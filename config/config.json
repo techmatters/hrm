@@ -1,0 +1,23 @@
+{
+  "development": {
+    "username": "hrm",
+    "password": null,
+    "database": "hrmdb",
+    "host": "127.0.0.1",
+    "dialect": "postgres"
+  },
+  "test": {
+    "username": "hrm",
+    "password": null,
+    "database": "hrmdb",
+    "host": "127.0.0.1",
+    "dialect": "postgres"
+  },
+  "production": {
+    "username": "hrm",
+    "password": null,
+    "database": "hrmdb",
+    "host": "127.0.0.1",
+    "dialect": "postgres"
+  }
+}
