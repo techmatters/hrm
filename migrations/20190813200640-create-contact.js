@@ -8,14 +8,18 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      category: {
+      taskId: {
         type: Sequelize.STRING
       },
-      age: {
+      reservationId: {
         type: Sequelize.STRING
       },
-      method: {
-        type: Sequelize.STRING
+      ageBracketId: {
+        type: Sequelize.INTEGER,
+        references: {
+          model: 'AgeBrackets',
+          key: 'id'
+        }
       },
       createdAt: {
         allowNull: false,

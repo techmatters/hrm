@@ -1,12 +1,10 @@
 'use strict';
 module.exports = (sequelize, DataTypes) => {
   const Contact = sequelize.define('Contact', {
-    category: DataTypes.STRING,
-    age: DataTypes.STRING,
-    method: DataTypes.STRING
+    taskId: DataTypes.STRING,
+    reservationId: DataTypes.STRING,
+    ageBracketId: DataTypes.INTEGER
   }, {});
-  Contact.associate = function(models) {
-    // associations can be defined here
-  };
+  Contact.hasOne(AgeBracket);
   return Contact;
 };
