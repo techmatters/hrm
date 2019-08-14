@@ -23,3 +23,30 @@ app.post('/contacts', function(req, res) {
 });
 
 app.listen(port, () => console.log(`Example app listening on port ${port}!`))
+
+/*
+
+What is the API for a contact object?
+
+we would want to return:
+{
+  id: 3,
+  taskId: .....,
+  reservationId: ....,
+  ageBracket: 15-17,
+  primaryClassification: {  // do we separate this or do isPrimary: true?
+    theme: 'Health',
+    category: 'Addiction',
+    subcategory: 'Alcohol addiction'    
+  },
+  otherClassifications: [
+    {
+      theme: 'Abuse and Violence',
+      category: 'Bullying',
+      subcategory: 'Physical Bullying'
+    }
+  ],
+  createdAt: '2019-08-12 12:08:39Z' // hmm... this should probs be epoch
+}
+
+*/
