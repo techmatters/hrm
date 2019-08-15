@@ -1,10 +1,13 @@
 'use strict';
 module.exports = (sequelize, DataTypes) => {
+  // TODO(nick): Not sure we're supposed to get AgeBracket this way
+  let Sequelize = require('sequelize')
+  let AgeBracket = require('./agebracket')(sequelize, Sequelize)
   const Contact = sequelize.define('Contact', {
+    timestamp: DataTypes.BIGINT,
     taskId: DataTypes.STRING,
-    reservationId: DataTypes.STRING,
-    ageBracketId: DataTypes.INTEGER
+    reservationId: DataTypes.STRING
   }, {});
-  Contact.hasOne(AgeBracket);
+  Contact.belongsTo(AgeBracket);
   return Contact;
 };
