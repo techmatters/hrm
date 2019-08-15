@@ -38,6 +38,7 @@ TODO(nick): currently doing this with square brackets instead
 */
 app.post('/contacts', function(req, res) {
   console.log(req.body);
+  // TODO(nick): Sanitize this so little bobby tables doesn't get us
   var ageBracketPromise =
     AgeBracket.findOne({where: { bracket: req.body.ageBracket }}); // cache eventually
   var subcategoryPromise =
