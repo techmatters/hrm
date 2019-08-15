@@ -5,6 +5,8 @@ module.exports = (sequelize, DataTypes) => {
     min: DataTypes.INTEGER,
     max: DataTypes.INTEGER
   }, {});
-  AgeBracket.hasMany(Contact);
+  AgeBracket.associate = function(models) {
+    // associations can be defined here
+  };
   return AgeBracket;
 };
