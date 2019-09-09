@@ -1,6 +1,7 @@
 const express = require('express')
+const cors = require('cors')
 const app = express()
-const port = 3000
+const port = 8080
 const Sequelize = require('sequelize')
 
 const sequelize = new Sequelize('postgres://hrm@localhost:5432/hrmdb');
@@ -9,9 +10,11 @@ const AgeBracket = require('./models/agebracket.js')(sequelize, Sequelize);
 const Subcategory = require('./models/subcategory.js')(sequelize, Sequelize);
 
 app.use(express.json())
+app.use(cors())
 sequelize.sync().then(() => console.log("Sequelize synced"));
 
-// run with node app.js and hit curl localhost:3000/
+// run with node app.js and hit curl localhost:8080/
+app.options('/', cors())
 app.get('/', function (req, res) {
   Contact.findAll().then(contacts => {
   	res.json(contacts);
@@ -36,6 +39,7 @@ on error return 400 with
 }
 TODO(nick): currently doing this with square brackets instead
 */
+app.options('/contacts', cors())
 app.post('/contacts', function(req, res) {
   console.log(req.body);
   // TODO(nick): Sanitize this so little bobby tables doesn't get us
@@ -58,20 +62,20 @@ app.post('/contacts', function(req, res) {
         res.status(400).send(JSON.stringify(errorArray));
         reject();
       }
-      Contact.create({
+      return Contact.create({
         taskId: req.body.taskId,
         reservationId: req.body.reservationId,
         timestamp: req.body.timestamp,
         AgeBracketId: ageBracket.id,
         SubcategoryId: subcategory.id
-      })
+      });
     })
     .then(contact => {
       let str = JSON.stringify(contact.toJSON());
       console.log("contact = " + str);
       res.json(str);
     })
-    .catch( error => { console.log("request rejected"); });
+    .catch( error => { console.log("request rejected: " + error); });
 });
 
 app.listen(port, () => console.log(`Example app listening on port ${port}!`))
