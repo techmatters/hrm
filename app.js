@@ -62,20 +62,20 @@ app.post('/contacts', function(req, res) {
         res.status(400).send(JSON.stringify(errorArray));
         reject();
       }
-      Contact.create({
+      return Contact.create({
         taskId: req.body.taskId,
         reservationId: req.body.reservationId,
         timestamp: req.body.timestamp,
         AgeBracketId: ageBracket.id,
         SubcategoryId: subcategory.id
-      })
+      });
     })
     .then(contact => {
       let str = JSON.stringify(contact.toJSON());
       console.log("contact = " + str);
       res.json(str);
     })
-    .catch( error => { console.log("request rejected"); });
+    .catch( error => { console.log("request rejected: " + error); });
 });
 
 app.listen(port, () => console.log(`Example app listening on port ${port}!`))
