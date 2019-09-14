@@ -13,11 +13,43 @@ app.use(express.json())
 app.use(cors())
 sequelize.sync().then(() => console.log("Sequelize synced"));
 
-// run with node app.js and hit curl localhost:8080/
-app.options('/', cors())
-app.get('/', function (req, res) {
-  Contact.findAll().then(contacts => {
-  	res.json(contacts);
+app.options('/contacts', cors())
+
+// run with node app.js and hit curl localhost:8080/contacts/
+// array of
+/*
+{
+  AgeBracket: "15-17",
+  Subcategory: "Gang violence",
+  Date: "....",
+  TaskId: "TA123",
+  ReservationId: "TR123"
+}
+*/
+app.get('/contacts', function (req, res) {
+  Contact.findAll({
+    attributes: ['createdAt', 'taskId', 'reservationId'],
+    include: [
+    {
+      model: AgeBracket,
+      attributes: [ 'bracket' ]
+    },
+    {
+      model: Subcategory,
+      attributes: [ 'subcategory' ]
+    }],
+    order: [ [ 'createdAt', 'DESC' ] ],
+    limit: 10
+  }).then(contacts => {
+    res.json(contacts.map(e =>
+      new Object({
+        "Date": e.createdAt,
+        "AgeBracket": e.AgeBracket.bracket,
+        "Subcategory": e.Subcategory.subcategory,
+        "TaskId": e.taskId,
+        "ReservationId": e.reservationId
+      })
+    ));
   })
 });
 
@@ -39,7 +71,6 @@ on error return 400 with
 }
 TODO(nick): currently doing this with square brackets instead
 */
-app.options('/contacts', cors())
 app.post('/contacts', function(req, res) {
   console.log(req.body);
   // TODO(nick): Sanitize this so little bobby tables doesn't get us
