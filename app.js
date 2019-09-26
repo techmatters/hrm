@@ -1,5 +1,7 @@
+var createError = require('http-errors');
 const express = require('express')
-const cors = require('cors')
+var logger = require('morgan');
+// const cors = require('cors')
 const app = express()
 
 // Sequelize init
@@ -8,12 +10,19 @@ const app = express()
 // const Contact = require('./models/contact.js')(sequelize, Sequelize);
 // const AgeBracket = require('./models/agebracket.js')(sequelize, Sequelize);
 // const Subcategory = require('./models/subcategory.js')(sequelize, Sequelize);
+app.use(logger('dev'));
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 
-app.use(express.json())
-app.use(cors())
+app.get('/', function(req, res) {
+  res.json({
+    "Message": "This is the root"
+  });
+});
+// app.use(cors())
 // sequelize.sync().then(() => console.log("Sequelize synced"));
 
-app.options('/contacts', cors())
+// app.options('/contacts', cors())
 
 // run with node app.js and hit curl localhost:8080/contacts/
 // array of
@@ -115,6 +124,22 @@ app.post('/contacts', function(req, res) {
   //   })
   //   .catch( error => { console.log("request rejected: " + error); });
 });
+
+app.use(function(req, res, next) {
+  next(createError(404));
+});
+
+app.use(function(err, req, res, next) {
+  // set locals, only providing error in development
+  res.locals.message = err.message;
+  res.locals.error = req.app.get('env') === 'development' ? err : {};
+
+  // render the error page
+  res.status(err.status || 500);
+  res.render('error');
+});
+
+console.log(new Date(Date.now()).toLocaleString() + ": app.js has been created");
 
 module.exports = app;
 
