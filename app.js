@@ -1,7 +1,7 @@
 const express = require('express')
 const cors = require('cors')
 const app = express()
-const port = 8080
+// const port = 8080
 const Sequelize = require('sequelize')
 
 const sequelize = new Sequelize('postgres://hrm@localhost:5432/hrmdb');
@@ -52,6 +52,7 @@ app.get('/contacts', function (req, res) {
     ));
   })
 });
+
 
 // example: curl -XPOST -H'Content-Type: application/json' localhost:3000/contacts -d'{"hi": 2}'
 /*
@@ -109,7 +110,9 @@ app.post('/contacts', function(req, res) {
     .catch( error => { console.log("request rejected: " + error); });
 });
 
-app.listen(port, () => console.log(`Example app listening on port ${port}!`))
+module.exports = app;
+
+// app.listen(port, () => console.log(`Example app listening on port ${port}!`))
 
 /*
 
