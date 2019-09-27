@@ -1,6 +1,6 @@
-var createError = require('http-errors');
+const createError = require('http-errors');
 const express = require('express');
-var logger = require('morgan');
+const logger = require('morgan');
 const cors = require('cors');
 const app = express();
 
@@ -26,7 +26,7 @@ app.use(cors())
 
 app.get('/', function(req, res) {
   res.json({
-    "Message": "This is the root"
+    "Message": "Welcome to the HRM!"
   });
 });
 
