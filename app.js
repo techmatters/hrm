@@ -1,19 +1,38 @@
-const express = require('express')
-const cors = require('cors')
-const app = express()
-const port = 8080
-const Sequelize = require('sequelize')
+const createError = require('http-errors');
+const express = require('express');
+const logger = require('morgan');
+const cors = require('cors');
+const app = express();
 
-const sequelize = new Sequelize('postgres://hrm@localhost:5432/hrmdb');
+// Sequelize init
+const Sequelize = require('sequelize');
+const host = process.env.RDS_HOSTNAME || 'localhost';
+const user = process.env.RDS_USERNAME || 'hrm';
+const pass = process.env.RDS_PASSWORD || '';
+const port = process.env.RDS_PORT || '5432';
+console.log('Trying with: ' + [host, user].join(', '));
+const sequelize = new Sequelize('hrmdb', 'hrm', pass, {
+  host: host,
+  dialect: 'postgres'
+});
+console.log('After connect attempt');
 const Contact = require('./models/contact.js')(sequelize, Sequelize);
 const AgeBracket = require('./models/agebracket.js')(sequelize, Sequelize);
 const Subcategory = require('./models/subcategory.js')(sequelize, Sequelize);
-
-app.use(express.json())
+app.use(logger('dev'));
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 app.use(cors())
+
+app.get('/', function(req, res) {
+  res.json({
+    "Message": "Welcome to the HRM!"
+  });
+});
+
 sequelize.sync().then(() => console.log("Sequelize synced"));
 
-app.options('/contacts', cors())
+app.options('/contacts', cors());
 
 // run with node app.js and hit curl localhost:8080/contacts/
 // array of
@@ -52,6 +71,7 @@ app.get('/contacts', function (req, res) {
     ));
   })
 });
+
 
 // example: curl -XPOST -H'Content-Type: application/json' localhost:3000/contacts -d'{"hi": 2}'
 /*
@@ -109,7 +129,23 @@ app.post('/contacts', function(req, res) {
     .catch( error => { console.log("request rejected: " + error); });
 });
 
-app.listen(port, () => console.log(`Example app listening on port ${port}!`))
+app.use(function(req, res, next) {
+  next(createError(404));
+});
+
+app.use(function(err, req, res, next) {
+  // set locals, only providing error in development
+  res.locals.message = err.message;
+  res.locals.error = req.app.get('env') === 'development' ? err : {};
+
+  // render the error page
+  res.status(err.status || 500);
+  res.render('error');
+});
+
+console.log(new Date(Date.now()).toLocaleString() + ": app.js has been created");
+
+module.exports = app;
 
 /*
 
