@@ -7,7 +7,8 @@ module.exports = (sequelize, DataTypes) => {
   const Contact = sequelize.define('Contact', {
     timestamp: DataTypes.BIGINT,
     taskId: DataTypes.STRING,
-    reservationId: DataTypes.STRING
+    reservationId: DataTypes.STRING,
+    rawJson: DataTypes.JSON
   }, {});
   Contact.belongsTo(AgeBracket);
   Contact.belongsTo(Subcategory);
