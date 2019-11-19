@@ -36,14 +36,21 @@ app.options('/contacts', cors());
 
 // run with node app.js and hit curl localhost:8080/contacts/
 app.get('/contacts', function (req, res) {
-  Contact.findAll({
+  const queryObject = {
     order: [ [ 'createdAt', 'DESC' ] ],
     limit: 10
-  }).then(contacts => {
+  };
+  if (req.query.queueName) {
+    queryObject.where = {
+      queueName: req.query.queueName
+    };
+  }
+  Contact.findAll(queryObject).then(contacts => {
     res.json(contacts.map(e =>
       new Object({
+        "id": e.id,
         "Date": e.createdAt,
-        "FormData": e.rawJson
+        "FormData": redact(e.rawJson)
       })
     ));
   })
@@ -54,9 +61,13 @@ app.get('/contacts', function (req, res) {
 app.post('/contacts', function(req, res) {
   console.log(req.body);
   // TODO(nick): Sanitize this so little bobby tables doesn't get us
-  Contact.create({
+  const contactRecord = {
     rawJson: req.body.form
-  })
+  }
+  if (req.body.form && req.body.form.queueName) {
+    contactRecord.queueName = req.body.form.queueName;
+  }
+  Contact.create(contactRecord)
   .then(contact => {
     let str = JSON.stringify(contact.toJSON());
     console.log("contact = " + str);
@@ -78,6 +89,16 @@ app.use(function(err, req, res, next) {
   res.status(err.status || 500);
   res.render('error');
 });
+
+function redact(form) {
+  if (!form || !form.number) return form;
+  const num = form.number;
+	const len = num.length;
+  return {
+    ...form,
+    number: num.slice(0,4) + "X".repeat(len-5) + num.slice(len-3)
+  }
+}
 
 console.log(new Date(Date.now()).toLocaleString() + ": app.js has been created");
 
