@@ -8,7 +8,8 @@ module.exports = (sequelize, DataTypes) => {
     timestamp: DataTypes.BIGINT,
     taskId: DataTypes.STRING,
     reservationId: DataTypes.STRING,
-    rawJson: DataTypes.JSON
+    rawJson: DataTypes.JSON,
+    queueName: DataTypes.STRING
   }, {});
   Contact.belongsTo(AgeBracket);
   Contact.belongsTo(Subcategory);
