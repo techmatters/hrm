@@ -91,12 +91,12 @@ app.use(function(err, req, res, next) {
 });
 
 function redact(form) {
-  if (!form || !form.number) return form;
+  if (!form || !form.number || form.number === 'Anonymous') return form;
   const num = form.number;
 	const len = num.length;
   return {
     ...form,
-    number: num.slice(0,4) + "X".repeat(len-5) + num.slice(len-3)
+    number: num.slice(0,4) + "X".repeat(len-7) + num.slice(len-3)
   }
 }
 
