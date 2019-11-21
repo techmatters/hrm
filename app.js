@@ -91,7 +91,12 @@ app.use(function(err, req, res, next) {
 });
 
 function redact(form) {
-  if (!form || !form.number || form.number === 'Anonymous') return form;
+  if (!form ||
+      !form.number ||
+      form.number === 'Anonymous' ||
+      form.number === 'Customer') {
+        return form;
+  }
   const num = form.number;
 	const len = num.length;
   return {
