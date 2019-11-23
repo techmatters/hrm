@@ -44,7 +44,6 @@ app.options('/contacts', cors());
 app.get('/contacts', function (req, res) {
   const base64Key = new Buffer(req.headers.authorization.replace("Basic ", ""), 'base64');
   if (base64Key.toString('ascii') !== apiKey) {
-    console.log("Failing");
     return res.status(401).json({error: 'Authentication failed'});
   }
   const queryObject = {
@@ -72,7 +71,6 @@ app.get('/contacts', function (req, res) {
 app.post('/contacts', function(req, res) {
   const base64Key = new Buffer(req.headers.authorization.replace("Basic ", ""), 'base64');
   if (base64Key.toString('ascii') !== apiKey) {
-    console.log("Failing");
     return res.status(401).json({error: 'Authentication failed'});
   }
   console.log(req.body);
