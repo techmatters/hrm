@@ -10,7 +10,7 @@ const host = process.env.RDS_HOSTNAME || 'localhost';
 const user = process.env.RDS_USERNAME || 'hrm';
 const pass = process.env.RDS_PASSWORD || '';
 const port = process.env.RDS_PORT || '5432';
-const apiKey = process.env.API_KEY.toString();
+const apiKey = process.env.API_KEY;
 
 if (!apiKey) {
   throw("Must specify API key");
