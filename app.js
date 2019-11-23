@@ -10,6 +10,12 @@ const host = process.env.RDS_HOSTNAME || 'localhost';
 const user = process.env.RDS_USERNAME || 'hrm';
 const pass = process.env.RDS_PASSWORD || '';
 const port = process.env.RDS_PORT || '5432';
+const apiKey = process.env.API_KEY.toString();
+
+if (!apiKey) {
+  throw("Must specify API key");
+}
+
 console.log('Trying with: ' + [host, user].join(', '));
 const sequelize = new Sequelize('hrmdb', 'hrm', pass, {
   host: host,
@@ -36,6 +42,11 @@ app.options('/contacts', cors());
 
 // run with node app.js and hit curl localhost:8080/contacts/
 app.get('/contacts', function (req, res) {
+  const base64Key = new Buffer(req.headers.authorization.replace("Basic ", ""), 'base64');
+  if (base64Key.toString('ascii') !== apiKey) {
+    console.log("Failing");
+    return res.status(401).json({error: 'Authentication failed'});
+  }
   const queryObject = {
     order: [ [ 'createdAt', 'DESC' ] ],
     limit: 10
@@ -59,6 +70,11 @@ app.get('/contacts', function (req, res) {
 
 // example: curl -XPOST -H'Content-Type: application/json' localhost:3000/contacts -d'{"hi": 2}'
 app.post('/contacts', function(req, res) {
+  const base64Key = new Buffer(req.headers.authorization.replace("Basic ", ""), 'base64');
+  if (base64Key.toString('ascii') !== apiKey) {
+    console.log("Failing");
+    return res.status(401).json({error: 'Authentication failed'});
+  }
   console.log(req.body);
   // TODO(nick): Sanitize this so little bobby tables doesn't get us
   const contactRecord = {
