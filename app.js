@@ -12,10 +12,14 @@ const pass = process.env.RDS_PASSWORD || '';
 const port = process.env.RDS_PORT || '5432';
 const apiKey = process.env.API_KEY;
 
+const Op = Sequelize.Op;
+const version = "0.3.0";
+
 if (!apiKey) {
   throw("Must specify API key");
 }
 
+console.log(`Starting HRM version ${version}`);
 console.log('Trying with: ' + [host, user].join(', '));
 const sequelize = new Sequelize('hrmdb', 'hrm', pass, {
   host: host,
@@ -52,7 +56,9 @@ app.get('/contacts', function (req, res) {
   };
   if (req.query.queueName) {
     queryObject.where = {
-      queueName: req.query.queueName
+      queueName: {
+        [Op.like]: `${req.query.queueName}%`
+      }
     };
   }
   Contact.findAll(queryObject).then(contacts => {
