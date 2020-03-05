@@ -81,11 +81,11 @@ app.post('/contacts', function(req, res) {
   // TODO(nick): Sanitize this so little bobby tables doesn't get us
   const contactRecord = {
     rawJson: req.body.form,
-    twilioWorkerId: req.body.twilioWorkerId,
-    helpline: req.body.helpline,
+    twilioWorkerId: req.body.twilioWorkerId || '',
+    helpline: req.body.helpline || '',
     queueName: req.body.queueName || req.body.form.queueName,
-    number: req.body.number,
-    channel: req.body.channel
+    number: req.body.number || '',
+    channel: req.body.channel || ''
   }
   
   Contact.create(contactRecord)
