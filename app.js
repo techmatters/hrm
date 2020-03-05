@@ -83,7 +83,7 @@ app.post('/contacts', function(req, res) {
     rawJson: req.body.form,
     twilioWorkerId: req.body.twilioWorkerId,
     helpline: req.body.helpline,
-    queueName: req.body.queueName,
+    queueName: req.body.queueName || req.body.form.queueName,
     number: req.body.number,
     channel: req.body.channel
   }
