@@ -117,8 +117,8 @@ app.use(function(err, req, res, next) {
 });
 
 function formatNumber(number) {
-  const len = num.length;
-  return num.slice(0,4) + "X".repeat(len-7) + num.slice(len-3);
+  const len = number.length;
+  return number.slice(0,4) + "X".repeat(len-7) + number.slice(len-3);
 }
 
 function redact(form) {
