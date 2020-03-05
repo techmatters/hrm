@@ -9,7 +9,11 @@ module.exports = (sequelize, DataTypes) => {
     taskId: DataTypes.STRING,
     reservationId: DataTypes.STRING,
     rawJson: DataTypes.JSON,
-    queueName: DataTypes.STRING
+    queueName: DataTypes.STRING,
+    twilioWorkerId: DataTypes.STRING,
+    helpline: DataTypes.STRING,
+    number: DataTypes.STRING,
+    channel: DataTypes.STRING
   }, {});
   Contact.belongsTo(AgeBracket);
   Contact.belongsTo(Subcategory);
