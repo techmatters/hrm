@@ -62,9 +62,14 @@ app.get('/contacts', function (req, res) {
   Contact.findAll(queryObject).then(contacts => {
     res.json(contacts.map(e =>
       new Object({
-        "id": e.id,
-        "Date": e.createdAt,
-        "FormData": redact(e.rawJson)
+        id: e.id,
+        Date: e.createdAt,
+        FormData: redact(e.rawJson),
+        twilioWorkerId: e.twilioWorkerId,
+        helpline: e.helpline,
+        queueName: e.queueName,
+        number: formatNumber(e.number),
+        channel: e.channel
       })
     ));
   })
@@ -111,18 +116,23 @@ app.use(function(err, req, res, next) {
   res.render('error');
 });
 
-function redact(form) {
-  if (!form ||
-      !form.number ||
-      form.number === 'Anonymous' ||
-      form.number === 'Customer') {
-        return form;
+function formatNumber(number) {
+  if (number == null || number === 'Anonymous' || number === 'Customer') {
+    return number;
   }
-  const num = form.number;
-	const len = num.length;
+
+  const len = number.length;
+  return number.slice(0,4) + "X".repeat(len-7) + number.slice(len-3);
+}
+
+function redact(form) {
+  if (!form) {
+    return form;
+  }
+
   return {
     ...form,
-    number: num.slice(0,4) + "X".repeat(len-7) + num.slice(len-3)
+    number: formatNumber(form.number)
   }
 }
 
