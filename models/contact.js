@@ -10,7 +10,7 @@ module.exports = (sequelize, DataTypes) => {
     reservationId: DataTypes.STRING,
     rawJson: DataTypes.JSON,
     queueName: DataTypes.STRING,
-    counselorId: DataTypes.STRING,
+    twilioWorkerId: DataTypes.STRING,
     helpline: DataTypes.STRING,
     number: DataTypes.STRING,
     channel: DataTypes.STRING

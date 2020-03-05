@@ -40,8 +40,6 @@ app.get('/', function(req, res) {
   });
 });
 
-sequelize.sync().then(() => console.log("Sequelize synced"));
-
 app.options('/contacts', cors());
 
 // run with node app.js and hit curl localhost:8080/contacts/
@@ -83,7 +81,7 @@ app.post('/contacts', function(req, res) {
   // TODO(nick): Sanitize this so little bobby tables doesn't get us
   const contactRecord = {
     rawJson: req.body.form,
-    counselorId: req.body.counselorId,
+    twilioWorkerId: req.body.twilioWorkerId,
     helpline: req.body.helpline,
     queueName: req.body.queueName,
     number: req.body.number,

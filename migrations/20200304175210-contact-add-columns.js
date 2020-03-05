@@ -5,7 +5,7 @@ module.exports = {
     return Promise.all([
       queryInterface.addColumn(
         'Contacts',
-        'counselorId',
+        'twilioWorkerId',
         { type: Sequelize.STRING }
       ),
       queryInterface.addColumn(
@@ -28,7 +28,7 @@ module.exports = {
 
   down: (queryInterface, Sequelize) => {
     return Promise.all([
-      queryInterface.removeColumn('Contacts', 'counselorId'),
+      queryInterface.removeColumn('Contacts', 'twilioWorkerId'),
       queryInterface.removeColumn('Contacts', 'helpline'),
       queryInterface.removeColumn('Contacts', 'number'),
       queryInterface.removeColumn('Contacts', 'channel'),
