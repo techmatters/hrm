@@ -86,7 +86,11 @@ app.post('/contacts/search', (req, res) => {
   checkAuthentication(req);
 
   const { helpline, firstName, lastName, counselor, phoneNumber, dateFrom, dateTo } = req.body;
-
+  const anyValue = helpline || firstName || lastName || counselor || phoneNumber || dateFrom || dateTo;
+ 
+  if (!anyValue) {
+    res.json([]);
+  }
   
   const queryObject = {
     where: {
@@ -108,7 +112,9 @@ app.post('/contacts/search', (req, res) => {
           twilioWorkerId: counselor,
         },
         phoneNumber && {
-          number: phoneNumber,
+          number: {
+            [Op.iLike]: `%${phoneNumber}%`,
+          },
         },
         dateFrom && {
           createdAt: {
