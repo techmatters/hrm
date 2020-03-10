@@ -172,12 +172,12 @@ function buildSearchQueryObject(body) {
                 [Op.iLike]: `%${singleInput || phoneNumber}%`,
               },
             },
-            dateFrom && {
+            (dateFrom && !singleInput) && {
               createdAt: {
                 [Op.gte]: startOfDay(parseISO(dateFrom)),
               },
             },
-            dateTo && {
+            (dateTo && !singleInput) && {
               createdAt: {
                 [Op.lte]: endOfDay(parseISO(dateTo)),
               },
