@@ -3,6 +3,9 @@ const express = require('express');
 const logger = require('morgan');
 const cors = require('cors');
 const app = express();
+const parseISO = require('date-fns/parseISO');
+const startOfDay = require('date-fns/startOfDay');
+var endOfDay = require('date-fns/endOfDay');
 
 // Sequelize init
 const Sequelize = require('sequelize');
@@ -42,12 +45,16 @@ app.get('/', function(req, res) {
 
 app.options('/contacts', cors());
 
-// run with node app.js and hit curl localhost:8080/contacts/
-app.get('/contacts', function (req, res) {
+function checkAuthentication(req) {
   const base64Key = new Buffer(req.headers.authorization.replace("Basic ", ""), 'base64');
   if (base64Key.toString('ascii') !== apiKey) {
     return res.status(401).json({error: 'Authentication failed'});
   }
+}
+
+// run with node app.js and hit curl localhost:8080/contacts/
+app.get('/contacts', function (req, res) {
+  checkAuthentication(req);
   const queryObject = {
     order: [ [ 'createdAt', 'DESC' ] ],
     limit: 10
@@ -75,13 +82,58 @@ app.get('/contacts', function (req, res) {
   })
 });
 
+app.post('/contacts/search', (req, res) => {
+  checkAuthentication(req);
+
+  const { helpline, firstName, lastName, counselor, phoneNumber, dateFrom, dateTo } = req.body;
+
+  
+  const queryObject = {
+    where: {
+      [Op.and]: [
+        helpline && {
+          helpline: helpline,
+        },
+        firstName && {
+          'rawJson.childInformation.name.firstName': {
+            [Op.iLike]: firstName,
+          }
+        },
+        lastName && {
+          'rawJson.childInformation.name.lastName': {
+            [Op.iLike]: lastName,
+          }
+        },
+        counselor && {
+          twilioWorkerId: counselor,
+        },
+        phoneNumber && {
+          number: phoneNumber,
+        },
+        dateFrom && {
+          createdAt: {
+            [Op.gte]: startOfDay(parseISO(dateFrom)),
+          },
+        },
+        dateTo && {
+          createdAt: {
+            [Op.lte]: endOfDay(parseISO(dateTo)),
+          },
+        },
+      ],
+    }
+  };
+  Contact.findAll(queryObject)
+  .then(contacts => {
+    console.log("contacts:", contacts);
+    res.json(contacts);
+  })
+  .catch( error => { console.log("request rejected: " + error); });
+});
 
 // example: curl -XPOST -H'Content-Type: application/json' localhost:3000/contacts -d'{"hi": 2}'
 app.post('/contacts', function(req, res) {
-  const base64Key = new Buffer(req.headers.authorization.replace("Basic ", ""), 'base64');
-  if (base64Key.toString('ascii') !== apiKey) {
-    return res.status(401).json({error: 'Authentication failed'});
-  }
+  checkAuthentication(req);
   console.log(req.body);
   // TODO(nick): Sanitize this so little bobby tables doesn't get us
   const contactRecord = {
