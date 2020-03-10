@@ -151,10 +151,35 @@ app.post('/contacts/search', (req, res) => {
       ],
     }
   };
+
   Contact.findAll(queryObject)
   .then(contacts => {
-    console.log("contacts:", contacts);
-    res.json(contacts);
+    const searchResults = contacts.map(contact => {
+      const contactId = contact.id;
+      const dateTime = contact.createdAt;
+      const name = `${contact.rawJson.childInformation.name.firstName} ${contact.rawJson.childInformation.name.lastName}`;
+      const customerNumber = contact.number;
+      const callType = contact.rawJson.callType;
+      const categories = "TBD";
+      const counselor = contact.twilioWorkerId;
+      const notes = contact.rawJson.caseInformation.callSumary;
+      
+      return ({
+        contactId,
+        overview: {
+          dateTime,
+          name,
+          customerNumber,
+          callType,
+          categories,
+          counselor,
+          notes,
+        },
+        details: redact(contact.rawJson),
+      });
+    });
+
+    res.json(searchResults);
   })
   .catch( error => { console.log("request rejected: " + error); });
 });
