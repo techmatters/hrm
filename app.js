@@ -5,7 +5,8 @@ const cors = require('cors');
 const app = express();
 const parseISO = require('date-fns/parseISO');
 const startOfDay = require('date-fns/startOfDay');
-var endOfDay = require('date-fns/endOfDay');
+const endOfDay = require('date-fns/endOfDay');
+const isValid = require('date-fns/isValid');
 
 // Sequelize init
 const Sequelize = require('sequelize');
@@ -85,12 +86,15 @@ app.get('/contacts', function (req, res) {
 app.post('/contacts/search', (req, res) => {
   checkAuthentication(req);
 
-  const { helpline, firstName, lastName, counselor, phoneNumber, dateFrom, dateTo } = req.body;
-  const anyValue = helpline || firstName || lastName || counselor || phoneNumber || dateFrom || dateTo;
+  const { helpline, firstName, lastName, counselor, phoneNumber, dateFrom, dateTo, singleInput } = req.body;
+  const anyValue = helpline || firstName || lastName || counselor || phoneNumber || dateFrom || dateTo || singleInput;
  
   if (!anyValue) {
     res.json([]);
   }
+
+  const operator = singleInput ? Op.or : Op.and;
+  const isSingleInputValidDate = singleInput && isValid(parseISO(singleInput));
   
   const queryObject = {
     where: {
@@ -98,33 +102,51 @@ app.post('/contacts/search', (req, res) => {
         helpline && {
           helpline: helpline,
         },
-        firstName && {
-          'rawJson.childInformation.name.firstName': {
-            [Op.iLike]: firstName,
-          }
-        },
-        lastName && {
-          'rawJson.childInformation.name.lastName': {
-            [Op.iLike]: lastName,
-          }
-        },
-        counselor && {
-          twilioWorkerId: counselor,
-        },
-        phoneNumber && {
-          number: {
-            [Op.iLike]: `%${phoneNumber}%`,
-          },
-        },
-        dateFrom && {
-          createdAt: {
-            [Op.gte]: startOfDay(parseISO(dateFrom)),
-          },
-        },
-        dateTo && {
-          createdAt: {
-            [Op.lte]: endOfDay(parseISO(dateTo)),
-          },
+        {
+          [operator]: [
+            (firstName || singleInput) && {
+              'rawJson.childInformation.name.firstName': {
+                [Op.iLike]: singleInput || firstName,
+              }
+            },
+            (lastName || singleInput) && {
+              'rawJson.childInformation.name.lastName': {
+                [Op.iLike]: singleInput || lastName,
+              }
+            },
+            counselor && {
+              twilioWorkerId: counselor,
+            },
+            (phoneNumber || singleInput) && {
+              number: {
+                [Op.iLike]: `%${singleInput || phoneNumber}%`,
+              },
+            },
+            dateFrom && {
+              createdAt: {
+                [Op.gte]: startOfDay(parseISO(dateFrom)),
+              },
+            },
+            dateTo && {
+              createdAt: {
+                [Op.lte]: endOfDay(parseISO(dateTo)),
+              },
+            },
+            isSingleInputValidDate && {
+              [Op.and]: [
+                {
+                  createdAt: {
+                    [Op.gte]: startOfDay(parseISO(singleInput)),
+                  },
+                },
+                {
+                  createdAt: {
+                    [Op.lte]: endOfDay(parseISO(singleInput)),
+                  },
+                },
+              ],
+            },
+          ],
         },
       ],
     }
