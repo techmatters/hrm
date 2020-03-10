@@ -13,7 +13,8 @@ module.exports = (sequelize, DataTypes) => {
     twilioWorkerId: DataTypes.STRING,
     helpline: DataTypes.STRING,
     number: DataTypes.STRING,
-    channel: DataTypes.STRING
+    channel: DataTypes.STRING,
+    conversationDuration: DataTypes.INTEGER,
   }, {});
   Contact.belongsTo(AgeBracket);
   Contact.belongsTo(Subcategory);

@@ -69,7 +69,8 @@ app.get('/contacts', function (req, res) {
         helpline: e.helpline,
         queueName: e.queueName,
         number: formatNumber(e.number),
-        channel: e.channel
+        channel: e.channel,
+        conversationDuration: e.conversationDuration,
       })
     ));
   })
@@ -90,7 +91,8 @@ app.post('/contacts', function(req, res) {
     helpline: req.body.helpline || '',
     queueName: req.body.queueName || req.body.form.queueName,
     number: req.body.number || '',
-    channel: req.body.channel || ''
+    channel: req.body.channel || '',
+    conversationDuration: req.body.conversationDuration,
   }
   
   Contact.create(contactRecord)
