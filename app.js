@@ -46,13 +46,6 @@ app.get('/', function(req, res) {
 
 app.options('/contacts', cors());
 
-function checkAuthentication(req) {
-  const base64Key = new Buffer(req.headers.authorization.replace("Basic ", ""), 'base64');
-  if (base64Key.toString('ascii') !== apiKey) {
-    return res.status(401).json({error: 'Authentication failed'});
-  }
-}
-
 // run with node app.js and hit curl localhost:8080/contacts/
 app.get('/contacts', function (req, res) {
   checkAuthentication(req);
@@ -85,18 +78,75 @@ app.get('/contacts', function (req, res) {
 
 app.post('/contacts/search', (req, res) => {
   checkAuthentication(req);
+  checkSearchParams(req.body);
 
-  const { helpline, firstName, lastName, counselor, phoneNumber, dateFrom, dateTo, singleInput } = req.body;
+  const queryObject = buildSearchQueryObject(req.body);
+
+  Contact.findAll(queryObject)
+    .then(contacts => res.json(contacts.map(convertContactToSearchResult)))
+    .catch( error => { console.log("request rejected: " + error); });
+});
+
+// example: curl -XPOST -H'Content-Type: application/json' localhost:3000/contacts -d'{"hi": 2}'
+app.post('/contacts', function(req, res) {
+  checkAuthentication(req);
+  console.log(req.body);
+  // TODO(nick): Sanitize this so little bobby tables doesn't get us
+  const contactRecord = {
+    rawJson: req.body.form,
+    twilioWorkerId: req.body.twilioWorkerId || '',
+    helpline: req.body.helpline || '',
+    queueName: req.body.queueName || req.body.form.queueName,
+    number: req.body.number || '',
+    channel: req.body.channel || ''
+  }
+  
+  Contact.create(contactRecord)
+  .then(contact => {
+    let str = JSON.stringify(contact.toJSON());
+    console.log("contact = " + str);
+    res.json(str);
+  })
+  .catch( error => { console.log("request rejected: " + error); });
+});
+
+app.use(function(req, res, next) {
+  next(createError(404));
+});
+
+app.use(function(err, req, res, next) {
+  // set locals, only providing error in development
+  res.locals.message = err.message;
+  res.locals.error = req.app.get('env') === 'development' ? err : {};
+
+  // render the error page
+  res.status(err.status || 500);
+  res.render('error');
+});
+
+function checkAuthentication(req) {
+  const base64Key = new Buffer(req.headers.authorization.replace("Basic ", ""), 'base64');
+  if (base64Key.toString('ascii') !== apiKey) {
+    return res.status(401).json({error: 'Authentication failed'});
+  }
+}
+
+function checkSearchParams(body) {
+  const { helpline, firstName, lastName, counselor, phoneNumber, dateFrom, dateTo, singleInput } = body;
   const anyValue = helpline || firstName || lastName || counselor || phoneNumber || dateFrom || dateTo || singleInput;
  
   if (!anyValue) {
     res.json([]);
   }
+}
+
+function buildSearchQueryObject(body) {
+  const { helpline, firstName, lastName, counselor, phoneNumber, dateFrom, dateTo, singleInput } = body;
 
   const operator = singleInput ? Op.or : Op.and;
   const isSingleInputValidDate = singleInput && isValid(parseISO(singleInput));
   
-  const queryObject = {
+  return ({
     where: {
       [Op.and]: [
         helpline && {
@@ -150,76 +200,33 @@ app.post('/contacts/search', (req, res) => {
         },
       ],
     }
-  };
+  });
+}
 
-  Contact.findAll(queryObject)
-  .then(contacts => {
-    const searchResults = contacts.map(contact => {
-      const contactId = contact.id;
-      const dateTime = contact.createdAt;
-      const name = `${contact.rawJson.childInformation.name.firstName} ${contact.rawJson.childInformation.name.lastName}`;
-      const customerNumber = contact.number;
-      const callType = contact.rawJson.callType;
-      const categories = "TBD";
-      const counselor = contact.twilioWorkerId;
-      const notes = contact.rawJson.caseInformation.callSumary;
-      
-      return ({
-        contactId,
-        overview: {
-          dateTime,
-          name,
-          customerNumber,
-          callType,
-          categories,
-          counselor,
-          notes,
-        },
-        details: redact(contact.rawJson),
-      });
-    });
-
-    res.json(searchResults);
-  })
-  .catch( error => { console.log("request rejected: " + error); });
-});
-
-// example: curl -XPOST -H'Content-Type: application/json' localhost:3000/contacts -d'{"hi": 2}'
-app.post('/contacts', function(req, res) {
-  checkAuthentication(req);
-  console.log(req.body);
-  // TODO(nick): Sanitize this so little bobby tables doesn't get us
-  const contactRecord = {
-    rawJson: req.body.form,
-    twilioWorkerId: req.body.twilioWorkerId || '',
-    helpline: req.body.helpline || '',
-    queueName: req.body.queueName || req.body.form.queueName,
-    number: req.body.number || '',
-    channel: req.body.channel || ''
-  }
+function convertContactToSearchResult(contact) {
+  const contactId = contact.id;
+  const dateTime = contact.createdAt;
+  const name = `${contact.rawJson.childInformation.name.firstName} ${contact.rawJson.childInformation.name.lastName}`;
+  const customerNumber = contact.number;
+  const callType = contact.rawJson.callType;
+  const categories = "TBD";
+  const counselor = contact.twilioWorkerId;
+  const notes = contact.rawJson.caseInformation.callSumary;
   
-  Contact.create(contactRecord)
-  .then(contact => {
-    let str = JSON.stringify(contact.toJSON());
-    console.log("contact = " + str);
-    res.json(str);
-  })
-  .catch( error => { console.log("request rejected: " + error); });
-});
-
-app.use(function(req, res, next) {
-  next(createError(404));
-});
-
-app.use(function(err, req, res, next) {
-  // set locals, only providing error in development
-  res.locals.message = err.message;
-  res.locals.error = req.app.get('env') === 'development' ? err : {};
-
-  // render the error page
-  res.status(err.status || 500);
-  res.render('error');
-});
+  return ({
+    contactId,
+    overview: {
+      dateTime,
+      name,
+      customerNumber,
+      callType,
+      categories,
+      counselor,
+      notes,
+    },
+    details: redact(contact.rawJson),
+  });
+};
 
 function formatNumber(number) {
   if (number == null || number === 'Anonymous' || number === 'Customer') {
