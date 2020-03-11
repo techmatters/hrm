@@ -3,6 +3,10 @@ const express = require('express');
 const logger = require('morgan');
 const cors = require('cors');
 const app = express();
+const parseISO = require('date-fns/parseISO');
+const startOfDay = require('date-fns/startOfDay');
+const endOfDay = require('date-fns/endOfDay');
+const isValid = require('date-fns/isValid');
 
 // Sequelize init
 const Sequelize = require('sequelize');
@@ -44,10 +48,7 @@ app.options('/contacts', cors());
 
 // run with node app.js and hit curl localhost:8080/contacts/
 app.get('/contacts', function (req, res) {
-  const base64Key = new Buffer(req.headers.authorization.replace("Basic ", ""), 'base64');
-  if (base64Key.toString('ascii') !== apiKey) {
-    return res.status(401).json({error: 'Authentication failed'});
-  }
+  checkAuthentication(req);
   const queryObject = {
     order: [ [ 'createdAt', 'DESC' ] ],
     limit: 10
@@ -76,13 +77,20 @@ app.get('/contacts', function (req, res) {
   })
 });
 
+app.post('/contacts/search', (req, res) => {
+  checkAuthentication(req);
+  checkSearchParams(req.body);
+
+  const queryObject = buildSearchQueryObject(req.body);
+
+  Contact.findAll(queryObject)
+    .then(contacts => res.json(convertContactsToSearchResults(contacts)))
+    .catch( error => { console.log("request rejected: " + error); });
+});
 
 // example: curl -XPOST -H'Content-Type: application/json' localhost:3000/contacts -d'{"hi": 2}'
 app.post('/contacts', function(req, res) {
-  const base64Key = new Buffer(req.headers.authorization.replace("Basic ", ""), 'base64');
-  if (base64Key.toString('ascii') !== apiKey) {
-    return res.status(401).json({error: 'Authentication failed'});
-  }
+  checkAuthentication(req);
   console.log(req.body);
   // TODO(nick): Sanitize this so little bobby tables doesn't get us
   const contactRecord = {
@@ -117,6 +125,131 @@ app.use(function(err, req, res, next) {
   res.status(err.status || 500);
   res.render('error');
 });
+
+function checkAuthentication(req) {
+  const base64Key = new Buffer(req.headers.authorization.replace("Basic ", ""), 'base64');
+  if (base64Key.toString('ascii') !== apiKey) {
+    return res.status(401).json({error: 'Authentication failed'});
+  }
+}
+
+function checkSearchParams(body) {
+  const { helpline, firstName, lastName, counselor, phoneNumber, dateFrom, dateTo, singleInput } = body;
+  const anyValue = helpline || firstName || lastName || counselor || phoneNumber || dateFrom || dateTo || singleInput;
+ 
+  if (!anyValue) {
+    res.json([]);
+  }
+}
+
+function buildSearchQueryObject(body) {
+  const { helpline, firstName, lastName, counselor, phoneNumber, dateFrom, dateTo, singleInput } = body;
+
+  const operator = singleInput ? Op.or : Op.and;
+  const isSingleInputValidDate = singleInput && isValid(parseISO(singleInput));
+  
+  return ({
+    where: {
+      [Op.and]: [
+        helpline && {
+          helpline: helpline,
+        },
+        {
+          [operator]: [
+            (firstName || singleInput) && {
+              'rawJson.childInformation.name.firstName': {
+                [Op.iLike]: singleInput || firstName,
+              }
+            },
+            (lastName || singleInput) && {
+              'rawJson.childInformation.name.lastName': {
+                [Op.iLike]: singleInput || lastName,
+              }
+            },
+            counselor && {
+              twilioWorkerId: counselor,
+            },
+            (phoneNumber || singleInput) && {
+              number: {
+                [Op.iLike]: `%${singleInput || phoneNumber}%`,
+              },
+            },
+            (dateFrom && !singleInput) && {
+              createdAt: {
+                [Op.gte]: startOfDay(parseISO(dateFrom)),
+              },
+            },
+            (dateTo && !singleInput) && {
+              createdAt: {
+                [Op.lte]: endOfDay(parseISO(dateTo)),
+              },
+            },
+            isSingleInputValidDate && {
+              [Op.and]: [
+                {
+                  createdAt: {
+                    [Op.gte]: startOfDay(parseISO(singleInput)),
+                  },
+                },
+                {
+                  createdAt: {
+                    [Op.lte]: endOfDay(parseISO(singleInput)),
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    }
+  });
+}
+
+function convertContactsToSearchResults(contacts) {
+  return contacts.map(contact => {
+    if (!isValidContact(contact)) {
+      let contactJson = JSON.stringify(contact);
+      console.log(`Invalid Contact: ${contactJson}`);
+      return null;
+    }
+
+    const contactId = contact.id;
+    const dateTime = contact.createdAt;
+    const name = `${contact.rawJson.childInformation.name.firstName} ${contact.rawJson.childInformation.name.lastName}`;
+    const customerNumber = contact.number;
+    const callType = contact.rawJson.callType;
+    const categories = "TBD";
+    const counselor = contact.twilioWorkerId;
+    const notes = contact.rawJson.caseInformation.callSumary;
+
+    return ({
+      contactId,
+      overview: {
+        dateTime,
+        name,
+        customerNumber,
+        callType,
+        categories,
+        counselor,
+        notes,
+      },
+      details: redact(contact.rawJson),
+    })
+  }).filter(contact => contact);
+};
+
+function isValidContact(contact) {
+  return contact
+    && contact.rawJson
+    && !isNullOrEmptyObject(contact.rawJson.callType)
+    && !isNullOrEmptyObject(contact.rawJson.childInformation)
+    && !isNullOrEmptyObject(contact.rawJson.callerInformation)
+    && !isNullOrEmptyObject(contact.rawJson.caseInformation);
+}
+
+function isNullOrEmptyObject(obj) {
+  return obj == null || Object.keys(obj).length === 0;
+}
 
 function formatNumber(number) {
   if (number == null || number === 'Anonymous' || number === 'Customer') {
