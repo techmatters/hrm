@@ -1,9 +1,11 @@
-'use strict';
+const Sequelize = require('sequelize');
+const ageBracket = require('./agebracket');
+const subcategory = require('./subcategory');
+
 module.exports = (sequelize, DataTypes) => {
   // TODO(nick): Not sure we're supposed to get AgeBracket this way
-  let Sequelize = require('sequelize')
-  let AgeBracket = require('./agebracket')(sequelize, Sequelize)
-  let Subcategory = require('./subcategory')(sequelize, Sequelize)
+  const AgeBracketModel = ageBracket(sequelize, Sequelize);
+  const SubcategoryModel = subcategory(sequelize, Sequelize);
   const Contact = sequelize.define('Contact', {
     timestamp: DataTypes.BIGINT,
     taskId: DataTypes.STRING,
@@ -16,7 +18,7 @@ module.exports = (sequelize, DataTypes) => {
     channel: DataTypes.STRING,
     conversationDuration: DataTypes.INTEGER,
   }, {});
-  Contact.belongsTo(AgeBracket);
-  Contact.belongsTo(Subcategory);
+  Contact.belongsTo(AgeBracketModel);
+  Contact.belongsTo(SubcategoryModel);
   return Contact;
 };

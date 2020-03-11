@@ -1,9 +1,9 @@
-'use strict';
+
 module.exports = (sequelize, DataTypes) => {
   const Subcategory = sequelize.define('Subcategory', {
-    subcategory: DataTypes.STRING
+    subcategory: DataTypes.STRING,
   }, {});
-  Subcategory.associate = function(models) {
+  Subcategory.associate = () => {
     // associations can be defined here
   };
   return Subcategory;

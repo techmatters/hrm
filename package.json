@@ -6,7 +6,9 @@
     "start": "sequelize db:migrate && node ./bin/www",
     "test": "jest",
     "db:create-migration": "sequelize migration:generate --name ",
-    "db:undo-last": "sequelize db:migrate:undo"
+    "db:undo-last": "sequelize db:migrate:undo",
+    "lint": "eslint --ext js .",
+    "lint:fix": "npm run lint -- --fix"
   },
   "repository": {
     "type": "git",
@@ -32,6 +34,9 @@
     "sequelize-cli": "^5.5.0"
   },
   "devDependencies": {
+    "eslint": "^6.8.0",
+    "eslint-config-airbnb-base": "^14.0.0",
+    "eslint-plugin-import": "^2.20.1",
     "jest": "^25.1.0"
   }
 }
