@@ -83,7 +83,7 @@ app.post('/contacts/search', (req, res) => {
   const queryObject = buildSearchQueryObject(req.body);
 
   Contact.findAll(queryObject)
-    .then(contacts => res.json(contacts.map(convertContactToSearchResult)))
+    .then(contacts => res.json(convertContactsToSearchResults(contacts)))
     .catch( error => { console.log("request rejected: " + error); });
 });
 
@@ -203,30 +203,51 @@ function buildSearchQueryObject(body) {
   });
 }
 
-function convertContactToSearchResult(contact) {
-  const contactId = contact.id;
-  const dateTime = contact.createdAt;
-  const name = `${contact.rawJson.childInformation.name.firstName} ${contact.rawJson.childInformation.name.lastName}`;
-  const customerNumber = contact.number;
-  const callType = contact.rawJson.callType;
-  const categories = "TBD";
-  const counselor = contact.twilioWorkerId;
-  const notes = contact.rawJson.caseInformation.callSumary;
-  
-  return ({
-    contactId,
-    overview: {
-      dateTime,
-      name,
-      customerNumber,
-      callType,
-      categories,
-      counselor,
-      notes,
-    },
-    details: redact(contact.rawJson),
-  });
+function convertContactsToSearchResults(contacts) {
+  return contacts.map(contact => {
+    if (!isValidContact(contact)) {
+      let contactJson = JSON.stringify(contact);
+      console.log(`Invalid Contact: ${contactJson}`);
+      return null;
+    }
+
+    const contactId = contact.id;
+    const dateTime = contact.createdAt;
+    const name = `${contact.rawJson.childInformation.name.firstName} ${contact.rawJson.childInformation.name.lastName}`;
+    const customerNumber = contact.number;
+    const callType = contact.rawJson.callType;
+    const categories = "TBD";
+    const counselor = contact.twilioWorkerId;
+    const notes = contact.rawJson.caseInformation.callSumary;
+
+    return ({
+      contactId,
+      overview: {
+        dateTime,
+        name,
+        customerNumber,
+        callType,
+        categories,
+        counselor,
+        notes,
+      },
+      details: redact(contact.rawJson),
+    })
+  }).filter(contact => contact);
 };
+
+function isValidContact(contact) {
+  return contact
+    && contact.rawJson
+    && !isNullOrEmptyObject(contact.rawJson.callType)
+    && !isNullOrEmptyObject(contact.rawJson.childInformation)
+    && !isNullOrEmptyObject(contact.rawJson.callerInformation)
+    && !isNullOrEmptyObject(contact.rawJson.caseInformation);
+}
+
+function isNullOrEmptyObject(obj) {
+  return obj == null || Object.keys(obj).length === 0;
+}
 
 function formatNumber(number) {
   if (number == null || number === 'Anonymous' || number === 'Customer') {
