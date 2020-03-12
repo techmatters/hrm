@@ -4,9 +4,11 @@
   "description": "",
   "scripts": {
     "start": "sequelize db:migrate && node ./bin/www",
-    "test": "jest",
+    "test": "jest --passWithNoTests",
     "db:create-migration": "sequelize migration:generate --name ",
-    "db:undo-last": "sequelize db:migrate:undo"
+    "db:undo-last": "sequelize db:migrate:undo",
+    "lint": "eslint --ext js .",
+    "lint:fix": "npm run lint -- --fix"
   },
   "repository": {
     "type": "git",
@@ -28,10 +30,16 @@
     "morgan": "^1.9.1",
     "pg": "^7.12.1",
     "pg-hstore": "^2.3.3",
-    "sequelize": "^5.13.1",
+    "sequelize": "^5.21.5",
     "sequelize-cli": "^5.5.0"
   },
   "devDependencies": {
-    "jest": "^24.9.0"
+    "eslint": "^6.8.0",
+    "eslint-config-airbnb-base": "^14.0.0",
+    "eslint-config-prettier": "^6.10.0",
+    "eslint-plugin-import": "^2.20.1",
+    "eslint-plugin-prettier": "^3.1.2",
+    "jest": "^25.1.0",
+    "prettier": "^1.19.1"
   }
 }
