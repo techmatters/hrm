@@ -1,10 +1,6 @@
-
 module.exports = {
-  up: (queryInterface, Sequelize) => queryInterface.addColumn(
-    'Contacts',
-    'conversationDuration',
-    Sequelize.INTEGER,
-  ),
+  up: (queryInterface, Sequelize) =>
+    queryInterface.addColumn('Contacts', 'conversationDuration', Sequelize.INTEGER),
 
-  down: (queryInterface) => queryInterface.removeColumn('Contacts', 'conversationDuration'),
+  down: queryInterface => queryInterface.removeColumn('Contacts', 'conversationDuration'),
 };

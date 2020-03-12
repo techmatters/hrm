@@ -20,7 +20,7 @@ const { Op } = Sequelize;
 const version = '0.3.0';
 
 if (!apiKey) {
-  throw (new Error('Must specify API key'));
+  throw new Error('Must specify API key');
 }
 
 console.log(`Starting HRM version ${version}`);
@@ -74,17 +74,31 @@ function redact(form) {
 
 function checkSearchParams(body, res) {
   const {
-    helpline, firstName, lastName, counselor, phoneNumber, dateFrom, dateTo, singleInput,
+    helpline,
+    firstName,
+    lastName,
+    counselor,
+    phoneNumber,
+    dateFrom,
+    dateTo,
+    singleInput,
   } = body;
 
-  const anyValue = helpline
-    || firstName
-    || lastName
-    || counselor
-    || phoneNumber
-    || dateFrom
-    || dateTo
-    || singleInput;
+  /**
+   * Prettier currently enforces the operators (eg. ||) to the at the end of the line.
+   * It's much more readable when it's placed at the beggining of the line. But that's
+   * a current limitation of Prettier. There's a PR in place that will fix this in future
+   * versions of Prettier: https://github.com/prettier/prettier/pull/7111.
+   */
+  const anyValue =
+    helpline ||
+    firstName ||
+    lastName ||
+    counselor ||
+    phoneNumber ||
+    dateFrom ||
+    dateTo ||
+    singleInput;
 
   if (!anyValue) {
     res.json([]);
@@ -93,13 +107,22 @@ function checkSearchParams(body, res) {
 
 function buildSearchQueryObject(body) {
   const {
-    helpline, firstName, lastName, counselor, phoneNumber, dateFrom, dateTo, singleInput,
+    helpline,
+    firstName,
+    lastName,
+    counselor,
+    phoneNumber,
+    dateFrom,
+    dateTo,
+    singleInput,
   } = body;
 
   const operator = singleInput ? Op.or : Op.and;
   const isSingleInputValidDate = singleInput && isValid(parseISO(singleInput));
+  const compareDateFrom = dateFrom && !singleInput;
+  const compareDateTo = dateTo && !singleInput;
 
-  return ({
+  return {
     where: {
       [Op.and]: [
         helpline && {
@@ -125,12 +148,12 @@ function buildSearchQueryObject(body) {
                 [Op.iLike]: `%${singleInput || phoneNumber}%`,
               },
             },
-            (dateFrom && !singleInput) && {
+            compareDateFrom && {
               createdAt: {
                 [Op.gte]: startOfDay(parseISO(dateFrom)),
               },
             },
-            (dateTo && !singleInput) && {
+            compareDateTo && {
               createdAt: {
                 [Op.lte]: endOfDay(parseISO(dateTo)),
               },
@@ -153,7 +176,7 @@ function buildSearchQueryObject(body) {
         },
       ],
     },
-  });
+  };
 }
 
 function isNullOrEmptyObject(obj) {
@@ -161,45 +184,49 @@ function isNullOrEmptyObject(obj) {
 }
 
 function isValidContact(contact) {
-  return contact
-    && contact.rawJson
-    && !isNullOrEmptyObject(contact.rawJson.callType)
-    && !isNullOrEmptyObject(contact.rawJson.childInformation)
-    && !isNullOrEmptyObject(contact.rawJson.callerInformation)
-    && !isNullOrEmptyObject(contact.rawJson.caseInformation);
+  return (
+    contact &&
+    contact.rawJson &&
+    !isNullOrEmptyObject(contact.rawJson.callType) &&
+    !isNullOrEmptyObject(contact.rawJson.childInformation) &&
+    !isNullOrEmptyObject(contact.rawJson.callerInformation) &&
+    !isNullOrEmptyObject(contact.rawJson.caseInformation)
+  );
 }
 
 function convertContactsToSearchResults(contacts) {
-  return contacts.map((contact) => {
-    if (!isValidContact(contact)) {
-      const contactJson = JSON.stringify(contact);
-      console.log(`Invalid Contact: ${contactJson}`);
-      return null;
-    }
+  return contacts
+    .map(contact => {
+      if (!isValidContact(contact)) {
+        const contactJson = JSON.stringify(contact);
+        console.log(`Invalid Contact: ${contactJson}`);
+        return null;
+      }
 
-    const contactId = contact.id;
-    const dateTime = contact.createdAt;
-    const name = `${contact.rawJson.childInformation.name.firstName} ${contact.rawJson.childInformation.name.lastName}`;
-    const customerNumber = contact.number;
-    const { callType } = contact.rawJson;
-    const categories = 'TBD';
-    const counselor = contact.twilioWorkerId;
-    const notes = contact.rawJson.caseInformation.callSumary;
+      const contactId = contact.id;
+      const dateTime = contact.createdAt;
+      const name = `${contact.rawJson.childInformation.name.firstName} ${contact.rawJson.childInformation.name.lastName}`;
+      const customerNumber = contact.number;
+      const { callType } = contact.rawJson;
+      const categories = 'TBD';
+      const counselor = contact.twilioWorkerId;
+      const notes = contact.rawJson.caseInformation.callSumary;
 
-    return ({
-      contactId,
-      overview: {
-        dateTime,
-        name,
-        customerNumber,
-        callType,
-        categories,
-        counselor,
-        notes,
-      },
-      details: redact(contact.rawJson),
-    });
-  }).filter((contact) => contact);
+      return {
+        contactId,
+        overview: {
+          dateTime,
+          name,
+          customerNumber,
+          callType,
+          categories,
+          counselor,
+          notes,
+        },
+        details: redact(contact.rawJson),
+      };
+    })
+    .filter(contact => contact);
 }
 
 // run with node app.js and hit curl localhost:8080/contacts/
@@ -216,18 +243,20 @@ app.get('/contacts', (req, res) => {
       },
     };
   }
-  Contact.findAll(queryObject).then((contacts) => {
-    res.json(contacts.map((e) => ({
-      id: e.id,
-      Date: e.createdAt,
-      FormData: redact(e.rawJson),
-      twilioWorkerId: e.twilioWorkerId,
-      helpline: e.helpline,
-      queueName: e.queueName,
-      number: formatNumber(e.number),
-      channel: e.channel,
-      conversationDuration: e.conversationDuration,
-    })));
+  Contact.findAll(queryObject).then(contacts => {
+    res.json(
+      contacts.map(e => ({
+        id: e.id,
+        Date: e.createdAt,
+        FormData: redact(e.rawJson),
+        twilioWorkerId: e.twilioWorkerId,
+        helpline: e.helpline,
+        queueName: e.queueName,
+        number: formatNumber(e.number),
+        channel: e.channel,
+        conversationDuration: e.conversationDuration,
+      })),
+    );
   });
 });
 
@@ -238,8 +267,8 @@ app.post('/contacts/search', (req, res) => {
   const queryObject = buildSearchQueryObject(req.body);
 
   Contact.findAll(queryObject)
-    .then((contacts) => res.json(convertContactsToSearchResults(contacts)))
-    .catch((error) => { console.log(`request rejected: ${error}`); });
+    .then(contacts => res.json(convertContactsToSearchResults(contacts)))
+    .catch(error => console.log(`request rejected: ${error}`));
 });
 
 // example: curl -XPOST -H'Content-Type: application/json' localhost:3000/contacts -d'{"hi": 2}'
@@ -258,12 +287,12 @@ app.post('/contacts', (req, res) => {
   };
 
   Contact.create(contactRecord)
-    .then((contact) => {
+    .then(contact => {
       const str = JSON.stringify(contact.toJSON());
       console.log(`contact = ${str}`);
       res.json(str);
     })
-    .catch((error) => { console.log(`request rejected: ${error}`); });
+    .catch(error => console.log(`request rejected: ${error}`));
 });
 
 app.use((req, res, next) => {
