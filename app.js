@@ -17,7 +17,7 @@ const pass = process.env.RDS_PASSWORD || '';
 const apiKey = process.env.API_KEY;
 
 const { Op } = Sequelize;
-const version = '0.3.0';
+const version = '0.3.6';
 
 if (!apiKey) {
   throw new Error('Must specify API key');
