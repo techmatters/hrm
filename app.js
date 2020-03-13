@@ -1,5 +1,6 @@
 const createError = require('http-errors');
 const express = require('express');
+require('express-async-errors');
 const logger = require('morgan');
 const cors = require('cors');
 const Sequelize = require('sequelize');
@@ -64,45 +65,38 @@ app.use(authorizationMiddleware);
 
 // run with node app.js and hit curl localhost:8080/contacts/
 app.get('/contacts', async (req, res) => {
-  try {
-    const contacts = await ContactController.getContacts(req.query);
-    res.json(contacts);
-  } catch (error) {
-    console.log(`[ContactController.getContacts]: ${error}`);
-  }
+  const contacts = await ContactController.getContacts(req.query);
+  res.json(contacts);
 });
 
 app.post('/contacts/search', async (req, res) => {
-  try {
-    const searchResults = await ContactController.searchContacts(req.body);
-    res.json(searchResults);
-  } catch (error) {
-    console.log(`[ContactController.searchContacts]: ${error}`);
-  }
+  const searchResults = await ContactController.searchContacts(req.body);
+  res.json(searchResults);
 });
 
 // example: curl -XPOST -H'Content-Type: application/json' localhost:3000/contacts -d'{"hi": 2}'
 app.post('/contacts', async (req, res) => {
-  try {
-    const contact = await ContactController.createContact(req.body);
-    res.json(contact);
-  } catch (error) {
-    console.log(`[ContactController.createContact]: ${error}`);
-  }
+  const contact = await ContactController.createContact(req.body);
+  res.json(contact);
 });
 
 app.use((req, res, next) => {
   next(createError(404));
 });
 
-app.use((err, req, res) => {
+app.use((err, req, res, next) => {
+  console.log(err);
+
   // set locals, only providing error in development
   res.locals.message = err.message;
   res.locals.error = req.app.get('env') === 'development' ? err : {};
 
-  // render the error page
+  const error =
+    req.app.get('env') === 'development' ? { message: err.message, error: err.stack } : {};
+
   res.status(err.status || 500);
-  res.render('error');
+  res.json(error);
+  next();
 });
 
 console.log(`${new Date(Date.now()).toLocaleString()}: app.js has been created`);
