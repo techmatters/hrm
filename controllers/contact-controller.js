@@ -195,9 +195,45 @@ const ContactController = sequelize => {
     return convertContactsToSearchResults(contacts);
   };
 
-  // TODO: other methods
-  const getContacts = () => [];
-  const createContact = () => null;
+  const getContacts = async query => {
+    const queryObject = {
+      order: [['createdAt', 'DESC']],
+      limit: 10,
+    };
+    if (query.queueName) {
+      queryObject.where = {
+        queueName: {
+          [Op.like]: `${query.queueName}%`,
+        },
+      };
+    }
+    const contacts = await Contact.findAll(queryObject);
+    return contacts.map(e => ({
+      id: e.id,
+      Date: e.createdAt,
+      FormData: redact(e.rawJson),
+      twilioWorkerId: e.twilioWorkerId,
+      helpline: e.helpline,
+      queueName: e.queueName,
+      number: formatNumber(e.number),
+      channel: e.channel,
+      conversationDuration: e.conversationDuration,
+    }));
+  };
+  const createContact = async body => {
+    const contactRecord = {
+      rawJson: body.form,
+      twilioWorkerId: body.twilioWorkerId || '',
+      helpline: body.helpline || '',
+      queueName: body.queueName || body.form.queueName,
+      number: body.number || '',
+      channel: body.channel || '',
+      conversationDuration: body.conversationDuration,
+    };
+
+    const contact = await Contact.create(contactRecord);
+    return contact;
+  };
 
   return { searchContacts, getContacts, createContact };
 };
