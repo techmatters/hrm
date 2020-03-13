@@ -41,21 +41,29 @@ app.get('/', (req, res) => {
 
 app.options('/contacts', cors());
 
-function checkAuthentication(req, res) {
+function unauthorized(res) {
+  const authorizationFailed = { error: 'Authorization failed' };
+  console.log(`[authorizationMiddleware]: ${JSON.stringify(authorizationFailed)}`);
+  res.status(401).json(authorizationFailed);
+}
+
+function authorizationMiddleware(req, res, next) {
   if (!req || !req.headers || !req.headers.authorization) {
-    res.status(401).json({ error: 'Authentication failed' });
+    return unauthorized(res);
   }
 
   const base64Key = Buffer.from(req.headers.authorization.replace('Basic ', ''), 'base64');
   if (base64Key.toString('ascii') !== apiKey) {
-    res.status(401).json({ error: 'Authentication failed' });
+    return unauthorized(res);
   }
+
+  return next();
 }
+
+app.use(authorizationMiddleware);
 
 // run with node app.js and hit curl localhost:8080/contacts/
 app.get('/contacts', async (req, res) => {
-  checkAuthentication(req, res);
-
   try {
     const contacts = await ContactController.getContacts(req.query);
     res.json(contacts);
@@ -65,8 +73,6 @@ app.get('/contacts', async (req, res) => {
 });
 
 app.post('/contacts/search', async (req, res) => {
-  checkAuthentication(req, res);
-
   try {
     const searchResults = await ContactController.searchContacts(req.body);
     res.json(searchResults);
@@ -77,8 +83,6 @@ app.post('/contacts/search', async (req, res) => {
 
 // example: curl -XPOST -H'Content-Type: application/json' localhost:3000/contacts -d'{"hi": 2}'
 app.post('/contacts', async (req, res) => {
-  checkAuthentication(req, res);
-
   try {
     const contact = await ContactController.createContact(req.body);
     res.json(contact);
