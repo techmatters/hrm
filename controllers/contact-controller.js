@@ -59,6 +59,8 @@ function isEmptySearchParams(body) {
   return !anyValue;
 }
 
+const orUndefined = value => value || undefined;
+
 function buildSearchQueryObject(body) {
   const {
     helpline,
@@ -72,9 +74,10 @@ function buildSearchQueryObject(body) {
   } = body;
 
   const operator = singleInput ? Op.or : Op.and;
-  const isSingleInputValidDate = singleInput && isValid(parseISO(singleInput));
-  const compareDateFrom = dateFrom && !singleInput;
-  const compareDateTo = dateTo && !singleInput;
+  const isSingleInputValidDate = orUndefined(singleInput && isValid(parseISO(singleInput)));
+  const compareCounselor = orUndefined(counselor && !singleInput);
+  const compareDateFrom = orUndefined(dateFrom && !singleInput);
+  const compareDateTo = orUndefined(dateTo && !singleInput);
 
   return {
     where: {
@@ -94,7 +97,7 @@ function buildSearchQueryObject(body) {
                 [Op.iLike]: singleInput || lastName,
               },
             },
-            counselor && {
+            compareCounselor && {
               twilioWorkerId: counselor,
             },
             (phoneNumber || singleInput) && {
@@ -160,11 +163,11 @@ function convertContactsToSearchResults(contacts) {
       const contactId = contact.id;
       const dateTime = contact.createdAt;
       const name = `${contact.rawJson.childInformation.name.firstName} ${contact.rawJson.childInformation.name.lastName}`;
-      const customerNumber = contact.number;
+      const customerNumber = formatNumber(contact.number);
       const { callType } = contact.rawJson;
       const categories = 'TBD';
       const counselor = contact.twilioWorkerId;
-      const notes = contact.rawJson.caseInformation.callSumary;
+      const notes = contact.rawJson.caseInformation.callSummary;
 
       return {
         contactId,
