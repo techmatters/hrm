@@ -133,6 +133,8 @@ function buildSearchQueryObject(body) {
         },
       ],
     },
+    order: [['createdAt', 'DESC']],
+    limit: 20,
   };
 }
 
