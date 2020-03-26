@@ -140,6 +140,8 @@ test('Call findAll(queryObject) with given params', async () => {
         },
       ],
     },
+    order: [['createdAt', 'DESC']],
+    limit: 20,
   };
 
   const spy = jest.spyOn(MockContact, 'findAll');
@@ -186,6 +188,8 @@ test('Call findAll(queryObject) with singleInput param', async () => {
         },
       ],
     },
+    order: [['createdAt', 'DESC']],
+    limit: 20,
   };
 
   const spy = jest.spyOn(MockContact, 'findAll');
@@ -245,6 +249,8 @@ test('Call findAll(queryObject) with singleInput param of type date', async () =
         },
       ],
     },
+    order: [['createdAt', 'DESC']],
+    limit: 20,
   };
 
   const spy = jest.spyOn(MockContact, 'findAll');
@@ -297,6 +303,8 @@ test('Call findAll(queryObject) with singleInput and ignore other params', async
         },
       ],
     },
+    order: [['createdAt', 'DESC']],
+    limit: 20,
   };
 
   const spy = jest.spyOn(MockContact, 'findAll');
