@@ -21,6 +21,8 @@ const defaultContact = {
       callSummary: '',
     },
   },
+  channel: '',
+  conversationDuration: null,
 };
 
 class ContactBuilder {
@@ -66,6 +68,16 @@ class ContactBuilder {
     return this;
   }
 
+  withChannel(channel) {
+    this.channel = channel;
+    return this;
+  }
+
+  withConversationDuration(conversationDuration) {
+    this.conversationDuration = conversationDuration;
+    return this;
+  }
+
   build() {
     return {
       ...defaultContact,
@@ -90,6 +102,8 @@ class ContactBuilder {
           ...(this.callSummary && { callSummary: this.callSummary }),
         },
       },
+      ...(this.channel && { channel: this.channel }),
+      ...(this.conversationDuration && { conversationDuration: this.conversationDuration }),
     };
   }
 }

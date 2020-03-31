@@ -165,11 +165,13 @@ function convertContactsToSearchResults(contacts) {
       const contactId = contact.id;
       const dateTime = contact.createdAt;
       const name = `${contact.rawJson.childInformation.name.firstName} ${contact.rawJson.childInformation.name.lastName}`;
-      const customerNumber = formatNumber(contact.number);
+      const customerNumber = contact.number;
       const { callType } = contact.rawJson;
+      // TODO (Gian): retrieveTags must be done here instead than in flex plugin
       const categories = 'TBD';
       const counselor = contact.twilioWorkerId;
       const notes = contact.rawJson.caseInformation.callSummary;
+      const { channel, conversationDuration } = contact;
 
       return {
         contactId,
@@ -181,8 +183,10 @@ function convertContactsToSearchResults(contacts) {
           categories,
           counselor,
           notes,
+          channel,
+          conversationDuration,
         },
-        details: redact(contact.rawJson),
+        details: contact.rawJson,
       };
     })
     .filter(contact => contact);
