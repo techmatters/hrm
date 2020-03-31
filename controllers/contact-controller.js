@@ -167,6 +167,7 @@ function convertContactsToSearchResults(contacts) {
       const name = `${contact.rawJson.childInformation.name.firstName} ${contact.rawJson.childInformation.name.lastName}`;
       const customerNumber = contact.number;
       const { callType } = contact.rawJson;
+      // TODO (Gian): retrieveTags must be done here instead than in flex plugin
       const categories = 'TBD';
       const counselor = contact.twilioWorkerId;
       const notes = contact.rawJson.caseInformation.callSummary;
