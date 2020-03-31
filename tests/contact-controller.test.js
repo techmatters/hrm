@@ -38,6 +38,8 @@ test('Convert contacts to searchResults', async () => {
     .withCallType('Child calling about self')
     .withTwilioWorkerId('twilio-worker-id')
     .withCreatedAt('2020-03-10')
+    .withChannel('voice')
+    .withConversationDuration(10)
     .build();
   const sarahPark = new ContactBuilder()
     .withId('sarah-id')
@@ -60,8 +62,8 @@ test('Convert contacts to searchResults', async () => {
         categories: 'TBD',
         counselor: 'twilio-worker-id',
         notes: 'Lost young boy',
-        channel: '',
-        conversationDuration: null,
+        channel: 'voice',
+        conversationDuration: 10,
       },
       details: {
         ...jillSmith.rawJson,
