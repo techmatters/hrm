@@ -170,6 +170,7 @@ function convertContactsToSearchResults(contacts) {
       const categories = 'TBD';
       const counselor = contact.twilioWorkerId;
       const notes = contact.rawJson.caseInformation.callSummary;
+      const { channel, conversationDuration } = contact;
 
       return {
         contactId,
@@ -181,6 +182,8 @@ function convertContactsToSearchResults(contacts) {
           categories,
           counselor,
           notes,
+          channel,
+          conversationDuration,
         },
         details: redact(contact.rawJson),
       };
