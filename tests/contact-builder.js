@@ -21,6 +21,8 @@ const defaultContact = {
       callSummary: '',
     },
   },
+  channel: '',
+  conversationDuration: null,
 };
 
 class ContactBuilder {

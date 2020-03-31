@@ -60,6 +60,8 @@ test('Convert contacts to searchResults', async () => {
         categories: 'TBD',
         counselor: 'twilio-worker-id',
         notes: 'Lost young boy',
+        channel: '',
+        conversationDuration: null,
       },
       details: {
         ...jillSmith.rawJson,
@@ -76,6 +78,8 @@ test('Convert contacts to searchResults', async () => {
         categories: 'TBD',
         counselor: 'twilio-worker-id',
         notes: 'Young pregnant woman',
+        channel: '',
+        conversationDuration: null,
       },
       details: sarahPark.rawJson,
     },
