@@ -57,7 +57,7 @@ test('Convert contacts to searchResults', async () => {
       overview: {
         dateTime: '2020-03-10T00:00:00.000Z',
         name: 'Jill Smith',
-        customerNumber: '+120XXXXX142',
+        customerNumber: '+12025550142',
         callType: 'Child calling about self',
         categories: 'TBD',
         counselor: 'twilio-worker-id',
@@ -67,7 +67,7 @@ test('Convert contacts to searchResults', async () => {
       },
       details: {
         ...jillSmith.rawJson,
-        number: '+120XXXXX142',
+        number: '+12025550142',
       },
     },
     {

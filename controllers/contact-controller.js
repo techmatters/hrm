@@ -165,7 +165,7 @@ function convertContactsToSearchResults(contacts) {
       const contactId = contact.id;
       const dateTime = contact.createdAt;
       const name = `${contact.rawJson.childInformation.name.firstName} ${contact.rawJson.childInformation.name.lastName}`;
-      const customerNumber = formatNumber(contact.number);
+      const customerNumber = contact.number;
       const { callType } = contact.rawJson;
       const categories = 'TBD';
       const counselor = contact.twilioWorkerId;
@@ -185,7 +185,7 @@ function convertContactsToSearchResults(contacts) {
           channel,
           conversationDuration,
         },
-        details: redact(contact.rawJson),
+        details: contact.rawJson,
       };
     })
     .filter(contact => contact);
