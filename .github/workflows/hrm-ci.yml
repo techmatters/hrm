@@ -15,7 +15,7 @@ jobs:
       postgres:
         image: postgres:11.7
         env:
-          POSTGRES_PASSWORD:
+          POSTGRES_PASSWORD: postgres
         # Set health checks to wait until postgres has started
         options: >-
           --health-cmd pg_isready
@@ -42,3 +42,4 @@ jobs:
       env:
         CI: true
         API_KEY: secret
+        RDS_PASSWORD: postgres
