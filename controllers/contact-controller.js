@@ -87,31 +87,35 @@ function buildSearchQueryObject(body) {
         },
         {
           [operator]: [
-            (firstName || singleInput) && {
+            {
               [Op.or]: [
                 {
-                  'rawJson.childInformation.name.firstName': {
-                    [Op.iLike]: `%${singleInput || firstName}%`,
-                  },
+                  [operator]: [
+                    (firstName || singleInput) && {
+                      'rawJson.childInformation.name.firstName': {
+                        [Op.iLike]: `%${singleInput || firstName}%`,
+                      },
+                    },
+                    (lastName || singleInput) && {
+                      'rawJson.childInformation.name.lastName': {
+                        [Op.iLike]: `%${singleInput || lastName}%`,
+                      },
+                    },
+                  ],
                 },
                 {
-                  'rawJson.callerInformation.name.firstName': {
-                    [Op.iLike]: `%${singleInput || firstName}%`,
-                  },
-                },
-              ],
-            },
-            (lastName || singleInput) && {
-              [Op.or]: [
-                {
-                  'rawJson.childInformation.name.lastName': {
-                    [Op.iLike]: `%${singleInput || lastName}%`,
-                  },
-                },
-                {
-                  'rawJson.callerInformation.name.lastName': {
-                    [Op.iLike]: `%${singleInput || lastName}%`,
-                  },
+                  [operator]: [
+                    (firstName || singleInput) && {
+                      'rawJson.callerInformation.name.firstName': {
+                        [Op.iLike]: `%${singleInput || firstName}%`,
+                      },
+                    },
+                    (lastName || singleInput) && {
+                      'rawJson.callerInformation.name.lastName': {
+                        [Op.iLike]: `%${singleInput || lastName}%`,
+                      },
+                    },
+                  ],
                 },
               ],
             },
