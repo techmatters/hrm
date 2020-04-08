@@ -11,23 +11,6 @@ jobs:
       matrix:
         node-version: [12.x]
 
-    services:
-      postgres:
-        image: postgres:11.7
-        env:
-          POSTGRES_USER: hrm
-          POSTGRES_DB: hrmdb
-          POSTGRES_PASSWORD: postgres
-        # Set health checks to wait until postgres has started
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          # Maps tcp port 5432 on service container to the host
-          - 5432:5432
-
     steps:
     - name: Checkout Branch
       uses: actions/checkout@v2
@@ -36,13 +19,18 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
     - name: Setup database tables
-      uses: n1ru4l/psql-action@v1
+      uses: m4nu56/postgresql-action@1.0
       with:
-        POSTGRES_HOST: localhost
-        POSTGRES_USER: hrm
-        POSTGRES_PASSWORD: postgres
-        POSTGRES_PORT: 5432 
-        DATABASE_DUMP_PATH: "/dump.sql"
+        # Version of PostgreSQL to use
+        postgresql version: 11.7
+        # POSTGRES_DB - name for the default database that is created
+        postgresql db: hrmdb
+        # POSTGRES_USER - create the specified user with superuser power
+        postgresql user: hrm
+        # POSTGRES_PASSWORD - superuser password
+        postgresql password: postgres
+        # POSTGRES_INIT_SCRIPTS - directory containing DB init scripts
+        postgresql init scripts: # optional, default is 
     - name: Install Packages
       run: npm install
     - name: Run Lint
