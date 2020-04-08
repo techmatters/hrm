@@ -22,7 +22,7 @@ afterAll(async done => {
   // log('\n Test Finished \n');
 });
 
-describe('/contacts', () => {
+describe('/contacts route', () => {
   const route = '/contacts';
 
   // First test post so dabatabe wont be empty
@@ -68,41 +68,43 @@ describe('/contacts', () => {
     });
   });
 
-  describe('/search', () => {
+  describe('/contacts/search route', () => {
     const subRoute = `${route}/search`;
 
-    test('should return 401', async () => {
-      const response = await request.post(subRoute).send({});
+    describe('POST', () => {
+      test('should return 401', async () => {
+        const response = await request.post(subRoute).send({});
 
-      expect(response.status).toBe(401);
-      expect(response.body.error).toBe('Authorization failed');
-    });
-
-    describe('multiple input search', () => {
-      test('should return 200', async () => {
-        const response = await request
-          .post(subRoute)
-          .set(headers)
-          .send({ firstName: 'jh', lastName: 'he' }); // should match both contacts created on /contacts POST
-
-        expect(response.status).toBe(200);
-        const [c2, c1] = response.body; // result is sorted DESC
-        expect(c1.overview.callType).toBe(contact1.form.callType);
-        expect(c2.overview.callType).toBe(contact2.form.callType);
+        expect(response.status).toBe(401);
+        expect(response.body.error).toBe('Authorization failed');
       });
-    });
 
-    describe('single input search', () => {
-      test('should return 200', async () => {
-        const response = await request
-          .post(subRoute)
-          .set(headers)
-          .send({ singleInput: 'qwerty' }); // should match both contacts created on /contacts POST
+      describe('multiple input search', () => {
+        test('should return 200', async () => {
+          const response = await request
+            .post(subRoute)
+            .set(headers)
+            .send({ firstName: 'jh', lastName: 'he' }); // should match both contacts created on /contacts POST
 
-        expect(response.status).toBe(200);
-        const [c2, c1] = response.body; // result is sorted DESC
-        expect(c1.overview.callType).toBe(contact1.form.callType);
-        expect(c2.overview.callType).toBe(contact2.form.callType);
+          expect(response.status).toBe(200);
+          const [c2, c1] = response.body; // result is sorted DESC
+          expect(c1.overview.callType).toBe(contact1.form.callType);
+          expect(c2.overview.callType).toBe(contact2.form.callType);
+        });
+      });
+
+      describe('single input search', () => {
+        test('should return 200', async () => {
+          const response = await request
+            .post(subRoute)
+            .set(headers)
+            .send({ singleInput: 'qwerty' }); // should match both contacts created on /contacts POST
+
+          expect(response.status).toBe(200);
+          const [c2, c1] = response.body; // result is sorted DESC
+          expect(c1.overview.callType).toBe(contact1.form.callType);
+          expect(c2.overview.callType).toBe(contact2.form.callType);
+        });
       });
     });
   });
