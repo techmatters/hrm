@@ -36,7 +36,13 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
     - name: Setup database tables
-      run:  psql -d hrmdb -U hrm -f dump.sql
+      uses: n1ru4l/psql-action@v1
+      with:
+        POSTGRES_HOST: localhost
+        POSTGRES_USER: hrm
+        POSTGRES_PASSWORD: postgres
+        POSTGRES_PORT: 5432 
+        DATABASE_DUMP_PATH: "/dump.sql"
     - name: Install Packages
       run: npm install
     - name: Run Lint
