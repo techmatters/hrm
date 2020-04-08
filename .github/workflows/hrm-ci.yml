@@ -30,7 +30,7 @@ jobs:
         # POSTGRES_PASSWORD - superuser password
         postgresql password: postgres
         # POSTGRES_INIT_SCRIPTS - directory containing DB init scripts
-        postgresql init scripts: "./dump.sql"
+        postgresql init scripts: tests/db-init
     - name: Install Packages
       run: npm install
     - name: Run Lint
