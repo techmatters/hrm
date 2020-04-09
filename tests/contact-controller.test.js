@@ -114,14 +114,36 @@ test('Call findAll(queryObject) with given params', async () => {
         {
           [Op.and]: [
             {
-              'rawJson.childInformation.name.firstName': {
-                [Op.iLike]: body.firstName,
-              },
-            },
-            {
-              'rawJson.childInformation.name.lastName': {
-                [Op.iLike]: body.lastName,
-              },
+              [Op.or]: [
+                {
+                  [Op.and]: [
+                    {
+                      'rawJson.childInformation.name.firstName': {
+                        [Op.iLike]: `%${body.firstName}%`,
+                      },
+                    },
+                    {
+                      'rawJson.childInformation.name.lastName': {
+                        [Op.iLike]: `%${body.lastName}%`,
+                      },
+                    },
+                  ],
+                },
+                {
+                  [Op.and]: [
+                    {
+                      'rawJson.callerInformation.name.firstName': {
+                        [Op.iLike]: `%${body.firstName}%`,
+                      },
+                    },
+                    {
+                      'rawJson.callerInformation.name.lastName': {
+                        [Op.iLike]: `%${body.lastName}%`,
+                      },
+                    },
+                  ],
+                },
+              ],
             },
             {
               twilioWorkerId: body.counselor,
@@ -172,14 +194,36 @@ test('Call findAll(queryObject) with singleInput param', async () => {
         {
           [Op.or]: [
             {
-              'rawJson.childInformation.name.firstName': {
-                [Op.iLike]: body.singleInput,
-              },
-            },
-            {
-              'rawJson.childInformation.name.lastName': {
-                [Op.iLike]: body.singleInput,
-              },
+              [Op.or]: [
+                {
+                  [Op.or]: [
+                    {
+                      'rawJson.childInformation.name.firstName': {
+                        [Op.iLike]: `%${body.singleInput}%`,
+                      },
+                    },
+                    {
+                      'rawJson.childInformation.name.lastName': {
+                        [Op.iLike]: `%${body.singleInput}%`,
+                      },
+                    },
+                  ],
+                },
+                {
+                  [Op.or]: [
+                    {
+                      'rawJson.callerInformation.name.firstName': {
+                        [Op.iLike]: `%${body.singleInput}%`,
+                      },
+                    },
+                    {
+                      'rawJson.callerInformation.name.lastName': {
+                        [Op.iLike]: `%${body.singleInput}%`,
+                      },
+                    },
+                  ],
+                },
+              ],
             },
             undefined,
             {
@@ -220,14 +264,36 @@ test('Call findAll(queryObject) with singleInput param of type date', async () =
         {
           [Op.or]: [
             {
-              'rawJson.childInformation.name.firstName': {
-                [Op.iLike]: body.singleInput,
-              },
-            },
-            {
-              'rawJson.childInformation.name.lastName': {
-                [Op.iLike]: body.singleInput,
-              },
+              [Op.or]: [
+                {
+                  [Op.or]: [
+                    {
+                      'rawJson.childInformation.name.firstName': {
+                        [Op.iLike]: `%${body.singleInput}%`,
+                      },
+                    },
+                    {
+                      'rawJson.childInformation.name.lastName': {
+                        [Op.iLike]: `%${body.singleInput}%`,
+                      },
+                    },
+                  ],
+                },
+                {
+                  [Op.or]: [
+                    {
+                      'rawJson.callerInformation.name.firstName': {
+                        [Op.iLike]: `%${body.singleInput}%`,
+                      },
+                    },
+                    {
+                      'rawJson.callerInformation.name.lastName': {
+                        [Op.iLike]: `%${body.singleInput}%`,
+                      },
+                    },
+                  ],
+                },
+              ],
             },
             undefined,
             {
@@ -287,14 +353,36 @@ test('Call findAll(queryObject) with singleInput and ignore other params', async
         {
           [Op.or]: [
             {
-              'rawJson.childInformation.name.firstName': {
-                [Op.iLike]: body.singleInput,
-              },
-            },
-            {
-              'rawJson.childInformation.name.lastName': {
-                [Op.iLike]: body.singleInput,
-              },
+              [Op.or]: [
+                {
+                  [Op.or]: [
+                    {
+                      'rawJson.childInformation.name.firstName': {
+                        [Op.iLike]: `%${body.singleInput}%`,
+                      },
+                    },
+                    {
+                      'rawJson.childInformation.name.lastName': {
+                        [Op.iLike]: `%${body.singleInput}%`,
+                      },
+                    },
+                  ],
+                },
+                {
+                  [Op.or]: [
+                    {
+                      'rawJson.callerInformation.name.firstName': {
+                        [Op.iLike]: `%${body.singleInput}%`,
+                      },
+                    },
+                    {
+                      'rawJson.callerInformation.name.lastName': {
+                        [Op.iLike]: `%${body.singleInput}%`,
+                      },
+                    },
+                  ],
+                },
+              ],
             },
             undefined,
             {

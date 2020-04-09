@@ -87,15 +87,37 @@ function buildSearchQueryObject(body) {
         },
         {
           [operator]: [
-            (firstName || singleInput) && {
-              'rawJson.childInformation.name.firstName': {
-                [Op.iLike]: singleInput || firstName,
-              },
-            },
-            (lastName || singleInput) && {
-              'rawJson.childInformation.name.lastName': {
-                [Op.iLike]: singleInput || lastName,
-              },
+            {
+              [Op.or]: [
+                {
+                  [operator]: [
+                    (firstName || singleInput) && {
+                      'rawJson.childInformation.name.firstName': {
+                        [Op.iLike]: `%${singleInput || firstName}%`,
+                      },
+                    },
+                    (lastName || singleInput) && {
+                      'rawJson.childInformation.name.lastName': {
+                        [Op.iLike]: `%${singleInput || lastName}%`,
+                      },
+                    },
+                  ],
+                },
+                {
+                  [operator]: [
+                    (firstName || singleInput) && {
+                      'rawJson.callerInformation.name.firstName': {
+                        [Op.iLike]: `%${singleInput || firstName}%`,
+                      },
+                    },
+                    (lastName || singleInput) && {
+                      'rawJson.callerInformation.name.lastName': {
+                        [Op.iLike]: `%${singleInput || lastName}%`,
+                      },
+                    },
+                  ],
+                },
+              ],
             },
             compareCounselor && {
               twilioWorkerId: counselor,
