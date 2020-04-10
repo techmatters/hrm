@@ -1,5 +1,7 @@
 const supertest = require('supertest');
+const Sequelize = require('sequelize');
 const app = require('../../app');
+const contactModel = require('../../models/contact.js');
 const mocks = require('./mocks');
 
 const server = app.listen();
@@ -12,8 +14,18 @@ const headers = {
   Authorization: `Basic ${Buffer.from(process.env.API_KEY).toString('base64')}`,
 };
 
-beforeAll(done => {
+const host = process.env.RDS_HOSTNAME || 'localhost';
+const pass = process.env.RDS_PASSWORD || '';
+const sequelize = new Sequelize('hrmdb', 'hrm', pass, {
+  host,
+  dialect: 'postgres',
+});
+const Contact = contactModel(sequelize, Sequelize);
+
+beforeAll(async done => {
   // log('\n Test started \n');
+  await Contact.destroy({ where: { twilioWorkerId: 'fake-worker-123' } });
+
   done();
 });
 
@@ -90,6 +102,20 @@ describe('/contacts route', () => {
           const [c2, c1] = response.body; // result is sorted DESC
           expect(c1.overview.callType).toBe(contact1.form.callType);
           expect(c2.overview.callType).toBe(contact2.form.callType);
+        });
+      });
+
+      describe('multiple input search without name search', () => {
+        test('should return 200', async () => {
+          const response = await request
+            .post(subRoute)
+            .set(headers)
+            .send({ counselor: 'fake-worker-123' });
+
+          expect(response.status).toBe(200);
+          const [c1] = response.body; // result is sorted DESC
+          expect(response.body).toHaveLength(1);
+          expect(c1.overview.callType).toBe(contact1.form.callType);
         });
       });
 
