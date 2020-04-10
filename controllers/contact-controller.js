@@ -87,7 +87,7 @@ function buildSearchQueryObject(body) {
         },
         {
           [operator]: [
-            {
+            (firstName || lastName || singleInput) && {
               [Op.or]: [
                 {
                   [operator]: [
