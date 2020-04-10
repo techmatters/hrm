@@ -179,6 +179,58 @@ test('Call findAll(queryObject) with given params', async () => {
   expect(spy).toHaveBeenCalledWith(expectedQueryObject);
 });
 
+test('Call findAll(queryObject) without name search', async () => {
+  const body = {
+    helpline: 'helpline',
+    counselor: 'counselorId',
+    phoneNumber: 'Anonymous',
+    dateFrom: '2020-03-10',
+    dateTo: '2020-03-15',
+  };
+
+  const expectedQueryObject = {
+    where: {
+      [Op.and]: [
+        {
+          helpline: body.helpline,
+        },
+        {
+          [Op.and]: [
+            undefined,
+            {
+              twilioWorkerId: body.counselor,
+            },
+            {
+              number: {
+                [Op.iLike]: `%${body.phoneNumber}%`,
+              },
+            },
+            {
+              createdAt: {
+                [Op.gte]: startOfDay(parseISO(body.dateFrom)),
+              },
+            },
+            {
+              createdAt: {
+                [Op.lte]: endOfDay(parseISO(body.dateTo)),
+              },
+            },
+            undefined,
+          ],
+        },
+      ],
+    },
+    order: [['createdAt', 'DESC']],
+    limit: 20,
+  };
+
+  const spy = jest.spyOn(MockContact, 'findAll');
+  const ContactController = createContactController(DBConnectionMock);
+  await ContactController.searchContacts(body);
+
+  expect(spy).toHaveBeenCalledWith(expectedQueryObject);
+});
+
 test('Call findAll(queryObject) with singleInput param', async () => {
   const body = {
     helpline: 'helpline',
