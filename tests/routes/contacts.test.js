@@ -24,7 +24,14 @@ const Contact = contactModel(sequelize, Sequelize);
 
 beforeAll(async done => {
   // log('\n Test started \n');
-  await Contact.destroy({ where: { twilioWorkerId: 'fake-worker-123' } });
+  await Contact.destroy({
+    where: {
+      [Sequelize.Op.or]: [
+        { twilioWorkerId: 'fake-worker-123' },
+        { twilioWorkerId: 'fake-worker-987' },
+      ],
+    },
+  });
 
   done();
 });
