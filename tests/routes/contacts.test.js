@@ -7,7 +7,7 @@ const mocks = require('./mocks');
 const server = app.listen();
 const request = supertest.agent(server);
 
-const { contact1, contact2 } = mocks;
+const { contact1, contact2, broken1, broken2 } = mocks;
 
 const headers = {
   'Content-Type': 'application/json',
@@ -47,20 +47,19 @@ describe('/contacts route', () => {
     });
 
     test('should return 200', async () => {
-      const response1 = await request
-        .post(route)
-        .set(headers)
-        .send(contact1);
+      const contacts = [contact1, contact2, broken1, broken2];
+      const requests = contacts.map(item =>
+        request
+          .post(route)
+          .set(headers)
+          .send(item),
+      );
+      const responses = await Promise.all(requests);
 
-      const response2 = await request
-        .post(route)
-        .set(headers)
-        .send(contact2);
-
-      expect(response1.status).toBe(200);
-      expect(response2.status).toBe(200);
-      expect(response1.body.rawJson.callType).toBe(contact1.form.callType);
-      expect(response2.body.rawJson.callType).toBe(contact2.form.callType);
+      responses.forEach((res, index) => {
+        expect(res.status).toBe(200);
+        expect(res.body.rawJson.callType).toBe(contacts[index].form.callType);
+      });
     });
   });
 
@@ -96,7 +95,7 @@ describe('/contacts route', () => {
           const response = await request
             .post(subRoute)
             .set(headers)
-            .send({ firstName: 'jh', lastName: 'he' }); // should match both contacts created on /contacts POST
+            .send({ firstName: 'jh', lastName: 'he' }); // should match all contacts, but filter non-data (brokens)
 
           expect(response.status).toBe(200);
           const [c2, c1] = response.body; // result is sorted DESC
@@ -110,12 +109,13 @@ describe('/contacts route', () => {
           const response = await request
             .post(subRoute)
             .set(headers)
-            .send({ counselor: 'fake-worker-123' });
+            .send({ counselor: 'fake-worker-123' }); // should match contact1 & broken1
 
           expect(response.status).toBe(200);
-          const [c1] = response.body; // result is sorted DESC
-          expect(response.body).toHaveLength(1);
+          const [b1, c1] = response.body; // result is sorted DESC
+          expect(response.body).toHaveLength(2);
           expect(c1.overview.callType).toBe(contact1.form.callType);
+          expect(b1.overview.callType).toBe(broken1.form.callType);
         });
       });
 

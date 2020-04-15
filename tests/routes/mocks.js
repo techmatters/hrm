@@ -124,4 +124,7 @@ const contact2 = {
   conversationDuration: 10,
 };
 
-module.exports = { contact1, contact2 };
+const broken1 = { ...contact1, form: { ...contact1.form, callType: 'Joke' } };
+const broken2 = { ...contact2, form: { ...contact2.form, callType: 'Blank' } };
+
+module.exports = { contact1, contact2, broken1, broken2 };
