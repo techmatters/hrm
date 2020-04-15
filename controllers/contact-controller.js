@@ -89,7 +89,7 @@ function buildSearchQueryObject(body) {
     where: {
       [Op.and]: [
         helpline && {
-          helpline,
+          [Op.or]: [{ helpline: '' }, { helpline: { [Op.is]: null } }, { helpline }],
         },
         {
           [operator]: [
@@ -121,9 +121,7 @@ function buildSearchQueryObject(body) {
                 {
                   [Op.and]: [
                     {
-                      'rawJson.callType': {
-                        [Op.eq]: callTypes.caller,
-                      },
+                      'rawJson.callType': callTypes.caller,
                     },
                     {
                       [operator]: [

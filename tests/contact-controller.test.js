@@ -109,7 +109,7 @@ test('Call findAll(queryObject) with given params', async () => {
     where: {
       [Op.and]: [
         {
-          helpline: body.helpline,
+          [Op.or]: [{ helpline: '' }, { helpline: { [Op.is]: null } }, { helpline: body.helpline }],
         },
         {
           [Op.and]: [
@@ -141,9 +141,7 @@ test('Call findAll(queryObject) with given params', async () => {
                 {
                   [Op.and]: [
                     {
-                      'rawJson.callType': {
-                        [Op.eq]: 'Someone calling about a child',
-                      },
+                      'rawJson.callType': 'Someone calling about a child',
                     },
                     {
                       [Op.and]: [
@@ -210,7 +208,7 @@ test('Call findAll(queryObject) without name search', async () => {
     where: {
       [Op.and]: [
         {
-          helpline: body.helpline,
+          [Op.or]: [{ helpline: '' }, { helpline: { [Op.is]: null } }, { helpline: body.helpline }],
         },
         {
           [Op.and]: [
@@ -259,7 +257,7 @@ test('Call findAll(queryObject) with singleInput param', async () => {
     where: {
       [Op.and]: [
         {
-          helpline: body.helpline,
+          [Op.or]: [{ helpline: '' }, { helpline: { [Op.is]: null } }, { helpline: body.helpline }],
         },
         {
           [Op.or]: [
@@ -291,9 +289,7 @@ test('Call findAll(queryObject) with singleInput param', async () => {
                 {
                   [Op.and]: [
                     {
-                      'rawJson.callType': {
-                        [Op.eq]: 'Someone calling about a child',
-                      },
+                      'rawJson.callType': 'Someone calling about a child',
                     },
                     {
                       [Op.or]: [
@@ -347,7 +343,7 @@ test('Call findAll(queryObject) with singleInput param of type date', async () =
     where: {
       [Op.and]: [
         {
-          helpline: body.helpline,
+          [Op.or]: [{ helpline: '' }, { helpline: { [Op.is]: null } }, { helpline: body.helpline }],
         },
         {
           [Op.or]: [
@@ -379,9 +375,7 @@ test('Call findAll(queryObject) with singleInput param of type date', async () =
                 {
                   [Op.and]: [
                     {
-                      'rawJson.callType': {
-                        [Op.eq]: 'Someone calling about a child',
-                      },
+                      'rawJson.callType': 'Someone calling about a child',
                     },
                     {
                       [Op.or]: [
@@ -454,7 +448,7 @@ test('Call findAll(queryObject) with singleInput and ignore other params', async
     where: {
       [Op.and]: [
         {
-          helpline: body.helpline,
+          [Op.or]: [{ helpline: '' }, { helpline: { [Op.is]: null } }, { helpline: body.helpline }],
         },
         {
           [Op.or]: [
@@ -486,9 +480,7 @@ test('Call findAll(queryObject) with singleInput and ignore other params', async
                 {
                   [Op.and]: [
                     {
-                      'rawJson.callType': {
-                        [Op.eq]: 'Someone calling about a child',
-                      },
+                      'rawJson.callType': 'Someone calling about a child',
                     },
                     {
                       [Op.or]: [
