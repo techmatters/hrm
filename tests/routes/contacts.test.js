@@ -122,7 +122,9 @@ describe('/contacts route', () => {
           const [b1, c1] = response.body; // result is sorted DESC
           expect(response.body).toHaveLength(2);
           expect(c1.overview.callType).toBe(contact1.form.callType);
+          expect(c1.details).toStrictEqual(contact1.form);
           expect(b1.overview.callType).toBe(broken1.form.callType);
+          expect(b1.details).toStrictEqual(broken1.form);
         });
       });
 
