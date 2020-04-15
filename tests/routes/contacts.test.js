@@ -7,7 +7,7 @@ const mocks = require('./mocks');
 const server = app.listen();
 const request = supertest.agent(server);
 
-const { contact1, contact2, broken1, broken2 } = mocks;
+const { contact1, contact2, broken1, broken2, invalid1 } = mocks;
 
 const headers = {
   'Content-Type': 'application/json',
@@ -54,7 +54,7 @@ describe('/contacts route', () => {
     });
 
     test('should return 200', async () => {
-      const contacts = [contact1, contact2, broken1, broken2];
+      const contacts = [contact1, contact2, broken1, broken2, invalid1];
       const requests = contacts.map(item =>
         request
           .post(route)
@@ -102,7 +102,7 @@ describe('/contacts route', () => {
           const response = await request
             .post(subRoute)
             .set(headers)
-            .send({ firstName: 'jh', lastName: 'he' }); // should match all contacts, but filter non-data (brokens)
+            .send({ firstName: 'jh', lastName: 'he' }); // should match all contacts, but filter non-data/invalids
 
           expect(response.status).toBe(200);
           const [c2, c1] = response.body; // result is sorted DESC
@@ -131,7 +131,7 @@ describe('/contacts route', () => {
           const response = await request
             .post(subRoute)
             .set(headers)
-            .send({ singleInput: 'qwerty' }); // should match both contacts created on /contacts POST
+            .send({ singleInput: 'qwerty' }); // should match contact1 & contact2
 
           expect(response.status).toBe(200);
           const [c2, c1] = response.body; // result is sorted DESC

@@ -8,6 +8,12 @@ const contactModel = require('../models/contact.js');
 
 const { Op } = Sequelize;
 
+// Intentionally adding only the types of interest here
+const callTypes = {
+  child: 'Child calling about self',
+  caller: 'Someone calling about a child',
+};
+
 function formatNumber(number) {
   if (number == null || number === 'Anonymous' || number === 'Customer') {
     return number;
@@ -93,7 +99,7 @@ function buildSearchQueryObject(body) {
                   [Op.and]: [
                     {
                       'rawJson.callType': {
-                        [Op.in]: ['Child calling about self', 'Someone calling about a child'],
+                        [Op.in]: [callTypes.child, callTypes.caller],
                       },
                     },
                     {
@@ -116,7 +122,7 @@ function buildSearchQueryObject(body) {
                   [Op.and]: [
                     {
                       'rawJson.callType': {
-                        [Op.eq]: 'Someone calling about a child',
+                        [Op.eq]: callTypes.caller,
                       },
                     },
                     {
@@ -178,6 +184,17 @@ function buildSearchQueryObject(body) {
   };
 }
 
+function isNonDataCallType(callType) {
+  return callType !== callTypes.caller && callType !== callTypes.child;
+}
+
+const nonDataOrSummary = contact => {
+  return (
+    isNonDataCallType(contact.rawJson.callType) ||
+    contact.rawJson.caseInformation.callSummary !== undefined
+  );
+};
+
 function isNullOrEmptyObject(obj) {
   return obj == null || Object.keys(obj).length === 0;
 }
@@ -189,7 +206,8 @@ function isValidContact(contact) {
     !isNullOrEmptyObject(contact.rawJson.callType) &&
     !isNullOrEmptyObject(contact.rawJson.childInformation) &&
     !isNullOrEmptyObject(contact.rawJson.callerInformation) &&
-    !isNullOrEmptyObject(contact.rawJson.caseInformation)
+    !isNullOrEmptyObject(contact.rawJson.caseInformation) &&
+    nonDataOrSummary(contact)
   );
 }
 
