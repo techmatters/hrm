@@ -138,15 +138,15 @@ describe('/contacts route', () => {
 
           expect(response1.status).toBe(200);
           expect(response1.body).toHaveLength(3);
-          const [nh, wh2, wh1] = response1.body; // result is sorted DESC
-          expect(wh1.details).toStrictEqual(another1.form);
-          expect(wh2.details).toStrictEqual(another2.form);
+          const [nh, a2, a1] = response1.body; // result is sorted DESC
+          expect(a1.details).toStrictEqual(another1.form);
+          expect(a2.details).toStrictEqual(another2.form);
           expect(nh.details).toStrictEqual(noHelpline.form);
 
           expect(response2.status).toBe(200);
           expect(response2.body).toHaveLength(2);
-          const [nh2, wh] = response2.body; // result is sorted DESC
-          expect(wh.details).toStrictEqual(another1.form);
+          const [nh2, a] = response2.body; // result is sorted DESC
+          expect(a.details).toStrictEqual(another1.form);
           expect(nh2.details).toStrictEqual(noHelpline.form);
         });
       });
@@ -160,10 +160,10 @@ describe('/contacts route', () => {
 
           expect(response.status).toBe(200);
           expect(response.body).toHaveLength(4);
-          const [nh, wh1, b1, c1] = response.body; // result is sorted DESC
+          const [nh, a1, b1, c1] = response.body; // result is sorted DESC
           expect(c1.details).toStrictEqual(contact1.form);
           expect(b1.details).toStrictEqual(broken1.form);
-          expect(wh1.details).toStrictEqual(another1.form);
+          expect(a1.details).toStrictEqual(another1.form);
           expect(nh.details).toStrictEqual(noHelpline.form);
         });
       });
