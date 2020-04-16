@@ -124,4 +124,49 @@ const contact2 = {
   conversationDuration: 10,
 };
 
-module.exports = { contact1, contact2 };
+// Non data contacts with actual information
+const broken1 = { ...contact1, form: { ...contact1.form, callType: 'Joke' } };
+const broken2 = { ...contact2, form: { ...contact2.form, callType: 'Blank' } };
+
+const anotherChild = {
+  ...contact1.form.childInformation,
+  name: {
+    firstName: 'Marie',
+    lastName: 'Curie',
+  },
+};
+
+const anotherCaller = {
+  ...contact2.form.callerInformation,
+  name: {
+    firstName: 'Marie',
+    lastName: 'Curie',
+  },
+};
+
+const withHelpline1 = {
+  ...contact1,
+  form: { ...contact1.form, childInformation: anotherChild },
+  helpline: 'Helpline 1',
+};
+
+const withHelpline2 = {
+  ...contact2,
+  form: { ...contact2.form, callerInformation: anotherCaller, childInformation: anotherChild },
+  helpline: 'Helpline 2',
+};
+
+const noHelpline = {
+  ...withHelpline1,
+  helpline: '',
+};
+
+module.exports = {
+  contact1,
+  contact2,
+  broken1,
+  broken2,
+  withHelpline1,
+  withHelpline2,
+  noHelpline,
+};

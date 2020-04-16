@@ -7,7 +7,7 @@ const mocks = require('./mocks');
 const server = app.listen();
 const request = supertest.agent(server);
 
-const { contact1, contact2 } = mocks;
+const { contact1, contact2, broken1, broken2, withHelpline1, withHelpline2, noHelpline } = mocks;
 
 const headers = {
   'Content-Type': 'application/json',
@@ -24,7 +24,14 @@ const Contact = contactModel(sequelize, Sequelize);
 
 beforeAll(async done => {
   // log('\n Test started \n');
-  await Contact.destroy({ where: { twilioWorkerId: 'fake-worker-123' } });
+  await Contact.destroy({
+    where: {
+      [Sequelize.Op.or]: [
+        { twilioWorkerId: 'fake-worker-123' },
+        { twilioWorkerId: 'fake-worker-987' },
+      ],
+    },
+  });
 
   done();
 });
@@ -37,7 +44,7 @@ afterAll(async done => {
 describe('/contacts route', () => {
   const route = '/contacts';
 
-  // First test post so dabatabe wont be empty
+  // First test post so database wont be empty
   describe('POST', () => {
     test('should return 401', async () => {
       const response = await request.post(route).send(contact1);
@@ -47,20 +54,27 @@ describe('/contacts route', () => {
     });
 
     test('should return 200', async () => {
-      const response1 = await request
-        .post(route)
-        .set(headers)
-        .send(contact1);
+      const contacts = [
+        contact1,
+        contact2,
+        broken1,
+        broken2,
+        withHelpline1,
+        withHelpline2,
+        noHelpline,
+      ];
+      const requests = contacts.map(item =>
+        request
+          .post(route)
+          .set(headers)
+          .send(item),
+      );
+      const responses = await Promise.all(requests);
 
-      const response2 = await request
-        .post(route)
-        .set(headers)
-        .send(contact2);
-
-      expect(response1.status).toBe(200);
-      expect(response2.status).toBe(200);
-      expect(response1.body.rawJson.callType).toBe(contact1.form.callType);
-      expect(response2.body.rawJson.callType).toBe(contact2.form.callType);
+      responses.forEach((res, index) => {
+        expect(res.status).toBe(200);
+        expect(res.body.rawJson.callType).toBe(contacts[index].form.callType);
+      });
     });
   });
 
@@ -96,12 +110,52 @@ describe('/contacts route', () => {
           const response = await request
             .post(subRoute)
             .set(headers)
-            .send({ firstName: 'jh', lastName: 'he' }); // should match both contacts created on /contacts POST
+            .send({ firstName: 'jh', lastName: 'he' }); // should filter non-data
 
           expect(response.status).toBe(200);
+          expect(response.body).toHaveLength(2);
           const [c2, c1] = response.body; // result is sorted DESC
-          expect(c1.overview.callType).toBe(contact1.form.callType);
-          expect(c2.overview.callType).toBe(contact2.form.callType);
+          expect(c1.details).toStrictEqual(contact1.form);
+          expect(c2.details).toStrictEqual(contact2.form);
+        });
+      });
+
+      describe('multiple input search that targets zero contacts', () => {
+        test('should return 200', async () => {
+          const response = await request
+            .post(subRoute)
+            .set(headers)
+            .send({ firstName: 'jh', lastName: 'curie' });
+
+          expect(response.status).toBe(200);
+          expect(response.body).toHaveLength(0);
+        });
+      });
+
+      describe('multiple input search with helpline', () => {
+        test('should return 200', async () => {
+          const response1 = await request
+            .post(subRoute)
+            .set(headers)
+            .send({ firstName: 'ma', lastName: 'ur' }); // should match withHelpline1 & withHelpline2
+
+          const response2 = await request
+            .post(subRoute)
+            .set(headers)
+            .send({ firstName: 'ma', lastName: 'ur', helpline: 'Helpline 1' }); // should match withHelpline1 & noHelpline
+
+          expect(response1.status).toBe(200);
+          expect(response1.body).toHaveLength(3);
+          const [nh, wh2, wh1] = response1.body; // result is sorted DESC
+          expect(wh1.details).toStrictEqual(withHelpline1.form);
+          expect(wh2.details).toStrictEqual(withHelpline2.form);
+          expect(nh.details).toStrictEqual(noHelpline.form);
+
+          expect(response2.status).toBe(200);
+          expect(response2.body).toHaveLength(2);
+          const [nh2, wh] = response2.body; // result is sorted DESC
+          expect(wh.details).toStrictEqual(withHelpline1.form);
+          expect(nh2.details).toStrictEqual(noHelpline.form);
         });
       });
 
@@ -110,12 +164,15 @@ describe('/contacts route', () => {
           const response = await request
             .post(subRoute)
             .set(headers)
-            .send({ counselor: 'fake-worker-123' });
+            .send({ counselor: 'fake-worker-123' }); // should match contact1 & broken1 & withHelpline1 & noHelpline
 
           expect(response.status).toBe(200);
-          const [c1] = response.body; // result is sorted DESC
-          expect(response.body).toHaveLength(1);
-          expect(c1.overview.callType).toBe(contact1.form.callType);
+          expect(response.body).toHaveLength(4);
+          const [nh, wh1, b1, c1] = response.body; // result is sorted DESC
+          expect(c1.details).toStrictEqual(contact1.form);
+          expect(b1.details).toStrictEqual(broken1.form);
+          expect(wh1.details).toStrictEqual(withHelpline1.form);
+          expect(nh.details).toStrictEqual(noHelpline.form);
         });
       });
 
@@ -124,12 +181,13 @@ describe('/contacts route', () => {
           const response = await request
             .post(subRoute)
             .set(headers)
-            .send({ singleInput: 'qwerty' }); // should match both contacts created on /contacts POST
+            .send({ singleInput: 'qwerty' }); // should match contact1 & contact2
 
           expect(response.status).toBe(200);
+          expect(response.body).toHaveLength(2);
           const [c2, c1] = response.body; // result is sorted DESC
-          expect(c1.overview.callType).toBe(contact1.form.callType);
-          expect(c2.overview.callType).toBe(contact2.form.callType);
+          expect(c1.details).toStrictEqual(contact1.form);
+          expect(c2.details).toStrictEqual(contact2.form);
         });
       });
     });

@@ -109,7 +109,7 @@ test('Call findAll(queryObject) with given params', async () => {
     where: {
       [Op.and]: [
         {
-          helpline: body.helpline,
+          [Op.or]: [{ helpline: '' }, { helpline: { [Op.is]: null } }, { helpline: body.helpline }],
         },
         {
           [Op.and]: [
@@ -118,28 +118,44 @@ test('Call findAll(queryObject) with given params', async () => {
                 {
                   [Op.and]: [
                     {
-                      'rawJson.childInformation.name.firstName': {
-                        [Op.iLike]: `%${body.firstName}%`,
+                      'rawJson.callType': {
+                        [Op.in]: ['Child calling about self', 'Someone calling about a child'],
                       },
                     },
                     {
-                      'rawJson.childInformation.name.lastName': {
-                        [Op.iLike]: `%${body.lastName}%`,
-                      },
+                      [Op.and]: [
+                        {
+                          'rawJson.childInformation.name.firstName': {
+                            [Op.iLike]: `%${body.firstName}%`,
+                          },
+                        },
+                        {
+                          'rawJson.childInformation.name.lastName': {
+                            [Op.iLike]: `%${body.lastName}%`,
+                          },
+                        },
+                      ],
                     },
                   ],
                 },
                 {
                   [Op.and]: [
                     {
-                      'rawJson.callerInformation.name.firstName': {
-                        [Op.iLike]: `%${body.firstName}%`,
-                      },
+                      'rawJson.callType': 'Someone calling about a child',
                     },
                     {
-                      'rawJson.callerInformation.name.lastName': {
-                        [Op.iLike]: `%${body.lastName}%`,
-                      },
+                      [Op.and]: [
+                        {
+                          'rawJson.callerInformation.name.firstName': {
+                            [Op.iLike]: `%${body.firstName}%`,
+                          },
+                        },
+                        {
+                          'rawJson.callerInformation.name.lastName': {
+                            [Op.iLike]: `%${body.lastName}%`,
+                          },
+                        },
+                      ],
                     },
                   ],
                 },
@@ -192,7 +208,7 @@ test('Call findAll(queryObject) without name search', async () => {
     where: {
       [Op.and]: [
         {
-          helpline: body.helpline,
+          [Op.or]: [{ helpline: '' }, { helpline: { [Op.is]: null } }, { helpline: body.helpline }],
         },
         {
           [Op.and]: [
@@ -241,37 +257,53 @@ test('Call findAll(queryObject) with singleInput param', async () => {
     where: {
       [Op.and]: [
         {
-          helpline: body.helpline,
+          [Op.or]: [{ helpline: '' }, { helpline: { [Op.is]: null } }, { helpline: body.helpline }],
         },
         {
           [Op.or]: [
             {
               [Op.or]: [
                 {
-                  [Op.or]: [
+                  [Op.and]: [
                     {
-                      'rawJson.childInformation.name.firstName': {
-                        [Op.iLike]: `%${body.singleInput}%`,
+                      'rawJson.callType': {
+                        [Op.in]: ['Child calling about self', 'Someone calling about a child'],
                       },
                     },
                     {
-                      'rawJson.childInformation.name.lastName': {
-                        [Op.iLike]: `%${body.singleInput}%`,
-                      },
+                      [Op.or]: [
+                        {
+                          'rawJson.childInformation.name.firstName': {
+                            [Op.iLike]: `%${body.singleInput}%`,
+                          },
+                        },
+                        {
+                          'rawJson.childInformation.name.lastName': {
+                            [Op.iLike]: `%${body.singleInput}%`,
+                          },
+                        },
+                      ],
                     },
                   ],
                 },
                 {
-                  [Op.or]: [
+                  [Op.and]: [
                     {
-                      'rawJson.callerInformation.name.firstName': {
-                        [Op.iLike]: `%${body.singleInput}%`,
-                      },
+                      'rawJson.callType': 'Someone calling about a child',
                     },
                     {
-                      'rawJson.callerInformation.name.lastName': {
-                        [Op.iLike]: `%${body.singleInput}%`,
-                      },
+                      [Op.or]: [
+                        {
+                          'rawJson.callerInformation.name.firstName': {
+                            [Op.iLike]: `%${body.singleInput}%`,
+                          },
+                        },
+                        {
+                          'rawJson.callerInformation.name.lastName': {
+                            [Op.iLike]: `%${body.singleInput}%`,
+                          },
+                        },
+                      ],
                     },
                   ],
                 },
@@ -311,37 +343,53 @@ test('Call findAll(queryObject) with singleInput param of type date', async () =
     where: {
       [Op.and]: [
         {
-          helpline: body.helpline,
+          [Op.or]: [{ helpline: '' }, { helpline: { [Op.is]: null } }, { helpline: body.helpline }],
         },
         {
           [Op.or]: [
             {
               [Op.or]: [
                 {
-                  [Op.or]: [
+                  [Op.and]: [
                     {
-                      'rawJson.childInformation.name.firstName': {
-                        [Op.iLike]: `%${body.singleInput}%`,
+                      'rawJson.callType': {
+                        [Op.in]: ['Child calling about self', 'Someone calling about a child'],
                       },
                     },
                     {
-                      'rawJson.childInformation.name.lastName': {
-                        [Op.iLike]: `%${body.singleInput}%`,
-                      },
+                      [Op.or]: [
+                        {
+                          'rawJson.childInformation.name.firstName': {
+                            [Op.iLike]: `%${body.singleInput}%`,
+                          },
+                        },
+                        {
+                          'rawJson.childInformation.name.lastName': {
+                            [Op.iLike]: `%${body.singleInput}%`,
+                          },
+                        },
+                      ],
                     },
                   ],
                 },
                 {
-                  [Op.or]: [
+                  [Op.and]: [
                     {
-                      'rawJson.callerInformation.name.firstName': {
-                        [Op.iLike]: `%${body.singleInput}%`,
-                      },
+                      'rawJson.callType': 'Someone calling about a child',
                     },
                     {
-                      'rawJson.callerInformation.name.lastName': {
-                        [Op.iLike]: `%${body.singleInput}%`,
-                      },
+                      [Op.or]: [
+                        {
+                          'rawJson.callerInformation.name.firstName': {
+                            [Op.iLike]: `%${body.singleInput}%`,
+                          },
+                        },
+                        {
+                          'rawJson.callerInformation.name.lastName': {
+                            [Op.iLike]: `%${body.singleInput}%`,
+                          },
+                        },
+                      ],
                     },
                   ],
                 },
@@ -400,37 +448,53 @@ test('Call findAll(queryObject) with singleInput and ignore other params', async
     where: {
       [Op.and]: [
         {
-          helpline: body.helpline,
+          [Op.or]: [{ helpline: '' }, { helpline: { [Op.is]: null } }, { helpline: body.helpline }],
         },
         {
           [Op.or]: [
             {
               [Op.or]: [
                 {
-                  [Op.or]: [
+                  [Op.and]: [
                     {
-                      'rawJson.childInformation.name.firstName': {
-                        [Op.iLike]: `%${body.singleInput}%`,
+                      'rawJson.callType': {
+                        [Op.in]: ['Child calling about self', 'Someone calling about a child'],
                       },
                     },
                     {
-                      'rawJson.childInformation.name.lastName': {
-                        [Op.iLike]: `%${body.singleInput}%`,
-                      },
+                      [Op.or]: [
+                        {
+                          'rawJson.childInformation.name.firstName': {
+                            [Op.iLike]: `%${body.singleInput}%`,
+                          },
+                        },
+                        {
+                          'rawJson.childInformation.name.lastName': {
+                            [Op.iLike]: `%${body.singleInput}%`,
+                          },
+                        },
+                      ],
                     },
                   ],
                 },
                 {
-                  [Op.or]: [
+                  [Op.and]: [
                     {
-                      'rawJson.callerInformation.name.firstName': {
-                        [Op.iLike]: `%${body.singleInput}%`,
-                      },
+                      'rawJson.callType': 'Someone calling about a child',
                     },
                     {
-                      'rawJson.callerInformation.name.lastName': {
-                        [Op.iLike]: `%${body.singleInput}%`,
-                      },
+                      [Op.or]: [
+                        {
+                          'rawJson.callerInformation.name.firstName': {
+                            [Op.iLike]: `%${body.singleInput}%`,
+                          },
+                        },
+                        {
+                          'rawJson.callerInformation.name.lastName': {
+                            [Op.iLike]: `%${body.singleInput}%`,
+                          },
+                        },
+                      ],
                     },
                   ],
                 },

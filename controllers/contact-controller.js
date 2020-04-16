@@ -8,6 +8,12 @@ const contactModel = require('../models/contact.js');
 
 const { Op } = Sequelize;
 
+// Intentionally adding only the types of interest here
+const callTypes = {
+  child: 'Child calling about self',
+  caller: 'Someone calling about a child',
+};
+
 function formatNumber(number) {
   if (number == null || number === 'Anonymous' || number === 'Customer') {
     return number;
@@ -83,37 +89,53 @@ function buildSearchQueryObject(body) {
     where: {
       [Op.and]: [
         helpline && {
-          helpline,
+          [Op.or]: [{ helpline: '' }, { helpline: { [Op.is]: null } }, { helpline }],
         },
         {
           [operator]: [
             (firstName || lastName || singleInput) && {
               [Op.or]: [
                 {
-                  [operator]: [
-                    (firstName || singleInput) && {
-                      'rawJson.childInformation.name.firstName': {
-                        [Op.iLike]: `%${singleInput || firstName}%`,
+                  [Op.and]: [
+                    {
+                      'rawJson.callType': {
+                        [Op.in]: [callTypes.child, callTypes.caller],
                       },
                     },
-                    (lastName || singleInput) && {
-                      'rawJson.childInformation.name.lastName': {
-                        [Op.iLike]: `%${singleInput || lastName}%`,
-                      },
+                    {
+                      [operator]: [
+                        (firstName || singleInput) && {
+                          'rawJson.childInformation.name.firstName': {
+                            [Op.iLike]: `%${singleInput || firstName}%`,
+                          },
+                        },
+                        (lastName || singleInput) && {
+                          'rawJson.childInformation.name.lastName': {
+                            [Op.iLike]: `%${singleInput || lastName}%`,
+                          },
+                        },
+                      ],
                     },
                   ],
                 },
                 {
-                  [operator]: [
-                    (firstName || singleInput) && {
-                      'rawJson.callerInformation.name.firstName': {
-                        [Op.iLike]: `%${singleInput || firstName}%`,
-                      },
+                  [Op.and]: [
+                    {
+                      'rawJson.callType': callTypes.caller,
                     },
-                    (lastName || singleInput) && {
-                      'rawJson.callerInformation.name.lastName': {
-                        [Op.iLike]: `%${singleInput || lastName}%`,
-                      },
+                    {
+                      [operator]: [
+                        (firstName || singleInput) && {
+                          'rawJson.callerInformation.name.firstName': {
+                            [Op.iLike]: `%${singleInput || firstName}%`,
+                          },
+                        },
+                        (lastName || singleInput) && {
+                          'rawJson.callerInformation.name.lastName': {
+                            [Op.iLike]: `%${singleInput || lastName}%`,
+                          },
+                        },
+                      ],
                     },
                   ],
                 },
