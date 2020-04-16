@@ -144,20 +144,31 @@ const anotherCaller = {
   },
 };
 
-const withHelpline1 = {
+const another1 = {
   ...contact1,
   form: { ...contact1.form, childInformation: anotherChild },
   helpline: 'Helpline 1',
 };
 
-const withHelpline2 = {
+const another2 = {
   ...contact2,
-  form: { ...contact2.form, callerInformation: anotherCaller, childInformation: anotherChild },
+  form: {
+    ...contact2.form,
+    callerInformation: {
+      ...anotherCaller,
+      location: { phone1: '+1 (515) 555-1212', phone2: '+1 (616) 555-1212' },
+    },
+    childInformation: {
+      ...anotherChild,
+      location: { phone1: '+1 (313) 555-1212', phone2: '+1 (414) 555-1212' },
+    },
+  },
   helpline: 'Helpline 2',
+  number: '+1 (212) 555-1212',
 };
 
 const noHelpline = {
-  ...withHelpline1,
+  ...another1,
   helpline: '',
 };
 
@@ -166,7 +177,7 @@ module.exports = {
   contact2,
   broken1,
   broken2,
-  withHelpline1,
-  withHelpline2,
+  another1,
+  another2,
   noHelpline,
 };

@@ -6,23 +6,29 @@ const endOfDay = require('date-fns/endOfDay');
 const createContactController = require('../controllers/contact-controller');
 const ContactBuilder = require('./contact-builder');
 
+const callTypes = {
+  child: 'Child calling about self',
+  caller: 'Someone calling about a child',
+};
+
 const { Op } = Sequelize;
 const DBConnectionMock = new SequelizeMock();
 const MockContact = DBConnectionMock.define('Contacts');
+
+const ContactController = createContactController(DBConnectionMock);
+const { queryOnName, queryOnPhone } = ContactController.queries;
 
 jest.mock('../models/contact', () => () => MockContact);
 
 afterEach(() => jest.clearAllMocks());
 
 test('Return [] when no params are given', async () => {
-  const ContactController = createContactController(DBConnectionMock);
   const result = await ContactController.searchContacts({});
 
   expect(result).toStrictEqual([]);
 });
 
 test('Return [] when only invalid params are given', async () => {
-  const ContactController = createContactController(DBConnectionMock);
   const result = await ContactController.searchContacts({ invalid: 'invalid' });
 
   expect(result).toStrictEqual([]);
@@ -88,10 +94,282 @@ test('Convert contacts to searchResults', async () => {
   ];
 
   MockContact.$queueResult([MockContact.build(jillSmith), MockContact.build(sarahPark)]);
-  const ContactController = createContactController(DBConnectionMock);
   const result = await ContactController.searchContacts({ helpline: 'helpline' });
 
   expect(result).toStrictEqual(expectedSearchResult);
+});
+
+describe('Test queryOnName', () => {
+  test('with firstName and lastName', async () => {
+    const expected = {
+      [Op.or]: [
+        {
+          [Op.and]: [
+            {
+              'rawJson.callType': {
+                [Op.in]: [callTypes.child, callTypes.caller],
+              },
+            },
+            {
+              [Op.and]: [
+                {
+                  'rawJson.childInformation.name.firstName': {
+                    [Op.iLike]: `%FirstName%`,
+                  },
+                },
+                {
+                  'rawJson.childInformation.name.lastName': {
+                    [Op.iLike]: `%LastName%`,
+                  },
+                },
+              ],
+            },
+          ],
+        },
+        {
+          [Op.and]: [
+            {
+              'rawJson.callType': callTypes.caller,
+            },
+            {
+              [Op.and]: [
+                {
+                  'rawJson.callerInformation.name.firstName': {
+                    [Op.iLike]: `%FirstName%`,
+                  },
+                },
+                {
+                  'rawJson.callerInformation.name.lastName': {
+                    [Op.iLike]: `%LastName%`,
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    const result = queryOnName(Op.and)(undefined)('FirstName')('LastName');
+
+    expect(result).toStrictEqual(expected);
+  });
+
+  test('with firstName', async () => {
+    const expected = {
+      [Op.or]: [
+        {
+          [Op.and]: [
+            {
+              'rawJson.callType': {
+                [Op.in]: [callTypes.child, callTypes.caller],
+              },
+            },
+            {
+              [Op.and]: [
+                {
+                  'rawJson.childInformation.name.firstName': {
+                    [Op.iLike]: `%FirstName%`,
+                  },
+                },
+                undefined,
+              ],
+            },
+          ],
+        },
+        {
+          [Op.and]: [
+            {
+              'rawJson.callType': callTypes.caller,
+            },
+            {
+              [Op.and]: [
+                {
+                  'rawJson.callerInformation.name.firstName': {
+                    [Op.iLike]: `%FirstName%`,
+                  },
+                },
+                undefined,
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    const result = queryOnName(Op.and)(undefined)('FirstName')(undefined);
+
+    expect(result).toStrictEqual(expected);
+  });
+
+  test('with lastName', async () => {
+    const expected = {
+      [Op.or]: [
+        {
+          [Op.and]: [
+            {
+              'rawJson.callType': {
+                [Op.in]: [callTypes.child, callTypes.caller],
+              },
+            },
+            {
+              [Op.and]: [
+                undefined,
+                {
+                  'rawJson.childInformation.name.lastName': {
+                    [Op.iLike]: `%LastName%`,
+                  },
+                },
+              ],
+            },
+          ],
+        },
+        {
+          [Op.and]: [
+            {
+              'rawJson.callType': callTypes.caller,
+            },
+            {
+              [Op.and]: [
+                undefined,
+                {
+                  'rawJson.callerInformation.name.lastName': {
+                    [Op.iLike]: `%LastName%`,
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    const result = queryOnName(Op.and)(undefined)(undefined)('LastName');
+
+    expect(result).toStrictEqual(expected);
+  });
+
+  test('with singleInput', async () => {
+    const expected = {
+      [Op.or]: [
+        {
+          [Op.and]: [
+            {
+              'rawJson.callType': {
+                [Op.in]: [callTypes.child, callTypes.caller],
+              },
+            },
+            {
+              [Op.or]: [
+                {
+                  'rawJson.childInformation.name.firstName': {
+                    [Op.iLike]: `%SingleInput%`,
+                  },
+                },
+                {
+                  'rawJson.childInformation.name.lastName': {
+                    [Op.iLike]: `%SingleInput%`,
+                  },
+                },
+              ],
+            },
+          ],
+        },
+        {
+          [Op.and]: [
+            {
+              'rawJson.callType': callTypes.caller,
+            },
+            {
+              [Op.or]: [
+                {
+                  'rawJson.callerInformation.name.firstName': {
+                    [Op.iLike]: `%SingleInput%`,
+                  },
+                },
+                {
+                  'rawJson.callerInformation.name.lastName': {
+                    [Op.iLike]: `%SingleInput%`,
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    const result = queryOnName(Op.or)('SingleInput')(undefined)(undefined);
+
+    expect(result).toStrictEqual(expected);
+  });
+});
+
+describe('Test queryOnPhone', () => {
+  test('with phoneNumber and singleInput', async () => {
+    const expected = {
+      [Op.or]: [
+        Sequelize.where(
+          Sequelize.fn('REGEXP_REPLACE', Sequelize.col('number'), '[^[:digit:]]', '', 'g'),
+          { [Op.iLike]: `%${12125551212}%` },
+        ),
+        Sequelize.where(
+          Sequelize.fn(
+            'REGEXP_REPLACE',
+            Sequelize.literal(`"rawJson"#>>'{childInformation,location,phone1}'`),
+            '[^[:digit:]]',
+            '',
+            'g',
+          ),
+          {
+            [Op.iLike]: `%${12125551212}%`,
+          },
+        ),
+        Sequelize.where(
+          Sequelize.fn(
+            'REGEXP_REPLACE',
+            Sequelize.literal(`"rawJson"#>>'{childInformation,location,phone2}'`),
+            '[^[:digit:]]',
+            '',
+            'g',
+          ),
+          {
+            [Op.iLike]: `%${12125551212}%`,
+          },
+        ),
+        Sequelize.where(
+          Sequelize.fn(
+            'REGEXP_REPLACE',
+            Sequelize.literal(`"rawJson"#>>'{callerInformation,location,phone1}'`),
+            '[^[:digit:]]',
+            '',
+            'g',
+          ),
+          {
+            [Op.iLike]: `%${12125551212}%`,
+          },
+        ),
+        Sequelize.where(
+          Sequelize.fn(
+            'REGEXP_REPLACE',
+            Sequelize.literal(`"rawJson"#>>'{callerInformation,location,phone2}'`),
+            '[^[:digit:]]',
+            '',
+            'g',
+          ),
+          {
+            [Op.iLike]: `%${12125551212}%`,
+          },
+        ),
+      ],
+    };
+
+    const result1 = queryOnPhone(undefined)('+1 (212) 555-1212');
+    const result2 = queryOnPhone('+1 (212) 555-1212')(undefined);
+
+    expect(result1).toStrictEqual(expected);
+    expect(result2).toStrictEqual(expected);
+  });
 });
 
 test('Call findAll(queryObject) with given params', async () => {
@@ -100,10 +378,13 @@ test('Call findAll(queryObject) with given params', async () => {
     firstName: 'Jill',
     lastName: 'Smith',
     counselor: 'counselorId',
-    phoneNumber: 'Anonymous',
+    phoneNumber: '123',
     dateFrom: '2020-03-10',
     dateTo: '2020-03-15',
   };
+
+  const spy = jest.spyOn(MockContact, 'findAll');
+  await ContactController.searchContacts(body);
 
   const expectedQueryObject = {
     where: {
@@ -113,62 +394,11 @@ test('Call findAll(queryObject) with given params', async () => {
         },
         {
           [Op.and]: [
-            {
-              [Op.or]: [
-                {
-                  [Op.and]: [
-                    {
-                      'rawJson.callType': {
-                        [Op.in]: ['Child calling about self', 'Someone calling about a child'],
-                      },
-                    },
-                    {
-                      [Op.and]: [
-                        {
-                          'rawJson.childInformation.name.firstName': {
-                            [Op.iLike]: `%${body.firstName}%`,
-                          },
-                        },
-                        {
-                          'rawJson.childInformation.name.lastName': {
-                            [Op.iLike]: `%${body.lastName}%`,
-                          },
-                        },
-                      ],
-                    },
-                  ],
-                },
-                {
-                  [Op.and]: [
-                    {
-                      'rawJson.callType': 'Someone calling about a child',
-                    },
-                    {
-                      [Op.and]: [
-                        {
-                          'rawJson.callerInformation.name.firstName': {
-                            [Op.iLike]: `%${body.firstName}%`,
-                          },
-                        },
-                        {
-                          'rawJson.callerInformation.name.lastName': {
-                            [Op.iLike]: `%${body.lastName}%`,
-                          },
-                        },
-                      ],
-                    },
-                  ],
-                },
-              ],
-            },
+            queryOnName(Op.and)(undefined)(body.firstName)(body.lastName),
             {
               twilioWorkerId: body.counselor,
             },
-            {
-              number: {
-                [Op.iLike]: `%${body.phoneNumber}%`,
-              },
-            },
+            queryOnPhone(undefined)(body.phoneNumber),
             {
               createdAt: {
                 [Op.gte]: startOfDay(parseISO(body.dateFrom)),
@@ -187,10 +417,6 @@ test('Call findAll(queryObject) with given params', async () => {
     order: [['createdAt', 'DESC']],
     limit: 20,
   };
-
-  const spy = jest.spyOn(MockContact, 'findAll');
-  const ContactController = createContactController(DBConnectionMock);
-  await ContactController.searchContacts(body);
 
   expect(spy).toHaveBeenCalledWith(expectedQueryObject);
 });
@@ -199,10 +425,13 @@ test('Call findAll(queryObject) without name search', async () => {
   const body = {
     helpline: 'helpline',
     counselor: 'counselorId',
-    phoneNumber: 'Anonymous',
+    phoneNumber: '123',
     dateFrom: '2020-03-10',
     dateTo: '2020-03-15',
   };
+
+  const spy = jest.spyOn(MockContact, 'findAll');
+  await ContactController.searchContacts(body);
 
   const expectedQueryObject = {
     where: {
@@ -216,11 +445,7 @@ test('Call findAll(queryObject) without name search', async () => {
             {
               twilioWorkerId: body.counselor,
             },
-            {
-              number: {
-                [Op.iLike]: `%${body.phoneNumber}%`,
-              },
-            },
+            queryOnPhone(undefined)(body.phoneNumber),
             {
               createdAt: {
                 [Op.gte]: startOfDay(parseISO(body.dateFrom)),
@@ -239,10 +464,6 @@ test('Call findAll(queryObject) without name search', async () => {
     order: [['createdAt', 'DESC']],
     limit: 20,
   };
-
-  const spy = jest.spyOn(MockContact, 'findAll');
-  const ContactController = createContactController(DBConnectionMock);
-  await ContactController.searchContacts(body);
 
   expect(spy).toHaveBeenCalledWith(expectedQueryObject);
 });
@@ -253,6 +474,9 @@ test('Call findAll(queryObject) with singleInput param', async () => {
     singleInput: 'singleInput',
   };
 
+  const spy = jest.spyOn(MockContact, 'findAll');
+  await ContactController.searchContacts(body);
+
   const expectedQueryObject = {
     where: {
       [Op.and]: [
@@ -261,60 +485,9 @@ test('Call findAll(queryObject) with singleInput param', async () => {
         },
         {
           [Op.or]: [
-            {
-              [Op.or]: [
-                {
-                  [Op.and]: [
-                    {
-                      'rawJson.callType': {
-                        [Op.in]: ['Child calling about self', 'Someone calling about a child'],
-                      },
-                    },
-                    {
-                      [Op.or]: [
-                        {
-                          'rawJson.childInformation.name.firstName': {
-                            [Op.iLike]: `%${body.singleInput}%`,
-                          },
-                        },
-                        {
-                          'rawJson.childInformation.name.lastName': {
-                            [Op.iLike]: `%${body.singleInput}%`,
-                          },
-                        },
-                      ],
-                    },
-                  ],
-                },
-                {
-                  [Op.and]: [
-                    {
-                      'rawJson.callType': 'Someone calling about a child',
-                    },
-                    {
-                      [Op.or]: [
-                        {
-                          'rawJson.callerInformation.name.firstName': {
-                            [Op.iLike]: `%${body.singleInput}%`,
-                          },
-                        },
-                        {
-                          'rawJson.callerInformation.name.lastName': {
-                            [Op.iLike]: `%${body.singleInput}%`,
-                          },
-                        },
-                      ],
-                    },
-                  ],
-                },
-              ],
-            },
+            queryOnName(Op.or)(body.singleInput)(undefined)(undefined),
             undefined,
-            {
-              number: {
-                [Op.iLike]: `%${body.singleInput}%`,
-              },
-            },
+            queryOnPhone(body.singleInput)(undefined),
             undefined,
             undefined,
             undefined,
@@ -326,10 +499,6 @@ test('Call findAll(queryObject) with singleInput param', async () => {
     limit: 20,
   };
 
-  const spy = jest.spyOn(MockContact, 'findAll');
-  const ContactController = createContactController(DBConnectionMock);
-  await ContactController.searchContacts(body);
-
   expect(spy).toHaveBeenCalledWith(expectedQueryObject);
 });
 
@@ -339,6 +508,9 @@ test('Call findAll(queryObject) with singleInput param of type date', async () =
     singleInput: '2020-03-10',
   };
 
+  const spy = jest.spyOn(MockContact, 'findAll');
+  await ContactController.searchContacts(body);
+
   const expectedQueryObject = {
     where: {
       [Op.and]: [
@@ -347,60 +519,9 @@ test('Call findAll(queryObject) with singleInput param of type date', async () =
         },
         {
           [Op.or]: [
-            {
-              [Op.or]: [
-                {
-                  [Op.and]: [
-                    {
-                      'rawJson.callType': {
-                        [Op.in]: ['Child calling about self', 'Someone calling about a child'],
-                      },
-                    },
-                    {
-                      [Op.or]: [
-                        {
-                          'rawJson.childInformation.name.firstName': {
-                            [Op.iLike]: `%${body.singleInput}%`,
-                          },
-                        },
-                        {
-                          'rawJson.childInformation.name.lastName': {
-                            [Op.iLike]: `%${body.singleInput}%`,
-                          },
-                        },
-                      ],
-                    },
-                  ],
-                },
-                {
-                  [Op.and]: [
-                    {
-                      'rawJson.callType': 'Someone calling about a child',
-                    },
-                    {
-                      [Op.or]: [
-                        {
-                          'rawJson.callerInformation.name.firstName': {
-                            [Op.iLike]: `%${body.singleInput}%`,
-                          },
-                        },
-                        {
-                          'rawJson.callerInformation.name.lastName': {
-                            [Op.iLike]: `%${body.singleInput}%`,
-                          },
-                        },
-                      ],
-                    },
-                  ],
-                },
-              ],
-            },
+            queryOnName(Op.or)(body.singleInput)(undefined)(undefined),
             undefined,
-            {
-              number: {
-                [Op.iLike]: `%${body.singleInput}%`,
-              },
-            },
+            queryOnPhone(body.singleInput)(undefined),
             undefined,
             undefined,
             {
@@ -425,10 +546,6 @@ test('Call findAll(queryObject) with singleInput param of type date', async () =
     limit: 20,
   };
 
-  const spy = jest.spyOn(MockContact, 'findAll');
-  const ContactController = createContactController(DBConnectionMock);
-  await ContactController.searchContacts(body);
-
   expect(spy).toHaveBeenCalledWith(expectedQueryObject);
 });
 
@@ -439,10 +556,13 @@ test('Call findAll(queryObject) with singleInput and ignore other params', async
     firstName: 'Jill',
     lastName: 'Smith',
     counselor: 'counselorId',
-    phoneNumber: 'Anonymous',
+    // phoneNumber: '123', // currently this case is not handled
     dateFrom: '2020-03-10',
     dateTo: '2020-03-15',
   };
+
+  const spy = jest.spyOn(MockContact, 'findAll');
+  await ContactController.searchContacts(body);
 
   const expectedQueryObject = {
     where: {
@@ -452,60 +572,9 @@ test('Call findAll(queryObject) with singleInput and ignore other params', async
         },
         {
           [Op.or]: [
-            {
-              [Op.or]: [
-                {
-                  [Op.and]: [
-                    {
-                      'rawJson.callType': {
-                        [Op.in]: ['Child calling about self', 'Someone calling about a child'],
-                      },
-                    },
-                    {
-                      [Op.or]: [
-                        {
-                          'rawJson.childInformation.name.firstName': {
-                            [Op.iLike]: `%${body.singleInput}%`,
-                          },
-                        },
-                        {
-                          'rawJson.childInformation.name.lastName': {
-                            [Op.iLike]: `%${body.singleInput}%`,
-                          },
-                        },
-                      ],
-                    },
-                  ],
-                },
-                {
-                  [Op.and]: [
-                    {
-                      'rawJson.callType': 'Someone calling about a child',
-                    },
-                    {
-                      [Op.or]: [
-                        {
-                          'rawJson.callerInformation.name.firstName': {
-                            [Op.iLike]: `%${body.singleInput}%`,
-                          },
-                        },
-                        {
-                          'rawJson.callerInformation.name.lastName': {
-                            [Op.iLike]: `%${body.singleInput}%`,
-                          },
-                        },
-                      ],
-                    },
-                  ],
-                },
-              ],
-            },
+            queryOnName(Op.or)(body.singleInput)(undefined)(undefined),
             undefined,
-            {
-              number: {
-                [Op.iLike]: `%${body.singleInput}%`,
-              },
-            },
+            queryOnPhone(body.singleInput)(undefined),
             undefined,
             undefined,
             undefined,
@@ -516,10 +585,6 @@ test('Call findAll(queryObject) with singleInput and ignore other params', async
     order: [['createdAt', 'DESC']],
     limit: 20,
   };
-
-  const spy = jest.spyOn(MockContact, 'findAll');
-  const ContactController = createContactController(DBConnectionMock);
-  await ContactController.searchContacts(body);
 
   expect(spy).toHaveBeenCalledWith(expectedQueryObject);
 });

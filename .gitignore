@@ -68,3 +68,4 @@ typings/
 
 # Visual Studio workspace
 *.code-workspace
+.vscode
