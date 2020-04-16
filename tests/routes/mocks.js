@@ -127,11 +127,6 @@ const contact2 = {
 // Non data contacts with actual information
 const broken1 = { ...contact1, form: { ...contact1.form, callType: 'Joke' } };
 const broken2 = { ...contact2, form: { ...contact2.form, callType: 'Blank' } };
-// Data contact withouth caseInformation.callSummary (can be empty string but no undefined)
-const invalid1 = {
-  ...contact1,
-  form: { ...contact1.form, caseInformation: { keepConfidential: false } },
-};
 
 const anotherChild = {
   ...contact1.form.childInformation,
@@ -171,7 +166,6 @@ module.exports = {
   contact2,
   broken1,
   broken2,
-  invalid1,
   withHelpline1,
   withHelpline2,
   noHelpline,

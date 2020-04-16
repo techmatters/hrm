@@ -7,16 +7,7 @@ const mocks = require('./mocks');
 const server = app.listen();
 const request = supertest.agent(server);
 
-const {
-  contact1,
-  contact2,
-  broken1,
-  broken2,
-  invalid1,
-  withHelpline1,
-  withHelpline2,
-  noHelpline,
-} = mocks;
+const { contact1, contact2, broken1, broken2, withHelpline1, withHelpline2, noHelpline } = mocks;
 
 const headers = {
   'Content-Type': 'application/json',
@@ -68,7 +59,6 @@ describe('/contacts route', () => {
         contact2,
         broken1,
         broken2,
-        invalid1,
         withHelpline1,
         withHelpline2,
         noHelpline,
@@ -120,13 +110,25 @@ describe('/contacts route', () => {
           const response = await request
             .post(subRoute)
             .set(headers)
-            .send({ firstName: 'jh', lastName: 'he' }); // should filter non-data/invalids
+            .send({ firstName: 'jh', lastName: 'he' }); // should filter non-data
 
           expect(response.status).toBe(200);
           expect(response.body).toHaveLength(2);
           const [c2, c1] = response.body; // result is sorted DESC
           expect(c1.details).toStrictEqual(contact1.form);
           expect(c2.details).toStrictEqual(contact2.form);
+        });
+      });
+
+      describe('multiple input search that targets zero contacts', () => {
+        test('should return 200', async () => {
+          const response = await request
+            .post(subRoute)
+            .set(headers)
+            .send({ firstName: 'jh', lastName: 'curie' });
+
+          expect(response.status).toBe(200);
+          expect(response.body).toHaveLength(0);
         });
       });
 
