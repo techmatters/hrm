@@ -268,7 +268,7 @@ describe('/contacts route', () => {
       // https://github.com/tech-matters/hrm/pull/33#discussion_r409904466
       describe('search FAILS if the number in DB is a substring of the input', () => {
         test('returns zero contacts (adding the country code)', async () => {
-          const phoneNumber = `+1 ${another2.number}`;
+          const phoneNumber = `+1 ${another2.form.childInformation.location.phone1}`;
           const response = await request
             .post(subRoute)
             .set(headers)
