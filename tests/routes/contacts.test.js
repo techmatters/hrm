@@ -237,6 +237,47 @@ describe('/contacts route', () => {
           });
         });
       });
+
+      describe('search over phone regexp (phoneNumber AND singleInput provided)', () => {
+        test('should return 200 (with contacts that matches singleInput)', async () => {
+          const phoneNumber = another1.number;
+          const singleInput = another2.number;
+          const response = await request
+            .post(subRoute)
+            .set(headers)
+            .send({ phoneNumber, singleInput });
+
+          expect(response.status).toBe(200);
+          expect(response.body).toHaveLength(1);
+          expect(response.body[0].details).toStrictEqual(another2.form);
+        });
+
+        test('returns zero contacts (no match for singleInput and phoneNumber is ignored)', async () => {
+          const phoneNumber = another1.number;
+          const singleInput = '11235813';
+          const response = await request
+            .post(subRoute)
+            .set(headers)
+            .send({ phoneNumber, singleInput });
+
+          expect(response.status).toBe(200);
+          expect(response.body).toHaveLength(0);
+        });
+      });
+
+      // https://github.com/tech-matters/hrm/pull/33#discussion_r409904466
+      describe('search FAILS if the number in DB is a substring of the input', () => {
+        test('returns zero contacts (adding the country code)', async () => {
+          const phoneNumber = `+1 ${another2.number}`;
+          const response = await request
+            .post(subRoute)
+            .set(headers)
+            .send({ phoneNumber });
+
+          expect(response.status).toBe(200);
+          expect(response.body).toHaveLength(0);
+        });
+      });
     });
   });
 });

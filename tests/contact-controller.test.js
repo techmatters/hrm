@@ -150,7 +150,7 @@ describe('Test queryOnName', () => {
       ],
     };
 
-    const result = queryOnName(Op.and)(undefined)('FirstName')('LastName');
+    const result = queryOnName(Op.and, undefined, 'FirstName', 'LastName');
 
     expect(result).toStrictEqual(expected);
   });
@@ -197,7 +197,7 @@ describe('Test queryOnName', () => {
       ],
     };
 
-    const result = queryOnName(Op.and)(undefined)('FirstName')(undefined);
+    const result = queryOnName(Op.and, undefined, 'FirstName', undefined);
 
     expect(result).toStrictEqual(expected);
   });
@@ -244,7 +244,7 @@ describe('Test queryOnName', () => {
       ],
     };
 
-    const result = queryOnName(Op.and)(undefined)(undefined)('LastName');
+    const result = queryOnName(Op.and, undefined, undefined, 'LastName');
 
     expect(result).toStrictEqual(expected);
   });
@@ -299,7 +299,7 @@ describe('Test queryOnName', () => {
       ],
     };
 
-    const result = queryOnName(Op.or)('SingleInput')(undefined)(undefined);
+    const result = queryOnName(Op.or, 'SingleInput', undefined, undefined);
 
     expect(result).toStrictEqual(expected);
   });
@@ -364,8 +364,8 @@ describe('Test queryOnPhone', () => {
       ],
     };
 
-    const result1 = queryOnPhone(undefined)('+1 (212) 555-1212');
-    const result2 = queryOnPhone('+1 (212) 555-1212')(undefined);
+    const result1 = queryOnPhone(undefined, '+1 (212) 555-1212');
+    const result2 = queryOnPhone('+1 (212) 555-1212', undefined);
 
     expect(result1).toStrictEqual(expected);
     expect(result2).toStrictEqual(expected);
@@ -394,11 +394,11 @@ test('Call findAll(queryObject) with given params', async () => {
         },
         {
           [Op.and]: [
-            queryOnName(Op.and)(undefined)(body.firstName)(body.lastName),
+            queryOnName(Op.and, undefined, body.firstName, body.lastName),
             {
               twilioWorkerId: body.counselor,
             },
-            queryOnPhone(undefined)(body.phoneNumber),
+            queryOnPhone(undefined, body.phoneNumber),
             {
               createdAt: {
                 [Op.gte]: startOfDay(parseISO(body.dateFrom)),
@@ -445,7 +445,7 @@ test('Call findAll(queryObject) without name search', async () => {
             {
               twilioWorkerId: body.counselor,
             },
-            queryOnPhone(undefined)(body.phoneNumber),
+            queryOnPhone(undefined, body.phoneNumber),
             {
               createdAt: {
                 [Op.gte]: startOfDay(parseISO(body.dateFrom)),
@@ -485,9 +485,9 @@ test('Call findAll(queryObject) with singleInput param', async () => {
         },
         {
           [Op.or]: [
-            queryOnName(Op.or)(body.singleInput)(undefined)(undefined),
+            queryOnName(Op.or, body.singleInput, undefined, undefined),
             undefined,
-            queryOnPhone(body.singleInput)(undefined),
+            queryOnPhone(body.singleInput, undefined),
             undefined,
             undefined,
             undefined,
@@ -519,9 +519,9 @@ test('Call findAll(queryObject) with singleInput param of type date', async () =
         },
         {
           [Op.or]: [
-            queryOnName(Op.or)(body.singleInput)(undefined)(undefined),
+            queryOnName(Op.or, body.singleInput, undefined, undefined),
             undefined,
-            queryOnPhone(body.singleInput)(undefined),
+            queryOnPhone(body.singleInput, undefined),
             undefined,
             undefined,
             {
@@ -556,7 +556,7 @@ test('Call findAll(queryObject) with singleInput and ignore other params', async
     firstName: 'Jill',
     lastName: 'Smith',
     counselor: 'counselorId',
-    // phoneNumber: '123', // currently this case is not handled
+    phoneNumber: '123',
     dateFrom: '2020-03-10',
     dateTo: '2020-03-15',
   };
@@ -572,9 +572,9 @@ test('Call findAll(queryObject) with singleInput and ignore other params', async
         },
         {
           [Op.or]: [
-            queryOnName(Op.or)(body.singleInput)(undefined)(undefined),
+            queryOnName(Op.or, body.singleInput, undefined, undefined),
             undefined,
-            queryOnPhone(body.singleInput)(undefined),
+            queryOnPhone(body.singleInput, undefined),
             undefined,
             undefined,
             undefined,

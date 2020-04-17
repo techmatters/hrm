@@ -164,7 +164,7 @@ const another2 = {
     },
   },
   helpline: 'Helpline 2',
-  number: '+1 (212) 555-1212',
+  number: '(212) 555-1212',
 };
 
 const noHelpline = {

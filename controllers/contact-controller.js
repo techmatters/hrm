@@ -67,7 +67,7 @@ function isEmptySearchParams(body) {
 
 const orUndefined = value => value || undefined;
 
-const queryOnName = operator => singleInput => firstName => lastName =>
+const queryOnName = (operator, singleInput, firstName, lastName) =>
   (singleInput || firstName || lastName) && {
     [Op.or]: [
       {
@@ -117,10 +117,10 @@ const queryOnName = operator => singleInput => firstName => lastName =>
     ],
   };
 
-const queryOnPhone = singleInput => phoneNumber => {
+const queryOnPhone = (singleInput, phoneNumber) => {
   const re = /[\D]/gi;
   const singleDigitsOnly = singleInput && singleInput.replace(re, '');
-  const phoneDigitsOnly = phoneNumber && phoneNumber.replace(re, '');
+  const phoneDigitsOnly = !singleInput && phoneNumber ? phoneNumber.replace(re, '') : undefined;
 
   // column should be passed via Sequelize.col or Sequelize.literal
   const phoneRegExp = column =>
@@ -167,11 +167,11 @@ function buildSearchQueryObject(body) {
         },
         {
           [operator]: [
-            queryOnName(operator)(singleInput)(firstName)(lastName),
+            queryOnName(operator, singleInput, firstName, lastName),
             compareCounselor && {
               twilioWorkerId: counselor,
             },
-            queryOnPhone(singleInput)(phoneNumber),
+            queryOnPhone(singleInput, phoneNumber),
             compareDateFrom && {
               createdAt: {
                 [Op.gte]: startOfDay(parseISO(dateFrom)),
