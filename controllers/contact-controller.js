@@ -67,6 +67,80 @@ function isEmptySearchParams(body) {
 
 const orUndefined = value => value || undefined;
 
+const queryOnName = (operator, singleInput, firstName, lastName) =>
+  (singleInput || firstName || lastName) && {
+    [Op.or]: [
+      {
+        [Op.and]: [
+          {
+            'rawJson.callType': {
+              [Op.in]: [callTypes.child, callTypes.caller],
+            },
+          },
+          {
+            [operator]: [
+              (firstName || singleInput) && {
+                'rawJson.childInformation.name.firstName': {
+                  [Op.iLike]: `%${singleInput || firstName}%`,
+                },
+              },
+              (lastName || singleInput) && {
+                'rawJson.childInformation.name.lastName': {
+                  [Op.iLike]: `%${singleInput || lastName}%`,
+                },
+              },
+            ],
+          },
+        ],
+      },
+      {
+        [Op.and]: [
+          {
+            'rawJson.callType': callTypes.caller,
+          },
+          {
+            [operator]: [
+              (firstName || singleInput) && {
+                'rawJson.callerInformation.name.firstName': {
+                  [Op.iLike]: `%${singleInput || firstName}%`,
+                },
+              },
+              (lastName || singleInput) && {
+                'rawJson.callerInformation.name.lastName': {
+                  [Op.iLike]: `%${singleInput || lastName}%`,
+                },
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+
+const queryOnPhone = (singleInput, phoneNumber) => {
+  const re = /[\D]/gi;
+  const singleDigitsOnly = singleInput && singleInput.replace(re, '');
+  const phoneDigitsOnly = !singleInput && phoneNumber ? phoneNumber.replace(re, '') : undefined;
+
+  // column should be passed via Sequelize.col or Sequelize.literal
+  const phoneRegExp = column =>
+    Sequelize.where(Sequelize.fn('REGEXP_REPLACE', column, '[^[:digit:]]', '', 'g'), {
+      [Op.iLike]: `%${singleDigitsOnly || phoneDigitsOnly}%`,
+    });
+
+  return (
+    (singleDigitsOnly || phoneDigitsOnly) && {
+      [Op.or]: [
+        { number: { [Op.iLike]: `%${singleDigitsOnly || phoneDigitsOnly}%` } },
+        phoneRegExp(Sequelize.literal(`"rawJson"#>>'{childInformation,location,phone1}'`)),
+        phoneRegExp(Sequelize.literal(`"rawJson"#>>'{childInformation,location,phone2}'`)),
+        phoneRegExp(Sequelize.literal(`"rawJson"#>>'{callerInformation,location,phone1}'`)),
+        phoneRegExp(Sequelize.literal(`"rawJson"#>>'{callerInformation,location,phone2}'`)),
+      ],
+    }
+  );
+};
+
 function buildSearchQueryObject(body) {
   const {
     helpline,
@@ -93,62 +167,11 @@ function buildSearchQueryObject(body) {
         },
         {
           [operator]: [
-            (firstName || lastName || singleInput) && {
-              [Op.or]: [
-                {
-                  [Op.and]: [
-                    {
-                      'rawJson.callType': {
-                        [Op.in]: [callTypes.child, callTypes.caller],
-                      },
-                    },
-                    {
-                      [operator]: [
-                        (firstName || singleInput) && {
-                          'rawJson.childInformation.name.firstName': {
-                            [Op.iLike]: `%${singleInput || firstName}%`,
-                          },
-                        },
-                        (lastName || singleInput) && {
-                          'rawJson.childInformation.name.lastName': {
-                            [Op.iLike]: `%${singleInput || lastName}%`,
-                          },
-                        },
-                      ],
-                    },
-                  ],
-                },
-                {
-                  [Op.and]: [
-                    {
-                      'rawJson.callType': callTypes.caller,
-                    },
-                    {
-                      [operator]: [
-                        (firstName || singleInput) && {
-                          'rawJson.callerInformation.name.firstName': {
-                            [Op.iLike]: `%${singleInput || firstName}%`,
-                          },
-                        },
-                        (lastName || singleInput) && {
-                          'rawJson.callerInformation.name.lastName': {
-                            [Op.iLike]: `%${singleInput || lastName}%`,
-                          },
-                        },
-                      ],
-                    },
-                  ],
-                },
-              ],
-            },
+            queryOnName(operator, singleInput, firstName, lastName),
             compareCounselor && {
               twilioWorkerId: counselor,
             },
-            (phoneNumber || singleInput) && {
-              number: {
-                [Op.iLike]: `%${singleInput || phoneNumber}%`,
-              },
-            },
+            queryOnPhone(singleInput, phoneNumber),
             compareDateFrom && {
               createdAt: {
                 [Op.gte]: startOfDay(parseISO(dateFrom)),
@@ -288,7 +311,7 @@ const ContactController = sequelize => {
     return contact;
   };
 
-  return { searchContacts, getContacts, createContact };
+  return { searchContacts, getContacts, createContact, queries: { queryOnName, queryOnPhone } };
 };
 
 module.exports = ContactController;
