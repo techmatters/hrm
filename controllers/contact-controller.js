@@ -131,7 +131,7 @@ const queryOnPhone = (singleInput, phoneNumber) => {
   return (
     (singleDigitsOnly || phoneDigitsOnly) && {
       [Op.or]: [
-        phoneRegExp(Sequelize.col('number')),
+        { number: { [Op.iLike]: `%${singleDigitsOnly || phoneDigitsOnly}%` } },
         phoneRegExp(Sequelize.literal(`"rawJson"#>>'{childInformation,location,phone1}'`)),
         phoneRegExp(Sequelize.literal(`"rawJson"#>>'{childInformation,location,phone2}'`)),
         phoneRegExp(Sequelize.literal(`"rawJson"#>>'{callerInformation,location,phone1}'`)),

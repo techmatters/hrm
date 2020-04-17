@@ -309,10 +309,7 @@ describe('Test queryOnPhone', () => {
   test('with phoneNumber and singleInput', async () => {
     const expected = {
       [Op.or]: [
-        Sequelize.where(
-          Sequelize.fn('REGEXP_REPLACE', Sequelize.col('number'), '[^[:digit:]]', '', 'g'),
-          { [Op.iLike]: `%${12125551212}%` },
-        ),
+        { number: { [Op.iLike]: `%${12125551212}%` } },
         Sequelize.where(
           Sequelize.fn(
             'REGEXP_REPLACE',
