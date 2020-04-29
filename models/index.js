@@ -21,11 +21,10 @@
 const fs = require('fs');
 const path = require('path');
 const Sequelize = require('sequelize');
+const configFile = require('../config/config.js');
 
+const config = configFile[process.env.NODE_ENV] || configFile.development;
 const basename = path.basename(__filename);
-const env = process.env.NODE_ENV || 'development';
-const config = require('../config/config.js')[env];
-
 const db = {};
 let sequelize;
 
