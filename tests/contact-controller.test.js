@@ -15,10 +15,8 @@ const { Op } = Sequelize;
 const DBConnectionMock = new SequelizeMock();
 const MockContact = DBConnectionMock.define('Contacts');
 
-const ContactController = createContactController(DBConnectionMock);
+const ContactController = createContactController(MockContact);
 const { queryOnName, queryOnPhone } = ContactController.queries;
-
-jest.mock('../models/contact', () => () => MockContact);
 
 afterEach(() => jest.clearAllMocks());
 
