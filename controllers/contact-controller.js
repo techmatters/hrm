@@ -1,10 +1,9 @@
+const createError = require('http-errors');
 const Sequelize = require('sequelize');
 const parseISO = require('date-fns/parseISO');
 const startOfDay = require('date-fns/startOfDay');
 const endOfDay = require('date-fns/endOfDay');
 const isValid = require('date-fns/isValid');
-
-const contactModel = require('../models/contact.js');
 
 const { Op } = Sequelize;
 
@@ -259,9 +258,7 @@ function convertContactsToSearchResults(contacts) {
     .filter(contact => contact);
 }
 
-const ContactController = sequelize => {
-  const Contact = contactModel(sequelize, Sequelize);
-
+const ContactController = Contact => {
   const searchContacts = async body => {
     if (isEmptySearchParams(body)) {
       return [];
@@ -311,7 +308,31 @@ const ContactController = sequelize => {
     return contact;
   };
 
-  return { searchContacts, getContacts, createContact, queries: { queryOnName, queryOnPhone } };
+  const getContact = async id => {
+    const contact = await Contact.findByPk(id);
+
+    if (!contact) {
+      const errorMessage = `Contact with id ${id} not found`;
+      throw createError(404, errorMessage);
+    }
+
+    return contact;
+  };
+
+  const connectToCase = async (contactId, caseId) => {
+    const contact = await getContact(contactId);
+    const updatedContact = await contact.update({ caseId });
+
+    return updatedContact;
+  };
+
+  return {
+    searchContacts,
+    getContacts,
+    createContact,
+    connectToCase,
+    queries: { queryOnName, queryOnPhone },
+  };
 };
 
 module.exports = ContactController;
