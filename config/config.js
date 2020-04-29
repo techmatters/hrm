@@ -2,10 +2,10 @@ require('dotenv').config();
 
 module.exports = {
   development: {
-    username: 'hrm',
-    password: null,
-    database: 'hrmdb',
-    host: 'localhost',
+    username: process.env.RDS_USERNAME || 'hrm',
+    password: process.env.RDS_PASSWORD || null,
+    database: process.env.RDS_DBNAME || 'hrmdb',
+    host: process.env.RDS_HOSTNAME || 'localhost',
     dialect: 'postgres',
   },
   staging: {

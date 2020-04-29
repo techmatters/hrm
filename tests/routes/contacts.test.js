@@ -1,7 +1,7 @@
 const supertest = require('supertest');
 const Sequelize = require('sequelize');
 const app = require('../../app');
-const contactModel = require('../../models/contact.js');
+const models = require('../../models');
 const mocks = require('./mocks');
 
 const server = app.listen();
@@ -14,13 +14,7 @@ const headers = {
   Authorization: `Basic ${Buffer.from(process.env.API_KEY).toString('base64')}`,
 };
 
-const host = process.env.RDS_HOSTNAME || 'localhost';
-const pass = process.env.RDS_PASSWORD || '';
-const sequelize = new Sequelize('hrmdb', 'hrm', pass, {
-  host,
-  dialect: 'postgres',
-});
-const Contact = contactModel(sequelize, Sequelize);
+const { Contact } = models;
 
 beforeAll(async done => {
   // log('\n Test started \n');
