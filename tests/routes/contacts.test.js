@@ -7,14 +7,24 @@ const mocks = require('./mocks');
 const server = app.listen();
 const request = supertest.agent(server);
 
-const { contact1, contact2, broken1, broken2, another1, another2, noHelpline } = mocks;
+const {
+  contact1,
+  contact2,
+  broken1,
+  broken2,
+  another1,
+  another2,
+  noHelpline,
+  case1,
+  case2,
+} = mocks;
 
 const headers = {
   'Content-Type': 'application/json',
   Authorization: `Basic ${Buffer.from(process.env.API_KEY).toString('base64')}`,
 };
 
-const { Contact } = models;
+const { Contact, Case } = models;
 
 beforeAll(async done => {
   // log('\n Test started \n');
@@ -270,6 +280,77 @@ describe('/contacts route', () => {
 
           expect(response.status).toBe(200);
           expect(response.body).toHaveLength(0);
+        });
+      });
+    });
+  });
+
+  describe('/contacts/:contactId/connectToCase route', () => {
+    let createdContact;
+    let createdCase;
+    let existingContactId;
+    let nonExistingContactId;
+    let existingCaseId;
+    let nonExistingCaseId;
+
+    beforeEach(async () => {
+      createdContact = await Contact.create(contact1);
+      createdCase = await Case.create(case1);
+      const contactToBeDeleted = await Contact.create(contact1);
+      const caseToBeDeleted = await Case.create(case1);
+
+      existingContactId = createdContact.id;
+      existingCaseId = createdCase.id;
+      nonExistingContactId = contactToBeDeleted.id;
+      nonExistingCaseId = caseToBeDeleted.id;
+
+      await contactToBeDeleted.destroy();
+      await caseToBeDeleted.destroy();
+    });
+
+    afterEach(async () => {
+      createdContact.destroy();
+      createdCase.destroy();
+    });
+
+    describe('POST', () => {
+      const subRoute = contactId => `${route}/${contactId}/connectToCase`;
+
+      test('should return 401', async () => {
+        const response = await request.post(subRoute(existingContactId)).send({});
+
+        expect(response.status).toBe(401);
+        expect(response.body.error).toBe('Authorization failed');
+      });
+
+      test('should return 200', async () => {
+        const response = await request
+          .post(subRoute(existingContactId))
+          .set(headers)
+          .send({ caseId: existingCaseId });
+
+        expect(response.status).toBe(200);
+        expect(response.body.caseId).toBe(existingCaseId);
+      });
+
+      describe('use non-existent contactId', () => {
+        test('should return 404', async () => {
+          const response = await request
+            .post(subRoute(nonExistingContactId))
+            .set(headers)
+            .send({ caseId: existingCaseId });
+
+          expect(response.status).toBe(404);
+        });
+      });
+      describe('use non-existent caseId', () => {
+        test('should return 404', async () => {
+          const response = await request
+            .post(subRoute(existingContactId))
+            .set(headers)
+            .send({ caseId: nonExistingCaseId });
+
+          expect(response.status).toBe(404);
         });
       });
     });
