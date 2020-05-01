@@ -7,17 +7,7 @@ const mocks = require('./mocks');
 const server = app.listen();
 const request = supertest.agent(server);
 
-const {
-  contact1,
-  contact2,
-  broken1,
-  broken2,
-  another1,
-  another2,
-  noHelpline,
-  case1,
-  case2,
-} = mocks;
+const { contact1, contact2, broken1, broken2, another1, another2, noHelpline, case1 } = mocks;
 
 const headers = {
   'Content-Type': 'application/json',
