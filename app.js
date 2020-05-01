@@ -82,13 +82,13 @@ app.post('/cases', async (req, res) => {
   res.json(createdCase);
 });
 
-app.post('/cases/:id', async (req, res) => {
+app.put('/cases/:id', async (req, res) => {
   const { id } = req.params;
   const updatedCase = await CaseController.updateCase(id, req.body);
   res.json(updatedCase);
 });
 
-app.post('/contacts/:contactId/connectToCase', async (req, res) => {
+app.put('/contacts/:contactId/connectToCase', async (req, res) => {
   const { contactId } = req.params;
   const { caseId } = req.body;
   await CaseController.getCase(caseId);

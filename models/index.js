@@ -24,6 +24,8 @@ const Sequelize = require('sequelize');
 const configFile = require('../config/config.js');
 
 const config = configFile[process.env.NODE_ENV] || configFile.development;
+config.logging = !process.env.RUNNING_TESTS;
+
 const basename = path.basename(__filename);
 const db = {};
 let sequelize;

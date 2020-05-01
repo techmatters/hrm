@@ -303,11 +303,11 @@ describe('/contacts route', () => {
       createdCase.destroy();
     });
 
-    describe('POST', () => {
+    describe('PUT', () => {
       const subRoute = contactId => `${route}/${contactId}/connectToCase`;
 
       test('should return 401', async () => {
-        const response = await request.post(subRoute(existingContactId)).send({});
+        const response = await request.put(subRoute(existingContactId)).send({});
 
         expect(response.status).toBe(401);
         expect(response.body.error).toBe('Authorization failed');
@@ -315,7 +315,7 @@ describe('/contacts route', () => {
 
       test('should return 200', async () => {
         const response = await request
-          .post(subRoute(existingContactId))
+          .put(subRoute(existingContactId))
           .set(headers)
           .send({ caseId: existingCaseId });
 
@@ -326,7 +326,7 @@ describe('/contacts route', () => {
       describe('use non-existent contactId', () => {
         test('should return 404', async () => {
           const response = await request
-            .post(subRoute(nonExistingContactId))
+            .put(subRoute(nonExistingContactId))
             .set(headers)
             .send({ caseId: existingCaseId });
 
@@ -336,7 +336,7 @@ describe('/contacts route', () => {
       describe('use non-existent caseId', () => {
         test('should return 404', async () => {
           const response = await request
-            .post(subRoute(existingContactId))
+            .put(subRoute(existingContactId))
             .set(headers)
             .send({ caseId: nonExistingCaseId });
 

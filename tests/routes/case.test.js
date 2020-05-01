@@ -54,47 +54,49 @@ describe('/cases route', () => {
   });
 
   describe('/cases/:id route', () => {
-    let createdCase;
-    let nonExistingCaseId;
-    let subRoute;
+    describe('PUT', () => {
+      let createdCase;
+      let nonExistingCaseId;
+      let subRoute;
 
-    beforeEach(async () => {
-      createdCase = await Case.create(case1);
-      subRoute = id => `/cases/${id}`;
+      beforeEach(async () => {
+        createdCase = await Case.create(case1);
+        subRoute = id => `/cases/${id}`;
 
-      const caseToBeDeleted = await Case.create(case2);
-      nonExistingCaseId = caseToBeDeleted.id;
-      caseToBeDeleted.destroy();
-    });
+        const caseToBeDeleted = await Case.create(case2);
+        nonExistingCaseId = caseToBeDeleted.id;
+        caseToBeDeleted.destroy();
+      });
 
-    afterEach(async () => {
-      await createdCase.destroy();
-    });
+      afterEach(async () => {
+        await createdCase.destroy();
+      });
 
-    test('should return 401', async () => {
-      const response = await request.post(subRoute(createdCase.id)).send(case1);
+      test('should return 401', async () => {
+        const response = await request.put(subRoute(createdCase.id)).send(case1);
 
-      expect(response.status).toBe(401);
-      expect(response.body.error).toBe('Authorization failed');
-    });
-    test('should return 200', async () => {
-      const status = 'closed';
-      const response = await request
-        .post(subRoute(createdCase.id))
-        .set(headers)
-        .send({ status });
+        expect(response.status).toBe(401);
+        expect(response.body.error).toBe('Authorization failed');
+      });
+      test('should return 200', async () => {
+        const status = 'closed';
+        const response = await request
+          .put(subRoute(createdCase.id))
+          .set(headers)
+          .send({ status });
 
-      expect(response.status).toBe(200);
-      expect(response.body.status).toBe(status);
-    });
-    test('should return 404', async () => {
-      const status = 'closed';
-      const response = await request
-        .post(subRoute(nonExistingCaseId))
-        .set(headers)
-        .send({ status });
+        expect(response.status).toBe(200);
+        expect(response.body.status).toBe(status);
+      });
+      test('should return 404', async () => {
+        const status = 'closed';
+        const response = await request
+          .put(subRoute(nonExistingCaseId))
+          .set(headers)
+          .send({ status });
 
-      expect(response.status).toBe(404);
+        expect(response.status).toBe(404);
+      });
     });
   });
 });
