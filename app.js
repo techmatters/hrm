@@ -3,6 +3,11 @@ const express = require('express');
 require('express-async-errors');
 const logger = require('morgan');
 const cors = require('cors');
+const swaggerUi = require('swagger-ui-express');
+const yaml = require('js-yaml');
+const fs = require('fs');
+
+const swaggerDocument = yaml.safeLoad(fs.readFileSync('./swagger.yaml', 'utf8'));
 const models = require('./models');
 
 const app = express();
@@ -14,6 +19,8 @@ if (!apiKey) {
 }
 
 console.log(`Starting HRM version ${version}`);
+
+app.use('/swagger', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 const { Contact, Case } = models;
 const ContactController = require('./controllers/contact-controller')(Contact);
