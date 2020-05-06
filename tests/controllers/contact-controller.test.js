@@ -3,7 +3,7 @@ const SequelizeMock = require('sequelize-mock');
 const parseISO = require('date-fns/parseISO');
 const startOfDay = require('date-fns/startOfDay');
 const endOfDay = require('date-fns/endOfDay');
-const createContactController = require('../controllers/contact-controller');
+const createContactController = require('../../controllers/contact-controller');
 const ContactBuilder = require('./contact-builder');
 
 const callTypes = {
@@ -14,11 +14,10 @@ const callTypes = {
 const { Op } = Sequelize;
 const DBConnectionMock = new SequelizeMock();
 const MockContact = DBConnectionMock.define('Contacts');
+MockContact.findByPk = jest.fn(); // SequelizeMock doesn't define findByPk by itself
 
-const ContactController = createContactController(DBConnectionMock);
+const ContactController = createContactController(MockContact);
 const { queryOnName, queryOnPhone } = ContactController.queries;
-
-jest.mock('../models/contact', () => () => MockContact);
 
 afterEach(() => jest.clearAllMocks());
 
@@ -584,4 +583,28 @@ test('Call findAll(queryObject) with singleInput and ignore other params', async
   };
 
   expect(spy).toHaveBeenCalledWith(expectedQueryObject);
+});
+
+test('connect contact to case', async () => {
+  const contactId = 1;
+  const caseId = 2;
+  const contactFromDB = {
+    id: contactId,
+    update: jest.fn(),
+  };
+  jest.spyOn(MockContact, 'findByPk').mockImplementation(() => contactFromDB);
+  const updateSpy = jest.spyOn(contactFromDB, 'update');
+
+  const updateCaseObject = { caseId };
+  await ContactController.connectToCase(contactId, caseId);
+
+  expect(updateSpy).toHaveBeenCalledWith(updateCaseObject);
+});
+
+test('connect non existing contact to case', async () => {
+  const nonExistingContactId = 1;
+  const caseId = 2;
+  jest.spyOn(MockContact, 'findByPk').mockImplementation(() => null);
+
+  await expect(ContactController.connectToCase(nonExistingContactId, caseId)).rejects.toThrow();
 });

@@ -172,6 +172,22 @@ const noHelpline = {
   helpline: '',
 };
 
+const case1 = {
+  status: 'open',
+  helpline: 'helpline',
+  info: {
+    notes: 'Child with covid-19',
+  },
+};
+
+const case2 = {
+  status: 'open',
+  helpline: 'helpline',
+  info: {
+    notes: 'Refugee child',
+  },
+};
+
 module.exports = {
   contact1,
   contact2,
@@ -180,4 +196,6 @@ module.exports = {
   another1,
   another2,
   noHelpline,
+  case1,
+  case2,
 };

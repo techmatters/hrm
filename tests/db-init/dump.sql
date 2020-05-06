@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 11.7 (Ubuntu 11.7-2.pgdg18.04+1)
--- Dumped by pg_dump version 11.7 (Ubuntu 11.7-2.pgdg18.04+1)
+-- Dumped from database version 11.6
+-- Dumped by pg_dump version 11.6
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -59,6 +59,44 @@ ALTER SEQUENCE public."AgeBrackets_id_seq" OWNED BY public."AgeBrackets".id;
 
 
 --
+-- Name: Cases; Type: TABLE; Schema: public; Owner: hrm
+--
+
+CREATE TABLE public."Cases" (
+    id integer NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    status character varying(255),
+    helpline character varying(255),
+    info jsonb
+);
+
+
+ALTER TABLE public."Cases" OWNER TO hrm;
+
+--
+-- Name: Cases_id_seq; Type: SEQUENCE; Schema: public; Owner: hrm
+--
+
+CREATE SEQUENCE public."Cases_id_seq"
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public."Cases_id_seq" OWNER TO hrm;
+
+--
+-- Name: Cases_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: hrm
+--
+
+ALTER SEQUENCE public."Cases_id_seq" OWNED BY public."Cases".id;
+
+
+--
 -- Name: Contacts; Type: TABLE; Schema: public; Owner: hrm
 --
 
@@ -77,7 +115,8 @@ CREATE TABLE public."Contacts" (
     helpline character varying(255),
     number character varying(255),
     channel character varying(255),
-    "conversationDuration" integer
+    "conversationDuration" integer,
+    "caseId" integer
 );
 
 
@@ -160,6 +199,13 @@ ALTER TABLE ONLY public."AgeBrackets" ALTER COLUMN id SET DEFAULT nextval('publi
 
 
 --
+-- Name: Cases id; Type: DEFAULT; Schema: public; Owner: hrm
+--
+
+ALTER TABLE ONLY public."Cases" ALTER COLUMN id SET DEFAULT nextval('public."Cases_id_seq"'::regclass);
+
+
+--
 -- Name: Contacts id; Type: DEFAULT; Schema: public; Owner: hrm
 --
 
@@ -189,11 +235,6 @@ COPY public."AgeBrackets" (id, bracket, min, max, "createdAt", "updatedAt") FROM
 9	Unknown	\N	\N	2019-08-15 13:41:11.922-03	2019-08-15 13:41:11.922-03
 \.
 
-
---
--- Data for Name: Contacts; Type: TABLE DATA; Schema: public; Owner: hrm
---
-
 --
 -- Data for Name: SequelizeMeta; Type: TABLE DATA; Schema: public; Owner: hrm
 --
@@ -201,6 +242,8 @@ COPY public."AgeBrackets" (id, bracket, min, max, "createdAt", "updatedAt") FROM
 COPY public."SequelizeMeta" (name) FROM stdin;
 20200304175210-contact-add-columns.js
 20200310140432-contact-add-conversationDuration.js
+20200427210632-create-case.js
+20200428160048-case-has-many-contacts.js
 \.
 
 
@@ -228,10 +271,17 @@ SELECT pg_catalog.setval('public."AgeBrackets_id_seq"', 9, true);
 
 
 --
+-- Name: Cases_id_seq; Type: SEQUENCE SET; Schema: public; Owner: hrm
+--
+
+SELECT pg_catalog.setval('public."Cases_id_seq"', 2, true);
+
+
+--
 -- Name: Contacts_id_seq; Type: SEQUENCE SET; Schema: public; Owner: hrm
 --
 
-SELECT pg_catalog.setval('public."Contacts_id_seq"', 701, true);
+SELECT pg_catalog.setval('public."Contacts_id_seq"', 671, true);
 
 
 --
@@ -247,6 +297,14 @@ SELECT pg_catalog.setval('public."Subcategories_id_seq"', 8, true);
 
 ALTER TABLE ONLY public."AgeBrackets"
     ADD CONSTRAINT "AgeBrackets_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: Cases Cases_pkey; Type: CONSTRAINT; Schema: public; Owner: hrm
+--
+
+ALTER TABLE ONLY public."Cases"
+    ADD CONSTRAINT "Cases_pkey" PRIMARY KEY (id);
 
 
 --
@@ -290,6 +348,13 @@ ALTER TABLE ONLY public."Contacts"
 
 
 --
--- PostgreSQL database dump complete
+-- Name: Contacts Contacts_caseId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: hrm
 --
 
+ALTER TABLE ONLY public."Contacts"
+    ADD CONSTRAINT "Contacts_caseId_fkey" FOREIGN KEY ("caseId") REFERENCES public."Cases"(id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+
+--
+-- PostgreSQL database dump complete
+--

@@ -3,16 +3,12 @@ const express = require('express');
 require('express-async-errors');
 const logger = require('morgan');
 const cors = require('cors');
-const Sequelize = require('sequelize');
+
+const models = require('./models');
+const swagger = require('./swagger');
 
 const app = express();
-
-// Sequelize init
-const host = process.env.RDS_HOSTNAME || 'localhost';
-const user = process.env.RDS_USERNAME || 'hrm';
-const pass = process.env.RDS_PASSWORD || '';
 const apiKey = process.env.API_KEY;
-
 const version = '0.3.6';
 
 if (!apiKey) {
@@ -20,12 +16,12 @@ if (!apiKey) {
 }
 
 console.log(`Starting HRM version ${version}`);
-console.log(`Trying with: ${[host, user].join(', ')}`);
-const sequelize = new Sequelize('hrmdb', 'hrm', pass, {
-  host,
-  dialect: 'postgres',
-});
-const ContactController = require('./controllers/contact-controller')(sequelize);
+
+swagger.runWhenNotProduction(app);
+
+const { Contact, Case } = models;
+const ContactController = require('./controllers/contact-controller')(Contact);
+const CaseController = require('./controllers/case-controller')(Case);
 
 console.log('After connect attempt');
 
@@ -78,6 +74,30 @@ app.post('/contacts/search', async (req, res) => {
 app.post('/contacts', async (req, res) => {
   const contact = await ContactController.createContact(req.body);
   res.json(contact);
+});
+
+app.get('/cases', async (req, res) => {
+  const cases = await CaseController.listCases(req.query);
+  res.json(cases);
+});
+
+app.post('/cases', async (req, res) => {
+  const createdCase = await CaseController.createCase(req.body);
+  res.json(createdCase);
+});
+
+app.put('/cases/:id', async (req, res) => {
+  const { id } = req.params;
+  const updatedCase = await CaseController.updateCase(id, req.body);
+  res.json(updatedCase);
+});
+
+app.put('/contacts/:contactId/connectToCase', async (req, res) => {
+  const { contactId } = req.params;
+  const { caseId } = req.body;
+  await CaseController.getCase(caseId);
+  const updatedContact = await ContactController.connectToCase(contactId, caseId);
+  res.json(updatedContact);
 });
 
 app.use((req, res, next) => {

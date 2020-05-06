@@ -4,7 +4,7 @@
   "description": "",
   "scripts": {
     "start": "sequelize db:migrate && node ./bin/www",
-    "test": "jest --passWithNoTests --forceExit",
+    "test": "RUNNING_TESTS=true jest --passWithNoTests --forceExit",
     "db:create-migration": "sequelize migration:generate --name ",
     "db:undo-last": "sequelize db:migrate:undo",
     "lint": "eslint --ext js .",
@@ -28,11 +28,13 @@
     "express": "^4.17.1",
     "express-async-errors": "^3.1.1",
     "http-errors": "^1.7.3",
+    "js-yaml": "^3.13.1",
     "morgan": "^1.9.1",
     "pg": "^7.12.1",
     "pg-hstore": "^2.3.3",
     "sequelize": "^5.21.5",
-    "sequelize-cli": "^5.5.0"
+    "sequelize-cli": "^5.5.0",
+    "swagger-ui-express": "^4.1.4"
   },
   "devDependencies": {
     "@types/jest": "^25.2.1",
