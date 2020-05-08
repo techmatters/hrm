@@ -158,6 +158,7 @@ components:
         - status
         - helpline
         - info
+        - twilioWorkerId
       properties:
         status:
           type: string
@@ -168,6 +169,9 @@ components:
         info:
           type: object
           example: { "notes": "Child with covid-19" }
+        twilioWorkerId:
+          type: string
+          example: WZd3d289370720216aab7e3dc023e80f5f
     Contact:
       type: object
       required:
@@ -180,6 +184,7 @@ components:
         - number
         - channel
         - conversationDuration
+        - caseId
       properties:
         timestamp:
           type: integer
@@ -213,6 +218,10 @@ components:
           type: integer
           format: int32
           example: 42
+        caseId:
+          type: integer
+          format: int32
+          example: 1
   responses:
     UnauthorizedError:
       description: API Key is missing or invalid
