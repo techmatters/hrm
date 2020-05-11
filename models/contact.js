@@ -74,6 +74,11 @@ module.exports = (sequelize, DataTypes) => {
 
   Contact.associate = models => Contact.belongsTo(models.Case, { foreignKey: 'caseId' });
 
+  /**
+   * Whenever a contact gets connected to a case, a CaseAudit record should be created
+   * to track this new association. It should also record disassociations between contacts
+   * and cases.
+   */
   Contact.afterUpdate('auditCaseHook', async (contactInstance, options) => {
     const noCaseIdChange = contactInstance.previous('caseId') === contactInstance.dataValues.caseId;
 
