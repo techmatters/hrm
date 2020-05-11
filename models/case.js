@@ -13,15 +13,15 @@ module.exports = (sequelize, DataTypes) => {
 
   Case.afterUpdate('auditCaseHook', async (caseInstance, options) => {
     const contacts = await caseInstance.getContacts();
-    const contactsId = contacts.map(contact => contact.dataValues.id);
+    const contactIds = contacts.map(contact => contact.dataValues.id);
     const previousValue = {
       // eslint-disable-next-line no-underscore-dangle
       ...caseInstance._previousDataValues,
-      contacts: contactsId,
+      contacts: contactIds,
     };
     const newValue = {
       ...caseInstance.dataValues,
-      contacts: contactsId,
+      contacts: contactIds,
     };
     const caseAuditRecord = {
       caseId: newValue.id,
