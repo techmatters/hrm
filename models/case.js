@@ -1,3 +1,18 @@
+const createCaseAudit = async (CaseAudit, previousValue, newValue, transaction) => {
+  const caseAuditRecord = {
+    caseId: newValue.id,
+    twilioWorkerId: newValue.twilioWorkerId,
+    previousValue,
+    newValue,
+  };
+  await CaseAudit.create(caseAuditRecord, { transaction });
+};
+
+const getContactIds = async caseInstance => {
+  const contacts = await caseInstance.getContacts();
+  return contacts.map(contact => contact.dataValues.id);
+};
+
 module.exports = (sequelize, DataTypes) => {
   const Case = sequelize.define('Case', {
     status: DataTypes.STRING,
@@ -11,10 +26,21 @@ module.exports = (sequelize, DataTypes) => {
     Case.hasMany(models.CaseAudit, { foreignKey: 'caseId' });
   };
 
+  Case.afterCreate('auditCaseHook', async (caseInstance, options) => {
+    const { CaseAudit } = caseInstance.sequelize.models;
+    const contactIds = await getContactIds(caseInstance);
+    const previousValue = null;
+    const newValue = {
+      ...caseInstance.dataValues,
+      contacts: contactIds,
+    };
+
+    await createCaseAudit(CaseAudit, previousValue, newValue, options.transaction);
+  });
+
   Case.afterUpdate('auditCaseHook', async (caseInstance, options) => {
-    const contacts = await caseInstance.getContacts();
-    const contactIds = contacts.map(contact => contact.dataValues.id);
-    console.log(caseInstance.previous());
+    const { CaseAudit } = caseInstance.sequelize.models;
+    const contactIds = await getContactIds(caseInstance);
     const previousValue = {
       ...caseInstance.dataValues,
       ...caseInstance.previous(),
@@ -24,16 +50,8 @@ module.exports = (sequelize, DataTypes) => {
       ...caseInstance.dataValues,
       contacts: contactIds,
     };
-    const caseAuditRecord = {
-      caseId: newValue.id,
-      twilioWorkerId: newValue.twilioWorkerId,
-      previousValue,
-      newValue,
-    };
-    const { CaseAudit } = caseInstance.sequelize.models;
-    await CaseAudit.create(caseAuditRecord, {
-      transaction: options.transaction,
-    });
+
+    await createCaseAudit(CaseAudit, previousValue, newValue, options.transaction);
   });
 
   return Case;
