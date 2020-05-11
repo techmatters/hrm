@@ -1,11 +1,10 @@
-/* eslint-disable no-underscore-dangle */
 const Sequelize = require('sequelize');
 
 const { Op } = Sequelize;
 
 const getPreviousAndNewCases = async (contactInstance, transaction) => {
   const { Case } = contactInstance.sequelize.models;
-  const previousCaseId = contactInstance._previousDataValues.caseId;
+  const previousCaseId = contactInstance.previous('caseId');
   const newCaseId = contactInstance.dataValues.caseId;
 
   const casesFromDB = await Case.findAll(
@@ -76,8 +75,7 @@ module.exports = (sequelize, DataTypes) => {
   Contact.associate = models => Contact.belongsTo(models.Case, { foreignKey: 'caseId' });
 
   Contact.afterUpdate('auditCaseHook', async (contactInstance, options) => {
-    const noCaseIdChange =
-      contactInstance._previousDataValues.caseId === contactInstance.dataValues.caseId;
+    const noCaseIdChange = contactInstance.previous('caseId') === contactInstance.dataValues.caseId;
 
     if (noCaseIdChange) return;
 
