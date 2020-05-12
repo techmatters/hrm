@@ -46,18 +46,18 @@ const createCaseAudit = async (
     newValue,
   };
 
-  CaseAudit.create(caseAuditRecord, { transaction });
+  await CaseAudit.create(caseAuditRecord, { transaction });
 };
 
 const auditDisconnectContact = async (contactInstance, caseFromDB, transaction) => {
   const initialContactsFunction = (currentContactsId, id) => [...currentContactsId, id];
-  createCaseAudit(initialContactsFunction, contactInstance, caseFromDB, transaction);
+  await createCaseAudit(initialContactsFunction, contactInstance, caseFromDB, transaction);
 };
 
 const auditConnectContact = async (contactInstance, caseFromDB, transaction) => {
   const initialContactsFunction = (currentContactsId, id) =>
     currentContactsId.filter(e => e !== id);
-  createCaseAudit(initialContactsFunction, contactInstance, caseFromDB, transaction);
+  await createCaseAudit(initialContactsFunction, contactInstance, caseFromDB, transaction);
 };
 
 module.exports = (sequelize, DataTypes) => {
@@ -85,8 +85,8 @@ module.exports = (sequelize, DataTypes) => {
     if (noCaseIdChange) return;
 
     const [previousCase, newCase] = await getPreviousAndNewCases(contactInstance);
-    auditDisconnectContact(contactInstance, previousCase, options.transaction);
-    auditConnectContact(contactInstance, newCase, options.transaction);
+    await auditDisconnectContact(contactInstance, previousCase, options.transaction);
+    await auditConnectContact(contactInstance, newCase, options.transaction);
   });
 
   return Contact;

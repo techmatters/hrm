@@ -7,33 +7,42 @@ const mocks = require('./mocks');
 const server = app.listen();
 const request = supertest.agent(server);
 
-const { contact1, contact2, broken1, broken2, another1, another2, noHelpline, case1 } = mocks;
+const {
+  contact1,
+  contact2,
+  broken1,
+  broken2,
+  another1,
+  another2,
+  noHelpline,
+  case1,
+  case2,
+} = mocks;
 
 const headers = {
   'Content-Type': 'application/json',
   Authorization: `Basic ${Buffer.from(process.env.API_KEY).toString('base64')}`,
 };
 
-const { Contact, Case } = models;
+const { Contact, Case, CaseAudit } = models;
 
-beforeAll(async done => {
-  // log('\n Test started \n');
-  await Contact.destroy({
-    where: {
-      [Sequelize.Op.or]: [
-        { twilioWorkerId: 'fake-worker-123' },
-        { twilioWorkerId: 'fake-worker-987' },
-      ],
+const caseAuditsQuery = {
+  where: {
+    twilioWorkerId: {
+      [Sequelize.Op.in]: ['fake-worker-123', 'fake-worker-129', 'fake-worker-987'],
     },
-  });
+  },
+};
 
-  done();
+beforeAll(async () => {
+  await Contact.destroy(caseAuditsQuery);
 });
 
 afterAll(async done => {
   server.close(done);
-  // log('\n Test Finished \n');
 });
+
+afterEach(async () => CaseAudit.destroy(caseAuditsQuery));
 
 describe('/contacts route', () => {
   const route = '/contacts';
@@ -278,19 +287,23 @@ describe('/contacts route', () => {
   describe('/contacts/:contactId/connectToCase route', () => {
     let createdContact;
     let createdCase;
+    let anotherCreatedCase;
     let existingContactId;
     let nonExistingContactId;
     let existingCaseId;
+    let anotherExistingCaseId;
     let nonExistingCaseId;
 
     beforeEach(async () => {
       createdContact = await Contact.create(contact1);
       createdCase = await Case.create(case1);
+      anotherCreatedCase = await Case.create(case2);
       const contactToBeDeleted = await Contact.create(contact1);
       const caseToBeDeleted = await Case.create(case1);
 
       existingContactId = createdContact.id;
       existingCaseId = createdCase.id;
+      anotherExistingCaseId = anotherCreatedCase.id;
       nonExistingContactId = contactToBeDeleted.id;
       nonExistingCaseId = caseToBeDeleted.id;
 
@@ -299,8 +312,9 @@ describe('/contacts route', () => {
     });
 
     afterEach(async () => {
-      createdContact.destroy();
-      createdCase.destroy();
+      await createdContact.destroy();
+      await createdCase.destroy();
+      await anotherCreatedCase.destroy();
     });
 
     describe('PUT', () => {
@@ -321,6 +335,58 @@ describe('/contacts route', () => {
 
         expect(response.status).toBe(200);
         expect(response.body.caseId).toBe(existingCaseId);
+      });
+
+      test('should create create a CaseAudit', async () => {
+        const caseAuditPreviousCount = await CaseAudit.count(caseAuditsQuery);
+        const response = await request
+          .put(subRoute(existingContactId))
+          .set(headers)
+          .send({ caseId: existingCaseId });
+
+        const caseAudits = await CaseAudit.findAll(caseAuditsQuery);
+        const byGreaterId = (a, b) => b.id - a.id;
+        const lastCaseAudit = caseAudits.sort(byGreaterId)[0];
+        const { previousValue, newValue } = lastCaseAudit;
+
+        expect(response.status).toBe(200);
+        expect(caseAudits).toHaveLength(caseAuditPreviousCount + 1);
+        expect(previousValue.contacts).not.toContain(existingContactId);
+        expect(newValue.contacts).toContain(existingContactId);
+      });
+
+      test('should create create two CaseAudit', async () => {
+        await request
+          .put(subRoute(existingContactId))
+          .set(headers)
+          .send({ caseId: existingCaseId });
+
+        const caseAuditPreviousCount = await CaseAudit.count(caseAuditsQuery);
+
+        const response = await request
+          .put(subRoute(existingContactId))
+          .set(headers)
+          .send({ caseId: anotherExistingCaseId });
+
+        const caseAudits = await CaseAudit.findAll(caseAuditsQuery);
+        const byGreaterId = (a, b) => b.id - a.id;
+        const firstCaseAudit = caseAudits.sort(byGreaterId)[0];
+        const secondCaseAudit = caseAudits.sort(byGreaterId)[1];
+        const {
+          previousValue: previousValueFromFirst,
+          newValue: newValueFromFirst,
+        } = firstCaseAudit;
+        const {
+          previousValue: previousValueFromSecond,
+          newValue: newValueFromSecond,
+        } = secondCaseAudit;
+
+        expect(response.status).toBe(200);
+        expect(caseAudits).toHaveLength(caseAuditPreviousCount + 2);
+        expect(previousValueFromFirst.contacts).not.toContain(existingContactId);
+        expect(newValueFromFirst.contacts).toContain(existingContactId);
+        expect(previousValueFromSecond.contacts).toContain(existingContactId);
+        expect(newValueFromSecond.contacts).not.toContain(existingContactId);
       });
 
       describe('use non-existent contactId', () => {
