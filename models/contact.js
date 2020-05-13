@@ -50,13 +50,13 @@ const createCaseAudit = async (
 };
 
 const auditDisconnectContact = async (contactInstance, caseFromDB, transaction) => {
-  const initialContactsFunction = (currentContactsId, id) => [...currentContactsId, id];
+  const initialContactsFunction = (currentContactIds, id) => [...currentContactIds, id];
   await createCaseAudit(initialContactsFunction, contactInstance, caseFromDB, transaction);
 };
 
 const auditConnectContact = async (contactInstance, caseFromDB, transaction) => {
-  const initialContactsFunction = (currentContactsId, id) =>
-    currentContactsId.filter(e => e !== id);
+  const initialContactsFunction = (currentContactIds, id) =>
+    currentContactIds.filter(e => e !== id);
   await createCaseAudit(initialContactsFunction, contactInstance, caseFromDB, transaction);
 };
 
