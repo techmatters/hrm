@@ -178,6 +178,7 @@ const case1 = {
   info: {
     notes: 'Child with covid-19',
   },
+  twilioWorkerId: 'fake-worker-129',
 };
 
 const case2 = {
@@ -186,6 +187,7 @@ const case2 = {
   info: {
     notes: 'Refugee child',
   },
+  twilioWorkerId: 'fake-worker-129',
 };
 
 module.exports = {

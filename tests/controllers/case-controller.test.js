@@ -16,6 +16,7 @@ test('create case', async () => {
     helpline: 'helpline',
     status: 'open',
     info: { notes: 'Child with covid-19' },
+    twilioWorkerId: 'twilio-worker-id',
   };
 
   await CaseController.createCase(caseToBeCreated);
@@ -30,6 +31,7 @@ test('get existing case', async () => {
     helpline: 'helpline',
     status: 'open',
     info: { notes: 'Child with covid-19' },
+    twilioWorkerId: 'twilio-worker-id',
   };
   const findByPkSpy = jest.spyOn(MockCase, 'findByPk').mockImplementation(() => caseFromDB);
 
@@ -54,6 +56,7 @@ test('list cases', async () => {
       helpline: 'helpline',
       status: 'open',
       info: { notes: 'Child with covid-19' },
+      twilioWorkerId: 'twilio-worker-id',
     },
   ];
   const findAllSpy = jest.spyOn(MockCase, 'findAll').mockImplementation(() => casesFromDB);
@@ -79,6 +82,7 @@ test('update existing case', async () => {
     helpline: 'helpline',
     status: 'open',
     info: { notes: 'Child with covid-19' },
+    twilioWorkerId: 'twilio-worker-id',
     update: jest.fn(),
   };
   jest.spyOn(MockCase, 'findByPk').mockImplementation(() => caseFromDB);

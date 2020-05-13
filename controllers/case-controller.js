@@ -6,6 +6,7 @@ const CaseController = Case => {
       info: body.info,
       helpline: body.helpline,
       status: body.status || 'open',
+      twilioWorkerId: body.twilioWorkerId,
     };
 
     const createdCase = await Case.create(caseRecord);

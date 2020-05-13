@@ -1,4 +1,5 @@
 const supertest = require('supertest');
+const Sequelize = require('sequelize');
 const app = require('../../app');
 const models = require('../../models');
 const mocks = require('./mocks');
@@ -13,7 +14,25 @@ const headers = {
   Authorization: `Basic ${Buffer.from(process.env.API_KEY).toString('base64')}`,
 };
 
-const { Case } = models;
+const { Case, CaseAudit } = models;
+
+const caseAuditsQuery = {
+  where: {
+    twilioWorkerId: {
+      [Sequelize.Op.in]: ['fake-worker-123', 'fake-worker-129'],
+    },
+  },
+};
+
+beforeAll(async () => {
+  await CaseAudit.destroy(caseAuditsQuery);
+});
+
+afterAll(done => {
+  server.close(done);
+});
+
+afterEach(async () => CaseAudit.destroy(caseAuditsQuery));
 
 describe('/cases route', () => {
   const route = '/cases';
@@ -51,6 +70,26 @@ describe('/cases route', () => {
       expect(response.body.helpline).toBe(case1.helpline);
       expect(response.body.info).toStrictEqual(case1.info);
     });
+    test('should create a CaseAudit', async () => {
+      const caseAuditPreviousCount = await CaseAudit.count(caseAuditsQuery);
+      const response = await request
+        .post(route)
+        .set(headers)
+        .send(case1);
+
+      const caseAudits = await CaseAudit.findAll(caseAuditsQuery);
+      const byGreaterId = (a, b) => b.id - a.id;
+      const lastCaseAudit = caseAudits.sort(byGreaterId)[0];
+      const { previousValue, newValue } = lastCaseAudit;
+
+      expect(response.status).toBe(200);
+      expect(caseAudits).toHaveLength(caseAuditPreviousCount + 1);
+      expect(previousValue).toBeNull();
+      expect(newValue.info).toStrictEqual(case1.info);
+      expect(newValue.helpline).toStrictEqual(case1.helpline);
+      expect(newValue.status).toStrictEqual(case1.status);
+      expect(newValue.twilioWorkerId).toStrictEqual(case1.twilioWorkerId);
+    });
   });
 
   describe('/cases/:id route', () => {
@@ -65,12 +104,10 @@ describe('/cases route', () => {
 
         const caseToBeDeleted = await Case.create(case2);
         nonExistingCaseId = caseToBeDeleted.id;
-        caseToBeDeleted.destroy();
+        await caseToBeDeleted.destroy();
       });
 
-      afterEach(async () => {
-        await createdCase.destroy();
-      });
+      afterEach(async () => createdCase.destroy());
 
       test('should return 401', async () => {
         const response = await request.put(subRoute(createdCase.id)).send(case1);
@@ -87,6 +124,32 @@ describe('/cases route', () => {
 
         expect(response.status).toBe(200);
         expect(response.body.status).toBe(status);
+      });
+      test('should create a CaseAudit', async () => {
+        const caseAuditPreviousCount = await CaseAudit.count(caseAuditsQuery);
+        const status = 'closed';
+        const response = await request
+          .put(subRoute(createdCase.id))
+          .set(headers)
+          .send({ status });
+
+        const caseAudits = await CaseAudit.findAll(caseAuditsQuery);
+        const byGreaterId = (a, b) => b.id - a.id;
+        const lastCaseAudit = caseAudits.sort(byGreaterId)[0];
+        const { previousValue, newValue } = lastCaseAudit;
+
+        expect(response.status).toBe(200);
+        expect(caseAudits).toHaveLength(caseAuditPreviousCount + 1);
+
+        expect(previousValue.info).toStrictEqual(case1.info);
+        expect(previousValue.helpline).toStrictEqual(case1.helpline);
+        expect(previousValue.status).toStrictEqual(case1.status);
+        expect(previousValue.twilioWorkerId).toStrictEqual(case1.twilioWorkerId);
+
+        expect(newValue.info).toStrictEqual(case1.info);
+        expect(newValue.helpline).toStrictEqual(case1.helpline);
+        expect(newValue.status).toStrictEqual(status);
+        expect(newValue.twilioWorkerId).toStrictEqual(case1.twilioWorkerId);
       });
       test('should return 404', async () => {
         const status = 'closed';
