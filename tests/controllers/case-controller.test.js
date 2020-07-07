@@ -52,13 +52,34 @@ test('list cases', async () => {
   const caseId = 1;
   const casesFromDB = [
     {
-      id: caseId,
-      helpline: 'helpline',
-      status: 'open',
-      info: { notes: 'Child with covid-19' },
-      twilioWorkerId: 'twilio-worker-id',
+      dataValues: {
+        id: caseId,
+        helpline: 'helpline',
+        status: 'open',
+        info: { notes: 'Child with covid-19' },
+        twilioWorkerId: 'twilio-worker-id',
+      },
+      getContacts() {
+        return [
+          {
+            dataValues: {
+              rawJson: {
+                childInformation: { name: { firstName: 'name', lastName: 'last' } },
+                caseInformation: { callSummary: 'summary' },
+              },
+            },
+          },
+        ];
+      },
     },
   ];
+
+  const expectedCases = casesFromDB.map(caseItem => {
+    const { dataValues } = caseItem;
+    const newItem = { ...dataValues, childName: 'name last', callSummary: 'summary' };
+    return newItem;
+  });
+
   const findAllSpy = jest.spyOn(MockCase, 'findAll').mockImplementation(() => casesFromDB);
   const queryParams = { helpline: 'helpline' };
 
@@ -72,7 +93,11 @@ test('list cases', async () => {
   };
 
   expect(findAllSpy).toHaveBeenCalledWith(expectedQueryObject);
-  expect(result).toStrictEqual(casesFromDB);
+  console.log('expectedCases');
+  console.log(expectedCases);
+  console.log('result');
+  console.log(result);
+  expect(result).toStrictEqual(expectedCases);
 });
 
 test('update existing case', async () => {
