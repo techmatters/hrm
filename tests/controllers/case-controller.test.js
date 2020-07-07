@@ -67,7 +67,10 @@ test('list cases (with 1st contact)', async () => {
                 childInformation: { name: { firstName: 'name', lastName: 'last' } },
                 caseInformation: {
                   callSummary: 'summary',
-                  categories: { some: 'some', thing: 'thing' },
+                  categories: {
+                    cat1: { sub1: false, sub2: true },
+                    cat2: { sub2: false, sub4: false },
+                  },
                 },
               },
             },
@@ -83,7 +86,7 @@ test('list cases (with 1st contact)', async () => {
       ...dataValues,
       childName: 'name last',
       callSummary: 'summary',
-      categories: { some: 'some', thing: 'thing' },
+      categories: ['sub2'],
     };
     return newItem;
   });
@@ -123,7 +126,7 @@ test('list cases (without contacts)', async () => {
 
   const expectedCases = casesFromDB.map(caseItem => {
     const { dataValues } = caseItem;
-    const newItem = { ...dataValues, childName: '', callSummary: '', categories: null };
+    const newItem = { ...dataValues, childName: '', callSummary: '', categories: [] };
     return newItem;
   });
 
