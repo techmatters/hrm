@@ -62,7 +62,6 @@ const auditConnectContact = async (contactInstance, caseFromDB, transaction) => 
 
 module.exports = (sequelize, DataTypes) => {
   const Contact = sequelize.define('Contact', {
-    taskId: DataTypes.STRING,
     rawJson: DataTypes.JSON,
     queueName: DataTypes.STRING,
     twilioWorkerId: DataTypes.STRING,
