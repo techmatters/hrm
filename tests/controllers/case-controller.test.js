@@ -48,7 +48,7 @@ test('get non existing case', async () => {
   await expect(CaseController.getCase(nonExistingCaseId)).rejects.toThrow();
 });
 
-test('list cases', async () => {
+test('list cases (with 1st contact)', async () => {
   const caseId = 1;
   const casesFromDB = [
     {
@@ -93,10 +93,45 @@ test('list cases', async () => {
   };
 
   expect(findAllSpy).toHaveBeenCalledWith(expectedQueryObject);
-  console.log('expectedCases');
-  console.log(expectedCases);
-  console.log('result');
-  console.log(result);
+  expect(result).toStrictEqual(expectedCases);
+});
+
+test('list cases (without contacts)', async () => {
+  const caseId = 1;
+  const casesFromDB = [
+    {
+      dataValues: {
+        id: caseId,
+        helpline: 'helpline',
+        status: 'open',
+        info: { notes: 'Child with covid-19' },
+        twilioWorkerId: 'twilio-worker-id',
+      },
+      getContacts() {
+        return [];
+      },
+    },
+  ];
+
+  const expectedCases = casesFromDB.map(caseItem => {
+    const { dataValues } = caseItem;
+    const newItem = { ...dataValues, childName: '', callSummary: '' };
+    return newItem;
+  });
+
+  const findAllSpy = jest.spyOn(MockCase, 'findAll').mockImplementation(() => casesFromDB);
+  const queryParams = { helpline: 'helpline' };
+
+  const result = await CaseController.listCases(queryParams);
+
+  const expectedQueryObject = {
+    order: [['createdAt', 'DESC']],
+    where: {
+      helpline: 'helpline',
+    },
+  };
+
+  expect(findAllSpy).toHaveBeenCalledWith(expectedQueryObject);
   expect(result).toStrictEqual(expectedCases);
 });
 

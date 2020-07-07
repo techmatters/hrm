@@ -35,8 +35,11 @@ const CaseController = Case => {
     const cases = await Case.findAll(queryObject);
     const withContactInfo = await Promise.all(
       cases.map(async caseItem => {
-        const fstContact = (await caseItem.getContacts())[0].dataValues;
-        const { childInformation, caseInformation } = fstContact.rawJson;
+        const fstContact = (await caseItem.getContacts())[0];
+
+        if (!fstContact) return { ...caseItem.dataValues, childName: '', callSummary: '' };
+
+        const { childInformation, caseInformation } = fstContact.dataValues.rawJson;
         const childName = `${childInformation.name.firstName} ${childInformation.name.lastName}`;
         const { callSummary } = caseInformation;
         return { ...caseItem.dataValues, childName, callSummary };
