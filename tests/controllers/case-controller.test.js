@@ -65,7 +65,10 @@ test('list cases (with 1st contact)', async () => {
             dataValues: {
               rawJson: {
                 childInformation: { name: { firstName: 'name', lastName: 'last' } },
-                caseInformation: { callSummary: 'summary' },
+                caseInformation: {
+                  callSummary: 'summary',
+                  categories: { some: 'some', thing: 'thing' },
+                },
               },
             },
           },
@@ -76,7 +79,12 @@ test('list cases (with 1st contact)', async () => {
 
   const expectedCases = casesFromDB.map(caseItem => {
     const { dataValues } = caseItem;
-    const newItem = { ...dataValues, childName: 'name last', callSummary: 'summary' };
+    const newItem = {
+      ...dataValues,
+      childName: 'name last',
+      callSummary: 'summary',
+      categories: { some: 'some', thing: 'thing' },
+    };
     return newItem;
   });
 
@@ -115,7 +123,7 @@ test('list cases (without contacts)', async () => {
 
   const expectedCases = casesFromDB.map(caseItem => {
     const { dataValues } = caseItem;
-    const newItem = { ...dataValues, childName: '', callSummary: '' };
+    const newItem = { ...dataValues, childName: '', callSummary: '', categories: null };
     return newItem;
   });
 

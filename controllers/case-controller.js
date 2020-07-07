@@ -37,12 +37,13 @@ const CaseController = Case => {
       cases.map(async caseItem => {
         const fstContact = (await caseItem.getContacts())[0];
 
-        if (!fstContact) return { ...caseItem.dataValues, childName: '', callSummary: '' };
+        if (!fstContact)
+          return { ...caseItem.dataValues, childName: '', callSummary: '', categories: null };
 
         const { childInformation, caseInformation } = fstContact.dataValues.rawJson;
         const childName = `${childInformation.name.firstName} ${childInformation.name.lastName}`;
-        const { callSummary } = caseInformation;
-        return { ...caseItem.dataValues, childName, callSummary };
+        const { callSummary, categories } = caseInformation;
+        return { ...caseItem.dataValues, childName, callSummary, categories };
       }),
     );
 
