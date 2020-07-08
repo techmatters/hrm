@@ -175,7 +175,6 @@ components:
     Contact:
       type: object
       required:
-        - taskId
         - reservationId
         - rawJson
         - queueName
@@ -190,9 +189,6 @@ components:
           type: integer
           format: int64
           example: 1565827981000
-        taskId:
-          type: string
-          example: WTc8145e01d854f131d6925019ae38231f
         reservationId:
           type: string
           example: WS17ce7c9cf654a4b240031ff7b17e7d93
