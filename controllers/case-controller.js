@@ -26,16 +26,20 @@ const CaseController = Case => {
   };
 
   const listCases = async query => {
+    const limit = query.limit && parseInt(query.limit, 10);
+    const offset = query.offset && parseInt(query.offset, 10);
     const queryObject = {
       order: [['createdAt', 'DESC']],
       where: {
         helpline: query.helpline || '',
       },
+      limit,
+      offset,
     };
 
-    const cases = await Case.findAll(queryObject);
-    const withContactInfo = await Promise.all(
-      cases.map(async caseItem => {
+    const { count, rows } = await Case.findAndCountAll(queryObject);
+    const cases = await Promise.all(
+      rows.map(async caseItem => {
         const fstContact = (await caseItem.getContacts())[0];
 
         if (!fstContact)
@@ -49,7 +53,7 @@ const CaseController = Case => {
       }),
     );
 
-    return withContactInfo;
+    return { cases, count };
   };
 
   const updateCase = async (id, body) => {
