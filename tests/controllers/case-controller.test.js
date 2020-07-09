@@ -91,11 +91,15 @@ test('list cases (with 1st contact)', async () => {
     return newItem;
   });
 
-  const findAllSpy = jest.spyOn(MockCase, 'findAll').mockImplementation(() => casesFromDB);
+  const expected = { cases: expectedCases, count: expectedCases.length };
+
+  const findAndCountAllSpy = jest
+    .spyOn(MockCase, 'findAndCountAll')
+    .mockImplementation(() => ({ rows: casesFromDB, count: casesFromDB.length }));
   const queryParams = { helpline: 'helpline' };
 
   const result = await CaseController.listCases(queryParams);
-
+  console.log(result);
   const expectedQueryObject = {
     order: [['createdAt', 'DESC']],
     where: {
@@ -103,8 +107,8 @@ test('list cases (with 1st contact)', async () => {
     },
   };
 
-  expect(findAllSpy).toHaveBeenCalledWith(expectedQueryObject);
-  expect(result).toStrictEqual(expectedCases);
+  expect(findAndCountAllSpy).toHaveBeenCalledWith(expectedQueryObject);
+  expect(result).toStrictEqual(expected);
 });
 
 test('list cases (without contacts)', async () => {
@@ -130,7 +134,11 @@ test('list cases (without contacts)', async () => {
     return newItem;
   });
 
-  const findAllSpy = jest.spyOn(MockCase, 'findAll').mockImplementation(() => casesFromDB);
+  const expected = { cases: expectedCases, count: expectedCases.length };
+
+  const findAndCountAllSpy = jest
+    .spyOn(MockCase, 'findAndCountAll')
+    .mockImplementation(() => ({ rows: casesFromDB, count: casesFromDB.length }));
   const queryParams = { helpline: 'helpline' };
 
   const result = await CaseController.listCases(queryParams);
@@ -142,8 +150,8 @@ test('list cases (without contacts)', async () => {
     },
   };
 
-  expect(findAllSpy).toHaveBeenCalledWith(expectedQueryObject);
-  expect(result).toStrictEqual(expectedCases);
+  expect(findAndCountAllSpy).toHaveBeenCalledWith(expectedQueryObject);
+  expect(result).toStrictEqual(expected);
 });
 
 test('update existing case', async () => {
