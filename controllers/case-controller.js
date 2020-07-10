@@ -26,7 +26,7 @@ const CaseController = Case => {
   };
 
   const listCases = async query => {
-    const limit = query.limit && parseInt(query.limit, 10);
+    const limit = (query.limit && parseInt(query.limit, 10)) || 1000;
     const offset = query.offset && parseInt(query.offset, 10);
     const queryObject = {
       order: [['createdAt', 'DESC']],
