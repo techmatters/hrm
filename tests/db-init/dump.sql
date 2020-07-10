@@ -104,7 +104,6 @@ ALTER SEQUENCE public."Cases_id_seq" OWNED BY public."Cases".id;
 
 CREATE TABLE public."Contacts" (
     id integer NOT NULL,
-    "taskId" character varying(255),
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL,
     "rawJson" jsonb,
