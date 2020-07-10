@@ -1,4 +1,5 @@
 const createError = require('http-errors');
+const { retrieveCategories } = require('./helpers');
 
 const CaseController = Case => {
   const createCase = async body => {
@@ -33,7 +34,22 @@ const CaseController = Case => {
     };
 
     const cases = await Case.findAll(queryObject);
-    return cases;
+    const withContactInfo = await Promise.all(
+      cases.map(async caseItem => {
+        const fstContact = (await caseItem.getContacts())[0];
+
+        if (!fstContact)
+          return { ...caseItem.dataValues, childName: '', callSummary: '', categories: [] };
+
+        const { childInformation, caseInformation } = fstContact.dataValues.rawJson;
+        const childName = `${childInformation.name.firstName} ${childInformation.name.lastName}`;
+        const { callSummary } = caseInformation;
+        const categories = retrieveCategories(caseInformation.categories);
+        return { ...caseItem.dataValues, childName, callSummary, categories };
+      }),
+    );
+
+    return withContactInfo;
   };
 
   const updateCase = async (id, body) => {
