@@ -5,7 +5,16 @@
  */
 const retrieveCategories = categories => {
   const cats = Object.entries(categories);
-  const subcats = cats.flatMap(([, subs]) => Object.entries(subs));
+  const subcats = cats.flatMap(([cat, subs]) => {
+    const subsWithCat = {
+      ...subs,
+      [`Unspecified/Other - ${cat}`]: subs['Unspecified/Other'],
+    };
+
+    delete subsWithCat['Unspecified/Other'];
+
+    return Object.entries(subsWithCat);
+  });
 
   const flattened = subcats.map(([subcat, bool]) => {
     if (bool) return subcat;
