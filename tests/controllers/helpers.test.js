@@ -67,5 +67,5 @@ describe('test retrieveCategories', () => {
 
     expect(result).toHaveLength(1);
     expect(result[0]).toBe('Unspecified/Other - category1');
-  })
+  });
 });
