@@ -4,6 +4,8 @@
  * @returns {string[]} returns an array conaining the tags of the contact as strings (if any)
  */
 const retrieveCategories = categories => {
+  if (!categories) return [];
+
   const cats = Object.entries(categories);
   const subcats = cats.flatMap(([cat, subs]) => {
     const subsWithCat = {
