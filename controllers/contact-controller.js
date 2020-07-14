@@ -4,6 +4,7 @@ const parseISO = require('date-fns/parseISO');
 const startOfDay = require('date-fns/startOfDay');
 const endOfDay = require('date-fns/endOfDay');
 const isValid = require('date-fns/isValid');
+const { retrieveCategories } = require('./helpers');
 
 const { Op } = Sequelize;
 
@@ -232,9 +233,8 @@ function convertContactsToSearchResults(contacts) {
       const dateTime = contact.createdAt;
       const name = `${contact.rawJson.childInformation.name.firstName} ${contact.rawJson.childInformation.name.lastName}`;
       const customerNumber = contact.number;
-      const { callType } = contact.rawJson;
-      // TODO (Gian): retrieveTags must be done here instead than in flex plugin
-      const categories = 'TBD';
+      const { callType, caseInformation } = contact.rawJson;
+      const categories = retrieveCategories(caseInformation.categories);
       const counselor = contact.twilioWorkerId;
       const notes = contact.rawJson.caseInformation.callSummary;
       const { channel, conversationDuration } = contact;
