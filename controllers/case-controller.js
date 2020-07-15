@@ -47,7 +47,12 @@ const CaseController = Case => {
         const fstContact = (await caseItem.getContacts())[0];
 
         if (!fstContact)
-          return { ...caseItem.dataValues, childName: '', callSummary: '', categories: [] };
+          return {
+            ...caseItem.dataValues,
+            childName: '',
+            callSummary: '',
+            categories: retrieveCategories(undefined), // we call the function here so the return value allways matches
+          };
 
         const { childInformation, caseInformation } = fstContact.dataValues.rawJson;
         const childName = `${childInformation.name.firstName} ${childInformation.name.lastName}`;
