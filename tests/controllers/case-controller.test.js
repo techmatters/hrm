@@ -183,7 +183,7 @@ test('list cases (with 1st contact, no limit/offset)', async () => {
       ...dataValues,
       childName: 'name last',
       callSummary: 'summary',
-      categories: ['sub2'],
+      categories: { cat2: ['sub2'] },
     };
     return newItem;
   });
@@ -247,7 +247,7 @@ test('list cases (with 1st contact, with limit/offset)', async () => {
       ...dataValues,
       childName: 'name last',
       callSummary: 'summary',
-      categories: ['sub2'],
+      categories: { cat1: ['sub2'] },
     };
     return newItem;
   });
@@ -292,7 +292,7 @@ test('list cases (without contacts)', async () => {
 
   const expectedCases = casesFromDB.map(caseItem => {
     const { dataValues } = caseItem;
-    const newItem = { ...dataValues, childName: '', callSummary: '', categories: [] };
+    const newItem = { ...dataValues, childName: '', callSummary: '', categories: {} };
     return newItem;
   });
 

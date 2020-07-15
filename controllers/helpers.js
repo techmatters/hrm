@@ -1,34 +1,32 @@
 /* eslint-disable import/prefer-default-export */
+
+/**
+ * @param {string[]} accumulator
+ * @param {[string, boolean]} currentValue
+ */
+const subcatsReducer = (accumulator, [subcat, bool]) =>
+  bool ? [...accumulator, subcat] : accumulator;
+
+/**
+ * @param {{ [category: string]: string[] }} accumulator
+ * @param {[string, { [subcategory: string]: boolean }]} currentValue
+ */
+const catsReducer = (accumulator, [cat, subcats]) => {
+  const subcatsList = Object.entries(subcats).reduce(subcatsReducer, []);
+
+  if (!subcatsList.length) return accumulator;
+
+  return { ...accumulator, [cat]: subcatsList };
+};
+
 /**
  * @param {{ [category: string]: { [subcategory: string]: boolean } }} categories categories object
- * @returns {string[]} returns an array conaining the tags of the contact as strings (if any)
+ * @returns {{ [category: string]: string[] }} returns an object containing each truthy subcategory under the category name
  */
 const retrieveCategories = categories => {
-  if (!categories) return [];
+  if (!categories) return {};
 
-  const cats = Object.entries(categories);
-  const subcats = cats.flatMap(([cat, subs]) => {
-    const subsWithCat = {
-      ...subs,
-      [`Unspecified/Other - ${cat}`]: subs['Unspecified/Other'],
-    };
-
-    delete subsWithCat['Unspecified/Other'];
-
-    return Object.entries(subsWithCat);
-  });
-
-  const flattened = subcats.map(([subcat, bool]) => {
-    if (bool) return subcat;
-    return null;
-  });
-
-  const tags = flattened.reduce((acc, curr) => {
-    if (curr) return [...acc, curr];
-    return acc;
-  }, []);
-
-  return tags;
+  return Object.entries(categories).reduce(catsReducer, {});
 };
 
 module.exports = {
