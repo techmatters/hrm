@@ -183,7 +183,7 @@ test('list cases (with 1st contact, no limit/offset)', async () => {
       ...dataValues,
       childName: 'name last',
       callSummary: 'summary',
-      categories: { cat2: ['sub2'] },
+      categories: { cat1: ['sub2'] },
     };
     return newItem;
   });
