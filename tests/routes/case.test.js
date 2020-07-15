@@ -48,7 +48,7 @@ describe('/cases route', () => {
       const response = await request.get(route).set(headers);
 
       expect(response.status).toBe(200);
-      expect(response.body).toStrictEqual([]);
+      expect(response.body).toStrictEqual({ cases: [], count: 0 });
     });
   });
 
