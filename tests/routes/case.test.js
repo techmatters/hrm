@@ -161,5 +161,45 @@ describe('/cases route', () => {
         expect(response.status).toBe(404);
       });
     });
+
+    describe('DELETE', () => {
+      let createdCase;
+      let nonExistingCaseId;
+      let subRoute;
+
+      beforeEach(async () => {
+        createdCase = await Case.create(case1);
+        subRoute = id => `/cases/${id}`;
+
+        const caseToBeDeleted = await Case.create(case2);
+        nonExistingCaseId = caseToBeDeleted.id;
+        await caseToBeDeleted.destroy();
+      });
+
+      afterEach(async () => createdCase.destroy());
+
+      test('should return 401', async () => {
+        const response = await request.delete(subRoute(createdCase.id)).send();
+
+        expect(response.status).toBe(401);
+        expect(response.body.error).toBe('Authorization failed');
+      });
+      test('should return 200', async () => {
+        const response = await request
+          .delete(subRoute(createdCase.id))
+          .set(headers)
+          .send();
+
+        expect(response.status).toBe(200);
+      });
+      test('should return 404', async () => {
+        const response = await request
+          .delete(subRoute(nonExistingCaseId.id))
+          .set(headers)
+          .send();
+
+        expect(response.status).toBe(404);
+      });
+    });
   });
 });

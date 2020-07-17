@@ -350,3 +350,28 @@ test('update non existing case', async () => {
 
   await expect(CaseController.updateCase(nonExsitingCaseId, updateCaseObject)).rejects.toThrow();
 });
+
+test('delete existing case', async () => {
+  const caseId = 1;
+  const caseFromDB = {
+    id: caseId,
+    helpline: 'helpline',
+    status: 'open',
+    info: { notes: 'Child with covid-19' },
+    twilioWorkerId: 'twilio-worker-id',
+    destroy: jest.fn(),
+  };
+  jest.spyOn(MockCase, 'findByPk').mockImplementation(() => caseFromDB);
+  const destroySpy = jest.spyOn(caseFromDB, 'destroy');
+
+  await CaseController.deleteCase(caseId);
+
+  expect(destroySpy).toHaveBeenCalled();
+});
+
+test('delete non existing case', async () => {
+  const nonExsitingCaseId = 1;
+  jest.spyOn(MockCase, 'findByPk').mockImplementation(() => null);
+
+  await expect(CaseController.deleteCase(nonExsitingCaseId)).rejects.toThrow();
+});
