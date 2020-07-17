@@ -71,7 +71,12 @@ const CaseController = Case => {
     return updatedCase;
   };
 
-  return { createCase, getCase, listCases, updateCase };
+  const deleteCase = async id => {
+    const caseFromDB = await getCase(id);
+    await caseFromDB.destroy();
+  };
+
+  return { createCase, getCase, listCases, updateCase, deleteCase };
 };
 
 module.exports = CaseController;
