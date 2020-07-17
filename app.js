@@ -92,6 +92,12 @@ app.put('/cases/:id', async (req, res) => {
   res.json(updatedCase);
 });
 
+app.delete('/cases/:id', async (req, res) => {
+  const { id } = req.params;
+  await CaseController.deleteCase(id);
+  res.sendStatus(200);
+});
+
 app.put('/contacts/:contactId/connectToCase', async (req, res) => {
   const { contactId } = req.params;
   const { caseId } = req.body;
