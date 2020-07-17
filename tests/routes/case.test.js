@@ -194,7 +194,7 @@ describe('/cases route', () => {
       });
       test('should return 404', async () => {
         const response = await request
-          .delete(subRoute(nonExistingCaseId.id))
+          .delete(subRoute(nonExistingCaseId))
           .set(headers)
           .send();
 
