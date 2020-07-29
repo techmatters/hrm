@@ -19,9 +19,10 @@ console.log(`Starting HRM version ${version}`);
 
 swagger.runWhenNotProduction(app);
 
-const { Contact, Case } = models;
+const { Contact, Case, CaseAudit } = models;
 const ContactController = require('./controllers/contact-controller')(Contact);
 const CaseController = require('./controllers/case-controller')(Case);
+const CaseAuditController = require('./controllers/case-audit-controller')(CaseAudit);
 
 console.log('After connect attempt');
 
@@ -104,6 +105,20 @@ app.put('/contacts/:contactId/connectToCase', async (req, res) => {
   await CaseController.getCase(caseId);
   const updatedContact = await ContactController.connectToCase(contactId, caseId);
   res.json(updatedContact);
+});
+
+const getContactIdsFromCaseAudits = caseAudits => {
+  return [...new Set(caseAudits.map(caseAudit => caseAudit.newValue.contacts).flat())];
+};
+
+app.get('/cases/:caseId/activities/', async (req, res) => {
+  const { caseId } = req.params;
+  const caseAudits = await CaseAuditController.getAuditsForCase(caseId);
+  const contactIds = getContactIdsFromCaseAudits(caseAudits);
+  const relatedContacts = await ContactController.getContactsById(contactIds);
+  const activities = await CaseAuditController.getActivities(caseAudits, relatedContacts);
+
+  res.json(activities);
 });
 
 app.use((req, res, next) => {
