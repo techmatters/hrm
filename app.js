@@ -109,6 +109,7 @@ app.put('/contacts/:contactId/connectToCase', async (req, res) => {
 
 app.get('/cases/:caseId/activities/', async (req, res) => {
   const { caseId } = req.params;
+  await CaseController.getCase(caseId);
   const caseAudits = await CaseAuditController.getAuditsForCase(caseId);
   const contactIds = CaseAuditController.getContactIdsFromCaseAudits(caseAudits);
   const relatedContacts = await ContactController.getContactsById(contactIds);
