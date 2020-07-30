@@ -13,7 +13,8 @@ const ActivityTypes = {
 function createAddNoteActivity({ previousValue, newValue, createdAt }) {
   const previousNotes = (previousValue && previousValue.info && previousValue.info.notes) || [];
   const newNotes = (newValue && newValue.info && newValue.info.notes) || [];
-  const newNote = newNotes.find(note => !previousNotes.includes(note));
+  const newNote =
+    newNotes.find(note => !previousNotes.includes(note)) || newNotes[newNotes.length - 1];
 
   return {
     date: createdAt,
@@ -62,6 +63,8 @@ function getActivityType({ previousValue, newValue }, relatedContacts) {
     const newContact = relatedContacts.find(contact => contact.id === newContactId);
 
     activityType = ActivityTypes.connectContact[newContact.channel];
+  } else {
+    activityType = ActivityTypes.unknown;
   }
 
   return activityType;
@@ -69,11 +72,12 @@ function getActivityType({ previousValue, newValue }, relatedContacts) {
 
 function getActivity(caseAudit, relatedContacts) {
   const activityType = getActivityType(caseAudit, relatedContacts);
+  const isConnectContactType = type => Object.keys(ActivityTypes.connectContact).includes(type);
   let activity;
 
   if (activityType === ActivityTypes.addNote) {
     activity = createAddNoteActivity(caseAudit);
-  } else if (Object.keys(ActivityTypes.connectContact).includes(activityType)) {
+  } else if (isConnectContactType(activityType)) {
     activity = createConnectContactActivity(caseAudit, activityType, relatedContacts);
   }
 

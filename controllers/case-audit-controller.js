@@ -1,6 +1,10 @@
 const { getActivity } = require('./activities');
 
 const CaseAuditController = CaseAudit => {
+  const getContactIdsFromCaseAudits = caseAudits => {
+    return [...new Set(caseAudits.map(caseAudit => caseAudit.newValue.contacts).flat())];
+  };
+
   const getAuditsForCase = async caseId => {
     const queryObject = {
       order: [['createdAt', 'DESC']],
@@ -17,16 +21,13 @@ const CaseAuditController = CaseAudit => {
 
     caseAudits.forEach(caseAudit => {
       const activity = getActivity(caseAudit, relatedContacts);
-
-      if (activity) {
-        activities.push(activity);
-      }
+      if (activity) activities.push(activity);
     });
 
     return activities;
   };
 
-  return { getAuditsForCase, getActivities };
+  return { getAuditsForCase, getActivities, getContactIdsFromCaseAudits };
 };
 
 module.exports = CaseAuditController;
