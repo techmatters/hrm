@@ -293,6 +293,19 @@ const ContactController = Contact => {
       conversationDuration: e.conversationDuration,
     }));
   };
+
+  const getContactsById = async contactIds => {
+    const queryObject = {
+      where: {
+        id: {
+          [Op.in]: contactIds,
+        },
+      },
+    };
+
+    return Contact.findAll(queryObject);
+  };
+
   const createContact = async body => {
     const contactRecord = {
       rawJson: body.form,
@@ -329,6 +342,7 @@ const ContactController = Contact => {
   return {
     searchContacts,
     getContacts,
+    getContactsById,
     createContact,
     connectToCase,
     queries: { queryOnName, queryOnPhone },

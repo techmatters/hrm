@@ -91,6 +91,34 @@ paths:
           $ref: '#/components/responses/UnauthorizedError'
         '404':
           description: Case not found
+  /cases/{caseId}/activities:
+    get:
+      tags:
+        - cases
+      summary: fetch case activities
+      operationId: getCaseActivities
+      parameters:
+        - name: caseId
+          in: path
+          description: ID of case
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: Activities of the case
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  allOf:
+                    - $ref: '#/components/schemas/Activity'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: Case not found
   /contacts/{contactId}/connectToCase:
     put:
       tags:
@@ -218,6 +246,23 @@ components:
           type: integer
           format: int32
           example: 1
+    Activity:
+      type: object
+      required:
+        - date
+        - type
+        - text
+      properties:
+        date:
+          type: string
+          format: date-time
+          example: '2020-30-07 18:55:20'
+        type:
+          type: string
+          example: note
+        text:
+          type: string
+          example: Child needs help
   responses:
     UnauthorizedError:
       description: API Key is missing or invalid
