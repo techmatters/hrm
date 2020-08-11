@@ -15,6 +15,7 @@ test('getContactIdsFromCaseAudits', () => {
   const caseAudits = [
     {
       id: 1,
+      twilioWorkerId: 'twilio-worker-id',
       previousValue: null,
       newValue: {
         contacts: [],
@@ -22,6 +23,7 @@ test('getContactIdsFromCaseAudits', () => {
     },
     {
       id: 2,
+      twilioWorkerId: 'twilio-worker-id',
       previousValue: {
         contacts: [],
       },
@@ -31,6 +33,7 @@ test('getContactIdsFromCaseAudits', () => {
     },
     {
       id: 3,
+      twilioWorkerId: 'twilio-worker-id',
       previousValue: {
         contacts: [123],
       },
@@ -40,6 +43,7 @@ test('getContactIdsFromCaseAudits', () => {
     },
     {
       id: 4,
+      twilioWorkerId: 'twilio-worker-id',
       previousValue: {
         contacts: [123, 124],
       },
@@ -63,6 +67,7 @@ test('getAuditsForCase', async () => {
   const caseAudits = [
     {
       id: 1,
+      twilioWorkerId: 'twilio-worker-id',
       previousValue: null,
       newValue: {
         contacts: [],
@@ -70,6 +75,7 @@ test('getAuditsForCase', async () => {
     },
     {
       id: 2,
+      twilioWorkerId: 'twilio-worker-id',
       previousValue: {
         contacts: [],
         info: {},
@@ -99,6 +105,7 @@ test('getAuditsForCase', async () => {
 test('getActivities', async () => {
   const caseAudit1 = {
     id: 1,
+    twilioWorkerId: 'twilio-worker-id',
     previousValue: null,
     newValue: {
       contacts: [],
@@ -106,6 +113,7 @@ test('getActivities', async () => {
   };
   const caseAudit2 = {
     id: 2,
+    twilioWorkerId: 'twilio-worker-id',
     previousValue: {
       contacts: [],
     },

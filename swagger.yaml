@@ -252,6 +252,7 @@ components:
         - date
         - type
         - text
+        - twilioWorkerId
       properties:
         date:
           type: string
@@ -263,6 +264,9 @@ components:
         text:
           type: string
           example: Child needs help
+        twilioWorkerId:
+          type: string
+          example: WZd3d289370720216aab7e3dc023e80f5f
   responses:
     UnauthorizedError:
       description: API Key is missing or invalid
