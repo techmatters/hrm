@@ -10,7 +10,7 @@ const ActivityTypes = {
   unknown: 'unknown',
 };
 
-function createAddNoteActivity({ previousValue, newValue, createdAt }) {
+function createAddNoteActivity({ previousValue, newValue, createdAt, twilioWorkerId }) {
   const previousNotes = (previousValue && previousValue.info && previousValue.info.notes) || [];
   const newNotes = (newValue && newValue.info && newValue.info.notes) || [];
   const newNote =
@@ -20,11 +20,12 @@ function createAddNoteActivity({ previousValue, newValue, createdAt }) {
     date: createdAt,
     type: ActivityTypes.addNote,
     text: newNote,
+    twilioWorkerId,
   };
 }
 
 function createConnectContactActivity(
-  { previousValue, newValue, createdAt },
+  { previousValue, newValue, createdAt, twilioWorkerId },
   type,
   relatedContacts,
 ) {
@@ -37,6 +38,7 @@ function createConnectContactActivity(
     date: createdAt,
     type,
     text: newContact.rawJson.caseInformation.callSummary,
+    twilioWorkerId,
   };
 }
 

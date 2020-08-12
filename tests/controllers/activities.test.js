@@ -5,6 +5,7 @@ describe('getActivity', () => {
     const createdAt = '2020-30-07 18:55:20';
     const caseAudit = {
       createdAt,
+      twilioWorkerId: 'twilio-worker-id',
       previousValue: {
         info: {
           notes: [],
@@ -22,6 +23,7 @@ describe('getActivity', () => {
       date: createdAt,
       type: 'note',
       text: 'content',
+      twilioWorkerId: 'twilio-worker-id',
     };
 
     expect(activity).toStrictEqual(expectedActivity);
@@ -31,6 +33,7 @@ describe('getActivity', () => {
     const createdAt = '2020-30-07 18:55:20';
     const caseAudit = {
       createdAt,
+      twilioWorkerId: 'twilio-worker-id',
       previousValue: {
         contacts: [],
       },
@@ -55,6 +58,7 @@ describe('getActivity', () => {
       date: createdAt,
       type: 'facebook',
       text: 'Child summary',
+      twilioWorkerId: 'twilio-worker-id',
     };
 
     expect(activity).toStrictEqual(expectedActivity);
