@@ -163,7 +163,6 @@ test('list cases (with 1st contact, no limit/offset)', async () => {
               rawJson: {
                 childInformation: { name: { firstName: 'name', lastName: 'last' } },
                 caseInformation: {
-                  callSummary: 'summary',
                   categories: {
                     cat1: { sub1: false, sub2: true },
                     cat2: { sub2: false, sub4: false },
@@ -182,7 +181,6 @@ test('list cases (with 1st contact, no limit/offset)', async () => {
     const newItem = {
       ...dataValues,
       childName: 'name last',
-      callSummary: 'summary',
       categories: { cat1: ['sub2'] },
     };
     return newItem;
@@ -227,7 +225,6 @@ test('list cases (with 1st contact, with limit/offset)', async () => {
               rawJson: {
                 childInformation: { name: { firstName: 'name', lastName: 'last' } },
                 caseInformation: {
-                  callSummary: 'summary',
                   categories: {
                     cat1: { sub1: false, sub2: true },
                     cat2: { sub2: false, sub4: false },
@@ -246,7 +243,6 @@ test('list cases (with 1st contact, with limit/offset)', async () => {
     const newItem = {
       ...dataValues,
       childName: 'name last',
-      callSummary: 'summary',
       categories: { cat1: ['sub2'] },
     };
     return newItem;
@@ -292,7 +288,7 @@ test('list cases (without contacts)', async () => {
 
   const expectedCases = casesFromDB.map(caseItem => {
     const { dataValues } = caseItem;
-    const newItem = { ...dataValues, childName: '', callSummary: '', categories: {} };
+    const newItem = { ...dataValues, childName: '', categories: {} };
     return newItem;
   });
 
