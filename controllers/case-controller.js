@@ -56,9 +56,8 @@ const CaseController = Case => {
 
         const { childInformation, caseInformation } = fstContact.dataValues.rawJson;
         const childName = `${childInformation.name.firstName} ${childInformation.name.lastName}`;
-        const { callSummary } = caseInformation;
         const categories = retrieveCategories(caseInformation.categories);
-        return { ...caseItem.dataValues, childName, callSummary, categories };
+        return { ...caseItem.dataValues, childName, categories };
       }),
     );
 
