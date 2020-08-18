@@ -50,15 +50,13 @@ const CaseController = Case => {
           return {
             ...caseItem.dataValues,
             childName: '',
-            callSummary: '',
             categories: retrieveCategories(undefined), // we call the function here so the return value allways matches
           };
 
         const { childInformation, caseInformation } = fstContact.dataValues.rawJson;
         const childName = `${childInformation.name.firstName} ${childInformation.name.lastName}`;
-        const { callSummary } = caseInformation;
         const categories = retrieveCategories(caseInformation.categories);
-        return { ...caseItem.dataValues, childName, callSummary, categories };
+        return { ...caseItem.dataValues, childName, categories };
       }),
     );
 
