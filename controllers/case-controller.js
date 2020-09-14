@@ -34,9 +34,6 @@ const CaseController = Case => {
     const offset = (query.offset && parseInt(query.offset, 10)) || 0;
     const queryObject = {
       order: [['createdAt', 'DESC']],
-      where: {
-        helpline: query.helpline || '',
-      },
       limit,
       offset,
     };
