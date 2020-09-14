@@ -37,6 +37,11 @@ const CaseController = Case => {
       limit,
       offset,
     };
+    if (query.helpline) {
+      queryObject.where = {
+        helpline: query.helpline,
+      }
+    };
 
     const { count, rows } = await Case.findAndCountAll(queryObject);
     const cases = await Promise.all(
