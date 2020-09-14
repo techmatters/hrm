@@ -314,6 +314,19 @@ test('list cases (without contacts)', async () => {
   expect(result).toStrictEqual(expected);
 });
 
+test('list cases without helpline', async () => {
+  const findAndCountAllSpy = jest.spyOn(MockCase, 'findAndCountAll');
+  const queryParams = { limit: 20, offset: 30 };
+  await CaseController.listCases(queryParams);
+  const expectedQueryObject = {
+    order: [['createdAt', 'DESC']],
+    limit: 20,
+    offset: 30,
+  };
+
+  expect(findAndCountAllSpy).toHaveBeenCalledWith(expectedQueryObject);
+});
+
 test('update existing case', async () => {
   const caseId = 1;
   const caseFromDB = {
