@@ -21,16 +21,18 @@ const { queryOnName, queryOnPhone } = ContactController.queries;
 
 afterEach(() => jest.clearAllMocks());
 
+const emptyResult = { count: 0, contacts: [] };
+
 test('Return [] when no params are given', async () => {
   const result = await ContactController.searchContacts({});
 
-  expect(result).toStrictEqual([]);
+  expect(result).toStrictEqual(emptyResult);
 });
 
 test('Return [] when only invalid params are given', async () => {
   const result = await ContactController.searchContacts({ invalid: 'invalid' });
 
-  expect(result).toStrictEqual([]);
+  expect(result).toStrictEqual(emptyResult);
 });
 
 test('Convert contacts to searchResults', async () => {
@@ -56,43 +58,51 @@ test('Convert contacts to searchResults', async () => {
     .withTwilioWorkerId('twilio-worker-id')
     .withCreatedAt('2020-03-15')
     .build();
-  const expectedSearchResult = [
-    {
-      contactId: 'jill-id',
-      overview: {
-        dateTime: '2020-03-10T00:00:00.000Z',
-        name: 'Jill Smith',
-        customerNumber: '+12025550142',
-        callType: 'Child calling about self',
-        categories: {},
-        counselor: 'twilio-worker-id',
-        notes: 'Lost young boy',
-        channel: 'voice',
-        conversationDuration: 10,
+  const expectedSearchResult = {
+    count: 2,
+    contacts: [
+      {
+        contactId: 'jill-id',
+        overview: {
+          dateTime: '2020-03-10T00:00:00.000Z',
+          name: 'Jill Smith',
+          customerNumber: '+12025550142',
+          callType: 'Child calling about self',
+          categories: {},
+          counselor: 'twilio-worker-id',
+          notes: 'Lost young boy',
+          channel: 'voice',
+          conversationDuration: 10,
+        },
+        details: {
+          ...jillSmith.rawJson,
+          number: '+12025550142',
+        },
       },
-      details: {
-        ...jillSmith.rawJson,
-        number: '+12025550142',
+      {
+        contactId: 'sarah-id',
+        overview: {
+          dateTime: '2020-03-15T00:00:00.000Z',
+          name: 'Sarah Park',
+          customerNumber: 'Anonymous',
+          callType: 'Child calling about self',
+          categories: {},
+          counselor: 'twilio-worker-id',
+          notes: 'Young pregnant woman',
+          channel: '',
+          conversationDuration: null,
+        },
+        details: sarahPark.rawJson,
       },
-    },
-    {
-      contactId: 'sarah-id',
-      overview: {
-        dateTime: '2020-03-15T00:00:00.000Z',
-        name: 'Sarah Park',
-        customerNumber: 'Anonymous',
-        callType: 'Child calling about self',
-        categories: {},
-        counselor: 'twilio-worker-id',
-        notes: 'Young pregnant woman',
-        channel: '',
-        conversationDuration: null,
-      },
-      details: sarahPark.rawJson,
-    },
-  ];
+    ]
+  };
 
-  MockContact.$queueResult([MockContact.build(jillSmith), MockContact.build(sarahPark)]);
+  const mockedResult = {
+    count: 2,
+    rows: [MockContact.build(jillSmith), MockContact.build(sarahPark)],
+  };
+
+  MockContact.$queueResult(mockedResult);
   const result = await ContactController.searchContacts({ helpline: 'helpline' });
 
   expect(result).toStrictEqual(expectedSearchResult);
@@ -368,7 +378,7 @@ describe('Test queryOnPhone', () => {
   });
 });
 
-test('Call findAll(queryObject) with given params', async () => {
+test('Call findAndCountAll(queryObject) with given params', async () => {
   const body = {
     helpline: 'helpline',
     firstName: 'Jill',
@@ -379,7 +389,7 @@ test('Call findAll(queryObject) with given params', async () => {
     dateTo: '2020-03-15',
   };
 
-  const spy = jest.spyOn(MockContact, 'findAll');
+  const spy = jest.spyOn(MockContact, 'findAndCountAll');
   await ContactController.searchContacts(body);
 
   const expectedQueryObject = {
@@ -418,7 +428,7 @@ test('Call findAll(queryObject) with given params', async () => {
   expect(spy).toHaveBeenCalledWith(expectedQueryObject);
 });
 
-test('Call findAll(queryObject) without name search', async () => {
+test('Call findAndCountAll(queryObject) without name search', async () => {
   const body = {
     helpline: 'helpline',
     counselor: 'counselorId',
@@ -427,7 +437,7 @@ test('Call findAll(queryObject) without name search', async () => {
     dateTo: '2020-03-15',
   };
 
-  const spy = jest.spyOn(MockContact, 'findAll');
+  const spy = jest.spyOn(MockContact, 'findAndCountAll');
   await ContactController.searchContacts(body);
 
   const expectedQueryObject = {
@@ -466,13 +476,13 @@ test('Call findAll(queryObject) without name search', async () => {
   expect(spy).toHaveBeenCalledWith(expectedQueryObject);
 });
 
-test('Call findAll(queryObject) with singleInput param', async () => {
+test('Call findAndCountAll(queryObject) with singleInput param', async () => {
   const body = {
     helpline: 'helpline',
     singleInput: 'singleInput',
   };
 
-  const spy = jest.spyOn(MockContact, 'findAll');
+  const spy = jest.spyOn(MockContact, 'findAndCountAll');
   await ContactController.searchContacts(body);
 
   const expectedQueryObject = {
@@ -501,13 +511,13 @@ test('Call findAll(queryObject) with singleInput param', async () => {
   expect(spy).toHaveBeenCalledWith(expectedQueryObject);
 });
 
-test('Call findAll(queryObject) with singleInput param of type date', async () => {
+test('Call findAndCountAll(queryObject) with singleInput param of type date', async () => {
   const body = {
     helpline: 'helpline',
     singleInput: '2020-03-10',
   };
 
-  const spy = jest.spyOn(MockContact, 'findAll');
+  const spy = jest.spyOn(MockContact, 'findAndCountAll');
   await ContactController.searchContacts(body);
 
   const expectedQueryObject = {
@@ -549,7 +559,7 @@ test('Call findAll(queryObject) with singleInput param of type date', async () =
   expect(spy).toHaveBeenCalledWith(expectedQueryObject);
 });
 
-test('Call findAll(queryObject) with singleInput and ignore other params', async () => {
+test('Call findAndCountAll(queryObject) with singleInput and ignore other params', async () => {
   const body = {
     helpline: 'helpline',
     singleInput: 'singleInput',
@@ -561,7 +571,7 @@ test('Call findAll(queryObject) with singleInput and ignore other params', async
     dateTo: '2020-03-15',
   };
 
-  const spy = jest.spyOn(MockContact, 'findAll');
+  const spy = jest.spyOn(MockContact, 'findAndCountAll');
   await ContactController.searchContacts(body);
 
   const expectedQueryObject = {

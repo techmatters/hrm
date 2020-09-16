@@ -264,11 +264,12 @@ function convertContactsToSearchResults(contacts) {
 const ContactController = Contact => {
   const searchContacts = async (body, query = {}) => {
     if (isEmptySearchParams(body)) {
-      return [];
+      return { count: 0, contacts: [] };
     }
     const queryObject = buildSearchQueryObject(body, query);
-    const contacts = await Contact.findAll(queryObject);
-    return convertContactsToSearchResults(contacts);
+    const { count, rows } = await Contact.findAndCountAll(queryObject);
+    const contacts = convertContactsToSearchResults(rows);
+    return { count, contacts };
   };
 
   const getContacts = async query => {

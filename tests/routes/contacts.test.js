@@ -109,9 +109,11 @@ describe('/contacts route', () => {
 
           expect(response.status).toBe(200);
           expect(response.body).toHaveLength(2);
-          const [c2, c1] = response.body; // result is sorted DESC
+          const { contacts, count } = response.body;
+          const [c2, c1] = contacts; // result is sorted DESC
           expect(c1.details).toStrictEqual(contact1.form);
           expect(c2.details).toStrictEqual(contact2.form);
+          expect(count).toBe(2);
         });
       });
 
@@ -122,8 +124,9 @@ describe('/contacts route', () => {
             .set(headers)
             .send({ firstName: 'jh', lastName: 'curie' });
 
+          const { count } = response.body;
           expect(response.status).toBe(200);
-          expect(response.body).toHaveLength(0);
+          expect(count).toBe(0);
         });
       });
 
@@ -139,16 +142,19 @@ describe('/contacts route', () => {
             .set(headers)
             .send({ firstName: 'ma', lastName: 'ur', helpline: 'Helpline 1' }); // should match another1 & noHelpline
 
+          const { contacts: contacts1, count: count1 } = response1.body;
+          const { contacts: contacts2, count: count2 } = response2.body;
+
           expect(response1.status).toBe(200);
-          expect(response1.body).toHaveLength(3);
-          const [nh, a2, a1] = response1.body; // result is sorted DESC
+          expect(count1).toBe(3);
+          const [nh, a2, a1] = contacts1; // result is sorted DESC
           expect(a1.details).toStrictEqual(another1.form);
           expect(a2.details).toStrictEqual(another2.form);
           expect(nh.details).toStrictEqual(noHelpline.form);
 
           expect(response2.status).toBe(200);
-          expect(response2.body).toHaveLength(2);
-          const [nh2, a] = response2.body; // result is sorted DESC
+          expect(count2).toBe(2);
+          const [nh2, a] = contacts2; // result is sorted DESC
           expect(a.details).toStrictEqual(another1.form);
           expect(nh2.details).toStrictEqual(noHelpline.form);
         });
@@ -161,9 +167,11 @@ describe('/contacts route', () => {
             .set(headers)
             .send({ counselor: 'fake-worker-123' }); // should match contact1 & broken1 & another1 & noHelpline
 
+          const { contacts, count } = response.body;
+
           expect(response.status).toBe(200);
-          expect(response.body).toHaveLength(4);
-          const [nh, a1, b1, c1] = response.body; // result is sorted DESC
+          expect(count).toBe(4);
+          const [nh, a1, b1, c1] = contacts; // result is sorted DESC
           expect(c1.details).toStrictEqual(contact1.form);
           expect(b1.details).toStrictEqual(broken1.form);
           expect(a1.details).toStrictEqual(another1.form);
@@ -178,9 +186,11 @@ describe('/contacts route', () => {
             .set(headers)
             .send({ singleInput: 'qwerty' }); // should match contact1 & contact2
 
+          const { contacts, count } = response.body;
+
           expect(response.status).toBe(200);
-          expect(response.body).toHaveLength(2);
-          const [c2, c1] = response.body; // result is sorted DESC
+          expect(count).toBe(2);
+          const [c2, c1] = contacts; // result is sorted DESC
           expect(c1.details).toStrictEqual(contact1.form);
           expect(c2.details).toStrictEqual(contact2.form);
         });
@@ -206,9 +216,10 @@ describe('/contacts route', () => {
           const responses = await Promise.all(requests);
 
           responses.forEach(res => {
+            const { count, contacts } = res.body;
             expect(res.status).toBe(200);
-            expect(res.body).toHaveLength(1);
-            expect(res.body[0].details).toStrictEqual(another2.form);
+            expect(count).toBe(1);
+            expect(contacts[0].details).toStrictEqual(another2.form);
           });
         });
       });
@@ -234,9 +245,10 @@ describe('/contacts route', () => {
           const responses = await Promise.all(requests);
 
           responses.forEach(res => {
+            const { count, contacts } = res.body;
             expect(res.status).toBe(200);
-            expect(res.body).toHaveLength(1);
-            expect(res.body[0].details).toStrictEqual(another2.form);
+            expect(count).toBe(1);
+            expect(contacts[0].details).toStrictEqual(another2.form);
           });
         });
       });
@@ -250,9 +262,11 @@ describe('/contacts route', () => {
             .set(headers)
             .send({ phoneNumber, singleInput });
 
+          const { contacts, count } = response.body;
+
           expect(response.status).toBe(200);
-          expect(response.body).toHaveLength(1);
-          expect(response.body[0].details).toStrictEqual(another2.form);
+          expect(count).toBe(1);
+          expect(contacts[0].details).toStrictEqual(another2.form);
         });
 
         test('returns zero contacts (no match for singleInput and phoneNumber is ignored)', async () => {
@@ -263,8 +277,10 @@ describe('/contacts route', () => {
             .set(headers)
             .send({ phoneNumber, singleInput });
 
+          const { count } = response.body;
+
           expect(response.status).toBe(200);
-          expect(response.body).toHaveLength(0);
+          expect(count).toBe(0);
         });
       });
 
@@ -277,8 +293,10 @@ describe('/contacts route', () => {
             .set(headers)
             .send({ phoneNumber });
 
+          const { count } = response.body;
+
           expect(response.status).toBe(200);
-          expect(response.body).toHaveLength(0);
+          expect(count).toBe(0);
         });
       });
     });
