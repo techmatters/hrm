@@ -262,7 +262,7 @@ function convertContactsToSearchResults(contacts) {
 }
 
 const ContactController = Contact => {
-  const searchContacts = async (body, query) => {
+  const searchContacts = async (body, query = {}) => {
     if (isEmptySearchParams(body)) {
       return [];
     }

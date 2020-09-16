@@ -411,7 +411,8 @@ test('Call findAll(queryObject) with given params', async () => {
       ],
     },
     order: [['createdAt', 'DESC']],
-    limit: 20,
+    limit: 1000,
+    offset: 0,
   };
 
   expect(spy).toHaveBeenCalledWith(expectedQueryObject);
@@ -458,7 +459,8 @@ test('Call findAll(queryObject) without name search', async () => {
       ],
     },
     order: [['createdAt', 'DESC']],
-    limit: 20,
+    limit: 1000,
+    offset: 0,
   };
 
   expect(spy).toHaveBeenCalledWith(expectedQueryObject);
@@ -492,7 +494,8 @@ test('Call findAll(queryObject) with singleInput param', async () => {
       ],
     },
     order: [['createdAt', 'DESC']],
-    limit: 20,
+    limit: 1000,
+    offset: 0,
   };
 
   expect(spy).toHaveBeenCalledWith(expectedQueryObject);
@@ -539,7 +542,8 @@ test('Call findAll(queryObject) with singleInput param of type date', async () =
       ],
     },
     order: [['createdAt', 'DESC']],
-    limit: 20,
+    limit: 1000,
+    offset: 0,
   };
 
   expect(spy).toHaveBeenCalledWith(expectedQueryObject);
@@ -579,7 +583,8 @@ test('Call findAll(queryObject) with singleInput and ignore other params', async
       ],
     },
     order: [['createdAt', 'DESC']],
-    limit: 20,
+    limit: 1000,
+    offset: 0,
   };
 
   expect(spy).toHaveBeenCalledWith(expectedQueryObject);
