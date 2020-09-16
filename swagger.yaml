@@ -186,14 +186,14 @@ paths:
         description: Case to create
       responses:
         '200':
-          description: Activities of the case
+          description: Search contacts result
           content:
             application/json:
               schema:
                 type: array
                 items:
                   allOf:
-                    - $ref: '#/components/schemas/Activity'
+                    - $ref: '#/components/schemas/SearchContactsResult'
         '401':
           $ref: '#/components/responses/UnauthorizedError'
 components:
@@ -342,6 +342,19 @@ components:
         singleInput:
           type: string
           example: John
+    SearchContactsResult:
+      type: object
+      required:
+        - count
+        - contact
+      properties:
+        count:
+          type: integer
+          format: int32
+          example: 1
+        contacts:
+          schema:
+            $ref: '#/components/schemas/SearchContact'
   responses:
     UnauthorizedError:
       description: API Key is missing or invalid
