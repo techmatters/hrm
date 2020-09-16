@@ -159,6 +159,43 @@ paths:
           $ref: '#/components/responses/UnauthorizedError'
         '404':
           description: Case or contact not found
+  /contacts/search:
+    post:
+      tags:
+        - contacts
+      summary: search contacts
+      operationId: searchContacts
+      parameters:
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            format: int32
+        - in: query
+          name: offset
+          required: false
+          schema:
+            type: integer
+            format: int32
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchContact'
+        description: Case to create
+      responses:
+        '200':
+          description: Activities of the case
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  allOf:
+                    - $ref: '#/components/schemas/Activity'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
 components:
   schemas:
     SequelizeRecord:
@@ -267,6 +304,44 @@ components:
         twilioWorkerId:
           type: string
           example: WZd3d289370720216aab7e3dc023e80f5f
+    SearchContact:
+      type: object
+      required:
+        - helpline
+        - firstName
+        - lastName
+        - counselor
+        - phoneNumber
+        - dateFrom
+        - dateTo
+        - singleInput
+      properties:
+        helpline:
+          type: string
+          example: helpline-1
+        firstName:
+          type: string
+          example: John
+        lastName:
+          type: string
+          example: Doe
+        counselor:
+          type: string
+          example: WZd3d289370720216aab7e3dc023e80f5f
+        phoneNumber:
+          type: string
+          example: '+12025550163'
+        dateFrom:
+          type: string
+          format: date-time
+          example: '2020-03-19T15:03:03.042Z'
+        dateTo:
+          type: string
+          format: date-time
+          example: '2020-03-19T15:03:03.042Z'
+        singleInput:
+          type: string
+          example: John
   responses:
     UnauthorizedError:
       description: API Key is missing or invalid

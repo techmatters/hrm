@@ -67,7 +67,7 @@ app.get('/contacts', async (req, res) => {
 });
 
 app.post('/contacts/search', async (req, res) => {
-  const searchResults = await ContactController.searchContacts(req.body);
+  const searchResults = await ContactController.searchContacts(req.body, req.query);
   res.json(searchResults);
 });
 
