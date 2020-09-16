@@ -108,7 +108,6 @@ describe('/contacts route', () => {
             .send({ firstName: 'jh', lastName: 'he' }); // should filter non-data
 
           expect(response.status).toBe(200);
-          expect(response.body).toHaveLength(2);
           const { contacts, count } = response.body;
           const [c2, c1] = contacts; // result is sorted DESC
           expect(c1.details).toStrictEqual(contact1.form);
