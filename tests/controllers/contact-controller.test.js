@@ -94,7 +94,7 @@ test('Convert contacts to searchResults', async () => {
         },
         details: sarahPark.rawJson,
       },
-    ]
+    ],
   };
 
   const mockedResult = {
