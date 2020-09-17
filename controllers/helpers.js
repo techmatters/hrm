@@ -29,6 +29,16 @@ const retrieveCategories = categories => {
   return Object.entries(categories).reduce(catsReducer, {});
 };
 
+const getPaginationElements = query => {
+  const queryLimit =
+    query.limit && !Number.isNaN(parseInt(query.limit, 10)) ? parseInt(query.limit, 10) : Infinity;
+  const limit = Math.min(queryLimit, 1000);
+  const offset = (query.offset && parseInt(query.offset, 10)) || 0;
+
+  return { limit, offset };
+};
+
 module.exports = {
   retrieveCategories,
+  getPaginationElements,
 };

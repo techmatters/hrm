@@ -159,6 +159,43 @@ paths:
           $ref: '#/components/responses/UnauthorizedError'
         '404':
           description: Case or contact not found
+  /contacts/search:
+    post:
+      tags:
+        - contacts
+      summary: search contacts
+      operationId: searchContacts
+      parameters:
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            format: int32
+        - in: query
+          name: offset
+          required: false
+          schema:
+            type: integer
+            format: int32
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchContact'
+        description: Case to create
+      responses:
+        '200':
+          description: Search contacts result
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  allOf:
+                    - $ref: '#/components/schemas/SearchContactsResult'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
 components:
   schemas:
     SequelizeRecord:
@@ -267,6 +304,130 @@ components:
         twilioWorkerId:
           type: string
           example: WZd3d289370720216aab7e3dc023e80f5f
+    SearchContact:
+      type: object
+      required:
+        - helpline
+        - firstName
+        - lastName
+        - counselor
+        - phoneNumber
+        - dateFrom
+        - dateTo
+        - singleInput
+      properties:
+        helpline:
+          type: string
+          example: helpline-1
+        firstName:
+          type: string
+          example: John
+        lastName:
+          type: string
+          example: Doe
+        counselor:
+          type: string
+          example: WZd3d289370720216aab7e3dc023e80f5f
+        phoneNumber:
+          type: string
+          example: '+12025550163'
+        dateFrom:
+          type: string
+          format: date-time
+          example: '2020-03-19T15:03:03.042Z'
+        dateTo:
+          type: string
+          format: date-time
+          example: '2020-03-19T15:03:03.042Z'
+        singleInput:
+          type: string
+          example: John
+    SearchContactsResult:
+      type: object
+      required:
+        - count
+        - contact
+      properties:
+        count:
+          type: integer
+          format: int32
+          example: 1
+        contacts:
+          type: array
+          items:
+            type: object
+            properties:
+              contactId:
+                type: string
+                example: WS17ce7c9cf654a4b240031ff7b17e7d93
+              overview:
+                type: object
+                properties:
+                  dateTime:
+                    type: string
+                    format: date-time
+                    example: '2020-03-19T15:03:03.042Z'
+                  name:
+                    type: string
+                    example: Jhon
+                  customerNumber:
+                    type: string
+                    example: '+12025550163'
+                  callType:
+                    type: string
+                    example: Child calling about self
+                  categories:
+                    type: object
+                    example: {}
+                  counselor:
+                    type: string
+                    example: WZd3d289370720216aab7e3dc023e80f5f
+                  notes:
+                    type: string
+                    example: Child needs help
+                  channel:
+                    type: string
+                    example: web
+                  conversationDuration:
+                    type: integer
+                    format: int32
+                    example: 42
+              details:
+                type: object
+                properties:
+                  timestamp:
+                    type: integer
+                    format: int64
+                    example: 1565827981000
+                  reservationId:
+                    type: string
+                    example: WS17ce7c9cf654a4b240031ff7b17e7d93
+                  rawJson:
+                    type: object
+                    example: { "callType": {}, "callerInformation": {}, "childInformation": {}, "caseInformation": {} }
+                  queueName:
+                    type: string
+                    example: Admin
+                  twilioWorkerId:
+                    type: string
+                    example: WZd3d289370720216aab7e3dc023e80f5f
+                  helpline:
+                    type: string
+                    example:
+                  number:
+                    type: string
+                    example: '+12025550163'
+                  channel:
+                    type: string
+                    example: web
+                  conversationDuration:
+                    type: integer
+                    format: int32
+                    example: 42
+                  caseId:
+                    type: integer
+                    format: int32
+                    example: 1
   responses:
     UnauthorizedError:
       description: API Key is missing or invalid

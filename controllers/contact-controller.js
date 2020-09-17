@@ -4,7 +4,7 @@ const parseISO = require('date-fns/parseISO');
 const startOfDay = require('date-fns/startOfDay');
 const endOfDay = require('date-fns/endOfDay');
 const isValid = require('date-fns/isValid');
-const { retrieveCategories } = require('./helpers');
+const { retrieveCategories, getPaginationElements } = require('./helpers');
 
 const { Op } = Sequelize;
 
@@ -141,7 +141,7 @@ const queryOnPhone = (singleInput, phoneNumber) => {
   );
 };
 
-function buildSearchQueryObject(body) {
+function buildSearchQueryObject(body, query) {
   const {
     helpline,
     firstName,
@@ -152,6 +152,8 @@ function buildSearchQueryObject(body) {
     dateTo,
     singleInput,
   } = body;
+
+  const { limit, offset } = getPaginationElements(query);
 
   const operator = singleInput ? Op.or : Op.and;
   const isSingleInputValidDate = orUndefined(singleInput && isValid(parseISO(singleInput)));
@@ -201,7 +203,8 @@ function buildSearchQueryObject(body) {
       ],
     },
     order: [['createdAt', 'DESC']],
-    limit: 20,
+    limit,
+    offset,
   };
 }
 
@@ -259,13 +262,14 @@ function convertContactsToSearchResults(contacts) {
 }
 
 const ContactController = Contact => {
-  const searchContacts = async body => {
+  const searchContacts = async (body, query = {}) => {
     if (isEmptySearchParams(body)) {
-      return [];
+      return { count: 0, contacts: [] };
     }
-    const queryObject = buildSearchQueryObject(body);
-    const contacts = await Contact.findAll(queryObject);
-    return convertContactsToSearchResults(contacts);
+    const queryObject = buildSearchQueryObject(body, query);
+    const { count, rows } = await Contact.findAndCountAll(queryObject);
+    const contacts = convertContactsToSearchResults(rows);
+    return { count, contacts };
   };
 
   const getContacts = async query => {

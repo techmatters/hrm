@@ -1,5 +1,5 @@
 const createError = require('http-errors');
-const { retrieveCategories } = require('./helpers');
+const { retrieveCategories, getPaginationElements } = require('./helpers');
 
 const CaseController = Case => {
   const createCase = async body => {
@@ -26,12 +26,8 @@ const CaseController = Case => {
   };
 
   const listCases = async query => {
-    const queryLimit =
-      query.limit && !Number.isNaN(parseInt(query.limit, 10))
-        ? parseInt(query.limit, 10)
-        : Infinity;
-    const limit = Math.min(queryLimit, 1000);
-    const offset = (query.offset && parseInt(query.offset, 10)) || 0;
+    const { limit, offset } = getPaginationElements(query);
+
     const queryObject = {
       order: [['createdAt', 'DESC']],
       limit,
