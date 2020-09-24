@@ -573,7 +573,7 @@ test('Call findAndCountAll(queryObject) with singleInput param of type date', as
   expect(spy).toHaveBeenCalledWith(expectedQueryObject);
 });
 
-test('Call findAndCountAll(queryObject) with singleInput and ignore other params', async () => {
+test('Call findAndCountAll(queryObject) with singleInput and ignore other params but onlyDataContacts', async () => {
   const body = {
     helpline: 'helpline',
     singleInput: 'singleInput',
@@ -602,7 +602,11 @@ test('Call findAndCountAll(queryObject) with singleInput and ignore other params
             queryOnPhone(body.singleInput, undefined),
             undefined,
             undefined,
-            undefined,
+            {
+              'rawJson.callType': {
+                [Op.in]: [callTypes.child, callTypes.caller],
+              },
+            },
             undefined,
           ],
         },

@@ -161,7 +161,6 @@ function buildSearchQueryObject(body, query) {
   const compareCounselor = orUndefined(counselor && !singleInput);
   const compareDateFrom = orUndefined(dateFrom && !singleInput);
   const compareDateTo = orUndefined(dateTo && !singleInput);
-  const shouldFilterNonDataContacts = orUndefined(onlyDataContacts && !singleInput);
 
   return {
     where: {
@@ -186,7 +185,7 @@ function buildSearchQueryObject(body, query) {
                 [Op.lte]: endOfDay(parseISO(dateTo)),
               },
             },
-            shouldFilterNonDataContacts && {
+            onlyDataContacts && {
               'rawJson.callType': {
                 [Op.in]: [callTypes.child, callTypes.caller],
               },
