@@ -150,6 +150,7 @@ function buildSearchQueryObject(body, query) {
     phoneNumber,
     dateFrom,
     dateTo,
+    onlyDataContacts,
     singleInput,
   } = body;
 
@@ -182,6 +183,11 @@ function buildSearchQueryObject(body, query) {
             compareDateTo && {
               createdAt: {
                 [Op.lte]: endOfDay(parseISO(dateTo)),
+              },
+            },
+            onlyDataContacts && {
+              'rawJson.callType': {
+                [Op.in]: [callTypes.child, callTypes.caller],
               },
             },
             isSingleInputValidDate && {
