@@ -314,6 +314,7 @@ components:
         - phoneNumber
         - dateFrom
         - dateTo
+        - onlyDataContacts
         - singleInput
       properties:
         helpline:
@@ -339,6 +340,9 @@ components:
           type: string
           format: date-time
           example: '2020-03-19T15:03:03.042Z'
+        onlyDataContacts:
+          type: boolean
+          example: true
         singleInput:
           type: string
           example: John

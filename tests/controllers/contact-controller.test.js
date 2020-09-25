@@ -387,6 +387,7 @@ test('Call findAndCountAll(queryObject) with given params', async () => {
     phoneNumber: '123',
     dateFrom: '2020-03-10',
     dateTo: '2020-03-15',
+    onlyDataContacts: true,
   };
 
   const spy = jest.spyOn(MockContact, 'findAndCountAll');
@@ -415,6 +416,11 @@ test('Call findAndCountAll(queryObject) with given params', async () => {
                 [Op.lte]: endOfDay(parseISO(body.dateTo)),
               },
             },
+            {
+              'rawJson.callType': {
+                [Op.in]: [callTypes.child, callTypes.caller],
+              },
+            },
             undefined,
           ],
         },
@@ -435,6 +441,7 @@ test('Call findAndCountAll(queryObject) without name search', async () => {
     phoneNumber: '123',
     dateFrom: '2020-03-10',
     dateTo: '2020-03-15',
+    onlyDataContacts: true,
   };
 
   const spy = jest.spyOn(MockContact, 'findAndCountAll');
@@ -461,6 +468,11 @@ test('Call findAndCountAll(queryObject) without name search', async () => {
             {
               createdAt: {
                 [Op.lte]: endOfDay(parseISO(body.dateTo)),
+              },
+            },
+            {
+              'rawJson.callType': {
+                [Op.in]: [callTypes.child, callTypes.caller],
               },
             },
             undefined,
@@ -499,6 +511,7 @@ test('Call findAndCountAll(queryObject) with singleInput param', async () => {
             undefined,
             undefined,
             undefined,
+            undefined,
           ],
         },
       ],
@@ -533,6 +546,7 @@ test('Call findAndCountAll(queryObject) with singleInput param of type date', as
             queryOnPhone(body.singleInput, undefined),
             undefined,
             undefined,
+            undefined,
             {
               [Op.and]: [
                 {
@@ -559,7 +573,7 @@ test('Call findAndCountAll(queryObject) with singleInput param of type date', as
   expect(spy).toHaveBeenCalledWith(expectedQueryObject);
 });
 
-test('Call findAndCountAll(queryObject) with singleInput and ignore other params', async () => {
+test('Call findAndCountAll(queryObject) with singleInput and ignore other params but onlyDataContacts', async () => {
   const body = {
     helpline: 'helpline',
     singleInput: 'singleInput',
@@ -569,6 +583,7 @@ test('Call findAndCountAll(queryObject) with singleInput and ignore other params
     phoneNumber: '123',
     dateFrom: '2020-03-10',
     dateTo: '2020-03-15',
+    onlyDataContacts: true,
   };
 
   const spy = jest.spyOn(MockContact, 'findAndCountAll');
@@ -587,6 +602,11 @@ test('Call findAndCountAll(queryObject) with singleInput and ignore other params
             queryOnPhone(body.singleInput, undefined),
             undefined,
             undefined,
+            {
+              'rawJson.callType': {
+                [Op.in]: [callTypes.child, callTypes.caller],
+              },
+            },
             undefined,
           ],
         },
