@@ -196,6 +196,44 @@ paths:
                     - $ref: '#/components/schemas/SearchContactsResult'
         '401':
           $ref: '#/components/responses/UnauthorizedError'
+  /cases/search:
+    post:
+      tags:
+        - cases
+      summary: search cases
+      operationId: searchCases
+      parameters:
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            format: int32
+        - in: query
+          name: offset
+          required: false
+          schema:
+            type: integer
+            format: int32
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchContact'
+        description: Case to search
+      responses:
+        '200':
+          description: Search cases result
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  allOf:
+                    - $ref: '#/components/schemas/SequelizeRecord'
+                    - $ref: '#/components/schemas/Case'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
 components:
   schemas:
     SequelizeRecord:
