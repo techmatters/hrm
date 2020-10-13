@@ -227,6 +227,33 @@ paths:
                 $ref: '#/components/schemas/SearchCasesResult'
         '401':
           $ref: '#/components/responses/UnauthorizedError'
+  /cases/{caseId}/firstContact:
+    get:
+      tags:
+        - cases
+      summary: fetch case first contact
+      operationId: getCaseFirstContact
+      parameters:
+        - name: caseId
+          in: path
+          description: ID of case
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: First contact of the case
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SequelizeRecord'
+                  - $ref: '#/components/schemas/Contact'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: Case not found
 components:
   schemas:
     SequelizeRecord:
