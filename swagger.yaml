@@ -190,10 +190,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  allOf:
-                    - $ref: '#/components/schemas/SearchContactsResult'
+                $ref: '#/components/schemas/SearchContactsResult'
         '401':
           $ref: '#/components/responses/UnauthorizedError'
   /cases/search:
@@ -227,11 +224,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  allOf:
-                    - $ref: '#/components/schemas/SequelizeRecord'
-                    - $ref: '#/components/schemas/Case'
+                $ref: '#/components/schemas/SearchCasesResult'
         '401':
           $ref: '#/components/responses/UnauthorizedError'
 components:
@@ -353,7 +346,6 @@ components:
         - dateFrom
         - dateTo
         - onlyDataContacts
-        - singleInput
       properties:
         helpline:
           type: string
@@ -381,9 +373,6 @@ components:
         onlyDataContacts:
           type: boolean
           example: true
-        singleInput:
-          type: string
-          example: John
     SearchContactsResult:
       type: object
       required:
@@ -470,6 +459,53 @@ components:
                     type: integer
                     format: int32
                     example: 1
+    SearchCasesResult:
+      type: object
+      required:
+        - count
+        - cases
+      properties:  
+        count:
+          type: integer
+          format: int32
+          example: 1
+        cases:
+          type: array
+          items:
+            type: object
+            required:
+              - id
+              - createdAt
+              - updatedAt
+              - status
+              - helpline
+              - info
+              - twilioWorkerId
+            properties:
+              id:
+                type: integer
+                format: int32
+                example: 27
+              createdAt:
+                type: string
+                format: date-time
+                example: '2020-03-19T15:03:03.042Z'
+              updatedAt:
+                type: string
+                format: date-time
+                example: '2020-04-29T22:18:19.663Z'
+              status:
+                type: string
+                example: open
+              helpline:
+                type: string
+                example: helpline-1
+              info:
+                type: object
+                example: { "notes": "Child with covid-19" }
+              twilioWorkerId:
+                type: string
+                example: WZd3d289370720216aab7e3dc023e80f5f
   responses:
     UnauthorizedError:
       description: API Key is missing or invalid
