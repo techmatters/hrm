@@ -268,6 +268,12 @@ components:
         twilioWorkerId:
           type: string
           example: WZd3d289370720216aab7e3dc023e80f5f
+        connectedContacts:
+          type: array
+          items:
+            allOf:
+              - $ref: '#/components/schemas/SequelizeRecord'
+              - $ref: '#/components/schemas/Contact'
     Contact:
       type: object
       required:
@@ -473,16 +479,8 @@ components:
           type: array
           items:
             allOf:
-              - $ref: '#/components/schemas/Case'
               - $ref: '#/components/schemas/SequelizeRecord'
-              - type: object
-                properties:
-                  contacts:
-                    type: array
-                    items:
-                      allOf:
-                        - $ref: '#/components/schemas/Contact'
-                        - $ref: '#/components/schemas/SequelizeRecord'
+              - $ref: '#/components/schemas/Case'
   responses:
     UnauthorizedError:
       description: API Key is missing or invalid
