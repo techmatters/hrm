@@ -190,10 +190,41 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  allOf:
-                    - $ref: '#/components/schemas/SearchContactsResult'
+                $ref: '#/components/schemas/SearchContactsResult'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /cases/search:
+    post:
+      tags:
+        - cases
+      summary: search cases
+      operationId: searchCases
+      parameters:
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            format: int32
+        - in: query
+          name: offset
+          required: false
+          schema:
+            type: integer
+            format: int32
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchContact'
+        description: Case to search
+      responses:
+        '200':
+          description: Search cases result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchCasesResult'
         '401':
           $ref: '#/components/responses/UnauthorizedError'
 components:
@@ -237,6 +268,12 @@ components:
         twilioWorkerId:
           type: string
           example: WZd3d289370720216aab7e3dc023e80f5f
+        connectedContacts:
+          type: array
+          items:
+            allOf:
+              - $ref: '#/components/schemas/SequelizeRecord'
+              - $ref: '#/components/schemas/Contact'
     Contact:
       type: object
       required:
@@ -315,7 +352,6 @@ components:
         - dateFrom
         - dateTo
         - onlyDataContacts
-        - singleInput
       properties:
         helpline:
           type: string
@@ -343,14 +379,11 @@ components:
         onlyDataContacts:
           type: boolean
           example: true
-        singleInput:
-          type: string
-          example: John
     SearchContactsResult:
       type: object
       required:
         - count
-        - contact
+        - contacts
       properties:
         count:
           type: integer
@@ -432,6 +465,22 @@ components:
                     type: integer
                     format: int32
                     example: 1
+    SearchCasesResult:
+      type: object
+      required:
+        - count
+        - cases
+      properties:  
+        count:
+          type: integer
+          format: int32
+          example: 1
+        cases:
+          type: array
+          items:
+            allOf:
+              - $ref: '#/components/schemas/SequelizeRecord'
+              - $ref: '#/components/schemas/Case'
   responses:
     UnauthorizedError:
       description: API Key is missing or invalid
