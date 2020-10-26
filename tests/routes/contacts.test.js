@@ -208,7 +208,7 @@ describe('/contacts route', () => {
 
       describe('search over phone regexp', () => {
         test('should return 200', async () => {
-          const phoneNumber = another1.number;
+          const phoneNumber = another2.number;
           const response = await request
             .post(subRoute)
             .set(headers)
@@ -218,7 +218,7 @@ describe('/contacts route', () => {
 
           expect(response.status).toBe(200);
           expect(count).toBe(1);
-          expect(contacts[0].details).toStrictEqual(another1.form);
+          expect(contacts[0].details).toStrictEqual(another2.form);
         });
       });
 
