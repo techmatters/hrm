@@ -3,7 +3,6 @@ const Sequelize = require('sequelize');
 const parseISO = require('date-fns/parseISO');
 const startOfDay = require('date-fns/startOfDay');
 const endOfDay = require('date-fns/endOfDay');
-const isValid = require('date-fns/isValid');
 const { retrieveCategories, getPaginationElements } = require('./helpers');
 
 const { Op } = Sequelize;
