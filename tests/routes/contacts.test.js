@@ -178,23 +178,6 @@ describe('/contacts route', () => {
         });
       });
 
-      describe('single input search', () => {
-        test('should return 200', async () => {
-          const response = await request
-            .post(subRoute)
-            .set(headers)
-            .send({ singleInput: 'qwerty' }); // should match contact1 & contact2
-
-          const { contacts, count } = response.body;
-
-          expect(response.status).toBe(200);
-          expect(count).toBe(2);
-          const [c2, c1] = contacts; // result is sorted DESC
-          expect(c1.details).toStrictEqual(contact1.form);
-          expect(c2.details).toStrictEqual(contact2.form);
-        });
-      });
-
       describe('search over phone regexp (multi input)', () => {
         test('should return 200', async () => {
           const phoneNumbers = [
@@ -223,63 +206,19 @@ describe('/contacts route', () => {
         });
       });
 
-      describe('search over phone regexp (single input)', () => {
+      describe('search over phone regexp', () => {
         test('should return 200', async () => {
-          const { childInformation, callerInformation } = another2.form;
-          const phoneNumbers = [
-            another2.number,
-            childInformation.location.phone1,
-            childInformation.location.phone2,
-            callerInformation.location.phone1,
-            callerInformation.location.phone2,
-          ];
-          const requests = phoneNumbers.map(phone => {
-            const phoneNumber = phone.substr(3, 8);
-            return request
-              .post(subRoute)
-              .set(headers)
-              .send({ singleInput: phoneNumber });
-          });
-
-          const responses = await Promise.all(requests);
-
-          responses.forEach(res => {
-            const { count, contacts } = res.body;
-            expect(res.status).toBe(200);
-            expect(count).toBe(1);
-            expect(contacts[0].details).toStrictEqual(another2.form);
-          });
-        });
-      });
-
-      describe('search over phone regexp (phoneNumber AND singleInput provided)', () => {
-        test('should return 200 (with contacts that matches singleInput)', async () => {
           const phoneNumber = another1.number;
-          const singleInput = another2.number;
           const response = await request
             .post(subRoute)
             .set(headers)
-            .send({ phoneNumber, singleInput });
+            .send({ phoneNumber });
 
           const { contacts, count } = response.body;
 
           expect(response.status).toBe(200);
           expect(count).toBe(1);
-          expect(contacts[0].details).toStrictEqual(another2.form);
-        });
-
-        test('returns zero contacts (no match for singleInput and phoneNumber is ignored)', async () => {
-          const phoneNumber = another1.number;
-          const singleInput = '11235813';
-          const response = await request
-            .post(subRoute)
-            .set(headers)
-            .send({ phoneNumber, singleInput });
-
-          const { count } = response.body;
-
-          expect(response.status).toBe(200);
-          expect(count).toBe(0);
+          expect(contacts[0].details).toStrictEqual(another1.form);
         });
       });
 
