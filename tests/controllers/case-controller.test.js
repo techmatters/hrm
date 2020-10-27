@@ -17,11 +17,13 @@ test('create case', async () => {
     status: 'open',
     info: { notes: 'Child with covid-19' },
     twilioWorkerId: 'twilio-worker-id',
+    connectedContacts: [],
   };
 
   await CaseController.createCase(caseToBeCreated);
 
-  expect(createSpy).toHaveBeenCalledWith(caseToBeCreated);
+  const options = { include: { association: 'connectedContacts' } };
+  expect(createSpy).toHaveBeenCalledWith(caseToBeCreated, options);
 });
 
 test('get existing case', async () => {
