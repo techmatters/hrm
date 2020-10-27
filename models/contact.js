@@ -29,7 +29,7 @@ const createCaseAudit = async (
   if (!caseFromDB) return;
 
   const { CaseAudit } = contactInstance.sequelize.models;
-  const contacts = await caseFromDB.getContacts();
+  const contacts = await caseFromDB.getConnectedContacts();
   const contactsId = contacts.map(contact => contact.dataValues.id);
   const previousValue = {
     ...caseFromDB.dataValues,

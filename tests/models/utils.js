@@ -6,7 +6,7 @@ const getMockedCaseInstance = ({ dataValues, previousValues, contactIds }) => {
     create: jest.fn(),
   };
   const getContactWithId = id => ({ dataValues: { id } });
-  const getContacts = () => contactIds.map(id => getContactWithId(id));
+  const getConnectedContacts = () => contactIds.map(id => getContactWithId(id));
   const previous = () => previousValues;
 
   return {
@@ -15,7 +15,7 @@ const getMockedCaseInstance = ({ dataValues, previousValues, contactIds }) => {
     },
     dataValues,
     previous,
-    getContacts,
+    getConnectedContacts,
   };
 };
 

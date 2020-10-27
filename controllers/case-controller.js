@@ -15,7 +15,8 @@ const CaseController = Case => {
   };
 
   const getCase = async id => {
-    const caseFromDB = await Case.findByPk(id);
+    const options = { include: { association: 'connectedContacts' } };
+    const caseFromDB = await Case.findByPk(id, options);
 
     if (!caseFromDB) {
       const errorMessage = `Case with id ${id} not found`;
@@ -32,6 +33,7 @@ const CaseController = Case => {
       order: [['createdAt', 'DESC']],
       limit,
       offset,
+      include: { association: 'connectedContacts', required: true },
     };
     if (query.helpline) {
       queryObject.where = {
@@ -40,23 +42,22 @@ const CaseController = Case => {
     }
 
     const { count, rows } = await Case.findAndCountAll(queryObject);
-    const cases = await Promise.all(
-      rows.map(async caseItem => {
-        const fstContact = (await caseItem.getContacts())[0];
+    const cases = rows.map(caseItem => {
+      const fstContact = caseItem.connectedContacts[0];
 
-        if (!fstContact)
-          return {
-            ...caseItem.dataValues,
-            childName: '',
-            categories: retrieveCategories(undefined), // we call the function here so the return value allways matches
-          };
+      if (!fstContact) {
+        return {
+          ...caseItem.dataValues,
+          childName: '',
+          categories: retrieveCategories(undefined), // we call the function here so the return value allways matches
+        };
+      }
 
-        const { childInformation, caseInformation } = fstContact.dataValues.rawJson;
-        const childName = `${childInformation.name.firstName} ${childInformation.name.lastName}`;
-        const categories = retrieveCategories(caseInformation.categories);
-        return { ...caseItem.dataValues, childName, categories };
-      }),
-    );
+      const { childInformation, caseInformation } = fstContact.dataValues.rawJson;
+      const childName = `${childInformation.name.firstName} ${childInformation.name.lastName}`;
+      const categories = retrieveCategories(caseInformation.categories);
+      return { ...caseItem.dataValues, childName, categories };
+    });
 
     return { cases, count };
   };
