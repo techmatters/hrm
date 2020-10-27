@@ -3,7 +3,6 @@ const Sequelize = require('sequelize');
 const parseISO = require('date-fns/parseISO');
 const startOfDay = require('date-fns/startOfDay');
 const endOfDay = require('date-fns/endOfDay');
-const isValid = require('date-fns/isValid');
 const { retrieveCategories, getPaginationElements } = require('./helpers');
 
 const { Op } = Sequelize;
@@ -35,40 +34,18 @@ function redact(form) {
 }
 
 function isEmptySearchParams(body) {
-  const {
-    helpline,
-    firstName,
-    lastName,
-    counselor,
-    phoneNumber,
-    dateFrom,
-    dateTo,
-    singleInput,
-  } = body;
+  const { helpline, firstName, lastName, counselor, phoneNumber, dateFrom, dateTo } = body;
 
-  /**
-   * Prettier currently enforces the operators (eg. ||) to the at the end of the line.
-   * It's much more readable when it's placed at the beggining of the line. But that's
-   * a current limitation of Prettier. There's a PR in place that will fix this in future
-   * versions of Prettier: https://github.com/prettier/prettier/pull/7111.
-   */
   const anyValue =
-    helpline ||
-    firstName ||
-    lastName ||
-    counselor ||
-    phoneNumber ||
-    dateFrom ||
-    dateTo ||
-    singleInput;
+    helpline || firstName || lastName || counselor || phoneNumber || dateFrom || dateTo;
 
   return !anyValue;
 }
 
 const orUndefined = value => value || undefined;
 
-const queryOnName = (operator, singleInput, firstName, lastName) =>
-  (singleInput || firstName || lastName) && {
+const queryOnName = (firstName, lastName) =>
+  (firstName || lastName) && {
     [Op.or]: [
       {
         [Op.and]: [
@@ -78,15 +55,15 @@ const queryOnName = (operator, singleInput, firstName, lastName) =>
             },
           },
           {
-            [operator]: [
-              (firstName || singleInput) && {
+            [Op.and]: [
+              firstName && {
                 'rawJson.childInformation.name.firstName': {
-                  [Op.iLike]: `%${singleInput || firstName}%`,
+                  [Op.iLike]: `%${firstName}%`,
                 },
               },
-              (lastName || singleInput) && {
+              lastName && {
                 'rawJson.childInformation.name.lastName': {
-                  [Op.iLike]: `%${singleInput || lastName}%`,
+                  [Op.iLike]: `%${lastName}%`,
                 },
               },
             ],
@@ -99,15 +76,15 @@ const queryOnName = (operator, singleInput, firstName, lastName) =>
             'rawJson.callType': callTypes.caller,
           },
           {
-            [operator]: [
-              (firstName || singleInput) && {
+            [Op.and]: [
+              firstName && {
                 'rawJson.callerInformation.name.firstName': {
-                  [Op.iLike]: `%${singleInput || firstName}%`,
+                  [Op.iLike]: `%${firstName}%`,
                 },
               },
-              (lastName || singleInput) && {
+              lastName && {
                 'rawJson.callerInformation.name.lastName': {
-                  [Op.iLike]: `%${singleInput || lastName}%`,
+                  [Op.iLike]: `%${lastName}%`,
                 },
               },
             ],
@@ -117,21 +94,20 @@ const queryOnName = (operator, singleInput, firstName, lastName) =>
     ],
   };
 
-const queryOnPhone = (singleInput, phoneNumber) => {
+const queryOnPhone = phoneNumber => {
   const re = /[\D]/gi;
-  const singleDigitsOnly = singleInput && singleInput.replace(re, '');
-  const phoneDigitsOnly = !singleInput && phoneNumber ? phoneNumber.replace(re, '') : undefined;
+  const phoneDigitsOnly = phoneNumber ? phoneNumber.replace(re, '') : undefined;
 
   // column should be passed via Sequelize.col or Sequelize.literal
   const phoneRegExp = column =>
     Sequelize.where(Sequelize.fn('REGEXP_REPLACE', column, '[^[:digit:]]', '', 'g'), {
-      [Op.iLike]: `%${singleDigitsOnly || phoneDigitsOnly}%`,
+      [Op.iLike]: `%${phoneDigitsOnly}%`,
     });
 
   return (
-    (singleDigitsOnly || phoneDigitsOnly) && {
+    phoneDigitsOnly && {
       [Op.or]: [
-        { number: { [Op.iLike]: `%${singleDigitsOnly || phoneDigitsOnly}%` } },
+        { number: { [Op.iLike]: `%${phoneDigitsOnly}%` } },
         phoneRegExp(Sequelize.literal(`"rawJson"#>>'{childInformation,location,phone1}'`)),
         phoneRegExp(Sequelize.literal(`"rawJson"#>>'{childInformation,location,phone2}'`)),
         phoneRegExp(Sequelize.literal(`"rawJson"#>>'{callerInformation,location,phone1}'`)),
@@ -151,16 +127,13 @@ function buildSearchQueryObject(body, query) {
     dateFrom,
     dateTo,
     onlyDataContacts,
-    singleInput,
   } = body;
 
   const { limit, offset } = getPaginationElements(query);
 
-  const operator = singleInput ? Op.or : Op.and;
-  const isSingleInputValidDate = orUndefined(singleInput && isValid(parseISO(singleInput)));
-  const compareCounselor = orUndefined(counselor && !singleInput);
-  const compareDateFrom = orUndefined(dateFrom && !singleInput);
-  const compareDateTo = orUndefined(dateTo && !singleInput);
+  const compareCounselor = orUndefined(counselor);
+  const compareDateFrom = orUndefined(dateFrom);
+  const compareDateTo = orUndefined(dateTo);
 
   return {
     where: {
@@ -169,12 +142,12 @@ function buildSearchQueryObject(body, query) {
           [Op.or]: [{ helpline: '' }, { helpline: { [Op.is]: null } }, { helpline }],
         },
         {
-          [operator]: [
-            queryOnName(operator, singleInput, firstName, lastName),
+          [Op.and]: [
+            queryOnName(firstName, lastName),
             compareCounselor && {
               twilioWorkerId: counselor,
             },
-            queryOnPhone(singleInput, phoneNumber),
+            queryOnPhone(phoneNumber),
             compareDateFrom && {
               createdAt: {
                 [Op.gte]: startOfDay(parseISO(dateFrom)),
@@ -189,20 +162,6 @@ function buildSearchQueryObject(body, query) {
               'rawJson.callType': {
                 [Op.in]: [callTypes.child, callTypes.caller],
               },
-            },
-            isSingleInputValidDate && {
-              [Op.and]: [
-                {
-                  createdAt: {
-                    [Op.gte]: startOfDay(parseISO(singleInput)),
-                  },
-                },
-                {
-                  createdAt: {
-                    [Op.lte]: endOfDay(parseISO(singleInput)),
-                  },
-                },
-              ],
             },
           ],
         },
