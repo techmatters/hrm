@@ -3,14 +3,16 @@ const { retrieveCategories, getPaginationElements } = require('./helpers');
 
 const CaseController = Case => {
   const createCase = async body => {
+    const options = { include: { association: 'connectedContacts' } };
     const caseRecord = {
       info: body.info,
       helpline: body.helpline,
       status: body.status || 'open',
       twilioWorkerId: body.twilioWorkerId,
+      connectedContacts: [],
     };
 
-    const createdCase = await Case.create(caseRecord);
+    const createdCase = await Case.create(caseRecord, options);
     return createdCase;
   };
 
