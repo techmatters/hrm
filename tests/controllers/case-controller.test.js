@@ -17,11 +17,13 @@ test('create case', async () => {
     status: 'open',
     info: { notes: 'Child with covid-19' },
     twilioWorkerId: 'twilio-worker-id',
+    connectedContacts: [],
   };
 
   await CaseController.createCase(caseToBeCreated);
 
-  expect(createSpy).toHaveBeenCalledWith(caseToBeCreated);
+  const options = { include: { association: 'connectedContacts' } };
+  expect(createSpy).toHaveBeenCalledWith(caseToBeCreated, options);
 });
 
 test('get existing case', async () => {
@@ -37,7 +39,8 @@ test('get existing case', async () => {
 
   const result = await CaseController.getCase(caseId);
 
-  expect(findByPkSpy).toHaveBeenCalledWith(caseId);
+  const options = { include: { association: 'connectedContacts' } };
+  expect(findByPkSpy).toHaveBeenCalledWith(caseId, options);
   expect(result).toStrictEqual(caseFromDB);
 });
 
@@ -63,6 +66,10 @@ describe('Test listCases query params', () => {
       },
       limit: 1000,
       offset: 0,
+      include: {
+        association: 'connectedContacts',
+        required: true,
+      },
     };
 
     expect(findAndCountAllSpy).toHaveBeenCalledWith(expectedQueryObject);
@@ -82,6 +89,10 @@ describe('Test listCases query params', () => {
       },
       limit: 30,
       offset: 0,
+      include: {
+        association: 'connectedContacts',
+        required: true,
+      },
     };
 
     expect(findAndCountAllSpy).toHaveBeenCalledWith(expectedQueryObject);
@@ -101,6 +112,10 @@ describe('Test listCases query params', () => {
       },
       limit: 1000,
       offset: 30,
+      include: {
+        association: 'connectedContacts',
+        required: true,
+      },
     };
 
     expect(findAndCountAllSpy).toHaveBeenCalledWith(expectedQueryObject);
@@ -120,6 +135,10 @@ describe('Test listCases query params', () => {
       },
       limit: 30,
       offset: 30,
+      include: {
+        association: 'connectedContacts',
+        required: true,
+      },
     };
 
     expect(findAndCountAllSpy).toHaveBeenCalledWith(expectedQueryObject);
@@ -139,6 +158,10 @@ describe('Test listCases query params', () => {
       },
       limit: 1000,
       offset: 0,
+      include: {
+        association: 'connectedContacts',
+        required: true,
+      },
     };
 
     expect(findAndCountAllSpy).toHaveBeenCalledWith(expectedQueryObject);
@@ -156,23 +179,21 @@ test('list cases (with 1st contact, no limit/offset)', async () => {
         info: { notes: 'Child with covid-19' },
         twilioWorkerId: 'twilio-worker-id',
       },
-      getContacts() {
-        return [
-          {
-            dataValues: {
-              rawJson: {
-                childInformation: { name: { firstName: 'name', lastName: 'last' } },
-                caseInformation: {
-                  categories: {
-                    cat1: { sub1: false, sub2: true },
-                    cat2: { sub2: false, sub4: false },
-                  },
+      connectedContacts: [
+        {
+          dataValues: {
+            rawJson: {
+              childInformation: { name: { firstName: 'name', lastName: 'last' } },
+              caseInformation: {
+                categories: {
+                  cat1: { sub1: false, sub2: true },
+                  cat2: { sub2: false, sub4: false },
                 },
               },
             },
           },
-        ];
-      },
+        },
+      ],
     },
   ];
 
@@ -201,6 +222,10 @@ test('list cases (with 1st contact, no limit/offset)', async () => {
     },
     limit: 1000,
     offset: 0,
+    include: {
+      association: 'connectedContacts',
+      required: true,
+    },
   };
 
   expect(findAndCountAllSpy).toHaveBeenCalledWith(expectedQueryObject);
@@ -218,23 +243,21 @@ test('list cases (with 1st contact, with limit/offset)', async () => {
         info: { notes: 'Child with covid-19' },
         twilioWorkerId: 'twilio-worker-id',
       },
-      getContacts() {
-        return [
-          {
-            dataValues: {
-              rawJson: {
-                childInformation: { name: { firstName: 'name', lastName: 'last' } },
-                caseInformation: {
-                  categories: {
-                    cat1: { sub1: false, sub2: true },
-                    cat2: { sub2: false, sub4: false },
-                  },
+      connectedContacts: [
+        {
+          dataValues: {
+            rawJson: {
+              childInformation: { name: { firstName: 'name', lastName: 'last' } },
+              caseInformation: {
+                categories: {
+                  cat1: { sub1: false, sub2: true },
+                  cat2: { sub2: false, sub4: false },
                 },
               },
             },
           },
-        ];
-      },
+        },
+      ],
     },
   ];
 
@@ -263,6 +286,10 @@ test('list cases (with 1st contact, with limit/offset)', async () => {
     },
     limit: 20,
     offset: 30,
+    include: {
+      association: 'connectedContacts',
+      required: true,
+    },
   };
 
   expect(findAndCountAllSpy).toHaveBeenCalledWith(expectedQueryObject);
@@ -280,9 +307,7 @@ test('list cases (without contacts)', async () => {
         info: { notes: 'Child with covid-19' },
         twilioWorkerId: 'twilio-worker-id',
       },
-      getContacts() {
-        return [];
-      },
+      connectedContacts: [],
     },
   ];
 
@@ -308,6 +333,10 @@ test('list cases (without contacts)', async () => {
     },
     limit: 1000,
     offset: 0,
+    include: {
+      association: 'connectedContacts',
+      required: true,
+    },
   };
 
   expect(findAndCountAllSpy).toHaveBeenCalledWith(expectedQueryObject);
@@ -322,6 +351,10 @@ test('list cases without helpline', async () => {
     order: [['createdAt', 'DESC']],
     limit: 20,
     offset: 30,
+    include: {
+      association: 'connectedContacts',
+      required: true,
+    },
   };
 
   expect(findAndCountAllSpy).toHaveBeenCalledWith(expectedQueryObject);

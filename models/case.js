@@ -9,7 +9,7 @@ const createCaseAudit = async (CaseAudit, previousValue, newValue, transaction) 
 };
 
 const getContactIds = async caseInstance => {
-  const contacts = await caseInstance.getContacts();
+  const contacts = await caseInstance.getConnectedContacts();
   return contacts.map(contact => contact.dataValues.id);
 };
 
@@ -22,7 +22,7 @@ module.exports = (sequelize, DataTypes) => {
   });
 
   Case.associate = models => {
-    Case.hasMany(models.Contact, { foreignKey: 'caseId' });
+    Case.hasMany(models.Contact, { foreignKey: 'caseId', as: 'connectedContacts' });
     Case.hasMany(models.CaseAudit, { foreignKey: 'caseId' });
   };
 
