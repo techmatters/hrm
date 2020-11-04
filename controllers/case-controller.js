@@ -94,8 +94,6 @@ const CaseController = (Case, sequelize) => {
         dateTo: body.dateTo || null,
       },
     });
-    // const queryObject = buildSearchQueryObject(body, query);
-    // const { count, rows: cases } = await Case.findAndCountAll(queryObject);
     return { count: metadata.rowCount, cases };
   };
 
