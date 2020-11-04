@@ -3,7 +3,12 @@ const Sequelize = require('sequelize');
 const parseISO = require('date-fns/parseISO');
 const startOfDay = require('date-fns/startOfDay');
 const endOfDay = require('date-fns/endOfDay');
-const { retrieveCategories, getPaginationElements } = require('./helpers');
+const {
+  retrieveCategories,
+  getPaginationElements,
+  isEmptySearchParams,
+  orUndefined,
+} = require('./helpers');
 
 const { Op } = Sequelize;
 
@@ -32,17 +37,6 @@ function redact(form) {
     number: formatNumber(form.number),
   };
 }
-
-function isEmptySearchParams(body) {
-  const { helpline, firstName, lastName, counselor, phoneNumber, dateFrom, dateTo } = body;
-
-  const anyValue =
-    helpline || firstName || lastName || counselor || phoneNumber || dateFrom || dateTo;
-
-  return !anyValue;
-}
-
-const orUndefined = value => value || undefined;
 
 const queryOnName = (firstName, lastName) =>
   (firstName || lastName) && {

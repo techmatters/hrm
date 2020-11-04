@@ -38,7 +38,20 @@ const getPaginationElements = query => {
   return { limit, offset };
 };
 
+const isEmptySearchParams = body => {
+  const { helpline, firstName, lastName, counselor, phoneNumber, dateFrom, dateTo } = body;
+
+  const anyValue =
+    helpline || firstName || lastName || counselor || phoneNumber || dateFrom || dateTo;
+
+  return !anyValue;
+};
+
+const orUndefined = value => value || undefined;
+
 module.exports = {
   retrieveCategories,
   getPaginationElements,
+  isEmptySearchParams,
+  orUndefined,
 };
