@@ -92,6 +92,7 @@ const CaseController = (Case, sequelize) => {
         lastName: body.lastName ? `%${body.lastName}%` : null,
         dateFrom: body.dateFrom || null,
         dateTo: body.dateTo || null,
+        helpline: body.helpline || null,
       },
     });
     return { count: metadata.rowCount, cases };

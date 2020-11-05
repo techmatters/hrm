@@ -11,7 +11,10 @@ LEFT JOIN LATERAL (
   SELECT * FROM "Contacts" c WHERE c."caseId" = "cases".id
   ) contacts ON true
 WHERE
-  CASE WHEN :firstName IS NULL THEN TRUE
+  CASE WHEN :helpline IS NULL THEN TRUE
+  ELSE  cases.helpline = :helpline
+  END
+  AND CASE WHEN :firstName IS NULL THEN TRUE
   ELSE
   (
     households IS NOT NULL AND h.value->'household'->'name'->>'firstName' ILIKE :firstName
