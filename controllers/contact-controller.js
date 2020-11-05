@@ -240,7 +240,9 @@ function convertContactsToSearchResults(contacts) {
 
       const contactId = contact.id;
       const dateTime = contact.createdAt;
-      const name = `${contact.rawJson.childInformation.name.firstName} ${contact.rawJson.childInformation.name.lastName}`;
+      const name = contact.rawJson.childInformation.name
+        ? `${contact.rawJson.childInformation.name.firstName} ${contact.rawJson.childInformation.name.lastName}`
+        : `${contact.rawJson.childInformation.firstName} ${contact.rawJson.childInformation.lastName}`;
       const customerNumber = contact.number;
       const { callType, caseInformation } = contact.rawJson;
       const categories = retrieveCategories(caseInformation.categories);
