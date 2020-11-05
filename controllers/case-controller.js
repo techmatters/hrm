@@ -88,11 +88,12 @@ const CaseController = (Case, sequelize) => {
     console.log({ query });
     const [cases, metadata] = await sequelize.query(searchCasesQuery, {
       replacements: {
+        helpline: body.helpline || null,
         firstName: body.firstName ? `%${body.firstName}%` : null,
         lastName: body.lastName ? `%${body.lastName}%` : null,
         dateFrom: body.dateFrom || null,
         dateTo: body.dateTo || null,
-        helpline: body.helpline || null,
+        phoneNumber: body.phoneNumber ? `%${body.phoneNumber}%` : null,
       },
     });
     return { count: metadata.rowCount, cases };

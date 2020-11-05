@@ -34,5 +34,20 @@ WHERE
   AND CASE WHEN :dateTo IS NULL THEN TRUE
   ELSE cases."createdAt" <= :dateTo::DATE
   END
+  AND CASE WHEN :phoneNumber IS NULL THEN TRUE
+  ELSE
+  (
+    households IS NOT NULL AND
+    (
+      regexp_replace(h.value->'household'->'location'->>'phone1', '\D', '', 'g') ILIKE :phoneNumber
+      OR regexp_replace(h.value->'household'->'location'->>'phone2', '\D', '', 'g') ILIKE :phoneNumber
+    )
+    OR perpetrators IS NOT NULL AND
+    (
+      regexp_replace(p.value->'perpetrator'->'location'->>'phone1', '\D', '', 'g') ILIKE :phoneNumber
+      OR regexp_replace(p.value->'perpetrator'->'location'->>'phone2', '\D', '', 'g') ILIKE :phoneNumber
+    )
+  )
+  END
 GROUP BY cases.id
 ;
