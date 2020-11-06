@@ -1,5 +1,4 @@
 SELECT DISTINCT ON (cases.id)
-  cases.id,
   cases.*,
   COALESCE(json_agg(contacts.*) FILTER (WHERE contacts.id IS NOT NULL), '[]') AS "connectedContacts"
 FROM
