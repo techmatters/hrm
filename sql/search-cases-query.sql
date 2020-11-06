@@ -1,6 +1,6 @@
 SELECT DISTINCT ON (cases.id)
   cases.*,
-  COALESCE(json_agg(contacts.*) FILTER (WHERE contacts.id IS NOT NULL), '[]') AS "connectedContacts"
+  COALESCE(json_agg(DISTINCT contacts.*) FILTER (WHERE contacts.id IS NOT NULL), '[]') AS "connectedContacts"
 FROM
   "Cases" cases,
   jsonb_to_record(info) AS info_as_table(notes jsonb, households jsonb, perpetrators jsonb)
