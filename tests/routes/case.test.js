@@ -3,6 +3,7 @@ const Sequelize = require('sequelize');
 const app = require('../../app');
 const models = require('../../models');
 const mocks = require('./mocks');
+const addDays = require('date-fns/addDays');
 
 const server = app.listen();
 const request = supertest.agent(server);
@@ -324,18 +325,20 @@ describe('/cases route', () => {
         const body = {
           helpline: 'helpline',
           dateFrom: createdCase1.createdAt,
-          dateTo: createdCase2.createdAt,
+          dateTo: addDays(createdCase1.createdAt, 1),
         };
+        console.log(JSON.stringify(body, null, 2));
         const response = await request
           .post(subRoute)
           .set(headers)
           .send(body);
 
         expect(response.status).toBe(200);
-        expect(response.body.count).toBe(2);
-        const [firstCase, secondCase] = response.body.cases;
-        expect(firstCase.id).toBe(createdCase1.id);
-        expect(secondCase.id).toBe(createdCase2.id);
+        expect(response.body.count).toBeGreaterThan(3);
+        const ids = response.body.cases.map(c => c.id);
+        expect(ids).toContain(createdCase1.id);
+        expect(ids).toContain(createdCase2.id);
+        expect(ids).toContain(createdCase3.id);
       });
     });
   });
