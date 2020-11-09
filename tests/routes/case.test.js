@@ -1,9 +1,9 @@
 const supertest = require('supertest');
 const Sequelize = require('sequelize');
+const addDays = require('date-fns/addDays');
 const app = require('../../app');
 const models = require('../../models');
 const mocks = require('./mocks');
-const addDays = require('date-fns/addDays');
 
 const server = app.listen();
 const request = supertest.agent(server);
