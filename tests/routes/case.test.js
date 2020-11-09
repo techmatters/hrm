@@ -214,7 +214,9 @@ describe('/cases route', () => {
               firstName: 'Maria',
               lastName: 'Silva',
             },
-            phone1: '+1-202-555-0184',
+            location: {
+              phone1: '+1-202-555-0184',
+            },
           },
         },
         {
@@ -248,7 +250,9 @@ describe('/cases route', () => {
               firstName: 'John',
               lastName: 'Doe',
             },
-            phone2: '+12025550184',
+            location: {
+              phone2: '+12025550184',
+            },
           },
         },
       ],
