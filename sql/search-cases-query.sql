@@ -3,7 +3,7 @@ SELECT DISTINCT ON (cases.id)
   COALESCE(json_agg(DISTINCT contacts.*) FILTER (WHERE contacts.id IS NOT NULL), '[]') AS "connectedContacts"
 FROM
   "Cases" cases,
-  jsonb_to_record(info) AS info_as_table(notes jsonb, households jsonb, perpetrators jsonb)
+  jsonb_to_record(info) AS info_as_table(households jsonb, perpetrators jsonb)
 LEFT JOIN LATERAL json_array_elements(households::JSON) h ON TRUE
 LEFT JOIN LATERAL json_array_elements(perpetrators::JSON) p ON TRUE
 LEFT JOIN LATERAL (
