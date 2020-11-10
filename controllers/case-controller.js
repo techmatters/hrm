@@ -86,6 +86,7 @@ const CaseController = (Case, sequelize) => {
       return { count: 0, contacts: [] };
     }
     console.log({ query });
+    const notDigits = /[\D]/gi;
     const [cases, metadata] = await sequelize.query(searchCasesQuery, {
       replacements: {
         helpline: body.helpline || null,
@@ -93,7 +94,7 @@ const CaseController = (Case, sequelize) => {
         lastName: body.lastName ? `%${body.lastName}%` : null,
         dateFrom: body.dateFrom || null,
         dateTo: body.dateTo || null,
-        phoneNumber: body.phoneNumber ? `%${body.phoneNumber}%` : null,
+        phoneNumber: body.phoneNumber ? `%${body.phoneNumber.replace(notDigits, '')}%` : null,
       },
     });
     return { count: metadata.rowCount, cases };
