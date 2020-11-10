@@ -1,7 +1,13 @@
 const createError = require('http-errors');
-const { retrieveCategories, getPaginationElements } = require('./helpers');
+const fs = require('fs');
+const path = require('path');
+const { retrieveCategories, getPaginationElements, isEmptySearchParams } = require('./helpers');
 
-const CaseController = Case => {
+const searchCasesQuery = fs
+  .readFileSync(path.join(__dirname, '../sql/search-cases-query.sql'))
+  .toString();
+
+const CaseController = (Case, sequelize) => {
   const createCase = async body => {
     const options = { include: { association: 'connectedContacts' } };
     const caseRecord = {
@@ -75,7 +81,26 @@ const CaseController = Case => {
     await caseFromDB.destroy();
   };
 
-  return { createCase, getCase, listCases, updateCase, deleteCase };
+  const searchCases = async (body, query) => {
+    if (isEmptySearchParams(body)) {
+      return { count: 0, contacts: [] };
+    }
+    console.log({ query });
+    const notDigits = /[\D]/gi;
+    const [cases, metadata] = await sequelize.query(searchCasesQuery, {
+      replacements: {
+        helpline: body.helpline || null,
+        firstName: body.firstName ? `%${body.firstName}%` : null,
+        lastName: body.lastName ? `%${body.lastName}%` : null,
+        dateFrom: body.dateFrom || null,
+        dateTo: body.dateTo || null,
+        phoneNumber: body.phoneNumber ? `%${body.phoneNumber.replace(notDigits, '')}%` : null,
+      },
+    });
+    return { count: metadata.rowCount, cases };
+  };
+
+  return { createCase, getCase, listCases, updateCase, deleteCase, searchCases };
 };
 
 module.exports = CaseController;

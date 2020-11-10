@@ -1,5 +1,6 @@
 const supertest = require('supertest');
 const Sequelize = require('sequelize');
+const addDays = require('date-fns/addDays');
 const app = require('../../app');
 const models = require('../../models');
 const mocks = require('./mocks');
@@ -28,8 +29,8 @@ beforeAll(async () => {
   await CaseAudit.destroy(caseAuditsQuery);
 });
 
-afterAll(done => {
-  server.close(done);
+afterAll(async () => {
+  await CaseAudit.destroy(caseAuditsQuery);
 });
 
 afterEach(async () => CaseAudit.destroy(caseAuditsQuery));
@@ -199,6 +200,145 @@ describe('/cases route', () => {
           .send();
 
         expect(response.status).toBe(404);
+      });
+    });
+  });
+
+  const withHouseholds = caseObject => ({
+    ...caseObject,
+    info: {
+      ...caseObject.info,
+      households: [
+        {
+          household: {
+            name: {
+              firstName: 'Maria',
+              lastName: 'Silva',
+            },
+            location: {
+              phone1: '+1-202-555-0184',
+            },
+          },
+        },
+        {
+          household: {
+            name: {
+              firstName: 'John',
+              lastName: 'Doe',
+            },
+          },
+        },
+      ],
+    },
+  });
+
+  const withPerpetrators = caseObject => ({
+    ...caseObject,
+    info: {
+      ...caseObject.info,
+      perpetrators: [
+        {
+          perpetrator: {
+            name: {
+              firstName: 'Maria',
+              lastName: 'Silva',
+            },
+          },
+        },
+        {
+          perpetrator: {
+            name: {
+              firstName: 'John',
+              lastName: 'Doe',
+            },
+            location: {
+              phone2: '+12025550184',
+            },
+          },
+        },
+      ],
+    },
+  });
+
+  describe('/cases/search route', () => {
+    describe('POST', () => {
+      let createdCase1;
+      let createdCase2;
+      let createdCase3;
+      const subRoute = '/cases/search';
+
+      beforeEach(async () => {
+        createdCase1 = await Case.create(withHouseholds(case1));
+        createdCase2 = await Case.create(case1);
+        createdCase3 = await Case.create(withPerpetrators(case1));
+      });
+
+      afterEach(async () => {
+        await createdCase1.destroy();
+        await createdCase2.destroy();
+        await createdCase3.destroy();
+      });
+
+      test('should return 401', async () => {
+        const response = await request.post(subRoute).send({});
+
+        expect(response.status).toBe(401);
+        expect(response.body.error).toBe('Authorization failed');
+      });
+
+      test('should return 200 - search by name', async () => {
+        const body = {
+          helpline: 'helpline',
+          firstName: 'maria',
+          lastName: 'silva',
+        };
+        const response = await request
+          .post(subRoute)
+          .set(headers)
+          .send(body);
+
+        expect(response.status).toBe(200);
+        expect(response.body.count).toBe(2);
+        const [firstCase, secondCase] = response.body.cases;
+        expect(firstCase.id).toBe(createdCase1.id);
+        expect(secondCase.id).toBe(createdCase3.id);
+      });
+
+      test('should return 200 - search by phone number', async () => {
+        const body = {
+          helpline: 'helpline',
+          phoneNumber: '2025550184',
+        };
+        const response = await request
+          .post(subRoute)
+          .set(headers)
+          .send(body);
+
+        expect(response.status).toBe(200);
+        expect(response.body.count).toBe(2);
+        const [firstCase, secondCase] = response.body.cases;
+        expect(firstCase.id).toBe(createdCase1.id);
+        expect(secondCase.id).toBe(createdCase3.id);
+      });
+
+      test('should return 200 - search by date', async () => {
+        const body = {
+          helpline: 'helpline',
+          dateFrom: createdCase1.createdAt,
+          dateTo: addDays(createdCase1.createdAt, 1),
+        };
+        console.log(JSON.stringify(body, null, 2));
+        const response = await request
+          .post(subRoute)
+          .set(headers)
+          .send(body);
+
+        expect(response.status).toBe(200);
+        expect(response.body.count).toBeGreaterThan(3);
+        const ids = response.body.cases.map(c => c.id);
+        expect(ids).toContain(createdCase1.id);
+        expect(ids).toContain(createdCase2.id);
+        expect(ids).toContain(createdCase3.id);
       });
     });
   });
