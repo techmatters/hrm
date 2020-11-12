@@ -29,22 +29,6 @@ WHERE
     ELSE  cases.helpline = :helpline
     END
   AND
-  -- search on firstName of households and perpetrators
-    CASE WHEN :firstName IS NULL THEN TRUE
-    ELSE (
-      households IS NOT NULL AND h.value->'household'->'name'->>'firstName' ILIKE :firstName
-      OR perpetrators IS NOT NULL AND p.value->'perpetrator'->'name'->>'firstName' ILIKE :firstName
-    )
-    END
-  AND
-    -- search on lastName of households and perpetrators
-    CASE WHEN :lastName IS NULL THEN TRUE
-    ELSE (
-      households IS NOT NULL AND h.value->'household'->'name'->>'lastName' ILIKE :lastName
-      OR perpetrators IS NOT NULL AND p.value->'perpetrator'->'name'->>'lastName' ILIKE :lastName
-    )
-    END
-  AND
     CASE WHEN :dateFrom IS NULL THEN TRUE
     ELSE cases."createdAt" >= :dateFrom::DATE
     END
@@ -52,19 +36,81 @@ WHERE
     CASE WHEN :dateTo IS NULL THEN TRUE
     ELSE cases."createdAt" <= :dateTo::DATE
     END
-  AND
-    -- search on phone1 and phone2 of households and perpetrators
-    CASE WHEN :phoneNumber IS NULL THEN TRUE
-    ELSE (
-      households IS NOT NULL AND (
-        regexp_replace(h.value->'household'->'location'->>'phone1', '\D', '', 'g') ILIKE :phoneNumber
-        OR regexp_replace(h.value->'household'->'location'->>'phone2', '\D', '', 'g') ILIKE :phoneNumber
+  AND (
+
+    -- search on childInformation of connectedContacts
+    (
+      CASE WHEN :firstName IS NULL THEN TRUE
+      ELSE contacts."rawJson"->'childInformation'->'name'->>'firstName' ILIKE :firstName
+      END
+    AND
+      CASE WHEN :lastName IS NULL THEN TRUE
+      ELSE contacts."rawJson"->'childInformation'->'name'->>'lastName' ILIKE :lastName
+      END
+    AND
+      CASE WHEN :phoneNumber IS NULL THEN TRUE
+      ELSE (
+        regexp_replace(contacts."rawJson"->'childInformation'->'location'->>'phone1', '\D', '', 'g') ILIKE :phoneNumber
+        OR regexp_replace(contacts."rawJson"->'childInformation'->'location'->>'phone2', '\D', '', 'g') ILIKE :phoneNumber
+        OR regexp_replace(contacts.number, '\D', '', 'g') ILIKE :phoneNumber
       )
-      OR perpetrators IS NOT NULL AND (
-        regexp_replace(p.value->'perpetrator'->'location'->>'phone1', '\D', '', 'g') ILIKE :phoneNumber
-        OR regexp_replace(p.value->'perpetrator'->'location'->>'phone2', '\D', '', 'g') ILIKE :phoneNumber
-      )
+      END
     )
-    END
+
+    -- search on callerInformation of connectedContacts
+  OR ( 
+        CASE WHEN :firstName IS NULL THEN TRUE
+        ELSE contacts."rawJson"->'callerInformation'->'name'->>'firstName' ILIKE :firstName
+        END
+      AND
+        CASE WHEN :lastName IS NULL THEN TRUE
+        ELSE contacts."rawJson"->'callerInformation'->'name'->>'lastName' ILIKE :lastName
+        END
+      AND
+        CASE WHEN :phoneNumber IS NULL THEN TRUE
+        ELSE (
+          regexp_replace(contacts."rawJson"->'callerInformation'->'location'->>'phone1', '\D', '', 'g') ILIKE :phoneNumber
+          OR regexp_replace(contacts."rawJson"->'callerInformation'->'location'->>'phone2', '\D', '', 'g') ILIKE :phoneNumber
+          OR regexp_replace(contacts.number, '\D', '', 'g') ILIKE :phoneNumber
+        )
+        END
+      )
+
+    -- search on households
+  OR (
+        CASE WHEN :firstName IS NULL THEN TRUE
+        ELSE h.value->'household'->'name'->>'firstName' ILIKE :firstName
+        END
+      AND
+        CASE WHEN :lastName IS NULL THEN TRUE
+        ELSE h.value->'household'->'name'->>'lastName' ILIKE :lastName
+        END
+      AND
+        CASE WHEN :phoneNumber IS NULL THEN TRUE
+        ELSE (
+          regexp_replace(h.value->'household'->'location'->>'phone1', '\D', '', 'g') ILIKE :phoneNumber
+          OR regexp_replace(h.value->'household'->'location'->>'phone2', '\D', '', 'g') ILIKE :phoneNumber
+        )
+        END
+      )
+
+    -- search on perpetrators
+  OR (
+        CASE WHEN :firstName IS NULL THEN TRUE
+        ELSE p.value->'perpetrator'->'name'->>'firstName' ILIKE :firstName
+        END
+      AND
+        CASE WHEN :lastName IS NULL THEN TRUE
+        ELSE p.value->'perpetrator'->'name'->>'lastName' ILIKE :lastName
+        END
+      AND
+        CASE WHEN :phoneNumber IS NULL THEN TRUE
+        ELSE (
+          regexp_replace(p.value->'perpetrator'->'location'->>'phone1', '\D', '', 'g') ILIKE :phoneNumber
+          OR regexp_replace(p.value->'perpetrator'->'location'->>'phone2', '\D', '', 'g') ILIKE :phoneNumber
+        )
+        END
+      )
+  )
 GROUP BY cases.id
 ;
