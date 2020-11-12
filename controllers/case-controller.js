@@ -95,6 +95,7 @@ const CaseController = (Case, sequelize) => {
         dateFrom: body.dateFrom || null,
         dateTo: body.dateTo || null,
         phoneNumber: body.phoneNumber ? `%${body.phoneNumber.replace(notDigits, '')}%` : null,
+        counselor: body.counselor || null,
       },
     });
     return { count: metadata.rowCount, cases };

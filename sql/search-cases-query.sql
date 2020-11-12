@@ -29,6 +29,10 @@ WHERE
     ELSE  cases.helpline = :helpline
     END
   AND
+    CASE WHEN :counselor IS NULL THEN TRUE
+    ELSE cases."twilioWorkerId" = :counselor
+    END
+  AND
     CASE WHEN :dateFrom IS NULL THEN TRUE
     ELSE cases."createdAt"::DATE >= :dateFrom::DATE
     END
