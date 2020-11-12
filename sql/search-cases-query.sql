@@ -30,11 +30,11 @@ WHERE
     END
   AND
     CASE WHEN :dateFrom IS NULL THEN TRUE
-    ELSE cases."createdAt" >= :dateFrom::DATE
+    ELSE cases."createdAt"::DATE >= :dateFrom::DATE
     END
   AND
     CASE WHEN :dateTo IS NULL THEN TRUE
-    ELSE cases."createdAt" <= :dateTo::DATE
+    ELSE cases."createdAt"::DATE <= :dateTo::DATE
     END
   AND (
 
