@@ -1,6 +1,5 @@
 const supertest = require('supertest');
 const Sequelize = require('sequelize');
-const addDays = require('date-fns/addDays');
 const app = require('../../app');
 const models = require('../../models');
 const mocks = require('./mocks');
@@ -8,14 +7,14 @@ const mocks = require('./mocks');
 const server = app.listen();
 const request = supertest.agent(server);
 
-const { case1, case2 } = mocks;
+const { case1, case2, contact1 } = mocks;
 
 const headers = {
   'Content-Type': 'application/json',
   Authorization: `Basic ${Buffer.from(process.env.API_KEY).toString('base64')}`,
 };
 
-const { Case, CaseAudit } = models;
+const { Case, CaseAudit, Contact } = models;
 
 const caseAuditsQuery = {
   where: {
@@ -260,20 +259,49 @@ describe('/cases route', () => {
     },
   });
 
+  const fillNameAndPhone = contact => {
+    const modifiedContact = {
+      ...contact,
+      form: {
+        ...contact.form,
+        childInformation: {
+          ...contact.form.childInformation,
+          name: {
+            firstName: 'Maria',
+            lastName: 'Silva',
+          },
+        },
+      },
+      number: '+1-202-555-0184',
+    };
+
+    modifiedContact.rawJson = modifiedContact.form;
+    delete modifiedContact.form;
+
+    return modifiedContact;
+  };
+
   describe('/cases/search route', () => {
     describe('POST', () => {
       let createdCase1;
       let createdCase2;
       let createdCase3;
+      let createdContact;
       const subRoute = '/cases/search';
 
       beforeEach(async () => {
         createdCase1 = await Case.create(withHouseholds(case1));
         createdCase2 = await Case.create(case1);
         createdCase3 = await Case.create(withPerpetrators(case1));
+        createdContact = await Contact.create(fillNameAndPhone(contact1));
+
+        // Connects createdContact with createdCase2
+        createdContact.caseId = createdCase2.id;
+        await createdContact.save();
       });
 
       afterEach(async () => {
+        await createdContact.destroy();
         await createdCase1.destroy();
         await createdCase2.destroy();
         await createdCase3.destroy();
@@ -298,10 +326,11 @@ describe('/cases route', () => {
           .send(body);
 
         expect(response.status).toBe(200);
-        expect(response.body.count).toBe(2);
-        const [firstCase, secondCase] = response.body.cases;
-        expect(firstCase.id).toBe(createdCase1.id);
-        expect(secondCase.id).toBe(createdCase3.id);
+        expect(response.body.count).toBe(3);
+        const ids = response.body.cases.map(c => c.id);
+        expect(ids).toContain(createdCase1.id);
+        expect(ids).toContain(createdCase2.id);
+        expect(ids).toContain(createdCase3.id);
       });
 
       test('should return 200 - search by phone number', async () => {
@@ -315,19 +344,19 @@ describe('/cases route', () => {
           .send(body);
 
         expect(response.status).toBe(200);
-        expect(response.body.count).toBe(2);
-        const [firstCase, secondCase] = response.body.cases;
-        expect(firstCase.id).toBe(createdCase1.id);
-        expect(secondCase.id).toBe(createdCase3.id);
+        expect(response.body.count).toBe(3);
+        const ids = response.body.cases.map(c => c.id);
+        expect(ids).toContain(createdCase1.id);
+        expect(ids).toContain(createdCase2.id);
+        expect(ids).toContain(createdCase3.id);
       });
 
       test('should return 200 - search by date', async () => {
         const body = {
           helpline: 'helpline',
           dateFrom: createdCase1.createdAt,
-          dateTo: addDays(createdCase1.createdAt, 1),
+          dateTo: createdCase3.createdAt,
         };
-        console.log(JSON.stringify(body, null, 2));
         const response = await request
           .post(subRoute)
           .set(headers)
