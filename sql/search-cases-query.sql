@@ -12,7 +12,7 @@
 
 SELECT * FROM (
   SELECT DISTINCT ON (cases.id) -- Do not return same case twice
-    count(*) OVER() AS "totalCount",
+    (count(*) OVER())::INTEGER AS "totalCount",
     cases.*,
     -- build "connectedContacts": an aggregate contacts as an array of json objects
     COALESCE(json_agg(DISTINCT contacts.*) FILTER (WHERE contacts.id IS NOT NULL), '[]') AS "connectedContacts"
