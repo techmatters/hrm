@@ -102,8 +102,11 @@ const CaseController = (Case, sequelize) => {
       },
     });
 
-    const count = casesWithTotalCount.length > 0 ? casesWithTotalCount[0].totalCount : 0;
-    const cases = casesWithTotalCount.map(({ totalCount, ...rest }) => ({ ...rest }));
+    const count =
+      casesWithTotalCount && casesWithTotalCount.length > 0 ? casesWithTotalCount[0].totalCount : 0;
+    const cases = casesWithTotalCount
+      ? casesWithTotalCount.map(({ totalCount, ...rest }) => ({ ...rest }))
+      : [];
 
     return { count, cases };
   };
