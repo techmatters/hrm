@@ -308,7 +308,10 @@ describe('/cases route', () => {
       });
 
       test('should return 401', async () => {
-        const response = await request.post(subRoute).send({});
+        const response = await request
+          .post(subRoute)
+          .query({ limit: 20, offset: 0 })
+          .send({});
 
         expect(response.status).toBe(401);
         expect(response.body.error).toBe('Authorization failed');
@@ -322,6 +325,7 @@ describe('/cases route', () => {
         };
         const response = await request
           .post(subRoute)
+          .query({ limit: 20, offset: 0 })
           .set(headers)
           .send(body);
 
@@ -340,6 +344,7 @@ describe('/cases route', () => {
         };
         const response = await request
           .post(subRoute)
+          .query({ limit: 20, offset: 0 })
           .set(headers)
           .send(body);
 
@@ -359,6 +364,7 @@ describe('/cases route', () => {
         };
         const response = await request
           .post(subRoute)
+          .query({ limit: 20, offset: 0 })
           .set(headers)
           .send(body);
 

@@ -85,9 +85,10 @@ const CaseController = (Case, sequelize) => {
     if (isEmptySearchParams(body)) {
       return { count: 0, contacts: [] };
     }
-    console.log({ query });
+
     const notDigits = /[\D]/gi;
-    const [cases, metadata] = await sequelize.query(searchCasesQuery, {
+    const casesWithTotalCount = await sequelize.query(searchCasesQuery, {
+      type: sequelize.QueryTypes.SELECT,
       replacements: {
         helpline: body.helpline || null,
         firstName: body.firstName ? `%${body.firstName}%` : null,
@@ -96,9 +97,18 @@ const CaseController = (Case, sequelize) => {
         dateTo: body.dateTo || null,
         phoneNumber: body.phoneNumber ? `%${body.phoneNumber.replace(notDigits, '')}%` : null,
         counselor: body.counselor || null,
+        limit: query.limit,
+        offset: query.offset,
       },
     });
-    return { count: metadata.rowCount, cases };
+
+    const count =
+      casesWithTotalCount && casesWithTotalCount.length > 0 ? casesWithTotalCount[0].totalCount : 0;
+    const cases = casesWithTotalCount
+      ? casesWithTotalCount.map(({ totalCount, ...rest }) => ({ ...rest }))
+      : [];
+
+    return { count, cases };
   };
 
   return { createCase, getCase, listCases, updateCase, deleteCase, searchCases };
