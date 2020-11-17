@@ -6,6 +6,7 @@ const cors = require('cors');
 
 const models = require('./models');
 const swagger = require('./swagger');
+const { apiV0 } = require('./routes');
 
 const app = express();
 const apiKey = process.env.API_KEY;
@@ -59,6 +60,17 @@ function authorizationMiddleware(req, res, next) {
 }
 
 app.use(authorizationMiddleware);
+
+/**
+ * Middleware that adds the account sid (taken from path) to the request object, so we can use it in the routes.
+ * NOTE: If we ever move this project to Typescript: https://dev.to/kwabenberko/extend-express-s-request-object-with-typescript-declaration-merging-1nn5
+ */
+const addAccountSid = (req, res, next) => {
+  req.accountSid = req.params.accountSid;
+  return next();
+};
+
+app.use('/v0/accounts/:accountSid', addAccountSid, apiV0);
 
 // run with node app.js and hit curl localhost:8080/contacts/
 app.get('/contacts', async (req, res) => {
