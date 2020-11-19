@@ -34,6 +34,10 @@ SELECT * FROM (
       ELSE  cases.helpline = :helpline
       END
     AND
+      CASE WHEN :closedCases::BOOLEAN = FALSE THEN cases.status <> 'closed'
+      ELSE TRUE
+      END
+    AND
       CASE WHEN :counselor IS NULL THEN TRUE
       ELSE cases."twilioWorkerId" = :counselor
       END
