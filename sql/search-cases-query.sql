@@ -28,8 +28,14 @@ SELECT * FROM (
     SELECT * FROM "Contacts" c WHERE c."caseId" = "cases".id
     ) contacts ON true
   WHERE
+    jsonb_typeof(info) = 'object'
+    AND
       CASE WHEN :helpline IS NULL THEN TRUE
       ELSE  cases.helpline = :helpline
+      END
+    AND
+      CASE WHEN :closedCases::BOOLEAN = FALSE THEN cases.status <> 'closed'
+      ELSE TRUE
       END
     AND
       CASE WHEN :counselor IS NULL THEN TRUE
