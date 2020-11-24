@@ -278,6 +278,8 @@ const ContactController = Contact => {
       number: body.number || '',
       channel: body.channel || '',
       conversationDuration: body.conversationDuration,
+      accountSid: body.accountSid || '',
+      timeOfContact: body.timeOfContact || Date.now(),
     };
 
     const contact = await Contact.create(contactRecord);

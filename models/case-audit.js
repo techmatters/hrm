@@ -9,6 +9,7 @@ module.exports = (sequelize, DataTypes) => {
      * But sequelize was NOT inserting 'caseId' when CREATING a CaseAudit.
      */
     caseId: DataTypes.INTEGER,
+    accountSid: DataTypes.STRING,
   });
 
   CaseAudit.associate = models => CaseAudit.belongsTo(models.Case, { foreignKey: 'caseId' });
