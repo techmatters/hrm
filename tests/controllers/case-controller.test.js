@@ -18,6 +18,7 @@ test('create case', async () => {
     info: { notes: 'Child with covid-19' },
     twilioWorkerId: 'twilio-worker-id',
     connectedContacts: [],
+    accountSid: '',
   };
 
   await CaseController.createCase(caseToBeCreated);
