@@ -68,6 +68,13 @@ class ContactBuilder {
     return this;
   }
 
+  withTimeOfContact(timeOfContact) {
+    const date = parseISO(timeOfContact);
+    const timezoneOffset = date.getTimezoneOffset();
+    this.timeOfContact = subMinutes(date, timezoneOffset).toISOString();
+    return this;
+  }
+
   withChannel(channel) {
     this.channel = channel;
     return this;
@@ -85,6 +92,7 @@ class ContactBuilder {
       ...(this.number && { number: this.number }),
       ...(this.twilioWorkerId && { twilioWorkerId: this.twilioWorkerId }),
       ...(this.createdAt && { createdAt: this.createdAt }),
+      ...(this.timeOfContact && { timeOfContact: this.timeOfContact }),
       rawJson: {
         ...defaultContact.rawJson,
         ...(this.number && { number: this.number }),
