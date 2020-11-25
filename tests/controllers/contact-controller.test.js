@@ -370,7 +370,7 @@ test('Call findAndCountAll(queryObject) with given params', async () => {
         },
       ],
     },
-    order: [['createdAt', 'DESC']],
+    order: [['timeOfContact', 'DESC']],
     limit: 1000,
     offset: 0,
   };
@@ -423,7 +423,7 @@ test('Call findAndCountAll(queryObject) without name search', async () => {
         },
       ],
     },
-    order: [['createdAt', 'DESC']],
+    order: [['timeOfContact', 'DESC']],
     limit: 1000,
     offset: 0,
   };
