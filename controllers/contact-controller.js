@@ -161,7 +161,7 @@ function buildSearchQueryObject(body, query) {
         },
       ],
     },
-    order: [['createdAt', 'DESC']],
+    order: [['timeOfContact', 'DESC']],
     limit,
     offset,
   };
@@ -233,7 +233,7 @@ const ContactController = Contact => {
 
   const getContacts = async query => {
     const queryObject = {
-      order: [['createdAt', 'DESC']],
+      order: [['timeOfContact', 'DESC']],
       limit: 10,
     };
     if (query.queueName) {
