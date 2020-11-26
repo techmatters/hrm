@@ -69,6 +69,8 @@ module.exports = (sequelize, DataTypes) => {
     number: DataTypes.STRING,
     channel: DataTypes.STRING,
     conversationDuration: DataTypes.INTEGER,
+    accountSid: DataTypes.STRING,
+    timeOfContact: DataTypes.DATE,
   });
 
   Contact.associate = models => Contact.belongsTo(models.Case, { foreignKey: 'caseId' });

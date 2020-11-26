@@ -16,6 +16,7 @@ const CaseController = (Case, sequelize) => {
       status: body.status || 'open',
       twilioWorkerId: body.twilioWorkerId,
       connectedContacts: [],
+      accountSid: body.accountSid || '',
     };
 
     const createdCase = await Case.create(caseRecord, options);

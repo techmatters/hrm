@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 11.6
--- Dumped by pg_dump version 11.6
+-- Dumped from database version 11.9 (Ubuntu 11.9-1.pgdg18.04+1)
+-- Dumped by pg_dump version 11.9 (Ubuntu 11.9-1.pgdg18.04+1)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -31,7 +31,8 @@ CREATE TABLE public."CaseAudits" (
     "caseId" integer,
     "twilioWorkerId" character varying(255),
     "previousValue" jsonb,
-    "newValue" jsonb
+    "newValue" jsonb,
+    "accountSid" character varying(255)
 );
 
 
@@ -70,7 +71,8 @@ CREATE TABLE public."Cases" (
     status character varying(255),
     helpline character varying(255),
     info jsonb,
-    "twilioWorkerId" character varying(255)
+    "twilioWorkerId" character varying(255),
+    "accountSid" character varying(255)
 );
 
 
@@ -113,7 +115,9 @@ CREATE TABLE public."Contacts" (
     number character varying(255),
     channel character varying(255),
     "conversationDuration" integer,
-    "caseId" integer
+    "caseId" integer,
+    "accountSid" character varying(255),
+    "timeOfContact" timestamp with time zone
 );
 
 
@@ -173,48 +177,24 @@ ALTER TABLE ONLY public."Cases" ALTER COLUMN id SET DEFAULT nextval('public."Cas
 ALTER TABLE ONLY public."Contacts" ALTER COLUMN id SET DEFAULT nextval('public."Contacts_id_seq"'::regclass);
 
 --
--- Data for Name: SequelizeMeta; Type: TABLE DATA; Schema: public; Owner: hrm
---
-
-COPY public."SequelizeMeta" (name) FROM stdin;
-20190813194746-create-theme.js
-20190813195308-create-category.js
-20190813195347-create-subcategory.js
-20190813195430-create-age-bracket.js
-20190813200640-create-contact.js
-20190813200641-create-contact-category.js
-20190815000611-create-contact.js
-20190815003825-create-age-bracket.js
-20190815022907-create-subcategory.js
-20200304175210-contact-add-columns.js
-20200310140432-contact-add-conversationDuration.js
-20200427210632-create-case.js
-20200428160048-case-has-many-contacts.js
-20200506172048-remove-agebracket-subcategory-timestamp-reservationid.js
-20200507212012-create-case-audit.js
-20200507212342-case-add-column-workerid.js
-\.
-
-
---
 -- Name: CaseAudits_id_seq; Type: SEQUENCE SET; Schema: public; Owner: hrm
 --
 
-SELECT pg_catalog.setval('public."CaseAudits_id_seq"', 38, true);
+SELECT pg_catalog.setval('public."CaseAudits_id_seq"', 2405, true);
 
 
 --
 -- Name: Cases_id_seq; Type: SEQUENCE SET; Schema: public; Owner: hrm
 --
 
-SELECT pg_catalog.setval('public."Cases_id_seq"', 878, true);
+SELECT pg_catalog.setval('public."Cases_id_seq"', 1983, true);
 
 
 --
 -- Name: Contacts_id_seq; Type: SEQUENCE SET; Schema: public; Owner: hrm
 --
 
-SELECT pg_catalog.setval('public."Contacts_id_seq"', 1703, true);
+SELECT pg_catalog.setval('public."Contacts_id_seq"', 2555, true);
 
 
 --
@@ -268,3 +248,4 @@ ALTER TABLE ONLY public."Contacts"
 --
 -- PostgreSQL database dump complete
 --
+

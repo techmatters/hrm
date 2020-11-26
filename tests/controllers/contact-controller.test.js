@@ -45,6 +45,7 @@ test('Convert contacts to searchResults', async () => {
     .withCallType('Child calling about self')
     .withTwilioWorkerId('twilio-worker-id')
     .withCreatedAt('2020-03-10')
+    .withTimeOfContact('2020-03-10')
     .withChannel('voice')
     .withConversationDuration(10)
     .build();
@@ -57,6 +58,7 @@ test('Convert contacts to searchResults', async () => {
     .withCallType('Child calling about self')
     .withTwilioWorkerId('twilio-worker-id')
     .withCreatedAt('2020-03-15')
+    .withTimeOfContact('2020-03-15')
     .build();
   const expectedSearchResult = {
     count: 2,
@@ -350,12 +352,12 @@ test('Call findAndCountAll(queryObject) with given params', async () => {
             },
             queryOnPhone(body.phoneNumber),
             {
-              createdAt: {
+              timeOfContact: {
                 [Op.gte]: startOfDay(parseISO(body.dateFrom)),
               },
             },
             {
-              createdAt: {
+              timeOfContact: {
                 [Op.lte]: endOfDay(parseISO(body.dateTo)),
               },
             },
@@ -368,7 +370,7 @@ test('Call findAndCountAll(queryObject) with given params', async () => {
         },
       ],
     },
-    order: [['createdAt', 'DESC']],
+    order: [['timeOfContact', 'DESC']],
     limit: 1000,
     offset: 0,
   };
@@ -403,12 +405,12 @@ test('Call findAndCountAll(queryObject) without name search', async () => {
             },
             queryOnPhone(body.phoneNumber),
             {
-              createdAt: {
+              timeOfContact: {
                 [Op.gte]: startOfDay(parseISO(body.dateFrom)),
               },
             },
             {
-              createdAt: {
+              timeOfContact: {
                 [Op.lte]: endOfDay(parseISO(body.dateTo)),
               },
             },
@@ -421,7 +423,7 @@ test('Call findAndCountAll(queryObject) without name search', async () => {
         },
       ],
     },
-    order: [['createdAt', 'DESC']],
+    order: [['timeOfContact', 'DESC']],
     limit: 1000,
     offset: 0,
   };

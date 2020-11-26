@@ -19,6 +19,7 @@ module.exports = (sequelize, DataTypes) => {
     helpline: DataTypes.STRING,
     info: DataTypes.JSONB,
     twilioWorkerId: DataTypes.STRING,
+    accountSid: DataTypes.STRING,
   });
 
   Case.associate = models => {

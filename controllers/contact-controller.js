@@ -143,12 +143,12 @@ function buildSearchQueryObject(body, query) {
             },
             queryOnPhone(phoneNumber),
             compareDateFrom && {
-              createdAt: {
+              timeOfContact: {
                 [Op.gte]: startOfDay(parseISO(dateFrom)),
               },
             },
             compareDateTo && {
-              createdAt: {
+              timeOfContact: {
                 [Op.lte]: endOfDay(parseISO(dateTo)),
               },
             },
@@ -161,7 +161,7 @@ function buildSearchQueryObject(body, query) {
         },
       ],
     },
-    order: [['createdAt', 'DESC']],
+    order: [['timeOfContact', 'DESC']],
     limit,
     offset,
   };
@@ -192,7 +192,7 @@ function convertContactsToSearchResults(contacts) {
       }
 
       const contactId = contact.id;
-      const dateTime = contact.createdAt;
+      const dateTime = contact.timeOfContact;
       const name = `${contact.rawJson.childInformation.name.firstName} ${contact.rawJson.childInformation.name.lastName}`;
       const customerNumber = contact.number;
       const { callType, caseInformation } = contact.rawJson;
@@ -233,7 +233,7 @@ const ContactController = Contact => {
 
   const getContacts = async query => {
     const queryObject = {
-      order: [['createdAt', 'DESC']],
+      order: [['timeOfContact', 'DESC']],
       limit: 10,
     };
     if (query.queueName) {
@@ -246,7 +246,7 @@ const ContactController = Contact => {
     const contacts = await Contact.findAll(queryObject);
     return contacts.map(e => ({
       id: e.id,
-      Date: e.createdAt,
+      Date: e.timeOfContact,
       FormData: redact(e.rawJson),
       twilioWorkerId: e.twilioWorkerId,
       helpline: e.helpline,
@@ -278,6 +278,8 @@ const ContactController = Contact => {
       number: body.number || '',
       channel: body.channel || '',
       conversationDuration: body.conversationDuration,
+      accountSid: body.accountSid || '',
+      timeOfContact: body.timeOfContact || Date.now(),
     };
 
     const contact = await Contact.create(contactRecord);
