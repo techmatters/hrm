@@ -66,7 +66,7 @@ const authorizationMiddleware = async (req, res, next) => {
       console.log("Token authentication failed");
     }
   } else if (authHeader.startsWith('Basic')) {
-    const base64Key = Buffer.from(req.headers.authorization.replace('Basic ', ''), 'base64');
+    const base64Key = Buffer.from(authHeader.replace('Basic ', ''), 'base64');
     if (base64Key.toString('ascii') === apiKey) {
       console.log("API Key authentication successful");
       return next();
