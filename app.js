@@ -3,6 +3,7 @@ const express = require('express');
 require('express-async-errors');
 const logger = require('morgan');
 const cors = require('cors');
+const TokenValidator = require('twilio-flex-token-validator').validator;
 
 const models = require('./models');
 const swagger = require('./swagger');
@@ -10,6 +11,8 @@ const { apiV0 } = require('./routes');
 
 const app = express();
 const apiKey = process.env.API_KEY;
+const accountSid = process.env.TWILIO_ACCOUNT_SID;
+const authToken = process.env.TWILIO_AUTH_TOKEN;
 const version = '0.3.6';
 
 if (!apiKey) {
@@ -46,17 +49,33 @@ function unauthorized(res) {
   res.status(401).json(authorizationFailed);
 }
 
-function authorizationMiddleware(req, res, next) {
+const authorizationMiddleware = async (req, res, next) => {
   if (!req || !req.headers || !req.headers.authorization) {
     return unauthorized(res);
   }
 
-  const base64Key = Buffer.from(req.headers.authorization.replace('Basic ', ''), 'base64');
-  if (base64Key.toString('ascii') !== apiKey) {
-    return unauthorized(res);
+  const authHeader = req.headers.authorization;
+  if (authHeader.startsWith('Bearer')) {
+    const token = authHeader.replace('Bearer ', '');
+    try {
+      const tokenResult = await TokenValidator(token, accountSid, authToken);
+      console.log('Token authentication successful');
+      console.log(tokenResult);
+      return next();
+    } catch {
+      console.log("Token authentication failed");
+    }
+  } else if (authHeader.startsWith('Basic')) {
+    const base64Key = Buffer.from(req.headers.authorization.replace('Basic ', ''), 'base64');
+    if (base64Key.toString('ascii') === apiKey) {
+      console.log("API Key authentication successful");
+      return next();
+    } else {
+      console.log("API Key authentication failed");
+    }
   }
 
-  return next();
+  return unauthorized(res);
 }
 
 app.use(authorizationMiddleware);
