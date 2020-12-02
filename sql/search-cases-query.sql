@@ -28,14 +28,10 @@ SELECT * FROM (
     SELECT * FROM "Contacts" c WHERE c."caseId" = "cases".id
     ) contacts ON true
   WHERE
-    jsonb_typeof(info) = 'object'
+    info IS NULL OR jsonb_typeof(info) = 'object'
     AND
       CASE WHEN :helpline IS NULL THEN TRUE
       ELSE  cases.helpline = :helpline
-      END
-    AND
-      CASE WHEN :closedCases::BOOLEAN = FALSE THEN cases.status <> 'closed'
-      ELSE TRUE
       END
     AND
       CASE WHEN :counselor IS NULL THEN TRUE
@@ -126,6 +122,15 @@ SELECT * FROM (
         )
     )
   GROUP BY cases.id
+  -- Needed a HAVING clause because we couldn't do aggregations on WHERE clauses
+  HAVING
+    -- search on closedCases and orphaned cases (without connected contacts)
+    CASE WHEN :closedCases::BOOLEAN = FALSE THEN (
+      cases.status <> 'closed'
+      AND json_array_length(COALESCE(json_agg(DISTINCT contacts.*) FILTER (WHERE contacts.id IS NOT NULL), '[]')) > 0
+    )
+    ELSE TRUE
+    END
 ) "unorderedResults"
 ORDER BY "createdAt" DESC
 LIMIT :limit
