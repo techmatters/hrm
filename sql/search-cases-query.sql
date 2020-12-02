@@ -122,7 +122,9 @@ SELECT * FROM (
         )
     )
   GROUP BY cases.id
+  -- Needed a HAVING clause because we couldn't do aggregations on WHERE clauses
   HAVING
+    -- search on closedCases and orphaned cases (without connected contacts)
     CASE WHEN :closedCases::BOOLEAN = FALSE THEN (
       cases.status <> 'closed'
       AND json_array_length(COALESCE(json_agg(DISTINCT contacts.*) FILTER (WHERE contacts.id IS NOT NULL), '[]')) > 0
