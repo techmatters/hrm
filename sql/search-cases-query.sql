@@ -34,10 +34,6 @@ SELECT * FROM (
       ELSE  cases.helpline = :helpline
       END
     AND
-      CASE WHEN :closedCases::BOOLEAN = FALSE THEN cases.status <> 'closed'
-      ELSE TRUE
-      END
-    AND
       CASE WHEN :counselor IS NULL THEN TRUE
       ELSE cases."twilioWorkerId" = :counselor
       END
@@ -126,6 +122,13 @@ SELECT * FROM (
         )
     )
   GROUP BY cases.id
+  HAVING
+    CASE WHEN :closedCases::BOOLEAN = FALSE THEN (
+      cases.status <> 'closed'
+      AND json_array_length(COALESCE(json_agg(DISTINCT contacts.*) FILTER (WHERE contacts.id IS NOT NULL), '[]')) > 0
+    )
+    ELSE TRUE
+    END
 ) "unorderedResults"
 ORDER BY "createdAt" DESC
 LIMIT :limit
