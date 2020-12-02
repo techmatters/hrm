@@ -28,7 +28,7 @@ SELECT * FROM (
     SELECT * FROM "Contacts" c WHERE c."caseId" = "cases".id
     ) contacts ON true
   WHERE
-    jsonb_typeof(info) = 'object'
+    info IS NULL OR jsonb_typeof(info) = 'object'
     AND
       CASE WHEN :helpline IS NULL THEN TRUE
       ELSE  cases.helpline = :helpline
