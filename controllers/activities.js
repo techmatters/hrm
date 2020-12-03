@@ -35,6 +35,7 @@ function createConnectContactActivity(
   const newContact = relatedContacts.find(contact => contact.id === newContactId);
 
   return {
+    contactId: newContactId,
     date: createdAt,
     type,
     text: newContact.rawJson.caseInformation.callSummary,
