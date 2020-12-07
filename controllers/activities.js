@@ -23,6 +23,7 @@ function createAddNoteActivity({ previousValue, newValue, createdAt, twilioWorke
     type: ActivityTypes.addNote,
     text: newNote,
     twilioWorkerId,
+    icon: ActivityTypes.addNote,
   };
 }
 
