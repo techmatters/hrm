@@ -65,4 +65,43 @@ describe('getActivity', () => {
 
     expect(activity).toStrictEqual(expectedActivity);
   });
+
+  test('default channel - facebook channel (contactless task)', () => {
+    const createdAt = '2020-30-07 18:55:20';
+    const caseAudit = {
+      createdAt,
+      twilioWorkerId: 'twilio-worker-id',
+      previousValue: {
+        contacts: [],
+      },
+      newValue: {
+        contacts: [1],
+      },
+    };
+    const relatedContacts = [
+      {
+        id: 1,
+        channel: 'default',
+        rawJson: {
+          caseInformation: {
+            callSummary: 'Child summary',
+          },
+          contactlessTask: {
+            channel: 'facebook',
+          },
+        },
+      },
+    ];
+
+    const activity = getActivity(caseAudit, relatedContacts);
+    const expectedActivity = {
+      date: createdAt,
+      type: 'default',
+      text: 'Child summary',
+      twilioWorkerId: 'twilio-worker-id',
+      icon: 'facebook',
+    };
+
+    expect(activity).toStrictEqual(expectedActivity);
+  });
 });
