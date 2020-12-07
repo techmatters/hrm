@@ -2,10 +2,12 @@ const ActivityTypes = {
   createCase: 'create',
   addNote: 'note',
   connectContact: {
+    voice: 'voice',
     whatsapp: 'whatsapp',
     facebook: 'facebook',
     web: 'web',
     sms: 'sms',
+    default: 'default',
   },
   unknown: 'unknown',
 };
@@ -34,11 +36,17 @@ function createConnectContactActivity(
   const newContactId = newContacts.find(contact => !previousContacts.includes(contact));
   const newContact = relatedContacts.find(contact => contact.id === newContactId);
 
+  const icon =
+    type === ActivityTypes.connectContact.default
+      ? newContact.rawJson.contactlessTask.channel
+      : type;
+
   return {
     date: createdAt,
     type,
     text: newContact.rawJson.caseInformation.callSummary,
     twilioWorkerId,
+    icon,
   };
 }
 
