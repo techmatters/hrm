@@ -43,6 +43,7 @@ function createConnectContactActivity(
       : type;
 
   return {
+    contactId: newContactId,
     date: createdAt,
     type: typeOrChannel,
     text: newContact.rawJson.caseInformation.callSummary,
