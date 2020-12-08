@@ -24,7 +24,6 @@ describe('getActivity', () => {
       type: 'note',
       text: 'content',
       twilioWorkerId: 'twilio-worker-id',
-      icon: 'note',
     };
 
     expect(activity).toStrictEqual(expectedActivity);
@@ -60,7 +59,6 @@ describe('getActivity', () => {
       type: 'facebook',
       text: 'Child summary',
       twilioWorkerId: 'twilio-worker-id',
-      icon: 'facebook',
     };
 
     expect(activity).toStrictEqual(expectedActivity);
@@ -96,10 +94,9 @@ describe('getActivity', () => {
     const activity = getActivity(caseAudit, relatedContacts);
     const expectedActivity = {
       date: createdAt,
-      type: 'default',
+      type: 'facebook',
       text: 'Child summary',
       twilioWorkerId: 'twilio-worker-id',
-      icon: 'facebook',
     };
 
     expect(activity).toStrictEqual(expectedActivity);
