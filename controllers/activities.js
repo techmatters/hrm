@@ -23,7 +23,6 @@ function createAddNoteActivity({ previousValue, newValue, createdAt, twilioWorke
     type: ActivityTypes.addNote,
     text: newNote,
     twilioWorkerId,
-    icon: ActivityTypes.addNote,
   };
 }
 
@@ -37,17 +36,17 @@ function createConnectContactActivity(
   const newContactId = newContacts.find(contact => !previousContacts.includes(contact));
   const newContact = relatedContacts.find(contact => contact.id === newContactId);
 
-  const icon =
+  // if the type is default, send the channel the counselor entered
+  const typeOrChannel =
     type === ActivityTypes.connectContact.default
       ? newContact.rawJson.contactlessTask.channel
       : type;
 
   return {
     date: createdAt,
-    type,
+    type: typeOrChannel,
     text: newContact.rawJson.caseInformation.callSummary,
     twilioWorkerId,
-    icon,
   };
 }
 
