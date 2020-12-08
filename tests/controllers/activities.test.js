@@ -60,6 +60,7 @@ describe('getActivity', () => {
       type: 'facebook',
       text: 'Child summary',
       twilioWorkerId: 'twilio-worker-id',
+      channel: 'facebook',
     };
 
     expect(activity).toStrictEqual(expectedActivity);
@@ -96,9 +97,10 @@ describe('getActivity', () => {
     const expectedActivity = {
       contactId: 1,
       date: createdAt,
-      type: 'facebook',
+      type: 'default',
       text: 'Child summary',
       twilioWorkerId: 'twilio-worker-id',
+      channel: 'facebook',
     };
 
     expect(activity).toStrictEqual(expectedActivity);

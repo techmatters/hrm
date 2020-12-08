@@ -12,6 +12,8 @@ const ActivityTypes = {
   unknown: 'unknown',
 };
 
+const isConnectContactType = type => Object.keys(ActivityTypes.connectContact).includes(type);
+
 function createAddNoteActivity({ previousValue, newValue, createdAt, twilioWorkerId }) {
   const previousNotes = (previousValue && previousValue.info && previousValue.info.notes) || [];
   const newNotes = (newValue && newValue.info && newValue.info.notes) || [];
@@ -36,18 +38,18 @@ function createConnectContactActivity(
   const newContactId = newContacts.find(contact => !previousContacts.includes(contact));
   const newContact = relatedContacts.find(contact => contact.id === newContactId);
 
-  // if the type is default, send the channel the counselor entered
-  const typeOrChannel =
-    type === ActivityTypes.connectContact.default
-      ? newContact.rawJson.contactlessTask.channel
-      : type;
+  const channel =
+    type !== ActivityTypes.connectContact.default
+      ? type
+      : newContact.rawJson.contactlessTask.channel;
 
   return {
     contactId: newContactId,
     date: createdAt,
-    type: typeOrChannel,
+    type,
     text: newContact.rawJson.caseInformation.callSummary,
     twilioWorkerId,
+    channel,
   };
 }
 
@@ -83,7 +85,6 @@ function getActivityType({ previousValue, newValue }, relatedContacts) {
 
 function getActivity(caseAudit, relatedContacts) {
   const activityType = getActivityType(caseAudit, relatedContacts);
-  const isConnectContactType = type => Object.keys(ActivityTypes.connectContact).includes(type);
   let activity;
 
   if (activityType === ActivityTypes.addNote) {
