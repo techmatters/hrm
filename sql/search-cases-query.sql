@@ -31,7 +31,11 @@ SELECT * FROM (
     (info IS NULL OR jsonb_typeof(info) = 'object')
     AND
       CASE WHEN :helpline IS NULL THEN TRUE
-      ELSE  cases.helpline = :helpline
+      ELSE  (
+        cases.helpline = :helpline
+        OR cases.helpline = ''
+        OR cases.helpline IS NULL
+      )
       END
     AND
       CASE WHEN :counselor IS NULL THEN TRUE
