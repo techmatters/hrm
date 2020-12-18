@@ -29,6 +29,35 @@ describe('getActivity', () => {
     expect(activity).toStrictEqual(expectedActivity);
   });
 
+  test('referral added', () => {
+    const createdAt = '2020-30-07 18:55:20';
+    const referral = { date: '2020-12-15', referredTo: 'State Agency 1', comments: 'comment' };
+    const caseAudit = {
+      createdAt,
+      twilioWorkerId: 'twilio-worker-id',
+      previousValue: {
+        info: {
+          referrals: [],
+        },
+      },
+      newValue: {
+        info: {
+          referrals: [referral],
+        },
+      },
+    };
+
+    const activity = getActivity(caseAudit, []);
+    const expectedActivity = {
+      date: createdAt,
+      type: 'referral',
+      referral,
+      twilioWorkerId: 'twilio-worker-id',
+    };
+
+    expect(activity).toStrictEqual(expectedActivity);
+  });
+
   test('facebook contact connected', () => {
     const createdAt = '2020-30-07 18:55:20';
     const caseAudit = {

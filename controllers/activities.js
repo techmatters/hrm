@@ -1,6 +1,7 @@
 const ActivityTypes = {
   createCase: 'create',
   addNote: 'note',
+  addReferral: 'referral',
   connectContact: {
     voice: 'voice',
     whatsapp: 'whatsapp',
@@ -14,9 +15,13 @@ const ActivityTypes = {
 
 const isConnectContactType = type => Object.keys(ActivityTypes.connectContact).includes(type);
 
+function getObjectsFromInfo(caseObj, name) {
+  return (caseObj && caseObj.info && caseObj.info[name]) || [];
+}
+
 function createAddNoteActivity({ previousValue, newValue, createdAt, twilioWorkerId }) {
-  const previousNotes = (previousValue && previousValue.info && previousValue.info.notes) || [];
-  const newNotes = (newValue && newValue.info && newValue.info.notes) || [];
+  const previousNotes = getObjectsFromInfo(previousValue, 'notes');
+  const newNotes = getObjectsFromInfo(newValue, 'notes');
   const newNote =
     newNotes.find(note => !previousNotes.includes(note)) || newNotes[newNotes.length - 1];
 
@@ -24,6 +29,23 @@ function createAddNoteActivity({ previousValue, newValue, createdAt, twilioWorke
     date: createdAt,
     type: ActivityTypes.addNote,
     text: newNote,
+    twilioWorkerId,
+  };
+}
+
+function createAddReferralActivity({ previousValue, newValue, createdAt, twilioWorkerId }) {
+  const previousReferrals = getObjectsFromInfo(previousValue, 'referrals');
+  const newReferrals = getObjectsFromInfo(newValue, 'referrals');
+  const isEqual = (a, b) =>
+    a.date === b.date && a.referredTo === b.referredTo && a.comments === b.comments;
+  const newReferral =
+    newReferrals.find(referral => !previousReferrals.some(r => isEqual(referral, r))) ||
+    newReferrals[newReferrals.length - 1];
+
+  return {
+    date: createdAt,
+    type: ActivityTypes.addReferral,
+    referral: newReferral,
     twilioWorkerId,
   };
 }
@@ -54,14 +76,10 @@ function createConnectContactActivity(
 }
 
 function getActivityType({ previousValue, newValue }, relatedContacts) {
-  const previousNotesCount =
-    (previousValue &&
-      previousValue.info &&
-      previousValue.info.notes &&
-      previousValue.info.notes.length) ||
-    0;
-  const newNotesCount =
-    (newValue && newValue.info && newValue.info.notes && newValue.info.notes.length) || 0;
+  const previousNotesCount = getObjectsFromInfo(previousValue, 'notes').length;
+  const newNotesCount = getObjectsFromInfo(newValue, 'notes').length;
+  const previousReferralsCount = getObjectsFromInfo(previousValue, 'referrals').length;
+  const newReferralsCount = getObjectsFromInfo(newValue, 'referrals').length;
   const previousContacts = (previousValue && previousValue.contacts) || [];
   const newContacts = (newValue && newValue.contacts) || [];
 
@@ -71,6 +89,8 @@ function getActivityType({ previousValue, newValue }, relatedContacts) {
     activityType = ActivityTypes.createCase;
   } else if (previousNotesCount < newNotesCount) {
     activityType = ActivityTypes.addNote;
+  } else if (previousReferralsCount < newReferralsCount) {
+    activityType = ActivityTypes.addReferral;
   } else if (previousContacts.length < newContacts.length) {
     const newContactId = newContacts.find(contact => !previousContacts.includes(contact));
     const newContact = relatedContacts.find(contact => contact.id === newContactId);
@@ -89,6 +109,8 @@ function getActivity(caseAudit, relatedContacts) {
 
   if (activityType === ActivityTypes.addNote) {
     activity = createAddNoteActivity(caseAudit);
+  } else if (activityType === ActivityTypes.addReferral) {
+    activity = createAddReferralActivity(caseAudit);
   } else if (isConnectContactType(activityType)) {
     activity = createConnectContactActivity(caseAudit, activityType, relatedContacts);
   }
