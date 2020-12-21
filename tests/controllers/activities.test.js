@@ -51,6 +51,7 @@ describe('getActivity', () => {
     const expectedActivity = {
       date: createdAt,
       type: 'referral',
+      text: referral.referredTo,
       referral,
       twilioWorkerId: 'twilio-worker-id',
     };
