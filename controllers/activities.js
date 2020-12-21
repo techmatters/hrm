@@ -45,6 +45,7 @@ function createAddReferralActivity({ previousValue, newValue, createdAt, twilioW
   return {
     date: createdAt,
     type: ActivityTypes.addReferral,
+    text: newReferral.referredTo,
     referral: newReferral,
     twilioWorkerId,
   };
