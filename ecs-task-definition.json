@@ -36,7 +36,7 @@
                 "logDriver": "awslogs",
                 "options": {
                   "awslogs-group" : "${ENVIRONMENT}-hrm-awslogs",
-                  "awslogs-region": "${AWS_REGION}",
+                  "awslogs-region": "${AWS_DEFAULT_REGION}",
                   "awslogs-stream-prefix": "${ENVIRONMENT}-hrm-service"
                 }
             }
