@@ -23,6 +23,7 @@
 #    See the documentation for each action used below for the recommended IAM policies for this IAM user,
 #    and best practices on handling the access key credentials.
 
+name: Deploy HRM to Amazon ECS
 on:
   release:
     types: [created]
@@ -32,8 +33,6 @@ on:
         default: staging
         required: true
 
-name: Deploy HRM to Amazon ECS
-on: 
   workflow_dispatch:
     inputs:
       environment:
