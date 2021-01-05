@@ -23,9 +23,14 @@
 #    See the documentation for each action used below for the recommended IAM policies for this IAM user,
 #    and best practices on handling the access key credentials.
 
-# on:
-#   release:
-#     types: [created]
+on:
+  release:
+    types: [created]
+    inputs:
+      environment:
+        description: HRM environment.
+        default: staging
+        required: true
 
 name: Deploy HRM to Amazon ECS
 on: 
