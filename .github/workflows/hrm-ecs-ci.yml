@@ -24,13 +24,8 @@
 #    and best practices on handling the access key credentials.
 name: Deploy HRM to Amazon ECS
 on:
-  release:
-    types: [created]
-    inputs:
-      environment:
-        description: HRM environment.
-        default: staging
-        required: true
+#  release:
+#    types: [created]
 
   workflow_dispatch:
     inputs:
