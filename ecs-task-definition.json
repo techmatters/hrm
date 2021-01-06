@@ -1,0 +1,45 @@
+{
+    "family": "${ENVIRONMENT}-hrm-task",
+    "taskRoleArn": "arn:aws:iam::${AWS_ACC_ID}:role/${ENVIRONMENT}-ecsTaskRole",
+    "executionRoleArn": "arn:aws:iam::${AWS_ACC_ID}:role/${ENVIRONMENT}-ecsTaskExecutionRole",
+    "networkMode": "awsvpc",
+    "requires_compatibilities": ["FARGATE"],
+    "containerDefinitions": [
+        {
+            "name": "",
+            "image": "",
+            "cpu": 512,
+            "memory": 1024,
+            "portMappings": [
+                {
+                    "containerPort": 8080,
+                    "hostPort": 8080,
+                    "protocol": "tcp"
+                }
+            ],
+            "essential": true,
+            "entryPoint": [""],
+            "command": ["npm", "start"],
+            "environment": [
+                {
+                    "name": "",
+                    "value": ""
+                }
+            ],
+            "environmentFiles": [
+                {
+                    "value": "arn:aws:s3:::${S3_VARIABLES}/${ENVIRONMENT}.env",
+                    "type": "s3"
+                }
+            ],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                  "awslogs-group" : "${ENVIRONMENT}-hrm-awslogs",
+                  "awslogs-region": "${AWS_DEFAULT_REGION}",
+                  "awslogs-stream-prefix": "${ENVIRONMENT}-hrm-service"
+                }
+            }
+        }
+    ]
+}
