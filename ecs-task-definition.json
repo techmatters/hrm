@@ -147,8 +147,7 @@
                         "name": "",
                         "valueFrom": ""
                     }
-                ]
-            },
+                ],
             "healthCheck": {
                 "command": [
                     ""
