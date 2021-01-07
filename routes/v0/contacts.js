@@ -16,7 +16,9 @@ contactsRouter.get('/', async (req, res) => {
 
 // example: curl -XPOST -H'Content-Type: application/json' localhost:3000/contacts -d'{"hi": 2}'
 contactsRouter.post('/', async (req, res) => {
-  const contact = await ContactController.createContact(req.body);
+  const { accountSid } = req;
+
+  const contact = await ContactController.createContact(req.body, accountSid);
   res.json(contact);
 });
 

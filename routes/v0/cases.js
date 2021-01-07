@@ -14,7 +14,9 @@ casesRouter.get('/', async (req, res) => {
 });
 
 casesRouter.post('/', async (req, res) => {
-  const createdCase = await CaseController.createCase(req.body);
+  const { accountSid } = req;
+
+  const createdCase = await CaseController.createCase(req.body, accountSid);
   res.json(createdCase);
 });
 
