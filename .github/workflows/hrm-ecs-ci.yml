@@ -35,10 +35,7 @@ on:
         required: true
 
 env:
-  ENVIRONMENT: ${{ github.event.inputs.environment }}
-  AWS_ACC_ID: ${{ secrets.AWS_ACCOUNT_ID }}
   AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
-  S3_VARIABLES: tl-hrm-vars-${{ github.event.inputs.environment }}
   GITHUB_SHA: ${{ github.sha }}
 
 jobs:
