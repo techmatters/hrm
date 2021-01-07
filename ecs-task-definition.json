@@ -5,7 +5,7 @@
     "networkMode": "awsvpc",
     "containerDefinitions": [
         {
-            "name": "${ENVIRONMENT}-hrm",
+            "name": "staging-hrm",
             "image": "${AWS_ACC_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ENVIRONMENT}-hrm:${ENVIRONMENT}-hrm-${GITHUB_SHA}",
             "repositoryCredentials": {
                 "credentialsParameter": ""
