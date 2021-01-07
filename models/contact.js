@@ -1,4 +1,6 @@
 const Sequelize = require('sequelize');
+// Can't import CaseAudit model before Sequelize has initiated, so we import the controller creator and provide the CaseAudit model in runtime
+const CaseAuditControllerCreator = require('../controllers/case-audit-controller');
 
 const { Op } = Sequelize;
 
@@ -20,44 +22,31 @@ const getPreviousAndNewCases = async (contactInstance, transaction) => {
   return [previousCase, newCase];
 };
 
-const createCaseAudit = async (
-  initialContactsFunction,
-  contactInstance,
-  caseFromDB,
-  transaction,
-) => {
-  if (!caseFromDB) return;
-
-  const { CaseAudit } = contactInstance.sequelize.models;
-  const contacts = await caseFromDB.getConnectedContacts();
-  const contactsId = contacts.map(contact => contact.dataValues.id);
-  const previousValue = {
-    ...caseFromDB.dataValues,
-    contacts: initialContactsFunction(contactsId, contactInstance.dataValues.id),
-  };
-  const newValue = {
-    ...caseFromDB.dataValues,
-    contacts: contactsId,
-  };
-  const caseAuditRecord = {
-    caseId: caseFromDB.dataValues.id,
-    twilioWorkerId: contactInstance.dataValues.twilioWorkerId,
-    previousValue,
-    newValue,
-  };
-
-  await CaseAudit.create(caseAuditRecord, { transaction });
-};
-
 const auditDisconnectContact = async (contactInstance, caseFromDB, transaction) => {
+  const { CaseAudit } = contactInstance.sequelize.models;
+  const { createCaseAuditFromContact } = CaseAuditControllerCreator(CaseAudit);
   const initialContactsFunction = (currentContactIds, id) => [...currentContactIds, id];
-  await createCaseAudit(initialContactsFunction, contactInstance, caseFromDB, transaction);
+
+  await createCaseAuditFromContact(
+    initialContactsFunction,
+    contactInstance,
+    caseFromDB,
+    transaction,
+  );
 };
 
 const auditConnectContact = async (contactInstance, caseFromDB, transaction) => {
+  const { CaseAudit } = contactInstance.sequelize.models;
+  const { createCaseAuditFromContact } = CaseAuditControllerCreator(CaseAudit);
   const initialContactsFunction = (currentContactIds, id) =>
     currentContactIds.filter(e => e !== id);
-  await createCaseAudit(initialContactsFunction, contactInstance, caseFromDB, transaction);
+
+  await createCaseAuditFromContact(
+    initialContactsFunction,
+    contactInstance,
+    caseFromDB,
+    transaction,
+  );
 };
 
 module.exports = (sequelize, DataTypes) => {
