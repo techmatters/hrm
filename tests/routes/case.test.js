@@ -35,7 +35,7 @@ afterAll(async () => {
 afterEach(async () => CaseAudit.destroy(caseAuditsQuery));
 
 describe('/cases route', () => {
-  const route = '/cases';
+  const route = '/v0/accounts/accountSid/cases';
 
   describe('GET', () => {
     test('should return 401', async () => {
@@ -100,7 +100,7 @@ describe('/cases route', () => {
 
       beforeEach(async () => {
         createdCase = await Case.create(case1);
-        subRoute = id => `/cases/${id}`;
+        subRoute = id => `${route}/${id}`;
 
         const caseToBeDeleted = await Case.create(case2);
         nonExistingCaseId = caseToBeDeleted.id;
@@ -169,7 +169,7 @@ describe('/cases route', () => {
 
       beforeEach(async () => {
         createdCase = await Case.create(case1);
-        subRoute = id => `/cases/${id}`;
+        subRoute = id => `${route}/${id}`;
 
         const caseToBeDeleted = await Case.create(case2);
         nonExistingCaseId = caseToBeDeleted.id;
@@ -287,7 +287,7 @@ describe('/cases route', () => {
       let createdCase2;
       let createdCase3;
       let createdContact;
-      const subRoute = '/cases/search';
+      const subRoute = `${route}/search`;
 
       beforeEach(async () => {
         createdCase1 = await Case.create(withHouseholds(case1));

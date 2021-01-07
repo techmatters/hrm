@@ -45,7 +45,7 @@ afterAll(async done => {
 afterEach(async () => CaseAudit.destroy(caseAuditsQuery));
 
 describe('/contacts route', () => {
-  const route = '/contacts';
+  const route = '/v0/accounts/accountSid/contacts';
 
   // First test post so database wont be empty
   describe('POST', () => {

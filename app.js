@@ -4,7 +4,6 @@ require('express-async-errors');
 const logger = require('morgan');
 const cors = require('cors');
 
-const models = require('./models');
 const swagger = require('./swagger');
 const { apiV0 } = require('./routes');
 
@@ -19,11 +18,6 @@ if (!apiKey) {
 console.log(`Starting HRM version ${version}`);
 
 swagger.runWhenNotProduction(app);
-
-const { Contact, Case, CaseAudit, sequelize } = models;
-const ContactController = require('./controllers/contact-controller')(Contact);
-const CaseController = require('./controllers/case-controller')(Case, sequelize);
-const CaseAuditController = require('./controllers/case-audit-controller')(CaseAudit);
 
 console.log('After connect attempt');
 
