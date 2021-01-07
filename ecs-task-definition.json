@@ -5,7 +5,7 @@
     "networkMode": "awsvpc",
     "containerDefinitions": [
         {
-            "name": "staging-hrm",
+            "name": "${ENVIRONMENT}-hrm",
             "image": "${AWS_ACC_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ENVIRONMENT}-hrm:${ENVIRONMENT}-hrm-${GITHUB_SHA}",
             "cpu": 512,
             "memory": 1024,
