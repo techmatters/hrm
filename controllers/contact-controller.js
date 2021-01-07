@@ -269,7 +269,7 @@ const ContactController = Contact => {
     return Contact.findAll(queryObject);
   };
 
-  const createContact = async body => {
+  const createContact = async (body, accountSid) => {
     const contactRecord = {
       rawJson: body.form,
       twilioWorkerId: body.twilioWorkerId || '',
@@ -278,7 +278,7 @@ const ContactController = Contact => {
       number: body.number || '',
       channel: body.channel || '',
       conversationDuration: body.conversationDuration,
-      accountSid: body.accountSid || '',
+      accountSid: accountSid || '',
       timeOfContact: body.timeOfContact || Date.now(),
     };
 
