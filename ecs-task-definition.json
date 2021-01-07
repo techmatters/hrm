@@ -3,19 +3,13 @@
     "taskRoleArn": "arn:aws:iam::${AWS_ACC_ID}:role/${ENVIRONMENT}-ecsTaskRole",
     "executionRoleArn": "arn:aws:iam::${AWS_ACC_ID}:role/${ENVIRONMENT}-ecsTaskExecutionRole",
     "networkMode": "awsvpc",
+    "requires_compatibilities": ["FARGATE"],
     "containerDefinitions": [
         {
             "name": "staging-hrm",
             "image": "${AWS_ACC_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ENVIRONMENT}-hrm:${ENVIRONMENT}-hrm-${GITHUB_SHA}",
-            "repositoryCredentials": {
-                "credentialsParameter": ""
-            },
             "cpu": 512,
             "memory": 1024,
-            "memoryReservation": 0,
-            "links": [
-                ""
-            ],
             "portMappings": [
                 {
                     "containerPort": 8080,
@@ -24,12 +18,8 @@
                 }
             ],
             "essential": true,
-            "entryPoint": [
-                ""
-            ],
-            "command": [
-                "npm", "start"
-            ],
+            "entryPoint": [""],
+            "command": ["npm", "start"],
             "environment": [
                 {
                     "name": "",
@@ -42,98 +32,6 @@
                     "type": "s3"
                 }
             ],
-            "mountPoints": [
-                {
-                    "sourceVolume": "",
-                    "containerPath": "",
-                    "readOnly": true
-                }
-            ],
-            "volumesFrom": [
-                {
-                    "sourceContainer": "",
-                    "readOnly": true
-                }
-            ],
-            "linuxParameters": {
-                "capabilities": {
-                    "add": [
-                        ""
-                    ],
-                    "drop": [
-                        ""
-                    ]
-                },
-                "devices": [
-                    {
-                        "hostPath": "",
-                        "containerPath": "",
-                        "permissions": [
-                            "write"
-                        ]
-                    }
-                ],
-                "initProcessEnabled": true,
-                "sharedMemorySize": 0,
-                "tmpfs": [
-                    {
-                        "containerPath": "",
-                        "size": 0,
-                        "mountOptions": [
-                            ""
-                        ]
-                    }
-                ],
-                "maxSwap": 0,
-                "swappiness": 0
-            },
-            "secrets": [
-                {
-                    "name": "",
-                    "valueFrom": ""
-                }
-            ],
-            "dependsOn": [
-                {
-                    "containerName": "",
-                    "condition": "START"
-                }
-            ],
-            "startTimeout": 0,
-            "stopTimeout": 0,
-            "hostname": "",
-            "user": "",
-            "workingDirectory": "",
-            "disableNetworking": true,
-            "privileged": true,
-            "readonlyRootFilesystem": true,
-            "dnsServers": [
-                ""
-            ],
-            "dnsSearchDomains": [
-                ""
-            ],
-            "extraHosts": [
-                {
-                    "hostname": "",
-                    "ipAddress": ""
-                }
-            ],
-            "dockerSecurityOptions": [
-                ""
-            ],
-            "interactive": true,
-            "pseudoTerminal": true,
-            "dockerLabels": {
-                "KeyName": ""
-            },
-            "ulimits": [
-                {
-                    "name": "sigpending",
-                    "softLimit": 0,
-                    "hardLimit": 0
-                }
-            ],
             "logConfiguration": {
                 "logDriver": "awslogs",
                 "options": {
@@ -141,98 +39,7 @@
                   "awslogs-region": "${AWS_DEFAULT_REGION}",
                   "awslogs-stream-prefix": "${ENVIRONMENT}-hrm-service"
                 }
-            },
-                "secretOptions": [
-                    {
-                        "name": "",
-                        "valueFrom": ""
-                    }
-                ],
-            "healthCheck": {
-                "command": [
-                    ""
-                ],
-                "interval": 0,
-                "timeout": 0,
-                "retries": 0,
-                "startPeriod": 0
-            },
-            "systemControls": [
-                {
-                    "namespace": "",
-                    "value": ""
-                }
-            ],
-            "resourceRequirements": [
-                {
-                    "value": "",
-                    "type": "InferenceAccelerator"
-                }
-            ],
-            "firelensConfiguration": {
-                "type": "fluentbit",
-                "options": {
-                    "KeyName": ""
-                }
             }
-        }
-    ],
-    "volumes": [
-        {
-            "name": "",
-            "host": {
-                "sourcePath": ""
-            },
-            "dockerVolumeConfiguration": {
-                "scope": "shared",
-                "autoprovision": true,
-                "driver": "",
-                "driverOpts": {
-                    "KeyName": ""
-                },
-                "labels": {
-                    "KeyName": ""
-                }
-            },
-            "efsVolumeConfiguration": {
-                "fileSystemId": "",
-                "rootDirectory": ""
-            }
-        }
-    ],
-    "placementConstraints": [
-        {
-            "type": "memberOf",
-            "expression": ""
-        }
-    ],
-    "requiresCompatibilities": [
-        "FARGATE"
-    ],
-    "cpu": "",
-    "memory": "",
-    "tags": [
-        {
-            "key": "",
-            "value": ""
-        }
-    ],
-    "pidMode": "task",
-    "ipcMode": "host",
-    "proxyConfiguration": {
-        "type": "APPMESH",
-        "containerName": "",
-        "properties": [
-            {
-                "name": "",
-                "value": ""
-            }
-        ]
-    },
-    "inferenceAccelerators": [
-        {
-            "deviceName": "",
-            "deviceType": ""
         }
     ]
 }
