@@ -3,7 +3,6 @@
     "taskRoleArn": "arn:aws:iam::${AWS_ACC_ID}:role/${ENVIRONMENT}-ecsTaskRole",
     "executionRoleArn": "arn:aws:iam::${AWS_ACC_ID}:role/${ENVIRONMENT}-ecsTaskExecutionRole",
     "networkMode": "awsvpc",
-    "requires_compatibilities": ["FARGATE"],
     "containerDefinitions": [
         {
             "name": "staging-hrm",
@@ -41,5 +40,8 @@
                 }
             }
         }
+    ],
+    "requiresCompatibilities": [
+        "FARGATE"
     ]
 }
