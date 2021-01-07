@@ -8,8 +8,6 @@ const CaseController = require('../../controllers/case-controller')(Case, sequel
 const contactsRouter = Router();
 
 contactsRouter.get('/', async (req, res) => {
-  console.log('>>> req.accountSid: ', req.accountSid); // TODO: remove log, is just for showing how to use the accountSid
-
   const contacts = await ContactController.getContacts(req.query);
   res.json(contacts);
 });

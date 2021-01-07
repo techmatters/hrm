@@ -72,69 +72,6 @@ const addAccountSid = (req, res, next) => {
 
 app.use('/v0/accounts/:accountSid', addAccountSid, apiV0);
 
-// run with node app.js and hit curl localhost:8080/contacts/
-app.get('/contacts', async (req, res) => {
-  const contacts = await ContactController.getContacts(req.query);
-  res.json(contacts);
-});
-
-app.post('/contacts/search', async (req, res) => {
-  const searchResults = await ContactController.searchContacts(req.body, req.query);
-  res.json(searchResults);
-});
-
-// example: curl -XPOST -H'Content-Type: application/json' localhost:3000/contacts -d'{"hi": 2}'
-app.post('/contacts', async (req, res) => {
-  const contact = await ContactController.createContact(req.body);
-  res.json(contact);
-});
-
-app.get('/cases', async (req, res) => {
-  const cases = await CaseController.listCases(req.query);
-  res.json(cases);
-});
-
-app.post('/cases', async (req, res) => {
-  const createdCase = await CaseController.createCase(req.body);
-  res.json(createdCase);
-});
-
-app.put('/cases/:id', async (req, res) => {
-  const { id } = req.params;
-  const updatedCase = await CaseController.updateCase(id, req.body);
-  res.json(updatedCase);
-});
-
-app.delete('/cases/:id', async (req, res) => {
-  const { id } = req.params;
-  await CaseController.deleteCase(id);
-  res.sendStatus(200);
-});
-
-app.put('/contacts/:contactId/connectToCase', async (req, res) => {
-  const { contactId } = req.params;
-  const { caseId } = req.body;
-  await CaseController.getCase(caseId);
-  const updatedContact = await ContactController.connectToCase(contactId, caseId);
-  res.json(updatedContact);
-});
-
-app.get('/cases/:caseId/activities/', async (req, res) => {
-  const { caseId } = req.params;
-  await CaseController.getCase(caseId);
-  const caseAudits = await CaseAuditController.getAuditsForCase(caseId);
-  const contactIds = CaseAuditController.getContactIdsFromCaseAudits(caseAudits);
-  const relatedContacts = await ContactController.getContactsById(contactIds);
-  const activities = await CaseAuditController.getActivities(caseAudits, relatedContacts);
-
-  res.json(activities);
-});
-
-app.post('/cases/search', async (req, res) => {
-  const searchResults = await CaseController.searchCases(req.body, req.query);
-  res.json(searchResults);
-});
-
 app.use((req, res, next) => {
   next(createError(404));
 });
