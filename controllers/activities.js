@@ -44,7 +44,7 @@ function createAddReferralActivity({ previousValue, newValue, createdAt, twilioW
 
   return {
     date: newReferral.date,
-    added: createdAt,
+    createdAt,
     type: ActivityTypes.addReferral,
     text: newReferral.referredTo,
     referral: newReferral,
@@ -53,7 +53,7 @@ function createAddReferralActivity({ previousValue, newValue, createdAt, twilioW
 }
 
 function createConnectContactActivity(
-  { previousValue, newValue, twilioWorkerId },
+  { previousValue, newValue, createdAt, twilioWorkerId },
   type,
   relatedContacts,
 ) {
@@ -70,6 +70,7 @@ function createConnectContactActivity(
   return {
     contactId: newContactId,
     date: newContact.timeOfContact,
+    createdAt,
     type,
     text: newContact.rawJson.caseInformation.callSummary,
     twilioWorkerId,
