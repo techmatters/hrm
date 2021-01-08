@@ -8,15 +8,15 @@ const CaseController = require('../../controllers/case-controller')(Case, sequel
 const contactsRouter = Router();
 
 contactsRouter.get('/', async (req, res) => {
-  console.log('>>> req.accountSid: ', req.accountSid); // TODO: remove log, is just for showing how to use the accountSid
-
   const contacts = await ContactController.getContacts(req.query);
   res.json(contacts);
 });
 
 // example: curl -XPOST -H'Content-Type: application/json' localhost:3000/contacts -d'{"hi": 2}'
 contactsRouter.post('/', async (req, res) => {
-  const contact = await ContactController.createContact(req.body);
+  const { accountSid } = req;
+
+  const contact = await ContactController.createContact(req.body, accountSid);
   res.json(contact);
 });
 

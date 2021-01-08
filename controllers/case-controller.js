@@ -8,7 +8,7 @@ const searchCasesQuery = fs
   .toString();
 
 const CaseController = (Case, sequelize) => {
-  const createCase = async body => {
+  const createCase = async (body, accountSid) => {
     const options = { include: { association: 'connectedContacts' } };
     const caseRecord = {
       info: body.info,
@@ -16,7 +16,7 @@ const CaseController = (Case, sequelize) => {
       status: body.status || 'open',
       twilioWorkerId: body.twilioWorkerId,
       connectedContacts: [],
-      accountSid: body.accountSid || '',
+      accountSid: accountSid || '',
     };
 
     const createdCase = await Case.create(caseRecord, options);

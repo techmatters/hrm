@@ -1,12 +1,5 @@
-const createCaseAudit = async (CaseAudit, previousValue, newValue, transaction) => {
-  const caseAuditRecord = {
-    caseId: newValue.id,
-    twilioWorkerId: newValue.twilioWorkerId,
-    previousValue,
-    newValue,
-  };
-  await CaseAudit.create(caseAuditRecord, { transaction });
-};
+// Can't import CaseAudit model before Sequelize has initiated, so we import the controller creator and provide the CaseAudit model in runtime
+const CaseAuditControllerCreator = require('../controllers/case-audit-controller');
 
 const getContactIds = async caseInstance => {
   const contacts = await caseInstance.getConnectedContacts();
@@ -29,6 +22,7 @@ module.exports = (sequelize, DataTypes) => {
 
   Case.afterCreate('auditCaseHook', async (caseInstance, options) => {
     const { CaseAudit } = caseInstance.sequelize.models;
+    const { createCaseAuditFromCase } = CaseAuditControllerCreator(CaseAudit);
     const contactIds = await getContactIds(caseInstance);
     const previousValue = null;
     const newValue = {
@@ -36,11 +30,12 @@ module.exports = (sequelize, DataTypes) => {
       contacts: contactIds,
     };
 
-    await createCaseAudit(CaseAudit, previousValue, newValue, options.transaction);
+    await createCaseAuditFromCase(previousValue, newValue, options.transaction);
   });
 
   Case.afterUpdate('auditCaseHook', async (caseInstance, options) => {
     const { CaseAudit } = caseInstance.sequelize.models;
+    const { createCaseAuditFromCase } = CaseAuditControllerCreator(CaseAudit);
     const contactIds = await getContactIds(caseInstance);
     const previousValue = {
       ...caseInstance.dataValues,
@@ -52,7 +47,7 @@ module.exports = (sequelize, DataTypes) => {
       contacts: contactIds,
     };
 
-    await createCaseAudit(CaseAudit, previousValue, newValue, options.transaction);
+    await createCaseAuditFromCase(previousValue, newValue, options.transaction);
   });
 
   return Case;
