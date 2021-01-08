@@ -49,7 +49,8 @@ describe('getActivity', () => {
 
     const activity = getActivity(caseAudit, []);
     const expectedActivity = {
-      date: createdAt,
+      date: referral.date,
+      added: createdAt,
       type: 'referral',
       text: referral.referredTo,
       referral,
@@ -75,6 +76,7 @@ describe('getActivity', () => {
       {
         id: 1,
         channel: 'facebook',
+        timeOfContact: createdAt,
         rawJson: {
           caseInformation: {
             callSummary: 'Child summary',
@@ -112,6 +114,7 @@ describe('getActivity', () => {
       {
         id: 1,
         channel: 'default',
+        timeOfContact: '2021-01-07 10:00:00',
         rawJson: {
           caseInformation: {
             callSummary: 'Child summary',
@@ -126,7 +129,7 @@ describe('getActivity', () => {
     const activity = getActivity(caseAudit, relatedContacts);
     const expectedActivity = {
       contactId: 1,
-      date: createdAt,
+      date: '2021-01-07 10:00:00',
       type: 'default',
       text: 'Child summary',
       twilioWorkerId: 'twilio-worker-id',
