@@ -92,17 +92,17 @@ SELECT * FROM (
       -- search on households
     OR (
           CASE WHEN :firstName IS NULL THEN TRUE
-          ELSE h.value->'household'->'name'->>'firstName' ILIKE :firstName
+          ELSE h.value->'household'->>'firstName' ILIKE :firstName
           END
         AND
           CASE WHEN :lastName IS NULL THEN TRUE
-          ELSE h.value->'household'->'name'->>'lastName' ILIKE :lastName
+          ELSE h.value->'household'->>'lastName' ILIKE :lastName
           END
         AND
           CASE WHEN :phoneNumber IS NULL THEN TRUE
           ELSE (
-            regexp_replace(h.value->'household'->'location'->>'phone1', '\D', '', 'g') ILIKE :phoneNumber
-            OR regexp_replace(h.value->'household'->'location'->>'phone2', '\D', '', 'g') ILIKE :phoneNumber
+            regexp_replace(h.value->'household'->>'phone1', '\D', '', 'g') ILIKE :phoneNumber
+            OR regexp_replace(h.value->'household'->>'phone2', '\D', '', 'g') ILIKE :phoneNumber
           )
           END
         )
@@ -110,17 +110,17 @@ SELECT * FROM (
       -- search on perpetrators
     OR (
           CASE WHEN :firstName IS NULL THEN TRUE
-          ELSE p.value->'perpetrator'->'name'->>'firstName' ILIKE :firstName
+          ELSE p.value->'perpetrator'->>'firstName' ILIKE :firstName
           END
         AND
           CASE WHEN :lastName IS NULL THEN TRUE
-          ELSE p.value->'perpetrator'->'name'->>'lastName' ILIKE :lastName
+          ELSE p.value->'perpetrator'->>'lastName' ILIKE :lastName
           END
         AND
           CASE WHEN :phoneNumber IS NULL THEN TRUE
           ELSE (
-            regexp_replace(p.value->'perpetrator'->'location'->>'phone1', '\D', '', 'g') ILIKE :phoneNumber
-            OR regexp_replace(p.value->'perpetrator'->'location'->>'phone2', '\D', '', 'g') ILIKE :phoneNumber
+            regexp_replace(p.value->'perpetrator'->>'phone1', '\D', '', 'g') ILIKE :phoneNumber
+            OR regexp_replace(p.value->'perpetrator'->>'phone2', '\D', '', 'g') ILIKE :phoneNumber
           )
           END
         )

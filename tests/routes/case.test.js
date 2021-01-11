@@ -210,21 +210,15 @@ describe('/cases route', () => {
       households: [
         {
           household: {
-            name: {
-              firstName: 'Maria',
-              lastName: 'Silva',
-            },
-            location: {
-              phone1: '+1-202-555-0184',
-            },
+            firstName: 'Maria',
+            lastName: 'Silva',
+            phone1: '+1-202-555-0184',
           },
         },
         {
           household: {
-            name: {
-              firstName: 'John',
-              lastName: 'Doe',
-            },
+            firstName: 'John',
+            lastName: 'Doe',
           },
         },
       ],
@@ -238,21 +232,15 @@ describe('/cases route', () => {
       perpetrators: [
         {
           perpetrator: {
-            name: {
-              firstName: 'Maria',
-              lastName: 'Silva',
-            },
+            firstName: 'Maria',
+            lastName: 'Silva',
           },
         },
         {
           perpetrator: {
-            name: {
-              firstName: 'John',
-              lastName: 'Doe',
-            },
-            location: {
-              phone2: '+12025550184',
-            },
+            firstName: 'John',
+            lastName: 'Doe',
+            phone2: '+12025550184',
           },
         },
       ],

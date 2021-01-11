@@ -293,7 +293,7 @@ describe('/contacts route', () => {
         expect(response.body.caseId).toBe(existingCaseId);
       });
 
-      test('should create create a CaseAudit', async () => {
+      test('should create a CaseAudit', async () => {
         const caseAuditPreviousCount = await CaseAudit.count(caseAuditsQuery);
         const response = await request
           .put(subRoute(existingContactId))
@@ -311,7 +311,7 @@ describe('/contacts route', () => {
         expect(newValue.contacts).toContain(existingContactId);
       });
 
-      test('should create create two CaseAudit', async () => {
+      test('should create two CaseAudit', async () => {
         await request
           .put(subRoute(existingContactId))
           .set(headers)
