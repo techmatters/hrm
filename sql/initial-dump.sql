@@ -101,17 +101,6 @@ ALTER SEQUENCE public."Contacts_id_seq" OWNED BY public."Contacts".id;
 
 
 --
--- Name: SequelizeMeta; Type: TABLE; Schema: public; Owner: hrm
---
-
-CREATE TABLE public."SequelizeMeta" (
-    name character varying(255) NOT NULL
-);
-
-
-ALTER TABLE public."SequelizeMeta" OWNER TO hrm;
-
---
 -- Name: Subcategories; Type: TABLE; Schema: public; Owner: hrm
 --
 
@@ -203,14 +192,6 @@ ALTER TABLE ONLY public."AgeBrackets"
 
 ALTER TABLE ONLY public."Contacts"
     ADD CONSTRAINT "Contacts_pkey" PRIMARY KEY (id);
-
-
---
--- Name: SequelizeMeta SequelizeMeta_pkey; Type: CONSTRAINT; Schema: public; Owner: hrm
---
-
-ALTER TABLE ONLY public."SequelizeMeta"
-    ADD CONSTRAINT "SequelizeMeta_pkey" PRIMARY KEY (name);
 
 
 --
