@@ -40,4 +40,6 @@ jobs:
       env:
         CI: true
         API_KEY: secret
+        TWILIO_ACCOUNT_SID: ACxxx
+        TWILIO_AUTH_TOKEN: xxxxxx
         RDS_PASSWORD: postgres
