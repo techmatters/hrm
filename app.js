@@ -56,6 +56,7 @@ async function authorizationMiddleware(req, res, next) {
   if (!req || !req.headers || !req.headers.authorization) {
     return unauthorized(res);
   }
+  console.log('\n\n\n\n\n\n\n\n>>>>>>>>> THIS CASE');
 
   const { authorization } = req.headers;
 
@@ -68,20 +69,18 @@ async function authorizationMiddleware(req, res, next) {
       // Here we can add tokenResult (worker, roles, etc) to the req object. Is this something we want? if above code is uncomented (auth with apiKey), that can lead to confusing flows, as sometimes it will exist and sometimes not.
       return next();
     } catch (err) {
-      console.error('Token authentication failed');
+      console.error('Token authentication failed: ', err);
     }
   }
 
-  // We want to preserve this?
-
-  // else if (authorization.startsWith('Basic')) {
-  //   const base64Key = Buffer.from(authorization.replace('Basic ', ''), 'base64');
-  //   if (base64Key.toString('ascii') === apiKey) {
-  //     console.error('API Key authentication successful');
-  //     return next();
-  //   }
-  //   console.log('API Key authentication failed');
-  // }
+  // for testing we use old api key (can't hit TokenValidator api with fake credentials as it results in The requested resource /Accounts/ACxxxxxxxxxx/Tokens/validate was not found)
+  if (process.env.NODE_ENV === 'test' && authorization.startsWith('Basic')) {
+    const base64Key = Buffer.from(authorization.replace('Basic ', ''), 'base64');
+    if (base64Key.toString('ascii') === apiKey) {
+      return next();
+    }
+    console.log('API Key authentication failed');
+  }
 
   return unauthorized(res);
 }
