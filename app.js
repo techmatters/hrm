@@ -56,16 +56,14 @@ async function authorizationMiddleware(req, res, next) {
   if (!req || !req.headers || !req.headers.authorization) {
     return unauthorized(res);
   }
-  console.log('\n\n\n\n\n\n\n\n>>>>>>>>> THIS CASE');
 
   const { authorization } = req.headers;
 
   if (authorization.startsWith('Bearer')) {
     const token = authorization.replace('Bearer ', '');
     try {
+      // eslint-disable-next-line no-unused-vars
       const tokenResult = await TokenValidator(token, accountSid, authToken);
-      console.log('Token authentication successful');
-      console.log(tokenResult);
       // Here we can add tokenResult (worker, roles, etc) to the req object. Is this something we want? if above code is uncomented (auth with apiKey), that can lead to confusing flows, as sometimes it will exist and sometimes not.
       return next();
     } catch (err) {
