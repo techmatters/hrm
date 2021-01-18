@@ -14,10 +14,6 @@ const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken = process.env.TWILIO_AUTH_TOKEN;
 const version = '0.3.6';
 
-if (!apiKey) {
-  throw new Error('Must specify API key');
-}
-
 if (!accountSid || !authToken) {
   throw new Error('Must specify Twilio credentials');
 }
