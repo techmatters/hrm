@@ -172,6 +172,11 @@ const noHelpline = {
   helpline: '',
 };
 
+const withTaskId = {
+  ...contact1,
+  taskId: 'taskId',
+};
+
 const case1 = {
   status: 'open',
   helpline: 'helpline',
@@ -198,6 +203,7 @@ module.exports = {
   another1,
   another2,
   noHelpline,
+  withTaskId,
   case1,
   case2,
 };

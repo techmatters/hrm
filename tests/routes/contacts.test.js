@@ -15,6 +15,7 @@ const {
   another1,
   another2,
   noHelpline,
+  withTaskId,
   case1,
   case2,
 } = mocks;
@@ -70,6 +71,29 @@ describe('/contacts route', () => {
         expect(res.status).toBe(200);
         expect(res.body.rawJson.callType).toBe(contacts[index].form.callType);
       });
+    });
+
+    test('Idempotence on create contact', async () => {
+      const response = await request
+        .post(route)
+        .set(headers)
+        .send(withTaskId);
+
+      const beforeContacts = await request.get(route).set(headers);
+
+      const subsequentResponse = await request
+        .post(route)
+        .set(headers)
+        .send(withTaskId);
+
+      const afterContacts = await request.get(route).set(headers);
+
+      // both should succeed
+      expect(response.status).toBe(200);
+      expect(subsequentResponse.status).toBe(200);
+
+      // but second call should do nothing
+      expect(afterContacts.body).toHaveLength(beforeContacts.body.length);
     });
   });
 
