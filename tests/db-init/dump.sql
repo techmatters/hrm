@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 11.9 (Ubuntu 11.9-1.pgdg18.04+1)
--- Dumped by pg_dump version 11.9 (Ubuntu 11.9-1.pgdg18.04+1)
+-- Dumped from database version 11.10 (Ubuntu 11.10-1.pgdg18.04+1)
+-- Dumped by pg_dump version 11.10 (Ubuntu 11.10-1.pgdg18.04+1)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -117,7 +117,8 @@ CREATE TABLE public."Contacts" (
     "conversationDuration" integer,
     "caseId" integer,
     "accountSid" character varying(255),
-    "timeOfContact" timestamp with time zone
+    "timeOfContact" timestamp with time zone,
+    "taskId" character varying(255)
 );
 
 
@@ -176,25 +177,26 @@ ALTER TABLE ONLY public."Cases" ALTER COLUMN id SET DEFAULT nextval('public."Cas
 
 ALTER TABLE ONLY public."Contacts" ALTER COLUMN id SET DEFAULT nextval('public."Contacts_id_seq"'::regclass);
 
+
 --
 -- Name: CaseAudits_id_seq; Type: SEQUENCE SET; Schema: public; Owner: hrm
 --
 
-SELECT pg_catalog.setval('public."CaseAudits_id_seq"', 2405, true);
+SELECT pg_catalog.setval('public."CaseAudits_id_seq"', 753, true);
 
 
 --
 -- Name: Cases_id_seq; Type: SEQUENCE SET; Schema: public; Owner: hrm
 --
 
-SELECT pg_catalog.setval('public."Cases_id_seq"', 1983, true);
+SELECT pg_catalog.setval('public."Cases_id_seq"', 655, true);
 
 
 --
 -- Name: Contacts_id_seq; Type: SEQUENCE SET; Schema: public; Owner: hrm
 --
 
-SELECT pg_catalog.setval('public."Contacts_id_seq"', 2555, true);
+SELECT pg_catalog.setval('public."Contacts_id_seq"', 3028, true);
 
 
 --
