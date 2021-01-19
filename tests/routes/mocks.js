@@ -173,7 +173,35 @@ const noHelpline = {
 };
 
 const withTaskId = {
-  ...contact1,
+  form: {
+    callType: 'Child calling about self',
+    childInformation: {
+      name: {
+        firstName: 'withTaskId',
+        lastName: 'withTaskId',
+      },
+      gender: '',
+      age: '',
+      language: '',
+      nationality: '',
+      ethnicity: '',
+      location: {
+        streetAddress: '',
+        city: '',
+        stateOrCounty: '',
+        postalCode: '',
+        phone1: '',
+        phone2: '',
+      },
+      refugee: false,
+    },
+  },
+  twilioWorkerId: 'fake-worker-123',
+  helpline: '',
+  queueName: '',
+  number: '12025550184',
+  channel: 'chat',
+  conversationDuration: 1,
   taskId: 'taskId',
 };
 
