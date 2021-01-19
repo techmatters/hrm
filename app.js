@@ -3,16 +3,19 @@ const express = require('express');
 require('express-async-errors');
 const logger = require('morgan');
 const cors = require('cors');
+const TokenValidator = require('twilio-flex-token-validator').validator;
 
 const swagger = require('./swagger');
 const { apiV0 } = require('./routes');
 
 const app = express();
 const apiKey = process.env.API_KEY;
+const accountSid = process.env.TWILIO_ACCOUNT_SID;
+const authToken = process.env.TWILIO_AUTH_TOKEN;
 const version = '0.3.6';
 
-if (!apiKey) {
-  throw new Error('Must specify API key');
+if (!accountSid || !authToken) {
+  throw new Error('Must specify Twilio credentials');
 }
 
 console.log(`Starting HRM version ${version}`);
@@ -40,17 +43,40 @@ function unauthorized(res) {
   res.status(401).json(authorizationFailed);
 }
 
-function authorizationMiddleware(req, res, next) {
+/**
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ * @param {import('express').NextFunction} next
+ */
+async function authorizationMiddleware(req, res, next) {
   if (!req || !req.headers || !req.headers.authorization) {
     return unauthorized(res);
   }
 
-  const base64Key = Buffer.from(req.headers.authorization.replace('Basic ', ''), 'base64');
-  if (base64Key.toString('ascii') !== apiKey) {
-    return unauthorized(res);
+  const { authorization } = req.headers;
+
+  if (authorization.startsWith('Bearer')) {
+    const token = authorization.replace('Bearer ', '');
+    try {
+      // eslint-disable-next-line no-unused-vars
+      const tokenResult = await TokenValidator(token, accountSid, authToken);
+      // Here we can add tokenResult (worker, roles, etc) to the req object. Is this something we want? if above code is uncomented (auth with apiKey), that can lead to confusing flows, as sometimes it will exist and sometimes not.
+      return next();
+    } catch (err) {
+      console.error('Token authentication failed: ', err);
+    }
   }
 
-  return next();
+  // for testing we use old api key (can't hit TokenValidator api with fake credentials as it results in The requested resource /Accounts/ACxxxxxxxxxx/Tokens/validate was not found)
+  if (process.env.NODE_ENV === 'test' && authorization.startsWith('Basic')) {
+    const base64Key = Buffer.from(authorization.replace('Basic ', ''), 'base64');
+    if (base64Key.toString('ascii') === apiKey) {
+      return next();
+    }
+    console.log('API Key authentication failed');
+  }
+
+  return unauthorized(res);
 }
 
 app.use(authorizationMiddleware);
