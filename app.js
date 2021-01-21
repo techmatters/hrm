@@ -10,13 +10,7 @@ const { apiV0 } = require('./routes');
 
 const app = express();
 const apiKey = process.env.API_KEY;
-const accountSid = process.env.TWILIO_ACCOUNT_SID;
-const authToken = process.env.TWILIO_AUTH_TOKEN;
 const version = '0.3.6';
-
-if (!accountSid || !authToken) {
-  throw new Error('Must specify Twilio credentials');
-}
 
 console.log(`Starting HRM version ${version}`);
 
@@ -58,6 +52,13 @@ async function authorizationMiddleware(req, res, next) {
   if (authorization.startsWith('Bearer')) {
     const token = authorization.replace('Bearer ', '');
     try {
+      const { accountSid } = req;
+      if (!accountSid) throw new Error('accountSid not specified in the request.');
+
+      const authTokenKey = `TWILIO_AUTH_TOKEN_${accountSid}`;
+      const authToken = process.env[authTokenKey];
+      if (!authToken) throw new Error('authToken not provided for the specified accountSid.');
+
       // eslint-disable-next-line no-unused-vars
       const tokenResult = await TokenValidator(token, accountSid, authToken);
       // Here we can add tokenResult (worker, roles, etc) to the req object. Is this something we want? if above code is uncomented (auth with apiKey), that can lead to confusing flows, as sometimes it will exist and sometimes not.
@@ -79,8 +80,6 @@ async function authorizationMiddleware(req, res, next) {
   return unauthorized(res);
 }
 
-app.use(authorizationMiddleware);
-
 /**
  * Middleware that adds the account sid (taken from path) to the request object, so we can use it in the routes.
  * NOTE: If we ever move this project to Typescript: https://dev.to/kwabenberko/extend-express-s-request-object-with-typescript-declaration-merging-1nn5
@@ -90,7 +89,7 @@ const addAccountSid = (req, res, next) => {
   return next();
 };
 
-app.use('/v0/accounts/:accountSid', addAccountSid, apiV0);
+app.use('/v0/accounts/:accountSid', addAccountSid, authorizationMiddleware, apiV0);
 
 app.use((req, res, next) => {
   next(createError(404));
