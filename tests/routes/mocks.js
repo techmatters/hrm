@@ -172,6 +172,39 @@ const noHelpline = {
   helpline: '',
 };
 
+const withTaskId = {
+  form: {
+    callType: 'Child calling about self',
+    childInformation: {
+      name: {
+        firstName: 'withTaskId',
+        lastName: 'withTaskId',
+      },
+      gender: '',
+      age: '',
+      language: '',
+      nationality: '',
+      ethnicity: '',
+      location: {
+        streetAddress: '',
+        city: '',
+        stateOrCounty: '',
+        postalCode: '',
+        phone1: '',
+        phone2: '',
+      },
+      refugee: false,
+    },
+  },
+  twilioWorkerId: 'not-fake-worker-123',
+  helpline: '',
+  queueName: '',
+  number: '11111111111',
+  channel: 'chat',
+  conversationDuration: 1,
+  taskId: 'taskId',
+};
+
 const case1 = {
   status: 'open',
   helpline: 'helpline',
@@ -198,6 +231,7 @@ module.exports = {
   another1,
   another2,
   noHelpline,
+  withTaskId,
   case1,
   case2,
 };

@@ -15,6 +15,7 @@ const {
   another1,
   another2,
   noHelpline,
+  withTaskId,
   case1,
   case2,
 } = mocks;
@@ -70,6 +71,29 @@ describe('/contacts route', () => {
         expect(res.status).toBe(200);
         expect(res.body.rawJson.callType).toBe(contacts[index].form.callType);
       });
+    });
+
+    test('Idempotence on create contact', async () => {
+      const response = await request
+        .post(route)
+        .set(headers)
+        .send(withTaskId);
+
+      const beforeContacts = await request.get(route).set(headers);
+
+      const subsequentResponse = await request
+        .post(route)
+        .set(headers)
+        .send(withTaskId);
+
+      const afterContacts = await request.get(route).set(headers);
+
+      // both should succeed
+      expect(response.status).toBe(200);
+      expect(subsequentResponse.status).toBe(200);
+
+      // but second call should do nothing
+      expect(afterContacts.body).toHaveLength(beforeContacts.body.length);
     });
   });
 
@@ -250,6 +274,8 @@ describe('/contacts route', () => {
     let anotherExistingCaseId;
     let nonExistingCaseId;
 
+    const byGreaterId = (a, b) => b.id - a.id;
+
     beforeEach(async () => {
       createdContact = await Contact.create(contact1);
       createdCase = await Case.create(case1);
@@ -301,7 +327,6 @@ describe('/contacts route', () => {
           .send({ caseId: existingCaseId });
 
         const caseAudits = await CaseAudit.findAll(caseAuditsQuery);
-        const byGreaterId = (a, b) => b.id - a.id;
         const lastCaseAudit = caseAudits.sort(byGreaterId)[0];
         const { previousValue, newValue } = lastCaseAudit;
 
@@ -309,6 +334,30 @@ describe('/contacts route', () => {
         expect(caseAudits).toHaveLength(caseAuditPreviousCount + 1);
         expect(previousValue.contacts).not.toContain(existingContactId);
         expect(newValue.contacts).toContain(existingContactId);
+      });
+
+      test('Idempotence on connect contact to case', async () => {
+        const response1 = await request
+          .put(subRoute(existingContactId))
+          .set(headers)
+          .send({ caseId: existingCaseId });
+
+        const beforeCaseAuditCount = await CaseAudit.count(caseAuditsQuery);
+
+        // repeat above operation (should do nothing)
+        const response2 = await request
+          .put(subRoute(existingContactId))
+          .set(headers)
+          .send({ caseId: existingCaseId });
+
+        const afterCaseAuditCount = await CaseAudit.count(caseAuditsQuery);
+
+        // both should succeed
+        expect(response1.status).toBe(200);
+        expect(response2.status).toBe(200);
+
+        // but second call should do nothing
+        expect(afterCaseAuditCount).toBe(beforeCaseAuditCount);
       });
 
       test('should create two CaseAudit', async () => {
@@ -325,7 +374,6 @@ describe('/contacts route', () => {
           .send({ caseId: anotherExistingCaseId });
 
         const caseAudits = await CaseAudit.findAll(caseAuditsQuery);
-        const byGreaterId = (a, b) => b.id - a.id;
         const firstCaseAudit = caseAudits.sort(byGreaterId)[0];
         const secondCaseAudit = caseAudits.sort(byGreaterId)[1];
         const {

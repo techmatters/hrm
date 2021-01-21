@@ -270,6 +270,12 @@ const ContactController = Contact => {
   };
 
   const createContact = async (body, accountSid) => {
+    // if a contact has been already created with this taskId, just return it (idempotence on taskId). Should we use a different HTTP code status for this case?
+    if (body.taskId) {
+      const contact = await Contact.findOne({ where: { taskId: body.taskId } });
+      if (contact) return contact;
+    }
+
     const contactRecord = {
       rawJson: body.form,
       twilioWorkerId: body.twilioWorkerId || '',
@@ -280,6 +286,7 @@ const ContactController = Contact => {
       conversationDuration: body.conversationDuration,
       accountSid: accountSid || '',
       timeOfContact: body.timeOfContact || Date.now(),
+      taskId: body.taskId || '',
     };
 
     const contact = await Contact.create(contactRecord);
