@@ -5,6 +5,25 @@ const { Contact, Case, CaseAudit, sequelize } = models;
 const ContactController = require('../../controllers/contact-controller')(Contact);
 const CaseController = require('../../controllers/case-controller')(Case, sequelize);
 const CaseAuditController = require('../../controllers/case-audit-controller')(CaseAudit);
+const { CaseResource, can } = require('../../permissions');
+const { asyncHandler, unauthorized } = require('../../utils');
+
+/**
+ * This methods checks if the user can edit the case.
+ * If yes, the endpoint code is run.
+ * If not, it sends unauthorized.
+ * @param {*} req
+ * @param {*} res
+ * @param {*} next
+ */
+const editCasePermissions = async (req, res, next) => {
+  const { id } = req.params;
+  const caseObj = await CaseController.getCase(id);
+  const caseResource = new CaseResource(caseObj.twilioWorkerId);
+  const canEdit = can(req.user, 'edit', caseResource);
+
+  return canEdit ? next() : unauthorized(res);
+};
 
 const casesRouter = Router();
 
@@ -20,7 +39,11 @@ casesRouter.post('/', async (req, res) => {
   res.json(createdCase);
 });
 
-casesRouter.put('/:id', async (req, res) => {
+/**
+ * We use asyncHandler(fn) here because expressJS expects the middleware to be a synchronous function,
+ * but editCasePermissions(args) is asynchronous
+ * */
+casesRouter.put('/:id', asyncHandler(editCasePermissions), async (req, res) => {
   const { id } = req.params;
   const updatedCase = await CaseController.updateCase(id, req.body);
   res.json(updatedCase);

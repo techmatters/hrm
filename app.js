@@ -7,6 +7,8 @@ const TokenValidator = require('twilio-flex-token-validator').validator;
 
 const swagger = require('./swagger');
 const { apiV0 } = require('./routes');
+const { unauthorized } = require('./utils');
+const { setupPermissions, User } = require('./permissions');
 
 const app = express();
 const apiKey = process.env.API_KEY;
@@ -23,6 +25,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cors());
 
+// Here we apply the permission rules
+setupPermissions();
+
 app.get('/', (req, res) => {
   res.json({
     Message: 'Welcome to the HRM!',
@@ -30,12 +35,6 @@ app.get('/', (req, res) => {
 });
 
 app.options('/contacts', cors());
-
-function unauthorized(res) {
-  const authorizationFailed = { error: 'Authorization failed' };
-  console.log(`[authorizationMiddleware]: ${JSON.stringify(authorizationFailed)}`);
-  res.status(401).json(authorizationFailed);
-}
 
 /**
  * @param {import('express').Request} req
@@ -61,7 +60,7 @@ async function authorizationMiddleware(req, res, next) {
 
       // eslint-disable-next-line no-unused-vars
       const tokenResult = await TokenValidator(token, accountSid, authToken);
-      // Here we can add tokenResult (worker, roles, etc) to the req object. Is this something we want? if above code is uncomented (auth with apiKey), that can lead to confusing flows, as sometimes it will exist and sometimes not.
+      req.user = new User(tokenResult.worker_sid, tokenResult.roles);
       return next();
     } catch (err) {
       console.error('Token authentication failed: ', err);
