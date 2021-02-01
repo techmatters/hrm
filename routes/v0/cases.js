@@ -5,7 +5,7 @@ const { Contact, Case, CaseAudit, sequelize } = models;
 const ContactController = require('../../controllers/contact-controller')(Contact);
 const CaseController = require('../../controllers/case-controller')(Case, sequelize);
 const CaseAuditController = require('../../controllers/case-audit-controller')(CaseAudit);
-const { CaseResource, can } = require('../../permissions');
+const { can } = require('../../permissions');
 const { asyncHandler, unauthorized } = require('../../utils');
 
 /**
@@ -19,8 +19,7 @@ const { asyncHandler, unauthorized } = require('../../utils');
 const editCasePermissions = async (req, res, next) => {
   const { id } = req.params;
   const caseObj = await CaseController.getCase(id);
-  const caseResource = new CaseResource(caseObj.twilioWorkerId);
-  const canEdit = can(req.user, 'edit', caseResource);
+  const canEdit = can(req.user, 'edit', caseObj);
 
   return canEdit ? next() : unauthorized(res);
 };

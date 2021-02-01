@@ -1,18 +1,27 @@
 const CanCan = require('cancan');
-const { User, ContactResource, CaseResource } = require('./resources');
+const models = require('../models');
+
+const { Case } = models;
 
 const cancan = new CanCan();
 const { allow, can } = cancan;
 
+const User = class {
+  constructor(workerSid, roles) {
+    this.workerSid = workerSid;
+    this.roles = roles;
+  }
+};
+
 const setupPermissions = () => {
-  allow(User, 'view', CaseResource);
+  allow(User, 'view', Case);
   // Here we could check if user.role === 'admin' as well
   allow(
     User,
     'edit',
-    CaseResource,
-    (user, caseResource) => user.workerSid === caseResource.workerSid,
+    Case,
+    (user, caseObj) => user.workerSid === caseObj.dataValues.twilioWorkerId,
   );
 };
 
-module.exports = { can, setupPermissions, User, ContactResource, CaseResource };
+module.exports = { can, setupPermissions, User };
