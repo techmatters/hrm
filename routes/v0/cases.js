@@ -1,4 +1,3 @@
-// const { Router } = require('express');
 const models = require('../../models');
 const { SafeRouter } = require('../../permissions');
 
