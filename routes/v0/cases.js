@@ -1,5 +1,5 @@
 const models = require('../../models');
-const { SafeRouter } = require('../../permissions');
+const { SafeRouter, openEndpoint } = require('../../permissions');
 
 const { Contact, Case, CaseAudit, sequelize } = models;
 const ContactController = require('../../controllers/contact-controller')(Contact);
@@ -29,27 +29,14 @@ const creatorCanEditCase = async (req, res, next) => {
   next();
 };
 
-/**
- * A fake middleware that just marks the request as authorized.
- * This can be deleted after we have all authorization middlewares set
- * for all enpoints.
- * @param {*} req
- * @param {*} res
- * @param {*} next
- */
-const fakeAuthorized = (req, res, next) => {
-  req.authorized = true;
-  next();
-};
-
 const casesRouter = SafeRouter();
 
-casesRouter.get('/', fakeAuthorized, async (req, res) => {
+casesRouter.get('/', openEndpoint, async (req, res) => {
   const cases = await CaseController.listCases(req.query);
   res.json(cases);
 });
 
-casesRouter.post('/', fakeAuthorized, async (req, res) => {
+casesRouter.post('/', openEndpoint, async (req, res) => {
   const { accountSid } = req;
 
   const createdCase = await CaseController.createCase(req.body, accountSid);
@@ -66,13 +53,13 @@ casesRouter.put('/:id', asyncHandler(creatorCanEditCase), async (req, res) => {
   res.json(updatedCase);
 });
 
-casesRouter.delete('/:id', fakeAuthorized, async (req, res) => {
+casesRouter.delete('/:id', openEndpoint, async (req, res) => {
   const { id } = req.params;
   await CaseController.deleteCase(id);
   res.sendStatus(200);
 });
 
-casesRouter.get('/:caseId/activities/', fakeAuthorized, async (req, res) => {
+casesRouter.get('/:caseId/activities/', openEndpoint, async (req, res) => {
   const { caseId } = req.params;
   await CaseController.getCase(caseId);
   const caseAudits = await CaseAuditController.getAuditsForCase(caseId);
@@ -83,7 +70,7 @@ casesRouter.get('/:caseId/activities/', fakeAuthorized, async (req, res) => {
   res.json(activities);
 });
 
-casesRouter.post('/search', fakeAuthorized, async (req, res) => {
+casesRouter.post('/search', openEndpoint, async (req, res) => {
   const searchResults = await CaseController.searchCases(req.body, req.query);
   res.json(searchResults);
 });

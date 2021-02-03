@@ -26,6 +26,17 @@ const { Router } = require('express');
 const { unauthorized } = require('../utils');
 
 /**
+ * A middleware that just marks an endpoint as open.
+ * @param {*} req
+ * @param {*} res
+ * @param {*} next
+ */
+const openEndpoint = (req, res, next) => {
+  req.authorized = true;
+  next();
+};
+
+/**
  * Sets req.authorized to false.
  * Subsequent middlewares may authorize the request.
  * This will be the first middleware in the chain.
@@ -56,8 +67,8 @@ const blockUnauthorized = (req, res, next) => (req.authorized ? next() : unautho
  */
 const addPermissionMiddlewares = handlers => {
   const params = [...handlers];
-  const endopintHandler = params.pop();
-  return [startAuthorization, ...params, blockUnauthorized, endopintHandler];
+  const endpointHandler = params.pop();
+  return [startAuthorization, ...params, blockUnauthorized, endpointHandler];
 };
 
 // HTTP methods and the 'all' special method
@@ -88,4 +99,4 @@ const SafeRouter = args => {
   };
 };
 
-module.exports = SafeRouter;
+module.exports = { SafeRouter, openEndpoint };
