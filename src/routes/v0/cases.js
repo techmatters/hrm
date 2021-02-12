@@ -44,6 +44,7 @@ casesRouter.get('/:caseId/activities/', async (req, res) => {
 });
 
 casesRouter.post('/search', async (req, res) => {
+  console.log('Executing Cases search...');
   const searchResults = await CaseController.searchCases(req.body, req.query);
   res.json(searchResults);
 });

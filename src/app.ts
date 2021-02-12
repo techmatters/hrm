@@ -1,3 +1,4 @@
+import { Response } from './types';
 const createError = require('http-errors');
 const express = require('express');
 require('express-async-errors');
@@ -5,7 +6,7 @@ const logger = require('morgan');
 const cors = require('cors');
 const TokenValidator = require('twilio-flex-token-validator').validator;
 
-const swagger = require('./swagger');
+// const swagger = require('./swagger');
 const { apiV0 } = require('./routes');
 
 const app = express();
@@ -14,7 +15,7 @@ const version = '0.3.6';
 
 console.log(`Starting HRM version ${version}`);
 
-swagger.runWhenNotProduction(app);
+// swagger.runWhenNotProduction(app);
 
 console.log('After connect attempt');
 
@@ -24,9 +25,12 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cors());
 
 app.get('/', (req, res) => {
-  res.json({
+  const response: Response = {
     Message: 'Welcome to the HRM!',
-  });
+    Datetime: new Date(),
+  };
+
+  res.json(response);
 });
 
 app.options('/contacts', cors());
