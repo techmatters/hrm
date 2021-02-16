@@ -1,4 +1,4 @@
-import { Response } from './types';
+import { SerializedResponse } from './types';
 const createError = require('http-errors');
 const express = require('express');
 require('express-async-errors');
@@ -6,16 +6,18 @@ const logger = require('morgan');
 const cors = require('cors');
 const TokenValidator = require('twilio-flex-token-validator').validator;
 
-// const swagger = require('./swagger');
+const swagger = require('./swagger');
 const { apiV0 } = require('./routes');
 
 const app = express();
 const apiKey = process.env.API_KEY;
-const version = '0.3.6';
+const version = '1.0.0';
 
+console.log('-------------------------------');
 console.log(`Starting HRM version ${version}`);
+console.log('-------------------------------');
 
-// swagger.runWhenNotProduction(app);
+swagger.runWhenNotProduction(app);
 
 console.log('After connect attempt');
 
@@ -25,7 +27,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cors());
 
 app.get('/', (req, res) => {
-  const response: Response = {
+  const response: SerializedResponse = {
     Message: 'Welcome to the HRM!',
     Datetime: new Date(),
   };
@@ -54,6 +56,7 @@ async function authorizationMiddleware(req, res, next) {
   const { authorization } = req.headers;
 
   if (authorization.startsWith('Bearer')) {
+    console.log('Request: ', req.accountSid);
     const token = authorization.replace('Bearer ', '');
     try {
       const { accountSid } = req;

@@ -3,8 +3,8 @@
 /**
  * Module dependencies.
  */
-console.log(new Date(Date.now()).toLocaleString() + ": trying to initialize www");
-var app = require('../dist/app');
+console.log(new Date(Date.now()).toLocaleString() + ": trying to initialize server!");
+var app = require('./app');
 var debug = require('debug')('hrm:server');
 var http = require('http');
 
