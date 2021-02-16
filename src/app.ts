@@ -56,7 +56,6 @@ async function authorizationMiddleware(req, res, next) {
   const { authorization } = req.headers;
 
   if (authorization.startsWith('Bearer')) {
-    console.log('Request: ', req.accountSid);
     const token = authorization.replace('Bearer ', '');
     try {
       const { accountSid } = req;
