@@ -8,10 +8,10 @@
     "build": "npm run clean && tsc && npm run copy-files",
     "clean": "rimraf dist/",
     "copy-files": "copyfiles -u 1 src/**/*.yaml src/**/*.sql dist/",
-    "test": "RUNNING_TESTS=true jest --passWithNoTests --forceExit",
+    "test": "cd ./dist && RUNNING_TESTS=true jest --passWithNoTests --forceExit",
     "db:create-migration": "cd ./dist && sequelize migration:generate --name ",
     "db:undo-last": "cd ./dist && sequelize db:migrate:undo",
-    "lint": "eslint --ext js .",
+    "lint": "cd ./src && eslint --ext js .",
     "lint:fix": "npm run lint -- --fix"
   },
   "repository": {
