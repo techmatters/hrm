@@ -59,6 +59,7 @@ const contact1 = {
   number: '12025550184',
   channel: 'chat',
   conversationDuration: 14,
+  accountSid: 'account-sid',
 };
 
 const contact2 = {
@@ -122,6 +123,7 @@ const contact2 = {
   number: '12025550184',
   channel: 'chat',
   conversationDuration: 10,
+  accountSid: 'account-sid',
 };
 
 // Non data contacts with actual information
@@ -203,6 +205,7 @@ const withTaskId = {
   channel: 'chat',
   conversationDuration: 1,
   taskId: 'taskId',
+  accountSid: 'account-sid',
 };
 
 const case1 = {
@@ -212,6 +215,7 @@ const case1 = {
     notes: 'Child with covid-19',
   },
   twilioWorkerId: 'fake-worker-129',
+  accountSid: 'account-sid',
 };
 
 const case2 = {
@@ -221,6 +225,7 @@ const case2 = {
     notes: 'Refugee child',
   },
   twilioWorkerId: 'fake-worker-129',
+  accountSid: 'account-sid',
 };
 
 module.exports = {
