@@ -9,7 +9,8 @@ const CaseAuditController = require('../../controllers/case-audit-controller')(C
 const casesRouter = Router();
 
 casesRouter.get('/', async (req, res) => {
-  const cases = await CaseController.listCases(req.query);
+  const { accountSid } = req;
+  const cases = await CaseController.listCases(req.query, accountSid);
   res.json(cases);
 });
 
@@ -44,7 +45,8 @@ casesRouter.get('/:caseId/activities/', async (req, res) => {
 });
 
 casesRouter.post('/search', async (req, res) => {
-  const searchResults = await CaseController.searchCases(req.body, req.query);
+  const { accountSid } = req;
+  const searchResults = await CaseController.searchCases(req.body, req.query, accountSid);
   res.json(searchResults);
 });
 

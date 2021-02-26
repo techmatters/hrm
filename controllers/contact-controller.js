@@ -111,7 +111,7 @@ const queryOnPhone = phoneNumber => {
   );
 };
 
-function buildSearchQueryObject(body, query) {
+function buildSearchQueryObject(body, query, accountSid) {
   const {
     helpline,
     firstName,
@@ -137,6 +137,7 @@ function buildSearchQueryObject(body, query) {
         },
         {
           [Op.and]: [
+            accountSid && { accountSid },
             queryOnName(firstName, lastName),
             compareCounselor && {
               twilioWorkerId: counselor,
@@ -221,11 +222,11 @@ function convertContactsToSearchResults(contacts) {
 }
 
 const ContactController = Contact => {
-  const searchContacts = async (body, query = {}) => {
+  const searchContacts = async (body, query = {}, accountSid) => {
     if (isEmptySearchParams(body)) {
       return { count: 0, contacts: [] };
     }
-    const queryObject = buildSearchQueryObject(body, query);
+    const queryObject = buildSearchQueryObject(body, query, accountSid);
     const { count, rows } = await Contact.findAndCountAll(queryObject);
     const contacts = convertContactsToSearchResults(rows);
     return { count, contacts };
