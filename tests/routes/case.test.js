@@ -35,7 +35,7 @@ afterAll(async () => {
 afterEach(async () => CaseAudit.destroy(caseAuditsQuery));
 
 describe('/cases route', () => {
-  const route = '/v0/accounts/accountSid/cases';
+  const route = '/v0/accounts/account-sid/cases';
 
   describe('GET', () => {
     test('should return 401', async () => {

@@ -29,7 +29,8 @@ contactsRouter.put('/:contactId/connectToCase', async (req, res) => {
 });
 
 contactsRouter.post('/search', async (req, res) => {
-  const searchResults = await ContactController.searchContacts(req.body, req.query);
+  const { accountSid } = req;
+  const searchResults = await ContactController.searchContacts(req.body, req.query, accountSid);
   res.json(searchResults);
 });
 

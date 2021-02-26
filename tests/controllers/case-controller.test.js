@@ -1,9 +1,13 @@
+const Sequelize = require('sequelize');
 const SequelizeMock = require('sequelize-mock');
 const createCaseController = require('../../controllers/case-controller');
 
 const DBConnectionMock = new SequelizeMock();
 const MockCase = DBConnectionMock.define('Cases');
 MockCase.findByPk = jest.fn(); // SequelizeMock doesn't define findByPk by itself
+
+const { Op } = Sequelize;
+const accountSid = 'account-sid';
 
 const CaseController = createCaseController(MockCase);
 
@@ -18,10 +22,10 @@ test('create case', async () => {
     info: { notes: 'Child with covid-19' },
     twilioWorkerId: 'twilio-worker-id',
     connectedContacts: [],
-    accountSid: '',
+    accountSid,
   };
 
-  await CaseController.createCase(caseToBeCreated);
+  await CaseController.createCase(caseToBeCreated, accountSid);
 
   const options = { include: { association: 'connectedContacts' } };
   expect(createSpy).toHaveBeenCalledWith(caseToBeCreated, options);
@@ -59,11 +63,11 @@ describe('Test listCases query params', () => {
       .mockImplementation(() => ({ rows: [], count: 0 }));
     const queryParams = { helpline: 'helpline' };
 
-    await CaseController.listCases(queryParams);
+    await CaseController.listCases(queryParams, accountSid);
     const expectedQueryObject = {
       order: [['createdAt', 'DESC']],
       where: {
-        helpline: 'helpline',
+        [Op.and]: [{ helpline: 'helpline' }, { accountSid }],
       },
       limit: 1000,
       offset: 0,
@@ -82,11 +86,11 @@ describe('Test listCases query params', () => {
       .mockImplementation(() => ({ rows: [], count: 0 }));
     const queryParams = { helpline: 'helpline', limit: 30 };
 
-    await CaseController.listCases(queryParams);
+    await CaseController.listCases(queryParams, accountSid);
     const expectedQueryObject = {
       order: [['createdAt', 'DESC']],
       where: {
-        helpline: 'helpline',
+        [Op.and]: [{ helpline: 'helpline' }, { accountSid }],
       },
       limit: 30,
       offset: 0,
@@ -105,11 +109,11 @@ describe('Test listCases query params', () => {
       .mockImplementation(() => ({ rows: [], count: 0 }));
     const queryParams = { helpline: 'helpline', offset: 30 };
 
-    await CaseController.listCases(queryParams);
+    await CaseController.listCases(queryParams, accountSid);
     const expectedQueryObject = {
       order: [['createdAt', 'DESC']],
       where: {
-        helpline: 'helpline',
+        [Op.and]: [{ helpline: 'helpline' }, { accountSid }],
       },
       limit: 1000,
       offset: 30,
@@ -128,11 +132,11 @@ describe('Test listCases query params', () => {
       .mockImplementation(() => ({ rows: [], count: 0 }));
     const queryParams = { helpline: 'helpline', limit: 30, offset: 30 };
 
-    await CaseController.listCases(queryParams);
+    await CaseController.listCases(queryParams, accountSid);
     const expectedQueryObject = {
       order: [['createdAt', 'DESC']],
       where: {
-        helpline: 'helpline',
+        [Op.and]: [{ helpline: 'helpline' }, { accountSid }],
       },
       limit: 30,
       offset: 30,
@@ -151,11 +155,11 @@ describe('Test listCases query params', () => {
       .mockImplementation(() => ({ rows: [], count: 0 }));
     const queryParams = { helpline: 'helpline', limit: 'not a number' };
 
-    await CaseController.listCases(queryParams);
+    await CaseController.listCases(queryParams, accountSid);
     const expectedQueryObject = {
       order: [['createdAt', 'DESC']],
       where: {
-        helpline: 'helpline',
+        [Op.and]: [{ helpline: 'helpline' }, { accountSid }],
       },
       limit: 1000,
       offset: 0,
@@ -215,11 +219,11 @@ test('list cases (with 1st contact, no limit/offset)', async () => {
     .mockImplementation(() => ({ rows: casesFromDB, count: casesFromDB.length }));
   const queryParams = { helpline: 'helpline' };
 
-  const result = await CaseController.listCases(queryParams);
+  const result = await CaseController.listCases(queryParams, accountSid);
   const expectedQueryObject = {
     order: [['createdAt', 'DESC']],
     where: {
-      helpline: 'helpline',
+      [Op.and]: [{ helpline: 'helpline' }, { accountSid }],
     },
     limit: 1000,
     offset: 0,
@@ -279,11 +283,11 @@ test('list cases (with 1st contact, with limit/offset)', async () => {
     .mockImplementation(() => ({ rows: casesFromDB, count: casesFromDB.length }));
   const queryParams = { helpline: 'helpline', limit: 20, offset: 30 };
 
-  const result = await CaseController.listCases(queryParams);
+  const result = await CaseController.listCases(queryParams, accountSid);
   const expectedQueryObject = {
     order: [['createdAt', 'DESC']],
     where: {
-      helpline: 'helpline',
+      [Op.and]: [{ helpline: 'helpline' }, { accountSid }],
     },
     limit: 20,
     offset: 30,
@@ -325,12 +329,12 @@ test('list cases (without contacts)', async () => {
     .mockImplementation(() => ({ rows: casesFromDB, count: casesFromDB.length }));
   const queryParams = { helpline: 'helpline' };
 
-  const result = await CaseController.listCases(queryParams);
+  const result = await CaseController.listCases(queryParams, accountSid);
 
   const expectedQueryObject = {
     order: [['createdAt', 'DESC']],
     where: {
-      helpline: 'helpline',
+      [Op.and]: [{ helpline: 'helpline' }, { accountSid }],
     },
     limit: 1000,
     offset: 0,
@@ -347,9 +351,12 @@ test('list cases (without contacts)', async () => {
 test('list cases without helpline', async () => {
   const findAndCountAllSpy = jest.spyOn(MockCase, 'findAndCountAll');
   const queryParams = { limit: 20, offset: 30 };
-  await CaseController.listCases(queryParams);
+  await CaseController.listCases(queryParams, accountSid);
   const expectedQueryObject = {
     order: [['createdAt', 'DESC']],
+    where: {
+      [Op.and]: [undefined, { accountSid }],
+    },
     limit: 20,
     offset: 30,
     include: {
