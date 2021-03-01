@@ -42,7 +42,7 @@ if (config.use_env_variable) {
 const db = {
   sequelize,
   Sequelize,
-  CaseAudit: CaseAuditFactory(sequelize),
+  CaseAudit: () => CaseAuditFactory(sequelize),
 };
 
 // ToDo: this code is not working in typescript. We need to figure out a better way to load the models dynamically
@@ -51,10 +51,8 @@ fs.readdirSync(__dirname)
     return file.indexOf('.') !== 0 && file !== basename && file.slice(-3) === '.js';
   })
   .forEach(file => {
-    if (file !== 'case-audit.js') {
       const model = sequelize.import(path.join(__dirname, file));
       db[model.name] = model;
-    }
   });
 
 Object.keys(db).forEach((modelName: any) => {
