@@ -1,7 +1,8 @@
+import models from '../../models';
 const { Router } = require('express');
-const models = require('../../models');
 
-const { Contact, Case, CaseAudit, sequelize } = models;
+const { sequelize } = models;
+const { Contact, Case, CaseAudit } = sequelize;
 const ContactController = require('../../controllers/contact-controller')(Contact);
 const CaseController = require('../../controllers/case-controller')(Case, sequelize);
 const CaseAuditController = require('../../controllers/case-audit-controller')(CaseAudit);

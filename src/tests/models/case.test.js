@@ -1,3 +1,4 @@
+// eslint-disable-next-line import/no-unresolved
 const models = require('../../models');
 const { getHook, getMockedCaseInstance } = require('./utils');
 

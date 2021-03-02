@@ -1,7 +1,7 @@
+import models from '../../models';
 const { Router } = require('express');
-const models = require('../../models');
 
-const { sequelize } = models.default;
+const { sequelize } = models;
 const { Contact, Case } = sequelize.models;
 const ContactController = require('../../controllers/contact-controller')(Contact);
 const CaseController = require('../../controllers/case-controller')(Case, sequelize);

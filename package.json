@@ -11,7 +11,7 @@
     "test": "cd ./dist && RUNNING_TESTS=true jest --passWithNoTests --forceExit",
     "db:create-migration": "cd ./dist && sequelize migration:generate --name ",
     "db:undo-last": "cd ./dist && sequelize db:migrate:undo",
-    "lint": "cd ./src && eslint --ext js .",
+    "lint": "cd ./src && eslint .",
     "lint:fix": "npm run lint -- --fix"
   },
   "repository": {
