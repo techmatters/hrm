@@ -1,4 +1,8 @@
-import { BuildOptions, DataTypes, Model, Sequelize } from 'sequelize';
+import { 
+  Sequelize,
+  Model,
+  DataTypes,
+ } from 'sequelize';
 
 interface CaseAuditAttributes {
   accountSid: string;
@@ -10,21 +14,37 @@ interface CaseAuditAttributes {
 
 export interface CaseAuditModel extends Model<CaseAuditAttributes>, CaseAuditAttributes {}
 
-export class CaseAudit extends Model<CaseAuditModel, CaseAuditAttributes> { }
+export class CaseAudit extends Model<CaseAuditModel, CaseAuditAttributes> {
+  static associate = models => CaseAudit.belongsTo(models.Case, { foreignKey: 'caseId' });
+}
 
-export type CaseAuditStatic = typeof Model & {
-  new (values?: object, options?: BuildOptions): CaseAuditModel;
-};
-
-export function CaseAuditFactory (sequelize: Sequelize): CaseAuditStatic {
-  return <CaseAuditStatic>sequelize.define('CaseAudit', {
+export default (sequelize: Sequelize): typeof CaseAudit => {
+  CaseAudit.init({
     accountSid: { type: DataTypes.STRING },
     caseId: { type: DataTypes.NUMBER },
     newValue: { type: DataTypes.STRING },
     previousValue:  { type: DataTypes.STRING },
     twilioWorkerId: { type: DataTypes.STRING }, 
+  }, 
+  {
+    tableName  : 'CaseAudit',
+    sequelize
   })
-};
+
+  return CaseAudit;
+
+  // const CaseAudit = <CaseAuditStatic>sequelize.define("CaseAudit", {
+  //   accountSid: { type: DataTypes.STRING },
+  //   caseId: { type: DataTypes.NUMBER },
+  //   newValue: { type: DataTypes.STRING },
+  //   previousValue:  { type: DataTypes.STRING },
+  //   twilioWorkerId: { type: DataTypes.STRING }, 
+  // });
+
+  // CaseAudit.associate = models => CaseAudit.belongsTo(models.Case, { foreignKey: 'caseId' });
+
+  // return CaseAudit;
+}
 
 // module.exports = (sequelize, DataTypes) => {
 //   const CaseAudit = sequelize.define('CaseAudit', {

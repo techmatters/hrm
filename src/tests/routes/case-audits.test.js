@@ -2,6 +2,7 @@ const supertest = require('supertest');
 const Sequelize = require('sequelize');
 // eslint-disable-next-line import/no-unresolved
 const app = require('../../app');
+// eslint-disable-next-line import/no-unresolved
 const models = require('../../models');
 const mocks = require('./mocks');
 
