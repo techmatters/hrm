@@ -19,7 +19,6 @@
  */
 
 import { Sequelize } from 'sequelize';
-import { CaseAuditFactory } from './case-audit';
 
 const fs = require('fs');
 const path = require('path');
@@ -42,7 +41,6 @@ if (config.use_env_variable) {
 const db = {
   sequelize,
   Sequelize,
-  CaseAudit: CaseAuditFactory(sequelize),
 };
 
 // ToDo: this code is not working in typescript. We need to figure out a better way to load the models dynamically
@@ -51,10 +49,8 @@ fs.readdirSync(__dirname)
     return file.indexOf('.') !== 0 && file !== basename && file.slice(-3) === '.js';
   })
   .forEach(file => {
-    if (file !== 'case-audit.js') {
-      const model = sequelize.import(path.join(__dirname, file));
-      db[model.name] = model;
-    }
+    const model = sequelize.import(path.join(__dirname, file));
+    db[model.name] = model;
   });
 
 Object.keys(db).forEach((modelName: any) => {
@@ -62,8 +58,5 @@ Object.keys(db).forEach((modelName: any) => {
     db[modelName].associate(db);
   }
 });
-
-// ToDo: we need to setup the relations between models using Typescript
-// CaseAudit.belongsTo(models.Case, { foreignKey: 'caseId' });
 
 export default db;
