@@ -454,7 +454,7 @@ test('connect contact to case', async () => {
   const updateSpy = jest.spyOn(contactFromDB, 'update');
 
   const updateCaseObject = { caseId };
-  await ContactController.connectToCase(contactId, caseId);
+  await ContactController.connectToCase(contactId, caseId, accountSid);
 
   expect(updateSpy).toHaveBeenCalledWith(updateCaseObject);
 });
@@ -464,5 +464,7 @@ test('connect non existing contact to case', async () => {
   const caseId = 2;
   jest.spyOn(MockContact, 'findByPk').mockImplementation(() => null);
 
-  await expect(ContactController.connectToCase(nonExistingContactId, caseId)).rejects.toThrow();
+  await expect(
+    ContactController.connectToCase(nonExistingContactId, caseId, accountSid),
+  ).rejects.toThrow();
 });
