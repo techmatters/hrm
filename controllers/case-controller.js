@@ -27,8 +27,11 @@ const CaseController = (Case, sequelize) => {
   };
 
   const getCase = async (id, accountSid) => {
-    const options = { include: { association: 'connectedContacts' }, where: { accountSid } };
-    const caseFromDB = await Case.findByPk(id, options);
+    const options = {
+      include: { association: 'connectedContacts' },
+      where: { [Op.and]: [{ id }, { accountSid }] },
+    };
+    const caseFromDB = await Case.findOne(options);
 
     if (!caseFromDB) {
       const errorMessage = `Case with id ${id} not found`;

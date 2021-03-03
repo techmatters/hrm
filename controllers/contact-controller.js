@@ -305,8 +305,9 @@ const ContactController = Contact => {
     return contact;
   };
 
-  const getContact = async id => {
-    const contact = await Contact.findByPk(id);
+  const getContact = async (id, accountSid) => {
+    const options = { where: { [Op.and]: [{ id }, { accountSid }] } };
+    const contact = await Contact.findOne(options);
 
     if (!contact) {
       const errorMessage = `Contact with id ${id} not found`;
