@@ -233,7 +233,7 @@ const ContactController = Contact => {
   };
 
   const getContacts = async (query, accountSid) => {
-    const queueName = { query };
+    const { queueName } = query;
     const queryObject = {
       order: [['timeOfContact', 'DESC']],
       limit: 10,
