@@ -232,18 +232,24 @@ const ContactController = Contact => {
     return { count, contacts };
   };
 
-  const getContacts = async query => {
+  const getContacts = async (query, accountSid) => {
+    const { queueName } = query;
     const queryObject = {
       order: [['timeOfContact', 'DESC']],
       limit: 10,
     };
-    if (query.queueName) {
-      queryObject.where = {
-        queueName: {
-          [Op.like]: `${query.queueName}%`,
+
+    queryObject.where = {
+      [Op.and]: [
+        accountSid && { accountSid },
+        queueName && {
+          queueName: {
+            [Op.like]: `${queueName}%`,
+          },
         },
-      };
-    }
+      ],
+    };
+
     const contacts = await Contact.findAll(queryObject);
     return contacts.map(e => ({
       id: e.id,
@@ -258,12 +264,17 @@ const ContactController = Contact => {
     }));
   };
 
-  const getContactsById = async contactIds => {
+  const getContactsById = async (contactIds, accountSid) => {
     const queryObject = {
       where: {
-        id: {
-          [Op.in]: contactIds,
-        },
+        [Op.and]: [
+          accountSid && { accountSid },
+          {
+            id: {
+              [Op.in]: contactIds,
+            },
+          },
+        ],
       },
     };
 
@@ -294,8 +305,9 @@ const ContactController = Contact => {
     return contact;
   };
 
-  const getContact = async id => {
-    const contact = await Contact.findByPk(id);
+  const getContact = async (id, accountSid) => {
+    const options = { where: { [Op.and]: [{ id }, { accountSid }] } };
+    const contact = await Contact.findOne(options);
 
     if (!contact) {
       const errorMessage = `Contact with id ${id} not found`;
@@ -305,8 +317,8 @@ const ContactController = Contact => {
     return contact;
   };
 
-  const connectToCase = async (contactId, caseId) => {
-    const contact = await getContact(contactId);
+  const connectToCase = async (contactId, caseId, accountSid) => {
+    const contact = await getContact(contactId, accountSid);
     const updatedContact = await contact.update({ caseId });
 
     return updatedContact;

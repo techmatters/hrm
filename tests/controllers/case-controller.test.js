@@ -4,7 +4,6 @@ const createCaseController = require('../../controllers/case-controller');
 
 const DBConnectionMock = new SequelizeMock();
 const MockCase = DBConnectionMock.define('Cases');
-MockCase.findByPk = jest.fn(); // SequelizeMock doesn't define findByPk by itself
 
 const { Op } = Sequelize;
 const accountSid = 'account-sid';
@@ -40,20 +39,23 @@ test('get existing case', async () => {
     info: { notes: 'Child with covid-19' },
     twilioWorkerId: 'twilio-worker-id',
   };
-  const findByPkSpy = jest.spyOn(MockCase, 'findByPk').mockImplementation(() => caseFromDB);
+  const findOneSpy = jest.spyOn(MockCase, 'findOne').mockImplementation(() => caseFromDB);
 
-  const result = await CaseController.getCase(caseId);
+  const result = await CaseController.getCase(caseId, accountSid);
 
-  const options = { include: { association: 'connectedContacts' } };
-  expect(findByPkSpy).toHaveBeenCalledWith(caseId, options);
+  const options = {
+    include: { association: 'connectedContacts' },
+    where: { [Op.and]: [{ id: caseId }, { accountSid }] },
+  };
+  expect(findOneSpy).toHaveBeenCalledWith(options);
   expect(result).toStrictEqual(caseFromDB);
 });
 
 test('get non existing case', async () => {
   const nonExistingCaseId = 1;
-  jest.spyOn(MockCase, 'findByPk').mockImplementation(() => null);
+  jest.spyOn(MockCase, 'findOne').mockImplementation(() => null);
 
-  await expect(CaseController.getCase(nonExistingCaseId)).rejects.toThrow();
+  await expect(CaseController.getCase(nonExistingCaseId, accountSid)).rejects.toThrow();
 });
 
 describe('Test listCases query params', () => {
@@ -378,27 +380,29 @@ test('update existing case', async () => {
     twilioWorkerId: 'twilio-worker-id',
     update: jest.fn(),
   };
-  jest.spyOn(MockCase, 'findByPk').mockImplementation(() => caseFromDB);
+  jest.spyOn(MockCase, 'findOne').mockImplementation(() => caseFromDB);
   const updateSpy = jest.spyOn(caseFromDB, 'update');
 
   const updateCaseObject = {
     info: { notes: 'Refugee Child' },
   };
 
-  await CaseController.updateCase(caseId, updateCaseObject);
+  await CaseController.updateCase(caseId, updateCaseObject, accountSid);
 
   expect(updateSpy).toHaveBeenCalledWith(updateCaseObject);
 });
 
 test('update non existing case', async () => {
   const nonExsitingCaseId = 1;
-  jest.spyOn(MockCase, 'findByPk').mockImplementation(() => null);
+  jest.spyOn(MockCase, 'findOne').mockImplementation(() => null);
 
   const updateCaseObject = {
     info: { notes: 'Refugee Child' },
   };
 
-  await expect(CaseController.updateCase(nonExsitingCaseId, updateCaseObject)).rejects.toThrow();
+  await expect(
+    CaseController.updateCase(nonExsitingCaseId, updateCaseObject, accountSid),
+  ).rejects.toThrow();
 });
 
 test('delete existing case', async () => {
@@ -411,17 +415,17 @@ test('delete existing case', async () => {
     twilioWorkerId: 'twilio-worker-id',
     destroy: jest.fn(),
   };
-  jest.spyOn(MockCase, 'findByPk').mockImplementation(() => caseFromDB);
+  jest.spyOn(MockCase, 'findOne').mockImplementation(() => caseFromDB);
   const destroySpy = jest.spyOn(caseFromDB, 'destroy');
 
-  await CaseController.deleteCase(caseId);
+  await CaseController.deleteCase(caseId, accountSid);
 
   expect(destroySpy).toHaveBeenCalled();
 });
 
 test('delete non existing case', async () => {
   const nonExsitingCaseId = 1;
-  jest.spyOn(MockCase, 'findByPk').mockImplementation(() => null);
+  jest.spyOn(MockCase, 'findOne').mockImplementation(() => null);
 
-  await expect(CaseController.deleteCase(nonExsitingCaseId)).rejects.toThrow();
+  await expect(CaseController.deleteCase(nonExsitingCaseId, accountSid)).rejects.toThrow();
 });

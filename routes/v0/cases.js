@@ -22,23 +22,26 @@ casesRouter.post('/', async (req, res) => {
 });
 
 casesRouter.put('/:id', async (req, res) => {
+  const { accountSid } = req;
   const { id } = req.params;
-  const updatedCase = await CaseController.updateCase(id, req.body);
+  const updatedCase = await CaseController.updateCase(id, req.body, accountSid);
   res.json(updatedCase);
 });
 
 casesRouter.delete('/:id', async (req, res) => {
+  const { accountSid } = req;
   const { id } = req.params;
-  await CaseController.deleteCase(id);
+  await CaseController.deleteCase(id, accountSid);
   res.sendStatus(200);
 });
 
 casesRouter.get('/:caseId/activities/', async (req, res) => {
+  const { accountSid } = req;
   const { caseId } = req.params;
-  await CaseController.getCase(caseId);
-  const caseAudits = await CaseAuditController.getAuditsForCase(caseId);
+  await CaseController.getCase(caseId, accountSid);
+  const caseAudits = await CaseAuditController.getAuditsForCase(caseId, accountSid);
   const contactIds = CaseAuditController.getContactIdsFromCaseAudits(caseAudits);
-  const relatedContacts = await ContactController.getContactsById(contactIds);
+  const relatedContacts = await ContactController.getContactsById(contactIds, accountSid);
   const activities = await CaseAuditController.getActivities(caseAudits, relatedContacts);
 
   res.json(activities);

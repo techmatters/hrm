@@ -26,9 +26,12 @@ const CaseController = (Case, sequelize) => {
     return createdCase;
   };
 
-  const getCase = async id => {
-    const options = { include: { association: 'connectedContacts' } };
-    const caseFromDB = await Case.findByPk(id, options);
+  const getCase = async (id, accountSid) => {
+    const options = {
+      include: { association: 'connectedContacts' },
+      where: { [Op.and]: [{ id }, { accountSid }] },
+    };
+    const caseFromDB = await Case.findOne(options);
 
     if (!caseFromDB) {
       const errorMessage = `Case with id ${id} not found`;
@@ -74,14 +77,14 @@ const CaseController = (Case, sequelize) => {
     return { cases, count };
   };
 
-  const updateCase = async (id, body) => {
-    const caseFromDB = await getCase(id);
+  const updateCase = async (id, body, accountSid) => {
+    const caseFromDB = await getCase(id, accountSid);
     const updatedCase = await caseFromDB.update(body);
     return updatedCase;
   };
 
-  const deleteCase = async id => {
-    const caseFromDB = await getCase(id);
+  const deleteCase = async (id, accountSid) => {
+    const caseFromDB = await getCase(id, accountSid);
     await caseFromDB.destroy();
   };
 

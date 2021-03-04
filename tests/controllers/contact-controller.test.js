@@ -14,7 +14,6 @@ const callTypes = {
 const { Op } = Sequelize;
 const DBConnectionMock = new SequelizeMock();
 const MockContact = DBConnectionMock.define('Contacts');
-MockContact.findByPk = jest.fn(); // SequelizeMock doesn't define findByPk by itself
 
 const ContactController = createContactController(MockContact);
 const { queryOnName, queryOnPhone } = ContactController.queries;
@@ -450,11 +449,11 @@ test('connect contact to case', async () => {
     id: contactId,
     update: jest.fn(),
   };
-  jest.spyOn(MockContact, 'findByPk').mockImplementation(() => contactFromDB);
+  jest.spyOn(MockContact, 'findOne').mockImplementation(() => contactFromDB);
   const updateSpy = jest.spyOn(contactFromDB, 'update');
 
   const updateCaseObject = { caseId };
-  await ContactController.connectToCase(contactId, caseId);
+  await ContactController.connectToCase(contactId, caseId, accountSid);
 
   expect(updateSpy).toHaveBeenCalledWith(updateCaseObject);
 });
@@ -462,7 +461,9 @@ test('connect contact to case', async () => {
 test('connect non existing contact to case', async () => {
   const nonExistingContactId = 1;
   const caseId = 2;
-  jest.spyOn(MockContact, 'findByPk').mockImplementation(() => null);
+  jest.spyOn(MockContact, 'findOne').mockImplementation(() => null);
 
-  await expect(ContactController.connectToCase(nonExistingContactId, caseId)).rejects.toThrow();
+  await expect(
+    ContactController.connectToCase(nonExistingContactId, caseId, accountSid),
+  ).rejects.toThrow();
 });
