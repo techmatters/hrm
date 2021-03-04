@@ -38,7 +38,7 @@ describe('/cases/:caseId/activities route', () => {
   describe('GET', () => {
     let createdCase;
     let nonExistingCaseId;
-    const route = id => `/v0/accounts/accountSid/cases/${id}/activities`;
+    const route = id => `/v0/accounts/account-sid/cases/${id}/activities`;
 
     beforeEach(async () => {
       createdCase = await Case.create(case1);

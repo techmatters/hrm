@@ -47,7 +47,7 @@ test('get existing case', async () => {
     include: { association: 'connectedContacts' },
     where: { [Op.and]: [{ id: caseId }, { accountSid }] },
   };
-  expect(findOneSpy).toHaveBeenCalledWith(caseId, options);
+  expect(findOneSpy).toHaveBeenCalledWith(options);
   expect(result).toStrictEqual(caseFromDB);
 });
 
