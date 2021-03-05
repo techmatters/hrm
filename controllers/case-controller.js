@@ -1,7 +1,10 @@
 const createError = require('http-errors');
+const Sequelize = require('sequelize');
 const fs = require('fs');
 const path = require('path');
 const { retrieveCategories, getPaginationElements, isEmptySearchParams } = require('./helpers');
+
+const { Op } = Sequelize;
 
 const searchCasesQuery = fs
   .readFileSync(path.join(__dirname, '../sql/search-cases-query.sql'))
@@ -23,9 +26,12 @@ const CaseController = (Case, sequelize) => {
     return createdCase;
   };
 
-  const getCase = async id => {
-    const options = { include: { association: 'connectedContacts' } };
-    const caseFromDB = await Case.findByPk(id, options);
+  const getCase = async (id, accountSid) => {
+    const options = {
+      include: { association: 'connectedContacts' },
+      where: { [Op.and]: [{ id }, { accountSid }] },
+    };
+    const caseFromDB = await Case.findOne(options);
 
     if (!caseFromDB) {
       const errorMessage = `Case with id ${id} not found`;
@@ -35,8 +41,9 @@ const CaseController = (Case, sequelize) => {
     return caseFromDB;
   };
 
-  const listCases = async query => {
+  const listCases = async (query, accountSid) => {
     const { limit, offset } = getPaginationElements(query);
+    const { helpline } = query;
 
     const queryObject = {
       order: [['createdAt', 'DESC']],
@@ -44,11 +51,10 @@ const CaseController = (Case, sequelize) => {
       offset,
       include: { association: 'connectedContacts', required: true },
     };
-    if (query.helpline) {
-      queryObject.where = {
-        helpline: query.helpline,
-      };
-    }
+
+    queryObject.where = {
+      [Op.and]: [helpline && { helpline }, accountSid && { accountSid }],
+    };
 
     const { count, rows } = await Case.findAndCountAll(queryObject);
     const cases = rows.map(caseItem => {
@@ -71,18 +77,18 @@ const CaseController = (Case, sequelize) => {
     return { cases, count };
   };
 
-  const updateCase = async (id, body) => {
-    const caseFromDB = await getCase(id);
+  const updateCase = async (id, body, accountSid) => {
+    const caseFromDB = await getCase(id, accountSid);
     const updatedCase = await caseFromDB.update(body);
     return updatedCase;
   };
 
-  const deleteCase = async id => {
-    const caseFromDB = await getCase(id);
+  const deleteCase = async (id, accountSid) => {
+    const caseFromDB = await getCase(id, accountSid);
     await caseFromDB.destroy();
   };
 
-  const searchCases = async (body, query) => {
+  const searchCases = async (body, query, accountSid) => {
     if (isEmptySearchParams(body)) {
       return { count: 0, contacts: [] };
     }
@@ -91,6 +97,7 @@ const CaseController = (Case, sequelize) => {
     const casesWithTotalCount = await sequelize.query(searchCasesQuery, {
       type: sequelize.QueryTypes.SELECT,
       replacements: {
+        accountSid,
         helpline: body.helpline || null,
         firstName: body.firstName ? `%${body.firstName}%` : null,
         lastName: body.lastName ? `%${body.lastName}%` : null,

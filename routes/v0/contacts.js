@@ -8,7 +8,8 @@ const CaseController = require('../../controllers/case-controller')(Case, sequel
 const contactsRouter = Router();
 
 contactsRouter.get('/', async (req, res) => {
-  const contacts = await ContactController.getContacts(req.query);
+  const { accountSid } = req;
+  const contacts = await ContactController.getContacts(req.query, accountSid);
   res.json(contacts);
 });
 
@@ -21,15 +22,17 @@ contactsRouter.post('/', async (req, res) => {
 });
 
 contactsRouter.put('/:contactId/connectToCase', async (req, res) => {
+  const { accountSid } = req;
   const { contactId } = req.params;
   const { caseId } = req.body;
-  await CaseController.getCase(caseId);
-  const updatedContact = await ContactController.connectToCase(contactId, caseId);
+  await CaseController.getCase(caseId, accountSid);
+  const updatedContact = await ContactController.connectToCase(contactId, caseId, accountSid);
   res.json(updatedContact);
 });
 
 contactsRouter.post('/search', async (req, res) => {
-  const searchResults = await ContactController.searchContacts(req.body, req.query);
+  const { accountSid } = req;
+  const searchResults = await ContactController.searchContacts(req.body, req.query, accountSid);
   res.json(searchResults);
 });
 

@@ -1,3 +1,4 @@
+const Sequelize = require('sequelize');
 const SequelizeMock = require('sequelize-mock');
 const { getActivity } = require('../../controllers/activities');
 const createCaseAuditController = require('../../controllers/case-audit-controller');
@@ -6,6 +7,9 @@ const DBConnectionMock = new SequelizeMock();
 const MockCaseAudit = DBConnectionMock.define('CaseAudits');
 
 jest.mock('../../controllers/activities');
+
+const { Op } = Sequelize;
+const accountSid = 'account-sid';
 
 const CaseAuditController = createCaseAuditController(MockCaseAudit);
 
@@ -89,12 +93,12 @@ test('getAuditsForCase', async () => {
     .spyOn(MockCaseAudit, 'findAll')
     .mockReturnValue(Promise.resolve(caseAudits));
 
-  const result = await CaseAuditController.getAuditsForCase(caseId);
+  const result = await CaseAuditController.getAuditsForCase(caseId, accountSid);
 
   const expectedQuery = {
     order: [['createdAt', 'DESC']],
     where: {
-      caseId,
+      [Op.and]: [{ caseId }, { accountSid }],
     },
   };
 

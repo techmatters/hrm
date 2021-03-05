@@ -1,9 +1,12 @@
+const Sequelize = require('sequelize');
 const SequelizeMock = require('sequelize-mock');
 const createCaseController = require('../../controllers/case-controller');
 
 const DBConnectionMock = new SequelizeMock();
 const MockCase = DBConnectionMock.define('Cases');
-MockCase.findByPk = jest.fn(); // SequelizeMock doesn't define findByPk by itself
+
+const { Op } = Sequelize;
+const accountSid = 'account-sid';
 
 const CaseController = createCaseController(MockCase);
 
@@ -18,10 +21,10 @@ test('create case', async () => {
     info: { notes: 'Child with covid-19' },
     twilioWorkerId: 'twilio-worker-id',
     connectedContacts: [],
-    accountSid: '',
+    accountSid,
   };
 
-  await CaseController.createCase(caseToBeCreated);
+  await CaseController.createCase(caseToBeCreated, accountSid);
 
   const options = { include: { association: 'connectedContacts' } };
   expect(createSpy).toHaveBeenCalledWith(caseToBeCreated, options);
@@ -36,20 +39,23 @@ test('get existing case', async () => {
     info: { notes: 'Child with covid-19' },
     twilioWorkerId: 'twilio-worker-id',
   };
-  const findByPkSpy = jest.spyOn(MockCase, 'findByPk').mockImplementation(() => caseFromDB);
+  const findOneSpy = jest.spyOn(MockCase, 'findOne').mockImplementation(() => caseFromDB);
 
-  const result = await CaseController.getCase(caseId);
+  const result = await CaseController.getCase(caseId, accountSid);
 
-  const options = { include: { association: 'connectedContacts' } };
-  expect(findByPkSpy).toHaveBeenCalledWith(caseId, options);
+  const options = {
+    include: { association: 'connectedContacts' },
+    where: { [Op.and]: [{ id: caseId }, { accountSid }] },
+  };
+  expect(findOneSpy).toHaveBeenCalledWith(options);
   expect(result).toStrictEqual(caseFromDB);
 });
 
 test('get non existing case', async () => {
   const nonExistingCaseId = 1;
-  jest.spyOn(MockCase, 'findByPk').mockImplementation(() => null);
+  jest.spyOn(MockCase, 'findOne').mockImplementation(() => null);
 
-  await expect(CaseController.getCase(nonExistingCaseId)).rejects.toThrow();
+  await expect(CaseController.getCase(nonExistingCaseId, accountSid)).rejects.toThrow();
 });
 
 describe('Test listCases query params', () => {
@@ -59,11 +65,11 @@ describe('Test listCases query params', () => {
       .mockImplementation(() => ({ rows: [], count: 0 }));
     const queryParams = { helpline: 'helpline' };
 
-    await CaseController.listCases(queryParams);
+    await CaseController.listCases(queryParams, accountSid);
     const expectedQueryObject = {
       order: [['createdAt', 'DESC']],
       where: {
-        helpline: 'helpline',
+        [Op.and]: [{ helpline: 'helpline' }, { accountSid }],
       },
       limit: 1000,
       offset: 0,
@@ -82,11 +88,11 @@ describe('Test listCases query params', () => {
       .mockImplementation(() => ({ rows: [], count: 0 }));
     const queryParams = { helpline: 'helpline', limit: 30 };
 
-    await CaseController.listCases(queryParams);
+    await CaseController.listCases(queryParams, accountSid);
     const expectedQueryObject = {
       order: [['createdAt', 'DESC']],
       where: {
-        helpline: 'helpline',
+        [Op.and]: [{ helpline: 'helpline' }, { accountSid }],
       },
       limit: 30,
       offset: 0,
@@ -105,11 +111,11 @@ describe('Test listCases query params', () => {
       .mockImplementation(() => ({ rows: [], count: 0 }));
     const queryParams = { helpline: 'helpline', offset: 30 };
 
-    await CaseController.listCases(queryParams);
+    await CaseController.listCases(queryParams, accountSid);
     const expectedQueryObject = {
       order: [['createdAt', 'DESC']],
       where: {
-        helpline: 'helpline',
+        [Op.and]: [{ helpline: 'helpline' }, { accountSid }],
       },
       limit: 1000,
       offset: 30,
@@ -128,11 +134,11 @@ describe('Test listCases query params', () => {
       .mockImplementation(() => ({ rows: [], count: 0 }));
     const queryParams = { helpline: 'helpline', limit: 30, offset: 30 };
 
-    await CaseController.listCases(queryParams);
+    await CaseController.listCases(queryParams, accountSid);
     const expectedQueryObject = {
       order: [['createdAt', 'DESC']],
       where: {
-        helpline: 'helpline',
+        [Op.and]: [{ helpline: 'helpline' }, { accountSid }],
       },
       limit: 30,
       offset: 30,
@@ -151,11 +157,11 @@ describe('Test listCases query params', () => {
       .mockImplementation(() => ({ rows: [], count: 0 }));
     const queryParams = { helpline: 'helpline', limit: 'not a number' };
 
-    await CaseController.listCases(queryParams);
+    await CaseController.listCases(queryParams, accountSid);
     const expectedQueryObject = {
       order: [['createdAt', 'DESC']],
       where: {
-        helpline: 'helpline',
+        [Op.and]: [{ helpline: 'helpline' }, { accountSid }],
       },
       limit: 1000,
       offset: 0,
@@ -215,11 +221,11 @@ test('list cases (with 1st contact, no limit/offset)', async () => {
     .mockImplementation(() => ({ rows: casesFromDB, count: casesFromDB.length }));
   const queryParams = { helpline: 'helpline' };
 
-  const result = await CaseController.listCases(queryParams);
+  const result = await CaseController.listCases(queryParams, accountSid);
   const expectedQueryObject = {
     order: [['createdAt', 'DESC']],
     where: {
-      helpline: 'helpline',
+      [Op.and]: [{ helpline: 'helpline' }, { accountSid }],
     },
     limit: 1000,
     offset: 0,
@@ -279,11 +285,11 @@ test('list cases (with 1st contact, with limit/offset)', async () => {
     .mockImplementation(() => ({ rows: casesFromDB, count: casesFromDB.length }));
   const queryParams = { helpline: 'helpline', limit: 20, offset: 30 };
 
-  const result = await CaseController.listCases(queryParams);
+  const result = await CaseController.listCases(queryParams, accountSid);
   const expectedQueryObject = {
     order: [['createdAt', 'DESC']],
     where: {
-      helpline: 'helpline',
+      [Op.and]: [{ helpline: 'helpline' }, { accountSid }],
     },
     limit: 20,
     offset: 30,
@@ -325,12 +331,12 @@ test('list cases (without contacts)', async () => {
     .mockImplementation(() => ({ rows: casesFromDB, count: casesFromDB.length }));
   const queryParams = { helpline: 'helpline' };
 
-  const result = await CaseController.listCases(queryParams);
+  const result = await CaseController.listCases(queryParams, accountSid);
 
   const expectedQueryObject = {
     order: [['createdAt', 'DESC']],
     where: {
-      helpline: 'helpline',
+      [Op.and]: [{ helpline: 'helpline' }, { accountSid }],
     },
     limit: 1000,
     offset: 0,
@@ -347,9 +353,12 @@ test('list cases (without contacts)', async () => {
 test('list cases without helpline', async () => {
   const findAndCountAllSpy = jest.spyOn(MockCase, 'findAndCountAll');
   const queryParams = { limit: 20, offset: 30 };
-  await CaseController.listCases(queryParams);
+  await CaseController.listCases(queryParams, accountSid);
   const expectedQueryObject = {
     order: [['createdAt', 'DESC']],
+    where: {
+      [Op.and]: [undefined, { accountSid }],
+    },
     limit: 20,
     offset: 30,
     include: {
@@ -371,27 +380,29 @@ test('update existing case', async () => {
     twilioWorkerId: 'twilio-worker-id',
     update: jest.fn(),
   };
-  jest.spyOn(MockCase, 'findByPk').mockImplementation(() => caseFromDB);
+  jest.spyOn(MockCase, 'findOne').mockImplementation(() => caseFromDB);
   const updateSpy = jest.spyOn(caseFromDB, 'update');
 
   const updateCaseObject = {
     info: { notes: 'Refugee Child' },
   };
 
-  await CaseController.updateCase(caseId, updateCaseObject);
+  await CaseController.updateCase(caseId, updateCaseObject, accountSid);
 
   expect(updateSpy).toHaveBeenCalledWith(updateCaseObject);
 });
 
 test('update non existing case', async () => {
   const nonExsitingCaseId = 1;
-  jest.spyOn(MockCase, 'findByPk').mockImplementation(() => null);
+  jest.spyOn(MockCase, 'findOne').mockImplementation(() => null);
 
   const updateCaseObject = {
     info: { notes: 'Refugee Child' },
   };
 
-  await expect(CaseController.updateCase(nonExsitingCaseId, updateCaseObject)).rejects.toThrow();
+  await expect(
+    CaseController.updateCase(nonExsitingCaseId, updateCaseObject, accountSid),
+  ).rejects.toThrow();
 });
 
 test('delete existing case', async () => {
@@ -404,17 +415,17 @@ test('delete existing case', async () => {
     twilioWorkerId: 'twilio-worker-id',
     destroy: jest.fn(),
   };
-  jest.spyOn(MockCase, 'findByPk').mockImplementation(() => caseFromDB);
+  jest.spyOn(MockCase, 'findOne').mockImplementation(() => caseFromDB);
   const destroySpy = jest.spyOn(caseFromDB, 'destroy');
 
-  await CaseController.deleteCase(caseId);
+  await CaseController.deleteCase(caseId, accountSid);
 
   expect(destroySpy).toHaveBeenCalled();
 });
 
 test('delete non existing case', async () => {
   const nonExsitingCaseId = 1;
-  jest.spyOn(MockCase, 'findByPk').mockImplementation(() => null);
+  jest.spyOn(MockCase, 'findOne').mockImplementation(() => null);
 
-  await expect(CaseController.deleteCase(nonExsitingCaseId)).rejects.toThrow();
+  await expect(CaseController.deleteCase(nonExsitingCaseId, accountSid)).rejects.toThrow();
 });

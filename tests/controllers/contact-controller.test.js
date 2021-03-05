@@ -14,23 +14,28 @@ const callTypes = {
 const { Op } = Sequelize;
 const DBConnectionMock = new SequelizeMock();
 const MockContact = DBConnectionMock.define('Contacts');
-MockContact.findByPk = jest.fn(); // SequelizeMock doesn't define findByPk by itself
 
 const ContactController = createContactController(MockContact);
 const { queryOnName, queryOnPhone } = ContactController.queries;
+
+const accountSid = 'account-sid';
 
 afterEach(() => jest.clearAllMocks());
 
 const emptyResult = { count: 0, contacts: [] };
 
 test('Return [] when no params are given', async () => {
-  const result = await ContactController.searchContacts({});
+  const result = await ContactController.searchContacts({}, undefined, accountSid);
 
   expect(result).toStrictEqual(emptyResult);
 });
 
 test('Return [] when only invalid params are given', async () => {
-  const result = await ContactController.searchContacts({ invalid: 'invalid' });
+  const result = await ContactController.searchContacts(
+    { invalid: 'invalid' },
+    undefined,
+    accountSid,
+  );
 
   expect(result).toStrictEqual(emptyResult);
 });
@@ -105,7 +110,11 @@ test('Convert contacts to searchResults', async () => {
   };
 
   MockContact.$queueResult(mockedResult);
-  const result = await ContactController.searchContacts({ helpline: 'helpline' });
+  const result = await ContactController.searchContacts(
+    { helpline: 'helpline' },
+    undefined,
+    accountSid,
+  );
 
   expect(result).toStrictEqual(expectedSearchResult);
 });
@@ -336,7 +345,7 @@ test('Call findAndCountAll(queryObject) with given params', async () => {
   };
 
   const spy = jest.spyOn(MockContact, 'findAndCountAll');
-  await ContactController.searchContacts(body);
+  await ContactController.searchContacts(body, undefined, accountSid);
 
   const expectedQueryObject = {
     where: {
@@ -346,6 +355,7 @@ test('Call findAndCountAll(queryObject) with given params', async () => {
         },
         {
           [Op.and]: [
+            { accountSid },
             queryOnName(body.firstName, body.lastName),
             {
               twilioWorkerId: body.counselor,
@@ -389,7 +399,7 @@ test('Call findAndCountAll(queryObject) without name search', async () => {
   };
 
   const spy = jest.spyOn(MockContact, 'findAndCountAll');
-  await ContactController.searchContacts(body);
+  await ContactController.searchContacts(body, undefined, accountSid);
 
   const expectedQueryObject = {
     where: {
@@ -399,6 +409,7 @@ test('Call findAndCountAll(queryObject) without name search', async () => {
         },
         {
           [Op.and]: [
+            { accountSid },
             undefined,
             {
               twilioWorkerId: body.counselor,
@@ -438,11 +449,11 @@ test('connect contact to case', async () => {
     id: contactId,
     update: jest.fn(),
   };
-  jest.spyOn(MockContact, 'findByPk').mockImplementation(() => contactFromDB);
+  jest.spyOn(MockContact, 'findOne').mockImplementation(() => contactFromDB);
   const updateSpy = jest.spyOn(contactFromDB, 'update');
 
   const updateCaseObject = { caseId };
-  await ContactController.connectToCase(contactId, caseId);
+  await ContactController.connectToCase(contactId, caseId, accountSid);
 
   expect(updateSpy).toHaveBeenCalledWith(updateCaseObject);
 });
@@ -450,7 +461,9 @@ test('connect contact to case', async () => {
 test('connect non existing contact to case', async () => {
   const nonExistingContactId = 1;
   const caseId = 2;
-  jest.spyOn(MockContact, 'findByPk').mockImplementation(() => null);
+  jest.spyOn(MockContact, 'findOne').mockImplementation(() => null);
 
-  await expect(ContactController.connectToCase(nonExistingContactId, caseId)).rejects.toThrow();
+  await expect(
+    ContactController.connectToCase(nonExistingContactId, caseId, accountSid),
+  ).rejects.toThrow();
 });

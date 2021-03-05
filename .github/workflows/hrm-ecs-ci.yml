@@ -30,8 +30,8 @@ on:
   workflow_dispatch:
     inputs:
       environment:
-        description: HRM environment to deploy. E.G = staging, production, beta (must match with the AWS environment value). Default value = staging
-        default: staging
+        description: HRM environment to deploy. E.G = development, staging, production (must match with the AWS environment value). Default value = development
+        default: development
         required: true
 
 env:

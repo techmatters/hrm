@@ -1,15 +1,18 @@
+const Sequelize = require('sequelize');
 const { getActivity } = require('./activities');
+
+const { Op } = Sequelize;
 
 const CaseAuditController = CaseAudit => {
   const getContactIdsFromCaseAudits = caseAudits => {
     return [...new Set(caseAudits.map(caseAudit => caseAudit.newValue.contacts).flat())];
   };
 
-  const getAuditsForCase = async caseId => {
+  const getAuditsForCase = async (caseId, accountSid) => {
     const queryObject = {
       order: [['createdAt', 'DESC']],
       where: {
-        caseId,
+        [Op.and]: [caseId && { caseId }, accountSid && { accountSid }],
       },
     };
 
