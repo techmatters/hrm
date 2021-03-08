@@ -6,7 +6,6 @@ const ContactController = require('../../controllers/contact-controller')(Contac
 const CaseController = require('../../controllers/case-controller')(Case, sequelize);
 const CaseAuditController = require('../../controllers/case-audit-controller')(CaseAudit);
 const { can } = require('../../permissions');
-const { asyncHandler } = require('../../utils');
 
 /**
  * This middleware checks if the user can edit the case.
@@ -15,14 +14,18 @@ const { asyncHandler } = require('../../utils');
  * @param {*} res
  * @param {*} next
  */
+// eslint-disable-next-line no-unused-vars
 const creatorCanEditCase = async (req, res, next) => {
-  if (!req.authorized) {
+  if (!req.isAuthorized()) {
+    const { accountSid } = req;
     const { id } = req.params;
-    const caseObj = await CaseController.getCase(id);
+    const caseObj = await CaseController.getCase(id, accountSid);
     const canEdit = can(req.user, 'edit', caseObj);
 
     if (canEdit) {
-      req.authorized = true;
+      req.authorize();
+    } else {
+      req.unauthorize();
     }
   }
 
@@ -44,11 +47,7 @@ casesRouter.post('/', openEndpoint, async (req, res) => {
   res.json(createdCase);
 });
 
-/**
- * We use asyncHandler(fn) here because expressJS expects the middleware to be a synchronous function,
- * but creatorCanEditCase(args) is asynchronous
- * */
-casesRouter.put('/:id', asyncHandler(creatorCanEditCase), async (req, res) => {
+casesRouter.put('/:id', openEndpoint, async (req, res) => {
   const { accountSid } = req;
   const { id } = req.params;
   const updatedCase = await CaseController.updateCase(id, req.body, accountSid);

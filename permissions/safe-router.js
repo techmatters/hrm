@@ -12,15 +12,13 @@
  * const safeRouter = SafeRouter();
  * safeRouter.get('/:id', customPermissionMiddlewares, () => {});
  * safeRouter.post('/search', customPermissionMiddlewares, () => {});
- * // Integrate with Express using SafeRouter's field 'expressRouter'
+ * Integrate with Express using SafeRouter's field 'expressRouter'
  * router.use('/resource', safeRouter.expressRouter);
  *
  * IMPORTANT NOTE:
- * Any authorization middleware should set 'req.authorized' to true and call next()
- * to mark the request as authorized.
- * DO NOT set 'req.authorized' to false NEVER. In case a middleware cannot authorize the request, just
- * call next() and don't chenge 'req.authorized'.
- * This is point that should be improved in future versions!
+ * Any authorization middleware should call req.authorize()/req.unauthorize() and call next()
+ * to mark the request as authorized/unauthorized.
+ * DO NOT set 'req.authorized' directly.
  */
 const { Router } = require('express');
 const { unauthorized } = require('../utils');
@@ -32,19 +30,32 @@ const { unauthorized } = require('../utils');
  * @param {*} next
  */
 const openEndpoint = (req, res, next) => {
-  req.authorized = true;
+  req.authorize();
   next();
 };
 
 /**
- * Sets req.authorized to false.
- * Subsequent middlewares may authorize the request.
+ * Adds authorize(), unauthorize() and isAuthorized() methods to the request
+ * @param {*} req
+ */
+const createAuthorizationMethods = req => {
+  req.authorize = () => {
+    req.authorized = true;
+  };
+  req.unauthorize = () => null;
+  req.isAuthorized = () => req.authorized;
+};
+
+/**
+ * Sets req.authorized to false and create authorization methods.
+ * Subsequent middlewares may authorize/unauthorize the request.
  * This will be the first middleware in the chain.
  * @param {*} req
  * @param {*} res
  * @param {*} next
  */
 const startAuthorization = (req, res, next) => {
+  createAuthorizationMethods(req);
   req.authorized = false;
   next();
 };
@@ -57,7 +68,7 @@ const startAuthorization = (req, res, next) => {
  * @param {*} res
  * @param {*} next
  */
-const blockUnauthorized = (req, res, next) => (req.authorized ? next() : unauthorized(res));
+const blockUnauthorized = (req, res, next) => (req.isAuthorized() ? next() : unauthorized(res));
 
 /**
  * Includes two middlewares in the list of handlers:
