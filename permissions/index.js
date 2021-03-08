@@ -1,6 +1,6 @@
 const CanCan = require('cancan');
 const models = require('../models');
-const { SafeRouter, openEndpoint } = require('./safe-router');
+const { SafeRouter, publicEndpoint } = require('./safe-router');
 
 const { Case } = models;
 
@@ -25,4 +25,4 @@ const setupPermissions = () => {
   );
 };
 
-module.exports = { can, setupPermissions, User, SafeRouter, openEndpoint };
+module.exports = { can, setupPermissions, User, SafeRouter, publicEndpoint };

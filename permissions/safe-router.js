@@ -29,7 +29,7 @@ const { unauthorized } = require('../utils');
  * @param {*} res
  * @param {*} next
  */
-const openEndpoint = (req, res, next) => {
+const publicEndpoint = (req, res, next) => {
   req.authorize();
   next();
 };
@@ -110,4 +110,4 @@ const SafeRouter = args => {
   };
 };
 
-module.exports = { SafeRouter, openEndpoint };
+module.exports = { SafeRouter, publicEndpoint };

@@ -1,5 +1,5 @@
 const models = require('../../models');
-const { SafeRouter, openEndpoint } = require('../../permissions');
+const { SafeRouter, publicEndpoint } = require('../../permissions');
 
 const { Contact, Case, CaseAudit, sequelize } = models;
 const ContactController = require('../../controllers/contact-controller')(Contact);
@@ -34,34 +34,34 @@ const creatorCanEditCase = async (req, res, next) => {
 
 const casesRouter = SafeRouter();
 
-casesRouter.get('/', openEndpoint, async (req, res) => {
+casesRouter.get('/', publicEndpoint, async (req, res) => {
   const { accountSid } = req;
   const cases = await CaseController.listCases(req.query, accountSid);
   res.json(cases);
 });
 
-casesRouter.post('/', openEndpoint, async (req, res) => {
+casesRouter.post('/', publicEndpoint, async (req, res) => {
   const { accountSid } = req;
 
   const createdCase = await CaseController.createCase(req.body, accountSid);
   res.json(createdCase);
 });
 
-casesRouter.put('/:id', openEndpoint, async (req, res) => {
+casesRouter.put('/:id', publicEndpoint, async (req, res) => {
   const { accountSid } = req;
   const { id } = req.params;
   const updatedCase = await CaseController.updateCase(id, req.body, accountSid);
   res.json(updatedCase);
 });
 
-casesRouter.delete('/:id', openEndpoint, async (req, res) => {
+casesRouter.delete('/:id', publicEndpoint, async (req, res) => {
   const { accountSid } = req;
   const { id } = req.params;
   await CaseController.deleteCase(id, accountSid);
   res.sendStatus(200);
 });
 
-casesRouter.get('/:caseId/activities/', openEndpoint, async (req, res) => {
+casesRouter.get('/:caseId/activities/', publicEndpoint, async (req, res) => {
   const { accountSid } = req;
   const { caseId } = req.params;
   await CaseController.getCase(caseId, accountSid);
@@ -73,7 +73,7 @@ casesRouter.get('/:caseId/activities/', openEndpoint, async (req, res) => {
   res.json(activities);
 });
 
-casesRouter.post('/search', openEndpoint, async (req, res) => {
+casesRouter.post('/search', publicEndpoint, async (req, res) => {
   const { accountSid } = req;
   const searchResults = await CaseController.searchCases(req.body, req.query, accountSid);
   res.json(searchResults);
