@@ -1,41 +1,67 @@
-const { Router } = require('express');
 const models = require('../../models');
+const { SafeRouter, publicEndpoint } = require('../../permissions');
 
 const { Contact, Case, CaseAudit, sequelize } = models;
 const ContactController = require('../../controllers/contact-controller')(Contact);
 const CaseController = require('../../controllers/case-controller')(Case, sequelize);
 const CaseAuditController = require('../../controllers/case-audit-controller')(CaseAudit);
+const { can } = require('../../permissions');
 
-const casesRouter = Router();
+/**
+ * This middleware checks if the user can edit the case.
+ * If yes, it sets the req.authorized to true.
+ * @param {*} req
+ * @param {*} res
+ * @param {*} next
+ */
+// eslint-disable-next-line no-unused-vars
+const creatorCanEditCase = async (req, res, next) => {
+  if (!req.isAuthorized()) {
+    const { accountSid } = req;
+    const { id } = req.params;
+    const caseObj = await CaseController.getCase(id, accountSid);
+    const canEdit = can(req.user, 'edit', caseObj);
 
-casesRouter.get('/', async (req, res) => {
+    if (canEdit) {
+      req.authorize();
+    } else {
+      req.unauthorize();
+    }
+  }
+
+  next();
+};
+
+const casesRouter = SafeRouter();
+
+casesRouter.get('/', publicEndpoint, async (req, res) => {
   const { accountSid } = req;
   const cases = await CaseController.listCases(req.query, accountSid);
   res.json(cases);
 });
 
-casesRouter.post('/', async (req, res) => {
+casesRouter.post('/', publicEndpoint, async (req, res) => {
   const { accountSid } = req;
 
   const createdCase = await CaseController.createCase(req.body, accountSid);
   res.json(createdCase);
 });
 
-casesRouter.put('/:id', async (req, res) => {
+casesRouter.put('/:id', publicEndpoint, async (req, res) => {
   const { accountSid } = req;
   const { id } = req.params;
   const updatedCase = await CaseController.updateCase(id, req.body, accountSid);
   res.json(updatedCase);
 });
 
-casesRouter.delete('/:id', async (req, res) => {
+casesRouter.delete('/:id', publicEndpoint, async (req, res) => {
   const { accountSid } = req;
   const { id } = req.params;
   await CaseController.deleteCase(id, accountSid);
   res.sendStatus(200);
 });
 
-casesRouter.get('/:caseId/activities/', async (req, res) => {
+casesRouter.get('/:caseId/activities/', publicEndpoint, async (req, res) => {
   const { accountSid } = req;
   const { caseId } = req.params;
   await CaseController.getCase(caseId, accountSid);
@@ -47,10 +73,10 @@ casesRouter.get('/:caseId/activities/', async (req, res) => {
   res.json(activities);
 });
 
-casesRouter.post('/search', async (req, res) => {
+casesRouter.post('/search', publicEndpoint, async (req, res) => {
   const { accountSid } = req;
   const searchResults = await CaseController.searchCases(req.body, req.query, accountSid);
   res.json(searchResults);
 });
 
-module.exports = casesRouter;
+module.exports = casesRouter.expressRouter;
