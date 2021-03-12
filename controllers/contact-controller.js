@@ -291,6 +291,7 @@ const ContactController = Contact => {
     const contactRecord = {
       rawJson: body.form,
       twilioWorkerId: body.twilioWorkerId || '',
+      createdBy: body.createdBy || '',
       helpline: body.helpline || '',
       queueName: body.queueName || body.form.queueName,
       number: body.number || '',

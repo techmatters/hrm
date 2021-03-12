@@ -12,6 +12,7 @@ module.exports = (sequelize, DataTypes) => {
     helpline: DataTypes.STRING,
     info: DataTypes.JSONB,
     twilioWorkerId: DataTypes.STRING,
+    createdBy: DataTypes.STRING,
     accountSid: DataTypes.STRING,
   });
 
