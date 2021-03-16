@@ -16,7 +16,6 @@ const version = '0.3.6';
 
 console.log(`Starting HRM version ${version}`);
 
-
 swagger.runWhenNotProduction(app);
 
 console.log('After connect attempt');
