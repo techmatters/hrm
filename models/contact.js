@@ -56,7 +56,10 @@ module.exports = (sequelize, DataTypes) => {
     rawJson: DataTypes.JSON,
     queueName: DataTypes.STRING,
     twilioWorkerId: DataTypes.STRING,
-    createdBy: DataTypes.STRING,
+    createdBy: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
     helpline: DataTypes.STRING,
     number: DataTypes.STRING,
     channel: DataTypes.STRING,
