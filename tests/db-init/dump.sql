@@ -32,7 +32,8 @@ CREATE TABLE public."CaseAudits" (
     "twilioWorkerId" character varying(255),
     "previousValue" jsonb,
     "newValue" jsonb,
-    "accountSid" character varying(255)
+    "accountSid" character varying(255),
+    "createdBy" character varying(255)
 );
 
 
@@ -184,21 +185,21 @@ ALTER TABLE ONLY public."Contacts" ALTER COLUMN id SET DEFAULT nextval('public."
 -- Name: CaseAudits_id_seq; Type: SEQUENCE SET; Schema: public; Owner: hrm
 --
 
-SELECT pg_catalog.setval('public."CaseAudits_id_seq"', 1327, true);
+SELECT pg_catalog.setval('public."CaseAudits_id_seq"', 1338, true);
 
 
 --
 -- Name: Cases_id_seq; Type: SEQUENCE SET; Schema: public; Owner: hrm
 --
 
-SELECT pg_catalog.setval('public."Cases_id_seq"', 1104, true);
+SELECT pg_catalog.setval('public."Cases_id_seq"', 1108, true);
 
 
 --
 -- Name: Contacts_id_seq; Type: SEQUENCE SET; Schema: public; Owner: hrm
 --
 
-SELECT pg_catalog.setval('public."Contacts_id_seq"', 3433, true);
+SELECT pg_catalog.setval('public."Contacts_id_seq"', 3435, true);
 
 
 --
