@@ -3,7 +3,7 @@ const { getHook, getMockedCaseInstance } = require('./utils');
 
 const { Case } = models;
 const workerSid = 'worker-sid';
-const transaction= 'transaction-1';
+const transaction = 'transaction-1';
 const options = { transaction, context: { workerSid } };
 
 test('afterCreate hook should create CaseAudit', async () => {
