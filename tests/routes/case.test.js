@@ -8,6 +8,8 @@ const server = app.listen();
 const request = supertest.agent(server);
 
 const { case1, case2, contact1 } = mocks;
+const workerSid = 'worker-sid';
+const options = { context: { workerSid } };
 
 const headers = {
   'Content-Type': 'application/json',
@@ -99,10 +101,10 @@ describe('/cases route', () => {
       let subRoute;
 
       beforeEach(async () => {
-        createdCase = await Case.create(case1);
+        createdCase = await Case.create(case1, options);
         subRoute = id => `${route}/${id}`;
 
-        const caseToBeDeleted = await Case.create(case2);
+        const caseToBeDeleted = await Case.create(case2, options);
         nonExistingCaseId = caseToBeDeleted.id;
         await caseToBeDeleted.destroy();
       });
@@ -168,10 +170,10 @@ describe('/cases route', () => {
       let subRoute;
 
       beforeEach(async () => {
-        createdCase = await Case.create(case1);
+        createdCase = await Case.create(case1, options);
         subRoute = id => `${route}/${id}`;
 
-        const caseToBeDeleted = await Case.create(case2);
+        const caseToBeDeleted = await Case.create(case2, options);
         nonExistingCaseId = caseToBeDeleted.id;
         await caseToBeDeleted.destroy();
       });
@@ -278,10 +280,10 @@ describe('/cases route', () => {
       const subRoute = `${route}/search`;
 
       beforeEach(async () => {
-        createdCase1 = await Case.create(withHouseholds(case1));
-        createdCase2 = await Case.create(case1);
-        createdCase3 = await Case.create(withPerpetrators(case1));
-        createdContact = await Contact.create(fillNameAndPhone(contact1));
+        createdCase1 = await Case.create(withHouseholds(case1), options);
+        createdCase2 = await Case.create(case1, options);
+        createdCase3 = await Case.create(withPerpetrators(case1), options);
+        createdContact = await Contact.create(fillNameAndPhone(contact1), options);
 
         // Connects createdContact with createdCase2
         createdContact.caseId = createdCase2.id;

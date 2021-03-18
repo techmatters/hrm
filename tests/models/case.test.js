@@ -2,7 +2,8 @@ const models = require('../../models');
 const { getHook, getMockedCaseInstance } = require('./utils');
 
 const { Case } = models;
-const options = { transaction: 'transaction-1' };
+const workerSid = 'worker-sid';
+const options = { transaction: 'transaction-1', context: { workerSid } };
 
 test('afterCreate hook should create CaseAudit', async () => {
   const hook = getHook(Case, 'afterCreate', 'auditCaseHook');
@@ -13,6 +14,7 @@ test('afterCreate hook should create CaseAudit', async () => {
     helpline: 'helpline',
     info: { notes: 'notes' },
     twilioWorkerId: 'worker-id',
+    createdBy: workerSid,
   };
   const contactIds = [1, 2, 3];
   const caseInstance = getMockedCaseInstance({ dataValues, contactIds });
@@ -23,6 +25,7 @@ test('afterCreate hook should create CaseAudit', async () => {
   const expectedCaseAuditRecord = {
     caseId: 3,
     twilioWorkerId: 'worker-id',
+    createdBy: workerSid,
     previousValue: null,
     newValue: {
       ...dataValues,
@@ -44,6 +47,7 @@ test('afterUpdate hook should create CaseAudit', async () => {
     helpline: 'helpline',
     info: { notes: 'notes' },
     twilioWorkerId: 'worker-id',
+    createdBy: workerSid,
   };
   const previousValues = {
     ...dataValues,
@@ -58,6 +62,7 @@ test('afterUpdate hook should create CaseAudit', async () => {
   const expectedCaseAuditRecord = {
     caseId: 3,
     twilioWorkerId: 'worker-id',
+    createdBy: workerSid,
     previousValue: {
       ...previousValues,
       contacts: contactIds,

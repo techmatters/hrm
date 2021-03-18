@@ -19,6 +19,7 @@ const ContactController = createContactController(MockContact);
 const { queryOnName, queryOnPhone } = ContactController.queries;
 
 const accountSid = 'account-sid';
+const workerSid = 'worker-sid';
 
 afterEach(() => jest.clearAllMocks());
 
@@ -49,6 +50,7 @@ test('Convert contacts to searchResults', async () => {
     .withNumber('+12025550142')
     .withCallType('Child calling about self')
     .withTwilioWorkerId('twilio-worker-id')
+    .withCreatedBy(workerSid)
     .withCreatedAt('2020-03-10')
     .withTimeOfContact('2020-03-10')
     .withChannel('voice')
@@ -62,6 +64,7 @@ test('Convert contacts to searchResults', async () => {
     .withNumber('Anonymous')
     .withCallType('Child calling about self')
     .withTwilioWorkerId('twilio-worker-id')
+    .withCreatedBy(workerSid)
     .withCreatedAt('2020-03-15')
     .withTimeOfContact('2020-03-15')
     .build();
@@ -453,9 +456,11 @@ test('connect contact to case', async () => {
   const updateSpy = jest.spyOn(contactFromDB, 'update');
 
   const updateCaseObject = { caseId };
-  await ContactController.connectToCase(contactId, caseId, accountSid);
+  const contextObject = { context: { workerSid } };
 
-  expect(updateSpy).toHaveBeenCalledWith(updateCaseObject);
+  await ContactController.connectToCase(contactId, caseId, accountSid, workerSid);
+
+  expect(updateSpy).toHaveBeenCalledWith(updateCaseObject, contextObject);
 });
 
 test('connect non existing contact to case', async () => {
@@ -464,6 +469,6 @@ test('connect non existing contact to case', async () => {
   jest.spyOn(MockContact, 'findOne').mockImplementation(() => null);
 
   await expect(
-    ContactController.connectToCase(nonExistingContactId, caseId, accountSid),
+    ContactController.connectToCase(nonExistingContactId, caseId, accountSid, workerSid),
   ).rejects.toThrow();
 });

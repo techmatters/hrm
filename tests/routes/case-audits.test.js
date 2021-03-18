@@ -13,6 +13,7 @@ const headers = {
   'Content-Type': 'application/json',
   Authorization: `Basic ${Buffer.from(process.env.API_KEY).toString('base64')}`,
 };
+const workerSid = 'worker-sid';
 
 const { Case, CaseAudit } = models;
 
@@ -39,10 +40,11 @@ describe('/cases/:caseId/activities route', () => {
     let createdCase;
     let nonExistingCaseId;
     const route = id => `/v0/accounts/account-sid/cases/${id}/activities`;
+    const options = { context: { workerSid } };
 
     beforeEach(async () => {
-      createdCase = await Case.create(case1);
-      const caseToBeDeleted = await Case.create(case2);
+      createdCase = await Case.create(case1, options);
+      const caseToBeDeleted = await Case.create(case2, options);
       nonExistingCaseId = caseToBeDeleted.id;
       await caseToBeDeleted.destroy();
     });

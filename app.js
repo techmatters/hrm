@@ -71,6 +71,7 @@ async function authorizationMiddleware(req, res, next) {
   if (process.env.NODE_ENV === 'test' && authorization.startsWith('Basic')) {
     const base64Key = Buffer.from(authorization.replace('Basic ', ''), 'base64');
     if (base64Key.toString('ascii') === apiKey) {
+      req.user = new User('test-worker-sid', []);
       return next();
     }
     console.log('API Key authentication failed');
