@@ -3,7 +3,8 @@ const { getHook, getMockedCaseInstance } = require('./utils');
 
 const { Case } = models;
 const workerSid = 'worker-sid';
-const options = { transaction: 'transaction-1', context: { workerSid } };
+const transaction= 'transaction-1';
+const options = { transaction, context: { workerSid } };
 
 test('afterCreate hook should create CaseAudit', async () => {
   const hook = getHook(Case, 'afterCreate', 'auditCaseHook');
@@ -35,7 +36,7 @@ test('afterCreate hook should create CaseAudit', async () => {
 
   await hook(caseInstance, options);
 
-  expect(createMethod).toHaveBeenCalledWith(expectedCaseAuditRecord, options);
+  expect(createMethod).toHaveBeenCalledWith(expectedCaseAuditRecord, { transaction });
 });
 
 test('afterUpdate hook should create CaseAudit', async () => {
@@ -75,5 +76,5 @@ test('afterUpdate hook should create CaseAudit', async () => {
 
   await hook(caseInstance, options);
 
-  expect(createMethod).toHaveBeenCalledWith(expectedCaseAuditRecord, options);
+  expect(createMethod).toHaveBeenCalledWith(expectedCaseAuditRecord, { transaction });
 });

@@ -3,7 +3,8 @@ const { getHook, getMockedCaseInstance, getMockedContactInstance } = require('./
 
 const { Contact } = models;
 const workerSid = 'worker-sid';
-const options = { transaction: 'transaction-1', context: { workerSid } };
+const transaction = 'transaction-1';
+const options = { transaction, context: { workerSid } };
 
 test('afterUpdate hook should create two CaseAudit', async () => {
   const hook = getHook(Contact, 'afterUpdate', 'auditCaseHook');
@@ -78,8 +79,8 @@ test('afterUpdate hook should create two CaseAudit', async () => {
   await hook(contactInstance, options);
 
   expect(createMethod).toHaveBeenCalledTimes(2);
-  expect(createMethod).toHaveBeenNthCalledWith(1, expectedPreviousCaseAuditRecord, options);
-  expect(createMethod).toHaveBeenNthCalledWith(2, expectedNewCaseAuditRecord, options);
+  expect(createMethod).toHaveBeenNthCalledWith(1, expectedPreviousCaseAuditRecord, { transaction });
+  expect(createMethod).toHaveBeenNthCalledWith(2, expectedNewCaseAuditRecord, { transaction });
 });
 
 test('afterUpdate hook should create only one CaseAudits', async () => {
@@ -128,7 +129,7 @@ test('afterUpdate hook should create only one CaseAudits', async () => {
   await hook(contactInstance, options);
 
   expect(createMethod).toHaveBeenCalledTimes(1);
-  expect(createMethod).toHaveBeenNthCalledWith(1, expectedNewCaseAuditRecord, options);
+  expect(createMethod).toHaveBeenNthCalledWith(1, expectedNewCaseAuditRecord, { transaction });
 });
 
 test('afterUpdate hook should create no CaseAudits', async () => {
