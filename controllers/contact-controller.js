@@ -132,9 +132,7 @@ function buildSearchQueryObject(body, query, accountSid) {
   return {
     where: {
       [Op.and]: [
-        helpline && {
-          [Op.or]: [{ helpline: '' }, { helpline: { [Op.is]: null } }, { helpline }],
-        },
+        helpline && { helpline },
         {
           [Op.and]: [
             accountSid && { accountSid },
