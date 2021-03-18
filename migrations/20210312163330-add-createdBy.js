@@ -5,6 +5,7 @@ module.exports = {
       return Promise.all([
         queryInterface.addColumn('Contacts', 'createdBy', Sequelize.STRING, { transaction: t }),
         queryInterface.addColumn('Cases', 'createdBy', Sequelize.STRING, { transaction: t }),
+        queryInterface.addColumn('CaseAudits', 'createdBy', Sequelize.STRING, { transaction: t }),
       ]);
     });
   },
@@ -15,6 +16,7 @@ module.exports = {
       return Promise.all([
         queryInterface.removeColumn('Contacts', 'createdBy', { transaction: t }),
         queryInterface.removeColumn('Cases', 'createdBy', { transaction: t }),
+        queryInterface.removeColumn('CaseAudits', 'createdBy', { transaction: t }),
       ]);
     });
   },
