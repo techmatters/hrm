@@ -22,11 +22,16 @@ contactsRouter.post('/', publicEndpoint, async (req, res) => {
 });
 
 contactsRouter.put('/:contactId/connectToCase', publicEndpoint, async (req, res) => {
-  const { accountSid } = req;
+  const { accountSid, user } = req;
   const { contactId } = req.params;
   const { caseId } = req.body;
   await CaseController.getCase(caseId, accountSid);
-  const updatedContact = await ContactController.connectToCase(contactId, caseId, accountSid);
+  const updatedContact = await ContactController.connectToCase(
+    contactId,
+    caseId,
+    accountSid,
+    user.workerSid,
+  );
   res.json(updatedContact);
 });
 

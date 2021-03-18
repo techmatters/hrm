@@ -11,8 +11,11 @@ const searchCasesQuery = fs
   .toString();
 
 const CaseController = (Case, sequelize) => {
-  const createCase = async (body, accountSid) => {
-    const options = { include: { association: 'connectedContacts' } };
+  const createCase = async (body, accountSid, workerSid) => {
+    const options = {
+      include: { association: 'connectedContacts' },
+      context: { workerSid },
+    };
     const caseRecord = {
       info: body.info,
       helpline: body.helpline,
@@ -78,9 +81,10 @@ const CaseController = (Case, sequelize) => {
     return { cases, count };
   };
 
-  const updateCase = async (id, body, accountSid) => {
+  const updateCase = async (id, body, accountSid, workerSid) => {
     const caseFromDB = await getCase(id, accountSid);
-    const updatedCase = await caseFromDB.update(body);
+    const options = { context: { workerSid } };
+    const updatedCase = await caseFromDB.update(body, options);
     return updatedCase;
   };
 

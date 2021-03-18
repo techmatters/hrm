@@ -318,9 +318,10 @@ const ContactController = Contact => {
     return contact;
   };
 
-  const connectToCase = async (contactId, caseId, accountSid) => {
+  const connectToCase = async (contactId, caseId, accountSid, workerSid) => {
     const contact = await getContact(contactId, accountSid);
-    const updatedContact = await contact.update({ caseId });
+    const options = { context: { workerSid } };
+    const updatedContact = await contact.update({ caseId }, options);
 
     return updatedContact;
   };

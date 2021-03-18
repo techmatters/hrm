@@ -22,6 +22,8 @@ module.exports = (sequelize, DataTypes) => {
   };
 
   Case.afterCreate('auditCaseHook', async (caseInstance, options) => {
+    const { context } = options;
+
     const { CaseAudit } = caseInstance.sequelize.models;
     const { createCaseAuditFromCase } = CaseAuditControllerCreator(CaseAudit);
     const contactIds = await getContactIds(caseInstance);
@@ -31,10 +33,12 @@ module.exports = (sequelize, DataTypes) => {
       contacts: contactIds,
     };
 
-    await createCaseAuditFromCase(previousValue, newValue, options.transaction);
+    await createCaseAuditFromCase(previousValue, newValue, options.transaction, context.workerSid);
   });
 
   Case.afterUpdate('auditCaseHook', async (caseInstance, options) => {
+    const { context } = options;
+
     const { CaseAudit } = caseInstance.sequelize.models;
     const { createCaseAuditFromCase } = CaseAuditControllerCreator(CaseAudit);
     const contactIds = await getContactIds(caseInstance);
@@ -48,7 +52,7 @@ module.exports = (sequelize, DataTypes) => {
       contacts: contactIds,
     };
 
-    await createCaseAuditFromCase(previousValue, newValue, options.transaction);
+    await createCaseAuditFromCase(previousValue, newValue, options.transaction, context.workerSid);
   });
 
   return Case;
