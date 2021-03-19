@@ -15,18 +15,23 @@ contactsRouter.get('/', publicEndpoint, async (req, res) => {
 
 // example: curl -XPOST -H'Content-Type: application/json' localhost:3000/contacts -d'{"hi": 2}'
 contactsRouter.post('/', publicEndpoint, async (req, res) => {
-  const { accountSid } = req;
+  const { accountSid, user } = req;
 
-  const contact = await ContactController.createContact(req.body, accountSid);
+  const contact = await ContactController.createContact(req.body, accountSid, user.workerSid);
   res.json(contact);
 });
 
 contactsRouter.put('/:contactId/connectToCase', publicEndpoint, async (req, res) => {
-  const { accountSid } = req;
+  const { accountSid, user } = req;
   const { contactId } = req.params;
   const { caseId } = req.body;
   await CaseController.getCase(caseId, accountSid);
-  const updatedContact = await ContactController.connectToCase(contactId, caseId, accountSid);
+  const updatedContact = await ContactController.connectToCase(
+    contactId,
+    caseId,
+    accountSid,
+    user.workerSid,
+  );
   res.json(updatedContact);
 });
 

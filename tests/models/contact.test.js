@@ -2,7 +2,9 @@ const models = require('../../models');
 const { getHook, getMockedCaseInstance, getMockedContactInstance } = require('./utils');
 
 const { Contact } = models;
-const options = { transaction: 'transaction-1' };
+const workerSid = 'worker-sid';
+const transaction = 'transaction-1';
+const options = { transaction, context: { workerSid } };
 
 test('afterUpdate hook should create two CaseAudit', async () => {
   const hook = getHook(Contact, 'afterUpdate', 'auditCaseHook');
@@ -15,6 +17,7 @@ test('afterUpdate hook should create two CaseAudit', async () => {
     helpline: 'helpline',
     info: { notes: 'notes from previous case' },
     twilioWorkerId,
+    createdBy: workerSid,
   };
   const newCaseDataValues = {
     id: 2,
@@ -22,6 +25,7 @@ test('afterUpdate hook should create two CaseAudit', async () => {
     helpline: 'helpline',
     info: { notes: 'notes from new case' },
     twilioWorkerId,
+    createdBy: workerSid,
   };
   const previousCase = getMockedCaseInstance({
     dataValues: previousCaseDataValues,
@@ -36,6 +40,7 @@ test('afterUpdate hook should create two CaseAudit', async () => {
   const contactInstance = getMockedContactInstance({
     contactId,
     twilioWorkerId,
+    createdBy: workerSid,
     previousCase,
     newCase,
   });
@@ -46,6 +51,7 @@ test('afterUpdate hook should create two CaseAudit', async () => {
   const expectedPreviousCaseAuditRecord = {
     caseId: 1,
     twilioWorkerId,
+    createdBy: workerSid,
     previousValue: {
       ...previousCaseDataValues,
       contacts: [1, 2, contactId],
@@ -59,6 +65,7 @@ test('afterUpdate hook should create two CaseAudit', async () => {
   const expectedNewCaseAuditRecord = {
     caseId: 2,
     twilioWorkerId,
+    createdBy: workerSid,
     previousValue: {
       ...newCaseDataValues,
       contacts: [8, 9],
@@ -72,8 +79,8 @@ test('afterUpdate hook should create two CaseAudit', async () => {
   await hook(contactInstance, options);
 
   expect(createMethod).toHaveBeenCalledTimes(2);
-  expect(createMethod).toHaveBeenNthCalledWith(1, expectedPreviousCaseAuditRecord, options);
-  expect(createMethod).toHaveBeenNthCalledWith(2, expectedNewCaseAuditRecord, options);
+  expect(createMethod).toHaveBeenNthCalledWith(1, expectedPreviousCaseAuditRecord, { transaction });
+  expect(createMethod).toHaveBeenNthCalledWith(2, expectedNewCaseAuditRecord, { transaction });
 });
 
 test('afterUpdate hook should create only one CaseAudits', async () => {
@@ -87,6 +94,7 @@ test('afterUpdate hook should create only one CaseAudits', async () => {
     helpline: 'helpline',
     info: { notes: 'notes from new case' },
     twilioWorkerId,
+    createdBy: workerSid,
   };
   const newCase = getMockedCaseInstance({
     dataValues: newCaseDataValues,
@@ -96,6 +104,7 @@ test('afterUpdate hook should create only one CaseAudits', async () => {
   const contactInstance = getMockedContactInstance({
     contactId,
     twilioWorkerId,
+    createdBy: workerSid,
     previousCase: null,
     newCase,
   });
@@ -106,6 +115,7 @@ test('afterUpdate hook should create only one CaseAudits', async () => {
   const expectedNewCaseAuditRecord = {
     caseId: 2,
     twilioWorkerId,
+    createdBy: workerSid,
     previousValue: {
       ...newCaseDataValues,
       contacts: [8, 9],
@@ -119,7 +129,7 @@ test('afterUpdate hook should create only one CaseAudits', async () => {
   await hook(contactInstance, options);
 
   expect(createMethod).toHaveBeenCalledTimes(1);
-  expect(createMethod).toHaveBeenNthCalledWith(1, expectedNewCaseAuditRecord, options);
+  expect(createMethod).toHaveBeenNthCalledWith(1, expectedNewCaseAuditRecord, { transaction });
 });
 
 test('afterUpdate hook should create no CaseAudits', async () => {
@@ -133,6 +143,7 @@ test('afterUpdate hook should create no CaseAudits', async () => {
     helpline: 'helpline',
     info: { notes: 'notes from previous case' },
     twilioWorkerId,
+    createdBy: workerSid,
   };
   const previousCase = getMockedCaseInstance({
     dataValues: previousCaseDataValues,
@@ -142,6 +153,7 @@ test('afterUpdate hook should create no CaseAudits', async () => {
   const contactInstance = getMockedContactInstance({
     contactId,
     twilioWorkerId,
+    createdBy: workerSid,
     previousCase,
     newCase: previousCase, // didn't change connected case
   });

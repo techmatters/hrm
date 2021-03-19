@@ -281,7 +281,7 @@ const ContactController = Contact => {
     return Contact.findAll(queryObject);
   };
 
-  const createContact = async (body, accountSid) => {
+  const createContact = async (body, accountSid, workerSid) => {
     // if a contact has been already created with this taskId, just return it (idempotence on taskId). Should we use a different HTTP code status for this case?
     if (body.taskId) {
       const contact = await Contact.findOne({ where: { taskId: body.taskId } });
@@ -291,6 +291,7 @@ const ContactController = Contact => {
     const contactRecord = {
       rawJson: body.form,
       twilioWorkerId: body.twilioWorkerId || '',
+      createdBy: workerSid,
       helpline: body.helpline || '',
       queueName: body.queueName || body.form.queueName,
       number: body.number || '',
@@ -317,9 +318,10 @@ const ContactController = Contact => {
     return contact;
   };
 
-  const connectToCase = async (contactId, caseId, accountSid) => {
+  const connectToCase = async (contactId, caseId, accountSid, workerSid) => {
     const contact = await getContact(contactId, accountSid);
-    const updatedContact = await contact.update({ caseId });
+    const options = { context: { workerSid } };
+    const updatedContact = await contact.update({ caseId }, options);
 
     return updatedContact;
   };

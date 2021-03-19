@@ -1,6 +1,10 @@
 module.exports = (sequelize, DataTypes) => {
   const CaseAudit = sequelize.define('CaseAudit', {
     twilioWorkerId: DataTypes.STRING,
+    createdBy: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
     previousValue: DataTypes.JSONB,
     newValue: DataTypes.JSONB,
     /**

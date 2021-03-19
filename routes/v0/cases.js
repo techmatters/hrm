@@ -41,16 +41,16 @@ casesRouter.get('/', publicEndpoint, async (req, res) => {
 });
 
 casesRouter.post('/', publicEndpoint, async (req, res) => {
-  const { accountSid } = req;
+  const { accountSid, user } = req;
 
-  const createdCase = await CaseController.createCase(req.body, accountSid);
+  const createdCase = await CaseController.createCase(req.body, accountSid, user.workerSid);
   res.json(createdCase);
 });
 
 casesRouter.put('/:id', publicEndpoint, async (req, res) => {
-  const { accountSid } = req;
+  const { accountSid, user } = req;
   const { id } = req.params;
-  const updatedCase = await CaseController.updateCase(id, req.body, accountSid);
+  const updatedCase = await CaseController.updateCase(id, req.body, accountSid, user.workerSid);
   res.json(updatedCase);
 });
 

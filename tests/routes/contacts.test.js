@@ -24,6 +24,7 @@ const headers = {
   'Content-Type': 'application/json',
   Authorization: `Basic ${Buffer.from(process.env.API_KEY).toString('base64')}`,
 };
+const workerSid = 'worker-sid';
 
 const { Contact, Case, CaseAudit } = models;
 
@@ -277,11 +278,12 @@ describe('/contacts route', () => {
     const byGreaterId = (a, b) => b.id - a.id;
 
     beforeEach(async () => {
-      createdContact = await Contact.create(contact1);
-      createdCase = await Case.create(case1);
-      anotherCreatedCase = await Case.create(case2);
-      const contactToBeDeleted = await Contact.create(contact1);
-      const caseToBeDeleted = await Case.create(case1);
+      const options = { context: { workerSid } };
+      createdContact = await Contact.create(contact1, options);
+      createdCase = await Case.create(case1, options);
+      anotherCreatedCase = await Case.create(case2, options);
+      const contactToBeDeleted = await Contact.create(contact1, options);
+      const caseToBeDeleted = await Case.create(case1, options);
 
       existingContactId = createdContact.id;
       existingCaseId = createdCase.id;
