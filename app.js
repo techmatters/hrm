@@ -25,9 +25,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cors());
 
-// Here we apply the permission rules
-setupPermissions();
-
 app.get('/', (req, res) => {
   res.json({
     Message: 'Welcome to the HRM!',
@@ -58,9 +55,19 @@ async function authorizationMiddleware(req, res, next) {
       const authToken = process.env[authTokenKey];
       if (!authToken) throw new Error('authToken not provided for the specified accountSid.');
 
-      // eslint-disable-next-line no-unused-vars
+      const workspaceSidKey = `TWILIO_WORKSPACE_SID_${accountSid}`;
+      const workspaceSid = process.env[workspaceSidKey];
+      if (!workspaceSid) throw new Error('workspaceSid not provided for the specified accountSid.');
+
       const tokenResult = await TokenValidator(token, accountSid, authToken);
-      req.user = new User(tokenResult.worker_sid, tokenResult.roles);
+      // eslint-disable-next-line global-require
+      const client = require('twilio')(accountSid, authToken);
+      const worker = await client.taskrouter
+        .workspaces(workspaceSid)
+        .workers(tokenResult.worker_sid)
+        .fetch();
+      const { roles } = JSON.parse(worker.attributes);
+      req.user = new User(tokenResult.worker_sid, roles);
       return next();
     } catch (err) {
       console.error('Token authentication failed: ', err);
@@ -88,7 +95,13 @@ const addAccountSid = (req, res, next) => {
   return next();
 };
 
-app.use('/v0/accounts/:accountSid', addAccountSid, authorizationMiddleware, apiV0);
+app.use(
+  '/v0/accounts/:accountSid',
+  addAccountSid,
+  authorizationMiddleware,
+  setupPermissions,
+  apiV0,
+);
 
 app.use((req, res, next) => {
   next(createError(404));

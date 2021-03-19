@@ -1,36 +1,10 @@
 const models = require('../../models');
-const { SafeRouter, publicEndpoint } = require('../../permissions');
+const { SafeRouter, publicEndpoint, canEditCase } = require('../../permissions');
 
 const { Contact, Case, CaseAudit, sequelize } = models;
 const ContactController = require('../../controllers/contact-controller')(Contact);
 const CaseController = require('../../controllers/case-controller')(Case, sequelize);
 const CaseAuditController = require('../../controllers/case-audit-controller')(CaseAudit);
-const { can } = require('../../permissions');
-
-/**
- * This middleware checks if the user can edit the case.
- * If yes, it sets the req.authorized to true.
- * @param {*} req
- * @param {*} res
- * @param {*} next
- */
-// eslint-disable-next-line no-unused-vars
-const creatorCanEditCase = async (req, res, next) => {
-  if (!req.isAuthorized()) {
-    const { accountSid } = req;
-    const { id } = req.params;
-    const caseObj = await CaseController.getCase(id, accountSid);
-    const canEdit = can(req.user, 'edit', caseObj);
-
-    if (canEdit) {
-      req.authorize();
-    } else {
-      req.unauthorize();
-    }
-  }
-
-  next();
-};
 
 const casesRouter = SafeRouter();
 
@@ -47,7 +21,7 @@ casesRouter.post('/', publicEndpoint, async (req, res) => {
   res.json(createdCase);
 });
 
-casesRouter.put('/:id', publicEndpoint, async (req, res) => {
+casesRouter.put('/:id', canEditCase, async (req, res) => {
   const { accountSid } = req;
   const { id } = req.params;
   const updatedCase = await CaseController.updateCase(id, req.body, accountSid);
