@@ -287,7 +287,7 @@ describe('/cases route', () => {
 
         // Connects createdContact with createdCase2
         createdContact.caseId = createdCase2.id;
-        await createdContact.save();
+        await createdContact.save(options);
       });
 
       afterEach(async () => {
