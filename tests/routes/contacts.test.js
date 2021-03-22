@@ -190,16 +190,19 @@ describe('/contacts route', () => {
           const response = await request
             .post(subRoute)
             .set(headers)
-            .send({ counselor: 'fake-worker-123' }); // should match contact1 & broken1 & another1 & noHelpline
+            .send({ counselor: 'worker-sid' }); // should match contact1 & broken1 & another1 & noHelpline
 
           const { contacts, count } = response.body;
 
           expect(response.status).toBe(200);
-          expect(count).toBe(4);
-          const [nh, a1, b1, c1] = contacts; // result is sorted DESC
+          expect(count).toBe(7);
+          const [nh, a2, a1, b2, b1, c2, c1] = contacts; // result is sorted DESC
           expect(c1.details).toStrictEqual(contact1.form);
+          expect(c2.details).toStrictEqual(contact2.form);
           expect(b1.details).toStrictEqual(broken1.form);
+          expect(b2.details).toStrictEqual(broken2.form);
           expect(a1.details).toStrictEqual(another1.form);
+          expect(a2.details).toStrictEqual(another2.form);
           expect(nh.details).toStrictEqual(noHelpline.form);
         });
       });
