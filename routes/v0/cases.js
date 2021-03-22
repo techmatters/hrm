@@ -21,7 +21,7 @@ casesRouter.post('/', publicEndpoint, async (req, res) => {
   res.json(createdCase);
 });
 
-casesRouter.put('/:id', publicEndpoint, async (req, res) => {
+casesRouter.put('/:id', canEditCase, async (req, res) => {
   const { accountSid, user } = req;
   const { id } = req.params;
   const updatedCase = await CaseController.updateCase(id, req.body, accountSid, user.workerSid);
