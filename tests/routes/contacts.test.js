@@ -8,6 +8,7 @@ const server = app.listen();
 const request = supertest.agent(server);
 
 const {
+  accountSid,
   contact1,
   contact2,
   broken1,
@@ -31,7 +32,7 @@ const { Contact, Case, CaseAudit } = models;
 const caseAuditsQuery = {
   where: {
     twilioWorkerId: {
-      [Sequelize.Op.in]: ['fake-worker-123', 'fake-worker-129', 'fake-worker-987'],
+      [Sequelize.Op.in]: ['fake-worker-123', 'fake-worker-129', 'fake-worker-987', workerSid],
     },
   },
 };
@@ -47,7 +48,7 @@ afterAll(async done => {
 afterEach(async () => CaseAudit.destroy(caseAuditsQuery));
 
 describe('/contacts route', () => {
-  const route = '/v0/accounts/account-sid/contacts';
+  const route = `/v0/accounts/${accountSid}/contacts`;
 
   // First test post so database wont be empty
   describe('POST', () => {

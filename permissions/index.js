@@ -10,6 +10,11 @@ const applyPermissions = {
 };
 
 const setupPermissions = (req, res, next) => {
+  if (process.env.NODE_ENV === 'test') {
+    applyZmPermissions(req);
+    return next();
+  }
+
   const { accountSid } = req;
   const permissionsKey = `PERMISSIONS_${accountSid}`;
   const permissions = process.env[permissionsKey];

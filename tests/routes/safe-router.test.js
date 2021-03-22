@@ -1,5 +1,6 @@
 const supertest = require('supertest');
 const { SafeRouter, publicEndpoint } = require('../../permissions');
+const { accountSid } = require('./mocks');
 
 const mockRouter = SafeRouter();
 const middlewareThatDontAuthorize = (req, res, next) => {
@@ -34,35 +35,31 @@ const headers = {
   Authorization: `Basic ${Buffer.from(process.env.API_KEY).toString('base64')}`,
 };
 
+const baseRoute = `/v0/accounts/${accountSid}`;
+
 test('unauthorize endpoints with no middleware', async () => {
-  const response = await request.get('/v0/accounts/account-sid/without-middleware').set(headers);
+  const response = await request.get(`${baseRoute}/without-middleware`).set(headers);
   expect(response.status).toBe(401);
 });
 
 test('authorize endpoints with  publicEndpoint middleware', async () => {
-  const response = await request
-    .get('/v0/accounts/account-sid/with-public-endpoint-middleware')
-    .set(headers);
+  const response = await request.get(`${baseRoute}/with-public-endpoint-middleware`).set(headers);
   expect(response.status).toBe(200);
 });
 
 test('Unauthorize endpoints with middleware that dont authorize', async () => {
   const response = await request
-    .get('/v0/accounts/account-sid/with-middleware-that-dont-authorize')
+    .get(`${baseRoute}/with-middleware-that-dont-authorize`)
     .set(headers);
   expect(response.status).toBe(401);
 });
 
 test('Authorizes endpoints with middleware that authorizes', async () => {
-  const response = await request
-    .get('/v0/accounts/account-sid/with-middleware-that-authorizes')
-    .set(headers);
+  const response = await request.get(`${baseRoute}/with-middleware-that-authorizes`).set(headers);
   expect(response.status).toBe(200);
 });
 
 test('Authorizes endpoints with multiple middlewares and one that authorizes', async () => {
-  const response = await request
-    .get('/v0/accounts/account-sid/with-multiple-middlewares')
-    .set(headers);
+  const response = await request.get(`${baseRoute}/with-multiple-middlewares`).set(headers);
   expect(response.status).toBe(200);
 });

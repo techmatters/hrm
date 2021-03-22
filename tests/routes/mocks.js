@@ -1,3 +1,5 @@
+const accountSid = 'ACCOUNT_SID';
+
 const contact1 = {
   form: {
     callType: 'Child calling about self',
@@ -53,14 +55,14 @@ const contact1 = {
       },
     },
   },
-  twilioWorkerId: 'fake-worker-123',
+  twilioWorkerId: 'worker-sid',
   createdBy: 'worker-sid',
   helpline: '',
   queueName: '',
   number: '12025550184',
   channel: 'chat',
   conversationDuration: 14,
-  accountSid: 'account-sid',
+  accountSid,
 };
 
 const contact2 = {
@@ -118,14 +120,14 @@ const contact2 = {
       },
     },
   },
-  twilioWorkerId: 'fake-worker-987',
+  twilioWorkerId: 'worker-sid',
   createdBy: 'worker-sid',
   helpline: '',
   queueName: '',
   number: '12025550184',
   channel: 'chat',
   conversationDuration: 10,
-  accountSid: 'account-sid',
+  accountSid,
 };
 
 // Non data contacts with actual information
@@ -200,7 +202,7 @@ const withTaskId = {
       refugee: false,
     },
   },
-  twilioWorkerId: 'not-fake-worker-123',
+  twilioWorkerId: 'worker-sid',
   createdBy: 'worker-sid',
   helpline: '',
   queueName: '',
@@ -208,7 +210,7 @@ const withTaskId = {
   channel: 'chat',
   conversationDuration: 1,
   taskId: 'taskId',
-  accountSid: 'account-sid',
+  accountSid,
 };
 
 const case1 = {
@@ -217,9 +219,9 @@ const case1 = {
   info: {
     notes: 'Child with covid-19',
   },
-  twilioWorkerId: 'fake-worker-129',
+  twilioWorkerId: 'worker-sid',
   createdBy: 'worker-sid',
-  accountSid: 'account-sid',
+  accountSid,
 };
 
 const case2 = {
@@ -228,12 +230,13 @@ const case2 = {
   info: {
     notes: 'Refugee child',
   },
-  twilioWorkerId: 'fake-worker-129',
+  twilioWorkerId: 'worker-sid',
   createdBy: 'worker-sid',
-  accountSid: 'account-sid',
+  accountSid,
 };
 
 module.exports = {
+  accountSid,
   contact1,
   contact2,
   broken1,
