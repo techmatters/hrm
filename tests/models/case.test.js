@@ -2,7 +2,9 @@ const models = require('../../models');
 const { getHook, getMockedCaseInstance } = require('./utils');
 
 const { Case } = models;
-const options = { transaction: 'transaction-1' };
+const workerSid = 'worker-sid';
+const transaction = 'transaction-1';
+const options = { transaction, context: { workerSid } };
 
 test('afterCreate hook should create CaseAudit', async () => {
   const hook = getHook(Case, 'afterCreate', 'auditCaseHook');
@@ -13,6 +15,7 @@ test('afterCreate hook should create CaseAudit', async () => {
     helpline: 'helpline',
     info: { notes: 'notes' },
     twilioWorkerId: 'worker-id',
+    createdBy: workerSid,
   };
   const contactIds = [1, 2, 3];
   const caseInstance = getMockedCaseInstance({ dataValues, contactIds });
@@ -23,6 +26,7 @@ test('afterCreate hook should create CaseAudit', async () => {
   const expectedCaseAuditRecord = {
     caseId: 3,
     twilioWorkerId: 'worker-id',
+    createdBy: workerSid,
     previousValue: null,
     newValue: {
       ...dataValues,
@@ -32,7 +36,7 @@ test('afterCreate hook should create CaseAudit', async () => {
 
   await hook(caseInstance, options);
 
-  expect(createMethod).toHaveBeenCalledWith(expectedCaseAuditRecord, options);
+  expect(createMethod).toHaveBeenCalledWith(expectedCaseAuditRecord, { transaction });
 });
 
 test('afterUpdate hook should create CaseAudit', async () => {
@@ -44,6 +48,7 @@ test('afterUpdate hook should create CaseAudit', async () => {
     helpline: 'helpline',
     info: { notes: 'notes' },
     twilioWorkerId: 'worker-id',
+    createdBy: workerSid,
   };
   const previousValues = {
     ...dataValues,
@@ -58,6 +63,7 @@ test('afterUpdate hook should create CaseAudit', async () => {
   const expectedCaseAuditRecord = {
     caseId: 3,
     twilioWorkerId: 'worker-id',
+    createdBy: workerSid,
     previousValue: {
       ...previousValues,
       contacts: contactIds,
@@ -70,5 +76,5 @@ test('afterUpdate hook should create CaseAudit', async () => {
 
   await hook(caseInstance, options);
 
-  expect(createMethod).toHaveBeenCalledWith(expectedCaseAuditRecord, options);
+  expect(createMethod).toHaveBeenCalledWith(expectedCaseAuditRecord, { transaction });
 });

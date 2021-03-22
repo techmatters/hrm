@@ -19,7 +19,13 @@ const getMockedCaseInstance = ({ dataValues, previousValues, contactIds }) => {
   };
 };
 
-const getMockedContactInstance = ({ contactId, twilioWorkerId, previousCase, newCase }) => {
+const getMockedContactInstance = ({
+  contactId,
+  twilioWorkerId,
+  createdBy,
+  previousCase,
+  newCase,
+}) => {
   const CaseAudit = {
     create: jest.fn(),
   };
@@ -36,6 +42,7 @@ const getMockedContactInstance = ({ contactId, twilioWorkerId, previousCase, new
       id: contactId,
       caseId: newCase.dataValues.id,
       twilioWorkerId,
+      createdBy,
     },
     previous,
   };

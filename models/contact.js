@@ -22,7 +22,7 @@ const getPreviousAndNewCases = async (contactInstance, transaction) => {
   return [previousCase, newCase];
 };
 
-const auditDisconnectContact = async (contactInstance, caseFromDB, transaction) => {
+const auditDisconnectContact = async (contactInstance, caseFromDB, transaction, workerSid) => {
   const { CaseAudit } = contactInstance.sequelize.models;
   const { createCaseAuditFromContact } = CaseAuditControllerCreator(CaseAudit);
   const initialContactsFunction = (currentContactIds, id) => [...currentContactIds, id];
@@ -32,10 +32,11 @@ const auditDisconnectContact = async (contactInstance, caseFromDB, transaction) 
     contactInstance,
     caseFromDB,
     transaction,
+    workerSid,
   );
 };
 
-const auditConnectContact = async (contactInstance, caseFromDB, transaction) => {
+const auditConnectContact = async (contactInstance, caseFromDB, transaction, workerSid) => {
   const { CaseAudit } = contactInstance.sequelize.models;
   const { createCaseAuditFromContact } = CaseAuditControllerCreator(CaseAudit);
   const initialContactsFunction = (currentContactIds, id) =>
@@ -46,6 +47,7 @@ const auditConnectContact = async (contactInstance, caseFromDB, transaction) => 
     contactInstance,
     caseFromDB,
     transaction,
+    workerSid,
   );
 };
 
@@ -54,6 +56,10 @@ module.exports = (sequelize, DataTypes) => {
     rawJson: DataTypes.JSON,
     queueName: DataTypes.STRING,
     twilioWorkerId: DataTypes.STRING,
+    createdBy: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
     helpline: DataTypes.STRING,
     number: DataTypes.STRING,
     channel: DataTypes.STRING,
@@ -75,9 +81,16 @@ module.exports = (sequelize, DataTypes) => {
 
     if (noCaseIdChange) return;
 
+    const { context } = options;
+
     const [previousCase, newCase] = await getPreviousAndNewCases(contactInstance);
-    await auditDisconnectContact(contactInstance, previousCase, options.transaction);
-    await auditConnectContact(contactInstance, newCase, options.transaction);
+    await auditDisconnectContact(
+      contactInstance,
+      previousCase,
+      options.transaction,
+      context.workerSid,
+    );
+    await auditConnectContact(contactInstance, newCase, options.transaction, context.workerSid);
   });
 
   return Contact;

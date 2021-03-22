@@ -7,6 +7,7 @@ const MockCase = DBConnectionMock.define('Cases');
 
 const { Op } = Sequelize;
 const accountSid = 'account-sid';
+const workerSid = 'worker-sid';
 
 const CaseController = createCaseController(MockCase);
 
@@ -20,13 +21,14 @@ test('create case', async () => {
     status: 'open',
     info: { notes: 'Child with covid-19' },
     twilioWorkerId: 'twilio-worker-id',
+    createdBy: workerSid,
     connectedContacts: [],
     accountSid,
   };
 
-  await CaseController.createCase(caseToBeCreated, accountSid);
+  await CaseController.createCase(caseToBeCreated, accountSid, workerSid);
 
-  const options = { include: { association: 'connectedContacts' } };
+  const options = { include: { association: 'connectedContacts' }, context: { workerSid } };
   expect(createSpy).toHaveBeenCalledWith(caseToBeCreated, options);
 });
 
@@ -378,18 +380,20 @@ test('update existing case', async () => {
     status: 'open',
     info: { notes: 'Child with covid-19' },
     twilioWorkerId: 'twilio-worker-id',
+    createdBy: workerSid,
     update: jest.fn(),
   };
   jest.spyOn(MockCase, 'findOne').mockImplementation(() => caseFromDB);
   const updateSpy = jest.spyOn(caseFromDB, 'update');
+  const contextObject = { context: { workerSid } };
 
   const updateCaseObject = {
     info: { notes: 'Refugee Child' },
   };
 
-  await CaseController.updateCase(caseId, updateCaseObject, accountSid);
+  await CaseController.updateCase(caseId, updateCaseObject, accountSid, workerSid);
 
-  expect(updateSpy).toHaveBeenCalledWith(updateCaseObject);
+  expect(updateSpy).toHaveBeenCalledWith(updateCaseObject, contextObject);
 });
 
 test('update non existing case', async () => {
@@ -401,7 +405,7 @@ test('update non existing case', async () => {
   };
 
   await expect(
-    CaseController.updateCase(nonExsitingCaseId, updateCaseObject, accountSid),
+    CaseController.updateCase(nonExsitingCaseId, updateCaseObject, accountSid, workerSid),
   ).rejects.toThrow();
 });
 

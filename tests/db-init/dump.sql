@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 11.10 (Ubuntu 11.10-1.pgdg18.04+1)
--- Dumped by pg_dump version 11.10 (Ubuntu 11.10-1.pgdg18.04+1)
+-- Dumped from database version 11.11 (Ubuntu 11.11-1.pgdg18.04+1)
+-- Dumped by pg_dump version 11.11 (Ubuntu 11.11-1.pgdg18.04+1)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -32,7 +32,8 @@ CREATE TABLE public."CaseAudits" (
     "twilioWorkerId" character varying(255),
     "previousValue" jsonb,
     "newValue" jsonb,
-    "accountSid" character varying(255)
+    "accountSid" character varying(255),
+    "createdBy" character varying(255)
 );
 
 
@@ -72,7 +73,8 @@ CREATE TABLE public."Cases" (
     helpline character varying(255),
     info jsonb,
     "twilioWorkerId" character varying(255),
-    "accountSid" character varying(255)
+    "accountSid" character varying(255),
+    "createdBy" character varying(255)
 );
 
 
@@ -118,7 +120,8 @@ CREATE TABLE public."Contacts" (
     "caseId" integer,
     "accountSid" character varying(255),
     "timeOfContact" timestamp with time zone,
-    "taskId" character varying(255)
+    "taskId" character varying(255),
+    "createdBy" character varying(255)
 );
 
 
@@ -182,21 +185,21 @@ ALTER TABLE ONLY public."Contacts" ALTER COLUMN id SET DEFAULT nextval('public."
 -- Name: CaseAudits_id_seq; Type: SEQUENCE SET; Schema: public; Owner: hrm
 --
 
-SELECT pg_catalog.setval('public."CaseAudits_id_seq"', 753, true);
+SELECT pg_catalog.setval('public."CaseAudits_id_seq"', 1338, true);
 
 
 --
 -- Name: Cases_id_seq; Type: SEQUENCE SET; Schema: public; Owner: hrm
 --
 
-SELECT pg_catalog.setval('public."Cases_id_seq"', 655, true);
+SELECT pg_catalog.setval('public."Cases_id_seq"', 1108, true);
 
 
 --
 -- Name: Contacts_id_seq; Type: SEQUENCE SET; Schema: public; Owner: hrm
 --
 
-SELECT pg_catalog.setval('public."Contacts_id_seq"', 3028, true);
+SELECT pg_catalog.setval('public."Contacts_id_seq"', 3435, true);
 
 
 --

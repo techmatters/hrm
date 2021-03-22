@@ -61,6 +61,11 @@ class ContactBuilder {
     return this;
   }
 
+  withCreatedBy(workerSid) {
+    this.createdBy = workerSid;
+    return this;
+  }
+
   withCreatedAt(createdAt) {
     const date = parseISO(createdAt);
     const timezoneOffset = date.getTimezoneOffset();

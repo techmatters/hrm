@@ -54,6 +54,7 @@ const contact1 = {
     },
   },
   twilioWorkerId: 'fake-worker-123',
+  createdBy: 'worker-sid',
   helpline: '',
   queueName: '',
   number: '12025550184',
@@ -118,6 +119,7 @@ const contact2 = {
     },
   },
   twilioWorkerId: 'fake-worker-987',
+  createdBy: 'worker-sid',
   helpline: '',
   queueName: '',
   number: '12025550184',
@@ -199,6 +201,7 @@ const withTaskId = {
     },
   },
   twilioWorkerId: 'not-fake-worker-123',
+  createdBy: 'worker-sid',
   helpline: '',
   queueName: '',
   number: '11111111111',
@@ -215,6 +218,7 @@ const case1 = {
     notes: 'Child with covid-19',
   },
   twilioWorkerId: 'fake-worker-129',
+  createdBy: 'worker-sid',
   accountSid: 'account-sid',
 };
 
@@ -225,6 +229,7 @@ const case2 = {
     notes: 'Refugee child',
   },
   twilioWorkerId: 'fake-worker-129',
+  createdBy: 'worker-sid',
   accountSid: 'account-sid',
 };
 

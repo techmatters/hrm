@@ -35,6 +35,7 @@ const CaseAuditController = CaseAudit => {
     contactInstance,
     caseFromDB,
     transaction,
+    createdBy,
   ) => {
     if (!caseFromDB) return;
 
@@ -51,6 +52,7 @@ const CaseAuditController = CaseAudit => {
     const caseAuditRecord = {
       caseId: caseFromDB.dataValues.id,
       twilioWorkerId: contactInstance.dataValues.twilioWorkerId,
+      createdBy,
       accountSid: contactInstance.dataValues.accountSid,
       previousValue,
       newValue,
@@ -59,10 +61,11 @@ const CaseAuditController = CaseAudit => {
     await CaseAudit.create(caseAuditRecord, { transaction });
   };
 
-  const createCaseAuditFromCase = async (previousValue, newValue, transaction) => {
+  const createCaseAuditFromCase = async (previousValue, newValue, transaction, createdBy) => {
     const caseAuditRecord = {
       caseId: newValue.id,
       twilioWorkerId: newValue.twilioWorkerId,
+      createdBy,
       accountSid: newValue.accountSid,
       previousValue,
       newValue,
