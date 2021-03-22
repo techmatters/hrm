@@ -351,7 +351,7 @@ test('Call findAndCountAll(queryObject) with given params', async () => {
     where: {
       [Op.and]: [
         {
-          [Op.or]: [{ helpline: '' }, { helpline: { [Op.is]: null } }, { helpline: body.helpline }],
+          helpline: body.helpline,
         },
         {
           [Op.and]: [
@@ -405,7 +405,7 @@ test('Call findAndCountAll(queryObject) without name search', async () => {
     where: {
       [Op.and]: [
         {
-          [Op.or]: [{ helpline: '' }, { helpline: { [Op.is]: null } }, { helpline: body.helpline }],
+          helpline: body.helpline,
         },
         {
           [Op.and]: [
