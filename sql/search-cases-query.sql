@@ -33,8 +33,6 @@ SELECT * FROM (
       CASE WHEN :helpline IS NULL THEN TRUE
       ELSE  (
         cases.helpline = :helpline
-        OR cases.helpline = ''
-        OR cases.helpline IS NULL
       )
       END
     AND

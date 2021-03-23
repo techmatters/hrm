@@ -164,7 +164,7 @@ describe('/contacts route', () => {
           const response2 = await request
             .post(subRoute)
             .set(headers)
-            .send({ firstName: 'ma', lastName: 'ur', helpline: 'Helpline 1' }); // should match another1 & noHelpline
+            .send({ firstName: 'ma', lastName: 'ur', helpline: 'Helpline 1' }); // should bring only the case with 'Helpline 1'
 
           const { contacts: contacts1, count: count1 } = response1.body;
           const { contacts: contacts2, count: count2 } = response2.body;
@@ -177,10 +177,9 @@ describe('/contacts route', () => {
           expect(nh.details).toStrictEqual(noHelpline.form);
 
           expect(response2.status).toBe(200);
-          expect(count2).toBe(2);
-          const [nh2, a] = contacts2; // result is sorted DESC
+          expect(count2).toBe(1);
+          const [a] = contacts2; // result is sorted DESC
           expect(a.details).toStrictEqual(another1.form);
-          expect(nh2.details).toStrictEqual(noHelpline.form);
         });
       });
 
