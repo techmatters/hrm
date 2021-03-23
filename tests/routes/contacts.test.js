@@ -195,8 +195,9 @@ describe('/contacts route', () => {
           const { contacts, count } = response.body;
 
           expect(response.status).toBe(200);
-          expect(count).toBe(7);
-          const [nh, a2, a1, b2, b1, c2, c1] = contacts; // result is sorted DESC
+          expect(count).toBe(8); // This fails locally
+          const [wt, nh, a2, a1, b2, b1, c2, c1] = contacts; // result is sorted DESC
+          expect(wt.details).toStrictEqual(withTaskId.form);
           expect(c1.details).toStrictEqual(contact1.form);
           expect(c2.details).toStrictEqual(contact2.form);
           expect(b1.details).toStrictEqual(broken1.form);
