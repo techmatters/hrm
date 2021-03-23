@@ -195,7 +195,7 @@ describe('/contacts route', () => {
           const { contacts, count } = response.body;
 
           expect(response.status).toBe(200);
-          expect(count).toBe(8); // This fails locally
+          expect(count).toBe(8); // TODO: This fails locally. Not sure why on CI count is 8 instead of 7.
           const [nh, a2, a1, b2, b1, c2, c1] = contacts; // result is sorted DESC
           expect(c1.details).toStrictEqual(contact1.form);
           expect(c2.details).toStrictEqual(contact2.form);
