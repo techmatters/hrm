@@ -52,6 +52,13 @@ const isAddPerpetrator = change =>
 const isAddIncident = change =>
   isAddOrEditKind(change.kind) && isPathEqual(change.path, ['info', 'incidents']);
 
+/**
+ * This function compares the original object and the object with the updated values
+ * to decide what actions it's trying to do, e.g.: [ADD_NOTE, ADD_REFERRAL]
+ * @param {*} original the original object from DB
+ * @param {*} updated the object with the updated values
+ * @returns
+ */
 const getActions = (original, updated) => {
   const ignoredProperties = ['createdAt', 'updatedAt', 'connectedContacts'];
   const preFilter = (path, key) => ignoredProperties.includes(key);
