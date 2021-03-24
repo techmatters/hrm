@@ -5,6 +5,10 @@ const models = require('../models');
 const { Case, sequelize } = models;
 const CaseController = require('../controllers/case-controller')(Case, sequelize);
 
+/**
+ * It checks if the user can edit the case based on the fields it's trying to edit
+ * according to the defined permission rules.
+ */
 const canEditCase = asyncHandler(async (req, res, next) => {
   if (!req.isAuthorized()) {
     const { accountSid, body, user, can } = req;
