@@ -14,18 +14,25 @@ const ADD_INCIDENT = 'addIncident';
 const EDIT_INCIDENT = 'editIncident';
 const EDIT_CASE_SUMMARY = 'editCaseSummary';
 
+// deep-diff lib kinds:
+const NEW_PROPERTY = 'N';
+const EDITED_PROPERTY = 'E';
+const ARRAY_CHANGED = 'A';
+
 const isPathEqual = (left, right) => left[0] === right[0] && left[1] === right[1];
 
-const isAddOrEditKind = kind => ['N', 'E', 'A'].includes(kind);
+const isAddOrEditKind = kind => [NEW_PROPERTY, EDITED_PROPERTY, ARRAY_CHANGED].includes(kind);
 
 const isEditCaseSummary = change =>
   isAddOrEditKind(change.kind) && isPathEqual(change.path, ['info', 'summary']);
 
 const isCloseCase = change =>
-  change.kind === 'E' && isPathEqual(change.path, ['status']) && change.rhs === 'closed';
+  change.kind === EDITED_PROPERTY &&
+  isPathEqual(change.path, ['status']) &&
+  change.rhs === 'closed';
 
 const isReopenCase = change =>
-  change.kind === 'E' &&
+  change.kind === EDITED_PROPERTY &&
   isPathEqual(change.path, ['status']) &&
   change.lhs === 'closed' &&
   change.rhs === 'open';
