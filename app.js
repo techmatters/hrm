@@ -60,14 +60,7 @@ async function authorizationMiddleware(req, res, next) {
       if (!workspaceSid) throw new Error('workspaceSid not provided for the specified accountSid.');
 
       const tokenResult = await TokenValidator(token, accountSid, authToken);
-      // eslint-disable-next-line global-require
-      const client = require('twilio')(accountSid, authToken);
-      const worker = await client.taskrouter
-        .workspaces(workspaceSid)
-        .workers(tokenResult.worker_sid)
-        .fetch();
-      const { roles } = JSON.parse(worker.attributes);
-      req.user = new User(tokenResult.worker_sid, roles);
+      req.user = new User(tokenResult.worker_sid, tokenResult.roles);
       return next();
     } catch (err) {
       console.error('Token authentication failed: ', err);
