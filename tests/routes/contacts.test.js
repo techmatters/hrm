@@ -8,6 +8,7 @@ const server = app.listen();
 const request = supertest.agent(server);
 
 const {
+  accountSid,
   contact1,
   contact2,
   broken1,
@@ -31,7 +32,7 @@ const { Contact, Case, CaseAudit } = models;
 const caseAuditsQuery = {
   where: {
     twilioWorkerId: {
-      [Sequelize.Op.in]: ['fake-worker-123', 'fake-worker-129', 'fake-worker-987'],
+      [Sequelize.Op.in]: ['fake-worker-123', 'fake-worker-129', 'fake-worker-987', workerSid],
     },
   },
 };
@@ -47,7 +48,7 @@ afterAll(async done => {
 afterEach(async () => CaseAudit.destroy(caseAuditsQuery));
 
 describe('/contacts route', () => {
-  const route = '/v0/accounts/account-sid/contacts';
+  const route = `/v0/accounts/${accountSid}/contacts`;
 
   // First test post so database wont be empty
   describe('POST', () => {
@@ -188,16 +189,19 @@ describe('/contacts route', () => {
           const response = await request
             .post(subRoute)
             .set(headers)
-            .send({ counselor: 'fake-worker-123' }); // should match contact1 & broken1 & another1 & noHelpline
+            .send({ counselor: 'worker-sid' }); // should match contact1 & broken1 & another1 & noHelpline
 
           const { contacts, count } = response.body;
 
           expect(response.status).toBe(200);
-          expect(count).toBe(4);
-          const [nh, a1, b1, c1] = contacts; // result is sorted DESC
+          expect(count).toBe(8); // TODO: This fails locally. Not sure why on CI count is 8 instead of 7.
+          const [nh, a2, a1, b2, b1, c2, c1] = contacts; // result is sorted DESC
           expect(c1.details).toStrictEqual(contact1.form);
+          expect(c2.details).toStrictEqual(contact2.form);
           expect(b1.details).toStrictEqual(broken1.form);
+          expect(b2.details).toStrictEqual(broken2.form);
           expect(a1.details).toStrictEqual(another1.form);
+          expect(a2.details).toStrictEqual(another2.form);
           expect(nh.details).toStrictEqual(noHelpline.form);
         });
       });

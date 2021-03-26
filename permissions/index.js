@@ -1,28 +1,27 @@
-const CanCan = require('cancan');
-const models = require('../models');
+const User = require('./user');
 const { SafeRouter, publicEndpoint } = require('./safe-router');
+const { applyPermissions: applyZmPermissions } = require('./rules/zm');
+const { applyPermissions: applyZaPermissions } = require('./rules/za');
+const { canEditCase } = require('./middlewares');
 
-const { Case } = models;
+const applyPermissions = {
+  zm: applyZmPermissions,
+  za: applyZaPermissions,
+};
 
-const cancan = new CanCan();
-const { allow, can } = cancan;
-
-const User = class {
-  constructor(workerSid, roles) {
-    this.workerSid = workerSid;
-    this.roles = roles;
+const setupPermissions = (req, res, next) => {
+  if (process.env.NODE_ENV === 'test') {
+    applyZmPermissions(req);
+    return next();
   }
+
+  const { accountSid } = req;
+  const permissionsKey = `PERMISSIONS_${accountSid}`;
+  const permissions = process.env[permissionsKey];
+  if (!permissions) throw new Error('permissions not provided for the specified accountSid.');
+
+  applyPermissions[permissions](req);
+  return next();
 };
 
-const setupPermissions = () => {
-  allow(User, 'view', Case);
-  // Here we could check if user.role === 'admin' as well
-  allow(
-    User,
-    'edit',
-    Case,
-    (user, caseObj) => user.workerSid === caseObj.dataValues.twilioWorkerId,
-  );
-};
-
-module.exports = { can, setupPermissions, User, SafeRouter, publicEndpoint };
+module.exports = { setupPermissions, User, SafeRouter, publicEndpoint, canEditCase };

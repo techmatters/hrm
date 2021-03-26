@@ -7,7 +7,7 @@ const mocks = require('./mocks');
 const server = app.listen();
 const request = supertest.agent(server);
 
-const { case1, case2 } = mocks;
+const { case1, case2, accountSid } = mocks;
 
 const headers = {
   'Content-Type': 'application/json',
@@ -20,7 +20,7 @@ const { Case, CaseAudit } = models;
 const caseAuditsQuery = {
   where: {
     twilioWorkerId: {
-      [Sequelize.Op.in]: ['fake-worker-123', 'fake-worker-129'],
+      [Sequelize.Op.in]: ['fake-worker-123', 'fake-worker-129', workerSid],
     },
   },
 };
@@ -39,7 +39,7 @@ describe('/cases/:caseId/activities route', () => {
   describe('GET', () => {
     let createdCase;
     let nonExistingCaseId;
-    const route = id => `/v0/accounts/account-sid/cases/${id}/activities`;
+    const route = id => `/v0/accounts/${accountSid}/cases/${id}/activities`;
     const options = { context: { workerSid } };
 
     beforeEach(async () => {
