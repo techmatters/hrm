@@ -65,16 +65,18 @@ const getActions = (original, updated) => {
   const changes = diff(original, updated, preFilter);
 
   const actions = [];
-  changes.forEach(change => {
-    if (isCloseCase(change)) actions.push(CLOSE_CASE);
-    if (isReopenCase(change)) actions.push(REOPEN_CASE);
-    if (isAddNote(change)) actions.push(ADD_NOTE);
-    if (isAddReferral(change)) actions.push(ADD_REFERRAL);
-    if (isAddHousehold(change)) actions.push(ADD_HOUSEHOLD);
-    if (isAddPerpetrator(change)) actions.push(ADD_PERPETRATOR);
-    if (isAddIncident(change)) actions.push(ADD_INCIDENT);
-    if (isEditCaseSummary(change)) actions.push(EDIT_CASE_SUMMARY);
-  });
+  if (changes) {
+    changes.forEach(change => {
+      if (isCloseCase(change)) actions.push(CLOSE_CASE);
+      if (isReopenCase(change)) actions.push(REOPEN_CASE);
+      if (isAddNote(change)) actions.push(ADD_NOTE);
+      if (isAddReferral(change)) actions.push(ADD_REFERRAL);
+      if (isAddHousehold(change)) actions.push(ADD_HOUSEHOLD);
+      if (isAddPerpetrator(change)) actions.push(ADD_PERPETRATOR);
+      if (isAddIncident(change)) actions.push(ADD_INCIDENT);
+      if (isEditCaseSummary(change)) actions.push(EDIT_CASE_SUMMARY);
+    });
+  }
 
   return actions;
 };
