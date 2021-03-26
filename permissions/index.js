@@ -1,6 +1,5 @@
 const User = require('./user');
 const { SafeRouter, publicEndpoint } = require('./safe-router');
-const { applyPermissions: applyZmPermissions } = require('./rules/zm');
 const { applyPermissions: applyZaPermissions } = require('./rules/za');
 const { applyPermissions: applyOpenPermissions } = require('./rules/open');
 const { canEditCase } = require('./middlewares');
