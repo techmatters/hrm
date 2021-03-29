@@ -55,10 +55,6 @@ async function authorizationMiddleware(req, res, next) {
       const authToken = process.env[authTokenKey];
       if (!authToken) throw new Error('authToken not provided for the specified accountSid.');
 
-      const workspaceSidKey = `TWILIO_WORKSPACE_SID_${accountSid}`;
-      const workspaceSid = process.env[workspaceSidKey];
-      if (!workspaceSid) throw new Error('workspaceSid not provided for the specified accountSid.');
-
       const tokenResult = await TokenValidator(token, accountSid, authToken);
       req.user = new User(tokenResult.worker_sid, tokenResult.roles);
       return next();
