@@ -1,10 +1,10 @@
 const createError = require('http-errors');
 const express = require('express');
 require('express-async-errors');
-const logger = require('morgan');
 const cors = require('cors');
 const TokenValidator = require('twilio-flex-token-validator').validator;
 
+const httpLogger = require('./logging/httplogging');
 const swagger = require('./swagger');
 const { apiV0 } = require('./routes');
 const { unauthorized } = require('./utils');
@@ -20,7 +20,7 @@ swagger.runWhenNotProduction(app);
 
 console.log('After connect attempt');
 
-app.use(logger('dev'));
+app.use(httpLogger);
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cors());
@@ -30,7 +30,7 @@ setupPermissions();
 
 app.get('/', (req, res) => {
   res.json({
-    Message: 'Welcome to the HRM!',
+    Message: 'HRM is up and running!',
   });
 });
 
