@@ -127,6 +127,11 @@ SELECT * FROM (
           END
         )
     )
+    -- previous contacts search
+    AND
+      CASE WHEN :contactNumber IS NULL THEN TRUE
+      ELSE contacts.number = :contactNumber
+      END
   GROUP BY cases.id
   -- Needed a HAVING clause because we couldn't do aggregations on WHERE clauses
   HAVING

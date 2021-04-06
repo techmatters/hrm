@@ -39,10 +39,26 @@ const getPaginationElements = query => {
 };
 
 const isEmptySearchParams = body => {
-  const { helpline, firstName, lastName, counselor, phoneNumber, dateFrom, dateTo } = body;
+  const {
+    helpline,
+    firstName,
+    lastName,
+    counselor,
+    phoneNumber,
+    dateFrom,
+    dateTo,
+    contactNumber,
+  } = body;
 
   const anyValue =
-    helpline || firstName || lastName || counselor || phoneNumber || dateFrom || dateTo;
+    helpline ||
+    firstName ||
+    lastName ||
+    counselor ||
+    phoneNumber ||
+    dateFrom ||
+    dateTo ||
+    contactNumber;
 
   return !anyValue;
 };
