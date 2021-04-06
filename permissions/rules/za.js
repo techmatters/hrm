@@ -21,6 +21,14 @@ allow(User, Actions.REOPEN_CASE, Case, user => isSupervisor(user));
 
 allow(
   User,
+  Actions.CASE_STATUS_TRANSITION,
+  Case,
+  (user, caseObj) =>
+    isSupervisor(user) || (isCaseOpen(caseObj) && isCounselorWhoCreated(user, caseObj)),
+);
+
+allow(
+  User,
   Actions.ADD_NOTE,
   Case,
   (user, caseObj) =>
