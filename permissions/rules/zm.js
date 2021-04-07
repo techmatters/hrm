@@ -19,13 +19,7 @@ allow(
 
 allow(User, Actions.REOPEN_CASE, Case, user => isSupervisor(user));
 
-allow(
-  User,
-  Actions.CASE_STATUS_TRANSITION,
-  Case,
-  (user, caseObj) =>
-    isSupervisor(user) || (isCaseOpen(caseObj) && isCounselorWhoCreated(user, caseObj)),
-);
+allow(User, Actions.CASE_STATUS_TRANSITION, Case, () => false); // Until other statuses than 'open' and 'closed' are added to the ZM specs, we disallow this kind of changes. For more information about this refer to https://github.com/tech-matters/hrm/pull/107#discussion_r608604050
 
 allow(
   User,
