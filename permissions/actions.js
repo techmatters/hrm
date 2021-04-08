@@ -2,6 +2,7 @@ const diff = require('deep-diff');
 
 const CLOSE_CASE = 'closeCase';
 const REOPEN_CASE = 'reopenCase';
+const CASE_STATUS_TRANSITION = 'caseStatusTransition';
 const ADD_NOTE = 'addNote';
 const EDIT_NOTE = 'editNote';
 const ADD_REFERRAL = 'addReferral';
@@ -35,7 +36,13 @@ const isReopenCase = change =>
   change.kind === EDITED_PROPERTY &&
   isPathEqual(change.path, ['status']) &&
   change.lhs === 'closed' &&
-  change.rhs === 'open';
+  change.rhs !== 'closed';
+
+const isCaseStatusTransition = change =>
+  change.kind === EDITED_PROPERTY &&
+  isPathEqual(change.path, ['status']) &&
+  change.lhs !== 'closed' &&
+  change.rhs !== 'closed';
 
 const isAddNote = change =>
   isAddOrEditKind(change.kind) && isPathEqual(change.path, ['info', 'notes']);
@@ -69,6 +76,7 @@ const getActions = (original, updated) => {
     changes.forEach(change => {
       if (isCloseCase(change)) actions.push(CLOSE_CASE);
       if (isReopenCase(change)) actions.push(REOPEN_CASE);
+      if (isCaseStatusTransition(change)) actions.push(CASE_STATUS_TRANSITION);
       if (isAddNote(change)) actions.push(ADD_NOTE);
       if (isAddReferral(change)) actions.push(ADD_REFERRAL);
       if (isAddHousehold(change)) actions.push(ADD_HOUSEHOLD);
@@ -85,6 +93,7 @@ module.exports = {
   getActions,
   CLOSE_CASE,
   REOPEN_CASE,
+  CASE_STATUS_TRANSITION,
   ADD_NOTE,
   EDIT_NOTE,
   ADD_REFERRAL,
