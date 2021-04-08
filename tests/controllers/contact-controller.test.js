@@ -344,6 +344,7 @@ test('Call findAndCountAll(queryObject) with given params', async () => {
     phoneNumber: '123',
     dateFrom: '2020-03-10',
     dateTo: '2020-03-15',
+    contactNumber: '+123456',
     onlyDataContacts: true,
   };
 
@@ -375,6 +376,9 @@ test('Call findAndCountAll(queryObject) with given params', async () => {
               },
             },
             {
+              number: body.contactNumber,
+            },
+            {
               'rawJson.callType': {
                 [Op.in]: [callTypes.child, callTypes.caller],
               },
@@ -398,6 +402,7 @@ test('Call findAndCountAll(queryObject) without name search', async () => {
     phoneNumber: '123',
     dateFrom: '2020-03-10',
     dateTo: '2020-03-15',
+    contactNumber: '+123456',
     onlyDataContacts: true,
   };
 
@@ -427,6 +432,9 @@ test('Call findAndCountAll(queryObject) without name search', async () => {
               timeOfContact: {
                 [Op.lte]: endOfDay(parseISO(body.dateTo)),
               },
+            },
+            {
+              number: body.contactNumber,
             },
             {
               'rawJson.callType': {
