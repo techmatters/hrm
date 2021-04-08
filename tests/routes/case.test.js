@@ -380,7 +380,7 @@ describe('/cases route', () => {
         expect(response.status).toBe(200);
         expect(response.body.count).toBe(1);
         const caseFromDB = response.body.cases[0];
-        expect(caseFromDB.id).toContain(createdCase2.id);
+        expect(caseFromDB.id).toStrictEqual(createdCase2.id);
       });
     });
   });
