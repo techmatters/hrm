@@ -120,6 +120,7 @@ function buildSearchQueryObject(body, query, accountSid) {
     phoneNumber,
     dateFrom,
     dateTo,
+    contactNumber,
     onlyDataContacts,
   } = body;
 
@@ -150,6 +151,9 @@ function buildSearchQueryObject(body, query, accountSid) {
               timeOfContact: {
                 [Op.lte]: endOfDay(parseISO(dateTo)),
               },
+            },
+            contactNumber && {
+              number: contactNumber,
             },
             onlyDataContacts && {
               'rawJson.callType': {

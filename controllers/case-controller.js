@@ -110,6 +110,7 @@ const CaseController = (Case, sequelize) => {
         dateTo: body.dateTo || null,
         phoneNumber: body.phoneNumber ? `%${body.phoneNumber.replace(notDigits, '')}%` : null,
         counselor: body.counselor || null,
+        contactNumber: body.contactNumber || null,
         closedCases: typeof body.closedCases === 'undefined' || body.closedCases,
         limit: query.limit,
         offset: query.offset,

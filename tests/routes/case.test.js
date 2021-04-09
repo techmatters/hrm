@@ -365,6 +365,23 @@ describe('/cases route', () => {
         expect(ids).toContain(createdCase2.id);
         expect(ids).toContain(createdCase3.id);
       });
+
+      test('should return 200 - search by contact number', async () => {
+        const body = {
+          helpline: 'helpline',
+          contactNumber: '+1-202-555-0184',
+        };
+        const response = await request
+          .post(subRoute)
+          .query({ limit: 20, offset: 0 })
+          .set(headers)
+          .send(body);
+
+        expect(response.status).toBe(200);
+        expect(response.body.count).toBe(1);
+        const caseFromDB = response.body.cases[0];
+        expect(caseFromDB.id).toStrictEqual(createdCase2.id);
+      });
     });
   });
 });
