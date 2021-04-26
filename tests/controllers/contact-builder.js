@@ -97,6 +97,7 @@ class ContactBuilder {
       ...(this.number && { number: this.number }),
       ...(this.twilioWorkerId && { twilioWorkerId: this.twilioWorkerId }),
       ...(this.createdAt && { createdAt: this.createdAt }),
+      ...(this.createdBy && { createdBy: this.createdBy }),
       ...(this.timeOfContact && { timeOfContact: this.timeOfContact }),
       rawJson: {
         ...defaultContact.rawJson,
