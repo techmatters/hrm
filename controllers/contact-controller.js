@@ -201,9 +201,8 @@ function convertContactsToSearchResults(contacts) {
       const { callType, caseInformation } = contact.rawJson;
       const categories = retrieveCategories(caseInformation.categories);
       const counselor = contact.twilioWorkerId;
-      const addedBy = contact.createdBy;
       const notes = contact.rawJson.caseInformation.callSummary;
-      const { channel, conversationDuration } = contact;
+      const { channel, conversationDuration, createdBy } = contact;
 
       return {
         contactId,
@@ -214,7 +213,7 @@ function convertContactsToSearchResults(contacts) {
           callType,
           categories,
           counselor,
-          addedBy,
+          createdBy,
           notes,
           channel,
           conversationDuration,
