@@ -8,6 +8,7 @@ const ActivityTypes = {
     facebook: 'facebook',
     web: 'web',
     sms: 'sms',
+    twitter: 'twitter',
     default: 'default',
   },
   unknown: 'unknown',
