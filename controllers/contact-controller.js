@@ -303,6 +303,8 @@ const ContactController = Contact => {
       accountSid: accountSid || '',
       timeOfContact: body.timeOfContact || Date.now(),
       taskId: body.taskId || '',
+      channelSid: body.channelSid || '',
+      serviceSid: body.serviceSid || '',
     };
 
     const contact = await Contact.create(contactRecord);
