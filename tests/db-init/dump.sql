@@ -121,7 +121,9 @@ CREATE TABLE public."Contacts" (
     "accountSid" character varying(255),
     "timeOfContact" timestamp with time zone,
     "taskId" character varying(255),
-    "createdBy" character varying(255)
+    "createdBy" character varying(255),
+    "channelSid" character varying(255),
+    "serviceSid" character varying(255)
 );
 
 
