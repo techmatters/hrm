@@ -71,7 +71,10 @@ module.exports = (sequelize, DataTypes) => {
     serviceSid: DataTypes.STRING,
   });
 
-  Contact.associate = models => Contact.belongsTo(models.Case, { foreignKey: 'caseId' });
+  Contact.associate = models => {
+    Contact.belongsTo(models.Case, { foreignKey: 'caseId' });
+    Contact.hasMany(models.PostSurvey, { foreignKey: 'contactTaskId' });
+  };
 
   /**
    * Whenever a contact gets connected to a case, a CaseAudit record should be created
