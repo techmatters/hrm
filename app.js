@@ -87,7 +87,7 @@ async function authorizationMiddleware(req, res, next) {
       const systemSecret = process.env[systemSecretKey];
 
       const requestSecret = authorization.replace('Basic ', '');
-      if (requestSecret === systemSecret) {
+      if (systemSecret && requestSecret && requestSecret === systemSecret) {
         req.user = new User('system', []);
         return next();
       }
