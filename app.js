@@ -34,6 +34,16 @@ app.get('/', (req, res) => {
 app.options('/contacts', cors());
 
 /**
+ * @param {string} path
+ * @param {string} method
+ */
+const systemHasAccess = (path, method) => {
+  if (path === '/postSurveys' && method === 'POST') return true;
+
+  return false;
+};
+
+/**
  * @param {import('express').Request} req
  * @param {import('express').Response} res
  * @param {import('express').NextFunction} next
@@ -44,13 +54,12 @@ async function authorizationMiddleware(req, res, next) {
   }
 
   const { authorization } = req.headers;
+  const { accountSid } = req;
+  if (!accountSid) return unauthorized(res);
 
   if (authorization.startsWith('Bearer')) {
     const token = authorization.replace('Bearer ', '');
     try {
-      const { accountSid } = req;
-      if (!accountSid) throw new Error('accountSid not specified in the request.');
-
       const authTokenKey = `TWILIO_AUTH_TOKEN_${accountSid}`;
       const authToken = process.env[authTokenKey];
       if (!authToken) throw new Error('authToken not provided for the specified accountSid.');
@@ -63,13 +72,27 @@ async function authorizationMiddleware(req, res, next) {
     }
   }
 
-  // for testing we use old api key (can't hit TokenValidator api with fake credentials as it results in The requested resource /Accounts/ACxxxxxxxxxx/Tokens/validate was not found)
-  if (process.env.NODE_ENV === 'test' && authorization.startsWith('Basic')) {
-    const base64Key = Buffer.from(authorization.replace('Basic ', ''), 'base64');
-    if (base64Key.toString('ascii') === apiKey) {
-      req.user = new User('worker-sid', []);
-      return next();
+  if (authorization.startsWith('Basic')) {
+    if (process.env.NODE_ENV === 'test') {
+      // for testing we use old api key (can't hit TokenValidator api with fake credentials as it results in The requested resource /Accounts/ACxxxxxxxxxx/Tokens/validate was not found)
+      const base64Key = Buffer.from(authorization.replace('Basic ', ''), 'base64');
+      if (base64Key.toString('ascii') === apiKey) {
+        req.user = new User('worker-sid', []);
+        return next();
+      }
     }
+
+    if (systemHasAccess(req.path, req.method)) {
+      const systemSecretKey = `TWILIO_SYSTEM_KEY_${accountSid}`;
+      const systemSecret = process.env[systemSecretKey];
+
+      const requestSecret = authorization.replace('Basic ', '');
+      if (requestSecret === systemSecret) {
+        req.user = new User('system', []);
+        return next();
+      }
+    }
+
     console.log('API Key authentication failed');
   }
 
