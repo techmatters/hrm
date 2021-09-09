@@ -3,6 +3,7 @@ const express = require('express');
 require('express-async-errors');
 const cors = require('cors');
 const TokenValidator = require('twilio-flex-token-validator').validator;
+const crypto = require('crypto');
 
 const httpLogger = require('./logging/httplogging');
 const swagger = require('./swagger');
@@ -34,10 +35,14 @@ app.get('/', (req, res) => {
 app.options('/contacts', cors());
 
 /**
+ * Helper to whitelist the requests that other parts of the system (external to HRM, like Serverless functions) can perform on HRM.
+ * Takes in the path and the method of the request and returns a boolean indicating if the endpoint can be accessed.
  * @param {string} path
  * @param {string} method
+ *
+ * IMPORTANT: This kind of static key acces should never be used to retrieve sensitive information.
  */
-const systemHasAccess = (path, method) => {
+const systemCanPerformRequest = (path, method) => {
   if (path === '/postSurveys' && method === 'POST') return true;
 
   return false;
@@ -82,13 +87,17 @@ async function authorizationMiddleware(req, res, next) {
       }
     }
 
-    if (systemHasAccess(req.path, req.method)) {
+    if (systemCanPerformRequest(req.path, req.method)) {
       const systemSecretKey = `TWILIO_SYSTEM_KEY_${accountSid}`;
       const systemSecret = process.env[systemSecretKey];
-
       const requestSecret = authorization.replace('Basic ', '');
-      if (systemSecret && requestSecret && requestSecret === systemSecret) {
-        req.user = new User('system', []);
+      const isSystemSecretValid =
+        systemSecret &&
+        requestSecret &&
+        crypto.timingSafeEqual(Buffer.from(requestSecret), Buffer.from(systemSecret));
+
+      if (isSystemSecretValid) {
+        req.user = new User(`system-${accountSid}`, []);
         return next();
       }
     }
