@@ -42,7 +42,7 @@ app.options('/contacts', cors());
  *
  * IMPORTANT: This kind of static key acces should never be used to retrieve sensitive information.
  */
-const systemCanPerformRequest = (path, method) => {
+const externalSourceCanPerformRequest = (path, method) => {
   if (path === '/postSurveys' && method === 'POST') return true;
 
   return false;
@@ -89,17 +89,17 @@ async function authorizationMiddleware(req, res, next) {
       }
     }
 
-    if (systemCanPerformRequest(req.path, req.method)) {
-      const systemSecretKey = `TWILIO_SYSTEM_KEY_${accountSid}`;
-      const systemSecret = process.env[systemSecretKey];
+    if (externalSourceCanPerformRequest(req.path, req.method)) {
+      const externalSourceSecretKey = `EXTERNAL_SOURCE_KEY_${accountSid}`;
+      const externalSourceSecret = process.env[externalSourceSecretKey];
       const requestSecret = authorization.replace('Basic ', '');
-      const isSystemSecretValid =
-        systemSecret &&
+      const isExternalSourceSecretValid =
+        externalSourceSecret &&
         requestSecret &&
-        crypto.timingSafeEqual(Buffer.from(requestSecret), Buffer.from(systemSecret));
+        crypto.timingSafeEqual(Buffer.from(requestSecret), Buffer.from(externalSourceSecret));
 
-      if (isSystemSecretValid) {
-        req.user = new User(`system-${accountSid}`, []);
+      if (isExternalSourceSecretValid) {
+        req.user = new User(`account-${accountSid}`, []);
         return next();
       }
     }
