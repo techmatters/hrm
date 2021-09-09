@@ -15,7 +15,6 @@ test('create post survey', async () => {
   const createSpy = jest.spyOn(MockPostSurvey, 'create');
 
   const postSurveyToBeCreated = {
-    helpline: 'helpline',
     contactTaskId: 'WTxxxxxxxxxx',
     taskId: 'WTyyyyyyyyyy',
     data: { question: 'Some Answer' },
@@ -25,19 +24,6 @@ test('create post survey', async () => {
   await PostSurveyController.createPostSurvey(postSurveyToBeCreated, accountSid);
 
   expect(createSpy).toHaveBeenCalledWith(postSurveyToBeCreated);
-});
-
-test('get all post surveys', async () => {
-  const options = {
-    limit: 10,
-    where: { [Op.and]: [{ accountSid }] },
-  };
-
-  const findAllSpy = jest.spyOn(MockPostSurvey, 'findAll');
-
-  await PostSurveyController.getPostSurveys({}, accountSid);
-
-  expect(findAllSpy).toHaveBeenCalledWith(options);
 });
 
 test('get all post surveys by contact id', async () => {

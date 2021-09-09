@@ -65,22 +65,6 @@ describe('/postSurveys route', () => {
     });
   });
 
-  describe('GET', () => {
-    test('should return 401', async () => {
-      const response = await request.get(route);
-
-      expect(response.status).toBe(401);
-      expect(response.body.error).toBe('Authorization failed');
-    });
-
-    test('should return 200', async () => {
-      const response = await request.get(route).set(headers);
-
-      expect(response.status).toBe(200);
-      expect(response.body).not.toHaveLength(0);
-    });
-  });
-
   describe('/postSurveys/contactTaskId/:id route', () => {
     const subRoute = `${route}/contactTaskId`;
     const shouldExist = `${subRoute}/${body.contactTaskId}`;

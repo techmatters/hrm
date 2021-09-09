@@ -159,7 +159,6 @@ CREATE TABLE public."PostSurveys" (
     id integer NOT NULL,
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL,
-    helpline character varying(255),
     "accountSid" character varying(255),
     "taskId" character varying(255),
     "contactTaskId" character varying(255),
