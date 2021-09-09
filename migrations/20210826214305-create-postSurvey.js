@@ -15,7 +15,6 @@ module.exports = {
         allowNull: false,
         type: Sequelize.DATE,
       },
-      helpline: { type: Sequelize.STRING },
       accountSid: { type: Sequelize.STRING },
       taskId: { type: Sequelize.STRING },
       contactTaskId: { type: Sequelize.STRING },

@@ -39,12 +39,11 @@ const PostSurveyController = PostSurvey => {
 
   /**
    *
-   * @param {{ helpline: string; taskId: string; contactTaskId: string; data: {} }} body
+   * @param {{ taskId: string; contactTaskId: string; data: {} }} body
    * @param {string} accountSid
    */
   const createPostSurvey = async (body, accountSid) => {
     const record = {
-      helpline: body.helpline || '',
       accountSid: accountSid || '',
       taskId: body.taskId || '',
       contactTaskId: body.contactTaskId || '',
