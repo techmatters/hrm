@@ -4,26 +4,6 @@ const { Op } = Sequelize;
 
 const PostSurveyController = PostSurvey => {
   /**
-   *
-   * @param {{}} query
-   * @param {string} accountSid
-   */
-  const getPostSurveys = async (query, accountSid) => {
-    // const {} = query;
-    const queryObject = {
-      limit: 10,
-    };
-
-    queryObject.where = {
-      [Op.and]: [accountSid && { accountSid }],
-    };
-
-    const postSurveys = await PostSurvey.findAll(queryObject);
-    return postSurveys;
-  };
-
-  /**
-   *
    * @param {string} contactTaskId
    * @param {string} accountSid
    */
@@ -38,7 +18,6 @@ const PostSurveyController = PostSurvey => {
   };
 
   /**
-   *
    * @param {{ taskId: string; contactTaskId: string; data: {} }} body
    * @param {string} accountSid
    */
@@ -55,7 +34,6 @@ const PostSurveyController = PostSurvey => {
   };
 
   return {
-    getPostSurveys,
     getPostSurveysByContactTaskId,
     createPostSurvey,
   };

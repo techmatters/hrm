@@ -6,15 +6,6 @@ const PostSurveyController = require('../../controllers/post-survey-controller')
 
 const postSurveysRouter = SafeRouter();
 
-postSurveysRouter.get('/', publicEndpoint, async (
-  /** @type {import('express').Request} */ req,
-  /** @type {import('express').Response} */ res,
-) => {
-  const { accountSid } = req;
-  const postSurveys = await PostSurveyController.getPostSurveys(req.query, accountSid);
-  res.json(postSurveys);
-});
-
 postSurveysRouter.post('/', publicEndpoint, async (
   /** @type {import('express').Request} */ req,
   /** @type {import('express').Response} */ res,
