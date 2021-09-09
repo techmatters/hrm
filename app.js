@@ -81,7 +81,9 @@ async function authorizationMiddleware(req, res, next) {
     if (process.env.NODE_ENV === 'test') {
       // for testing we use old api key (can't hit TokenValidator api with fake credentials as it results in The requested resource /Accounts/ACxxxxxxxxxx/Tokens/validate was not found)
       const base64Key = Buffer.from(authorization.replace('Basic ', ''), 'base64');
-      if (base64Key.toString('ascii') === apiKey) {
+      const isTestSecretValid = crypto.timingSafeEqual(base64Key, Buffer.from(apiKey));
+
+      if (isTestSecretValid) {
         req.user = new User('worker-sid', []);
         return next();
       }
