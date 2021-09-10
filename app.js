@@ -87,25 +87,29 @@ async function authorizationMiddleware(req, res, next) {
         req.user = new User('worker-sid', []);
         return next();
       }
+
+      console.log('API Key authentication failed');
     }
 
     if (canAccessResourceWithStaticKey(req.path, req.method)) {
-      const staticSecretKey = `STATIC_KEY_${accountSid}`;
-      const staticSecret = process.env[staticSecretKey];
-      const requestSecret = authorization.replace('Basic ', '');
-      const isStaticSecretValid =
-        staticSecret &&
-        requestSecret &&
-        staticSecret.length === requestSecret.length &&
-        crypto.timingSafeEqual(Buffer.from(requestSecret), Buffer.from(staticSecret));
+      try {
+        const staticSecretKey = `STATIC_KEY_${accountSid}`;
+        const staticSecret = process.env[staticSecretKey];
+        const requestSecret = authorization.replace('Basic ', '');
 
-      if (isStaticSecretValid) {
-        req.user = new User(`account-${accountSid}`, []);
-        return next();
+        const isStaticSecretValid =
+          staticSecret &&
+          requestSecret &&
+          crypto.timingSafeEqual(Buffer.from(requestSecret), Buffer.from(staticSecret));
+
+        if (isStaticSecretValid) {
+          req.user = new User(`account-${accountSid}`, []);
+          return next();
+        }
+      } catch (err) {
+        console.error('Static key authentication failed: ', err);
       }
     }
-
-    console.log('API Key authentication failed');
   }
 
   return unauthorized(res);
