@@ -2,7 +2,7 @@ const Actions = require('./actions');
 const { asyncHandler } = require('../utils');
 const models = require('../models');
 
-const { Case, sequelize } = models;
+const { Case, PostSurvey, sequelize } = models;
 const CaseController = require('../controllers/case-controller')(Case, sequelize);
 
 /**
@@ -31,9 +31,7 @@ const canViewPostSurvey = (req, res, next) => {
   if (!req.isAuthorized()) {
     const { user, can } = req;
 
-    const postSurvey = {}; // we pass an empty object to can as for now, it does not need the actual post survey record to check.
-
-    if (can(user, Actions.VIEW_POST_SURVEY, postSurvey)) {
+    if (can(user, Actions.VIEW_POST_SURVEY, PostSurvey)) {
       req.authorize();
     } else {
       req.unauthorize();
