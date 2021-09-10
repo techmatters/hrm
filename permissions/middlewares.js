@@ -1,4 +1,4 @@
-const { getActions } = require('./actions');
+const Actions = require('./actions');
 const { asyncHandler } = require('../utils');
 const models = require('../models');
 
@@ -14,7 +14,7 @@ const canEditCase = asyncHandler(async (req, res, next) => {
     const { accountSid, body, user, can } = req;
     const { id } = req.params;
     const caseObj = await CaseController.getCase(id, accountSid);
-    const actions = getActions(caseObj.dataValues, body);
+    const actions = Actions.getActions(caseObj.dataValues, body);
     const canEdit = actions.every(action => can(user, action, caseObj));
 
     if (canEdit) {
@@ -27,4 +27,20 @@ const canEditCase = asyncHandler(async (req, res, next) => {
   next();
 });
 
-module.exports = { canEditCase };
+const canViewPostSurvey = (req, res, next) => {
+  if (!req.isAuthorized()) {
+    const { user, can } = req;
+
+    const postSurvey = {}; // we pass an empty object to can as for now, it does not need the actual post survey record to check.
+
+    if (can(user, Actions.VIEW_POST_SURVEY, postSurvey)) {
+      req.authorize();
+    } else {
+      req.unauthorize();
+    }
+  }
+
+  next();
+};
+
+module.exports = { canEditCase, canViewPostSurvey };

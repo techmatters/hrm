@@ -1,5 +1,5 @@
 const models = require('../../models');
-const { SafeRouter, publicEndpoint } = require('../../permissions');
+const { SafeRouter, publicEndpoint, canViewPostSurvey } = require('../../permissions');
 
 const { PostSurvey } = models;
 const PostSurveyController = require('../../controllers/post-survey-controller')(PostSurvey);
@@ -16,7 +16,7 @@ postSurveysRouter.post('/', publicEndpoint, async (
   res.json(createdPostSurvey);
 });
 
-postSurveysRouter.get('/contactTaskId/:id', publicEndpoint, async (
+postSurveysRouter.get('/contactTaskId/:id', canViewPostSurvey, async (
   /** @type {import('express').Request} */ req,
   /** @type {import('express').Response} */ res,
 ) => {

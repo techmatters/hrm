@@ -14,6 +14,7 @@ const EDIT_PERPETRATOR = 'editPerpetrator';
 const ADD_INCIDENT = 'addIncident';
 const EDIT_INCIDENT = 'editIncident';
 const EDIT_CASE_SUMMARY = 'editCaseSummary';
+const VIEW_POST_SURVEY = 'viewPostSurvey';
 
 // deep-diff lib kinds:
 const NEW_PROPERTY = 'N';
@@ -105,4 +106,5 @@ module.exports = {
   ADD_INCIDENT,
   EDIT_INCIDENT,
   EDIT_CASE_SUMMARY,
+  VIEW_POST_SURVEY,
 };
