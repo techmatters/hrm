@@ -42,7 +42,7 @@ app.options('/contacts', cors());
  *
  * IMPORTANT: This kind of static key acces should never be used to retrieve sensitive information.
  */
-const externalSourceCanPerformRequest = (path, method) => {
+const canAccessResourceWithStaticKey = (path, method) => {
   if (path === '/postSurveys' && method === 'POST') return true;
 
   return false;
@@ -89,16 +89,17 @@ async function authorizationMiddleware(req, res, next) {
       }
     }
 
-    if (externalSourceCanPerformRequest(req.path, req.method)) {
-      const externalSourceSecretKey = `EXTERNAL_SOURCE_KEY_${accountSid}`;
-      const externalSourceSecret = process.env[externalSourceSecretKey];
+    if (canAccessResourceWithStaticKey(req.path, req.method)) {
+      const staticSecretKey = `STATIC_KEY_${accountSid}`;
+      const staticSecret = process.env[staticSecretKey];
       const requestSecret = authorization.replace('Basic ', '');
-      const isExternalSourceSecretValid =
-        externalSourceSecret &&
+      const isStaticSecretValid =
+        staticSecret &&
         requestSecret &&
-        crypto.timingSafeEqual(Buffer.from(requestSecret), Buffer.from(externalSourceSecret));
+        staticSecret.length === requestSecret.length &&
+        crypto.timingSafeEqual(Buffer.from(requestSecret), Buffer.from(staticSecret));
 
-      if (isExternalSourceSecretValid) {
+      if (isStaticSecretValid) {
         req.user = new User(`account-${accountSid}`, []);
         return next();
       }
