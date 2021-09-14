@@ -95,6 +95,22 @@ allow(
     isSupervisor(user) || (isCaseOpen(caseObj) && isCounselorWhoCreated(user, caseObj)),
 );
 
+allow(
+  User,
+  Actions.ADD_DOCUMENT,
+  Case,
+  (user, caseObj) =>
+    isSupervisor(user) || (isCaseOpen(caseObj) && isCounselorWhoCreated(user, caseObj)),
+);
+
+allow(
+  User,
+  Actions.EDIT_DOCUMENT,
+  Case,
+  (user, caseObj) =>
+    isSupervisor(user) || (isCaseOpen(caseObj) && isCounselorWhoCreated(user, caseObj)),
+);
+
 allow(User, Actions.EDIT_CASE_SUMMARY, Case, user => isSupervisor(user));
 
 const applyPermissions = req => {

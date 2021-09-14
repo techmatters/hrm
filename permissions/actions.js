@@ -13,6 +13,8 @@ const ADD_PERPETRATOR = 'addPerpetrator';
 const EDIT_PERPETRATOR = 'editPerpetrator';
 const ADD_INCIDENT = 'addIncident';
 const EDIT_INCIDENT = 'editIncident';
+const ADD_DOCUMENT = 'addDocument';
+const EDIT_DOCUMENT = 'editDocument';
 const EDIT_CASE_SUMMARY = 'editCaseSummary';
 
 // deep-diff lib kinds:
@@ -59,6 +61,9 @@ const isAddPerpetrator = change =>
 const isAddIncident = change =>
   isAddOrEditKind(change.kind) && isPathEqual(change.path, ['info', 'incidents']);
 
+const isAddDocument = change =>
+  isAddOrEditKind(change.kind) && isPathEqual(change.path, ['info', 'documents']);
+
 /**
  * This function compares the original object and the object with the updated values
  * to decide what actions it's trying to do, e.g.: [ADD_NOTE, ADD_REFERRAL]
@@ -82,6 +87,7 @@ const getActions = (original, updated) => {
       if (isAddHousehold(change)) actions.push(ADD_HOUSEHOLD);
       if (isAddPerpetrator(change)) actions.push(ADD_PERPETRATOR);
       if (isAddIncident(change)) actions.push(ADD_INCIDENT);
+      if (isAddDocument(change)) actions.push(ADD_DOCUMENT);
       if (isEditCaseSummary(change)) actions.push(EDIT_CASE_SUMMARY);
     });
   }
@@ -104,5 +110,7 @@ module.exports = {
   EDIT_PERPETRATOR,
   ADD_INCIDENT,
   EDIT_INCIDENT,
+  ADD_DOCUMENT,
+  EDIT_DOCUMENT,
   EDIT_CASE_SUMMARY,
 };
