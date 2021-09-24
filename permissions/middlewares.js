@@ -1,8 +1,8 @@
-const { getActions } = require('./actions');
+const Actions = require('./actions');
 const { asyncHandler } = require('../utils');
 const models = require('../models');
 
-const { Case, sequelize } = models;
+const { Case, PostSurvey, sequelize } = models;
 const CaseController = require('../controllers/case-controller')(Case, sequelize);
 
 /**
@@ -14,7 +14,7 @@ const canEditCase = asyncHandler(async (req, res, next) => {
     const { accountSid, body, user, can } = req;
     const { id } = req.params;
     const caseObj = await CaseController.getCase(id, accountSid);
-    const actions = getActions(caseObj.dataValues, body);
+    const actions = Actions.getActions(caseObj.dataValues, body);
     const canEdit = actions.every(action => can(user, action, caseObj));
 
     if (canEdit) {
@@ -27,4 +27,18 @@ const canEditCase = asyncHandler(async (req, res, next) => {
   next();
 });
 
-module.exports = { canEditCase };
+const canViewPostSurvey = (req, res, next) => {
+  if (!req.isAuthorized()) {
+    const { user, can } = req;
+
+    if (can(user, Actions.VIEW_POST_SURVEY, PostSurvey)) {
+      req.authorize();
+    } else {
+      req.unauthorize();
+    }
+  }
+
+  next();
+};
+
+module.exports = { canEditCase, canViewPostSurvey };

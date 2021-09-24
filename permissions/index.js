@@ -5,7 +5,7 @@ const { applyPermissions: applyZaPermissions } = require('./rules/za');
 const { applyPermissions: applyEtPermissions } = require('./rules/et');
 const { applyPermissions: applyMwPermissions } = require('./rules/mw');
 const { applyPermissions: applyOpenPermissions } = require('./rules/open');
-const { canEditCase } = require('./middlewares');
+const { canEditCase, canViewPostSurvey } = require('./middlewares');
 
 const applyPermissions = {
   zm: applyZmPermissions,
@@ -29,4 +29,11 @@ const setupPermissions = (req, res, next) => {
   return next();
 };
 
-module.exports = { setupPermissions, User, SafeRouter, publicEndpoint, canEditCase };
+module.exports = {
+  setupPermissions,
+  User,
+  SafeRouter,
+  publicEndpoint,
+  canEditCase,
+  canViewPostSurvey,
+};

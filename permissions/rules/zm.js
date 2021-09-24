@@ -7,7 +7,7 @@ const models = require('../../models');
 const cancan = new CanCan();
 const { can, allow } = cancan;
 
-const { Case } = models;
+const { Case, PostSurvey } = models;
 
 allow(
   User,
@@ -112,6 +112,8 @@ allow(
 );
 
 allow(User, Actions.EDIT_CASE_SUMMARY, Case, user => isSupervisor(user));
+
+allow(User, Actions.VIEW_POST_SURVEY, PostSurvey, isSupervisor);
 
 const applyPermissions = req => {
   req.can = can;

@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 11.11 (Ubuntu 11.11-1.pgdg18.04+1)
--- Dumped by pg_dump version 11.11 (Ubuntu 11.11-1.pgdg18.04+1)
+-- Dumped from database version 11.12 (Ubuntu 11.12-1.pgdg18.04+1)
+-- Dumped by pg_dump version 11.12 (Ubuntu 11.12-1.pgdg18.04+1)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -152,6 +152,45 @@ ALTER SEQUENCE public."Contacts_id_seq" OWNED BY public."Contacts".id;
 
 
 --
+-- Name: PostSurveys; Type: TABLE; Schema: public; Owner: hrm
+--
+
+CREATE TABLE public."PostSurveys" (
+    id integer NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "accountSid" character varying(255),
+    "taskId" character varying(255),
+    "contactTaskId" character varying(255),
+    data jsonb
+);
+
+
+ALTER TABLE public."PostSurveys" OWNER TO hrm;
+
+--
+-- Name: PostSurveys_id_seq; Type: SEQUENCE; Schema: public; Owner: hrm
+--
+
+CREATE SEQUENCE public."PostSurveys_id_seq"
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public."PostSurveys_id_seq" OWNER TO hrm;
+
+--
+-- Name: PostSurveys_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: hrm
+--
+
+ALTER SEQUENCE public."PostSurveys_id_seq" OWNED BY public."PostSurveys".id;
+
+
+--
 -- Name: SequelizeMeta; Type: TABLE; Schema: public; Owner: hrm
 --
 
@@ -184,24 +223,38 @@ ALTER TABLE ONLY public."Contacts" ALTER COLUMN id SET DEFAULT nextval('public."
 
 
 --
+-- Name: PostSurveys id; Type: DEFAULT; Schema: public; Owner: hrm
+--
+
+ALTER TABLE ONLY public."PostSurveys" ALTER COLUMN id SET DEFAULT nextval('public."PostSurveys_id_seq"'::regclass);
+
+
+--
 -- Name: CaseAudits_id_seq; Type: SEQUENCE SET; Schema: public; Owner: hrm
 --
 
-SELECT pg_catalog.setval('public."CaseAudits_id_seq"', 1338, true);
+SELECT pg_catalog.setval('public."CaseAudits_id_seq"', 2011, true);
 
 
 --
 -- Name: Cases_id_seq; Type: SEQUENCE SET; Schema: public; Owner: hrm
 --
 
-SELECT pg_catalog.setval('public."Cases_id_seq"', 1108, true);
+SELECT pg_catalog.setval('public."Cases_id_seq"', 1772, true);
 
 
 --
 -- Name: Contacts_id_seq; Type: SEQUENCE SET; Schema: public; Owner: hrm
 --
 
-SELECT pg_catalog.setval('public."Contacts_id_seq"', 3435, true);
+SELECT pg_catalog.setval('public."Contacts_id_seq"', 3808, true);
+
+
+--
+-- Name: PostSurveys_id_seq; Type: SEQUENCE SET; Schema: public; Owner: hrm
+--
+
+SELECT pg_catalog.setval('public."PostSurveys_id_seq"', 16, true);
 
 
 --
@@ -226,6 +279,14 @@ ALTER TABLE ONLY public."Cases"
 
 ALTER TABLE ONLY public."Contacts"
     ADD CONSTRAINT "Contacts_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: PostSurveys PostSurveys_pkey; Type: CONSTRAINT; Schema: public; Owner: hrm
+--
+
+ALTER TABLE ONLY public."PostSurveys"
+    ADD CONSTRAINT "PostSurveys_pkey" PRIMARY KEY (id);
 
 
 --
