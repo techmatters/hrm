@@ -111,7 +111,13 @@ allow(
     isSupervisor(user) || (isCaseOpen(caseObj) && isCounselorWhoCreated(user, caseObj)),
 );
 
-allow(User, Actions.EDIT_CASE_SUMMARY, Case, user => isSupervisor(user));
+allow(
+  User,
+  Actions.EDIT_CASE_SUMMARY,
+  Case,
+  (user, caseObj) =>
+    isSupervisor(user) || (isCaseOpen(caseObj) && isCounselorWhoCreated(user, caseObj)),
+);
 
 allow(User, Actions.VIEW_POST_SURVEY, PostSurvey, isSupervisor);
 
