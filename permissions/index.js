@@ -4,6 +4,8 @@ const { applyPermissions: applyZmPermissions } = require('./rules/zm');
 const { applyPermissions: applyZaPermissions } = require('./rules/za');
 const { applyPermissions: applyEtPermissions } = require('./rules/et');
 const { applyPermissions: applyMwPermissions } = require('./rules/mw');
+const { applyPermissions: applyBrPermissions } = require('./rules/br');
+const { applyPermissions: applyInPermissions } = require('./rules/in');
 const { applyPermissions: applyOpenPermissions } = require('./rules/open');
 const { canEditCase, canViewPostSurvey } = require('./middlewares');
 
@@ -12,6 +14,8 @@ const applyPermissions = {
   za: applyZaPermissions,
   et: applyEtPermissions,
   mw: applyMwPermissions,
+  br: applyBrPermissions,
+  in: applyInPermissions,
 };
 
 const setupPermissions = (req, res, next) => {
@@ -23,7 +27,8 @@ const setupPermissions = (req, res, next) => {
   const { accountSid } = req;
   const permissionsKey = `PERMISSIONS_${accountSid}`;
   const permissions = process.env[permissionsKey];
-  if (!permissions) throw new Error('permissions not provided for the specified accountSid.');
+  if (!applyPermissions[permissions])
+    throw new Error('permissions not provided for the specified accountSid.');
 
   applyPermissions[permissions](req);
   return next();
