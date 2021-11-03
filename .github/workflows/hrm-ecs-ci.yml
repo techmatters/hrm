@@ -92,3 +92,25 @@ jobs:
         service: ${{ github.event.inputs.environment }}-ecs-service
         cluster: ${{ github.event.inputs.environment }}-ecs-cluster
         wait-for-service-stability: true
+
+    # Set any env vars needed from Parameter Store here
+    - name: Set GITHUB_ACTIONS_SLACK_BOT_TOKEN
+      uses: "marvinpinto/action-inject-ssm-secrets@latest"
+      with:
+        ssm_parameter: "GITHUB_ACTIONS_SLACK_BOT_TOKEN"
+        env_variable_name: "GITHUB_ACTIONS_SLACK_BOT_TOKEN"
+    - name: Set ASELO_DEPLOYS_CHANNEL_ID
+      uses: "marvinpinto/action-inject-ssm-secrets@latest"
+      with:
+        ssm_parameter: "ASELO_DEPLOYS_CHANNEL_ID"
+        env_variable_name: "ASELO_DEPLOYS_CHANNEL_ID"
+
+    # Send Slack notifying success
+    - name: Slack Aselo channel
+      id: slack
+      uses: slackapi/slack-github-action@v1.14.0
+      with:
+        channel-id: ${{ env.ASELO_DEPLOYS_CHANNEL_ID }}
+        slack-message: "`[HRM]` ${{ github.workflow }} deployed with SHA ${{ github.sha }} to environment `${{ github.event.inputs.environment }}` :rocket:."
+      env:
+        SLACK_BOT_TOKEN: ${{ env.GITHUB_ACTIONS_SLACK_BOT_TOKEN }}
