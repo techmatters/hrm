@@ -74,6 +74,7 @@ module.exports = (sequelize, DataTypes) => {
   Contact.associate = models => {
     Contact.belongsTo(models.Case, { foreignKey: 'caseId' });
     Contact.hasMany(models.PostSurvey, { foreignKey: 'contactTaskId' });
+    Contact.hasMany(models.PostSurvey, { foreignKey: 'contactTaskId' });
   };
 
   /**
