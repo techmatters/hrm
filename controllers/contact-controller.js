@@ -9,6 +9,10 @@ const {
   isEmptySearchParams,
   orUndefined,
 } = require('./helpers');
+const models = require('../models');
+
+const { CSAMReport } = models;
+const CSAMReportController = require('../controllers/csam-report-controller')(CSAMReport);
 
 const { Op } = Sequelize;
 
@@ -284,10 +288,19 @@ const ContactController = Contact => {
     return Contact.findAll(queryObject);
   };
 
+  /**
+   *
+   * @param {} body
+   * @param {string} accountSid
+   * @param {string} workerSid
+   */
   const createContact = async (body, accountSid, workerSid) => {
     // if a contact has been already created with this taskId, just return it (idempotence on taskId). Should we use a different HTTP code status for this case?
     if (body.taskId) {
-      const contact = await Contact.findOne({ where: { taskId: body.taskId } });
+      const contact = await Contact.findOne({
+        include: { association: 'CSAMReports' },
+        where: { taskId: body.taskId },
+      });
       if (contact) return contact;
     }
 
@@ -308,11 +321,24 @@ const ContactController = Contact => {
     };
 
     const contact = await Contact.create(contactRecord);
+
+    // Link all of the csam reports related to this contact
+    if (body.csamReports && body.csamReports.length) {
+      await Promise.all(
+        body.csamReports.map(r =>
+          CSAMReportController.connectToContact(contact.id, r.id, accountSid),
+        ),
+      );
+    }
+
     return contact;
   };
 
   const getContact = async (id, accountSid) => {
-    const options = { where: { [Op.and]: [{ id }, { accountSid }] } };
+    const options = {
+      include: { association: 'CSAMReports' },
+      where: { [Op.and]: [{ id }, { accountSid }] },
+    };
     const contact = await Contact.findOne(options);
 
     if (!contact) {
