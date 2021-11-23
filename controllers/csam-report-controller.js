@@ -5,7 +5,7 @@ const { Op } = Sequelize;
 
 const CSAMReportController = CSAMReport => {
   /**
-   * @param {string} contactId
+   * @param {number} contactId
    * @param {string} accountSid
    */
   const getCSAMReports = async (contactId, accountSid) => {
@@ -19,7 +19,7 @@ const CSAMReportController = CSAMReport => {
   };
 
   /**
-   * @param {string} id
+   * @param {number} id
    * @param {string} accountSid
    */
   const getCSAMReport = async (id, accountSid) => {
@@ -35,7 +35,7 @@ const CSAMReportController = CSAMReport => {
   };
 
   /**
-   * @param {{ twilioWorkerId: string, contactId: string, csamReportId: string }} body
+   * @param {{ twilioWorkerId: string, contactId: number, csamReportId: string }} body
    * @param {string} accountSid
    */
   const createCSAMReport = async (body, accountSid) => {
