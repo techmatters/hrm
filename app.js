@@ -13,13 +13,8 @@ const { setupPermissions, User } = require('./permissions');
 
 const app = express();
 const apiKey = process.env.API_KEY;
-const version = '0.3.6';
-
-console.log(`Starting HRM version ${version}`);
 
 swagger.runWhenNotProduction(app);
-
-console.log('After connect attempt');
 
 app.use(httpLogger);
 app.use(express.json());
