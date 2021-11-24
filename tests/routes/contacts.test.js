@@ -27,7 +27,8 @@ const headers = {
 };
 const workerSid = 'worker-sid';
 
-const { Contact, Case, CaseAudit } = models;
+const { Contact, Case, CaseAudit, CSAMReport } = models;
+const CSAMReportController = require('../../controllers/csam-report-controller')(CSAMReport);
 
 const caseAuditsQuery = {
   where: {
@@ -43,6 +44,7 @@ beforeAll(async () => {
 
 afterAll(async done => {
   server.close(done);
+  // await CSAMReport.destroy(caseAuditsQuery);
 });
 
 afterEach(async () => CaseAudit.destroy(caseAuditsQuery));
@@ -96,6 +98,32 @@ describe('/contacts route', () => {
 
       // but second call should do nothing
       expect(afterContacts.body).toHaveLength(beforeContacts.body.length);
+    });
+
+    test('Connects to CSAM report', async () => {
+      // Create CSAM Report
+      const csamReportId = 'csam-report-id';
+      const newReport = (
+        await CSAMReportController.createCSAMReport(
+          {
+            csamReportId,
+            twilioWorkerId: workerSid,
+          },
+          accountSid,
+        )
+      ).dataValues;
+
+      // Create contact with above report
+      const response = await request
+        .post(route)
+        .set(headers)
+        .send({ ...contact1, csamReports: [newReport] });
+
+      const updatedReport = await CSAMReportController.getCSAMReport(newReport.id, accountSid);
+      expect(updatedReport.contactId).toEqual(response.body.id);
+
+      // Remove this contact to not interfere with following tests
+      await Contact.destroy({ where: { id: response.body.id } });
     });
   });
 
