@@ -44,7 +44,7 @@ describe('get all CSAM reports', () => {
     expect(findAllSpy).toHaveBeenCalledWith(options);
   });
 
-  test('By account sid & contad id', async () => {
+  test('By account sid & contact id', async () => {
     const contactId = 1;
     const options = {
       where: { [Op.and]: [{ accountSid }, { contactId }] },
