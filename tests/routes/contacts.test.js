@@ -46,6 +46,7 @@ afterAll(async done => {
   server.close(done);
   await Case.destroy(query);
   await CSAMReport.destroy(query);
+  await Contact.destroy(query);
 });
 
 afterEach(async () => CaseAudit.destroy(query));
