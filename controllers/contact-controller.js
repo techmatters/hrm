@@ -135,6 +135,7 @@ function buildSearchQueryObject(body, query, accountSid) {
   const compareDateTo = orUndefined(dateTo);
 
   return {
+    include: { association: 'csamReports' },
     where: {
       [Op.and]: [
         helpline && { helpline },
@@ -206,7 +207,7 @@ function convertContactsToSearchResults(contacts) {
       const categories = retrieveCategories(caseInformation.categories);
       const counselor = contact.twilioWorkerId;
       const notes = contact.rawJson.caseInformation.callSummary;
-      const { channel, conversationDuration, createdBy } = contact;
+      const { channel, conversationDuration, createdBy, csamReports } = contact;
 
       return {
         contactId,
@@ -222,6 +223,7 @@ function convertContactsToSearchResults(contacts) {
           channel,
           conversationDuration,
         },
+        csamReports,
         details: contact.rawJson,
       };
     })
@@ -242,6 +244,7 @@ const ContactController = Contact => {
   const getContacts = async (query, accountSid) => {
     const { queueName } = query;
     const queryObject = {
+      include: { association: 'csamReports' },
       order: [['timeOfContact', 'DESC']],
       limit: 10,
     };
@@ -273,6 +276,7 @@ const ContactController = Contact => {
 
   const getContactsById = async (contactIds, accountSid) => {
     const queryObject = {
+      include: { association: 'csamReports' },
       where: {
         [Op.and]: [
           accountSid && { accountSid },
@@ -288,6 +292,21 @@ const ContactController = Contact => {
     return Contact.findAll(queryObject);
   };
 
+  const getContact = async (id, accountSid) => {
+    const options = {
+      include: { association: 'csamReports' },
+      where: { [Op.and]: [{ id }, { accountSid }] },
+    };
+    const contact = await Contact.findOne(options);
+
+    if (!contact) {
+      const errorMessage = `Contact with id ${id} not found`;
+      throw createError(404, errorMessage);
+    }
+
+    return contact;
+  };
+
   /**
    *
    * @param {} body
@@ -298,7 +317,7 @@ const ContactController = Contact => {
     // if a contact has been already created with this taskId, just return it (idempotence on taskId). Should we use a different HTTP code status for this case?
     if (body.taskId) {
       const contact = await Contact.findOne({
-        include: { association: 'CSAMReports' },
+        include: { association: 'csamReports' },
         where: { taskId: body.taskId },
       });
       if (contact) return contact;
@@ -324,29 +343,11 @@ const ContactController = Contact => {
 
     // Link all of the csam reports related to this contact
     if (body.csamReports && body.csamReports.length) {
-      await Promise.all(
-        body.csamReports.map(r =>
-          CSAMReportController.connectToContact(contact.id, r.id, accountSid),
-        ),
-      );
+      const reportIds = body.csamReports.map(e => e.id).filter(Boolean);
+      await CSAMReportController.connectToContacts(contact.id, reportIds, accountSid);
     }
 
-    return contact;
-  };
-
-  const getContact = async (id, accountSid) => {
-    const options = {
-      include: { association: 'CSAMReports' },
-      where: { [Op.and]: [{ id }, { accountSid }] },
-    };
-    const contact = await Contact.findOne(options);
-
-    if (!contact) {
-      const errorMessage = `Contact with id ${id} not found`;
-      throw createError(404, errorMessage);
-    }
-
-    return contact;
+    return getContact(contact.id, accountSid);
   };
 
   const connectToCase = async (contactId, caseId, accountSid, workerSid) => {

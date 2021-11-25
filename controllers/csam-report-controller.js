@@ -51,24 +51,28 @@ const CSAMReportController = CSAMReport => {
   };
 
   /**
-   *
+   * Updates all the reports with id "in reportIds", linking them with the contact of id contactId
    * @param {number} contactId
-   * @param {number} reportId
+   * @param {number[]} reportIds
    * @param {string} accountSid
    */
-  const connectToContact = async (contactId, reportId, accountSid) => {
-    const report = await getCSAMReport(reportId, accountSid);
+  const connectToContacts = async (contactId, reportIds, accountSid) => {
+    const queryObject = {
+      where: {
+        [Op.and]: [accountSid && { accountSid }, { id: reportIds }],
+      },
+    };
 
-    const updatedReport = await report.update({ contactId });
+    const updatedReports = await CSAMReport.update({ contactId }, queryObject);
 
-    return updatedReport;
+    return updatedReports;
   };
 
   return {
     getCSAMReports,
     getCSAMReport,
     createCSAMReport,
-    connectToContact,
+    connectToContacts,
   };
 };
 
