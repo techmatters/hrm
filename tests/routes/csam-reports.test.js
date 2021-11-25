@@ -68,7 +68,6 @@ describe('/csamReports route', () => {
       const reportFromDB = await CSAMReportController.getCSAMReport(response.body.id, accountSid);
       expect(reportFromDB).toBeDefined();
       expect(reportFromDB.csamReportId).toEqual(csamReportId);
-      console.log('csamReport: ', reportFromDB);
     });
   });
 });

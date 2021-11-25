@@ -71,18 +71,21 @@ test('get a single CSAM report by id', async () => {
   expect(findOneSpy).toHaveBeenCalledWith(options);
 });
 
-test('connect Contact to CSAMReport', async () => {
+test('connect Contact to a list of CSAMReports', async () => {
   const contactId = 1;
-  const reportId = 99;
+  const reportId98 = 98;
+  const reportId99 = 99;
+  const reportIds = [reportId98, reportId99];
 
-  const csamReportFromDB = {
-    id: reportId,
-    update: jest.fn(),
+  const expectedQueryObject = {
+    where: {
+      [Op.and]: [accountSid && { accountSid }, { id: reportIds }],
+    },
   };
-  jest.spyOn(MockCSAMReport, 'findOne').mockImplementation(() => csamReportFromDB);
-  const updateSpy = jest.spyOn(csamReportFromDB, 'update');
 
-  await CSAMReportController.connectToContact(contactId, reportId, accountSid);
+  const updateSpy = jest.spyOn(MockCSAMReport, 'update').mockImplementation(() => {});
 
-  expect(updateSpy).toHaveBeenCalledWith({ contactId });
+  await CSAMReportController.connectToContacts(contactId, reportIds, accountSid);
+
+  expect(updateSpy).toHaveBeenCalledWith({ contactId }, expectedQueryObject);
 });

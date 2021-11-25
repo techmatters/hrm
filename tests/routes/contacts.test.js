@@ -30,7 +30,7 @@ const workerSid = 'worker-sid';
 const { Contact, Case, CaseAudit, CSAMReport } = models;
 const CSAMReportController = require('../../controllers/csam-report-controller')(CSAMReport);
 
-const caseAuditsQuery = {
+const query = {
   where: {
     twilioWorkerId: {
       [Sequelize.Op.in]: ['fake-worker-123', 'fake-worker-129', 'fake-worker-987', workerSid],
@@ -39,15 +39,16 @@ const caseAuditsQuery = {
 };
 
 beforeAll(async () => {
-  await Contact.destroy(caseAuditsQuery);
+  await Contact.destroy(query);
 });
 
 afterAll(async done => {
   server.close(done);
-  // await CSAMReport.destroy(caseAuditsQuery);
+  await Case.destroy(query);
+  await CSAMReport.destroy(query);
 });
 
-afterEach(async () => CaseAudit.destroy(caseAuditsQuery));
+afterEach(async () => CaseAudit.destroy(query));
 
 describe('/contacts route', () => {
   const route = `/v0/accounts/${accountSid}/contacts`;
@@ -73,6 +74,7 @@ describe('/contacts route', () => {
 
       responses.forEach((res, index) => {
         expect(res.status).toBe(200);
+        expect(res.body.rawJson.callType).toBe(contacts[index].form.callType);
         expect(res.body.rawJson.callType).toBe(contacts[index].form.callType);
       });
     });
@@ -100,13 +102,25 @@ describe('/contacts route', () => {
       expect(afterContacts.body).toHaveLength(beforeContacts.body.length);
     });
 
-    test('Connects to CSAM report', async () => {
+    test('Connects to CSAM reports', async () => {
       // Create CSAM Report
-      const csamReportId = 'csam-report-id';
-      const newReport = (
+      const csamReportId1 = 'csam-report-id-1';
+      const csamReportId2 = 'csam-report-id-2';
+
+      const newReport1 = (
         await CSAMReportController.createCSAMReport(
           {
-            csamReportId,
+            csamReportId: csamReportId1,
+            twilioWorkerId: workerSid,
+          },
+          accountSid,
+        )
+      ).dataValues;
+
+      const newReport2 = (
+        await CSAMReportController.createCSAMReport(
+          {
+            csamReportId: csamReportId2,
             twilioWorkerId: workerSid,
           },
           accountSid,
@@ -117,10 +131,18 @@ describe('/contacts route', () => {
       const response = await request
         .post(route)
         .set(headers)
-        .send({ ...contact1, csamReports: [newReport] });
+        .send({ ...contact1, csamReports: [newReport1, newReport2] });
 
-      const updatedReport = await CSAMReportController.getCSAMReport(newReport.id, accountSid);
-      expect(updatedReport.contactId).toEqual(response.body.id);
+      const updatedReport1 = await CSAMReportController.getCSAMReport(newReport1.id, accountSid);
+      expect(updatedReport1.contactId).toEqual(response.body.id);
+      expect(updatedReport1.csamReportId).toEqual(csamReportId1);
+
+      const updatedReport2 = await CSAMReportController.getCSAMReport(newReport2.id, accountSid);
+      expect(updatedReport2.contactId).toEqual(response.body.id);
+      expect(updatedReport2.csamReportId).toEqual(csamReportId2);
+
+      // Test the association
+      expect(response.body.csamReports).toHaveLength(2);
 
       // Remove this contact to not interfere with following tests
       await Contact.destroy({ where: { id: response.body.id } });
@@ -167,6 +189,10 @@ describe('/contacts route', () => {
           expect(c1.details).toStrictEqual(contact1.form);
           expect(c2.details).toStrictEqual(contact2.form);
           expect(count).toBe(2);
+
+          // Test the association
+          expect(c1.csamReports).toHaveLength(0);
+          expect(c2.csamReports).toHaveLength(0);
         });
       });
 
@@ -350,16 +376,19 @@ describe('/contacts route', () => {
 
         expect(response.status).toBe(200);
         expect(response.body.caseId).toBe(existingCaseId);
+
+        // Test the association
+        expect(response.body.csamReports).toHaveLength(0);
       });
 
       test('should create a CaseAudit', async () => {
-        const caseAuditPreviousCount = await CaseAudit.count(caseAuditsQuery);
+        const caseAuditPreviousCount = await CaseAudit.count(query);
         const response = await request
           .put(subRoute(existingContactId))
           .set(headers)
           .send({ caseId: existingCaseId });
 
-        const caseAudits = await CaseAudit.findAll(caseAuditsQuery);
+        const caseAudits = await CaseAudit.findAll(query);
         const lastCaseAudit = caseAudits.sort(byGreaterId)[0];
         const { previousValue, newValue } = lastCaseAudit;
 
@@ -375,7 +404,7 @@ describe('/contacts route', () => {
           .set(headers)
           .send({ caseId: existingCaseId });
 
-        const beforeCaseAuditCount = await CaseAudit.count(caseAuditsQuery);
+        const beforeCaseAuditCount = await CaseAudit.count(query);
 
         // repeat above operation (should do nothing)
         const response2 = await request
@@ -383,7 +412,7 @@ describe('/contacts route', () => {
           .set(headers)
           .send({ caseId: existingCaseId });
 
-        const afterCaseAuditCount = await CaseAudit.count(caseAuditsQuery);
+        const afterCaseAuditCount = await CaseAudit.count(query);
 
         // both should succeed
         expect(response1.status).toBe(200);
@@ -399,14 +428,14 @@ describe('/contacts route', () => {
           .set(headers)
           .send({ caseId: existingCaseId });
 
-        const caseAuditPreviousCount = await CaseAudit.count(caseAuditsQuery);
+        const caseAuditPreviousCount = await CaseAudit.count(query);
 
         const response = await request
           .put(subRoute(existingContactId))
           .set(headers)
           .send({ caseId: anotherExistingCaseId });
 
-        const caseAudits = await CaseAudit.findAll(caseAuditsQuery);
+        const caseAudits = await CaseAudit.findAll(query);
         const firstCaseAudit = caseAudits.sort(byGreaterId)[0];
         const secondCaseAudit = caseAudits.sort(byGreaterId)[1];
         const {
