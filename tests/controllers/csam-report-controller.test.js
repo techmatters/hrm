@@ -85,7 +85,7 @@ test('connect Contact to a list of CSAMReports', async () => {
 
   const updateSpy = jest.spyOn(MockCSAMReport, 'update').mockImplementation(() => {});
 
-  await CSAMReportController.connectToContacts(contactId, reportIds, accountSid);
+  await CSAMReportController.connectContactToReports(contactId, reportIds, accountSid);
 
   expect(updateSpy).toHaveBeenCalledWith({ contactId }, expectedQueryObject);
 });

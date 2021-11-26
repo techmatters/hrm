@@ -56,7 +56,7 @@ const CSAMReportController = CSAMReport => {
    * @param {number[]} reportIds
    * @param {string} accountSid
    */
-  const connectToContacts = async (contactId, reportIds, accountSid) => {
+  const connectContactToReports = async (contactId, reportIds, accountSid) => {
     const queryObject = {
       where: {
         [Op.and]: [accountSid && { accountSid }, { id: reportIds }],
@@ -72,7 +72,7 @@ const CSAMReportController = CSAMReport => {
     getCSAMReports,
     getCSAMReport,
     createCSAMReport,
-    connectToContacts,
+    connectContactToReports,
   };
 };
 

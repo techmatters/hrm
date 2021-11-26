@@ -344,7 +344,7 @@ const ContactController = Contact => {
     // Link all of the csam reports related to this contact
     if (body.csamReports && body.csamReports.length) {
       const reportIds = body.csamReports.map(e => e.id).filter(Boolean);
-      await CSAMReportController.connectToContacts(contact.id, reportIds, accountSid);
+      await CSAMReportController.connectContactToReports(contact.id, reportIds, accountSid);
     }
 
     return getContact(contact.id, accountSid);
