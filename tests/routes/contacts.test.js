@@ -64,6 +64,8 @@ describe('/contacts route', () => {
     });
 
     test('should return 200', async () => {
+      const updateSpy = jest.spyOn(CSAMReport, 'update');
+
       const contacts = [contact1, contact2, broken1, broken2, another1, another2, noHelpline];
       const requests = contacts.map(item =>
         request
@@ -78,6 +80,8 @@ describe('/contacts route', () => {
         expect(res.body.rawJson.callType).toBe(contacts[index].form.callType);
         expect(res.body.rawJson.callType).toBe(contacts[index].form.callType);
       });
+
+      expect(updateSpy).not.toHaveBeenCalled();
     });
 
     test('Idempotence on create contact', async () => {
@@ -104,6 +108,8 @@ describe('/contacts route', () => {
     });
 
     test('Connects to CSAM reports', async () => {
+      const updateSpy = jest.spyOn(CSAMReport, 'update');
+
       // Create CSAM Report
       const csamReportId1 = 'csam-report-id-1';
       const csamReportId2 = 'csam-report-id-2';
@@ -133,6 +139,8 @@ describe('/contacts route', () => {
         .post(route)
         .set(headers)
         .send({ ...contact1, csamReports: [newReport1, newReport2] });
+
+      expect(updateSpy).toHaveBeenCalled();
 
       const updatedReport1 = await CSAMReportController.getCSAMReport(newReport1.id, accountSid);
       expect(updatedReport1.contactId).toEqual(response.body.id);

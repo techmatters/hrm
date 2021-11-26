@@ -341,13 +341,14 @@ const ContactController = Contact => {
 
     const contact = await Contact.create(contactRecord);
 
-    // Link all of the csam reports related to this contact
+    // Link all of the csam reports related to this contact (if any) and return the record with associations
     if (body.csamReports && body.csamReports.length) {
       const reportIds = body.csamReports.map(e => e.id).filter(Boolean);
       await CSAMReportController.connectContactToReports(contact.id, reportIds, accountSid);
+      return getContact(contact.id, accountSid);
     }
 
-    return getContact(contact.id, accountSid);
+    return contact;
   };
 
   const connectToCase = async (contactId, caseId, accountSid, workerSid) => {
