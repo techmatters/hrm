@@ -28,7 +28,10 @@ test('create case', async () => {
 
   await CaseController.createCase(caseToBeCreated, accountSid, workerSid);
 
-  const options = { include: { association: 'connectedContacts' }, context: { workerSid } };
+  const options = {
+    include: { association: 'connectedContacts', include: { association: 'csamReports' } },
+    context: { workerSid },
+  };
   expect(createSpy).toHaveBeenCalledWith(caseToBeCreated, options);
 });
 
@@ -46,7 +49,7 @@ test('get existing case', async () => {
   const result = await CaseController.getCase(caseId, accountSid);
 
   const options = {
-    include: { association: 'connectedContacts' },
+    include: { association: 'connectedContacts', include: { association: 'csamReports' } },
     where: { [Op.and]: [{ id: caseId }, { accountSid }] },
   };
   expect(findOneSpy).toHaveBeenCalledWith(options);
@@ -78,6 +81,7 @@ describe('Test listCases query params', () => {
       include: {
         association: 'connectedContacts',
         required: true,
+        include: { association: 'csamReports' },
       },
     };
 
@@ -101,6 +105,7 @@ describe('Test listCases query params', () => {
       include: {
         association: 'connectedContacts',
         required: true,
+        include: { association: 'csamReports' },
       },
     };
 
@@ -124,6 +129,7 @@ describe('Test listCases query params', () => {
       include: {
         association: 'connectedContacts',
         required: true,
+        include: { association: 'csamReports' },
       },
     };
 
@@ -147,6 +153,7 @@ describe('Test listCases query params', () => {
       include: {
         association: 'connectedContacts',
         required: true,
+        include: { association: 'csamReports' },
       },
     };
 
@@ -170,6 +177,7 @@ describe('Test listCases query params', () => {
       include: {
         association: 'connectedContacts',
         required: true,
+        include: { association: 'csamReports' },
       },
     };
 
@@ -234,6 +242,7 @@ test('list cases (with 1st contact, no limit/offset)', async () => {
     include: {
       association: 'connectedContacts',
       required: true,
+      include: { association: 'csamReports' },
     },
   };
 
@@ -298,6 +307,7 @@ test('list cases (with 1st contact, with limit/offset)', async () => {
     include: {
       association: 'connectedContacts',
       required: true,
+      include: { association: 'csamReports' },
     },
   };
 
@@ -345,6 +355,7 @@ test('list cases (without contacts)', async () => {
     include: {
       association: 'connectedContacts',
       required: true,
+      include: { association: 'csamReports' },
     },
   };
 
@@ -366,6 +377,7 @@ test('list cases without helpline', async () => {
     include: {
       association: 'connectedContacts',
       required: true,
+      include: { association: 'csamReports' },
     },
   };
 
