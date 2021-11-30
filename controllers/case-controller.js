@@ -13,7 +13,10 @@ const searchCasesQuery = fs
 const CaseController = (Case, sequelize) => {
   const createCase = async (body, accountSid, workerSid) => {
     const options = {
-      include: { association: 'connectedContacts' },
+      include: {
+        association: 'connectedContacts',
+        include: { association: 'csamReports' },
+      },
       context: { workerSid },
     };
     const caseRecord = {
@@ -32,7 +35,10 @@ const CaseController = (Case, sequelize) => {
 
   const getCase = async (id, accountSid) => {
     const options = {
-      include: { association: 'connectedContacts' },
+      include: {
+        association: 'connectedContacts',
+        include: { association: 'csamReports' },
+      },
       where: { [Op.and]: [{ id }, { accountSid }] },
     };
     const caseFromDB = await Case.findOne(options);
@@ -53,7 +59,11 @@ const CaseController = (Case, sequelize) => {
       order: [['createdAt', 'DESC']],
       limit,
       offset,
-      include: { association: 'connectedContacts', required: true },
+      include: {
+        association: 'connectedContacts',
+        include: { association: 'csamReports' },
+        required: true,
+      },
     };
 
     queryObject.where = {
