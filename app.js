@@ -115,12 +115,9 @@ async function authorizationMiddleware(req, res, next) {
  * NOTE: If we ever move this project to Typescript: https://dev.to/kwabenberko/extend-express-s-request-object-with-typescript-declaration-merging-1nn5
  */
 const addAccountSid = (req, res, next) => {
-  console.log('accounts SID middleware');
   req.accountSid = req.params.accountSid;
   return next();
 };
-
-console.log('accounts SID middleware defined');
 
 app.use(
   '/v0/accounts/:accountSid',
@@ -129,8 +126,6 @@ app.use(
   setupPermissions,
   apiV0,
 );
-
-console.log('accounts SID middleware used');
 
 app.use((req, res, next) => {
   next(createError(404));
