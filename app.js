@@ -73,7 +73,7 @@ async function authorizationMiddleware(req, res, next) {
   }
 
   if (authorization.startsWith('Basic')) {
-    if (process.env.NODE_ENV === 'test') {
+    if (process.env.NODE_ENV === 'test' || process.env.HRM_PERMIT_BASIC_AUTHENTICATIO) {
       // for testing we use old api key (can't hit TokenValidator api with fake credentials as it results in The requested resource /Accounts/ACxxxxxxxxxx/Tokens/validate was not found)
       const base64Key = Buffer.from(authorization.replace('Basic ', ''), 'base64');
       const isTestSecretValid = crypto.timingSafeEqual(base64Key, Buffer.from(apiKey));
@@ -115,9 +115,12 @@ async function authorizationMiddleware(req, res, next) {
  * NOTE: If we ever move this project to Typescript: https://dev.to/kwabenberko/extend-express-s-request-object-with-typescript-declaration-merging-1nn5
  */
 const addAccountSid = (req, res, next) => {
+  console.log('accounts SID middleware');
   req.accountSid = req.params.accountSid;
   return next();
 };
+
+console.log('accounts SID middleware defined');
 
 app.use(
   '/v0/accounts/:accountSid',
@@ -126,6 +129,8 @@ app.use(
   setupPermissions,
   apiV0,
 );
+
+console.log('accounts SID middleware used');
 
 app.use((req, res, next) => {
   next(createError(404));

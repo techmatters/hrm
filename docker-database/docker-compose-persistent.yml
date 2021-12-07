@@ -1,0 +1,9 @@
+services:
+  db:
+    build: .
+    ports:
+      - "5432:5432"
+    volumes:
+      - hrm_postgres_volume:/var/lib/postgresql
+volumes:
+  hrm_postgres_volume: { }
