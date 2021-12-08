@@ -73,7 +73,7 @@ async function authorizationMiddleware(req, res, next) {
   }
 
   if (authorization.startsWith('Basic')) {
-    if (process.env.NODE_ENV === 'test' || process.env.HRM_PERMIT_BASIC_AUTHENTICATIO) {
+    if (process.env.NODE_ENV === 'test' || process.env.HRM_PERMIT_BASIC_AUTHENTICATION) {
       // for testing we use old api key (can't hit TokenValidator api with fake credentials as it results in The requested resource /Accounts/ACxxxxxxxxxx/Tokens/validate was not found)
       const base64Key = Buffer.from(authorization.replace('Basic ', ''), 'base64');
       const isTestSecretValid = crypto.timingSafeEqual(base64Key, Buffer.from(apiKey));
