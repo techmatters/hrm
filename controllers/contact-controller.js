@@ -9,6 +9,10 @@ const {
   isEmptySearchParams,
   orUndefined,
 } = require('./helpers');
+const models = require('../models');
+
+const { CSAMReport } = models;
+const CSAMReportController = require('../controllers/csam-report-controller')(CSAMReport);
 
 const { Op } = Sequelize;
 
@@ -131,6 +135,7 @@ function buildSearchQueryObject(body, query, accountSid) {
   const compareDateTo = orUndefined(dateTo);
 
   return {
+    include: { association: 'csamReports' },
     where: {
       [Op.and]: [
         helpline && { helpline },
@@ -202,7 +207,7 @@ function convertContactsToSearchResults(contacts) {
       const categories = retrieveCategories(caseInformation.categories);
       const counselor = contact.twilioWorkerId;
       const notes = contact.rawJson.caseInformation.callSummary;
-      const { channel, conversationDuration, createdBy } = contact;
+      const { channel, conversationDuration, createdBy, csamReports } = contact;
 
       return {
         contactId,
@@ -218,6 +223,7 @@ function convertContactsToSearchResults(contacts) {
           channel,
           conversationDuration,
         },
+        csamReports,
         details: contact.rawJson,
       };
     })
@@ -238,6 +244,7 @@ const ContactController = Contact => {
   const getContacts = async (query, accountSid) => {
     const { queueName } = query;
     const queryObject = {
+      include: { association: 'csamReports' },
       order: [['timeOfContact', 'DESC']],
       limit: 10,
     };
@@ -269,6 +276,7 @@ const ContactController = Contact => {
 
   const getContactsById = async (contactIds, accountSid) => {
     const queryObject = {
+      include: { association: 'csamReports' },
       where: {
         [Op.and]: [
           accountSid && { accountSid },
@@ -284,10 +292,34 @@ const ContactController = Contact => {
     return Contact.findAll(queryObject);
   };
 
+  const getContact = async (id, accountSid) => {
+    const options = {
+      include: { association: 'csamReports' },
+      where: { [Op.and]: [{ id }, { accountSid }] },
+    };
+    const contact = await Contact.findOne(options);
+
+    if (!contact) {
+      const errorMessage = `Contact with id ${id} not found`;
+      throw createError(404, errorMessage);
+    }
+
+    return contact;
+  };
+
+  /**
+   *
+   * @param {} body
+   * @param {string} accountSid
+   * @param {string} workerSid
+   */
   const createContact = async (body, accountSid, workerSid) => {
     // if a contact has been already created with this taskId, just return it (idempotence on taskId). Should we use a different HTTP code status for this case?
     if (body.taskId) {
-      const contact = await Contact.findOne({ where: { taskId: body.taskId } });
+      const contact = await Contact.findOne({
+        include: { association: 'csamReports' },
+        where: { taskId: body.taskId },
+      });
       if (contact) return contact;
     }
 
@@ -308,16 +340,12 @@ const ContactController = Contact => {
     };
 
     const contact = await Contact.create(contactRecord);
-    return contact;
-  };
 
-  const getContact = async (id, accountSid) => {
-    const options = { where: { [Op.and]: [{ id }, { accountSid }] } };
-    const contact = await Contact.findOne(options);
-
-    if (!contact) {
-      const errorMessage = `Contact with id ${id} not found`;
-      throw createError(404, errorMessage);
+    // Link all of the csam reports related to this contact (if any) and return the record with associations
+    if (body.csamReports && body.csamReports.length) {
+      const reportIds = body.csamReports.map(e => e.id).filter(Boolean);
+      await CSAMReportController.connectContactToReports(contact.id, reportIds, accountSid);
+      return getContact(contact.id, accountSid);
     }
 
     return contact;

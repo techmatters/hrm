@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 11.12 (Ubuntu 11.12-1.pgdg18.04+1)
--- Dumped by pg_dump version 11.12 (Ubuntu 11.12-1.pgdg18.04+1)
+-- Dumped from database version 11.13 (Ubuntu 11.13-1.pgdg20.04+1)
+-- Dumped by pg_dump version 11.13 (Ubuntu 11.13-1.pgdg20.04+1)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -19,6 +19,45 @@ SET row_security = off;
 SET default_tablespace = '';
 
 SET default_with_oids = false;
+
+--
+-- Name: CSAMReports; Type: TABLE; Schema: public; Owner: hrm
+--
+
+CREATE TABLE public."CSAMReports" (
+    id integer NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "accountSid" character varying(255),
+    "twilioWorkerId" character varying(255),
+    "csamReportId" character varying(255),
+    "contactId" integer
+);
+
+
+ALTER TABLE public."CSAMReports" OWNER TO hrm;
+
+--
+-- Name: CSAMReports_id_seq; Type: SEQUENCE; Schema: public; Owner: hrm
+--
+
+CREATE SEQUENCE public."CSAMReports_id_seq"
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public."CSAMReports_id_seq" OWNER TO hrm;
+
+--
+-- Name: CSAMReports_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: hrm
+--
+
+ALTER SEQUENCE public."CSAMReports_id_seq" OWNED BY public."CSAMReports".id;
+
 
 --
 -- Name: CaseAudits; Type: TABLE; Schema: public; Owner: hrm
@@ -202,6 +241,13 @@ CREATE TABLE public."SequelizeMeta" (
 ALTER TABLE public."SequelizeMeta" OWNER TO hrm;
 
 --
+-- Name: CSAMReports id; Type: DEFAULT; Schema: public; Owner: hrm
+--
+
+ALTER TABLE ONLY public."CSAMReports" ALTER COLUMN id SET DEFAULT nextval('public."CSAMReports_id_seq"'::regclass);
+
+
+--
 -- Name: CaseAudits id; Type: DEFAULT; Schema: public; Owner: hrm
 --
 
@@ -228,33 +274,70 @@ ALTER TABLE ONLY public."Contacts" ALTER COLUMN id SET DEFAULT nextval('public."
 
 ALTER TABLE ONLY public."PostSurveys" ALTER COLUMN id SET DEFAULT nextval('public."PostSurveys_id_seq"'::regclass);
 
+--
+-- Data for Name: SequelizeMeta; Type: TABLE DATA; Schema: public; Owner: hrm
+--
+
+COPY public."SequelizeMeta" (name) FROM stdin;
+20200304175210-contact-add-columns.js
+20200310140432-contact-add-conversationDuration.js
+20200427210632-create-case.js
+20200428160048-case-has-many-contacts.js
+20200506172048-remove-agebracket-subcategory-timestamp-reservationid.js
+20200507212012-create-case-audit.js
+20200507212342-case-add-column-workerid.js
+20200707174416-contact-remove-taskId.js
+20201111150719-all-add-accountSid.js
+20201124131224-timeOfContact.js
+20210118174350-add-taskId.js
+20210312163330-add-createdBy.js
+20210630164641-add-channelsid-servicesid.js
+20210826214305-create-postSurvey.js
+20211122172057-create-CSAMReport.js
+\.
+
+
+--
+-- Name: CSAMReports_id_seq; Type: SEQUENCE SET; Schema: public; Owner: hrm
+--
+
+SELECT pg_catalog.setval('public."CSAMReports_id_seq"', 2, true);
+
 
 --
 -- Name: CaseAudits_id_seq; Type: SEQUENCE SET; Schema: public; Owner: hrm
 --
 
-SELECT pg_catalog.setval('public."CaseAudits_id_seq"', 2011, true);
+SELECT pg_catalog.setval('public."CaseAudits_id_seq"', 1, false);
 
 
 --
 -- Name: Cases_id_seq; Type: SEQUENCE SET; Schema: public; Owner: hrm
 --
 
-SELECT pg_catalog.setval('public."Cases_id_seq"', 1772, true);
+SELECT pg_catalog.setval('public."Cases_id_seq"', 1, false);
 
 
 --
 -- Name: Contacts_id_seq; Type: SEQUENCE SET; Schema: public; Owner: hrm
 --
 
-SELECT pg_catalog.setval('public."Contacts_id_seq"', 3808, true);
+SELECT pg_catalog.setval('public."Contacts_id_seq"', 625, true);
 
 
 --
 -- Name: PostSurveys_id_seq; Type: SEQUENCE SET; Schema: public; Owner: hrm
 --
 
-SELECT pg_catalog.setval('public."PostSurveys_id_seq"', 16, true);
+SELECT pg_catalog.setval('public."PostSurveys_id_seq"', 1, false);
+
+
+--
+-- Name: CSAMReports CSAMReports_pkey; Type: CONSTRAINT; Schema: public; Owner: hrm
+--
+
+ALTER TABLE ONLY public."CSAMReports"
+    ADD CONSTRAINT "CSAMReports_pkey" PRIMARY KEY (id);
 
 
 --
@@ -298,6 +381,14 @@ ALTER TABLE ONLY public."SequelizeMeta"
 
 
 --
+-- Name: CSAMReports CSAMReports_contactId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: hrm
+--
+
+ALTER TABLE ONLY public."CSAMReports"
+    ADD CONSTRAINT "CSAMReports_contactId_fkey" FOREIGN KEY ("contactId") REFERENCES public."Contacts"(id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+
+--
 -- Name: CaseAudits CaseAudits_caseId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: hrm
 --
 
@@ -311,6 +402,13 @@ ALTER TABLE ONLY public."CaseAudits"
 
 ALTER TABLE ONLY public."Contacts"
     ADD CONSTRAINT "Contacts_caseId_fkey" FOREIGN KEY ("caseId") REFERENCES public."Cases"(id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+
+--
+-- Name: SCHEMA public; Type: ACL; Schema: -; Owner: postgres
+--
+
+GRANT ALL ON SCHEMA public TO hrm;
 
 
 --

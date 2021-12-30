@@ -89,6 +89,7 @@ test('Convert contacts to searchResults', async () => {
           ...jillSmith.rawJson,
           number: '+12025550142',
         },
+        csamReports: [],
       },
       {
         contactId: 'sarah-id',
@@ -105,6 +106,7 @@ test('Convert contacts to searchResults', async () => {
           conversationDuration: null,
         },
         details: sarahPark.rawJson,
+        csamReports: [],
       },
     ],
   };
@@ -354,6 +356,7 @@ test('Call findAndCountAll(queryObject) with given params', async () => {
   await ContactController.searchContacts(body, undefined, accountSid);
 
   const expectedQueryObject = {
+    include: { association: 'csamReports' },
     where: {
       [Op.and]: [
         {
@@ -412,6 +415,7 @@ test('Call findAndCountAll(queryObject) without name search', async () => {
   await ContactController.searchContacts(body, undefined, accountSid);
 
   const expectedQueryObject = {
+    include: { association: 'csamReports' },
     where: {
       [Op.and]: [
         {

@@ -25,7 +25,10 @@ SELECT * FROM (
   LEFT JOIN LATERAL json_array_elements(perpetrators::JSON) p ON TRUE
   -- Join contacts on contacts.caseId column
   LEFT JOIN LATERAL (
-    SELECT * FROM "Contacts" c WHERE c."caseId" = "cases".id
+    SELECT c.*,
+    COALESCE(json_agg(DISTINCT r.*) FILTER (WHERE r.id IS NOT NULL), '[]') AS "csamReports"
+    FROM "Contacts" c LEFT JOIN "CSAMReports" r ON c."id" = r."contactId" WHERE c."caseId" = "cases".id
+    GROUP BY c.id
     ) contacts ON true
   WHERE
     (info IS NULL OR jsonb_typeof(info) = 'object')
