@@ -25,8 +25,7 @@ allow(
   User,
   Actions.ADD_NOTE,
   Case,
-  (user, caseObj) =>
-    true,
+  (user, caseObj) => true,
 );
 
 allow(User, Actions.EDIT_NOTE, Case, user => isSupervisor(user));
@@ -35,8 +34,7 @@ allow(
   User,
   Actions.ADD_REFERRAL,
   Case,
-  (user, caseObj) =>
-    true,
+  (user, caseObj) => true,
 );
 
 allow(
@@ -51,8 +49,7 @@ allow(
   User,
   Actions.ADD_HOUSEHOLD,
   Case,
-  (user, caseObj) =>
-    true,
+  (user, caseObj) => true,
 );
 
 allow(
@@ -67,8 +64,7 @@ allow(
   User,
   Actions.ADD_PERPETRATOR,
   Case,
-  (user, caseObj) =>
-    true,
+  (user, caseObj) => true,
 );
 
 allow(
@@ -83,8 +79,7 @@ allow(
   User,
   Actions.ADD_INCIDENT,
   Case,
-  (user, caseObj) =>
-    true,
+  (user, caseObj) => true,
 );
 
 allow(
@@ -99,8 +94,7 @@ allow(
   User,
   Actions.ADD_DOCUMENT,
   Case,
-  (user, caseObj) =>
-    true,
+  (user, caseObj) => true,
 );
 
 allow(
