@@ -26,7 +26,7 @@ allow(
   Actions.ADD_NOTE,
   Case,
   (user, caseObj) =>
-    isSupervisor(user) || (isCaseOpen(caseObj) && isCounselorWhoCreated(user, caseObj)),
+    true,
 );
 
 allow(User, Actions.EDIT_NOTE, Case, user => isSupervisor(user));
@@ -36,7 +36,7 @@ allow(
   Actions.ADD_REFERRAL,
   Case,
   (user, caseObj) =>
-    isSupervisor(user) || (isCaseOpen(caseObj) && isCounselorWhoCreated(user, caseObj)),
+    true,
 );
 
 allow(
@@ -52,7 +52,7 @@ allow(
   Actions.ADD_HOUSEHOLD,
   Case,
   (user, caseObj) =>
-    isSupervisor(user) || (isCaseOpen(caseObj) && isCounselorWhoCreated(user, caseObj)),
+    true,
 );
 
 allow(
@@ -68,7 +68,7 @@ allow(
   Actions.ADD_PERPETRATOR,
   Case,
   (user, caseObj) =>
-    isSupervisor(user) || (isCaseOpen(caseObj) && isCounselorWhoCreated(user, caseObj)),
+    true,
 );
 
 allow(
@@ -84,7 +84,7 @@ allow(
   Actions.ADD_INCIDENT,
   Case,
   (user, caseObj) =>
-    isSupervisor(user) || (isCaseOpen(caseObj) && isCounselorWhoCreated(user, caseObj)),
+    true,
 );
 
 allow(
@@ -100,7 +100,7 @@ allow(
   Actions.ADD_DOCUMENT,
   Case,
   (user, caseObj) =>
-    isSupervisor(user) || (isCaseOpen(caseObj) && isCounselorWhoCreated(user, caseObj)),
+    true,
 );
 
 allow(
