@@ -6,6 +6,7 @@ const { applyPermissions: applyEtPermissions } = require('./rules/et');
 const { applyPermissions: applyMwPermissions } = require('./rules/mw');
 const { applyPermissions: applyBrPermissions } = require('./rules/br');
 const { applyPermissions: applyInPermissions } = require('./rules/in');
+const { applyPermissions: applyJmPermissions } = require('./rules/jm');
 const { applyPermissions: applyOpenPermissions } = require('./rules/open');
 const { canEditCase, canViewPostSurvey } = require('./middlewares');
 
@@ -16,6 +17,7 @@ const applyPermissions = {
   mw: applyMwPermissions,
   br: applyBrPermissions,
   in: applyInPermissions,
+  jm: applyJmPermissions,
 };
 
 const setupPermissions = (req, res, next) => {
