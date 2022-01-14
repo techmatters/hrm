@@ -5,6 +5,7 @@
   "scripts": {
     "start": "sequelize db:migrate && node ./bin/www",
     "test": "RUNNING_TESTS=true jest --passWithNoTests --forceExit",
+    "db:auto-generate-migration": "node ./liquibase/scripts/autoGenerateMigrationSql.js",
     "db:create-migration": "sequelize migration:generate --name ",
     "db:undo-last": "sequelize db:migrate:undo",
     "lint": "eslint --ext js .",
@@ -53,6 +54,7 @@
     "prettier": "^1.19.1",
     "sequelize-mock": "^0.10.2",
     "supertest": "^4.0.2",
-    "util": "^0.12.2"
+    "util": "^0.12.2",
+    "yargs": "^17.3.1"
   }
 }
