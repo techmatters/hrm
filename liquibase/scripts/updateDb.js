@@ -1,5 +1,6 @@
 const util = require('util');
 const exec = util.promisify(require('child_process').exec);
+/* eslint-disable-next-line import/no-extraneous-dependencies */
 const yargs = require('yargs');
 
 async function main() {

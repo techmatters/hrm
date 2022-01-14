@@ -1,6 +1,7 @@
 const util = require('util');
 const exec = util.promisify(require('child_process').execSync);
 const fs = require('fs');
+/* eslint-disable-next-line import/no-extraneous-dependencies */
 const yargs = require('yargs');
 
 async function main() {
@@ -20,7 +21,9 @@ async function main() {
     ? '/liquibase/changelog/liquibase.for-docker-db.properties'
     : '/liquibase/changelog/liquibase.properties';
   await exec(
-    `docker run --rm -v ${process.cwd()}/liquibase:/liquibase/changelog --network docker-database_default liquibase/liquibase  --log-level debug --defaults-file ${propertiesFile} --url offline:postgresql?snapshot=changelog/current-snapshot.json --reference-url jdbc:postgresql://${args.docker ? 'db' : 'localhost'}:5432/hrmdb diff-changelog`,
+    `docker run --rm -v ${process.cwd()}/liquibase:/liquibase/changelog --network docker-database_default liquibase/liquibase  --log-level debug --defaults-file ${propertiesFile} --url offline:postgresql?snapshot=changelog/current-snapshot.json --reference-url jdbc:postgresql://${
+      args.docker ? 'db' : 'localhost'
+    }:5432/hrmdb diff-changelog`,
   );
   const timestamp = new Date();
   fs.copyFileSync(
