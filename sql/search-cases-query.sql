@@ -15,18 +15,18 @@ SELECT * FROM (
     (count(*) OVER())::INTEGER AS "totalCount",
     cases.*,
     -- build "connectedContacts": an aggregate contacts as an array of json objects
-    COALESCE(json_agg(DISTINCT contacts.*) FILTER (WHERE contacts.id IS NOT NULL), '[]') AS "connectedContacts"
+    COALESCE(jsonb_agg(DISTINCT contacts.*) FILTER (WHERE contacts.id IS NOT NULL), '[]') AS "connectedContacts"
   FROM
     "Cases" cases,
     -- Transform "info" column as a table with columns "households" and "perpetrators"
     jsonb_to_record(info) AS info_as_table(households jsonb, perpetrators jsonb)
   -- Extract every household/perpetrator as a record and apply a join
-  LEFT JOIN LATERAL json_array_elements(households::JSON) h ON TRUE
-  LEFT JOIN LATERAL json_array_elements(perpetrators::JSON) p ON TRUE
+  LEFT JOIN LATERAL jsonb_array_elements(households::JSONB) h ON TRUE
+  LEFT JOIN LATERAL jsonb_array_elements(perpetrators::JSONB) p ON TRUE
   -- Join contacts on contacts.caseId column
   LEFT JOIN LATERAL (
     SELECT c.*,
-    COALESCE(json_agg(DISTINCT r.*) FILTER (WHERE r.id IS NOT NULL), '[]') AS "csamReports"
+    COALESCE(jsonb_agg(DISTINCT r.*) FILTER (WHERE r.id IS NOT NULL), '[]') AS "csamReports"
     FROM "Contacts" c LEFT JOIN "CSAMReports" r ON c."id" = r."contactId" WHERE c."caseId" = "cases".id
     GROUP BY c.id
     ) contacts ON true
@@ -39,9 +39,7 @@ SELECT * FROM (
       )
       END
     AND
-      CASE WHEN :accountSid IS NULL THEN TRUE
-      ELSE cases."accountSid" = :accountSid
-      END
+      :accountSid IS NOT NULL AND cases."accountSid" = :accountSid
     AND
       CASE WHEN :counselor IS NULL THEN TRUE
       ELSE cases."twilioWorkerId" = :counselor
@@ -141,7 +139,7 @@ SELECT * FROM (
     -- search on closedCases and orphaned cases (without connected contacts)
     CASE WHEN :closedCases::BOOLEAN = FALSE THEN (
       cases.status <> 'closed'
-      AND json_array_length(COALESCE(json_agg(DISTINCT contacts.*) FILTER (WHERE contacts.id IS NOT NULL), '[]')) > 0
+      AND jsonb_array_length(COALESCE(jsonb_agg(DISTINCT contacts.*) FILTER (WHERE contacts.id IS NOT NULL), '[]')) > 0
     )
     ELSE TRUE
     END
