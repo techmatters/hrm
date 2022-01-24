@@ -39,9 +39,7 @@ SELECT * FROM (
       )
       END
     AND
-      CASE WHEN :accountSid IS NULL THEN TRUE
-      ELSE cases."accountSid" = :accountSid
-      END
+      :accountSid IS NOT NULL cases."accountSid" = :accountSid
     AND
       CASE WHEN :counselor IS NULL THEN TRUE
       ELSE cases."twilioWorkerId" = :counselor
