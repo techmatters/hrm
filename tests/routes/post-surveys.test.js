@@ -28,9 +28,14 @@ beforeAll(async () => {
   await PostSurvey.destroy(postSurveys2DestroyQuery);
 });
 
-afterAll(async done => {
-  server.close(done);
-  await PostSurvey.destroy(postSurveys2DestroyQuery);
+afterAll(done => {
+  server.close(() => {
+    console.log('post survey server closed.');
+    PostSurvey.destroy(postSurveys2DestroyQuery).then(() => {
+      console.log('post survey cleaned up.');
+      done();
+    });
+  });
 });
 
 // afterEach(async () => PostSurvey.destroy(postSurveys2DestroyQuery));

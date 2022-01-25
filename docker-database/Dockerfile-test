@@ -1,0 +1,5 @@
+FROM library/postgres:11.14
+ENV POSTGRES_USER=hrm
+ENV POSTGRES_HOST_AUTH_METHOD=trust
+ENV POSTGRES_DB=hrmdb
+ADD tests/db-init/dump.sql /docker-entrypoint-initdb.d/

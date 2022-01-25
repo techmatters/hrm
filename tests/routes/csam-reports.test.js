@@ -33,9 +33,13 @@ beforeAll(async () => {
   await CSAMReport.destroy(csamReports2DestroyQuery);
 });
 
-afterAll(async done => {
-  server.close(done);
-  await CSAMReport.destroy(csamReports2DestroyQuery);
+afterAll(done => {
+  server.close(() => {
+    CSAMReport.destroy(csamReports2DestroyQuery).then(() => {
+      console.log('csam reports test cleaned up.');
+      done();
+    });
+  });
 });
 
 describe('/csamReports route', () => {

@@ -42,11 +42,15 @@ beforeAll(async () => {
   await Contact.destroy(query);
 });
 
-afterAll(async done => {
-  server.close(done);
-  await Case.destroy(query);
-  await CSAMReport.destroy(query);
-  await Contact.destroy(query);
+afterAll(done => {
+  server.close(() => {
+    Case.destroy(query).then(() => {
+      CSAMReport.destroy(query).then(() => {
+        Contact.destroy(query).then(() => done());
+      });
+    });
+  });
+  console.log('Deleted data in contacts.test');
 });
 
 afterEach(async () => CaseAudit.destroy(query));
@@ -67,19 +71,18 @@ describe('/contacts route', () => {
       const updateSpy = jest.spyOn(CSAMReport, 'update');
 
       const contacts = [contact1, contact2, broken1, broken2, another1, another2, noHelpline];
-      const requests = contacts.map(item =>
-        request
+      // These need to be run in series to guarantee the ordering for later tests
+      // eslint-disable-next-line no-restricted-syntax
+      for (const contact of contacts) {
+        // eslint-disable-next-line no-await-in-loop
+        const res = await request
           .post(route)
           .set(headers)
-          .send(item),
-      );
-      const responses = await Promise.all(requests);
-
-      responses.forEach((res, index) => {
+          .send(contact);
         expect(res.status).toBe(200);
-        expect(res.body.rawJson.callType).toBe(contacts[index].form.callType);
-        expect(res.body.rawJson.callType).toBe(contacts[index].form.callType);
-      });
+        expect(res.body.rawJson.callType).toBe(contact.form.callType);
+        expect(res.body.rawJson.callType).toBe(contact.form.callType);
+      }
 
       expect(updateSpy).not.toHaveBeenCalled();
     });
