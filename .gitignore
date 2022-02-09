@@ -69,3 +69,6 @@ typings/
 # Visual Studio workspace
 *.code-workspace
 .vscode
+
+# TSC output
+dist/
