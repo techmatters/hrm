@@ -1,3 +1,4 @@
+import * as casesDb from '../../db/case';
 const models = require('../../models');
 const { SafeRouter, publicEndpoint, canEditCase } = require('../../permissions');
 
@@ -6,18 +7,21 @@ const ContactController = require('../../controllers/contact-controller')(Contac
 const CaseController = require('../../controllers/case-controller')(Case, sequelize);
 const CaseAuditController = require('../../controllers/case-audit-controller')(CaseAudit);
 
+
 const casesRouter = SafeRouter();
 
 casesRouter.get('/', publicEndpoint, async (req, res) => {
   const { accountSid } = req;
-  const cases = await CaseController.listCases(req.query, accountSid);
+  const cases = await casesDb.list(req.query, accountSid);
   res.json(cases);
 });
 
 casesRouter.post('/', publicEndpoint, async (req, res) => {
   const { accountSid, user } = req;
 
-  const createdCase = await CaseController.createCase(req.body, accountSid, user.workerSid);
+  //const createdCase = await CaseController.createCase(req.body, accountSid, user.workerSid);
+  const createdCase = await casesDb.create(req.body, accountSid, user.workerSid);
+
   res.json(createdCase);
 });
 

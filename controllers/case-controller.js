@@ -7,7 +7,7 @@ const { retrieveCategories, getPaginationElements, isEmptySearchParams } = requi
 const { Op } = Sequelize;
 
 const searchCasesQuery = fs
-  .readFileSync(path.join(__dirname, '../../sql/search-cases-query.sql'))
+  .readFileSync(path.join(__dirname, '../sql/search-cases-query.sql'))
   .toString();
 
 const CaseController = (Case, sequelize) => {
