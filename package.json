@@ -4,7 +4,7 @@
   "description": "",
   "scripts": {
     "start": "sequelize db:migrate && node ./bin/www",
-    "test": "RUNNING_TESTS=true jest --passWithNoTests --forceExit",
+    "test": "RUNNING_TESTS=true jest --passWithNoTests --forceExit --maxWorkers=1",
     "db:create-migration": "sequelize migration:generate --name ",
     "db:undo-last": "sequelize db:migrate:undo",
     "lint": "eslint --ext js .",
