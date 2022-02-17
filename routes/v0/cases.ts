@@ -12,7 +12,7 @@ const casesRouter = SafeRouter();
 
 casesRouter.get('/', publicEndpoint, async (req, res) => {
   const { accountSid } = req;
-  const cases = await casesDb.list(req.query, accountSid);
+  const cases = await CaseController.listCases(req.query, accountSid);
   res.json(cases);
 });
 

@@ -4,10 +4,29 @@
  * Module dependencies.
  */
 console.log(`${new Date(Date.now()).toLocaleString()}: trying to initialize www`);
-const app = require('../app');
 const debug = require('debug')('hrm:server');
 const http = require('http');
+const app = require('../app');
 
+/**
+ * Normalize a port into a number, string, or false.
+ */
+
+function normalizePort(val) {
+  const port = parseInt(val, 10);
+
+  if (Number.isNaN(port)) {
+    // named pipe
+    return val;
+  }
+
+  if (port >= 0) {
+    // port number
+    return port;
+  }
+
+  return false;
+}
 /**
  * Get port from environment and store in Express.
  */
@@ -21,34 +40,6 @@ console.log(`${new Date(Date.now()).toLocaleString()}: trying to create server`)
 
 const server = http.createServer(app);
 console.log(`${new Date(Date.now()).toLocaleString()}: created server, about to listen`);
-/**
- * Listen on provided port, on all network interfaces.
- */
-
-server.listen(port);
-server.on('error', onError);
-server.on('listening', onListening);
-console.log(`${new Date(Date.now()).toLocaleString()}: listening or not`);
-
-/**
- * Normalize a port into a number, string, or false.
- */
-
-function normalizePort(val) {
-  const port = parseInt(val, 10);
-
-  if (isNaN(port)) {
-    // named pipe
-    return val;
-  }
-
-  if (port >= 0) {
-    // port number
-    return port;
-  }
-
-  return false;
-}
 
 /**
  * Event listener for HTTP server "error" event.
@@ -86,3 +77,12 @@ function onListening() {
   debug(`Listening on ${bind}`);
   console.log(`Log listening on ${bind}`);
 }
+
+/**
+ * Listen on provided port, on all network interfaces.
+ */
+
+server.listen(port);
+server.on('error', onError);
+server.on('listening', onListening);
+console.log(`${new Date(Date.now()).toLocaleString()}: listening or not`);

@@ -45,7 +45,7 @@ afterEach(async () => CaseAudit.destroy(caseAuditsQuery));
 describe('/cases route', () => {
   const route = `/v0/accounts/${accountSid}/cases`;
 
-  describe('GET', () => {
+  describe.only('GET', () => {
     test('should return 401', async () => {
       const response = await request.get(route);
 
@@ -57,6 +57,24 @@ describe('/cases route', () => {
 
       expect(response.status).toBe(200);
       expect(response.body).toStrictEqual({ cases: [], count: 0 });
+    });
+    describe('With data', () => {
+      let createdCase;
+
+      beforeEach(async () => {
+        createdCase = await Case.create(case1, options);
+      });
+
+      afterEach(async () => {
+        await createdCase.destroy();
+      });
+
+      test('should return 200 when populated', async () => {
+        const response = await request.get(route).set(headers);
+
+        expect(response.status).toBe(200);
+        expect(response.body).toStrictEqual({ cases: [createdCase], count: 1 });
+      });
     });
   });
 

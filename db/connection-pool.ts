@@ -1,7 +1,11 @@
-import { createPool } from 'slonik'
+import pgPromise from 'pg-promise';
 import configSet from '../config/config'
 
-const config = configSet.development
-const pool = createPool(`postgres://${config.username}:${config.password}@${config.host}:${config.port}/${config.database}`);
+const pgp = pgPromise({
 
-export default pool;
+})
+
+const config = configSet.development
+const db = pgp(`postgres://${config.username}:${config.password}@${config.host}:${config.port}/${config.database}`);
+
+export default db;
