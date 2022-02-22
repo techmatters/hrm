@@ -39,7 +39,7 @@ const CaseController = (Case, sequelize) => {
         association: 'connectedContacts',
         include: { association: 'csamReports' },
       },
-      where: { [Op.and]: [{ id }, { accountSid }] },
+      where: { [Op.and]: [{ id: id || null }, { accountSid }] },
     };
     const caseFromDB = await Case.findOne(options);
 
