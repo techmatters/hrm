@@ -338,7 +338,7 @@ describe('/cases route', () => {
     },
   });
 
-  describe.skip('/cases/search route', () => {
+  describe('/cases/search route', () => {
     describe('POST', () => {
       let createdCase1;
       let createdCase2;

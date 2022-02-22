@@ -29,7 +29,10 @@ export class CaseRecord {
 
 export type Case = CaseRecord & {
   connectedContacts?: Contact[]
+  childName?: string
+  categories: Record<string, string[]>
 }
+type CaseWithCount = Case & {totalCount: number}
 
 type CaseAuditRecord = {
   previousValue?: any,
@@ -47,6 +50,13 @@ const SELECT_CONTACTS =
 COALESCE(jsonb_agg(DISTINCT r.*) FILTER (WHERE r.id IS NOT NULL), '[]') AS "csamReports"
 FROM "Contacts" c LEFT JOIN "CSAMReports" r ON c."id" = r."contactId" WHERE c."caseId" = "cases".id
 GROUP BY c.id`;
+
+const SEARCH_FROM_EXTRAS = `    
+  -- Transform "info" column as a table with columns "households" and "perpetrators"
+  CROSS JOIN jsonb_to_record(info) AS info_as_table(households jsonb, perpetrators jsonb)
+  -- Extract every household/perpetrator as a record and apply a join
+  LEFT JOIN LATERAL jsonb_array_elements(households::JSONB) h ON TRUE
+  LEFT JOIN LATERAL jsonb_array_elements(perpetrators::JSONB) p ON TRUE`
 
 const LIST_WHERE_CLAUSE =  `WHERE "cases"."accountSid" = $<accountSid> AND (cast($<helpline> as text) IS NULL OR "cases"."helpline" = $<helpline>)`
 
@@ -165,15 +175,17 @@ const SEARCH_HAVING_CLAUSE = `
     ELSE TRUE
     END`
 
-const selectCasesUnorderedSql = (whereClause: string, havingClause: string = '') =>
+const selectCasesUnorderedSql = (whereClause: string, extraFromClause: string = '', havingClause: string = '') =>
   `SELECT DISTINCT ON (cases.id)
     (count(*) OVER())::INTEGER AS "totalCount",
     cases.*,
     COALESCE(jsonb_agg(DISTINCT contacts.*) FILTER (WHERE contacts.id IS NOT NULL), '[]') AS "connectedContacts"
-FROM "Cases" cases LEFT JOIN LATERAL (${SELECT_CONTACTS}) contacts ON true ${whereClause} GROUP BY "cases"."id" ${havingClause}`;
+    FROM "Cases" cases 
+    ${extraFromClause}
+    LEFT JOIN LATERAL (${SELECT_CONTACTS}) contacts ON true ${whereClause} GROUP BY "cases"."id" ${havingClause}`;
 
-const selectCasesPaginatedSql = (whereClause: string, havingClause: string = '') => `
-SELECT * FROM (${selectCasesUnorderedSql(whereClause, havingClause)}) "unordered" ORDER BY "createdAt" DESC
+const selectCasesPaginatedSql = (whereClause: string, extraFromClause: string = '', havingClause: string = '') => `
+SELECT * FROM (${selectCasesUnorderedSql(whereClause, extraFromClause, havingClause)}) "unordered" ORDER BY "createdAt" DESC
 LIMIT $<limit>
 OFFSET $<offset>`
 
@@ -219,25 +231,7 @@ export const create = async (body, accountSid, workerSid) : Promise<CaseRecord> 
   });
 };
 
-export const list = async (query: { helpline: string}, accountSid): Promise<{ cases: readonly Case[], count: number}> => {
-  const { limit, offset } = getPaginationElements(query);
-  const { helpline } = query;
-
-  const { count, rows } =  await pool.task(
-    async connection => {
-        console.log("list", query, accountSid);
-        const statement = selectCasesPaginatedSql(LIST_WHERE_CLAUSE)
-        const queryValues =  {accountSid, helpline, limit, offset}
-        console.log('Executing ():', statement, queryValues);
-        const result: Case[] = await connection.any<Case>(statement, queryValues);
-        console.log('Executed (slonik):', statement);
-        console.log('Result (slonik): ', result);
-        const { count } = await connection.one<{count: number}>(`SELECT COUNT(*)::INTEGER AS "count" FROM "Cases" WHERE "accountSid" = $<accountSid> AND (cast($<helpline> as text) IS NULL OR "helpline" = $<helpline>)`,
-          {accountSid, helpline});
-        return { rows: result, count }
-
-    })
-  const cases = rows.map(caseItem => {
+const addCategoriesAndChildName = (caseItem: Case): Case => {
     const fstContact = caseItem.connectedContacts[0];
 
     if (!fstContact) {
@@ -252,20 +246,37 @@ export const list = async (query: { helpline: string}, accountSid): Promise<{ ca
     const childName = `${childInformation.name.firstName} ${childInformation.name.lastName}`;
     const categories = retrieveCategories(caseInformation.categories);
     return { ...caseItem, childName, categories };
-  });
+}
 
-  return { cases, count };
-};
-
-
-export const search = async (body, query: { helpline: string}, accountSid): Promise<{ cases: readonly Case[], count: number}> => {
+export const list = async (query: { helpline: string}, accountSid): Promise<{ cases: readonly Case[], count: number}> => {
   const { limit, offset } = getPaginationElements(query);
   const { helpline } = query;
 
   const { count, rows } =  await pool.task(
     async connection => {
+        console.log("list", query, accountSid);
+        const statement = selectCasesPaginatedSql(LIST_WHERE_CLAUSE)
+        const queryValues =  {accountSid, helpline, limit, offset}
+        console.log('Executing ():', statement, queryValues);
+        const result: CaseWithCount[] = await connection.any<CaseWithCount>(statement, queryValues);
+        console.log('Executed (slonik):', statement);
+        console.log('Result (slonik): ', result);
+        const count = result.length ? result[0].totalCount : 0;
+        return { rows: result, count }
+    });
+
+  const cases = rows.map(addCategoriesAndChildName);
+
+  return { cases, count };
+};
+
+export const search = async (body, query: { helpline: string}, accountSid): Promise<{ cases: readonly Case[], count: number}> => {
+  const { limit, offset } = getPaginationElements(query);
+
+  const { count, rows } =  await pool.task(
+    async connection => {
       console.log("list", query, accountSid);
-      const statement = selectCasesPaginatedSql(SEARCH_WHERE_CLAUSE, SEARCH_HAVING_CLAUSE)
+      const statement = selectCasesPaginatedSql(SEARCH_WHERE_CLAUSE, SEARCH_FROM_EXTRAS, SEARCH_HAVING_CLAUSE)
       const queryValues =  {
         accountSid,
         helpline: body.helpline || null,
@@ -281,30 +292,14 @@ export const search = async (body, query: { helpline: string}, accountSid): Prom
         offset: offset,
       }
       console.log('Executing ():', statement, queryValues);
-      const result: Case[] = await connection.any<Case>(statement, queryValues);
+      const result: CaseWithCount[] = await connection.any<CaseWithCount>(statement, queryValues);
       console.log('Executed (slonik):', statement);
       console.log('Result (slonik): ', result);
-      const count: number = await connection.one<number>(`SELECT COUNT(*) AS "count" FROM "Cases" WHERE "accountSid" = $<accountSid> AND (cast($<helpline> as text) IS NULL OR "helpline" = $<helpline>)`,
-        {accountSid, helpline});
+      const count: number = result.length ? result[0].totalCount : 0;
       return { rows: result, count }
+    });
 
-    })
-  const cases = rows.map(caseItem => {
-    const fstContact = caseItem.connectedContacts[0];
-
-    if (!fstContact) {
-      return {
-        ...caseItem,
-        childName: '',
-        categories: retrieveCategories(undefined), // we call the function here so the return value always matches
-      };
-    }
-
-    const { childInformation, caseInformation } = fstContact.rawJson;
-    const childName = `${childInformation.name.firstName} ${childInformation.name.lastName}`;
-    const categories = retrieveCategories(caseInformation.categories);
-    return { ...caseItem, childName, categories };
-  });
+  const cases = rows.map(addCategoriesAndChildName);
 
   return { cases, count };
 };

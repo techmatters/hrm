@@ -3,7 +3,7 @@ const express = require('express');
 require('express-async-errors');
 const cors = require('cors');
 const TokenValidator = require('twilio-flex-token-validator').validator;
-const crypto = require('crypto');
+const cryptoLib = require('crypto');
 
 const httpLogger = require('./logging/httplogging');
 const swagger = require('./swagger');
@@ -76,7 +76,7 @@ async function authorizationMiddleware(req, res, next) {
     if (process.env.NODE_ENV === 'test' || process.env.HRM_PERMIT_BASIC_AUTHENTICATION) {
       // for testing we use old api key (can't hit TokenValidator api with fake credentials as it results in The requested resource /Accounts/ACxxxxxxxxxx/Tokens/validate was not found)
       const base64Key = Buffer.from(authorization.replace('Basic ', ''), 'base64');
-      const isTestSecretValid = crypto.timingSafeEqual(base64Key, Buffer.from(apiKey));
+      const isTestSecretValid = cryptoLib.timingSafeEqual(base64Key, Buffer.from(apiKey));
 
       if (isTestSecretValid) {
         req.user = new User('worker-sid', []);
@@ -95,7 +95,7 @@ async function authorizationMiddleware(req, res, next) {
         const isStaticSecretValid =
           staticSecret &&
           requestSecret &&
-          crypto.timingSafeEqual(Buffer.from(requestSecret), Buffer.from(staticSecret));
+          cryptoLib.timingSafeEqual(Buffer.from(requestSecret), Buffer.from(staticSecret));
 
         if (isStaticSecretValid) {
           req.user = new User(`account-${accountSid}`, []);
