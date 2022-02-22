@@ -37,6 +37,10 @@ const headers = {
 
 const baseRoute = `/v0/accounts/${accountSid}`;
 
+afterAll(done => {
+  server.close(done);
+});
+
 test('unauthorize endpoints with no middleware', async () => {
   const response = await request.get(`${baseRoute}/without-middleware`).set(headers);
   expect(response.status).toBe(401);

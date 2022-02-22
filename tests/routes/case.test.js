@@ -26,6 +26,12 @@ const caseAuditsQuery = {
   },
 };
 
+afterAll(done => {
+  server.close(() => {
+    done();
+  });
+});
+
 beforeAll(async () => {
   await CaseAudit.destroy(caseAuditsQuery);
 });
