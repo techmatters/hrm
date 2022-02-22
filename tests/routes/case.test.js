@@ -4,6 +4,21 @@ const app = require('../../app');
 const models = require('../../models');
 const mocks = require('./mocks');
 
+expect.extend({
+  toParseAsDate(received, date) {
+    const pass = Date.parse(received).valueOf() === date.valueOf();
+    console.log(
+      `Expected '${received}' to be the same as '${date.toISOString()}' ${Date.parse(
+        received,
+      ).valueOf()} === ${date.valueOf()}`,
+    );
+    return {
+      pass,
+      message: () => `Expected '${received}' to be the same as '${date.toISOString()}'`,
+    };
+  },
+});
+
 const server = app.listen();
 const request = supertest.agent(server);
 
@@ -45,7 +60,29 @@ afterEach(async () => CaseAudit.destroy(caseAuditsQuery));
 describe('/cases route', () => {
   const route = `/v0/accounts/${accountSid}/cases`;
 
-  describe.only('GET', () => {
+  const fillNameAndPhone = contact => {
+    const modifiedContact = {
+      ...contact,
+      form: {
+        ...contact.form,
+        childInformation: {
+          ...contact.form.childInformation,
+          name: {
+            firstName: 'Maria',
+            lastName: 'Silva',
+          },
+        },
+      },
+      number: '+1-202-555-0184',
+    };
+
+    modifiedContact.rawJson = modifiedContact.form;
+    delete modifiedContact.form;
+
+    return modifiedContact;
+  };
+
+  describe('GET', () => {
     test('should return 401', async () => {
       const response = await request.get(route);
 
@@ -60,9 +97,14 @@ describe('/cases route', () => {
     });
     describe('With data', () => {
       let createdCase;
+      let createdContact;
 
       beforeEach(async () => {
         createdCase = await Case.create(case1, options);
+
+        createdContact = await Contact.create(fillNameAndPhone(contact1), options);
+        createdContact.caseId = createdCase.id;
+        await createdContact.save(options);
       });
 
       afterEach(async () => {
@@ -71,9 +113,32 @@ describe('/cases route', () => {
 
       test('should return 200 when populated', async () => {
         const response = await request.get(route).set(headers);
+        const { firstName, lastName } = createdContact.dataValues.rawJson.childInformation.name;
 
         expect(response.status).toBe(200);
-        expect(response.body).toStrictEqual({ cases: [createdCase], count: 1 });
+        expect(response.body).toStrictEqual(
+          expect.objectContaining({
+            cases: expect.arrayContaining([
+              expect.objectContaining({
+                ...createdCase.dataValues,
+                createdAt: createdCase.dataValues.createdAt.toISOString(),
+                updatedAt: createdCase.dataValues.updatedAt.toISOString(),
+                childName: `${firstName} ${lastName}`,
+                categories: {},
+                connectedContacts: [
+                  expect.objectContaining({
+                    ...createdContact.dataValues,
+                    csamReports: [],
+                    createdAt: expect.toParseAsDate(createdContact.dataValues.createdAt),
+                    updatedAt: expect.toParseAsDate(createdContact.dataValues.updatedAt),
+                  }),
+                ],
+                totalCount: 1,
+              }),
+            ]),
+            count: 1,
+          }),
+        );
       });
     });
   });
@@ -273,29 +338,7 @@ describe('/cases route', () => {
     },
   });
 
-  const fillNameAndPhone = contact => {
-    const modifiedContact = {
-      ...contact,
-      form: {
-        ...contact.form,
-        childInformation: {
-          ...contact.form.childInformation,
-          name: {
-            firstName: 'Maria',
-            lastName: 'Silva',
-          },
-        },
-      },
-      number: '+1-202-555-0184',
-    };
-
-    modifiedContact.rawJson = modifiedContact.form;
-    delete modifiedContact.form;
-
-    return modifiedContact;
-  };
-
-  describe('/cases/search route', () => {
+  describe.skip('/cases/search route', () => {
     describe('POST', () => {
       let createdCase1;
       let createdCase2;

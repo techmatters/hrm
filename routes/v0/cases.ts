@@ -12,14 +12,15 @@ const casesRouter = SafeRouter();
 
 casesRouter.get('/', publicEndpoint, async (req, res) => {
   const { accountSid } = req;
-  const cases = await CaseController.listCases(req.query, accountSid);
+  // const cases = await CaseController.listCases(req.query, accountSid);
+  const cases = await casesDb.list(req.query, accountSid);
   res.json(cases);
 });
 
 casesRouter.post('/', publicEndpoint, async (req, res) => {
   const { accountSid, user } = req;
 
-  //const createdCase = await CaseController.createCase(req.body, accountSid, user.workerSid);
+  // const createdCase = await CaseController.createCase(req.body, accountSid, user.workerSid);
   const createdCase = await casesDb.create(req.body, accountSid, user.workerSid);
 
   res.json(createdCase);
@@ -53,7 +54,7 @@ casesRouter.get('/:caseId/activities/', publicEndpoint, async (req, res) => {
 
 casesRouter.post('/search', publicEndpoint, async (req, res) => {
   const { accountSid } = req;
-  const searchResults = await CaseController.searchCases(req.body, req.query, accountSid);
+  const searchResults = await casesDb.search(req.body, req.query, accountSid);
   res.json(searchResults);
 });
 
