@@ -1,8 +1,13 @@
 import pool from './connection-pool';
 import { getPaginationElements, retrieveCategories } from '../controllers/helpers';
 import { Contact } from './contact';
+import pgPromise from 'pg-promise';
 
-
+const VALID_CASE_UPDATE_FIELDS = [
+  'info',
+  'helpline',
+  'status',
+]
 
 type NewCaseRecord = {
   info: any,
@@ -23,8 +28,8 @@ export class CaseRecord {
   twilioWorkerId: string;
   createdBy: string;
   accountSid: string;
-  createdAt: number;
-  updatedAt: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export type Case = CaseRecord & {
@@ -59,6 +64,8 @@ const SEARCH_FROM_EXTRAS = `
   LEFT JOIN LATERAL jsonb_array_elements(perpetrators::JSONB) p ON TRUE`
 
 const LIST_WHERE_CLAUSE =  `WHERE "cases"."accountSid" = $<accountSid> AND (cast($<helpline> as text) IS NULL OR "cases"."helpline" = $<helpline>)`
+
+const ID_WHERE_CLAUSE =  `WHERE "cases"."accountSid" = $<accountSid> AND "cases"."id" = $<caseId>`
 
 const SEARCH_WHERE_CLAUSE = `WHERE
     (info IS NULL OR jsonb_typeof(info) = 'object')
@@ -175,6 +182,7 @@ const SEARCH_HAVING_CLAUSE = `
     ELSE TRUE
     END`
 
+
 const selectCasesUnorderedSql = (whereClause: string, extraFromClause: string = '', havingClause: string = '') =>
   `SELECT DISTINCT ON (cases.id)
     (count(*) OVER())::INTEGER AS "totalCount",
@@ -189,13 +197,30 @@ SELECT * FROM (${selectCasesUnorderedSql(whereClause, extraFromClause, havingCla
 LIMIT $<limit>
 OFFSET $<offset>`
 
+const logCaseAudit = async (transaction: pgPromise.ITask<unknown>, updated: Case | CaseRecord, original?: Case) => {
+  const auditRecord: CaseAuditRecord = {
+    caseId: updated.id,
+    createdAt: updated.createdAt,
+    updatedAt: updated.updatedAt,
+    createdBy: updated.createdBy,
+    accountSid: updated.accountSid,
+    twilioWorkerId: updated.twilioWorkerId,
+    newValue: { ...updated, contacts: ((<Case>updated).connectedContacts ?? []).map(cc => cc.id)},
+    previousValue: original ? { ...original, contacts: (original.connectedContacts ?? []).map(cc => cc.id)} : null
+  }
+
+  const auditRecordEntries = Object.entries(auditRecord);
+  await transaction.none(`INSERT INTO "CaseAudits" (${auditRecordEntries.map(e => `"${e[0]}"`).join(`, `)}) VALUES (${auditRecordEntries.map((v, idx) => `$${idx+1}`).join(`, `)})`, auditRecordEntries.map(e => e[1]))
+
+}
+
 export const create = async (body, accountSid, workerSid) : Promise<CaseRecord> => {
   const now = new Date();
   const caseRecord: NewCaseRecord = {
     info: body.info,
     helpline: body.helpline,
     status: body.status || 'open',
-    twilioWorkerId: body.twilioWorkerId,
+    twilioWorkerId: workerSid,
     createdBy: workerSid,
     accountSid: accountSid,
     createdAt: now.toISOString(),
@@ -209,20 +234,7 @@ export const create = async (body, accountSid, workerSid) : Promise<CaseRecord> 
         const insertValues = caseInsertEntries.map(e => e[1]);
         const statement = `INSERT INTO "Cases" (${caseInsertEntries.map(e => `"${e[0]}"`).join(`, `)}) VALUES (${caseInsertEntries.map((v, idx) => `$${idx+1}`).join(`, `)}) RETURNING *`
         const inserted: CaseRecord = await transaction.one(statement, insertValues);
-        const auditRecord: CaseAuditRecord = {
-          caseId: inserted.id,
-          createdAt: caseRecord.createdAt,
-          updatedAt: caseRecord.updatedAt,
-          createdBy: caseRecord.createdBy,
-          accountSid,
-          twilioWorkerId: inserted.twilioWorkerId,
-          newValue: {
-            ...inserted,
-            contacts: []
-          }
-        }
-        const auditRecordEntries = Object.entries(auditRecord);
-        await transaction.none(`INSERT INTO "CaseAudits" (${auditRecordEntries.map(e => `"${e[0]}"`).join(`, `)}) VALUES (${auditRecordEntries.map((v, idx) => `$${idx+1}`).join(`, `)})`, auditRecordEntries.map(e => e[1]))
+        await logCaseAudit(transaction, inserted)
         return inserted;
       })
   });
@@ -298,3 +310,63 @@ export const search = async (body, query: { helpline: string}, accountSid): Prom
 export const deleteById = async (id, accountSid) => {
   return pool.oneOrNone(`DELETE FROM "Cases" WHERE "Cases"."accountSid" = $1 AND "Cases"."id" = $2 RETURNING *`,[accountSid, id]);
 };
+
+export const update = async (id, body, accountSid, workerSid): Promise<Case> => {
+  const filtered = Object.entries(body).filter(([key,])=>VALID_CASE_UPDATE_FIELDS.includes(key));
+  console.log('Input body:', body, Object.entries(body), filtered);
+  const update = Object.fromEntries(filtered);
+  const result = await pool.tx(
+    async transaction => {
+      const caseRecordUpdates: Partial<NewCaseRecord> = {
+        ...update,
+        twilioWorkerId: workerSid,
+        updatedAt: new Date().toISOString()
+      }
+      const caseRecordUpdateEntries = Object.entries(caseRecordUpdates)
+      const updateById = `
+        SELECT
+          cases.*,
+          contacts."connectedContacts"
+          FROM "Cases" AS cases
+          LEFT JOIN LATERAL ( 
+          SELECT COALESCE(jsonb_agg(to_jsonb(row(c, reports))), '[]') AS  "connectedContacts" 
+          FROM "Contacts" c 
+          LEFT JOIN LATERAL (
+            SELECT COALESCE(jsonb_agg(to_jsonb(row(r))), '[]') AS  "csamReports" 
+            FROM "CSAMReports" r 
+            WHERE r."contactId" = c.id
+          ) reports ON true
+          WHERE c."caseId" = cases.id
+        ) contacts ON true
+        ${ID_WHERE_CLAUSE};
+      WITH 
+      updated AS (
+        UPDATE "Cases" AS "cases" SET ${caseRecordUpdateEntries.map(([field, ]) => `"${field}" = $<${field}>`)} ${ID_WHERE_CLAUSE} RETURNING *
+      )
+      SELECT
+        cases.*,
+        contacts."connectedContacts"
+        FROM updated AS cases
+        LEFT JOIN LATERAL ( 
+        SELECT COALESCE(jsonb_agg(to_jsonb(row(c, reports))), '[]') AS  "connectedContacts" 
+        FROM "Contacts" c 
+        LEFT JOIN LATERAL (
+          SELECT COALESCE(jsonb_agg(to_jsonb(row(r))), '[]') AS  "csamReports" 
+          FROM "CSAMReports" r 
+          WHERE r."contactId" = c.id
+        ) reports ON true
+        WHERE c."caseId" = cases.id
+		  ) contacts ON true
+      ${ID_WHERE_CLAUSE}`;
+      const updateValues = { accountSid, caseId: id, ...caseRecordUpdates };
+      console.log("Update SQL:", updateById, updateValues);
+      const [original, updated] = await pool.multi<Case>(updateById, updateValues);
+      console.log("Updated record:",original, updated);
+      if (updated.length) {
+        await logCaseAudit(transaction, updated[0], original[0]);
+      }
+      return updated;
+    }
+  );
+  return result.length ? result[0] : void 0;
+}

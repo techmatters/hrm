@@ -1,4 +1,5 @@
 export class ContactRecord {
+  id: number;
   rawJson?: any;
   queueName?: string;
   twilioWorkerId?: string;
