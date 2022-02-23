@@ -1,10 +1,10 @@
 const supertest = require('supertest');
 const Sequelize = require('sequelize');
-const app = require('../../app');
+const expressApp = require('../../app');
 const models = require('../../models');
 const mocks = require('./mocks');
 
-const server = app.listen();
+const server = expressApp.listen();
 const request = supertest.agent(server);
 
 const { case1, case2, accountSid } = mocks;

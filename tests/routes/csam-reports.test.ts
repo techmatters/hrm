@@ -1,6 +1,6 @@
 const supertest = require('supertest');
 const Sequelize = require('sequelize');
-const app = require('../../app');
+const expressApp = require('../../app');
 const models = require('../../models');
 const mocks = require('./mocks');
 
@@ -10,7 +10,7 @@ const mocks = require('./mocks');
 const { CSAMReport } = models;
 const CSAMReportController = require('../../controllers/csam-report-controller')(CSAMReport);
 
-const server = app.listen();
+const server = expressApp.listen();
 const request = supertest.agent(server);
 
 const { accountSid } = mocks;

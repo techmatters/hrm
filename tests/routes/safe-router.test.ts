@@ -25,9 +25,9 @@ mockRouter.get(
 );
 
 jest.mock('../../routes', () => ({ apiV0: mockRouter.expressRouter }));
-const app = require('../../app');
+const expressApp = require('../../app');
 
-const server = app.listen();
+const server = expressApp.listen();
 const request = supertest.agent(server);
 
 const headers = {

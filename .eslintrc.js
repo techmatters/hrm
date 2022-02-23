@@ -13,4 +13,5 @@ module.exports = {
   env: {
     "jest/globals": true,
   },
+  ignorePatterns: ["dist/**"]
 };

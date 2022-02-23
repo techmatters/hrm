@@ -6,7 +6,7 @@
 console.log(`${new Date(Date.now()).toLocaleString()}: trying to initialize www`);
 const debug = require('debug')('hrm:server');
 const http = require('http');
-const app = require('../app');
+const expressApp = require('../app');
 
 /**
  * Normalize a port into a number, string, or false.
@@ -31,7 +31,7 @@ function normalizePort(val) {
  * Get port from environment and store in Express.
  */
 const port = normalizePort(process.env.PORT || '3000');
-app.set('port', port);
+expressApp.set('port', port);
 
 /**
  * Create HTTP server.
