@@ -208,10 +208,7 @@ export const create = async (body, accountSid, workerSid) : Promise<CaseRecord> 
       return connection.tx(async transaction => {
         const insertValues = caseInsertEntries.map(e => e[1]);
         const statement = `INSERT INTO "Cases" (${caseInsertEntries.map(e => `"${e[0]}"`).join(`, `)}) VALUES (${caseInsertEntries.map((v, idx) => `$${idx+1}`).join(`, `)}) RETURNING *`
-        console.log('Executing (slonik):', statement, insertValues);
         const inserted: CaseRecord = await transaction.one(statement, insertValues);
-        console.log('Executed (slonik):', statement, insertValues);
-        console.log('Result (slonik): ', inserted);
         const auditRecord: CaseAuditRecord = {
           caseId: inserted.id,
           createdAt: caseRecord.createdAt,
@@ -257,10 +254,7 @@ export const list = async (query: { helpline: string}, accountSid): Promise<{ ca
         console.log("list", query, accountSid);
         const statement = selectCasesPaginatedSql(LIST_WHERE_CLAUSE)
         const queryValues =  {accountSid, helpline, limit, offset}
-        console.log('Executing ():', statement, queryValues);
         const result: CaseWithCount[] = await connection.any<CaseWithCount>(statement, queryValues);
-        console.log('Executed (slonik):', statement);
-        console.log('Result (slonik): ', result);
         const count = result.length ? result[0].totalCount : 0;
         return { rows: result, count }
     });
@@ -291,10 +285,7 @@ export const search = async (body, query: { helpline: string}, accountSid): Prom
         limit: limit,
         offset: offset,
       }
-      console.log('Executing ():', statement, queryValues);
       const result: CaseWithCount[] = await connection.any<CaseWithCount>(statement, queryValues);
-      console.log('Executed (slonik):', statement);
-      console.log('Result (slonik): ', result);
       const count: number = result.length ? result[0].totalCount : 0;
       return { rows: result, count }
     });
@@ -302,4 +293,8 @@ export const search = async (body, query: { helpline: string}, accountSid): Prom
   const cases = rows.map(addCategoriesAndChildName);
 
   return { cases, count };
+};
+
+export const deleteById = async (id, accountSid) => {
+  return pool.oneOrNone(`DELETE FROM "Cases" WHERE "Cases"."accountSid" = $1 AND "Cases"."id" = $2 RETURNING *`,[accountSid, id]);
 };

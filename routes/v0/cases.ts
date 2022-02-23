@@ -1,3 +1,4 @@
+import createError from 'http-errors'
 import * as casesDb from '../../db/case';
 const models = require('../../models');
 const { SafeRouter, publicEndpoint, canEditCase } = require('../../permissions');
@@ -6,8 +7,6 @@ const { Contact, Case, CaseAudit, sequelize } = models;
 const ContactController = require('../../controllers/contact-controller')(Contact);
 const CaseController = require('../../controllers/case-controller')(Case, sequelize);
 const CaseAuditController = require('../../controllers/case-audit-controller')(CaseAudit);
-
-
 const casesRouter = SafeRouter();
 
 casesRouter.get('/', publicEndpoint, async (req, res) => {
@@ -36,7 +35,11 @@ casesRouter.put('/:id', canEditCase, async (req, res) => {
 casesRouter.delete('/:id', publicEndpoint, async (req, res) => {
   const { accountSid } = req;
   const { id } = req.params;
-  await CaseController.deleteCase(id, accountSid);
+  // await CaseController.deleteCase(id, accountSid);
+  const deleted = await casesDb.deleteById(id, accountSid);
+  if (!deleted) {
+    throw createError(404)
+  }
   res.sendStatus(200);
 });
 

@@ -82,6 +82,35 @@ describe('/cases route', () => {
     return modifiedContact;
   };
 
+  const validateSingleCaseResponse = (actual, expectedCaseModel, expectedContactModel)=> {
+    const { firstName, lastName } = expectedContactModel.dataValues.rawJson.childInformation.name;
+
+    expect(actual.status).toBe(200);
+    expect(actual.body).toStrictEqual(
+      expect.objectContaining({
+        cases: expect.arrayContaining([
+          expect.objectContaining({
+            ...expectedCaseModel.dataValues,
+            createdAt: expectedCaseModel.dataValues.createdAt.toISOString(),
+            updatedAt: expectedCaseModel.dataValues.updatedAt.toISOString(),
+            childName: `${firstName} ${lastName}`,
+            categories: {},
+            connectedContacts: [
+              expect.objectContaining({
+                ...expectedContactModel.dataValues,
+                csamReports: [],
+                createdAt: expect.toParseAsDate(expectedContactModel.dataValues.createdAt),
+                updatedAt: expect.toParseAsDate(expectedContactModel.dataValues.updatedAt),
+              }),
+            ],
+            totalCount: 1,
+          }),
+        ]),
+        count: 1,
+      }),
+    );
+  }
+
   describe('GET', () => {
     test('should return 401', async () => {
       const response = await request.get(route);
@@ -113,32 +142,7 @@ describe('/cases route', () => {
 
       test('should return 200 when populated', async () => {
         const response = await request.get(route).set(headers);
-        const { firstName, lastName } = createdContact.dataValues.rawJson.childInformation.name;
-
-        expect(response.status).toBe(200);
-        expect(response.body).toStrictEqual(
-          expect.objectContaining({
-            cases: expect.arrayContaining([
-              expect.objectContaining({
-                ...createdCase.dataValues,
-                createdAt: createdCase.dataValues.createdAt.toISOString(),
-                updatedAt: createdCase.dataValues.updatedAt.toISOString(),
-                childName: `${firstName} ${lastName}`,
-                categories: {},
-                connectedContacts: [
-                  expect.objectContaining({
-                    ...createdContact.dataValues,
-                    csamReports: [],
-                    createdAt: expect.toParseAsDate(createdContact.dataValues.createdAt),
-                    updatedAt: expect.toParseAsDate(createdContact.dataValues.updatedAt),
-                  }),
-                ],
-                totalCount: 1,
-              }),
-            ]),
-            count: 1,
-          }),
-        );
+        validateSingleCaseResponse(response, createdCase, createdContact)
       });
     });
   });
@@ -161,6 +165,7 @@ describe('/cases route', () => {
       expect(response.body.helpline).toBe(case1.helpline);
       expect(response.body.info).toStrictEqual(case1.info);
     });
+
     test('should create a CaseAudit', async () => {
       const caseAuditPreviousCount = await CaseAudit.count(caseAuditsQuery);
       const response = await request
@@ -443,11 +448,7 @@ describe('/cases route', () => {
           .query({ limit: 20, offset: 0 })
           .set(headers)
           .send(body);
-
-        expect(response.status).toBe(200);
-        expect(response.body.count).toBe(1);
-        const caseFromDB = response.body.cases[0];
-        expect(caseFromDB.id).toStrictEqual(createdCase2.id);
+        validateSingleCaseResponse(response, createdCase2, createdContact);
       });
     });
   });
