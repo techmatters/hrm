@@ -7,6 +7,7 @@ const { Contact, Case, CaseAudit, sequelize } = models;
 const ContactController = require('../../controllers/contact-controller')(Contact);
 const CaseController = require('../../controllers/case-controller')(Case, sequelize);
 const CaseAuditController = require('../../controllers/case-audit-controller')(CaseAudit);
+const { getActivitiesForCase } = require('../../controllers/activities');
 const casesRouter = SafeRouter();
 
 casesRouter.get('/', publicEndpoint, async (req, res) => {
@@ -46,13 +47,22 @@ casesRouter.delete('/:id', publicEndpoint, async (req, res) => {
 casesRouter.get('/:caseId/activities/', publicEndpoint, async (req, res) => {
   const { accountSid } = req;
   const { caseId } = req.params;
+  /*
   await CaseController.getCase(caseId, accountSid);
   const caseAudits = await CaseAuditController.getAuditsForCase(caseId, accountSid);
   const contactIds = CaseAuditController.getContactIdsFromCaseAudits(caseAudits);
   const relatedContacts = await ContactController.getContactsById(contactIds, accountSid);
-  const activities = await CaseAuditController.getActivities(caseAudits, relatedContacts);
+  const activities = CaseAuditController.getActivities(caseAudits, relatedContacts);
+  */
 
-  res.json(activities);
+  try {
+    res.json(await getActivitiesForCase(accountSid, caseId));
+  } catch (err) {
+    if (err.message === 'Case not found.') {
+      throw createError(404);
+    }
+    else throw err;
+  }
 });
 
 casesRouter.post('/search', publicEndpoint, async (req, res) => {

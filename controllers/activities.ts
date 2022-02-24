@@ -1,3 +1,7 @@
+import * as casesDb from '../db/case';
+const { Contact } = require('../models');
+const ContactController = require('../controllers/contact-controller')(Contact);
+
 const ActivityTypes = {
   createCase: 'create',
   addNote: 'note',
@@ -122,4 +126,31 @@ function getActivity(caseAudit, relatedContacts) {
   return activity;
 }
 
-module.exports = { getActivity };
+const getActivitiesFromCaseAudits = (caseAudits, relatedContacts) => {
+  const activities = [];
+
+  caseAudits.forEach(caseAudit => {
+    const activity = getActivity(caseAudit, relatedContacts);
+    if (activity) activities.push(activity);
+  });
+
+  return activities;
+};
+
+
+const getContactIdsFromCaseAudits = caseAudits => {
+  return [...new Set(caseAudits.flatMap(caseAudit => caseAudit.newValue.contacts))];
+};
+
+async function getActivitiesForCase(accountSid, caseId) {
+  const caseAudits = await casesDb.getAuditsForCase(accountSid, caseId);
+  // Cases will always have at least 1 audit record from when they were created
+  if (!caseAudits.length) {
+    throw new Error(`Case not found.`);
+  }
+  const contactIds = getContactIdsFromCaseAudits(caseAudits);
+  const relatedContacts = await ContactController.getContactsById(contactIds, accountSid);
+  return getActivitiesFromCaseAudits(caseAudits, relatedContacts);
+}
+
+module.exports = { getActivity, getActivitiesForCase };

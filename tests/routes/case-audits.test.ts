@@ -3,6 +3,7 @@ const Sequelize = require('sequelize');
 const expressApp = require('../../app');
 const models = require('../../models');
 const mocks = require('./mocks');
+import * as casesDb from '../../db/case';
 
 const server = expressApp.listen();
 const request = supertest.agent(server);
@@ -15,7 +16,7 @@ const headers = {
 };
 const workerSid = 'worker-sid';
 
-const { Case, CaseAudit } = models;
+const { CaseAudit } = models;
 
 const caseAuditsQuery = {
   where: {
@@ -40,13 +41,12 @@ describe('/cases/:caseId/activities route', () => {
     let createdCase;
     let nonExistingCaseId;
     const route = id => `/v0/accounts/${accountSid}/cases/${id}/activities`;
-    const options = { context: { workerSid } };
 
     beforeEach(async () => {
-      createdCase = await Case.create(case1, options);
-      const caseToBeDeleted = await Case.create(case2, options);
+      createdCase = await casesDb.create(case1, accountSid, case1.twilioWorkerId);
+      const caseToBeDeleted = await casesDb.create(case2, accountSid, case2.twilioWorkerId);
       nonExistingCaseId = caseToBeDeleted.id;
-      await caseToBeDeleted.destroy();
+      await casesDb.deleteById(nonExistingCaseId, accountSid);
     });
 
     test('should return 401', async () => {

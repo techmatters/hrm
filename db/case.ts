@@ -109,7 +109,6 @@ const SEARCH_WHERE_CLAUSE = `WHERE
         )
         END
       )
-
       -- search on callerInformation of connectedContacts
     OR ( 
           CASE WHEN $<firstName> IS NULL THEN TRUE
@@ -370,3 +369,7 @@ export const update = async (id, body, accountSid, workerSid): Promise<Case> => 
   );
   return result.length ? result[0] : void 0;
 }
+
+export const getAuditsForCase = async (accountSid, caseId): Promise<CaseAuditRecord[]> => {
+  return pool.any<CaseAuditRecord>(`SELECT * FROM "CaseAudits" WHERE "CaseAudits"."accountSid" = $<accountSid> AND "CaseAudits"."caseId" = $<caseId>`, { accountSid, caseId });
+};
