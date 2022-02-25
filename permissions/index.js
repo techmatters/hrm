@@ -12,6 +12,7 @@ const { applyPermissions: applyOpenPermissions } = require('./rules/open');
 const { canEditCase, canViewPostSurvey } = require('./middlewares');
 
 const applyPermissions = {
+  open: applyOpenPermissions,
   zm: applyZmPermissions,
   za: applyZaPermissions,
   et: applyEtPermissions,

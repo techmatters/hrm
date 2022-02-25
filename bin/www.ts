@@ -38,7 +38,7 @@ expressApp.set('port', port);
  */
 console.log(`${new Date(Date.now()).toLocaleString()}: trying to create server`);
 
-const server = http.createServer(app);
+const server = http.createServer(expressApp);
 console.log(`${new Date(Date.now()).toLocaleString()}: created server, about to listen`);
 
 /**

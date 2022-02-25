@@ -264,7 +264,7 @@ export const list = async (query: { helpline: string}, accountSid): Promise<{ ca
     async connection => {
         console.log("list", query, accountSid);
         const statement = selectCasesPaginatedSql(LIST_WHERE_CLAUSE)
-        const queryValues =  {accountSid, helpline, limit, offset}
+        const queryValues =  {accountSid, helpline: helpline || null, limit, offset}
         const result: CaseWithCount[] = await connection.any<CaseWithCount>(statement, queryValues);
         const count = result.length ? result[0].totalCount : 0;
         return { rows: result, count }
