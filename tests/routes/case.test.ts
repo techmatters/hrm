@@ -392,11 +392,11 @@ describe('/cases route', () => {
           .send(body);
 
         expect(response.status).toBe(200);
-        expect(response.body.count).toBe(3);
         const ids = response.body.cases.map(c => c.id);
         expect(ids).toContain(createdCase1.id);
         expect(ids).toContain(createdCase2.id);
         expect(ids).toContain(createdCase3.id);
+        expect(response.body.count).toBe(3);
       });
 
       test('should return 200 - search by phone number', async () => {
@@ -411,11 +411,11 @@ describe('/cases route', () => {
           .send(body);
 
         expect(response.status).toBe(200);
-        expect(response.body.count).toBe(3);
         const ids = response.body.cases.map(c => c.id);
         expect(ids).toContain(createdCase1.id);
         expect(ids).toContain(createdCase2.id);
         expect(ids).toContain(createdCase3.id);
+        expect(response.body.count).toBe(3);
       });
 
       test('should return 200 - search by date', async () => {
