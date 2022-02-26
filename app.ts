@@ -132,7 +132,7 @@ app.use((req, res, next) => {
 });
 
 app.use((err, req, res, next) => {
-  console.log(err, err.message, err.stack);
+  console.log(err);
 
   // set locals, only providing error in development
   res.locals.message = err.message;
