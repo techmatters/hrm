@@ -3,10 +3,6 @@ const Sequelize = require('sequelize');
 const { Op } = Sequelize;
 
 const CaseAuditController = CaseAudit => {
-  const getContactIdsFromCaseAudits = caseAudits => {
-    return [...new Set(caseAudits.map(caseAudit => caseAudit.newValue.contacts).flat())];
-  };
-
   const getAuditsForCase = async (caseId, accountSid) => {
     const queryObject = {
       order: [['createdAt', 'DESC']],
@@ -63,7 +59,6 @@ const CaseAuditController = CaseAudit => {
 
   return {
     getAuditsForCase,
-    getContactIdsFromCaseAudits,
     createCaseAuditFromContact,
     createCaseAuditFromCase,
   };

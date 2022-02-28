@@ -14,57 +14,6 @@ const CaseAuditController = createCaseAuditController(MockCaseAudit);
 
 afterEach(() => jest.clearAllMocks());
 
-test('getContactIdsFromCaseAudits', () => {
-  const caseAudits = [
-    {
-      id: 1,
-      twilioWorkerId: 'twilio-worker-id',
-      previousValue: null,
-      newValue: {
-        contacts: [],
-      },
-    },
-    {
-      id: 2,
-      twilioWorkerId: 'twilio-worker-id',
-      previousValue: {
-        contacts: [],
-      },
-      newValue: {
-        contacts: [123],
-      },
-    },
-    {
-      id: 3,
-      twilioWorkerId: 'twilio-worker-id',
-      previousValue: {
-        contacts: [123],
-      },
-      newValue: {
-        contacts: [123, 124],
-      },
-    },
-    {
-      id: 4,
-      twilioWorkerId: 'twilio-worker-id',
-      previousValue: {
-        contacts: [123, 124],
-      },
-      newValue: {
-        contacts: [123, 124],
-        info: {
-          notes: ['One note'],
-        },
-      },
-    },
-  ];
-
-  const result = CaseAuditController.getContactIdsFromCaseAudits(caseAudits);
-
-  const expectedContactIds = [123, 124];
-  expect(result).toStrictEqual(expectedContactIds);
-});
-
 test('getAuditsForCase', async () => {
   const caseId = 1;
   const caseAudits = [
