@@ -79,8 +79,6 @@ describe('/cases route', () => {
   };
 
   const validateSingleCaseResponse = (actual, expectedCaseModel, expectedContactModel) => {
-    const { firstName, lastName } = expectedContactModel.dataValues.rawJson.childInformation.name;
-
     expect(actual.status).toBe(200);
     expect(actual.body).toStrictEqual(
       expect.objectContaining({
