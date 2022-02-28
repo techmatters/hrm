@@ -1,10 +1,25 @@
 const supertest = require('supertest');
 const Sequelize = require('sequelize');
-const app = require('../../app');
+const expressApp = require('../../app');
 const models = require('../../models');
 const mocks = require('./mocks');
 
-const server = app.listen();
+expect.extend({
+  toParseAsDate(received, date) {
+    const pass = Date.parse(received).valueOf() === date.valueOf();
+    console.log(
+      `Expected '${received}' to be the same as '${date.toISOString()}' ${Date.parse(
+        received,
+      ).valueOf()} === ${date.valueOf()}`,
+    );
+    return {
+      pass,
+      message: () => `Expected '${received}' to be the same as '${date.toISOString()}'`,
+    };
+  },
+});
+
+const server = expressApp.listen();
 const request = supertest.agent(server);
 
 const { case1, case2, contact1, accountSid } = mocks;
@@ -36,14 +51,58 @@ beforeAll(async () => {
   await CaseAudit.destroy(caseAuditsQuery);
 });
 
-afterAll(async () => {
-  await CaseAudit.destroy(caseAuditsQuery);
-});
-
 afterEach(async () => CaseAudit.destroy(caseAuditsQuery));
 
 describe('/cases route', () => {
   const route = `/v0/accounts/${accountSid}/cases`;
+
+  const fillNameAndPhone = contact => {
+    const modifiedContact = {
+      ...contact,
+      form: {
+        ...contact.form,
+        childInformation: {
+          ...contact.form.childInformation,
+          name: {
+            firstName: 'Maria',
+            lastName: 'Silva',
+          },
+        },
+      },
+      number: '+1-202-555-0184',
+    };
+
+    modifiedContact.rawJson = modifiedContact.form;
+    delete modifiedContact.form;
+
+    return modifiedContact;
+  };
+
+  const validateSingleCaseResponse = (actual, expectedCaseModel, expectedContactModel) => {
+    const { firstName, lastName } = expectedContactModel.dataValues.rawJson.childInformation.name;
+
+    expect(actual.status).toBe(200);
+    expect(actual.body).toStrictEqual(
+      expect.objectContaining({
+        cases: expect.arrayContaining([
+          expect.objectContaining({
+            ...expectedCaseModel.dataValues,
+            createdAt: expectedCaseModel.dataValues.createdAt.toISOString(),
+            updatedAt: expectedCaseModel.dataValues.updatedAt.toISOString(),
+            connectedContacts: [
+              expect.objectContaining({
+                ...expectedContactModel.dataValues,
+                csamReports: [],
+                createdAt: expect.toParseAsDate(expectedContactModel.dataValues.createdAt),
+                updatedAt: expect.toParseAsDate(expectedContactModel.dataValues.updatedAt),
+              }),
+            ],
+          }),
+        ]),
+        count: 1,
+      }),
+    );
+  };
 
   describe('GET', () => {
     test('should return 401', async () => {
@@ -57,6 +116,27 @@ describe('/cases route', () => {
 
       expect(response.status).toBe(200);
       expect(response.body).toStrictEqual({ cases: [], count: 0 });
+    });
+    describe('With data', () => {
+      let createdCase;
+      let createdContact;
+
+      beforeEach(async () => {
+        createdCase = await Case.create(case1, options);
+
+        createdContact = await Contact.create(fillNameAndPhone(contact1), options);
+        createdContact.caseId = createdCase.id;
+        await createdContact.save(options);
+      });
+
+      afterEach(async () => {
+        await createdCase.destroy();
+      });
+
+      test('should return 200 when populated', async () => {
+        const response = await request.get(route).set(headers);
+        validateSingleCaseResponse(response, createdCase, createdContact);
+      });
     });
   });
 
@@ -78,6 +158,7 @@ describe('/cases route', () => {
       expect(response.body.helpline).toBe(case1.helpline);
       expect(response.body.info).toStrictEqual(case1.info);
     });
+
     test('should create a CaseAudit', async () => {
       const caseAuditPreviousCount = await CaseAudit.count(caseAuditsQuery);
       const response = await request
@@ -255,28 +336,6 @@ describe('/cases route', () => {
     },
   });
 
-  const fillNameAndPhone = contact => {
-    const modifiedContact = {
-      ...contact,
-      form: {
-        ...contact.form,
-        childInformation: {
-          ...contact.form.childInformation,
-          name: {
-            firstName: 'Maria',
-            lastName: 'Silva',
-          },
-        },
-      },
-      number: '+1-202-555-0184',
-    };
-
-    modifiedContact.rawJson = modifiedContact.form;
-    delete modifiedContact.form;
-
-    return modifiedContact;
-  };
-
   describe('/cases/search route', () => {
     describe('POST', () => {
       let createdCase1;
@@ -326,11 +385,11 @@ describe('/cases route', () => {
           .send(body);
 
         expect(response.status).toBe(200);
-        expect(response.body.count).toBe(3);
         const ids = response.body.cases.map(c => c.id);
         expect(ids).toContain(createdCase1.id);
         expect(ids).toContain(createdCase2.id);
         expect(ids).toContain(createdCase3.id);
+        expect(response.body.count).toBe(3);
       });
 
       test('should return 200 - search by phone number', async () => {
@@ -345,11 +404,11 @@ describe('/cases route', () => {
           .send(body);
 
         expect(response.status).toBe(200);
-        expect(response.body.count).toBe(3);
         const ids = response.body.cases.map(c => c.id);
         expect(ids).toContain(createdCase1.id);
         expect(ids).toContain(createdCase2.id);
         expect(ids).toContain(createdCase3.id);
+        expect(response.body.count).toBe(3);
       });
 
       test('should return 200 - search by date', async () => {
@@ -382,11 +441,7 @@ describe('/cases route', () => {
           .query({ limit: 20, offset: 0 })
           .set(headers)
           .send(body);
-
-        expect(response.status).toBe(200);
-        expect(response.body.count).toBe(1);
-        const caseFromDB = response.body.cases[0];
-        expect(caseFromDB.id).toStrictEqual(createdCase2.id);
+        validateSingleCaseResponse(response, createdCase2, createdContact);
       });
     });
   });
