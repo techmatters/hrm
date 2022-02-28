@@ -1,10 +1,9 @@
 const models = require('../../models');
 const { SafeRouter, publicEndpoint, canEditCase } = require('../../permissions');
+const { getCaseActivities } = require('../../controllers/activities');
 
-const { Contact, Case, CaseAudit, sequelize } = models;
-const ContactController = require('../../controllers/contact-controller')(Contact);
+const { Case, sequelize } = models;
 const CaseController = require('../../controllers/case-controller')(Case, sequelize);
-const CaseAuditController = require('../../controllers/case-audit-controller')(CaseAudit);
 
 const casesRouter = SafeRouter();
 
@@ -38,11 +37,7 @@ casesRouter.delete('/:id', publicEndpoint, async (req, res) => {
 casesRouter.get('/:caseId/activities/', publicEndpoint, async (req, res) => {
   const { accountSid } = req;
   const { caseId } = req.params;
-  await CaseController.getCase(caseId, accountSid);
-  const caseAudits = await CaseAuditController.getAuditsForCase(caseId, accountSid);
-  const contactIds = CaseAuditController.getContactIdsFromCaseAudits(caseAudits);
-  const relatedContacts = await ContactController.getContactsById(contactIds, accountSid);
-  const activities = await CaseAuditController.getActivities(caseAudits, relatedContacts);
+  const activities = await getCaseActivities(caseId, accountSid);
 
   res.json(activities);
 });
