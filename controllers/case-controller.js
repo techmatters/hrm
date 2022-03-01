@@ -2,6 +2,7 @@ const createError = require('http-errors');
 const Sequelize = require('sequelize');
 const fs = require('fs');
 const path = require('path');
+const { isArray } = require('util');
 const { retrieveCategories, getPaginationElements, isEmptySearchParams } = require('./helpers');
 
 const { Op } = Sequelize;
@@ -9,6 +10,33 @@ const { Op } = Sequelize;
 const searchCasesQuery = fs
   .readFileSync(path.join(__dirname, '../sql/search-cases-query.sql'))
   .toString();
+
+// DEPRECATE ME - This migration code should only be required until CHI-1040 is deployed to all flex instances
+const migrateLegacyNotes = (model, update, twilioWorkerId) => {
+  if (update.info) {
+    const legacyNotes = isArray(update.info.cases) ? update.info.cases : [];
+    const counsellorNotes = isArray(update.info.counsellorCases) ? update.info.counsellorCases : [];
+    const dbNotes = isArray(model.info.counsellorCases) ? update.info.counsellorCases : [];
+
+    // Assume if there are more new format notes in the update than in the DB, that this is the correct update
+    // Otherwise, if there are more legacy notes that current notes in the DB, convert them to the new format & add them
+    if (counsellorNotes.length <= dbNotes.length && legacyNotes.length > dbNotes.length) {
+      return {
+        ...update,
+        info: {
+          ...update.info,
+          counsellorNotes: [
+            ...dbNotes,
+            ...legacyNotes
+              .slice(dbNotes.length)
+              .map(note => ({ note, twilioWorkerId, createdAt: new Date().toISOString() })),
+          ],
+        },
+      };
+    }
+  }
+  return update;
+};
 
 const CaseController = (Case, sequelize) => {
   const createCase = async (body, accountSid, workerSid) => {
@@ -29,8 +57,7 @@ const CaseController = (Case, sequelize) => {
       accountSid: accountSid || '',
     };
 
-    const createdCase = await Case.create(caseRecord, options);
-    return createdCase;
+    return Case.create(caseRecord, options);
   };
 
   const getCase = async (id, accountSid) => {
@@ -94,8 +121,7 @@ const CaseController = (Case, sequelize) => {
   const updateCase = async (id, body, accountSid, workerSid) => {
     const caseFromDB = await getCase(id, accountSid);
     const options = { context: { workerSid } };
-    const updatedCase = await caseFromDB.update(body, options);
-    return updatedCase;
+    return caseFromDB.update(migrateLegacyNotes(caseFromDB, body, workerSid), options);
   };
 
   const deleteCase = async (id, accountSid) => {

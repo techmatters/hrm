@@ -216,12 +216,11 @@ test('list cases (with 1st contact, no limit/offset)', async () => {
 
   const expectedCases = casesFromDB.map(caseItem => {
     const { dataValues } = caseItem;
-    const newItem = {
+    return {
       ...dataValues,
       childName: 'name last',
       categories: { cat1: ['sub2'] },
     };
-    return newItem;
   });
 
   const expected = { cases: expectedCases, count: expectedCases.length };
@@ -281,12 +280,11 @@ test('list cases (with 1st contact, with limit/offset)', async () => {
 
   const expectedCases = casesFromDB.map(caseItem => {
     const { dataValues } = caseItem;
-    const newItem = {
+    return {
       ...dataValues,
       childName: 'name last',
       categories: { cat1: ['sub2'] },
     };
-    return newItem;
   });
 
   const expected = { cases: expectedCases, count: expectedCases.length };
@@ -332,8 +330,7 @@ test('list cases (without contacts)', async () => {
 
   const expectedCases = casesFromDB.map(caseItem => {
     const { dataValues } = caseItem;
-    const newItem = { ...dataValues, childName: '', categories: {} };
-    return newItem;
+    return  { ...dataValues, childName: '', categories: {} };
   });
 
   const expected = { cases: expectedCases, count: expectedCases.length };
@@ -409,7 +406,7 @@ test('update existing case', async () => {
 });
 
 test('update non existing case', async () => {
-  const nonExsitingCaseId = 1;
+  const nonExistingCaseId = 1;
   jest.spyOn(MockCase, 'findOne').mockImplementation(() => null);
 
   const updateCaseObject = {
@@ -417,7 +414,7 @@ test('update non existing case', async () => {
   };
 
   await expect(
-    CaseController.updateCase(nonExsitingCaseId, updateCaseObject, accountSid, workerSid),
+    CaseController.updateCase(nonExistingCaseId, updateCaseObject, accountSid, workerSid),
   ).rejects.toThrow();
 });
 
