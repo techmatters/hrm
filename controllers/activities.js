@@ -148,4 +148,4 @@ const getCaseActivities = async (caseId, accountSid) => {
   return convertAuditsAndContactsToActivities(caseAudits, relatedContacts);
 };
 
-module.exports = { getCaseActivities, convertAuditsAndContactsToActivities, getActivity };
+module.exports = { getCaseActivities };
