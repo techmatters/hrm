@@ -330,7 +330,7 @@ test('list cases (without contacts)', async () => {
 
   const expectedCases = casesFromDB.map(caseItem => {
     const { dataValues } = caseItem;
-    return  { ...dataValues, childName: '', categories: {} };
+    return { ...dataValues, childName: '', categories: {} };
   });
 
   const expected = { cases: expectedCases, count: expectedCases.length };
