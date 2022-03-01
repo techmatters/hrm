@@ -59,7 +59,7 @@ describe('/cases route', () => {
   const fillNameAndPhone = contact => {
     const modifiedContact = {
       ...contact,
-      form: {
+      rawJson: {
         ...contact.form,
         childInformation: {
           ...contact.form.childInformation,
@@ -72,7 +72,6 @@ describe('/cases route', () => {
       number: '+1-202-555-0184',
     };
 
-    modifiedContact.rawJson = modifiedContact.form;
     delete modifiedContact.form;
 
     return modifiedContact;
@@ -128,6 +127,7 @@ describe('/cases route', () => {
       });
 
       afterEach(async () => {
+        await createdContact.destroy();
         await createdCase.destroy();
       });
 
