@@ -131,6 +131,7 @@ describe('/cases route', () => {
         await createdCase.destroy();
       });
 
+      // eslint-disable-next-line jest/expect-expect
       test('should return 200 when populated', async () => {
         const response = await request.get(route).set(headers);
         validateSingleCaseResponse(response, createdCase, createdContact);
@@ -429,6 +430,7 @@ describe('/cases route', () => {
         expect(ids).toContain(createdCase3.id);
       });
 
+      // eslint-disable-next-line jest/expect-expect
       test('should return 200 - search by contact number', async () => {
         const body = {
           helpline: 'helpline',
