@@ -1,7 +1,7 @@
 module.exports = {
   up: async queryInterface => {
-    await queryInterface.sequelize.query(`UPDATE "Cases" casesToUpdate
-SET casesToUpdate.info = jsonb_set(casesToUpdate.info, '{referrals}', ar."auditReferrals")
+    await queryInterface.sequelize.query(`UPDATE "Cases" AS casesToUpdate
+SET "info" = jsonb_set(casesToUpdate."info", '{referrals}', ar."auditReferrals")
 FROM
 (
     SELECT
@@ -18,9 +18,9 @@ FROM
 ) ar
 WHERE casesToUpdate.id = ar."caseId"`);
     return queryInterface.sequelize.query(`
-    UPDATE "Cases" casesToUpdate
+    UPDATE "Cases" AS casesToUpdate
     -- Set the existing info to have a new property called 'counsellorNotes' with the JSON array from the subquery
-    SET casesToUpdate.info = jsonb_set(casesToUpdate.info, '{counsellorNotes}', cn."counsellorNotes")
+    SET "info" = jsonb_set(casesToUpdate.info, '{counsellorNotes}', cn."counsellorNotes")
     FROM
     (
       SELECT
@@ -42,12 +42,12 @@ WHERE casesToUpdate.id = ar."caseId"`);
     WHERE casesToUpdate.id = cn."caseId"
     `);
   },
-  down: async queryInterface => {
+  down: queryInterface => {
     // Not sure if there's any value to removing the additional referral properties in a rollback? The update is idempotent anyway.
     // The same could be said for counsellorNotes, but that rollback is pretty simple, whereas removing the extra props from referrals is a PITA
     return queryInterface.sequelize.query(`
         UPDATE "Cases" casesToUpdate
-        SET casesToUpdate.info = casesToUpdate.info - 'counsellorNotes' 
+        SET "info" = casesToUpdate.info - 'counsellorNotes' 
     `);
   },
 };
