@@ -41,7 +41,9 @@ test('get existing case', async () => {
     id: caseId,
     helpline: 'helpline',
     status: 'open',
-    info: { notes: 'Child with covid-19' },
+    info: {
+      counsellorNotes: [{ note: 'Child with covid-19', twilioWorkerId: 'contact-adder' }],
+    },
     twilioWorkerId: 'twilio-worker-id',
   };
   const findOneSpy = jest.spyOn(MockCase, 'findOne').mockImplementation(() => caseFromDB);
@@ -193,7 +195,9 @@ test('list cases (with 1st contact, no limit/offset)', async () => {
         id: caseId,
         helpline: 'helpline',
         status: 'open',
-        info: { notes: 'Child with covid-19' },
+        info: {
+          counsellorNotes: [{ note: 'Child with covid-19', twilioWorkerId: 'contact-adder' }],
+        },
         twilioWorkerId: 'twilio-worker-id',
       },
       connectedContacts: [
@@ -218,6 +222,10 @@ test('list cases (with 1st contact, no limit/offset)', async () => {
     const { dataValues } = caseItem;
     return {
       ...dataValues,
+      info: {
+        ...dataValues.info,
+        notes: ['Child with covid-19'], // Legacy notes property
+      },
       childName: 'name last',
       categories: { cat1: ['sub2'] },
     };
@@ -257,7 +265,9 @@ test('list cases (with 1st contact, with limit/offset)', async () => {
         id: caseId,
         helpline: 'helpline',
         status: 'open',
-        info: { notes: 'Child with covid-19' },
+        info: {
+          counsellorNotes: [{ note: 'Child with covid-19', twilioWorkerId: 'contact-adder' }],
+        },
         twilioWorkerId: 'twilio-worker-id',
       },
       connectedContacts: [
@@ -282,6 +292,10 @@ test('list cases (with 1st contact, with limit/offset)', async () => {
     const { dataValues } = caseItem;
     return {
       ...dataValues,
+      info: {
+        ...dataValues.info,
+        notes: ['Child with covid-19'], // Legacy notes property
+      },
       childName: 'name last',
       categories: { cat1: ['sub2'] },
     };
@@ -380,29 +394,224 @@ test('list cases without helpline', async () => {
 
   expect(findAndCountAllSpy).toHaveBeenCalledWith(expectedQueryObject);
 });
-
-test('update existing case', async () => {
-  const caseId = 1;
-  const caseFromDB = {
-    id: caseId,
-    helpline: 'helpline',
-    status: 'open',
-    info: { notes: 'Child with covid-19' },
-    twilioWorkerId: 'twilio-worker-id',
-    createdBy: workerSid,
-    update: jest.fn(),
-  };
-  jest.spyOn(MockCase, 'findOne').mockImplementation(() => caseFromDB);
-  const updateSpy = jest.spyOn(caseFromDB, 'update');
-  const contextObject = { context: { workerSid } };
-
-  const updateCaseObject = {
-    info: { notes: 'Refugee Child' },
+describe('update existing case', () => {
+  const mockExistingCase = expectedCaseInfo => {
+    const caseId = 1;
+    const caseFromDB = {
+      dataValues: {
+        id: caseId,
+        helpline: 'helpline',
+        status: 'open',
+        info: expectedCaseInfo,
+        twilioWorkerId: 'twilio-worker-id',
+        createdBy: workerSid,
+      },
+      update: jest.fn(),
+    };
+    jest.spyOn(MockCase, 'findOne').mockImplementation(() => caseFromDB);
+    return caseFromDB;
   };
 
-  await CaseController.updateCase(caseId, updateCaseObject, accountSid, workerSid);
+  const mockUpdatedCase = (updatedCaseInfo, caseFromDB) => {
+    const updateCaseObject = {
+      info: updatedCaseInfo,
+    };
+    const updateSpy = jest
+      .spyOn(caseFromDB, 'update')
+      .mockImplementation(() => ({ dataValues: updateCaseObject }));
+    return { updateCaseObject, updateSpy };
+  };
 
-  expect(updateSpy).toHaveBeenCalledWith(updateCaseObject, contextObject);
+  test('using current format', async () => {
+    const caseFromDB = mockExistingCase({
+      counsellorNotes: [{ note: 'Child with covid-19', twilioWorkerId: 'contact-adder' }],
+    });
+
+    const { updateCaseObject, updateSpy } = mockUpdatedCase(
+      {
+        counsellorNotes: [{ note: 'Refugee Child', twilioWorkerId: 'contact-adder' }],
+      },
+      caseFromDB,
+    );
+
+    const returned = await CaseController.updateCase(
+      caseFromDB.dataValues.id,
+      updateCaseObject,
+      accountSid,
+      workerSid,
+    );
+
+    const contextObject = { context: { workerSid } };
+    expect(updateSpy).toHaveBeenCalledWith(updateCaseObject, contextObject);
+    expect(returned.info).toStrictEqual({
+      ...updateCaseObject.info,
+      notes: ['Refugee Child'],
+    });
+  });
+
+  test('adding a note in legacy note format - converts legacy note to counsellor note', async () => {
+    const caseFromDB = mockExistingCase({
+      counsellorNotes: [{ note: 'Child with covid-19', twilioWorkerId: 'contact-adder' }],
+    });
+
+    const { updateCaseObject, updateSpy } = mockUpdatedCase(
+      {
+        counsellorNotes: [
+          { note: 'Child with covid-19', twilioWorkerId: 'contact-adder' },
+          { note: 'Refugee Child', twilioWorkerId: workerSid, createdAt: expect.anything() },
+        ],
+      },
+      caseFromDB,
+    );
+    const contextObject = { context: { workerSid } };
+
+    const legacyUpdateCaseObject = {
+      info: { notes: ['Child with covid-19', 'Refugee Child'] },
+    };
+
+    const returned = await CaseController.updateCase(
+      caseFromDB.dataValues.id,
+      legacyUpdateCaseObject,
+      accountSid,
+      workerSid,
+    );
+
+    expect(updateSpy).toHaveBeenCalledWith(updateCaseObject, contextObject);
+    expect(returned.info).toStrictEqual({
+      ...updateCaseObject.info,
+      notes: ['Child with covid-19', 'Refugee Child'],
+    });
+  });
+
+  test('adding a referral in legacy format - adds missing properties', async () => {
+    const caseFromDB = mockExistingCase({
+      referrals: [
+        {
+          date: '2020-10-15',
+          referredTo: 'State Agency 1',
+          comments: 'comment',
+          createdAt: '2020-10-16 00:00:00',
+          twilioWorkerId: 'referral-adder',
+        },
+      ],
+    });
+
+    const { updateCaseObject, updateSpy } = mockUpdatedCase(
+      {
+        referrals: [
+          {
+            date: '2020-10-15',
+            referredTo: 'State Agency 1',
+            comments: 'comment',
+            createdAt: '2020-10-16 00:00:00',
+            twilioWorkerId: 'referral-adder',
+          },
+          {
+            date: '2020-10-16',
+            referredTo: 'State Agency 2',
+            comments: 'comment',
+            createdAt: expect.anything(),
+            twilioWorkerId: workerSid,
+          },
+        ],
+      },
+      caseFromDB,
+    );
+    const contextObject = { context: { workerSid } };
+
+    const legacyUpdateCaseObject = {
+      info: {
+        referrals: [
+          {
+            date: '2020-10-15',
+            referredTo: 'State Agency 1',
+            comments: 'comment',
+            createdAt: '2020-10-16 00:00:00',
+            twilioWorkerId: 'referral-adder',
+          },
+          {
+            date: '2020-10-16',
+            referredTo: 'State Agency 2',
+            comments: 'comment',
+          },
+        ],
+      },
+    };
+
+    const returned = await CaseController.updateCase(
+      caseFromDB.dataValues.id,
+      legacyUpdateCaseObject,
+      accountSid,
+      workerSid,
+    );
+
+    expect(updateSpy).toHaveBeenCalledWith(updateCaseObject, contextObject);
+    expect(returned.info).toStrictEqual(updateCaseObject.info);
+  });
+
+  test('update an existing referral in legacy referral format - does not overwrite preexisting new properties', async () => {
+    const caseFromDB = mockExistingCase({
+      referrals: [
+        {
+          date: '2020-10-15',
+          referredTo: 'State Agency 1',
+          comments: 'comment',
+          createdAt: '2020-10-16 00:00:00',
+          twilioWorkerId: 'referral-adder',
+        },
+      ],
+    });
+
+    const { updateCaseObject, updateSpy } = mockUpdatedCase(
+      {
+        referrals: [
+          {
+            date: '2020-10-15',
+            referredTo: 'State Agency 1',
+            comments: 'changed comment',
+            createdAt: '2020-10-16 00:00:00',
+            twilioWorkerId: 'referral-adder',
+          },
+          {
+            date: '2020-10-16',
+            referredTo: 'State Agency 2',
+            comments: 'comment',
+            createdAt: expect.anything(),
+            twilioWorkerId: workerSid,
+          },
+        ],
+      },
+      caseFromDB,
+    );
+    const contextObject = { context: { workerSid } };
+
+    const legacyUpdateCaseObject = {
+      info: {
+        referrals: [
+          {
+            date: '2020-10-15',
+            referredTo: 'State Agency 1',
+            comments: 'changed comment',
+          },
+          {
+            date: '2020-10-16',
+            referredTo: 'State Agency 2',
+            comments: 'comment',
+          },
+        ],
+      },
+    };
+
+    const returned = await CaseController.updateCase(
+      caseFromDB.dataValues.id,
+      legacyUpdateCaseObject,
+      accountSid,
+      workerSid,
+    );
+
+    expect(updateSpy).toHaveBeenCalledWith(updateCaseObject, contextObject);
+    expect(returned.info).toStrictEqual(updateCaseObject.info);
+  });
 });
 
 test('update non existing case', async () => {

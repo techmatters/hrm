@@ -63,7 +63,15 @@ describe('/cases/:caseId/activities route', () => {
       const response = await request.get(route(createdCase.id)).set(headers);
 
       expect(response.status).toBe(200);
-      expect(response.body).toStrictEqual([]);
+      const caseNote = case1.info.counsellorNotes[0];
+      expect(response.body).toStrictEqual([
+        {
+          text: caseNote.note,
+          twilioWorkerId: caseNote.twilioWorkerId,
+          date: caseNote.createdAt,
+          type: 'note',
+        },
+      ]);
     });
   });
 });

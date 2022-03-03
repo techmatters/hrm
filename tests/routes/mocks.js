@@ -217,7 +217,13 @@ const case1 = {
   status: 'open',
   helpline: 'helpline',
   info: {
-    notes: 'Child with covid-19',
+    counsellorNotes: [
+      {
+        note: 'Child with covid-19',
+        twilioWorkerId: 'note-adder',
+        createdAt: '2022-01-01 00:00:00',
+      },
+    ],
   },
   twilioWorkerId: 'worker-sid',
   createdBy: 'worker-sid',
@@ -228,7 +234,11 @@ const case2 = {
   status: 'open',
   helpline: 'helpline',
   info: {
-    notes: 'Refugee child',
+    counsellorNotes: {
+      note: 'Child with covid-19',
+      twilioWorkerId: 'other-note-adder',
+      createdAt: '2021-01-01 00:00:00',
+    },
   },
   twilioWorkerId: 'worker-sid',
   createdBy: 'worker-sid',

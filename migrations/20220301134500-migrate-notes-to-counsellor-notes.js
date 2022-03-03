@@ -1,5 +1,22 @@
 module.exports = {
-  up: queryInterface => {
+  up: async queryInterface => {
+    await queryInterface.sequelize.query(`UPDATE "Cases" casesToUpdate
+SET casesToUpdate.info = jsonb_set(casesToUpdate.info, '{referrals}', ar."auditReferrals")
+FROM
+(
+    SELECT
+        ca."caseId",
+        COALESCE(jsonb_agg(r.value || jsonb_build_object('id', ca.id::text, 'twilioWorkerId', ca."twilioWorkerId", 'createdAt',ca."createdAt")) FILTER (WHERE r.value IS NOT NULL), '[]') AS "auditReferrals"
+    FROM public."CaseAudits" ca
+        LEFT JOIN LATERAL
+        jsonb_array_elements(jsonb_path_query_array(ca."newValue"->'info'->'referrals', CONCAT('$[', COALESCE(jsonb_array_length(ca."previousValue"->'info'->'referrals'), 0), ' to ', jsonb_array_length(ca."newValue"->'info'->'referrals'), ']')::jsonpath))
+         r ON true
+    WHERE
+        ca."caseId" IS NOT NULL AND
+        COALESCE(jsonb_array_length(ca."previousValue"->'info'->'referrals'), 0) < jsonb_array_length(ca."newValue"->'info'->'referrals')
+    GROUP BY ca."caseId"
+) ar
+WHERE casesToUpdate.id = ar."caseId"`);
     return queryInterface.sequelize.query(`
     UPDATE "Cases" casesToUpdate
     -- Set the existing info to have a new property called 'counsellorNotes' with the JSON array from the subquery
@@ -26,9 +43,10 @@ module.exports = {
     `);
   },
   down: async queryInterface => {
+    // Not sure if there's any value to removing the additional referral properties in a rollback? The update is idempotent anyway.
+    // The same could be said for counsellorNotes, but that rollback is pretty simple, whereas removing the extra props from referrals is a PITA
     return queryInterface.sequelize.query(`
         UPDATE "Cases" casesToUpdate
-        -- No, really, that's how you remove a key from a jsonb blob :-P
         SET casesToUpdate.info = casesToUpdate.info - 'counsellorNotes' 
     `);
   },

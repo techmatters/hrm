@@ -28,6 +28,23 @@ function getObjectsFromInfo(caseObj, name) {
   return (caseObj && caseObj.info && caseObj.info[name]) || [];
 }
 
+const noteActivities = ({ counsellorNotes }) =>
+  (counsellorNotes || [])
+    .map(n => {
+      try {
+        return {
+          date: n.createdAt,
+          type: ActivityTypes.addNote,
+          text: n.note,
+          twilioWorkerId: n.twilioWorkerId,
+        };
+      } catch (err) {
+        console.warn(`Error processing referral, excluding from data`, n, err);
+        return null;
+      }
+    })
+    .filter(na => na);
+
 function createAddNoteActivity({ previousValue, newValue, createdAt, twilioWorkerId }) {
   const previousNotes = getObjectsFromInfo(previousValue, 'notes');
   const newNotes = getObjectsFromInfo(newValue, 'notes');
@@ -61,6 +78,25 @@ function createAddReferralActivity({ previousValue, newValue, createdAt, twilioW
   };
 }
 
+const referralActivities = ({ referrals }) =>
+  (referrals || [])
+    .map(r => {
+      try {
+        return {
+          date: r.date,
+          createdAt: r.createdAt,
+          type: ActivityTypes.addReferral,
+          text: r.referredTo,
+          twilioWorkerId: r.twilioWorkerId,
+          referral: r,
+        };
+      } catch (err) {
+        console.warn(`Error processing referral, excluding from data`, r, err);
+        return null;
+      }
+    })
+    .filter(ra => ra);
+
 function createConnectContactActivity(
   { previousValue, newValue, createdAt, twilioWorkerId },
   type,
@@ -78,7 +114,7 @@ function createConnectContactActivity(
 
   return {
     contactId: newContactId,
-    date: newContact.timeOfContact,
+    date: new Date(newContact.timeOfContact),
     createdAt,
     type,
     text: newContact.rawJson.caseInformation.callSummary,
@@ -86,6 +122,29 @@ function createConnectContactActivity(
     channel,
   };
 }
+
+const connectedContactActivities = caseContacts =>
+  (caseContacts || [])
+    .map(cc => {
+      try {
+        const type = ActivityTypes.connectContact[cc.channel];
+        const channel =
+          type !== ActivityTypes.connectContact.default ? type : cc.rawJson.contactlessTask.channel;
+        return {
+          contactId: cc.id,
+          date: cc.timeOfContact,
+          createdAt: cc.createdAt,
+          type,
+          text: cc.rawJson.caseInformation.callSummary,
+          twilioWorkerId: cc.twilioWorkerId,
+          channel,
+        };
+      } catch (err) {
+        console.warn(`Error processing connected contact, excluding from data`, cc, err);
+        return null;
+      }
+    })
+    .filter(cca => cca);
 
 function getActivityType({ previousValue, newValue }, relatedContacts) {
   const previousNotesCount = getObjectsFromInfo(previousValue, 'notes').length;
@@ -142,11 +201,24 @@ const convertAuditsAndContactsToActivities = async (caseAudits, relatedContacts)
 };
 
 const getCaseActivities = async (caseId, accountSid) => {
-  await CaseController.getCase(caseId, accountSid);
-  const caseAudits = await CaseAuditController.getAuditsForCase(caseId, accountSid);
-  const contactIds = [...new Set(caseAudits.flatMap(caseAudit => caseAudit.newValue.contacts))];
-  const relatedContacts = await ContactController.getContactsById(contactIds, accountSid);
-  return convertAuditsAndContactsToActivities(caseAudits, relatedContacts);
+  const dbCase = await CaseController.getCase(caseId, accountSid);
+  return [
+    ...noteActivities(dbCase.info),
+    ...referralActivities(dbCase.info),
+    ...connectedContactActivities(dbCase.connectedContacts),
+  ].sort((activity1, activity2) => {
+    try {
+      return new Date(activity2.date) - new Date(activity1.date);
+    } catch (err) {
+      console.warn(
+        'Failed to create data objects from data properties for sorting, falling back to simple text comparison',
+        activity1.date,
+        activity2.date,
+        err,
+      );
+      return (activity2.date || '').toString().localeCompare((activity1.date || '').toString());
+    }
+  });
 };
 
 module.exports = { getCaseActivities };
