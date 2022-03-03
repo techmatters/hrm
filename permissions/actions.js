@@ -37,9 +37,6 @@ const isNewOrAddKind = kind => kind === NEW_PROPERTY || kind === ARRAY_CHANGED;
 const isEditKind = kind => kind === EDITED_PROPERTY;
 const isAddOrEditKind = kind => isNewOrAddKind(kind) || isEditKind(kind);
 
-const isEditCaseSummary = change =>
-  isAddOrEditKind(change.kind) && isPathEqual(change.path, ['info', 'summary']);
-
 const isCloseCase = change =>
   isEditKind(change.kind) && isPathEqual(change.path, ['status']) && change.rhs === 'closed';
 
@@ -89,6 +86,9 @@ const isEditIncident = change =>
 
 const isEditDocument = change =>
   isEditKind(change.kind) && isPathEqual(change.path, ['info', 'documents']);
+
+const isEditCaseSummary = change =>
+  isAddOrEditKind(change.kind) && isPathEqual(change.path, ['info', 'summary']);
 
 /**
  * This function compares the original object and the object with the updated values
