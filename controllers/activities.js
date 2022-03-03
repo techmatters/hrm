@@ -1,3 +1,10 @@
+const models = require('../models');
+
+const { Contact, Case, CaseAudit, sequelize } = models;
+const ContactController = require('../controllers/contact-controller')(Contact);
+const CaseController = require('../controllers/case-controller')(Case, sequelize);
+const CaseAuditController = require('../controllers/case-audit-controller')(CaseAudit);
+
 const ActivityTypes = {
   createCase: 'create',
   addNote: 'note',
@@ -123,4 +130,23 @@ function getActivity(caseAudit, relatedContacts) {
   return activity;
 }
 
-module.exports = { getActivity };
+const convertAuditsAndContactsToActivities = async (caseAudits, relatedContacts) => {
+  const activities = [];
+
+  caseAudits.forEach(caseAudit => {
+    const activity = getActivity(caseAudit, relatedContacts);
+    if (activity) activities.push(activity);
+  });
+
+  return activities;
+};
+
+const getCaseActivities = async (caseId, accountSid) => {
+  await CaseController.getCase(caseId, accountSid);
+  const caseAudits = await CaseAuditController.getAuditsForCase(caseId, accountSid);
+  const contactIds = [...new Set(caseAudits.flatMap(caseAudit => caseAudit.newValue.contacts))];
+  const relatedContacts = await ContactController.getContactsById(contactIds, accountSid);
+  return convertAuditsAndContactsToActivities(caseAudits, relatedContacts);
+};
+
+module.exports = { getCaseActivities };

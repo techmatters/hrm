@@ -1,13 +1,8 @@
 const Sequelize = require('sequelize');
-const { getActivity } = require('./activities');
 
 const { Op } = Sequelize;
 
 const CaseAuditController = CaseAudit => {
-  const getContactIdsFromCaseAudits = caseAudits => {
-    return [...new Set(caseAudits.map(caseAudit => caseAudit.newValue.contacts).flat())];
-  };
-
   const getAuditsForCase = async (caseId, accountSid) => {
     const queryObject = {
       order: [['createdAt', 'DESC']],
@@ -17,17 +12,6 @@ const CaseAuditController = CaseAudit => {
     };
 
     return CaseAudit.findAll(queryObject);
-  };
-
-  const getActivities = async (caseAudits, relatedContacts) => {
-    const activities = [];
-
-    caseAudits.forEach(caseAudit => {
-      const activity = getActivity(caseAudit, relatedContacts);
-      if (activity) activities.push(activity);
-    });
-
-    return activities;
   };
 
   const createCaseAuditFromContact = async (
@@ -75,8 +59,6 @@ const CaseAuditController = CaseAudit => {
 
   return {
     getAuditsForCase,
-    getActivities,
-    getContactIdsFromCaseAudits,
     createCaseAuditFromContact,
     createCaseAuditFromCase,
   };
