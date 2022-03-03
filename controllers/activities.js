@@ -16,6 +16,7 @@ const ActivityTypes = {
     web: 'web',
     sms: 'sms',
     twitter: 'twitter',
+    instagram: 'instagram',
     default: 'default',
   },
   unknown: 'unknown',
