@@ -27,17 +27,17 @@ const DELETED_PROPERTY = 'D';
 
 /**
  * @param {string[]} target
- * @param {string[]} changePath
+ * @returns {function(string[]): bool}
  * Compares the target.length first components of a change path to decide if they refer to the same "case item type" under case.info (e.g. if it's editing the status, info (notes, perpetrators, etc))
  * Example paths are like:
  *   [ 'info', 'perpetrators' ] when adding a new perpetrator
  *   [ 'info', 'perpetrators', 0, 'perpetrator', 'phone1' ] when editin an existing perpetrator
  */
-const isPathTarget = (target, changePath) =>
+const isPathTarget = target => changePath =>
   target.every((value, index) => changePath[index] === value);
 
-const isPathTargetsStatus = path => isPathTarget(['status'], path);
-const isPathTargetsInfo = path => isPathTarget(['info'], path);
+const isPathTargetsStatus = isPathTarget(['status']);
+const isPathTargetsInfo = isPathTarget(['info']);
 
 const isNewOrAddKind = kind => kind === NEW_PROPERTY || kind === ARRAY_CHANGED;
 const isEditKind = kind => kind === EDITED_PROPERTY;
@@ -59,43 +59,43 @@ const isCaseStatusTransition = change =>
   change.rhs !== 'closed';
 
 const isAddNote = change =>
-  isNewOrAddKind(change.kind) && isPathTarget(['info', 'notes'], change.path);
+  isNewOrAddKind(change.kind) && isPathTarget(['info', 'notes'])(change.path);
 
 const isAddReferral = change =>
-  isNewOrAddKind(change.kind) && isPathTarget(['info', 'referrals'], change.path);
+  isNewOrAddKind(change.kind) && isPathTarget(['info', 'referrals'])(change.path);
 
 const isAddHousehold = change =>
-  isNewOrAddKind(change.kind) && isPathTarget(['info', 'households'], change.path);
+  isNewOrAddKind(change.kind) && isPathTarget(['info', 'households'])(change.path);
 
 const isAddPerpetrator = change =>
-  isNewOrAddKind(change.kind) && isPathTarget(['info', 'perpetrators'], change.path);
+  isNewOrAddKind(change.kind) && isPathTarget(['info', 'perpetrators'])(change.path);
 
 const isAddIncident = change =>
-  isNewOrAddKind(change.kind) && isPathTarget(['info', 'incidents'], change.path);
+  isNewOrAddKind(change.kind) && isPathTarget(['info', 'incidents'])(change.path);
 
 const isAddDocument = change =>
-  isNewOrAddKind(change.kind) && isPathTarget(['info', 'documents'], change.path);
+  isNewOrAddKind(change.kind) && isPathTarget(['info', 'documents'])(change.path);
 
 const isEditNote = change =>
-  isEditKind(change.kind) && isPathTarget(['info', 'notes'], change.path);
+  isEditKind(change.kind) && isPathTarget(['info', 'notes'])(change.path);
 
 const isEditReferral = change =>
-  isEditKind(change.kind) && isPathTarget(['info', 'referrals'], change.path);
+  isEditKind(change.kind) && isPathTarget(['info', 'referrals'])(change.path);
 
 const isEditHousehold = change =>
-  isEditKind(change.kind) && isPathTarget(['info', 'households'], change.path);
+  isEditKind(change.kind) && isPathTarget(['info', 'households'])(change.path);
 
 const isEditPerpetrator = change =>
-  isEditKind(change.kind) && isPathTarget(['info', 'perpetrators'], change.path);
+  isEditKind(change.kind) && isPathTarget(['info', 'perpetrators'])(change.path);
 
 const isEditIncident = change =>
-  isEditKind(change.kind) && isPathTarget(['info', 'incidents'], change.path);
+  isEditKind(change.kind) && isPathTarget(['info', 'incidents'])(change.path);
 
 const isEditDocument = change =>
-  isEditKind(change.kind) && isPathTarget(['info', 'documents'], change.path);
+  isEditKind(change.kind) && isPathTarget(['info', 'documents'])(change.path);
 
 const isEditCaseSummary = change =>
-  isAddOrEditKind(change.kind) && isPathTarget(['info', 'summary'], change.path);
+  isAddOrEditKind(change.kind) && isPathTarget(['info', 'summary'])(change.path);
 
 /**
  * This function compares the original object and the object with the updated values
