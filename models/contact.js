@@ -60,6 +60,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: false,
     },
+    createdAt: DataTypes.DATE,
     helpline: DataTypes.STRING,
     number: DataTypes.STRING,
     channel: DataTypes.STRING,

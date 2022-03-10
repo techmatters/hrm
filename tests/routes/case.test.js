@@ -78,27 +78,27 @@ describe('/cases route', () => {
   };
 
   const validateSingleCaseResponse = (actual, expectedCaseModel, expectedContactModel) => {
+    const { connectedContacts, ...caseDataValues } = expectedCaseModel.dataValues;
     expect(actual.status).toBe(200);
     expect(actual.body).toStrictEqual(
       expect.objectContaining({
-        cases: expect.arrayContaining([
-          expect.objectContaining({
-            ...expectedCaseModel.dataValues,
-            createdAt: expectedCaseModel.dataValues.createdAt.toISOString(),
-            updatedAt: expectedCaseModel.dataValues.updatedAt.toISOString(),
-            connectedContacts: [
-              expect.objectContaining({
-                ...expectedContactModel.dataValues,
-                csamReports: [],
-                createdAt: expect.toParseAsDate(expectedContactModel.dataValues.createdAt),
-                updatedAt: expect.toParseAsDate(expectedContactModel.dataValues.updatedAt),
-              }),
-            ],
-          }),
-        ]),
+        cases: expect.arrayContaining([expect.anything()]),
         count: 1,
       }),
     );
+    expect(actual.body.cases[0]).toMatchObject({
+      ...caseDataValues,
+      createdAt: expectedCaseModel.dataValues.createdAt.toISOString(),
+      updatedAt: expectedCaseModel.dataValues.updatedAt.toISOString(),
+    });
+    expect(actual.body.cases[0].connectedContacts).toStrictEqual([
+      expect.objectContaining({
+        ...expectedContactModel.dataValues,
+        csamReports: [],
+        createdAt: expect.toParseAsDate(expectedContactModel.dataValues.createdAt),
+        updatedAt: expect.toParseAsDate(expectedContactModel.dataValues.updatedAt),
+      }),
+    ]);
   };
 
   describe('GET', () => {
@@ -155,7 +155,10 @@ describe('/cases route', () => {
       expect(response.status).toBe(200);
       expect(response.body.status).toBe(case1.status);
       expect(response.body.helpline).toBe(case1.helpline);
-      expect(response.body.info).toStrictEqual(case1.info);
+      expect(response.body.info).toStrictEqual({
+        ...case1.info,
+        notes: case1.info.counsellorNotes.map(cn => cn.note), // Legacy notes for old clients
+      });
     });
 
     test('should create a CaseAudit', async () => {

@@ -63,7 +63,105 @@ describe('/cases/:caseId/activities route', () => {
       const response = await request.get(route(createdCase.id)).set(headers);
 
       expect(response.status).toBe(200);
-      expect(response.body).toStrictEqual([]);
+      const caseNote = case1.info.counsellorNotes[0];
+      expect(response.body).toStrictEqual([
+        {
+          text: caseNote.note,
+          twilioWorkerId: caseNote.twilioWorkerId,
+          date: caseNote.createdAt,
+          type: 'note',
+        },
+      ]);
+    });
+    test('should reflect edited notes', async () => {
+      const updated = {
+        ...case1,
+        info: {
+          ...case1.info,
+          counsellorNotes: [
+            {
+              ...case1.info.counsellorNotes[0],
+              note: 'I changed it',
+            },
+          ],
+        },
+      };
+      await request
+        .put(`/v0/accounts/${accountSid}/cases/${createdCase.id}`)
+        .set(headers)
+        .send(updated);
+      const response = await request.get(route(createdCase.id)).set(headers);
+      expect(response.status).toBe(200);
+      const caseNote = case1.info.counsellorNotes[0];
+      expect(response.body).toStrictEqual([
+        {
+          text: 'I changed it',
+          twilioWorkerId: caseNote.twilioWorkerId,
+          date: caseNote.createdAt,
+          type: 'note',
+        },
+      ]);
+    });
+    test('should reflect edited referrals', async () => {
+      const update = {
+        ...case1,
+        info: {
+          ...case1.info,
+          referrals: [
+            {
+              date: '2020-10-15',
+              referredTo: 'State Agency 1',
+              comments: 'comment',
+              createdAt: '2020-10-15 16:00:00',
+              twilioWorkerId: 'referral-adder',
+            },
+            {
+              date: '2020-10-16',
+              referredTo: 'State Agency 2',
+              comments: 'comment',
+              createdAt: '2020-10-16 00:00:00',
+              twilioWorkerId: 'referral-adder',
+            },
+          ],
+        },
+      };
+      await request
+        .put(`/v0/accounts/${accountSid}/cases/${createdCase.id}`)
+        .set(headers)
+        .send(update);
+      update.info.referrals[0].referredTo = 'NGO 1';
+      await request
+        .put(`/v0/accounts/${accountSid}/cases/${createdCase.id}`)
+        .set(headers)
+        .send(update);
+      const response = await request.get(route(createdCase.id)).set(headers);
+      expect(response.status).toBe(200);
+      const caseNote = case1.info.counsellorNotes[0];
+      const updateReferrals = update.info.referrals;
+      expect(response.body).toStrictEqual([
+        {
+          type: 'note',
+          text: caseNote.note,
+          twilioWorkerId: caseNote.twilioWorkerId,
+          date: caseNote.createdAt,
+        },
+        {
+          type: 'referral',
+          text: updateReferrals[1].referredTo,
+          twilioWorkerId: updateReferrals[1].twilioWorkerId,
+          date: updateReferrals[1].date,
+          createdAt: updateReferrals[1].createdAt,
+          referral: updateReferrals[1],
+        },
+        {
+          type: 'referral',
+          text: 'NGO 1',
+          twilioWorkerId: updateReferrals[0].twilioWorkerId,
+          date: updateReferrals[0].date,
+          createdAt: updateReferrals[0].createdAt,
+          referral: updateReferrals[0],
+        },
+      ]);
     });
   });
 });
