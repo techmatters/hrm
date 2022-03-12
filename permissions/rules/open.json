@@ -1,0 +1,19 @@
+{
+  "closeCase": [["everyone"]],
+  "reopenCase": [["everyone"]],
+  "caseStatusTransition": [["everyone"]],
+  "addNote": [["everyone"]],
+  "editNote": [["everyone"]],
+  "addReferral": [["everyone"]],
+  "editReferral": [["everyone"]],
+  "addHousehold": [["everyone"]],
+  "editHousehold": [["everyone"]],
+  "addPerpetrator": [["everyone"]],
+  "editPerpetrator": [["everyone"]],
+  "addIncident": [["everyone"]],
+  "editIncident": [["everyone"]],
+  "addDocument": [["everyone"]],
+  "editDocument": [["everyone"]],
+  "editCaseSummary": [["everyone"]],
+  "viewPostSurvey": [["everyone"]]
+}
