@@ -1,7 +1,7 @@
 /* eslint-disable jest/no-standalone-expect */
 const each = require('jest-each').default;
 
-const actions = require('../../permissions/actions');
+const { actionsMaps, getActions } = require('../../permissions/actions');
 
 const emptyCase = {
   id: 123,
@@ -28,37 +28,37 @@ each([
   {
     caseFromDB: emptyCase,
     update: { info: { summary: 'case summary' } },
-    expectedCondition: [actions.EDIT_CASE_SUMMARY],
+    expectedCondition: [actionsMaps.case.EDIT_CASE_SUMMARY],
     conditionDescription: 'adding a case summary',
   },
   {
     caseFromDB: emptyCase,
     update: { info: { notes: ['note 1'] } },
-    expectedCondition: [actions.ADD_NOTE],
+    expectedCondition: [actionsMaps.case.ADD_NOTE],
     conditionDescription: 'adding a note',
   },
   {
     caseFromDB: emptyCase,
     update: { info: { incidents: [{ incident: { property: 'property' } }] } },
-    expectedCondition: [actions.ADD_INCIDENT],
+    expectedCondition: [actionsMaps.case.ADD_INCIDENT],
     conditionDescription: 'adding an incident',
   },
   {
     caseFromDB: emptyCase,
     update: { info: { referrals: [{ property: 'property' }] } },
-    expectedCondition: [actions.ADD_REFERRAL],
+    expectedCondition: [actionsMaps.case.ADD_REFERRAL],
     conditionDescription: 'adding a referral',
   },
   {
     caseFromDB: emptyCase,
     update: { info: { households: [{ household: { property: 'property' } }] } },
-    expectedCondition: [actions.ADD_HOUSEHOLD],
+    expectedCondition: [actionsMaps.case.ADD_HOUSEHOLD],
     conditionDescription: 'adding a household',
   },
   {
     caseFromDB: emptyCase,
     update: { info: { perpetrators: [{ perpetrator: { property: 'property' } }] } },
-    expectedCondition: [actions.ADD_PERPETRATOR],
+    expectedCondition: [actionsMaps.case.ADD_PERPETRATOR],
     conditionDescription: 'adding a perpetrator',
   },
   {
@@ -73,18 +73,18 @@ each([
       },
     },
     expectedCondition: [
-      actions.ADD_NOTE,
-      actions.ADD_INCIDENT,
-      actions.ADD_REFERRAL,
-      actions.ADD_HOUSEHOLD,
-      actions.ADD_PERPETRATOR,
+      actionsMaps.case.ADD_NOTE,
+      actionsMaps.case.ADD_INCIDENT,
+      actionsMaps.case.ADD_REFERRAL,
+      actionsMaps.case.ADD_HOUSEHOLD,
+      actionsMaps.case.ADD_PERPETRATOR,
     ],
     conditionDescription: 'adding more than one property (test multiple additions not exhaustive)',
   },
 ]).test(
   "Should return '$expectedCondition' actions list when '$conditionDescription'",
   async ({ expectedCondition, caseFromDB, update }) => {
-    const result = actions.getActions(caseFromDB, update);
+    const result = getActions(caseFromDB, update);
 
     expect(result).toMatchObject(expectedCondition);
   },
@@ -120,7 +120,7 @@ each([
   {
     caseFromDB: caseWithProperties,
     update: { info: { notes: ['note 1', 'note 2'] } },
-    expectedCondition: [actions.ADD_NOTE],
+    expectedCondition: [actionsMaps.case.ADD_NOTE],
     conditionDescription: 'adding a second note',
   },
   {
@@ -130,13 +130,13 @@ each([
         incidents: [{ incident: { property: 'property' } }, { incident: { property: 'second' } }],
       },
     },
-    expectedCondition: [actions.ADD_INCIDENT],
+    expectedCondition: [actionsMaps.case.ADD_INCIDENT],
     conditionDescription: 'adding a second incident',
   },
   {
     caseFromDB: caseWithProperties,
     update: { info: { referrals: [{ property: 'property' }, { property: 'second' }] } },
-    expectedCondition: [actions.ADD_REFERRAL],
+    expectedCondition: [actionsMaps.case.ADD_REFERRAL],
     conditionDescription: 'adding a second referral',
   },
   {
@@ -149,7 +149,7 @@ each([
         ],
       },
     },
-    expectedCondition: [actions.ADD_HOUSEHOLD],
+    expectedCondition: [actionsMaps.case.ADD_HOUSEHOLD],
     conditionDescription: 'adding a second household',
   },
   {
@@ -162,7 +162,7 @@ each([
         ],
       },
     },
-    expectedCondition: [actions.ADD_PERPETRATOR],
+    expectedCondition: [actionsMaps.case.ADD_PERPETRATOR],
     conditionDescription: 'adding a second perpetrator',
   },
   {
@@ -183,18 +183,18 @@ each([
       },
     },
     expectedCondition: [
-      actions.ADD_NOTE,
-      actions.ADD_INCIDENT,
-      actions.ADD_REFERRAL,
-      actions.ADD_HOUSEHOLD,
-      actions.ADD_PERPETRATOR,
+      actionsMaps.case.ADD_NOTE,
+      actionsMaps.case.ADD_INCIDENT,
+      actionsMaps.case.ADD_REFERRAL,
+      actionsMaps.case.ADD_HOUSEHOLD,
+      actionsMaps.case.ADD_PERPETRATOR,
     ],
     conditionDescription: 'adding more than one property (test multiple additions not exhaustive)',
   },
 ]).test(
   "Should return '$expectedCondition' actions list when '$conditionDescription'",
   async ({ expectedCondition, caseFromDB, update }) => {
-    const result = actions.getActions(caseFromDB, update);
+    const result = getActions(caseFromDB, update);
 
     expect(result).toMatchObject(expectedCondition);
   },
@@ -205,7 +205,7 @@ each([
   {
     caseFromDB: caseWithProperties,
     update: { info: { notes: ['note 1 modified'] } },
-    expectedCondition: [actions.EDIT_NOTE],
+    expectedCondition: [actionsMaps.case.EDIT_NOTE],
     conditionDescription: 'editing a note',
   },
   {
@@ -215,13 +215,13 @@ each([
         incidents: [{ incident: { property: 'property modified' } }],
       },
     },
-    expectedCondition: [actions.EDIT_INCIDENT],
+    expectedCondition: [actionsMaps.case.EDIT_INCIDENT],
     conditionDescription: 'editing an incident',
   },
   {
     caseFromDB: caseWithProperties,
     update: { info: { referrals: [{ property: 'property modified' }] } },
-    expectedCondition: [actions.EDIT_REFERRAL],
+    expectedCondition: [actionsMaps.case.EDIT_REFERRAL],
     conditionDescription: 'editing a referral',
   },
   {
@@ -231,7 +231,7 @@ each([
         households: [{ household: { property: 'property modified' } }],
       },
     },
-    expectedCondition: [actions.EDIT_HOUSEHOLD],
+    expectedCondition: [actionsMaps.case.EDIT_HOUSEHOLD],
     conditionDescription: 'editing a household',
   },
   {
@@ -241,7 +241,7 @@ each([
         perpetrators: [{ perpetrator: { property: 'property modified' } }],
       },
     },
-    expectedCondition: [actions.EDIT_PERPETRATOR],
+    expectedCondition: [actionsMaps.case.EDIT_PERPETRATOR],
     conditionDescription: 'editing a perpetrator',
   },
   {
@@ -256,36 +256,36 @@ each([
       },
     },
     expectedCondition: [
-      actions.EDIT_NOTE,
-      actions.EDIT_INCIDENT,
-      actions.EDIT_REFERRAL,
-      actions.EDIT_HOUSEHOLD,
-      actions.EDIT_PERPETRATOR,
+      actionsMaps.case.EDIT_NOTE,
+      actionsMaps.case.EDIT_INCIDENT,
+      actionsMaps.case.EDIT_REFERRAL,
+      actionsMaps.case.EDIT_HOUSEHOLD,
+      actionsMaps.case.EDIT_PERPETRATOR,
     ],
     conditionDescription: 'editing more than one property (test multiple editions not exhaustive)',
   },
   {
     caseFromDB: caseWithProperties,
     update: { status: 'another' },
-    expectedCondition: [actions.CASE_STATUS_TRANSITION],
+    expectedCondition: [actionsMaps.case.CASE_STATUS_TRANSITION],
     conditionDescription: 'transitioning from a not-closed status to aother not-closed status',
   },
   {
     caseFromDB: caseWithProperties,
     update: { status: 'closed' },
-    expectedCondition: [actions.CLOSE_CASE],
+    expectedCondition: [actionsMaps.case.CLOSE_CASE],
     conditionDescription: 'transitioning from a not-closed status closed',
   },
   {
     caseFromDB: { ...caseWithProperties, status: 'closed' },
     update: { status: 'another' },
-    expectedCondition: [actions.REOPEN_CASE],
+    expectedCondition: [actionsMaps.case.REOPEN_CASE],
     conditionDescription: 'transitioning from a not-closed status closed',
   },
 ]).test(
   "Should return '$expectedCondition' actions list when '$conditionDescription'",
   async ({ expectedCondition, caseFromDB, update }) => {
-    const result = actions.getActions(caseFromDB, update);
+    const result = getActions(caseFromDB, update);
 
     expect(result).toMatchObject(expectedCondition);
   },
