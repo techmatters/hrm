@@ -36,7 +36,7 @@ describe('Test that all actions work fine (everyone)', () => {
       },
       user: new User('not creator', []),
     })),
-  ).test(`Action $action should return true`, async ({ action, caseToBeCreated, user }) => {
+  ).test('Action $action should return true', async ({ action, caseToBeCreated, user }) => {
     const createdCase = await Case.create(caseToBeCreated, options);
     expect(can(user, action, createdCase)).toBeTruthy();
   });
@@ -53,7 +53,7 @@ describe('Test that all actions work fine (everyone)', () => {
       },
       user: new User('not creator', []),
     })),
-  ).test(`Action $action should return true`, async ({ action, postSurveyToBeCreated, user }) => {
+  ).test('Action $action should return true', async ({ action, postSurveyToBeCreated, user }) => {
     const createdPostSurvey = await PostSurvey.create(postSurveyToBeCreated);
     expect(can(user, action, createdPostSurvey)).toBeTruthy();
   });
@@ -77,7 +77,7 @@ describe('Test that all actions work fine (no one)', () => {
       },
       user: new User('creator', ['supervisor']),
     })),
-  ).test(`Action $action should return false`, async ({ action, caseToBeCreated, user }) => {
+  ).test('Action $action should return false', async ({ action, caseToBeCreated, user }) => {
     const createdCase = await Case.create(caseToBeCreated, options);
     expect(can(user, action, createdCase)).toBeFalsy();
   });
@@ -94,7 +94,7 @@ describe('Test that all actions work fine (no one)', () => {
       },
       user: new User('creator', ['supervisor']),
     })),
-  ).test(`Action $action should return false`, async ({ action, postSurveyToBeCreated, user }) => {
+  ).test('Action $action should return false', async ({ action, postSurveyToBeCreated, user }) => {
     const createdPostSurvey = await PostSurvey.create(postSurveyToBeCreated);
     expect(can(user, action, createdPostSurvey)).toBeFalsy();
   });
@@ -123,7 +123,7 @@ describe('Test that an empty set of conditions does not grants permissions', () 
       },
       user: new User('creator', ['supervisor']),
     })),
-  ).test(`Action $action should return false`, async ({ action, caseToBeCreated, user }) => {
+  ).test('Action $action should return false', async ({ action, caseToBeCreated, user }) => {
     const createdCase = await Case.create(caseToBeCreated, options);
     expect(can(user, action, createdCase)).toBeFalsy();
   });
@@ -140,24 +140,25 @@ describe('Test that an empty set of conditions does not grants permissions', () 
       },
       user: new User('creator', ['supervisor']),
     })),
-  ).test(`Action $action should return false`, async ({ action, postSurveyToBeCreated, user }) => {
+  ).test('Action $action should return false', async ({ action, postSurveyToBeCreated, user }) => {
     const createdPostSurvey = await PostSurvey.create(postSurveyToBeCreated);
     expect(can(user, action, createdPostSurvey)).toBeFalsy();
   });
 });
 
-// Given one single actions array (i.e. actionsMaps.case or actionsMaps.postSurvey values converted to array), returns a random action within
-const getRandomAction = actionsMap =>
-  actionsMap[Math.floor(Math.random() * 100) % actionsMap.length];
-const getRandomCaseAction = () => getRandomAction(Object.values(actionsMaps.case));
-const getRandomPostSurveyAction = () => getRandomAction(Object.values(actionsMaps.postSurvey));
+const addPrettyConditionsSets = t => ({
+  ...t,
+  prettyConditionsSets: t.conditionsSets.map(arr => `[${arr.join(',')}]`),
+});
 
-describe('Test different scenarios (random action)', () => {
-  // Test Case permissions
+const mapTestToActions = actionsMap => t =>
+  Object.values(actionsMap).map(action => ({ ...t, action }));
+
+// Test Case permissions
+describe('Test different scenarios (Case)', () => {
   each(
     [
       {
-        action: getRandomCaseAction(),
         conditionsSets: [['everyone']],
         expectedResult: true,
         expectedDescription: 'is not creator nor supervisor, case is open',
@@ -172,7 +173,6 @@ describe('Test different scenarios (random action)', () => {
         user: new User('not creator', []),
       },
       {
-        action: getRandomCaseAction(),
         conditionsSets: [['everyone']],
         expectedResult: true,
         expectedDescription: 'is not creator nor supervisor, case is closed',
@@ -187,7 +187,6 @@ describe('Test different scenarios (random action)', () => {
         user: new User('not creator', []),
       },
       {
-        action: getRandomCaseAction(),
         conditionsSets: [], // no one
         expectedResult: false,
         expectedDescription: 'user is creator, supervisor, case is open',
@@ -202,7 +201,6 @@ describe('Test different scenarios (random action)', () => {
         user: new User('creator', ['supervisor']),
       },
       {
-        action: getRandomCaseAction(),
         conditionsSets: [['isSupervisor'], ['isCreator', 'isCaseOpen']],
         expectedResult: true,
         expectedDescription: 'user is supervisor but not creator, case open',
@@ -217,7 +215,6 @@ describe('Test different scenarios (random action)', () => {
         user: new User('not creator', ['supervisor']),
       },
       {
-        action: getRandomCaseAction(),
         conditionsSets: [['isSupervisor'], ['isCreator', 'isCaseOpen']],
         expectedResult: true,
         expectedDescription: 'user is supervisor but not creator, case closed',
@@ -232,7 +229,6 @@ describe('Test different scenarios (random action)', () => {
         user: new User('not creator', ['supervisor']),
       },
       {
-        action: getRandomCaseAction(),
         conditionsSets: [['isSupervisor'], ['isCreator', 'isCaseOpen']],
         expectedResult: false,
         expectedDescription: 'user is not supervisor nor creator',
@@ -247,7 +243,6 @@ describe('Test different scenarios (random action)', () => {
         user: new User('not creator', []),
       },
       {
-        action: getRandomCaseAction(),
         conditionsSets: [['isSupervisor'], ['isCreator', 'isCaseOpen']],
         expectedResult: true,
         expectedDescription: 'user is creator and case is open',
@@ -262,7 +257,6 @@ describe('Test different scenarios (random action)', () => {
         user: new User('creator', []),
       },
       {
-        action: getRandomCaseAction(),
         conditionsSets: [['isSupervisor'], ['isCreator', 'isCaseOpen']],
         expectedResult: false,
         expectedDescription: 'user is creator but case is closed',
@@ -277,7 +271,6 @@ describe('Test different scenarios (random action)', () => {
         user: new User('creator', []),
       },
       {
-        action: getRandomCaseAction(),
         conditionsSets: [['isSupervisor'], ['isCreator', 'isCaseOpen']],
         expectedResult: false,
         expectedDescription: 'case is open but user is not creator',
@@ -291,26 +284,32 @@ describe('Test different scenarios (random action)', () => {
         },
         user: new User('not creator', []),
       },
-    ].map(t => ({ ...t, prettyConditionsSets: t.conditionsSets.map(arr => `[${arr.join(',')}]`) })),
-  ).test(
-    `Should return $expectedResult when $expectedDescription and conditionsSets are $prettyConditionsSets`,
-    async ({ action, conditionsSets, caseToBeCreated, user, expectedResult }) => {
+    ].map(addPrettyConditionsSets),
+    // .flatMap(mapTestToActions(actionsMaps.case)),
+  ).describe(
+    'Expect $expectedResult when $expectedDescription with $prettyConditionsSets',
+    ({ conditionsSets, caseToBeCreated, user, expectedResult }) => {
       const rules = buildRules(conditionsSets);
       const can = setupCanForRules(rules);
 
-      const createdCase = await Case.create(caseToBeCreated, options);
-      expect(can(user, action, createdCase)).toBe(expectedResult);
+      Object.values(actionsMaps.case).forEach(action =>
+        test(`${action}`, async () => {
+          const createdCase = await Case.create(caseToBeCreated, options);
+          expect(can(user, action, createdCase)).toBe(expectedResult);
+        }),
+      );
     },
   );
+});
 
-  // Test PostSurvey permissions
+// Test PostSurvey permissions
+describe('Test different scenarios (PostSurvey)', () => {
   each(
     [
       {
-        action: getRandomPostSurveyAction(),
         conditionsSets: [['everyone']],
         expectedResult: true,
-        expectedDescription: 'not supervisor but set for everyone',
+        expectedDescription: 'not supervisor',
         postSurveyToBeCreated: {
           accountSid,
           taskId: 'task-sid',
@@ -320,10 +319,9 @@ describe('Test different scenarios (random action)', () => {
         user: new User('not creator', []),
       },
       {
-        action: getRandomPostSurveyAction(),
         conditionsSets: [],
         expectedResult: false,
-        expectedDescription: 'not supervisor and set for no one',
+        expectedDescription: 'not supervisor',
         postSurveyToBeCreated: {
           accountSid,
           taskId: 'task-sid',
@@ -333,10 +331,9 @@ describe('Test different scenarios (random action)', () => {
         user: new User('not creator', []),
       },
       {
-        action: getRandomPostSurveyAction(),
         conditionsSets: [],
         expectedResult: false,
-        expectedDescription: 'is supervisor but set for no one',
+        expectedDescription: 'is supervisor',
         postSurveyToBeCreated: {
           accountSid,
           taskId: 'task-sid',
@@ -346,7 +343,6 @@ describe('Test different scenarios (random action)', () => {
         user: new User('not creator', ['supervisor']),
       },
       {
-        action: getRandomPostSurveyAction(),
         conditionsSets: [['isSupervisor']],
         expectedResult: true,
         expectedDescription: 'is supervisor',
@@ -358,15 +354,19 @@ describe('Test different scenarios (random action)', () => {
         },
         user: new User('not creator', ['supervisor']),
       },
-    ].map(t => ({ ...t, prettyConditionsSets: t.conditionsSets.map(arr => `[${arr.join(',')}]`) })),
-  ).test(
-    `Should return $expectedResult when $expectedDescription and conditionsSets are $prettyConditionsSets`,
-    async ({ action, conditionsSets, postSurveyToBeCreated, user, expectedResult }) => {
+    ].map(addPrettyConditionsSets),
+  ).describe(
+    'Expect $expectedResult when $expectedDescription with $prettyConditionsSets',
+    ({ conditionsSets, postSurveyToBeCreated, user, expectedResult }) => {
       const rules = buildRules(conditionsSets);
       const can = setupCanForRules(rules);
 
-      const createdPostSurvey = await PostSurvey.create(postSurveyToBeCreated, options);
-      expect(can(user, action, createdPostSurvey)).toBe(expectedResult);
+      Object.values(actionsMaps.postSurvey).forEach(action =>
+        test(`${action}`, async () => {
+          const createdPostSurvey = await PostSurvey.create(postSurveyToBeCreated, options);
+          expect(can(user, action, createdPostSurvey)).toBe(expectedResult);
+        }),
+      );
     },
   );
 });
