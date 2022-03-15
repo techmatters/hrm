@@ -19,7 +19,7 @@ const checkCondition = conditionsState => condition => conditionsState[condition
  * @returns {(conditionsSet: 'isSupervisor' | 'isCreator' | 'isCaseOpen' | 'everyone'[]) => boolean}
  */
 const checkConditionsSet = conditionsState => conditionsSet =>
-  conditionsSet.every(checkCondition(conditionsState));
+  conditionsSet.length > 0 && conditionsSet.every(checkCondition(conditionsState));
 
 /**
  * Given a conditionsState and a set of conditions sets, returns true if one of the conditions sets contains conditions that are all true in the conditionsState

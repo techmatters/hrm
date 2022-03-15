@@ -18,20 +18,6 @@ const buildRules = conditionsSets =>
     .flatMap(e => Object.values(e))
     .reduce((accum, action) => ({ ...accum, [action]: conditionsSets }), {});
 
-// each([
-//   {
-//     dataValues: {
-//       id: 123,
-//       status: 'open',
-//       helpline: 'helpline',
-//       info: { notes: 'notes' },
-//       twilioWorkerId: 'creator',
-//       createdBy: 'creator',
-//     },
-//     user: new User('creator', []),
-//   },
-// ]);
-
 describe('Test that all actions work fine (everyone)', () => {
   const rules = buildRules([['everyone']]);
   const can = setupCanForRules(rules);
@@ -70,6 +56,93 @@ describe('Test that all actions work fine (everyone)', () => {
   ).test(`Action $action should return true`, async ({ action, postSurveyToBeCreated, user }) => {
     const createdPostSurvey = await PostSurvey.create(postSurveyToBeCreated);
     expect(can(user, action, createdPostSurvey)).toBeTruthy();
+  });
+});
+
+describe('Test that all actions work fine (no one)', () => {
+  const rules = buildRules([]);
+  const can = setupCanForRules(rules);
+
+  // Test Case permissions
+  each(
+    Object.values(actionsMaps.case).map(action => ({
+      action,
+      caseToBeCreated: {
+        status: 'open',
+        info: {},
+        twilioWorkerId: 'creator',
+        helpline,
+        createdBy: workerSid,
+        accountSid,
+      },
+      user: new User('creator', ['supervisor']),
+    })),
+  ).test(`Action $action should return false`, async ({ action, caseToBeCreated, user }) => {
+    const createdCase = await Case.create(caseToBeCreated, options);
+    expect(can(user, action, createdCase)).toBeFalsy();
+  });
+
+  // Test PostSurvey permissions
+  each(
+    Object.values(actionsMaps.postSurvey).map(action => ({
+      action,
+      postSurveyToBeCreated: {
+        accountSid,
+        taskId: 'task-sid',
+        contactTaskId: 'contact-task-id',
+        data: {},
+      },
+      user: new User('creator', ['supervisor']),
+    })),
+  ).test(`Action $action should return false`, async ({ action, postSurveyToBeCreated, user }) => {
+    const createdPostSurvey = await PostSurvey.create(postSurveyToBeCreated);
+    expect(can(user, action, createdPostSurvey)).toBeFalsy();
+  });
+});
+
+/**
+ * This test suite checks that [[]] (an empty list within the conditions sets for a given action)
+ * does not result in granting permissions when it shouldn't.
+ * The reason is how checkConditionsSet is implemented: [].every(predicate) evaluates true for all predicates
+ */
+describe('Test that an empty set of conditions does not grants permissions', () => {
+  const rules = buildRules([[]]);
+  const can = setupCanForRules(rules);
+
+  // Test Case permissions
+  each(
+    Object.values(actionsMaps.case).map(action => ({
+      action,
+      caseToBeCreated: {
+        status: 'open',
+        info: {},
+        twilioWorkerId: 'creator',
+        helpline,
+        createdBy: workerSid,
+        accountSid,
+      },
+      user: new User('creator', ['supervisor']),
+    })),
+  ).test(`Action $action should return false`, async ({ action, caseToBeCreated, user }) => {
+    const createdCase = await Case.create(caseToBeCreated, options);
+    expect(can(user, action, createdCase)).toBeFalsy();
+  });
+
+  // Test PostSurvey permissions
+  each(
+    Object.values(actionsMaps.postSurvey).map(action => ({
+      action,
+      postSurveyToBeCreated: {
+        accountSid,
+        taskId: 'task-sid',
+        contactTaskId: 'contact-task-id',
+        data: {},
+      },
+      user: new User('creator', ['supervisor']),
+    })),
+  ).test(`Action $action should return false`, async ({ action, postSurveyToBeCreated, user }) => {
+    const createdPostSurvey = await PostSurvey.create(postSurveyToBeCreated);
+    expect(can(user, action, createdPostSurvey)).toBeFalsy();
   });
 });
 
