@@ -15,5 +15,7 @@
   "addDocument": [["everyone"]],
   "editDocument": [["everyone"]],
   "editCaseSummary": [["everyone"]],
+  "editChildIsAtRisk": [["everyone"]],
+  "editFollowUpDate": [["everyone"]],
   "viewPostSurvey": [["everyone"]]
 }
