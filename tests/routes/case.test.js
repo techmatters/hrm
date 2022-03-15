@@ -1,4 +1,4 @@
-/* eslint-disable jest/no-standalone-expect */
+/* eslint-disable jest/no-standalone-expect,no-await-in-loop */
 const supertest = require('supertest');
 const Sequelize = require('sequelize');
 const each = require('jest-each').default;
@@ -91,28 +91,40 @@ describe('/cases route', () => {
     return modifiedContact;
   };
 
-  const validateSingleCaseResponse = (actual, expectedCaseModel, expectedContactModel) => {
-    const { connectedContacts, ...caseDataValues } = expectedCaseModel.dataValues;
+  const validateCaseListResponse = (actual, expectedCaseAndContactModels, count) => {
     expect(actual.status).toBe(200);
     expect(actual.body).toStrictEqual(
       expect.objectContaining({
         cases: expect.arrayContaining([expect.anything()]),
-        count: 1,
+        count,
       }),
     );
-    expect(actual.body.cases[0]).toMatchObject({
-      ...caseDataValues,
-      createdAt: expectedCaseModel.dataValues.createdAt.toISOString(),
-      updatedAt: expectedCaseModel.dataValues.updatedAt.toISOString(),
-    });
-    expect(actual.body.cases[0].connectedContacts).toStrictEqual([
-      expect.objectContaining({
-        ...expectedContactModel.dataValues,
-        csamReports: [],
-        createdAt: expect.toParseAsDate(expectedContactModel.dataValues.createdAt),
-        updatedAt: expect.toParseAsDate(expectedContactModel.dataValues.updatedAt),
-      }),
-    ]);
+    expectedCaseAndContactModels.forEach(
+      ({ case: expectedCaseModel, contact: expectedContactModel }, index) => {
+        const { connectedContacts, ...caseDataValues } = expectedCaseModel.dataValues;
+        expect(actual.body.cases[index]).toMatchObject({
+          ...caseDataValues,
+          createdAt: expectedCaseModel.dataValues.createdAt.toISOString(),
+          updatedAt: expectedCaseModel.dataValues.updatedAt.toISOString(),
+        });
+        expect(actual.body.cases[index].connectedContacts).toStrictEqual([
+          expect.objectContaining({
+            ...expectedContactModel.dataValues,
+            csamReports: [],
+            createdAt: expect.toParseAsDate(expectedContactModel.dataValues.createdAt),
+            updatedAt: expect.toParseAsDate(expectedContactModel.dataValues.updatedAt),
+          }),
+        ]);
+      },
+    );
+  };
+
+  const validateSingleCaseResponse = (actual, expectedCaseModel, expectedContactModel) => {
+    validateCaseListResponse(
+      actual,
+      [{ case: expectedCaseModel, contact: expectedContactModel }],
+      1,
+    );
   };
 
   const without = (original, property) => {
@@ -133,7 +145,7 @@ describe('/cases route', () => {
       expect(response.status).toBe(200);
       expect(response.body).toStrictEqual({ cases: [], count: 0 });
     });
-    describe('With data', () => {
+    describe('With single record', () => {
       let createdCase;
       let createdContact;
 
@@ -154,6 +166,122 @@ describe('/cases route', () => {
       test('should return 200 when populated', async () => {
         const response = await request.get(route).set(headers);
         validateSingleCaseResponse(response, createdCase, createdContact);
+      });
+    });
+    describe('With multiple records', () => {
+      const CASE_SAMPLE_SIZE = 10;
+      const createdCasesAndContacts = [];
+      const accounts = ['ACCOUNT_SID_1', 'ACCOUNT_SID_2'];
+      const helplines = ['helpline-1', 'helpline-2', 'helpline-3'];
+      beforeAll(async () => {
+        for (let i = 0; i < CASE_SAMPLE_SIZE; i += 1) {
+          const createdCase = await Case.create(
+            {
+              ...case1,
+              accountSid: accounts[i % accounts.length],
+              helpline: helplines[i % helplines.length],
+            },
+            options,
+          );
+          const createdContact = await Contact.create(
+            fillNameAndPhone({
+              ...contact1,
+              accountSid: accounts[i % accounts.length],
+              helpline: helplines[i % helplines.length],
+            }),
+            options,
+          );
+          createdContact.caseId = createdCase.id;
+          await createdContact.save(options);
+          createdCasesAndContacts.push({
+            contact: createdContact,
+            case: createdCase,
+          });
+        }
+      });
+
+      afterAll(async () => {
+        return Promise.all([
+          Case.destroy({ where: { id: createdCasesAndContacts.map(ccc => ccc.case.id) } }),
+          Contact.destroy({ where: { id: createdCasesAndContacts.map(ccc => ccc.contact.id) } }),
+        ]);
+      });
+
+      // eslint-disable-next-line jest/expect-expect
+      each([
+        {
+          description:
+            'should return all cases for account when no helpline, limit or offset is specified',
+          listRoute: `/v0/accounts/${accounts[0]}/cases`,
+          expectedCasesAndContacts: () =>
+            createdCasesAndContacts
+              .filter(ccc => ccc.case.dataValues.accountSid === accounts[0])
+              .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+          expectedCount: 5,
+        },
+        {
+          description: 'should return all cases for account & helpline when helpline is specified',
+          listRoute: `/v0/accounts/${accounts[0]}/cases?helpline=${helplines[1]}`,
+          expectedCasesAndContacts: () =>
+            createdCasesAndContacts
+              .filter(
+                ccc =>
+                  ccc.case.dataValues.accountSid === accounts[0] &&
+                  ccc.case.helpline === helplines[1],
+              )
+              .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+          expectedCount: 1,
+        },
+        {
+          description: 'should return first X cases when limit X is specified',
+          listRoute: `/v0/accounts/${accounts[0]}/cases?limit=3`,
+          expectedCasesAndContacts: () =>
+            createdCasesAndContacts
+              .filter(ccc => ccc.case.dataValues.accountSid === accounts[0])
+              .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id)
+              .slice(0, 3),
+          expectedCount: 5,
+        },
+        {
+          description:
+            'should return X cases, starting at Y when limit X and offset Y are specified',
+          listRoute: `/v0/accounts/${accounts[0]}/cases?limit=2&offset=1`,
+          expectedCasesAndContacts: () =>
+            createdCasesAndContacts
+              .filter(ccc => ccc.case.dataValues.accountSid === accounts[0])
+              .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id)
+              .slice(1, 3),
+          expectedCount: 5,
+        },
+        {
+          description:
+            'should return remaining cases, starting at Y when limit X and offset Y are specified',
+          listRoute: `/v0/accounts/${accounts[0]}/cases?offset=2`,
+          expectedCasesAndContacts: () =>
+            createdCasesAndContacts
+              .filter(ccc => ccc.case.dataValues.accountSid === accounts[0])
+              .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id)
+              .slice(2),
+          expectedCount: 5,
+        },
+        {
+          description:
+            'should apply offset and limit to filtered set when helpline filter is applied',
+          listRoute: `/v0/accounts/${accounts[0]}/cases?helpline=${helplines[0]}&limit=1&offset=1`,
+          expectedCasesAndContacts: () =>
+            createdCasesAndContacts
+              .filter(
+                ccc =>
+                  ccc.case.dataValues.accountSid === accounts[0] &&
+                  ccc.case.dataValues.helpline === helplines[0],
+              )
+              .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id)
+              .slice(1, 2),
+          expectedCount: 2,
+        },
+      ]).test('$description', async ({ listRoute, expectedCasesAndContacts, expectedCount }) => {
+        const response = await request.get(listRoute).set(headers);
+        validateCaseListResponse(response, expectedCasesAndContacts(), expectedCount);
       });
     });
   });
@@ -534,6 +662,62 @@ describe('/cases route', () => {
             ],
           },
           changeDescription: 'households changed',
+        },
+        {
+          originalCase: () => cases.populated,
+          infoUpdate: {
+            perpetrators: [
+              {
+                perpetrator: {
+                  firstName: 'Jane',
+                  lastName: 'Jones',
+                },
+                createdAt: '2021-03-15T20:56:22.640Z',
+                twilioWorkerId: 'household-editor',
+              },
+              {
+                perpetrator: {
+                  firstName: 'John',
+                  lastName: 'Smith',
+                  phone2: '+87654321',
+                },
+                createdAt: '2021-03-16T20:56:22.640Z',
+                twilioWorkerId: 'household-editor',
+              },
+            ],
+          },
+          changeDescription: 'perpetrators changed',
+        },
+        {
+          originalCase: () => cases.populated,
+          infoUpdate: {
+            referrals: [
+              {
+                id: '2503',
+                date: '2021-02-18',
+                comments: 'Referred to state agency 2',
+                createdAt: '2021-02-19T21:38:30.911+00:00',
+                referredTo: 'DREAMS 2',
+                twilioWorkerId: 'referral-editor',
+              },
+              {
+                id: '2504',
+                date: '2021-02-18',
+                comments: 'Referred to support group',
+                createdAt: '2021-02-19T21:39:30.911+00:00',
+                referredTo: 'Test',
+                twilioWorkerId: 'referral-editor',
+              },
+            ],
+          },
+          changeDescription: 'referral edited',
+        },
+        {
+          originalCase: () => cases.populated,
+          infoUpdate: {
+            incidents: [],
+          },
+          changeDescription: 'incident deleted',
         },
       ]).test(
         'should return 200 when $changeDescription',
