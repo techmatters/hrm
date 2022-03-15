@@ -3,7 +3,7 @@
   "reopenCase": [["isSupervisor"]],
   "caseStatusTransition": [],
   "addNote": [["isSupervisor"], ["isCreator", "isCaseOpen"]],
-  "editNote": [["isSupervisor"], ["isCreator", "isCaseOpen"]],
+  "editNote": [["isSupervisor"]],
   "addReferral": [["isSupervisor"], ["isCreator", "isCaseOpen"]],
   "editReferral": [["isSupervisor"], ["isCreator", "isCaseOpen"]],
   "addHousehold": [["isSupervisor"], ["isCreator", "isCaseOpen"]],
