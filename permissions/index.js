@@ -20,6 +20,7 @@ const applyPermissions = {
   in: applyInPermissions,
   jm: applyJmPermissions,
   ca: applyCaPermissions,
+  open: applyOpenPermissions,
 };
 
 const setupPermissions = (req, res, next) => {
