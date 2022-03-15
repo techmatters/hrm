@@ -19,6 +19,8 @@ const actionsMaps = {
     ADD_DOCUMENT: 'addDocument',
     EDIT_DOCUMENT: 'editDocument',
     EDIT_CASE_SUMMARY: 'editCaseSummary',
+    EDIT_CHILD_IS_AT_RISK: 'editChildIsAtRisk',
+    EDIT_FOLLOW_UP_DATE: 'editFollowUpDate',
   },
   postSurvey: {
     VIEW_POST_SURVEY: 'viewPostSurvey',
