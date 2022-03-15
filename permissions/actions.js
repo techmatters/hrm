@@ -1,6 +1,5 @@
 const diff = require('deep-diff');
 
-// TODO: complete this actions with the ones that are in the frontend so a single file is shared
 const actionsMaps = {
   case: {
     CLOSE_CASE: 'closeCase',
