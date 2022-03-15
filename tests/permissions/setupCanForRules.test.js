@@ -151,9 +151,6 @@ const addPrettyConditionsSets = t => ({
   prettyConditionsSets: t.conditionsSets.map(arr => `[${arr.join(',')}]`),
 });
 
-const mapTestToActions = actionsMap => t =>
-  Object.values(actionsMap).map(action => ({ ...t, action }));
-
 // Test Case permissions
 describe('Test different scenarios (Case)', () => {
   each(
