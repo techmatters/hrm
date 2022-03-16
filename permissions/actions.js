@@ -1,22 +1,29 @@
 const diff = require('deep-diff');
 
-const CLOSE_CASE = 'closeCase';
-const REOPEN_CASE = 'reopenCase';
-const CASE_STATUS_TRANSITION = 'caseStatusTransition';
-const ADD_NOTE = 'addNote';
-const EDIT_NOTE = 'editNote';
-const ADD_REFERRAL = 'addReferral';
-const EDIT_REFERRAL = 'editReferral';
-const ADD_HOUSEHOLD = 'addHousehold';
-const EDIT_HOUSEHOLD = 'editHousehold';
-const ADD_PERPETRATOR = 'addPerpetrator';
-const EDIT_PERPETRATOR = 'editPerpetrator';
-const ADD_INCIDENT = 'addIncident';
-const EDIT_INCIDENT = 'editIncident';
-const ADD_DOCUMENT = 'addDocument';
-const EDIT_DOCUMENT = 'editDocument';
-const EDIT_CASE_SUMMARY = 'editCaseSummary';
-const VIEW_POST_SURVEY = 'viewPostSurvey';
+// TODO: complete this actions with the ones that are in the frontend so a single file is shared
+const actionsMaps = {
+  case: {
+    CLOSE_CASE: 'closeCase',
+    REOPEN_CASE: 'reopenCase',
+    CASE_STATUS_TRANSITION: 'caseStatusTransition',
+    ADD_NOTE: 'addNote',
+    EDIT_NOTE: 'editNote',
+    ADD_REFERRAL: 'addReferral',
+    EDIT_REFERRAL: 'editReferral',
+    ADD_HOUSEHOLD: 'addHousehold',
+    EDIT_HOUSEHOLD: 'editHousehold',
+    ADD_PERPETRATOR: 'addPerpetrator',
+    EDIT_PERPETRATOR: 'editPerpetrator',
+    ADD_INCIDENT: 'addIncident',
+    EDIT_INCIDENT: 'editIncident',
+    ADD_DOCUMENT: 'addDocument',
+    EDIT_DOCUMENT: 'editDocument',
+    EDIT_CASE_SUMMARY: 'editCaseSummary',
+  },
+  postSurvey: {
+    VIEW_POST_SURVEY: 'viewPostSurvey',
+  },
+};
 
 // deep-diff lib kinds:
 const NEW_PROPERTY = 'N';
@@ -121,25 +128,25 @@ const getActions = (original, updated) => {
   if (changes) {
     changes.forEach(change => {
       if (isPathTargetsStatus(change.path)) {
-        if (isCloseCase(change)) actions.push(CLOSE_CASE);
-        if (isReopenCase(change)) actions.push(REOPEN_CASE);
-        if (isCaseStatusTransition(change)) actions.push(CASE_STATUS_TRANSITION);
+        if (isCloseCase(change)) actions.push(actionsMaps.case.CLOSE_CASE);
+        if (isReopenCase(change)) actions.push(actionsMaps.case.REOPEN_CASE);
+        if (isCaseStatusTransition(change)) actions.push(actionsMaps.case.CASE_STATUS_TRANSITION);
       }
 
       if (isPathTargetsInfo(change.path)) {
-        if (isAddNote(change)) actions.push(ADD_NOTE);
-        if (isAddReferral(change)) actions.push(ADD_REFERRAL);
-        if (isAddHousehold(change)) actions.push(ADD_HOUSEHOLD);
-        if (isAddPerpetrator(change)) actions.push(ADD_PERPETRATOR);
-        if (isAddIncident(change)) actions.push(ADD_INCIDENT);
-        if (isAddDocument(change)) actions.push(ADD_DOCUMENT);
-        if (isEditCaseSummary(change)) actions.push(EDIT_CASE_SUMMARY);
-        if (isEditNote(change)) actions.push(EDIT_NOTE);
-        if (isEditReferral(change)) actions.push(EDIT_REFERRAL);
-        if (isEditHousehold(change)) actions.push(EDIT_HOUSEHOLD);
-        if (isEditPerpetrator(change)) actions.push(EDIT_PERPETRATOR);
-        if (isEditIncident(change)) actions.push(EDIT_INCIDENT);
-        if (isEditDocument(change)) actions.push(EDIT_DOCUMENT);
+        if (isAddNote(change)) actions.push(actionsMaps.case.ADD_NOTE);
+        if (isAddReferral(change)) actions.push(actionsMaps.case.ADD_REFERRAL);
+        if (isAddHousehold(change)) actions.push(actionsMaps.case.ADD_HOUSEHOLD);
+        if (isAddPerpetrator(change)) actions.push(actionsMaps.case.ADD_PERPETRATOR);
+        if (isAddIncident(change)) actions.push(actionsMaps.case.ADD_INCIDENT);
+        if (isAddDocument(change)) actions.push(actionsMaps.case.ADD_DOCUMENT);
+        if (isEditCaseSummary(change)) actions.push(actionsMaps.case.EDIT_CASE_SUMMARY);
+        if (isEditNote(change)) actions.push(actionsMaps.case.EDIT_NOTE);
+        if (isEditReferral(change)) actions.push(actionsMaps.case.EDIT_REFERRAL);
+        if (isEditHousehold(change)) actions.push(actionsMaps.case.EDIT_HOUSEHOLD);
+        if (isEditPerpetrator(change)) actions.push(actionsMaps.case.EDIT_PERPETRATOR);
+        if (isEditIncident(change)) actions.push(actionsMaps.case.EDIT_INCIDENT);
+        if (isEditDocument(change)) actions.push(actionsMaps.case.EDIT_DOCUMENT);
       }
     });
   }
@@ -149,21 +156,5 @@ const getActions = (original, updated) => {
 
 module.exports = {
   getActions,
-  CLOSE_CASE,
-  REOPEN_CASE,
-  CASE_STATUS_TRANSITION,
-  ADD_NOTE,
-  EDIT_NOTE,
-  ADD_REFERRAL,
-  EDIT_REFERRAL,
-  ADD_HOUSEHOLD,
-  EDIT_HOUSEHOLD,
-  ADD_PERPETRATOR,
-  EDIT_PERPETRATOR,
-  ADD_INCIDENT,
-  EDIT_INCIDENT,
-  ADD_DOCUMENT,
-  EDIT_DOCUMENT,
-  EDIT_CASE_SUMMARY,
-  VIEW_POST_SURVEY,
+  actionsMaps,
 };

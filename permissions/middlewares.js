@@ -31,7 +31,7 @@ const canViewPostSurvey = (req, res, next) => {
   if (!req.isAuthorized()) {
     const { user, can } = req;
 
-    if (can(user, Actions.VIEW_POST_SURVEY, PostSurvey)) {
+    if (can(user, Actions.actionsMaps.postSurvey.VIEW_POST_SURVEY, PostSurvey)) {
       req.authorize();
     } else {
       req.unauthorize();
