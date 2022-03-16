@@ -1,7 +1,7 @@
 const models = require('../models');
 
 const { Case, sequelize } = models;
-const CaseController = require('../controllers/case-controller')(Case, sequelize);
+const CaseController = require('./case-controller')(Case, sequelize);
 
 const ActivityTypes = {
   createCase: 'create',

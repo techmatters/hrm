@@ -1,6 +1,6 @@
 const Sequelize = require('sequelize');
 const SequelizeMock = require('sequelize-mock');
-const createCSAMReportController = require('../../controllers/csam-report-controller');
+const createCSAMReportController = require('../../src/controllers/csam-report-controller');
 
 const DBConnectionMock = new SequelizeMock();
 const MockCSAMReport = DBConnectionMock.define('CSAMReports');

@@ -3,7 +3,7 @@ const SequelizeMock = require('sequelize-mock');
 const parseISO = require('date-fns/parseISO');
 const startOfDay = require('date-fns/startOfDay');
 const endOfDay = require('date-fns/endOfDay');
-const createContactController = require('../../controllers/contact-controller');
+const createContactController = require('../../src/controllers/contact-controller');
 const ContactBuilder = require('./contact-builder');
 
 const callTypes = {

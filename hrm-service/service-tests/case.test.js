@@ -2,8 +2,8 @@
 const supertest = require('supertest');
 const Sequelize = require('sequelize');
 const each = require('jest-each').default;
-const expressApp = require('../../app');
-const models = require('../../models');
+const expressApp = require('../src/app');
+const models = require('../src/models');
 const mocks = require('./mocks');
 
 expect.extend({

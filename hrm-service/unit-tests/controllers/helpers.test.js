@@ -1,4 +1,4 @@
-const { retrieveCategories, getPaginationElements } = require('../../controllers/helpers');
+const { retrieveCategories, getPaginationElements } = require('../../src/controllers/helpers');
 
 describe('test retrieveCategories', () => {
   test('undefined/null categories', async () => {

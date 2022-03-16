@@ -8,7 +8,7 @@ const { retrieveCategories, getPaginationElements, isEmptySearchParams } = requi
 const { Op } = Sequelize;
 
 const searchCasesQuery = fs
-  .readFileSync(path.join(__dirname, '../sql/search-cases-query.sql'))
+  .readFileSync(path.join(__dirname, '../../sql/search-cases-query.sql'))
   .toString();
 
 // Checks for any notes that might have been added to legacy 'notes' property by an old version of the client and converts & copies them to the new 'counsellorNotes' property/

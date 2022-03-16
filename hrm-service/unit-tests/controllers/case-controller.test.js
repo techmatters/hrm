@@ -1,6 +1,6 @@
 const Sequelize = require('sequelize');
 const SequelizeMock = require('sequelize-mock');
-const createCaseController = require('../../controllers/case-controller');
+const createCaseController = require('../../src/controllers/case-controller');
 
 const DBConnectionMock = new SequelizeMock();
 const MockCase = DBConnectionMock.define('Cases');

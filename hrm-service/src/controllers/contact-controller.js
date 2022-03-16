@@ -12,7 +12,7 @@ const {
 const models = require('../models');
 
 const { CSAMReport } = models;
-const CSAMReportController = require('../controllers/csam-report-controller')(CSAMReport);
+const CSAMReportController = require('./csam-report-controller')(CSAMReport);
 
 const { Op } = Sequelize;
 

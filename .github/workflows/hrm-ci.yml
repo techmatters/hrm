@@ -22,7 +22,7 @@ jobs:
       uses: m4nu56/postgresql-action@1.0
       with:
         # Version of PostgreSQL to use
-        postgresql version: 11.4
+        postgresql version: 12.7
         # POSTGRES_DB - name for the default database that is created
         postgresql db: hrmdb
         # POSTGRES_USER - create the specified user with superuser power
@@ -32,12 +32,19 @@ jobs:
         # POSTGRES_INIT_SCRIPTS - directory containing DB init scripts
         postgresql init scripts: tests/db-init
     - name: Install Packages
+      working-directory: hrm-service
       run: npm install
     - name: Run Lint
+      working-directory: hrm-service
       run: npm run lint --if-present
-    - name: Run Tests
-      run: npm test
+    - name: Run Unit Tests
+      working-directory: hrm-service
+      run: npm run test:unit
+    - name: Run Service Tests
+      working-directory: hrm-service
+      run: npm run test:service
       env:
+        RUNNING_TESTS: true
         CI: true
         API_KEY: secret
         TWILIO_ACCOUNT_SID: ACxxx

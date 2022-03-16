@@ -1,6 +1,6 @@
 const Sequelize = require('sequelize');
 const SequelizeMock = require('sequelize-mock');
-const createPostSurveyController = require('../../controllers/post-survey-controller');
+const createPostSurveyController = require('../../src/controllers/post-survey-controller');
 
 const DBConnectionMock = new SequelizeMock();
 const MockPostSurvey = DBConnectionMock.define('PostSurveys');

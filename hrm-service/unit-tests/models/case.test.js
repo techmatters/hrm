@@ -1,4 +1,4 @@
-const models = require('../../models');
+const models = require('../../src/models');
 const { getHook, getMockedCaseInstance } = require('./utils');
 
 const { Case } = models;

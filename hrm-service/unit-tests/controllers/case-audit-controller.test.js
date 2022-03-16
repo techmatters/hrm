@@ -1,11 +1,11 @@
 const Sequelize = require('sequelize');
 const SequelizeMock = require('sequelize-mock');
-const createCaseAuditController = require('../../controllers/case-audit-controller');
+const createCaseAuditController = require('../../src/controllers/case-audit-controller');
 
 const DBConnectionMock = new SequelizeMock();
 const MockCaseAudit = DBConnectionMock.define('CaseAudits');
 
-jest.mock('../../controllers/activities');
+jest.mock('../../src/controllers/activities');
 
 const { Op } = Sequelize;
 const accountSid = 'account-sid';

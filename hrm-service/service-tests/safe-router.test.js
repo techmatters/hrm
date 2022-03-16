@@ -1,5 +1,5 @@
 const supertest = require('supertest');
-const { SafeRouter, publicEndpoint } = require('../../permissions');
+const { SafeRouter, publicEndpoint } = require('../src/permissions');
 const { accountSid } = require('./mocks');
 
 const mockRouter = SafeRouter();
@@ -24,8 +24,8 @@ mockRouter.get(
   defaultHandler,
 );
 
-jest.mock('../../routes', () => ({ apiV0: mockRouter.expressRouter }));
-const app = require('../../app');
+jest.mock('../src/routes', () => ({ apiV0: mockRouter.expressRouter }));
+const app = require('../src/app');
 
 const server = app.listen();
 const request = supertest.agent(server);

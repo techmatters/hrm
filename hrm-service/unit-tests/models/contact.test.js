@@ -1,4 +1,4 @@
-const models = require('../../models');
+const models = require('../../src/models');
 const { getHook, getMockedCaseInstance, getMockedContactInstance } = require('./utils');
 
 const { Contact } = models;

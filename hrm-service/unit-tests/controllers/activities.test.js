@@ -1,6 +1,6 @@
-const CaseControllerModule = require('../../controllers/case-controller');
+const CaseControllerModule = require('../../src/controllers/case-controller');
 
-jest.mock('../../controllers/case-controller');
+jest.mock('../../src/controllers/case-controller');
 
 const CaseController = {
   getCase: jest.fn(),
@@ -8,7 +8,7 @@ const CaseController = {
 
 CaseControllerModule.mockReturnValue(CaseController);
 
-const { getCaseActivities } = require('../../controllers/activities');
+const { getCaseActivities } = require('../../src/controllers/activities');
 
 const CREATED_AT_DATE = '2020-30-07 18:55:20';
 
