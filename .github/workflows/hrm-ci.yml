@@ -18,6 +18,15 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
+    - name: Install Packages
+      working-directory: hrm-service
+      run: npm install
+    - name: Run Lint
+      working-directory: hrm-service
+      run: npm run lint --if-present
+    - name: Run Unit Tests
+      working-directory: hrm-service
+      run: npm run test:unit
     - name: Setup database tables
       uses: m4nu56/postgresql-action@1.0
       with:
@@ -30,16 +39,7 @@ jobs:
         # POSTGRES_PASSWORD - superuser password
         postgresql password: postgres
         # POSTGRES_INIT_SCRIPTS - directory containing DB init scripts
-        postgresql init scripts: tests/db-init
-    - name: Install Packages
-      working-directory: hrm-service
-      run: npm install
-    - name: Run Lint
-      working-directory: hrm-service
-      run: npm run lint --if-present
-    - name: Run Unit Tests
-      working-directory: hrm-service
-      run: npm run test:unit
+        postgresql init scripts: hrm-service/tests/db-init
     - name: Run Service Tests
       working-directory: hrm-service
       run: npm run test:service
