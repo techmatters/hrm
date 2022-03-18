@@ -2,6 +2,9 @@
 const each = require('jest-each').default;
 
 const models = require('../../src/models');
+
+jest.mock('../../src/models');
+
 const { setupCanForRules } = require('../../src/permissions/setupCanForRules');
 const { actionsMaps } = require('../../src/permissions/actions');
 const { User } = require('../../src/permissions');
@@ -11,7 +14,6 @@ const { Case, PostSurvey } = models;
 const accountSid = 'account-sid';
 const helpline = 'helpline';
 const workerSid = 'worker-sid';
-const options = { context: { workerSid } };
 
 const buildRules = conditionsSets =>
   Object.values(actionsMaps)
@@ -37,7 +39,8 @@ describe('Test that all actions work fine (everyone)', () => {
       user: new User('not creator', []),
     })),
   ).test('Action $action should return true', async ({ action, caseToBeCreated, user }) => {
-    const createdCase = await Case.create(caseToBeCreated, options);
+    const createdCase = new Case();
+    createdCase.dataValues = caseToBeCreated;
     expect(can(user, action, createdCase)).toBeTruthy();
   });
 
@@ -54,7 +57,8 @@ describe('Test that all actions work fine (everyone)', () => {
       user: new User('not creator', []),
     })),
   ).test('Action $action should return true', async ({ action, postSurveyToBeCreated, user }) => {
-    const createdPostSurvey = await PostSurvey.create(postSurveyToBeCreated);
+    const createdPostSurvey = new PostSurvey();
+    createdPostSurvey.dataValues = postSurveyToBeCreated;
     expect(can(user, action, createdPostSurvey)).toBeTruthy();
   });
 });
@@ -78,7 +82,8 @@ describe('Test that all actions work fine (no one)', () => {
       user: new User('creator', ['supervisor']),
     })),
   ).test('Action $action should return false', async ({ action, caseToBeCreated, user }) => {
-    const createdCase = await Case.create(caseToBeCreated, options);
+    const createdCase = new Case();
+    createdCase.dataValues = caseToBeCreated;
     expect(can(user, action, createdCase)).toBeFalsy();
   });
 
@@ -95,7 +100,8 @@ describe('Test that all actions work fine (no one)', () => {
       user: new User('creator', ['supervisor']),
     })),
   ).test('Action $action should return false', async ({ action, postSurveyToBeCreated, user }) => {
-    const createdPostSurvey = await PostSurvey.create(postSurveyToBeCreated);
+    const createdPostSurvey = new PostSurvey();
+    createdPostSurvey.dataValues = postSurveyToBeCreated;
     expect(can(user, action, createdPostSurvey)).toBeFalsy();
   });
 });
@@ -124,7 +130,8 @@ describe('Test that an empty set of conditions does not grants permissions', () 
       user: new User('creator', ['supervisor']),
     })),
   ).test('Action $action should return false', async ({ action, caseToBeCreated, user }) => {
-    const createdCase = await Case.create(caseToBeCreated, options);
+    const createdCase = new Case();
+    createdCase.dataValues = caseToBeCreated;
     expect(can(user, action, createdCase)).toBeFalsy();
   });
 
@@ -141,7 +148,8 @@ describe('Test that an empty set of conditions does not grants permissions', () 
       user: new User('creator', ['supervisor']),
     })),
   ).test('Action $action should return false', async ({ action, postSurveyToBeCreated, user }) => {
-    const createdPostSurvey = await PostSurvey.create(postSurveyToBeCreated);
+    const createdPostSurvey = new PostSurvey();
+    createdPostSurvey.dataValues = postSurveyToBeCreated;
     expect(can(user, action, createdPostSurvey)).toBeFalsy();
   });
 });
@@ -291,7 +299,8 @@ describe('Test different scenarios (Case)', () => {
 
       Object.values(actionsMaps.case).forEach(action =>
         test(`${action}`, async () => {
-          const createdCase = await Case.create(caseToBeCreated, options);
+          const createdCase = new Case();
+          createdCase.dataValues = caseToBeCreated;
           expect(can(user, action, createdCase)).toBe(expectedResult);
         }),
       );
@@ -360,7 +369,8 @@ describe('Test different scenarios (PostSurvey)', () => {
 
       Object.values(actionsMaps.postSurvey).forEach(action =>
         test(`${action}`, async () => {
-          const createdPostSurvey = await PostSurvey.create(postSurveyToBeCreated, options);
+          const createdPostSurvey = new PostSurvey();
+          createdPostSurvey.dataValues = postSurveyToBeCreated;
           expect(can(user, action, createdPostSurvey)).toBe(expectedResult);
         }),
       );
