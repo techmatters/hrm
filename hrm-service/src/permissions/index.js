@@ -59,7 +59,7 @@ const applyPermissions = (req, initializedCan, permissionsConfig) => {
 };
 
 const setupPermissions = (req, res, next) => {
-  if (process.env.USE_OPEN_PERMISSIONS || process.env.RUNNING_TESTS) {
+  if (process.env.USE_OPEN_PERMISSIONS) {
     applyPermissions(req, initializedCanOpenRules, 'open rules');
     return next();
   }

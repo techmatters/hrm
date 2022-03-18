@@ -1,10 +1,10 @@
 /* eslint-disable jest/no-standalone-expect */
 const each = require('jest-each').default;
 
-const models = require('../../models');
-const { setupCanForRules } = require('../../permissions/setupCanForRules');
-const { actionsMaps } = require('../../permissions/actions');
-const { User } = require('../../permissions');
+const models = require('../../src/models');
+const { setupCanForRules } = require('../../src/permissions/setupCanForRules');
+const { actionsMaps } = require('../../src/permissions/actions');
+const { User } = require('../../src/permissions');
 
 const { Case, PostSurvey } = models;
 
