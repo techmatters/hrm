@@ -15,5 +15,7 @@
   "addDocument": [["isSupervisor"], ["isCreator", "isCaseOpen"]],
   "editDocument": [["isSupervisor"], ["isCreator", "isCaseOpen"]],
   "editCaseSummary": [["isSupervisor"], ["isCreator", "isCaseOpen"]],
+  "editChildIsAtRisk": [["isSupervisor"], ["isCreator", "isCaseOpen"]],
+  "editFollowUpDate": [["isSupervisor"], ["isCreator", "isCaseOpen"]],
   "viewPostSurvey": [["isSupervisor"]]
 }

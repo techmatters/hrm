@@ -2,13 +2,27 @@ const User = require('./user');
 const { SafeRouter, publicEndpoint } = require('./safe-router');
 const { setupCanForRules } = require('./setupCanForRules');
 
-const zmRules = require('./rules/zm.json');
 const openRules = require('./rules/open.json');
+const brRules = require('./rules/br.json');
+const caRules = require('./rules/ca.json');
+const etRules = require('./rules/et.json');
+const inRules = require('./rules/in.json');
+const jmRules = require('./rules/jm.json');
+const mwRules = require('./rules/mw.json');
+const zaRules = require('./rules/za.json');
+const zmRules = require('./rules/zm.json');
 
 const { canEditCase, canViewPostSurvey } = require('./middlewares');
 
 // TODO: maybe factor out so it's easier to build the API that retrieves this to the frontend
 const rulesMap = {
+  br: brRules,
+  ca: caRules,
+  et: etRules,
+  in: inRules,
+  jm: jmRules,
+  mw: mwRules,
+  za: zaRules,
   zm: zmRules,
 };
 
@@ -24,18 +38,6 @@ const initializedCanMap = Object.entries(rulesMap).reduce((accum, [key, rules]) 
 }, {});
 
 const initializedCanOpenRules = setupCanForRules(openRules);
-
-// TODO: complete rulesMap with this keys
-// const applyPermissions = {
-//   zm: applyZmPermissions,
-//   za: applyZaPermissions,
-//   et: applyEtPermissions,
-//   mw: applyMwPermissions,
-//   br: applyBrPermissions,
-//   in: applyInPermissions,
-//   jm: applyJmPermissions,
-//   ca: applyCaPermissions,
-// };
 
 /**
  * Applies the permissions if valid.
@@ -57,7 +59,7 @@ const applyPermissions = (req, initializedCan, permissionsConfig) => {
 };
 
 const setupPermissions = (req, res, next) => {
-  if (process.env.NODE_ENV === 'test') {
+  if (process.env.USE_OPEN_PERMISSIONS || process.env.RUNNING_TESTS) {
     applyPermissions(req, initializedCanOpenRules, 'open rules');
     return next();
   }
