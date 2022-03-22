@@ -1,20 +1,34 @@
+/* eslint-disable jest/no-standalone-expect,no-await-in-loop */
 const supertest = require('supertest');
 const Sequelize = require('sequelize');
+const each = require('jest-each').default;
 const expressApp = require('../../app');
 const models = require('../../models');
 const mocks = require('./mocks');
 
 expect.extend({
   toParseAsDate(received, date) {
-    const pass = Date.parse(received).valueOf() === date.valueOf();
-    console.log(
-      `Expected '${received}' to be the same as '${date.toISOString()}' ${Date.parse(
-        received,
-      ).valueOf()} === ${date.valueOf()}`,
-    );
+    let receivedDate;
+    try {
+      receivedDate = received instanceof Date ? received : Date.parse(received);
+    } catch (e) {
+      return {
+        pass: false,
+        message: () => `Expected '${received}' to be a parseable date. Error: ${e}`,
+      };
+    }
+
+    if (date) {
+      const pass = receivedDate.valueOf() === date.valueOf();
+      return {
+        pass,
+        message: () => `Expected '${received}' to be the same as '${date.toISOString()}'`,
+      };
+    }
+
     return {
-      pass,
-      message: () => `Expected '${received}' to be the same as '${date.toISOString()}'`,
+      pass: true,
+      message: () => `Expected '${received}' to be a parseable date.`,
     };
   },
 });
@@ -77,28 +91,45 @@ describe('/cases route', () => {
     return modifiedContact;
   };
 
-  const validateSingleCaseResponse = (actual, expectedCaseModel, expectedContactModel) => {
-    const { connectedContacts, ...caseDataValues } = expectedCaseModel.dataValues;
+  const validateCaseListResponse = (actual, expectedCaseAndContactModels, count) => {
     expect(actual.status).toBe(200);
     expect(actual.body).toStrictEqual(
       expect.objectContaining({
         cases: expect.arrayContaining([expect.anything()]),
-        count: 1,
+        count,
       }),
     );
-    expect(actual.body.cases[0]).toMatchObject({
-      ...caseDataValues,
-      createdAt: expectedCaseModel.dataValues.createdAt.toISOString(),
-      updatedAt: expectedCaseModel.dataValues.updatedAt.toISOString(),
-    });
-    expect(actual.body.cases[0].connectedContacts).toStrictEqual([
-      expect.objectContaining({
-        ...expectedContactModel.dataValues,
-        csamReports: [],
-        createdAt: expect.toParseAsDate(expectedContactModel.dataValues.createdAt),
-        updatedAt: expect.toParseAsDate(expectedContactModel.dataValues.updatedAt),
-      }),
-    ]);
+    expectedCaseAndContactModels.forEach(
+      ({ case: expectedCaseModel, contact: expectedContactModel }, index) => {
+        const { connectedContacts, ...caseDataValues } = expectedCaseModel.dataValues;
+        expect(actual.body.cases[index]).toMatchObject({
+          ...caseDataValues,
+          createdAt: expectedCaseModel.dataValues.createdAt.toISOString(),
+          updatedAt: expectedCaseModel.dataValues.updatedAt.toISOString(),
+        });
+        expect(actual.body.cases[index].connectedContacts).toStrictEqual([
+          expect.objectContaining({
+            ...expectedContactModel.dataValues,
+            csamReports: [],
+            createdAt: expect.toParseAsDate(expectedContactModel.dataValues.createdAt),
+            updatedAt: expect.toParseAsDate(expectedContactModel.dataValues.updatedAt),
+          }),
+        ]);
+      },
+    );
+  };
+
+  const validateSingleCaseResponse = (actual, expectedCaseModel, expectedContactModel) => {
+    validateCaseListResponse(
+      actual,
+      [{ case: expectedCaseModel, contact: expectedContactModel }],
+      1,
+    );
+  };
+
+  const without = (original, property) => {
+    const { [property]: removed, ...rest } = original;
+    return rest;
   };
 
   describe('GET', () => {
@@ -114,7 +145,7 @@ describe('/cases route', () => {
       expect(response.status).toBe(200);
       expect(response.body).toStrictEqual({ cases: [], count: 0 });
     });
-    describe('With data', () => {
+    describe('With single record', () => {
       let createdCase;
       let createdContact;
 
@@ -136,6 +167,125 @@ describe('/cases route', () => {
         const response = await request.get(route).set(headers);
         validateSingleCaseResponse(response, createdCase, createdContact);
       });
+    });
+    describe('With multiple records', () => {
+      const CASE_SAMPLE_SIZE = 10;
+      const createdCasesAndContacts = [];
+      const accounts = ['ACCOUNT_SID_1', 'ACCOUNT_SID_2'];
+      const helplines = ['helpline-1', 'helpline-2', 'helpline-3'];
+      beforeAll(async () => {
+        for (let i = 0; i < CASE_SAMPLE_SIZE; i += 1) {
+          const createdCase = await Case.create(
+            {
+              ...case1,
+              accountSid: accounts[i % accounts.length],
+              helpline: helplines[i % helplines.length],
+            },
+            options,
+          );
+          const createdContact = await Contact.create(
+            fillNameAndPhone({
+              ...contact1,
+              accountSid: accounts[i % accounts.length],
+              helpline: helplines[i % helplines.length],
+            }),
+            options,
+          );
+          createdContact.caseId = createdCase.id;
+          await createdContact.save(options);
+          createdCasesAndContacts.push({
+            contact: createdContact,
+            case: createdCase,
+          });
+        }
+      });
+
+      afterAll(async () => {
+        return Promise.all([
+          Case.destroy({ where: { id: createdCasesAndContacts.map(ccc => ccc.case.id) } }),
+          Contact.destroy({ where: { id: createdCasesAndContacts.map(ccc => ccc.contact.id) } }),
+        ]);
+      });
+
+      // eslint-disable-next-line jest/expect-expect
+      each([
+        {
+          description:
+            'should return all cases for account when no helpline, limit or offset is specified',
+          listRoute: `/v0/accounts/${accounts[0]}/cases`,
+          expectedCasesAndContacts: () =>
+            createdCasesAndContacts
+              .filter(ccc => ccc.case.dataValues.accountSid === accounts[0])
+              .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+          expectedTotalCount: 5,
+        },
+        {
+          description: 'should return all cases for account & helpline when helpline is specified',
+          listRoute: `/v0/accounts/${accounts[0]}/cases?helpline=${helplines[1]}`,
+          expectedCasesAndContacts: () =>
+            createdCasesAndContacts
+              .filter(
+                ccc =>
+                  ccc.case.dataValues.accountSid === accounts[0] &&
+                  ccc.case.helpline === helplines[1],
+              )
+              .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+          expectedTotalCount: 1,
+        },
+        {
+          description: 'should return first X cases when limit X is specified',
+          listRoute: `/v0/accounts/${accounts[0]}/cases?limit=3`,
+          expectedCasesAndContacts: () =>
+            createdCasesAndContacts
+              .filter(ccc => ccc.case.dataValues.accountSid === accounts[0])
+              .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id)
+              .slice(0, 3),
+          expectedTotalCount: 5,
+        },
+        {
+          description:
+            'should return X cases, starting at Y when limit X and offset Y are specified',
+          listRoute: `/v0/accounts/${accounts[0]}/cases?limit=2&offset=1`,
+          expectedCasesAndContacts: () =>
+            createdCasesAndContacts
+              .filter(ccc => ccc.case.dataValues.accountSid === accounts[0])
+              .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id)
+              .slice(1, 3),
+          expectedTotalCount: 5,
+        },
+        {
+          description:
+            'should return remaining cases, starting at Y when offset Y and no limit is specified',
+          listRoute: `/v0/accounts/${accounts[0]}/cases?offset=2`,
+          expectedCasesAndContacts: () =>
+            createdCasesAndContacts
+              .filter(ccc => ccc.case.dataValues.accountSid === accounts[0])
+              .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id)
+              .slice(2),
+          expectedTotalCount: 5,
+        },
+        {
+          description:
+            'should apply offset and limit to filtered set when helpline filter is applied',
+          listRoute: `/v0/accounts/${accounts[0]}/cases?helpline=${helplines[0]}&limit=1&offset=1`,
+          expectedCasesAndContacts: () =>
+            createdCasesAndContacts
+              .filter(
+                ccc =>
+                  ccc.case.dataValues.accountSid === accounts[0] &&
+                  ccc.case.dataValues.helpline === helplines[0],
+              )
+              .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id)
+              .slice(1, 2),
+          expectedTotalCount: 2,
+        },
+      ]).test(
+        '$description',
+        async ({ listRoute, expectedCasesAndContacts, expectedTotalCount }) => {
+          const response = await request.get(listRoute).set(headers);
+          validateCaseListResponse(response, expectedCasesAndContacts(), expectedTotalCount);
+        },
+      );
     });
   });
 
@@ -159,6 +309,9 @@ describe('/cases route', () => {
         ...case1.info,
         notes: case1.info.counsellorNotes.map(cn => cn.note), // Legacy notes for old clients
       });
+      // Check the DB is actually updated
+      const fromDb = await Case.findByPk(response.body.id);
+      expect(fromDb.dataValues).toMatchObject(case1);
     });
 
     test('should create a CaseAudit', async () => {
@@ -184,64 +337,448 @@ describe('/cases route', () => {
   });
 
   describe('/cases/:id route', () => {
+    const counsellorNotes = [
+      {
+        id: '1',
+        note: 'Child with covid-19',
+        twilioWorkerId: 'note-adder',
+        createdAt: '2022-01-01 00:00:00',
+      },
+      {
+        id: '2',
+        note: 'Child recovered from covid-19',
+        twilioWorkerId: 'other-note-adder',
+        createdAt: '2022-01-05 00:00:00',
+      },
+    ];
+    const perpetrators = [
+      {
+        perpetrator: {
+          firstName: 'Jane',
+          lastName: 'Doe',
+        },
+        createdAt: '2021-03-15T20:56:22.640Z',
+        twilioWorkerId: 'perpetrator-adder',
+      },
+      {
+        perpetrator: {
+          firstName: 'J.',
+          lastName: 'Doe',
+          phone2: '+12345678',
+          createdAt: '2021-03-16T20:56:22.640Z',
+          twilioWorkerId: 'perpetrator-adder',
+        },
+      },
+    ];
+
+    const households = [
+      {
+        household: {
+          firstName: 'Jane',
+          lastName: 'Doe',
+        },
+        createdAt: '2021-03-15T20:56:22.640Z',
+        twilioWorkerId: 'household-adder',
+      },
+      {
+        household: {
+          firstName: 'J.',
+          lastName: 'Doe',
+          phone2: '+12345678',
+        },
+        createdAt: '2021-03-16T20:56:22.640Z',
+        twilioWorkerId: 'household-adder',
+      },
+    ];
+
+    const incidents = [
+      {
+        incident: {
+          date: '2021-03-03',
+          duration: '',
+          location: 'Other',
+          isCaregiverAware: null,
+          incidentWitnessed: null,
+          reactionOfCaregiver: '',
+          whereElseBeenReported: '',
+          abuseReportedElsewhere: null,
+        },
+        createdAt: '2021-03-16T20:56:22.640Z',
+        twilioWorkerId: 'incident-adder',
+      },
+    ];
+
+    const referrals = [
+      {
+        id: '2503',
+        date: '2021-02-18',
+        comments: 'Referred to state agency',
+        createdAt: '2021-02-19T21:38:30.911+00:00',
+        referredTo: 'DREAMS',
+        twilioWorkerId: 'referral-adder',
+      },
+    ];
+
+    const documents = [
+      {
+        id: '5e127299-17ba-4adf-a040-69dac9ca45bf',
+        document: {
+          comments: 'test file!',
+          fileName: 'sample1.pdf',
+        },
+        createdAt: '2021-09-21T17:57:52.346Z',
+        twilioWorkerId: 'document-adder',
+      },
+      {
+        id: '10d21f35-142c-4538-92db-d558f80898ae',
+        document: {
+          comments: '',
+          fileName: 'sample2.pdf',
+        },
+        createdAt: '2021-09-21T19:47:03.167Z',
+        twilioWorkerId: 'document-adder',
+      },
+    ];
+
+    const cases = {};
+    let nonExistingCaseId;
+    let subRoute;
+
+    beforeEach(async () => {
+      cases.blank = await Case.create(case1, options);
+      cases.populated = await Case.create(
+        {
+          ...case1,
+          info: {
+            summary: 'something summery',
+            perpetrators,
+            households,
+            incidents,
+            documents,
+            referrals,
+            counsellorNotes,
+          },
+        },
+        options,
+      );
+      subRoute = id => `${route}/${id}`;
+
+      const caseToBeDeleted = await Case.create(case2, options);
+      nonExistingCaseId = caseToBeDeleted.id;
+      await caseToBeDeleted.destroy();
+    });
+
+    afterEach(async () => {
+      cases.blank.destroy();
+      cases.populated.destroy();
+    });
+
     describe('PUT', () => {
-      let createdCase;
-      let nonExistingCaseId;
-      let subRoute;
-
-      beforeEach(async () => {
-        createdCase = await Case.create(case1, options);
-        subRoute = id => `${route}/${id}`;
-
-        const caseToBeDeleted = await Case.create(case2, options);
-        nonExistingCaseId = caseToBeDeleted.id;
-        await caseToBeDeleted.destroy();
-      });
-
-      afterEach(async () => createdCase.destroy());
-
       test('should return 401', async () => {
-        const response = await request.put(subRoute(createdCase.id)).send(case1);
+        const response = await request.put(subRoute(cases.blank.id)).send(case1);
 
         expect(response.status).toBe(401);
         expect(response.body.error).toBe('Authorization failed');
       });
-      test('should return 200', async () => {
-        const status = 'closed';
-        const response = await request
-          .put(subRoute(createdCase.id))
-          .set(headers)
-          .send({ status });
 
-        expect(response.status).toBe(200);
-        expect(response.body.status).toBe(status);
-      });
-      test('should create a CaseAudit', async () => {
-        const caseAuditPreviousCount = await CaseAudit.count(caseAuditsQuery);
-        const status = 'closed';
-        const response = await request
-          .put(subRoute(createdCase.id))
-          .set(headers)
-          .send({ status });
+      each([
+        {
+          caseUpdate: { status: 'closed' },
+          changeDescription: 'status',
+        },
+        {
+          infoUpdate: { summary: 'To summarize....' },
+          changeDescription: 'summary',
+        },
+        {
+          infoUpdate: {
+            counsellorNotes,
+          },
+          changeDescription: 'counsellorNotes',
+        },
+        {
+          infoUpdate: {
+            perpetrators,
+          },
+          changeDescription: 'perpetrators added',
+        },
+        {
+          infoUpdate: {
+            households,
+          },
+          changeDescription: 'households added',
+        },
+        {
+          infoUpdate: {
+            incidents,
+          },
+          changeDescription: 'incidents added',
+        },
+        {
+          infoUpdate: {
+            referrals,
+          },
+          changeDescription: 'referrals added',
+        },
+        {
+          infoUpdate: {
+            documents,
+          },
+          changeDescription: 'documents added',
+        },
+        {
+          infoUpdate: {
+            referrals,
+            documents,
+            counsellorNotes,
+            perpetrators,
+            households,
+            incidents,
+          },
+          changeDescription: 'multiple different case info items are added',
+        },
+        {
+          originalCase: () => cases.populated,
+          infoUpdate: {
+            counsellorNotes: [],
+          },
+          changeDescription: 'counsellorNotes deleted',
+        },
+        {
+          originalCase: () => cases.populated,
+          infoUpdate: {
+            counsellorNotes: [
+              {
+                id: '1',
+                note: 'Child with pneumonia',
+                twilioWorkerId: 'note-adder-1',
+                createdAt: '2022-01-01 00:00:00',
+              },
+              {
+                id: '2',
+                note: 'Child recovered from pneumonia',
+                twilioWorkerId: 'other-note-adder-1',
+                createdAt: '2022-01-05 00:00:00',
+              },
+            ],
+          },
+          changeDescription: 'counsellorNotes modified',
+        },
+        {
+          originalCase: () => cases.populated,
+          infoUpdate: {
+            counsellorNotes: [
+              {
+                id: '3',
+                note: 'Child with pneumonia',
+                twilioWorkerId: 'note-adder-1',
+                createdAt: '2022-01-01 00:00:00',
+              },
+              {
+                id: '4',
+                note: 'Child recovered from pneumonia',
+                twilioWorkerId: 'other-note-adder-1',
+                createdAt: '2022-01-05 00:00:00',
+              },
+            ],
+          },
+          changeDescription: 'counsellorNotes replaced',
+        },
+        {
+          originalCase: () => cases.populated,
+          infoUpdate: {
+            documents: [],
+          },
+          changeDescription: 'documents deleted',
+        },
+        {
+          originalCase: () => cases.populated,
+          infoUpdate: {
+            documents: [
+              {
+                id: '5e127299-17ba-4adf-a040-69dac9ca45bf',
+                document: {
+                  comments: 'test file!',
+                  fileName: 'sample1.pdf',
+                },
+                createdAt: '2021-09-21T17:57:52.346Z',
+                twilioWorkerId: 'document-adder',
+              },
+            ],
+          },
+          changeDescription: 'documents partially deleted',
+        },
+        {
+          originalCase: () => cases.populated,
+          infoUpdate: {
+            documents: [
+              {
+                id: '5e127299-17ba-4adf-a040-69dac9ca45bf',
+                document: {
+                  comments: 'test file!',
+                  fileName: 'sample1.pdf',
+                },
+                createdAt: '2021-09-21T17:57:52.346Z',
+                twilioWorkerId: 'document-adder',
+              },
+              {
+                id: 'different',
+                document: {
+                  comments: '',
+                  fileName: 'sample3.pdf',
+                },
+                createdAt: '2021-09-21T19:47:03.167Z',
+                twilioWorkerId: 'document-adder',
+              },
+            ],
+          },
+          changeDescription: 'documents partially replaced',
+        },
+        {
+          originalCase: () => cases.populated,
+          caseUpdate: () => ({
+            info: without(cases.populated.dataValues.info, 'households'),
+          }),
+          changeDescription: 'households property removed',
+        },
+        {
+          originalCase: () => cases.populated,
+          infoUpdate: {
+            households: [
+              {
+                household: {
+                  firstName: 'Jane',
+                  lastName: 'Jones',
+                },
+                createdAt: '2021-03-15T20:56:22.640Z',
+                twilioWorkerId: 'household-editor',
+              },
+              {
+                household: {
+                  firstName: 'John',
+                  lastName: 'Smith',
+                  phone2: '+87654321',
+                },
+                createdAt: '2021-03-16T20:56:22.640Z',
+                twilioWorkerId: 'household-editor',
+              },
+            ],
+          },
+          changeDescription: 'households changed',
+        },
+        {
+          originalCase: () => cases.populated,
+          infoUpdate: {
+            perpetrators: [
+              {
+                perpetrator: {
+                  firstName: 'Jane',
+                  lastName: 'Jones',
+                },
+                createdAt: '2021-03-15T20:56:22.640Z',
+                twilioWorkerId: 'household-editor',
+              },
+              {
+                perpetrator: {
+                  firstName: 'John',
+                  lastName: 'Smith',
+                  phone2: '+87654321',
+                },
+                createdAt: '2021-03-16T20:56:22.640Z',
+                twilioWorkerId: 'household-editor',
+              },
+            ],
+          },
+          changeDescription: 'perpetrators changed',
+        },
+        {
+          originalCase: () => cases.populated,
+          infoUpdate: {
+            referrals: [
+              {
+                id: '2503',
+                date: '2021-02-18',
+                comments: 'Referred to state agency 2',
+                createdAt: '2021-02-19T21:38:30.911+00:00',
+                referredTo: 'DREAMS 2',
+                twilioWorkerId: 'referral-editor',
+              },
+              {
+                id: '2504',
+                date: '2021-02-18',
+                comments: 'Referred to support group',
+                createdAt: '2021-02-19T21:39:30.911+00:00',
+                referredTo: 'Test',
+                twilioWorkerId: 'referral-editor',
+              },
+            ],
+          },
+          changeDescription: 'referral edited',
+        },
+        {
+          originalCase: () => cases.populated,
+          infoUpdate: {
+            incidents: [],
+          },
+          changeDescription: 'incident deleted',
+        },
+      ]).test(
+        'should return 200 when $changeDescription',
+        async ({
+          caseUpdate: caseUpdateParam = {},
+          infoUpdate,
+          originalCase: originalCaseGetter = () => cases.blank,
+        }) => {
+          const caseAuditPreviousCount = await CaseAudit.count(caseAuditsQuery);
+          const caseUpdate =
+            typeof caseUpdateParam === 'function' ? caseUpdateParam() : caseUpdateParam;
+          const originalCase = originalCaseGetter();
+          const update = {
+            ...caseUpdate,
+          };
+          if (infoUpdate) {
+            update.info = { ...originalCase.dataValues.info, ...caseUpdate.info, ...infoUpdate };
+          }
+          console.log('UPDATE:', update, caseUpdate, infoUpdate);
+          const response = await request
+            .put(subRoute(originalCase.id))
+            .set(headers)
+            .send(update);
 
-        const caseAudits = await CaseAudit.findAll(caseAuditsQuery);
-        const byGreaterId = (a, b) => b.id - a.id;
-        const lastCaseAudit = caseAudits.sort(byGreaterId)[0];
-        const { previousValue, newValue } = lastCaseAudit;
+          expect(response.status).toBe(200);
+          const expected = {
+            ...originalCase.dataValues,
+            createdAt: expect.toParseAsDate(originalCase.dataValues.createdAt),
+            updatedAt: expect.toParseAsDate(),
+            ...update,
+          };
 
-        expect(response.status).toBe(200);
-        expect(caseAudits).toHaveLength(caseAuditPreviousCount + 1);
+          expect(response.body).toMatchObject(expected);
 
-        expect(previousValue.info).toStrictEqual(case1.info);
-        expect(previousValue.helpline).toStrictEqual(case1.helpline);
-        expect(previousValue.status).toStrictEqual(case1.status);
-        expect(previousValue.twilioWorkerId).toStrictEqual(case1.twilioWorkerId);
+          // Check the DB is actually updated
+          const fromDb = await Case.findByPk(originalCase.id);
+          expect(fromDb.dataValues).toMatchObject(expected);
 
-        expect(newValue.info).toStrictEqual(case1.info);
-        expect(newValue.helpline).toStrictEqual(case1.helpline);
-        expect(newValue.status).toStrictEqual(status);
-        expect(newValue.twilioWorkerId).toStrictEqual(case1.twilioWorkerId);
-      });
+          // Check change is audited
+          const caseAudits = await CaseAudit.findAll(caseAuditsQuery);
+          expect(caseAudits).toHaveLength(caseAuditPreviousCount + 1);
+          const byGreaterId = (a, b) => b.id - a.id;
+          const lastCaseAudit = caseAudits.sort(byGreaterId)[0];
+          const { previousValue, newValue } = lastCaseAudit;
+          expect(previousValue).toStrictEqual({
+            connectedContacts: [],
+            contacts: [],
+            ...originalCase.dataValues,
+            createdAt: expect.toParseAsDate(originalCase.dataValues.createdAt),
+            updatedAt: expect.toParseAsDate(),
+          });
+          expect(newValue).toStrictEqual({
+            connectedContacts: [],
+            contacts: [],
+            ...expected,
+          });
+        },
+      );
       test('should return 404', async () => {
         const status = 'closed';
         const response = await request
@@ -254,34 +791,23 @@ describe('/cases route', () => {
     });
 
     describe('DELETE', () => {
-      let createdCase;
-      let nonExistingCaseId;
-      let subRoute;
-
-      beforeEach(async () => {
-        createdCase = await Case.create(case1, options);
-        subRoute = id => `${route}/${id}`;
-
-        const caseToBeDeleted = await Case.create(case2, options);
-        nonExistingCaseId = caseToBeDeleted.id;
-        await caseToBeDeleted.destroy();
-      });
-
-      afterEach(async () => createdCase.destroy());
-
       test('should return 401', async () => {
-        const response = await request.delete(subRoute(createdCase.id)).send();
+        const response = await request.delete(subRoute(cases.blank.id)).send();
 
         expect(response.status).toBe(401);
         expect(response.body.error).toBe('Authorization failed');
       });
       test('should return 200', async () => {
         const response = await request
-          .delete(subRoute(createdCase.id))
+          .delete(subRoute(cases.blank.id))
           .set(headers)
           .send();
 
         expect(response.status).toBe(200);
+
+        // Check the DB is actually updated
+        const fromDb = await Case.findByPk(cases.blank.id);
+        expect(fromDb).toBeFalsy();
       });
       test('should return 404', async () => {
         const response = await request
