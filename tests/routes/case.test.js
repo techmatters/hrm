@@ -279,10 +279,13 @@ describe('/cases route', () => {
               .slice(1, 2),
           expectedTotalCount: 2,
         },
-      ]).test('$description', async ({ listRoute, expectedCasesAndContacts, expectedTotalCount }) => {
-        const response = await request.get(listRoute).set(headers);
-        validateCaseListResponse(response, expectedCasesAndContacts(), expectedTotalCount);
-      });
+      ]).test(
+        '$description',
+        async ({ listRoute, expectedCasesAndContacts, expectedTotalCount }) => {
+          const response = await request.get(listRoute).set(headers);
+          validateCaseListResponse(response, expectedCasesAndContacts(), expectedTotalCount);
+        },
+      );
     });
   });
 
