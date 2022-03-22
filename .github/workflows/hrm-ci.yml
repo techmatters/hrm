@@ -18,11 +18,20 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
+    - name: Install Packages
+      working-directory: hrm-service
+      run: npm install
+    - name: Run Lint
+      working-directory: hrm-service
+      run: npm run lint --if-present
+    - name: Run Unit Tests
+      working-directory: hrm-service
+      run: npm run test:unit
     - name: Setup database tables
       uses: m4nu56/postgresql-action@1.0
       with:
         # Version of PostgreSQL to use
-        postgresql version: 11.4
+        postgresql version: 12.7
         # POSTGRES_DB - name for the default database that is created
         postgresql db: hrmdb
         # POSTGRES_USER - create the specified user with superuser power
@@ -30,14 +39,12 @@ jobs:
         # POSTGRES_PASSWORD - superuser password
         postgresql password: postgres
         # POSTGRES_INIT_SCRIPTS - directory containing DB init scripts
-        postgresql init scripts: tests/db-init
-    - name: Install Packages
-      run: npm install
-    - name: Run Lint
-      run: npm run lint --if-present
-    - name: Run Tests
-      run: npm test
+        postgresql init scripts: hrm-service/service-tests/db-init
+    - name: Run Service Tests
+      working-directory: hrm-service
+      run: npm run test:service
       env:
+        USE_OPEN_PERMISSIONS: true
         CI: true
         API_KEY: secret
         TWILIO_ACCOUNT_SID: ACxxx
