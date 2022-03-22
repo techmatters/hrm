@@ -217,7 +217,7 @@ describe('/cases route', () => {
             createdCasesAndContacts
               .filter(ccc => ccc.case.dataValues.accountSid === accounts[0])
               .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
-          expectedCount: 5,
+          expectedTotalCount: 5,
         },
         {
           description: 'should return all cases for account & helpline when helpline is specified',
@@ -230,7 +230,7 @@ describe('/cases route', () => {
                   ccc.case.helpline === helplines[1],
               )
               .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
-          expectedCount: 1,
+          expectedTotalCount: 1,
         },
         {
           description: 'should return first X cases when limit X is specified',
@@ -240,7 +240,7 @@ describe('/cases route', () => {
               .filter(ccc => ccc.case.dataValues.accountSid === accounts[0])
               .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id)
               .slice(0, 3),
-          expectedCount: 5,
+          expectedTotalCount: 5,
         },
         {
           description:
@@ -251,18 +251,18 @@ describe('/cases route', () => {
               .filter(ccc => ccc.case.dataValues.accountSid === accounts[0])
               .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id)
               .slice(1, 3),
-          expectedCount: 5,
+          expectedTotalCount: 5,
         },
         {
           description:
-            'should return remaining cases, starting at Y when limit X and offset Y are specified',
+            'should return remaining cases, starting at Y when offset Y and no limit is specified',
           listRoute: `/v0/accounts/${accounts[0]}/cases?offset=2`,
           expectedCasesAndContacts: () =>
             createdCasesAndContacts
               .filter(ccc => ccc.case.dataValues.accountSid === accounts[0])
               .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id)
               .slice(2),
-          expectedCount: 5,
+          expectedTotalCount: 5,
         },
         {
           description:
@@ -277,12 +277,15 @@ describe('/cases route', () => {
               )
               .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id)
               .slice(1, 2),
-          expectedCount: 2,
+          expectedTotalCount: 2,
         },
-      ]).test('$description', async ({ listRoute, expectedCasesAndContacts, expectedCount }) => {
-        const response = await request.get(listRoute).set(headers);
-        validateCaseListResponse(response, expectedCasesAndContacts(), expectedCount);
-      });
+      ]).test(
+        '$description',
+        async ({ listRoute, expectedCasesAndContacts, expectedTotalCount }) => {
+          const response = await request.get(listRoute).set(headers);
+          validateCaseListResponse(response, expectedCasesAndContacts(), expectedTotalCount);
+        },
+      );
     });
   });
 
