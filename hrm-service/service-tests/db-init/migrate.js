@@ -1,3 +1,4 @@
+// eslint-disable-next-line global-require,import/no-extraneous-dependencies
 const { Umzug, SequelizeStorage } = require('umzug');
 const pathLib = require('path');
 const { sequelize } = require('../../src/models/index.js');
