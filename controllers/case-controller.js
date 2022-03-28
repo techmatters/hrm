@@ -136,7 +136,7 @@ const CaseController = (Case, sequelize) => {
     const { helpline } = query;
 
     const queryObject = {
-      order: [[sortBy, order]],
+      order: [[sortBy, `${order} NULLS LAST`]],
       limit,
       offset,
       include: {
