@@ -34,8 +34,10 @@ const getPaginationElements = query => {
     query.limit && !Number.isNaN(parseInt(query.limit, 10)) ? parseInt(query.limit, 10) : Infinity;
   const limit = Math.min(queryLimit, 1000);
   const offset = (query.offset && parseInt(query.offset, 10)) || 0;
+  const sortBy = query.sortBy || 'id';
+  const order = query.order || 'DESC';
 
-  return { limit, offset };
+  return { limit, offset, sortBy, order };
 };
 
 const isEmptySearchParams = body => {
