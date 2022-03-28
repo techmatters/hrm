@@ -1,22 +1,16 @@
 import { pgp } from '../connection-pool';
 
-const VALID_CASE_UPDATE_FIELDS = [
-  'info',
-  'helpline',
-  'status',
-  'twilioWorkerId',
-  'updatedAt'
-]
+const VALID_CASE_UPDATE_FIELDS = ['info', 'helpline', 'status', 'twilioWorkerId', 'updatedAt'];
 
 const updateCaseColumnSet = new pgp.helpers.ColumnSet(
   VALID_CASE_UPDATE_FIELDS.map(f => ({
     name: f,
     skip: val => !val.exists,
-  }))
-  , {table:  'Cases'})
+  })),
+  { table: 'Cases' },
+);
 
-const SELECT_CONTACTS =
-  `SELECT c.*,
+const SELECT_CONTACTS = `SELECT c.*,
 COALESCE(jsonb_agg(DISTINCT r.*) FILTER (WHERE r.id IS NOT NULL), '[]') AS "csamReports"
 FROM "Contacts" c LEFT JOIN "CSAMReports" r ON c."id" = r."contactId" WHERE c."caseId" = "cases".id
 GROUP BY c.id`;
@@ -26,13 +20,17 @@ const SEARCH_FROM_EXTRAS = `
   CROSS JOIN jsonb_to_record(info) AS info_as_table(households jsonb, perpetrators jsonb)
   -- Extract every household/perpetrator as a record and apply a join
   LEFT JOIN LATERAL jsonb_array_elements(households::JSONB) h ON TRUE
-  LEFT JOIN LATERAL jsonb_array_elements(perpetrators::JSONB) p ON TRUE`
+  LEFT JOIN LATERAL jsonb_array_elements(perpetrators::JSONB) p ON TRUE`;
 
-const LIST_WHERE_CLAUSE =  `WHERE "cases"."accountSid" = $<accountSid> AND (cast($<helpline> as text) IS NULL OR "cases"."helpline" = $<helpline>)`
+const LIST_WHERE_CLAUSE = `WHERE "cases"."accountSid" = $<accountSid> AND (cast($<helpline> as text) IS NULL OR "cases"."helpline" = $<helpline>)`;
 
-const ID_WHERE_CLAUSE =  `WHERE "cases"."accountSid" = $<accountSid> AND "cases"."id" = $<caseId>`
+const ID_WHERE_CLAUSE = `WHERE "cases"."accountSid" = $<accountSid> AND "cases"."id" = $<caseId>`;
 
-const nameAndPhoneNumberSearchSql = (firstNameSource: string, lastNameSource: string, phoneNumberColumns: string[])=>
+const nameAndPhoneNumberSearchSql = (
+  firstNameSource: string,
+  lastNameSource: string,
+  phoneNumberColumns: string[],
+) =>
   `CASE WHEN $<firstName> IS NULL THEN TRUE
         ELSE ${firstNameSource} ILIKE $<firstName>
         END
@@ -43,9 +41,11 @@ const nameAndPhoneNumberSearchSql = (firstNameSource: string, lastNameSource: st
       AND
         CASE WHEN $<phoneNumber> IS NULL THEN TRUE
         ELSE (
-          ${phoneNumberColumns.map(pn => `regexp_replace(${pn}, '\\D', '', 'g') ILIKE $<phoneNumber>`).join('\n OR ')}
+          ${phoneNumberColumns
+            .map(pn => `regexp_replace(${pn}, '\\D', '', 'g') ILIKE $<phoneNumber>`)
+            .join('\n OR ')}
         )
-        END`
+        END`;
 
 const SEARCH_WHERE_CLAUSE = `WHERE
     (info IS NULL OR jsonb_typeof(info) = 'object')
@@ -72,27 +72,51 @@ const SEARCH_WHERE_CLAUSE = `WHERE
     AND (
       -- search on childInformation of connectedContacts
       (
-        ${nameAndPhoneNumberSearchSql("contacts.\"rawJson\"->'childInformation'->'name'->>'firstName'", "contacts.\"rawJson\"->'childInformation'->'name'->>'lastName'", ["contacts.\"rawJson\"->'childInformation'->'location'->>'phone1'", "contacts.\"rawJson\"->'childInformation'->'location'->>'phone2'", "contacts.number"])}  
+        ${nameAndPhoneNumberSearchSql(
+          "contacts.\"rawJson\"->'childInformation'->'name'->>'firstName'",
+          "contacts.\"rawJson\"->'childInformation'->'name'->>'lastName'",
+          [
+            "contacts.\"rawJson\"->'childInformation'->'location'->>'phone1'",
+            "contacts.\"rawJson\"->'childInformation'->'location'->>'phone2'",
+            'contacts.number',
+          ],
+        )}  
       )
         -- search on callerInformation of connectedContacts
       OR ( 
-        ${nameAndPhoneNumberSearchSql("contacts.\"rawJson\"->'callerInformation'->'name'->>'firstName'", "contacts.\"rawJson\"->'callerInformation'->'name'->>'lastName'", ["contacts.\"rawJson\"->'callerInformation'->'location'->>'phone1'", "contacts.\"rawJson\"->'callerInformation'->'location'->>'phone2'", "contacts.number"])}  
+        ${nameAndPhoneNumberSearchSql(
+          "contacts.\"rawJson\"->'callerInformation'->'name'->>'firstName'",
+          "contacts.\"rawJson\"->'callerInformation'->'name'->>'lastName'",
+          [
+            "contacts.\"rawJson\"->'callerInformation'->'location'->>'phone1'",
+            "contacts.\"rawJson\"->'callerInformation'->'location'->>'phone2'",
+            'contacts.number',
+          ],
+        )}  
       )
         -- search on households
       OR (
-        ${nameAndPhoneNumberSearchSql("h.value->'household'->>'firstName'", "h.value->'household'->>'lastName'", ["h.value->'household'->>'phone1'", "h.value->'household'->>'phone2'"])}
+        ${nameAndPhoneNumberSearchSql(
+          "h.value->'household'->>'firstName'",
+          "h.value->'household'->>'lastName'",
+          ["h.value->'household'->>'phone1'", "h.value->'household'->>'phone2'"],
+        )}
        )
   
         -- search on perpetrators
       OR (
-        ${nameAndPhoneNumberSearchSql("p.value->'perpetrator'->>'firstName'", "p.value->'perpetrator'->>'lastName'", ["p.value->'perpetrator'->>'phone1'", "p.value->'perpetrator'->>'phone2'"])}
+        ${nameAndPhoneNumberSearchSql(
+          "p.value->'perpetrator'->>'firstName'",
+          "p.value->'perpetrator'->>'lastName'",
+          ["p.value->'perpetrator'->>'phone1'", "p.value->'perpetrator'->>'phone2'"],
+        )}
       )
     )
     -- previous contacts search
     AND
       CASE WHEN $<contactNumber> IS NULL THEN TRUE
       ELSE contacts.number = $<contactNumber>
-      END`
+      END`;
 
 const SEARCH_HAVING_CLAUSE = `  
   -- Needed a HAVING clause because we couldn't do aggregations on WHERE clauses
@@ -104,7 +128,7 @@ const SEARCH_HAVING_CLAUSE = `
     )
     ELSE TRUE
     END
-`
+`;
 
 export const selectSingleCaseByIdSql = (tableName: string) => `SELECT
         cases.*,
@@ -120,9 +144,13 @@ export const selectSingleCaseByIdSql = (tableName: string) => `SELECT
         ) reports ON true
         WHERE c."caseId" = cases.id
 		  ) contacts ON true
-      ${ID_WHERE_CLAUSE}`
+      ${ID_WHERE_CLAUSE}`;
 
-const selectCasesUnorderedSql = (whereClause: string, extraFromClause: string = '', havingClause: string = '') =>
+const selectCasesUnorderedSql = (
+  whereClause: string,
+  extraFromClause: string = '',
+  havingClause: string = '',
+) =>
   `SELECT DISTINCT ON (cases.id)
     (count(*) OVER())::INTEGER AS "totalCount",
     cases.*,
@@ -131,25 +159,37 @@ const selectCasesUnorderedSql = (whereClause: string, extraFromClause: string = 
     ${extraFromClause}
     LEFT JOIN LATERAL (${SELECT_CONTACTS}) contacts ON true ${whereClause} GROUP BY "cases"."id" ${havingClause}`;
 
-const selectCasesPaginatedSql = (whereClause: string, extraFromClause: string = '', havingClause: string = '') => `
-SELECT * FROM (${selectCasesUnorderedSql(whereClause, extraFromClause, havingClause)}) "unordered" ORDER BY "createdAt" DESC
+const selectCasesPaginatedSql = (
+  whereClause: string,
+  extraFromClause: string = '',
+  havingClause: string = '',
+) => `
+SELECT * FROM (${selectCasesUnorderedSql(
+  whereClause,
+  extraFromClause,
+  havingClause,
+)}) "unordered" ORDER BY "createdAt" DESC
 LIMIT $<limit>
-OFFSET $<offset>`
+OFFSET $<offset>`;
 
 export const SELECT_CASE_LIST = selectCasesPaginatedSql(LIST_WHERE_CLAUSE);
 
-export const SELECT_CASE_SEARCH = selectCasesPaginatedSql(SEARCH_WHERE_CLAUSE, SEARCH_FROM_EXTRAS, SEARCH_HAVING_CLAUSE)
+export const SELECT_CASE_SEARCH = selectCasesPaginatedSql(
+  SEARCH_WHERE_CLAUSE,
+  SEARCH_FROM_EXTRAS,
+  SEARCH_HAVING_CLAUSE,
+);
 
-export const SELECT_CASE_AUDITS_FOR_CASE = `SELECT * FROM "CaseAudits" WHERE "CaseAudits"."accountSid" = $<accountSid> AND "CaseAudits"."caseId" = $<caseId>`
+export const SELECT_CASE_AUDITS_FOR_CASE = `SELECT * FROM "CaseAudits" WHERE "CaseAudits"."accountSid" = $<accountSid> AND "CaseAudits"."caseId" = $<caseId>`;
 
-export const DELETE_BY_ID =`DELETE FROM "Cases" WHERE "Cases"."accountSid" = $1 AND "Cases"."id" = $2 RETURNING *`
+export const DELETE_BY_ID = `DELETE FROM "Cases" WHERE "Cases"."accountSid" = $1 AND "Cases"."id" = $2 RETURNING *`;
 
-export const updateByIdSql = (updatedValues: Record<string, unknown>)=> `
-      ${selectSingleCaseByIdSql("Cases")};
+export const updateByIdSql = (updatedValues: Record<string, unknown>) => `
+      ${selectSingleCaseByIdSql('Cases')};
       WITH 
       updated AS (
-        ${ pgp.helpers.update(updatedValues, updateCaseColumnSet) } 
+        ${pgp.helpers.update(updatedValues, updateCaseColumnSet)} 
           WHERE "Cases"."accountSid" = $<accountSid> AND "Cases"."id" = $<caseId> 
           RETURNING *
       )
-      ${selectSingleCaseByIdSql("updated")}`
+      ${selectSingleCaseByIdSql('updated')}`;

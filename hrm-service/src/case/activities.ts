@@ -1,5 +1,4 @@
-import * as caseDb from './case-data-access'
-import { getById } from './case-data-access';
+import * as caseDb from './case-data-access';
 
 const ActivityTypes = {
   createCase: 'create',
@@ -80,7 +79,7 @@ const connectedContactActivities = caseContacts =>
 export const getCaseActivities = async (caseId, accountSid) => {
   const dbCase = await caseDb.getById(caseId, accountSid);
   if (!dbCase) {
-    throw new Error(`Case with id '${caseId}' from account '${accountSid}' not found.`)
+    throw new Error(`Case with id '${caseId}' from account '${accountSid}' not found.`);
   }
   return [
     ...noteActivities(dbCase.info),

@@ -3,7 +3,6 @@ import { getById } from '../../src/case/case-data-access';
 
 jest.mock('../../src/case/case-data-access');
 
-
 const CREATED_AT_DATE = '2020-30-07 18:55:20';
 
 const mockFakeCase = (info, connectedContacts = undefined) =>

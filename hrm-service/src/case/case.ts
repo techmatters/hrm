@@ -1,4 +1,3 @@
-
 // Checks for any notes that might have been added to legacy 'notes' property by an old version of the client and converts & copies them to the new 'counsellorNotes' property/
 // DEPRECATE ME - This migration code should only be required until CHI-1040 is deployed to all flex instances
 import * as caseDb from './case-data-access';
@@ -22,7 +21,7 @@ const addCategoriesAndChildName = (caseItem: CaseRecord): Case => {
   const childName = `${childInformation.name.firstName} ${childInformation.name.lastName}`;
   const categories = retrieveCategories(caseInformation.categories);
   return { ...caseItem, childName, categories };
-}
+};
 
 const migrateAddedLegacyNotesToCounsellorNotes = (
   update,
@@ -31,7 +30,9 @@ const migrateAddedLegacyNotesToCounsellorNotes = (
 ) => {
   if (update.info) {
     const legacyNotes = Array.isArray(update.info.notes) ? update.info.notes : [];
-    const counsellorNotes = Array.isArray(update.info.counsellorNotes) ? update.info.counsellorNotes : [];
+    const counsellorNotes = Array.isArray(update.info.counsellorNotes)
+      ? update.info.counsellorNotes
+      : [];
     const dbNotes = Array.isArray(dbCase.info.counsellorNotes) ? dbCase.info.counsellorNotes : [];
 
     // Assume if there are more new format notes in the update than in the DB, that this is the correct update
@@ -96,31 +97,55 @@ const generateLegacyNotesFromCounsellorNotes = caseFromDb => {
   return caseFromDb;
 };
 
-export const createCase = async (body, accountSid, workerSid) : Promise<CaseRecord> => {
+export const createCase = async (body, accountSid, workerSid): Promise<CaseRecord> => {
   const migratedBody = migrateAddedLegacyNotesToCounsellorNotes(
     fixLegacyReferrals(body, workerSid),
     workerSid,
   );
   const created = await caseDb.create(migratedBody, accountSid, workerSid);
   return generateLegacyNotesFromCounsellorNotes(created);
-}
+};
 
-export const updateCase = async (id, body: Partial<CaseRecord>, accountSid, workerSid) : Promise<Case> => {
+export const updateCase = async (
+  id,
+  body: Partial<CaseRecord>,
+  accountSid,
+  workerSid,
+): Promise<Case> => {
   const caseFromDB = await caseDb.getById(id, accountSid);
   const migratedBody = migrateAddedLegacyNotesToCounsellorNotes(
     fixLegacyReferrals(body, workerSid, caseFromDB),
     workerSid,
     caseFromDB,
   );
-  return generateLegacyNotesFromCounsellorNotes(await caseDb.update(id, migratedBody, accountSid, workerSid))
-}
+  return generateLegacyNotesFromCounsellorNotes(
+    await caseDb.update(id, migratedBody, accountSid, workerSid),
+  );
+};
 
-export const listCases = async (query: { helpline: string}, accountSid): Promise<{ cases: readonly Case[], count: number}> => {
+export const listCases = async (
+  query: { helpline: string },
+  accountSid,
+): Promise<{ cases: readonly Case[]; count: number }> => {
   const dbResult = await caseDb.list(query, accountSid);
-  return { ...dbResult, cases: dbResult.cases.map(c => generateLegacyNotesFromCounsellorNotes(addCategoriesAndChildName(c))) };
-}
+  return {
+    ...dbResult,
+    cases: dbResult.cases.map(c =>
+      generateLegacyNotesFromCounsellorNotes(addCategoriesAndChildName(c)),
+    ),
+  };
+};
 
-export const searchCases = async (body, query: { helpline: string}, accountSid): Promise<{ cases: readonly Case[], count: number}> => {
+export const searchCases = async (
+  body,
+  query: { helpline: string },
+  accountSid,
+): Promise<{ cases: readonly Case[]; count: number }> => {
   const dbResult = await caseDb.search(body, query, accountSid);
-  return { ...dbResult, cases: dbResult.cases.map(c => generateLegacyNotesFromCounsellorNotes(addCategoriesAndChildName(c))) };
-}
+  return {
+    ...dbResult,
+    cases: dbResult.cases.map(c =>
+      generateLegacyNotesFromCounsellorNotes(addCategoriesAndChildName(c)),
+    ),
+  };
+};

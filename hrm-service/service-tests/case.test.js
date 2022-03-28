@@ -99,7 +99,6 @@ describe('/cases route', () => {
         count,
       }),
     );
-    console.log('DUMP:', actual.body, expectedCaseAndContactModels.map(ccm => ccm.case.dataValues), count);
     expectedCaseAndContactModels.forEach(
       ({ case: expectedCaseModel, contact: expectedContactModel }, index) => {
         const { connectedContacts, ...caseDataValues } = expectedCaseModel.dataValues;

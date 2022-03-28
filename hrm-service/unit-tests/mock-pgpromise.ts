@@ -42,41 +42,43 @@ const createMockConnection = ()=> ({
 
 jest.mock('../src/connection-pool', ()=> ({
   db: createMockConnection(),
-  pgp: jest.requireActual('../src/connection-pool').pgp
+  pgp: jest.requireActual('../src/connection-pool').pgp,
 }));
 
 export const mockConnection = createMockConnection;
 
-export const mockTask = (mockConnection: pgPromise.ITask<unknown>) => {
+export const mockTask = (mockConn: pgPromise.ITask<unknown>) => {
   jest.spyOn(db, 'task').mockImplementation((action: (connection: pgPromise.ITask<unknown>)=>Promise<any>)=> {
-    return action(mockConnection)
+    return action(mockConn);
   });
-}
-export const mockTransaction = (mockConnection: pgPromise.ITask<unknown>, mockTx: pgPromise.ITask<unknown> | undefined = undefined) => {
+};
+export const mockTransaction = (mockConn: pgPromise.ITask<unknown>, mockTx: pgPromise.ITask<unknown> | undefined = undefined) => {
   if (mockTx) {
     // @ts-ignore
-    jest.spyOn(mockConnection, 'tx').mockImplementation((action: (connection: pgPromise.ITask<unknown>) => Promise<any>) => {
-      return action(mockTx)
+    jest.spyOn(mockConn, 'tx').mockImplementation((action: (connection: pgPromise.ITask<unknown>) => Promise<any>) => {
+      return action(mockTx);
     });
 
-    mockTask(mockConnection);
-  }
-  else {
+    mockTask(mockConn);
+  } else {
     jest.spyOn(db, 'tx').mockImplementation((action: (connection: pgPromise.ITask<unknown>)=>Promise<any>)=> {
-      return action(mockConnection)
+      return action(mockConn);
     });
   }
-}
+};
 
-export const getSqlStatement = (mockQueryMethod: jest.SpyInstance<any, [query: QueryParam, values?:any] | [query: QueryParam, values?:any, cb?: any, thisArg?: any]>, callIndex = -1): string => {
+// eslint-disable-next-line prettier/prettier
+type PgQueryParameters = [query: QueryParam, values?:any] | [query: QueryParam, values?:any, cb?: any, thisArg?: any];
+
+export const getSqlStatement = (mockQueryMethod: jest.SpyInstance<any, PgQueryParameters>, callIndex = -1): string => {
   expect(mockQueryMethod).toHaveBeenCalled();
   return mockQueryMethod.mock.calls[callIndex < 0 ? mockQueryMethod.mock.calls.length + callIndex : callIndex][0].toString();
-}
+};
 
 export const expectValuesInSql = (sql: string,  expectedValues: Record<string, any>): void => {
   Object.entries(expectedValues).forEach(([key, val] )=> {
     expect(sql).toContain(key);
-    if (typeof val !== 'function' && typeof val!== 'object') {
+    if (typeof val !== 'function' && typeof val !== 'object') {
       expect(sql).toContain(val.toString());
     }
     if (typeof val === 'object') {
@@ -84,5 +86,5 @@ export const expectValuesInSql = (sql: string,  expectedValues: Record<string, a
         expect(sql).toContain(val.toISOString());
       }
     }
-  })
-}
+  });
+};
