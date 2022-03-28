@@ -449,7 +449,7 @@ describe('update existing case', () => {
     });
   });
 
-  test('adding a note in legacy note format - converts legacy note to counsellor note', async () => {
+  test('adding a note in legacy note format - converts legacy note to counsellor note dfsgsg', async () => {
     const caseFromDB = mockExistingCase({
       counsellorNotes: [{ note: 'Child with covid-19', twilioWorkerId: 'contact-adder' }],
     });

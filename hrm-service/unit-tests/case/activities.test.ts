@@ -1,19 +1,13 @@
-const CaseControllerModule = require('../../src/controllers/case-controller');
+import { getCaseActivities } from '../../src/case/activities';
+import { getById } from '../../src/case/case-data-access';
 
-jest.mock('../../src/controllers/case-controller');
+jest.mock('../../src/case/case-data-access');
 
-const CaseController = {
-  getCase: jest.fn(),
-};
-
-CaseControllerModule.mockReturnValue(CaseController);
-
-const { getCaseActivities } = require('../../src/controllers/activities');
 
 const CREATED_AT_DATE = '2020-30-07 18:55:20';
 
 const mockFakeCase = (info, connectedContacts = undefined) =>
-  CaseController.getCase.mockReturnValue({
+  (getById as jest.Mock).mockReturnValue({
     accountSid: 'FAKEY_FAKEY',
     createdAt: CREATED_AT_DATE,
     twilioWorkerId: 'twilio-worker-id',
@@ -25,12 +19,12 @@ const mockFakeCase = (info, connectedContacts = undefined) =>
 
 describe('getCaseActivities', () => {
   beforeEach(() => {
-    CaseController.getCase.mockReturnValue({ info: {} });
+    (getById as jest.Mock).mockReturnValue({ info: {} });
   });
 
   test('Always retrieves case by id & account', async () => {
     const activities = await getCaseActivities(1337, 'FAKEY_FAKEY');
-    expect(CaseController.getCase).toHaveBeenCalledWith(1337, 'FAKEY_FAKEY');
+    expect(getById).toHaveBeenCalledWith(1337, 'FAKEY_FAKEY');
     expect(activities).toHaveLength(0);
   });
 

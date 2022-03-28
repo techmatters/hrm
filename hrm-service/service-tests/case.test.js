@@ -99,6 +99,7 @@ describe('/cases route', () => {
         count,
       }),
     );
+    console.log('DUMP:', actual.body, expectedCaseAndContactModels.map(ccm => ccm.case.dataValues), count);
     expectedCaseAndContactModels.forEach(
       ({ case: expectedCaseModel, contact: expectedContactModel }, index) => {
         const { connectedContacts, ...caseDataValues } = expectedCaseModel.dataValues;
@@ -173,7 +174,8 @@ describe('/cases route', () => {
       const createdCasesAndContacts = [];
       const accounts = ['ACCOUNT_SID_1', 'ACCOUNT_SID_2'];
       const helplines = ['helpline-1', 'helpline-2', 'helpline-3'];
-      beforeAll(async () => {
+      beforeEach(async () => {
+        createdCasesAndContacts.length = 0;
         for (let i = 0; i < CASE_SAMPLE_SIZE; i += 1) {
           const createdCase = await Case.create(
             {
@@ -200,8 +202,8 @@ describe('/cases route', () => {
         }
       });
 
-      afterAll(async () => {
-        return Promise.all([
+      afterEach(async () => {
+        await Promise.all([
           Case.destroy({ where: { id: createdCasesAndContacts.map(ccc => ccc.case.id) } }),
           Contact.destroy({ where: { id: createdCasesAndContacts.map(ccc => ccc.contact.id) } }),
         ]);
@@ -739,7 +741,6 @@ describe('/cases route', () => {
           if (infoUpdate) {
             update.info = { ...originalCase.dataValues.info, ...caseUpdate.info, ...infoUpdate };
           }
-          console.log('UPDATE:', update, caseUpdate, infoUpdate);
           const response = await request
             .put(subRoute(originalCase.id))
             .set(headers)
