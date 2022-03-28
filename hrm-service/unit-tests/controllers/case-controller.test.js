@@ -75,7 +75,7 @@ describe('Test listCases query params', () => {
 
       await CaseController.listCases(queryParams, accountSid);
       const expectedQueryObject = {
-        order: [['id', 'DESC']],
+        order: [['id', 'DESC NULLS LAST']],
         where: {
           [Op.and]: [{ helpline: 'helpline' }, { accountSid }],
         },
@@ -99,7 +99,7 @@ describe('Test listCases query params', () => {
 
       await CaseController.listCases(queryParams, accountSid);
       const expectedQueryObject = {
-        order: [['id', 'DESC']],
+        order: [['id', 'DESC NULLS LAST']],
         where: {
           [Op.and]: [{ helpline: 'helpline' }, { accountSid }],
         },
@@ -123,7 +123,7 @@ describe('Test listCases query params', () => {
 
       await CaseController.listCases(queryParams, accountSid);
       const expectedQueryObject = {
-        order: [['id', 'DESC']],
+        order: [['id', 'DESC NULLS LAST']],
         where: {
           [Op.and]: [{ helpline: 'helpline' }, { accountSid }],
         },
@@ -147,7 +147,7 @@ describe('Test listCases query params', () => {
 
       await CaseController.listCases(queryParams, accountSid);
       const expectedQueryObject = {
-        order: [['id', 'DESC']],
+        order: [['id', 'DESC NULLS LAST']],
         where: {
           [Op.and]: [{ helpline: 'helpline' }, { accountSid }],
         },
@@ -171,7 +171,7 @@ describe('Test listCases query params', () => {
 
       await CaseController.listCases(queryParams, accountSid);
       const expectedQueryObject = {
-        order: [['id', 'DESC']],
+        order: [['id', 'DESC NULLS LAST']],
         where: {
           [Op.and]: [{ helpline: 'helpline' }, { accountSid }],
         },
@@ -197,7 +197,7 @@ describe('Test listCases query params', () => {
 
       await CaseController.listCases(queryParams, accountSid);
       const expectedQueryObject = {
-        order: [['id', 'DESC']],
+        order: [['id', 'DESC NULLS LAST']],
         where: {
           [Op.and]: [{ helpline: 'helpline' }, { accountSid }],
         },
@@ -227,7 +227,7 @@ describe('Test listCases query params', () => {
 
       await CaseController.listCases(queryParams, accountSid);
       const expectedQueryObject = {
-        order: [['Child Name', 'ASC']],
+        order: [['Child Name', 'ASC NULLS LAST']],
         where: {
           [Op.and]: [{ helpline: 'helpline' }, { accountSid }],
         },
@@ -302,7 +302,7 @@ test('list cases (with 1st contact, no limit/offset)', async () => {
 
   const result = await CaseController.listCases(queryParams, accountSid);
   const expectedQueryObject = {
-    order: [['id', 'DESC']],
+    order: [['id', 'DESC NULLS LAST']],
     where: {
       [Op.and]: [{ helpline: 'helpline' }, { accountSid }],
     },
@@ -372,7 +372,7 @@ test('list cases (with 1st contact, with limit/offset)', async () => {
 
   const result = await CaseController.listCases(queryParams, accountSid);
   const expectedQueryObject = {
-    order: [['id', 'DESC']],
+    order: [['id', 'DESC NULLS LAST']],
     where: {
       [Op.and]: [{ helpline: 'helpline' }, { accountSid }],
     },
@@ -419,7 +419,7 @@ test('list cases (without contacts)', async () => {
   const result = await CaseController.listCases(queryParams, accountSid);
 
   const expectedQueryObject = {
-    order: [['id', 'DESC']],
+    order: [['id', 'DESC NULLS LAST']],
     where: {
       [Op.and]: [{ helpline: 'helpline' }, { accountSid }],
     },
@@ -441,7 +441,7 @@ test('list cases without helpline', async () => {
   const queryParams = { limit: 20, offset: 30 };
   await CaseController.listCases(queryParams, accountSid);
   const expectedQueryObject = {
-    order: [['id', 'DESC']],
+    order: [['id', 'DESC NULLS LAST']],
     where: {
       [Op.and]: [undefined, { accountSid }],
     },
