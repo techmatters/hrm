@@ -7,8 +7,8 @@
     "start": "npm run build && sequelize db:migrate && cd ./dist && node ./bin/www",
     "test": "jest --passWithNoTests --forceExit --maxWorkers=1",
     "test:unit": "jest unit-tests",
-    "test:service": "jest --passWithNoTests --forceExit --maxWorkers=1 service-tests",
-    "test:service:local": "docker compose -f ./docker-compose-test.yml up -d && cross-env POSTGRES_PORT=5433 API_KEY=anything USE_OPEN_PERMISSIONS=true jest --verbose --maxWorkers=1  service-tests & docker compose -f ./docker-compose-test.yml down",
+    "test:service": "node ./service-tests/db-init/migrate && jest --passWithNoTests --forceExit --maxWorkers=1 service-tests",
+    "test:service:local": "docker compose -f ./docker-compose-test.yml up -d && cross-env POSTGRES_PORT=5433 node ./service-tests/db-init/migrate && cross-env POSTGRES_PORT=5433 API_KEY=anything USE_OPEN_PERMISSIONS=true jest --verbose --maxWorkers=1  service-tests & docker compose -f ./docker-compose-test.yml down",
     "db:create-migration": "./node_modules/.bin/sequelize migration:generate --name ",
     "db:undo-last": "./node_modules/.bin/sequelize db:migrate:undo",
     "lint": "./node_modules/.bin/eslint --ext js,ts .",
@@ -72,6 +72,7 @@
     "supertest": "^4.0.2",
     "ts-node": "^10.7.0",
     "typescript": "^4.6.3",
+    "umzug": "^3.0.0",
     "util": "^0.12.2"
   }
 }
