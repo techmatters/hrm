@@ -132,11 +132,11 @@ const CaseController = (Case, sequelize) => {
   };
 
   const listCases = async (query, accountSid) => {
-    const { limit, offset } = getPaginationElements(query);
+    const { limit, offset, sortBy, order } = getPaginationElements(query);
     const { helpline } = query;
 
     const queryObject = {
-      order: [['createdAt', 'DESC']],
+      order: [[sortBy, `${order} NULLS LAST`]],
       limit,
       offset,
       include: {
