@@ -3,9 +3,10 @@ import { getPaginationElements } from '../controllers/helpers';
 import pgPromise from 'pg-promise';
 import {
   DELETE_BY_ID,
+  OrderByDirection,
   SELECT_CASE_AUDITS_FOR_CASE,
-  SELECT_CASE_LIST,
   SELECT_CASE_SEARCH,
+  selectCaseList,
   selectSingleCaseByIdSql,
   updateByIdSql,
 } from './case-sql';
@@ -138,11 +139,13 @@ export const list = async (
   query: { helpline: string },
   accountSid,
 ): Promise<{ cases: readonly CaseRecord[]; count: number }> => {
-  const { limit, offset } = getPaginationElements(query);
+  const { limit, offset, sortBy, order = OrderByDirection.ascending } = getPaginationElements(
+    query,
+  );
   const { helpline } = query;
-
+  const orderClause = [{ sortField: sortBy, sortDirection: <OrderByDirection>order }];
   const { count, rows } = await db.task(async connection => {
-    const statement = SELECT_CASE_LIST;
+    const statement = selectCaseList(orderClause);
     const queryValues = { accountSid, helpline: helpline || null, limit, offset };
     const result: CaseWithCount[] = await connection.any<CaseWithCount>(statement, queryValues);
     const totalCount = result.length ? result[0].totalCount : 0;

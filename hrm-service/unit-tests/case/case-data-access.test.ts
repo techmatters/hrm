@@ -10,6 +10,7 @@ import {
 import * as caseDb from '../../src/case/case-data-access';
 import each from 'jest-each';
 import { db } from '../../src/connection-pool';
+import { OrderByDirection } from '../../src/case/case-sql';
 
 const accountSid = 'account-sid';
 const workerSid = 'worker-sid';
@@ -102,47 +103,94 @@ describe('list', () => {
         description: 'should use a default limit and offset 0 when neither specified',
         parameters: { helpline: 'fakeHelpline' },
         expectedDbParameters: { helpline: 'fakeHelpline', limit: expect.any(Number), offset: 0 },
+        expectedInSql: ['"id" DESC'],
       },
       {
         description: 'should use a specified limit and offset 0 when only limit is specified',
         parameters: { helpline: 'fakeHelpline', limit: 45 },
         expectedDbParameters: { helpline: 'fakeHelpline', limit: 45, offset: 0 },
+        expectedInSql: ['"id" DESC'],
       },
       {
         description:
           'should use a default limit specified and offset when only offset is specified',
         parameters: { helpline: 'fakeHelpline', offset: 30 },
         expectedDbParameters: { helpline: 'fakeHelpline', limit: expect.any(Number), offset: 30 },
+        expectedInSql: ['"id" DESC'],
       },
       {
         description: 'should use a specified limit and offset when both are present',
         parameters: { helpline: 'fakeHelpline', limit: 45, offset: 30 },
         expectedDbParameters: { helpline: 'fakeHelpline', limit: 45, offset: 30 },
+        expectedInSql: ['"id" DESC'],
       },
       {
         description: 'should use a default limit and/or offset when either are NaN',
         parameters: { helpline: 'fakeHelpline', limit: NaN, offset: NaN },
         expectedDbParameters: { helpline: 'fakeHelpline', limit: expect.any(Number), offset: 0 },
+        expectedInSql: ['"id" DESC'],
       },
       {
         description: "should generate SQL without helpline filter if one isn't set",
         parameters: { limit: 100, offset: 25 },
         expectedDbParameters: { limit: 100, offset: 25 },
+        expectedInSql: ['"id" DESC'],
       },
-    ]).test('$description', async ({ parameters, expectedDbParameters }) => {
-      const dbResult = [
-        { ...createMockCaseRecord({ id: 2 }), totalCount: 1337 },
-        { ...createMockCaseRecord({ id: 1 }), totalCount: 1337 },
-      ];
-      const anySpy = jest.spyOn(conn, 'any').mockResolvedValue(dbResult);
-      const result = await caseDb.list(parameters, accountSid);
-      expect(anySpy).toHaveBeenCalledWith(
-        expect.stringContaining('Cases'),
-        expect.objectContaining({ ...expectedDbParameters, accountSid }),
-      );
-      expect(result.count).toEqual(1337);
-      expect(result.cases).toStrictEqual(dbResult);
-    });
+      {
+        description: 'should generate SQL with order by clause',
+        parameters: {
+          limit: 100,
+          offset: 25,
+          sortBy: 'jimmyjab',
+          order: OrderByDirection.ascendingNullsLast,
+        },
+        expectedDbParameters: { limit: 100, offset: 25 },
+        expectedInSql: ['"id" DESC', '"jimmyjab" ASC NULLS LAST'],
+      },
+      {
+        description: "should use default 'id' column for ordering if order specified but no column",
+        parameters: {
+          limit: 100,
+          offset: 25,
+          order: OrderByDirection.ascendingNullsLast,
+        },
+        expectedDbParameters: { limit: 100, offset: 25 },
+        expectedInSql: ['"id" DESC', '"id" ASC NULLS LAST,'],
+      },
+      {
+        description: 'should use default DESC sort if only sort column is specified',
+        parameters: {
+          limit: 100,
+          offset: 25,
+          sortBy: 'jimmyjab',
+        },
+        expectedDbParameters: { limit: 100, offset: 25 },
+        expectedInSql: ['"id" DESC', '"jimmyjab" DESC'],
+      },
+    ]).test(
+      '$description',
+      async ({ parameters, expectedDbParameters, expectedInSql = [], notExpectedInSql = [] }) => {
+        const dbResult = [
+          { ...createMockCaseRecord({ id: 2 }), totalCount: 1337 },
+          { ...createMockCaseRecord({ id: 1 }), totalCount: 1337 },
+        ];
+        const anySpy = jest.spyOn(conn, 'any').mockResolvedValue(dbResult);
+        const result = await caseDb.list(parameters, accountSid);
+        expect(anySpy).toHaveBeenCalledWith(
+          expect.stringContaining('Cases'),
+          expect.objectContaining({ ...expectedDbParameters, accountSid }),
+        );
+        const sql = getSqlStatement(anySpy);
+        expectedInSql.forEach(expected => {
+          expect(sql).toContain(expected);
+        });
+        notExpectedInSql.forEach(notExpected => {
+          expect(sql).not.toContain(notExpected);
+        });
+        expect(result.count).toEqual(1337);
+        expect(result.cases).toStrictEqual(dbResult);
+      },
+    );
   });
   each([
     {
@@ -226,6 +274,7 @@ describe('update', () => {
     tx = mockConnection();
     mockTransaction(tx);
   });
+
   test('runs update SQL against cases table with provided ID.', async () => {
     const caseUpdateResult = createMockCaseRecord(caseUpdate);
     const multiSpy = jest

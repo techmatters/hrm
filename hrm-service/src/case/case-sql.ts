@@ -1,6 +1,19 @@
 import { pgp } from '../connection-pool';
 
+export const enum OrderByDirection {
+  ascendingNullsLast = 'ASC NULLS LAST',
+  descendingNullsLast = 'DESC NULLS LAST',
+  ascending = 'ASC',
+  descending = 'DESC',
+}
+
 const VALID_CASE_UPDATE_FIELDS = ['info', 'helpline', 'status', 'twilioWorkerId', 'updatedAt'];
+
+type OrderByClauseItem = { sortField: string; sortDirection: OrderByDirection };
+
+const DEFAULT_SORT: OrderByClauseItem[] = [
+  { sortField: 'id', sortDirection: OrderByDirection.descending },
+];
 
 const updateCaseColumnSet = new pgp.helpers.ColumnSet(
   VALID_CASE_UPDATE_FIELDS.map(f => ({
@@ -9,6 +22,16 @@ const updateCaseColumnSet = new pgp.helpers.ColumnSet(
   })),
   { table: 'Cases' },
 );
+
+const generateOrderByClause = (
+  clauses: { sortField: string; sortDirection: OrderByDirection }[],
+): string => {
+  if (clauses.length > 0) {
+    return ` ORDER BY ${clauses
+      .map(t => `${pgp.as.name(t.sortField)} ${t.sortDirection}`)
+      .join(', ')}`;
+  } else return '';
+};
 
 const SELECT_CONTACTS = `SELECT c.*,
 COALESCE(jsonb_agg(DISTINCT r.*) FILTER (WHERE r.id IS NOT NULL), '[]') AS "csamReports"
@@ -161,6 +184,7 @@ const selectCasesUnorderedSql = (
 
 const selectCasesPaginatedSql = (
   whereClause: string,
+  orderByClause: string,
   extraFromClause: string = '',
   havingClause: string = '',
 ) => `
@@ -168,14 +192,15 @@ SELECT * FROM (${selectCasesUnorderedSql(
   whereClause,
   extraFromClause,
   havingClause,
-)}) "unordered" ORDER BY "createdAt" DESC
+)}) "unordered" ${orderByClause}
 LIMIT $<limit>
 OFFSET $<offset>`;
 
-export const SELECT_CASE_LIST = selectCasesPaginatedSql(LIST_WHERE_CLAUSE);
+export const SELECT_CASE_LIST = selectCasesPaginatedSql(LIST_WHERE_CLAUSE, '');
 
 export const SELECT_CASE_SEARCH = selectCasesPaginatedSql(
   SEARCH_WHERE_CLAUSE,
+  generateOrderByClause(DEFAULT_SORT),
   SEARCH_FROM_EXTRAS,
   SEARCH_HAVING_CLAUSE,
 );
@@ -193,3 +218,10 @@ export const updateByIdSql = (updatedValues: Record<string, unknown>) => `
           RETURNING *
       )
       ${selectSingleCaseByIdSql('updated')}`;
+
+export const selectCaseList = (
+  orderByClauses: { sortField: string; sortDirection: OrderByDirection }[] = [],
+) => {
+  const orderBySql = generateOrderByClause(orderByClauses.concat(DEFAULT_SORT));
+  return selectCasesPaginatedSql(LIST_WHERE_CLAUSE, orderBySql);
+};
