@@ -1,9 +1,16 @@
-// Checks for any notes that might have been added to legacy 'notes' property by an old version of the client and converts & copies them to the new 'counsellorNotes' property/
-// DEPRECATE ME - This migration code should only be required until CHI-1040 is deployed to all flex instances
+/**
+ * This is the 'business logic' module for Case CRUD operations.
+ * For the moment it just does some light mapping between the types used for the REST layer, and the types used for the database layer.
+ * This includes compatibility code required to provide cases in a shape expected by older clients
+ */
 import * as caseDb from './case-data-access';
 import { retrieveCategories } from '../controllers/helpers';
 
-type Case = caseDb.Case;
+type Case = CaseRecord & {
+  childName?: string;
+  categories: Record<string, string[]>;
+};
+
 type CaseRecord = caseDb.CaseRecord;
 
 const addCategoriesAndChildName = (caseItem: CaseRecord): Case => {
@@ -23,6 +30,8 @@ const addCategoriesAndChildName = (caseItem: CaseRecord): Case => {
   return { ...caseItem, childName, categories };
 };
 
+// Checks for any notes that might have been added to legacy 'notes' property by an old version of the client and converts & copies them to the new 'counsellorNotes' property/
+// DEPRECATE ME - This migration code should only be required until CHI-1040 is deployed to all flex instances
 const migrateAddedLegacyNotesToCounsellorNotes = (
   update,
   twilioWorkerId,
@@ -113,6 +122,9 @@ export const updateCase = async (
   workerSid,
 ): Promise<Case> => {
   const caseFromDB = await caseDb.getById(id, accountSid);
+  if (!caseFromDB) {
+    return;
+  }
   const migratedBody = migrateAddedLegacyNotesToCounsellorNotes(
     fixLegacyReferrals(body, workerSid, caseFromDB),
     workerSid,

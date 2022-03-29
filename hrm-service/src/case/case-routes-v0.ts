@@ -22,6 +22,9 @@ casesRouter.put('/:id', canEditCase, async (req, res) => {
   const { accountSid, user } = req;
   const { id } = req.params;
   const updatedCase = await caseApi.updateCase(id, req.body, accountSid, user.workerSid);
+  if (!updatedCase) {
+    throw createError(404);
+  }
   res.json(updatedCase);
 });
 

@@ -63,11 +63,7 @@ export type CaseRecord = NewCaseRecord & {
   connectedContacts?: Contact[];
 };
 
-export type Case = CaseRecord & {
-  childName?: string;
-  categories: Record<string, string[]>;
-};
-type CaseWithCount = Case & { totalCount: number };
+type CaseWithCount = CaseRecord & { totalCount: number };
 
 type CaseAuditRecord = {
   previousValue?: any;
@@ -83,7 +79,7 @@ type CaseAuditRecord = {
 const logCaseAudit = async (
   transaction: pgPromise.ITask<unknown>,
   updated: CaseRecord,
-  original?: Case,
+  original?: CaseRecord,
 ) => {
   const auditRecord: CaseAuditRecord = {
     caseId: updated.id,
@@ -92,7 +88,10 @@ const logCaseAudit = async (
     createdBy: updated.createdBy,
     accountSid: updated.accountSid,
     twilioWorkerId: updated.twilioWorkerId,
-    newValue: { ...updated, contacts: ((<Case>updated).connectedContacts ?? []).map(cc => cc.id) },
+    newValue: {
+      ...updated,
+      contacts: ((<CaseRecord>updated).connectedContacts ?? []).map(cc => cc.id),
+    },
     previousValue: original
       ? { ...original, contacts: (original.connectedContacts ?? []).map(cc => cc.id) }
       : null,
@@ -157,7 +156,7 @@ export const search = async (
   body,
   query: { helpline: string },
   accountSid,
-): Promise<{ cases: readonly Case[]; count: number }> => {
+): Promise<{ cases: readonly CaseRecord[]; count: number }> => {
   const { limit, offset } = getPaginationElements(query);
 
   const { count, rows } = await db.task(async connection => {
@@ -203,7 +202,7 @@ export const update = async (
     };
 
     const updateById = updateByIdSql(caseRecordUpdates);
-    const [original, updated] = await transaction.multi<Case>(updateById, {
+    const [original, updated] = await transaction.multi<CaseRecord>(updateById, {
       accountSid,
       caseId: id,
     });

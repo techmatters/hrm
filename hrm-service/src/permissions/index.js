@@ -24,6 +24,7 @@ const rulesMap = {
   mw: mwRules,
   za: zaRules,
   zm: zmRules,
+  open: openRules,
 };
 
 /**

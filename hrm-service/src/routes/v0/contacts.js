@@ -1,9 +1,9 @@
 const models = require('../../models');
 const { SafeRouter, publicEndpoint } = require('../../permissions');
+const createError = require('http-errors');
 
-const { Contact, Case, sequelize } = models;
+const { Contact } = models;
 const ContactController = require('../../controllers/contact-controller')(Contact);
-const CaseController = require('../../controllers/case-controller')(Case, sequelize);
 
 const contactsRouter = SafeRouter();
 
@@ -25,14 +25,19 @@ contactsRouter.put('/:contactId/connectToCase', publicEndpoint, async (req, res)
   const { accountSid, user } = req;
   const { contactId } = req.params;
   const { caseId } = req.body;
-  await CaseController.getCase(caseId, accountSid);
-  const updatedContact = await ContactController.connectToCase(
-    contactId,
-    caseId,
-    accountSid,
-    user.workerSid,
-  );
-  res.json(updatedContact);
+  try {
+    const updatedContact = await ContactController.connectToCase(
+      contactId,
+      caseId,
+      accountSid,
+      user.workerSid,
+    );
+    res.json(updatedContact);
+  } catch (err) {
+    if (err.message.includes('violates foreign key constraint')) {
+      throw createError(404);
+    } else throw err;
+  }
 });
 
 contactsRouter.post('/search', publicEndpoint, async (req, res) => {

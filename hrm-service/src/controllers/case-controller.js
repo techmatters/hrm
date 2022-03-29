@@ -1,3 +1,9 @@
+/**
+ * DEPRECATED MODULE
+ * This class only exists to ensure that the service tests used to verify the old Sequelize cases and the new pg-promise cases are consistent
+ * Once we are confident in the new pg-promise production code, we will migrate the tests to use the pg-promise data access layer and remove this.
+ * Use pg-promise based data access code in /hrm-service/src/cases going forward
+ */
 const createError = require('http-errors');
 const Sequelize = require('sequelize');
 const fs = require('fs');
