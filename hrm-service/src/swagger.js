@@ -2,7 +2,7 @@ const swaggerUi = require('swagger-ui-express');
 const yaml = require('js-yaml');
 const fs = require('fs');
 
-const swaggerDocument = yaml.safeLoad(fs.readFileSync('./swagger.yaml', 'utf8'));
+const swaggerDocument = yaml.safeLoad(fs.readFileSync(`${__dirname}/../swagger.yaml`, 'utf8'));
 
 const runWhenNotProduction = app => {
   const isProduction = process.env.NODE_ENV && process.env.NODE_ENV === 'production';
