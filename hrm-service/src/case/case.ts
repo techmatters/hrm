@@ -165,7 +165,10 @@ const generateLegacyNotesFromCounsellorNotes = caseFromDb => {
   return caseFromDb;
 };
 
-const caseRecordToCase = (record: CaseRecord): Case => generateLegacyNotesFromCounsellorNotes(addCategoriesAndChildName({ ...record, ...caseSectionRecordsToInfo(record.caseSections) }))
+const caseRecordToCase = (record: CaseRecord): Case =>
+  generateLegacyNotesFromCounsellorNotes(
+    addCategoriesAndChildName({ ...record, ...caseSectionRecordsToInfo(record.caseSections) }),
+  );
 
 export const createCase = async (body, accountSid, workerSid): Promise<CaseRecord> => {
   const migratedBody = migrateAddedLegacyNotesToCounsellorNotes(
@@ -196,12 +199,13 @@ export const updateCase = async (
   );
 };
 
-export const getCase(id: number, accountSid: string): Case => {
+export const getCase = async (id: number, accountSid: string): Promise<Case | undefined> => {
   const caseFromDb = await caseDb.getById(id, accountSid);
   if (caseFromDb) {
     return caseRecordToCase(caseFromDb);
   }
-}
+  return;
+};
 
 export const listCases = async (
   query: { helpline: string },
