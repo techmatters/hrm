@@ -63,6 +63,7 @@ export type NewCaseRecord = {
 export type CaseRecord = NewCaseRecord & {
   id: number;
   connectedContacts?: Contact[];
+  caseSections?: CaseSectionRecord[];
 };
 
 type CaseWithCount = CaseRecord & { totalCount: number };
@@ -210,13 +211,15 @@ export const update = async (
 ): Promise<CaseRecord> => {
   delete body.accountSid;
   const result = await db.tx(async transaction => {
+    const nowISOString = new Date().toISOString();
     const caseRecordUpdates: Partial<NewCaseRecord> = {
       ...body,
       twilioWorkerId: workerSid,
-      updatedAt: new Date().toISOString(),
+      updatedAt: nowISOString,
     };
     let caseUpdateSql = updateByIdSql(caseRecordUpdates);
     if (caseRecordUpdates.info) {
+      // Map individual lists inside the info JSON blob to a list of records for the CaseSections table
       const allSections: CaseSectionRecord[] = Object.entries(CASE_SECTION_NAMES).flatMap(
         ([sectionName, { getSectionSpecificData }]) =>
           (caseRecordUpdates.info[sectionName] ?? []).map(section => {
@@ -225,7 +228,7 @@ export const update = async (
               sectionType: sectionName,
               sectionId: section.id ?? randomUUID(),
               createdBy: workerSid,
-              createdAt: new Date().toISOString(),
+              createdAt: nowISOString,
               sectionTypeSpecificData: getSectionSpecificData(section),
             };
             if (section.id) {

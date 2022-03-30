@@ -5,13 +5,72 @@
  */
 import * as caseDb from './case-data-access';
 import { retrieveCategories } from '../controllers/helpers';
+import { CaseSectionRecord, Contact, NewCaseRecord } from './case-data-access';
 
-type Case = CaseRecord & {
+type Case = NewCaseRecord & {
+  id: number;
   childName?: string;
   categories: Record<string, string[]>;
+  connectedContacts?: Contact[];
 };
 
+type CaseInfoSection = {
+  id: string;
+  twilioWorkerId: string;
+  updatedAt?: string;
+  updatedBy?: string;
+} & Record<string, any>;
+
 type CaseRecord = caseDb.CaseRecord;
+
+/**
+ * Converts a single list of all sections for a case to a set of arrays grouped by type
+ */
+const caseSectionRecordsToInfo = (
+  sections: CaseSectionRecord[],
+): Record<string, CaseInfoSection[]> => {
+  const infoLists: Record<string, CaseInfoSection[]> = {};
+  return sections.reduce((categorized, record) => {
+    const {
+      caseId,
+      sectionType,
+      sectionId,
+      sectionTypeSpecificData,
+      createdBy,
+      ...restOfRecord
+    } = record;
+    switch (record.sectionType) {
+      case 'note':
+        categorized.counsellorNotes = categorized.counsellorNotes ?? [];
+        categorized.counsellorNotes.push({
+          ...restOfRecord,
+          id: sectionId,
+          twilioWorkerId: createdBy,
+          note: sectionTypeSpecificData.note,
+        });
+        break;
+      case 'referral':
+        categorized.referrals = categorized.referrals ?? [];
+        categorized.referrals.push({
+          ...sectionTypeSpecificData,
+          ...restOfRecord,
+          id: sectionId,
+          twilioWorkerId: createdBy,
+        });
+        break;
+      default:
+        const listName = `${record.sectionType}s`;
+        categorized[listName] = categorized[listName] ?? [];
+        categorized[listName].push({
+          ...restOfRecord,
+          id: sectionId,
+          twilioWorkerId: createdBy,
+          [record.sectionType]: sectionTypeSpecificData,
+        });
+    }
+    return categorized;
+  }, infoLists);
+};
 
 const addCategoriesAndChildName = (caseItem: CaseRecord): Case => {
   const fstContact = caseItem.connectedContacts[0];
@@ -106,6 +165,8 @@ const generateLegacyNotesFromCounsellorNotes = caseFromDb => {
   return caseFromDb;
 };
 
+const caseRecordToCase = (record: CaseRecord): Case => generateLegacyNotesFromCounsellorNotes(addCategoriesAndChildName({ ...record, ...caseSectionRecordsToInfo(record.caseSections) }))
+
 export const createCase = async (body, accountSid, workerSid): Promise<CaseRecord> => {
   const migratedBody = migrateAddedLegacyNotesToCounsellorNotes(
     fixLegacyReferrals(body, workerSid),
@@ -134,6 +195,13 @@ export const updateCase = async (
     await caseDb.update(id, migratedBody, accountSid, workerSid),
   );
 };
+
+export const getCase(id: number, accountSid: string): Case => {
+  const caseFromDb = await caseDb.getById(id, accountSid);
+  if (caseFromDb) {
+    return caseRecordToCase(caseFromDb);
+  }
+}
 
 export const listCases = async (
   query: { helpline: string },
