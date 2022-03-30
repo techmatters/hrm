@@ -196,16 +196,12 @@ SELECT * FROM (${selectCasesUnorderedSql(
 LIMIT $<limit>
 OFFSET $<offset>`;
 
-export const SELECT_CASE_LIST = selectCasesPaginatedSql(LIST_WHERE_CLAUSE, '');
-
 export const SELECT_CASE_SEARCH = selectCasesPaginatedSql(
   SEARCH_WHERE_CLAUSE,
   generateOrderByClause(DEFAULT_SORT),
   SEARCH_FROM_EXTRAS,
   SEARCH_HAVING_CLAUSE,
 );
-
-export const SELECT_CASE_AUDITS_FOR_CASE = `SELECT * FROM "CaseAudits" WHERE "CaseAudits"."accountSid" = $<accountSid> AND "CaseAudits"."caseId" = $<caseId>`;
 
 export const DELETE_BY_ID = `DELETE FROM "Cases" WHERE "Cases"."accountSid" = $1 AND "Cases"."id" = $2 RETURNING *`;
 
@@ -217,7 +213,8 @@ export const updateByIdSql = (updatedValues: Record<string, unknown>) => `
           WHERE "Cases"."accountSid" = $<accountSid> AND "Cases"."id" = $<caseId> 
           RETURNING *
       )
-      ${selectSingleCaseByIdSql('updated')}`;
+      ${selectSingleCaseByIdSql('updated')}
+`;
 
 export const selectCaseList = (
   orderByClauses: { sortField: string; sortDirection: OrderByDirection }[] = [],

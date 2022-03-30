@@ -4,45 +4,46 @@ import pgPromise from 'pg-promise';
 import {
   DELETE_BY_ID,
   OrderByDirection,
-  SELECT_CASE_AUDITS_FOR_CASE,
   SELECT_CASE_SEARCH,
   selectCaseList,
   selectSingleCaseByIdSql,
   updateByIdSql,
 } from './case-sql';
+import { caseSectionUpsertSql, deleteMissingCaseSectionsSql } from './case-sections-sql';
+import { randomUUID } from 'crypto';
+
+const CASE_SECTION_NAMES: Record<string, { getSectionSpecificData: (section: any) => any }> = {
+  households: { getSectionSpecificData: s => s.household },
+  perpetrators: { getSectionSpecificData: s => s.perpetrator },
+  incidents: { getSectionSpecificData: s => s.incident },
+  counsellorNotes: { getSectionSpecificData: s => ({ note: s.note }) },
+  referrals: {
+    getSectionSpecificData: s => {
+      return { date: s.date, referredTo: s.referredTo, comments: s.comments };
+    },
+  },
+  documents: { getSectionSpecificData: s => s.document },
+};
 
 /**
  * Move me to contacts directory when that exists
  */
-class ContactRecord {
+type ContactRecord = {
   id: number;
-
   rawJson?: any;
-
   queueName?: string;
-
   twilioWorkerId?: string;
-
   createdBy?: string;
-
   helpline?: string;
-
   number?: string;
-
   channel?: string;
-
   conversationDuration?: number;
-
   accountSid: string;
-
   timeOfContact?: Date;
-
   taskId?: string;
-
   channelSid?: string;
-
   serviceSid?: string;
-}
+};
 
 export type Contact = ContactRecord & {
   csamReports: any[];
@@ -75,6 +76,17 @@ type CaseAuditRecord = {
   createdAt: string;
   updatedAt: string;
   caseId: number;
+};
+
+export type CaseSectionRecord = {
+  caseId: number;
+  sectionType: string;
+  sectionId: string;
+  createdAt: string;
+  createdBy: string;
+  updatedAt?: string;
+  updatedBy?: string;
+  sectionTypeSpecificData: Record<string, any>;
 };
 
 const logCaseAudit = async (
@@ -203,9 +215,42 @@ export const update = async (
       twilioWorkerId: workerSid,
       updatedAt: new Date().toISOString(),
     };
-
-    const updateById = updateByIdSql(caseRecordUpdates);
-    const [original, updated] = await transaction.multi<CaseRecord>(updateById, {
+    let caseUpdateSql = updateByIdSql(caseRecordUpdates);
+    if (caseRecordUpdates.info) {
+      const allSections: CaseSectionRecord[] = Object.entries(CASE_SECTION_NAMES).flatMap(
+        ([sectionName, { getSectionSpecificData }]) =>
+          (caseRecordUpdates.info[sectionName] ?? []).map(section => {
+            const caseSectionRecordToUpsert: CaseSectionRecord = {
+              caseId: id,
+              sectionType: sectionName,
+              sectionId: section.id ?? randomUUID(),
+              createdBy: workerSid,
+              createdAt: new Date().toISOString(),
+              sectionTypeSpecificData: getSectionSpecificData(section),
+            };
+            if (section.id) {
+              caseSectionRecordToUpsert.sectionId = section.id;
+            }
+            return caseSectionRecordToUpsert;
+          }),
+      );
+      if (allSections.length) {
+        caseUpdateSql += `;
+          ${caseSectionUpsertSql(allSections)}`;
+      }
+      caseUpdateSql += `;
+      ${deleteMissingCaseSectionsSql(
+        Object.fromEntries(
+          Object.keys(CASE_SECTION_NAMES).map(sectionName => [
+            sectionName,
+            (caseRecordUpdates.info[sectionName] ?? []).map(s => s.id).filter(deleteId => deleteId),
+          ]),
+        ),
+      )}`;
+      console.log('CASE UPDATE SQL WITH CASE SECTION UPDATES:');
+      console.log(caseUpdateSql);
+    }
+    const [original, updated] = await transaction.multi<CaseRecord>(caseUpdateSql, {
       accountSid,
       caseId: id,
     });
@@ -216,8 +261,4 @@ export const update = async (
     return updated;
   });
   return result.length ? result[0] : void 0;
-};
-
-export const getAuditsForCase = async (accountSid, caseId): Promise<CaseAuditRecord[]> => {
-  return db.any<CaseAuditRecord>(SELECT_CASE_AUDITS_FOR_CASE, { accountSid, caseId });
 };
