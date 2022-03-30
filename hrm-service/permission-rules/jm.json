@@ -4,7 +4,7 @@
   "caseStatusTransition": [],
   "addNote": [["everyone"]],
   "editNote": [["isSupervisor"]],
-  "addReferral": ["everyone"],
+  "addReferral": [["everyone"]],
   "editReferral": [["isSupervisor"]],
   "addHousehold": [["everyone"]],
   "editHousehold": [["isSupervisor"]],
