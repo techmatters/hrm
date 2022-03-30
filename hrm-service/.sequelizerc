@@ -1,0 +1,6 @@
+const path = require('path');
+
+module.exports = {
+  'config': path.resolve('dist', 'config', 'config.js'),
+  'models-path': path.resolve('dist', 'models'),
+}
