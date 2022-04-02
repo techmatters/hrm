@@ -10,21 +10,6 @@ import {
   updateByIdSql,
 } from './case-sql';
 import { caseSectionUpsertSql, deleteMissingCaseSectionsSql } from './case-sections-sql';
-import { randomUUID } from 'crypto';
-
-const CASE_SECTION_NAMES: Record<string, { getSectionSpecificData: (section: any) => any }> = {
-  households: { getSectionSpecificData: s => s.household },
-  perpetrators: { getSectionSpecificData: s => s.perpetrator },
-  incidents: { getSectionSpecificData: s => s.incident },
-  counsellorNotes: { getSectionSpecificData: s => ({ note: s.note }) },
-  referrals: {
-    getSectionSpecificData: s => {
-      return { date: s.date, referredTo: s.referredTo, comments: s.comments };
-    },
-  },
-  documents: { getSectionSpecificData: s => s.document },
-};
-
 /**
  * Move me to contacts directory when that exists
  */
@@ -49,7 +34,7 @@ export type Contact = ContactRecord & {
   csamReports: any[];
 };
 
-export type NewCaseRecord = {
+export type CaseRecordCommon = {
   info: any;
   helpline: string;
   status: string;
@@ -60,7 +45,11 @@ export type NewCaseRecord = {
   updatedAt: string;
 };
 
-export type CaseRecord = NewCaseRecord & {
+export type NewCaseRecord = CaseRecordCommon & {
+  caseSections?: CaseSectionRecord[];
+};
+
+export type CaseRecord = CaseRecordCommon & {
   id: number;
   connectedContacts?: Contact[];
   caseSections?: CaseSectionRecord[];
@@ -79,15 +68,18 @@ type CaseAuditRecord = {
   caseId: number;
 };
 
-export type CaseSectionRecord = {
-  caseId: number;
+type CaseSectionCommon = {
+  caseId?: number;
   sectionType: string;
   sectionId: string;
+  sectionTypeSpecificData: Record<string, any>;
+};
+
+export type CaseSectionRecord = CaseSectionCommon & {
   createdAt: string;
   createdBy: string;
   updatedAt?: string;
   updatedBy?: string;
-  sectionTypeSpecificData: Record<string, any>;
 };
 
 const logCaseAudit = async (
@@ -115,7 +107,11 @@ const logCaseAudit = async (
   await transaction.none(statement);
 };
 
-export const create = async (body, accountSid, workerSid): Promise<CaseRecord> => {
+export const create = async (
+  body: Partial<NewCaseRecord>,
+  accountSid,
+  workerSid,
+): Promise<CaseRecord> => {
   const now = new Date();
   const caseRecord: NewCaseRecord = {
     info: body.info,
@@ -130,7 +126,15 @@ export const create = async (body, accountSid, workerSid): Promise<CaseRecord> =
   return db.task(async connection => {
     return connection.tx(async transaction => {
       const statement = `${pgp.helpers.insert(caseRecord, null, 'Cases')} RETURNING *`;
-      const inserted: CaseRecord = await transaction.one(statement);
+      let inserted: CaseRecord = await transaction.one(statement);
+      if ((body.caseSections ?? []).length) {
+        const allSections = body.caseSections.map(s => ({ ...s, caseId: inserted.id }));
+        const sectionStatement = `${caseSectionUpsertSql(allSections)};${selectSingleCaseByIdSql(
+          'Cases',
+        )}`;
+        const queryValues = { accountSid, caseId: inserted.id };
+        inserted = await transaction.one(sectionStatement, queryValues);
+      }
       await logCaseAudit(transaction, inserted);
       return inserted;
     });
@@ -205,61 +209,42 @@ export const deleteById = async (id, accountSid) => {
 
 export const update = async (
   id,
-  body: Partial<CaseRecord>,
+  caseRecordUpdates: Partial<NewCaseRecord>,
   accountSid,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   workerSid,
+  toAuditRecord = c => c,
 ): Promise<CaseRecord> => {
-  delete body.accountSid;
   const result = await db.tx(async transaction => {
-    const nowISOString = new Date().toISOString();
-    const caseRecordUpdates: Partial<NewCaseRecord> = {
-      ...body,
-      twilioWorkerId: workerSid,
-      updatedAt: nowISOString,
-    };
-    let caseUpdateSql = updateByIdSql(caseRecordUpdates);
+    const caseUpdateSqlStatements = [selectSingleCaseByIdSql('Cases')];
     if (caseRecordUpdates.info) {
-      // Map individual lists inside the info JSON blob to a list of records for the CaseSections table
-      const allSections: CaseSectionRecord[] = Object.entries(CASE_SECTION_NAMES).flatMap(
-        ([sectionName, { getSectionSpecificData }]) =>
-          (caseRecordUpdates.info[sectionName] ?? []).map(section => {
-            const caseSectionRecordToUpsert: CaseSectionRecord = {
-              caseId: id,
-              sectionType: sectionName,
-              sectionId: section.id ?? randomUUID(),
-              createdBy: workerSid,
-              createdAt: nowISOString,
-              sectionTypeSpecificData: getSectionSpecificData(section),
-            };
-            if (section.id) {
-              caseSectionRecordToUpsert.sectionId = section.id;
-            }
-            return caseSectionRecordToUpsert;
-          }),
-      );
+      const allSections: CaseSectionRecord[] = caseRecordUpdates.caseSections ?? [];
       if (allSections.length) {
-        caseUpdateSql += `;
-          ${caseSectionUpsertSql(allSections)}`;
+        caseUpdateSqlStatements.push(caseSectionUpsertSql(allSections));
       }
-      caseUpdateSql += `;
-      ${deleteMissingCaseSectionsSql(
-        Object.fromEntries(
-          Object.keys(CASE_SECTION_NAMES).map(sectionName => [
-            sectionName,
-            (caseRecordUpdates.info[sectionName] ?? []).map(s => s.id).filter(deleteId => deleteId),
-          ]),
-        ),
-      )}`;
-      console.log('CASE UPDATE SQL WITH CASE SECTION UPDATES:');
-      console.log(caseUpdateSql);
+      // Map case sections into a list of ids grouped by category, which allows a more concise DELETE SQL statement to be generated
+      const caseSectionIdsByType = allSections.reduce((idsBySectionType, caseSection) => {
+        idsBySectionType[caseSection.sectionType] = idsBySectionType[caseSection.sectionType] ?? [];
+        idsBySectionType[caseSection.sectionType].push(caseSection.sectionId);
+        return idsBySectionType;
+      }, <Record<string, string[]>>{});
+      caseUpdateSqlStatements.push(deleteMissingCaseSectionsSql(caseSectionIdsByType));
     }
-    const [original, updated] = await transaction.multi<CaseRecord>(caseUpdateSql, {
-      accountSid,
-      caseId: id,
-    });
+    caseUpdateSqlStatements.push(updateByIdSql(caseRecordUpdates));
 
+    const [original, ...restOfOutput] = await transaction.multi<CaseRecord>(
+      caseUpdateSqlStatements.join(`;
+    `),
+      {
+        accountSid,
+        caseId: id,
+      },
+    );
+    const updated = restOfOutput.pop();
     if (updated.length) {
-      await logCaseAudit(transaction, updated[0], original[0]);
+      const auditUpdated = toAuditRecord(updated[0]);
+      const auditOriginal = toAuditRecord(original[0]);
+      await logCaseAudit(transaction, auditUpdated, auditOriginal);
     }
     return updated;
   });

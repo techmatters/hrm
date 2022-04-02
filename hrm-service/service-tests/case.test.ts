@@ -1,10 +1,28 @@
 /* eslint-disable jest/no-standalone-expect,no-await-in-loop */
+import { Case, getCase, WELL_KNOWN_CASE_SECTION_NAMES } from '../src/case/case';
+
 const supertest = require('supertest');
 const Sequelize = require('sequelize');
 const each = require('jest-each').default;
 const expressApp = require('../src/app');
 const models = require('../src/models');
 const mocks = require('./mocks');
+import * as caseApi from '../src/case/case';
+import * as caseDb from '../src/case/case-data-access';
+import { db } from '../src/connection-pool';
+
+export {};
+declare global {
+  namespace jest {
+    interface Matchers<R> {
+      toParseAsDate(date: Date): R;
+    }
+    // @ts-ignore
+    interface Expect<R> {
+      toParseAsDate(date: Date): R;
+    }
+  }
+}
 
 expect.extend({
   toParseAsDate(received, date) {
@@ -19,10 +37,11 @@ expect.extend({
     }
 
     if (date) {
-      const pass = receivedDate.valueOf() === date.valueOf();
+      const expectedDate = typeof date === 'string' ? Date.parse(date) : date;
+      const pass = receivedDate.valueOf() === expectedDate.valueOf();
       return {
         pass,
-        message: () => `Expected '${received}' to be the same as '${date.toISOString()}'`,
+        message: () => `Expected '${received}' to be the same as '${expectedDate.toISOString()}'`,
       };
     }
 
@@ -45,7 +64,7 @@ const headers = {
   Authorization: `Basic ${Buffer.from(process.env.API_KEY).toString('base64')}`,
 };
 
-const { Case, CaseAudit, Contact } = models;
+const { CaseAudit, Contact } = models;
 
 const caseAuditsQuery = {
   where: {
@@ -53,6 +72,37 @@ const caseAuditsQuery = {
       [Sequelize.Op.in]: ['fake-worker-123', 'fake-worker-129', workerSid],
     },
   },
+};
+
+const without = (original, ...property) => {
+  if (!original) return original;
+  const { ...output } = original;
+  property.forEach(p => delete output[p]);
+  return output;
+};
+
+const convertCaseInfoToExpectedInfo = (input: any) => {
+  if (!input || !input.info) return { ...input };
+  const expectedCase = {
+    ...input,
+    info: { ...input.info },
+  };
+  const { info: expectedInfo } = expectedCase;
+  if (expectedInfo) {
+    Object.keys(WELL_KNOWN_CASE_SECTION_NAMES).forEach(sectionName => {
+      if (expectedInfo[sectionName]) {
+        expectedInfo[sectionName] = expectedInfo[sectionName].map(section => ({
+          id: expect.anything(),
+          ...section,
+          createdAt: expect.toParseAsDate(section.createdAt),
+        }));
+        if (sectionName === 'counsellorNotes') {
+          expectedInfo.notes = expectedInfo.counsellorNotes.map(cn => cn.note);
+        }
+      }
+    });
+  }
+  return expectedCase;
 };
 
 afterAll(done => {
@@ -101,11 +151,11 @@ describe('/cases route', () => {
     );
     expectedCaseAndContactModels.forEach(
       ({ case: expectedCaseModel, contact: expectedContactModel }, index) => {
-        const { connectedContacts, ...caseDataValues } = expectedCaseModel.dataValues;
+        const { connectedContacts, ...caseDataValues } = expectedCaseModel;
         expect(actual.body.cases[index]).toMatchObject({
           ...caseDataValues,
-          createdAt: expectedCaseModel.dataValues.createdAt.toISOString(),
-          updatedAt: expectedCaseModel.dataValues.updatedAt.toISOString(),
+          createdAt: expectedCaseModel.createdAt.toISOString(),
+          updatedAt: expectedCaseModel.updatedAt.toISOString(),
         });
         expect(actual.body.cases[index].connectedContacts).toStrictEqual([
           expect.objectContaining({
@@ -126,12 +176,6 @@ describe('/cases route', () => {
       1,
     );
   };
-
-  const without = (original, property) => {
-    const { [property]: removed, ...rest } = original;
-    return rest;
-  };
-
   describe('GET', () => {
     test('should return 401', async () => {
       const response = await request.get(route);
@@ -150,16 +194,17 @@ describe('/cases route', () => {
       let createdContact;
 
       beforeEach(async () => {
-        createdCase = await Case.create(case1, options);
+        createdCase = await caseApi.createCase(case1, accountSid, workerSid);
 
         createdContact = await Contact.create(fillNameAndPhone(contact1), options);
         createdContact.caseId = createdCase.id;
         await createdContact.save(options);
+        createdCase = await getCase(createdCase.id, accountSid); // refresh case from DB now it has a contact connected
       });
 
       afterEach(async () => {
         await createdContact.destroy();
-        await createdCase.destroy();
+        await caseDb.deleteById(createdCase.id, accountSid);
       });
 
       // eslint-disable-next-line jest/expect-expect
@@ -176,13 +221,13 @@ describe('/cases route', () => {
       beforeEach(async () => {
         createdCasesAndContacts.length = 0;
         for (let i = 0; i < CASE_SAMPLE_SIZE; i += 1) {
-          const createdCase = await Case.create(
+          const createdCase = await caseApi.createCase(
             {
               ...case1,
-              accountSid: accounts[i % accounts.length],
               helpline: helplines[i % helplines.length],
             },
-            options,
+            accounts[i % accounts.length],
+            workerSid,
           );
           const createdContact = await Contact.create(
             fillNameAndPhone({
@@ -194,16 +239,19 @@ describe('/cases route', () => {
           );
           createdContact.caseId = createdCase.id;
           await createdContact.save(options);
+          const connectedCase = await getCase(createdCase.id, accounts[i % accounts.length]); // reread case from DB now it has a contact connected
           createdCasesAndContacts.push({
             contact: createdContact,
-            case: createdCase,
+            case: connectedCase,
           });
         }
       });
 
       afterEach(async () => {
         await Promise.all([
-          Case.destroy({ where: { id: createdCasesAndContacts.map(ccc => ccc.case.id) } }),
+          db.none(`DELETE FROM "Cases" WHERE id IN ($<ids:csv>)`, {
+            ids: createdCasesAndContacts.map(ccc => ccc.case.id),
+          }),
           Contact.destroy({ where: { id: createdCasesAndContacts.map(ccc => ccc.contact.id) } }),
         ]);
       });
@@ -216,7 +264,7 @@ describe('/cases route', () => {
           listRoute: `/v0/accounts/${accounts[0]}/cases`,
           expectedCasesAndContacts: () =>
             createdCasesAndContacts
-              .filter(ccc => ccc.case.dataValues.accountSid === accounts[0])
+              .filter(ccc => ccc.case.accountSid === accounts[0])
               .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
           expectedTotalCount: 5,
         },
@@ -226,9 +274,7 @@ describe('/cases route', () => {
           expectedCasesAndContacts: () =>
             createdCasesAndContacts
               .filter(
-                ccc =>
-                  ccc.case.dataValues.accountSid === accounts[0] &&
-                  ccc.case.helpline === helplines[1],
+                ccc => ccc.case.accountSid === accounts[0] && ccc.case.helpline === helplines[1],
               )
               .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
           expectedTotalCount: 1,
@@ -238,7 +284,7 @@ describe('/cases route', () => {
           listRoute: `/v0/accounts/${accounts[0]}/cases?limit=3`,
           expectedCasesAndContacts: () =>
             createdCasesAndContacts
-              .filter(ccc => ccc.case.dataValues.accountSid === accounts[0])
+              .filter(ccc => ccc.case.accountSid === accounts[0])
               .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id)
               .slice(0, 3),
           expectedTotalCount: 5,
@@ -249,7 +295,7 @@ describe('/cases route', () => {
           listRoute: `/v0/accounts/${accounts[0]}/cases?limit=2&offset=1`,
           expectedCasesAndContacts: () =>
             createdCasesAndContacts
-              .filter(ccc => ccc.case.dataValues.accountSid === accounts[0])
+              .filter(ccc => ccc.case.accountSid === accounts[0])
               .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id)
               .slice(1, 3),
           expectedTotalCount: 5,
@@ -260,7 +306,7 @@ describe('/cases route', () => {
           listRoute: `/v0/accounts/${accounts[0]}/cases?offset=2`,
           expectedCasesAndContacts: () =>
             createdCasesAndContacts
-              .filter(ccc => ccc.case.dataValues.accountSid === accounts[0])
+              .filter(ccc => ccc.case.accountSid === accounts[0])
               .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id)
               .slice(2),
           expectedTotalCount: 5,
@@ -272,9 +318,7 @@ describe('/cases route', () => {
           expectedCasesAndContacts: () =>
             createdCasesAndContacts
               .filter(
-                ccc =>
-                  ccc.case.dataValues.accountSid === accounts[0] &&
-                  ccc.case.dataValues.helpline === helplines[0],
+                ccc => ccc.case.accountSid === accounts[0] && ccc.case.helpline === helplines[0],
               )
               .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id)
               .slice(1, 2),
@@ -304,15 +348,20 @@ describe('/cases route', () => {
         .send(case1);
 
       expect(response.status).toBe(200);
-      expect(response.body.status).toBe(case1.status);
-      expect(response.body.helpline).toBe(case1.helpline);
-      expect(response.body.info).toStrictEqual({
-        ...case1.info,
-        notes: case1.info.counsellorNotes.map(cn => cn.note), // Legacy notes for old clients
-      });
+      const expected = {
+        ...convertCaseInfoToExpectedInfo(case1),
+        id: expect.anything(),
+        updatedAt: expect.toParseAsDate(),
+        createdAt: expect.toParseAsDate(),
+        categories: {},
+        connectedContacts: [],
+        childName: '',
+      };
+
+      expect(response.body).toStrictEqual(expected);
       // Check the DB is actually updated
-      const fromDb = await Case.findByPk(response.body.id);
-      expect(fromDb.dataValues).toMatchObject(case1);
+      const fromDb = await caseApi.getCase(response.body.id, accountSid);
+      expect(fromDb).toStrictEqual(expected);
     });
 
     test('should create a CaseAudit', async () => {
@@ -366,9 +415,9 @@ describe('/cases route', () => {
           firstName: 'J.',
           lastName: 'Doe',
           phone2: '+12345678',
-          createdAt: '2021-03-16T20:56:22.640Z',
-          twilioWorkerId: 'perpetrator-adder',
         },
+        createdAt: '2021-03-16T20:56:22.640Z',
+        twilioWorkerId: 'perpetrator-adder',
       },
     ];
 
@@ -441,13 +490,13 @@ describe('/cases route', () => {
       },
     ];
 
-    const cases = {};
+    const cases: Record<string, Case> = {};
     let nonExistingCaseId;
     let subRoute;
 
     beforeEach(async () => {
-      cases.blank = await Case.create(case1, options);
-      cases.populated = await Case.create(
+      cases.blank = await caseApi.createCase(case1, accountSid, workerSid);
+      cases.populated = await caseApi.createCase(
         {
           ...case1,
           info: {
@@ -460,18 +509,19 @@ describe('/cases route', () => {
             counsellorNotes,
           },
         },
-        options,
+        accountSid,
+        workerSid,
       );
       subRoute = id => `${route}/${id}`;
 
-      const caseToBeDeleted = await Case.create(case2, options);
+      const caseToBeDeleted = await caseApi.createCase(case2, accountSid, workerSid);
       nonExistingCaseId = caseToBeDeleted.id;
-      await caseToBeDeleted.destroy();
+      await caseDb.deleteById(caseToBeDeleted.id, accountSid);
     });
 
     afterEach(async () => {
-      cases.blank.destroy();
-      cases.populated.destroy();
+      await caseDb.deleteById(cases.blank.id, accountSid);
+      await caseDb.deleteById(cases.populated.id, accountSid);
     });
 
     describe('PUT', () => {
@@ -485,11 +535,11 @@ describe('/cases route', () => {
       each([
         {
           caseUpdate: { status: 'closed' },
-          changeDescription: 'status',
+          changeDescription: 'status changed',
         },
         {
           infoUpdate: { summary: 'To summarize....' },
-          changeDescription: 'summary',
+          changeDescription: 'summary changed',
         },
         {
           infoUpdate: {
@@ -638,7 +688,7 @@ describe('/cases route', () => {
         {
           originalCase: () => cases.populated,
           caseUpdate: () => ({
-            info: without(cases.populated.dataValues.info, 'households'),
+            info: without(cases.populated.info, 'households'),
           }),
           changeDescription: 'households property removed',
         },
@@ -738,7 +788,7 @@ describe('/cases route', () => {
             ...caseUpdate,
           };
           if (infoUpdate) {
-            update.info = { ...originalCase.dataValues.info, ...caseUpdate.info, ...infoUpdate };
+            update.info = { ...originalCase.info, ...caseUpdate.info, ...infoUpdate };
           }
           const response = await request
             .put(subRoute(originalCase.id))
@@ -747,17 +797,17 @@ describe('/cases route', () => {
 
           expect(response.status).toBe(200);
           const expected = {
-            ...originalCase.dataValues,
-            createdAt: expect.toParseAsDate(originalCase.dataValues.createdAt),
+            ...convertCaseInfoToExpectedInfo(originalCase),
+            createdAt: expect.toParseAsDate(originalCase.createdAt),
             updatedAt: expect.toParseAsDate(),
-            ...update,
+            ...convertCaseInfoToExpectedInfo(update),
           };
 
           expect(response.body).toMatchObject(expected);
 
           // Check the DB is actually updated
-          const fromDb = await Case.findByPk(originalCase.id);
-          expect(fromDb.dataValues).toMatchObject(expected);
+          const fromDb = await caseApi.getCase(originalCase.id, accountSid);
+          expect(fromDb).toMatchObject(expected);
 
           // Check change is audited
           const caseAudits = await CaseAudit.findAll(caseAuditsQuery);
@@ -768,8 +818,8 @@ describe('/cases route', () => {
           expect(previousValue).toStrictEqual({
             connectedContacts: [],
             contacts: [],
-            ...originalCase.dataValues,
-            createdAt: expect.toParseAsDate(originalCase.dataValues.createdAt),
+            ...convertCaseInfoToExpectedInfo(originalCase),
+            createdAt: expect.toParseAsDate(originalCase.createdAt),
             updatedAt: expect.toParseAsDate(),
           });
           expect(newValue).toStrictEqual({
@@ -806,7 +856,7 @@ describe('/cases route', () => {
         expect(response.status).toBe(200);
 
         // Check the DB is actually updated
-        const fromDb = await Case.findByPk(cases.blank.id);
+        const fromDb = await caseDb.getById(cases.blank.id, accountSid);
         expect(fromDb).toBeFalsy();
       });
       test('should return 404', async () => {
@@ -873,21 +923,23 @@ describe('/cases route', () => {
       const subRoute = `${route}/search`;
 
       beforeEach(async () => {
-        createdCase1 = await Case.create(withHouseholds(case1), options);
-        createdCase2 = await Case.create(case1, options);
-        createdCase3 = await Case.create(withPerpetrators(case1), options);
-        createdContact = await Contact.create(fillNameAndPhone(contact1), options);
+        createdCase1 = await caseApi.createCase(withHouseholds(case1), accountSid, workerSid);
+        createdCase2 = await caseApi.createCase(case1, accountSid, workerSid);
+        createdCase3 = await caseApi.createCase(withPerpetrators(case1), accountSid, workerSid);
+        createdContact = await Contact.create(fillNameAndPhone(contact1), accountSid, workerSid);
 
         // Connects createdContact with createdCase2
         createdContact.caseId = createdCase2.id;
         await createdContact.save(options);
+        // Get case 2 again, now a contact is connected
+        createdCase2 = await caseApi.getCase(createdCase2.id, accountSid);
       });
 
       afterEach(async () => {
         await createdContact.destroy();
-        await createdCase1.destroy();
-        await createdCase2.destroy();
-        await createdCase3.destroy();
+        await caseDb.deleteById(createdCase1.id, accountSid);
+        await caseDb.deleteById(createdCase2.id, accountSid);
+        await caseDb.deleteById(createdCase3.id, accountSid);
       });
 
       test('should return 401', async () => {
