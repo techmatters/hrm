@@ -22,13 +22,14 @@ test('create case', async () => {
     ...caseToBeCreated,
     accountSid,
     createdBy: workerSid,
-    createdAt: expect.anything(),
+    createdAt: expect.any(String), // current timestamp
+    updatedAt: expect.any(String), // current timestamp
     info: {
       counsellorNotes: [
         {
           note: 'Child with covid-19',
           twilioWorkerId: workerSid,
-          createdAt: expect.anything(), // current timestamp
+          createdAt: expect.any(String), // current timestamp
         },
       ],
     },
@@ -39,8 +40,8 @@ test('create case', async () => {
         createdBy: workerSid,
         updatedAt: undefined,
         updatedBy: undefined,
-        createdAt: expect.anything(),
-        sectionId: expect.anything(),
+        createdAt: expect.any(String),
+        sectionId: expect.any(String),
         sectionTypeSpecificData: { note: 'Child with covid-19' },
       },
     ],
@@ -65,7 +66,7 @@ test('create case', async () => {
 
   const createdCase = await caseApi.createCase(caseToBeCreated, accountSid, workerSid);
   // any worker & account specified on the object should be overwritten with the ones from the user
-  expect(createSpy).toHaveBeenCalledWith(expectedCaseDbParameter, accountSid, workerSid);
+  expect(createSpy).toHaveBeenCalledWith(expectedCaseDbParameter, accountSid, expect.any(Function));
   expect(createdCase).toStrictEqual({
     ...caseToBeCreated,
     id: 1,
@@ -86,6 +87,7 @@ test('create case', async () => {
     },
   });
 });
+
 describe('listCases', () => {
   const caseId = 1;
   const caseWithContact = createMockCase({
@@ -736,7 +738,6 @@ describe('update existing case', () => {
         caseId,
         expectedDbCaseParameter,
         accountSid,
-        workerSid,
         expect.any(Function),
       );
       expect(returned).toStrictEqual(expectedResponse);

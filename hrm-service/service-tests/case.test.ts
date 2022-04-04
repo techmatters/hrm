@@ -1,62 +1,30 @@
 /* eslint-disable jest/no-standalone-expect,no-await-in-loop */
-import { Case, getCase, WELL_KNOWN_CASE_SECTION_NAMES } from '../src/case/case';
+import * as caseApi from '../src/case/case';
+import { Case, getCase } from '../src/case/case';
+import * as caseDb from '../src/case/case-data-access';
+import { db } from '../src/connection-pool';
+import {
+  convertCaseInfoToExpectedInfo,
+  countCaseAudits,
+  deleteCaseAudits,
+  fillNameAndPhone,
+  selectCaseAudits,
+  validateCaseListResponse,
+  validateSingleCaseResponse,
+  without,
+} from './case-validation';
 
 const supertest = require('supertest');
-const Sequelize = require('sequelize');
 const each = require('jest-each').default;
 const expressApp = require('../src/app');
 const models = require('../src/models');
 const mocks = require('./mocks');
-import * as caseApi from '../src/case/case';
-import * as caseDb from '../src/case/case-data-access';
-import { db } from '../src/connection-pool';
 
-export {};
-declare global {
-  namespace jest {
-    interface Matchers<R> {
-      toParseAsDate(date: Date): R;
-    }
-    // @ts-ignore
-    interface Expect<R> {
-      toParseAsDate(date: Date): R;
-    }
-  }
-}
-
-expect.extend({
-  toParseAsDate(received, date) {
-    let receivedDate;
-    try {
-      receivedDate = received instanceof Date ? received : Date.parse(received);
-    } catch (e) {
-      return {
-        pass: false,
-        message: () => `Expected '${received}' to be a parseable date. Error: ${e}`,
-      };
-    }
-
-    if (date) {
-      const expectedDate = typeof date === 'string' ? Date.parse(date) : date;
-      const pass = receivedDate.valueOf() === expectedDate.valueOf();
-      return {
-        pass,
-        message: () => `Expected '${received}' to be the same as '${expectedDate.toISOString()}'`,
-      };
-    }
-
-    return {
-      pass: true,
-      message: () => `Expected '${received}' to be a parseable date.`,
-    };
-  },
-});
-
+export const workerSid = 'worker-sid';
 const server = expressApp.listen();
 const request = supertest.agent(server);
 
 const { case1, case2, contact1, accountSid } = mocks;
-const workerSid = 'worker-sid';
 const options = { context: { workerSid } };
 
 const headers = {
@@ -64,46 +32,7 @@ const headers = {
   Authorization: `Basic ${Buffer.from(process.env.API_KEY).toString('base64')}`,
 };
 
-const { CaseAudit, Contact } = models;
-
-const caseAuditsQuery = {
-  where: {
-    twilioWorkerId: {
-      [Sequelize.Op.in]: ['fake-worker-123', 'fake-worker-129', workerSid],
-    },
-  },
-};
-
-const without = (original, ...property) => {
-  if (!original) return original;
-  const { ...output } = original;
-  property.forEach(p => delete output[p]);
-  return output;
-};
-
-const convertCaseInfoToExpectedInfo = (input: any) => {
-  if (!input || !input.info) return { ...input };
-  const expectedCase = {
-    ...input,
-    info: { ...input.info },
-  };
-  const { info: expectedInfo } = expectedCase;
-  if (expectedInfo) {
-    Object.keys(WELL_KNOWN_CASE_SECTION_NAMES).forEach(sectionName => {
-      if (expectedInfo[sectionName]) {
-        expectedInfo[sectionName] = expectedInfo[sectionName].map(section => ({
-          id: expect.anything(),
-          ...section,
-          createdAt: expect.toParseAsDate(section.createdAt),
-        }));
-        if (sectionName === 'counsellorNotes') {
-          expectedInfo.notes = expectedInfo.counsellorNotes.map(cn => cn.note);
-        }
-      }
-    });
-  }
-  return expectedCase;
-};
+const { Contact } = models;
 
 afterAll(done => {
   server.close(() => {
@@ -112,70 +41,14 @@ afterAll(done => {
 });
 
 beforeAll(async () => {
-  await CaseAudit.destroy(caseAuditsQuery);
+  await deleteCaseAudits(workerSid);
 });
 
-afterEach(async () => CaseAudit.destroy(caseAuditsQuery));
+afterEach(async () => deleteCaseAudits(workerSid));
 
 describe('/cases route', () => {
   const route = `/v0/accounts/${accountSid}/cases`;
 
-  const fillNameAndPhone = contact => {
-    const modifiedContact = {
-      ...contact,
-      rawJson: {
-        ...contact.form,
-        childInformation: {
-          ...contact.form.childInformation,
-          name: {
-            firstName: 'Maria',
-            lastName: 'Silva',
-          },
-        },
-      },
-      number: '+1-202-555-0184',
-    };
-
-    delete modifiedContact.form;
-
-    return modifiedContact;
-  };
-
-  const validateCaseListResponse = (actual, expectedCaseAndContactModels, count) => {
-    expect(actual.status).toBe(200);
-    expect(actual.body).toStrictEqual(
-      expect.objectContaining({
-        cases: expect.arrayContaining([expect.anything()]),
-        count,
-      }),
-    );
-    expectedCaseAndContactModels.forEach(
-      ({ case: expectedCaseModel, contact: expectedContactModel }, index) => {
-        const { connectedContacts, ...caseDataValues } = expectedCaseModel;
-        expect(actual.body.cases[index]).toMatchObject({
-          ...caseDataValues,
-          createdAt: expectedCaseModel.createdAt.toISOString(),
-          updatedAt: expectedCaseModel.updatedAt.toISOString(),
-        });
-        expect(actual.body.cases[index].connectedContacts).toStrictEqual([
-          expect.objectContaining({
-            ...expectedContactModel.dataValues,
-            csamReports: [],
-            createdAt: expect.toParseAsDate(expectedContactModel.dataValues.createdAt),
-            updatedAt: expect.toParseAsDate(expectedContactModel.dataValues.updatedAt),
-          }),
-        ]);
-      },
-    );
-  };
-
-  const validateSingleCaseResponse = (actual, expectedCaseModel, expectedContactModel) => {
-    validateCaseListResponse(
-      actual,
-      [{ case: expectedCaseModel, contact: expectedContactModel }],
-      1,
-    );
-  };
   describe('GET', () => {
     test('should return 401', async () => {
       const response = await request.get(route);
@@ -335,6 +208,16 @@ describe('/cases route', () => {
   });
 
   describe('POST', () => {
+    const expected = {
+      ...convertCaseInfoToExpectedInfo(case1),
+      id: expect.anything(),
+      updatedAt: expect.toParseAsDate(),
+      createdAt: expect.toParseAsDate(),
+      categories: {},
+      connectedContacts: [],
+      childName: '',
+    };
+
     test('should return 401', async () => {
       const response = await request.post(route).send(case1);
 
@@ -348,16 +231,6 @@ describe('/cases route', () => {
         .send(case1);
 
       expect(response.status).toBe(200);
-      const expected = {
-        ...convertCaseInfoToExpectedInfo(case1),
-        id: expect.anything(),
-        updatedAt: expect.toParseAsDate(),
-        createdAt: expect.toParseAsDate(),
-        categories: {},
-        connectedContacts: [],
-        childName: '',
-      };
-
       expect(response.body).toStrictEqual(expected);
       // Check the DB is actually updated
       const fromDb = await caseApi.getCase(response.body.id, accountSid);
@@ -365,13 +238,13 @@ describe('/cases route', () => {
     });
 
     test('should create a CaseAudit', async () => {
-      const caseAuditPreviousCount = await CaseAudit.count(caseAuditsQuery);
+      const caseAuditPreviousCount = await countCaseAudits(workerSid);
       const response = await request
         .post(route)
         .set(headers)
         .send(case1);
 
-      const caseAudits = await CaseAudit.findAll(caseAuditsQuery);
+      const caseAudits = await selectCaseAudits(workerSid);
       const byGreaterId = (a, b) => b.id - a.id;
       const lastCaseAudit = caseAudits.sort(byGreaterId)[0];
       const { previousValue, newValue } = lastCaseAudit;
@@ -379,10 +252,7 @@ describe('/cases route', () => {
       expect(response.status).toBe(200);
       expect(caseAudits).toHaveLength(caseAuditPreviousCount + 1);
       expect(previousValue).toBeNull();
-      expect(newValue.info).toStrictEqual(case1.info);
-      expect(newValue.helpline).toStrictEqual(case1.helpline);
-      expect(newValue.status).toStrictEqual(case1.status);
-      expect(newValue.twilioWorkerId).toStrictEqual(case1.twilioWorkerId);
+      expect(newValue).toStrictEqual({ ...expected, contacts: [] });
     });
   });
 
@@ -780,7 +650,7 @@ describe('/cases route', () => {
           infoUpdate,
           originalCase: originalCaseGetter = () => cases.blank,
         }) => {
-          const caseAuditPreviousCount = await CaseAudit.count(caseAuditsQuery);
+          const caseAuditPreviousCount = await countCaseAudits(workerSid);
           const caseUpdate =
             typeof caseUpdateParam === 'function' ? caseUpdateParam() : caseUpdateParam;
           const originalCase = originalCaseGetter();
@@ -810,7 +680,7 @@ describe('/cases route', () => {
           expect(fromDb).toMatchObject(expected);
 
           // Check change is audited
-          const caseAudits = await CaseAudit.findAll(caseAuditsQuery);
+          const caseAudits = await selectCaseAudits(workerSid);
           expect(caseAudits).toHaveLength(caseAuditPreviousCount + 1);
           const byGreaterId = (a, b) => b.id - a.id;
           const lastCaseAudit = caseAudits.sort(byGreaterId)[0];

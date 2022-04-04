@@ -85,13 +85,12 @@ describe('createCase', () => {
     });
     const oneSpy = jest.spyOn(tx, 'one').mockResolvedValue({ ...caseFromDB, id: 1337 });
 
-    const result = await caseDb.create(caseFromDB, accountSid, workerSid);
+    const result = await caseDb.create(caseFromDB, accountSid);
     const insertSql = getSqlStatement(oneSpy, -2);
     const { caseSections, ...caseWithoutSections } = caseFromDB;
     expectValuesInSql(insertSql, {
       ...caseWithoutSections,
       accountSid,
-      twilioWorkerId: workerSid,
       createdAt: expect.anything(),
       updatedAt: expect.anything(),
     });
@@ -108,7 +107,7 @@ describe('createCase', () => {
     jest.spyOn(tx, 'one').mockResolvedValue({ ...caseFromDB, id: 1337 });
     const noneSpy = jest.spyOn(tx, 'none').mockResolvedValue(undefined);
 
-    const result = await caseDb.create(caseFromDB, accountSid, workerSid);
+    const result = await caseDb.create(caseFromDB, accountSid);
     const auditSql = getSqlStatement(noneSpy);
     expect(auditSql).toContain('CaseAudits');
 
@@ -305,7 +304,7 @@ describe('update', () => {
       [{ ...caseUpdateResult, id: caseId }],
     ]);
 
-    const result = await caseDb.update(caseId, caseUpdate, accountSid, workerSid);
+    const result = await caseDb.update(caseId, caseUpdate, accountSid);
     const updateSql = getSqlStatement(multiSpy);
     expect(updateSql).toContain('Cases');
     expect(updateSql).toContain('Contacts');
@@ -330,7 +329,7 @@ describe('update', () => {
       .mockResolvedValue([[{ ...createMockCaseRecord({}), id: caseId }], [caseUpdateResult]]);
     const auditSpy = jest.spyOn(tx, 'none');
 
-    const result = await caseDb.update(caseId, caseUpdate, accountSid, workerSid);
+    const result = await caseDb.update(caseId, caseUpdate, accountSid);
     const auditSql = getSqlStatement(auditSpy);
     expect(auditSql).toContain('CaseAudits');
     expectValuesInSql(auditSql, caseUpdateResult);
@@ -343,7 +342,7 @@ describe('update', () => {
       .mockResolvedValue([[{ ...createMockCaseRecord({}), id: caseId }], []]);
     const auditSpy = jest.spyOn(tx, 'none');
 
-    await caseDb.update(caseId, caseUpdate, accountSid, workerSid);
+    await caseDb.update(caseId, caseUpdate, accountSid);
     expect(updateSpy).toBeCalled();
     expect(auditSpy).not.toBeCalled();
   });

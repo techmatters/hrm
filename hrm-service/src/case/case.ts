@@ -190,6 +190,14 @@ const generateLegacyNotesFromCounsellorNotes = caseFromDb => {
   return caseFromDb;
 };
 
+/**
+ * Converts a case passed in from the API to a case record ready to write to the DB
+ * If an 'original' case is passed, it is assumed this is an update of an existing case
+ * Data from the 'original will be used to inject data that might be missing from the update if it is using a legacy format
+ * @param inputCase
+ * @param workerSid
+ * @param original
+ */
 const caseToCaseRecord = (
   inputCase: Partial<Case>,
   workerSid: string,
@@ -234,12 +242,13 @@ const caseRecordToCase = (record: CaseRecord): Case => {
 };
 
 export const createCase = async (body: Partial<Case>, accountSid, workerSid): Promise<Case> => {
+  const nowISO = new Date().toISOString();
   delete body.id;
   const record = caseToCaseRecord(
-    { ...body, createdBy: workerSid, createdAt: new Date().toISOString(), accountSid },
+    { ...body, createdBy: workerSid, createdAt: nowISO, updatedAt: nowISO, accountSid },
     workerSid,
   );
-  const created = await caseDb.create(record, accountSid, workerSid);
+  const created = await caseDb.create(record, accountSid, caseRecordToCase);
   return caseRecordToCase(created);
 };
 
@@ -253,7 +262,7 @@ export const updateCase = async (id, body: Partial<Case>, accountSid, workerSid)
     workerSid,
     caseRecordToCase(caseFromDB),
   );
-  return caseRecordToCase(await caseDb.update(id, record, accountSid, workerSid, caseRecordToCase));
+  return caseRecordToCase(await caseDb.update(id, record, accountSid, caseRecordToCase));
 };
 
 export const getCase = async (id: number, accountSid: string): Promise<Case | undefined> => {

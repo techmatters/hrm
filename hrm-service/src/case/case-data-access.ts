@@ -1,3 +1,5 @@
+// eslint-disable-next-line prettier/prettier
+import type { Case } from './case';
 import { db, pgp } from '../connection-pool';
 import { getPaginationElements } from '../controllers/helpers';
 import pgPromise from 'pg-promise';
@@ -68,14 +70,11 @@ type CaseAuditRecord = {
   caseId: number;
 };
 
-type CaseSectionCommon = {
+export type CaseSectionRecord = {
   caseId?: number;
   sectionType: string;
   sectionId: string;
   sectionTypeSpecificData: Record<string, any>;
-};
-
-export type CaseSectionRecord = CaseSectionCommon & {
   createdAt: string;
   createdBy: string;
   updatedAt?: string;
@@ -84,8 +83,8 @@ export type CaseSectionRecord = CaseSectionCommon & {
 
 const logCaseAudit = async (
   transaction: pgPromise.ITask<unknown>,
-  updated: CaseRecord,
-  original?: CaseRecord,
+  updated: Case,
+  original?: Case,
 ) => {
   const auditRecord: CaseAuditRecord = {
     caseId: updated.id,
@@ -110,32 +109,24 @@ const logCaseAudit = async (
 export const create = async (
   body: Partial<NewCaseRecord>,
   accountSid,
-  workerSid,
+  toAuditRecord = c => c,
 ): Promise<CaseRecord> => {
-  const now = new Date();
-  const caseRecord: NewCaseRecord = {
-    info: body.info,
-    helpline: body.helpline,
-    status: body.status || 'open',
-    twilioWorkerId: workerSid,
-    createdBy: workerSid,
-    accountSid: accountSid,
-    createdAt: now.toISOString(),
-    updatedAt: now.toISOString(),
-  };
+  const { caseSections, ...caseRecord  } = body;
+  caseRecord.accountSid = accountSid;
+
   return db.task(async connection => {
     return connection.tx(async transaction => {
       const statement = `${pgp.helpers.insert(caseRecord, null, 'Cases')} RETURNING *`;
       let inserted: CaseRecord = await transaction.one(statement);
-      if ((body.caseSections ?? []).length) {
-        const allSections = body.caseSections.map(s => ({ ...s, caseId: inserted.id }));
+      if ((caseSections ?? []).length) {
+        const allSections = caseSections.map(s => ({ ...s, caseId: inserted.id }));
         const sectionStatement = `${caseSectionUpsertSql(allSections)};${selectSingleCaseByIdSql(
           'Cases',
         )}`;
         const queryValues = { accountSid, caseId: inserted.id };
         inserted = await transaction.one(sectionStatement, queryValues);
       }
-      await logCaseAudit(transaction, inserted);
+      await logCaseAudit(transaction, toAuditRecord(inserted));
       return inserted;
     });
   });
@@ -211,8 +202,6 @@ export const update = async (
   id,
   caseRecordUpdates: Partial<NewCaseRecord>,
   accountSid,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  workerSid,
   toAuditRecord = c => c,
 ): Promise<CaseRecord> => {
   const result = await db.tx(async transaction => {
