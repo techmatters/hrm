@@ -10,6 +10,10 @@ export const enum OrderByDirection {
 
 const VALID_CASE_UPDATE_FIELDS = ['info', 'helpline', 'status', 'twilioWorkerId', 'updatedAt'];
 
+const ORDER_BY_FIELDS_MAP = {
+  'info.followUpDate': `"info"->>'followUpDate'`,
+};
+
 type OrderByClauseItem = { sortField: string; sortDirection: OrderByDirection };
 
 const DEFAULT_SORT: OrderByClauseItem[] = [
@@ -29,7 +33,9 @@ const generateOrderByClause = (
 ): string => {
   if (clauses.length > 0) {
     return ` ORDER BY ${clauses
-      .map(t => `${pgp.as.name(t.sortField)} ${t.sortDirection}`)
+      .map(
+        t => `${ORDER_BY_FIELDS_MAP[t.sortField] ?? pgp.as.name(t.sortField)} ${t.sortDirection}`,
+      )
       .join(', ')}`;
   } else return '';
 };

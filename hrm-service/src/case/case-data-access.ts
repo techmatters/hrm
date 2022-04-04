@@ -5,7 +5,6 @@ import { getPaginationElements } from '../controllers/helpers';
 import pgPromise from 'pg-promise';
 import {
   DELETE_BY_ID,
-  OrderByDirection,
   SELECT_CASE_SEARCH,
   selectCaseList,
   selectSingleCaseByIdSql,
@@ -147,11 +146,11 @@ export const list = async (
   query: { helpline: string },
   accountSid,
 ): Promise<{ cases: readonly CaseRecord[]; count: number }> => {
-  const { limit, offset, sortBy, order = OrderByDirection.ascending } = getPaginationElements(
+  const { limit, offset, sortBy, sortDirection } = getPaginationElements(
     query,
   );
   const { helpline } = query;
-  const orderClause = [{ sortField: sortBy, sortDirection: <OrderByDirection>order }];
+  const orderClause = [{ sortField: sortBy, sortDirection }];
   const { count, rows } = await db.task(async connection => {
     const statement = selectCaseList(orderClause);
     const queryValues = { accountSid, helpline: helpline || null, limit, offset };
@@ -220,6 +219,7 @@ export const update = async (
       caseUpdateSqlStatements.push(deleteMissingCaseSectionsSql(caseSectionIdsByType));
     }
     caseUpdateSqlStatements.push(updateByIdSql(caseRecordUpdates));
+    caseUpdateSqlStatements.push(selectSingleCaseByIdSql('Cases'));
 
     const [original, ...restOfOutput] = await transaction.multi<CaseRecord>(
       caseUpdateSqlStatements.join(`;

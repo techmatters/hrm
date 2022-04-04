@@ -1,5 +1,6 @@
 /* eslint-disable import/prefer-default-export */
 
+const { OrderByDirection } = require('../case/case-sql');
 /**
  * @param {string[]} accumulator
  * @param {[string, boolean]} currentValue
@@ -35,9 +36,12 @@ const getPaginationElements = query => {
   const limit = Math.min(queryLimit, 1000);
   const offset = (query.offset && parseInt(query.offset, 10)) || 0;
   const sortBy = query.sortBy || 'id';
-  const order = query.order || 'DESC';
+  const sortDirection =
+    (query.sortDirection ?? 'desc').toLowerCase() === 'asc'
+      ? OrderByDirection.ascendingNullsLast
+      : OrderByDirection.descendingNullsLast;
 
-  return { limit, offset, sortBy, order };
+  return { limit, offset, sortBy, sortDirection };
 };
 
 const isEmptySearchParams = body => {

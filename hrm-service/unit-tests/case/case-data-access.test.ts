@@ -10,7 +10,6 @@ import {
 import * as caseDb from '../../src/case/case-data-access';
 import each from 'jest-each';
 import { db } from '../../src/connection-pool';
-import { OrderByDirection } from '../../src/case/case-sql';
 
 const accountSid = 'account-sid';
 const workerSid = 'worker-sid';
@@ -164,7 +163,7 @@ describe('list', () => {
           limit: 100,
           offset: 25,
           sortBy: 'jimmyjab',
-          order: OrderByDirection.ascendingNullsLast,
+          sortDirection: 'ASC',
         },
         expectedDbParameters: { limit: 100, offset: 25 },
         expectedInSql: ['"id" DESC', '"jimmyjab" ASC NULLS LAST'],
@@ -174,20 +173,20 @@ describe('list', () => {
         parameters: {
           limit: 100,
           offset: 25,
-          order: OrderByDirection.ascendingNullsLast,
+          sortDirection: 'ASC',
         },
         expectedDbParameters: { limit: 100, offset: 25 },
         expectedInSql: ['"id" DESC', '"id" ASC NULLS LAST,'],
       },
       {
-        description: 'should use default DESC sort if only sort column is specified',
+        description: 'should use default DESC NULLS LAST sort if only sort column is specified',
         parameters: {
           limit: 100,
           offset: 25,
           sortBy: 'jimmyjab',
         },
         expectedDbParameters: { limit: 100, offset: 25 },
-        expectedInSql: ['"id" DESC', '"jimmyjab" DESC'],
+        expectedInSql: ['"id" DESC', '"jimmyjab" DESC NULLS LAST'],
       },
     ]).test(
       '$description',
