@@ -66,124 +66,182 @@ test('get non existing case', async () => {
 });
 
 describe('Test listCases query params', () => {
-  test('should use defaults limit and offset', async () => {
-    const findAndCountAllSpy = jest
-      .spyOn(MockCase, 'findAndCountAll')
-      .mockImplementation(() => ({ rows: [], count: 0 }));
-    const queryParams = { helpline: 'helpline' };
+  describe('limit and offset', () => {
+    test('should use defaults limit and offset', async () => {
+      const findAndCountAllSpy = jest
+        .spyOn(MockCase, 'findAndCountAll')
+        .mockImplementation(() => ({ rows: [], count: 0 }));
+      const queryParams = { helpline: 'helpline' };
 
-    await CaseController.listCases(queryParams, accountSid);
-    const expectedQueryObject = {
-      order: [['createdAt', 'DESC']],
-      where: {
-        [Op.and]: [{ helpline: 'helpline' }, { accountSid }],
-      },
-      limit: 1000,
-      offset: 0,
-      include: {
-        association: 'connectedContacts',
-        required: true,
-        include: { association: 'csamReports' },
-      },
-    };
+      await CaseController.listCases(queryParams, accountSid);
+      const expectedQueryObject = {
+        order: [['id', 'DESC NULLS LAST']],
+        where: {
+          [Op.and]: [{ helpline: 'helpline' }, { accountSid }],
+        },
+        limit: 1000,
+        offset: 0,
+        include: {
+          association: 'connectedContacts',
+          required: true,
+          include: { association: 'csamReports' },
+        },
+      };
 
-    expect(findAndCountAllSpy).toHaveBeenCalledWith(expectedQueryObject);
+      expect(findAndCountAllSpy).toHaveBeenCalledWith(expectedQueryObject);
+    });
+
+    test('should use limit 30 and default offset', async () => {
+      const findAndCountAllSpy = jest
+        .spyOn(MockCase, 'findAndCountAll')
+        .mockImplementation(() => ({ rows: [], count: 0 }));
+      const queryParams = { helpline: 'helpline', limit: 30 };
+
+      await CaseController.listCases(queryParams, accountSid);
+      const expectedQueryObject = {
+        order: [['id', 'DESC NULLS LAST']],
+        where: {
+          [Op.and]: [{ helpline: 'helpline' }, { accountSid }],
+        },
+        limit: 30,
+        offset: 0,
+        include: {
+          association: 'connectedContacts',
+          required: true,
+          include: { association: 'csamReports' },
+        },
+      };
+
+      expect(findAndCountAllSpy).toHaveBeenCalledWith(expectedQueryObject);
+    });
+
+    test('should use default limit and offset 30', async () => {
+      const findAndCountAllSpy = jest
+        .spyOn(MockCase, 'findAndCountAll')
+        .mockImplementation(() => ({ rows: [], count: 0 }));
+      const queryParams = { helpline: 'helpline', offset: 30 };
+
+      await CaseController.listCases(queryParams, accountSid);
+      const expectedQueryObject = {
+        order: [['id', 'DESC NULLS LAST']],
+        where: {
+          [Op.and]: [{ helpline: 'helpline' }, { accountSid }],
+        },
+        limit: 1000,
+        offset: 30,
+        include: {
+          association: 'connectedContacts',
+          required: true,
+          include: { association: 'csamReports' },
+        },
+      };
+
+      expect(findAndCountAllSpy).toHaveBeenCalledWith(expectedQueryObject);
+    });
+
+    test('should use limit 30 and offset 30', async () => {
+      const findAndCountAllSpy = jest
+        .spyOn(MockCase, 'findAndCountAll')
+        .mockImplementation(() => ({ rows: [], count: 0 }));
+      const queryParams = { helpline: 'helpline', limit: 30, offset: 30 };
+
+      await CaseController.listCases(queryParams, accountSid);
+      const expectedQueryObject = {
+        order: [['id', 'DESC NULLS LAST']],
+        where: {
+          [Op.and]: [{ helpline: 'helpline' }, { accountSid }],
+        },
+        limit: 30,
+        offset: 30,
+        include: {
+          association: 'connectedContacts',
+          required: true,
+          include: { association: 'csamReports' },
+        },
+      };
+
+      expect(findAndCountAllSpy).toHaveBeenCalledWith(expectedQueryObject);
+    });
+
+    test('should handle Nan limit', async () => {
+      const findAndCountAllSpy = jest
+        .spyOn(MockCase, 'findAndCountAll')
+        .mockImplementation(() => ({ rows: [], count: 0 }));
+      const queryParams = { helpline: 'helpline', limit: 'not a number' };
+
+      await CaseController.listCases(queryParams, accountSid);
+      const expectedQueryObject = {
+        order: [['id', 'DESC NULLS LAST']],
+        where: {
+          [Op.and]: [{ helpline: 'helpline' }, { accountSid }],
+        },
+        limit: 1000,
+        offset: 0,
+        include: {
+          association: 'connectedContacts',
+          required: true,
+          include: { association: 'csamReports' },
+        },
+      };
+
+      expect(findAndCountAllSpy).toHaveBeenCalledWith(expectedQueryObject);
+    });
   });
 
-  test('should use limit 30 and default offset', async () => {
-    const findAndCountAllSpy = jest
-      .spyOn(MockCase, 'findAndCountAll')
-      .mockImplementation(() => ({ rows: [], count: 0 }));
-    const queryParams = { helpline: 'helpline', limit: 30 };
+  describe('sortBy and sortDirection', () => {
+    test('default values', async () => {
+      const findAndCountAllSpy = jest
+        .spyOn(MockCase, 'findAndCountAll')
+        .mockImplementation(() => ({ rows: [], count: 0 }));
+      const queryParams = { helpline: 'helpline', limit: 10, offset: 0 };
 
-    await CaseController.listCases(queryParams, accountSid);
-    const expectedQueryObject = {
-      order: [['createdAt', 'DESC']],
-      where: {
-        [Op.and]: [{ helpline: 'helpline' }, { accountSid }],
-      },
-      limit: 30,
-      offset: 0,
-      include: {
-        association: 'connectedContacts',
-        required: true,
-        include: { association: 'csamReports' },
-      },
-    };
+      await CaseController.listCases(queryParams, accountSid);
+      const expectedQueryObject = {
+        order: [['id', 'DESC NULLS LAST']],
+        where: {
+          [Op.and]: [{ helpline: 'helpline' }, { accountSid }],
+        },
+        limit: 10,
+        offset: 0,
+        include: {
+          association: 'connectedContacts',
+          required: true,
+          include: { association: 'csamReports' },
+        },
+      };
 
-    expect(findAndCountAllSpy).toHaveBeenCalledWith(expectedQueryObject);
-  });
+      expect(findAndCountAllSpy).toHaveBeenCalledWith(expectedQueryObject);
+    });
 
-  test('should use default limit and offset 30', async () => {
-    const findAndCountAllSpy = jest
-      .spyOn(MockCase, 'findAndCountAll')
-      .mockImplementation(() => ({ rows: [], count: 0 }));
-    const queryParams = { helpline: 'helpline', offset: 30 };
+    test('custom sortBy and sortDirection', async () => {
+      const findAndCountAllSpy = jest
+        .spyOn(MockCase, 'findAndCountAll')
+        .mockImplementation(() => ({ rows: [], count: 0 }));
+      const queryParams = {
+        helpline: 'helpline',
+        limit: 10,
+        offset: 0,
+        sortBy: 'Child Name',
+        sortDirection: 'ASC',
+      };
 
-    await CaseController.listCases(queryParams, accountSid);
-    const expectedQueryObject = {
-      order: [['createdAt', 'DESC']],
-      where: {
-        [Op.and]: [{ helpline: 'helpline' }, { accountSid }],
-      },
-      limit: 1000,
-      offset: 30,
-      include: {
-        association: 'connectedContacts',
-        required: true,
-        include: { association: 'csamReports' },
-      },
-    };
+      await CaseController.listCases(queryParams, accountSid);
+      const expectedQueryObject = {
+        order: [['Child Name', 'ASC NULLS LAST']],
+        where: {
+          [Op.and]: [{ helpline: 'helpline' }, { accountSid }],
+        },
+        limit: 10,
+        offset: 0,
+        include: {
+          association: 'connectedContacts',
+          required: true,
+          include: { association: 'csamReports' },
+        },
+      };
 
-    expect(findAndCountAllSpy).toHaveBeenCalledWith(expectedQueryObject);
-  });
-
-  test('should use limit 30 and offset 30', async () => {
-    const findAndCountAllSpy = jest
-      .spyOn(MockCase, 'findAndCountAll')
-      .mockImplementation(() => ({ rows: [], count: 0 }));
-    const queryParams = { helpline: 'helpline', limit: 30, offset: 30 };
-
-    await CaseController.listCases(queryParams, accountSid);
-    const expectedQueryObject = {
-      order: [['createdAt', 'DESC']],
-      where: {
-        [Op.and]: [{ helpline: 'helpline' }, { accountSid }],
-      },
-      limit: 30,
-      offset: 30,
-      include: {
-        association: 'connectedContacts',
-        required: true,
-        include: { association: 'csamReports' },
-      },
-    };
-
-    expect(findAndCountAllSpy).toHaveBeenCalledWith(expectedQueryObject);
-  });
-
-  test('should handle Nan limit', async () => {
-    const findAndCountAllSpy = jest
-      .spyOn(MockCase, 'findAndCountAll')
-      .mockImplementation(() => ({ rows: [], count: 0 }));
-    const queryParams = { helpline: 'helpline', limit: 'not a number' };
-
-    await CaseController.listCases(queryParams, accountSid);
-    const expectedQueryObject = {
-      order: [['createdAt', 'DESC']],
-      where: {
-        [Op.and]: [{ helpline: 'helpline' }, { accountSid }],
-      },
-      limit: 1000,
-      offset: 0,
-      include: {
-        association: 'connectedContacts',
-        required: true,
-        include: { association: 'csamReports' },
-      },
-    };
-
-    expect(findAndCountAllSpy).toHaveBeenCalledWith(expectedQueryObject);
+      expect(findAndCountAllSpy).toHaveBeenCalledWith(expectedQueryObject);
+    });
   });
 });
 
@@ -240,7 +298,7 @@ test('list cases (with 1st contact, no limit/offset)', async () => {
 
   const result = await CaseController.listCases(queryParams, accountSid);
   const expectedQueryObject = {
-    order: [['createdAt', 'DESC']],
+    order: [['id', 'DESC NULLS LAST']],
     where: {
       [Op.and]: [{ helpline: 'helpline' }, { accountSid }],
     },
@@ -310,7 +368,7 @@ test('list cases (with 1st contact, with limit/offset)', async () => {
 
   const result = await CaseController.listCases(queryParams, accountSid);
   const expectedQueryObject = {
-    order: [['createdAt', 'DESC']],
+    order: [['id', 'DESC NULLS LAST']],
     where: {
       [Op.and]: [{ helpline: 'helpline' }, { accountSid }],
     },
@@ -357,7 +415,7 @@ test('list cases (without contacts)', async () => {
   const result = await CaseController.listCases(queryParams, accountSid);
 
   const expectedQueryObject = {
-    order: [['createdAt', 'DESC']],
+    order: [['id', 'DESC NULLS LAST']],
     where: {
       [Op.and]: [{ helpline: 'helpline' }, { accountSid }],
     },
@@ -379,7 +437,7 @@ test('list cases without helpline', async () => {
   const queryParams = { limit: 20, offset: 30 };
   await CaseController.listCases(queryParams, accountSid);
   const expectedQueryObject = {
-    order: [['createdAt', 'DESC']],
+    order: [['id', 'DESC NULLS LAST']],
     where: {
       [Op.and]: [undefined, { accountSid }],
     },

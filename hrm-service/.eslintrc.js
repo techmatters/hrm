@@ -1,16 +1,29 @@
 module.exports = {
-  extends: [
-    "airbnb-base",
-    "prettier",
-    "plugin:jest/recommended",
-    "plugin:jest/style",
-  ],
-  plugins: ["prettier", "jest"],
+  extends: ['airbnb-typescript/base', 'plugin:prettier/recommended'],
+  plugins: ['prettier', 'jest', 'import'],
   rules: {
-    "prettier/prettier": ["error"],
-    "no-console": "off",
+    'prettier/prettier': ['error'],
+    'no-console': 'off',
+    '@typescript-eslint/indent': 'off',
+    '@typescript-eslint/quotes': 'off',
+  },
+  settings: {
+    'import/resolver': {
+      typescript: {}, // this loads <rootdir>/tsconfig.json to eslint
+      node: {
+        extensions: ['.js', '.ts'],
+      },
+    },
   },
   env: {
-    "jest/globals": true,
+    'jest/globals': true,
   },
+  parser: '@typescript-eslint/parser',
+  parserOptions: {
+    project: './tsconfig.eslint.json',
+    tsconfigRootDir: __dirname,
+    ecmaVersion: 2018, // Allows for the parsing of modern ECMAScript features
+    sourceType: 'module', // Allows for the use of imports
+  },
+  ignorePatterns: ['dist/**'],
 };

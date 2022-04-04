@@ -1,0 +1,5 @@
+{
+  "extends": "./tsconfig.json",
+  "include": ["babel.config.js", ".eslintrc.js", "jest.config.js", "src/**/*.ts", "src/**/*.js","unit-tests/**/*.ts", "unit-tests/**/*.js","service-tests/**/*.ts", "service-tests/**/*.js","migrations/**/*.js", "seeders/**/*.js"],
+  "exclude": []
+}

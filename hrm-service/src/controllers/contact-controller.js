@@ -231,6 +231,7 @@ function convertContactsToSearchResults(contacts) {
 }
 
 const ContactController = Contact => {
+  // eslint-disable-next-line @typescript-eslint/default-param-last
   const searchContacts = async (body, query = {}, accountSid) => {
     if (isEmptySearchParams(body)) {
       return { count: 0, contacts: [] };

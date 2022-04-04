@@ -2,15 +2,15 @@ const User = require('./user');
 const { SafeRouter, publicEndpoint } = require('./safe-router');
 const { setupCanForRules } = require('./setupCanForRules');
 
-const openRules = require('./rules/open.json');
-const brRules = require('./rules/br.json');
-const caRules = require('./rules/ca.json');
-const etRules = require('./rules/et.json');
-const inRules = require('./rules/in.json');
-const jmRules = require('./rules/jm.json');
-const mwRules = require('./rules/mw.json');
-const zaRules = require('./rules/za.json');
-const zmRules = require('./rules/zm.json');
+const openRules = require('../../permission-rules/open.json');
+const brRules = require('../../permission-rules/br.json');
+const caRules = require('../../permission-rules/ca.json');
+const etRules = require('../../permission-rules/et.json');
+const inRules = require('../../permission-rules/in.json');
+const jmRules = require('../../permission-rules/jm.json');
+const mwRules = require('../../permission-rules/mw.json');
+const zaRules = require('../../permission-rules/za.json');
+const zmRules = require('../../permission-rules/zm.json');
 
 const { canEditCase, canViewPostSurvey } = require('./middlewares');
 

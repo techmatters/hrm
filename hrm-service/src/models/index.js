@@ -19,7 +19,7 @@
  */
 
 const Sequelize = require('sequelize');
-const configFile = require('../config/config.js');
+const configFile = require('../config/config');
 
 const config = configFile[process.env.NODE_ENV] || configFile.development;
 config.logging = process.env.SEQUELIZE_STATEMENT_LOGGING;
