@@ -1,10 +1,9 @@
 module.exports = {
   up: async queryInterface => {
-    console.log('UP!!');
     await queryInterface.sequelize.query(
       `CREATE SEQUENCE IF NOT EXISTS public."CaseSections_sectionId_seq"
         INCREMENT 1
-        START 1
+        START 100000
         MINVALUE 1
         MAXVALUE 9223372036854775807
         CACHE 1;`,
@@ -40,9 +39,12 @@ module.exports = {
     await queryInterface.sequelize.query(`
       INSERT INTO "CaseSections"
       SELECT
-          cases.id AS caseId,
+      cases.id AS caseId,
           'note' AS "sectionType",
-          COALESCE(notes."id", nextval('"CaseSections_sectionId_seq"'::regclass)::text) AS "sectionId",
+          CASE 
+       WHEN (notesWithSameId.duplicates = 1) THEN COALESCE(notes."id", nextval('"CaseSections_sectionId_seq"'::regclass)::text) 
+       ELSE nextval('"CaseSections_sectionId_seq"'::regclass)::text 
+      END AS "sectionId",
           notes."createdAt",
           notes."twilioWorkerId" AS "createdBy",
           notes."updatedAt",
@@ -50,12 +52,17 @@ module.exports = {
           jsonb_build_object('note', notes."note") AS "sectionTypeSpecificData"
       FROM "Cases" AS cases
           INNER JOIN LATERAL jsonb_to_recordset(cases.info::JSONB->'counsellorNotes') AS
-          notes("note" text, "id" text, "twilioWorkerId" text, "createdAt" timestamp with time zone, "updatedBy" text, "updatedAt" timestamp with time zone) ON true
+            notes("note" text, "id" text, "twilioWorkerId" text, "createdAt" timestamp with time zone, "updatedBy" text, "updatedAt" timestamp with time zone) ON true
+      INNER JOIN LATERAL (SELECT COUNT(*) AS duplicates FROM jsonb_to_recordset(cases.info::JSONB->'counsellorNotes') AS
+      nids("id" text) WHERE notes.id = nids.id) AS notesWithSameId ON true
       UNION ALL
           SELECT
               cases.id AS caseId,
-              'referral' AS "sectionType",
-              COALESCE(referrals."id", nextval('"CaseSections_sectionId_seq"'::regclass)::text) AS "sectionId",
+              'referral' AS "sectionType", 
+        CASE 
+         WHEN (referralsWithSameId.duplicates = 1) THEN COALESCE(referrals."id", nextval('"CaseSections_sectionId_seq"'::regclass)::text) 
+         ELSE nextval('"CaseSections_sectionId_seq"'::regclass)::text 
+        END AS "sectionId",
               referrals."createdAt",
               referrals."twilioWorkerId" AS "createdBy",
               referrals."updatedAt",
@@ -63,12 +70,17 @@ module.exports = {
               jsonb_build_object('referredTo', referrals."referredTo", 'comment', referrals."comment", 'date', referrals."date") AS "sectionTypeSpecificData"
           FROM "Cases" AS cases
           INNER JOIN LATERAL jsonb_to_recordset(cases.info::JSONB->'referrals') AS
-          referrals("referredTo" text, "date" text, "comment" text, "id" text, "twilioWorkerId" text, "createdAt" timestamp with time zone, "updatedBy" text, "updatedAt" timestamp with time zone) ON true
+            referrals("referredTo" text, "date" text, "comment" text, "id" text, "twilioWorkerId" text, "createdAt" timestamp with time zone, "updatedBy" text, "updatedAt" timestamp with time zone) ON true
+      INNER JOIN LATERAL (SELECT COUNT(*) AS duplicates FROM jsonb_to_recordset(cases.info::JSONB->'referrals') AS
+      rids("id" text) WHERE referrals.id = rids.id) AS referralsWithSameId ON true
       UNION ALL
           SELECT
               cases.id AS caseId,
               'perpetrator' AS "sectionType",
-              COALESCE(perpetrators."id", nextval('"CaseSections_sectionId_seq"'::regclass)::text) AS "sectionId",
+        CASE 
+         WHEN (perpetratorsWithSameId.duplicates = 1) THEN COALESCE(perpetrators."id", nextval('"CaseSections_sectionId_seq"'::regclass)::text) 
+         ELSE nextval('"CaseSections_sectionId_seq"'::regclass)::text 
+        END AS "sectionId",
               perpetrators."createdAt",
               perpetrators."twilioWorkerId" AS "createdBy",
               perpetrators."updatedAt",
@@ -76,12 +88,17 @@ module.exports = {
               perpetrators."perpetrator" AS "sectionTypeSpecificData"
           FROM "Cases" AS cases
           INNER JOIN LATERAL jsonb_to_recordset(cases.info::JSONB->'perpetrators') AS
-          perpetrators("perpetrator" jsonb, "id" text, "twilioWorkerId" text, "createdAt" timestamp with time zone, "updatedBy" text, "updatedAt" timestamp with time zone) ON true
+            perpetrators("perpetrator" jsonb, "id" text, "twilioWorkerId" text, "createdAt" timestamp with time zone, "updatedBy" text, "updatedAt" timestamp with time zone) ON true
+      INNER JOIN LATERAL (SELECT COUNT(*) AS duplicates FROM jsonb_to_recordset(cases.info::JSONB->'perpetrators') AS
+      pids("id" text) WHERE perpetrators.id = pids.id) AS perpetratorsWithSameId ON true    
       UNION ALL
           SELECT
               cases.id AS caseId,
               'household' AS "sectionType",
-              COALESCE(households."id", nextval('"CaseSections_sectionId_seq"'::regclass)::text) AS "sectionId",
+        CASE 
+         WHEN (householdsWithSameId.duplicates = 1) THEN COALESCE(households."id", nextval('"CaseSections_sectionId_seq"'::regclass)::text) 
+         ELSE nextval('"CaseSections_sectionId_seq"'::regclass)::text 
+        END AS "sectionId",
               households."createdAt",
               households."twilioWorkerId" AS "createdBy",
               households."updatedAt",
@@ -89,12 +106,17 @@ module.exports = {
               households."household" AS "sectionTypeSpecificData"
           FROM "Cases" AS cases
           INNER JOIN LATERAL jsonb_to_recordset(cases.info::JSONB->'households') AS
-          households("household" jsonb, "id" text, "twilioWorkerId" text, "createdAt" timestamp with time zone, "updatedBy" text, "updatedAt" timestamp with time zone) ON true
+            households("household" jsonb, "id" text, "twilioWorkerId" text, "createdAt" timestamp with time zone, "updatedBy" text, "updatedAt" timestamp with time zone) ON true
+      INNER JOIN LATERAL (SELECT COUNT(*) AS duplicates FROM jsonb_to_recordset(cases.info::JSONB->'households') AS
+      hids("id" text) WHERE households.id = hids.id) AS householdsWithSameId ON true
       UNION ALL
           SELECT
               cases.id AS caseId,
               'incident' AS "sectionType",
-              COALESCE(incidents."id", nextval('"CaseSections_sectionId_seq"'::regclass)::text) AS "sectionId",
+        CASE 
+         WHEN (incidentsWithSameId.duplicates = 1) THEN COALESCE(incidents."id", nextval('"CaseSections_sectionId_seq"'::regclass)::text) 
+         ELSE nextval('"CaseSections_sectionId_seq"'::regclass)::text 
+        END AS "sectionId",
               incidents."createdAt",
               incidents."twilioWorkerId" AS "createdBy",
               incidents."updatedAt",
@@ -102,12 +124,17 @@ module.exports = {
               incidents."incident" AS "sectionTypeSpecificData"
           FROM "Cases" AS cases
           INNER JOIN LATERAL jsonb_to_recordset(cases.info::JSONB->'incidents') AS
-          incidents("incident" jsonb, "id" text, "twilioWorkerId" text, "createdAt" timestamp with time zone, "updatedBy" text, "updatedAt" timestamp with time zone) ON true
+            incidents("incident" jsonb, "id" text, "twilioWorkerId" text, "createdAt" timestamp with time zone, "updatedBy" text, "updatedAt" timestamp with time zone) ON true
+      INNER JOIN LATERAL (SELECT COUNT(*) AS duplicates FROM jsonb_to_recordset(cases.info::JSONB->'incidents') AS
+      iids("id" text) WHERE incidents.id = iids.id) AS incidentsWithSameId ON true
       UNION ALL
           SELECT
               cases.id AS caseId,
               'document' AS "sectionType",
-              COALESCE(documents."id", nextval('"CaseSections_sectionId_seq"'::regclass)::text) AS "sectionId",
+        CASE 
+         WHEN (documentsWithSameId.duplicates = 1) THEN COALESCE(documents."id", nextval('"CaseSections_sectionId_seq"'::regclass)::text) 
+         ELSE nextval('"CaseSections_sectionId_seq"'::regclass)::text 
+        END AS "sectionId",
               documents."createdAt",
               documents."twilioWorkerId" AS "createdBy",
               documents."updatedAt",
@@ -115,7 +142,9 @@ module.exports = {
               documents."document" AS "sectionTypeSpecificData"
           FROM "Cases" AS cases
           INNER JOIN LATERAL jsonb_to_recordset(cases.info::JSONB->'documents') AS
-          documents("document" jsonb, "id" text, "twilioWorkerId" text, "createdAt" timestamp with time zone, "updatedBy" text, "updatedAt" timestamp with time zone) ON true
+            documents("document" jsonb, "id" text, "twilioWorkerId" text, "createdAt" timestamp with time zone, "updatedBy" text, "updatedAt" timestamp with time zone) ON true
+      INNER JOIN LATERAL (SELECT COUNT(*) AS duplicates FROM jsonb_to_recordset(cases.info::JSONB->'documents') AS
+      dids("id" text) WHERE documents.id = dids.id) AS documentsWithSameId ON true
       ORDER BY caseId, "sectionType", "sectionId"
     `);
   },
