@@ -89,6 +89,7 @@ const SEARCH_WHERE_CLAUSE = `WHERE
     AND (
       -- search on childInformation of connectedContacts
       (
+        
         ${nameAndPhoneNumberSearchSql(
           "contacts.\"rawJson\"->'childInformation'->'name'->>'firstName'",
           "contacts.\"rawJson\"->'childInformation'->'name'->>'lastName'",
@@ -113,14 +114,18 @@ const SEARCH_WHERE_CLAUSE = `WHERE
       )
         -- search on case sections in the expected format
       OR (
+        EXISTS (
+        SELECT 1 FROM "CaseSections" cs WHERE cs."caseId" = cases.id
+        AND
         ${nameAndPhoneNumberSearchSql(
-          'caseSections."sectionTypeSpecificData"->>\'firstName\'',
-          'caseSections."sectionTypeSpecificData"->>\'lastName\'',
+          'cs."sectionTypeSpecificData"->>\'firstName\'',
+          'cs."sectionTypeSpecificData"->>\'lastName\'',
           [
-            'caseSections."sectionTypeSpecificData"->>\'phone1\'',
-            'caseSections."sectionTypeSpecificData"->>\'phone2\'',
+            'cs."sectionTypeSpecificData"->>\'phone1\'',
+            'cs."sectionTypeSpecificData"->>\'phone2\'',
           ],
         )}
+        )
       )
     )
     -- previous contacts search
@@ -169,11 +174,11 @@ const selectCasesUnorderedSql = (whereClause: string, havingClause: string = '')
     (count(*) OVER())::INTEGER AS "totalCount",
     cases.*,
     COALESCE(jsonb_agg(DISTINCT contacts.*) FILTER (WHERE contacts.id IS NOT NULL), '[]') AS "connectedContacts",
-    COALESCE(jsonb_agg(DISTINCT caseSections.*) FILTER (WHERE caseSections."caseId" IS NOT NULL), '[]') AS "caseSections"
+    caseSections."caseSections"
     FROM "Cases" cases 
     LEFT JOIN LATERAL (${SELECT_CONTACTS}) contacts ON true 
     LEFT JOIN LATERAL (${SELECT_CASE_SECTIONS}) caseSections ON true
-    ${whereClause} GROUP BY "cases"."id", caseSections."caseId", caseSections."sectionType", caseSections."sectionId" ${havingClause}`;
+    ${whereClause} GROUP BY "cases"."id", caseSections."caseSections" ${havingClause}`;
 
 const selectCasesPaginatedSql = (
   whereClause: string,

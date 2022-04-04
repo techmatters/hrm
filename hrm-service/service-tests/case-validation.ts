@@ -78,7 +78,7 @@ export const convertCaseInfoToExpectedInfo = (input: any) => {
   const { info: expectedInfo } = expectedCase;
   if (expectedInfo) {
     Object.keys(WELL_KNOWN_CASE_SECTION_NAMES).forEach(sectionName => {
-      if (expectedInfo[sectionName]) {
+      if (expectedInfo[sectionName] && expectedInfo[sectionName].length) {
         expectedInfo[sectionName] = expectedInfo[sectionName].map(section => ({
           id: expect.anything(),
           ...section,
@@ -86,6 +86,11 @@ export const convertCaseInfoToExpectedInfo = (input: any) => {
         }));
         if (sectionName === 'counsellorNotes') {
           expectedInfo.notes = expectedInfo.counsellorNotes.map(cn => cn.note);
+        }
+      } else {
+        delete expectedInfo[sectionName];
+        if (sectionName === 'counsellorNotes') {
+          delete expectedInfo.notes;
         }
       }
     });

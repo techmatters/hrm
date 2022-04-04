@@ -25,6 +25,10 @@ export const WELL_KNOWN_CASE_SECTION_NAMES: Record<
   documents: { getSectionSpecificData: s => s.document, sectionTypeName: 'document' },
 };
 
+export const EMPTY_INFO_SECTIONS = Object.fromEntries(
+  Object.entries(WELL_KNOWN_CASE_SECTION_NAMES).map(([k]) => [k, []]),
+);
+
 export type Case = CaseRecordCommon & {
   id: number;
   childName?: string;
@@ -232,10 +236,20 @@ const caseToCaseRecord = (
 };
 
 const caseRecordToCase = (record: CaseRecord): Case => {
+  // Remove legacy case sections
+  const info = {
+    ...record.info,
+  };
+  Object.keys(WELL_KNOWN_CASE_SECTION_NAMES).forEach(k => delete info[k]);
+  delete info.notes;
+
   const { caseSections, ...output } = generateLegacyNotesFromCounsellorNotes(
     addCategoriesAndChildName({
       ...record,
-      info: { ...record.info, ...caseSectionRecordsToInfo(record.caseSections) },
+      info: {
+        ...info,
+        ...caseSectionRecordsToInfo(record.caseSections),
+      },
     }),
   );
   return output;
