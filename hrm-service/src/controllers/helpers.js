@@ -35,9 +35,9 @@ const getPaginationElements = query => {
   const limit = Math.min(queryLimit, 1000);
   const offset = (query.offset && parseInt(query.offset, 10)) || 0;
   const sortBy = query.sortBy || 'id';
-  const order = query.order || 'DESC';
+  const sortDirection = query.sortDirection || 'DESC';
 
-  return { limit, offset, sortBy, order };
+  return { limit, offset, sortBy, sortDirection };
 };
 
 const isEmptySearchParams = body => {

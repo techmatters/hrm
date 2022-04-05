@@ -188,7 +188,7 @@ describe('Test listCases query params', () => {
     });
   });
 
-  describe('sortBy and order', () => {
+  describe('sortBy and sortDirection', () => {
     test('default values', async () => {
       const findAndCountAllSpy = jest
         .spyOn(MockCase, 'findAndCountAll')
@@ -213,7 +213,7 @@ describe('Test listCases query params', () => {
       expect(findAndCountAllSpy).toHaveBeenCalledWith(expectedQueryObject);
     });
 
-    test('custom sortBy and order', async () => {
+    test('custom sortBy and sortDirection', async () => {
       const findAndCountAllSpy = jest
         .spyOn(MockCase, 'findAndCountAll')
         .mockImplementation(() => ({ rows: [], count: 0 }));
@@ -222,7 +222,7 @@ describe('Test listCases query params', () => {
         limit: 10,
         offset: 0,
         sortBy: 'Child Name',
-        order: 'ASC',
+        sortDirection: 'ASC',
       };
 
       await CaseController.listCases(queryParams, accountSid);
@@ -241,10 +241,6 @@ describe('Test listCases query params', () => {
       };
 
       expect(findAndCountAllSpy).toHaveBeenCalledWith(expectedQueryObject);
-    });
-
-    test('nullable/empty data at the end', async () => {
-      expect(1).toBe(1);
     });
   });
 });
