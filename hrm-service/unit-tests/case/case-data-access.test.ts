@@ -142,7 +142,7 @@ describe('list', () => {
           limit: 100,
           offset: 25,
           sortBy: 'jimmyjab',
-          order: OrderByDirection.ascendingNullsLast,
+          sortDirection: OrderByDirection.ascending,
         },
         expectedDbParameters: { limit: 100, offset: 25 },
         expectedInSql: ['"id" DESC', '"jimmyjab" ASC NULLS LAST'],
@@ -152,7 +152,7 @@ describe('list', () => {
         parameters: {
           limit: 100,
           offset: 25,
-          order: OrderByDirection.ascendingNullsLast,
+          sortDirection: OrderByDirection.ascending,
         },
         expectedDbParameters: { limit: 100, offset: 25 },
         expectedInSql: ['"id" DESC', '"id" ASC NULLS LAST,'],
@@ -165,7 +165,7 @@ describe('list', () => {
           sortBy: 'jimmyjab',
         },
         expectedDbParameters: { limit: 100, offset: 25 },
-        expectedInSql: ['"id" DESC', '"jimmyjab" DESC'],
+        expectedInSql: ['"id" DESC', '"jimmyjab" DESC NULLS LAST'],
       },
     ]).test(
       '$description',

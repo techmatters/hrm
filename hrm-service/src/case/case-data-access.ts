@@ -139,11 +139,17 @@ export const list = async (
   query: { helpline: string },
   accountSid,
 ): Promise<{ cases: readonly CaseRecord[]; count: number }> => {
-  const { limit, offset, sortBy, order = OrderByDirection.ascending } = getPaginationElements(
-    query,
-  );
+  const { limit, offset, sortBy, sortDirection } = getPaginationElements(query);
   const { helpline } = query;
-  const orderClause = [{ sortField: sortBy, sortDirection: <OrderByDirection>order }];
+  const orderClause = [
+    {
+      sortField: sortBy,
+      sortDirection:
+        sortDirection.toLowerCase() === 'asc'
+          ? OrderByDirection.ascendingNullsLast
+          : OrderByDirection.descendingNullsLast,
+    },
+  ];
   const { count, rows } = await db.task(async connection => {
     const statement = selectCaseList(orderClause);
     const queryValues = { accountSid, helpline: helpline || null, limit, offset };
