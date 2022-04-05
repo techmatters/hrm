@@ -29,13 +29,11 @@ async function migrate() {
   console.log(timeoutPoint);
   while (Date.now() < timeoutPoint) {
     try {
-      console.log('Attempting migration...');
       // eslint-disable-next-line no-await-in-loop
       ret = await umzug.up();
       console.log('Migration complete.');
       break;
     } catch (err) {
-      console.log('Retrying connection...');
       lastErr = err;
     }
   }
