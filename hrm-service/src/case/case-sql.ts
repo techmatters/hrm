@@ -40,10 +40,16 @@ const generateOrderByClause = (
   } else return '';
 };
 
-const SELECT_CONTACTS = `SELECT c.*,
-COALESCE(jsonb_agg(DISTINCT r.*) FILTER (WHERE r.id IS NOT NULL), '[]') AS "csamReports"
-FROM "Contacts" c LEFT JOIN "CSAMReports" r ON c."id" = r."contactId" WHERE c."caseId" = "cases".id
-GROUP BY c.id`;
+const SELECT_CONTACTS = `SELECT COALESCE(jsonb_agg(DISTINCT contacts.*) FILTER (WHERE contacts."caseId" IS NOT NULL), '[]') AS "connectedContacts"
+FROM (
+  SELECT
+    c.*,
+    COALESCE(jsonb_agg(DISTINCT r.*) FILTER (WHERE r.id IS NOT NULL), '[]') AS "csamReports"
+  FROM "Contacts" c 
+  LEFT JOIN "CSAMReports" r ON c."id" = r."contactId" 
+  WHERE c."caseId" = "cases".id
+  GROUP BY c.id
+) AS contacts WHERE contacts."caseId" = cases.id`;
 
 const LIST_WHERE_CLAUSE = `WHERE "cases"."accountSid" = $<accountSid> AND (cast($<helpline> as text) IS NULL OR "cases"."helpline" = $<helpline>)`;
 
@@ -94,51 +100,53 @@ const SEARCH_WHERE_CLAUSE = `WHERE
       END
     AND (
       -- search on childInformation of connectedContacts
-      (
-        
-        ${nameAndPhoneNumberSearchSql(
-          "contacts.\"rawJson\"->'childInformation'->'name'->>'firstName'",
-          "contacts.\"rawJson\"->'childInformation'->'name'->>'lastName'",
-          [
-            "contacts.\"rawJson\"->'childInformation'->'location'->>'phone1'",
-            "contacts.\"rawJson\"->'childInformation'->'location'->>'phone2'",
-            'contacts.number',
-          ],
-        )}  
+      ($<firstName> IS NULL AND $<lastName> IS NULL AND $<phoneNumber> IS NULL) OR
+      EXISTS (
+        SELECT 1 FROM "Contacts" c WHERE c."caseId" = cases.id 
+          AND (
+            (
+            ${nameAndPhoneNumberSearchSql(
+              "c.\"rawJson\"->'childInformation'->'name'->>'firstName'",
+              "c.\"rawJson\"->'childInformation'->'name'->>'lastName'",
+              [
+                "c.\"rawJson\"->'childInformation'->'location'->>'phone1'",
+                "c.\"rawJson\"->'childInformation'->'location'->>'phone2'",
+                'c.number',
+              ],
+            )})
+            -- search on callerInformation of connectedContacts
+            OR ( 
+              ${nameAndPhoneNumberSearchSql(
+                "c.\"rawJson\"->'callerInformation'->'name'->>'firstName'",
+                "c.\"rawJson\"->'callerInformation'->'name'->>'lastName'",
+                [
+                  "c.\"rawJson\"->'callerInformation'->'location'->>'phone1'",
+                  "c.\"rawJson\"->'callerInformation'->'location'->>'phone2'",
+                ],
+              )}  
+            )
+          )
       )
-        -- search on callerInformation of connectedContacts
-      OR ( 
-        ${nameAndPhoneNumberSearchSql(
-          "contacts.\"rawJson\"->'callerInformation'->'name'->>'firstName'",
-          "contacts.\"rawJson\"->'callerInformation'->'name'->>'lastName'",
-          [
-            "contacts.\"rawJson\"->'callerInformation'->'location'->>'phone1'",
-            "contacts.\"rawJson\"->'callerInformation'->'location'->>'phone2'",
-            'contacts.number',
-          ],
-        )}  
-      )
-        -- search on case sections in the expected format
-      OR (
-        EXISTS (
+      -- search on case sections in the expected format
+      OR EXISTS (
         SELECT 1 FROM "CaseSections" cs WHERE cs."caseId" = cases.id
-        AND
-        ${nameAndPhoneNumberSearchSql(
-          'cs."sectionTypeSpecificData"->>\'firstName\'',
-          'cs."sectionTypeSpecificData"->>\'lastName\'',
-          [
-            'cs."sectionTypeSpecificData"->>\'phone1\'',
-            'cs."sectionTypeSpecificData"->>\'phone2\'',
-          ],
-        )}
-        )
+          AND
+          ${nameAndPhoneNumberSearchSql(
+            'cs."sectionTypeSpecificData"->>\'firstName\'',
+            'cs."sectionTypeSpecificData"->>\'lastName\'',
+            [
+              'cs."sectionTypeSpecificData"->>\'phone1\'',
+              'cs."sectionTypeSpecificData"->>\'phone2\'',
+            ],
+          )}
       )
     )
-    -- previous contacts search
-    AND
-      CASE WHEN $<contactNumber> IS NULL THEN TRUE
-      ELSE contacts.number = $<contactNumber>
-      END`;
+    AND (
+      $<contactNumber> IS NULL OR
+      EXISTS (
+        SELECT 1 FROM "Contacts" c WHERE c."caseId" = cases.id AND c.number = $<contactNumber>
+      )
+    )`;
 
 const SEARCH_HAVING_CLAUSE = `  
   -- Needed a HAVING clause because we couldn't do aggregations on WHERE clauses
@@ -146,7 +154,7 @@ const SEARCH_HAVING_CLAUSE = `
     -- search on closedCases and orphaned cases (without connected contacts)
     CASE WHEN $<closedCases>::BOOLEAN = FALSE THEN (
       cases.status <> 'closed'
-      AND jsonb_array_length(COALESCE(jsonb_agg(DISTINCT contacts.*) FILTER (WHERE contacts.id IS NOT NULL), '[]')) > 0
+      AND jsonb_array_length(contacts."connectedContacts") > 0
     )
     ELSE TRUE
     END
@@ -179,12 +187,19 @@ const selectCasesUnorderedSql = (whereClause: string, havingClause: string = '')
   `SELECT DISTINCT ON (cases.id)
     (count(*) OVER())::INTEGER AS "totalCount",
     cases.*,
-    COALESCE(jsonb_agg(DISTINCT contacts.*) FILTER (WHERE contacts.id IS NOT NULL), '[]') AS "connectedContacts",
+    contacts."connectedContacts",
+    NULLIF(
+      CONCAT(
+        contacts."connectedContacts"::JSONB#>>'{0, "rawJson", "childInformation", "name", "firstName"}', 
+        ' ', 
+        contacts."connectedContacts"::JSONB#>>'{0, "rawJson", "childInformation", "name", "lastName"}'
+      )
+    , ' ') AS "childName",  
     caseSections."caseSections"
     FROM "Cases" cases 
     LEFT JOIN LATERAL (${SELECT_CONTACTS}) contacts ON true 
     LEFT JOIN LATERAL (${SELECT_CASE_SECTIONS}) caseSections ON true
-    ${whereClause} GROUP BY "cases"."id", caseSections."caseSections" ${havingClause}`;
+    ${whereClause} GROUP BY "cases"."id", caseSections."caseSections", contacts."connectedContacts" ${havingClause}`;
 
 const selectCasesPaginatedSql = (
   whereClause: string,
