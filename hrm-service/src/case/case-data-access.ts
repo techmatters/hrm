@@ -4,13 +4,15 @@ import { db, pgp } from '../connection-pool';
 import { getPaginationElements } from '../controllers/helpers';
 import pgPromise from 'pg-promise';
 import {
-  DELETE_BY_ID,
-  SELECT_CASE_SEARCH,
-  selectCaseList,
-  selectSingleCaseByIdSql,
   updateByIdSql,
-} from './case-sql';
-import { caseSectionUpsertSql, deleteMissingCaseSectionsSql } from './case-sections-sql';
+} from './sql/case-update-sql';
+import {
+  OrderByDirection, selectCaseSearch,
+  selectCaseList, OrderByColumns,
+} from './sql/case-search-sql';
+import { caseSectionUpsertSql, deleteMissingCaseSectionsSql } from './sql/case-sections-sql';
+import { DELETE_BY_ID } from './sql/case-delete-sql';
+import { selectSingleCaseByIdSql } from './sql/case-get-sql';
 /**
  * Move me to contacts directory when that exists
  */
@@ -78,6 +80,34 @@ export type CaseSectionRecord = {
   createdBy: string;
   updatedAt?: string;
   updatedBy?: string;
+};
+
+export type CaseListConfiguration = {
+  sortBy?: OrderByColumns,
+  sortDirection?: OrderByDirection
+  offset?: number,
+  limit?: number
+};
+
+export type CaseSearchCriteria = {
+  phoneNumber?: string,
+  contactNumber?: string,
+  firstName?: string,
+  lastName?: string,
+};
+
+export type DateFilter = {
+  from?: string,
+  to?: string,
+};
+
+export type CaseListFilters = {
+  counsellors?: string[],
+  statuses?: string[],
+  excludedStatuses?: string[],
+  createdAt?: DateFilter,
+  helplines?: string[],
+  includeOrphans?: boolean
 };
 
 const logCaseAudit = async (
@@ -150,7 +180,7 @@ export const list = async (
     query,
   );
   const { helpline } = query;
-  const orderClause = [{ sortField: sortBy, sortDirection }];
+  const orderClause = [{ sortBy, sortDirection }];
   const { count, rows } = await db.task(async connection => {
     const statement = selectCaseList(orderClause);
     const queryValues = { accountSid, helpline: helpline || null, limit, offset };
@@ -163,28 +193,27 @@ export const list = async (
 };
 
 export const search = async (
-  body,
-  query: { helpline: string },
+  listConfiguration: CaseListConfiguration,
   accountSid,
+  searchCriteria: CaseSearchCriteria = {},
+  filters: CaseListFilters = {},
 ): Promise<{ cases: readonly CaseRecord[]; count: number }> => {
-  const { limit, offset } = getPaginationElements(query);
-
+  const { limit, offset, sortBy, sortDirection } = getPaginationElements(
+    listConfiguration,
+  );
+  const orderClause = [{ sortBy, sortDirection }];
   const { count, rows } = await db.task(async connection => {
-    const statement = SELECT_CASE_SEARCH;
+    const statement = selectCaseSearch(filters, orderClause);
     const queryValues = {
       accountSid,
-      helpline: body.helpline || null,
-      firstName: body.firstName ? `%${body.firstName}%` : null,
-      lastName: body.lastName ? `%${body.lastName}%` : null,
-      dateFrom: body.dateFrom || null,
-      dateTo: body.dateTo || null,
-      phoneNumber: body.phoneNumber ? `%${body.phoneNumber.replace(/[\D]/gi, '')}%` : null,
-      counselor: body.counselor || null,
-      contactNumber: body.contactNumber || null,
-      closedCases: typeof body.closedCases === 'undefined' || body.closedCases,
+      firstName: searchCriteria.firstName ? `%${searchCriteria.firstName}%` : null,
+      lastName: searchCriteria.lastName ? `%${searchCriteria.lastName}%` : null,
+      phoneNumber: searchCriteria.phoneNumber ? `%${searchCriteria.phoneNumber.replace(/[\D]/gi, '')}%` : null,
+      contactNumber: searchCriteria.contactNumber || null,
       limit: limit,
       offset: offset,
     };
+    console.log("CASE SEARCH QUERY:", statement, queryValues);
     const result: CaseWithCount[] = await connection.any<CaseWithCount>(statement, queryValues);
     const totalCount: number = result.length ? result[0].totalCount : 0;
     return { rows: result, count: totalCount };

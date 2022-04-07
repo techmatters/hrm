@@ -10,6 +10,7 @@ import {
 import * as caseDb from '../../src/case/case-data-access';
 import each from 'jest-each';
 import { db } from '../../src/connection-pool';
+import { OrderByColumns } from '../../src/case/sql/case-search-sql';
 
 const accountSid = 'account-sid';
 const workerSid = 'worker-sid';
@@ -114,7 +115,7 @@ describe('createCase', () => {
   });
 });
 
-describe('list', () => {
+describe('search', () => {
   beforeEach(() => {
     mockTask(conn);
   });
@@ -122,55 +123,71 @@ describe('list', () => {
     each([
       {
         description: 'should use a default limit and offset 0 when neither specified',
-        parameters: { helpline: 'fakeHelpline' },
-        expectedDbParameters: { helpline: 'fakeHelpline', limit: expect.any(Number), offset: 0 },
-        expectedInSql: ['"id" DESC'],
+        filters: { helplines: ['fakeHelpline'] },
+        expectedDbParameters: { limit: expect.any(Number), offset: 0 },
+        expectedInSql: ['"id" DESC', 'fakeHelpline'],
       },
       {
         description: 'should use a specified limit and offset 0 when only limit is specified',
-        parameters: { helpline: 'fakeHelpline', limit: 45 },
-        expectedDbParameters: { helpline: 'fakeHelpline', limit: 45, offset: 0 },
-        expectedInSql: ['"id" DESC'],
+        filters: { helplines: ['fakeHelpline'] },
+        listConfig: { limit: 45 },
+        expectedDbParameters: { limit: 45, offset: 0 },
+        expectedInSql: ['"id" DESC', 'fakeHelpline'],
       },
       {
         description:
           'should use a default limit specified and offset when only offset is specified',
-        parameters: { helpline: 'fakeHelpline', offset: 30 },
-        expectedDbParameters: { helpline: 'fakeHelpline', limit: expect.any(Number), offset: 30 },
-        expectedInSql: ['"id" DESC'],
+        filters: { helplines: ['fakeHelpline'] },
+        listConfig: { offset: 30 },
+        expectedDbParameters: { limit: expect.any(Number), offset: 30 },
+        expectedInSql: ['"id" DESC', 'fakeHelpline'],
       },
       {
         description: 'should use a specified limit and offset when both are present',
-        parameters: { helpline: 'fakeHelpline', limit: 45, offset: 30 },
-        expectedDbParameters: { helpline: 'fakeHelpline', limit: 45, offset: 30 },
-        expectedInSql: ['"id" DESC'],
+        filters: { helplines: ['fakeHelpline'] },
+        listConfig: { limit: 45, offset: 30 },
+        expectedDbParameters: { limit: 45, offset: 30 },
+        expectedInSql: ['"id" DESC', 'fakeHelpline'],
       },
       {
         description: 'should use a default limit and/or offset when either are NaN',
-        parameters: { helpline: 'fakeHelpline', limit: NaN, offset: NaN },
-        expectedDbParameters: { helpline: 'fakeHelpline', limit: expect.any(Number), offset: 0 },
-        expectedInSql: ['"id" DESC'],
+        filters: { helplines: ['fakeHelpline'] },
+        listConfig: { limit: NaN, offset: NaN },
+        expectedDbParameters: { limit: expect.any(Number), offset: 0 },
+        expectedInSql: ['"id" DESC', 'fakeHelpline'],
       },
       {
         description: "should generate SQL without helpline filter if one isn't set",
-        parameters: { limit: 100, offset: 25 },
+        listConfig: { limit: 100, offset: 25 },
         expectedDbParameters: { limit: 100, offset: 25 },
         expectedInSql: ['"id" DESC'],
       },
       {
         description: 'should generate SQL with order by clause',
-        parameters: {
+        listConfig: {
+          limit: 100,
+          offset: 25,
+          sortBy: OrderByColumns.CHILD_NAME,
+          sortDirection: 'ASC',
+        },
+        expectedDbParameters: { limit: 100, offset: 25 },
+        expectedInSql: ['"id" DESC', '"childName" ASC NULLS LAST'],
+      },
+      {
+        description: 'should ignore unrecognised sortBy columns',
+        listConfig: {
           limit: 100,
           offset: 25,
           sortBy: 'jimmyjab',
           sortDirection: 'ASC',
         },
         expectedDbParameters: { limit: 100, offset: 25 },
-        expectedInSql: ['"id" DESC', '"jimmyjab" ASC NULLS LAST'],
+        expectedInSql: ['"id" DESC'],
+        notExpectedInSql: ['jimmyjab'],
       },
       {
         description: "should use default 'id' column for ordering if order specified but no column",
-        parameters: {
+        listConfig: {
           limit: 100,
           offset: 25,
           sortDirection: 'ASC',
@@ -180,23 +197,29 @@ describe('list', () => {
       },
       {
         description: 'should use default DESC NULLS LAST sort if only sort column is specified',
-        parameters: {
+        listConfig: {
           limit: 100,
           offset: 25,
-          sortBy: 'jimmyjab',
+          sortBy: OrderByColumns.CHILD_NAME,
         },
         expectedDbParameters: { limit: 100, offset: 25 },
-        expectedInSql: ['"id" DESC', '"jimmyjab" DESC NULLS LAST'],
+        expectedInSql: ['"id" DESC', '"childName" DESC NULLS LAST'],
       },
     ]).test(
       '$description',
-      async ({ parameters, expectedDbParameters, expectedInSql = [], notExpectedInSql = [] }) => {
+      async ({
+        listConfig = {},
+        filters = {},
+        expectedDbParameters,
+        expectedInSql = [],
+        notExpectedInSql = [],
+      }) => {
         const dbResult = [
           { ...createMockCaseRecord({ id: 2 }), totalCount: 1337 },
           { ...createMockCaseRecord({ id: 1 }), totalCount: 1337 },
         ];
         const anySpy = jest.spyOn(conn, 'any').mockResolvedValue(dbResult);
-        const result = await caseDb.list(parameters, accountSid);
+        const result = await caseDb.search(listConfig, accountSid, {}, filters);
         expect(anySpy).toHaveBeenCalledWith(
           expect.stringContaining('Cases'),
           expect.objectContaining({ ...expectedDbParameters, accountSid }),
@@ -216,8 +239,8 @@ describe('list', () => {
   each([
     {
       description: 'should return case without contacts when a case has none connected',
-      parameters: { helpline: 'fakeHelpline' },
-      expectedDbParameters: { helpline: 'fakeHelpline', limit: expect.any(Number), offset: 0 },
+      filters: { helplines: ['fakeHelpline'] },
+      expectedDbParameters: { limit: expect.any(Number), offset: 0 },
       dbResult: [
         {
           id: caseId,
@@ -233,8 +256,8 @@ describe('list', () => {
     },
     {
       description: 'should return connected contacts when a case has them',
-      parameters: { helpline: 'fakeHelpline' },
-      expectedDbParameters: { helpline: 'fakeHelpline', limit: expect.any(Number), offset: 0 },
+      filters: { helplines: ['fakeHelpline'] },
+      expectedDbParameters: { limit: expect.any(Number), offset: 0 },
       dbResult: [
         {
           id: caseId,
@@ -263,12 +286,24 @@ describe('list', () => {
     },
   ]).test(
     '$description',
-    async ({ parameters, expectedDbParameters, dbResult, expectedResult = dbResult }) => {
+    async ({
+      filters = {},
+      listConfig = {},
+      expectedDbParameters,
+      dbResult,
+      expectedResult = dbResult,
+    }) => {
       const anySpy = jest.spyOn(conn, 'any').mockResolvedValue(dbResult);
-      const result = await caseDb.list(parameters, accountSid);
+      const result = await caseDb.search(listConfig, accountSid, {}, filters);
       expect(anySpy).toHaveBeenCalledWith(
         expect.stringContaining('Cases'),
-        expect.objectContaining({ ...expectedDbParameters, accountSid }),
+        expect.objectContaining({
+          contactNumber: null,
+          firstName: null,
+          lastName: null,
+          ...expectedDbParameters,
+          accountSid,
+        }),
       );
       const statementExecuted = getSqlStatement(anySpy);
       expect(statementExecuted).toContain('Contacts');

@@ -1,38 +1,30 @@
 /* eslint-disable jest/no-standalone-expect,no-await-in-loop */
 import * as caseApi from '../src/case/case';
-import { Case, getCase } from '../src/case/case';
+import { Case } from '../src/case/case';
 import * as caseDb from '../src/case/case-data-access';
-import { db } from '../src/connection-pool';
 import {
   convertCaseInfoToExpectedInfo,
   countCaseAudits,
   deleteCaseAudits,
-  fillNameAndPhone,
   selectCaseAudits,
-  validateCaseListResponse,
-  validateSingleCaseResponse,
   without,
 } from './case-validation';
 
 const supertest = require('supertest');
 const each = require('jest-each').default;
 const expressApp = require('../src/app');
-const models = require('../src/models');
 const mocks = require('./mocks');
 
 export const workerSid = 'worker-sid';
 const server = expressApp.listen();
 const request = supertest.agent(server);
 
-const { case1, case2, contact1, accountSid } = mocks;
-const options = { context: { workerSid } };
+const { case1, case2, accountSid } = mocks;
 
 const headers = {
   'Content-Type': 'application/json',
   Authorization: `Basic ${Buffer.from(process.env.API_KEY).toString('base64')}`,
 };
-
-const { Contact } = models;
 
 afterAll(done => {
   server.close(() => {
@@ -48,164 +40,6 @@ afterEach(async () => deleteCaseAudits(workerSid));
 
 describe('/cases route', () => {
   const route = `/v0/accounts/${accountSid}/cases`;
-
-  describe('GET', () => {
-    test('should return 401', async () => {
-      const response = await request.get(route);
-
-      expect(response.status).toBe(401);
-      expect(response.body.error).toBe('Authorization failed');
-    });
-    test('should return 200', async () => {
-      const response = await request.get(route).set(headers);
-
-      expect(response.status).toBe(200);
-      expect(response.body).toStrictEqual({ cases: [], count: 0 });
-    });
-    describe('With single record', () => {
-      let createdCase;
-      let createdContact;
-
-      beforeEach(async () => {
-        createdCase = await caseApi.createCase(case1, accountSid, workerSid);
-
-        createdContact = await Contact.create(fillNameAndPhone(contact1), options);
-        createdContact.caseId = createdCase.id;
-        await createdContact.save(options);
-        createdCase = await getCase(createdCase.id, accountSid); // refresh case from DB now it has a contact connected
-      });
-
-      afterEach(async () => {
-        await createdContact.destroy();
-        await caseDb.deleteById(createdCase.id, accountSid);
-      });
-
-      // eslint-disable-next-line jest/expect-expect
-      test('should return 200 when populated', async () => {
-        const response = await request.get(route).set(headers);
-        validateSingleCaseResponse(response, createdCase, createdContact);
-      });
-    });
-    describe('With multiple records', () => {
-      const CASE_SAMPLE_SIZE = 10;
-      const createdCasesAndContacts = [];
-      const accounts = ['ACCOUNT_SID_1', 'ACCOUNT_SID_2'];
-      const helplines = ['helpline-1', 'helpline-2', 'helpline-3'];
-      beforeEach(async () => {
-        createdCasesAndContacts.length = 0;
-        for (let i = 0; i < CASE_SAMPLE_SIZE; i += 1) {
-          const createdCase = await caseApi.createCase(
-            {
-              ...case1,
-              helpline: helplines[i % helplines.length],
-            },
-            accounts[i % accounts.length],
-            workerSid,
-          );
-          const createdContact = await Contact.create(
-            fillNameAndPhone({
-              ...contact1,
-              accountSid: accounts[i % accounts.length],
-              helpline: helplines[i % helplines.length],
-            }),
-            options,
-          );
-          createdContact.caseId = createdCase.id;
-          await createdContact.save(options);
-          const connectedCase = await getCase(createdCase.id, accounts[i % accounts.length]); // reread case from DB now it has a contact connected
-          createdCasesAndContacts.push({
-            contact: createdContact,
-            case: connectedCase,
-          });
-        }
-      });
-
-      afterEach(async () => {
-        await Promise.all([
-          db.none(`DELETE FROM "Cases" WHERE id IN ($<ids:csv>)`, {
-            ids: createdCasesAndContacts.map(ccc => ccc.case.id),
-          }),
-          Contact.destroy({ where: { id: createdCasesAndContacts.map(ccc => ccc.contact.id) } }),
-        ]);
-      });
-
-      // eslint-disable-next-line jest/expect-expect
-      each([
-        {
-          description:
-            'should return all cases for account when no helpline, limit or offset is specified',
-          listRoute: `/v0/accounts/${accounts[0]}/cases`,
-          expectedCasesAndContacts: () =>
-            createdCasesAndContacts
-              .filter(ccc => ccc.case.accountSid === accounts[0])
-              .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
-          expectedTotalCount: 5,
-        },
-        {
-          description: 'should return all cases for account & helpline when helpline is specified',
-          listRoute: `/v0/accounts/${accounts[0]}/cases?helpline=${helplines[1]}`,
-          expectedCasesAndContacts: () =>
-            createdCasesAndContacts
-              .filter(
-                ccc => ccc.case.accountSid === accounts[0] && ccc.case.helpline === helplines[1],
-              )
-              .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
-          expectedTotalCount: 1,
-        },
-        {
-          description: 'should return first X cases when limit X is specified',
-          listRoute: `/v0/accounts/${accounts[0]}/cases?limit=3`,
-          expectedCasesAndContacts: () =>
-            createdCasesAndContacts
-              .filter(ccc => ccc.case.accountSid === accounts[0])
-              .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id)
-              .slice(0, 3),
-          expectedTotalCount: 5,
-        },
-        {
-          description:
-            'should return X cases, starting at Y when limit X and offset Y are specified',
-          listRoute: `/v0/accounts/${accounts[0]}/cases?limit=2&offset=1`,
-          expectedCasesAndContacts: () =>
-            createdCasesAndContacts
-              .filter(ccc => ccc.case.accountSid === accounts[0])
-              .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id)
-              .slice(1, 3),
-          expectedTotalCount: 5,
-        },
-        {
-          description:
-            'should return remaining cases, starting at Y when offset Y and no limit is specified',
-          listRoute: `/v0/accounts/${accounts[0]}/cases?offset=2`,
-          expectedCasesAndContacts: () =>
-            createdCasesAndContacts
-              .filter(ccc => ccc.case.accountSid === accounts[0])
-              .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id)
-              .slice(2),
-          expectedTotalCount: 5,
-        },
-        {
-          description:
-            'should apply offset and limit to filtered set when helpline filter is applied',
-          listRoute: `/v0/accounts/${accounts[0]}/cases?helpline=${helplines[0]}&limit=1&offset=1`,
-          expectedCasesAndContacts: () =>
-            createdCasesAndContacts
-              .filter(
-                ccc => ccc.case.accountSid === accounts[0] && ccc.case.helpline === helplines[0],
-              )
-              .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id)
-              .slice(1, 2),
-          expectedTotalCount: 2,
-        },
-      ]).test(
-        '$description',
-        async ({ listRoute, expectedCasesAndContacts, expectedTotalCount }) => {
-          const response = await request.get(listRoute).set(headers);
-          validateCaseListResponse(response, expectedCasesAndContacts(), expectedTotalCount);
-        },
-      );
-    });
-  });
 
   describe('POST', () => {
     const expected = {
@@ -736,163 +570,6 @@ describe('/cases route', () => {
           .send();
 
         expect(response.status).toBe(404);
-      });
-    });
-  });
-
-  const withHouseholds = caseObject => ({
-    ...caseObject,
-    info: {
-      ...caseObject.info,
-      households: [
-        {
-          household: {
-            firstName: 'Maria',
-            lastName: 'Silva',
-            phone1: '+1-202-555-0184',
-          },
-        },
-        {
-          household: {
-            firstName: 'John',
-            lastName: 'Doe',
-          },
-        },
-      ],
-    },
-  });
-
-  const withPerpetrators = caseObject => ({
-    ...caseObject,
-    info: {
-      ...caseObject.info,
-      perpetrators: [
-        {
-          perpetrator: {
-            firstName: 'Maria',
-            lastName: 'Silva',
-          },
-        },
-        {
-          perpetrator: {
-            firstName: 'John',
-            lastName: 'Doe',
-            phone2: '+12025550184',
-          },
-        },
-      ],
-    },
-  });
-
-  describe('/cases/search route', () => {
-    describe('POST', () => {
-      let createdCase1;
-      let createdCase2;
-      let createdCase3;
-      let createdContact;
-      const subRoute = `${route}/search`;
-
-      beforeEach(async () => {
-        createdCase1 = await caseApi.createCase(withHouseholds(case1), accountSid, workerSid);
-        createdCase2 = await caseApi.createCase(case1, accountSid, workerSid);
-        createdCase3 = await caseApi.createCase(withPerpetrators(case1), accountSid, workerSid);
-        createdContact = await Contact.create(fillNameAndPhone(contact1), accountSid, workerSid);
-
-        // Connects createdContact with createdCase2
-        createdContact.caseId = createdCase2.id;
-        await createdContact.save(options);
-        // Get case 2 again, now a contact is connected
-        createdCase2 = await caseApi.getCase(createdCase2.id, accountSid);
-      });
-
-      afterEach(async () => {
-        await createdContact.destroy();
-        await caseDb.deleteById(createdCase1.id, accountSid);
-        await caseDb.deleteById(createdCase2.id, accountSid);
-        await caseDb.deleteById(createdCase3.id, accountSid);
-      });
-
-      test('should return 401', async () => {
-        const response = await request
-          .post(subRoute)
-          .query({ limit: 20, offset: 0 })
-          .send({});
-
-        expect(response.status).toBe(401);
-        expect(response.body.error).toBe('Authorization failed');
-      });
-
-      test('should return 200 - search by name', async () => {
-        const body = {
-          helpline: 'helpline',
-          firstName: 'maria',
-          lastName: 'silva',
-        };
-        const response = await request
-          .post(subRoute)
-          .query({ limit: 20, offset: 0 })
-          .set(headers)
-          .send(body);
-
-        expect(response.status).toBe(200);
-        const ids = response.body.cases.map(c => c.id);
-        expect(ids).toContain(createdCase1.id);
-        expect(ids).toContain(createdCase2.id);
-        expect(ids).toContain(createdCase3.id);
-        expect(response.body.count).toBe(3);
-      });
-
-      test('should return 200 - search by phone number', async () => {
-        const body = {
-          helpline: 'helpline',
-          phoneNumber: '2025550184',
-        };
-        const response = await request
-          .post(subRoute)
-          .query({ limit: 20, offset: 0 })
-          .set(headers)
-          .send(body);
-
-        expect(response.status).toBe(200);
-        const ids = response.body.cases.map(c => c.id);
-        expect(ids).toContain(createdCase1.id);
-        expect(ids).toContain(createdCase2.id);
-        expect(ids).toContain(createdCase3.id);
-        expect(response.body.count).toBe(3);
-      });
-
-      test('should return 200 - search by date', async () => {
-        const body = {
-          helpline: 'helpline',
-          dateFrom: createdCase1.createdAt,
-          dateTo: createdCase3.createdAt,
-        };
-        const response = await request
-          .post(subRoute)
-          .query({ limit: 20, offset: 0 })
-          .set(headers)
-          .send(body);
-
-        expect(response.status).toBe(200);
-        expect(response.body.count).toBeGreaterThan(3);
-        const ids = response.body.cases.map(c => c.id);
-        expect(ids).toContain(createdCase1.id);
-        expect(ids).toContain(createdCase2.id);
-        expect(ids).toContain(createdCase3.id);
-      });
-
-      // eslint-disable-next-line jest/expect-expect
-      test('should return 200 - search by contact number', async () => {
-        const body = {
-          helpline: 'helpline',
-          contactNumber: '+1-202-555-0184',
-        };
-        const response = await request
-          .post(subRoute)
-          .query({ limit: 20, offset: 0 })
-          .set(headers)
-          .send(body);
-        validateSingleCaseResponse(response, createdCase2, createdContact);
       });
     });
   });

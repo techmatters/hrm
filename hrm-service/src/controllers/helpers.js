@@ -1,6 +1,6 @@
 /* eslint-disable import/prefer-default-export */
 
-const { OrderByDirection } = require('../case/case-sql');
+const { OrderByDirection } = require('../case/sql/case-search-sql');
 /**
  * @param {string[]} accumulator
  * @param {[string, boolean]} currentValue
