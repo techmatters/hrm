@@ -172,26 +172,6 @@ export const getById = async (
   });
 };
 
-export const list = async (
-  query: { helpline: string },
-  accountSid,
-): Promise<{ cases: readonly CaseRecord[]; count: number }> => {
-  const { limit, offset, sortBy, sortDirection } = getPaginationElements(
-    query,
-  );
-  const { helpline } = query;
-  const orderClause = [{ sortBy, sortDirection }];
-  const { count, rows } = await db.task(async connection => {
-    const statement = selectCaseList(orderClause);
-    const queryValues = { accountSid, helpline: helpline || null, limit, offset };
-    const result: CaseWithCount[] = await connection.any<CaseWithCount>(statement, queryValues);
-    const totalCount = result.length ? result[0].totalCount : 0;
-    return { rows: result, count: totalCount };
-  });
-
-  return { cases: rows, count };
-};
-
 export const search = async (
   listConfiguration: CaseListConfiguration,
   accountSid,
@@ -213,7 +193,6 @@ export const search = async (
       limit: limit,
       offset: offset,
     };
-    console.log("CASE SEARCH QUERY:", statement, queryValues);
     const result: CaseWithCount[] = await connection.any<CaseWithCount>(statement, queryValues);
     const totalCount: number = result.length ? result[0].totalCount : 0;
     return { rows: result, count: totalCount };

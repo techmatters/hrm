@@ -492,7 +492,7 @@ describe('/cases route', () => {
                     [helplines[1], helplines[2]].indexOf(ccc.case.helpline) !== -1,
                 )
                 .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
-            expectedTotalCount: 1,
+            expectedTotalCount: 3,
           },
           {
             description: 'should return first X cases when limit X is specified',

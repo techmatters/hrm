@@ -295,17 +295,6 @@ export const getCase = async (id: number, accountSid: string): Promise<Case | un
   return;
 };
 
-export const listCases = async (
-  query: { helpline: string },
-  accountSid,
-): Promise<{ cases: readonly Case[]; count: number }> => {
-  const dbResult = await caseDb.list(query, accountSid);
-  return {
-    ...dbResult,
-    cases: dbResult.cases.map(caseRecordToCase),
-  };
-};
-
 export type SearchParameters = CaseSearchCriteria & {
   filters?: CaseListFilters;
 } & {

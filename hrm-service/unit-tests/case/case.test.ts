@@ -88,7 +88,7 @@ test('create case', async () => {
   });
 });
 
-describe('listCases', () => {
+describe('searchCases', () => {
   const caseId = 1;
   const caseWithContact = createMockCase({
     id: caseId,
@@ -198,7 +198,8 @@ describe('listCases', () => {
     {
       description:
         'list cases (with 1st contact, no limit/offset) - extracts child name and categories',
-      queryParams: { helpline: 'helpline' },
+      search: { helpline: 'helpline' },
+      expectedDbFilters: { helplines: ['helpline'] },
       casesFromDb: [caseRecordWithContact],
       expectedCases: [
         {
@@ -215,7 +216,9 @@ describe('listCases', () => {
     {
       description:
         'list cases (with 1st contact, with limit/offset) - extracts child name and categories',
-      queryParams: { helpline: 'helpline', offset: 30, limit: 45 },
+      search: { helpline: 'helpline' },
+      expectedDbFilters: { helplines: ['helpline'] },
+      listConfig: { offset: 30, limit: 45 },
       casesFromDb: [caseRecordWithContact],
       expectedCases: [
         {
@@ -232,28 +235,49 @@ describe('listCases', () => {
     {
       description:
         'list cases (without contacts) - extracts child name and categories & creates legacy notes',
-      queryParams: { helpline: 'helpline' },
+      search: { helpline: 'helpline' },
+      expectedDbFilters: { helplines: ['helpline'] },
       casesFromDb: [caseRecordWithoutContact],
       expectedCases: [{ ...caseWithoutContact, childName: '', categories: {} }],
     },
     {
       description: 'list cases without helpline - sends offset & limit to db layer but no helpline',
-      queryParams: { offset: 30, limit: 45 },
+      listConfig: { offset: 30, limit: 45 },
       casesFromDb: [caseRecordWithoutContact],
       expectedCases: [{ ...caseWithoutContact, childName: '', categories: {} }],
     },
-  ]).test('$description', async ({ casesFromDb, expectedCases, queryParams }) => {
-    const expected = { cases: expectedCases, count: 1337 };
+  ]).test(
+    '$description',
+    async ({
+      casesFromDb,
+      expectedCases,
+      listConfig,
+      search,
+      expectedDbSearchCriteria = {},
+      expectedDbFilters = {},
+    }) => {
+      const expected = { cases: expectedCases, count: 1337 };
 
-    const listSpy = jest
-      .spyOn(caseDb, 'list')
-      .mockResolvedValue({ cases: casesFromDb, count: 1337 });
+      const searchSpy = jest
+        .spyOn(caseDb, 'search')
+        .mockResolvedValue({ cases: casesFromDb, count: 1337 });
 
-    const result = await caseApi.listCases(queryParams, accountSid);
+      const result = await caseApi.searchCases(accountSid, listConfig, search);
 
-    expect(listSpy).toHaveBeenCalledWith(queryParams, accountSid);
-    expect(result).toStrictEqual(expected);
-  });
+      expect(searchSpy).toHaveBeenCalledWith(
+        listConfig ?? {},
+        accountSid,
+        expectedDbSearchCriteria,
+        {
+          includeOrphans: true,
+          excludedStatuses: [],
+          counsellors: undefined,
+          ...expectedDbFilters,
+        },
+      );
+      expect(result).toStrictEqual(expected);
+    },
+  );
 });
 
 describe('update existing case', () => {
