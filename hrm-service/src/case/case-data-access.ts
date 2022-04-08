@@ -8,7 +8,7 @@ import {
 } from './sql/case-update-sql';
 import {
   OrderByDirection, selectCaseSearch,
-  selectCaseList, OrderByColumns,
+   OrderByColumns,
 } from './sql/case-search-sql';
 import { caseSectionUpsertSql, deleteMissingCaseSectionsSql } from './sql/case-sections-sql';
 import { DELETE_BY_ID } from './sql/case-delete-sql';

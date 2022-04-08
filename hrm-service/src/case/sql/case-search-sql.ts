@@ -191,11 +191,6 @@ SELECT * FROM (${selectCasesUnorderedSql(whereClause, havingClause)}) "unordered
 LIMIT $<limit>
 OFFSET $<offset>`;
 
-export const selectCaseList = (orderByClauses: OrderByClauseItem[] = []) => {
-  const orderBySql = generateOrderByClause(orderByClauses.concat(DEFAULT_SORT));
-  return selectCasesPaginatedSql(LIST_WHERE_CLAUSE, orderBySql);
-};
-
 export const selectCaseSearch = (
   filters: CaseListFilters,
   orderByClauses: OrderByClauseItem[] = [],
