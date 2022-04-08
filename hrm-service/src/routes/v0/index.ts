@@ -1,6 +1,6 @@
+import cases from '../../case/case-routes-v0';
 const { Router } = require('express');
 const contacts = require('./contacts');
-const cases = require('./cases');
 const postSurveys = require('./post-surveys');
 const csamReports = require('./csam-reports');
 

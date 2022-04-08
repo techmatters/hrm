@@ -1,9 +1,8 @@
 const Actions = require('./actions');
 const { asyncHandler } = require('../utils');
 const models = require('../models');
-
-const { Case, PostSurvey, sequelize } = models;
-const CaseController = require('../controllers/case-controller')(Case, sequelize);
+const { getById } = require('../case/case-data-access');
+const { PostSurvey, Case } = models;
 
 /**
  * It checks if the user can edit the case based on the fields it's trying to edit
@@ -13,8 +12,9 @@ const canEditCase = asyncHandler(async (req, res, next) => {
   if (!req.isAuthorized()) {
     const { accountSid, body, user, can } = req;
     const { id } = req.params;
-    const caseObj = await CaseController.getCase(id, accountSid);
-    const actions = Actions.getActions(caseObj.dataValues, body);
+    const caseObj = await getById(id, accountSid);
+    const caseModel = new Case(caseObj);
+    const actions = Actions.getActions(caseModel, body);
     const canEdit = actions.every(action => can(user, action, caseObj));
 
     if (canEdit) {
