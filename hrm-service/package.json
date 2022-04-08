@@ -4,7 +4,8 @@
   "description": "",
   "scripts": {
     "build": "npx tsc",
-    "start": "npm run build && sequelize db:migrate && cd ./dist && node ./bin/www",
+    "start": "sequelize db:migrate && cd ./dist && node ./bin/www",
+    "build-and-start": "npm run build && npm run start",
     "test": "jest --passWithNoTests --forceExit --maxWorkers=1",
     "test:unit": "jest unit-tests",
     "test:service": "jest --passWithNoTests --forceExit --maxWorkers=1 service-tests",
