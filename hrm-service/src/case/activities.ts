@@ -1,7 +1,4 @@
-const models = require('../models');
-
-const { Case, sequelize } = models;
-const CaseController = require('./case-controller')(Case, sequelize);
+import * as caseDb from './case-data-access';
 
 const ActivityTypes = {
   createCase: 'create',
@@ -79,15 +76,18 @@ const connectedContactActivities = caseContacts =>
     })
     .filter(cca => cca);
 
-const getCaseActivities = async (caseId, accountSid) => {
-  const dbCase = await CaseController.getCase(caseId, accountSid);
+export const getCaseActivities = async (caseId, accountSid) => {
+  const dbCase = await caseDb.getById(caseId, accountSid);
+  if (!dbCase) {
+    throw new Error(`Case with id '${caseId}' from account '${accountSid}' not found.`);
+  }
   return [
     ...noteActivities(dbCase.info),
     ...referralActivities(dbCase.info),
     ...connectedContactActivities(dbCase.connectedContacts),
   ].sort((activity1, activity2) => {
     try {
-      return new Date(activity2.date) - new Date(activity1.date);
+      return new Date(activity2.date).getTime() - new Date(activity1.date).getTime();
     } catch (err) {
       console.warn(
         'Failed to create data objects from data properties for sorting, falling back to simple text comparison',
@@ -99,5 +99,3 @@ const getCaseActivities = async (caseId, accountSid) => {
     }
   });
 };
-
-module.exports = { getCaseActivities };
