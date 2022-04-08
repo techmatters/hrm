@@ -51,8 +51,6 @@ FROM (
   GROUP BY c.id
 ) AS contacts WHERE contacts."caseId" = cases.id`;
 
-const LIST_WHERE_CLAUSE = `WHERE "cases"."accountSid" = $<accountSid> AND (cast($<helpline> as text) IS NULL OR "cases"."helpline" = $<helpline>)`;
-
 const filterSql = ({
   counsellors,
   statuses,
