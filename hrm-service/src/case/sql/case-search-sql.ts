@@ -20,7 +20,7 @@ export const enum OrderByColumns {
 const ORDER_BY_FIELDS: Record<OrderByColumns, string> = {
   id: pgp.as.name('id'),
   createdAt: pgp.as.name('createdAt'),
-  updatedAt: 'updatedAt',
+  updatedAt: pgp.as.name('updatedAt'),
   'info.followUpDate': `"info"->>'followUpDate'`,
   childName: pgp.as.name('childName'),
 } as const;
