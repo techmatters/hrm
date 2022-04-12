@@ -2,30 +2,8 @@ const User = require('./user');
 const { SafeRouter, publicEndpoint } = require('./safe-router');
 const { setupCanForRules } = require('./setupCanForRules');
 
-const openRules = require('../../permission-rules/open.json');
-const brRules = require('../../permission-rules/br.json');
-const caRules = require('../../permission-rules/ca.json');
-const etRules = require('../../permission-rules/et.json');
-const inRules = require('../../permission-rules/in.json');
-const jmRules = require('../../permission-rules/jm.json');
-const mwRules = require('../../permission-rules/mw.json');
-const zaRules = require('../../permission-rules/za.json');
-const zmRules = require('../../permission-rules/zm.json');
-
 const { canEditCase, canViewPostSurvey } = require('./middlewares');
-
-// TODO: maybe factor out so it's easier to build the API that retrieves this to the frontend
-const rulesMap = {
-  br: brRules,
-  ca: caRules,
-  et: etRules,
-  in: inRules,
-  jm: jmRules,
-  mw: mwRules,
-  za: zaRules,
-  zm: zmRules,
-  open: openRules,
-};
+const { rulesMap } = require('./rulesMap');
 
 /**
  * @type {{ [key in keyof typeof rulesMap]: ReturnType<typeof setupCanForRules> }}
