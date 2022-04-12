@@ -1,4 +1,5 @@
 import { pgp } from '../connection-pool';
+import { SELECT_CASE_SECTIONS } from './case-sections-sql';
 
 export const enum OrderByDirection {
   ascendingNullsLast = 'ASC NULLS LAST',
@@ -8,6 +9,10 @@ export const enum OrderByDirection {
 }
 
 const VALID_CASE_UPDATE_FIELDS = ['info', 'helpline', 'status', 'twilioWorkerId', 'updatedAt'];
+
+const ORDER_BY_FIELDS_MAP = {
+  'info.followUpDate': `"info"->>'followUpDate'`,
+};
 
 type OrderByClauseItem = { sortField: string; sortDirection: OrderByDirection };
 
@@ -28,7 +33,9 @@ const generateOrderByClause = (
 ): string => {
   if (clauses.length > 0) {
     return ` ORDER BY ${clauses
-      .map(t => `${pgp.as.name(t.sortField)} ${t.sortDirection}`)
+      .map(
+        t => `${ORDER_BY_FIELDS_MAP[t.sortField] ?? pgp.as.name(t.sortField)} ${t.sortDirection}`,
+      )
       .join(', ')}`;
   } else return '';
 };
@@ -37,13 +44,6 @@ const SELECT_CONTACTS = `SELECT c.*,
 COALESCE(jsonb_agg(DISTINCT r.*) FILTER (WHERE r.id IS NOT NULL), '[]') AS "csamReports"
 FROM "Contacts" c LEFT JOIN "CSAMReports" r ON c."id" = r."contactId" WHERE c."caseId" = "cases".id
 GROUP BY c.id`;
-
-const SEARCH_FROM_EXTRAS = `    
-  -- Transform "info" column as a table with columns "households" and "perpetrators"
-  CROSS JOIN jsonb_to_record(info) AS info_as_table(households jsonb, perpetrators jsonb)
-  -- Extract every household/perpetrator as a record and apply a join
-  LEFT JOIN LATERAL jsonb_array_elements(households::JSONB) h ON TRUE
-  LEFT JOIN LATERAL jsonb_array_elements(perpetrators::JSONB) p ON TRUE`;
 
 const LIST_WHERE_CLAUSE = `WHERE "cases"."accountSid" = $<accountSid> AND (cast($<helpline> as text) IS NULL OR "cases"."helpline" = $<helpline>)`;
 
@@ -95,6 +95,7 @@ const SEARCH_WHERE_CLAUSE = `WHERE
     AND (
       -- search on childInformation of connectedContacts
       (
+        
         ${nameAndPhoneNumberSearchSql(
           "contacts.\"rawJson\"->'childInformation'->'name'->>'firstName'",
           "contacts.\"rawJson\"->'childInformation'->'name'->>'lastName'",
@@ -117,22 +118,20 @@ const SEARCH_WHERE_CLAUSE = `WHERE
           ],
         )}  
       )
-        -- search on households
+        -- search on case sections in the expected format
       OR (
+        EXISTS (
+        SELECT 1 FROM "CaseSections" cs WHERE cs."caseId" = cases.id
+        AND
         ${nameAndPhoneNumberSearchSql(
-          "h.value->'household'->>'firstName'",
-          "h.value->'household'->>'lastName'",
-          ["h.value->'household'->>'phone1'", "h.value->'household'->>'phone2'"],
+          'cs."sectionTypeSpecificData"->>\'firstName\'',
+          'cs."sectionTypeSpecificData"->>\'lastName\'',
+          [
+            'cs."sectionTypeSpecificData"->>\'phone1\'',
+            'cs."sectionTypeSpecificData"->>\'phone2\'',
+          ],
         )}
-       )
-  
-        -- search on perpetrators
-      OR (
-        ${nameAndPhoneNumberSearchSql(
-          "p.value->'perpetrator'->>'firstName'",
-          "p.value->'perpetrator'->>'lastName'",
-          ["p.value->'perpetrator'->>'phone1'", "p.value->'perpetrator'->>'phone2'"],
-        )}
+        )
       )
     )
     -- previous contacts search
@@ -155,69 +154,62 @@ const SEARCH_HAVING_CLAUSE = `
 
 export const selectSingleCaseByIdSql = (tableName: string) => `SELECT
         cases.*,
+        caseSections."caseSections",
         contacts."connectedContacts"
         FROM "${tableName}" AS cases
+
         LEFT JOIN LATERAL ( 
-        SELECT COALESCE(jsonb_agg(to_jsonb(row(c, reports))), '[]') AS  "connectedContacts" 
+        SELECT COALESCE(jsonb_agg(to_jsonb(c) || to_jsonb(reports)), '[]') AS  "connectedContacts" 
         FROM "Contacts" c 
         LEFT JOIN LATERAL (
-          SELECT COALESCE(jsonb_agg(to_jsonb(row(r))), '[]') AS  "csamReports" 
+          SELECT COALESCE(jsonb_agg(to_jsonb(r)), '[]') AS  "csamReports" 
           FROM "CSAMReports" r 
           WHERE r."contactId" = c.id
         ) reports ON true
         WHERE c."caseId" = cases.id
-		  ) contacts ON true
+      ) contacts ON true
+        LEFT JOIN LATERAL (
+          SELECT COALESCE(jsonb_agg(to_jsonb(cs)), '[]') AS  "caseSections" 
+          FROM "CaseSections" cs
+          WHERE cs."caseId" = cases.id
+        ) caseSections ON true
       ${ID_WHERE_CLAUSE}`;
 
-const selectCasesUnorderedSql = (
-  whereClause: string,
-  extraFromClause: string = '',
-  havingClause: string = '',
-) =>
+const selectCasesUnorderedSql = (whereClause: string, havingClause: string = '') =>
   `SELECT DISTINCT ON (cases.id)
     (count(*) OVER())::INTEGER AS "totalCount",
     cases.*,
-    COALESCE(jsonb_agg(DISTINCT contacts.*) FILTER (WHERE contacts.id IS NOT NULL), '[]') AS "connectedContacts"
+    COALESCE(jsonb_agg(DISTINCT contacts.*) FILTER (WHERE contacts.id IS NOT NULL), '[]') AS "connectedContacts",
+    caseSections."caseSections"
     FROM "Cases" cases 
-    ${extraFromClause}
-    LEFT JOIN LATERAL (${SELECT_CONTACTS}) contacts ON true ${whereClause} GROUP BY "cases"."id" ${havingClause}`;
+    LEFT JOIN LATERAL (${SELECT_CONTACTS}) contacts ON true 
+    LEFT JOIN LATERAL (${SELECT_CASE_SECTIONS}) caseSections ON true
+    ${whereClause} GROUP BY "cases"."id", caseSections."caseSections" ${havingClause}`;
 
 const selectCasesPaginatedSql = (
   whereClause: string,
   orderByClause: string,
-  extraFromClause: string = '',
   havingClause: string = '',
 ) => `
-SELECT * FROM (${selectCasesUnorderedSql(
-  whereClause,
-  extraFromClause,
-  havingClause,
-)}) "unordered" ${orderByClause}
+SELECT * FROM (${selectCasesUnorderedSql(whereClause, havingClause)}) "unordered" ${orderByClause}
 LIMIT $<limit>
 OFFSET $<offset>`;
-
-export const SELECT_CASE_LIST = selectCasesPaginatedSql(LIST_WHERE_CLAUSE, '');
 
 export const SELECT_CASE_SEARCH = selectCasesPaginatedSql(
   SEARCH_WHERE_CLAUSE,
   generateOrderByClause(DEFAULT_SORT),
-  SEARCH_FROM_EXTRAS,
   SEARCH_HAVING_CLAUSE,
 );
 
-export const SELECT_CASE_AUDITS_FOR_CASE = `SELECT * FROM "CaseAudits" WHERE "CaseAudits"."accountSid" = $<accountSid> AND "CaseAudits"."caseId" = $<caseId>`;
-
 export const DELETE_BY_ID = `DELETE FROM "Cases" WHERE "Cases"."accountSid" = $1 AND "Cases"."id" = $2 RETURNING *`;
 
-export const updateByIdSql = (updatedValues: Record<string, unknown>) => `
-      ${selectSingleCaseByIdSql('Cases')};
-      WITH 
-      updated AS (
+export const updateByIdSql = (updatedValues: Record<string, unknown>) => `WITH updated AS (
         ${pgp.helpers.update(updatedValues, updateCaseColumnSet)} 
           WHERE "Cases"."accountSid" = $<accountSid> AND "Cases"."id" = $<caseId> 
           RETURNING *
       )
-      ${selectSingleCaseByIdSql('updated')}`;
+      ${selectSingleCaseByIdSql('updated')}
+`;
 
 export const selectCaseList = (
   orderByClauses: { sortField: string; sortDirection: OrderByDirection }[] = [],

@@ -5,16 +5,104 @@
  */
 import * as caseDb from './case-data-access';
 import { retrieveCategories } from '../controllers/helpers';
+import { CaseRecordCommon, CaseSectionRecord, Contact, NewCaseRecord } from './case-data-access';
+import { randomUUID } from 'crypto';
 
-type Case = CaseRecord & {
+export const WELL_KNOWN_CASE_SECTION_NAMES: Record<
+  string,
+  { sectionTypeName: string; getSectionSpecificData: (section: any) => any }
+> = {
+  households: { getSectionSpecificData: s => s.household, sectionTypeName: 'household' },
+  perpetrators: { getSectionSpecificData: s => s.perpetrator, sectionTypeName: 'perpetrator' },
+  incidents: { getSectionSpecificData: s => s.incident, sectionTypeName: 'incident' },
+  counsellorNotes: { getSectionSpecificData: s => ({ note: s.note }), sectionTypeName: 'note' },
+  referrals: {
+    getSectionSpecificData: s => {
+      return { date: s.date, referredTo: s.referredTo, comments: s.comments };
+    },
+    sectionTypeName: 'referral',
+  },
+  documents: { getSectionSpecificData: s => s.document, sectionTypeName: 'document' },
+};
+
+export const EMPTY_INFO_SECTIONS = Object.fromEntries(
+  Object.entries(WELL_KNOWN_CASE_SECTION_NAMES).map(([k]) => [k, []]),
+);
+
+export type Case = CaseRecordCommon & {
+  id: number;
   childName?: string;
   categories: Record<string, string[]>;
+  connectedContacts?: Contact[];
 };
+
+type CaseInfoSection = {
+  id: string;
+  twilioWorkerId: string;
+  updatedAt?: string;
+  updatedBy?: string;
+} & Record<string, any>;
 
 type CaseRecord = caseDb.CaseRecord;
 
+/**
+ * Converts a single list of all sections for a case to a set of arrays grouped by type
+ */
+const caseSectionRecordsToInfo = (
+  sections: CaseSectionRecord[] = [],
+): Record<string, CaseInfoSection[]> => {
+  const infoLists: Record<string, CaseInfoSection[]> = {};
+  return sections.reduce((categorized, record) => {
+    const {
+      caseId,
+      sectionType,
+      sectionId,
+      sectionTypeSpecificData,
+      createdBy,
+      ...restOfRecord
+    } = record;
+
+    if (!restOfRecord.updatedAt) {
+      delete restOfRecord.updatedAt;
+    }
+    if (!restOfRecord.updatedBy) {
+      delete restOfRecord.updatedBy;
+    }
+    switch (record.sectionType) {
+      case 'note':
+        categorized.counsellorNotes = categorized.counsellorNotes ?? [];
+        categorized.counsellorNotes.push({
+          ...restOfRecord,
+          id: sectionId,
+          twilioWorkerId: createdBy,
+          note: sectionTypeSpecificData.note,
+        });
+        break;
+      case 'referral':
+        categorized.referrals = categorized.referrals ?? [];
+        categorized.referrals.push({
+          ...sectionTypeSpecificData,
+          ...restOfRecord,
+          id: sectionId,
+          twilioWorkerId: createdBy,
+        });
+        break;
+      default:
+        const listName = `${record.sectionType}s`;
+        categorized[listName] = categorized[listName] ?? [];
+        categorized[listName].push({
+          ...restOfRecord,
+          id: sectionId,
+          twilioWorkerId: createdBy,
+          [record.sectionType]: sectionTypeSpecificData,
+        });
+    }
+    return categorized;
+  }, infoLists);
+};
+
 const addCategoriesAndChildName = (caseItem: CaseRecord): Case => {
-  const fstContact = caseItem.connectedContacts[0];
+  const fstContact = (caseItem.connectedContacts ?? [])[0];
 
   if (!fstContact) {
     return {
@@ -106,33 +194,97 @@ const generateLegacyNotesFromCounsellorNotes = caseFromDb => {
   return caseFromDb;
 };
 
-export const createCase = async (body, accountSid, workerSid): Promise<CaseRecord> => {
-  const migratedBody = migrateAddedLegacyNotesToCounsellorNotes(
-    fixLegacyReferrals(body, workerSid),
+/**
+ * Converts a case passed in from the API to a case record ready to write to the DB
+ * If an 'original' case is passed, it is assumed this is an update of an existing case
+ * Data from the 'original will be used to inject data that might be missing from the update if it is using a legacy format
+ * @param inputCase
+ * @param workerSid
+ * @param original
+ */
+const caseToCaseRecord = (
+  inputCase: Partial<Case>,
+  workerSid: string,
+  original?: Case,
+): Partial<NewCaseRecord> => {
+  const migratedCase = migrateAddedLegacyNotesToCounsellorNotes(
+    fixLegacyReferrals(inputCase, workerSid, original),
     workerSid,
+    original,
   );
-  const created = await caseDb.create(migratedBody, accountSid, workerSid);
-  return generateLegacyNotesFromCounsellorNotes(created);
+  const info = migratedCase.info ?? {};
+  const caseSections: CaseSectionRecord[] = Object.entries(WELL_KNOWN_CASE_SECTION_NAMES).flatMap(
+    ([sectionName, { getSectionSpecificData, sectionTypeName }]) =>
+      (info[sectionName] ?? []).map(section => {
+        const caseSectionRecordToUpsert: CaseSectionRecord = {
+          caseId: migratedCase.id,
+          sectionType: sectionTypeName,
+          sectionId: section.id ?? randomUUID(),
+          createdBy: section.twilioWorkerId ?? workerSid,
+          createdAt: section.createdAt ?? new Date().toISOString(),
+          updatedBy: section.updatedBy,
+          updatedAt: section.updatedAt,
+          sectionTypeSpecificData: getSectionSpecificData(section),
+        };
+        return caseSectionRecordToUpsert;
+      }),
+  );
+  return {
+    ...migratedCase,
+    caseSections,
+  };
 };
 
-export const updateCase = async (
-  id,
-  body: Partial<CaseRecord>,
-  accountSid,
-  workerSid,
-): Promise<Case> => {
-  const caseFromDB = await caseDb.getById(id, accountSid);
+const caseRecordToCase = (record: CaseRecord): Case => {
+  // Remove legacy case sections
+  const info = {
+    ...record.info,
+  };
+  Object.keys(WELL_KNOWN_CASE_SECTION_NAMES).forEach(k => delete info[k]);
+  delete info.notes;
+
+  const { caseSections, ...output } = generateLegacyNotesFromCounsellorNotes(
+    addCategoriesAndChildName({
+      ...record,
+      info: {
+        ...info,
+        ...caseSectionRecordsToInfo(record.caseSections),
+      },
+    }),
+  );
+  return output;
+};
+
+export const createCase = async (body: Partial<Case>, accountSid, workerSid): Promise<Case> => {
+  const nowISO = new Date().toISOString();
+  delete body.id;
+  const record = caseToCaseRecord(
+    { ...body, createdBy: workerSid, createdAt: nowISO, updatedAt: nowISO, accountSid },
+    workerSid,
+  );
+  const created = await caseDb.create(record, accountSid, caseRecordToCase);
+  return caseRecordToCase(created);
+};
+
+export const updateCase = async (id, body: Partial<Case>, accountSid, workerSid): Promise<Case> => {
+  const caseFromDB: CaseRecord = await caseDb.getById(id, accountSid);
   if (!caseFromDB) {
     return;
   }
-  const migratedBody = migrateAddedLegacyNotesToCounsellorNotes(
-    fixLegacyReferrals(body, workerSid, caseFromDB),
+  const record = caseToCaseRecord(
+    { ...body, id, accountSid },
     workerSid,
-    caseFromDB,
+    caseRecordToCase(caseFromDB),
   );
-  return generateLegacyNotesFromCounsellorNotes(
-    await caseDb.update(id, migratedBody, accountSid, workerSid),
-  );
+  return caseRecordToCase(await caseDb.update(id, record, accountSid, caseRecordToCase));
+};
+
+export const getCase = async (id: number, accountSid: string): Promise<Case | undefined> => {
+  const caseFromDb = await caseDb.getById(id, accountSid);
+  if (caseFromDb) {
+    return caseRecordToCase(caseFromDb);
+  }
+  return;
 };
 
 export const listCases = async (
@@ -142,9 +294,7 @@ export const listCases = async (
   const dbResult = await caseDb.list(query, accountSid);
   return {
     ...dbResult,
-    cases: dbResult.cases.map(c =>
-      generateLegacyNotesFromCounsellorNotes(addCategoriesAndChildName(c)),
-    ),
+    cases: dbResult.cases.map(caseRecordToCase),
   };
 };
 
@@ -156,8 +306,6 @@ export const searchCases = async (
   const dbResult = await caseDb.search(body, query, accountSid);
   return {
     ...dbResult,
-    cases: dbResult.cases.map(c =>
-      generateLegacyNotesFromCounsellorNotes(addCategoriesAndChildName(c)),
-    ),
+    cases: dbResult.cases.map(caseRecordToCase),
   };
 };

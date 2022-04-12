@@ -1,54 +1,41 @@
+// eslint-disable-next-line prettier/prettier
+import type { Case } from './case';
 import { db, pgp } from '../connection-pool';
 import { getPaginationElements } from '../controllers/helpers';
 import pgPromise from 'pg-promise';
 import {
   DELETE_BY_ID,
-  OrderByDirection,
-  SELECT_CASE_AUDITS_FOR_CASE,
   SELECT_CASE_SEARCH,
   selectCaseList,
   selectSingleCaseByIdSql,
   updateByIdSql,
 } from './case-sql';
-
+import { caseSectionUpsertSql, deleteMissingCaseSectionsSql } from './case-sections-sql';
 /**
  * Move me to contacts directory when that exists
  */
-class ContactRecord {
+type ContactRecord = {
   id: number;
-
   rawJson?: any;
-
   queueName?: string;
-
   twilioWorkerId?: string;
-
   createdBy?: string;
-
   helpline?: string;
-
   number?: string;
-
   channel?: string;
-
   conversationDuration?: number;
-
   accountSid: string;
-
   timeOfContact?: Date;
-
   taskId?: string;
-
   channelSid?: string;
-
   serviceSid?: string;
-}
+};
 
 export type Contact = ContactRecord & {
   csamReports: any[];
 };
 
-export type NewCaseRecord = {
+export type CaseRecordCommon = {
   info: any;
   helpline: string;
   status: string;
@@ -59,9 +46,14 @@ export type NewCaseRecord = {
   updatedAt: string;
 };
 
-export type CaseRecord = NewCaseRecord & {
+export type NewCaseRecord = CaseRecordCommon & {
+  caseSections?: CaseSectionRecord[];
+};
+
+export type CaseRecord = CaseRecordCommon & {
   id: number;
   connectedContacts?: Contact[];
+  caseSections?: CaseSectionRecord[];
 };
 
 type CaseWithCount = CaseRecord & { totalCount: number };
@@ -77,10 +69,21 @@ type CaseAuditRecord = {
   caseId: number;
 };
 
+export type CaseSectionRecord = {
+  caseId?: number;
+  sectionType: string;
+  sectionId: string;
+  sectionTypeSpecificData: Record<string, any>;
+  createdAt: string;
+  createdBy: string;
+  updatedAt?: string;
+  updatedBy?: string;
+};
+
 const logCaseAudit = async (
   transaction: pgPromise.ITask<unknown>,
-  updated: CaseRecord,
-  original?: CaseRecord,
+  updated: Case,
+  original?: Case,
 ) => {
   const auditRecord: CaseAuditRecord = {
     caseId: updated.id,
@@ -102,23 +105,27 @@ const logCaseAudit = async (
   await transaction.none(statement);
 };
 
-export const create = async (body, accountSid, workerSid): Promise<CaseRecord> => {
-  const now = new Date();
-  const caseRecord: NewCaseRecord = {
-    info: body.info,
-    helpline: body.helpline,
-    status: body.status || 'open',
-    twilioWorkerId: workerSid,
-    createdBy: workerSid,
-    accountSid: accountSid,
-    createdAt: now.toISOString(),
-    updatedAt: now.toISOString(),
-  };
+export const create = async (
+  body: Partial<NewCaseRecord>,
+  accountSid,
+  toAuditRecord = c => c,
+): Promise<CaseRecord> => {
+  const { caseSections, ...caseRecord  } = body;
+  caseRecord.accountSid = accountSid;
+
   return db.task(async connection => {
     return connection.tx(async transaction => {
       const statement = `${pgp.helpers.insert(caseRecord, null, 'Cases')} RETURNING *`;
-      const inserted: CaseRecord = await transaction.one(statement);
-      await logCaseAudit(transaction, inserted);
+      let inserted: CaseRecord = await transaction.one(statement);
+      if ((caseSections ?? []).length) {
+        const allSections = caseSections.map(s => ({ ...s, caseId: inserted.id }));
+        const sectionStatement = `${caseSectionUpsertSql(allSections)};${selectSingleCaseByIdSql(
+          'Cases',
+        )}`;
+        const queryValues = { accountSid, caseId: inserted.id };
+        inserted = await transaction.one(sectionStatement, queryValues);
+      }
+      await logCaseAudit(transaction, toAuditRecord(inserted));
       return inserted;
     });
   });
@@ -139,17 +146,11 @@ export const list = async (
   query: { helpline: string },
   accountSid,
 ): Promise<{ cases: readonly CaseRecord[]; count: number }> => {
-  const { limit, offset, sortBy, sortDirection } = getPaginationElements(query);
+  const { limit, offset, sortBy, sortDirection } = getPaginationElements(
+    query,
+  );
   const { helpline } = query;
-  const orderClause = [
-    {
-      sortField: sortBy,
-      sortDirection:
-        sortDirection.toLowerCase() === 'asc'
-          ? OrderByDirection.ascendingNullsLast
-          : OrderByDirection.descendingNullsLast,
-    },
-  ];
+  const orderClause = [{ sortField: sortBy, sortDirection }];
   const { count, rows } = await db.task(async connection => {
     const statement = selectCaseList(orderClause);
     const queryValues = { accountSid, helpline: helpline || null, limit, offset };
@@ -198,32 +199,43 @@ export const deleteById = async (id, accountSid) => {
 
 export const update = async (
   id,
-  body: Partial<CaseRecord>,
+  caseRecordUpdates: Partial<NewCaseRecord>,
   accountSid,
-  workerSid,
+  toAuditRecord = c => c,
 ): Promise<CaseRecord> => {
-  delete body.accountSid;
   const result = await db.tx(async transaction => {
-    const caseRecordUpdates: Partial<NewCaseRecord> = {
-      ...body,
-      twilioWorkerId: workerSid,
-      updatedAt: new Date().toISOString(),
-    };
+    const caseUpdateSqlStatements = [selectSingleCaseByIdSql('Cases')];
+    if (caseRecordUpdates.info) {
+      const allSections: CaseSectionRecord[] = caseRecordUpdates.caseSections ?? [];
+      if (allSections.length) {
+        caseUpdateSqlStatements.push(caseSectionUpsertSql(allSections));
+      }
+      // Map case sections into a list of ids grouped by category, which allows a more concise DELETE SQL statement to be generated
+      const caseSectionIdsByType = allSections.reduce((idsBySectionType, caseSection) => {
+        idsBySectionType[caseSection.sectionType] = idsBySectionType[caseSection.sectionType] ?? [];
+        idsBySectionType[caseSection.sectionType].push(caseSection.sectionId);
+        return idsBySectionType;
+      }, <Record<string, string[]>>{});
+      caseUpdateSqlStatements.push(deleteMissingCaseSectionsSql(caseSectionIdsByType));
+    }
+    caseUpdateSqlStatements.push(updateByIdSql(caseRecordUpdates));
+    caseUpdateSqlStatements.push(selectSingleCaseByIdSql('Cases'));
 
-    const updateById = updateByIdSql(caseRecordUpdates);
-    const [original, updated] = await transaction.multi<CaseRecord>(updateById, {
-      accountSid,
-      caseId: id,
-    });
-
+    const [original, ...restOfOutput] = await transaction.multi<CaseRecord>(
+      caseUpdateSqlStatements.join(`;
+    `),
+      {
+        accountSid,
+        caseId: id,
+      },
+    );
+    const updated = restOfOutput.pop();
     if (updated.length) {
-      await logCaseAudit(transaction, updated[0], original[0]);
+      const auditUpdated = toAuditRecord(updated[0]);
+      const auditOriginal = toAuditRecord(original[0]);
+      await logCaseAudit(transaction, auditUpdated, auditOriginal);
     }
     return updated;
   });
   return result.length ? result[0] : void 0;
-};
-
-export const getAuditsForCase = async (accountSid, caseId): Promise<CaseAuditRecord[]> => {
-  return db.any<CaseAuditRecord>(SELECT_CASE_AUDITS_FOR_CASE, { accountSid, caseId });
 };

@@ -10,7 +10,6 @@ import {
 import * as caseDb from '../../src/case/case-data-access';
 import each from 'jest-each';
 import { db } from '../../src/connection-pool';
-import { OrderByDirection } from '../../src/case/case-sql';
 
 const accountSid = 'account-sid';
 const workerSid = 'worker-sid';
@@ -70,13 +69,35 @@ describe('createCase', () => {
       info: {
         counsellorNotes: [{ note: 'Child with covid-19', twilioWorkerId: 'contact-adder' }],
       },
+      caseSections: [
+        {
+          sectionType: 'note',
+          sectionId: 'NOTE_1',
+          createdBy: 'contact-adder',
+          createdAt: new Date(2000, 4, 21).toISOString(),
+          updatedAt: undefined,
+          updatedBy: undefined,
+          sectionTypeSpecificData: { note: 'Child with covid-19' },
+        },
+      ],
       twilioWorkerId: 'twilio-worker-id',
     });
     const oneSpy = jest.spyOn(tx, 'one').mockResolvedValue({ ...caseFromDB, id: 1337 });
 
-    const result = await caseDb.create(caseFromDB, accountSid, workerSid);
-    const insertSql = getSqlStatement(oneSpy);
-    expectValuesInSql(insertSql, { ...caseFromDB, accountSid, twilioWorkerId: workerSid });
+    const result = await caseDb.create(caseFromDB, accountSid);
+    const insertSql = getSqlStatement(oneSpy, -2);
+    const { caseSections, ...caseWithoutSections } = caseFromDB;
+    expectValuesInSql(insertSql, {
+      ...caseWithoutSections,
+      accountSid,
+      createdAt: expect.anything(),
+      updatedAt: expect.anything(),
+    });
+    const insertSectionSql = getSqlStatement(oneSpy, -1);
+    expectValuesInSql(insertSectionSql, {
+      ...caseSections[0],
+      caseId: 1337,
+    });
     expect(result).toStrictEqual({ ...caseFromDB, id: 1337 });
   });
 
@@ -85,7 +106,7 @@ describe('createCase', () => {
     jest.spyOn(tx, 'one').mockResolvedValue({ ...caseFromDB, id: 1337 });
     const noneSpy = jest.spyOn(tx, 'none').mockResolvedValue(undefined);
 
-    const result = await caseDb.create(caseFromDB, accountSid, workerSid);
+    const result = await caseDb.create(caseFromDB, accountSid);
     const auditSql = getSqlStatement(noneSpy);
     expect(auditSql).toContain('CaseAudits');
 
@@ -142,7 +163,7 @@ describe('list', () => {
           limit: 100,
           offset: 25,
           sortBy: 'jimmyjab',
-          sortDirection: OrderByDirection.ascending,
+          sortDirection: 'ASC',
         },
         expectedDbParameters: { limit: 100, offset: 25 },
         expectedInSql: ['"id" DESC', '"jimmyjab" ASC NULLS LAST'],
@@ -152,13 +173,13 @@ describe('list', () => {
         parameters: {
           limit: 100,
           offset: 25,
-          sortDirection: OrderByDirection.ascending,
+          sortDirection: 'ASC',
         },
         expectedDbParameters: { limit: 100, offset: 25 },
         expectedInSql: ['"id" DESC', '"id" ASC NULLS LAST,'],
       },
       {
-        description: 'should use default DESC sort if only sort column is specified',
+        description: 'should use default DESC NULLS LAST sort if only sort column is specified',
         parameters: {
           limit: 100,
           offset: 25,
@@ -267,7 +288,6 @@ describe('update', () => {
       counsellorNotes: [{ note: 'Child with covid-19', twilioWorkerId: 'contact-adder' }],
     },
     twilioWorkerId: 'ignored-twilio-worker-id',
-    accountSid: 'NOT_USING_THIS_ONE',
   };
 
   beforeEach(() => {
@@ -277,19 +297,18 @@ describe('update', () => {
 
   test('runs update SQL against cases table with provided ID.', async () => {
     const caseUpdateResult = createMockCaseRecord(caseUpdate);
-    const multiSpy = jest
-      .spyOn(tx, 'multi')
-      .mockResolvedValue([
-        [{ ...createMockCaseRecord({}), id: caseId }],
-        [{ ...caseUpdateResult, id: caseId }],
-      ]);
+    const multiSpy = jest.spyOn(tx, 'multi').mockResolvedValue([
+      [{ ...createMockCaseRecord({}), id: caseId }],
+      [2], //Simulate outputs from caseSection queries
+      [{ ...caseUpdateResult, id: caseId }],
+    ]);
 
-    const result = await caseDb.update(caseId, caseUpdate, accountSid, workerSid);
+    const result = await caseDb.update(caseId, caseUpdate, accountSid);
     const updateSql = getSqlStatement(multiSpy);
     expect(updateSql).toContain('Cases');
     expect(updateSql).toContain('Contacts');
     expect(updateSql).toContain('CSAMReports');
-    expectValuesInSql(updateSql, { ...caseUpdate, twilioWorkerId: workerSid });
+    expectValuesInSql(updateSql, { ...caseUpdate });
     expect(multiSpy).toHaveBeenCalledWith(
       expect.any(String),
       expect.objectContaining({ accountSid, caseId }),
@@ -309,7 +328,7 @@ describe('update', () => {
       .mockResolvedValue([[{ ...createMockCaseRecord({}), id: caseId }], [caseUpdateResult]]);
     const auditSpy = jest.spyOn(tx, 'none');
 
-    const result = await caseDb.update(caseId, caseUpdate, accountSid, workerSid);
+    const result = await caseDb.update(caseId, caseUpdate, accountSid);
     const auditSql = getSqlStatement(auditSpy);
     expect(auditSql).toContain('CaseAudits');
     expectValuesInSql(auditSql, caseUpdateResult);
@@ -322,7 +341,7 @@ describe('update', () => {
       .mockResolvedValue([[{ ...createMockCaseRecord({}), id: caseId }], []]);
     const auditSpy = jest.spyOn(tx, 'none');
 
-    await caseDb.update(caseId, caseUpdate, accountSid, workerSid);
+    await caseDb.update(caseId, caseUpdate, accountSid);
     expect(updateSpy).toBeCalled();
     expect(auditSpy).not.toBeCalled();
   });
