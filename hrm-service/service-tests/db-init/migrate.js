@@ -3,7 +3,7 @@ const { Umzug, SequelizeStorage } = require('umzug');
 const pathLib = require('path');
 const { sequelize } = require('../../src/models/index');
 
-const CONNECT_ATTEMPT_SECONDS = 2;
+const CONNECT_ATTEMPT_SECONDS = 20;
 
 const umzug = new Umzug({
   migrations: {
@@ -23,15 +23,19 @@ const umzug = new Umzug({
 });
 
 async function migrate() {
-  const timeoutPoint = Date.now() + CONNECT_ATTEMPT_SECONDS;
+  const timeoutPoint = Date.now() + CONNECT_ATTEMPT_SECONDS * 1000;
   let ret;
   let lastErr;
   console.log(timeoutPoint);
   while (Date.now() < timeoutPoint) {
     try {
+      console.log('Attempting migration...');
       // eslint-disable-next-line no-await-in-loop
       ret = await umzug.up();
+      console.log('Migration complete.');
+      break;
     } catch (err) {
+      console.log('Retrying connection...');
       lastErr = err;
     }
   }
