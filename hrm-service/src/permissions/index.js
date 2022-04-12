@@ -38,8 +38,6 @@ const initializedCanMap = Object.entries(rulesMap).reduce((accum, [key, rules]) 
   };
 }, {});
 
-const initializedCanOpenRules = setupCanForRules(openRules);
-
 /**
  * Applies the permissions if valid.
  * @param {import('express').Request} req
@@ -61,7 +59,7 @@ const applyPermissions = (req, initializedCan, permissionsConfig) => {
 
 const setupPermissions = (req, res, next) => {
   if (process.env.USE_OPEN_PERMISSIONS) {
-    applyPermissions(req, initializedCanOpenRules, 'open rules');
+    applyPermissions(req, initializedCanMap.open, 'open rules');
     return next();
   }
 
