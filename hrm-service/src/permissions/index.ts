@@ -1,29 +1,29 @@
-const User = require('./user');
-const { SafeRouter, publicEndpoint } = require('./safe-router');
-const { setupCanForRules } = require('./setupCanForRules');
+import User from './user';
+import { SafeRouter, publicEndpoint } from './safe-router';
+import { setupCanForRules } from './setupCanForRules';
 
-const { canEditCase, canViewPostSurvey } = require('./middlewares');
-const { rulesMap } = require('./rulesMap');
+import { canEditCase, canViewPostSurvey } from './middlewares';
+import { rulesMap } from './rulesMap';
 
-/**
- * @type {{ [key in keyof typeof rulesMap]: ReturnType<typeof setupCanForRules> }}
- */
-const initializedCanMap = Object.entries(rulesMap).reduce((accum, [key, rules]) => {
+const initializedCanMap = Object.entries(rulesMap).reduce<
+  { [key in keyof typeof rulesMap]: ReturnType<typeof setupCanForRules> }
+>((accum, [key, rules]) => {
   const can = setupCanForRules(rules);
   return {
     ...accum,
     [key]: can,
   };
-}, {});
+}, null);
 
 /**
  * Applies the permissions if valid.
- * @param {import('express').Request} req
- * @param {ReturnType<typeof setupCanForRules>} initializedCan
- * @param {string} permissionsConfig
  * @throws Will throw if initializedCan is not a function
  */
-const applyPermissions = (req, initializedCan, permissionsConfig) => {
+const applyPermissions = (
+  req: import('express').Request,
+  initializedCan: ReturnType<typeof setupCanForRules>,
+  permissionsConfig: string,
+) => {
   if (!initializedCan) throw new Error(`Cannot find rules for ${permissionsConfig}`);
 
   if (typeof initializedCan === 'string')
@@ -32,6 +32,7 @@ const applyPermissions = (req, initializedCan, permissionsConfig) => {
   if (typeof initializedCan !== 'function')
     throw new Error(`Error in rules for ${permissionsConfig}. Error: can is not a function.`);
 
+  //@ts-ignore TODO: Improve our custom Request type to override Express.Request
   req.can = initializedCan;
 };
 

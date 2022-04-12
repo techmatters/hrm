@@ -8,23 +8,23 @@ const { Case, PostSurvey } = models;
 
 /**
  * Given a conditionsState and a condition, returns true if the condition is true in the conditionsState
- * @param {{ [condition in 'isSupervisor' | 'isCreator' | 'isCaseOpen' | 'everyone']: boolean }} conditionsState
- * @returns {(condition: 'isSupervisor' | 'isCreator' | 'isCaseOpen' | 'everyone') => boolean}
+ * @param {{ [condition in import('./types').Condition]: boolean }} conditionsState
+ * @returns {(condition: import('./types').Condition) => boolean}
  */
 const checkCondition = conditionsState => condition => conditionsState[condition];
 
 /**
  * Given a conditionsState and a set of conditions, returns true if all the conditions are true in the conditionsState
- * @param {{ [condition in 'isSupervisor' | 'isCreator' | 'isCaseOpen' | 'everyone']: boolean }} conditionsState
- * @returns {(conditionsSet: 'isSupervisor' | 'isCreator' | 'isCaseOpen' | 'everyone'[]) => boolean}
+ * @param {{ [condition in import('./types').Condition]: boolean }} conditionsState
+ * @returns {(conditionsSet: import('./types').ConditionsSet) => boolean}
  */
 const checkConditionsSet = conditionsState => conditionsSet =>
   conditionsSet.length > 0 && conditionsSet.every(checkCondition(conditionsState));
 
 /**
  * Given a conditionsState and a set of conditions sets, returns true if one of the conditions sets contains conditions that are all true in the conditionsState
- * @param {{ [condition in 'isSupervisor' | 'isCreator' | 'isCaseOpen' | 'everyone']: boolean }} conditionsState
- * @param {'isSupervisor' | 'isCreator' | 'isCaseOpen' | 'everyone'[][]} conditionsSets
+ * @param {{ [condition in import('./types').Condition]: boolean }} conditionsState
+ * @param {import('./types').ConditionsSets} conditionsSets
  */
 const checkConditionsSets = (conditionsState, conditionsSets) =>
   conditionsSets.some(checkConditionsSet(conditionsState));
@@ -57,15 +57,10 @@ const bindSetupAllow = allow => (
   });
 };
 
+/**
+ * @param {import('./types').RulesFile} rules
+ */
 const setupCanForRules = rules => {
-  const rulesAreValid = Object.values(actionsMaps).every(map =>
-    Object.values(map).every(action => rules[action]),
-  );
-
-  if (!rulesAreValid) {
-    return 'Rules file incomplete.';
-  }
-
   const cancan = new CanCan();
   const { can, allow } = cancan;
   const setupAllow = bindSetupAllow(allow);
