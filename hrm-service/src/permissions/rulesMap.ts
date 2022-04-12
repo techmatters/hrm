@@ -8,7 +8,10 @@ import mwRules from '../../permission-rules/mw.json';
 import zaRules from '../../permission-rules/za.json';
 import zmRules from '../../permission-rules/zm.json';
 
-export const rulesMap = {
+// eslint-disable-next-line prettier/prettier
+import { isRulesFile, RulesFile } from './types';
+
+const rulesMapDef = {
   br: brRules,
   ca: caRules,
   et: etRules,
@@ -18,4 +21,18 @@ export const rulesMap = {
   za: zaRules,
   zm: zmRules,
   open: openRules,
-};
+} as const;
+
+const toRulesMap = () =>
+  // This type assertion is legit as long as we check that every entry if rulesMapDef is indeed a RulesFile
+  Object.entries(rulesMapDef).reduce<{ [k in keyof typeof rulesMapDef]: RulesFile }>(
+    (accum, [k, rules]) => {
+      if (!isRulesFile(rules))
+        throw new Error(`Error: rules file for ${k} is not a valid RulesFile`);
+
+      return { ...accum, [k]: rules };
+    },
+    null,
+  );
+
+export const rulesMap = toRulesMap();
