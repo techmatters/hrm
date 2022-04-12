@@ -14,7 +14,7 @@ const { setupPermissions, User } = require('./permissions');
 const app = express();
 const apiKey = process.env.API_KEY;
 
-swagger.runWhenNotProduction(app);
+swagger.runWhenNotProductionOrTest(app);
 
 app.use(httpLogger);
 app.use(express.json());
