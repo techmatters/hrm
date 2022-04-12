@@ -222,6 +222,7 @@ const case1 = {
         note: 'Child with covid-19',
         twilioWorkerId: 'note-adder',
         createdAt: '2022-01-01 00:00:00',
+        customProperty: 'something else',
       },
     ],
   },

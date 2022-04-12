@@ -249,7 +249,7 @@ describe('/cases route', () => {
           infoUpdate: {
             counsellorNotes,
           },
-          changeDescription: 'counsellorNotes',
+          changeDescription: 'counsellorNotes added',
         },
         {
           infoUpdate: {
@@ -314,6 +314,7 @@ describe('/cases route', () => {
                 note: 'Child recovered from pneumonia',
                 twilioWorkerId: 'other-note-adder-1',
                 createdAt: '2022-01-05 00:00:00',
+                custom: 'property',
               },
             ],
           },
@@ -334,6 +335,7 @@ describe('/cases route', () => {
                 note: 'Child recovered from pneumonia',
                 twilioWorkerId: 'other-note-adder-1',
                 createdAt: '2022-01-05 00:00:00',
+                custom: 'property',
               },
             ],
           },
@@ -465,6 +467,7 @@ describe('/cases route', () => {
                 createdAt: '2021-02-19T21:39:30.911+00:00',
                 referredTo: 'Test',
                 twilioWorkerId: 'referral-editor',
+                custom: 'property',
               },
             ],
           },
