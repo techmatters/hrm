@@ -1,7 +1,7 @@
 import { pgp } from '../../connection-pool';
 import { selectSingleCaseByIdSql } from './case-get-sql';
 
-const VALID_CASE_UPDATE_FIELDS = ['info', 'helpline', 'status', 'twilioWorkerId', 'updatedAt'];
+const VALID_CASE_UPDATE_FIELDS = ['info', 'status', 'updatedAt'];
 
 const updateCaseColumnSet = new pgp.helpers.ColumnSet(
   VALID_CASE_UPDATE_FIELDS.map(f => ({
