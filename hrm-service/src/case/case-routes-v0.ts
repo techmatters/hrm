@@ -11,7 +11,7 @@ casesRouter.get('/', publicEndpoint, async (req, res) => {
   const cases = await caseApi.searchCases(
     accountSid,
     { sortDirection, sortBy, limit, offset },
-    search,
+    { filters: { includeOrphans: false }, ...search },
   );
   res.json(cases);
 });

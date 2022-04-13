@@ -58,7 +58,7 @@ const insertSampleCases = async ({
 }: InsertSampleCaseSettings): Promise<CaseWithContact[]> => {
   const createdCasesAndContacts: CaseWithContact[] = [];
   for (let i = 0; i < sampleSize; i += 1) {
-    const createdCase = await caseApi.createCase(
+    let createdCase = await caseApi.createCase(
       {
         ...cases[i % cases.length],
         helpline: helplines[i % helplines.length],
@@ -68,24 +68,27 @@ const insertSampleCases = async ({
       accounts[i % accounts.length],
       workers[i % workers.length],
     );
-    const createdContact = await Contact.create(
-      fillNameAndPhone(
-        {
-          ...contact1,
-          accountSid: accounts[i % accounts.length],
-          helpline: helplines[i % helplines.length],
-        },
-        contactNames[i % contactNames.length],
-        contactNumbers[i % contactNumbers.length],
-      ),
-      options,
-    );
-    createdContact.caseId = createdCase.id;
-    await createdContact.save(options);
-    const connectedCase = await getCase(createdCase.id, accounts[i % accounts.length]); // reread case from DB now it has a contact connected
+    let createdContact = undefined;
+    if (contactNames[i % contactNames.length]) {
+      createdContact = await Contact.create(
+        fillNameAndPhone(
+          {
+            ...contact1,
+            accountSid: accounts[i % accounts.length],
+            helpline: helplines[i % helplines.length],
+          },
+          contactNames[i % contactNames.length],
+          contactNumbers[i % contactNumbers.length],
+        ),
+        options,
+      );
+      createdContact.caseId = createdCase.id;
+      await createdContact.save(options);
+      createdCase = await getCase(createdCase.id, accounts[i % accounts.length]); // reread case from DB now it has a contact connected
+    }
     createdCasesAndContacts.push({
       contact: createdContact,
-      case: connectedCase,
+      case: createdCase,
     });
   }
   return createdCasesAndContacts;
@@ -646,6 +649,25 @@ describe('/cases route', () => {
                 .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
             expectedTotalCount: 5,
           },
+          {
+            description:
+              'should filter out cases with no contact if includeOrphans filter is set false',
+            searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
+            body: {
+              filters: {
+                includeOrphans: false,
+              },
+            },
+            sampleConfig: <InsertSampleCaseSettings>{
+              ...SIMPLE_SAMPLE_CONFIG,
+              contactNames: [{ firstName: 'a', lastName: 'z' }, null],
+            },
+            expectedCasesAndContacts: sampleCasesAndContacts =>
+              sampleCasesAndContacts
+                .filter(ccc => ccc.case.connectedContacts.length > 0)
+                .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+            expectedTotalCount: 5,
+          },
         ]).test(
           '$description',
           async ({
@@ -672,7 +694,11 @@ describe('/cases route', () => {
                   ids: createdCasesAndContacts.map(ccc => ccc.case.id),
                 }),
                 Contact.destroy({
-                  where: { id: createdCasesAndContacts.map(ccc => ccc.contact.id) },
+                  where: {
+                    id: createdCasesAndContacts
+                      .filter(ccc => ccc.contact)
+                      .map(ccc => ccc.contact.id),
+                  },
                 }),
               ]);
             }
