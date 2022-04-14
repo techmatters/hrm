@@ -343,7 +343,7 @@ describe('update', () => {
     expect(updateSql).toContain('Cases');
     expect(updateSql).toContain('Contacts');
     expect(updateSql).toContain('CSAMReports');
-    expectValuesInSql(updateSql, { ...caseUpdate });
+    expectValuesInSql(updateSql, { info: caseUpdate.info, status: caseUpdate.status });
     expect(multiSpy).toHaveBeenCalledWith(
       expect.any(String),
       expect.objectContaining({ accountSid, caseId }),
