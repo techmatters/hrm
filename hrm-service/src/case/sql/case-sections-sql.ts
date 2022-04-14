@@ -1,6 +1,6 @@
-import { pgp } from '../connection-pool';
+import { pgp } from '../../connection-pool';
 // eslint-disable-next-line prettier/prettier
-import { CaseSectionRecord } from './case-data-access';
+import { CaseSectionRecord } from '../case-data-access';
 
 export const SELECT_CASE_SECTIONS = `SELECT 
          COALESCE(jsonb_agg(DISTINCT cs.*) FILTER (WHERE cs."caseId" IS NOT NULL), '[]') AS "caseSections"

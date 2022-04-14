@@ -45,6 +45,7 @@ export const caseAuditsWhereClause = (workerSid: string) =>
   pgp.as.format(`WHERE "twilioWorkerId" IN($<workers:csv>) `, {
     workers: ['fake-worker-123', 'fake-worker-129', workerSid],
   });
+
 export const countCaseAudits = async (workerSid: string): Promise<number> => {
   return (
     await db.one<{ count: number }>(
@@ -55,20 +56,24 @@ export const countCaseAudits = async (workerSid: string): Promise<number> => {
     )
   ).count;
 };
+
 export const selectCaseAudits = async (workerSid: string): Promise<any[]> =>
   db.manyOrNone(`SELECT * FROM "CaseAudits" $<whereClause:raw>`, {
     whereClause: caseAuditsWhereClause(workerSid),
   });
+
 export const deleteCaseAudits = async (workerSid: string) =>
   db.none(`DELETE FROM "CaseAudits" $<whereClause:raw>`, {
     whereClause: caseAuditsWhereClause(workerSid),
   });
+
 export const without = (original, ...property) => {
   if (!original) return original;
   const { ...output } = original;
   property.forEach(p => delete output[p]);
   return output;
 };
+
 export const convertCaseInfoToExpectedInfo = (input: any) => {
   if (!input || !input.info) return { ...input };
   const expectedCase = {
@@ -130,20 +135,24 @@ export const validateSingleCaseResponse = (actual, expectedCaseModel, expectedCo
   validateCaseListResponse(actual, [{ case: expectedCaseModel, contact: expectedContactModel }], 1);
 };
 
-export const fillNameAndPhone = contact => {
+export const fillNameAndPhone = (
+  contact,
+  name = {
+    firstName: 'Maria',
+    lastName: 'Silva',
+  },
+  number = '+1-202-555-0184',
+) => {
   const modifiedContact = {
     ...contact,
     rawJson: {
       ...contact.form,
       childInformation: {
         ...contact.form.childInformation,
-        name: {
-          firstName: 'Maria',
-          lastName: 'Silva',
-        },
+        name,
       },
     },
-    number: '+1-202-555-0184',
+    number,
   };
 
   delete modifiedContact.form;

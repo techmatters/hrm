@@ -5,7 +5,15 @@
  */
 import * as caseDb from './case-data-access';
 import { retrieveCategories } from '../controllers/helpers';
-import { CaseRecordCommon, CaseSectionRecord, Contact, NewCaseRecord } from './case-data-access';
+import {
+  CaseListConfiguration,
+  CaseListFilters,
+  CaseRecordCommon,
+  CaseSearchCriteria,
+  CaseSectionRecord,
+  Contact,
+  NewCaseRecord,
+} from './case-data-access';
 import { randomUUID } from 'crypto';
 
 export const WELL_KNOWN_CASE_SECTION_NAMES: Record<
@@ -287,23 +295,30 @@ export const getCase = async (id: number, accountSid: string): Promise<Case | un
   return;
 };
 
-export const listCases = async (
-  query: { helpline: string },
-  accountSid,
-): Promise<{ cases: readonly Case[]; count: number }> => {
-  const dbResult = await caseDb.list(query, accountSid);
-  return {
-    ...dbResult,
-    cases: dbResult.cases.map(caseRecordToCase),
-  };
+export type SearchParameters = CaseSearchCriteria & {
+  filters?: CaseListFilters;
+} & {
+  helpline?: string;
+  counselor?: string;
+  closedCases?: boolean;
 };
 
 export const searchCases = async (
-  body,
-  query: { helpline: string },
   accountSid,
+  listConfiguration: CaseListConfiguration = {},
+  search: SearchParameters = {},
 ): Promise<{ cases: readonly Case[]; count: number }> => {
-  const dbResult = await caseDb.search(body, query, accountSid);
+  const { filters, helpline, counselor, closedCases, ...searchCriteria } = search;
+  const caseFilters = filters ?? {};
+  caseFilters.helplines = caseFilters.helplines ?? (helpline ? helpline.split(';') : undefined);
+  caseFilters.counsellors =
+    caseFilters.counsellors ?? (counselor ? counselor.split(';') : undefined);
+  caseFilters.excludedStatuses = caseFilters.excludedStatuses ?? [];
+  if (closedCases === false) {
+    caseFilters.excludedStatuses.push('closed');
+  }
+  caseFilters.includeOrphans = caseFilters.includeOrphans ?? closedCases ?? true;
+  const dbResult = await caseDb.search(listConfiguration, accountSid, searchCriteria, caseFilters);
   return {
     ...dbResult,
     cases: dbResult.cases.map(caseRecordToCase),
