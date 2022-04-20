@@ -221,7 +221,8 @@ const case1 = {
       {
         note: 'Child with covid-19',
         twilioWorkerId: 'note-adder',
-        createdAt: '2022-01-01 00:00:00',
+        createdAt: '2022-01-01T00:00:00+00:00',
+        customProperty: 'something else',
       },
     ],
   },
@@ -238,7 +239,7 @@ const case2 = {
       {
         note: 'Refugee child',
         twilioWorkerId: 'other-note-adder',
-        createdAt: '2021-01-01 00:00:00',
+        createdAt: '2021-01-01T00:00:00+00:00',
       },
     ],
   },
