@@ -1,6 +1,6 @@
 import { pgp } from '../../connection-pool';
 import { SELECT_CASE_SECTIONS } from './case-sections-sql';
-import { CaseListFilters } from '../case-data-access';
+import { CaseListFilters, DateExistsCondition, DateFilter } from '../case-data-access';
 
 export const enum OrderByDirection {
   ascendingNullsLast = 'ASC NULLS LAST',
@@ -51,10 +51,39 @@ FROM (
   GROUP BY c.id
 ) AS contacts WHERE contacts."caseId" = cases.id`;
 
+const enum FilterableDateField {
+  CREATED_AT = 'cases."createdAt"',
+  UPDATED_AT = 'cases."updatedAt"',
+  FOLLOW_UP_DATE = `cases."info"->>'followUpDate'`,
+}
+
+const dateFilterCondition = (
+  field: FilterableDateField,
+  filter: DateFilter,
+): string | undefined => {
+  let existsCondition: string | undefined;
+  if (filter.exists === DateExistsCondition.MUST_EXIST) {
+    existsCondition = `(${field} IS NOT NULL)`;
+  } else if (filter.exists === DateExistsCondition.MUST_NOT_EXIST) {
+    existsCondition = `(${field} IS NULL)`;
+  }
+  if (filter.to || filter.from) {
+    return pgp.as.format(
+      `(($<from> IS NULL OR ${field}::TIMESTAMP WITH TIME ZONE >= $<from>::TIMESTAMP WITH TIME ZONE) 
+            AND ($<to> IS NULL OR ${field}::TIMESTAMP WITH TIME ZONE <= $<to>::TIMESTAMP WITH TIME ZONE)
+            ${existsCondition ? ` AND ${existsCondition}` : ''})`,
+      filter,
+    );
+  }
+  return existsCondition;
+};
+
 const filterSql = ({
   counsellors,
   statuses,
   createdAt = {},
+  updatedAt = {},
+  followUpDate = {},
   helplines,
   excludedStatuses,
   includeOrphans,
@@ -76,14 +105,13 @@ const filterSql = ({
   if (statuses && statuses.length) {
     filterSqlClauses.push(pgp.as.format(`cases."status" IN ($<statuses:csv>)`, { statuses }));
   }
-  if (createdAt && (createdAt.from || createdAt.to)) {
-    filterSqlClauses.push(
-      pgp.as.format(
-        `(($<from> IS NULL OR cases."createdAt"::DATE > $<from>::DATE) AND ($<to> IS NULL OR cases."createdAt" < $<to>::DATE))`,
-        createdAt,
-      ),
-    );
-  }
+  filterSqlClauses.push(
+    ...[
+      dateFilterCondition(FilterableDateField.CREATED_AT, createdAt),
+      dateFilterCondition(FilterableDateField.UPDATED_AT, updatedAt),
+      dateFilterCondition(FilterableDateField.FOLLOW_UP_DATE, followUpDate),
+    ].filter(sql => sql),
+  );
   if (!includeOrphans) {
     filterSqlClauses.push(`jsonb_array_length(contacts."connectedContacts") > 0`);
   }

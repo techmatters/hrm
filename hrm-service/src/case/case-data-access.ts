@@ -96,9 +96,15 @@ export type CaseSearchCriteria = {
   lastName?: string,
 };
 
+export const enum DateExistsCondition {
+  MUST_EXIST = 'MUST_EXIST',
+  MUST_NOT_EXIST = 'MUST_NOT_EXIST',
+}
+
 export type DateFilter = {
   from?: string,
   to?: string,
+  exists?: DateExistsCondition
 };
 
 export type CaseListFilters = {
@@ -106,6 +112,8 @@ export type CaseListFilters = {
   statuses?: string[],
   excludedStatuses?: string[],
   createdAt?: DateFilter,
+  updatedAt?: DateFilter,
+  followUpDate?: DateFilter,
   helplines?: string[],
   includeOrphans?: boolean
 };
