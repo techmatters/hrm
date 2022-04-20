@@ -1,3 +1,5 @@
+// Can we delete this file?
+
 // Can't import CaseAudit model before Sequelize has initiated, so we import the controller creator and provide the CaseAudit model in runtime
 const CaseAuditControllerCreator = require('../controllers/case-audit-controller');
 

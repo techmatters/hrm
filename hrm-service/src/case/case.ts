@@ -267,7 +267,14 @@ export const createCase = async (body: Partial<Case>, accountSid, workerSid): Pr
   const nowISO = new Date().toISOString();
   delete body.id;
   const record = caseToCaseRecord(
-    { ...body, createdBy: workerSid, createdAt: nowISO, updatedAt: nowISO, accountSid },
+    {
+      ...body,
+      createdBy: workerSid,
+      createdAt: nowISO,
+      updatedAt: nowISO,
+      updatedBy: null,
+      accountSid,
+    },
     workerSid,
   );
   const created = await caseDb.create(record, accountSid, caseRecordToCase);
@@ -280,10 +287,11 @@ export const updateCase = async (id, body: Partial<Case>, accountSid, workerSid)
     return;
   }
   const record = caseToCaseRecord(
-    { ...body, id, accountSid },
+    { ...body, updatedBy: workerSid, id, accountSid },
     workerSid,
     caseRecordToCase(caseFromDB),
   );
+
   return caseRecordToCase(await caseDb.update(id, record, accountSid, caseRecordToCase));
 };
 

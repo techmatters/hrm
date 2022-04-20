@@ -1,7 +1,7 @@
 import { pgp } from '../../connection-pool';
 import { selectSingleCaseByIdSql } from './case-get-sql';
 
-const VALID_CASE_UPDATE_FIELDS = ['info', 'status', 'updatedAt'];
+const VALID_CASE_UPDATE_FIELDS = ['info', 'status', 'updatedAt', 'updatedBy'];
 
 const updateCaseColumnSet = new pgp.helpers.ColumnSet(
   VALID_CASE_UPDATE_FIELDS.map(f => ({
