@@ -79,7 +79,8 @@ async function authorizationMiddleware(req, res, next) {
       const isTestSecretValid = crypto.timingSafeEqual(base64Key, Buffer.from(apiKey));
 
       if (isTestSecretValid) {
-        req.user = new User('worker-sid', []);
+        const testUser = req.headers['test-user'] || 'worker-sid';
+        req.user = new User(testUser, []);
         return next();
       }
 

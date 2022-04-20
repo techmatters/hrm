@@ -47,6 +47,7 @@ describe('/cases route', () => {
       id: expect.anything(),
       updatedAt: expect.toParseAsDate(),
       createdAt: expect.toParseAsDate(),
+      updatedBy: null,
       categories: {},
       connectedContacts: [],
       childName: '',
@@ -480,12 +481,18 @@ describe('/cases route', () => {
           },
           changeDescription: 'incident deleted',
         },
+        {
+          infoUpdate: { summary: 'To summarize....' },
+          changeDescription: 'summary changed by another couselor',
+          customWorkerSid: 'another-worker-sid',
+        },
       ]).test(
         'should return 200 when $changeDescription',
         async ({
           caseUpdate: caseUpdateParam = {},
           infoUpdate,
           originalCase: originalCaseGetter = () => cases.blank,
+          customWorkerSid = undefined,
         }) => {
           const caseAuditPreviousCount = await countCaseAudits(workerSid);
           const caseUpdate =
@@ -497,9 +504,10 @@ describe('/cases route', () => {
           if (infoUpdate) {
             update.info = { ...originalCase.info, ...caseUpdate.info, ...infoUpdate };
           }
+
           const response = await request
             .put(subRoute(originalCase.id))
-            .set(headers)
+            .set({ ...headers, ...(customWorkerSid && { 'test-user': customWorkerSid }) })
             .send(update);
 
           expect(response.status).toBe(200);
@@ -508,6 +516,7 @@ describe('/cases route', () => {
             createdAt: expect.toParseAsDate(originalCase.createdAt),
             updatedAt: expect.toParseAsDate(),
             ...convertCaseInfoToExpectedInfo(update),
+            updatedBy: customWorkerSid || workerSid,
           };
 
           expect(response.body).toMatchObject(expected);
