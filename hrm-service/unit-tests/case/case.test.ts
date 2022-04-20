@@ -289,7 +289,9 @@ describe('update existing case', () => {
       description: 'counsellorNotes are updated using current format',
       updateCaseObject: {
         info: {
-          counsellorNotes: [{ note: 'Refugee Child', twilioWorkerId: 'contact-updater' }],
+          counsellorNotes: [
+            { note: 'Refugee Child', twilioWorkerId: 'contact-updater', custom: 'data' },
+          ],
         },
       },
       dbResponse: {
@@ -302,6 +304,7 @@ describe('update existing case', () => {
             sectionType: 'note',
             sectionTypeSpecificData: {
               note: 'Refugee Child',
+              custom: 'data',
             },
           },
         ],
@@ -315,6 +318,7 @@ describe('update existing case', () => {
           counsellorNotes: [
             {
               note: 'Refugee Child',
+              custom: 'data',
               twilioWorkerId: 'contact-updater',
               id: expect.anything(),
               createdAt: expect.anything(),
@@ -336,13 +340,16 @@ describe('update existing case', () => {
             sectionType: 'note',
             sectionTypeSpecificData: {
               note: 'Refugee Child',
+              custom: 'data',
             },
           },
         ],
         accountSid,
         id: 1,
         info: {
-          counsellorNotes: [{ note: 'Refugee Child', twilioWorkerId: 'contact-updater' }],
+          counsellorNotes: [
+            { note: 'Refugee Child', twilioWorkerId: 'contact-updater', custom: 'data' },
+          ],
         },
       },
     },
@@ -633,6 +640,7 @@ describe('update existing case', () => {
               date: '2020-10-16',
               referredTo: 'State Agency 2',
               comments: 'comment',
+              anotherProperty: 'anotherValue',
             },
           ],
         },
@@ -662,6 +670,7 @@ describe('update existing case', () => {
               date: '2020-10-16',
               referredTo: 'State Agency 2',
               comments: 'comment',
+              anotherProperty: 'anotherValue',
             },
           },
         ],
@@ -696,6 +705,7 @@ describe('update existing case', () => {
               date: '2020-10-16',
               referredTo: 'State Agency 2',
               comments: 'comment',
+              anotherProperty: 'anotherValue',
             },
           },
         ],
@@ -715,6 +725,7 @@ describe('update existing case', () => {
               comments: 'comment',
               createdAt: expect.anything(),
               twilioWorkerId: workerSid,
+              anotherProperty: 'anotherValue',
             },
           ],
         },
@@ -737,6 +748,7 @@ describe('update existing case', () => {
               comments: 'comment',
               createdAt: expect.anything(),
               twilioWorkerId: workerSid,
+              anotherProperty: 'anotherValue',
             },
           ],
         },
