@@ -351,6 +351,7 @@ describe('update existing case', () => {
             { note: 'Refugee Child', twilioWorkerId: 'contact-updater', custom: 'data' },
           ],
         },
+        updatedBy: workerSid,
       },
     },
     {
@@ -442,6 +443,7 @@ describe('update existing case', () => {
             },
           },
         ],
+        updatedBy: workerSid,
       },
       expectedResponse: createMockCase({
         accountSid,
@@ -583,6 +585,7 @@ describe('update existing case', () => {
             },
           ],
         },
+        updatedBy: workerSid,
       },
       expectedResponse: createMockCase({
         info: {
@@ -729,6 +732,7 @@ describe('update existing case', () => {
             },
           ],
         },
+        updatedBy: workerSid,
       },
       expectedResponse: createMockCase({
         info: {
