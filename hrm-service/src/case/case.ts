@@ -16,34 +16,6 @@ import {
 } from './case-data-access';
 import { randomUUID } from 'crypto';
 
-export const WELL_KNOWN_CASE_SECTION_NAMES: Record<
-  string,
-  { sectionTypeName: string; getSectionSpecificData: (section: any) => any }
-> = {
-  households: { getSectionSpecificData: s => s.household, sectionTypeName: 'household' },
-  perpetrators: { getSectionSpecificData: s => s.perpetrator, sectionTypeName: 'perpetrator' },
-  incidents: { getSectionSpecificData: s => s.incident, sectionTypeName: 'incident' },
-  counsellorNotes: { getSectionSpecificData: s => ({ note: s.note }), sectionTypeName: 'note' },
-  referrals: {
-    getSectionSpecificData: s => {
-      return { date: s.date, referredTo: s.referredTo, comments: s.comments };
-    },
-    sectionTypeName: 'referral',
-  },
-  documents: { getSectionSpecificData: s => s.document, sectionTypeName: 'document' },
-};
-
-export const EMPTY_INFO_SECTIONS = Object.fromEntries(
-  Object.entries(WELL_KNOWN_CASE_SECTION_NAMES).map(([k]) => [k, []]),
-);
-
-export type Case = CaseRecordCommon & {
-  id: number;
-  childName?: string;
-  categories: Record<string, string[]>;
-  connectedContacts?: Contact[];
-};
-
 type CaseInfoSection = {
   id: string;
   twilioWorkerId: string;
@@ -51,6 +23,44 @@ type CaseInfoSection = {
   updatedBy?: string;
 } & Record<string, any>;
 
+const getSectionSpecificDataFromNotesOrReferrals = (
+  caseSection: CaseInfoSection,
+): Record<string, any> => {
+  const {
+    id,
+    twilioWorkerId,
+    createdAt,
+    updatedBy,
+    updatedAt,
+    ...sectionSpecificData
+  } = caseSection;
+  return sectionSpecificData;
+};
+
+export const WELL_KNOWN_CASE_SECTION_NAMES: Record<
+  string,
+  { sectionTypeName: string; getSectionSpecificData: (section: any) => any }
+> = {
+  households: { getSectionSpecificData: s => s.household, sectionTypeName: 'household' },
+  perpetrators: { getSectionSpecificData: s => s.perpetrator, sectionTypeName: 'perpetrator' },
+  incidents: { getSectionSpecificData: s => s.incident, sectionTypeName: 'incident' },
+  counsellorNotes: {
+    getSectionSpecificData: getSectionSpecificDataFromNotesOrReferrals,
+    sectionTypeName: 'note',
+  },
+  referrals: {
+    getSectionSpecificData: getSectionSpecificDataFromNotesOrReferrals,
+    sectionTypeName: 'referral',
+  },
+  documents: { getSectionSpecificData: s => s.document, sectionTypeName: 'document' },
+};
+
+export type Case = CaseRecordCommon & {
+  id: number;
+  childName?: string;
+  categories: Record<string, string[]>;
+  connectedContacts?: Contact[];
+};
 type CaseRecord = caseDb.CaseRecord;
 
 /**
@@ -80,10 +90,10 @@ const caseSectionRecordsToInfo = (
       case 'note':
         categorized.counsellorNotes = categorized.counsellorNotes ?? [];
         categorized.counsellorNotes.push({
+          ...sectionTypeSpecificData,
           ...restOfRecord,
           id: sectionId,
           twilioWorkerId: createdBy,
-          note: sectionTypeSpecificData.note,
         });
         break;
       case 'referral':

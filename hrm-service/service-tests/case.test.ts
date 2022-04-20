@@ -249,7 +249,7 @@ describe('/cases route', () => {
           infoUpdate: {
             counsellorNotes,
           },
-          changeDescription: 'counsellorNotes',
+          changeDescription: 'counsellorNotes added',
         },
         {
           infoUpdate: {
@@ -467,6 +467,7 @@ describe('/cases route', () => {
                 createdAt: '2021-02-19T21:39:30.911+00:00',
                 referredTo: 'Test',
                 twilioWorkerId: 'referral-editor',
+                custom: 'property',
               },
             ],
           },
