@@ -4,6 +4,48 @@ const app = require('../src/app');
 const models = require('../src/models');
 const mocks = require('./mocks');
 
+//Notes: I am having a hard time importing this from `./case-validation.ts`
+declare global {
+  namespace jest {
+    interface Matchers<R> {
+      toParseAsDate(date: Date): R;
+    }
+    // @ts-ignore
+    interface Expect<R> {
+      toParseAsDate(date: Date): R;
+    }
+  }
+}
+
+expect.extend({
+  toParseAsDate(received, date) {
+    let receivedDate;
+    try {
+      receivedDate = received instanceof Date ? received : Date.parse(received);
+    } catch (e) {
+      return {
+        pass: false,
+        message: () => `Expected '${received}' to be a parseable date. Error: ${e}`,
+      };
+    }
+
+    if (date) {
+      const expectedDate = typeof date === 'string' ? Date.parse(date) : date;
+      const pass = receivedDate.valueOf() === expectedDate.valueOf();
+      return {
+        pass,
+        message: () => `Expected '${received}' to be the same as '${expectedDate.toISOString()}'`,
+      };
+    }
+
+    return {
+      pass: true,
+      message: () => `Expected '${received}' to be a parseable date.`,
+    };
+  },
+});
+
+
 /**
  * This interacts with the DB
  */
