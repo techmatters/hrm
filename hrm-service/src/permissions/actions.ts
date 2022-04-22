@@ -1,6 +1,6 @@
-const diff = require('deep-diff');
+import { diff, Diff, DiffNew, DiffEdit, DiffArray } from 'deep-diff';
 
-const actionsMaps = {
+export const actionsMaps = {
   case: {
     CLOSE_CASE: 'closeCase',
     REOPEN_CASE: 'reopenCase',
@@ -24,7 +24,13 @@ const actionsMaps = {
   postSurvey: {
     VIEW_POST_SURVEY: 'viewPostSurvey',
   },
-};
+} as const;
+
+type NestedStringValues<T> = T extends object
+  ? { [K in keyof T]: T[K] extends string ? T[K] : NestedStringValues<T[K]> }[keyof T]
+  : never;
+
+export type Actions = NestedStringValues<typeof actionsMaps>;
 
 // deep-diff lib kinds:
 const NEW_PROPERTY = 'N';
@@ -34,85 +40,88 @@ const ARRAY_CHANGED = 'A';
 const DELETED_PROPERTY = 'D';
 
 /**
- * @param {string[]} target
- * @returns {function(string[]): bool}
  * Compares the target.length first components of a change path to decide if they refer to the same "case item type" under case.info (e.g. if it's editing the status, info (notes, perpetrators, etc))
  * Example paths are like:
  *   [ 'info', 'perpetrators' ] when adding a new perpetrator
  *   [ 'info', 'perpetrators', 0, 'perpetrator', 'phone1' ] when editin an existing perpetrator
  */
-const isPathTarget = target => changePath =>
+const isPathTarget = (target: string[]) => (changePath: string[]): boolean =>
   target.every((value, index) => changePath[index] === value);
 
 const isPathTargetsStatus = isPathTarget(['status']);
 const isPathTargetsInfo = isPathTarget(['info']);
 
-const isNewOrAddKind = kind => kind === NEW_PROPERTY || kind === ARRAY_CHANGED;
-const isEditKind = kind => kind === EDITED_PROPERTY;
-const isAddOrEditKind = kind => isNewOrAddKind(kind) || isEditKind(kind);
+const isNewKind = <T>(change: Diff<T>): change is DiffNew<T> => change.kind === NEW_PROPERTY;
 
-const isCloseCase = change =>
-  isEditKind(change.kind) && isPathTargetsStatus(change.path) && change.rhs === 'closed';
+const isArrayKind = <T>(change: Diff<T>): change is DiffArray<T> => change.kind === ARRAY_CHANGED;
 
-const isReopenCase = change =>
-  isEditKind(change.kind) &&
+const isNewOrAddKind = <T>(change: Diff<T>) => isNewKind(change) || isArrayKind(change);
+
+const isEditKind = <T>(change: Diff<T>): change is DiffEdit<T> => change.kind === EDITED_PROPERTY;
+
+const isAddOrEditKind = <T>(change: Diff<T>) => isNewOrAddKind(change) || isEditKind(change);
+
+const isCloseCase = (change: Diff<{}, any>) =>
+  isEditKind(change) && isPathTargetsStatus(change.path) && change.rhs === 'closed';
+
+const isReopenCase = (change: Diff<any>) =>
+  isEditKind(change) &&
   isPathTargetsStatus(change.path) &&
   change.lhs === 'closed' &&
   change.rhs !== 'closed';
 
-const isCaseStatusTransition = change =>
-  isEditKind(change.kind) &&
+const isCaseStatusTransition = (change: Diff<any>) =>
+  isEditKind(change) &&
   isPathTargetsStatus(change.path) &&
   change.lhs !== 'closed' &&
   change.rhs !== 'closed';
 
-const isAddNote = change =>
-  isNewOrAddKind(change.kind) && isPathTarget(['info', 'notes'])(change.path);
+const isAddNote = (change: Diff<any>) =>
+  isNewOrAddKind(change) && isPathTarget(['info', 'notes'])(change.path);
 
-const isAddReferral = change =>
-  isNewOrAddKind(change.kind) && isPathTarget(['info', 'referrals'])(change.path);
+const isAddReferral = (change: Diff<any>) =>
+  isNewOrAddKind(change) && isPathTarget(['info', 'referrals'])(change.path);
 
-const isAddHousehold = change =>
-  isNewOrAddKind(change.kind) && isPathTarget(['info', 'households'])(change.path);
+const isAddHousehold = (change: Diff<any>) =>
+  isNewOrAddKind(change) && isPathTarget(['info', 'households'])(change.path);
 
-const isAddPerpetrator = change =>
-  isNewOrAddKind(change.kind) && isPathTarget(['info', 'perpetrators'])(change.path);
+const isAddPerpetrator = (change: Diff<any>) =>
+  isNewOrAddKind(change) && isPathTarget(['info', 'perpetrators'])(change.path);
 
-const isAddIncident = change =>
-  isNewOrAddKind(change.kind) && isPathTarget(['info', 'incidents'])(change.path);
+const isAddIncident = (change: Diff<any>) =>
+  isNewOrAddKind(change) && isPathTarget(['info', 'incidents'])(change.path);
 
-const isAddDocument = change =>
-  isNewOrAddKind(change.kind) && isPathTarget(['info', 'documents'])(change.path);
+const isAddDocument = (change: Diff<any>) =>
+  isNewOrAddKind(change) && isPathTarget(['info', 'documents'])(change.path);
 
-const isEditNote = change =>
-  isEditKind(change.kind) && isPathTarget(['info', 'notes'])(change.path);
+const isEditNote = (change: Diff<any>) =>
+  isEditKind(change) && isPathTarget(['info', 'notes'])(change.path);
 
-const isEditReferral = change =>
-  isEditKind(change.kind) && isPathTarget(['info', 'referrals'])(change.path);
+const isEditReferral = (change: Diff<any>) =>
+  isEditKind(change) && isPathTarget(['info', 'referrals'])(change.path);
 
-const isEditHousehold = change =>
-  isEditKind(change.kind) && isPathTarget(['info', 'households'])(change.path);
+const isEditHousehold = (change: Diff<any>) =>
+  isEditKind(change) && isPathTarget(['info', 'households'])(change.path);
 
-const isEditPerpetrator = change =>
-  isEditKind(change.kind) && isPathTarget(['info', 'perpetrators'])(change.path);
+const isEditPerpetrator = (change: Diff<any>) =>
+  isEditKind(change) && isPathTarget(['info', 'perpetrators'])(change.path);
 
-const isEditIncident = change =>
-  isEditKind(change.kind) && isPathTarget(['info', 'incidents'])(change.path);
+const isEditIncident = (change: Diff<any>) =>
+  isEditKind(change) && isPathTarget(['info', 'incidents'])(change.path);
 
-const isEditDocument = change =>
-  isEditKind(change.kind) && isPathTarget(['info', 'documents'])(change.path);
+const isEditDocument = (change: Diff<any>) =>
+  isEditKind(change) && isPathTarget(['info', 'documents'])(change.path);
 
-const isEditCaseSummary = change =>
-  isAddOrEditKind(change.kind) && isPathTarget(['info', 'summary'])(change.path);
+const isEditCaseSummary = (change: Diff<any>) =>
+  isAddOrEditKind(change) && isPathTarget(['info', 'summary'])(change.path);
 
 /**
  * This function compares the original object and the object with the updated values
  * to decide what actions it's trying to do, e.g.: [ADD_NOTE, EDIT_REFERRAL]
  * @param {*} original the original object from DB
  * @param {*} updated the object with the updated values
- * @returns
  */
-const getActions = (original, updated) => {
+export const getActions = (original: any, updated: any) => {
   // Filter out the topmost properties not included in the payload to avoid false DELETED_PROPERTY (as we send Partial<Case> from the frontend)
   const partialOriginal = Object.keys(updated).reduce(
     (accum, currentKey) =>
@@ -122,7 +131,7 @@ const getActions = (original, updated) => {
     {},
   );
   const ignoredProperties = ['createdAt', 'updatedAt', 'connectedContacts'];
-  const preFilter = (path, key) => ignoredProperties.includes(key);
+  const preFilter = (path: any, key: string) => ignoredProperties.includes(key);
   const changes = diff(partialOriginal, updated, preFilter);
 
   const actions = [];
@@ -153,9 +162,4 @@ const getActions = (original, updated) => {
   }
 
   return actions;
-};
-
-module.exports = {
-  getActions,
-  actionsMaps,
 };

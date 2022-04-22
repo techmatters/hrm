@@ -268,7 +268,7 @@ each([
     caseFromDB: caseWithProperties,
     update: { status: 'another' },
     expectedCondition: [actionsMaps.case.CASE_STATUS_TRANSITION],
-    conditionDescription: 'transitioning from a not-closed status to aother not-closed status',
+    conditionDescription: 'transitioning from a not-closed status to another not-closed status',
   },
   {
     caseFromDB: caseWithProperties,

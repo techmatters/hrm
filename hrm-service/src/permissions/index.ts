@@ -1,9 +1,11 @@
-import User from './user';
-import { SafeRouter, publicEndpoint } from './safe-router';
-import { setupCanForRules } from './setupCanForRules';
+export { User } from './user';
+export { SafeRouter, publicEndpoint } from './safe-router';
+export { canEditCase, canViewPostSurvey } from './middlewares';
 
-import { canEditCase, canViewPostSurvey } from './middlewares';
+import { setupCanForRules } from './setupCanForRules';
 import { rulesMap } from './rulesMap';
+// eslint-disable-next-line prettier/prettier
+import type { Request, Response, NextFunction } from 'express';
 
 const initializedCanMap = Object.entries(rulesMap).reduce<
   { [key in keyof typeof rulesMap]: ReturnType<typeof setupCanForRules> }
@@ -20,7 +22,7 @@ const initializedCanMap = Object.entries(rulesMap).reduce<
  * @throws Will throw if initializedCan is not a function
  */
 const applyPermissions = (
-  req: import('express').Request,
+  req: Request,
   initializedCan: ReturnType<typeof setupCanForRules>,
   permissionsConfig: string,
 ) => {
@@ -36,12 +38,13 @@ const applyPermissions = (
   req.can = initializedCan;
 };
 
-const setupPermissions = (req, res, next) => {
+export const setupPermissions = (req: Request, res: Response, next: NextFunction) => {
   if (process.env.USE_OPEN_PERMISSIONS) {
     applyPermissions(req, initializedCanMap.open, 'open rules');
     return next();
   }
 
+  //@ts-ignore TODO: Improve our custom Request type to override Express.Request
   const { accountSid } = req;
   const permissionsKey = `PERMISSIONS_${accountSid}`;
   const permissionsConfig = process.env[permissionsKey];
@@ -49,13 +52,4 @@ const setupPermissions = (req, res, next) => {
 
   applyPermissions(req, initializedCan, permissionsConfig);
   return next();
-};
-
-module.exports = {
-  setupPermissions,
-  User,
-  SafeRouter,
-  publicEndpoint,
-  canEditCase,
-  canViewPostSurvey,
 };

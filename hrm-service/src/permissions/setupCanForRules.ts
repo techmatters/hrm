@@ -1,40 +1,36 @@
-const CanCan = require('cancan');
-const { isCounselorWhoCreated, isSupervisor, isCaseOpen } = require('./helpers');
-const { actionsMaps } = require('./actions');
-const User = require('./user');
-const models = require('../models');
+import CanCan from 'cancan';
+import { isCounselorWhoCreated, isSupervisor, isCaseOpen } from './helpers';
+import { actionsMaps } from './actions';
+import { User } from './user';
+import models from '../models';
+// eslint-disable-next-line prettier/prettier
+import type { Condition, ConditionsSet, ConditionsSets, RulesFile } from './rulesMap' ;
 
 const { Case, PostSurvey } = models;
 
 /**
  * Given a conditionsState and a condition, returns true if the condition is true in the conditionsState
- * @param {{ [condition in import('./types').Condition]: boolean }} conditionsState
- * @returns {(condition: import('./types').Condition) => boolean}
  */
-const checkCondition = conditionsState => condition => conditionsState[condition];
+const checkCondition = (conditionsState: { [condition in Condition]: boolean }) => (condition: Condition): boolean => conditionsState[condition];
 
 /**
  * Given a conditionsState and a set of conditions, returns true if all the conditions are true in the conditionsState
- * @param {{ [condition in import('./types').Condition]: boolean }} conditionsState
- * @returns {(conditionsSet: import('./types').ConditionsSet) => boolean}
  */
-const checkConditionsSet = conditionsState => conditionsSet =>
+const checkConditionsSet = (conditionsState: { [condition in Condition]: boolean }) => (conditionsSet: ConditionsSet): boolean =>
   conditionsSet.length > 0 && conditionsSet.every(checkCondition(conditionsState));
 
 /**
  * Given a conditionsState and a set of conditions sets, returns true if one of the conditions sets contains conditions that are all true in the conditionsState
- * @param {{ [condition in import('./types').Condition]: boolean }} conditionsState
- * @param {import('./types').ConditionsSets} conditionsSets
  */
-const checkConditionsSets = (conditionsState, conditionsSets) =>
+const checkConditionsSets = (conditionsState: { [condition in Condition]: boolean }, conditionsSets: ConditionsSets): boolean =>
   conditionsSets.some(checkConditionsSet(conditionsState));
 
-const bindSetupAllow = allow => (
-  performerModel,
-  action,
-  targetModel,
-  targetKind,
-  conditionsSets,
+const bindSetupAllow = (allow: CanCan['allow']) => (
+  performerModel: any,
+  action: string,
+  targetModel: any,
+  targetKind: string,
+  conditionsSets: ConditionsSets,
 ) => {
   allow(performerModel, action, targetModel, (performer, target) => {
     // Build the proper conditionsState depending on the targetKind
@@ -57,10 +53,7 @@ const bindSetupAllow = allow => (
   });
 };
 
-/**
- * @param {import('./types').RulesFile} rules
- */
-const setupCanForRules = rules => {
+export const setupCanForRules = (rules: RulesFile) => {
   const cancan = new CanCan();
   const { can, allow } = cancan;
   const setupAllow = bindSetupAllow(allow);
@@ -76,8 +69,4 @@ const setupCanForRules = rules => {
   );
 
   return can;
-};
-
-module.exports = {
-  setupCanForRules,
 };
