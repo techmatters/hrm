@@ -105,6 +105,15 @@ export const convertCaseInfoToExpectedInfo = (input: any) => {
 
 export const validateCaseListResponse = (actual, expectedCaseAndContactModels, count) => {
   expect(actual.status).toBe(200);
+  if (count === 0) {
+    expect(actual.body).toStrictEqual(
+      expect.objectContaining({
+        cases: [],
+        count,
+      }),
+    );
+    return;
+  }
   expect(actual.body).toStrictEqual(
     expect.objectContaining({
       cases: expect.arrayContaining([expect.anything()]),

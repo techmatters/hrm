@@ -1,4 +1,6 @@
 /* eslint-disable jest/no-standalone-expect,no-await-in-loop */
+import { add, addDays } from 'date-fns';
+
 import * as caseApi from '../src/case/case';
 import { Case, getCase } from '../src/case/case';
 import * as caseDb from '../src/case/case-data-access';
@@ -9,6 +11,7 @@ import {
   validateCaseListResponse,
   validateSingleCaseResponse,
 } from './case-validation';
+import { DateExistsCondition } from '../src/case/case-data-access';
 
 const supertest = require('supertest');
 const each = require('jest-each').default;
@@ -44,6 +47,9 @@ type InsertSampleCaseSettings = {
   cases?: Case[];
   contactNames?: { firstName: string; lastName: string }[];
   contactNumbers?: string[];
+  createdAtGenerator?: (idx: number) => string;
+  updatedAtGenerator?: (idx: number) => string;
+  followUpDateGenerator?: (idx: number) => string;
 };
 
 const insertSampleCases = async ({
@@ -55,16 +61,39 @@ const insertSampleCases = async ({
   cases = [case1],
   contactNames = [{ firstName: 'Maria', lastName: 'Silva' }],
   contactNumbers = ['+1-202-555-0184'],
+  createdAtGenerator = () => undefined,
+  updatedAtGenerator = () => undefined,
+  followUpDateGenerator = () => undefined,
 }: InsertSampleCaseSettings): Promise<CaseWithContact[]> => {
   const createdCasesAndContacts: CaseWithContact[] = [];
   for (let i = 0; i < sampleSize; i += 1) {
+    const toCreate = {
+      ...cases[i % cases.length],
+      helpline: helplines[i % helplines.length],
+      status: statuses[i % statuses.length],
+      twilioWorkerId: workers[i % workers.length],
+    };
+    const createdAt = createdAtGenerator(i);
+    if (createdAt) {
+      toCreate.createdAt = createdAt;
+    } else {
+      delete toCreate.createdAt;
+    }
+    const updatedAt = updatedAtGenerator(i);
+    if (updatedAt) {
+      toCreate.updatedAt = updatedAt;
+    } else {
+      delete toCreate.updatedAt;
+    }
+    const followUpDate = followUpDateGenerator(i);
+    if (followUpDate) {
+      toCreate.info = toCreate.info ?? {};
+      toCreate.info.followUpDate = followUpDate;
+    } else if (toCreate.info) {
+      delete toCreate.info.followUpDate;
+    }
     let createdCase = await caseApi.createCase(
-      {
-        ...cases[i % cases.length],
-        helpline: helplines[i % helplines.length],
-        status: statuses[i % statuses.length],
-        twilioWorkerId: workers[i % workers.length],
-      },
+      toCreate,
       accounts[i % accounts.length],
       workers[i % workers.length],
     );
@@ -417,6 +446,7 @@ describe('/cases route', () => {
       });
 
       describe('Larger record set', () => {
+        const baselineDate = new Date(2010, 6, 15);
         const accounts = ['ACCOUNT_SID_1', 'ACCOUNT_SID_2'];
         const helplines = ['helpline-1', 'helpline-2', 'helpline-3'];
         const SIMPLE_SAMPLE_CONFIG: InsertSampleCaseSettings = {
@@ -667,6 +697,184 @@ describe('/cases route', () => {
                 .filter(ccc => ccc.case.connectedContacts.length > 0)
                 .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
             expectedTotalCount: 5,
+          },
+          {
+            description:
+              'should only include cases with followUpDate prior to the followUpDate.to filter if specified',
+            searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
+            body: {
+              filters: {
+                followUpDate: {
+                  to: add(baselineDate, { days: 4, hours: 12 }).toISOString(),
+                },
+              },
+            },
+            sampleConfig: <InsertSampleCaseSettings>{
+              ...SEARCHABLE_CONTACT_PHONE_NUMBER_SAMPLE_CONFIG,
+              followUpDateGenerator: idx => addDays(baselineDate, idx).toISOString(),
+            },
+            expectedCasesAndContacts: sampleCasesAndContacts =>
+              sampleCasesAndContacts
+                .filter(
+                  ccc =>
+                    new Date(ccc.case.info.followUpDate) <
+                    add(baselineDate, { days: 4, hours: 12 }),
+                )
+                .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+            expectedTotalCount: 5,
+          },
+          {
+            description:
+              'should only include cases with followUpDate after the followUpDate.from filter if specified',
+            searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
+            body: {
+              filters: {
+                followUpDate: {
+                  from: add(baselineDate, { days: 4, hours: 12 }).toISOString(),
+                },
+              },
+            },
+            sampleConfig: <InsertSampleCaseSettings>{
+              ...SEARCHABLE_CONTACT_PHONE_NUMBER_SAMPLE_CONFIG,
+              followUpDateGenerator: idx => addDays(baselineDate, idx).toISOString(),
+            },
+            expectedCasesAndContacts: sampleCasesAndContacts =>
+              sampleCasesAndContacts
+                .filter(
+                  ccc =>
+                    new Date(ccc.case.info.followUpDate) >
+                    add(baselineDate, { days: 4, hours: 12 }),
+                )
+                .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+            expectedTotalCount: 5,
+          },
+          {
+            description:
+              'should only include cases with followUpDate between the followUpDate.from and the followUpDate.to filter if both are specified',
+            searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
+            body: {
+              filters: {
+                followUpDate: {
+                  from: add(baselineDate, { days: 2, hours: 12 }).toISOString(),
+                  to: add(baselineDate, { days: 6, hours: 12 }).toISOString(),
+                },
+              },
+            },
+            sampleConfig: <InsertSampleCaseSettings>{
+              ...SEARCHABLE_CONTACT_PHONE_NUMBER_SAMPLE_CONFIG,
+              followUpDateGenerator: idx => addDays(baselineDate, idx).toISOString(),
+            },
+            expectedCasesAndContacts: sampleCasesAndContacts =>
+              sampleCasesAndContacts
+                .filter(
+                  ccc =>
+                    new Date(ccc.case.info.followUpDate) >
+                      add(baselineDate, { days: 2, hours: 12 }) &&
+                    new Date(ccc.case.info.followUpDate) <
+                      add(baselineDate, { days: 6, hours: 12 }),
+                )
+                .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+            expectedTotalCount: 4,
+          },
+          {
+            description:
+              'should only include cases without followUpDate set in followUpDate.exists: MUST_NOT_EXIST filter specified',
+            searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
+            body: {
+              filters: {
+                followUpDate: {
+                  exists: DateExistsCondition.MUST_NOT_EXIST,
+                },
+              },
+            },
+            sampleConfig: <InsertSampleCaseSettings>{
+              ...SEARCHABLE_CONTACT_PHONE_NUMBER_SAMPLE_CONFIG,
+              followUpDateGenerator: idx =>
+                idx % 2 === 1 ? addDays(baselineDate, idx).toISOString() : undefined,
+            },
+            expectedCasesAndContacts: sampleCasesAndContacts =>
+              sampleCasesAndContacts
+                .filter(ccc => !ccc.case.info.followUpDate)
+                .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+            expectedTotalCount: 5,
+          },
+          {
+            description:
+              'should not include cases with createdAt not between the createdAt.from and the createdAt.to filter if both are specified',
+            searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
+            body: {
+              filters: {
+                createdAt: {
+                  from: add(baselineDate, { days: 2, hours: 12 }).toISOString(),
+                  to: add(baselineDate, { days: 6, hours: 12 }).toISOString(),
+                },
+              },
+            },
+            sampleConfig: <InsertSampleCaseSettings>{
+              ...SEARCHABLE_CONTACT_PHONE_NUMBER_SAMPLE_CONFIG,
+              createdAtGenerator: idx => addDays(baselineDate, idx).toISOString(),
+            },
+            expectedCasesAndContacts: () => [],
+            expectedTotalCount: 0,
+          },
+          {
+            description:
+              'should include cases with createdAt between the createdAt.from and the createdAt.to filter if both are specified',
+            searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
+            body: {
+              filters: {
+                createdAt: {
+                  from: add(baselineDate, { days: 2, hours: 12 }).toISOString(),
+                  to: add(new Date(), { days: 6, hours: 12 }).toISOString(),
+                },
+              },
+            },
+            sampleConfig: <InsertSampleCaseSettings>{
+              ...SEARCHABLE_CONTACT_PHONE_NUMBER_SAMPLE_CONFIG,
+              createdAtGenerator: idx => addDays(baselineDate, idx).toISOString(),
+            },
+            expectedCasesAndContacts: sampleCasesAndContacts =>
+              sampleCasesAndContacts.sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+            expectedTotalCount: 10,
+          },
+          {
+            description:
+              'should not include cases with updatedAt not between the updatedAt.from and the updatedAt.to filter if both are specified',
+            searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
+            body: {
+              filters: {
+                updatedAt: {
+                  from: add(baselineDate, { days: 2, hours: 12 }).toISOString(),
+                  to: add(baselineDate, { days: 6, hours: 12 }).toISOString(),
+                },
+              },
+            },
+            sampleConfig: <InsertSampleCaseSettings>{
+              ...SEARCHABLE_CONTACT_PHONE_NUMBER_SAMPLE_CONFIG,
+              updatedAtGenerator: idx => addDays(baselineDate, idx).toISOString(),
+            },
+            expectedCasesAndContacts: () => [],
+            expectedTotalCount: 0,
+          },
+          {
+            description:
+              'should include cases with updatedAt between the updatedAt.from and the updatedAt.to filter if both are specified',
+            searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
+            body: {
+              filters: {
+                updatedAt: {
+                  from: add(baselineDate, { days: 2, hours: 12 }).toISOString(),
+                  to: add(new Date(), { days: 6, hours: 12 }).toISOString(),
+                },
+              },
+            },
+            sampleConfig: <InsertSampleCaseSettings>{
+              ...SEARCHABLE_CONTACT_PHONE_NUMBER_SAMPLE_CONFIG,
+              updatedAtGenerator: idx => addDays(baselineDate, idx).toISOString(),
+            },
+            expectedCasesAndContacts: sampleCasesAndContacts =>
+              sampleCasesAndContacts.sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+            expectedTotalCount: 10,
           },
         ]).test(
           '$description',
