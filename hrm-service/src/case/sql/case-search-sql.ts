@@ -52,9 +52,9 @@ FROM (
 ) AS contacts WHERE contacts."caseId" = cases.id`;
 
 const enum FilterableDateField {
-  CREATED_AT = 'cases."createdAt"',
-  UPDATED_AT = 'cases."updatedAt"',
-  FOLLOW_UP_DATE = `cases."info"->>'followUpDate'`,
+  CREATED_AT = 'cases."createdAt"::TIMESTAMP WITH TIME ZONE',
+  UPDATED_AT = 'cases."updatedAt"::TIMESTAMP WITH TIME ZONE',
+  FOLLOW_UP_DATE = `CAST(cases."info"->>'followUpDate' AS TIMESTAMP WITH TIME ZONE)`,
 }
 
 const dateFilterCondition = (
@@ -69,10 +69,11 @@ const dateFilterCondition = (
   }
   if (filter.to || filter.from) {
     return pgp.as.format(
-      `(($<from> IS NULL OR ${field}::TIMESTAMP WITH TIME ZONE >= $<from>::TIMESTAMP WITH TIME ZONE) 
-            AND ($<to> IS NULL OR ${field}::TIMESTAMP WITH TIME ZONE <= $<to>::TIMESTAMP WITH TIME ZONE)
+      `(($<from> IS NULL OR ${field} >= $<from>::TIMESTAMP WITH TIME ZONE) 
+            AND ($<to> IS NULL OR ${field} <= $<to>::TIMESTAMP WITH TIME ZONE)
             ${existsCondition ? ` AND ${existsCondition}` : ''})`,
       filter,
+      { def: null },
     );
   }
   return existsCondition;
