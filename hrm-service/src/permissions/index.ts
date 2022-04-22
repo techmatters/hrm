@@ -1,6 +1,7 @@
 export { User } from './user';
 export { SafeRouter, publicEndpoint } from './safe-router';
 export { canEditCase, canViewPostSurvey } from './middlewares';
+export { rulesMap } from './rulesMap';
 
 import { setupCanForRules } from './setupCanForRules';
 import { rulesMap } from './rulesMap';
@@ -24,18 +25,23 @@ const initializedCanMap = Object.entries(rulesMap).reduce<
 const applyPermissions = (
   req: Request,
   initializedCan: ReturnType<typeof setupCanForRules>,
-  permissionsConfig: string,
+  permissionsConfigName: string,
 ) => {
-  if (!initializedCan) throw new Error(`Cannot find rules for ${permissionsConfig}`);
+  if (!initializedCan) throw new Error(`Cannot find rules for ${permissionsConfigName}`);
 
   if (typeof initializedCan === 'string')
-    throw new Error(`Error in rules for ${permissionsConfig}. Error: ${initializedCan}`);
+    throw new Error(`Error in rules for ${permissionsConfigName}. Error: ${initializedCan}`);
 
   if (typeof initializedCan !== 'function')
-    throw new Error(`Error in rules for ${permissionsConfig}. Error: can is not a function.`);
+    throw new Error(`Error in rules for ${permissionsConfigName}. Error: can is not a function.`);
 
   //@ts-ignore TODO: Improve our custom Request type to override Express.Request
   req.can = initializedCan;
+};
+
+export const getPermissionsConfigName = (accountSid: string) => {
+  const permissionsKey = `PERMISSIONS_${accountSid}`;
+  return process.env[permissionsKey];
 };
 
 export const setupPermissions = (req: Request, res: Response, next: NextFunction) => {
@@ -47,9 +53,9 @@ export const setupPermissions = (req: Request, res: Response, next: NextFunction
   //@ts-ignore TODO: Improve our custom Request type to override Express.Request
   const { accountSid } = req;
   const permissionsKey = `PERMISSIONS_${accountSid}`;
-  const permissionsConfig = process.env[permissionsKey];
-  const initializedCan = initializedCanMap[permissionsConfig];
+  const permissionsConfigName = process.env[permissionsKey];
+  const initializedCan = initializedCanMap[permissionsConfigName];
 
-  applyPermissions(req, initializedCan, permissionsConfig);
+  applyPermissions(req, initializedCan, permissionsConfigName);
   return next();
 };

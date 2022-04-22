@@ -100,6 +100,7 @@ const overrideHTTPMethods = router =>
 /**
  * SafeRouter function. It creates a router where the user can set the HTTP methods
  * and also exposes the field 'expressRouter' to integrate it with Express.
+ * @returns {T extends import('express').Router}
  */
 const SafeRouter = args => {
   const router = Router(args);
