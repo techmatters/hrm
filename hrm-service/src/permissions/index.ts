@@ -39,9 +39,21 @@ const applyPermissions = (
   req.can = initializedCan;
 };
 
+/**
+ * @throws Will throw if there is no env var set for PERMISSIONS_${accountSid} or if it's an invalid key in rulesMap
+ */
 export const getPermissionsConfigName = (accountSid: string) => {
   const permissionsKey = `PERMISSIONS_${accountSid}`;
-  return process.env[permissionsKey];
+
+  const permissionsConfigName = process.env[permissionsKey];
+
+  if (!permissionsConfigName)
+    throw new Error(`No permissions set for account ${accountSid}.`);
+    
+  if (!rulesMap[permissionsConfigName])
+    throw new Error(`Permissions rules with name ${permissionsConfigName} missing in rules map.`);
+
+  return permissionsConfigName;
 };
 
 export const setupPermissions = (req: Request, res: Response, next: NextFunction) => {
