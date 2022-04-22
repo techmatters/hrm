@@ -11,16 +11,16 @@ const workerSid = 'worker-sid';
 const anotherWorkerSid = 'another-worker-sid';
 const testAccountSid = 'test-account-sid';
 
-const selectAuditStm = (tableName: string, targetPK: string) =>
-  `SELECT * FROM "Audits" WHERE "tableName" = '${tableName}' AND "targetPK" = '${targetPK}'`;
-
 describe('Cases_audit_trigger', () => {
   let createdCase = null;
+
+  const selectCreatedCaseAudits = () =>
+    `SELECT * FROM "Audits" WHERE "tableName" = 'Cases' AND ("oldRecord"->>'id' = '${createdCase.id}' OR "newRecord"->>'id' = '${createdCase.id}')`;
 
   afterAll(async () => {
     db.task(t =>
       t.none(
-        `DELETE FROM "Audits" WHERE "tableName" = 'Cases' AND "targetPK" = '${createdCase.id}'`,
+        `DELETE FROM "Audits" WHERE "tableName" = 'Cases' AND ("oldRecord"->>'id' = '${createdCase.id}' OR "newRecord"->>'id' = '${createdCase.id}')`,
       ),
     );
   });
@@ -38,17 +38,21 @@ describe('Cases_audit_trigger', () => {
 
     const expectedAudit = {
       id: expect.any(Number),
+      user: 'hrm',
       tableName: 'Cases',
-      targetPK: `${createdCase.id}`,
       operation: 'INSERT',
-      updatedBy: workerSid,
-      previousRecord: null,
+      oldRecord: null,
+      newRecord: {
+        ...createdCase,
+        createdAt: expect.toParseAsDate(createdCase.createdAt),
+        updatedAt: expect.toParseAsDate(createdCase.updatedAt),
+      },
       timestamp_trx: expect.toParseAsDate(),
       timestamp_stm: expect.toParseAsDate(),
       timestamp_clock: expect.toParseAsDate(),
     };
 
-    const caseAudits = await db.task(t => t.manyOrNone(selectAuditStm('Cases', createdCase.id)));
+    const caseAudits = await db.task(t => t.manyOrNone(selectCreatedCaseAudits));
 
     expect(caseAudits).toHaveLength(1);
 
@@ -66,13 +70,17 @@ describe('Cases_audit_trigger', () => {
 
     const expectedAudit = {
       id: expect.any(Number),
+      user: 'hrm',
       tableName: 'Cases',
-      targetPK: `${createdCase.id}`,
       operation: 'UPDATE',
-      updatedBy: anotherWorkerSid,
-      previousRecord: {
+      oldRecord: {
         ...createdCase,
         createdAt: expect.toParseAsDate(createdCase.createdAt),
+        updatedAt: expect.toParseAsDate(createdCase.updatedAt),
+      },
+      newRecord: {
+        ...updatedCase,
+        createdAt: expect.toParseAsDate(updatedCase.createdAt),
         updatedAt: expect.toParseAsDate(updatedCase.updatedAt),
       },
       timestamp_trx: expect.toParseAsDate(),
@@ -80,7 +88,7 @@ describe('Cases_audit_trigger', () => {
       timestamp_clock: expect.toParseAsDate(),
     };
 
-    const caseAudits = await db.task(t => t.manyOrNone(selectAuditStm('Cases', createdCase.id)));
+    const caseAudits = await db.task(t => t.manyOrNone(selectCreatedCaseAudits));
 
     expect(caseAudits).toHaveLength(2);
 
@@ -98,21 +106,21 @@ describe('Cases_audit_trigger', () => {
 
     const expectedAudit = {
       id: expect.any(Number),
+      user: 'hrm',
       tableName: 'Cases',
-      targetPK: `${createdCase.id}`,
       operation: 'DELETE',
-      updatedBy: null,
-      previousRecord: {
+      oldRecord: {
         ...createdCase,
         createdAt: expect.toParseAsDate(createdCase.createdAt),
         updatedAt: expect.toParseAsDate(createdCase.updatedAt),
       },
+      newRecord: null,
       timestamp_trx: expect.toParseAsDate(),
       timestamp_stm: expect.toParseAsDate(),
       timestamp_clock: expect.toParseAsDate(),
     };
 
-    const caseAudits = await db.task(t => t.manyOrNone(selectAuditStm('Cases', createdCase.id)));
+    const caseAudits = await db.task(t => t.manyOrNone(selectCreatedCaseAudits));
 
     expect(caseAudits).toHaveLength(3);
 
@@ -127,7 +135,12 @@ describe('CaseSections_audit_trigger', () => {
   const sectionName = 'section';
   const sectionId = '123';
 
-  const getCaseSectionPK = cs => `${cs.caseId}${cs.sectionType}${cs.sectionId}`;
+  const selectCreatedCaseSectionAudits = () =>
+    `SELECT * FROM "Audits" WHERE "tableName" = 'CaseSections' AND (
+      ("oldRecord"->>'caseId' = '${createdCase.id}' AND "oldRecord"->>'sectionType' = '${sectionName}'  AND "oldRecord"->>'sectionId' = '${sectionId}')
+      OR 
+      ("newRecord"->>'caseId' = '${createdCase.id}' AND "newRecord"->>'sectionType' = '${sectionName}'  AND "newRecord"->>'sectionId' = '${sectionId}')
+    )`;
 
   beforeAll(async () => {
     createdCase = await db.task(t =>
@@ -142,9 +155,17 @@ describe('CaseSections_audit_trigger', () => {
   afterAll(async () => {
     db.task(t =>
       t.none(
-        `DELETE FROM "Audits" WHERE "tableName" = 'CaseSections' AND "targetPK" = '${getCaseSectionPK(
-          createdCaseSection,
-        )}'`,
+        `DELETE FROM "Audits" WHERE "tableName" = 'CaseSections' AND (
+          ("oldRecord"->>'caseId' = '${createdCase.id}' AND "oldRecord"->>'sectionType' = '${sectionName}'  AND "oldRecord"->>'sectionId' = '${sectionId}')
+          OR 
+          ("newRecord"->>'caseId' = '${createdCase.id}' AND "newRecord"->>'sectionType' = '${sectionName}'  AND "newRecord"->>'sectionId' = '${sectionId}')
+        )`,
+      ),
+    );
+
+    db.task(t =>
+      t.none(
+        `DELETE FROM "Audits" WHERE "tableName" = 'Cases' AND ("oldRecord"->>'id' = '${createdCase.id}' OR "newRecord"->>'id' = '${createdCase.id}')`,
       ),
     );
   });
@@ -162,19 +183,21 @@ describe('CaseSections_audit_trigger', () => {
 
     const expectedAudit = {
       id: expect.any(Number),
+      user: 'hrm',
       tableName: 'CaseSections',
-      targetPK: getCaseSectionPK(createdCaseSection),
       operation: 'INSERT',
-      updatedBy: workerSid,
-      previousRecord: null,
+      oldRecord: null,
+      newRecord: {
+        ...createdCaseSection,
+        createdAt: expect.toParseAsDate(createdCaseSection.createdAt),
+        updatedAt: expect.toParseAsDate(createdCaseSection.updatedAt),
+      },
       timestamp_trx: expect.toParseAsDate(),
       timestamp_stm: expect.toParseAsDate(),
       timestamp_clock: expect.toParseAsDate(),
     };
 
-    const caseSectionAudits = await db.task(t =>
-      t.manyOrNone(selectAuditStm('CaseSections', getCaseSectionPK(createdCaseSection))),
-    );
+    const caseSectionAudits = await db.task(t => t.manyOrNone(selectCreatedCaseSectionAudits()));
 
     expect(caseSectionAudits).toHaveLength(1);
 
@@ -194,13 +217,17 @@ describe('CaseSections_audit_trigger', () => {
 
     const expectedAudit = {
       id: expect.any(Number),
+      user: 'hrm',
       tableName: 'CaseSections',
-      targetPK: getCaseSectionPK(updatedCaseSection),
       operation: 'UPDATE',
-      updatedBy: anotherWorkerSid,
-      previousRecord: {
+      oldRecord: {
         ...createdCaseSection,
         createdAt: expect.toParseAsDate(createdCaseSection.createdAt),
+        updatedAt: expect.toParseAsDate(createdCaseSection.updatedAt),
+      },
+      newRecord: {
+        ...updatedCaseSection,
+        createdAt: expect.toParseAsDate(updatedCaseSection.createdAt),
         updatedAt: expect.toParseAsDate(updatedCaseSection.updatedAt),
       },
       timestamp_trx: expect.toParseAsDate(),
@@ -208,9 +235,7 @@ describe('CaseSections_audit_trigger', () => {
       timestamp_clock: expect.toParseAsDate(),
     };
 
-    const caseSectionAudits = await db.task(t =>
-      t.manyOrNone(selectAuditStm('CaseSections', getCaseSectionPK(createdCaseSection))),
-    );
+    const caseSectionAudits = await db.task(t => t.manyOrNone(selectCreatedCaseSectionAudits()));
 
     expect(caseSectionAudits).toHaveLength(2);
 
@@ -231,23 +256,21 @@ describe('CaseSections_audit_trigger', () => {
 
     const expectedAudit = {
       id: expect.any(Number),
+      user: 'hrm',
       tableName: 'CaseSections',
-      targetPK: getCaseSectionPK(createdCaseSection),
       operation: 'DELETE',
-      updatedBy: null,
-      previousRecord: {
+      oldRecord: {
         ...createdCaseSection,
         createdAt: expect.toParseAsDate(createdCaseSection.createdAt),
         updatedAt: expect.toParseAsDate(createdCaseSection.updatedAt),
       },
+      newRecord: null,
       timestamp_trx: expect.toParseAsDate(),
       timestamp_stm: expect.toParseAsDate(),
       timestamp_clock: expect.toParseAsDate(),
     };
 
-    const caseSectionAudits = await db.task(t =>
-      t.manyOrNone(selectAuditStm('CaseSections', getCaseSectionPK(createdCaseSection))),
-    );
+    const caseSectionAudits = await db.task(t => t.manyOrNone(selectCreatedCaseSectionAudits()));
 
     expect(caseSectionAudits).toHaveLength(3);
 
@@ -258,10 +281,13 @@ describe('CaseSections_audit_trigger', () => {
 describe('Contacts_audit_trigger', () => {
   let createdContact = null;
 
+  const selectCreatedContactAudits = () =>
+    `SELECT * FROM "Audits" WHERE "tableName" = 'Contacts' AND ("oldRecord"->>'id' = '${createdContact.id}' OR "newRecord"->>'id' = '${createdContact.id}')`;
+
   afterAll(async () => {
     db.task(t =>
       t.none(
-        `DELETE FROM "Audits" WHERE "tableName" = 'Contacts' AND "targetPK" = '${createdContact.id}'`,
+        `DELETE FROM "Audits" WHERE "tableName" = 'Contacts' AND ("oldRecord"->>'id' = '${createdContact.id}' OR "newRecord"->>'id' = '${createdContact.id}')`,
       ),
     );
   });
@@ -279,19 +305,21 @@ describe('Contacts_audit_trigger', () => {
 
     const expectedAudit = {
       id: expect.any(Number),
+      user: 'hrm',
       tableName: 'Contacts',
-      targetPK: `${createdContact.id}`,
       operation: 'INSERT',
-      updatedBy: workerSid,
-      previousRecord: null,
+      oldRecord: null,
+      newRecord: {
+        ...createdContact,
+        createdAt: expect.toParseAsDate(createdContact.createdAt),
+        updatedAt: expect.toParseAsDate(createdContact.updatedAt),
+      },
       timestamp_trx: expect.toParseAsDate(),
       timestamp_stm: expect.toParseAsDate(),
       timestamp_clock: expect.toParseAsDate(),
     };
 
-    const contactAudits = await db.task(t =>
-      t.manyOrNone(selectAuditStm('Contacts', createdContact.id)),
-    );
+    const contactAudits = await db.task(t => t.manyOrNone(selectCreatedContactAudits()));
 
     expect(contactAudits).toHaveLength(1);
 
@@ -309,13 +337,17 @@ describe('Contacts_audit_trigger', () => {
 
     const expectedAudit = {
       id: expect.any(Number),
+      user: 'hrm',
       tableName: 'Contacts',
-      targetPK: `${createdContact.id}`,
       operation: 'UPDATE',
-      updatedBy: anotherWorkerSid,
-      previousRecord: {
+      oldRecord: {
         ...createdContact,
         createdAt: expect.toParseAsDate(createdContact.createdAt),
+        updatedAt: expect.toParseAsDate(createdContact.updatedAt),
+      },
+      newRecord: {
+        ...updatedContact,
+        createdAt: expect.toParseAsDate(updatedContact.createdAt),
         updatedAt: expect.toParseAsDate(updatedContact.updatedAt),
       },
       timestamp_trx: expect.toParseAsDate(),
@@ -323,9 +355,7 @@ describe('Contacts_audit_trigger', () => {
       timestamp_clock: expect.toParseAsDate(),
     };
 
-    const contactAudits = await db.task(t =>
-      t.manyOrNone(selectAuditStm('Contacts', createdContact.id)),
-    );
+    const contactAudits = await db.task(t => t.manyOrNone(selectCreatedContactAudits()));
 
     expect(contactAudits).toHaveLength(2);
 
@@ -343,23 +373,21 @@ describe('Contacts_audit_trigger', () => {
 
     const expectedAudit = {
       id: expect.any(Number),
+      user: 'hrm',
       tableName: 'Contacts',
-      targetPK: `${createdContact.id}`,
       operation: 'DELETE',
-      updatedBy: null,
-      previousRecord: {
+      oldRecord: {
         ...createdContact,
         createdAt: expect.toParseAsDate(createdContact.createdAt),
         updatedAt: expect.toParseAsDate(createdContact.updatedAt),
       },
+      newRecord: null,
       timestamp_trx: expect.toParseAsDate(),
       timestamp_stm: expect.toParseAsDate(),
       timestamp_clock: expect.toParseAsDate(),
     };
 
-    const contactAudits = await db.task(t =>
-      t.manyOrNone(selectAuditStm('Contacts', createdContact.id)),
-    );
+    const contactAudits = await db.task(t => t.manyOrNone(selectCreatedContactAudits()));
 
     expect(contactAudits).toHaveLength(3);
 

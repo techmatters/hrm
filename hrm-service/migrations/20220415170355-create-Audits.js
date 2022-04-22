@@ -19,11 +19,11 @@ module.exports = {
       `CREATE TABLE IF NOT EXISTS public."Audits"
       (
         id integer NOT NULL DEFAULT nextval('"Audits_id_seq"'::regclass),
+        "user" text NOT NULL,
         "tableName" text NOT NULL,
-        "targetPK" text NOT NULL,
         operation text NOT NULL,
-        "updatedBy" text,
-        "previousRecord" jsonb,
+        "oldRecord" jsonb,
+        "newRecord" jsonb,
         timestamp_trx timestamp with time zone NOT NULL,
         timestamp_stm timestamp with time zone NOT NULL,
         timestamp_clock timestamp with time zone NOT NULL,
@@ -43,46 +43,23 @@ module.exports = {
       AS $BODY$
       DECLARE
         audit_row public."Audits";
-        "targetPK" text;
-        "updatedBy" text;
       BEGIN
         IF TG_WHEN <> 'AFTER' THEN
           RAISE EXCEPTION 'audit_trigger() may only run as an AFTER trigger';
         END IF;
 
-        IF (TG_OP = 'UPDATE' AND TG_LEVEL = 'ROW') THEN
-          "updatedBy" = NEW."updatedBy";
-          IF (TG_TABLE_NAME = 'CaseSections') THEN
-            "targetPK" = concat(NEW."caseId", NEW."sectionType", NEW."sectionId");
-          ELSE
-            "targetPK" = NEW."id";
-          END IF;
-        ELSIF (TG_OP = 'INSERT' AND TG_LEVEL = 'ROW') THEN
-          "updatedBy" = NEW."createdBy";
-          IF (TG_TABLE_NAME = 'CaseSections') THEN
-            "targetPK" = concat(NEW."caseId", NEW."sectionType", NEW."sectionId");
-          ELSE
-            "targetPK" = NEW."id";
-          END IF;
-        ELSIF (TG_OP = 'DELETE' AND TG_LEVEL = 'ROW') THEN
-          "updatedBy" = NULL;
-          IF (TG_TABLE_NAME = 'CaseSections') THEN
-            "targetPK" = concat(OLD."caseId", OLD."sectionType", OLD."sectionId");
-          ELSE
-            "targetPK" = OLD."id";
-          END IF;
-        ELSE
+        IF (TG_LEVEL <> 'ROW' OR (TG_OP <> 'UPDATE' AND TG_OP <> 'INSERT' AND TG_OP <> 'DELETE')) THEN
           RAISE EXCEPTION 'audit_trigger() added as trigger for unhandled case: %, %',TG_OP, TG_LEVEL;
           RETURN NULL;
         END IF;
         
         audit_row = ROW(
           nextval('"Audits_id_seq"'::regclass), -- new audit id
+          current_user,                         -- the current DB user
           TG_TABLE_NAME,                        -- target tabla name
-          "targetPK",                           -- target row primary key
           TG_OP,                                -- operation performed on target row
-          "updatedBy",                          -- who's performing the above operation on the target row
           to_jsonb(OLD),                        -- target record previous state
+          to_jsonb(NEW),                        -- target record new state
           current_timestamp,                    -- transaction timestamp
           statement_timestamp(),                -- statement timestamp
           clock_timestamp()                     -- Current date and time (changes during statement execution)
