@@ -320,6 +320,7 @@ const ContactController = Contact => {
       rawJson: body.form,
       twilioWorkerId: body.twilioWorkerId || '',
       createdBy: workerSid,
+      updatedBy: null,
       helpline: body.helpline || '',
       queueName: body.queueName || body.form.queueName,
       number: body.number || '',

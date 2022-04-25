@@ -43,6 +43,7 @@ export type CaseRecordCommon = {
   status: string;
   twilioWorkerId: string;
   createdBy: string;
+  updatedBy: string;
   accountSid: string;
   createdAt: string;
   updatedAt: string;
