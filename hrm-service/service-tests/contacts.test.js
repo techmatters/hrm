@@ -66,10 +66,6 @@ afterAll(done => {
   console.log('Deleted data in contacts.test');
 });
 
-// afterEach(async () => {
-//   await db.query(`DELETE FROM "Audits" WHERE "tableName" = 'Cases' AND ("oldRecord"->>'id' = '${createdCase.id}' OR "newRecord"->>'id' = '${createdCase.id}')`)
-// })
-
 describe('/contacts route', () => {
   const route = `/v0/accounts/${accountSid}/contacts`;
 
