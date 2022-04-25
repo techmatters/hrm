@@ -16,9 +16,7 @@ const request = supertest.agent(server);
 
 const { accountSid } = mocks;
 const workerSid = 'worker-sid';
-/**
- * Notes: I think these should belong in the mocks.js. I will move them once I finalize this PR. I understand I have to destroy them, and I was hoping you can point me to the best practise to do this.
- */
+
 
 const csamReport1 = {
   csamReportId: 'csam-report-id',
@@ -38,7 +36,7 @@ const { contact1 } = mocks;
 const invalidContactCsamReport = {
   csamReportId: 'csam-report-id',
   twilioWorkerId: 'worker-sid',
-  contactId: 12345,
+  contactId: 1234,
 };
 
 const headers = {
