@@ -17,7 +17,6 @@ const request = supertest.agent(server);
 const { accountSid } = mocks;
 const workerSid = 'worker-sid';
 
-
 const csamReport1 = {
   csamReportId: 'csam-report-id',
   twilioWorkerId: workerSid,
