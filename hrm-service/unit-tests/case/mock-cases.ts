@@ -18,6 +18,7 @@ export const createMockCaseRecord = (partial: Partial<CaseRecord>): CaseRecord =
       accountSid: 'ACCOUNT_SID',
       createdAt: baselineDate.toISOString(),
       updatedAt: baselineDate.toISOString(),
+      updatedBy: null,
       caseSections: [
         {
           caseId: 1,

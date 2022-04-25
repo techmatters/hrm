@@ -47,6 +47,7 @@ describe('/cases route', () => {
       id: expect.anything(),
       updatedAt: expect.toParseAsDate(),
       createdAt: expect.toParseAsDate(),
+      updatedBy: null,
       categories: {},
       connectedContacts: [],
       childName: '',
@@ -96,13 +97,13 @@ describe('/cases route', () => {
         id: '1',
         note: 'Child with covid-19',
         twilioWorkerId: 'note-adder',
-        createdAt: '2022-01-01 00:00:00',
+        createdAt: '2022-01-01T00:00:00+00:00',
       },
       {
         id: '2',
         note: 'Child recovered from covid-19',
         twilioWorkerId: 'other-note-adder',
-        createdAt: '2022-01-05 00:00:00',
+        createdAt: '2022-01-05T00:00:00+00:00',
       },
     ];
     const perpetrators = [
@@ -307,13 +308,13 @@ describe('/cases route', () => {
                 id: '1',
                 note: 'Child with pneumonia',
                 twilioWorkerId: 'note-adder-1',
-                createdAt: '2022-01-01 00:00:00',
+                createdAt: '2022-01-01T00:00:00+00:00',
               },
               {
                 id: '2',
                 note: 'Child recovered from pneumonia',
                 twilioWorkerId: 'other-note-adder-1',
-                createdAt: '2022-01-05 00:00:00',
+                createdAt: '2022-01-05T00:00:00+00:00',
                 custom: 'property',
               },
             ],
@@ -328,13 +329,13 @@ describe('/cases route', () => {
                 id: '3',
                 note: 'Child with pneumonia',
                 twilioWorkerId: 'note-adder-1',
-                createdAt: '2022-01-01 00:00:00',
+                createdAt: '2022-01-01T00:00:00+00:00',
               },
               {
                 id: '4',
                 note: 'Child recovered from pneumonia',
                 twilioWorkerId: 'other-note-adder-1',
-                createdAt: '2022-01-05 00:00:00',
+                createdAt: '2022-01-05T00:00:00+00:00',
                 custom: 'property',
               },
             ],
@@ -480,12 +481,18 @@ describe('/cases route', () => {
           },
           changeDescription: 'incident deleted',
         },
+        {
+          infoUpdate: { summary: 'To summarize....' },
+          changeDescription: 'summary changed by another couselor',
+          customWorkerSid: 'another-worker-sid',
+        },
       ]).test(
         'should return 200 when $changeDescription',
         async ({
           caseUpdate: caseUpdateParam = {},
           infoUpdate,
           originalCase: originalCaseGetter = () => cases.blank,
+          customWorkerSid = undefined,
         }) => {
           const caseAuditPreviousCount = await countCaseAudits(workerSid);
           const caseUpdate =
@@ -497,9 +504,10 @@ describe('/cases route', () => {
           if (infoUpdate) {
             update.info = { ...originalCase.info, ...caseUpdate.info, ...infoUpdate };
           }
+
           const response = await request
             .put(subRoute(originalCase.id))
-            .set(headers)
+            .set({ ...headers, ...(customWorkerSid && { 'test-user': customWorkerSid }) })
             .send(update);
 
           expect(response.status).toBe(200);
@@ -508,6 +516,7 @@ describe('/cases route', () => {
             createdAt: expect.toParseAsDate(originalCase.createdAt),
             updatedAt: expect.toParseAsDate(),
             ...convertCaseInfoToExpectedInfo(update),
+            updatedBy: customWorkerSid || workerSid,
           };
 
           expect(response.body).toMatchObject(expected);
