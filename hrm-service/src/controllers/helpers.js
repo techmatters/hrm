@@ -71,9 +71,19 @@ const isEmptySearchParams = body => {
 
 const orUndefined = value => value || undefined;
 
+function formatNumber(number) {
+  if (number === undefined || number == null || number === 'Anonymous' || number === 'Customer') {
+    return number;
+  }
+
+  const len = number.length;
+  return number.slice(0, 4) + 'X'.repeat(Math.max(0, len - 7)) + number.slice(len - 3);
+}
+
 module.exports = {
   retrieveCategories,
   getPaginationElements,
   isEmptySearchParams,
   orUndefined,
+  formatNumber,
 };

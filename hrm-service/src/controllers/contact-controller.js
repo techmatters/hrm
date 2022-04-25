@@ -8,6 +8,7 @@ const {
   getPaginationElements,
   isEmptySearchParams,
   orUndefined,
+  formatNumber,
 } = require('./helpers');
 const models = require('../models');
 
@@ -21,15 +22,6 @@ const callTypes = {
   child: 'Child calling about self',
   caller: 'Someone calling about a child',
 };
-
-function formatNumber(number) {
-  if (number == null || number === 'Anonymous' || number === 'Customer') {
-    return number;
-  }
-
-  const len = number.length;
-  return number.slice(0, 4) + 'X'.repeat(len - 7) + number.slice(len - 3);
-}
 
 function redact(form) {
   if (!form) {
