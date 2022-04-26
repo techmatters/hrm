@@ -264,6 +264,7 @@ const ContactController = Contact => {
       number: formatNumber(e.number),
       channel: e.channel,
       conversationDuration: e.conversationDuration,
+      csamReports: e.csamReports,
     }));
   };
 

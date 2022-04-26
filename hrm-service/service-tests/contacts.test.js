@@ -6,6 +6,8 @@ const mocks = require('./mocks');
 const each = require('jest-each').default;
 const { formatNumber } = require('../src/controllers/helpers');
 const { db } = require('../src/connection-pool');
+import { subHours, subDays } from 'date-fns';
+
 import './case-validation';
 
 const server = app.listen();
@@ -301,9 +303,34 @@ describe('/contacts route', () => {
     const queueName = 'queue-name';
 
     let createdContacts = [];
+    let csamReports = [];
     beforeAll(async () => {
       // Clean what's been created so far
       await Contact.destroy(query);
+
+      // Create CSAM Reports
+      const csamReportId1 = 'csam-report-id-1';
+      const csamReportId2 = 'csam-report-id-2';
+
+      const newReport1 = (
+        await CSAMReportController.createCSAMReport(
+          {
+            csamReportId: csamReportId1,
+            twilioWorkerId: workerSid,
+          },
+          accountSid,
+        )
+      ).dataValues;
+
+      const newReport2 = (
+        await CSAMReportController.createCSAMReport(
+          {
+            csamReportId: csamReportId2,
+            twilioWorkerId: workerSid,
+          },
+          accountSid,
+        )
+      ).dataValues;
 
       // Create some contacts to work with
       const contact = { ...contact1 };
@@ -312,7 +339,13 @@ describe('/contacts route', () => {
 
       const oneHourBefore = {
         ...withQueueName,
-        timeOfContact: new Date(new Date().getTime() - 1000 * 60 * 60).toISOString(), // one hour before
+        timeOfContact: subHours(new Date(), 1).toISOString(), // one hour before
+      };
+
+      const withCSAMReports = {
+        ...contact2,
+        queueName: 'withCSAMReports',
+        csamReports: [newReport1, newReport2],
       };
 
       const responses = await resolveSequentially(
@@ -328,6 +361,7 @@ describe('/contacts route', () => {
           withQueueName,
           oneHourBefore,
           withQueueName,
+          withCSAMReports,
         ].map(c => () =>
           request
             .post(route)
@@ -337,6 +371,15 @@ describe('/contacts route', () => {
       );
 
       createdContacts = responses.map(r => r.body);
+      const withCSAMReportsId = createdContacts.find(c => c.queueName === 'withCSAMReports').id;
+
+      // Retrieve the csam reports that should be connected to withCSAMReports
+      const updatedCsamReports = await CSAMReportController.getCSAMReports(
+        withCSAMReportsId,
+        accountSid,
+      );
+      expect(updatedCsamReports).toHaveLength(2);
+      csamReports = updatedCsamReports;
     });
 
     afterAll(async () => {
@@ -347,8 +390,13 @@ describe('/contacts route', () => {
           },
         },
       });
-
-      createdContacts = [];
+      await CSAMReport.destroy({
+        where: {
+          id: {
+            [Sequelize.Op.in]: csamReports.map(c => c.id),
+          },
+        },
+      });
     });
 
     each([
@@ -385,6 +433,27 @@ describe('/contacts route', () => {
           );
         },
       },
+      {
+        queryParams: `queueName=withCSAMReports`,
+        changeDescription:
+          'withCSAMReports (filter by queueName and check csam reports are retrieved)',
+        expectCallback: response => {
+          expect(response.status).toBe(200);
+          expect(response.body.length).toBe(1);
+
+          const withCSAMReports = createdContacts.find(c => c.queueName === 'withCSAMReports');
+
+          expect(response.body.find(c => withCSAMReports.id === c.id)).toBeDefined();
+          expect(response.body[0].FormData).toMatchObject(withCSAMReports.rawJson);
+          response.body[0].csamReports.forEach(r => {
+            expect(csamReports.find(r2 => r2.id === r.id)).toMatchObject({
+              ...r,
+              createdAt: expect.toParseAsDate(r.createdAt),
+              updatedAt: expect.toParseAsDate(r.updatedAt),
+            });
+          });
+        },
+      },
     ]).test(
       'should return 200 when $changeDescription',
       async ({ expectCallback, queryParams }) => {
@@ -406,22 +475,54 @@ describe('/contacts route', () => {
       });
 
       let createdContacts = [];
+      let csamReports = [];
       beforeAll(async () => {
         // Clean what's been created so far
         await Contact.destroy(query);
 
+        // Create CSAM Reports
+        const csamReportId1 = 'csam-report-id-1';
+        const csamReportId2 = 'csam-report-id-2';
+
+        const newReport1 = (
+          await CSAMReportController.createCSAMReport(
+            {
+              csamReportId: csamReportId1,
+              twilioWorkerId: workerSid,
+            },
+            accountSid,
+          )
+        ).dataValues;
+
+        const newReport2 = (
+          await CSAMReportController.createCSAMReport(
+            {
+              csamReportId: csamReportId2,
+              twilioWorkerId: workerSid,
+            },
+            accountSid,
+          )
+        ).dataValues;
+
         // Create some contacts to work with
         const oneHourBefore = {
           ...another2,
-          timeOfContact: new Date(new Date().getTime() - 1000 * 60 * 60).toISOString(), // one hour before
+          timeOfContact: subHours(new Date(), 1).toISOString(), // one hour before
         };
 
         const oneWeekBefore = {
           ...noHelpline,
-          timeOfContact: new Date(new Date().getTime() - 1000 * 60 * 60 * 24 * 7).toISOString(), // one hour before
+          timeOfContact: subDays(new Date(), 7).toISOString(), // one hour before
         };
 
         const invalidContact = {};
+
+        const withCSAMReports = {
+          ...noHelpline,
+          queueName: 'withCSAMReports',
+          number: '123412341234',
+          csamReports: [newReport1, newReport2],
+        };
 
         const responses = await resolveSequentially(
           [
@@ -434,6 +535,7 @@ describe('/contacts route', () => {
             withTaskId,
             oneHourBefore,
             invalidContact,
+            withCSAMReports,
             oneWeekBefore,
           ].map(c => () =>
             request
@@ -444,6 +546,15 @@ describe('/contacts route', () => {
         );
 
         createdContacts = responses.map(r => r.body);
+        const withCSAMReportsId = createdContacts.find(c => c.queueName === 'withCSAMReports').id;
+
+        // Retrieve the csam reports that should be connected to withCSAMReports
+        const updatedCsamReports = await CSAMReportController.getCSAMReports(
+          withCSAMReportsId,
+          accountSid,
+        );
+        expect(updatedCsamReports).toHaveLength(2);
+        csamReports = updatedCsamReports;
       });
 
       afterAll(async () => {
@@ -454,8 +565,13 @@ describe('/contacts route', () => {
             },
           },
         });
-
-        createdContacts = [];
+        await CSAMReport.destroy({
+          where: {
+            id: {
+              [Sequelize.Op.in]: csamReports.map(c => c.id),
+            },
+          },
+        });
       });
 
       each([
@@ -501,11 +617,11 @@ describe('/contacts route', () => {
           changeDescription: 'multiple input search without name search',
           body: { counselor: 'worker-sid' }, // should match contact1 & broken1 & another1 & noHelpline
           expectCallback: response => {
-            const { contacts, count } = response.body;
+            const { contacts } = response.body;
 
             expect(response.status).toBe(200);
             // invalidContact will return null from the search endpoint, exclude it here
-            expect(count).toBe(createdContacts.length - 1);
+            expect(contacts.length).toBe(createdContacts.length - 1);
             const createdConcatdsByTimeOfContact = createdContacts.sort(compareTimeOfContactDesc);
             createdConcatdsByTimeOfContact.forEach(c => {
               const searchContact = contacts.find(results => results.contactId === c.id);
@@ -632,6 +748,29 @@ describe('/contacts route', () => {
                 // Check that all contacts contains the appropriate info
                 expect(c.rawJson).toMatchObject(searchContact.details);
               }
+            });
+          },
+        },
+        {
+          changeDescription:
+            'withCSAMReports (filter by contactNumber and check csam reports are retrieved)',
+          body: { contactNumber: '123412341234' },
+          expectCallback: response => {
+            expect(response.status).toBe(200);
+
+            const { contacts } = response.body;
+            expect(contacts.length).toBe(1);
+
+            const withCSAMReports = createdContacts.find(c => c.queueName === 'withCSAMReports');
+
+            expect(contacts.find(c => withCSAMReports.id === c.contactId)).toBeDefined();
+            expect(contacts[0].details).toMatchObject(withCSAMReports.rawJson);
+            contacts[0].csamReports.forEach(r => {
+              expect(csamReports.find(r2 => r2.id === r.id)).toMatchObject({
+                ...r,
+                createdAt: expect.toParseAsDate(r.createdAt),
+                updatedAt: expect.toParseAsDate(r.updatedAt),
+              });
             });
           },
         },
