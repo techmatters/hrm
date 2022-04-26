@@ -11,6 +11,14 @@ import './case-validation';
 const server = app.listen();
 const request = supertest.agent(server);
 
+/**
+ *
+ * @param {(() => Promise<any>)[]} ps
+ * @returns
+ */
+const resolveSequentially = ps =>
+  ps.reduce((p, v) => p.then(a => v().then(r => a.concat([r]))), Promise.resolve([]));
+
 const {
   accountSid,
   contact1,
@@ -307,28 +315,27 @@ describe('/contacts route', () => {
         timeOfContact: new Date(new Date().getTime() - 1000 * 60 * 60).toISOString(), // one hour before
       };
 
-      const sequentialResponses = [
-        contact,
-        contact,
-        contact,
-        contact,
-        contact,
-        contact,
-        contact,
-        contact,
-        withQueueName,
-        oneHourBefore,
-        withQueueName,
-      ]
-        .map(c => () =>
+      const responses = await resolveSequentially(
+        [
+          contact,
+          contact,
+          contact,
+          contact,
+          contact,
+          contact,
+          contact,
+          contact,
+          withQueueName,
+          oneHourBefore,
+          withQueueName,
+        ].map(c => () =>
           request
             .post(route)
             .set(headers)
             .send(c),
-        )
-        .reduce((p, v) => p.then(a => v().then(r => a.concat([r]))), Promise.resolve([]));
+        ),
+      );
 
-      const responses = await sequentialResponses;
       createdContacts = responses.map(r => r.body);
     });
 
@@ -416,27 +423,26 @@ describe('/contacts route', () => {
 
         const invalidContact = {};
 
-        const sequentialResponses = [
-          contact1,
-          contact2,
-          broken1,
-          broken2,
-          another1,
-          noHelpline,
-          withTaskId,
-          oneHourBefore,
-          invalidContact,
-          oneWeekBefore,
-        ]
-          .map(c => () =>
+        const responses = await resolveSequentially(
+          [
+            contact1,
+            contact2,
+            broken1,
+            broken2,
+            another1,
+            noHelpline,
+            withTaskId,
+            oneHourBefore,
+            invalidContact,
+            oneWeekBefore,
+          ].map(c => () =>
             request
               .post(route)
               .set(headers)
               .send(c),
-          )
-          .reduce((p, v) => p.then(a => v().then(r => [...a, r])), Promise.resolve([]));
+          ),
+        );
 
-        const responses = await sequentialResponses;
         createdContacts = responses.map(r => r.body);
       });
 
