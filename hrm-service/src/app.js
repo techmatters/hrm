@@ -137,10 +137,11 @@ app.use((err, req, res, next) => {
 
   // set locals, only providing error in development
   res.locals.message = err.message;
-  res.locals.error = req.app.get('env') === 'development' ? err : {};
+  const env = req.app.get('env');
+  const setLocals = env === 'development' || env === 'test';
+  res.locals.error = setLocals ? err : {};
 
-  const error =
-    req.app.get('env') === 'development' ? { message: err.message, error: err.stack } : {};
+  const error = setLocals ? { message: err.message, error: err.stack } : {};
 
   res.status(err.status || 500);
   res.json(error);

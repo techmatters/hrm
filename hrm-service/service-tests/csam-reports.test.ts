@@ -136,7 +136,9 @@ describe('/csamReports route', () => {
         .send(invalidContactCsamReport);
 
       expect(response.status).toBe(500);
-      expect(response.body).toEqual({});
+      expect(response.body.message).toContain(
+        'insert or update on table "CSAMReports" violates foreign key constraint "CSAMReports_contactId_fkey"',
+      );
     });
     test('missing twilioWorkerId, returns 200', async () => {
       const response = await request
