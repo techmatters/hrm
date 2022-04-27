@@ -7,7 +7,12 @@ const casesRouter = SafeRouter();
 
 casesRouter.get('/', publicEndpoint, async (req, res) => {
   const { accountSid } = req;
-  const cases = await caseApi.listCases(req.query, accountSid);
+  const { sortDirection, sortBy, limit, offset, ...search } = req.query;
+  const cases = await caseApi.searchCases(
+    accountSid,
+    { sortDirection, sortBy, limit, offset },
+    { filters: { includeOrphans: false }, ...search },
+  );
   res.json(cases);
 });
 
@@ -53,7 +58,7 @@ casesRouter.get('/:caseId/activities/', publicEndpoint, async (req, res) => {
 
 casesRouter.post('/search', publicEndpoint, async (req, res) => {
   const { accountSid } = req;
-  const searchResults = await caseApi.searchCases(req.body, req.query, accountSid);
+  const searchResults = await caseApi.searchCases(accountSid, req.query, req.body);
   res.json(searchResults);
 });
 

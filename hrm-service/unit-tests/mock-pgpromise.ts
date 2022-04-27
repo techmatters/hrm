@@ -78,7 +78,7 @@ export const getSqlStatement = (mockQueryMethod: jest.SpyInstance<any, PgQueryPa
 export const expectValuesInSql = (sql: string,  expectedValues: Record<string, any>): void => {
   Object.entries(expectedValues).forEach(([key, val] )=> {
     expect(sql).toContain(key);
-    if (typeof val !== 'function' && typeof val !== 'object') {
+    if (val && typeof val !== 'function' && typeof val !== 'object') {
       expect(sql).toContain(val.toString());
     }
     if (typeof val === 'object') {

@@ -10,7 +10,7 @@ import {
 import * as caseDb from '../../src/case/case-data-access';
 import each from 'jest-each';
 import { db } from '../../src/connection-pool';
-import { OrderByDirection } from '../../src/case/case-sql';
+import { OrderByColumns } from '../../src/case/sql/case-search-sql';
 
 const accountSid = 'account-sid';
 const workerSid = 'worker-sid';
@@ -70,13 +70,35 @@ describe('createCase', () => {
       info: {
         counsellorNotes: [{ note: 'Child with covid-19', twilioWorkerId: 'contact-adder' }],
       },
+      caseSections: [
+        {
+          sectionType: 'note',
+          sectionId: 'NOTE_1',
+          createdBy: 'contact-adder',
+          createdAt: new Date(2000, 4, 21).toISOString(),
+          updatedAt: undefined,
+          updatedBy: undefined,
+          sectionTypeSpecificData: { note: 'Child with covid-19' },
+        },
+      ],
       twilioWorkerId: 'twilio-worker-id',
     });
     const oneSpy = jest.spyOn(tx, 'one').mockResolvedValue({ ...caseFromDB, id: 1337 });
 
-    const result = await caseDb.create(caseFromDB, accountSid, workerSid);
-    const insertSql = getSqlStatement(oneSpy);
-    expectValuesInSql(insertSql, { ...caseFromDB, accountSid, twilioWorkerId: workerSid });
+    const result = await caseDb.create(caseFromDB, accountSid);
+    const insertSql = getSqlStatement(oneSpy, -2);
+    const { caseSections, ...caseWithoutSections } = caseFromDB;
+    expectValuesInSql(insertSql, {
+      ...caseWithoutSections,
+      accountSid,
+      createdAt: expect.anything(),
+      updatedAt: expect.anything(),
+    });
+    const insertSectionSql = getSqlStatement(oneSpy, -1);
+    expectValuesInSql(insertSectionSql, {
+      ...caseSections[0],
+      caseId: 1337,
+    });
     expect(result).toStrictEqual({ ...caseFromDB, id: 1337 });
   });
 
@@ -85,7 +107,7 @@ describe('createCase', () => {
     jest.spyOn(tx, 'one').mockResolvedValue({ ...caseFromDB, id: 1337 });
     const noneSpy = jest.spyOn(tx, 'none').mockResolvedValue(undefined);
 
-    const result = await caseDb.create(caseFromDB, accountSid, workerSid);
+    const result = await caseDb.create(caseFromDB, accountSid);
     const auditSql = getSqlStatement(noneSpy);
     expect(auditSql).toContain('CaseAudits');
 
@@ -93,7 +115,7 @@ describe('createCase', () => {
   });
 });
 
-describe('list', () => {
+describe('search', () => {
   beforeEach(() => {
     mockTask(conn);
   });
@@ -101,81 +123,103 @@ describe('list', () => {
     each([
       {
         description: 'should use a default limit and offset 0 when neither specified',
-        parameters: { helpline: 'fakeHelpline' },
-        expectedDbParameters: { helpline: 'fakeHelpline', limit: expect.any(Number), offset: 0 },
-        expectedInSql: ['"id" DESC'],
+        filters: { helplines: ['fakeHelpline'] },
+        expectedDbParameters: { limit: expect.any(Number), offset: 0 },
+        expectedInSql: ['"id" DESC', 'fakeHelpline'],
       },
       {
         description: 'should use a specified limit and offset 0 when only limit is specified',
-        parameters: { helpline: 'fakeHelpline', limit: 45 },
-        expectedDbParameters: { helpline: 'fakeHelpline', limit: 45, offset: 0 },
-        expectedInSql: ['"id" DESC'],
+        filters: { helplines: ['fakeHelpline'] },
+        listConfig: { limit: 45 },
+        expectedDbParameters: { limit: 45, offset: 0 },
+        expectedInSql: ['"id" DESC', 'fakeHelpline'],
       },
       {
         description:
           'should use a default limit specified and offset when only offset is specified',
-        parameters: { helpline: 'fakeHelpline', offset: 30 },
-        expectedDbParameters: { helpline: 'fakeHelpline', limit: expect.any(Number), offset: 30 },
-        expectedInSql: ['"id" DESC'],
+        filters: { helplines: ['fakeHelpline'] },
+        listConfig: { offset: 30 },
+        expectedDbParameters: { limit: expect.any(Number), offset: 30 },
+        expectedInSql: ['"id" DESC', 'fakeHelpline'],
       },
       {
         description: 'should use a specified limit and offset when both are present',
-        parameters: { helpline: 'fakeHelpline', limit: 45, offset: 30 },
-        expectedDbParameters: { helpline: 'fakeHelpline', limit: 45, offset: 30 },
-        expectedInSql: ['"id" DESC'],
+        filters: { helplines: ['fakeHelpline'] },
+        listConfig: { limit: 45, offset: 30 },
+        expectedDbParameters: { limit: 45, offset: 30 },
+        expectedInSql: ['"id" DESC', 'fakeHelpline'],
       },
       {
         description: 'should use a default limit and/or offset when either are NaN',
-        parameters: { helpline: 'fakeHelpline', limit: NaN, offset: NaN },
-        expectedDbParameters: { helpline: 'fakeHelpline', limit: expect.any(Number), offset: 0 },
-        expectedInSql: ['"id" DESC'],
+        filters: { helplines: ['fakeHelpline'] },
+        listConfig: { limit: NaN, offset: NaN },
+        expectedDbParameters: { limit: expect.any(Number), offset: 0 },
+        expectedInSql: ['"id" DESC', 'fakeHelpline'],
       },
       {
         description: "should generate SQL without helpline filter if one isn't set",
-        parameters: { limit: 100, offset: 25 },
+        listConfig: { limit: 100, offset: 25 },
         expectedDbParameters: { limit: 100, offset: 25 },
         expectedInSql: ['"id" DESC'],
       },
       {
         description: 'should generate SQL with order by clause',
-        parameters: {
+        listConfig: {
+          limit: 100,
+          offset: 25,
+          sortBy: OrderByColumns.CHILD_NAME,
+          sortDirection: 'ASC',
+        },
+        expectedDbParameters: { limit: 100, offset: 25 },
+        expectedInSql: ['"id" DESC', '"childName" ASC NULLS LAST'],
+      },
+      {
+        description: 'should ignore unrecognised sortBy columns',
+        listConfig: {
           limit: 100,
           offset: 25,
           sortBy: 'jimmyjab',
-          sortDirection: OrderByDirection.ascending,
+          sortDirection: 'ASC',
         },
         expectedDbParameters: { limit: 100, offset: 25 },
-        expectedInSql: ['"id" DESC', '"jimmyjab" ASC NULLS LAST'],
+        expectedInSql: ['"id" DESC'],
+        notExpectedInSql: ['jimmyjab'],
       },
       {
         description: "should use default 'id' column for ordering if order specified but no column",
-        parameters: {
+        listConfig: {
           limit: 100,
           offset: 25,
-          sortDirection: OrderByDirection.ascending,
+          sortDirection: 'ASC',
         },
         expectedDbParameters: { limit: 100, offset: 25 },
         expectedInSql: ['"id" DESC', '"id" ASC NULLS LAST,'],
       },
       {
-        description: 'should use default DESC sort if only sort column is specified',
-        parameters: {
+        description: 'should use default DESC NULLS LAST sort if only sort column is specified',
+        listConfig: {
           limit: 100,
           offset: 25,
-          sortBy: 'jimmyjab',
+          sortBy: OrderByColumns.CHILD_NAME,
         },
         expectedDbParameters: { limit: 100, offset: 25 },
-        expectedInSql: ['"id" DESC', '"jimmyjab" DESC NULLS LAST'],
+        expectedInSql: ['"id" DESC', '"childName" DESC NULLS LAST'],
       },
     ]).test(
       '$description',
-      async ({ parameters, expectedDbParameters, expectedInSql = [], notExpectedInSql = [] }) => {
+      async ({
+        listConfig = {},
+        filters = {},
+        expectedDbParameters,
+        expectedInSql = [],
+        notExpectedInSql = [],
+      }) => {
         const dbResult = [
           { ...createMockCaseRecord({ id: 2 }), totalCount: 1337 },
           { ...createMockCaseRecord({ id: 1 }), totalCount: 1337 },
         ];
         const anySpy = jest.spyOn(conn, 'any').mockResolvedValue(dbResult);
-        const result = await caseDb.list(parameters, accountSid);
+        const result = await caseDb.search(listConfig, accountSid, {}, filters);
         expect(anySpy).toHaveBeenCalledWith(
           expect.stringContaining('Cases'),
           expect.objectContaining({ ...expectedDbParameters, accountSid }),
@@ -195,8 +239,8 @@ describe('list', () => {
   each([
     {
       description: 'should return case without contacts when a case has none connected',
-      parameters: { helpline: 'fakeHelpline' },
-      expectedDbParameters: { helpline: 'fakeHelpline', limit: expect.any(Number), offset: 0 },
+      filters: { helplines: ['fakeHelpline'] },
+      expectedDbParameters: { limit: expect.any(Number), offset: 0 },
       dbResult: [
         {
           id: caseId,
@@ -212,8 +256,8 @@ describe('list', () => {
     },
     {
       description: 'should return connected contacts when a case has them',
-      parameters: { helpline: 'fakeHelpline' },
-      expectedDbParameters: { helpline: 'fakeHelpline', limit: expect.any(Number), offset: 0 },
+      filters: { helplines: ['fakeHelpline'] },
+      expectedDbParameters: { limit: expect.any(Number), offset: 0 },
       dbResult: [
         {
           id: caseId,
@@ -242,12 +286,24 @@ describe('list', () => {
     },
   ]).test(
     '$description',
-    async ({ parameters, expectedDbParameters, dbResult, expectedResult = dbResult }) => {
+    async ({
+      filters = {},
+      listConfig = {},
+      expectedDbParameters,
+      dbResult,
+      expectedResult = dbResult,
+    }) => {
       const anySpy = jest.spyOn(conn, 'any').mockResolvedValue(dbResult);
-      const result = await caseDb.list(parameters, accountSid);
+      const result = await caseDb.search(listConfig, accountSid, {}, filters);
       expect(anySpy).toHaveBeenCalledWith(
         expect.stringContaining('Cases'),
-        expect.objectContaining({ ...expectedDbParameters, accountSid }),
+        expect.objectContaining({
+          contactNumber: null,
+          firstName: null,
+          lastName: null,
+          ...expectedDbParameters,
+          accountSid,
+        }),
       );
       const statementExecuted = getSqlStatement(anySpy);
       expect(statementExecuted).toContain('Contacts');
@@ -267,7 +323,6 @@ describe('update', () => {
       counsellorNotes: [{ note: 'Child with covid-19', twilioWorkerId: 'contact-adder' }],
     },
     twilioWorkerId: 'ignored-twilio-worker-id',
-    accountSid: 'NOT_USING_THIS_ONE',
   };
 
   beforeEach(() => {
@@ -277,19 +332,18 @@ describe('update', () => {
 
   test('runs update SQL against cases table with provided ID.', async () => {
     const caseUpdateResult = createMockCaseRecord(caseUpdate);
-    const multiSpy = jest
-      .spyOn(tx, 'multi')
-      .mockResolvedValue([
-        [{ ...createMockCaseRecord({}), id: caseId }],
-        [{ ...caseUpdateResult, id: caseId }],
-      ]);
+    const multiSpy = jest.spyOn(tx, 'multi').mockResolvedValue([
+      [{ ...createMockCaseRecord({}), id: caseId }],
+      [2], //Simulate outputs from caseSection queries
+      [{ ...caseUpdateResult, id: caseId }],
+    ]);
 
-    const result = await caseDb.update(caseId, caseUpdate, accountSid, workerSid);
+    const result = await caseDb.update(caseId, caseUpdate, accountSid);
     const updateSql = getSqlStatement(multiSpy);
     expect(updateSql).toContain('Cases');
     expect(updateSql).toContain('Contacts');
     expect(updateSql).toContain('CSAMReports');
-    expectValuesInSql(updateSql, { ...caseUpdate, twilioWorkerId: workerSid });
+    expectValuesInSql(updateSql, { info: caseUpdate.info, status: caseUpdate.status });
     expect(multiSpy).toHaveBeenCalledWith(
       expect.any(String),
       expect.objectContaining({ accountSid, caseId }),
@@ -309,7 +363,7 @@ describe('update', () => {
       .mockResolvedValue([[{ ...createMockCaseRecord({}), id: caseId }], [caseUpdateResult]]);
     const auditSpy = jest.spyOn(tx, 'none');
 
-    const result = await caseDb.update(caseId, caseUpdate, accountSid, workerSid);
+    const result = await caseDb.update(caseId, caseUpdate, accountSid);
     const auditSql = getSqlStatement(auditSpy);
     expect(auditSql).toContain('CaseAudits');
     expectValuesInSql(auditSql, caseUpdateResult);
@@ -322,7 +376,7 @@ describe('update', () => {
       .mockResolvedValue([[{ ...createMockCaseRecord({}), id: caseId }], []]);
     const auditSpy = jest.spyOn(tx, 'none');
 
-    await caseDb.update(caseId, caseUpdate, accountSid, workerSid);
+    await caseDb.update(caseId, caseUpdate, accountSid);
     expect(updateSpy).toBeCalled();
     expect(auditSpy).not.toBeCalled();
   });

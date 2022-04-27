@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 11.13 (Ubuntu 11.13-1.pgdg20.04+1)
--- Dumped by pg_dump version 11.13 (Ubuntu 11.13-1.pgdg20.04+1)
+-- Dumped from database version 12.10 (Debian 12.10-1.pgdg110+1)
+-- Dumped by pg_dump version 12.10 (Debian 12.10-1.pgdg110+1)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -18,7 +18,7 @@ SET row_security = off;
 
 SET default_tablespace = '';
 
-SET default_with_oids = false;
+SET default_table_access_method = heap;
 
 --
 -- Name: CSAMReports; Type: TABLE; Schema: public; Owner: hrm
@@ -99,6 +99,38 @@ ALTER TABLE public."CaseAudits_id_seq" OWNER TO hrm;
 
 ALTER SEQUENCE public."CaseAudits_id_seq" OWNED BY public."CaseAudits".id;
 
+
+--
+-- Name: CaseSections_sectionId_seq; Type: SEQUENCE; Schema: public; Owner: hrm
+--
+
+CREATE SEQUENCE public."CaseSections_sectionId_seq"
+    START WITH 100000
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public."CaseSections_sectionId_seq" OWNER TO hrm;
+
+--
+-- Name: CaseSections; Type: TABLE; Schema: public; Owner: hrm
+--
+
+CREATE TABLE public."CaseSections" (
+    "caseId" integer NOT NULL,
+    "sectionType" text NOT NULL,
+    "sectionId" text DEFAULT nextval('public."CaseSections_sectionId_seq"'::regclass) NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "createdBy" text NOT NULL,
+    "updatedAt" timestamp with time zone,
+    "updatedBy" text,
+    "sectionTypeSpecificData" jsonb
+);
+
+
+ALTER TABLE public."CaseSections" OWNER TO hrm;
 
 --
 -- Name: Cases; Type: TABLE; Schema: public; Owner: hrm
@@ -274,6 +306,55 @@ ALTER TABLE ONLY public."Contacts" ALTER COLUMN id SET DEFAULT nextval('public."
 
 ALTER TABLE ONLY public."PostSurveys" ALTER COLUMN id SET DEFAULT nextval('public."PostSurveys_id_seq"'::regclass);
 
+
+--
+-- Data for Name: CSAMReports; Type: TABLE DATA; Schema: public; Owner: hrm
+--
+
+COPY public."CSAMReports" (id, "createdAt", "updatedAt", "accountSid", "twilioWorkerId", "csamReportId", "contactId") FROM stdin;
+\.
+
+
+--
+-- Data for Name: CaseAudits; Type: TABLE DATA; Schema: public; Owner: hrm
+--
+
+COPY public."CaseAudits" (id, "createdAt", "updatedAt", "caseId", "twilioWorkerId", "previousValue", "newValue", "accountSid", "createdBy") FROM stdin;
+\.
+
+
+--
+-- Data for Name: CaseSections; Type: TABLE DATA; Schema: public; Owner: hrm
+--
+
+COPY public."CaseSections" ("caseId", "sectionType", "sectionId", "createdAt", "createdBy", "updatedAt", "updatedBy", "sectionTypeSpecificData") FROM stdin;
+\.
+
+
+--
+-- Data for Name: Cases; Type: TABLE DATA; Schema: public; Owner: hrm
+--
+
+COPY public."Cases" (id, "createdAt", "updatedAt", status, helpline, info, "twilioWorkerId", "accountSid", "createdBy") FROM stdin;
+\.
+
+
+--
+-- Data for Name: Contacts; Type: TABLE DATA; Schema: public; Owner: hrm
+--
+
+COPY public."Contacts" (id, "createdAt", "updatedAt", "rawJson", "queueName", "twilioWorkerId", helpline, number, channel, "conversationDuration", "caseId", "accountSid", "timeOfContact", "taskId", "createdBy", "channelSid", "serviceSid") FROM stdin;
+\.
+
+
+--
+-- Data for Name: PostSurveys; Type: TABLE DATA; Schema: public; Owner: hrm
+--
+
+COPY public."PostSurveys" (id, "createdAt", "updatedAt", "accountSid", "taskId", "contactTaskId", data) FROM stdin;
+\.
+
+
 --
 -- Data for Name: SequelizeMeta; Type: TABLE DATA; Schema: public; Owner: hrm
 --
@@ -294,6 +375,8 @@ COPY public."SequelizeMeta" (name) FROM stdin;
 20210630164641-add-channelsid-servicesid.js
 20210826214305-create-postSurvey.js
 20211122172057-create-CSAMReport.js
+20220301134500-migrate-notes-to-counsellor-notes.js
+20220324154600-create-CaseSections.js
 \.
 
 
@@ -309,6 +392,13 @@ SELECT pg_catalog.setval('public."CSAMReports_id_seq"', 2, true);
 --
 
 SELECT pg_catalog.setval('public."CaseAudits_id_seq"', 1, false);
+
+
+--
+-- Name: CaseSections_sectionId_seq; Type: SEQUENCE SET; Schema: public; Owner: hrm
+--
+
+SELECT pg_catalog.setval('public."CaseSections_sectionId_seq"', 100000, false);
 
 
 --
@@ -349,6 +439,14 @@ ALTER TABLE ONLY public."CaseAudits"
 
 
 --
+-- Name: CaseSections CaseSections_pkey; Type: CONSTRAINT; Schema: public; Owner: hrm
+--
+
+ALTER TABLE ONLY public."CaseSections"
+    ADD CONSTRAINT "CaseSections_pkey" PRIMARY KEY ("caseId", "sectionType", "sectionId");
+
+
+--
 -- Name: Cases Cases_pkey; Type: CONSTRAINT; Schema: public; Owner: hrm
 --
 
@@ -381,6 +479,13 @@ ALTER TABLE ONLY public."SequelizeMeta"
 
 
 --
+-- Name: fki_CaseSections_caseId_Case_id_fk; Type: INDEX; Schema: public; Owner: hrm
+--
+
+CREATE INDEX "fki_CaseSections_caseId_Case_id_fk" ON public."CaseSections" USING btree ("caseId");
+
+
+--
 -- Name: CSAMReports CSAMReports_contactId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: hrm
 --
 
@@ -397,18 +502,19 @@ ALTER TABLE ONLY public."CaseAudits"
 
 
 --
+-- Name: CaseSections CaseSections_caseId_Case_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: hrm
+--
+
+ALTER TABLE ONLY public."CaseSections"
+    ADD CONSTRAINT "CaseSections_caseId_Case_id_fk" FOREIGN KEY ("caseId") REFERENCES public."Cases"(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
 -- Name: Contacts Contacts_caseId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: hrm
 --
 
 ALTER TABLE ONLY public."Contacts"
     ADD CONSTRAINT "Contacts_caseId_fkey" FOREIGN KEY ("caseId") REFERENCES public."Cases"(id) ON UPDATE CASCADE ON DELETE SET NULL;
-
-
---
--- Name: SCHEMA public; Type: ACL; Schema: -; Owner: postgres
---
-
-GRANT ALL ON SCHEMA public TO hrm;
 
 
 --

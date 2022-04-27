@@ -5,6 +5,7 @@ import etRules from '../../permission-rules/et.json';
 import inRules from '../../permission-rules/in.json';
 import jmRules from '../../permission-rules/jm.json';
 import mwRules from '../../permission-rules/mw.json';
+import ukRules from '../../permission-rules/uk.json';
 import zaRules from '../../permission-rules/za.json';
 import zmRules from '../../permission-rules/zm.json';
 
@@ -35,6 +36,7 @@ const rulesMapDef = {
   in: inRules,
   jm: jmRules,
   mw: mwRules,
+  uk: ukRules,
   za: zaRules,
   zm: zmRules,
   open: openRules,

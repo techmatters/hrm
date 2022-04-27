@@ -171,7 +171,6 @@ describe('/contacts route', () => {
 
     test('should return 200', async () => {
       const response = await request.get(route).set(headers);
-
       expect(response.status).toBe(200);
       expect(response.body).not.toHaveLength(0);
     });
