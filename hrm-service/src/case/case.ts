@@ -243,6 +243,7 @@ const caseToCaseRecord = (
           updatedBy: section.updatedBy,
           updatedAt: section.updatedAt,
           sectionTypeSpecificData: getSectionSpecificData(section),
+          accountSid: section.accountSid,
         };
         return caseSectionRecordToUpsert;
       }),

@@ -77,6 +77,7 @@ export type CaseSectionRecord = {
   sectionType: string;
   sectionId: string;
   sectionTypeSpecificData: Record<string, any>;
+  accountSid: string;
   createdAt: string;
   createdBy: string;
   updatedAt?: string;
@@ -149,7 +150,7 @@ export const create = async (
       const statement = `${pgp.helpers.insert(caseRecord, null, 'Cases')} RETURNING *`;
       let inserted: CaseRecord = await transaction.one(statement);
       if ((caseSections ?? []).length) {
-        const allSections = caseSections.map(s => ({ ...s, caseId: inserted.id }));
+        const allSections = caseSections.map(s => ({ ...s, caseId: inserted.id, accountSid }));
         const sectionStatement = `${caseSectionUpsertSql(allSections)};${selectSingleCaseByIdSql(
           'Cases',
         )}`;
@@ -217,7 +218,7 @@ export const update = async (
     if (caseRecordUpdates.info) {
       const allSections: CaseSectionRecord[] = caseRecordUpdates.caseSections ?? [];
       if (allSections.length) {
-        caseUpdateSqlStatements.push(caseSectionUpsertSql(allSections));
+        caseUpdateSqlStatements.push(caseSectionUpsertSql(allSections.map(s => ({ ...s, accountSid }))));
       }
       // Map case sections into a list of ids grouped by category, which allows a more concise DELETE SQL statement to be generated
       const caseSectionIdsByType = allSections.reduce((idsBySectionType, caseSection) => {

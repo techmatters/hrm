@@ -46,10 +46,10 @@ FROM (
     c.*,
     COALESCE(jsonb_agg(DISTINCT r.*) FILTER (WHERE r.id IS NOT NULL), '[]') AS "csamReports"
   FROM "Contacts" c 
-  LEFT JOIN "CSAMReports" r ON c."id" = r."contactId" 
-  WHERE c."caseId" = "cases".id
-  GROUP BY c.id
-) AS contacts WHERE contacts."caseId" = cases.id`;
+  LEFT JOIN "CSAMReports" r ON c."id" = r."contactId"  AND c."accountSid" = r."accountSid"
+  WHERE c."caseId" = "cases".id AND c."accountSid" = "cases"."accountSid"
+  GROUP BY c."accountSid", c.id
+) AS contacts WHERE contacts."caseId" = cases.id AND contacts."accountSid" = cases."accountSid"`;
 
 const filterSql = ({
   counsellors,
@@ -116,7 +116,7 @@ const SEARCH_WHERE_CLAUSE = `(
       -- search on childInformation of connectedContacts
       ($<firstName> IS NULL AND $<lastName> IS NULL AND $<phoneNumber> IS NULL) OR
       EXISTS (
-        SELECT 1 FROM "Contacts" c WHERE c."caseId" = cases.id 
+        SELECT 1 FROM "Contacts" c WHERE c."caseId" = cases.id  AND c."accountSid" = cases."accountSid"
           AND (
             (
             ${nameAndPhoneNumberSearchSql(
@@ -143,7 +143,7 @@ const SEARCH_WHERE_CLAUSE = `(
       )
       -- search on case sections in the expected format
       OR EXISTS (
-        SELECT 1 FROM "CaseSections" cs WHERE cs."caseId" = cases.id
+        SELECT 1 FROM "CaseSections" cs WHERE cs."caseId" = cases.id AND cs."accountSid" = cases."accountSid"
           AND
           ${nameAndPhoneNumberSearchSql(
             'cs."sectionTypeSpecificData"->>\'firstName\'',
@@ -158,12 +158,12 @@ const SEARCH_WHERE_CLAUSE = `(
     AND (
       $<contactNumber> IS NULL OR
       EXISTS (
-        SELECT 1 FROM "Contacts" c WHERE c."caseId" = cases.id AND c.number = $<contactNumber>
+        SELECT 1 FROM "Contacts" c WHERE c."caseId" = cases.id AND c."accountSid" = cases."accountSid" AND c.number = $<contactNumber>
       )
     )`;
 
 const selectCasesUnorderedSql = (whereClause: string, havingClause: string = '') =>
-  `SELECT DISTINCT ON (cases.id)
+  `SELECT DISTINCT ON (cases."accountSid", cases.id)
     (count(*) OVER())::INTEGER AS "totalCount",
     cases.*,
     contacts."connectedContacts",
@@ -178,7 +178,7 @@ const selectCasesUnorderedSql = (whereClause: string, havingClause: string = '')
     FROM "Cases" cases 
     LEFT JOIN LATERAL (${SELECT_CONTACTS}) contacts ON true 
     LEFT JOIN LATERAL (${SELECT_CASE_SECTIONS}) caseSections ON true
-    ${whereClause} GROUP BY "cases"."id", caseSections."caseSections", contacts."connectedContacts" ${havingClause}`;
+    ${whereClause} GROUP BY "cases"."accountSid", "cases"."id", caseSections."caseSections", contacts."connectedContacts" ${havingClause}`;
 
 const selectCasesPaginatedSql = (
   whereClause: string,

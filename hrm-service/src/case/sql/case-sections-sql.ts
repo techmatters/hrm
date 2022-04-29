@@ -5,7 +5,7 @@ import { CaseSectionRecord } from '../case-data-access';
 export const SELECT_CASE_SECTIONS = `SELECT 
          COALESCE(jsonb_agg(DISTINCT cs.*) FILTER (WHERE cs."caseId" IS NOT NULL), '[]') AS "caseSections"
                      FROM "CaseSections" cs
-                     WHERE cs."caseId" = cases.id`;
+                     WHERE cs."caseId" = cases.id AND cs."accountSid" = cases."accountSid"`;
 
 export const caseSectionUpsertSql = (sections: CaseSectionRecord[]): string =>
   `${pgp.helpers.insert(
@@ -19,6 +19,7 @@ export const caseSectionUpsertSql = (sections: CaseSectionRecord[]): string =>
       'updatedBy',
       'updatedAt',
       'sectionTypeSpecificData',
+      'accountSid',
     ],
     'CaseSections',
   )} 
@@ -35,8 +36,8 @@ export const deleteMissingCaseSectionsSql = (idsByType: Record<string, string[]>
         )
         .join(' OR '),
     );
-    return `DELETE FROM "CaseSections" WHERE "caseId" = $<caseId> AND NOT (${sectionTypeWhereExpression})`;
+    return `DELETE FROM "CaseSections" WHERE "caseId" = $<caseId> AND "accountSid" = $<accountSid> AND NOT (${sectionTypeWhereExpression})`;
   } else {
-    return `DELETE FROM "CaseSections" WHERE "caseId" = $<caseId>`;
+    return `DELETE FROM "CaseSections" WHERE "caseId" = $<caseId> AND "accountSid" = $<accountSid>`;
   }
 };
