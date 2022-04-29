@@ -1,0 +1,26 @@
+-- WARNING: Only intended to be used for local tests & development, not against real DBs
+
+-- This query is the one in src/case/sql/case-get-sql.ts with accountSid and case id provided
+
+SELECT
+  cases.*,
+  caseSections."caseSections",
+  contacts."connectedContacts"
+  FROM "Cases" AS cases
+
+  LEFT JOIN LATERAL ( 
+  SELECT COALESCE(jsonb_agg(to_jsonb(c) || to_jsonb(reports)), '[]') AS  "connectedContacts" 
+  FROM "Contacts" c 
+  LEFT JOIN LATERAL (
+    SELECT COALESCE(jsonb_agg(to_jsonb(r)), '[]') AS  "csamReports" 
+    FROM "CSAMReports" r 
+    WHERE r."contactId" = c.id AND r."accountSid" = c."accountSid"
+  ) reports ON true
+  WHERE c."caseId" = cases.id AND c."accountSid" = cases."accountSid"
+) contacts ON true
+  LEFT JOIN LATERAL (
+    SELECT COALESCE(jsonb_agg(to_jsonb(cs) ORDER BY cs."createdAt"), '[]') AS  "caseSections"
+    FROM "CaseSections" cs
+    WHERE cs."caseId" = cases.id
+  ) caseSections ON true
+WHERE "cases"."accountSid" = 'ACCOUNT_SID' AND "cases"."id" = 1143
