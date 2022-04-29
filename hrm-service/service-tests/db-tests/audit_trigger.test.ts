@@ -14,13 +14,30 @@ const testAccountSid = 'test-account-sid';
 describe('Cases_audit_trigger', () => {
   let createdCase = null;
 
-  const selectCreatedCaseAudits = () =>
-    `SELECT * FROM "Audits" WHERE "tableName" = 'Cases' AND ("oldRecord"->>'id' = '${createdCase.id}' OR "newRecord"->>'id' = '${createdCase.id}')`;
+  const selectCreatedCaseAudits = () => `
+    SELECT * FROM "Audits" 
+    WHERE "tableName" = 'Cases' AND (
+      ("oldRecord"->>'id' = '${createdCase.id}' AND "oldRecord"->>'accountSid' = '${testAccountSid}') 
+      OR 
+      ("newRecord"->>'id' = '${createdCase.id}' AND "newRecord"->>'accountSid' = '${testAccountSid}')
+    )
+  `;
 
   afterAll(async () => {
-    db.task(t =>
+    await db.task(t =>
+      t.none(`
+        DELETE FROM "Audits" 
+        WHERE "tableName" = 'Cases' AND (
+          ("oldRecord"->>'id' = '${createdCase.id}' AND "oldRecord"->>'accountSid' = '${testAccountSid}')
+          OR
+          ("newRecord"->>'id' = '${createdCase.id}' AND "newRecord"->>'accountSid' = '${testAccountSid}')
+        )
+      `),
+    );
+
+    await db.task(t =>
       t.none(
-        `DELETE FROM "Audits" WHERE "tableName" = 'Cases' AND ("oldRecord"->>'id' = '${createdCase.id}' OR "newRecord"->>'id' = '${createdCase.id}')`,
+        `DELETE FROM "Cases" WHERE  id = ${createdCase.id} AND "accountSid" = '${testAccountSid}'`,
       ),
     );
   });
@@ -62,7 +79,7 @@ describe('Cases_audit_trigger', () => {
   test('UPDATE audit', async () => {
     const updatedCase = await db.task(t =>
       t.one(
-        `UPDATE "Cases" SET "info" = '{ "foo": 1, "bar": { "baz": "baz" } }'::jsonb, "updatedBy" = '${anotherWorkerSid}' WHERE id = ${createdCase.id} RETURNING *;`,
+        `UPDATE "Cases" SET "info" = '{ "foo": 1, "bar": { "baz": "baz" } }'::jsonb, "updatedBy" = '${anotherWorkerSid}' WHERE id = ${createdCase.id} AND "accountSid" = '${testAccountSid}' RETURNING *;`,
       ),
     );
 
@@ -99,7 +116,9 @@ describe('Cases_audit_trigger', () => {
 
   test('DELETE audit', async () => {
     const deletedCase = await db.task(t =>
-      t.none(`DELETE FROM "Cases" WHERE id = ${createdCase.id};`),
+      t.none(
+        `DELETE FROM "Cases" WHERE id = ${createdCase.id} AND "accountSid" = '${testAccountSid}';`,
+      ),
     );
 
     expect(deletedCase).toBeNull();
@@ -138,7 +157,7 @@ describe('CaseSections_audit_trigger', () => {
   const selectCreatedCaseSectionAudits = () =>
     `SELECT * FROM "Audits" WHERE "tableName" = 'CaseSections' AND (
       ("oldRecord"->>'caseId' = '${createdCase.id}' AND "oldRecord"->>'sectionType' = '${sectionName}'  AND "oldRecord"->>'sectionId' = '${sectionId}')
-      OR 
+      OR
       ("newRecord"->>'caseId' = '${createdCase.id}' AND "newRecord"->>'sectionType' = '${sectionName}'  AND "newRecord"->>'sectionId' = '${sectionId}')
     )`;
 
@@ -153,19 +172,30 @@ describe('CaseSections_audit_trigger', () => {
   });
 
   afterAll(async () => {
-    db.task(t =>
+    await db.task(t =>
       t.none(
         `DELETE FROM "Audits" WHERE "tableName" = 'CaseSections' AND (
           ("oldRecord"->>'caseId' = '${createdCase.id}' AND "oldRecord"->>'sectionType' = '${sectionName}'  AND "oldRecord"->>'sectionId' = '${sectionId}')
-          OR 
+          OR
           ("newRecord"->>'caseId' = '${createdCase.id}' AND "newRecord"->>'sectionType' = '${sectionName}'  AND "newRecord"->>'sectionId' = '${sectionId}')
         )`,
       ),
     );
 
-    db.task(t =>
+    await db.task(t =>
+      t.none(`
+        DELETE FROM "Audits"
+        WHERE "tableName" = 'Cases' AND (
+          ("oldRecord"->>'id' = '${createdCase.id}' AND "oldRecord"->>'accountSid' = '${testAccountSid}' )
+          OR 
+          ("newRecord"->>'id' = '${createdCase.id}' AND "newRecord"->>'accountSid' = '${testAccountSid}')
+        )
+      `),
+    );
+
+    await db.task(t =>
       t.none(
-        `DELETE FROM "Audits" WHERE "tableName" = 'Cases' AND ("oldRecord"->>'id' = '${createdCase.id}' OR "newRecord"->>'id' = '${createdCase.id}')`,
+        `DELETE FROM "Cases" WHERE  id = ${createdCase.id} AND "accountSid" = '${testAccountSid}'`,
       ),
     );
   });
@@ -173,8 +203,8 @@ describe('CaseSections_audit_trigger', () => {
   test('INSERT audit', async () => {
     createdCaseSection = await db.task(t =>
       t.one(`
-        INSERT INTO "CaseSections" ("caseId", "sectionType", "sectionId", "createdAt", "createdBy", "updatedAt", "updatedBy", "sectionTypeSpecificData")
-        VALUES (${createdCase.id}, '${sectionName}', '${sectionId}', current_timestamp, '${workerSid}', current_timestamp, '${workerSid}', '{}'::jsonb)
+        INSERT INTO "CaseSections" ("caseId", "sectionType", "sectionId", "createdAt", "createdBy", "updatedAt", "updatedBy", "sectionTypeSpecificData", "accountSid")
+        VALUES (${createdCase.id}, '${sectionName}', '${sectionId}', current_timestamp, '${workerSid}', current_timestamp, '${workerSid}', '{}'::jsonb, '${testAccountSid}')
         RETURNING *;
       `),
     );
@@ -281,14 +311,31 @@ describe('CaseSections_audit_trigger', () => {
 describe('Contacts_audit_trigger', () => {
   let createdContact = null;
 
-  const selectCreatedContactAudits = () =>
-    `SELECT * FROM "Audits" WHERE "tableName" = 'Contacts' AND ("oldRecord"->>'id' = '${createdContact.id}' OR "newRecord"->>'id' = '${createdContact.id}')`;
+  const selectCreatedContactAudits = () => `
+    SELECT * FROM "Audits" 
+    WHERE "tableName" = 'Contacts' AND (
+      ("oldRecord"->>'id' = '${createdContact.id}' AND "oldRecord"->>'accountSid' = '${testAccountSid}')
+      OR 
+      ("newRecord"->>'id' = '${createdContact.id}' AND "newRecord"->>'accountSid' = '${testAccountSid}')
+    )
+  `;
 
   afterAll(async () => {
-    db.task(t =>
-      t.none(
-        `DELETE FROM "Audits" WHERE "tableName" = 'Contacts' AND ("oldRecord"->>'id' = '${createdContact.id}' OR "newRecord"->>'id' = '${createdContact.id}')`,
-      ),
+    await db.task(t =>
+      t.none(`
+        DELETE FROM "Audits" 
+        WHERE "tableName" = 'Contacts' AND (
+          ("oldRecord"->>'id' = '${createdContact.id}' AND "oldRecord"->>'accountSid' = '${testAccountSid}')
+          OR 
+          ("newRecord"->>'id' = '${createdContact.id}' AND "newRecord"->>'accountSid' = '${testAccountSid}')
+        )
+      `),
+    );
+
+    await db.task(t =>
+      t.none(`
+        DELETE FROM "Contacts" WHERE id = ${createdContact.id} AND "accountSid" = '${testAccountSid}'
+      `),
     );
   });
 
