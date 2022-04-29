@@ -163,11 +163,13 @@ describe('/cases route', () => {
       });
 
       afterEach(async () => {
+        await Contact.destroy({
+          where: { id: createdCasesAndContacts.map(ccc => ccc.contact.id) },
+        });
         await Promise.all([
           db.none(`DELETE FROM "Cases" WHERE id IN ($<ids:csv>)`, {
             ids: createdCasesAndContacts.map(ccc => ccc.case.id),
           }),
-          Contact.destroy({ where: { id: createdCasesAndContacts.map(ccc => ccc.contact.id) } }),
         ]);
       });
 
@@ -373,7 +375,6 @@ describe('/cases route', () => {
           expect(response.body.count).toBe(3);
         });
 
-        // eslint-disable-next-line jest/expect-expect
         test('should return 200 - search by contact number', async () => {
           const body = {
             helpline: 'helpline',
