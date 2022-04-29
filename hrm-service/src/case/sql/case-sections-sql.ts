@@ -2,6 +2,9 @@ import { pgp } from '../../connection-pool';
 // eslint-disable-next-line prettier/prettier
 import { CaseSectionRecord } from '../case-data-access';
 
+/**
+ * Is this FILTER (WHERE cs."caseId" IS NOT NULL) needed? Won't cs."caseId" always be not null as "caseId" is part of the PK?
+ */
 export const SELECT_CASE_SECTIONS = `SELECT 
          COALESCE(jsonb_agg(DISTINCT cs.*) FILTER (WHERE cs."caseId" IS NOT NULL), '[]') AS "caseSections"
                      FROM "CaseSections" cs
