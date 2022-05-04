@@ -21,6 +21,7 @@ describe('Cases_audit_trigger', () => {
       OR 
       ("newRecord"->>'id' = '${createdCase.id}' AND "newRecord"->>'accountSid' = '${testAccountSid}')
     )
+    ORDER BY "timestamp_clock" ASC
   `;
 
   afterAll(async () => {
@@ -154,12 +155,15 @@ describe('CaseSections_audit_trigger', () => {
   const sectionName = 'section';
   const sectionId = '123';
 
-  const selectCreatedCaseSectionAudits = () =>
-    `SELECT * FROM "Audits" WHERE "tableName" = 'CaseSections' AND (
+  const selectCreatedCaseSectionAudits = () => `
+    SELECT * FROM "Audits" 
+    WHERE "tableName" = 'CaseSections' AND (
       ("oldRecord"->>'caseId' = '${createdCase.id}' AND "oldRecord"->>'sectionType' = '${sectionName}'  AND "oldRecord"->>'sectionId' = '${sectionId}')
       OR
       ("newRecord"->>'caseId' = '${createdCase.id}' AND "newRecord"->>'sectionType' = '${sectionName}'  AND "newRecord"->>'sectionId' = '${sectionId}')
-    )`;
+    )
+    ORDER BY "timestamp_clock" ASC
+    `;
 
   beforeAll(async () => {
     createdCase = await db.task(t =>
@@ -318,6 +322,7 @@ describe('Contacts_audit_trigger', () => {
       OR 
       ("newRecord"->>'id' = '${createdContact.id}' AND "newRecord"->>'accountSid' = '${testAccountSid}')
     )
+    ORDER BY "timestamp_clock" ASC
   `;
 
   afterAll(async () => {
