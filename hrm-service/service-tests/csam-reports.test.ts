@@ -64,14 +64,10 @@ beforeAll(async () => {
   await Contact.destroy(query);
 });
 
-afterAll(done => {
-  server.close(() => {
-    CSAMReport.destroy(csamReports2DestroyQuery).then(() => {
-      Contact.destroy(query).then(() => {
-        done();
-      });
-    });
-  });
+afterAll(async () => {
+  await CSAMReport.destroy(csamReports2DestroyQuery);
+  await Contact.destroy(query);
+  server.close();
   console.log('csam reports test cleaned up.');
 });
 
@@ -134,6 +130,23 @@ describe('/csamReports route', () => {
         .post(route)
         .set(headers)
         .send(invalidContactCsamReport);
+
+      expect(response.status).toBe(500);
+      expect(response.body).toEqual({});
+    });
+    test('invalid accountSid, returns 500', async () => {
+      //Create a Contact for the contactId
+      const contactRoute = `/v0/accounts/${accountSid}/contacts`;
+      const contactResponse = await request
+        .post(contactRoute)
+        .set(headers)
+        .send(contact1);
+      let csamReportWithContactId = { ...csamReport1, contactId: contactResponse.body.id };
+
+      const response = await request
+        .post(route.replace(accountSid, 'another-account-sid'))
+        .set(headers)
+        .send(csamReportWithContactId);
 
       expect(response.status).toBe(500);
       expect(response.body).toEqual({});

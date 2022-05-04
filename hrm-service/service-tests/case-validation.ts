@@ -74,7 +74,7 @@ export const without = (original, ...property) => {
   return output;
 };
 
-export const convertCaseInfoToExpectedInfo = (input: any) => {
+export const convertCaseInfoToExpectedInfo = (input: any, accountSid: string = null) => {
   if (!input || !input.info) return { ...input };
   const expectedCase = {
     ...input,
@@ -87,6 +87,7 @@ export const convertCaseInfoToExpectedInfo = (input: any) => {
         expectedInfo[sectionName] = expectedInfo[sectionName].map(section => ({
           id: expect.anything(),
           ...section,
+          accountSid: section.accountSid || expectedCase.accountSid || accountSid,
           createdAt: expect.toParseAsDate(section.createdAt),
         }));
         if (sectionName === 'counsellorNotes') {

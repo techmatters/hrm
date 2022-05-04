@@ -16,9 +16,81 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
+--
+-- Name: audit_trigger(); Type: FUNCTION; Schema: public; Owner: hrm
+--
+
+CREATE FUNCTION public.audit_trigger() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+      DECLARE
+        audit_row public."Audits";
+      BEGIN
+        IF TG_WHEN <> 'AFTER' THEN
+          RAISE EXCEPTION 'audit_trigger() may only run as an AFTER trigger';
+        END IF;
+
+        IF (TG_LEVEL <> 'ROW' OR (TG_OP <> 'UPDATE' AND TG_OP <> 'INSERT' AND TG_OP <> 'DELETE')) THEN
+          RAISE EXCEPTION 'audit_trigger() added as trigger for unhandled case: %, %',TG_OP, TG_LEVEL;
+          RETURN NULL;
+        END IF;
+        
+        audit_row = ROW(
+          nextval('"Audits_id_seq"'::regclass), -- new audit id
+          current_user,                         -- the current DB user
+          TG_TABLE_NAME,                        -- target tabla name
+          TG_OP,                                -- operation performed on target row
+          to_jsonb(OLD),                        -- target record previous state
+          to_jsonb(NEW),                        -- target record new state
+          current_timestamp,                    -- transaction timestamp
+          statement_timestamp(),                -- statement timestamp
+          clock_timestamp()                     -- Current date and time (changes during statement execution)
+        );
+
+        INSERT INTO public."Audits" VALUES (audit_row.*);
+        RETURN NULL;
+      END
+      $$;
+
+
+ALTER FUNCTION public.audit_trigger() OWNER TO hrm;
+
+--
+-- Name: Audits_id_seq; Type: SEQUENCE; Schema: public; Owner: hrm
+--
+
+CREATE SEQUENCE public."Audits_id_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public."Audits_id_seq" OWNER TO hrm;
+
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
+
+--
+-- Name: Audits; Type: TABLE; Schema: public; Owner: hrm
+--
+
+CREATE TABLE public."Audits" (
+    id integer DEFAULT nextval('public."Audits_id_seq"'::regclass) NOT NULL,
+    "user" text NOT NULL,
+    "tableName" text NOT NULL,
+    operation text NOT NULL,
+    "oldRecord" jsonb,
+    "newRecord" jsonb,
+    timestamp_trx timestamp with time zone NOT NULL,
+    timestamp_stm timestamp with time zone NOT NULL,
+    timestamp_clock timestamp with time zone NOT NULL
+);
+
+
+ALTER TABLE public."Audits" OWNER TO hrm;
 
 --
 -- Name: CSAMReports; Type: TABLE; Schema: public; Owner: hrm
@@ -145,7 +217,8 @@ CREATE TABLE public."Cases" (
     info jsonb,
     "twilioWorkerId" character varying(255),
     "accountSid" character varying(255),
-    "createdBy" character varying(255)
+    "createdBy" character varying(255),
+    "updatedBy" text
 );
 
 
@@ -194,7 +267,8 @@ CREATE TABLE public."Contacts" (
     "taskId" character varying(255),
     "createdBy" character varying(255),
     "channelSid" character varying(255),
-    "serviceSid" character varying(255)
+    "serviceSid" character varying(255),
+    "updatedBy" text
 );
 
 
@@ -308,6 +382,14 @@ ALTER TABLE ONLY public."PostSurveys" ALTER COLUMN id SET DEFAULT nextval('publi
 
 
 --
+-- Data for Name: Audits; Type: TABLE DATA; Schema: public; Owner: hrm
+--
+
+COPY public."Audits" (id, "user", "tableName", operation, "oldRecord", "newRecord", timestamp_trx, timestamp_stm, timestamp_clock) FROM stdin;
+\.
+
+
+--
 -- Data for Name: CSAMReports; Type: TABLE DATA; Schema: public; Owner: hrm
 --
 
@@ -335,7 +417,7 @@ COPY public."CaseSections" ("caseId", "sectionType", "sectionId", "createdAt", "
 -- Data for Name: Cases; Type: TABLE DATA; Schema: public; Owner: hrm
 --
 
-COPY public."Cases" (id, "createdAt", "updatedAt", status, helpline, info, "twilioWorkerId", "accountSid", "createdBy") FROM stdin;
+COPY public."Cases" (id, "createdAt", "updatedAt", status, helpline, info, "twilioWorkerId", "accountSid", "createdBy", "updatedBy") FROM stdin;
 \.
 
 
@@ -343,7 +425,7 @@ COPY public."Cases" (id, "createdAt", "updatedAt", status, helpline, info, "twil
 -- Data for Name: Contacts; Type: TABLE DATA; Schema: public; Owner: hrm
 --
 
-COPY public."Contacts" (id, "createdAt", "updatedAt", "rawJson", "queueName", "twilioWorkerId", helpline, number, channel, "conversationDuration", "caseId", "accountSid", "timeOfContact", "taskId", "createdBy", "channelSid", "serviceSid") FROM stdin;
+COPY public."Contacts" (id, "createdAt", "updatedAt", "rawJson", "queueName", "twilioWorkerId", helpline, number, channel, "conversationDuration", "caseId", "accountSid", "timeOfContact", "taskId", "createdBy", "channelSid", "serviceSid", "updatedBy") FROM stdin;
 \.
 
 
@@ -377,7 +459,16 @@ COPY public."SequelizeMeta" (name) FROM stdin;
 20211122172057-create-CSAMReport.js
 20220301134500-migrate-notes-to-counsellor-notes.js
 20220324154600-create-CaseSections.js
+20220415151254-add-updatedBy.js
+20220415170355-create-Audits.js
 \.
+
+
+--
+-- Name: Audits_id_seq; Type: SEQUENCE SET; Schema: public; Owner: hrm
+--
+
+SELECT pg_catalog.setval('public."Audits_id_seq"', 1, false);
 
 
 --
@@ -420,6 +511,14 @@ SELECT pg_catalog.setval('public."Contacts_id_seq"', 625, true);
 --
 
 SELECT pg_catalog.setval('public."PostSurveys_id_seq"', 1, false);
+
+
+--
+-- Name: Audits Audits_pkey; Type: CONSTRAINT; Schema: public; Owner: hrm
+--
+
+ALTER TABLE ONLY public."Audits"
+    ADD CONSTRAINT "Audits_pkey" PRIMARY KEY (id);
 
 
 --
@@ -483,6 +582,27 @@ ALTER TABLE ONLY public."SequelizeMeta"
 --
 
 CREATE INDEX "fki_CaseSections_caseId_Case_id_fk" ON public."CaseSections" USING btree ("caseId");
+
+
+--
+-- Name: CaseSections CaseSections_audit_trigger; Type: TRIGGER; Schema: public; Owner: hrm
+--
+
+CREATE TRIGGER "CaseSections_audit_trigger" AFTER INSERT OR DELETE OR UPDATE ON public."CaseSections" FOR EACH ROW EXECUTE FUNCTION public.audit_trigger();
+
+
+--
+-- Name: Cases Cases_audit_trigger; Type: TRIGGER; Schema: public; Owner: hrm
+--
+
+CREATE TRIGGER "Cases_audit_trigger" AFTER INSERT OR DELETE OR UPDATE ON public."Cases" FOR EACH ROW EXECUTE FUNCTION public.audit_trigger();
+
+
+--
+-- Name: Contacts Contacts_audit_trigger; Type: TRIGGER; Schema: public; Owner: hrm
+--
+
+CREATE TRIGGER "Contacts_audit_trigger" AFTER INSERT OR DELETE OR UPDATE ON public."Contacts" FOR EACH ROW EXECUTE FUNCTION public.audit_trigger();
 
 
 --
