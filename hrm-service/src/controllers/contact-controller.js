@@ -358,6 +358,7 @@ const ContactController = Contact => {
     searchContacts,
     getContacts,
     getContactsById,
+    getContact,
     createContact,
     connectToCase,
     queries: { queryOnName, queryOnPhone },

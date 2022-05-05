@@ -3,39 +3,12 @@ import type { Case } from './case';
 import { db, pgp } from '../connection-pool';
 import { getPaginationElements } from '../controllers/helpers';
 import pgPromise from 'pg-promise';
-import {
-  updateByIdSql,
-} from './sql/case-update-sql';
-import {
-  OrderByDirection, selectCaseSearch,
-   OrderByColumns,
-} from './sql/case-search-sql';
+import { updateByIdSql } from './sql/case-update-sql';
+import { OrderByColumns, OrderByDirection, selectCaseSearch } from './sql/case-search-sql';
 import { caseSectionUpsertSql, deleteMissingCaseSectionsSql } from './sql/case-sections-sql';
 import { DELETE_BY_ID } from './sql/case-delete-sql';
 import { selectSingleCaseByIdSql } from './sql/case-get-sql';
-/**
- * Move me to contacts directory when that exists
- */
-type ContactRecord = {
-  id: number;
-  rawJson?: any;
-  queueName?: string;
-  twilioWorkerId?: string;
-  createdBy?: string;
-  helpline?: string;
-  number?: string;
-  channel?: string;
-  conversationDuration?: number;
-  accountSid: string;
-  timeOfContact?: Date;
-  taskId?: string;
-  channelSid?: string;
-  serviceSid?: string;
-};
-
-export type Contact = ContactRecord & {
-  csamReports: any[];
-};
+import { Contact } from '../contact/contact-data-access';
 
 export type CaseRecordCommon = {
   info: any;

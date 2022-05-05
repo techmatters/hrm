@@ -2,6 +2,7 @@ import models from '../models';
 import { SafeRouter, publicEndpoint } from '../permissions';
 import createError from 'http-errors';
 import contactControllerFactory from '../controllers/contact-controller';
+import { patchContact } from './contact';
 const { Contact } = models;
 const ContactController = contactControllerFactory(Contact);
 
@@ -48,9 +49,10 @@ contactsRouter.post('/search', publicEndpoint, async (req, res) => {
 
 contactsRouter.patch('/:contactId', publicEndpoint, async (req, res) => {
   const { accountSid, user } = req;
+  const { contactId } = req.params;
 
-  const contact = await ContactController.createContact(req.body, accountSid, user.workerSid);
+  const contact = await patchContact(accountSid, user.workerSid, contactId, req.body);
   res.json(contact);
-})
+});
 
 export default contactsRouter.expressRouter;
