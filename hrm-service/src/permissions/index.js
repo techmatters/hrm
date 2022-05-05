@@ -1,4 +1,6 @@
-import { setupCanForRules } from './setupCanForRules';
+const User = require('./user');
+const { SafeRouter, publicEndpoint } = require('./safe-router');
+const { setupCanForRules } = require('./setupCanForRules');
 
 const openRules = require('../../permission-rules/open.json');
 const brRules = require('../../permission-rules/br.json');
@@ -10,6 +12,8 @@ const mwRules = require('../../permission-rules/mw.json');
 const ukRules = require('../../permission-rules/uk.json');
 const zaRules = require('../../permission-rules/za.json');
 const zmRules = require('../../permission-rules/zm.json');
+
+const { canEditCase, canViewPostSurvey } = require('./middlewares');
 
 // TODO: maybe factor out so it's easier to build the API that retrieves this to the frontend
 const rulesMap = {
@@ -45,7 +49,7 @@ const initializedCanOpenRules = setupCanForRules(openRules);
  * @param {string} permissionsConfig
  * @throws Will throw if initializedCan is not a function
  */
-export const applyPermissions = (req, initializedCan, permissionsConfig) => {
+const applyPermissions = (req, initializedCan, permissionsConfig) => {
   if (!initializedCan) throw new Error(`Cannot find rules for ${permissionsConfig}`);
 
   if (typeof initializedCan === 'string')
@@ -57,7 +61,7 @@ export const applyPermissions = (req, initializedCan, permissionsConfig) => {
   req.can = initializedCan;
 };
 
-export const setupPermissions = (req, res, next) => {
+const setupPermissions = (req, res, next) => {
   if (process.env.USE_OPEN_PERMISSIONS) {
     applyPermissions(req, initializedCanOpenRules, 'open rules');
     return next();
@@ -72,6 +76,11 @@ export const setupPermissions = (req, res, next) => {
   return next();
 };
 
-export * from './middlewares';
-export * from './safe-router';
-export * from './user';
+module.exports = {
+  setupPermissions,
+  User,
+  SafeRouter,
+  publicEndpoint,
+  canEditCase,
+  canViewPostSurvey,
+};

@@ -1,9 +1,9 @@
-import models from '../models';
-import { SafeRouter, publicEndpoint } from '../permissions';
-import createError from 'http-errors';
-import contactControllerFactory from '../controllers/contact-controller';
+const models = require('../../models');
+const { SafeRouter, publicEndpoint } = require('../../permissions');
+const createError = require('http-errors');
+
 const { Contact } = models;
-const ContactController = contactControllerFactory(Contact);
+const ContactController = require('../../controllers/contact-controller')(Contact);
 
 const contactsRouter = SafeRouter();
 
@@ -46,11 +46,4 @@ contactsRouter.post('/search', publicEndpoint, async (req, res) => {
   res.json(searchResults);
 });
 
-contactsRouter.patch('/:contactId', publicEndpoint, async (req, res) => {
-  const { accountSid, user } = req;
-
-  const contact = await ContactController.createContact(req.body, accountSid, user.workerSid);
-  res.json(contact);
-})
-
-export default contactsRouter.expressRouter;
+module.exports = contactsRouter.expressRouter;
