@@ -109,6 +109,11 @@ export type DateFilter = {
   exists?: DateExistsCondition
 };
 
+export type CategoryFilter = {
+  category: string;
+  subcategory: string;
+};
+
 export type CaseListFilters = {
   counsellors?: string[],
   statuses?: string[],
@@ -116,6 +121,7 @@ export type CaseListFilters = {
   createdAt?: DateFilter,
   updatedAt?: DateFilter,
   followUpDate?: DateFilter,
+  categories?: CategoryFilter[],
   helplines?: string[],
   includeOrphans?: boolean
 };

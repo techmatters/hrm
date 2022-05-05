@@ -1,6 +1,11 @@
 import { pgp } from '../../connection-pool';
 import { SELECT_CASE_SECTIONS } from './case-sections-sql';
-import { CaseListFilters, DateExistsCondition, DateFilter } from '../case-data-access';
+import {
+  CaseListFilters,
+  DateExistsCondition,
+  DateFilter,
+  CategoryFilter,
+} from '../case-data-access';
 
 export const enum OrderByDirection {
   ascendingNullsLast = 'ASC NULLS LAST',
@@ -79,12 +84,29 @@ const dateFilterCondition = (
   return existsCondition;
 };
 
+const categoriesCondition = (categories: CategoryFilter[]): string => {
+  const whereConditions = categories
+    .map(
+      c =>
+        `c."rawJson"->'caseInformation'->'categories'->'${c.category}'->>'${c.subcategory}' ilike 'true'`,
+    )
+    .join(' OR ');
+
+  return pgp.as.format(
+    `EXISTS (
+      SELECT 1 FROM "Contacts" c
+      WHERE c."caseId" = cases.id AND c."accountSid" = cases."accountSid" AND (${whereConditions})
+    )`,
+  );
+};
+
 const filterSql = ({
   counsellors,
   statuses,
   createdAt = {},
   updatedAt = {},
   followUpDate = {},
+  categories,
   helplines,
   excludedStatuses,
   includeOrphans,
@@ -113,6 +135,9 @@ const filterSql = ({
       dateFilterCondition(FilterableDateField.FOLLOW_UP_DATE, followUpDate),
     ].filter(sql => sql),
   );
+  if (categories && categories.length) {
+    filterSqlClauses.push(categoriesCondition(categories));
+  }
   if (!includeOrphans) {
     filterSqlClauses.push(`jsonb_array_length(contacts."connectedContacts") > 0`);
   }
