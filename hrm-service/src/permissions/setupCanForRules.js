@@ -1,7 +1,7 @@
 const CanCan = require('cancan');
 const { isCounselorWhoCreated, isSupervisor, isCaseOpen } = require('./helpers');
 const { actionsMaps } = require('./actions');
-import { User } from './user';
+const User = require('./user');
 const models = require('../models');
 
 const { Case, PostSurvey } = models;

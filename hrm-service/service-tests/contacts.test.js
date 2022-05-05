@@ -1,6 +1,5 @@
-import supertest from 'supertest';
-import * as Sequelize from 'sequelize';
-import { ContactRawJson } from '../src/contact/contact-data-access';
+const supertest = require('supertest');
+const Sequelize = require('sequelize');
 const app = require('../src/app');
 const models = require('../src/models');
 const mocks = require('./mocks');
@@ -10,7 +9,6 @@ const { db } = require('../src/connection-pool');
 import { subHours, subDays } from 'date-fns';
 
 import './case-validation';
-import { PatchPayload } from '../src/contact/contact';
 
 const server = app.listen();
 const request = supertest.agent(server);
@@ -45,7 +43,6 @@ const workerSid = 'worker-sid';
 
 const { Contact, Case, CSAMReport } = models;
 const CSAMReportController = require('../src/controllers/csam-report-controller')(CSAMReport);
-const ContactController = require('../src/controllers/contact-controller')(Contact);
 
 const query = {
   where: {
@@ -293,7 +290,7 @@ describe('/contacts route', () => {
 
   const mapId = c => c.id;
   const compareTimeOfContactDesc = (c1, c2) =>
-    new Date(c2.timeOfContact).valueOf() - new Date(c1.timeOfContact).valueOf();
+    new Date(c2.timeOfContact) - new Date(c1.timeOfContact);
 
   describe('GET', () => {
     test('should return 401', async () => {
@@ -790,313 +787,6 @@ describe('/contacts route', () => {
           expectCallback(response);
         },
       );
-    });
-  });
-
-  describe('/contacts/:contactId route', () => {
-    beforeEach(async () => {
-      const options = { context: { workerSid } };
-      const caseToBeDeleted = await Case.create(case1, options);
-
-      await caseToBeDeleted.destroy();
-    });
-
-    describe('PATCH', () => {
-      type TestOptions = {
-        patch: PatchPayload['rawJson'];
-        description: string;
-        original?: ContactRawJson;
-        expected: Partial<ContactRawJson>;
-      };
-      const subRoute = contactId => `${route}/${contactId}`;
-
-      test('should return 401', async () => {
-        const createdContact = await Contact.create(contact1, { context: { workerSid } });
-        try {
-          const response = await request.patch(subRoute(createdContact.id)).send({});
-
-          expect(response.status).toBe(401);
-          expect(response.body.error).toBe('Authorization failed');
-        } finally {
-          createdContact.destroy();
-        }
-      });
-      describe('Blank rawJson', () => {
-        const sampleRawJson = {
-          ...contact1.form,
-          caseInformation: {
-            ...contact1.form.caseInformation,
-            categories: {
-              a: {
-                a1: false,
-                a2: true,
-              },
-              b: {
-                b1: true,
-                b2: false,
-              },
-            },
-          },
-        };
-        each(<TestOptions[]>[
-          {
-            description: 'add child information',
-            patch: {
-              childInformation: {
-                name: { firstName: 'Lorna', lastName: 'Ballantyne' },
-                some: 'property',
-              },
-            },
-            expected: {
-              childInformation: {
-                name: { firstName: 'Lorna', lastName: 'Ballantyne' },
-                some: 'property',
-              },
-            },
-          },
-          {
-            description: 'add caller information',
-            patch: {
-              callerInformation: {
-                name: { firstName: 'Lorna', lastName: 'Ballantyne' },
-                some: 'other property',
-              },
-            },
-            expected: {
-              callerInformation: {
-                name: { firstName: 'Lorna', lastName: 'Ballantyne' },
-                some: 'other property',
-              },
-            },
-          },
-          {
-            description: 'add case information and categories',
-            patch: {
-              caseInformation: {
-                other: 'case property',
-                categories: {
-                  category1: {
-                    subcategory1: true,
-                    subcategory2: true,
-                  },
-                },
-              },
-            },
-            expected: {
-              caseInformation: {
-                other: 'case property',
-                categories: {
-                  category1: {
-                    subcategory1: true,
-                    subcategory2: true,
-                  },
-                },
-              },
-            },
-          },
-          {
-            description: 'add case information',
-            patch: {
-              caseInformation: {
-                other: 'case property',
-              },
-            },
-            expected: {
-              caseInformation: {
-                other: 'case property',
-              },
-            },
-          },
-          {
-            description: 'add categories',
-            patch: {
-              caseInformation: {
-                categories: {
-                  category1: {
-                    subcategory1: true,
-                    subcategory2: true,
-                  },
-                },
-              },
-            },
-            expected: {
-              caseInformation: {
-                categories: {
-                  category1: {
-                    subcategory1: true,
-                    subcategory2: true,
-                  },
-                },
-              },
-            },
-          },
-          {
-            description: 'overwrite child information',
-            original: sampleRawJson,
-            patch: {
-              childInformation: {
-                name: { firstName: 'Lorna', lastName: 'Ballantyne' },
-                some: 'property',
-              },
-            },
-            expected: {
-              ...sampleRawJson,
-              childInformation: {
-                name: { firstName: 'Lorna', lastName: 'Ballantyne' },
-                some: 'property',
-              },
-            },
-          },
-          {
-            original: sampleRawJson,
-            description: 'overwrite caller information',
-            patch: {
-              callerInformation: {
-                name: { firstName: 'Lorna', lastName: 'Ballantyne' },
-                some: 'other property',
-              },
-            },
-            expected: {
-              ...sampleRawJson,
-              callerInformation: {
-                name: { firstName: 'Lorna', lastName: 'Ballantyne' },
-                some: 'other property',
-              },
-            },
-          },
-          {
-            original: sampleRawJson,
-            description: 'overwrite case information and categories',
-            patch: {
-              caseInformation: {
-                other: 'overwrite case property',
-                categories: {
-                  category1: {
-                    subcategory1: true,
-                    subcategory2: true,
-                  },
-                },
-              },
-            },
-            expected: {
-              ...sampleRawJson,
-              caseInformation: {
-                other: 'overwrite case property',
-                categories: {
-                  category1: {
-                    subcategory1: true,
-                    subcategory2: true,
-                  },
-                },
-              },
-            },
-          },
-          {
-            original: sampleRawJson,
-            description: 'overwrite case information',
-            patch: {
-              caseInformation: {
-                other: 'case property',
-              },
-            },
-            expected: {
-              ...sampleRawJson,
-              caseInformation: {
-                other: 'case property',
-                categories: sampleRawJson.caseInformation.categories,
-              },
-            },
-          },
-          {
-            original: sampleRawJson,
-            description: 'overwrite categories',
-            patch: {
-              caseInformation: {
-                categories: {
-                  category1: {
-                    subcategory1: true,
-                    subcategory2: true,
-                  },
-                },
-              },
-            },
-            expected: {
-              ...sampleRawJson,
-              caseInformation: {
-                ...sampleRawJson.caseInformation,
-                categories: {
-                  category1: {
-                    subcategory1: true,
-                    subcategory2: true,
-                  },
-                },
-              },
-            },
-          },
-        ]).test.only(
-          'should $description if that is specified in the payload',
-          async ({ patch, original, expected }: TestOptions) => {
-            console.log('expected:', expected);
-            const createdContact = await Contact.create(
-              { ...contact1, rawJson: original },
-              { context: { workerSid } },
-            );
-            try {
-              const existingContactId = createdContact.id;
-              const response = await request
-                .patch(subRoute(existingContactId))
-                .set(headers)
-                .send({ rawJson: patch });
-
-              expect(response.status).toBe(200);
-              expect(response.body).toStrictEqual({
-                ...createdContact.dataValues,
-                createdAt: expect.toParseAsDate(createdContact.dataValues.createdAt),
-                updatedAt: expect.toParseAsDate(),
-                updatedBy: workerSid,
-                rawJson: expected,
-                csamReports: [],
-              });
-              // Test the association
-              expect(response.body.csamReports).toHaveLength(0);
-              const savedContact = await ContactController.getContact(
-                existingContactId,
-                accountSid,
-              );
-
-              expect(savedContact.dataValues).toStrictEqual({
-                ...createdContact.dataValues,
-                createdAt: expect.toParseAsDate(createdContact.dataValues.createdAt),
-                updatedAt: expect.toParseAsDate(),
-                updatedBy: workerSid,
-                rawJson: expected,
-                csamReports: [],
-              });
-            } finally {
-              createdContact.destroy();
-            }
-          },
-        );
-      });
-
-      describe('use non-existent contactId', () => {
-        test('should return 404', async () => {
-          const contactToBeDeleted = await Contact.create(contact1, { context: { workerSid } });
-          const nonExistingContactId = contactToBeDeleted.id;
-          await contactToBeDeleted.destroy();
-          const response = await request
-            .patch(subRoute(nonExistingContactId))
-            .set(headers)
-            .send({
-              contactRawJson: {
-                name: { firstName: 'Lorna', lastName: 'Ballantyne' },
-                some: 'property',
-              },
-            });
-
-          expect(response.status).toBe(404);
-        });
-      });
     });
   });
 
