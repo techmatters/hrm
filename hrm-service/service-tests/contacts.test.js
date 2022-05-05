@@ -383,17 +383,17 @@ describe('/contacts route', () => {
     });
 
     afterAll(async () => {
-      await Contact.destroy({
-        where: {
-          id: {
-            [Sequelize.Op.in]: createdContacts.map(c => c.id),
-          },
-        },
-      });
       await CSAMReport.destroy({
         where: {
           id: {
             [Sequelize.Op.in]: csamReports.map(c => c.id),
+          },
+        },
+      });
+      await Contact.destroy({
+        where: {
+          id: {
+            [Sequelize.Op.in]: createdContacts.map(c => c.id),
           },
         },
       });
@@ -478,7 +478,9 @@ describe('/contacts route', () => {
       let csamReports = [];
       beforeAll(async () => {
         // Clean what's been created so far
+        await CSAMReport.destroy(query);
         await Contact.destroy(query);
+        await Case.destroy(query);
 
         // Create CSAM Reports
         const csamReportId1 = 'csam-report-id-1';
@@ -558,17 +560,17 @@ describe('/contacts route', () => {
       });
 
       afterAll(async () => {
-        await Contact.destroy({
-          where: {
-            id: {
-              [Sequelize.Op.in]: createdContacts.map(c => c.id),
-            },
-          },
-        });
         await CSAMReport.destroy({
           where: {
             id: {
               [Sequelize.Op.in]: csamReports.map(c => c.id),
+            },
+          },
+        });
+        await Contact.destroy({
+          where: {
+            id: {
+              [Sequelize.Op.in]: createdContacts.map(c => c.id),
             },
           },
         });
