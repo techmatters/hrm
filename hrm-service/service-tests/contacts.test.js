@@ -3,9 +3,23 @@ const Sequelize = require('sequelize');
 const app = require('../src/app');
 const models = require('../src/models');
 const mocks = require('./mocks');
+const each = require('jest-each').default;
+const { formatNumber } = require('../src/controllers/helpers');
+const { db } = require('../src/connection-pool');
+import { subHours, subDays } from 'date-fns';
+
+import './case-validation';
 
 const server = app.listen();
 const request = supertest.agent(server);
+
+/**
+ *
+ * @param {(() => Promise<any>)[]} ps
+ * @returns
+ */
+const resolveSequentially = ps =>
+  ps.reduce((p, v) => p.then(a => v().then(r => a.concat([r]))), Promise.resolve([]));
 
 const {
   accountSid,
@@ -27,14 +41,23 @@ const headers = {
 };
 const workerSid = 'worker-sid';
 
-const { Contact, Case, CaseAudit, CSAMReport } = models;
+const { Contact, Case, CSAMReport } = models;
 const CSAMReportController = require('../src/controllers/csam-report-controller')(CSAMReport);
 
 const query = {
   where: {
-    twilioWorkerId: {
-      [Sequelize.Op.in]: ['fake-worker-123', 'fake-worker-129', 'fake-worker-987', workerSid],
-    },
+    [Sequelize.Op.or]: [
+      {
+        twilioWorkerId: {
+          [Sequelize.Op.in]: ['fake-worker-123', 'fake-worker-129', 'fake-worker-987', workerSid],
+        },
+      },
+      {
+        accountSid: {
+          [Sequelize.Op.in]: ['', accountSid],
+        },
+      },
+    ],
   },
 };
 
@@ -52,8 +75,6 @@ afterAll(async () => {
   console.log('Deleted data in contacts.test');
 });
 
-afterEach(async () => CaseAudit.destroy(query));
-
 describe('/contacts route', () => {
   const route = `/v0/accounts/${accountSid}/contacts`;
 
@@ -66,25 +87,103 @@ describe('/contacts route', () => {
       expect(response.body.error).toBe('Authorization failed');
     });
 
-    test('should return 200', async () => {
-      const updateSpy = jest.spyOn(CSAMReport, 'update');
+    each([
+      {
+        contact: contact1,
+        changeDescription: 'callType is Child calling about self',
+      },
+      {
+        contact: contact2,
+        changeDescription: 'callType is Someone calling about a child',
+      },
+      {
+        contact: broken1,
+        changeDescription:
+          'contact is non data with actual information (1) (no payload manipulation)',
+      },
+      {
+        contact: broken2,
+        changeDescription:
+          'contact is non data with actual information (2) (no payload manipulation)',
+      },
+      {
+        contact: another1,
+        changeDescription: 'callType is Child calling about self (with variations in the form)',
+      },
+      {
+        contact: another2,
+        changeDescription:
+          'callType is Someone calling about a child (with variations in the form)',
+      },
+      {
+        contact: noHelpline,
+        changeDescription: 'there is no helpline set in the payload',
+      },
+      {
+        contact: {
+          form: {},
+          twilioWorkerId: null,
+          helpline: null,
+          queueName: null,
+          number: null,
+          channel: null,
+          conversationDuration: null,
+          accountSid: null,
+          timeOfContact: null,
+          taskId: null,
+          channelSid: null,
+          serviceSid: null,
+        },
+        expectedGetContact: {
+          form: {},
+          twilioWorkerId: '',
+          helpline: '',
+          queueName: null,
+          number: '',
+          channel: '',
+          conversationDuration: null,
+          accountSid: '',
+          taskId: '',
+          channelSid: '',
+          serviceSid: '',
+        },
+        changeDescription: 'missing fields (filled with defaults)',
+      },
+    ]).test(
+      'should return 200 when $changeDescription',
+      async ({ contact, expectedGetContact = null }) => {
+        // const updateSpy = jest.spyOn(CSAMReport, 'update');
 
-      const contacts = [contact1, contact2, broken1, broken2, another1, another2, noHelpline];
-      // These need to be run in series to guarantee the ordering for later tests
-      // eslint-disable-next-line no-restricted-syntax
-      for (const contact of contacts) {
-        // eslint-disable-next-line no-await-in-loop
+        const expected = expectedGetContact || contact;
+
         const res = await request
           .post(route)
           .set(headers)
           .send(contact);
+
         expect(res.status).toBe(200);
         expect(res.body.rawJson.callType).toBe(contact.form.callType);
         expect(res.body.rawJson.callType).toBe(contact.form.callType);
-      }
 
-      expect(updateSpy).not.toHaveBeenCalled();
-    });
+        // expect(updateSpy).not.toHaveBeenCalled();
+
+        const contacts = await request.get(route).set(headers);
+
+        const createdContact = contacts.body.find(c => c.id === res.body.id);
+        expect(createdContact).toBeDefined();
+
+        expect(createdContact.FormData).toMatchObject(expected.form);
+        expect(createdContact.Date).toParseAsDate();
+        expect(createdContact.twilioWorkerId).toBe(expected.twilioWorkerId);
+        expect(createdContact.helpline).toBe(expected.helpline);
+        expect(createdContact.queueName).toBe(
+          expected.queueName || expected.form.queueName || null,
+        );
+        expect(createdContact.number).toBe(formatNumber(expected.number));
+        expect(createdContact.channel).toBe(expected.channel);
+        expect(createdContact.conversationDuration).toBe(expected.conversationDuration);
+      },
+    );
 
     test('Idempotence on create contact', async () => {
       const response = await request
@@ -107,9 +206,37 @@ describe('/contacts route', () => {
 
       // but second call should do nothing
       expect(afterContacts.body).toHaveLength(beforeContacts.body.length);
+      expect(afterContacts.body.filter(c => c.id === response.body.id)).toHaveLength(1);
     });
 
-    test('Connects to CSAM reports', async () => {
+    test('Connects to CSAM reports (not existing csam report id, do nothing)', async () => {
+      const updateSpy = jest.spyOn(CSAMReport, 'update');
+
+      const notExistingCsamReport = { id: 99999999 };
+
+      // Create contact with above report
+      const response = await request
+        .post(route)
+        .set(headers)
+        .send({ ...contact1, csamReports: [notExistingCsamReport] });
+
+      expect(updateSpy).toHaveBeenCalled();
+
+      // Test the association
+      expect(response.status).toBe(200);
+
+      // Test the association
+      expect(response.body.csamReports).toHaveLength(0);
+
+      // No new report is created
+      await expect(
+        CSAMReportController.getCSAMReport(notExistingCsamReport.id, accountSid),
+      ).rejects.toThrow(`CSAM Report with id ${notExistingCsamReport.id} not found`);
+
+      await Contact.destroy({ where: { id: response.body.id } });
+    });
+
+    test('Connects to CSAM reports (valid csam reports ids)', async () => {
       const updateSpy = jest.spyOn(CSAMReport, 'update');
 
       // Create CSAM Report
@@ -161,6 +288,10 @@ describe('/contacts route', () => {
     });
   });
 
+  const mapId = c => c.id;
+  const compareTimeOfContactDesc = (c1, c2) =>
+    new Date(c2.timeOfContact) - new Date(c1.timeOfContact);
+
   describe('GET', () => {
     test('should return 401', async () => {
       const response = await request.get(route);
@@ -169,11 +300,167 @@ describe('/contacts route', () => {
       expect(response.body.error).toBe('Authorization failed');
     });
 
-    test('should return 200', async () => {
-      const response = await request.get(route).set(headers);
-      expect(response.status).toBe(200);
-      expect(response.body).not.toHaveLength(0);
+    const queueName = 'queue-name';
+
+    let createdContacts = [];
+    let csamReports = [];
+    beforeAll(async () => {
+      // Clean what's been created so far
+      await Contact.destroy(query);
+
+      // Create CSAM Reports
+      const csamReportId1 = 'csam-report-id-1';
+      const csamReportId2 = 'csam-report-id-2';
+
+      const newReport1 = (
+        await CSAMReportController.createCSAMReport(
+          {
+            csamReportId: csamReportId1,
+            twilioWorkerId: workerSid,
+          },
+          accountSid,
+        )
+      ).dataValues;
+
+      const newReport2 = (
+        await CSAMReportController.createCSAMReport(
+          {
+            csamReportId: csamReportId2,
+            twilioWorkerId: workerSid,
+          },
+          accountSid,
+        )
+      ).dataValues;
+
+      // Create some contacts to work with
+      const contact = { ...contact1 };
+
+      const withQueueName = { ...contact, queueName };
+
+      const oneHourBefore = {
+        ...withQueueName,
+        timeOfContact: subHours(new Date(), 1).toISOString(), // one hour before
+      };
+
+      const withCSAMReports = {
+        ...contact2,
+        queueName: 'withCSAMReports',
+        csamReports: [newReport1, newReport2],
+      };
+
+      const responses = await resolveSequentially(
+        [
+          contact,
+          contact,
+          contact,
+          contact,
+          contact,
+          contact,
+          contact,
+          contact,
+          withQueueName,
+          oneHourBefore,
+          withQueueName,
+          withCSAMReports,
+        ].map(c => () =>
+          request
+            .post(route)
+            .set(headers)
+            .send(c),
+        ),
+      );
+
+      createdContacts = responses.map(r => r.body);
+      const withCSAMReportsId = createdContacts.find(c => c.queueName === 'withCSAMReports').id;
+
+      // Retrieve the csam reports that should be connected to withCSAMReports
+      const updatedCsamReports = await CSAMReportController.getCSAMReports(
+        withCSAMReportsId,
+        accountSid,
+      );
+      expect(updatedCsamReports).toHaveLength(2);
+      csamReports = updatedCsamReports;
     });
+
+    afterAll(async () => {
+      await Contact.destroy({
+        where: {
+          id: {
+            [Sequelize.Op.in]: createdContacts.map(c => c.id),
+          },
+        },
+      });
+      await CSAMReport.destroy({
+        where: {
+          id: {
+            [Sequelize.Op.in]: csamReports.map(c => c.id),
+          },
+        },
+      });
+    });
+
+    each([
+      {
+        queryParams: '',
+        changeDescription: 'no query params provided',
+        expectCallback: response => {
+          expect(response.status).toBe(200);
+          expect(response.body.length).toBe(10);
+
+          // Get the first 10 contacts (should exclude "oneHourBefore")
+          const expectedContactsResponse = createdContacts
+            .sort(compareTimeOfContactDesc)
+            .slice(0, 10);
+
+          expectedContactsResponse.forEach(c =>
+            expect(response.body.find(c2 => c.id === c2.id)).toBeDefined(),
+          );
+          expect(response.body.map(mapId)).toMatchObject(expectedContactsResponse.map(mapId));
+        },
+      },
+      {
+        queryParams: `queueName=${queueName}`,
+        changeDescription: 'with query param (filter by queueName)',
+        expectCallback: response => {
+          expect(response.status).toBe(200);
+          expect(response.body.length).toBe(3);
+
+          const withQ = createdContacts.filter(c => c.queueName === queueName);
+
+          withQ.forEach(c => expect(response.body.find(c2 => c.id === c2.id)).toBeDefined());
+          expect(response.body.map(mapId)).toMatchObject(
+            withQ.sort(compareTimeOfContactDesc).map(mapId),
+          );
+        },
+      },
+      {
+        queryParams: `queueName=withCSAMReports`,
+        changeDescription:
+          'withCSAMReports (filter by queueName and check csam reports are retrieved)',
+        expectCallback: response => {
+          expect(response.status).toBe(200);
+          expect(response.body.length).toBe(1);
+
+          const withCSAMReports = createdContacts.find(c => c.queueName === 'withCSAMReports');
+
+          expect(response.body.find(c => withCSAMReports.id === c.id)).toBeDefined();
+          expect(response.body[0].FormData).toMatchObject(withCSAMReports.rawJson);
+          response.body[0].csamReports.forEach(r => {
+            expect(csamReports.find(r2 => r2.id === r.id)).toMatchObject({
+              ...r,
+              createdAt: expect.toParseAsDate(r.createdAt),
+              updatedAt: expect.toParseAsDate(r.updatedAt),
+            });
+          });
+        },
+      },
+    ]).test(
+      'should return 200 when $changeDescription',
+      async ({ expectCallback, queryParams }) => {
+        const response = await request.get(`${route}?${queryParams}`).set(headers);
+        expectCallback(response);
+      },
+    );
   });
 
   describe('/contacts/search route', () => {
@@ -187,149 +474,317 @@ describe('/contacts route', () => {
         expect(response.body.error).toBe('Authorization failed');
       });
 
-      describe('multiple input search', () => {
-        test('should return 200', async () => {
-          const response = await request
-            .post(subRoute)
-            .set(headers)
-            .send({ firstName: 'jh', lastName: 'he' }); // should filter non-data
+      let createdContacts = [];
+      let csamReports = [];
+      beforeAll(async () => {
+        // Clean what's been created so far
+        await Contact.destroy(query);
 
-          expect(response.status).toBe(200);
-          const { contacts, count } = response.body;
-          const [c2, c1] = contacts; // result is sorted DESC
-          expect(c1.details).toStrictEqual(contact1.form);
-          expect(c2.details).toStrictEqual(contact2.form);
-          expect(count).toBe(2);
+        // Create CSAM Reports
+        const csamReportId1 = 'csam-report-id-1';
+        const csamReportId2 = 'csam-report-id-2';
 
-          // Test the association
-          expect(c1.csamReports).toHaveLength(0);
-          expect(c2.csamReports).toHaveLength(0);
-        });
-      });
+        const newReport1 = (
+          await CSAMReportController.createCSAMReport(
+            {
+              csamReportId: csamReportId1,
+              twilioWorkerId: workerSid,
+            },
+            accountSid,
+          )
+        ).dataValues;
 
-      describe('multiple input search that targets zero contacts', () => {
-        test('should return 200', async () => {
-          const response = await request
-            .post(subRoute)
-            .set(headers)
-            .send({ firstName: 'jh', lastName: 'curie' });
+        const newReport2 = (
+          await CSAMReportController.createCSAMReport(
+            {
+              csamReportId: csamReportId2,
+              twilioWorkerId: workerSid,
+            },
+            accountSid,
+          )
+        ).dataValues;
 
-          const { count } = response.body;
-          expect(response.status).toBe(200);
-          expect(count).toBe(0);
-        });
-      });
+        // Create some contacts to work with
+        const oneHourBefore = {
+          ...another2,
+          timeOfContact: subHours(new Date(), 1).toISOString(), // one hour before
+        };
 
-      describe('multiple input search with helpline', () => {
-        test('should return 200', async () => {
-          const response1 = await request
-            .post(subRoute)
-            .set(headers)
-            .send({ firstName: 'ma', lastName: 'ur' }); // should match another1 & another2
+        const oneWeekBefore = {
+          ...noHelpline,
+          timeOfContact: subDays(new Date(), 7).toISOString(), // one hour before
+        };
 
-          const response2 = await request
-            .post(subRoute)
-            .set(headers)
-            .send({ firstName: 'ma', lastName: 'ur', helpline: 'Helpline 1' }); // should bring only the case with 'Helpline 1'
+        const invalidContact = {};
 
-          const { contacts: contacts1, count: count1 } = response1.body;
-          const { contacts: contacts2, count: count2 } = response2.body;
+        const withCSAMReports = {
+          ...noHelpline,
+          queueName: 'withCSAMReports',
+          number: '123412341234',
+          csamReports: [newReport1, newReport2],
+        };
 
-          expect(response1.status).toBe(200);
-          expect(count1).toBe(3);
-          const [nh, a2, a1] = contacts1; // result is sorted DESC
-          expect(a1.details).toStrictEqual(another1.form);
-          expect(a2.details).toStrictEqual(another2.form);
-          expect(nh.details).toStrictEqual(noHelpline.form);
-
-          expect(response2.status).toBe(200);
-          expect(count2).toBe(1);
-          const [a] = contacts2; // result is sorted DESC
-          expect(a.details).toStrictEqual(another1.form);
-        });
-      });
-
-      describe('multiple input search without name search', () => {
-        test('should return 200', async () => {
-          const response = await request
-            .post(subRoute)
-            .set(headers)
-            .send({ counselor: 'worker-sid' }); // should match contact1 & broken1 & another1 & noHelpline
-
-          const { contacts, count } = response.body;
-
-          expect(response.status).toBe(200);
-          expect(count).toBe(8); // TODO: This fails locally. Not sure why on CI count is 8 instead of 7.
-          const [nh, a2, a1, b2, b1, c2, c1] = contacts; // result is sorted DESC
-          expect(c1.details).toStrictEqual(contact1.form);
-          expect(c2.details).toStrictEqual(contact2.form);
-          expect(b1.details).toStrictEqual(broken1.form);
-          expect(b2.details).toStrictEqual(broken2.form);
-          expect(a1.details).toStrictEqual(another1.form);
-          expect(a2.details).toStrictEqual(another2.form);
-          expect(nh.details).toStrictEqual(noHelpline.form);
-        });
-      });
-
-      describe('search over phone regexp (multi input)', () => {
-        test('should return 200', async () => {
-          const phoneNumbers = [
-            another2.number,
-            another2.form.childInformation.location.phone1,
-            another2.form.childInformation.location.phone2,
-            another2.form.callerInformation.location.phone1,
-            another2.form.callerInformation.location.phone2,
-          ];
-          const requests = phoneNumbers.map(phone => {
-            const phoneNumber = phone.substr(1, 6);
-            return request
-              .post(subRoute)
+        const responses = await resolveSequentially(
+          [
+            contact1,
+            contact2,
+            broken1,
+            broken2,
+            another1,
+            noHelpline,
+            withTaskId,
+            oneHourBefore,
+            invalidContact,
+            withCSAMReports,
+            oneWeekBefore,
+          ].map(c => () =>
+            request
+              .post(route)
               .set(headers)
-              .send({ phoneNumber, lastName: 'curi' });
-          });
+              .send(c),
+          ),
+        );
 
-          const responses = await Promise.all(requests);
+        createdContacts = responses.map(r => r.body);
+        const withCSAMReportsId = createdContacts.find(c => c.queueName === 'withCSAMReports').id;
 
-          responses.forEach(res => {
-            const { count, contacts } = res.body;
-            expect(res.status).toBe(200);
+        // Retrieve the csam reports that should be connected to withCSAMReports
+        const updatedCsamReports = await CSAMReportController.getCSAMReports(
+          withCSAMReportsId,
+          accountSid,
+        );
+        expect(updatedCsamReports).toHaveLength(2);
+        csamReports = updatedCsamReports;
+      });
+
+      afterAll(async () => {
+        await Contact.destroy({
+          where: {
+            id: {
+              [Sequelize.Op.in]: createdContacts.map(c => c.id),
+            },
+          },
+        });
+        await CSAMReport.destroy({
+          where: {
+            id: {
+              [Sequelize.Op.in]: csamReports.map(c => c.id),
+            },
+          },
+        });
+      });
+
+      each([
+        {
+          body: { firstName: 'jh', lastName: 'he' },
+          changeDescription: 'multiple input search',
+          expectCallback: response => {
+            expect(response.status).toBe(200);
+            const { contacts, count } = response.body;
+            expect(count).toBe(2);
+
+            const [c2, c1] = contacts; // result is sorted DESC
+            expect(c1.details).toStrictEqual(contact1.form);
+            expect(c2.details).toStrictEqual(contact2.form);
+
+            // Test the association
+            expect(c1.csamReports).toHaveLength(0);
+            expect(c2.csamReports).toHaveLength(0);
+          },
+        },
+        {
+          body: { firstName: 'jh', lastName: 'curie' },
+          changeDescription: 'multiple input search that targets zero contacts',
+          expectCallback: response => {
+            const { count } = response.body;
+            expect(response.status).toBe(200);
+            expect(count).toBe(0);
+          },
+        },
+        {
+          changeDescription: 'multiple input search with helpline',
+          body: { firstName: 'ma', lastName: 'ur', helpline: 'Helpline 1' }, // should retrieve only the contact with 'Helpline 1'
+          expectCallback: response => {
+            const { contacts, count } = response.body;
+
+            expect(response.status).toBe(200);
             expect(count).toBe(1);
-            expect(contacts[0].details).toStrictEqual(another2.form);
-          });
-        });
-      });
+            const [a] = contacts;
+            expect(a.details).toStrictEqual(another1.form);
+          },
+        },
+        {
+          changeDescription: 'multiple input search without name search',
+          body: { counselor: 'worker-sid' }, // should match contact1 & broken1 & another1 & noHelpline
+          expectCallback: response => {
+            const { contacts } = response.body;
 
-      describe('search over phone regexp', () => {
-        test('should return 200', async () => {
-          const phoneNumber = another2.number;
+            expect(response.status).toBe(200);
+            // invalidContact will return null from the search endpoint, exclude it here
+            expect(contacts.length).toBe(createdContacts.length - 1);
+            const createdConcatdsByTimeOfContact = createdContacts.sort(compareTimeOfContactDesc);
+            createdConcatdsByTimeOfContact.forEach(c => {
+              const searchContact = contacts.find(results => results.contactId === c.id);
+              if (searchContact) {
+                // Check that all contacts contains the appropriate info
+                expect(c.rawJson).toMatchObject(searchContact.details);
+              }
+            });
+          },
+        },
+        ...[
+          another2.number,
+          another2.form.childInformation.location.phone1,
+          another2.form.childInformation.location.phone2,
+          another2.form.callerInformation.location.phone1,
+          another2.form.callerInformation.location.phone2,
+        ].map(phone => {
+          const phoneNumber = phone.substring(1, 6);
+
+          return {
+            changeDescription: 'phone regexp',
+            body: { phoneNumber },
+            expectCallback: response => {
+              const { count, contacts } = response.body;
+              expect(response.status).toBe(200);
+              expect(count).toBe(1);
+              expect(contacts[0].details).toStrictEqual(another2.form);
+            },
+          };
+        }),
+        ...[
+          another2.number,
+          another2.form.childInformation.location.phone1,
+          another2.form.childInformation.location.phone2,
+          another2.form.callerInformation.location.phone1,
+          another2.form.callerInformation.location.phone2,
+        ].map(phone => {
+          const phoneNumber = phone.substring(1, 6);
+
+          return {
+            changeDescription: 'phone regexp & lastName (multi input)',
+            body: { phoneNumber, lastName: 'curi' },
+            expectCallback: response => {
+              const { count, contacts } = response.body;
+              expect(response.status).toBe(200);
+              expect(count).toBe(1);
+              expect(contacts[0].details).toStrictEqual(another2.form);
+            },
+          };
+        }),
+        {
+          // https://github.com/tech-matters/hrm/pull/33#discussion_r409904466
+          changeDescription: 'returns zero contacts (adding the country code)',
+          body: { phoneNumber: `+1 ${another2.form.childInformation.location.phone1}` },
+          expectCallback: response => {
+            const { count } = response.body;
+
+            expect(response.status).toBe(200);
+            expect(count).toBe(0);
+          },
+        },
+        ...Array.from(Array(10).keys()).map(n => ({
+          changeDescription: `limit set to ${n}`,
+          queryParams: `limit=${n}`,
+          body: { counselor: 'worker-sid' }, // should match contact1 & broken1 & another1 & noHelpline
+          expectCallback: response => {
+            expect(response.status).toBe(200);
+
+            // If the limit exceeds the "count" for the query, then it should return the entire match ("count" elements)
+            const { count, contacts } = response.body;
+            if (n > count) {
+              expect(contacts).toHaveLength(count);
+            } else {
+              expect(contacts).toHaveLength(n);
+            }
+          },
+        })),
+        // Should match withTaskId in all cases
+        ...[
+          { helpline: withTaskId.helpline },
+          { firstName: withTaskId.form.childInformation.name.firstName },
+          { lastName: withTaskId.form.childInformation.name.lastName },
+          { contactNumber: withTaskId.number },
+        ].map(body => ({
+          changeDescription: JSON.stringify(body),
+          body,
+          expectCallback: response => {
+            expect(response.status).toBe(200);
+            const { contacts } = response.body;
+
+            expect(contacts).toHaveLength(1);
+            expect(contacts[0].details).toMatchObject(withTaskId.form);
+          },
+        })),
+        {
+          changeDescription: 'Test date filters (should match oneWeekBefore only)',
+          body: {
+            dateFrom: new Date(new Date().getTime() - 1000 * 60 * 60 * 24 * 8).toISOString(),
+            dateTo: new Date(new Date().getTime() - 1000 * 60 * 60 * 24 * 5).toISOString(),
+          },
+          expectCallback: response => {
+            expect(response.status).toBe(200);
+            const { contacts } = response.body;
+
+            expect(contacts).toHaveLength(1);
+            expect(contacts[0].details).toMatchObject(noHelpline.form);
+          },
+        },
+        {
+          changeDescription: 'Test date filters (should all but oneWeekBefore)',
+          body: {
+            dateFrom: new Date().toISOString(),
+          },
+          expectCallback: response => {
+            expect(response.status).toBe(200);
+            const { contacts } = response.body;
+
+            // Expect all but invalid and oneWeekBefore
+            expect(contacts).toHaveLength(createdContacts.length - 2);
+            const createdConcatdsByTimeOfContact = createdContacts.sort(compareTimeOfContactDesc);
+            createdConcatdsByTimeOfContact.forEach(c => {
+              const searchContact = contacts.find(results => results.contactId === c.id);
+              if (searchContact) {
+                // Check that all contacts contains the appropriate info
+                expect(c.rawJson).toMatchObject(searchContact.details);
+              }
+            });
+          },
+        },
+        {
+          changeDescription:
+            'withCSAMReports (filter by contactNumber and check csam reports are retrieved)',
+          body: { contactNumber: '123412341234' },
+          expectCallback: response => {
+            expect(response.status).toBe(200);
+
+            const { contacts } = response.body;
+            expect(contacts.length).toBe(1);
+
+            const withCSAMReports = createdContacts.find(c => c.queueName === 'withCSAMReports');
+
+            expect(contacts.find(c => withCSAMReports.id === c.contactId)).toBeDefined();
+            expect(contacts[0].details).toMatchObject(withCSAMReports.rawJson);
+            contacts[0].csamReports.forEach(r => {
+              expect(csamReports.find(r2 => r2.id === r.id)).toMatchObject({
+                ...r,
+                createdAt: expect.toParseAsDate(r.createdAt),
+                updatedAt: expect.toParseAsDate(r.updatedAt),
+              });
+            });
+          },
+        },
+      ]).test(
+        'should return 200 with $changeDescription',
+        async ({ expectCallback, queryParams = '', body = {} }) => {
           const response = await request
-            .post(subRoute)
+            .post(`${subRoute}?${queryParams}`)
             .set(headers)
-            .send({ phoneNumber });
+            .send(body); // should filter non-data
 
-          const { contacts, count } = response.body;
-
-          expect(response.status).toBe(200);
-          expect(count).toBe(1);
-          expect(contacts[0].details).toStrictEqual(another2.form);
-        });
-      });
-
-      // https://github.com/tech-matters/hrm/pull/33#discussion_r409904466
-      describe('search FAILS if the number in DB is a substring of the input', () => {
-        test('returns zero contacts (adding the country code)', async () => {
-          const phoneNumber = `+1 ${another2.form.childInformation.location.phone1}`;
-          const response = await request
-            .post(subRoute)
-            .set(headers)
-            .send({ phoneNumber });
-
-          const { count } = response.body;
-
-          expect(response.status).toBe(200);
-          expect(count).toBe(0);
-        });
-      });
+          expectCallback(response);
+        },
+      );
     });
   });
 
@@ -392,78 +847,107 @@ describe('/contacts route', () => {
         expect(response.body.csamReports).toHaveLength(0);
       });
 
+      // const selectCreatedCaseAudits = () =>
+      // `SELECT * FROM "Audits" WHERE "tableName" = 'Cases' AND ("oldRecord"->>'id' = '${createdCase.id}' OR "newRecord"->>'id' = '${createdCase.id}')`;
+      const countCasesAudits = async () =>
+        parseInt(
+          (
+            await db.task(t => t.any(`SELECT COUNT(*) FROM "Audits" WHERE "tableName" = 'Cases'`))
+          )[0].count,
+          10,
+        );
+
+      const selectCasesAudits = () =>
+        db.task(t => t.any(`SELECT * FROM "Audits" WHERE "tableName" = 'Cases'`));
+
+      const countContactsAudits = async () =>
+        parseInt(
+          (
+            await db.task(t =>
+              t.any(`SELECT COUNT(*) FROM "Audits" WHERE "tableName" = 'Contacts'`),
+            )
+          )[0].count,
+          10,
+        );
+      const selectContactsAudits = () =>
+        db.task(t => t.any(`SELECT * FROM "Audits" WHERE "tableName" = 'Contacts'`));
+
       test('should create a CaseAudit', async () => {
-        const caseAuditPreviousCount = await CaseAudit.count(query);
+        const casesAuditPreviousCount = await countCasesAudits();
+        const contactsAuditPreviousCount = await countContactsAudits();
+
         const response = await request
           .put(subRoute(existingContactId))
           .set(headers)
           .send({ caseId: existingCaseId });
 
-        const caseAudits = await CaseAudit.findAll(query);
-        const lastCaseAudit = caseAudits.sort(byGreaterId)[0];
-        const { previousValue, newValue } = lastCaseAudit;
-
         expect(response.status).toBe(200);
-        expect(caseAudits).toHaveLength(caseAuditPreviousCount + 1);
-        expect(previousValue.contacts).not.toContain(existingContactId);
-        expect(newValue.contacts).toContain(existingContactId);
+
+        const casesAudits = await selectCasesAudits();
+        const contactsAudits = await selectContactsAudits();
+
+        // Connecting contacts to cases does not update Cases, but Contacts
+        expect(casesAudits).toHaveLength(casesAuditPreviousCount);
+        expect(contactsAudits).toHaveLength(contactsAuditPreviousCount + 1);
+
+        const lastContactAudit = contactsAudits.sort(byGreaterId)[0];
+        const { oldRecord, newRecord } = lastContactAudit;
+
+        expect(oldRecord.caseId).toBe(null);
+        expect(newRecord.caseId).toBe(existingCaseId);
       });
 
-      test('Idempotence on connect contact to case', async () => {
+      // I believe this behavior is dependant on Sequelize, and will change once we get rid of it
+      test('Idempotence on connect contact to case (does not generates extra Contacts audit if caseId has no changed)', async () => {
         const response1 = await request
           .put(subRoute(existingContactId))
           .set(headers)
           .send({ caseId: existingCaseId });
 
-        const beforeCaseAuditCount = await CaseAudit.count(query);
+        expect(response1.status).toBe(200);
 
-        // repeat above operation (should do nothing)
+        const casesAuditPreviousCount = await countCasesAudits();
+        const contactsAuditPreviousCount = await countContactsAudits();
+
+        // repeat above operation (should do nothing but emit an audit)
         const response2 = await request
           .put(subRoute(existingContactId))
           .set(headers)
           .send({ caseId: existingCaseId });
 
-        const afterCaseAuditCount = await CaseAudit.count(query);
-
-        // both should succeed
-        expect(response1.status).toBe(200);
         expect(response2.status).toBe(200);
 
-        // but second call should do nothing
-        expect(afterCaseAuditCount).toBe(beforeCaseAuditCount);
+        const casesAuditAfterCount = await countCasesAudits();
+        const contactsAuditAfterCount = await countContactsAudits();
+
+        expect(casesAuditAfterCount).toBe(casesAuditPreviousCount);
+        expect(contactsAuditAfterCount).toBe(contactsAuditPreviousCount);
       });
 
-      test('should create two CaseAudit', async () => {
-        await request
+      test('Should create audit for a Contact if caseId changes', async () => {
+        const response1 = await request
           .put(subRoute(existingContactId))
           .set(headers)
           .send({ caseId: existingCaseId });
 
-        const caseAuditPreviousCount = await CaseAudit.count(query);
+        expect(response1.status).toBe(200);
 
-        const response = await request
+        const casesAuditPreviousCount = await countCasesAudits();
+        const contactsAuditPreviousCount = await countContactsAudits();
+
+        // repeat above operation (should do nothing but emit an audit)
+        const response2 = await request
           .put(subRoute(existingContactId))
           .set(headers)
           .send({ caseId: anotherExistingCaseId });
 
-        const caseAudits = await CaseAudit.findAll(query);
-        const firstCaseAudit = caseAudits.sort(byGreaterId)[0];
-        const secondCaseAudit = caseAudits.sort(byGreaterId)[1];
-        const {
-          previousValue: previousValueFromFirst,
-          newValue: newValueFromFirst,
-        } = firstCaseAudit;
-        const {
-          previousValue: previousValueFromSecond,
-          newValue: newValueFromSecond,
-        } = secondCaseAudit;
+        expect(response2.status).toBe(200);
 
-        expect(response.status).toBe(200);
-        expect(caseAudits).toHaveLength(caseAuditPreviousCount + 2);
-        expect(previousValueFromFirst.contacts).not.toContain(existingContactId);
-        expect(newValueFromFirst.contacts).toContain(existingContactId);
-        expect(previousValueFromSecond.contacts).toContain(existingContactId);
-        expect(newValueFromSecond.contacts).not.toContain(existingContactId);
+        const casesAuditAfterCount = await countCasesAudits();
+        const contactsAuditAfterCount = await countContactsAudits();
+
+        expect(casesAuditAfterCount).toBe(casesAuditPreviousCount);
+        expect(contactsAuditAfterCount).toBe(contactsAuditPreviousCount + 1);
       });
 
       describe('use non-existent contactId', () => {
