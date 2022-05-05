@@ -1,0 +1,55 @@
+-- WARNING: Only intended to be used for local tests & development, not against real DBs
+
+-- This function creates recors for Cases, CaseSections, Contacts and CSAMReports
+
+CREATE OR REPLACE FUNCTION fillDB() RETURNS void AS
+$BODY$
+DECLARE
+   r record;
+   account_sid text;
+   helpline_name text;
+   worker_sid text;
+   case_id integer;
+   contact_id integer;
+BEGIN
+    FOR r IN (SELECT generate_series(1, 100) as num)
+    LOOP
+        account_sid = 'account-' || (r.num % 5)::text;
+        helpline_name = account_sid || 'helpline-' || (r.num % 2)::text;
+        worker_sid = account_sid || 'worker-' || (r.num % 10)::text;
+
+        -- WITH case_record AS (
+        --   INSERT INTO "Cases" ("info", "accountSid", "helpline", "status", "twilioWorkerId", "createdBy", "createdAt", "updatedAt", "updatedBy")
+        --   VALUES ('{}'::jsonb, account_sid, helpline_name, 'open', worker_sid, worker_sid, current_timestamp, current_timestamp, NULL)
+        --   RETURNING *
+        -- ),
+        -- contact_record AS (
+        --   INSERT INTO "Contacts" ("rawJson", "accountSid", "helpline", "createdBy", "createdAt", "updatedAt", "updatedBy", "caseId") 
+        --   VALUES ('{}'::jsonb, account_sid, helpline_name, worker_sid, current_timestamp, current_timestamp, NULL, (SELECT case_record.id FROM case_record))
+        --   RETURNING *
+        -- )
+
+          INSERT INTO "Cases" ("info", "accountSid", "helpline", "status", "twilioWorkerId", "createdBy", "createdAt", "updatedAt", "updatedBy")
+          VALUES ('{}'::jsonb, account_sid, helpline_name, 'open', worker_sid, worker_sid, current_timestamp, current_timestamp, NULL)
+          RETURNING id INTO case_id;
+
+          INSERT INTO "Contacts" ("rawJson", "accountSid", "helpline", "createdBy", "createdAt", "updatedAt", "updatedBy", "caseId") 
+          VALUES ('{}'::jsonb, account_sid, helpline_name, worker_sid, current_timestamp, current_timestamp, NULL, case_id)
+          RETURNING id INTO contact_id;
+
+        INSERT INTO "CaseSections" ("caseId", "sectionType", "createdAt", "createdBy", "updatedAt", "updatedBy", "sectionTypeSpecificData", "accountSid")
+        VALUES (case_id, 'sectionName', current_timestamp, worker_sid, current_timestamp, current_timestamp, '{}'::jsonb, account_sid);
+
+        INSERT INTO "CaseSections" ("caseId", "sectionType", "createdAt", "createdBy", "updatedAt", "updatedBy", "sectionTypeSpecificData", "accountSid")
+        VALUES (case_id, 'sectionName', current_timestamp, worker_sid, current_timestamp, current_timestamp, '{}'::jsonb, account_sid);
+
+        INSERT INTO "CSAMReports" ("accountSid", "twilioWorkerId", "csamReportId", "contactId", "createdAt", "updatedAt")
+        VALUES (account_sid, worker_sid, 'csam-report-' || r.num::text, contact_id, current_timestamp, current_timestamp);
+
+        INSERT INTO "CSAMReports" ("accountSid", "twilioWorkerId", "csamReportId", "contactId", "createdAt", "updatedAt")
+        VALUES (account_sid, worker_sid, 'csam-report-' || r.num::text, contact_id, current_timestamp, current_timestamp);
+    END LOOP;
+    RETURN;
+END;
+$BODY$
+LANGUAGE plpgsql;

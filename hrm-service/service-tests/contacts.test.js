@@ -62,17 +62,16 @@ const query = {
 };
 
 beforeAll(async () => {
+  await CSAMReport.destroy(query);
   await Contact.destroy(query);
+  await Case.destroy(query);
 });
 
-afterAll(done => {
-  server.close(() => {
-    Case.destroy(query).then(() => {
-      CSAMReport.destroy(query).then(() => {
-        Contact.destroy(query).then(() => done());
-      });
-    });
-  });
+afterAll(async () => {
+  await CSAMReport.destroy(query);
+  await Contact.destroy(query);
+  await Case.destroy(query);
+  server.close();
   console.log('Deleted data in contacts.test');
 });
 
@@ -283,7 +282,8 @@ describe('/contacts route', () => {
       // Test the association
       expect(response.body.csamReports).toHaveLength(2);
 
-      // Remove this contact to not interfere with following tests
+      // Remove records to not interfere with following tests
+      await CSAMReport.destroy({ where: { contactId: response.body.id } });
       await Contact.destroy({ where: { id: response.body.id } });
     });
   });

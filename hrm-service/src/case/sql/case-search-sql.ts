@@ -1,6 +1,6 @@
 import { pgp } from '../../connection-pool';
 import { SELECT_CASE_SECTIONS } from './case-sections-sql';
-import { CaseListFilters } from '../case-data-access';
+import { CaseListFilters, DateExistsCondition, DateFilter } from '../case-data-access';
 
 export const enum OrderByDirection {
   ascendingNullsLast = 'ASC NULLS LAST',
@@ -46,15 +46,45 @@ FROM (
     c.*,
     COALESCE(jsonb_agg(DISTINCT r.*) FILTER (WHERE r.id IS NOT NULL), '[]') AS "csamReports"
   FROM "Contacts" c 
-  LEFT JOIN "CSAMReports" r ON c."id" = r."contactId" 
-  WHERE c."caseId" = "cases".id
-  GROUP BY c.id
-) AS contacts WHERE contacts."caseId" = cases.id`;
+  LEFT JOIN "CSAMReports" r ON c."id" = r."contactId"  AND c."accountSid" = r."accountSid"
+  WHERE c."caseId" = "cases".id AND c."accountSid" = "cases"."accountSid"
+  GROUP BY c."accountSid", c.id
+) AS contacts WHERE contacts."caseId" = cases.id AND contacts."accountSid" = cases."accountSid"`;
+
+const enum FilterableDateField {
+  CREATED_AT = 'cases."createdAt"::TIMESTAMP WITH TIME ZONE',
+  UPDATED_AT = 'cases."updatedAt"::TIMESTAMP WITH TIME ZONE',
+  FOLLOW_UP_DATE = `CAST(cases."info"->>'followUpDate' AS TIMESTAMP WITH TIME ZONE)`,
+}
+
+const dateFilterCondition = (
+  field: FilterableDateField,
+  filter: DateFilter,
+): string | undefined => {
+  let existsCondition: string | undefined;
+  if (filter.exists === DateExistsCondition.MUST_EXIST) {
+    existsCondition = `(${field} IS NOT NULL)`;
+  } else if (filter.exists === DateExistsCondition.MUST_NOT_EXIST) {
+    existsCondition = `(${field} IS NULL)`;
+  }
+  if (filter.to || filter.from) {
+    return pgp.as.format(
+      `(($<from> IS NULL OR ${field} >= $<from>::TIMESTAMP WITH TIME ZONE) 
+            AND ($<to> IS NULL OR ${field} <= $<to>::TIMESTAMP WITH TIME ZONE)
+            ${existsCondition ? ` AND ${existsCondition}` : ''})`,
+      filter,
+      { def: null },
+    );
+  }
+  return existsCondition;
+};
 
 const filterSql = ({
   counsellors,
   statuses,
   createdAt = {},
+  updatedAt = {},
+  followUpDate = {},
   helplines,
   excludedStatuses,
   includeOrphans,
@@ -76,14 +106,13 @@ const filterSql = ({
   if (statuses && statuses.length) {
     filterSqlClauses.push(pgp.as.format(`cases."status" IN ($<statuses:csv>)`, { statuses }));
   }
-  if (createdAt && (createdAt.from || createdAt.to)) {
-    filterSqlClauses.push(
-      pgp.as.format(
-        `(($<from> IS NULL OR cases."createdAt"::DATE > $<from>::DATE) AND ($<to> IS NULL OR cases."createdAt" < $<to>::DATE))`,
-        createdAt,
-      ),
-    );
-  }
+  filterSqlClauses.push(
+    ...[
+      dateFilterCondition(FilterableDateField.CREATED_AT, createdAt),
+      dateFilterCondition(FilterableDateField.UPDATED_AT, updatedAt),
+      dateFilterCondition(FilterableDateField.FOLLOW_UP_DATE, followUpDate),
+    ].filter(sql => sql),
+  );
   if (!includeOrphans) {
     filterSqlClauses.push(`jsonb_array_length(contacts."connectedContacts") > 0`);
   }
@@ -116,7 +145,7 @@ const SEARCH_WHERE_CLAUSE = `(
       -- search on childInformation of connectedContacts
       ($<firstName> IS NULL AND $<lastName> IS NULL AND $<phoneNumber> IS NULL) OR
       EXISTS (
-        SELECT 1 FROM "Contacts" c WHERE c."caseId" = cases.id 
+        SELECT 1 FROM "Contacts" c WHERE c."caseId" = cases.id  AND c."accountSid" = cases."accountSid"
           AND (
             (
             ${nameAndPhoneNumberSearchSql(
@@ -143,7 +172,7 @@ const SEARCH_WHERE_CLAUSE = `(
       )
       -- search on case sections in the expected format
       OR EXISTS (
-        SELECT 1 FROM "CaseSections" cs WHERE cs."caseId" = cases.id
+        SELECT 1 FROM "CaseSections" cs WHERE cs."caseId" = cases.id AND cs."accountSid" = cases."accountSid"
           AND
           ${nameAndPhoneNumberSearchSql(
             'cs."sectionTypeSpecificData"->>\'firstName\'',
@@ -158,12 +187,12 @@ const SEARCH_WHERE_CLAUSE = `(
     AND (
       $<contactNumber> IS NULL OR
       EXISTS (
-        SELECT 1 FROM "Contacts" c WHERE c."caseId" = cases.id AND c.number = $<contactNumber>
+        SELECT 1 FROM "Contacts" c WHERE c."caseId" = cases.id AND c."accountSid" = cases."accountSid" AND c.number = $<contactNumber>
       )
     )`;
 
 const selectCasesUnorderedSql = (whereClause: string, havingClause: string = '') =>
-  `SELECT DISTINCT ON (cases.id)
+  `SELECT DISTINCT ON (cases."accountSid", cases.id)
     (count(*) OVER())::INTEGER AS "totalCount",
     cases.*,
     contacts."connectedContacts",
@@ -178,7 +207,7 @@ const selectCasesUnorderedSql = (whereClause: string, havingClause: string = '')
     FROM "Cases" cases 
     LEFT JOIN LATERAL (${SELECT_CONTACTS}) contacts ON true 
     LEFT JOIN LATERAL (${SELECT_CASE_SECTIONS}) caseSections ON true
-    ${whereClause} GROUP BY "cases"."id", caseSections."caseSections", contacts."connectedContacts" ${havingClause}`;
+    ${whereClause} GROUP BY "cases"."accountSid", "cases"."id", caseSections."caseSections", contacts."connectedContacts" ${havingClause}`;
 
 const selectCasesPaginatedSql = (
   whereClause: string,

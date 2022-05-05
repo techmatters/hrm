@@ -27,10 +27,13 @@ const caseAuditsQuery = {
 
 beforeAll(async () => {
   await CaseAudit.destroy(caseAuditsQuery);
+  await Case.destroy(caseAuditsQuery);
 });
 
-afterAll(done => {
-  server.close(done);
+afterAll(async () => {
+  await CaseAudit.destroy(caseAuditsQuery);
+  await Case.destroy(caseAuditsQuery);
+  server.close();
 });
 
 afterEach(async () => CaseAudit.destroy(caseAuditsQuery));

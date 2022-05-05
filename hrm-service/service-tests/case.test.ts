@@ -515,7 +515,7 @@ describe('/cases route', () => {
             ...convertCaseInfoToExpectedInfo(originalCase),
             createdAt: expect.toParseAsDate(originalCase.createdAt),
             updatedAt: expect.toParseAsDate(),
-            ...convertCaseInfoToExpectedInfo(update),
+            ...convertCaseInfoToExpectedInfo(update, accountSid),
             updatedBy: customWorkerSid || workerSid,
           };
 
