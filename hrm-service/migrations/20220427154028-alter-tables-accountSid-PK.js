@@ -48,8 +48,6 @@ module.exports = {
     console.log('Added new PK to "PostSurveys"');
 
     // Modify CSAMReports PK
-
-    // Modify PostSurveys PK
     await queryInterface.sequelize.query(
       'DELETE FROM public."CSAMReports" WHERE "accountSid" IS NULL',
     );
