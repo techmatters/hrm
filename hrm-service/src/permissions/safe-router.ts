@@ -20,8 +20,8 @@
  * to mark the request as authorized/unauthorized.
  * DO NOT set 'req.authorized' directly.
  */
-const { Router } = require('express');
-const { unauthorized } = require('../utils');
+import { Router, RouterOptions } from 'express';
+import { unauthorized } from '../utils';
 
 /**
  * A middleware that just marks an endpoint as open.
@@ -29,7 +29,7 @@ const { unauthorized } = require('../utils');
  * @param {*} res
  * @param {*} next
  */
-const publicEndpoint = (req, res, next) => {
+export const publicEndpoint = (req, res, next) => {
   req.authorize();
   next();
 };
@@ -83,25 +83,39 @@ const addPermissionMiddlewares = handlers => {
 };
 
 // HTTP methods and the 'all' special method
-const expressHttpMethods = ['all', 'get', 'post', 'put', 'delete', 'patch', 'options', 'head'];
-
+const expressHttpMethods = [
+  'all',
+  'get',
+  'post',
+  'put',
+  'delete',
+  'patch',
+  'options',
+  'head',
+] as const;
+type ExpressHttpMethod = typeof expressHttpMethods[number];
+type ExpressHttpMethodImpl = (path: string, ...handlers: any) => Router;
 /**
  * Overrides the HTTP methods to include the permissions middlewares in the list of handlers
  * @param {*} router
  */
-const overrideHTTPMethods = router =>
-  Object.fromEntries(
-    expressHttpMethods.map(method => [
-      method,
-      (path, ...handlers) => router[method](path, addPermissionMiddlewares(handlers)),
-    ]),
+const overrideHTTPMethods = (router: Router): Record<ExpressHttpMethod, ExpressHttpMethodImpl> =>
+  <Record<ExpressHttpMethod, ExpressHttpMethodImpl>>(
+    Object.fromEntries(
+      expressHttpMethods.map(method => [
+        method,
+        (path, ...handlers) => router[method](path, addPermissionMiddlewares(handlers)),
+      ]),
+    )
   );
 
 /**
  * SafeRouter function. It creates a router where the user can set the HTTP methods
  * and also exposes the field 'expressRouter' to integrate it with Express.
  */
-const SafeRouter = args => {
+export const SafeRouter = (
+  args?: RouterOptions,
+): { expressRouter: Router } & Record<ExpressHttpMethod, ExpressHttpMethodImpl> => {
   const router = Router(args);
 
   return {
@@ -109,5 +123,3 @@ const SafeRouter = args => {
     expressRouter: router,
   };
 };
-
-module.exports = { SafeRouter, publicEndpoint };
