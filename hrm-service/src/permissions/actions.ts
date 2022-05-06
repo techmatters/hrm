@@ -1,6 +1,6 @@
-const diff = require('deep-diff');
+import diff from 'deep-diff';
 
-const actionsMaps = {
+export const actionsMaps = {
   case: {
     CLOSE_CASE: 'closeCase',
     REOPEN_CASE: 'reopenCase',
@@ -112,7 +112,7 @@ const isEditCaseSummary = change =>
  * @param {*} updated the object with the updated values
  * @returns
  */
-const getActions = (original, updated) => {
+export const getActions = (original, updated) => {
   // Filter out the topmost properties not included in the payload to avoid false DELETED_PROPERTY (as we send Partial<Case> from the frontend)
   const partialOriginal = Object.keys(updated).reduce(
     (accum, currentKey) =>
@@ -153,9 +153,4 @@ const getActions = (original, updated) => {
   }
 
   return actions;
-};
-
-module.exports = {
-  getActions,
-  actionsMaps,
 };
