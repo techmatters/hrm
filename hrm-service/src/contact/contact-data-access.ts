@@ -1,5 +1,5 @@
 import { db } from '../connection-pool';
-import { UPDATE_CASEID_BY_ID, UPDATE_RAWJSON_BY_ID } from './sql/contact-patch.sql';
+import { UPDATE_CASEID_BY_ID, UPDATE_RAWJSON_BY_ID } from './sql/contact-update.sql';
 
 type NestedInformation = { name: { firstName: string; lastName: string } };
 export type InformationObject = NestedInformation & {
