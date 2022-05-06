@@ -7,7 +7,7 @@ jest.mock('../../src/models');
 
 const { setupCanForRules } = require('../../src/permissions/setupCanForRules');
 const { actionsMaps } = require('../../src/permissions/actions');
-const { User } = require('../../src/permissions');
+import { User } from '../../src/permissions';
 
 const { Case, PostSurvey } = models;
 

@@ -52,6 +52,7 @@ module.exports = {
       'DELETE FROM public."CSAMReports" WHERE "accountSid" IS NULL',
     );
     console.log('Removed CSAMReports with NULL accountSid');
+
     await queryInterface.sequelize.query(
       'ALTER TABLE public."CSAMReports" DROP CONSTRAINT IF EXISTS "CSAMReports_pkey" CASCADE;',
     );

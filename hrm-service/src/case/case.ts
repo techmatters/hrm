@@ -11,10 +11,10 @@ import {
   CaseRecordCommon,
   CaseSearchCriteria,
   CaseSectionRecord,
-  Contact,
   NewCaseRecord,
 } from './case-data-access';
 import { randomUUID } from 'crypto';
+import { Contact } from '../contact/contact-data-access';
 
 type CaseInfoSection = {
   id: string;

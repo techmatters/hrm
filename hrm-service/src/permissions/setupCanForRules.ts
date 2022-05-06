@@ -1,7 +1,7 @@
-const CanCan = require('cancan');
-const { isCounselorWhoCreated, isSupervisor, isCaseOpen } = require('./helpers');
-const { actionsMaps } = require('./actions');
-const User = require('./user');
+import CanCan from 'cancan';
+import { isCounselorWhoCreated, isSupervisor, isCaseOpen } from './helpers';
+import { actionsMaps } from './actions';
+import { User } from './user';
 const models = require('../models');
 
 const { Case, PostSurvey } = models;
@@ -57,7 +57,7 @@ const bindSetupAllow = allow => (
   });
 };
 
-const setupCanForRules = rules => {
+export const setupCanForRules = rules => {
   const rulesAreValid = Object.values(actionsMaps).every(map =>
     Object.values(map).every(action => rules[action]),
   );
@@ -81,8 +81,4 @@ const setupCanForRules = rules => {
   );
 
   return can;
-};
-
-module.exports = {
-  setupCanForRules,
 };
