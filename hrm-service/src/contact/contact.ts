@@ -75,10 +75,7 @@ export const connectContactToCase = async (
   contactId: string,
   caseId: string,
 ): Promise<Contact> => {
-  const updated: Contact | undefined = await connectToCase(accountSid, contactId, {
-    updatedBy,
-    caseId,
-  });
+  const updated: Contact | undefined = await connectToCase(accountSid, contactId, caseId);
   if (!updated) {
     throw new Error(`Contact not found with id ${contactId}`);
   }

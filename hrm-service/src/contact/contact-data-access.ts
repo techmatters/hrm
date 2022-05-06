@@ -85,13 +85,13 @@ export const patch = async (
 export const connectToCase = async (
   accountSid: string,
   contactId: string,
-  contactUpdates: { updatedBy: string; caseId: string },
+  caseId: string,
 ): Promise<Contact | undefined> => {
   return db.task(async connection => {
     const updatedContact: Contact = await connection.oneOrNone<Contact>(UPDATE_CASEID_BY_ID, {
       accountSid,
       contactId,
-      ...contactUpdates,
+      caseId,
     });
     return updatedContact;
   });

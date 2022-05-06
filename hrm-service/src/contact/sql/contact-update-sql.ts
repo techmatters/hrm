@@ -41,9 +41,7 @@ ${selectSingleContactByIdSql('updated')}
 export const UPDATE_CASEID_BY_ID = `WITH updated AS (
 UPDATE "Contacts" 
 SET 
-  "caseId" = $<caseId>,
-  "updatedBy" = CASE WHEN "caseId"=$<caseId> THEN "updatedBy" ELSE $<updatedBy> END,
-  "updatedAt" = CASE WHEN "caseId"=$<caseId> THEN "updatedAt" ELSE CURRENT_TIMESTAMP END
+  "caseId" = $<caseId>
 WHERE "accountSid" = $<accountSid> AND "id"=$<contactId>
 RETURNING *
 )

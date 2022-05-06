@@ -1178,8 +1178,6 @@ describe('/contacts route', () => {
 
         expect(response.status).toBe(200);
         expect(response.body.caseId).toBe(existingCaseId);
-        expect(response.body.updatedAt).toParseAsDate();
-        expect(response.body.updatedBy).toBe(workerSid);
 
         // Test the association
         expect(response.body.csamReports).toHaveLength(0);
@@ -1235,7 +1233,7 @@ describe('/contacts route', () => {
         expect(newRecord.caseId).toBe(existingCaseId);
       });
 
-      test('Idempotence on connect contact to case - generates audit but does not update last updated details', async () => {
+      test('Idempotence on connect contact to case - generates audit', async () => {
         const response1 = await request
           .put(subRoute(existingContactId))
           .set(headers)
@@ -1254,8 +1252,6 @@ describe('/contacts route', () => {
 
         expect(response2.status).toBe(200);
         expect(response2.body.caseId).toBe(existingCaseId);
-        expect(response2.body.updatedBy).toBe(response1.body.updatedBy);
-        expect(response2.body.updatedAt).toBe(response1.body.updatedAt);
 
         const casesAuditAfterCount = await countCasesAudits();
         const contactsAuditAfterCount = await countContactsAudits();

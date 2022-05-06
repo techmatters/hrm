@@ -12,11 +12,7 @@ describe('connectContactToCase', () => {
     };
     const connectSpy = jest.spyOn(contactDb, 'connectToCase').mockResolvedValue(mockContact);
     const result = await connectContactToCase('accountSid', 'case-connector', '1234', '4321');
-    expect(connectSpy).toHaveBeenCalledWith(
-      'accountSid',
-      '1234',
-      expect.objectContaining({ caseId: '4321', updatedBy: 'case-connector' }),
-    );
+    expect(connectSpy).toHaveBeenCalledWith('accountSid', '1234', '4321');
     expect(result).toStrictEqual(mockContact);
   });
   test('Throws if data access layer returns undefined', () => {
