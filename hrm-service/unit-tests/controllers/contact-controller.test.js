@@ -458,31 +458,3 @@ test('Call findAndCountAll(queryObject) without name search', async () => {
 
   expect(spy).toHaveBeenCalledWith(expectedQueryObject);
 });
-
-test('connect contact to case', async () => {
-  const contactId = 1;
-  const caseId = 2;
-  const contactFromDB = {
-    id: contactId,
-    update: jest.fn(),
-  };
-  jest.spyOn(MockContact, 'findOne').mockImplementation(() => contactFromDB);
-  const updateSpy = jest.spyOn(contactFromDB, 'update');
-
-  const updateCaseObject = { caseId };
-  const contextObject = { context: { workerSid } };
-
-  await ContactController.connectToCase(contactId, caseId, accountSid, workerSid);
-
-  expect(updateSpy).toHaveBeenCalledWith(updateCaseObject, contextObject);
-});
-
-test('connect non existing contact to case', async () => {
-  const nonExistingContactId = 1;
-  const caseId = 2;
-  jest.spyOn(MockContact, 'findOne').mockImplementation(() => null);
-
-  await expect(
-    ContactController.connectToCase(nonExistingContactId, caseId, accountSid, workerSid),
-  ).rejects.toThrow();
-});
