@@ -1033,7 +1033,7 @@ describe('/contacts route', () => {
               },
             },
           },
-        ]).test.only(
+        ]).test(
           'should $description if that is specified in the payload',
           async ({ patch, original, expected }: TestOptions) => {
             console.log('expected:', expected);

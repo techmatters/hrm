@@ -1,4 +1,4 @@
-import { Contact, ContactRawJson, patch } from './contact-data-access';
+import { connectToCase, Contact, ContactRawJson, patch } from './contact-data-access';
 
 export type PatchPayload = {
   rawJson: Partial<
@@ -6,7 +6,7 @@ export type PatchPayload = {
   >;
 };
 
-export const patchContact = (
+export const patchContact = async (
   accountSid: string,
   updatedBy: string,
   contactId: string,
@@ -18,7 +18,7 @@ export const patchContact = (
     caseInformation: fullCaseInformation,
   } = contactPatch.rawJson;
   const { categories, ...caseInformation } = fullCaseInformation ?? {};
-  return patch(accountSid, contactId, {
+  const updated = await patch(accountSid, contactId, {
     updatedBy,
     childInformation,
     callerInformation,
@@ -27,4 +27,8 @@ export const patchContact = (
       ? <Record<string, string | boolean>>caseInformation
       : undefined,
   });
+  if (!updated) {
+    throw new Error(`Contact not found with id ${contactId}`);
+  }
+  return updated;
 };

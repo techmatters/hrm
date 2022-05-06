@@ -2,7 +2,7 @@ import models from '../models';
 import { SafeRouter, publicEndpoint } from '../permissions';
 import createError from 'http-errors';
 import contactControllerFactory from '../controllers/contact-controller';
-import { patchContact } from './contact';
+import { connectContactToCase, patchContact } from './contact';
 const { Contact } = models;
 const ContactController = contactControllerFactory(Contact);
 
@@ -50,9 +50,14 @@ contactsRouter.post('/search', publicEndpoint, async (req, res) => {
 contactsRouter.patch('/:contactId', publicEndpoint, async (req, res) => {
   const { accountSid, user } = req;
   const { contactId } = req.params;
-
-  const contact = await patchContact(accountSid, user.workerSid, contactId, req.body);
-  res.json(contact);
+  try {
+    const contact = await patchContact(accountSid, user.workerSid, contactId, req.body);
+    res.json(contact);
+  } catch (err) {
+    if (err.message.toLowerCase().includes('contact not found')) {
+      throw createError(404);
+    } else throw err;
+  }
 });
 
 export default contactsRouter.expressRouter;

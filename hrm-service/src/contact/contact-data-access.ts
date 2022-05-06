@@ -1,4 +1,4 @@
-import { db, pgp } from '../connection-pool';
+import { db } from '../connection-pool';
 import { UPDATE_RAWJSON_BY_ID } from './sql/contact-patch.sql';
 
 type NestedInformation = { name: { firstName: string; lastName: string } };
@@ -58,15 +58,8 @@ export const patch = async (
   accountSid: string,
   contactId: string,
   contactUpdates: ContactUpdates,
-): Promise<Contact> => {
+): Promise<Contact | undefined> => {
   return db.task(async connection => {
-    console.log(
-      pgp.as.format(UPDATE_RAWJSON_BY_ID, {
-        accountSid,
-        contactId,
-        ...contactUpdates,
-      }),
-    );
     const updatedContact: Contact = await connection.oneOrNone<Contact>(UPDATE_RAWJSON_BY_ID, {
       accountSid,
       contactId,
@@ -75,3 +68,4 @@ export const patch = async (
     return updatedContact;
   });
 };
+
