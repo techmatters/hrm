@@ -1,4 +1,4 @@
-import { connectToCase, Contact, ContactRawJson, patch } from './contact-data-access';
+import { Contact, ContactRawJson, patch } from './contact-data-access';
 
 export type PatchPayload = {
   rawJson: Partial<

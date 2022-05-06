@@ -68,4 +68,3 @@ export const patch = async (
     return updatedContact;
   });
 };
-

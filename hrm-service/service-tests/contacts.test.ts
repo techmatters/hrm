@@ -1079,23 +1079,47 @@ describe('/contacts route', () => {
         );
       });
 
-      describe('use non-existent contactId', () => {
-        test('should return 404', async () => {
-          const contactToBeDeleted = await Contact.create(contact1, { context: { workerSid } });
-          const nonExistingContactId = contactToBeDeleted.id;
-          await contactToBeDeleted.destroy();
-          const response = await request
-            .patch(subRoute(nonExistingContactId))
-            .set(headers)
-            .send({
-              contactRawJson: {
-                name: { firstName: 'Lorna', lastName: 'Ballantyne' },
-                some: 'property',
-              },
-            });
+      test('use non-existent contactId should return 404', async () => {
+        const contactToBeDeleted = await Contact.create(contact1, { context: { workerSid } });
+        const nonExistingContactId = contactToBeDeleted.id;
+        await contactToBeDeleted.destroy();
+        const response = await request
+          .patch(subRoute(nonExistingContactId))
+          .set(headers)
+          .send({
+            rawJson: {
+              name: { firstName: 'Lorna', lastName: 'Ballantyne' },
+              some: 'property',
+            },
+          });
 
-          expect(response.status).toBe(404);
-        });
+        expect(response.status).toBe(404);
+      });
+
+      test('malformed payload should return 400', async () => {
+        const contactToBeDeleted = await Contact.create(contact1, { context: { workerSid } });
+        const nonExistingContactId = contactToBeDeleted.id;
+        await contactToBeDeleted.destroy();
+        const response = await request
+          .patch(subRoute(nonExistingContactId))
+          .set(headers)
+          .send({
+            notRawJson: { some: 'crap' },
+          });
+
+        expect(response.status).toBe(400);
+      });
+
+      test('no body should return 400', async () => {
+        const contactToBeDeleted = await Contact.create(contact1, { context: { workerSid } });
+        const nonExistingContactId = contactToBeDeleted.id;
+        await contactToBeDeleted.destroy();
+        const response = await request
+          .patch(subRoute(nonExistingContactId))
+          .set(headers)
+          .send();
+
+        expect(response.status).toBe(400);
       });
     });
   });

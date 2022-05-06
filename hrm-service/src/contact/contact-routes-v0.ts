@@ -2,7 +2,7 @@ import models from '../models';
 import { SafeRouter, publicEndpoint } from '../permissions';
 import createError from 'http-errors';
 import contactControllerFactory from '../controllers/contact-controller';
-import { connectContactToCase, patchContact } from './contact';
+import { patchContact } from './contact';
 const { Contact } = models;
 const ContactController = contactControllerFactory(Contact);
 
@@ -50,6 +50,9 @@ contactsRouter.post('/search', publicEndpoint, async (req, res) => {
 contactsRouter.patch('/:contactId', publicEndpoint, async (req, res) => {
   const { accountSid, user } = req;
   const { contactId } = req.params;
+  if (!req.body || !req.body.rawJson) {
+    throw createError(400);
+  }
   try {
     const contact = await patchContact(accountSid, user.workerSid, contactId, req.body);
     res.json(contact);
