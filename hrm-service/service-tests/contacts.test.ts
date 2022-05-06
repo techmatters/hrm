@@ -469,7 +469,7 @@ describe('/contacts route', () => {
   describe('/contacts/search route', () => {
     const subRoute = `${route}/search`;
 
-    describe.only('POST', () => {
+    describe('POST', () => {
       test('should return 401', async () => {
         const response = await request.post(subRoute).send({});
 
@@ -765,10 +765,10 @@ describe('/contacts route', () => {
 
             const { contacts } = response.body;
             expect(contacts.length).toBe(1);
-
+            console.log(contacts[0]);
             const withCSAMReports = createdContacts.find(c => c.queueName === 'withCSAMReports');
 
-            expect(contacts.find(c => withCSAMReports.id === c.contactId)).toBeDefined();
+            expect(contacts.find(c => withCSAMReports.id.toString() === c.contactId)).toBeDefined();
             expect(contacts[0].details).toMatchObject(withCSAMReports.rawJson);
             contacts[0].csamReports.forEach(r => {
               expect(csamReports.find(r2 => r2.id === r.id)).toMatchObject({
