@@ -1,5 +1,5 @@
 import { db } from '../connection-pool';
-import { UPDATE_RAWJSON_BY_ID } from './sql/contact-patch.sql';
+import { UPDATE_CASEID_BY_ID, UPDATE_RAWJSON_BY_ID } from './sql/contact-patch.sql';
 
 type NestedInformation = { name: { firstName: string; lastName: string } };
 export type InformationObject = NestedInformation & {
@@ -61,6 +61,21 @@ export const patch = async (
 ): Promise<Contact | undefined> => {
   return db.task(async connection => {
     const updatedContact: Contact = await connection.oneOrNone<Contact>(UPDATE_RAWJSON_BY_ID, {
+      accountSid,
+      contactId,
+      ...contactUpdates,
+    });
+    return updatedContact;
+  });
+};
+
+export const connectToCase = async (
+  accountSid: string,
+  contactId: string,
+  contactUpdates: { updatedBy: string; caseId: string },
+): Promise<Contact | undefined> => {
+  return db.task(async connection => {
+    const updatedContact: Contact = await connection.oneOrNone<Contact>(UPDATE_CASEID_BY_ID, {
       accountSid,
       contactId,
       ...contactUpdates,

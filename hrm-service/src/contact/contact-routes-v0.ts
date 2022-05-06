@@ -2,7 +2,7 @@ import models from '../models';
 import { SafeRouter, publicEndpoint } from '../permissions';
 import createError from 'http-errors';
 import contactControllerFactory from '../controllers/contact-controller';
-import { patchContact } from './contact';
+import { patchContact, connectContactToCase } from './contact';
 const { Contact } = models;
 const ContactController = contactControllerFactory(Contact);
 
@@ -27,15 +27,18 @@ contactsRouter.put('/:contactId/connectToCase', publicEndpoint, async (req, res)
   const { contactId } = req.params;
   const { caseId } = req.body;
   try {
-    const updatedContact = await ContactController.connectToCase(
-      contactId,
-      caseId,
+    const updatedContact = await connectContactToCase(
       accountSid,
       user.workerSid,
+      contactId,
+      caseId,
     );
     res.json(updatedContact);
   } catch (err) {
-    if (err.message.includes('violates foreign key constraint')) {
+    if (
+      err.message.toLowerCase().includes('violates foreign key constraint') ||
+      err.message.toLowerCase().includes('contact not found')
+    ) {
       throw createError(404);
     } else throw err;
   }

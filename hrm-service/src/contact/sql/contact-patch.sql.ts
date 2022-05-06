@@ -37,3 +37,15 @@ RETURNING *
 )
 ${selectSingleContactByIdSql('updated')}
 `;
+
+export const UPDATE_CASEID_BY_ID = `WITH updated AS (
+UPDATE "Contacts" 
+SET 
+  "caseId" = $<caseId>
+  "updatedBy" = $<updatedBy>,
+  "updatedAt" = CURRENT_TIMESTAMP
+WHERE "accountSid" = $<accountSid> AND "id"=$<contactId>
+RETURNING *
+)
+${selectSingleContactByIdSql('updated')}
+`;
