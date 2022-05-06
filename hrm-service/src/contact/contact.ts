@@ -1,9 +1,45 @@
-import { connectToCase, Contact, ContactRawJson, patch } from './contact-data-access';
+import {
+  connectToCase,
+  Contact,
+  ContactRawJson,
+  patch,
+  search,
+  SearchParameters,
+} from './contact-data-access';
+import { retrieveCategories, getPaginationElements } from '../controllers/helpers';
 
 export type PatchPayload = {
   rawJson: Partial<
     Pick<ContactRawJson, 'callerInformation' | 'childInformation' | 'caseInformation'>
   >;
+};
+
+export type CSAMReportEntry = {
+  csamReportId: string;
+  id: number;
+  createdAt: string;
+  updatedAt?: string;
+  updatedBy?: string;
+  twilioWorkerId: string;
+};
+
+export type SearchContact = {
+  contactId: string;
+  overview: {
+    helpline: string;
+    dateTime: string;
+    name: string;
+    customerNumber: string;
+    callType: string;
+    categories: {};
+    counselor: string;
+    notes: string;
+    channel: string;
+    conversationDuration: number;
+    createdBy: string;
+  };
+  details: ContactRawJson;
+  csamReports: CSAMReportEntry[];
 };
 
 export const patchContact = async (
@@ -47,4 +83,73 @@ export const connectContactToCase = async (
     throw new Error(`Contact not found with id ${contactId}`);
   }
   return updated;
+};
+
+function isNullOrEmptyObject(obj) {
+  return obj == null || Object.keys(obj).length === 0;
+}
+
+function isValidContact(contact) {
+  return (
+    contact &&
+    contact.rawJson &&
+    !isNullOrEmptyObject(contact.rawJson.callType) &&
+    !isNullOrEmptyObject(contact.rawJson.childInformation) &&
+    !isNullOrEmptyObject(contact.rawJson.callerInformation) &&
+    !isNullOrEmptyObject(contact.rawJson.caseInformation)
+  );
+}
+
+function convertContactsToSearchResults(contacts: Contact[]): SearchContact[] {
+  return contacts
+    .map(contact => {
+      if (!isValidContact(contact)) {
+        const contactJson = JSON.stringify(contact);
+        console.log(`Invalid Contact: ${contactJson}`);
+        return null;
+      }
+
+      const contactId = contact.id;
+      const dateTime = contact.timeOfContact;
+      const name = `${contact.rawJson.childInformation.name.firstName} ${contact.rawJson.childInformation.name.lastName}`;
+      const customerNumber = contact.number;
+      const { callType, caseInformation } = contact.rawJson;
+      const categories = retrieveCategories(caseInformation.categories);
+      const counselor = contact.twilioWorkerId;
+      const notes = contact.rawJson.caseInformation.callSummary;
+      const { channel, conversationDuration, createdBy, csamReports, helpline } = contact;
+
+      return {
+        contactId: contactId.toString(),
+        overview: {
+          helpline,
+          dateTime: dateTime.toISOString(),
+          name,
+          customerNumber,
+          callType,
+          categories,
+          counselor,
+          createdBy,
+          notes: notes.toString(),
+          channel,
+          conversationDuration,
+        },
+        csamReports,
+        details: contact.rawJson,
+      };
+    })
+    .filter(contact => contact);
+}
+
+export const searchContacts = async (
+  accountSid: string,
+  searchParameters: SearchParameters,
+  query,
+): Promise<{ count: number; contacts: SearchContact[] }> => {
+  const { limit, offset } = getPaginationElements(query);
+  const unprocessedResults = await search(accountSid, searchParameters, limit, offset);
+  return {
+    count: unprocessedResults.count,
+    contacts: convertContactsToSearchResults(unprocessedResults.rows),
+  };
 };

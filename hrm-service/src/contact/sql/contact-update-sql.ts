@@ -1,4 +1,4 @@
-import { selectSingleContactByIdSql } from './contact-get';
+import { selectSingleContactByIdSql } from './contact-get-sql';
 
 export const UPDATE_RAWJSON_BY_ID = `WITH updated AS (
 UPDATE "Contacts" 

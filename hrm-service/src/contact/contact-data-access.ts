@@ -1,5 +1,6 @@
-import { db } from '../connection-pool';
-import { UPDATE_CASEID_BY_ID, UPDATE_RAWJSON_BY_ID } from './sql/contact-update.sql';
+import { db, pgp } from '../connection-pool';
+import { UPDATE_CASEID_BY_ID, UPDATE_RAWJSON_BY_ID } from './sql/contact-update-sql';
+import { searchParametersToQueryParameters, SELECT_CONTACT_SEARCH } from './sql/contact-search-sql';
 
 type NestedInformation = { name: { firstName: string; lastName: string } };
 export type InformationObject = NestedInformation & {
@@ -42,6 +43,18 @@ export type Contact = ContactRecord & {
   csamReports: any[];
 };
 
+export type SearchParameters = {
+  helpline?: string;
+  firstName?: string;
+  lastName?: string;
+  counselor?: string;
+  phoneNumber?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  contactNumber?: string;
+  onlyDataContacts: boolean;
+};
+
 /**
  * Represents the individual parts of the contact that can be overwritten in a patch operation
  * Each of these parameters will overwrite the specific part of the contact it relates to completely, but leave the rest of the contact data unmodified
@@ -81,5 +94,29 @@ export const connectToCase = async (
       ...contactUpdates,
     });
     return updatedContact;
+  });
+};
+
+export const search = async (
+  accountSid: string,
+  searchParameters: SearchParameters,
+  limit: number,
+  offset: number,
+): Promise<{ rows: Contact[]; count: number }> => {
+  return db.task(async connection => {
+    console.log(
+      'CONTACT SEARCH QUERY',
+      pgp.as.format(
+        SELECT_CONTACT_SEARCH,
+        searchParametersToQueryParameters(accountSid, searchParameters, limit, offset),
+      ),
+    );
+    const searchResults: (Contact & { totalCount: number })[] = await connection.manyOrNone<
+      Contact & { totalCount: number }
+    >(
+      SELECT_CONTACT_SEARCH,
+      searchParametersToQueryParameters(accountSid, searchParameters, limit, offset),
+    );
+    return { rows: searchResults, count: searchResults.length ? searchResults[0].totalCount : 0 };
   });
 };

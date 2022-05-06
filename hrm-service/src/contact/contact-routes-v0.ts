@@ -2,7 +2,7 @@ import models from '../models';
 import { SafeRouter, publicEndpoint } from '../permissions';
 import createError from 'http-errors';
 import contactControllerFactory from '../controllers/contact-controller';
-import { patchContact, connectContactToCase } from './contact';
+import { patchContact, connectContactToCase, searchContacts } from './contact';
 const { Contact } = models;
 const ContactController = contactControllerFactory(Contact);
 
@@ -46,7 +46,7 @@ contactsRouter.put('/:contactId/connectToCase', publicEndpoint, async (req, res)
 
 contactsRouter.post('/search', publicEndpoint, async (req, res) => {
   const { accountSid } = req;
-  const searchResults = await ContactController.searchContacts(req.body, req.query, accountSid);
+  const searchResults = await searchContacts(accountSid, req.body, req.query);
   res.json(searchResults);
 });
 

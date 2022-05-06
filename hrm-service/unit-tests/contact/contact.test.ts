@@ -19,7 +19,7 @@ describe('connectContactToCase', () => {
     );
     expect(result).toStrictEqual(mockContact);
   });
-  test('Throws if data access layer returns undefined', async () => {
+  test('Throws if data access layer returns undefined', () => {
     jest.spyOn(contactDb, 'connectToCase').mockResolvedValue(undefined);
     expect(connectContactToCase('accountSid', 'case-connector', '1234', '4321')).rejects.toThrow();
   });
