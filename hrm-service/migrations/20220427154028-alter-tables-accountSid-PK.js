@@ -2,9 +2,12 @@
 
 module.exports = {
   up: async queryInterface => {
+    // Remove cases without account ID
+    await queryInterface.sequelize.query('DELETE FROM public."Cases" WHERE "accountSid" IS NULL');
+    console.log('Removed cases with NULL accountSid');
     // Modify Cases PK
     await queryInterface.sequelize.query(
-      'ALTER TABLE public."Cases" DROP CONSTRAINT "Cases_pkey" CASCADE;',
+      'ALTER TABLE public."Cases" DROP CONSTRAINT IF EXISTS "Cases_pkey" CASCADE;',
     );
     console.log('Dropped PK from "Cases"');
 
@@ -13,9 +16,14 @@ module.exports = {
     );
     console.log('Added new PK to "Cases"');
 
+    // Remove cases without account ID
+    await queryInterface.sequelize.query(
+      'DELETE FROM public."Contacts" WHERE "accountSid" IS NULL',
+    );
+    console.log('Removed contacts with NULL accountSid');
     // Modify Contacts PK
     await queryInterface.sequelize.query(
-      'ALTER TABLE public."Contacts" DROP CONSTRAINT "Contacts_pkey" CASCADE;',
+      'ALTER TABLE public."Contacts" DROP CONSTRAINT IF EXISTS "Contacts_pkey" CASCADE;',
     );
     console.log('Dropped PK from "Contacts"');
 
@@ -26,7 +34,11 @@ module.exports = {
 
     // Modify PostSurveys PK
     await queryInterface.sequelize.query(
-      'ALTER TABLE public."PostSurveys" DROP CONSTRAINT "PostSurveys_pkey" CASCADE;',
+      'DELETE FROM public."PostSurveys" WHERE "accountSid" IS NULL',
+    );
+    console.log('Removed PostSurveys with NULL accountSid');
+    await queryInterface.sequelize.query(
+      'ALTER TABLE public."PostSurveys" DROP CONSTRAINT IF EXISTS "PostSurveys_pkey" CASCADE;',
     );
     console.log('Dropped PK from "PostSurveys"');
 
@@ -37,7 +49,11 @@ module.exports = {
 
     // Modify CSAMReports PK
     await queryInterface.sequelize.query(
-      'ALTER TABLE public."CSAMReports" DROP CONSTRAINT "CSAMReports_pkey" CASCADE;',
+      'DELETE FROM public."CSAMReports" WHERE "accountSid" IS NULL',
+    );
+    console.log('Removed CSAMReports with NULL accountSid');
+    await queryInterface.sequelize.query(
+      'ALTER TABLE public."CSAMReports" DROP CONSTRAINT IF EXISTS "CSAMReports_pkey" CASCADE;',
     );
     console.log('Dropped PK from "CSAMReports"');
 
@@ -95,7 +111,7 @@ module.exports = {
   down: async queryInterface => {
     // Revert Cases PK
     await queryInterface.sequelize.query(
-      'ALTER TABLE public."Cases" DROP CONSTRAINT "Cases_pkey" CASCADE;',
+      'ALTER TABLE public."Cases" DROP CONSTRAINT IF EXISTS "Cases_pkey" CASCADE;',
     );
     console.log('Dropped PK from "Cases"');
 
@@ -104,7 +120,7 @@ module.exports = {
 
     // Revert Contacts PK
     await queryInterface.sequelize.query(
-      'ALTER TABLE public."Contacts" DROP CONSTRAINT "Contacts_pkey" CASCADE;',
+      'ALTER TABLE public."Contacts" DROP CONSTRAINT IF EXISTS "Contacts_pkey" CASCADE;',
     );
     console.log('Dropped PK from "Contacts"');
 
@@ -113,7 +129,7 @@ module.exports = {
 
     // Revert PostSurveys PK
     await queryInterface.sequelize.query(
-      'ALTER TABLE public."PostSurveys" DROP CONSTRAINT "PostSurveys_pkey" CASCADE;',
+      'ALTER TABLE public."PostSurveys" DROP CONSTRAINT IF EXISTS "PostSurveys_pkey" CASCADE;',
     );
     console.log('Dropped PK from "PostSurveys"');
 
@@ -124,7 +140,7 @@ module.exports = {
 
     // Revert CSAMReports PK
     await queryInterface.sequelize.query(
-      'ALTER TABLE public."CSAMReports" DROP CONSTRAINT "CSAMReports_pkey" CASCADE;',
+      'ALTER TABLE public."CSAMReports" DROP CONSTRAINT IF EXISTS "CSAMReports_pkey" CASCADE;',
     );
     console.log('Dropped PK from "CSAMReports"');
 
