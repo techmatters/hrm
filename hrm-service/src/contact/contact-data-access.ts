@@ -2,7 +2,7 @@ import { db } from '../connection-pool';
 import { UPDATE_CASEID_BY_ID, UPDATE_RAWJSON_BY_ID } from './sql/contact-update-sql';
 import { SELECT_CONTACT_SEARCH } from './sql/contact-search-sql';
 import { endOfDay, parseISO, startOfDay } from 'date-fns';
-import { selectSingleContactByTaskId } from './sql/contact-get-sql';
+import { selectSingleContactByIdSql, selectSingleContactByTaskId } from './sql/contact-get-sql';
 import { insertContactSql, NewContactRecord } from './sql/contact-insert-sql';
 import { PersonInformation } from './contact-json';
 
@@ -183,6 +183,14 @@ export const connectToCase = async (
     return updatedContact;
   });
 };
+
+export const getById = async (accountSid: string, contactId: string): Promise<Contact> =>
+  db.task(async connection =>
+    connection.oneOrNone<Contact>(selectSingleContactByIdSql('Contacts'), {
+      accountSid,
+      contactId,
+    }),
+  );
 
 export const search = async (
   accountSid: string,

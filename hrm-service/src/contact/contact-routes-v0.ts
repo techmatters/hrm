@@ -1,18 +1,8 @@
-import models from '../models';
 import { SafeRouter, publicEndpoint } from '../permissions';
 import createError from 'http-errors';
-import contactControllerFactory from '../controllers/contact-controller';
 import { patchContact, connectContactToCase, searchContacts, createContact } from './contact';
-const { Contact } = models;
-const ContactController = contactControllerFactory(Contact);
 
 const contactsRouter = SafeRouter();
-
-contactsRouter.get('/', publicEndpoint, async (req, res) => {
-  const { accountSid } = req;
-  const contacts = await ContactController.getContacts(req.query, accountSid);
-  res.json(contacts);
-});
 
 // example: curl -XPOST -H'Content-Type: application/json' localhost:3000/contacts -d'{"hi": 2}'
 contactsRouter.post('/', publicEndpoint, async (req, res) => {

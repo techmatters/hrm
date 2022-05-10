@@ -12,6 +12,7 @@ import { subHours, subDays } from 'date-fns';
 
 import './case-validation';
 import { PatchPayload } from '../src/contact/contact';
+import { getById } from '../src/contact/contact-data-access';
 
 const server = app.listen();
 const request = supertest.agent(server);
@@ -46,7 +47,6 @@ const workerSid = 'worker-sid';
 
 const { Contact, Case, CSAMReport } = models;
 const CSAMReportController = require('../src/controllers/csam-report-controller')(CSAMReport);
-const ContactController = require('../src/controllers/contact-controller')(Contact);
 
 const query = {
   where: {
@@ -167,23 +167,19 @@ describe('/contacts route', () => {
 
         expect(res.status).toBe(200);
         expect(res.body.rawJson.callType).toBe(contact.form.callType);
-        expect(res.body.rawJson.callType).toBe(contact.form.callType);
 
-        // expect(updateSpy).not.toHaveBeenCalled();
-
-        const contacts = await request.get(route).set(headers);
-
-        const createdContact = contacts.body.find(c => c.id === res.body.id);
+        const createdContact = await getById(accountSid, res.body.id);
         expect(createdContact).toBeDefined();
 
-        expect(createdContact.FormData).toMatchObject(expected.form);
-        expect(createdContact.Date).toParseAsDate();
+        expect(createdContact.rawJson).toMatchObject(expected.form);
+        expect(createdContact.timeOfContact).toParseAsDate();
+        expect(createdContact.createdAt).toParseAsDate();
         expect(createdContact.twilioWorkerId).toBe(expected.twilioWorkerId);
         expect(createdContact.helpline).toBe(expected.helpline);
         expect(createdContact.queueName).toBe(
           expected.queueName || expected.form.queueName || null,
         );
-        expect(createdContact.number).toBe(formatNumber(expected.number));
+        expect(createdContact.number).toBe(expected.number);
         expect(createdContact.channel).toBe(expected.channel);
         expect(createdContact.conversationDuration).toBe(expected.conversationDuration);
       },
@@ -194,23 +190,17 @@ describe('/contacts route', () => {
         .post(route)
         .set(headers)
         .send(withTaskId);
-
-      const beforeContacts = await request.get(route).set(headers);
-
       const subsequentResponse = await request
         .post(route)
         .set(headers)
         .send(withTaskId);
 
-      const afterContacts = await request.get(route).set(headers);
-
       // both should succeed
       expect(response.status).toBe(200);
       expect(subsequentResponse.status).toBe(200);
 
-      // but second call should do nothing
-      expect(afterContacts.body).toHaveLength(beforeContacts.body.length);
-      expect(afterContacts.body.filter(c => c.id === response.body.id)).toHaveLength(1);
+      // but should both return the same entity (i.e. the second call didn't create one)
+      expect(subsequentResponse.body.id).toBe(response.body.id);
     });
 
     test('Connects to CSAM reports (not existing csam report id, do nothing)', async () => {
@@ -289,177 +279,6 @@ describe('/contacts route', () => {
   const mapId = c => c.id;
   const compareTimeOfContactDesc = (c1, c2) =>
     new Date(c2.timeOfContact).valueOf() - new Date(c1.timeOfContact).valueOf();
-
-  describe('GET', () => {
-    test('should return 401', async () => {
-      const response = await request.get(route);
-
-      expect(response.status).toBe(401);
-      expect(response.body.error).toBe('Authorization failed');
-    });
-
-    const queueName = 'queue-name';
-
-    let createdContacts = [];
-    let csamReports = [];
-    beforeAll(async () => {
-      // Clean what's been created so far
-      await Contact.destroy(query);
-
-      // Create CSAM Reports
-      const csamReportId1 = 'csam-report-id-1';
-      const csamReportId2 = 'csam-report-id-2';
-
-      const newReport1 = (
-        await CSAMReportController.createCSAMReport(
-          {
-            csamReportId: csamReportId1,
-            twilioWorkerId: workerSid,
-          },
-          accountSid,
-        )
-      ).dataValues;
-
-      const newReport2 = (
-        await CSAMReportController.createCSAMReport(
-          {
-            csamReportId: csamReportId2,
-            twilioWorkerId: workerSid,
-          },
-          accountSid,
-        )
-      ).dataValues;
-
-      // Create some contacts to work with
-      const contact = { ...contact1 };
-
-      const withQueueName = { ...contact, queueName };
-
-      const oneHourBefore = {
-        ...withQueueName,
-        timeOfContact: subHours(new Date(), 1).toISOString(), // one hour before
-      };
-
-      const withCSAMReports = {
-        ...contact2,
-        queueName: 'withCSAMReports',
-        csamReports: [newReport1, newReport2],
-      };
-
-      const responses = await resolveSequentially(
-        [
-          contact,
-          contact,
-          contact,
-          contact,
-          contact,
-          contact,
-          contact,
-          contact,
-          withQueueName,
-          oneHourBefore,
-          withQueueName,
-          withCSAMReports,
-        ].map(c => () =>
-          request
-            .post(route)
-            .set(headers)
-            .send(c),
-        ),
-      );
-
-      createdContacts = responses.map(r => r.body);
-      const withCSAMReportsId = createdContacts.find(c => c.queueName === 'withCSAMReports').id;
-
-      // Retrieve the csam reports that should be connected to withCSAMReports
-      const updatedCsamReports = await CSAMReportController.getCSAMReports(
-        withCSAMReportsId,
-        accountSid,
-      );
-      expect(updatedCsamReports).toHaveLength(2);
-      csamReports = updatedCsamReports;
-    });
-
-    afterAll(async () => {
-      await CSAMReport.destroy({
-        where: {
-          id: {
-            [Sequelize.Op.in]: csamReports.map(c => c.id),
-          },
-        },
-      });
-      await Contact.destroy({
-        where: {
-          id: {
-            [Sequelize.Op.in]: createdContacts.map(c => c.id),
-          },
-        },
-      });
-    });
-
-    each([
-      {
-        queryParams: '',
-        changeDescription: 'no query params provided',
-        expectCallback: response => {
-          expect(response.status).toBe(200);
-          expect(response.body.length).toBe(10);
-
-          // Get the first 10 contacts (should exclude "oneHourBefore")
-          const expectedContactsResponse = createdContacts
-            .sort(compareTimeOfContactDesc)
-            .slice(0, 10);
-
-          expectedContactsResponse.forEach(c =>
-            expect(response.body.find(c2 => c.id === c2.id)).toBeDefined(),
-          );
-          expect(response.body.map(mapId)).toMatchObject(expectedContactsResponse.map(mapId));
-        },
-      },
-      {
-        queryParams: `queueName=${queueName}`,
-        changeDescription: 'with query param (filter by queueName)',
-        expectCallback: response => {
-          expect(response.status).toBe(200);
-          expect(response.body.length).toBe(3);
-
-          const withQ = createdContacts.filter(c => c.queueName === queueName);
-
-          withQ.forEach(c => expect(response.body.find(c2 => c.id === c2.id)).toBeDefined());
-          expect(response.body.map(mapId)).toMatchObject(
-            withQ.sort(compareTimeOfContactDesc).map(mapId),
-          );
-        },
-      },
-      {
-        queryParams: `queueName=withCSAMReports`,
-        changeDescription:
-          'withCSAMReports (filter by queueName and check csam reports are retrieved)',
-        expectCallback: response => {
-          expect(response.status).toBe(200);
-          expect(response.body.length).toBe(1);
-
-          const withCSAMReports = createdContacts.find(c => c.queueName === 'withCSAMReports');
-
-          expect(response.body.find(c => withCSAMReports.id === c.id)).toBeDefined();
-          expect(response.body[0].FormData).toMatchObject(withCSAMReports.rawJson);
-          response.body[0].csamReports.forEach(r => {
-            expect(csamReports.find(r2 => r2.id === r.id)).toMatchObject({
-              ...r,
-              createdAt: expect.toParseAsDate(r.createdAt),
-              updatedAt: expect.toParseAsDate(r.updatedAt),
-            });
-          });
-        },
-      },
-    ]).test(
-      'should return 200 when $changeDescription',
-      async ({ expectCallback, queryParams }) => {
-        const response = await request.get(`${route}?${queryParams}`).set(headers);
-        expectCallback(response);
-      },
-    );
-  });
 
   describe('/contacts/search route', () => {
     const subRoute = `${route}/search`;
@@ -1054,12 +873,12 @@ describe('/contacts route', () => {
               });
               // Test the association
               expect(response.body.csamReports).toHaveLength(0);
-              const savedContact = await ContactController.getContact(
-                existingContactId,
+              const savedContact = await getById(
                 accountSid,
+                existingContactId,
               );
 
-              expect(savedContact.dataValues).toStrictEqual({
+              expect(savedContact).toStrictEqual({
                 ...createdContact.dataValues,
                 createdAt: expect.toParseAsDate(createdContact.dataValues.createdAt),
                 updatedAt: expect.toParseAsDate(),
