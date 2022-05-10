@@ -1,5 +1,3 @@
-
-
 export const SELECT_CONTACT_SEARCH = `
         SELECT 
         (count(*) OVER())::INTEGER AS "totalCount",
