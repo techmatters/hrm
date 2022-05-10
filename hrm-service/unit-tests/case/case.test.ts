@@ -35,6 +35,7 @@ test('create case', async () => {
     },
     caseSections: [
       {
+        accountSid: '',
         sectionType: 'note',
         caseId: undefined,
         createdBy: workerSid,
@@ -53,6 +54,7 @@ test('create case', async () => {
     id: 1,
     caseSections: [
       {
+        accountSid: '',
         sectionType: 'note',
         caseId: 1,
         createdBy: workerSid,
@@ -119,6 +121,7 @@ describe('searchCases', () => {
               cat2: { sub2: false, sub4: false },
             },
           },
+          callType: '',
         },
       },
     ],
@@ -130,6 +133,7 @@ describe('searchCases', () => {
     info: {},
     caseSections: [
       {
+        accountSid,
         sectionTypeSpecificData: { note: 'Child with covid-19' },
         createdBy: 'contact-adder',
         createdAt: baselineCreatedDate,
@@ -152,6 +156,8 @@ describe('searchCases', () => {
               cat2: { sub2: false, sub4: false },
             },
           },
+          callerInformation: { name: { firstName: undefined, lastName: undefined } },
+          callType: '',
         },
       },
     ],
@@ -182,6 +188,7 @@ describe('searchCases', () => {
     status: 'open',
     caseSections: [
       {
+        accountSid: '',
         sectionTypeSpecificData: { note: 'Child with covid-19' },
         createdBy: 'contact-adder',
         createdAt: baselineCreatedDate,
@@ -364,6 +371,7 @@ describe('update existing case', () => {
       existingCaseObject: createMockCaseRecord({
         caseSections: [
           {
+            accountSid: '',
             caseId: 1,
             sectionType: 'note',
             createdBy: 'contact-updater',
@@ -471,6 +479,7 @@ describe('update existing case', () => {
       existingCaseObject: createMockCaseRecord({
         caseSections: [
           {
+            accountSid: '',
             caseId: 1,
             sectionType: 'referral',
             createdBy: 'referral-adder',
@@ -616,6 +625,7 @@ describe('update existing case', () => {
       existingCaseObject: createMockCaseRecord({
         caseSections: [
           {
+            accountSid: '',
             caseId: 1,
             sectionType: 'referral',
             createdBy: 'referral-adder',

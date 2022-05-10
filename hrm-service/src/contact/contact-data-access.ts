@@ -3,7 +3,8 @@ import { UPDATE_CASEID_BY_ID, UPDATE_RAWJSON_BY_ID } from './sql/contact-update-
 import { searchParametersToQueryParameters, SELECT_CONTACT_SEARCH } from './sql/contact-search-sql';
 
 type NestedInformation = { name: { firstName: string; lastName: string } };
-export type InformationObject = NestedInformation & {
+
+type PersonInformation = NestedInformation & {
   [key: string]: string | boolean | NestedInformation[keyof NestedInformation]; // having NestedInformation[keyof NestedInformation] makes type looser here because of this https://github.com/microsoft/TypeScript/issues/17867. Possible/future solution https://github.com/microsoft/TypeScript/pull/29317
 };
 
@@ -13,13 +14,13 @@ export type InformationObject = NestedInformation & {
 export type ContactRawJson = {
   definitionVersion?: string;
   callType: string;
-  childInformation: InformationObject;
-  callerInformation: InformationObject;
+  childInformation: PersonInformation;
+  callerInformation?: PersonInformation;
   caseInformation: {
     categories: Record<string, Record<string, boolean>>;
     [key: string]: string | boolean | Record<string, Record<string, boolean>>;
   };
-  contactlessTask: { [key: string]: string | boolean };
+  contactlessTask?: { [key: string]: string | boolean };
 };
 
 type ContactRecord = {
@@ -33,6 +34,7 @@ type ContactRecord = {
   channel?: string;
   conversationDuration?: number;
   accountSid: string;
+  createdAt?: Date;
   timeOfContact?: Date;
   taskId?: string;
   channelSid?: string;
@@ -60,8 +62,8 @@ export type SearchParameters = {
  * Each of these parameters will overwrite the specific part of the contact it relates to completely, but leave the rest of the contact data unmodified
  */
 export type ContactUpdates = {
-  childInformation?: InformationObject;
-  callerInformation?: InformationObject;
+  childInformation?: PersonInformation;
+  callerInformation?: PersonInformation;
   caseInformation?: Record<string, string | boolean>;
   categories?: Record<string, Record<string, boolean>>;
   updatedBy: string;
@@ -104,13 +106,6 @@ export const search = async (
   offset: number,
 ): Promise<{ rows: Contact[]; count: number }> => {
   return db.task(async connection => {
-    console.log(
-      'CONTACT SEARCH QUERY',
-      pgp.as.format(
-        SELECT_CONTACT_SEARCH,
-        searchParametersToQueryParameters(accountSid, searchParameters, limit, offset),
-      ),
-    );
     const searchResults: (Contact & { totalCount: number })[] = await connection.manyOrNone<
       Contact & { totalCount: number }
     >(
