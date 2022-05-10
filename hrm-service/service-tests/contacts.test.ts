@@ -82,7 +82,7 @@ describe('/contacts route', () => {
   const route = `/v0/accounts/${accountSid}/contacts`;
 
   // First test post so database wont be empty
-  describe('POST', () => {
+  describe.only('POST', () => {
     test('should return 401', async () => {
       const response = await request.post(route).send(contact1);
 

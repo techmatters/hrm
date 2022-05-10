@@ -2,7 +2,7 @@ import models from '../models';
 import { SafeRouter, publicEndpoint } from '../permissions';
 import createError from 'http-errors';
 import contactControllerFactory from '../controllers/contact-controller';
-import { patchContact, connectContactToCase, searchContacts } from './contact';
+import { patchContact, connectContactToCase, searchContacts, createContact } from './contact';
 const { Contact } = models;
 const ContactController = contactControllerFactory(Contact);
 
@@ -18,7 +18,7 @@ contactsRouter.get('/', publicEndpoint, async (req, res) => {
 contactsRouter.post('/', publicEndpoint, async (req, res) => {
   const { accountSid, user } = req;
 
-  const contact = await ContactController.createContact(req.body, accountSid, user.workerSid);
+  const contact = await createContact(accountSid, user.workerSid, req.body);
   res.json(contact);
 });
 

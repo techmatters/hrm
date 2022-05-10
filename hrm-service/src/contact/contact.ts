@@ -1,12 +1,13 @@
 import {
   connectToCase,
-  Contact,
-  ContactRawJson,
+  Contact, create,
   patch,
   search,
   SearchParameters,
 } from './contact-data-access';
+import { ContactRawJson} from '../case/contact-json';
 import { retrieveCategories, getPaginationElements } from '../controllers/helpers';
+import { NewContactRecord } from './sql/contact-insert-sql';
 
 export type PatchPayload = {
   rawJson: Partial<
@@ -40,6 +41,20 @@ export type SearchContact = {
   };
   details: ContactRawJson;
   csamReports: CSAMReportEntry[];
+};
+
+type CreateContactPayload = NewContactRecord & { form?: ContactRawJson }
+
+export const createContact = async (
+  accountSid: string,
+  createdBy: string,
+  newContact: CreateContactPayload,
+): Promise<Contact> => {
+  return create(accountSid, {
+    ...newContact,
+    rawJson: newContact.rawJson ?? newContact.form,
+    createdBy,
+  });
 };
 
 export const patchContact = async (
