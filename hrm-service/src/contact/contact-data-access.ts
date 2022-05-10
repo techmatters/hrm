@@ -1,6 +1,6 @@
-import { db, pgp } from '../connection-pool';
+import { db } from '../connection-pool';
 import { UPDATE_CASEID_BY_ID, UPDATE_RAWJSON_BY_ID } from './sql/contact-update-sql';
-import { searchParametersToQueryParameters, SELECT_CONTACT_SEARCH } from './sql/contact-search-sql';
+import { SELECT_CONTACT_SEARCH } from './sql/contact-search-sql';
 
 type NestedInformation = { name: { firstName: string; lastName: string } };
 
@@ -67,6 +67,78 @@ export type ContactUpdates = {
   caseInformation?: Record<string, string | boolean>;
   categories?: Record<string, Record<string, boolean>>;
   updatedBy: string;
+};
+
+import { endOfDay, startOfDay, parseISO } from 'date-fns';
+
+// Intentionally adding only the types of interest here
+const callTypes = {
+  child: 'Child calling about self',
+  caller: 'Someone calling about a child',
+};
+
+type QueryParams = {
+  accountSid: string;
+  firstNamePattern?: string;
+  lastNamePattern?: string;
+  phoneNumberPattern?: string;
+  counselor?: string;
+  dateTo?: string;
+  dateFrom?: string;
+  contactNumber?: string;
+  onlyDataContact: boolean;
+  dataCallTypes: string[];
+  limit: number;
+  offset: number;
+};
+
+const searchParametersToQueryParameters = (
+  accountSid: string,
+  {
+    firstName,
+    lastName,
+    phoneNumber,
+    dateFrom,
+    dateTo,
+    ...restOfSearch
+  }: {
+    firstName?: string;
+    lastName?: string;
+    phoneNumber?: string;
+    dateFrom?: string;
+    dateTo?: string;
+  },
+  limit: number,
+  offset: number,
+): QueryParams => {
+  const queryParams: QueryParams = {
+    ...{
+      helpline: undefined,
+      lastNamePattern: undefined,
+      firstNamePattern: undefined,
+      phoneNumberPattern: undefined,
+      counselor: undefined,
+      contactNumber: undefined,
+      onlyDataContact: false,
+    },
+    dateFrom: dateFrom ? startOfDay(parseISO(dateFrom)).toISOString() : undefined,
+    dateTo: dateTo ? endOfDay(parseISO(dateTo)).toISOString() : undefined,
+    ...restOfSearch,
+    accountSid,
+    dataCallTypes: Object.values(callTypes),
+    limit,
+    offset,
+  };
+  if (firstName) {
+    queryParams.firstNamePattern = `%${firstName}%`;
+  }
+  if (lastName) {
+    queryParams.lastNamePattern = `%${lastName}%`;
+  }
+  if (phoneNumber) {
+    queryParams.phoneNumberPattern = `%${phoneNumber.replace(/[\D]/gi, '')}%`;
+  }
+  return queryParams;
 };
 
 export const patch = async (
