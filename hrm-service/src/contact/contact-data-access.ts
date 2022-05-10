@@ -1,47 +1,18 @@
 import { db } from '../connection-pool';
 import { UPDATE_CASEID_BY_ID, UPDATE_RAWJSON_BY_ID } from './sql/contact-update-sql';
 import { SELECT_CONTACT_SEARCH } from './sql/contact-search-sql';
+import { endOfDay, parseISO, startOfDay } from 'date-fns';
+import { selectSingleContactByTaskId } from './sql/contact-get-sql';
+import { insertContactSql, NewContactRecord } from './sql/contact-insert-sql';
+import { PersonInformation } from '../case/contact-json';
 
-type NestedInformation = { name: { firstName: string; lastName: string } };
-
-type PersonInformation = NestedInformation & {
-  [key: string]: string | boolean | NestedInformation[keyof NestedInformation]; // having NestedInformation[keyof NestedInformation] makes type looser here because of this https://github.com/microsoft/TypeScript/issues/17867. Possible/future solution https://github.com/microsoft/TypeScript/pull/29317
-};
-
-/**
- * This and contained types are copied from Flex
- */
-export type ContactRawJson = {
-  definitionVersion?: string;
-  callType: string;
-  childInformation: PersonInformation;
-  callerInformation?: PersonInformation;
-  caseInformation: {
-    categories: Record<string, Record<string, boolean>>;
-    [key: string]: string | boolean | Record<string, Record<string, boolean>>;
-  };
-  contactlessTask?: { [key: string]: string | boolean };
-};
-
-type ContactRecord = {
+type ExistingContactRecord = {
   id: number;
-  rawJson?: ContactRawJson;
-  queueName?: string;
-  twilioWorkerId?: string;
-  createdBy?: string;
-  helpline?: string;
-  number?: string;
-  channel?: string;
-  conversationDuration?: number;
   accountSid: string;
   createdAt?: Date;
-  timeOfContact?: Date;
-  taskId?: string;
-  channelSid?: string;
-  serviceSid?: string;
-};
+} & Partial<NewContactRecord>;
 
-export type Contact = ContactRecord & {
+export type Contact = ExistingContactRecord & {
   csamReports: any[];
 };
 
@@ -68,8 +39,6 @@ export type ContactUpdates = {
   categories?: Record<string, Record<string, boolean>>;
   updatedBy: string;
 };
-
-import { endOfDay, startOfDay, parseISO } from 'date-fns';
 
 // Intentionally adding only the types of interest here
 const callTypes = {
@@ -139,6 +108,52 @@ const searchParametersToQueryParameters = (
     queryParams.phoneNumberPattern = `%${phoneNumber.replace(/[\D]/gi, '')}%`;
   }
   return queryParams;
+};
+
+export const create = async (
+  accountSid: string,
+  newContact: NewContactRecord,
+): Promise<Contact | undefined> => {
+  const completeNewContact: NewContactRecord = Object.assign(
+    <Partial<NewContactRecord>>{
+      helpline: '',
+      number: '',
+      channel: '',
+      timeOfContact: new Date(),
+      channelSid: '',
+      serviceSid: '',
+      taskId: '',
+    },
+    newContact,
+  );
+
+  return db.tx(async connection => {
+    if (newContact.taskId) {
+      const existingContact: Contact = await connection.oneOrNone<Contact>(
+        selectSingleContactByTaskId('Contacts'),
+        {
+          accountSid,
+          taskId: newContact.taskId,
+        },
+      );
+      if (existingContact) {
+        // A contact with the same task ID already exists, return it
+        return existingContact;
+      }
+    }
+    console.log('INSERT CONTACT', {
+      accountSid,
+      ...completeNewContact,
+    });
+    const updatedContact: Contact = await connection.oneOrNone<Contact>(
+      insertContactSql({
+        accountSid,
+        createdAt: new Date(),
+        ...completeNewContact,
+      })
+    );
+    return updatedContact;
+  });
 };
 
 export const patch = async (
