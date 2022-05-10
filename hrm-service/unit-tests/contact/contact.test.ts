@@ -6,9 +6,6 @@ import {
   searchContacts,
 } from '../../src/contact/contact';
 import { ContactBuilder } from './contact-builder';
-import startOfDay from 'date-fns/startOfDay';
-import parseISO from 'date-fns/parseISO';
-import endOfDay from 'date-fns/endOfDay';
 
 jest.mock('../../src/contact/contact-data-access');
 
@@ -190,14 +187,13 @@ describe('searchContacts', () => {
     expect(searchSpy).toHaveBeenCalledWith(accountSid, body, expect.any(Number), 0);
   });
 
-
   test('Call search without limit / offset, a default limit and offset 0', async () => {
     const body = {
       helpline: 'helpline',
       onlyDataContacts: true,
     };
     const searchSpy = jest.spyOn(contactDb, 'search').mockResolvedValue({ count: 0, rows: [] });
-    await searchContacts(accountSid, body, { limit: 10, offset: 1000});
+    await searchContacts(accountSid, body, { limit: 10, offset: 1000 });
 
     expect(searchSpy).toHaveBeenCalledWith(accountSid, body, 10, 1000);
   });
