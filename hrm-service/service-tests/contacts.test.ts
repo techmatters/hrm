@@ -6,7 +6,6 @@ const app = require('../src/app');
 const models = require('../src/models');
 const mocks = require('./mocks');
 const each = require('jest-each').default;
-const { formatNumber } = require('../src/controllers/helpers');
 const { db } = require('../src/connection-pool');
 import { subHours, subDays } from 'date-fns';
 
@@ -276,7 +275,6 @@ describe('/contacts route', () => {
     });
   });
 
-  const mapId = c => c.id;
   const compareTimeOfContactDesc = (c1, c2) =>
     new Date(c2.timeOfContact).valueOf() - new Date(c1.timeOfContact).valueOf();
 
