@@ -4,7 +4,7 @@ import { SELECT_CONTACT_SEARCH } from './sql/contact-search-sql';
 import { endOfDay, parseISO, startOfDay } from 'date-fns';
 import { selectSingleContactByTaskId } from './sql/contact-get-sql';
 import { insertContactSql, NewContactRecord } from './sql/contact-insert-sql';
-import { PersonInformation } from '../case/contact-json';
+import { PersonInformation } from './contact-json';
 
 type ExistingContactRecord = {
   id: number;
@@ -55,6 +55,7 @@ type QueryParams = {
   dateTo?: string;
   dateFrom?: string;
   contactNumber?: string;
+  helpline?: string;
   onlyDataContact: boolean;
   dataCallTypes: string[];
   limit: number;
@@ -69,6 +70,9 @@ const searchParametersToQueryParameters = (
     phoneNumber,
     dateFrom,
     dateTo,
+    helpline,
+    contactNumber,
+    counselor,
     ...restOfSearch
   }: {
     firstName?: string;
@@ -76,6 +80,9 @@ const searchParametersToQueryParameters = (
     phoneNumber?: string;
     dateFrom?: string;
     dateTo?: string;
+    contactNumber?: string;
+    helpline?: string;
+    counselor?: string;
   },
   limit: number,
   offset: number,
@@ -90,10 +97,14 @@ const searchParametersToQueryParameters = (
       contactNumber: undefined,
       onlyDataContact: false,
     },
+    ...restOfSearch,
+    helpline: helpline || undefined, // ensure empty strings are replaced with nulls
+    contactNumber: contactNumber || undefined, // ensure empty strings are replaced with nulls
+    counselor: counselor || undefined, // ensure empty strings are replaced with nulls
     dateFrom: dateFrom ? startOfDay(parseISO(dateFrom)).toISOString() : undefined,
     dateTo: dateTo ? endOfDay(parseISO(dateTo)).toISOString() : undefined,
-    ...restOfSearch,
     accountSid,
+
     dataCallTypes: Object.values(callTypes),
     limit,
     offset,
@@ -113,20 +124,8 @@ const searchParametersToQueryParameters = (
 export const create = async (
   accountSid: string,
   newContact: NewContactRecord,
+  csamReportIds: number[],
 ): Promise<Contact | undefined> => {
-  const completeNewContact: NewContactRecord = Object.assign(
-    <Partial<NewContactRecord>>{
-      helpline: '',
-      number: '',
-      channel: '',
-      timeOfContact: new Date(),
-      channelSid: '',
-      serviceSid: '',
-      taskId: '',
-    },
-    newContact,
-  );
-
   return db.tx(async connection => {
     if (newContact.taskId) {
       const existingContact: Contact = await connection.oneOrNone<Contact>(
@@ -141,16 +140,15 @@ export const create = async (
         return existingContact;
       }
     }
-    console.log('INSERT CONTACT', {
-      accountSid,
-      ...completeNewContact,
-    });
+    const now = new Date();
     const updatedContact: Contact = await connection.oneOrNone<Contact>(
       insertContactSql({
+        ...newContact,
         accountSid,
-        createdAt: new Date(),
-        ...completeNewContact,
-      })
+        createdAt: now,
+        updatedAt: now,
+      }),
+      { csamReportIds },
     );
     return updatedContact;
   });

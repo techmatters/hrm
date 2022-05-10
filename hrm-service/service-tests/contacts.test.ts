@@ -1,6 +1,7 @@
 import supertest from 'supertest';
 import * as Sequelize from 'sequelize';
-import { ContactRawJson } from '../src/contact/contact-data-access';
+// eslint-disable-next-line prettier/prettier
+import type { ContactRawJson } from '../src/contact/contact-json';
 const app = require('../src/app');
 const models = require('../src/models');
 const mocks = require('./mocks');
@@ -82,7 +83,7 @@ describe('/contacts route', () => {
   const route = `/v0/accounts/${accountSid}/contacts`;
 
   // First test post so database wont be empty
-  describe.only('POST', () => {
+  describe('POST', () => {
     test('should return 401', async () => {
       const response = await request.post(route).send(contact1);
 
@@ -213,8 +214,6 @@ describe('/contacts route', () => {
     });
 
     test('Connects to CSAM reports (not existing csam report id, do nothing)', async () => {
-      const updateSpy = jest.spyOn(CSAMReport, 'update');
-
       const notExistingCsamReport = { id: 99999999 };
 
       // Create contact with above report
@@ -223,7 +222,6 @@ describe('/contacts route', () => {
         .set(headers)
         .send({ ...contact1, csamReports: [notExistingCsamReport] });
 
-      expect(updateSpy).toHaveBeenCalled();
 
       // Test the association
       expect(response.status).toBe(200);
@@ -240,7 +238,6 @@ describe('/contacts route', () => {
     });
 
     test('Connects to CSAM reports (valid csam reports ids)', async () => {
-      const updateSpy = jest.spyOn(CSAMReport, 'update');
 
       // Create CSAM Report
       const csamReportId1 = 'csam-report-id-1';
@@ -271,8 +268,6 @@ describe('/contacts route', () => {
         .post(route)
         .set(headers)
         .send({ ...contact1, csamReports: [newReport1, newReport2] });
-
-      expect(updateSpy).toHaveBeenCalled();
 
       const updatedReport1 = await CSAMReportController.getCSAMReport(newReport1.id, accountSid);
       expect(updatedReport1.contactId).toEqual(response.body.id);

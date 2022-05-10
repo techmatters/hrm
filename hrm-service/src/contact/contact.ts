@@ -1,11 +1,12 @@
 import {
   connectToCase,
-  Contact, create,
+  Contact,
+  create,
   patch,
   search,
   SearchParameters,
 } from './contact-data-access';
-import { ContactRawJson} from '../case/contact-json';
+import { ContactRawJson } from './contact-json';
 import { retrieveCategories, getPaginationElements } from '../controllers/helpers';
 import { NewContactRecord } from './sql/contact-insert-sql';
 
@@ -43,18 +44,36 @@ export type SearchContact = {
   csamReports: CSAMReportEntry[];
 };
 
-type CreateContactPayload = NewContactRecord & { form?: ContactRawJson }
+type CreateContactPayload = NewContactRecord & { form?: ContactRawJson } & {
+  csamReports: CSAMReportEntry[];
+};
 
 export const createContact = async (
   accountSid: string,
   createdBy: string,
   newContact: CreateContactPayload,
 ): Promise<Contact> => {
-  return create(accountSid, {
+  const completeNewContact: NewContactRecord = {
     ...newContact,
+    helpline: newContact.helpline ?? '',
+    number: newContact.number ?? '',
+    channel: newContact.channel ?? '',
+    timeOfContact: newContact.timeOfContact ? new Date(newContact.timeOfContact) : new Date(),
+    channelSid: newContact.channelSid ?? '',
+    serviceSid: newContact.serviceSid ?? '',
+    taskId: newContact.taskId ?? '',
+    twilioWorkerId: newContact.twilioWorkerId ?? '',
     rawJson: newContact.rawJson ?? newContact.form,
+    queueName:
+      // Checking in rawJson might be redundant, copied from Sequelize logic in contact-controller.js
+      newContact.queueName || (<any>(newContact.rawJson ?? newContact.form ?? {})).queueName,
     createdBy,
-  });
+  };
+  return create(
+    accountSid,
+    completeNewContact,
+    (newContact.csamReports ?? []).map(csr => csr.id),
+  );
 };
 
 export const patchContact = async (

@@ -17,7 +17,7 @@ export type NewContactRecord = {
 };
 
 export const insertContactSql = (
-  contact: NewContactRecord & { accountSid: string; createdAt: Date },
+  contact: NewContactRecord & { accountSid: string; createdAt: Date; updatedAt: Date },
 ) =>
   `WITH inserted AS (
     ${pgp.helpers.insert(
@@ -29,7 +29,9 @@ export const insertContactSql = (
         'twilioWorkerId',
         'createdBy',
         'createdAt',
+        'updatedAt',
         'helpline',
+        'channel',
         'number',
         'conversationDuration',
         'timeOfContact',
@@ -40,14 +42,15 @@ export const insertContactSql = (
       'Contacts',
     )}
   RETURNING *
-    )
+    ),
+    csamConnect AS (
+      UPDATE "CSAMReports" SET "contactId"=inserted."id" FROM inserted WHERE "CSAMReports"."id" = ANY(ARRAY[$<csamReportIds:csv>]::integer[]) RETURNING "CSAMReports".*
+    )  
     SELECT c.*, reports."csamReports" 
         FROM inserted AS c
         LEFT JOIN LATERAL (
-          SELECT COALESCE(jsonb_agg(to_jsonb(r)), '[]') AS  "csamReports" 
-          FROM "CSAMReports" r 
+          SELECT COALESCE(jsonb_agg(to_jsonb(r)), '[]') AS "csamReports" 
+          FROM csamConnect r 
           WHERE r."contactId" = c.id AND r."accountSid" = c."accountSid"
         ) reports ON true
-        
-
 `;

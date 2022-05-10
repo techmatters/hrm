@@ -1,4 +1,3 @@
-
 type NestedInformation = { name: { firstName: string; lastName: string } };
 
 export type PersonInformation = NestedInformation & {
