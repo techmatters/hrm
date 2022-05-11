@@ -591,6 +591,23 @@ describe('/contacts route', () => {
             });
           },
         },
+        {
+          body: { firstName: 'jh', lastName: 'he', counselor: '', contactNumber: '', helpline: '' },
+          changeDescription: 'empty strings should be ignored',
+          expectCallback: response => {
+            expect(response.status).toBe(200);
+            const { contacts } = response.body;
+            //expect(count).toBe(2);
+
+            const [c2, c1] = contacts; // result is sorted DESC
+            expect(c1.details).toStrictEqual(contact1.form);
+            expect(c2.details).toStrictEqual(contact2.form);
+
+            // Test the association
+            expect(c1.csamReports).toHaveLength(0);
+            expect(c2.csamReports).toHaveLength(0);
+          },
+        },
       ]).test(
         'should return 200 with $changeDescription',
         async ({ expectCallback, queryParams = '', body = {} }) => {

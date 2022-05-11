@@ -141,7 +141,7 @@ export const create = async (
       }
     }
     const now = new Date();
-    const updatedContact: Contact = await connection.oneOrNone<Contact>(
+    const updatedContact: Contact = await connection.one<Contact>(
       insertContactSql({
         ...newContact,
         accountSid,

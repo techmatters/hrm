@@ -1,11 +1,14 @@
 import * as contactDb from '../../src/contact/contact-data-access';
 import {
   connectContactToCase,
+  createContact,
+  CSAMReportEntry,
   patchContact,
   SearchContact,
   searchContacts,
 } from '../../src/contact/contact';
 import { ContactBuilder } from './contact-builder';
+import { omit } from 'lodash';
 
 jest.mock('../../src/contact/contact-data-access');
 
@@ -14,6 +17,187 @@ const mockContact: contactDb.Contact = {
   accountSid: 'accountSid',
   csamReports: [],
 };
+
+describe('createContact', () => {
+  const sampleCreateContactPayload = {
+    rawJson: {
+      childInformation: {
+        name: {
+          firstName: 'Lorna',
+          lastName: 'Ballantyne',
+        },
+      },
+      callType: 'carrier pigeon',
+      caseInformation: {
+        categories: {
+          a: {
+            category: true,
+          },
+        },
+      },
+    },
+    queueName: 'Q',
+    conversationDuration: 100,
+    twilioWorkerId: 'owning-worker-id',
+    timeOfContact: new Date(2010, 5, 15),
+    createdBy: 'ignored-worker-id',
+    helpline: 'a helpline',
+    taskId: 'a task',
+    channel: 'morse code',
+    number: "that's numberwang",
+    channelSid: 'a channel',
+    serviceSid: 'a service',
+    csamReports: [],
+  };
+  test("Passes payload down to data layer with user workerSid used for 'createdBy'", async () => {
+    const createSpy = jest.spyOn(contactDb, 'create').mockResolvedValue(mockContact);
+    const returnValue = await createContact(
+      'parameter account-sid',
+      'contact-creator',
+      sampleCreateContactPayload,
+    );
+    expect(createSpy).toHaveBeenCalledWith(
+      'parameter account-sid',
+      { ...sampleCreateContactPayload, createdBy: 'contact-creator' },
+      [],
+    );
+    expect(returnValue).toStrictEqual(mockContact);
+  });
+  test('Missing values are converted to empty strings for several fields', async () => {
+    const createSpy = jest.spyOn(contactDb, 'create').mockResolvedValue(mockContact);
+    const minimalPayload = omit(
+      sampleCreateContactPayload,
+      'helpline',
+      'number',
+      'channel',
+      'channelSid',
+      'serviceSid',
+      'taskId',
+      'twilioWorkerId',
+    );
+    const returnValue = await createContact(
+      'parameter account-sid',
+      'contact-creator',
+      minimalPayload,
+    );
+    expect(createSpy).toHaveBeenCalledWith(
+      'parameter account-sid',
+      {
+        ...minimalPayload,
+        createdBy: 'contact-creator',
+        helpline: '',
+        number: '',
+        channel: '',
+        channelSid: '',
+        serviceSid: '',
+        taskId: '',
+        twilioWorkerId: '',
+      },
+      [],
+    );
+    expect(returnValue).toStrictEqual(mockContact);
+  });
+  test('Missing timeOfContact value is substituted with current date', async () => {
+    const createSpy = jest.spyOn(contactDb, 'create').mockResolvedValue(mockContact);
+    const payload = omit(sampleCreateContactPayload, 'timeOfContact');
+    const returnValue = await createContact('parameter account-sid', 'contact-creator', payload);
+    expect(createSpy).toHaveBeenCalledWith(
+      'parameter account-sid',
+      {
+        ...payload,
+        timeOfContact: expect.any(Date),
+        createdBy: 'contact-creator',
+      },
+      [],
+    );
+    expect(returnValue).toStrictEqual(mockContact);
+  });
+
+  test('rawJson will be read from form property if it is there and rawJson is not', async () => {
+    const createSpy = jest.spyOn(contactDb, 'create').mockResolvedValue(mockContact);
+    const payload = omit(sampleCreateContactPayload, 'rawJson');
+    payload.form = sampleCreateContactPayload.rawJson;
+    const returnValue = await createContact('parameter account-sid', 'contact-creator', payload);
+    expect(createSpy).toHaveBeenCalledWith(
+      'parameter account-sid',
+      { ...sampleCreateContactPayload, createdBy: 'contact-creator' },
+      [],
+    );
+    expect(returnValue).toStrictEqual(mockContact);
+  });
+  test('empty array will be passed for csamReportIds if csamReport property is missing', async () => {
+    const createSpy = jest.spyOn(contactDb, 'create').mockResolvedValue(mockContact);
+    const payload = omit(sampleCreateContactPayload, 'csamReport');
+    const returnValue = await createContact('parameter account-sid', 'contact-creator', payload);
+    expect(createSpy).toHaveBeenCalledWith(
+      'parameter account-sid',
+      { ...payload, createdBy: 'contact-creator' },
+      [],
+    );
+    expect(returnValue).toStrictEqual(mockContact);
+  });
+  test('ids will be passed in csamReportIds if csamReport property is populated', async () => {
+    const createSpy = jest.spyOn(contactDb, 'create').mockResolvedValue(mockContact);
+    const payload = {
+      ...sampleCreateContactPayload,
+      // Cheat a bit and cast these because all the other props on CSAMReportEntry are ignored here
+      csamReports: <CSAMReportEntry[]>[{ id: 2 }, { id: 4 }, { id: 6 }],
+    };
+    const returnValue = await createContact('parameter account-sid', 'contact-creator', payload);
+    expect(createSpy).toHaveBeenCalledWith(
+      'parameter account-sid',
+      { ...payload, createdBy: 'contact-creator' },
+      expect.arrayContaining([2, 4, 6]),
+    );
+    expect(returnValue).toStrictEqual(mockContact);
+  });
+  test('queue will be looked for as a rawJson property if omitted from the top level', async () => {
+    const createSpy = jest.spyOn(contactDb, 'create').mockResolvedValue(mockContact);
+    const payload = {
+      ...omit(sampleCreateContactPayload, 'queueName'),
+      rawJson: {
+        ...sampleCreateContactPayload.rawJson,
+        queueName: 'Q2',
+      },
+    };
+    const returnValue = await createContact('parameter account-sid', 'contact-creator', payload);
+    expect(createSpy).toHaveBeenCalledWith(
+      'parameter account-sid',
+      { ...payload, queueName: 'Q2', createdBy: 'contact-creator' },
+      [],
+    );
+    expect(returnValue).toStrictEqual(mockContact);
+  });
+  test('queue will be looked for as a form property if omitted from the top level and rawJson', async () => {
+    const createSpy = jest.spyOn(contactDb, 'create').mockResolvedValue(mockContact);
+    const payload = {
+      ...omit(sampleCreateContactPayload, 'rawJson', 'queueName'),
+      rawJson: {
+        ...sampleCreateContactPayload.rawJson,
+        queueName: 'Q2',
+      },
+    };
+    payload.form = sampleCreateContactPayload.rawJson;
+    const returnValue = await createContact('parameter account-sid', 'contact-creator', payload);
+    expect(createSpy).toHaveBeenCalledWith(
+      'parameter account-sid',
+      { ...payload, queueName: 'Q2', createdBy: 'contact-creator' },
+      [],
+    );
+    expect(returnValue).toStrictEqual(mockContact);
+  });
+  test('queue will be undefined if not present on rawJson, form or top level', async () => {
+    const createSpy = jest.spyOn(contactDb, 'create').mockResolvedValue(mockContact);
+    const payload = omit(sampleCreateContactPayload, 'queueName');
+    const returnValue = await createContact('parameter account-sid', 'contact-creator', payload);
+    expect(createSpy).toHaveBeenCalledWith(
+      'parameter account-sid',
+      { ...payload, queueName: undefined, createdBy: 'contact-creator' },
+      [],
+    );
+    expect(returnValue).toStrictEqual(mockContact);
+  });
+});
 
 describe('connectContactToCase', () => {
   test('Returns contact produced by data access layer', async () => {

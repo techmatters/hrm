@@ -1,12 +1,110 @@
 import * as pgPromise from 'pg-promise';
-import { mockConnection, mockTask } from '../mock-pgpromise';
-import { search } from '../../src/contact/contact-data-access';
+import { mockConnection, mockTask, mockTransaction } from '../mock-pgpromise';
+import { search, create } from '../../src/contact/contact-data-access';
 import { endOfDay, startOfDay } from 'date-fns';
+import { ContactBuilder } from './contact-builder';
+import { NewContactRecord, insertContactSql } from '../../src/contact/sql/contact-insert-sql';
+
+jest.mock('../../src/contact/sql/contact-insert-sql', () => ({
+  insertContactSql: jest.fn().mockReturnValue('MOCKED INSERT STATEMENT'),
+}));
 
 let conn: pgPromise.ITask<unknown>;
 
 beforeEach(() => {
   conn = mockConnection();
+});
+
+describe('create', () => {
+  const sampleNewContact: NewContactRecord = {
+    rawJson: {
+      childInformation: {
+        name: {
+          firstName: 'Lorna',
+          lastName: 'Ballantyne',
+        },
+      },
+      callType: 'carrier pigeon',
+      caseInformation: {
+        categories: {},
+      },
+    },
+    queueName: 'Q',
+    conversationDuration: 100,
+    twilioWorkerId: undefined,
+    timeOfContact: undefined,
+    createdBy: undefined,
+    helpline: undefined,
+    taskId: undefined,
+    channel: undefined,
+    number: undefined,
+    channelSid: undefined,
+    serviceSid: undefined,
+  };
+
+  test('No task ID specified in payload - runs SQL to insert new record and connect CSAM reports, using current date for created / updated and accountSid parameter', async () => {
+    const returnValue = new ContactBuilder().build();
+    mockTransaction(conn);
+
+    jest.spyOn(conn, 'one').mockResolvedValue(returnValue);
+    const created = await create('parameter account-sid', sampleNewContact, [3, 2, 1]);
+    expect(insertContactSql).toHaveBeenCalledWith({
+      ...sampleNewContact,
+      updatedAt: expect.anything(),
+      createdAt: expect.anything(),
+      accountSid: 'parameter account-sid',
+    });
+    expect(conn.one).toHaveBeenCalledWith(
+      expect.stringContaining('MOCKED INSERT STATEMENT'),
+      expect.objectContaining({
+        csamReportIds: expect.arrayContaining([1, 2, 3]),
+      }),
+    );
+    expect(created).toStrictEqual(returnValue);
+  });
+
+  test('Task ID specified in payload that is not already associated with a contact - creates contact as expected', async () => {
+    const returnValue = new ContactBuilder().build();
+    const sampleContactWithTaskId = { ...sampleNewContact, taskId: 'A TASK' };
+    mockTransaction(conn);
+
+    jest.spyOn(conn, 'one').mockResolvedValue(returnValue);
+    jest.spyOn(conn, 'oneOrNone').mockResolvedValue(undefined);
+    const created = await create('parameter account-sid', sampleContactWithTaskId, [3, 2, 1]);
+    expect(conn.oneOrNone).toHaveBeenCalledWith(expect.stringContaining('Contacts'), {
+      accountSid: 'parameter account-sid',
+      taskId: 'A TASK',
+    });
+    expect(insertContactSql).toHaveBeenCalledWith({
+      ...sampleContactWithTaskId,
+      updatedAt: expect.anything(),
+      createdAt: expect.anything(),
+      accountSid: 'parameter account-sid',
+    });
+    expect(conn.one).toHaveBeenCalledWith(
+      expect.stringContaining('MOCKED INSERT STATEMENT'),
+      expect.objectContaining({
+        csamReportIds: expect.arrayContaining([1, 2, 3]),
+      }),
+    );
+    expect(created).toStrictEqual(returnValue);
+  });
+
+  test('Task ID specified in payload that is already associated with a contact - creates nothing and returns existing contact', async () => {
+    const existingValue = new ContactBuilder().build();
+    const sampleContactWithTaskId = { ...sampleNewContact, taskId: 'A TASK' };
+    mockTransaction(conn);
+
+    jest.spyOn(conn, 'one');
+    jest.spyOn(conn, 'oneOrNone').mockResolvedValue(existingValue);
+    const created = await create('parameter account-sid', sampleContactWithTaskId, [3, 2, 1]);
+    expect(conn.oneOrNone).toHaveBeenCalledWith(expect.stringContaining('Contacts'), {
+      accountSid: 'parameter account-sid',
+      taskId: 'A TASK',
+    });
+    expect(conn.one).not.toHaveBeenCalled();
+    expect(created).toStrictEqual(existingValue);
+  });
 });
 
 describe('search', () => {
@@ -114,6 +212,7 @@ describe('search', () => {
         onlyDataContacts: true,
         contactNumber: "1 o'clock, 2 o'clock, 3'clock, ROCK!",
         counselor: 'contact-owner',
+        helpline: 'a helpline',
       },
       1000,
       0,
@@ -123,6 +222,31 @@ describe('search', () => {
       onlyDataContacts: true,
       contactNumber: "1 o'clock, 2 o'clock, 3'clock, ROCK!",
       counselor: 'contact-owner',
+      helpline: 'a helpline',
+      limit: 1000,
+      offset: 0,
+    });
+  });
+  test('other parameters - set as undefined if empty strings', async () => {
+    jest.spyOn(conn, 'manyOrNone').mockResolvedValue([]);
+    mockTask(conn);
+    await search(
+      ACCOUNT_SID,
+      {
+        onlyDataContacts: true,
+        contactNumber: '',
+        counselor: '',
+        helpline: '',
+      },
+      1000,
+      0,
+    );
+    expect(conn.manyOrNone).toHaveBeenCalledWith(expect.any(String), {
+      ...emptySearch,
+      onlyDataContacts: true,
+      contactNumber: undefined,
+      counselor: undefined,
+      helpline: undefined,
       limit: 1000,
       offset: 0,
     });
