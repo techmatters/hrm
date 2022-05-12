@@ -50,16 +50,13 @@ jobs:
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v1
       with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-access-key-id: ${{ secrets.TEMP_EU_AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.TEMP_EU_AWS_SECRET_ACCESS_KEY }}
         aws-region: eu-west-1
 
     - name: Login to Amazon ECR
       id: login-ecr
       uses: aws-actions/amazon-ecr-login@v1
-      with:
-        aws-region: eu-west-1
-
     - name: Build, tag, and push image to Amazon ECR
       working-directory: hrm-service
       id: build-image
