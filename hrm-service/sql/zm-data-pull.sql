@@ -15,7 +15,7 @@ FROM
   left join lateral jsonb_each_text(categories.value) subcategories on true
 where
   "createdAt" >= '2021-11-01' -- Fill dateFrom
-  and "createdAt" <= '2021-11-30' -- Fill dateTo
+  and "createdAt" < '2021-12-01' -- Fill dateTo (exclusive)
   and "accountSid" = 'XXXXXXXXXX' -- Fill accountSid
   and subcategories.value = 'true'
 group by "createdAt", "twilioWorkerId", "timeOfContact", "rawJson" 
