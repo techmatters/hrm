@@ -5,7 +5,7 @@ const { sequelize } = require('../../src/models/index');
 
 const CONNECT_ATTEMPT_SECONDS = 20;
 
-const umzug = new Umzug({
+const parent = new Umzug({
   migrations: {
     glob: pathLib.join(process.cwd(), './migrations/*.js'),
     resolve: ({ name, path, context }) => {
@@ -22,6 +22,15 @@ const umzug = new Umzug({
   storage: new SequelizeStorage({ sequelize }),
 });
 
+const umzug = new Umzug({
+  ...parent.options,
+  migrations: async ctx => {
+    const migrations = await parent.migrations(ctx);
+    console.log(migrations.map(m => m.path));
+    return migrations;
+  },
+});
+
 async function migrate() {
   const timeoutPoint = Date.now() + CONNECT_ATTEMPT_SECONDS * 1000;
   let ret;
@@ -35,7 +44,6 @@ async function migrate() {
       console.log('Migration complete.');
       break;
     } catch (err) {
-      console.log(err);
       lastErr = err;
     }
   }
