@@ -39,6 +39,8 @@ async function migrate() {
   while (Date.now() < timeoutPoint) {
     try {
       // eslint-disable-next-line no-await-in-loop
+      console.log('Umzug cleardown starting.');
+      await umzug.down({ to: 0 });
       console.log('Umzug migration starting.');
       ret = await umzug.up();
       console.log('Migration complete.');
