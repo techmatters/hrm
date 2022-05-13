@@ -1,6 +1,9 @@
 module.exports = {
   up: async queryInterface => {
     await queryInterface.sequelize.transaction(async transaction => {
+      console.log(
+        'Initial schema creation. Checking if this step is required by checking if Contacts table already exists',
+      );
       const [result] = await queryInterface.sequelize.query(
         `SELECT to_regclass('public.Contacts') AS tableExists`,
         {
