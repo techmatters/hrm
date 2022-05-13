@@ -5,6 +5,8 @@ const models = require('../src/models');
 const mocks = require('./mocks');
 import './case-validation';
 
+console.log(process.env.INCLUDE_ERROR_IN_RESPONSE);
+
 /**
  * This interacts with the DB
  */
@@ -132,7 +134,9 @@ describe('/csamReports route', () => {
         .send(invalidContactCsamReport);
 
       expect(response.status).toBe(500);
-      expect(response.body).toEqual({});
+      expect(response.body.message).toContain(
+        'insert or update on table "CSAMReports" violates foreign key constraint "CSAMReports_contactId_accountSid_fkey"',
+      );
     });
     test('invalid accountSid, returns 500', async () => {
       //Create a Contact for the contactId
@@ -149,7 +153,9 @@ describe('/csamReports route', () => {
         .send(csamReportWithContactId);
 
       expect(response.status).toBe(500);
-      expect(response.body).toEqual({});
+      expect(response.body.message).toContain(
+        'insert or update on table "CSAMReports" violates foreign key constraint "CSAMReports_contactId_accountSid_fkey"',
+      );
     });
     test('missing twilioWorkerId, returns 200', async () => {
       const response = await request

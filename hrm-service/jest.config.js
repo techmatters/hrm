@@ -7,6 +7,7 @@ module.exports = config => {
       rootDir: '.',
       modulePathIgnorePatterns: ['dist'],
       maxWorkers: 1,
+      setupFiles: ['<rootDir>/setTestEnvVars.js'],
     }
   );
 };

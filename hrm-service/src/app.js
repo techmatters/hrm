@@ -135,12 +135,13 @@ app.use((req, res, next) => {
 app.use((err, req, res, next) => {
   console.log(err);
 
+  const includeErrorInResponse = process.env.INCLUDE_ERROR_IN_RESPONSE;
+
   // set locals, only providing error in development
   res.locals.message = err.message;
-  res.locals.error = req.app.get('env') === 'development' ? err : {};
+  res.locals.error = includeErrorInResponse ? err : {};
 
-  const error =
-    req.app.get('env') === 'development' ? { message: err.message, error: err.stack } : {};
+  const error = includeErrorInResponse ? { message: err.message, error: err.stack } : {};
 
   res.status(err.status || 500);
   res.json(error);
