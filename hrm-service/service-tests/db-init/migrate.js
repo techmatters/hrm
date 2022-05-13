@@ -1,7 +1,7 @@
 // eslint-disable-next-line global-require,import/no-extraneous-dependencies
 const { Umzug, SequelizeStorage } = require('umzug');
 const pathLib = require('path');
-const { sequelize } = require('../../src/models/index');
+const { sequelize, Sequelize } = require('../../src/models/index');
 
 const CONNECT_ATTEMPT_SECONDS = 20;
 
@@ -13,8 +13,8 @@ const parent = new Umzug({
       const migration = require(path);
       return {
         name,
-        up: async () => migration.up(context),
-        down: async () => migration.down(context),
+        up: async () => migration.up(context, Sequelize),
+        down: async () => migration.down(context, Sequelize),
       };
     },
   },
