@@ -1,4 +1,3 @@
-import CanCan from 'cancan';
 import { isCounselorWhoCreated, isSupervisor, isCaseOpen } from './helpers';
 import { actionsMaps } from './actions';
 import { User } from './user';
@@ -29,14 +28,8 @@ const checkConditionsSet = conditionsState => conditionsSet =>
 const checkConditionsSets = (conditionsState, conditionsSets) =>
   conditionsSets.some(checkConditionsSet(conditionsState));
 
-const bindSetupAllow = allow => (
-  performerModel,
-  action,
-  targetModel,
-  targetKind,
-  conditionsSets,
-) => {
-  allow(performerModel, action, targetModel, (performer, target) => {
+const setupAllow = (action, targetKind, conditionsSets) => {
+  return (performer, target) => {
     // Build the proper conditionsState depending on the targetKind
     let conditionsState = null;
     if (targetKind === 'case') {
@@ -54,7 +47,7 @@ const bindSetupAllow = allow => (
     }
 
     return checkConditionsSets(conditionsState, conditionsSets);
-  });
+  };
 };
 
 export const setupCanForRules = rules => {
@@ -66,19 +59,18 @@ export const setupCanForRules = rules => {
     return 'Rules file incomplete.';
   }
 
-  const cancan = new CanCan();
-  const { can, allow } = cancan;
-  const setupAllow = bindSetupAllow(allow);
+  const actionCheckers: Record<string, (performer: any, target: any) => boolean> = {};
 
   // Configure Case permissions
-  Object.values(actionsMaps.case).forEach(action =>
-    setupAllow(User, action, Case, 'case', rules[action]),
+  Object.values(actionsMaps.case).forEach(
+    action => (actionCheckers[action] = setupAllow(action, 'case', rules[action])),
   );
 
   // Configure PostSurvey permissions
-  Object.values(actionsMaps.postSurvey).forEach(action =>
-    setupAllow(User, action, PostSurvey, 'postSurvey', rules[action]),
+  Object.values(actionsMaps.postSurvey).forEach(
+    action => (actionCheckers[action] = setupAllow(action, 'postSurvey', rules[action])),
   );
 
-  return can;
+  return (performer: any, action: string, target: any): boolean =>
+    actionCheckers[action](performer, target);
 };
