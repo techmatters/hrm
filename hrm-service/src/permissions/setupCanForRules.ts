@@ -1,9 +1,5 @@
 import { isCounselorWhoCreated, isSupervisor, isCaseOpen } from './helpers';
 import { actionsMaps } from './actions';
-import { User } from './user';
-const models = require('../models');
-
-const { Case, PostSurvey } = models;
 
 /**
  * Given a conditionsState and a condition, returns true if the condition is true in the conditionsState
