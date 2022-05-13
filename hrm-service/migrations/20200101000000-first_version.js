@@ -38,10 +38,12 @@ module.exports = {
           `,
           { transaction },
         );
-        await queryInterface.sequelize.query(`
+        await queryInterface.sequelize.query(
+          `
           ALTER SEQUENCE public."AgeBrackets_id_seq" OWNED BY public."AgeBrackets".id;
         `,
-        { transaction },);
+          { transaction },
+        );
         await queryInterface.sequelize.query(
           `
             CREATE TABLE public."Contacts" (
@@ -88,7 +90,8 @@ module.exports = {
           `,
           { transaction },
         );
-        await queryInterface.sequelize.query(`
+        await queryInterface.sequelize.query(
+          `
           CREATE SEQUENCE public."Subcategories_id_seq"
               AS integer
               START WITH 1
@@ -97,7 +100,8 @@ module.exports = {
               NO MAXVALUE
               CACHE 1;
         `,
-          { transaction },);
+          { transaction },
+        );
         await queryInterface.sequelize.query(
           `
             ALTER SEQUENCE public."Subcategories_id_seq" OWNED BY public."Subcategories".id
@@ -145,13 +149,6 @@ module.exports = {
           `
             ALTER TABLE ONLY public."Contacts"
             ADD CONSTRAINT "Contacts_pkey" PRIMARY KEY (id)
-          `,
-          { transaction },
-        );
-        await queryInterface.sequelize.query(
-          `
-            ALTER TABLE ONLY public."Contacts"
-            ADD CONSTRAINT "Contacts_pkey" PRIMARY KEY (id);
           `,
           { transaction },
         );
