@@ -11,7 +11,7 @@ module.exports = {
         },
       );
       console.log(result[0].tableExists);
-      if (!result) {
+      if (!result[0].tableExists) {
         await queryInterface.sequelize.query(
           `
             CREATE TABLE public."AgeBrackets" (
