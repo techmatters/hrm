@@ -40,7 +40,8 @@ module.exports = {
         );
         await queryInterface.sequelize.query(`
           ALTER SEQUENCE public."AgeBrackets_id_seq" OWNED BY public."AgeBrackets".id;
-        `);
+        `,
+        { transaction },);
         await queryInterface.sequelize.query(
           `
             CREATE TABLE public."Contacts" (
@@ -95,7 +96,8 @@ module.exports = {
               NO MINVALUE
               NO MAXVALUE
               CACHE 1;
-        `);
+        `,
+          { transaction },);
         await queryInterface.sequelize.query(
           `
             ALTER SEQUENCE public."Subcategories_id_seq" OWNED BY public."Subcategories".id
