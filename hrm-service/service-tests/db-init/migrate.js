@@ -5,7 +5,7 @@ const { sequelize, Sequelize } = require('../../src/models/index');
 
 const CONNECT_ATTEMPT_SECONDS = 20;
 
-const parent = new Umzug({
+const umzug = new Umzug({
   migrations: {
     glob: pathLib.join(process.cwd(), './migrations/*.js'),
     resolve: ({ name, path, context }) => {
@@ -20,15 +20,6 @@ const parent = new Umzug({
   },
   context: sequelize.getQueryInterface(),
   storage: new SequelizeStorage({ sequelize }),
-});
-
-const umzug = new Umzug({
-  ...parent.options,
-  migrations: async ctx => {
-    const migrations = await parent.migrations(ctx);
-    console.log(migrations.map(m => m.path));
-    return migrations;
-  },
 });
 
 async function migrate() {

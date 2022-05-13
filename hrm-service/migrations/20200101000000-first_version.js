@@ -5,12 +5,12 @@ module.exports = {
         'Initial schema creation. Checking if this step is required by checking if Contacts table already exists',
       );
       const [result] = await queryInterface.sequelize.query(
-        `SELECT to_regclass('public.Contacts') AS tableExists`,
+        `SELECT to_regclass('public."Contacts"') AS "tableExists"`,
         {
           transaction,
         },
       );
-      console.log(result[0].tableExists);
+      console.log(result);
       if (!result[0].tableExists) {
         await queryInterface.sequelize.query(
           `
