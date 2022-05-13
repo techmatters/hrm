@@ -35,6 +35,7 @@ async function migrate() {
       console.log('Migration complete.');
       break;
     } catch (err) {
+      console.log(err);
       lastErr = err;
     }
   }
