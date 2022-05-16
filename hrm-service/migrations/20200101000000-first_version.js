@@ -1,17 +1,14 @@
 module.exports = {
   up: async queryInterface => {
     await queryInterface.sequelize.transaction(async transaction => {
-      console.log(
-        'Initial schema creation. Checking if this step is required by checking if Contacts table already exists',
-      );
       const [result] = await queryInterface.sequelize.query(
         `SELECT to_regclass('public."Contacts"') AS "tableExists"`,
         {
           transaction,
         },
       );
-      console.log(result);
       if (!result[0].tableExists) {
+        console.log('Attempting to build initial database schema.');
         await queryInterface.sequelize.query(
           `
             CREATE TABLE public."AgeBrackets" (
@@ -174,7 +171,10 @@ module.exports = {
           { transaction },
         );
       } else {
-        console.log('SKIPPING INITIAL TABLE CREATION AS CONTACT TABLE EXISTS.');
+        console.log(
+          'A "Contacts" table was found, so despite umzug thinking the base schema creation script is required, we will skip it.\n' +
+            'This can happen because this base schema migration was added retroactively and is missing from some DBs migration state, or because the base schema was created manually prior to first deploying the service.',
+        );
       }
     });
   },
