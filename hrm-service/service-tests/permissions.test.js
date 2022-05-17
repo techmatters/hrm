@@ -48,13 +48,21 @@ describe('/permissions route', () => {
         expectedStatus: 200,
         expectedPayload: rules,
       })),
-    ]).test('$description', async ({ accountSid, headersConfig = headers, expectedStatus }) => {
-      const response = await request
-        .get(`/v0/accounts/${accountSid}/permissions`) // env vars for fake accountsSids set in setTestEnvVars.js
-        .set(headersConfig);
+    ]).test(
+      '$description',
+      async ({
+        accountSid,
+        headersConfig = headers,
+        expectedStatus,
+        expectedPayload = undefined,
+      }) => {
+        const response = await request
+          .get(`/v0/accounts/${accountSid}/permissions`) // env vars for fake accountsSids set in setTestEnvVars.js
+          .set(headersConfig);
 
-      expect(response.status).toBe(expectedStatus);
-      if (expectedStatus === 200) expect(response.body).toMatchObject(expectedPayload);
-    });
+        expect(response.status).toBe(expectedStatus);
+        if (expectedStatus === 200) expect(response.body).toMatchObject(expectedPayload);
+      },
+    );
   });
 });
