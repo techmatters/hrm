@@ -2,7 +2,7 @@ import createError from 'http-errors';
 import * as casesDb from './case-data-access';
 import * as caseApi from './case';
 import { getCaseActivities } from './activities';
-const { SafeRouter, publicEndpoint, canEditCase } = require('../permissions');
+import { SafeRouter, publicEndpoint, canEditCase } from '../permissions';
 const casesRouter = SafeRouter();
 
 casesRouter.get('/', publicEndpoint, async (req, res) => {
