@@ -1,77 +1,73 @@
+export { User } from './user';
+export { SafeRouter, publicEndpoint } from './safe-router';
+export { canEditCase, canViewPostSurvey } from './middlewares';
+export { rulesMap } from './rulesMap';
+
 import { setupCanForRules } from './setupCanForRules';
+import { rulesMap } from './rulesMap';
+// eslint-disable-next-line prettier/prettier
+import type { Request, Response, NextFunction } from 'express';
 
-const openRules = require('../../permission-rules/open.json');
-const brRules = require('../../permission-rules/br.json');
-const caRules = require('../../permission-rules/ca.json');
-const etRules = require('../../permission-rules/et.json');
-const inRules = require('../../permission-rules/in.json');
-const jmRules = require('../../permission-rules/jm.json');
-const mwRules = require('../../permission-rules/mw.json');
-const ukRules = require('../../permission-rules/uk.json');
-const zaRules = require('../../permission-rules/za.json');
-const zmRules = require('../../permission-rules/zm.json');
-
-// TODO: maybe factor out so it's easier to build the API that retrieves this to the frontend
-const rulesMap = {
-  br: brRules,
-  ca: caRules,
-  et: etRules,
-  in: inRules,
-  jm: jmRules,
-  mw: mwRules,
-  uk: ukRules,
-  za: zaRules,
-  zm: zmRules,
-  open: openRules,
+const initializedCanMap = Object.entries(rulesMap).reduce<
+  { [key in keyof typeof rulesMap]: ReturnType<typeof setupCanForRules> }
+>((accum, [key, rules]) => {
+const can = setupCanForRules(rules);
+return {
+  ...accum,
+  [key]: can,
 };
-
-/**
- * @type {{ [key in keyof typeof rulesMap]: ReturnType<typeof setupCanForRules> }}
- */
-const initializedCanMap = Object.entries(rulesMap).reduce((accum, [key, rules]) => {
-  const can = setupCanForRules(rules);
-  return {
-    ...accum,
-    [key]: can,
-  };
-}, {});
-
-const initializedCanOpenRules = setupCanForRules(openRules);
+}, null);
 
 /**
  * Applies the permissions if valid.
- * @param {import('express').Request} req
- * @param {ReturnType<typeof setupCanForRules>} initializedCan
- * @param {string} permissionsConfig
  * @throws Will throw if initializedCan is not a function
  */
-export const applyPermissions = (req, initializedCan, permissionsConfig) => {
-  if (!initializedCan) throw new Error(`Cannot find rules for ${permissionsConfig}`);
+export const applyPermissions = (req: Request,
+  initializedCan: ReturnType<typeof setupCanForRules>,
+  permissionsConfigName: string,
+  ) => {
+  if (!initializedCan) throw new Error(`Cannot find rules for ${permissionsConfigName}`);
 
   if (typeof initializedCan === 'string')
-    throw new Error(`Error in rules for ${permissionsConfig}. Error: ${initializedCan}`);
+    throw new Error(`Error in rules for ${permissionsConfigName}. Error: ${initializedCan}`);
 
   if (typeof initializedCan !== 'function')
-    throw new Error(`Error in rules for ${permissionsConfig}. Error: can is not a function.`);
+    throw new Error(`Error in rules for ${permissionsConfigName}. Error: can is not a function.`);
 
+  //@ts-ignore TODO: Improve our custom Request type to override Express.Request
   req.can = initializedCan;
 };
 
-export const setupPermissions = (req, res, next) => {
+/**
+ * @throws Will throw if there is no env var set for PERMISSIONS_${accountSid} or if it's an invalid key in rulesMap
+ */
+ export const getPermissionsConfigName = (accountSid: string) => {
+  const permissionsKey = `PERMISSIONS_${accountSid}`;
+
+  const permissionsConfigName = process.env[permissionsKey];
+
+  if (!permissionsConfigName)
+    throw new Error(`No permissions set for account ${accountSid}.`);
+
+  if (!rulesMap[permissionsConfigName])
+    throw new Error(`Permissions rules with name ${permissionsConfigName} missing in rules map.`);
+
+  return permissionsConfigName;
+};
+
+
+export const setupPermissions = (req: Request, res: Response, next: NextFunction) => {
   if (process.env.USE_OPEN_PERMISSIONS) {
-    applyPermissions(req, initializedCanOpenRules, 'open rules');
+    applyPermissions(req, initializedCanMap.open, 'open rules');
     return next();
   }
 
+  //@ts-ignore TODO: Improve our custom Request type to override Express.Request
   const { accountSid } = req;
   const permissionsKey = `PERMISSIONS_${accountSid}`;
-  const permissionsConfig = process.env[permissionsKey];
-  const initializedCan = initializedCanMap[permissionsConfig];
+  const permissionsConfigName = process.env[permissionsKey];
+  const initializedCan = initializedCanMap[permissionsConfigName];
 
-  applyPermissions(req, initializedCan, permissionsConfig);
+  applyPermissions(req, initializedCan, permissionsConfigName);
   return next();
 };
-
-export * from './middlewares';
-export * from './safe-router';
-export * from './user';
