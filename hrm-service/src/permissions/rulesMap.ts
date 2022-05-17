@@ -11,7 +11,13 @@ import zmRules from '../../permission-rules/zm.json';
 
 import { actionsMaps, Actions } from './actions';
 
-export const conditionTypes = ['isSupervisor', 'isCreator', 'isCaseOpen', 'everyone'] as const;
+export const conditionTypes = [
+  'isSupervisor',
+  'isCreator',
+  'isCaseOpen',
+  'isOwner',
+  'everyone',
+] as const;
 export type Condition = typeof conditionTypes[number];
 export type ConditionsSet = Condition[];
 export type ConditionsSets = ConditionsSet[];
