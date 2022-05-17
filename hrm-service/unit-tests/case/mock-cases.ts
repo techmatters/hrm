@@ -21,6 +21,7 @@ export const createMockCaseRecord = (partial: Partial<CaseRecord>): CaseRecord =
       updatedBy: null,
       caseSections: [
         {
+          accountSid: 'ACCOUNT_SID',
           caseId: 1,
           sectionType: 'note',
           sectionId: 'NOTE_1',

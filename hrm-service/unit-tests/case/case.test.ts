@@ -35,6 +35,7 @@ test('create case', async () => {
     },
     caseSections: [
       {
+        accountSid: undefined,
         sectionType: 'note',
         caseId: undefined,
         createdBy: workerSid,
@@ -51,8 +52,10 @@ test('create case', async () => {
   const createdCaseRecord: CaseRecord = {
     ...expectedCaseDbParameter,
     id: 1,
+    accountSid,
     caseSections: [
       {
+        accountSid,
         sectionType: 'note',
         caseId: 1,
         createdBy: workerSid,
@@ -78,6 +81,7 @@ test('create case', async () => {
       ...caseToBeCreated.info,
       counsellorNotes: [
         {
+          accountSid,
           note: 'Child with covid-19',
           twilioWorkerId: workerSid,
           createdAt: baselineCreatedDate,
@@ -93,10 +97,12 @@ describe('searchCases', () => {
   const caseWithContact = createMockCase({
     id: caseId,
     helpline: 'helpline',
+    accountSid,
     status: 'open',
     info: {
       counsellorNotes: [
         {
+          accountSid,
           note: 'Child with covid-19',
           twilioWorkerId: 'contact-adder',
           id: 'NOTE_1',
@@ -119,17 +125,21 @@ describe('searchCases', () => {
               cat2: { sub2: false, sub4: false },
             },
           },
+          callerInformation: { name: { firstName: undefined, lastName: undefined } },
+          callType: '',
         },
       },
     ],
   });
   const caseRecordWithContact = createMockCaseRecord({
+    accountSid,
     id: caseId,
     helpline: 'helpline',
     status: 'open',
     info: {},
     caseSections: [
       {
+        accountSid,
         sectionTypeSpecificData: { note: 'Child with covid-19' },
         createdBy: 'contact-adder',
         createdAt: baselineCreatedDate,
@@ -152,18 +162,22 @@ describe('searchCases', () => {
               cat2: { sub2: false, sub4: false },
             },
           },
+          callerInformation: { name: { firstName: undefined, lastName: undefined } },
+          callType: '',
         },
       },
     ],
   });
 
   const caseWithoutContact = createMockCase({
+    accountSid,
     id: caseId,
     helpline: 'helpline',
     status: 'open',
     info: {
       counsellorNotes: [
         {
+          accountSid,
           note: 'Child with covid-19',
           twilioWorkerId: 'contact-adder',
           id: 'NOTE_1',
@@ -178,10 +192,12 @@ describe('searchCases', () => {
 
   const caseRecordWithoutContact = createMockCaseRecord({
     id: caseId,
+    accountSid,
     helpline: 'helpline',
     status: 'open',
     caseSections: [
       {
+        accountSid,
         sectionTypeSpecificData: { note: 'Child with covid-19' },
         createdBy: 'contact-adder',
         createdAt: baselineCreatedDate,
@@ -364,6 +380,7 @@ describe('update existing case', () => {
       existingCaseObject: createMockCaseRecord({
         caseSections: [
           {
+            accountSid,
             caseId: 1,
             sectionType: 'note',
             createdBy: 'contact-updater',
@@ -409,6 +426,7 @@ describe('update existing case', () => {
         info: {
           counsellorNotes: [
             {
+              accountSid,
               note: 'Child with covid-19',
               twilioWorkerId: 'contact-updater',
               id: 'EXISTING SECTION ID',
@@ -419,6 +437,7 @@ describe('update existing case', () => {
         },
         caseSections: [
           {
+            accountSid,
             caseId: 1,
             sectionType: 'note',
             createdBy: 'contact-updater',
@@ -428,9 +447,11 @@ describe('update existing case', () => {
             sectionId: 'EXISTING SECTION ID',
             sectionTypeSpecificData: {
               note: 'Child with covid-19',
+              accountSid,
             },
           },
           {
+            accountSid: undefined,
             caseId: 1,
             sectionType: 'note',
             createdBy: workerSid,
@@ -471,6 +492,7 @@ describe('update existing case', () => {
       existingCaseObject: createMockCaseRecord({
         caseSections: [
           {
+            accountSid: '',
             caseId: 1,
             sectionType: 'referral',
             createdBy: 'referral-adder',
@@ -616,6 +638,7 @@ describe('update existing case', () => {
       existingCaseObject: createMockCaseRecord({
         caseSections: [
           {
+            accountSid: '',
             caseId: 1,
             sectionType: 'referral',
             createdBy: 'referral-adder',

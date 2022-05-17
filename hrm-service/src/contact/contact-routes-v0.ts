@@ -1,24 +1,14 @@
-import models from '../models';
 import { SafeRouter, publicEndpoint } from '../permissions';
 import createError from 'http-errors';
-import contactControllerFactory from '../controllers/contact-controller';
-import { patchContact } from './contact';
-const { Contact } = models;
-const ContactController = contactControllerFactory(Contact);
+import { patchContact, connectContactToCase, searchContacts, createContact } from './contact';
 
 const contactsRouter = SafeRouter();
-
-contactsRouter.get('/', publicEndpoint, async (req, res) => {
-  const { accountSid } = req;
-  const contacts = await ContactController.getContacts(req.query, accountSid);
-  res.json(contacts);
-});
 
 // example: curl -XPOST -H'Content-Type: application/json' localhost:3000/contacts -d'{"hi": 2}'
 contactsRouter.post('/', publicEndpoint, async (req, res) => {
   const { accountSid, user } = req;
 
-  const contact = await ContactController.createContact(req.body, accountSid, user.workerSid);
+  const contact = await createContact(accountSid, user.workerSid, req.body);
   res.json(contact);
 });
 
@@ -27,15 +17,18 @@ contactsRouter.put('/:contactId/connectToCase', publicEndpoint, async (req, res)
   const { contactId } = req.params;
   const { caseId } = req.body;
   try {
-    const updatedContact = await ContactController.connectToCase(
-      contactId,
-      caseId,
+    const updatedContact = await connectContactToCase(
       accountSid,
       user.workerSid,
+      contactId,
+      caseId,
     );
     res.json(updatedContact);
   } catch (err) {
-    if (err.message.includes('violates foreign key constraint')) {
+    if (
+      err.message.toLowerCase().includes('violates foreign key constraint') ||
+      err.message.toLowerCase().includes('contact not found')
+    ) {
       throw createError(404);
     } else throw err;
   }
@@ -43,7 +36,7 @@ contactsRouter.put('/:contactId/connectToCase', publicEndpoint, async (req, res)
 
 contactsRouter.post('/search', publicEndpoint, async (req, res) => {
   const { accountSid } = req;
-  const searchResults = await ContactController.searchContacts(req.body, req.query, accountSid);
+  const searchResults = await searchContacts(accountSid, req.body, req.query);
   res.json(searchResults);
 });
 
