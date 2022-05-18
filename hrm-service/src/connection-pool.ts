@@ -5,5 +5,7 @@ export const pgp = pgPromise({});
 
 const config = configSet.default;
 export const db = pgp(
-  `postgres://${config.username}:${config.password}@${config.host}:${config.port}/${config.database}?&application_name=hrm-service`,
+  `postgres://${encodeURIComponent(config.username)}:${encodeURIComponent(config.password)}@${
+    config.host
+  }:${config.port}/${encodeURIComponent(config.database)}?&application_name=hrm-service`,
 );
