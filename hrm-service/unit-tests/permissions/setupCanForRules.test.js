@@ -9,7 +9,7 @@ const { setupCanForRules } = require('../../src/permissions/setupCanForRules');
 const { actionsMaps } = require('../../src/permissions/actions');
 import { User } from '../../src/permissions';
 
-const { Case, PostSurvey } = models;
+const { Case, PostSurvey, Contact } = models;
 
 const accountSid = 'account-sid';
 const helpline = 'helpline';
@@ -24,6 +24,8 @@ describe('Test that all actions work fine (everyone)', () => {
   const rules = buildRules([['everyone']]);
   const can = setupCanForRules(rules);
 
+  const notCreator = new User('not creator', []);
+
   // Test Case permissions
   each(
     Object.values(actionsMaps.case).map(action => ({
@@ -36,12 +38,28 @@ describe('Test that all actions work fine (everyone)', () => {
         createdBy: workerSid,
         accountSid,
       },
-      user: new User('not creator', []),
+      user: notCreator,
     })),
   ).test('Action $action should return true', async ({ action, caseToBeCreated, user }) => {
     const createdCase = new Case();
     createdCase.dataValues = caseToBeCreated;
     expect(can(user, action, createdCase)).toBeTruthy();
+  });
+
+  // Test Contact permissions
+  each(
+    Object.values(actionsMaps.contact).map(action => ({
+      action,
+      contactToBeCreated: {
+        accountSid,
+        twilioWorkerId: 'creator',
+      },
+      user: notCreator,
+    })),
+  ).test('Action $action should return true', async ({ action, contactToBeCreated, user }) => {
+    const createdContact = new Contact();
+    createdContact.dataValues = contactToBeCreated;
+    expect(can(user, action, createdContact)).toBeTruthy();
   });
 
   // Test PostSurvey permissions
@@ -54,7 +72,7 @@ describe('Test that all actions work fine (everyone)', () => {
         contactTaskId: 'contact-task-id',
         data: {},
       },
-      user: new User('not creator', []),
+      user: notCreator,
     })),
   ).test('Action $action should return true', async ({ action, postSurveyToBeCreated, user }) => {
     const createdPostSurvey = new PostSurvey();
@@ -67,6 +85,8 @@ describe('Test that all actions work fine (no one)', () => {
   const rules = buildRules([]);
   const can = setupCanForRules(rules);
 
+  const supervisor = new User('creator', ['supervisor']);
+
   // Test Case permissions
   each(
     Object.values(actionsMaps.case).map(action => ({
@@ -79,12 +99,28 @@ describe('Test that all actions work fine (no one)', () => {
         createdBy: workerSid,
         accountSid,
       },
-      user: new User('creator', ['supervisor']),
+      user: supervisor,
     })),
   ).test('Action $action should return false', async ({ action, caseToBeCreated, user }) => {
     const createdCase = new Case();
     createdCase.dataValues = caseToBeCreated;
     expect(can(user, action, createdCase)).toBeFalsy();
+  });
+
+  // Test Contact permissions
+  each(
+    Object.values(actionsMaps.contact).map(action => ({
+      action,
+      contactToBeCreated: {
+        accountSid,
+        twilioWorkerId: 'creator',
+      },
+      user: supervisor,
+    })),
+  ).test('Action $action should return true', async ({ action, contactToBeCreated, user }) => {
+    const createdContact = new Contact();
+    createdContact.dataValues = contactToBeCreated;
+    expect(can(user, action, createdContact)).toBeFalsy();
   });
 
   // Test PostSurvey permissions
@@ -97,7 +133,7 @@ describe('Test that all actions work fine (no one)', () => {
         contactTaskId: 'contact-task-id',
         data: {},
       },
-      user: new User('creator', ['supervisor']),
+      user: supervisor,
     })),
   ).test('Action $action should return false', async ({ action, postSurveyToBeCreated, user }) => {
     const createdPostSurvey = new PostSurvey();
@@ -115,6 +151,8 @@ describe('Test that an empty set of conditions does not grants permissions', () 
   const rules = buildRules([[]]);
   const can = setupCanForRules(rules);
 
+  const supervisor = new User('creator', ['supervisor']);
+
   // Test Case permissions
   each(
     Object.values(actionsMaps.case).map(action => ({
@@ -127,12 +165,28 @@ describe('Test that an empty set of conditions does not grants permissions', () 
         createdBy: workerSid,
         accountSid,
       },
-      user: new User('creator', ['supervisor']),
+      user: supervisor,
     })),
   ).test('Action $action should return false', async ({ action, caseToBeCreated, user }) => {
     const createdCase = new Case();
     createdCase.dataValues = caseToBeCreated;
     expect(can(user, action, createdCase)).toBeFalsy();
+  });
+
+  // Test Contact permissions
+  each(
+    Object.values(actionsMaps.contact).map(action => ({
+      action,
+      contactToBeCreated: {
+        accountSid,
+        twilioWorkerId: 'creator',
+      },
+      user: supervisor,
+    })),
+  ).test('Action $action should return true', async ({ action, contactToBeCreated, user }) => {
+    const createdContact = new Contact();
+    createdContact.dataValues = contactToBeCreated;
+    expect(can(user, action, createdContact)).toBeFalsy();
   });
 
   // Test PostSurvey permissions
@@ -145,7 +199,7 @@ describe('Test that an empty set of conditions does not grants permissions', () 
         contactTaskId: 'contact-task-id',
         data: {},
       },
-      user: new User('creator', ['supervisor']),
+      user: supervisor,
     })),
   ).test('Action $action should return false', async ({ action, postSurveyToBeCreated, user }) => {
     const createdPostSurvey = new PostSurvey();
@@ -302,6 +356,88 @@ describe('Test different scenarios (Case)', () => {
           const createdCase = new Case();
           createdCase.dataValues = caseToBeCreated;
           expect(can(user, action, createdCase)).toBe(expectedResult);
+        }),
+      );
+    },
+  );
+});
+
+// Test Contact permissions
+describe('Test different scenarios (Contact)', () => {
+  each(
+    [
+      {
+        conditionsSets: [['everyone']],
+        expectedResult: true,
+        expectedDescription: 'not supervisor',
+        contactToBeCreated: {
+          accountSid,
+          twilioWorkerId: 'creator',
+        },
+        user: new User('not creator', []),
+      },
+      {
+        conditionsSets: [],
+        expectedResult: false,
+        expectedDescription: 'is owner',
+        contactToBeCreated: {
+          accountSid,
+          twilioWorkerId: 'creator',
+        },
+        user: new User('creator', []),
+      },
+      {
+        conditionsSets: [],
+        expectedResult: false,
+        expectedDescription: 'is supervisor',
+        contactToBeCreated: {
+          accountSid,
+          twilioWorkerId: 'creator',
+        },
+        user: new User('not creator', ['supervisor']),
+      },
+      {
+        conditionsSets: [['isSupervisor']],
+        expectedResult: true,
+        expectedDescription: 'is supervisor',
+        contactToBeCreated: {
+          accountSid,
+          twilioWorkerId: 'creator',
+        },
+        user: new User('not creator', ['supervisor']),
+      },
+      {
+        conditionsSets: [['isOwner']],
+        expectedResult: true,
+        expectedDescription: 'is owner',
+        contactToBeCreated: {
+          accountSid,
+          twilioWorkerId: 'creator',
+        },
+        user: new User('creator', []),
+      },
+      {
+        conditionsSets: [['isOwner']],
+        expectedResult: false,
+        expectedDescription: 'is not owner',
+        contactToBeCreated: {
+          accountSid,
+          twilioWorkerId: 'creator',
+        },
+        user: new User('not creator', []),
+      },
+    ].map(addPrettyConditionsSets),
+  ).describe(
+    'Expect $expectedResult when $expectedDescription with $prettyConditionsSets',
+    ({ conditionsSets, contactToBeCreated, user, expectedResult }) => {
+      const rules = buildRules(conditionsSets);
+      const can = setupCanForRules(rules);
+
+      Object.values(actionsMaps.contact).forEach(action =>
+        test(`${action}`, async () => {
+          const createdContact = new Contact();
+          createdContact.dataValues = contactToBeCreated;
+          expect(can(user, action, createdContact)).toBe(expectedResult);
         }),
       );
     },
