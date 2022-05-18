@@ -24,6 +24,8 @@ import { User } from './user';
 const setupAllow = (targetKind: string, conditionsSets: ConditionsSets) => {
   if (!isTargetKind(targetKind)) throw new Error(`Invalid target kind ${targetKind} provided to setupAllow`);
 
+  // We could do type validation on target depending on targetKind if we ever want to make sure the "allow" is called on a proper target (same as cancan used to do)
+
   return (performer: User, target: any) => {
     // Build the proper conditionsState depending on the targetKind
     let conditionsState = null;

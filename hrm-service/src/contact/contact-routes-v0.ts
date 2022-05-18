@@ -1,6 +1,8 @@
 import { SafeRouter, publicEndpoint, canEditContact } from '../permissions';
 import createError from 'http-errors';
 import { patchContact, connectContactToCase, searchContacts, createContact } from './contact';
+// eslint-disable-next-line prettier/prettier
+import type { Request, Response, NextFunction } from 'express';
 
 const contactsRouter = SafeRouter();
 
@@ -40,12 +42,17 @@ contactsRouter.post('/search', publicEndpoint, async (req, res) => {
   res.json(searchResults);
 });
 
-contactsRouter.patch('/:contactId', canEditContact, async (req, res) => {
-  const { accountSid, user } = req;
-  const { contactId } = req.params;
+const validatePatchPayload = (req: Request, res: Response, next: NextFunction) => {
   if (!req.body || !req.body.rawJson) {
     throw createError(400);
   }
+
+  next();
+};
+
+contactsRouter.patch('/:contactId', validatePatchPayload, canEditContact, async (req, res) => {
+  const { accountSid, user } = req;
+  const { contactId } = req.params;
   try {
     const contact = await patchContact(accountSid, user.workerSid, contactId, req.body);
     res.json(contact);
