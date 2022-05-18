@@ -50,7 +50,6 @@ export const insertContactSql = (
         FROM inserted AS c
         LEFT JOIN LATERAL (
           SELECT COALESCE(jsonb_agg(to_jsonb(r)), '[]') AS "csamReports" 
-          FROM csamConnect r 
-          WHERE r."contactId" = c.id AND r."accountSid" = c."accountSid"
+          FROM csamConnect r
         ) reports ON true
 `;
