@@ -2,39 +2,35 @@ import CanCan from 'cancan';
 import { isCounselorWhoCreated, isSupervisor, isCaseOpen } from './helpers';
 import { actionsMaps } from './actions';
 import { User } from './user';
-const models = require('../models');
+import models from '../models';
+// eslint-disable-next-line prettier/prettier
+import type { Condition, ConditionsSet, ConditionsSets, RulesFile } from './rulesMap' ;
 
 const { Case, PostSurvey } = models;
 
 /**
  * Given a conditionsState and a condition, returns true if the condition is true in the conditionsState
- * @param {{ [condition in 'isSupervisor' | 'isCreator' | 'isCaseOpen' | 'everyone']: boolean }} conditionsState
- * @returns {(condition: 'isSupervisor' | 'isCreator' | 'isCaseOpen' | 'everyone') => boolean}
  */
-const checkCondition = conditionsState => condition => conditionsState[condition];
+ const checkCondition = (conditionsState: { [condition in Condition]: boolean }) => (condition: Condition): boolean => conditionsState[condition];
 
 /**
  * Given a conditionsState and a set of conditions, returns true if all the conditions are true in the conditionsState
- * @param {{ [condition in 'isSupervisor' | 'isCreator' | 'isCaseOpen' | 'everyone']: boolean }} conditionsState
- * @returns {(conditionsSet: 'isSupervisor' | 'isCreator' | 'isCaseOpen' | 'everyone'[]) => boolean}
  */
-const checkConditionsSet = conditionsState => conditionsSet =>
-  conditionsSet.length > 0 && conditionsSet.every(checkCondition(conditionsState));
+ const checkConditionsSet = (conditionsState: { [condition in Condition]: boolean }) => (conditionsSet: ConditionsSet): boolean =>
+ conditionsSet.length > 0 && conditionsSet.every(checkCondition(conditionsState));
 
 /**
  * Given a conditionsState and a set of conditions sets, returns true if one of the conditions sets contains conditions that are all true in the conditionsState
- * @param {{ [condition in 'isSupervisor' | 'isCreator' | 'isCaseOpen' | 'everyone']: boolean }} conditionsState
- * @param {'isSupervisor' | 'isCreator' | 'isCaseOpen' | 'everyone'[][]} conditionsSets
  */
-const checkConditionsSets = (conditionsState, conditionsSets) =>
-  conditionsSets.some(checkConditionsSet(conditionsState));
+ const checkConditionsSets = (conditionsState: { [condition in Condition]: boolean }, conditionsSets: ConditionsSets): boolean =>
+ conditionsSets.some(checkConditionsSet(conditionsState));
 
-const bindSetupAllow = allow => (
-  performerModel,
-  action,
-  targetModel,
-  targetKind,
-  conditionsSets,
+ const bindSetupAllow = (allow: CanCan['allow']) => (
+  performerModel: any,
+  action: string,
+  targetModel: any,
+  targetKind: string,
+  conditionsSets: ConditionsSets,
 ) => {
   allow(performerModel, action, targetModel, (performer, target) => {
     // Build the proper conditionsState depending on the targetKind
@@ -57,15 +53,7 @@ const bindSetupAllow = allow => (
   });
 };
 
-export const setupCanForRules = rules => {
-  const rulesAreValid = Object.values(actionsMaps).every(map =>
-    Object.values(map).every(action => rules[action]),
-  );
-
-  if (!rulesAreValid) {
-    return 'Rules file incomplete.';
-  }
-
+export const setupCanForRules = (rules: RulesFile) => {
   const cancan = new CanCan();
   const { can, allow } = cancan;
   const setupAllow = bindSetupAllow(allow);

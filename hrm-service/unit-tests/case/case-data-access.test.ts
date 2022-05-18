@@ -72,6 +72,7 @@ describe('createCase', () => {
       },
       caseSections: [
         {
+          accountSid: '',
           sectionType: 'note',
           sectionId: 'NOTE_1',
           createdBy: 'contact-adder',

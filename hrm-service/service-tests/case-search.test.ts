@@ -898,18 +898,14 @@ describe('/cases route', () => {
                 expectedTotalCount,
               );
             } finally {
-              await Promise.all([
-                db.none(`DELETE FROM "Cases" WHERE id IN ($<ids:csv>)`, {
-                  ids: createdCasesAndContacts.map(ccc => ccc.case.id),
-                }),
-                Contact.destroy({
-                  where: {
-                    id: createdCasesAndContacts
-                      .filter(ccc => ccc.contact)
-                      .map(ccc => ccc.contact.id),
-                  },
-                }),
-              ]);
+              await Contact.destroy({
+                where: {
+                  id: createdCasesAndContacts.filter(ccc => ccc.contact).map(ccc => ccc.contact.id),
+                },
+              });
+              await db.none(`DELETE FROM "Cases" WHERE id IN ($<ids:csv>)`, {
+                ids: createdCasesAndContacts.map(ccc => ccc.case.id),
+              });
             }
           },
         );
