@@ -22,7 +22,7 @@
 # 4. Store an IAM user access key in GitHub Actions secrets named `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`.
 #    See the documentation for each action used below for the recommended IAM policies for this IAM user,
 #    and best practices on handling the access key credentials.
-name: Deploy HRM to Amazon ECS - eu-west-1
+name: Deploy HRM to Amazon ECS - Multi Region
 on:
 #  release:
 #    types: [created]
@@ -33,9 +33,13 @@ on:
         description: HRM environment to deploy. E.G = development, staging, production (must match with the AWS environment value). Default value = development
         default: development
         required: true
+      region:
+        description: AWS region to deploy. E.G = us-east-1, eu-west-1 (must match with the AWS environment value). Default value = us-east-1
+        default: development
+        required: true
 
 env:
-  AWS_DEFAULT_REGION: eu-west-1
+  AWS_DEFAULT_REGION: ${{ github.event.inputs.region }}
   GITHUB_SHA: ${{ github.sha }}
 
 jobs:
@@ -50,9 +54,9 @@ jobs:
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v1
       with:
-        aws-access-key-id: ${{ secrets.TEMP_EU_AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.TEMP_EU_AWS_SECRET_ACCESS_KEY }}
-        aws-region: eu-west-1
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ github.event.inputs.region }}
 
     - name: Login to Amazon ECR
       id: login-ecr
@@ -99,7 +103,7 @@ jobs:
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: us-east-1
+        aws-region: ${{ github.event.inputs.region }}
     # Set any env vars needed from Parameter Store here
     - name: Set GITHUB_ACTIONS_SLACK_BOT_TOKEN
       uses: "marvinpinto/action-inject-ssm-secrets@latest"
