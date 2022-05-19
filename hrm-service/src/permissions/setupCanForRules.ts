@@ -54,11 +54,17 @@ const setupAllow = (targetKind: string, conditionsSets: ConditionsSets) => {
 };
 
 export const setupCanForRules = (rules: RulesFile) => {
-  const actionCheckers = Object.entries(actionsMaps).reduce<Record<Actions, ReturnType<typeof setupAllow>>>(
-    (outerAccum, [targetKind, actions]) => 
-      Object.entries(actions).reduce((innerAccum, [, action]) => ({ ...innerAccum, [action]: setupAllow(targetKind, rules[action]) }), outerAccum)
-    , null);
+  const actionCheckers = {} as { [action in Actions]: ReturnType<typeof setupAllow> };
 
-  return (performer: User, action: Actions, target: any): boolean =>
+  const targetKinds = Object.keys(actionsMaps);
+  targetKinds.forEach((targetKind: string) => {
+    if (!isTargetKind(targetKind)) throw new Error(`Invalid target kind ${targetKind} found in setupCanForRules`);
+
+    const actionsForTK = Object.values(actionsMaps[targetKind]);
+    actionsForTK.forEach((action) => actionCheckers[action] = setupAllow(targetKind, rules[action]));
+  });
+
+
+  return (performer: User, action: Actions, target: any) =>
     actionCheckers[action](performer, target);
 };
