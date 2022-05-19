@@ -1,6 +1,8 @@
-import { SafeRouter, publicEndpoint, canEditContact } from '../permissions';
+import { SafeRouter, publicEndpoint, actionsMaps } from '../permissions';
 import createError from 'http-errors';
 import { patchContact, connectContactToCase, searchContacts, createContact } from './contact';
+import { asyncHandler } from '../utils';
+import { getById } from '../contact/contact-data-access';
 // eslint-disable-next-line prettier/prettier
 import type { Request, Response, NextFunction } from 'express';
 
@@ -49,6 +51,26 @@ const validatePatchPayload = (req: Request, res: Response, next: NextFunction) =
 
   next();
 };
+
+const canEditContact = asyncHandler(async (req, res, next) => {
+  if (!req.isAuthorized()) {
+    const { accountSid, user, can } = req;
+    const { contactId } = req.params;
+
+    const contactObj = await getById(accountSid, contactId);
+
+    if (!contactObj) throw createError(404);
+
+    if (can(user, actionsMaps.contact.EDIT_CONTACT, contactObj)) {
+      req.authorize();
+    } else {
+      req.unauthorize();
+    }
+  }
+
+  next();
+});
+
 
 contactsRouter.patch('/:contactId', validatePatchPayload, canEditContact, async (req, res) => {
   const { accountSid, user } = req;

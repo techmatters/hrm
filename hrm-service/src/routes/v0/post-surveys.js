@@ -1,5 +1,5 @@
 const models = require('../../models');
-const { SafeRouter, publicEndpoint, canViewPostSurvey } = require('../../permissions');
+const { SafeRouter, publicEndpoint, actionsMaps } = require('../../permissions');
 
 const { PostSurvey } = models;
 const PostSurveyController = require('../../controllers/post-survey-controller')(PostSurvey);
@@ -15,6 +15,21 @@ postSurveysRouter.post('/', publicEndpoint, async (
   const createdPostSurvey = await PostSurveyController.createPostSurvey(req.body, accountSid);
   res.json(createdPostSurvey);
 });
+
+const canViewPostSurvey = (req, res, next) => {
+  if (!req.isAuthorized()) {
+    const { user, can } = req;
+
+    // Nothing from the target param is being used for postSurvey target kind, we can pass null for now
+    if (can(user, actionsMaps.postSurvey.VIEW_POST_SURVEY, null)) {
+      req.authorize();
+    } else {
+      req.unauthorize();
+    }
+  }
+
+  next();
+};
 
 postSurveysRouter.get('/contactTaskId/:id', canViewPostSurvey, async (
   /** @type {import('express').Request} */ req,
