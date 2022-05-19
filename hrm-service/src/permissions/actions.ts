@@ -21,6 +21,9 @@ export const actionsMaps = {
     EDIT_CHILD_IS_AT_RISK: 'editChildIsAtRisk',
     EDIT_FOLLOW_UP_DATE: 'editFollowUpDate',
   },
+  contact: {
+    EDIT_CONTACT: 'editContact',
+  },
   postSurvey: {
     VIEW_POST_SURVEY: 'viewPostSurvey',
   },

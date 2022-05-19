@@ -1,12 +1,12 @@
 import CanCan from 'cancan';
-import { isCounselorWhoCreated, isSupervisor, isCaseOpen } from './helpers';
+import { isCounselorWhoCreated, isSupervisor, isCaseOpen, isContactOwner } from './helpers';
 import { actionsMaps } from './actions';
 import { User } from './user';
 import models from '../models';
 // eslint-disable-next-line prettier/prettier
 import type { Condition, ConditionsSet, ConditionsSets, RulesFile } from './rulesMap' ;
 
-const { Case, PostSurvey } = models;
+const { Case, Contact, PostSurvey } = models;
 
 /**
  * Given a conditionsState and a condition, returns true if the condition is true in the conditionsState
@@ -42,6 +42,12 @@ const { Case, PostSurvey } = models;
         isCaseOpen: isCaseOpen(target),
         everyone: true,
       };
+    } else if (targetKind === 'contact') {
+      conditionsState = {
+        isSupervisor: isSupervisor(performer),
+        isOwner: isContactOwner(performer, target),
+        everyone: true,
+      };
     } else if (targetKind === 'postSurvey') {
       conditionsState = {
         isSupervisor: isSupervisor(performer),
@@ -61,6 +67,11 @@ export const setupCanForRules = (rules: RulesFile) => {
   // Configure Case permissions
   Object.values(actionsMaps.case).forEach(action =>
     setupAllow(User, action, Case, 'case', rules[action]),
+  );
+
+  // Configure Contact permissions
+  Object.values(actionsMaps.contact).forEach(action =>
+    setupAllow(User, action, Contact, 'contact', rules[action]),
   );
 
   // Configure PostSurvey permissions

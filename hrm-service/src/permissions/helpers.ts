@@ -6,3 +6,6 @@ export const isCounselorWhoCreated = (user: User, caseObj: any) =>
   user.workerSid === caseObj.dataValues.twilioWorkerId;
 
 export const isCaseOpen = (caseObj: any) => caseObj.dataValues.status !== 'closed';
+
+export const isContactOwner = (user: User, contactObj: any) =>
+  user.workerSid === contactObj.dataValues.twilioWorkerId;

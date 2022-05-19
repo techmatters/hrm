@@ -1,4 +1,4 @@
-import { SafeRouter, publicEndpoint } from '../permissions';
+import { SafeRouter, publicEndpoint, canEditContact } from '../permissions';
 import createError from 'http-errors';
 import { patchContact, connectContactToCase, searchContacts, createContact } from './contact';
 
@@ -40,7 +40,7 @@ contactsRouter.post('/search', publicEndpoint, async (req, res) => {
   res.json(searchResults);
 });
 
-contactsRouter.patch('/:contactId', publicEndpoint, async (req, res) => {
+contactsRouter.patch('/:contactId', canEditContact, async (req, res) => {
   const { accountSid, user } = req;
   const { contactId } = req.params;
   if (!req.body || !req.body.rawJson) {

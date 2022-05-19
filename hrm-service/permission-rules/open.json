@@ -17,5 +17,6 @@
   "editCaseSummary": [["everyone"]],
   "editChildIsAtRisk": [["everyone"]],
   "editFollowUpDate": [["everyone"]],
+  "editContact": [["everyone"]],
   "viewPostSurvey": [["everyone"]]
 }
