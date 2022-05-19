@@ -4,7 +4,7 @@
   "description": "",
   "scripts": {
     "build": "npx tsc",
-    "start": "node ./service-tests/db-init/migrate && cd ./dist && node ./src/bin/www",
+    "start": "node ./service-tests/db-init/migrate && cd ./dist && node ./bin/www",
     "build-and-start": "npm run build && npm run start",
     "test": "jest --passWithNoTests --forceExit --maxWorkers=1",
     "test:unit": "jest unit-tests",
