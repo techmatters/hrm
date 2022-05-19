@@ -22,7 +22,7 @@
 # 4. Store an IAM user access key in GitHub Actions secrets named `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`.
 #    See the documentation for each action used below for the recommended IAM policies for this IAM user,
 #    and best practices on handling the access key credentials.
-name: Deploy HRM to Amazon ECS - Multi Region
+name: \[Multi Region\] Deploy HRM to Amazon ECS
 on:
 #  release:
 #    types: [created]
@@ -35,7 +35,7 @@ on:
         required: true
       region:
         description: AWS region to deploy. E.G = us-east-1, eu-west-1 (must match with the AWS environment value). Default value = us-east-1
-        default: development
+        default: us-east-1
         required: true
 
 env:
@@ -103,7 +103,7 @@ jobs:
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ github.event.inputs.region }}
+        aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
     # Set any env vars needed from Parameter Store here
     - name: Set GITHUB_ACTIONS_SLACK_BOT_TOKEN
       uses: "marvinpinto/action-inject-ssm-secrets@latest"
@@ -122,6 +122,6 @@ jobs:
       uses: slackapi/slack-github-action@v1.14.0
       with:
         channel-id: ${{ env.ASELO_DEPLOYS_CHANNEL_ID }}
-        slack-message: "`[HRM]` Action ${{ github.workflow }} completed with SHA ${{ github.sha }} to environment `${{ github.event.inputs.environment }}` :rocket:."
+        slack-message: "`[HRM]` Action ${{ github.workflow }} completed with SHA ${{ github.sha }} to region `${{ github.event.inputs.region }}`, environment `${{ github.event.inputs.environment }}` :rocket:."
       env:
         SLACK_BOT_TOKEN: ${{ env.GITHUB_ACTIONS_SLACK_BOT_TOKEN }}
