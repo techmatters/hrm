@@ -9,6 +9,7 @@ import {
   selectCaseAudits,
   without,
 } from './case-validation';
+import { isBefore } from 'date-fns';
 
 const supertest = require('supertest');
 const each = require('jest-each').default;
@@ -505,6 +506,8 @@ describe('/cases route', () => {
             update.info = { ...originalCase.info, ...caseUpdate.info, ...infoUpdate };
           }
 
+          const caseBeforeUpdate = await caseApi.getCase(originalCase.id, accountSid);
+
           const response = await request
             .put(subRoute(originalCase.id))
             .set({ ...headers, ...(customWorkerSid && { 'test-user': customWorkerSid }) })
@@ -524,6 +527,15 @@ describe('/cases route', () => {
           // Check the DB is actually updated
           const fromDb = await caseApi.getCase(originalCase.id, accountSid);
           expect(fromDb).toMatchObject(expected);
+
+          // Check that in each case, createdAt is not changed
+          expect(fromDb.createdAt).toStrictEqual(caseBeforeUpdate.createdAt);
+          // Check that in each case, updatedAt is greater than createdAt
+          expect(isBefore(new Date(fromDb.createdAt), new Date(fromDb.updatedAt))).toBe(true);
+          // Check that in each case, updatedAt is greater it was before
+          expect(isBefore(new Date(caseBeforeUpdate.updatedAt), new Date(fromDb.updatedAt))).toBe(
+            true,
+          );
 
           // Check change is audited
           const caseAudits = await selectCaseAudits(workerSid);
