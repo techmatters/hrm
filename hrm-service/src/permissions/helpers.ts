@@ -3,9 +3,9 @@ import { User } from './index';
 export const isSupervisor = (user: User) => user.roles.includes('supervisor');
 
 export const isCounselorWhoCreated = (user: User, caseObj: any) =>
-  user.workerSid === caseObj.dataValues.twilioWorkerId;
+  user.workerSid === caseObj.twilioWorkerId;
 
-export const isCaseOpen = (caseObj: any) => caseObj.dataValues.status !== 'closed';
+export const isCaseOpen = (caseObj: any) => caseObj.status !== 'closed';
 
 export const isContactOwner = (user: User, contactObj: any) =>
-  user.workerSid === contactObj.dataValues.twilioWorkerId;
+  user.workerSid === contactObj.twilioWorkerId;

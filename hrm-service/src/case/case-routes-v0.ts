@@ -2,7 +2,11 @@ import createError from 'http-errors';
 import * as casesDb from './case-data-access';
 import * as caseApi from './case';
 import { getCaseActivities } from './activities';
-import { SafeRouter, publicEndpoint, canEditCase } from '../permissions';
+import { SafeRouter, publicEndpoint } from '../permissions';
+import { getActions } from '../permissions';
+import { asyncHandler } from '../utils';
+import { getById } from '../case/case-data-access';
+
 const casesRouter = SafeRouter();
 
 casesRouter.get('/', publicEndpoint, async (req, res) => {
@@ -21,6 +25,31 @@ casesRouter.post('/', publicEndpoint, async (req, res) => {
   const createdCase = await caseApi.createCase(req.body, accountSid, user.workerSid);
 
   res.json(createdCase);
+});
+
+/**
+ * It checks if the user can edit the case based on the fields it's trying to edit
+ * according to the defined permission rules.
+ */
+const canEditCase = asyncHandler(async (req, res, next) => {
+  if (!req.isAuthorized()) {
+    const { accountSid, body, user, can } = req;
+    const { id } = req.params;
+    const caseObj = await getById(id, accountSid);
+
+    if (!caseObj) throw createError(404);
+
+    const actions = getActions(caseObj, body);
+    const canEdit = actions.every(action => can(user, action, caseObj));
+
+    if (canEdit) {
+      req.authorize();
+    } else {
+      req.unauthorize();
+    }
+  }
+
+  next();
 });
 
 casesRouter.put('/:id', canEditCase, async (req, res) => {

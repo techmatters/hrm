@@ -1,12 +1,8 @@
-import CanCan from 'cancan';
 import { isCounselorWhoCreated, isSupervisor, isCaseOpen, isContactOwner } from './helpers';
-import { actionsMaps } from './actions';
-import { User } from './user';
-import models from '../models';
+import { actionsMaps, Actions, isTargetKind } from './actions';
 // eslint-disable-next-line prettier/prettier
 import type { Condition, ConditionsSet, ConditionsSets, RulesFile } from './rulesMap' ;
-
-const { Case, Contact, PostSurvey } = models;
+import { User } from './user';
 
 /**
  * Given a conditionsState and a condition, returns true if the condition is true in the conditionsState
@@ -25,14 +21,12 @@ const { Case, Contact, PostSurvey } = models;
  const checkConditionsSets = (conditionsState: { [condition in Condition]: boolean }, conditionsSets: ConditionsSets): boolean =>
  conditionsSets.some(checkConditionsSet(conditionsState));
 
- const bindSetupAllow = (allow: CanCan['allow']) => (
-  performerModel: any,
-  action: string,
-  targetModel: any,
-  targetKind: string,
-  conditionsSets: ConditionsSets,
-) => {
-  allow(performerModel, action, targetModel, (performer, target) => {
+const setupAllow = (targetKind: string, conditionsSets: ConditionsSets) => {
+  if (!isTargetKind(targetKind)) throw new Error(`Invalid target kind ${targetKind} provided to setupAllow`);
+
+  // We could do type validation on target depending on targetKind if we ever want to make sure the "allow" is called on a proper target (same as cancan used to do)
+
+  return (performer: User, target: any) => {
     // Build the proper conditionsState depending on the targetKind
     let conditionsState = null;
     if (targetKind === 'case') {
@@ -56,28 +50,21 @@ const { Case, Contact, PostSurvey } = models;
     }
 
     return checkConditionsSets(conditionsState, conditionsSets);
-  });
+  };
 };
 
 export const setupCanForRules = (rules: RulesFile) => {
-  const cancan = new CanCan();
-  const { can, allow } = cancan;
-  const setupAllow = bindSetupAllow(allow);
+  const actionCheckers = {} as { [action in Actions]: ReturnType<typeof setupAllow> };
 
-  // Configure Case permissions
-  Object.values(actionsMaps.case).forEach(action =>
-    setupAllow(User, action, Case, 'case', rules[action]),
-  );
+  const targetKinds = Object.keys(actionsMaps);
+  targetKinds.forEach((targetKind: string) => {
+    if (!isTargetKind(targetKind)) throw new Error(`Invalid target kind ${targetKind} found in setupCanForRules`);
 
-  // Configure Contact permissions
-  Object.values(actionsMaps.contact).forEach(action =>
-    setupAllow(User, action, Contact, 'contact', rules[action]),
-  );
+    const actionsForTK = Object.values(actionsMaps[targetKind]);
+    actionsForTK.forEach((action) => actionCheckers[action] = setupAllow(targetKind, rules[action]));
+  });
 
-  // Configure PostSurvey permissions
-  Object.values(actionsMaps.postSurvey).forEach(action =>
-    setupAllow(User, action, PostSurvey, 'postSurvey', rules[action]),
-  );
 
-  return can;
+  return (performer: User, action: Actions, target: any) =>
+    actionCheckers[action](performer, target);
 };

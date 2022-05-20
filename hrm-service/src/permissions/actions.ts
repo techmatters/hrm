@@ -29,6 +29,9 @@ export const actionsMaps = {
   },
 } as const;
 
+export type TargetKind = keyof typeof actionsMaps;
+export const isTargetKind = (s: string): s is TargetKind => Boolean(actionsMaps[s]);
+
 /**
  * Utility type that given an object with any nesting depth, will return the union of all the leaves that are of type "string"
  */
