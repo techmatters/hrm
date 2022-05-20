@@ -297,8 +297,11 @@ export const updateCase = async (id, body: Partial<Case>, accountSid, workerSid)
   if (!caseFromDB) {
     return;
   }
+
+  const nowISO = new Date().toISOString();
+
   const record = caseToCaseRecord(
-    { ...body, updatedBy: workerSid, id, accountSid },
+    { ...body, updatedBy: workerSid, updatedAt: nowISO, id, accountSid },
     workerSid,
     caseRecordToCase(caseFromDB),
   );
