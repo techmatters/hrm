@@ -3,6 +3,7 @@ import * as caseApi from '../../src/case/case';
 import { createMockCase, createMockCaseRecord } from './mock-cases';
 import each from 'jest-each';
 import { CaseRecord, NewCaseRecord } from '../../src/case/case-data-access';
+import '../../service-tests/case-validation';
 
 jest.mock('../../src/case/case-data-access');
 const accountSid = 'account-sid';
@@ -315,7 +316,7 @@ describe('update existing case', () => {
           {
             caseId: 1,
             createdBy: 'contact-updater',
-            createdAt: expect.anything(),
+            createdAt: expect.toParseAsDate(),
             sectionId: expect.anything(),
             sectionType: 'note',
             sectionTypeSpecificData: {
@@ -337,7 +338,7 @@ describe('update existing case', () => {
               custom: 'data',
               twilioWorkerId: 'contact-updater',
               id: expect.anything(),
-              createdAt: expect.anything(),
+              createdAt: expect.toParseAsDate(),
             },
           ],
           notes: ['Refugee Child'],
@@ -349,7 +350,7 @@ describe('update existing case', () => {
           {
             caseId: 1,
             createdBy: 'contact-updater',
-            createdAt: expect.anything(),
+            createdAt: expect.toParseAsDate(),
             updatedAt: undefined,
             updatedBy: undefined,
             sectionId: expect.anything(),
@@ -368,6 +369,7 @@ describe('update existing case', () => {
           ],
         },
         updatedBy: workerSid,
+        updatedAt: expect.toParseAsDate(),
       },
     },
     {
@@ -432,7 +434,7 @@ describe('update existing case', () => {
               id: 'EXISTING SECTION ID',
               createdAt: baselineDate,
             },
-            { note: 'Refugee Child', twilioWorkerId: workerSid, createdAt: expect.anything() },
+            { note: 'Refugee Child', twilioWorkerId: workerSid, createdAt: expect.toParseAsDate() },
           ],
         },
         caseSections: [
@@ -455,7 +457,7 @@ describe('update existing case', () => {
             caseId: 1,
             sectionType: 'note',
             createdBy: workerSid,
-            createdAt: expect.anything(),
+            createdAt: expect.toParseAsDate(),
             updatedAt: undefined,
             updatedBy: undefined,
             sectionId: expect.anything(),
@@ -465,6 +467,7 @@ describe('update existing case', () => {
           },
         ],
         updatedBy: workerSid,
+        updatedAt: expect.toParseAsDate(),
       },
       expectedResponse: createMockCase({
         accountSid,
@@ -480,7 +483,7 @@ describe('update existing case', () => {
               id: 'NOTE_2',
               note: 'Refugee Child',
               twilioWorkerId: workerSid,
-              createdAt: expect.anything(),
+              createdAt: expect.toParseAsDate(),
             },
           ],
           notes: ['Child with covid-19', 'Refugee Child'],
@@ -577,7 +580,7 @@ describe('update existing case', () => {
             caseId: 1,
             sectionType: 'referral',
             createdBy: workerSid,
-            createdAt: expect.anything(),
+            createdAt: expect.toParseAsDate(),
             updatedAt: undefined,
             updatedBy: undefined,
             sectionId: expect.anything(),
@@ -602,12 +605,13 @@ describe('update existing case', () => {
               date: '2020-10-16',
               referredTo: 'State Agency 2',
               comments: 'comment',
-              createdAt: expect.anything(),
+              createdAt: expect.toParseAsDate(),
               twilioWorkerId: workerSid,
             },
           ],
         },
         updatedBy: workerSid,
+        updatedAt: expect.toParseAsDate(),
       },
       expectedResponse: createMockCase({
         info: {
@@ -625,7 +629,7 @@ describe('update existing case', () => {
               date: '2020-10-16',
               referredTo: 'State Agency 2',
               comments: 'comment',
-              createdAt: expect.anything(),
+              createdAt: expect.toParseAsDate(),
               twilioWorkerId: workerSid,
             },
           ],
@@ -723,7 +727,7 @@ describe('update existing case', () => {
             caseId: 1,
             sectionType: 'referral',
             createdBy: workerSid,
-            createdAt: expect.anything(),
+            createdAt: expect.toParseAsDate(),
             updatedAt: undefined,
             updatedBy: undefined,
             sectionId: expect.anything(),
@@ -749,13 +753,14 @@ describe('update existing case', () => {
               date: '2020-10-16',
               referredTo: 'State Agency 2',
               comments: 'comment',
-              createdAt: expect.anything(),
+              createdAt: expect.toParseAsDate(),
               twilioWorkerId: workerSid,
               anotherProperty: 'anotherValue',
             },
           ],
         },
         updatedBy: workerSid,
+        updatedAt: expect.toParseAsDate(),
       },
       expectedResponse: createMockCase({
         info: {
@@ -773,7 +778,7 @@ describe('update existing case', () => {
               date: '2020-10-16',
               referredTo: 'State Agency 2',
               comments: 'comment',
-              createdAt: expect.anything(),
+              createdAt: expect.toParseAsDate(),
               twilioWorkerId: workerSid,
               anotherProperty: 'anotherValue',
             },
