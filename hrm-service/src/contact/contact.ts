@@ -2,6 +2,7 @@ import {
   connectToCase,
   Contact,
   create,
+  getColumnsForTranscript as getColumnsForTranscriptDA,
   patch,
   search,
   SearchParameters,
@@ -183,4 +184,15 @@ export const searchContacts = async (
     count: unprocessedResults.count,
     contacts: convertContactsToSearchResults(unprocessedResults.rows),
   };
+};
+
+export const getColumnsForTranscript = async ({
+  dateFrom = null,
+  dateTo = null,
+}: {
+  dateFrom?: string;
+  dateTo?: string;
+}) => {
+  const result = await getColumnsForTranscriptDA({ dateFrom, dateTo });
+  return result;
 };

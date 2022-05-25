@@ -4,6 +4,7 @@ import { SELECT_CONTACT_SEARCH } from './sql/contact-search-sql';
 import { endOfDay, parseISO, startOfDay } from 'date-fns';
 import { selectSingleContactByIdSql, selectSingleContactByTaskId } from './sql/contact-get-sql';
 import { insertContactSql, NewContactRecord } from './sql/contact-insert-sql';
+import { selectColumnsForTranscript } from './sql/contact-get-columns-for-transcripts-sql';
 import { PersonInformation } from './contact-json';
 
 type ExistingContactRecord = {
@@ -206,5 +207,28 @@ export const search = async (
       searchParametersToQueryParameters(accountSid, searchParameters, limit, offset),
     );
     return { rows: searchResults, count: searchResults.length ? searchResults[0].totalCount : 0 };
+  });
+};
+
+type ColumnsForTranscript = {
+  accountSid: string;
+  serviceSid: string;
+  channelSid: string;
+};
+
+export const getColumnsForTranscript = async ({
+  dateFrom,
+  dateTo,
+}: {
+  dateFrom?: string;
+  dateTo?: string;
+}): Promise<ColumnsForTranscript[]> => {
+  return db.task(async connection => {
+    const result = await connection.manyOrNone<ColumnsForTranscript>(selectColumnsForTranscript, {
+      dateFrom,
+      dateTo,
+    });
+
+    return result;
   });
 };
