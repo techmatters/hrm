@@ -55,6 +55,8 @@ export class ContactBuilder {
 
   private helpline: string;
 
+  private taskId: string;
+
   withId(id: number): ContactBuilder {
     this.id = id;
     return this;
@@ -62,6 +64,11 @@ export class ContactBuilder {
 
   withHelpline(helpline: string): ContactBuilder {
     this.helpline = helpline;
+    return this;
+  }
+
+  withTaskId(taskId: string): ContactBuilder {
+    this.taskId = taskId;
     return this;
   }
 
@@ -125,6 +132,7 @@ export class ContactBuilder {
       ...defaultContact,
       ...(this.id && { id: this.id }),
       ...(this.helpline && { helpline: this.helpline }),
+      ...(this.taskId && { taskId: this.taskId }),
       ...(this.number && { number: this.number }),
       ...(this.twilioWorkerId && { twilioWorkerId: this.twilioWorkerId }),
       ...(this.createdAt && { createdAt: this.createdAt }),

@@ -39,6 +39,7 @@ export type SearchContact = {
     channel: string;
     conversationDuration: number;
     createdBy: string;
+    taskId: string;
   };
   details: ContactRawJson;
   csamReports: CSAMReportEntry[];
@@ -148,7 +149,7 @@ function convertContactsToSearchResults(contacts: Contact[]): SearchContact[] {
       const categories = retrieveCategories(caseInformation.categories);
       const counselor = contact.twilioWorkerId;
       const notes = contact.rawJson.caseInformation.callSummary;
-      const { channel, conversationDuration, createdBy, csamReports, helpline } = contact;
+      const { channel, conversationDuration, createdBy, csamReports, helpline, taskId } = contact;
 
       return {
         contactId: contactId.toString(),
@@ -164,6 +165,7 @@ function convertContactsToSearchResults(contacts: Contact[]): SearchContact[] {
           notes: notes.toString(),
           channel,
           conversationDuration,
+          taskId,
         },
         csamReports,
         details: contact.rawJson,

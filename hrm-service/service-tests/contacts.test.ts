@@ -343,8 +343,8 @@ describe('/contacts route', () => {
 
         const responses = await resolveSequentially(
           [
-            contact1,
-            contact2,
+            { ...contact1, taskId: 'contact-1-task' },
+            { ...contact2, taskId: 'contact-2-task' },
             broken1,
             broken2,
             another1,
@@ -407,6 +407,9 @@ describe('/contacts route', () => {
             // Test the association
             expect(c1.csamReports).toHaveLength(0);
             expect(c2.csamReports).toHaveLength(0);
+            // Test the association
+            expect(c1.overview.taskId).toBe('contact-1-task');
+            expect(c2.overview.taskId).toBe('contact-2-task');
           },
         },
         {

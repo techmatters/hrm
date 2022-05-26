@@ -274,6 +274,7 @@ describe('searchContacts', () => {
     const jillSmith = new ContactBuilder()
       .withId(4321)
       .withHelpline('a helpline')
+      .withTaskId('jill-smith-task')
       .withChildFirstName('Jill')
       .withChildLastName('Smith')
       .withCallSummary('Lost young boy')
@@ -315,6 +316,7 @@ describe('searchContacts', () => {
             notes: 'Lost young boy',
             channel: 'voice',
             conversationDuration: 10,
+            taskId: 'jill-smith-task',
           },
           details: jillSmith.rawJson,
           csamReports: [],
@@ -323,6 +325,7 @@ describe('searchContacts', () => {
           contactId: '1234',
           overview: {
             helpline: undefined,
+            taskId: undefined,
             dateTime: '2020-03-15T00:00:00.000Z',
             name: 'Sarah Park',
             customerNumber: 'Anonymous',
