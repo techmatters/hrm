@@ -1,0 +1,10 @@
+services:
+  db:
+    build: .
+    command: ["postgres", "-c", "log_statement=all"]
+    ports:
+      - "5434:5432"
+    volumes:
+      - hrm_transcript_postgres_volume:/var/lib/postgresql
+volumes:
+  hrm_transcript_postgres_volume: { }
