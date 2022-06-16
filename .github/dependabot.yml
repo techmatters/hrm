@@ -1,0 +1,14 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/hrm-service/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 0
+    allow:
+      - dependency-name: "*"
+        dependency-type: "production"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-patch"]
+
