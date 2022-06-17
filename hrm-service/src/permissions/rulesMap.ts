@@ -9,6 +9,7 @@ const mwRules = require('../../permission-rules/mw.json');
 const ukRules = require('../../permission-rules/uk.json');
 const zaRules = require('../../permission-rules/za.json');
 const zmRules = require('../../permission-rules/zm.json');
+const coRules = require('../../permission-rules/co.json');
 
 import { actionsMaps, Actions } from './actions';
 
@@ -46,6 +47,7 @@ const rulesMapDef = {
   uk: ukRules,
   za: zaRules,
   zm: zmRules,
+  co: coRules,
   open: openRules,
   demo: demoRules,
 } as const;

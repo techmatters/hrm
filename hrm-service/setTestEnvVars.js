@@ -1,5 +1,6 @@
 process.env.PERMISSIONS_br = 'br';
 process.env.PERMISSIONS_ca = 'ca';
+process.env.PERMISSIONS_co = 'co';
 process.env.PERMISSIONS_et = 'et';
 process.env.PERMISSIONS_in = 'in';
 process.env.PERMISSIONS_jm = 'jm';
