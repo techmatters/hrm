@@ -8,6 +8,7 @@ process.env.PERMISSIONS_uk = 'uk';
 process.env.PERMISSIONS_za = 'za';
 process.env.PERMISSIONS_zm = 'zm';
 process.env.PERMISSIONS_open = 'open';
+process.env.PERMISSIONS_demo = 'demo';
 process.env.PERMISSIONS_notConfigured = '';
 process.env.PERMISSIONS_notExistsInRulesMap = 'notExistsInRulesMap';
 

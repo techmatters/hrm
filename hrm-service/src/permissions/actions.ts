@@ -21,10 +21,16 @@ export const actionsMaps = {
     EDIT_CHILD_IS_AT_RISK: 'editChildIsAtRisk',
     EDIT_FOLLOW_UP_DATE: 'editFollowUpDate',
   },
+  contact: {
+    EDIT_CONTACT: 'editContact',
+  },
   postSurvey: {
     VIEW_POST_SURVEY: 'viewPostSurvey',
   },
 } as const;
+
+export type TargetKind = keyof typeof actionsMaps;
+export const isTargetKind = (s: string): s is TargetKind => Boolean(actionsMaps[s]);
 
 /**
  * Utility type that given an object with any nesting depth, will return the union of all the leaves that are of type "string"

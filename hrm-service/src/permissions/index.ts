@@ -1,7 +1,7 @@
 export { User } from './user';
 export { SafeRouter, publicEndpoint } from './safe-router';
-export { canEditCase, canViewPostSurvey } from './middlewares';
 export { rulesMap } from './rulesMap';
+export { Actions, actionsMaps, getActions } from './actions';
 
 import { setupCanForRules } from './setupCanForRules';
 import { rulesMap } from './rulesMap';

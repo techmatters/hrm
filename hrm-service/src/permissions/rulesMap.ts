@@ -1,18 +1,25 @@
-import openRules from '../../permission-rules/open.json';
-import brRules from '../../permission-rules/br.json';
-import caRules from '../../permission-rules/ca.json';
-import etRules from '../../permission-rules/et.json';
-import inRules from '../../permission-rules/in.json';
-import jmRules from '../../permission-rules/jm.json';
-import mwRules from '../../permission-rules/mw.json';
-import ukRules from '../../permission-rules/uk.json';
-import zaRules from '../../permission-rules/za.json';
-import zmRules from '../../permission-rules/zm.json';
-import coRules from '../../permission-rules/co.json';
+const openRules = require('../../permission-rules/open.json');
+const demoRules = require('../../permission-rules/demo.json');
+const brRules = require('../../permission-rules/br.json');
+const caRules = require('../../permission-rules/ca.json');
+const etRules = require('../../permission-rules/et.json');
+const inRules = require('../../permission-rules/in.json');
+const jmRules = require('../../permission-rules/jm.json');
+const mwRules = require('../../permission-rules/mw.json');
+const ukRules = require('../../permission-rules/uk.json');
+const zaRules = require('../../permission-rules/za.json');
+const zmRules = require('../../permission-rules/zm.json');
+const coRules = require('../../permission-rules/co.json');
 
 import { actionsMaps, Actions } from './actions';
 
-export const conditionTypes = ['isSupervisor', 'isCreator', 'isCaseOpen', 'everyone'] as const;
+export const conditionTypes = [
+  'isSupervisor',
+  'isCreator',
+  'isCaseOpen',
+  'isOwner',
+  'everyone',
+] as const;
 export type Condition = typeof conditionTypes[number];
 export type ConditionsSet = Condition[];
 export type ConditionsSets = ConditionsSet[];
@@ -42,6 +49,7 @@ const rulesMapDef = {
   zm: zmRules,
   co: coRules,
   open: openRules,
+  demo: demoRules,
 } as const;
 
 const validRulesMap = () =>

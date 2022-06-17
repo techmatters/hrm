@@ -1,4 +1,4 @@
-import { selectSingleContactByIdSql } from './contact-get';
+import { selectSingleContactByIdSql } from './contact-get-sql';
 
 export const UPDATE_RAWJSON_BY_ID = `WITH updated AS (
 UPDATE "Contacts" 
@@ -32,6 +32,16 @@ SET "rawJson" = COALESCE("rawJson", '{}'::JSONB)
   || (CASE WHEN $<childInformation> IS NOT NULL THEN jsonb_build_object('childInformation', $<childInformation>::JSONB) ELSE '{}'::JSONB END),
   "updatedBy" = $<updatedBy>,
   "updatedAt" = CURRENT_TIMESTAMP
+WHERE "accountSid" = $<accountSid> AND "id"=$<contactId>
+RETURNING *
+)
+${selectSingleContactByIdSql('updated')}
+`;
+
+export const UPDATE_CASEID_BY_ID = `WITH updated AS (
+UPDATE "Contacts" 
+SET 
+  "caseId" = $<caseId>
 WHERE "accountSid" = $<accountSid> AND "id"=$<contactId>
 RETURNING *
 )
