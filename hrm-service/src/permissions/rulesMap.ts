@@ -8,6 +8,7 @@ import mwRules from '../../permission-rules/mw.json';
 import ukRules from '../../permission-rules/uk.json';
 import zaRules from '../../permission-rules/za.json';
 import zmRules from '../../permission-rules/zm.json';
+import coRules from '../../permission-rules/co.json';
 
 import { actionsMaps, Actions } from './actions';
 
@@ -39,6 +40,7 @@ const rulesMapDef = {
   uk: ukRules,
   za: zaRules,
   zm: zmRules,
+  co: coRules,
   open: openRules,
 } as const;
 
