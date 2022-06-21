@@ -9,6 +9,7 @@ import { caseSectionUpsertSql, deleteMissingCaseSectionsSql } from './sql/case-s
 import { DELETE_BY_ID } from './sql/case-delete-sql';
 import { selectSingleCaseByIdSql } from './sql/case-get-sql';
 import { Contact } from '../contact/contact-data-access';
+import { SearchParameters } from '../search';
 
 export type CaseRecordCommon = {
   info: any;
@@ -64,12 +65,7 @@ export type CaseListConfiguration = {
   limit?: number
 };
 
-export type CaseSearchCriteria = {
-  phoneNumber?: string,
-  contactNumber?: string,
-  firstName?: string,
-  lastName?: string,
-};
+type CaseSearchCriteria = Pick<SearchParameters, 'firstName' | 'lastName' | 'phoneNumber' | 'contactNumber' | 'dateFrom' | 'dateTo'>;
 
 export const enum DateExistsCondition {
   MUST_EXIST = 'MUST_EXIST',
@@ -163,7 +159,7 @@ export const getById = async (
 
 export const search = async (
   listConfiguration: CaseListConfiguration,
-  accountSid,
+  accountSid: string,
   searchCriteria: CaseSearchCriteria = {},
   filters: CaseListFilters = {},
 ): Promise<{ cases: readonly CaseRecord[]; count: number }> => {
@@ -179,6 +175,8 @@ export const search = async (
       lastName: searchCriteria.lastName ? `%${searchCriteria.lastName}%` : null,
       phoneNumber: searchCriteria.phoneNumber ? `%${searchCriteria.phoneNumber.replace(/[\D]/gi, '')}%` : null,
       contactNumber: searchCriteria.contactNumber || null,
+      dateFrom: searchCriteria.dateFrom || null,
+      dateTo: searchCriteria.dateTo || null,
       limit: limit,
       offset: offset,
     };

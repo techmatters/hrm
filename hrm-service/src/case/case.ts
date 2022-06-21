@@ -9,12 +9,12 @@ import {
   CaseListConfiguration,
   CaseListFilters,
   CaseRecordCommon,
-  CaseSearchCriteria,
   CaseSectionRecord,
   NewCaseRecord,
 } from './case-data-access';
 import { randomUUID } from 'crypto';
 import { Contact } from '../contact/contact-data-access';
+import { SearchParameters } from '../search';
 
 type CaseInfoSection = {
   id: string;
@@ -317,18 +317,14 @@ export const getCase = async (id: number, accountSid: string): Promise<Case | un
   return;
 };
 
-export type SearchParameters = CaseSearchCriteria & {
+export type CaseSearchParameters = SearchParameters & {
   filters?: CaseListFilters;
-} & {
-  helpline?: string;
-  counselor?: string;
-  closedCases?: boolean;
 };
 
 export const searchCases = async (
-  accountSid,
+  accountSid: string,
   listConfiguration: CaseListConfiguration = {},
-  search: SearchParameters = {},
+  search: CaseSearchParameters = {},
 ): Promise<{ cases: readonly Case[]; count: number }> => {
   const { filters, helpline, counselor, closedCases, ...searchCriteria } = search;
   const caseFilters = filters ?? {};

@@ -214,6 +214,12 @@ const SEARCH_WHERE_CLAUSE = `(
       EXISTS (
         SELECT 1 FROM "Contacts" c WHERE c."caseId" = cases.id AND c."accountSid" = cases."accountSid" AND c.number = $<contactNumber>
       )
+    )
+    AND (
+      $<dateFrom> IS NULL OR cases."createdAt" >= $<dateFrom>
+    )
+    AND (
+      $<dateTo> IS NULL OR cases."createdAt" >= $<dateTo>
     )`;
 
 const selectCasesUnorderedSql = (whereClause: string, havingClause: string = '') =>
