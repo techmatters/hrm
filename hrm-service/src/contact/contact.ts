@@ -1,14 +1,8 @@
-import {
-  connectToCase,
-  Contact,
-  create,
-  patch,
-  search,
-  SearchParameters,
-} from './contact-data-access';
+import { connectToCase, Contact, create, patch, search } from './contact-data-access';
 import { ContactRawJson } from './contact-json';
 import { retrieveCategories, getPaginationElements } from '../controllers/helpers';
 import { NewContactRecord } from './sql/contact-insert-sql';
+import { SearchParameters } from '../search';
 
 export type PatchPayload = {
   rawJson: Partial<

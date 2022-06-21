@@ -5,6 +5,7 @@ import { endOfDay, parseISO, startOfDay } from 'date-fns';
 import { selectSingleContactByIdSql, selectSingleContactByTaskId } from './sql/contact-get-sql';
 import { insertContactSql, NewContactRecord } from './sql/contact-insert-sql';
 import { PersonInformation } from './contact-json';
+import { SearchParameters } from '../search';
 
 type ExistingContactRecord = {
   id: number;
@@ -14,18 +15,6 @@ type ExistingContactRecord = {
 
 export type Contact = ExistingContactRecord & {
   csamReports: any[];
-};
-
-export type SearchParameters = {
-  helpline?: string;
-  firstName?: string;
-  lastName?: string;
-  counselor?: string;
-  phoneNumber?: string;
-  dateFrom?: string;
-  dateTo?: string;
-  contactNumber?: string;
-  onlyDataContacts: boolean;
 };
 
 /**
