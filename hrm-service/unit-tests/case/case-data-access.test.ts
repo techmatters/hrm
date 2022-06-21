@@ -206,11 +206,59 @@ describe('search', () => {
         expectedDbParameters: { limit: 100, offset: 25 },
         expectedInSql: ['"id" DESC', '"childName" DESC NULLS LAST'],
       },
+      {
+        description: 'should pass null query values when CaseSearchCriteria is empty',
+        listConfig: {
+          limit: 100,
+          offset: 25,
+          sortBy: OrderByColumns.CHILD_NAME,
+        },
+        searchCriteria: {},
+        expectedDbParameters: {
+          limit: 100,
+          offset: 25,
+          firstName: null,
+          lastName: null,
+          phoneNumber: null,
+          contactNumber: null,
+          dateFrom: null,
+          dateTo: null,
+        },
+        expectedInSql: ['"id" DESC', '"childName" DESC NULLS LAST'],
+      },
+      {
+        description: 'should pass appropriate query values when CaseSearchCriteria is provided',
+        listConfig: {
+          limit: 100,
+          offset: 25,
+          sortBy: OrderByColumns.CHILD_NAME,
+        },
+        searchCriteria: {
+          firstName: 'firstName',
+          lastName: 'lastName',
+          phoneNumber: '123',
+          contactNumber: 'contactNumber',
+          dateFrom: '2022-06-20',
+          dateTo: '2022-06-21',
+        },
+        expectedDbParameters: {
+          limit: 100,
+          offset: 25,
+          firstName: '%firstName%',
+          lastName: '%lastName%',
+          phoneNumber: '%123%',
+          contactNumber: 'contactNumber',
+          dateFrom: '2022-06-20',
+          dateTo: '2022-06-21',
+        },
+        expectedInSql: ['"id" DESC', '"childName" DESC NULLS LAST'],
+      },
     ]).test(
       '$description',
       async ({
         listConfig = {},
         filters = {},
+        searchCriteria = {},
         expectedDbParameters,
         expectedInSql = [],
         notExpectedInSql = [],
@@ -220,7 +268,7 @@ describe('search', () => {
           { ...createMockCaseRecord({ id: 1 }), totalCount: 1337 },
         ];
         const anySpy = jest.spyOn(conn, 'any').mockResolvedValue(dbResult);
-        const result = await caseDb.search(listConfig, accountSid, {}, filters);
+        const result = await caseDb.search(listConfig, accountSid, searchCriteria, filters);
         expect(anySpy).toHaveBeenCalledWith(
           expect.stringContaining('Cases'),
           expect.objectContaining({ ...expectedDbParameters, accountSid }),
