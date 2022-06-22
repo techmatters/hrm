@@ -334,7 +334,7 @@ describe('/cases route', () => {
         const subRoute = `${route}/search`;
         const searchTestRunStart = new Date().toISOString();
 
-        beforeEach(async () => {
+        beforeAll(async () => {
           createdCase1 = await caseApi.createCase(withHouseholds(case1), accountSid, workerSid);
           createdCase2 = await caseApi.createCase(case1, accountSid, workerSid);
           createdCase3 = await caseApi.createCase(withPerpetrators(case1), accountSid, workerSid);
@@ -347,7 +347,7 @@ describe('/cases route', () => {
           createdCase2 = await caseApi.getCase(createdCase2.id, accountSid);
         });
 
-        afterEach(async () => {
+        afterAll(async () => {
           await createdContact.destroy();
           await caseDb.deleteById(createdCase1.id, accountSid);
           await caseDb.deleteById(createdCase2.id, accountSid);
@@ -386,7 +386,7 @@ describe('/cases route', () => {
             body: {
               helpline: 'helpline',
               dateFrom: searchTestRunStart,
-              dateTo: add(new Date(), { hours: 1 }), // flaky test as new Date() is bound at object creation time, which occurs before test execution. Adding 1 hour should be enough offset
+              dateTo: add(new Date(), { hours: 1 }).toISOString(), // flaky test as new Date() is bound at object creation time, which occurs before test execution. Adding 1 hour should be enough offset
             },
           },
         ]).test('$description', async ({ body }) => {
