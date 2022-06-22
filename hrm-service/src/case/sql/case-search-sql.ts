@@ -219,7 +219,7 @@ const SEARCH_WHERE_CLAUSE = `(
       $<dateFrom> IS NULL OR cases."createdAt" >= $<dateFrom>
     )
     AND (
-      $<dateTo> IS NULL OR cases."createdAt" >= $<dateTo>
+      $<dateTo> IS NULL OR cases."createdAt" <= $<dateTo>
     )`;
 
 const selectCasesUnorderedSql = (whereClause: string, havingClause: string = '') =>
