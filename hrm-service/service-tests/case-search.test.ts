@@ -1,5 +1,5 @@
 /* eslint-disable jest/no-standalone-expect,no-await-in-loop */
-import { add, addDays } from 'date-fns';
+import { add, addDays, sub } from 'date-fns';
 
 import * as caseApi from '../src/case/case';
 import { Case, getCase } from '../src/case/case';
@@ -386,7 +386,7 @@ describe('/cases route', () => {
             body: {
               helpline: 'helpline',
               dateFrom: searchTestRunStart,
-              dateTo: new Date().toISOString(),
+              dateTo: add(new Date(), { hours: 1 }), // flaky test as new Date() is bound at object creation time, which occurs before test execution. Adding 1 hour should be enough offset
             },
           },
         ]).test('$description', async ({ body }) => {
@@ -443,6 +443,121 @@ describe('/cases route', () => {
             .send(body);
           expect(response.body.cases.length).toBe(0);
           expect(response.body.count).toBe(0);
+        });
+      });
+
+      describe('Test date filters', () => {
+        let createdCase1;
+        let createdCase2;
+        let createdCase3;
+        const subRoute = `${route}/search`;
+        const searchTestRunStart = new Date().toISOString();
+        const oneWeekAgo = sub(new Date(searchTestRunStart), { weeks: 1 }).toISOString();
+        const oneWeekAhead = add(new Date(searchTestRunStart), { weeks: 1 }).toISOString();
+
+        const updateCaseCreatedAt = (caseObject, date) =>
+          `UPDATE "Cases" SET "createdAt" = '${date}' WHERE id = ${caseObject.id} RETURNING *`;
+
+        beforeEach(async () => {
+          createdCase1 = await caseApi.createCase(case1, accountSid, workerSid);
+          createdCase2 = await caseApi.createCase(case1, accountSid, workerSid);
+          createdCase3 = await caseApi.createCase(case1, accountSid, workerSid);
+
+          // Alter createdAt dates to play with date filters
+          createdCase1 = await db.task(t => t.one(updateCaseCreatedAt(createdCase1, oneWeekAgo)));
+          createdCase3 = await db.task(t => t.one(updateCaseCreatedAt(createdCase3, oneWeekAhead)));
+        });
+
+        afterEach(async () => {
+          await caseDb.deleteById(createdCase1.id, accountSid);
+          await caseDb.deleteById(createdCase2.id, accountSid);
+          await caseDb.deleteById(createdCase3.id, accountSid);
+        });
+
+        each([
+          {
+            description: 'All records should match when no date filters are added',
+            body: {
+              helpline: 'helpline',
+            },
+            getExpectedIds: () => [createdCase3.id, createdCase2.id, createdCase1.id],
+          },
+          {
+            description: 'Only case created before (or at) oneWeekAgo should be returned',
+            body: {
+              helpline: 'helpline',
+              dateTo: oneWeekAgo,
+            },
+            getExpectedIds: () => [createdCase1.id],
+          },
+          {
+            description: 'Only cases created after oneWeekAgo should be returned',
+            body: {
+              helpline: 'helpline',
+              dateFrom: add(new Date(oneWeekAgo), { seconds: 1 }),
+            },
+            getExpectedIds: () => [createdCase3.id, createdCase2.id],
+          },
+          {
+            description: 'Only case created after (or at) oneWeekAhead should be returned',
+            body: {
+              helpline: 'helpline',
+              dateFrom: oneWeekAhead,
+            },
+            getExpectedIds: () => [createdCase3.id],
+          },
+          {
+            description: 'Only cases created before oneWeekAhead should be returned',
+            body: {
+              helpline: 'helpline',
+              dateTo: sub(new Date(oneWeekAhead), { seconds: 1 }),
+            },
+            getExpectedIds: () => [createdCase2.id, createdCase1.id],
+          },
+          {
+            description: 'Only cases created between [oneWeekAgo, oneWeekAhead] should be returned',
+            body: {
+              helpline: 'helpline',
+              dateFrom: oneWeekAgo,
+              dateTo: oneWeekAhead,
+            },
+            getExpectedIds: () => [createdCase3.id, createdCase2.id, createdCase1.id],
+          },
+          {
+            description: 'Only case created between (oneWeekAgo, oneWeekAhead) should be returned',
+            body: {
+              helpline: 'helpline',
+              dateFrom: add(new Date(oneWeekAgo), { seconds: 1 }),
+              dateTo: sub(new Date(oneWeekAhead), { seconds: 1 }),
+            },
+            getExpectedIds: () => [createdCase2.id],
+          },
+          {
+            description: 'No case should be returned (dateFrom)',
+            body: {
+              helpline: 'helpline',
+              dateFrom: add(new Date(oneWeekAhead), { seconds: 1 }),
+            },
+            getExpectedIds: () => [],
+          },
+          {
+            description: 'No case should be returned (dateTo)',
+            body: {
+              helpline: 'helpline',
+              dateTo: sub(new Date(oneWeekAgo), { seconds: 1 }),
+            },
+            getExpectedIds: () => [],
+          },
+        ]).test('$description', async ({ body, getExpectedIds }) => {
+          const response = await request
+            .post(subRoute)
+            .query({ limit: 20, offset: 0 })
+            .set(headers)
+            .send(body);
+
+          expect(response.status).toBe(200);
+          const ids = response.body.cases.map(c => c.id);
+          expect(ids).toMatchObject(getExpectedIds());
         });
       });
 
