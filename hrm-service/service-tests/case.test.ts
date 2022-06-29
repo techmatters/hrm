@@ -230,6 +230,38 @@ describe('/cases route', () => {
       await caseDb.deleteById(cases.populated.id, accountSid);
     });
 
+    describe('GET', () => {
+      test('should return 401', async () => {
+        const response = await request.put(subRoute(cases.blank.id)).send(case1);
+
+        expect(response.status).toBe(401);
+        expect(response.body.error).toBe('Authorization failed');
+      });
+
+      test('should return 404', async () => {
+        const response = await request
+          .get(subRoute('0000')) // Imposible to exist case
+          .set({ ...headers });
+
+        expect(response.status).toBe(404);
+        expect(response.body.error).toContain('NotFoundError: Not Found');
+      });
+
+      test('Should return 200', async () => {
+        const response = await request.get(subRoute(cases.populated.id)).set({ ...headers });
+
+        expect(response.status).toBe(200);
+
+        const expected = {
+          ...convertCaseInfoToExpectedInfo(cases.populated),
+          createdAt: expect.toParseAsDate(cases.populated.createdAt),
+          updatedAt: expect.toParseAsDate(cases.populated.createdAt),
+        };
+
+        expect(response.body).toMatchObject(expected);
+      });
+    });
+
     describe('PUT', () => {
       test('should return 401', async () => {
         const response = await request.put(subRoute(cases.blank.id)).send(case1);
