@@ -52,6 +52,23 @@ const canEditCase = asyncHandler(async (req, res, next) => {
   next();
 });
 
+casesRouter.get('/:id', publicEndpoint, async (req, res) => {
+  const { accountSid } = req;
+  const { id } = req.params;
+
+  if (!id) {
+    throw createError(400, 'Case id missing in the request payload');
+  }
+
+  const caseFromDB = await caseApi.getCase(id, accountSid);
+
+  if (!caseFromDB) {
+    throw createError(404);
+  }
+
+  res.json(caseFromDB);
+});
+
 casesRouter.put('/:id', canEditCase, async (req, res) => {
   const { accountSid, user } = req;
   const { id } = req.params;
