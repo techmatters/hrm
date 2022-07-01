@@ -51,8 +51,7 @@ export async function processRetrieveContactRecordingUrlJob(job: RetrieveContact
 
 /**
  * This is the implementation of the job's 'when completed' hook, which can be used to do any required follow up work in HRM when a job completes
- * @param client
- * @param contact
+ * @param job
  */
 export async function processRetrieveContactRecordingUrlCompletion(
   job: RetrieveContactRecordingJob,

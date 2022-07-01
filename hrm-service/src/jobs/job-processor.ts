@@ -4,10 +4,14 @@ import {
   processRetrieveContactRecordingUrlCompletion,
   processRetrieveContactRecordingUrlJob,
 } from './contact-recording-url-job';
+import { subMilliseconds } from 'date-fns';
 
 let processingJobs = false;
+
+// El cheapo simulation of a 'completed jobs' SQS queue
 const completedJobs: ContactJob[] = [];
 const JOB_PROCESSING_INTERVAL_MILLISECONDS = 5000;
+const JOB_RETRY_INTERVAL_MILLISECONDS = 60000;
 
 export async function processJobs() {
   if (!processingJobs) {
@@ -31,7 +35,9 @@ export async function processJobs() {
 
         console.log(`Checking for due jobs`);
         // This pulls any jobs due to be run and marks them as attempted
-        const jobs = await pullDueJobs(new Date());
+        const jobs = await pullDueJobs(
+          subMilliseconds(new Date(), JOB_RETRY_INTERVAL_MILLISECONDS),
+        );
         console.log(`Found ${jobs.length} jobs due to action`);
         for (const job of jobs) {
           console.log(job);
