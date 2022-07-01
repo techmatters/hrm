@@ -1,3 +1,4 @@
+// Whilst this is a POC there is no 'down' script or indexes on the table.
 module.exports = {
   up: async queryInterface => {
     await queryInterface.sequelize.query(`
