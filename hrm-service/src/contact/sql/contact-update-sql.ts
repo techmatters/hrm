@@ -47,3 +47,10 @@ RETURNING *
 )
 ${selectSingleContactByIdSql('updated')}
 `;
+
+export const APPEND_MEDIA_URL_SQL = `
+UPDATE "Contacts" 
+SET 
+  "rawJson" = COALESCE("rawJson", '{}'::JSONB) || jsonb_build_object('mediaUrls', COALESCE("rawJson"->'mediaUrls', '[]'::JSONB) || $<mediaUrls:json>::JSONB)
+WHERE "accountSid" = $<accountSid> AND "id"=$<contactId>
+`;
