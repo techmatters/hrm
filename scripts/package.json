@@ -10,7 +10,8 @@
     "import-conversation-postgres": "node dist/import-conversation-postgres.js",
     "build-then-import-conversation-postgres": "npm run build && node dist/import-conversation-postgres.js",
     "import-conversation-cloudsearch": "node dist/import-conversation-cloudsearch.js",
-    "build-then-import-conversation-cloudsearch": "npm run build && node dist/import-conversation-cloudsearch.js"
+    "build-then-import-conversation-cloudsearch": "npm run build && node dist/import-conversation-cloudsearch.js",
+    "build-then-unzip-books": "npm run build && node dist/unzip-books.js"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.16.11",
