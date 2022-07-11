@@ -59,7 +59,7 @@ FROM (
 const enum FilterableDateField {
   CREATED_AT = 'cases."createdAt"::TIMESTAMP WITH TIME ZONE',
   UPDATED_AT = 'cases."updatedAt"::TIMESTAMP WITH TIME ZONE',
-  FOLLOW_UP_DATE = `CAST(cases."info"->>'followUpDate' AS TIMESTAMP WITH TIME ZONE)`,
+  FOLLOW_UP_DATE = `CAST(NULLIF(cases."info"->>'followUpDate', '') AS TIMESTAMP WITH TIME ZONE)`,
 }
 
 const dateFilterCondition = (
