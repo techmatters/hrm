@@ -11,12 +11,12 @@ import {
   validateCaseListResponse,
   validateSingleCaseResponse,
 } from './case-validation';
-import { DateExistsCondition } from '../src/case/case-data-access';
+import { CaseListFilters, DateExistsCondition } from '../src/case/case-data-access';
+import * as contactDb from '../src/contact/contact-data-access';
 
 const supertest = require('supertest');
 const each = require('jest-each').default;
 const expressApp = require('../src/app');
-const models = require('../src/models');
 const mocks = require('./mocks');
 
 export const workerSid = 'worker-sid';
@@ -24,14 +24,12 @@ const server = expressApp.listen();
 const request = supertest.agent(server);
 
 const { case1, contact1, accountSid } = mocks;
-const options = { context: { workerSid } };
-
 const headers = {
   'Content-Type': 'application/json',
   Authorization: `Basic ${Buffer.from(process.env.API_KEY).toString('base64')}`,
 };
 
-const { Contact } = models;
+type Contact = contactDb.Contact;
 
 type CaseWithContact = {
   case: Case;
@@ -50,6 +48,7 @@ type InsertSampleCaseSettings = {
   createdAtGenerator?: (idx: number) => string;
   updatedAtGenerator?: (idx: number) => string;
   followUpDateGenerator?: (idx: number) => string;
+  categoriesGenerator?: (idx: number) => Record<string, Record<string, boolean>>;
 };
 
 const insertSampleCases = async ({
@@ -64,10 +63,11 @@ const insertSampleCases = async ({
   createdAtGenerator = () => undefined,
   updatedAtGenerator = () => undefined,
   followUpDateGenerator = () => undefined,
+  categoriesGenerator = () => undefined,
 }: InsertSampleCaseSettings): Promise<CaseWithContact[]> => {
   const createdCasesAndContacts: CaseWithContact[] = [];
   for (let i = 0; i < sampleSize; i += 1) {
-    const toCreate = {
+    const toCreate: Partial<Case> = {
       ...cases[i % cases.length],
       helpline: helplines[i % helplines.length],
       status: statuses[i % statuses.length],
@@ -97,26 +97,52 @@ const insertSampleCases = async ({
       accounts[i % accounts.length],
       workers[i % workers.length],
     );
-    let createdContact = undefined;
+    let connectedContact: Contact = undefined;
     if (contactNames[i % contactNames.length]) {
-      createdContact = await Contact.create(
-        fillNameAndPhone(
-          {
-            ...contact1,
-            accountSid: accounts[i % accounts.length],
-            helpline: helplines[i % helplines.length],
-          },
-          contactNames[i % contactNames.length],
-          contactNumbers[i % contactNumbers.length],
-        ),
-        options,
+      const contactToCreate = fillNameAndPhone(
+        {
+          ...contact1,
+          twilioWorkerId: workers[i % workers.length],
+          accountSid: accounts[i % accounts.length],
+          helpline: helplines[i % helplines.length],
+        },
+        contactNames[i % contactNames.length],
+        contactNumbers[i % contactNumbers.length],
       );
-      createdContact.caseId = createdCase.id;
-      await createdContact.save(options);
+      contactToCreate.timeOfContact = new Date();
+      contactToCreate.taskId = undefined;
+      contactToCreate.channelSid = `CHANNEL_${i}`;
+      contactToCreate.serviceSid = 'SERVICE_SID';
+
+      const categories = categoriesGenerator(i);
+      if (categories) {
+        contactToCreate.rawJson = contactToCreate.rawJson ?? {
+          caseInformation: { categories: {} },
+          callerInformation: { name: { firstName: '', lastName: '' } },
+          childInformation: { name: { firstName: '', lastName: '' } },
+          callType: '',
+        };
+        contactToCreate.rawJson.caseInformation = contactToCreate.rawJson.caseInformation ?? {
+          categories: {},
+        };
+        contactToCreate.rawJson.caseInformation.categories = categories;
+      } else if (contactToCreate.rawJson?.caseInformation) {
+        delete contactToCreate.rawJson.caseInformation.categories;
+      }
+      const savedContact = await contactDb.create(
+        accounts[i % accounts.length],
+        contactToCreate,
+        [],
+      );
+      connectedContact = await contactDb.connectToCase(
+        savedContact.accountSid,
+        savedContact.id.toString(),
+        createdCase.id.toString(),
+      );
       createdCase = await getCase(createdCase.id, accounts[i % accounts.length]); // reread case from DB now it has a contact connected
     }
     createdCasesAndContacts.push({
-      contact: createdContact,
+      contact: connectedContact,
       case: createdCase,
     });
   }
@@ -153,19 +179,37 @@ describe('/cases route', () => {
     });
     describe('With single record', () => {
       let createdCase;
-      let createdContact;
+      let createdContact: Contact;
 
       beforeEach(async () => {
         createdCase = await caseApi.createCase(case1, accountSid, workerSid);
 
-        createdContact = await Contact.create(fillNameAndPhone(contact1), options);
-        createdContact.caseId = createdCase.id;
-        await createdContact.save(options);
+        const contactToCreate = fillNameAndPhone({
+          ...contact1,
+          twilioWorkerId: workerSid,
+          timeOfContact: new Date(),
+          taskId: `TASK_SID`,
+          channelSid: `CHANNEL_SID`,
+          serviceSid: 'SERVICE_SID',
+        });
+
+        contactToCreate.timeOfContact = new Date();
+        contactToCreate.taskId = `TASK_SID`;
+        contactToCreate.channelSid = `CHANNEL_SID`;
+        contactToCreate.serviceSid = 'SERVICE_SID';
+        createdContact = await contactDb.create(accountSid, contactToCreate, []);
+        createdContact = await contactDb.connectToCase(
+          accountSid,
+          createdContact.id.toString(),
+          createdCase.id,
+        );
         createdCase = await getCase(createdCase.id, accountSid); // refresh case from DB now it has a contact connected
       });
 
       afterEach(async () => {
-        await createdContact.destroy();
+        await db.none(`DELETE FROM "Contacts" WHERE id = $<id>`, {
+          id: createdContact.id,
+        });
         await caseDb.deleteById(createdCase.id, accountSid);
       });
 
@@ -192,14 +236,12 @@ describe('/cases route', () => {
       });
 
       afterEach(async () => {
-        await Contact.destroy({
-          where: { id: createdCasesAndContacts.map(ccc => ccc.contact.id) },
+        await db.none(`DELETE FROM "Contacts" WHERE id IN ($<ids:csv>)`, {
+          ids: createdCasesAndContacts.map(ccc => ccc.contact.id).filter(id => id),
         });
-        await Promise.all([
-          db.none(`DELETE FROM "Cases" WHERE id IN ($<ids:csv>)`, {
-            ids: createdCasesAndContacts.map(ccc => ccc.case.id),
-          }),
-        ]);
+        await db.none(`DELETE FROM "Cases" WHERE id IN ($<ids:csv>)`, {
+          ids: createdCasesAndContacts.map(ccc => ccc.case.id),
+        });
       });
 
       // eslint-disable-next-line jest/expect-expect
@@ -330,7 +372,7 @@ describe('/cases route', () => {
         let createdCase1;
         let createdCase2;
         let createdCase3;
-        let createdContact;
+        let createdContact: Contact;
         const subRoute = `${route}/search`;
         const searchTestRunStart = new Date().toISOString();
 
@@ -338,17 +380,27 @@ describe('/cases route', () => {
           createdCase1 = await caseApi.createCase(withHouseholds(case1), accountSid, workerSid);
           createdCase2 = await caseApi.createCase(case1, accountSid, workerSid);
           createdCase3 = await caseApi.createCase(withPerpetrators(case1), accountSid, workerSid);
-          createdContact = await Contact.create(fillNameAndPhone(contact1), accountSid, workerSid);
+          const toCreate = fillNameAndPhone({ ...contact1, twilioWorkerId: workerSid });
 
+          toCreate.timeOfContact = new Date();
+          toCreate.taskId = `TASK_SID`;
+          toCreate.channelSid = `CHANNEL_SID`;
+          toCreate.serviceSid = 'SERVICE_SID';
           // Connects createdContact with createdCase2
-          createdContact.caseId = createdCase2.id;
-          await createdContact.save(options);
+          createdContact = await contactDb.create(accountSid, toCreate, []);
+          createdContact = await contactDb.connectToCase(
+            accountSid,
+            createdContact.id.toString(),
+            createdCase2.id,
+          );
           // Get case 2 again, now a contact is connected
           createdCase2 = await caseApi.getCase(createdCase2.id, accountSid);
         });
 
         afterEach(async () => {
-          await createdContact.destroy();
+          await db.none(`DELETE FROM "Contacts" WHERE id = $<id>`, {
+            id: createdContact.id,
+          });
           await caseDb.deleteById(createdCase1.id, accountSid);
           await caseDb.deleteById(createdCase2.id, accountSid);
           await caseDb.deleteById(createdCase3.id, accountSid);
@@ -877,6 +929,70 @@ describe('/cases route', () => {
               sampleCasesAndContacts.sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
             expectedTotalCount: 10,
           },
+          {
+            description: 'should include only cases matching category if one is specified',
+            searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
+            body: {
+              filters: <CaseListFilters>{
+                categories: [{ category: 'a', subcategory: 'ab' }],
+              },
+            },
+            sampleConfig: <InsertSampleCaseSettings>{
+              ...SEARCHABLE_CONTACT_PHONE_NUMBER_SAMPLE_CONFIG,
+              categoriesGenerator: idx => ({
+                a: {
+                  aa: true,
+                  ab: !!(idx % 2),
+                },
+                b: {
+                  ba: !(idx % 3),
+                  bb: false,
+                },
+              }),
+            },
+            expectedCasesAndContacts: sampleCasesAndContacts =>
+              sampleCasesAndContacts
+                .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id)
+                .filter(ccc => ccc.contact.rawJson.caseInformation.categories.a.ab),
+            expectedTotalCount: 5,
+          },
+          {
+            description:
+              'should include only cases matching any category if multiple are specified',
+            searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
+            body: {
+              filters: <CaseListFilters>{
+                categories: [
+                  { category: 'a', subcategory: 'ab' },
+                  { category: 'b', subcategory: 'ba' },
+                  { category: 'b', subcategory: 'bb' },
+                ],
+              },
+            },
+            sampleConfig: <InsertSampleCaseSettings>{
+              ...SEARCHABLE_CONTACT_PHONE_NUMBER_SAMPLE_CONFIG,
+              categoriesGenerator: idx => ({
+                a: {
+                  aa: true,
+                  ab: !(idx % 2),
+                },
+                b: {
+                  ba: !(idx % 3),
+                  bb: false,
+                },
+              }),
+            },
+            expectedCasesAndContacts: sampleCasesAndContacts =>
+              sampleCasesAndContacts
+                .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id)
+                .filter(
+                  ccc =>
+                    ccc.contact.rawJson.caseInformation.categories.a.ab ||
+                    ccc.contact.rawJson.caseInformation.categories.b.ba ||
+                    ccc.contact.rawJson.caseInformation.categories.b.bb,
+                ),
+            expectedTotalCount: 7,
+          },
         ]).test(
           '$description',
           async ({
@@ -898,10 +1014,8 @@ describe('/cases route', () => {
                 expectedTotalCount,
               );
             } finally {
-              await Contact.destroy({
-                where: {
-                  id: createdCasesAndContacts.filter(ccc => ccc.contact).map(ccc => ccc.contact.id),
-                },
+              await db.none(`DELETE FROM "Contacts" WHERE id IN ($<ids:csv>)`, {
+                ids: createdCasesAndContacts.map(ccc => ccc.contact?.id).filter(id => id),
               });
               await db.none(`DELETE FROM "Cases" WHERE id IN ($<ids:csv>)`, {
                 ids: createdCasesAndContacts.map(ccc => ccc.case.id),

@@ -84,6 +84,22 @@ const dateFilterCondition = (
   return existsCondition;
 };
 
+// Produces a table of
+const CATEGORIES_FILTER_SQL = `EXISTS (
+SELECT 1 FROM 
+(
+    SELECT categories.key AS category, subcategories.key AS subcategory 
+    FROM "Contacts" c,jsonb_each(c."rawJson"->'caseInformation'->'categories') categories, jsonb_each_text(categories.value) AS subcategories 
+    WHERE c."caseId" = cases.id AND c."accountSid" = cases."accountSid" AND subcategories.value = 'true'
+) AS availableCategories
+INNER JOIN jsonb_to_recordset($<categories>) AS requiredCategories(category text, subcategory text) 
+ON requiredCategories.category = availableCategories.category AND requiredCategories.subcategory = availableCategories.subcategory
+)`;
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const bulkCategoriesCondition = (categories: CategoryFilter[]): string =>
+  pgp.as.format(CATEGORIES_FILTER_SQL, categories);
+
 const categoriesCondition = (categories: CategoryFilter[]): string => {
   const whereConditions = categories
     .map(
@@ -92,12 +108,16 @@ const categoriesCondition = (categories: CategoryFilter[]): string => {
     )
     .join(' OR ');
 
-  return pgp.as.format(
+  const sql = pgp.as.format(
     `EXISTS (
       SELECT 1 FROM "Contacts" c
       WHERE c."caseId" = cases.id AND c."accountSid" = cases."accountSid" AND (${whereConditions})
     )`,
   );
+
+  console.log('CATEGORY FILTER SQL:', sql);
+
+  return sql;
 };
 
 const filterSql = ({
@@ -137,6 +157,7 @@ const filterSql = ({
   );
   if (categories && categories.length) {
     filterSqlClauses.push(categoriesCondition(categories));
+    //filterSqlClauses.push(bulkCategoriesCondition(categories));
   }
   if (!includeOrphans) {
     filterSqlClauses.push(`jsonb_array_length(contacts."connectedContacts") > 0`);

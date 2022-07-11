@@ -125,7 +125,7 @@ export const create = async (
   accountSid: string,
   newContact: NewContactRecord,
   csamReportIds: number[],
-): Promise<Contact | undefined> => {
+): Promise<Contact> => {
   return db.tx(async connection => {
     if (newContact.taskId) {
       const existingContact: Contact = await connection.oneOrNone<Contact>(

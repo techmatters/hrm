@@ -1,5 +1,7 @@
 import { db, pgp } from '../src/connection-pool';
 import { WELL_KNOWN_CASE_SECTION_NAMES } from '../src/case/case';
+import { NewContactRecord } from '../src/contact/sql/contact-insert-sql';
+import { ContactRawJson } from '../src/contact/contact-json';
 
 declare global {
   namespace jest {
@@ -129,12 +131,17 @@ export const validateCaseListResponse = (actual, expectedCaseAndContactModels, c
         createdAt: expectedCaseModel.createdAt.toISOString(),
         updatedAt: expectedCaseModel.updatedAt.toISOString(),
       });
+
       expect(actual.body.cases[index].connectedContacts).toStrictEqual([
         expect.objectContaining({
-          ...expectedContactModel.dataValues,
+          ...expectedContactModel,
           csamReports: [],
-          createdAt: expect.toParseAsDate(expectedContactModel.dataValues.createdAt),
-          updatedAt: expect.toParseAsDate(expectedContactModel.dataValues.updatedAt),
+          timeOfContact: expect.toParseAsDate(expectedContactModel.timeOfContact),
+          createdAt: expect.toParseAsDate(expectedContactModel.createdAt),
+          updatedAt: expect.toParseAsDate(expectedContactModel.updatedAt),
+          rawJson: {
+            ...expectedContactModel.rawJson,
+          },
         }),
       ]);
     },
@@ -146,14 +153,14 @@ export const validateSingleCaseResponse = (actual, expectedCaseModel, expectedCo
 };
 
 export const fillNameAndPhone = (
-  contact,
+  contact: NewContactRecord & { form?: ContactRawJson },
   name = {
     firstName: 'Maria',
     lastName: 'Silva',
   },
   number = '+1-202-555-0184',
-) => {
-  const modifiedContact = {
+): NewContactRecord => {
+  const modifiedContact: NewContactRecord = {
     ...contact,
     rawJson: {
       ...contact.form,
@@ -165,7 +172,7 @@ export const fillNameAndPhone = (
     number,
   };
 
-  delete modifiedContact.form;
+  delete (<any>modifiedContact).form;
 
   return modifiedContact;
 };
