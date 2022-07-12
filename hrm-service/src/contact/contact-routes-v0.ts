@@ -2,7 +2,7 @@ import { SafeRouter, publicEndpoint, actionsMaps } from '../permissions';
 import createError from 'http-errors';
 import { patchContact, connectContactToCase, searchContacts, createContact } from './contact';
 import { asyncHandler } from '../utils';
-import { getById } from '../contact/contact-data-access';
+import { getById } from './contact-data-access';
 // eslint-disable-next-line prettier/prettier
 import type { Request, Response, NextFunction } from 'express';
 

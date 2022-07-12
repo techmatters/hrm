@@ -84,7 +84,7 @@ const dateFilterCondition = (
   return existsCondition;
 };
 
-// Produces a table of
+// Produces a table of category / subcategory pairs from the input category filters, and another from the categories specified in the contact json, and joins on them
 const CATEGORIES_FILTER_SQL = `EXISTS (
 SELECT 1 FROM 
 (
@@ -92,33 +92,13 @@ SELECT 1 FROM
     FROM "Contacts" c,jsonb_each(c."rawJson"->'caseInformation'->'categories') categories, jsonb_each_text(categories.value) AS subcategories 
     WHERE c."caseId" = cases.id AND c."accountSid" = cases."accountSid" AND subcategories.value = 'true'
 ) AS availableCategories
-INNER JOIN jsonb_to_recordset($<categories>) AS requiredCategories(category text, subcategory text) 
+INNER JOIN jsonb_to_recordset($<categories:json>) AS requiredCategories(category text, subcategory text) 
 ON requiredCategories.category = availableCategories.category AND requiredCategories.subcategory = availableCategories.subcategory
 )`;
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const bulkCategoriesCondition = (categories: CategoryFilter[]): string =>
-  pgp.as.format(CATEGORIES_FILTER_SQL, categories);
-
-const categoriesCondition = (categories: CategoryFilter[]): string => {
-  const whereConditions = categories
-    .map(
-      c =>
-        `c."rawJson"->'caseInformation'->'categories'->'${c.category}'->>'${c.subcategory}' ilike 'true'`,
-    )
-    .join(' OR ');
-
-  const sql = pgp.as.format(
-    `EXISTS (
-      SELECT 1 FROM "Contacts" c
-      WHERE c."caseId" = cases.id AND c."accountSid" = cases."accountSid" AND (${whereConditions})
-    )`,
-  );
-
-  console.log('CATEGORY FILTER SQL:', sql);
-
-  return sql;
-};
+  pgp.as.format(CATEGORIES_FILTER_SQL, { categories });
 
 const filterSql = ({
   counsellors,
@@ -156,8 +136,8 @@ const filterSql = ({
     ].filter(sql => sql),
   );
   if (categories && categories.length) {
-    filterSqlClauses.push(categoriesCondition(categories));
-    //filterSqlClauses.push(bulkCategoriesCondition(categories));
+    //filterSqlClauses.push(categoriesCondition(categories));
+    filterSqlClauses.push(bulkCategoriesCondition(categories));
   }
   if (!includeOrphans) {
     filterSqlClauses.push(`jsonb_array_length(contacts."connectedContacts") > 0`);

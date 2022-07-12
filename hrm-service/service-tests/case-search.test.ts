@@ -1020,6 +1020,42 @@ describe('/cases route', () => {
                 ),
             expectedTotalCount: 7,
           },
+          {
+            description: 'should allow any characters in categories and subcategories',
+            searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
+            body: {
+              filters: <CaseListFilters>{
+                categories: [
+                  { category: 'a', subcategory: "a'b\n,.!\t:{}" },
+                  { category: "'b\n\r,.!\t:{}", subcategory: 'ba' },
+                  { category: 'b', subcategory: 'bb' },
+                ],
+              },
+            },
+            sampleConfig: <InsertSampleCaseSettings>{
+              ...SEARCHABLE_CONTACT_PHONE_NUMBER_SAMPLE_CONFIG,
+              categoriesGenerator: idx => ({
+                a: {
+                  aa: true,
+                  "a'b\n,.!\t:{}": !(idx % 2),
+                },
+                "'b\n\r,.!	:{}": {
+                  ba: !(idx % 3),
+                  bb: false,
+                },
+              }),
+            },
+            expectedCasesAndContacts: sampleCasesAndContacts =>
+              sampleCasesAndContacts
+                .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id)
+                .filter(
+                  ccc =>
+                    ccc.contact.rawJson.caseInformation.categories.a["a'b\n,.!\t:{}"] ||
+                    ccc.contact.rawJson.caseInformation.categories["'b\n\r,.!	:{}"].ba ||
+                    ccc.contact.rawJson.caseInformation.categories["'b\n\r,.!	:{}"].bb,
+                ),
+            expectedTotalCount: 7,
+          },
         ]).test(
           '$description',
           async ({
