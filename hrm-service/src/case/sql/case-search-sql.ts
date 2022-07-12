@@ -136,7 +136,6 @@ const filterSql = ({
     ].filter(sql => sql),
   );
   if (categories && categories.length) {
-    //filterSqlClauses.push(categoriesCondition(categories));
     filterSqlClauses.push(bulkCategoriesCondition(categories));
   }
   if (!includeOrphans) {
