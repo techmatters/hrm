@@ -86,7 +86,7 @@ const insertSampleCases = async ({
       delete toCreate.updatedAt;
     }
     const followUpDate = followUpDateGenerator(i);
-    if (followUpDate) {
+    if (typeof followUpDate !== 'undefined') {
       toCreate.info = toCreate.info ?? {};
       toCreate.info.followUpDate = followUpDate;
     } else if (toCreate.info) {
@@ -778,31 +778,6 @@ describe('/cases route', () => {
           },
           {
             description:
-              'should only include cases with followUpDate after the followUpDate.from filter if specified',
-            searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
-            body: {
-              filters: {
-                followUpDate: {
-                  from: add(baselineDate, { days: 4, hours: 12 }).toISOString(),
-                },
-              },
-            },
-            sampleConfig: <InsertSampleCaseSettings>{
-              ...SEARCHABLE_CONTACT_PHONE_NUMBER_SAMPLE_CONFIG,
-              followUpDateGenerator: idx => addDays(baselineDate, idx).toISOString(),
-            },
-            expectedCasesAndContacts: sampleCasesAndContacts =>
-              sampleCasesAndContacts
-                .filter(
-                  ccc =>
-                    new Date(ccc.case.info.followUpDate) >
-                    add(baselineDate, { days: 4, hours: 12 }),
-                )
-                .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
-            expectedTotalCount: 5,
-          },
-          {
-            description:
               'should only include cases with followUpDate between the followUpDate.from and the followUpDate.to filter if both are specified',
             searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
             body: {
@@ -831,6 +806,36 @@ describe('/cases route', () => {
           },
           {
             description:
+              'should exclude cases with followUpDate set as empty string if the followUpDate.from and the followUpDate.to filter if both are specified',
+            searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
+            body: {
+              filters: {
+                followUpDate: {
+                  from: add(baselineDate, { days: 2, hours: 12 }).toISOString(),
+                  to: add(baselineDate, { days: 6, hours: 12 }).toISOString(),
+                },
+              },
+            },
+            sampleConfig: <InsertSampleCaseSettings>{
+              ...SEARCHABLE_CONTACT_PHONE_NUMBER_SAMPLE_CONFIG,
+              followUpDateGenerator: idx =>
+                idx % 2 ? '' : addDays(baselineDate, idx).toISOString(),
+            },
+            expectedCasesAndContacts: sampleCasesAndContacts =>
+              sampleCasesAndContacts
+                .filter(
+                  ccc =>
+                    ccc.case.info.followUpDate &&
+                    new Date(ccc.case.info.followUpDate) >
+                      add(baselineDate, { days: 2, hours: 12 }) &&
+                    new Date(ccc.case.info.followUpDate) <
+                      add(baselineDate, { days: 6, hours: 12 }),
+                )
+                .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+            expectedTotalCount: 2,
+          },
+          {
+            description:
               'should only include cases without followUpDate set in followUpDate.exists: MUST_NOT_EXIST filter specified',
             searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
             body: {
@@ -844,6 +849,28 @@ describe('/cases route', () => {
               ...SEARCHABLE_CONTACT_PHONE_NUMBER_SAMPLE_CONFIG,
               followUpDateGenerator: idx =>
                 idx % 2 === 1 ? addDays(baselineDate, idx).toISOString() : undefined,
+            },
+            expectedCasesAndContacts: sampleCasesAndContacts =>
+              sampleCasesAndContacts
+                .filter(ccc => !ccc.case.info.followUpDate)
+                .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+            expectedTotalCount: 5,
+          },
+          {
+            description:
+              'should count an empty string value as not existing followUpDate.exists: MUST_NOT_EXIST filter specified',
+            searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
+            body: {
+              filters: {
+                followUpDate: {
+                  exists: DateExistsCondition.MUST_NOT_EXIST,
+                },
+              },
+            },
+            sampleConfig: <InsertSampleCaseSettings>{
+              ...SEARCHABLE_CONTACT_PHONE_NUMBER_SAMPLE_CONFIG,
+              followUpDateGenerator: idx =>
+                idx % 2 === 1 ? addDays(baselineDate, idx).toISOString() : '',
             },
             expectedCasesAndContacts: sampleCasesAndContacts =>
               sampleCasesAndContacts
