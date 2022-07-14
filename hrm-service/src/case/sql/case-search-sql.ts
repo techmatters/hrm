@@ -89,7 +89,7 @@ const CATEGORIES_FILTER_SQL = `EXISTS (
 SELECT 1 FROM 
 (
     SELECT categories.key AS category, subcategories.key AS subcategory 
-    FROM "Contacts" c,jsonb_each(c."rawJson"->'caseInformation'->'categories') categories, jsonb_each_text(categories.value) AS subcategories 
+    FROM "Contacts" c, jsonb_each(c."rawJson"->'caseInformation'->'categories') categories, jsonb_each_text(categories.value) AS subcategories 
     WHERE c."caseId" = cases.id AND c."accountSid" = cases."accountSid" AND subcategories.value = 'true'
 ) AS availableCategories
 INNER JOIN jsonb_to_recordset($<categories:json>) AS requiredCategories(category text, subcategory text) 
