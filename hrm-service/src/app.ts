@@ -1,15 +1,15 @@
-const createError = require('http-errors');
-const express = require('express');
-require('express-async-errors');
-const cors = require('cors');
-const TokenValidator = require('twilio-flex-token-validator').validator;
-const crypto = require('crypto');
+import createError from 'http-errors';
+import express from 'express';
+import 'express-async-errors';
+import cors from 'cors';
+import { validator as TokenValidator } from 'twilio-flex-token-validator';
+import crypto from 'crypto';
 
-const httpLogger = require('./logging/httplogging');
-const swagger = require('./swagger');
-const { apiV0 } = require('./routes');
-const { unauthorized } = require('./utils');
-const { setupPermissions, User } = require('./permissions');
+import httpLogger from './logging/httplogging';
+import swagger from './swagger';
+import { apiV0 } from './routes';
+import { unauthorized } from './utils';
+import { setupPermissions, User } from './permissions';
 
 const app = express();
 const apiKey = process.env.API_KEY;
@@ -37,11 +37,11 @@ app.options('/contacts', cors());
  *
  * IMPORTANT: This kind of static key acces should never be used to retrieve sensitive information.
  */
-const canAccessResourceWithStaticKey = (path, method) => {
-  if (path === '/postSurveys' && method === 'POST') return true;
-
-  return false;
+const canAccessResourceWithStaticKey = (path, method): boolean => {
+  return path === '/postSurveys' && method === 'POST';
 };
+
+type TokenValidatorResponse = { worker_sid: string; roles: string[] };
 
 /**
  * @param {import('express').Request} req
@@ -64,7 +64,9 @@ async function authorizationMiddleware(req, res, next) {
       const authToken = process.env[authTokenKey];
       if (!authToken) throw new Error('authToken not provided for the specified accountSid.');
 
-      const tokenResult = await TokenValidator(token, accountSid, authToken);
+      const tokenResult = <TokenValidatorResponse>(
+        await TokenValidator(token, accountSid, authToken)
+      );
       req.user = new User(tokenResult.worker_sid, tokenResult.roles);
       return next();
     } catch (err) {
@@ -150,4 +152,4 @@ app.use((err, req, res, next) => {
 
 console.log(`${new Date(Date.now()).toLocaleString()}: app.js has been created`);
 
-module.exports = app;
+export default app;

@@ -2,7 +2,7 @@ import supertest from 'supertest';
 import * as Sequelize from 'sequelize';
 // eslint-disable-next-line prettier/prettier
 import type { ContactRawJson } from '../src/contact/contact-json';
-const app = require('../src/app');
+import app from '../src/app';
 const models = require('../src/models');
 const mocks = require('./mocks');
 const each = require('jest-each').default;

@@ -13,10 +13,10 @@ import {
 } from './case-validation';
 import { CaseListFilters, DateExistsCondition } from '../src/case/case-data-access';
 import * as contactDb from '../src/contact/contact-data-access';
+import expressApp from '../src/app';
 
 const supertest = require('supertest');
 const each = require('jest-each').default;
-const expressApp = require('../src/app');
 const mocks = require('./mocks');
 
 export const workerSid = 'worker-sid';

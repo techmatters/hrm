@@ -1,6 +1,6 @@
+import app from '../src/app';
 const supertest = require('supertest');
 const Sequelize = require('sequelize');
-const app = require('../src/app');
 const models = require('../src/models');
 const mocks = require('./mocks');
 

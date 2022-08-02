@@ -13,7 +13,7 @@ import { isBefore } from 'date-fns';
 
 const supertest = require('supertest');
 const each = require('jest-each').default;
-const expressApp = require('../src/app');
+import expressApp from '../src/app';
 const mocks = require('./mocks');
 
 export const workerSid = 'worker-sid';
