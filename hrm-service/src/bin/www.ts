@@ -4,7 +4,7 @@
  * Module dependencies.
  */
 console.log(new Date(Date.now()).toLocaleString() + ': trying to initialize www');
-import app from '../app';
+import { createService } from '../app';
 import debugFactory from 'debug';
 import http from 'http';
 
@@ -30,11 +30,11 @@ function normalizePort(val) {
   return false;
 }
 
+const app = createService();
 /**
  * Create HTTP server.
  */
 console.log(new Date(Date.now()).toLocaleString() + ': trying to create server');
-
 var server = http.createServer(app);
 console.log(new Date(Date.now()).toLocaleString() + ': created server, about to listen');
 /**

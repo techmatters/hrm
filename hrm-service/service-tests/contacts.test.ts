@@ -2,7 +2,7 @@ import supertest from 'supertest';
 import * as Sequelize from 'sequelize';
 // eslint-disable-next-line prettier/prettier
 import type { ContactRawJson } from '../src/contact/contact-json';
-import app from '../src/app';
+import { createService } from '../src/app';
 const models = require('../src/models');
 const mocks = require('./mocks');
 const each = require('jest-each').default;
@@ -13,7 +13,7 @@ import './case-validation';
 import { PatchPayload } from '../src/contact/contact';
 import { getById } from '../src/contact/contact-data-access';
 
-const server = app.listen();
+const server = createService().listen();
 const request = supertest.agent(server);
 
 /**

@@ -13,14 +13,14 @@ import {
 } from './case-validation';
 import { CaseListFilters, DateExistsCondition } from '../src/case/case-data-access';
 import * as contactDb from '../src/contact/contact-data-access';
-import expressApp from '../src/app';
+import { createService } from '../src/app';
 
 const supertest = require('supertest');
 const each = require('jest-each').default;
 const mocks = require('./mocks');
 
 export const workerSid = 'worker-sid';
-const server = expressApp.listen();
+const server = createService().listen();
 const request = supertest.agent(server);
 
 const { case1, contact1, accountSid } = mocks;

@@ -1,5 +1,8 @@
-import { SafeRouter as MockSafeRouter, publicEndpoint as mockPublicEndpoint } from '../src/permissions';
-import app from '../src/app';
+import {
+  SafeRouter as MockSafeRouter,
+  publicEndpoint as mockPublicEndpoint,
+} from '../src/permissions';
+import { createService } from '../src/app';
 const supertest = require('supertest');
 const { accountSid } = require('./mocks');
 
@@ -31,7 +34,7 @@ jest.mock('../src/routes', () => {
   );
   return { apiV0: mockRouter.expressRouter };
 });
-const server = app.listen();
+const server = createService().listen();
 const request = supertest.agent(server);
 
 const headers = {

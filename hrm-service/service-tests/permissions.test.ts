@@ -1,10 +1,10 @@
-import expressApp from '../src/app';
+import { createService } from '../src/app';
 import { rulesMap } from '../src/permissions';
 
 const supertest = require('supertest');
 const each = require('jest-each').default;
 
-const server = expressApp.listen();
+const server = createService().listen();
 const request = supertest.agent(server);
 
 const headers = {

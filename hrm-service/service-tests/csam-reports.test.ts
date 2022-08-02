@@ -1,4 +1,4 @@
-import app from '../src/app';
+import { createService } from '../src/app';
 const supertest = require('supertest');
 const Sequelize = require('sequelize');
 const models = require('../src/models');
@@ -13,7 +13,7 @@ console.log(process.env.INCLUDE_ERROR_IN_RESPONSE);
 const { CSAMReport, Contact } = models;
 const CSAMReportController = require('../src/controllers/csam-report-controller')(CSAMReport);
 
-const server = app.listen();
+const server = createService().listen();
 const request = supertest.agent(server);
 
 const { accountSid } = mocks;

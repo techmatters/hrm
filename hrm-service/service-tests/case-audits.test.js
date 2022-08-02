@@ -1,10 +1,10 @@
-import app from '../src/app';
+import { createService } from '../src/app';
 const supertest = require('supertest');
 const Sequelize = require('sequelize');
 const models = require('../src/models');
 const mocks = require('./mocks');
 
-const server = app.listen();
+const server = createService().listen();
 const request = supertest.agent(server);
 
 const { case1, case2, accountSid } = mocks;
