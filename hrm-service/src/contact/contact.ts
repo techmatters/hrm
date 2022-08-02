@@ -7,8 +7,9 @@ import {
   SearchParameters,
 } from './contact-data-access';
 import { ContactRawJson } from './contact-json';
-import { retrieveCategories, getPaginationElements } from '../controllers/helpers';
+import { getPaginationElements, retrieveCategories } from '../controllers/helpers';
 import { NewContactRecord } from './sql/contact-insert-sql';
+import { createContactJob, JobType } from '../jobs/job-data-access';
 
 export type PatchPayload = {
   rawJson: Partial<
@@ -70,11 +71,19 @@ export const createContact = async (
       newContact.queueName || (<any>(newContact.rawJson ?? newContact.form ?? {})).queueName,
     createdBy,
   };
-  return create(
+  const created = await create(
     accountSid,
     completeNewContact,
     (newContact.csamReports ?? []).map(csr => csr.id),
   );
+  if (created.channelSid?.startsWith('CA')) {
+    await createContactJob({
+      jobType: JobType.RETRIEVE_CONTACT_RECORDING_URL,
+      resource: created,
+      additionalPayload: undefined,
+    });
+  }
+  return created;
 };
 
 export const patchContact = async (

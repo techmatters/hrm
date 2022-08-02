@@ -1,3 +1,10 @@
+export const enum ContactMediaType {
+  RECORDING = 'recording',
+  TRANSCRIPT = 'transcript',
+}
+
+export type ContactMediaUrl = { url: string; type: ContactMediaType };
+
 type NestedInformation = { name: { firstName: string; lastName: string } };
 
 export type PersonInformation = NestedInformation & {
@@ -17,4 +24,5 @@ export type ContactRawJson = {
     [key: string]: string | boolean | Record<string, Record<string, boolean>>;
   };
   contactlessTask?: { [key: string]: string | boolean };
+  mediaUrls?: ContactMediaUrl[];
 };

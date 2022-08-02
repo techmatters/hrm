@@ -1,10 +1,14 @@
 import { db } from '../connection-pool';
-import { UPDATE_CASEID_BY_ID, UPDATE_RAWJSON_BY_ID } from './sql/contact-update-sql';
+import {
+  APPEND_MEDIA_URL_SQL,
+  UPDATE_CASEID_BY_ID,
+  UPDATE_RAWJSON_BY_ID,
+} from './sql/contact-update-sql';
 import { SELECT_CONTACT_SEARCH } from './sql/contact-search-sql';
 import { endOfDay, parseISO, startOfDay } from 'date-fns';
 import { selectSingleContactByIdSql, selectSingleContactByTaskId } from './sql/contact-get-sql';
 import { insertContactSql, NewContactRecord } from './sql/contact-insert-sql';
-import { PersonInformation } from './contact-json';
+import { ContactMediaUrl, PersonInformation } from './contact-json';
 
 type ExistingContactRecord = {
   id: number;
@@ -125,7 +129,7 @@ export const create = async (
   accountSid: string,
   newContact: NewContactRecord,
   csamReportIds: number[],
-): Promise<Contact> => {
+): Promise<Contact | undefined> => {
   return db.tx(async connection => {
     if (newContact.taskId) {
       const existingContact: Contact = await connection.oneOrNone<Contact>(
@@ -183,6 +187,21 @@ export const connectToCase = async (
     return updatedContact;
   });
 };
+
+/**
+ * Currently just adds them naively, should probably try to dedup, or perhaps simply overwrite them instead.
+ * @param accountSid
+ * @param contactId
+ * @param mediaUrls
+ */
+export const appendMediaUrls = async (
+  accountSid: string,
+  contactId: number,
+  mediaUrls: ContactMediaUrl[],
+): Promise<void> =>
+  db.task(async connection =>
+    connection.none(APPEND_MEDIA_URL_SQL, { accountSid, contactId, mediaUrls }),
+  );
 
 export const getById = async (accountSid: string, contactId: string): Promise<Contact> =>
   db.task(async connection =>
