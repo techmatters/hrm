@@ -9,9 +9,10 @@ import httpLogger from './logging/httplogging';
 import swagger from './swagger';
 import { apiV0 } from './routes';
 import { unauthorized } from './utils';
-import { setupPermissions, User } from './permissions';
+import { Permissions, setupPermissions, User } from './permissions';
+import jsonPermissions from './permissions/jsonPermissions';
 
-export function createService() {
+export function createService(permissions: Permissions = jsonPermissions) {
   const app = express();
   const apiKey = process.env.API_KEY;
 
@@ -127,8 +128,8 @@ export function createService() {
     '/v0/accounts/:accountSid',
     addAccountSid,
     authorizationMiddleware,
-    setupPermissions,
-    apiV0,
+    setupPermissions(permissions),
+    apiV0(permissions),
   );
 
   app.use((req, res, next) => {

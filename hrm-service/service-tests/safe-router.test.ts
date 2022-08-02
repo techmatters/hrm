@@ -32,8 +32,11 @@ jest.mock('../src/routes', () => {
     middlewareThatAuthorizes,
     defaultHandler,
   );
-  return { apiV0: mockRouter.expressRouter };
+  return {
+    apiV0: () => mockRouter.expressRouter,
+  };
 });
+
 const server = createService().listen();
 const request = supertest.agent(server);
 
