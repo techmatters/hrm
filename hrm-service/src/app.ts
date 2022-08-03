@@ -20,7 +20,7 @@ type ServiceCreationOptions = Partial<{
 export function createService({
   permissions = jsonPermissions,
   authTokenLookup = accountSid => process.env[`TWILIO_AUTH_TOKEN_${accountSid}`],
-}: ServiceCreationOptions) {
+}: ServiceCreationOptions = {}) {
   const app = express();
   const apiKey = process.env.API_KEY;
 
