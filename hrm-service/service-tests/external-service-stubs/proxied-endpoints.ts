@@ -1,11 +1,15 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { Mockttp, getLocal, generateCACertificate } from 'mockttp';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { createGlobalProxyAgent } from 'global-agent';
 
 let mockServer: Mockttp;
 
 async function mockttpServer() {
   if (!mockServer) {
     const https = await generateCACertificate();
+    // Just wave through them self signed certs... :-/
+    process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
     mockServer = getLocal({ https });
   }
   return mockServer;
@@ -13,8 +17,12 @@ async function mockttpServer() {
 
 export async function start(): Promise<void> {
   const server = await mockttpServer();
-  await server.start(8088);
+  await server.start();
   await server.forAnyRequest().thenPassThrough();
+  const global = createGlobalProxyAgent();
+  // Filter local requests out from proxy to prevent loops.
+  global.NO_PROXY = 'localhost*,127.0.*,local.home*';
+  global.HTTP_PROXY = `http://localhost:${server.port}`;
 }
 
 export async function stop(): Promise<void> {
@@ -44,5 +52,6 @@ export async function mockSuccessfulTwilioAuthentication(
     .thenJson(200, <TokenValidatorResponse>{
       worker_sid: mockWorkerSid,
       roles: mockRoles,
+      valid: true,
     });
 }

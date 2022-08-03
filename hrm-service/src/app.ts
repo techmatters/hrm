@@ -12,7 +12,15 @@ import { unauthorized } from './utils';
 import { Permissions, setupPermissions, User } from './permissions';
 import jsonPermissions from './permissions/jsonPermissions';
 
-export function createService(permissions: Permissions = jsonPermissions) {
+type ServiceCreationOptions = Partial<{
+  permissions: Permissions;
+  authTokenLookup: (accountSid: string) => string;
+}>;
+
+export function createService({
+  permissions = jsonPermissions,
+  authTokenLookup = accountSid => process.env[`TWILIO_AUTH_TOKEN_${accountSid}`],
+}: ServiceCreationOptions) {
   const app = express();
   const apiKey = process.env.API_KEY;
 
@@ -62,8 +70,7 @@ export function createService(permissions: Permissions = jsonPermissions) {
     if (authorization.startsWith('Bearer')) {
       const token = authorization.replace('Bearer ', '');
       try {
-        const authTokenKey = `TWILIO_AUTH_TOKEN_${accountSid}`;
-        const authToken = process.env[authTokenKey];
+        const authToken = authTokenLookup(accountSid);
         if (!authToken) throw new Error('authToken not provided for the specified accountSid.');
 
         const tokenResult = <TokenValidatorResponse>(

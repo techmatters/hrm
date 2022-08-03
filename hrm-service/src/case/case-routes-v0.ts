@@ -40,6 +40,7 @@ const canEditCase = asyncHandler(async (req, res, next) => {
     if (!caseObj) throw createError(404);
 
     const actions = getActions(caseObj, body);
+    console.log(`Actions taken in case edit (case #${id})`, actions);
     const canEdit = actions.every(action => can(user, action, caseObj));
 
     if (canEdit) {
