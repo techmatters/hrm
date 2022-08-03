@@ -3,19 +3,22 @@ import * as caseApi from '../src/case/case';
 import { Case } from '../src/case/case';
 import * as caseDb from '../src/case/case-data-access';
 import { deleteCaseAudits } from './case-validation';
-import { Permissions } from '../src/permissions';
 import * as proxiedEndpoints from './external-service-stubs/proxied-endpoints';
 
+const openRules = require('../permission-rules/open.json');
 const supertest = require('supertest');
 const each = require('jest-each').default;
 import { createService } from '../src/app';
+import { RulesFile } from '../src/permissions/rulesMap';
 const mocks = require('./mocks');
 
 export const workerSid = 'worker-sid';
-let permissionsImpl: ReturnType<Permissions['checker']> = () => false;
+let testRules: RulesFile;
+
 const server = createService({
   permissions: {
-    checker: () => permissionsImpl,
+    rules: () => testRules,
+    cachePermissions: false, // Means we can evaluate different rules each request without restarting the service
   },
   authTokenLookup: () => 'picernic basket',
 }).listen();
@@ -27,6 +30,19 @@ const headers = {
   'Content-Type': 'application/json',
   Authorization: `Bearer bearing a bear (rawr)`,
 };
+
+function ruleFileWithOnePermittedOrDeniedAction(
+  permittedAction: string,
+  isPermitted: boolean,
+): RulesFile {
+  const ruleEntries = Object.keys(openRules).map(key => [
+    key,
+    (key === permittedAction && isPermitted) || (key !== permittedAction && !isPermitted)
+      ? [['everyone']]
+      : [],
+  ]);
+  return Object.fromEntries(ruleEntries);
+}
 
 afterAll(done => {
   console.log('Stopping proxied endpoints.');
@@ -225,10 +241,7 @@ describe('/cases/:id route - PUT', () => {
           update.info = { ...originalCase.info, ...caseUpdate.info, ...infoUpdate };
         }
 
-        permissionsImpl = (performer, action, target) =>
-          ((testingDeniedCase && action !== actionToTest) ||
-            (!testingDeniedCase && action === actionToTest)) &&
-          target;
+        testRules = ruleFileWithOnePermittedOrDeniedAction(actionToTest, !testingDeniedCase);
         const permittedResponse = await request
           .put(subRoute(originalCase.id))
           .set(headers)

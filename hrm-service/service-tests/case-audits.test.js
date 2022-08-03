@@ -1,10 +1,11 @@
 import { createService } from '../src/app';
+import { openPermissions } from '../src/permissions/jsonPermissions';
 const supertest = require('supertest');
 const Sequelize = require('sequelize');
 const models = require('../src/models');
 const mocks = require('./mocks');
 
-const server = createService().listen();
+const server = createService({ permissions: openPermissions }).listen();
 const request = supertest.agent(server);
 
 const { case1, case2, accountSid } = mocks;

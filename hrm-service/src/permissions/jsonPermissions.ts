@@ -1,16 +1,5 @@
 import { rulesMap } from './rulesMap';
-import { setupCanForRules } from './setupCanForRules';
 import { Permissions } from './index';
-
-const initializedCanMap = Object.entries(rulesMap).reduce<
-  { [key in keyof typeof rulesMap]: ReturnType<typeof setupCanForRules> }
->((accum, [key, rules]) => {
-  const can = setupCanForRules(rules);
-  return {
-    ...accum,
-    [key]: can,
-  };
-}, null);
 
 export const getPermissionsConfigName = (accountSid: string) => {
   const permissionsKey = `PERMISSIONS_${accountSid}`;
@@ -28,27 +17,18 @@ export const getPermissionsConfigName = (accountSid: string) => {
 /**
  * @throws Will throw if there is no env var set for PERMISSIONS_${accountSid} or if it's an invalid key in rulesMap
  */
-const lookup: Permissions = {
-  checker: (accountSid: string) => {
-    if (process.env.USE_OPEN_PERMISSIONS) {
-      return initializedCanMap.open;
-    }
-
-    const permissionsConfigName = getPermissionsConfigName(accountSid);
-    const initializedCan = initializedCanMap[permissionsConfigName];
-
-    if (!initializedCan) throw new Error(`Cannot find rules for ${permissionsConfigName}`);
-
-    if (typeof initializedCan === 'string')
-      throw new Error(`Error in rules for ${permissionsConfigName}. Error: ${initializedCan}`);
-
-    return initializedCan;
-  },
+export const jsonPermissions: Permissions = {
   rules: (accountSid: string) => {
     const permissionsConfigName = getPermissionsConfigName(accountSid);
 
-    return rulesMap[permissionsConfigName];
+    const rules = rulesMap[permissionsConfigName];
+    if (!rules) throw new Error(`Cannot find rules for ${permissionsConfigName}`);
+    return rules;
   },
+  cachePermissions: true,
 };
 
-export default lookup;
+export const openPermissions: Permissions = {
+  rules: () => rulesMap.open,
+  cachePermissions: true,
+};

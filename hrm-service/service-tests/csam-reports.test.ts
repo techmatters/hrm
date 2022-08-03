@@ -4,6 +4,7 @@ const Sequelize = require('sequelize');
 const models = require('../src/models');
 const mocks = require('./mocks');
 import './case-validation';
+import { openPermissions } from '../src/permissions/jsonPermissions';
 
 console.log(process.env.INCLUDE_ERROR_IN_RESPONSE);
 
@@ -13,7 +14,7 @@ console.log(process.env.INCLUDE_ERROR_IN_RESPONSE);
 const { CSAMReport, Contact } = models;
 const CSAMReportController = require('../src/controllers/csam-report-controller')(CSAMReport);
 
-const server = createService().listen();
+const server = createService({ permissions: openPermissions }).listen();
 const request = supertest.agent(server);
 
 const { accountSid } = mocks;

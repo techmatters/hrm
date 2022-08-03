@@ -8,9 +8,11 @@ import { RulesFile } from './rulesMap';
 // eslint-disable-next-line prettier/prettier
 import type { Request, Response, NextFunction } from 'express';
 
+const canCache: Record<string, ReturnType<typeof setupCanForRules>> = {};
+
 export type Permissions = {
-  checker: (accountSid: string) => ReturnType<typeof setupCanForRules>;
-  rules?: (accountSid: string) => RulesFile;
+  rules: (accountSid: string) => RulesFile;
+  cachePermissions: boolean;
 };
 
 /**
@@ -29,8 +31,12 @@ export const applyPermissions = (req: Request,
 
 export const setupPermissions = (lookup: Permissions) => (req: Request, res: Response, next: NextFunction) => {
   const { accountSid } = <any>req;
-  const initializedCan = lookup.checker(accountSid);
-
-  applyPermissions(req, initializedCan);
+  if (lookup.cachePermissions) {
+    canCache[accountSid] = canCache[accountSid] ?? setupCanForRules(lookup.rules(accountSid));
+    const initializedCan = canCache[accountSid];
+    applyPermissions(req, initializedCan);
+  } else {
+    applyPermissions(req, setupCanForRules(lookup.rules(accountSid)));
+  }
   return next();
 };

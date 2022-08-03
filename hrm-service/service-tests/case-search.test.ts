@@ -14,13 +14,14 @@ import {
 import { CaseListFilters, DateExistsCondition } from '../src/case/case-data-access';
 import * as contactDb from '../src/contact/contact-data-access';
 import { createService } from '../src/app';
+import { openPermissions } from '../src/permissions/jsonPermissions';
 
 const supertest = require('supertest');
 const each = require('jest-each').default;
 const mocks = require('./mocks');
 
 export const workerSid = 'worker-sid';
-const server = createService().listen();
+const server = createService({ permissions: openPermissions }).listen();
 const request = supertest.agent(server);
 
 const { case1, contact1, accountSid } = mocks;

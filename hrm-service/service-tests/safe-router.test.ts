@@ -3,6 +3,7 @@ import {
   publicEndpoint as mockPublicEndpoint,
 } from '../src/permissions';
 import { createService } from '../src/app';
+import { openPermissions } from '../src/permissions/jsonPermissions';
 const supertest = require('supertest');
 const { accountSid } = require('./mocks');
 
@@ -37,7 +38,7 @@ jest.mock('../src/routes', () => {
   };
 });
 
-const server = createService().listen();
+const server = createService({ permissions: openPermissions }).listen();
 const request = supertest.agent(server);
 
 const headers = {
