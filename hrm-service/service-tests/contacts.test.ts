@@ -12,7 +12,7 @@ import { subHours, subDays } from 'date-fns';
 import './case-validation';
 import { PatchPayload } from '../src/contact/contact';
 import { getById } from '../src/contact/contact-data-access';
-import { openPermissions } from '../src/permissions/jsonPermissions';
+import { openPermissions } from '../src/permissions/json-permissions';
 
 const server = createService({ permissions: openPermissions }).listen();
 const request = supertest.agent(server);

@@ -10,7 +10,7 @@ import swagger from './swagger';
 import { apiV0 } from './routes';
 import { unauthorized } from './utils';
 import { Permissions, setupPermissions, User } from './permissions';
-import { jsonPermissions } from './permissions/jsonPermissions';
+import { jsonPermissions } from './permissions/json-permissions';
 
 type ServiceCreationOptions = Partial<{
   permissions: Permissions;

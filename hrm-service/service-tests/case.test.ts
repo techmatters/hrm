@@ -14,7 +14,7 @@ import { isBefore } from 'date-fns';
 const supertest = require('supertest');
 const each = require('jest-each').default;
 import { createService } from '../src/app';
-import { openPermissions } from '../src/permissions/jsonPermissions';
+import { openPermissions } from '../src/permissions/json-permissions';
 const mocks = require('./mocks');
 
 export const workerSid = 'worker-sid';

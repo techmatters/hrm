@@ -1,5 +1,5 @@
 import { createService } from '../src/app';
-import { openPermissions } from '../src/permissions/jsonPermissions';
+import { openPermissions } from '../src/permissions/json-permissions';
 const supertest = require('supertest');
 const Sequelize = require('sequelize');
 const models = require('../src/models');

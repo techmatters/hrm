@@ -4,7 +4,7 @@ const Sequelize = require('sequelize');
 const models = require('../src/models');
 const mocks = require('./mocks');
 import './case-validation';
-import { openPermissions } from '../src/permissions/jsonPermissions';
+import { openPermissions } from '../src/permissions/json-permissions';
 
 console.log(process.env.INCLUDE_ERROR_IN_RESPONSE);
 

@@ -55,10 +55,14 @@ const DELETED_PROPERTY = 'D';
  *   [ 'info', 'perpetrators', 0, 'perpetrator', 'phone1' ] when editin an existing perpetrator
  */
 const isPathTarget = (target: string[]) => (changePath: string[]): boolean =>
-  target.every((value, index) => changePath[index] === value);
+  target.every((value, index) => changePath[index] === value) &&
+  target.length === changePath.length;
+
+const isDescendantPathTarget = (target: string[]) => (changePath: string[]): boolean =>
+  target.every((value, index) => changePath[index] === value) && target.length < changePath.length;
 
 const isPathTargetsStatus = isPathTarget(['status']);
-const isPathTargetsInfo = isPathTarget(['info']);
+const isPathTargetsInfo = isDescendantPathTarget(['info']);
 
 const isNewKind = <T>(change: Diff<T>): change is DiffNew<T> => change.kind === NEW_PROPERTY;
 
@@ -86,7 +90,7 @@ const isCaseStatusTransition = (change: Diff<any>) =>
   change.rhs !== 'closed';
 
 const isAddNote = (change: Diff<any>) =>
-  isNewOrAddKind(change) && isPathTarget(['info', 'notes'])(change.path);
+  isNewOrAddKind(change) && isPathTarget(['info', 'counsellorNotes'])(change.path);
 
 const isAddReferral = (change: Diff<any>) =>
   isNewOrAddKind(change) && isPathTarget(['info', 'referrals'])(change.path);
@@ -103,26 +107,64 @@ const isAddIncident = (change: Diff<any>) =>
 const isAddDocument = (change: Diff<any>) =>
   isNewOrAddKind(change) && isPathTarget(['info', 'documents'])(change.path);
 
-const isEditNote = (change: Diff<any>) =>
-  isEditKind(change) && isPathTarget(['info', 'notes'])(change.path);
+const isSectionEdit = (sectionName: string) => (change: Diff<any>) =>
+  (isEditKind(change) && isPathTarget(['info', sectionName])(change.path)) ||
+  isDescendantPathTarget(['info', sectionName])(change.path);
 
-const isEditReferral = (change: Diff<any>) =>
-  isEditKind(change) && isPathTarget(['info', 'referrals'])(change.path);
-
-const isEditHousehold = (change: Diff<any>) =>
-  isEditKind(change) && isPathTarget(['info', 'households'])(change.path);
-
-const isEditPerpetrator = (change: Diff<any>) =>
-  isEditKind(change) && isPathTarget(['info', 'perpetrators'])(change.path);
-
-const isEditIncident = (change: Diff<any>) =>
-  isEditKind(change) && isPathTarget(['info', 'incidents'])(change.path);
-
-const isEditDocument = (change: Diff<any>) =>
-  isEditKind(change) && isPathTarget(['info', 'documents'])(change.path);
+const isEditNote = isSectionEdit('counsellorNotes');
+const isEditReferral = isSectionEdit('referrals');
+const isEditHousehold = isSectionEdit('households');
+const isEditPerpetrator = isSectionEdit('perpetrators');
+const isEditIncident = isSectionEdit('incidents');
+const isEditDocument = isSectionEdit('documents');
 
 const isEditCaseSummary = (change: Diff<any>) =>
   isAddOrEditKind(change) && isPathTarget(['info', 'summary'])(change.path);
+
+function sectionCompare(a: { createdAt: string }, b: { createdAt: string }) {
+  if (a.createdAt < b.createdAt) {
+    return -1;
+  }
+  if (a.createdAt > b.createdAt) {
+    return 1;
+  }
+  return 0;
+}
+
+function sortedSections(original: any): any {
+  if (original.info) {
+    const sortedInfo = {
+      ...original.info,
+    };
+
+    if (original.info.counsellorNotes) {
+      sortedInfo.counsellorNotes = [...original.info.counsellorNotes.sort(sectionCompare)];
+    }
+
+    if (original.info.referrals) {
+      sortedInfo.referrals = [...original.info.referrals.sort(sectionCompare)];
+    }
+
+    if (original.info.households) {
+      sortedInfo.households = [...original.info.households.sort(sectionCompare)];
+    }
+
+    if (original.info.perpetrators) {
+      sortedInfo.perpetrators = [...original.info.perpetrators.sort(sectionCompare)];
+    }
+
+    if (original.info.incidents) {
+      sortedInfo.incidents = [...original.info.incidents.sort(sectionCompare)];
+    }
+
+    if (original.info.documents) {
+      sortedInfo.documents = [...original.info.documents.sort(sectionCompare)];
+    }
+
+    return { ...original, info: sortedInfo };
+  }
+  return { ...original };
+}
 
 /**
  * This function compares the original object and the object with the updated values
@@ -133,7 +175,7 @@ const isEditCaseSummary = (change: Diff<any>) =>
  */
 export const getActions = (original: any, updated: any) => {
   // Filter out the topmost properties not included in the payload to avoid false DELETED_PROPERTY (as we send Partial<Case> from the frontend)
-  const partialOriginal = Object.keys(updated).reduce(
+  let partialOriginal: any = Object.keys(updated).reduce(
     (accum, currentKey) =>
       Object.prototype.hasOwnProperty.call(original, currentKey)
         ? { ...accum, [currentKey]: original[currentKey] }
@@ -142,10 +184,12 @@ export const getActions = (original: any, updated: any) => {
   );
   const ignoredProperties = ['createdAt', 'updatedAt', 'connectedContacts'];
   const preFilter = (path: any, key: string) => ignoredProperties.includes(key);
-  const changes = diff(partialOriginal, updated, preFilter);
+  // const changes = diff(sortedSections(partialOriginal), sortedSections(updated), preFilter);
+  const changes = diff(sortedSections(partialOriginal), sortedSections(updated), preFilter);
 
   const actions = [];
   if (changes) {
+    console.log(JSON.stringify(changes, null, 2));
     changes.forEach(change => {
       if (isPathTargetsStatus(change.path)) {
         if (isCloseCase(change)) actions.push(actionsMaps.case.CLOSE_CASE);

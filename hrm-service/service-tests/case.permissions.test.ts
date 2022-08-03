@@ -197,36 +197,140 @@ describe('/cases/:id route - PUT', () => {
     await caseDb.deleteById(cases.populated.id, accountSid);
   });
 
-  describe('Individual updates', () => {
+  describe('Case record updates', () => {
     each(
       [
         {
           caseUpdate: { status: 'closed' },
           changeDescription: 'status changed',
           actionToTest: 'closeCase',
+          casesToTest: ['blank', 'populated'],
         },
         {
           infoUpdate: { summary: 'To summarize....' },
           changeDescription: 'summary changed',
           actionToTest: 'editCaseSummary',
-        },
-      ].flatMap(tc => [
-        {
-          ...tc,
-          testingDeniedCase: false,
-          changeDescription: `should return 200 when ${tc.changeDescription} (${tc.actionToTest} is permitted)`,
+          casesToTest: ['blank', 'populated'],
         },
         {
-          ...tc,
-          testingDeniedCase: true,
-          changeDescription: `should return 401 when ${tc.changeDescription} (${tc.actionToTest} is prohibited)`,
+          infoUpdate: oi => ({
+            ...oi,
+            counsellorNotes: [
+              ...(oi.counsellorNotes ?? []),
+              {
+                id: '3',
+                note: 'Added',
+                twilioWorkerId: 'note-adder',
+                createdAt: '2022-07-01T00:00:00+00:00',
+              },
+            ],
+          }),
+          changeDescription: 'note added',
+          actionToTest: 'addNote',
+          casesToTest: ['blank', 'populated'],
         },
-      ]),
+        {
+          infoUpdate: oi => ({
+            ...oi,
+            households: [
+              ...(oi.households ?? []),
+              {
+                household: {
+                  firstName: 'Jane',
+                  lastName: 'Doe',
+                },
+                createdAt: '2022-03-15T20:56:22.640Z',
+                twilioWorkerId: 'household-adder',
+              },
+            ],
+          }),
+          changeDescription: 'household added',
+          actionToTest: 'addHousehold',
+          casesToTest: ['blank', 'populated'],
+        },
+        {
+          infoUpdate: oi => ({
+            ...oi,
+            perpetrators: oi.perpetrators.map((p, idx) =>
+              idx === 0
+                ? {
+                    perpetrator: {
+                      firstName: 'Jane',
+                      lastName: 'Doe',
+                    },
+                    createdAt: '2022-03-15T20:56:22.640Z',
+                    twilioWorkerId: 'perp-editor',
+                  }
+                : p,
+            ),
+          }),
+          changeDescription: 'perpetrator edited',
+          actionToTest: 'editPerpetrator',
+          casesToTest: ['populated'],
+        },
+        {
+          infoUpdate: oi => ({
+            ...oi,
+            documents: oi.documents.map((p, idx) =>
+              idx === 0
+                ? {
+                    id: '5e127299-17ba-4adf-a040-69dac9ca45bf',
+                    documents: {
+                      comments: 'can I edit the test file?',
+                      fileName: 'something_other_than_sample1.pdf',
+                    },
+                    createdAt: '2022-03-15T20:56:22.640Z',
+                    twilioWorkerId: 'perp-editor',
+                  }
+                : p,
+            ),
+          }),
+          changeDescription: 'documents edited',
+          actionToTest: 'editDocument',
+          casesToTest: ['populated'],
+        },
+        {
+          infoUpdate: oi => ({
+            ...oi,
+            households: [
+              oi.households[1],
+              {
+                household: {
+                  firstName: 'Jane',
+                  lastName: 'Doe',
+                },
+                createdAt: '2022-03-15T20:56:22.640Z',
+                twilioWorkerId: 'household-adder',
+              },
+              oi.households[0],
+            ],
+          }),
+          changeDescription: 'household added and order changed',
+          actionToTest: 'addHousehold',
+          casesToTest: ['populated'],
+        },
+      ].flatMap(tc =>
+        tc.casesToTest.flatMap(oc => [
+          {
+            ...tc,
+            testingDeniedCase: false,
+            changeDescription: `${oc} case: should return 200 when ${tc.changeDescription} (${tc.actionToTest} is permitted)`,
+            originalCase: () => cases[oc],
+          },
+          {
+            ...tc,
+            testingDeniedCase: true,
+            changeDescription: `${oc} should return 401 when ${tc.changeDescription} (${tc.actionToTest} is prohibited)`,
+            originalCase: () => cases[oc],
+          },
+        ]),
+      ),
+      //.filter((tc) => tc.changeDescription.includes('populated case: should return 200 when documents edited (editDocument is permitted)')),
     ).test(
       '$changeDescription',
       async ({
         caseUpdate: caseUpdateParam = {},
-        infoUpdate,
+        infoUpdate: infoUpdateParam = undefined,
         originalCase: originalCaseGetter = () => cases.blank,
         actionToTest,
         testingDeniedCase,
@@ -237,7 +341,12 @@ describe('/cases/:id route - PUT', () => {
         const update = {
           ...caseUpdate,
         };
+        const infoUpdate =
+          typeof infoUpdateParam === 'function'
+            ? infoUpdateParam(originalCase.info)
+            : infoUpdateParam;
         if (infoUpdate) {
+          console.log('INFO UPDATE:', originalCase.info, infoUpdate);
           update.info = { ...originalCase.info, ...caseUpdate.info, ...infoUpdate };
         }
 

@@ -3,7 +3,7 @@ import {
   publicEndpoint as mockPublicEndpoint,
 } from '../src/permissions';
 import { createService } from '../src/app';
-import { openPermissions } from '../src/permissions/jsonPermissions';
+import { openPermissions } from '../src/permissions/json-permissions';
 const supertest = require('supertest');
 const { accountSid } = require('./mocks');
 
