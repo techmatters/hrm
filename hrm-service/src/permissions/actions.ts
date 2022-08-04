@@ -184,12 +184,10 @@ export const getActions = (original: any, updated: any) => {
   );
   const ignoredProperties = ['createdAt', 'updatedAt', 'connectedContacts'];
   const preFilter = (path: any, key: string) => ignoredProperties.includes(key);
-  // const changes = diff(sortedSections(partialOriginal), sortedSections(updated), preFilter);
   const changes = diff(sortedSections(partialOriginal), sortedSections(updated), preFilter);
 
   const actions = [];
   if (changes) {
-    console.log(JSON.stringify(changes, null, 2));
     changes.forEach(change => {
       if (isPathTargetsStatus(change.path)) {
         if (isCloseCase(change)) actions.push(actionsMaps.case.CLOSE_CASE);
