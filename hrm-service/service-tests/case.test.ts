@@ -13,11 +13,12 @@ import { isBefore } from 'date-fns';
 
 const supertest = require('supertest');
 const each = require('jest-each').default;
-const expressApp = require('../src/app');
+import { createService } from '../src/app';
+import { openPermissions } from '../src/permissions/json-permissions';
 const mocks = require('./mocks');
 
 export const workerSid = 'worker-sid';
-const server = expressApp.listen();
+const server = createService({ permissions: openPermissions }).listen();
 const request = supertest.agent(server);
 
 const { case1, case2, accountSid } = mocks;

@@ -1,9 +1,10 @@
-const supertest = require('supertest');
-const each = require('jest-each').default;
-const expressApp = require('../src/app');
+import { createService } from '../src/app';
 import { rulesMap } from '../src/permissions';
 
-const server = expressApp.listen();
+const supertest = require('supertest');
+const each = require('jest-each').default;
+
+const server = createService().listen();
 const request = supertest.agent(server);
 
 const headers = {

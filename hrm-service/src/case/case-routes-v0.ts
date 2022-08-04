@@ -5,7 +5,7 @@ import { getCaseActivities } from './activities';
 import { SafeRouter, publicEndpoint } from '../permissions';
 import { getActions } from '../permissions';
 import { asyncHandler } from '../utils';
-import { getById } from '../case/case-data-access';
+import { getCase } from './case';
 
 const casesRouter = SafeRouter();
 
@@ -35,11 +35,12 @@ const canEditCase = asyncHandler(async (req, res, next) => {
   if (!req.isAuthorized()) {
     const { accountSid, body, user, can } = req;
     const { id } = req.params;
-    const caseObj = await getById(id, accountSid);
+    const caseObj = await getCase(id, accountSid);
 
     if (!caseObj) throw createError(404);
 
     const actions = getActions(caseObj, body);
+    console.debug(`Actions attempted in case edit (case #${id})`, actions);
     const canEdit = actions.every(action => can(user, action, caseObj));
 
     if (canEdit) {

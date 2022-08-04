@@ -2,7 +2,7 @@ import supertest from 'supertest';
 import * as Sequelize from 'sequelize';
 // eslint-disable-next-line prettier/prettier
 import type { ContactRawJson } from '../src/contact/contact-json';
-const app = require('../src/app');
+import { createService } from '../src/app';
 const models = require('../src/models');
 const mocks = require('./mocks');
 const each = require('jest-each').default;
@@ -12,8 +12,9 @@ import { subHours, subDays } from 'date-fns';
 import './case-validation';
 import { PatchPayload } from '../src/contact/contact';
 import { getById } from '../src/contact/contact-data-access';
+import { openPermissions } from '../src/permissions/json-permissions';
 
-const server = app.listen();
+const server = createService({ permissions: openPermissions }).listen();
 const request = supertest.agent(server);
 
 /**
