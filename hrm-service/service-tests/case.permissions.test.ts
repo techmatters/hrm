@@ -346,7 +346,6 @@ describe('/cases/:id route - PUT', () => {
             ? infoUpdateParam(originalCase.info)
             : infoUpdateParam;
         if (infoUpdate) {
-          console.log('INFO UPDATE:', originalCase.info, infoUpdate);
           update.info = { ...originalCase.info, ...caseUpdate.info, ...infoUpdate };
         }
 
