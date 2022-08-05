@@ -2,6 +2,22 @@
 module.exports = {
   up: async queryInterface => {
     await queryInterface.sequelize.query(`
+    CREATE SEQUENCE IF NOT EXISTS public."ContactJobs_id_seq"
+        INCREMENT 1
+        START 1
+        MINVALUE 1
+        MAXVALUE 9223372036854775807
+        CACHE 1
+  `);
+    console.log('Created sequence "ContactJobs_id_seq"');
+
+    await queryInterface.sequelize.query(`
+    ALTER SEQUENCE public."ContactJobs_id_seq"
+        OWNER TO hrm;
+  `);
+    console.log('Sequence "ContactJobs_id_seq" now owned by HRM');
+
+    await queryInterface.sequelize.query(`
       CREATE TABLE IF NOT EXISTS public."ContactJobs"
       (
         id bigint NOT NULL DEFAULT nextval('"ContactJobs_id_seq"'::regclass),
@@ -28,22 +44,5 @@ module.exports = {
           OWNER to hrm;
     `);
     console.log('Table "ContactJobs" now owned by HRM');
-
-    await queryInterface.sequelize.query(`
-      CREATE SEQUENCE IF NOT EXISTS public."ContactJobs_id_seq"
-          INCREMENT 1
-          START 1
-          MINVALUE 1
-          MAXVALUE 9223372036854775807
-          CACHE 1
-          OWNED BY "ContactJobs".id;
-    `);
-    console.log('Created sequence "ContactJobs_id_seq"');
-
-    await queryInterface.sequelize.query(`
-      ALTER SEQUENCE public."ContactJobs_id_seq"
-          OWNER TO hrm;
-    `);
-    console.log('Sequence "ContactJobs_id_seq" now owned by HRM');
   },
 };
