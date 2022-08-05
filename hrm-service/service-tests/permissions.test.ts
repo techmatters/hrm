@@ -1,22 +1,27 @@
 import { createService } from '../src/app';
 import { rulesMap } from '../src/permissions';
+import * as proxiedEndpoints from './external-service-stubs/proxied-endpoints';
+const { workerSid } = require('./mocks');
 
 const supertest = require('supertest');
 const each = require('jest-each').default;
 
-const server = createService().listen();
+const server = createService({
+  authTokenLookup: () => 'picernic basket',
+}).listen();
 const request = supertest.agent(server);
 
 const headers = {
   'Content-Type': 'application/json',
-  Authorization: `Basic ${Buffer.from(process.env.API_KEY).toString('base64')}`,
+  Authorization: `Bearer bearing a bear (rawr)`,
 };
 
-afterAll(done => {
-  server.close(() => {
-    done();
-  });
+beforeAll(async () => {
+  await proxiedEndpoints.start();
+  await proxiedEndpoints.mockSuccessfulTwilioAuthentication(workerSid);
 });
+
+afterAll(async () => Promise.all([server.close(), proxiedEndpoints.stop()]));
 
 describe('/permissions route', () => {
   describe('GET', () => {

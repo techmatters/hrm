@@ -22,7 +22,6 @@ export function createService({
   authTokenLookup = accountSid => process.env[`TWILIO_AUTH_TOKEN_${accountSid}`],
 }: ServiceCreationOptions = {}) {
   const app = express();
-  const apiKey = process.env.API_KEY;
 
   swagger.runWhenNotProduction(app);
 
@@ -84,20 +83,6 @@ export function createService({
     }
 
     if (authorization.startsWith('Basic')) {
-      if (process.env.NODE_ENV === 'test' || process.env.HRM_PERMIT_BASIC_AUTHENTICATION) {
-        // for testing we use old api key (can't hit TokenValidator api with fake credentials as it results in The requested resource /Accounts/ACxxxxxxxxxx/Tokens/validate was not found)
-        const base64Key = Buffer.from(authorization.replace('Basic ', ''), 'base64');
-        const isTestSecretValid = crypto.timingSafeEqual(base64Key, Buffer.from(apiKey));
-
-        if (isTestSecretValid) {
-          const testUser = req.headers['test-user'] || 'worker-sid';
-          req.user = new User(testUser, []);
-          return next();
-        }
-
-        console.log('API Key authentication failed');
-      }
-
       if (canAccessResourceWithStaticKey(req.path, req.method)) {
         try {
           const staticSecretKey = `STATIC_KEY_${accountSid}`;

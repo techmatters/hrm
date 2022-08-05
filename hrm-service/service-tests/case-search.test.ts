@@ -15,19 +15,22 @@ import { CaseListFilters, DateExistsCondition } from '../src/case/case-data-acce
 import * as contactDb from '../src/contact/contact-data-access';
 import { createService } from '../src/app';
 import { openPermissions } from '../src/permissions/json-permissions';
+import * as proxiedEndpoints from './external-service-stubs/proxied-endpoints';
 
 const supertest = require('supertest');
 const each = require('jest-each').default;
 const mocks = require('./mocks');
 
-export const workerSid = 'worker-sid';
-const server = createService({ permissions: openPermissions }).listen();
+const server = createService({
+  permissions: openPermissions,
+  authTokenLookup: () => 'picernic basket',
+}).listen();
 const request = supertest.agent(server);
 
-const { case1, contact1, accountSid } = mocks;
+const { case1, contact1, accountSid, workerSid } = mocks;
 const headers = {
   'Content-Type': 'application/json',
-  Authorization: `Basic ${Buffer.from(process.env.API_KEY).toString('base64')}`,
+  Authorization: `Bearer bearing a bear (rawr)`,
 };
 
 type Contact = contactDb.Contact;
@@ -151,12 +154,14 @@ const insertSampleCases = async ({
 };
 
 afterAll(done => {
-  server.close(() => {
-    done();
+  proxiedEndpoints.stop().finally(() => {
+    server.close(done);
   });
 });
 
 beforeAll(async () => {
+  await proxiedEndpoints.start();
+  await proxiedEndpoints.mockSuccessfulTwilioAuthentication(workerSid);
   await deleteCaseAudits(workerSid);
 });
 

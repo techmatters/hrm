@@ -1,18 +1,22 @@
 import { createService } from '../src/app';
 import { openPermissions } from '../src/permissions/json-permissions';
+import * as proxiedEndpoints from './external-service-stubs/proxied-endpoints';
 const supertest = require('supertest');
 const Sequelize = require('sequelize');
 const models = require('../src/models');
 const mocks = require('./mocks');
 
-const server = createService({ permissions: openPermissions }).listen();
+const server = createService({
+  permissions: openPermissions,
+  authTokenLookup: () => 'picernic basket',
+}).listen();
 const request = supertest.agent(server);
 
-const { accountSid } = mocks;
+const { accountSid, workerSid } = mocks;
 
 const headers = {
   'Content-Type': 'application/json',
-  Authorization: `Basic ${Buffer.from(process.env.API_KEY).toString('base64')}`,
+  Authorization: `Bearer bearing a bear (rawr)`,
 };
 
 const { PostSurvey } = models;
@@ -26,19 +30,18 @@ const postSurveys2DestroyQuery = {
 };
 
 beforeAll(async () => {
+  await proxiedEndpoints.start();
+  await proxiedEndpoints.mockSuccessfulTwilioAuthentication(workerSid);
   await PostSurvey.destroy(postSurveys2DestroyQuery);
 });
 
-afterAll(done => {
-  server.close(() => {
-    console.log('post survey server closed.');
-    PostSurvey.destroy(postSurveys2DestroyQuery).then(() => {
-      console.log('post survey cleaned up.');
-      done();
-    });
-  });
-});
-
+afterAll(async () =>
+  Promise.all([
+    proxiedEndpoints.stop(),
+    PostSurvey.destroy(postSurveys2DestroyQuery),
+    server.close(),
+  ]),
+);
 // afterEach(async () => PostSurvey.destroy(postSurveys2DestroyQuery));
 
 describe('/postSurveys route', () => {

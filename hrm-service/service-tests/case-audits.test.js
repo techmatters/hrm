@@ -1,18 +1,22 @@
 import { createService } from '../src/app';
 import { openPermissions } from '../src/permissions/json-permissions';
+import * as proxiedEndpoints from './external-service-stubs/proxied-endpoints';
 const supertest = require('supertest');
 const Sequelize = require('sequelize');
 const models = require('../src/models');
 const mocks = require('./mocks');
 
-const server = createService({ permissions: openPermissions }).listen();
+const server = createService({
+  permissions: openPermissions,
+  authTokenLookup: () => 'picernic basket',
+}).listen();
 const request = supertest.agent(server);
 
 const { case1, case2, accountSid } = mocks;
 
 const headers = {
   'Content-Type': 'application/json',
-  Authorization: `Basic ${Buffer.from(process.env.API_KEY).toString('base64')}`,
+  Authorization: `Bearer bearing a bear (rawr)`,
 };
 const workerSid = 'worker-sid';
 
@@ -27,6 +31,8 @@ const caseAuditsQuery = {
 };
 
 beforeAll(async () => {
+  await proxiedEndpoints.start();
+  await proxiedEndpoints.mockSuccessfulTwilioAuthentication(workerSid);
   await CaseAudit.destroy(caseAuditsQuery);
   await Case.destroy(caseAuditsQuery);
 });
@@ -34,7 +40,9 @@ beforeAll(async () => {
 afterAll(async () => {
   await CaseAudit.destroy(caseAuditsQuery);
   await Case.destroy(caseAuditsQuery);
-  server.close();
+
+  await proxiedEndpoints.stop();
+  await server.close();
 });
 
 afterEach(async () => CaseAudit.destroy(caseAuditsQuery));
