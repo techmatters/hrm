@@ -28,6 +28,8 @@
   },
   "homepage": "https://github.com/tech-matters/hrm#readme",
   "dependencies": {
+    "@aws-sdk/client-sns": "^3.142.0",
+    "@aws-sdk/client-sqs": "^3.142.0",
     "cors": "^2.8.5",
     "date-fns": "^2.28.0",
     "debug": "^4.1.1",
