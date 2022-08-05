@@ -4,6 +4,7 @@ import { Contact } from '../contact/contact-data-access';
 
 export const enum JobType {
   RETRIEVE_CONTACT_RECORDING_URL = 'retrieve-contact-recording-url',
+  RETRIEVE_CONTACT_TRANSCRIPT = 'retrieve-contact-transcript',
 }
 
 type Job<TResource, TComplete = any, TAdditional = any> = {
@@ -18,7 +19,11 @@ export type RetrieveContactRecordingJob = Job<Contact, string[], undefined> & {
   jobType: JobType.RETRIEVE_CONTACT_RECORDING_URL;
 };
 
-export type ContactJob = RetrieveContactRecordingJob;
+export type RetrieveContactTranscriptJob = Job<Contact, string[], undefined> & {
+  jobType: JobType.RETRIEVE_CONTACT_TRANSCRIPT;
+};
+
+export type ContactJob = RetrieveContactRecordingJob | RetrieveContactTranscriptJob;
 
 /**
  * Returns all the jobs that are considered 'due'
@@ -40,9 +45,9 @@ export const pullDueJobs = async (lastAttemptedBefore: Date): Promise<ContactJob
  * @param id
  * @param completionPayload
  */
-export const completeJob = async (id: number, completionPayload: any): Promise<void> => {
-  await db.task(tx => {
-    return tx.none(COMPLETE_JOB_SQL, { id, completionPayload });
+export const completeJob = async (id: number, completionPayload: any): Promise<ContactJob> => {
+  return db.task(tx => {
+    return tx.oneOrNone(COMPLETE_JOB_SQL, { id, completionPayload });
   });
 };
 

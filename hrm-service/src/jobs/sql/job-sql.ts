@@ -15,4 +15,5 @@ UPDATE "ContactJobs" SET
     "completed" = CURRENT_TIMESTAMP, 
     "completionPayload" = $<completionPayload:json>::JSONB
 WHERE "id" = $<id>
+RETURNING *
 `;
