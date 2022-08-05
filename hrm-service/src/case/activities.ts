@@ -1,19 +1,11 @@
 import * as caseDb from './case-data-access';
+import { channelTypes } from '../contact/contact';
 
 const ActivityTypes = {
   createCase: 'create',
   addNote: 'note',
   addReferral: 'referral',
-  connectContact: {
-    voice: 'voice',
-    whatsapp: 'whatsapp',
-    facebook: 'facebook',
-    web: 'web',
-    sms: 'sms',
-    twitter: 'twitter',
-    instagram: 'instagram',
-    default: 'default',
-  },
+  connectContact: channelTypes,
   unknown: 'unknown',
 };
 

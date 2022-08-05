@@ -50,6 +50,31 @@ type CreateContactPayload = NewContactRecord & { form?: ContactRawJson } & {
   csamReports: CSAMReportEntry[];
 };
 
+// This should be in sync with the fronted (src/states/DomainConstants.ts)
+export const channelTypes = {
+  voice: 'voice',
+  whatsapp: 'whatsapp',
+  facebook: 'facebook',
+  web: 'web',
+  sms: 'sms',
+  twitter: 'twitter',
+  instagram: 'instagram',
+  default: 'default',
+} as const;
+
+const chatChannels = [
+  channelTypes.whatsapp,
+  channelTypes.facebook,
+  channelTypes.web,
+  channelTypes.sms,
+  channelTypes.twitter,
+  channelTypes.instagram,
+];
+
+const isVoiceChannel = (channel: string) => channel === channelTypes.voice;
+
+const isChatChannel = (channel: string) => chatChannels.includes(channel as any);
+
 export const createContact = async (
   accountSid: string,
   createdBy: string,
@@ -76,9 +101,17 @@ export const createContact = async (
     completeNewContact,
     (newContact.csamReports ?? []).map(csr => csr.id),
   );
-  if (created.channelSid?.startsWith('CA')) {
+  // Should this part of the same transaction as creating the contact record?
+  // if (created.channelSid?.startsWith('CA')) {
+  if (isVoiceChannel(created.channel)) {
     await createContactJob({
       jobType: JobType.RETRIEVE_CONTACT_RECORDING_URL,
+      resource: created,
+      additionalPayload: undefined,
+    });
+  } else if (isChatChannel(created.channelSid)) {
+    await createContactJob({
+      jobType: JobType.RETRIEVE_CONTACT_TRANSCRIPT,
       resource: created,
       additionalPayload: undefined,
     });
