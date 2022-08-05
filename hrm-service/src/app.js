@@ -10,6 +10,7 @@ const swagger = require('./swagger');
 const { apiV0 } = require('./routes');
 const { unauthorized } = require('./utils');
 const { setupPermissions, User } = require('./permissions');
+const { processJobs } = require('./jobs/job-processor');
 
 const app = express();
 const apiKey = process.env.API_KEY;
@@ -147,6 +148,8 @@ app.use((err, req, res, next) => {
   res.json(error);
   next();
 });
+
+processJobs();
 
 console.log(`${new Date(Date.now()).toLocaleString()}: app.js has been created`);
 
