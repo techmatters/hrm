@@ -109,7 +109,7 @@ export const createContact = async (
       resource: created,
       additionalPayload: undefined,
     });
-  } else if (isChatChannel(created.channelSid)) {
+  } else if (isChatChannel(created.channel)) {
     await createContactJob({
       jobType: JobType.RETRIEVE_CONTACT_TRANSCRIPT,
       resource: created,
