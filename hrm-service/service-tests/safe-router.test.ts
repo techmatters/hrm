@@ -4,8 +4,9 @@ import {
 } from '../src/permissions';
 import { createService } from '../src/app';
 import { openPermissions } from '../src/permissions/json-permissions';
+import * as proxiedEndpoints from './external-service-stubs/proxied-endpoints';
 const supertest = require('supertest');
-const { accountSid } = require('./mocks');
+const { accountSid, workerSid } = require('./mocks');
 
 jest.mock('../src/routes', () => {
   const mockRouter = MockSafeRouter();
@@ -38,18 +39,28 @@ jest.mock('../src/routes', () => {
   };
 });
 
-const server = createService({ permissions: openPermissions }).listen();
+const server = createService({
+  permissions: openPermissions,
+  authTokenLookup: () => 'picernic basket',
+}).listen();
 const request = supertest.agent(server);
 
 const headers = {
   'Content-Type': 'application/json',
-  Authorization: `Basic ${Buffer.from(process.env.API_KEY).toString('base64')}`,
+  Authorization: `Bearer bearing a bear (rawr)`,
 };
 
 const baseRoute = `/v0/accounts/${accountSid}`;
 
+beforeAll(async () => {
+  await proxiedEndpoints.start();
+  await proxiedEndpoints.mockSuccessfulTwilioAuthentication(workerSid);
+});
+
 afterAll(done => {
-  server.close(done);
+  proxiedEndpoints.stop().finally(() => {
+    server.close(done);
+  });
 });
 
 test('unauthorize endpoints with no middleware', async () => {

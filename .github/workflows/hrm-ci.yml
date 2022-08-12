@@ -44,9 +44,7 @@ jobs:
       working-directory: hrm-service
       run: npm run test:service
       env:
-        USE_OPEN_PERMISSIONS: true
         CI: true
-        API_KEY: secret
         TWILIO_ACCOUNT_SID: ACxxx
         TWILIO_AUTH_TOKEN: xxxxxx
         RDS_PASSWORD: postgres

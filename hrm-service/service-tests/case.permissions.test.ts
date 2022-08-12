@@ -12,7 +12,6 @@ import { createService } from '../src/app';
 import { RulesFile } from '../src/permissions/rulesMap';
 const mocks = require('./mocks');
 
-export const workerSid = 'worker-sid';
 let testRules: RulesFile;
 
 const server = createService({
@@ -24,7 +23,7 @@ const server = createService({
 }).listen();
 const request = supertest.agent(server);
 
-const { case1, accountSid } = mocks;
+const { case1, accountSid, workerSid } = mocks;
 
 const headers = {
   'Content-Type': 'application/json',
@@ -45,12 +44,8 @@ function ruleFileWithOnePermittedOrDeniedAction(
 }
 
 afterAll(done => {
-  console.log('Stopping proxied endpoints.');
   proxiedEndpoints.stop().finally(() => {
-    console.log('Stopped proxied endpoints, stopping HRM.');
-    server.close(() => {
-      done();
-    });
+    server.close(done);
   });
 });
 

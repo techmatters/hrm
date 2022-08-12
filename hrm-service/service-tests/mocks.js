@@ -250,6 +250,8 @@ const case2 = {
   accountSid,
 };
 
+const workerSid = 'worker-sid';
+
 module.exports = {
   accountSid,
   contact1,
@@ -262,4 +264,5 @@ module.exports = {
   withTaskId,
   case1,
   case2,
+  workerSid,
 };

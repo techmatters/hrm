@@ -7,6 +7,7 @@ let mockServer: Mockttp;
 
 async function mockttpServer() {
   if (!mockServer) {
+    console.log('CREATING ENDPOINT SERVER');
     const https = await generateCACertificate();
     // Just wave through them self signed certs... :-/
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
@@ -18,6 +19,7 @@ async function mockttpServer() {
 export async function start(): Promise<void> {
   const server = await mockttpServer();
   await server.start();
+  console.log('STARTED ENDPOINT SERVER');
   await server.forAnyRequest().thenPassThrough();
   const global = createGlobalProxyAgent();
   // Filter local requests out from proxy to prevent loops.
@@ -43,6 +45,8 @@ export async function mockSuccessfulTwilioAuthentication(
   accountSid: string | undefined = undefined,
 ): Promise<void> {
   const server = await mockttpServer();
+  server.reset();
+  await server.forAnyRequest().thenPassThrough();
   await server
     .forPost(
       accountSid

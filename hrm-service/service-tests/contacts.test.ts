@@ -13,8 +13,12 @@ import './case-validation';
 import { PatchPayload } from '../src/contact/contact';
 import { getById } from '../src/contact/contact-data-access';
 import { openPermissions } from '../src/permissions/json-permissions';
+import * as proxiedEndpoints from './external-service-stubs/proxied-endpoints';
 
-const server = createService({ permissions: openPermissions }).listen();
+const server = createService({
+  permissions: openPermissions,
+  authTokenLookup: () => 'picernic basket',
+}).listen();
 const request = supertest.agent(server);
 
 /**
@@ -37,13 +41,13 @@ const {
   withTaskId,
   case1,
   case2,
+  workerSid,
 } = mocks;
 
 const headers = {
   'Content-Type': 'application/json',
-  Authorization: `Basic ${Buffer.from(process.env.API_KEY).toString('base64')}`,
+  Authorization: `Bearer bearing a bear (rawr)`,
 };
-const workerSid = 'worker-sid';
 
 const { Contact, Case, CSAMReport } = models;
 const CSAMReportController = require('../src/controllers/csam-report-controller')(CSAMReport);
@@ -66,6 +70,8 @@ const query = {
 };
 
 beforeAll(async () => {
+  await proxiedEndpoints.start();
+  await proxiedEndpoints.mockSuccessfulTwilioAuthentication(workerSid);
   await CSAMReport.destroy(query);
   await Contact.destroy(query);
   await Case.destroy(query);
@@ -75,8 +81,8 @@ afterAll(async () => {
   await CSAMReport.destroy(query);
   await Contact.destroy(query);
   await Case.destroy(query);
-  server.close();
-  console.log('Deleted data in contacts.test');
+  await proxiedEndpoints.stop();
+  await server.close();
 });
 
 describe('/contacts route', () => {

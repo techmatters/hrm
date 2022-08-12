@@ -15,27 +15,35 @@ const supertest = require('supertest');
 const each = require('jest-each').default;
 import { createService } from '../src/app';
 import { openPermissions } from '../src/permissions/json-permissions';
+import * as proxiedEndpoints from './external-service-stubs/proxied-endpoints';
 const mocks = require('./mocks');
 
-export const workerSid = 'worker-sid';
-const server = createService({ permissions: openPermissions }).listen();
+const server = createService({
+  permissions: openPermissions,
+  authTokenLookup: () => 'picernic basket',
+}).listen();
 const request = supertest.agent(server);
 
-const { case1, case2, accountSid } = mocks;
+const { case1, case2, accountSid, workerSid } = mocks;
 
 const headers = {
   'Content-Type': 'application/json',
-  Authorization: `Basic ${Buffer.from(process.env.API_KEY).toString('base64')}`,
+  Authorization: `Bearer bearing a bear (rawr)`,
 };
 
 afterAll(done => {
-  server.close(() => {
-    done();
+  proxiedEndpoints.stop().finally(() => {
+    server.close(done);
   });
 });
 
 beforeAll(async () => {
   await deleteCaseAudits(workerSid);
+  await proxiedEndpoints.start();
+});
+
+beforeEach(async () => {
+  await proxiedEndpoints.mockSuccessfulTwilioAuthentication(workerSid);
 });
 
 afterEach(async () => deleteCaseAudits(workerSid));
@@ -517,7 +525,7 @@ describe('/cases route', () => {
         },
         {
           infoUpdate: { summary: 'To summarize....' },
-          changeDescription: 'summary changed by another couselor',
+          changeDescription: 'summary changed by another counselor',
           customWorkerSid: 'another-worker-sid',
         },
       ]).test(
@@ -538,12 +546,12 @@ describe('/cases route', () => {
           if (infoUpdate) {
             update.info = { ...originalCase.info, ...caseUpdate.info, ...infoUpdate };
           }
-
           const caseBeforeUpdate = await caseApi.getCase(originalCase.id, accountSid);
 
+          await proxiedEndpoints.mockSuccessfulTwilioAuthentication(customWorkerSid ?? workerSid);
           const response = await request
             .put(subRoute(originalCase.id))
-            .set({ ...headers, ...(customWorkerSid && { 'test-user': customWorkerSid }) })
+            .set(headers)
             .send(update);
 
           expect(response.status).toBe(200);
