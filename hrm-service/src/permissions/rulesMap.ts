@@ -1,14 +1,18 @@
 const openRules = require('../../permission-rules/open.json');
 const demoRules = require('../../permission-rules/demo.json');
+const devRules = require('../../permission-rules/dev.json');
+const e2eRules = require('../../permission-rules/e2e.json');
 const brRules = require('../../permission-rules/br.json');
 const caRules = require('../../permission-rules/ca.json');
 const etRules = require('../../permission-rules/et.json');
 const inRules = require('../../permission-rules/in.json');
 const jmRules = require('../../permission-rules/jm.json');
 const mwRules = require('../../permission-rules/mw.json');
+const roRules = require('../../permission-rules/ro.json');
 const ukRules = require('../../permission-rules/uk.json');
 const zaRules = require('../../permission-rules/za.json');
 const zmRules = require('../../permission-rules/zm.json');
+const coRules = require('../../permission-rules/co.json');
 
 import { actionsMaps, Actions } from './actions';
 
@@ -43,11 +47,15 @@ const rulesMapDef = {
   in: inRules,
   jm: jmRules,
   mw: mwRules,
+  ro: roRules,
   uk: ukRules,
   za: zaRules,
   zm: zmRules,
+  co: coRules,
   open: openRules,
   demo: demoRules,
+  dev: devRules,
+  e2e: e2eRules,
 } as const;
 
 const validRulesMap = () =>

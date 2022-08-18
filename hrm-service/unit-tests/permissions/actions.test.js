@@ -33,7 +33,7 @@ each([
   },
   {
     caseFromDB: emptyCase,
-    update: { info: { notes: ['note 1'] } },
+    update: { info: { counsellorNotes: ['note 1'] } },
     expectedCondition: [actionsMaps.case.ADD_NOTE],
     conditionDescription: 'adding a note',
   },
@@ -65,7 +65,7 @@ each([
     caseFromDB: emptyCase,
     update: {
       info: {
-        notes: ['note 1'],
+        counsellorNotes: ['note 1'],
         incidents: [{ incident: { property: 'property' } }],
         referrals: [{ property: 'property' }],
         households: [{ household: { property: 'property' } }],
@@ -96,7 +96,7 @@ const caseWithProperties = {
   helpline: 'helpline',
   info: {
     definitionVersion: 'v1',
-    notes: ['note 1'],
+    counsellorNotes: ['note 1'],
     incidents: [{ incident: { property: 'property' } }],
     referrals: [{ property: 'property' }],
     households: [{ household: { property: 'property' } }],
@@ -119,7 +119,7 @@ const caseWithProperties = {
 each([
   {
     caseFromDB: caseWithProperties,
-    update: { info: { notes: ['note 1', 'note 2'] } },
+    update: { info: { counsellorNotes: ['note 1', 'note 2'] } },
     expectedCondition: [actionsMaps.case.ADD_NOTE],
     conditionDescription: 'adding a second note',
   },
@@ -169,7 +169,7 @@ each([
     caseFromDB: caseWithProperties,
     update: {
       info: {
-        notes: ['note 1', 'note 2'],
+        counsellorNotes: ['note 1', 'note 2'],
         incidents: [{ incident: { property: 'property' } }, { incident: { property: 'second' } }],
         referrals: [{ property: 'property' }, { property: 'second' }],
         households: [
@@ -204,7 +204,7 @@ each([
 each([
   {
     caseFromDB: caseWithProperties,
-    update: { info: { notes: ['note 1 modified'] } },
+    update: { info: { counsellorNotes: ['note 1 modified'] } },
     expectedCondition: [actionsMaps.case.EDIT_NOTE],
     conditionDescription: 'editing a note',
   },
@@ -248,7 +248,7 @@ each([
     caseFromDB: caseWithProperties,
     update: {
       info: {
-        notes: ['note 1 modified'],
+        counsellorNotes: ['note 1 modified'],
         incidents: [{ incident: { property: 'property modified' } }],
         referrals: [{ property: 'property modified' }],
         households: [{ household: { property: 'property modified' } }],

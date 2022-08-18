@@ -13,28 +13,37 @@ import { isBefore } from 'date-fns';
 
 const supertest = require('supertest');
 const each = require('jest-each').default;
-const expressApp = require('../src/app');
+import { createService } from '../src/app';
+import { openPermissions } from '../src/permissions/json-permissions';
+import * as proxiedEndpoints from './external-service-stubs/proxied-endpoints';
 const mocks = require('./mocks');
 
-export const workerSid = 'worker-sid';
-const server = expressApp.listen();
+const server = createService({
+  permissions: openPermissions,
+  authTokenLookup: () => 'picernic basket',
+}).listen();
 const request = supertest.agent(server);
 
-const { case1, case2, accountSid } = mocks;
+const { case1, case2, accountSid, workerSid } = mocks;
 
 const headers = {
   'Content-Type': 'application/json',
-  Authorization: `Basic ${Buffer.from(process.env.API_KEY).toString('base64')}`,
+  Authorization: `Bearer bearing a bear (rawr)`,
 };
 
 afterAll(done => {
-  server.close(() => {
-    done();
+  proxiedEndpoints.stop().finally(() => {
+    server.close(done);
   });
 });
 
 beforeAll(async () => {
   await deleteCaseAudits(workerSid);
+  await proxiedEndpoints.start();
+});
+
+beforeEach(async () => {
+  await proxiedEndpoints.mockSuccessfulTwilioAuthentication(workerSid);
 });
 
 afterEach(async () => deleteCaseAudits(workerSid));
@@ -228,6 +237,38 @@ describe('/cases route', () => {
     afterEach(async () => {
       await caseDb.deleteById(cases.blank.id, accountSid);
       await caseDb.deleteById(cases.populated.id, accountSid);
+    });
+
+    describe('GET', () => {
+      test('should return 401', async () => {
+        const response = await request.put(subRoute(cases.blank.id)).send(case1);
+
+        expect(response.status).toBe(401);
+        expect(response.body.error).toBe('Authorization failed');
+      });
+
+      test('should return 404', async () => {
+        const response = await request
+          .get(subRoute('0000')) // Imposible to exist case
+          .set({ ...headers });
+
+        expect(response.status).toBe(404);
+        expect(response.body.error).toContain('NotFoundError: Not Found');
+      });
+
+      test('Should return 200', async () => {
+        const response = await request.get(subRoute(cases.populated.id)).set({ ...headers });
+
+        expect(response.status).toBe(200);
+
+        const expected = {
+          ...convertCaseInfoToExpectedInfo(cases.populated),
+          createdAt: expect.toParseAsDate(cases.populated.createdAt),
+          updatedAt: expect.toParseAsDate(cases.populated.createdAt),
+        };
+
+        expect(response.body).toMatchObject(expected);
+      });
     });
 
     describe('PUT', () => {
@@ -484,7 +525,7 @@ describe('/cases route', () => {
         },
         {
           infoUpdate: { summary: 'To summarize....' },
-          changeDescription: 'summary changed by another couselor',
+          changeDescription: 'summary changed by another counselor',
           customWorkerSid: 'another-worker-sid',
         },
       ]).test(
@@ -505,12 +546,12 @@ describe('/cases route', () => {
           if (infoUpdate) {
             update.info = { ...originalCase.info, ...caseUpdate.info, ...infoUpdate };
           }
-
           const caseBeforeUpdate = await caseApi.getCase(originalCase.id, accountSid);
 
+          await proxiedEndpoints.mockSuccessfulTwilioAuthentication(customWorkerSid ?? workerSid);
           const response = await request
             .put(subRoute(originalCase.id))
-            .set({ ...headers, ...(customWorkerSid && { 'test-user': customWorkerSid }) })
+            .set(headers)
             .send(update);
 
           expect(response.status).toBe(200);

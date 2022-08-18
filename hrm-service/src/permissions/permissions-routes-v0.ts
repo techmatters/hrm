@@ -1,24 +1,24 @@
-import { SafeRouter, publicEndpoint } from '../permissions';
-import { rulesMap, getPermissionsConfigName } from '../permissions';
+import { SafeRouter, publicEndpoint, Permissions } from '../permissions';
 // eslint-disable-next-line prettier/prettier
 import type { Request, Response } from 'express';
 import createError from 'http-errors';
 
-const permissionsRouter = SafeRouter();
+export default (permissions: Permissions) => {
+  const permissionsRouter = SafeRouter();
+  permissionsRouter.get('/', publicEndpoint, (req: Request, res: Response, next) => {
+    try {
+      //@ts-ignore TODO: Improve our custom Request type to override Express.Request
+      const { accountSid } = req;
+      if (!permissions.rules) {
+        return next(createError(400, 'Reading rules is not supported by the permissions implementation being used by this instance of the HRM service.'));
+      }
+      const rules = permissions.rules(accountSid);
 
-permissionsRouter.get('/', publicEndpoint, (req: Request, res: Response, next) => {
-  try {
-    //@ts-ignore TODO: Improve our custom Request type to override Express.Request
-    const { accountSid } = req;
+      res.json(rules);
+    } catch (err) {
+      return next(createError(500, err.message));
+    }
+  });
 
-    const permissionsConfigName = getPermissionsConfigName(accountSid);
-
-    const rules = rulesMap[permissionsConfigName];
-
-    res.json(rules);
-  } catch (err) {
-    return next(createError(500, err.message));
-  }
-});
-
-export default permissionsRouter.expressRouter;
+  return permissionsRouter.expressRouter;
+};

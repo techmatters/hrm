@@ -1,9 +1,11 @@
+import { createService } from '../src/app';
 const supertest = require('supertest');
 const Sequelize = require('sequelize');
-const app = require('../src/app');
 const models = require('../src/models');
 const mocks = require('./mocks');
 import './case-validation';
+import { openPermissions } from '../src/permissions/json-permissions';
+import * as proxiedEndpoints from './external-service-stubs/proxied-endpoints';
 
 console.log(process.env.INCLUDE_ERROR_IN_RESPONSE);
 
@@ -13,11 +15,13 @@ console.log(process.env.INCLUDE_ERROR_IN_RESPONSE);
 const { CSAMReport, Contact } = models;
 const CSAMReportController = require('../src/controllers/csam-report-controller')(CSAMReport);
 
-const server = app.listen();
+const server = createService({
+  permissions: openPermissions,
+  authTokenLookup: () => 'picernic basket',
+}).listen();
 const request = supertest.agent(server);
 
-const { accountSid } = mocks;
-const workerSid = 'worker-sid';
+const { accountSid, workerSid } = mocks;
 
 const csamReport1 = {
   csamReportId: 'csam-report-id',
@@ -42,7 +46,7 @@ const invalidContactCsamReport = {
 
 const headers = {
   'Content-Type': 'application/json',
-  Authorization: `Basic ${Buffer.from(process.env.API_KEY).toString('base64')}`,
+  Authorization: `Bearer bearing a bear (rawr)`,
 };
 
 const csamReports2DestroyQuery = {
@@ -62,6 +66,8 @@ const query = {
 };
 
 beforeAll(async () => {
+  await proxiedEndpoints.start();
+  await proxiedEndpoints.mockSuccessfulTwilioAuthentication(workerSid);
   await CSAMReport.destroy(csamReports2DestroyQuery);
   await Contact.destroy(query);
 });
@@ -69,7 +75,8 @@ beforeAll(async () => {
 afterAll(async () => {
   await CSAMReport.destroy(csamReports2DestroyQuery);
   await Contact.destroy(query);
-  server.close();
+  await proxiedEndpoints.stop();
+  await server.close();
   console.log('csam reports test cleaned up.');
 });
 
