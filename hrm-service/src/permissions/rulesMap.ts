@@ -15,7 +15,6 @@ const ukRules = require('../../permission-rules/uk.json');
 const zaRules = require('../../permission-rules/za.json');
 const zmRules = require('../../permission-rules/zm.json');
 
-
 import { actionsMaps, Actions } from './actions';
 
 export const conditionTypes = [
