@@ -119,7 +119,7 @@ const caseSectionRecordsToInfo = (
   }, infoLists);
 };
 
-const addCategoriesAndChildName = (caseItem: CaseRecord): Case => {
+const addCategoriesAndChildName = (caseItem: CaseRecord) => {
   const fstContact = (caseItem.connectedContacts ?? [])[0];
 
   if (!fstContact) {
@@ -136,106 +136,18 @@ const addCategoriesAndChildName = (caseItem: CaseRecord): Case => {
   return { ...caseItem, childName, categories };
 };
 
-// Checks for any notes that might have been added to legacy 'notes' property by an old version of the client and converts & copies them to the new 'counsellorNotes' property/
-// DEPRECATE ME - This migration code should only be required until CHI-1040 is deployed to all flex instances
-const migrateAddedLegacyNotesToCounsellorNotes = (
-  update,
-  twilioWorkerId,
-  dbCase: Partial<Case> = { info: {} },
-) => {
-  if (update.info) {
-    const legacyNotes = Array.isArray(update.info.notes) ? update.info.notes : [];
-    const counsellorNotes = Array.isArray(update.info.counsellorNotes)
-      ? update.info.counsellorNotes
-      : [];
-    const dbNotes = Array.isArray(dbCase.info.counsellorNotes) ? dbCase.info.counsellorNotes : [];
-
-    // Assume if there are more new format notes in the update than in the DB, that this is the correct update
-    // Otherwise, if there are more legacy notes that current notes in the DB, convert them to the new format & add them
-    if (counsellorNotes.length <= dbNotes.length && legacyNotes.length > dbNotes.length) {
-      const migrated = {
-        ...update,
-        info: {
-          ...update.info,
-          counsellorNotes: [
-            ...dbNotes,
-            ...legacyNotes
-              .slice(dbNotes.length)
-              .map(note => ({ note, twilioWorkerId, createdAt: new Date().toISOString() })),
-          ],
-        },
-      };
-      delete migrated.info.notes;
-      return migrated;
-    }
-  }
-  return update;
-};
-
-// Checks for any referrals that might be missing new properties because they were sent from legacy clients.
-// DEPRECATE ME - This migration code should only be required until CHI-1040 is deployed to all flex instances
-const fixLegacyReferrals = (update, twilioWorkerId, dbCase: Partial<Case> = {}) => {
-  if (update.info && Array.isArray(update.info.referrals)) {
-    const modelReferrals = (dbCase.info || {}).referrals || [];
-    return {
-      ...update,
-      info: {
-        ...update.info,
-        referrals: update.info.referrals.map((r, idx) => ({
-          // Deliberately putting the new props first so existing ones will overwrite them
-          twilioWorkerId: (modelReferrals[idx] || {}).twilioWorkerId || twilioWorkerId,
-          createdAt: (modelReferrals[idx] || {}).createdAt || new Date().toISOString(),
-          ...r,
-        })),
-      },
-    };
-  }
-  return update;
-};
-
-// Copy the text content of the new 'counsellorNotes' property to the legacy 'notes' property.
-// Not sure if anything actually reads the 'notes' property on the case info directly on the front end, or always reads them via the 'activities' endpoint
-// But this function makes them backwards compatible just in case
-// DEPRECATE ME - This migration code should only be required until CHI-1040 is deployed to all flex instances
-const generateLegacyNotesFromCounsellorNotes = caseFromDb => {
-  if (caseFromDb.info && caseFromDb.info.counsellorNotes) {
-    return {
-      ...caseFromDb,
-      info: {
-        ...caseFromDb.info,
-        notes: Array.isArray(caseFromDb.info.counsellorNotes)
-          ? caseFromDb.info.counsellorNotes.map(n => n.note)
-          : undefined,
-      },
-    };
-  }
-  return caseFromDb;
-};
-
 /**
  * Converts a case passed in from the API to a case record ready to write to the DB
- * If an 'original' case is passed, it is assumed this is an update of an existing case
- * Data from the 'original will be used to inject data that might be missing from the update if it is using a legacy format
  * @param inputCase
  * @param workerSid
- * @param original
  */
-const caseToCaseRecord = (
-  inputCase: Partial<Case>,
-  workerSid: string,
-  original?: Case,
-): Partial<NewCaseRecord> => {
-  const migratedCase = migrateAddedLegacyNotesToCounsellorNotes(
-    fixLegacyReferrals(inputCase, workerSid, original),
-    workerSid,
-    original,
-  );
-  const info = migratedCase.info ?? {};
+const caseToCaseRecord = (inputCase: Partial<Case>, workerSid: string): Partial<NewCaseRecord> => {
+  const info = inputCase.info ?? {};
   const caseSections: CaseSectionRecord[] = Object.entries(WELL_KNOWN_CASE_SECTION_NAMES).flatMap(
     ([sectionName, { getSectionSpecificData, sectionTypeName }]) =>
       (info[sectionName] ?? []).map(section => {
         const caseSectionRecordToUpsert: CaseSectionRecord = {
-          caseId: migratedCase.id,
+          caseId: inputCase.id,
           sectionType: sectionTypeName,
           sectionId: section.id ?? randomUUID(),
           createdBy: section.twilioWorkerId ?? workerSid,
@@ -249,7 +161,7 @@ const caseToCaseRecord = (
       }),
   );
   return {
-    ...migratedCase,
+    ...inputCase,
     caseSections,
   };
 };
@@ -262,19 +174,22 @@ const caseRecordToCase = (record: CaseRecord): Case => {
   Object.keys(WELL_KNOWN_CASE_SECTION_NAMES).forEach(k => delete info[k]);
   delete info.notes;
 
-  const { caseSections, ...output } = generateLegacyNotesFromCounsellorNotes(
-    addCategoriesAndChildName({
-      ...record,
-      info: {
-        ...info,
-        ...caseSectionRecordsToInfo(record.caseSections),
-      },
-    }),
-  );
+  const { caseSections, ...output } = addCategoriesAndChildName({
+    ...record,
+    info: {
+      ...info,
+      ...caseSectionRecordsToInfo(record.caseSections),
+    },
+  });
+
   return output;
 };
 
-export const createCase = async (body: Partial<Case>, accountSid, workerSid): Promise<Case> => {
+export const createCase = async (
+  body: Partial<Case>,
+  accountSid: Case['accountSid'],
+  workerSid: Case['twilioWorkerId'],
+): Promise<Case> => {
   const nowISO = new Date().toISOString();
   delete body.id;
   const record = caseToCaseRecord(
@@ -292,7 +207,12 @@ export const createCase = async (body: Partial<Case>, accountSid, workerSid): Pr
   return caseRecordToCase(created);
 };
 
-export const updateCase = async (id, body: Partial<Case>, accountSid, workerSid): Promise<Case> => {
+export const updateCase = async (
+  id: Case['id'],
+  body: Partial<Case>,
+  accountSid: Case['accountSid'],
+  workerSid: Case['twilioWorkerId'],
+): Promise<Case> => {
   const caseFromDB: CaseRecord = await caseDb.getById(id, accountSid);
   if (!caseFromDB) {
     return;
@@ -303,7 +223,7 @@ export const updateCase = async (id, body: Partial<Case>, accountSid, workerSid)
   const record = caseToCaseRecord(
     { ...body, updatedBy: workerSid, updatedAt: nowISO, id, accountSid },
     workerSid,
-    caseRecordToCase(caseFromDB),
+    // caseRecordToCase(caseFromDB),
   );
 
   return caseRecordToCase(await caseDb.update(id, record, accountSid, caseRecordToCase));
