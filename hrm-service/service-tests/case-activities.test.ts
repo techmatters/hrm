@@ -1,9 +1,10 @@
 import { createService } from '../src/app';
 import { openPermissions } from '../src/permissions/json-permissions';
 import * as proxiedEndpoints from './external-service-stubs/proxied-endpoints';
+import * as caseApi from '../src/case/case';
+import * as caseDb from '../src/case/case-data-access';
+import { db } from '../src/connection-pool';
 const supertest = require('supertest');
-const Sequelize = require('sequelize');
-const models = require('../src/models');
 const mocks = require('./mocks');
 
 const server = createService({
@@ -20,45 +21,39 @@ const headers = {
 };
 const workerSid = 'worker-sid';
 
-const { Case, CaseAudit } = models;
-
-const caseAuditsQuery = {
-  where: {
-    twilioWorkerId: {
-      [Sequelize.Op.in]: ['fake-worker-123', 'fake-worker-129', workerSid],
-    },
-  },
-};
+const deleteCases = () =>
+  db.task(t =>
+    t.none(`
+    DELETE FROM "Cases" 
+    WHERE "twilioWorkerId" IN ('fake-worker-123', 'fake-worker-129', '${workerSid}');
+  `),
+  );
 
 beforeAll(async () => {
   await proxiedEndpoints.start();
   await proxiedEndpoints.mockSuccessfulTwilioAuthentication(workerSid);
-  await CaseAudit.destroy(caseAuditsQuery);
-  await Case.destroy(caseAuditsQuery);
+  await deleteCases();
 });
 
 afterAll(async () => {
-  await CaseAudit.destroy(caseAuditsQuery);
-  await Case.destroy(caseAuditsQuery);
+  await deleteCases();
 
   await proxiedEndpoints.stop();
   await server.close();
 });
-
-afterEach(async () => CaseAudit.destroy(caseAuditsQuery));
 
 describe('/cases/:caseId/activities route', () => {
   describe('GET', () => {
     let createdCase;
     let nonExistingCaseId;
     const route = id => `/v0/accounts/${accountSid}/cases/${id}/activities`;
-    const options = { context: { workerSid } };
+    // const options = { context: {  } };
 
     beforeEach(async () => {
-      createdCase = await Case.create(case1, options);
-      const caseToBeDeleted = await Case.create(case2, options);
+      createdCase = await caseApi.createCase(case1, accountSid, workerSid);
+      const caseToBeDeleted = await caseApi.createCase(case2, accountSid, workerSid);
       nonExistingCaseId = caseToBeDeleted.id;
-      await caseToBeDeleted.destroy();
+      await caseDb.deleteById(caseToBeDeleted.id, accountSid);
     });
 
     test('should return 401', async () => {
