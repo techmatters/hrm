@@ -11,7 +11,15 @@
     "build-then-import-conversation-postgres": "npm run build && node dist/import-conversation-postgres.js",
     "import-conversation-cloudsearch": "node dist/import-conversation-cloudsearch.js",
     "build-then-import-conversation-cloudsearch": "npm run build && node dist/import-conversation-cloudsearch.js",
-    "build-then-unzip-books": "npm run build && node dist/unzip-books.js"
+    "build-then-unzip-books": "npm run build && node dist/unzip-books.js",
+    "generate-resource-json": "node dist/generate-resource-json.js",
+    "build-then-generate-resource-json": "npm run build && node dist/generate-resource-json.js",
+    "import-resource-postgres-relational": "node dist/import-resource-postgres-relational.js",
+    "build-then-import-resource-postgres-relational": "npm run build && node dist/import-resource-postgres-relational.js",
+    "import-resource-postgres-document": "node dist/import-resource-postgres-document.js",
+    "build-then-import-resource-postgres-document": "npm run build && node dist/import-resource-postgres-document.js",
+    "import-resource-mongo": "node dist/import-resource-mongodb.js",
+    "build-then-import-resource-mongo": "npm run build && node dist/import-resource-mongodb.js"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.16.11",
@@ -45,6 +53,7 @@
     "axios": "^0.27.2",
     "date-fns": "^2.28.0",
     "delay": "^5.0.0",
+    "mongodb": "^4.9.0",
     "pg": "^8.7.3",
     "pg-promise": "^10.11.1",
     "uuid": "^8.3.2"

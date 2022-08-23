@@ -72,3 +72,5 @@ typings/
 
 # TSC output
 **/dist/
+
+/resources-poc/resource-json/**
