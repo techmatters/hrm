@@ -14,7 +14,15 @@ test('create case', async () => {
   const caseToBeCreated = createMockCase({
     helpline: 'helpline',
     status: 'open',
-    info: { notes: ['Child with covid-19'] },
+    info: {
+      counsellorNotes: [
+        {
+          note: 'Child with covid-19',
+          twilioWorkerId: workerSid,
+          createdAt: baselineCreatedDate,
+        },
+      ],
+    },
     twilioWorkerId: 'client-assigned-twilio-worker-id',
     createdBy: 'Fake news', // Overwritten by workerSid for User
     accountSid: 'wrong-account-sid', // Overwritten by accountSid for User
@@ -30,7 +38,7 @@ test('create case', async () => {
         {
           note: 'Child with covid-19',
           twilioWorkerId: workerSid,
-          createdAt: expect.any(String), // current timestamp
+          createdAt: baselineCreatedDate,
         },
       ],
     },
@@ -110,7 +118,6 @@ describe('searchCases', () => {
           createdAt: baselineCreatedDate,
         },
       ],
-      notes: ['Child with covid-19'], // Legacy notes property
     },
     twilioWorkerId: 'twilio-worker-id',
     connectedContacts: [
@@ -185,7 +192,6 @@ describe('searchCases', () => {
           createdAt: baselineCreatedDate,
         },
       ],
-      notes: ['Child with covid-19'], // Legacy notes property
     },
     twilioWorkerId: 'twilio-worker-id',
     connectedContacts: [],
@@ -221,10 +227,6 @@ describe('searchCases', () => {
       expectedCases: [
         {
           ...caseWithContact,
-          info: {
-            ...caseWithContact.info,
-            notes: ['Child with covid-19'], // Legacy notes property
-          },
           childName: 'name last',
           categories: { cat1: ['sub2'] },
         },
@@ -240,10 +242,6 @@ describe('searchCases', () => {
       expectedCases: [
         {
           ...caseWithContact,
-          info: {
-            ...caseWithContact.info,
-            notes: ['Child with covid-19'], // Legacy notes property
-          },
           childName: 'name last',
           categories: { cat1: ['sub2'] },
         },
@@ -341,7 +339,6 @@ describe('update existing case', () => {
               createdAt: expect.toParseAsDate(),
             },
           ],
-          notes: ['Refugee Child'],
         },
         twilioWorkerId: workerSid,
       }),
@@ -371,420 +368,6 @@ describe('update existing case', () => {
         updatedBy: workerSid,
         updatedAt: expect.toParseAsDate(),
       },
-    },
-    {
-      description: 'adding a note in legacy note format - converts legacy note to counsellor note',
-      updateCaseObject: {
-        info: {
-          notes: ['Child with covid-19', 'Refugee Child'],
-        },
-      },
-      existingCaseObject: createMockCaseRecord({
-        caseSections: [
-          {
-            accountSid,
-            caseId: 1,
-            sectionType: 'note',
-            createdBy: 'contact-updater',
-            createdAt: baselineDate,
-            sectionId: 'EXISTING SECTION ID',
-            sectionTypeSpecificData: {
-              note: 'Child with covid-19',
-            },
-          },
-        ],
-        info: {},
-      }),
-      dbResponse: {
-        caseSections: [
-          {
-            caseId: 1,
-            createdBy: 'contact-updater',
-            createdAt: baselineDate,
-            sectionId: 'EXISTING SECTION ID',
-            sectionType: 'note',
-            sectionTypeSpecificData: {
-              note: 'Child with covid-19',
-            },
-          },
-          {
-            caseId: 1,
-            createdBy: workerSid,
-            createdAt: new Date().toISOString(),
-            sectionId: 'NOTE_2',
-            sectionType: 'note',
-            sectionTypeSpecificData: {
-              note: 'Refugee Child',
-            },
-          },
-        ],
-        accountSid,
-        id: 1,
-        twilioWorkerId: 'twilio-worker-id',
-      },
-      expectedDbCaseParameter: {
-        accountSid,
-        id: 1,
-        info: {
-          counsellorNotes: [
-            {
-              accountSid,
-              note: 'Child with covid-19',
-              twilioWorkerId: 'contact-updater',
-              id: 'EXISTING SECTION ID',
-              createdAt: baselineDate,
-            },
-            { note: 'Refugee Child', twilioWorkerId: workerSid, createdAt: expect.toParseAsDate() },
-          ],
-        },
-        caseSections: [
-          {
-            accountSid,
-            caseId: 1,
-            sectionType: 'note',
-            createdBy: 'contact-updater',
-            createdAt: baselineDate,
-            updatedAt: undefined,
-            updatedBy: undefined,
-            sectionId: 'EXISTING SECTION ID',
-            sectionTypeSpecificData: {
-              note: 'Child with covid-19',
-              accountSid,
-            },
-          },
-          {
-            accountSid: undefined,
-            caseId: 1,
-            sectionType: 'note',
-            createdBy: workerSid,
-            createdAt: expect.toParseAsDate(),
-            updatedAt: undefined,
-            updatedBy: undefined,
-            sectionId: expect.anything(),
-            sectionTypeSpecificData: {
-              note: 'Refugee Child',
-            },
-          },
-        ],
-        updatedBy: workerSid,
-        updatedAt: expect.toParseAsDate(),
-      },
-      expectedResponse: createMockCase({
-        accountSid,
-        info: {
-          counsellorNotes: [
-            {
-              note: 'Child with covid-19',
-              id: 'EXISTING SECTION ID',
-              twilioWorkerId: 'contact-updater',
-              createdAt: baselineDate,
-            },
-            {
-              id: 'NOTE_2',
-              note: 'Refugee Child',
-              twilioWorkerId: workerSid,
-              createdAt: expect.toParseAsDate(),
-            },
-          ],
-          notes: ['Child with covid-19', 'Refugee Child'],
-        },
-      }),
-    },
-    {
-      description: 'adding a referral in legacy format generates missing properties',
-      existingCaseObject: createMockCaseRecord({
-        caseSections: [
-          {
-            accountSid: '',
-            caseId: 1,
-            sectionType: 'referral',
-            createdBy: 'referral-adder',
-            createdAt: '2020-10-16 00:00:00',
-            sectionId: 'EXISTING REFERRAL SECTION ID',
-            sectionTypeSpecificData: {
-              date: '2020-10-15',
-              referredTo: 'State Agency 1',
-              comments: 'comment',
-            },
-          },
-        ],
-        info: {},
-      }),
-      updateCaseObject: {
-        info: {
-          referrals: [
-            {
-              id: 'EXISTING REFERRAL SECTION ID',
-              date: '2020-10-15',
-              referredTo: 'State Agency 1',
-              comments: 'changed comment',
-              createdAt: '2020-10-16 00:00:00',
-              twilioWorkerId: 'referral-adder',
-            },
-            {
-              date: '2020-10-16',
-              referredTo: 'State Agency 2',
-              comments: 'comment',
-            },
-          ],
-        },
-      },
-      dbResponse: {
-        info: {},
-        caseSections: [
-          {
-            caseId: 1,
-            sectionType: 'referral',
-            createdBy: 'referral-adder',
-            createdAt: '2020-10-16 00:00:00',
-            sectionId: 'EXISTING REFERRAL SECTION ID',
-            sectionTypeSpecificData: {
-              date: '2020-10-15',
-              referredTo: 'State Agency 1',
-              comments: 'changed comment',
-            },
-          },
-          {
-            caseId: 1,
-            sectionType: 'referral',
-            createdBy: workerSid,
-            createdAt: baselineCreatedDate,
-            sectionId: 'ADDED REFERRAL SECTION ID',
-            sectionTypeSpecificData: {
-              date: '2020-10-16',
-              referredTo: 'State Agency 2',
-              comments: 'comment',
-            },
-          },
-        ],
-      },
-      expectedDbCaseParameter: {
-        accountSid,
-        id: 1,
-        caseSections: [
-          {
-            caseId: 1,
-            sectionType: 'referral',
-            createdBy: 'referral-adder',
-            createdAt: '2020-10-16 00:00:00',
-            updatedAt: undefined,
-            updatedBy: undefined,
-            sectionId: 'EXISTING REFERRAL SECTION ID',
-            sectionTypeSpecificData: {
-              date: '2020-10-15',
-              referredTo: 'State Agency 1',
-              comments: 'changed comment',
-            },
-          },
-          {
-            caseId: 1,
-            sectionType: 'referral',
-            createdBy: workerSid,
-            createdAt: expect.toParseAsDate(),
-            updatedAt: undefined,
-            updatedBy: undefined,
-            sectionId: expect.anything(),
-            sectionTypeSpecificData: {
-              date: '2020-10-16',
-              referredTo: 'State Agency 2',
-              comments: 'comment',
-            },
-          },
-        ],
-        info: {
-          referrals: [
-            {
-              id: 'EXISTING REFERRAL SECTION ID',
-              date: '2020-10-15',
-              referredTo: 'State Agency 1',
-              comments: 'changed comment',
-              createdAt: '2020-10-16 00:00:00',
-              twilioWorkerId: 'referral-adder',
-            },
-            {
-              date: '2020-10-16',
-              referredTo: 'State Agency 2',
-              comments: 'comment',
-              createdAt: expect.toParseAsDate(),
-              twilioWorkerId: workerSid,
-            },
-          ],
-        },
-        updatedBy: workerSid,
-        updatedAt: expect.toParseAsDate(),
-      },
-      expectedResponse: createMockCase({
-        info: {
-          referrals: [
-            {
-              id: 'EXISTING REFERRAL SECTION ID',
-              date: '2020-10-15',
-              referredTo: 'State Agency 1',
-              comments: 'changed comment',
-              createdAt: '2020-10-16 00:00:00',
-              twilioWorkerId: 'referral-adder',
-            },
-            {
-              id: 'ADDED REFERRAL SECTION ID',
-              date: '2020-10-16',
-              referredTo: 'State Agency 2',
-              comments: 'comment',
-              createdAt: expect.toParseAsDate(),
-              twilioWorkerId: workerSid,
-            },
-          ],
-        },
-      }),
-    },
-    {
-      description:
-        'update an existing referral in legacy referral format - does not overwrite preexisting new properties',
-      existingCaseObject: createMockCaseRecord({
-        caseSections: [
-          {
-            accountSid: '',
-            caseId: 1,
-            sectionType: 'referral',
-            createdBy: 'referral-adder',
-            createdAt: '2020-10-16 00:00:00',
-            sectionId: 'EXISTING REFERRAL SECTION ID',
-            sectionTypeSpecificData: {
-              date: '2020-10-15',
-              referredTo: 'State Agency 1',
-              comments: 'comment',
-            },
-          },
-        ],
-        info: {},
-      }),
-      updateCaseObject: {
-        info: {
-          referrals: [
-            {
-              id: 'EXISTING REFERRAL SECTION ID',
-              date: '2020-10-15',
-              referredTo: 'State Agency 1',
-              comments: 'changed comment',
-            },
-            {
-              date: '2020-10-16',
-              referredTo: 'State Agency 2',
-              comments: 'comment',
-              anotherProperty: 'anotherValue',
-            },
-          ],
-        },
-      },
-      dbResponse: {
-        info: {},
-        caseSections: [
-          {
-            caseId: 1,
-            sectionType: 'referral',
-            createdBy: 'referral-adder',
-            createdAt: '2020-10-16 00:00:00',
-            sectionId: 'EXISTING REFERRAL SECTION ID',
-            sectionTypeSpecificData: {
-              date: '2020-10-15',
-              referredTo: 'State Agency 1',
-              comments: 'changed comment',
-            },
-          },
-          {
-            caseId: 1,
-            sectionType: 'referral',
-            createdBy: workerSid,
-            createdAt: baselineCreatedDate,
-            sectionId: 'ADDED REFERRAL SECTION ID',
-            sectionTypeSpecificData: {
-              date: '2020-10-16',
-              referredTo: 'State Agency 2',
-              comments: 'comment',
-              anotherProperty: 'anotherValue',
-            },
-          },
-        ],
-      },
-      expectedDbCaseParameter: {
-        accountSid,
-        id: 1,
-        caseSections: [
-          {
-            caseId: 1,
-            sectionType: 'referral',
-            createdBy: 'referral-adder',
-            createdAt: '2020-10-16 00:00:00',
-            updatedAt: undefined,
-            updatedBy: undefined,
-            sectionId: 'EXISTING REFERRAL SECTION ID',
-            sectionTypeSpecificData: {
-              date: '2020-10-15',
-              referredTo: 'State Agency 1',
-              comments: 'changed comment',
-            },
-          },
-          {
-            caseId: 1,
-            sectionType: 'referral',
-            createdBy: workerSid,
-            createdAt: expect.toParseAsDate(),
-            updatedAt: undefined,
-            updatedBy: undefined,
-            sectionId: expect.anything(),
-            sectionTypeSpecificData: {
-              date: '2020-10-16',
-              referredTo: 'State Agency 2',
-              comments: 'comment',
-              anotherProperty: 'anotherValue',
-            },
-          },
-        ],
-        info: {
-          referrals: [
-            {
-              id: 'EXISTING REFERRAL SECTION ID',
-              date: '2020-10-15',
-              referredTo: 'State Agency 1',
-              comments: 'changed comment',
-              createdAt: '2020-10-16 00:00:00',
-              twilioWorkerId: 'referral-adder',
-            },
-            {
-              date: '2020-10-16',
-              referredTo: 'State Agency 2',
-              comments: 'comment',
-              createdAt: expect.toParseAsDate(),
-              twilioWorkerId: workerSid,
-              anotherProperty: 'anotherValue',
-            },
-          ],
-        },
-        updatedBy: workerSid,
-        updatedAt: expect.toParseAsDate(),
-      },
-      expectedResponse: createMockCase({
-        info: {
-          referrals: [
-            {
-              id: 'EXISTING REFERRAL SECTION ID',
-              date: '2020-10-15',
-              referredTo: 'State Agency 1',
-              comments: 'changed comment',
-              createdAt: '2020-10-16 00:00:00',
-              twilioWorkerId: 'referral-adder',
-            },
-            {
-              id: 'ADDED REFERRAL SECTION ID',
-              date: '2020-10-16',
-              referredTo: 'State Agency 2',
-              comments: 'comment',
-              createdAt: expect.toParseAsDate(),
-              twilioWorkerId: workerSid,
-              anotherProperty: 'anotherValue',
-            },
-          ],
-        },
-      }),
     },
   ]).test(
     '$description',
@@ -818,7 +401,15 @@ test('update non existing case', async () => {
   jest.spyOn(caseDb, 'update').mockImplementation(() => null);
 
   const updateCaseObject = {
-    info: { notes: 'Refugee Child' },
+    info: {
+      counsellorNotes: [
+        {
+          note: 'Child with covid-19',
+          twilioWorkerId: workerSid,
+          createdAt: baselineCreatedDate,
+        },
+      ],
+    },
   };
 
   await expect(

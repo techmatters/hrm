@@ -76,7 +76,7 @@ export const without = (original, ...property) => {
   return output;
 };
 
-export const convertCaseInfoToExpectedInfo = (input: any, accountSid: string = null) => {
+export const convertCaseInfoToExpectedInfo = (input: any, accountSid: string | null = null) => {
   if (!input || !input.info) return { ...input };
   const expectedCase = {
     ...input,
@@ -92,9 +92,6 @@ export const convertCaseInfoToExpectedInfo = (input: any, accountSid: string = n
           accountSid: section.accountSid || expectedCase.accountSid || accountSid,
           createdAt: expect.toParseAsDate(section.createdAt),
         }));
-        if (sectionName === 'counsellorNotes') {
-          expectedInfo.notes = expectedInfo.counsellorNotes.map(cn => cn.note);
-        }
       } else {
         delete expectedInfo[sectionName];
         if (sectionName === 'counsellorNotes') {
