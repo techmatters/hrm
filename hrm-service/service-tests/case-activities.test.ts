@@ -21,7 +21,7 @@ const headers = {
 };
 const workerSid = 'worker-sid';
 
-const deleteCases = () =>
+const cleanupCases = () =>
   db.task(t =>
     t.none(`
     DELETE FROM "Cases" 
@@ -32,11 +32,11 @@ const deleteCases = () =>
 beforeAll(async () => {
   await proxiedEndpoints.start();
   await proxiedEndpoints.mockSuccessfulTwilioAuthentication(workerSid);
-  await deleteCases();
+  await cleanupCases();
 });
 
 afterAll(async () => {
-  await deleteCases();
+  await cleanupCases();
 
   await proxiedEndpoints.stop();
   await server.close();
