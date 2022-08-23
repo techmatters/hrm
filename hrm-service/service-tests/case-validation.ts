@@ -43,32 +43,6 @@ expect.extend({
   },
 });
 
-export const caseAuditsWhereClause = (workerSid: string) =>
-  pgp.as.format(`WHERE "twilioWorkerId" IN($<workers:csv>) `, {
-    workers: ['fake-worker-123', 'fake-worker-129', workerSid],
-  });
-
-export const countCaseAudits = async (workerSid: string): Promise<number> => {
-  return (
-    await db.one<{ count: number }>(
-      `SELECT COUNT(*)::integer AS count FROM "CaseAudits" $<whereClause:raw>`,
-      {
-        whereClause: caseAuditsWhereClause(workerSid),
-      },
-    )
-  ).count;
-};
-
-export const selectCaseAudits = async (workerSid: string): Promise<any[]> =>
-  db.manyOrNone(`SELECT * FROM "CaseAudits" $<whereClause:raw>`, {
-    whereClause: caseAuditsWhereClause(workerSid),
-  });
-
-export const deleteCaseAudits = async (workerSid: string) =>
-  db.none(`DELETE FROM "CaseAudits" $<whereClause:raw>`, {
-    whereClause: caseAuditsWhereClause(workerSid),
-  });
-
 export const without = (original, ...property) => {
   if (!original) return original;
   const { ...output } = original;

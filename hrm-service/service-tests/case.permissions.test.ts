@@ -2,7 +2,6 @@
 import * as caseApi from '../src/case/case';
 import { Case } from '../src/case/case';
 import * as caseDb from '../src/case/case-data-access';
-import { deleteCaseAudits } from './case-validation';
 import * as proxiedEndpoints from './external-service-stubs/proxied-endpoints';
 
 const openRules = require('../permission-rules/open.json');
@@ -52,10 +51,8 @@ afterAll(done => {
 beforeAll(async () => {
   await proxiedEndpoints.start();
   await proxiedEndpoints.mockSuccessfulTwilioAuthentication(workerSid);
-  await deleteCaseAudits(workerSid);
 });
 
-afterEach(async () => deleteCaseAudits(workerSid));
 
 describe('/cases/:id route - PUT', () => {
   const route = `/v0/accounts/${accountSid}/cases`;
