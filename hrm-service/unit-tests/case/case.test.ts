@@ -297,7 +297,6 @@ describe('searchCases', () => {
 
 describe('update existing case', () => {
   const caseId = 1;
-  const baselineDate = new Date(2001, 5, 4).toISOString();
 
   each([
     {

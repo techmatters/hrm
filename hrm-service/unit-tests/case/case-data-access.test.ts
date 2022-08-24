@@ -13,7 +13,6 @@ import { db } from '../../src/connection-pool';
 import { OrderByColumns } from '../../src/case/sql/case-search-sql';
 
 const accountSid = 'account-sid';
-const workerSid = 'worker-sid';
 let conn: pgPromise.ITask<unknown>;
 const caseId = 42;
 

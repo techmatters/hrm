@@ -1,4 +1,3 @@
-import { db, pgp } from '../src/connection-pool';
 import { WELL_KNOWN_CASE_SECTION_NAMES } from '../src/case/case';
 import { NewContactRecord } from '../src/contact/sql/contact-insert-sql';
 import { ContactRawJson } from '../src/contact/contact-json';

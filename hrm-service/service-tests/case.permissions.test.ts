@@ -53,7 +53,6 @@ beforeAll(async () => {
   await proxiedEndpoints.mockSuccessfulTwilioAuthentication(workerSid);
 });
 
-
 describe('/cases/:id route - PUT', () => {
   const route = `/v0/accounts/${accountSid}/cases`;
 
