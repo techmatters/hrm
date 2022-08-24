@@ -44,3 +44,13 @@ TABLESPACE pg_default;
 
 ALTER TABLE IF EXISTS resource_document."ResourceReferenceAttributeValues"
     OWNER to resource_document;
+
+-- Index: ResourceReferenceAttributeValues_value_idx
+
+-- DROP INDEX IF EXISTS resource_relational."ResourceReferenceAttributeValues_value_idx";
+
+CREATE INDEX IF NOT EXISTS "ResourceReferenceAttributeValues_value_idx"
+    ON resource_relational."ResourceReferenceAttributeValues" USING btree
+    (value COLLATE pg_catalog."default" text_pattern_ops ASC NULLS LAST, "accountSid" COLLATE pg_catalog."default" ASC NULLS LAST)
+    INCLUDE("valueLabel", language)
+    TABLESPACE pg_default;

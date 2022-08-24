@@ -112,3 +112,24 @@ CREATE INDEX IF NOT EXISTS "fki_ResourceReferenceAttributeValues_referenceId_acc
     ON resource_relational."ResourceReferenceAttributes" USING btree
     ("referenceId" COLLATE pg_catalog."default" ASC NULLS LAST, "accountSid" COLLATE pg_catalog."default" ASC NULLS LAST)
     TABLESPACE pg_default;
+
+-- Index: ResourceStringAttributes_value_idx
+
+-- DROP INDEX IF EXISTS resource_relational."ResourceStringAttributes_value_idx";
+
+CREATE INDEX IF NOT EXISTS "ResourceStringAttributes_value_idx"
+    ON resource_relational."ResourceStringAttributes" USING btree
+    (value COLLATE pg_catalog."default" text_pattern_ops ASC NULLS LAST, "accountSid" COLLATE pg_catalog."default" ASC NULLS LAST)
+    INCLUDE("valueLabel", language)
+    TABLESPACE pg_default;
+
+
+-- Index: ResourceReferenceAttributeValues_value_idx
+
+-- DROP INDEX IF EXISTS resource_relational."ResourceReferenceAttributeValues_value_idx";
+
+CREATE INDEX IF NOT EXISTS "ResourceReferenceAttributeValues_value_idx"
+    ON resource_relational."ResourceReferenceAttributeValues" USING btree
+    (value COLLATE pg_catalog."default" text_pattern_ops ASC NULLS LAST, "accountSid" COLLATE pg_catalog."default" ASC NULLS LAST)
+    INCLUDE("valueLabel", language)
+    TABLESPACE pg_default;
