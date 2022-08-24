@@ -78,7 +78,7 @@ test('create case', async () => {
 
   const createdCase = await caseApi.createCase(caseToBeCreated, accountSid, workerSid);
   // any worker & account specified on the object should be overwritten with the ones from the user
-  expect(createSpy).toHaveBeenCalledWith(expectedCaseDbParameter, accountSid, expect.any(Function));
+  expect(createSpy).toHaveBeenCalledWith(expectedCaseDbParameter, accountSid);
   expect(createdCase).toStrictEqual({
     ...caseToBeCreated,
     id: 1,
@@ -384,12 +384,7 @@ describe('update existing case', () => {
       jest.spyOn(caseDb, 'getById').mockResolvedValue(existingCaseObject);
 
       const returned = await caseApi.updateCase(caseId, updateCaseObject, accountSid, workerSid);
-      expect(updateSpy).toHaveBeenCalledWith(
-        caseId,
-        expectedDbCaseParameter,
-        accountSid,
-        expect.any(Function),
-      );
+      expect(updateSpy).toHaveBeenCalledWith(caseId, expectedDbCaseParameter, accountSid);
       expect(returned).toStrictEqual(expectedResponse);
     },
   );

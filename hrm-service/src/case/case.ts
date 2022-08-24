@@ -203,7 +203,7 @@ export const createCase = async (
     },
     workerSid,
   );
-  const created = await caseDb.create(record, accountSid, caseRecordToCase);
+  const created = await caseDb.create(record, accountSid);
   return caseRecordToCase(created);
 };
 
@@ -226,7 +226,7 @@ export const updateCase = async (
     // caseRecordToCase(caseFromDB),
   );
 
-  return caseRecordToCase(await caseDb.update(id, record, accountSid, caseRecordToCase));
+  return caseRecordToCase(await caseDb.update(id, record, accountSid));
 };
 
 export const getCase = async (id: number, accountSid: string): Promise<Case | undefined> => {
