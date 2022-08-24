@@ -184,7 +184,7 @@ export const connectToCase = async (
   });
 };
 
-export const getById = async (accountSid: string, contactId: string): Promise<Contact> =>
+export const getById = async (accountSid: string, contactId: number): Promise<Contact> =>
   db.task(async connection =>
     connection.oneOrNone<Contact>(selectSingleContactByIdSql('Contacts'), {
       accountSid,
