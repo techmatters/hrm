@@ -334,6 +334,9 @@ describe('/contacts route', () => {
 
       let createdContacts: contactDb.Contact[] = [];
       let csamReports = [];
+
+      const startTestsTimeStamp = new Date();
+
       beforeAll(async () => {
         // Clean what's been created so far
         await CSAMReport.destroy(query);
@@ -367,12 +370,12 @@ describe('/contacts route', () => {
         // Create some contacts to work with
         const oneHourBefore = {
           ...another2,
-          timeOfContact: subHours(new Date(), 1).toISOString(), // one hour before
+          timeOfContact: subHours(startTestsTimeStamp, 1).toISOString(), // one hour before
         };
 
         const oneWeekBefore = {
           ...noHelpline,
-          timeOfContact: subDays(new Date(), 7).toISOString(), // one hour before
+          timeOfContact: subDays(startTestsTimeStamp, 7).toISOString(), // one hour before
         };
 
         const invalidContact = {};
@@ -424,6 +427,7 @@ describe('/contacts route', () => {
             },
           },
         });
+
         await Promise.all(createdContacts.filter(c => c.id).map(c => deleteContactById(c.id, c.accountSid)));
       });
 
@@ -575,8 +579,8 @@ describe('/contacts route', () => {
         {
           changeDescription: 'Test date filters (should match oneWeekBefore only)',
           body: {
-            dateFrom: subDays(new Date(), 8).toISOString(),
-            dateTo: subDays(new Date(), 5).toISOString(),
+            dateFrom: subDays(startTestsTimeStamp, 8).toISOString(),
+            dateTo: subDays(startTestsTimeStamp, 5).toISOString(),
           },
           expectCallback: response => {
             expect(response.status).toBe(200);
@@ -589,7 +593,7 @@ describe('/contacts route', () => {
         {
           changeDescription: 'Test date filters (should all but oneWeekBefore)',
           body: {
-            dateFrom: new Date().toISOString(),
+            dateFrom: subHours(startTestsTimeStamp, 1).toISOString(),
           },
           expectCallback: response => {
             expect(response.status).toBe(200);
@@ -616,7 +620,7 @@ describe('/contacts route', () => {
 
             const { contacts } = response.body;
             expect(contacts.length).toBe(1);
-            console.log(contacts[0]);
+
             const withCSAMReports = createdContacts.find(c => c.queueName === 'withCSAMReports');
 
             expect(contacts.find(c => withCSAMReports.id.toString() === c.contactId)).toBeDefined();
@@ -897,7 +901,7 @@ describe('/contacts route', () => {
         ]).test(
           'should $description if that is specified in the payload',
           async ({ patch, original, expected }: TestOptions) => {
-            console.log('expected:', expected);
+
             const createdContact = await contactApi.createContact(accountSid, workerSid, { ...contact1, rawJson: original || {} });
             try {
               const existingContactId = createdContact.id;
