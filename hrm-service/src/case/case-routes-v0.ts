@@ -1,7 +1,6 @@
 import createError from 'http-errors';
 import * as casesDb from './case-data-access';
 import * as caseApi from './case';
-import { getCaseActivities } from './activities';
 import { SafeRouter, publicEndpoint } from '../permissions';
 import { getActions } from '../permissions';
 import { asyncHandler } from '../utils';
@@ -84,19 +83,6 @@ casesRouter.delete('/:id', publicEndpoint, async (req, res) => {
     throw createError(404);
   }
   res.sendStatus(200);
-});
-
-casesRouter.get('/:caseId/activities/', publicEndpoint, async (req, res) => {
-  const { accountSid } = req;
-  const { caseId } = req.params;
-
-  try {
-    res.json(await getCaseActivities(caseId, accountSid));
-  } catch (err) {
-    if (err.message.match(/Case .* not found\./)) {
-      throw createError(404);
-    } else throw err;
-  }
 });
 
 casesRouter.post('/search', publicEndpoint, async (req, res) => {

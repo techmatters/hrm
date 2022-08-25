@@ -1,4 +1,3 @@
-import { db, pgp } from '../src/connection-pool';
 import { WELL_KNOWN_CASE_SECTION_NAMES } from '../src/case/case';
 import { NewContactRecord } from '../src/contact/sql/contact-insert-sql';
 import { ContactRawJson } from '../src/contact/contact-json';
@@ -43,32 +42,6 @@ expect.extend({
   },
 });
 
-export const caseAuditsWhereClause = (workerSid: string) =>
-  pgp.as.format(`WHERE "twilioWorkerId" IN($<workers:csv>) `, {
-    workers: ['fake-worker-123', 'fake-worker-129', workerSid],
-  });
-
-export const countCaseAudits = async (workerSid: string): Promise<number> => {
-  return (
-    await db.one<{ count: number }>(
-      `SELECT COUNT(*)::integer AS count FROM "CaseAudits" $<whereClause:raw>`,
-      {
-        whereClause: caseAuditsWhereClause(workerSid),
-      },
-    )
-  ).count;
-};
-
-export const selectCaseAudits = async (workerSid: string): Promise<any[]> =>
-  db.manyOrNone(`SELECT * FROM "CaseAudits" $<whereClause:raw>`, {
-    whereClause: caseAuditsWhereClause(workerSid),
-  });
-
-export const deleteCaseAudits = async (workerSid: string) =>
-  db.none(`DELETE FROM "CaseAudits" $<whereClause:raw>`, {
-    whereClause: caseAuditsWhereClause(workerSid),
-  });
-
 export const without = (original, ...property) => {
   if (!original) return original;
   const { ...output } = original;
@@ -76,7 +49,7 @@ export const without = (original, ...property) => {
   return output;
 };
 
-export const convertCaseInfoToExpectedInfo = (input: any, accountSid: string = null) => {
+export const convertCaseInfoToExpectedInfo = (input: any, accountSid: string | null = null) => {
   if (!input || !input.info) return { ...input };
   const expectedCase = {
     ...input,
@@ -92,9 +65,6 @@ export const convertCaseInfoToExpectedInfo = (input: any, accountSid: string = n
           accountSid: section.accountSid || expectedCase.accountSid || accountSid,
           createdAt: expect.toParseAsDate(section.createdAt),
         }));
-        if (sectionName === 'counsellorNotes') {
-          expectedInfo.notes = expectedInfo.counsellorNotes.map(cn => cn.note);
-        }
       } else {
         delete expectedInfo[sectionName];
         if (sectionName === 'counsellorNotes') {
