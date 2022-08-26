@@ -345,7 +345,6 @@ describe('/contacts route', () => {
           number: '123412341234',
           csamReports: [newReport1, newReport2],
         };
-        console.log('nonData1', nonData1);
         const responses = await resolveSequentially(
           [
             { ...contact1, taskId: 'contact-1-task' },
@@ -490,7 +489,6 @@ describe('/contacts route', () => {
             // invalidContact will return null, and nonData1, nonData2, broken1 and broken2 are not data contact types
             expect(contacts.length).toBe(createdContacts.length - 5);
             const createdContactsByTimeOfContact = createdContacts.sort(compareTimeOfContactDesc);
-            console.log(createdContacts);
             createdContactsByTimeOfContact
               .filter((c) => ['Child calling about self', 'Someone calling about a child'].includes(c.rawJson?.callType))
               .forEach((c)=> {
@@ -630,7 +628,6 @@ describe('/contacts route', () => {
 
             const { contacts } = response.body;
             expect(contacts.length).toBe(1);
-            console.log(contacts[0]);
             const withCSAMReports = createdContacts.find(c => c.queueName === 'withCSAMReports');
 
             expect(contacts.find(c => withCSAMReports.id.toString() === c.contactId)).toBeDefined();
