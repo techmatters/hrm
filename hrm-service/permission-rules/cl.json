@@ -1,11 +1,11 @@
 {
-"closeCase":  [["isSupervisor"],["isCreator", "isCaseOpen"]],
+  "closeCase":  [["isSupervisor"],["isCreator", "isCaseOpen"]],
 "reopenCase":  [["isSupervisor"]],
-"caseStatusTransition":  [["isSupervisor"]],
+"caseStatusTransition":  [["isSupervisor"],["isCreator", "isCaseOpen"]],
 "addNote":  [["isSupervisor"],["isCreator", "isCaseOpen"]],
-"editNote":  [["isSupervisor"],["isCreator", "isCaseOpen"]],
+"editNote":  [["isSupervisor"]],
 "addReferral":  [["isSupervisor"],["isCreator", "isCaseOpen"]],
-"editReferral":  [["isSupervisor"]],
+"editReferral":  [["isSupervisor"],["isCreator", "isCaseOpen"]],
 "addHousehold":  [["isSupervisor"],["isCreator", "isCaseOpen"]],
 "editHousehold":  [["isSupervisor"],["isCreator", "isCaseOpen"]],
 "addPerpetrator":  [["isSupervisor"],["isCreator", "isCaseOpen"]],
@@ -18,5 +18,5 @@
 "editChildIsAtRisk":  [["isSupervisor"],["isCreator", "isCaseOpen"]],
 "editFollowUpDate":  [["isSupervisor"],["isCreator", "isCaseOpen"]],
 "editContact":  [["isSupervisor"],["isOwner"]],
-"viewPostSurvey": [["isSupervisor"]]
+"viewPostSurvey":  [["isSupervisor"]]
 }

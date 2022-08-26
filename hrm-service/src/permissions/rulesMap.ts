@@ -4,6 +4,8 @@ const devRules = require('../../permission-rules/dev.json');
 const e2eRules = require('../../permission-rules/e2e.json');
 const brRules = require('../../permission-rules/br.json');
 const caRules = require('../../permission-rules/ca.json');
+const clRules = require('../../permission-rules/cl.json');
+const coRules = require('../../permission-rules/co.json');
 const etRules = require('../../permission-rules/et.json');
 const inRules = require('../../permission-rules/in.json');
 const jmRules = require('../../permission-rules/jm.json');
@@ -12,7 +14,6 @@ const roRules = require('../../permission-rules/ro.json');
 const ukRules = require('../../permission-rules/uk.json');
 const zaRules = require('../../permission-rules/za.json');
 const zmRules = require('../../permission-rules/zm.json');
-const coRules = require('../../permission-rules/co.json');
 
 import { actionsMaps, Actions } from './actions';
 
@@ -43,6 +44,8 @@ export const isRulesFile = (rules: any): rules is RulesFile =>
 const rulesMapDef = {
   br: brRules,
   ca: caRules,
+  cl: clRules,
+  co: coRules,
   et: etRules,
   in: inRules,
   jm: jmRules,
@@ -51,7 +54,6 @@ const rulesMapDef = {
   uk: ukRules,
   za: zaRules,
   zm: zmRules,
-  co: coRules,
   open: openRules,
   demo: demoRules,
   dev: devRules,
