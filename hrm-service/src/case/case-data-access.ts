@@ -1,8 +1,5 @@
-// eslint-disable-next-line prettier/prettier
-import type { Case } from './case';
 import { db, pgp } from '../connection-pool';
 import { getPaginationElements } from '../controllers/helpers';
-import pgPromise from 'pg-promise';
 import { updateByIdSql } from './sql/case-update-sql';
 import { OrderByColumns, OrderByDirection, selectCaseSearch } from './sql/case-search-sql';
 import { caseSectionUpsertSql, deleteMissingCaseSectionsSql } from './sql/case-sections-sql';
@@ -34,17 +31,6 @@ export type CaseRecord = CaseRecordCommon & {
 
 type CaseWithCount = CaseRecord & { totalCount: number };
 
-type CaseAuditRecord = {
-  previousValue?: any;
-  newValue?: any;
-  twilioWorkerId: string;
-  createdBy: string;
-  accountSid: string;
-  createdAt: string;
-  updatedAt: string;
-  caseId: number;
-};
-
 export type CaseSectionRecord = {
   caseId?: number;
   sectionType: string;
@@ -58,17 +44,17 @@ export type CaseSectionRecord = {
 };
 
 export type CaseListConfiguration = {
-  sortBy?: OrderByColumns,
-  sortDirection?: OrderByDirection
-  offset?: number,
-  limit?: number
+  sortBy?: OrderByColumns;
+  sortDirection?: OrderByDirection;
+  offset?: number;
+  limit?: number;
 };
 
 export type CaseSearchCriteria = {
-  phoneNumber?: string,
-  contactNumber?: string,
-  firstName?: string,
-  lastName?: string,
+  phoneNumber?: string;
+  contactNumber?: string;
+  firstName?: string;
+  lastName?: string;
 };
 
 export const enum DateExistsCondition {
@@ -77,9 +63,9 @@ export const enum DateExistsCondition {
 }
 
 export type DateFilter = {
-  from?: string,
-  to?: string,
-  exists?: DateExistsCondition
+  from?: string;
+  to?: string;
+  exists?: DateExistsCondition;
 };
 
 export type CategoryFilter = {
@@ -88,48 +74,22 @@ export type CategoryFilter = {
 };
 
 export type CaseListFilters = {
-  counsellors?: string[],
-  statuses?: string[],
-  excludedStatuses?: string[],
-  createdAt?: DateFilter,
-  updatedAt?: DateFilter,
-  followUpDate?: DateFilter,
-  categories?: CategoryFilter[],
-  helplines?: string[],
-  includeOrphans?: boolean
-};
-
-const logCaseAudit = async (
-  transaction: pgPromise.ITask<unknown>,
-  updated: Case,
-  original?: Case,
-) => {
-  const auditRecord: CaseAuditRecord = {
-    caseId: updated.id,
-    createdAt: updated.createdAt,
-    updatedAt: updated.updatedAt,
-    createdBy: updated.createdBy,
-    accountSid: updated.accountSid,
-    twilioWorkerId: updated.twilioWorkerId,
-    newValue: {
-      ...updated,
-      contacts: ((<CaseRecord>updated).connectedContacts ?? []).map(cc => cc.id),
-    },
-    previousValue: original
-      ? { ...original, contacts: (original.connectedContacts ?? []).map(cc => cc.id) }
-      : null,
-  };
-
-  const statement = pgp.helpers.insert(auditRecord, null, 'CaseAudits');
-  await transaction.none(statement);
+  counsellors?: string[];
+  statuses?: string[];
+  excludedStatuses?: string[];
+  createdAt?: DateFilter;
+  updatedAt?: DateFilter;
+  followUpDate?: DateFilter;
+  categories?: CategoryFilter[];
+  helplines?: string[];
+  includeOrphans?: boolean;
 };
 
 export const create = async (
   body: Partial<NewCaseRecord>,
-  accountSid,
-  toAuditRecord = c => c,
+  accountSid: string,
 ): Promise<CaseRecord> => {
-  const { caseSections, ...caseRecord  } = body;
+  const { caseSections, ...caseRecord } = body;
   caseRecord.accountSid = accountSid;
 
   return db.task(async connection => {
@@ -144,7 +104,7 @@ export const create = async (
         const queryValues = { accountSid, caseId: inserted.id };
         inserted = await transaction.one(sectionStatement, queryValues);
       }
-      await logCaseAudit(transaction, toAuditRecord(inserted));
+
       return inserted;
     });
   });
@@ -163,13 +123,11 @@ export const getById = async (
 
 export const search = async (
   listConfiguration: CaseListConfiguration,
-  accountSid,
+  accountSid: string,
   searchCriteria: CaseSearchCriteria = {},
   filters: CaseListFilters = {},
 ): Promise<{ cases: readonly CaseRecord[]; count: number }> => {
-  const { limit, offset, sortBy, sortDirection } = getPaginationElements(
-    listConfiguration,
-  );
+  const { limit, offset, sortBy, sortDirection } = getPaginationElements(listConfiguration);
   const orderClause = [{ sortBy, sortDirection }];
   const { count, rows } = await db.task(async connection => {
     const statement = selectCaseSearch(filters, orderClause);
@@ -177,7 +135,9 @@ export const search = async (
       accountSid,
       firstName: searchCriteria.firstName ? `%${searchCriteria.firstName}%` : null,
       lastName: searchCriteria.lastName ? `%${searchCriteria.lastName}%` : null,
-      phoneNumber: searchCriteria.phoneNumber ? `%${searchCriteria.phoneNumber.replace(/[\D]/gi, '')}%` : null,
+      phoneNumber: searchCriteria.phoneNumber
+        ? `%${searchCriteria.phoneNumber.replace(/[\D]/gi, '')}%`
+        : null,
       contactNumber: searchCriteria.contactNumber || null,
       limit: limit,
       offset: offset,
@@ -197,15 +157,16 @@ export const deleteById = async (id, accountSid) => {
 export const update = async (
   id,
   caseRecordUpdates: Partial<NewCaseRecord>,
-  accountSid,
-  toAuditRecord = c => c,
+  accountSid: string,
 ): Promise<CaseRecord> => {
   const result = await db.tx(async transaction => {
     const caseUpdateSqlStatements = [selectSingleCaseByIdSql('Cases')];
     if (caseRecordUpdates.info) {
       const allSections: CaseSectionRecord[] = caseRecordUpdates.caseSections ?? [];
       if (allSections.length) {
-        caseUpdateSqlStatements.push(caseSectionUpsertSql(allSections.map(s => ({ ...s, accountSid }))));
+        caseUpdateSqlStatements.push(
+          caseSectionUpsertSql(allSections.map(s => ({ ...s, accountSid }))),
+        );
       }
       // Map case sections into a list of ids grouped by category, which allows a more concise DELETE SQL statement to be generated
       const caseSectionIdsByType = allSections.reduce((idsBySectionType, caseSection) => {
@@ -218,6 +179,7 @@ export const update = async (
     caseUpdateSqlStatements.push(updateByIdSql(caseRecordUpdates));
     caseUpdateSqlStatements.push(selectSingleCaseByIdSql('Cases'));
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [original, ...restOfOutput] = await transaction.multi<CaseRecord>(
       caseUpdateSqlStatements.join(`;
     `),
@@ -227,11 +189,7 @@ export const update = async (
       },
     );
     const updated = restOfOutput.pop();
-    if (updated.length) {
-      const auditUpdated = toAuditRecord(updated[0]);
-      const auditOriginal = toAuditRecord(original[0]);
-      await logCaseAudit(transaction, auditUpdated, auditOriginal);
-    }
+
     return updated;
   });
   return result.length ? result[0] : void 0;

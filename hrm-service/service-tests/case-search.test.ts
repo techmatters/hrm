@@ -6,7 +6,6 @@ import { Case, getCase } from '../src/case/case';
 import * as caseDb from '../src/case/case-data-access';
 import { db } from '../src/connection-pool';
 import {
-  deleteCaseAudits,
   fillNameAndPhone,
   validateCaseListResponse,
   validateSingleCaseResponse,
@@ -162,10 +161,7 @@ afterAll(done => {
 beforeAll(async () => {
   await proxiedEndpoints.start();
   await proxiedEndpoints.mockSuccessfulTwilioAuthentication(workerSid);
-  await deleteCaseAudits(workerSid);
 });
-
-afterEach(async () => deleteCaseAudits(workerSid));
 
 describe('/cases route', () => {
   const route = `/v0/accounts/${accountSid}/cases`;

@@ -2,13 +2,7 @@
 import * as caseApi from '../src/case/case';
 import { Case } from '../src/case/case';
 import * as caseDb from '../src/case/case-data-access';
-import {
-  convertCaseInfoToExpectedInfo,
-  countCaseAudits,
-  deleteCaseAudits,
-  selectCaseAudits,
-  without,
-} from './case-validation';
+import { convertCaseInfoToExpectedInfo, without } from './case-validation';
 import { isBefore } from 'date-fns';
 
 const supertest = require('supertest');
@@ -38,15 +32,12 @@ afterAll(done => {
 });
 
 beforeAll(async () => {
-  await deleteCaseAudits(workerSid);
   await proxiedEndpoints.start();
 });
 
 beforeEach(async () => {
   await proxiedEndpoints.mockSuccessfulTwilioAuthentication(workerSid);
 });
-
-afterEach(async () => deleteCaseAudits(workerSid));
 
 describe('/cases route', () => {
   const route = `/v0/accounts/${accountSid}/cases`;
@@ -80,24 +71,6 @@ describe('/cases route', () => {
       // Check the DB is actually updated
       const fromDb = await caseApi.getCase(response.body.id, accountSid);
       expect(fromDb).toStrictEqual(expected);
-    });
-
-    test('should create a CaseAudit', async () => {
-      const caseAuditPreviousCount = await countCaseAudits(workerSid);
-      const response = await request
-        .post(route)
-        .set(headers)
-        .send(case1);
-
-      const caseAudits = await selectCaseAudits(workerSid);
-      const byGreaterId = (a, b) => b.id - a.id;
-      const lastCaseAudit = caseAudits.sort(byGreaterId)[0];
-      const { previousValue, newValue } = lastCaseAudit;
-
-      expect(response.status).toBe(200);
-      expect(caseAudits).toHaveLength(caseAuditPreviousCount + 1);
-      expect(previousValue).toBeNull();
-      expect(newValue).toStrictEqual({ ...expected, contacts: [] });
     });
   });
 
@@ -536,7 +509,6 @@ describe('/cases route', () => {
           originalCase: originalCaseGetter = () => cases.blank,
           customWorkerSid = undefined,
         }) => {
-          const caseAuditPreviousCount = await countCaseAudits(workerSid);
           const caseUpdate =
             typeof caseUpdateParam === 'function' ? caseUpdateParam() : caseUpdateParam;
           const originalCase = originalCaseGetter();
@@ -577,25 +549,6 @@ describe('/cases route', () => {
           expect(isBefore(new Date(caseBeforeUpdate.updatedAt), new Date(fromDb.updatedAt))).toBe(
             true,
           );
-
-          // Check change is audited
-          const caseAudits = await selectCaseAudits(workerSid);
-          expect(caseAudits).toHaveLength(caseAuditPreviousCount + 1);
-          const byGreaterId = (a, b) => b.id - a.id;
-          const lastCaseAudit = caseAudits.sort(byGreaterId)[0];
-          const { previousValue, newValue } = lastCaseAudit;
-          expect(previousValue).toStrictEqual({
-            connectedContacts: [],
-            contacts: [],
-            ...convertCaseInfoToExpectedInfo(originalCase),
-            createdAt: expect.toParseAsDate(originalCase.createdAt),
-            updatedAt: expect.toParseAsDate(),
-          });
-          expect(newValue).toStrictEqual({
-            connectedContacts: [],
-            contacts: [],
-            ...expected,
-          });
         },
       );
       test('should return 404', async () => {

@@ -18,13 +18,16 @@ import {
   case2,
   workerSid, nonData2, nonData1,
 } from './mocks';
-const each = require('jest-each').default;
-const { db } = require('../src/connection-pool');
+import each  from 'jest-each';
+import { db } from '../src/connection-pool';
 import { subHours, subDays } from 'date-fns';
 
 import './case-validation';
+import * as caseApi from '../src/case/case';
+import * as caseDb from '../src/case/case-data-access';
 import { PatchPayload } from '../src/contact/contact';
-import { getById } from '../src/contact/contact-data-access';
+import * as contactApi from '../src/contact/contact';
+import * as contactDb from '../src/contact/contact-data-access';
 import { openPermissions } from '../src/permissions/json-permissions';
 import * as proxiedEndpoints from './external-service-stubs/proxied-endpoints';
 
@@ -32,7 +35,7 @@ const server = createService({
   permissions: openPermissions,
   authTokenLookup: () => 'picernic basket',
 }).listen();
-const request = supertest.agent(server);
+const request = supertest.agent(server, undefined);
 
 /**
  *
@@ -47,8 +50,41 @@ const headers = {
   Authorization: `Bearer bearing a bear (rawr)`,
 };
 
-const { Contact, Case, CSAMReport } = models;
+const { CSAMReport } = models;
 const CSAMReportController = require('../src/controllers/csam-report-controller')(CSAMReport);
+
+const cleanupWhereClause = `
+  WHERE "twilioWorkerId" IN ('fake-worker-123', 'fake-worker-129', 'fake-worker-987', '${workerSid}') OR "accountSid" IN ('', '${accountSid}');
+`;
+
+const cleanupCases = () =>
+  db.task(t =>
+    t.none(`
+      DELETE FROM "Cases" 
+      ${cleanupWhereClause}
+  `),
+  );
+
+const cleanupContacts = () =>
+  db.task(t =>
+    t.none(`
+      DELETE FROM "Contacts" 
+      ${cleanupWhereClause}
+  `),
+  );
+
+/**
+ * We could move this to contact data access, but since is something we only want in test suits, it might be better this way
+ */
+// eslint-disable-next-line @typescript-eslint/no-shadow
+const deleteContactById = (id: number, accountSid: string) =>
+  db.task(t =>
+    t.none(`
+      DELETE FROM "Contacts" 
+      WHERE "id" = ${id} AND "accountSid" = '${accountSid}';
+  `),
+  );
+
 
 const query = {
   where: {
@@ -71,14 +107,14 @@ beforeAll(async () => {
   await proxiedEndpoints.start();
   await proxiedEndpoints.mockSuccessfulTwilioAuthentication(workerSid);
   await CSAMReport.destroy(query);
-  await Contact.destroy(query);
-  await Case.destroy(query);
+  await cleanupContacts();
+  await cleanupCases();
 });
 
 afterAll(async () => {
   await CSAMReport.destroy(query);
-  await Contact.destroy(query);
-  await Case.destroy(query);
+  await cleanupContacts();
+  await cleanupCases();
   await proxiedEndpoints.stop();
   await server.close();
 });
@@ -172,7 +208,7 @@ describe('/contacts route', () => {
         expect(res.status).toBe(200);
         expect(res.body.rawJson.callType).toBe(contact.form.callType);
 
-        const createdContact = await getById(accountSid, res.body.id);
+        const createdContact = await contactDb.getById(accountSid, res.body.id);
         expect(createdContact).toBeDefined();
 
         expect(createdContact.rawJson).toMatchObject(expected.form);
@@ -228,7 +264,7 @@ describe('/contacts route', () => {
         CSAMReportController.getCSAMReport(notExistingCsamReport.id, accountSid),
       ).rejects.toThrow(`CSAM Report with id ${notExistingCsamReport.id} not found`);
 
-      await Contact.destroy({ where: { id: response.body.id } });
+      await deleteContactById(response.body.id, response.body.accountSid);
     });
 
     test('Connects to CSAM reports (valid csam reports ids)', async () => {
@@ -276,7 +312,7 @@ describe('/contacts route', () => {
 
       // Remove records to not interfere with following tests
       await CSAMReport.destroy({ where: { contactId: response.body.id } });
-      await Contact.destroy({ where: { id: response.body.id } });
+      await deleteContactById(response.body.id, response.body.accountSid);
     });
   });
 
@@ -294,13 +330,16 @@ describe('/contacts route', () => {
         expect(response.body.error).toBe('Authorization failed');
       });
 
-      let createdContacts = [];
+      let createdContacts: contactDb.Contact[] = [];
       let csamReports = [];
+
+      const startTestsTimeStamp = new Date();
+
       beforeAll(async () => {
         // Clean what's been created so far
         await CSAMReport.destroy(query);
-        await Contact.destroy(query);
-        await Case.destroy(query);
+        await cleanupContacts();
+        await cleanupCases();
 
         // Create CSAM Reports
         const csamReportId1 = 'csam-report-id-1';
@@ -329,12 +368,12 @@ describe('/contacts route', () => {
         // Create some contacts to work with
         const oneHourBefore = {
           ...another2,
-          timeOfContact: subHours(new Date(), 1).toISOString(), // one hour before
+          timeOfContact: subHours(startTestsTimeStamp, 1).toISOString(), // one hour before
         };
 
         const oneWeekBefore = {
           ...noHelpline,
-          timeOfContact: subDays(new Date(), 7).toISOString(), // one hour before
+          timeOfContact: subDays(startTestsTimeStamp, 7).toISOString(), // one hour before
         };
 
         const invalidContact = {};
@@ -369,8 +408,7 @@ describe('/contacts route', () => {
         );
 
         createdContacts = responses.map(r => r.body);
-        const withCSAMReportsId = createdContacts.find(c => c.queueName === 'withCSAMReports').id;
-
+        const withCSAMReportsId = createdContacts.find(c => c.queueName === 'withCSAMReports')?.id;
         // Retrieve the csam reports that should be connected to withCSAMReports
         const updatedCsamReports = await CSAMReportController.getCSAMReports(
           withCSAMReportsId,
@@ -388,13 +426,8 @@ describe('/contacts route', () => {
             },
           },
         });
-        await Contact.destroy({
-          where: {
-            id: {
-              [Sequelize.Op.in]: createdContacts.map(c => c.id),
-            },
-          },
-        });
+
+        await Promise.all(createdContacts.filter(c => c.id).map(c => deleteContactById(c.id, c.accountSid)));
       });
 
       each([
@@ -587,8 +620,8 @@ describe('/contacts route', () => {
         {
           changeDescription: 'Test date filters (should match oneWeekBefore only)',
           body: {
-            dateFrom: subDays(new Date(), 8).toISOString(),
-            dateTo: subDays(new Date(), 5).toISOString(),
+            dateFrom: subDays(startTestsTimeStamp, 8).toISOString(),
+            dateTo: subDays(startTestsTimeStamp, 5).toISOString(),
           },
           expectCallback: response => {
             expect(response.status).toBe(200);
@@ -601,7 +634,7 @@ describe('/contacts route', () => {
         {
           changeDescription: 'Test date filters (should all but oneWeekBefore)',
           body: {
-            dateFrom: new Date().toISOString(),
+            dateFrom: subHours(startTestsTimeStamp, 1).toISOString(),
           },
           expectCallback: response => {
             expect(response.status).toBe(200);
@@ -673,13 +706,6 @@ describe('/contacts route', () => {
   });
 
   describe('/contacts/:contactId route', () => {
-    beforeEach(async () => {
-      const options = { context: { workerSid } };
-      const caseToBeDeleted = await Case.create(case1, options);
-
-      await caseToBeDeleted.destroy();
-    });
-
     describe('PATCH', () => {
       type TestOptions = {
         patch: PatchPayload['rawJson'];
@@ -690,14 +716,14 @@ describe('/contacts route', () => {
       const subRoute = contactId => `${route}/${contactId}`;
 
       test('should return 401', async () => {
-        const createdContact = await Contact.create(contact1, { context: { workerSid } });
+        const createdContact = await contactApi.createContact(accountSid, workerSid, { ...contact1, rawJson: {} });
         try {
           const response = await request.patch(subRoute(createdContact.id)).send({});
 
           expect(response.status).toBe(401);
           expect(response.body.error).toBe('Authorization failed');
         } finally {
-          createdContact.destroy();
+          await deleteContactById(createdContact.id, createdContact.accountSid);
         }
       });
       describe('Blank rawJson', () => {
@@ -915,10 +941,8 @@ describe('/contacts route', () => {
         ]).test(
           'should $description if that is specified in the payload',
           async ({ patch, original, expected }: TestOptions) => {
-            const createdContact = await Contact.create(
-              { ...contact1, rawJson: original },
-              { context: { workerSid } },
-            );
+
+            const createdContact = await contactApi.createContact(accountSid, workerSid, { ...contact1, rawJson: original || {} });
             try {
               const existingContactId = createdContact.id;
               const response = await request
@@ -928,8 +952,9 @@ describe('/contacts route', () => {
 
               expect(response.status).toBe(200);
               expect(response.body).toStrictEqual({
-                ...createdContact.dataValues,
-                createdAt: expect.toParseAsDate(createdContact.dataValues.createdAt),
+                ...createdContact,
+                timeOfContact: expect.toParseAsDate(createdContact.timeOfContact),
+                createdAt: expect.toParseAsDate(createdContact.createdAt),
                 updatedAt: expect.toParseAsDate(),
                 updatedBy: workerSid,
                 rawJson: expected,
@@ -937,49 +962,49 @@ describe('/contacts route', () => {
               });
               // Test the association
               expect(response.body.csamReports).toHaveLength(0);
-              const savedContact = await getById(
+              const savedContact = await contactDb.getById(
                 accountSid,
                 existingContactId,
               );
 
               expect(savedContact).toStrictEqual({
-                ...createdContact.dataValues,
-                createdAt: expect.toParseAsDate(createdContact.dataValues.createdAt),
+                ...createdContact,
+                createdAt: expect.toParseAsDate(createdContact.createdAt),
                 updatedAt: expect.toParseAsDate(),
                 updatedBy: workerSid,
                 rawJson: expected,
                 csamReports: [],
               });
             } finally {
-              createdContact.destroy();
+              await deleteContactById(createdContact.id, createdContact.accountSid);
             }
           },
         );
       });
 
       test('use non-existent contactId should return 404', async () => {
-        const contactToBeDeleted = await Contact.create(contact1, { context: { workerSid } });
+        const contactToBeDeleted = await contactApi.createContact(accountSid, workerSid, contact1);
         const nonExistingContactId = contactToBeDeleted.id;
-        await contactToBeDeleted.destroy();
+        await deleteContactById(contactToBeDeleted.id, contactToBeDeleted.accountSid);
         const response = await request
-          .patch(subRoute(nonExistingContactId))
-          .set(headers)
-          .send({
+        .patch(subRoute(nonExistingContactId))
+        .set(headers)
+        .send({
             rawJson: {
               name: { firstName: 'Lorna', lastName: 'Ballantyne' },
               some: 'property',
             },
           });
 
-        expect(response.status).toBe(404);
-      });
+          expect(response.status).toBe(404);
+        });
 
-      test('malformed payload should return 400', async () => {
-        const contactToBeDeleted = await Contact.create(contact1, { context: { workerSid } });
+        test('malformed payload should return 400', async () => {
+        const contactToBeDeleted = await contactApi.createContact(accountSid, workerSid, contact1);
         const nonExistingContactId = contactToBeDeleted.id;
-        await contactToBeDeleted.destroy();
+        await deleteContactById(contactToBeDeleted.id, contactToBeDeleted.accountSid);
         const response = await request
-          .patch(subRoute(nonExistingContactId))
+        .patch(subRoute(nonExistingContactId))
           .set(headers)
           .send({
             notRawJson: { some: 'crap' },
@@ -989,16 +1014,16 @@ describe('/contacts route', () => {
       });
 
       test('no body should return 400', async () => {
-        const contactToBeDeleted = await Contact.create(contact1, { context: { workerSid } });
+        const contactToBeDeleted = await contactApi.createContact(accountSid, workerSid, contact1);
         const nonExistingContactId = contactToBeDeleted.id;
-        await contactToBeDeleted.destroy();
+        await deleteContactById(contactToBeDeleted.id, contactToBeDeleted.accountSid);
         const response = await request
-          .patch(subRoute(nonExistingContactId))
+        .patch(subRoute(nonExistingContactId))
           .set(headers)
           .send();
 
-        expect(response.status).toBe(400);
-      });
+          expect(response.status).toBe(400);
+        });
     });
   });
 
@@ -1015,12 +1040,11 @@ describe('/contacts route', () => {
     const byGreaterId = (a, b) => b.id - a.id;
 
     beforeEach(async () => {
-      const options = { context: { workerSid } };
-      createdContact = await Contact.create(contact1, options);
-      createdCase = await Case.create(case1, options);
-      anotherCreatedCase = await Case.create(case2, options);
-      const contactToBeDeleted = await Contact.create(contact1, options);
-      const caseToBeDeleted = await Case.create(case1, options);
+      createdContact = await contactApi.createContact(accountSid, workerSid, contact1);
+      createdCase = await caseApi.createCase(case1, accountSid, workerSid);
+      anotherCreatedCase = await caseApi.createCase(case2, accountSid, workerSid);
+      const contactToBeDeleted = await contactApi.createContact(accountSid, workerSid, contact1);
+      const caseToBeDeleted = await caseApi.createCase(case1, accountSid, workerSid);
 
       existingContactId = createdContact.id;
       existingCaseId = createdCase.id;
@@ -1028,14 +1052,14 @@ describe('/contacts route', () => {
       nonExistingContactId = contactToBeDeleted.id;
       nonExistingCaseId = caseToBeDeleted.id;
 
-      await contactToBeDeleted.destroy();
-      await caseToBeDeleted.destroy();
+      await deleteContactById(contactToBeDeleted.id, contactToBeDeleted.accountSid);
+      await caseDb.deleteById(caseToBeDeleted.id, accountSid);
     });
 
     afterEach(async () => {
-      await createdContact.destroy();
-      await createdCase.destroy();
-      await anotherCreatedCase.destroy();
+      await deleteContactById(createdContact.id, createdContact.accountSid);
+      await caseDb.deleteById(createdCase.id, accountSid);
+      await caseDb.deleteById(anotherCreatedCase.id, accountSid);
     });
 
     describe('PUT', () => {
