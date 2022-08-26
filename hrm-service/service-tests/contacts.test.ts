@@ -31,6 +31,8 @@ import * as contactDb from '../src/contact/contact-data-access';
 import { openPermissions } from '../src/permissions/json-permissions';
 import * as proxiedEndpoints from './external-service-stubs/proxied-endpoints';
 
+const { form, ...contact1WithRawJsonProp } = contact1;
+
 const server = createService({
   permissions: openPermissions,
   authTokenLookup: () => 'picernic basket',
@@ -319,7 +321,7 @@ describe('/contacts route', () => {
   const compareTimeOfContactDesc = (c1, c2) =>
     new Date(c2.timeOfContact).valueOf() - new Date(c1.timeOfContact).valueOf();
 
-  describe.only('/contacts/search route', () => {
+  describe('/contacts/search route', () => {
     const subRoute = `${route}/search`;
 
     describe('POST', () => {
@@ -716,7 +718,7 @@ describe('/contacts route', () => {
       const subRoute = contactId => `${route}/${contactId}`;
 
       test('should return 401', async () => {
-        const createdContact = await contactApi.createContact(accountSid, workerSid, { ...contact1, rawJson: {} });
+        const createdContact = await contactApi.createContact(accountSid, workerSid, { ...contact1, form: <ContactRawJson>{}, csamReports: [] });
         try {
           const response = await request.patch(subRoute(createdContact.id)).send({});
 
@@ -942,7 +944,7 @@ describe('/contacts route', () => {
           'should $description if that is specified in the payload',
           async ({ patch, original, expected }: TestOptions) => {
 
-            const createdContact = await contactApi.createContact(accountSid, workerSid, { ...contact1, rawJson: original || {} });
+            const createdContact = await contactApi.createContact(accountSid, workerSid, { ...contact1WithRawJsonProp, rawJson: original || <ContactRawJson>{}, csamReports: [] });
             try {
               const existingContactId = createdContact.id;
               const response = await request
@@ -983,7 +985,7 @@ describe('/contacts route', () => {
       });
 
       test('use non-existent contactId should return 404', async () => {
-        const contactToBeDeleted = await contactApi.createContact(accountSid, workerSid, contact1);
+        const contactToBeDeleted = await contactApi.createContact(accountSid, workerSid, <any>contact1);
         const nonExistingContactId = contactToBeDeleted.id;
         await deleteContactById(contactToBeDeleted.id, contactToBeDeleted.accountSid);
         const response = await request
@@ -1000,7 +1002,7 @@ describe('/contacts route', () => {
         });
 
         test('malformed payload should return 400', async () => {
-        const contactToBeDeleted = await contactApi.createContact(accountSid, workerSid, contact1);
+        const contactToBeDeleted = await contactApi.createContact(accountSid, workerSid, <any>contact1);
         const nonExistingContactId = contactToBeDeleted.id;
         await deleteContactById(contactToBeDeleted.id, contactToBeDeleted.accountSid);
         const response = await request
@@ -1014,7 +1016,7 @@ describe('/contacts route', () => {
       });
 
       test('no body should return 400', async () => {
-        const contactToBeDeleted = await contactApi.createContact(accountSid, workerSid, contact1);
+        const contactToBeDeleted = await contactApi.createContact(accountSid, workerSid, <any>contact1);
         const nonExistingContactId = contactToBeDeleted.id;
         await deleteContactById(contactToBeDeleted.id, contactToBeDeleted.accountSid);
         const response = await request
@@ -1040,10 +1042,10 @@ describe('/contacts route', () => {
     const byGreaterId = (a, b) => b.id - a.id;
 
     beforeEach(async () => {
-      createdContact = await contactApi.createContact(accountSid, workerSid, contact1);
+      createdContact = await contactApi.createContact(accountSid, workerSid, <any>contact1);
       createdCase = await caseApi.createCase(case1, accountSid, workerSid);
       anotherCreatedCase = await caseApi.createCase(case2, accountSid, workerSid);
-      const contactToBeDeleted = await contactApi.createContact(accountSid, workerSid, contact1);
+      const contactToBeDeleted = await contactApi.createContact(accountSid, workerSid, <any>contact1);
       const caseToBeDeleted = await caseApi.createCase(case1, accountSid, workerSid);
 
       existingContactId = createdContact.id;

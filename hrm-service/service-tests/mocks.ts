@@ -1,7 +1,7 @@
 import { Case } from '../src/case/case';
 
 export const accountSid = 'ACCOUNT_SID';
-
+// TODO: Turn these into proper API types (will probably break so many tests...)
 export const contact1 = {
   form: {
     callType: 'Child calling about self',
