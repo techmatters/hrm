@@ -48,7 +48,7 @@ export const SELECT_CONTACT_SEARCH = `
           $<contactNumber> IS NULL OR contacts."number" = $<contactNumber> 
         )
         AND (
-          $<onlyDataContact> != true OR (
+          $<onlyDataContacts> != true OR (
             "rawJson"->>'callType' IN ($<dataCallTypes:csv>)
           )
         )

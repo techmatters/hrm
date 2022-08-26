@@ -9,7 +9,7 @@
     "test": "jest --passWithNoTests --forceExit --maxWorkers=1",
     "test:unit": "jest unit-tests",
     "test:service": "node ./service-tests/db-init/migrate && jest --passWithNoTests --forceExit --maxWorkers=1 service-tests",
-    "test:service:local": "docker compose -f ./docker-compose-test.yml up -d && cross-env POSTGRES_PORT=5433 node ./service-tests/db-init/migrate && cross-env POSTGRES_PORT=5433 jest --verbose --maxWorkers=1 service-tests & docker compose -f ./docker-compose-test.yml down",
+    "test:service:local": "docker compose -f ./docker-compose-test.yml up -d && cross-env POSTGRES_PORT=5433 node ./service-tests/db-init/migrate && cross-env POSTGRES_PORT=5433 jest --verbose --maxWorkers=1 service-tests/contacts.test & docker compose -f ./docker-compose-test.yml down",
     "test:coverage:local": "docker compose -f ./docker-compose-test.yml up -d && cross-env POSTGRES_PORT=5433 node ./service-tests/db-init/migrate && cross-env POSTGRES_PORT=5433 jest --verbose --maxWorkers=1  --coverage & docker compose -f ./docker-compose-test.yml down",
     "test:migrate:local": "docker compose -f ./docker-compose-test.yml up -d && cross-env POSTGRES_PORT=5433 node ./service-tests/db-init/migrate  docker compose -f ./docker-compose-test.yml down",
     "db:create-migration": "./node_modules/.bin/sequelize migration:generate --name ",

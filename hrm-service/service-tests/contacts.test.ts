@@ -4,7 +4,20 @@ import * as Sequelize from 'sequelize';
 import type { ContactRawJson } from '../src/contact/contact-json';
 import { createService } from '../src/app';
 const models = require('../src/models');
-const mocks = require('./mocks');
+import {
+  accountSid,
+  contact1,
+  contact2,
+  broken1,
+  broken2,
+  another1,
+  another2,
+  noHelpline,
+  withTaskId,
+  case1,
+  case2,
+  workerSid, nonData2, nonData1,
+} from './mocks';
 const each = require('jest-each').default;
 const { db } = require('../src/connection-pool');
 import { subHours, subDays } from 'date-fns';
@@ -28,21 +41,6 @@ const request = supertest.agent(server);
  */
 const resolveSequentially = ps =>
   ps.reduce((p, v) => p.then(a => v().then(r => a.concat([r]))), Promise.resolve([]));
-
-const {
-  accountSid,
-  contact1,
-  contact2,
-  broken1,
-  broken2,
-  another1,
-  another2,
-  noHelpline,
-  withTaskId,
-  case1,
-  case2,
-  workerSid,
-} = mocks;
 
 const headers = {
   'Content-Type': 'application/json',
@@ -285,7 +283,7 @@ describe('/contacts route', () => {
   const compareTimeOfContactDesc = (c1, c2) =>
     new Date(c2.timeOfContact).valueOf() - new Date(c1.timeOfContact).valueOf();
 
-  describe('/contacts/search route', () => {
+  describe.only('/contacts/search route', () => {
     const subRoute = `${route}/search`;
 
     describe('POST', () => {
@@ -347,13 +345,15 @@ describe('/contacts route', () => {
           number: '123412341234',
           csamReports: [newReport1, newReport2],
         };
-
+        console.log('nonData1', nonData1);
         const responses = await resolveSequentially(
           [
             { ...contact1, taskId: 'contact-1-task' },
             { ...contact2, taskId: 'contact-2-task' },
             broken1,
             broken2,
+            nonData1,
+            nonData2,
             another1,
             noHelpline,
             withTaskId,
@@ -403,6 +403,27 @@ describe('/contacts route', () => {
           body: { firstName: 'jh', lastName: 'he' },
           changeDescription: 'multiple input search',
           expectCallback: response => {
+            // Name based filters remove non data contacts regardless of setting?
+            expect(response.status).toBe(200);
+            const { contacts } = response.body;
+            //expect(count).toBe(2);
+
+            const [c2, c1] = contacts; // result is sorted DESC
+            expect(c1.details).toStrictEqual(contact1.form);
+            expect(c2.details).toStrictEqual(contact2.form);
+
+            // Test the association
+            expect(c1.csamReports).toHaveLength(0);
+            expect(c2.csamReports).toHaveLength(0);
+            // Test the association
+            expect(c1.overview.taskId).toBe('contact-1-task');
+            expect(c2.overview.taskId).toBe('contact-2-task');
+          },
+        },
+        {
+          body: { firstName: 'jh', lastName: 'he', onlyDataContacts: true },
+          changeDescription: 'multiple input search (data contacts only)',
+          expectCallback: response => {
             expect(response.status).toBe(200);
             const { contacts } = response.body;
             //expect(count).toBe(2);
@@ -451,6 +472,28 @@ describe('/contacts route', () => {
             expect(contacts.length).toBe(createdContacts.length - 1);
             const createdConcatdsByTimeOfContact = createdContacts.sort(compareTimeOfContactDesc);
             createdConcatdsByTimeOfContact.forEach(c => {
+              const searchContact = contacts.find(results => results.contactId === c.id);
+              if (searchContact) {
+                // Check that all contacts contains the appropriate info
+                expect(c.rawJson).toMatchObject(searchContact.details);
+              }
+            });
+          },
+        },
+        {
+          changeDescription: 'multiple input search without name search excluding non data contacts',
+          body: { counselor: 'worker-sid', onlyDataContacts: true }, // should match contact1 & broken1 & another1 & noHelpline
+          expectCallback: response => {
+            const { contacts } = response.body;
+
+            expect(response.status).toBe(200);
+            // invalidContact will return null, and nonData1, nonData2, broken1 and broken2 are not data contact types
+            expect(contacts.length).toBe(createdContacts.length - 5);
+            const createdContactsByTimeOfContact = createdContacts.sort(compareTimeOfContactDesc);
+            console.log(createdContacts);
+            createdContactsByTimeOfContact
+              .filter((c) => ['Child calling about self', 'Someone calling about a child'].includes(c.rawJson?.callType))
+              .forEach((c)=> {
               const searchContact = contacts.find(results => results.contactId === c.id);
               if (searchContact) {
                 // Check that all contacts contains the appropriate info
@@ -568,8 +611,8 @@ describe('/contacts route', () => {
 
             // Expect all but invalid and oneWeekBefore
             expect(contacts).toHaveLength(createdContacts.length - 2);
-            const createdConcatdsByTimeOfContact = createdContacts.sort(compareTimeOfContactDesc);
-            createdConcatdsByTimeOfContact.forEach(c => {
+            const createdContactsByTimeOfContact = createdContacts.sort(compareTimeOfContactDesc);
+            createdContactsByTimeOfContact.forEach(c => {
               const searchContact = contacts.find(results => results.contactId === c.id);
               if (searchContact) {
                 // Check that all contacts contains the appropriate info
@@ -606,8 +649,8 @@ describe('/contacts route', () => {
           changeDescription: 'empty strings should be ignored',
           expectCallback: response => {
             expect(response.status).toBe(200);
-            const { contacts } = response.body;
-            //expect(count).toBe(2);
+            const { contacts, count } = response.body;
+            expect(count).toBe(2);
 
             const [c2, c1] = contacts; // result is sorted DESC
             expect(c1.details).toStrictEqual(contact1.form);
@@ -875,7 +918,6 @@ describe('/contacts route', () => {
         ]).test(
           'should $description if that is specified in the payload',
           async ({ patch, original, expected }: TestOptions) => {
-            console.log('expected:', expected);
             const createdContact = await Contact.create(
               { ...contact1, rawJson: original },
               { context: { workerSid } },

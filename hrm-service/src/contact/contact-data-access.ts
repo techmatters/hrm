@@ -1,4 +1,4 @@
-import { db } from '../connection-pool';
+import { db, pgp } from '../connection-pool';
 import { UPDATE_CASEID_BY_ID, UPDATE_RAWJSON_BY_ID } from './sql/contact-update-sql';
 import { SELECT_CONTACT_SEARCH } from './sql/contact-search-sql';
 import { endOfDay, parseISO, startOfDay } from 'date-fns';
@@ -56,7 +56,7 @@ type QueryParams = {
   dateFrom?: string;
   contactNumber?: string;
   helpline?: string;
-  onlyDataContact: boolean;
+  onlyDataContacts: boolean;
   dataCallTypes: string[];
   limit: number;
   offset: number;
@@ -95,7 +95,7 @@ const searchParametersToQueryParameters = (
       phoneNumberPattern: undefined,
       counselor: undefined,
       contactNumber: undefined,
-      onlyDataContact: false,
+      onlyDataContacts: false,
     },
     ...restOfSearch,
     helpline: helpline || undefined, // ensure empty strings are replaced with nulls
@@ -141,6 +141,7 @@ export const create = async (
       }
     }
     const now = new Date();
+    console.log('Contact INSERT', newContact);
     const updatedContact: Contact = await connection.one<Contact>(
       insertContactSql({
         ...newContact,

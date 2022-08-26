@@ -16,7 +16,7 @@ const each = require('jest-each').default;
 import { createService } from '../src/app';
 import { openPermissions } from '../src/permissions/json-permissions';
 import * as proxiedEndpoints from './external-service-stubs/proxied-endpoints';
-const mocks = require('./mocks');
+import * as mocks from './mocks';
 
 const server = createService({
   permissions: openPermissions,
