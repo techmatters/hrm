@@ -439,8 +439,7 @@ describe('/contacts route', () => {
           expectCallback: response => {
             // Name based filters remove non data contacts regardless of setting?
             expect(response.status).toBe(200);
-            const { contacts } = response.body;
-            //expect(count).toBe(2);
+            const { contacts, count } = response.body;
 
             const [c2, c1] = contacts; // result is sorted DESC
             expect(c1.details).toStrictEqual(contact1.form);
@@ -452,6 +451,8 @@ describe('/contacts route', () => {
             // Test the association
             expect(c1.overview.taskId).toBe('contact-1-task');
             expect(c2.overview.taskId).toBe('contact-2-task');
+            expect(count).toBe(2);
+            expect(contacts.length).toBe(2);
           },
         },
         {
