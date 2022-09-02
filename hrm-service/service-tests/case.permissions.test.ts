@@ -9,7 +9,7 @@ const supertest = require('supertest');
 const each = require('jest-each').default;
 import { createService } from '../src/app';
 import { RulesFile } from '../src/permissions/rulesMap';
-const mocks = require('./mocks');
+import * as mocks from './mocks';
 
 let testRules: RulesFile;
 

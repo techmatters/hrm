@@ -123,7 +123,11 @@ export const validateSingleCaseResponse = (actual, expectedCaseModel, expectedCo
 };
 
 export const fillNameAndPhone = (
-  contact: NewContactRecord & { form?: ContactRawJson },
+  contact: Omit<NewContactRecord, 'rawJson'> & {
+    form?: any;
+    rawJson?: ContactRawJson;
+    accountSid: string;
+  },
   name = {
     firstName: 'Maria',
     lastName: 'Silva',

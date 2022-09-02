@@ -1,11 +1,11 @@
 import { createService } from '../src/app';
-const supertest = require('supertest');
-const Sequelize = require('sequelize');
-const models = require('../src/models');
-const mocks = require('./mocks');
+import * as mocks from './mocks';
 import './case-validation';
 import { openPermissions } from '../src/permissions/json-permissions';
 import * as proxiedEndpoints from './external-service-stubs/proxied-endpoints';
+const supertest = require('supertest');
+const Sequelize = require('sequelize');
+const models = require('../src/models');
 
 console.log(process.env.INCLUDE_ERROR_IN_RESPONSE);
 

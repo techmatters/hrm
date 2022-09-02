@@ -45,15 +45,23 @@ export type SearchContact = {
   csamReports: CSAMReportEntry[];
 };
 
-type CreateContactPayload = NewContactRecord & { form?: ContactRawJson } & {
-  csamReports: CSAMReportEntry[];
-};
+type CreateContactPayloadWithFormProperty = Omit<NewContactRecord, 'rawJson'> & {
+  form: ContactRawJson;
+} & { csamReports?: CSAMReportEntry[] };
+
+export type CreateContactPayload =
+  | (NewContactRecord & { csamReports?: CSAMReportEntry[] })
+  | CreateContactPayloadWithFormProperty;
+
+const usesFormProperty = (p: CreateContactPayload): p is CreateContactPayloadWithFormProperty =>
+  (<any>p).form && !(<any>p).rawJson;
 
 export const createContact = async (
   accountSid: string,
   createdBy: string,
   newContact: CreateContactPayload,
 ): Promise<Contact> => {
+  const rawJson = usesFormProperty(newContact) ? newContact.form : newContact.rawJson;
   const completeNewContact: NewContactRecord = {
     ...newContact,
     helpline: newContact.helpline ?? '',
@@ -64,10 +72,10 @@ export const createContact = async (
     serviceSid: newContact.serviceSid ?? '',
     taskId: newContact.taskId ?? '',
     twilioWorkerId: newContact.twilioWorkerId ?? '',
-    rawJson: newContact.rawJson ?? newContact.form,
+    rawJson,
     queueName:
       // Checking in rawJson might be redundant, copied from Sequelize logic in contact-controller.js
-      newContact.queueName || (<any>(newContact.rawJson ?? newContact.form ?? {})).queueName,
+      newContact.queueName || (<any>(rawJson ?? {})).queueName,
     createdBy,
   };
   return create(

@@ -4,8 +4,21 @@ import * as Sequelize from 'sequelize';
 import type { ContactRawJson } from '../src/contact/contact-json';
 import { createService } from '../src/app';
 const models = require('../src/models');
+import {
+  accountSid,
+  contact1,
+  contact2,
+  broken1,
+  broken2,
+  another1,
+  another2,
+  noHelpline,
+  withTaskId,
+  case1,
+  case2,
+  workerSid, nonData2, nonData1,
+} from './mocks';
 import each  from 'jest-each';
-import mocks from './mocks';
 import { db } from '../src/connection-pool';
 import { subHours, subDays } from 'date-fns';
 
@@ -17,6 +30,8 @@ import * as contactApi from '../src/contact/contact';
 import * as contactDb from '../src/contact/contact-data-access';
 import { openPermissions } from '../src/permissions/json-permissions';
 import * as proxiedEndpoints from './external-service-stubs/proxied-endpoints';
+
+const { form, ...contact1WithRawJsonProp } = contact1;
 
 const server = createService({
   permissions: openPermissions,
@@ -31,21 +46,6 @@ const request = supertest.agent(server, undefined);
  */
 const resolveSequentially = ps =>
   ps.reduce((p, v) => p.then(a => v().then(r => a.concat([r]))), Promise.resolve([]));
-
-const {
-  accountSid,
-  contact1,
-  contact2,
-  broken1,
-  broken2,
-  another1,
-  another2,
-  noHelpline,
-  withTaskId,
-  case1,
-  case2,
-  workerSid,
-} = mocks;
 
 const headers = {
   'Content-Type': 'application/json',
@@ -79,7 +79,7 @@ const cleanupContacts = () =>
  * We could move this to contact data access, but since is something we only want in test suits, it might be better this way
  */
 // eslint-disable-next-line @typescript-eslint/no-shadow
-const deleteContactById = (id: number, accountSid: string) => 
+const deleteContactById = (id: number, accountSid: string) =>
   db.task(t =>
     t.none(`
       DELETE FROM "Contacts" 
@@ -386,13 +386,14 @@ describe('/contacts route', () => {
           number: '123412341234',
           csamReports: [newReport1, newReport2],
         };
-
         const responses = await resolveSequentially(
           [
             { ...contact1, taskId: 'contact-1-task' },
             { ...contact2, taskId: 'contact-2-task' },
             broken1,
             broken2,
+            nonData1,
+            nonData2,
             another1,
             noHelpline,
             withTaskId,
@@ -435,6 +436,28 @@ describe('/contacts route', () => {
         {
           body: { firstName: 'jh', lastName: 'he' },
           changeDescription: 'multiple input search',
+          expectCallback: response => {
+            // Name based filters remove non data contacts regardless of setting?
+            expect(response.status).toBe(200);
+            const { contacts, count } = response.body;
+
+            const [c2, c1] = contacts; // result is sorted DESC
+            expect(c1.details).toStrictEqual(contact1.form);
+            expect(c2.details).toStrictEqual(contact2.form);
+
+            // Test the association
+            expect(c1.csamReports).toHaveLength(0);
+            expect(c2.csamReports).toHaveLength(0);
+            // Test the association
+            expect(c1.overview.taskId).toBe('contact-1-task');
+            expect(c2.overview.taskId).toBe('contact-2-task');
+            expect(count).toBe(2);
+            expect(contacts.length).toBe(2);
+          },
+        },
+        {
+          body: { firstName: 'jh', lastName: 'he', onlyDataContacts: true },
+          changeDescription: 'multiple input search (data contacts only)',
           expectCallback: response => {
             expect(response.status).toBe(200);
             const { contacts } = response.body;
@@ -484,6 +507,27 @@ describe('/contacts route', () => {
             expect(contacts.length).toBe(createdContacts.length - 1);
             const createdConcatdsByTimeOfContact = createdContacts.sort(compareTimeOfContactDesc);
             createdConcatdsByTimeOfContact.forEach(c => {
+              const searchContact = contacts.find(results => results.contactId === c.id);
+              if (searchContact) {
+                // Check that all contacts contains the appropriate info
+                expect(c.rawJson).toMatchObject(searchContact.details);
+              }
+            });
+          },
+        },
+        {
+          changeDescription: 'multiple input search without name search excluding non data contacts',
+          body: { counselor: 'worker-sid', onlyDataContacts: true }, // should match contact1 & broken1 & another1 & noHelpline
+          expectCallback: response => {
+            const { contacts } = response.body;
+
+            expect(response.status).toBe(200);
+            // invalidContact will return null, and nonData1, nonData2, broken1 and broken2 are not data contact types
+            expect(contacts.length).toBe(createdContacts.length - 5);
+            const createdContactsByTimeOfContact = createdContacts.sort(compareTimeOfContactDesc);
+            createdContactsByTimeOfContact
+              .filter((c) => ['Child calling about self', 'Someone calling about a child'].includes(c.rawJson?.callType))
+              .forEach((c)=> {
               const searchContact = contacts.find(results => results.contactId === c.id);
               if (searchContact) {
                 // Check that all contacts contains the appropriate info
@@ -601,8 +645,8 @@ describe('/contacts route', () => {
 
             // Expect all but invalid and oneWeekBefore
             expect(contacts).toHaveLength(createdContacts.length - 2);
-            const createdConcatdsByTimeOfContact = createdContacts.sort(compareTimeOfContactDesc);
-            createdConcatdsByTimeOfContact.forEach(c => {
+            const createdContactsByTimeOfContact = createdContacts.sort(compareTimeOfContactDesc);
+            createdContactsByTimeOfContact.forEach(c => {
               const searchContact = contacts.find(results => results.contactId === c.id);
               if (searchContact) {
                 // Check that all contacts contains the appropriate info
@@ -620,7 +664,6 @@ describe('/contacts route', () => {
 
             const { contacts } = response.body;
             expect(contacts.length).toBe(1);
-
             const withCSAMReports = createdContacts.find(c => c.queueName === 'withCSAMReports');
 
             expect(contacts.find(c => withCSAMReports.id.toString() === c.contactId)).toBeDefined();
@@ -639,8 +682,8 @@ describe('/contacts route', () => {
           changeDescription: 'empty strings should be ignored',
           expectCallback: response => {
             expect(response.status).toBe(200);
-            const { contacts } = response.body;
-            //expect(count).toBe(2);
+            const { contacts, count } = response.body;
+            expect(count).toBe(2);
 
             const [c2, c1] = contacts; // result is sorted DESC
             expect(c1.details).toStrictEqual(contact1.form);
@@ -676,7 +719,7 @@ describe('/contacts route', () => {
       const subRoute = contactId => `${route}/${contactId}`;
 
       test('should return 401', async () => {
-        const createdContact = await contactApi.createContact(accountSid, workerSid, { ...contact1, rawJson: {} });
+        const createdContact = await contactApi.createContact(accountSid, workerSid, { ...contact1, form: <ContactRawJson>{}, csamReports: [] });
         try {
           const response = await request.patch(subRoute(createdContact.id)).send({});
 
@@ -902,7 +945,7 @@ describe('/contacts route', () => {
           'should $description if that is specified in the payload',
           async ({ patch, original, expected }: TestOptions) => {
 
-            const createdContact = await contactApi.createContact(accountSid, workerSid, { ...contact1, rawJson: original || {} });
+            const createdContact = await contactApi.createContact(accountSid, workerSid, { ...contact1WithRawJsonProp, rawJson: original || <ContactRawJson>{}, csamReports: [] });
             try {
               const existingContactId = createdContact.id;
               const response = await request
@@ -943,7 +986,7 @@ describe('/contacts route', () => {
       });
 
       test('use non-existent contactId should return 404', async () => {
-        const contactToBeDeleted = await contactApi.createContact(accountSid, workerSid, contact1);
+        const contactToBeDeleted = await contactApi.createContact(accountSid, workerSid, <any>contact1);
         const nonExistingContactId = contactToBeDeleted.id;
         await deleteContactById(contactToBeDeleted.id, contactToBeDeleted.accountSid);
         const response = await request
@@ -958,9 +1001,9 @@ describe('/contacts route', () => {
 
           expect(response.status).toBe(404);
         });
-        
+
         test('malformed payload should return 400', async () => {
-        const contactToBeDeleted = await contactApi.createContact(accountSid, workerSid, contact1);
+        const contactToBeDeleted = await contactApi.createContact(accountSid, workerSid, <any>contact1);
         const nonExistingContactId = contactToBeDeleted.id;
         await deleteContactById(contactToBeDeleted.id, contactToBeDeleted.accountSid);
         const response = await request
@@ -974,19 +1017,19 @@ describe('/contacts route', () => {
       });
 
       test('no body should return 400', async () => {
-        const contactToBeDeleted = await contactApi.createContact(accountSid, workerSid, contact1);
+        const contactToBeDeleted = await contactApi.createContact(accountSid, workerSid, <any>contact1);
         const nonExistingContactId = contactToBeDeleted.id;
         await deleteContactById(contactToBeDeleted.id, contactToBeDeleted.accountSid);
         const response = await request
         .patch(subRoute(nonExistingContactId))
           .set(headers)
           .send();
-          
+
           expect(response.status).toBe(400);
         });
     });
   });
-  
+
   describe('/contacts/:contactId/connectToCase route', () => {
     let createdContact;
     let createdCase;
@@ -996,26 +1039,26 @@ describe('/contacts route', () => {
     let existingCaseId;
     let anotherExistingCaseId;
     let nonExistingCaseId;
-    
+
     const byGreaterId = (a, b) => b.id - a.id;
-    
+
     beforeEach(async () => {
-      createdContact = await contactApi.createContact(accountSid, workerSid, contact1);
+      createdContact = await contactApi.createContact(accountSid, workerSid, <any>contact1);
       createdCase = await caseApi.createCase(case1, accountSid, workerSid);
       anotherCreatedCase = await caseApi.createCase(case2, accountSid, workerSid);
-      const contactToBeDeleted = await contactApi.createContact(accountSid, workerSid, contact1);
+      const contactToBeDeleted = await contactApi.createContact(accountSid, workerSid, <any>contact1);
       const caseToBeDeleted = await caseApi.createCase(case1, accountSid, workerSid);
-      
+
       existingContactId = createdContact.id;
       existingCaseId = createdCase.id;
       anotherExistingCaseId = anotherCreatedCase.id;
       nonExistingContactId = contactToBeDeleted.id;
       nonExistingCaseId = caseToBeDeleted.id;
-      
+
       await deleteContactById(contactToBeDeleted.id, contactToBeDeleted.accountSid);
       await caseDb.deleteById(caseToBeDeleted.id, accountSid);
     });
-    
+
     afterEach(async () => {
       await deleteContactById(createdContact.id, createdContact.accountSid);
       await caseDb.deleteById(createdCase.id, accountSid);

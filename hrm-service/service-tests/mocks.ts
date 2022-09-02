@@ -1,6 +1,8 @@
-const accountSid = 'ACCOUNT_SID';
+import { Case } from '../src/case/case';
 
-const contact1 = {
+export const accountSid = 'ACCOUNT_SID';
+// TODO: Turn these into proper API types (will probably break so many tests...)
+export const contact1 = {
   form: {
     callType: 'Child calling about self',
     childInformation: {
@@ -65,7 +67,7 @@ const contact1 = {
   accountSid,
 };
 
-const contact2 = {
+export const contact2 = {
   form: {
     callType: 'Someone calling about a child',
     childInformation: {
@@ -130,11 +132,29 @@ const contact2 = {
   accountSid,
 };
 
+export const nonData1 = {
+  ...contact1,
+  form: {
+    callType: 'Joke',
+    childInformation: { name: contact1.form.childInformation.name },
+    caseInformation: { categories: {}, callSummary: '' },
+    callerInformation: { name: contact1.form.callerInformation.name },
+  },
+};
+export const nonData2 = {
+  ...contact2,
+  form: {
+    callType: 'Blank',
+    childInformation: { name: contact2.form.childInformation.name },
+    caseInformation: { categories: {}, callSummary: '' },
+    callerInformation: { name: contact2.form.callerInformation.name },
+  },
+};
 // Non data contacts with actual information
-const broken1 = { ...contact1, form: { ...contact1.form, callType: 'Joke' } };
-const broken2 = { ...contact2, form: { ...contact2.form, callType: 'Blank' } };
+export const broken1 = { ...contact1, form: { ...contact1.form, callType: 'Joke' } };
+export const broken2 = { ...contact2, form: { ...contact2.form, callType: 'Blank' } };
 
-const anotherChild = {
+export const anotherChild = {
   ...contact1.form.childInformation,
   name: {
     firstName: 'Marie',
@@ -142,7 +162,7 @@ const anotherChild = {
   },
 };
 
-const anotherCaller = {
+export const anotherCaller = {
   ...contact2.form.callerInformation,
   name: {
     firstName: 'Marie',
@@ -150,13 +170,13 @@ const anotherCaller = {
   },
 };
 
-const another1 = {
+export const another1 = {
   ...contact1,
   form: { ...contact1.form, childInformation: anotherChild },
   helpline: 'Helpline 1',
 };
 
-const another2 = {
+export const another2 = {
   ...contact2,
   form: {
     ...contact2.form,
@@ -173,12 +193,12 @@ const another2 = {
   number: '+12125551212',
 };
 
-const noHelpline = {
+export const noHelpline = {
   ...another1,
   helpline: '',
 };
 
-const withTaskId = {
+export const withTaskId = {
   form: {
     callType: 'Child calling about self',
     childInformation: {
@@ -215,7 +235,7 @@ const withTaskId = {
   accountSid,
 };
 
-const case1 = {
+export const case1: Partial<Case> = {
   status: 'open',
   helpline: 'helpline',
   info: {
@@ -233,7 +253,7 @@ const case1 = {
   accountSid,
 };
 
-const case2 = {
+export const case2: Partial<Case> = {
   status: 'open',
   helpline: 'helpline',
   info: {
@@ -250,19 +270,4 @@ const case2 = {
   accountSid,
 };
 
-const workerSid = 'worker-sid';
-
-module.exports = {
-  accountSid,
-  contact1,
-  contact2,
-  broken1,
-  broken2,
-  another1,
-  another2,
-  noHelpline,
-  withTaskId,
-  case1,
-  case2,
-  workerSid,
-};
+export const workerSid = 'worker-sid';

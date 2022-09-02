@@ -15,10 +15,10 @@ import * as contactDb from '../src/contact/contact-data-access';
 import { createService } from '../src/app';
 import { openPermissions } from '../src/permissions/json-permissions';
 import * as proxiedEndpoints from './external-service-stubs/proxied-endpoints';
+import * as mocks from './mocks';
 
 const supertest = require('supertest');
 const each = require('jest-each').default;
-const mocks = require('./mocks');
 
 const server = createService({
   permissions: openPermissions,
@@ -45,7 +45,7 @@ type InsertSampleCaseSettings = {
   helplines: string[];
   workers?: string[];
   statuses?: string[];
-  cases?: Case[];
+  cases?: Partial<Case>[];
   contactNames?: { firstName: string; lastName: string }[];
   contactNumbers?: string[];
   createdAtGenerator?: (idx: number) => string;
