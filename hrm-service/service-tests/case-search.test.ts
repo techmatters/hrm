@@ -106,7 +106,6 @@ const insertSampleCases = async ({
         {
           ...contact1,
           twilioWorkerId: workers[i % workers.length],
-          accountSid: accounts[i % accounts.length],
           helpline: helplines[i % helplines.length],
         },
         contactNames[i % contactNames.length],

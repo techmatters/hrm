@@ -45,7 +45,7 @@ export type SearchContact = {
   csamReports: CSAMReportEntry[];
 };
 
-type CreateContactPayloadWithFormProperty = Omit<NewContactRecord, 'rawJson'> & {
+export type CreateContactPayloadWithFormProperty = Omit<NewContactRecord, 'rawJson'> & {
   form: ContactRawJson;
 } & { csamReports?: CSAMReportEntry[] };
 
@@ -53,8 +53,9 @@ export type CreateContactPayload =
   | (NewContactRecord & { csamReports?: CSAMReportEntry[] })
   | CreateContactPayloadWithFormProperty;
 
-const usesFormProperty = (p: CreateContactPayload): p is CreateContactPayloadWithFormProperty =>
-  (<any>p).form && !(<any>p).rawJson;
+export const usesFormProperty = (
+  p: CreateContactPayload,
+): p is CreateContactPayloadWithFormProperty => (<any>p).form && !(<any>p).rawJson;
 
 export const createContact = async (
   accountSid: string,
