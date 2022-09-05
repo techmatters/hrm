@@ -7,22 +7,26 @@ import {
   CategoryFilter,
 } from '../case-data-access';
 
-export const enum OrderByDirection {
-  ascendingNullsLast = 'ASC NULLS LAST',
-  descendingNullsLast = 'DESC NULLS LAST',
-  ascending = 'ASC',
-  descending = 'DESC',
-}
+export const OrderByDirection = {
+  ascendingNullsLast: 'ASC NULLS LAST',
+  descendingNullsLast: 'DESC NULLS LAST',
+  ascending: 'ASC',
+  descending: 'DESC',
+} as const;
 
-export const enum OrderByColumns {
-  ID = 'id',
-  CREATED_AT = 'createdAt',
-  UPDATED_AT = 'updatedAt',
-  CHILD_NAME = 'childName',
-  FOLLOW_UP_DATE = 'info.followUpDate',
-}
+export type OrderByDirectionType = typeof OrderByDirection[keyof typeof OrderByDirection];
 
-const ORDER_BY_FIELDS: Record<OrderByColumns, string> = {
+export const OrderByColumn = {
+  ID: 'id',
+  CREATED_AT: 'createdAt',
+  UPDATED_AT: 'updatedAt',
+  CHILD_NAME: 'childName',
+  FOLLOW_UP_DATE: 'info.followUpDate',
+} as const;
+
+export type OrderByColumnType = typeof OrderByColumn[keyof typeof OrderByColumn];
+
+const ORDER_BY_FIELDS: Record<OrderByColumnType, string> = {
   id: pgp.as.name('id'),
   createdAt: pgp.as.name('createdAt'),
   updatedAt: pgp.as.name('updatedAt'),
@@ -30,7 +34,7 @@ const ORDER_BY_FIELDS: Record<OrderByColumns, string> = {
   childName: pgp.as.name('childName'),
 } as const;
 
-type OrderByClauseItem = { sortBy: string; sortDirection: OrderByDirection };
+type OrderByClauseItem = { sortBy: string; sortDirection: OrderByDirectionType };
 
 const DEFAULT_SORT: OrderByClauseItem[] = [
   { sortBy: 'id', sortDirection: OrderByDirection.descending },

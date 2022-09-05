@@ -1,18 +1,19 @@
 /* eslint-disable jest/no-standalone-expect */
-const each = require('jest-each').default;
-
-const { setupCanForRules } = require('../../src/permissions/setupCanForRules');
-const { actionsMaps } = require('../../src/permissions/actions');
-import { User } from '../../src/permissions';
+import each from 'jest-each';
+import { setupCanForRules } from '../../src/permissions/setupCanForRules';
+import { actionsMaps, User } from '../../src/permissions';
+import { RulesFile } from '../../src/permissions/rulesMap';
 
 const accountSid = 'account-sid';
 const helpline = 'helpline';
 const workerSid = 'worker-sid';
 
-const buildRules = conditionsSets =>
-  Object.values(actionsMaps)
+const buildRules = (conditionsSets): RulesFile => {
+  const entries = Object.values(actionsMaps)
     .flatMap(e => Object.values(e))
-    .reduce((accum, action) => ({ ...accum, [action]: conditionsSets }), {});
+    .map(action => [action, conditionsSets]);
+  return Object.fromEntries(entries);
+};
 
 describe('Test that all actions work fine (everyone)', () => {
   const rules = buildRules([['everyone']]);

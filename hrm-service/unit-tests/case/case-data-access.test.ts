@@ -10,7 +10,7 @@ import {
 import * as caseDb from '../../src/case/case-data-access';
 import each from 'jest-each';
 import { db } from '../../src/connection-pool';
-import { OrderByColumns } from '../../src/case/sql/case-search-sql';
+import { OrderByColumn } from '../../src/case/sql/case-search-sql';
 
 const accountSid = 'account-sid';
 let conn: pgPromise.ITask<unknown>;
@@ -155,7 +155,7 @@ describe('search', () => {
         listConfig: {
           limit: 100,
           offset: 25,
-          sortBy: OrderByColumns.CHILD_NAME,
+          sortBy: OrderByColumn.CHILD_NAME,
           sortDirection: 'ASC',
         },
         expectedDbParameters: { limit: 100, offset: 25 },
@@ -188,7 +188,7 @@ describe('search', () => {
         listConfig: {
           limit: 100,
           offset: 25,
-          sortBy: OrderByColumns.CHILD_NAME,
+          sortBy: OrderByColumn.CHILD_NAME,
         },
         expectedDbParameters: { limit: 100, offset: 25 },
         expectedInSql: ['"id" DESC', '"childName" DESC NULLS LAST'],
