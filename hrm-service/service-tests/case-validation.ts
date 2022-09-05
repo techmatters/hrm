@@ -1,7 +1,6 @@
 import { WELL_KNOWN_CASE_SECTION_NAMES } from '../src/case/case';
 import { NewContactRecord } from '../src/contact/sql/contact-insert-sql';
-import { ContactRawJson } from '../src/contact/contact-json';
-import { CreateContactPayload, CreateContactPayloadWithFormProperty } from '../src/contact/contact';
+import { CreateContactPayloadWithFormProperty } from '../src/contact/contact';
 
 declare global {
   namespace jest {
