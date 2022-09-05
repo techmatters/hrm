@@ -33,10 +33,10 @@ export const SELECT_CONTACT_SEARCH = `
         AND (
           $<phoneNumberPattern> IS NULL
           OR "number" ILIKE $<phoneNumberPattern>
-          OR regexp_replace("rawJson"#>>'{childInformation,location,phone1}', '\\D', '', 'g') ILIKE $<phoneNumberPattern>
-          OR regexp_replace("rawJson"#>>'{childInformation,location,phone2}', '\\D', '', 'g') ILIKE $<phoneNumberPattern>
-          OR regexp_replace("rawJson"#>>'{callerInformation,location,phone1}', '\\D', '', 'g') ILIKE $<phoneNumberPattern>
-          OR regexp_replace("rawJson"#>>'{callerInformation,location,phone2}', '\\D', '', 'g') ILIKE $<phoneNumberPattern>
+          OR regexp_replace("rawJson"#>>'{childInformation,phone1}', '\\D', '', 'g') ILIKE $<phoneNumberPattern>
+          OR regexp_replace("rawJson"#>>'{childInformation,phone2}', '\\D', '', 'g') ILIKE $<phoneNumberPattern>
+          OR regexp_replace("rawJson"#>>'{callerInformation,phone1}', '\\D', '', 'g') ILIKE $<phoneNumberPattern>
+          OR regexp_replace("rawJson"#>>'{callerInformation,phone2}', '\\D', '', 'g') ILIKE $<phoneNumberPattern>
         )
         AND (
           $<dateFrom> IS NULL OR contacts."timeOfContact" >= $<dateFrom>

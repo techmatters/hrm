@@ -1,6 +1,7 @@
 import { WELL_KNOWN_CASE_SECTION_NAMES } from '../src/case/case';
 import { NewContactRecord } from '../src/contact/sql/contact-insert-sql';
 import { ContactRawJson } from '../src/contact/contact-json';
+import { CreateContactPayload, CreateContactPayloadWithFormProperty } from '../src/contact/contact';
 
 declare global {
   namespace jest {
@@ -123,11 +124,7 @@ export const validateSingleCaseResponse = (actual, expectedCaseModel, expectedCo
 };
 
 export const fillNameAndPhone = (
-  contact: Omit<NewContactRecord, 'rawJson'> & {
-    form?: any;
-    rawJson?: ContactRawJson;
-    accountSid: string;
-  },
+  contact: CreateContactPayloadWithFormProperty,
   name = {
     firstName: 'Maria',
     lastName: 'Silva',

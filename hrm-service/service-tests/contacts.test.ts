@@ -25,13 +25,17 @@ import { subHours, subDays } from 'date-fns';
 import './case-validation';
 import * as caseApi from '../src/case/case';
 import * as caseDb from '../src/case/case-data-access';
-import { PatchPayload } from '../src/contact/contact';
+import {
+  CreateContactPayloadWithFormProperty,
+  PatchPayload,
+} from '../src/contact/contact';
 import * as contactApi from '../src/contact/contact';
 import * as contactDb from '../src/contact/contact-data-access';
 import { openPermissions } from '../src/permissions/json-permissions';
 import * as proxiedEndpoints from './external-service-stubs/proxied-endpoints';
 
-const { form, ...contact1WithRawJsonProp } = contact1;
+const { form, ...contact1WithRawJsonProp } = contact1 as CreateContactPayloadWithFormProperty;
+
 
 const server = createService({
   permissions: openPermissions,
@@ -460,8 +464,7 @@ describe('/contacts route', () => {
           changeDescription: 'multiple input search (data contacts only)',
           expectCallback: response => {
             expect(response.status).toBe(200);
-            const { contacts } = response.body;
-            //expect(count).toBe(2);
+            const { contacts, count } = response.body;
 
             const [c2, c1] = contacts; // result is sorted DESC
             expect(c1.details).toStrictEqual(contact1.form);
@@ -473,6 +476,7 @@ describe('/contacts route', () => {
             // Test the association
             expect(c1.overview.taskId).toBe('contact-1-task');
             expect(c2.overview.taskId).toBe('contact-2-task');
+            expect(count).toBe(2);
           },
         },
         {
@@ -538,10 +542,10 @@ describe('/contacts route', () => {
         },
         ...[
           another2.number,
-          another2.form.childInformation.location.phone1,
-          another2.form.childInformation.location.phone2,
-          another2.form.callerInformation.location.phone1,
-          another2.form.callerInformation.location.phone2,
+          another2.form.childInformation.phone1 as string,
+          another2.form.childInformation.phone2 as string,
+          another2.form.callerInformation.phone1 as string,
+          another2.form.callerInformation.phone2 as string,
         ].map(phone => {
           const phoneNumber = phone.substring(1, 6);
 
@@ -558,12 +562,12 @@ describe('/contacts route', () => {
         }),
         ...[
           another2.number,
-          another2.form.childInformation.location.phone1,
-          another2.form.childInformation.location.phone2,
-          another2.form.callerInformation.location.phone1,
-          another2.form.callerInformation.location.phone2,
+          another2.form.childInformation.phone1,
+          another2.form.childInformation.phone2,
+          another2.form.callerInformation.phone1,
+          another2.form.callerInformation.phone2,
         ].map(phone => {
-          const phoneNumber = phone.substring(1, 6);
+          const phoneNumber = phone.toString().substring(1, 6);
 
           return {
             changeDescription: 'phone regexp & lastName (multi input)',
@@ -579,7 +583,7 @@ describe('/contacts route', () => {
         {
           // https://github.com/tech-matters/hrm/pull/33#discussion_r409904466
           changeDescription: 'returns zero contacts (adding the country code)',
-          body: { phoneNumber: `+1 ${another2.form.childInformation.location.phone1}` },
+          body: { phoneNumber: `+1 ${another2.form.childInformation.phone1}` },
           expectCallback: response => {
             const { count } = response.body;
 
