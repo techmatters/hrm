@@ -2,7 +2,8 @@ import * as pgPromise from 'pg-promise';
 import { db } from '../src/connection-pool';
 import { QueryParam } from 'pg-promise';
 
-const createMockConnection = ()=> ({
+function createMockConnection() {
+ return {
   ctx: {
     context: {},
     connected: true,
@@ -38,7 +39,8 @@ const createMockConnection = ()=> ({
   batch: jest.fn(),
   page: jest.fn(),
   sequence: jest.fn(),
-});
+};
+}
 
 jest.mock('../src/connection-pool', ()=> ({
   db: createMockConnection(),
@@ -48,6 +50,7 @@ jest.mock('../src/connection-pool', ()=> ({
 export const mockConnection = createMockConnection;
 
 export const mockTask = (mockConn: pgPromise.ITask<unknown>) => {
+  // @ts-ignore
   jest.spyOn(db, 'task').mockImplementation((action: (connection: pgPromise.ITask<unknown>)=>Promise<any>)=> {
     return action(mockConn);
   });
@@ -61,6 +64,7 @@ export const mockTransaction = (mockConn: pgPromise.ITask<unknown>, mockTx: pgPr
 
     mockTask(mockConn);
   } else {
+    // @ts-ignore
     jest.spyOn(db, 'tx').mockImplementation((action: (connection: pgPromise.ITask<unknown>)=>Promise<any>)=> {
       return action(mockConn);
     });

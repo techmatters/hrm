@@ -1,13 +1,16 @@
-const { defaults } = require('jest-config');
-
 module.exports = config => {
   return (
     config || {
-      ...defaults,
+      preset: 'ts-jest',
       rootDir: '.',
-      modulePathIgnorePatterns: ['dist'],
       maxWorkers: 1,
       setupFiles: ['<rootDir>/setTestEnvVars.js'],
+      globals: {
+        'ts-jest': {
+          // to give support to const enum. Not working, conflicting with module resolution
+          useExperimentalLanguageServer: true,
+        },
+      },
     }
   );
 };
