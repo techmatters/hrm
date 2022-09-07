@@ -38,9 +38,37 @@ on:
         default: us-east-1
         required: true
 
+
+  workflow_call:
+    secrets:
+      AWS_ACCESS_KEY_ID:
+        required: true
+      AWS_SECRET_ACCESS_KEY:
+        required: true
+      # Should probably use the passed in region for everything but the GITHUB_ACTIONS_SLACK_BOT_TOKEN SSM parameter only exists in us-east-1
+      AWS_DEFAULT_REGION:
+        required: true
+    inputs:
+      environment:
+        description: HRM environment to deploy. E.G = development, staging, production (must match with the AWS environment value). Default value = development
+        type: string
+        default: development
+        required: true
+      region:
+        description: AWS region to deploy. E.G = us-east-1, eu-west-1 (must match with the AWS environment value). Default value = us-east-1
+        type: string
+        default: us-east-1
+        required: true
+      send-slack-message:
+        description: 'Specifies if should send a Slack message at the end of successful run. Defaults to true'
+        required: false
+        default: 'true'
+        type: string
+
 env:
   AWS_DEFAULT_REGION: ${{ github.event.inputs.region }}
   GITHUB_SHA: ${{ github.sha }}
+  SEND_
 
 jobs:
   deploy:
@@ -125,3 +153,4 @@ jobs:
         slack-message: "`[HRM]` Action ${{ github.workflow }} completed with SHA ${{ github.sha }} to region `${{ github.event.inputs.region }}`, environment `${{ github.event.inputs.environment }}` :rocket:."
       env:
         SLACK_BOT_TOKEN: ${{ env.GITHUB_ACTIONS_SLACK_BOT_TOKEN }}
+      if:
