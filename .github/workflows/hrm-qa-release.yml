@@ -69,41 +69,16 @@ jobs:
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
-      - name: Use Node.js
-        uses: actions/setup-node@v1
-        with:
-          node-version: '14.x'
-          # Get latest tag for this version
-      - name: Get latest tag
-        uses: oprypin/find-latest-tag@v1
-        with:
-          repository: techmatters/serverless # This repo
-          # releases-only: false  # This repository doesn't use GitHub's "release" feature.
-          prefix: "${{ inputs.tag-prefix }}-qa"
-        id: latest_matching_tag
-        continue-on-error: true
 
-      # Generate next tag
-      - name: Generate next tag
-        # TODO: remove branch tag (gian_CHI-1262-p2)
-        uses: techmatters/flex-plugins/.github/actions/generate-next-tag@gian_CHI-1262-p2
+      - name: Create pre release
+        # TODO: remove branch tag
+        uses: techmatters/flex-plugins/.github/actions/generate-pre-release@gian_CHI-1262-p2
         with:
-          prefix: "${{ inputs.tag-prefix }}-qa"
-          latest-matching-tag: ${{ steps.latest_matching_tag.outputs.tag }}
-        id: generate_next_tag
-
-      - run: echo ${{ steps.generate_next_tag.outputs.generated-tag }}
-
-      # Create a pre-release
-      - uses: "marvinpinto/action-automatic-releases@v1.2.1"
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          automatic_release_tag: ${{ steps.generate_next_tag.outputs.generated-tag }}
-          prerelease: true
+          tag-prefix: ${{ inputs.tag-prefix }}
+          tag-suffix: 'qa'
           title: ${{ inputs.title }}
-          # files: |
-          #   LICENSE.txt
-          #   *.jar
+          repository: ${{ github.event.repository.name }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
         id: create_pre_release
 
       ## TODO: Abstract all of this in a custom action reused across repos?
