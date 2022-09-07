@@ -83,7 +83,7 @@ jobs:
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ github.event.inputs.region }}
+        aws-region: ${{ inputs.region }}
 
     - name: Login to Amazon ECR
       id: login-ecr
@@ -93,9 +93,9 @@ jobs:
       id: build-image
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        ECR_REPOSITORY: ${{ github.event.inputs.environment }}-hrm
+        ECR_REPOSITORY: ${{ inputs.environment }}-hrm
         IMAGE_TAG_1: latest
-        IMAGE_TAG_2: ${{ github.event.inputs.environment }}-hrm-${{ github.sha }}
+        IMAGE_TAG_2: ${{ inputs.environment }}-hrm-${{ github.sha }}
       run: |
         # Build a docker container and
         # push it to ECR so that it can
@@ -106,22 +106,22 @@ jobs:
         echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG_2"
 
     - name: Download current ECS task definition
-      run: aws ecs describe-task-definition --task-definition ${{ github.event.inputs.environment }}-hrm-task --query taskDefinition > task-definition.json
+      run: aws ecs describe-task-definition --task-definition ${{ inputs.environment }}-hrm-task --query taskDefinition > task-definition.json
 
     - name: Fill in the new image ID in the Amazon ECS task definition
       id: task-def
       uses: aws-actions/amazon-ecs-render-task-definition@v1
       with:
         task-definition: task-definition.json
-        container-name: ${{ github.event.inputs.environment }}-hrm-container
+        container-name: ${{ inputs.environment }}-hrm-container
         image: ${{ steps.build-image.outputs.image }}
 
     - name: Deploy Amazon ECS task definition
       uses: aws-actions/amazon-ecs-deploy-task-definition@v1
       with:
         task-definition: ${{ steps.task-def.outputs.task-definition }}
-        service: ${{ github.event.inputs.environment }}-ecs-service
-        cluster: ${{ github.event.inputs.environment }}-ecs-cluster
+        service: ${{ inputs.environment }}-ecs-service
+        cluster: ${{ inputs.environment }}-ecs-cluster
         wait-for-service-stability: true
 
 
@@ -153,4 +153,4 @@ jobs:
       env:
         SLACK_BOT_TOKEN: ${{ env.GITHUB_ACTIONS_SLACK_BOT_TOKEN }}
       if:
-        github.event.inputs.
+        ${{ inputs.send-slack-message != 'false' }}
