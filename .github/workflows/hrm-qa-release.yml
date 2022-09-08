@@ -13,7 +13,7 @@ on:
 
 jobs:
   build-and-deploy:
-    uses: techmatters/hrm/.github/workflows/hrm-ecs-ci-multiregion.yml@CHI-1267-qa_release_workflow
+    uses: techmatters/hrm/.github/workflows/hrm-ecs-ci-multiregion.yml@master
     secrets:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -72,7 +72,7 @@ jobs:
 
       - name: Create pre release
         # TODO: remove branch tag
-        uses: techmatters/flex-plugins/.github/actions/generate-pre-release@gian_CHI-1262-p2
+        uses: techmatters/flex-plugins/.github/actions/generate-pre-release@master
         with:
           tag-prefix: ${{ inputs.tag-prefix }}
           tag-suffix: 'qa'
