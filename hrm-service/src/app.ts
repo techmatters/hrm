@@ -75,6 +75,11 @@ export function createService({
         const tokenResult = <TokenValidatorResponse>(
           await TokenValidator(token, accountSid, authToken)
         );
+
+        if (!tokenResult.worker_sid) {
+          throw new Error('Invalid token');
+        }
+
         req.user = new User(tokenResult.worker_sid, tokenResult.roles);
         return next();
       } catch (err) {
