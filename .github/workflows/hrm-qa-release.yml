@@ -13,7 +13,7 @@ on:
 
 jobs:
   build-and-deploy:
-    uses: techmatters/hrm/.github/workflows/hrm-ecs-ci-multiregion.yml@master
+    uses: techmatters/hrm/.github/workflows/hrm-ecs-ci-multiregion.yml@CHI-1267-qa_release_workflow
     secrets:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
