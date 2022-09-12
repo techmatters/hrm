@@ -40,7 +40,10 @@ export const getAuthorizationMiddleware = (authTokenLookup = defaultTokenLookup)
     const token = authorization.replace('Bearer ', '');
     try {
       const authToken = authTokenLookup(accountSid);
-      if (!authToken) throw new Error('authToken not provided for the specified accountSid.');
+      if (!authToken) {
+        console.error(`authToken not provided for the accountSid ${accountSid}.`);
+        return unauthorized(res);
+      }
 
       const tokenResult = <TokenValidatorResponse>(
         await TokenValidator(token, accountSid, authToken)

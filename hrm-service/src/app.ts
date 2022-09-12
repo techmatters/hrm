@@ -8,8 +8,7 @@ import swagger from './swagger';
 import { apiV0 } from './routes';
 import { Permissions, setupPermissions } from './permissions';
 import { jsonPermissions } from './permissions/json-permissions';
-import { getAuthorizationMiddleware } from './middlewares/authorizationMiddleware';
-import { addAccountSid } from './middlewares/addAccountSid';
+import { getAuthorizationMiddleware, addAccountSid } from './middlewares';
 
 type ServiceCreationOptions = Partial<{
   permissions: Permissions;
