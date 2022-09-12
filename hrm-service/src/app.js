@@ -43,6 +43,11 @@ const canAccessResourceWithStaticKey = (path, method) => {
   return false;
 };
 
+const isWorker = tokenResult =>
+  Boolean(tokenResult.worker_sid) && tokenResult.worker_sid.startsWith('WK');
+const isGuest = tokenResult =>
+  Array.isArray(tokenResult.roles) && tokenResult.roles.includes('guest');
+
 /**
  * @param {import('express').Request} req
  * @param {import('express').Response} res
@@ -65,6 +70,11 @@ async function authorizationMiddleware(req, res, next) {
       if (!authToken) throw new Error('authToken not provided for the specified accountSid.');
 
       const tokenResult = await TokenValidator(token, accountSid, authToken);
+
+      if (!isWorker(tokenResult) || isGuest(tokenResult)) {
+        return unauthorized(res);
+      }
+
       req.user = new User(tokenResult.worker_sid, tokenResult.roles);
       return next();
     } catch (err) {
