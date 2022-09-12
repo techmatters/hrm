@@ -499,7 +499,7 @@ describe('/cases route', () => {
         {
           infoUpdate: { summary: 'To summarize....' },
           changeDescription: 'summary changed by another counselor',
-          customWorkerSid: 'another-worker-sid',
+          customWorkerSid: 'WK-another-worker-sid',
         },
       ]).test(
         'should return 200 when $changeDescription',

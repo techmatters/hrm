@@ -3,10 +3,9 @@ import each from 'jest-each';
 import { setupCanForRules } from '../../src/permissions/setupCanForRules';
 import { actionsMaps, User } from '../../src/permissions';
 import { RulesFile } from '../../src/permissions/rulesMap';
+import { workerSid, accountSid } from '../../service-tests/mocks';
 
-const accountSid = 'account-sid';
 const helpline = 'helpline';
-const workerSid = 'worker-sid';
 
 const buildRules = (conditionsSets): RulesFile => {
   const entries = Object.values(actionsMaps)

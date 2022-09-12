@@ -1,6 +1,7 @@
 const Sequelize = require('sequelize');
 const SequelizeMock = require('sequelize-mock');
 const createCSAMReportController = require('../../src/controllers/csam-report-controller');
+const { workerSid, accountSid } = require('../../service-tests/mocks');
 
 const DBConnectionMock = new SequelizeMock();
 const MockCSAMReport = DBConnectionMock.define('CSAMReports');
@@ -8,9 +9,6 @@ const MockCSAMReport = DBConnectionMock.define('CSAMReports');
 const CSAMReportController = createCSAMReportController(MockCSAMReport);
 
 const { Op } = Sequelize;
-
-const accountSid = 'account-sid';
-const workerSid = 'worker-sid';
 
 test('create CSAM report', async () => {
   const createSpy = jest.spyOn(MockCSAMReport, 'create');

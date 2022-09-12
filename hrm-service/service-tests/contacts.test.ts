@@ -502,7 +502,7 @@ describe('/contacts route', () => {
         },
         {
           changeDescription: 'multiple input search without name search',
-          body: { counselor: 'worker-sid' }, // should match contact1 & broken1 & another1 & noHelpline
+          body: { counselor: workerSid }, // should match contact1 & broken1 & another1 & noHelpline
           expectCallback: response => {
             const { contacts } = response.body;
 
@@ -521,7 +521,7 @@ describe('/contacts route', () => {
         },
         {
           changeDescription: 'multiple input search without name search excluding non data contacts',
-          body: { counselor: 'worker-sid', onlyDataContacts: true }, // should match contact1 & broken1 & another1 & noHelpline
+          body: { counselor: workerSid, onlyDataContacts: true }, // should match contact1 & broken1 & another1 & noHelpline
           expectCallback: response => {
             const { contacts } = response.body;
 
@@ -594,7 +594,7 @@ describe('/contacts route', () => {
         ...Array.from(Array(10).keys()).map(n => ({
           changeDescription: `limit set to ${n}`,
           queryParams: `limit=${n}`,
-          body: { counselor: 'worker-sid' }, // should match contact1 & broken1 & another1 & noHelpline
+          body: { counselor: workerSid }, // should match contact1 & broken1 & another1 & noHelpline
           expectCallback: response => {
             expect(response.status).toBe(200);
 
