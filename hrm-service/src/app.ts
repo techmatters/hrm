@@ -52,6 +52,11 @@ export function createService({
 
   type TokenValidatorResponse = { worker_sid: string; roles: string[] };
 
+  const isWorker = (tokenResult: TokenValidatorResponse) =>
+    Boolean(tokenResult.worker_sid) && tokenResult.worker_sid.startsWith('WK');
+  const isGuest = (tokenResult: TokenValidatorResponse) =>
+    Array.isArray(tokenResult.roles) && tokenResult.roles.includes('guest');
+
   /**
    * @param {import('express').Request} req
    * @param {import('express').Response} res
@@ -76,8 +81,8 @@ export function createService({
           await TokenValidator(token, accountSid, authToken)
         );
 
-        if (!tokenResult.worker_sid) {
-          throw new Error('Invalid token');
+        if (!isWorker(tokenResult) || isGuest(tokenResult)) {
+          return unauthorized(res);
         }
 
         req.user = new User(tokenResult.worker_sid, tokenResult.roles);
