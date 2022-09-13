@@ -1,8 +1,8 @@
 const tftv = require('twilio-flex-token-validator');
 import each from 'jest-each';
-import { getAuthorizationMiddleware } from '../src/middlewares';
-import { User } from '../src/permissions';
-import utils, { unauthorized } from '../src/utils';
+import { getAuthorizationMiddleware } from '../../src/middlewares';
+import { User } from '../../src/permissions';
+import utils, { unauthorized } from '../../src/utils';
 
 beforeEach(() => {
   jest.clearAllMocks();
