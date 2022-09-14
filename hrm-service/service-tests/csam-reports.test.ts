@@ -40,7 +40,7 @@ const csamReport3 = {
 const { contact1 } = mocks;
 const invalidContactCsamReport = {
   csamReportId: 'csam-report-id',
-  twilioWorkerId: 'worker-sid',
+  twilioWorkerId: workerSid,
   contactId: 1234,
 };
 
@@ -86,7 +86,7 @@ describe('/csamReports route', () => {
     id: expect.anything(),
     accountSid: accountSid,
     csamReportId: 'csam-report-id',
-    twilioWorkerId: 'worker-sid',
+    twilioWorkerId: workerSid,
     contactId: null,
     updatedAt: expect.toParseAsDate(),
     createdAt: expect.toParseAsDate(),

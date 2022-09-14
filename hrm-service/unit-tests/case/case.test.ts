@@ -4,10 +4,9 @@ import { createMockCase, createMockCaseRecord } from './mock-cases';
 import each from 'jest-each';
 import { CaseRecord, NewCaseRecord } from '../../src/case/case-data-access';
 import '../../service-tests/case-validation';
+import { workerSid, accountSid } from '../../service-tests/mocks';
 
 jest.mock('../../src/case/case-data-access');
-const accountSid = 'account-sid';
-const workerSid = 'worker-sid';
 const baselineCreatedDate = new Date(2013, 6, 13).toISOString();
 
 test('create case', async () => {

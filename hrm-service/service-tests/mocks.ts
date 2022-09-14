@@ -56,8 +56,8 @@ export const contact1: CreateContactPayloadWithFormProperty = {
       streetAddress: '',
     },
   },
-  twilioWorkerId: 'worker-sid',
-  createdBy: 'worker-sid',
+  twilioWorkerId: 'WK-worker-sid',
+  createdBy: 'WK-worker-sid',
   helpline: '',
   queueName: '',
   number: '12025550184',
@@ -117,8 +117,8 @@ export const contact2: CreateContactPayloadWithFormProperty = {
       streetAddress: '',
     },
   },
-  twilioWorkerId: 'worker-sid',
-  createdBy: 'worker-sid',
+  twilioWorkerId: 'WK-worker-sid',
+  createdBy: 'WK-worker-sid',
   helpline: '',
   queueName: '',
   number: '12025550184',
@@ -224,8 +224,8 @@ export const withTaskId: CreateContactPayloadWithFormProperty = {
     callerInformation: contact1.form.callerInformation,
     caseInformation: contact1.form.caseInformation,
   },
-  twilioWorkerId: 'worker-sid',
-  createdBy: 'worker-sid',
+  twilioWorkerId: 'WK-worker-sid',
+  createdBy: 'WK-worker-sid',
   helpline: 'withTaskId',
   queueName: '',
   number: '11111111111',
@@ -241,14 +241,14 @@ export const case1: Partial<Case> = {
     counsellorNotes: [
       {
         note: 'Child with covid-19',
-        twilioWorkerId: 'note-adder',
+        twilioWorkerId: 'WK-note-adder',
         createdAt: '2022-01-01T00:00:00+00:00',
         customProperty: 'something else',
       },
     ],
   },
-  twilioWorkerId: 'worker-sid',
-  createdBy: 'worker-sid',
+  twilioWorkerId: 'WK-worker-sid',
+  createdBy: 'WK-worker-sid',
   accountSid,
 };
 
@@ -259,14 +259,14 @@ export const case2: Partial<Case> = {
     counsellorNotes: [
       {
         note: 'Refugee child',
-        twilioWorkerId: 'other-note-adder',
+        twilioWorkerId: 'WK-other-note-adder',
         createdAt: '2021-01-01T00:00:00+00:00',
       },
     ],
   },
-  twilioWorkerId: 'worker-sid',
-  createdBy: 'worker-sid',
+  twilioWorkerId: 'WK-worker-sid',
+  createdBy: 'WK-worker-sid',
   accountSid,
 };
 
-export const workerSid = 'worker-sid';
+export const workerSid = 'WK-worker-sid';

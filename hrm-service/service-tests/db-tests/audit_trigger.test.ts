@@ -7,8 +7,8 @@ import { db } from '../../src/connection-pool';
 
 import '../case-validation';
 
-const workerSid = 'worker-sid';
-const anotherWorkerSid = 'another-worker-sid';
+const workerSid = 'WK-worker-sid';
+const anotherWorkerSid = 'WK-another-worker-sid';
 const testAccountSid = 'test-account-sid';
 
 describe('Cases_audit_trigger', () => {
