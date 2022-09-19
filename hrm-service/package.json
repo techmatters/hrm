@@ -43,6 +43,7 @@
     "pg-promise": "^10.11.1",
     "sequelize": "^6.16.2",
     "sequelize-cli": "^6.4.1",
+    "swagger-jsdoc": "^6.2.5",
     "swagger-ui-express": "^4.1.4",
     "twilio": "^3.58.0",
     "twilio-flex-token-validator": "^1.5.5"

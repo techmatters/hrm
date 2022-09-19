@@ -8,6 +8,34 @@ import { getCase } from './case';
 
 const casesRouter = SafeRouter();
 
+/**
+ * @openapi
+ * /cases:
+ *   get:
+ *     tags:
+ *       - Cases
+ *     summary: list cases for a helpline
+ *     operationId: getCases
+ *     parameters:
+ *       - in: query
+ *         name: helpline
+ *         required: false
+ *         schema:
+ *           type: string
+ *     responses:
+ *       '200':
+ *         description: Fetched cases
+ *         content:
+ *             application/json:
+ *               schema:
+ *                 type: array
+ *                 items:
+ *                   allOf:
+ *                     - $ref: '#/components/schemas/SequelizeRecord'
+ *                     - $ref: '#/components/schemas/Case'
+ *       '401':
+ *         $ref: '#/components/responses/UnauthorizedError'
+ */
 casesRouter.get('/', publicEndpoint, async (req, res) => {
   const { accountSid } = req;
   const { sortDirection, sortBy, limit, offset, ...search } = req.query;
@@ -19,6 +47,32 @@ casesRouter.get('/', publicEndpoint, async (req, res) => {
   res.json(cases);
 });
 
+/**
+ * @openapi
+ * /cases:
+ *   post:
+ *     tags:
+ *       - Cases
+ *     summary: create case
+ *     operationId: createCase
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Case'
+ *       description: Case to create
+ *     responses:
+ *       '200':
+ *         description: Created case
+ *         content:
+ *             application/json:
+ *               schema:
+ *                 allOf:
+ *                   - $ref: '#/components/schemas/SequelizeRecord'
+ *                   - $ref: '#/components/schemas/Case'
+ *       '401':
+ *         $ref: '#/components/responses/UnauthorizedError'
+ */
 casesRouter.post('/', publicEndpoint, async (req, res) => {
   const { accountSid, user } = req;
   const createdCase = await caseApi.createCase(req.body, accountSid, user.workerSid);
