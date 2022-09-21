@@ -7,6 +7,18 @@ import {
   CategoryFilter,
 } from '../case-data-access';
 
+/**
+ * @openapi
+ * components:
+ *   schemas:
+ *     OrderByDirection:
+ *       type: string
+ *       enum:
+ *         - ASC NULLS LAST
+ *         - DESC NULLS LAST
+ *         - ASC
+ *         - DESC
+ */
 export const OrderByDirection = {
   ascendingNullsLast: 'ASC NULLS LAST',
   descendingNullsLast: 'DESC NULLS LAST',
@@ -16,6 +28,19 @@ export const OrderByDirection = {
 
 export type OrderByDirectionType = typeof OrderByDirection[keyof typeof OrderByDirection];
 
+/**
+ * @openapi
+ * components:
+ *   schemas:
+ *     OrderByColumn:
+ *       type: string
+ *       enum:
+ *         - id
+ *         - createdAt
+ *         - updatedAt
+ *         - childName
+ *         - info.followUpDate
+ */
 export const OrderByColumn = {
   ID: 'id',
   CREATED_AT: 'createdAt',
@@ -54,7 +79,7 @@ FROM (
   SELECT
     c.*,
     COALESCE(jsonb_agg(DISTINCT r.*) FILTER (WHERE r.id IS NOT NULL), '[]') AS "csamReports"
-  FROM "Contacts" c 
+  FROM "Contacts" c
   LEFT JOIN "CSAMReports" r ON c."id" = r."contactId"  AND c."accountSid" = r."accountSid"
   WHERE c."caseId" = "cases".id AND c."accountSid" = "cases"."accountSid"
   GROUP BY c."accountSid", c.id
@@ -78,7 +103,7 @@ const dateFilterCondition = (
   }
   if (filter.to || filter.from) {
     return pgp.as.format(
-      `(($<from> IS NULL OR ${field} >= $<from>::TIMESTAMP WITH TIME ZONE) 
+      `(($<from> IS NULL OR ${field} >= $<from>::TIMESTAMP WITH TIME ZONE)
             AND ($<to> IS NULL OR ${field} <= $<to>::TIMESTAMP WITH TIME ZONE)
             ${existsCondition ? ` AND ${existsCondition}` : ''})`,
       filter,
@@ -90,13 +115,13 @@ const dateFilterCondition = (
 
 // Produces a table of category / subcategory pairs from the input category filters, and another from the categories specified in the contact json, and joins on them
 const CATEGORIES_FILTER_SQL = `EXISTS (
-SELECT 1 FROM 
+SELECT 1 FROM
 (
-    SELECT categories.key AS category, subcategories.key AS subcategory 
-    FROM "Contacts" c, jsonb_each(c."rawJson"->'caseInformation'->'categories') categories, jsonb_each_text(categories.value) AS subcategories 
+    SELECT categories.key AS category, subcategories.key AS subcategory
+    FROM "Contacts" c, jsonb_each(c."rawJson"->'caseInformation'->'categories') categories, jsonb_each_text(categories.value) AS subcategories
     WHERE c."caseId" = cases.id AND c."accountSid" = cases."accountSid" AND subcategories.value = 'true'
 ) AS availableCategories
-INNER JOIN jsonb_to_recordset($<categories:json>) AS requiredCategories(category text, subcategory text) 
+INNER JOIN jsonb_to_recordset($<categories:json>) AS requiredCategories(category text, subcategory text)
 ON requiredCategories.category = availableCategories.category AND requiredCategories.subcategory = availableCategories.subcategory
 )`;
 
@@ -187,7 +212,7 @@ const SEARCH_WHERE_CLAUSE = `(
               ],
             )})
             -- search on callerInformation of connectedContacts
-            OR ( 
+            OR (
               ${nameAndPhoneNumberSearchSql(
                 "c.\"rawJson\"->'callerInformation'->'name'->>'firstName'",
                 "c.\"rawJson\"->'callerInformation'->'name'->>'lastName'",
@@ -195,7 +220,7 @@ const SEARCH_WHERE_CLAUSE = `(
                   "c.\"rawJson\"->'callerInformation'->'location'->>'phone1'",
                   "c.\"rawJson\"->'callerInformation'->'location'->>'phone2'",
                 ],
-              )}  
+              )}
             )
           )
       )
@@ -227,14 +252,14 @@ const selectCasesUnorderedSql = (whereClause: string, havingClause: string = '')
     contacts."connectedContacts",
     NULLIF(
       CONCAT(
-        contacts."connectedContacts"::JSONB#>>'{0, "rawJson", "childInformation", "name", "firstName"}', 
-        ' ', 
+        contacts."connectedContacts"::JSONB#>>'{0, "rawJson", "childInformation", "name", "firstName"}',
+        ' ',
         contacts."connectedContacts"::JSONB#>>'{0, "rawJson", "childInformation", "name", "lastName"}'
       )
-    , ' ') AS "childName",  
+    , ' ') AS "childName",
     caseSections."caseSections"
-    FROM "Cases" cases 
-    LEFT JOIN LATERAL (${SELECT_CONTACTS}) contacts ON true 
+    FROM "Cases" cases
+    LEFT JOIN LATERAL (${SELECT_CONTACTS}) contacts ON true
     LEFT JOIN LATERAL (${SELECT_CASE_SECTIONS}) caseSections ON true
     ${whereClause} GROUP BY "cases"."accountSid", "cases"."id", caseSections."caseSections", contacts."connectedContacts" ${havingClause}`;
 

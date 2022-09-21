@@ -10,6 +10,72 @@ import { ContactRawJson } from './contact-json';
 import { retrieveCategories, getPaginationElements } from '../controllers/helpers';
 import { NewContactRecord } from './sql/contact-insert-sql';
 
+/**
+ * @openapi
+ * components:
+ *   schemas:
+ *     Contact:
+ *       type: object
+ *       required:
+ *         - reservationId
+ *         - rawJson
+ *         - queueName
+ *         - twilioWorkerId
+ *         - helpline
+ *         - number
+ *         - channel
+ *         - conversationDuration
+ *         - caseId
+ *         - timeOfContact
+ *       properties:
+ *         timestamp:
+ *           type: integer
+ *           format: int64
+ *           example: 1565827981000
+ *         reservationId:
+ *           type: string
+ *           example: WS17ce7c9cf654a4b240031ff7b17e7d93
+ *         rawJson:
+ *           type: object
+ *           example:
+ *             {
+ *               'callType': {},
+ *               'callerInformation': {},
+ *               'childInformation': {},
+ *               'caseInformation': {},
+ *             }
+ *         queueName:
+ *           type: string
+ *           example: Admin
+ *         twilioWorkerId:
+ *           type: string
+ *           example: WZd3d289370720216aab7e3dc023e80f5f
+ *         helpline:
+ *           type: string
+ *           example:
+ *         number:
+ *           type: string
+ *           example: '+12025550163'
+ *         channel:
+ *           type: string
+ *           example: web
+ *         conversationDuration:
+ *           type: integer
+ *           format: int32
+ *           example: 42
+ *         caseId:
+ *           type: integer
+ *           format: int32
+ *           example: 1
+ *         accountSid:
+ *           type: string
+ *           example: ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+ *         timeOfContact:
+ *           type: integer
+ *           format: int64
+ *           example: 1565827981000
+ */
+
 export type PatchPayload = {
   rawJson: Partial<
     Pick<ContactRawJson, 'callerInformation' | 'childInformation' | 'caseInformation'>
@@ -141,6 +207,103 @@ function isValidContact(contact) {
   );
 }
 
+/**
+ * @openapi
+ * components:
+ *   schemas:
+ *     SearchContactsResult:
+ *       type: object
+ *       required:
+ *         - count
+ *         - contacts
+ *       properties:
+ *         count:
+ *           type: integer
+ *           format: int32
+ *           example: 1
+ *         contacts:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               contactId:
+ *                 type: string
+ *                 example: WS17ce7c9cf654a4b240031ff7b17e7d93
+ *               overview:
+ *                 type: object
+ *                 properties:
+ *                   dateTime:
+ *                     type: string
+ *                     format: date-time
+ *                     example: '2020-03-19T15:03:03.042Z'
+ *                   name:
+ *                     type: string
+ *                     example: Jhon
+ *                   customerNumber:
+ *                     type: string
+ *                     example: '+12025550163'
+ *                   callType:
+ *                     type: string
+ *                     example: Child calling about self
+ *                   categories:
+ *                     type: object
+ *                     example: {}
+ *                   counselor:
+ *                     type: string
+ *                     example: WZd3d289370720216aab7e3dc023e80f5f
+ *                   notes:
+ *                     type: string
+ *                     example: Child needs help
+ *                   channel:
+ *                     type: string
+ *                     example: web
+ *                   conversationDuration:
+ *                     type: integer
+ *                     format: int32
+ *                     example: 42
+ *               details:
+ *                 type: object
+ *                 properties:
+ *                   timestamp:
+ *                     type: integer
+ *                     format: int64
+ *                     example: 1565827981000
+ *                   reservationId:
+ *                     type: string
+ *                     example: WS17ce7c9cf654a4b240031ff7b17e7d93
+ *                   rawJson:
+ *                     type: object
+ *                     example:
+ *                       {
+ *                         'callType': {},
+ *                         'callerInformation': {},
+ *                         'childInformation': {},
+ *                         'caseInformation': {},
+ *                       }
+ *                   queueName:
+ *                     type: string
+ *                     example: Admin
+ *                   twilioWorkerId:
+ *                     type: string
+ *                     example: WZd3d289370720216aab7e3dc023e80f5f
+ *                   helpline:
+ *                     type: string
+ *                     example:
+ *                   number:
+ *                     type: string
+ *                     example: '+12025550163'
+ *                   channel:
+ *                     type: string
+ *                     example: web
+ *                   conversationDuration:
+ *                     type: integer
+ *                     format: int32
+ *                     example: 42
+ *                   caseId:
+ *                     type: integer
+ *                     format: int32
+ *                     example: 1
+ */
 function convertContactsToSearchResults(contacts: Contact[]): SearchContact[] {
   return contacts
     .map(contact => {

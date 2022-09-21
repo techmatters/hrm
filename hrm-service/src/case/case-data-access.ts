@@ -7,6 +7,39 @@ import { DELETE_BY_ID } from './sql/case-delete-sql';
 import { selectSingleCaseByIdSql } from './sql/case-get-sql';
 import { Contact } from '../contact/contact-data-access';
 
+/**
+ * @openapi
+ * components:
+ *   schemas:
+ *     CaseRecordBase:
+ *       type: object
+ *       required:
+ *         - status
+ *         - helpline
+ *         - info
+ *         - twilioWorkerId
+ *       properties:
+ *         info:
+ *           type: object
+ *           example: { "notes": "Child with covid-19" }
+ *         helpline:
+ *           type: string
+ *           example: helpline-1
+ *         status:
+ *           type: string
+ *           example: open
+ *         twilioWorkerId:
+ *           type: string
+ *           example: WZd3d289370720216aab7e3dc023e80f5f
+ *         accountSid:
+ *           type: string
+ *           example: ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+ *     CaseRecordCommon:
+ *       allOf:
+ *         - $ref: '#/components/schemas/SequelizeRecord'
+ *         - $ref: '#/components/schemas/CaseRecordBase'
+ *
+ */
 export type CaseRecordCommon = {
   info: any;
   helpline: string;
@@ -19,18 +52,84 @@ export type CaseRecordCommon = {
   updatedAt: string;
 };
 
+/**
+ * @openapi
+ * components:
+ *   schemas:
+ *     NewCaseRecord:
+ *       allOf:
+ *         - $ref: '#/components/schemas/CaseRecordCommon'
+ *         - type: object
+ *           properties:
+ *             caseSections:
+ *               $ref: '#/components/schemas/CaseSectionRecord'
+ */
 export type NewCaseRecord = CaseRecordCommon & {
   caseSections?: CaseSectionRecord[];
 };
 
+/**
+ * @openapi
+ * components:
+ *   schemas:
+ *     CaseRecord:
+ *       allOf:
+ *         - $ref: '#/components/schemas/CaseRecordCommon'
+ *         - $ref: '#/components/schemas/ObjectHasId'
+ *         - connectedContacts:
+ *           type: array
+ *           items:
+ *             allOf:
+ *               - $ref: '#/components/schemas/Contact'
+ * #TODO: fill in the rest
+ */
 export type CaseRecord = CaseRecordCommon & {
   id: number;
   connectedContacts?: Contact[];
   caseSections?: CaseSectionRecord[];
 };
 
+/**
+ * @openapi
+ * components:
+ *   schemas:
+ *     CaseWithCount:
+ *       allOf:
+ *         - $ref: '#/components/schemas/CaseRecord'
+ *         - $ref: '#/components/schemas/ObjectHasId'
+ *         - totalCount:
+ *           type: number
+ *           example: 1
+ */
 type CaseWithCount = CaseRecord & { totalCount: number };
 
+/**
+ * @openapi
+ * components:
+ *   schemas:
+ *     CaseSectionRecord:
+ *      allOf:
+ *        - $ref: '#/components/schemas/SequelizeRecord'
+ *        - type: object
+ *          properties:
+ *            caseId:
+ *              type: number
+ *              example: 1
+ *            sectionType:
+ *              type: string
+ *              example: notes
+ *            sectionId:
+ *              type: string
+ *            sectionTypeSpecificData:
+ *              type: string
+ *            accountSid:
+ *              type: string
+ *            createdAt:
+ *              type: string
+ *            createdBy:
+ *              type: string
+ * #TODO: fill in the rest
+ */
 export type CaseSectionRecord = {
   caseId?: number;
   sectionType: string;
@@ -43,6 +142,54 @@ export type CaseSectionRecord = {
   updatedBy?: string;
 };
 
+/**
+ * @openapi
+ * components:
+ *   parameters:
+ *     OrderByColumn:
+ *       in: query
+ *       name: sortBy
+ *       required: false
+ *       schema:
+ *         $ref: '#/components/schemas/OrderByColumn'
+ *     OrderByDirection:
+ *       in: query
+ *       name: sortDirection
+ *       required: false
+ *       schema:
+ *         $ref: '#/components/schemas/OrderByDirection'
+ *       description: >
+ *         Sort Order:
+ *           * `ASC NULLS LAST` - ascending order, nulls last
+ *           * `DESC NULLS LAST` - descending order, nulls last
+ *           * `ASC` - ascending order, nulls first
+ *           * `DESC` - descending order, nulls first
+ *     Offset:
+ *       in: query
+ *       name: offset
+ *       required: false
+ *       schema:
+ *         type: number
+ *     Limit:
+ *       in: query
+ *       name: limit
+ *       required: false
+ *       schema:
+ *         type: number
+ *
+ * # this doesn't seem to work as a parameter list unfortunately. Be
+ * # sure to update param lists in /cases/search and /cases get endpoints
+ * # if you update this.
+ *
+ * definitions:
+ *   CaseListConfiguration:
+ *     type: array
+ *     items:
+ *       - $ref: '#/components/parameters/OrderByColumn'
+ *       - $ref: '#/components/parameters/OrderByDirection'
+ *       - $ref: '#/components/parameters/Offset'
+ *       - $ref: '#/components/parameters/Limit'
+ */
 export type CaseListConfiguration = {
   sortBy?: OrderByColumnType;
   sortDirection?: OrderByDirectionType;

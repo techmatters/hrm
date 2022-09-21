@@ -17,22 +17,22 @@ const casesRouter = SafeRouter();
  *     summary: list cases for a helpline
  *     operationId: getCases
  *     parameters:
+ *       - $ref: '#/components/parameters/OrderByColumn'
+ *       - $ref: '#/components/parameters/OrderByDirection'
+ *       - $ref: '#/components/parameters/Offset'
+ *       - $ref: '#/components/parameters/Limit'
  *       - in: query
- *         name: helpline
+ *         name: search
  *         required: false
  *         schema:
- *           type: string
+ *           $ref: '#/components/schemas/SearchParameters'
  *     responses:
  *       '200':
  *         description: Fetched cases
  *         content:
- *             application/json:
- *               schema:
- *                 type: array
- *                 items:
- *                   allOf:
- *                     - $ref: '#/components/schemas/SequelizeRecord'
- *                     - $ref: '#/components/schemas/Case'
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ArrayOfCases'
  *       '401':
  *         $ref: '#/components/responses/UnauthorizedError'
  */
@@ -59,17 +59,15 @@ casesRouter.get('/', publicEndpoint, async (req, res) => {
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/Case'
+ *             $ref: '#/components/schemas/CaseRecordBase'
  *       description: Case to create
  *     responses:
  *       '200':
  *         description: Created case
  *         content:
- *             application/json:
- *               schema:
- *                 allOf:
- *                   - $ref: '#/components/schemas/SequelizeRecord'
- *                   - $ref: '#/components/schemas/Case'
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Case'
  *       '401':
  *         $ref: '#/components/responses/UnauthorizedError'
  */
@@ -119,6 +117,40 @@ casesRouter.get('/:id', publicEndpoint, async (req, res) => {
   res.json(caseFromDB);
 });
 
+/**
+ * @openapi
+ * /cases/{caseId}:
+ *   put:
+ *     tags:
+ *       - Cases
+ *     summary: update case
+ *     operationId: updateCase
+ *     parameters:
+ *       - name: caseId
+ *         in: path
+ *         description: ID of case to update
+ *         required: true
+ *         schema:
+ *           type: integer
+ *           format: int32
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Case'
+ *       description: Case to create
+ *     responses:
+ *       '200':
+ *         description: Created case
+ *         content:
+ *             application/json:
+ *               schema:
+ *                 $ref: '#/components/schemas/Case'
+ *       '401':
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       '404':
+ *         description: Case not found
+ */
 casesRouter.put('/:id', canEditCase, async (req, res) => {
   const { accountSid, user } = req;
   const { id } = req.params;
@@ -139,6 +171,38 @@ casesRouter.delete('/:id', publicEndpoint, async (req, res) => {
   res.sendStatus(200);
 });
 
+/**
+ * @openapi
+ * /cases/search:
+ *   post:
+ *     tags:
+ *       - Cases
+ *     summary: search cases
+ *     operationId: searchCases
+ *     parameters:
+ *       - $ref: '#/components/parameters/OrderByColumn'
+ *       - $ref: '#/components/parameters/OrderByDirection'
+ *       - $ref: '#/components/parameters/Offset'
+ *       - $ref: '#/components/parameters/Limit'
+ *
+ *       # this doesn't seem to work unfortunately, so we are listing them for now.
+ *       #$ref: '#/definitions/CaseListConfiguration'
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/SearchParameters'
+ *       description: Case to search
+ *     responses:
+ *       '200':
+ *         description: Search cases result
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SearchCasesResult'
+ *       '401':
+ *         $ref: '#/components/responses/UnauthorizedError'
+ */
 casesRouter.post('/search', publicEndpoint, async (req, res) => {
   const { accountSid } = req;
   const searchResults = await caseApi.searchCases(accountSid, req.query, req.body);

@@ -55,6 +55,34 @@ export const WELL_KNOWN_CASE_SECTION_NAMES: Record<
   documents: { getSectionSpecificData: s => s.document, sectionTypeName: 'document' },
 };
 
+/**
+ * @openapi
+ * components:
+ *   schemas:
+ *     Case:
+ *       allOf:
+ *         - $ref: '#/components/schemas/CaseRecordCommon'
+ *         - $ref: '#/components/schemas/ObjectHasId'
+ *         - type: object
+ *           properties:
+ *             childName:
+ *               type: string
+ *               example: "John Doe"
+ *             categories:
+ *               type: array
+ *               items:
+ *                 type: string
+ *                 example: "Child Protection"
+ *             connectedContacts:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Contact'
+ *
+ *     ArrayOfCases:
+ *       type: array
+ *       items:
+ *         $ref: '#/components/schemas/Case'
+ */
 export type Case = CaseRecordCommon & {
   id: number;
   childName?: string;
@@ -237,6 +265,20 @@ export const getCase = async (id: number, accountSid: string): Promise<Case | un
   return;
 };
 
+/**
+ * @openapi
+ * components:
+ *   schemas:
+ *     SearchParameters:
+ *       type: object
+ *       properties:
+ *         helpline:
+ *           type: string
+ *         counselor:
+ *           type: string
+ *         closedCases:
+ *           type: boolean
+ */
 export type SearchParameters = CaseSearchCriteria & {
   filters?: CaseListFilters;
 } & {
@@ -245,6 +287,26 @@ export type SearchParameters = CaseSearchCriteria & {
   closedCases?: boolean;
 };
 
+/**
+ * @openapi
+ * components:
+ *   schemas:
+ *     SearchCasesResult:
+ *       type: object
+ *       required:
+ *         - count
+ *         - cases
+ *       properties:
+ *         count:
+ *           type: integer
+ *           format: int32
+ *           example: 1
+ *         cases:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/Case'
+ *
+ */
 export const searchCases = async (
   accountSid,
   listConfiguration: CaseListConfiguration = {},
