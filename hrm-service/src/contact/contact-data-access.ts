@@ -6,12 +6,40 @@ import { selectSingleContactByIdSql, selectSingleContactByTaskId } from './sql/c
 import { insertContactSql, NewContactRecord } from './sql/contact-insert-sql';
 import { PersonInformation } from './contact-json';
 
+/**
+ * @openapi
+ * components:
+ *   schemas:
+ *     ExistingContactRecord:
+ *       allOf:
+ *         - $ref: '#/components/schemas/SequelizeRecord'
+ *         - $ref: '#/components/schemas/ObjectHasId'
+ *         - $ref: '#/components/schemas/NewContactRecord'
+ *         - type: object
+ *           properties:
+ *             accountSid:
+ *               $ref: '#/components/schemas/Sid'
+ */
 type ExistingContactRecord = {
   id: number;
   accountSid: string;
   createdAt?: Date;
 } & Partial<NewContactRecord>;
 
+/**
+ * @openapi
+ * components:
+ *   schemas:
+ *     Contact:
+ *       allOf:
+ *         - $ref: '#/components/schemas/ExistingContactRecord'
+ *         - type: object
+ *           properties:
+ *             csamReports:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/CSAMReportEntry'
+ */
 export type Contact = ExistingContactRecord & {
   csamReports: any[];
 };

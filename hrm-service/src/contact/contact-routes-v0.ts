@@ -9,6 +9,7 @@ import type { Request, Response, NextFunction } from 'express';
 const contactsRouter = SafeRouter();
 
 // example: curl -XPOST -H'Content-Type: application/json' localhost:3000/contacts -d'{"hi": 2}'
+
 /**
  * @openapi
  * /contacts:
@@ -17,79 +18,19 @@ const contactsRouter = SafeRouter();
  *       - Contacts
  *     summary: create a new contact
  *     operationId: createContact
- *     parameters:
- *       - name: rawJson
- *         in: body
- *         description: Raw contact form object
- *         required: true
- *         schema:
- *           type: object
- *           example:
- *             {
- *               'callType': {},
- *               'callerInformation': {},
- *               'childInformation': {},
- *               'caseInformation': {},
- *             }
- *       - name: queueName
- *         in: body
- *         description: Name of the queue where this contact was taken
- *         schema:
- *           type: string
- *           example: Admin
- *       - name: twilioWorkerId
- *         in: body
- *         description: Id of the Twilio worker that took the contact
- *         schema:
- *           type: string
- *           example: WZd3d289370720216aab7e3dc023e80f5f
- *       - name: helpline
- *         in: body
- *         description: Helpline where the contact took place
- *         schema:
- *           type: string
- *           example: Toronto Line
- *       - name: number
- *         in: body
- *         description: Number of the caller for this contact
- *         schema:
- *           type: string
- *           example: '+12025550163'
- *       - name: channel
- *         in: body
- *         description: Channel where this contact took place
- *         schema:
- *           type: string
- *           example: 'web'
- *       - name: conversationDuration
- *         in: body
- *         description: Duration in seconds of this contact
- *         schema:
- *           type: integer
- *           format: int32
- *           example: 42
- *       - name: accountSid
- *         in: body
- *         description: Id of the Twilio account that took the contact
- *         schema:
- *           type: string
- *           example: ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
- *       - name: timeOfContact
- *         in: body
- *         description: Date-time of the contact (EPOCH timestamp)
- *         schema:
- *           type: integer
- *           format: int32
- *           example: 1565827981000
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/CreateContactPayload'
+ *       description: Contact to create
  *     responses:
  *       '200':
  *         description: Created contact
  *         content:
  *           application/json:
  *             schema:
- *               allOf:
- *                 - $ref: '#/components/schemas/SequelizeRecord'
- *                 - $ref: '#/components/schemas/Contact'
+ *               $ref: '#/components/schemas/Contact'
  *       '401':
  *         $ref: '#/components/responses/UnauthorizedError'
  */
@@ -136,9 +77,7 @@ contactsRouter.post('/', publicEndpoint, async (req, res) => {
  *         content:
  *           application/json:
  *             schema:
- *               allOf:
- *                 - $ref: '#/components/schemas/SequelizeRecord'
- *                 - $ref: '#/components/schemas/Contact'
+ *               $ref: '#/components/schemas/Contact'
  *       '401':
  *         $ref: '#/components/responses/UnauthorizedError'
  *       '404':
@@ -170,36 +109,27 @@ contactsRouter.put('/:contactId/connectToCase', publicEndpoint, async (req, res)
  * @openapi
  * /contacts/search:
  *   post:
- *     tags:
- *       - Contacts
  *     summary: search contacts
  *     operationId: searchContacts
  *     parameters:
- *       - in: query
- *         name: limit
- *         required: false
- *         schema:
- *           type: integer
- *           format: int32
- *       - in: query
- *         name: offset
- *         required: false
- *         schema:
- *           type: integer
- *           format: int32
+ *       - $ref: '#/components/parameters/OrderByColumn'
+ *       - $ref: '#/components/parameters/OrderByDirection'
+ *       - $ref: '#/components/parameters/Offset'
+ *       - $ref: '#/components/parameters/Limit'
+ *
  *     requestBody:
  *       content:
  *         application/json:
  *           schema:
  *             $ref: '#/components/schemas/SearchParameters'
- *       description: Case to create
+ *       description: Contact to search
  *     responses:
  *       '200':
- *         description: Search contacts result
+ *         description: Search contact result
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/SearchContactsResult'
+ *               $ref: '#/components/schemas/SearchContact'
  *       '401':
  *         $ref: '#/components/responses/UnauthorizedError'
  */

@@ -1,6 +1,44 @@
 import { pgp } from '../../connection-pool';
 import { ContactRawJson } from '../contact-json';
 
+/**
+ * @openapi
+ * components:
+ *   schemas:
+ *     ContactRecordBase:
+ *       type: object
+ *       properties:
+ *         queueName:
+ *           type: string
+ *           example: Admin
+ *         twilioWorkerId:
+ *           $ref: '#/components/schemas/TwilioWorkerId'
+ *         createdBy:
+ *           type: string
+ *           example: 'user'
+ *         helpline:
+ *           $ref: '#/components/schemas/Helpline'
+ *         number:
+ *           $ref: '#/components/schemas/PhoneNumber'
+ *         channel:
+ *           $ref: '#/components/schemas/Channel'
+ *         conversationDuration:
+ *           $ref: '#/components/schemas/ConversationDuration'
+ *         taskId:
+ *           $ref: '#/components/schemas/TaskId'
+ *         channelSid:
+ *           $ref: '#/components/schemas/Sid'
+ *         serviceSid:
+ *           $ref: '#/components/schemas/Sid'
+ *     NewContactRecord:
+ *       allOf:
+ *         - $ref: '#/components/schemas/ContactRecordBase'
+ *         - type: object
+ *           properties:
+ *             rawJson:
+ *               $ref: '#/components/schemas/ContactRawJson'
+ *
+ */
 export type NewContactRecord = {
   rawJson: ContactRawJson;
   queueName: string;
@@ -45,11 +83,11 @@ export const insertContactSql = (
     ),
     csamConnect AS (
       UPDATE "CSAMReports" SET "contactId"=inserted."id" FROM inserted WHERE "CSAMReports"."id" = ANY(ARRAY[$<csamReportIds:csv>]::integer[]) RETURNING "CSAMReports".*
-    )  
-    SELECT c.*, reports."csamReports" 
+    )
+    SELECT c.*, reports."csamReports"
         FROM inserted AS c
         LEFT JOIN LATERAL (
-          SELECT COALESCE(jsonb_agg(to_jsonb(r)), '[]') AS "csamReports" 
+          SELECT COALESCE(jsonb_agg(to_jsonb(r)), '[]') AS "csamReports"
           FROM csamConnect r
         ) reports ON true
 `;

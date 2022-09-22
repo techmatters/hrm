@@ -66,8 +66,7 @@ export const WELL_KNOWN_CASE_SECTION_NAMES: Record<
  *         - type: object
  *           properties:
  *             childName:
- *               type: string
- *               example: "John Doe"
+ *               $ref: '#/components/schemas/FullName'
  *             categories:
  *               type: array
  *               items:

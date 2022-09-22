@@ -11,20 +11,79 @@ components:
         id:
           $ref: '#/components/schemas/id'
 
+    TwilioWorkerId:
+      type: string
+      example: WZd3d289370720216aab7e3dc023e80f5f
+
+    ObjectHasTwilioWorkerId:
+      type: object
+      properties:
+        twilioWorkerId:
+          $ref: '#/components/schemas/TwilioWorkerId'
+
+    DateTime:
+      type: string
+      format: date-time
+      example: '2020-03-19T15:03:03.042Z'
+
+    FullName:
+      type: string
+      example: 'Jean-Luc Picard'
+
+    FirstName:
+      type: string
+      example: 'Kathryn'
+
+    LastName:
+      type: string
+      example: 'Janeway'
+
+    PhoneNumber:
+      type: string
+      example: '+12025550142'
+
+    CallType:
+      type: string
+      example: 'Child calling about self'
+
+    Channel:
+      type: string
+      example: 'voice'
+
+    Helpline:
+      type: string
+      example: 'Toronto Helpline'
+
+    ConversationDuration:
+      type: integer
+      format: int32
+      example: 120
+
+    TaskId:
+      type: string
+      example: 'WT123'
+
+    Sid:
+      type: string
+      example: 'WZd3d289370720216aab7e3dc023e80f5f'
+
     SequelizeRecord:
       type: object
       properties:
-        createdBy:
-          type: string
-          example: 'system'
         createdAt:
           type: string
           format: date-time
           example: '2020-03-19T15:03:03.042Z'
+        createdBy:
+          type: string
+          example: 'system'
         updatedAt:
           type: string
           format: date-time
           example: '2020-04-29T22:18:19.663Z'
+        updatedBy:
+          type: string
+          example: 'system'
 
     Activity: # Unused?
       type: object
@@ -45,8 +104,7 @@ components:
           type: string
           example: Child needs help
         twilioWorkerId:
-          type: string
-          example: WZd3d289370720216aab7e3dc023e80f5f
+          $ref: '#/components/schemas/TwilioWorkerId'
 
   responses:
     UnauthorizedError:

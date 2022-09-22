@@ -29,8 +29,7 @@ import { Contact } from '../contact/contact-data-access';
  *           type: string
  *           example: open
  *         twilioWorkerId:
- *           type: string
- *           example: WZd3d289370720216aab7e3dc023e80f5f
+ *           $ref: "#/components/schemas/TwilioWorkerId"
  *         accountSid:
  *           type: string
  *           example: ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -38,7 +37,6 @@ import { Contact } from '../contact/contact-data-access';
  *       allOf:
  *         - $ref: '#/components/schemas/SequelizeRecord'
  *         - $ref: '#/components/schemas/CaseRecordBase'
- *
  */
 export type CaseRecordCommon = {
   info: any;
