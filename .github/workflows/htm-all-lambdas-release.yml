@@ -37,7 +37,7 @@ on:
 env:
   AWS_DEFAULT_REGION: ${{ env.AWS_REGION }}
   GITHUB_SHA: ${{ github.sha }}
-  DOCKER_IMAGE_BASE: 712893914485.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/hrm-lambdas-
+  DOCKER_IMAGE_BASE: 712893914485.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ inputs.environment }}/hrm-lambdas-
 
 jobs:
   build-lambdas:
@@ -117,7 +117,7 @@ jobs:
           context: ~/lambdas/src/${{ matrix.lambdas }}
           file: ~/lambdas/Dockerfile
           push: true
-          tags: ${{ env.DOCKER_IMAGE_BASE }}${{ matrix.lambdas }}:latest, ${{ env.DOCKER_IMAGE_BASE }}${{ inputs.environment }}-${{ matrix.lambdas }}:live
+          tags: ${{ env.DOCKER_IMAGE_BASE }}${{ matrix.lambdas }}:latest, ${{ env.DOCKER_IMAGE_BASE }}${{ matrix.lambdas }}:live
 
       - name: Update Lambda and Publish
         run: |

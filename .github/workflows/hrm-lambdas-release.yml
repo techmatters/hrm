@@ -45,7 +45,7 @@ on:
 env:
   AWS_DEFAULT_REGION: ${{ env.AWS_REGION }}
   GITHUB_SHA: ${{ github.sha }}
-  DOCKER_IMAGE_BASE: 712893914485.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/hrm-lambdas-${{ inputs.environment }}
+  DOCKER_IMAGE_BASE: 712893914485.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ inputs.environment }}/hrm-lambdas-
 
 jobs:
   build-lambdas:
