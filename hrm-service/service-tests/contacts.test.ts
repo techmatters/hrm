@@ -40,6 +40,7 @@ const { form, ...contact1WithRawJsonProp } = contact1 as CreateContactPayloadWit
 const server = createService({
   permissions: openPermissions,
   authTokenLookup: () => 'picernic basket',
+  enableProcessContactJobs: false,
 }).listen();
 const request = supertest.agent(server, undefined);
 

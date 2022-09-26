@@ -9,6 +9,7 @@ const models = require('../src/models');
 const server = createService({
   permissions: openPermissions,
   authTokenLookup: () => 'picernic basket',
+  enableProcessContactJobs: false,
 }).listen();
 const request = supertest.agent(server);
 
