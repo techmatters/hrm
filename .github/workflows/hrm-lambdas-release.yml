@@ -45,7 +45,7 @@ on:
 env:
   AWS_DEFAULT_REGION: ${{ env.AWS_REGION }}
   GITHUB_SHA: ${{ github.sha }}
-  DOCKER_IMAGE_BASE: 712893914485.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ inputs.environment }}-hrm-lambdas-
+  DOCKER_IMAGE_BASE: 712893914485.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/hrm-lambdas-${{ inputs.environment }}
 
 jobs:
   build-lambdas:
@@ -93,11 +93,11 @@ jobs:
           context: ~/lambdas/src/${{ inputs.lambda_name }}
           file: ~/lambdas/Dockerfile
           push: true
-          tags: ${{ env.DOCKER_IMAGE_BASE }}${{ inputs.lambda_name }}:latest, ${{ env.DOCKER_IMAGE_BASE }}/hrm-lambdas-${{ matrix.lambdas }}:${{ inputs.environment }}
+          tags: ${{ env.DOCKER_IMAGE_BASE }}${{ inputs.lambda_name }}:latest, ${{ env.DOCKER_IMAGE_BASE }}${{ matrix.lambdas }}:live
 
       - name: Update Lambda and Publish
         run: |
-          aws lambda update-function-code --function-name ${{ inputs.lambda_name }} --image-uri ${{ env.DOCKER_IMAGE_BASE }}${{ matrix.lambdas }}:${{ inputs.environment }} --publish
+          aws lambda update-function-code --function-name ${{ inputs.lambda_name }} --image-uri ${{ env.DOCKER_IMAGE_BASE }}${{ matrix.lambdas }}:live --publish
 
       # Send Slack notifying success
       - name: Slack Aselo channel

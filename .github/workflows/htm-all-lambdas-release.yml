@@ -2,14 +2,6 @@ name: '[Multi Region] Deploy HRM All Lambdas'
 on:
   workflow_dispatch:
     inputs:
-      lambda_name:
-        description: 'hrm lambda name'
-        required: true
-        default: mock
-        type: choice
-        options:
-          - mock
-
       environment:
         description: HRM environment to deploy. E.G = development, staging, production (must match with the AWS environment value). Default value = development
         default: development
@@ -45,7 +37,7 @@ on:
 env:
   AWS_DEFAULT_REGION: ${{ env.AWS_REGION }}
   GITHUB_SHA: ${{ github.sha }}
-  DOCKER_IMAGE_BASE: 712893914485.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ inputs.environment }}-hrm-lambdas-
+  DOCKER_IMAGE_BASE: 712893914485.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/hrm-lambdas-
 
 jobs:
   build-lambdas:
@@ -125,11 +117,11 @@ jobs:
           context: ~/lambdas/src/${{ matrix.lambdas }}
           file: ~/lambdas/Dockerfile
           push: true
-          tags: ${{ env.DOCKER_IMAGE_BASE }}${{ matrix.lambdas }}:latest, ${{ env.DOCKER_IMAGE_BASE }}/hrm-lambdas-${{ matrix.lambdas }}:${{ inputs.environment }}
+          tags: ${{ env.DOCKER_IMAGE_BASE }}${{ matrix.lambdas }}:latest, ${{ env.DOCKER_IMAGE_BASE }}${{ inputs.environment }}-${{ matrix.lambdas }}:live
 
       - name: Update Lambda and Publish
         run: |
-          aws lambda update-function-code --function-name ${{ matrix.lambdas }} --image-uri ${{ env.DOCKER_IMAGE_BASE }}${{ matrix.lambdas }}:${{ inputs.environment }} --publish
+          aws lambda update-function-code --function-name ${{ matrix.lambdas }} --image-uri ${{ env.DOCKER_IMAGE_BASE }}${{ matrix.lambdas }}:live --publish
 
       # Send Slack notifying success
       - name: Slack Aselo channel

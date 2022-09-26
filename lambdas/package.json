@@ -33,6 +33,6 @@
     "compile:mock": "cd src/mock && npm install && cd ../../ && npx tsc src/mock/*.ts",
     "docker:mock:build": "docker build -t lambdas-mock -f Dockerfile src/mock/.",
     "docker:mock:run": "docker run -p 9000:8080 lambdas-mock",
-    "test-mock": "curl -XPOST \"http://localhost:9000/2015-03-31/functions/function/invocations\" -d '{}'"
+    "test:mock": "curl -XPOST \"http://localhost:9000/2015-03-31/functions/function/invocations\" -d '{}'"
   }
 }
