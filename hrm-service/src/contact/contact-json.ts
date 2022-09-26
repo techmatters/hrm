@@ -4,6 +4,13 @@ export type PersonInformation = NestedInformation & {
   [key: string]: string | boolean | NestedInformation[keyof NestedInformation]; // having NestedInformation[keyof NestedInformation] makes type looser here because of this https://github.com/microsoft/TypeScript/issues/17867. Possible/future solution https://github.com/microsoft/TypeScript/pull/29317
 };
 
+export const enum ContactMediaType {
+  RECORDING = 'recording',
+  TRANSCRIPT = 'transcript',
+}
+
+export type ContactMediaUrl = { url: string; type: ContactMediaType };
+
 /**
  * This and contained types are copied from Flex
  */
@@ -17,4 +24,5 @@ export type ContactRawJson = {
     [key: string]: string | boolean | Record<string, Record<string, boolean>>;
   };
   contactlessTask?: { [key: string]: string | boolean };
+  mediaUrls?: ContactMediaUrl[];
 };
