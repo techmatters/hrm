@@ -1,5 +1,9 @@
 name: '[Multi Region] Deploy HRM Lambda'
 on:
+  push:
+    branches:
+      - CHI-1385-lambda_deploy
+
   workflow_dispatch:
     inputs:
       lambda_name:
@@ -41,6 +45,22 @@ on:
       # Should probably use the passed in region for everything but the GITHUB_ACTIONS_SLACK_BOT_TOKEN SSM parameter only exists in us-east-1
       AWS_DEFAULT_REGION:
         required: true
+    inputs:
+      environment:
+        description: HRM environment to deploy. E.G = development, staging, production (must match with the AWS environment value). Default value = development
+        type: string
+        default: development
+        required: true
+      lambda_name:
+        description: 'hrm lambda name'
+        required: true
+        default: mock
+        type: string
+      send-slack-message:
+        description: 'Specifies if should send a Slack message at the end of successful run. Defaults to true'
+        required: false
+        default: 'true'
+        type: string
 
 env:
   AWS_DEFAULT_REGION: ${{ env.AWS_REGION }}
