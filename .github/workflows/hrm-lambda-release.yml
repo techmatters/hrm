@@ -1,0 +1,111 @@
+name: '[Multi Region] Deploy HRM Lambda'
+on:
+  workflow_dispatch:
+    inputs:
+      lambda_name:
+        description: 'hrm lambda name'
+        required: true
+        default: mock
+        type: choice
+        options:
+          - mock
+
+      environment:
+        description: HRM environment to deploy. E.G = development, staging, production (must match with the AWS environment value). Default value = development
+        default: development
+        required: true
+        type: choice
+        options:
+          - development
+          - staging
+          - production
+
+      #TODO: I've mapped region to environment, below. See note there about multi-region setup
+      # region:
+      #   description: AWS region to deploy. E.G = us-east-1, eu-west-1 (must match with the AWS environment value). Default value = us-east-1
+      #   default: us-east-1
+      #   required: true
+
+      send-slack-message:
+        description: 'Specifies if should send a Slack message at the end of successful run. Defaults to true'
+        required: true
+        type: boolean
+        default: true
+
+  workflow_call:
+    secrets:
+      AWS_ACCESS_KEY_ID:
+        required: true
+      AWS_SECRET_ACCESS_KEY:
+        required: true
+      # Should probably use the passed in region for everything but the GITHUB_ACTIONS_SLACK_BOT_TOKEN SSM parameter only exists in us-east-1
+      AWS_DEFAULT_REGION:
+        required: true
+
+env:
+  AWS_DEFAULT_REGION: ${{ env.AWS_REGION }}
+  GITHUB_SHA: ${{ github.sha }}
+  DOCKER_IMAGE_BASE: 712893914485.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ inputs.environment }}/hrm-lambdas-
+
+jobs:
+  build-lambdas:
+    name: Build Lambdas
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 14.x
+
+      # I still don't have full understanding of the region differences between env, but this is an option for skipping the region input
+      # if each env has multiple regions, this could be output and another matrix job could be produced to deploy to each region
+      - name: Set Env Based on Environment
+
+        run: |
+          case "${{ inputs.environment }}" in development) region="eu-west-1" ;; staging) region="eu-west-1" ;; production) region="eu-west-1" ;; *) echo "Invalid environment: ${{ inputs.environment }}" && exit 1 ;; esac &&
+          echo AWS_REGION=$region >> $GITHUB_ENV
+
+      - name: Compile Lambda
+        run: |
+          cd lambdas
+          npm ci
+          npm run compile-${{ inputs.lambda_name }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      # build and push the image
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v2
+        with:
+          context: ~/lambdas/src/${{ inputs.lambda_name }}
+          file: ~/lambdas/Dockerfile
+          push: true
+          tags: ${{ env.DOCKER_IMAGE_BASE }}${{ inputs.lambda_name }}:latest, ${{ env.DOCKER_IMAGE_BASE }}${{ matrix.lambdas }}:live
+
+      - name: Update Lambda and Publish
+        run: |
+          aws lambda update-function-code --function-name ${{ inputs.lambda_name }} --image-uri ${{ env.DOCKER_IMAGE_BASE }}${{ matrix.lambdas }}:live --publish
+
+      # Send Slack notifying success
+      - name: Slack Aselo channel
+        id: slack
+        uses: slackapi/slack-github-action@v1.14.0
+        with:
+          channel-id: ${{ env.ASELO_DEPLOYS_CHANNEL_ID }}
+          slack-message: '`[HRM lambdas - ${{ inputs.lambda_name }}]` Action ${{ github.workflow }} completed with SHA ${{ github.sha }} to region `${{ env.AWS_REGION }}`, environment `${{ inputs.environment }}` :rocket:.'
+        env:
+          SLACK_BOT_TOKEN: ${{ env.GITHUB_ACTIONS_SLACK_BOT_TOKEN }}
+        if: ${{ inputs.send-slack-message != 'false' }}
