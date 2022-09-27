@@ -3,10 +3,10 @@ import { Contact } from '../contact/contact-data-access';
 import { COMPLETE_JOB_SQL, PULL_DUE_JOBS_SQL } from './sql/contact-job-sql';
 
 export const enum ContactJobType {
-  TEST_CONTACT_JOB = 'test-contact-job',
+  RETRIEVE_CONTACT_TRANSCRIPT = 'retrieve-contact-transcript',
 }
 
-type Job<TComplete = any, TAdditional = any> = {
+type Job<TComplete = unknown, TAdditional = unknown> = {
   id: number;
   resource: Contact;
   completed?: Date;
@@ -14,9 +14,11 @@ type Job<TComplete = any, TAdditional = any> = {
   additionalPayload: TAdditional;
 };
 
-export type TestContactJob = Job & { jobType: ContactJobType.TEST_CONTACT_JOB };
+export type RetrieveContactTranscriptJob = Job<string[], undefined> & {
+  jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT;
+};
 
-export type ContactJob = TestContactJob;
+export type ContactJob = RetrieveContactTranscriptJob;
 
 /**
  * Returns all the jobs that are considered 'due'
