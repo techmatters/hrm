@@ -19,3 +19,10 @@ process.env.PERMISSIONS_notConfigured = '';
 process.env.PERMISSIONS_notExistsInRulesMap = 'notExistsInRulesMap';
 
 process.env.INCLUDE_ERROR_IN_RESPONSE = true;
+
+if (!process.env.ENABLE_TEST_DEBUG) {
+  console.log = jest.fn(() => {});
+  console.error = jest.fn(() => {});
+  console.warn = jest.fn(() => {});
+  console.debug = jest.fn(() => {});
+}
