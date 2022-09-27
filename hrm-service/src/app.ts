@@ -70,7 +70,17 @@ export function createService({
   });
 
   if (enableProcessContactJobs) {
-    processContactJobs();
+    const processorIntervalId = processContactJobs();
+
+    const gracefulExit = () => {
+      clearInterval(processorIntervalId);
+    };
+
+    app.on('close', gracefulExit);
+    // @ts-ignore
+    app.close = () => {
+      app.emit('close');
+    };
   }
 
   console.log(`${new Date(Date.now()).toLocaleString()}: app.js has been created`);
