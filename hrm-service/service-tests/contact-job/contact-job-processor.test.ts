@@ -1,10 +1,6 @@
 import supertest from 'supertest';
 import timers from 'timers';
 
-jest.spyOn(console, 'log').mockImplementation(() => {});
-jest.spyOn(console, 'warn').mockImplementation(() => {});
-jest.spyOn(console, 'error').mockImplementation(() => {});
-
 const wait = async (ms: number) => {
   const p = new Promise(resolve => setTimeout(resolve, ms));
   return p;
@@ -14,6 +10,7 @@ let server;
 let createService;
 let contactJobProcessor;
 let contactJobComplete;
+let contactJobDataAccess;
 let contactJobPublish;
 
 const startServer = () => {
@@ -37,6 +34,7 @@ beforeEach(() => {
     createService = require('../../src/app').createService;
     contactJobProcessor = require('../../src/contact-job/contact-job-processor');
     contactJobComplete = require('../../src/contact-job/contact-job-complete');
+    contactJobDataAccess = require('../../src/contact-job/contact-job-data-access');
     contactJobPublish = require('../../src/contact-job/contact-job-publish');
   });
 });
@@ -81,9 +79,11 @@ describe('processContactJobs', () => {
 
   test('swipes are as expected', async () => {
     jest.spyOn(contactJobProcessor, 'getProcessingInterval').mockImplementation(() => 10);
+    // Since above number is very small, we need to mock any async operation (like DB ops)
     const processorSpy = jest.spyOn(contactJobProcessor, 'processContactJobs');
-    const completeSpy = jest.spyOn(contactJobComplete, 'processCompleteContactJobs');
-    const publishSpy = jest.spyOn(contactJobPublish, 'publishPendingContactJobs');
+    const completeSpy = jest.spyOn(contactJobComplete, 'pollAndprocessCompletedContactJobs');
+    jest.spyOn(contactJobDataAccess, 'pullDueContactJobs').mockImplementation(() => []);
+    const publishSpy = jest.spyOn(contactJobPublish, 'publishDueContactJobs');
 
     startServer();
 
@@ -105,7 +105,7 @@ describe('processContactJobs', () => {
     const errorSpy = jest.spyOn(console, 'error');
     const processorSpy = jest.spyOn(contactJobProcessor, 'processContactJobs');
     const completeSpy = jest
-      .spyOn(contactJobComplete, 'processCompleteContactJobs')
+      .spyOn(contactJobComplete, 'pollAndprocessCompletedContactJobs')
       .mockImplementationOnce(() => {
         throw new Error('Aaaw, snap!');
       });
