@@ -79,8 +79,8 @@ jobs:
         with:
           node-version: 14.x
 
-      # I still don't have full understanding of the region differences between env, but this is an option for skipping the region input
-      # if each env has multiple regions, this could be output and another matrix job could be produced to deploy to each region
+      #TODO: make decision about public ECR/dockerhub repo and maintaining ability to deploy different code to different regions
+      # then set up matrix update for lambda if we go that direction, or move back to region based option for input
       - name: Set Env Based on Environment
 
         run: |
@@ -123,6 +123,7 @@ jobs:
           push: true
           tags: ${{ env.DOCKER_IMAGE_BASE }}${{ env.LAMBDA_NAME }}:live
 
+      #TODO: simplify and namespace the lamda name to make this substitution easier
       - name: Update Lambda and Publish
         run: |
           aws lambda update-function-code --function-name contact-job-processor-${{ env.LAMBDA_NAME }}-lambda --image-uri ${{ env.DOCKER_IMAGE_BASE }}${{ env.LAMBDA_NAME }}:live --publish
