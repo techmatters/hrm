@@ -121,7 +121,7 @@ jobs:
           context: ./lambdas/src/${{ env.LAMBDA_NAME }}
           file: ./lambdas/Dockerfile
           push: true
-          tags: ${{ env.DOCKER_IMAGE_BASE }}${{ env.LAMBDA_NAME }}:latest, ${{ env.DOCKER_IMAGE_BASE }}${{ env.LAMBDA_NAME }}:live
+          tags: ${{ env.DOCKER_IMAGE_BASE }}${{ env.LAMBDA_NAME }}:live
 
       - name: Update Lambda and Publish
         run: |
