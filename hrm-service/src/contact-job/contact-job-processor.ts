@@ -1,7 +1,7 @@
 import { setInterval } from 'timers';
 import { subMilliseconds } from 'date-fns';
 import { pullDueContactJobs } from './contact-job-data-access';
-import { processCompleteContactJobs } from './contact-job-complete';
+import { pollAndprocessCompletedContactJobs } from './contact-job-complete';
 import { publishDueContactJobs } from './contact-job-publish';
 
 let processingJobs = false;
@@ -20,7 +20,7 @@ export function processContactJobs() {
     return setInterval(async () => {
       try {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const completedJobs = await processCompleteContactJobs();
+        const completedJobs = await pollAndprocessCompletedContactJobs();
 
         const dueContactJobs = await pullDueContactJobs(
           subMilliseconds(new Date(), getRetryInterval()),
