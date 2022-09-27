@@ -11,16 +11,19 @@ type ContactJobMessageCommons = {
 
 //====== Message payloads to publish for pending contact jobs ======//
 
-export type PublishTestContactJob = ContactJobMessageCommons & {
-  jobType: ContactJobType.TEST_CONTACT_JOB;
+export type PublishRetrieveContactTranscript = ContactJobMessageCommons & {
+  jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT;
+  serviceSid: Contact['serviceSid'];
+  channelSid: Contact['channelSid'];
+  filePath: string; // the file name as we want to save the transctipr in S3
 };
 
-export type PublishToContactJobsTopicParams = PublishTestContactJob;
+export type PublishToContactJobsTopicParams = PublishRetrieveContactTranscript;
 
 //====== Message payloads expected for the completed contact jobs ======//
 
-export type TestContactJobCompleted = PublishTestContactJob & {
+export type CompletedRetrieveContactTranscript = PublishRetrieveContactTranscript & {
   completionPayload: string;
 };
 
-export type CompletedContactJobBody = TestContactJobCompleted;
+export type CompletedContactJobBody = CompletedRetrieveContactTranscript;

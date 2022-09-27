@@ -6,12 +6,27 @@ export const enum ContactJobType {
   RETRIEVE_CONTACT_TRANSCRIPT = 'retrieve-contact-transcript',
 }
 
-type Job<TComplete = unknown, TAdditional = unknown> = {
+// Reflects the actual shape of a record in the ContactJobs table
+type ContactJobRecord = {
   id: number;
-  resource: Contact;
+  contactId: number;
+  accountSid: string;
+  jobType: string;
+  requested: Date;
   completed?: Date;
+  lastAttempt?: Date;
+  numberOfAttempts: number;
+  additionalPayload: any;
+  completionPayload: any;
+};
+
+// ContactJob base interface, picks the properties used from ContactJobRecord plus the resource Contact
+type Job<TComplete = any, TAdditional = any> = {
+  id: ContactJobRecord['id'];
+  completed?: ContactJobRecord['completed'];
   completionPayload?: TComplete;
   additionalPayload: TAdditional;
+  resource: Contact;
 };
 
 export type RetrieveContactTranscriptJob = Job<string[], undefined> & {
@@ -28,8 +43,8 @@ export type ContactJob = RetrieveContactTranscriptJob;
  * @param lastAttemptedBefore
  */
 export const pullDueContactJobs = async (lastAttemptedBefore: Date): Promise<ContactJob[]> => {
-  return db.task(conn => {
-    return conn.manyOrNone<ContactJob>(PULL_DUE_JOBS_SQL, {
+  return db.task(tx => {
+    return tx.manyOrNone<ContactJob>(PULL_DUE_JOBS_SQL, {
       lastAttemptedBefore: lastAttemptedBefore.toISOString(),
     });
   });
@@ -43,7 +58,7 @@ export const pullDueContactJobs = async (lastAttemptedBefore: Date): Promise<Con
 export const completeContactJob = async (
   id: number,
   completionPayload: any,
-): Promise<ContactJob> => {
+): Promise<ContactJobRecord> => {
   return db.task(tx => {
     return tx.oneOrNone(COMPLETE_JOB_SQL, { id, completionPayload });
   });
