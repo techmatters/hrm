@@ -121,11 +121,11 @@ jobs:
           context: ~/lambdas/src/${{ env.LAMBDA_NAME }}
           file: ~/lambdas/Dockerfile
           push: true
-          tags: ${{ env.DOCKER_IMAGE_BASE }}${{ env.LAMBDA_NAME }}:latest, ${{ env.DOCKER_IMAGE_BASE }}${{ matrix.lambdas }}:live
+          tags: ${{ env.DOCKER_IMAGE_BASE }}${{ env.LAMBDA_NAME }}:latest, ${{ env.DOCKER_IMAGE_BASE }}${{ env.LAMBDA_NAME }}:live
 
       - name: Update Lambda and Publish
         run: |
-          aws lambda update-function-code --function-name ${{ env.LAMBDA_NAME }} --image-uri ${{ env.DOCKER_IMAGE_BASE }}${{ matrix.lambdas }}:live --publish
+          aws lambda update-function-code --function-name ${{ env.LAMBDA_NAME }} --image-uri ${{ env.DOCKER_IMAGE_BASE }}${{ env.LAMBDA_NAME }}:live --publish
 
       # Send Slack notifying success
       - name: Slack Aselo channel
