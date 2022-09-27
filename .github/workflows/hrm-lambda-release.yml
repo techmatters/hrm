@@ -84,8 +84,15 @@ jobs:
       - name: Set Env Based on Environment
 
         run: |
-          echo inputs.environment: ${{ inputs.environment }}
-          case "${{ inputs.environment }}" in development) region="eu-west-1" ;; staging) region="eu-west-1" ;; production) region="eu-west-1" ;; *) echo "Invalid environment: ${{ inputs.environment }}" && exit 1 ;; esac
+          INPUT_ENVIRONMENT=${{ inputs.environment }}
+          INPUT_LAMBDA_NAME=${{ inputs.lambda_name }}
+          ENVIRONMENT=${INPUT_ENVIRONMENT:-development}
+          LAMBDA_NAME=${INPUT_LAMBDA_NAME:-mock}
+
+          echo ENVIRONMENT=$ENVIRONMENT >> $GITHUB_ENV
+          echo LAMBDA_NAME=$LAMBDA_NAME >> $GITHUB_ENV
+
+          case "$ENVIRONMENT" in development) region="eu-west-1" ;; staging) region="eu-west-1" ;; production) region="eu-west-1" ;; *) echo "Invalid environment: ${{ inputs.environment }}" && exit 1 ;; esac
           echo AWS_REGION=$region >> $GITHUB_ENV
           echo AWS_DEFAULT_REGION=$region >> $GITHUB_ENV
           echo DOCKER_IMAGE_BASE=712893914485.dkr.ecr.${region}.amazonaws.com/${{ inputs.environment }}/hrm-lambdas- >> $GITHUB_ENV
@@ -94,7 +101,7 @@ jobs:
         run: |
           cd lambdas
           npm ci
-          npm run compile-${{ inputs.lambda_name }}
+          npm run compile-${{ env.LAMBDA_NAME }}
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -111,14 +118,14 @@ jobs:
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v2
         with:
-          context: ~/lambdas/src/${{ inputs.lambda_name }}
+          context: ~/lambdas/src/${{ env.LAMBDA_NAME }}
           file: ~/lambdas/Dockerfile
           push: true
-          tags: ${{ env.DOCKER_IMAGE_BASE }}${{ inputs.lambda_name }}:latest, ${{ env.DOCKER_IMAGE_BASE }}${{ matrix.lambdas }}:live
+          tags: ${{ env.DOCKER_IMAGE_BASE }}${{ env.LAMBDA_NAME }}:latest, ${{ env.DOCKER_IMAGE_BASE }}${{ matrix.lambdas }}:live
 
       - name: Update Lambda and Publish
         run: |
-          aws lambda update-function-code --function-name ${{ inputs.lambda_name }} --image-uri ${{ env.DOCKER_IMAGE_BASE }}${{ matrix.lambdas }}:live --publish
+          aws lambda update-function-code --function-name ${{ env.LAMBDA_NAME }} --image-uri ${{ env.DOCKER_IMAGE_BASE }}${{ matrix.lambdas }}:live --publish
 
       # Send Slack notifying success
       - name: Slack Aselo channel
@@ -126,7 +133,7 @@ jobs:
         uses: slackapi/slack-github-action@v1.14.0
         with:
           channel-id: ${{ env.ASELO_DEPLOYS_CHANNEL_ID }}
-          slack-message: '`[HRM lambdas - ${{ inputs.lambda_name }}]` Action ${{ github.workflow }} completed with SHA ${{ github.sha }} to region `${{ env.AWS_REGION }}`, environment `${{ inputs.environment }}` :rocket:.'
+          slack-message: '`[HRM lambdas - ${{ env.LAMBDA_NAME }}]` Action ${{ github.workflow }} completed with SHA ${{ github.sha }} to region `${{ env.AWS_REGION }}`, environment `${{ env.ENVIRONMENT }}` :rocket:.'
         env:
           SLACK_BOT_TOKEN: ${{ env.GITHUB_ACTIONS_SLACK_BOT_TOKEN }}
         if: ${{ inputs.send-slack-message != 'false' }}
