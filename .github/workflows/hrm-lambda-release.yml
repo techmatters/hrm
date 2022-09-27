@@ -101,7 +101,7 @@ jobs:
         run: |
           cd lambdas
           npm ci
-          npm run compile-${{ env.LAMBDA_NAME }}
+          npm run compile:${{ env.LAMBDA_NAME }}
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
