@@ -2,15 +2,6 @@ name: 'Deploy HRM Lambda'
 on:
   workflow_dispatch:
     inputs:
-      lambda_name:
-        description: 'hrm lambda name'
-        required: true
-        default: retrieve-recording-url
-        type: choice
-        options:
-          - retrieve-recording-url
-          - retrieve-transcript
-
       environment:
         description: HRM environment to deploy. E.G = development, staging, production (must match with the AWS environment value). Default value = development
         default: development
@@ -21,11 +12,14 @@ on:
           - staging
           - production
 
-      send-slack-message:
-        description: 'Specifies if should send a Slack message at the end of successful run. Defaults to true'
+      lambda_name:
+        description: 'hrm lambda name'
         required: true
-        type: boolean
-        default: true
+        default: retrieve-recording-url
+        type: choice
+        options:
+          - retrieve-recording-url
+          - retrieve-transcript
 
   workflow_call:
     secrets:
@@ -36,6 +30,22 @@ on:
       # Should probably use the passed in region for everything but the GITHUB_ACTIONS_SLACK_BOT_TOKEN SSM parameter only exists in us-east-1
       AWS_DEFAULT_REGION:
         required: true
+    inputs:
+      environment:
+        description: HRM environment to deploy. E.G = development, staging, production (must match with the AWS environment value). Default value = development
+        type: string
+        default: development
+        required: true
+      lambda_name:
+        description: 'hrm lambda name'
+        required: true
+        default: retrieve-recording-url
+        type: string
+      send-slack-message:
+        description: 'Specifies if should send a Slack message at the end of successful run. Defaults to true'
+        required: false
+        default: 'true'
+        type: string
 
 env:
   GITHUB_SHA: ${{ github.sha }}
