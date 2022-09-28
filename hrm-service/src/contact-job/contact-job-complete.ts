@@ -8,7 +8,7 @@ import { appendMediaUrls } from '../contact/contact-data-access';
 import { ContactMediaType } from '../contact/contact-json';
 import { assertExhaustive } from './assertExhaustive';
 
-const processCompletedRetrieveContactTranscript = async (
+export const processCompletedRetrieveContactTranscript = async (
   completedJob: CompletedRetrieveContactTranscript,
 ) => {
   return appendMediaUrls(completedJob.accountSid, completedJob.contactId, [
@@ -35,30 +35,33 @@ export const pollAndprocessCompletedContactJobs = async () => {
 
   const { Messages: messages } = polledCompletedJobs;
 
-  if (Array.isArray(messages) && messages.length) {
-    const completedJobs = await Promise.allSettled(
-      messages.map(async m => {
-        try {
-          const completedJob: CompletedContactJobBody = JSON.parse(m.Body);
-
-          await processCompletedContactJob(completedJob);
-
-          // Mark the job as completed
-          const markedComplete = await completeContactJob(
-            completedJob.jobId,
-            completedJob.completionPayload,
-          );
-
-          // Delete the message from the queue (this could be batched)
-          await deletedCompletedContactJobs(m.ReceiptHandle);
-
-          return markedComplete;
-        } catch (err) {
-          console.error('Failed to process completed CompletedContactJobBody:', m, err);
-        }
-      }),
-    );
-
-    return completedJobs;
+  if (!Array.isArray(messages)) {
+    throw new Error(`polledCompletedJobs returned invalid messages format ${messages}`);
   }
+
+  const completedJobs = await Promise.allSettled(
+    messages.map(async m => {
+      try {
+        const completedJob: CompletedContactJobBody = JSON.parse(m.Body);
+
+        await processCompletedContactJob(completedJob);
+
+        // Mark the job as completed
+        const markedComplete = await completeContactJob(
+          completedJob.jobId,
+          completedJob.completionPayload,
+        );
+
+        // Delete the message from the queue (this could be batched)
+        await deletedCompletedContactJobs(m.ReceiptHandle);
+
+        return markedComplete;
+      } catch (err) {
+        console.error('Failed to process CompletedContactJobBody:', m, err);
+        return Promise.reject(err);
+      }
+    }),
+  );
+
+  return completedJobs;
 };
