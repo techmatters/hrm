@@ -1,10 +1,5 @@
 name: 'Deploy HRM Lambda'
 on:
-  #TODO: remove this before merging to master.
-  push:
-    branches:
-      - CHI-*
-
   workflow_dispatch:
     inputs:
       lambda_name:
@@ -46,8 +41,8 @@ env:
   GITHUB_SHA: ${{ github.sha }}
 
 jobs:
-  build-lambdas:
-    name: Build Lambdas
+  build-lambda:
+    name: Build And Deploy Lambda
     runs-on: ubuntu-latest
 
     steps:
@@ -61,7 +56,7 @@ jobs:
 
       #TODO: Move to a matrix based region split for the ECR/update lambda steps
       - name: Set Env Based on Environment
-
+        # this is overcomplicated to allow for testing with a push event
         run: |
           INPUT_ENVIRONMENT=${{ inputs.environment }}
           INPUT_LAMBDA_NAME=${{ inputs.lambda_name }}
