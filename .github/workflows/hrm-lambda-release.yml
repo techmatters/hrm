@@ -10,10 +10,11 @@ on:
       lambda_name:
         description: 'hrm lambda name'
         required: true
-        default: mock
+        default: retrieve-recording-url
         type: choice
         options:
-          - mock
+          - retrieve-recording-url
+          - retrieve-transcript
 
       environment:
         description: HRM environment to deploy. E.G = development, staging, production (must match with the AWS environment value). Default value = development
@@ -46,22 +47,6 @@ on:
       # Should probably use the passed in region for everything but the GITHUB_ACTIONS_SLACK_BOT_TOKEN SSM parameter only exists in us-east-1
       AWS_DEFAULT_REGION:
         required: true
-    inputs:
-      environment:
-        description: HRM environment to deploy. E.G = development, staging, production (must match with the AWS environment value). Default value = development
-        type: string
-        default: development
-        required: true
-      lambda_name:
-        description: 'hrm lambda name'
-        required: true
-        default: mock
-        type: string
-      send-slack-message:
-        description: 'Specifies if should send a Slack message at the end of successful run. Defaults to true'
-        required: false
-        default: 'true'
-        type: string
 
 env:
   GITHUB_SHA: ${{ github.sha }}
@@ -88,7 +73,7 @@ jobs:
           INPUT_ENVIRONMENT=${{ inputs.environment }}
           INPUT_LAMBDA_NAME=${{ inputs.lambda_name }}
           ENVIRONMENT=${INPUT_ENVIRONMENT:-development}
-          LAMBDA_NAME=${INPUT_LAMBDA_NAME:-mock}
+          LAMBDA_NAME=${INPUT_LAMBDA_NAME:-retrieve-transcript}
 
           echo ENVIRONMENT=$ENVIRONMENT >> $GITHUB_ENV
           echo LAMBDA_NAME=$LAMBDA_NAME >> $GITHUB_ENV
@@ -127,7 +112,7 @@ jobs:
       #TODO: simplify and namespace the lamda name to make this substitution easier
       - name: Update Lambda and Publish
         run: |
-          aws lambda update-function-code --function-name contact-job-processor-${{ env.LAMBDA_NAME }}-lambda --image-uri ${{ env.DOCKER_IMAGE_BASE }}${{ env.LAMBDA_NAME }}:live --publish
+          aws lambda update-function-code --function-name ${{ env.ENVIRONMENT }}-hrm-contact-job-${{ env.LAMBDA_NAME }} --image-uri ${{ env.DOCKER_IMAGE_BASE }}${{ env.LAMBDA_NAME }}:live --publish
 
       # Send Slack notifying success
       - name: Slack Aselo channel

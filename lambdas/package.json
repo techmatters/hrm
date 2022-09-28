@@ -29,10 +29,15 @@
     "typescript": "^4.1.5"
   },
   "scripts": {
-    "compile": "run-p compile:mock",
-    "compile:mock": "cd src/mock && npm install && cd ../../ && npx tsc src/mock/*.ts",
-    "docker:mock:build": "docker build -t lambdas-mock -f Dockerfile src/mock/.",
-    "docker:mock:run": "docker run -p 9000:8080 lambdas-mock",
-    "test:mock": "curl -XPOST \"http://localhost:9000/2015-03-31/functions/function/invocations\" -d '{}'"
+    "compile": "run-p compile:retrieve-recording-url compile:retrieve-transcript",
+    "compile:retrieve-recording-url": "cd src/retrieve-recording-url && npm install && cd ../../ && npx tsc src/retrieve-recording-url/*.ts",
+    "compile:retrieve-transcript": "cd src/retrieve-recording-url && npm install && cd ../../ && npx tsc src/retrieve-recording-url/*.ts",
+    "docker:build": "run-p docker:build:retrieve-recording-url docker:build:retrieve-transcript",
+    "docker:build:retrieve-recording-url": "docker build -t lambdas-retrieve-recording-url -f Dockerfile src/retrieve-recording-url/.",
+    "docker:build:retrieve-transcript": "docker build -t lambdas-retrieve-recording-url -f Dockerfile src/retrieve-recording-url/.",
+    "docker:run:retrieve-recording-url": "docker run -p 9000:8080 lambdas-retrieve-recording-url",
+    "docker:run:retrieve-transcript": "docker run -p 9000:8080 lambdas-retrieve-recording-url",
+    "test:retrieve-recording-url": "curl -XPOST \"http://localhost:9000/2015-03-31/functions/function/invocations\" -d '{}'",
+    "test:retrieve-transcript": "curl -XPOST \"http://localhost:9000/2015-03-31/functions/function/invocations\" -d '{}'"
   }
 }

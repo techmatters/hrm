@@ -1,6 +1,6 @@
 {
-  "name": "mock",
-  "version": "1.0.0",
+  "name": "retrieve-recording-url",
+  "version": "0.1",
   "description": "",
   "main": "index.js",
   "scripts": {
