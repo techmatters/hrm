@@ -33,6 +33,7 @@ import * as contactApi from '../src/contact/contact';
 import * as contactDb from '../src/contact/contact-data-access';
 import { openPermissions } from '../src/permissions/json-permissions';
 import * as proxiedEndpoints from './external-service-stubs/proxied-endpoints';
+import { ContactJobType } from '../src/contact-job/contact-job-data-access';
 
 const { form, ...contact1WithRawJsonProp } = contact1 as CreateContactPayloadWithFormProperty;
 
@@ -80,6 +81,14 @@ const cleanupContacts = () =>
   `),
   );
 
+const cleanupContactsJobs = () =>
+  db.task(t =>
+    t.none(`
+      DELETE FROM "ContactJobs" 
+      WHERE "accountSid" IN ('', '${accountSid}')
+  `),
+  );
+
 /**
  * We could move this to contact data access, but since is something we only want in test suits, it might be better this way
  */
@@ -90,6 +99,15 @@ const deleteContactById = (id: number, accountSid: string) =>
       DELETE FROM "Contacts" 
       WHERE "id" = ${id} AND "accountSid" = '${accountSid}';
   `),
+  );
+
+// eslint-disable-next-line @typescript-eslint/no-shadow
+const selectJobsByContactId = (contactId: number, accountSid: string) => 
+  db.task(t =>
+    t.manyOrNone(`
+      SELECT * FROM "ContactJobs"
+      WHERE "contactId" = ${contactId} AND "accountSid" = '${accountSid}';
+    `),
   );
 
 
@@ -114,12 +132,14 @@ beforeAll(async () => {
   await proxiedEndpoints.start();
   await proxiedEndpoints.mockSuccessfulTwilioAuthentication(workerSid);
   await CSAMReport.destroy(query);
+  await cleanupContactsJobs();
   await cleanupContacts();
   await cleanupCases();
 });
 
 afterAll(async () => {
   await CSAMReport.destroy(query);
+  await cleanupContactsJobs();
   await cleanupContacts();
   await cleanupCases();
   await proxiedEndpoints.stop();
@@ -321,6 +341,40 @@ describe('/contacts route', () => {
       await CSAMReport.destroy({ where: { contactId: response.body.id } });
       await deleteContactById(response.body.id, response.body.accountSid);
     });
+
+    each(
+      contactApi.chatChannels.map(channel => ({
+        channel,
+        contact: { ...withTaskId, channel, taskId: `${withTaskId}-${channel}` },
+      }))).test(
+      `contacts with channel type $channel should create ${ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT} job`,
+      async ({ contact }) => {
+        const res = await request
+          .post(route)
+          .set(headers)
+          .send(contact);
+
+        expect(res.status).toBe(200);
+        
+        const createdContact = await contactDb.getById(accountSid, res.body.id);
+        const jobs = await selectJobsByContactId(createdContact.id, createdContact.accountSid);
+
+        const retrieveContactTranscriptJobs = jobs.filter(j => j.jobType === ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT);
+        expect(retrieveContactTranscriptJobs).toHaveLength(1);
+
+        // Test that idempotence applies to jobs too
+        const res2 = await request
+        .post(route)
+        .set(headers)
+        .send(contact);
+
+        expect(res2.status).toBe(200);
+        const jobs2 = await selectJobsByContactId(res.body.id, res.body.accountSid);
+
+        const retrieveContactTranscriptJobs2 = jobs2.filter(j => j.jobType === ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT);
+        expect(retrieveContactTranscriptJobs2).toHaveLength(1);
+      },
+    );
   });
 
   const compareTimeOfContactDesc = (c1, c2) =>
@@ -345,6 +399,7 @@ describe('/contacts route', () => {
       beforeAll(async () => {
         // Clean what's been created so far
         await CSAMReport.destroy(query);
+        await cleanupContactsJobs();
         await cleanupContacts();
         await cleanupCases();
 

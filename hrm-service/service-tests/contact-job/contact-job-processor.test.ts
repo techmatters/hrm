@@ -26,7 +26,6 @@ const startServer = () => {
 const stopServer = async () => {
   if (server && server.close) await server.close();
   server = null;
-  await wait(100);
 };
 
 beforeEach(() => {
@@ -41,7 +40,6 @@ beforeEach(() => {
 
 afterEach(async () => {
   await stopServer();
-  // jest.resetModules();
   jest.clearAllMocks();
 });
 
