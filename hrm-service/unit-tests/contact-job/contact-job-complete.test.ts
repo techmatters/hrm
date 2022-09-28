@@ -44,7 +44,7 @@ describe('pollAndprocessCompletedContactJobs', () => {
 
     jest
       .spyOn(contactJobDataAccess, 'completeContactJob')
-      .mockImplementation(async () => validPayload as any);
+      .mockImplementation(async () => 'done' as any);
 
     const result = await contactJobComplete.pollAndprocessCompletedContactJobs();
 
@@ -58,8 +58,51 @@ describe('pollAndprocessCompletedContactJobs', () => {
 
     expect(result[0].status).toBe('rejected');
     expect(result[1].status).toBe('fulfilled');
+  });
 
-    console.log(result);
+  test('If a job fails, it does not shuts down other jobs', async () => {
+    const validPayload1 = {
+      Body: JSON.stringify({
+        jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
+      }),
+      ReceiptHandle: 'valid',
+    };
+
+    const validPayload2 = {
+      Body: JSON.stringify({
+        jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
+      }),
+      ReceiptHandle: 'valid',
+    };
+
+    jest.spyOn(SQSClient, 'pollCompletedContactJobs').mockImplementation(async () => ({
+      Messages: [validPayload1, validPayload2],
+    }));
+    const errorSpy = jest.spyOn(console, 'error');
+    const processCompletedRetrieveContactTranscriptSpy = jest
+      .spyOn(contactJobComplete, 'processCompletedRetrieveContactTranscript')
+      .mockImplementation(async () => {});
+
+    processCompletedRetrieveContactTranscriptSpy.mockImplementationOnce(() => {
+      throw new Error(':sad_trombone:');
+    });
+
+    jest
+      .spyOn(contactJobDataAccess, 'completeContactJob')
+      .mockImplementation(async () => 'done' as any);
+
+    const result = await contactJobComplete.pollAndprocessCompletedContactJobs();
+
+    expect(processCompletedRetrieveContactTranscriptSpy).toHaveBeenCalledTimes(2);
+    expect(errorSpy).toHaveBeenCalledTimes(1);
+    expect(errorSpy).toHaveBeenCalledWith(
+      'Failed to process CompletedContactJobBody:',
+      validPayload1,
+      new Error(':sad_trombone:'),
+    );
+
+    expect(result[0].status).toBe('rejected');
+    expect(result[1].status).toBe('fulfilled');
   });
 
   test('RETRIEVE_CONTACT_TRANSCRIPT job is processed accordingly', async () => {
@@ -100,7 +143,5 @@ describe('pollAndprocessCompletedContactJobs', () => {
     expect(deletedCompletedContactJobsSpy).toHaveBeenCalledWith(validPayload.ReceiptHandle);
 
     expect(result[0].status).toBe('fulfilled');
-
-    console.log(result);
   });
 });
