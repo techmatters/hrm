@@ -1,8 +1,9 @@
 name: '[Multi Region] Deploy HRM Lambda'
 on:
+  #TODO: remove this before merging to master.
   push:
     branches:
-      - CHI-1385-lambda_deploy
+      - CHI-*
 
   workflow_dispatch:
     inputs:
