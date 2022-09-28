@@ -1,7 +1,7 @@
 FROM public.ecr.aws/lambda/nodejs:14
 
-# Assumes your function is named "app.js", and there is a package.json file in the app directory
-COPY *.js package.json  ${LAMBDA_TASK_ROOT}
+# Copy script files and package.json to lambda root
+COPY *.js package.json ${LAMBDA_TASK_ROOT}
 
 # Install NPM dependencies for function
 RUN npm install

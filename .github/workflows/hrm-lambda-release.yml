@@ -1,4 +1,4 @@
-name: '[Multi Region] Deploy HRM Lambda'
+name: 'Deploy HRM Lambda'
 on:
   #TODO: remove this before merging to master.
   push:
