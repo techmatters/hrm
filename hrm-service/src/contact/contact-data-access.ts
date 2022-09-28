@@ -125,27 +125,23 @@ const searchParametersToQueryParameters = (
   return queryParams;
 };
 
+export const getByTaskId = async (accountSid: string, newContact: NewContactRecord) => {
+  return db.task(connection =>
+    connection.oneOrNone<Contact>(selectSingleContactByTaskId('Contacts'), {
+      accountSid,
+      taskId: newContact.taskId,
+    }),
+  );
+};
+
 export const create = async (
   accountSid: string,
   newContact: NewContactRecord,
   csamReportIds: number[],
-): Promise<{ contact: Contact; isNewContact: boolean }> => {
+): Promise<Contact> => {
   return db.tx(async connection => {
-    if (newContact.taskId) {
-      const existingContact: Contact = await connection.oneOrNone<Contact>(
-        selectSingleContactByTaskId('Contacts'),
-        {
-          accountSid,
-          taskId: newContact.taskId,
-        },
-      );
-      if (existingContact) {
-        // A contact with the same task ID already exists, return it
-        return { contact: existingContact, isNewContact: false };
-      }
-    }
     const now = new Date();
-    const updatedContact: Contact = await connection.one<Contact>(
+    const created: Contact = await connection.one<Contact>(
       insertContactSql({
         ...newContact,
         accountSid,
@@ -154,7 +150,7 @@ export const create = async (
       }),
       { csamReportIds },
     );
-    return { contact: updatedContact, isNewContact: true };
+    return created;
   });
 };
 

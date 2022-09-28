@@ -69,12 +69,7 @@ describe('create', () => {
     mockTransaction(conn);
 
     jest.spyOn(conn, 'one').mockResolvedValue(returnValue);
-    jest.spyOn(conn, 'oneOrNone').mockResolvedValue(undefined);
     const created = await create('parameter account-sid', sampleContactWithTaskId, [3, 2, 1]);
-    expect(conn.oneOrNone).toHaveBeenCalledWith(expect.stringContaining('Contacts'), {
-      accountSid: 'parameter account-sid',
-      taskId: 'A TASK',
-    });
     expect(insertContactSql).toHaveBeenCalledWith({
       ...sampleContactWithTaskId,
       updatedAt: expect.anything(),
@@ -88,22 +83,6 @@ describe('create', () => {
       }),
     );
     expect(created).toStrictEqual(returnValue);
-  });
-
-  test('Task ID specified in payload that is already associated with a contact - creates nothing and returns existing contact', async () => {
-    const existingValue = new ContactBuilder().build();
-    const sampleContactWithTaskId = { ...sampleNewContact, taskId: 'A TASK' };
-    mockTransaction(conn);
-
-    jest.spyOn(conn, 'one');
-    jest.spyOn(conn, 'oneOrNone').mockResolvedValue(existingValue);
-    const created = await create('parameter account-sid', sampleContactWithTaskId, [3, 2, 1]);
-    expect(conn.oneOrNone).toHaveBeenCalledWith(expect.stringContaining('Contacts'), {
-      accountSid: 'parameter account-sid',
-      taskId: 'A TASK',
-    });
-    expect(conn.one).not.toHaveBeenCalled();
-    expect(created).toStrictEqual(existingValue);
   });
 });
 

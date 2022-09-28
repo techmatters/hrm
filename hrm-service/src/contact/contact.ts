@@ -2,6 +2,7 @@ import {
   connectToCase,
   Contact,
   create,
+  getByTaskId,
   patch,
   search,
   SearchParameters,
@@ -108,22 +109,28 @@ export const createContact = async (
       newContact.queueName || (<any>(rawJson ?? {})).queueName,
     createdBy,
   };
-  const { contact: created, isNewContact } = await create(
+
+  if (completeNewContact.taskId) {
+    const existingContact: Contact = await getByTaskId(accountSid, completeNewContact);
+    if (existingContact) {
+      // A contact with the same task ID already exists, return it (idempotence)
+      return existingContact;
+    }
+  }
+
+  const created = await create(
     accountSid,
     completeNewContact,
     (newContact.csamReports ?? []).map(csr => csr.id),
   );
 
-  // Avoid creating jobs if this contact was returned by idempotence (isNewContact = false)
-  if (isNewContact) {
-    // TODO: this being not in the same trx, might fail, the contact be created, but the request fail with 5xx. Idempotence prevents inconsistencies but do we want this behavior?
-    if (isChatChannel(created.channel)) {
-      await createContactJob({
-        jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
-        resource: created,
-        additionalPayload: undefined,
-      });
-    }
+  // TODO: this being not in the same trx, might fail, the contact be created, but the request fail with 5xx. Idempotence prevents inconsistencies but do we want this behavior?
+  if (isChatChannel(created.channel)) {
+    await createContactJob({
+      jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
+      resource: created,
+      additionalPayload: undefined,
+    });
   }
 
   return created;
