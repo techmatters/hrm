@@ -26,12 +26,6 @@ on:
           - staging
           - production
 
-      #TODO: I've mapped region to environment, below. See note there about multi-region setup
-      # region:
-      #   description: AWS region to deploy. E.G = us-east-1, eu-west-1 (must match with the AWS environment value). Default value = us-east-1
-      #   default: us-east-1
-      #   required: true
-
       send-slack-message:
         description: 'Specifies if should send a Slack message at the end of successful run. Defaults to true'
         required: true
@@ -65,8 +59,7 @@ jobs:
         with:
           node-version: 14.x
 
-      #TODO: make decision about public ECR/dockerhub repo and maintaining ability to deploy different code to different regions
-      # then set up matrix update for lambda if we go that direction, or move back to region based option for input
+      #TODO: Move to a matrix based region split for the ECR/update lambda steps
       - name: Set Env Based on Environment
 
         run: |
@@ -109,7 +102,6 @@ jobs:
           push: true
           tags: ${{ env.DOCKER_IMAGE_BASE }}${{ env.LAMBDA_NAME }}:live
 
-      #TODO: simplify and namespace the lamda name to make this substitution easier
       - name: Update Lambda and Publish
         run: |
           aws lambda update-function-code --function-name ${{ env.ENVIRONMENT }}-hrm-contact-job-${{ env.LAMBDA_NAME }} --image-uri ${{ env.DOCKER_IMAGE_BASE }}${{ env.LAMBDA_NAME }}:live --publish

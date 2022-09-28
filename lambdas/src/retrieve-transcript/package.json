@@ -1,6 +1,6 @@
 {
-  "name": "retrieve-transcript",
-  "version": "0.0.1",
+  "name": "processor-retrieve-contact-transcript",
+  "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
