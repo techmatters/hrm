@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.json",
+  "include": ["*.ts", "*.js"],
+  "lib": ["ES2020"],
+  "compilerOptions": {
+    "outDir": "",
+    "rootDir": "",
+  },
+}
