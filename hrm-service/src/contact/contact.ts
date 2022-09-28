@@ -59,7 +59,7 @@ export const channelTypes = {
   default: 'default',
 } as const;
 
-const chatChannels = [
+export const chatChannels = [
   channelTypes.whatsapp,
   channelTypes.facebook,
   channelTypes.web,
@@ -108,19 +108,22 @@ export const createContact = async (
       newContact.queueName || (<any>(rawJson ?? {})).queueName,
     createdBy,
   };
-  const created = await create(
+  const { contact: created, isNewContact } = await create(
     accountSid,
     completeNewContact,
     (newContact.csamReports ?? []).map(csr => csr.id),
   );
 
-  // TODO: this being not in the same trx, might fail, the contact be created, but the request fail with 5xx. Idempotence prevents inconsistencies but do we want this behavior?
-  if (isChatChannel(created.channel)) {
-    await createContactJob({
-      jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
-      resource: created,
-      additionalPayload: undefined,
-    });
+  // Avoid creating jobs if this contact was returned by idempotence (isNewContact = false)
+  if (isNewContact) {
+    // TODO: this being not in the same trx, might fail, the contact be created, but the request fail with 5xx. Idempotence prevents inconsistencies but do we want this behavior?
+    if (isChatChannel(created.channel)) {
+      await createContactJob({
+        jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
+        resource: created,
+        additionalPayload: undefined,
+      });
+    }
   }
 
   return created;

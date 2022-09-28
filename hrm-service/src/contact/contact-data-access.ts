@@ -129,7 +129,7 @@ export const create = async (
   accountSid: string,
   newContact: NewContactRecord,
   csamReportIds: number[],
-): Promise<Contact> => {
+): Promise<{ contact: Contact; isNewContact: boolean }> => {
   return db.tx(async connection => {
     if (newContact.taskId) {
       const existingContact: Contact = await connection.oneOrNone<Contact>(
@@ -141,7 +141,7 @@ export const create = async (
       );
       if (existingContact) {
         // A contact with the same task ID already exists, return it
-        return existingContact;
+        return { contact: existingContact, isNewContact: false };
       }
     }
     const now = new Date();
@@ -154,7 +154,7 @@ export const create = async (
       }),
       { csamReportIds },
     );
-    return updatedContact;
+    return { contact: updatedContact, isNewContact: true };
   });
 };
 
