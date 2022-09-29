@@ -21,13 +21,13 @@ type RetrieveContactTranscriptCompleted = PublishRetrieveContactTranscript & {
   completionPayload: string;
 };
 
-// function assertFulfilled<T>(item: PromiseSettledResult<T>): item is PromiseFulfilledResult<T> {
-//   return item.status === 'fulfilled';
-// }
+function assertFulfilled<T>(item: PromiseSettledResult<T>): item is PromiseFulfilledResult<T> {
+  return item.status === 'fulfilled';
+}
 
-// function assertRejected<T>(item: PromiseSettledResult<T>): item is PromiseRejectedResult {
-//   return item.status === 'rejected';
-// }
+function assertRejected<T>(item: PromiseSettledResult<T>): item is PromiseRejectedResult {
+  return item.status === 'rejected';
+}
 
 const pickRetrieveContactTranscriptCompleted = <T extends PublishRetrieveContactTranscript>(
   m: T,
@@ -56,151 +56,151 @@ export const handler = async (event: SQSEvent): Promise<any> => {
 
     console.dir(messages);
 
-    // const ssm = new SSM();
+    const ssm = new SSM();
 
-    // // TODO: factor out into a function
-    // const withParameters = await Promise.allSettled(
-    //   messages.map(async (m) => {
-    //     try {
-    //       const [authToken, docsBucketName] = (
-    //         await Promise.all(
-    //           ['TWILIO_AUTH_TOKEN', 'S3_DOCS_BUCKET_NAME'].map(async (s) =>
-    //             ssm
-    //               .getParameter({
-    //                 Name: `${s}_${m.accountSid}`,
-    //                 WithDecryption: true,
-    //               })
-    //               .promise(),
-    //           ),
-    //         )
-    //       ).map((param) => param.Parameter?.Value);
+    // TODO: factor out into a function
+    const withParameters = await Promise.allSettled(
+      messages.map(async (m) => {
+        try {
+          const [authToken, docsBucketName] = (
+            await Promise.all(
+              ['TWILIO_AUTH_TOKEN', 'S3_DOCS_BUCKET_NAME'].map(async (s) =>
+                ssm
+                  .getParameter({
+                    Name: `${s}_${m.accountSid}`,
+                    WithDecryption: true,
+                  })
+                  .promise(),
+              ),
+            )
+          ).map((param) => param.Parameter?.Value);
 
-    //       const { accountSid, contactId } = m;
+          const { accountSid, contactId } = m;
 
-    //       if (!authToken) {
-    //         return await Promise.reject(
-    //           new Error(
-    //             `authToken is missing while trying to import trnascripts for contactId ${contactId} and accountSid ${accountSid}`,
-    //           ),
-    //         );
-    //       }
+          if (!authToken) {
+            return await Promise.reject(
+              new Error(
+                `authToken is missing while trying to import trnascripts for contactId ${contactId} and accountSid ${accountSid}`,
+              ),
+            );
+          }
 
-    //       if (!docsBucketName) {
-    //         return await Promise.reject(
-    //           new Error(
-    //             `docsBucketName is missing while trying to import trnascripts for contactId ${contactId} and accountSid ${accountSid}`,
-    //           ),
-    //         );
-    //       }
+          if (!docsBucketName) {
+            return await Promise.reject(
+              new Error(
+                `docsBucketName is missing while trying to import trnascripts for contactId ${contactId} and accountSid ${accountSid}`,
+              ),
+            );
+          }
 
-    //       return {
-    //         ...m,
-    //         authToken,
-    //         docsBucketName,
-    //       };
-    //     } catch (err) {
-    //       console.log(`Failed getting parameters for accountSid ${m.accountSid}`, err);
-    //       return Promise.reject(err);
-    //     }
-    //   }),
-    // );
+          return {
+            ...m,
+            authToken,
+            docsBucketName,
+          };
+        } catch (err) {
+          console.log(`Failed getting parameters for accountSid ${m.accountSid}`, err);
+          return Promise.reject(err);
+        }
+      }),
+    );
 
-    // // TODO: factor out into a function
-    // const withTranscripts = await Promise.allSettled(
-    //   withParameters.map(async (m) => {
-    //     try {
-    //       if (assertRejected(m)) {
-    //         return await Promise.reject(m.reason);
-    //       }
+    // TODO: factor out into a function
+    const withTranscripts = await Promise.allSettled(
+      withParameters.map(async (m) => {
+        try {
+          if (assertRejected(m)) {
+            return await Promise.reject(m.reason);
+          }
 
-    //       const { accountSid, authToken, serviceSid, channelSid } = m.value;
+          const { accountSid, authToken, serviceSid, channelSid } = m.value;
 
-    //       const transcript = await exportTranscript({
-    //         accountSid,
-    //         authToken,
-    //         serviceSid,
-    //         channelSid,
-    //       });
+          const transcript = await exportTranscript({
+            accountSid,
+            authToken,
+            serviceSid,
+            channelSid,
+          });
 
-    //       return { ...m.value, transcript };
-    //     } catch (err) {
-    //       if (assertFulfilled(m)) {
-    //         console.log(
-    //           `Failed getting transcript for contactId, accountSid ${m.value.accountSid}`,
-    //           err,
-    //         );
-    //       }
-    //       return Promise.reject(err);
-    //     }
-    //   }),
-    // );
+          return { ...m.value, transcript };
+        } catch (err) {
+          if (assertFulfilled(m)) {
+            console.log(
+              `Failed getting transcript for contactId, accountSid ${m.value.accountSid}`,
+              err,
+            );
+          }
+          return Promise.reject(err);
+        }
+      }),
+    );
 
-    // const s3 = new S3();
+    const s3 = new S3();
 
-    // // TODO: factor out into a function
-    // const withTranscriptUrls = await Promise.allSettled(
-    //   withTranscripts.map(async (m) => {
-    //     if (assertRejected(m)) {
-    //       return Promise.reject(m.reason);
-    //     }
+    // TODO: factor out into a function
+    const withTranscriptUrls = await Promise.allSettled(
+      withTranscripts.map(async (m) => {
+        if (assertRejected(m)) {
+          return Promise.reject(m.reason);
+        }
 
-    //     const {
-    //       transcript,
-    //       docsBucketName,
-    //       accountSid,
-    //       contactId,
-    //       taskId,
-    //       twilioWorkerId,
-    //       serviceSid,
-    //       channelSid,
-    //       filePath,
-    //     } = m.value;
+        const {
+          transcript,
+          docsBucketName,
+          accountSid,
+          contactId,
+          taskId,
+          twilioWorkerId,
+          serviceSid,
+          channelSid,
+          filePath,
+        } = m.value;
 
-    //     const uploadResult = await s3
-    //       .upload({
-    //         Bucket: docsBucketName,
-    //         Key: filePath,
-    //         Body: JSON.stringify({
-    //           transcript,
-    //           accountSid,
-    //           contactId,
-    //           taskId,
-    //           twilioWorkerId,
-    //           serviceSid,
-    //           channelSid,
-    //         }),
-    //       })
-    //       .promise();
+        const uploadResult = await s3
+          .upload({
+            Bucket: docsBucketName,
+            Key: filePath,
+            Body: JSON.stringify({
+              transcript,
+              accountSid,
+              contactId,
+              taskId,
+              twilioWorkerId,
+              serviceSid,
+              channelSid,
+            }),
+          })
+          .promise();
 
-    //     const completedJob = pickRetrieveContactTranscriptCompleted(m.value, uploadResult);
+        const completedJob = pickRetrieveContactTranscriptCompleted(m.value, uploadResult);
 
-    //     return completedJob;
-    //   }),
-    // );
+        return completedJob;
+      }),
+    );
 
-    // const [completedJobs, failedJobs] = [
-    //   withTranscriptUrls.filter(assertFulfilled).map((m) => m.value),
-    //   withTranscriptUrls.filter(assertRejected),
-    // ];
+    const [completedJobs, failedJobs] = [
+      withTranscriptUrls.filter(assertFulfilled).map((m) => m.value),
+      withTranscriptUrls.filter(assertRejected),
+    ];
 
-    // const sqs = new SQS();
+    const sqs = new SQS();
 
-    // // TODO: factor out into a function
-    // const results = await Promise.allSettled(
-    //   completedJobs.map((m) =>
-    //     sqs
-    //       .sendMessage({
-    //         MessageBody: JSON.stringify(m),
-    //         // TODO: separate queue url by tier and AWS region (different HRMs will consume different queues)
-    //         QueueUrl: 'https://sqs.us-east-1.amazonaws.com/712893914485/development-completed-jobs',
-    //       })
-    //       .promise(),
-    //   ),
-    // );
+    // TODO: factor out into a function
+    const results = await Promise.allSettled(
+      completedJobs.map((m) =>
+        sqs
+          .sendMessage({
+            MessageBody: JSON.stringify(m),
+            // TODO: separate queue url by tier and AWS region (different HRMs will consume different queues)
+            QueueUrl: 'https://sqs.us-east-1.amazonaws.com/712893914485/development-completed-jobs',
+          })
+          .promise(),
+      ),
+    );
 
-    // console.log('results:', results);
-    // // Do we want to do some processing with the failed jobs?
-    // console.log('failed jobs:', failedJobs);
+    console.log('results:', results);
+    // Do we want to do some processing with the failed jobs?
+    console.log('failed jobs:', failedJobs);
 
     return { statusCode: 200 };
   } catch (err) {

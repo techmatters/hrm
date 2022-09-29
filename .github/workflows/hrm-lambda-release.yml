@@ -39,7 +39,7 @@ on:
       lambda_name:
         description: 'hrm lambda name'
         required: true
-        default: contact-retrieve-recording-url
+        default: contact-retrieve-transcript
         type: string
       send-slack-message:
         description: 'Specifies if should send a Slack message at the end of successful run. Defaults to true'
@@ -71,7 +71,7 @@ jobs:
           INPUT_ENVIRONMENT=${{ inputs.environment }}
           INPUT_LAMBDA_NAME=${{ inputs.lambda_name }}
           ENVIRONMENT=${INPUT_ENVIRONMENT:-development}
-          LAMBDA_NAME=${INPUT_LAMBDA_NAME:-retrieve-transcript}
+          LAMBDA_NAME=${INPUT_LAMBDA_NAME:-contact-retrieve-transcript}
 
           echo ENVIRONMENT=$ENVIRONMENT >> $GITHUB_ENV
           echo LAMBDA_NAME=$LAMBDA_NAME >> $GITHUB_ENV
@@ -79,7 +79,7 @@ jobs:
           case "$ENVIRONMENT" in development) region="us-east-1" ;; staging) region="us-east-1" ;; production) region="us-east-1" ;; *) echo "Invalid environment: ${{ inputs.environment }}" && exit 1 ;; esac
           echo AWS_REGION=$region >> $GITHUB_ENV
           echo AWS_DEFAULT_REGION=$region >> $GITHUB_ENV
-          echo DOCKER_IMAGE_BASE=712893914485.dkr.ecr.${region}.amazonaws.com/${ENVIRONMENT}/hrm-lambdas- >> $GITHUB_ENV
+          echo DOCKER_IMAGE_BASE=712893914485.dkr.ecr.${region}.amazonaws.com/${ENVIRONMENT}/hrm-contact- >> $GITHUB_ENV
 
       - name: Compile Lambda
         run: |
@@ -109,7 +109,7 @@ jobs:
 
       - name: Update Lambda and Publish
         run: |
-          aws lambda update-function-code --function-name ${{ env.ENVIRONMENT }}-hrm-job-${{ env.LAMBDA_NAME }} --image-uri ${{ env.DOCKER_IMAGE_BASE }}${{ env.LAMBDA_NAME }}:live --publish
+          aws lambda update-function-code --function-name ${{ env.ENVIRONMENT }}-hrm-contact-${{ env.LAMBDA_NAME }} --image-uri ${{ env.DOCKER_IMAGE_BASE }}${{ env.LAMBDA_NAME }}:live --publish
 
       # Send Slack notifying success
       - name: Slack Aselo channel
