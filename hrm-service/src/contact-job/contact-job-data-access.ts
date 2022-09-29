@@ -3,7 +3,7 @@ import { Contact } from '../contact/contact-data-access';
 import { COMPLETE_JOB_SQL, PULL_DUE_JOBS_SQL } from './sql/contact-job-sql';
 
 export const enum ContactJobType {
-  RETRIEVE_CONTACT_TRANSCRIPT = 'retrieve-contact-transcript',
+  RETRIEVE_CONTACT_TRANSCRIPT = 'retrieve-transcript',
 }
 
 // Reflects the actual shape of a record in the ContactJobs table
