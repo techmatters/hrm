@@ -4,6 +4,6 @@
   "lib": ["ES2020"],
   "compilerOptions": {
     "outDir": "",
-    "rootDir": "",
-  },
+    "rootDir": ""
+  }
 }

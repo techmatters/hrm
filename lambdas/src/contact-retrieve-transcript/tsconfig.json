@@ -4,6 +4,7 @@
   "lib": ["ES2020"],
   "compilerOptions": {
     "outDir": "",
-    "rootDir": "",
-  },
+    "target": "ES6",
+    "rootDir": ""
+  }
 }
