@@ -13,10 +13,10 @@ import { uploadTranscript } from './uploadTranscript';
  */
 
 const sqs = new SQS();
-const sqsQueueUrl = process.env.completed_sqs_queue_url;
+const CompletedQueueUrl = process.env.completed_sqs_queue_url;
 
-if (!sqsQueueUrl) {
-  throw new Error('Missing sqsQueueUrl');
+if (!CompletedQueueUrl) {
+  throw new Error('Missing completed_sqs_queue_url ENV Variable');
 }
 
 const processRecord = async (sqsRecord: SQSRecord) => {
@@ -55,7 +55,7 @@ const processRecord = async (sqsRecord: SQSRecord) => {
   await sqs
     .sendMessage({
       MessageBody: JSON.stringify(completedJob),
-      QueueUrl: sqsQueueUrl,
+      QueueUrl: CompletedQueueUrl,
     })
     .promise();
 };
