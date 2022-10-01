@@ -20,11 +20,12 @@ if (!sqsQueueUrl) {
 }
 
 const processRecord = async (sqsRecord: SQSRecord) => {
+  console.dir(sqsRecord);
   const snsMessage: SNSMessage = JSON.parse(sqsRecord.body);
   const message = JSON.parse(snsMessage.Message);
   const parameters = await getParameters(message);
 
-  //TODO: this is pretty goofy. refactor inputs to take partial types
+  //TODO: this var destructuring is pretty goofy. refactor inputs to take partial types (rbd - 01/10/22)
   const { accountSid, channelSid, contactId, serviceSid, taskId, twilioWorkerId } = message;
   const { authToken, docsBucketName } = parameters;
 
@@ -59,6 +60,14 @@ const processRecord = async (sqsRecord: SQSRecord) => {
     .promise();
 };
 
+/**
+ * I refactored this from the multiple Promises.allSettled() that depended on input chaining approach to
+ * a single map with a Promise.all() where all errors are swallowed by exceptions and added to a
+ * SQSBatchResponse so we can use built-in error handling in SQS/Lambda. For me, this pattern is
+ * significantly simpler and easier to understand, but I know that is a subjective opinion and am
+ * happy to explore options around the nested bach operations approach if that is preferred.
+ * (rbd - 01/10/22)
+ */
 export const handler = async (event: SQSEvent): Promise<any> => {
   try {
     const response: SQSBatchResponse = { batchItemFailures: [] };
@@ -67,11 +76,16 @@ export const handler = async (event: SQSEvent): Promise<any> => {
       try {
         await processRecord(sqsRecord);
       } catch (err) {
-        console.log('Failed to process record', err);
+        console.error('Failed to process record', err);
 
         /**
          * This is currently based around using built in retry and DLQs to handle
          * failed messages.
+         *
+         * If we want to handle failures with HRM poller instead, then we would need
+         * to delete successful messages from the original SQS queue and add a status
+         * message to the payload for the Completed SQS queue so that that poller can
+         * handle retries for both failures and successes. (rbd - 01/10/22)
          */
         response.batchItemFailures.push({ itemIdentifier: sqsRecord.messageId });
       }
