@@ -1,6 +1,6 @@
 import { Twilio } from 'twilio';
 
-type ExportTranscriptParams = {
+export type ExportTranscriptParams = {
   accountSid: string;
   authToken: string;
   serviceSid: string;
@@ -10,8 +10,8 @@ type ExportTranscriptParams = {
 export const exportTranscript = async ({
   accountSid,
   authToken,
-  serviceSid,
   channelSid,
+  serviceSid,
 }: ExportTranscriptParams) => {
   // eslint-disable-next-line no-console
   console.log(
@@ -24,7 +24,8 @@ export const exportTranscript = async ({
       .channels.get(channelSid)
       .messages.list();
 
-    const transformed = messages.map((m) => ({
+    //TODO: define type for this structure.
+    const transcript = messages.map((m) => ({
       sid: m.sid,
       dateCreated: m.dateCreated,
       from: m.from,
@@ -34,12 +35,7 @@ export const exportTranscript = async ({
       media: m.media,
     }));
 
-    return {
-      accountSid,
-      serviceSid,
-      channelSid,
-      messages: transformed,
-    };
+    return transcript;
   } catch (err) {
     // eslint-disable-next-line no-console
     console.error(err);
