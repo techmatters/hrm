@@ -4,7 +4,7 @@ import {
   CompletedContactJobBody,
   CompletedRetrieveContactTranscript,
 } from './contact-job-messages';
-import { appendMediaUrls } from '../contact/contact-data-access';
+import { appendMediaUrls } from '../contact/contact';
 import { ContactMediaType } from '../contact/contact-json';
 import { assertExhaustive } from './assertExhaustive';
 

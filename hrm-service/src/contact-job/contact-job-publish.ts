@@ -4,7 +4,7 @@ import { publishToContactJobsTopic } from './client-sns';
 import { ContactJobType } from './contact-job-data-access';
 import { assertExhaustive } from './assertExhaustive';
 
-const publishRetrieveContactTranscript = (contactJob: RetrieveContactTranscriptJob) => {
+export const publishRetrieveContactTranscript = (contactJob: RetrieveContactTranscriptJob) => {
   const {
     accountSid,
     id: contactId,

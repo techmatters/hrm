@@ -1,4 +1,4 @@
-import { Contact } from '../contact/contact-data-access';
+import { Contact } from '../contact/contact';
 import { ContactJob, ContactJobType } from './contact-job-data-access';
 
 type ContactJobMessageCommons = {

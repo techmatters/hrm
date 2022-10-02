@@ -7,7 +7,7 @@ export const enum ContactJobType {
 }
 
 // Reflects the actual shape of a record in the ContactJobs table
-type ContactJobRecord = {
+export type ContactJobRecord = {
   id: number;
   contactId: number;
   accountSid: string;
