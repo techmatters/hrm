@@ -345,7 +345,7 @@ describe('/contacts route', () => {
     each(
       contactApi.chatChannels.map(channel => ({
         channel,
-        contact: { ...withTaskId, channel, taskId: `${withTaskId}-${channel}` },
+        contact: { ...withTaskId, channel, taskId: `${withTaskId.taskId}-${channel}` },
       }))).test(
       `contacts with channel type $channel should create ${ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT} job`,
       async ({ contact }) => {
