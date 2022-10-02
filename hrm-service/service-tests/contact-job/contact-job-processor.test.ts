@@ -89,11 +89,17 @@ describe('processContactJobs', () => {
 
     expect(completeSpy).toHaveBeenCalledTimes(1);
     expect(publishSpy).toHaveBeenCalledTimes(1);
+    expect(completeSpy.mock.invocationCallOrder[0]).toBeLessThan(
+      publishSpy.mock.invocationCallOrder[0],
+    );
 
     await processorIntervalCallback();
 
     expect(completeSpy).toHaveBeenCalledTimes(2);
     expect(publishSpy).toHaveBeenCalledTimes(2);
+    expect(completeSpy.mock.invocationCallOrder[1]).toBeLessThan(
+      publishSpy.mock.invocationCallOrder[1],
+    );
   });
 
   test('error on sweep does not shuts down the server', async () => {
