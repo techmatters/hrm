@@ -12,6 +12,9 @@ import { retrieveCategories, getPaginationElements } from '../controllers/helper
 import { NewContactRecord } from './sql/contact-insert-sql';
 import { createContactJob, ContactJobType } from '../contact-job/contact-job-data-access';
 
+// Re export as is:
+export { appendMediaUrls, Contact } from './contact-data-access';
+
 export type PatchPayload = {
   rawJson: Partial<
     Pick<ContactRawJson, 'callerInformation' | 'childInformation' | 'caseInformation'>

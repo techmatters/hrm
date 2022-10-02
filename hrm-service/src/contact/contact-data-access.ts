@@ -14,6 +14,7 @@ type ExistingContactRecord = {
   id: number;
   accountSid: string;
   createdAt?: Date;
+  updatedAt?: Date;
 } & Partial<NewContactRecord>;
 
 export type Contact = ExistingContactRecord & {
