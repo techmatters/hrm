@@ -7,12 +7,11 @@ let processingJobs = false;
 const JOB_PROCESSING_INTERVAL_MILLISECONDS = 5000;
 const JOB_RETRY_INTERVAL_MILLISECONDS = 60000;
 
-export const getProcessingInterval = () => JOB_PROCESSING_INTERVAL_MILLISECONDS;
-export const getRetryInterval = () => JOB_RETRY_INTERVAL_MILLISECONDS;
-
 export function processContactJobs() {
   if (!processingJobs) {
-    console.log(`Started processing jobs every ${getProcessingInterval()} milliseconds.`);
+    console.log(
+      `Started processing jobs every ${JOB_PROCESSING_INTERVAL_MILLISECONDS} milliseconds.`,
+    );
     processingJobs = true;
 
     return setInterval(async () => {
@@ -26,14 +25,14 @@ export function processContactJobs() {
         // console.log(completedJobs);
 
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const pusblishResults = await publishPendingContactJobs(getRetryInterval());
+        const pusblishResults = await publishPendingContactJobs(JOB_RETRY_INTERVAL_MILLISECONDS);
 
         // Process published results
         // console.log(pusblishResults);
       } catch (err) {
         console.error('JOB PROCESSING SWEEP ABORTED DUE TO UNHANDLED ERROR', err);
       }
-    }, getProcessingInterval());
+    }, JOB_PROCESSING_INTERVAL_MILLISECONDS);
   } else {
     console.warn(`processContactJobs repeating task already running`);
   }
