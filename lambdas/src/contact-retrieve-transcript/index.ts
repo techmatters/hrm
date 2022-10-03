@@ -20,6 +20,15 @@ if (!CompletedQueueUrl) {
 
 const processRecord = async (sqsRecord: SQSRecord) => {
   console.dir(sqsRecord);
+  /**
+   * TODO: This is still based around sending messages with SNS instead of directly to SES. I think we should
+   * consider moving to sending SES directly from HRM, as that will simplify the message structure. If we
+   * were sending a generic "contactSaved" event to SNS and letting sns handle figuring out if it should
+   * process a transcript or a recording based on the payload, the SNS message structure would seem more
+   * worth the complexity. But if we know at job creation time that the job what type of job is being sent
+   * and what jobs should run, we can just send the payload directly to SES and avoid the added SNS message
+   * complexity.
+   */
   const snsMessage: SNSMessage = JSON.parse(sqsRecord.body);
   const message = JSON.parse(snsMessage.Message);
   const parameters = await getParameters(message);
