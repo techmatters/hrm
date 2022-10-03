@@ -8,6 +8,7 @@ const each = require('jest-each').default;
 
 const server = createService({
   authTokenLookup: () => 'picernic basket',
+  enableProcessContactJobs: false,
 }).listen();
 const request = supertest.agent(server);
 

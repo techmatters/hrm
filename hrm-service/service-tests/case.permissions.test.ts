@@ -19,6 +19,7 @@ const server = createService({
     cachePermissions: false, // Means we can evaluate different rules each request without restarting the service
   },
   authTokenLookup: () => 'picernic basket',
+  enableProcessContactJobs: false,
 }).listen();
 const request = supertest.agent(server);
 
