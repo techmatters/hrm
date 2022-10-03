@@ -1,0 +1,7 @@
+# Dependencies
+node_modules/
+
+# Compiled files and bundles
+src/**/*.js
+src/**/*.js.map
+src/**/*.zip
