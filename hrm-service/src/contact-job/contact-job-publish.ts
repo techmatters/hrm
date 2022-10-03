@@ -38,13 +38,18 @@ export const publishDueContactJobs = async (
 ): Promise<PromiseSettledResult<PublishedContactJobResult>[]> => {
   const publishedContactJobResult = await Promise.allSettled(
     dueContactJobs.map((dueJob: ContactJob) => {
-      switch (dueJob.jobType) {
-        case ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT: {
-          return publishRetrieveContactTranscript(dueJob);
+      try {
+        switch (dueJob.jobType) {
+          case ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT: {
+            return publishRetrieveContactTranscript(dueJob);
+          }
+          // TODO: remove the as never typecast when we have 2 or more job types. TS complains if we remove it now.
+          default:
+            assertExhaustive(dueJob as never);
         }
-        // TODO: remove the as never typecast when we have 2 or more job types. TS complains if we remove it now.
-        default:
-          assertExhaustive(dueJob as never);
+      } catch (err) {
+        console.error('Failed to publish due job:', dueJob, err);
+        return Promise.reject(err);
       }
     }),
   );
