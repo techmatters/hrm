@@ -1,17 +1,14 @@
 import supertest from 'supertest';
 import timers from 'timers';
 
-const wait = async (ms: number) => {
-  const p = new Promise(resolve => setTimeout(resolve, ms));
-  return p;
-};
+jest.mock('../../src/contact-job/client-sns');
+jest.mock('../../src/contact-job/client-sqs');
 
 let server;
-let createService;
-let contactJobProcessor;
-let contactJobComplete;
-let contactJobDataAccess;
-let contactJobPublish;
+let createService: typeof import('../../src/app').createService;
+let contactJobComplete: typeof import('../../src/contact-job/contact-job-complete');
+let contactJobPublish: typeof import('../../src/contact-job/contact-job-publish');
+let contactJobProcessor: typeof import('../../src/contact-job/contact-job-processor');
 
 const startServer = () => {
   const service = createService({
@@ -31,10 +28,9 @@ const stopServer = async () => {
 beforeEach(() => {
   jest.isolateModules(() => {
     createService = require('../../src/app').createService;
-    contactJobProcessor = require('../../src/contact-job/contact-job-processor');
     contactJobComplete = require('../../src/contact-job/contact-job-complete');
-    contactJobDataAccess = require('../../src/contact-job/contact-job-data-access');
     contactJobPublish = require('../../src/contact-job/contact-job-publish');
+    contactJobProcessor = require('../../src/contact-job/contact-job-processor');
   });
 });
 
@@ -45,76 +41,89 @@ afterEach(async () => {
 
 describe('processContactJobs', () => {
   test('intialized on server start', async () => {
-    const processorSpy = jest.spyOn(contactJobProcessor, 'processContactJobs');
+    // Mock setInterval to return the internal cb instead than it's interval id, so we can call it when we want
+    const setIntervalSpy = jest.spyOn(timers, 'setInterval').mockImplementation(callback => {
+      return callback as any;
+    });
 
-    const logSpy = jest.spyOn(console, 'log');
+    const processorSpy = jest.spyOn(contactJobProcessor, 'processContactJobs');
 
     startServer();
 
-    expect(processorSpy).toHaveBeenCalled();
-    expect(logSpy).toHaveBeenCalledWith(
-      `Started processing jobs every ${contactJobProcessor.getProcessingInterval()} milliseconds.`,
-    );
+    expect(processorSpy).toHaveBeenCalledTimes(1);
+    expect(setIntervalSpy).toHaveBeenCalledTimes(1);
   });
 
   test('calling processContactJobs twice does not spans another processor', async () => {
-    const setIntervalSpy = jest.spyOn(timers, 'setInterval');
+    // Mock setInterval to return the internal cb instead than it's interval id, so we can call it when we want
+    const setIntervalSpy = jest.spyOn(timers, 'setInterval').mockImplementation(callback => {
+      return callback as any;
+    });
+
     const processorSpy = jest.spyOn(contactJobProcessor, 'processContactJobs');
-    const warnSpy = jest.spyOn(console, 'warn');
 
-    startServer();
-
-    // await Promise.resolve();
-    // await wait(2000);
-
+    contactJobProcessor.processContactJobs();
     contactJobProcessor.processContactJobs();
 
     expect(processorSpy).toHaveBeenCalledTimes(2);
-
     expect(setIntervalSpy).toHaveBeenCalledTimes(1);
-    expect(warnSpy).toHaveBeenCalledWith(`processContactJobs repeating task already running`);
   });
 
-  test('swipes are as expected', async () => {
-    jest.spyOn(contactJobProcessor, 'getProcessingInterval').mockImplementation(() => 10);
-    // Since above number is very small, we need to mock any async operation (like DB ops)
-    const processorSpy = jest.spyOn(contactJobProcessor, 'processContactJobs');
-    const completeSpy = jest.spyOn(contactJobComplete, 'pollAndprocessCompletedContactJobs');
-    jest.spyOn(contactJobDataAccess, 'pullDueContactJobs').mockImplementation(() => []);
+  test('job processor loop is as expected: poll & process completed, then publish due', async () => {
+    // Mock setInterval to return the internal cb instead than it's interval id, so we can call it when we want
+    // const setIntervalSpy =
+    jest.spyOn(timers, 'setInterval').mockImplementation(callback => {
+      return callback as any;
+    });
+    const completeSpy = jest
+      .spyOn(contactJobComplete, 'pollAndprocessCompletedContactJobs')
+      .mockImplementation(() => Promise.resolve(undefined) as any);
     const publishSpy = jest.spyOn(contactJobPublish, 'publishDueContactJobs');
 
-    startServer();
+    const processorIntervalCallback = (contactJobProcessor.processContactJobs() as unknown) as () => Promise<
+      void
+    >;
 
-    expect(processorSpy).toHaveBeenCalled();
-
-    await wait(contactJobProcessor.getProcessingInterval());
+    await processorIntervalCallback();
 
     expect(completeSpy).toHaveBeenCalledTimes(1);
     expect(publishSpy).toHaveBeenCalledTimes(1);
+    expect(completeSpy.mock.invocationCallOrder[0]).toBeLessThan(
+      publishSpy.mock.invocationCallOrder[0],
+    );
 
-    await wait(contactJobProcessor.getProcessingInterval());
+    await processorIntervalCallback();
 
     expect(completeSpy).toHaveBeenCalledTimes(2);
     expect(publishSpy).toHaveBeenCalledTimes(2);
+    expect(completeSpy.mock.invocationCallOrder[1]).toBeLessThan(
+      publishSpy.mock.invocationCallOrder[1],
+    );
   });
 
-  test('error on swipe does not shuts down the server', async () => {
-    jest.spyOn(contactJobProcessor, 'getProcessingInterval').mockImplementation(() => 10);
+  test('error on sweep does not shuts down the server', async () => {
+    // Mock setInterval to return the internal cb instead than it's interval id, so we can call it when we want
+    // const setIntervalSpy =
+    jest.spyOn(timers, 'setInterval').mockImplementation(callback => {
+      return callback as any;
+    });
+
     const errorSpy = jest.spyOn(console, 'error');
-    const processorSpy = jest.spyOn(contactJobProcessor, 'processContactJobs');
     const completeSpy = jest
       .spyOn(contactJobComplete, 'pollAndprocessCompletedContactJobs')
       .mockImplementationOnce(() => {
         throw new Error('Aaaw, snap!');
       });
 
+    const processorIntervalCallback = (contactJobProcessor.processContactJobs() as unknown) as () => Promise<
+      void
+    >;
+
+    await processorIntervalCallback();
+
     startServer();
 
     const request = supertest.agent(server);
-
-    expect(processorSpy).toHaveBeenCalled();
-
-    await wait(contactJobProcessor.getProcessingInterval());
 
     expect(completeSpy).toHaveBeenCalledTimes(1);
 
@@ -128,11 +137,6 @@ describe('processContactJobs', () => {
     const response = await request.get('/');
     expect(response.statusCode).toBe(200);
     expect(response.body).toMatchObject({ Message: 'HRM is up and running!' });
-
-    await wait(contactJobProcessor.getProcessingInterval());
-
-    // The another sweep is executed again in the future
-    expect(completeSpy).toHaveBeenCalled();
   });
 
   test('error starting the processor wont start server', async () => {
