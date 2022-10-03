@@ -1,14 +1,18 @@
+import each from 'jest-each';
+
 import * as SQSClient from '../../src/contact-job/client-sqs';
 import * as contactJobDataAccess from '../../src/contact-job/contact-job-data-access';
 import * as contactJobComplete from '../../src/contact-job/contact-job-complete';
 import { ContactJobType } from '../../src/contact-job/contact-job-data-access';
+
+jest.mock('../../src/contact-job/client-sqs');
 
 afterEach(() => {
   jest.clearAllMocks();
 });
 
 describe('pollAndprocessCompletedContactJobs', () => {
-  test('Completed jobs are polled as expected', async () => {
+  test('Completed jobs are polled from SQS client as expected', async () => {
     const sqsSpy = jest
       .spyOn(SQSClient, 'pollCompletedContactJobs')
       .mockImplementation(async () => ({
@@ -105,43 +109,60 @@ describe('pollAndprocessCompletedContactJobs', () => {
     expect(result[1].status).toBe('fulfilled');
   });
 
-  test('RETRIEVE_CONTACT_TRANSCRIPT job is processed accordingly', async () => {
-    const job = {
-      jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
-      jobId: 1,
-      accountSid: 'accountSid',
-      contactId: 'contactId',
-      taskId: 'taskId',
-      twilioWorkerId: 'twilioWorkerId',
-      serviceSid: 'serviceSid',
-      channelSid: 'channelSid',
-      filePath: 'filePath',
-      completionPayload: 'completionPayload',
-    };
-    const validPayload = {
-      Body: JSON.stringify(job),
-      ReceiptHandle: 'valid',
-    };
+  const completedJobsList = [
+    {
+      job: {
+        jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
+        jobId: 1,
+        accountSid: 'accountSid',
+        contactId: 'contactId',
+        taskId: 'taskId',
+        twilioWorkerId: 'twilioWorkerId',
+        serviceSid: 'serviceSid',
+        channelSid: 'channelSid',
+        filePath: 'filePath',
+        completionPayload: 'completionPayload',
+      },
+      processCompletedFunction: 'processCompletedRetrieveContactTranscript',
+    },
+  ];
 
-    jest.spyOn(SQSClient, 'pollCompletedContactJobs').mockImplementation(async () => ({
-      Messages: [validPayload],
-    }));
-    const deletedCompletedContactJobsSpy = jest
-      .spyOn(SQSClient, 'deletedCompletedContactJobs')
-      .mockImplementation(async () => {});
-    const processCompletedRetrieveContactTranscriptSpy = jest
-      .spyOn(contactJobComplete, 'processCompletedRetrieveContactTranscript')
-      .mockImplementation(async () => {});
-    const completeContactJobSpy = jest
-      .spyOn(contactJobDataAccess, 'completeContactJob')
-      .mockImplementation(async () => validPayload as any);
+  test('Check that we are testing all the possible job types (useful for the next test)', () => {
+    expect(completedJobsList.length).toBe(Object.values(ContactJobType).length);
 
-    const result = await contactJobComplete.pollAndprocessCompletedContactJobs();
-
-    expect(processCompletedRetrieveContactTranscriptSpy).toHaveBeenCalledWith(job);
-    expect(completeContactJobSpy).toHaveBeenCalledWith(job.jobId, job.completionPayload);
-    expect(deletedCompletedContactJobsSpy).toHaveBeenCalledWith(validPayload.ReceiptHandle);
-
-    expect(result[0].status).toBe('fulfilled');
+    Object.values(ContactJobType).forEach(jobType => {
+      expect(completedJobsList.some(({ job }) => job.jobType === jobType)).toBeTruthy();
+    });
   });
+
+  each(completedJobsList).test(
+    '$job.jobType job is processed accordingly',
+    async ({ job, processCompletedFunction }) => {
+      const validPayload = {
+        Body: JSON.stringify(job),
+        ReceiptHandle: 'valid',
+      };
+
+      jest.spyOn(SQSClient, 'pollCompletedContactJobs').mockImplementation(async () => ({
+        Messages: [validPayload],
+      }));
+      const deletedCompletedContactJobsSpy = jest
+        .spyOn(SQSClient, 'deletedCompletedContactJobs')
+        .mockImplementation(async () => {});
+      const processCompletedFunctionSpy = jest
+        .spyOn(contactJobComplete, processCompletedFunction)
+        .mockImplementation(async () => {});
+      const completeContactJobSpy = jest
+        .spyOn(contactJobDataAccess, 'completeContactJob')
+        .mockImplementation(async () => validPayload as any);
+
+      const result = await contactJobComplete.pollAndprocessCompletedContactJobs();
+
+      expect(processCompletedFunctionSpy).toHaveBeenCalledWith(job);
+      expect(completeContactJobSpy).toHaveBeenCalledWith(job.jobId, job.completionPayload);
+      expect(deletedCompletedContactJobsSpy).toHaveBeenCalledWith(validPayload.ReceiptHandle);
+
+      expect(result[0].status).toBe('fulfilled');
+    },
+  );
 });
