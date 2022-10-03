@@ -9,7 +9,6 @@ import { uploadTranscript } from './uploadTranscript';
  * This is based around latest SQS error handling that supports batchItemFailure responses.
  *
  * Reference: https://docs.aws.amazon.com/lambda/latest/dg/with-sqs.html#services-sqs-batchfailurereporting
- * Reference: https://dev.to/aws-builders/amazon-sqs-to-aws-lambda-error-handling-3d4f
  */
 
 const sqs = new SQS();
@@ -70,6 +69,11 @@ const processRecord = async (sqsRecord: SQSRecord) => {
  */
 export const handler = async (event: SQSEvent): Promise<any> => {
   try {
+    // This isn't really doing anything if we are handling errors in the complete queue, but
+    // it keeps us from having to delete each message from the queue since SQS will assume
+    // success if we don't return anything in batchItemFailure response. And the queues
+    // will be set up for more "SQS" native error handling in the future if we decide it
+    // has value. (rbd - 03/10/22)
     const response: SQSBatchResponse = { batchItemFailures: [] };
 
     const promises = event.Records.map(async (sqsRecord: SQSRecord) => {
@@ -78,16 +82,16 @@ export const handler = async (event: SQSEvent): Promise<any> => {
       } catch (err) {
         console.error('Failed to process record', err);
 
-        /**
-         * This is currently based around using built in retry and DLQs to handle
-         * failed messages.
-         *
-         * If we want to handle failures with HRM poller instead, then we would need
-         * to delete successful messages from the original SQS queue and add a status
-         * message to the payload for the Completed SQS queue so that that poller can
-         * handle retries for both failures and successes. (rbd - 01/10/22)
-         */
-        response.batchItemFailures.push({ itemIdentifier: sqsRecord.messageId });
+        const failedJob = {
+          //TODO: fill this in appropriately once some other decisions have been made. (rbd - 03/10/22)
+        };
+
+        await sqs
+          .sendMessage({
+            MessageBody: JSON.stringify(failedJob),
+            QueueUrl: CompletedQueueUrl,
+          })
+          .promise();
       }
     });
 
