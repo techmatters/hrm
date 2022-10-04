@@ -1,5 +1,5 @@
 import { SSM } from 'aws-sdk';
-import { PublishRetrieveContactTranscript } from './types';
+import { PublishRetrieveContactTranscript } from 'hrm-lib/types/ContactJob';
 
 const ssm = new SSM();
 
