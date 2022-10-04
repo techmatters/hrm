@@ -3,7 +3,14 @@ import { PublishRetrieveContactTranscript } from 'hrm-lib/types/ContactJob';
 
 const ssm = new SSM();
 
-export const getParameters = async (message: PublishRetrieveContactTranscript) => {
+export type GetParametersReturn = {
+  authToken: string;
+  docsBucketName: string;
+};
+
+export const getParameters = async (
+  message: PublishRetrieveContactTranscript,
+): Promise<GetParametersReturn> => {
   const [authToken, docsBucketName] = (
     await Promise.all(
       ['TWILIO_AUTH_TOKEN', 'S3_DOCS_BUCKET_NAME'].map(async (s) =>

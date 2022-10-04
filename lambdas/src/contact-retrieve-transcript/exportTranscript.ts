@@ -7,12 +7,24 @@ export type ExportTranscriptParams = {
   channelSid: string;
 };
 
+export type ExportedMessage = {
+  sid: string;
+  dateCreated: Date;
+  from: string;
+  body: string;
+  index: number;
+  type: string;
+  media: any;
+};
+
+export type ExportTranscriptReturn = ExportedMessage[];
+
 export const exportTranscript = async ({
   accountSid,
   authToken,
   channelSid,
   serviceSid,
-}: ExportTranscriptParams) => {
+}: ExportTranscriptParams): Promise<ExportTranscriptReturn> => {
   // eslint-disable-next-line no-console
   console.log(
     `Trying to export transcript with accountSid ${accountSid}, serviceSid ${serviceSid}, channelSid ${channelSid}`,

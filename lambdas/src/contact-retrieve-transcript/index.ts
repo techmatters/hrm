@@ -1,4 +1,5 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
+import { S3 } from 'aws-sdk';
 import { SQS } from 'aws-sdk';
 import type { SQSBatchResponse, SQSEvent, SQSRecord, SNSMessage } from 'aws-lambda';
 import { exportTranscript } from './exportTranscript';
@@ -33,26 +34,22 @@ const processRecord = async (sqsRecord: SQSRecord) => {
   const message = JSON.parse(snsMessage.Message);
   const parameters = await getParameters(message);
 
-  //TODO: this var destructuring is pretty goofy. refactor inputs to take partial types (rbd - 01/10/22)
-  const { accountSid, channelSid, contactId, serviceSid, taskId, twilioWorkerId } = message;
-  const { authToken, docsBucketName } = parameters;
-
   const transcript = await exportTranscript({
-    accountSid,
-    authToken,
-    channelSid,
-    serviceSid,
+    accountSid: message.accountSid,
+    authToken: parameters.authToken,
+    channelSid: message.channelSid,
+    serviceSid: message.serviceSid,
   });
 
-  const uploadResults = await uploadTranscript({
+  const uploadResults: S3.ManagedUpload.SendData = await uploadTranscript({
     transcript,
-    docsBucketName,
-    accountSid,
-    contactId,
-    taskId,
-    twilioWorkerId,
-    serviceSid,
-    channelSid,
+    docsBucketName: parameters.docsBucketName,
+    accountSid: message.accountSid,
+    contactId: message.contactId,
+    taskId: message.taskId,
+    twilioWorkerId: message.twilioWorkerId,
+    serviceSid: message.serviceSid,
+    channelSid: message.channelSid,
   });
 
   const completedJob = {
