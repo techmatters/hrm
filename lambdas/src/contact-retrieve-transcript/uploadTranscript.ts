@@ -1,5 +1,8 @@
 import { S3 } from 'aws-sdk';
-import { PublishRetrieveContactTranscript, RetrieveContactTranscriptCompleted } from './types';
+import {
+  PublishRetrieveContactTranscript,
+  RetrieveContactTranscriptCompleted,
+} from 'hrm-lib/types/ContactJob';
 
 const s3 = new S3();
 

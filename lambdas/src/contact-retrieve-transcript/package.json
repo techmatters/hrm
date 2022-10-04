@@ -10,6 +10,7 @@
   "license": "ISC",
   "dependencies": {
     "aws-sdk": "^2.1225.0",
+    "hrm-lib": "file:../../../hrm-lib",
     "twilio": "^3.80.0",
     "util": "^0.12.4"
   }

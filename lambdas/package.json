@@ -30,8 +30,8 @@
   },
   "scripts": {
     "compile": "run-p compile:contact-retrieve-recording-url compile:contact-retrieve-transcript",
-    "compile:contact-retrieve-recording-url": "cd src/contact-retrieve-recording-url && npm install && cd ../../ && npx tsc src/contact-retrieve-recording-url/*.ts",
-    "compile:contact-retrieve-transcript": "cd src/contact-retrieve-transcript && npm install && cd ../../ && npx tsc src/contact-retrieve-transcript/*.ts",
+    "compile:contact-retrieve-recording-url": "cd src/contact-retrieve-recording-url && npm ci && cd ../../ && npx tsc src/contact-retrieve-recording-url/*.ts",
+    "compile:contact-retrieve-transcript": "cd src/contact-retrieve-transcript && npm ci && cd ../../ && npx tsc src/contact-retrieve-transcript/*.ts",
     "docker:build": "run-p docker:build:contact-retrieve-recording-url docker:build:contact-retrieve-transcript",
     "docker:build:contact-retrieve-recording-url": "docker build -t lambdas-contact-retrieve-recording-url -f Dockerfile src/contact-retrieve-recording-url/.",
     "docker:build:contact-retrieve-transcript": "docker build -t lambdas-contact-retrieve-transcript -f Dockerfile src/contact-retrieve-transcript/.",

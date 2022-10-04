@@ -1,13 +1,11 @@
 FROM public.ecr.aws/lambda/nodejs:14
 
-# Copy package.json to lambda root
-COPY package.json ${LAMBDA_TASK_ROOT}
+################################
+# This dockerfile depends on npm ci and typescipt having already been compiled
+################################
 
-# Install NPM dependencies for function
-RUN npm install
-
-# Copy script files to lambda root
-COPY *.js ${LAMBDA_TASK_ROOT}
+# Copy compiled JS, modules, and package.json to lambda root
+COPY *.js node_modules package.json  ${LAMBDA_TASK_ROOT}
 
 # Set the CMD to your handler (could also be done as a parameter override outside of the Dockerfile)
 CMD [ "index.handler" ]
