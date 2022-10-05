@@ -41,7 +41,7 @@ const processRecord = async (sqsRecord: SQSRecord) => {
     serviceSid: message.serviceSid,
   });
 
-  const uploadResults: S3.ManagedUpload.SendData = await uploadTranscript({
+  const uploadResults = await uploadTranscript({
     transcript,
     docsBucketName: parameters.docsBucketName,
     accountSid: message.accountSid,
