@@ -80,12 +80,6 @@ jobs:
           echo AWS_DEFAULT_REGION=$region >> $GITHUB_ENV
           echo DOCKER_IMAGE_BASE=712893914485.dkr.ecr.${region}.amazonaws.com/${ENVIRONMENT}/hrm-contact- >> $GITHUB_ENV
 
-      - name: Compile Lambda
-        run: |
-          cd lambdas
-          npm ci
-          npm run compile:${{ env.LAMBDA_NAME }}
-
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
