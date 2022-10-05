@@ -5,7 +5,7 @@ const s3 = new S3();
 
 export type UploadTranscriptParams = {
   transcript: ExportTranscriptResult;
-  docsBucketName: string;
+  docsBucketName: string | undefined;
   accountSid: string;
   contactId: number;
   filePath: string;

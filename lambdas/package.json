@@ -30,6 +30,7 @@
   },
   "scripts": {
     "compile": "run-p compile:contact-retrieve-recording-url compile:contact-retrieve-transcript",
+    "compile:hrm-ssm-cache": "cd src/lib/hrm-ssm-cache && npm ci && cd ../../../ && npx tsc src/lib/hrm-ssm-cache/*.ts",
     "compile:contact-retrieve-recording-url": "cd src/contact-retrieve-recording-url && npm ci && cd ../../ && npx tsc src/contact-retrieve-recording-url/*.ts",
     "compile:contact-retrieve-transcript": "cd src/contact-retrieve-transcript && npm ci && cd ../../ && npx tsc src/contact-retrieve-transcript/*.ts",
     "docker:build": "run-p docker:build:contact-retrieve-recording-url docker:build:contact-retrieve-transcript",
@@ -37,8 +38,8 @@
     "docker:build:contact-retrieve-transcript": "docker build -t lambdas-contact-retrieve-transcript --build-arg lambda_name=contact-retrieve-transcript -f Dockerfile ../",
     "docker:build-and-run:contact-retrieve-recording-url": "run-s docker:build:contact-retrieve-recording-url docker:run:contact-retrieve-recording-url",
     "docker:build-and-run:contact-retrieve-transcript": "run-s docker:build:contact-retrieve-transcript docker:run:contact-retrieve-transcript",
-    "docker:run:contact-retrieve-recording-url": "docker run -p 9000:8080 lambdas-contact-retrieve-recording-url",
-    "docker:run:contact-retrieve-transcript": "docker run -p 9000:8080 -e completed_sqs_queue_url=fakeQueueUrl lambdas-contact-retrieve-transcript",
+    "docker:run:contact-retrieve-recording-url": "docker run -p 9000:8080 -e hrm_env=local -e completed_sqs_queue_url=local lambdas-contact-retrieve-recording-url",
+    "docker:run:contact-retrieve-transcript": "docker run -p 9000:8080 -e hrm_env=local -e completed_sqs_queue_url=local lambdas-contact-retrieve-transcript",
     "test:contact-retrieve-recording-url": "curl -XPOST \"http://localhost:9000/2015-03-31/functions/function/invocations\" -d '{}'",
     "test:contact-retrieve-transcript": "curl -XPOST \"http://localhost:9000/2015-03-31/functions/function/invocations\" -d \"$(cat src/contact-retrieve-transcript/testPayload.json)\""
   }

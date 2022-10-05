@@ -1,9 +1,8 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { S3 } from 'aws-sdk';
 import { SQS } from 'aws-sdk';
 import type { SQSBatchResponse, SQSEvent, SQSRecord, SNSMessage } from 'aws-lambda';
 import { exportTranscript } from './exportTranscript';
-import { getParameters } from './getParameters';
+import { config, loadParameters } from 'hrm-ssm-cache';
 import { uploadTranscript } from './uploadTranscript';
 
 /**
@@ -13,11 +12,8 @@ import { uploadTranscript } from './uploadTranscript';
  */
 
 const sqs = new SQS();
-const CompletedQueueUrl = process.env.completed_sqs_queue_url;
-
-if (!CompletedQueueUrl) {
-  throw new Error('Missing completed_sqs_queue_url ENV Variable');
-}
+const completedQueueUrl = process.env.completed_sqs_queue_url;
+const hrm_env = process.env.hrm_env;
 
 const processRecord = async (sqsRecord: SQSRecord) => {
   console.dir(sqsRecord);
@@ -32,18 +28,20 @@ const processRecord = async (sqsRecord: SQSRecord) => {
    */
   const snsMessage: SNSMessage = JSON.parse(sqsRecord.body);
   const message = JSON.parse(snsMessage.Message);
-  const parameters = await getParameters(message);
+
+  const authToken = config.values[`/${hrm_env}/${message.accountSid}/TWILIO_AUTH_TOKEN`];
+  const docsBucketName = config.values[`/${hrm_env}/${message.accountSid}/S3_DOCS_BUCKET_NAME`];
 
   const transcript = await exportTranscript({
+    authToken,
     accountSid: message.accountSid,
-    authToken: parameters.authToken,
     channelSid: message.channelSid,
     serviceSid: message.serviceSid,
   });
 
   const uploadResults = await uploadTranscript({
     transcript,
-    docsBucketName: parameters.docsBucketName,
+    docsBucketName,
     accountSid: message.accountSid,
     contactId: message.contactId,
     filePath: message.filePath,
@@ -61,9 +59,28 @@ const processRecord = async (sqsRecord: SQSRecord) => {
   await sqs
     .sendMessage({
       MessageBody: JSON.stringify(completedJob),
-      QueueUrl: CompletedQueueUrl,
+      QueueUrl: completedQueueUrl,
     })
     .promise();
+};
+
+export const processRecordWithoutException = async (sqsRecord: SQSRecord): Promise<void> => {
+  try {
+    await processRecord(sqsRecord);
+  } catch (err) {
+    console.error('Failed to process record', err);
+
+    const failedJob = {
+      //TODO: fill this in appropriately once some other decisions have been made. (rbd - 03/10/22)
+    };
+
+    await sqs
+      .sendMessage({
+        MessageBody: JSON.stringify(failedJob),
+        QueueUrl: completedQueueUrl,
+      })
+      .promise();
+  }
 };
 
 /**
@@ -75,44 +92,41 @@ const processRecord = async (sqsRecord: SQSRecord) => {
  * (rbd - 01/10/22)
  */
 export const handler = async (event: SQSEvent): Promise<any> => {
+  if (!completedQueueUrl) {
+    throw new Error('Missing completed_sqs_queue_url ENV Variable');
+  }
+
+  if (!hrm_env) {
+    throw new Error('Missing hrm_env ENV Variable');
+  }
+
+  // This isn't really doing anything if we are handling errors in the complete queue, but
+  // it keeps us from having to delete each message from the queue since SQS will assume
+  // success if we don't return anything in batchItemFailure response. And the queues
+  // will be set up for more "SQS" native error handling in the future if we decide it
+  // has value. (rbd - 03/10/22)
+  const response: SQSBatchResponse = { batchItemFailures: [] };
+
   try {
-    // This isn't really doing anything if we are handling errors in the complete queue, but
-    // it keeps us from having to delete each message from the queue since SQS will assume
-    // success if we don't return anything in batchItemFailure response. And the queues
-    // will be set up for more "SQS" native error handling in the future if we decide it
-    // has value. (rbd - 03/10/22)
-    const response: SQSBatchResponse = { batchItemFailures: [] };
+    await loadParameters({ regex: /TWILIO_AUTH_TOKEN|S3_DOCS_BUCKET_NAME/ });
 
-    const promises = event.Records.map(async (sqsRecord: SQSRecord) => {
-      try {
-        await processRecord(sqsRecord);
-      } catch (err) {
-        console.error('Failed to process record', err);
-
-        const failedJob = {
-          //TODO: fill this in appropriately once some other decisions have been made. (rbd - 03/10/22)
-        };
-
-        await sqs
-          .sendMessage({
-            MessageBody: JSON.stringify(failedJob),
-            QueueUrl: CompletedQueueUrl,
-          })
-          .promise();
-      }
-    });
+    const promises = event.Records.map(
+      async (sqsRecord) => await processRecordWithoutException(sqsRecord),
+    );
 
     await Promise.all(promises);
 
     return response;
   } catch (err) {
-    // You should REALLY never get here unless something is terribly wrong with the message from SQS
-    // eslint-disable-next-line no-console
+    //SSM failures and other uncaught exceptions will cause a failure of all messages sending them to DLQ.
     console.error(err);
-    return {
-      statusCode: 500,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(err),
-    };
+
+    response.batchItemFailures = event.Records.map((record) => {
+      return {
+        itemIdentifier: record.messageId,
+      };
+    });
+
+    return response;
   }
 };

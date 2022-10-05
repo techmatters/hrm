@@ -2,7 +2,7 @@ import { Twilio } from 'twilio';
 
 export type ExportTranscriptParams = {
   accountSid: string;
-  authToken: string;
+  authToken: string | undefined;
   serviceSid: string;
   channelSid: string;
 };

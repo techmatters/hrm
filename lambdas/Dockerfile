@@ -11,14 +11,14 @@ COPY hrm-lib /tmp/build/hrm-lib
 COPY lambdas /tmp/build/lambdas
 
 RUN cd /tmp/build/lambdas \
-    && pwd \
-    && node --version \
-    && cat package.json \
     && npm install \
+    && npm run compile:hrm-ssm-cache \
     && npm run compile:${lambda_name} \
     && cd src/${lambda_name} \
     && cp *.js /var/task/ \
     && cp -r node_modules /var/task/ \
+    && cd ../lib \
+    && cp -r hrm-ssm-cache /var/lib \
     && rm -rf /tmp/* \
     && rm -rf /root/.cache \
     && rm -rf /usr/local/share/.cache \

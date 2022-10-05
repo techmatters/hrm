@@ -11,6 +11,7 @@
   "dependencies": {
     "aws-sdk": "^2.1225.0",
     "hrm-lib": "file:../../../hrm-lib",
+    "hrm-ssm-cache": "file:../lib/hrm-ssm-cache",
     "twilio": "^3.80.0",
     "util": "^0.12.4"
   }
