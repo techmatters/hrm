@@ -7,24 +7,14 @@ export type ExportTranscriptParams = {
   channelSid: string;
 };
 
-export type ExportedMessage = {
-  sid: string;
-  dateCreated: Date;
-  from: string;
-  body: string;
-  index: number;
-  type: string;
-  media: any;
-};
-
-export type ExportTranscriptReturn = ExportedMessage[];
+export type ExportTranscriptResult = Awaited<ReturnType<typeof exportTranscript>>;
 
 export const exportTranscript = async ({
   accountSid,
   authToken,
   channelSid,
   serviceSid,
-}: ExportTranscriptParams): Promise<ExportTranscriptReturn> => {
+}: ExportTranscriptParams) => {
   // eslint-disable-next-line no-console
   console.log(
     `Trying to export transcript with accountSid ${accountSid}, serviceSid ${serviceSid}, channelSid ${channelSid}`,
@@ -36,7 +26,6 @@ export const exportTranscript = async ({
     .channels.get(channelSid)
     .messages.list();
 
-  //TODO: define type for this structure.
   const transcript = messages.map((m) => ({
     sid: m.sid,
     dateCreated: m.dateCreated,

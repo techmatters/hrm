@@ -46,6 +46,7 @@ const processRecord = async (sqsRecord: SQSRecord) => {
     docsBucketName: parameters.docsBucketName,
     accountSid: message.accountSid,
     contactId: message.contactId,
+    filePath: message.filePath,
     taskId: message.taskId,
     twilioWorkerId: message.twilioWorkerId,
     serviceSid: message.serviceSid,

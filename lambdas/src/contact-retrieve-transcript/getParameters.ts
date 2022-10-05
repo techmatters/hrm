@@ -1,5 +1,5 @@
 import { SSM } from 'aws-sdk';
-import { PublishRetrieveContactTranscript } from 'hrm-lib/types/ContactJob';
+import type { PublishRetrieveContactTranscript } from 'hrm-lib/types/ContactJob';
 
 const ssm = new SSM();
 
@@ -11,6 +11,7 @@ export type GetParametersReturn = {
 export const getParameters = async (
   message: PublishRetrieveContactTranscript,
 ): Promise<GetParametersReturn> => {
+  //TODO: discuss methods for handling this with Gian
   const [authToken, docsBucketName] = (
     await Promise.all(
       ['TWILIO_AUTH_TOKEN', 'S3_DOCS_BUCKET_NAME'].map(async (s) =>
