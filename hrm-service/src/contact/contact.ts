@@ -132,7 +132,7 @@ export const createContact = async (
     await createContactJob({
       jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
       resource: created,
-      additionalPayload: undefined,
+      additionalPayload: null,
     });
   }
 
