@@ -2,7 +2,7 @@
 import { SQS } from 'aws-sdk';
 import type { SQSBatchResponse, SQSEvent, SQSRecord, SNSMessage } from 'aws-lambda';
 import { exportTranscript } from './exportTranscript';
-import { config, loadParameters } from 'hrm-ssm-cache';
+import { ssmCache, loadSsmCache } from 'hrm-ssm-cache';
 import { uploadTranscript } from './uploadTranscript';
 
 /**
@@ -12,14 +12,36 @@ import { uploadTranscript } from './uploadTranscript';
  */
 
 const sqs = new SQS();
-const completedQueueUrl = process.env.completed_sqs_queue_url;
+const completedQueueUrl = process.env.completed_sqs_queue_url as string;
 const hrm_env = process.env.hrm_env;
+
+/**
+ * Discussion Topic:
+ * This assumes a new ssm param path based structure like `/development/twilio/${accountSid}/AUTH_TOKEN`,
+ * Obviously accountSid could be a more simple representation of the account if needed. But I think this
+ * would allow us to increase the flexibility of loading SSM params in batches significantly and for applying
+ * IAM policies to SSM params in a slightly less granular way.
+ *
+ * I still don't have an understanding of all of the places and ways that the various credentials are used
+ * and would love some input on this before we go too much further. (rbd - 06/10/22)
+ */
+const ssmCacheConfigs = [
+  {
+    path: `/${hrm_env}/twilio`,
+    regex: /AUTH_TOKEN/,
+  },
+  {
+    path: `/${hrm_env}/s3`,
+    regex: /DOCS_BUCKET_NAME/,
+  },
+];
 
 const processRecord = async (sqsRecord: SQSRecord) => {
   console.dir(sqsRecord);
   /**
    * TODO: This is still based around sending messages with SNS instead of directly to SES. I think we should
-   * consider moving to sending SES directly from HRM, as that will simplify the message structure. If we
+   * consider moving to sending SES directly from HRM, as that will simplify the message structure. And simplify
+   * processing of the DLQ if we are planning to use the completed queue as the DLQ in the first iteration. If we
    * were sending a generic "contactSaved" event to SNS and letting sns handle figuring out if it should
    * process a transcript or a recording based on the payload, the SNS message structure would seem more
    * worth the complexity. But if we know at job creation time that the job what type of job is being sent
@@ -29,8 +51,8 @@ const processRecord = async (sqsRecord: SQSRecord) => {
   const snsMessage: SNSMessage = JSON.parse(sqsRecord.body);
   const message = JSON.parse(snsMessage.Message);
 
-  const authToken = config.values[`/${hrm_env}/${message.accountSid}/TWILIO_AUTH_TOKEN`];
-  const docsBucketName = config.values[`/${hrm_env}/${message.accountSid}/S3_DOCS_BUCKET_NAME`];
+  const authToken = ssmCache.values[`/${hrm_env}/twilio/${message.accountSid}/AUTH_TOKEN`];
+  const docsBucketName = ssmCache.values[`/${hrm_env}/s3/${message.accountSid}/DOCS_BUCKET_NAME`];
 
   const transcript = await exportTranscript({
     authToken,
@@ -92,23 +114,18 @@ export const processRecordWithoutException = async (sqsRecord: SQSRecord): Promi
  * (rbd - 01/10/22)
  */
 export const handler = async (event: SQSEvent): Promise<any> => {
-  if (!completedQueueUrl) {
-    throw new Error('Missing completed_sqs_queue_url ENV Variable');
-  }
-
-  if (!hrm_env) {
-    throw new Error('Missing hrm_env ENV Variable');
-  }
-
-  // This isn't really doing anything if we are handling errors in the complete queue, but
-  // it keeps us from having to delete each message from the queue since SQS will assume
-  // success if we don't return anything in batchItemFailure response. And the queues
-  // will be set up for more "SQS" native error handling in the future if we decide it
-  // has value. (rbd - 03/10/22)
   const response: SQSBatchResponse = { batchItemFailures: [] };
 
   try {
-    await loadParameters({ regex: /TWILIO_AUTH_TOKEN|S3_DOCS_BUCKET_NAME/ });
+    if (!completedQueueUrl) {
+      throw new Error('Missing completed_sqs_queue_url ENV Variable');
+    }
+
+    if (!hrm_env) {
+      throw new Error('Missing hrm_env ENV Variable');
+    }
+
+    await loadSsmCache({ configs: ssmCacheConfigs });
 
     const promises = event.Records.map(
       async (sqsRecord) => await processRecordWithoutException(sqsRecord),
@@ -118,9 +135,11 @@ export const handler = async (event: SQSEvent): Promise<any> => {
 
     return response;
   } catch (err) {
-    //SSM failures and other uncaught exceptions will cause a failure of all messages sending them to DLQ.
+    // SSM failures and other major setup exceptions will cause a failure of all messages sending them to DLQ
+    // which should be the same as the completed queue right now.
     console.error(err);
 
+    // We use batchItemFailures here because we d
     response.batchItemFailures = event.Records.map((record) => {
       return {
         itemIdentifier: record.messageId,
