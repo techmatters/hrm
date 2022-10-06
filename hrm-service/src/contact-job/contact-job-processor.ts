@@ -8,7 +8,7 @@ let processingJobs = false;
 
 const JOB_PROCESSING_INTERVAL_MILLISECONDS = 5000; // 5 seconds
 const JOB_RETRY_INTERVAL_MILLISECONDS = 120000; // 2 minutes
-const JOB_MAX_ATTEMPTS = 20;
+export const JOB_MAX_ATTEMPTS = 20;
 
 export function processContactJobs() {
   if (!processingJobs) {
