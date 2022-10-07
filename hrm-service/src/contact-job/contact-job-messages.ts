@@ -23,12 +23,17 @@ export type PublishToContactJobsTopicParams = PublishRetrieveContactTranscript;
 
 //====== Message payloads expected for the completed contact jobs ======//
 
-type CompletedContactJobMessageCommons<T> = {
-  attemptResult: 'success' | 'failure';
-  attemptPayload: T;
-};
+type CompletedContactJobMessageCommons<TSuccess, TFailure> =
+  | {
+      attemptResult: 'success';
+      attemptPayload: TSuccess;
+    }
+  | {
+      attemptResult: 'failure';
+      attemptPayload: TFailure;
+    };
 
 export type CompletedRetrieveContactTranscript = PublishRetrieveContactTranscript &
-  CompletedContactJobMessageCommons<string>;
+  CompletedContactJobMessageCommons<string, any>;
 
 export type CompletedContactJobBody = CompletedRetrieveContactTranscript;

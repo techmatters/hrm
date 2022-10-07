@@ -105,6 +105,6 @@ export const appendFailedAttemptPayload = async (
     tx.oneOrNone<ContactJob>(APPEND_FAILED_ATTEMPT_PAYLOAD, {
       id,
       attemptNumber,
-      attemptPayload: JSON.stringify(attemptPayload),
+      attemptPayload: attemptPayload,
     }),
   );
