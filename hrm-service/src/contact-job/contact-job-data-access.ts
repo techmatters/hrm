@@ -1,3 +1,4 @@
+import { ITask } from 'pg-promise';
 import { db, pgp } from '../connection-pool';
 import { Contact } from '../contact/contact-data-access';
 import {
@@ -69,31 +70,29 @@ export const completeContactJob = async (
 
 /**
  * Add a new job to be completed to the ContactJobs queue
- * @param job
+ * Requires tx: ITask to make the creation of the job part of the same transaction
  */
-export const createContactJob = async (
+export const createContactJob = (tx: ITask<{}>) => async (
   job: Pick<ContactJob, 'jobType' | 'resource' | 'additionalPayload'>,
 ): Promise<void> => {
   const contact = job.resource;
-  await db.task(tx => {
-    const insertSql = pgp.helpers.insert(
-      {
-        requested: new Date().toISOString(),
-        jobType: job.jobType,
-        contactId: contact.id,
-        accountSid: contact.accountSid,
-        additionalPayload: job.additionalPayload,
-        lastAttempt: null,
-        numberOfAttempts: 0,
-        failedAttemptsPayloads: {},
-        completed: null,
-        completionPayload: null,
-      },
-      null,
-      'ContactJobs',
-    );
-    return tx.none(insertSql);
-  });
+  const insertSql = pgp.helpers.insert(
+    {
+      requested: new Date().toISOString(),
+      jobType: job.jobType,
+      contactId: contact.id,
+      accountSid: contact.accountSid,
+      additionalPayload: job.additionalPayload,
+      lastAttempt: null,
+      numberOfAttempts: 0,
+      failedAttemptsPayloads: {},
+      completed: null,
+      completionPayload: null,
+    },
+    null,
+    'ContactJobs',
+  );
+  return tx.none(insertSql);
 };
 
 export const appendFailedAttemptPayload = async (

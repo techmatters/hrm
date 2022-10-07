@@ -8,7 +8,8 @@ import { db } from '../../../src/connection-pool';
 import '../../case-validation';
 import { CompletedContactJobBody } from '../../../src/contact-job/contact-job-messages';
 import { ContactMediaType } from '../../../src/contact/contact-json';
-import { chatChannels, Contact } from '../../../src/contact/contact';
+import { Contact } from '../../../src/contact/contact';
+import { chatChannels } from '../../../src/contact/channelTypes';
 import { JOB_MAX_ATTEMPTS } from '../../../src/contact-job/contact-job-processor';
 
 jest.mock('../../../src/contact-job/client-sns');
