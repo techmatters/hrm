@@ -12,7 +12,12 @@ import { uploadTranscript } from './uploadTranscript';
  */
 
 const sqs = new SQS();
-const completedQueueUrl = process.env.completed_sqs_queue_url as string;
+
+//TODO: remove this once I figure out how to do it in cdk config (rbd - 07/10/22)
+const completedQueueUrl = process.env.completed_sqs_queue_url?.replace(
+  'localhost',
+  'localstack',
+) as string;
 const hrm_env = process.env.hrm_env;
 
 /**
@@ -28,31 +33,24 @@ const hrm_env = process.env.hrm_env;
 const ssmCacheConfigs = [
   {
     path: `/${hrm_env}/twilio`,
-    regex: /AUTH_TOKEN/,
+    regex: /auth_token/,
   },
   {
     path: `/${hrm_env}/s3`,
-    regex: /DOCS_BUCKET_NAME/,
+    regex: /docs_bucket_name/,
   },
 ];
 
 const processRecord = async (sqsRecord: SQSRecord) => {
   console.dir(sqsRecord);
-  /**
-   * TODO: This is still based around sending messages with SNS instead of directly to SES. I think we should
-   * consider moving to sending SES directly from HRM, as that will simplify the message structure. And simplify
-   * processing of the DLQ if we are planning to use the completed queue as the DLQ in the first iteration. If we
-   * were sending a generic "contactSaved" event to SNS and letting sns handle figuring out if it should
-   * process a transcript or a recording based on the payload, the SNS message structure would seem more
-   * worth the complexity. But if we know at job creation time that the job what type of job is being sent
-   * and what jobs should run, we can just send the payload directly to SES and avoid the added SNS message
-   * complexity.
-   */
-  const snsMessage: SNSMessage = JSON.parse(sqsRecord.body);
-  const message = JSON.parse(snsMessage.Message);
+  const message = JSON.parse(sqsRecord.body);
+  console.log(message);
 
-  const authToken = ssmCache.values[`/${hrm_env}/twilio/${message.accountSid}/AUTH_TOKEN`];
-  const docsBucketName = ssmCache.values[`/${hrm_env}/s3/${message.accountSid}/DOCS_BUCKET_NAME`];
+  const authToken = ssmCache.values[`/${hrm_env}/twilio/${message.accountSid}/auth_token`];
+  const docsBucketName = ssmCache.values[`/${hrm_env}/s3/${message.accountSid}/docs_bucket_name`];
+
+  console.log('authToken', authToken);
+  console.log('docsBucketName', docsBucketName);
 
   const transcript = await exportTranscript({
     authToken,
@@ -93,7 +91,11 @@ export const processRecordWithoutException = async (sqsRecord: SQSRecord): Promi
     console.error('Failed to process record', err);
 
     const failedJob = {
-      //TODO: fill this in appropriately once some other decisions have been made. (rbd - 03/10/22)
+      error: {
+        message: err.message,
+        stack: err.stack,
+      },
+      sqsRecord,
     };
 
     await sqs
@@ -127,6 +129,8 @@ export const handler = async (event: SQSEvent): Promise<any> => {
 
     await loadSsmCache({ configs: ssmCacheConfigs });
 
+    console.dir(ssmCache);
+
     const promises = event.Records.map(
       async (sqsRecord) => await processRecordWithoutException(sqsRecord),
     );
@@ -137,7 +141,7 @@ export const handler = async (event: SQSEvent): Promise<any> => {
   } catch (err) {
     // SSM failures and other major setup exceptions will cause a failure of all messages sending them to DLQ
     // which should be the same as the completed queue right now.
-    console.error(err);
+    console.dir(err);
 
     // We use batchItemFailures here because we d
     response.batchItemFailures = event.Records.map((record) => {

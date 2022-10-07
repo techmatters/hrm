@@ -2,7 +2,12 @@ import { SSM } from 'aws-sdk';
 
 // This is based around the pattern found in https://github.com/ryands17/lambda-ssm-cache
 
-const ssm = new SSM();
+// This allows endpoint override for localstack I haven't found a better way to do this yet
+const ssmConfig = process.env.AWS_ENDPOINT_OVERRIDE
+  ? { endpoint: process.env.AWS_ENDPOINT_OVERRIDE }
+  : {};
+
+const ssm = new SSM(ssmConfig);
 
 export type SsmCache = {
   values: Record<string, string | undefined>;
@@ -60,12 +65,7 @@ const loadPaginated = async ({
     })
     .promise();
 
-  resp.Parameters?.forEach(({ Name, Value }) => {
-    if (!Name) return;
-    if (regex && !regex.test(Name)) return;
-
-    ssmCache.values[Name] = Value;
-  });
+  resp.Parameters?.forEach((p) => addToCache(regex, p));
 
   if (resp.NextToken) {
     await loadPaginated({
@@ -76,6 +76,13 @@ const loadPaginated = async ({
   }
 };
 
-const hasCacheExpired = () => ssmCache.expiryDate && new Date() > ssmCache.expiryDate;
+export const addToCache = (regex, { Name = null, Value = null }: SSM.Parameter) => {
+  if (!Name) return;
+  if (regex && !regex.test(Name)) return;
 
-const isConfigNotEmpty = () => Object.keys(ssmCache.values).length;
+  ssmCache.values[Name] = Value;
+};
+
+const hasCacheExpired = () => !!(ssmCache.expiryDate && new Date() > ssmCache.expiryDate);
+
+const isConfigNotEmpty = () => !!Object.keys(ssmCache.values).length;

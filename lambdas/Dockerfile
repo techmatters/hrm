@@ -1,4 +1,4 @@
-FROM public.ecr.aws/lambda/nodejs:14 as build
+FROM public.ecr.aws/lambda/nodejs:16 as build
 
 ARG lambda_name
 ENV lambda_name ${lambda_name}
@@ -18,6 +18,7 @@ RUN cd /tmp/build/lambdas \
     && cp *.js /var/task/ \
     && cp -r node_modules /var/task/ \
     && cd ../lib \
+    # it is weird that this isn't a hard link after npm ci, but we get runtime errors without it.
     && cp -r hrm-ssm-cache /var/lib \
     && rm -rf /tmp/* \
     && rm -rf /root/.cache \
@@ -30,7 +31,7 @@ FROM scratch
 COPY --from=build / /
 
 # all of this is a little more fragile than I would like because we have to duplicate the parent repo
-# at https://github.com/aws/aws-lambda-base-images/blob/nodejs14.x/Dockerfile.nodejs14.x
+# at https://github.com/aws/aws-lambda-base-images/blob/nodejs16.x/Dockerfile.nodejs16.x
 ENV LANG=en_US.UTF-8
 ENV TZ=:/etc/localtime
 ENV PATH=/var/lang/bin:/usr/local/bin:/usr/bin/:/bin:/opt/bin
