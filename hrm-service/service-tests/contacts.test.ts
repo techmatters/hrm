@@ -33,8 +33,11 @@ import * as contactApi from '../src/contact/contact';
 import * as contactDb from '../src/contact/contact-data-access';
 import { openPermissions } from '../src/permissions/json-permissions';
 import * as proxiedEndpoints from './external-service-stubs/proxied-endpoints';
-import { ContactJobType } from '../src/contact-job/contact-job-data-access';
+import * as contactJobDataAccess from '../src/contact-job/contact-job-data-access';
 import { chatChannels } from '../src/contact/channelTypes';
+import * as contactInsertSql from '../src/contact/sql/contact-insert-sql';
+import { selectSingleContactByTaskId } from '../src/contact/sql/contact-get-sql';
+
 
 const { form, ...contact1WithRawJsonProp } = contact1 as CreateContactPayloadWithFormProperty;
 
@@ -90,14 +93,27 @@ const cleanupContactsJobs = () =>
   `),
   );
 
-/**
- * We could move this to contact data access, but since is something we only want in test suits, it might be better this way
- */
+// eslint-disable-next-line @typescript-eslint/no-shadow
+const getContactByTaskId = (taskId: string, accountSid: string) => 
+  db.oneOrNone(
+    selectSingleContactByTaskId('Contacts'),
+    { accountSid, taskId },
+  );
+
 // eslint-disable-next-line @typescript-eslint/no-shadow
 const deleteContactById = (id: number, accountSid: string) =>
   db.task(t =>
     t.none(`
       DELETE FROM "Contacts" 
+      WHERE "id" = ${id} AND "accountSid" = '${accountSid}';
+  `),
+  );
+
+// eslint-disable-next-line @typescript-eslint/no-shadow
+const deleteContactJobById = (id: number, accountSid: string) =>
+  db.task(t =>
+    t.none(`
+      DELETE FROM "ContactJobs" 
       WHERE "id" = ${id} AND "accountSid" = '${accountSid}';
   `),
   );
@@ -348,7 +364,7 @@ describe('/contacts route', () => {
         channel,
         contact: { ...withTaskId, channel, taskId: `${withTaskId.taskId}-${channel}` },
       }))).test(
-      `contacts with channel type $channel should create ${ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT} job`,
+      `contacts with channel type $channel should create ${contactJobDataAccess.ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT} job`,
       async ({ contact }) => {
         const res = await request
           .post(route)
@@ -360,7 +376,7 @@ describe('/contacts route', () => {
         const createdContact = await contactDb.getById(accountSid, res.body.id);
         const jobs = await selectJobsByContactId(createdContact.id, createdContact.accountSid);
 
-        const retrieveContactTranscriptJobs = jobs.filter(j => j.jobType === ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT);
+        const retrieveContactTranscriptJobs = jobs.filter(j => j.jobType === contactJobDataAccess.ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT);
         expect(retrieveContactTranscriptJobs).toHaveLength(1);
 
         // Test that idempotence applies to jobs too
@@ -372,8 +388,72 @@ describe('/contacts route', () => {
         expect(res2.status).toBe(200);
         const jobs2 = await selectJobsByContactId(res.body.id, res.body.accountSid);
 
-        const retrieveContactTranscriptJobs2 = jobs2.filter(j => j.jobType === ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT);
+        const retrieveContactTranscriptJobs2 = jobs2.filter(j => j.jobType === contactJobDataAccess.ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT);
         expect(retrieveContactTranscriptJobs2).toHaveLength(1);
+
+        const attemptedContact = await getContactByTaskId(contact.taskId, accountSid);
+
+        expect(attemptedContact).not.toBeNull();
+
+        await Promise.all(retrieveContactTranscriptJobs.map(j => deleteContactJobById(j.id, j.accountSid)));
+        await deleteContactById(res.body.id, res.body.accountSid);
+      },
+    );
+
+    each(
+      chatChannels.map(channel => ({
+        channel,
+        contact: { ...withTaskId, channel, taskId: `${withTaskId.taskId}-${channel}` },
+      }))).test(
+      `if contact with channel type $channel is not created, neither is ${contactJobDataAccess.ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT} job`,
+      async ({ contact }) => {
+        const insertContactSqlSpy = jest.spyOn(contactInsertSql, 'insertContactSql').mockImplementationOnce(() => {
+          throw new Error('Ups');
+        });
+
+        const createContactJobSpy = jest.spyOn(contactJobDataAccess, 'createContactJob');
+
+        const res = await request
+          .post(route)
+          .set(headers)
+          .send(contact);
+
+        expect(res.status).toBe(500);
+        
+        expect(createContactJobSpy).not.toHaveBeenCalled();
+
+        const attemptedContact = await getContactByTaskId(contact.taskId, accountSid);
+
+        expect(attemptedContact).toBeNull();
+
+        insertContactSqlSpy.mockRestore();
+        createContactJobSpy.mockRestore();
+      },
+    );
+
+    each(
+      chatChannels.map(channel => ({
+        channel,
+        contact: { ...withTaskId, channel, taskId: `${withTaskId.taskId}-${channel}` },
+      }))).test(
+      `if ${contactJobDataAccess.ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT} job creation fails with channel type $channel, the contact is not created either`,
+      async ({ contact }) => {
+        const createContactJobSpy = jest.spyOn(contactJobDataAccess, 'createContactJob').mockImplementationOnce(() => {
+          throw new Error('Ups');
+        });
+
+        const res = await request
+          .post(route)
+          .set(headers)
+          .send(contact);
+
+        expect(res.status).toBe(500);
+        
+        const attemptedContact = await getContactByTaskId(contact.taskId, accountSid);
+
+        expect(attemptedContact).toBeNull();
+
+        createContactJobSpy.mockRestore();
       },
     );
   });
