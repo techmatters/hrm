@@ -34,6 +34,7 @@ import * as contactDb from '../src/contact/contact-data-access';
 import { openPermissions } from '../src/permissions/json-permissions';
 import * as proxiedEndpoints from './external-service-stubs/proxied-endpoints';
 import { ContactJobType } from '../src/contact-job/contact-job-data-access';
+import { chatChannels } from '../src/contact/channelTypes';
 
 const { form, ...contact1WithRawJsonProp } = contact1 as CreateContactPayloadWithFormProperty;
 
@@ -343,7 +344,7 @@ describe('/contacts route', () => {
     });
 
     each(
-      contactApi.chatChannels.map(channel => ({
+      chatChannels.map(channel => ({
         channel,
         contact: { ...withTaskId, channel, taskId: `${withTaskId.taskId}-${channel}` },
       }))).test(
