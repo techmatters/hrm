@@ -241,7 +241,7 @@ describe('pollAndprocessCompletedContactJobs', () => {
       },
     ]),
   ).test(
-    '$job.jobType failed job is processed accordingly with attempt number $job.attemptNumber',
+    '$job.jobType failed job is processed accordingly with expectMarkedAsComplete "$job.expectMarkedAsComplete"',
     async ({ job, processCompletedFunction, expectMarkedAsComplete }) => {
       const validPayload = {
         Body: JSON.stringify(job),

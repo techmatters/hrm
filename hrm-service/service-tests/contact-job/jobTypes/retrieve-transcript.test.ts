@@ -9,6 +9,7 @@ import '../../case-validation';
 import { CompletedContactJobBody } from '../../../src/contact-job/contact-job-messages';
 import { ContactMediaType } from '../../../src/contact/contact-json';
 import { chatChannels, Contact } from '../../../src/contact/contact';
+import { JOB_MAX_ATTEMPTS } from '../../../src/contact-job/contact-job-processor';
 
 jest.mock('../../../src/contact-job/client-sns');
 
@@ -89,9 +90,12 @@ const createChatContact = async (channel: string, startedTimestamp: number) => {
 
   const retrieveContactTranscriptJob = retrieveContactTranscriptJobs[0];
 
+  expect(isAfter(retrieveContactTranscriptJob.requested, startedTimestamp)).toBeTruthy();
   expect(retrieveContactTranscriptJob.completed).toBeNull();
   expect(retrieveContactTranscriptJob.lastAttempt).toBeNull();
-  expect(isAfter(retrieveContactTranscriptJob.requested, startedTimestamp)).toBeTruthy();
+  expect(retrieveContactTranscriptJob.numberOfAttempts).toBe(0);
+  expect(retrieveContactTranscriptJob.failedAttemptsPayloads).toMatchObject({});
+  expect(retrieveContactTranscriptJob.completionPayload).toBeNull();
 
   // Assign for cleanup
   createdContact = contact;
@@ -252,7 +256,9 @@ describe('complete retrieve-transcript job type', () => {
         serviceSid: contact.serviceSid,
         taskId: contact.taskId,
         twilioWorkerId: contact.twilioWorkerId,
-        completionPayload: 'some-url-here',
+        attemptPayload: 'some-url-here',
+        attemptNumber: 1,
+        attemptResult: 'success',
       };
 
       // const pollCompletedContactJobsSpy =
@@ -293,7 +299,7 @@ describe('complete retrieve-transcript job type', () => {
 
       const expectedMediaUrls = [
         {
-          url: completedPayload.completionPayload,
+          url: completedPayload.attemptPayload,
           type: ContactMediaType.TRANSCRIPT,
         },
       ];
@@ -332,6 +338,125 @@ describe('complete retrieve-transcript job type', () => {
 
       expect(updatedContact?.rawJson?.mediaUrls).toHaveLength(1);
       expect(updatedContact?.rawJson?.mediaUrls).toMatchObject(expectedMediaUrls);
+    },
+  );
+
+  each(
+    chatChannels.flatMap(channel => [
+      {
+        channel,
+        expectMarkedAsComplete: false,
+      },
+      {
+        channel,
+        expectMarkedAsComplete: true,
+      },
+    ]),
+  ).test(
+    '$channel completed job with failure appends the failure payload with expectMarkedAsComplete "$job.expectMarkedAsComplete"',
+    async ({ channel, expectMarkedAsComplete }) => {
+      const startedTimestamp = Date.now();
+      const [contact, retrieveContactTranscriptJob] = await createChatContact(
+        channel,
+        startedTimestamp,
+      );
+
+      const err = new Error('something went wrong');
+      const errToObject = Object.fromEntries(Object.getOwnPropertyNames(err).map(n => [n, err[n]]));
+
+      const completedPayload: CompletedContactJobBody = {
+        accountSid: retrieveContactTranscriptJob.accountSid,
+        channelSid: contact.channelSid,
+        contactId: contact.id,
+        filePath: 'the-path-file-sent',
+        jobId: retrieveContactTranscriptJob.id,
+        jobType: contactJobApi.ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
+        serviceSid: contact.serviceSid,
+        taskId: contact.taskId,
+        twilioWorkerId: contact.twilioWorkerId,
+        attemptPayload: errToObject,
+        attemptNumber: !expectMarkedAsComplete ? 1 : JOB_MAX_ATTEMPTS,
+        attemptResult: 'failure',
+      };
+
+      // const pollCompletedContactJobsSpy =
+      jest.spyOn(SQSClient, 'pollCompletedContactJobs').mockImplementation(() =>
+        Promise.resolve({
+          Messages: [
+            {
+              ReceiptHandle: retrieveContactTranscriptJob.id.toString(),
+              Body: JSON.stringify(completedPayload),
+            },
+          ],
+        }),
+      );
+
+      const processCompletedRetrieveContactTranscriptSpy = jest.spyOn(
+        contactJobComplete,
+        'processCompletedRetrieveContactTranscript',
+      );
+      const publishDueContactJobsSpy = jest.spyOn(contactJobPublish, 'publishDueContactJobs');
+      // const publishRetrieveContactTranscriptSpy = jest.spyOn(
+      //   contactJobPublish,
+      //   'publishRetrieveContactTranscript',
+      // );
+
+      const appendMediaUrlsSpy = jest.spyOn(contactApi, 'appendMediaUrls');
+
+      // Mock setInterval to return the internal cb instead than it's interval id, so we can call it when we want
+      // const setIntervalSpy =
+      jest.spyOn(timers, 'setInterval').mockImplementation(callback => {
+        return callback as any;
+      });
+
+      const processorIntervalCallback = (contactJobProcessor.processContactJobs() as unknown) as () => Promise<
+        void
+      >;
+
+      await processorIntervalCallback();
+
+      // Expect that proper code flow was executed
+      expect(processCompletedRetrieveContactTranscriptSpy).not.toHaveBeenCalled();
+      expect(appendMediaUrlsSpy).not.toHaveBeenCalled();
+
+      // Publish face is invoked
+      expect(publishDueContactJobsSpy).toHaveBeenCalledTimes(1);
+
+      // Check the completed job in the DB
+      const updatedRetrieveContactTranscriptJob = await selectJobById(
+        retrieveContactTranscriptJob.id,
+        accountSid,
+      );
+
+      if (!updatedRetrieveContactTranscriptJob)
+        throw new Error('updatedRetrieveContactTranscriptJob is null!');
+
+      expect(
+        updatedRetrieveContactTranscriptJob.failedAttemptsPayloads[completedPayload.attemptNumber],
+      ).toContainEqual(expect.objectContaining(completedPayload.attemptPayload));
+
+      if (expectMarkedAsComplete) {
+        // And previous job is not completed hence retrieved as due
+        // expect(publishRetrieveContactTranscriptSpy).toHaveBeenCalledTimes(1);
+        expect(
+          isAfter(updatedRetrieveContactTranscriptJob.completed!, startedTimestamp),
+        ).toBeTruthy();
+        expect(updatedRetrieveContactTranscriptJob.completionPayload).toBe(
+          'Attempts limit reached',
+        );
+      } else {
+        // But previous job is completed hence not retrieved as due
+        // expect(publishRetrieveContactTranscriptSpy).toHaveBeenCalledTimes(0);
+        expect(updatedRetrieveContactTranscriptJob.completed).toBeNull();
+        expect(updatedRetrieveContactTranscriptJob.completionPayload).toBeNull();
+      }
+
+      // Check the updated contact in the DB
+      const updatedContact = await db.task(async t =>
+        t.oneOrNone<Contact>(`SELECT * FROM "Contacts" WHERE id = ${contact.id}`),
+      );
+
+      expect(updatedContact?.rawJson?.mediaUrls).toBeFalsy();
     },
   );
 });
