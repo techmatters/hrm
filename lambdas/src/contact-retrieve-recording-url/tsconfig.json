@@ -1,9 +1,10 @@
 {
   "extends": "../../tsconfig.json",
   "include": ["*.ts", "*.js"],
-  "lib": ["ES2020"],
   "compilerOptions": {
+    "lib": ["ES2020"],
     "outDir": "",
-    "rootDir": "",
-  },
+    "target": "ES6",
+    "rootDir": ""
+  }
 }

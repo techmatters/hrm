@@ -15,11 +15,11 @@ on:
       lambda_name:
         description: 'hrm lambda name'
         required: true
-        default: retrieve-recording-url
+        default: contact-retrieve-recording-url
         type: choice
         options:
-          - retrieve-recording-url
-          - retrieve-transcript
+          - contact-retrieve-recording-url
+          - contact-retrieve-transcript
 
   workflow_call:
     secrets:
@@ -39,7 +39,6 @@ on:
       lambda_name:
         description: 'hrm lambda name'
         required: true
-        default: retrieve-recording-url
         type: string
       send-slack-message:
         description: 'Specifies if should send a Slack message at the end of successful run. Defaults to true'
@@ -59,11 +58,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 14.x
-
       #TODO: Move to a matrix based region split for the ECR/update lambda steps
       - name: Set Env Based on Environment
         # this is overcomplicated to allow for testing with a push event
@@ -71,7 +65,7 @@ jobs:
           INPUT_ENVIRONMENT=${{ inputs.environment }}
           INPUT_LAMBDA_NAME=${{ inputs.lambda_name }}
           ENVIRONMENT=${INPUT_ENVIRONMENT:-development}
-          LAMBDA_NAME=${INPUT_LAMBDA_NAME:-retrieve-transcript}
+          LAMBDA_NAME=${INPUT_LAMBDA_NAME:-contact-retrieve-transcript}
 
           echo ENVIRONMENT=$ENVIRONMENT >> $GITHUB_ENV
           echo LAMBDA_NAME=$LAMBDA_NAME >> $GITHUB_ENV
@@ -79,13 +73,7 @@ jobs:
           case "$ENVIRONMENT" in development) region="us-east-1" ;; staging) region="us-east-1" ;; production) region="us-east-1" ;; *) echo "Invalid environment: ${{ inputs.environment }}" && exit 1 ;; esac
           echo AWS_REGION=$region >> $GITHUB_ENV
           echo AWS_DEFAULT_REGION=$region >> $GITHUB_ENV
-          echo DOCKER_IMAGE_BASE=712893914485.dkr.ecr.${region}.amazonaws.com/${ENVIRONMENT}/hrm-lambdas- >> $GITHUB_ENV
-
-      - name: Compile Lambda
-        run: |
-          cd lambdas
-          npm ci
-          npm run compile:${{ env.LAMBDA_NAME }}
+          echo DOCKER_IMAGE_BASE=712893914485.dkr.ecr.${region}.amazonaws.com/${ENVIRONMENT}/hrm-contact- >> $GITHUB_ENV
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -102,14 +90,16 @@ jobs:
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v2
         with:
-          context: ./lambdas/src/${{ env.LAMBDA_NAME }}
+          context: ./
           file: ./lambdas/Dockerfile
+          build-args: |
+            lambda_name=${{ env.LAMBDA_NAME }}
           push: true
           tags: ${{ env.DOCKER_IMAGE_BASE }}${{ env.LAMBDA_NAME }}:live
 
       - name: Update Lambda and Publish
         run: |
-          aws lambda update-function-code --function-name ${{ env.ENVIRONMENT }}-hrm-contact-job-${{ env.LAMBDA_NAME }} --image-uri ${{ env.DOCKER_IMAGE_BASE }}${{ env.LAMBDA_NAME }}:live --publish
+          aws lambda update-function-code --function-name ${{ env.ENVIRONMENT }}-${{ env.LAMBDA_NAME }} --image-uri ${{ env.DOCKER_IMAGE_BASE }}${{ env.LAMBDA_NAME }}:live --publish
 
       # Send Slack notifying success
       - name: Slack Aselo channel

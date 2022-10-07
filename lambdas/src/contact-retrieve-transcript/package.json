@@ -1,6 +1,6 @@
 {
-  "name": "retrieve-recording-url",
-  "version": "0.0.1",
+  "name": "hrm-contact-retrieve-contact-transcript",
+  "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -9,6 +9,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "aws-sdk": "^2.1225.0",
+    "hrm-lib": "file:../../../hrm-lib",
+    "hrm-ssm-cache": "file:../lib/hrm-ssm-cache",
     "twilio": "^3.80.0",
     "util": "^0.12.4"
   }
