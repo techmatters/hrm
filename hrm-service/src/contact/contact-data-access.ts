@@ -9,6 +9,8 @@ import { endOfDay, parseISO, startOfDay } from 'date-fns';
 import { selectSingleContactByIdSql, selectSingleContactByTaskId } from './sql/contact-get-sql';
 import { insertContactSql, NewContactRecord } from './sql/contact-insert-sql';
 import { ContactMediaUrl, PersonInformation } from './contact-json';
+import { createContactJob, ContactJobType } from '../contact-job/contact-job-data-access';
+import { isChatChannel } from './channelTypes';
 
 type ExistingContactRecord = {
   id: number;
@@ -126,21 +128,26 @@ const searchParametersToQueryParameters = (
   return queryParams;
 };
 
-export const getByTaskId = async (accountSid: string, newContact: NewContactRecord) => {
-  return db.task(connection =>
-    connection.oneOrNone<Contact>(selectSingleContactByTaskId('Contacts'), {
-      accountSid,
-      taskId: newContact.taskId,
-    }),
-  );
-};
-
 export const create = async (
   accountSid: string,
   newContact: NewContactRecord,
   csamReportIds: number[],
 ): Promise<Contact> => {
   return db.tx(async connection => {
+    if (newContact.taskId) {
+      const existingContact: Contact = await connection.oneOrNone<Contact>(
+        selectSingleContactByTaskId('Contacts'),
+        {
+          accountSid,
+          taskId: newContact.taskId,
+        },
+      );
+      if (existingContact) {
+        // A contact with the same task ID already exists, return it
+        return existingContact;
+      }
+    }
+
     const now = new Date();
     const created: Contact = await connection.one<Contact>(
       insertContactSql({
@@ -151,6 +158,15 @@ export const create = async (
       }),
       { csamReportIds },
     );
+
+    if (isChatChannel(created.channel)) {
+      await createContactJob(connection)({
+        jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
+        resource: created,
+        additionalPayload: undefined,
+      });
+    }
+
     return created;
   });
 };

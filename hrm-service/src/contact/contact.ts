@@ -2,7 +2,6 @@ import {
   connectToCase,
   Contact,
   create,
-  getByTaskId,
   patch,
   search,
   SearchParameters,
@@ -10,7 +9,6 @@ import {
 import { ContactRawJson } from './contact-json';
 import { retrieveCategories, getPaginationElements } from '../controllers/helpers';
 import { NewContactRecord } from './sql/contact-insert-sql';
-import { createContactJob, ContactJobType } from '../contact-job/contact-job-data-access';
 
 // Re export as is:
 export { appendMediaUrls, Contact } from './contact-data-access';
@@ -50,34 +48,6 @@ export type SearchContact = {
   csamReports: CSAMReportEntry[];
 };
 
-// This should be in sync with the fronted (src/states/DomainConstants.ts)
-export const channelTypes = {
-  voice: 'voice',
-  whatsapp: 'whatsapp',
-  facebook: 'facebook',
-  web: 'web',
-  sms: 'sms',
-  twitter: 'twitter',
-  instagram: 'instagram',
-  line: 'line',
-  default: 'default',
-} as const;
-
-export const chatChannels = [
-  channelTypes.whatsapp,
-  channelTypes.facebook,
-  channelTypes.web,
-  channelTypes.sms,
-  channelTypes.twitter,
-  channelTypes.instagram,
-  channelTypes.line,
-];
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const isVoiceChannel = (channel: string) => channel === channelTypes.voice;
-
-const isChatChannel = (channel: string) => chatChannels.includes(channel as any);
-
 export type CreateContactPayloadWithFormProperty = Omit<NewContactRecord, 'rawJson'> & {
   form: ContactRawJson;
 } & { csamReports?: CSAMReportEntry[] };
@@ -113,28 +83,11 @@ export const createContact = async (
     createdBy,
   };
 
-  if (completeNewContact.taskId) {
-    const existingContact: Contact = await getByTaskId(accountSid, completeNewContact);
-    if (existingContact) {
-      // A contact with the same task ID already exists, return it (idempotence)
-      return existingContact;
-    }
-  }
-
   const created = await create(
     accountSid,
     completeNewContact,
     (newContact.csamReports ?? []).map(csr => csr.id),
   );
-
-  // TODO: this being not in the same trx, might fail, the contact be created, but the request fail with 5xx. Idempotence prevents inconsistencies but do we want this behavior?
-  if (isChatChannel(created.channel)) {
-    await createContactJob({
-      jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
-      resource: created,
-      additionalPayload: undefined,
-    });
-  }
 
   return created;
 };
