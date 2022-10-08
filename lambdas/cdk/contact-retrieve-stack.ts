@@ -28,18 +28,37 @@ export class ContactRetrieveStack extends cdk.Stack {
 
     /*
       Here, there be dragons.
-      This is very overcomplicated and took way too long to figure out.
-      Tokens are unresolved until apply in the produced CF template.
-      So, you can't just do normal string replace operations. You have
-      to use native cloudformation functions to manipulate the string.
+
+      To use the queue urls from inside of a lambda, we have to replace
+      'localhost' with 'localstack' so that container to container dns
+      lookups resolve correctly on the docker network.
+
+      This is WAY more complicated than it should be and took way too long
+      to figure out. But here goes:
+
+      CDK passes around tokens that are used inside of the final CloudFormation
+      template that is generated and deployed, not the actual string values for
+      things like queue urls that aren't known until the deployment is partially
+      complete.
+
+      Tokens are unresolvable until they are applied in the produced CF template.
+      So, you can't just do normal string replace operations. You have to use
+      native cloudformation functions to manipulate the string.
+
       BUUUT. There is no "replace" function in cloudformation. So you have
-      to use split/join to do a janky replace. Also... for some reason we
-      can't use "Fn::split" inside of a "Fn::Join" function directly. we have
-      to use the select to iterate over items in the split or else we just
-      get a string of "Fn::split" as our url. I have no idea why, but i
-      discovered the pattern by trial and error mixed with reviewing generate
-      cloudformation templates from the CDK that used the join/split replace
-      pattern. (rbd 08/10/22)
+      to use split/join to do a janky replace.
+
+      Also... for some reason we can't use "Fn::split" inside of a "Fn::Join"
+      function directly. We have to use the select to iterate over items in the
+      split or else we just get a string of "Fn::split" as our url. I have no idea
+      why, but i discovered this working pattern by trial and error mixed with reviewing
+      generate cloudformation templates from the CDK that used the join/split replace
+      pattern.
+
+      This is pretty fragile since we can't arbitrarily split/join if there are
+      multiple instances of the needle in the haystack. But it works for this
+      simple case.
+      (rbd 08/10/22)
     */
     const splitCompleteQueueUrl = cdk.Fn.split('localhost', resources.completeQueue.queueUrl);
     const completedQueueUrl = cdk.Fn.join('localstack', [
