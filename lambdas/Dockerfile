@@ -12,7 +12,7 @@ COPY lambdas /tmp/build/lambdas
 
 RUN cd /tmp/build/lambdas \
     && npm install \
-    && npm run compile:hrm-ssm-cache \
+    && npm run compile:lib \
     && npm run compile:${lambda_name} \
     && cd src/${lambda_name} \
     && cp *.js /var/task/ \

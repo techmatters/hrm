@@ -5,6 +5,7 @@
     "lib": ["ES2020"],
     "outDir": "",
     "target": "ES6",
-    "rootDir": ""
+    "rootDir": "",
+    "esModuleInterop": true
   }
 }

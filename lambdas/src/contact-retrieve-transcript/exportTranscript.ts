@@ -20,7 +20,7 @@ export const exportTranscript = async ({
     `Trying to export transcript with accountSid ${accountSid}, serviceSid ${serviceSid}, channelSid ${channelSid}`,
   );
 
-  //TODO: remove dirty hack to test localstack
+  //TODO: remove this dirty hack that I used to test localstack where twilio doesn't work. (rbd - 08/10/22)
   if (process.env.hrm_env == 'local') {
     return [
       {

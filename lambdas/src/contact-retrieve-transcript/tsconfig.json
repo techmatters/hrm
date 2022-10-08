@@ -1,6 +1,6 @@
 {
   "extends": "../../tsconfig.json",
-  "include": ["*.ts", "*.js", "tests/generateMockMessageBody.js"],
+  "include": ["*.ts", "*.js"],
   "compilerOptions": {
     "lib": ["ES2020"],
     "outDir": "",

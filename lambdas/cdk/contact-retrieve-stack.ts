@@ -49,7 +49,7 @@ export class ContactRetrieveStack extends cdk.Stack {
 
     const fn = new lambdaNode.NodejsFunction(this, 'fetchParams', {
       //TODO: change this back to 16 once it isn't broken upstream
-      runtime: lambda.Runtime.NODEJS_14_X,
+      runtime: lambda.Runtime.NODEJS_16_X,
       memorySize: 512,
       handler: 'handler',
       entry: `./src/${id}/index.ts`,
