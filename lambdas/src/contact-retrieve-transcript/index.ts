@@ -14,10 +14,7 @@ import { uploadTranscript } from './uploadTranscript';
 const sqs = new SQS();
 
 //TODO: remove this once I figure out how to do it in cdk config (rbd - 07/10/22)
-const completedQueueUrl = process.env.completed_sqs_queue_url?.replace(
-  'localhost',
-  'localstack',
-) as string;
+const completedQueueUrl = process.env.completed_sqs_queue_url as string;
 const hrm_env = process.env.hrm_env;
 
 /**
@@ -42,15 +39,15 @@ const ssmCacheConfigs = [
 ];
 
 const processRecord = async (sqsRecord: SQSRecord) => {
-  console.dir(sqsRecord);
   const message = JSON.parse(sqsRecord.body);
   console.log(message);
 
   const authToken = ssmCache.values[`/${hrm_env}/twilio/${message.accountSid}/auth_token`];
   const docsBucketName = ssmCache.values[`/${hrm_env}/s3/${message.accountSid}/docs_bucket_name`];
 
-  console.log('authToken', authToken);
-  console.log('docsBucketName', docsBucketName);
+  if (!authToken || !docsBucketName) {
+    throw new Error('Missing required SSM params');
+  }
 
   const transcript = await exportTranscript({
     authToken,
@@ -90,10 +87,13 @@ export const processRecordWithoutException = async (sqsRecord: SQSRecord): Promi
   } catch (err) {
     console.error('Failed to process record', err);
 
+    const message = err instanceof Error ? err.message : String(err);
+    const stack = err instanceof Error ? err.stack : '';
+
     const failedJob = {
       error: {
-        message: err.message,
-        stack: err.stack,
+        message,
+        stack,
       },
       sqsRecord,
     };
@@ -128,8 +128,6 @@ export const handler = async (event: SQSEvent): Promise<any> => {
     }
 
     await loadSsmCache({ configs: ssmCacheConfigs });
-
-    console.dir(ssmCache);
 
     const promises = event.Records.map(
       async (sqsRecord) => await processRecordWithoutException(sqsRecord),

@@ -23,7 +23,8 @@ export class ContactCoreStack extends cdk.Stack {
     });
 
     const fn = new lambdaNode.NodejsFunction(this, 'fetchParams', {
-      runtime: lambda.Runtime.NODEJS_16_X,
+      //TODO: change this back to 16 once it isn't broken upstream
+      runtime: lambda.Runtime.NODEJS_14_X,
       memorySize: 512,
       handler: 'handler',
       entry: `./src/contact-complete/index.ts`,

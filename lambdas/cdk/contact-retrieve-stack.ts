@@ -26,23 +26,39 @@ export class ContactRetrieveStack extends cdk.Stack {
       description: `The url of the ${id} queue`,
     });
 
-    const completedSqsQueueImport = cdk.Fn.importValue('contactCompleteQueueUrl');
+    /*
+      Here, there be dragons.
+      This is very overcomplicated and took way too long to figure out.
+      Tokens are unresolved until apply in the produced CF template.
+      So, you can't just do normal string replace operations. You have
+      to use native cloudformation functions to manipulate the string.
+      BUUUT. There is no "replace" function in cloudformation. So you have
+      to use split/join to do a janky replace. Also... for some reason we
+      can't use "Fn::split" inside of a "Fn::Join" function directly. we have
+      to use the select to iterate over items in the split or else we just
+      get a string of "Fn::split" as our url. I have no idea why, but i
+      discovered the pattern by trial and error mixed with reviewing generate
+      cloudformation templates from the CDK that used the join/split replace
+      pattern. (rbd 08/10/22)
+    */
+    const splitCompleteQueueUrl = cdk.Fn.split('localhost', resources.completeQueue.queueUrl);
+    const completedQueueUrl = cdk.Fn.join('localstack', [
+      cdk.Fn.select(0, splitCompleteQueueUrl),
+      cdk.Fn.select(1, splitCompleteQueueUrl),
+    ]);
 
     const fn = new lambdaNode.NodejsFunction(this, 'fetchParams', {
-      //   logRetention: logs.RetentionDays.ONE_WEEK,
-      runtime: lambda.Runtime.NODEJS_16_X,
+      //TODO: change this back to 16 once it isn't broken upstream
+      runtime: lambda.Runtime.NODEJS_14_X,
       memorySize: 512,
       handler: 'handler',
       entry: `./src/${id}/index.ts`,
-      //   architectures: [lambda.Architecture.ARM_64],
       environment: {
         NODE_OPTIONS: '--enable-source-maps',
         AWS_ENDPOINT_OVERRIDE: 'http://localstack:4566',
         SQS_ENDPOINT: 'http://localstack:4566',
         hrm_env: 'local',
-        completed_sqs_queue_url: completedSqsQueueImport
-          .toString()
-          .replace(/localhost/g, 'localstack'),
+        completed_sqs_queue_url: completedQueueUrl,
       },
       bundling: { sourceMap: true },
       deadLetterQueueEnabled: true,

@@ -59,9 +59,9 @@
     "local:deploy": "cdklocal deploy --all --outputs-file ./cdk/outputs.json",
     "local:destroy": "cdklocal destroy --all",
     "local:diff": "cdklocal diff",
-    "local:sync": "cdklocal sync",
+    "local:synth": "cdklocal synth --all",
     "test:docker:contact-retrieve-recording-url": "curl -XPOST \"http://localhost:9001/2015-03-31/functions/function/invocations\" -d '{}'",
     "test:docker:contact-retrieve-transcript": "curl -XPOST \"http://localhost:9000/2015-03-31/functions/function/invocations\" -d \"$(cat src/contact-retrieve-transcript/testPayload.json)\"",
-    "test:localstack:contact-retrieve-transcript": "ts-node testContact.ts"
+    "test:localstack:contact-retrieve-transcript": "ts-node tests/sendMockContactMessage.ts contact-retrieve-transcript"
   }
 }
