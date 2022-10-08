@@ -70,7 +70,7 @@ export class ContactRetrieveStack extends cdk.Stack {
     fn.addToRolePolicy(
       new iam.PolicyStatement({
         actions: ['ssm:GetParametersByPath'],
-        resources: [`arn:aws:ssm:${this.region}:*:parameter/local*`],
+        resources: [`arn:aws:ssm:${this.region}:*:parameter/local/*`],
       }),
     );
 

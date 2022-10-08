@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import * as cdk from '@aws-cdk/core';
+import { ContactCompleteStack } from './contact-complete-stack';
 import { ContactCoreStack } from './contact-core-stack';
 import { ContactRetrieveStack } from './contact-retrieve-stack';
 
@@ -8,12 +9,16 @@ const contactCore = new ContactCoreStack(app, 'ContactCoreStack', {
   env: { region: app.node.tryGetContext('region') },
 });
 
-const contactRetriveTranscript = new ContactRetrieveStack(
+const contactComplete = new ContactCompleteStack(app, 'contact-complete', {
+  env: { region: app.node.tryGetContext('region') },
+});
+
+new ContactRetrieveStack(
   app,
   'contact-retrieve-transcript',
   {
-    deadLetterQueue: contactCore.completeQueue,
-    completeQueue: contactCore.completeQueue,
+    deadLetterQueue: contactComplete.completeQueue,
+    completeQueue: contactComplete.completeQueue,
     docsBucket: contactCore.docsBucket,
   },
   {
@@ -21,13 +26,15 @@ const contactRetriveTranscript = new ContactRetrieveStack(
   },
 );
 
-// new ContactRetrieveStack(
-//   app,
-//   'contact-retrieve-recording-url',
-//   {
-//     deadLetterQueue: contactCore.completeQueue,
-//   },
-//   {
-//     env: { region: app.node.tryGetContext('region') },
-//   },
-// );
+new ContactRetrieveStack(
+  app,
+  'contact-retrieve-recording-url',
+  {
+    deadLetterQueue: contactComplete.completeQueue,
+    completeQueue: contactComplete.completeQueue,
+    docsBucket: contactCore.docsBucket,
+  },
+  {
+    env: { region: app.node.tryGetContext('region') },
+  },
+);

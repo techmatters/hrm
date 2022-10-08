@@ -62,6 +62,8 @@
     "local:synth": "cdklocal synth --all",
     "test:docker:contact-retrieve-recording-url": "curl -XPOST \"http://localhost:9001/2015-03-31/functions/function/invocations\" -d '{}'",
     "test:docker:contact-retrieve-transcript": "curl -XPOST \"http://localhost:9000/2015-03-31/functions/function/invocations\" -d \"$(cat src/contact-retrieve-transcript/testPayload.json)\"",
+    "test:localstack:contact-complete": "ts-node tests/sendMockContactMessage.ts contact-complete",
+    "test:localstack:contact-retrieve-recording-url": "ts-node tests/sendMockContactMessage.ts contact-retrieve-recording-url",
     "test:localstack:contact-retrieve-transcript": "ts-node tests/sendMockContactMessage.ts contact-retrieve-transcript"
   }
 }
