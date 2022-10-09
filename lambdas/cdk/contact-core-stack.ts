@@ -29,12 +29,12 @@ export class ContactCoreStack extends cdk.Stack {
 
     new ssm.StringParameter(this, 'twilio_testSid1_auth_token', {
       parameterName: '/local/twilio/testSid1/auth_token',
-      stringValue: 'fakeAuthToken',
+      stringValue: 'mockAuthToken',
     });
 
     new ssm.StringParameter(this, 'twilio_testSid2_auth_token', {
       parameterName: '/local/twilio/testSid2/auth_token',
-      stringValue: 'fakeAuthToken',
+      stringValue: 'mockAuthToken',
     });
   }
 }

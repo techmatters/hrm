@@ -1,4 +1,4 @@
-import { Twilio } from 'twilio';
+import { getClient } from 'hrm-twilio-client';
 
 export type ExportTranscriptParams = {
   accountSid: string;
@@ -20,29 +20,7 @@ export const exportTranscript = async ({
     `Trying to export transcript with accountSid ${accountSid}, serviceSid ${serviceSid}, channelSid ${channelSid}`,
   );
 
-  //TODO: remove this dirty hack that I used to test localstack where twilio doesn't work. (rbd - 08/10/22)
-  if (process.env.hrm_env == 'local') {
-    return [
-      {
-        sid: 1,
-        dateCreated: 'blah',
-        from: 'person1',
-        body: 'hi',
-        index: 0,
-        type: 'message',
-      },
-      {
-        sid: 2,
-        dateCreated: 'blah',
-        from: 'person2',
-        body: 'hi',
-        index: 1,
-        type: 'message',
-      },
-    ];
-  }
-
-  const client = new Twilio(accountSid, authToken);
+  const client = getClient({ accountSid, authToken });
   const messages = await client.chat.v2
     .services(serviceSid)
     .channels.get(channelSid)

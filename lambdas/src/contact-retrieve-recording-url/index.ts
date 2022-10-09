@@ -47,6 +47,8 @@ const processRecord = async (sqsRecord: SQSRecord) => {
     throw new Error('Missing required SSM params');
   }
 
+  //TODO: fill in the actual work!
+
   const completedJob = {
     ...message,
     completionPayload: 'notARealPayload',

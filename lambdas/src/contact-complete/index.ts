@@ -12,6 +12,7 @@ const sqs = new SQS();
 
 const processRecord = async (sqsRecord: SQSRecord) => {
   console.dir(sqsRecord);
+  //TODO: fill in the actual work!
 };
 
 /**

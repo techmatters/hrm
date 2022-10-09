@@ -14,7 +14,7 @@ export type SsmCache = {
   expiryDate?: Date;
 };
 
-export let ssmCache: SsmCache = { values: {} };
+export const ssmCache: SsmCache = { values: {} };
 
 export type SsmCacheConfig = {
   path: string;
@@ -50,7 +50,7 @@ type LoadPaginatedParameters = {
   nextToken?: string;
 };
 
-const loadPaginated = async ({
+export const loadPaginated = async ({
   path,
   regex,
   nextToken,

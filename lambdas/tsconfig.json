@@ -12,5 +12,10 @@
     "moduleResolution": "node",
     "resolveJsonModule": true
   },
-  "include": ["src/**/*.ts", "src/**/*.js"]
+  "include": ["src/**/*.ts", "src/**/*.js"],
+  "ts-node": {
+    // It is faster to skip typechecking.
+    "transpileOnly": true,
+    "files": true
+  }
 }

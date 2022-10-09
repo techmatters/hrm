@@ -13,7 +13,6 @@ import { uploadTranscript } from './uploadTranscript';
 
 const sqs = new SQS();
 
-//TODO: remove this once I figure out how to do it in cdk config (rbd - 07/10/22)
 const completedQueueUrl = process.env.completed_sqs_queue_url as string;
 const hrm_env = process.env.hrm_env;
 
