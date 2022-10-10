@@ -13,9 +13,9 @@ Run `npm run test` to run all tests. This will perform a full setup for localsta
 
 If localstack is already initialized, you can run `npm run test:localstack:e2e:quick` to run the e2e tests without re-initializing localstack.
 
-Unit tests are currently tests inline with the code. They can be run with `npm run test:unit`.
+Unit tests are currently inline with the code. They can be run with `npm run test:unit`.
 
-Service tests are coming soon!
+Service tests are coming soon assuming there aren't any changes to the way we manage localstack!
 
 See options for individual tests in `package.json`
 
