@@ -89,6 +89,7 @@ export const processRecordWithoutException = async (sqsRecord: SQSRecord): Promi
     const message = err instanceof Error ? err.message : String(err);
     const stack = err instanceof Error ? err.stack : '';
 
+    //TODO: fill this in appropriately once some other decisions have been made. (rbd - 03/10/22)
     const failedJob = {
       error: {
         message,
