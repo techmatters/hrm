@@ -1,5 +1,13 @@
 import { S3 } from 'aws-sdk';
 
+/**
+ * I extracted this out to a library because there isn't a great way to do overrides
+ * for the localstack env globally that I could find. It is a little weird, but
+ * drys up the setup a bit.
+ *
+ * Totally open to other ideas here.
+ * (rbd 10-10-22)
+ */
 const getS3Conf = () => {
   const s3Config: {
     endpoint?: string;

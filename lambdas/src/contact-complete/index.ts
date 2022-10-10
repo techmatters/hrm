@@ -16,12 +16,12 @@ const processRecord = async (sqsRecord: SQSRecord) => {
 };
 
 /**
- * I refactored this from the multiple Promises.allSettled() that depended on input chaining approach to
- * a single map with a Promise.all() where all errors are swallowed by exceptions and added to a
- * SQSBatchResponse so we can use built-in error handling in SQS/Lambda. For me, this pattern is
- * significantly simpler and easier to understand, but I know that is a subjective opinion and am
- * happy to explore options around the nested bach operations approach if that is preferred.
- * (rbd - 01/10/22)
+ * I went ahead and created this placeholder for the completed queue processor lambda.
+ *
+ * It looks like Gian is still working on this in an hrm-services loop, but I don't
+ * think it is a big deal to have this in place. I'm happy to remove it if it is too
+ * soon.
+ * (rbd - 10/10/22)
  */
 export const handler = async (event: SQSEvent): Promise<any> => {
   const response: SQSBatchResponse = { batchItemFailures: [] };
@@ -33,8 +33,6 @@ export const handler = async (event: SQSEvent): Promise<any> => {
 
     return response;
   } catch (err) {
-    // SSM failures and other major setup exceptions will cause a failure of all messages sending them to DLQ
-    // which should be the same as the completed queue right now.
     console.dir(err);
 
     // We use batchItemFailures here because we d

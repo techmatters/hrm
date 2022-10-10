@@ -58,7 +58,6 @@
     "docker:compose:up": "docker-compose up -d",
     "docker:compose:down": "docker-compose down",
     "docker:compose:logs": "docker-compose logs -f",
-    "localstack": "cdklocal",
     "localstack:bootstrap": "cdklocal bootstrap",
     "localstack:deploy": "cdklocal deploy --all --outputs-file ./cdk/outputs.json",
     "localstack:destroy": "cdklocal destroy --all",

@@ -9,7 +9,7 @@ import { SqsEventSource } from '@aws-cdk/aws-lambda-event-sources';
 export class ContactCoreStack extends cdk.Stack {
   public readonly docsBucket: s3.Bucket;
 
-  constructor(scope: cdk.App, id: string, props?: cdk.StackProps) {
+  constructor({ scope, id, props }: { scope: cdk.App; id: string; props?: cdk.StackProps }) {
     super(scope, id, props);
 
     this.docsBucket = new s3.Bucket(this, 'contact_docs_bucket', {
