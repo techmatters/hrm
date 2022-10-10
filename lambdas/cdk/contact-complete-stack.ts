@@ -48,8 +48,10 @@ export class ContactCompleteStack extends cdk.Stack {
       entry: `./src/contact-complete/index.ts`,
       environment: {
         NODE_OPTIONS: '--enable-source-maps',
-        AWS_ENDPOINT_OVERRIDE: 'http://localstack:4566',
-        SQS_ENDPOINT: 'http://localstack:4566',
+        S3_ENDPOINT: 'http://localstack:4566',
+        S3_FORCE_PATH_STYLE: 'true',
+        S3_REGION: 'us-east-1',
+        SSM_ENDPOINT: 'http://localstack:4566',
       },
       bundling: { sourceMap: true },
     });

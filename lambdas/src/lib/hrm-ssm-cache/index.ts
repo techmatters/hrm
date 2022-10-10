@@ -3,9 +3,7 @@ import { SSM } from 'aws-sdk';
 // This is based around the pattern found in https://github.com/ryands17/lambda-ssm-cache
 
 // This allows endpoint override for localstack I haven't found a better way to do this globally yet
-const ssmConfig = process.env.AWS_ENDPOINT_OVERRIDE
-  ? { endpoint: process.env.AWS_ENDPOINT_OVERRIDE }
-  : {};
+const ssmConfig = process.env.SSM_ENDPOINT ? { endpoint: process.env.SSM_ENDPOINT } : {};
 
 const ssm = new SSM(ssmConfig);
 

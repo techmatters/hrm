@@ -1,15 +1,5 @@
-import { S3 } from 'aws-sdk';
+import { s3 } from 'hrm-s3-client';
 import type { ExportTranscriptResult } from './exportTranscript';
-
-const s3Config = process.env.AWS_ENDPOINT_OVERRIDE
-  ? {
-      region: 'us-east-1',
-      endpoint: process.env.AWS_ENDPOINT_OVERRIDE,
-      s3ForcePathStyle: true,
-    }
-  : {};
-
-const s3 = new S3(s3Config);
 
 export type UploadTranscriptParams = {
   transcript: ExportTranscriptResult;

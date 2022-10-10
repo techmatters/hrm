@@ -74,8 +74,11 @@ export class ContactRetrieveStack extends cdk.Stack {
       entry: `./src/${id}/index.ts`,
       environment: {
         NODE_OPTIONS: '--enable-source-maps',
-        AWS_ENDPOINT_OVERRIDE: 'http://localstack:4566',
-        SQS_ENDPOINT: 'http://localstack:4566',
+        S3_ENDPOINT: 'http://localstack:4566',
+        S3_FORCE_PATH_STYLE: 'true',
+        S3_REGION: 'us-east-1',
+        // SQS_ENDPOINT: 'http://localstack:4566',
+        SSM_ENDPOINT: 'http://localstack:4566',
         hrm_env: 'local',
         completed_sqs_queue_url: completedQueueUrl,
       },

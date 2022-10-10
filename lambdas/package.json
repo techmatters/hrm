@@ -44,6 +44,7 @@
     "awslocal": "aws --endpoint http://localhost:4566",
     "compile": "run-s compile:lib compile:contact",
     "compile:lib": "run-p compile:lib:*",
+    "compile:lib:hrm-s3-client": "cd src/lib/hrm-s3-client && npm ci && cd ../../../ && npx tsc src/lib/hrm-s3-client/*.ts",
     "compile:lib:hrm-ssm-cache": "cd src/lib/hrm-ssm-cache && npm ci && cd ../../../ && npx tsc src/lib/hrm-ssm-cache/*.ts",
     "compile:lib:hrm-twilio-client": "cd src/lib/hrm-twilio-client && npm ci && cd ../../../ && npx tsc src/lib/hrm-twilio-client/*.ts",
     "compile:contact": "run-p compile:contact-*",
@@ -70,6 +71,6 @@
     "test:localstack:e2e": "run-s localstack:init test:localstack:e2e:run",
     "test:localstack:e2e:quick": "run-s localstack:deploy test:localstack:e2e:run",
     "test:localstack:e2e:run": "jest tests/e2e",
-    "test:unit": "jest src/**"
+    "test:unit": "jest src/**/*.test.ts src/lib/**/*.test.ts"
   }
 }
