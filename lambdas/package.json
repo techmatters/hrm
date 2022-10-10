@@ -65,7 +65,7 @@
     "localstack:init": "run-s compile docker:compose:up localstack:bootstrap localstack:deploy",
     "localstack:logs": "run-s docker:compose:logs",
     "localstack:synth": "cdklocal synth --all",
-    "test": "run-s test:unit test:localstack",
+    "test": "run-s compile test:unit test:localstack",
     "test:localstack": "run-s test:localstack:e2e",
     "test:localstack:e2e": "run-s localstack:init test:localstack:e2e:run",
     "test:localstack:e2e:quick": "run-s localstack:deploy test:localstack:e2e:run",
