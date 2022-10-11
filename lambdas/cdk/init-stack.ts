@@ -1,8 +1,9 @@
 #!/usr/bin/env node
+/* eslint-disable no-new */
 import * as cdk from '@aws-cdk/core';
-import { ContactCompleteStack } from './contact-complete-stack';
-import { ContactCoreStack } from './contact-core-stack';
-import { ContactRetrieveStack } from './contact-retrieve-stack';
+import ContactCompleteStack from './contact-complete-stack';
+import ContactCoreStack from './contact-core-stack';
+import ContactRetrieveStack from './contact-retrieve-stack';
 
 /**
  * Discussion:
@@ -47,6 +48,9 @@ const contactCore = new ContactCoreStack({
 const contactComplete = new ContactCompleteStack({
   scope: app,
   id: 'contact-complete',
+  params: {
+    skipLambda: true, // for now the lambda to process complete queue is disabled
+  },
   props: {
     env: { region: app.node.tryGetContext('region') },
   },

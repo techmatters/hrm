@@ -1,10 +1,11 @@
+/* eslint-disable no-new */
 import * as cdk from '@aws-cdk/core';
 import * as lambda from '@aws-cdk/aws-lambda';
 import * as lambdaNode from '@aws-cdk/aws-lambda-nodejs';
 import * as sqs from '@aws-cdk/aws-sqs';
 import { SqsEventSource } from '@aws-cdk/aws-lambda-event-sources';
 
-export class ContactCompleteStack extends cdk.Stack {
+export default class ContactCompleteStack extends cdk.Stack {
   public readonly completeQueue: sqs.Queue;
 
   constructor({

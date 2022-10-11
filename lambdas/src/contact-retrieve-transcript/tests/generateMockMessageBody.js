@@ -7,6 +7,6 @@ export const generateMessage = () => {
     accountSid,
     contactId: Math.floor(Math.random() * 1000000),
     jobType: 'retrieve-contact-transcript',
-    filePath: `accountSid/testFilePath-${Math.floor(Math.random() * 1000000)}`,
+    filePath: `${accountSid}/testFilePath-${Math.floor(Math.random() * 1000000)}`,
   };
 };

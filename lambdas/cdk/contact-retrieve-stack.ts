@@ -1,3 +1,4 @@
+/* eslint-disable no-new */
 import * as cdk from '@aws-cdk/core';
 import * as iam from '@aws-cdk/aws-iam';
 import * as lambda from '@aws-cdk/aws-lambda';
@@ -6,7 +7,7 @@ import * as s3 from '@aws-cdk/aws-s3';
 import * as sqs from '@aws-cdk/aws-sqs';
 import { SqsEventSource } from '@aws-cdk/aws-lambda-event-sources';
 
-export class ContactRetrieveStack extends cdk.Stack {
+export default class ContactRetrieveStack extends cdk.Stack {
   constructor({
     scope,
     id,
@@ -71,7 +72,7 @@ export class ContactRetrieveStack extends cdk.Stack {
     ]);
 
     const fn = new lambdaNode.NodejsFunction(this, 'fetchParams', {
-      //TODO: change this back to 16 once it isn't broken upstream
+      // TODO: change this back to 16 once it isn't broken upstream
       runtime: lambda.Runtime.NODEJS_16_X,
       memorySize: 512,
       handler: 'handler',
@@ -81,7 +82,6 @@ export class ContactRetrieveStack extends cdk.Stack {
         S3_ENDPOINT: 'http://localstack:4566',
         S3_FORCE_PATH_STYLE: 'true',
         S3_REGION: 'us-east-1',
-        // SQS_ENDPOINT: 'http://localstack:4566',
         SSM_ENDPOINT: 'http://localstack:4566',
         hrm_env: 'local',
         completed_sqs_queue_url: completedQueueUrl,

@@ -14,39 +14,16 @@ export type SsmCache = {
 
 export const ssmCache: SsmCache = { values: {} };
 
-export type SsmCacheConfig = {
-  path: string;
-  regex?: RegExp;
+export const addToCache = (regex, { Name = null, Value = null }: SSM.Parameter) => {
+  if (!Name) return;
+  if (regex && !regex.test(Name)) return;
+
+  ssmCache.values[Name] = Value;
 };
 
-export type loadSsmCacheParameters = {
-  expiryTime?: number;
-  // We accept an array of types to allow loading parameters from multiple paths
-  configs: SsmCacheConfig[];
-};
+const hasCacheExpired = () => !!(ssmCache.expiryDate && new Date() > ssmCache.expiryDate);
 
-export const loadSsmCache = async ({
-  expiryTime: cacheDuration = 3600000,
-  configs,
-}: loadSsmCacheParameters) => {
-  if (!ssmCache.expiryDate) {
-    ssmCache.expiryDate = new Date(Date.now() + cacheDuration);
-  }
-
-  if (isConfigNotEmpty() && !hasCacheExpired()) return;
-
-  // do we need to clear ssmCache for this path or is overwriting values
-  // okay for our use case? (rbd - 06/10/22)
-  const promises = configs.map(async (config) => await loadPaginated(config));
-
-  await Promise.all(promises);
-};
-
-type LoadPaginatedParameters = {
-  path?: string;
-  regex?: RegExp;
-  nextToken?: string;
-};
+const isConfigNotEmpty = () => !!Object.keys(ssmCache.values).length;
 
 export const loadPaginated = async ({
   path,
@@ -74,13 +51,36 @@ export const loadPaginated = async ({
   }
 };
 
-export const addToCache = (regex, { Name = null, Value = null }: SSM.Parameter) => {
-  if (!Name) return;
-  if (regex && !regex.test(Name)) return;
-
-  ssmCache.values[Name] = Value;
+export type SsmCacheConfig = {
+  path: string;
+  regex?: RegExp;
 };
 
-const hasCacheExpired = () => !!(ssmCache.expiryDate && new Date() > ssmCache.expiryDate);
+export type LoadSsmCacheParameters = {
+  expiryTime?: number;
+  // We accept an array of types to allow loading parameters from multiple paths
+  configs: SsmCacheConfig[];
+};
 
-const isConfigNotEmpty = () => !!Object.keys(ssmCache.values).length;
+export const loadSsmCache = async ({
+  expiryTime: cacheDuration = 3600000,
+  configs,
+}: LoadSsmCacheParameters) => {
+  if (!ssmCache.expiryDate) {
+    ssmCache.expiryDate = new Date(Date.now() + cacheDuration);
+  }
+
+  if (isConfigNotEmpty() && !hasCacheExpired()) return;
+
+  // do we need to clear ssmCache for this path or is overwriting values
+  // okay for our use case? (rbd - 06/10/22)
+  const promises = configs.map(async (config) => loadPaginated(config));
+
+  await Promise.all(promises);
+};
+
+type LoadPaginatedParameters = {
+  path?: string;
+  regex?: RegExp;
+  nextToken?: string;
+};

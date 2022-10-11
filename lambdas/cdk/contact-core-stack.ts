@@ -1,12 +1,9 @@
+/* eslint-disable no-new */
 import * as cdk from '@aws-cdk/core';
-import * as lambda from '@aws-cdk/aws-lambda';
-import * as lambdaNode from '@aws-cdk/aws-lambda-nodejs';
 import * as s3 from '@aws-cdk/aws-s3';
-import * as sqs from '@aws-cdk/aws-sqs';
 import * as ssm from '@aws-cdk/aws-ssm';
-import { SqsEventSource } from '@aws-cdk/aws-lambda-event-sources';
 
-export class ContactCoreStack extends cdk.Stack {
+export default class ContactCoreStack extends cdk.Stack {
   public readonly docsBucket: s3.Bucket;
 
   constructor({ scope, id, props }: { scope: cdk.App; id: string; props?: cdk.StackProps }) {

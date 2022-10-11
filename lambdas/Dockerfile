@@ -7,21 +7,21 @@ ENV lambda_name ${lambda_name}
 # We must have the full repo context for our docker build so we can
 # copy the hrm-lib package and labmdas folders so that the file: based
 # dependency in package.json can be resolved
-COPY hrm-lib /tmp/build/hrm-lib
+COPY hrm-types /tmp/build/hrm-types
 COPY lambdas /tmp/build/lambdas
 
 RUN cd /tmp/build/lambdas \
     && npm install \
-    && npm run build:lib \
+    && npm run install:lib \
     && npm run compile:lib \
-    && npm run build:${lambda_name} \
+    && npm run install:${lambda_name} \
     && npm run compile:${lambda_name} \
     && cd src/${lambda_name} \
     && cp *.js /var/task/ \
     && cp -r node_modules /var/task/ \
     && cd ../lib \
     # it is weird that this isn't a hard link after npm ci, but we get runtime errors without it.
-    && cp -r hrm-ssm-cache /var/lib \
+    && cp -r * /var/lib \
     && rm -rf /tmp/* \
     && rm -rf /root/.cache \
     && rm -rf /usr/local/share/.cache \

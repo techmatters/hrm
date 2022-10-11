@@ -1,6 +1,6 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { SQS } from 'aws-sdk';
-import type { SQSBatchResponse, SQSEvent, SQSRecord, SNSMessage } from 'aws-lambda';
+import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
 import { ssmCache, loadSsmCache } from 'hrm-ssm-cache';
 
 /**
@@ -11,9 +11,9 @@ import { ssmCache, loadSsmCache } from 'hrm-ssm-cache';
 
 const sqs = new SQS();
 
-//TODO: remove this once I figure out how to do it in cdk config (rbd - 07/10/22)
+// TODO: remove this once I figure out how to do it in cdk config (rbd - 07/10/22)
 const completedQueueUrl = process.env.completed_sqs_queue_url as string;
-const hrm_env = process.env.hrm_env;
+const hrmEnv = process.env.hrm_env;
 
 /**
  * Discussion Topic:
@@ -27,11 +27,11 @@ const hrm_env = process.env.hrm_env;
  */
 const ssmCacheConfigs = [
   {
-    path: `/${hrm_env}/twilio`,
+    path: `/${hrmEnv}/twilio`,
     regex: /auth_token/,
   },
   {
-    path: `/${hrm_env}/s3`,
+    path: `/${hrmEnv}/s3`,
     regex: /docs_bucket_name/,
   },
 ];
@@ -40,14 +40,14 @@ const processRecord = async (sqsRecord: SQSRecord) => {
   const message = JSON.parse(sqsRecord.body);
   console.log(message);
 
-  const authToken = ssmCache.values[`/${hrm_env}/twilio/${message.accountSid}/auth_token`];
-  const docsBucketName = ssmCache.values[`/${hrm_env}/s3/${message.accountSid}/docs_bucket_name`];
+  const authToken = ssmCache.values[`/${hrmEnv}/twilio/${message.accountSid}/auth_token`];
+  const docsBucketName = ssmCache.values[`/${hrmEnv}/s3/${message.accountSid}/docs_bucket_name`];
 
   if (!authToken || !docsBucketName) {
     throw new Error('Missing required SSM params');
   }
 
-  //TODO: fill in the actual work!
+  // TODO: fill in the actual work!
 
   const completedJob = {
     ...message,
@@ -96,14 +96,14 @@ export const handler = async (event: SQSEvent): Promise<any> => {
       throw new Error('Missing completed_sqs_queue_url ENV Variable');
     }
 
-    if (!hrm_env) {
+    if (!hrmEnv) {
       throw new Error('Missing hrm_env ENV Variable');
     }
 
     await loadSsmCache({ configs: ssmCacheConfigs });
 
-    const promises = event.Records.map(
-      async (sqsRecord) => await processRecordWithoutException(sqsRecord),
+    const promises = event.Records.map(async (sqsRecord) =>
+      processRecordWithoutException(sqsRecord),
     );
 
     await Promise.all(promises);

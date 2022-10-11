@@ -12,7 +12,7 @@ const sqs = new SQS();
 
 const processRecord = async (sqsRecord: SQSRecord) => {
   console.dir(sqsRecord);
-  //TODO: fill in the actual work!
+  // TODO: fill in the actual work!
 };
 
 /**
@@ -27,7 +27,7 @@ export const handler = async (event: SQSEvent): Promise<any> => {
   const response: SQSBatchResponse = { batchItemFailures: [] };
 
   try {
-    const promises = event.Records.map(async (sqsRecord) => await processRecord(sqsRecord));
+    const promises = event.Records.map(async (sqsRecord) => processRecord(sqsRecord));
 
     await Promise.all(promises);
 

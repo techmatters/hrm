@@ -1,0 +1,28 @@
+version: '3'
+services:
+  contact-complete:
+    image: lambdas-contact-complete
+    ports:
+      - '9000:8080'
+    environment:
+      - completed_sqs_queue_url
+    env_file:
+      - .env.localstack
+
+  contact-retrieve-recording-url:
+    image: lambdas-contact-retrieve-recording-url
+    ports:
+      - '9001:8080'
+    environment:
+      - completed_sqs_queue_url
+    env_file:
+      - .env.localstack
+
+  contact-retrieve-transcript:
+    image: lambdas-contact-retrieve-transcript
+    ports:
+      - '9002:8080'
+    environment:
+      - completed_sqs_queue_url
+    env_file:
+      - .env.localstack
