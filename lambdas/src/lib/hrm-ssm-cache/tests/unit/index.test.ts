@@ -1,4 +1,4 @@
-import { addToCache, ssmCache } from './index';
+import { addToCache, ssmCache } from '../../index';
 
 describe('addToCache', () => {
   it('should add a value to the cache with matching regex', () => {

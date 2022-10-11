@@ -12,7 +12,9 @@ COPY lambdas /tmp/build/lambdas
 
 RUN cd /tmp/build/lambdas \
     && npm install \
+    && npm run build:lib \
     && npm run compile:lib \
+    && npm run build:${lambda_name} \
     && npm run compile:${lambda_name} \
     && cd src/${lambda_name} \
     && cp *.js /var/task/ \
