@@ -51,7 +51,7 @@
     "install:lib:hrm-s3-client": "cd src/lib/hrm-s3-client && npm ci",
     "install:lib:hrm-ssm-cache": "cd src/lib/hrm-ssm-cache && npm ci",
     "install:lib:hrm-twilio-client": "cd src/lib/hrm-twilio-client && npm ci",
-    "install-and-compile": "run-s build compile",
+    "install-and-compile": "run-s install compile",
     "compile": "run-s compile:lib compile:contact",
     "compile:contact": "run-p compile:contact-*",
     "compile:contact-complete": "npx tsc src/contact-complete/*.ts",
