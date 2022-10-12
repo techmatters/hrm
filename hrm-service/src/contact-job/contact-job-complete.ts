@@ -69,7 +69,7 @@ export const pollAndprocessCompletedContactJobs = async (jobMaxAttempts: number)
           const { jobId, attemptNumber, attemptPayload } = completedJob;
           const updated = await appendFailedAttemptPayload(jobId, attemptNumber, attemptPayload);
 
-          if (attemptNumber === jobMaxAttempts) {
+          if (attemptNumber >= jobMaxAttempts) {
             const completionPayload = { message: 'Attempts limit reached' };
             const markedComplete = await completeContactJob(completedJob.jobId, completionPayload);
 
