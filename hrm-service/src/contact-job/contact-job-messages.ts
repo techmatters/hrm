@@ -7,6 +7,7 @@ type ContactJobMessageCommons = {
   contactId: Contact['id'];
   taskId: Contact['taskId'];
   twilioWorkerId: Contact['twilioWorkerId'];
+  attemptNumber: number;
 };
 
 //====== Message payloads to publish for pending contact jobs ======//
@@ -22,8 +23,17 @@ export type PublishToContactJobsTopicParams = PublishRetrieveContactTranscript;
 
 //====== Message payloads expected for the completed contact jobs ======//
 
-export type CompletedRetrieveContactTranscript = PublishRetrieveContactTranscript & {
-  completionPayload: string;
-};
+type CompletedContactJobMessageCommons<TSuccess, TFailure> =
+  | {
+      attemptResult: 'success';
+      attemptPayload: TSuccess;
+    }
+  | {
+      attemptResult: 'failure';
+      attemptPayload: TFailure;
+    };
+
+export type CompletedRetrieveContactTranscript = PublishRetrieveContactTranscript &
+  CompletedContactJobMessageCommons<string, any>;
 
 export type CompletedContactJobBody = CompletedRetrieveContactTranscript;

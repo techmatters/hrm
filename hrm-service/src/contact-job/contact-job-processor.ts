@@ -8,6 +8,7 @@ let processingJobs = false;
 
 const JOB_PROCESSING_INTERVAL_MILLISECONDS = 5000; // 5 seconds
 const JOB_RETRY_INTERVAL_MILLISECONDS = 120000; // 2 minutes
+export const JOB_MAX_ATTEMPTS = 20;
 
 export function processContactJobs() {
   if (!processingJobs) {
@@ -19,7 +20,7 @@ export function processContactJobs() {
     return setInterval(async () => {
       try {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const completedJobs = await pollAndprocessCompletedContactJobs();
+        const completedJobs = await pollAndprocessCompletedContactJobs(JOB_MAX_ATTEMPTS);
 
         const dueContactJobs = await pullDueContactJobs(
           subMilliseconds(new Date(), JOB_RETRY_INTERVAL_MILLISECONDS),

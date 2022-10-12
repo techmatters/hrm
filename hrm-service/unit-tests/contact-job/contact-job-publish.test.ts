@@ -1,7 +1,8 @@
 import * as SNSClient from '../../src/contact-job/client-sns';
 import * as contactJobPublish from '../../src/contact-job/contact-job-publish';
-import { ContactJobType } from '../../src/contact-job/contact-job-data-access';
+import { ContactJob, ContactJobType } from '../../src/contact-job/contact-job-data-access';
 import each from 'jest-each';
+import { PublishToContactJobsTopicParams } from '../../src/contact-job/contact-job-messages';
 
 jest.mock('../../src/contact-job/client-sns');
 
@@ -12,8 +13,17 @@ beforeEach(() => {
 describe('publishDueContactJobs', () => {
   test('Invalid job format throws but does not shuts down other jobs', async () => {
     const invalidPayload = { jobType: 'invalid' };
-    const validPayload = {
+    const validPayload: PublishToContactJobsTopicParams = {
       jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
+      jobId: 1,
+      accountSid: 'accountSid',
+      attemptNumber: 1,
+      contactId: 123,
+      taskId: 'taskId',
+      twilioWorkerId: 'twilioWorkerId',
+      serviceSid: 'serviceSid',
+      channelSid: 'channelSid',
+      filePath: 'filePath',
     };
 
     const errorSpy = jest.spyOn(console, 'error');
@@ -45,11 +55,27 @@ describe('publishDueContactJobs', () => {
     const validPayload1 = {
       jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
       jobId: 1,
+      accountSid: 'accountSid',
+      attemptNumber: 1,
+      contactId: 123,
+      taskId: 'taskId',
+      twilioWorkerId: 'twilioWorkerId',
+      serviceSid: 'serviceSid',
+      channelSid: 'channelSid',
+      filePath: 'filePath',
     };
 
     const validPayload2 = {
       jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
       jobId: 2,
+      accountSid: 'accountSid',
+      attemptNumber: 1,
+      contactId: 321,
+      taskId: 'taskId',
+      twilioWorkerId: 'twilioWorkerId',
+      serviceSid: 'serviceSid',
+      channelSid: 'channelSid',
+      filePath: 'filePath',
     };
 
     const errorSpy = jest.spyOn(console, 'error');
@@ -82,14 +108,24 @@ describe('publishDueContactJobs', () => {
     publishRetrieveContactTranscriptSpy.mockRestore();
   });
 
-  const pendingJobsList = [
+  const dueJobsList: {
+    dueJob: ContactJob;
+    publishDueContactJobFunction: keyof typeof contactJobPublish;
+    expectedMessageToPublish: PublishToContactJobsTopicParams;
+  }[] = [
     {
-      job: {
+      dueJob: {
         jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
         id: 1,
         completed: null,
         completionPayload: null,
         additionalPayload: null,
+        accountSid: 'accountSid',
+        contactId: 123,
+        failedAttemptsPayloads: {},
+        lastAttempt: null,
+        numberOfAttempts: 1,
+        requested: new Date(),
         resource: {
           accountSid: 'accountSid',
           id: 123,
@@ -98,6 +134,7 @@ describe('publishDueContactJobs', () => {
           serviceSid: 'serviceSid',
           channelSid: 'channelSid',
           createdAt: new Date('01-01-2022'),
+          csamReports: [],
         },
       },
       publishDueContactJobFunction: 'publishRetrieveContactTranscript',
@@ -111,21 +148,22 @@ describe('publishDueContactJobs', () => {
         taskId: 'taskId',
         twilioWorkerId: 'twilioWorkerId',
         filePath: 'transcripts/2022/01/01/20220101000000-taskId.json',
+        attemptNumber: 1,
       },
     },
   ];
 
   test('Check that we are testing all the possible job types (useful for the next test)', () => {
-    expect(pendingJobsList.length).toBe(Object.values(ContactJobType).length);
+    expect(dueJobsList.length).toBe(Object.values(ContactJobType).length);
 
     Object.values(ContactJobType).forEach(jobType => {
-      expect(pendingJobsList.some(({ job }) => job.jobType === jobType)).toBeTruthy();
+      expect(dueJobsList.some(({ dueJob }) => dueJob.jobType === jobType)).toBeTruthy();
     });
   });
 
-  each(pendingJobsList).test(
-    '$job.jobType job is processed accordingly and published via SNS client',
-    async ({ job, publishDueContactJobFunction, expectedMessageToPublish }) => {
+  each(dueJobsList).test(
+    '$dueJob.jobType job is processed accordingly and published via SNS client',
+    async ({ dueJob, publishDueContactJobFunction, expectedMessageToPublish }) => {
       const publishToContactJobsTopicSpy = jest
         .spyOn(SNSClient, 'publishToContactJobsTopic')
         .mockImplementation(() => Promise.resolve(undefined));
@@ -134,11 +172,11 @@ describe('publishDueContactJobs', () => {
         publishDueContactJobFunction,
       );
 
-      console.log(await contactJobPublish.publishRetrieveContactTranscript(job));
+      console.log(await contactJobPublish.publishRetrieveContactTranscript(dueJob));
 
-      const result = await contactJobPublish.publishDueContactJobs([job]);
+      const result = await contactJobPublish.publishDueContactJobs([dueJob]);
 
-      expect(publishDueContactJobFunctionSpy).toHaveBeenCalledWith(job);
+      expect(publishDueContactJobFunctionSpy).toHaveBeenCalledWith(dueJob);
       expect(publishToContactJobsTopicSpy).toHaveBeenCalledWith(expectedMessageToPublish);
 
       expect(result[0].status).toBe('fulfilled');

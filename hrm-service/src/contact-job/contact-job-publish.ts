@@ -28,6 +28,7 @@ export const publishRetrieveContactTranscript = (contactJob: RetrieveContactTran
     taskId,
     twilioWorkerId,
     filePath,
+    attemptNumber: contactJob.numberOfAttempts,
   });
 };
 

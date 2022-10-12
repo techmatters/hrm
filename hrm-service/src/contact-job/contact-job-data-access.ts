@@ -1,7 +1,11 @@
 import { ITask } from 'pg-promise';
 import { db, pgp } from '../connection-pool';
 import { Contact } from '../contact/contact-data-access';
-import { COMPLETE_JOB_SQL, PULL_DUE_JOBS_SQL } from './sql/contact-job-sql';
+import {
+  COMPLETE_JOB_SQL,
+  PULL_DUE_JOBS_SQL,
+  APPEND_FAILED_ATTEMPT_PAYLOAD,
+} from './sql/contact-job-sql';
 
 export enum ContactJobType {
   RETRIEVE_CONTACT_TRANSCRIPT = 'retrieve-transcript',
@@ -14,23 +18,22 @@ export type ContactJobRecord = {
   accountSid: string;
   jobType: string;
   requested: Date;
-  completed?: Date;
-  lastAttempt?: Date;
+  completed: Date | null;
+  lastAttempt: Date | null;
   numberOfAttempts: number;
+  failedAttemptsPayloads: Record<string, any[]>; // This type is enforced at creation time
   additionalPayload: any;
   completionPayload: any;
 };
 
 // ContactJob base interface, picks the properties used from ContactJobRecord plus the resource Contact
-type Job<TComplete = any, TAdditional = any> = {
-  id: ContactJobRecord['id'];
-  completed?: ContactJobRecord['completed'];
-  completionPayload?: TComplete;
+type Job<TComplete, TAdditional> = ContactJobRecord & {
+  completionPayload: TComplete;
   additionalPayload: TAdditional;
   resource: Contact;
 };
 
-export type RetrieveContactTranscriptJob = Job<string[], undefined> & {
+export type RetrieveContactTranscriptJob = Job<string[] | null, null> & {
   jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT;
 };
 
@@ -70,7 +73,7 @@ export const completeContactJob = async (
  * Requires tx: ITask to make the creation of the job part of the same transaction
  */
 export const createContactJob = (tx: ITask<{}>) => async (
-  job: Omit<ContactJob, 'id'>,
+  job: Pick<ContactJob, 'jobType' | 'resource' | 'additionalPayload'>,
 ): Promise<void> => {
   const contact = job.resource;
   const insertSql = pgp.helpers.insert(
@@ -80,10 +83,27 @@ export const createContactJob = (tx: ITask<{}>) => async (
       contactId: contact.id,
       accountSid: contact.accountSid,
       additionalPayload: job.additionalPayload,
+      lastAttempt: null,
+      numberOfAttempts: 0,
+      failedAttemptsPayloads: {},
+      completed: null,
+      completionPayload: null,
     },
     null,
     'ContactJobs',
   );
-
   return tx.none(insertSql);
 };
+
+export const appendFailedAttemptPayload = async (
+  id: ContactJob['id'],
+  attemptNumber: number,
+  attemptPayload: any,
+): Promise<ContactJob> =>
+  db.task(tx =>
+    tx.oneOrNone<ContactJob>(APPEND_FAILED_ATTEMPT_PAYLOAD, {
+      id,
+      attemptNumber,
+      attemptPayload: attemptPayload,
+    }),
+  );
