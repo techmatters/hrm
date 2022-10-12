@@ -16,7 +16,7 @@ afterEach(() => {
 describe('pollAndprocessCompletedContactJobs', () => {
   test('Completed jobs are polled from SQS client as expected', async () => {
     const sqsSpy = jest
-      .spyOn(SQSClient, 'pollCompletedContactJobs')
+      .spyOn(SQSClient, 'pollCompletedContactJobsFromQueue')
       .mockImplementation(async () => ({
         Messages: [],
       }));
@@ -52,7 +52,7 @@ describe('pollAndprocessCompletedContactJobs', () => {
       ReceiptHandle: 'valid',
     };
 
-    jest.spyOn(SQSClient, 'pollCompletedContactJobs').mockImplementation(async () => ({
+    jest.spyOn(SQSClient, 'pollCompletedContactJobsFromQueue').mockImplementation(async () => ({
       Messages: [invalidPayload, validPayload],
     }));
     const errorSpy = jest.spyOn(console, 'error');
@@ -105,7 +105,7 @@ describe('pollAndprocessCompletedContactJobs', () => {
       ReceiptHandle: 'valid',
     };
 
-    jest.spyOn(SQSClient, 'pollCompletedContactJobs').mockImplementation(async () => ({
+    jest.spyOn(SQSClient, 'pollCompletedContactJobsFromQueue').mockImplementation(async () => ({
       Messages: [validPayload1, validPayload2],
     }));
     const errorSpy = jest.spyOn(console, 'error');
@@ -174,11 +174,11 @@ describe('pollAndprocessCompletedContactJobs', () => {
         ReceiptHandle: 'valid',
       };
 
-      jest.spyOn(SQSClient, 'pollCompletedContactJobs').mockImplementation(async () => ({
+      jest.spyOn(SQSClient, 'pollCompletedContactJobsFromQueue').mockImplementation(async () => ({
         Messages: [validPayload],
       }));
       const deletedCompletedContactJobsSpy = jest
-        .spyOn(SQSClient, 'deletedCompletedContactJobs')
+        .spyOn(SQSClient, 'deleteCompletedContactJobsFromQueue')
         .mockImplementation(async () => {});
       const processCompletedFunctionSpy = jest
         .spyOn(contactJobComplete, processCompletedFunction)
@@ -190,7 +190,10 @@ describe('pollAndprocessCompletedContactJobs', () => {
       const result = await contactJobComplete.pollAndprocessCompletedContactJobs(JOB_MAX_ATTEMPTS);
 
       expect(processCompletedFunctionSpy).toHaveBeenCalledWith(job);
-      expect(completeContactJobSpy).toHaveBeenCalledWith(job.jobId, job.attemptPayload);
+      expect(completeContactJobSpy).toHaveBeenCalledWith(job.jobId, {
+        message: 'Job processed successfully',
+        value: job.attemptPayload,
+      });
       expect(deletedCompletedContactJobsSpy).toHaveBeenCalledWith(validPayload.ReceiptHandle);
 
       expect(result[0].status).toBe('fulfilled');
@@ -241,18 +244,18 @@ describe('pollAndprocessCompletedContactJobs', () => {
       },
     ]),
   ).test(
-    '$job.jobType failed job is processed accordingly with expectMarkedAsComplete "$job.expectMarkedAsComplete"',
+    '$job.jobType failed job is processed accordingly with expectMarkedAsComplete "$expectMarkedAsComplete"',
     async ({ job, processCompletedFunction, expectMarkedAsComplete }) => {
       const validPayload = {
         Body: JSON.stringify(job),
         ReceiptHandle: 'valid',
       };
 
-      jest.spyOn(SQSClient, 'pollCompletedContactJobs').mockImplementation(async () => ({
+      jest.spyOn(SQSClient, 'pollCompletedContactJobsFromQueue').mockImplementation(async () => ({
         Messages: [validPayload],
       }));
       const deletedCompletedContactJobsSpy = jest
-        .spyOn(SQSClient, 'deletedCompletedContactJobs')
+        .spyOn(SQSClient, 'deleteCompletedContactJobsFromQueue')
         .mockImplementation(async () => {});
       const processCompletedFunctionSpy = jest
         .spyOn(contactJobComplete, processCompletedFunction)
@@ -267,12 +270,15 @@ describe('pollAndprocessCompletedContactJobs', () => {
       const result = await contactJobComplete.pollAndprocessCompletedContactJobs(JOB_MAX_ATTEMPTS);
 
       expect(processCompletedFunctionSpy).not.toHaveBeenCalled();
-      expect(deletedCompletedContactJobsSpy).not.toHaveBeenCalled();
 
       if (expectMarkedAsComplete) {
-        expect(completeContactJobSpy).toHaveBeenCalledWith(job.jobId, 'Attempts limit reached');
+        expect(completeContactJobSpy).toHaveBeenCalledWith(job.jobId, {
+          message: 'Attempts limit reached',
+        });
+        expect(deletedCompletedContactJobsSpy).toHaveBeenCalledWith(validPayload.ReceiptHandle);
       } else {
         expect(completeContactJobSpy).not.toHaveBeenCalled();
+        expect(deletedCompletedContactJobsSpy).not.toHaveBeenCalled();
       }
 
       expect(appendFailedAttemptPayloadSpy).toHaveBeenCalledWith(

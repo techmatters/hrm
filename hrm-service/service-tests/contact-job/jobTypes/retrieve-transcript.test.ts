@@ -263,7 +263,7 @@ describe('complete retrieve-transcript job type', () => {
       };
 
       // const pollCompletedContactJobsSpy =
-      jest.spyOn(SQSClient, 'pollCompletedContactJobs').mockImplementation(() =>
+      jest.spyOn(SQSClient, 'pollCompletedContactJobsFromQueue').mockImplementation(() =>
         Promise.resolve({
           Messages: [
             {
@@ -330,7 +330,10 @@ describe('complete retrieve-transcript job type', () => {
       expect(
         isAfter(updatedRetrieveContactTranscriptJob.completed!, startedTimestamp),
       ).toBeTruthy();
-      expect(updatedRetrieveContactTranscriptJob.completionPayload).toBe('some-url-here');
+      expect(updatedRetrieveContactTranscriptJob.completionPayload).toMatchObject({
+        message: 'Job processed successfully',
+        value: 'some-url-here',
+      });
 
       // Check the updated contact in the DB
       const updatedContact = await db.task(async t =>
@@ -381,7 +384,7 @@ describe('complete retrieve-transcript job type', () => {
       };
 
       // const pollCompletedContactJobsSpy =
-      jest.spyOn(SQSClient, 'pollCompletedContactJobs').mockImplementation(() =>
+      jest.spyOn(SQSClient, 'pollCompletedContactJobsFromQueue').mockImplementation(() =>
         Promise.resolve({
           Messages: [
             {
@@ -442,9 +445,9 @@ describe('complete retrieve-transcript job type', () => {
         expect(
           isAfter(updatedRetrieveContactTranscriptJob.completed!, startedTimestamp),
         ).toBeTruthy();
-        expect(updatedRetrieveContactTranscriptJob.completionPayload).toBe(
-          'Attempts limit reached',
-        );
+        expect(updatedRetrieveContactTranscriptJob.completionPayload).toMatchObject({
+          message: 'Attempts limit reached',
+        });
       } else {
         // But previous job is completed hence not retrieved as due
         // expect(publishRetrieveContactTranscriptSpy).toHaveBeenCalledTimes(0);

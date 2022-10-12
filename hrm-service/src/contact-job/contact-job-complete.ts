@@ -55,10 +55,11 @@ export const pollAndprocessCompletedContactJobs = async (jobMaxAttempts: number)
           await processCompletedContactJob(completedJob);
 
           // Mark the job as completed
-          const markedComplete = await completeContactJob(
-            completedJob.jobId,
-            completedJob.attemptPayload,
-          );
+          const completionPayload = {
+            message: 'Job processed successfully',
+            value: completedJob.attemptPayload,
+          };
+          const markedComplete = await completeContactJob(completedJob.jobId, completionPayload);
 
           // Delete the message from the queue (this could be batched)
           await deleteCompletedContactJobsFromQueue(m.ReceiptHandle);
@@ -69,10 +70,8 @@ export const pollAndprocessCompletedContactJobs = async (jobMaxAttempts: number)
           const updated = await appendFailedAttemptPayload(jobId, attemptNumber, attemptPayload);
 
           if (attemptNumber === jobMaxAttempts) {
-            const markedComplete = await completeContactJob(
-              completedJob.jobId,
-              'Attempts limit reached',
-            );
+            const completionPayload = { message: 'Attempts limit reached' };
+            const markedComplete = await completeContactJob(completedJob.jobId, completionPayload);
 
             await deleteCompletedContactJobsFromQueue(m.ReceiptHandle);
 
