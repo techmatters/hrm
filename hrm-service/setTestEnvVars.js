@@ -3,6 +3,7 @@ process.env.PERMISSIONS_ca = 'ca';
 process.env.PERMISSIONS_cl = 'cl';
 process.env.PERMISSIONS_co = 'co';
 process.env.PERMISSIONS_et = 'et';
+process.env.PERMISSIONS_hu = 'hu';
 process.env.PERMISSIONS_in = 'in';
 process.env.PERMISSIONS_jm = 'jm';
 process.env.PERMISSIONS_mw = 'mw';
