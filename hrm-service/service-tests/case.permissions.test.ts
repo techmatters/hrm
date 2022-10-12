@@ -9,7 +9,7 @@ const supertest = require('supertest');
 const each = require('jest-each').default;
 import { createService } from '../src/app';
 import { RulesFile } from '../src/permissions/rulesMap';
-const mocks = require('./mocks');
+import * as mocks from './mocks';
 
 let testRules: RulesFile;
 
@@ -19,6 +19,7 @@ const server = createService({
     cachePermissions: false, // Means we can evaluate different rules each request without restarting the service
   },
   authTokenLookup: () => 'picernic basket',
+  enableProcessContactJobs: false,
 }).listen();
 const request = supertest.agent(server);
 

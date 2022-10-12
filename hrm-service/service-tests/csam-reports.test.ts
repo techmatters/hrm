@@ -1,11 +1,11 @@
 import { createService } from '../src/app';
-const supertest = require('supertest');
-const Sequelize = require('sequelize');
-const models = require('../src/models');
-const mocks = require('./mocks');
+import * as mocks from './mocks';
 import './case-validation';
 import { openPermissions } from '../src/permissions/json-permissions';
 import * as proxiedEndpoints from './external-service-stubs/proxied-endpoints';
+const supertest = require('supertest');
+const Sequelize = require('sequelize');
+const models = require('../src/models');
 
 console.log(process.env.INCLUDE_ERROR_IN_RESPONSE);
 
@@ -18,6 +18,7 @@ const CSAMReportController = require('../src/controllers/csam-report-controller'
 const server = createService({
   permissions: openPermissions,
   authTokenLookup: () => 'picernic basket',
+  enableProcessContactJobs: false,
 }).listen();
 const request = supertest.agent(server);
 
@@ -40,7 +41,7 @@ const csamReport3 = {
 const { contact1 } = mocks;
 const invalidContactCsamReport = {
   csamReportId: 'csam-report-id',
-  twilioWorkerId: 'worker-sid',
+  twilioWorkerId: workerSid,
   contactId: 1234,
 };
 
@@ -86,7 +87,7 @@ describe('/csamReports route', () => {
     id: expect.anything(),
     accountSid: accountSid,
     csamReportId: 'csam-report-id',
-    twilioWorkerId: 'worker-sid',
+    twilioWorkerId: workerSid,
     contactId: null,
     updatedAt: expect.toParseAsDate(),
     createdAt: expect.toParseAsDate(),

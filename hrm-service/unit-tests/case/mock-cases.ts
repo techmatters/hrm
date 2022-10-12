@@ -1,7 +1,7 @@
 import { CaseRecord, NewCaseRecord } from '../../src/case/case-data-access';
 import { Case } from '../../src/case/case';
+import { workerSid } from '../../service-tests/mocks';
 
-const workerSid = 'worker-sid';
 const baselineDate = new Date(2000, 5, 1);
 
 export const createMockCaseRecord = (partial: Partial<CaseRecord>): CaseRecord => {

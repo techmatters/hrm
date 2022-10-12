@@ -1,7 +1,7 @@
 import { db, pgp } from '../connection-pool';
 import { getPaginationElements } from '../controllers/helpers';
 import { updateByIdSql } from './sql/case-update-sql';
-import { OrderByColumns, OrderByDirection, selectCaseSearch } from './sql/case-search-sql';
+import { OrderByColumnType, OrderByDirectionType, selectCaseSearch } from './sql/case-search-sql';
 import { caseSectionUpsertSql, deleteMissingCaseSectionsSql } from './sql/case-sections-sql';
 import { DELETE_BY_ID } from './sql/case-delete-sql';
 import { selectSingleCaseByIdSql } from './sql/case-get-sql';
@@ -44,8 +44,8 @@ export type CaseSectionRecord = {
 };
 
 export type CaseListConfiguration = {
-  sortBy?: OrderByColumns;
-  sortDirection?: OrderByDirection;
+  sortBy?: OrderByColumnType;
+  sortDirection?: OrderByDirectionType;
   offset?: number;
   limit?: number;
 };

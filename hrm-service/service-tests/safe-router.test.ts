@@ -6,7 +6,7 @@ import { createService } from '../src/app';
 import { openPermissions } from '../src/permissions/json-permissions';
 import * as proxiedEndpoints from './external-service-stubs/proxied-endpoints';
 const supertest = require('supertest');
-const { accountSid, workerSid } = require('./mocks');
+import { accountSid, workerSid } from './mocks';
 
 jest.mock('../src/routes', () => {
   const mockRouter = MockSafeRouter();
@@ -42,6 +42,7 @@ jest.mock('../src/routes', () => {
 const server = createService({
   permissions: openPermissions,
   authTokenLookup: () => 'picernic basket',
+  enableProcessContactJobs: false,
 }).listen();
 const request = supertest.agent(server);
 

@@ -11,6 +11,7 @@ const inRules = require('../../permission-rules/in.json');
 const jmRules = require('../../permission-rules/jm.json');
 const mwRules = require('../../permission-rules/mw.json');
 const roRules = require('../../permission-rules/ro.json');
+const thRules = require('../../permission-rules/th.json');
 const ukRules = require('../../permission-rules/uk.json');
 const zaRules = require('../../permission-rules/za.json');
 const zmRules = require('../../permission-rules/zm.json');
@@ -51,6 +52,7 @@ const rulesMapDef = {
   jm: jmRules,
   mw: mwRules,
   ro: roRules,
+  th: thRules,
   uk: ukRules,
   za: zaRules,
   zm: zmRules,

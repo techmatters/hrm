@@ -56,7 +56,7 @@ type QueryParams = {
   dateFrom?: string;
   contactNumber?: string;
   helpline?: string;
-  onlyDataContact: boolean;
+  onlyDataContacts: boolean;
   dataCallTypes: string[];
   limit: number;
   offset: number;
@@ -95,7 +95,7 @@ const searchParametersToQueryParameters = (
       phoneNumberPattern: undefined,
       counselor: undefined,
       contactNumber: undefined,
-      onlyDataContact: false,
+      onlyDataContacts: false,
     },
     ...restOfSearch,
     helpline: helpline || undefined, // ensure empty strings are replaced with nulls

@@ -117,7 +117,6 @@ describe('search', () => {
     phoneNumberPattern: undefined,
     counselor: undefined,
     contactNumber: undefined,
-    onlyDataContact: false,
     accountSid: ACCOUNT_SID,
     dateFrom: undefined,
     dateTo: undefined,

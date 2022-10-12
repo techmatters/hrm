@@ -10,11 +10,12 @@ const each = require('jest-each').default;
 import { createService } from '../src/app';
 import { openPermissions } from '../src/permissions/json-permissions';
 import * as proxiedEndpoints from './external-service-stubs/proxied-endpoints';
-const mocks = require('./mocks');
+import * as mocks from './mocks';
 
 const server = createService({
   permissions: openPermissions,
   authTokenLookup: () => 'picernic basket',
+  enableProcessContactJobs: false,
 }).listen();
 const request = supertest.agent(server);
 
@@ -499,7 +500,7 @@ describe('/cases route', () => {
         {
           infoUpdate: { summary: 'To summarize....' },
           changeDescription: 'summary changed by another counselor',
-          customWorkerSid: 'another-worker-sid',
+          customWorkerSid: 'WK-another-worker-sid',
         },
       ]).test(
         'should return 200 when $changeDescription',

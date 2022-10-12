@@ -1,14 +1,15 @@
 import { createService } from '../src/app';
 import { openPermissions } from '../src/permissions/json-permissions';
 import * as proxiedEndpoints from './external-service-stubs/proxied-endpoints';
+import * as mocks from './mocks';
 const supertest = require('supertest');
 const Sequelize = require('sequelize');
 const models = require('../src/models');
-const mocks = require('./mocks');
 
 const server = createService({
   permissions: openPermissions,
   authTokenLookup: () => 'picernic basket',
+  enableProcessContactJobs: false,
 }).listen();
 const request = supertest.agent(server);
 
