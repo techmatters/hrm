@@ -3,7 +3,7 @@ import {
   completeContactJob,
   appendFailedAttemptPayload,
 } from './contact-job-data-access';
-import { deletedCompletedContactJobs, pollCompletedContactJobs } from './client-sqs';
+import { deleteCompletedContactJobsFromQueue, pollCompletedContactJobsFromQueue } from './client-sqs';
 import {
   CompletedContactJobBody,
   CompletedRetrieveContactTranscript,
@@ -35,7 +35,7 @@ const processCompletedContactJob = async (completedJob: CompletedContactJobBody)
 };
 
 export const pollAndprocessCompletedContactJobs = async (jobMaxAttempts: number) => {
-  const polledCompletedJobs = await pollCompletedContactJobs();
+  const polledCompletedJobs = await pollCompletedContactJobsFromQueue();
 
   const { Messages: messages } = polledCompletedJobs;
 
@@ -58,7 +58,7 @@ export const pollAndprocessCompletedContactJobs = async (jobMaxAttempts: number)
           );
 
           // Delete the message from the queue (this could be batched)
-          await deletedCompletedContactJobs(m.ReceiptHandle);
+          await deleteCompletedContactJobsFromQueue(m.ReceiptHandle);
 
           return markedComplete;
         } else {
