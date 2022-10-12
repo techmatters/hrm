@@ -1,5 +1,7 @@
 import { selectSingleContactByIdSql } from './contact-get-sql';
 
+const ID_WHERE_CLAUSE = `WHERE "accountSid" = $<accountSid> AND "id"=$<contactId>`;
+
 export const UPDATE_RAWJSON_BY_ID = `WITH updated AS (
 UPDATE "Contacts" 
 SET "rawJson" = COALESCE("rawJson", '{}'::JSONB) 
@@ -32,7 +34,7 @@ SET "rawJson" = COALESCE("rawJson", '{}'::JSONB)
   || (CASE WHEN $<childInformation> IS NOT NULL THEN jsonb_build_object('childInformation', $<childInformation>::JSONB) ELSE '{}'::JSONB END),
   "updatedBy" = $<updatedBy>,
   "updatedAt" = CURRENT_TIMESTAMP
-WHERE "accountSid" = $<accountSid> AND "id"=$<contactId>
+${ID_WHERE_CLAUSE}
 RETURNING *
 )
 ${selectSingleContactByIdSql('updated')}
@@ -42,8 +44,15 @@ export const UPDATE_CASEID_BY_ID = `WITH updated AS (
 UPDATE "Contacts" 
 SET 
   "caseId" = $<caseId>
-WHERE "accountSid" = $<accountSid> AND "id"=$<contactId>
+${ID_WHERE_CLAUSE}
 RETURNING *
 )
 ${selectSingleContactByIdSql('updated')}
+`;
+
+export const APPEND_MEDIA_URL_SQL = `
+  UPDATE "Contacts"
+  SET
+    "rawJson" = COALESCE("rawJson", '{}'::JSONB) || jsonb_build_object('mediaUrls', COALESCE("rawJson"->'mediaUrls', '[]'::JSONB) || $<mediaUrls:json>::JSONB)
+  ${ID_WHERE_CLAUSE}
 `;

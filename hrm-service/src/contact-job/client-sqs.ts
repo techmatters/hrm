@@ -1,4 +1,4 @@
-export const pollCompletedContactJobs = async (): Promise<{
+export const pollCompletedContactJobsFromQueue = async (): Promise<{
   Messages: { ReceiptHandle: string; Body: string }[];
 }> => {
   return {
@@ -6,6 +6,6 @@ export const pollCompletedContactJobs = async (): Promise<{
   };
 };
 
-export const deletedCompletedContactJobs = async (ReceiptHandle: any) => {
+export const deleteCompletedContactJobsFromQueue = async (ReceiptHandle: any) => {
   return ReceiptHandle;
 };

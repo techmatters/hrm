@@ -1,15 +1,22 @@
 import { db } from '../connection-pool';
-import { UPDATE_CASEID_BY_ID, UPDATE_RAWJSON_BY_ID } from './sql/contact-update-sql';
+import {
+  APPEND_MEDIA_URL_SQL,
+  UPDATE_CASEID_BY_ID,
+  UPDATE_RAWJSON_BY_ID,
+} from './sql/contact-update-sql';
 import { SELECT_CONTACT_SEARCH } from './sql/contact-search-sql';
 import { endOfDay, parseISO, startOfDay } from 'date-fns';
 import { selectSingleContactByIdSql, selectSingleContactByTaskId } from './sql/contact-get-sql';
 import { insertContactSql, NewContactRecord } from './sql/contact-insert-sql';
-import { PersonInformation } from './contact-json';
+import { ContactMediaUrl, PersonInformation } from './contact-json';
+import { createContactJob, ContactJobType } from '../contact-job/contact-job-data-access';
+import { isChatChannel } from './channelTypes';
 
 type ExistingContactRecord = {
   id: number;
   accountSid: string;
   createdAt?: Date;
+  updatedAt?: Date;
 } & Partial<NewContactRecord>;
 
 export type Contact = ExistingContactRecord & {
@@ -140,8 +147,9 @@ export const create = async (
         return existingContact;
       }
     }
+
     const now = new Date();
-    const updatedContact: Contact = await connection.one<Contact>(
+    const created: Contact = await connection.one<Contact>(
       insertContactSql({
         ...newContact,
         accountSid,
@@ -150,7 +158,16 @@ export const create = async (
       }),
       { csamReportIds },
     );
-    return updatedContact;
+
+    if (isChatChannel(created.channel)) {
+      await createContactJob(connection)({
+        jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
+        resource: created,
+        additionalPayload: undefined,
+      });
+    }
+
+    return created;
   });
 };
 
@@ -208,3 +225,12 @@ export const search = async (
     return { rows: searchResults, count: searchResults.length ? searchResults[0].totalCount : 0 };
   });
 };
+
+export const appendMediaUrls = async (
+  accountSid: string,
+  contactId: number,
+  mediaUrls: ContactMediaUrl[],
+): Promise<void> =>
+  db.task(async connection =>
+    connection.none(APPEND_MEDIA_URL_SQL, { accountSid, contactId, mediaUrls }),
+  );

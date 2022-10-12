@@ -1,39 +1,59 @@
-import { subMilliseconds } from 'date-fns';
-import { pullDueContactJobs, TestContactJob } from './contact-job-data-access';
+import { format } from 'date-fns';
+import { ContactJob, RetrieveContactTranscriptJob } from './contact-job-data-access';
 import { publishToContactJobsTopic } from './client-sns';
 import { ContactJobType } from './contact-job-data-access';
+import { assertExhaustive } from './assertExhaustive';
 
-export const publishTestContactJob = (contactJob: TestContactJob) => {
-  const { accountSid, id: contactId, taskId, twilioWorkerId } = contactJob.resource;
+export const publishRetrieveContactTranscript = (contactJob: RetrieveContactTranscriptJob) => {
+  const {
+    accountSid,
+    id: contactId,
+    channelSid,
+    serviceSid,
+    taskId,
+    twilioWorkerId,
+    createdAt,
+  } = contactJob.resource;
+
+  const dateBasedPath = format(new Date(createdAt), 'yyyy/MM/dd/yyyyMMddHHmmss');
+  const filePath = `transcripts/${dateBasedPath}-${taskId}.json`;
 
   return publishToContactJobsTopic({
     jobType: contactJob.jobType,
     jobId: contactJob.id,
     accountSid,
     contactId,
+    channelSid,
+    serviceSid,
     taskId,
     twilioWorkerId,
+    filePath,
+    attemptNumber: contactJob.numberOfAttempts,
   });
 };
 
-type PublishedContactJobResult = Awaited<ReturnType<typeof publishTestContactJob>>;
+type PublishedContactJobResult = Awaited<ReturnType<typeof publishToContactJobsTopic>>;
 
-export const publishPendingContactJobs = async (
-  contactJobRetryIntervalMiliseconds: number,
+export const publishDueContactJobs = async (
+  dueContactJobs: ContactJob[],
 ): Promise<PromiseSettledResult<PublishedContactJobResult>[]> => {
-  // This pulls any jobs due to be run and marks them as attempted
-  const pendingJobs = await pullDueContactJobs(
-    subMilliseconds(new Date(), contactJobRetryIntervalMiliseconds),
-  );
-
-  const publishResults = await Promise.allSettled(
-    pendingJobs.map((pendingJob: TestContactJob) => {
-      switch (pendingJob.jobType) {
-        case ContactJobType.TEST_CONTACT_JOB:
-          return publishTestContactJob(pendingJob);
+  const publishedContactJobResult = await Promise.allSettled(
+    dueContactJobs.map((dueJob: ContactJob) => {
+      try {
+        switch (dueJob.jobType) {
+          case ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT: {
+            return publishRetrieveContactTranscript(dueJob);
+          }
+          // TODO: remove the as never typecast when we have 2 or more job types. TS complains if we remove it now.
+          default:
+            assertExhaustive(dueJob as never);
+        }
+      } catch (err) {
+        console.error('Failed to publish due job:', dueJob, err);
+        return Promise.reject(err);
       }
     }),
   );
 
-  return publishResults;
+  return publishedContactJobResult;
 };

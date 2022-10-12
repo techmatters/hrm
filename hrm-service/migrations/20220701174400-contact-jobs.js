@@ -27,6 +27,7 @@ module.exports = {
         completed timestamp with time zone,
         "lastAttempt" timestamp with time zone,
         "numberOfAttempts" integer NOT NULL DEFAULT 0,
+        "failedAttemptsPayloads" jsonb,
         "additionalPayload" jsonb,
         "completionPayload" jsonb,
         CONSTRAINT "ContactJobs_pkey" PRIMARY KEY (id),

@@ -10,6 +10,9 @@ import { ContactRawJson } from './contact-json';
 import { retrieveCategories, getPaginationElements } from '../controllers/helpers';
 import { NewContactRecord } from './sql/contact-insert-sql';
 
+// Re export as is:
+export { appendMediaUrls, Contact } from './contact-data-access';
+
 export type PatchPayload = {
   rawJson: Partial<
     Pick<ContactRawJson, 'callerInformation' | 'childInformation' | 'caseInformation'>
@@ -79,11 +82,14 @@ export const createContact = async (
       newContact.queueName || (<any>(rawJson ?? {})).queueName,
     createdBy,
   };
-  return create(
+
+  const created = await create(
     accountSid,
     completeNewContact,
     (newContact.csamReports ?? []).map(csr => csr.id),
   );
+
+  return created;
 };
 
 export const patchContact = async (

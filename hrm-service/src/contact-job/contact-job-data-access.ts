@@ -1,22 +1,43 @@
+import { ITask } from 'pg-promise';
 import { db, pgp } from '../connection-pool';
 import { Contact } from '../contact/contact-data-access';
-import { COMPLETE_JOB_SQL, PULL_DUE_JOBS_SQL } from './sql/contact-job-sql';
+import {
+  COMPLETE_JOB_SQL,
+  PULL_DUE_JOBS_SQL,
+  APPEND_FAILED_ATTEMPT_PAYLOAD,
+} from './sql/contact-job-sql';
 
-export const enum ContactJobType {
-  TEST_CONTACT_JOB = 'test-contact-job',
+export enum ContactJobType {
+  RETRIEVE_CONTACT_TRANSCRIPT = 'retrieve-transcript',
 }
 
-type Job<TComplete = any, TAdditional = any> = {
+// Reflects the actual shape of a record in the ContactJobs table
+export type ContactJobRecord = {
   id: number;
-  resource: Contact;
-  completed?: Date;
-  completionPayload?: TComplete;
-  additionalPayload: TAdditional;
+  contactId: number;
+  accountSid: string;
+  jobType: string;
+  requested: Date;
+  completed: Date | null;
+  lastAttempt: Date | null;
+  numberOfAttempts: number;
+  failedAttemptsPayloads: Record<string, any[]>; // This type is enforced at creation time
+  additionalPayload: any;
+  completionPayload: any;
 };
 
-export type TestContactJob = Job & { jobType: ContactJobType.TEST_CONTACT_JOB };
+// ContactJob base interface, picks the properties used from ContactJobRecord plus the resource Contact
+type Job<TComplete, TAdditional> = ContactJobRecord & {
+  completionPayload: TComplete;
+  additionalPayload: TAdditional;
+  resource: Contact;
+};
 
-export type ContactJob = TestContactJob;
+export type RetrieveContactTranscriptJob = Job<string[] | null, null> & {
+  jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT;
+};
+
+export type ContactJob = RetrieveContactTranscriptJob;
 
 /**
  * Returns all the jobs that are considered 'due'
@@ -26,8 +47,8 @@ export type ContactJob = TestContactJob;
  * @param lastAttemptedBefore
  */
 export const pullDueContactJobs = async (lastAttemptedBefore: Date): Promise<ContactJob[]> => {
-  return db.task(conn => {
-    return conn.manyOrNone<ContactJob>(PULL_DUE_JOBS_SQL, {
+  return db.task(tx => {
+    return tx.manyOrNone<ContactJob>(PULL_DUE_JOBS_SQL, {
       lastAttemptedBefore: lastAttemptedBefore.toISOString(),
     });
   });
@@ -41,7 +62,7 @@ export const pullDueContactJobs = async (lastAttemptedBefore: Date): Promise<Con
 export const completeContactJob = async (
   id: number,
   completionPayload: any,
-): Promise<ContactJob> => {
+): Promise<ContactJobRecord> => {
   return db.task(tx => {
     return tx.oneOrNone(COMPLETE_JOB_SQL, { id, completionPayload });
   });
@@ -49,22 +70,40 @@ export const completeContactJob = async (
 
 /**
  * Add a new job to be completed to the ContactJobs queue
- * @param job
+ * Requires tx: ITask to make the creation of the job part of the same transaction
  */
-export const createContactJob = async (job: Omit<ContactJob, 'id'>): Promise<void> => {
+export const createContactJob = (tx: ITask<{}>) => async (
+  job: Pick<ContactJob, 'jobType' | 'resource' | 'additionalPayload'>,
+): Promise<void> => {
   const contact = job.resource;
-  await db.task(tx => {
-    const insertSql = pgp.helpers.insert(
-      {
-        requested: new Date().toISOString(),
-        jobType: job.jobType,
-        contactId: contact.id,
-        accountSid: contact.accountSid,
-        additionalPayload: job.additionalPayload,
-      },
-      null,
-      'ContactJobs',
-    );
-    return tx.none(insertSql);
-  });
+  const insertSql = pgp.helpers.insert(
+    {
+      requested: new Date().toISOString(),
+      jobType: job.jobType,
+      contactId: contact.id,
+      accountSid: contact.accountSid,
+      additionalPayload: job.additionalPayload,
+      lastAttempt: null,
+      numberOfAttempts: 0,
+      failedAttemptsPayloads: {},
+      completed: null,
+      completionPayload: null,
+    },
+    null,
+    'ContactJobs',
+  );
+  return tx.none(insertSql);
 };
+
+export const appendFailedAttemptPayload = async (
+  id: ContactJob['id'],
+  attemptNumber: number,
+  attemptPayload: any,
+): Promise<ContactJob> =>
+  db.task(tx =>
+    tx.oneOrNone<ContactJob>(APPEND_FAILED_ATTEMPT_PAYLOAD, {
+      id,
+      attemptNumber,
+      attemptPayload: attemptPayload,
+    }),
+  );

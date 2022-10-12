@@ -23,7 +23,6 @@ const startServer = () => {
 const stopServer = async () => {
   if (server && server.close) await server.close();
   server = null;
-  // await wait(100);
 };
 
 beforeEach(() => {
@@ -77,9 +76,9 @@ describe('processContactJobs', () => {
       return callback as any;
     });
     const completeSpy = jest
-      .spyOn(contactJobComplete, 'processCompleteContactJobs')
-      .mockImplementation(() => Promise.resolve(undefined));
-    const publishSpy = jest.spyOn(contactJobPublish, 'publishPendingContactJobs');
+      .spyOn(contactJobComplete, 'pollAndprocessCompletedContactJobs')
+      .mockImplementation(() => Promise.resolve(undefined) as any);
+    const publishSpy = jest.spyOn(contactJobPublish, 'publishDueContactJobs');
 
     const processorIntervalCallback = (contactJobProcessor.processContactJobs() as unknown) as () => Promise<
       void
@@ -111,7 +110,7 @@ describe('processContactJobs', () => {
 
     const errorSpy = jest.spyOn(console, 'error');
     const completeSpy = jest
-      .spyOn(contactJobComplete, 'processCompleteContactJobs')
+      .spyOn(contactJobComplete, 'pollAndprocessCompletedContactJobs')
       .mockImplementationOnce(() => {
         throw new Error('Aaaw, snap!');
       });
