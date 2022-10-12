@@ -25,6 +25,10 @@ const hrmEnv = process.env.hrm_env;
  *
  * I still don't have an understanding of all of the places and ways that the various credentials are used
  * and would love some input on this before we go too much further. (rbd - 06/10/22)
+ *
+ * This structure could also have a region based permission boundary like:
+ * `/development/us-east-1/twilio/${accountSid}/AUTH_TOKEN` so that lambdas and hrm in us-east-1 would only
+ * have access to and load secrets for their region. (rbd 12/10/22)
  */
 const ssmCacheConfigs = [
   {
