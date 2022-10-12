@@ -3,7 +3,10 @@ import {
   completeContactJob,
   appendFailedAttemptPayload,
 } from './contact-job-data-access';
-import { deleteCompletedContactJobsFromQueue, pollCompletedContactJobsFromQueue } from './client-sqs';
+import {
+  deleteCompletedContactJobsFromQueue,
+  pollCompletedContactJobsFromQueue,
+} from './client-sqs';
 import {
   CompletedContactJobBody,
   CompletedRetrieveContactTranscript,
@@ -70,6 +73,8 @@ export const pollAndprocessCompletedContactJobs = async (jobMaxAttempts: number)
               completedJob.jobId,
               'Attempts limit reached',
             );
+
+            await deleteCompletedContactJobsFromQueue(m.ReceiptHandle);
 
             return markedComplete;
           }
