@@ -78,7 +78,7 @@ describe('contact-retrieve-transcript', () => {
     await sqs.purgeQueue({ QueueUrl: queueUrl }).promise();
   });
 
-  test('success', async () => {
+  test('well formed message creates success message in complete queue and file in s3', async () => {
     const message = generateMockMessageBody();
     const sqsResp = await sendMessage({ message, lambdaName });
     expect(sqsResp).toHaveProperty('MessageId');
@@ -99,7 +99,7 @@ describe('contact-retrieve-transcript', () => {
     );
   });
 
-  test('badAccountSid', async () => {
+  test('message with bad accountSid produces failure message in complete queue', async () => {
     const message = { ...generateMockMessageBody(), accountSid: 'badSid' };
     const sqsResp = await sendMessage({ message, lambdaName });
     expect(sqsResp).toHaveProperty('MessageId');
