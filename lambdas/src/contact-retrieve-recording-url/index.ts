@@ -3,6 +3,8 @@ import { SQS } from 'aws-sdk';
 import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
 import { ssmCache, loadSsmCache } from 'hrm-ssm-cache';
 
+//TODO: this is a placeholder for recording retrieval that doesn't actually do anything yet.
+
 /**
  * This is based around latest SQS error handling that supports batchItemFailure responses.
  *
@@ -11,20 +13,9 @@ import { ssmCache, loadSsmCache } from 'hrm-ssm-cache';
 
 const sqs = new SQS();
 
-// TODO: remove this once I figure out how to do it in cdk config (rbd - 07/10/22)
 const completedQueueUrl = process.env.completed_sqs_queue_url as string;
 const hrmEnv = process.env.hrm_env;
 
-/**
- * Discussion Topic:
- * This assumes a new ssm param path based structure like `/development/twilio/${accountSid}/AUTH_TOKEN`,
- * Obviously accountSid could be a more simple representation of the account if needed. But I think this
- * would allow us to increase the flexibility of loading SSM params in batches significantly and for applying
- * IAM policies to SSM params in a slightly less granular way.
- *
- * I still don't have an understanding of all of the places and ways that the various credentials are used
- * and would love some input on this before we go too much further. (rbd - 06/10/22)
- */
 const ssmCacheConfigs = [
   {
     path: `/${hrmEnv}/twilio`,
@@ -114,7 +105,11 @@ export const handler = async (event: SQSEvent): Promise<any> => {
     // which should be the same as the completed queue right now.
     console.dir(err);
 
-    // We use batchItemFailures here because we d
+    // We fail all messages here and rely on SQS retry/DLQ because we hit
+    // a fatal error before we could process any of the messages. The error
+    // handler, whether loop based in hrm-services or lambda based here, will
+    // need to be able to handle these messages that will end up in the completed
+    // queue without a completionPayload.
     response.batchItemFailures = event.Records.map((record) => {
       return {
         itemIdentifier: record.messageId,

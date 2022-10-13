@@ -1,5 +1,7 @@
+//TODO: write some unit test. ;)
+
 describe('exportTranscript', () => {
-  it('should add do a thing', () => {
+  it('should do a thing', () => {
     expect(true).toBe(true);
   });
 });

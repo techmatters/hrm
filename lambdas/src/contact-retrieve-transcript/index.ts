@@ -145,7 +145,11 @@ export const handler = async (event: SQSEvent): Promise<any> => {
     // which should be the same as the completed queue right now.
     console.dir(err);
 
-    // We use batchItemFailures here because we d
+    // We fail all messages here and rely on SQS retry/DLQ because we hit
+    // a fatal error before we could process any of the messages. The error
+    // handler, whether loop based in hrm-services or lambda based here, will
+    // need to be able to handle these messages that will end up in the completed
+    // queue without a completionPayload.
     response.batchItemFailures = event.Records.map((record) => {
       return {
         itemIdentifier: record.messageId,

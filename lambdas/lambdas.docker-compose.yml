@@ -1,3 +1,9 @@
+# This is used for testing the built lambda docker image locally
+# which isn't currently supported by localstack. We could pay
+# for a localstack pro license so we could use docker images
+# in localstack instead of src based builds, but i'm not sure
+# it's worth it for now.
+
 version: '3'
 services:
   contact-complete:

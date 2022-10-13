@@ -1,5 +1,6 @@
 import { jest } from '@jest/globals';
 import { S3, SQS } from 'aws-sdk';
+import { generateMockMessageBody } from '../../src/contact-retrieve-transcript/tests/generateMockMessageBody';
 import { getStackOutput } from '../parseCdkOutput';
 import { sendMessage } from '../sendMessage';
 
@@ -28,24 +29,11 @@ const sqs = new SQS({
 
 const lambdaName = 'contact-retrieve-transcript';
 
-const accountSids = ['testSid1', 'testSid2'];
-
-export const generateMessage = () => {
-  const accountSid = accountSids[Math.floor(Math.random() * accountSids.length)];
-  return {
-    jobId: Math.floor(Math.random() * 1000000),
-    accountSid,
-    contactId: Math.floor(Math.random() * 1000000),
-    jobType: 'retrieve-contact-transcript',
-    filePath: `accountSid/testFilePath-${Math.floor(Math.random() * 1000000)}`,
-  };
-};
-
 export const waitForS3Object = async ({
   message,
   retryCount = 0,
 }: {
-  message: ReturnType<typeof generateMessage>;
+  message: ReturnType<typeof generateMockMessageBody>;
   retryCount?: number;
 }): Promise<S3.GetObjectOutput | undefined> => {
   const params = {
@@ -91,7 +79,7 @@ describe('contact-retrieve-transcript', () => {
   });
 
   test('success', async () => {
-    const message = generateMessage();
+    const message = generateMockMessageBody();
     const sqsResp = await sendMessage({ message, lambdaName });
     expect(sqsResp).toHaveProperty('MessageId');
 
@@ -112,7 +100,7 @@ describe('contact-retrieve-transcript', () => {
   });
 
   test('badAccountSid', async () => {
-    const message = { ...generateMessage(), accountSid: 'badSid' };
+    const message = { ...generateMockMessageBody(), accountSid: 'badSid' };
     const sqsResp = await sendMessage({ message, lambdaName });
     expect(sqsResp).toHaveProperty('MessageId');
 
