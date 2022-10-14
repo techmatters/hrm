@@ -82,7 +82,7 @@ export default class ContactRetrieveStack extends cdk.Stack {
       runtime: lambda.Runtime.NODEJS_16_X,
       memorySize: 512,
       handler: 'handler',
-      entry: `./src/${id}/index.ts`,
+      entry: `./jobs/src/${id}/index.ts`,
       environment: {
         NODE_OPTIONS: '--enable-source-maps',
         S3_ENDPOINT: 'http://localstack:4566',

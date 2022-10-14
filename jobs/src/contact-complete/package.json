@@ -3,9 +3,6 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
   "author": "",
   "license": "ISC",
   "dependencies": {
@@ -14,5 +11,8 @@
   },
   "devDependencies": {
     "@hrm/types": "^1.0.0"
+  },
+  "scripts": {
+    "docker:build": "docker build -t lambdas-contact-complete --build-arg lambda_name=contact-complete -f ../../Dockerfile ../../../"
   }
 }

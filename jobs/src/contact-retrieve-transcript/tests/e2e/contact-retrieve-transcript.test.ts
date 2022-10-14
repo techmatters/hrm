@@ -1,8 +1,8 @@
 import { jest } from '@jest/globals';
 import { S3, SQS } from 'aws-sdk';
-import { generateMockMessageBody } from '../../src/contact-retrieve-transcript/tests/generateMockMessageBody';
-import { getStackOutput } from '../parseCdkOutput';
-import { sendMessage } from '../sendMessage';
+import { generateMockMessageBody } from '../generateMockMessageBody';
+import { getStackOutput } from '../../../../../cdk/cdkOutput';
+import { sendMessage } from '../../../../tests/sendMessage';
 
 /**
  * TODO: This is a super dirty proof of concept for e2e tests.
@@ -15,6 +15,8 @@ const localstackEndpoint = 'http://localhost:4566';
 
 const completeOutput: any = getStackOutput('contact-complete');
 const { queueUrl } = completeOutput;
+
+console.log('queueUrl', queueUrl);
 
 // TODO: modularize all of this setup for reuse
 const s3 = new S3({
@@ -92,9 +94,9 @@ describe('contact-retrieve-transcript', () => {
     expect(sqsResult?.Messages).toHaveLength(1);
 
     const sqsMessage = sqsResult?.Messages?.[0];
-
-    const body = JSON.parse(sqsResult?.Messages?.[0]?.Body || '');
-    expect(body?.completionPayload).toEqual(
+    const body = JSON.parse(sqsMessage?.Body || '');
+    expect(body?.attemptResult).toEqual('success');
+    expect(body?.attemptPayload).toEqual(
       `http://localstack:4566/contact-docs-bucket/${message.filePath}`,
     );
   });
@@ -110,8 +112,8 @@ describe('contact-retrieve-transcript', () => {
     expect(sqsResult?.Messages).toHaveLength(1);
 
     const sqsMessage = sqsResult?.Messages?.[0];
-
-    const body = JSON.parse(sqsResult?.Messages?.[0]?.Body || '');
-    expect(body?.error.message).toEqual('Missing required SSM params');
+    const body = JSON.parse(sqsMessage?.Body || '');
+    expect(body?.attemptResult).toEqual('failure');
+    expect(body?.attemptPayload).toEqual('Missing required SSM params');
   });
 });

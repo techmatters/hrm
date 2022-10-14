@@ -21,8 +21,8 @@
     "@aws-cdk/core": "^1.176.0"
   },
   "devDependencies": {
+    "@tsconfig/node16": "^1.0.3",
     "@types/aws-lambda": "^8.10.72",
-    "@types/aws-sdk": "^2.7.0",
     "@types/jest": "^26.0.24",
     "@types/node": "^14.14.26",
     "@types/node-fetch": "^2.5.10",
@@ -46,5 +46,28 @@
     "ts-jest": "^29.0.3",
     "ts-node": "^10.9.1",
     "typescript": "^4.8.4"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "start": "run-s start:cdk start:service",
+    "start:cdk": "localstack:init",
+    "start:service": "cd hrm-service && npm run start",
+    "docker:build": "npm run docker:build --workspaces --if-present",
+    "docker:compose:jobs:up": "completed_sqs_queue_url=$(npx ts-node jobs/tests/getContactCompleteQueueUrl.ts) docker-compose -f jobs/docker-compose.yml up -d",
+    "docker:compose:jobs:down": "docker-compose -f jobs/docker-compose.yml down",
+    "docker:compose:jobs:logs": "docker-compose -f jobs/docker-compose.yml logs -f",
+    "docker:compose:localstack:up": "docker-compose up -d",
+    "docker:compose:down": "docker-compose -f jobs/docker-compose.yml -f docker-compose.yml down",
+    "docker:compose:logs": "docker-compose -f jobs/docker-compose.yml logs -f ",
+    "lint": "eslint --ext ts .",
+    "lint:fix": "npm run lint -- --fix",
+    "localstack:bootstrap": "cdklocal bootstrap",
+    "localstack:deploy": "cdklocal deploy --all --outputs-file ./cdk/outputs.json",
+    "localstack:destroy": "cdklocal destroy --all",
+    "localstack:diff": "cdklocal diff",
+    "localstack:init": "run-s docker:compose:localstack:up localstack:bootstrap localstack:deploy",
+    "localstack:logs": "run-s docker:compose:logs",
+    "localstack:synth": "cdklocal synth --all",
+    "test:e2e": "npm run test:e2e --workspaces --if-present"
   }
 }

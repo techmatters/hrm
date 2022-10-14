@@ -1,8 +1,6 @@
 {
-  "extends": "./tsconfig.base.json",
   "files": [],
   "references": [
-    { "path": "hrm-service" },
     { "path": "jobs/packages/s3-client" },
     { "path": "jobs/packages/twilio-client" },
     { "path": "jobs/src/contact-complete" },

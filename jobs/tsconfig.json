@@ -1,5 +1,5 @@
 {
-  "extends": "../tsconfig.base.json",
+  "extends": "@tsconfig/node16/tsconfig.json",
   "compilerOptions": {
     "lib": ["ES2020"],
     "strict": true,
@@ -7,4 +7,8 @@
     "checkJs": true,
     "resolveJsonModule": true
   },
+  "ts-node": {
+    "transpileOnly": true,
+    "files": true
+  }
 }

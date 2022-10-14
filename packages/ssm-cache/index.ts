@@ -14,7 +14,7 @@ export type SsmCache = {
 
 export const ssmCache: SsmCache = { values: {} };
 
-export const addToCache = (regex, { Name = null, Value = null }: SSM.Parameter) => {
+export const addToCache = (regex: RegExp | undefined, { Name, Value }: SSM.Parameter) => {
   if (!Name) return;
   if (regex && !regex.test(Name)) return;
 
@@ -30,15 +30,16 @@ export const loadPaginated = async ({
   regex,
   nextToken,
 }: LoadPaginatedParameters): Promise<void> => {
-  const resp = await ssm
-    .getParametersByPath({
-      MaxResults: 10, // 10 is max allowed by AWS
-      Path: path,
-      Recursive: true,
-      WithDecryption: true,
-      NextToken: nextToken,
-    })
-    .promise();
+  const params: SSM.GetParametersByPathRequest = {
+    MaxResults: 10, // 10 is max allowed by AWS
+    Path: path,
+    Recursive: true,
+    WithDecryption: true,
+  };
+
+  if (nextToken) params.NextToken = nextToken;
+
+  const resp = await ssm.getParametersByPath(params).promise();
 
   resp.Parameters?.forEach((p) => addToCache(regex, p));
 
@@ -80,7 +81,7 @@ export const loadSsmCache = async ({
 };
 
 type LoadPaginatedParameters = {
-  path?: string;
+  path: string;
   regex?: RegExp;
   nextToken?: string;
 };

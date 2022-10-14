@@ -3,9 +3,6 @@
   "version": "0.0.1",
   "description": "",
   "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
   "author": "",
   "license": "ISC",
   "dependencies": {
@@ -17,5 +14,8 @@
   },
   "devDependencies": {
     "@hrm/types": "^1.0.0"
+  },
+  "scripts": {
+    "docker:build": "docker build -t lambdas-contact-retrieve-recording-url --build-arg lambda_name=contact-retrieve-recording-url -f ../../Dockerfile ../../../"
   }
 }

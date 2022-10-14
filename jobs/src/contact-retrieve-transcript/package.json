@@ -3,9 +3,6 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
   "author": "",
   "license": "ISC",
   "dependencies": {
@@ -16,6 +13,11 @@
     "util": "^0.12.4"
   },
   "devDependencies": {
-    "@hrm/types": "^1.0.0"
+    "@hrm/types": "^1.0.0",
+    "ts-node": "^10.9.1"
+  },
+  "scripts": {
+    "docker:build": "docker build -t lambdas-contact-retrieve-transcript --build-arg lambda_name=contact-retrieve-transcript -f ../../Dockerfile ../../../",
+    "test:e2e": "jest tests/e2e"
   }
 }

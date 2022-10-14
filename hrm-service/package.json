@@ -3,7 +3,6 @@
   "version": "0.0.0",
   "description": "The easiest way to run the tests locally is to run the test DB in docker.",
   "scripts": {
-    "build": "npx tsc",
     "start": "node ./service-tests/db-init/migrate && cd ./dist && node ./bin/www",
     "build-and-start": "npm run build && npm run start",
     "test": "jest --passWithNoTests --forceExit --maxWorkers=1",

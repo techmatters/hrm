@@ -1,5 +1,5 @@
 import { SQS } from 'aws-sdk';
-import { getStackOutput } from './parseCdkOutput';
+import { getStackOutput } from '../../cdk/cdkOutput';
 
 export const sendMessage = async ({
   lambdaName,
