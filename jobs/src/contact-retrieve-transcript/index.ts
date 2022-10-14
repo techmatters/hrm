@@ -4,8 +4,8 @@ import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
 import type {
   CompletedContactJobBody,
   PublishToContactJobsTopicParams,
-} from 'hrm-types/ContactJob';
-import { ssmCache, loadSsmCache } from 'hrm-ssm-cache';
+} from '@hrm/types/ContactJob';
+import { ssmCache, loadSsmCache } from '@hrm/ssm-cache';
 import { exportTranscript } from './exportTranscript';
 import { uploadTranscript } from './uploadTranscript';
 

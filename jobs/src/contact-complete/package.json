@@ -1,5 +1,5 @@
 {
-  "name": "hrm-contact-complete",
+  "name": "@hrm/jobs-contact-complete",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -9,7 +9,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "aws-sdk": "^2.1225.0",
-    "hrm-types": "file:../../../hrm-types"
+    "@hrm/ssm-cache": "^1.0.0",
+    "aws-sdk": "^2.1225.0"
+  },
+  "devDependencies": {
+    "@hrm/types": "^1.0.0"
   }
 }

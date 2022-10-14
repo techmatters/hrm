@@ -1,11 +1,7 @@
 {
   "extends": "../../tsconfig.json",
-  "include": ["*.ts", "*.js"],
+  "include": ["*.ts"],
   "compilerOptions": {
-    "lib": ["ES2020"],
-    "outDir": "",
-    "target": "ES6",
-    "rootDir": "",
-    "esModuleInterop": true
+    "outDir": "./dist"
   }
 }

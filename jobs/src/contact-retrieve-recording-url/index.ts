@@ -4,8 +4,8 @@ import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
 import type {
   CompletedContactJobBody,
   PublishToContactJobsTopicParams,
-} from 'hrm-types/ContactJob';
-import { ssmCache, loadSsmCache } from 'hrm-ssm-cache';
+} from '@hrm/types/ContactJob';
+import { ssmCache, loadSsmCache } from '@hrm/ssm-cache';
 
 //TODO: this is a placeholder for recording retrieval that doesn't actually do anything yet.
 
@@ -32,7 +32,6 @@ const ssmCacheConfigs = [
 ];
 
 const processRecord = async (message: PublishToContactJobsTopicParams) => {
-  const message = JSON.parse(sqsRecord.body);
   console.log(message);
 
   const authToken = ssmCache.values[`/${hrmEnv}/twilio/${message.accountSid}/auth_token`];

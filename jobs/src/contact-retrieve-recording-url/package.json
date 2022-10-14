@@ -1,5 +1,5 @@
 {
-  "name": "hrm-contact-retrieve-recording-url",
+  "name": "@hrm/jobs-contact-retrieve-recording-url",
   "version": "0.0.1",
   "description": "",
   "main": "index.js",
@@ -9,10 +9,13 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@hrm/jobs-twilio-client": "^1.0.0",
+    "@hrm/ssm-cache": "^1.0.0",
     "aws-sdk": "^2.1225.0",
-    "hrm-ssm-cache": "file:../lib/hrm-ssm-cache",
-    "hrm-types": "file:../../../hrm-types",
     "twilio": "^3.80.0",
     "util": "^0.12.4"
+  },
+  "devDependencies": {
+    "@hrm/types": "^1.0.0"
   }
 }

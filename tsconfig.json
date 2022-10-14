@@ -1,0 +1,9 @@
+{
+  "files": [],
+  "references": [
+    { "path": "hrm-service" },
+    { "path": "jobs/src/contact-complete" },
+    { "path": "jobs/src/contact-retrieve-recording-url" },
+    { "path": "jobs/src/contact-retrieve-transcript" }
+  ]
+}
