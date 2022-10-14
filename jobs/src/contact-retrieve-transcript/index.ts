@@ -1,6 +1,10 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { SQS } from 'aws-sdk';
 import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
+import type {
+  CompletedContactJobBody,
+  PublishToContactJobsTopicParams,
+} from 'hrm-types/ContactJob';
 import { ssmCache, loadSsmCache } from 'hrm-ssm-cache';
 import { exportTranscript } from './exportTranscript';
 import { uploadTranscript } from './uploadTranscript';
@@ -41,8 +45,7 @@ const ssmCacheConfigs = [
   },
 ];
 
-const processRecord = async (sqsRecord: SQSRecord) => {
-  const message = JSON.parse(sqsRecord.body);
+const processRecord = async (message: PublishToContactJobsTopicParams) => {
   console.log(message);
 
   const authToken = ssmCache.values[`/${hrmEnv}/twilio/${message.accountSid}/auth_token`];
@@ -71,9 +74,10 @@ const processRecord = async (sqsRecord: SQSRecord) => {
     channelSid: message.channelSid,
   });
 
-  const completedJob = {
+  const completedJob: CompletedContactJobBody = {
     ...message,
-    completionPayload: uploadResults.Location,
+    attemptResult: 'success',
+    attemptPayload: uploadResults.Location,
   };
 
   await sqs
@@ -85,21 +89,18 @@ const processRecord = async (sqsRecord: SQSRecord) => {
 };
 
 export const processRecordWithoutException = async (sqsRecord: SQSRecord): Promise<void> => {
+  const message = JSON.parse(sqsRecord.body);
   try {
-    await processRecord(sqsRecord);
+    await processRecord(message);
   } catch (err) {
     console.error('Failed to process record', err);
 
-    const message = err instanceof Error ? err.message : String(err);
-    const stack = err instanceof Error ? err.stack : '';
+    const errMessage = err instanceof Error ? err.message : String(err);
 
-    // TODO: fill this in appropriately once some other decisions have been made. (rbd - 03/10/22)
-    const failedJob = {
-      error: {
-        message,
-        stack,
-      },
-      sqsRecord,
+    const failedJob: CompletedContactJobBody = {
+      ...message,
+      attemptResult: 'failure',
+      attemptPayload: errMessage,
     };
 
     await sqs
@@ -111,14 +112,6 @@ export const processRecordWithoutException = async (sqsRecord: SQSRecord): Promi
   }
 };
 
-/**
- * I refactored this from the multiple Promises.allSettled() that depended on input chaining approach to
- * a single map with a Promise.all() where all errors are swallowed by exceptions and added to a
- * SQSBatchResponse so we can use built-in error handling in SQS/Lambda. For me, this pattern is
- * significantly simpler and easier to understand, but I know that is a subjective opinion and am
- * happy to explore options around the nested bach operations approach if that is preferred.
- * (rbd - 01/10/22)
- */
 export const handler = async (event: SQSEvent): Promise<any> => {
   const response: SQSBatchResponse = { batchItemFailures: [] };
 

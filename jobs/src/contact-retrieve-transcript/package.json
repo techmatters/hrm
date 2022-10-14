@@ -11,9 +11,11 @@
   "dependencies": {
     "aws-sdk": "^2.1225.0",
     "hrm-s3-client": "file:../lib/hrm-s3-client",
-    "hrm-ssm-cache": "file:../lib/hrm-ssm-cache",
+    "hrm-ssm-cache": "file:../../../lib/hrm-ssm-cache",
     "hrm-twilio-client": "file:../lib/hrm-twilio-client",
-    "hrm-types": "file:../../../hrm-types",
     "util": "^0.12.4"
+  },
+  "devDependencies": {
+    "hrm-types": "file:../../../lib/hrm-types"
   }
 }

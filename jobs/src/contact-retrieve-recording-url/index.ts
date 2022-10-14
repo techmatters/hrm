@@ -1,6 +1,10 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { SQS } from 'aws-sdk';
 import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
+import type {
+  CompletedContactJobBody,
+  PublishToContactJobsTopicParams,
+} from 'hrm-types/ContactJob';
 import { ssmCache, loadSsmCache } from 'hrm-ssm-cache';
 
 //TODO: this is a placeholder for recording retrieval that doesn't actually do anything yet.
@@ -27,7 +31,7 @@ const ssmCacheConfigs = [
   },
 ];
 
-const processRecord = async (sqsRecord: SQSRecord) => {
+const processRecord = async (message: PublishToContactJobsTopicParams) => {
   const message = JSON.parse(sqsRecord.body);
   console.log(message);
 
@@ -40,9 +44,10 @@ const processRecord = async (sqsRecord: SQSRecord) => {
 
   // TODO: fill in the actual work!
 
-  const completedJob = {
+  const completedJob: CompletedContactJobBody = {
     ...message,
-    completionPayload: 'notARealPayload',
+    attemptResult: 'success',
+    attemptPayload: 'NotARealRecordingUrl',
   };
 
   await sqs
@@ -54,20 +59,18 @@ const processRecord = async (sqsRecord: SQSRecord) => {
 };
 
 export const processRecordWithoutException = async (sqsRecord: SQSRecord): Promise<void> => {
+  const message = JSON.parse(sqsRecord.body);
   try {
-    await processRecord(sqsRecord);
+    await processRecord(message);
   } catch (err) {
     console.error('Failed to process record', err);
 
-    const message = err instanceof Error ? err.message : String(err);
-    const stack = err instanceof Error ? err.stack : '';
+    const errMessage = err instanceof Error ? err.message : String(err);
 
-    const failedJob = {
-      error: {
-        message,
-        stack,
-      },
-      sqsRecord,
+    const failedJob: CompletedContactJobBody = {
+      ...message,
+      attemptResult: 'failure',
+      attemptPayload: errMessage,
     };
 
     await sqs

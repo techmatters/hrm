@@ -1,0 +1,13 @@
+{
+  "name": "hrm",
+  "version": "1.0.0",
+  "description": "",
+  "author": "",
+  "license": "ISC",
+  "workspaces": [
+    "packages/*",
+    "hrm-service",
+    "jobs/packages/*",
+    "jobs/src/*"
+  ]
+}

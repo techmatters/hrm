@@ -5,6 +5,7 @@ import * as lambda from '@aws-cdk/aws-lambda';
 import * as lambdaNode from '@aws-cdk/aws-lambda-nodejs';
 import * as s3 from '@aws-cdk/aws-s3';
 import * as sqs from '@aws-cdk/aws-sqs';
+import * as ssm from '@aws-cdk/aws-ssm';
 import { SqsEventSource } from '@aws-cdk/aws-lambda-event-sources';
 
 export default class ContactRetrieveStack extends cdk.Stack {
@@ -70,6 +71,11 @@ export default class ContactRetrieveStack extends cdk.Stack {
       cdk.Fn.select(0, splitCompleteQueueUrl),
       cdk.Fn.select(1, splitCompleteQueueUrl),
     ]);
+
+    new ssm.StringParameter(this, `${id}-queue-url`, {
+      parameterName: `/local/sqs/jobs/contact/${id}-queue-url`,
+      stringValue: 'mockAuthToken',
+    });
 
     const fn = new lambdaNode.NodejsFunction(this, 'fetchParams', {
       // TODO: change this back to 16 once it isn't broken upstream
