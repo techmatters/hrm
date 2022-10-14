@@ -1,8 +1,8 @@
-import { Twilio } from 'twilio';
+import { getClient } from 'hrm-twilio-client';
 
 export type ExportTranscriptParams = {
   accountSid: string;
-  authToken: string | undefined;
+  authToken: string;
   serviceSid: string;
   channelSid: string;
 };
@@ -20,7 +20,7 @@ export const exportTranscript = async ({
     `Trying to export transcript with accountSid ${accountSid}, serviceSid ${serviceSid}, channelSid ${channelSid}`,
   );
 
-  const client = new Twilio(accountSid, authToken);
+  const client = getClient({ accountSid, authToken });
   const messages = await client.chat.v2
     .services(serviceSid)
     .channels.get(channelSid)

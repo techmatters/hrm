@@ -1,11 +1,9 @@
-import { S3 } from 'aws-sdk';
+import { s3 } from 'hrm-s3-client';
 import type { ExportTranscriptResult } from './exportTranscript';
-
-const s3 = new S3();
 
 export type UploadTranscriptParams = {
   transcript: ExportTranscriptResult;
-  docsBucketName: string | undefined;
+  docsBucketName: string;
   accountSid: string;
   contactId: number;
   filePath: string;
@@ -28,6 +26,7 @@ export const uploadTranscript = async ({
   serviceSid,
   channelSid,
 }: UploadTranscriptParams) => {
+  console.log('docsBucketName', docsBucketName);
   const uploadResult = await s3
     .upload({
       Bucket: docsBucketName,

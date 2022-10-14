@@ -10,9 +10,10 @@
   "license": "ISC",
   "dependencies": {
     "aws-sdk": "^2.1225.0",
-    "hrm-lib": "file:../../../hrm-lib",
+    "hrm-s3-client": "file:../lib/hrm-s3-client",
     "hrm-ssm-cache": "file:../lib/hrm-ssm-cache",
-    "twilio": "^3.80.0",
+    "hrm-twilio-client": "file:../lib/hrm-twilio-client",
+    "hrm-types": "file:../../../hrm-types",
     "util": "^0.12.4"
   }
 }

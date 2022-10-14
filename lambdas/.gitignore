@@ -5,3 +5,9 @@ node_modules/
 src/**/*.js
 src/**/*.js.map
 src/**/*.zip
+!src/**/tests/**/*.js
+
+# CDK asset staging directory
+.cdk.staging
+cdk.out
+cdk.context.json

@@ -1,6 +1,6 @@
 {
-  "name": "hrm-contact-retrieve-recording-url",
-  "version": "0.0.1",
+  "name": "hrm-contact-complete",
+  "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -10,9 +10,6 @@
   "license": "ISC",
   "dependencies": {
     "aws-sdk": "^2.1225.0",
-    "hrm-ssm-cache": "file:../lib/hrm-ssm-cache",
-    "hrm-types": "file:../../../hrm-types",
-    "twilio": "^3.80.0",
-    "util": "^0.12.4"
+    "hrm-types": "file:../../../hrm-types"
   }
 }

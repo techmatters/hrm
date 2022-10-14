@@ -1,8 +1,8 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { SQS } from 'aws-sdk';
-import type { SQSBatchResponse, SQSEvent, SQSRecord, SNSMessage } from 'aws-lambda';
-import { exportTranscript } from './exportTranscript';
+import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
 import { ssmCache, loadSsmCache } from 'hrm-ssm-cache';
+import { exportTranscript } from './exportTranscript';
 import { uploadTranscript } from './uploadTranscript';
 
 /**
@@ -12,8 +12,9 @@ import { uploadTranscript } from './uploadTranscript';
  */
 
 const sqs = new SQS();
+
 const completedQueueUrl = process.env.completed_sqs_queue_url as string;
-const hrm_env = process.env.hrm_env;
+const hrmEnv = process.env.hrm_env;
 
 /**
  * Discussion Topic:
@@ -24,35 +25,32 @@ const hrm_env = process.env.hrm_env;
  *
  * I still don't have an understanding of all of the places and ways that the various credentials are used
  * and would love some input on this before we go too much further. (rbd - 06/10/22)
+ *
+ * This structure could also have a region based permission boundary like:
+ * `/development/us-east-1/twilio/${accountSid}/AUTH_TOKEN` so that lambdas and hrm in us-east-1 would only
+ * have access to and load secrets for their region. (rbd 12/10/22)
  */
 const ssmCacheConfigs = [
   {
-    path: `/${hrm_env}/twilio`,
-    regex: /AUTH_TOKEN/,
+    path: `/${hrmEnv}/twilio`,
+    regex: /auth_token/,
   },
   {
-    path: `/${hrm_env}/s3`,
-    regex: /DOCS_BUCKET_NAME/,
+    path: `/${hrmEnv}/s3`,
+    regex: /docs_bucket_name/,
   },
 ];
 
 const processRecord = async (sqsRecord: SQSRecord) => {
-  console.dir(sqsRecord);
-  /**
-   * TODO: This is still based around sending messages with SNS instead of directly to SES. I think we should
-   * consider moving to sending SES directly from HRM, as that will simplify the message structure. And simplify
-   * processing of the DLQ if we are planning to use the completed queue as the DLQ in the first iteration. If we
-   * were sending a generic "contactSaved" event to SNS and letting sns handle figuring out if it should
-   * process a transcript or a recording based on the payload, the SNS message structure would seem more
-   * worth the complexity. But if we know at job creation time that the job what type of job is being sent
-   * and what jobs should run, we can just send the payload directly to SES and avoid the added SNS message
-   * complexity.
-   */
-  const snsMessage: SNSMessage = JSON.parse(sqsRecord.body);
-  const message = JSON.parse(snsMessage.Message);
+  const message = JSON.parse(sqsRecord.body);
+  console.log(message);
 
-  const authToken = ssmCache.values[`/${hrm_env}/twilio/${message.accountSid}/AUTH_TOKEN`];
-  const docsBucketName = ssmCache.values[`/${hrm_env}/s3/${message.accountSid}/DOCS_BUCKET_NAME`];
+  const authToken = ssmCache.values[`/${hrmEnv}/twilio/${message.accountSid}/auth_token`];
+  const docsBucketName = ssmCache.values[`/${hrmEnv}/s3/${message.accountSid}/docs_bucket_name`];
+
+  if (!authToken || !docsBucketName) {
+    throw new Error('Missing required SSM params');
+  }
 
   const transcript = await exportTranscript({
     authToken,
@@ -92,8 +90,16 @@ export const processRecordWithoutException = async (sqsRecord: SQSRecord): Promi
   } catch (err) {
     console.error('Failed to process record', err);
 
+    const message = err instanceof Error ? err.message : String(err);
+    const stack = err instanceof Error ? err.stack : '';
+
+    // TODO: fill this in appropriately once some other decisions have been made. (rbd - 03/10/22)
     const failedJob = {
-      //TODO: fill this in appropriately once some other decisions have been made. (rbd - 03/10/22)
+      error: {
+        message,
+        stack,
+      },
+      sqsRecord,
     };
 
     await sqs
@@ -121,14 +127,14 @@ export const handler = async (event: SQSEvent): Promise<any> => {
       throw new Error('Missing completed_sqs_queue_url ENV Variable');
     }
 
-    if (!hrm_env) {
+    if (!hrmEnv) {
       throw new Error('Missing hrm_env ENV Variable');
     }
 
     await loadSsmCache({ configs: ssmCacheConfigs });
 
-    const promises = event.Records.map(
-      async (sqsRecord) => await processRecordWithoutException(sqsRecord),
+    const promises = event.Records.map(async (sqsRecord) =>
+      processRecordWithoutException(sqsRecord),
     );
 
     await Promise.all(promises);
@@ -137,9 +143,13 @@ export const handler = async (event: SQSEvent): Promise<any> => {
   } catch (err) {
     // SSM failures and other major setup exceptions will cause a failure of all messages sending them to DLQ
     // which should be the same as the completed queue right now.
-    console.error(err);
+    console.dir(err);
 
-    // We use batchItemFailures here because we d
+    // We fail all messages here and rely on SQS retry/DLQ because we hit
+    // a fatal error before we could process any of the messages. The error
+    // handler, whether loop based in hrm-services or lambda based here, will
+    // need to be able to handle these messages that will end up in the completed
+    // queue without a completionPayload.
     response.batchItemFailures = event.Records.map((record) => {
       return {
         itemIdentifier: record.messageId,
