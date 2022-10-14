@@ -4,8 +4,8 @@ import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
 import type {
   CompletedContactJobBody,
   PublishToContactJobsTopicParams,
-} from '@hrm/types/ContactJob';
-import { ssmCache, loadSsmCache } from '@hrm/ssm-cache';
+} from '@tech-matters/hrm-types/ContactJob';
+import { ssmCache, loadSsmCache } from '@tech-matters/hrm-ssm-cache';
 
 //TODO: this is a placeholder for recording retrieval that doesn't actually do anything yet.
 

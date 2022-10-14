@@ -1,5 +1,5 @@
 {
-  "name": "@hrm/jobs-s3-client",
+  "name": "@tech-matters/hrm-jobs-s3-client",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",

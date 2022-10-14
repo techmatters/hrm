@@ -1,16 +1,16 @@
 {
-  "name": "@hrm/jobs-contact-complete",
+  "name": "@tech-matters/hrm-jobs-contact-complete",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@hrm/ssm-cache": "^1.0.0",
+    "@tech-matters/hrm-ssm-cache": "^1.0.0",
     "aws-sdk": "^2.1225.0"
   },
   "devDependencies": {
-    "@hrm/types": "^1.0.0"
+    "@tech-matters/hrm-types": "^1.0.0"
   },
   "scripts": {
     "docker:build": "docker build -t lambdas-contact-complete --build-arg lambda_name=contact-complete -f ../../Dockerfile ../../../"

@@ -1,5 +1,5 @@
 {
-  "name": "@hrm/jobs",
+  "name": "@tech-matters/hrm-jobs",
   "version": "1.0.0",
   "description": "",
   "author": "",
@@ -12,8 +12,6 @@
     "test:docker:contact-retrieve-transcript": "curl -XPOST \"http://localhost:9002/2015-03-31/functions/function/invocations\" -d \"$(cat src/contact-retrieve-transcript/tests/testPayload.json)\"",
     "test:localstack": "run-s test:localstack:e2e",
     "test:localstack:e2e": "run-s localstack:init test:localstack:e2e:run",
-    "test:localstack:e2e:quick": "run-s localstack:deploy test:localstack:e2e:run",
-    "test:unit": "run-s compile test:unit:run",
-    "test:unit:run": "jest src/**/tests/unit/*.test.ts src/lib/**/tests/unit/*.test.ts"
+    "test:localstack:e2e:quick": "run-s localstack:deploy test:localstack:e2e:run"
   }
 }

@@ -1,5 +1,5 @@
 {
-  "name": "@hrm/base",
+  "name": "@tech-matters/hrm-base",
   "version": "1.0.0",
   "description": "",
   "author": "",
@@ -57,8 +57,8 @@
     "docker:compose:jobs:down": "docker-compose -f jobs/docker-compose.yml down",
     "docker:compose:jobs:logs": "docker-compose -f jobs/docker-compose.yml logs -f",
     "docker:compose:localstack:up": "docker-compose up -d",
+    "docker:compose:localstack:down": "docker-compose down",
     "docker:compose:down": "docker-compose -f jobs/docker-compose.yml -f docker-compose.yml down",
-    "docker:compose:logs": "docker-compose -f jobs/docker-compose.yml logs -f ",
     "lint": "eslint --ext ts .",
     "lint:fix": "npm run lint -- --fix",
     "localstack:bootstrap": "cdklocal bootstrap",
@@ -66,8 +66,10 @@
     "localstack:destroy": "cdklocal destroy --all",
     "localstack:diff": "cdklocal diff",
     "localstack:init": "run-s docker:compose:localstack:up localstack:bootstrap localstack:deploy",
-    "localstack:logs": "run-s docker:compose:logs",
+    "localstack:logs": "docker-compose logs -f",
     "localstack:synth": "cdklocal synth --all",
-    "test:e2e": "npm run test:e2e --workspaces --if-present"
+    "localstack:down": "run-s docker:compose:localstack:down",
+    "test:e2e": "npm run test:e2e --workspaces --if-present",
+    "test:unit": "npm run test:unit --workspaces --if-present"
   }
 }

@@ -1,19 +1,15 @@
 {
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "lib": ["ES2020"],
     "strict": true,
-    "sourceMap": true,
-    "esModuleInterop": true,
-    "target": "ES6",
     "allowSyntheticDefaultImports": true,
-    "allowJs": true,
     "checkJs": true,
     "moduleResolution": "node",
     "resolveJsonModule": true,
-    "rootDir": "",
-    "outDir": ""
+    "outDir": "./dist"
   },
-  "include": ["*.ts", "*.js"],
+  "include": ["*.ts"],
   "ts-node": {
     // It is faster to skip typechecking.
     "transpileOnly": true,
