@@ -45,8 +45,8 @@ export const waitForS3Object = async ({
   try {
     result = await s3.getObject(params).promise();
   } catch (err) {
-    if (retryCount < 15) {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+    if (retryCount < 60) {
+      await new Promise((resolve) => setTimeout(resolve, 250));
       return waitForS3Object({ message, retryCount: retryCount + 1 });
     }
   }
@@ -64,8 +64,8 @@ export const waitForSQSMessage = async ({
     result = await sqs.receiveMessage({ QueueUrl: queueUrl }).promise();
     if (!result?.Messages) throw new Error('No messages');
   } catch (err) {
-    if (retryCount < 15) {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+    if (retryCount < 60) {
+      await new Promise((resolve) => setTimeout(resolve, 250));
       return waitForSQSMessage({ retryCount: retryCount + 1 });
     }
   }
