@@ -16,8 +16,6 @@ const localstackEndpoint = 'http://localhost:4566';
 const completeOutput: any = getStackOutput('contact-complete');
 const { queueUrl } = completeOutput;
 
-console.log('queueUrl', queueUrl);
-
 // TODO: modularize all of this setup for reuse
 const s3 = new S3({
   region: 'us-east-1',
@@ -114,6 +112,8 @@ describe('contact-retrieve-transcript', () => {
     const sqsMessage = sqsResult?.Messages?.[0];
     const body = JSON.parse(sqsMessage?.Body || '');
     expect(body?.attemptResult).toEqual('failure');
-    expect(body?.attemptPayload).toEqual('Missing required SSM params');
+    expect(body?.attemptPayload).toEqual(
+      'SSM parameter /local/twilio/badSid/auth_token not found in cache',
+    );
   });
 });

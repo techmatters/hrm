@@ -5,7 +5,7 @@ import type {
   CompletedContactJobBody,
   PublishToContactJobsTopicParams,
 } from '@tech-matters/hrm-types/ContactJob';
-import { ssmCache, loadSsmCache } from '@tech-matters/hrm-ssm-cache';
+import { getSsmParameter, loadSsmCache } from '@tech-matters/hrm-ssm-cache';
 
 //TODO: this is a placeholder for recording retrieval that doesn't actually do anything yet.
 
@@ -34,8 +34,8 @@ const ssmCacheConfigs = [
 const processRecord = async (message: PublishToContactJobsTopicParams) => {
   console.log(message);
 
-  const authToken = ssmCache.values[`/${hrmEnv}/twilio/${message.accountSid}/auth_token`];
-  const docsBucketName = ssmCache.values[`/${hrmEnv}/s3/${message.accountSid}/docs_bucket_name`];
+  const authToken = getSsmParameter(`/${hrmEnv}/twilio/${message.accountSid}/auth_token`);
+  const docsBucketName = getSsmParameter(`/${hrmEnv}/s3/${message.accountSid}/docs_bucket_name`);
 
   if (!authToken || !docsBucketName) {
     throw new Error('Missing required SSM params');

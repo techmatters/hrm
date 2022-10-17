@@ -70,7 +70,7 @@
     "localstack:deploy": "cdklocal deploy --all --outputs-file ./cdk/outputs.json",
     "localstack:destroy": "cdklocal destroy --all",
     "localstack:diff": "cdklocal diff",
-    "localstack:init": "run-s docker:compose:localstack:up localstack:bootstrap localstack:deploy",
+    "localstack:init": "run-s docker:compose:localstack:up build localstack:bootstrap localstack:deploy",
     "localstack:logs": "docker-compose logs -f",
     "localstack:synth": "cdklocal synth --all",
     "localstack:down": "run-s docker:compose:localstack:down",

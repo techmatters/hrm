@@ -1,6 +1,6 @@
 import { SQS, SSM } from 'aws-sdk';
 import { PublishToContactJobsTopicParams } from '@tech-matters/hrm-types/ContactJob';
-import { ssmCache } from '../config/ssmCache';
+import { getSsmParameter } from '../config/ssmCache';
 
 const sqs = new SQS();
 
@@ -18,10 +18,9 @@ export const deleteCompletedContactJobsFromQueue = async (ReceiptHandle: any) =>
 
 export const publishToContactJobs = async (params: PublishToContactJobsTopicParams) => {
   try {
-    const QueueUrl =
-      ssmCache.values[
-        `/${process.env.NODE_ENV}/sqs/jobs/contact/queue-url-contact-${params.jobType}`
-      ];
+    const QueueUrl = getSsmParameter(
+      `/${process.env.NODE_ENV}/sqs/jobs/contact/queue-url-contact-${params.jobType}`,
+    );
 
     return sqs
       .sendMessage({

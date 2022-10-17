@@ -82,3 +82,7 @@ docker compose -f ./docker-compose-test.yml down
 ```
 
 in any terminal window.
+
+## Managing packages for sub modules
+
+Package management is handled at the root level for sub modules. Since the package.lock is managed at the root level, you can't just run "npm add {package}" in a sub module. Instead, you must run "npm add {package} -w {sub module name}" from the root directory.

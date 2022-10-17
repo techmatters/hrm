@@ -14,6 +14,14 @@ export type SsmCache = {
 
 export const ssmCache: SsmCache = { values: {} };
 
+export const getSsmParameter = (name: string): string => {
+  if (!Object.prototype.hasOwnProperty.call(ssmCache.values, name)) {
+    throw new Error(`SSM parameter ${name} not found in cache`);
+  }
+
+  return ssmCache.values[name] || '';
+};
+
 export const addToCache = (regex: RegExp | undefined, { Name, Value }: SSM.Parameter) => {
   if (!Name) return;
   if (regex && !regex.test(Name)) return;
