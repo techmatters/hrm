@@ -27,14 +27,16 @@ async function migrate() {
   let ret;
   let lastErr;
   console.log(timeoutPoint);
+  console.log('Umzug migration starting.');
   while (Date.now() < timeoutPoint) {
     try {
       // eslint-disable-next-line no-await-in-loop
-      console.log('Umzug migration starting.');
       ret = await umzug.up();
       console.log('Migration complete.');
       break;
     } catch (err) {
+      console.log('Migration failed. Retrying...');
+      await setTimeout(() => {}, 100);
       lastErr = err;
     }
   }

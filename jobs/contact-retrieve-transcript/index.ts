@@ -18,29 +18,15 @@ import { uploadTranscript } from './uploadTranscript';
 const sqs = new SQS();
 
 const completedQueueUrl = process.env.completed_sqs_queue_url as string;
-const hrmEnv = process.env.hrm_env;
+const hrmEnv = process.env.NODE_ENV;
 
-/**
- * Discussion Topic:
- * This assumes a new ssm param path based structure like `/development/twilio/${accountSid}/AUTH_TOKEN`,
- * Obviously accountSid could be a more simple representation of the account if needed. But I think this
- * would allow us to increase the flexibility of loading SSM params in batches significantly and for applying
- * IAM policies to SSM params in a slightly less granular way.
- *
- * I still don't have an understanding of all of the places and ways that the various credentials are used
- * and would love some input on this before we go too much further. (rbd - 06/10/22)
- *
- * This structure could also have a region based permission boundary like:
- * `/development/us-east-1/twilio/${accountSid}/AUTH_TOKEN` so that lambdas and hrm in us-east-1 would only
- * have access to and load secrets for their region. (rbd 12/10/22)
- */
 const ssmCacheConfigs = [
   {
     path: `/${hrmEnv}/twilio`,
     regex: /auth_token/,
   },
   {
-    path: `/${hrmEnv}/s3`,
+    path: `/${hrmEnv}/s3/`,
     regex: /docs_bucket_name/,
   },
 ];
@@ -121,7 +107,7 @@ export const handler = async (event: SQSEvent): Promise<any> => {
     }
 
     if (!hrmEnv) {
-      throw new Error('Missing hrm_env ENV Variable');
+      throw new Error('Missing NODE_ENV ENV Variable');
     }
 
     await loadSsmCache({ configs: ssmCacheConfigs });

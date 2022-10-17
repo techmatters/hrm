@@ -1,12 +1,3 @@
-/**
- * Discussion:
- *
- * The current contact-job-messages in hrm-services have significant dependency on types that are
- * internal to hrm-services. Do we want to extract those out without the dependencies? Or is there
- * a better way to do this?
- *
- * For now, I'm just duplicating those types here.
- */
 export enum ContactJobType {
   RETRIEVE_CONTACT_TRANSCRIPT = 'retrieve-transcript',
 }

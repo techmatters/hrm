@@ -10,7 +10,7 @@ import {
 import {
   CompletedContactJobBody,
   CompletedRetrieveContactTranscript,
-} from './contact-job-messages';
+} from '@tech-matters/hrm-types/ContactJob';
 import { appendMediaUrls } from '../contact/contact';
 import { ContactMediaType } from '../contact/contact-json';
 import { assertExhaustive } from './assertExhaustive';

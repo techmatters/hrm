@@ -18,7 +18,7 @@ import { ssmCache, loadSsmCache } from '@tech-matters/hrm-ssm-cache';
 const sqs = new SQS();
 
 const completedQueueUrl = process.env.completed_sqs_queue_url as string;
-const hrmEnv = process.env.hrm_env;
+const hrmEnv = process.env.NODE_ENV;
 
 const ssmCacheConfigs = [
   {
@@ -90,7 +90,7 @@ export const handler = async (event: SQSEvent): Promise<any> => {
     }
 
     if (!hrmEnv) {
-      throw new Error('Missing hrm_env ENV Variable');
+      throw new Error('Missing NODE_ENV ENV Variable');
     }
 
     await loadSsmCache({ configs: ssmCacheConfigs });

@@ -1,5 +1,3 @@
-//TODO: eslint setup is mostly copied from hrm-services. I had some problems
-// with the jest plugin, so I disabled it for now. We should revisit this.
 module.exports = {
   extends: ['airbnb-typescript/base', 'plugin:prettier/recommended'],
   plugins: ['prettier', 'import'],
@@ -25,5 +23,5 @@ module.exports = {
     ecmaVersion: 2018, // Allows for the parsing of modern ECMAScript features
     sourceType: 'module', // Allows for the use of imports
   },
-  ignorePatterns: ['cdk.out/**'],
+  ignorePatterns: ['cdk.out/**', '**/dist/**', 'coverage/**'],
 };

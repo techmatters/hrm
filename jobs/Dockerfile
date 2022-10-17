@@ -12,9 +12,9 @@ COPY jobs /tmp/build/jobs
 COPY package.json package-lock.json tsconfig.build.jobs.json /tmp/build/
 
 RUN cd /tmp/build \
-    && npm ci --production -w=jobs/src/${lambda_name} \
+    && npm ci --production -w=jobs/${lambda_name} \
     && npx tsc --project tsconfig.build.jobs.json \
-    && cp jobs/src/${lambda_name}/dist/*.js /var/task/ \
+    && cp jobs/${lambda_name}/dist/*.js /var/task/ \
     && cp -r node_modules /var/task/ \
     # && cd ../lib \
     # # it is weird that this isn't a hard link after npm ci, but we get runtime errors without it.

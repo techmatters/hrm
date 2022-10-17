@@ -73,8 +73,8 @@ export default class ContactRetrieveStack extends cdk.Stack {
     ]);
 
     new ssm.StringParameter(this, `${id}-queue-url`, {
-      parameterName: `/local/sqs/jobs/contact/${id}-queue-url`,
-      stringValue: 'mockAuthToken',
+      parameterName: `/local/sqs/jobs/contact/queue-url-${id}`,
+      stringValue: queue.queueUrl,
     });
 
     const fn = new lambdaNode.NodejsFunction(this, 'fetchParams', {
@@ -82,14 +82,14 @@ export default class ContactRetrieveStack extends cdk.Stack {
       runtime: lambda.Runtime.NODEJS_16_X,
       memorySize: 512,
       handler: 'handler',
-      entry: `./jobs/src/${id}/index.ts`,
+      entry: `./jobs/${id}/index.ts`,
       environment: {
         NODE_OPTIONS: '--enable-source-maps',
         S3_ENDPOINT: 'http://localstack:4566',
         S3_FORCE_PATH_STYLE: 'true',
         S3_REGION: 'us-east-1',
         SSM_ENDPOINT: 'http://localstack:4566',
-        hrm_env: 'local',
+        NODE_ENV: 'local',
         completed_sqs_queue_url: completedQueueUrl,
       },
       bundling: { sourceMap: true },

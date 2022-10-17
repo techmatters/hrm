@@ -1,4 +1,4 @@
-import { getClient } from '@tech-matters/hrm-jobs-twilio-client';
+import { getClient } from '@tech-matters/hrm-twilio-client';
 
 export type ExportTranscriptParams = {
   accountSid: string;

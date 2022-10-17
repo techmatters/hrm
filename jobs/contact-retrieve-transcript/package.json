@@ -6,8 +6,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@tech-matters/hrm-jobs-s3-client": "^1.0.0",
-    "@tech-matters/hrm-jobs-twilio-client": "^1.0.0",
+    "@tech-matters/hrm-s3-client": "^1.0.0",
+    "@tech-matters/hrm-twilio-client": "^1.0.0",
     "@tech-matters/hrm-ssm-cache": "^1.0.0",
     "aws-sdk": "^2.1225.0",
     "util": "^0.12.4"
@@ -17,7 +17,7 @@
     "ts-node": "^10.9.1"
   },
   "scripts": {
-    "docker:build": "docker build -t lambdas-contact-retrieve-transcript --build-arg lambda_name=contact-retrieve-transcript -f ../../Dockerfile ../../../",
+    "docker:build": "docker build -t hrm-jobs-contact-retrieve-transcript --build-arg lambda_name=contact-retrieve-transcript -f ../../Dockerfile ../../../",
     "test:e2e": "jest tests/e2e",
     "test:unit": "jest tests/unit/*.test.ts"
   }

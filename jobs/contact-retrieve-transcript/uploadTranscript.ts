@@ -1,4 +1,4 @@
-import { s3 } from '@tech-matters/hrm-jobs-s3-client';
+import { s3 } from '@tech-matters/hrm-s3-client';
 import type { ExportTranscriptResult } from './exportTranscript';
 
 export type UploadTranscriptParams = {

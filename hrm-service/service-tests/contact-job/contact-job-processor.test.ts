@@ -1,7 +1,6 @@
 import supertest from 'supertest';
 import timers from 'timers';
 
-jest.mock('../../src/contact-job/client-sns');
 jest.mock('../../src/contact-job/client-sqs');
 
 let server;

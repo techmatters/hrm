@@ -42,12 +42,6 @@ export const getMockClient = () => {
 };
 
 const getClientOrMock = ({ accountSid, authToken }: { accountSid: string; authToken: string }) => {
-  /**
-   * Discussion:
-   * I'd appreciate any suggestions on how to improve this pattern. The root problem is that
-   * we want to be able to run local e2e mocks of the Twilio client but we don't have very
-   * great control of the code running inside of the lambda from our test runner. (rbd - 10/10/2020)
-   */
   if (authToken === 'mockAuthToken') {
     return getMockClient();
   }

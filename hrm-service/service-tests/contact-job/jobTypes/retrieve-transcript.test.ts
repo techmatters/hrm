@@ -1,18 +1,16 @@
 import { isAfter } from 'date-fns';
 import each from 'jest-each';
 import timers from 'timers';
+import { CompletedContactJobBody } from '@tech-matters/hrm-types/ContactJob';
 
 import { withTaskId, accountSid, workerSid } from '../../mocks';
 import * as contactJobApi from '../../../src/contact-job/contact-job-data-access';
 import { db } from '../../../src/connection-pool';
 import '../../case-validation';
-import { CompletedContactJobBody } from '../../../src/contact-job/contact-job-messages';
 import { ContactMediaType } from '../../../src/contact/contact-json';
 import { Contact } from '../../../src/contact/contact';
 import { chatChannels } from '../../../src/contact/channelTypes';
 import { JOB_MAX_ATTEMPTS } from '../../../src/contact-job/contact-job-processor';
-
-jest.mock('../../../src/contact-job/client-sns');
 
 // eslint-disable-next-line @typescript-eslint/no-shadow
 const selectJobsByContactId = (contactId: number, accountSid: string) =>

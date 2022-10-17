@@ -4,7 +4,6 @@
   "description": "Shared library for HRM",
   "author": "",
   "license": "ISC",
-  "main": "index.js",
   "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

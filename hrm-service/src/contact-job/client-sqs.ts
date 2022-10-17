@@ -1,10 +1,8 @@
 import { SQS, SSM } from 'aws-sdk';
-import { PublishToContactJobsTopicParams } from './contact-job-messages';
+import { PublishToContactJobsTopicParams } from '@tech-matters/hrm-types/ContactJob';
+import { ssmCache } from '../config/ssmCache';
 
 const sqs = new SQS();
-// This allows endpoint override for localstack I haven't found a better way to do this globally yet
-const ssmConfig = process.env.SSM_ENDPOINT ? { endpoint: process.env.SSM_ENDPOINT } : {};
-const ssm = new SSM(ssmConfig);
 
 export const pollCompletedContactJobsFromQueue = async (): Promise<{
   Messages: { ReceiptHandle: string; Body: string }[];
@@ -20,10 +18,15 @@ export const deleteCompletedContactJobsFromQueue = async (ReceiptHandle: any) =>
 
 export const publishToContactJobs = async (params: PublishToContactJobsTopicParams) => {
   try {
+    const QueueUrl =
+      ssmCache.values[
+        `/${process.env.NODE_ENV}/sqs/jobs/contact/queue-url-contact-${params.jobType}`
+      ];
+
     return sqs
       .sendMessage({
         MessageBody: JSON.stringify(params),
-        QueueUrl: `lambdaOutput.queueUrl`,
+        QueueUrl,
       })
       .promise();
   } catch (err) {

@@ -4,9 +4,9 @@ As an alternative to installing Postgres on your local workstation, you can use 
 
 This has a couple of advantages:
 
-* Less locally installed dependencies - all you need locally is Docker (which most devs need)
-* Changing Postgres version is simple, just run a different image, instead of having to run multiple local versions
-* You are always running Linux Postgres, so any differences between the Linux version we deploy with and MacOS / Windows builds will not affect local dev
+- Less locally installed dependencies - all you need locally is Docker (which most devs need)
+- Changing Postgres version is simple, just run a different image, instead of having to run multiple local versions
+- You are always running Linux Postgres, so any differences between the Linux version we deploy with and MacOS / Windows builds will not affect local dev
 
 This directory comes with a docker-compose.yml that will run a Postgres container and deploy the HRM schema (and create the required users) on port 5432
 
@@ -27,9 +27,9 @@ You can then populate the DB with data valid, up-to-date data by running the `/s
 
 The current `docker-compose.yml` doesn't provide a volume on the host for storing data in persistently, meaning every time you restart it, it reverts to it's initial state.
 
-This can be handy for some use cases like deterministic testing, but would get annoying for data to day dev. To allow your container to restart with the same data it had when it shut down, you should use `docker-compose-persistent.yml` instead, i.e. 
+This can be handy for some use cases like deterministic testing, but would get annoying for data to day dev. To allow your container to restart with the same data it had when it shut down, you should use `docker-compose-persistent.yml` instead, i.e.
+
 ```
 docker compose -f ./docker-compose-persistent.yml build
 docker compose -f ./docker-compose-persistent.yml up
 ```
-
