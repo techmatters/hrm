@@ -3,7 +3,7 @@ name: hrm-ci
 on: [push]
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
 
     services:
@@ -54,7 +54,7 @@ jobs:
           postgresql init scripts: hrm-service/service-tests/db-init
 
       - name: Run HRM Service Tests
-        run: npm run test:service
+        run: npm run test:service:ci
         env:
           CI: true
           TWILIO_ACCOUNT_SID: ACxxx

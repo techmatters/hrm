@@ -81,6 +81,8 @@
     "test:e2e:run": "npm run test:e2e --workspaces --if-present",
     "test:migrate": "npm run test:migrate --workspaces --if-present",
     "test:service": "npm run test:service --workspaces --if-present",
+    "test:service:migrate": "npm run test:service:migrate --workspaces --if-present",
+    "test:service:ci": "npm run test:service:ci --workspaces --if-present",
     "test:unit": "npm run test:unit --workspaces --if-present",
     "test:docker:contact-complete": "curl -XPOST \"http://localhost:9000/2015-03-31/functions/function/invocations\" -d \"$(cat jobs/contact-complete/tests/testPayload.json)\"",
     "test:docker:contact-retrieve-recording-url": "curl -XPOST \"http://localhost:9001/2015-03-31/functions/function/invocations\" -d \"$(cat jobs/contact-retrieve-recording-url/tests/testPayload.json)\"",
