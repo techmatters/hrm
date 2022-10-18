@@ -50,9 +50,9 @@ jest.mock('../src/connection-pool', () => ({
 export const mockConnection = createMockConnection;
 
 export const mockTask = (mockConn: pgPromise.ITask<unknown>) => {
-  // @ts-ignore
   jest
     .spyOn(db, 'task')
+    // @ts-ignore
     .mockImplementation((action: (connection: pgPromise.ITask<unknown>) => Promise<any>) => {
       return action(mockConn);
     });
@@ -62,18 +62,18 @@ export const mockTransaction = (
   mockTx: pgPromise.ITask<unknown> | undefined = undefined,
 ) => {
   if (mockTx) {
-    // @ts-ignore
     jest
       .spyOn(mockConn, 'tx')
+      // @ts-ignore
       .mockImplementation((action: (connection: pgPromise.ITask<unknown>) => Promise<any>) => {
         return action(mockTx);
       });
 
     mockTask(mockConn);
   } else {
-    // @ts-ignore
     jest
       .spyOn(db, 'tx')
+      // @ts-ignore
       .mockImplementation((action: (connection: pgPromise.ITask<unknown>) => Promise<any>) => {
         return action(mockConn);
       });
@@ -81,7 +81,9 @@ export const mockTransaction = (
 };
 
 // eslint-disable-next-line prettier/prettier
-type PgQueryParameters = [query: QueryParam, values?:any] | [query: QueryParam, values?:any, cb?: any, thisArg?: any];
+type PgQueryParameters =
+  | [query: QueryParam, values?: any]
+  | [query: QueryParam, values?: any, cb?: any, thisArg?: any];
 
 export const getSqlStatement = (
   mockQueryMethod: jest.SpyInstance<any, PgQueryParameters>,
