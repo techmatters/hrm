@@ -1,6 +1,5 @@
 import supertest from 'supertest';
 import timers from 'timers';
-import { loadSsmCache, ssmCache } from '../../src/config/ssmCache';
 
 jest.mock('../../src/contact-job/client-sqs');
 
@@ -26,8 +25,6 @@ const stopServer = async () => {
 };
 
 beforeEach(async () => {
-  await loadSsmCache();
-
   jest.isolateModules(() => {
     createService = require('../../src/app').createService;
     contactJobComplete = require('../../src/contact-job/contact-job-complete');
