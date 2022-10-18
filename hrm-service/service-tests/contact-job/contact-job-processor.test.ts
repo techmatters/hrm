@@ -2,6 +2,7 @@ import supertest from 'supertest';
 import timers from 'timers';
 
 jest.mock('../../src/contact-job/client-sqs');
+jest.mock('@tech-matters/hrm-ssm-cache');
 
 let server;
 let createService: typeof import('../../src/app').createService;
@@ -79,8 +80,9 @@ describe('processContactJobs', () => {
       .mockImplementation(() => Promise.resolve(undefined) as any);
     const publishSpy = jest.spyOn(contactJobPublish, 'publishDueContactJobs');
 
-    const processorIntervalCallback =
-      contactJobProcessor.processContactJobs() as unknown as () => Promise<void>;
+    const processorIntervalCallback = (contactJobProcessor.processContactJobs() as unknown) as () => Promise<
+      void
+    >;
 
     await processorIntervalCallback();
 
@@ -113,8 +115,9 @@ describe('processContactJobs', () => {
         throw new Error('Aaaw, snap!');
       });
 
-    const processorIntervalCallback =
-      contactJobProcessor.processContactJobs() as unknown as () => Promise<void>;
+    const processorIntervalCallback = (contactJobProcessor.processContactJobs() as unknown) as () => Promise<
+      void
+    >;
 
     await processorIntervalCallback();
 

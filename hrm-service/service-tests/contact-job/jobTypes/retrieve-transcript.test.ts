@@ -13,6 +13,8 @@ import { JOB_MAX_ATTEMPTS } from '../../../src/contact-job/contact-job-processor
 
 import type { CompletedContactJobBody } from '@tech-matters/hrm-types/ContactJob';
 
+jest.mock('@tech-matters/hrm-ssm-cache');
+
 // eslint-disable-next-line @typescript-eslint/no-shadow
 const selectJobsByContactId = (contactId: number, accountSid: string) =>
   db.task(t =>
