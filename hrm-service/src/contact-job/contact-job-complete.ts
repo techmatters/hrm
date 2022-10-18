@@ -7,13 +7,14 @@ import {
   deleteCompletedContactJobsFromQueue,
   pollCompletedContactJobsFromQueue,
 } from './client-sqs';
-import {
-  CompletedContactJobBody,
-  CompletedRetrieveContactTranscript,
-} from '@tech-matters/hrm-types/ContactJob';
 import { appendMediaUrls } from '../contact/contact';
 import { ContactMediaType } from '../contact/contact-json';
 import { assertExhaustive } from './assertExhaustive';
+
+import type {
+  CompletedContactJobBody,
+  CompletedRetrieveContactTranscript,
+} from '@tech-matters/hrm-types/ContactJob';
 
 export const processCompletedRetrieveContactTranscript = async (
   completedJob: CompletedRetrieveContactTranscript,

@@ -4,8 +4,9 @@ import * as SQSClient from '../../src/contact-job/client-sqs';
 import * as contactJobDataAccess from '../../src/contact-job/contact-job-data-access';
 import * as contactJobComplete from '../../src/contact-job/contact-job-complete';
 import { ContactJobType } from '../../src/contact-job/contact-job-data-access';
-import { CompletedContactJobBody } from '@tech-matters/hrm-types/ContactJob';
 import { JOB_MAX_ATTEMPTS } from '../../src/contact-job/contact-job-processor';
+
+import type { CompletedContactJobBody } from '@tech-matters/hrm-types/ContactJob';
 
 jest.mock('../../src/contact-job/client-sqs');
 

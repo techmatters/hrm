@@ -17,6 +17,7 @@ export const deleteCompletedContactJobsFromQueue = async (ReceiptHandle: any) =>
 };
 
 export const publishToContactJobs = async (params: PublishToContactJobsTopicParams) => {
+  //TODO: more robust error handling/messaging
   try {
     const QueueUrl = getSsmParameter(
       `/${process.env.NODE_ENV}/sqs/jobs/contact/queue-url-contact-${params.jobType}`,
