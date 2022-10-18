@@ -37,7 +37,9 @@ There are several types of tests, (unit, service, e2e). These can be run using w
 
 The primary test paths all do setup and teardown of required resources. This can add time to the test cycle. There are `:run` sub-scripts for tests that require setup and teardown like service and e2e tests. If you already have a test db docker container running, you can run these using workspaces by running something like `npm run -w hrm-service test:service:run` from the root directory. You can also run the tests by navigating into the package directory and running `npm run test:service:run`.
 
-### Local Development
+### Starting HRM
+
+This requires an `hrm-service/dist/.env` file to be present. Contents of that file are outside the scope of this documentation currently.
 
 You can run the full stack quickly by running `npm run build-and-start` from the root directory (after running `npm ci`). This will start the hrm-service and hrm-jobs packages.
 
@@ -45,7 +47,7 @@ Running hrm jobs requires a lot of extra time and local resources. If you are on
 
 #### Redeploying jobs to localstack after code changes
 
-If you modify a lambda job, you must redeploy with `npm run localstack:deploy` for localstack to pick up the changes.
+If you modify a lambda job, you must redeploy with `npm run localstack:deploy` for localstack to pick up the changes. The `npm run test:e2e` script will do this for you, but will use the longer `localstack:init` script. For faster test running use `npm run localstack:deploy` and then `npm run test:e2e --workspaces --if-present`
 
 #### Localstack logs
 
