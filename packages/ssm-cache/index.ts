@@ -49,7 +49,7 @@ export const loadPaginated = async ({
 
   const resp = await ssm.getParametersByPath(params).promise();
 
-  resp.Parameters?.forEach((p) => addToCache(regex, p));
+  resp.Parameters?.forEach(p => addToCache(regex, p));
 
   if (resp.NextToken) {
     await loadPaginated({
@@ -83,7 +83,7 @@ export const loadSsmCache = async ({
 
   // do we need to clear ssmCache for this path or is overwriting values
   // okay for our use case? (rbd - 06/10/22)
-  const promises = configs.map(async (config) => loadPaginated(config));
+  const promises = configs.map(async config => loadPaginated(config));
 
   await Promise.all(promises);
 };

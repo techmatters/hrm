@@ -26,7 +26,7 @@ export const exportTranscript = async ({
     .channels.get(channelSid)
     .messages.list();
 
-  const transcript = messages.map((m) => ({
+  const transcript = messages.map(m => ({
     sid: m.sid,
     dateCreated: m.dateCreated,
     from: m.from,

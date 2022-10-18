@@ -12,7 +12,9 @@ export default class ContactRetrieveStack extends cdk.Stack {
   constructor({
     scope,
     id,
-    params,
+    params = {
+      skipLambda: false,
+    },
     props,
   }: {
     scope: cdk.Construct;
@@ -20,6 +22,7 @@ export default class ContactRetrieveStack extends cdk.Stack {
     params: {
       completeQueue: sqs.Queue;
       docsBucket: s3.Bucket;
+      skipLambda?: boolean;
     };
     props?: cdk.StackProps;
   }) {
@@ -31,6 +34,19 @@ export default class ContactRetrieveStack extends cdk.Stack {
       value: queue.queueUrl,
       description: `The url of the ${id} queue`,
     });
+
+    new ssm.StringParameter(this, `${id}-queue-url`, {
+      parameterName: `/local/sqs/jobs/contact/queue-url-${id}`,
+      stringValue: queue.queueUrl,
+    });
+
+    // duplicated for test env
+    new ssm.StringParameter(this, `${id}-queue-url-test`, {
+      parameterName: `/test/sqs/jobs/contact/queue-url-${id}`,
+      stringValue: queue.queueUrl,
+    });
+
+    if (params.skipLambda) return;
 
     /*
       Here, there be dragons.
@@ -71,17 +87,6 @@ export default class ContactRetrieveStack extends cdk.Stack {
       cdk.Fn.select(0, splitCompleteQueueUrl),
       cdk.Fn.select(1, splitCompleteQueueUrl),
     ]);
-
-    new ssm.StringParameter(this, `${id}-queue-url`, {
-      parameterName: `/local/sqs/jobs/contact/queue-url-${id}`,
-      stringValue: queue.queueUrl,
-    });
-
-    // duplicated for test env
-    new ssm.StringParameter(this, `${id}-queue-url-test`, {
-      parameterName: `/test/sqs/jobs/contact/queue-url-${id}`,
-      stringValue: queue.queueUrl,
-    });
 
     const fn = new lambdaNode.NodejsFunction(this, 'fetchParams', {
       // TODO: change this back to 16 once it isn't broken upstream

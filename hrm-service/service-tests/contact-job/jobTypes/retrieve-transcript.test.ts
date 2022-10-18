@@ -131,9 +131,8 @@ describe('publish retrieve-transcript job type', () => {
       return callback as any;
     });
 
-    const processorIntervalCallback = (contactJobProcessor.processContactJobs() as unknown) as () => Promise<
-      void
-    >;
+    const processorIntervalCallback =
+      contactJobProcessor.processContactJobs() as unknown as () => Promise<void>;
 
     await processorIntervalCallback();
 
@@ -164,7 +163,7 @@ describe('publish retrieve-transcript job type', () => {
 
     expect(updatedRetrieveContactTranscriptJob.completed).toBeNull();
     expect(
-      isAfter(updatedRetrieveContactTranscriptJob.lastAttempt!, startedTimestamp),
+      moment(updatedRetrieveContactTranscriptJob.lastAttempt!).isAfter(startedTimestamp),
     ).toBeTruthy();
     expect(updatedRetrieveContactTranscriptJob.numberOfAttempts).toBe(1);
   });
@@ -194,9 +193,8 @@ describe('publish retrieve-transcript job type', () => {
         return callback as any;
       });
 
-      const processorIntervalCallback = (contactJobProcessor.processContactJobs() as unknown) as () => Promise<
-        void
-      >;
+      const processorIntervalCallback =
+        contactJobProcessor.processContactJobs() as unknown as () => Promise<void>;
 
       await processorIntervalCallback();
       await processorIntervalCallback();
@@ -294,9 +292,8 @@ describe('complete retrieve-transcript job type', () => {
         return callback as any;
       });
 
-      const processorIntervalCallback = (contactJobProcessor.processContactJobs() as unknown) as () => Promise<
-        void
-      >;
+      const processorIntervalCallback =
+        contactJobProcessor.processContactJobs() as unknown as () => Promise<void>;
 
       await processorIntervalCallback();
 
@@ -415,9 +412,8 @@ describe('complete retrieve-transcript job type', () => {
         return callback as any;
       });
 
-      const processorIntervalCallback = (contactJobProcessor.processContactJobs() as unknown) as () => Promise<
-        void
-      >;
+      const processorIntervalCallback =
+        contactJobProcessor.processContactJobs() as unknown as () => Promise<void>;
 
       await processorIntervalCallback();
 

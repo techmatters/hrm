@@ -36,7 +36,7 @@ async function migrate() {
       break;
     } catch (err) {
       console.log('Migration failed. Retrying...');
-      await setTimeout(() => {}, 100);
+      await new Promise(resolve => setTimeout(resolve, 250));
       lastErr = err;
     }
   }

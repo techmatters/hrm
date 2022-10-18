@@ -1,6 +1,7 @@
-import { SQS, SSM } from 'aws-sdk';
-import { PublishToContactJobsTopicParams } from '@tech-matters/hrm-types/ContactJob';
+import { SQS } from 'aws-sdk';
 import { getSsmParameter } from '../config/ssmCache';
+
+import type { PublishToContactJobsTopicParams } from '@tech-matters/hrm-types/ContactJob';
 
 const sqs = new SQS();
 
@@ -23,7 +24,7 @@ export const publishToContactJobs = async (params: PublishToContactJobsTopicPara
       `/${process.env.NODE_ENV}/sqs/jobs/contact/queue-url-contact-${params.jobType}`,
     );
 
-    return sqs
+    return await sqs
       .sendMessage({
         MessageBody: JSON.stringify(params),
         QueueUrl,

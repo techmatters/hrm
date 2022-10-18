@@ -112,9 +112,7 @@ export const handler = async (event: SQSEvent): Promise<any> => {
 
     await loadSsmCache({ configs: ssmCacheConfigs });
 
-    const promises = event.Records.map(async (sqsRecord) =>
-      processRecordWithoutException(sqsRecord),
-    );
+    const promises = event.Records.map(async sqsRecord => processRecordWithoutException(sqsRecord));
 
     await Promise.all(promises);
 
@@ -129,7 +127,7 @@ export const handler = async (event: SQSEvent): Promise<any> => {
     // handler, whether loop based in hrm-services or lambda based here, will
     // need to be able to handle these messages that will end up in the completed
     // queue without a completionPayload.
-    response.batchItemFailures = event.Records.map((record) => {
+    response.batchItemFailures = event.Records.map(record => {
       return {
         itemIdentifier: record.messageId,
       };

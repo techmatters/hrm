@@ -62,10 +62,7 @@ describe('/cases route', () => {
       expect(response.body.error).toBe('Authorization failed');
     });
     test('should return 200', async () => {
-      const response = await request
-        .post(route)
-        .set(headers)
-        .send(case1);
+      const response = await request.post(route).set(headers).send(case1);
 
       expect(response.status).toBe(200);
       expect(response.body).toStrictEqual(expected);
@@ -522,10 +519,7 @@ describe('/cases route', () => {
           const caseBeforeUpdate = await caseApi.getCase(originalCase.id, accountSid);
 
           await proxiedEndpoints.mockSuccessfulTwilioAuthentication(customWorkerSid ?? workerSid);
-          const response = await request
-            .put(subRoute(originalCase.id))
-            .set(headers)
-            .send(update);
+          const response = await request.put(subRoute(originalCase.id)).set(headers).send(update);
 
           expect(response.status).toBe(200);
           const expected = {
@@ -571,10 +565,7 @@ describe('/cases route', () => {
         expect(response.body.error).toBe('Authorization failed');
       });
       test('should return 200', async () => {
-        const response = await request
-          .delete(subRoute(cases.blank.id))
-          .set(headers)
-          .send();
+        const response = await request.delete(subRoute(cases.blank.id)).set(headers).send();
 
         expect(response.status).toBe(200);
 
@@ -583,10 +574,7 @@ describe('/cases route', () => {
         expect(fromDb).toBeFalsy();
       });
       test('should return 404', async () => {
-        const response = await request
-          .delete(subRoute(nonExistingCaseId))
-          .set(headers)
-          .send();
+        const response = await request.delete(subRoute(nonExistingCaseId)).set(headers).send();
 
         expect(response.status).toBe(404);
       });

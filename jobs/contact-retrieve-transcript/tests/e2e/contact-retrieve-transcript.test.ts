@@ -1,4 +1,3 @@
-import { jest } from '@jest/globals';
 import { S3, SQS } from 'aws-sdk';
 import { generateMockMessageBody } from '../generateMockMessageBody';
 import { getStackOutput } from '../../../../cdk/cdkOutput';
@@ -46,7 +45,7 @@ export const waitForS3Object = async ({
     result = await s3.getObject(params).promise();
   } catch (err) {
     if (retryCount < 60) {
-      await new Promise((resolve) => setTimeout(resolve, 250));
+      await new Promise(resolve => setTimeout(resolve, 250));
       return waitForS3Object({ message, retryCount: retryCount + 1 });
     }
   }
@@ -65,7 +64,7 @@ export const waitForSQSMessage = async ({
     if (!result?.Messages) throw new Error('No messages');
   } catch (err) {
     if (retryCount < 60) {
-      await new Promise((resolve) => setTimeout(resolve, 250));
+      await new Promise(resolve => setTimeout(resolve, 250));
       return waitForSQSMessage({ retryCount: retryCount + 1 });
     }
   }

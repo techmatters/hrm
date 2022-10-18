@@ -1,5 +1,3 @@
-// eslint-disable-next-line import/no-extraneous-dependencies
-import { SQS } from 'aws-sdk';
 import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
 
 /**
@@ -17,8 +15,6 @@ import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
  * Reference: https://docs.aws.amazon.com/lambda/latest/dg/with-sqs.html#services-sqs-batchfailurereporting
  */
 
-const sqs = new SQS();
-
 const processRecord = async (sqsRecord: SQSRecord) => {
   console.dir(sqsRecord);
   // TODO: fill in the actual work!
@@ -28,7 +24,7 @@ export const handler = async (event: SQSEvent): Promise<any> => {
   const response: SQSBatchResponse = { batchItemFailures: [] };
 
   try {
-    const promises = event.Records.map(async (sqsRecord) => processRecord(sqsRecord));
+    const promises = event.Records.map(async sqsRecord => processRecord(sqsRecord));
 
     await Promise.all(promises);
 
@@ -40,7 +36,7 @@ export const handler = async (event: SQSEvent): Promise<any> => {
     // a fatal error before we could process any of the messages. Once we
     // start using this lambda, we'll need to be sure the internal retry
     // logic is robust enough to handle transient errors.
-    response.batchItemFailures = event.Records.map((record) => {
+    response.batchItemFailures = event.Records.map(record => {
       return {
         itemIdentifier: record.messageId,
       };

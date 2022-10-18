@@ -65,10 +65,7 @@ describe('/postSurveys route', () => {
     });
 
     test('should return 200', async () => {
-      const response = await request
-        .post(route)
-        .set(headers)
-        .send(body);
+      const response = await request.post(route).set(headers).send(body);
 
       expect(response.status).toBe(200);
       expect(response.body.data).toEqual(body.data);

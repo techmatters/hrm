@@ -1,6 +1,6 @@
 module.exports = {
   extends: ['airbnb-typescript/base', 'plugin:prettier/recommended'],
-  plugins: ['prettier', 'import'],
+  plugins: ['prettier', 'jest', 'import'],
   rules: {
     'prettier/prettier': ['error'],
     'no-console': 'off',
@@ -16,6 +16,9 @@ module.exports = {
       },
     },
   },
+  env: {
+    'jest/globals': true,
+  },
   parser: '@typescript-eslint/parser',
   parserOptions: {
     project: './tsconfig.eslint.json',
@@ -23,5 +26,5 @@ module.exports = {
     ecmaVersion: 2018, // Allows for the parsing of modern ECMAScript features
     sourceType: 'module', // Allows for the use of imports
   },
-  ignorePatterns: ['cdk.out/**', '**/dist/**', 'coverage/**'],
+  ignorePatterns: ['cdk.out/**', '**/dist/**', '**/coverage/**'],
 };

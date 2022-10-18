@@ -409,10 +409,7 @@ describe('/cases route', () => {
         });
 
         test('should return 401', async () => {
-          const response = await request
-            .post(subRoute)
-            .query({ limit: 20, offset: 0 })
-            .send({});
+          const response = await request.post(subRoute).query({ limit: 20, offset: 0 }).send({});
 
           expect(response.status).toBe(401);
           expect(response.body.error).toBe('Authorization failed');
@@ -1069,10 +1066,7 @@ describe('/cases route', () => {
           }) => {
             const createdCasesAndContacts = await insertSampleCases(sampleConfig);
             try {
-              const response = await request
-                .post(searchRoute)
-                .set(headers)
-                .send(body);
+              const response = await request.post(searchRoute).set(headers).send(body);
               validateCaseListResponse(
                 response,
                 expectedCasesAndContacts(createdCasesAndContacts),

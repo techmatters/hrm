@@ -54,12 +54,17 @@ const DELETED_PROPERTY = 'D';
  *   [ 'info', 'perpetrators' ] when adding a new perpetrator
  *   [ 'info', 'perpetrators', 0, 'perpetrator', 'phone1' ] when editin an existing perpetrator
  */
-const isPathTarget = (target: string[]) => (changePath: string[]): boolean =>
-  target.every((value, index) => changePath[index] === value) &&
-  target.length === changePath.length;
+const isPathTarget =
+  (target: string[]) =>
+  (changePath: string[]): boolean =>
+    target.every((value, index) => changePath[index] === value) &&
+    target.length === changePath.length;
 
-const isDescendantPathTarget = (target: string[]) => (changePath: string[]): boolean =>
-  target.every((value, index) => changePath[index] === value) && target.length < changePath.length;
+const isDescendantPathTarget =
+  (target: string[]) =>
+  (changePath: string[]): boolean =>
+    target.every((value, index) => changePath[index] === value) &&
+    target.length < changePath.length;
 
 const isPathTargetsStatus = isPathTarget(['status']);
 const isPathTargetsInfo = isDescendantPathTarget(['info']);

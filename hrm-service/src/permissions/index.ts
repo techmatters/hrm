@@ -19,9 +19,10 @@ export type Permissions = {
  * Applies the permissions if valid.
  * @throws Will throw if initializedCan is not a function
  */
-export const applyPermissions = (req: Request,
+export const applyPermissions = (
+  req: Request,
   initializedCan: ReturnType<typeof setupCanForRules>,
-  ) => {
+) => {
   if (typeof initializedCan !== 'function')
     throw new Error(`Error in looked up permission rules: can is not a function.`);
 
@@ -29,14 +30,15 @@ export const applyPermissions = (req: Request,
   req.can = initializedCan;
 };
 
-export const setupPermissions = (lookup: Permissions) => (req: Request, res: Response, next: NextFunction) => {
-  const { accountSid } = <any>req;
-  if (lookup.cachePermissions) {
-    canCache[accountSid] = canCache[accountSid] ?? setupCanForRules(lookup.rules(accountSid));
-    const initializedCan = canCache[accountSid];
-    applyPermissions(req, initializedCan);
-  } else {
-    applyPermissions(req, setupCanForRules(lookup.rules(accountSid)));
-  }
-  return next();
-};
+export const setupPermissions =
+  (lookup: Permissions) => (req: Request, res: Response, next: NextFunction) => {
+    const { accountSid } = <any>req;
+    if (lookup.cachePermissions) {
+      canCache[accountSid] = canCache[accountSid] ?? setupCanForRules(lookup.rules(accountSid));
+      const initializedCan = canCache[accountSid];
+      applyPermissions(req, initializedCan);
+    } else {
+      applyPermissions(req, setupCanForRules(lookup.rules(accountSid)));
+    }
+    return next();
+  };

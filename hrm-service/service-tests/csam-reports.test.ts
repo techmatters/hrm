@@ -102,10 +102,7 @@ describe('/csamReports route', () => {
     });
 
     test('should return 200', async () => {
-      const response = await request
-        .post(route)
-        .set(headers)
-        .send(csamReport1);
+      const response = await request.post(route).set(headers).send(csamReport1);
 
       expect(response.status).toBe(200);
       expect(response.body).toStrictEqual(expected);
@@ -118,16 +115,10 @@ describe('/csamReports route', () => {
     test('valid contactId, should return 200 and update the database correctly', async () => {
       //Create a Contact for the contactId
       const contactRoute = `/v0/accounts/${accountSid}/contacts`;
-      const contactResponse = await request
-        .post(contactRoute)
-        .set(headers)
-        .send(contact1);
+      const contactResponse = await request.post(contactRoute).set(headers).send(contact1);
       let csamReportWithContactId = { ...csamReport1, contactId: contactResponse.body.id };
 
-      const response = await request
-        .post(route)
-        .set(headers)
-        .send(csamReportWithContactId);
+      const response = await request.post(route).set(headers).send(csamReportWithContactId);
 
       expect(response.status).toBe(200);
       expect(response.body.contactId).toBe(csamReportWithContactId.contactId);
@@ -136,10 +127,7 @@ describe('/csamReports route', () => {
       expect(reportFromDB.csamReportId).toEqual(expected.csamReportId);
     });
     test('invalid contactId, returns 500', async () => {
-      const response = await request
-        .post(route)
-        .set(headers)
-        .send(invalidContactCsamReport);
+      const response = await request.post(route).set(headers).send(invalidContactCsamReport);
 
       expect(response.status).toBe(500);
       expect(response.body.message).toContain(
@@ -149,10 +137,7 @@ describe('/csamReports route', () => {
     test('invalid accountSid, returns 500', async () => {
       //Create a Contact for the contactId
       const contactRoute = `/v0/accounts/${accountSid}/contacts`;
-      const contactResponse = await request
-        .post(contactRoute)
-        .set(headers)
-        .send(contact1);
+      const contactResponse = await request.post(contactRoute).set(headers).send(contact1);
       let csamReportWithContactId = { ...csamReport1, contactId: contactResponse.body.id };
 
       const response = await request
@@ -166,10 +151,7 @@ describe('/csamReports route', () => {
       );
     });
     test('missing twilioWorkerId, returns 200', async () => {
-      const response = await request
-        .post(route)
-        .set(headers)
-        .send(csamReport2);
+      const response = await request.post(route).set(headers).send(csamReport2);
       expect(response.status).toBe(200);
       expect(response.body.twilioWorkerId).toEqual('');
 
@@ -177,10 +159,7 @@ describe('/csamReports route', () => {
       expect(reportFromDB.csamReportId).toEqual(expected.csamReportId);
     });
     test('missing csamReportId, returns 200', async () => {
-      const response = await request
-        .post(route)
-        .set(headers)
-        .send(csamReport3);
+      const response = await request.post(route).set(headers).send(csamReport3);
       expect(response.status).toBe(200);
 
       expect(response.body.csamReportId).toEqual('');

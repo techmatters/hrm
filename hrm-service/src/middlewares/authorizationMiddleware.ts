@@ -27,60 +27,62 @@ const isGuest = (tokenResult: TokenValidatorResponse) =>
 
 const defaultTokenLookup = (accountSid: string) => process.env[`TWILIO_AUTH_TOKEN_${accountSid}`];
 
-export const getAuthorizationMiddleware = (authTokenLookup = defaultTokenLookup) => async (req: Request, res: Response, next: NextFunction) => {
-  if (!req || !req.headers || !req.headers.authorization) {
-    return unauthorized(res);
-  }
-
-  const { authorization } = req.headers;
-  const { accountSid } = req;
-  if (!accountSid) return unauthorized(res);
-
-  if (authorization.startsWith('Bearer')) {
-    const token = authorization.replace('Bearer ', '');
-    try {
-      const authToken = authTokenLookup(accountSid);
-      if (!authToken) {
-        console.error(`authToken not provided for the accountSid ${accountSid}.`);
-        return unauthorized(res);
-      }
-
-      const tokenResult = <TokenValidatorResponse>(
-        await TokenValidator(token, accountSid, authToken)
-      );
-
-      if (!isWorker(tokenResult) || isGuest(tokenResult)) {
-        return unauthorized(res);
-      }
-
-      req.user = new User(tokenResult.worker_sid, tokenResult.roles);
-      return next();
-    } catch (err) {
-      console.error('Token authentication failed: ', err);
+export const getAuthorizationMiddleware =
+  (authTokenLookup = defaultTokenLookup) =>
+  async (req: Request, res: Response, next: NextFunction) => {
+    if (!req || !req.headers || !req.headers.authorization) {
+      return unauthorized(res);
     }
-  }
 
-  if (authorization.startsWith('Basic')) {
-    if (canAccessResourceWithStaticKey(req.path, req.method)) {
+    const { authorization } = req.headers;
+    const { accountSid } = req;
+    if (!accountSid) return unauthorized(res);
+
+    if (authorization.startsWith('Bearer')) {
+      const token = authorization.replace('Bearer ', '');
       try {
-        const staticSecretKey = `STATIC_KEY_${accountSid}`;
-        const staticSecret = process.env[staticSecretKey];
-        const requestSecret = authorization.replace('Basic ', '');
-
-        const isStaticSecretValid =
-          staticSecret &&
-          requestSecret &&
-          crypto.timingSafeEqual(Buffer.from(requestSecret), Buffer.from(staticSecret));
-
-        if (isStaticSecretValid) {
-          req.user = new User(`account-${accountSid}`, []);
-          return next();
+        const authToken = authTokenLookup(accountSid);
+        if (!authToken) {
+          console.error(`authToken not provided for the accountSid ${accountSid}.`);
+          return unauthorized(res);
         }
+
+        const tokenResult = <TokenValidatorResponse>(
+          await TokenValidator(token, accountSid, authToken)
+        );
+
+        if (!isWorker(tokenResult) || isGuest(tokenResult)) {
+          return unauthorized(res);
+        }
+
+        req.user = new User(tokenResult.worker_sid, tokenResult.roles);
+        return next();
       } catch (err) {
-        console.error('Static key authentication failed: ', err);
+        console.error('Token authentication failed: ', err);
       }
     }
-  }
 
-  return unauthorized(res);
-};
+    if (authorization.startsWith('Basic')) {
+      if (canAccessResourceWithStaticKey(req.path, req.method)) {
+        try {
+          const staticSecretKey = `STATIC_KEY_${accountSid}`;
+          const staticSecret = process.env[staticSecretKey];
+          const requestSecret = authorization.replace('Basic ', '');
+
+          const isStaticSecretValid =
+            staticSecret &&
+            requestSecret &&
+            crypto.timingSafeEqual(Buffer.from(requestSecret), Buffer.from(staticSecret));
+
+          if (isStaticSecretValid) {
+            req.user = new User(`account-${accountSid}`, []);
+            return next();
+          }
+        } catch (err) {
+          console.error('Static key authentication failed: ', err);
+        }
+      }
+    }
+
+    return unauthorized(res);
+  };

@@ -26,14 +26,8 @@ type CaseInfoSection = {
 const getSectionSpecificDataFromNotesOrReferrals = (
   caseSection: CaseInfoSection,
 ): Record<string, any> => {
-  const {
-    id,
-    twilioWorkerId,
-    createdAt,
-    updatedBy,
-    updatedAt,
-    ...sectionSpecificData
-  } = caseSection;
+  const { id, twilioWorkerId, createdAt, updatedBy, updatedAt, ...sectionSpecificData } =
+    caseSection;
   return sectionSpecificData;
 };
 
@@ -71,14 +65,8 @@ const caseSectionRecordsToInfo = (
 ): Record<string, CaseInfoSection[]> => {
   const infoLists: Record<string, CaseInfoSection[]> = {};
   return sections.reduce((categorized, record) => {
-    const {
-      caseId,
-      sectionType,
-      sectionId,
-      sectionTypeSpecificData,
-      createdBy,
-      ...restOfRecord
-    } = record;
+    const { caseId, sectionType, sectionId, sectionTypeSpecificData, createdBy, ...restOfRecord } =
+      record;
 
     if (!restOfRecord.updatedAt) {
       delete restOfRecord.updatedAt;
