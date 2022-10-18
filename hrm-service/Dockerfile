@@ -1,6 +1,6 @@
 FROM node:16-alpine as build
 
-# This is a bit complicated by the need for access to the hrm-lib package.
+# This is a bit complicated by the need for access to the package.
 # We must have the full repo context for our docker build so we can
 # copy the hrm-lib package and labmdas folders so that the file: based
 # dependency in package.json can be resolved
@@ -9,14 +9,17 @@ COPY hrm-service /tmp/build/hrm-service
 COPY package.json package-lock.json tsconfig.build.service.json /tmp/build/
 
 RUN cd /tmp/build \
-    && npm ci -w=hrm-service \
+    && npm ci -w=hrm-service -w packages/* \
     && npx tsc --project tsconfig.build.service.json \
     && cp -r hrm-service/* /home/node/ \
+    && cp -r packages /var/node/ \
     && cp -r node_modules /home/node/ \
     && rm -rf /tmp/* \
     && rm -rf /root/.cache \
     && rm -rf /root/.npm \
-    && rm -rf /usr/local/share/.cache
+    && rm -rf /usr/local/share/.cache \
+    && rm -rf /usr/local/share/.cache \
+    && rm -rf /usr/local/lib/node_modules
 
 WORKDIR /home/node
 

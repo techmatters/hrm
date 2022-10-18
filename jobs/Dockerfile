@@ -3,7 +3,7 @@ FROM public.ecr.aws/lambda/nodejs:16 as build
 ARG lambda_name
 ENV lambda_name ${lambda_name}
 
-# This is a bit complicated by the need for access to the hrm-lib package.
+# This is a bit complicated by the need for access to the packages.
 # We must have the full repo context for our docker build so we can
 # copy the hrm-lib package and labmdas folders so that the file: based
 # dependency in package.json can be resolved
@@ -12,20 +12,17 @@ COPY jobs /tmp/build/jobs
 COPY package.json package-lock.json tsconfig.build.jobs.json /tmp/build/
 
 RUN cd /tmp/build \
-    && npm ci --production -w=jobs/${lambda_name} \
+    && npm ci -w jobs/${lambda_name} -w packages/* \
     && npx tsc --project tsconfig.build.jobs.json \
     && cp jobs/${lambda_name}/dist/*.js /var/task/ \
+    && cp -r packages /var/task/ \
     && cp -r node_modules /var/task/ \
-    # && cd ../lib \
-    # # it is weird that this isn't a hard link after npm ci, but we get runtime errors without it.
-    # && cp -r * /var/lib \
     && rm -rf /var/task/node_modules/typescript \
     && rm -rf /tmp/* \
     && rm -rf /root/.cache \
     && rm -rf /root/.npm \
     && rm -rf /usr/local/share/.cache \
     && rm -rf /usr/local/lib/node_modules
-
 
 # The added layers from our build increase image size significantly. This flattens the image
 # to reduce the size of the final image.

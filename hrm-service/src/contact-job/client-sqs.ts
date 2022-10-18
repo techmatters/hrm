@@ -29,6 +29,6 @@ export const publishToContactJobs = async (params: PublishToContactJobsTopicPara
       })
       .promise();
   } catch (err) {
-    console.error('Error trying to send message to SQS queue', err);
+    console.error('Error trying to send message to SQS queue');
   }
 };

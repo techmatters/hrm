@@ -77,6 +77,12 @@ export default class ContactRetrieveStack extends cdk.Stack {
       stringValue: queue.queueUrl,
     });
 
+    // duplicated for test env
+    new ssm.StringParameter(this, `${id}-queue-url-test`, {
+      parameterName: `/test/sqs/jobs/contact/queue-url-${id}`,
+      stringValue: queue.queueUrl,
+    });
+
     const fn = new lambdaNode.NodejsFunction(this, 'fetchParams', {
       // TODO: change this back to 16 once it isn't broken upstream
       runtime: lambda.Runtime.NODEJS_16_X,

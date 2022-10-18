@@ -16,6 +16,6 @@
     "@tech-matters/hrm-types": "^1.0.0"
   },
   "scripts": {
-    "docker:build": "docker build -t hrm-jobs-contact-retrieve-recording-url --build-arg lambda_name=contact-retrieve-recording-url -f ../../Dockerfile ../../../"
+    "docker:build": "docker build -t hrm-jobs-contact-retrieve-recording-url --build-arg lambda_name=contact-retrieve-recording-url -f ../Dockerfile ../../"
   }
 }
