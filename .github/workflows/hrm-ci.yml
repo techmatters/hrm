@@ -16,7 +16,7 @@ jobs:
           node-version: 16.x
 
       - name: Install Packages
-        run: npm install
+        run: npm ci
 
       - name: Run Lint
         run: npm run lint --if-present
