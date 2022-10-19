@@ -6,7 +6,7 @@
 
 version: '3'
 services:
-  contact-complete:
+  jobs-contact-complete:
     image: hrm-jobs-contact-complete
     ports:
       - '9000:8080'
@@ -15,7 +15,7 @@ services:
     env_file:
       - ../.env.localstack
 
-  contact-retrieve-recording-url:
+  jobs-contact-retrieve-recording-url:
     image: hrm-jobs-contact-retrieve-recording-url
     ports:
       - '9001:8080'
@@ -24,7 +24,7 @@ services:
     env_file:
       - ../.env.localstack
 
-  contact-retrieve-transcript:
+  jobs-contact-retrieve-transcript:
     image: hrm-jobs-contact-retrieve-transcript
     ports:
       - '9002:8080'

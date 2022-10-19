@@ -64,6 +64,10 @@
     "docker:compose:jobs:logs": "docker-compose -f jobs/docker-compose.yml logs -f",
     "docker:compose:localstack:up": "docker-compose up -d",
     "docker:compose:localstack:down": "docker-compose down",
+    "docker:compose:localstack:logs": "docker-compose logs -f",
+    "docker:compose:service:up": "docker-compose -f service/docker-compose.yml up -d",
+    "docker:compose:service:down": "docker-compose -f service/docker-compose.yml down",
+    "docker:compose:service:logs": "docker-compose -f service/docker-compose.yml logs -f",
     "lint": "eslint --ext ts .",
     "lint:fix": "npm run lint -- --fix",
     "localstack:bootstrap": "cdklocal bootstrap",
@@ -84,8 +88,10 @@
     "test:service:migrate": "npm run test:service:migrate --workspaces --if-present",
     "test:service:ci": "npm run test:service:ci --workspaces --if-present",
     "test:unit": "npm run test:unit --workspaces --if-present",
-    "test:docker:contact-complete": "curl -XPOST \"http://localhost:9000/2015-03-31/functions/function/invocations\" -d \"$(cat jobs/contact-complete/tests/testPayload.json)\"",
-    "test:docker:contact-retrieve-recording-url": "curl -XPOST \"http://localhost:9001/2015-03-31/functions/function/invocations\" -d \"$(cat jobs/contact-retrieve-recording-url/tests/testPayload.json)\"",
-    "test:docker:contact-retrieve-transcript": "curl -XPOST \"http://localhost:9002/2015-03-31/functions/function/invocations\" -d \"$(cat jobs/contact-retrieve-transcript/tests/testPayload.json)\""
+    "test:docker:jobs": "run-s test:docker:jobs:*",
+    "test:docker:jobs:contact-complete": "curl -XPOST \"http://localhost:9000/2015-03-31/functions/function/invocations\" -d \"$(cat jobs/contact-complete/tests/testPayload.json)\"",
+    "test:docker:jobs:contact-retrieve-recording-url": "curl -XPOST \"http://localhost:9001/2015-03-31/functions/function/invocations\" -d \"$(cat jobs/contact-retrieve-recording-url/tests/testPayload.json)\"",
+    "test:docker:jobs:contact-retrieve-transcript": "curl -XPOST \"http://localhost:9002/2015-03-31/functions/function/invocations\" -d \"$(cat jobs/contact-retrieve-transcript/tests/testPayload.json)\"",
+    "test:docker:service": ""
   }
 }
