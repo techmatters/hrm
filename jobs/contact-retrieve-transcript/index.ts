@@ -1,13 +1,17 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { SQS } from 'aws-sdk';
+
+import { getSsmParameter, loadSsmCache } from '@tech-matters/hrm-ssm-cache';
+import { exportTranscript } from './exportTranscript';
+import { uploadTranscript } from './uploadTranscript';
+
+// eslint-disable-next-line prettier/prettier
 import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
+// eslint-disable-next-line prettier/prettier
 import type {
   CompletedContactJobBody,
   PublishToContactJobsTopicParams,
 } from '@tech-matters/hrm-types/ContactJob';
-import { getSsmParameter, loadSsmCache } from '@tech-matters/hrm-ssm-cache';
-import { exportTranscript } from './exportTranscript';
-import { uploadTranscript } from './uploadTranscript';
 
 /**
  * This is based around latest SQS error handling that supports batchItemFailure responses.

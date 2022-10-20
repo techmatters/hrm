@@ -80,8 +80,9 @@ describe('processContactJobs', () => {
       .mockImplementation(() => Promise.resolve(undefined) as any);
     const publishSpy = jest.spyOn(contactJobPublish, 'publishDueContactJobs');
 
-    const processorIntervalCallback =
-      contactJobProcessor.processContactJobs() as unknown as () => Promise<void>;
+    const processorIntervalCallback = (contactJobProcessor.processContactJobs() as unknown) as () => Promise<
+      void
+    >;
 
     await processorIntervalCallback();
 
@@ -114,8 +115,9 @@ describe('processContactJobs', () => {
         throw new Error('Aaaw, snap!');
       });
 
-    const processorIntervalCallback =
-      contactJobProcessor.processContactJobs() as unknown as () => Promise<void>;
+    const processorIntervalCallback = (contactJobProcessor.processContactJobs() as unknown) as () => Promise<
+      void
+    >;
 
     await processorIntervalCallback();
 

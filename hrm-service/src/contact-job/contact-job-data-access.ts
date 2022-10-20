@@ -72,28 +72,28 @@ export const completeContactJob = async (
  * Add a new job to be completed to the ContactJobs queue
  * Requires tx: ITask to make the creation of the job part of the same transaction
  */
-export const createContactJob =
-  (tx: ITask<{}>) =>
-  async (job: Pick<ContactJob, 'jobType' | 'resource' | 'additionalPayload'>): Promise<void> => {
-    const contact = job.resource;
-    const insertSql = pgp.helpers.insert(
-      {
-        requested: new Date().toISOString(),
-        jobType: job.jobType,
-        contactId: contact.id,
-        accountSid: contact.accountSid,
-        additionalPayload: job.additionalPayload,
-        lastAttempt: null,
-        numberOfAttempts: 0,
-        failedAttemptsPayloads: {},
-        completed: null,
-        completionPayload: null,
-      },
-      null,
-      'ContactJobs',
-    );
-    return tx.none(insertSql);
-  };
+export const createContactJob = (tx: ITask<{}>) => async (
+  job: Pick<ContactJob, 'jobType' | 'resource' | 'additionalPayload'>,
+): Promise<void> => {
+  const contact = job.resource;
+  const insertSql = pgp.helpers.insert(
+    {
+      requested: new Date().toISOString(),
+      jobType: job.jobType,
+      contactId: contact.id,
+      accountSid: contact.accountSid,
+      additionalPayload: job.additionalPayload,
+      lastAttempt: null,
+      numberOfAttempts: 0,
+      failedAttemptsPayloads: {},
+      completed: null,
+      completionPayload: null,
+    },
+    null,
+    'ContactJobs',
+  );
+  return tx.none(insertSql);
+};
 
 export const appendFailedAttemptPayload = async (
   id: ContactJob['id'],

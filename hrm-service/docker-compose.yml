@@ -3,10 +3,6 @@ services:
   service:
     image: hrm-jobs-contact-complete
     ports:
-      - '3000:3000'
+      - '3001:3000'
     environment:
-
-    env_file:
-      - ../.env.localstack
-
-
+      API_KEY: testApiKey

@@ -6,6 +6,7 @@ import * as contactJobComplete from '../../src/contact-job/contact-job-complete'
 import { ContactJobType } from '../../src/contact-job/contact-job-data-access';
 import { JOB_MAX_ATTEMPTS } from '../../src/contact-job/contact-job-processor';
 
+// eslint-disable-next-line prettier/prettier
 import type { CompletedContactJobBody } from '@tech-matters/hrm-types/ContactJob';
 
 jest.mock('../../src/contact-job/client-sqs');

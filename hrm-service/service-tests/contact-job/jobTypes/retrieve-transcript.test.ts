@@ -11,6 +11,7 @@ import { Contact } from '../../../src/contact/contact';
 import { chatChannels } from '../../../src/contact/channelTypes';
 import { JOB_MAX_ATTEMPTS } from '../../../src/contact-job/contact-job-processor';
 
+// eslint-disable-next-line prettier/prettier
 import type { CompletedContactJobBody } from '@tech-matters/hrm-types/ContactJob';
 
 jest.mock('@tech-matters/hrm-ssm-cache');

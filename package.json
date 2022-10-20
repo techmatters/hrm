@@ -38,11 +38,11 @@
     "eslint-import-resolver-typescript": "^2.7.0",
     "eslint-plugin-import": "^2.25.3",
     "eslint-plugin-jest": "^23.8.2",
-    "eslint-plugin-prettier": "^4.2.1",
+    "eslint-plugin-prettier": "^3.4.1",
     "jest": "^28.1.3",
     "jest-config": "^28.1.3",
     "npm-run-all": "^4.1.5",
-    "prettier": "^2.7.1",
+    "prettier": "^1.19.1",
     "ts-jest": "^28.0.8",
     "ts-node": "^10.9.1",
     "typescript": "^4.8.4"
@@ -65,9 +65,9 @@
     "docker:compose:localstack:up": "docker-compose up -d",
     "docker:compose:localstack:down": "docker-compose down",
     "docker:compose:localstack:logs": "docker-compose logs -f",
-    "docker:compose:service:up": "docker-compose -f service/docker-compose.yml up -d",
-    "docker:compose:service:down": "docker-compose -f service/docker-compose.yml down",
-    "docker:compose:service:logs": "docker-compose -f service/docker-compose.yml logs -f",
+    "docker:compose:service:up": "docker-compose -f hrm-service/docker-compose.yml up -d",
+    "docker:compose:service:down": "docker-compose -f hrm-service/docker-compose.yml down",
+    "docker:compose:service:logs": "docker-compose -f hrm-service/docker-compose.yml logs -f",
     "lint": "eslint --ext ts .",
     "lint:fix": "npm run lint -- --fix",
     "localstack:bootstrap": "cdklocal bootstrap",
@@ -79,7 +79,7 @@
     "localstack:logs": "docker-compose logs -f",
     "localstack:synth": "cdklocal synth --all",
     "localstack:down": "run-s docker:compose:localstack:down",
-    "test": "run-s test:unit test:service test:e2e",
+    "test": "run-p test:unit test:service test:e2e",
     "test:coverage": "npm run test:coverage --workspaces --if-present",
     "test:e2e": "run-s localstack:init test:e2e:run",
     "test:e2e:run": "npm run test:e2e --workspaces --if-present",
@@ -92,6 +92,6 @@
     "test:docker:jobs:contact-complete": "curl -XPOST \"http://localhost:9000/2015-03-31/functions/function/invocations\" -d \"$(cat jobs/contact-complete/tests/testPayload.json)\"",
     "test:docker:jobs:contact-retrieve-recording-url": "curl -XPOST \"http://localhost:9001/2015-03-31/functions/function/invocations\" -d \"$(cat jobs/contact-retrieve-recording-url/tests/testPayload.json)\"",
     "test:docker:jobs:contact-retrieve-transcript": "curl -XPOST \"http://localhost:9002/2015-03-31/functions/function/invocations\" -d \"$(cat jobs/contact-retrieve-transcript/tests/testPayload.json)\"",
-    "test:docker:service": ""
+    "test:docker:service": "DEBUG=pw:api PLAYWRIGHT_BASEURL=http://localhost:3001 PLAYWRIGHT_USER_USERNAME=test PLAYWRIGHT_USER_PASSWORD=test TWILIO_ACCOUNT_SID=test TWILIO_AUTH_TOKEN=test cd ../flex-plugins/e2e-tests && npm i && npm run test"
   }
 }

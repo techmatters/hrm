@@ -2,7 +2,9 @@
 import { SQS } from 'aws-sdk';
 import { getSsmParameter, loadSsmCache } from '@tech-matters/hrm-ssm-cache';
 
+// eslint-disable-next-line prettier/prettier
 import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
+// eslint-disable-next-line prettier/prettier
 import type {
   CompletedContactJobBody,
   PublishToContactJobsTopicParams,

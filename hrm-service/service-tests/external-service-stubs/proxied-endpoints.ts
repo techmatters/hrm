@@ -37,8 +37,7 @@ type TokenValidatorResponse = {
   roles: string[];
 };
 
-const twilioIamAnyAccountPattern: RegExp =
-  /https:\/\/iam.twilio.com\/v1\/Accounts\/.+\/Tokens\/validate/;
+const twilioIamAnyAccountPattern: RegExp = /https:\/\/iam.twilio.com\/v1\/Accounts\/.+\/Tokens\/validate/;
 
 export async function mockSuccessfulTwilioAuthentication(
   mockWorkerSid: string = 'WK-worker-sid',

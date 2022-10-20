@@ -80,10 +80,9 @@ export const mockTransaction = (
   }
 };
 
-// eslint-disable-next-line prettier/prettier
 type PgQueryParameters =
-  | [query: QueryParam, values?: any]
-  | [query: QueryParam, values?: any, cb?: any, thisArg?: any];
+  // eslint-disable-next-line prettier/prettier
+  [query: QueryParam, values?: any] | [query: QueryParam, values?: any, cb?: any, thisArg?: any];
 
 export const getSqlStatement = (
   mockQueryMethod: jest.SpyInstance<any, PgQueryParameters>,

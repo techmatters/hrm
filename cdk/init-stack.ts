@@ -18,10 +18,6 @@ import ContactRetrieveStack from './contact-retrieve-stack';
  * for both and would likely allow us to tightly couple the infrastructure definition
  * with the code in this repo. It would also allow us to test terraform modules locally.
  *
- * Another alternative would be to use CDK for both localstack and AWS. This would
- * prevent the duplication of infrastructure definitions, but is yet another layer of
- * complexity to learn and maintain and lean on for our production stack.
- *
  * (rbd 14-10-22)
  */
 

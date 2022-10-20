@@ -1,4 +1,6 @@
 import { s3 } from '@tech-matters/hrm-s3-client';
+
+// eslint-disable-next-line prettier/prettier
 import type { ExportTranscriptResult } from './exportTranscript';
 
 export type UploadTranscriptParams = {

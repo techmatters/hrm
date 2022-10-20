@@ -11,6 +11,7 @@ import { appendMediaUrls } from '../contact/contact';
 import { ContactMediaType } from '../contact/contact-json';
 import { assertExhaustive } from './assertExhaustive';
 
+// eslint-disable-next-line prettier/prettier
 import type {
   CompletedContactJobBody,
   CompletedRetrieveContactTranscript,

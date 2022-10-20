@@ -1,7 +1,0 @@
-
-
-# Compiled files and bundles
-src/**/*.js
-src/**/*.js.map
-src/**/*.zip
-!src/**/tests/**/*.js
