@@ -1,4 +1,5 @@
 import { db } from '../connection-pool';
+import { enableCreateContactJobsFlag } from '../featureFlags';
 import {
   APPEND_MEDIA_URL_SQL,
   UPDATE_CASEID_BY_ID,
@@ -159,7 +160,7 @@ export const create = async (
       { csamReportIds },
     );
 
-    if (isChatChannel(created.channel)) {
+    if (enableCreateContactJobsFlag && isChatChannel(created.channel)) {
       await createContactJob(connection)({
         jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
         resource: created,
