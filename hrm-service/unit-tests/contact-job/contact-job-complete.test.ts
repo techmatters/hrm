@@ -9,7 +9,16 @@ import { JOB_MAX_ATTEMPTS } from '../../src/contact-job/contact-job-processor';
 // eslint-disable-next-line prettier/prettier
 import type { CompletedContactJobBody } from '@tech-matters/hrm-types/ContactJob';
 
-jest.mock('../../src/contact-job/client-sqs');
+jest.mock('aws-sdk', () => {
+  const SQSMocked = {
+    sendMessage: jest.fn().mockReturnThis(),
+    promise: jest.fn(),
+  };
+  return {
+    SQS: jest.fn(() => SQSMocked),
+  };
+});
+jest.mock('@tech-matters/hrm-ssm-cache');
 
 afterEach(() => {
   jest.clearAllMocks();

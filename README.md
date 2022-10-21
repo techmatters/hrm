@@ -1,6 +1,6 @@
-[![Actions Status](https://github.com/tech-matters/hrm/workflows/hrm-ci/badge.svg)](https://github.com/tech-matters/hrm/actions)
-
 # hrm
+
+[![Actions Status](https://github.com/tech-matters/hrm/workflows/hrm-ci/badge.svg)](https://github.com/tech-matters/hrm/actions)
 
 The Helpline Relationship Management (HRM) system is the backend for the Aselo system. It is built as an Express/NodeJS REST API accessed by the [Aselo frontend](https://www.twilio.com/docs/flex/developer/plugins). See [aselo.org](https://aselo.org/) or [contact Aselo](https://aselo.org/contact-us/) for more information.
 
@@ -37,9 +37,23 @@ There are several types of tests, (unit, service, e2e). These can be run using w
 
 The primary test paths all do setup and teardown of required resources. This can add time to the test cycle. There are `:run` sub-scripts for tests that require setup and teardown like service and e2e tests. If you already have a test db docker container running, you can run these using workspaces by running something like `npm run -w hrm-service test:service:run` from the root directory. You can also run the tests by navigating into the package directory and running `npm run test:service:run`.
 
-### Starting HRM
+### Running HRM service locally
 
-This requires an `hrm-service/dist/.env` file to be present. Contents of that file are outside the scope of this documentation currently.
+#### Starting HRM db
+
+From the root directory run `npm run docker:compose:db:up`. This will start a docker container with a postgres database for the HRM service to use.
+
+The HRM node service will update the schema to the latest version when you run it.
+
+You can then populate the DB with valid, up-to-date data by running the `./hrm-service/sql/multi-tenant-sample-data.sql`, either with pgAdmin installed on your host, a CLI client running on the host, or the one running in the container
+
+The db container created doesn't provide a volume on the host for storing data in persistently, meaning every time you restart it, it reverts to it's initial state.
+
+This can be handy for some use cases like deterministic testing, but would get annoying for data to day dev. To allow your container to restart with the same data it had when it shut down, you should use `npm run docker:compose:db-persistent:up` instead.
+
+#### Starting HRM service
+
+This requires an `./hrm-service/dist/.env` file to be present. Contents of that file are outside the scope of this documentation currently.
 
 You can run the full stack quickly by running `npm run build-and-start` from the root directory (after running `npm ci`). This will start the hrm-service and hrm-jobs packages.
 
@@ -49,42 +63,19 @@ Running hrm jobs requires a lot of extra time and local resources. If you are on
 
 If you modify a lambda job, you must redeploy with `npm run localstack:deploy` for localstack to pick up the changes. The `npm run test:e2e` script will do this for you, but will use the longer `localstack:init` script. For faster test running use `npm run localstack:deploy` and then `npm run test:e2e --workspaces --if-present`
 
-#### Localstack logs
+#### Localstack (and all docker-compose) logs
 
-Run `npm run localstack:logs` to tail logs from localstack, including output from lambda functions.
+Run `npm run docker:compose::logs` to tail logs from localstack, including output from lambda functions.
 
-#### Destroy localstack and running db contatiners
+#### Destroy localstack and all docker containers
 
-run `npm run docker:compose:down` to destroy the localstack infrastructure.
-
-#### Debugging SQL in test runs
-
-- this may be outdated
-
-If you want to debug the queries hitting the DB as part of the tests, you can use 2 terminal sessions.
-
-In a new terminal session from the hrm-service directory run:
-
-```shell
-docker compose -f ./docker-compose-test.yml up # don't use the '-d' flag!
-```
-
-Then in the original (with the environment variables set) session run
-
-```shell
-jest --verbose
-```
-
-You should see all the SQL queries run by the tests logged out in the docker terminal.
-
-After the run, Ctrl-C the docker compose session and run
-
-```shell
-docker compose -f ./docker-compose-test.yml down
-```
-
-in any terminal window.
+run `npm run docker:compose:down` to destroy the localstack and all docker based infrastructure running locally.
 
 ## Managing packages for sub modules
 
 Package management is handled at the root level for sub modules. Since the package.lock is managed at the root level, you can't just run "npm add {package}" in a sub module. Instead, you must run "npm add {package} -w {sub module name}" from the root directory.
+
+## Additional Documentation
+
+- [Debugging Service Jest](./docs/debugging-service-jest.md)
+- [Testing Service Docker Build](./docs/test-service-docker.md)

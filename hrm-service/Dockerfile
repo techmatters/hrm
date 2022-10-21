@@ -12,14 +12,11 @@ RUN cd /tmp/build \
     && npm ci -w=hrm-service -w packages/* \
     && npx tsc --project tsconfig.build.service.json \
     && cp -r hrm-service/* /home/node/ \
-    && cp -r packages /var/node/ \
+    && cp -r packages /home/node/ \
     && cp -r node_modules /home/node/ \
     && rm -rf /tmp/* \
     && rm -rf /root/.cache \
-    && rm -rf /root/.npm \
-    && rm -rf /usr/local/share/.cache \
-    && rm -rf /usr/local/share/.cache \
-    && rm -rf /usr/local/lib/node_modules
+    && rm -rf /usr/local/share/.cache
 
 WORKDIR /home/node
 

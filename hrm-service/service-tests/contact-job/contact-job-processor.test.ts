@@ -1,7 +1,15 @@
 import supertest from 'supertest';
 import timers from 'timers';
 
-jest.mock('../../src/contact-job/client-sqs');
+jest.mock('aws-sdk', () => {
+  const SQSMocked = {
+    sendMessage: jest.fn().mockReturnThis(),
+    promise: jest.fn(),
+  };
+  return {
+    SQS: jest.fn(() => SQSMocked),
+  };
+});
 jest.mock('@tech-matters/hrm-ssm-cache');
 
 let server;

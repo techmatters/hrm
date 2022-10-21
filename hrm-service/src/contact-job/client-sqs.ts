@@ -4,7 +4,14 @@ import { getSsmParameter } from '../config/ssmCache';
 // eslint-disable-next-line prettier/prettier
 import type { PublishToContactJobsTopicParams } from '@tech-matters/hrm-types/ContactJob';
 
-const sqs = new SQS();
+let sqs: SQS;
+
+export const getSqsClient = () => {
+  if (!sqs) {
+    sqs = new SQS();
+  }
+  return sqs;
+};
 
 export const pollCompletedContactJobsFromQueue = async (): Promise<{
   Messages: { ReceiptHandle: string; Body: string }[];
@@ -19,13 +26,14 @@ export const deleteCompletedContactJobsFromQueue = async (ReceiptHandle: any) =>
 };
 
 export const publishToContactJobs = async (params: PublishToContactJobsTopicParams) => {
+
   //TODO: more robust error handling/messaging
   try {
     const QueueUrl = getSsmParameter(
       `/${process.env.NODE_ENV}/sqs/jobs/contact/queue-url-contact-${params.jobType}`,
     );
 
-    return await sqs
+    return await getSqsClient()
       .sendMessage({
         MessageBody: JSON.stringify(params),
         QueueUrl,

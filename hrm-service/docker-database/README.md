@@ -1,5 +1,7 @@
 # Running a local DB with Docker
 
+- this is possibly outdated, see top level documentation
+
 As an alternative to installing Postgres on your local workstation, you can use postgres docker containers for local development
 
 This has a couple of advantages:

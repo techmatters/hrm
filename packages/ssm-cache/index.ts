@@ -5,7 +5,7 @@ import { SSM } from 'aws-sdk';
 // This allows endpoint override for localstack I haven't found a better way to do this globally yet
 const ssmConfig = process.env.SSM_ENDPOINT ? { endpoint: process.env.SSM_ENDPOINT } : {};
 
-const ssm = new SSM(ssmConfig);
+let ssm: SSM;
 
 export type SsmCache = {
   values: Record<string, string | undefined>;
@@ -29,9 +29,17 @@ export const addToCache = (regex: RegExp | undefined, { Name, Value }: SSM.Param
   ssmCache.values[Name] = Value;
 };
 
-const hasCacheExpired = () => !!(ssmCache.expiryDate && new Date() > ssmCache.expiryDate);
+export const hasCacheExpired = () => !!(ssmCache.expiryDate && new Date() > ssmCache.expiryDate);
 
-const isConfigNotEmpty = () => !!Object.keys(ssmCache.values).length;
+export const isConfigNotEmpty = () => !!Object.keys(ssmCache.values).length;
+
+export const getSsmClient = () => {
+  if (!ssm) {
+    ssm = new SSM(ssmConfig);
+  }
+
+  return ssm;
+};
 
 export const loadPaginated = async ({
   path,
@@ -47,7 +55,7 @@ export const loadPaginated = async ({
 
   if (nextToken) params.NextToken = nextToken;
 
-  const resp = await ssm.getParametersByPath(params).promise();
+  const resp = await getSsmClient().getParametersByPath(params).promise();
 
   resp.Parameters?.forEach(p => addToCache(regex, p));
 
@@ -81,8 +89,6 @@ export const loadSsmCache = async ({
 
   if (isConfigNotEmpty() && !hasCacheExpired()) return;
 
-  // do we need to clear ssmCache for this path or is overwriting values
-  // okay for our use case? (rbd - 06/10/22)
   const promises = configs.map(async config => loadPaginated(config));
 
   await Promise.all(promises);

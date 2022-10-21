@@ -1,6 +1,6 @@
 import { loadSsmCache as loadSsmCacheRoot } from '@tech-matters/hrm-ssm-cache';
 
-export { getSsmParameter, ssmCache } from '@tech-matters/hrm-ssm-cache';
+export { getSsmParameter, hasCacheExpired, ssmCache } from '@tech-matters/hrm-ssm-cache';
 
 const ssmCacheConfigs = [
   {
