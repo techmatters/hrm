@@ -55,7 +55,9 @@ export const loadPaginated = async ({
 
   if (nextToken) params.NextToken = nextToken;
 
-  const resp = await getSsmClient().getParametersByPath(params).promise();
+  const resp = await getSsmClient()
+    .getParametersByPath(params)
+    .promise();
 
   resp.Parameters?.forEach(p => addToCache(regex, p));
 
