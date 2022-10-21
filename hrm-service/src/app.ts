@@ -10,6 +10,7 @@ import { Permissions, setupPermissions } from './permissions';
 import { jsonPermissions } from './permissions/json-permissions';
 import { getAuthorizationMiddleware, addAccountSid } from './middlewares';
 import { processContactJobs } from './contact-job/contact-job-processor';
+import { enableProcessContactJobsFlag } from './featureFlags';
 
 type ServiceCreationOptions = Partial<{
   permissions: Permissions;
@@ -20,7 +21,7 @@ type ServiceCreationOptions = Partial<{
 export function createService({
   permissions = jsonPermissions,
   authTokenLookup,
-  enableProcessContactJobs = true,
+  enableProcessContactJobs = enableProcessContactJobsFlag,
 }: ServiceCreationOptions = {}) {
   const app = express();
 

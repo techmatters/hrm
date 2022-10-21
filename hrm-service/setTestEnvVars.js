@@ -21,3 +21,6 @@ process.env.PERMISSIONS_notConfigured = '';
 process.env.PERMISSIONS_notExistsInRulesMap = 'notExistsInRulesMap';
 
 process.env.INCLUDE_ERROR_IN_RESPONSE = true;
+
+process.env.ENABLE_CREATE_CONTACT_JOBS = true;
+process.env.ENABLE_PROCESS_CONTACT_JOBS = true;
