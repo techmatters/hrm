@@ -1,0 +1,12 @@
+// TODO: This should be job specific and reside in the job folder
+{
+  "files": [],
+  "references": [
+    { "path": "packages/ssm-cache" },
+    { "path": "packages/s3-client" },
+    { "path": "packages/twilio-client" },
+    { "path": "jobs/contact-complete" },
+    { "path": "jobs/contact-retrieve-recording-url" },
+    { "path": "jobs/contact-retrieve-transcript" }
+  ]
+}

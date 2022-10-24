@@ -1,0 +1,34 @@
+# This is used for testing the built lambda docker image locally
+# which isn't currently supported by localstack. We could pay
+# for a localstack pro license so we could use docker images
+# in localstack instead of src based builds, but i'm not sure
+# it's worth it for now.
+
+version: '3'
+services:
+  jobs-contact-complete:
+    image: hrm-jobs-contact-complete
+    ports:
+      - '9000:8080'
+    environment:
+      - completed_sqs_queue_url
+    env_file:
+      - ../.env.localstack
+
+  jobs-contact-retrieve-recording-url:
+    image: hrm-jobs-contact-retrieve-recording-url
+    ports:
+      - '9001:8080'
+    environment:
+      - completed_sqs_queue_url
+    env_file:
+      - ../.env.localstack
+
+  jobs-contact-retrieve-transcript:
+    image: hrm-jobs-contact-retrieve-transcript
+    ports:
+      - '9002:8080'
+    environment:
+      - completed_sqs_queue_url
+    env_file:
+      - ../.env.localstack
