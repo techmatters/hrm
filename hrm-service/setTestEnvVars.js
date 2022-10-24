@@ -7,6 +7,7 @@ process.env.PERMISSIONS_hu = 'hu';
 process.env.PERMISSIONS_in = 'in';
 process.env.PERMISSIONS_jm = 'jm';
 process.env.PERMISSIONS_mw = 'mw';
+process.env.PERMISSIONS_ph = 'ph';
 process.env.PERMISSIONS_pl = 'pl';
 process.env.PERMISSIONS_ro = 'ro';
 process.env.PERMISSIONS_th = 'th';
