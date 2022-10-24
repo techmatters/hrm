@@ -1,16 +1,7 @@
 import supertest from 'supertest';
 import timers from 'timers';
 
-jest.mock('aws-sdk', () => {
-  const SQSMocked = {
-    sendMessage: jest.fn().mockReturnThis(),
-    promise: jest.fn(),
-  };
-  return {
-    SQS: jest.fn(() => SQSMocked),
-  };
-});
-jest.mock('@tech-matters/hrm-ssm-cache');
+require('../mocks');
 
 let server;
 let createService: typeof import('../../src/app').createService;

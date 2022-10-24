@@ -13,13 +13,24 @@ export const getSqsClient = () => {
   return sqs;
 };
 
-export const pollCompletedContactJobsFromQueue = async (): Promise<{
-  Messages: { ReceiptHandle: string; Body: string }[];
-}> => {
-  return {
-    Messages: [],
+export const pollCompletedContactJobsFromQueue =
+  async (): Promise<SQS.Types.ReceiveMessageResult> => {
+    try {
+      const QueueUrl = getSsmParameter(
+        `/${process.env.NODE_ENV}/sqs/jobs/contact/queue-url-contact-complete`,
+      );
+
+      return await getSqsClient()
+        .receiveMessage({
+          QueueUrl,
+          MaxNumberOfMessages: 10,
+          WaitTimeSeconds: 0,
+        })
+        .promise();
+    } catch (err) {
+      console.error('Error trying to poll messages from SQS queue');
+    }
   };
-};
 
 export const deleteCompletedContactJobsFromQueue = async (ReceiptHandle: any) => {
   return ReceiptHandle;
