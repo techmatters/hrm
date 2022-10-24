@@ -3,6 +3,7 @@ import { subMilliseconds } from 'date-fns';
 import { pullDueContactJobs } from './contact-job-data-access';
 import { pollAndprocessCompletedContactJobs } from './contact-job-complete';
 import { publishDueContactJobs } from './contact-job-publish';
+import { loadSsmCache } from '../config/ssmCache';
 
 let processingJobs = false;
 
@@ -19,6 +20,10 @@ export function processContactJobs() {
 
     return setInterval(async () => {
       try {
+        //TODO: once this handles other config variables besides those needed
+        // for SQS, it should be moved out of this loop.
+        await loadSsmCache();
+
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const completedJobs = await pollAndprocessCompletedContactJobs(JOB_MAX_ATTEMPTS);
 
