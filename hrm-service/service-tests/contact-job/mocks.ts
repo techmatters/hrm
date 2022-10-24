@@ -1,10 +1,6 @@
 jest.mock('aws-sdk', () => {
   const SQSMocked = {
-    sendMessage: jest.fn(() => {
-      return {
-        promise: jest.fn().mockResolvedValue({ MessageId: '12345' }),
-      };
-    }),
+    sendMessage: jest.fn().mockReturnThis(),
     receiveMessage: jest.fn(() => {
       return {
         promise: jest.fn().mockResolvedValue({
