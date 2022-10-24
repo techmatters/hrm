@@ -67,7 +67,6 @@
     "lint:fix": "npm run lint -- --fix",
     "localstack:bootstrap": "cdklocal bootstrap",
     "localstack:deploy": "cdklocal deploy --all --outputs-file ./cdk/outputs.json",
-    "localstack:deploy:no-lambda": "cdklocal deploy --all --outputs-file ./cdk/outputs.json --app 'npx ts-node cdk/init-no-lambda-stack.ts'",
     "localstack:destroy": "cdklocal destroy --all",
     "localstack:diff": "cdklocal diff",
     "localstack:init": "run-s docker:compose:localstack:up build localstack:bootstrap localstack:deploy",
