@@ -5,4 +5,5 @@
 3. Optionally run localstack for AWS resources with: `npm run localstack:init`
 4. Bring up the hrm service container with: `npm run docker:compose:service:up`
 5. Get logs from `npm run docker:compose:logs`
-6. Run tests with: `npm run test:docker:service` - this is only tested on nix and requires aws-cli to be installed locally
+6. TODO: instructions for importing correct data for e2e tests
+7. In another terminal, run tests with: `npm run test:docker:service` - this is only tested on nix and requires aws-cli to be installed locally
