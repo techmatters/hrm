@@ -1,7 +1,7 @@
 import supertest from 'supertest';
 import timers from 'timers';
 
-require('../mocks');
+require('./mocks');
 
 let server;
 let createService: typeof import('../../src/app').createService;
