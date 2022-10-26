@@ -1,8 +1,7 @@
 import { SafeRouter, publicEndpoint, actionsMaps } from '../permissions';
 import createError from 'http-errors';
-import { patchContact, connectContactToCase, searchContacts, createContact } from './contact';
+import { patchContact, connectContactToCase, searchContacts, createContact, getContactById, Contact } from './contact';
 import { asyncHandler } from '../utils';
-import { getById } from './contact-data-access';
 // eslint-disable-next-line prettier/prettier
 import type { Request, Response, NextFunction } from 'express';
 
@@ -57,14 +56,20 @@ const canEditContact = asyncHandler(async (req, res, next) => {
     const { accountSid, user, can } = req;
     const { contactId } = req.params;
 
-    const contactObj = await getById(accountSid, contactId);
+    try {
+      const contactObj = await getContactById(accountSid, contactId);
 
-    if (!contactObj) throw createError(404);
-
-    if (can(user, actionsMaps.contact.EDIT_CONTACT, contactObj)) {
-      req.authorize();
-    } else {
-      req.unauthorize();
+      if (can(user, actionsMaps.contact.EDIT_CONTACT, contactObj)) {
+        req.authorize();
+      } else {
+        req.unauthorize();
+      }
+    } catch (err) {
+      if (err instanceof Error && err.message.includes('Contact not found')) {
+        throw createError(404);
+      } else {
+        throw createError(500);
+      }
     }
   }
 

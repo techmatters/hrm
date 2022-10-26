@@ -2,6 +2,7 @@ import {
   connectToCase,
   Contact,
   create,
+  getById,
   patch,
   search,
   SearchParameters,
@@ -11,7 +12,8 @@ import { retrieveCategories, getPaginationElements } from '../controllers/helper
 import { NewContactRecord } from './sql/contact-insert-sql';
 
 // Re export as is:
-export { appendMediaUrls, Contact } from './contact-data-access';
+export { updateConversationMedia, Contact } from './contact-data-access';
+export * from './contact-json';
 
 export type PatchPayload = {
   rawJson: Partial<
@@ -59,6 +61,16 @@ export type CreateContactPayload =
 export const usesFormProperty = (
   p: CreateContactPayload,
 ): p is CreateContactPayloadWithFormProperty => (<any>p).form && !(<any>p).rawJson;
+
+export const getContactById = async (accountSid: string, contactId: number) => {
+  const contact = await getById(accountSid, contactId);
+
+  if (!contact) {
+    throw new Error(`Contact not found with id ${contactId}`);
+  }
+
+  return contact;
+};
 
 export const createContact = async (
   accountSid: string,
