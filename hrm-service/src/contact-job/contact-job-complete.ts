@@ -11,19 +11,35 @@ import {
   CompletedContactJobBody,
   CompletedRetrieveContactTranscript,
 } from './contact-job-messages';
-import { appendMediaUrls } from '../contact/contact';
-import { ContactMediaType } from '../contact/contact-json';
+import {
+  isS3StoredTranscript,
+  getContactById,
+  updateConversationMedia,
+  S3StoredTranscript,
+} from '../contact/contact';
 import { assertExhaustive } from './assertExhaustive';
 
 export const processCompletedRetrieveContactTranscript = async (
   completedJob: CompletedRetrieveContactTranscript,
 ) => {
-  return appendMediaUrls(completedJob.accountSid, completedJob.contactId, [
-    {
-      url: completedJob.attemptPayload,
-      type: ContactMediaType.TRANSCRIPT,
-    },
-  ]);
+  const contact = await getContactById(completedJob.accountSid, completedJob.contactId);
+  const { conversationMedia } = contact.rawJson;
+
+  const transcriptEntryIndex = conversationMedia?.findIndex(m => isS3StoredTranscript(m) && !m.url);
+
+  if (transcriptEntryIndex < 0) {
+    throw new Error(
+      `Contact with id ${contact.id} does not have a pending transcript entry in conversationMedia`,
+    );
+  }
+
+  (<S3StoredTranscript>conversationMedia[transcriptEntryIndex]).url = completedJob.attemptPayload;
+
+  return updateConversationMedia(
+    completedJob.accountSid,
+    completedJob.contactId,
+    conversationMedia,
+  );
 };
 
 const processCompletedContactJob = async (completedJob: CompletedContactJobBody) => {
