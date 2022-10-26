@@ -9,7 +9,7 @@ import { SELECT_CONTACT_SEARCH } from './sql/contact-search-sql';
 import { endOfDay, parseISO, startOfDay } from 'date-fns';
 import { selectSingleContactByIdSql, selectSingleContactByTaskId } from './sql/contact-get-sql';
 import { insertContactSql, NewContactRecord } from './sql/contact-insert-sql';
-import { ContactRawJson, PersonInformation } from './contact-json';
+import { ContactRawJson, isS3StoredTranscript, isS3StoredTranscriptPending, PersonInformation } from './contact-json';
 import { createContactJob, ContactJobType } from '../contact-job/contact-job-data-access';
 import { isChatChannel } from './channelTypes';
 
@@ -160,7 +160,11 @@ export const create = async (
       { csamReportIds },
     );
 
-    if (enableCreateContactJobsFlag && isChatChannel(created.channel)) {
+    if (
+      enableCreateContactJobsFlag &&
+      isChatChannel(created.channel) &&
+      created.rawJson?.conversationMedia?.some(isS3StoredTranscriptPending)
+    ) {
       await createContactJob(connection)({
         jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
         resource: created,

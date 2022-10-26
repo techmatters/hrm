@@ -12,10 +12,10 @@ import {
   CompletedRetrieveContactTranscript,
 } from './contact-job-messages';
 import {
-  isS3StoredTranscript,
   getContactById,
   updateConversationMedia,
   S3StoredTranscript,
+  isS3StoredTranscriptPending,
 } from '../contact/contact';
 import { assertExhaustive } from './assertExhaustive';
 
@@ -25,7 +25,7 @@ export const processCompletedRetrieveContactTranscript = async (
   const contact = await getContactById(completedJob.accountSid, completedJob.contactId);
   const { conversationMedia } = contact.rawJson;
 
-  const transcriptEntryIndex = conversationMedia?.findIndex(m => isS3StoredTranscript(m) && !m.url);
+  const transcriptEntryIndex = conversationMedia?.findIndex(isS3StoredTranscriptPending);
 
   if (transcriptEntryIndex < 0) {
     throw new Error(

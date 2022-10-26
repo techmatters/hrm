@@ -28,6 +28,8 @@ export const isTwilioStoredMedia = (m: ConversationMedia): m is TwilioStoredMedi
   m.store === 'twilio';
 export const isS3StoredTranscript = (m: ConversationMedia): m is S3StoredTranscript =>
   m.store === 'S3' && m.type === ContactMediaType.TRANSCRIPT;
+export const isS3StoredTranscriptPending = (m: ConversationMedia) =>
+  isS3StoredTranscript(m) && !m.url;
 
 /**
  * This and contained types are copied from Flex
