@@ -76,6 +76,7 @@ export const createContact = async (
   accountSid: string,
   createdBy: string,
   newContact: CreateContactPayload,
+  contactPermissionsBasedTransformer: (contact: Contact) => Contact,
 ): Promise<Contact> => {
   const rawJson = usesFormProperty(newContact) ? newContact.form : newContact.rawJson;
   const completeNewContact: NewContactRecord = {
@@ -101,7 +102,7 @@ export const createContact = async (
     (newContact.csamReports ?? []).map(csr => csr.id),
   );
 
-  return created;
+  return contactPermissionsBasedTransformer(created);
 };
 
 export const patchContact = async (
@@ -109,6 +110,7 @@ export const patchContact = async (
   updatedBy: string,
   contactId: string,
   contactPatch: PatchPayload,
+  contactPermissionsBasedTransformer: (contact: Contact) => Contact,
 ): Promise<Contact> => {
   const {
     childInformation,
@@ -128,7 +130,7 @@ export const patchContact = async (
   if (!updated) {
     throw new Error(`Contact not found with id ${contactId}`);
   }
-  return updated;
+  return contactPermissionsBasedTransformer(updated);
 };
 
 export const connectContactToCase = async (
@@ -136,12 +138,13 @@ export const connectContactToCase = async (
   updatedBy: string,
   contactId: string,
   caseId: string,
+  contactPermissionsBasedTransformer: (contact: Contact) => Contact,
 ): Promise<Contact> => {
   const updated: Contact | undefined = await connectToCase(accountSid, contactId, caseId);
   if (!updated) {
     throw new Error(`Contact not found with id ${contactId}`);
   }
-  return updated;
+  return contactPermissionsBasedTransformer(updated);
 };
 
 function isNullOrEmptyObject(obj) {
@@ -205,11 +208,14 @@ export const searchContacts = async (
   accountSid: string,
   searchParameters: SearchParameters,
   query,
+  contactPermissionsBasedTransformer: (contact: Contact) => Contact,
 ): Promise<{ count: number; contacts: SearchContact[] }> => {
   const { limit, offset } = getPaginationElements(query);
   const unprocessedResults = await search(accountSid, searchParameters, limit, offset);
   return {
     count: unprocessedResults.count,
-    contacts: convertContactsToSearchResults(unprocessedResults.rows),
+    contacts: convertContactsToSearchResults(
+      unprocessedResults.rows.map(contactPermissionsBasedTransformer),
+    ),
   };
 };
