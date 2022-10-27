@@ -15,6 +15,11 @@ In order to prevent sensitive credentials to be leaked, please follow this instr
 
 ## Local Development
 
+### Requirements
+
+[nvm](https://github.com/nvm-sh/nvm) or [nvm-windows](https://github.com/coreybutler/nvm-windows)
+[docker](https://docs.docker.com/get-docker/)
+
 ### Initial setup
 
 #### NVM (install/use)
@@ -79,3 +84,4 @@ Package management is handled at the root level for sub modules. Since the packa
 
 - [Debugging Service Jest](./docs/debugging-service-jest.md)
 - [Testing Service Docker Build](./docs/test-service-docker.md)
+- [Import Dev Db to local postgres](./docs/import-dev-db-locally.md)

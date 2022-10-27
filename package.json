@@ -84,7 +84,6 @@
     "test:docker:jobs": "run-s test:docker:jobs:*",
     "test:docker:jobs:contact-complete": "curl -XPOST \"http://localhost:9000/2015-03-31/functions/function/invocations\" -d \"$(cat jobs/contact-complete/tests/testPayload.json)\"",
     "test:docker:jobs:contact-retrieve-recording-url": "curl -XPOST \"http://localhost:9001/2015-03-31/functions/function/invocations\" -d \"$(cat jobs/contact-retrieve-recording-url/tests/testPayload.json)\"",
-    "test:docker:jobs:contact-retrieve-transcript": "curl -XPOST \"http://localhost:9002/2015-03-31/functions/function/invocations\" -d \"$(cat jobs/contact-retrieve-transcript/tests/testPayload.json)\"",
-    "test:docker:service": "cd ../flex-plugins/e2e-tests && npm i && npx playwright install && aws ssm get-parameter --name \"/local/flex-plugins/e2e/env\" --with-decryption --query \"Parameter.Value\" --output text > .env && source .env && cross-env DEBUG=pw:api PLAYWRIGHT_BASEURL=http://localhost:8081 npm run test"
+    "test:docker:jobs:contact-retrieve-transcript": "curl -XPOST \"http://localhost:9002/2015-03-31/functions/function/invocations\" -d \"$(cat jobs/contact-retrieve-transcript/tests/testPayload.json)\""
   }
 }
