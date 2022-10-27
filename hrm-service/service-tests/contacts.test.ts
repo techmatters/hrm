@@ -38,6 +38,28 @@ import * as contactInsertSql from '../src/contact/sql/contact-insert-sql';
 import { selectSingleContactByTaskId } from '../src/contact/sql/contact-get-sql';
 
 const { form, ...contact1WithRawJsonProp } = contact1 as CreateContactPayloadWithFormProperty;
+const withTaskIdAndTranscript = {
+  ...withTaskId,
+  form: {
+    ...withTaskId.form,
+    childInformation: {
+      ...withTaskId.form.childInformation,
+      name: {
+        firstName: 'withTaskIdAndTranscript',
+        lastName: 'withTaskIdAndTranscript',
+      },
+    },
+    conversationMedia: [
+      {
+        store: 'S3' as const,
+        type: ContactMediaType.TRANSCRIPT,
+        url: undefined,
+      },
+    ],
+  },
+  channel: channelTypes.web,
+  taskId: `${withTaskId.taskId}-transcript-permissions-test`,
+};
 
 const createRequest = (permissions: typeof openPermissions) => {
   const server = createService({
@@ -52,6 +74,18 @@ const createRequest = (permissions: typeof openPermissions) => {
 };
 
 const [server, request] = createRequest({ ...openPermissions, cachePermissions: false });
+
+// Use different permissions to exclude transcripts
+const [serverNoTranscripts, requestNoTranscripts] = createRequest({
+  ...openPermissions,
+  cachePermissions: false,
+  rules: () => {
+    return {
+      ...openPermissions.rules(''),
+      viewExternalTranscript: [], // no one
+    };
+  },
+});
 
 /**
  *
@@ -170,6 +204,7 @@ afterAll(async () => {
   await cleanupCases();
   await proxiedEndpoints.stop();
   server.close();
+  serverNoTranscripts.close();
 });
 
 describe('/contacts route', () => {
@@ -518,6 +553,46 @@ describe('/contacts route', () => {
         createContactJobSpy.mockRestore();
       },
     );
+
+    each([
+      {
+        requestAgent: request,
+        expectTranscripts: true,
+        description: `with viewExternalTranscript includes transcripts`,
+      },
+      {
+        requestAgent: requestNoTranscripts,
+        expectTranscripts: false,
+        description: `without viewExternalTranscript excludes transcripts`,
+      },
+    ]).test(`$description`, async ({ requestAgent, expectTranscripts }) => {
+      const createdContact = await contactApi.createContact(
+        accountSid,
+        workerSid,
+        withTaskIdAndTranscript,
+        c => c,
+      );
+
+      const res = await requestAgent
+        .post(route)
+        .set(headers)
+        .send(withTaskIdAndTranscript);
+
+      expect(Array.isArray((<contactApi.Contact>res.body).rawJson?.conversationMedia)).toBeTruthy();
+
+      if (expectTranscripts) {
+        expect(
+          (<contactApi.Contact>res.body).rawJson?.conversationMedia?.some(isS3StoredTranscript),
+        ).toBeTruthy();
+      } else {
+        expect(
+          (<contactApi.Contact>res.body).rawJson?.conversationMedia?.some(isS3StoredTranscript),
+        ).toBeFalsy();
+      }
+
+      await deleteJobsByContactId(createdContact.id, createdContact.accountSid);
+      await deleteContactById(createdContact.id, createdContact.accountSid);
+    });
   });
 
   const compareTimeOfContactDesc = (c1, c2) =>
@@ -917,6 +992,61 @@ describe('/contacts route', () => {
           expectCallback(response);
         },
       );
+
+      each([
+        {
+          requestAgent: request,
+          expectTranscripts: true,
+          description: `with viewExternalTranscript includes transcripts`,
+        },
+        {
+          requestAgent: requestNoTranscripts,
+          expectTranscripts: false,
+          description: `without viewExternalTranscript excludes transcripts`,
+        },
+      ]).test(`$description`, async ({ requestAgent, expectTranscripts }) => {
+        const createdContact = await contactApi.createContact(
+          accountSid,
+          workerSid,
+          withTaskIdAndTranscript,
+          c => c,
+        );
+
+        const res = await requestAgent
+          .post(`${route}/search`)
+          .set(headers)
+          .send({
+            dateFrom: createdContact.createdAt,
+            dateTo: createdContact.createdAt,
+            firstName: 'withTaskIdAndTranscript',
+          });
+
+        expect(res.status).toBe(200);
+        expect(res.body.count).toBe(1);
+
+        expect(
+          Array.isArray(
+            (<contactApi.SearchContact>res.body.contacts[0]).details?.conversationMedia,
+          ),
+        ).toBeTruthy();
+
+        if (expectTranscripts) {
+          expect(
+            (<contactApi.SearchContact>res.body.contacts[0]).details?.conversationMedia?.some(
+              isS3StoredTranscript,
+            ),
+          ).toBeTruthy();
+        } else {
+          expect(
+            (<contactApi.SearchContact>res.body.contacts[0]).details?.conversationMedia?.some(
+              isS3StoredTranscript,
+            ),
+          ).toBeFalsy();
+        }
+
+        await deleteJobsByContactId(createdContact.id, createdContact.accountSid);
+        await deleteContactById(createdContact.id, createdContact.accountSid);
+      });
     });
   });
 
@@ -1268,6 +1398,48 @@ describe('/contacts route', () => {
 
         expect(response.status).toBe(400);
       });
+
+      each([
+        {
+          requestAgent: request,
+          expectTranscripts: true,
+          description: `with viewExternalTranscript includes transcripts`,
+        },
+        {
+          requestAgent: requestNoTranscripts,
+          expectTranscripts: false,
+          description: `without viewExternalTranscript excludes transcripts`,
+        },
+      ]).test(`$description`, async ({ requestAgent, expectTranscripts }) => {
+        const createdContact = await contactApi.createContact(
+          accountSid,
+          workerSid,
+          withTaskIdAndTranscript,
+          c => c,
+        );
+
+        const res = await requestAgent
+          .patch(`${route}/${createdContact.id}`)
+          .set(headers)
+          .send({ rawJson: createdContact.rawJson });
+
+        expect(
+          Array.isArray((<contactApi.Contact>res.body).rawJson?.conversationMedia),
+        ).toBeTruthy();
+
+        if (expectTranscripts) {
+          expect(
+            (<contactApi.Contact>res.body).rawJson?.conversationMedia?.some(isS3StoredTranscript),
+          ).toBeTruthy();
+        } else {
+          expect(
+            (<contactApi.Contact>res.body).rawJson?.conversationMedia?.some(isS3StoredTranscript),
+          ).toBeFalsy();
+        }
+
+        await deleteJobsByContactId(createdContact.id, createdContact.accountSid);
+        await deleteContactById(createdContact.id, createdContact.accountSid);
+      });
     });
   });
 
@@ -1459,154 +1631,4 @@ describe('/contacts route', () => {
       });
     });
   });
-});
-
-describe('Test permissions based transformations', () => {
-  const route = `/v0/accounts/${accountSid}/contacts`;
-
-  // Use different permissions to exclude transcripts
-  const [serverNoTranscripts, requestNoTranscripts] = createRequest({
-    ...openPermissions,
-    cachePermissions: false,
-    rules: () => {
-      return {
-        ...openPermissions.rules(''),
-        viewExternalTranscript: [], // no one
-      };
-    },
-  });
-
-  const contact = {
-    ...withTaskId,
-    form: {
-      ...withTaskId.form,
-      conversationMedia: [
-        {
-          store: 'S3' as const,
-          type: ContactMediaType.TRANSCRIPT,
-          url: undefined,
-        },
-      ],
-    },
-    channel: channelTypes.web,
-    taskId: `${withTaskId.taskId}-transcript-permissions-test`,
-  };
-
-  let createdContact: contactDb.Contact;
-  beforeAll(async () => {
-    createdContact = await contactApi.createContact(accountSid, workerSid, contact, c => c);
-    console.log(createdContact);
-  });
-
-  afterAll(async () => {
-    await deleteJobsByContactId(createdContact.id, createdContact.accountSid);
-    await deleteContactById(createdContact.id, createdContact.accountSid);
-    serverNoTranscripts.close();
-  });
-
-  each([
-    {
-      requestAgent: request,
-      expectTranscripts: true,
-      description: `with viewExternalTranscript includes transcripts`,
-    },
-    {
-      requestAgent: requestNoTranscripts,
-      expectTranscripts: false,
-      description: `without viewExternalTranscript excludes transcripts`,
-    },
-  ]).test(`POST on /contacts $description`, async ({ requestAgent, expectTranscripts }) => {
-    const res = await requestAgent
-      .post(route)
-      .set(headers)
-      .send(contact);
-
-    expect(Array.isArray((<contactApi.Contact>res.body).rawJson?.conversationMedia)).toBeTruthy();
-
-    if (expectTranscripts) {
-      expect(
-        (<contactApi.Contact>res.body).rawJson?.conversationMedia?.some(isS3StoredTranscript),
-      ).toBeTruthy();
-    } else {
-      expect(
-        (<contactApi.Contact>res.body).rawJson?.conversationMedia?.some(isS3StoredTranscript),
-      ).toBeFalsy();
-    }
-  });
-
-  each([
-    {
-      requestAgent: request,
-      expectTranscripts: true,
-      description: `with viewExternalTranscript includes transcripts`,
-    },
-    {
-      requestAgent: requestNoTranscripts,
-      expectTranscripts: false,
-      description: `without viewExternalTranscript excludes transcripts`,
-    },
-  ]).test(`POST on /contacts/search $description`, async ({ requestAgent, expectTranscripts }) => {
-    const res = await requestAgent
-      .post(`${route}/search`)
-      .set(headers)
-      .send({
-        dateFrom: createdContact.createdAt,
-        dateTo: createdContact.createdAt,
-        firstName: 'withTaskId',
-      });
-
-    expect(res.status).toBe(200);
-    expect(res.body.count).toBe(1);
-
-    expect(
-      Array.isArray((<contactApi.SearchContact>res.body.contacts[0]).details?.conversationMedia),
-    ).toBeTruthy();
-
-    if (expectTranscripts) {
-      expect(
-        (<contactApi.SearchContact>res.body.contacts[0]).details?.conversationMedia?.some(
-          isS3StoredTranscript,
-        ),
-      ).toBeTruthy();
-    } else {
-      expect(
-        (<contactApi.SearchContact>res.body.contacts[0]).details?.conversationMedia?.some(
-          isS3StoredTranscript,
-        ),
-      ).toBeFalsy();
-    }
-  });
-
-  each([
-    {
-      requestAgent: request,
-      expectTranscripts: true,
-      description: `with viewExternalTranscript includes transcripts`,
-    },
-    {
-      requestAgent: requestNoTranscripts,
-      expectTranscripts: false,
-      description: `without viewExternalTranscript excludes transcripts`,
-    },
-  ]).test(
-    `PATCH on /contacts/:contactId $description`,
-    async ({ requestAgent, expectTranscripts }) => {
-      const res = await requestAgent
-        .patch(`${route}/${createdContact.id}`)
-        .set(headers)
-        .send({ rawJson: createdContact.rawJson });
-
-      expect(Array.isArray((<contactApi.Contact>res.body).rawJson?.conversationMedia)).toBeTruthy();
-
-      if (expectTranscripts) {
-        expect(
-          (<contactApi.Contact>res.body).rawJson?.conversationMedia?.some(isS3StoredTranscript),
-        ).toBeTruthy();
-      } else {
-        expect(
-          (<contactApi.Contact>res.body).rawJson?.conversationMedia?.some(isS3StoredTranscript),
-        ).toBeFalsy();
-      }
-    },
-  );
 });
