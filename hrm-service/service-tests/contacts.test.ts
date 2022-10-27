@@ -1,7 +1,7 @@
 import supertest from 'supertest';
 import * as Sequelize from 'sequelize';
 // eslint-disable-next-line prettier/prettier
-import { ContactMediaType, ContactRawJson } from '../src/contact/contact-json';
+import { ContactMediaType, ContactRawJson, isS3StoredTranscript } from '../src/contact/contact-json';
 import { createService } from '../src/app';
 const models = require('../src/models');
 import {
@@ -33,18 +33,25 @@ import * as contactDb from '../src/contact/contact-data-access';
 import { openPermissions } from '../src/permissions/json-permissions';
 import * as proxiedEndpoints from './external-service-stubs/proxied-endpoints';
 import * as contactJobDataAccess from '../src/contact-job/contact-job-data-access';
-import { chatChannels } from '../src/contact/channelTypes';
+import { channelTypes, chatChannels } from '../src/contact/channelTypes';
 import * as contactInsertSql from '../src/contact/sql/contact-insert-sql';
 import { selectSingleContactByTaskId } from '../src/contact/sql/contact-get-sql';
 
 const { form, ...contact1WithRawJsonProp } = contact1 as CreateContactPayloadWithFormProperty;
 
-const server = createService({
-  permissions: openPermissions,
-  authTokenLookup: () => 'picernic basket',
-  enableProcessContactJobs: false,
-}).listen();
-const request = supertest.agent(server, undefined);
+const createRequest = (permissions: typeof openPermissions) => {
+  const server = createService({
+    permissions: permissions,
+    authTokenLookup: () => 'picernic basket',
+    enableProcessContactJobs: false,
+  }).listen();
+
+  const request = supertest.agent(server, undefined);
+
+  return [server, request] as const;
+};
+
+const [server, request] = createRequest({ ...openPermissions, cachePermissions: false });
 
 /**
  *
@@ -121,6 +128,15 @@ const selectJobsByContactId = (contactId: number, accountSid: string) =>
     `),
   );
 
+// eslint-disable-next-line @typescript-eslint/no-shadow
+const deleteJobsByContactId = (contactId: number, accountSid: string) =>
+  db.task(t =>
+    t.manyOrNone(`
+      DELETE FROM "ContactJobs"
+      WHERE "contactId" = ${contactId} AND "accountSid" = '${accountSid}';
+    `),
+  );
+
 const query = {
   where: {
     [Sequelize.Op.or]: [
@@ -153,7 +169,7 @@ afterAll(async () => {
   await cleanupContacts();
   await cleanupCases();
   await proxiedEndpoints.stop();
-  await server.close();
+  server.close();
 });
 
 describe('/contacts route', () => {
@@ -716,10 +732,12 @@ describe('/contacts route', () => {
             expect(contacts.length).toBe(createdContacts.length - 5);
             const createdContactsByTimeOfContact = createdContacts.sort(compareTimeOfContactDesc);
             createdContactsByTimeOfContact
-              .filter(c =>
-                ['Child calling about self', 'Someone calling about a child'].includes(
-                  c.rawJson?.callType,
-                ),
+              .filter(
+                c =>
+                  c.rawJson &&
+                  ['Child calling about self', 'Someone calling about a child'].includes(
+                    c.rawJson.callType,
+                  ),
               )
               .forEach(c => {
                 const searchContact = contacts.find(results => results.contactId === c.id);
@@ -913,11 +931,16 @@ describe('/contacts route', () => {
       const subRoute = contactId => `${route}/${contactId}`;
 
       test('should return 401', async () => {
-        const createdContact = await contactApi.createContact(accountSid, workerSid, {
-          ...contact1,
-          form: <ContactRawJson>{},
-          csamReports: [],
-        });
+        const createdContact = await contactApi.createContact(
+          accountSid,
+          workerSid,
+          {
+            ...contact1,
+            form: <ContactRawJson>{},
+            csamReports: [],
+          },
+          c => c,
+        );
         try {
           const response = await request.patch(subRoute(createdContact.id)).send({});
 
@@ -1142,11 +1165,16 @@ describe('/contacts route', () => {
         ]).test(
           'should $description if that is specified in the payload',
           async ({ patch, original, expected }: TestOptions) => {
-            const createdContact = await contactApi.createContact(accountSid, workerSid, {
-              ...contact1WithRawJsonProp,
-              rawJson: original || <ContactRawJson>{},
-              csamReports: [],
-            });
+            const createdContact = await contactApi.createContact(
+              accountSid,
+              workerSid,
+              {
+                ...contact1WithRawJsonProp,
+                rawJson: original || <ContactRawJson>{},
+                csamReports: [],
+              },
+              c => c,
+            );
             try {
               const existingContactId = createdContact.id;
               const response = await request
@@ -1188,6 +1216,7 @@ describe('/contacts route', () => {
           accountSid,
           workerSid,
           <any>contact1,
+          c => c,
         );
         const nonExistingContactId = contactToBeDeleted.id;
         await deleteContactById(contactToBeDeleted.id, contactToBeDeleted.accountSid);
@@ -1209,6 +1238,7 @@ describe('/contacts route', () => {
           accountSid,
           workerSid,
           <any>contact1,
+          c => c,
         );
         const nonExistingContactId = contactToBeDeleted.id;
         await deleteContactById(contactToBeDeleted.id, contactToBeDeleted.accountSid);
@@ -1227,6 +1257,7 @@ describe('/contacts route', () => {
           accountSid,
           workerSid,
           <any>contact1,
+          c => c,
         );
         const nonExistingContactId = contactToBeDeleted.id;
         await deleteContactById(contactToBeDeleted.id, contactToBeDeleted.accountSid);
@@ -1253,13 +1284,14 @@ describe('/contacts route', () => {
     const byGreaterId = (a, b) => b.id - a.id;
 
     beforeEach(async () => {
-      createdContact = await contactApi.createContact(accountSid, workerSid, <any>contact1);
+      createdContact = await contactApi.createContact(accountSid, workerSid, <any>contact1, c => c);
       createdCase = await caseApi.createCase(case1, accountSid, workerSid);
       anotherCreatedCase = await caseApi.createCase(case2, accountSid, workerSid);
       const contactToBeDeleted = await contactApi.createContact(
         accountSid,
         workerSid,
         <any>contact1,
+        c => c,
       );
       const caseToBeDeleted = await caseApi.createCase(case1, accountSid, workerSid);
 
@@ -1427,4 +1459,154 @@ describe('/contacts route', () => {
       });
     });
   });
+});
+
+describe('Test permissions based transformations', () => {
+  const route = `/v0/accounts/${accountSid}/contacts`;
+
+  // Use different permissions to exclude transcripts
+  const [serverNoTranscripts, requestNoTranscripts] = createRequest({
+    ...openPermissions,
+    cachePermissions: false,
+    rules: () => {
+      return {
+        ...openPermissions.rules(''),
+        viewExternalTranscript: [], // no one
+      };
+    },
+  });
+
+  const contact = {
+    ...withTaskId,
+    form: {
+      ...withTaskId.form,
+      conversationMedia: [
+        {
+          store: 'S3' as const,
+          type: ContactMediaType.TRANSCRIPT,
+          url: undefined,
+        },
+      ],
+    },
+    channel: channelTypes.web,
+    taskId: `${withTaskId.taskId}-transcript-permissions-test`,
+  };
+
+  let createdContact: contactDb.Contact;
+  beforeAll(async () => {
+    createdContact = await contactApi.createContact(accountSid, workerSid, contact, c => c);
+    console.log(createdContact);
+  });
+
+  afterAll(async () => {
+    await deleteJobsByContactId(createdContact.id, createdContact.accountSid);
+    await deleteContactById(createdContact.id, createdContact.accountSid);
+    serverNoTranscripts.close();
+  });
+
+  each([
+    {
+      requestAgent: request,
+      expectTranscripts: true,
+      description: `with viewExternalTranscript includes transcripts`,
+    },
+    {
+      requestAgent: requestNoTranscripts,
+      expectTranscripts: false,
+      description: `without viewExternalTranscript excludes transcripts`,
+    },
+  ]).test(`POST on /contacts $description`, async ({ requestAgent, expectTranscripts }) => {
+    const res = await requestAgent
+      .post(route)
+      .set(headers)
+      .send(contact);
+
+    expect(Array.isArray((<contactApi.Contact>res.body).rawJson?.conversationMedia)).toBeTruthy();
+
+    if (expectTranscripts) {
+      expect(
+        (<contactApi.Contact>res.body).rawJson?.conversationMedia?.some(isS3StoredTranscript),
+      ).toBeTruthy();
+    } else {
+      expect(
+        (<contactApi.Contact>res.body).rawJson?.conversationMedia?.some(isS3StoredTranscript),
+      ).toBeFalsy();
+    }
+  });
+
+  each([
+    {
+      requestAgent: request,
+      expectTranscripts: true,
+      description: `with viewExternalTranscript includes transcripts`,
+    },
+    {
+      requestAgent: requestNoTranscripts,
+      expectTranscripts: false,
+      description: `without viewExternalTranscript excludes transcripts`,
+    },
+  ]).test(`POST on /contacts/search $description`, async ({ requestAgent, expectTranscripts }) => {
+    const res = await requestAgent
+      .post(`${route}/search`)
+      .set(headers)
+      .send({
+        dateFrom: createdContact.createdAt,
+        dateTo: createdContact.createdAt,
+        firstName: 'withTaskId',
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.count).toBe(1);
+
+    expect(
+      Array.isArray((<contactApi.SearchContact>res.body.contacts[0]).details?.conversationMedia),
+    ).toBeTruthy();
+
+    if (expectTranscripts) {
+      expect(
+        (<contactApi.SearchContact>res.body.contacts[0]).details?.conversationMedia?.some(
+          isS3StoredTranscript,
+        ),
+      ).toBeTruthy();
+    } else {
+      expect(
+        (<contactApi.SearchContact>res.body.contacts[0]).details?.conversationMedia?.some(
+          isS3StoredTranscript,
+        ),
+      ).toBeFalsy();
+    }
+  });
+
+  each([
+    {
+      requestAgent: request,
+      expectTranscripts: true,
+      description: `with viewExternalTranscript includes transcripts`,
+    },
+    {
+      requestAgent: requestNoTranscripts,
+      expectTranscripts: false,
+      description: `without viewExternalTranscript excludes transcripts`,
+    },
+  ]).test(
+    `PATCH on /contacts/:contactId $description`,
+    async ({ requestAgent, expectTranscripts }) => {
+      const res = await requestAgent
+        .patch(`${route}/${createdContact.id}`)
+        .set(headers)
+        .send({ rawJson: createdContact.rawJson });
+
+      expect(Array.isArray((<contactApi.Contact>res.body).rawJson?.conversationMedia)).toBeTruthy();
+
+      if (expectTranscripts) {
+        expect(
+          (<contactApi.Contact>res.body).rawJson?.conversationMedia?.some(isS3StoredTranscript),
+        ).toBeTruthy();
+      } else {
+        expect(
+          (<contactApi.Contact>res.body).rawJson?.conversationMedia?.some(isS3StoredTranscript),
+        ).toBeFalsy();
+      }
+    },
+  );
 });
