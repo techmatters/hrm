@@ -19,6 +19,7 @@ import {
   workerSid,
   nonData2,
   nonData1,
+  withTaskIdAndTranscript,
 } from './mocks';
 import each from 'jest-each';
 import { db } from '../src/connection-pool';
@@ -33,59 +34,29 @@ import * as contactDb from '../src/contact/contact-data-access';
 import { openPermissions } from '../src/permissions/json-permissions';
 import * as proxiedEndpoints from './external-service-stubs/proxied-endpoints';
 import * as contactJobDataAccess from '../src/contact-job/contact-job-data-access';
-import { channelTypes, chatChannels } from '../src/contact/channelTypes';
+import { chatChannels } from '../src/contact/channelTypes';
 import * as contactInsertSql from '../src/contact/sql/contact-insert-sql';
 import { selectSingleContactByTaskId } from '../src/contact/sql/contact-get-sql';
+import { RulesFile } from '../src/permissions/rulesMap';
+import { ruleFileWithOneActionOverride } from './permissions-overrides';
 
 const { form, ...contact1WithRawJsonProp } = contact1 as CreateContactPayloadWithFormProperty;
-const withTaskIdAndTranscript = {
-  ...withTaskId,
-  form: {
-    ...withTaskId.form,
-    childInformation: {
-      ...withTaskId.form.childInformation,
-      name: {
-        firstName: 'withTaskIdAndTranscript',
-        lastName: 'withTaskIdAndTranscript',
-      },
-    },
-    conversationMedia: [
-      {
-        store: 'S3' as const,
-        type: ContactMediaType.TRANSCRIPT,
-        url: undefined,
-      },
-    ],
-  },
-  channel: channelTypes.web,
-  taskId: `${withTaskId.taskId}-transcript-permissions-test`,
+
+let testRules: RulesFile;
+const useOpenRules = () => {
+  testRules = openPermissions.rules(accountSid);
 };
-
-const createRequest = (permissions: typeof openPermissions) => {
-  const server = createService({
-    permissions: permissions,
-    authTokenLookup: () => 'picernic basket',
-    enableProcessContactJobs: false,
-  }).listen();
-
-  const request = supertest.agent(server, undefined);
-
-  return [server, request] as const;
-};
-
-const [server, request] = createRequest({ ...openPermissions, cachePermissions: false });
-
-// Use different permissions to exclude transcripts
-const [serverNoTranscripts, requestNoTranscripts] = createRequest({
-  ...openPermissions,
-  cachePermissions: false,
-  rules: () => {
-    return {
-      ...openPermissions.rules(''),
-      viewExternalTranscript: [], // no one
-    };
+useOpenRules();
+const server = createService({
+  permissions: {
+    cachePermissions: false,
+    rules: () => testRules,
   },
-});
+  authTokenLookup: () => 'picernic basket',
+  enableProcessContactJobs: false,
+}).listen();
+
+const request = supertest.agent(server, undefined);
 
 /**
  *
@@ -204,7 +175,6 @@ afterAll(async () => {
   await cleanupCases();
   await proxiedEndpoints.stop();
   server.close();
-  serverNoTranscripts.close();
 });
 
 describe('/contacts route', () => {
@@ -556,16 +526,14 @@ describe('/contacts route', () => {
 
     each([
       {
-        requestAgent: request,
         expectTranscripts: true,
         description: `with viewExternalTranscript includes transcripts`,
       },
       {
-        requestAgent: requestNoTranscripts,
         expectTranscripts: false,
         description: `without viewExternalTranscript excludes transcripts`,
       },
-    ]).test(`$description`, async ({ requestAgent, expectTranscripts }) => {
+    ]).test(`$description`, async ({ expectTranscripts }) => {
       const createdContact = await contactApi.createContact(
         accountSid,
         workerSid,
@@ -573,7 +541,13 @@ describe('/contacts route', () => {
         { user: { workerSid, roles: [] }, can: () => true },
       );
 
-      const res = await requestAgent
+      if (!expectTranscripts) {
+        testRules = ruleFileWithOneActionOverride('viewExternalTranscript', false);
+      } else {
+        useOpenRules();
+      }
+
+      const res = await request
         .post(route)
         .set(headers)
         .send(withTaskIdAndTranscript);
@@ -592,6 +566,7 @@ describe('/contacts route', () => {
 
       await deleteJobsByContactId(createdContact.id, createdContact.accountSid);
       await deleteContactById(createdContact.id, createdContact.accountSid);
+      useOpenRules();
     });
   });
 
@@ -995,16 +970,14 @@ describe('/contacts route', () => {
 
       each([
         {
-          requestAgent: request,
           expectTranscripts: true,
           description: `with viewExternalTranscript includes transcripts`,
         },
         {
-          requestAgent: requestNoTranscripts,
           expectTranscripts: false,
           description: `without viewExternalTranscript excludes transcripts`,
         },
-      ]).test(`$description`, async ({ requestAgent, expectTranscripts }) => {
+      ]).test(`$description`, async ({ expectTranscripts }) => {
         const createdContact = await contactApi.createContact(
           accountSid,
           workerSid,
@@ -1012,7 +985,13 @@ describe('/contacts route', () => {
           { user: { workerSid, roles: [] }, can: () => true },
         );
 
-        const res = await requestAgent
+        if (!expectTranscripts) {
+          testRules = ruleFileWithOneActionOverride('viewExternalTranscript', false);
+        } else {
+          useOpenRules();
+        }
+
+        const res = await request
           .post(`${route}/search`)
           .set(headers)
           .send({
@@ -1046,6 +1025,7 @@ describe('/contacts route', () => {
 
         await deleteJobsByContactId(createdContact.id, createdContact.accountSid);
         await deleteContactById(createdContact.id, createdContact.accountSid);
+        useOpenRules();
       });
     });
   });
@@ -1401,16 +1381,14 @@ describe('/contacts route', () => {
 
       each([
         {
-          requestAgent: request,
           expectTranscripts: true,
           description: `with viewExternalTranscript includes transcripts`,
         },
         {
-          requestAgent: requestNoTranscripts,
           expectTranscripts: false,
           description: `without viewExternalTranscript excludes transcripts`,
         },
-      ]).test(`$description`, async ({ requestAgent, expectTranscripts }) => {
+      ]).test(`$description`, async ({ expectTranscripts }) => {
         const createdContact = await contactApi.createContact(
           accountSid,
           workerSid,
@@ -1418,7 +1396,13 @@ describe('/contacts route', () => {
           { user: { workerSid, roles: [] }, can: () => true },
         );
 
-        const res = await requestAgent
+        if (!expectTranscripts) {
+          testRules = ruleFileWithOneActionOverride('viewExternalTranscript', false);
+        } else {
+          useOpenRules();
+        }
+
+        const res = await request
           .patch(`${route}/${createdContact.id}`)
           .set(headers)
           .send({ rawJson: createdContact.rawJson });
@@ -1439,6 +1423,7 @@ describe('/contacts route', () => {
 
         await deleteJobsByContactId(createdContact.id, createdContact.accountSid);
         await deleteContactById(createdContact.id, createdContact.accountSid);
+        useOpenRules();
       });
     });
   });
