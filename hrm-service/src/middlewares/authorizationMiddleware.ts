@@ -53,7 +53,7 @@ export const getAuthorizationMiddleware = (authTokenLookup = defaultTokenLookup)
         return unauthorized(res);
       }
 
-      req.user = new User(tokenResult.worker_sid, tokenResult.roles);
+      req.user = new User(accountSid, tokenResult.worker_sid, tokenResult.roles);
       return next();
     } catch (err) {
       console.error('Token authentication failed: ', err);
@@ -73,7 +73,7 @@ export const getAuthorizationMiddleware = (authTokenLookup = defaultTokenLookup)
           crypto.timingSafeEqual(Buffer.from(requestSecret), Buffer.from(staticSecret));
 
         if (isStaticSecretValid) {
-          req.user = new User(`account-${accountSid}`, []);
+          req.user = new User(accountSid, `account-${accountSid}`, []);
           return next();
         }
       } catch (err) {

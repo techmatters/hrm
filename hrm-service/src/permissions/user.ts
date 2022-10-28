@@ -1,13 +1,16 @@
 import { setupCanForRules } from './setupCanForRules';
 
 export class User {
+  accountSid: string;
+
   workerSid: string;
 
   roles: string[];
 
   initializedCan: ReturnType<typeof setupCanForRules>;
 
-  constructor(workerSid: string, roles: string[]) {
+  constructor(accountSid, workerSid: string, roles: string[]) {
+    this.accountSid = accountSid;
     this.workerSid = workerSid;
     this.roles = roles;
   }

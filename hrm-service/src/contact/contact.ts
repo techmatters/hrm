@@ -1,3 +1,4 @@
+import { User } from '../permissions';
 import {
   connectToCase,
   Contact,
@@ -62,8 +63,8 @@ export const usesFormProperty = (
   p: CreateContactPayload,
 ): p is CreateContactPayloadWithFormProperty => (<any>p).form && !(<any>p).rawJson;
 
-export const getContactById = async (accountSid: string, contactId: number) => {
-  const contact = await getById(accountSid, contactId);
+export const getContactById = async (user: User, contactId: number) => {
+  const contact = await getById(user, contactId);
 
   if (!contact) {
     throw new Error(`Contact not found with id ${contactId}`);
@@ -73,10 +74,9 @@ export const getContactById = async (accountSid: string, contactId: number) => {
 };
 
 export const createContact = async (
-  accountSid: string,
+  user: User,
   createdBy: string,
   newContact: CreateContactPayload,
-  contactPermissionsBasedTransformer: (contact: Contact) => Contact,
 ): Promise<Contact> => {
   const rawJson = usesFormProperty(newContact) ? newContact.form : newContact.rawJson;
   const completeNewContact: NewContactRecord = {
@@ -97,20 +97,19 @@ export const createContact = async (
   };
 
   const created = await create(
-    accountSid,
+    user,
     completeNewContact,
     (newContact.csamReports ?? []).map(csr => csr.id),
   );
 
-  return contactPermissionsBasedTransformer(created);
+  return created;
 };
 
 export const patchContact = async (
-  accountSid: string,
+  user: User,
   updatedBy: string,
   contactId: string,
   contactPatch: PatchPayload,
-  contactPermissionsBasedTransformer: (contact: Contact) => Contact,
 ): Promise<Contact> => {
   const {
     childInformation,
@@ -118,7 +117,7 @@ export const patchContact = async (
     caseInformation: fullCaseInformation,
   } = contactPatch.rawJson;
   const { categories, ...caseInformation } = fullCaseInformation ?? {};
-  const updated = await patch(accountSid, contactId, {
+  const updated = await patch(user, contactId, {
     updatedBy,
     childInformation,
     callerInformation,
@@ -130,21 +129,20 @@ export const patchContact = async (
   if (!updated) {
     throw new Error(`Contact not found with id ${contactId}`);
   }
-  return contactPermissionsBasedTransformer(updated);
+  return updated;
 };
 
 export const connectContactToCase = async (
-  accountSid: string,
+  user: User,
   updatedBy: string,
   contactId: string,
   caseId: string,
-  contactPermissionsBasedTransformer: (contact: Contact) => Contact,
 ): Promise<Contact> => {
-  const updated: Contact | undefined = await connectToCase(accountSid, contactId, caseId);
+  const updated: Contact | undefined = await connectToCase(user, contactId, caseId);
   if (!updated) {
     throw new Error(`Contact not found with id ${contactId}`);
   }
-  return contactPermissionsBasedTransformer(updated);
+  return updated;
 };
 
 function isNullOrEmptyObject(obj) {
@@ -205,17 +203,14 @@ function convertContactsToSearchResults(contacts: Contact[]): SearchContact[] {
 }
 
 export const searchContacts = async (
-  accountSid: string,
+  user: User,
   searchParameters: SearchParameters,
   query,
-  contactPermissionsBasedTransformer: (contact: Contact) => Contact,
 ): Promise<{ count: number; contacts: SearchContact[] }> => {
   const { limit, offset } = getPaginationElements(query);
-  const unprocessedResults = await search(accountSid, searchParameters, limit, offset);
+  const unprocessedResults = await search(user, searchParameters, limit, offset);
   return {
     count: unprocessedResults.count,
-    contacts: convertContactsToSearchResults(
-      unprocessedResults.rows.map(contactPermissionsBasedTransformer),
-    ),
+    contacts: convertContactsToSearchResults(unprocessedResults.rows),
   };
 };

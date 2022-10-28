@@ -1,3 +1,5 @@
+import { actionsMaps, User } from '../permissions';
+
 import { db } from '../connection-pool';
 import { enableCreateContactJobsFlag } from '../featureFlags';
 import {
@@ -129,8 +131,43 @@ const searchParametersToQueryParameters = (
   return queryParams;
 };
 
+const filterExternalTranscripts = (contact: Contact) => ({
+  ...contact,
+  rawJson: {
+    ...contact.rawJson,
+    conversationMedia: contact.rawJson.conversationMedia?.filter(m => !isS3StoredTranscript(m)),
+  },
+});
+
+const permissionFilters = [
+  {
+    action: actionsMaps.contact.VIEW_EXTERNAL_TRANSCRIPT,
+    filter: filterExternalTranscripts,
+  },
+];
+
+/**
+ * In contrast to other permission based functions that are middlewares,
+ * this function is applied after the contact records are brought from the DB,
+ * stripping certain properties based on the permissions.
+ * This rules are defined here so they have better visibility,
+ * but this function is "injected" into the business layer that's where we have access to the "raw contact entities".
+ */
+export const applyContactPermissionsBasedTransformer = (user: User, contact: Contact) => {
+  let result: Contact = contact;
+
+  permissionFilters.forEach(({ action, filter }) => {
+    // Filters the external transcript records if user does not have permission on this contact
+    if (!user.can(action, contact)) {
+      result = filter(result);
+    }
+  });
+
+  return result;
+};
+
 export const create = async (
-  accountSid: string,
+  user: User,
   newContact: NewContactRecord,
   csamReportIds: number[],
 ): Promise<Contact> => {
@@ -139,7 +176,7 @@ export const create = async (
       const existingContact: Contact = await connection.oneOrNone<Contact>(
         selectSingleContactByTaskId('Contacts'),
         {
-          accountSid,
+          user.accountSid,
           taskId: newContact.taskId,
         },
       );
@@ -153,7 +190,7 @@ export const create = async (
     const created: Contact = await connection.one<Contact>(
       insertContactSql({
         ...newContact,
-        accountSid,
+        user.accountSid,
         createdAt: now,
         updatedAt: now,
       }),
@@ -172,50 +209,55 @@ export const create = async (
       });
     }
 
-    return created;
+    return applyContactPermissionsBasedTransformer(user, created);
   });
 };
 
 export const patch = async (
-  accountSid: string,
+  user: User,
   contactId: string,
   contactUpdates: ContactUpdates,
 ): Promise<Contact | undefined> => {
   return db.task(async connection => {
     const updatedContact: Contact = await connection.oneOrNone<Contact>(UPDATE_RAWJSON_BY_ID, {
-      accountSid,
+      user.accountSid,
       contactId,
       ...contactUpdates,
     });
-    return updatedContact;
+    return applyContactPermissionsBasedTransformer(user, updatedContact);
   });
 };
 
 export const connectToCase = async (
-  accountSid: string,
+  user: User,
   contactId: string,
   caseId: string,
 ): Promise<Contact | undefined> => {
   return db.task(async connection => {
     const updatedContact: Contact = await connection.oneOrNone<Contact>(UPDATE_CASEID_BY_ID, {
-      accountSid,
+      user.accountSid,
       contactId,
       caseId,
     });
-    return updatedContact;
+    return applyContactPermissionsBasedTransformer(user, updatedContact);
   });
 };
 
-export const getById = async (accountSid: string, contactId: number): Promise<Contact> =>
-  db.task(async connection =>
-    connection.oneOrNone<Contact>(selectSingleContactByIdSql('Contacts'), {
-      accountSid,
+export const getById = async (
+    user: User,
+    contactId: number
+  ): Promise<Contact> =>
+  db.task(async connection => {
+    const contact = await connection.oneOrNone<Contact>(selectSingleContactByIdSql('Contacts'), {
+      user.accountSid,
       contactId,
     }),
-  );
+
+    return applyContactPermissionsBasedTransformer(user, contact);
+  });
 
 export const search = async (
-  accountSid: string,
+  user: User,
   searchParameters: SearchParameters,
   limit: number,
   offset: number,
@@ -225,20 +267,22 @@ export const search = async (
       Contact & { totalCount: number }
     >(
       SELECT_CONTACT_SEARCH,
-      searchParametersToQueryParameters(accountSid, searchParameters, limit, offset),
+      searchParametersToQueryParameters(user.accountSid, searchParameters, limit, offset),
     );
-    return { rows: searchResults, count: searchResults.length ? searchResults[0].totalCount : 0 };
+
+    const rows = searchResults.map(contact => applyContactPermissionsBasedTransformer(user, contact));
+    return { rows, count: searchResults.length ? searchResults[0].totalCount : 0 };
   });
 };
 
 export const updateConversationMedia = async (
-  accountSid: string,
+  user: User,
   contactId: number,
   conversationMedia: ContactRawJson['conversationMedia'],
 ): Promise<void> =>
   db.task(async connection =>
     connection.none(UPDATE_CONVERSATION_MEDIA_BY_ID, {
-      accountSid,
+      user.accountSid,
       contactId,
       conversationMedia,
     }),
