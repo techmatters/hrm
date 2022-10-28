@@ -27,6 +27,9 @@ export const applyPermissions = (req: Request,
 
   //@ts-ignore TODO: Improve our custom Request type to override Express.Request
   req.can = initializedCan;
+
+  //TODO: This is not very explicit and is ripe for breakage. We should find a better way to do this.
+  req.user.initializedCan = initializedCan;
 };
 
 export const setupPermissions = (lookup: Permissions) => (req: Request, res: Response, next: NextFunction) => {

@@ -4,7 +4,6 @@ import { patchContact, connectContactToCase, searchContacts, createContact, getC
 import { asyncHandler } from '../utils';
 // eslint-disable-next-line prettier/prettier
 import type { Request, Response, NextFunction } from 'express';
-import { setupCanForRules } from '../permissions/setupCanForRules';
 
 const contactsRouter = SafeRouter();
 
@@ -17,11 +16,11 @@ const filterExternalTranscripts = (contact: Contact) => ({ ...contact, rawJson: 
  * This rules are defined here so they have better visibility,
  * but this function is "injected" into the business layer that's where we have access to the "raw contact entities".
  */
-export const applyContactPermissionsBasedTransformer = (can: ReturnType<typeof setupCanForRules>, user: User) =>  (contact: Contact) => {
+export const applyContactPermissionsBasedTransformer = (user: User) =>  (contact: Contact) => {
   let result: Contact = contact;
 
   // Filters the external transcript records if user does not have permission on this contact
-  if (!can(user, actionsMaps.contact.VIEW_EXTERNAL_TRANSCRIPT, contact)) {
+  if (!user.can(actionsMaps.contact.VIEW_EXTERNAL_TRANSCRIPT, contact)) {
     result = filterExternalTranscripts(result);
   }
 
@@ -32,7 +31,7 @@ export const applyContactPermissionsBasedTransformer = (can: ReturnType<typeof s
 contactsRouter.post('/', publicEndpoint, async (req, res) => {
   const { accountSid, user } = req;
 
-  const contactPermissionsBasedTransformer = applyContactPermissionsBasedTransformer(req.can, user);
+  const contactPermissionsBasedTransformer = applyContactPermissionsBasedTransformer(user);
 
   const contact = await createContact(accountSid, user.workerSid, req.body, contactPermissionsBasedTransformer);
   res.json(contact);
