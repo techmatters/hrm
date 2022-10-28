@@ -7,9 +7,11 @@ import {
   search,
   SearchParameters,
 } from './contact-data-access';
-import { ContactRawJson } from './contact-json';
+import { ContactRawJson, isS3StoredTranscript } from './contact-json';
 import { retrieveCategories, getPaginationElements } from '../controllers/helpers';
 import { NewContactRecord } from './sql/contact-insert-sql';
+import { setupCanForRules } from '../permissions/setupCanForRules';
+import { actionsMaps, User } from '../permissions';
 
 // Re export as is:
 export { updateConversationMedia, Contact } from './contact-data-access';
@@ -62,6 +64,38 @@ export const usesFormProperty = (
   p: CreateContactPayload,
 ): p is CreateContactPayloadWithFormProperty => (<any>p).form && !(<any>p).rawJson;
 
+const filterExternalTranscripts = (contact: Contact) => ({
+  ...contact,
+  rawJson: {
+    ...contact.rawJson,
+    conversationMedia: contact.rawJson.conversationMedia?.filter(m => !isS3StoredTranscript(m)),
+  },
+});
+
+type PermissionsBasedTransformation = {
+  action: typeof actionsMaps['contact'][keyof typeof actionsMaps['contact']];
+  transformation: (contact: Contact) => Contact;
+};
+
+const permissionsBasedTransformations: PermissionsBasedTransformation[] = [
+  {
+    action: actionsMaps.contact.VIEW_EXTERNAL_TRANSCRIPT,
+    transformation: filterExternalTranscripts,
+  },
+];
+
+export const bindApplyTransformations = (can: ReturnType<typeof setupCanForRules>, user: User) => (
+  contact: Contact,
+) => {
+  const result = permissionsBasedTransformations.reduce(
+    (transformed, { action, transformation }) =>
+      !can(user, action, contact) ? transformation(transformed) : transformed,
+    contact,
+  );
+
+  return result;
+};
+
 export const getContactById = async (accountSid: string, contactId: number) => {
   const contact = await getById(accountSid, contactId);
 
@@ -76,7 +110,7 @@ export const createContact = async (
   accountSid: string,
   createdBy: string,
   newContact: CreateContactPayload,
-  contactPermissionsBasedTransformer: (contact: Contact) => Contact,
+  { can, user }: { can: ReturnType<typeof setupCanForRules>; user: User },
 ): Promise<Contact> => {
   const rawJson = usesFormProperty(newContact) ? newContact.form : newContact.rawJson;
   const completeNewContact: NewContactRecord = {
@@ -102,7 +136,9 @@ export const createContact = async (
     (newContact.csamReports ?? []).map(csr => csr.id),
   );
 
-  return contactPermissionsBasedTransformer(created);
+  const applyTransformations = bindApplyTransformations(can, user);
+
+  return applyTransformations(created);
 };
 
 export const patchContact = async (
@@ -110,7 +146,7 @@ export const patchContact = async (
   updatedBy: string,
   contactId: string,
   contactPatch: PatchPayload,
-  contactPermissionsBasedTransformer: (contact: Contact) => Contact,
+  { can, user }: { can: ReturnType<typeof setupCanForRules>; user: User },
 ): Promise<Contact> => {
   const {
     childInformation,
@@ -130,7 +166,10 @@ export const patchContact = async (
   if (!updated) {
     throw new Error(`Contact not found with id ${contactId}`);
   }
-  return contactPermissionsBasedTransformer(updated);
+
+  const applyTransformations = bindApplyTransformations(can, user);
+
+  return applyTransformations(updated);
 };
 
 export const connectContactToCase = async (
@@ -138,13 +177,15 @@ export const connectContactToCase = async (
   updatedBy: string,
   contactId: string,
   caseId: string,
-  contactPermissionsBasedTransformer: (contact: Contact) => Contact,
+  { can, user }: { can: ReturnType<typeof setupCanForRules>; user: User },
 ): Promise<Contact> => {
   const updated: Contact | undefined = await connectToCase(accountSid, contactId, caseId);
   if (!updated) {
     throw new Error(`Contact not found with id ${contactId}`);
   }
-  return contactPermissionsBasedTransformer(updated);
+
+  const applyTransformations = bindApplyTransformations(can, user);
+  return applyTransformations(updated);
 };
 
 function isNullOrEmptyObject(obj) {
@@ -208,14 +249,13 @@ export const searchContacts = async (
   accountSid: string,
   searchParameters: SearchParameters,
   query,
-  contactPermissionsBasedTransformer: (contact: Contact) => Contact,
+  { can, user }: { can: ReturnType<typeof setupCanForRules>; user: User },
 ): Promise<{ count: number; contacts: SearchContact[] }> => {
+  const applyTransformations = bindApplyTransformations(can, user);
   const { limit, offset } = getPaginationElements(query);
   const unprocessedResults = await search(accountSid, searchParameters, limit, offset);
   return {
     count: unprocessedResults.count,
-    contacts: convertContactsToSearchResults(
-      unprocessedResults.rows.map(contactPermissionsBasedTransformer),
-    ),
+    contacts: convertContactsToSearchResults(unprocessedResults.rows.map(applyTransformations)),
   };
 };
