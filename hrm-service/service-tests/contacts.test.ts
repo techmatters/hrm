@@ -570,7 +570,7 @@ describe('/contacts route', () => {
         accountSid,
         workerSid,
         withTaskIdAndTranscript,
-        c => c,
+        { user: { workerSid, roles: [] }, can: () => true },
       );
 
       const res = await requestAgent
@@ -1009,7 +1009,7 @@ describe('/contacts route', () => {
           accountSid,
           workerSid,
           withTaskIdAndTranscript,
-          c => c,
+          { user: { workerSid, roles: [] }, can: () => true },
         );
 
         const res = await requestAgent
@@ -1069,7 +1069,7 @@ describe('/contacts route', () => {
             form: <ContactRawJson>{},
             csamReports: [],
           },
-          c => c,
+          { user: { workerSid, roles: [] }, can: () => true },
         );
         try {
           const response = await request.patch(subRoute(createdContact.id)).send({});
@@ -1303,7 +1303,7 @@ describe('/contacts route', () => {
                 rawJson: original || <ContactRawJson>{},
                 csamReports: [],
               },
-              c => c,
+              { user: { workerSid, roles: [] }, can: () => true },
             );
             try {
               const existingContactId = createdContact.id;
@@ -1346,7 +1346,7 @@ describe('/contacts route', () => {
           accountSid,
           workerSid,
           <any>contact1,
-          c => c,
+          { user: { workerSid, roles: [] }, can: () => true },
         );
         const nonExistingContactId = contactToBeDeleted.id;
         await deleteContactById(contactToBeDeleted.id, contactToBeDeleted.accountSid);
@@ -1368,7 +1368,7 @@ describe('/contacts route', () => {
           accountSid,
           workerSid,
           <any>contact1,
-          c => c,
+          { user: { workerSid, roles: [] }, can: () => true },
         );
         const nonExistingContactId = contactToBeDeleted.id;
         await deleteContactById(contactToBeDeleted.id, contactToBeDeleted.accountSid);
@@ -1387,7 +1387,7 @@ describe('/contacts route', () => {
           accountSid,
           workerSid,
           <any>contact1,
-          c => c,
+          { user: { workerSid, roles: [] }, can: () => true },
         );
         const nonExistingContactId = contactToBeDeleted.id;
         await deleteContactById(contactToBeDeleted.id, contactToBeDeleted.accountSid);
@@ -1415,7 +1415,7 @@ describe('/contacts route', () => {
           accountSid,
           workerSid,
           withTaskIdAndTranscript,
-          c => c,
+          { user: { workerSid, roles: [] }, can: () => true },
         );
 
         const res = await requestAgent
@@ -1456,14 +1456,17 @@ describe('/contacts route', () => {
     const byGreaterId = (a, b) => b.id - a.id;
 
     beforeEach(async () => {
-      createdContact = await contactApi.createContact(accountSid, workerSid, <any>contact1, c => c);
+      createdContact = await contactApi.createContact(accountSid, workerSid, <any>contact1, {
+        user: { workerSid, roles: [] },
+        can: () => true,
+      });
       createdCase = await caseApi.createCase(case1, accountSid, workerSid);
       anotherCreatedCase = await caseApi.createCase(case2, accountSid, workerSid);
       const contactToBeDeleted = await contactApi.createContact(
         accountSid,
         workerSid,
         <any>contact1,
-        c => c,
+        { user: { workerSid, roles: [] }, can: () => true },
       );
       const caseToBeDeleted = await caseApi.createCase(case1, accountSid, workerSid);
 
