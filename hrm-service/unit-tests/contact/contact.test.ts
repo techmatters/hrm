@@ -316,7 +316,7 @@ describe('patchContact', () => {
 
 describe('searchContacts', () => {
   const accountSid = 'account-sid',
-    workerSid = 'contact-searcher';
+    contactSearcher = 'contact-searcher';
   test('Converts contacts returned by data layer to search results', async () => {
     const jillSmith = new ContactBuilder()
       .withId(4321)
@@ -328,7 +328,7 @@ describe('searchContacts', () => {
       .withNumber('+12025550142')
       .withCallType('Child calling about self')
       .withTwilioWorkerId('twilio-worker-id')
-      .withCreatedBy(workerSid)
+      .withCreatedBy(contactSearcher)
       .withCreatedAt(new Date('2020-03-10T00:00:00Z'))
       .withTimeOfContact(new Date('2020-03-10T00:00:00Z'))
       .withChannel('voice')
@@ -342,7 +342,7 @@ describe('searchContacts', () => {
       .withNumber('Anonymous')
       .withCallType('Child calling about self')
       .withTwilioWorkerId('twilio-worker-id')
-      .withCreatedBy(workerSid)
+      .withCreatedBy(contactSearcher)
       .withCreatedAt(new Date('2020-03-15T00:00:00Z'))
       .withTimeOfContact(new Date('2020-03-15T00:00:00Z'))
       .build();
