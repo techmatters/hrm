@@ -88,7 +88,10 @@ const createChatContact = async (channel: string, startedTimestamp: number) => {
     channel,
     taskId: `${withTaskId.taskId}-${channel}`,
   };
-  const contact = await contactApi.createContact(accountSid, workerSid, contactTobeCreated);
+  const contact = await contactApi.createContact(accountSid, workerSid, contactTobeCreated, {
+    can: () => true,
+    user: { workerSid, roles: [] },
+  });
 
   const jobs = await selectJobsByContactId(contact.id, contact.accountSid);
 

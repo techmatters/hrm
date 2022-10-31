@@ -12,6 +12,8 @@ import { omit } from 'lodash';
 
 jest.mock('../../src/contact/contact-data-access');
 
+const workerSid = 'WORKER_SID';
+
 const mockContact: contactDb.Contact = {
   id: 1234,
   accountSid: 'accountSid',
@@ -55,6 +57,10 @@ describe('createContact', () => {
       'parameter account-sid',
       'contact-creator',
       sampleCreateContactPayload,
+      {
+        can: () => true,
+        user: { workerSid, roles: [] },
+      },
     );
     expect(createSpy).toHaveBeenCalledWith(
       'parameter account-sid',
@@ -79,6 +85,10 @@ describe('createContact', () => {
       'parameter account-sid',
       'contact-creator',
       minimalPayload,
+      {
+        can: () => true,
+        user: { workerSid, roles: [] },
+      },
     );
     expect(createSpy).toHaveBeenCalledWith(
       'parameter account-sid',
@@ -100,7 +110,10 @@ describe('createContact', () => {
   test('Missing timeOfContact value is substituted with current date', async () => {
     const createSpy = jest.spyOn(contactDb, 'create').mockResolvedValue(mockContact);
     const payload = omit(sampleCreateContactPayload, 'timeOfContact');
-    const returnValue = await createContact('parameter account-sid', 'contact-creator', payload);
+    const returnValue = await createContact('parameter account-sid', 'contact-creator', payload, {
+      can: () => true,
+      user: { workerSid, roles: [] },
+    });
     expect(createSpy).toHaveBeenCalledWith(
       'parameter account-sid',
       {
@@ -117,7 +130,10 @@ describe('createContact', () => {
     const createSpy = jest.spyOn(contactDb, 'create').mockResolvedValue(mockContact);
     const payload = omit(sampleCreateContactPayload, 'rawJson');
     payload.form = sampleCreateContactPayload.rawJson;
-    const returnValue = await createContact('parameter account-sid', 'contact-creator', payload);
+    const returnValue = await createContact('parameter account-sid', 'contact-creator', payload, {
+      can: () => true,
+      user: { workerSid, roles: [] },
+    });
     expect(createSpy).toHaveBeenCalledWith(
       'parameter account-sid',
       { ...sampleCreateContactPayload, createdBy: 'contact-creator' },
@@ -128,7 +144,10 @@ describe('createContact', () => {
   test('empty array will be passed for csamReportIds if csamReport property is missing', async () => {
     const createSpy = jest.spyOn(contactDb, 'create').mockResolvedValue(mockContact);
     const payload = omit(sampleCreateContactPayload, 'csamReport');
-    const returnValue = await createContact('parameter account-sid', 'contact-creator', payload);
+    const returnValue = await createContact('parameter account-sid', 'contact-creator', payload, {
+      can: () => true,
+      user: { workerSid, roles: [] },
+    });
     expect(createSpy).toHaveBeenCalledWith(
       'parameter account-sid',
       { ...payload, createdBy: 'contact-creator' },
@@ -143,7 +162,10 @@ describe('createContact', () => {
       // Cheat a bit and cast these because all the other props on CSAMReportEntry are ignored here
       csamReports: <CSAMReportEntry[]>[{ id: 2 }, { id: 4 }, { id: 6 }],
     };
-    const returnValue = await createContact('parameter account-sid', 'contact-creator', payload);
+    const returnValue = await createContact('parameter account-sid', 'contact-creator', payload, {
+      can: () => true,
+      user: { workerSid, roles: [] },
+    });
     expect(createSpy).toHaveBeenCalledWith(
       'parameter account-sid',
       { ...payload, createdBy: 'contact-creator' },
@@ -160,7 +182,10 @@ describe('createContact', () => {
         queueName: 'Q2',
       },
     };
-    const returnValue = await createContact('parameter account-sid', 'contact-creator', payload);
+    const returnValue = await createContact('parameter account-sid', 'contact-creator', payload, {
+      can: () => true,
+      user: { workerSid, roles: [] },
+    });
     expect(createSpy).toHaveBeenCalledWith(
       'parameter account-sid',
       { ...payload, queueName: 'Q2', createdBy: 'contact-creator' },
@@ -178,7 +203,10 @@ describe('createContact', () => {
       },
     };
     payload.form = sampleCreateContactPayload.rawJson;
-    const returnValue = await createContact('parameter account-sid', 'contact-creator', payload);
+    const returnValue = await createContact('parameter account-sid', 'contact-creator', payload, {
+      can: () => true,
+      user: { workerSid, roles: [] },
+    });
     expect(createSpy).toHaveBeenCalledWith(
       'parameter account-sid',
       { ...payload, queueName: 'Q2', createdBy: 'contact-creator' },
@@ -189,7 +217,10 @@ describe('createContact', () => {
   test('queue will be undefined if not present on rawJson, form or top level', async () => {
     const createSpy = jest.spyOn(contactDb, 'create').mockResolvedValue(mockContact);
     const payload = omit(sampleCreateContactPayload, 'queueName');
-    const returnValue = await createContact('parameter account-sid', 'contact-creator', payload);
+    const returnValue = await createContact('parameter account-sid', 'contact-creator', payload, {
+      can: () => true,
+      user: { workerSid, roles: [] },
+    });
     expect(createSpy).toHaveBeenCalledWith(
       'parameter account-sid',
       { ...payload, queueName: undefined, createdBy: 'contact-creator' },
@@ -202,13 +233,21 @@ describe('createContact', () => {
 describe('connectContactToCase', () => {
   test('Returns contact produced by data access layer', async () => {
     const connectSpy = jest.spyOn(contactDb, 'connectToCase').mockResolvedValue(mockContact);
-    const result = await connectContactToCase('accountSid', 'case-connector', '1234', '4321');
+    const result = await connectContactToCase('accountSid', 'case-connector', '1234', '4321', {
+      can: () => true,
+      user: { workerSid, roles: [] },
+    });
     expect(connectSpy).toHaveBeenCalledWith('accountSid', '1234', '4321');
     expect(result).toStrictEqual(mockContact);
   });
   test('Throws if data access layer returns undefined', () => {
     jest.spyOn(contactDb, 'connectToCase').mockResolvedValue(undefined);
-    expect(connectContactToCase('accountSid', 'case-connector', '1234', '4321')).rejects.toThrow();
+    expect(
+      connectContactToCase('accountSid', 'case-connector', '1234', '4321', {
+        can: () => true,
+        user: { workerSid, roles: [] },
+      }),
+    ).rejects.toThrow();
   });
 });
 
@@ -237,7 +276,10 @@ describe('patchContact', () => {
   };
   test('Passes callerInformation, childInformation, caseInformation & categories to data layer as separate properties', async () => {
     const patchSpy = jest.spyOn(contactDb, 'patch').mockResolvedValue(mockContact);
-    const result = await patchContact('accountSid', 'contact-patcher', '1234', samplePatch);
+    const result = await patchContact('accountSid', 'contact-patcher', '1234', samplePatch, {
+      can: () => true,
+      user: { workerSid, roles: [] },
+    });
     expect(result).toStrictEqual(mockContact);
     expect(patchSpy).toHaveBeenCalledWith('accountSid', '1234', {
       updatedBy: 'contact-patcher',
@@ -263,7 +305,12 @@ describe('patchContact', () => {
   });
   test('Throws if data layer returns undefined', () => {
     jest.spyOn(contactDb, 'patch').mockResolvedValue(undefined);
-    expect(patchContact('accountSid', 'contact-patcher', '1234', samplePatch)).rejects.toThrow();
+    expect(
+      patchContact('accountSid', 'contact-patcher', '1234', samplePatch, {
+        can: () => true,
+        user: { workerSid, roles: [] },
+      }),
+    ).rejects.toThrow();
   });
 });
 
@@ -350,7 +397,15 @@ describe('searchContacts', () => {
     const searchSpy = jest.spyOn(contactDb, 'search').mockResolvedValue(mockedResult);
     const parameters = { helpline: 'helpline', onlyDataContacts: false };
 
-    const result = await searchContacts(accountSid, parameters, {});
+    const result = await searchContacts(
+      accountSid,
+      parameters,
+      {},
+      {
+        can: () => true,
+        user: { workerSid, roles: [] },
+      },
+    );
 
     expect(searchSpy).toHaveBeenCalledWith(accountSid, parameters, expect.any(Number), 0);
     expect(result).toStrictEqual(expectedSearchResult);
@@ -369,7 +424,15 @@ describe('searchContacts', () => {
       onlyDataContacts: true,
     };
     const searchSpy = jest.spyOn(contactDb, 'search').mockResolvedValue({ count: 0, rows: [] });
-    await searchContacts(accountSid, body, {});
+    await searchContacts(
+      accountSid,
+      body,
+      {},
+      {
+        can: () => true,
+        user: { workerSid, roles: [] },
+      },
+    );
 
     expect(searchSpy).toHaveBeenCalledWith(accountSid, body, expect.any(Number), 0);
   });
@@ -380,7 +443,15 @@ describe('searchContacts', () => {
       onlyDataContacts: true,
     };
     const searchSpy = jest.spyOn(contactDb, 'search').mockResolvedValue({ count: 0, rows: [] });
-    await searchContacts(accountSid, body, { limit: 10, offset: 1000 });
+    await searchContacts(
+      accountSid,
+      body,
+      { limit: 10, offset: 1000 },
+      {
+        can: () => true,
+        user: { workerSid, roles: [] },
+      },
+    );
 
     expect(searchSpy).toHaveBeenCalledWith(accountSid, body, 10, 1000);
   });
