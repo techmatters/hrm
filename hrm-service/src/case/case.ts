@@ -198,7 +198,9 @@ const mapContactTransformations = ({
   const applyTransformations = bindApplyContactTransformations(can, user);
   const withTransformedContacts = {
     ...caseRecord,
-    connectedContacts: caseRecord.connectedContacts?.map(applyTransformations),
+    ...(caseRecord.connectedContacts && {
+      connectedContacts: caseRecord.connectedContacts.map(applyTransformations),
+    }),
   };
 
   return withTransformedContacts;
