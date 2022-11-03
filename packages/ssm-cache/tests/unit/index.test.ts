@@ -1,4 +1,4 @@
-import { addToCache, ssmCache } from '../../index';
+import { addToCache, getSsmParameter, ssmCache, SsmParameterNotFound } from '../../index';
 
 describe('addToCache', () => {
   it('should add a value to the cache with matching regex', () => {
@@ -11,6 +11,7 @@ describe('addToCache', () => {
 
     expect(ssmCache.values).toHaveProperty(ssmParam.Name);
     expect(ssmCache.values[ssmParam.Name]).toEqual(ssmParam.Value);
+    expect(getSsmParameter(ssmParam.Name)).toEqual(ssmParam.Value);
   });
 
   it('should not add a value to the cache with non-matching regex', () => {
@@ -22,5 +23,6 @@ describe('addToCache', () => {
     addToCache(/notRight/, ssmParam);
 
     expect(ssmCache.values).not.toHaveProperty(ssmParam.Name);
+    expect(() => getSsmParameter(ssmParam.Name)).toThrow(SsmParameterNotFound);
   });
 });
