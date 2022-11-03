@@ -1,15 +1,15 @@
 import { db } from '../connection-pool';
 import { enableCreateContactJobsFlag } from '../featureFlags';
 import {
-  APPEND_MEDIA_URL_SQL,
   UPDATE_CASEID_BY_ID,
   UPDATE_RAWJSON_BY_ID,
+  UPDATE_CONVERSATION_MEDIA_BY_ID,
 } from './sql/contact-update-sql';
 import { SELECT_CONTACT_SEARCH } from './sql/contact-search-sql';
 import { endOfDay, parseISO, startOfDay } from 'date-fns';
 import { selectSingleContactByIdSql, selectSingleContactByTaskId } from './sql/contact-get-sql';
 import { insertContactSql, NewContactRecord } from './sql/contact-insert-sql';
-import { ContactMediaUrl, PersonInformation } from './contact-json';
+import { ContactRawJson, isS3StoredTranscriptPending, PersonInformation } from './contact-json';
 import { createContactJob, ContactJobType } from '../contact-job/contact-job-data-access';
 import { isChatChannel } from './channelTypes';
 
@@ -160,7 +160,11 @@ export const create = async (
       { csamReportIds },
     );
 
-    if (enableCreateContactJobsFlag && isChatChannel(created.channel)) {
+    if (
+      enableCreateContactJobsFlag &&
+      isChatChannel(created.channel) &&
+      created.rawJson?.conversationMedia?.some(isS3StoredTranscriptPending)
+    ) {
       await createContactJob(connection)({
         jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
         resource: created,
@@ -227,11 +231,15 @@ export const search = async (
   });
 };
 
-export const appendMediaUrls = async (
+export const updateConversationMedia = async (
   accountSid: string,
   contactId: number,
-  mediaUrls: ContactMediaUrl[],
+  conversationMedia: ContactRawJson['conversationMedia'],
 ): Promise<void> =>
   db.task(async connection =>
-    connection.none(APPEND_MEDIA_URL_SQL, { accountSid, contactId, mediaUrls }),
+    connection.none(UPDATE_CONVERSATION_MEDIA_BY_ID, {
+      accountSid,
+      contactId,
+      conversationMedia,
+    }),
   );

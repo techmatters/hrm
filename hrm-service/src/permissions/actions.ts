@@ -23,6 +23,7 @@ export const actionsMaps = {
   },
   contact: {
     EDIT_CONTACT: 'editContact',
+    VIEW_EXTERNAL_TRANSCRIPT: 'viewExternalTranscript',
   },
   postSurvey: {
     VIEW_POST_SURVEY: 'viewPostSurvey',
