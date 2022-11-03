@@ -9,6 +9,14 @@ import type { Request, Response, NextFunction } from 'express';
 const contactsRouter = SafeRouter();
 
 // example: curl -XPOST -H'Content-Type: application/json' localhost:3000/contacts -d'{"hi": 2}'
+
+/**
+ * @param {string} req.accountSid - SID of the helpline
+ * @param {User} req.query.user - User for requested
+ * @param {import('./contact').CreateContactPayload} req.body - Contact to create
+ *
+ * @returns {import('./contact').Contact} - Created contact
+ */
 contactsRouter.post('/', publicEndpoint, async (req, res) => {
   const { accountSid, user } = req;
 
