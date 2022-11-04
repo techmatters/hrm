@@ -17,6 +17,9 @@ export const ssmCache: SsmCache = { values: {} };
 export class SsmParameterNotFound extends Error {
   constructor(message: string) {
     super(message);
+
+    // see: https://github.com/microsoft/TypeScript/wiki/FAQ#why-doesnt-extending-built-ins-like-error-array-and-map-work
+    Object.setPrototypeOf(this, SsmParameterNotFound.prototype);
     this.name = 'SsmParameterNotFound';
   }
 }
