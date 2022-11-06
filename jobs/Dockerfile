@@ -9,11 +9,11 @@ ENV lambda_name ${lambda_name}
 # dependency in package.json can be resolved
 COPY packages /tmp/build/packages
 COPY jobs /tmp/build/jobs
-COPY package.json package-lock.json tsconfig.build.jobs.json /tmp/build/
+COPY package.json package-lock.json tsconfig.base.json tsconfig.build.jobs.json /tmp/build/
 
 RUN cd /tmp/build \
     && npm ci -w jobs/${lambda_name} -w packages/* \
-    && npx tsc --project tsconfig.build.jobs.json \
+    && npx tsc -b tsconfig.build.jobs.json \
     && cp jobs/${lambda_name}/dist/*.js /var/task/ \
     && cp -r packages /var/task/ \
     && cp -r node_modules /var/task/ \
