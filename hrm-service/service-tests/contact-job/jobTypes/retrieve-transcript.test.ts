@@ -1,6 +1,6 @@
 import each from 'jest-each';
+import { isAfter } from 'date-fns';
 import timers from 'timers';
-import moment from 'moment';
 
 import { withTaskId, accountSid, workerSid } from '../../mocks';
 import * as contactJobApi from '../../../src/contact-job/contact-job-data-access';
@@ -95,8 +95,7 @@ const createChatContact = async (channel: string, startedTimestamp: number) => {
 
   console.log('startedTimestamp', startedTimestamp);
   console.log('retrieveContactTranscriptJob.requested', retrieveContactTranscriptJob.requested);
-
-  expect(moment(retrieveContactTranscriptJob.requested).isAfter(startedTimestamp)).toBeTruthy();
+  expect(isAfter(retrieveContactTranscriptJob.requested, startedTimestamp)).toBeTruthy();
   expect(retrieveContactTranscriptJob.completed).toBeNull();
   expect(retrieveContactTranscriptJob.lastAttempt).toBeNull();
   expect(retrieveContactTranscriptJob.numberOfAttempts).toBe(0);
@@ -165,9 +164,8 @@ describe('publish retrieve-transcript job type', () => {
       throw new Error('updatedRetrieveContactTranscriptJob is null!');
 
     expect(updatedRetrieveContactTranscriptJob.completed).toBeNull();
-    expect(
-      moment(updatedRetrieveContactTranscriptJob.lastAttempt!).isAfter(startedTimestamp),
-    ).toBeTruthy();
+
+    expect(isAfter(updatedRetrieveContactTranscriptJob.lastAttempt!, startedTimestamp)).toBeTruthy();
     expect(updatedRetrieveContactTranscriptJob.numberOfAttempts).toBe(1);
   });
 
@@ -228,9 +226,7 @@ describe('publish retrieve-transcript job type', () => {
         throw new Error('updatedRetrieveContactTranscriptJob is null!');
 
       expect(updatedRetrieveContactTranscriptJob.completed).toBeNull();
-      expect(
-        moment(updatedRetrieveContactTranscriptJob.lastAttempt!).isAfter(startedTimestamp),
-      ).toBeTruthy();
+      expect(isAfter(updatedRetrieveContactTranscriptJob.lastAttempt!, startedTimestamp)).toBeTruthy();
       expect(updatedRetrieveContactTranscriptJob.numberOfAttempts).toBe(1);
     },
   );
@@ -329,9 +325,8 @@ describe('complete retrieve-transcript job type', () => {
       if (!updatedRetrieveContactTranscriptJob)
         throw new Error('updatedRetrieveContactTranscriptJob is null!');
 
-      expect(
-        moment(updatedRetrieveContactTranscriptJob.completed!).isAfter(startedTimestamp),
-      ).toBeTruthy();
+
+      expect(isAfter(updatedRetrieveContactTranscriptJob.completed!, startedTimestamp)).toBeTruthy();
       expect(updatedRetrieveContactTranscriptJob.completionPayload).toMatchObject({
         message: 'Job processed successfully',
         value: 'some-url-here',
@@ -443,9 +438,8 @@ describe('complete retrieve-transcript job type', () => {
       if (expectMarkedAsComplete) {
         // And previous job is not completed hence retrieved as due
         // expect(publishRetrieveContactTranscriptSpy).toHaveBeenCalledTimes(1);
-        expect(
-          moment(updatedRetrieveContactTranscriptJob.completed!).isAfter(startedTimestamp),
-        ).toBeTruthy();
+
+        expect(isAfter(updatedRetrieveContactTranscriptJob.completed!, startedTimestamp)).toBeTruthy();
         expect(updatedRetrieveContactTranscriptJob.completionPayload).toMatchObject({
           message: 'Attempts limit reached',
         });
