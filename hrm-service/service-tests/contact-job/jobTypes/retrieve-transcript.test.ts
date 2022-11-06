@@ -93,8 +93,6 @@ const createChatContact = async (channel: string, startedTimestamp: number) => {
 
   const retrieveContactTranscriptJob = retrieveContactTranscriptJobs[0];
 
-  console.log('startedTimestamp', startedTimestamp);
-  console.log('retrieveContactTranscriptJob.requested', retrieveContactTranscriptJob.requested);
   expect(isAfter(retrieveContactTranscriptJob.requested, startedTimestamp)).toBeTruthy();
   expect(retrieveContactTranscriptJob.completed).toBeNull();
   expect(retrieveContactTranscriptJob.lastAttempt).toBeNull();
