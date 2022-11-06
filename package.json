@@ -84,6 +84,7 @@
     "test:docker:jobs": "run-s test:docker:jobs:*",
     "test:docker:jobs:contact-complete": "curl -XPOST \"http://localhost:9000/2015-03-31/functions/function/invocations\" -d \"$(cat jobs/contact-complete/tests/testPayload.json)\"",
     "test:docker:jobs:contact-retrieve-recording-url": "curl -XPOST \"http://localhost:9001/2015-03-31/functions/function/invocations\" -d \"$(cat jobs/contact-retrieve-recording-url/tests/testPayload.json)\"",
-    "test:docker:jobs:contact-retrieve-transcript": "curl -XPOST \"http://localhost:9002/2015-03-31/functions/function/invocations\" -d \"$(cat jobs/contact-retrieve-transcript/tests/testPayload.json)\""
+    "test:docker:jobs:contact-retrieve-transcript": "curl -XPOST \"http://localhost:9002/2015-03-31/functions/function/invocations\" -d \"$(cat jobs/contact-retrieve-transcript/tests/testPayload.json)\"",
+    "ssm:local": "npm run ssm:local --workspaces --if-present"
   }
 }

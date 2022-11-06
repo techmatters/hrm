@@ -58,7 +58,11 @@ This can be handy for some use cases like deterministic testing, but would get a
 
 #### Starting HRM service
 
-This requires an `./hrm-service/dist/.env` file to be present. Contents of that file are outside the scope of this documentation currently.
+Build the HRM service, packages, and jobs by running `npm run build` from the root directory.
+
+Run `npm run ssm:local` from the root directory to download required secrets for local development from AWS SSM Parameter Store.
+
+Run `npm run start:service` from the root directory to start the HRM service.
 
 You can run the full stack quickly by running `npm run build-and-start` from the root directory (after running `npm ci`). This will start the hrm-service and hrm-jobs packages.
 

@@ -21,7 +21,9 @@
     "db:create-migration": "sequelize migration:generate --name ",
     "db:undo-last": "sequelize db:migrate:undo",
     "lint": "eslint --ext js,ts .",
-    "lint:fix": "npm run lint -- --fix"
+    "lint:fix": "npm run lint -- --fix",
+    "ssm:local": "run-s ssm:local:*",
+    "ssm:local:env": "docker run --rm -v ~/.aws:/home/aws/.aws -e AWS_DEFAULT_REGION -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY interrobangc/awscli2 ssm get-parameter --name \"/local/hrm/hrm-service/.env\" --with-decryption --query \"Parameter.Value\" --output text > ./dist/.env"
   },
   "repository": {
     "type": "git",
