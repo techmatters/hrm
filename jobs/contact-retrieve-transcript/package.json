@@ -19,6 +19,6 @@
   "scripts": {
     "docker:build": "docker build -t hrm-jobs-contact-retrieve-transcript --build-arg lambda_name=contact-retrieve-transcript -f ../Dockerfile ../../",
     "test:e2e": "jest tests/e2e",
-    "test:unit": "jest tests/unit/*.test.ts"
+    "test:unit": "jest tests/unit"
   }
 }
