@@ -14,9 +14,19 @@ export type SsmCache = {
 
 export const ssmCache: SsmCache = { values: {} };
 
+export class SsmParameterNotFound extends Error {
+  constructor(message: string) {
+    super(message);
+
+    // see: https://github.com/microsoft/TypeScript/wiki/FAQ#why-doesnt-extending-built-ins-like-error-array-and-map-work
+    Object.setPrototypeOf(this, SsmParameterNotFound.prototype);
+    this.name = 'SsmParameterNotFound';
+  }
+}
+
 export const getSsmParameter = (name: string): string => {
   if (!Object.prototype.hasOwnProperty.call(ssmCache.values, name)) {
-    throw new Error(`SSM parameter ${name} not found in cache`);
+    throw new SsmParameterNotFound(`SSM parameter ${name} not found in cache`);
   }
 
   return ssmCache.values[name] || '';

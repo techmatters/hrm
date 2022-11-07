@@ -3,6 +3,7 @@ import * as cdk from '@aws-cdk/core';
 import * as lambda from '@aws-cdk/aws-lambda';
 import * as lambdaNode from '@aws-cdk/aws-lambda-nodejs';
 import * as sqs from '@aws-cdk/aws-sqs';
+import * as ssm from '@aws-cdk/aws-ssm';
 import { SqsEventSource } from '@aws-cdk/aws-lambda-event-sources';
 
 export default class ContactCompleteStack extends cdk.Stack {
@@ -25,6 +26,17 @@ export default class ContactCompleteStack extends cdk.Stack {
   }) {
     super(scope, id, props);
     this.completeQueue = new sqs.Queue(this, id);
+
+    new ssm.StringParameter(this, `complete-queue-url`, {
+      parameterName: `/local/sqs/jobs/contact/queue-url-complete`,
+      stringValue: this.completeQueue.queueUrl,
+    });
+
+    // duplicated for test env
+    new ssm.StringParameter(this, `complete-queue-url-test`, {
+      parameterName: `/test/sqs/jobs/contact/queue-url-complete`,
+      stringValue: this.completeQueue.queueUrl,
+    });
 
     new cdk.CfnOutput(this, 'queueUrl', {
       value: this.completeQueue.queueUrl,

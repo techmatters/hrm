@@ -1,8 +1,7 @@
 import supertest from 'supertest';
 import timers from 'timers';
 
-jest.mock('../../src/contact-job/client-sns');
-jest.mock('../../src/contact-job/client-sqs');
+require('./mocks');
 
 let server;
 let createService: typeof import('../../src/app').createService;
@@ -25,7 +24,7 @@ const stopServer = async () => {
   server = null;
 };
 
-beforeEach(() => {
+beforeEach(async () => {
   jest.isolateModules(() => {
     createService = require('../../src/app').createService;
     contactJobComplete = require('../../src/contact-job/contact-job-complete');
