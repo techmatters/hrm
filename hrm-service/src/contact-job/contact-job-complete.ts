@@ -8,22 +8,41 @@ import {
   pollCompletedContactJobsFromQueue,
 } from './client-sqs';
 import {
+  getContactById,
+  updateConversationMedia,
+  S3StoredTranscript,
+  isS3StoredTranscriptPending,
+} from '../contact/contact';
+
+import { assertExhaustive } from './assertExhaustive';
+
+// eslint-disable-next-line prettier/prettier
+import type {
   CompletedContactJobBody,
   CompletedRetrieveContactTranscript,
-} from './contact-job-messages';
-import { appendMediaUrls } from '../contact/contact';
-import { ContactMediaType } from '../contact/contact-json';
-import { assertExhaustive } from './assertExhaustive';
+} from '@tech-matters/hrm-types/ContactJob';
 
 export const processCompletedRetrieveContactTranscript = async (
   completedJob: CompletedRetrieveContactTranscript,
 ) => {
-  return appendMediaUrls(completedJob.accountSid, completedJob.contactId, [
-    {
-      url: completedJob.attemptPayload,
-      type: ContactMediaType.TRANSCRIPT,
-    },
-  ]);
+  const contact = await getContactById(completedJob.accountSid, completedJob.contactId);
+  const { conversationMedia } = contact.rawJson;
+
+  const transcriptEntryIndex = conversationMedia?.findIndex(isS3StoredTranscriptPending);
+
+  if (transcriptEntryIndex < 0) {
+    throw new Error(
+      `Contact with id ${contact.id} does not have a pending transcript entry in conversationMedia`,
+    );
+  }
+
+  (<S3StoredTranscript>conversationMedia[transcriptEntryIndex]).url = completedJob.attemptPayload;
+
+  return updateConversationMedia(
+    completedJob.accountSid,
+    completedJob.contactId,
+    conversationMedia,
+  );
 };
 
 const processCompletedContactJob = async (completedJob: CompletedContactJobBody) => {

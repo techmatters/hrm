@@ -1,18 +1,20 @@
-import { isAfter } from 'date-fns';
 import each from 'jest-each';
+import { isAfter } from 'date-fns';
 import timers from 'timers';
 
 import { withTaskId, accountSid, workerSid } from '../../mocks';
 import * as contactJobApi from '../../../src/contact-job/contact-job-data-access';
 import { db } from '../../../src/connection-pool';
 import '../../case-validation';
-import { CompletedContactJobBody } from '../../../src/contact-job/contact-job-messages';
-import { ContactMediaType } from '../../../src/contact/contact-json';
+import { ContactMediaType, isS3StoredTranscriptPending } from '../../../src/contact/contact-json';
 import { Contact } from '../../../src/contact/contact';
 import { chatChannels } from '../../../src/contact/channelTypes';
 import { JOB_MAX_ATTEMPTS } from '../../../src/contact-job/contact-job-processor';
 
-jest.mock('../../../src/contact-job/client-sns');
+// eslint-disable-next-line prettier/prettier
+import type { CompletedContactJobBody } from '@tech-matters/hrm-types/ContactJob';
+
+require('../mocks');
 
 // eslint-disable-next-line @typescript-eslint/no-shadow
 const selectJobsByContactId = (contactId: number, accountSid: string) =>
@@ -75,10 +77,23 @@ afterAll(async () => {
 const createChatContact = async (channel: string, startedTimestamp: number) => {
   const contactTobeCreated = {
     ...withTaskId,
+    form: {
+      ...withTaskId.form,
+      conversationMedia: [
+        {
+          store: 'S3' as const,
+          type: ContactMediaType.TRANSCRIPT,
+          url: undefined,
+        },
+      ],
+    },
     channel,
     taskId: `${withTaskId.taskId}-${channel}`,
   };
-  const contact = await contactApi.createContact(accountSid, workerSid, contactTobeCreated);
+  const contact = await contactApi.createContact(accountSid, workerSid, contactTobeCreated, {
+    can: () => true,
+    user: { workerSid, roles: [] },
+  });
 
   const jobs = await selectJobsByContactId(contact.id, contact.accountSid);
 
@@ -129,9 +144,8 @@ describe('publish retrieve-transcript job type', () => {
       return callback as any;
     });
 
-    const processorIntervalCallback = (contactJobProcessor.processContactJobs() as unknown) as () => Promise<
-      void
-    >;
+    const processorIntervalCallback =
+      contactJobProcessor.processContactJobs() as unknown as () => Promise<void>;
 
     await processorIntervalCallback();
 
@@ -161,9 +175,8 @@ describe('publish retrieve-transcript job type', () => {
       throw new Error('updatedRetrieveContactTranscriptJob is null!');
 
     expect(updatedRetrieveContactTranscriptJob.completed).toBeNull();
-    expect(
-      isAfter(updatedRetrieveContactTranscriptJob.lastAttempt!, startedTimestamp),
-    ).toBeTruthy();
+
+    expect(isAfter(updatedRetrieveContactTranscriptJob.lastAttempt!, startedTimestamp)).toBeTruthy();
     expect(updatedRetrieveContactTranscriptJob.numberOfAttempts).toBe(1);
   });
 
@@ -192,9 +205,8 @@ describe('publish retrieve-transcript job type', () => {
         return callback as any;
       });
 
-      const processorIntervalCallback = (contactJobProcessor.processContactJobs() as unknown) as () => Promise<
-        void
-      >;
+      const processorIntervalCallback =
+        contactJobProcessor.processContactJobs() as unknown as () => Promise<void>;
 
       await processorIntervalCallback();
       await processorIntervalCallback();
@@ -225,9 +237,7 @@ describe('publish retrieve-transcript job type', () => {
         throw new Error('updatedRetrieveContactTranscriptJob is null!');
 
       expect(updatedRetrieveContactTranscriptJob.completed).toBeNull();
-      expect(
-        isAfter(updatedRetrieveContactTranscriptJob.lastAttempt!, startedTimestamp),
-      ).toBeTruthy();
+      expect(isAfter(updatedRetrieveContactTranscriptJob.lastAttempt!, startedTimestamp)).toBeTruthy();
       expect(updatedRetrieveContactTranscriptJob.numberOfAttempts).toBe(1);
     },
   );
@@ -239,7 +249,7 @@ describe('complete retrieve-transcript job type', () => {
       channel,
     })),
   ).test(
-    '$channel successful completed appends resulting media url and marked as complete',
+    '$channel successful completed adds resulting transcript url and marked as complete',
     async ({ channel }) => {
       const startedTimestamp = Date.now();
       const [contact, retrieveContactTranscriptJob] = await createChatContact(
@@ -284,7 +294,7 @@ describe('complete retrieve-transcript job type', () => {
         'publishRetrieveContactTranscript',
       );
 
-      const appendMediaUrlsSpy = jest.spyOn(contactApi, 'appendMediaUrls');
+      const updateConversationMediaSpy = jest.spyOn(contactApi, 'updateConversationMedia');
 
       // Mock setInterval to return the internal cb instead than it's interval id, so we can call it when we want
       // const setIntervalSpy =
@@ -292,14 +302,14 @@ describe('complete retrieve-transcript job type', () => {
         return callback as any;
       });
 
-      const processorIntervalCallback = (contactJobProcessor.processContactJobs() as unknown) as () => Promise<
-        void
-      >;
+      const processorIntervalCallback =
+        contactJobProcessor.processContactJobs() as unknown as () => Promise<void>;
 
       await processorIntervalCallback();
 
-      const expectedMediaUrls = [
+      const expecteConversationMedia = [
         {
+          store: 'S3',
           url: completedPayload.attemptPayload,
           type: ContactMediaType.TRANSCRIPT,
         },
@@ -307,10 +317,10 @@ describe('complete retrieve-transcript job type', () => {
 
       // Expect that proper code flow was executed
       expect(processCompletedRetrieveContactTranscriptSpy).toHaveBeenCalledWith(completedPayload);
-      expect(appendMediaUrlsSpy).toHaveBeenCalledWith(
+      expect(updateConversationMediaSpy).toHaveBeenCalledWith(
         completedPayload.accountSid,
         completedPayload.contactId,
-        expectedMediaUrls,
+        expecteConversationMedia,
       );
 
       // Publish face is invoked
@@ -327,9 +337,8 @@ describe('complete retrieve-transcript job type', () => {
       if (!updatedRetrieveContactTranscriptJob)
         throw new Error('updatedRetrieveContactTranscriptJob is null!');
 
-      expect(
-        isAfter(updatedRetrieveContactTranscriptJob.completed!, startedTimestamp),
-      ).toBeTruthy();
+
+      expect(isAfter(updatedRetrieveContactTranscriptJob.completed!, startedTimestamp)).toBeTruthy();
       expect(updatedRetrieveContactTranscriptJob.completionPayload).toMatchObject({
         message: 'Job processed successfully',
         value: 'some-url-here',
@@ -340,8 +349,8 @@ describe('complete retrieve-transcript job type', () => {
         t.oneOrNone<Contact>(`SELECT * FROM "Contacts" WHERE id = ${contact.id}`),
       );
 
-      expect(updatedContact?.rawJson?.mediaUrls).toHaveLength(1);
-      expect(updatedContact?.rawJson?.mediaUrls).toMatchObject(expectedMediaUrls);
+      expect(updatedContact?.rawJson?.conversationMedia).toHaveLength(1);
+      expect(updatedContact?.rawJson?.conversationMedia).toMatchObject(expecteConversationMedia);
     },
   );
 
@@ -405,7 +414,7 @@ describe('complete retrieve-transcript job type', () => {
       //   'publishRetrieveContactTranscript',
       // );
 
-      const appendMediaUrlsSpy = jest.spyOn(contactApi, 'appendMediaUrls');
+      const updateConversationMediaSpy = jest.spyOn(contactApi, 'updateConversationMedia');
 
       // Mock setInterval to return the internal cb instead than it's interval id, so we can call it when we want
       // const setIntervalSpy =
@@ -413,15 +422,14 @@ describe('complete retrieve-transcript job type', () => {
         return callback as any;
       });
 
-      const processorIntervalCallback = (contactJobProcessor.processContactJobs() as unknown) as () => Promise<
-        void
-      >;
+      const processorIntervalCallback =
+        contactJobProcessor.processContactJobs() as unknown as () => Promise<void>;
 
       await processorIntervalCallback();
 
       // Expect that proper code flow was executed
       expect(processCompletedRetrieveContactTranscriptSpy).not.toHaveBeenCalled();
-      expect(appendMediaUrlsSpy).not.toHaveBeenCalled();
+      expect(updateConversationMediaSpy).not.toHaveBeenCalled();
 
       // Publish face is invoked
       expect(publishDueContactJobsSpy).toHaveBeenCalledTimes(1);
@@ -442,9 +450,8 @@ describe('complete retrieve-transcript job type', () => {
       if (expectMarkedAsComplete) {
         // And previous job is not completed hence retrieved as due
         // expect(publishRetrieveContactTranscriptSpy).toHaveBeenCalledTimes(1);
-        expect(
-          isAfter(updatedRetrieveContactTranscriptJob.completed!, startedTimestamp),
-        ).toBeTruthy();
+
+        expect(isAfter(updatedRetrieveContactTranscriptJob.completed!, startedTimestamp)).toBeTruthy();
         expect(updatedRetrieveContactTranscriptJob.completionPayload).toMatchObject({
           message: 'Attempts limit reached',
         });
@@ -460,7 +467,9 @@ describe('complete retrieve-transcript job type', () => {
         t.oneOrNone<Contact>(`SELECT * FROM "Contacts" WHERE id = ${contact.id}`),
       );
 
-      expect(updatedContact?.rawJson?.mediaUrls).toBeFalsy();
+      expect(
+        updatedContact?.rawJson?.conversationMedia?.every(isS3StoredTranscriptPending),
+      ).toBeTruthy();
     },
   );
 });

@@ -1,10 +1,10 @@
-import * as SNSClient from '../../src/contact-job/client-sns';
+import * as SQSClient from '../../src/contact-job/client-sqs';
 import * as contactJobPublish from '../../src/contact-job/contact-job-publish';
 import { ContactJob, ContactJobType } from '../../src/contact-job/contact-job-data-access';
 import each from 'jest-each';
-import { PublishToContactJobsTopicParams } from '../../src/contact-job/contact-job-messages';
+import { PublishToContactJobsTopicParams } from '@tech-matters/hrm-types/ContactJob';
 
-jest.mock('../../src/contact-job/client-sns');
+jest.mock('../../src/contact-job/client-sqs');
 
 beforeEach(() => {
   jest.resetAllMocks();
@@ -165,7 +165,7 @@ describe('publishDueContactJobs', () => {
     '$dueJob.jobType job is processed accordingly and published via SNS client',
     async ({ dueJob, publishDueContactJobFunction, expectedMessageToPublish }) => {
       const publishToContactJobsTopicSpy = jest
-        .spyOn(SNSClient, 'publishToContactJobsTopic')
+        .spyOn(SQSClient, 'publishToContactJobs')
         .mockImplementation(() => Promise.resolve(undefined));
       const publishDueContactJobFunctionSpy = jest.spyOn(
         contactJobPublish,

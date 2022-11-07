@@ -1,5 +1,6 @@
 import { Case } from '../src/case/case';
-import { CreateContactPayloadWithFormProperty } from '../src/contact/contact';
+import { channelTypes } from '../src/contact/channelTypes';
+import { ContactMediaType, CreateContactPayloadWithFormProperty } from '../src/contact/contact';
 import { Contact } from '../src/contact/contact-data-access';
 
 export const accountSid = 'ACCOUNT_SID';
@@ -270,3 +271,26 @@ export const case2: Partial<Case> = {
 };
 
 export const workerSid = 'WK-worker-sid';
+
+export const withTaskIdAndTranscript = {
+  ...withTaskId,
+  form: {
+    ...withTaskId.form,
+    childInformation: {
+      ...withTaskId.form.childInformation,
+      name: {
+        firstName: 'withTaskIdAndTranscript',
+        lastName: 'withTaskIdAndTranscript',
+      },
+    },
+    conversationMedia: [
+      {
+        store: 'S3' as const,
+        type: ContactMediaType.TRANSCRIPT,
+        url: undefined,
+      },
+    ],
+  },
+  channel: channelTypes.web,
+  taskId: `${withTaskId.taskId}-transcript-permissions-test`,
+};

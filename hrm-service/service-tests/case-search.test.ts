@@ -16,18 +16,30 @@ import { createService } from '../src/app';
 import { openPermissions } from '../src/permissions/json-permissions';
 import * as proxiedEndpoints from './external-service-stubs/proxied-endpoints';
 import * as mocks from './mocks';
+import { ruleFileWithOneActionOverride } from './permissions-overrides';
+import { RulesFile } from '../src/permissions/rulesMap';
+import { connectContactToCase, createContact, isS3StoredTranscript } from '../src/contact/contact';
 
 const supertest = require('supertest');
 const each = require('jest-each').default;
 
+const { case1, contact1, accountSid, workerSid } = mocks;
+
+let testRules: RulesFile;
+const useOpenRules = () => {
+  testRules = openPermissions.rules(accountSid);
+};
+useOpenRules();
 const server = createService({
-  permissions: openPermissions,
+  permissions: {
+    cachePermissions: false,
+    rules: () => testRules,
+  },
   authTokenLookup: () => 'picernic basket',
   enableProcessContactJobs: false,
 }).listen();
 const request = supertest.agent(server);
 
-const { case1, contact1, accountSid, workerSid } = mocks;
 const headers = {
   'Content-Type': 'application/json',
   Authorization: `Bearer bearing a bear (rawr)`,
@@ -101,7 +113,7 @@ const insertSampleCases = async ({
       accounts[i % accounts.length],
       workers[i % workers.length],
     );
-    let connectedContact: Contact = undefined;
+    let connectedContact: Contact;
     if (contactNames[i % contactNames.length]) {
       const contactToCreate = fillNameAndPhone(
         {
@@ -142,7 +154,10 @@ const insertSampleCases = async ({
         savedContact.id.toString(),
         createdCase.id.toString(),
       );
-      createdCase = await getCase(createdCase.id, accounts[i % accounts.length]); // reread case from DB now it has a contact connected
+      createdCase = await getCase(createdCase.id, accounts[i % accounts.length], {
+        user: { workerSid, roles: [] },
+        can: () => true,
+      }); // reread case from DB now it has a contact connected
     }
     createdCasesAndContacts.push({
       contact: connectedContact,
@@ -162,6 +177,24 @@ beforeAll(async () => {
   await proxiedEndpoints.start();
   await proxiedEndpoints.mockSuccessfulTwilioAuthentication(workerSid);
 });
+
+// eslint-disable-next-line @typescript-eslint/no-shadow
+const deleteContactById = (id: number, accountSid: string) =>
+  db.task(t =>
+    t.none(`
+      DELETE FROM "Contacts" 
+      WHERE "id" = ${id} AND "accountSid" = '${accountSid}';
+  `),
+  );
+
+// eslint-disable-next-line @typescript-eslint/no-shadow
+const deleteJobsByContactId = (contactId: number, accountSid: string) =>
+  db.task(t =>
+    t.manyOrNone(`
+      DELETE FROM "ContactJobs"
+      WHERE "contactId" = ${contactId} AND "accountSid" = '${accountSid}';
+    `),
+  );
 
 describe('/cases route', () => {
   const route = `/v0/accounts/${accountSid}/cases`;
@@ -205,7 +238,10 @@ describe('/cases route', () => {
           createdContact.id.toString(),
           createdCase.id,
         );
-        createdCase = await getCase(createdCase.id, accountSid); // refresh case from DB now it has a contact connected
+        createdCase = await getCase(createdCase.id, accountSid, {
+          user: { workerSid, roles: [] },
+          can: () => true,
+        }); // refresh case from DB now it has a contact connected
       });
 
       afterEach(async () => {
@@ -223,7 +259,7 @@ describe('/cases route', () => {
     });
     describe('With multiple records', () => {
       const CASE_SAMPLE_SIZE = 10;
-      const createdCasesAndContacts = [];
+      const createdCasesAndContacts: CaseWithContact[] = [];
       const accounts = ['ACCOUNT_SID_1', 'ACCOUNT_SID_2'];
       const helplines = ['helpline-1', 'helpline-2', 'helpline-3'];
       beforeEach(async () => {
@@ -322,6 +358,85 @@ describe('/cases route', () => {
         },
       );
     });
+
+    each([
+      {
+        expectTranscripts: true,
+        description: `with viewExternalTranscript includes transcripts`,
+      },
+      {
+        expectTranscripts: false,
+        description: `without viewExternalTranscript excludes transcripts`,
+      },
+    ]).test(`with connectedContacts $description`, async ({ expectTranscripts }) => {
+      const createdCase = await caseApi.createCase(case1, accountSid, workerSid);
+      const createdContact = await createContact(
+        accountSid,
+        workerSid,
+        mocks.withTaskIdAndTranscript,
+        { user: { workerSid, roles: [] }, can: () => true },
+      );
+      await connectContactToCase(
+        accountSid,
+        workerSid,
+        String(createdContact.id),
+        String(createdCase.id),
+        {
+          user: { workerSid, roles: [] },
+          can: () => true,
+        },
+      );
+
+      if (!expectTranscripts) {
+        testRules = ruleFileWithOneActionOverride('viewExternalTranscript', false);
+      } else {
+        useOpenRules();
+      }
+
+      await proxiedEndpoints.mockSuccessfulTwilioAuthentication(workerSid);
+      const response = await request
+        .get(route)
+        .query({
+          dateFrom: createdCase.createdAt,
+          dateTo: createdCase.createdAt,
+          firstName: 'withTaskIdAndTranscript',
+        })
+        .set(headers);
+
+      console.log(response.body);
+      expect(response.status).toBe(200);
+
+      expect(<caseApi.Case>response.body.cases).toHaveLength(1);
+
+      expect(
+        (<caseApi.Case[]>response.body.cases).every(caseObj =>
+          caseObj.connectedContacts?.every(c => Array.isArray(c.rawJson?.conversationMedia)),
+        ),
+      ).toBeTruthy();
+
+      if (expectTranscripts) {
+        expect(
+          (<caseApi.Case[]>response.body.cases).every(caseObj =>
+            caseObj.connectedContacts?.every(c =>
+              c.rawJson?.conversationMedia?.some(isS3StoredTranscript),
+            ),
+          ),
+        ).toBeTruthy();
+      } else {
+        expect(
+          (<caseApi.Case[]>response.body.cases).every(caseObj =>
+            caseObj.connectedContacts?.every(c =>
+              c.rawJson?.conversationMedia?.some(isS3StoredTranscript),
+            ),
+          ),
+        ).toBeFalsy();
+      }
+
+      await deleteJobsByContactId(createdContact.id, createdContact.accountSid);
+      await deleteContactById(createdContact.id, createdContact.accountSid);
+      await caseDb.deleteById(createdCase.id, accountSid);
+      useOpenRules();
+    });
   });
 
   const withHouseholds = caseObject => ({
@@ -396,7 +511,10 @@ describe('/cases route', () => {
             createdCase2.id,
           );
           // Get case 2 again, now a contact is connected
-          createdCase2 = await caseApi.getCase(createdCase2.id, accountSid);
+          createdCase2 = await caseApi.getCase(createdCase2.id, accountSid, {
+            user: { workerSid, roles: [] },
+            can: () => true,
+          });
         });
 
         afterEach(async () => {
@@ -489,7 +607,10 @@ describe('/cases route', () => {
           const body = {
             closedCases: false,
           };
-          await caseApi.updateCase(createdCase2.id, { status: 'closed' }, accountSid, workerSid);
+          await caseApi.updateCase(createdCase2.id, { status: 'closed' }, accountSid, workerSid, {
+            user: { workerSid, roles: [] },
+            can: () => true,
+          });
           const response = await request
             .post(subRoute)
             .query({ limit: 20, offset: 0 })
@@ -1088,6 +1209,85 @@ describe('/cases route', () => {
             }
           },
         );
+      });
+
+      each([
+        {
+          expectTranscripts: true,
+          description: `with viewExternalTranscript includes transcripts`,
+        },
+        {
+          expectTranscripts: false,
+          description: `without viewExternalTranscript excludes transcripts`,
+        },
+      ]).test(`with connectedContacts $description`, async ({ expectTranscripts }) => {
+        const createdCase = await caseApi.createCase(case1, accountSid, workerSid);
+        const createdContact = await createContact(
+          accountSid,
+          workerSid,
+          mocks.withTaskIdAndTranscript,
+          { user: { workerSid, roles: [] }, can: () => true },
+        );
+        await connectContactToCase(
+          accountSid,
+          workerSid,
+          String(createdContact.id),
+          String(createdCase.id),
+          {
+            user: { workerSid, roles: [] },
+            can: () => true,
+          },
+        );
+
+        if (!expectTranscripts) {
+          testRules = ruleFileWithOneActionOverride('viewExternalTranscript', false);
+        } else {
+          useOpenRules();
+        }
+
+        await proxiedEndpoints.mockSuccessfulTwilioAuthentication(workerSid);
+        const response = await request
+          .post(`${route}/search`)
+          .query({ limit: 20, offset: 0 })
+          .set(headers)
+          .send({
+            dateFrom: createdCase.createdAt,
+            dateTo: createdCase.createdAt,
+            firstName: 'withTaskIdAndTranscript',
+          });
+
+        expect(response.status).toBe(200);
+
+        expect(<caseApi.Case>response.body.cases).toHaveLength(1);
+
+        expect(
+          (<caseApi.Case[]>response.body.cases).every(caseObj =>
+            caseObj.connectedContacts?.every(c => Array.isArray(c.rawJson?.conversationMedia)),
+          ),
+        ).toBeTruthy();
+
+        if (expectTranscripts) {
+          expect(
+            (<caseApi.Case[]>response.body.cases).every(caseObj =>
+              caseObj.connectedContacts?.every(c =>
+                c.rawJson?.conversationMedia?.some(isS3StoredTranscript),
+              ),
+            ),
+          ).toBeTruthy();
+        } else {
+          expect(
+            (<caseApi.Case[]>response.body.cases).every(caseObj =>
+              caseObj.connectedContacts?.every(c =>
+                c.rawJson?.conversationMedia?.some(isS3StoredTranscript),
+              ),
+            ),
+          ).toBeFalsy();
+        }
+
+        await deleteJobsByContactId(createdContact.id, createdContact.accountSid);
+        await deleteContactById(createdContact.id, createdContact.accountSid);
+        await caseDb.deleteById(createdCase.id, accountSid);
+        useOpenRules();
       });
     });
   });

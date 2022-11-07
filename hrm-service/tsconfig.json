@@ -10,9 +10,5 @@
     "lib": ["es2019"]
   },
 
-  "include": [
-    "src/**/*.js",
-    "src/**/*.json",
-    "src/**/*.ts"
-  ]
+  "include": ["src/**/*.js", "src/**/*.json", "src/**/*.ts"]
 }

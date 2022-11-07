@@ -1,0 +1,15 @@
+version: '3'
+services:
+  service:
+    image: hrm-service
+    ports:
+      - '8081:8080'
+    environment:
+      API_KEY: testApiKey
+      PORT: 8080
+      POSTGRES_PORT: 5432
+      RDS_HOSTNAME: db
+
+    env_file:
+      - ../.env.localstack
+      - dist/.env

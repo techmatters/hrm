@@ -1,0 +1,17 @@
+version: '3'
+services:
+  localstack:
+    image: localstack/localstack
+    ports:
+      - '127.0.0.1:4566:4566' # LocalStack Gateway
+      - '127.0.0.1:4510-4559:4510-4559' # external services port range
+      - '${PORT_WEB_UI-8088}:8080'
+    environment:
+      - HOSTNAME_EXTERNAL=localstack
+      - DEBUG=1
+      - DATA_DIR=/tmp/localstack/data
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      - LAMBDA_EXECUTOR=docker
+      - LAMBDA_NETWORK=bridge
+    volumes:
+      - '/var/run/docker.sock:/var/run/docker.sock'
