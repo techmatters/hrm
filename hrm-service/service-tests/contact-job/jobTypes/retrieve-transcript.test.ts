@@ -1,18 +1,20 @@
-import { isAfter } from 'date-fns';
 import each from 'jest-each';
+import { isAfter } from 'date-fns';
 import timers from 'timers';
 
 import { withTaskId, accountSid, workerSid } from '../../mocks';
 import * as contactJobApi from '../../../src/contact-job/contact-job-data-access';
 import { db } from '../../../src/connection-pool';
 import '../../case-validation';
-import { CompletedContactJobBody } from '../../../src/contact-job/contact-job-messages';
 import { ContactMediaType, isS3StoredTranscriptPending } from '../../../src/contact/contact-json';
 import { Contact } from '../../../src/contact/contact';
 import { chatChannels } from '../../../src/contact/channelTypes';
 import { JOB_MAX_ATTEMPTS } from '../../../src/contact-job/contact-job-processor';
 
-jest.mock('../../../src/contact-job/client-sns');
+// eslint-disable-next-line prettier/prettier
+import type { CompletedContactJobBody } from '@tech-matters/hrm-types/ContactJob';
+
+require('../mocks');
 
 // eslint-disable-next-line @typescript-eslint/no-shadow
 const selectJobsByContactId = (contactId: number, accountSid: string) =>
@@ -142,9 +144,8 @@ describe('publish retrieve-transcript job type', () => {
       return callback as any;
     });
 
-    const processorIntervalCallback = (contactJobProcessor.processContactJobs() as unknown) as () => Promise<
-      void
-    >;
+    const processorIntervalCallback =
+      contactJobProcessor.processContactJobs() as unknown as () => Promise<void>;
 
     await processorIntervalCallback();
 
@@ -174,9 +175,8 @@ describe('publish retrieve-transcript job type', () => {
       throw new Error('updatedRetrieveContactTranscriptJob is null!');
 
     expect(updatedRetrieveContactTranscriptJob.completed).toBeNull();
-    expect(
-      isAfter(updatedRetrieveContactTranscriptJob.lastAttempt!, startedTimestamp),
-    ).toBeTruthy();
+
+    expect(isAfter(updatedRetrieveContactTranscriptJob.lastAttempt!, startedTimestamp)).toBeTruthy();
     expect(updatedRetrieveContactTranscriptJob.numberOfAttempts).toBe(1);
   });
 
@@ -205,9 +205,8 @@ describe('publish retrieve-transcript job type', () => {
         return callback as any;
       });
 
-      const processorIntervalCallback = (contactJobProcessor.processContactJobs() as unknown) as () => Promise<
-        void
-      >;
+      const processorIntervalCallback =
+        contactJobProcessor.processContactJobs() as unknown as () => Promise<void>;
 
       await processorIntervalCallback();
       await processorIntervalCallback();
@@ -238,9 +237,7 @@ describe('publish retrieve-transcript job type', () => {
         throw new Error('updatedRetrieveContactTranscriptJob is null!');
 
       expect(updatedRetrieveContactTranscriptJob.completed).toBeNull();
-      expect(
-        isAfter(updatedRetrieveContactTranscriptJob.lastAttempt!, startedTimestamp),
-      ).toBeTruthy();
+      expect(isAfter(updatedRetrieveContactTranscriptJob.lastAttempt!, startedTimestamp)).toBeTruthy();
       expect(updatedRetrieveContactTranscriptJob.numberOfAttempts).toBe(1);
     },
   );
@@ -305,9 +302,8 @@ describe('complete retrieve-transcript job type', () => {
         return callback as any;
       });
 
-      const processorIntervalCallback = (contactJobProcessor.processContactJobs() as unknown) as () => Promise<
-        void
-      >;
+      const processorIntervalCallback =
+        contactJobProcessor.processContactJobs() as unknown as () => Promise<void>;
 
       await processorIntervalCallback();
 
@@ -341,9 +337,8 @@ describe('complete retrieve-transcript job type', () => {
       if (!updatedRetrieveContactTranscriptJob)
         throw new Error('updatedRetrieveContactTranscriptJob is null!');
 
-      expect(
-        isAfter(updatedRetrieveContactTranscriptJob.completed!, startedTimestamp),
-      ).toBeTruthy();
+
+      expect(isAfter(updatedRetrieveContactTranscriptJob.completed!, startedTimestamp)).toBeTruthy();
       expect(updatedRetrieveContactTranscriptJob.completionPayload).toMatchObject({
         message: 'Job processed successfully',
         value: 'some-url-here',
@@ -427,9 +422,8 @@ describe('complete retrieve-transcript job type', () => {
         return callback as any;
       });
 
-      const processorIntervalCallback = (contactJobProcessor.processContactJobs() as unknown) as () => Promise<
-        void
-      >;
+      const processorIntervalCallback =
+        contactJobProcessor.processContactJobs() as unknown as () => Promise<void>;
 
       await processorIntervalCallback();
 
@@ -456,9 +450,8 @@ describe('complete retrieve-transcript job type', () => {
       if (expectMarkedAsComplete) {
         // And previous job is not completed hence retrieved as due
         // expect(publishRetrieveContactTranscriptSpy).toHaveBeenCalledTimes(1);
-        expect(
-          isAfter(updatedRetrieveContactTranscriptJob.completed!, startedTimestamp),
-        ).toBeTruthy();
+
+        expect(isAfter(updatedRetrieveContactTranscriptJob.completed!, startedTimestamp)).toBeTruthy();
         expect(updatedRetrieveContactTranscriptJob.completionPayload).toMatchObject({
           message: 'Attempts limit reached',
         });

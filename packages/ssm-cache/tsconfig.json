@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2020"],
+    "strict": true,
+    "allowSyntheticDefaultImports": true,
+    "checkJs": true,
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "outDir": "./dist"
+  },
+  "include": ["*.ts"],
+  "ts-node": {
+    "transpileOnly": true,
+    "files": true
+  }
+}

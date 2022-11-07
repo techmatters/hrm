@@ -8,16 +8,19 @@ import {
   pollCompletedContactJobsFromQueue,
 } from './client-sqs';
 import {
-  CompletedContactJobBody,
-  CompletedRetrieveContactTranscript,
-} from './contact-job-messages';
-import {
   getContactById,
   updateConversationMedia,
   S3StoredTranscript,
   isS3StoredTranscriptPending,
 } from '../contact/contact';
+
 import { assertExhaustive } from './assertExhaustive';
+
+// eslint-disable-next-line prettier/prettier
+import type {
+  CompletedContactJobBody,
+  CompletedRetrieveContactTranscript,
+} from '@tech-matters/hrm-types/ContactJob';
 
 export const processCompletedRetrieveContactTranscript = async (
   completedJob: CompletedRetrieveContactTranscript,

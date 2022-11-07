@@ -1,6 +1,6 @@
 import { format } from 'date-fns';
 import { ContactJob, RetrieveContactTranscriptJob } from './contact-job-data-access';
-import { publishToContactJobsTopic } from './client-sns';
+import { publishToContactJobs } from './client-sqs';
 import { ContactJobType } from './contact-job-data-access';
 import { assertExhaustive } from './assertExhaustive';
 
@@ -18,7 +18,7 @@ export const publishRetrieveContactTranscript = (contactJob: RetrieveContactTran
   const dateBasedPath = format(new Date(createdAt), 'yyyy/MM/dd/yyyyMMddHHmmss');
   const filePath = `transcripts/${dateBasedPath}-${taskId}.json`;
 
-  return publishToContactJobsTopic({
+  return publishToContactJobs({
     jobType: contactJob.jobType,
     jobId: contactJob.id,
     accountSid,
@@ -32,7 +32,7 @@ export const publishRetrieveContactTranscript = (contactJob: RetrieveContactTran
   });
 };
 
-type PublishedContactJobResult = Awaited<ReturnType<typeof publishToContactJobsTopic>>;
+type PublishedContactJobResult = Awaited<ReturnType<typeof publishToContactJobs>>;
 
 export const publishDueContactJobs = async (
   dueContactJobs: ContactJob[],

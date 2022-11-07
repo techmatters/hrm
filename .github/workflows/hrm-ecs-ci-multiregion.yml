@@ -22,10 +22,10 @@
 # 4. Store an IAM user access key in GitHub Actions secrets named `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`.
 #    See the documentation for each action used below for the recommended IAM policies for this IAM user,
 #    and best practices on handling the access key credentials.
-name: "[Multi Region] Deploy HRM to Amazon ECS"
+name: '[Multi Region] Deploy HRM to Amazon ECS'
 on:
-#  release:
-#    types: [created]
+  #  release:
+  #    types: [created]
 
   workflow_dispatch:
     inputs:
@@ -37,7 +37,6 @@ on:
         description: AWS region to deploy. E.G = us-east-1, eu-west-1 (must match with the AWS environment value). Default value = us-east-1
         default: us-east-1
         required: true
-
 
   workflow_call:
     secrets:
@@ -75,82 +74,83 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2
 
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v1
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ inputs.region }}
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ inputs.region }}
 
-    - name: Login to Amazon ECR
-      id: login-ecr
-      uses: aws-actions/amazon-ecr-login@v1
-    - name: Build, tag, and push image to Amazon ECR
-      working-directory: hrm-service
-      id: build-image
-      env:
-        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        ECR_REPOSITORY: ${{ inputs.environment }}-hrm
-        IMAGE_TAG_1: latest
-        IMAGE_TAG_2: ${{ inputs.environment }}-hrm-${{ github.sha }}
-      run: |
-        # Build a docker container and
-        # push it to ECR so that it can
-        # be deployed to ECS.
-        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG_1 -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG_2 .
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG_1
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG_2
-        echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG_2"
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
 
-    - name: Download current ECS task definition
-      run: aws ecs describe-task-definition --task-definition ${{ inputs.environment }}-hrm-task --query taskDefinition > task-definition.json
+      - name: Build, tag, and push image to Amazon ECR
+        working-directory: hrm-service
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ inputs.environment }}-hrm
+          IMAGE_TAG_1: latest
+          IMAGE_TAG_2: ${{ inputs.environment }}-hrm-${{ github.sha }}
+        run: |
+          # Build a docker container and
+          # push it to ECR so that it can
+          # be deployed to ECS.
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG_1 -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG_2 -f Dockerfile ../
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG_1
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG_2
+          echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG_2"
 
-    - name: Fill in the new image ID in the Amazon ECS task definition
-      id: task-def
-      uses: aws-actions/amazon-ecs-render-task-definition@v1
-      with:
-        task-definition: task-definition.json
-        container-name: ${{ inputs.environment }}-hrm-container
-        image: ${{ steps.build-image.outputs.image }}
+      - name: Download current ECS task definition
+        run: aws ecs describe-task-definition --task-definition ${{ inputs.environment }}-hrm-task --query taskDefinition > task-definition.json
 
-    - name: Deploy Amazon ECS task definition
-      uses: aws-actions/amazon-ecs-deploy-task-definition@v1
-      with:
-        task-definition: ${{ steps.task-def.outputs.task-definition }}
-        service: ${{ inputs.environment }}-ecs-service
-        cluster: ${{ inputs.environment }}-ecs-cluster
-        wait-for-service-stability: true
+      - name: Fill in the new image ID in the Amazon ECS task definition
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name: ${{ inputs.environment }}-hrm-container
+          image: ${{ steps.build-image.outputs.image }}
 
+      - name: Deploy Amazon ECS task definition
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: ${{ inputs.environment }}-ecs-service
+          cluster: ${{ inputs.environment }}-ecs-cluster
+          wait-for-service-stability: true
 
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v1
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
-    # Set any env vars needed from Parameter Store here
-    - name: Set GITHUB_ACTIONS_SLACK_BOT_TOKEN
-      uses: "marvinpinto/action-inject-ssm-secrets@latest"
-      with:
-        ssm_parameter: "GITHUB_ACTIONS_SLACK_BOT_TOKEN"
-        env_variable_name: "GITHUB_ACTIONS_SLACK_BOT_TOKEN"
-    - name: Set ASELO_DEPLOYS_CHANNEL_ID
-      uses: "marvinpinto/action-inject-ssm-secrets@latest"
-      with:
-        ssm_parameter: "ASELO_DEPLOYS_CHANNEL_ID"
-        env_variable_name: "ASELO_DEPLOYS_CHANNEL_ID"
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
 
-    # Send Slack notifying success
-    - name: Slack Aselo channel
-      id: slack
-      uses: slackapi/slack-github-action@v1.14.0
-      with:
-        channel-id: ${{ env.ASELO_DEPLOYS_CHANNEL_ID }}
-        slack-message: "`[HRM]` Action ${{ github.workflow }} completed with SHA ${{ github.sha }} to region `${{ inputs.region }}`, environment `${{ inputs.environment }}` :rocket:."
-      env:
-        SLACK_BOT_TOKEN: ${{ env.GITHUB_ACTIONS_SLACK_BOT_TOKEN }}
-      if:
-        ${{ inputs.send-slack-message != 'false' }}
+      # Set any env vars needed from Parameter Store here
+      - name: Set GITHUB_ACTIONS_SLACK_BOT_TOKEN
+        uses: 'marvinpinto/action-inject-ssm-secrets@latest'
+        with:
+          ssm_parameter: 'GITHUB_ACTIONS_SLACK_BOT_TOKEN'
+          env_variable_name: 'GITHUB_ACTIONS_SLACK_BOT_TOKEN'
+
+      - name: Set ASELO_DEPLOYS_CHANNEL_ID
+        uses: 'marvinpinto/action-inject-ssm-secrets@latest'
+        with:
+          ssm_parameter: 'ASELO_DEPLOYS_CHANNEL_ID'
+          env_variable_name: 'ASELO_DEPLOYS_CHANNEL_ID'
+
+      # Send Slack notifying success
+      - name: Slack Aselo channel
+        id: slack
+        uses: slackapi/slack-github-action@v1.14.0
+        with:
+          channel-id: ${{ env.ASELO_DEPLOYS_CHANNEL_ID }}
+          slack-message: '`[HRM]` Action ${{ github.workflow }} completed with SHA ${{ github.sha }} to region `${{ inputs.region }}`, environment `${{ inputs.environment }}` :rocket:.'
+        env:
+          SLACK_BOT_TOKEN: ${{ env.GITHUB_ACTIONS_SLACK_BOT_TOKEN }}
+        if: ${{ inputs.send-slack-message != 'false' }}

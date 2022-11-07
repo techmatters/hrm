@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.base.json",
+  "files": [],
+  "references": [
+    { "path": "packages/ssm-cache" },
+    { "path": "packages/s3-client" },
+    { "path": "packages/twilio-client" },
+    { "path": "hrm-service" },
+    { "path": "jobs/contact-complete" },
+    { "path": "jobs/contact-retrieve-recording-url" },
+    { "path": "jobs/contact-retrieve-transcript" }
+  ]
+}
