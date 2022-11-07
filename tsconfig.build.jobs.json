@@ -1,5 +1,6 @@
 // TODO: This should be job specific and reside in the job folder
 {
+  "extends": "./tsconfig.base.json",
   "files": [],
   "references": [
     { "path": "packages/ssm-cache" },

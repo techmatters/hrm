@@ -12,3 +12,4 @@ services:
 
     env_file:
       - ../.env.localstack
+      - dist/.env
