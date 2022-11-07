@@ -4,12 +4,12 @@ import { Case } from '../src/case/case';
 import * as caseDb from '../src/case/case-data-access';
 import * as proxiedEndpoints from './external-service-stubs/proxied-endpoints';
 
-const openRules = require('../permission-rules/open.json');
 const supertest = require('supertest');
 const each = require('jest-each').default;
 import { createService } from '../src/app';
 import { RulesFile } from '../src/permissions/rulesMap';
 import * as mocks from './mocks';
+import { ruleFileWithOnePermittedOrDeniedAction } from './permissions-overrides';
 
 let testRules: RulesFile;
 
@@ -29,19 +29,6 @@ const headers = {
   'Content-Type': 'application/json',
   Authorization: `Bearer bearing a bear (rawr)`,
 };
-
-function ruleFileWithOnePermittedOrDeniedAction(
-  permittedAction: string,
-  isPermitted: boolean,
-): RulesFile {
-  const ruleEntries = Object.keys(openRules).map(key => [
-    key,
-    (key === permittedAction && isPermitted) || (key !== permittedAction && !isPermitted)
-      ? [['everyone']]
-      : [],
-  ]);
-  return Object.fromEntries(ruleEntries);
-}
 
 afterAll(done => {
   proxiedEndpoints.stop().finally(() => {

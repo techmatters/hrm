@@ -15,6 +15,9 @@ import {
 } from './case-data-access';
 import { randomUUID } from 'crypto';
 import { Contact } from '../contact/contact-data-access';
+import { setupCanForRules } from '../permissions/setupCanForRules';
+import { User } from '../permissions';
+import { bindApplyTransformations as bindApplyContactTransformations } from '../contact/contact';
 
 type CaseInfoSection = {
   id: string;
@@ -185,6 +188,24 @@ const caseRecordToCase = (record: CaseRecord): Case => {
   return output;
 };
 
+const mapContactTransformations = ({
+  can,
+  user,
+}: {
+  can: ReturnType<typeof setupCanForRules>;
+  user: User;
+}) => (caseRecord: CaseRecord) => {
+  const applyTransformations = bindApplyContactTransformations(can, user);
+  const withTransformedContacts = {
+    ...caseRecord,
+    ...(caseRecord.connectedContacts && {
+      connectedContacts: caseRecord.connectedContacts.map(applyTransformations),
+    }),
+  };
+
+  return withTransformedContacts;
+};
+
 export const createCase = async (
   body: Partial<Case>,
   accountSid: Case['accountSid'],
@@ -204,6 +225,8 @@ export const createCase = async (
     workerSid,
   );
   const created = await caseDb.create(record, accountSid);
+
+  // A new case is always initialized with empty connected contacts. No need to apply mapContactTransformations here
   return caseRecordToCase(created);
 };
 
@@ -212,6 +235,7 @@ export const updateCase = async (
   body: Partial<Case>,
   accountSid: Case['accountSid'],
   workerSid: Case['twilioWorkerId'],
+  { can, user }: { can: ReturnType<typeof setupCanForRules>; user: User },
 ): Promise<Case> => {
   const caseFromDB: CaseRecord = await caseDb.getById(id, accountSid);
   if (!caseFromDB) {
@@ -226,13 +250,21 @@ export const updateCase = async (
     // caseRecordToCase(caseFromDB),
   );
 
-  return caseRecordToCase(await caseDb.update(id, record, accountSid));
+  const updated = await caseDb.update(id, record, accountSid);
+
+  const withTransformedContacts = mapContactTransformations({ can, user })(updated);
+
+  return caseRecordToCase(withTransformedContacts);
 };
 
-export const getCase = async (id: number, accountSid: string): Promise<Case | undefined> => {
+export const getCase = async (
+  id: number,
+  accountSid: string,
+  { can, user }: { can: ReturnType<typeof setupCanForRules>; user: User },
+): Promise<Case | undefined> => {
   const caseFromDb = await caseDb.getById(id, accountSid);
   if (caseFromDb) {
-    return caseRecordToCase(caseFromDb);
+    return caseRecordToCase(mapContactTransformations({ can, user })(caseFromDb));
   }
   return;
 };
@@ -246,9 +278,10 @@ export type SearchParameters = CaseSearchCriteria & {
 };
 
 export const searchCases = async (
-  accountSid,
-  listConfiguration: CaseListConfiguration = {},
-  search: SearchParameters = {},
+  accountSid: string,
+  listConfiguration: CaseListConfiguration,
+  search: SearchParameters,
+  { can, user }: { can: ReturnType<typeof setupCanForRules>; user: User },
 ): Promise<{ cases: readonly Case[]; count: number }> => {
   const { filters, helpline, counselor, closedCases, ...searchCriteria } = search;
   const caseFilters = filters ?? {};
@@ -263,6 +296,6 @@ export const searchCases = async (
   const dbResult = await caseDb.search(listConfiguration, accountSid, searchCriteria, caseFilters);
   return {
     ...dbResult,
-    cases: dbResult.cases.map(caseRecordToCase),
+    cases: dbResult.cases.map(mapContactTransformations({ can, user })).map(caseRecordToCase),
   };
 };

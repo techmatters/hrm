@@ -265,8 +265,8 @@ describe('searchCases', () => {
     async ({
       casesFromDb,
       expectedCases,
-      listConfig,
-      search,
+      listConfig = {},
+      search = {},
       expectedDbSearchCriteria = {},
       expectedDbFilters = {},
     }) => {
@@ -276,7 +276,10 @@ describe('searchCases', () => {
         .spyOn(caseDb, 'search')
         .mockResolvedValue({ cases: casesFromDb, count: 1337 });
 
-      const result = await caseApi.searchCases(accountSid, listConfig, search);
+      const result = await caseApi.searchCases(accountSid, listConfig, search, {
+        can: () => true,
+        user: { workerSid, roles: [] },
+      });
 
       expect(searchSpy).toHaveBeenCalledWith(
         listConfig ?? {},
@@ -290,6 +293,8 @@ describe('searchCases', () => {
         },
       );
       expect(result).toStrictEqual(expected);
+
+      searchSpy.mockReset();
     },
   );
 });
@@ -382,7 +387,10 @@ describe('update existing case', () => {
         .mockImplementation(() => Promise.resolve(createMockCaseRecord(dbResponse)));
       jest.spyOn(caseDb, 'getById').mockResolvedValue(existingCaseObject);
 
-      const returned = await caseApi.updateCase(caseId, updateCaseObject, accountSid, workerSid);
+      const returned = await caseApi.updateCase(caseId, updateCaseObject, accountSid, workerSid, {
+        can: () => true,
+        user: { workerSid, roles: [] },
+      });
       expect(updateSpy).toHaveBeenCalledWith(caseId, expectedDbCaseParameter, accountSid);
       expect(returned).toStrictEqual(expectedResponse);
     },
@@ -406,6 +414,9 @@ test('update non existing case', async () => {
   };
 
   await expect(
-    caseApi.updateCase(nonExistingCaseId, updateCaseObject, accountSid, workerSid),
+    caseApi.updateCase(nonExistingCaseId, updateCaseObject, accountSid, workerSid, {
+      can: () => true,
+      user: { workerSid, roles: [] },
+    }),
   ).rejects.toThrow();
 });

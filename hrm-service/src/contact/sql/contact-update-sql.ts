@@ -50,9 +50,9 @@ RETURNING *
 ${selectSingleContactByIdSql('updated')}
 `;
 
-export const APPEND_MEDIA_URL_SQL = `
+export const UPDATE_CONVERSATION_MEDIA_BY_ID = `
   UPDATE "Contacts"
   SET
-    "rawJson" = COALESCE("rawJson", '{}'::JSONB) || jsonb_build_object('mediaUrls', COALESCE("rawJson"->'mediaUrls', '[]'::JSONB) || $<mediaUrls:json>::JSONB)
+    "rawJson" = COALESCE("rawJson", '{}'::JSONB) || jsonb_build_object('conversationMedia', COALESCE($<conversationMedia:json>::JSONB, "rawJson"->'conversationMedia', '[]'::JSONB))
   ${ID_WHERE_CLAUSE}
 `;

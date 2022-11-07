@@ -15,6 +15,7 @@ casesRouter.get('/', publicEndpoint, async (req, res) => {
     accountSid,
     { sortDirection, sortBy, limit, offset },
     { filters: { includeOrphans: false }, ...search },
+    { can: req.can, user: req.user },
   );
   res.json(cases);
 });
@@ -34,7 +35,7 @@ const canEditCase = asyncHandler(async (req, res, next) => {
   if (!req.isAuthorized()) {
     const { accountSid, body, user, can } = req;
     const { id } = req.params;
-    const caseObj = await getCase(id, accountSid);
+    const caseObj = await getCase(id, accountSid, { can, user });
 
     if (!caseObj) throw createError(404);
 
@@ -56,7 +57,7 @@ casesRouter.get('/:id', publicEndpoint, async (req, res) => {
   const { accountSid } = req;
   const { id } = req.params;
 
-  const caseFromDB = await caseApi.getCase(id, accountSid);
+  const caseFromDB = await caseApi.getCase(id, accountSid, { can: req.can, user: req.user });
 
   if (!caseFromDB) {
     throw createError(404);
@@ -68,7 +69,10 @@ casesRouter.get('/:id', publicEndpoint, async (req, res) => {
 casesRouter.put('/:id', canEditCase, async (req, res) => {
   const { accountSid, user } = req;
   const { id } = req.params;
-  const updatedCase = await caseApi.updateCase(id, req.body, accountSid, user.workerSid);
+  const updatedCase = await caseApi.updateCase(id, req.body, accountSid, user.workerSid, {
+    can: req.can,
+    user,
+  });
   if (!updatedCase) {
     throw createError(404);
   }
@@ -87,7 +91,10 @@ casesRouter.delete('/:id', publicEndpoint, async (req, res) => {
 
 casesRouter.post('/search', publicEndpoint, async (req, res) => {
   const { accountSid } = req;
-  const searchResults = await caseApi.searchCases(accountSid, req.query, req.body);
+  const searchResults = await caseApi.searchCases(accountSid, req.query || {}, req.body || {}, {
+    can: req.can,
+    user: req.user,
+  });
   res.json(searchResults);
 });
 
