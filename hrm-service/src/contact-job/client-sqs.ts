@@ -33,7 +33,15 @@ export const pollCompletedContactJobsFromQueue =
   };
 
 export const deleteCompletedContactJobsFromQueue = async (ReceiptHandle: any) => {
-  return ReceiptHandle;
+  try {
+    const QueueUrl = getSsmParameter(
+      `/${process.env.NODE_ENV}/sqs/jobs/contact/queue-url-contact-complete`,
+    );
+
+    return await getSqsClient().deleteMessage({ QueueUrl, ReceiptHandle }).promise();
+  } catch (err) {
+    console.error('Error trying to delete message from SQS queue', err);
+  }
 };
 
 export const publishToContactJobs = async (params: PublishToContactJobsTopicParams) => {
