@@ -28,7 +28,7 @@ export const pollCompletedContactJobsFromQueue =
         })
         .promise();
     } catch (err) {
-      console.error('Error trying to poll messages from SQS queue');
+      console.error('Error trying to poll messages from SQS queue', err);
     }
   };
 
@@ -51,6 +51,6 @@ export const publishToContactJobs = async (params: PublishToContactJobsTopicPara
       })
       .promise();
   } catch (err) {
-    console.error('Error trying to send message to SQS queue');
+    console.error('Error trying to send message to SQS queue', err);
   }
 };

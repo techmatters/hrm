@@ -59,6 +59,8 @@ const processCompletedContactJob = async (completedJob: CompletedContactJobBody)
 export const pollAndprocessCompletedContactJobs = async (jobMaxAttempts: number) => {
   const polledCompletedJobs = await pollCompletedContactJobsFromQueue();
 
+  if (!polledCompletedJobs?.Messages) return;
+
   const { Messages: messages } = polledCompletedJobs;
 
   if (!Array.isArray(messages)) {

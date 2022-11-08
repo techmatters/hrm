@@ -26,7 +26,7 @@ export const exportTranscript = async ({
     .channels.get(channelSid)
     .messages.list();
 
-  const transcript = messages.map(m => ({
+  const transformed = messages.map(m => ({
     sid: m.sid,
     dateCreated: m.dateCreated,
     from: m.from,
@@ -36,5 +36,10 @@ export const exportTranscript = async ({
     media: m.media,
   }));
 
-  return transcript;
+  return {
+    accountSid,
+    serviceSid,
+    channelSid,
+    messages: transformed,
+  };
 };
