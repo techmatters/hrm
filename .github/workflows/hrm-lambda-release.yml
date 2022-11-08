@@ -91,7 +91,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: ./
-          file: ./lambdas/Dockerfile
+          file: ./jobs/Dockerfile
           build-args: |
             lambda_name=${{ env.LAMBDA_NAME }}
           push: true
