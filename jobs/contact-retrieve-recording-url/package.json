@@ -6,14 +6,15 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@tech-matters/hrm-twilio-client": "^1.0.0",
     "@tech-matters/hrm-ssm-cache": "^1.0.0",
+    "@tech-matters/hrm-twilio-client": "^1.0.0",
     "aws-sdk": "^2.1225.0",
     "twilio": "^3.80.0",
     "util": "^0.12.4"
   },
   "devDependencies": {
-    "@tech-matters/hrm-types": "^1.0.0"
+    "@tech-matters/hrm-types": "^1.0.0",
+    "@types/aws-lambda": "^8.10.108"
   },
   "scripts": {
     "docker:build": "docker build -t hrm-jobs-contact-retrieve-recording-url --build-arg lambda_name=contact-retrieve-recording-url -f ../Dockerfile ../../"

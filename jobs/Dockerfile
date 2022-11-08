@@ -8,12 +8,13 @@ ENV lambda_name ${lambda_name}
 # copy the hrm-lib package and labmdas folders so that the file: based
 # dependency in package.json can be resolved
 COPY packages /tmp/build/packages
-COPY jobs /tmp/build/jobs
-COPY package.json package-lock.json tsconfig.base.json tsconfig.build.jobs.json /tmp/build/
+COPY jobs/${lambda_name} /tmp/build/jobs/${lambda_name}
+COPY jobs/tsconfig.json /tmp/build/jobs/tsconfig.json
+COPY package.json package-lock.json tsconfig.json tsconfig.base.json tsconfig.build.jobs.${lambda_name}.json /tmp/build/
 
 RUN cd /tmp/build \
     && npm ci -w jobs/${lambda_name} -w packages/* \
-    && npx tsc -b tsconfig.build.jobs.json \
+    && npx tsc -b tsconfig.build.jobs.${lambda_name}.json \
     && cp jobs/${lambda_name}/dist/*.js /var/task/ \
     && cp -r packages /var/task/ \
     && cp -r node_modules /var/task/ \
