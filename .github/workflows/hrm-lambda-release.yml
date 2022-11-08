@@ -73,7 +73,7 @@ jobs:
           case "$ENVIRONMENT" in development) region="us-east-1" ;; staging) region="us-east-1" ;; production) region="us-east-1" ;; *) echo "Invalid environment: ${{ inputs.environment }}" && exit 1 ;; esac
           echo AWS_REGION=$region >> $GITHUB_ENV
           echo AWS_DEFAULT_REGION=$region >> $GITHUB_ENV
-          echo DOCKER_IMAGE_BASE=712893914485.dkr.ecr.${region}.amazonaws.com/${ENVIRONMENT}/hrm-contact- >> $GITHUB_ENV
+          echo DOCKER_IMAGE_BASE=712893914485.dkr.ecr.${region}.amazonaws.com/${ENVIRONMENT}/hrm- >> $GITHUB_ENV
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
