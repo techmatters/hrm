@@ -99,7 +99,7 @@ jobs:
 
       - name: Update Lambda and Publish
         run: |
-          aws lambda update-function-code --function-name ${{ env.ENVIRONMENT }}-${{ env.LAMBDA_NAME }} --image-uri ${{ env.DOCKER_IMAGE_BASE }}${{ env.LAMBDA_NAME }}:live --publish
+          aws lambda update-function-code --function-name ${{ env.ENVIRONMENT }}-hrm-${{ env.LAMBDA_NAME }} --image-uri ${{ env.DOCKER_IMAGE_BASE }}${{ env.LAMBDA_NAME }}:live --publish
 
       # Send Slack notifying success
       - name: Slack Aselo channel
