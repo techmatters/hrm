@@ -32,7 +32,7 @@ export const pollCompletedContactJobsFromQueue =
     }
   };
 
-export const deleteCompletedContactJobsFromQueue = async (ReceiptHandle: any) => {
+export const deleteCompletedContactJobsFromQueue = async (ReceiptHandle: string) => {
   try {
     const QueueUrl = getSsmParameter(
       `/${process.env.NODE_ENV}/sqs/jobs/contact/queue-url-contact-complete`,
