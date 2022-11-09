@@ -34,12 +34,12 @@ export default class ContactCoreStack extends cdk.Stack {
       stringValue: 'mockAuthToken',
     });
 
-    new ssm.StringParameter(this, 'twilio_devUser_sid', {
+    new ssm.StringParameter(this, 'twilio_dev_user_sid', {
       parameterName: `/local/twilio/${process.env.TWILIO_ACCOUNT_SID}/auth_token`,
       stringValue: `${process.env.TWILIO_AUTH_TOKEN}`,
     });
 
-    new ssm.StringParameter(this, 's3_devUser_docs_bucket_name', {
+    new ssm.StringParameter(this, 's3_dev_user_docs_bucket_name', {
       parameterName: `/local/s3/${process.env.TWILIO_ACCOUNT_SID}/docs_bucket_name`,
       stringValue: this.docsBucket.bucketName,
     });

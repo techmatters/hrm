@@ -28,13 +28,13 @@ export default class ContactCompleteStack extends cdk.Stack {
     this.completeQueue = new sqs.Queue(this, id);
 
     new ssm.StringParameter(this, `complete-queue-url`, {
-      parameterName: `/local/sqs/jobs/contact/queue-url-contact-complete`,
+      parameterName: `/local/sqs/jobs/contact/queue-url-complete`,
       stringValue: this.completeQueue.queueUrl,
     });
 
     // duplicated for test env
     new ssm.StringParameter(this, `complete-queue-url-test`, {
-      parameterName: `/test/sqs/jobs/contact/queue-url-contact-complete`,
+      parameterName: `/test/sqs/jobs/contact/queue-url-complete`,
       stringValue: this.completeQueue.queueUrl,
     });
 

@@ -48,7 +48,7 @@ const contactComplete = new ContactCompleteStack({
 
 new ContactRetrieveStack({
   scope: app,
-  id: 'contact-retrieve-transcript',
+  id: 'retrieve-transcript',
   params: {
     completeQueue: contactComplete.completeQueue,
     docsBucket: contactCore.docsBucket,
@@ -60,7 +60,7 @@ new ContactRetrieveStack({
 
 new ContactRetrieveStack({
   scope: app,
-  id: 'contact-retrieve-recording-url',
+  id: 'retrieve-recording-url',
   params: {
     completeQueue: contactComplete.completeQueue,
     docsBucket: contactCore.docsBucket,

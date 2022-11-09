@@ -17,7 +17,7 @@ export const pollCompletedContactJobsFromQueue =
   async (): Promise<SQS.Types.ReceiveMessageResult> => {
     try {
       const QueueUrl = getSsmParameter(
-        `/${process.env.NODE_ENV}/sqs/jobs/contact/queue-url-contact-complete`,
+        `/${process.env.NODE_ENV}/sqs/jobs/contact/queue-url-complete`,
       );
 
       return await getSqsClient()
@@ -35,7 +35,7 @@ export const pollCompletedContactJobsFromQueue =
 export const deleteCompletedContactJobsFromQueue = async (ReceiptHandle: string) => {
   try {
     const QueueUrl = getSsmParameter(
-      `/${process.env.NODE_ENV}/sqs/jobs/contact/queue-url-contact-complete`,
+      `/${process.env.NODE_ENV}/sqs/jobs/contact/queue-url-complete`,
     );
 
     return await getSqsClient().deleteMessage({ QueueUrl, ReceiptHandle }).promise();
@@ -49,7 +49,7 @@ export const publishToContactJobs = async (params: PublishToContactJobsTopicPara
   //TODO: more robust error handling/messaging
   try {
     const QueueUrl = getSsmParameter(
-      `/${process.env.NODE_ENV}/sqs/jobs/contact/queue-url-contact-${params.jobType}`,
+      `/${process.env.NODE_ENV}/sqs/jobs/contact/queue-url-${params.jobType}`,
     );
 
     return await getSqsClient()
