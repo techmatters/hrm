@@ -55,7 +55,7 @@
     "build-and-start:service": "run-s build start:service",
     "start": "run-s start:localstack start:service",
     "start:localstack": "AWS_REGION=eu-west-1 run-s localstack:init",
-    "start:service": "AWS_REGION=eu-west-1 SSM_ENDPOINT=http://localhost:4566 PORT=8080 npm run -w hrm-service start",
+    "start:service": "cross-env AWS_REGION=eu-west-1 SSM_ENDPOINT=http://localhost:4566 PORT=8080 npm run -w hrm-service start",
     "docker:build": "npm run docker:build --workspaces --if-present",
     "docker:compose:down": "docker-compose -p hrm down",
     "docker:compose:logs": "docker-compose -p hrm logs -f",
