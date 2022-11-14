@@ -277,12 +277,17 @@ export type SearchParameters = CaseSearchCriteria & {
   closedCases?: boolean;
 };
 
+export type CaseSearchReturn = {
+  cases: Case[];
+  count: number;
+};
+
 export const searchCases = async (
   accountSid: string,
   listConfiguration: CaseListConfiguration,
   search: SearchParameters,
   { can, user }: { can: ReturnType<typeof setupCanForRules>; user: User },
-): Promise<{ cases: readonly Case[]; count: number }> => {
+): Promise<CaseSearchReturn> => {
   const { filters, helpline, counselor, closedCases, ...searchCriteria } = search;
   const caseFilters = filters ?? {};
   caseFilters.helplines = caseFilters.helplines ?? (helpline ? helpline.split(';') : undefined);

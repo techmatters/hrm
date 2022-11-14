@@ -8,6 +8,18 @@ import { getCase } from './case';
 
 const casesRouter = SafeRouter();
 
+/**
+ * Returns a filterable list of cases for a helpline
+ *
+ * @param {string} req.accountSid - SID of the helpline
+ * @param {CaseListConfiguration.sortDirection} req.query.sortDirection - Sort direction
+ * @param {CaseListConfiguration.sortBy} req.query.sortBy - Sort by
+ * @param {CaseListConfiguration.limit} req.query.limit - Limit
+ * @param {CaseListConfiguration.offset} req.query.offset - Offset
+ * @param {import('./case').SearchParameters} req.query.search
+ *
+ * @returns {import('./case').CaseSearchReturn} - List of cases
+ */
 casesRouter.get('/', publicEndpoint, async (req, res) => {
   const { accountSid } = req;
   const { sortDirection, sortBy, limit, offset, ...search } = req.query;

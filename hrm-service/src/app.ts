@@ -4,7 +4,6 @@ import 'express-async-errors';
 import cors from 'cors';
 
 import httpLogger from './logging/httplogging';
-import swagger from './swagger';
 import { apiV0 } from './routes';
 import { Permissions, setupPermissions } from './permissions';
 import { jsonPermissions } from './permissions/json-permissions';
@@ -24,8 +23,6 @@ export function createService({
   enableProcessContactJobs = enableProcessContactJobsFlag,
 }: ServiceCreationOptions = {}) {
   const app = express();
-
-  swagger.runWhenNotProduction(app);
 
   app.use(httpLogger);
   app.use(express.json());
