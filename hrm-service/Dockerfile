@@ -20,6 +20,9 @@ RUN cd /tmp/build \
 
 WORKDIR /home/node
 
+COPY hrm-service/docker-entrypoint /usr/local/bin/docker-entrypoint
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint"]
+
 # RUN npm test
 USER node
 
