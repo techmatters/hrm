@@ -9,7 +9,6 @@ export const sendMessage = async ({
   message: object;
 }) => {
   const sqs = new SQS({
-    region: 'eu-west-1',
     endpoint: 'http://localstack:4566',
   });
 
