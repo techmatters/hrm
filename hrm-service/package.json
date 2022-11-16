@@ -8,6 +8,7 @@
     "docker:compose:test:up": "docker compose -f ./docker-compose-test.yml up -d",
     "docker:compose:test:down": "docker compose -f ./docker-compose-test.yml down",
     "test": "run-s test:migrate test:unit test:service",
+    "test:run:watch": "cross-env AWS_REGION=eu-west-1 SSM_ENDPOINT=http://localhost:4566 jest --maxWorkers=1 --forceExit --watch",
     "test:unit": "jest unit-tests",
     "test:service": "cross-env POSTGRES_PORT=5433 run-s -c docker:compose:test:up test:service:migrate test:service:run docker:compose:test:down",
     "test:service:migrate": "node ./service-tests/db-init/migrate",
