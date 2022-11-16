@@ -10,7 +10,8 @@
     "aws-sdk": "^2.1225.0"
   },
   "devDependencies": {
-    "@tech-matters/hrm-types": "^1.0.0"
+    "@tech-matters/hrm-types": "^1.0.0",
+    "@types/aws-lambda": "^8.10.108"
   },
   "scripts": {
     "docker:build": "docker build -t hrm-jobs-contact-complete --build-arg lambda_name=contact-complete -f ../Dockerfile ../../"

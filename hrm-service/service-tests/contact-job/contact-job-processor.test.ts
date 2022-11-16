@@ -75,7 +75,7 @@ describe('processContactJobs', () => {
       return callback as any;
     });
     const completeSpy = jest
-      .spyOn(contactJobComplete, 'pollAndprocessCompletedContactJobs')
+      .spyOn(contactJobComplete, 'pollAndProcessCompletedContactJobs')
       .mockImplementation(() => Promise.resolve(undefined) as any);
     const publishSpy = jest.spyOn(contactJobPublish, 'publishDueContactJobs');
 
@@ -109,7 +109,7 @@ describe('processContactJobs', () => {
 
     const errorSpy = jest.spyOn(console, 'error');
     const completeSpy = jest
-      .spyOn(contactJobComplete, 'pollAndprocessCompletedContactJobs')
+      .spyOn(contactJobComplete, 'pollAndProcessCompletedContactJobs')
       .mockImplementationOnce(() => {
         throw new Error('Aaaw, snap!');
       });

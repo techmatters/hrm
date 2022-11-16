@@ -1,9 +1,13 @@
 #!/usr/bin/env node
 /* eslint-disable no-new */
 import * as cdk from '@aws-cdk/core';
+import * as dotenv from 'dotenv';
+
 import ContactCompleteStack from './contact-complete-stack';
 import ContactCoreStack from './contact-core-stack';
 import ContactRetrieveStack from './contact-retrieve-stack';
+
+dotenv.config({ path: './cdk/.env' });
 
 /**
  * We use AWS-CDK to configure localstack because it is the most common example
@@ -44,7 +48,7 @@ const contactComplete = new ContactCompleteStack({
 
 new ContactRetrieveStack({
   scope: app,
-  id: 'contact-retrieve-transcript',
+  id: 'retrieve-transcript',
   params: {
     completeQueue: contactComplete.completeQueue,
     docsBucket: contactCore.docsBucket,
@@ -56,7 +60,7 @@ new ContactRetrieveStack({
 
 new ContactRetrieveStack({
   scope: app,
-  id: 'contact-retrieve-recording-url',
+  id: 'retrieve-recording-url',
   params: {
     completeQueue: contactComplete.completeQueue,
     docsBucket: contactCore.docsBucket,

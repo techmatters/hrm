@@ -17,7 +17,7 @@ export const pollCompletedContactJobsFromQueue =
   async (): Promise<SQS.Types.ReceiveMessageResult> => {
     try {
       const QueueUrl = getSsmParameter(
-        `/${process.env.NODE_ENV}/sqs/jobs/contact/queue-url-contact-complete`,
+        `/${process.env.NODE_ENV}/sqs/jobs/contact/queue-url-complete`,
       );
 
       return await getSqsClient()
@@ -28,12 +28,20 @@ export const pollCompletedContactJobsFromQueue =
         })
         .promise();
     } catch (err) {
-      console.error('Error trying to poll messages from SQS queue');
+      console.error('Error trying to poll messages from SQS queue', err);
     }
   };
 
-export const deleteCompletedContactJobsFromQueue = async (ReceiptHandle: any) => {
-  return ReceiptHandle;
+export const deleteCompletedContactJobsFromQueue = async (ReceiptHandle: string) => {
+  try {
+    const QueueUrl = getSsmParameter(
+      `/${process.env.NODE_ENV}/sqs/jobs/contact/queue-url-complete`,
+    );
+
+    return await getSqsClient().deleteMessage({ QueueUrl, ReceiptHandle }).promise();
+  } catch (err) {
+    console.error('Error trying to delete message from SQS queue', err);
+  }
 };
 
 export const publishToContactJobs = async (params: PublishToContactJobsTopicParams) => {
@@ -41,7 +49,7 @@ export const publishToContactJobs = async (params: PublishToContactJobsTopicPara
   //TODO: more robust error handling/messaging
   try {
     const QueueUrl = getSsmParameter(
-      `/${process.env.NODE_ENV}/sqs/jobs/contact/queue-url-contact-${params.jobType}`,
+      `/${process.env.NODE_ENV}/sqs/jobs/contact/queue-url-${params.jobType}`,
     );
 
     return await getSqsClient()
@@ -51,6 +59,6 @@ export const publishToContactJobs = async (params: PublishToContactJobsTopicPara
       })
       .promise();
   } catch (err) {
-    console.error('Error trying to send message to SQS queue');
+    console.error('Error trying to send message to SQS queue', err);
   }
 };

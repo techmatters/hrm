@@ -51,6 +51,11 @@ describe('exportTranscript', () => {
       channelSid: 'channelSid',
     });
 
-    expect(transcript).toEqual(messageList);
+    expect(transcript).toEqual({
+      accountSid: 'accountSid',
+      serviceSid: 'serviceSid',
+      channelSid: 'channelSid',
+      messages: messageList,
+    });
   });
 });

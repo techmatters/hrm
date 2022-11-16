@@ -5,7 +5,7 @@ export { getSsmParameter, hasCacheExpired, ssmCache } from '@tech-matters/hrm-ss
 const ssmCacheConfigs = [
   {
     path: `/${process.env.NODE_ENV}/sqs/jobs/contact`,
-    regex: /queue-url-*./,
+    regex: /queue-url-*/,
   },
 ];
 

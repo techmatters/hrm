@@ -2,7 +2,7 @@ jest.mock('@tech-matters/hrm-ssm-cache');
 
 jest.mock('aws-sdk', () => {
   const SQSMocked = {
-    sendMessage: jest.fn().mockReturnThis(),
+    deleteMessage: () => jest.fn(),
     receiveMessage: jest.fn(() => {
       return {
         promise: jest.fn().mockResolvedValue({
@@ -10,6 +10,7 @@ jest.mock('aws-sdk', () => {
         }),
       };
     }),
+    sendMessage: jest.fn().mockReturnThis(),
     promise: jest.fn(),
   };
   return {
