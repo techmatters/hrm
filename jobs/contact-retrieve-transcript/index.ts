@@ -26,7 +26,7 @@ const hrmEnv = process.env.NODE_ENV;
 
 const ssmCacheConfigs = [
   {
-    path: `/${hrmEnv}/twilio`,
+    path: `/${hrmEnv}/twilio/`,
     regex: /auth_token/,
   },
   {

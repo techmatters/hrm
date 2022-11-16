@@ -1,7 +1,7 @@
 import { setInterval } from 'timers';
 import { subMilliseconds } from 'date-fns';
 import { pullDueContactJobs } from './contact-job-data-access';
-import { pollAndprocessCompletedContactJobs } from './contact-job-complete';
+import { pollAndProcessCompletedContactJobs } from './contact-job-complete';
 import { publishDueContactJobs } from './contact-job-publish';
 import { loadSsmCache } from '../config/ssmCache';
 
@@ -25,7 +25,7 @@ export function processContactJobs() {
         await loadSsmCache();
 
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const completedJobs = await pollAndprocessCompletedContactJobs(JOB_MAX_ATTEMPTS);
+        const completedJobs = await pollAndProcessCompletedContactJobs(JOB_MAX_ATTEMPTS);
 
         const dueContactJobs = await pullDueContactJobs(
           subMilliseconds(new Date(), JOB_RETRY_INTERVAL_MILLISECONDS),

@@ -17,7 +17,8 @@
     "@aws-cdk/aws-s3": "^1.176.0",
     "@aws-cdk/aws-sqs": "^1.176.0",
     "@aws-cdk/aws-ssm": "^1.176.0",
-    "@aws-cdk/core": "^1.176.0"
+    "@aws-cdk/core": "^1.176.0",
+    "dotenv": "^16.0.3"
   },
   "devDependencies": {
     "@tsconfig/node16": "^1.0.3",
@@ -53,8 +54,8 @@
     "build-and-start": "run-s build start",
     "build-and-start:service": "run-s build start:service",
     "start": "run-s start:localstack start:service",
-    "start:localstack": "run-s localstack:init",
-    "start:service": "PORT=8080 npm run -w hrm-service start",
+    "start:localstack": "AWS_REGION=eu-west-1 run-s localstack:init",
+    "start:service": "cross-env AWS_REGION=eu-west-1 SSM_ENDPOINT=http://localhost:4566 PORT=8080 npm run -w hrm-service start",
     "docker:build": "npm run docker:build --workspaces --if-present",
     "docker:compose:down": "docker-compose -p hrm down",
     "docker:compose:logs": "docker-compose -p hrm logs -f",
@@ -86,6 +87,9 @@
     "test:docker:jobs:contact-complete": "curl -XPOST \"http://localhost:9000/2015-03-31/functions/function/invocations\" -d \"$(cat jobs/contact-complete/tests/testPayload.json)\"",
     "test:docker:jobs:contact-retrieve-recording-url": "curl -XPOST \"http://localhost:9001/2015-03-31/functions/function/invocations\" -d \"$(cat jobs/contact-retrieve-recording-url/tests/testPayload.json)\"",
     "test:docker:jobs:contact-retrieve-transcript": "curl -XPOST \"http://localhost:9002/2015-03-31/functions/function/invocations\" -d \"$(cat jobs/contact-retrieve-transcript/tests/testPayload.json)\"",
-    "ssm:local": "npm run ssm:local --workspaces --if-present"
+    "ssm:local": "run-p ssm:local:*",
+    "ssm:local:base": "run-p ssm:local:base:*",
+    "ssm:local:base:cdk": "docker run --rm -v ~/.aws:/home/aws/.aws -e AWS_DEFAULT_REGION -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY interrobangc/awscli2 ssm get-parameter --name \"/local/hrm/cdk/.env\" --with-decryption --query \"Parameter.Value\" --output text > ./cdk/.env",
+    "ssm:local:workspaces": "npm run ssm:local --workspaces --if-present"
   }
 }
