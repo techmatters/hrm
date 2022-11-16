@@ -2,6 +2,7 @@ import { setInterval } from 'timers';
 import { subMilliseconds } from 'date-fns';
 import { pullDueContactJobs } from './contact-job-data-access';
 import { pollAndProcessCompletedContactJobs } from './contact-job-complete';
+import { ContactJobPollerError } from './contact-job-errors';
 import { publishDueContactJobs } from './contact-job-publish';
 import { loadSsmCache } from '../config/ssmCache';
 
@@ -34,7 +35,10 @@ export function processContactJobs() {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const publishedContactJobResult = await publishDueContactJobs(dueContactJobs);
       } catch (err) {
-        console.error('JOB PROCESSING SWEEP ABORTED DUE TO UNHANDLED ERROR', err);
+        console.error(
+          new ContactJobPollerError('JOB PROCESSING SWEEP ABORTED DUE TO UNHANDLED ERROR'),
+          err,
+        );
       }
     }, JOB_PROCESSING_INTERVAL_MILLISECONDS);
   } else {

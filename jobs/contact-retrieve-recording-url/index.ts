@@ -1,5 +1,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { SQS } from 'aws-sdk';
+
+import { ContactJobProcessorError } from '@tech-matters/hrm-job-errors';
 import { getSsmParameter, loadSsmCache } from '@tech-matters/hrm-ssm-cache';
 
 // eslint-disable-next-line prettier/prettier
@@ -65,7 +67,7 @@ export const processRecordWithoutException = async (sqsRecord: SQSRecord): Promi
   try {
     await processRecord(message);
   } catch (err) {
-    console.error('Failed to process record', err);
+    console.error(new ContactJobProcessorError('Failed to process record'), err);
 
     const errMessage = err instanceof Error ? err.message : String(err);
 
@@ -106,7 +108,7 @@ export const handler = async (event: SQSEvent): Promise<any> => {
   } catch (err) {
     // SSM failures and other major setup exceptions will cause a failure of all messages sending them to DLQ
     // which should be the same as the completed queue right now.
-    console.dir(err);
+    console.error(new ContactJobProcessorError('Failed to init processor'), err);
 
     // We fail all messages here and rely on SQS retry/DLQ because we hit
     // a fatal error before we could process any of the messages. The error
