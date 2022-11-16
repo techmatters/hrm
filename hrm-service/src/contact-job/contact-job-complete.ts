@@ -91,10 +91,12 @@ export const pollAndProcessCompletedContactJobs = async (jobMaxAttempts: number)
 
           const { jobId, attemptNumber, attemptPayload } = completedJob;
 
-          // emit an error to pick up in metrics since this is our error handler
+          // emit an error to pick up in metrics since completed queue is our
+          // DLQ. These may be duplicates of ContactJobProcessorErrors that have
+          // already caused an alarm, but there is a chance of other errors ending up here.
           console.error(
             new ContactJobCompleteProcessorError(
-              `ContactJobCompleteProcessorError: process job with id ${jobId} failed`,
+              `process job with id ${jobId} failed`,
               attemptPayload,
             ),
           );
