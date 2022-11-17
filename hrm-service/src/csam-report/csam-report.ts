@@ -4,6 +4,7 @@ import {
   updateContactIdByCsamReportIds,
   create,
   getById,
+  getByContactId,
 } from './csam-report-data-access';
 
 export { CSAMReportRecord } from './csam-report-data-access';
@@ -27,5 +28,7 @@ export const createCSAMReport = async (
     accountSid,
   );
 };
+
+export const getCsamReportsByContactId = getByContactId;
 
 export const connectContactToCsamReports = updateContactIdByCsamReportIds;

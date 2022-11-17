@@ -1,5 +1,5 @@
 const ID_WHERE_CLAUSE = `WHERE r."accountSid" = $<accountSid> AND r."id" = $<csamReportId>`;
-const IN_IDS_WHERE_CLAUSE = `WHERE r."accountSid" = $<accountSid> AND r."id" IN $<csamReportIds:csv>`;
+const CONTACT_ID_WHERE_CLAUSE = `WHERE r."accountSid" = $<accountSid> AND r."contactId" = $<contactId>`;
 
 export const selectSingleCsamReportByIdSql = `
   SELECT r.*
@@ -7,8 +7,8 @@ export const selectSingleCsamReportByIdSql = `
   ${ID_WHERE_CLAUSE}
 `;
 
-export const selectCsamReportsByIdsSql = `
+export const selectCsamReportsByContactIdSql = `
   SELECT r.*
   FROM "CSAMReports"
-  ${IN_IDS_WHERE_CLAUSE}
+  ${CONTACT_ID_WHERE_CLAUSE}
 `;

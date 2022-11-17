@@ -1,8 +1,8 @@
 import { db } from '../connection-pool';
 import { insertCSAMReportSql, NewCSAMReportRecord } from './sql/csam-report-insert-sql';
 import {
-  // selectCsamReportsByIdsSql,
   selectSingleCsamReportByIdSql,
+  selectCsamReportsByContactIdSql,
 } from './sql/csam-report-get-sql';
 import { updateContactIdByCsamReportIdsSql } from './sql/csam-report-update-sql';
 
@@ -28,6 +28,14 @@ export const getById = async (csamReportId: number, accountSid: string) =>
     connection.oneOrNone<CSAMReportRecord>(selectSingleCsamReportByIdSql, {
       accountSid,
       csamReportId,
+    }),
+  );
+
+export const getByContactId = async (contactId: number, accountSid: string) =>
+  db.task(async connection =>
+    connection.manyOrNone<CSAMReportRecord>(selectCsamReportsByContactIdSql, {
+      contactId,
+      accountSid,
     }),
   );
 
