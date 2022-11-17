@@ -47,10 +47,10 @@ const headers = {
 const whereTwilioWorkerIdClause = `WHERE "accountSid" = '${accountSid}' AND ("twilioWorkerId" = '${workerSid}' OR "twilioWorkerId" IS NULL)`;
 
 const cleanupContacts = async () =>
-  db.task(t => t.none(`DELETE FROM "Contacts ${whereTwilioWorkerIdClause}`));
+  db.task(t => t.none(`DELETE FROM "Contacts" ${whereTwilioWorkerIdClause}`));
 
 const cleanupCsamReports = async () =>
-  db.task(t => t.none(`DELETE FROM "CSAMReports ${whereTwilioWorkerIdClause}`));
+  db.task(t => t.none(`DELETE FROM "CSAMReports" ${whereTwilioWorkerIdClause}`));
 
 beforeAll(async () => {
   await proxiedEndpoints.start();

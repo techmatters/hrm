@@ -159,7 +159,7 @@ const deleteCsamReportById = (id: number, accountSid: string) =>
   );
 
 // eslint-disable-next-line @typescript-eslint/no-shadow
-const deleteCsamReportByContactId = (contactId: number, accountSid: string) =>
+const deleteCsamReportsByContactId = (contactId: number, accountSid: string) =>
   db.task(t =>
     t.manyOrNone(`
       DELETE FROM "CSAMReports"
@@ -325,9 +325,7 @@ describe('/contacts route', () => {
       expect(response.body.csamReports).toHaveLength(0);
 
       // No new report is created
-      await expect(
-        csamReportApi.getCSAMReport(notExistingCsamReport.id, accountSid),
-      ).rejects.toThrow(`CSAM Report with id ${notExistingCsamReport.id} not found`);
+      await expect(csamReportApi.getCSAMReport(notExistingCsamReport.id, accountSid)).toBeNull();
 
       await deleteContactById(response.body.id, response.body.accountSid);
     });
@@ -371,7 +369,7 @@ describe('/contacts route', () => {
       const updatedReport2 = await csamReportApi.getCSAMReport(newReport2.id, accountSid);
 
       if (!updatedReport2) {
-        throw new Error('updatedReport1 does not exists');
+        throw new Error('updatedReport2 does not exists');
       }
 
       expect(updatedReport2.contactId).toEqual(response.body.id);
@@ -381,7 +379,7 @@ describe('/contacts route', () => {
       expect(response.body.csamReports).toHaveLength(2);
 
       // Remove records to not interfere with following tests
-      await deleteCsamReportByContactId(response.body.id, response.body.accuntSid);
+      await deleteCsamReportsByContactId(response.body.id, response.body.accountSid);
       await deleteContactById(response.body.id, response.body.accountSid);
     });
 
