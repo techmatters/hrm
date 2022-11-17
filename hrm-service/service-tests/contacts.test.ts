@@ -325,7 +325,8 @@ describe('/contacts route', () => {
       expect(response.body.csamReports).toHaveLength(0);
 
       // No new report is created
-      await expect(csamReportApi.getCSAMReport(notExistingCsamReport.id, accountSid)).toBeNull();
+      const maybeReport = await csamReportApi.getCSAMReport(notExistingCsamReport.id, accountSid)
+      expect(maybeReport).toBeNull();
 
       await deleteContactById(response.body.id, response.body.accountSid);
     });
