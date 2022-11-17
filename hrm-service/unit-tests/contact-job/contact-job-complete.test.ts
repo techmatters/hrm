@@ -3,6 +3,7 @@ import each from 'jest-each';
 import * as SQSClient from '../../src/contact-job/client-sqs';
 import * as contactJobDataAccess from '../../src/contact-job/contact-job-data-access';
 import * as contactJobComplete from '../../src/contact-job/contact-job-complete';
+import { ContactJobPollerError } from '../../src/contact-job/contact-job-error';
 import { ContactJobType } from '../../src/contact-job/contact-job-data-access';
 import { JOB_MAX_ATTEMPTS } from '../../src/contact-job/contact-job-processor';
 
@@ -71,7 +72,7 @@ describe('pollAndProcessCompletedContactJobs', () => {
     expect(processCompletedRetrieveContactTranscriptSpy).toHaveBeenCalledTimes(1);
     expect(errorSpy).toHaveBeenCalledTimes(1);
     expect(errorSpy).toHaveBeenCalledWith(
-      'Failed to process CompletedContactJobBody:',
+      new ContactJobPollerError('Failed to process CompletedContactJobBody:'),
       invalidPayload,
       new Error(`Unhandled case: ${invalidPayload}`),
     );
@@ -128,7 +129,7 @@ describe('pollAndProcessCompletedContactJobs', () => {
     expect(processCompletedRetrieveContactTranscriptSpy).toHaveBeenCalledTimes(2);
     expect(errorSpy).toHaveBeenCalledTimes(1);
     expect(errorSpy).toHaveBeenCalledWith(
-      'Failed to process CompletedContactJobBody:',
+      new ContactJobPollerError('Failed to process CompletedContactJobBody:'),
       validPayload1,
       new Error(':sad_trombone:'),
     );

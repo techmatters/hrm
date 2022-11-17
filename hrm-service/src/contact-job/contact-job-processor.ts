@@ -2,7 +2,7 @@ import { setInterval } from 'timers';
 import { subMilliseconds } from 'date-fns';
 import { pullDueContactJobs } from './contact-job-data-access';
 import { pollAndProcessCompletedContactJobs } from './contact-job-complete';
-import { ContactJobPollerError } from './contact-job-errors';
+import { ContactJobPollerError } from './contact-job-error';
 import { publishDueContactJobs } from './contact-job-publish';
 import { loadSsmCache } from '../config/ssmCache';
 

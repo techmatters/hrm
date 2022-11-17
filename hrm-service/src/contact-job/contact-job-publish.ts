@@ -1,6 +1,6 @@
 import { format } from 'date-fns';
 import { ContactJob, RetrieveContactTranscriptJob } from './contact-job-data-access';
-import { ContactJobPollerError } from './contact-job-errors';
+import { ContactJobPollerError } from './contact-job-error';
 import { publishToContactJobs } from './client-sqs';
 import { ContactJobType } from './contact-job-data-access';
 import { assertExhaustive } from './assertExhaustive';

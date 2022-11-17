@@ -1,6 +1,7 @@
 import * as SQSClient from '../../src/contact-job/client-sqs';
 import * as contactJobPublish from '../../src/contact-job/contact-job-publish';
 import { ContactJob, ContactJobType } from '../../src/contact-job/contact-job-data-access';
+import { ContactJobPollerError } from '../../src/contact-job/contact-job-error';
 import each from 'jest-each';
 import { PublishToContactJobsTopicParams } from '@tech-matters/hrm-types/ContactJob';
 
@@ -40,7 +41,7 @@ describe('publishDueContactJobs', () => {
     expect(publishRetrieveContactTranscriptSpy).toHaveBeenCalledWith(validPayload);
     expect(errorSpy).toHaveBeenCalledTimes(1);
     expect(errorSpy).toHaveBeenCalledWith(
-      'Failed to publish due job:',
+      new ContactJobPollerError('Failed to publish due job:'),
       invalidPayload,
       new Error(`Unhandled case: ${invalidPayload}`),
     );
@@ -97,7 +98,7 @@ describe('publishDueContactJobs', () => {
     expect(publishRetrieveContactTranscriptSpy).toHaveBeenCalledWith(validPayload2);
     expect(errorSpy).toHaveBeenCalledTimes(1);
     expect(errorSpy).toHaveBeenCalledWith(
-      'Failed to publish due job:',
+      new ContactJobPollerError('Failed to publish due job:'),
       validPayload1,
       new Error(':sad_trombone:'),
     );
@@ -171,8 +172,6 @@ describe('publishDueContactJobs', () => {
         contactJobPublish,
         publishDueContactJobFunction,
       );
-
-      console.log(await contactJobPublish.publishRetrieveContactTranscript(dueJob));
 
       const result = await contactJobPublish.publishDueContactJobs([dueJob]);
 

@@ -3,7 +3,7 @@ import {
   completeContactJob,
   appendFailedAttemptPayload,
 } from './contact-job-data-access';
-import { ContactJobCompleteProcessorError, ContactJobPollerError } from './contact-job-errors';
+import { ContactJobCompleteProcessorError, ContactJobPollerError } from './contact-job-error';
 import {
   deleteCompletedContactJobsFromQueue,
   pollCompletedContactJobsFromQueue,
