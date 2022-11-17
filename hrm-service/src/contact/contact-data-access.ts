@@ -12,6 +12,7 @@ import { insertContactSql, NewContactRecord } from './sql/contact-insert-sql';
 import { ContactRawJson, isS3StoredTranscriptPending, PersonInformation } from './contact-json';
 import { createContactJob, ContactJobType } from '../contact-job/contact-job-data-access';
 import { isChatChannel } from './channelTypes';
+import { connectContactToCsamReports } from '../csam-report/csam-report';
 
 type ExistingContactRecord = {
   id: number;
@@ -157,8 +158,12 @@ export const create = async (
         createdAt: now,
         updatedAt: now,
       }),
-      { csamReportIds },
     );
+
+    const csamReports =
+      csamReportIds && csamReportIds.length
+        ? await connectContactToCsamReports(connection)(created.id, csamReportIds, accountSid)
+        : [];
 
     if (
       enableCreateContactJobsFlag &&
@@ -172,7 +177,7 @@ export const create = async (
       });
     }
 
-    return created;
+    return { ...created, csamReports };
   });
 };
 
