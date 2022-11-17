@@ -1,9 +1,14 @@
 import supertest from 'supertest';
-import * as Sequelize from 'sequelize';
-// eslint-disable-next-line prettier/prettier
-import { ContactMediaType, ContactRawJson, isS3StoredTranscript } from '../src/contact/contact-json';
+import each from 'jest-each';
+import { subHours, subDays } from 'date-fns';
+
+import { db } from '../src/connection-pool';
+import {
+  ContactMediaType,
+  ContactRawJson,
+  isS3StoredTranscript,
+} from '../src/contact/contact-json';
 import { createService } from '../src/app';
-const models = require('../src/models');
 import {
   accountSid,
   contact1,
@@ -21,10 +26,6 @@ import {
   nonData1,
   withTaskIdAndTranscript,
 } from './mocks';
-import each from 'jest-each';
-import { db } from '../src/connection-pool';
-import { subHours, subDays } from 'date-fns';
-
 import './case-validation';
 import * as caseApi from '../src/case/case';
 import * as caseDb from '../src/case/case-data-access';
@@ -39,6 +40,7 @@ import * as contactInsertSql from '../src/contact/sql/contact-insert-sql';
 import { selectSingleContactByTaskId } from '../src/contact/sql/contact-get-sql';
 import { RulesFile } from '../src/permissions/rulesMap';
 import { ruleFileWithOneActionOverride } from './permissions-overrides';
+import * as csamReportApi from '../src/csam-report/csam-report';
 
 const { form, ...contact1WithRawJsonProp } = contact1 as CreateContactPayloadWithFormProperty;
 
@@ -71,9 +73,6 @@ const headers = {
   Authorization: `Bearer bearing a bear (rawr)`,
 };
 
-const { CSAMReport } = models;
-const CSAMReportController = require('../src/controllers/csam-report-controller')(CSAMReport);
-
 const cleanupWhereClause = `
   WHERE "twilioWorkerId" IN ('fake-worker-123', 'fake-worker-129', 'fake-worker-987', '${workerSid}') OR "accountSid" IN ('', '${accountSid}');
 `;
@@ -100,6 +99,14 @@ const cleanupContactsJobs = () =>
       DELETE FROM "ContactJobs" 
       WHERE "accountSid" IN ('', '${accountSid}')
   `),
+  );
+
+const cleanupCsamReports = () =>
+  db.task(t =>
+    t.none(`
+      DELETE FROM "CSAMReports"
+      ${cleanupWhereClause}
+    `),
   );
 
 // eslint-disable-next-line @typescript-eslint/no-shadow
@@ -142,34 +149,35 @@ const deleteJobsByContactId = (contactId: number, accountSid: string) =>
     `),
   );
 
-const query = {
-  where: {
-    [Sequelize.Op.or]: [
-      {
-        twilioWorkerId: {
-          [Sequelize.Op.in]: ['fake-worker-123', 'fake-worker-129', 'fake-worker-987', workerSid],
-        },
-      },
-      {
-        accountSid: {
-          [Sequelize.Op.in]: ['', accountSid],
-        },
-      },
-    ],
-  },
-};
+// eslint-disable-next-line @typescript-eslint/no-shadow
+const deleteCsamReportById = (id: number, accountSid: string) =>
+  db.task(t =>
+    t.manyOrNone(`
+      DELETE FROM "CSAMReports"
+      WHERE "id" = ${id} AND "accountSid" = '${accountSid}';
+    `),
+  );
+
+// eslint-disable-next-line @typescript-eslint/no-shadow
+const deleteCsamReportByContactId = (contactId: number, accountSid: string) =>
+  db.task(t =>
+    t.manyOrNone(`
+      DELETE FROM "CSAMReports"
+      WHERE "contactId" = ${contactId} AND "accountSid" = '${accountSid}';
+    `),
+  );
 
 beforeAll(async () => {
   await proxiedEndpoints.start();
   await proxiedEndpoints.mockSuccessfulTwilioAuthentication(workerSid);
-  await CSAMReport.destroy(query);
+  await cleanupCsamReports();
   await cleanupContactsJobs();
   await cleanupContacts();
   await cleanupCases();
 });
 
 afterAll(async () => {
-  await CSAMReport.destroy(query);
+  await cleanupCsamReports();
   await cleanupContactsJobs();
   await cleanupContacts();
   await cleanupCases();
@@ -318,7 +326,7 @@ describe('/contacts route', () => {
 
       // No new report is created
       await expect(
-        CSAMReportController.getCSAMReport(notExistingCsamReport.id, accountSid),
+        csamReportApi.getCSAMReport(notExistingCsamReport.id, accountSid),
       ).rejects.toThrow(`CSAM Report with id ${notExistingCsamReport.id} not found`);
 
       await deleteContactById(response.body.id, response.body.accountSid);
@@ -329,25 +337,21 @@ describe('/contacts route', () => {
       const csamReportId1 = 'csam-report-id-1';
       const csamReportId2 = 'csam-report-id-2';
 
-      const newReport1 = (
-        await CSAMReportController.createCSAMReport(
-          {
-            csamReportId: csamReportId1,
-            twilioWorkerId: workerSid,
-          },
-          accountSid,
-        )
-      ).dataValues;
+      const newReport1 = await csamReportApi.createCSAMReport(
+        {
+          csamReportId: csamReportId1,
+          twilioWorkerId: workerSid,
+        },
+        accountSid,
+      );
 
-      const newReport2 = (
-        await CSAMReportController.createCSAMReport(
-          {
-            csamReportId: csamReportId2,
-            twilioWorkerId: workerSid,
-          },
-          accountSid,
-        )
-      ).dataValues;
+      const newReport2 = await csamReportApi.createCSAMReport(
+        {
+          csamReportId: csamReportId2,
+          twilioWorkerId: workerSid,
+        },
+        accountSid,
+      );
 
       // Create contact with above report
       const response = await request
@@ -355,11 +359,21 @@ describe('/contacts route', () => {
         .set(headers)
         .send({ ...contact1, csamReports: [newReport1, newReport2] });
 
-      const updatedReport1 = await CSAMReportController.getCSAMReport(newReport1.id, accountSid);
+      const updatedReport1 = await csamReportApi.getCSAMReport(newReport1.id, accountSid);
+
+      if (!updatedReport1) {
+        throw new Error('updatedReport1 does not exists');
+      }
+
       expect(updatedReport1.contactId).toEqual(response.body.id);
       expect(updatedReport1.csamReportId).toEqual(csamReportId1);
 
-      const updatedReport2 = await CSAMReportController.getCSAMReport(newReport2.id, accountSid);
+      const updatedReport2 = await csamReportApi.getCSAMReport(newReport2.id, accountSid);
+
+      if (!updatedReport2) {
+        throw new Error('updatedReport1 does not exists');
+      }
+
       expect(updatedReport2.contactId).toEqual(response.body.id);
       expect(updatedReport2.csamReportId).toEqual(csamReportId2);
 
@@ -367,7 +381,7 @@ describe('/contacts route', () => {
       expect(response.body.csamReports).toHaveLength(2);
 
       // Remove records to not interfere with following tests
-      await CSAMReport.destroy({ where: { contactId: response.body.id } });
+      await deleteCsamReportByContactId(response.body.id, response.body.accuntSid);
       await deleteContactById(response.body.id, response.body.accountSid);
     });
 
@@ -585,13 +599,13 @@ describe('/contacts route', () => {
       });
 
       let createdContacts: contactDb.Contact[] = [];
-      let csamReports = [];
+      let csamReports = new Array<csamReportApi.CSAMReportRecord>();
 
       const startTestsTimeStamp = new Date();
 
       beforeAll(async () => {
         // Clean what's been created so far
-        await CSAMReport.destroy(query);
+        await cleanupCsamReports();
         await cleanupContactsJobs();
         await cleanupContacts();
         await cleanupCases();
@@ -600,25 +614,21 @@ describe('/contacts route', () => {
         const csamReportId1 = 'csam-report-id-1';
         const csamReportId2 = 'csam-report-id-2';
 
-        const newReport1 = (
-          await CSAMReportController.createCSAMReport(
-            {
-              csamReportId: csamReportId1,
-              twilioWorkerId: workerSid,
-            },
-            accountSid,
-          )
-        ).dataValues;
+        const newReport1 = await csamReportApi.createCSAMReport(
+          {
+            csamReportId: csamReportId1,
+            twilioWorkerId: workerSid,
+          },
+          accountSid,
+        );
 
-        const newReport2 = (
-          await CSAMReportController.createCSAMReport(
-            {
-              csamReportId: csamReportId2,
-              twilioWorkerId: workerSid,
-            },
-            accountSid,
-          )
-        ).dataValues;
+        const newReport2 = await csamReportApi.createCSAMReport(
+          {
+            csamReportId: csamReportId2,
+            twilioWorkerId: workerSid,
+          },
+          accountSid,
+        );
 
         // Create some contacts to work with
         const oneHourBefore = {
@@ -663,9 +673,9 @@ describe('/contacts route', () => {
         );
 
         createdContacts = responses.map(r => r.body);
-        const withCSAMReportsId = createdContacts.find(c => c.queueName === 'withCSAMReports')?.id;
+        const withCSAMReportsId = createdContacts.find(c => c.queueName === 'withCSAMReports')!.id;
         // Retrieve the csam reports that should be connected to withCSAMReports
-        const updatedCsamReports = await CSAMReportController.getCSAMReports(
+        const updatedCsamReports = await csamReportApi.getCsamReportsByContactId(
           withCSAMReportsId,
           accountSid,
         );
@@ -674,14 +684,7 @@ describe('/contacts route', () => {
       });
 
       afterAll(async () => {
-        await CSAMReport.destroy({
-          where: {
-            id: {
-              [Sequelize.Op.in]: csamReports.map(c => c.id),
-            },
-          },
-        });
-
+        await Promise.all(csamReports.map(c => deleteCsamReportById(c.id, c.accountSid)));
         await Promise.all(
           createdContacts.filter(c => c.id).map(c => deleteContactById(c.id, c.accountSid)),
         );
@@ -927,6 +930,10 @@ describe('/contacts route', () => {
             const { contacts } = response.body;
             expect(contacts.length).toBe(1);
             const withCSAMReports = createdContacts.find(c => c.queueName === 'withCSAMReports');
+
+            if (!withCSAMReports) {
+              throw new Error('withCSAMReports is undefined');
+            }
 
             expect(contacts.find(c => withCSAMReports.id.toString() === c.contactId)).toBeDefined();
             expect(contacts[0].details).toMatchObject(withCSAMReports.rawJson);
