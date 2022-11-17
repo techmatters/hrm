@@ -358,12 +358,15 @@ describe('/contacts route', () => {
         .set(headers)
         .send({ ...contact1, csamReports: [newReport1, newReport2] });
 
+      expect(response.status).toBe(200);
+
       const updatedReport1 = await csamReportApi.getCSAMReport(newReport1.id, accountSid);
 
       if (!updatedReport1) {
         throw new Error('updatedReport1 does not exists');
       }
 
+      expect(updatedReport1.contactId).toBeDefined();
       expect(updatedReport1.contactId).toEqual(response.body.id);
       expect(updatedReport1.csamReportId).toEqual(csamReportId1);
 
@@ -373,6 +376,7 @@ describe('/contacts route', () => {
         throw new Error('updatedReport2 does not exists');
       }
 
+      expect(updatedReport2.contactId).toBeDefined();
       expect(updatedReport2.contactId).toEqual(response.body.id);
       expect(updatedReport2.csamReportId).toEqual(csamReportId2);
 
@@ -382,6 +386,50 @@ describe('/contacts route', () => {
       // Remove records to not interfere with following tests
       await deleteCsamReportsByContactId(response.body.id, response.body.accountSid);
       await deleteContactById(response.body.id, response.body.accountSid);
+    });
+
+    test(`If connecting csam report fails, the contact is not created either`, async () => {
+      const csamReportId = 'csam-report-id';
+      const newReport = await csamReportApi.createCSAMReport(
+        {
+          csamReportId: csamReportId,
+          twilioWorkerId: workerSid,
+        },
+        accountSid,
+      );
+
+      const contact = {
+        ...withTaskId,
+        form: {
+          ...withTaskId.form,
+        },
+        csamReports: [newReport.id],
+        channel: 'web',
+        taskId: `${withTaskId.taskId}-web-csam-failure`,
+      };
+
+      const connectContactToCsamReportsSpy = jest
+        .spyOn(csamReportApi, 'connectContactToCsamReports')
+        .mockImplementationOnce(() => {
+          throw new Error('Ups');
+        });
+
+      const res = await request
+        .post(route)
+        .set(headers)
+        .send(contact);
+
+      expect(res.status).toBe(500);
+
+      const updatedReport = await csamReportApi.getCSAMReport(newReport.id, accountSid);
+      expect(updatedReport?.contactId).toBeNull();
+
+      const attemptedContact = await getContactByTaskId(contact.taskId, accountSid);
+
+      expect(attemptedContact).toBeNull();
+
+      await deleteCsamReportById(newReport.id, newReport.accountSid);
+      connectContactToCsamReportsSpy.mockRestore();
     });
 
     each(
@@ -514,25 +562,39 @@ describe('/contacts route', () => {
         },
       })),
     ).test(
-      `if ${contactJobDataAccess.ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT} job creation fails with channel type $channel, the contact is not created either`,
+      `if ${contactJobDataAccess.ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT} job creation fails with channel type $channel, the contact is not created either, and csams are not linked`,
       async ({ contact }) => {
+        const csamReportId = 'csam-report-id';
+        const newReport = await csamReportApi.createCSAMReport(
+          {
+            csamReportId: csamReportId,
+            twilioWorkerId: workerSid,
+          },
+          accountSid,
+        );
+
         const createContactJobSpy = jest
           .spyOn(contactJobDataAccess, 'createContactJob')
           .mockImplementationOnce(() => {
             throw new Error('Ups');
           });
 
+        const contactWithCsam = { ...contact, csamReports: [newReport] };
         const res = await request
           .post(route)
           .set(headers)
-          .send(contact);
+          .send(contactWithCsam);
 
         expect(res.status).toBe(500);
+
+        const updatedReport = await csamReportApi.getCSAMReport(newReport.id, accountSid);
+        expect(updatedReport?.contactId).toBeNull();
 
         const attemptedContact = await getContactByTaskId(contact.taskId, accountSid);
 
         expect(attemptedContact).toBeNull();
 
+        await deleteCsamReportById(updatedReport!.id, updatedReport!.accountSid);
         createContactJobSpy.mockRestore();
       },
     );
