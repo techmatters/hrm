@@ -1,8 +1,8 @@
-const IN_IDS_WHERE_CLAUSE = `WHERE r."accountSid" = $<accountSid> AND r."id" IN $<csamReportIds:csv>`;
+const IN_IDS_WHERE_CLAUSE = `WHERE "accountSid" = $<accountSid> AND "id" IN ($<csamReportIds:csv>)`;
 
 export const updateContactIdByCsamReportIdsSql = `
-  UPDATE "CSAMReports" 
-  SET "contactId" = <contactId>
+  UPDATE "CSAMReports"
+  SET "contactId" = $<contactId>
   ${IN_IDS_WHERE_CLAUSE}
   RETURNING *
 `;
