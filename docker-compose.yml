@@ -11,7 +11,7 @@ services:
       - DEBUG=1
       - DATA_DIR=/tmp/localstack/data
       - DOCKER_HOST=unix:///var/run/docker.sock
-      - LAMBDA_EXECUTOR=docker
+      - LAMBDA_EXECUTOR=docker-reuse
       - LAMBDA_NETWORK=bridge
     volumes:
       - '/var/run/docker.sock:/var/run/docker.sock'

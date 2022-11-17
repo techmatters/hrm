@@ -26,7 +26,7 @@ const sqs = new SQS({
   endpoint: localstackEndpoint,
 });
 
-const lambdaName = 'contact-retrieve-transcript';
+const lambdaName = 'retrieve-transcript';
 
 export const waitForS3Object = async ({
   message,
