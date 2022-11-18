@@ -35,10 +35,7 @@ if (config.use_env_variable) {
   sequelize = new Sequelize(config.database, config.username, config.password, config);
 }
 
-db.Case = require('./case')(sequelize, Sequelize.DataTypes);
-db.CaseAudit = require('./case-audit')(sequelize, Sequelize.DataTypes);
 db.Contact = require('./contact')(sequelize, Sequelize.DataTypes);
-db.CSAMReport = require('./csam-report')(sequelize, Sequelize.DataTypes);
 db.PostSurvey = require('./post-survey')(sequelize, Sequelize.DataTypes);
 
 Object.keys(db).forEach(modelName => {
