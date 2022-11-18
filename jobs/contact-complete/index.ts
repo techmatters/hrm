@@ -1,3 +1,5 @@
+import { ContactJobProcessorError } from '@tech-matters/hrm-job-errors';
+
 // eslint-disable-next-line prettier/prettier
 import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
 
@@ -17,8 +19,12 @@ import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
  */
 
 const processRecord = async (sqsRecord: SQSRecord) => {
-  console.dir(sqsRecord);
-  // TODO: fill in the actual work!
+  try {
+    console.dir(sqsRecord);
+    // TODO: fill in the actual work!
+  } catch (err) {
+    console.error(new ContactJobProcessorError('Failed to process record'), err);
+  }
 };
 
 export const handler = async (event: SQSEvent): Promise<any> => {
@@ -31,7 +37,7 @@ export const handler = async (event: SQSEvent): Promise<any> => {
 
     return response;
   } catch (err) {
-    console.dir(err);
+    console.error(new ContactJobProcessorError('Failed to init processor'), err);
 
     // We fail all messages here and rely on SQS retry/DLQ because we hit
     // a fatal error before we could process any of the messages. Once we

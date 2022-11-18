@@ -1,6 +1,8 @@
 import supertest from 'supertest';
 import timers from 'timers';
 
+import { ContactJobPollerError } from '../../src/contact-job/contact-job-error';
+
 require('./mocks');
 
 let server;
@@ -127,7 +129,7 @@ describe('processContactJobs', () => {
     expect(completeSpy).toHaveBeenCalledTimes(1);
 
     expect(errorSpy).toHaveBeenCalledWith(
-      'JOB PROCESSING SWEEP ABORTED DUE TO UNHANDLED ERROR',
+      new ContactJobPollerError('JOB PROCESSING SWEEP ABORTED DUE TO UNHANDLED ERROR'),
       Error('Aaaw, snap!'),
     );
 

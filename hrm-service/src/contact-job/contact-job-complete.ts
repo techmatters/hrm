@@ -3,6 +3,7 @@ import {
   completeContactJob,
   appendFailedAttemptPayload,
 } from './contact-job-data-access';
+import { ContactJobCompleteProcessorError, ContactJobPollerError } from './contact-job-error';
 import {
   deleteCompletedContactJobsFromQueue,
   pollCompletedContactJobsFromQueue,
@@ -31,7 +32,7 @@ export const processCompletedRetrieveContactTranscript = async (
   const transcriptEntryIndex = conversationMedia?.findIndex(isS3StoredTranscriptPending);
 
   if (transcriptEntryIndex < 0) {
-    throw new Error(
+    throw new ContactJobPollerError(
       `Contact with id ${contact.id} does not have a pending transcript entry in conversationMedia`,
     );
   }
@@ -64,7 +65,7 @@ export const pollAndProcessCompletedContactJobs = async (jobMaxAttempts: number)
   const { Messages: messages } = polledCompletedJobs;
 
   if (!Array.isArray(messages)) {
-    throw new Error(`polledCompletedJobs returned invalid messages format ${messages}`);
+    throw new ContactJobPollerError(`polledCompletedJobs returned invalid messages format ${messages}`);
   }
 
   const completedJobs = await Promise.allSettled(
@@ -87,7 +88,19 @@ export const pollAndProcessCompletedContactJobs = async (jobMaxAttempts: number)
 
           return markedComplete;
         } else {
+
           const { jobId, attemptNumber, attemptPayload } = completedJob;
+
+          // emit an error to pick up in metrics since completed queue is our
+          // DLQ. These may be duplicates of ContactJobProcessorErrors that have
+          // already caused an alarm, but there is a chance of other errors ending up here.
+          console.error(
+            new ContactJobCompleteProcessorError(
+              `process job with id ${jobId} failed`,
+              attemptPayload,
+            ),
+          );
+
           const updated = await appendFailedAttemptPayload(jobId, attemptNumber, attemptPayload);
 
           if (attemptNumber >= jobMaxAttempts) {
@@ -102,7 +115,7 @@ export const pollAndProcessCompletedContactJobs = async (jobMaxAttempts: number)
           return updated;
         }
       } catch (err) {
-        console.error('Failed to process CompletedContactJobBody:', m, err);
+        console.error(new ContactJobPollerError('Failed to process CompletedContactJobBody:'), m, err);
         return Promise.reject(err);
       }
     }),

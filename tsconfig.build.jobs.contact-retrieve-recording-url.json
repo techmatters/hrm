@@ -2,6 +2,7 @@
   "extends": "./tsconfig.base.json",
   "files": [],
   "references": [
+    { "path": "packages/job-errors" },
     { "path": "packages/ssm-cache" },
     { "path": "packages/s3-client" },
     { "path": "packages/twilio-client" },

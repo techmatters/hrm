@@ -1,5 +1,6 @@
 import { format } from 'date-fns';
 import { ContactJob, RetrieveContactTranscriptJob } from './contact-job-data-access';
+import { ContactJobPollerError } from './contact-job-error';
 import { publishToContactJobs } from './client-sqs';
 import { ContactJobType } from './contact-job-data-access';
 import { assertExhaustive } from './assertExhaustive';
@@ -49,7 +50,7 @@ export const publishDueContactJobs = async (
             assertExhaustive(dueJob as never);
         }
       } catch (err) {
-        console.error('Failed to publish due job:', dueJob, err);
+        console.error(new ContactJobPollerError('Failed to publish due job:'), dueJob, err);
         return Promise.reject(err);
       }
     }),
