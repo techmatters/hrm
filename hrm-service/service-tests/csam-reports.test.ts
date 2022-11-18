@@ -1,19 +1,13 @@
+import supertest from 'supertest';
 import { createService } from '../src/app';
 import * as mocks from './mocks';
 import './case-validation';
 import { openPermissions } from '../src/permissions/json-permissions';
 import * as proxiedEndpoints from './external-service-stubs/proxied-endpoints';
-const supertest = require('supertest');
-const Sequelize = require('sequelize');
-const models = require('../src/models');
+import { db } from '../src/connection-pool';
+import * as csamReportsApi from '../src/csam-report/csam-report';
 
 console.log(process.env.INCLUDE_ERROR_IN_RESPONSE);
-
-/**
- * This interacts with the DB
- */
-const { CSAMReport, Contact } = models;
-const CSAMReportController = require('../src/controllers/csam-report-controller')(CSAMReport);
 
 const server = createService({
   permissions: openPermissions,
@@ -50,32 +44,24 @@ const headers = {
   Authorization: `Bearer bearing a bear (rawr)`,
 };
 
-const csamReports2DestroyQuery = {
-  where: {
-    accountSid: {
-      [Sequelize.Op.and]: [accountSid],
-    },
-  },
-};
+const whereTwilioWorkerIdClause = `WHERE "accountSid" = '${accountSid}' AND ("twilioWorkerId" = '${workerSid}' OR "twilioWorkerId" IS NULL)`;
 
-const query = {
-  where: {
-    twilioWorkerId: {
-      [Sequelize.Op.in]: [workerSid],
-    },
-  },
-};
+const cleanupContacts = async () =>
+  db.task(t => t.none(`DELETE FROM "Contacts" ${whereTwilioWorkerIdClause}`));
+
+const cleanupCsamReports = async () =>
+  db.task(t => t.none(`DELETE FROM "CSAMReports" ${whereTwilioWorkerIdClause}`));
 
 beforeAll(async () => {
   await proxiedEndpoints.start();
   await proxiedEndpoints.mockSuccessfulTwilioAuthentication(workerSid);
-  await CSAMReport.destroy(csamReports2DestroyQuery);
-  await Contact.destroy(query);
+  await cleanupCsamReports();
+  await cleanupContacts();
 });
 
 afterAll(async () => {
-  await CSAMReport.destroy(csamReports2DestroyQuery);
-  await Contact.destroy(query);
+  await cleanupCsamReports();
+  await cleanupContacts();
   await proxiedEndpoints.stop();
   await server.close();
   console.log('csam reports test cleaned up.');
@@ -110,8 +96,12 @@ describe('/csamReports route', () => {
       expect(response.status).toBe(200);
       expect(response.body).toStrictEqual(expected);
 
-      const reportFromDB = await CSAMReportController.getCSAMReport(response.body.id, accountSid);
-      expect(reportFromDB).toBeDefined();
+      const reportFromDB = await csamReportsApi.getCSAMReport(response.body.id, accountSid);
+
+      if (!reportFromDB) {
+        throw new Error('reportFromDB is undefined');
+      }
+
       expect(reportFromDB.csamReportId).toEqual(expected.csamReportId);
     });
 
@@ -132,9 +122,15 @@ describe('/csamReports route', () => {
       expect(response.status).toBe(200);
       expect(response.body.contactId).toBe(csamReportWithContactId.contactId);
 
-      const reportFromDB = await CSAMReportController.getCSAMReport(response.body.id, accountSid);
+      const reportFromDB = await csamReportsApi.getCSAMReport(response.body.id, accountSid);
+
+      if (!reportFromDB) {
+        throw new Error('reportFromDB is undefined');
+      }
+
       expect(reportFromDB.csamReportId).toEqual(expected.csamReportId);
     });
+
     test('invalid contactId, returns 500', async () => {
       const response = await request
         .post(route)
@@ -146,6 +142,7 @@ describe('/csamReports route', () => {
         'insert or update on table "CSAMReports" violates foreign key constraint "CSAMReports_contactId_accountSid_fkey"',
       );
     });
+
     test('invalid accountSid, returns 500', async () => {
       //Create a Contact for the contactId
       const contactRoute = `/v0/accounts/${accountSid}/contacts`;
@@ -165,6 +162,7 @@ describe('/csamReports route', () => {
         'insert or update on table "CSAMReports" violates foreign key constraint "CSAMReports_contactId_accountSid_fkey"',
       );
     });
+
     test('missing twilioWorkerId, returns 200', async () => {
       const response = await request
         .post(route)
@@ -173,9 +171,15 @@ describe('/csamReports route', () => {
       expect(response.status).toBe(200);
       expect(response.body.twilioWorkerId).toEqual('');
 
-      const reportFromDB = await CSAMReportController.getCSAMReport(response.body.id, accountSid);
+      const reportFromDB = await csamReportsApi.getCSAMReport(response.body.id, accountSid);
+
+      if (!reportFromDB) {
+        throw new Error('reportFromDB is undefined');
+      }
+
       expect(reportFromDB.csamReportId).toEqual(expected.csamReportId);
     });
+
     test('missing csamReportId, returns 200', async () => {
       const response = await request
         .post(route)
@@ -184,7 +188,7 @@ describe('/csamReports route', () => {
       expect(response.status).toBe(200);
 
       expect(response.body.csamReportId).toEqual('');
-      const reportFromDB = await CSAMReportController.getCSAMReport(response.body.id, accountSid);
+      const reportFromDB = await csamReportsApi.getCSAMReport(response.body.id, accountSid);
       expect(reportFromDB).toBeDefined();
     });
   });

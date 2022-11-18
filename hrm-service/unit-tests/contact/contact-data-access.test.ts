@@ -4,6 +4,7 @@ import { search, create } from '../../src/contact/contact-data-access';
 import { endOfDay, startOfDay } from 'date-fns';
 import { ContactBuilder } from './contact-builder';
 import { NewContactRecord, insertContactSql } from '../../src/contact/sql/contact-insert-sql';
+import * as csamReportApi from '../../src/csam-report/csam-report';
 
 jest.mock('../../src/contact/sql/contact-insert-sql', () => ({
   insertContactSql: jest.fn().mockReturnValue('MOCKED INSERT STATEMENT'),
@@ -47,6 +48,16 @@ describe('create', () => {
     mockTransaction(conn);
 
     jest.spyOn(conn, 'one').mockResolvedValue(returnValue);
+    jest
+      .spyOn(csamReportApi, 'connectContactToCsamReports')
+      .mockImplementationOnce(
+        () => async (contactId: number, csamReportIds: number[], accountSid: string) =>
+          csamReportIds.map(id => ({
+            id,
+            contactId,
+            accountSid,
+          })) as any,
+      );
     const created = await create('parameter account-sid', sampleNewContact, [3, 2, 1]);
     expect(insertContactSql).toHaveBeenCalledWith({
       ...sampleNewContact,
@@ -54,13 +65,15 @@ describe('create', () => {
       createdAt: expect.anything(),
       accountSid: 'parameter account-sid',
     });
-    expect(conn.one).toHaveBeenCalledWith(
-      expect.stringContaining('MOCKED INSERT STATEMENT'),
-      expect.objectContaining({
-        csamReportIds: expect.arrayContaining([1, 2, 3]),
-      }),
-    );
-    expect(created).toStrictEqual(returnValue);
+    expect(conn.one).toHaveBeenCalledWith(expect.stringContaining('MOCKED INSERT STATEMENT'));
+    expect(created).toStrictEqual({
+      ...returnValue,
+      csamReports: expect.arrayContaining([
+        expect.objectContaining({ id: 3 }),
+        expect.objectContaining({ id: 2 }),
+        expect.objectContaining({ id: 1 }),
+      ]),
+    });
   });
 
   test('Task ID specified in payload that is not already associated with a contact - creates contact as expected', async () => {
@@ -69,6 +82,16 @@ describe('create', () => {
     mockTransaction(conn);
 
     jest.spyOn(conn, 'one').mockResolvedValue(returnValue);
+    jest
+      .spyOn(csamReportApi, 'connectContactToCsamReports')
+      .mockImplementationOnce(
+        () => async (contactId: number, csamReportIds: number[], accountSid: string) =>
+          csamReportIds.map(id => ({
+            id,
+            contactId,
+            accountSid,
+          })) as any,
+      );
     const created = await create('parameter account-sid', sampleContactWithTaskId, [3, 2, 1]);
     expect(insertContactSql).toHaveBeenCalledWith({
       ...sampleContactWithTaskId,
@@ -76,13 +99,15 @@ describe('create', () => {
       createdAt: expect.anything(),
       accountSid: 'parameter account-sid',
     });
-    expect(conn.one).toHaveBeenCalledWith(
-      expect.stringContaining('MOCKED INSERT STATEMENT'),
-      expect.objectContaining({
-        csamReportIds: expect.arrayContaining([1, 2, 3]),
-      }),
-    );
-    expect(created).toStrictEqual(returnValue);
+    expect(conn.one).toHaveBeenCalledWith(expect.stringContaining('MOCKED INSERT STATEMENT'));
+    expect(created).toStrictEqual({
+      ...returnValue,
+      csamReports: expect.arrayContaining([
+        expect.objectContaining({ id: 3 }),
+        expect.objectContaining({ id: 2 }),
+        expect.objectContaining({ id: 1 }),
+      ]),
+    });
   });
 });
 
