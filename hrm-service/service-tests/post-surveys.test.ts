@@ -3,9 +3,10 @@ import { openPermissions } from '../src/permissions/json-permissions';
 import * as proxiedEndpoints from './external-service-stubs/proxied-endpoints';
 import * as mocks from './mocks';
 import { Op } from 'sequelize';
+import { db } from '../src/connection-pool';
 const supertest = require('supertest');
-const Sequelize = require('sequelize');
 const models = require('../src/models');
+import { create } from '../src/post-survey/post-survey-data-access'
 
 const server = createService({
   permissions: openPermissions,
@@ -23,24 +24,32 @@ const headers = {
 
 const { PostSurvey } = models;
 
-const postSurveys2DestroyQuery = {
-  where: {
-    accountSid: {
-      [Sequelize.Op.and]: [accountSid],
-    },
-  },
+const deleteAllPostSurveys = async ()=> db.task(t =>
+    t.none(`
+      DELETE FROM "PostSurveys" WHERE "accountSid" = '${accountSid}';
+  `),
+  );
+
+
+const countPostSurveys = async (contactTaskId: string, taskId: string): Promise<number> => {
+  const row = await db.task(connection =>
+    connection.any(`
+        SELECT COUNT(*) FROM "PostSurveys" WHERE "accountSid" = $<accountSid> AND "contactTaskId" = $<contactTaskId> AND "taskId" = $<taskId>
+    `, { accountSid, contactTaskId, taskId })
+  );
+  return parseInt(row[0].count);
 };
 
 beforeAll(async () => {
   await proxiedEndpoints.start();
   await proxiedEndpoints.mockSuccessfulTwilioAuthentication(workerSid);
-  await PostSurvey.destroy(postSurveys2DestroyQuery);
+  await deleteAllPostSurveys();
 });
 
 afterAll(async () =>
   Promise.all([
     proxiedEndpoints.stop(),
-    PostSurvey.destroy(postSurveys2DestroyQuery),
+    deleteAllPostSurveys(),
     server.close(),
   ]),
 );
@@ -61,9 +70,7 @@ describe('/postSurveys route', () => {
     const shouldExist = `${subRoute}/${body.contactTaskId}`;
     const shouldNotExist = `${subRoute}/one-that-not-exists`;
 
-    beforeAll(async () => {
-      await PostSurvey.create({ ...body, accountSid });
-    });
+    beforeAll(async () => create(accountSid, body));
 
     describe('GET', () => {
       test('should return 401', async () => {
@@ -114,15 +121,7 @@ describe('/postSurveys route', () => {
       expect(response.status).toBe(200);
       expect(response.body.data).toEqual(body.data);
 
-      const matchingRowsCount = await PostSurvey.count({
-        where: {
-          [Op.and]: [
-            accountSid && { accountSid },
-            contactTaskId && { contactTaskId },
-            taskId && { taskId },
-          ],
-        },
-      });
+      const matchingRowsCount = await countPostSurveys(contactTaskId, taskId);
 
       expect(matchingRowsCount).toBe(1);
     });
