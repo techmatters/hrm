@@ -4,17 +4,16 @@ const pathLib = require('path');
 const { sequelize, Sequelize } = require('../../src/models/index');
 const fs = require('fs');
 
-
 const CONNECT_ATTEMPT_SECONDS = 20;
 const migrationDirectory = pathLib.join(process.cwd(), './migrations/');
 const context = sequelize.getQueryInterface();
 
 // Glob based migrations stopped working locally for SJH, manually locate files instead
 const umzug = new Umzug({
-  migrations: fs.readdirSync(pathLib.join(process.cwd(), './migrations/'))
+  migrations: fs
+    .readdirSync(pathLib.join(process.cwd(), './migrations/'))
     .filter(file => file.endsWith('.js'))
-    .map(
-    filename => {
+    .map(filename => {
       // eslint-disable-next-line global-require,import/no-dynamic-require
       const migration = require(pathLib.join(migrationDirectory, filename));
       return {
@@ -22,11 +21,10 @@ const umzug = new Umzug({
         up: async () => migration.up(context, Sequelize),
         down: async () => migration.down(context, Sequelize),
       };
-    }
-  ),
+    }),
   context,
   storage: new SequelizeStorage({ sequelize }),
-  logger: console
+  logger: console,
 });
 
 async function migrate() {
@@ -42,6 +40,7 @@ async function migrate() {
       break;
     } catch (err) {
       console.log('Migration failed. Retrying...');
+      // eslint-disable-next-line @typescript-eslint/no-loop-func
       await new Promise(resolve => setTimeout(resolve, 250));
       lastErr = err;
     }

@@ -1,5 +1,3 @@
-const Sequelize = require('sequelize');
-
 module.exports = (sequelize, DataTypes) => {
   const Contact = sequelize.define('Contact', {
     rawJson: DataTypes.JSON,

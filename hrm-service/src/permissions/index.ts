@@ -45,4 +45,4 @@ export const setupPermissions = (lookup: Permissions) => (req: Request, res: Res
 
 export type RequestWithPermissions = SafeRouterRequest & {
   can: ReturnType<typeof setupCanForRules>
-}
+};

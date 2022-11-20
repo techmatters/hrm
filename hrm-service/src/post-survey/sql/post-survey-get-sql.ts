@@ -4,7 +4,7 @@ export const SELECT_POST_SURVEYS_BY_CONTACT_TASK = `
     "accountSid",
     "taskId",
     "data",
-    "createdBy" 
+    "createdAt" 
   FROM "PostSurveys" AS ps
   WHERE ps."accountSid" = $<accountSid> AND ps."contactTaskId" = $<contactTaskId>
-`
+`;

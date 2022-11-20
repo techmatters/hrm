@@ -50,7 +50,6 @@ describe('/postSurveys route', () => {
   const route = `/v0/accounts/${accountSid}/postSurveys`;
 
   describe('/postSurveys/contactTaskId/:id route', () => {
-
     const body = {
       helpline: 'helpline',
       contactTaskId: 'WTaaaaaaaaaa',
@@ -62,9 +61,9 @@ describe('/postSurveys route', () => {
     const shouldExist = `${subRoute}/${body.contactTaskId}`;
     const shouldNotExist = `${subRoute}/one-that-not-exists`;
 
-    beforeAll(async() => {
+    beforeAll(async () => {
       await PostSurvey.create({ ...body, accountSid });
-    })
+    });
 
     describe('GET', () => {
       test('should return 401', async () => {
@@ -117,11 +116,15 @@ describe('/postSurveys route', () => {
 
       const matchingRowsCount = await PostSurvey.count({
         where: {
-          [Op.and]: [accountSid && { accountSid }, contactTaskId && { contactTaskId }, taskId && { taskId }],
+          [Op.and]: [
+            accountSid && { accountSid },
+            contactTaskId && { contactTaskId },
+            taskId && { taskId },
+          ],
         },
       });
 
-      expect(matchingRowsCount).toBe(1)
+      expect(matchingRowsCount).toBe(1);
     });
   });
 });

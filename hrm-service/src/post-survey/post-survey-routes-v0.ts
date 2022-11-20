@@ -1,4 +1,4 @@
-
+// eslint-disable-next-line prettier/prettier
 import type { Request, Response } from 'express';
 import { SafeRouter, publicEndpoint, actionsMaps, RequestWithPermissions } from '../permissions';
 import { NewPostSurvey, PostSurvey } from './post-survey-data-access';
