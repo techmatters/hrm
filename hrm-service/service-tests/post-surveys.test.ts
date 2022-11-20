@@ -2,6 +2,7 @@ import { createService } from '../src/app';
 import { openPermissions } from '../src/permissions/json-permissions';
 import * as proxiedEndpoints from './external-service-stubs/proxied-endpoints';
 import * as mocks from './mocks';
+import { Op } from 'sequelize';
 const supertest = require('supertest');
 const Sequelize = require('sequelize');
 const models = require('../src/models');
@@ -48,37 +49,22 @@ afterAll(async () =>
 describe('/postSurveys route', () => {
   const route = `/v0/accounts/${accountSid}/postSurveys`;
 
-  const body = {
-    helpline: 'helpline',
-    contactTaskId: 'WTxxxxxxxxxx',
-    taskId: 'WTyyyyyyyyyy',
-    data: { question: 'Some Answer' },
-  };
-
-  // First test post so database wont be empty
-  describe('POST', () => {
-    test('should return 401', async () => {
-      const response = await request.post(route).send(body);
-
-      expect(response.status).toBe(401);
-      expect(response.body.error).toBe('Authorization failed');
-    });
-
-    test('should return 200', async () => {
-      const response = await request
-        .post(route)
-        .set(headers)
-        .send(body);
-
-      expect(response.status).toBe(200);
-      expect(response.body.data).toEqual(body.data);
-    });
-  });
-
   describe('/postSurveys/contactTaskId/:id route', () => {
+
+    const body = {
+      helpline: 'helpline',
+      contactTaskId: 'WTaaaaaaaaaa',
+      taskId: 'WTbbbbbbbbbb',
+      data: { question: 'Some Answer' },
+    };
+
     const subRoute = `${route}/contactTaskId`;
     const shouldExist = `${subRoute}/${body.contactTaskId}`;
     const shouldNotExist = `${subRoute}/one-that-not-exists`;
+
+    beforeAll(async() => {
+      await PostSurvey.create({ ...body, accountSid });
+    })
 
     describe('GET', () => {
       test('should return 401', async () => {
@@ -101,6 +87,41 @@ describe('/postSurveys route', () => {
         expect(response.status).toBe(200);
         expect(response.body).not.toHaveLength(0);
       });
+    });
+  });
+
+  // First test post so database wont be empty
+  describe('POST', () => {
+    const helpline = 'helpline';
+    const contactTaskId = 'WTxxxxxxxxxx';
+    const taskId = 'WTyyyyyyyyyy';
+    const data = { other_question: 'Some Other Answer' };
+
+    const body = { helpline, contactTaskId, taskId, data };
+
+    test('should return 401', async () => {
+      const response = await request.post(route).send(body);
+
+      expect(response.status).toBe(401);
+      expect(response.body.error).toBe('Authorization failed');
+    });
+
+    test('should return 200', async () => {
+      const response = await request
+        .post(route)
+        .set(headers)
+        .send(body);
+
+      expect(response.status).toBe(200);
+      expect(response.body.data).toEqual(body.data);
+
+      const matchingRowsCount = await PostSurvey.count({
+        where: {
+          [Op.and]: [accountSid && { accountSid }, contactTaskId && { contactTaskId }, taskId && { taskId }],
+        },
+      });
+
+      expect(matchingRowsCount).toBe(1)
     });
   });
 });
