@@ -1,8 +1,22 @@
 // eslint-disable-next-line global-require,import/no-extraneous-dependencies
 const { Umzug, SequelizeStorage } = require('umzug');
 const pathLib = require('path');
-const { sequelize, Sequelize } = require('../../src/models/index');
 const fs = require('fs');
+const Sequelize = require('sequelize');
+const configFile = require('../../src/config/config');
+
+const config = configFile[process.env.NODE_ENV] || configFile.development;
+config.logging = process.env.SEQUELIZE_STATEMENT_LOGGING;
+
+let sequelize;
+
+console.log(`Trying with: ${[config.host, config.username].join(', ')}`);
+
+if (config.use_env_variable) {
+  sequelize = new Sequelize(process.env[config.use_env_variable], config);
+} else {
+  sequelize = new Sequelize(config.database, config.username, config.password, config);
+}
 
 const CONNECT_ATTEMPT_SECONDS = 20;
 const migrationDirectory = pathLib.join(process.cwd(), './migrations/');
