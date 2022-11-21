@@ -2,8 +2,9 @@
 const { Umzug, SequelizeStorage } = require('umzug');
 const pathLib = require('path');
 const fs = require('fs');
+// eslint-disable-next-line import/no-extraneous-dependencies
 const Sequelize = require('sequelize');
-const configFile = require('../../src/config/config');
+const configFile = require('./src/config/config');
 
 const config = configFile[process.env.NODE_ENV] || configFile.development;
 config.logging = process.env.SEQUELIZE_STATEMENT_LOGGING;

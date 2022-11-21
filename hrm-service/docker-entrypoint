@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
 
-node ./service-tests/db-init/migrate
+node ./db-migrate
 
 exec "$@"
