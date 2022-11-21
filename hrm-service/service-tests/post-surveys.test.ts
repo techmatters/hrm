@@ -4,7 +4,7 @@ import * as proxiedEndpoints from './external-service-stubs/proxied-endpoints';
 import * as mocks from './mocks';
 import { db } from '../src/connection-pool';
 const supertest = require('supertest');
-import { create } from '../src/post-survey/post-survey-data-access'
+import { create } from '../src/post-survey/post-survey-data-access';
 
 const server = createService({
   permissions: openPermissions,
@@ -20,18 +20,21 @@ const headers = {
   Authorization: `Bearer bearing a bear (rawr)`,
 };
 
-const deleteAllPostSurveys = async ()=> db.task(t =>
+const deleteAllPostSurveys = async () =>
+  db.task(t =>
     t.none(`
       DELETE FROM "PostSurveys" WHERE "accountSid" = '${accountSid}';
   `),
   );
 
-
 const countPostSurveys = async (contactTaskId: string, taskId: string): Promise<number> => {
   const row = await db.task(connection =>
-    connection.any(`
+    connection.any(
+      `
         SELECT COUNT(*) FROM "PostSurveys" WHERE "accountSid" = $<accountSid> AND "contactTaskId" = $<contactTaskId> AND "taskId" = $<taskId>
-    `, { accountSid, contactTaskId, taskId })
+    `,
+      { accountSid, contactTaskId, taskId },
+    ),
   );
   return parseInt(row[0].count);
 };
@@ -43,11 +46,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () =>
-  Promise.all([
-    proxiedEndpoints.stop(),
-    deleteAllPostSurveys(),
-    server.close(),
-  ]),
+  Promise.all([proxiedEndpoints.stop(), deleteAllPostSurveys(), server.close()]),
 );
 // afterEach(async () => PostSurvey.destroy(postSurveys2DestroyQuery));
 
