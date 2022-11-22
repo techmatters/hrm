@@ -1,6 +1,7 @@
 import { SafeRouterRequest } from './safe-router';
 
 export { User } from './user';
+export { unauthorized } from './unauthorized';
 export { SafeRouter, publicEndpoint } from './safe-router';
 export { rulesMap } from './rulesMap';
 export { Actions, actionsMaps, getActions } from './actions';

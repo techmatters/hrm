@@ -3,7 +3,7 @@ import * as casesDb from './case-data-access';
 import * as caseApi from './case';
 import { SafeRouter, publicEndpoint, RequestWithPermissions } from '../permissions';
 import { getActions } from '../permissions';
-import { asyncHandler } from '../utils';
+import asyncHandler from '../async-handler';
 import { getCase } from './case';
 
 const casesRouter = SafeRouter();
