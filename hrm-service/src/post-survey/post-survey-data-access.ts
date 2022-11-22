@@ -10,8 +10,8 @@ export type NewPostSurvey = {
 
 export type PostSurvey = NewPostSurvey & {
   id: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: Date;
+  updatedAt: Date;
 };
 
 export const filterByContactTaskId = async (

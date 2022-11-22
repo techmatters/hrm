@@ -4,7 +4,7 @@
  * This includes compatibility code required to provide cases in a shape expected by older clients
  */
 import * as caseDb from './case-data-access';
-import { retrieveCategories } from '../controllers/helpers';
+import { retrieveCategories } from '../contact/categories';
 import {
   CaseListConfiguration,
   CaseListFilters,

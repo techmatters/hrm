@@ -1,7 +1,7 @@
 import createError from 'http-errors';
 import * as casesDb from './case-data-access';
 import * as caseApi from './case';
-import { SafeRouter, publicEndpoint } from '../permissions';
+import { SafeRouter, publicEndpoint, RequestWithPermissions } from '../permissions';
 import { getActions } from '../permissions';
 import { asyncHandler } from '../utils';
 import { getCase } from './case';
@@ -101,7 +101,7 @@ casesRouter.delete('/:id', publicEndpoint, async (req, res) => {
   res.sendStatus(200);
 });
 
-casesRouter.post('/search', publicEndpoint, async (req, res) => {
+casesRouter.post('/search', publicEndpoint, async (req: RequestWithPermissions, res) => {
   const { accountSid } = req;
   const searchResults = await caseApi.searchCases(accountSid, req.query || {}, req.body || {}, {
     can: req.can,

@@ -1,5 +1,6 @@
 import { mockConnection, mockTask } from '../mock-pgpromise';
 import * as pgPromise from 'pg-promise';
+import { subDays } from 'date-fns';
 import {
   PostSurvey,
   filterByContactTaskId,
@@ -13,6 +14,8 @@ beforeEach(() => {
   conn = mockConnection();
 });
 
+const baselineDate = new Date(2010, 6, 1);
+
 test('filterByContactTaskId runs query using account and contact task ids, and returns all matching post surveys.', async () => {
   const contactTaskId = 'CONTACT TASK ID';
   mockTask(conn);
@@ -24,8 +27,8 @@ test('filterByContactTaskId runs query using account and contact task ids, and r
       data: {
         some: 'stuff',
       },
-      createdAt: 'YESTERDAY',
-      updatedAt: 'YESTERDAY',
+      createdAt: subDays(baselineDate, 1),
+      updatedAt: subDays(baselineDate, 1),
     },
     {
       id: '2',
@@ -35,8 +38,8 @@ test('filterByContactTaskId runs query using account and contact task ids, and r
         more: 'crap',
         something: 'else',
       },
-      createdAt: 'DAY BEFORE YESTERDAY',
-      updatedAt: 'DAY BEFORE YESTERDAY',
+      createdAt: subDays(baselineDate, 2),
+      updatedAt: subDays(baselineDate, 2),
     },
   ];
   const manyOrNoneSpy = jest.spyOn(conn, 'manyOrNone').mockResolvedValue(postSurveysFromDB);
@@ -63,8 +66,8 @@ test('create runs query using account and provided post survey object, and retur
   const postSurveyFromDB: PostSurvey = {
     ...newPostSurvey,
     id: '100',
-    createdAt: 'JUST NOW',
-    updatedAt: 'JUST NOW',
+    createdAt: baselineDate,
+    updatedAt: baselineDate,
   };
   const oneSpy = jest.spyOn(conn, 'one').mockResolvedValue(postSurveyFromDB);
 
