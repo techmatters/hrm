@@ -20,7 +20,7 @@
  * to mark the request as authorized/unauthorized.
  * DO NOT set 'req.authorized' directly.
  */
-import { Router, RouterOptions } from 'express';
+import { Router, RouterOptions, Request } from 'express';
 import { unauthorized } from '../utils';
 
 /**
@@ -122,4 +122,10 @@ export const SafeRouter = (
     ...overrideHTTPMethods(router),
     expressRouter: router,
   };
+};
+
+export type SafeRouterRequest = Request & {
+  isAuthorized: () => boolean;
+  authorize: () => void;
+  unauthorize: () => void;
 };

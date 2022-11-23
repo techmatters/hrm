@@ -1,3 +1,5 @@
+import { SafeRouterRequest } from './safe-router';
+
 export { User } from './user';
 export { SafeRouter, publicEndpoint } from './safe-router';
 export { rulesMap } from './rulesMap';
@@ -39,4 +41,8 @@ export const setupPermissions = (lookup: Permissions) => (req: Request, res: Res
     applyPermissions(req, setupCanForRules(lookup.rules(accountSid)));
   }
   return next();
+};
+
+export type RequestWithPermissions = SafeRouterRequest & {
+  can: ReturnType<typeof setupCanForRules>
 };
