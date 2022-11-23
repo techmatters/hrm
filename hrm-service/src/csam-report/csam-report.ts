@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import {
   // CSAMReportRecord,
   CreateCSAMReport,
@@ -18,11 +19,18 @@ export const createCSAMReport = async (
 ) => {
   const now = new Date();
 
+  const { reportType, contactId, twilioWorkerId } = body;
+
+  const csamReportId = reportType === 'self-generated' ? randomUUID() : body.csamReportId;
+
+  // TODO: Should we check if the randomUUID exists in DB here?
+
   return create(
     {
-      contactId: body.contactId || null,
-      csamReportId: body.csamReportId || '',
-      twilioWorkerId: body.twilioWorkerId || '',
+      contactId: contactId || null,
+      reportType,
+      csamReportId,
+      twilioWorkerId: twilioWorkerId || '',
       createdAt: now,
       updatedAt: now,
     },
