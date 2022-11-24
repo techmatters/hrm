@@ -194,8 +194,10 @@ describe('/csamReports route', () => {
 
           if (csamReport.reportType === 'counsellor-generated') {
             expect(reportFromDB.csamReportId).toEqual(csamReport.csamReportId);
+            expect(reportFromDB.aknowledged).toBe(true);
           } else {
             expect(reportFromDB.csamReportId).toBeDefined();
+            expect(reportFromDB.aknowledged).toBe(false);
           }
 
           if (csamReport.twilioWorkerId) {

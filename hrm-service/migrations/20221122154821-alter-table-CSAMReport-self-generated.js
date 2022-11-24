@@ -7,17 +7,26 @@ module.exports = {
 
     await queryInterface.sequelize.query(
       `
-          ALTER TABLE IF EXISTS public."CSAMReports"
-          ADD COLUMN "reportType" text NOT NULL;
-        `,
+        ALTER TABLE IF EXISTS public."CSAMReports"
+        ADD COLUMN "reportType" TEXT NOT NULL;
+      `,
       { transaction },
     );
     console.log('Column reportType added to CSAMReports');
 
     await queryInterface.sequelize.query(
       `
-          UPDATE "CSAMReports" SET "reportType" = 'counsellor-generated';
-        `,
+        ALTER TABLE IF EXISTS public."CSAMReports"
+        ADD COLUMN "aknowledged" BOOLEAN NOT NULL;
+      `,
+      { transaction },
+    );
+    console.log('Column reportStatus added to CSAMReports');
+
+    await queryInterface.sequelize.query(
+      `
+        UPDATE "CSAMReports" SET "reportType" = 'counsellor-generated', "aknowledged" = TRUE;
+      `,
       { transaction },
     );
     console.log('Set reportType colum to "counsellor-generated" for all records');
