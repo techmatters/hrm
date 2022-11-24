@@ -55,7 +55,7 @@ afterAll(async () => {
   console.log('csam reports test cleaned up.');
 });
 
-describe('/csamReports route', () => {
+describe('/csamReports', () => {
   const route = `/v0/accounts/${accountSid}/csamReports`;
   describe('POST', () => {
     test('should return 401', async () => {
@@ -268,7 +268,7 @@ describe('/csamReports route', () => {
     });
   });
 
-  describe('/csamReports/:reportId route', () => {
+  describe('/:reportId', () => {
     describe('DELETE', () => {
       describe('Should return 422', () => {
         each([
@@ -333,6 +333,97 @@ describe('/csamReports route', () => {
           );
 
           expect(shouldntExistReport).toBeNull();
+        });
+      });
+    });
+
+    describe('/aknowledge', () => {
+      describe('PATCH', () => {
+        describe('Should return 422', () => {
+          each([
+            {
+              description: 'when reportId is a string',
+              reportId: 'a-string',
+            },
+          ]).test('$description', async ({ reportId }) => {
+            const response = await request.patch(`${route}/${reportId}/aknowledge`).set(headers);
+
+            expect(response.status).toBe(422);
+          });
+        });
+
+        describe('Should return 404', () => {
+          each([
+            {
+              description: 'when reportId does not exists in DB',
+              reportId: 99999999,
+            },
+          ]).test('$description', async ({ reportId }) => {
+            const response = await request.patch(`${route}/${reportId}/aknowledge`).set(headers);
+
+            expect(response.status).toBe(404);
+          });
+        });
+
+        describe('Should return 200', () => {
+          const testCasesWithContact: {
+            description: string;
+            csamReport?: Partial<csamReportsApi.CreateCSAMReport>;
+            contact: any;
+          }[] = [
+            {
+              description: 'with "counsellor-generated" is no-op',
+              csamReport: {
+                twilioWorkerId: workerSid,
+                reportType: 'counsellor-generated',
+                csamReportId: 'csam-report-id',
+              },
+              contact: contact1,
+            },
+            {
+              description: 'with "self-generated", sets "aknowledged" to TRUE',
+              csamReport: {
+                twilioWorkerId: workerSid,
+                reportType: 'self-generated',
+              },
+              contact: contact1,
+            },
+          ];
+
+          const testCases = testCasesWithContact.flatMap(({ contact, description, ...rest }) => [
+            { ...rest, description: description + ' without contact' },
+            { ...rest, contact, description: description + ' with contact' },
+          ]);
+
+          each(testCases).test('$description', async ({ csamReport, contact }) => {
+            let csamReportToSave;
+
+            if (contact) {
+              //Create a Contact for the contactId
+              const contactRoute = `/v0/accounts/${accountSid}/contacts`;
+              const contactResponse = await request
+                .post(contactRoute)
+                .set(headers)
+                .send(contact);
+
+              csamReportToSave = { ...csamReport, contactId: contactResponse.body.id };
+            } else {
+              csamReportToSave = { ...csamReport };
+            }
+
+            const createdReport = await csamReportsApi.createCSAMReport(
+              csamReportToSave,
+              accountSid,
+            );
+
+            const response = await request
+              .patch(`${route}/${createdReport.id}/aknowledge`)
+              .set(headers)
+              .send({});
+
+            expect(response.status).toBe(200);
+            expect(response.body.aknowledged).toBe(true);
+          });
         });
       });
     });
