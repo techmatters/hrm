@@ -7,6 +7,7 @@ import {
   getById,
   getByContactId,
   deleteById,
+  updateAknowledgedByCsamReportId,
 } from './csam-report-data-access';
 
 export { CSAMReportRecord } from './csam-report-data-access';
@@ -48,3 +49,5 @@ export const getCsamReportsByContactId = getByContactId;
 export const deleteCsamReport = deleteById;
 
 export const connectContactToCsamReports = updateContactIdByCsamReportIds;
+
+export const aknowledgeCsamReport = updateAknowledgedByCsamReportId(true);

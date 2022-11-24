@@ -5,7 +5,7 @@ import {
   selectCsamReportsByContactIdSql,
 } from './sql/csam-report-get-sql';
 import { deleteSingleCsamReportByIdSql } from './sql/csam-report-delete-sql';
-import { updateContactIdByCsamReportIdsSql } from './sql/csam-report-update-sql';
+import { updateContactIdByCsamReportIdsSql, updateAknowledgedByCsamReportIdSql } from './sql/csam-report-update-sql';
 // eslint-disable-next-line prettier/prettier
 import type { ITask } from 'pg-promise';
 
@@ -26,11 +26,11 @@ export const create = async (body: CreateCSAMReportRecord, accountSid: string) =
   });
 };
 
-export const getById = async (csamReportId: number, accountSid: string) =>
+export const getById = async (reportId: number, accountSid: string) =>
   db.task(async connection =>
     connection.oneOrNone<CSAMReportRecord>(selectSingleCsamReportByIdSql, {
       accountSid,
-      csamReportId,
+      reportId,
     }),
   );
 
@@ -52,12 +52,21 @@ export const deleteById = (reportId: number, accountSid: string) =>
 
 export const updateContactIdByCsamReportIds = (tx: ITask<{}>) => async (
   contactId: number,
-  csamReportIds: CSAMReportRecord['id'][],
+  reportIds: CSAMReportRecord['id'][],
   accountSid: string,
 ) => {
   return tx.manyOrNone<CSAMReportRecord>(updateContactIdByCsamReportIdsSql, {
       contactId,
-      csamReportIds,
+      reportIds,
       accountSid,
     });
 };
+
+export const updateAknowledgedByCsamReportId  = (aknowledged: boolean) => async (reportId: number, accountSid: string) =>
+  db.task(async connection =>
+    connection.oneOrNone<CSAMReportRecord>(updateAknowledgedByCsamReportIdSql, {
+      reportId,
+      accountSid,
+      aknowledged,
+    }),
+  );
