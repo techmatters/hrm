@@ -265,4 +265,74 @@ describe('/csamReports route', () => {
       });
     });
   });
+
+  describe('/csamReports/:reportId route', () => {
+    describe('DELETE', () => {
+      describe('Should return 422', () => {
+        each([
+          {
+            description: 'when reportId is a string',
+            reportId: 'a-string',
+          },
+        ]).test('$description', async reportId => {
+          const response = await request.delete(`${route}/${reportId}`).set(headers);
+
+          expect(response.status).toBe(422);
+        });
+      });
+
+      describe('Should return 200', () => {
+        const testCases: {
+          description: string;
+          csamReport?: Partial<csamReportsApi.CreateCSAMReport>;
+          contact?: any;
+          reportId?: number;
+        }[] = [
+          {
+            description: 'if exists, is deleted with "counsellor-generated"',
+            csamReport: {
+              twilioWorkerId: workerSid,
+              reportType: 'counsellor-generated',
+              csamReportId: 'csam-report-id',
+            },
+          },
+          {
+            description: 'if exists, is deleted with "self-generated"',
+            csamReport: {
+              twilioWorkerId: workerSid,
+              reportType: 'self-generated',
+            },
+          },
+          {
+            description: 'if not exists, is a no-op',
+            reportId: 999999,
+          },
+        ];
+
+        each(testCases).test('$description', async ({ csamReport, reportId }) => {
+          let reportIdToDelete: number;
+
+          if (csamReport) {
+            const createdReport = await csamReportsApi.createCSAMReport(csamReport, accountSid);
+            reportIdToDelete = createdReport.id;
+          } else {
+            reportIdToDelete = reportId;
+          }
+
+          expect(reportIdToDelete).toBeDefined();
+
+          const response = await request.delete(`${route}/${reportIdToDelete}`).set(headers);
+
+          expect(response.status).toBe(200);
+
+          const shouldntExistReport = await csamReportsApi.getCSAMReport(
+            reportIdToDelete,
+            accountSid,
+          );
+
+          expect(shouldntExistReport).toBeNull();
+        });
+      });
+    });
+  });
 });
