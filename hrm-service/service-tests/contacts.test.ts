@@ -340,6 +340,7 @@ describe('/contacts route', () => {
         {
           csamReportId: csamReportId1,
           twilioWorkerId: workerSid,
+          reportType: 'self-generated',
         },
         accountSid,
       );
@@ -348,6 +349,7 @@ describe('/contacts route', () => {
         {
           csamReportId: csamReportId2,
           twilioWorkerId: workerSid,
+          reportType: 'counsellor-generated',
         },
         accountSid,
       );
@@ -368,7 +370,7 @@ describe('/contacts route', () => {
 
       expect(updatedReport1.contactId).toBeDefined();
       expect(updatedReport1.contactId).toEqual(response.body.id);
-      expect(updatedReport1.csamReportId).toEqual(csamReportId1);
+      expect(updatedReport1.csamReportId).toBeDefined();
 
       const updatedReport2 = await csamReportApi.getCSAMReport(newReport2.id, accountSid);
 
@@ -394,6 +396,7 @@ describe('/contacts route', () => {
         {
           csamReportId: csamReportId,
           twilioWorkerId: workerSid,
+          reportType: 'counsellor-generated',
         },
         accountSid,
       );
@@ -569,6 +572,7 @@ describe('/contacts route', () => {
           {
             csamReportId: csamReportId,
             twilioWorkerId: workerSid,
+            reportType: 'counsellor-generated',
           },
           accountSid,
         );
@@ -679,6 +683,7 @@ describe('/contacts route', () => {
           {
             csamReportId: csamReportId1,
             twilioWorkerId: workerSid,
+            reportType: 'self-generated',
           },
           accountSid,
         );
@@ -687,6 +692,7 @@ describe('/contacts route', () => {
           {
             csamReportId: csamReportId2,
             twilioWorkerId: workerSid,
+            reportType: 'self-generated',
           },
           accountSid,
         );
