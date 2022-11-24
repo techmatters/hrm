@@ -16,7 +16,7 @@ csamReportRouter.post('/', publicEndpoint, async (req: Request & { accountSid: s
   if (reportType && reportType !== "counsellor-generated" && reportType !== "self-generated") {
     throw createError(422, 'Invalid argument "reportType" provided'); 
   }
-  if (!reportType || (reportType !== "counsellor-generated" && !csamReportId)) {
+  if ((!reportType || reportType === "counsellor-generated") && !csamReportId) {
     throw createError(422, 'Invalid, "reportType" argument specifies "counsellor-generated" report, but no csamReportId argument provided'); 
   }
 

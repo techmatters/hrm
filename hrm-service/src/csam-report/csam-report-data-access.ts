@@ -12,9 +12,9 @@ export type CSAMReportRecord = NewCSAMReportRecord & {
   id: number;
 };
 
-export type CreateCSAMReport = Omit<NewCSAMReportRecord, 'accountSid'>;
+export type CreateCSAMReportRecord = Omit<NewCSAMReportRecord, 'accountSid'>;
 
-export const create = async (body: CreateCSAMReport, accountSid: string) => {
+export const create = async (body: CreateCSAMReportRecord, accountSid: string) => {
   return db.task(async connection => {
     const statement = insertCSAMReportSql({
       ...body,

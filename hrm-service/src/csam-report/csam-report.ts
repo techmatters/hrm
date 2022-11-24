@@ -1,7 +1,7 @@
 import { randomUUID } from 'crypto';
 import {
   // CSAMReportRecord,
-  CreateCSAMReport,
+  CreateCSAMReportRecord,
   updateContactIdByCsamReportIds,
   create,
   getById,
@@ -13,8 +13,9 @@ export { CSAMReportRecord } from './csam-report-data-access';
 // While this is being used in test only, chances are we'll use it when we move out to making separate calls to fetch different entities
 export const getCSAMReport = getById;
 
+export type CreateCSAMReport = Omit<CreateCSAMReportRecord, 'createdAt' | 'updatedAt'>;
 export const createCSAMReport = async (
-  body: Omit<CreateCSAMReport, 'createdAt' | 'updatedAt'>,
+  body: Omit<CreateCSAMReportRecord, 'createdAt' | 'updatedAt'>,
   accountSid: string,
 ) => {
   const now = new Date();
