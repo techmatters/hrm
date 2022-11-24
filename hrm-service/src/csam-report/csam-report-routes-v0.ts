@@ -1,6 +1,6 @@
 import createError from 'http-errors';
 import { SafeRouter, publicEndpoint } from '../permissions';
-import { createCSAMReport } from './csam-report';
+import { createCSAMReport, deleteCsamReport } from './csam-report';
 
 // eslint-disable-next-line prettier/prettier
 import type { Request, Response } from 'express';
@@ -22,6 +22,19 @@ csamReportRouter.post('/', publicEndpoint, async (req: Request & { accountSid: s
 
   const createdCSAMReport = await createCSAMReport({ contactId, csamReportId, twilioWorkerId, reportType }, accountSid);
   res.json(createdCSAMReport);
+});
+
+csamReportRouter.delete('/:reportId', publicEndpoint, async (req: Request & { accountSid: string }, res: Response) => {
+  const { accountSid } = req;
+  const reportId = parseInt(req.params.reportId, 10);
+
+  if (isNaN(reportId)) {
+    throw createError(422, 'Invalid id');
+  }
+
+  await deleteCsamReport(reportId, accountSid);
+
+  res.json({ message: `CSAMReport with id ${reportId} deleted` });
 });
 
 export default csamReportRouter.expressRouter;

@@ -6,6 +6,7 @@ import {
   create,
   getById,
   getByContactId,
+  deleteById,
 } from './csam-report-data-access';
 
 export { CSAMReportRecord } from './csam-report-data-access';
@@ -41,5 +42,7 @@ export const createCSAMReport = async (
 
 // While this is being used in test only, chances are we'll use it when we move out to making separate calls to fetch different entities
 export const getCsamReportsByContactId = getByContactId;
+
+export const deleteCsamReport = deleteById;
 
 export const connectContactToCsamReports = updateContactIdByCsamReportIds;
