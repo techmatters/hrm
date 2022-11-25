@@ -1,4 +1,4 @@
-const { OrderByDirection } = require('./sql');
+import { OrderByDirection } from './sql';
 
 export type PaginationQuery = {
   limit?: string;
