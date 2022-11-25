@@ -1,8 +1,7 @@
 import { validator as TokenValidator } from 'twilio-flex-token-validator';
 import crypto from 'crypto';
 
-import { unauthorized } from '../utils';
-import { User } from '../permissions';
+import { User, unauthorized } from '../permissions';
 // eslint-disable-next-line prettier/prettier
 import type { Request, Response, NextFunction } from 'express';
 

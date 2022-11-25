@@ -1,8 +1,7 @@
 const tftv = require('twilio-flex-token-validator');
 import each from 'jest-each';
 import { getAuthorizationMiddleware } from '../../src/middlewares';
-import { User } from '../../src/permissions';
-import utils, { unauthorized } from '../../src/utils';
+import * as Permissions from '../../src/permissions';
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -80,7 +79,7 @@ describe('Test Bearer token', () => {
       mockedRes.json = jest.fn();
 
       jest.spyOn(tftv, 'validator').mockImplementationOnce(validatorImplementation);
-      const unauthorizedSpy = jest.spyOn(utils, 'unauthorized');
+      const unauthorizedSpy = jest.spyOn(Permissions, 'unauthorized');
 
       const result = await authorizationMiddleware(mockedReq, mockedRes, nextFn);
 
@@ -89,13 +88,15 @@ describe('Test Bearer token', () => {
         expect(unauthorizedSpy).not.toHaveBeenCalled();
         expect(result).toBe(undefined);
         const tokenResult = await validatorImplementation();
-        expect(mockedReq.user).toMatchObject(new User(tokenResult.worker_sid, tokenResult.roles));
+        expect(mockedReq.user).toMatchObject(
+          new Permissions.User(tokenResult.worker_sid, tokenResult.roles),
+        );
       } else {
         expect(nextFn).not.toHaveBeenCalled();
         expect(unauthorizedSpy).toHaveBeenCalled();
         expect(mockedRes._status).toBe(401);
         expect(mockedRes.json).toHaveBeenCalled();
-        expect(result).toMatchObject(unauthorized(mockedRes));
+        expect(result).toMatchObject(Permissions.unauthorized(mockedRes));
       }
     },
   );
