@@ -17,7 +17,7 @@ module.exports = {
     await queryInterface.sequelize.query(
       `
         ALTER TABLE IF EXISTS public."CSAMReports"
-        ADD COLUMN "aknowledged" BOOLEAN NOT NULL;
+        ADD COLUMN "acknowledged" BOOLEAN NOT NULL;
       `,
       { transaction },
     );
@@ -25,7 +25,7 @@ module.exports = {
 
     await queryInterface.sequelize.query(
       `
-        UPDATE "CSAMReports" SET "reportType" = 'counsellor-generated', "aknowledged" = TRUE;
+        UPDATE "CSAMReports" SET "reportType" = 'counsellor-generated', "acknowledged" = TRUE;
       `,
       { transaction },
     );

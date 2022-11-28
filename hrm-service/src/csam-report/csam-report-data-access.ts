@@ -5,7 +5,7 @@ import {
   selectCsamReportsByContactIdSql,
 } from './sql/csam-report-get-sql';
 import { deleteSingleCsamReportByIdSql } from './sql/csam-report-delete-sql';
-import { updateContactIdByCsamReportIdsSql, updateAknowledgedByCsamReportIdSql } from './sql/csam-report-update-sql';
+import { updateContactIdByCsamReportIdsSql, updateAcknowledgedByCsamReportIdSql } from './sql/csam-report-update-sql';
 // eslint-disable-next-line prettier/prettier
 import type { ITask } from 'pg-promise';
 
@@ -62,11 +62,11 @@ export const updateContactIdByCsamReportIds = (tx: ITask<{}>) => async (
     });
 };
 
-export const updateAknowledgedByCsamReportId  = (aknowledged: boolean) => async (reportId: number, accountSid: string) =>
+export const updateAcknowledgedByCsamReportId  = (acknowledged: boolean) => async (reportId: number, accountSid: string) =>
   db.task(async connection =>
-    connection.oneOrNone<CSAMReportRecord>(updateAknowledgedByCsamReportIdSql, {
+    connection.oneOrNone<CSAMReportRecord>(updateAcknowledgedByCsamReportIdSql, {
       reportId,
       accountSid,
-      aknowledged,
+      acknowledged,
     }),
   );

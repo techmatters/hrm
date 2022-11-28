@@ -8,9 +8,9 @@ export const updateContactIdByCsamReportIdsSql = `
   RETURNING *
 `;
 
-export const updateAknowledgedByCsamReportIdSql = `
+export const updateAcknowledgedByCsamReportIdSql = `
   UPDATE "CSAMReports"
-  SET "aknowledged" = $<aknowledged>
+  SET "acknowledged" = $<acknowledged>
   ${ID_WHERE_CLAUSE}
   RETURNING *
 `;

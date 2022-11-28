@@ -7,7 +7,7 @@ import {
   getById,
   getByContactId,
   deleteById,
-  updateAknowledgedByCsamReportId,
+  updateAcknowledgedByCsamReportId,
 } from './csam-report-data-access';
 
 export { CSAMReportRecord } from './csam-report-data-access';
@@ -17,7 +17,7 @@ export const getCSAMReport = getById;
 
 export type CreateCSAMReport = Omit<
   CreateCSAMReportRecord,
-  'createdAt' | 'updatedAt' | 'aknowledged'
+  'createdAt' | 'updatedAt' | 'acknowledged'
 >;
 export const createCSAMReport = async (body: CreateCSAMReport, accountSid: string) => {
   const now = new Date();
@@ -25,7 +25,7 @@ export const createCSAMReport = async (body: CreateCSAMReport, accountSid: strin
   const { reportType, contactId, twilioWorkerId } = body;
 
   const csamReportId = reportType === 'self-generated' ? randomUUID() : body.csamReportId;
-  const aknowledged = reportType === 'self-generated' ? false : true;
+  const acknowledged = reportType === 'self-generated' ? false : true;
 
   // TODO: Should we check if the randomUUID exists in DB here?
 
@@ -35,7 +35,7 @@ export const createCSAMReport = async (body: CreateCSAMReport, accountSid: strin
       reportType,
       csamReportId,
       twilioWorkerId: twilioWorkerId || '',
-      aknowledged,
+      acknowledged,
       createdAt: now,
       updatedAt: now,
     },
@@ -50,4 +50,4 @@ export const deleteCsamReport = deleteById;
 
 export const connectContactToCsamReports = updateContactIdByCsamReportIds;
 
-export const aknowledgeCsamReport = updateAknowledgedByCsamReportId(true);
+export const acknowledgeCsamReport = updateAcknowledgedByCsamReportId(true);

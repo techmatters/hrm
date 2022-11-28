@@ -194,10 +194,10 @@ describe('/csamReports', () => {
 
           if (csamReport.reportType === 'counsellor-generated') {
             expect(reportFromDB.csamReportId).toEqual(csamReport.csamReportId);
-            expect(reportFromDB.aknowledged).toBe(true);
+            expect(reportFromDB.acknowledged).toBe(true);
           } else {
             expect(reportFromDB.csamReportId).toBeDefined();
-            expect(reportFromDB.aknowledged).toBe(false);
+            expect(reportFromDB.acknowledged).toBe(false);
           }
 
           if (csamReport.twilioWorkerId) {
@@ -337,7 +337,7 @@ describe('/csamReports', () => {
       });
     });
 
-    describe('/aknowledge', () => {
+    describe('/acknowledge', () => {
       describe('POST', () => {
         describe('Should return 422', () => {
           each([
@@ -346,7 +346,7 @@ describe('/csamReports', () => {
               reportId: 'a-string',
             },
           ]).test('$description', async ({ reportId }) => {
-            const response = await request.post(`${route}/${reportId}/aknowledge`).set(headers);
+            const response = await request.post(`${route}/${reportId}/acknowledge`).set(headers);
 
             expect(response.status).toBe(422);
           });
@@ -359,7 +359,7 @@ describe('/csamReports', () => {
               reportId: 99999999,
             },
           ]).test('$description', async ({ reportId }) => {
-            const response = await request.post(`${route}/${reportId}/aknowledge`).set(headers);
+            const response = await request.post(`${route}/${reportId}/acknowledge`).set(headers);
 
             expect(response.status).toBe(404);
           });
@@ -381,7 +381,7 @@ describe('/csamReports', () => {
               contact: contact1,
             },
             {
-              description: 'with "self-generated", sets "aknowledged" to TRUE',
+              description: 'with "self-generated", sets "acknowledged" to TRUE',
               csamReport: {
                 twilioWorkerId: workerSid,
                 reportType: 'self-generated',
@@ -417,12 +417,12 @@ describe('/csamReports', () => {
             );
 
             const response = await request
-              .post(`${route}/${createdReport.id}/aknowledge`)
+              .post(`${route}/${createdReport.id}/acknowledge`)
               .set(headers)
               .send({});
 
             expect(response.status).toBe(200);
-            expect(response.body.aknowledged).toBe(true);
+            expect(response.body.acknowledged).toBe(true);
           });
         });
       });

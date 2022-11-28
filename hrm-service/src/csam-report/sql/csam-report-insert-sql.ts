@@ -5,7 +5,7 @@ export type NewCSAMReportRecord = {
   createdAt: Date;
   updatedAt: Date;
   reportType: 'counsellor-generated' | 'self-generated';
-  aknowledged: boolean;
+  acknowledged: boolean;
   twilioWorkerId?: string;
   csamReportId?: string;
   contactId?: number;
@@ -22,7 +22,7 @@ export const insertCSAMReportSql = (report: NewCSAMReportRecord) => `
       'csamReportId',
       'contactId',
       'reportType',
-      'aknowledged',
+      'acknowledged',
     ],
     'CSAMReports',
   )}

@@ -1,6 +1,6 @@
 import createError from 'http-errors';
 import { SafeRouter, publicEndpoint } from '../permissions';
-import { aknowledgeCsamReport, createCSAMReport, deleteCsamReport } from './csam-report';
+import { acknowledgeCsamReport, createCSAMReport, deleteCsamReport } from './csam-report';
 
 // eslint-disable-next-line prettier/prettier
 import type { Request, Response } from 'express';
@@ -37,7 +37,7 @@ csamReportRouter.delete('/:reportId', publicEndpoint, async (req: Request & { ac
   res.json({ message: `CSAMReport with id ${reportId} deleted` });
 });
 
-csamReportRouter.post('/:reportId/aknowledge', publicEndpoint, async (req: Request & { accountSid: string }, res: Response) => {
+csamReportRouter.post('/:reportId/acknowledge', publicEndpoint, async (req: Request & { accountSid: string }, res: Response) => {
   const { accountSid } = req;
   const reportId = parseInt(req.params.reportId, 10);
 
@@ -45,13 +45,13 @@ csamReportRouter.post('/:reportId/aknowledge', publicEndpoint, async (req: Reque
     throw createError(422, 'Invalid id');
   }
 
-  const aknowledgedReport = await aknowledgeCsamReport(reportId, accountSid);
+  const acknowledgedReport = await acknowledgeCsamReport(reportId, accountSid);
 
-  if (!aknowledgedReport) {
+  if (!acknowledgedReport) {
     throw createError(404, `Report with id ${reportId} not found`);
   }
 
-  res.json(aknowledgedReport);
+  res.json(acknowledgedReport);
 });
 
 export default csamReportRouter.expressRouter;
