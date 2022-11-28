@@ -338,7 +338,7 @@ describe('/csamReports', () => {
     });
 
     describe('/aknowledge', () => {
-      describe('PATCH', () => {
+      describe('POST', () => {
         describe('Should return 422', () => {
           each([
             {
@@ -346,7 +346,7 @@ describe('/csamReports', () => {
               reportId: 'a-string',
             },
           ]).test('$description', async ({ reportId }) => {
-            const response = await request.patch(`${route}/${reportId}/aknowledge`).set(headers);
+            const response = await request.post(`${route}/${reportId}/aknowledge`).set(headers);
 
             expect(response.status).toBe(422);
           });
@@ -359,7 +359,7 @@ describe('/csamReports', () => {
               reportId: 99999999,
             },
           ]).test('$description', async ({ reportId }) => {
-            const response = await request.patch(`${route}/${reportId}/aknowledge`).set(headers);
+            const response = await request.post(`${route}/${reportId}/aknowledge`).set(headers);
 
             expect(response.status).toBe(404);
           });
@@ -417,7 +417,7 @@ describe('/csamReports', () => {
             );
 
             const response = await request
-              .patch(`${route}/${createdReport.id}/aknowledge`)
+              .post(`${route}/${createdReport.id}/aknowledge`)
               .set(headers)
               .send({});
 

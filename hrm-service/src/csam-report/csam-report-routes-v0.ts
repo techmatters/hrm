@@ -37,7 +37,7 @@ csamReportRouter.delete('/:reportId', publicEndpoint, async (req: Request & { ac
   res.json({ message: `CSAMReport with id ${reportId} deleted` });
 });
 
-csamReportRouter.patch('/:reportId/aknowledge', publicEndpoint, async (req: Request & { accountSid: string }, res: Response) => {
+csamReportRouter.post('/:reportId/aknowledge', publicEndpoint, async (req: Request & { accountSid: string }, res: Response) => {
   const { accountSid } = req;
   const reportId = parseInt(req.params.reportId, 10);
 
