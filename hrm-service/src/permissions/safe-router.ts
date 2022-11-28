@@ -20,8 +20,8 @@
  * to mark the request as authorized/unauthorized.
  * DO NOT set 'req.authorized' directly.
  */
-import { Router, RouterOptions } from 'express';
-import { unauthorized } from '../utils';
+import { Router, RouterOptions, Request } from 'express';
+import { unauthorized } from './unauthorized';
 
 /**
  * A middleware that just marks an endpoint as open.
@@ -122,4 +122,10 @@ export const SafeRouter = (
     ...overrideHTTPMethods(router),
     expressRouter: router,
   };
+};
+
+export type SafeRouterRequest = Request & {
+  isAuthorized: () => boolean;
+  authorize: () => void;
+  unauthorize: () => void;
 };

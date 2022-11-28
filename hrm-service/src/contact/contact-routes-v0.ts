@@ -1,7 +1,7 @@
 import { SafeRouter, publicEndpoint, actionsMaps } from '../permissions';
 import createError from 'http-errors';
 import { patchContact, connectContactToCase, searchContacts, createContact, getContactById } from './contact';
-import { asyncHandler } from '../utils';
+import asyncHandler from '../async-handler';
 // eslint-disable-next-line prettier/prettier
 import type { Request, Response, NextFunction } from 'express';
 

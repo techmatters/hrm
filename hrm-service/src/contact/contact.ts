@@ -8,7 +8,8 @@ import {
   SearchParameters,
 } from './contact-data-access';
 import { ContactRawJson, isS3StoredTranscript } from './contact-json';
-import { retrieveCategories, getPaginationElements } from '../controllers/helpers';
+import { retrieveCategories } from './categories';
+import { getPaginationElements } from '../search';
 import { NewContactRecord } from './sql/contact-insert-sql';
 import { setupCanForRules } from '../permissions/setupCanForRules';
 import { actionsMaps, User } from '../permissions';
