@@ -4,7 +4,6 @@ import {
   selectSingleCsamReportByIdSql,
   selectCsamReportsByContactIdSql,
 } from './sql/csam-report-get-sql';
-import { deleteSingleCsamReportByIdSql } from './sql/csam-report-delete-sql';
 import { updateContactIdByCsamReportIdsSql, updateAcknowledgedByCsamReportIdSql } from './sql/csam-report-update-sql';
 // eslint-disable-next-line prettier/prettier
 import type { ITask } from 'pg-promise';
@@ -38,14 +37,6 @@ export const getByContactId = async (contactId: number, accountSid: string) =>
   db.task(async connection =>
     connection.manyOrNone<CSAMReportRecord>(selectCsamReportsByContactIdSql, {
       contactId,
-      accountSid,
-    }),
-  );
-
-export const deleteById = (reportId: number, accountSid: string) =>
-  db.task(async connection =>
-    connection.none(deleteSingleCsamReportByIdSql, {
-      reportId,
       accountSid,
     }),
   );
