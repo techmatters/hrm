@@ -13,6 +13,8 @@ import { getPaginationElements } from '../search';
 import { NewContactRecord } from './sql/contact-insert-sql';
 import { setupCanForRules } from '../permissions/setupCanForRules';
 import { actionsMaps, User } from '../permissions';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import type { CSAMReport } from '../csam-report/csam-report';
 
 // Re export as is:
 export { updateConversationMedia, Contact } from './contact-data-access';
@@ -22,15 +24,6 @@ export type PatchPayload = {
   rawJson: Partial<
     Pick<ContactRawJson, 'callerInformation' | 'childInformation' | 'caseInformation'>
   >;
-};
-
-export type CSAMReportEntry = {
-  csamReportId: string;
-  id: number;
-  createdAt: string;
-  updatedAt?: string;
-  updatedBy?: string;
-  twilioWorkerId: string;
 };
 
 export type SearchContact = {
@@ -50,15 +43,15 @@ export type SearchContact = {
     taskId: string;
   };
   details: ContactRawJson;
-  csamReports: CSAMReportEntry[];
+  csamReports: CSAMReport[];
 };
 
 export type CreateContactPayloadWithFormProperty = Omit<NewContactRecord, 'rawJson'> & {
   form: ContactRawJson;
-} & { csamReports?: CSAMReportEntry[] };
+} & { csamReports?: CSAMReport[] };
 
 export type CreateContactPayload =
-  | (NewContactRecord & { csamReports?: CSAMReportEntry[] })
+  | (NewContactRecord & { csamReports?: CSAMReport[] })
   | CreateContactPayloadWithFormProperty;
 
 export const usesFormProperty = (
