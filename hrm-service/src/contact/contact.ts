@@ -13,7 +13,7 @@ import { getPaginationElements } from '../search';
 import { NewContactRecord } from './sql/contact-insert-sql';
 import { setupCanForRules } from '../permissions/setupCanForRules';
 import { actionsMaps, User } from '../permissions';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+// eslint-disable-next-line prettier/prettier
 import type { CSAMReport } from '../csam-report/csam-report';
 
 // Re export as is:
