@@ -19,7 +19,9 @@ const request = supertest.agent(server);
 
 const { accountSid, workerSid } = mocks;
 
-const csamReport1: Partial<csamReportsApi.CreateCSAMReport> = {
+type CreateTestPayload = Partial<Parameters<typeof csamReportsApi.createCSAMReport>[0]>;
+
+const csamReport1: CreateTestPayload = {
   csamReportId: 'csam-report-id',
   twilioWorkerId: workerSid,
   contactId: undefined,
@@ -68,7 +70,7 @@ describe('/csamReports', () => {
     describe('Should return 422', () => {
       const testCases: {
         description: string;
-        csamReport: Partial<csamReportsApi.CreateCSAMReport>;
+        csamReport: CreateTestPayload;
       }[] = [
         {
           description: 'when reportType is defined but invalid',
@@ -107,7 +109,7 @@ describe('/csamReports', () => {
       describe('with valid arguments', () => {
         const testCasesWithContact: {
           description: string;
-          csamReport: Partial<csamReportsApi.CreateCSAMReport>;
+          csamReport: CreateTestPayload;
           contact?: any;
         }[] = [
           // with contact
@@ -212,7 +214,7 @@ describe('/csamReports', () => {
     describe('Should return 500', () => {
       const testCases: {
         description: string;
-        csamReport: Partial<csamReportsApi.CreateCSAMReport>;
+        csamReport: CreateTestPayload;
       }[] = [
         {
           description: 'when reportType is "counsellor-generated"',
@@ -300,7 +302,7 @@ describe('/csamReports', () => {
         describe('Should return 200', () => {
           const testCasesWithContact: {
             description: string;
-            csamReport?: Partial<csamReportsApi.CreateCSAMReport>;
+            csamReport?: CreateTestPayload;
             contact: any;
           }[] = [
             {

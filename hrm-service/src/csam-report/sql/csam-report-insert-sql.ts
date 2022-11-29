@@ -1,17 +1,9 @@
 import { pgp } from '../../connection-pool';
+import { NewCSAMReport } from '../csam-report-data-access';
 
-export type NewCSAMReportRecord = {
-  accountSid: string;
-  createdAt: Date;
-  updatedAt: Date;
-  reportType: 'counsellor-generated' | 'self-generated';
-  acknowledged: boolean;
-  twilioWorkerId?: string;
-  csamReportId?: string;
-  contactId?: number;
-};
-
-export const insertCSAMReportSql = (report: NewCSAMReportRecord) => `
+export const insertCSAMReportSql = (
+  report: NewCSAMReport & { accountSid: string; createdAt: Date; updatedAt: Date },
+) => `
   ${pgp.helpers.insert(
     report,
     [

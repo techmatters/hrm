@@ -664,7 +664,7 @@ describe('/contacts route', () => {
       });
 
       let createdContacts: contactDb.Contact[] = [];
-      let csamReports = new Array<csamReportApi.CSAMReportRecord>();
+      let csamReports = new Array<csamReportApi.CSAMReport>();
 
       const startTestsTimeStamp = new Date();
 

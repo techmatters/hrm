@@ -1,5 +1,5 @@
 import { db } from '../connection-pool';
-import { insertCSAMReportSql, NewCSAMReportRecord } from './sql/csam-report-insert-sql';
+import { insertCSAMReportSql } from './sql/csam-report-insert-sql';
 import {
   selectSingleCsamReportByIdSql,
   selectCsamReportsByContactIdSql,
@@ -8,26 +8,38 @@ import { updateContactIdByCsamReportIdsSql, updateAcknowledgedByCsamReportIdSql 
 // eslint-disable-next-line prettier/prettier
 import type { ITask } from 'pg-promise';
 
-export type CSAMReportRecord = NewCSAMReportRecord & {
-  id: number;
+export type NewCSAMReport = {
+  reportType: 'counsellor-generated' | 'self-generated';
+  acknowledged: boolean;
+  twilioWorkerId?: string;
+  csamReportId?: string;
+  contactId?: number;
 };
 
-export type CreateCSAMReportRecord = Omit<NewCSAMReportRecord, 'accountSid'>;
+export type CSAMReport = NewCSAMReport & {
+  id: number;
+  accountSid: string;
+  createdAt: Date;
+  updatedAt: Date;
+};
 
-export const create = async (body: CreateCSAMReportRecord, accountSid: string) => {
+export const create = async (newCsamReport: NewCSAMReport, accountSid: string) => {
+  const now = new Date();
   return db.task(async connection => {
     const statement = insertCSAMReportSql({
-      ...body,
+      ...newCsamReport,
+      updatedAt: now,
+      createdAt: now,
       accountSid,
     });
 
-    return connection.one<CSAMReportRecord>(statement);
+    return connection.one<CSAMReport>(statement);
   });
 };
 
 export const getById = async (reportId: number, accountSid: string) =>
   db.task(async connection =>
-    connection.oneOrNone<CSAMReportRecord>(selectSingleCsamReportByIdSql, {
+    connection.oneOrNone<CSAMReport>(selectSingleCsamReportByIdSql, {
       accountSid,
       reportId,
     }),
@@ -35,7 +47,7 @@ export const getById = async (reportId: number, accountSid: string) =>
 
 export const getByContactId = async (contactId: number, accountSid: string) =>
   db.task(async connection =>
-    connection.manyOrNone<CSAMReportRecord>(selectCsamReportsByContactIdSql, {
+    connection.manyOrNone<CSAMReport>(selectCsamReportsByContactIdSql, {
       contactId,
       accountSid,
     }),
@@ -43,10 +55,10 @@ export const getByContactId = async (contactId: number, accountSid: string) =>
 
 export const updateContactIdByCsamReportIds = (tx: ITask<{}>) => async (
   contactId: number,
-  reportIds: CSAMReportRecord['id'][],
+  reportIds: CSAMReport['id'][],
   accountSid: string,
 ) => {
-  return tx.manyOrNone<CSAMReportRecord>(updateContactIdByCsamReportIdsSql, {
+  return tx.manyOrNone<CSAMReport>(updateContactIdByCsamReportIdsSql, {
       contactId,
       reportIds,
       accountSid,
@@ -55,7 +67,7 @@ export const updateContactIdByCsamReportIds = (tx: ITask<{}>) => async (
 
 export const updateAcknowledgedByCsamReportId  = (acknowledged: boolean) => async (reportId: number, accountSid: string) =>
   db.task(async connection =>
-    connection.oneOrNone<CSAMReportRecord>(updateAcknowledgedByCsamReportIdSql, {
+    connection.oneOrNone<CSAMReport>(updateAcknowledgedByCsamReportIdSql, {
       reportId,
       accountSid,
       acknowledged,
