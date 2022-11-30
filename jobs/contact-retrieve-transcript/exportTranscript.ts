@@ -1,5 +1,7 @@
 import { getClient } from '@tech-matters/hrm-twilio-client';
 
+import RestException from 'twilio/lib/base/RestException';
+
 export type ExportTranscriptParams = {
   accountSid: string;
   authToken: string;
@@ -8,6 +10,96 @@ export type ExportTranscriptParams = {
 };
 
 export type ExportTranscriptResult = Awaited<ReturnType<typeof exportTranscript>>;
+
+export type ExportTranscripParticipants = {
+  [key: string]: {
+    user: Awaited<ReturnType<typeof getUser>>;
+    role: Awaited<ReturnType<typeof getRole>>;
+  };
+};
+
+const getTransformedMessages = async (
+  client: ReturnType<typeof getClient>,
+  channelSid: string,
+  serviceSid: string,
+) => {
+  const messages = await client.chat.v2
+    .services(serviceSid)
+    .channels.get(channelSid)
+    .messages.list();
+
+  return messages.map(m => ({
+    sid: m.sid,
+    dateCreated: m.dateCreated,
+    from: m.from,
+    body: m.body,
+    index: m.index,
+    type: m.type,
+    media: m.media,
+  }));
+};
+
+const getUser = async (client: ReturnType<typeof getClient>, serviceSid: string, from: string) => {
+  try {
+    return await client.chat.v2
+      .services(serviceSid)
+      .users.get(from)
+      .fetch();
+  } catch (err) {
+    if (err instanceof RestException && err.code === 20404) {
+      return null;
+    }
+    throw err;
+  }
+};
+
+const getRole = async (
+  client: ReturnType<typeof getClient>,
+  serviceSid: string,
+  roleSid: string,
+) => {
+  try {
+    return await client.chat.v2
+      .services(serviceSid)
+      .roles.get(roleSid)
+      .fetch();
+  } catch (err) {
+    if (err instanceof RestException && err.code === 20404) {
+      return null;
+    }
+    throw err;
+  }
+};
+
+const getParticipants = async (
+  client: ReturnType<typeof getClient>,
+  serviceSid: string,
+  messages: Awaited<ReturnType<typeof getTransformedMessages>>,
+) => {
+  const froms: Array<string> = [];
+
+  const participants: ExportTranscripParticipants = {};
+
+  messages.forEach(m => {
+    if (!froms.includes(m.from)) {
+      froms.push(m.from);
+    }
+  });
+
+  const promises = froms.map(async from => {
+    const user = await getUser(client, serviceSid, from);
+    const role = user?.roleSid ? await getRole(client, serviceSid, user.roleSid) : null;
+
+    participants[from] = {
+      user,
+      role,
+    };
+  });
+
+  await Promise.all(promises);
+
+  return participants;
+};
 
 export const exportTranscript = async ({
   accountSid,
@@ -21,25 +113,15 @@ export const exportTranscript = async ({
   );
 
   const client = getClient({ accountSid, authToken });
-  const messages = await client.chat.v2
-    .services(serviceSid)
-    .channels.get(channelSid)
-    .messages.list();
 
-  const transformed = messages.map(m => ({
-    sid: m.sid,
-    dateCreated: m.dateCreated,
-    from: m.from,
-    body: m.body,
-    index: m.index,
-    type: m.type,
-    media: m.media,
-  }));
+  const messages = await getTransformedMessages(client, channelSid, serviceSid);
+  const participants = await getParticipants(client, serviceSid, messages);
 
   return {
     accountSid,
     serviceSid,
     channelSid,
-    messages: transformed,
+    messages,
+    participants,
   };
 };

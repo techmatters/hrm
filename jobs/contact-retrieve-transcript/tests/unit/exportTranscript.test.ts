@@ -1,10 +1,11 @@
+import RestException from 'twilio/lib/base/RestException';
 import { exportTranscript } from '../../exportTranscript';
 
 const messageList = [
   {
     sid: 1,
     dateCreated: 'blah',
-    from: 'counselor',
+    from: 'bot',
     body: 'What is your name?',
     index: 0,
     type: 'message',
@@ -19,7 +20,38 @@ const messageList = [
     type: 'message',
     media: null,
   },
+  {
+    sid: 3,
+    dateCreated: 'blah',
+    from: 'counselor',
+    body: 'How are you today?',
+    index: 2,
+    type: 'message',
+    media: null,
+  },
 ];
+
+const childUserData = {
+  identity: 'child',
+  friendlyName: 'Child',
+  roleSid: 'childRoleSid',
+};
+
+const counselorUserData = {
+  identity: 'counselor',
+  friendlyName: 'Counselor',
+  roleSid: 'counselorRoleSid',
+};
+
+const childRoleData = {
+  sid: 'childRoleSid',
+  friendlyName: 'Child',
+};
+
+const counselorRoleData = {
+  sid: 'counselorRoleSid',
+  friendlyName: 'Counselor',
+};
 
 jest.mock('@tech-matters/hrm-twilio-client', () => {
   const mockClient = {
@@ -32,6 +64,62 @@ jest.mock('@tech-matters/hrm-twilio-client', () => {
                 list: () => messageList,
               },
             }),
+          },
+          users: {
+            get: (identity: string) => {
+              let userData: {
+                identity: string;
+                friendlyName: string;
+                roleSid: string;
+              };
+
+              switch (identity) {
+                case 'child':
+                  userData = childUserData;
+                  break;
+                case 'counselor':
+                  userData = counselorUserData;
+                  break;
+                default:
+                  // UGGGH. The twilio TS definition for RestException is wrong. It doesn't take the constructor override into account.
+                  // @ts-ignore
+                  throw new RestException({
+                    statusCode: 404,
+                    body: {
+                      code: 20404,
+                      message: `The requested resource /Services/IS43c487114db441beaad322a360117882/Users/${identity} was not found`,
+                      more_info: 'https://www.twilio.com/docs/errors/20404',
+                    },
+                  });
+              }
+
+              return {
+                fetch: () => Promise.resolve(userData),
+              };
+            },
+          },
+          roles: {
+            get: (roleSid: string) => {
+              let roleData: {
+                sid: string;
+                friendlyName: string;
+              };
+
+              switch (roleSid) {
+                case 'childRoleSid':
+                  roleData = childRoleData;
+                  break;
+                case 'counselorRoleSid':
+                  roleData = counselorRoleData;
+                  break;
+                default:
+                  throw new Error("Role doesn't exist");
+              }
+
+              return {
+                fetch: () => Promise.resolve(roleData),
+              };
+            },
           },
         }),
       },
@@ -56,6 +144,20 @@ describe('exportTranscript', () => {
       serviceSid: 'serviceSid',
       channelSid: 'channelSid',
       messages: messageList,
+      participants: {
+        bot: {
+          role: null,
+          user: null,
+        },
+        child: {
+          role: childRoleData,
+          user: childUserData,
+        },
+        counselor: {
+          role: counselorRoleData,
+          user: counselorUserData,
+        },
+      },
     });
   });
 });

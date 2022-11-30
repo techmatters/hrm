@@ -30,6 +30,7 @@ export function processContactJobs() {
 
         const dueContactJobs = await pullDueContactJobs(
           subMilliseconds(new Date(), JOB_RETRY_INTERVAL_MILLISECONDS),
+          JOB_MAX_ATTEMPTS,
         );
 
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
