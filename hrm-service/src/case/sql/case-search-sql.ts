@@ -6,6 +6,7 @@ import {
   DateFilter,
   CategoryFilter,
 } from '../case-data-access';
+import { leftJoinCsamReportsOnFK } from '../../csam-report/sql/csam-report-get-sql';
 
 export const OrderByDirection = {
   ascendingNullsLast: 'ASC NULLS LAST',
@@ -55,7 +56,7 @@ FROM (
     c.*,
     COALESCE(jsonb_agg(DISTINCT r.*) FILTER (WHERE r.id IS NOT NULL), '[]') AS "csamReports"
   FROM "Contacts" c 
-  LEFT JOIN "CSAMReports" r ON c."id" = r."contactId"  AND c."accountSid" = r."accountSid"
+  ${leftJoinCsamReportsOnFK('c')}
   WHERE c."caseId" = "cases".id AND c."accountSid" = "cases"."accountSid"
   GROUP BY c."accountSid", c.id
 ) AS contacts WHERE contacts."caseId" = cases.id AND contacts."accountSid" = cases."accountSid"`;

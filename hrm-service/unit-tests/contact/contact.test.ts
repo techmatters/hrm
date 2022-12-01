@@ -2,13 +2,13 @@ import * as contactDb from '../../src/contact/contact-data-access';
 import {
   connectContactToCase,
   createContact,
-  CSAMReportEntry,
   patchContact,
   SearchContact,
   searchContacts,
 } from '../../src/contact/contact';
 import { ContactBuilder } from './contact-builder';
 import { omit } from 'lodash';
+import { CSAMReport } from '../../src/csam-report/csam-report';
 
 jest.mock('../../src/contact/contact-data-access');
 
@@ -160,7 +160,7 @@ describe('createContact', () => {
     const payload = {
       ...sampleCreateContactPayload,
       // Cheat a bit and cast these because all the other props on CSAMReportEntry are ignored here
-      csamReports: <CSAMReportEntry[]>[{ id: 2 }, { id: 4 }, { id: 6 }],
+      csamReports: <CSAMReport[]>[{ id: 2 }, { id: 4 }, { id: 6 }],
     };
     const returnValue = await createContact('parameter account-sid', 'contact-creator', payload, {
       can: () => true,

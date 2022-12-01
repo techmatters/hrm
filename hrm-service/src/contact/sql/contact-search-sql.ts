@@ -1,12 +1,12 @@
+import { selectCoalesceCsamReportsByContactId } from '../../csam-report/sql/csam-report-get-sql';
+
 export const SELECT_CONTACT_SEARCH = `
         SELECT 
         (count(*) OVER())::INTEGER AS "totalCount",
         contacts.*, reports."csamReports" 
         FROM "Contacts" contacts
         LEFT JOIN LATERAL (
-          SELECT COALESCE(jsonb_agg(to_jsonb(r)), '[]') AS  "csamReports" 
-          FROM "CSAMReports" r 
-          WHERE r."contactId" = contacts.id AND r."accountSid" = contacts."accountSid"
+          ${selectCoalesceCsamReportsByContactId('contacts')}
         ) reports ON true
         WHERE contacts."accountSid" = $<accountSid>
         AND ($<helpline> IS NULL OR contacts."helpline" = $<helpline>)

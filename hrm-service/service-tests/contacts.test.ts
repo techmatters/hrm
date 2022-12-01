@@ -340,6 +340,7 @@ describe('/contacts route', () => {
         {
           csamReportId: csamReportId1,
           twilioWorkerId: workerSid,
+          reportType: 'self-generated',
         },
         accountSid,
       );
@@ -348,6 +349,7 @@ describe('/contacts route', () => {
         {
           csamReportId: csamReportId2,
           twilioWorkerId: workerSid,
+          reportType: 'counsellor-generated',
         },
         accountSid,
       );
@@ -368,7 +370,7 @@ describe('/contacts route', () => {
 
       expect(updatedReport1.contactId).toBeDefined();
       expect(updatedReport1.contactId).toEqual(response.body.id);
-      expect(updatedReport1.csamReportId).toEqual(csamReportId1);
+      expect(updatedReport1.csamReportId).toBeDefined();
 
       const updatedReport2 = await csamReportApi.getCSAMReport(newReport2.id, accountSid);
 
@@ -394,6 +396,7 @@ describe('/contacts route', () => {
         {
           csamReportId: csamReportId,
           twilioWorkerId: workerSid,
+          reportType: 'counsellor-generated',
         },
         accountSid,
       );
@@ -569,6 +572,7 @@ describe('/contacts route', () => {
           {
             csamReportId: csamReportId,
             twilioWorkerId: workerSid,
+            reportType: 'counsellor-generated',
           },
           accountSid,
         );
@@ -660,7 +664,7 @@ describe('/contacts route', () => {
       });
 
       let createdContacts: contactDb.Contact[] = [];
-      let csamReports = new Array<csamReportApi.CSAMReportRecord>();
+      let csamReports = new Array<csamReportApi.CSAMReport>();
 
       const startTestsTimeStamp = new Date();
 
@@ -679,6 +683,7 @@ describe('/contacts route', () => {
           {
             csamReportId: csamReportId1,
             twilioWorkerId: workerSid,
+            reportType: 'self-generated',
           },
           accountSid,
         );
@@ -687,6 +692,7 @@ describe('/contacts route', () => {
           {
             csamReportId: csamReportId2,
             twilioWorkerId: workerSid,
+            reportType: 'self-generated',
           },
           accountSid,
         );
@@ -1094,6 +1100,78 @@ describe('/contacts route', () => {
         await deleteJobsByContactId(createdContact.id, createdContact.accountSid);
         await deleteContactById(createdContact.id, createdContact.accountSid);
         useOpenRules();
+      });
+
+      test('CSAM reports are filtered if not acknowledged', async () => {
+        // Create CSAM Report
+        const csamReportId1 = 'csam-report-id-1';
+        const csamReportId2 = 'csam-report-id-2';
+        const csamReportId3 = 'csam-report-id-2';
+
+        const newReport1 = await csamReportApi.createCSAMReport(
+          {
+            csamReportId: csamReportId1,
+            twilioWorkerId: workerSid,
+            reportType: 'self-generated',
+          },
+          accountSid,
+        );
+
+        const newReport2 = await csamReportApi.createCSAMReport(
+          {
+            csamReportId: csamReportId2,
+            twilioWorkerId: workerSid,
+            reportType: 'counsellor-generated',
+          },
+          accountSid,
+        );
+
+        // This one should not be retrieved
+        const newReport3 = await csamReportApi.createCSAMReport(
+          {
+            csamReportId: csamReportId3,
+            twilioWorkerId: workerSid,
+            reportType: 'self-generated',
+          },
+          accountSid,
+        );
+
+        const contactToCreate = {
+          ...withTaskId,
+          taskId: 'Test CSAM filter',
+          csamReports: [newReport1, newReport2, newReport3],
+        };
+        // Very specific first name
+        contactToCreate.form.childInformation.name.firstName = 'Test CSAM filter';
+        const createdContact = await contactApi.createContact(
+          accountSid,
+          workerSid,
+          contactToCreate,
+          { user: { workerSid, roles: [] }, can: () => true },
+        );
+
+        await csamReportApi.acknowledgeCsamReport(newReport1.id, accountSid);
+
+        const res = await request
+          .post(`${route}/search`)
+          .set(headers)
+          .send({
+            firstName: 'Test CSAM filter',
+          });
+
+        expect(res.status).toBe(200);
+        expect(res.body.count).toBe(1);
+
+        expect((<contactApi.SearchContact>res.body.contacts[0]).csamReports).toHaveLength(2);
+        expect(
+          (<contactApi.SearchContact>res.body.contacts[0]).csamReports.find(
+            r => r.id === newReport3.id,
+          ),
+        ).toBeFalsy();
+
+        // // Remove records to not interfere with following tests
+        await deleteCsamReportsByContactId(createdContact.id, createdContact.accountSid);
+        await deleteContactById(createdContact.id, createdContact.accountSid);
       });
     });
   });

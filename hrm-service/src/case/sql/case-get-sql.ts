@@ -1,3 +1,5 @@
+import { selectCoalesceCsamReportsByContactId } from '../../csam-report/sql/csam-report-get-sql';
+
 const ID_WHERE_CLAUSE = `WHERE "cases"."accountSid" = $<accountSid> AND "cases"."id" = $<caseId>`;
 
 export const selectSingleCaseByIdSql = (tableName: string) => `SELECT
@@ -10,9 +12,7 @@ export const selectSingleCaseByIdSql = (tableName: string) => `SELECT
         SELECT COALESCE(jsonb_agg(to_jsonb(c) || to_jsonb(reports)), '[]') AS  "connectedContacts" 
         FROM "Contacts" c 
         LEFT JOIN LATERAL (
-          SELECT COALESCE(jsonb_agg(to_jsonb(r)), '[]') AS  "csamReports" 
-          FROM "CSAMReports" r 
-          WHERE r."contactId" = c.id AND r."accountSid" = c."accountSid"
+          ${selectCoalesceCsamReportsByContactId('c')}
         ) reports ON true
         WHERE c."caseId" = cases.id AND c."accountSid" = cases."accountSid"
       ) contacts ON true

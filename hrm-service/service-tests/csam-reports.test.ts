@@ -1,4 +1,5 @@
 import supertest from 'supertest';
+import each from 'jest-each';
 import { createService } from '../src/app';
 import * as mocks from './mocks';
 import './case-validation';
@@ -18,26 +19,15 @@ const request = supertest.agent(server);
 
 const { accountSid, workerSid } = mocks;
 
-const csamReport1 = {
+type CreateTestPayload = Partial<Parameters<typeof csamReportsApi.createCSAMReport>[0]>;
+
+const csamReport1: CreateTestPayload = {
   csamReportId: 'csam-report-id',
   twilioWorkerId: workerSid,
-  contactId: null,
-};
-const csamReport2 = {
-  csamReportId: 'csam-report-id',
-  twilioWorkerId: null,
-};
-const csamReport3 = {
-  csamReportId: null,
-  twilioWorkerId: workerSid,
+  contactId: undefined,
 };
 
 const { contact1 } = mocks;
-const invalidContactCsamReport = {
-  csamReportId: 'csam-report-id',
-  twilioWorkerId: workerSid,
-  contactId: 1234,
-};
 
 const headers = {
   'Content-Type': 'application/json',
@@ -67,18 +57,8 @@ afterAll(async () => {
   console.log('csam reports test cleaned up.');
 });
 
-describe('/csamReports route', () => {
+describe('/csamReports', () => {
   const route = `/v0/accounts/${accountSid}/csamReports`;
-  const expected = {
-    id: expect.anything(),
-    accountSid: accountSid,
-    csamReportId: 'csam-report-id',
-    twilioWorkerId: workerSid,
-    contactId: null,
-    updatedAt: expect.toParseAsDate(),
-    createdAt: expect.toParseAsDate(),
-  };
-
   describe('POST', () => {
     test('should return 401', async () => {
       const response = await request.post(route).send(csamReport1);
@@ -87,109 +67,290 @@ describe('/csamReports route', () => {
       expect(response.body.error).toBe('Authorization failed');
     });
 
-    test('should return 200', async () => {
-      const response = await request
-        .post(route)
-        .set(headers)
-        .send(csamReport1);
+    describe('Should return 422', () => {
+      const testCases: {
+        description: string;
+        csamReport: CreateTestPayload;
+      }[] = [
+        {
+          description: 'when reportType is defined but invalid',
+          csamReport: {
+            csamReportId: 'csam-report-id',
+            twilioWorkerId: workerSid,
+            reportType: 'invalid' as any,
+          },
+        },
+        {
+          description: 'when reportType is undefined and no csamReportId is provided',
+          csamReport: {
+            twilioWorkerId: workerSid,
+          },
+        },
+        {
+          description: 'when reportType is "counsellor-generated" and no csamReportId is provided',
+          csamReport: {
+            twilioWorkerId: workerSid,
+            reportType: 'counsellor-generated',
+          },
+        },
+      ];
 
-      expect(response.status).toBe(200);
-      expect(response.body).toStrictEqual(expected);
+      each(testCases).test('$description', async ({ csamReport }) => {
+        const response = await request
+          .post(route)
+          .set(headers)
+          .send(csamReport);
 
-      const reportFromDB = await csamReportsApi.getCSAMReport(response.body.id, accountSid);
-
-      if (!reportFromDB) {
-        throw new Error('reportFromDB is undefined');
-      }
-
-      expect(reportFromDB.csamReportId).toEqual(expected.csamReportId);
+        expect(response.status).toBe(422);
+      });
     });
 
-    test('valid contactId, should return 200 and update the database correctly', async () => {
-      //Create a Contact for the contactId
-      const contactRoute = `/v0/accounts/${accountSid}/contacts`;
-      const contactResponse = await request
-        .post(contactRoute)
-        .set(headers)
-        .send(contact1);
-      let csamReportWithContactId = { ...csamReport1, contactId: contactResponse.body.id };
+    describe('Should return 200', () => {
+      describe('with valid arguments', () => {
+        const testCasesWithContact: {
+          description: string;
+          csamReport: CreateTestPayload;
+          contact?: any;
+        }[] = [
+          // with contact
+          {
+            description: 'when reportType is "counsellor-generated", twilioWorkerId preset',
+            csamReport: {
+              twilioWorkerId: workerSid,
+              reportType: 'counsellor-generated',
+              csamReportId: 'csam-report-id',
+            },
+            contact: contact1,
+          },
+          {
+            description: 'when reportType is "self-generated", twilioWorkerId preset',
+            csamReport: {
+              twilioWorkerId: workerSid,
+              reportType: 'self-generated',
+            },
+            contact: contact1,
+          },
+          {
+            description: 'when reportType is "counsellor-generated", twilioWorkerId absent',
+            csamReport: {
+              reportType: 'counsellor-generated',
+              csamReportId: 'csam-report-id',
+            },
+          },
+          {
+            description: 'when reportType is "self-generated", twilioWorkerId absent',
+            csamReport: {
+              reportType: 'self-generated',
+            },
+          },
+        ];
 
-      const response = await request
-        .post(route)
-        .set(headers)
-        .send(csamReportWithContactId);
+        const testCases = testCasesWithContact.flatMap(({ contact, description, ...rest }) => [
+          { ...rest, description: description + ' without contact' },
+          { ...rest, contact, description: description + ' with contact' },
+        ]);
 
-      expect(response.status).toBe(200);
-      expect(response.body.contactId).toBe(csamReportWithContactId.contactId);
+        each(testCases).test('$description', async ({ csamReport, contact }) => {
+          let csamReportToSave;
 
-      const reportFromDB = await csamReportsApi.getCSAMReport(response.body.id, accountSid);
+          if (contact) {
+            //Create a Contact for the contactId
+            const contactRoute = `/v0/accounts/${accountSid}/contacts`;
+            const contactResponse = await request
+              .post(contactRoute)
+              .set(headers)
+              .send(contact);
 
-      if (!reportFromDB) {
-        throw new Error('reportFromDB is undefined');
-      }
+            csamReportToSave = { ...csamReport, contactId: contactResponse.body.id };
+          } else {
+            csamReportToSave = { ...csamReport };
+          }
 
-      expect(reportFromDB.csamReportId).toEqual(expected.csamReportId);
+          const expected = {
+            ...csamReportToSave,
+            id: expect.anything(),
+            accountSid: accountSid,
+            updatedAt: expect.toParseAsDate(),
+            createdAt: expect.toParseAsDate(),
+          };
+
+          const response = await request
+            .post(route)
+            .set(headers)
+            .send(csamReportToSave);
+
+          expect(response.status).toBe(200);
+          if (contact) {
+            expect(response.body.contactId).toBe(csamReportToSave.contactId);
+          } else {
+            expect(response.body.contactId).toBeNull();
+          }
+
+          const reportFromDB = await csamReportsApi.getCSAMReport(response.body.id, accountSid);
+
+          if (!reportFromDB) {
+            throw new Error('reportFromDB is undefined');
+          }
+
+          expect(reportFromDB).toEqual(expect.objectContaining(expected));
+
+          if (csamReport.reportType === 'counsellor-generated') {
+            expect(reportFromDB.csamReportId).toEqual(csamReport.csamReportId);
+            expect(reportFromDB.acknowledged).toBe(true);
+          } else {
+            expect(reportFromDB.csamReportId).toBeDefined();
+            expect(reportFromDB.acknowledged).toBe(false);
+          }
+
+          if (csamReport.twilioWorkerId) {
+            expect(reportFromDB.twilioWorkerId).toBe(csamReport.twilioWorkerId);
+          } else {
+            expect(reportFromDB.twilioWorkerId).toBe('');
+          }
+        });
+      });
     });
 
-    test('invalid contactId, returns 500', async () => {
-      const response = await request
-        .post(route)
-        .set(headers)
-        .send(invalidContactCsamReport);
+    describe('Should return 500', () => {
+      const testCases: {
+        description: string;
+        csamReport: CreateTestPayload;
+      }[] = [
+        {
+          description: 'when reportType is "counsellor-generated"',
+          csamReport: {
+            twilioWorkerId: workerSid,
+            reportType: 'counsellor-generated',
+            csamReportId: 'csam-report-id',
+            contactId: 99999999,
+          },
+        },
+        {
+          description: 'when reportType is "self-generated"',
+          csamReport: {
+            twilioWorkerId: workerSid,
+            reportType: 'self-generated',
+            csamReportId: 'csam-report-id',
+            contactId: 99999999,
+          },
+        },
+      ];
 
-      expect(response.status).toBe(500);
-      expect(response.body.message).toContain(
-        'insert or update on table "CSAMReports" violates foreign key constraint "CSAMReports_contactId_accountSid_fkey"',
-      );
+      each(testCases).test('Invalid contactId, $description', async ({ csamReport }) => {
+        const response = await request
+          .post(route)
+          .set(headers)
+          .send(csamReport);
+
+        expect(response.status).toBe(500);
+        expect(response.body.message).toContain(
+          'insert or update on table "CSAMReports" violates foreign key constraint "CSAMReports_contactId_accountSid_fkey"',
+        );
+      });
+
+      each(testCases).test('Invalid accountSid, $description', async ({ csamReport }) => {
+        //Create a Contact for the contactId
+        const contactRoute = `/v0/accounts/${accountSid}/contacts`;
+        const contactResponse = await request
+          .post(contactRoute)
+          .set(headers)
+          .send(contact1);
+        let csamReportWithContactId = { ...csamReport, contactId: contactResponse.body.id };
+
+        const response = await request
+          .post(route.replace(accountSid, 'another-account-sid'))
+          .set(headers)
+          .send(csamReportWithContactId);
+
+        expect(response.status).toBe(500);
+        expect(response.body.message).toContain(
+          'insert or update on table "CSAMReports" violates foreign key constraint "CSAMReports_contactId_accountSid_fkey"',
+        );
+      });
     });
+  });
 
-    test('invalid accountSid, returns 500', async () => {
-      //Create a Contact for the contactId
-      const contactRoute = `/v0/accounts/${accountSid}/contacts`;
-      const contactResponse = await request
-        .post(contactRoute)
-        .set(headers)
-        .send(contact1);
-      let csamReportWithContactId = { ...csamReport1, contactId: contactResponse.body.id };
+  describe('/:reportId', () => {
+    describe('/acknowledge', () => {
+      describe('POST', () => {
+        describe('Should return 404', () => {
+          each([
+            {
+              description: 'when reportId is a string',
+              reportId: 'a-string',
+            },
+            {
+              description: 'when reportId does not exists in DB',
+              reportId: 99999999,
+            },
+          ]).test('$description', async ({ reportId }) => {
+            const response = await request.post(`${route}/${reportId}/acknowledge`).set(headers);
 
-      const response = await request
-        .post(route.replace(accountSid, 'another-account-sid'))
-        .set(headers)
-        .send(csamReportWithContactId);
+            expect(response.status).toBe(404);
+          });
+        });
 
-      expect(response.status).toBe(500);
-      expect(response.body.message).toContain(
-        'insert or update on table "CSAMReports" violates foreign key constraint "CSAMReports_contactId_accountSid_fkey"',
-      );
-    });
+        describe('Should return 200', () => {
+          const testCasesWithContact: {
+            description: string;
+            csamReport?: CreateTestPayload;
+            contact: any;
+          }[] = [
+            {
+              description: 'with "counsellor-generated" is no-op',
+              csamReport: {
+                twilioWorkerId: workerSid,
+                reportType: 'counsellor-generated',
+                csamReportId: 'csam-report-id',
+              },
+              contact: contact1,
+            },
+            {
+              description: 'with "self-generated", sets "acknowledged" to TRUE',
+              csamReport: {
+                twilioWorkerId: workerSid,
+                reportType: 'self-generated',
+              },
+              contact: contact1,
+            },
+          ];
 
-    test('missing twilioWorkerId, returns 200', async () => {
-      const response = await request
-        .post(route)
-        .set(headers)
-        .send(csamReport2);
-      expect(response.status).toBe(200);
-      expect(response.body.twilioWorkerId).toEqual('');
+          const testCases = testCasesWithContact.flatMap(({ contact, description, ...rest }) => [
+            { ...rest, description: description + ' without contact' },
+            { ...rest, contact, description: description + ' with contact' },
+          ]);
 
-      const reportFromDB = await csamReportsApi.getCSAMReport(response.body.id, accountSid);
+          each(testCases).test('$description', async ({ csamReport, contact }) => {
+            let csamReportToSave;
 
-      if (!reportFromDB) {
-        throw new Error('reportFromDB is undefined');
-      }
+            if (contact) {
+              //Create a Contact for the contactId
+              const contactRoute = `/v0/accounts/${accountSid}/contacts`;
+              const contactResponse = await request
+                .post(contactRoute)
+                .set(headers)
+                .send(contact);
 
-      expect(reportFromDB.csamReportId).toEqual(expected.csamReportId);
-    });
+              csamReportToSave = { ...csamReport, contactId: contactResponse.body.id };
+            } else {
+              csamReportToSave = { ...csamReport };
+            }
 
-    test('missing csamReportId, returns 200', async () => {
-      const response = await request
-        .post(route)
-        .set(headers)
-        .send(csamReport3);
-      expect(response.status).toBe(200);
+            const createdReport = await csamReportsApi.createCSAMReport(
+              csamReportToSave,
+              accountSid,
+            );
 
-      expect(response.body.csamReportId).toEqual('');
-      const reportFromDB = await csamReportsApi.getCSAMReport(response.body.id, accountSid);
-      expect(reportFromDB).toBeDefined();
+            const response = await request
+              .post(`${route}/${createdReport.id}/acknowledge`)
+              .set(headers)
+              .send({});
+
+            expect(response.status).toBe(200);
+            expect(response.body.acknowledged).toBe(true);
+          });
+        });
+      });
     });
   });
 });
