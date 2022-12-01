@@ -24,13 +24,9 @@ csamReportRouter.post('/', publicEndpoint, async (req: Request & { accountSid: s
   res.json(createdCSAMReport);
 });
 
-csamReportRouter.post('/:reportId/acknowledge', publicEndpoint, async (req: Request & { accountSid: string }, res: Response) => {
+csamReportRouter.post('/:reportId(\\d+)/acknowledge', publicEndpoint, async (req: Request & { accountSid: string }, res: Response) => {
   const { accountSid } = req;
   const reportId = parseInt(req.params.reportId, 10);
-
-  if (isNaN(reportId)) {
-    throw createError(422, 'Invalid id');
-  }
 
   const acknowledgedReport = await acknowledgeCsamReport(reportId, accountSid);
 

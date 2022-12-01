@@ -273,21 +273,12 @@ describe('/csamReports', () => {
   describe('/:reportId', () => {
     describe('/acknowledge', () => {
       describe('POST', () => {
-        describe('Should return 422', () => {
+        describe('Should return 404', () => {
           each([
             {
               description: 'when reportId is a string',
               reportId: 'a-string',
             },
-          ]).test('$description', async ({ reportId }) => {
-            const response = await request.post(`${route}/${reportId}/acknowledge`).set(headers);
-
-            expect(response.status).toBe(422);
-          });
-        });
-
-        describe('Should return 404', () => {
-          each([
             {
               description: 'when reportId does not exists in DB',
               reportId: 99999999,
