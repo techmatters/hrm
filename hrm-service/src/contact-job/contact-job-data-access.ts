@@ -46,10 +46,14 @@ export type ContactJob = RetrieveContactTranscriptJob;
  * This will pull the contact in its current state and add it to the job payload for sending
  * @param lastAttemptedBefore
  */
-export const pullDueContactJobs = async (lastAttemptedBefore: Date): Promise<ContactJob[]> => {
+export const pullDueContactJobs = async (
+  lastAttemptedBefore: Date,
+  jobMaxAttempts: number,
+): Promise<ContactJob[]> => {
   return db.task(tx => {
     return tx.manyOrNone<ContactJob>(PULL_DUE_JOBS_SQL, {
       lastAttemptedBefore: lastAttemptedBefore.toISOString(),
+      jobMaxAttempts,
     });
   });
 };
