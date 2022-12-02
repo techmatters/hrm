@@ -45,12 +45,14 @@ const counselorUserData = {
 
 const childRoleData = {
   sid: 'childRoleSid',
-  friendlyName: 'Child',
+  friendlyName: 'service user',
+  isCounselor: false,
 };
 
 const counselorRoleData = {
   sid: 'counselorRoleSid',
-  friendlyName: 'Counselor',
+  friendlyName: 'counselor',
+  isCounselor: true,
 };
 
 jest.mock('@tech-matters/hrm-twilio-client', () => {

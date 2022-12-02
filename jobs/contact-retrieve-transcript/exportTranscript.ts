@@ -18,6 +18,8 @@ export type ExportTranscripParticipants = {
   };
 };
 
+const CHILD_ROLE = 'service user';
+
 const getTransformedMessages = async (
   client: ReturnType<typeof getClient>,
   channelSid: string,
@@ -59,10 +61,15 @@ const getRole = async (
   roleSid: string,
 ) => {
   try {
-    return await client.chat.v2
+    const role = await client.chat.v2
       .services(serviceSid)
       .roles.get(roleSid)
       .fetch();
+
+    return {
+      ...role,
+      isCounselor: role.friendlyName !== CHILD_ROLE,
+    };
   } catch (err) {
     if (err instanceof RestException && err.code === 20404) {
       return null;
