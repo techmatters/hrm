@@ -8,7 +8,7 @@ module.exports = {
     await queryInterface.sequelize.query(
       `
         ALTER TABLE IF EXISTS public."CSAMReports"
-        ADD COLUMN "reportType" TEXT NOT NULL;
+        ADD COLUMN "reportType" TEXT DEFAULT 'counsellor-generated' NOT NULL;
       `,
       { transaction },
     );
@@ -17,19 +17,29 @@ module.exports = {
     await queryInterface.sequelize.query(
       `
         ALTER TABLE IF EXISTS public."CSAMReports"
-        ADD COLUMN "acknowledged" BOOLEAN NOT NULL;
+        ADD COLUMN "acknowledged" BOOLEAN DEFAULT TRUE NOT NULL;
       `,
       { transaction },
     );
-    console.log('Column reportStatus added to CSAMReports');
+    console.log('Column acknowledged added to CSAMReports');
 
     await queryInterface.sequelize.query(
       `
-        UPDATE "CSAMReports" SET "reportType" = 'counsellor-generated', "acknowledged" = TRUE;
+        ALTER TABLE IF EXISTS public."CSAMReports"
+        ALTER COLUMN "reportType" DROP DEFAULT;
       `,
       { transaction },
     );
-    console.log('Set reportType colum to "counsellor-generated" for all records');
+    console.log('Column reportType default constraint droped');
+
+    await queryInterface.sequelize.query(
+      `
+        ALTER TABLE IF EXISTS public."CSAMReports"
+        ALTER COLUMN "acknowledged" DROP DEFAULT;
+      `,
+      { transaction },
+    );
+    console.log('Column acknowledged default constraint droped');
 
     await transaction.commit();
   },
