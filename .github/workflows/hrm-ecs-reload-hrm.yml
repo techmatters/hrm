@@ -1,4 +1,4 @@
-name: '[Multi Region] Reload HRM configuration via forced update'
+name: 'Reload HRM configuration via forced update'
 on:
   workflow_dispatch:
     inputs:
