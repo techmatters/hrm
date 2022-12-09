@@ -1,18 +1,25 @@
 name: '[Multi Region] Reload HRM configuration via forced update'
 on:
-  #  release:
-  #    types: [created]
-
   workflow_dispatch:
     inputs:
       environment:
         description: HRM environment to update. E.G = development, staging, production (must match with the AWS environment value). Default value = development
         default: development
         required: true
+        type: choice
+        options:
+          - development
+          - staging
+          - production
+
       region:
         description: AWS region to update. E.G = us-east-1, eu-west-1 (must match with the AWS environment value). Default value = us-east-1
         default: us-east-1
         required: true
+        type: choice
+        options:
+          - us-east-1
+          - eu-west-1
 
   workflow_call:
     secrets:
