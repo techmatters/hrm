@@ -1,0 +1,97 @@
+name: '[Multi Region] Reload HRM configuration via forced update'
+on:
+  #  release:
+  #    types: [created]
+
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: HRM environment to update. E.G = development, staging, production (must match with the AWS environment value). Default value = development
+        default: development
+        required: true
+      region:
+        description: AWS region to update. E.G = us-east-1, eu-west-1 (must match with the AWS environment value). Default value = us-east-1
+        default: us-east-1
+        required: true
+
+  workflow_call:
+    secrets:
+      AWS_ACCESS_KEY_ID:
+        required: true
+      AWS_SECRET_ACCESS_KEY:
+        required: true
+      # Should probably use the passed in region for everything but the GITHUB_ACTIONS_SLACK_BOT_TOKEN SSM parameter only exists in us-east-1
+      AWS_DEFAULT_REGION:
+        required: true
+    inputs:
+      environment:
+        description: HRM environment to update. E.G = development, staging, production (must match with the AWS environment value). Default value = development
+        type: string
+        default: development
+        required: true
+      region:
+        description: AWS region to update. E.G = us-east-1, eu-west-1 (must match with the AWS environment value). Default value = us-east-1
+        type: string
+        default: us-east-1
+        required: true
+      send-slack-message:
+        description: 'Specifies if should send a Slack message at the end of successful run. Defaults to true'
+        required: false
+        default: 'true'
+        type: string
+
+env:
+  AWS_DEFAULT_REGION: ${{ inputs.region }}
+  GITHUB_SHA: ${{ github.sha }}
+
+jobs:
+  deploy:
+    name: Update
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ inputs.region }}
+
+      - name: Force update of ECS service
+        run: aws ecs update-service --cluster ${{ inputs.environment }}-ecs-cluster --service ${{ inputs.environment }}-ecs-service --force-new-deployment
+
+      # TODO: force reload of lambdas as well
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
+
+      # Set any env vars needed from Parameter Store here
+      - name: Set GITHUB_ACTIONS_SLACK_BOT_TOKEN
+        uses: 'marvinpinto/action-inject-ssm-secrets@latest'
+        with:
+          ssm_parameter: 'GITHUB_ACTIONS_SLACK_BOT_TOKEN'
+          env_variable_name: 'GITHUB_ACTIONS_SLACK_BOT_TOKEN'
+
+      - name: Set ASELO_DEPLOYS_CHANNEL_ID
+        uses: 'marvinpinto/action-inject-ssm-secrets@latest'
+        with:
+          ssm_parameter: 'ASELO_DEPLOYS_CHANNEL_ID'
+          env_variable_name: 'ASELO_DEPLOYS_CHANNEL_ID'
+
+      # Send Slack notifying success
+      - name: Slack Aselo channel
+        id: slack
+        uses: slackapi/slack-github-action@v1.14.0
+        with:
+          channel-id: ${{ env.ASELO_DEPLOYS_CHANNEL_ID }}
+          slack-message: '`[HRM]` Action ${{ github.workflow }} completed with SHA ${{ github.sha }} to region `${{ inputs.region }}`, environment `${{ inputs.environment }}` :rocket:.'
+        env:
+          SLACK_BOT_TOKEN: ${{ env.GITHUB_ACTIONS_SLACK_BOT_TOKEN }}
+        if: ${{ inputs.send-slack-message != 'false' }}
