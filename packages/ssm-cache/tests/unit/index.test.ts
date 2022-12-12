@@ -1,4 +1,12 @@
-import { addToCache, getSsmParameter, ssmCache, SsmParameterNotFound } from '../../index';
+import { isAfter } from 'date-fns';
+
+import {
+  addToCache,
+  getSsmParameter,
+  loadSsmCache,
+  ssmCache,
+  SsmParameterNotFound,
+} from '../../index';
 
 describe('addToCache', () => {
   it('should add a value to the cache with matching regex', () => {
@@ -24,5 +32,14 @@ describe('addToCache', () => {
 
     expect(ssmCache.values).not.toHaveProperty(ssmParam.Name);
     expect(() => getSsmParameter(ssmParam.Name)).toThrow(SsmParameterNotFound);
+  });
+});
+
+describe('loadCache', () => {
+  it('loading after cache expired should update expiryDate', () => {
+    const initialExpire = new Date(Date.now() - 1000);
+    ssmCache.expiryDate = initialExpire;
+    loadSsmCache({ configs: [] });
+    expect(isAfter(ssmCache.expiryDate, initialExpire)).toBeTruthy();
   });
 });

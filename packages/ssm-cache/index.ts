@@ -95,11 +95,9 @@ export const loadSsmCache = async ({
   expiryTime: cacheDuration = 3600000,
   configs,
 }: LoadSsmCacheParameters) => {
-  if (!ssmCache.expiryDate) {
-    ssmCache.expiryDate = new Date(Date.now() + cacheDuration);
-  }
-
   if (isConfigNotEmpty() && !hasCacheExpired()) return;
+
+  ssmCache.expiryDate = new Date(Date.now() + cacheDuration);
 
   const promises = configs.map(async config => loadPaginated(config));
 
