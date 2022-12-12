@@ -68,7 +68,7 @@ describe('loadCache', () => {
 
   it('loading after cache expire should cause call fetch new params', async () => {
     const ssmCacheConfig = {
-      cacheDuration: -1, // set expire to the past to force update because sometimes this is do fast that milliseconds are the same.
+      cacheDurationMilliseconds: -1, // set expire to the past to force update because sometimes this is do fast that milliseconds are the same.
       configs: [
         {
           path: `/test/fake/param`,

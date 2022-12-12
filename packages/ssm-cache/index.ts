@@ -86,18 +86,18 @@ export type SsmCacheConfig = {
 };
 
 export type LoadSsmCacheParameters = {
-  cacheDuration?: number;
+  cacheDurationMilliseconds?: number;
   // We accept an array of types to allow loading parameters from multiple paths
   configs: SsmCacheConfig[];
 };
 
 export const loadSsmCache = async ({
-  cacheDuration = 3600000,
+  cacheDurationMilliseconds = 3600000,
   configs,
 }: LoadSsmCacheParameters) => {
   if (isConfigNotEmpty() && !hasCacheExpired()) return;
 
-  ssmCache.expiryDate = new Date(Date.now() + cacheDuration);
+  ssmCache.expiryDate = new Date(Date.now() + cacheDurationMilliseconds);
 
   const promises = configs.map(async config => loadPaginated(config));
 
