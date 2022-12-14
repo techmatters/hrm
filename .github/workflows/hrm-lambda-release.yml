@@ -107,7 +107,7 @@ jobs:
         uses: slackapi/slack-github-action@v1.14.0
         with:
           channel-id: ${{ env.ASELO_DEPLOYS_CHANNEL_ID }}
-          slack-message: '`[HRM lambdas - ${{ env.LAMBDA_NAME }}]` Deployment of ${{ github.ref_type }} ${{ github.ref_name }} requested by {{ github.triggering_actor }} completed to region `${{ env.AWS_REGION }}`, environment `${{ env.ENVIRONMENT }}` :rocket:.'
+          slack-message: '`[HRM lambdas - ${{ env.LAMBDA_NAME }}]` Deployment of ${{ github.ref_type }} ${{ github.ref_name }} requested by ${{ github.triggering_actor }} completed to region `${{ env.AWS_REGION }}`, environment `${{ env.ENVIRONMENT }}` :rocket:.'
         env:
           SLACK_BOT_TOKEN: ${{ env.GITHUB_ACTIONS_SLACK_BOT_TOKEN }}
         if: ${{ inputs.send-slack-message != 'false' }}
