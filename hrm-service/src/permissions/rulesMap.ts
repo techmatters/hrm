@@ -10,6 +10,7 @@ const etRules = require('../../permission-rules/et.json');
 const huRules = require('../../permission-rules/hu.json');
 const inRules = require('../../permission-rules/in.json');
 const jmRules = require('../../permission-rules/jm.json');
+const mtRules = require('../../permission-rules/mt.json');
 const mwRules = require('../../permission-rules/mw.json');
 const phRules = require('../../permission-rules/ph.json');
 const plRules = require('../../permission-rules/pl.json');
@@ -54,6 +55,7 @@ const rulesMapDef = {
   hu: huRules,
   in: inRules,
   jm: jmRules,
+  mt: mtRules,
   mw: mwRules,
   ph: phRules,
   pl: plRules,
