@@ -133,8 +133,8 @@ const insertSampleCases = async ({
       if (categories) {
         contactToCreate.rawJson = contactToCreate.rawJson ?? {
           caseInformation: { categories: {} },
-          callerInformation: { name: { firstName: '', lastName: '' } },
-          childInformation: { name: { firstName: '', lastName: '' } },
+          callerInformation: {},
+          childInformation: {},
           callType: '',
         };
         contactToCreate.rawJson.caseInformation = contactToCreate.rawJson.caseInformation ?? {

@@ -17,7 +17,10 @@ import { randomUUID } from 'crypto';
 import { Contact } from '../contact/contact-data-access';
 import { setupCanForRules } from '../permissions/setupCanForRules';
 import { User } from '../permissions';
-import { bindApplyTransformations as bindApplyContactTransformations } from '../contact/contact';
+import {
+  bindApplyTransformations as bindApplyContactTransformations,
+  getPersonsName,
+} from '../contact/contact';
 
 type CaseInfoSection = {
   id: string;
@@ -134,7 +137,7 @@ const addCategoriesAndChildName = (caseItem: CaseRecord) => {
   }
 
   const { childInformation, caseInformation } = fstContact.rawJson;
-  const childName = `${childInformation.name.firstName} ${childInformation.name.lastName}`;
+  const childName = getPersonsName(childInformation);
   const categories = retrieveCategories(caseInformation.categories);
   return { ...caseItem, childName, categories };
 };
