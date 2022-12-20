@@ -1,4 +1,4 @@
-type NestedInformation = { name: { firstName: string; lastName: string } };
+type NestedInformation = { name?: { firstName: string; lastName: string } };
 
 export type PersonInformation = NestedInformation & {
   [key: string]: string | boolean | NestedInformation[keyof NestedInformation]; // having NestedInformation[keyof NestedInformation] makes type looser here because of this https://github.com/microsoft/TypeScript/issues/17867. Possible/future solution https://github.com/microsoft/TypeScript/pull/29317
@@ -46,3 +46,6 @@ export type ContactRawJson = {
   contactlessTask?: { [key: string]: string | boolean };
   conversationMedia?: ConversationMedia[];
 };
+
+export const getPersonsName = (person: PersonInformation) =>
+  person.name ? `${person.name.firstName} ${person.name.lastName}` : '';

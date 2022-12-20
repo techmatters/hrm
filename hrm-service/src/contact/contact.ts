@@ -7,7 +7,7 @@ import {
   search,
   SearchParameters,
 } from './contact-data-access';
-import { ContactRawJson, isS3StoredTranscript } from './contact-json';
+import { ContactRawJson, getPersonsName, isS3StoredTranscript } from './contact-json';
 import { retrieveCategories } from './categories';
 import { getPaginationElements } from '../search';
 import { NewContactRecord } from './sql/contact-insert-sql';
@@ -208,7 +208,7 @@ function convertContactsToSearchResults(contacts: Contact[]): SearchContact[] {
 
       const contactId = contact.id;
       const dateTime = contact.timeOfContact;
-      const name = `${contact.rawJson.childInformation.name.firstName} ${contact.rawJson.childInformation.name.lastName}`;
+      const name = getPersonsName(contact.rawJson.childInformation);
       const customerNumber = contact.number;
       const { callType, caseInformation } = contact.rawJson;
       const categories = retrieveCategories(caseInformation.categories);
