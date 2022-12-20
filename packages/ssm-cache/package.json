@@ -23,5 +23,8 @@
   },
   "scripts": {
     "test:unit": "jest tests/unit"
+  },
+  "devDependencies": {
+    "date-fns": "^2.29.3"
   }
 }
