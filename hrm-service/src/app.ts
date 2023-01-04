@@ -8,19 +8,15 @@ import { apiV0 } from './routes';
 import { Permissions, setupPermissions } from './permissions';
 import { jsonPermissions } from './permissions/json-permissions';
 import { getAuthorizationMiddleware, addAccountSid } from './middlewares';
-import { processContactJobs } from './contact-job/contact-job-processor';
-import { enableProcessContactJobsFlag } from './featureFlags';
 
 type ServiceCreationOptions = Partial<{
   permissions: Permissions;
   authTokenLookup: (accountSid: string) => string;
-  enableProcessContactJobs: boolean;
 }>;
 
 export function createService({
   permissions = jsonPermissions,
   authTokenLookup,
-  enableProcessContactJobs = enableProcessContactJobsFlag,
 }: ServiceCreationOptions = {}) {
   const app = express();
 
@@ -66,20 +62,6 @@ export function createService({
     res.json(error);
     next();
   });
-
-  if (enableProcessContactJobs) {
-    const processorIntervalId = processContactJobs();
-
-    const gracefulExit = () => {
-      clearInterval(processorIntervalId);
-    };
-
-    app.on('close', gracefulExit);
-    // @ts-ignore
-    app.close = () => {
-      app.emit('close');
-    };
-  }
 
   console.log(`${new Date(Date.now()).toLocaleString()}: app.js has been created`);
 

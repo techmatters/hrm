@@ -9,7 +9,6 @@ import { create } from '../src/post-survey/post-survey-data-access';
 const server = createService({
   permissions: openPermissions,
   authTokenLookup: () => 'picernic basket',
-  enableProcessContactJobs: false,
 }).listen();
 const request = supertest.agent(server);
 

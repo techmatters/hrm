@@ -29,7 +29,6 @@ const server = createService({
     rules: () => testRules,
   },
   authTokenLookup: () => 'picernic basket',
-  enableProcessContactJobs: false,
 }).listen();
 const request = supertest.agent(server);
 
@@ -56,7 +55,7 @@ beforeEach(async () => {
 const deleteContactById = (id: number, accountSid: string) =>
   db.task(t =>
     t.none(`
-      DELETE FROM "Contacts" 
+      DELETE FROM "Contacts"
       WHERE "id" = ${id} AND "accountSid" = '${accountSid}';
   `),
   );

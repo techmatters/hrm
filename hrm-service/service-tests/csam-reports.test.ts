@@ -13,7 +13,6 @@ console.log(process.env.INCLUDE_ERROR_IN_RESPONSE);
 const server = createService({
   permissions: openPermissions,
   authTokenLookup: () => 'picernic basket',
-  enableProcessContactJobs: false,
 }).listen();
 const request = supertest.agent(server);
 

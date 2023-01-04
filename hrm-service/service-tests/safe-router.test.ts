@@ -42,7 +42,6 @@ jest.mock('../src/routes', () => {
 const server = createService({
   permissions: openPermissions,
   authTokenLookup: () => 'picernic basket',
-  enableProcessContactJobs: false,
 }).listen();
 const request = supertest.agent(server);
 
