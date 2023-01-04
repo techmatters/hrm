@@ -49,7 +49,7 @@ const useOpenRules = () => {
   testRules = openPermissions.rules(accountSid);
 };
 useOpenRules();
-const server = createService({
+export const server = createService({
   permissions: {
     cachePermissions: false,
     rules: () => testRules,
@@ -58,7 +58,7 @@ const server = createService({
   enableProcessContactJobs: false,
 }).listen();
 
-const request = supertest.agent(server, undefined);
+export const request = supertest.agent(server, undefined);
 
 /**
  *
@@ -68,7 +68,7 @@ const request = supertest.agent(server, undefined);
 const resolveSequentially = ps =>
   ps.reduce((p, v) => p.then(a => v().then(r => a.concat([r]))), Promise.resolve([]));
 
-const headers = {
+export const headers = {
   'Content-Type': 'application/json',
   Authorization: `Bearer bearing a bear (rawr)`,
 };
@@ -80,7 +80,7 @@ const cleanupWhereClause = `
 const cleanupCases = () =>
   db.task(t =>
     t.none(`
-      DELETE FROM "Cases" 
+      DELETE FROM "Cases"
       ${cleanupWhereClause}
   `),
   );
@@ -88,7 +88,7 @@ const cleanupCases = () =>
 const cleanupContacts = () =>
   db.task(t =>
     t.none(`
-      DELETE FROM "Contacts" 
+      DELETE FROM "Contacts"
       ${cleanupWhereClause}
   `),
   );
@@ -96,7 +96,7 @@ const cleanupContacts = () =>
 const cleanupContactsJobs = () =>
   db.task(t =>
     t.none(`
-      DELETE FROM "ContactJobs" 
+      DELETE FROM "ContactJobs"
       WHERE "accountSid" IN ('', '${accountSid}')
   `),
   );
@@ -117,7 +117,7 @@ const getContactByTaskId = (taskId: string, accountSid: string) =>
 const deleteContactById = (id: number, accountSid: string) =>
   db.task(t =>
     t.none(`
-      DELETE FROM "Contacts" 
+      DELETE FROM "Contacts"
       WHERE "id" = ${id} AND "accountSid" = '${accountSid}';
   `),
   );
@@ -126,7 +126,7 @@ const deleteContactById = (id: number, accountSid: string) =>
 const deleteContactJobById = (id: number, accountSid: string) =>
   db.task(t =>
     t.none(`
-      DELETE FROM "ContactJobs" 
+      DELETE FROM "ContactJobs"
       WHERE "id" = ${id} AND "accountSid" = '${accountSid}';
   `),
   );
