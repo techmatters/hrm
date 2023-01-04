@@ -1,9 +1,21 @@
 version: '3'
 services:
+  job-processor:
+    image: hrm-service
+    environment:
+      POSTGRES_PORT: 5432
+      RDS_HOSTNAME: db
+      HRM_RUN_MIGRATIONS: 'true'
+
+    env_file:
+      - ../.env.localstack
+      - dist/.env
+
   service:
     image: hrm-service
     ports:
       - '8081:8080'
+
     environment:
       API_KEY: testApiKey
       PORT: 8080
@@ -13,3 +25,6 @@ services:
     env_file:
       - ../.env.localstack
       - dist/.env
+
+    depends_on:
+      - job-processor

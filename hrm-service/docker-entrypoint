@@ -1,5 +1,7 @@
 #!/usr/bin/env sh
 
-node ./db-migrate
+if [ -n "$HRM_RUN_MIGRATIONS" ]; then
+  node ./db-migrate
+fi
 
 exec "$@"
