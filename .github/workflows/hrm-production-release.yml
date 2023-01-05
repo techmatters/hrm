@@ -27,7 +27,7 @@ jobs:
 
       # Send Slack notifying success
       - name: Slack aselo-deploys channel
-        uses: ./.github/actions/notify-deploys
+        uses: techmatters/flex-plugins/.github/actions/notify-deploys@master
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
