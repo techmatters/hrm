@@ -1,21 +1,14 @@
-import { createService } from '../src/app';
+import each from 'jest-each';
 import { rulesMap } from '../src/permissions';
 import * as proxiedEndpoints from './external-service-stubs/proxied-endpoints';
-const { workerSid } = require('./mocks');
+import { workerSid } from './mocks';
+import { headers, getRequest, getServer } from './server';
 
-const supertest = require('supertest');
-const each = require('jest-each').default;
+const server = getServer({
+  permissions: undefined,
+});
 
-const server = createService({
-  authTokenLookup: () => 'picernic basket',
-  enableProcessContactJobs: false,
-}).listen();
-const request = supertest.agent(server);
-
-const headers = {
-  'Content-Type': 'application/json',
-  Authorization: `Bearer bearing a bear (rawr)`,
-};
+const request = getRequest(server);
 
 beforeAll(async () => {
   await proxiedEndpoints.start();

@@ -3,22 +3,14 @@ import { openPermissions } from '../src/permissions/json-permissions';
 import * as proxiedEndpoints from './external-service-stubs/proxied-endpoints';
 import * as mocks from './mocks';
 import { db } from '../src/connection-pool';
-const supertest = require('supertest');
 import { create } from '../src/post-survey/post-survey-data-access';
+import { headers, getRequest, getServer, useOpenRules } from './server';
 
-const server = createService({
-  permissions: openPermissions,
-  authTokenLookup: () => 'picernic basket',
-  enableProcessContactJobs: false,
-}).listen();
-const request = supertest.agent(server);
+useOpenRules();
+const server = getServer();
+const request = getRequest(server);
 
 const { accountSid, workerSid } = mocks;
-
-const headers = {
-  'Content-Type': 'application/json',
-  Authorization: `Bearer bearing a bear (rawr)`,
-};
 
 const deleteAllPostSurveys = async () =>
   db.task(t =>
