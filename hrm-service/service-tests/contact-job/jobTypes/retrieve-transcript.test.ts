@@ -113,9 +113,7 @@ const createChatContact = async (channel: string, startedTimestamp: number) => {
   expect(retrieveContactTranscriptJob.completionPayload).toBeNull();
 
   const failurePayload = await db.oneOrNone('SELECT * FROM "ContactJobsFailures" WHERE "contactJobId" = $1', [retrieveContactTranscriptJob.id]);
-  expect(
-    failurePayload,
-  ).toBeNull;
+  expect(failurePayload).toBeNull();
 
   // Assign for cleanup
   createdContact = contact;

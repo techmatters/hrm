@@ -7,7 +7,6 @@ import {
   ContactRawJson,
   isS3StoredTranscript,
 } from '../src/contact/contact-json';
-import { createService } from '../src/app';
 import {
   accountSid,
   contact1,

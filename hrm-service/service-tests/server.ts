@@ -1,3 +1,4 @@
+// eslint-disable-next-line import/no-extraneous-dependencies
 import supertest from 'supertest';
 
 import { accountSid } from './mocks';

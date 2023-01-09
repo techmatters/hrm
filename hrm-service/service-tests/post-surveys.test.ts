@@ -1,5 +1,3 @@
-import { createService } from '../src/app';
-import { openPermissions } from '../src/permissions/json-permissions';
 import * as proxiedEndpoints from './external-service-stubs/proxied-endpoints';
 import * as mocks from './mocks';
 import { db } from '../src/connection-pool';

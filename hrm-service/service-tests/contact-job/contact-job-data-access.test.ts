@@ -50,7 +50,6 @@ describe('appendFailedAttemptPayload', () => {
     const payload = "SSM parameter /development/s3/AC6a65d4fbbc731e64e1c94e9806675c3b/docs_bucket_name not found in cache";
 
     const promises = [...Array(100)].map(async (_, i) => {
-      console.log(i)
       await appendFailedAttemptPayload(job.id, i, { test: i, payload });
     });
 
