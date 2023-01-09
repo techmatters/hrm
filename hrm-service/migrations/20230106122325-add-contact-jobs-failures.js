@@ -30,8 +30,8 @@ module.exports = {
         CONSTRAINT "ContactJobsFailures_pkey" PRIMARY KEY (id),
         CONSTRAINT "FK_ContactJobsFailures_ContactJobs" FOREIGN KEY ("contactJobId")
             REFERENCES public."ContactJobs" (id) MATCH SIMPLE
-            ON UPDATE NO ACTION
-            ON DELETE NO ACTION
+            ON UPDATE CASCADE
+            ON DELETE CASCADE
       )
     `);
     console.log('Table "ContactJobsFailures" created');
@@ -44,25 +44,27 @@ module.exports = {
 
     await queryInterface.sequelize.query(`
       ALTER TABLE IF EXISTS public."ContactJobs"
-          DROP COLUMN IF EXISTS failedAttemptsPayloads;
+          DROP COLUMN IF EXISTS "failedAttemptsPayloads";
     `);
     console.log('Table "ContactJobs.failedAttemptsPayloads" dropped');
 
-    // await queryInterface.sequelize.query(`
-    //   CREATE INDEX IF NOT EXISTS "ContactJobs_poll_due_idx" ON public."ContactJobs"
-    //   USING btree ("completed", "numberOfAttempts", "lastAttempt", "contactId", "accountSid"));
-    // `);
-    // console.log('Index ContactJobs_poll_due_idx created');
+    await queryInterface.sequelize.query(`
+      CREATE INDEX IF NOT EXISTS "ContactJobs_poll_due_idx" ON public."ContactJobs"
+        USING btree ("completed", "numberOfAttempts", "lastAttempt", "contactId", "accountSid");
+    `);
+    console.log('Index ContactJobs_poll_due_idx created');
   },
 
   async down(queryInterface, Sequelize) {
-    // await queryInterface.sequelize.query(`DROP INDEX IF EXISTS "ContactJobs_poll_due_idx";`);
-    // console.log('Index ContactJobs_poll_due_idx dropped');
-    /**
-     * Add reverting commands here.
-     *
-     * Example:
-     * await queryInterface.dropTable('users');
-     */
+    await queryInterface.sequelize.query(`DROP INDEX IF EXISTS "ContactJobs_poll_due_idx";`);
+
+    await queryInterface.sequelize.query(`
+      ALTER TABLE IF EXISTS public."ContactJobs"
+          ADD COLUMN IF NOT EXISTS "failedAttemptsPayloads" jsonb;
+    `);
+
+    await queryInterface.sequelize.query(`DROP TABLE IF EXISTS public."ContactJobsFailures"`);
+
+    await queryInterface.sequelize.query(`DROP SEQUENCE public."ContactJobsFailures_id_seq"`);
   },
 };

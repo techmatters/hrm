@@ -110,8 +110,12 @@ const createChatContact = async (channel: string, startedTimestamp: number) => {
   expect(retrieveContactTranscriptJob.completed).toBeNull();
   expect(retrieveContactTranscriptJob.lastAttempt).toBeNull();
   expect(retrieveContactTranscriptJob.numberOfAttempts).toBe(0);
-  // expect(retrieveContactTranscriptJob.failedAttemptsPayloads).toMatchObject({});
   expect(retrieveContactTranscriptJob.completionPayload).toBeNull();
+
+  const failurePayload = await db.oneOrNone('SELECT * FROM "ContactJobsFailures" WHERE "contactJobId" = $1', [retrieveContactTranscriptJob.id]);
+  expect(
+    failurePayload,
+  ).toBeNull;
 
   // Assign for cleanup
   createdContact = contact;
@@ -443,9 +447,11 @@ describe('complete retrieve-transcript job type', () => {
       if (!updatedRetrieveContactTranscriptJob)
         throw new Error('updatedRetrieveContactTranscriptJob is null!');
 
-      // expect(
-      //   updatedRetrieveContactTranscriptJob.failedAttemptsPayloads[completedPayload.attemptNumber],
-      // ).toContainEqual(expect.objectContaining(completedPayload.attemptPayload));
+
+      const failurePayload = await db.oneOrNone('SELECT * FROM "ContactJobsFailures" WHERE "contactJobId" = $1 AND "attemptNumber" = $2', [retrieveContactTranscriptJob.id, completedPayload.attemptNumber]);
+      expect(
+        failurePayload.payload,
+      ).toMatchObject(completedPayload.attemptPayload);
 
       if (expectMarkedAsComplete) {
         // And previous job is not completed hence retrieved as due
