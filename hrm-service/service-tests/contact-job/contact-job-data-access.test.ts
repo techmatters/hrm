@@ -2,7 +2,6 @@ import { performance } from 'perf_hooks';
 import { db } from '../../src/connection-pool';
 
 import * as proxiedEndpoints from '../external-service-stubs/proxied-endpoints';
-import { insertContactSql } from '../../src/contact/sql/contact-insert-sql';
 import {
   appendFailedAttemptPayload,
   createContactJob,
@@ -31,30 +30,34 @@ afterAll(async () => {
 
 describe('appendFailedAttemptPayload', () => {
   test('appendFailedAttemptPayload should execute quickly', async () => {
-    return db.tx(async connection => {
-      const res = await request
-        .post(`/v0/accounts/${accountSid}/contacts`)
-        .set(headers)
-        .send(contact1);
+    const res = await request
+      .post(`/v0/accounts/${accountSid}/contacts`)
+      .set(headers)
+      .send(contact1);
 
-      const contact = res.body as Contact;
+    const contact = res.body as Contact;
 
-      await createContactJob(connection)({
+    await db.tx(connection => {
+      createContactJob(connection)({
         jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
         resource: contact,
         additionalPayload: undefined,
       });
-
-      //TODO: get the job
-
-      const start = performance.now();
-      [...Array(100)].map(async (_, i) => {
-        // await appendFailedAttemptPayload(job.id, i, { test: i });
-      });
-      const end = performance.now();
-
-      //TOOO: figure out what a reasonable time is
-      expect(end - start).toBeLessThan(100);
     });
+
+    const job = await db.oneOrNone('SELECT * FROM "ContactJobs" WHERE "contactId" = $1', [contact.id]);
+
+    const payload = "SSM parameter /development/s3/AC6a65d4fbbc731e64e1c94e9806675c3b/docs_bucket_name not found in cache";
+
+    const promises = [...Array(100)].map(async (_, i) => {
+      console.log(i)
+      await appendFailedAttemptPayload(job.id, i, { test: i, payload });
+    });
+
+    const start = performance.now();
+    await Promise.all(promises);
+    const end = performance.now();
+
+    expect(end - start).toBeLessThan(100);
   });
 });
