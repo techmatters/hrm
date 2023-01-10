@@ -6,6 +6,9 @@ name: Create a production release
 on:
   workflow_dispatch:
     inputs:
+      tag-name:
+        description: Tag name - The name for the tag that will be given to this release.
+        required: true
       title:
         description: Release title - The title that will be given to this pre-release.
         required: true
@@ -22,6 +25,7 @@ jobs:
         uses: techmatters/flex-plugins/.github/actions/generate-production-release@gian_CHI-1264
         # uses: techmatters/flex-plugins/.github/actions/generate-production-release@master
         with:
+          tag-name: ${{ inputs.tag-name }}
           title: ${{ inputs.title }}
         id: create_prod_release
 
