@@ -22,8 +22,7 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Create production release
-        uses: techmatters/flex-plugins/.github/actions/generate-production-release@gian_CHI-1264
-        # uses: techmatters/flex-plugins/.github/actions/generate-production-release@master
+        uses: techmatters/flex-plugins/.github/actions/generate-production-release@master
         with:
           tag-name: ${{ inputs.tag-name }}
           title: ${{ inputs.title }}
