@@ -6,18 +6,8 @@ const defaultContact: Contact = {
   number: 'Anonymous',
   rawJson: {
     callType: 'Someone calling about a child',
-    childInformation: {
-      name: {
-        firstName: '',
-        lastName: '',
-      },
-    },
-    callerInformation: {
-      name: {
-        firstName: '',
-        lastName: '',
-      },
-    },
+    childInformation: {},
+    callerInformation: {},
     caseInformation: {
       callSummary: '',
       categories: {},
@@ -144,11 +134,8 @@ export class ContactBuilder {
         ...(this.callType && { callType: this.callType }),
         childInformation: {
           ...defaultContact.rawJson.childInformation,
-          name: {
-            ...defaultContact.rawJson.childInformation.name,
-            ...(this.childFirstName && { firstName: this.childFirstName }),
-            ...(this.childLastName && { lastName: this.childLastName }),
-          },
+          ...(this.childFirstName && { firstName: this.childFirstName }),
+          ...(this.childLastName && { lastName: this.childLastName }),
         },
         caseInformation: {
           ...defaultContact.rawJson.caseInformation,

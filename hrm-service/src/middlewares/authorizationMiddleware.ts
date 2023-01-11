@@ -47,7 +47,6 @@ export const getAuthorizationMiddleware = (authTokenLookup = defaultTokenLookup)
       const tokenResult = <TokenValidatorResponse>(
         await TokenValidator(token, accountSid, authToken)
       );
-
       if (!isWorker(tokenResult) || isGuest(tokenResult)) {
         return unauthorized(res);
       }

@@ -24,10 +24,8 @@ describe('createContact', () => {
   const sampleCreateContactPayload = {
     rawJson: {
       childInformation: {
-        name: {
-          firstName: 'Lorna',
-          lastName: 'Ballantyne',
-        },
+        firstName: 'Lorna',
+        lastName: 'Ballantyne',
       },
       callType: 'carrier pigeon',
       caseInformation: {
@@ -255,16 +253,12 @@ describe('patchContact', () => {
   const samplePatch = {
     rawJson: {
       childInformation: {
-        name: {
-          firstName: 'Charlotte',
-          lastName: 'Ballantyne',
-        },
+        firstName: 'Charlotte',
+        lastName: 'Ballantyne',
       },
       callerInformation: {
-        name: {
-          firstName: 'Lorna',
-          lastName: 'Ballantyne',
-        },
+        firstName: 'Lorna',
+        lastName: 'Ballantyne',
       },
       caseInformation: {
         some: 'property',
@@ -284,16 +278,12 @@ describe('patchContact', () => {
     expect(patchSpy).toHaveBeenCalledWith('accountSid', '1234', {
       updatedBy: 'contact-patcher',
       childInformation: {
-        name: {
-          firstName: 'Charlotte',
-          lastName: 'Ballantyne',
-        },
+        firstName: 'Charlotte',
+        lastName: 'Ballantyne',
       },
       callerInformation: {
-        name: {
-          firstName: 'Lorna',
-          lastName: 'Ballantyne',
-        },
+        firstName: 'Lorna',
+        lastName: 'Ballantyne',
       },
       caseInformation: {
         some: 'property',
@@ -354,7 +344,7 @@ describe('searchContacts', () => {
           overview: {
             helpline: 'a helpline',
             dateTime: '2020-03-10T00:00:00.000Z',
-            name: 'Jill Smith',
+            name: '', // Legacy property, not used in Flex v2.1+
             customerNumber: '+12025550142',
             createdBy: 'contact-searcher',
             callType: 'Child calling about self',
@@ -374,7 +364,7 @@ describe('searchContacts', () => {
             helpline: undefined,
             taskId: undefined,
             dateTime: '2020-03-15T00:00:00.000Z',
-            name: 'Sarah Park',
+            name: '', // Legacy property, not used in Flex v2.1+
             customerNumber: 'Anonymous',
             createdBy: 'contact-searcher',
             callType: 'Child calling about self',
@@ -409,6 +399,45 @@ describe('searchContacts', () => {
 
     expect(searchSpy).toHaveBeenCalledWith(accountSid, parameters, expect.any(Number), 0);
     expect(result).toStrictEqual(expectedSearchResult);
+  });
+  // Test for legacy behaviour, will be removed
+  test('Populates name overview property for legacy contacts', async () => {
+    const jillSmith = new ContactBuilder()
+      .withId(4321)
+      .withHelpline('a helpline')
+      .withTaskId('jill-smith-task')
+      .withCallSummary('Lost young boy')
+      .withNumber('+12025550142')
+      .withCallType('Child calling about self')
+      .withTwilioWorkerId('twilio-worker-id')
+      .withCreatedBy(contactSearcher)
+      .withCreatedAt(new Date('2020-03-10T00:00:00Z'))
+      .withTimeOfContact(new Date('2020-03-10T00:00:00Z'))
+      .withChannel('voice')
+      .withConversationDuration(10)
+      .build();
+    jillSmith.rawJson.childInformation.name = {
+      firstName: 'Jill',
+      lastName: 'Smith',
+    };
+
+    const mockedResult = {
+      count: 1,
+      rows: [jillSmith],
+    };
+    jest.spyOn(contactDb, 'search').mockResolvedValue(mockedResult);
+    const parameters = { helpline: 'helpline', onlyDataContacts: false };
+
+    const result = await searchContacts(
+      accountSid,
+      parameters,
+      {},
+      {
+        can: () => true,
+        user: { workerSid, roles: [] },
+      },
+    );
+    expect(result.contacts[0].overview.name).toStrictEqual('Jill Smith');
   });
 
   test('Call search without limit / offset, a default limit and offset 0', async () => {

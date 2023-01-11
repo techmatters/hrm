@@ -14,17 +14,29 @@ export const SELECT_CONTACT_SEARCH = `
           ($<lastNamePattern> IS NULL AND $<firstNamePattern> IS NULL)
           OR (
             "rawJson"->>'callType' IN ($<dataCallTypes:csv>)
-            AND
-            ($<lastNamePattern> IS NULL OR "rawJson"->'childInformation'->'name'->>'lastName' ILIKE $<lastNamePattern>)
-            AND
-            ($<firstNamePattern> IS NULL OR "rawJson"->'childInformation'->'name'->>'firstName' ILIKE $<firstNamePattern>)
+            AND (
+              $<lastNamePattern> IS NULL 
+              OR "rawJson"->'childInformation'->>'lastName' ILIKE $<lastNamePattern>
+              OR "rawJson"->'childInformation'->'name'->>'lastName' ILIKE $<lastNamePattern>
+            )
+            AND (
+              $<firstNamePattern> IS NULL 
+              OR "rawJson"->'childInformation'->>'firstName' ILIKE $<firstNamePattern>
+              OR "rawJson"->'childInformation'->'name'->>'firstName' ILIKE $<firstNamePattern>
+            )
           )
           OR (
             "rawJson"->>'callType' = 'Someone calling about a child'
-            AND
-            ($<lastNamePattern> IS NULL OR "rawJson"->'callerInformation'->'name'->>'lastName' ILIKE $<lastNamePattern>)
-            AND
-            ($<firstNamePattern> IS NULL OR "rawJson"->'callerInformation'->'name'->>'firstName' ILIKE $<firstNamePattern>)
+            AND (
+              $<lastNamePattern> IS NULL 
+              OR "rawJson"->'callerInformation'->>'lastName' ILIKE $<lastNamePattern> 
+              OR "rawJson"->'callerInformation'->'name'->>'lastName' ILIKE $<lastNamePattern>
+            )
+            AND (
+              $<firstNamePattern> IS NULL
+              OR "rawJson"->'callerInformation'->>'firstName' ILIKE $<firstNamePattern>
+              OR "rawJson"->'callerInformation'->'name'->>'firstName' ILIKE $<firstNamePattern>
+            )
           )
         )
         AND (

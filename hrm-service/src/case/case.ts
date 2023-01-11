@@ -137,6 +137,7 @@ const addCategoriesAndChildName = (caseItem: CaseRecord) => {
   }
 
   const { childInformation, caseInformation } = fstContact.rawJson;
+  // Legacy support - shouldn't be required once all flex clients are v2.1+ & contacts are migrated
   const childName = getPersonsName(childInformation);
   const categories = retrieveCategories(caseInformation.categories);
   return { ...caseItem, childName, categories };
