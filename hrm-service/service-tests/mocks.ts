@@ -9,10 +9,8 @@ export const contact1: CreateContactPayloadWithFormProperty = {
   form: {
     callType: 'Child calling about self',
     childInformation: {
-      name: {
-        firstName: 'Jhonny',
-        lastName: 'Theboy qwerty',
-      },
+      firstName: 'Jhonny',
+      lastName: 'Theboy qwerty',
       gender: '',
       age: '',
       language: '',
@@ -39,10 +37,8 @@ export const contact1: CreateContactPayloadWithFormProperty = {
       categories: {},
     },
     callerInformation: {
-      name: {
-        firstName: '',
-        lastName: '',
-      },
+      firstName: '',
+      lastName: '',
       relationshipToChild: '',
       gender: '',
       age: '',
@@ -70,10 +66,8 @@ export const contact2: CreateContactPayloadWithFormProperty = {
   form: {
     callType: 'Someone calling about a child',
     childInformation: {
-      name: {
-        firstName: 'Name',
-        lastName: 'Random',
-      },
+      firstName: 'Name',
+      lastName: 'Random',
       gender: '',
       age: '',
       language: '',
@@ -100,10 +94,8 @@ export const contact2: CreateContactPayloadWithFormProperty = {
       categories: {},
     },
     callerInformation: {
-      name: {
-        firstName: 'Jhon qwerty',
-        lastName: 'Thecaller',
-      },
+      firstName: 'Jhon qwerty',
+      lastName: 'Thecaller',
       relationshipToChild: '',
       gender: '',
       age: '',
@@ -131,18 +123,18 @@ export const nonData1: CreateContactPayloadWithFormProperty = {
   ...contact1,
   form: {
     callType: 'Joke',
-    childInformation: { name: contact1.form.childInformation.name },
+    childInformation: {},
     caseInformation: { categories: {}, callSummary: '' },
-    callerInformation: { name: contact1.form.callerInformation.name },
+    callerInformation: {},
   },
 };
 export const nonData2: CreateContactPayloadWithFormProperty = {
   ...contact2,
   form: {
     callType: 'Blank',
-    childInformation: { name: contact2.form.childInformation.name },
+    childInformation: {},
     caseInformation: { categories: {}, callSummary: '' },
-    callerInformation: { name: contact2.form.callerInformation.name },
+    callerInformation: {},
   },
 };
 // Non data contacts with actual information
@@ -157,18 +149,14 @@ export const broken2: CreateContactPayloadWithFormProperty = {
 
 export const anotherChild: Contact['rawJson']['childInformation'] = {
   ...contact1.form.childInformation,
-  name: {
-    firstName: 'Marie',
-    lastName: 'Curie',
-  },
+  firstName: 'Marie',
+  lastName: 'Curie',
 };
 
 export const anotherCaller: Contact['rawJson']['callerInformation'] = {
   ...contact2.form.callerInformation,
-  name: {
-    firstName: 'Marie',
-    lastName: 'Curie',
-  },
+  firstName: 'Marie',
+  lastName: 'Curie',
 };
 
 export const another1: CreateContactPayloadWithFormProperty = {
@@ -205,10 +193,8 @@ export const withTaskId: CreateContactPayloadWithFormProperty = {
   form: {
     callType: 'Child calling about self',
     childInformation: {
-      name: {
-        firstName: 'withTaskId',
-        lastName: 'withTaskId',
-      },
+      firstName: 'withTaskId',
+      lastName: 'withTaskId',
       gender: '',
       age: '',
       language: '',
@@ -278,10 +264,8 @@ export const withTaskIdAndTranscript = {
     ...withTaskId.form,
     childInformation: {
       ...withTaskId.form.childInformation,
-      name: {
-        firstName: 'withTaskIdAndTranscript',
-        lastName: 'withTaskIdAndTranscript',
-      },
+      firstName: 'withTaskIdAndTranscript',
+      lastName: 'withTaskIdAndTranscript',
     },
     conversationMedia: [
       {

@@ -20,10 +20,8 @@ describe('create', () => {
   const sampleNewContact: NewContactRecord = {
     rawJson: {
       childInformation: {
-        name: {
-          firstName: 'Lorna',
-          lastName: 'Ballantyne',
-        },
+        firstName: 'Lorna',
+        lastName: 'Ballantyne',
       },
       callType: 'carrier pigeon',
       caseInformation: {

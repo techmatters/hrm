@@ -191,8 +191,8 @@ function isValidContact(contact) {
     contact &&
     contact.rawJson &&
     !isNullOrEmptyObject(contact.rawJson.callType) &&
-    !isNullOrEmptyObject(contact.rawJson.childInformation) &&
-    !isNullOrEmptyObject(contact.rawJson.callerInformation) &&
+    typeof contact.rawJson.childInformation === 'object' &&
+    typeof contact.rawJson.callerInformation === 'object' &&
     !isNullOrEmptyObject(contact.rawJson.caseInformation)
   );
 }
@@ -208,6 +208,7 @@ function convertContactsToSearchResults(contacts: Contact[]): SearchContact[] {
 
       const contactId = contact.id;
       const dateTime = contact.timeOfContact;
+      // Legacy support - shouldn't be required once all flex clients are v2.1+ & contacts are migrated
       const name = getPersonsName(contact.rawJson.childInformation);
       const customerNumber = contact.number;
       const { callType, caseInformation } = contact.rawJson;

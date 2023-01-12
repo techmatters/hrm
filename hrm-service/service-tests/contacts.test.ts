@@ -830,8 +830,8 @@ describe('/contacts route', () => {
             expect(response.status).toBe(200);
             // invalidContact will return null from the search endpoint, exclude it here
             expect(contacts.length).toBe(createdContacts.length - 1);
-            const createdConcatdsByTimeOfContact = createdContacts.sort(compareTimeOfContactDesc);
-            createdConcatdsByTimeOfContact.forEach(c => {
+            const createdContactsByTimeOfContact = createdContacts.sort(compareTimeOfContactDesc);
+            createdContactsByTimeOfContact.forEach(c => {
               const searchContact = contacts.find(results => results.contactId === c.id);
               if (searchContact) {
                 // Check that all contacts contains the appropriate info
@@ -938,8 +938,8 @@ describe('/contacts route', () => {
         // Should match withTaskId in all cases
         ...[
           { helpline: withTaskId.helpline },
-          { firstName: withTaskId.form.childInformation.name.firstName },
-          { lastName: withTaskId.form.childInformation.name.lastName },
+          { firstName: withTaskId.form.childInformation.firstName },
+          { lastName: withTaskId.form.childInformation.lastName },
           { contactNumber: withTaskId.number },
         ].map(body => ({
           changeDescription: JSON.stringify(body),
@@ -1142,7 +1142,7 @@ describe('/contacts route', () => {
           csamReports: [newReport1, newReport2, newReport3],
         };
         // Very specific first name
-        contactToCreate.form.childInformation.name.firstName = 'Test CSAM filter';
+        contactToCreate.form.childInformation.firstName = 'Test CSAM filter';
         const createdContact = await contactApi.createContact(
           accountSid,
           workerSid,
