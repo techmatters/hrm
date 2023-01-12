@@ -39,25 +39,14 @@ module.exports = {
     `);
     console.log('Table "ContactJobs" created');
 
-    await queryInterface.sequelize.query(`      
+    await queryInterface.sequelize.query(`
       ALTER TABLE IF EXISTS public."ContactJobs"
           OWNER to hrm;
     `);
     console.log('Table "ContactJobs" now owned by HRM');
-
-    // await queryInterface.sequelize.query(`
-    //   CREATE INDEX IF NOT EXISTS "ContactJobs_contactId_accountSid_idx" ON public."ContactJobs"
-    //   USING btree ("contactId", "accountSid");
-    // `);
-    // console.log('Index ContactJobs_contactId_accountSid_idx created');
   },
 
   down: async queryInterface => {
-    // await queryInterface.sequelize.query(
-    //   `DROP INDEX IF EXISTS "ContactJobs_contactId_accountSid_idx";`,
-    // );
-    // console.log('Index ContactJobs_contactId_accountSid_idx dropped');
-
     await queryInterface.sequelize.query(`DROP TABLE IF EXISTS public."ContactJobs"`);
     console.log('Table "ContactJobs" dropped');
 

@@ -123,7 +123,6 @@ describe('publishDueContactJobs', () => {
         additionalPayload: null,
         accountSid: 'accountSid',
         contactId: 123,
-        failedAttemptsPayloads: {},
         lastAttempt: null,
         numberOfAttempts: 1,
         requested: new Date(),

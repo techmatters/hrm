@@ -1,21 +1,14 @@
-import supertest from 'supertest';
 import each from 'jest-each';
-import { createService } from '../src/app';
 import * as mocks from './mocks';
 import './case-validation';
-import { openPermissions } from '../src/permissions/json-permissions';
 import * as proxiedEndpoints from './external-service-stubs/proxied-endpoints';
 import { db } from '../src/connection-pool';
 import * as csamReportsApi from '../src/csam-report/csam-report';
+import { headers, getRequest, getServer, useOpenRules } from './server';
 
-console.log(process.env.INCLUDE_ERROR_IN_RESPONSE);
-
-const server = createService({
-  permissions: openPermissions,
-  authTokenLookup: () => 'picernic basket',
-  enableProcessContactJobs: false,
-}).listen();
-const request = supertest.agent(server);
+useOpenRules();
+const server = getServer();
+const request = getRequest(server);
 
 const { accountSid, workerSid } = mocks;
 
@@ -28,11 +21,6 @@ const csamReport1: CreateTestPayload = {
 };
 
 const { contact1 } = mocks;
-
-const headers = {
-  'Content-Type': 'application/json',
-  Authorization: `Bearer bearing a bear (rawr)`,
-};
 
 const whereTwilioWorkerIdClause = `WHERE "accountSid" = '${accountSid}' AND ("twilioWorkerId" = '${workerSid}' OR "twilioWorkerId" IS NULL)`;
 
