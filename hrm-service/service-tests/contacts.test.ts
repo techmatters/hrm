@@ -928,7 +928,6 @@ describe('/contacts route', () => {
 
             // If the limit exceeds the "count" for the query, then it should return the entire match ("count" elements)
             const { count, contacts } = response.body;
-            console.log('COUNT (ha ha ha...):', count);
             if (n > count) {
               expect(contacts).toHaveLength(count);
             } else {
