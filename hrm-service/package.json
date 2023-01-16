@@ -39,6 +39,7 @@
   "homepage": "https://github.com/tech-matters/hrm#readme",
   "dependencies": {
     "@tech-matters/hrm-ssm-cache": "^1.0.0",
+    "@tech-matters/resources-service": "^1.0.0",
     "aws-sdk": "^2.1231.0",
     "cors": "^2.8.5",
     "date-fns": "^2.28.0",

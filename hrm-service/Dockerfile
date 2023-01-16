@@ -5,14 +5,16 @@ FROM node:16-alpine as build
 # copy the hrm-lib package and labmdas folders so that the file: based
 # dependency in package.json can be resolved
 COPY packages /tmp/build/packages
+COPY resources-service /tmp/build/resources-service
 COPY hrm-service /tmp/build/hrm-service
 COPY package.json package-lock.json tsconfig.base.json tsconfig.build.service.json /tmp/build/
 
 RUN cd /tmp/build \
-    && npm ci -w=hrm-service -w packages/* \
+    && npm ci -w=hrm-service -w packages/* -w resources-service \
     && npx tsc -b tsconfig.build.service.json \
     && cp -r hrm-service/* /home/node/ \
     && cp -r packages /home/node/ \
+    && cp -r resources-service /home/node/ \
     && cp -r node_modules /home/node/ \
     && rm -rf /tmp/* \
     && rm -rf /root/.cache \
