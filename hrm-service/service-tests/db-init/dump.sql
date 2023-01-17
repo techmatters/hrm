@@ -35,7 +35,7 @@ BEGIN
       RAISE NOTICE 'Role "hrm" already exists. Skipping.';
    ELSE
       BEGIN   -- nested block
-         CREATE ROLE hrm WITH PASSWORD 'postgress' VALID UNTIL 'infinity';
+         CREATE ROLE hrm WITH PASSWORD 'postgres' VALID UNTIL 'infinity';
       EXCEPTION
          WHEN duplicate_object THEN
             RAISE NOTICE 'Role "hrm" was just created by a concurrent transaction. Skipping.';
