@@ -25,6 +25,7 @@
   },
   "homepage": "https://github.com/techmatters/hrm#readme",
   "dependencies": {
-    "dotenv": "^8.6.0"
+    "dotenv": "^8.6.0",
+    "pg-promise": "^10.15.4"
   }
 }
