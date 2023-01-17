@@ -24,6 +24,7 @@ SET default_table_access_method = heap;
 --
 
 -- Create user hrm if not exists
+-- set password to postgres as that's used in the tests
 DO
 $do$
 BEGIN
@@ -34,7 +35,7 @@ BEGIN
       RAISE NOTICE 'Role "hrm" already exists. Skipping.';
    ELSE
       BEGIN   -- nested block
-         CREATE ROLE hrm;
+         CREATE ROLE hrm WITH PASSWORD 'postgress' VALID UNTIL 'infinity';
       EXCEPTION
          WHEN duplicate_object THEN
             RAISE NOTICE 'Role "hrm" was just created by a concurrent transaction. Skipping.';
