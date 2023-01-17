@@ -95,11 +95,11 @@ jobs:
           build-args: |
             lambda_name=${{ env.LAMBDA_NAME }}
           push: true
-          tags: ${{ env.DOCKER_IMAGE_BASE }}${{ env.LAMBDA_NAME }}:live
+          tags: ${{ env.DOCKER_IMAGE_BASE }}${{ env.LAMBDA_NAME }}:live,${{ env.DOCKER_IMAGE_BASE }}${{ env.LAMBDA_NAME }}:${{ github.sha }}
 
       - name: Update Lambda and Publish
         run: |
-          aws lambda update-function-code --function-name ${{ env.ENVIRONMENT }}-hrm-${{ env.LAMBDA_NAME }} --image-uri ${{ env.DOCKER_IMAGE_BASE }}${{ env.LAMBDA_NAME }}:live --publish
+          aws lambda update-function-code --function-name ${{ env.ENVIRONMENT }}-hrm-${{ env.LAMBDA_NAME }} --image-uri ${{ env.DOCKER_IMAGE_BASE }}${{ env.LAMBDA_NAME }}:${{ github.sha }} --publish
 
       # Send Slack notifying success
       - name: Slack Aselo channel
