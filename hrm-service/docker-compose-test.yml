@@ -5,4 +5,4 @@ services:
       dockerfile: ./docker-database/Dockerfile-test
     command: ["postgres", "-c", "log_statement=all"]
     ports:
-      - "5433:5432"
+      - "5432:5432"

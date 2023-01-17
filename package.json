@@ -83,7 +83,7 @@
     "test:e2e:run": "cross-env AWS_REGION=eu-west-1 npm run test:e2e --workspaces --if-present",
     "test:migrate": "npm run test:migrate --workspaces --if-present",
     "test:service": "npm run test:service --workspaces --if-present",
-    "test:service:migrate": "npm run test:service:migrate --workspaces --if-present",
+    "test:service:migrate": "npm run test:service:migrate -w=hrm-service && npm run test:service:migrate -w=resources-service",
     "test:service:ci": "npm run test:service:ci --workspaces --if-present",
     "test:unit": "npm run test:unit --workspaces --if-present",
     "test:docker:jobs": "run-s test:docker:jobs:*",

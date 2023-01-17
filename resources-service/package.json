@@ -3,9 +3,16 @@
   "version": "1.0.0",
   "description": "",
   "main": "dist/index.js",
-  "devDependencies": {},
+  "devDependencies": {
+    "sequelize": "^6.28.0",
+    "sequelize-cli": "^6.5.2",
+    "umzug": "^3.2.1"
+  },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "test:service:migrate": "node ./db-migrate",
+    "db:create-migration": "sequelize migration:generate --name ",
+    "db:undo-last": "sequelize db:migrate:undo"
   },
   "repository": {
     "type": "git",
@@ -16,5 +23,8 @@
   "bugs": {
     "url": "https://github.com/techmatters/hrm/issues"
   },
-  "homepage": "https://github.com/techmatters/hrm#readme"
+  "homepage": "https://github.com/techmatters/hrm#readme",
+  "dependencies": {
+    "dotenv": "^8.6.0"
+  }
 }
