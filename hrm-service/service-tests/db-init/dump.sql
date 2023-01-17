@@ -15,11 +15,15 @@ SET check_function_bodies = false;
 SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
+SET default_tablespace = '';
+SET default_with_oids = false;
+SET default_table_access_method = heap;
 
 --
 -- Roles
 --
 
+-- Create user hrm if not exists
 DO
 $do$
 BEGIN
@@ -38,6 +42,7 @@ BEGIN
    END IF;
 END
 $do$;
+
 ALTER ROLE hrm WITH NOSUPERUSER INHERIT CREATEROLE CREATEDB LOGIN NOREPLICATION NOBYPASSRLS VALID UNTIL 'infinity';
 CREATE ROLE rds_ad;
 ALTER ROLE rds_ad WITH NOSUPERUSER INHERIT NOCREATEROLE NOCREATEDB NOLOGIN NOREPLICATION NOBYPASSRLS;
@@ -58,70 +63,18 @@ ALTER ROLE read_only_user WITH NOSUPERUSER INHERIT NOCREATEROLE NOCREATEDB LOGIN
 -- User Configurations
 --
 
---
--- User Config "rdsadmin"
---
-
 ALTER ROLE rdsadmin SET "TimeZone" TO 'utc';
---
--- User Config "rdsadmin"
---
-
 ALTER ROLE rdsadmin SET log_statement TO 'all';
---
--- User Config "rdsadmin"
---
-
 ALTER ROLE rdsadmin SET log_min_error_statement TO 'debug5';
---
--- User Config "rdsadmin"
---
-
 ALTER ROLE rdsadmin SET log_min_messages TO 'panic';
---
--- User Config "rdsadmin"
---
-
 ALTER ROLE rdsadmin SET exit_on_error TO '0';
---
--- User Config "rdsadmin"
---
-
 ALTER ROLE rdsadmin SET statement_timeout TO '0';
---
--- User Config "rdsadmin"
---
-
 ALTER ROLE rdsadmin SET role TO 'rdsadmin';
---
--- User Config "rdsadmin"
---
-
 ALTER ROLE rdsadmin SET "auto_explain.log_min_duration" TO '-1';
---
--- User Config "rdsadmin"
---
-
 ALTER ROLE rdsadmin SET temp_file_limit TO '-1';
---
--- User Config "rdsadmin"
---
-
 ALTER ROLE rdsadmin SET search_path TO 'pg_catalog', 'public';
---
--- User Config "rdsadmin"
---
-
 ALTER ROLE rdsadmin SET "pg_hint_plan.enable_hint" TO 'off';
---
--- User Config "rdsadmin"
---
-
 ALTER ROLE rdsadmin SET default_transaction_read_only TO 'off';
---
--- User Config "rdsadmin"
---
-
 ALTER ROLE rdsadmin SET default_tablespace TO '';
 
 
@@ -134,22 +87,6 @@ GRANT pg_signal_backend TO rds_superuser WITH ADMIN OPTION GRANTED BY rdsadmin;
 GRANT rds_password TO rds_superuser WITH ADMIN OPTION GRANTED BY rdsadmin;
 GRANT rds_replication TO rds_superuser WITH ADMIN OPTION GRANTED BY rdsadmin;
 GRANT rds_superuser TO hrm GRANTED BY rdsadmin;
-
-
-SET statement_timeout = 0;
-SET lock_timeout = 0;
-SET idle_in_transaction_session_timeout = 0;
-SET client_encoding = 'UTF8';
-SET standard_conforming_strings = on;
-SELECT pg_catalog.set_config('search_path', '', false);
-SET check_function_bodies = false;
-SET xmloption = content;
-SET client_min_messages = warning;
-SET row_security = off;
-
-SET default_tablespace = '';
-
-SET default_with_oids = false;
 
 -- Database: hrmdb
 
@@ -239,10 +176,6 @@ CREATE SEQUENCE public."Audits_id_seq"
 
 
 ALTER TABLE public."Audits_id_seq" OWNER TO hrm;
-
-SET default_tablespace = '';
-
-SET default_table_access_method = heap;
 
 --
 -- Name: Audits; Type: TABLE; Schema: public; Owner: hrm
