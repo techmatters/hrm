@@ -20,7 +20,24 @@ SET row_security = off;
 -- Roles
 --
 
-CREATE ROLE IF NOT EXISTS hrm;
+DO
+$do$
+BEGIN
+   IF EXISTS (
+      SELECT FROM pg_catalog.pg_roles
+      WHERE  rolname = 'hrm') THEN
+
+      RAISE NOTICE 'Role "hrm" already exists. Skipping.';
+   ELSE
+      BEGIN   -- nested block
+         CREATE ROLE hrm;
+      EXCEPTION
+         WHEN duplicate_object THEN
+            RAISE NOTICE 'Role "hrm" was just created by a concurrent transaction. Skipping.';
+      END;
+   END IF;
+END
+$do$;
 ALTER ROLE hrm WITH NOSUPERUSER INHERIT CREATEROLE CREATEDB LOGIN NOREPLICATION NOBYPASSRLS VALID UNTIL 'infinity';
 CREATE ROLE rds_ad;
 ALTER ROLE rds_ad WITH NOSUPERUSER INHERIT NOCREATEROLE NOCREATEDB NOLOGIN NOREPLICATION NOBYPASSRLS;
