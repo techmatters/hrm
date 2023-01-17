@@ -48,6 +48,7 @@ const getUser = async (client: ReturnType<typeof getClient>, serviceSid: string,
       .users.get(from)
       .fetch();
 
+    // Full object contains circular references that can't be converted to json in addition to unnecessary data
     return {
       sid: user.sid,
       accountSid: user.accountSid,
@@ -80,6 +81,7 @@ const getRole = async (
       .roles.get(roleSid)
       .fetch();
 
+    // Full object contains circular references that can't be converted to json later on
     return {
       sid: role.sid,
       accountSid: role.accountSid,
