@@ -1,4 +1,5 @@
 import { IRouter, Router } from 'express';
+import { stub } from '@tech-matters/resources-service';
 
 import cases from './case/case-routes-v0';
 import contacts from './contact/contact-routes-v0';
@@ -15,5 +16,11 @@ export const apiV0 = (rules: Permissions) => {
   router.use('/postSurveys', postSurveys);
   router.use('/csamReports', csamReports);
   router.use('/permissions', permissions(rules));
+
+  router.get('/resources', async (req, res) => {
+    const stubResult = await stub();
+    res.json(stubResult);
+  });
+
   return router;
 };

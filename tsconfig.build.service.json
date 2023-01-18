@@ -1,5 +1,9 @@
 {
   "extends": "./tsconfig.base.json",
   "files": [],
-  "references": [{ "path": "packages/ssm-cache" }, { "path": "hrm-service" }]
+  "references": [
+    { "path": "packages/ssm-cache" },
+    { "path": "resources-service" },
+    { "path": "hrm-service" }
+  ]
 }
