@@ -11,7 +11,7 @@
     "test": "run-s test:migrate test:unit test:service",
     "test:run:watch": "cross-env AWS_REGION=eu-west-1 CI=true TWILIO_ACCOUNT_SID=ACxxx TWILIO_AUTH_TOKEN=xxxxxx RDS_PASSWORD=postgres RESOURCES_PASSWORD=resources-password jest --maxWorkers=1 --forceExit --watch",
     "test:unit": "jest unit-tests",
-    "test:service": "cross-env POSTGRES_PORT=5432 run-s -c docker:compose:test:up test:service:migrate test:service:run docker:compose:test:down",
+    "test:service": "cross-env POSTGRES_PORT=5433 run-s -c docker:compose:test:up test:service:migrate test:service:run docker:compose:test:down",
     "test:service:migrate": "run-s test:service:ci:migrate",
     "test:service:run": "cross-env AWS_REGION=eu-west-1 SSM_ENDPOINT=http://localhost:4566 jest --verbose --maxWorkers=1 --forceExit service-tests",
     "test:service:ci": "run-s test:service:ci:migrate test:service:ci:run",
