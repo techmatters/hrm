@@ -1,9 +1,19 @@
 import { validator as TokenValidator } from 'twilio-flex-token-validator';
 import crypto from 'crypto';
 
-import { User, unauthorized } from '../permissions';
+import { user, User } from './user';
+import { unauthorized } from '@tech-matters/http';
 // eslint-disable-next-line prettier/prettier
 import type { Request, Response, NextFunction } from 'express';
+
+declare global {
+  namespace Express {
+    export interface Request {
+      user?: User;
+    }
+  }
+}
+
 
 /**
  * Helper to whitelist the requests that other parts of the system (external to HRM, like Serverless functions) can perform on HRM.
@@ -51,7 +61,7 @@ export const getAuthorizationMiddleware = (authTokenLookup = defaultTokenLookup)
         return unauthorized(res);
       }
 
-      req.user = new User(tokenResult.worker_sid, tokenResult.roles);
+      req.user = user(tokenResult.worker_sid, tokenResult.roles);
       return next();
     } catch (err) {
       console.error('Token authentication failed: ', err);
@@ -71,7 +81,7 @@ export const getAuthorizationMiddleware = (authTokenLookup = defaultTokenLookup)
           crypto.timingSafeEqual(Buffer.from(requestSecret), Buffer.from(staticSecret));
 
         if (isStaticSecretValid) {
-          req.user = new User(`account-${accountSid}`, []);
+          req.user = user(`account-${accountSid}`, []);
           return next();
         }
       } catch (err) {

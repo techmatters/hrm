@@ -16,7 +16,7 @@ import {
 import { randomUUID } from 'crypto';
 import { Contact } from '../contact/contact-data-access';
 import { setupCanForRules } from '../permissions/setupCanForRules';
-import { User } from '../permissions';
+import { User } from '@tech-matters/twilio-worker-auth';
 import {
   bindApplyTransformations as bindApplyContactTransformations,
   getPersonsName,

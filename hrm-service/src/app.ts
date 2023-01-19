@@ -7,7 +7,10 @@ import httpLogger from './logging/httplogging';
 import { apiV0 } from './routes';
 import { Permissions, setupPermissions } from './permissions';
 import { jsonPermissions } from './permissions/json-permissions';
-import { getAuthorizationMiddleware, addAccountSid } from './middlewares';
+import {
+  getAuthorizationMiddleware,
+  addAccountSidMiddleware,
+} from '@tech-matters/twilio-worker-auth';
 import { processContactJobs } from './contact-job/contact-job-processor';
 import { enableProcessContactJobsFlag } from './featureFlags';
 
@@ -15,15 +18,15 @@ type ServiceCreationOptions = Partial<{
   permissions: Permissions;
   authTokenLookup: (accountSid: string) => string;
   enableProcessContactJobs: boolean;
+  app: ReturnType<typeof express>;
 }>;
 
 export function createService({
   permissions = jsonPermissions,
   authTokenLookup,
   enableProcessContactJobs = enableProcessContactJobsFlag,
+  app = express(),
 }: ServiceCreationOptions = {}) {
-  const app = express();
-
   app.use(httpLogger);
   app.use(express.json());
   app.use(express.urlencoded({ extended: false }));
@@ -41,7 +44,7 @@ export function createService({
 
   app.use(
     '/v0/accounts/:accountSid',
-    addAccountSid,
+    addAccountSidMiddleware,
     authorizationMiddleware,
     setupPermissions(permissions),
     apiV0(permissions),

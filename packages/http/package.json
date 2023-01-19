@@ -1,0 +1,24 @@
+{
+  "name": "@tech-matters/http",
+  "version": "1.0.0",
+  "description": "HTTP lib to help Aselo service conform to common practices when using express",
+  "author": "",
+  "license": "ISC",
+  "main": "dist/index.js",
+  "devDependencies": {},
+  "dependencies": {
+    "express": "^4.17.1"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/techmatters/hrm.git"
+  },
+  "keywords": [],
+  "bugs": {
+    "url": "https://github.com/techmatters/hrm/issues"
+  },
+  "homepage": "https://github.com/techmatters/hrm#readme"
+}

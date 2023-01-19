@@ -1,4 +1,4 @@
-import { User } from './index';
+import { User } from '@tech-matters/twilio-worker-auth';
 
 export const isSupervisor = (user: User) => user.roles.includes('supervisor');
 
