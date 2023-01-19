@@ -43,10 +43,25 @@ const getTransformedMessages = async (
 
 const getUser = async (client: ReturnType<typeof getClient>, serviceSid: string, from: string) => {
   try {
-    return await client.chat.v2
+    const user = await client.chat.v2
       .services(serviceSid)
       .users.get(from)
       .fetch();
+
+    // Full object contains circular references that can't be converted to json in addition to unnecessary data
+    return {
+      sid: user.sid,
+      accountSid: user.accountSid,
+      serviceSid: user.serviceSid,
+      attributes: user.attributes,
+      friendlyName: user.friendlyName,
+      roleSid: user.roleSid,
+      identity: user.identity,
+      dateCreated: user.dateCreated,
+      joinedChannelsCount: user.joinedChannelsCount,
+      links: user.links,
+      url: user.url,
+    };
   } catch (err) {
     if (err instanceof RestException && err.code === 20404) {
       return null;
@@ -66,8 +81,16 @@ const getRole = async (
       .roles.get(roleSid)
       .fetch();
 
+    // Full object contains circular references that can't be converted to json later on
     return {
-      ...role,
+      sid: role.sid,
+      accountSid: role.accountSid,
+      serviceSid: role.serviceSid,
+      friendlyName: role.friendlyName,
+      type: role.type,
+      permissions: role.permissions,
+      dateCreated: role.dateCreated,
+      url: role.url,
       isCounselor: role.friendlyName !== CHILD_ROLE,
     };
   } catch (err) {

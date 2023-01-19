@@ -151,16 +151,16 @@ const filterSql = ({
 };
 
 const nameAndPhoneNumberSearchSql = (
-  firstNameSource: string,
-  lastNameSource: string,
+  firstNameSources: string[],
+  lastNameSources: string[],
   phoneNumberColumns: string[],
 ) =>
   `CASE WHEN $<firstName> IS NULL THEN TRUE
-        ELSE ${firstNameSource} ILIKE $<firstName>
+        ELSE ${firstNameSources.map(fns => `${fns} ILIKE $<firstName>`).join('\n OR ')}
         END
       AND
         CASE WHEN $<lastName> IS NULL THEN TRUE
-        ELSE ${lastNameSource} ILIKE $<lastName>
+        ELSE ${lastNameSources.map(lns => `${lns} ILIKE $<lastName>`).join('\n OR ')}
         END
       AND
         CASE WHEN $<phoneNumber> IS NULL THEN TRUE
@@ -179,8 +179,16 @@ const SEARCH_WHERE_CLAUSE = `(
           AND (
             (
             ${nameAndPhoneNumberSearchSql(
-              "c.\"rawJson\"->'childInformation'->'name'->>'firstName'",
-              "c.\"rawJson\"->'childInformation'->'name'->>'lastName'",
+              [
+                "c.\"rawJson\"->'childInformation'->>'firstName'",
+                // Legacy format support, remove when old contacts are migrated
+                "c.\"rawJson\"->'childInformation'->'name'->>'firstName'",
+              ],
+              [
+                "c.\"rawJson\"->'childInformation'->>'lastName'",
+                // Legacy format support, remove when old contacts are migrated
+                "c.\"rawJson\"->'childInformation'->'name'->>'lastName'",
+              ],
               [
                 "c.\"rawJson\"->'childInformation'->'location'->>'phone1'",
                 "c.\"rawJson\"->'childInformation'->'location'->>'phone2'",
@@ -190,8 +198,16 @@ const SEARCH_WHERE_CLAUSE = `(
             -- search on callerInformation of connectedContacts
             OR ( 
               ${nameAndPhoneNumberSearchSql(
-                "c.\"rawJson\"->'callerInformation'->'name'->>'firstName'",
-                "c.\"rawJson\"->'callerInformation'->'name'->>'lastName'",
+                [
+                  "c.\"rawJson\"->'callerInformation'->>'firstName'",
+                  // Legacy format support, remove when old contacts are migrated
+                  "c.\"rawJson\"->'callerInformation'->'name'->>'firstName'",
+                ],
+                [
+                  "c.\"rawJson\"->'callerInformation'->>'lastName'",
+                  // Legacy format support, remove when old contacts are migrated
+                  "c.\"rawJson\"->'callerInformation'->'name'->>'lastName'",
+                ],
                 [
                   "c.\"rawJson\"->'callerInformation'->'location'->>'phone1'",
                   "c.\"rawJson\"->'callerInformation'->'location'->>'phone2'",
@@ -205,8 +221,8 @@ const SEARCH_WHERE_CLAUSE = `(
         SELECT 1 FROM "CaseSections" cs WHERE cs."caseId" = cases.id AND cs."accountSid" = cases."accountSid"
           AND
           ${nameAndPhoneNumberSearchSql(
-            'cs."sectionTypeSpecificData"->>\'firstName\'',
-            'cs."sectionTypeSpecificData"->>\'lastName\'',
+            ['cs."sectionTypeSpecificData"->>\'firstName\''],
+            ['cs."sectionTypeSpecificData"->>\'lastName\''],
             [
               'cs."sectionTypeSpecificData"->>\'phone1\'',
               'cs."sectionTypeSpecificData"->>\'phone2\'',

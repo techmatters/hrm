@@ -1,33 +1,21 @@
 /* eslint-disable jest/no-standalone-expect,no-await-in-loop */
+
+import each from 'jest-each';
+
 import * as caseApi from '../src/case/case';
 import { Case } from '../src/case/case';
 import * as caseDb from '../src/case/case-data-access';
 import * as proxiedEndpoints from './external-service-stubs/proxied-endpoints';
 
-const supertest = require('supertest');
-const each = require('jest-each').default;
-import { createService } from '../src/app';
-import { RulesFile } from '../src/permissions/rulesMap';
 import * as mocks from './mocks';
 import { ruleFileWithOnePermittedOrDeniedAction } from './permissions-overrides';
+import { headers, getRequest, getServer, setRules, useOpenRules } from './server';
 
-let testRules: RulesFile;
-
-const server = createService({
-  permissions: {
-    rules: () => testRules,
-    cachePermissions: false, // Means we can evaluate different rules each request without restarting the service
-  },
-  authTokenLookup: () => 'picernic basket',
-}).listen();
-const request = supertest.agent(server);
+useOpenRules();
+const server = getServer();
+const request = getRequest(server);
 
 const { case1, accountSid, workerSid } = mocks;
-
-const headers = {
-  'Content-Type': 'application/json',
-  Authorization: `Bearer bearing a bear (rawr)`,
-};
 
 afterAll(done => {
   proxiedEndpoints.stop().finally(() => {
@@ -327,13 +315,14 @@ describe('/cases/:id route - PUT', () => {
           update.info = { ...originalCase.info, ...caseUpdate.info, ...infoUpdate };
         }
 
-        testRules = ruleFileWithOnePermittedOrDeniedAction(actionToTest, !testingDeniedCase);
+        setRules(ruleFileWithOnePermittedOrDeniedAction(actionToTest, !testingDeniedCase));
         const permittedResponse = await request
           .put(subRoute(originalCase.id))
           .set(headers)
           .send(update);
 
         expect(permittedResponse.status).toBe(testingDeniedCase ? 401 : 200);
+        useOpenRules();
       },
     );
   });

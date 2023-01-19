@@ -18,6 +18,9 @@ jobs:
       - name: Install Packages
         run: npm ci
 
+      - name: Build
+        run: npm run build
+
       - name: Run Lint
         run: npm run lint --if-present
 
@@ -32,7 +35,7 @@ jobs:
           # POSTGRES_DB - name for the default database that is created
           postgresql db: hrmdb
           # POSTGRES_USER - create the specified user with superuser power
-          postgresql user: hrm
+          postgresql user: rdsadmin
           # POSTGRES_PASSWORD - superuser password
           postgresql password: postgres
           # POSTGRES_INIT_SCRIPTS - directory containing DB init scripts

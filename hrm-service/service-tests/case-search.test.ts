@@ -1,5 +1,6 @@
 /* eslint-disable jest/no-standalone-expect,no-await-in-loop */
 import { add, addDays } from 'date-fns';
+import each from 'jest-each';
 
 import * as caseApi from '../src/case/case';
 import { Case, getCase } from '../src/case/case';
@@ -12,37 +13,17 @@ import {
 } from './case-validation';
 import { CaseListFilters, DateExistsCondition } from '../src/case/case-data-access';
 import * as contactDb from '../src/contact/contact-data-access';
-import { createService } from '../src/app';
-import { openPermissions } from '../src/permissions/json-permissions';
 import * as proxiedEndpoints from './external-service-stubs/proxied-endpoints';
 import * as mocks from './mocks';
 import { ruleFileWithOneActionOverride } from './permissions-overrides';
-import { RulesFile } from '../src/permissions/rulesMap';
 import { connectContactToCase, createContact, isS3StoredTranscript } from '../src/contact/contact';
+import { headers, getRequest, getServer, setRules, useOpenRules } from './server';
 
-const supertest = require('supertest');
-const each = require('jest-each').default;
+useOpenRules();
+const server = getServer();
+const request = getRequest(server);
 
 const { case1, contact1, accountSid, workerSid } = mocks;
-
-let testRules: RulesFile;
-const useOpenRules = () => {
-  testRules = openPermissions.rules(accountSid);
-};
-useOpenRules();
-const server = createService({
-  permissions: {
-    cachePermissions: false,
-    rules: () => testRules,
-  },
-  authTokenLookup: () => 'picernic basket',
-}).listen();
-const request = supertest.agent(server);
-
-const headers = {
-  'Content-Type': 'application/json',
-  Authorization: `Bearer bearing a bear (rawr)`,
-};
 
 type Contact = contactDb.Contact;
 
@@ -387,7 +368,7 @@ describe('/cases route', () => {
       );
 
       if (!expectTranscripts) {
-        testRules = ruleFileWithOneActionOverride('viewExternalTranscript', false);
+        setRules(ruleFileWithOneActionOverride('viewExternalTranscript', false));
       } else {
         useOpenRules();
       }
@@ -1239,7 +1220,7 @@ describe('/cases route', () => {
         );
 
         if (!expectTranscripts) {
-          testRules = ruleFileWithOneActionOverride('viewExternalTranscript', false);
+          setRules(ruleFileWithOneActionOverride('viewExternalTranscript', false));
         } else {
           useOpenRules();
         }

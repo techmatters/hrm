@@ -15,6 +15,115 @@ SET check_function_bodies = false;
 SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
+SET default_tablespace = '';
+SET default_with_oids = false;
+SET default_table_access_method = heap;
+
+--
+-- Roles
+--
+
+-- Create user hrm if not exists
+-- set password to postgres as that's used in the tests
+DO
+$do$
+BEGIN
+   IF EXISTS (
+      SELECT FROM pg_catalog.pg_roles
+      WHERE  rolname = 'hrm') THEN
+
+      RAISE NOTICE 'Role "hrm" already exists. Skipping.';
+   ELSE
+      BEGIN   -- nested block
+         CREATE ROLE hrm WITH PASSWORD 'postgres' VALID UNTIL 'infinity';
+      EXCEPTION
+         WHEN duplicate_object THEN
+            RAISE NOTICE 'Role "hrm" was just created by a concurrent transaction. Skipping.';
+      END;
+   END IF;
+END
+$do$;
+
+ALTER ROLE hrm WITH NOSUPERUSER INHERIT CREATEROLE CREATEDB LOGIN NOREPLICATION NOBYPASSRLS VALID UNTIL 'infinity';
+CREATE ROLE rds_ad;
+ALTER ROLE rds_ad WITH NOSUPERUSER INHERIT NOCREATEROLE NOCREATEDB NOLOGIN NOREPLICATION NOBYPASSRLS;
+CREATE ROLE rds_iam;
+ALTER ROLE rds_iam WITH NOSUPERUSER INHERIT NOCREATEROLE NOCREATEDB NOLOGIN NOREPLICATION NOBYPASSRLS;
+CREATE ROLE rds_password;
+ALTER ROLE rds_password WITH NOSUPERUSER INHERIT NOCREATEROLE NOCREATEDB NOLOGIN NOREPLICATION NOBYPASSRLS;
+CREATE ROLE rds_replication;
+ALTER ROLE rds_replication WITH NOSUPERUSER INHERIT NOCREATEROLE NOCREATEDB NOLOGIN NOREPLICATION NOBYPASSRLS;
+CREATE ROLE rds_superuser;
+ALTER ROLE rds_superuser WITH NOSUPERUSER INHERIT NOCREATEROLE NOCREATEDB NOLOGIN NOREPLICATION NOBYPASSRLS;
+ALTER ROLE rdsadmin WITH SUPERUSER INHERIT CREATEROLE CREATEDB LOGIN REPLICATION BYPASSRLS VALID UNTIL 'infinity';
+CREATE ROLE rdsrepladmin;
+ALTER ROLE rdsrepladmin WITH NOSUPERUSER NOINHERIT NOCREATEROLE NOCREATEDB NOLOGIN REPLICATION NOBYPASSRLS;
+CREATE ROLE read_only_user;
+ALTER ROLE read_only_user WITH NOSUPERUSER INHERIT NOCREATEROLE NOCREATEDB LOGIN NOREPLICATION NOBYPASSRLS;
+--
+-- User Configurations
+--
+
+ALTER ROLE rdsadmin SET "TimeZone" TO 'utc';
+ALTER ROLE rdsadmin SET log_statement TO 'all';
+ALTER ROLE rdsadmin SET log_min_error_statement TO 'debug5';
+ALTER ROLE rdsadmin SET log_min_messages TO 'panic';
+ALTER ROLE rdsadmin SET exit_on_error TO '0';
+ALTER ROLE rdsadmin SET statement_timeout TO '0';
+ALTER ROLE rdsadmin SET role TO 'rdsadmin';
+ALTER ROLE rdsadmin SET "auto_explain.log_min_duration" TO '-1';
+ALTER ROLE rdsadmin SET temp_file_limit TO '-1';
+ALTER ROLE rdsadmin SET search_path TO 'pg_catalog', 'public';
+ALTER ROLE rdsadmin SET "pg_hint_plan.enable_hint" TO 'off';
+ALTER ROLE rdsadmin SET default_transaction_read_only TO 'off';
+ALTER ROLE rdsadmin SET default_tablespace TO '';
+
+
+--
+-- Role memberships
+--
+
+GRANT pg_monitor TO rds_superuser WITH ADMIN OPTION GRANTED BY rdsadmin;
+GRANT pg_signal_backend TO rds_superuser WITH ADMIN OPTION GRANTED BY rdsadmin;
+GRANT rds_password TO rds_superuser WITH ADMIN OPTION GRANTED BY rdsadmin;
+GRANT rds_replication TO rds_superuser WITH ADMIN OPTION GRANTED BY rdsadmin;
+GRANT rds_superuser TO hrm GRANTED BY rdsadmin;
+
+-- Database: hrmdb
+
+-- CREATE DATABASE hrmdb
+--     WITH
+--     OWNER = hrm
+--     ENCODING = 'UTF8'
+--     LC_COLLATE = 'en_US.UTF-8'
+--     LC_CTYPE = 'en_US.UTF-8'
+--     TABLESPACE = pg_default
+--     CONNECTION LIMIT = -1
+--     IS_TEMPLATE = False;
+
+ALTER DATABASE hrmdb OWNER TO hrm;
+
+GRANT TEMPORARY, CONNECT ON DATABASE hrmdb TO PUBLIC;
+
+GRANT ALL ON DATABASE hrmdb TO hrm;
+
+GRANT CONNECT ON DATABASE hrmdb TO read_only_user;
+
+-- SCHEMA: public
+
+CREATE SCHEMA IF NOT EXISTS public
+    AUTHORIZATION hrm;
+
+ALTER SCHEMA public OWNER TO hrm;
+
+COMMENT ON SCHEMA public
+    IS 'standard public schema';
+
+GRANT ALL ON SCHEMA public TO PUBLIC;
+
+GRANT ALL ON SCHEMA public TO hrm;
+
+GRANT USAGE ON SCHEMA public TO read_only_user;
 
 --
 -- Name: audit_trigger(); Type: FUNCTION; Schema: public; Owner: hrm
@@ -68,10 +177,6 @@ CREATE SEQUENCE public."Audits_id_seq"
 
 
 ALTER TABLE public."Audits_id_seq" OWNER TO hrm;
-
-SET default_tablespace = '';
-
-SET default_table_access_method = heap;
 
 --
 -- Name: Audits; Type: TABLE; Schema: public; Owner: hrm

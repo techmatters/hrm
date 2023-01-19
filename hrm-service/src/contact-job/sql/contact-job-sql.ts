@@ -19,16 +19,8 @@ export const COMPLETE_JOB_SQL = `
   RETURNING *
 `;
 
-export const APPEND_FAILED_ATTEMPT_PAYLOAD = `
-  UPDATE "ContactJobs"
-  SET
-    "failedAttemptsPayloads" =
-      COALESCE("failedAttemptsPayloads", '{}'::JSONB) || jsonb_set(
-        "failedAttemptsPayloads", -- target
-        format('{%s}', $<attemptNumber>)::text[], -- path
-        COALESCE("failedAttemptsPayloads"#>format('{%s}', $<attemptNumber>)::text[], '[]'::JSONB) || $<attemptPayload:json>::JSONB, -- value
-        true -- create if not exists
-      )
-  WHERE id = $<id>
+export const ADD_FAILED_ATTEMPT_PAYLOAD = `
+  INSERT INTO "ContactJobsFailures" ("contactJobId", "attemptNumber", "payload", "createdAt")
+  VALUES ($<contactJobId>, $<attemptNumber>, $<attemptPayload:json>::JSONB, current_timestamp)
   RETURNING *
 `;

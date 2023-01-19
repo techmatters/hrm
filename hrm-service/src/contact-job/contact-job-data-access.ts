@@ -4,7 +4,7 @@ import { Contact } from '../contact/contact-data-access';
 import {
   COMPLETE_JOB_SQL,
   PULL_DUE_JOBS_SQL,
-  APPEND_FAILED_ATTEMPT_PAYLOAD,
+  ADD_FAILED_ATTEMPT_PAYLOAD,
 } from './sql/contact-job-sql';
 
 export enum ContactJobType {
@@ -21,7 +21,6 @@ export type ContactJobRecord = {
   completed: Date | null;
   lastAttempt: Date | null;
   numberOfAttempts: number;
-  failedAttemptsPayloads: Record<string, any[]>; // This type is enforced at creation time
   additionalPayload: any;
   completionPayload: any;
 };
@@ -89,7 +88,6 @@ export const createContactJob = (tx: ITask<{}>) => async (
       additionalPayload: job.additionalPayload,
       lastAttempt: null,
       numberOfAttempts: 0,
-      failedAttemptsPayloads: {},
       completed: null,
       completionPayload: null,
     },
@@ -100,14 +98,14 @@ export const createContactJob = (tx: ITask<{}>) => async (
 };
 
 export const appendFailedAttemptPayload = async (
-  id: ContactJob['id'],
+  contactJobId: ContactJob['id'],
   attemptNumber: number,
   attemptPayload: any,
 ): Promise<ContactJob> =>
   db.task(tx =>
-    tx.oneOrNone<ContactJob>(APPEND_FAILED_ATTEMPT_PAYLOAD, {
-      id,
+    tx.oneOrNone<ContactJob>(ADD_FAILED_ATTEMPT_PAYLOAD, {
+      contactJobId,
       attemptNumber,
-      attemptPayload: attemptPayload,
+      attemptPayload,
     }),
   );

@@ -4,7 +4,7 @@
 
 -- Dumped from database version 11.4
 -- Dumped by pg_dump version 11.3
-CREATE USER hrm;
+
 SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
@@ -19,6 +19,145 @@ SET row_security = off;
 SET default_tablespace = '';
 
 SET default_with_oids = false;
+
+--
+-- Roles
+--
+
+CREATE ROLE hrm;
+ALTER ROLE hrm WITH NOSUPERUSER INHERIT CREATEROLE CREATEDB LOGIN NOREPLICATION NOBYPASSRLS VALID UNTIL 'infinity';
+CREATE ROLE rds_ad;
+ALTER ROLE rds_ad WITH NOSUPERUSER INHERIT NOCREATEROLE NOCREATEDB NOLOGIN NOREPLICATION NOBYPASSRLS;
+CREATE ROLE rds_iam;
+ALTER ROLE rds_iam WITH NOSUPERUSER INHERIT NOCREATEROLE NOCREATEDB NOLOGIN NOREPLICATION NOBYPASSRLS;
+CREATE ROLE rds_password;
+ALTER ROLE rds_password WITH NOSUPERUSER INHERIT NOCREATEROLE NOCREATEDB NOLOGIN NOREPLICATION NOBYPASSRLS;
+CREATE ROLE rds_replication;
+ALTER ROLE rds_replication WITH NOSUPERUSER INHERIT NOCREATEROLE NOCREATEDB NOLOGIN NOREPLICATION NOBYPASSRLS;
+CREATE ROLE rds_superuser;
+ALTER ROLE rds_superuser WITH NOSUPERUSER INHERIT NOCREATEROLE NOCREATEDB NOLOGIN NOREPLICATION NOBYPASSRLS;
+ALTER ROLE rdsadmin WITH SUPERUSER INHERIT CREATEROLE CREATEDB LOGIN REPLICATION BYPASSRLS VALID UNTIL 'infinity';
+CREATE ROLE rdsrepladmin;
+ALTER ROLE rdsrepladmin WITH NOSUPERUSER NOINHERIT NOCREATEROLE NOCREATEDB NOLOGIN REPLICATION NOBYPASSRLS;
+CREATE ROLE read_only_user;
+ALTER ROLE read_only_user WITH NOSUPERUSER INHERIT NOCREATEROLE NOCREATEDB LOGIN NOREPLICATION NOBYPASSRLS;
+--
+-- User Configurations
+--
+
+--
+-- User Config "rdsadmin"
+--
+
+ALTER ROLE rdsadmin SET "TimeZone" TO 'utc';
+--
+-- User Config "rdsadmin"
+--
+
+ALTER ROLE rdsadmin SET log_statement TO 'all';
+--
+-- User Config "rdsadmin"
+--
+
+ALTER ROLE rdsadmin SET log_min_error_statement TO 'debug5';
+--
+-- User Config "rdsadmin"
+--
+
+ALTER ROLE rdsadmin SET log_min_messages TO 'panic';
+--
+-- User Config "rdsadmin"
+--
+
+ALTER ROLE rdsadmin SET exit_on_error TO '0';
+--
+-- User Config "rdsadmin"
+--
+
+ALTER ROLE rdsadmin SET statement_timeout TO '0';
+--
+-- User Config "rdsadmin"
+--
+
+ALTER ROLE rdsadmin SET role TO 'rdsadmin';
+--
+-- User Config "rdsadmin"
+--
+
+ALTER ROLE rdsadmin SET "auto_explain.log_min_duration" TO '-1';
+--
+-- User Config "rdsadmin"
+--
+
+ALTER ROLE rdsadmin SET temp_file_limit TO '-1';
+--
+-- User Config "rdsadmin"
+--
+
+ALTER ROLE rdsadmin SET search_path TO 'pg_catalog', 'public';
+--
+-- User Config "rdsadmin"
+--
+
+ALTER ROLE rdsadmin SET "pg_hint_plan.enable_hint" TO 'off';
+--
+-- User Config "rdsadmin"
+--
+
+ALTER ROLE rdsadmin SET default_transaction_read_only TO 'off';
+--
+-- User Config "rdsadmin"
+--
+
+ALTER ROLE rdsadmin SET default_tablespace TO '';
+
+
+--
+-- Role memberships
+--
+
+GRANT pg_monitor TO rds_superuser WITH ADMIN OPTION GRANTED BY rdsadmin;
+GRANT pg_signal_backend TO rds_superuser WITH ADMIN OPTION GRANTED BY rdsadmin;
+GRANT rds_password TO rds_superuser WITH ADMIN OPTION GRANTED BY rdsadmin;
+GRANT rds_replication TO rds_superuser WITH ADMIN OPTION GRANTED BY rdsadmin;
+GRANT rds_superuser TO hrm GRANTED BY rdsadmin;
+
+
+-- Database: hrmdb
+
+-- CREATE DATABASE hrmdb
+--     WITH
+--     OWNER = hrm
+--     ENCODING = 'UTF8'
+--     LC_COLLATE = 'en_US.UTF-8'
+--     LC_CTYPE = 'en_US.UTF-8'
+--     TABLESPACE = pg_default
+--     CONNECTION LIMIT = -1
+--     IS_TEMPLATE = False;
+
+ALTER DATABASE hrmdb OWNER TO hrm;
+
+GRANT TEMPORARY, CONNECT ON DATABASE hrmdb TO PUBLIC;
+
+GRANT ALL ON DATABASE hrmdb TO hrm;
+
+GRANT CONNECT ON DATABASE hrmdb TO read_only_user;
+
+-- SCHEMA: public
+
+CREATE SCHEMA IF NOT EXISTS public
+    AUTHORIZATION hrm;
+
+ALTER SCHEMA public OWNER TO hrm;
+
+COMMENT ON SCHEMA public
+    IS 'standard public schema';
+
+GRANT ALL ON SCHEMA public TO PUBLIC;
+
+GRANT ALL ON SCHEMA public TO hrm;
+
+GRANT USAGE ON SCHEMA public TO read_only_user;
 
 --
 -- Name: AgeBrackets; Type: TABLE; Schema: public; Owner: hrm

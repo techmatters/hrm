@@ -2,11 +2,9 @@ import {
   SafeRouter as MockSafeRouter,
   publicEndpoint as mockPublicEndpoint,
 } from '../src/permissions';
-import { createService } from '../src/app';
-import { openPermissions } from '../src/permissions/json-permissions';
 import * as proxiedEndpoints from './external-service-stubs/proxied-endpoints';
-const supertest = require('supertest');
 import { accountSid, workerSid } from './mocks';
+import { headers, getRequest, getServer, useOpenRules } from './server';
 
 jest.mock('../src/routes', () => {
   const mockRouter = MockSafeRouter();
@@ -39,16 +37,9 @@ jest.mock('../src/routes', () => {
   };
 });
 
-const server = createService({
-  permissions: openPermissions,
-  authTokenLookup: () => 'picernic basket',
-}).listen();
-const request = supertest.agent(server);
-
-const headers = {
-  'Content-Type': 'application/json',
-  Authorization: `Bearer bearing a bear (rawr)`,
-};
+useOpenRules();
+const server = getServer();
+const request = getRequest(server);
 
 const baseRoute = `/v0/accounts/${accountSid}`;
 

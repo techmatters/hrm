@@ -1,4 +1,3 @@
-import supertest from 'supertest';
 import each from 'jest-each';
 import { subHours, subDays } from 'date-fns';
 
@@ -8,7 +7,6 @@ import {
   ContactRawJson,
   isS3StoredTranscript,
 } from '../src/contact/contact-json';
-import { createService } from '../src/app';
 import {
   accountSid,
   contact1,
@@ -32,32 +30,20 @@ import * as caseDb from '../src/case/case-data-access';
 import { CreateContactPayloadWithFormProperty, PatchPayload } from '../src/contact/contact';
 import * as contactApi from '../src/contact/contact';
 import * as contactDb from '../src/contact/contact-data-access';
-import { openPermissions } from '../src/permissions/json-permissions';
 import * as proxiedEndpoints from './external-service-stubs/proxied-endpoints';
 import * as contactJobDataAccess from '../src/contact-job/contact-job-data-access';
 import { chatChannels } from '../src/contact/channelTypes';
 import * as contactInsertSql from '../src/contact/sql/contact-insert-sql';
 import { selectSingleContactByTaskId } from '../src/contact/sql/contact-get-sql';
-import { RulesFile } from '../src/permissions/rulesMap';
 import { ruleFileWithOneActionOverride } from './permissions-overrides';
 import * as csamReportApi from '../src/csam-report/csam-report';
+import { headers, getRequest, getServer, setRules, useOpenRules } from './server';
+
+useOpenRules();
+const server = getServer();
+const request = getRequest(server);
 
 const { form, ...contact1WithRawJsonProp } = contact1 as CreateContactPayloadWithFormProperty;
-
-let testRules: RulesFile;
-const useOpenRules = () => {
-  testRules = openPermissions.rules(accountSid);
-};
-useOpenRules();
-const server = createService({
-  permissions: {
-    cachePermissions: false,
-    rules: () => testRules,
-  },
-  authTokenLookup: () => 'picernic basket',
-}).listen();
-
-const request = supertest.agent(server, undefined);
 
 /**
  *
@@ -66,11 +52,6 @@ const request = supertest.agent(server, undefined);
  */
 const resolveSequentially = ps =>
   ps.reduce((p, v) => p.then(a => v().then(r => a.concat([r]))), Promise.resolve([]));
-
-const headers = {
-  'Content-Type': 'application/json',
-  Authorization: `Bearer bearing a bear (rawr)`,
-};
 
 const cleanupWhereClause = `
   WHERE "twilioWorkerId" IN ('fake-worker-123', 'fake-worker-129', 'fake-worker-987', '${workerSid}') OR "accountSid" IN ('', '${accountSid}');
@@ -620,7 +601,7 @@ describe('/contacts route', () => {
       );
 
       if (!expectTranscripts) {
-        testRules = ruleFileWithOneActionOverride('viewExternalTranscript', false);
+        setRules(ruleFileWithOneActionOverride('viewExternalTranscript', false));
       } else {
         useOpenRules();
       }
@@ -829,8 +810,8 @@ describe('/contacts route', () => {
             expect(response.status).toBe(200);
             // invalidContact will return null from the search endpoint, exclude it here
             expect(contacts.length).toBe(createdContacts.length - 1);
-            const createdConcatdsByTimeOfContact = createdContacts.sort(compareTimeOfContactDesc);
-            createdConcatdsByTimeOfContact.forEach(c => {
+            const createdContactsByTimeOfContact = createdContacts.sort(compareTimeOfContactDesc);
+            createdContactsByTimeOfContact.forEach(c => {
               const searchContact = contacts.find(results => results.contactId === c.id);
               if (searchContact) {
                 // Check that all contacts contains the appropriate info
@@ -937,8 +918,8 @@ describe('/contacts route', () => {
         // Should match withTaskId in all cases
         ...[
           { helpline: withTaskId.helpline },
-          { firstName: withTaskId.form.childInformation.name.firstName },
-          { lastName: withTaskId.form.childInformation.name.lastName },
+          { firstName: withTaskId.form.childInformation.firstName },
+          { lastName: withTaskId.form.childInformation.lastName },
           { contactNumber: withTaskId.number },
         ].map(body => ({
           changeDescription: JSON.stringify(body),
@@ -1059,7 +1040,7 @@ describe('/contacts route', () => {
         );
 
         if (!expectTranscripts) {
-          testRules = ruleFileWithOneActionOverride('viewExternalTranscript', false);
+          setRules(ruleFileWithOneActionOverride('viewExternalTranscript', false));
         } else {
           useOpenRules();
         }
@@ -1141,7 +1122,7 @@ describe('/contacts route', () => {
           csamReports: [newReport1, newReport2, newReport3],
         };
         // Very specific first name
-        contactToCreate.form.childInformation.name.firstName = 'Test CSAM filter';
+        contactToCreate.form.childInformation.firstName = 'Test CSAM filter';
         const createdContact = await contactApi.createContact(
           accountSid,
           workerSid,
@@ -1542,7 +1523,7 @@ describe('/contacts route', () => {
         );
 
         if (!expectTranscripts) {
-          testRules = ruleFileWithOneActionOverride('viewExternalTranscript', false);
+          setRules(ruleFileWithOneActionOverride('viewExternalTranscript', false));
         } else {
           useOpenRules();
         }
