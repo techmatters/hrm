@@ -17,9 +17,6 @@ jobs:
       - name: Install Packages
         run: npm ci
 
-      - name: Build
-        run: npm run build
-
       - name: Run Lint
         run: npm run lint --if-present
   test:

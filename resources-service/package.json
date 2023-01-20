@@ -21,7 +21,7 @@
     "test:service:ci": "run-s test:service:ci:migrate test:service:ci:run",
     "test:service:ci:migrate-hrm": "cd ../hrm-service && cross-env CI=true RDS_PASSWORD=postgres RESOURCES_PASSWORD=resources-password node ./db-migrate",
     "test:service:ci:migrate": "cross-env CI=true RDS_PASSWORD=postgres RESOURCES_PASSWORD=resources-password node ./db-migrate",
-    "test:service:ci:run": "cross-env AWS_REGION=eu-west-1 CI=true TWILIO_ACCOUNT_SID=ACxxx TWILIO_AUTH_TOKEN=xxxxxx RDS_PASSWORD=postgres RESOURCES_PASSWORD=resources-password jest --verbose --maxWorkers=1 --forceExit service-tests",
+    "test:service:ci:run": "cross-env AWS_REGION=eu-west-1 CI=true TWILIO_ACCOUNT_SID=ACxxx TWILIO_AUTH_TOKEN=xxxxxx RDS_PASSWORD=postgres RESOURCES_PASSWORD=resources-password jest --verbose --maxWorkers=1 --forceExit tests/service",
     "test:coverage": "run-s docker:compose:test:up test:service:migrate test:coverage:run docker:compose:test:down",
     "test:coverage:run": "cross-env POSTGRES_PORT=5433 AWS_REGION=eu-west-1 jest --verbose --maxWorkers=1 --coverage",
     "test:migrate": "run-s test:service:migrate",
