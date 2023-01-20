@@ -2,7 +2,7 @@ import { user } from '../../src';
 
 const tftv = require('twilio-flex-token-validator');
 import each from 'jest-each';
-import { getAuthorizationMiddleware } from '../../';
+import { getAuthorizationMiddleware } from '../../src';
 import { unauthorized } from '@tech-matters/http';
 
 jest.mock('@tech-matters/http', () => ({
