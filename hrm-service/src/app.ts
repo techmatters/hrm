@@ -1,24 +1,17 @@
-import createError from 'http-errors';
-import express from 'express';
+import express, { Express } from 'express';
 import 'express-async-errors';
-import cors from 'cors';
 
-import httpLogger from './logging/httplogging';
-import { apiV0 } from './routes';
-import { Permissions, setupPermissions } from './permissions';
+import { Permissions } from './permissions';
 import { jsonPermissions } from './permissions/json-permissions';
-import {
-  getAuthorizationMiddleware,
-  addAccountSidMiddleware,
-} from '@tech-matters/twilio-worker-auth';
 import { processContactJobs } from './contact-job/contact-job-processor';
 import { enableProcessContactJobsFlag } from './featureFlags';
+import { setUpHrmRoutes } from './setUpHrmRoutes';
 
 type ServiceCreationOptions = Partial<{
   permissions: Permissions;
   authTokenLookup: (accountSid: string) => string;
   enableProcessContactJobs: boolean;
-  app: ReturnType<typeof express>;
+  app: Express;
 }>;
 
 export function createService({
@@ -27,48 +20,13 @@ export function createService({
   enableProcessContactJobs = enableProcessContactJobsFlag,
   app = express(),
 }: ServiceCreationOptions = {}) {
-  app.use(httpLogger);
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: false }));
-  app.use(cors());
-
   app.get('/', (req, res) => {
     res.json({
       Message: 'HRM is up and running!',
     });
   });
 
-  app.options('/contacts', cors());
-
-  const authorizationMiddleware = getAuthorizationMiddleware(authTokenLookup);
-
-  app.use(
-    '/v0/accounts/:accountSid',
-    addAccountSidMiddleware,
-    authorizationMiddleware,
-    setupPermissions(permissions),
-    apiV0(permissions),
-  );
-
-  app.use((req, res, next) => {
-    next(createError(404));
-  });
-
-  app.use((err, req, res, next) => {
-    console.log(err);
-
-    const includeErrorInResponse = process.env.INCLUDE_ERROR_IN_RESPONSE;
-
-    // set locals, only providing error in development
-    res.locals.message = err.message;
-    res.locals.error = includeErrorInResponse ? err : {};
-
-    const error = includeErrorInResponse ? { message: err.message, error: err.stack } : {};
-
-    res.status(err.status || 500);
-    res.json(error);
-    next();
-  });
+  setUpHrmRoutes(app, authTokenLookup, permissions);
 
   if (enableProcessContactJobs) {
     const processorIntervalId = processContactJobs();

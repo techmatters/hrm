@@ -8,14 +8,17 @@ import postSurveys from './post-survey/post-survey-routes-v0';
 import permissions from './permissions/permissions-routes-v0';
 import { Permissions } from './permissions';
 
+export const HRM_ROUTES: [string, (rules: Permissions) => Router][] = [
+  ['/contacts', () => contacts],
+  ['/cases', () => cases],
+  ['/postSurveys', () => postSurveys],
+  ['/csamReports', () => csamReports],
+  ['/permissions', (rules: Permissions) => permissions(rules)],
+];
+
 export const apiV0 = (rules: Permissions) => {
   const router: IRouter = Router();
-
-  router.use('/contacts', contacts);
-  router.use('/cases', cases);
-  router.use('/postSurveys', postSurveys);
-  router.use('/csamReports', csamReports);
-  router.use('/permissions', permissions(rules));
+  HRM_ROUTES.forEach(([route, routerFactory]) => router.use(route, routerFactory(rules)));
 
   router.get('/resources', async (req, res) => {
     const stubResult = await stub();

@@ -13,7 +13,7 @@ import {
 } from './case-validation';
 import { CaseListFilters, DateExistsCondition } from '../src/case/case-data-access';
 import * as contactDb from '../src/contact/contact-data-access';
-import * as proxiedEndpoints from './external-service-stubs/proxied-endpoints';
+import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import * as mocks from './mocks';
 import { ruleFileWithOneActionOverride } from './permissions-overrides';
 import { connectContactToCase, createContact, isS3StoredTranscript } from '../src/contact/contact';
@@ -148,14 +148,14 @@ const insertSampleCases = async ({
 };
 
 afterAll(done => {
-  proxiedEndpoints.stop().finally(() => {
+  mockingProxy.stop().finally(() => {
     server.close(done);
   });
 });
 
 beforeAll(async () => {
-  await proxiedEndpoints.start();
-  await proxiedEndpoints.mockSuccessfulTwilioAuthentication(workerSid);
+  await mockingProxy.start();
+  await mockSuccessfulTwilioAuthentication(workerSid);
 });
 
 // eslint-disable-next-line @typescript-eslint/no-shadow
@@ -373,7 +373,7 @@ describe('/cases route', () => {
         useOpenRules();
       }
 
-      await proxiedEndpoints.mockSuccessfulTwilioAuthentication(workerSid);
+      await mockSuccessfulTwilioAuthentication(workerSid);
       const response = await request
         .get(route)
         .query({
@@ -1225,7 +1225,7 @@ describe('/cases route', () => {
           useOpenRules();
         }
 
-        await proxiedEndpoints.mockSuccessfulTwilioAuthentication(workerSid);
+        await mockSuccessfulTwilioAuthentication(workerSid);
         const response = await request
           .post(`${route}/search`)
           .query({ limit: 20, offset: 0 })

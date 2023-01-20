@@ -2,7 +2,7 @@ import {
   SafeRouter as MockSafeRouter,
   publicEndpoint as mockPublicEndpoint,
 } from '../src/permissions';
-import * as proxiedEndpoints from './external-service-stubs/proxied-endpoints';
+import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import { accountSid, workerSid } from './mocks';
 import { headers, getRequest, getServer, useOpenRules } from './server';
 
@@ -33,6 +33,7 @@ jest.mock('../src/routes', () => {
     defaultHandler,
   );
   return {
+    HRM_ROUTES: [],
     apiV0: () => mockRouter.expressRouter,
   };
 });
@@ -44,12 +45,12 @@ const request = getRequest(server);
 const baseRoute = `/v0/accounts/${accountSid}`;
 
 beforeAll(async () => {
-  await proxiedEndpoints.start();
-  await proxiedEndpoints.mockSuccessfulTwilioAuthentication(workerSid);
+  await mockingProxy.start();
+  await mockSuccessfulTwilioAuthentication(workerSid);
 });
 
 afterAll(done => {
-  proxiedEndpoints.stop().finally(() => {
+  mockingProxy.stop().finally(() => {
     server.close(done);
   });
 });

@@ -11,7 +11,7 @@ import { convertCaseInfoToExpectedInfo, without } from './case-validation';
 import { isBefore } from 'date-fns';
 
 // const each = require('jest-each').default;
-import * as proxiedEndpoints from './external-service-stubs/proxied-endpoints';
+import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import * as mocks from './mocks';
 import { ruleFileWithOneActionOverride } from './permissions-overrides';
 import { headers, getRequest, getServer, setRules, useOpenRules } from './server';
@@ -23,17 +23,17 @@ const request = getRequest(server);
 const { case1, case2, accountSid, workerSid } = mocks;
 
 afterAll(done => {
-  proxiedEndpoints.stop().finally(() => {
+  mockingProxy.stop().finally(() => {
     server.close(done);
   });
 });
 
 beforeAll(async () => {
-  await proxiedEndpoints.start();
+  await mockingProxy.start();
 });
 
 beforeEach(async () => {
-  await proxiedEndpoints.mockSuccessfulTwilioAuthentication(workerSid);
+  await mockSuccessfulTwilioAuthentication(workerSid);
 });
 
 // eslint-disable-next-line @typescript-eslint/no-shadow
@@ -605,7 +605,7 @@ describe('/cases route', () => {
             can: () => true,
           });
 
-          await proxiedEndpoints.mockSuccessfulTwilioAuthentication(customWorkerSid ?? workerSid);
+          await mockSuccessfulTwilioAuthentication(customWorkerSid ?? workerSid);
           const response = await request
             .put(subRoute(originalCase.id))
             .set(headers)
@@ -678,7 +678,7 @@ describe('/cases route', () => {
           useOpenRules();
         }
 
-        await proxiedEndpoints.mockSuccessfulTwilioAuthentication(workerSid);
+        await mockSuccessfulTwilioAuthentication(workerSid);
         const response = await request
           .put(subRoute(createdCase.id))
           .set(headers)

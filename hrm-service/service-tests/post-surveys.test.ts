@@ -1,4 +1,4 @@
-import * as proxiedEndpoints from './external-service-stubs/proxied-endpoints';
+import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import * as mocks from './mocks';
 import { db } from '../src/connection-pool';
 import { create } from '../src/post-survey/post-survey-data-access';
@@ -30,14 +30,12 @@ const countPostSurveys = async (contactTaskId: string, taskId: string): Promise<
 };
 
 beforeAll(async () => {
-  await proxiedEndpoints.start();
-  await proxiedEndpoints.mockSuccessfulTwilioAuthentication(workerSid);
+  await mockingProxy.start();
+  await mockSuccessfulTwilioAuthentication(workerSid);
   await deleteAllPostSurveys();
 });
 
-afterAll(async () =>
-  Promise.all([proxiedEndpoints.stop(), deleteAllPostSurveys(), server.close()]),
-);
+afterAll(async () => Promise.all([mockingProxy.stop(), deleteAllPostSurveys(), server.close()]));
 // afterEach(async () => PostSurvey.destroy(postSurveys2DestroyQuery));
 
 describe('/postSurveys route', () => {

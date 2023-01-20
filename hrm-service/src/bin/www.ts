@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+import express from 'express';
+
 /**
  * Module dependencies.
  */
@@ -7,6 +9,10 @@ console.log(new Date(Date.now()).toLocaleString() + ': trying to initialize www'
 import { createService } from '../app';
 import debugFactory from 'debug';
 import http from 'http';
+import {
+  configureDefaultPostMiddlewares,
+  configureDefaultPreMiddlewares,
+} from '@tech-matters/http';
 
 const debug = debugFactory('hrm:server');
 
@@ -30,7 +36,9 @@ function normalizePort(val) {
   return false;
 }
 
-const app = createService();
+const appWithoutServices = configureDefaultPreMiddlewares(express());
+const appWithHrmService = createService({ app: appWithoutServices });
+const app = configureDefaultPostMiddlewares(appWithHrmService);
 /**
  * Create HTTP server.
  */

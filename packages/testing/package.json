@@ -1,15 +1,14 @@
 {
-  "name": "@tech-matters/http",
+  "name": "@tech-matters/testing",
   "version": "1.0.0",
-  "description": "HTTP lib to help Aselo service conform to common practices when using express",
+  "description": "Utilities to facilitate backend unit & service testing with jest",
   "author": "",
   "license": "ISC",
   "main": "dist/index.js",
   "dependencies": {
-    "cors": "^2.8.5",
-    "express": "^4.17.1",
-    "http-errors": "^2.0.0",
-    "morgan": "^1.10.0"
+    "pg-promise": "^10.11.1",
+    "global-agent": "^3.0.0",
+    "mockttp": "^3.2.2"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -24,6 +23,5 @@
   },
   "homepage": "https://github.com/techmatters/hrm#readme",
   "devDependencies": {
-    "@types/morgan": "^1.9.4"
   }
 }

@@ -4,13 +4,27 @@
   "description": "",
   "main": "dist/index.js",
   "devDependencies": {
+    "@tech-matters/testing": "^1.0.0",
     "sequelize": "^6.28.0",
     "sequelize-cli": "^6.5.2",
     "umzug": "^3.2.1"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "test:service:migrate": "node ./db-migrate",
+    "docker:compose:test:up": "docker compose -f ../hrm-service/docker-compose-test.yml up -d",
+    "docker:compose:test:down": "docker compose -f ../hrm-service/docker-compose-test.yml down",
+    "test": "run-s test:unit test:service",
+    "test:run:watch": "cross-env AWS_REGION=eu-west-1 CI=true TWILIO_ACCOUNT_SID=ACxxx TWILIO_AUTH_TOKEN=xxxxxx RDS_PASSWORD=postgres RESOURCES_PASSWORD=resources-password jest --maxWorkers=1 --forceExit --watch",
+    "test:unit": "jest tests/unit",
+    "test:service": "cross-env POSTGRES_PORT=5433 run-s -c docker:compose:test:up test:service:migrate test:service:run docker:compose:test:down",
+    "test:service:migrate": "run-s test:service:ci:migrate-hrm test:service:ci:migrate",
+    "test:service:run": "cross-env AWS_REGION=eu-west-1 SSM_ENDPOINT=http://localhost:4566 jest --verbose --maxWorkers=1 tests/service",
+    "test:service:ci": "run-s test:service:ci:migrate test:service:ci:run",
+    "test:service:ci:migrate-hrm": "cd ../hrm-service && cross-env CI=true POSTGRES_PORT=5433 RDS_PASSWORD=postgres RESOURCES_PASSWORD=resources-password node ./db-migrate",
+    "test:service:ci:migrate": "cross-env CI=true POSTGRES_PORT=5433 RDS_PASSWORD=postgres RESOURCES_PASSWORD=resources-password node ./db-migrate",
+    "test:service:ci:run": "cross-env AWS_REGION=eu-west-1 CI=true TWILIO_ACCOUNT_SID=ACxxx TWILIO_AUTH_TOKEN=xxxxxx RDS_PASSWORD=postgres RESOURCES_PASSWORD=resources-password jest --verbose --maxWorkers=1 --forceExit service-tests",
+    "test:coverage": "run-s docker:compose:test:up test:service:migrate test:coverage:run docker:compose:test:down",
+    "test:coverage:run": "cross-env POSTGRES_PORT=5433 AWS_REGION=eu-west-1 jest --verbose --maxWorkers=1 --coverage",
+    "test:migrate": "run-s test:service:migrate",
     "db:create-migration": "sequelize migration:generate --name ",
     "db:undo-last": "sequelize db:migrate:undo"
   },
@@ -26,6 +40,9 @@
   "homepage": "https://github.com/techmatters/hrm#readme",
   "dependencies": {
     "dotenv": "^8.6.0",
-    "pg-promise": "^10.15.4"
+    "express": "^4.17.1",
+    "express-async-errors": "^3.1.1",
+    "pg-promise": "^10.15.4",
+    "@tech-matters/twilio-worker-auth": "^1.0.0"
   }
 }

@@ -34,9 +34,9 @@ const isWorker = (tokenResult: TokenValidatorResponse) =>
 const isGuest = (tokenResult: TokenValidatorResponse) =>
   Array.isArray(tokenResult.roles) && tokenResult.roles.includes('guest');
 
-const defaultTokenLookup = (accountSid: string) => process.env[`TWILIO_AUTH_TOKEN_${accountSid}`];
+const defaultTokenLookup = (accountSid: string) => process.env[`TWILIO_AUTH_TOKEN_${accountSid}`] ?? '';
 
-export const getAuthorizationMiddleware = (authTokenLookup = defaultTokenLookup) => async (req: Request, res: Response, next: NextFunction) => {
+export const getAuthorizationMiddleware = (authTokenLookup: (accountSid: string) => string = defaultTokenLookup) => async (req: Request, res: Response, next: NextFunction) => {
   if (!req || !req.headers || !req.headers.authorization) {
     return unauthorized(res);
   }

@@ -2,6 +2,7 @@
   "extends": "./tsconfig.base.json",
   "files": [],
   "references": [
+    { "path": "packages/testing" },
     { "path": "packages/http" },
     { "path": "packages/twilio-worker-auth" },
     { "path": "packages/ssm-cache" },
