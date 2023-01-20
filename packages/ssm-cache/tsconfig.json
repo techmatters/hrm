@@ -1,8 +1,7 @@
 {
   "extends": "../tsconfig.packages-base.json",
   "include": ["*.ts"],
-  "ts-node": {
-    "transpileOnly": true,
-    "files": true
+  "compilerOptions": {
+    "outDir": "./dist",
   }
 }
