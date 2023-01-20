@@ -6,7 +6,7 @@ import express from 'express';
  * Module dependencies.
  */
 console.log(new Date(Date.now()).toLocaleString() + ': trying to initialize www');
-import { createService } from '../app';
+import { configureService } from '../app';
 import debugFactory from 'debug';
 import http from 'http';
 import {
@@ -37,8 +37,11 @@ function normalizePort(val) {
 }
 
 const appWithoutServices = configureDefaultPreMiddlewares(express());
-const appWithHrmService = createService({ app: appWithoutServices });
-const app = configureDefaultPostMiddlewares(appWithHrmService);
+const appWithHrmService = configureService({ webServer: appWithoutServices });
+const app = configureDefaultPostMiddlewares(
+  appWithHrmService,
+  Boolean(process.env.INCLUDE_ERROR_IN_RESPONSE),
+);
 /**
  * Create HTTP server.
  */

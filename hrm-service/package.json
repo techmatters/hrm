@@ -37,9 +37,6 @@
     "url": "https://github.com/tech-matters/hrm/issues"
   },
   "homepage": "https://github.com/tech-matters/hrm#readme",
-  "directories": {
-    "test": "unit-tests"
-  },
   "dependencies": {
     "@tech-matters/hrm-ssm-cache": "^1.0.0",
     "@tech-matters/twilio-worker-auth": "^1.0.0",

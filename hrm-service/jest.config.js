@@ -11,7 +11,6 @@ module.exports = config => {
           useExperimentalLanguageServer: true,
         },
       },
-      transformIgnorePatterns: ['express-types'],
     }
   );
 };

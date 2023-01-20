@@ -11,22 +11,22 @@ type ServiceCreationOptions = Partial<{
   permissions: Permissions;
   authTokenLookup: (accountSid: string) => string;
   enableProcessContactJobs: boolean;
-  app: Express;
+  webServer: Express;
 }>;
 
-export function createService({
+export function configureService({
   permissions = jsonPermissions,
   authTokenLookup,
   enableProcessContactJobs = enableProcessContactJobsFlag,
-  app = express(),
+  webServer = express(),
 }: ServiceCreationOptions = {}) {
-  app.get('/', (req, res) => {
+  webServer.get('/', (req, res) => {
     res.json({
       Message: 'HRM is up and running!',
     });
   });
 
-  setUpHrmRoutes(app, authTokenLookup, permissions);
+  setUpHrmRoutes(webServer, authTokenLookup, permissions);
 
   if (enableProcessContactJobs) {
     const processorIntervalId = processContactJobs();
@@ -35,14 +35,14 @@ export function createService({
       clearInterval(processorIntervalId);
     };
 
-    app.on('close', gracefulExit);
+    webServer.on('close', gracefulExit);
     // @ts-ignore
-    app.close = () => {
-      app.emit('close');
+    webServer.close = () => {
+      webServer.emit('close');
     };
   }
 
-  console.log(`${new Date(Date.now()).toLocaleString()}: app.js has been created`);
+  console.log(`${new Date().toLocaleString()}: app.js has been created`);
 
-  return app;
+  return webServer;
 }

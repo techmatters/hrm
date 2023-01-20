@@ -22,7 +22,7 @@ export const getServer = (config?: Partial<typeof defaultConfig>) => {
     ...config,
     webServer: withoutService,
   });
-  return configureDefaultPostMiddlewares(withService).listen();
+  return configureDefaultPostMiddlewares(withService, true).listen();
 };
 
 export const getRequest = (server: ReturnType<typeof getServer>) => supertest.agent(server);

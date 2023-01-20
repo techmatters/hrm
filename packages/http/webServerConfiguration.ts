@@ -11,14 +11,15 @@ export const configureDefaultPreMiddlewares = (webServer: Express): Express => {
   webServer.use(cors());
   return webServer;
 };
-export const configureDefaultPostMiddlewares = (webServer: Express) => {
+export const configureDefaultPostMiddlewares = (
+  webServer: Express,
+  includeErrorInResponse: boolean,
+) => {
   webServer.use((req, res, next) => {
     next(createError(404));
   });
   const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
     console.log(err);
-
-    const includeErrorInResponse = process.env.INCLUDE_ERROR_IN_RESPONSE;
 
     // set locals, only providing error in development
     res.locals.message = err.message;
