@@ -3,9 +3,17 @@
 if [ -n "$HRM_RUN_MIGRATIONS" ]; then
   # Execute hrm-service migrations
   node ./db-migrate
+  if [ $? -ne 0 ]; then
+    echo "Failed to run hrm-service migrations"
+    exit 1
+  fi
 
   # Execute resources-service migrations (move once the service lives in it's own container)
   node ./node_modules/@tech-matters/resources-service/db-migrate
+  if [ $? -ne 0 ]; then
+    echo "Failed to run resource-service migrations"
+    exit 1
+  fi
 fi
 
 exec "$@"
