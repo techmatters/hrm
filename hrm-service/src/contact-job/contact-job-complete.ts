@@ -71,6 +71,10 @@ export const pollAndProcessCompletedContactJobs = async (jobMaxAttempts: number)
   const completedJobs = await Promise.allSettled(
     messages.map(async m => {
       try {
+
+        // Immediately handle the message deletion in case of error since poler
+        // is responsible for retrying failed jobs.
+        await deleteCompletedContactJobsFromQueue(m.ReceiptHandle);
         const completedJob: CompletedContactJobBody = JSON.parse(m.Body);
 
         if (completedJob.attemptResult === 'success') {
@@ -82,9 +86,6 @@ export const pollAndProcessCompletedContactJobs = async (jobMaxAttempts: number)
             value: completedJob.attemptPayload,
           };
           const markedComplete = await completeContactJob(completedJob.jobId, completionPayload);
-
-          // Delete the message from the queue (this could be batched)
-          await deleteCompletedContactJobsFromQueue(m.ReceiptHandle);
 
           return markedComplete;
         } else {
@@ -106,8 +107,6 @@ export const pollAndProcessCompletedContactJobs = async (jobMaxAttempts: number)
           if (attemptNumber >= jobMaxAttempts) {
             const completionPayload = { message: 'Attempts limit reached' };
             const markedComplete = await completeContactJob(completedJob.jobId, completionPayload);
-
-            await deleteCompletedContactJobsFromQueue(m.ReceiptHandle);
 
             return markedComplete;
           }
