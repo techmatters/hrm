@@ -113,7 +113,7 @@ jobs:
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: task-definition-job-processor.json
-          container-name: ${{ inputs.environment }}-hrm-container
+          container-name: ${{ inputs.environment }}-hrm-job-processor
           image: ${{ steps.build-image.outputs.image }}
 
       - name: Deploy Amazon ECS task definition for the job processor
