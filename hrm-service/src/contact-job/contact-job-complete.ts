@@ -72,9 +72,10 @@ export const pollAndProcessCompletedContactJobs = async (jobMaxAttempts: number)
     messages.map(async m => {
       try {
 
-        // Immediately handle the message deletion in case of error since poler
+        // Immediately handle the message deletion in case of error since poller
         // is responsible for retrying failed jobs.
         await deleteCompletedContactJobsFromQueue(m.ReceiptHandle);
+
         const completedJob: CompletedContactJobBody = JSON.parse(m.Body);
 
         if (completedJob.attemptResult === 'success') {
