@@ -8,12 +8,12 @@ beforeEach(() => {
   conn = mockConnection();
 });
 
-describe('stub', () => {
-  test('Runs SELECT 1 on DB', async () => {
+describe('getById', () => {
+  test('Runs a SELECT against the Resources table on the DB', async () => {
     mockTask(conn);
     const oneSpy = jest.spyOn(conn, 'one').mockResolvedValue(1);
 
-    const result = await resourceDb.stub();
+    const result = await resourceDb.getById();
 
     expect(oneSpy).toHaveBeenCalledWith('SELECT 1;');
     expect(result).toStrictEqual(1);

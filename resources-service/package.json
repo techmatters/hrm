@@ -5,11 +5,13 @@
   "main": "dist/index.js",
   "devDependencies": {
     "@tech-matters/testing": "^1.0.0",
+    "@types/http-errors": "^2.0.1",
     "sequelize": "^6.28.0",
     "sequelize-cli": "^6.5.2",
     "umzug": "^3.2.1"
   },
   "scripts": {
+    "migrate": "run-s test:service:ci:migrate",
     "docker:compose:test:up": "docker compose -f ../hrm-service/docker-compose-test.yml up -d",
     "docker:compose:test:down": "docker compose -f ../hrm-service/docker-compose-test.yml down",
     "test": "run-s test:unit test:service",
@@ -39,10 +41,11 @@
   },
   "homepage": "https://github.com/techmatters/hrm#readme",
   "dependencies": {
+    "@tech-matters/twilio-worker-auth": "^1.0.0",
     "dotenv": "^8.6.0",
     "express": "^4.17.1",
     "express-async-errors": "^3.1.1",
     "pg-promise": "^10.15.4",
-    "@tech-matters/twilio-worker-auth": "^1.0.0"
+    "http-errors": "^1.7.3"
   }
 }
