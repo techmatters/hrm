@@ -28,7 +28,7 @@ if (config.use_env_variable) {
   sequelize = new Sequelize(config.database, config.username, config.password, config);
 }
 
-const CONNECT_ATTEMPT_SECONDS = 1;
+const CONNECT_ATTEMPT_SECONDS = 5;
 const migrationDirectory = pathLib.join(process.cwd(), './migrations/');
 const context = sequelize.getQueryInterface();
 
@@ -65,7 +65,7 @@ async function migrate() {
     } catch (err) {
       console.log('Migration failed. Retrying...', err);
       // eslint-disable-next-line @typescript-eslint/no-loop-func
-      await new Promise(resolve => setTimeout(resolve, 250));
+      await new Promise(resolve => setTimeout(resolve, 1000));
       lastErr = err;
     }
   }
