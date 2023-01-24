@@ -1,24 +1,24 @@
-import * as proxiedEndpoints from '../external-service-stubs/proxied-endpoints';
-import { headers, getRequest, getServer, useOpenRules } from '../server';
-import { workerSid } from '../mocks';
+import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
+import { headers, getRequest, getServer } from './server';
 
-useOpenRules();
+export const workerSid = 'WK-worker-sid';
+
 const server = getServer();
 const request = getRequest(server);
 
 afterAll(done => {
-  proxiedEndpoints.stop().finally(() => {
+  mockingProxy.stop().finally(() => {
     server.close(done);
   });
 });
 
 beforeAll(async () => {
-  await proxiedEndpoints.start();
-  await proxiedEndpoints.mockSuccessfulTwilioAuthentication(workerSid);
+  await mockingProxy.start();
+  await mockSuccessfulTwilioAuthentication(workerSid);
 });
 
 describe('Test stub endpoint', () => {
-  const stubRoute = '/v0/accounts/ACCOUNT_SID/resources';
+  const stubRoute = '/v0/accounts/ACCOUNT_SID/resources/resource';
 
   test('Should return 401 unauthorized', async () => {
     const response = await request.get(stubRoute);

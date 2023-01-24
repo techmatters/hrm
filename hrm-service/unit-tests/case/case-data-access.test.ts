@@ -1,16 +1,11 @@
 import { createMockCaseInsert, createMockCaseRecord } from './mock-cases';
 import * as pgPromise from 'pg-promise';
-import {
-  expectValuesInSql,
-  getSqlStatement,
-  mockConnection,
-  mockTask,
-  mockTransaction,
-} from '../mock-pgpromise';
+import { mockConnection, mockTask, mockTransaction } from '../mock-db';
 import * as caseDb from '../../src/case/case-data-access';
 import each from 'jest-each';
 import { db } from '../../src/connection-pool';
 import { OrderByColumn } from '../../src/case/sql/case-search-sql';
+import { expectValuesInSql, getSqlStatement } from '@tech-matters/testing';
 
 const accountSid = 'account-sid';
 let conn: pgPromise.ITask<unknown>;

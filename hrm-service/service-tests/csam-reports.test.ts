@@ -1,7 +1,7 @@
 import each from 'jest-each';
 import * as mocks from './mocks';
 import './case-validation';
-import * as proxiedEndpoints from './external-service-stubs/proxied-endpoints';
+import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import { db } from '../src/connection-pool';
 import * as csamReportsApi from '../src/csam-report/csam-report';
 import { headers, getRequest, getServer, useOpenRules } from './server';
@@ -31,8 +31,8 @@ const cleanupCsamReports = async () =>
   db.task(t => t.none(`DELETE FROM "CSAMReports" ${whereTwilioWorkerIdClause}`));
 
 beforeAll(async () => {
-  await proxiedEndpoints.start();
-  await proxiedEndpoints.mockSuccessfulTwilioAuthentication(workerSid);
+  await mockingProxy.start();
+  await mockSuccessfulTwilioAuthentication(workerSid);
   await cleanupCsamReports();
   await cleanupContacts();
 });
@@ -40,7 +40,7 @@ beforeAll(async () => {
 afterAll(async () => {
   await cleanupCsamReports();
   await cleanupContacts();
-  await proxiedEndpoints.stop();
+  await mockingProxy.stop();
   await server.close();
   console.log('csam reports test cleaned up.');
 });

@@ -1,0 +1,30 @@
+{
+  "name": "@tech-matters/twilio-worker-auth",
+  "version": "1.0.0",
+  "description": "Authenticate Twilio workers using their flex token",
+  "author": "",
+  "license": "ISC",
+  "main": "dist/index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "dependencies": {
+    "@tech-matters/http": "^1.0.0",
+    "twilio-flex-token-validator": "^1.5.6"
+  },
+  "devDependencies": {
+    "jest-each": "^29.2.1"
+  },
+  "scripts": {
+    "test:unit": "jest tests/unit"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/techmatters/hrm.git"
+  },
+  "keywords": [],
+  "bugs": {
+    "url": "https://github.com/techmatters/hrm/issues"
+  },
+  "homepage": "https://github.com/techmatters/hrm#readme"
+}

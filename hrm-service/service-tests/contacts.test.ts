@@ -30,7 +30,7 @@ import * as caseDb from '../src/case/case-data-access';
 import { CreateContactPayloadWithFormProperty, PatchPayload } from '../src/contact/contact';
 import * as contactApi from '../src/contact/contact';
 import * as contactDb from '../src/contact/contact-data-access';
-import * as proxiedEndpoints from './external-service-stubs/proxied-endpoints';
+import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import * as contactJobDataAccess from '../src/contact-job/contact-job-data-access';
 import { chatChannels } from '../src/contact/channelTypes';
 import * as contactInsertSql from '../src/contact/sql/contact-insert-sql';
@@ -148,8 +148,8 @@ const deleteCsamReportsByContactId = (contactId: number, accountSid: string) =>
   );
 
 beforeAll(async () => {
-  await proxiedEndpoints.start();
-  await proxiedEndpoints.mockSuccessfulTwilioAuthentication(workerSid);
+  await mockingProxy.start();
+  await mockSuccessfulTwilioAuthentication(workerSid);
   await cleanupCsamReports();
   await cleanupContactsJobs();
   await cleanupContacts();
@@ -161,7 +161,7 @@ afterAll(async () => {
   await cleanupContactsJobs();
   await cleanupContacts();
   await cleanupCases();
-  await proxiedEndpoints.stop();
+  await mockingProxy.stop();
   server.close();
 });
 

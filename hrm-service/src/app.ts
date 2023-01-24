@@ -1,71 +1,33 @@
-import createError from 'http-errors';
-import express from 'express';
+import express, { Express } from 'express';
 import 'express-async-errors';
-import cors from 'cors';
 
-import httpLogger from './logging/httplogging';
-import { apiV0 } from './routes';
-import { Permissions, setupPermissions } from './permissions';
+// eslint-disable-next-line prettier/prettier
+import type { Permissions } from './permissions';
 import { jsonPermissions } from './permissions/json-permissions';
-import { getAuthorizationMiddleware, addAccountSid } from './middlewares';
 import { processContactJobs } from './contact-job/contact-job-processor';
 import { enableProcessContactJobsFlag } from './featureFlags';
+import { setUpHrmRoutes } from './setUpHrmRoutes';
 
 type ServiceCreationOptions = Partial<{
   permissions: Permissions;
   authTokenLookup: (accountSid: string) => string;
   enableProcessContactJobs: boolean;
+  webServer: Express;
 }>;
 
-export function createService({
+export function configureService({
   permissions = jsonPermissions,
   authTokenLookup,
   enableProcessContactJobs = enableProcessContactJobsFlag,
+  webServer = express(),
 }: ServiceCreationOptions = {}) {
-  const app = express();
-
-  app.use(httpLogger);
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: false }));
-  app.use(cors());
-
-  app.get('/', (req, res) => {
+  webServer.get('/', (req, res) => {
     res.json({
       Message: 'HRM is up and running!',
     });
   });
 
-  app.options('/contacts', cors());
-
-  const authorizationMiddleware = getAuthorizationMiddleware(authTokenLookup);
-
-  app.use(
-    '/v0/accounts/:accountSid',
-    addAccountSid,
-    authorizationMiddleware,
-    setupPermissions(permissions),
-    apiV0(permissions),
-  );
-
-  app.use((req, res, next) => {
-    next(createError(404));
-  });
-
-  app.use((err, req, res, next) => {
-    console.log(err);
-
-    const includeErrorInResponse = process.env.INCLUDE_ERROR_IN_RESPONSE;
-
-    // set locals, only providing error in development
-    res.locals.message = err.message;
-    res.locals.error = includeErrorInResponse ? err : {};
-
-    const error = includeErrorInResponse ? { message: err.message, error: err.stack } : {};
-
-    res.status(err.status || 500);
-    res.json(error);
-    next();
-  });
+  setUpHrmRoutes(webServer, authTokenLookup, permissions);
 
   if (enableProcessContactJobs) {
     const processorIntervalId = processContactJobs();
@@ -74,14 +36,14 @@ export function createService({
       clearInterval(processorIntervalId);
     };
 
-    app.on('close', gracefulExit);
+    webServer.on('close', gracefulExit);
     // @ts-ignore
-    app.close = () => {
-      app.emit('close');
+    webServer.close = () => {
+      webServer.emit('close');
     };
   }
 
-  console.log(`${new Date(Date.now()).toLocaleString()}: app.js has been created`);
+  console.log(`${new Date().toLocaleString()}: app.js has been created`);
 
-  return app;
+  return webServer;
 }

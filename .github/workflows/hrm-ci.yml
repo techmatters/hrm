@@ -3,6 +3,22 @@ name: hrm-ci
 on: [push]
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Branch
+        uses: actions/checkout@v2
+
+      - name: Use Node.js 16.x
+        uses: actions/setup-node@v1
+        with:
+          node-version: 16.x
+
+      - name: Install Packages
+        run: npm ci
+
+      - name: Run Lint
+        run: npm run lint --if-present
   test:
     runs-on: ubuntu-latest
 
@@ -21,9 +37,6 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Run Lint
-        run: npm run lint --if-present
-
       - name: Run Unit Tests
         run: npm run test:unit
 
@@ -41,5 +54,5 @@ jobs:
           # POSTGRES_INIT_SCRIPTS - directory containing DB init scripts
           postgresql init scripts: hrm-service/service-tests/db-init
 
-      - name: Run HRM Service Tests
+      - name: Run Service Tests
         run: npm run test:service:ci

@@ -1,6 +1,6 @@
 import each from 'jest-each';
 import { rulesMap } from '../src/permissions';
-import * as proxiedEndpoints from './external-service-stubs/proxied-endpoints';
+import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import { workerSid } from './mocks';
 import { headers, getRequest, getServer } from './server';
 
@@ -11,11 +11,11 @@ const server = getServer({
 const request = getRequest(server);
 
 beforeAll(async () => {
-  await proxiedEndpoints.start();
-  await proxiedEndpoints.mockSuccessfulTwilioAuthentication(workerSid);
+  await mockingProxy.start();
+  await mockSuccessfulTwilioAuthentication(workerSid);
 });
 
-afterAll(async () => Promise.all([server.close(), proxiedEndpoints.stop()]));
+afterAll(async () => Promise.all([server.close(), mockingProxy.stop()]));
 
 describe('/permissions route', () => {
   describe('GET', () => {

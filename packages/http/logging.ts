@@ -1,4 +1,4 @@
-const morgan = require('morgan');
+import morgan from 'morgan';
 
 /**
  * Basic HTTP Logger that shows information about each request.
@@ -8,4 +8,4 @@ const httpLogger = morgan(
   ':status - :method :url HTTP/:http-version - time: :response-time ms - length: :res[content-length] - Agent: :user-agent',
 );
 
-module.exports = httpLogger;
+export default httpLogger;

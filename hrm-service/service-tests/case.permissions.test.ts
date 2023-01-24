@@ -5,7 +5,7 @@ import each from 'jest-each';
 import * as caseApi from '../src/case/case';
 import { Case } from '../src/case/case';
 import * as caseDb from '../src/case/case-data-access';
-import * as proxiedEndpoints from './external-service-stubs/proxied-endpoints';
+import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 
 import * as mocks from './mocks';
 import { ruleFileWithOnePermittedOrDeniedAction } from './permissions-overrides';
@@ -18,14 +18,14 @@ const request = getRequest(server);
 const { case1, accountSid, workerSid } = mocks;
 
 afterAll(done => {
-  proxiedEndpoints.stop().finally(() => {
+  mockingProxy.stop().finally(() => {
     server.close(done);
   });
 });
 
 beforeAll(async () => {
-  await proxiedEndpoints.start();
-  await proxiedEndpoints.mockSuccessfulTwilioAuthentication(workerSid);
+  await mockingProxy.start();
+  await mockSuccessfulTwilioAuthentication(workerSid);
 });
 
 describe('/cases/:id route - PUT', () => {
