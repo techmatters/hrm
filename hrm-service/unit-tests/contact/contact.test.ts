@@ -57,7 +57,7 @@ describe('createContact', () => {
       sampleCreateContactPayload,
       {
         can: () => true,
-        user: { workerSid, roles: [] },
+        user: { workerSid, roles: [], isSupervisor: false },
       },
     );
     expect(createSpy).toHaveBeenCalledWith(
@@ -85,7 +85,7 @@ describe('createContact', () => {
       minimalPayload,
       {
         can: () => true,
-        user: { workerSid, roles: [] },
+        user: { workerSid, roles: [], isSupervisor: false },
       },
     );
     expect(createSpy).toHaveBeenCalledWith(
@@ -110,7 +110,7 @@ describe('createContact', () => {
     const payload = omit(sampleCreateContactPayload, 'timeOfContact');
     const returnValue = await createContact('parameter account-sid', 'contact-creator', payload, {
       can: () => true,
-      user: { workerSid, roles: [] },
+      user: { workerSid, roles: [], isSupervisor: false },
     });
     expect(createSpy).toHaveBeenCalledWith(
       'parameter account-sid',
@@ -130,7 +130,7 @@ describe('createContact', () => {
     payload.form = sampleCreateContactPayload.rawJson;
     const returnValue = await createContact('parameter account-sid', 'contact-creator', payload, {
       can: () => true,
-      user: { workerSid, roles: [] },
+      user: { workerSid, roles: [], isSupervisor: false },
     });
     expect(createSpy).toHaveBeenCalledWith(
       'parameter account-sid',
@@ -144,7 +144,7 @@ describe('createContact', () => {
     const payload = omit(sampleCreateContactPayload, 'csamReport');
     const returnValue = await createContact('parameter account-sid', 'contact-creator', payload, {
       can: () => true,
-      user: { workerSid, roles: [] },
+      user: { workerSid, roles: [], isSupervisor: false },
     });
     expect(createSpy).toHaveBeenCalledWith(
       'parameter account-sid',
@@ -162,7 +162,7 @@ describe('createContact', () => {
     };
     const returnValue = await createContact('parameter account-sid', 'contact-creator', payload, {
       can: () => true,
-      user: { workerSid, roles: [] },
+      user: { workerSid, roles: [], isSupervisor: false },
     });
     expect(createSpy).toHaveBeenCalledWith(
       'parameter account-sid',
@@ -182,7 +182,7 @@ describe('createContact', () => {
     };
     const returnValue = await createContact('parameter account-sid', 'contact-creator', payload, {
       can: () => true,
-      user: { workerSid, roles: [] },
+      user: { workerSid, roles: [], isSupervisor: false },
     });
     expect(createSpy).toHaveBeenCalledWith(
       'parameter account-sid',
@@ -203,7 +203,7 @@ describe('createContact', () => {
     payload.form = sampleCreateContactPayload.rawJson;
     const returnValue = await createContact('parameter account-sid', 'contact-creator', payload, {
       can: () => true,
-      user: { workerSid, roles: [] },
+      user: { workerSid, roles: [], isSupervisor: false },
     });
     expect(createSpy).toHaveBeenCalledWith(
       'parameter account-sid',
@@ -217,7 +217,7 @@ describe('createContact', () => {
     const payload = omit(sampleCreateContactPayload, 'queueName');
     const returnValue = await createContact('parameter account-sid', 'contact-creator', payload, {
       can: () => true,
-      user: { workerSid, roles: [] },
+      user: { workerSid, roles: [], isSupervisor: false },
     });
     expect(createSpy).toHaveBeenCalledWith(
       'parameter account-sid',
@@ -233,7 +233,7 @@ describe('connectContactToCase', () => {
     const connectSpy = jest.spyOn(contactDb, 'connectToCase').mockResolvedValue(mockContact);
     const result = await connectContactToCase('accountSid', 'case-connector', '1234', '4321', {
       can: () => true,
-      user: { workerSid, roles: [] },
+      user: { workerSid, roles: [], isSupervisor: false },
     });
     expect(connectSpy).toHaveBeenCalledWith('accountSid', '1234', '4321');
     expect(result).toStrictEqual(mockContact);
@@ -243,7 +243,7 @@ describe('connectContactToCase', () => {
     expect(
       connectContactToCase('accountSid', 'case-connector', '1234', '4321', {
         can: () => true,
-        user: { workerSid, roles: [] },
+        user: { workerSid, roles: [], isSupervisor: false },
       }),
     ).rejects.toThrow();
   });
@@ -272,7 +272,7 @@ describe('patchContact', () => {
     const patchSpy = jest.spyOn(contactDb, 'patch').mockResolvedValue(mockContact);
     const result = await patchContact('accountSid', 'contact-patcher', '1234', samplePatch, {
       can: () => true,
-      user: { workerSid, roles: [] },
+      user: { workerSid, roles: [], isSupervisor: false },
     });
     expect(result).toStrictEqual(mockContact);
     expect(patchSpy).toHaveBeenCalledWith('accountSid', '1234', {
@@ -298,7 +298,7 @@ describe('patchContact', () => {
     expect(
       patchContact('accountSid', 'contact-patcher', '1234', samplePatch, {
         can: () => true,
-        user: { workerSid, roles: [] },
+        user: { workerSid, roles: [], isSupervisor: false },
       }),
     ).rejects.toThrow();
   });
@@ -393,7 +393,7 @@ describe('searchContacts', () => {
       {},
       {
         can: () => true,
-        user: { workerSid, roles: [] },
+        user: { workerSid, roles: [], isSupervisor: false },
       },
     );
 
@@ -434,7 +434,7 @@ describe('searchContacts', () => {
       {},
       {
         can: () => true,
-        user: { workerSid, roles: [] },
+        user: { workerSid, roles: [], isSupervisor: false },
       },
     );
     expect(result.contacts[0].overview.name).toStrictEqual('Jill Smith');
@@ -459,7 +459,7 @@ describe('searchContacts', () => {
       {},
       {
         can: () => true,
-        user: { workerSid, roles: [] },
+        user: { workerSid, roles: [], isSupervisor: false },
       },
     );
 
@@ -478,7 +478,7 @@ describe('searchContacts', () => {
       { limit: 10, offset: 1000 },
       {
         can: () => true,
-        user: { workerSid, roles: [] },
+        user: { workerSid, roles: [], isSupervisor: false },
       },
     );
 

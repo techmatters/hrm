@@ -278,7 +278,7 @@ describe('searchCases', () => {
 
       const result = await caseApi.searchCases(accountSid, listConfig, search, {
         can: () => true,
-        user: { workerSid, roles: [] },
+        user: { workerSid, roles: [], isSupervisor: false },
       });
 
       expect(searchSpy).toHaveBeenCalledWith(
@@ -389,7 +389,7 @@ describe('update existing case', () => {
 
       const returned = await caseApi.updateCase(caseId, updateCaseObject, accountSid, workerSid, {
         can: () => true,
-        user: { workerSid, roles: [] },
+        user: { workerSid, roles: [], isSupervisor: false },
       });
       expect(updateSpy).toHaveBeenCalledWith(caseId, expectedDbCaseParameter, accountSid);
       expect(returned).toStrictEqual(expectedResponse);
@@ -416,7 +416,7 @@ test('update non existing case', async () => {
   await expect(
     caseApi.updateCase(nonExistingCaseId, updateCaseObject, accountSid, workerSid, {
       can: () => true,
-      user: { workerSid, roles: [] },
+      user: { workerSid, roles: [], isSupervisor: false },
     }),
   ).rejects.toThrow();
 });
