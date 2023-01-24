@@ -1,8 +1,8 @@
-import { isCounselorWhoCreated, isSupervisor, isCaseOpen, isContactOwner } from './helpers';
+import { isCounselorWhoCreated, isCaseOpen, isContactOwner } from './helpers';
 import { actionsMaps, Actions, isTargetKind } from './actions';
 // eslint-disable-next-line prettier/prettier
 import type { Condition, ConditionsSet, ConditionsSets, RulesFile } from './rulesMap' ;
-import { User } from '@tech-matters/twilio-worker-auth';
+import { User, isSupervisor } from '@tech-matters/twilio-worker-auth';
 
 /**
  * Given a conditionsState and a condition, returns true if the condition is true in the conditionsState

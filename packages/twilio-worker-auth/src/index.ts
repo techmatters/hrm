@@ -1,3 +1,3 @@
 export { getAuthorizationMiddleware } from './twilioWorkerAuthMiddleware';
 export { addAccountSidMiddleware } from './addAccountSidMiddleware';
-export { user, User } from './user';
+export { user, User, isSupervisor } from './user';
