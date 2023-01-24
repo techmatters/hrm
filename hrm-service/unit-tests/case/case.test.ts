@@ -5,6 +5,7 @@ import each from 'jest-each';
 import { CaseRecord, NewCaseRecord } from '../../src/case/case-data-access';
 import '../../service-tests/case-validation';
 import { workerSid, accountSid } from '../../service-tests/mocks';
+import { twilioUser } from '@tech-matters/twilio-worker-auth';
 
 jest.mock('../../src/case/case-data-access');
 const baselineCreatedDate = new Date(2013, 6, 13).toISOString();
@@ -278,7 +279,7 @@ describe('searchCases', () => {
 
       const result = await caseApi.searchCases(accountSid, listConfig, search, {
         can: () => true,
-        user: { workerSid, roles: [], isSupervisor: false },
+        user: twilioUser(workerSid, []),
       });
 
       expect(searchSpy).toHaveBeenCalledWith(
@@ -389,7 +390,7 @@ describe('update existing case', () => {
 
       const returned = await caseApi.updateCase(caseId, updateCaseObject, accountSid, workerSid, {
         can: () => true,
-        user: { workerSid, roles: [], isSupervisor: false },
+        user: twilioUser(workerSid, []),
       });
       expect(updateSpy).toHaveBeenCalledWith(caseId, expectedDbCaseParameter, accountSid);
       expect(returned).toStrictEqual(expectedResponse);
@@ -416,7 +417,7 @@ test('update non existing case', async () => {
   await expect(
     caseApi.updateCase(nonExistingCaseId, updateCaseObject, accountSid, workerSid, {
       can: () => true,
-      user: { workerSid, roles: [], isSupervisor: false },
+      user: twilioUser(workerSid, []),
     }),
   ).rejects.toThrow();
 });
