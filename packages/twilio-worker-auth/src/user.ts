@@ -8,3 +8,6 @@ export const user = (workerSid: string, roles: string[]): User => ({
   workerSid,
   roles,
 });
+
+export const isSupervisor = (possibleSupervisor: User) =>
+  possibleSupervisor.roles.includes('supervisor');
