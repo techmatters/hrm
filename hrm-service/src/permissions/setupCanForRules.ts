@@ -2,7 +2,7 @@ import { isCounselorWhoCreated, isCaseOpen, isContactOwner } from './helpers';
 import { actionsMaps, Actions, isTargetKind } from './actions';
 // eslint-disable-next-line prettier/prettier
 import type { Condition, ConditionsSet, ConditionsSets, RulesFile } from './rulesMap' ;
-import { TwilioUser, isSupervisor } from '@tech-matters/twilio-worker-auth';
+import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 
 /**
  * Given a conditionsState and a condition, returns true if the condition is true in the conditionsState
@@ -31,20 +31,20 @@ const setupAllow = (targetKind: string, conditionsSets: ConditionsSets) => {
     let conditionsState = null;
     if (targetKind === 'case') {
       conditionsState = {
-        isSupervisor: isSupervisor(performer),
+        isSupervisor: performer.isSupervisor,
         isCreator: isCounselorWhoCreated(performer, target),
         isCaseOpen: isCaseOpen(target),
         everyone: true,
       };
     } else if (targetKind === 'contact') {
       conditionsState = {
-        isSupervisor: isSupervisor(performer),
+        isSupervisor: performer.isSupervisor,
         isOwner: isContactOwner(performer, target),
         everyone: true,
       };
     } else if (targetKind === 'postSurvey') {
       conditionsState = {
-        isSupervisor: isSupervisor(performer),
+        isSupervisor: performer.isSupervisor,
         everyone: true,
       };
     }
