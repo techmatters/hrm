@@ -8,7 +8,7 @@ import { RulesFile } from '../src/permissions/rulesMap';
 import {
   configureDefaultPostMiddlewares,
   configureDefaultPreMiddlewares,
-} from '@tech-matters/http/dist/webServerConfiguration';
+} from '@tech-matters/http';
 import express from 'express';
 
 let testRules: RulesFile;

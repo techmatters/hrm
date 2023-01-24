@@ -1,4 +1,3 @@
-// eslint-disable-next-line prettier/prettier
 import './index';
 // eslint-disable-next-line prettier/prettier
 import type  { Request, Response, NextFunction } from "express";

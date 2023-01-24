@@ -1,7 +1,8 @@
 import express, { Express } from 'express';
 import 'express-async-errors';
 
-import { Permissions } from './permissions';
+// eslint-disable-next-line prettier/prettier
+import type { Permissions } from './permissions';
 import { jsonPermissions } from './permissions/json-permissions';
 import { processContactJobs } from './contact-job/contact-job-processor';
 import { enableProcessContactJobsFlag } from './featureFlags';

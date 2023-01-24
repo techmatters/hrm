@@ -7,17 +7,17 @@ import postSurveys from './post-survey/post-survey-routes-v0';
 import permissions from './permissions/permissions-routes-v0';
 import { Permissions } from './permissions';
 
-export const HRM_ROUTES: [string, (rules: Permissions) => Router][] = [
-  ['/contacts', () => contacts],
-  ['/cases', () => cases],
-  ['/postSurveys', () => postSurveys],
-  ['/csamReports', () => csamReports],
-  ['/permissions', (rules: Permissions) => permissions(rules)],
+export const HRM_ROUTES: { path: string; routerFactory: (rules: Permissions) => Router }[] = [
+  { path: '/contacts', routerFactory: () => contacts },
+  { path: '/cases', routerFactory: () => cases },
+  { path: '/postSurveys', routerFactory: () => postSurveys },
+  { path: '/csamReports', routerFactory: () => csamReports },
+  { path: '/permissions', routerFactory: (rules: Permissions) => permissions(rules) },
 ];
 
 export const apiV0 = (rules: Permissions) => {
   const router: IRouter = Router();
-  HRM_ROUTES.forEach(([route, routerFactory]) => router.use(route, routerFactory(rules)));
+  HRM_ROUTES.forEach(({ path, routerFactory }) => router.use(path, routerFactory(rules)));
 
   return router;
 };
