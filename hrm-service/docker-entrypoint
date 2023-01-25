@@ -5,7 +5,6 @@ node ./db-migrate
 
 # Execute resources-service migrations (move once the service lives in it's own container)
 cd ./resources-service
-node ./create-db
 node ./db-migrate
 cd ..
 

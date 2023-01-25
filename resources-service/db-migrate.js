@@ -65,7 +65,7 @@ async function migrate() {
     } catch (err) {
       console.log('Migration failed. Retrying...', err);
       // eslint-disable-next-line @typescript-eslint/no-loop-func
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 250));
       lastErr = err;
     }
   }

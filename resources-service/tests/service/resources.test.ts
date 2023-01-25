@@ -18,11 +18,11 @@ beforeAll(async () => {
   await mockSuccessfulTwilioAuthentication(workerSid);
   await db.multi(
     [
-      'INSERT INTO resources."Resources" (id, "accountSid", "name") VALUES (\'RESOURCE_1\', \'ACCOUNT_1\', \'Resource 1 (Account 1)\')',
-      'INSERT INTO resources."Resources" (id, "accountSid", "name") VALUES (\'RESOURCE_2\', \'ACCOUNT_1\', \'Resource 2 (Account 1)\')',
-      'INSERT INTO resources."Resources" (id, "accountSid", "name") VALUES (\'RESOURCE_3\', \'ACCOUNT_1\', \'Resource 3 (Account 1)\')',
-      'INSERT INTO resources."Resources" (id, "accountSid", "name") VALUES (\'RESOURCE_1\', \'ACCOUNT_2\', \'Resource 1 (Account 2)\')',
-      'INSERT INTO resources."Resources" (id, "accountSid", "name") VALUES (\'RESOURCE_2\', \'ACCOUNT_2\', \'Resource 2 (Account 2)\')',
+      `INSERT INTO resources."Resources" (id, "accountSid", "name") VALUES ('RESOURCE_1', 'ACCOUNT_1', 'Resource 1 (Account 1)')`,
+      `INSERT INTO resources."Resources" (id, "accountSid", "name") VALUES ('RESOURCE_2', 'ACCOUNT_1', 'Resource 2 (Account 1)')`,
+      `INSERT INTO resources."Resources" (id, "accountSid", "name") VALUES ('RESOURCE_3', 'ACCOUNT_1', 'Resource 3 (Account 1)')`,
+      `INSERT INTO resources."Resources" (id, "accountSid", "name") VALUES ('RESOURCE_1', 'ACCOUNT_2', 'Resource 1 (Account 2)')`,
+      `INSERT INTO resources."Resources" (id, "accountSid", "name") VALUES ('RESOURCE_2', 'ACCOUNT_2', 'Resource 2 (Account 2)')`,
     ].join(';'),
   );
 });

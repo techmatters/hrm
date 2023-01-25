@@ -27,6 +27,7 @@ async function create() {
       config.database,
     )}?&application_name=resources-db-create-script`,
   );
+
   while (Date.now() < timeoutPoint) {
     try {
       const {
@@ -35,15 +36,17 @@ async function create() {
         `SELECT COUNT(*) AS "userCount" FROM pg_user where usename = $<resourceUsername>`,
         { resourceUsername },
       );
+
       if (Number.parseInt(userCount) === 0) {
         console.log(`Creating user '${resourceUsername}' to manage resources schema`);
         await createUserConnection.none(`
-      CREATE USER ${resourceUsername} WITH PASSWORD '${resourcePassword}' VALID UNTIL 'infinity';
-      GRANT CONNECT, CREATE ON DATABASE hrmdb TO resources;
-    `);
+          CREATE USER ${resourceUsername} WITH PASSWORD '${resourcePassword}' VALID UNTIL 'infinity';
+          GRANT CONNECT, CREATE ON DATABASE hrmdb TO resources;
+        `);
       } else {
         console.log(`User '${resourceUsername}' already exists`);
       }
+
       lastErr = undefined;
       break;
     } catch (err) {
@@ -65,6 +68,7 @@ async function create() {
       config.database,
     )}?&application_name=resources-db-create-script`,
   );
+
   console.log(`Creating  resources schema`);
   await createSchemaConnection.none(`
       CREATE SCHEMA IF NOT EXISTS resources AUTHORIZATION resources;
