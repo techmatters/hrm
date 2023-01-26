@@ -16,7 +16,8 @@ import {
 import { randomUUID } from 'crypto';
 import { Contact } from '../contact/contact-data-access';
 import { setupCanForRules } from '../permissions/setupCanForRules';
-import { User } from '@tech-matters/twilio-worker-auth';
+// eslint-disable-next-line prettier/prettier
+import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import {
   bindApplyTransformations as bindApplyContactTransformations,
   getPersonsName,
@@ -197,7 +198,7 @@ const mapContactTransformations = ({
   user,
 }: {
   can: ReturnType<typeof setupCanForRules>;
-  user: User;
+  user: TwilioUser;
 }) => (caseRecord: CaseRecord) => {
   const applyTransformations = bindApplyContactTransformations(can, user);
   const withTransformedContacts = {
@@ -239,7 +240,7 @@ export const updateCase = async (
   body: Partial<Case>,
   accountSid: Case['accountSid'],
   workerSid: Case['twilioWorkerId'],
-  { can, user }: { can: ReturnType<typeof setupCanForRules>; user: User },
+  { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
 ): Promise<Case> => {
   const caseFromDB: CaseRecord = await caseDb.getById(id, accountSid);
   if (!caseFromDB) {
@@ -264,7 +265,7 @@ export const updateCase = async (
 export const getCase = async (
   id: number,
   accountSid: string,
-  { can, user }: { can: ReturnType<typeof setupCanForRules>; user: User },
+  { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
 ): Promise<Case | undefined> => {
   const caseFromDb = await caseDb.getById(id, accountSid);
   if (caseFromDb) {
@@ -290,7 +291,7 @@ export const searchCases = async (
   accountSid: string,
   listConfiguration: CaseListConfiguration,
   search: SearchParameters,
-  { can, user }: { can: ReturnType<typeof setupCanForRules>; user: User },
+  { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
 ): Promise<CaseSearchReturn> => {
   const { filters, helpline, counselor, closedCases, ...searchCriteria } = search;
   const caseFilters = filters ?? {};

@@ -13,7 +13,7 @@ import { getPaginationElements } from '../search';
 import { NewContactRecord } from './sql/contact-insert-sql';
 import { setupCanForRules } from '../permissions/setupCanForRules';
 import { actionsMaps } from '../permissions';
-import { User } from '@tech-matters/twilio-worker-auth';
+import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 // eslint-disable-next-line prettier/prettier
 import type { CSAMReport } from '../csam-report/csam-report';
 
@@ -79,7 +79,7 @@ const permissionsBasedTransformations: PermissionsBasedTransformation[] = [
   },
 ];
 
-export const bindApplyTransformations = (can: ReturnType<typeof setupCanForRules>, user: User) => (
+export const bindApplyTransformations = (can: ReturnType<typeof setupCanForRules>, user: TwilioUser) => (
   contact: Contact,
 ) => {
   const result = permissionsBasedTransformations.reduce(
@@ -105,7 +105,7 @@ export const createContact = async (
   accountSid: string,
   createdBy: string,
   newContact: CreateContactPayload,
-  { can, user }: { can: ReturnType<typeof setupCanForRules>; user: User },
+  { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
 ): Promise<Contact> => {
   const rawJson = usesFormProperty(newContact) ? newContact.form : newContact.rawJson;
   const completeNewContact: NewContactRecord = {
@@ -141,7 +141,7 @@ export const patchContact = async (
   updatedBy: string,
   contactId: string,
   contactPatch: PatchPayload,
-  { can, user }: { can: ReturnType<typeof setupCanForRules>; user: User },
+  { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
 ): Promise<Contact> => {
   const {
     childInformation,
@@ -172,7 +172,7 @@ export const connectContactToCase = async (
   updatedBy: string,
   contactId: string,
   caseId: string,
-  { can, user }: { can: ReturnType<typeof setupCanForRules>; user: User },
+  { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
 ): Promise<Contact> => {
   const updated: Contact | undefined = await connectToCase(accountSid, contactId, caseId);
   if (!updated) {
@@ -245,7 +245,7 @@ export const searchContacts = async (
   accountSid: string,
   searchParameters: SearchParameters,
   query,
-  { can, user }: { can: ReturnType<typeof setupCanForRules>; user: User },
+  { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
 ): Promise<{ count: number; contacts: SearchContact[] }> => {
   const applyTransformations = bindApplyTransformations(can, user);
   const { limit, offset } = getPaginationElements(query);

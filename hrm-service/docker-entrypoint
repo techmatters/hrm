@@ -4,6 +4,8 @@
 node ./db-migrate
 
 # Execute resources-service migrations (move once the service lives in it's own container)
-node ./node_modules/@tech-matters/resources-service/db-migrate
+cd ./resources-service
+node ./db-migrate
+cd ..
 
 exec "$@"

@@ -28,7 +28,7 @@ if (config.use_env_variable) {
   sequelize = new Sequelize(config.database, config.username, config.password, config);
 }
 
-const CONNECT_ATTEMPT_SECONDS = 20;
+const CONNECT_ATTEMPT_SECONDS = 5;
 const migrationDirectory = pathLib.join(process.cwd(), './migrations/');
 const context = sequelize.getQueryInterface();
 
@@ -47,7 +47,7 @@ const umzug = new Umzug({
       };
     }),
   context,
-  storage: new SequelizeStorage({ sequelize }),
+  storage: new SequelizeStorage({ sequelize, schema: 'resources' }),
   logger: console,
 });
 

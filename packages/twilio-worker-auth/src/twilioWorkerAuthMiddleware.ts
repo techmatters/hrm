@@ -1,7 +1,7 @@
 import { validator as TokenValidator } from 'twilio-flex-token-validator';
 import crypto from 'crypto';
 
-import { user, User } from './user';
+import { twilioUser, TwilioUser } from './twilioUser';
 import { unauthorized } from '@tech-matters/http';
 // eslint-disable-next-line prettier/prettier
 import type { Request, Response, NextFunction } from 'express';
@@ -9,7 +9,7 @@ import type { Request, Response, NextFunction } from 'express';
 declare global {
   namespace Express {
     export interface Request {
-      user?: User;
+      user?: TwilioUser;
     }
   }
 }
@@ -61,7 +61,7 @@ export const getAuthorizationMiddleware = (authTokenLookup: (accountSid: string)
         return unauthorized(res);
       }
 
-      req.user = user(tokenResult.worker_sid, tokenResult.roles);
+      req.user = twilioUser(tokenResult.worker_sid, tokenResult.roles);
       return next();
     } catch (err) {
       console.error('Token authentication failed: ', err);
@@ -81,7 +81,7 @@ export const getAuthorizationMiddleware = (authTokenLookup: (accountSid: string)
           crypto.timingSafeEqual(Buffer.from(requestSecret), Buffer.from(staticSecret));
 
         if (isStaticSecretValid) {
-          req.user = user(`account-${accountSid}`, []);
+          req.user = twilioUser(`account-${accountSid}`, []);
           return next();
         }
       } catch (err) {

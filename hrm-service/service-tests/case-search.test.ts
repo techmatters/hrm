@@ -18,6 +18,7 @@ import * as mocks from './mocks';
 import { ruleFileWithOneActionOverride } from './permissions-overrides';
 import { connectContactToCase, createContact, isS3StoredTranscript } from '../src/contact/contact';
 import { headers, getRequest, getServer, setRules, useOpenRules } from './server';
+import { twilioUser } from '@tech-matters/twilio-worker-auth';
 
 useOpenRules();
 const server = getServer();
@@ -135,7 +136,7 @@ const insertSampleCases = async ({
         createdCase.id.toString(),
       );
       createdCase = await getCase(createdCase.id, accounts[i % accounts.length], {
-        user: { workerSid, roles: [] },
+        user: twilioUser(workerSid, []),
         can: () => true,
       }); // reread case from DB now it has a contact connected
     }
@@ -219,7 +220,7 @@ describe('/cases route', () => {
           createdCase.id,
         );
         createdCase = await getCase(createdCase.id, accountSid, {
-          user: { workerSid, roles: [] },
+          user: twilioUser(workerSid, []),
           can: () => true,
         }); // refresh case from DB now it has a contact connected
       });
@@ -354,7 +355,7 @@ describe('/cases route', () => {
         accountSid,
         workerSid,
         mocks.withTaskIdAndTranscript,
-        { user: { workerSid, roles: [] }, can: () => true },
+        { user: twilioUser(workerSid, []), can: () => true },
       );
       await connectContactToCase(
         accountSid,
@@ -362,7 +363,7 @@ describe('/cases route', () => {
         String(createdContact.id),
         String(createdCase.id),
         {
-          user: { workerSid, roles: [] },
+          user: twilioUser(workerSid, []),
           can: () => true,
         },
       );
@@ -492,7 +493,7 @@ describe('/cases route', () => {
           );
           // Get case 2 again, now a contact is connected
           createdCase2 = await caseApi.getCase(createdCase2.id, accountSid, {
-            user: { workerSid, roles: [] },
+            user: twilioUser(workerSid, []),
             can: () => true,
           });
         });
@@ -588,7 +589,7 @@ describe('/cases route', () => {
             closedCases: false,
           };
           await caseApi.updateCase(createdCase2.id, { status: 'closed' }, accountSid, workerSid, {
-            user: { workerSid, roles: [] },
+            user: twilioUser(workerSid, []),
             can: () => true,
           });
           const response = await request
@@ -1206,7 +1207,7 @@ describe('/cases route', () => {
           accountSid,
           workerSid,
           mocks.withTaskIdAndTranscript,
-          { user: { workerSid, roles: [] }, can: () => true },
+          { user: twilioUser(workerSid, []), can: () => true },
         );
         await connectContactToCase(
           accountSid,
@@ -1214,7 +1215,7 @@ describe('/cases route', () => {
           String(createdContact.id),
           String(createdCase.id),
           {
-            user: { workerSid, roles: [] },
+            user: twilioUser(workerSid, []),
             can: () => true,
           },
         );

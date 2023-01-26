@@ -8,14 +8,19 @@ beforeEach(() => {
   conn = mockConnection();
 });
 
-describe('stub', () => {
-  test('Runs SELECT 1 on DB', async () => {
+describe('getById', () => {
+  test('Runs a SELECT against the Resources table on the DB', async () => {
     mockTask(conn);
-    const oneSpy = jest.spyOn(conn, 'one').mockResolvedValue(1);
+    const oneOrNoneSpy = jest
+      .spyOn(conn, 'oneOrNone')
+      .mockResolvedValue({ name: 'Fake Resource', id: 'FAKE_RESOURCE' });
 
-    const result = await resourceDb.stub();
+    const result = await resourceDb.getById('AC_FAKE', 'FAKE_RESOURCE');
 
-    expect(oneSpy).toHaveBeenCalledWith('SELECT 1;');
-    expect(result).toStrictEqual(1);
+    expect(oneOrNoneSpy).toHaveBeenCalledWith(expect.stringContaining('Resources'), {
+      accountSid: 'AC_FAKE',
+      resourceId: 'FAKE_RESOURCE',
+    });
+    expect(result).toStrictEqual({ name: 'Fake Resource', id: 'FAKE_RESOURCE' });
   });
 });

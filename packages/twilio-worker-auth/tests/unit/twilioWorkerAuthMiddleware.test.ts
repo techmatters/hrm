@@ -1,4 +1,4 @@
-import { user } from '../../src';
+import { twilioUser } from '../../src';
 
 const tftv = require('twilio-flex-token-validator');
 import each from 'jest-each';
@@ -96,7 +96,7 @@ describe('Test Bearer token', () => {
         expect(unauthorized).not.toHaveBeenCalled();
         expect(result).toBe(undefined);
         const tokenResult = await validatorImplementation();
-        expect(mockedReq.user).toMatchObject(user(tokenResult.worker_sid, tokenResult.roles));
+        expect(mockedReq.user).toMatchObject(twilioUser(tokenResult.worker_sid, tokenResult.roles));
       } else {
         expect(nextFn).not.toHaveBeenCalled();
         expect(unauthorized).toHaveBeenCalled();

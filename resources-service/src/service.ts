@@ -8,7 +8,7 @@ import {
 
 type ResourceServiceCreationOptions = {
   webServer: ReturnType<typeof express>;
-  authTokenLookup: (accountSid: string) => string;
+  authTokenLookup?: (accountSid: string) => string;
 };
 
 export const configureService = ({

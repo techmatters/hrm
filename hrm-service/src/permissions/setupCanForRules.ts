@@ -2,7 +2,7 @@ import { isCounselorWhoCreated, isCaseOpen, isContactOwner } from './helpers';
 import { actionsMaps, Actions, isTargetKind } from './actions';
 // eslint-disable-next-line prettier/prettier
 import type { Condition, ConditionsSet, ConditionsSets, RulesFile } from './rulesMap' ;
-import { User, isSupervisor } from '@tech-matters/twilio-worker-auth';
+import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 
 /**
  * Given a conditionsState and a condition, returns true if the condition is true in the conditionsState
@@ -26,25 +26,25 @@ const setupAllow = (targetKind: string, conditionsSets: ConditionsSets) => {
 
   // We could do type validation on target depending on targetKind if we ever want to make sure the "allow" is called on a proper target (same as cancan used to do)
 
-  return (performer: User, target: any) => {
+  return (performer: TwilioUser, target: any) => {
     // Build the proper conditionsState depending on the targetKind
     let conditionsState = null;
     if (targetKind === 'case') {
       conditionsState = {
-        isSupervisor: isSupervisor(performer),
+        isSupervisor: performer.isSupervisor,
         isCreator: isCounselorWhoCreated(performer, target),
         isCaseOpen: isCaseOpen(target),
         everyone: true,
       };
     } else if (targetKind === 'contact') {
       conditionsState = {
-        isSupervisor: isSupervisor(performer),
+        isSupervisor: performer.isSupervisor,
         isOwner: isContactOwner(performer, target),
         everyone: true,
       };
     } else if (targetKind === 'postSurvey') {
       conditionsState = {
-        isSupervisor: isSupervisor(performer),
+        isSupervisor: performer.isSupervisor,
         everyone: true,
       };
     }
@@ -65,6 +65,6 @@ export const setupCanForRules = (rules: RulesFile) => {
   });
 
 
-  return (performer: User, action: Actions, target: any) =>
+  return (performer: TwilioUser, action: Actions, target: any) =>
     actionCheckers[action](performer, target);
 };

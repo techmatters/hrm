@@ -7,6 +7,7 @@ import express from 'express';
  */
 console.log(new Date(Date.now()).toLocaleString() + ': trying to initialize www');
 import { configureService } from '../app';
+import { configureResourcesService } from '@tech-matters/resources-service';
 import debugFactory from 'debug';
 import http from 'http';
 import {
@@ -38,8 +39,9 @@ function normalizePort(val) {
 
 const appWithoutServices = configureDefaultPreMiddlewares(express());
 const appWithHrmService = configureService({ webServer: appWithoutServices });
+const appWithResourcesService = configureResourcesService({ webServer: appWithHrmService });
 const app = configureDefaultPostMiddlewares(
-  appWithHrmService,
+  appWithResourcesService,
   Boolean(process.env.INCLUDE_ERROR_IN_RESPONSE),
 );
 /**
