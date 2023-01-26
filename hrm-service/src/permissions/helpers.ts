@@ -1,11 +1,9 @@
-import { User } from './index';
+import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 
-export const isSupervisor = (user: User) => user.roles.includes('supervisor');
-
-export const isCounselorWhoCreated = (user: User, caseObj: any) =>
+export const isCounselorWhoCreated = (user: TwilioUser, caseObj: any) =>
   user.workerSid === caseObj.twilioWorkerId;
 
 export const isCaseOpen = (caseObj: any) => caseObj.status !== 'closed';
 
-export const isContactOwner = (user: User, contactObj: any) =>
+export const isContactOwner = (user: TwilioUser, contactObj: any) =>
   user.workerSid === contactObj.twilioWorkerId;

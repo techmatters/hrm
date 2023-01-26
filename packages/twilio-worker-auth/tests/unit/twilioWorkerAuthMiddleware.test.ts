@@ -1,11 +1,19 @@
+import { twilioUser } from '../../src';
+
 const tftv = require('twilio-flex-token-validator');
 import each from 'jest-each';
-import { getAuthorizationMiddleware } from '../../src/middlewares';
-import * as Permissions from '../../src/permissions';
+import { getAuthorizationMiddleware } from '../../src';
+import { unauthorized } from '@tech-matters/http';
+
+jest.mock('@tech-matters/http', () => ({
+  unauthorized: jest.fn(),
+}));
 
 beforeEach(() => {
   jest.clearAllMocks();
 });
+
+const mockUnauthorized = unauthorized as jest.Mock<ReturnType<typeof unauthorized>>;
 
 describe('Test Bearer token', () => {
   each([
@@ -79,24 +87,20 @@ describe('Test Bearer token', () => {
       mockedRes.json = jest.fn();
 
       jest.spyOn(tftv, 'validator').mockImplementationOnce(validatorImplementation);
-      const unauthorizedSpy = jest.spyOn(Permissions, 'unauthorized');
+      mockUnauthorized.mockReturnValue({ error: 'Geroutofit' });
 
       const result = await authorizationMiddleware(mockedReq, mockedRes, nextFn);
 
       if (shouldAuthorize) {
         expect(nextFn).toHaveBeenCalled();
-        expect(unauthorizedSpy).not.toHaveBeenCalled();
+        expect(unauthorized).not.toHaveBeenCalled();
         expect(result).toBe(undefined);
         const tokenResult = await validatorImplementation();
-        expect(mockedReq.user).toMatchObject(
-          new Permissions.User(tokenResult.worker_sid, tokenResult.roles),
-        );
+        expect(mockedReq.user).toMatchObject(twilioUser(tokenResult.worker_sid, tokenResult.roles));
       } else {
         expect(nextFn).not.toHaveBeenCalled();
-        expect(unauthorizedSpy).toHaveBeenCalled();
-        expect(mockedRes._status).toBe(401);
-        expect(mockedRes.json).toHaveBeenCalled();
-        expect(result).toMatchObject(Permissions.unauthorized(mockedRes));
+        expect(unauthorized).toHaveBeenCalled();
+        expect(result).toMatchObject(unauthorized(mockedRes));
       }
     },
   );

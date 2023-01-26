@@ -3,7 +3,7 @@
     "allowJs": true,
     "module": "commonjs",
     "esModuleInterop": true,
-    "target": "ES6",
+    "target": "ES2019",
     "moduleResolution": "node",
     "sourceMap": true,
     "outDir": "./dist",

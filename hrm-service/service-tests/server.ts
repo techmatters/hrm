@@ -2,9 +2,14 @@
 import supertest from 'supertest';
 
 import { accountSid } from './mocks';
-import { createService } from '../src/app';
+import { configureService } from '../src/app';
 import { openPermissions } from '../src/permissions/json-permissions';
 import { RulesFile } from '../src/permissions/rulesMap';
+import {
+  configureDefaultPostMiddlewares,
+  configureDefaultPreMiddlewares,
+} from '@tech-matters/http';
+import express from 'express';
 
 let testRules: RulesFile;
 
@@ -33,10 +38,13 @@ export const defaultConfig: {
 };
 
 export const getServer = (config?: Partial<typeof defaultConfig>) => {
-  return createService({
+  const withoutService = configureDefaultPreMiddlewares(express());
+  const withService = configureService({
     ...defaultConfig,
     ...config,
-  }).listen();
+    webServer: withoutService,
+  });
+  return configureDefaultPostMiddlewares(withService, true).listen();
 };
 
 export const getRequest = (server: ReturnType<typeof getServer>) => supertest.agent(server);

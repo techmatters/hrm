@@ -1,11 +1,10 @@
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { Mockttp, getLocal, generateCACertificate } from 'mockttp';
-// eslint-disable-next-line import/no-extraneous-dependencies
+// @ts-ignore
 import { createGlobalProxyAgent } from 'global-agent';
 
 let mockServer: Mockttp;
 
-async function mockttpServer() {
+export async function mockttpServer() {
   if (!mockServer) {
     console.log('CREATING ENDPOINT SERVER');
     const https = await generateCACertificate();
@@ -30,32 +29,4 @@ export async function start(): Promise<void> {
 export async function stop(): Promise<void> {
   const server = await mockttpServer();
   await server.stop();
-}
-
-type TokenValidatorResponse = {
-  worker_sid: string;
-  roles: string[];
-};
-
-const twilioIamAnyAccountPattern: RegExp = /https:\/\/iam.twilio.com\/v1\/Accounts\/.+\/Tokens\/validate/;
-
-export async function mockSuccessfulTwilioAuthentication(
-  mockWorkerSid: string = 'WK-worker-sid',
-  mockRoles: string[] = [],
-  accountSid: string | undefined = undefined,
-): Promise<void> {
-  const server = await mockttpServer();
-  server.reset();
-  await server.forAnyRequest().thenPassThrough();
-  await server
-    .forPost(
-      accountSid
-        ? `https://iam.twilio.com/v1/Accounts/${accountSid}/Tokens/validate`
-        : twilioIamAnyAccountPattern,
-    )
-    .thenJson(200, <TokenValidatorResponse>{
-      worker_sid: mockWorkerSid,
-      roles: mockRoles,
-      valid: true,
-    });
 }

@@ -1,4 +1,4 @@
-import { mockConnection, mockTask } from '../mock-pgpromise';
+import { mockConnection, mockTask } from '../mock-db';
 import * as pgPromise from 'pg-promise';
 import { subDays } from 'date-fns';
 import {

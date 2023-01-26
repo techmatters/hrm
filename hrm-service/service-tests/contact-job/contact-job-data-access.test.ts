@@ -1,7 +1,7 @@
 import { performance } from 'perf_hooks';
 import { db } from '../../src/connection-pool';
 
-import * as proxiedEndpoints from '../external-service-stubs/proxied-endpoints';
+import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import {
   appendFailedAttemptPayload,
   createContactJob,
@@ -19,12 +19,12 @@ const request = getRequest(server);
 import type { Contact } from '../../src/contact/contact-data-access';
 
 beforeAll(async () => {
-  await proxiedEndpoints.start();
-  await proxiedEndpoints.mockSuccessfulTwilioAuthentication(workerSid);
+  await mockingProxy.start();
+  await mockSuccessfulTwilioAuthentication(workerSid);
 });
 
 afterAll(async () => {
-  await proxiedEndpoints.stop();
+  await mockingProxy.stop();
   server.close();
 });
 

@@ -1,5 +1,5 @@
 import * as pgPromise from 'pg-promise';
-import { mockConnection, mockTask, mockTransaction } from '../mock-pgpromise';
+import { mockConnection, mockTask, mockTransaction } from '../mock-db';
 import { search, create } from '../../src/contact/contact-data-access';
 import { endOfDay, startOfDay } from 'date-fns';
 import { ContactBuilder } from './contact-builder';

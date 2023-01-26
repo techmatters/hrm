@@ -1,3 +1,2 @@
-import { db } from './connection-pool';
-
-export const stub = async () => db.task(async t => t.one('SELECT 1;'));
+// Export configuration function for when it's used as part of another service
+export { configureService as configureResourcesService } from './service';

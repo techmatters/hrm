@@ -13,6 +13,7 @@ import { JOB_MAX_ATTEMPTS } from '../../../src/contact-job/contact-job-processor
 
 // eslint-disable-next-line prettier/prettier
 import type { CompletedContactJobBody } from '@tech-matters/hrm-types/ContactJob';
+import { twilioUser } from '@tech-matters/twilio-worker-auth';
 
 require('../mocks');
 
@@ -92,7 +93,7 @@ const createChatContact = async (channel: string, startedTimestamp: number) => {
   };
   const contact = await contactApi.createContact(accountSid, workerSid, contactTobeCreated, {
     can: () => true,
-    user: { workerSid, roles: [] },
+    user: twilioUser(workerSid, []),
   });
 
   const jobs = await selectJobsByContactId(contact.id, contact.accountSid);

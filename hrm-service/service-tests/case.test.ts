@@ -11,10 +11,11 @@ import { convertCaseInfoToExpectedInfo, without } from './case-validation';
 import { isBefore } from 'date-fns';
 
 // const each = require('jest-each').default;
-import * as proxiedEndpoints from './external-service-stubs/proxied-endpoints';
+import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import * as mocks from './mocks';
 import { ruleFileWithOneActionOverride } from './permissions-overrides';
 import { headers, getRequest, getServer, setRules, useOpenRules } from './server';
+import { twilioUser } from '@tech-matters/twilio-worker-auth';
 
 useOpenRules();
 const server = getServer();
@@ -23,17 +24,17 @@ const request = getRequest(server);
 const { case1, case2, accountSid, workerSid } = mocks;
 
 afterAll(done => {
-  proxiedEndpoints.stop().finally(() => {
+  mockingProxy.stop().finally(() => {
     server.close(done);
   });
 });
 
 beforeAll(async () => {
-  await proxiedEndpoints.start();
+  await mockingProxy.start();
 });
 
 beforeEach(async () => {
-  await proxiedEndpoints.mockSuccessfulTwilioAuthentication(workerSid);
+  await mockSuccessfulTwilioAuthentication(workerSid);
 });
 
 // eslint-disable-next-line @typescript-eslint/no-shadow
@@ -85,7 +86,7 @@ describe('/cases route', () => {
       expect(response.body).toStrictEqual(expected);
       // Check the DB is actually updated
       const fromDb = await caseApi.getCase(response.body.id, accountSid, {
-        user: { workerSid, roles: [] },
+        user: twilioUser(workerSid, []),
         can: () => true,
       });
       expect(fromDb).toStrictEqual(expected);
@@ -276,7 +277,7 @@ describe('/cases route', () => {
           accountSid,
           workerSid,
           mocks.withTaskIdAndTranscript,
-          { user: { workerSid, roles: [] }, can: () => true },
+          { user: twilioUser(workerSid, []), can: () => true },
         );
         await connectContactToCase(
           accountSid,
@@ -284,7 +285,7 @@ describe('/cases route', () => {
           String(createdContact.id),
           String(createdCase.id),
           {
-            user: { workerSid, roles: [] },
+            user: twilioUser(workerSid, []),
             can: () => true,
           },
         );
@@ -601,11 +602,11 @@ describe('/cases route', () => {
             update.info = { ...originalCase.info, ...caseUpdate.info, ...infoUpdate };
           }
           const caseBeforeUpdate = await caseApi.getCase(originalCase.id, accountSid, {
-            user: { workerSid, roles: [] },
+            user: twilioUser(workerSid, []),
             can: () => true,
           });
 
-          await proxiedEndpoints.mockSuccessfulTwilioAuthentication(customWorkerSid ?? workerSid);
+          await mockSuccessfulTwilioAuthentication(customWorkerSid ?? workerSid);
           const response = await request
             .put(subRoute(originalCase.id))
             .set(headers)
@@ -624,7 +625,7 @@ describe('/cases route', () => {
 
           // Check the DB is actually updated
           const fromDb = await caseApi.getCase(originalCase.id, accountSid, {
-            user: { workerSid, roles: [] },
+            user: twilioUser(workerSid, []),
             can: () => true,
           });
           expect(fromDb).toMatchObject(expected);
@@ -659,7 +660,7 @@ describe('/cases route', () => {
           accountSid,
           workerSid,
           mocks.withTaskIdAndTranscript,
-          { user: { workerSid, roles: [] }, can: () => true },
+          { user: twilioUser(workerSid, []), can: () => true },
         );
         await connectContactToCase(
           accountSid,
@@ -667,7 +668,7 @@ describe('/cases route', () => {
           String(createdContact.id),
           String(createdCase.id),
           {
-            user: { workerSid, roles: [] },
+            user: twilioUser(workerSid, []),
             can: () => true,
           },
         );
@@ -678,7 +679,7 @@ describe('/cases route', () => {
           useOpenRules();
         }
 
-        await proxiedEndpoints.mockSuccessfulTwilioAuthentication(workerSid);
+        await mockSuccessfulTwilioAuthentication(workerSid);
         const response = await request
           .put(subRoute(createdCase.id))
           .set(headers)

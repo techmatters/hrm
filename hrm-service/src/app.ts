@@ -1,69 +1,32 @@
-import createError from 'http-errors';
-import express from 'express';
+import express, { Express } from 'express';
 import 'express-async-errors';
-import cors from 'cors';
 
-import httpLogger from './logging/httplogging';
-import { apiV0 } from './routes';
-import { Permissions, setupPermissions } from './permissions';
+// eslint-disable-next-line prettier/prettier
+import type { Permissions } from './permissions';
 import { jsonPermissions } from './permissions/json-permissions';
-import { getAuthorizationMiddleware, addAccountSid } from './middlewares';
+import { setUpHrmRoutes } from './setUpHrmRoutes';
 
 type ServiceCreationOptions = Partial<{
   permissions: Permissions;
   authTokenLookup: (accountSid: string) => string;
+  enableProcessContactJobs: boolean;
+  webServer: Express;
 }>;
 
-export function createService({
+export function configureService({
   permissions = jsonPermissions,
   authTokenLookup,
+  webServer = express(),
 }: ServiceCreationOptions = {}) {
-  const app = express();
-
-  app.use(httpLogger);
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: false }));
-  app.use(cors());
-
-  app.get('/', (req, res) => {
+  webServer.get('/', (req, res) => {
     res.json({
       Message: 'HRM is up and running!',
     });
   });
 
-  app.options('/contacts', cors());
+  setUpHrmRoutes(webServer, authTokenLookup, permissions);
 
-  const authorizationMiddleware = getAuthorizationMiddleware(authTokenLookup);
+  console.log(`${new Date().toLocaleString()}: app.js has been created`);
 
-  app.use(
-    '/v0/accounts/:accountSid',
-    addAccountSid,
-    authorizationMiddleware,
-    setupPermissions(permissions),
-    apiV0(permissions),
-  );
-
-  app.use((req, res, next) => {
-    next(createError(404));
-  });
-
-  app.use((err, req, res, next) => {
-    console.log(err);
-
-    const includeErrorInResponse = process.env.INCLUDE_ERROR_IN_RESPONSE;
-
-    // set locals, only providing error in development
-    res.locals.message = err.message;
-    res.locals.error = includeErrorInResponse ? err : {};
-
-    const error = includeErrorInResponse ? { message: err.message, error: err.stack } : {};
-
-    res.status(err.status || 500);
-    res.json(error);
-    next();
-  });
-
-  console.log(`${new Date(Date.now()).toLocaleString()}: app.js has been created`);
-
-  return app;
+  return webServer;
 }

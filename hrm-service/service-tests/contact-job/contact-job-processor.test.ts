@@ -6,13 +6,13 @@ import { ContactJobPollerError } from '../../src/contact-job/contact-job-error';
 require('./mocks');
 
 let server;
-let createService: typeof import('../../src/app').createService;
+let configureService: typeof import('../../src/app').configureService;
 let contactJobComplete: typeof import('../../src/contact-job/contact-job-complete');
 let contactJobPublish: typeof import('../../src/contact-job/contact-job-publish');
 let contactJobProcessor: typeof import('../../src/contact-job/contact-job-processor');
 
 const startServer = () => {
-  const service = createService({
+  const service = configureService({
     authTokenLookup: () => 'picernic basket',
   });
 
@@ -28,7 +28,7 @@ const stopServer = async () => {
 
 beforeEach(async () => {
   jest.isolateModules(() => {
-    createService = require('../../src/app').createService;
+    configureService = require('../../src/app').configureService;
     contactJobComplete = require('../../src/contact-job/contact-job-complete');
     contactJobPublish = require('../../src/contact-job/contact-job-publish');
     contactJobProcessor = require('../../src/contact-job/contact-job-processor');

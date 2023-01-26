@@ -30,7 +30,7 @@ import * as caseDb from '../src/case/case-data-access';
 import { CreateContactPayloadWithFormProperty, PatchPayload } from '../src/contact/contact';
 import * as contactApi from '../src/contact/contact';
 import * as contactDb from '../src/contact/contact-data-access';
-import * as proxiedEndpoints from './external-service-stubs/proxied-endpoints';
+import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import * as contactJobDataAccess from '../src/contact-job/contact-job-data-access';
 import { chatChannels } from '../src/contact/channelTypes';
 import * as contactInsertSql from '../src/contact/sql/contact-insert-sql';
@@ -38,6 +38,7 @@ import { selectSingleContactByTaskId } from '../src/contact/sql/contact-get-sql'
 import { ruleFileWithOneActionOverride } from './permissions-overrides';
 import * as csamReportApi from '../src/csam-report/csam-report';
 import { headers, getRequest, getServer, setRules, useOpenRules } from './server';
+import { twilioUser } from '@tech-matters/twilio-worker-auth';
 
 useOpenRules();
 const server = getServer();
@@ -148,8 +149,8 @@ const deleteCsamReportsByContactId = (contactId: number, accountSid: string) =>
   );
 
 beforeAll(async () => {
-  await proxiedEndpoints.start();
-  await proxiedEndpoints.mockSuccessfulTwilioAuthentication(workerSid);
+  await mockingProxy.start();
+  await mockSuccessfulTwilioAuthentication(workerSid);
   await cleanupCsamReports();
   await cleanupContactsJobs();
   await cleanupContacts();
@@ -161,7 +162,7 @@ afterAll(async () => {
   await cleanupContactsJobs();
   await cleanupContacts();
   await cleanupCases();
-  await proxiedEndpoints.stop();
+  await mockingProxy.stop();
   server.close();
 });
 
@@ -597,7 +598,7 @@ describe('/contacts route', () => {
         accountSid,
         workerSid,
         withTaskIdAndTranscript,
-        { user: { workerSid, roles: [] }, can: () => true },
+        { user: twilioUser(workerSid, []), can: () => true },
       );
 
       if (!expectTranscripts) {
@@ -1036,7 +1037,7 @@ describe('/contacts route', () => {
           accountSid,
           workerSid,
           withTaskIdAndTranscript,
-          { user: { workerSid, roles: [] }, can: () => true },
+          { user: twilioUser(workerSid, []), can: () => true },
         );
 
         if (!expectTranscripts) {
@@ -1127,7 +1128,7 @@ describe('/contacts route', () => {
           accountSid,
           workerSid,
           contactToCreate,
-          { user: { workerSid, roles: [] }, can: () => true },
+          { user: twilioUser(workerSid, []), can: () => true },
         );
 
         await csamReportApi.acknowledgeCsamReport(newReport1.id, accountSid);
@@ -1175,7 +1176,7 @@ describe('/contacts route', () => {
             form: <ContactRawJson>{},
             csamReports: [],
           },
-          { user: { workerSid, roles: [] }, can: () => true },
+          { user: twilioUser(workerSid, []), can: () => true },
         );
         try {
           const response = await request.patch(subRoute(createdContact.id)).send({});
@@ -1409,7 +1410,7 @@ describe('/contacts route', () => {
                 rawJson: original || <ContactRawJson>{},
                 csamReports: [],
               },
-              { user: { workerSid, roles: [] }, can: () => true },
+              { user: twilioUser(workerSid, []), can: () => true },
             );
             try {
               const existingContactId = createdContact.id;
@@ -1452,7 +1453,7 @@ describe('/contacts route', () => {
           accountSid,
           workerSid,
           <any>contact1,
-          { user: { workerSid, roles: [] }, can: () => true },
+          { user: twilioUser(workerSid, []), can: () => true },
         );
         const nonExistingContactId = contactToBeDeleted.id;
         await deleteContactById(contactToBeDeleted.id, contactToBeDeleted.accountSid);
@@ -1474,7 +1475,7 @@ describe('/contacts route', () => {
           accountSid,
           workerSid,
           <any>contact1,
-          { user: { workerSid, roles: [] }, can: () => true },
+          { user: twilioUser(workerSid, []), can: () => true },
         );
         const nonExistingContactId = contactToBeDeleted.id;
         await deleteContactById(contactToBeDeleted.id, contactToBeDeleted.accountSid);
@@ -1493,7 +1494,7 @@ describe('/contacts route', () => {
           accountSid,
           workerSid,
           <any>contact1,
-          { user: { workerSid, roles: [] }, can: () => true },
+          { user: twilioUser(workerSid, []), can: () => true },
         );
         const nonExistingContactId = contactToBeDeleted.id;
         await deleteContactById(contactToBeDeleted.id, contactToBeDeleted.accountSid);
@@ -1519,7 +1520,7 @@ describe('/contacts route', () => {
           accountSid,
           workerSid,
           withTaskIdAndTranscript,
-          { user: { workerSid, roles: [] }, can: () => true },
+          { user: twilioUser(workerSid, []), can: () => true },
         );
 
         if (!expectTranscripts) {
@@ -1568,7 +1569,7 @@ describe('/contacts route', () => {
 
     beforeEach(async () => {
       createdContact = await contactApi.createContact(accountSid, workerSid, <any>contact1, {
-        user: { workerSid, roles: [] },
+        user: twilioUser(workerSid, []),
         can: () => true,
       });
       createdCase = await caseApi.createCase(case1, accountSid, workerSid);
@@ -1577,7 +1578,7 @@ describe('/contacts route', () => {
         accountSid,
         workerSid,
         <any>contact1,
-        { user: { workerSid, roles: [] }, can: () => true },
+        { user: twilioUser(workerSid, []), can: () => true },
       );
       const caseToBeDeleted = await caseApi.createCase(case1, accountSid, workerSid);
 

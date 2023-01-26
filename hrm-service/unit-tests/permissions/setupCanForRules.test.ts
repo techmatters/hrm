@@ -1,9 +1,10 @@
 /* eslint-disable jest/no-standalone-expect */
 import each from 'jest-each';
 import { setupCanForRules } from '../../src/permissions/setupCanForRules';
-import { actionsMaps, User } from '../../src/permissions';
+import { actionsMaps } from '../../src/permissions';
 import { RulesFile } from '../../src/permissions/rulesMap';
 import { workerSid, accountSid } from '../../service-tests/mocks';
+import { twilioUser } from '@tech-matters/twilio-worker-auth';
 
 const helpline = 'helpline';
 
@@ -18,7 +19,7 @@ describe('Test that all actions work fine (everyone)', () => {
   const rules = buildRules([['everyone']]);
   const can = setupCanForRules(rules);
 
-  const notCreator = new User('not creator', []);
+  const notCreator = twilioUser('not creator', []);
 
   // Test Case permissions
   each(
@@ -73,7 +74,7 @@ describe('Test that all actions work fine (no one)', () => {
   const rules = buildRules([]);
   const can = setupCanForRules(rules);
 
-  const supervisor = new User('creator', ['supervisor']);
+  const supervisor = twilioUser('creator', ['supervisor']);
 
   // Test Case permissions
   each(
@@ -133,7 +134,7 @@ describe('Test that an empty set of conditions does not grants permissions', () 
   const rules = buildRules([[]]);
   const can = setupCanForRules(rules);
 
-  const supervisor = new User('creator', ['supervisor']);
+  const supervisor = twilioUser('creator', ['supervisor']);
 
   // Test Case permissions
   each(
@@ -205,7 +206,7 @@ describe('Test different scenarios (Case)', () => {
           createdBy: workerSid,
           accountSid,
         },
-        user: new User('not creator', []),
+        user: twilioUser('not creator', []),
       },
       {
         conditionsSets: [['everyone']],
@@ -219,7 +220,7 @@ describe('Test different scenarios (Case)', () => {
           createdBy: workerSid,
           accountSid,
         },
-        user: new User('not creator', []),
+        user: twilioUser('not creator', []),
       },
       {
         conditionsSets: [], // no one
@@ -233,7 +234,7 @@ describe('Test different scenarios (Case)', () => {
           createdBy: workerSid,
           accountSid,
         },
-        user: new User('creator', ['supervisor']),
+        user: twilioUser('creator', ['supervisor']),
       },
       {
         conditionsSets: [['isSupervisor'], ['isCreator', 'isCaseOpen']],
@@ -247,7 +248,7 @@ describe('Test different scenarios (Case)', () => {
           createdBy: workerSid,
           accountSid,
         },
-        user: new User('not creator', ['supervisor']),
+        user: twilioUser('not creator', ['supervisor']),
       },
       {
         conditionsSets: [['isSupervisor'], ['isCreator', 'isCaseOpen']],
@@ -261,7 +262,7 @@ describe('Test different scenarios (Case)', () => {
           createdBy: workerSid,
           accountSid,
         },
-        user: new User('not creator', ['supervisor']),
+        user: twilioUser('not creator', ['supervisor']),
       },
       {
         conditionsSets: [['isSupervisor'], ['isCreator', 'isCaseOpen']],
@@ -275,7 +276,7 @@ describe('Test different scenarios (Case)', () => {
           createdBy: workerSid,
           accountSid,
         },
-        user: new User('not creator', []),
+        user: twilioUser('not creator', []),
       },
       {
         conditionsSets: [['isSupervisor'], ['isCreator', 'isCaseOpen']],
@@ -289,7 +290,7 @@ describe('Test different scenarios (Case)', () => {
           createdBy: workerSid,
           accountSid,
         },
-        user: new User('creator', []),
+        user: twilioUser('creator', []),
       },
       {
         conditionsSets: [['isSupervisor'], ['isCreator', 'isCaseOpen']],
@@ -303,7 +304,7 @@ describe('Test different scenarios (Case)', () => {
           createdBy: workerSid,
           accountSid,
         },
-        user: new User('creator', []),
+        user: twilioUser('creator', []),
       },
       {
         conditionsSets: [['isSupervisor'], ['isCreator', 'isCaseOpen']],
@@ -317,7 +318,7 @@ describe('Test different scenarios (Case)', () => {
           createdBy: workerSid,
           accountSid,
         },
-        user: new User('not creator', []),
+        user: twilioUser('not creator', []),
       },
     ].map(addPrettyConditionsSets),
     // .flatMap(mapTestToActions(actionsMaps.case)),
@@ -348,7 +349,7 @@ describe('Test different scenarios (Contact)', () => {
           accountSid,
           twilioWorkerId: 'creator',
         },
-        user: new User('not creator', []),
+        user: twilioUser('not creator', []),
       },
       {
         conditionsSets: [],
@@ -358,7 +359,7 @@ describe('Test different scenarios (Contact)', () => {
           accountSid,
           twilioWorkerId: 'creator',
         },
-        user: new User('creator', []),
+        user: twilioUser('creator', []),
       },
       {
         conditionsSets: [],
@@ -368,7 +369,7 @@ describe('Test different scenarios (Contact)', () => {
           accountSid,
           twilioWorkerId: 'creator',
         },
-        user: new User('not creator', ['supervisor']),
+        user: twilioUser('not creator', ['supervisor']),
       },
       {
         conditionsSets: [['isSupervisor']],
@@ -378,7 +379,7 @@ describe('Test different scenarios (Contact)', () => {
           accountSid,
           twilioWorkerId: 'creator',
         },
-        user: new User('not creator', ['supervisor']),
+        user: twilioUser('not creator', ['supervisor']),
       },
       {
         conditionsSets: [['isOwner']],
@@ -388,7 +389,7 @@ describe('Test different scenarios (Contact)', () => {
           accountSid,
           twilioWorkerId: 'creator',
         },
-        user: new User('creator', []),
+        user: twilioUser('creator', []),
       },
       {
         conditionsSets: [['isOwner']],
@@ -398,7 +399,7 @@ describe('Test different scenarios (Contact)', () => {
           accountSid,
           twilioWorkerId: 'creator',
         },
-        user: new User('not creator', []),
+        user: twilioUser('not creator', []),
       },
     ].map(addPrettyConditionsSets),
   ).describe(
@@ -430,7 +431,7 @@ describe('Test different scenarios (PostSurvey)', () => {
           contactTaskId: 'contact-task-id',
           data: {},
         },
-        user: new User('not creator', []),
+        user: twilioUser('not creator', []),
       },
       {
         conditionsSets: [],
@@ -442,7 +443,7 @@ describe('Test different scenarios (PostSurvey)', () => {
           contactTaskId: 'contact-task-id',
           data: {},
         },
-        user: new User('not creator', []),
+        user: twilioUser('not creator', []),
       },
       {
         conditionsSets: [],
@@ -454,7 +455,7 @@ describe('Test different scenarios (PostSurvey)', () => {
           contactTaskId: 'contact-task-id',
           data: {},
         },
-        user: new User('not creator', ['supervisor']),
+        user: twilioUser('not creator', ['supervisor']),
       },
       {
         conditionsSets: [['isSupervisor']],
@@ -466,7 +467,7 @@ describe('Test different scenarios (PostSurvey)', () => {
           contactTaskId: 'contact-task-id',
           data: {},
         },
-        user: new User('not creator', ['supervisor']),
+        user: twilioUser('not creator', ['supervisor']),
       },
     ].map(addPrettyConditionsSets),
   ).describe(
