@@ -4,8 +4,6 @@ import 'express-async-errors';
 // eslint-disable-next-line prettier/prettier
 import type { Permissions } from './permissions';
 import { jsonPermissions } from './permissions/json-permissions';
-import { processContactJobs } from './contact-job/contact-job-processor';
-import { enableProcessContactJobsFlag } from './featureFlags';
 import { setUpHrmRoutes } from './setUpHrmRoutes';
 
 type ServiceCreationOptions = Partial<{
@@ -18,7 +16,6 @@ type ServiceCreationOptions = Partial<{
 export function configureService({
   permissions = jsonPermissions,
   authTokenLookup,
-  enableProcessContactJobs = enableProcessContactJobsFlag,
   webServer = express(),
 }: ServiceCreationOptions = {}) {
   webServer.get('/', (req, res) => {
@@ -28,20 +25,6 @@ export function configureService({
   });
 
   setUpHrmRoutes(webServer, authTokenLookup, permissions);
-
-  if (enableProcessContactJobs) {
-    const processorIntervalId = processContactJobs();
-
-    const gracefulExit = () => {
-      clearInterval(processorIntervalId);
-    };
-
-    webServer.on('close', gracefulExit);
-    // @ts-ignore
-    webServer.close = () => {
-      webServer.emit('close');
-    };
-  }
 
   console.log(`${new Date().toLocaleString()}: app.js has been created`);
 

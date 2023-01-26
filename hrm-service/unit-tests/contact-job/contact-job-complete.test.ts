@@ -271,15 +271,14 @@ describe('pollAndProcessCompletedContactJobs', () => {
       const result = await contactJobComplete.pollAndProcessCompletedContactJobs(JOB_MAX_ATTEMPTS);
 
       expect(processCompletedFunctionSpy).not.toHaveBeenCalled();
+      expect(deletedCompletedContactJobsSpy).toHaveBeenCalledWith(validPayload.ReceiptHandle);
 
       if (expectMarkedAsComplete) {
         expect(completeContactJobSpy).toHaveBeenCalledWith(job.jobId, {
           message: 'Attempts limit reached',
         });
-        expect(deletedCompletedContactJobsSpy).toHaveBeenCalledWith(validPayload.ReceiptHandle);
       } else {
         expect(completeContactJobSpy).not.toHaveBeenCalled();
-        expect(deletedCompletedContactJobsSpy).not.toHaveBeenCalled();
       }
 
       expect(appendFailedAttemptPayloadSpy).toHaveBeenCalledWith(

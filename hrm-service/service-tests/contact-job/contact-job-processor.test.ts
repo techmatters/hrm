@@ -41,20 +41,6 @@ afterEach(async () => {
 });
 
 describe('processContactJobs', () => {
-  test('intialized on server start', async () => {
-    // Mock setInterval to return the internal cb instead than it's interval id, so we can call it when we want
-    const setIntervalSpy = jest.spyOn(timers, 'setInterval').mockImplementation(callback => {
-      return callback as any;
-    });
-
-    const processorSpy = jest.spyOn(contactJobProcessor, 'processContactJobs');
-
-    startServer();
-
-    expect(processorSpy).toHaveBeenCalledTimes(1);
-    expect(setIntervalSpy).toHaveBeenCalledTimes(1);
-  });
-
   test('calling processContactJobs twice does not spans another processor', async () => {
     // Mock setInterval to return the internal cb instead than it's interval id, so we can call it when we want
     const setIntervalSpy = jest.spyOn(timers, 'setInterval').mockImplementation(callback => {
@@ -138,16 +124,5 @@ describe('processContactJobs', () => {
     const response = await request.get('/');
     expect(response.statusCode).toBe(200);
     expect(response.body).toMatchObject({ Message: 'HRM is up and running!' });
-  });
-
-  test('error starting the processor wont start server', async () => {
-    const processorSpy = jest
-      .spyOn(contactJobProcessor, 'processContactJobs')
-      .mockImplementationOnce(() => {
-        throw new Error('Aaaw, snap!');
-      });
-
-    expect(() => startServer()).toThrow();
-    expect(processorSpy).toHaveBeenCalled();
   });
 });

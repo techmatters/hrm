@@ -105,7 +105,26 @@ jobs:
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG_2
           echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG_2"
 
-      - name: Download current ECS task definition
+      - name: Download current ECS task definition for the job processor
+        run: aws ecs describe-task-definition --task-definition ${{ inputs.environment }}-hrm-job-processor --query taskDefinition > task-definition-job-processor.json
+
+      - name: Fill in the new image ID in the Amazon ECS task definition
+        id: task-def-job-processor
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition-job-processor.json
+          container-name: ${{ inputs.environment }}-hrm-job-processor
+          image: ${{ steps.build-image.outputs.image }}
+
+      - name: Deploy Amazon ECS task definition for the job processor
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.task-def-job-processor.outputs.task-definition }}
+          service: ${{ inputs.environment }}-job-processor
+          cluster: ${{ inputs.environment }}-ecs-cluster
+          wait-for-service-stability: true
+
+      - name: Download current ECS task definition for the api service
         run: aws ecs describe-task-definition --task-definition ${{ inputs.environment }}-hrm-task --query taskDefinition > task-definition.json
 
       - name: Fill in the new image ID in the Amazon ECS task definition
@@ -116,7 +135,7 @@ jobs:
           container-name: ${{ inputs.environment }}-hrm-container
           image: ${{ steps.build-image.outputs.image }}
 
-      - name: Deploy Amazon ECS task definition
+      - name: Deploy Amazon ECS task definition for the api service
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
