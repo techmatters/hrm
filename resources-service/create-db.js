@@ -41,7 +41,7 @@ async function create() {
         console.log(`Creating user '${resourceUsername}' to manage resources schema`);
         await createUserConnection.none(`
           CREATE USER ${resourceUsername} WITH PASSWORD '${resourcePassword}' VALID UNTIL 'infinity';
-          GRANT CONNECT, CREATE ON DATABASE hrmdb TO resources;
+          GRANT CONNECT, CREATE ON DATABASE hrmdb TO ${resourceUsername};
         `);
       } else {
         console.log(`User '${resourceUsername}' already exists`);
