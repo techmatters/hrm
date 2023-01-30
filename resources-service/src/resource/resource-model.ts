@@ -8,7 +8,7 @@ import {
 
 export type SearchParameters = {
   ids: string[];
-  nameSubstring: string;
+  nameSubstring?: string;
   pagination: {
     limit: number;
     start: number;
