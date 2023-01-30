@@ -8,7 +8,8 @@
     "@types/http-errors": "^2.0.1",
     "sequelize": "^6.28.0",
     "sequelize-cli": "^6.5.2",
-    "umzug": "^3.2.1"
+    "umzug": "^3.2.1",
+    "jest-each": "^29.2.1"
   },
   "scripts": {
     "migrate": "run-s db:create:schema test:service:ci:migrate",

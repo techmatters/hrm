@@ -1,5 +1,5 @@
-import { IRouter, Router } from 'express';
-import { getResource } from './resource-model';
+import { IRouter, Request, Router } from 'express';
+import { getResource, searchResources } from './resource-model';
 import { AccountSID } from '@tech-matters/twilio-worker-auth';
 import createError from 'http-errors';
 
@@ -12,5 +12,20 @@ router.get('/resource/:resourceId', async (req, res) => {
   }
   res.json(referrableResource);
 });
+
+router.post(
+  '/resource/search',
+  async (req: Request<{ nameSubstring: string; ids: string[] }>, res) => {
+    const { limit, start } = req.query;
+    const referrableResources = await searchResources(<AccountSID>req.accountSid, {
+      ...req.body,
+      pagination: {
+        limit: parseInt((limit as string) || '20'),
+        start: parseInt((start as string) || '0'),
+      },
+    });
+    res.json(referrableResources);
+  },
+);
 
 export default router;

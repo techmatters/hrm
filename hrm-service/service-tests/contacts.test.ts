@@ -1213,7 +1213,7 @@ describe('/contacts route', () => {
                 some: 'property',
               },
             },
-            expected: {
+            expectationDescription: {
               childInformation: {
                 name: { firstName: 'Lorna', lastName: 'Ballantyne' },
                 some: 'property',
@@ -1228,7 +1228,7 @@ describe('/contacts route', () => {
                 some: 'other property',
               },
             },
-            expected: {
+            expectationDescription: {
               callerInformation: {
                 name: { firstName: 'Lorna', lastName: 'Ballantyne' },
                 some: 'other property',
@@ -1248,7 +1248,7 @@ describe('/contacts route', () => {
                 },
               },
             },
-            expected: {
+            expectationDescription: {
               caseInformation: {
                 other: 'case property',
                 categories: {
@@ -1267,7 +1267,7 @@ describe('/contacts route', () => {
                 other: 'case property',
               },
             },
-            expected: {
+            expectationDescription: {
               caseInformation: {
                 other: 'case property',
               },
@@ -1285,7 +1285,7 @@ describe('/contacts route', () => {
                 },
               },
             },
-            expected: {
+            expectationDescription: {
               caseInformation: {
                 categories: {
                   category1: {
@@ -1305,7 +1305,7 @@ describe('/contacts route', () => {
                 some: 'property',
               },
             },
-            expected: {
+            expectationDescription: {
               ...sampleRawJson,
               childInformation: {
                 name: { firstName: 'Lorna', lastName: 'Ballantyne' },
@@ -1322,7 +1322,7 @@ describe('/contacts route', () => {
                 some: 'other property',
               },
             },
-            expected: {
+            expectationDescription: {
               ...sampleRawJson,
               callerInformation: {
                 name: { firstName: 'Lorna', lastName: 'Ballantyne' },
@@ -1344,7 +1344,7 @@ describe('/contacts route', () => {
                 },
               },
             },
-            expected: {
+            expectationDescription: {
               ...sampleRawJson,
               caseInformation: {
                 other: 'overwrite case property',
@@ -1365,7 +1365,7 @@ describe('/contacts route', () => {
                 other: 'case property',
               },
             },
-            expected: {
+            expectationDescription: {
               ...sampleRawJson,
               caseInformation: {
                 other: 'case property',
@@ -1386,7 +1386,7 @@ describe('/contacts route', () => {
                 },
               },
             },
-            expected: {
+            expectationDescription: {
               ...sampleRawJson,
               caseInformation: {
                 ...sampleRawJson.caseInformation,
