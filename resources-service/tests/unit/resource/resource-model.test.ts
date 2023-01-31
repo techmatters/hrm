@@ -40,6 +40,19 @@ describe('searchResources', () => {
     expect(getWhereNameContains).toHaveBeenCalledWith('AC_FAKE_ACCOUNT', 'Res', 10, 5);
     expect(getByIdList).toHaveBeenCalledWith('AC_FAKE_ACCOUNT', ['RESOURCE_1', 'RESOURCE_2']);
   });
+  test('Limit over 200 - forces limit to 100', async () => {
+    mockGetWhereNameContains.mockResolvedValue({
+      totalCount: 123,
+      results: ['RESOURCE_1', 'RESOURCE_2'],
+    });
+    mockGetByIdList.mockResolvedValue([]);
+    await searchResources('AC_FAKE_ACCOUNT', {
+      nameSubstring: 'Res',
+      ids: [],
+      pagination: { limit: 500, start: 10 },
+    });
+    expect(getWhereNameContains).toHaveBeenCalledWith('AC_FAKE_ACCOUNT', 'Res', 10, 200);
+  });
   test('Id search only specified - looks up resources with getByIdList', async () => {
     const resultSet = [
       { id: 'RESOURCE_1', name: 'Resource 1' },
@@ -171,7 +184,7 @@ describe('searchResources', () => {
       'RESOURCE_2',
     ]);
   });
-  test('Id search where start is past max available resultys - returns empty array but correct result', async () => {
+  test('Id search where start is past max available results - returns empty array but correct result', async () => {
     const resultSet = [
       { id: 'RESOURCE_1', name: 'Resource 1' },
       { id: 'RESOURCE_2', name: 'Resource 2' },

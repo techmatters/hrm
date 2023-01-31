@@ -16,6 +16,7 @@ export type SearchParameters = {
 };
 
 const EMPTY_RESULT = { totalCount: 0, results: [] };
+const MAX_SEARCH_RESULTS = 200;
 
 export const getResource = (
   accountSid: AccountSID,
@@ -24,20 +25,24 @@ export const getResource = (
 
 export const searchResources = async (
   accountSid: AccountSID,
-  { nameSubstring, ids = [], pagination: { limit, start } }: SearchParameters,
+  { nameSubstring, ids = [], pagination: { limit: unboundedLimit, start } }: SearchParameters,
 ): Promise<{ totalCount: number; results: ReferrableResource[] }> => {
-  console.log('IDs specified in request:', ids);
+  const limit = Math.min(MAX_SEARCH_RESULTS, unboundedLimit);
   const { results: idsOfNameMatches, totalCount: nameSearchTotalCount } = nameSubstring
     ? await getWhereNameContains(accountSid, nameSubstring, start, limit)
     : EMPTY_RESULT;
+
+  // If I'd known this logic would be such a hairball when I started writing the tests I wouldn't have bothered
+  // Still, it is only temporary, once the real search is implemented we won't need to splice 2 sets of results together so it will be much simpler
   const idsToLoad = [...idsOfNameMatches, ...ids.filter(id => !idsOfNameMatches.includes(id))];
   if (!idsToLoad.length) return { results: [], totalCount: nameSearchTotalCount };
-  console.log('Retrieving resources with IDs:', idsToLoad);
   // This might well be more than needed to meet the 'limit' criteria but best to query them all in case any of them 'miss'
   const unsortedResourceList = await getByIdList(accountSid, idsToLoad);
   const resourceMap = Object.fromEntries(
     unsortedResourceList.map(resource => [resource.id, resource]),
   );
+
+  // Add ALL the resources found looking up specific IDs to the paginated block of name search results
   const untrimmedResults = idsToLoad
     .map(id => {
       const mappedValue = resourceMap[id];
@@ -47,6 +52,7 @@ export const searchResources = async (
     })
     .filter(r => r);
 
+  // Figure out the proper results for the specified pagination window from the above combined set
   const resultsStartIndex = Math.max(0, start - nameSearchTotalCount); // If the start point is past the end of those returned in the name search, we need to drop some from the start of the result set to return the correct paginated window
   const totalCount = nameSearchTotalCount + (untrimmedResults.length - idsOfNameMatches.length);
   const results = untrimmedResults.slice(resultsStartIndex, resultsStartIndex + limit);

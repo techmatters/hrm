@@ -23,8 +23,10 @@ export const getById = async (
 export const getByIdList = async (
   accountSid: AccountSID,
   resourceIds: string[],
-): Promise<ReferrableResource[]> =>
-  db.task(async t => t.manyOrNone(SELECT_RESOURCE_IN_IDS, { accountSid, resourceIds }));
+): Promise<ReferrableResource[]> => {
+  console.debug('Retrieving resources with IDs:', resourceIds);
+  return db.task(async t => t.manyOrNone(SELECT_RESOURCE_IN_IDS, { accountSid, resourceIds }));
+};
 
 export const getWhereNameContains = async (
   accountSid: AccountSID,
