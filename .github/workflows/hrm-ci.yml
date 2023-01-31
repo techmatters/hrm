@@ -1,4 +1,4 @@
-name: hrm-ci
+name: Lint and Test HRM
 
 on: [push]
 
