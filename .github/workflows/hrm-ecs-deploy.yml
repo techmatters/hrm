@@ -1,42 +1,16 @@
-# This workflow will build and push a new container image to Amazon ECR,
-# and then will deploy a new task definition to Amazon ECS, when a release is created
-#
-# To use this workflow, you will need to complete the following set-up steps:
-#
-# 1. Create an ECR repository to store your images.
-#    For example: `aws ecr create-repository --repository-name my-ecr-repo --region us-east-2`.
-#    Replace the value of `ECR_REPOSITORY` in the workflow below with your repository's name.
-#    Replace the value of `aws-region` in the workflow below with your repository's region.
-#
-# 2. Create an ECS task definition, an ECS cluster, and an ECS service.
-#    For example, follow the Getting Started guide on the ECS console:
-#      https://us-east-2.console.aws.amazon.com/ecs/home?region=us-east-2#/firstRun
-#    Replace the values for `service` and `cluster` in the workflow below with your service and cluster names.
-#
-# 3. Store your ECS task definition as a JSON file in your repository.
-#    The format should follow the output of `aws ecs register-task-definition --generate-cli-skeleton`.
-#    Replace the value of `task-definition` in the workflow below with your JSON file's name.
-#    Replace the value of `container-name` in the workflow below with the name of the container
-#    in the `containerDefinitions` section of the task definition.
-#
-# 4. Store an IAM user access key in GitHub Actions secrets named `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`.
-#    See the documentation for each action used below for the recommended IAM policies for this IAM user,
-#    and best practices on handling the access key credentials.
 name: 'Deploy HRM to Amazon ECS'
 on:
-  #  release:
-  #    types: [created]
-
   workflow_dispatch:
     inputs:
       environment:
-        description: HRM environment to deploy. E.G = development, staging, production (must match with the AWS environment value). Default value = development
+        description: HRM environment to deploy.
         default: development
         required: true
-      region:
-        description: AWS region to deploy. E.G = us-east-1, eu-west-1 (must match with the AWS environment value). Default value = us-east-1
-        default: us-east-1
-        required: true
+        type: choice
+        options:
+          - development
+          - staging
+          - production
 
   workflow_call:
     secrets:
@@ -44,7 +18,6 @@ on:
         required: true
       AWS_SECRET_ACCESS_KEY:
         required: true
-      # Should probably use the passed in region for everything but the GITHUB_ACTIONS_SLACK_BOT_TOKEN SSM parameter only exists in us-east-1
       AWS_DEFAULT_REGION:
         required: true
     inputs:
@@ -53,11 +26,6 @@ on:
         type: string
         default: development
         required: true
-      region:
-        description: AWS region to deploy. E.G = us-east-1, eu-west-1 (must match with the AWS environment value). Default value = us-east-1
-        type: string
-        default: us-east-1
-        required: true
       send-slack-message:
         description: 'Specifies if should send a Slack message at the end of successful run. Defaults to true'
         required: false
@@ -65,45 +33,64 @@ on:
         type: string
 
 env:
-  AWS_DEFAULT_REGION: ${{ inputs.region }}
-  GITHUB_SHA: ${{ github.sha }}
+  ECR_REPOSITORY: ${{ inputs.environment }}-hrm
 
 jobs:
-  deploy:
-    name: Deploy
+  deploy_docker:
+    name: Build Docker Image and Set regions
     runs-on: ubuntu-latest
+
+    outputs:
+      regions: ${{ steps.set-output.outputs.regions }}
+      docker_image: ${{ steps.set-output.output.docker_image}}
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ inputs.region }}
+          aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
 
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Build, tag, and push image to Amazon ECR
-        working-directory: hrm-service
-        id: build-image
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: ${{ inputs.environment }}-hrm
-          IMAGE_TAG_1: latest
-          IMAGE_TAG_2: ${{ inputs.environment }}-hrm-${{ github.sha }}
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v2
+        with:
+          context: ./
+          file: ./hrm-service/Dockerfile
+          push: true
+          tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:live,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ inputs.environment }}-hrm-${{ github.sha }}
+
+      - id: set-output
         run: |
-          # Build a docker container and
-          # push it to ECR so that it can
-          # be deployed to ECS.
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG_1 -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG_2 -f Dockerfile ../
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG_1
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG_2
-          echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG_2"
+          regions=$(jq --arg key "${{ inputs.environment }}" '.[$key]' ./.github/workflows/config/environment-region-map.json)
+          echo "regions=$(echo $regions)" >> $GITHUB_OUTPUT
+          echo "docker_image=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}" >> $GITHUB_OUTPUT
+
+  deploy_ecs:
+    needs: deploy_docker
+    name: Deploy to Amazon ECS
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        region: ${{ fromJson(needs.deploy_docker.outputs.regions) }}
+
+    env:
+      DOCKER_IMAGE: ${{ needs.build_lambda.outputs.docker_image }}
+
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ matrix.region }}
 
       - name: Download current ECS task definition for the job processor
         run: aws ecs describe-task-definition --task-definition ${{ inputs.environment }}-hrm-job-processor --query taskDefinition > task-definition-job-processor.json
@@ -114,7 +101,7 @@ jobs:
         with:
           task-definition: task-definition-job-processor.json
           container-name: ${{ inputs.environment }}-hrm-job-processor
-          image: ${{ steps.build-image.outputs.image }}
+          image: ${{ env.DOCKER_IMAGE }}
 
       - name: Deploy Amazon ECS task definition for the job processor
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
@@ -133,7 +120,7 @@ jobs:
         with:
           task-definition: task-definition.json
           container-name: ${{ inputs.environment }}-hrm-container
-          image: ${{ steps.build-image.outputs.image }}
+          image: ${{ env.DOCKER_IMAGE }}
 
       - name: Deploy Amazon ECS task definition for the api service
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
@@ -143,6 +130,7 @@ jobs:
           cluster: ${{ inputs.environment }}-ecs-cluster
           wait-for-service-stability: true
 
+      # reconfigure AWS credentials to use the default region for SSM Parameter Store
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -169,7 +157,7 @@ jobs:
         uses: slackapi/slack-github-action@v1.14.0
         with:
           channel-id: ${{ env.ASELO_DEPLOYS_CHANNEL_ID }}
-          slack-message: '`[HRM]` Deployment of ${{ github.ref_type }} `${{ github.ref_name }}` requested by `${{ github.triggering_actor }}` completed with SHA ${{ github.sha }} to region `${{ inputs.region }}`, environment `${{ inputs.environment }}` :rocket:.'
+          slack-message: '`[HRM]` Deployment of ${{ github.ref_type }} `${{ github.ref_name }}` requested by `${{ github.triggering_actor }}` completed with SHA ${{ github.sha }} to region `${{ matrix.region }}`, environment `${{ inputs.environment }}` :rocket:.'
         env:
           SLACK_BOT_TOKEN: ${{ env.GITHUB_ACTIONS_SLACK_BOT_TOKEN }}
         if: ${{ inputs.send-slack-message != 'false' }}

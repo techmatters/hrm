@@ -49,7 +49,6 @@ on:
 
 env:
   AWS_DEFAULT_REGION: ${{ inputs.region }}
-  GITHUB_SHA: ${{ github.sha }}
 
 jobs:
   deploy:
