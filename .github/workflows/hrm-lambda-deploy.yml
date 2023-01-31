@@ -75,15 +75,15 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      # - name: Build and Push Docker Image
-      #   uses: docker/build-push-action@v2
-      #   with:
-      #     context: ./
-      #     file: ./jobs/Dockerfile
-      #     build-args: |
-      #       lambda_name=${{ inputs.lambda_name }}
-      #     push: true
-      #     tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:live,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v2
+        with:
+          context: ./
+          file: ./jobs/Dockerfile
+          build-args: |
+            lambda_name=${{ inputs.lambda_name }}
+          push: true
+          tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:live,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
 
       - id: generate-output
         run: |
