@@ -75,7 +75,6 @@ jobs:
           regions=$(jq --arg key "${{ inputs.environment }}" '.[$key]' ./.github/workflows/config/environment-region-map.json)
           echo "regions=$(echo $regions)" >> $GITHUB_OUTPUT
           echo "docker_image=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}" >> $GITHUB_OUTPUT
-          cat $GITHUB_OUTPUT
 
   deploy_ecs:
     needs: deploy_docker
@@ -86,7 +85,7 @@ jobs:
         region: ${{ fromJson(needs.deploy_docker.outputs.regions) }}
 
     env:
-      DOCKER_IMAGE: ${{ needs.build_lambda.outputs.docker_image }}
+      DOCKER_IMAGE: ${{ needs.deploy_docker.outputs.docker_image }}
 
     steps:
       - name: Configure AWS credentials
