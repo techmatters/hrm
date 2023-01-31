@@ -54,8 +54,8 @@ jobs:
     runs-on: ubuntu-latest
 
     outputs:
-      regions: ${{ steps.set-output.outputs.regions }}
-      docker_image: ${{ steps.set-output.output.docker_image}}
+      regions: ${{ steps.generate-output.outputs.regions }}
+      docker_image: ${{ steps.generate-output.output.docker_image}}
 
     steps:
       - name: Checkout
@@ -82,7 +82,7 @@ jobs:
       #     push: true
       #     tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:live,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
 
-      - id: set-output
+      - id: generate-output
         run: |
           regions=$(jq --arg key "${{ inputs.environment }}" '.[$key]' ./.github/workflows/config/environment-region-map.json)
           echo $regions
@@ -97,13 +97,10 @@ jobs:
       matrix:
         region: ${{ fromJson(needs.build_lambda.outputs.regions) }}
 
-    env:
-      DOCKER_IMAGE: ${{ needs.build_lambda.outputs.docker_image }}
-
     steps:
       - name: Update Lambda and Publish
         run: |
-          aws lambda update-function-code --function-name ${{ inputs.environment }}-hrm-${{ inputs.lambda_name }} --image-uri ${{ env.DOCKER_IMAGE }} --publish
+          aws lambda update-function-code --function-name ${{ inputs.environment }}-hrm-${{ inputs.lambda_name }} --image-uri ${{ needs.build_lambda.outputs.docker_image }} --publish
 
       # reconfigure AWS credentials to use the default region for SSM Parameter Store
       - name: Configure AWS credentials
