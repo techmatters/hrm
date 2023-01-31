@@ -3,6 +3,15 @@ name: hrm-ci
 on: [push]
 
 jobs:
+  license-header:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Branch
+        uses: actions/checkout@v2
+
+      - name: Run License Header
+        run: npm run license:check
+
   lint:
     runs-on: ubuntu-latest
     steps:
