@@ -85,6 +85,7 @@ jobs:
       - id: set-output
         run: |
           regions=$(jq --arg key "${{ inputs.environment }}" '.[$key]' ./.github/workflows/config/environment-region-map.json)
+          echo $regions
           echo "regions=$(echo $regions)" >> $GITHUB_OUTPUT
           echo "docker_image=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}" >> $GITHUB_OUTPUT
 
