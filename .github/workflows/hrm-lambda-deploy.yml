@@ -88,6 +88,7 @@ jobs:
           echo $regions
           echo "regions=$(echo $regions)" >> $GITHUB_OUTPUT
           echo "docker_image=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}" >> $GITHUB_OUTPUT
+          cat $GITHUB_OUTPUT
 
   deploy_lambdas:
     needs: build_lambda
@@ -97,10 +98,13 @@ jobs:
       matrix:
         region: ${{ fromJson(needs.build_lambda.outputs.regions) }}
 
+    env:
+      DOCKER_IMAGE: ${{ needs.build_lambda.outputs.docker_image }}
+
     steps:
       - name: Update Lambda and Publish
         run: |
-          aws lambda update-function-code --function-name ${{ inputs.environment }}-hrm-${{ inputs.lambda_name }} --image-uri ${{ needs.build_lambda.outputs.docker_image }} --publish
+          aws lambda update-function-code --function-name ${{ inputs.environment }}-hrm-${{ inputs.lambda_name }} --image-uri ${{ env.DOCKER_IMAGE }} --publish
 
       # reconfigure AWS credentials to use the default region for SSM Parameter Store
       - name: Configure AWS credentials
