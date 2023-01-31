@@ -91,6 +91,8 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ matrix.region }}
+          # this plugin sets the AWS account ID to a secret which is not allowed in outputs
+          # we have to disable that so repo output will work
           mask-aws-account-id: 'no'
 
       - name: Download current ECS task definition for the job processor
