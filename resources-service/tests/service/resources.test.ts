@@ -58,8 +58,8 @@ describe('GET /resource', () => {
   });
 });
 
-describe('POST /resource/search', () => {
-  const basePath = '/v0/accounts/ACCOUNT_1/resource/search';
+describe('POST /search', () => {
+  const basePath = '/v0/accounts/ACCOUNT_1/resources/search';
 
   test('Should return 401 unauthorized with no auth headers', async () => {
     const response = await request.post(`${basePath}?start=0&limit=5`).send({
