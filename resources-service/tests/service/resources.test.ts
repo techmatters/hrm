@@ -59,10 +59,10 @@ describe('GET /resource', () => {
 });
 
 describe('POST /resource/search', () => {
-  const basePath = '/v0/accounts/ACCOUNT_1/resources/resource';
+  const basePath = '/v0/accounts/ACCOUNT_1/resource/search';
 
   test('Should return 401 unauthorized with no auth headers', async () => {
-    const response = await request.post(`${basePath}/search?start=0&limit=5`).send({
+    const response = await request.post(`${basePath}?start=0&limit=5`).send({
       nameSubstring: 'Resource',
     });
     expect(response.status).toBe(401);
@@ -284,7 +284,7 @@ describe('POST /resource/search', () => {
         .filter(([, v]) => v)
         .map(([k, v]) => `${k}=${v}`)
         .join('&');
-      const url = `${basePath}/search${qs.length ? '?' : ''}${qs}`;
+      const url = `${basePath}${qs.length ? '?' : ''}${qs}`;
       console.log('POST', url, {
         nameSubstring,
         ids,

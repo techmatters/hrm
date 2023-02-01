@@ -20,7 +20,7 @@ beforeEach(() => {
   mockRouterConstructor.mockReset();
 });
 
-describe('POST /resource/search', () => {
+describe('POST /search', () => {
   type SearchRequestHandler = (
     req: Request<{ nameSubstring: string; ids: string[] }>,
     res: Response,
@@ -34,7 +34,7 @@ describe('POST /resource/search', () => {
     mockResponseJson.mockReset();
     mockRouterConstructor.mockImplementation(() => ({
       post: (path: string, handler: SearchRequestHandler) => {
-        if (path === '/resource/search') {
+        if (path === '/search') {
           searchRequestHandler = handler;
         }
       },
