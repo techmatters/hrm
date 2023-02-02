@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Utilities to facilitate backend unit & service testing with jest",
   "author": "",
-  "license": "ISC",
+  "license": "AGPL",
   "main": "dist/index.js",
   "dependencies": {
     "pg-promise": "^10.11.1",
@@ -23,6 +23,5 @@
     "url": "https://github.com/techmatters/hrm/issues"
   },
   "homepage": "https://github.com/techmatters/hrm#readme",
-  "devDependencies": {
-  }
+  "devDependencies": {}
 }

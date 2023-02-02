@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Shared errors for HRM jobs",
   "author": "",
-  "license": "ISC",
+  "license": "AGPL",
   "main": "dist/index.js",
   "devDependencies": {},
   "scripts": {

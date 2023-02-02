@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Authenticate Twilio workers using their flex token",
   "author": "",
-  "license": "ISC",
+  "license": "AGPL",
   "main": "dist/index.js",
   "directories": {
     "test": "tests"
