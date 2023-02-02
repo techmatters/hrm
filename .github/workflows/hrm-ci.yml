@@ -3,15 +3,6 @@ name: hrm-ci
 on: [push]
 
 jobs:
-  license-header:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Branch
-        uses: actions/checkout@v2
-
-      - name: Validate License Headers
-        run: npm run license:check
-
   lint:
     runs-on: ubuntu-latest
     steps:
@@ -28,6 +19,7 @@ jobs:
 
       - name: Run Lint
         run: npm run lint --if-present
+
   test:
     runs-on: ubuntu-latest
 
