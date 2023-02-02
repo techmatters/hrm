@@ -12,20 +12,16 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see https://www.gnu.org/licenses/.
 
-version: '3'
-services:
-  localstack:
-    image: localstack/localstack
-    ports:
-      - '127.0.0.1:4566:4566' # LocalStack Gateway
-      - '127.0.0.1:4510-4559:4510-4559' # external services port range
-      - '${PORT_WEB_UI-8088}:8080'
-    environment:
-      - HOSTNAME_EXTERNAL=localstack
-      - DEBUG=1
-      - DATA_DIR=/tmp/localstack/data
-      - DOCKER_HOST=unix:///var/run/docker.sock
-      - LAMBDA_EXECUTOR=docker-reuse
-      - LAMBDA_NETWORK=bridge
-    volumes:
-      - '/var/run/docker.sock:/var/run/docker.sock'
+name: Check License Header
+
+on: [push]
+
+jobs:
+  license-header:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Branch
+        uses: actions/checkout@v2
+
+      - name: Validate License Headers
+        run: npm run license:check
