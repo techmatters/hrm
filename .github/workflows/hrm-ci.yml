@@ -9,7 +9,7 @@ jobs:
       - name: Checkout Branch
         uses: actions/checkout@v2
 
-      - name: Run License Header
+      - name: Validate License Headers
         run: npm run license:check
 
   lint:
