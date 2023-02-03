@@ -60,7 +60,7 @@ on:
 env:
   ECR_REPOSITORY: ${{ inputs.environment }}/hrm-${{ inputs.lambda_name }}
   # if anything is set as a secret, it can't be used in outputs. So we need to set it as an env var
-  AWS_DEFAULT_REGION: us-east-1
+  PRIMARY_AWS_REGION: us-east-1
 
 jobs:
   build_lambda:
@@ -80,7 +80,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_DEFAULT_REGION }}
+          aws-region: ${{ env.PRIMARY_AWS_REGION }}
           # this plugin sets the AWS account ID to a secret which is not allowed in outputs
           # we have to disable that so repo output will work
           mask-aws-account-id: 'no'
@@ -133,13 +133,15 @@ jobs:
         run: |
           aws lambda update-function-code --function-name ${{ inputs.environment }}-hrm-${{ inputs.lambda_name }} --image-uri ${{ env.DOCKER_IMAGE }} --publish
 
-      # reconfigure AWS credentials to use the default region for SSM Parameter Store
+      # reconfigure AWS credentials to use the default region for SSM Parameter Store.
+      # aws-actions/configure-aws-credentials@v1 overrides env.AWS_DEFAULT_REGION, so
+      # we name our env var PRIMARY_AWS_REGION to avoid that.
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_DEFAULT_REGION }}
+          aws-region: ${{ env.PRIMARY_AWS_REGION }}
 
       # Set any env vars needed from Parameter Store here
       - name: Set GITHUB_ACTIONS_SLACK_BOT_TOKEN
