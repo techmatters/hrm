@@ -52,13 +52,13 @@ export default class ContactRetrieveStack extends cdk.Stack {
     });
 
     new ssm.StringParameter(this, `${id}-queue-url`, {
-      parameterName: `/local/sqs/jobs/contact/queue-url-${id}`,
+      parameterName: `/local/us-east-1/sqs/jobs/contact/queue-url-${id}`,
       stringValue: queue.queueUrl,
     });
 
     // duplicated for test env
     new ssm.StringParameter(this, `${id}-queue-url-test`, {
-      parameterName: `/test/sqs/jobs/contact/queue-url-${id}`,
+      parameterName: `/test/us-east-1/sqs/jobs/contact/queue-url-${id}`,
       stringValue: queue.queueUrl,
     });
 
