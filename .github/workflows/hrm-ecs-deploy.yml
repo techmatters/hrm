@@ -152,7 +152,9 @@ jobs:
           cluster: ${{ inputs.environment }}-ecs-cluster
           wait-for-service-stability: true
 
-      # reconfigure AWS credentials to use the default region for SSM Parameter Store
+      # reconfigure AWS credentials to use the default region for SSM Parameter Store.
+      # aws-actions/configure-aws-credentials@v1 overrides env.AWS_DEFAULT_REGION, so
+      # we name our env var PRIMARY_AWS_REGION to avoid that.
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
