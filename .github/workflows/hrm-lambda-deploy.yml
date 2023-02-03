@@ -131,7 +131,8 @@ jobs:
 
       - name: Update Lambda and Publish
         run: |
-          aws lambda update-function-code --function-name ${{ inputs.environment }}-hrm-${{ inputs.lambda_name }} --image-uri ${{ env.DOCKER_IMAGE }} --publish
+          DOCKER_IMAGE=$(echo "${{ env.DOCKER_IMAGE }}" | sed -r 's/${{ PRIMARY_AWS_REGION }}/${{ matrix.region }}/g')
+          aws lambda update-function-code --function-name ${{ inputs.environment }}-hrm-${{ inputs.lambda_name }} --image-uri "$DOCKER_IMAGE" --publish
 
       # reconfigure AWS credentials to use the default region for SSM Parameter Store.
       # aws-actions/configure-aws-credentials@v1 overrides env.AWS_DEFAULT_REGION, so
