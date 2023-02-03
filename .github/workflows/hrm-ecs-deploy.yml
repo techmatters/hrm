@@ -94,7 +94,9 @@ jobs:
     needs: deploy_docker
     name: Deploy to Amazon ECS
     runs-on: ubuntu-latest
+
     strategy:
+      fail-fast: false
       matrix:
         region: ${{ fromJson(needs.deploy_docker.outputs.regions) }}
 

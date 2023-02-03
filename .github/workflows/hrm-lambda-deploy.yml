@@ -109,7 +109,9 @@ jobs:
     needs: build_lambda
     name: Deploy to Amazon ECS
     runs-on: ubuntu-latest
+
     strategy:
+      fail-fast: false
       matrix:
         region: ${{ fromJson(needs.build_lambda.outputs.regions) }}
 
