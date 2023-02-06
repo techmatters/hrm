@@ -63,7 +63,6 @@ on:
 
 env:
   AWS_DEFAULT_REGION: ${{ inputs.region }}
-  GITHUB_SHA: ${{ github.sha }}
 
 jobs:
   deploy:
@@ -80,6 +79,9 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ inputs.region }}
+
+      - name: Force update of ECS poller service
+        run: aws ecs update-service --cluster ${{ inputs.environment }}-ecs-cluster --service ${{ inputs.environment }}-job-processor --force-new-deployment
 
       - name: Force update of ECS service
         run: aws ecs update-service --cluster ${{ inputs.environment }}-ecs-cluster --service ${{ inputs.environment }}-ecs-service --force-new-deployment
