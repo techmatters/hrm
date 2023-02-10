@@ -91,9 +91,16 @@ const getUser = async (client: ReturnType<typeof getClient>, serviceSid: string,
 const getRole = async (
   client: ReturnType<typeof getClient>,
   serviceSid: string,
+  user: Awaited<ReturnType<typeof getUser>>,
   member: MemberInstance | null,
 ) => {
   try {
+    // If the user is null, the participant is Bot, system etc (messages sent with API)
+    if (!user) {
+      return null;
+    }
+
+    // If the user exists and member is null, it means the participant is an agent that was removed from the channel upon task completion
     if (!member) {
       return {
         isCounselor: true,
@@ -143,9 +150,7 @@ const getParticipants = async (
   const promises = froms.map(async from => {
     const user = await getUser(client, serviceSid, from);
     const member = (user && members.find(m => m.identity === user.identity)) || null;
-    const role = user?.roleSid
-      ? await getRole(client, serviceSid, member)
-      : null;
+    const role = await getRole(client, serviceSid, user, member);
 
     participants[from] = {
       user,
