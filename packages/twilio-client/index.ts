@@ -18,17 +18,30 @@ import { Twilio } from 'twilio';
 
 import { getMockClient } from './mockClient';
 
-let client: Twilio | ReturnType<typeof getMockClient>;
+let client: Twilio;
 
-const getClientOrMock = ({ accountSid, authToken }: { accountSid: string; authToken: string }) => {
+const getClientOrMock = ({
+  accountSid,
+  authToken,
+}: {
+  accountSid: string;
+  authToken: string;
+}): Twilio => {
   if (authToken === 'mockAuthToken') {
-    return getMockClient();
+    const mock = (getMockClient() as unknown) as Twilio;
+    return mock;
   }
 
   return new Twilio(accountSid, authToken);
 };
 
-export const getClient = ({ accountSid, authToken }: { accountSid: string; authToken: string }) => {
+export const getClient = ({
+  accountSid,
+  authToken,
+}: {
+  accountSid: string;
+  authToken: string;
+}): Twilio => {
   if (!client) {
     client = getClientOrMock({ accountSid, authToken });
   }

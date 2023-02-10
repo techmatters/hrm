@@ -61,15 +61,26 @@ const counselorUserData = {
 
 const childRoleData = {
   sid: 'childRoleSid',
-  friendlyName: 'service user',
+  friendlyName: 'guest',
   isCounselor: false,
 };
 
 const counselorRoleData = {
   sid: 'counselorRoleSid',
-  friendlyName: 'counselor',
+  friendlyName: 'agent',
   isCounselor: true,
 };
+
+const membersList = [
+  {
+    identity: counselorUserData.identity,
+    roleSid: counselorUserData.roleSid,
+  },
+  {
+    identity: childUserData.identity,
+    roleSid: childUserData.roleSid,
+  },
+];
 
 jest.mock('@tech-matters/hrm-twilio-client', () => {
   const mockClient = {
@@ -77,9 +88,15 @@ jest.mock('@tech-matters/hrm-twilio-client', () => {
       v2: {
         services: () => ({
           channels: {
-            get: () => ({
+            get: (channelSid?: string) => ({
               messages: {
                 list: () => messageList,
+              },
+              members: {
+                list: () =>
+                  channelSid === 'channel-without-counselor'
+                    ? membersList.filter(m => m.identity !== counselorUserData.identity)
+                    : membersList,
               },
             }),
           },
@@ -149,7 +166,7 @@ jest.mock('@tech-matters/hrm-twilio-client', () => {
 });
 
 describe('exportTranscript', () => {
-  it('transcript should successfully be exported from twilio', async () => {
+  it('transcript should successfully be exported from twilio (counselor still member of channel)', async () => {
     const transcript = await exportTranscript({
       accountSid: 'accountSid',
       authToken: 'authToken',
@@ -168,11 +185,41 @@ describe('exportTranscript', () => {
           user: null,
         },
         child: {
-          role: childRoleData,
+          role: { isCounselor: childRoleData.isCounselor },
           user: childUserData,
         },
         counselor: {
-          role: counselorRoleData,
+          role: { isCounselor: counselorRoleData.isCounselor },
+          user: counselorUserData,
+        },
+      },
+    });
+  });
+
+  it('transcript should successfully be exported from twilio (counselor is not member of channel)', async () => {
+    const transcript = await exportTranscript({
+      accountSid: 'accountSid',
+      authToken: 'authToken',
+      serviceSid: 'serviceSid',
+      channelSid: 'channel-without-counselor',
+    });
+
+    expect(transcript).toEqual({
+      accountSid: 'accountSid',
+      serviceSid: 'serviceSid',
+      channelSid: 'channel-without-counselor',
+      messages: messageList,
+      participants: {
+        bot: {
+          role: null,
+          user: null,
+        },
+        child: {
+          role: { isCounselor: childRoleData.isCounselor },
+          user: childUserData,
+        },
+        counselor: {
+          role: { isCounselor: counselorRoleData.isCounselor },
           user: counselorUserData,
         },
       },
