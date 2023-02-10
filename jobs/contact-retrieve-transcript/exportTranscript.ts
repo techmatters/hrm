@@ -36,8 +36,7 @@ export type ExportTranscripParticipants = {
   };
 };
 
-const CHILD_ROLE_SERVICE = 'service user';
-const CHILD_ROLE_CHANNEL = 'guest';
+const GUEST_ROLE_CHANNEL = 'guest';
 
 const getTransformedMessages = async (
   client: ReturnType<typeof getClient>,
@@ -92,20 +91,21 @@ const getUser = async (client: ReturnType<typeof getClient>, serviceSid: string,
 const getRole = async (
   client: ReturnType<typeof getClient>,
   serviceSid: string,
-  serviceRoleSid: string,
   member: MemberInstance | null,
 ) => {
   try {
-    const serviceRole = await client.chat.v2
+    if (!member) {
+      return {
+        isCounselor: true,
+      };
+    }
+
+    const channelRole = await client.chat.v2
     .services(serviceSid)
-    .roles.get(serviceRoleSid)
+    .roles.get(member.roleSid)
     .fetch();
 
-    const { member_type: channelRole } =
-      (member && member.attributes && JSON.parse(member.attributes)) || {};
-
-    const isCounselor =
-      serviceRole.friendlyName !== CHILD_ROLE_SERVICE && channelRole !== CHILD_ROLE_CHANNEL;
+    const isCounselor = channelRole.friendlyName !== GUEST_ROLE_CHANNEL;
 
     // Full object contains circular references that can't be converted to json later on
     return {
@@ -144,7 +144,7 @@ const getParticipants = async (
     const user = await getUser(client, serviceSid, from);
     const member = (user && members.find(m => m.identity === user.identity)) || null;
     const role = user?.roleSid
-      ? await getRole(client, serviceSid, user.roleSid, member)
+      ? await getRole(client, serviceSid, member)
       : null;
 
     participants[from] = {
