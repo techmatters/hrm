@@ -88,12 +88,15 @@ jest.mock('@tech-matters/hrm-twilio-client', () => {
       v2: {
         services: () => ({
           channels: {
-            get: () => ({
+            get: (channelSid?: string) => ({
               messages: {
                 list: () => messageList,
               },
               members: {
-                list: () => membersList,
+                list: () =>
+                  channelSid === 'channel-without-counselor'
+                    ? membersList.filter(m => m.identity !== counselorUserData.identity)
+                    : membersList,
               },
             }),
           },
@@ -163,7 +166,7 @@ jest.mock('@tech-matters/hrm-twilio-client', () => {
 });
 
 describe('exportTranscript', () => {
-  it('transcript should successfully be exported from twilio', async () => {
+  it('transcript should successfully be exported from twilio (counselor still member of channel)', async () => {
     const transcript = await exportTranscript({
       accountSid: 'accountSid',
       authToken: 'authToken',
@@ -175,6 +178,36 @@ describe('exportTranscript', () => {
       accountSid: 'accountSid',
       serviceSid: 'serviceSid',
       channelSid: 'channelSid',
+      messages: messageList,
+      participants: {
+        bot: {
+          role: null,
+          user: null,
+        },
+        child: {
+          role: { isCounselor: childRoleData.isCounselor },
+          user: childUserData,
+        },
+        counselor: {
+          role: { isCounselor: counselorRoleData.isCounselor },
+          user: counselorUserData,
+        },
+      },
+    });
+  });
+
+  it('transcript should successfully be exported from twilio (counselor is not member of channel)', async () => {
+    const transcript = await exportTranscript({
+      accountSid: 'accountSid',
+      authToken: 'authToken',
+      serviceSid: 'serviceSid',
+      channelSid: 'channel-without-counselor',
+    });
+
+    expect(transcript).toEqual({
+      accountSid: 'accountSid',
+      serviceSid: 'serviceSid',
+      channelSid: 'channel-without-counselor',
       messages: messageList,
       participants: {
         bot: {
