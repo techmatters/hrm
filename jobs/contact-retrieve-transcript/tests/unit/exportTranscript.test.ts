@@ -61,15 +61,26 @@ const counselorUserData = {
 
 const childRoleData = {
   sid: 'childRoleSid',
-  friendlyName: 'service user',
+  friendlyName: 'guest',
   isCounselor: false,
 };
 
 const counselorRoleData = {
   sid: 'counselorRoleSid',
-  friendlyName: 'counselor',
+  friendlyName: 'agent',
   isCounselor: true,
 };
+
+const membersList = [
+  {
+    identity: counselorUserData.identity,
+    roleSid: counselorUserData.roleSid,
+  },
+  {
+    identity: childUserData.identity,
+    roleSid: childUserData.roleSid,
+  },
+];
 
 jest.mock('@tech-matters/hrm-twilio-client', () => {
   const mockClient = {
@@ -80,6 +91,9 @@ jest.mock('@tech-matters/hrm-twilio-client', () => {
             get: () => ({
               messages: {
                 list: () => messageList,
+              },
+              members: {
+                list: () => membersList,
               },
             }),
           },
@@ -168,11 +182,11 @@ describe('exportTranscript', () => {
           user: null,
         },
         child: {
-          role: childRoleData,
+          role: { isCounselor: childRoleData.isCounselor },
           user: childUserData,
         },
         counselor: {
-          role: counselorRoleData,
+          role: { isCounselor: counselorRoleData.isCounselor },
           user: counselorUserData,
         },
       },
