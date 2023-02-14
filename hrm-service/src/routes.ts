@@ -29,7 +29,7 @@ export const HRM_ROUTES: { path: string; routerFactory: (rules: Permissions) => 
   { path: '/cases', routerFactory: () => cases },
   { path: '/postSurveys', routerFactory: () => postSurveys },
   { path: '/csamReports', routerFactory: () => csamReports },
-  { path: '/referrals', routerFactory: () => referrals },
+  { path: '/referrals', routerFactory: () => referrals() },
   { path: '/permissions', routerFactory: (rules: Permissions) => permissions(rules) },
 ];
 

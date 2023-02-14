@@ -26,7 +26,7 @@ module.exports = {
         "contactId" integer NOT NULL,
         "resourceId" text NOT NULL,
         "referredAt" timestamp with time zone NOT NULL,
-        "resourceName" text NOT NULL,
+        "resourceName" text NULL,
         "additionalResourceInfo" jsonb NULL,
         CONSTRAINT "Referrals_pkey" PRIMARY KEY ("contactId", "accountSid", "resourceId", "referredAt"),
         CONSTRAINT "FK_Referrals_Contacts" FOREIGN KEY ("accountSid", "contactId")
