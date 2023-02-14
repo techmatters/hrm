@@ -62,7 +62,7 @@ export class DatabaseUniqueConstraintViolationError extends DatabaseConstraintVi
   }
 }
 
-export const inferDatabaseError = (rawError: Error): DatabaseError => {
+export const inferPostgresError = (rawError: Error): DatabaseError => {
   const errorBlob = rawError as any;
   switch (errorBlob.code) {
     case '23503':

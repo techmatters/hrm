@@ -19,7 +19,7 @@ import { insertReferralSql } from './sql/referral-insert-sql';
 import {
   DatabaseForeignKeyViolationError,
   DatabaseUniqueConstraintViolationError,
-  inferDatabaseError,
+  inferPostgresError,
 } from '../sql';
 
 // Working atround the lack of
@@ -64,7 +64,7 @@ export const createReferralRecord = async (
       conn.one(insertReferralSql({ resourceName: undefined, ...referral, accountSid })),
     );
   } catch (err) {
-    const dbErr = inferDatabaseError(err);
+    const dbErr = inferPostgresError(err);
     if (
       dbErr instanceof DatabaseUniqueConstraintViolationError &&
       dbErr.constraint === 'Referrals_pkey'
