@@ -52,7 +52,7 @@ export type Referral = {
   contactId: string;
   resourceId: string;
   referredAt: string;
-  resourceName: string;
+  resourceName?: string;
 };
 
 export const createReferralRecord = async (
@@ -60,7 +60,9 @@ export const createReferralRecord = async (
   referral: Referral,
 ): Promise<Referral> => {
   try {
-    return await db.task(conn => conn.one(insertReferralSql({ ...referral, accountSid })));
+    return await db.task(conn =>
+      conn.one(insertReferralSql({ resourceName: undefined, ...referral, accountSid })),
+    );
   } catch (err) {
     const dbErr = inferDatabaseError(err);
     if (
