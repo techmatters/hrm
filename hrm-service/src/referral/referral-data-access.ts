@@ -55,6 +55,9 @@ export type Referral = {
   resourceName?: string;
 };
 
+// Represents a referral when part of a contact structure, so no contact ID
+export type ReferralWithoutContactId = Omit<Referral, 'contactId'>;
+
 export const createReferralRecord = async (
   accountSid: string,
   referral: Referral,

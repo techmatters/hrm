@@ -29,6 +29,7 @@ import { ContactRawJson, isS3StoredTranscriptPending, PersonInformation } from '
 import { createContactJob, ContactJobType } from '../contact-job/contact-job-data-access';
 import { isChatChannel } from './channelTypes';
 import { connectContactToCsamReports } from '../csam-report/csam-report';
+import { ReferralWithoutContactId } from '../referral/referral-data-access';
 
 type ExistingContactRecord = {
   id: number;
@@ -39,6 +40,7 @@ type ExistingContactRecord = {
 
 export type Contact = ExistingContactRecord & {
   csamReports: any[];
+  referrals?: ReferralWithoutContactId[];
 };
 
 export type SearchParameters = {

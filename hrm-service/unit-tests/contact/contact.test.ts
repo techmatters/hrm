@@ -13,8 +13,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-
+import { mockTransaction, mockConnection } from '../mock-db';
 import * as contactDb from '../../src/contact/contact-data-access';
+import * as referralDb from '../../src/referral/referral-data-access';
 import {
   connectContactToCase,
   createContact,
@@ -22,12 +23,14 @@ import {
   SearchContact,
   searchContacts,
 } from '../../src/contact/contact';
+
 import { ContactBuilder } from './contact-builder';
 import { omit } from 'lodash';
 import { CSAMReport } from '../../src/csam-report/csam-report';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
-
+import { subHours } from 'date-fns';
 jest.mock('../../src/contact/contact-data-access');
+jest.mock('../../src/referral/referral-data-access');
 
 const workerSid = 'WORKER_SID';
 
@@ -38,6 +41,11 @@ const mockContact: contactDb.Contact = {
 };
 
 describe('createContact', () => {
+  beforeEach(() => {
+    const conn = mockConnection();
+    mockTransaction(conn);
+  });
+
   const sampleCreateContactPayload = {
     rawJson: {
       childInformation: {
@@ -242,6 +250,73 @@ describe('createContact', () => {
       [],
     );
     expect(returnValue).toStrictEqual(mockContact);
+  });
+  test('referrals specified - these will be added to the database using the created contact ID', async () => {
+    const createSpy = jest
+      .spyOn(contactDb, 'create')
+      .mockResolvedValue({ ...mockContact, id: 1234 });
+
+    const hourAgo = subHours(new Date(), 1);
+    const createReferralRecordSpy = jest
+      .spyOn(referralDb, 'createReferralRecord')
+      .mockResolvedValue({
+        contactId: '1234',
+        resourceId: 'TEST_RESOURCE',
+        referredAt: hourAgo.toISOString(),
+        resourceName: 'A test referred resource',
+      });
+    const payload = {
+      ...sampleCreateContactPayload,
+      referrals: [
+        {
+          resourceId: 'TEST_RESOURCE_1',
+          referredAt: hourAgo.toISOString(),
+          resourceName: 'A test referred resource',
+        },
+        {
+          resourceId: 'TEST_RESOURCE_2',
+          referredAt: hourAgo.toISOString(),
+          resourceName: 'Another test referred resource',
+        },
+      ],
+    };
+    const returnValue = await createContact('parameter account-sid', 'contact-creator', payload, {
+      can: () => true,
+      user: twilioUser(workerSid, []),
+    });
+    expect(createSpy).toHaveBeenCalledWith(
+      'parameter account-sid',
+      { ...sampleCreateContactPayload, createdBy: 'contact-creator' },
+      [],
+    );
+    expect(createReferralRecordSpy).toHaveBeenCalledWith('parameter account-sid', {
+      contactId: '1234',
+      resourceId: 'TEST_RESOURCE_1',
+      referredAt: hourAgo.toISOString(),
+      resourceName: 'A test referred resource',
+    });
+    expect(createReferralRecordSpy).toHaveBeenCalledWith('parameter account-sid', {
+      contactId: '1234',
+      resourceId: 'TEST_RESOURCE_2',
+      referredAt: hourAgo.toISOString(),
+      resourceName: 'Another test referred resource',
+    });
+    expect(returnValue).toStrictEqual({
+      ...mockContact,
+      // Dumb mock always returns same referral regardless of what's passed in
+      referrals: [
+        {
+          resourceId: 'TEST_RESOURCE',
+          referredAt: hourAgo.toISOString(),
+          resourceName: 'A test referred resource',
+        },
+        {
+          resourceId: 'TEST_RESOURCE',
+          referredAt: hourAgo.toISOString(),
+          resourceName: 'A test referred resource',
+        },
+      ],
+    });
   });
 });
 
