@@ -67,3 +67,6 @@ export type ContactRawJson = {
 
 export const getPersonsName = (person: PersonInformation) =>
   person.name ? `${person.name.firstName} ${person.name.lastName}` : '';
+
+// Represents a referral when part of a contact structure, so no contact ID
+export type ReferralWithoutContactId = Omit<Referral, 'contactId'>;

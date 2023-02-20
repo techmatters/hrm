@@ -22,7 +22,7 @@ import {
   inferPostgresError,
 } from '../sql';
 
-// Working atround the lack of
+// Working around the lack of a 'cause' property in the Error class for ES2020 - can be removed when we upgrade to ES2022
 export class DuplicateReferralError extends Error {
   cause: Error;
 
@@ -54,9 +54,6 @@ export type Referral = {
   referredAt: string;
   resourceName?: string;
 };
-
-// Represents a referral when part of a contact structure, so no contact ID
-export type ReferralWithoutContactId = Omit<Referral, 'contactId'>;
 
 export const createReferralRecord = async (
   accountSid: string,

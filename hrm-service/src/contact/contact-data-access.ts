@@ -25,11 +25,15 @@ import { SELECT_CONTACT_SEARCH } from './sql/contact-search-sql';
 import { endOfDay, parseISO, startOfDay } from 'date-fns';
 import { selectSingleContactByIdSql, selectSingleContactByTaskId } from './sql/contact-get-sql';
 import { insertContactSql, NewContactRecord } from './sql/contact-insert-sql';
-import { ContactRawJson, isS3StoredTranscriptPending, PersonInformation } from './contact-json';
+import {
+  ContactRawJson,
+  isS3StoredTranscriptPending,
+  PersonInformation,
+  ReferralWithoutContactId,
+} from './contact-json';
 import { createContactJob, ContactJobType } from '../contact-job/contact-job-data-access';
 import { isChatChannel } from './channelTypes';
 import { connectContactToCsamReports } from '../csam-report/csam-report';
-import { ReferralWithoutContactId } from '../referral/referral-data-access';
 
 type ExistingContactRecord = {
   id: number;

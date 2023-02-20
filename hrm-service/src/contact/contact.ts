@@ -23,7 +23,7 @@ import {
   search,
   SearchParameters,
 } from './contact-data-access';
-import { ContactRawJson, getPersonsName, isS3StoredTranscript } from './contact-json';
+import { ContactRawJson, getPersonsName, isS3StoredTranscript, ReferralWithoutContactId } from './contact-json';
 import { retrieveCategories } from './categories';
 import { getPaginationElements } from '../search';
 import { NewContactRecord } from './sql/contact-insert-sql';
@@ -32,7 +32,7 @@ import { actionsMaps } from '../permissions';
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 // eslint-disable-next-line prettier/prettier
 import type { CSAMReport } from '../csam-report/csam-report';
-import { createReferralRecord, ReferralWithoutContactId } from '../referral/referral-data-access';
+import { createReferralRecord } from '../referral/referral-data-access';
 import { db } from '../connection-pool';
 
 // Re export as is:
