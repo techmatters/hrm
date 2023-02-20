@@ -23,7 +23,7 @@ import {
   search,
   SearchParameters,
 } from './contact-data-access';
-import { ContactRawJson, getPersonsName, isS3StoredTranscript } from './contact-json';
+import { ContactRawJson, getPersonsName, isS3StoredTranscript, ReferralWithoutContactId } from './contact-json';
 import { retrieveCategories } from './categories';
 import { getPaginationElements } from '../search';
 import { NewContactRecord } from './sql/contact-insert-sql';
@@ -32,6 +32,8 @@ import { actionsMaps } from '../permissions';
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 // eslint-disable-next-line prettier/prettier
 import type { CSAMReport } from '../csam-report/csam-report';
+import { createReferralRecord } from '../referral/referral-data-access';
+import { db } from '../connection-pool';
 
 // Re export as is:
 export { updateConversationMedia, Contact } from './contact-data-access';
@@ -65,10 +67,10 @@ export type SearchContact = {
 
 export type CreateContactPayloadWithFormProperty = Omit<NewContactRecord, 'rawJson'> & {
   form: ContactRawJson;
-} & { csamReports?: CSAMReport[] };
+} & { csamReports?: CSAMReport[], referrals?: ReferralWithoutContactId[] };
 
 export type CreateContactPayload =
-  | (NewContactRecord & { csamReports?: CSAMReport[] })
+  | (NewContactRecord & { csamReports?: CSAMReport[], referrals?: ReferralWithoutContactId[] })
   | CreateContactPayloadWithFormProperty;
 
 export const usesFormProperty = (
@@ -98,13 +100,11 @@ const permissionsBasedTransformations: PermissionsBasedTransformation[] = [
 export const bindApplyTransformations = (can: ReturnType<typeof setupCanForRules>, user: TwilioUser) => (
   contact: Contact,
 ) => {
-  const result = permissionsBasedTransformations.reduce(
+  return permissionsBasedTransformations.reduce(
     (transformed, { action, transformation }) =>
       !can(user, action, contact) ? transformation(transformed) : transformed,
     contact,
   );
-
-  return result;
 };
 
 export const getContactById = async (accountSid: string, contactId: number) => {
@@ -124,8 +124,9 @@ export const createContact = async (
   { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
 ): Promise<Contact> => {
   const rawJson = usesFormProperty(newContact) ? newContact.form : newContact.rawJson;
+  const { referrals, ...withoutReferrals } = newContact;
   const completeNewContact: NewContactRecord = {
-    ...newContact,
+    ...withoutReferrals,
     helpline: newContact.helpline ?? '',
     number: newContact.number ?? '',
     channel: newContact.channel ?? '',
@@ -140,16 +141,26 @@ export const createContact = async (
       newContact.queueName || (<any>(rawJson ?? {})).queueName,
     createdBy,
   };
-
-  const created = await create(
-    accountSid,
-    completeNewContact,
-    (newContact.csamReports ?? []).map(csr => csr.id),
-  );
+  const createdContact: Contact = await db.tx(async () => {
+    const created = await create(
+      accountSid,
+      completeNewContact,
+      (newContact.csamReports ?? []).map(csr => csr.id),
+    );
+    if (referrals) {
+      created.referrals = [];
+      // Do this sequentially, it's on a single connection in a transaction anyway.
+      for (const referral of referrals) {
+        const { contactId, ...withoutContactId } = await createReferralRecord(accountSid, { ...referral, contactId: created.id.toString() });
+        created.referrals.push(withoutContactId);
+      }
+    }
+    return created;
+  });
 
   const applyTransformations = bindApplyTransformations(can, user);
 
-  return applyTransformations(created);
+  return applyTransformations(createdContact);
 };
 
 export const patchContact = async (

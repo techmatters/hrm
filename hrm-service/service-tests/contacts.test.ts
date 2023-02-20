@@ -184,6 +184,7 @@ afterAll(async () => {
 
 describe('/contacts route', () => {
   const route = `/v0/accounts/${accountSid}/contacts`;
+  const hourAgo = subHours(new Date(), 1);
 
   // First test post so database wont be empty
   describe('POST', () => {
@@ -197,6 +198,24 @@ describe('/contacts route', () => {
     each([
       {
         contact: contact1,
+        changeDescription: 'callType is Child calling about self',
+      },
+      {
+        contact: {
+          ...contact1,
+          referrals: [
+            {
+              resourceId: 'TEST_RESOURCE',
+              referredAt: hourAgo.toISOString(),
+              resourceName: 'A test referred resource',
+            },
+            {
+              resourceId: 'TEST_RESOURCE_1',
+              referredAt: hourAgo.toISOString(),
+              resourceName: 'Another test referred resource',
+            },
+          ],
+        },
         changeDescription: 'callType is Child calling about self',
       },
       {
@@ -269,6 +288,7 @@ describe('/contacts route', () => {
           .send(contact);
 
         expect(res.status).toBe(200);
+        expect(res.body.referrals).toStrictEqual(contact.referrals);
         expect(res.body.rawJson.callType).toBe(contact.form.callType);
 
         const createdContact = await contactDb.getById(accountSid, res.body.id);
