@@ -15,6 +15,7 @@
  */
 
 import { selectCoalesceCsamReportsByContactId } from '../../csam-report/sql/csam-report-get-sql';
+import { selectCoalesceReferralsByContactId } from '../../referral/sql/referral-get-sql';
 
 const ID_WHERE_CLAUSE = `WHERE "cases"."accountSid" = $<accountSid> AND "cases"."id" = $<caseId>`;
 
@@ -24,12 +25,15 @@ export const selectSingleCaseByIdSql = (tableName: string) => `SELECT
         contacts."connectedContacts"
         FROM "${tableName}" AS cases
 
-        LEFT JOIN LATERAL ( 
-        SELECT COALESCE(jsonb_agg(to_jsonb(c) || to_jsonb(reports)), '[]') AS  "connectedContacts" 
+        LEFT JOIN LATERAL (
+        SELECT COALESCE(jsonb_agg(to_jsonb(c) || to_jsonb(reports) || to_jsonb(referrals)), '[]') AS  "connectedContacts" 
         FROM "Contacts" c 
         LEFT JOIN LATERAL (
           ${selectCoalesceCsamReportsByContactId('c')}
         ) reports ON true
+        Left JOIN LATERAL (
+          ${selectCoalesceReferralsByContactId('c')}
+        ) referrals ON true
         WHERE c."caseId" = cases.id AND c."accountSid" = cases."accountSid"
       ) contacts ON true
         LEFT JOIN LATERAL (
