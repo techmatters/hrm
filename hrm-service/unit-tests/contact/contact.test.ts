@@ -449,6 +449,7 @@ describe('searchContacts', () => {
           },
           details: jillSmith.rawJson,
           csamReports: [],
+          referrals: [],
         },
         {
           contactId: '1234',
@@ -468,6 +469,7 @@ describe('searchContacts', () => {
           },
           details: sarahPark.rawJson,
           csamReports: [],
+          referrals: [],
         },
       ],
     };

@@ -1464,6 +1464,7 @@ describe('/contacts route', () => {
                 updatedBy: workerSid,
                 rawJson: expected,
                 csamReports: [],
+                referrals: [],
               });
               // Test the association
               expect(response.body.csamReports).toHaveLength(0);
