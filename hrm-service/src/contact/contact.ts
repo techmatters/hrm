@@ -63,6 +63,7 @@ export type SearchContact = {
   };
   details: ContactRawJson;
   csamReports: CSAMReport[];
+  referrals?: ReferralWithoutContactId[]
 };
 
 export type CreateContactPayloadWithFormProperty = Omit<NewContactRecord, 'rawJson'> & {
@@ -243,7 +244,7 @@ function convertContactsToSearchResults(contacts: Contact[]): SearchContact[] {
       const categories = retrieveCategories(caseInformation.categories);
       const counselor = contact.twilioWorkerId;
       const notes = contact.rawJson.caseInformation.callSummary;
-      const { channel, conversationDuration, createdBy, csamReports, helpline, taskId } = contact;
+      const { channel, conversationDuration, createdBy, csamReports, helpline, taskId, referrals } = contact;
 
       return {
         contactId: contactId.toString(),
@@ -262,6 +263,7 @@ function convertContactsToSearchResults(contacts: Contact[]): SearchContact[] {
           taskId,
         },
         csamReports,
+        referrals,
         details: contact.rawJson,
       };
     })
