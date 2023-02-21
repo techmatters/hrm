@@ -33,6 +33,8 @@ const clearDownDb = async () =>
   db.task(t =>
     t.none(
       `
+      DELETE FROM "Referrals" WHERE "accountSid" = $<accountSid>;
+      DELETE FROM "ContactJobs" WHERE "accountSid" = $<accountSid>;
       DELETE FROM "Contacts" WHERE "accountSid" = $<accountSid>;
     `,
       { accountSid },

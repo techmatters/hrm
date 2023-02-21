@@ -106,6 +106,14 @@ const cleanupCsamReports = () =>
     `),
   );
 
+const cleanupReferrals = () =>
+  db.task(t =>
+    t.none(`
+      DELETE FROM "CSAMReports"
+      ${cleanupWhereClause}
+    `),
+  );
+
 // eslint-disable-next-line @typescript-eslint/no-shadow
 const getContactByTaskId = (taskId: string, accountSid: string) =>
   db.oneOrNone(selectSingleContactByTaskId('Contacts'), { accountSid, taskId });
@@ -168,6 +176,7 @@ beforeAll(async () => {
   await mockingProxy.start();
   await mockSuccessfulTwilioAuthentication(workerSid);
   await cleanupCsamReports();
+  await cleanupReferrals();
   await cleanupContactsJobs();
   await cleanupContacts();
   await cleanupCases();
@@ -175,6 +184,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await cleanupCsamReports();
+  await cleanupReferrals();
   await cleanupContactsJobs();
   await cleanupContacts();
   await cleanupCases();
@@ -288,7 +298,7 @@ describe('/contacts route', () => {
           .send(contact);
 
         expect(res.status).toBe(200);
-        expect(res.body.referrals).toStrictEqual(contact.referrals);
+        expect(res.body.referrals).toStrictEqual(contact.referrals || []);
         expect(res.body.rawJson.callType).toBe(contact.form.callType);
 
         const createdContact = await contactDb.getById(accountSid, res.body.id);
@@ -688,6 +698,7 @@ describe('/contacts route', () => {
       beforeAll(async () => {
         // Clean what's been created so far
         await cleanupCsamReports();
+        await cleanupReferrals();
         await cleanupContactsJobs();
         await cleanupContacts();
         await cleanupCases();
@@ -1445,6 +1456,7 @@ describe('/contacts route', () => {
                 ...contact1WithRawJsonProp,
                 rawJson: original || <ContactRawJson>{},
                 csamReports: [],
+                // referrals: 
               },
               { user: twilioUser(workerSid, []), can: () => true },
             );
@@ -1477,6 +1489,7 @@ describe('/contacts route', () => {
                 updatedBy: workerSid,
                 rawJson: expected,
                 csamReports: [],
+                referrals: [],
               });
             } finally {
               await deleteContactById(createdContact.id, createdContact.accountSid);

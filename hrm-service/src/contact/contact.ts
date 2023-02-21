@@ -148,8 +148,9 @@ export const createContact = async (
       completeNewContact,
       (newContact.csamReports ?? []).map(csr => csr.id),
     );
+
+    created.referrals = [];
     if (referrals) {
-      created.referrals = [];
       // Do this sequentially, it's on a single connection in a transaction anyway.
       for (const referral of referrals) {
         const { contactId, ...withoutContactId } = await createReferralRecord(accountSid, { ...referral, contactId: created.id.toString() });
