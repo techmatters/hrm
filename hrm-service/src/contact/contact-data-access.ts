@@ -34,6 +34,7 @@ import {
 import { createContactJob, ContactJobType } from '../contact-job/contact-job-data-access';
 import { isChatChannel } from './channelTypes';
 import { connectContactToCsamReports } from '../csam-report/csam-report';
+import { createReferralRecord } from '../referral/referral-data-access';
 
 type ExistingContactRecord = {
   id: number;
@@ -156,6 +157,7 @@ export const create = async (
   accountSid: string,
   newContact: NewContactRecord,
   csamReportIds: number[],
+  referrals: ReferralWithoutContactId[],
 ): Promise<Contact> => {
   return db.tx(async connection => {
     if (newContact.taskId) {
@@ -187,6 +189,21 @@ export const create = async (
         ? await connectContactToCsamReports(connection)(created.id, csamReportIds, accountSid)
         : [];
 
+    const createdReferrals = [];
+    if (referrals && referrals.length) {
+      // Do this sequentially, it's on a single connection in a transaction anyway.
+      for (const referral of referrals) {
+        const { contactId, ...withoutContactId } = await createReferralRecord(
+          accountSid,
+          {
+            ...referral,
+            contactId: created.id,
+          },
+          connection,
+        );
+        createdReferrals.push(withoutContactId);
+      }
+    }
     if (
       enableCreateContactJobsFlag &&
       isChatChannel(created.channel) &&
@@ -199,7 +216,7 @@ export const create = async (
       });
     }
 
-    return { ...created, csamReports };
+    return { ...created, csamReports, referrals: createdReferrals };
   });
 };
 

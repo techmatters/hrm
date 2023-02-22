@@ -32,8 +32,6 @@ import { actionsMaps } from '../permissions';
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 // eslint-disable-next-line prettier/prettier
 import type { CSAMReport } from '../csam-report/csam-report';
-import { createReferralRecord } from '../referral/referral-data-access';
-import { db } from '../connection-pool';
 
 // Re export as is:
 export { updateConversationMedia, Contact } from './contact-data-access';
@@ -125,9 +123,9 @@ export const createContact = async (
   { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
 ): Promise<Contact> => {
   const rawJson = usesFormProperty(newContact) ? newContact.form : newContact.rawJson;
-  const { referrals, ...withoutReferrals } = newContact;
+  // const { referrals, ...withoutReferrals } = newContact;
   const completeNewContact: NewContactRecord = {
-    ...withoutReferrals,
+    ...newContact,
     helpline: newContact.helpline ?? '',
     number: newContact.number ?? '',
     channel: newContact.channel ?? '',
@@ -142,23 +140,12 @@ export const createContact = async (
       newContact.queueName || (<any>(rawJson ?? {})).queueName,
     createdBy,
   };
-  const createdContact: Contact = await db.tx(async () => {
-    const created = await create(
-      accountSid,
-      completeNewContact,
-      (newContact.csamReports ?? []).map(csr => csr.id),
-    );
-
-    created.referrals = [];
-    if (referrals) {
-      // Do this sequentially, it's on a single connection in a transaction anyway.
-      for (const referral of referrals) {
-        const { contactId, ...withoutContactId } = await createReferralRecord(accountSid, { ...referral, contactId: created.id.toString() });
-        created.referrals.push(withoutContactId);
-      }
-    }
-    return created;
-  });
+  const createdContact: Contact = await create(
+    accountSid,
+    completeNewContact,
+    (newContact.csamReports ?? []).map(csr => csr.id),
+    newContact.referrals ?? [],
+  );
 
   const applyTransformations = bindApplyTransformations(can, user);
 
