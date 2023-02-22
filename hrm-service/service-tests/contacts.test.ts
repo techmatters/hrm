@@ -53,6 +53,7 @@ import * as contactInsertSql from '../src/contact/sql/contact-insert-sql';
 import { selectSingleContactByTaskId } from '../src/contact/sql/contact-get-sql';
 import { ruleFileWithOneActionOverride } from './permissions-overrides';
 import * as csamReportApi from '../src/csam-report/csam-report';
+import * as referralDB from '../src/referral/referral-data-access';
 import { headers, getRequest, getServer, setRules, useOpenRules } from './server';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
 
@@ -168,6 +169,15 @@ const deleteCsamReportsByContactId = (contactId: number, accountSid: string) =>
   db.task(t =>
     t.manyOrNone(`
       DELETE FROM "CSAMReports"
+      WHERE "contactId" = ${contactId} AND "accountSid" = '${accountSid}';
+    `),
+  );
+
+// eslint-disable-next-line @typescript-eslint/no-shadow
+const deleteReferralsByContactId = (contactId: number, accountSid: string) =>
+  db.task(t =>
+    t.manyOrNone(`
+      DELETE FROM "Referrals"
       WHERE "contactId" = ${contactId} AND "accountSid" = '${accountSid}';
     `),
   );
@@ -460,6 +470,96 @@ describe('/contacts route', () => {
 
       await deleteCsamReportById(newReport.id, newReport.accountSid);
       connectContactToCsamReportsSpy.mockRestore();
+    });
+
+    test('Connects to referrals', async () => {
+      const referral1 = {
+        resourceId: 'TEST_RESOURCE',
+        referredAt: new Date().toISOString(),
+        resourceName: 'A test referred resource',
+      };
+
+      const referral2 = {
+        resourceId: 'TEST_RESOURCE_2',
+        referredAt: new Date().toISOString(),
+        resourceName: 'Another test referred resource',
+      };
+
+      const contact = {
+        ...withTaskId,
+        form: {
+          ...withTaskId.form,
+        },
+        referrals: [referral1, referral2],
+        channel: 'web',
+        taskId: `${withTaskId.taskId}-web-referral`,
+      };
+
+      // Create contact with referrals
+      const response = await request
+        .post(route)
+        .set(headers)
+        .send(contact);
+
+      expect(response.status).toBe(200);
+
+      const createdReferrals = await db.task(t =>
+        t.many(`
+          SELECT * FROM "Referrals" WHERE "contactId" = ${response.body.id}
+      `),
+      );
+
+      if (!createdReferrals || !createdReferrals.length) {
+        throw new Error('createdReferrals is empty');
+      }
+
+      createdReferrals.forEach(r => {
+        expect(r.contactId).toBeDefined();
+        expect(r.contactId).toEqual(response.body.id);
+      });
+
+      // Test the association
+      expect(response.body.referrals).toHaveLength(2);
+
+      // Remove records to not interfere with following tests
+      await deleteReferralsByContactId(response.body.id, response.body.accountSid);
+      await deleteContactById(response.body.id, response.body.accountSid);
+    });
+
+    test(`If creating referral fails, the contact is not created either`, async () => {
+      const referral = {
+        resourceId: 'TEST_RESOURCE',
+        referredAt: new Date().toISOString(),
+        resourceName: 'A test referred resource',
+      };
+
+      const contact = {
+        ...withTaskId,
+        form: {
+          ...withTaskId.form,
+        },
+        referrals: [referral],
+        channel: 'web',
+        taskId: `${withTaskId.taskId}-web-referral-failure`,
+      };
+
+      const createReferralSpy = jest
+        .spyOn(referralDB, 'createReferralRecord')
+        .mockImplementationOnce(() => {
+          throw new Error('Ups');
+        });
+
+      const res = await request
+        .post(route)
+        .set(headers)
+        .send(contact);
+
+      expect(createReferralSpy).toHaveBeenCalled();
+      expect(res.status).toBe(500);
+
+      const attemptedContact = await getContactByTaskId(contact.taskId, accountSid);
+
+      expect(attemptedContact).toBeNull();
     });
 
     each(
