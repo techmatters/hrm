@@ -215,7 +215,6 @@ describe('/cases route', () => {
 
       beforeEach(async () => {
         createdCase = await caseApi.createCase(case1, accountSid, workerSid);
-
         const contactToCreate = fillNameAndPhone({
           ...contact1,
           twilioWorkerId: workerSid,
@@ -251,6 +250,7 @@ describe('/cases route', () => {
       // eslint-disable-next-line jest/expect-expect
       test('should return 200 when populated', async () => {
         const response = await request.get(route).set(headers);
+
         validateSingleCaseResponse(response, createdCase, createdContact);
       });
     });
@@ -400,7 +400,6 @@ describe('/cases route', () => {
         })
         .set(headers);
 
-      console.log(response.body);
       expect(response.status).toBe(200);
 
       expect(<caseApi.Case>response.body.cases).toHaveLength(1);
