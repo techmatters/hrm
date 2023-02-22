@@ -72,7 +72,7 @@ FROM (
   SELECT
     c.*,
     COALESCE(jsonb_agg(DISTINCT r.*) FILTER (WHERE r.id IS NOT NULL), '[]') AS "csamReports",
-    COALESCE(jsonb_agg(DISTINCT referral.*), '[]') AS "referrals"
+    COALESCE(jsonb_agg(DISTINCT referral.*) FILTER (WHERE referral IS NOT NULL), '[]') AS "referrals"
   FROM "Contacts" c 
   ${leftJoinCsamReportsOnFK('c')}
   ${leftJoinReferralsOnFK('c')}

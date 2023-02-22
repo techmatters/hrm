@@ -20,14 +20,14 @@ import { selectCoalesceReferralsByContactId } from '../../referral/sql/referral-
 export const SELECT_CONTACT_SEARCH = `
         SELECT 
         (count(*) OVER())::INTEGER AS "totalCount",
-        contacts.*, reports."csamReports", referrals."referrals"
+        contacts.*, reports."csamReports", joinedReferrals."referrals"
         FROM "Contacts" contacts
         LEFT JOIN LATERAL (
           ${selectCoalesceCsamReportsByContactId('contacts')}
         ) reports ON true
         LEFT JOIN LATERAL (
           ${selectCoalesceReferralsByContactId('contacts')}
-        ) referrals ON true
+        ) joinedReferrals ON true
         WHERE contacts."accountSid" = $<accountSid>
         AND ($<helpline> IS NULL OR contacts."helpline" = $<helpline>)
         AND (

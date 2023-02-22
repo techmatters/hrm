@@ -20,25 +20,24 @@ import { selectCoalesceReferralsByContactId } from '../../referral/sql/referral-
 const ID_WHERE_CLAUSE = `WHERE "cases"."accountSid" = $<accountSid> AND "cases"."id" = $<caseId>`;
 
 export const selectSingleCaseByIdSql = (tableName: string) => `SELECT
-        cases.*,
-        caseSections."caseSections",
-        contacts."connectedContacts"
-        FROM "${tableName}" AS cases
-
-        LEFT JOIN LATERAL (
-        SELECT COALESCE(jsonb_agg(to_jsonb(c) || to_jsonb(reports) || to_jsonb(referrals)), '[]') AS  "connectedContacts" 
+      cases.*,
+      caseSections."caseSections",
+      contacts."connectedContacts"
+      FROM "${tableName}" AS cases
+      LEFT JOIN LATERAL (
+        SELECT COALESCE(jsonb_agg(to_jsonb(c) || to_jsonb(joinedReports) || to_jsonb(joinedReferrals)), '[]') AS  "connectedContacts"
         FROM "Contacts" c 
         LEFT JOIN LATERAL (
           ${selectCoalesceCsamReportsByContactId('c')}
-        ) reports ON true
-        Left JOIN LATERAL (
+        ) joinedReports ON true
+        LEFT JOIN LATERAL (
           ${selectCoalesceReferralsByContactId('c')}
-        ) referrals ON true
+        ) joinedReferrals ON true
         WHERE c."caseId" = cases.id AND c."accountSid" = cases."accountSid"
       ) contacts ON true
-        LEFT JOIN LATERAL (
-          SELECT COALESCE(jsonb_agg(to_jsonb(cs) ORDER BY cs."createdAt"), '[]') AS  "caseSections"
-          FROM "CaseSections" cs
-          WHERE cs."caseId" = cases.id AND cs."accountSid" = cases."accountSid"
-        ) caseSections ON true
+      LEFT JOIN LATERAL (
+        SELECT COALESCE(jsonb_agg(to_jsonb(cs) ORDER BY cs."createdAt"), '[]') AS  "caseSections"
+        FROM "CaseSections" cs
+        WHERE cs."caseId" = cases.id AND cs."accountSid" = cases."accountSid"
+      ) caseSections ON true
       ${ID_WHERE_CLAUSE}`;

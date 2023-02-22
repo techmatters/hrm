@@ -21,14 +21,14 @@ const ID_WHERE_CLAUSE = `WHERE c."accountSid" = $<accountSid> AND c."id" = $<con
 const TASKID_WHERE_CLAUSE = `WHERE c."accountSid" = $<accountSid> AND c."taskId" = $<taskId>`;
 
 export const selectContactsWithRelations = (table: string) => `
-        SELECT c.*, reports."csamReports", referrals."referrals"
+        SELECT c.*, reports."csamReports", joinedReferrals."referrals"
         FROM "${table}" c 
         LEFT JOIN LATERAL (
           ${selectCoalesceCsamReportsByContactId('c')}
         ) reports ON true
         LEFT JOIN LATERAL (
           ${selectCoalesceReferralsByContactId('c')}
-        ) referrals ON true`;
+        ) joinedReferrals ON true`;
 
 export const selectSingleContactByIdSql = (table: string) => `
       ${selectContactsWithRelations(table)}

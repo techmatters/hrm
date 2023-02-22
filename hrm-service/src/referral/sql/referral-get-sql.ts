@@ -21,7 +21,7 @@ const onFkFilteredClause = (contactAlias: string) => `
 `;
 
 export const selectCoalesceReferralsByContactId = (contactAlias: string) => `
-  SELECT COALESCE(jsonb_agg(to_jsonb(referral)), '[]') AS  "referrals"
+  SELECT COALESCE(jsonb_agg(to_jsonb(referral)), '[]') AS "referrals"
   FROM "Referrals" referral
   WHERE ${onFkFilteredClause(contactAlias)}
 `;
