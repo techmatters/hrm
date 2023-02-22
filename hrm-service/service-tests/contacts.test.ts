@@ -1456,7 +1456,6 @@ describe('/contacts route', () => {
                 ...contact1WithRawJsonProp,
                 rawJson: original || <ContactRawJson>{},
                 csamReports: [],
-                // referrals: 
               },
               { user: twilioUser(workerSid, []), can: () => true },
             );
