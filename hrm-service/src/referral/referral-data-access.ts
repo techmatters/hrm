@@ -14,6 +14,8 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
+// eslint-disable-next-line prettier/prettier
+import type { ITask } from 'pg-promise';
 import { db } from '../connection-pool';
 import { insertReferralSql } from './sql/referral-insert-sql';
 import {
@@ -58,10 +60,18 @@ export type Referral = {
 export const createReferralRecord = async (
   accountSid: string,
   referral: Referral,
+  tx?: ITask<{}>,
 ): Promise<Referral> => {
   try {
+    const statement = insertReferralSql({ resourceName: undefined, ...referral, accountSid });
+
+    // If a transaction is provided, use it
+    if (tx) {
+      return await tx.one(statement);
+    }
+
     return await db.task(conn =>
-      conn.one(insertReferralSql({ resourceName: undefined, ...referral, accountSid })),
+      conn.one(statement),
     );
   } catch (err) {
     const dbErr = inferPostgresError(err);

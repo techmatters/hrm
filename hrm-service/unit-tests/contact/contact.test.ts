@@ -89,6 +89,7 @@ describe('createContact', () => {
       'parameter account-sid',
       { ...sampleCreateContactPayload, createdBy: 'contact-creator' },
       [],
+      [],
     );
     expect(returnValue).toStrictEqual(mockContact);
   });
@@ -127,6 +128,7 @@ describe('createContact', () => {
         twilioWorkerId: '',
       },
       [],
+      [],
     );
     expect(returnValue).toStrictEqual(mockContact);
   });
@@ -145,6 +147,7 @@ describe('createContact', () => {
         createdBy: 'contact-creator',
       },
       [],
+      [],
     );
     expect(returnValue).toStrictEqual(mockContact);
   });
@@ -161,6 +164,7 @@ describe('createContact', () => {
       'parameter account-sid',
       { ...sampleCreateContactPayload, createdBy: 'contact-creator' },
       [],
+      [],
     );
     expect(returnValue).toStrictEqual(mockContact);
   });
@@ -174,6 +178,7 @@ describe('createContact', () => {
     expect(createSpy).toHaveBeenCalledWith(
       'parameter account-sid',
       { ...payload, createdBy: 'contact-creator' },
+      [],
       [],
     );
     expect(returnValue).toStrictEqual(mockContact);
@@ -193,6 +198,28 @@ describe('createContact', () => {
       'parameter account-sid',
       { ...payload, createdBy: 'contact-creator' },
       expect.arrayContaining([2, 4, 6]),
+      [],
+    );
+    expect(returnValue).toStrictEqual(mockContact);
+  });
+  test('referrals will be passed if populated', async () => {
+    const createSpy = jest.spyOn(contactDb, 'create').mockResolvedValue(mockContact);
+    const payload = {
+      ...sampleCreateContactPayload,
+      // Cheat a bit and cast these because all the other props on CSAMReportEntry are ignored here
+      referrals: <referralDb.Referral[]>[
+        { contactId: '1234', referredAt: new Date().toISOString(), resourceId: 'TEST_RESOURCE_ID' },
+      ],
+    };
+    const returnValue = await createContact('parameter account-sid', 'contact-creator', payload, {
+      can: () => true,
+      user: twilioUser(workerSid, []),
+    });
+    expect(createSpy).toHaveBeenCalledWith(
+      'parameter account-sid',
+      { ...payload, createdBy: 'contact-creator' },
+      [],
+      expect.arrayContaining(payload.referrals),
     );
     expect(returnValue).toStrictEqual(mockContact);
   });
@@ -212,6 +239,7 @@ describe('createContact', () => {
     expect(createSpy).toHaveBeenCalledWith(
       'parameter account-sid',
       { ...payload, queueName: 'Q2', createdBy: 'contact-creator' },
+      [],
       [],
     );
     expect(returnValue).toStrictEqual(mockContact);
@@ -234,6 +262,7 @@ describe('createContact', () => {
       'parameter account-sid',
       { ...payload, queueName: 'Q2', createdBy: 'contact-creator' },
       [],
+      [],
     );
     expect(returnValue).toStrictEqual(mockContact);
   });
@@ -248,23 +277,12 @@ describe('createContact', () => {
       'parameter account-sid',
       { ...payload, queueName: undefined, createdBy: 'contact-creator' },
       [],
+      [],
     );
     expect(returnValue).toStrictEqual(mockContact);
   });
   test('referrals specified - these will be added to the database using the created contact ID', async () => {
-    const createSpy = jest
-      .spyOn(contactDb, 'create')
-      .mockResolvedValue({ ...mockContact, id: 1234 });
-
     const hourAgo = subHours(new Date(), 1);
-    const createReferralRecordSpy = jest
-      .spyOn(referralDb, 'createReferralRecord')
-      .mockResolvedValue({
-        contactId: '1234',
-        resourceId: 'TEST_RESOURCE',
-        referredAt: hourAgo.toISOString(),
-        resourceName: 'A test referred resource',
-      });
     const payload = {
       ...sampleCreateContactPayload,
       referrals: [
@@ -280,6 +298,11 @@ describe('createContact', () => {
         },
       ],
     };
+
+    const createSpy = jest
+      .spyOn(contactDb, 'create')
+      .mockResolvedValue({ ...mockContact, id: 1234, referrals: payload.referrals });
+
     const returnValue = await createContact('parameter account-sid', 'contact-creator', payload, {
       can: () => true,
       user: twilioUser(workerSid, []),
@@ -288,32 +311,22 @@ describe('createContact', () => {
       'parameter account-sid',
       { ...sampleCreateContactPayload, createdBy: 'contact-creator' },
       [],
+      [],
     );
-    expect(createReferralRecordSpy).toHaveBeenCalledWith('parameter account-sid', {
-      contactId: '1234',
-      resourceId: 'TEST_RESOURCE_1',
-      referredAt: hourAgo.toISOString(),
-      resourceName: 'A test referred resource',
-    });
-    expect(createReferralRecordSpy).toHaveBeenCalledWith('parameter account-sid', {
-      contactId: '1234',
-      resourceId: 'TEST_RESOURCE_2',
-      referredAt: hourAgo.toISOString(),
-      resourceName: 'Another test referred resource',
-    });
+
     expect(returnValue).toStrictEqual({
       ...mockContact,
       // Dumb mock always returns same referral regardless of what's passed in
       referrals: [
         {
-          resourceId: 'TEST_RESOURCE',
+          resourceId: 'TEST_RESOURCE_1',
           referredAt: hourAgo.toISOString(),
           resourceName: 'A test referred resource',
         },
         {
-          resourceId: 'TEST_RESOURCE',
+          resourceId: 'TEST_RESOURCE_2',
           referredAt: hourAgo.toISOString(),
-          resourceName: 'A test referred resource',
+          resourceName: 'Another test referred resource',
         },
       ],
     });
@@ -449,6 +462,7 @@ describe('searchContacts', () => {
           },
           details: jillSmith.rawJson,
           csamReports: [],
+          referrals: [],
         },
         {
           contactId: '1234',
@@ -468,6 +482,7 @@ describe('searchContacts', () => {
           },
           details: sarahPark.rawJson,
           csamReports: [],
+          referrals: [],
         },
       ],
     };

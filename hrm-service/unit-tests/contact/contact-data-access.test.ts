@@ -72,7 +72,7 @@ describe('create', () => {
             accountSid,
           })) as any,
       );
-    const created = await create('parameter account-sid', sampleNewContact, [3, 2, 1]);
+    const created = await create('parameter account-sid', sampleNewContact, [3, 2, 1], []);
     expect(insertContactSql).toHaveBeenCalledWith({
       ...sampleNewContact,
       updatedAt: expect.anything(),
@@ -106,7 +106,7 @@ describe('create', () => {
             accountSid,
           })) as any,
       );
-    const created = await create('parameter account-sid', sampleContactWithTaskId, [3, 2, 1]);
+    const created = await create('parameter account-sid', sampleContactWithTaskId, [3, 2, 1], []);
     expect(insertContactSql).toHaveBeenCalledWith({
       ...sampleContactWithTaskId,
       updatedAt: expect.anything(),

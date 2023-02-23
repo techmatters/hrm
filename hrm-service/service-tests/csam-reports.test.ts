@@ -46,15 +46,20 @@ const cleanupContacts = async () =>
 const cleanupCsamReports = async () =>
   db.task(t => t.none(`DELETE FROM "CSAMReports" ${whereTwilioWorkerIdClause}`));
 
+const cleanupContactJobs = async () =>
+  db.task(t => t.none(`DELETE FROM "ContactJobs" WHERE "accountSid" = '${accountSid}'`));
+
 beforeAll(async () => {
   await mockingProxy.start();
   await mockSuccessfulTwilioAuthentication(workerSid);
   await cleanupCsamReports();
+  await cleanupContactJobs();
   await cleanupContacts();
 });
 
 afterAll(async () => {
   await cleanupCsamReports();
+  await cleanupContactJobs();
   await cleanupContacts();
   await mockingProxy.stop();
   await server.close();
