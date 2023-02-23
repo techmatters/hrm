@@ -6,7 +6,7 @@
   "devDependencies": {
     "@tech-matters/testing": "^1.0.0",
     "@types/http-errors": "^2.0.1",
-    "sequelize": "^6.28.0",
+    "sequelize": "^6.28.2",
     "sequelize-cli": "^6.5.2",
     "umzug": "^3.2.1",
     "jest-each": "^29.2.1"
