@@ -39,9 +39,9 @@ export class DuplicateReferralError extends Error {
 export class OrphanedReferralError extends Error {
   cause: Error;
 
-  contactId: number;
+  contactId: string;
 
-  constructor(contactId: number, error: Error) {
+  constructor(contactId: string, error: Error) {
     super(`No contact with id '${contactId}' exists to attach this referral to`);
     this.contactId = contactId;
     this.cause = error;
@@ -51,7 +51,7 @@ export class OrphanedReferralError extends Error {
 }
 
 export type Referral = {
-  contactId: number;
+  contactId: string;
   resourceId: string;
   referredAt: string;
   resourceName?: string;

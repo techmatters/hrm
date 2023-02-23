@@ -197,7 +197,7 @@ export const create = async (
           accountSid,
           {
             ...referral,
-            contactId: created.id,
+            contactId: created.id.toString(),
           },
           connection,
         );
