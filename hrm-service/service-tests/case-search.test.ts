@@ -145,6 +145,7 @@ const insertSampleCases = async ({
         accounts[i % accounts.length],
         contactToCreate,
         [],
+        [],
       );
       connectedContact = await contactDb.connectToCase(
         savedContact.accountSid,
@@ -228,7 +229,7 @@ describe('/cases route', () => {
         contactToCreate.taskId = `TASK_SID`;
         contactToCreate.channelSid = `CHANNEL_SID`;
         contactToCreate.serviceSid = 'SERVICE_SID';
-        createdContact = await contactDb.create(accountSid, contactToCreate, []);
+        createdContact = await contactDb.create(accountSid, contactToCreate, [], []);
         createdContact = await contactDb.connectToCase(
           accountSid,
           createdContact.id.toString(),
@@ -500,7 +501,7 @@ describe('/cases route', () => {
           toCreate.channelSid = `CHANNEL_SID`;
           toCreate.serviceSid = 'SERVICE_SID';
           // Connects createdContact with createdCase2
-          createdContact = await contactDb.create(accountSid, toCreate, []);
+          createdContact = await contactDb.create(accountSid, toCreate, [], []);
           createdContact = await contactDb.connectToCase(
             accountSid,
             createdContact.id.toString(),

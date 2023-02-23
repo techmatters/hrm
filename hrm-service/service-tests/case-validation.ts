@@ -122,6 +122,7 @@ export const validateCaseListResponse = (actual, expectedCaseAndContactModels, c
         expect.objectContaining({
           ...expectedContactModel,
           csamReports: [],
+          referrals: [],
           timeOfContact: expect.toParseAsDate(expectedContactModel.timeOfContact),
           createdAt: expect.toParseAsDate(expectedContactModel.createdAt),
           updatedAt: expect.toParseAsDate(expectedContactModel.updatedAt),
