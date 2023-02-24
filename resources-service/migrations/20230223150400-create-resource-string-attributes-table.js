@@ -93,6 +93,10 @@ module.exports = {
           OWNER to resources;
     `);
     console.log('Table "Globals" now owned by resources');
+    await queryInterface.sequelize.query(`
+      INSERT INTO resources."Globals" DEFAULT VALUES;
+    `);
+    console.log('Table "Globals" now owned by resources');
   },
 
   down: async queryInterface => {
