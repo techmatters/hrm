@@ -43,7 +43,7 @@ export type PublishToContactJobsTopicParams = PublishRetrieveContactTranscript;
 type CompletedContactJobMessageCommons<TSuccess, TFailure> =
   | {
       attemptResult: 'success';
-      attemptPayload: TSuccess;
+      attemptPayload: { bucket: TSuccess; key: TSuccess };
     }
   | {
       attemptResult: 'failure';

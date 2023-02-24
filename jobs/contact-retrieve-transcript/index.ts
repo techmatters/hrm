@@ -84,7 +84,10 @@ const processRecord = async (message: PublishToContactJobsTopicParams) => {
   const completedJob: CompletedContactJobBody = {
     ...message,
     attemptResult: 'success',
-    attemptPayload: uploadResults.Location,
+    attemptPayload: {
+      bucket: uploadResults.Bucket,
+      key: uploadResults.Key,
+    },
   };
 
   await sqs
