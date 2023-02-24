@@ -74,7 +74,7 @@ module.exports = {
       WHEN (pg_trigger_depth() = 0)
       EXECUTE FUNCTION resources."ResourcesLookupTables_updateSequence_trigger"();
     `);
-    console.log('Trigger Resources_update_trigger created');
+    console.log('Trigger ResourceStringAttributes_update_trigger created');
 
     await queryInterface.sequelize.query(`
       CREATE TABLE IF NOT EXISTS resources."Globals"
@@ -87,6 +87,12 @@ module.exports = {
       )
     `);
     console.log('Table "Globals" created');
+
+    await queryInterface.sequelize.query(`
+      ALTER TABLE IF EXISTS resources."Globals"
+          OWNER to resources;
+    `);
+    console.log('Table "Globals" now owned by resources');
   },
 
   down: async queryInterface => {
