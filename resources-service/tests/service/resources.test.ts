@@ -18,7 +18,7 @@ import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/
 import { headers, getRequest, getServer } from './server';
 import { db } from '../../src/connection-pool';
 import each from 'jest-each';
-import { ReferrableResource } from '../../src/resource/resource-data-access';
+import { ReferrableResource } from '../../src/resource/resource-model';
 
 export const workerSid = 'WK-worker-sid';
 
@@ -70,6 +70,7 @@ describe('GET /resource', () => {
     expect(response.body).toStrictEqual({
       id: 'RESOURCE_1',
       name: 'Resource 1 (Account 1)',
+      attributes: {},
     });
   });
 });
@@ -96,14 +97,17 @@ describe('POST /search', () => {
         {
           id: 'RESOURCE_0',
           name: 'Resource 0 (Account 1)',
+          attributes: {},
         },
         {
           id: 'RESOURCE_1',
           name: 'Resource 1 (Account 1)',
+          attributes: {},
         },
         {
           id: 'RESOURCE_2',
           name: 'Resource 2 (Account 1)',
+          attributes: {},
         },
       ],
       expectedTotalCount: 5,
@@ -119,14 +123,17 @@ describe('POST /search', () => {
         {
           id: 'RESOURCE_2',
           name: 'Resource 2 (Account 1)',
+          attributes: {},
         },
         {
           id: 'RESOURCE_3',
           name: 'Resource 3 (Account 1)',
+          attributes: {},
         },
         {
           id: 'RESOURCE_4',
           name: 'Resource 4 (Account 1)',
+          attributes: {},
         },
       ],
       expectedTotalCount: 5,
@@ -140,22 +147,27 @@ describe('POST /search', () => {
         {
           id: 'RESOURCE_0',
           name: 'Resource 0 (Account 1)',
+          attributes: {},
         },
         {
           id: 'RESOURCE_1',
           name: 'Resource 1 (Account 1)',
+          attributes: {},
         },
         {
           id: 'RESOURCE_2',
           name: 'Resource 2 (Account 1)',
+          attributes: {},
         },
         {
           id: 'RESOURCE_3',
           name: 'Resource 3 (Account 1)',
+          attributes: {},
         },
         {
           id: 'RESOURCE_4',
           name: 'Resource 4 (Account 1)',
+          attributes: {},
         },
       ],
       expectedTotalCount: 5,
@@ -178,18 +190,22 @@ describe('POST /search', () => {
         {
           id: 'RESOURCE_3',
           name: 'Resource 3 (Account 1)',
+          attributes: {},
         },
         {
           id: 'RESOURCE_0',
           name: 'Resource 0 (Account 1)',
+          attributes: {},
         },
         {
           id: 'RESOURCE_2',
           name: 'Resource 2 (Account 1)',
+          attributes: {},
         },
         {
           id: 'RESOURCE_1',
           name: 'Resource 1 (Account 1)',
+          attributes: {},
         },
       ],
       expectedTotalCount: 4,
@@ -203,10 +219,12 @@ describe('POST /search', () => {
         {
           id: 'RESOURCE_2',
           name: 'Resource 2 (Account 1)',
+          attributes: {},
         },
         {
           id: 'RESOURCE_1',
           name: 'Resource 1 (Account 1)',
+          attributes: {},
         },
       ],
       expectedTotalCount: 4,
@@ -224,10 +242,12 @@ describe('POST /search', () => {
         {
           id: 'RESOURCE_2',
           name: 'Resource 2 (Account 1)',
+          attributes: {},
         },
         {
           id: 'RESOURCE_1',
           name: 'Resource 1 (Account 1)',
+          attributes: {},
         },
       ],
       expectedTotalCount: 5,
@@ -243,14 +263,17 @@ describe('POST /search', () => {
         {
           id: 'RESOURCE_0',
           name: 'Resource 0 (Account 1)',
+          attributes: {},
         },
         {
           id: 'RESOURCE_2',
           name: 'Resource 2 (Account 1)',
+          attributes: {},
         },
         {
           id: 'RESOURCE_1',
           name: 'Resource 1 (Account 1)',
+          attributes: {},
         },
       ],
       expectedTotalCount: 3,
@@ -266,14 +289,17 @@ describe('POST /search', () => {
         {
           id: 'RESOURCE_0',
           name: 'Resource 0 (Account 1)',
+          attributes: {},
         },
         {
           id: 'RESOURCE_2',
           name: 'Resource 2 (Account 1)',
+          attributes: {},
         },
         {
           id: 'RESOURCE_1',
           name: 'Resource 1 (Account 1)',
+          attributes: {},
         },
       ],
       expectedTotalCount: 3,

@@ -35,7 +35,7 @@ describe('getById', () => {
 
     expect(oneOrNoneSpy).toHaveBeenCalledWith(expect.stringContaining('Resources'), {
       accountSid: 'AC_FAKE',
-      resourceId: 'FAKE_RESOURCE',
+      resourceIds: ['FAKE_RESOURCE'],
     });
     expect(result).toStrictEqual({ name: 'Fake Resource', id: 'FAKE_RESOURCE' });
   });
