@@ -31,8 +31,10 @@ afterAll(done => {
   });
 });
 
-const range = (elements: number): string[] =>
-  Array.from(Array(elements).keys()).map(i => i.toString());
+const range = (elements: number | string): string[] =>
+  Array.from(Array(typeof elements === 'number' ? elements : parseInt(elements)).keys()).map(i =>
+    i.toString(),
+  );
 
 beforeAll(async () => {
   await mockingProxy.start();
@@ -41,17 +43,48 @@ beforeAll(async () => {
     ['1', range(5)],
     ['2', range(2)],
   ];
-  await db.multi(
-    accountResourceIdTuples
-      .flatMap(([accountIdx, resourceIdxs]) =>
-        resourceIdxs.map(
-          resourceIdx =>
-            `INSERT INTO resources."Resources" (id, "accountSid", "name") VALUES ('RESOURCE_${resourceIdx}', 'ACCOUNT_${accountIdx}', 'Resource ${resourceIdx} (Account ${accountIdx})')`,
-        ),
-      )
-      .join(';'),
-  );
+  const testResourceCreateSql = accountResourceIdTuples
+    .flatMap(([accountIdx, resourceIdxs]) =>
+      resourceIdxs.flatMap(resourceIdx => {
+        const sql = `INSERT INTO resources."Resources" (id, "accountSid", "name") VALUES ('RESOURCE_${resourceIdx}', 'ACCOUNT_${accountIdx}', 'Resource ${resourceIdx} (Account ${accountIdx})')`;
+        const attributeSql = range(parseInt(resourceIdx)).flatMap(attributeIdx =>
+          range((parseInt(attributeIdx) % 2) + 1).map(
+            valueIdx =>
+              `INSERT INTO resources."ResourceStringAttributes" ("resourceId", "accountSid", "key", "language", "value", "info") VALUES ('RESOURCE_${resourceIdx}', 'ACCOUNT_${accountIdx}', 'ATTRIBUTE_${attributeIdx}', 'en-US', 'VALUE_${valueIdx}', '{ "some": "json" }')`,
+          ),
+        );
+        return [sql, ...attributeSql];
+      }),
+    )
+    .join(';\n');
+  console.log(testResourceCreateSql); // handy for debugging
+  await db.multi(testResourceCreateSql);
 });
+
+/*
+ * This function expects attributes to have been applied in a specific pattern (as defined in the beforeAll step):
+ * - Each resource has a number of attributes equal to its index
+ * - Even numbered attributes have 1 value, odd numbered attributes have 2 values
+ * - Each value has the same info
+ * - Each value has the same language
+ */
+const verifyResourcesAttributes = (resource: ReferrableResource) => {
+  console.log('RESOURCE: ', JSON.stringify(resource, null, 2));
+  const [, resourceIdx] = resource.id.split('_');
+  range(resourceIdx).forEach(attributeIdx => {
+    const attribute = resource.attributes[`ATTRIBUTE_${attributeIdx}`];
+    expect(attribute).toBeDefined();
+    const expectedValues = (parseInt(attributeIdx) % 2) + 1;
+    expect(attribute).toHaveLength(expectedValues);
+    range(expectedValues).forEach(valueIdx => {
+      expect(attribute[parseInt(valueIdx)]).toStrictEqual({
+        info: { some: 'json' },
+        language: 'en-US',
+        value: `VALUE_${valueIdx}`,
+      });
+    });
+  });
+};
 
 describe('GET /resource', () => {
   const basePath = '/v0/accounts/ACCOUNT_1/resources/resource';
@@ -67,11 +100,11 @@ describe('GET /resource', () => {
   test('Should return a 200 response with a single resource object', async () => {
     const response = await request.get(`${basePath}/RESOURCE_1`).set(headers);
     expect(response.status).toBe(200);
-    expect(response.body).toStrictEqual({
+    expect(response.body).toMatchObject({
       id: 'RESOURCE_1',
       name: 'Resource 1 (Account 1)',
-      attributes: {},
     });
+    verifyResourcesAttributes(response.body);
   });
 });
 
@@ -97,17 +130,14 @@ describe('POST /search', () => {
         {
           id: 'RESOURCE_0',
           name: 'Resource 0 (Account 1)',
-          attributes: {},
         },
         {
           id: 'RESOURCE_1',
           name: 'Resource 1 (Account 1)',
-          attributes: {},
         },
         {
           id: 'RESOURCE_2',
           name: 'Resource 2 (Account 1)',
-          attributes: {},
         },
       ],
       expectedTotalCount: 5,
@@ -339,9 +369,12 @@ describe('POST /search', () => {
           ids,
         });
       expect(response.status).toBe(200);
-      expect(response.body).toStrictEqual({
-        results: expectedResults,
-        totalCount: expectedTotalCount,
+      expect(response.body.totalCount).toBe(expectedTotalCount);
+      expect(response.body.results).toHaveLength(expectedResults.length);
+      expectedResults.forEach((expected, idx: number) => {
+        const result = response.body.results[idx];
+        expect(result).toMatchObject(expected);
+        verifyResourcesAttributes(result);
       });
     },
   );
