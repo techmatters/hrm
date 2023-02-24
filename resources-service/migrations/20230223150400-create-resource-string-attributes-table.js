@@ -102,9 +102,12 @@ module.exports = {
   down: async queryInterface => {
     await queryInterface.sequelize.query(`DROP TABLE IF EXISTS resources."Globals"`);
     console.log('Table "Globals" dropped');
+
     await queryInterface.sequelize.query(
-      `DROP FUNCTION IF EXISTS resources."ResourceStringAttributes_update_trigger"`,
+      `DROP FUNCTION IF EXISTS resources."ResourcesLookupTables_updateSequence_trigger"`,
     );
+    console.log('Function "ResourcesLookupTables_updateSequence_trigger" dropped');
+
     await queryInterface.sequelize.query(
       `DROP TABLE IF EXISTS resources."ResourceStringAttributes"`,
     );
