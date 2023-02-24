@@ -27,7 +27,11 @@ module.exports = {
         "info" JSONB,
         "lastUpdated" timestamp with time zone,
         "updateSequence"  bigint NOT NULL DEFAULT nextval('"Resources_updates_seq"'::regclass),
-        CONSTRAINT "ResourceStringAttributes_pkey" PRIMARY KEY ("resourceId", "accountSid", "key", "language", "value")
+        CONSTRAINT "ResourceStringAttributes_pkey" PRIMARY KEY ("resourceId", "accountSid", "key", "language", "value"),
+        CONSTRAINT "FK_ResourceStringAttributes_Resources" FOREIGN KEY ("resourceId", "accountSid")
+            REFERENCES resources."Resources" (id, "accountSid") MATCH SIMPLE
+            ON UPDATE CASCADE
+            ON DELETE CASCADE
       )
     `);
     console.log('Table "ResourceStringAttributes" created');
