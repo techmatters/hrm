@@ -20,6 +20,7 @@ import {
   ReferrableResourceRecord,
 } from '../../../src/resource/resource-data-access';
 import { searchResources } from '../../../src/resource/resource-model';
+import each from 'jest-each';
 
 jest.mock('../../../src/resource/resource-data-access', () => ({
   getByIdList: jest.fn(),
@@ -38,7 +39,13 @@ describe('searchResources', () => {
   });
   test('Name search only specified - finds ids with getWhereNameContains and looks up resources with getByIdList', async () => {
     const resultSet = [
-      { id: 'RESOURCE_1', name: 'Resource 1', attributes: [] },
+      {
+        id: 'RESOURCE_1',
+        name: 'Resource 1',
+        attributes: [
+          { key: 'testAttribute', value: 'testValue', language: 'Klingon', info: { qa: 'pla' } },
+        ],
+      },
       { id: 'RESOURCE_2', name: 'Resource 2', attributes: [] },
     ];
     mockGetWhereNameContains.mockResolvedValue({
@@ -52,7 +59,16 @@ describe('searchResources', () => {
       pagination: { limit: 5, start: 10 },
     });
     expect(res.totalCount).toBe(123);
-    expect(res.results).toStrictEqual(resultSet.map(r => ({ ...r, attributes: {} })));
+    expect(res.results).toStrictEqual(
+      resultSet.map(r => ({
+        ...r,
+        attributes: {
+          ...(r.id === 'RESOURCE_1'
+            ? { testAttribute: [{ value: 'testValue', language: 'Klingon', info: { qa: 'pla' } }] }
+            : {}),
+        },
+      })),
+    );
     expect(getWhereNameContains).toHaveBeenCalledWith('AC_FAKE_ACCOUNT', 'Res', 10, 5);
     expect(getByIdList).toHaveBeenCalledWith('AC_FAKE_ACCOUNT', ['RESOURCE_1', 'RESOURCE_2']);
   });
@@ -286,6 +302,90 @@ describe('searchResources', () => {
       'RESOURCE_4',
       'RESOURCE_3',
       'RESOURCE_2',
+    ]);
+  });
+
+  each([
+    {
+      description:
+        'Resource returned has multiple attribute entries with different keys and values - returns resource with an attribute object and a property for each key',
+      attributeRecords: [
+        { key: 'testAttribute', value: 'testValue', language: 'Klingon', info: { qa: 'pla' } },
+        { key: 'testAttribute2', value: 'testValue2', language: 'Klingon', info: { qa: 'pla' } },
+      ],
+      expectedAttributes: {
+        testAttribute: [{ value: 'testValue', language: 'Klingon', info: { qa: 'pla' } }],
+        testAttribute2: [{ value: 'testValue2', language: 'Klingon', info: { qa: 'pla' } }],
+      },
+    },
+    {
+      description:
+        'Resource returned has multiple attribute entries with different keys and same value - returns resource with an attribute object and a property for each key',
+      attributeRecords: [
+        { key: 'testAttribute', value: 'testValue', language: 'Klingon', info: { qa: 'pla' } },
+        { key: 'testAttribute2', value: 'testValue', language: 'Klingon', info: { qa: 'pla' } },
+      ],
+      expectedAttributes: {
+        testAttribute: [{ value: 'testValue', language: 'Klingon', info: { qa: 'pla' } }],
+        testAttribute2: [{ value: 'testValue', language: 'Klingon', info: { qa: 'pla' } }],
+      },
+    },
+    {
+      description:
+        'Resource returned has multiple attribute entries with different values and same keys - returns resource with an attribute object and a property with an array entry for each value',
+      attributeRecords: [
+        { key: 'testAttribute', value: 'testValue', language: 'Klingon', info: { qa: 'pla' } },
+        { key: 'testAttribute', value: 'testValue2', language: 'Klingon', info: { qa: 'pla' } },
+      ],
+      expectedAttributes: {
+        testAttribute: [
+          { value: 'testValue', language: 'Klingon', info: { qa: 'pla' } },
+          { value: 'testValue2', language: 'Klingon', info: { qa: 'pla' } },
+        ],
+      },
+    },
+    {
+      description:
+        'Resource returned has multiple attribute entries with same values and same keys but different languages - returns resource with an attribute object and a property with an array entry for each language',
+      attributeRecords: [
+        { key: 'testAttribute', value: 'testValue', language: 'Klingon', info: { qa: 'pla' } },
+        {
+          key: 'testAttribute',
+          value: 'testValue',
+          language: 'Romulan',
+          info: { jolan: 'tru' },
+        },
+      ],
+      expectedAttributes: {
+        testAttribute: [
+          { value: 'testValue', language: 'Klingon', info: { qa: 'pla' } },
+          { value: 'testValue', language: 'Romulan', info: { jolan: 'tru' } },
+        ],
+      },
+    },
+  ]).test('$description', async ({ attributeRecords, expectedAttributes }) => {
+    const resultSet = [
+      {
+        id: 'RESOURCE_1',
+        name: 'Resource 1',
+        attributes: attributeRecords,
+      },
+    ];
+    mockGetWhereNameContains.mockResolvedValue({
+      totalCount: 1,
+      results: ['RESOURCE_1'],
+    });
+    mockGetByIdList.mockResolvedValue(resultSet);
+    const res = await searchResources('AC_FAKE_ACCOUNT', {
+      nameSubstring: 'Res',
+      ids: [],
+      pagination: { limit: 5, start: 0 },
+    });
+    expect(res.results).toStrictEqual([
+      {
+        ...resultSet[0],
+        attributes: expectedAttributes,
+      },
     ]);
   });
 });

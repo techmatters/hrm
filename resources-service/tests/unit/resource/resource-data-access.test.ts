@@ -26,10 +26,15 @@ beforeEach(() => {
 
 describe('getById', () => {
   test('Runs a SELECT against the Resources table on the DB', async () => {
+    const dbRecord = {
+      name: 'Fake Resource',
+      id: 'FAKE_RESOURCE',
+      attributes: [
+        { key: 'attribute1', value: 'value1', language: 'es-ES', info: { some: 'stuff' } },
+      ],
+    };
     mockTask(conn);
-    const oneOrNoneSpy = jest
-      .spyOn(conn, 'oneOrNone')
-      .mockResolvedValue({ name: 'Fake Resource', id: 'FAKE_RESOURCE' });
+    const oneOrNoneSpy = jest.spyOn(conn, 'oneOrNone').mockResolvedValue(dbRecord);
 
     const result = await resourceDb.getById('AC_FAKE', 'FAKE_RESOURCE');
 
@@ -37,21 +42,22 @@ describe('getById', () => {
       accountSid: 'AC_FAKE',
       resourceIds: ['FAKE_RESOURCE'],
     });
-    expect(result).toStrictEqual({ name: 'Fake Resource', id: 'FAKE_RESOURCE' });
+    expect(result).toStrictEqual(dbRecord);
   });
 });
 
 describe('getByIdList', () => {
   test('Runs a SELECT against the Resources table on the DB, takes the results from the first DB result set and the count from the second', async () => {
     const results = [
-      { name: 'Fake Resource', id: 'FAKE_RESOURCE' },
+      {
+        name: 'Fake Resource',
+        id: 'FAKE_RESOURCE',
+        attributes: [{ key: 'attribute1', value: 'value1', language: 'es-ES', info: {} }],
+      },
       { name: 'Other Fake Resource', id: 'OTHER_FAKE_RESOURCE' },
     ];
     mockTask(conn);
-    const manyOrNoneSpy = jest.spyOn(conn, 'manyOrNone').mockResolvedValue([
-      { name: 'Fake Resource', id: 'FAKE_RESOURCE' },
-      { name: 'Other Fake Resource', id: 'OTHER_FAKE_RESOURCE' },
-    ]);
+    const manyOrNoneSpy = jest.spyOn(conn, 'manyOrNone').mockResolvedValue(results);
 
     const result = await resourceDb.getByIdList('AC_FAKE', [
       'FAKE_RESOURCE',
