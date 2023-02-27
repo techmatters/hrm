@@ -18,7 +18,7 @@
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
-  async up(queryInterface, Sequelize) {
+  async up(queryInterface) {
     await queryInterface.sequelize.query(`
     CREATE SEQUENCE IF NOT EXISTS public."ContactJobsFailures_id_seq"
         INCREMENT 1
@@ -71,7 +71,7 @@ module.exports = {
     console.log('Index ContactJobs_poll_due_idx created');
   },
 
-  async down(queryInterface, Sequelize) {
+  async down(queryInterface) {
     await queryInterface.sequelize.query(`DROP INDEX IF EXISTS "ContactJobs_poll_due_idx";`);
 
     await queryInterface.sequelize.query(`
