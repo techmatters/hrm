@@ -55,12 +55,38 @@ export class SsmParameterNotFound extends Error {
   }
 }
 
+export const hasParameterExpired = (parameter: SsmCacheParameter | undefined) => {
+  return !!(parameter?.expiryDate && new Date() > parameter.expiryDate);
+};
+
+export const hasCacheExpired = () => !!(ssmCache.expiryDate && new Date() > ssmCache.expiryDate);
+
+export const isConfigNotEmpty = () => !!Object.keys(ssmCache.values).length;
+
 export const setCacheDurationMilliseconds = (cacheDurationMilliseconds: number) => {
   ssmCache.cacheDurationMilliseconds = cacheDurationMilliseconds;
 };
 
 export const parameterExistsInCache = (name: string) =>
   Object.prototype.hasOwnProperty.call(ssmCache.values, name) && ssmCache.values[name];
+
+export const addToCache = (regex: RegExp | undefined, { Name, Value }: SSM.Parameter) => {
+  if (!Name) return;
+  if (regex && !regex.test(Name)) return;
+
+  ssmCache.values[Name] = {
+    value: Value || '',
+    expiryDate: new Date(Date.now() + ssmCache.cacheDurationMilliseconds),
+  };
+};
+
+export const getSsmClient = () => {
+  if (!ssm) {
+    ssm = new SSM(ssmConfig);
+  }
+
+  return ssm;
+};
 
 export const getSsmParameter = async (name: string): Promise<string> => {
   // If the cache doesn't have the requested parameter or if it is expired, load it
@@ -92,31 +118,6 @@ export const loadParameter = async (name: string) => {
   }
 
   addToCache(undefined, Parameter);
-};
-
-export const addToCache = (regex: RegExp | undefined, { Name, Value }: SSM.Parameter) => {
-  if (!Name) return;
-  if (regex && !regex.test(Name)) return;
-
-  ssmCache.values[Name] = {
-    value: Value || '',
-    expiryDate: new Date(Date.now() + ssmCache.cacheDurationMilliseconds),
-  };
-};
-
-export const hasParameterExpired = (parameter: SsmCacheParameter | undefined) => {
-  return !!(parameter?.expiryDate && new Date() > parameter.expiryDate);
-};
-
-export const hasCacheExpired = () => !!(ssmCache.expiryDate && new Date() > ssmCache.expiryDate);
-export const isConfigNotEmpty = () => !!Object.keys(ssmCache.values).length;
-
-export const getSsmClient = () => {
-  if (!ssm) {
-    ssm = new SSM(ssmConfig);
-  }
-
-  return ssm;
 };
 
 type LoadPaginatedParameters = {

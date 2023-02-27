@@ -41,16 +41,17 @@ const sqs = new SQS();
 const completedQueueUrl = process.env.completed_sqs_queue_url as string;
 const hrmEnv = process.env.NODE_ENV;
 
-const ssmCacheConfigs = [
-  {
-    path: `/${hrmEnv}/twilio/`,
-    regex: /auth_token/,
-  },
-  {
-    path: `/${hrmEnv}/s3`,
-    regex: /docs_bucket_name/,
-  },
-];
+// # used for ssm-cache.LoadSsmCache() call. Leaving here for now in case we need it later.
+// const ssmCacheConfigs = [
+//   {
+//     path: `/${hrmEnv}/twilio/`,
+//     regex: /auth_token/,
+//   },
+//   {
+//     path: `/${hrmEnv}/s3`,
+//     regex: /docs_bucket_name/,
+//   },
+// ];
 
 const processRecord = async (message: PublishToContactJobsTopicParams) => {
   console.log(message);
