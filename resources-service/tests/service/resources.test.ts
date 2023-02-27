@@ -57,7 +57,7 @@ beforeAll(async () => {
       }),
     )
     .join(';\n');
-  console.log(testResourceCreateSql); // handy for debugging
+  // console.log(testResourceCreateSql); // handy for debugging
   await db.multi(testResourceCreateSql);
 });
 
@@ -69,7 +69,6 @@ beforeAll(async () => {
  * - Each value has the same language
  */
 const verifyResourcesAttributes = (resource: ReferrableResource) => {
-  console.log('RESOURCE: ', JSON.stringify(resource, null, 2));
   const [, resourceIdx] = resource.id.split('_');
   range(resourceIdx).forEach(attributeIdx => {
     const attribute = resource.attributes[`ATTRIBUTE_${attributeIdx}`];
@@ -91,8 +90,6 @@ describe('GET /resource', () => {
 
   test('Should return 401 unauthorized with no auth headers', async () => {
     const response = await request.get(`${basePath}/RESOURCE_1`);
-    console.log(response.status);
-    console.log(response.body);
     expect(response.status).toBe(401);
     expect(response.body).toStrictEqual({ error: 'Authorization failed' });
   });
@@ -105,6 +102,315 @@ describe('GET /resource', () => {
       name: 'Resource 1 (Account 1)',
     });
     verifyResourcesAttributes(response.body);
+  });
+
+  describe('Reference Attributes', () => {
+    beforeAll(async () => {
+      const createReferenceSql = range(2)
+        .flatMap(accountIndex =>
+          range(10).flatMap(keyIndex =>
+            range(keyIndex).flatMap(valueIndex =>
+              range((parseInt(valueIndex) % 2) + 1).map(
+                // alternate between 1 and 2  language values
+                languageIndex =>
+                  `INSERT INTO resources."ResourceReferenceStringAttributeValues" (id, "accountSid", "key", "value", "language", "info") 
+                        VALUES (
+                            'REF_${keyIndex}_${valueIndex}_${languageIndex}', 
+                            'REFERENCES_TEST_ACCOUNT_${accountIndex}', 
+                            'REFERENCE_KEY_${keyIndex}', 
+                            'REFERENCE_VALUE_${valueIndex}', 
+                            'LANGUAGE_${languageIndex}', 
+                            ${
+                              languageIndex === '1'
+                                ? 'NULL'
+                                : `'{ "property_${keyIndex}": "VALUE_${valueIndex}" }'`
+                            })`,
+              ),
+            ),
+          ),
+        )
+        .join(';\n');
+      await db.multi(createReferenceSql);
+    });
+    beforeEach(async () => {
+      await db.multi(
+        range(2)
+          .flatMap(accountIndex =>
+            range(3).map(
+              resourceIdx =>
+                `INSERT INTO resources."Resources" (id, "accountSid", "name") VALUES ('RESOURCE_${resourceIdx}', 'REFERENCES_TEST_ACCOUNT_${accountIndex}', 'Resource ${resourceIdx}')`,
+            ),
+          )
+          .join(';\n'),
+      );
+    });
+    afterEach(async () => {
+      await db.none(
+        `DELETE FROM resources."Resources" WHERE "accountSid" ILIKE 'REFERENCES_TEST_ACCOUNT_%'`,
+      );
+    });
+    each([
+      {
+        description: `Single referenced attribute value - returns referenced value`,
+        setupSqlStatements: [
+          `INSERT INTO resources."ResourceReferenceStringAttributes" 
+            ("accountSid", "resourceId", "referenceId")
+            VALUES ('REFERENCES_TEST_ACCOUNT_0','RESOURCE_0', 'REF_1_0_0')`,
+        ],
+        nameSubstring: 'Resource 0',
+        expectedResult: {
+          id: 'RESOURCE_0',
+          name: 'Resource 0',
+          attributes: {
+            REFERENCE_KEY_1: [
+              {
+                value: 'REFERENCE_VALUE_0',
+                language: 'LANGUAGE_0',
+                info: {
+                  property_1: 'VALUE_0',
+                },
+              },
+            ],
+          },
+        },
+      },
+      {
+        description: `Multiple referenced attribute values under same key - returns referenced values grouped under the key`,
+        setupSqlStatements: range(3).map(
+          valueIndex =>
+            `INSERT INTO resources."ResourceReferenceStringAttributes" 
+                ("accountSid", "resourceId", "referenceId") 
+                VALUES ('REFERENCES_TEST_ACCOUNT_0', 'RESOURCE_0', 'REF_7_${valueIndex}_0')`,
+        ),
+        expectedResult: {
+          id: 'RESOURCE_0',
+          name: 'Resource 0',
+          attributes: {
+            REFERENCE_KEY_7: range(3).map(valueIndex => ({
+              value: `REFERENCE_VALUE_${valueIndex}`,
+              language: 'LANGUAGE_0',
+              info: {
+                property_7: `VALUE_${valueIndex}`,
+              },
+            })),
+          },
+        },
+      },
+      {
+        description: `Multiple referenced attribute values under same key and value but different languages - returns referenced values grouped under the key`,
+        setupSqlStatements: range(2).map(
+          languageIndex =>
+            `INSERT INTO resources."ResourceReferenceStringAttributes" 
+                ("accountSid", "resourceId", "referenceId") 
+                VALUES ('REFERENCES_TEST_ACCOUNT_0', 'RESOURCE_0', 'REF_5_3_${languageIndex}')`,
+        ),
+        expectedResult: {
+          id: 'RESOURCE_0',
+          name: 'Resource 0',
+          attributes: {
+            REFERENCE_KEY_5: range(2).map(languageIndex => ({
+              value: 'REFERENCE_VALUE_3',
+              language: `LANGUAGE_${languageIndex}`,
+              info:
+                languageIndex === '1'
+                  ? null
+                  : {
+                      property_5: `VALUE_3`,
+                    },
+            })),
+          },
+        },
+      },
+      {
+        description: `Multiple referenced attribute values under different keys - returns referenced values under their respective keys`,
+        setupSqlStatements: range(3).map(
+          keyIndex =>
+            `INSERT INTO resources."ResourceReferenceStringAttributes" 
+                ("accountSid", "resourceId", "referenceId") 
+                VALUES ('REFERENCES_TEST_ACCOUNT_0', 'RESOURCE_0', 'REF_${parseInt(keyIndex) +
+                  6}_5_0')`,
+        ),
+        expectedResult: {
+          id: 'RESOURCE_0',
+          name: 'Resource 0',
+          attributes: Object.fromEntries(
+            range(3).map(keyIndex => [
+              `REFERENCE_KEY_${parseInt(keyIndex) + 6}`,
+              [
+                {
+                  value: 'REFERENCE_VALUE_5',
+                  language: 'LANGUAGE_0',
+                  info: {
+                    [`property_${parseInt(keyIndex) + 6}`]: `VALUE_5`,
+                  },
+                },
+              ],
+            ]),
+          ),
+        },
+      },
+      {
+        description: `Referenced attribute values and inline attributes under different keys - returns ALL values under their respective keys`,
+        setupSqlStatements: [
+          `INSERT INTO resources."ResourceReferenceStringAttributes" 
+                ("accountSid", "resourceId", "referenceId") 
+                VALUES ('REFERENCES_TEST_ACCOUNT_0', 'RESOURCE_0', 'REF_6_5_0')`,
+          `INSERT INTO resources."ResourceStringAttributes" 
+                ("accountSid", "resourceId", "key", "value", "language") 
+                VALUES ('REFERENCES_TEST_ACCOUNT_0', 'RESOURCE_0', 'INLINE_KEY', 'INLINE_VALUE', 'INLINE_LANGUAGE')`,
+        ],
+        expectedResult: {
+          id: 'RESOURCE_0',
+          name: 'Resource 0',
+          attributes: {
+            REFERENCE_KEY_6: [
+              {
+                value: 'REFERENCE_VALUE_5',
+                language: 'LANGUAGE_0',
+                info: {
+                  [`property_6`]: `VALUE_5`,
+                },
+              },
+            ],
+            INLINE_KEY: [
+              {
+                value: 'INLINE_VALUE',
+                language: 'INLINE_LANGUAGE',
+                info: null,
+              },
+            ],
+          },
+        },
+      },
+      {
+        description: `Referenced attribute values and inline attributes under same keys - returns all values under the one key`,
+        setupSqlStatements: [
+          `INSERT INTO resources."ResourceReferenceStringAttributes" 
+                ("accountSid", "resourceId", "referenceId") 
+                VALUES ('REFERENCES_TEST_ACCOUNT_0', 'RESOURCE_0', 'REF_6_5_0')`,
+          `INSERT INTO resources."ResourceStringAttributes" 
+                ("accountSid", "resourceId", "key", "value", "language") 
+                VALUES ('REFERENCES_TEST_ACCOUNT_0', 'RESOURCE_0', 'REFERENCE_KEY_6', 'INLINE_VALUE', 'LANGUAGE_0')`,
+        ],
+        expectedResult: {
+          id: 'RESOURCE_0',
+          name: 'Resource 0',
+          attributes: {
+            REFERENCE_KEY_6: [
+              {
+                value: 'REFERENCE_VALUE_5',
+                language: 'LANGUAGE_0',
+                info: {
+                  [`property_6`]: `VALUE_5`,
+                },
+              },
+              {
+                value: 'INLINE_VALUE',
+                language: 'LANGUAGE_0',
+                info: null,
+              },
+            ],
+          },
+        },
+      },
+      {
+        description: `Referenced attribute values and inline attributes under same keys with same values but different languages - returns all values under the one key`,
+        setupSqlStatements: [
+          `INSERT INTO resources."ResourceReferenceStringAttributes" 
+                ("accountSid", "resourceId", "referenceId") 
+                VALUES ('REFERENCES_TEST_ACCOUNT_0', 'RESOURCE_0', 'REF_6_5_0')`,
+          `INSERT INTO resources."ResourceStringAttributes" 
+                ("accountSid", "resourceId", "key", "value", "language") 
+                VALUES ('REFERENCES_TEST_ACCOUNT_0', 'RESOURCE_0', 'REFERENCE_KEY_6', 'REFERENCE_VALUE_5', 'INLINE_LANGUAGE')`,
+        ],
+        expectedResult: {
+          id: 'RESOURCE_0',
+          name: 'Resource 0',
+          attributes: {
+            REFERENCE_KEY_6: [
+              {
+                value: 'REFERENCE_VALUE_5',
+                language: 'LANGUAGE_0',
+                info: {
+                  [`property_6`]: `VALUE_5`,
+                },
+              },
+              {
+                value: 'REFERENCE_VALUE_5',
+                language: 'INLINE_LANGUAGE',
+                info: null,
+              },
+            ],
+          },
+        },
+      },
+      {
+        description: `Referenced attribute values and inline attributes keys exist for same resource with same key value and language - returns both values`,
+        setupSqlStatements: [
+          `INSERT INTO resources."ResourceReferenceStringAttributes" 
+                ("accountSid", "resourceId", "referenceId") 
+                VALUES ('REFERENCES_TEST_ACCOUNT_0', 'RESOURCE_0', 'REF_6_5_0')`,
+          `INSERT INTO resources."ResourceStringAttributes" 
+                ("accountSid", "resourceId", "key", "value", "language", "info") 
+                VALUES ('REFERENCES_TEST_ACCOUNT_0', 'RESOURCE_0', 'REFERENCE_KEY_6', 'REFERENCE_VALUE_5', 'LANGUAGE_0', '{ "different": "info" }')`,
+        ],
+        expectedResult: {
+          id: 'RESOURCE_0',
+          name: 'Resource 0',
+          attributes: {
+            REFERENCE_KEY_6: [
+              {
+                value: 'REFERENCE_VALUE_5',
+                language: 'LANGUAGE_0',
+                info: {
+                  [`property_6`]: `VALUE_5`,
+                },
+              },
+              {
+                value: 'REFERENCE_VALUE_5',
+                language: 'LANGUAGE_0',
+                info: { different: 'info' },
+              },
+            ],
+          },
+        },
+      },
+    ]).test(
+      '$description',
+      async ({
+        setupSqlStatements,
+        expectedResult,
+      }: {
+        setupSqlStatements: string[];
+        nameSubstring: string;
+        expectedResult: ReferrableResource;
+      }) => {
+        await db.multi(setupSqlStatements.join(';\n'));
+        const response = await request
+          .get(`/v0/accounts/REFERENCES_TEST_ACCOUNT_0/resources/resource/RESOURCE_0`)
+          .set(headers);
+        expect(response.status).toBe(200);
+        const {
+          attributes: responseAttributes,
+          ...responseWithoutAttributes
+        } = response.body as ReferrableResource;
+        const { attributes: expectedAttributes, ...expectedWithoutAttributes } = expectedResult;
+        expect(responseWithoutAttributes).toStrictEqual(expectedWithoutAttributes);
+        const responseAttributeEntries = Object.entries(responseAttributes).sort(([keyA], [keyB]) =>
+          keyA.localeCompare(keyB),
+        );
+        const expectedAttributeEntries = Object.entries(expectedAttributes).sort(([keyA], [keyB]) =>
+          keyA.localeCompare(keyB),
+        );
+        expect(responseAttributeEntries).toHaveLength(expectedAttributeEntries.length);
+        responseAttributeEntries.forEach(([key, value], index) => {
+          const [expectedKey, expectedValue] = expectedAttributeEntries[index];
+          expect(key).toBe(expectedKey);
+          expect(value).toHaveLength(expectedValue.length);
+          expect(value).toEqual(expect.arrayContaining(expectedValue));
+        });
+      },
+    );
   });
 });
 
@@ -357,10 +663,6 @@ describe('POST /search', () => {
         .map(([k, v]) => `${k}=${v}`)
         .join('&');
       const url = `${basePath}${qs.length ? '?' : ''}${qs}`;
-      console.log('POST', url, {
-        nameSubstring,
-        ids,
-      });
       const response = await request
         .post(url)
         .set(headers)
