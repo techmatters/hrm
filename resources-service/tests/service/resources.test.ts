@@ -57,7 +57,7 @@ beforeAll(async () => {
       }),
     )
     .join(';\n');
-  console.log(testResourceCreateSql); // handy for debugging
+  // console.log(testResourceCreateSql); // handy for debugging
   await db.multi(testResourceCreateSql);
 });
 
@@ -69,7 +69,6 @@ beforeAll(async () => {
  * - Each value has the same language
  */
 const verifyResourcesAttributes = (resource: ReferrableResource) => {
-  console.log('RESOURCE: ', JSON.stringify(resource, null, 2));
   const [, resourceIdx] = resource.id.split('_');
   range(resourceIdx).forEach(attributeIdx => {
     const attribute = resource.attributes[`ATTRIBUTE_${attributeIdx}`];
@@ -91,8 +90,6 @@ describe('GET /resource', () => {
 
   test('Should return 401 unauthorized with no auth headers', async () => {
     const response = await request.get(`${basePath}/RESOURCE_1`);
-    console.log(response.status);
-    console.log(response.body);
     expect(response.status).toBe(401);
     expect(response.body).toStrictEqual({ error: 'Authorization failed' });
   });
@@ -357,10 +354,7 @@ describe('POST /search', () => {
         .map(([k, v]) => `${k}=${v}`)
         .join('&');
       const url = `${basePath}${qs.length ? '?' : ''}${qs}`;
-      console.log('POST', url, {
-        nameSubstring,
-        ids,
-      });
+
       const response = await request
         .post(url)
         .set(headers)
