@@ -47,7 +47,7 @@ describe('createReferralRecord', () => {
     mockTask(conn);
     const oneSpy = jest.spyOn(conn, 'one').mockResolvedValue(validReferral);
 
-    const result = await referralDb.createReferralRecord('AC_FAKE', validReferral);
+    const result = await referralDb.createReferralRecord()('AC_FAKE', validReferral);
 
     expect(oneSpy).toHaveBeenCalledWith(expect.stringContaining('Referrals'));
     const insertSql = oneSpy.mock.calls[0][0];
@@ -65,7 +65,7 @@ describe('createReferralRecord', () => {
     const { resourceName, ...withoutResourceName } = validReferral;
     const oneSpy = jest.spyOn(conn, 'one').mockResolvedValue(withoutResourceName);
 
-    const result = await referralDb.createReferralRecord('AC_FAKE', withoutResourceName);
+    const result = await referralDb.createReferralRecord()('AC_FAKE', withoutResourceName);
 
     expect(oneSpy).toHaveBeenCalledWith(expect.stringContaining('Referrals'));
     const insertSql = oneSpy.mock.calls[0][0];
@@ -85,7 +85,7 @@ describe('createReferralRecord', () => {
     dbError.table = 'Referrals';
     jest.spyOn(conn, 'one').mockRejectedValue(dbError);
 
-    await expect(referralDb.createReferralRecord('AC_FAKE', validReferral)).rejects.toThrow(
+    await expect(referralDb.createReferralRecord()('AC_FAKE', validReferral)).rejects.toThrow(
       OrphanedReferralError,
     );
   });
@@ -98,7 +98,7 @@ describe('createReferralRecord', () => {
     dbError.table = 'Referrals';
     jest.spyOn(conn, 'one').mockRejectedValue(dbError);
 
-    await expect(referralDb.createReferralRecord('AC_FAKE', validReferral)).rejects.toThrow(
+    await expect(referralDb.createReferralRecord()('AC_FAKE', validReferral)).rejects.toThrow(
       DatabaseForeignKeyViolationError,
     );
   });
@@ -111,7 +111,7 @@ describe('createReferralRecord', () => {
     dbError.table = 'Referrals';
     jest.spyOn(conn, 'one').mockRejectedValue(dbError);
 
-    await expect(referralDb.createReferralRecord('AC_FAKE', validReferral)).rejects.toThrow(
+    await expect(referralDb.createReferralRecord()('AC_FAKE', validReferral)).rejects.toThrow(
       DuplicateReferralError,
     );
   });
@@ -124,7 +124,7 @@ describe('createReferralRecord', () => {
     dbError.table = 'Referrals';
     jest.spyOn(conn, 'one').mockRejectedValue(dbError);
 
-    await expect(referralDb.createReferralRecord('AC_FAKE', validReferral)).rejects.toThrow(
+    await expect(referralDb.createReferralRecord()('AC_FAKE', validReferral)).rejects.toThrow(
       DatabaseUniqueConstraintViolationError,
     );
   });
@@ -135,7 +135,7 @@ describe('createReferralRecord', () => {
     originalError.code = 'OTHER_CODE';
     jest.spyOn(conn, 'one').mockRejectedValue(originalError);
 
-    await expect(referralDb.createReferralRecord('AC_FAKE', validReferral)).rejects.toThrow(
+    await expect(referralDb.createReferralRecord()('AC_FAKE', validReferral)).rejects.toThrow(
       new DatabaseError(originalError),
     );
   });
