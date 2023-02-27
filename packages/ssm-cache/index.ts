@@ -70,16 +70,6 @@ export const setCacheDurationMilliseconds = (cacheDurationMilliseconds: number) 
 export const parameterExistsInCache = (name: string) =>
   Object.prototype.hasOwnProperty.call(ssmCache.values, name) && ssmCache.values[name];
 
-export const addToCache = (regex: RegExp | undefined, { Name, Value }: SSM.Parameter) => {
-  if (!Name) return;
-  if (regex && !regex.test(Name)) return;
-
-  ssmCache.values[Name] = {
-    value: Value || '',
-    expiryDate: new Date(Date.now() + ssmCache.cacheDurationMilliseconds),
-  };
-};
-
 export const getSsmClient = () => {
   if (!ssm) {
     ssm = new SSM(ssmConfig);
@@ -88,19 +78,14 @@ export const getSsmClient = () => {
   return ssm;
 };
 
-export const getSsmParameter = async (name: string): Promise<string> => {
-  // If the cache doesn't have the requested parameter or if it is expired, load it
+export const addToCache = (regex: RegExp | undefined, { Name, Value }: SSM.Parameter) => {
+  if (!Name) return;
+  if (regex && !regex.test(Name)) return;
 
-  if (!parameterExistsInCache(name) || hasParameterExpired(ssmCache.values[name])) {
-    await loadParameter(name);
-  }
-
-  // If the cache still doesn't have the requested parameter, throw an error
-  if (!parameterExistsInCache(name)) {
-    throw new SsmParameterNotFound(`Parameter ${name} not found`);
-  }
-
-  return ssmCache?.values[name]?.value || '';
+  ssmCache.values[Name] = {
+    value: Value || '',
+    expiryDate: new Date(Date.now() + ssmCache.cacheDurationMilliseconds),
+  };
 };
 
 export const loadParameter = async (name: string) => {
@@ -118,6 +103,21 @@ export const loadParameter = async (name: string) => {
   }
 
   addToCache(undefined, Parameter);
+};
+
+export const getSsmParameter = async (name: string): Promise<string> => {
+  // If the cache doesn't have the requested parameter or if it is expired, load it
+
+  if (!parameterExistsInCache(name) || hasParameterExpired(ssmCache.values[name])) {
+    await loadParameter(name);
+  }
+
+  // If the cache still doesn't have the requested parameter, throw an error
+  if (!parameterExistsInCache(name)) {
+    throw new SsmParameterNotFound(`Parameter ${name} not found`);
+  }
+
+  return ssmCache?.values[name]?.value || '';
 };
 
 type LoadPaginatedParameters = {
