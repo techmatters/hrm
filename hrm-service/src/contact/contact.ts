@@ -13,7 +13,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-
 import {
   connectToCase,
   Contact,
@@ -79,8 +78,13 @@ export type CreateContactPayloadWithFormProperty = Omit<NewContactRecord, 'rawJs
   form: ContactRawJson;
 } & { csamReports?: CSAMReport[]; referrals?: ReferralWithoutContactId[] };
 
+type CreateContactPayloadWithRawJsonProperty = NewContactRecord & {
+  csamReports?: CSAMReport[];
+  referrals?: ReferralWithoutContactId[];
+};
+
 export type CreateContactPayload =
-  | (NewContactRecord & { csamReports?: CSAMReport[]; referrals?: ReferralWithoutContactId[] })
+  | CreateContactPayloadWithRawJsonProperty
   | CreateContactPayloadWithFormProperty;
 
 export const usesFormProperty = (
@@ -128,6 +132,45 @@ export const getContactById = async (accountSid: string, contactId: number) => {
   return contact;
 };
 
+const getNewContactPayload = (
+  newContact: CreateContactPayload,
+): {
+  newContactPayload: NewContactRecord;
+  csamReportsPayload?: CSAMReport[];
+  referralsPayload?: ReferralWithoutContactId[];
+} => {
+  if (usesFormProperty(newContact)) {
+    const {
+      csamReports: csamReportsPayload,
+      referrals: referralsPayload,
+      form,
+      ...rest
+    } = newContact;
+
+    return {
+      newContactPayload: {
+        ...rest,
+        rawJson: newContact.form,
+      },
+      csamReportsPayload,
+      referralsPayload,
+    };
+  }
+
+  const {
+    csamReports: csamReportsPayload,
+    referrals: referralsPayload,
+    form,
+    ...newContactPayload
+  } = newContact as CreateContactPayloadWithRawJsonProperty & { form?: any }; // typecast just to get rid of legacy form, if for some reason is here
+
+  return {
+    newContactPayload,
+    csamReportsPayload,
+    referralsPayload,
+  };
+};
+
 const shouldCreateRetrieveTranscript = (contact: Contact) =>
   enableCreateContactJobsFlag &&
   isChatChannel(contact.channel) &&
@@ -141,22 +184,26 @@ export const createContact = async (
   { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
 ): Promise<Contact> => {
   return db.tx(async connection => {
-    const rawJson = usesFormProperty(newContact) ? newContact.form : newContact.rawJson;
-    // const { referrals, ...withoutReferrals } = newContact;
+    const { newContactPayload, csamReportsPayload, referralsPayload } = getNewContactPayload(
+      newContact,
+    );
+
     const completeNewContact: NewContactRecord = {
-      ...newContact,
-      helpline: newContact.helpline ?? '',
-      number: newContact.number ?? '',
-      channel: newContact.channel ?? '',
-      timeOfContact: newContact.timeOfContact ? new Date(newContact.timeOfContact) : new Date(),
-      channelSid: newContact.channelSid ?? '',
-      serviceSid: newContact.serviceSid ?? '',
-      taskId: newContact.taskId ?? '',
-      twilioWorkerId: newContact.twilioWorkerId ?? '',
-      rawJson,
+      ...newContactPayload,
+      helpline: newContactPayload.helpline ?? '',
+      number: newContactPayload.number ?? '',
+      channel: newContactPayload.channel ?? '',
+      timeOfContact: newContactPayload.timeOfContact
+        ? new Date(newContactPayload.timeOfContact)
+        : new Date(),
+      channelSid: newContactPayload.channelSid ?? '',
+      serviceSid: newContactPayload.serviceSid ?? '',
+      taskId: newContactPayload.taskId ?? '',
+      twilioWorkerId: newContactPayload.twilioWorkerId ?? '',
+      rawJson: newContactPayload.rawJson,
       queueName:
         // Checking in rawJson might be redundant, copied from Sequelize logic in contact-controller.js
-        newContact.queueName || (<any>(rawJson ?? {})).queueName,
+        newContactPayload.queueName || (<any>(newContactPayload.rawJson ?? {})).queueName,
       createdBy,
     };
 
@@ -170,15 +217,16 @@ export const createContact = async (
       contactResult = contact;
     } else {
       // associate csam reports
-      const csamReportIds = (newContact.csamReports ?? []).map(csr => csr.id);
+      const csamReportIds = (csamReportsPayload ?? []).map(csr => csr.id);
       const csamReports =
         csamReportIds && csamReportIds.length
           ? await connectContactToCsamReports(connection)(contact.id, csamReportIds, accountSid)
           : [];
 
       // create resources referrals
-      const referrals = newContact.referrals ?? [];
+      const referrals = referralsPayload ?? [];
       const createdReferrals = [];
+
       if (referrals && referrals.length) {
         // Do this sequentially, it's on a single connection in a transaction anyway.
         for (const referral of referrals) {

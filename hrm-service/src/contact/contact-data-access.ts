@@ -187,7 +187,7 @@ export const create = (tx?: ITask<{}>) => async (
     return executeQuery(tx);
   }
 
-  return db.task(conn => executeQuery(conn));
+  return db.tx(conn => executeQuery(conn));
 };
 
 export const patch = async (
