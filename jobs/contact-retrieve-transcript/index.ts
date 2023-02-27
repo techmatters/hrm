@@ -55,8 +55,8 @@ const ssmCacheConfigs = [
 const processRecord = async (message: PublishToContactJobsTopicParams) => {
   console.log(message);
 
-  const authToken = getSsmParameter(`/${hrmEnv}/twilio/${message.accountSid}/auth_token`);
-  const docsBucketName = getSsmParameter(`/${hrmEnv}/s3/${message.accountSid}/docs_bucket_name`);
+  const authToken = await getSsmParameter(`/${hrmEnv}/twilio/${message.accountSid}/auth_token`);
+  const docsBucketName = await getSsmParameter(`/${hrmEnv}/s3/${message.accountSid}/docs_bucket_name`);
 
   if (!authToken || !docsBucketName) {
     throw new Error('Missing required SSM params');
@@ -130,8 +130,6 @@ export const handler = async (event: SQSEvent): Promise<any> => {
     if (!hrmEnv) {
       throw new Error('Missing NODE_ENV ENV Variable');
     }
-
-    await loadSsmCache({ configs: ssmCacheConfigs });
 
     const promises = event.Records.map(async sqsRecord => processRecordWithoutException(sqsRecord));
 

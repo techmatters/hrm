@@ -129,8 +129,6 @@ describe('contact-retrieve-transcript', () => {
     const sqsMessage = sqsResult?.Messages?.[0];
     const body = JSON.parse(sqsMessage?.Body || '');
     expect(body?.attemptResult).toEqual('failure');
-    expect(body?.attemptPayload).toEqual(
-      'SSM parameter /local/twilio/badSid/auth_token not found in cache',
-    );
+    expect(body?.attemptPayload).toEqual('Parameter /local/twilio/badSid/auth_token not found.');
   });
 });
