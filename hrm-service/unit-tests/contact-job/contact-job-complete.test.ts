@@ -44,7 +44,7 @@ describe('pollAndProcessCompletedContactJobs', () => {
 
     expect(sqsSpy).toHaveBeenCalled();
     expect(Array.isArray(result)).toBeTruthy();
-    expect(result.length).toBe(0);
+    expect(result?.length).toBe(0);
   });
 
   test('Invalid job format throws but does not shuts down other jobs', async () => {
@@ -93,8 +93,8 @@ describe('pollAndProcessCompletedContactJobs', () => {
       new Error(`Unhandled case: ${invalidPayload}`),
     );
 
-    expect(result[0].status).toBe('rejected');
-    expect(result[1].status).toBe('fulfilled');
+    expect(result?.[0].status).toBe('rejected');
+    expect(result?.[1].status).toBe('fulfilled');
   });
 
   test('If a job fails, it does not shuts down other jobs', async () => {
@@ -150,8 +150,8 @@ describe('pollAndProcessCompletedContactJobs', () => {
       new Error(':sad_trombone:'),
     );
 
-    expect(result[0].status).toBe('rejected');
-    expect(result[1].status).toBe('fulfilled');
+    expect(result?.[0].status).toBe('rejected');
+    expect(result?.[1].status).toBe('fulfilled');
   });
 
   const completedJobsList: {
@@ -214,7 +214,7 @@ describe('pollAndProcessCompletedContactJobs', () => {
       });
       expect(deletedCompletedContactJobsSpy).toHaveBeenCalledWith(validPayload.ReceiptHandle);
 
-      expect(result[0].status).toBe('fulfilled');
+      expect(result?.[0].status).toBe('fulfilled');
     },
   );
 
@@ -303,7 +303,64 @@ describe('pollAndProcessCompletedContactJobs', () => {
         job.attemptPayload,
       );
 
-      expect(result[0].status).toBe('fulfilled');
+      expect(result?.[0].status).toBe('fulfilled');
     },
   );
+
+  jest.mock('./contact-job-data-access', () => ({
+    getContactJobById: jest.fn().mockResolvedValue({
+      numberOfAttempts: 5,
+    }),
+  }));
+
+  describe('getAttemptNumber', () => {
+    it('returns completedJob.attemptNumber when not null', async () => {
+      const completedJob = {
+        jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
+        jobId: 1,
+        accountSid: 'accountSid',
+        attemptNumber: 1,
+        contactId: 123,
+        taskId: 'taskId',
+        twilioWorkerId: 'twilioWorkerId',
+        serviceSid: 'serviceSid',
+        channelSid: 'channelSid',
+        filePath: 'filePath',
+        attemptPayload: 'some-url-here',
+        attemptResult: 'success',
+      };
+      const contactJob = {
+        numberOfAttempts: 5,
+      };
+
+      const result = await contactJobComplete.getAttemptNumber(completedJob, contactJob);
+
+      expect(result).toBe(completedJob.attemptNumber);
+    });
+
+    it('returns contactJob.numberOfAttempts when completedJob.attemptNumber is null', async () => {
+      const completedJob = {
+        jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
+        jobId: 1,
+        accountSid: 'accountSid',
+        attemptNumber: undefined,
+        contactId: 123,
+        taskId: 'taskId',
+        twilioWorkerId: 'twilioWorkerId',
+        serviceSid: 'serviceSid',
+        channelSid: 'channelSid',
+        filePath: 'filePath',
+        attemptPayload: 'some-url-here',
+        attemptResult: 'success',
+      };
+      const contactJob = {
+        numberOfAttempts: 5,
+      };
+
+      const result = await contactJobComplete.getAttemptNumber(completedJob, contactJob);
+
+      expect(result).toBe(contactJob.numberOfAttempts);
+    });
+  });
+
 });

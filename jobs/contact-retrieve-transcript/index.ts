@@ -136,8 +136,6 @@ export const handler = async (event: SQSEvent): Promise<any> => {
     const promises = event.Records.map(async sqsRecord => processRecordWithoutException(sqsRecord));
 
     await Promise.all(promises);
-
-    return response;
   } catch (err) {
     // SSM failures and other major setup exceptions will cause a failure of all messages sending them to DLQ
     // which should be the same as the completed queue right now.
@@ -154,6 +152,9 @@ export const handler = async (event: SQSEvent): Promise<any> => {
       };
     });
 
-    return response;
+    console.log('Failed to init processor', response);
   }
+
+
+  return response;
 };

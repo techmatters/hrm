@@ -27,5 +27,6 @@ services:
       - DOCKER_HOST=unix:///var/run/docker.sock
       - LAMBDA_EXECUTOR=docker-reuse
       - LAMBDA_NETWORK=bridge
+      - LS_LOG=debug
     volumes:
       - '/var/run/docker.sock:/var/run/docker.sock'

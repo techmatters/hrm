@@ -40,3 +40,6 @@ export const ADD_FAILED_ATTEMPT_PAYLOAD = `
   VALUES ($<contactJobId>, $<attemptNumber>, $<attemptPayload:json>::JSONB, current_timestamp)
   RETURNING *
 `;
+
+export const selectSingleContactJobByIdSql = (table: string) =>
+  `SELECT * FROM "${table}" WHERE id = $(jobId)`;

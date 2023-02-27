@@ -21,6 +21,7 @@ import {
   COMPLETE_JOB_SQL,
   PULL_DUE_JOBS_SQL,
   ADD_FAILED_ATTEMPT_PAYLOAD,
+  selectSingleContactJobByIdSql,
 } from './sql/contact-job-sql';
 
 export enum ContactJobType {
@@ -53,6 +54,13 @@ export type RetrieveContactTranscriptJob = Job<string[] | null, null> & {
 };
 
 export type ContactJob = RetrieveContactTranscriptJob;
+
+export const getContactJobById = async (jobId: number): Promise<ContactJobRecord> =>
+  db.task(async connection =>
+    connection.oneOrNone<ContactJobRecord>(selectSingleContactJobByIdSql('ContactJobs'), {
+      jobId,
+    }),
+  );
 
 /**
  * Returns all the jobs that are considered 'due'

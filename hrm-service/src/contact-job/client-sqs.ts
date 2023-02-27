@@ -22,6 +22,10 @@ import type { PublishToContactJobsTopicParams } from '@tech-matters/hrm-types/Co
 
 let sqs: SQS;
 
+const COMPLETED_QUEUE_SSM_PATH = `/${process.env.NODE_ENV}/${process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION}/sqs/jobs/contact/queue-url-complete`;
+const JOB_QUEUE_SSM_PATH_BASE = `/${process.env.NODE_ENV}/${process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION}/sqs/jobs/contact/queue-url`;
+
+
 export const getSqsClient = () => {
   if (!sqs) {
     sqs = new SQS();
@@ -32,9 +36,7 @@ export const getSqsClient = () => {
 export const pollCompletedContactJobsFromQueue =
   async (): Promise<SQS.Types.ReceiveMessageResult> => {
     try {
-      const QueueUrl = getSsmParameter(
-        `/${process.env.NODE_ENV}/${process.env.AWS_DEFAULT_REGION}/sqs/jobs/contact/queue-url-complete`,
-      );
+      const QueueUrl = getSsmParameter(COMPLETED_QUEUE_SSM_PATH);
 
       return await getSqsClient()
         .receiveMessage({
@@ -50,9 +52,7 @@ export const pollCompletedContactJobsFromQueue =
 
 export const deleteCompletedContactJobsFromQueue = async (ReceiptHandle: string) => {
   try {
-    const QueueUrl = getSsmParameter(
-      `/${process.env.NODE_ENV}/${process.env.AWS_DEFAULT_REGION}/sqs/jobs/contact/queue-url-complete`,
-    );
+    const QueueUrl = getSsmParameter(COMPLETED_QUEUE_SSM_PATH);
 
     return await getSqsClient().deleteMessage({ QueueUrl, ReceiptHandle }).promise();
   } catch (err) {
@@ -65,7 +65,7 @@ export const publishToContactJobs = async (params: PublishToContactJobsTopicPara
   //TODO: more robust error handling/messaging
   try {
     const QueueUrl = getSsmParameter(
-      `/${process.env.NODE_ENV}/${process.env.AWS_DEFAULT_REGION}/sqs/jobs/contact/queue-url-${params.jobType}`,
+      `${JOB_QUEUE_SSM_PATH_BASE}${params.jobType}`,
     );
 
     return await getSqsClient()

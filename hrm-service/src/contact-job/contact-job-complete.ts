@@ -15,9 +15,11 @@
  */
 
 import {
-  ContactJobType,
-  completeContactJob,
   appendFailedAttemptPayload,
+  ContactJobType,
+  ContactJobRecord,
+  completeContactJob,
+  getContactJobById,
 } from './contact-job-data-access';
 import { ContactJobCompleteProcessorError, ContactJobPollerError } from './contact-job-error';
 import {
@@ -62,7 +64,7 @@ export const processCompletedRetrieveContactTranscript = async (
   );
 };
 
-const processCompletedContactJob = async (completedJob: CompletedContactJobBody) => {
+export const processCompletedContactJob = async (completedJob: CompletedContactJobBody) => {
   switch (completedJob.jobType) {
     case ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT: {
       return processCompletedRetrieveContactTranscript(completedJob);
@@ -72,6 +74,71 @@ const processCompletedContactJob = async (completedJob: CompletedContactJobBody)
       assertExhaustive(completedJob as never);
   }
 };
+
+export const getAttemptNumber = async(completedJob: CompletedContactJobBody, contactJob: ContactJobRecord) => {
+  // Attempt number can be null when error occurs in lambda before job data is parsed
+  // In this case we need to fetch the job from the database to get the attempt number
+  if (completedJob.attemptNumber != null) {
+    return completedJob.attemptNumber;
+  }
+
+  return  contactJob.numberOfAttempts;
+}
+
+export const getContactJobOrFail = async (completedJob: CompletedContactJobBody) => {
+  const contactJob = await getContactJobById(completedJob.jobId);
+
+  if (!contactJob) {
+    throw new Error(`Could not find contact job with id ${completedJob.jobId}`);
+  }
+
+  return contactJob;
+}
+
+export const handleSuccess = async (completedJob: CompletedContactJobBody) => {
+  if (completedJob.attemptResult !== 'success') return;
+
+  await processCompletedContactJob(completedJob);
+
+  // Mark the job as completed
+  const completionPayload = {
+    message: 'Job processed successfully',
+    value: completedJob.attemptPayload,
+  };
+  const markedComplete = await completeContactJob(completedJob.jobId, completionPayload);
+
+  return markedComplete;
+}
+
+export const handleFailure = async (completedJob: CompletedContactJobBody, jobMaxAttempts: number) => {
+  if (completedJob.attemptResult === 'success') return;
+
+  const { jobId, attemptPayload } = completedJob;
+
+  // emit an error to pick up in metrics since completed queue is our
+  // DLQ. These may be duplicates of ContactJobProcessorErrors that have
+  // already caused an alarm, but there is a chance of other errors ending up here.
+  console.error(
+    new ContactJobCompleteProcessorError(
+      `process job with id ${jobId} failed`,
+      attemptPayload,
+    ),
+  );
+
+  const contactJob = await getContactJobOrFail(completedJob);
+  const attemptNumber = await getAttemptNumber(completedJob, contactJob);
+
+  const updated = await appendFailedAttemptPayload(jobId, attemptNumber, attemptPayload);
+
+  if (attemptNumber >= jobMaxAttempts) {
+    const completionPayload = { message: 'Attempts limit reached' };
+    const markedComplete = await completeContactJob(completedJob.jobId, completionPayload);
+
+    return markedComplete;
+  }
+
+  return updated;
+}
 
 export const pollAndProcessCompletedContactJobs = async (jobMaxAttempts: number) => {
   const polledCompletedJobs = await pollCompletedContactJobsFromQueue();
@@ -95,40 +162,9 @@ export const pollAndProcessCompletedContactJobs = async (jobMaxAttempts: number)
         const completedJob: CompletedContactJobBody = JSON.parse(m.Body);
 
         if (completedJob.attemptResult === 'success') {
-          await processCompletedContactJob(completedJob);
-
-          // Mark the job as completed
-          const completionPayload = {
-            message: 'Job processed successfully',
-            value: completedJob.attemptPayload,
-          };
-          const markedComplete = await completeContactJob(completedJob.jobId, completionPayload);
-
-          return markedComplete;
+          return await handleSuccess(completedJob);
         } else {
-
-          const { jobId, attemptNumber, attemptPayload } = completedJob;
-
-          // emit an error to pick up in metrics since completed queue is our
-          // DLQ. These may be duplicates of ContactJobProcessorErrors that have
-          // already caused an alarm, but there is a chance of other errors ending up here.
-          console.error(
-            new ContactJobCompleteProcessorError(
-              `process job with id ${jobId} failed`,
-              attemptPayload,
-            ),
-          );
-
-          const updated = await appendFailedAttemptPayload(jobId, attemptNumber, attemptPayload);
-
-          if (attemptNumber >= jobMaxAttempts) {
-            const completionPayload = { message: 'Attempts limit reached' };
-            const markedComplete = await completeContactJob(completedJob.jobId, completionPayload);
-
-            return markedComplete;
-          }
-
-          return updated;
+          return await handleFailure(completedJob, jobMaxAttempts);
         }
       } catch (err) {
         console.error(new ContactJobPollerError('Failed to process CompletedContactJobBody:'), m, err);
