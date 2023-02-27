@@ -156,7 +156,7 @@ describe('loadSsmCache', () => {
 
   it('loading after cache expired should update expiryDate', async () => {
     const initialExpire = new Date(Date.now() - 1000);
-    SsmCache.ssmCache.expiryDate = { ...initialExpire };
+    SsmCache.ssmCache.expiryDate = initialExpire;
     await SsmCache.loadSsmCache({ configs: [] });
     expect(isAfter(SsmCache.ssmCache.expiryDate, initialExpire)).toBeTruthy();
   });
