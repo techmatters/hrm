@@ -459,17 +459,14 @@ describe('POST /search', () => {
         {
           id: 'RESOURCE_2',
           name: 'Resource 2 (Account 1)',
-          attributes: {},
         },
         {
           id: 'RESOURCE_3',
           name: 'Resource 3 (Account 1)',
-          attributes: {},
         },
         {
           id: 'RESOURCE_4',
           name: 'Resource 4 (Account 1)',
-          attributes: {},
         },
       ],
       expectedTotalCount: 5,
@@ -483,27 +480,22 @@ describe('POST /search', () => {
         {
           id: 'RESOURCE_0',
           name: 'Resource 0 (Account 1)',
-          attributes: {},
         },
         {
           id: 'RESOURCE_1',
           name: 'Resource 1 (Account 1)',
-          attributes: {},
         },
         {
           id: 'RESOURCE_2',
           name: 'Resource 2 (Account 1)',
-          attributes: {},
         },
         {
           id: 'RESOURCE_3',
           name: 'Resource 3 (Account 1)',
-          attributes: {},
         },
         {
           id: 'RESOURCE_4',
           name: 'Resource 4 (Account 1)',
-          attributes: {},
         },
       ],
       expectedTotalCount: 5,
@@ -526,22 +518,18 @@ describe('POST /search', () => {
         {
           id: 'RESOURCE_3',
           name: 'Resource 3 (Account 1)',
-          attributes: {},
         },
         {
           id: 'RESOURCE_0',
           name: 'Resource 0 (Account 1)',
-          attributes: {},
         },
         {
           id: 'RESOURCE_2',
           name: 'Resource 2 (Account 1)',
-          attributes: {},
         },
         {
           id: 'RESOURCE_1',
           name: 'Resource 1 (Account 1)',
-          attributes: {},
         },
       ],
       expectedTotalCount: 4,
@@ -555,12 +543,10 @@ describe('POST /search', () => {
         {
           id: 'RESOURCE_2',
           name: 'Resource 2 (Account 1)',
-          attributes: {},
         },
         {
           id: 'RESOURCE_1',
           name: 'Resource 1 (Account 1)',
-          attributes: {},
         },
       ],
       expectedTotalCount: 4,
@@ -578,12 +564,10 @@ describe('POST /search', () => {
         {
           id: 'RESOURCE_2',
           name: 'Resource 2 (Account 1)',
-          attributes: {},
         },
         {
           id: 'RESOURCE_1',
           name: 'Resource 1 (Account 1)',
-          attributes: {},
         },
       ],
       expectedTotalCount: 5,
@@ -599,17 +583,14 @@ describe('POST /search', () => {
         {
           id: 'RESOURCE_0',
           name: 'Resource 0 (Account 1)',
-          attributes: {},
         },
         {
           id: 'RESOURCE_2',
           name: 'Resource 2 (Account 1)',
-          attributes: {},
         },
         {
           id: 'RESOURCE_1',
           name: 'Resource 1 (Account 1)',
-          attributes: {},
         },
       ],
       expectedTotalCount: 3,
@@ -625,17 +606,14 @@ describe('POST /search', () => {
         {
           id: 'RESOURCE_0',
           name: 'Resource 0 (Account 1)',
-          attributes: {},
         },
         {
           id: 'RESOURCE_2',
           name: 'Resource 2 (Account 1)',
-          attributes: {},
         },
         {
           id: 'RESOURCE_1',
           name: 'Resource 1 (Account 1)',
-          attributes: {},
         },
       ],
       expectedTotalCount: 3,
@@ -680,4 +658,62 @@ describe('POST /search', () => {
       });
     },
   );
+
+  describe('Found resource has referenced attributes', () => {
+    beforeEach(async () => {
+      await db.multi(`
+INSERT INTO resources."ResourceReferenceStringAttributeValues" 
+  (id, "accountSid", "key", "value", "language", "info") 
+  VALUES (
+      'REF_SEARCH_TEST_ATTRIBUTE', 
+      'ACCOUNT_1', 
+      'REFERENCE_KEY', 
+      'REFERENCE_VALUE', 
+      'REFERENCE_LANGUAGE', 
+      '{ "property": "VALUE" }');
+INSERT INTO resources."ResourceReferenceStringAttributes" 
+  ("accountSid", "resourceId", "referenceId") 
+  VALUES ('ACCOUNT_1', 'RESOURCE_1', 'REF_SEARCH_TEST_ATTRIBUTE');
+      `);
+    });
+    test('should return the resource with the referenced attributes', async () => {
+      const response = await request
+        .post(`${basePath}?limit=1&start=0`)
+        .set(headers)
+        .send({
+          nameSubstring: 'Resource 1',
+        });
+      expect(response.status).toBe(200);
+      expect(response.body.totalCount).toBe(1);
+      expect(response.body.results).toStrictEqual([
+        {
+          id: 'RESOURCE_1',
+          name: 'Resource 1 (Account 1)',
+          attributes: {
+            REFERENCE_KEY: [
+              {
+                value: 'REFERENCE_VALUE',
+                language: 'REFERENCE_LANGUAGE',
+                info: { property: 'VALUE' },
+              },
+            ],
+            ATTRIBUTE_0: [
+              {
+                value: 'VALUE_0',
+                language: 'en-US',
+                info: { some: 'json' },
+              },
+            ],
+          },
+        },
+      ]);
+    });
+    afterEach(async () => {
+      await db.multi(`
+DELETE FROM resources."ResourceReferenceStringAttributeValues"
+WHERE id = 'REF_SEARCH_TEST_ATTRIBUTE';
+DELETE FROM resources."ResourceReferenceStringAttributes";
+      `);
+    });
+  });
 });
