@@ -145,13 +145,10 @@ export const handler = async (event: SQSEvent): Promise<any> => {
     // need to be able to handle these messages that will end up in the completed
     // queue without a completionPayload.
     response.batchItemFailures = event.Records.map(record => {
-      console.dir(record)
       return {
         itemIdentifier: record.messageId,
       };
-    });
-
-    console.log('Failed to init processor', response);
+    })
   }
 
 
