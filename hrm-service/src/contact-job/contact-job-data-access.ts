@@ -16,7 +16,8 @@
 
 import { ITask } from 'pg-promise';
 import { db, pgp } from '../connection-pool';
-import { Contact } from '../contact/contact-data-access';
+// eslint-disable-next-line prettier/prettier
+import type { Contact } from '../contact/contact-data-access';
 import {
   COMPLETE_JOB_SQL,
   PULL_DUE_JOBS_SQL,
@@ -91,7 +92,7 @@ export const completeContactJob = async (
  * Add a new job to be completed to the ContactJobs queue
  * Requires tx: ITask to make the creation of the job part of the same transaction
  */
-export const createContactJob = (tx: ITask<{}>) => async (
+export const createContactJob = (tx?: ITask<{}>) => async (
   job: Pick<ContactJob, 'jobType' | 'resource' | 'additionalPayload'>,
 ): Promise<void> => {
   const contact = job.resource;
@@ -110,7 +111,13 @@ export const createContactJob = (tx: ITask<{}>) => async (
     null,
     'ContactJobs',
   );
-  return tx.none(insertSql);
+
+  // If a transaction is provided, use it
+  if (tx) {
+    return tx.none(insertSql);
+  }
+
+  return db.task(conn => conn.none(insertSql));
 };
 
 export const appendFailedAttemptPayload = async (

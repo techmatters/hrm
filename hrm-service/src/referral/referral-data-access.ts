@@ -57,10 +57,9 @@ export type Referral = {
   resourceName?: string;
 };
 
-export const createReferralRecord = async (
+export const createReferralRecord = (tx?: ITask<{}>) => async (
   accountSid: string,
   referral: Referral,
-  tx?: ITask<{}>,
 ): Promise<Referral> => {
   try {
     const statement = insertReferralSql({ resourceName: undefined, ...referral, accountSid });

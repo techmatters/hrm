@@ -15,7 +15,6 @@
  */
 
 import { db } from '../connection-pool';
-import { enableCreateContactJobsFlag } from '../featureFlags';
 import {
   UPDATE_CASEID_BY_ID,
   UPDATE_RAWJSON_BY_ID,
@@ -27,14 +26,11 @@ import { selectSingleContactByIdSql, selectSingleContactByTaskId } from './sql/c
 import { insertContactSql, NewContactRecord } from './sql/contact-insert-sql';
 import {
   ContactRawJson,
-  isS3StoredTranscriptPending,
   PersonInformation,
   ReferralWithoutContactId,
 } from './contact-json';
-import { createContactJob, ContactJobType } from '../contact-job/contact-job-data-access';
-import { isChatChannel } from './channelTypes';
-import { connectContactToCsamReports } from '../csam-report/csam-report';
-import { createReferralRecord } from '../referral/referral-data-access';
+// eslint-disable-next-line prettier/prettier
+import type { ITask } from 'pg-promise';
 
 type ExistingContactRecord = {
   id: number;
@@ -153,15 +149,14 @@ const searchParametersToQueryParameters = (
   return queryParams;
 };
 
-export const create = async (
+export const create = (tx?: ITask<{}>) => async (
   accountSid: string,
   newContact: NewContactRecord,
-  csamReportIds: number[],
-  referrals: ReferralWithoutContactId[],
-): Promise<Contact> => {
-  return db.tx(async connection => {
+): Promise<{ contact: Contact; isNewRecord: boolean }> => {
+  // Inner query that will be executed in a pgp.ITask
+  const executeQuery = async (conn: ITask<{}>) => {
     if (newContact.taskId) {
-      const existingContact: Contact = await connection.oneOrNone<Contact>(
+      const existingContact: Contact = await conn.oneOrNone<Contact>(
         selectSingleContactByTaskId('Contacts'),
         {
           accountSid,
@@ -170,12 +165,12 @@ export const create = async (
       );
       if (existingContact) {
         // A contact with the same task ID already exists, return it
-        return existingContact;
+        return { contact: existingContact, isNewRecord: false };
       }
     }
 
     const now = new Date();
-    const created: Contact = await connection.one<Contact>(
+    const created: Contact = await conn.one<Contact>(
       insertContactSql({
         ...newContact,
         accountSid,
@@ -184,40 +179,15 @@ export const create = async (
       }),
     );
 
-    const csamReports =
-      csamReportIds && csamReportIds.length
-        ? await connectContactToCsamReports(connection)(created.id, csamReportIds, accountSid)
-        : [];
+    return { contact: created, isNewRecord: true };
+  };
 
-    const createdReferrals = [];
-    if (referrals && referrals.length) {
-      // Do this sequentially, it's on a single connection in a transaction anyway.
-      for (const referral of referrals) {
-        const { contactId, ...withoutContactId } = await createReferralRecord(
-          accountSid,
-          {
-            ...referral,
-            contactId: created.id.toString(),
-          },
-          connection,
-        );
-        createdReferrals.push(withoutContactId);
-      }
-    }
-    if (
-      enableCreateContactJobsFlag &&
-      isChatChannel(created.channel) &&
-      created.rawJson?.conversationMedia?.some(isS3StoredTranscriptPending)
-    ) {
-      await createContactJob(connection)({
-        jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
-        resource: created,
-        additionalPayload: undefined,
-      });
-    }
+  // If a transaction is provided, use it
+  if (tx) {
+    return executeQuery(tx);
+  }
 
-    return { ...created, csamReports, referrals: createdReferrals };
-  });
+  return db.task(conn => executeQuery(conn));
 };
 
 export const patch = async (
