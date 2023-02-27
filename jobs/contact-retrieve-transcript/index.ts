@@ -53,8 +53,6 @@ const ssmCacheConfigs = [
 ];
 
 const processRecord = async (message: PublishToContactJobsTopicParams) => {
-  console.log(message);
-
   const authToken = getSsmParameter(`/${hrmEnv}/twilio/${message.accountSid}/auth_token`);
   const docsBucketName = getSsmParameter(`/${hrmEnv}/s3/${message.accountSid}/docs_bucket_name`);
 
@@ -147,6 +145,7 @@ export const handler = async (event: SQSEvent): Promise<any> => {
     // need to be able to handle these messages that will end up in the completed
     // queue without a completionPayload.
     response.batchItemFailures = event.Records.map(record => {
+      console.dir(record)
       return {
         itemIdentifier: record.messageId,
       };

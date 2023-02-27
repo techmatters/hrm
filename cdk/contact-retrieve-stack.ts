@@ -119,7 +119,7 @@ export default class ContactRetrieveStack extends cdk.Stack {
         S3_REGION: 'us-east-1',
         SSM_ENDPOINT: 'http://localstack:4566',
         NODE_ENV: 'local',
-        // completed_sqs_queue_url: completedQueueUrl,
+        completed_sqs_queue_url: completedQueueUrl,
       },
       bundling: { sourceMap: true },
       deadLetterQueueEnabled: true,

@@ -23,7 +23,7 @@ import type { PublishToContactJobsTopicParams } from '@tech-matters/hrm-types/Co
 let sqs: SQS;
 
 const COMPLETED_QUEUE_SSM_PATH = `/${process.env.NODE_ENV}/${process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION}/sqs/jobs/contact/queue-url-complete`;
-const JOB_QUEUE_SSM_PATH_BASE = `/${process.env.NODE_ENV}/${process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION}/sqs/jobs/contact/queue-url`;
+const JOB_QUEUE_SSM_PATH_BASE = `/${process.env.NODE_ENV}/${process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION}/sqs/jobs/contact/queue-url-`;
 
 
 export const getSqsClient = () => {

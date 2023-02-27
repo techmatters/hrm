@@ -33,7 +33,7 @@ export type PublishRetrieveContactTranscript = ContactJobMessageCommons & {
   jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT;
   serviceSid: string;
   channelSid: string;
-  filePath: string; // the file name as we want to save the transctipr in S3
+  filePath: string; // the file name as we want to save the transcript in S3
 };
 
 export type PublishToContactJobsTopicParams = PublishRetrieveContactTranscript;

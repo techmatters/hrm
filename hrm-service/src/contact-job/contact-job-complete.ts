@@ -113,7 +113,12 @@ export const handleSuccess = async (completedJob: CompletedContactJobBody) => {
 export const handleFailure = async (completedJob: CompletedContactJobBody, jobMaxAttempts: number) => {
   if (completedJob.attemptResult === 'success') return;
 
-  const { jobId, attemptPayload } = completedJob;
+  const { jobId } = completedJob;
+  let { attemptPayload } = completedJob;
+
+  if (typeof attemptPayload !== 'string') {
+    attemptPayload = "Message did not contain attemptPayload. Likely DLQ'd from lambda"
+  }
 
   // emit an error to pick up in metrics since completed queue is our
   // DLQ. These may be duplicates of ContactJobProcessorErrors that have
@@ -154,7 +159,6 @@ export const pollAndProcessCompletedContactJobs = async (jobMaxAttempts: number)
   const completedJobs = await Promise.allSettled(
     messages.map(async m => {
       try {
-
         // Immediately handle the message deletion in case of error since poller
         // is responsible for retrying failed jobs.
         await deleteCompletedContactJobsFromQueue(m.ReceiptHandle);
