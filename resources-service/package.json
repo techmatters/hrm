@@ -12,7 +12,7 @@
     "jest-each": "^29.2.1"
   },
   "scripts": {
-    "migrate": "run-s db:create:schema test:service:ci:migrate",
+    "migrate": "cross-env RDS_USERNAME=hrm RDS_PASSWORD=postgres RESOURCES_PASSWORD=resources-password run-s db:create:schema test:service:ci:migrate",
     "docker:compose:test:up": "docker compose -f ../hrm-service/docker-compose-test.yml up -d",
     "docker:compose:test:down": "docker compose -f ../hrm-service/docker-compose-test.yml down",
     "test": "run-s test:unit test:service",

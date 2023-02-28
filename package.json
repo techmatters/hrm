@@ -49,7 +49,8 @@
     "prettier": "^1.19.1",
     "ts-jest": "^28.0.8",
     "ts-node": "^10.9.1",
-    "typescript": "^4.8.4"
+    "typescript": "^4.8.4",
+    "wait-on": "^7.0.1"
   },
   "scripts": {
     "build": "tsc -b --verbose",
@@ -72,7 +73,7 @@
     "docker:compose:service:up": "docker-compose -p hrm -f hrm-service/docker-compose.yml up -d",
     "lint": "cross-env NODE_OPTIONS=--max-old-space-size=8096 eslint --ext ts .",
     "lint:fix": "npm run lint -- --fix",
-    "localstack:bootstrap": "cross-env AWS_REGION=eu-west-1 cdklocal bootstrap",
+    "localstack:bootstrap": "wait-on tcp:4566 && cross-env AWS_REGION=eu-west-1 cdklocal bootstrap",
     "localstack:deploy": "cross-env AWS_REGION=eu-west-1 cdklocal deploy --all --outputs-file ./cdk/outputs.json",
     "localstack:destroy": "cross-env AWS_REGION=eu-west-1 cdklocal destroy --all",
     "localstack:diff": "cross-env AWS_REGION=eu-west-1 cdklocal diff",

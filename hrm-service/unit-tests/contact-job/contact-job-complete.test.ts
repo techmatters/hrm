@@ -63,7 +63,7 @@ describe('pollAndProcessCompletedContactJobs', () => {
       serviceSid: 'serviceSid',
       channelSid: 'channelSid',
       filePath: 'filePath',
-      attemptPayload: 'some-url-here',
+      attemptPayload: { bucket: 'some-url-here', key: 'some-url-here' },
       attemptResult: 'success',
     };
     const validPayload = {
@@ -109,7 +109,7 @@ describe('pollAndProcessCompletedContactJobs', () => {
       serviceSid: 'serviceSid',
       channelSid: 'channelSid',
       filePath: 'filePath',
-      attemptPayload: 'some-url-here',
+      attemptPayload: { bucket: 'some-url-here', key: 'some-url-here' },
       attemptResult: 'success',
     };
 
@@ -171,7 +171,7 @@ describe('pollAndProcessCompletedContactJobs', () => {
         channelSid: 'channelSid',
         filePath: 'filePath',
         attemptNumber: 1,
-        attemptPayload: 'completionPayload',
+        attemptPayload: { bucket: 'completionPayload', key: 'completionPayload' },
       },
       processCompletedFunction: 'processCompletedRetrieveContactTranscript',
     },

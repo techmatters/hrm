@@ -286,7 +286,7 @@ describe('complete retrieve-transcript job type', () => {
         serviceSid: contact.serviceSid,
         taskId: contact.taskId,
         twilioWorkerId: contact.twilioWorkerId,
-        attemptPayload: 'some-url-here',
+        attemptPayload: { bucket: 'some-url-here', key: 'some-url-here' },
         attemptNumber: 1,
         attemptResult: 'success',
       };
@@ -360,7 +360,7 @@ describe('complete retrieve-transcript job type', () => {
       expect(isAfter(updatedRetrieveContactTranscriptJob.completed!, startedTimestamp)).toBeTruthy();
       expect(updatedRetrieveContactTranscriptJob.completionPayload).toMatchObject({
         message: 'Job processed successfully',
-        value: 'some-url-here',
+        value: { bucket: 'some-url-here', key: 'some-url-here' },
       });
 
       // Check the updated contact in the DB
