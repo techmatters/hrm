@@ -23,7 +23,7 @@ LEFT JOIN LATERAL (
         FROM resources."ResourceStringAttributes" AS rsa
         WHERE rsa."accountSid" = r."accountSid" AND rsa."resourceId" = r.id
       UNION ALL 
-        SELECT rrsav."key", rrsav."value", rrsav."language", rrsav."info"
+        SELECT rrsa."key", rrsav."value", rrsav."language", rrsav."info"
         FROM 
         resources."ResourceReferenceStringAttributes" AS rrsa
         INNER JOIN resources."ResourceReferenceStringAttributeValues" AS rrsav ON rrsav."accountSid" = rrsa."accountSid" AND rrsav."id" = rrsa."referenceId"

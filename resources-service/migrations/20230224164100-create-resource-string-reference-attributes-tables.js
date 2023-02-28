@@ -21,7 +21,6 @@ module.exports = {
       (
         id text COLLATE pg_catalog."default" NOT NULL,
         "accountSid" text COLLATE pg_catalog."default" NOT NULL,
-        "key" text COLLATE pg_catalog."default" NOT NULL,
         "value" text COLLATE pg_catalog."default" NOT NULL,
         "language" text COLLATE pg_catalog."default" NOT NULL,
         "info" JSONB,
@@ -39,6 +38,13 @@ module.exports = {
     console.log('Table "ResourceReferenceStringAttributeValues" now owned by resources');
 
     await queryInterface.sequelize.query(`
+      DROP TRIGGER IF EXISTS "ResourceReferenceStringAttributeValues_update_trigger"
+      ON resources."ResourceReferenceStringAttributeValues"
+    `);
+    console.log(
+      'Trigger ResourceReferenceStringAttributeValues_update_trigger dropped (if it existed)',
+    );
+    await queryInterface.sequelize.query(`
       CREATE TRIGGER "ResourceReferenceStringAttributeValues_update_trigger"
       BEFORE UPDATE
       ON resources."ResourceReferenceStringAttributeValues"
@@ -52,10 +58,11 @@ module.exports = {
       CREATE TABLE IF NOT EXISTS resources."ResourceReferenceStringAttributes"
       (
         "accountSid" text COLLATE pg_catalog."default" NOT NULL,
-        "referenceId" text COLLATE pg_catalog."default" NOT NULL,
         "resourceId" text COLLATE pg_catalog."default" NOT NULL,
+        "key" text COLLATE pg_catalog."default" NOT NULL,
+        "referenceId" text COLLATE pg_catalog."default" NOT NULL,
         "updateSequence"  bigint NOT NULL DEFAULT nextval('"Resources_updates_seq"'::regclass),
-        CONSTRAINT "ResourceReferenceStringAttribute_pkey" PRIMARY KEY ("resourceId", "accountSid", "referenceId"),
+        CONSTRAINT "ResourceReferenceStringAttribute_pkey" PRIMARY KEY ("resourceId", "accountSid", "key", "referenceId"),
         CONSTRAINT "FK_ResourceReferenceStringAttributes_Resources" FOREIGN KEY ("resourceId", "accountSid")
             REFERENCES resources."Resources" (id, "accountSid") MATCH SIMPLE
             ON UPDATE CASCADE
@@ -73,6 +80,12 @@ module.exports = {
           OWNER to resources;
     `);
     console.log('Table "ResourceReferenceStringAttributes" now owned by resources');
+
+    await queryInterface.sequelize.query(`
+      DROP TRIGGER IF EXISTS "ResourceReferenceStringAttributes_update_trigger"
+      ON resources."ResourceReferenceStringAttributes";
+    `);
+    console.log('Trigger ResourceReferenceStringAttributes_update_trigger dropped (if it existed)');
 
     await queryInterface.sequelize.query(`
       CREATE TRIGGER "ResourceReferenceStringAttributes_update_trigger"
