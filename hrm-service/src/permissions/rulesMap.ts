@@ -35,6 +35,7 @@ const thRules = require('../../permission-rules/th.json');
 const ukRules = require('../../permission-rules/uk.json');
 const zaRules = require('../../permission-rules/za.json');
 const zmRules = require('../../permission-rules/zm.json');
+const zwRules = require('../../permission-rules/zw.json');
 
 import { actionsMaps, Actions } from './actions';
 
@@ -80,6 +81,7 @@ const rulesMapDef = {
   uk: ukRules,
   za: zaRules,
   zm: zmRules,
+  zw: zwRules,
   open: openRules,
   demo: demoRules,
   dev: devRules,

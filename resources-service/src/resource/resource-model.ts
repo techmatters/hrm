@@ -19,7 +19,7 @@ import {
   getById,
   getByIdList,
   getWhereNameContains,
-  ReferrableResource,
+  ReferrableResourceAttribute,
 } from './resource-data-access';
 
 export type SearchParameters = {
@@ -34,15 +34,39 @@ export type SearchParameters = {
 const EMPTY_RESULT = { totalCount: 0, results: [] };
 const MAX_SEARCH_RESULTS = 200;
 
-export const getResource = (
+const groupAttributesByKeys = (
+  attributesWithKeys: (ReferrableResourceAttribute & { key: string })[],
+): Record<string, ReferrableResourceAttribute[]> => {
+  const groupedAttributes: Record<string, ReferrableResourceAttribute[]> = {};
+  attributesWithKeys.forEach(attribute => {
+    groupedAttributes[attribute.key] = groupedAttributes[attribute.key] || [];
+    const { key, ...withoutKey } = attribute;
+    groupedAttributes[attribute.key].push(withoutKey);
+  });
+  return groupedAttributes;
+};
+
+export type ReferrableResource = {
+  name: string;
+  id: string;
+  attributes: Record<string, ReferrableResourceAttribute[]>;
+};
+
+// The full resource & the search result are synonyms for now, but the full resource should grow to be a superset
+export type ReferrableResourceSearchResult = ReferrableResource;
+
+export const getResource = async (
   accountSid: AccountSID,
   resourceId: string,
-): Promise<ReferrableResource | null> => getById(accountSid, resourceId);
+): Promise<ReferrableResource | null> => {
+  const record = await getById(accountSid, resourceId);
+  return record ? { ...record, attributes: groupAttributesByKeys(record.attributes) } : null;
+};
 
 export const searchResources = async (
   accountSid: AccountSID,
   { nameSubstring, ids = [], pagination: { limit: unboundedLimit, start } }: SearchParameters,
-): Promise<{ totalCount: number; results: ReferrableResource[] }> => {
+): Promise<{ totalCount: number; results: ReferrableResourceSearchResult[] }> => {
   const limit = Math.min(MAX_SEARCH_RESULTS, unboundedLimit);
   const { results: idsOfNameMatches, totalCount: nameSearchTotalCount } = nameSubstring
     ? await getWhereNameContains(accountSid, nameSubstring, start, limit)
@@ -72,5 +96,11 @@ export const searchResources = async (
   const resultsStartIndex = Math.max(0, start - nameSearchTotalCount); // If the start point is past the end of those returned in the name search, we need to drop some from the start of the result set to return the correct paginated window
   const totalCount = nameSearchTotalCount + (untrimmedResults.length - idsOfNameMatches.length);
   const results = untrimmedResults.slice(resultsStartIndex, resultsStartIndex + limit);
-  return { results, totalCount };
+  return {
+    results: results.map(record => ({
+      ...record,
+      attributes: groupAttributesByKeys(record.attributes),
+    })),
+    totalCount,
+  };
 };

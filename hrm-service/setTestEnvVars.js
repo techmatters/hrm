@@ -31,6 +31,7 @@ process.env.PERMISSIONS_th = 'th';
 process.env.PERMISSIONS_uk = 'uk';
 process.env.PERMISSIONS_za = 'za';
 process.env.PERMISSIONS_zm = 'zm';
+process.env.PERMISSIONS_zw = 'zw';
 process.env.PERMISSIONS_open = 'open';
 process.env.PERMISSIONS_demo = 'demo';
 process.env.PERMISSIONS_dev = 'dev';
