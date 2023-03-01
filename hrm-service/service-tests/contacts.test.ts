@@ -53,6 +53,7 @@ import * as contactInsertSql from '../src/contact/sql/contact-insert-sql';
 import { selectSingleContactByTaskId } from '../src/contact/sql/contact-get-sql';
 import { ruleFileWithOneActionOverride } from './permissions-overrides';
 import * as csamReportApi from '../src/csam-report/csam-report';
+import * as referralDB from '../src/referral/referral-data-access';
 import { headers, getRequest, getServer, setRules, useOpenRules } from './server';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
 
@@ -99,6 +100,14 @@ const cleanupContactsJobs = () =>
   );
 
 const cleanupCsamReports = () =>
+  db.task(t =>
+    t.none(`
+      DELETE FROM "CSAMReports"
+      ${cleanupWhereClause}
+    `),
+  );
+
+const cleanupReferrals = () =>
   db.task(t =>
     t.none(`
       DELETE FROM "CSAMReports"
@@ -164,10 +173,20 @@ const deleteCsamReportsByContactId = (contactId: number, accountSid: string) =>
     `),
   );
 
+// eslint-disable-next-line @typescript-eslint/no-shadow
+const deleteReferralsByContactId = (contactId: number, accountSid: string) =>
+  db.task(t =>
+    t.manyOrNone(`
+      DELETE FROM "Referrals"
+      WHERE "contactId" = ${contactId} AND "accountSid" = '${accountSid}';
+    `),
+  );
+
 beforeAll(async () => {
   await mockingProxy.start();
   await mockSuccessfulTwilioAuthentication(workerSid);
   await cleanupCsamReports();
+  await cleanupReferrals();
   await cleanupContactsJobs();
   await cleanupContacts();
   await cleanupCases();
@@ -175,6 +194,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await cleanupCsamReports();
+  await cleanupReferrals();
   await cleanupContactsJobs();
   await cleanupContacts();
   await cleanupCases();
@@ -184,6 +204,7 @@ afterAll(async () => {
 
 describe('/contacts route', () => {
   const route = `/v0/accounts/${accountSid}/contacts`;
+  const hourAgo = subHours(new Date(), 1);
 
   // First test post so database wont be empty
   describe('POST', () => {
@@ -197,6 +218,24 @@ describe('/contacts route', () => {
     each([
       {
         contact: contact1,
+        changeDescription: 'callType is Child calling about self',
+      },
+      {
+        contact: {
+          ...contact1,
+          referrals: [
+            {
+              resourceId: 'TEST_RESOURCE',
+              referredAt: hourAgo.toISOString(),
+              resourceName: 'A test referred resource',
+            },
+            {
+              resourceId: 'TEST_RESOURCE_1',
+              referredAt: hourAgo.toISOString(),
+              resourceName: 'Another test referred resource',
+            },
+          ],
+        },
         changeDescription: 'callType is Child calling about self',
       },
       {
@@ -269,6 +308,7 @@ describe('/contacts route', () => {
           .send(contact);
 
         expect(res.status).toBe(200);
+        expect(res.body.referrals).toStrictEqual(contact.referrals || []);
         expect(res.body.rawJson.callType).toBe(contact.form.callType);
 
         const createdContact = await contactDb.getById(accountSid, res.body.id);
@@ -430,6 +470,96 @@ describe('/contacts route', () => {
 
       await deleteCsamReportById(newReport.id, newReport.accountSid);
       connectContactToCsamReportsSpy.mockRestore();
+    });
+
+    test('Connects to referrals', async () => {
+      const referral1 = {
+        resourceId: 'TEST_RESOURCE',
+        referredAt: new Date().toISOString(),
+        resourceName: 'A test referred resource',
+      };
+
+      const referral2 = {
+        resourceId: 'TEST_RESOURCE_2',
+        referredAt: new Date().toISOString(),
+        resourceName: 'Another test referred resource',
+      };
+
+      const contact = {
+        ...withTaskId,
+        form: {
+          ...withTaskId.form,
+        },
+        referrals: [referral1, referral2],
+        channel: 'web',
+        taskId: `${withTaskId.taskId}-web-referral`,
+      };
+
+      // Create contact with referrals
+      const response = await request
+        .post(route)
+        .set(headers)
+        .send(contact);
+
+      expect(response.status).toBe(200);
+
+      const createdReferrals = await db.task(t =>
+        t.many(`
+          SELECT * FROM "Referrals" WHERE "contactId" = ${response.body.id}
+      `),
+      );
+
+      if (!createdReferrals || !createdReferrals.length) {
+        throw new Error('createdReferrals is empty');
+      }
+
+      createdReferrals.forEach(r => {
+        expect(r.contactId).toBeDefined();
+        expect(r.contactId).toEqual(response.body.id);
+      });
+
+      // Test the association
+      expect(response.body.referrals).toHaveLength(2);
+
+      // Remove records to not interfere with following tests
+      await deleteReferralsByContactId(response.body.id, response.body.accountSid);
+      await deleteContactById(response.body.id, response.body.accountSid);
+    });
+
+    test(`If creating referral fails, the contact is not created either`, async () => {
+      const referral = {
+        resourceId: 'TEST_RESOURCE',
+        referredAt: new Date().toISOString(),
+        resourceName: 'A test referred resource',
+      };
+
+      const contact = {
+        ...withTaskId,
+        form: {
+          ...withTaskId.form,
+        },
+        referrals: [referral],
+        channel: 'web',
+        taskId: `${withTaskId.taskId}-web-referral-failure`,
+      };
+
+      const createReferralSpy = jest
+        .spyOn(referralDB, 'createReferralRecord')
+        .mockImplementationOnce(() => {
+          throw new Error('Ups');
+        });
+
+      const res = await request
+        .post(route)
+        .set(headers)
+        .send(contact);
+
+      expect(createReferralSpy).toHaveBeenCalled();
+      expect(res.status).toBe(500);
+
+      const attemptedContact = await getContactByTaskId(contact.taskId, accountSid);
+
+      expect(attemptedContact).toBeNull();
     });
 
     each(
@@ -668,6 +798,7 @@ describe('/contacts route', () => {
       beforeAll(async () => {
         // Clean what's been created so far
         await cleanupCsamReports();
+        await cleanupReferrals();
         await cleanupContactsJobs();
         await cleanupContacts();
         await cleanupCases();
@@ -1444,6 +1575,7 @@ describe('/contacts route', () => {
                 updatedBy: workerSid,
                 rawJson: expected,
                 csamReports: [],
+                referrals: [],
               });
               // Test the association
               expect(response.body.csamReports).toHaveLength(0);
@@ -1456,6 +1588,7 @@ describe('/contacts route', () => {
                 updatedBy: workerSid,
                 rawJson: expected,
                 csamReports: [],
+                referrals: [],
               });
             } finally {
               await deleteContactById(createdContact.id, createdContact.accountSid);

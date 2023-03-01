@@ -16,8 +16,7 @@
 
 import { Request, Response, Router } from 'express';
 import resourceRoutes from '../../../src/resource/resource-routes-v0';
-import { searchResources } from '../../../src/resource/resource-model';
-import { ReferrableResource } from '../../../src/resource/resource-data-access';
+import { ReferrableResource, searchResources } from '../../../src/resource/resource-model';
 
 jest.mock('express', () => ({
   Router: jest.fn(),
@@ -60,11 +59,20 @@ describe('POST /search', () => {
   });
 
   test('Takes limit & start from query string, search parameters from body and returns resources from model as JSON', async () => {
-    const modelResult = {
+    const modelResult: { totalCount: number; results: ReferrableResource[] } = {
       totalCount: 100,
       results: [
-        { id: 'RESOURCE_1', name: 'Resource 1' },
-        { id: 'RESOURCE_2', name: 'Resource 2' },
+        {
+          id: 'RESOURCE_1',
+          name: 'Resource 1',
+          attributes: {
+            someAttribute: [
+              { value: 'some value', language: 'en-US' },
+              { value: 'some value', language: 'fr-FR' },
+            ],
+          },
+        },
+        { id: 'RESOURCE_2', name: 'Resource 2', attributes: {} },
       ],
     };
     mockSearchResources.mockResolvedValue(modelResult);
