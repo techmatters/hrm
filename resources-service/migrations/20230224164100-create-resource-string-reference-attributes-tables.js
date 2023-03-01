@@ -110,17 +110,7 @@ module.exports = {
     `);
     console.log('Removed ResourceStringAttributes old primary key');
     await queryInterface.sequelize.query(`
-      ALTER TABLE resources."ResourceStringAttributes" DROP CONSTRAINT IF EXISTS "UQ_Account_Resource_Key_Language_Value";
-    `);
-    console.log(
-      'Removed ResourceStringAttributes unique constraint, in case it already existed for some reason',
-    );
-    await queryInterface.sequelize.query(`
       ALTER TABLE resources."ResourceStringAttributes" ADD PRIMARY KEY (id, "accountSid");
-    `);
-    console.log('Added ResourceStringAttributes unique constraint');
-    await queryInterface.sequelize.query(`
-      ALTER TABLE resources."ResourceStringAttributes" ADD CONSTRAINT "UQ_Account_Resource_Key_Language_Value" UNIQUE ("resourceId", "accountSid", "key", "language", "value");
     `);
     console.log('Added ResourceStringAttributes unique constraint in place of old primary key');
     await queryInterface.sequelize.query(`
