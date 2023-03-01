@@ -13,8 +13,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-
+import { mockTransaction, mockConnection } from '../mock-db';
 import * as contactDb from '../../src/contact/contact-data-access';
+import * as referralDb from '../../src/referral/referral-data-access';
 import {
   connectContactToCase,
   createContact,
@@ -22,12 +23,14 @@ import {
   SearchContact,
   searchContacts,
 } from '../../src/contact/contact';
+
 import { ContactBuilder } from './contact-builder';
 import { omit } from 'lodash';
 import { CSAMReport } from '../../src/csam-report/csam-report';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
-
+import { subHours } from 'date-fns';
 jest.mock('../../src/contact/contact-data-access');
+jest.mock('../../src/referral/referral-data-access');
 
 const workerSid = 'WORKER_SID';
 
@@ -38,6 +41,11 @@ const mockContact: contactDb.Contact = {
 };
 
 describe('createContact', () => {
+  beforeEach(() => {
+    const conn = mockConnection();
+    mockTransaction(conn);
+  });
+
   const sampleCreateContactPayload = {
     rawJson: {
       childInformation: {
@@ -81,6 +89,7 @@ describe('createContact', () => {
       'parameter account-sid',
       { ...sampleCreateContactPayload, createdBy: 'contact-creator' },
       [],
+      [],
     );
     expect(returnValue).toStrictEqual(mockContact);
   });
@@ -119,6 +128,7 @@ describe('createContact', () => {
         twilioWorkerId: '',
       },
       [],
+      [],
     );
     expect(returnValue).toStrictEqual(mockContact);
   });
@@ -137,6 +147,7 @@ describe('createContact', () => {
         createdBy: 'contact-creator',
       },
       [],
+      [],
     );
     expect(returnValue).toStrictEqual(mockContact);
   });
@@ -153,6 +164,7 @@ describe('createContact', () => {
       'parameter account-sid',
       { ...sampleCreateContactPayload, createdBy: 'contact-creator' },
       [],
+      [],
     );
     expect(returnValue).toStrictEqual(mockContact);
   });
@@ -166,6 +178,7 @@ describe('createContact', () => {
     expect(createSpy).toHaveBeenCalledWith(
       'parameter account-sid',
       { ...payload, createdBy: 'contact-creator' },
+      [],
       [],
     );
     expect(returnValue).toStrictEqual(mockContact);
@@ -185,6 +198,28 @@ describe('createContact', () => {
       'parameter account-sid',
       { ...payload, createdBy: 'contact-creator' },
       expect.arrayContaining([2, 4, 6]),
+      [],
+    );
+    expect(returnValue).toStrictEqual(mockContact);
+  });
+  test('referrals will be passed if populated', async () => {
+    const createSpy = jest.spyOn(contactDb, 'create').mockResolvedValue(mockContact);
+    const payload = {
+      ...sampleCreateContactPayload,
+      // Cheat a bit and cast these because all the other props on CSAMReportEntry are ignored here
+      referrals: <referralDb.Referral[]>[
+        { contactId: '1234', referredAt: new Date().toISOString(), resourceId: 'TEST_RESOURCE_ID' },
+      ],
+    };
+    const returnValue = await createContact('parameter account-sid', 'contact-creator', payload, {
+      can: () => true,
+      user: twilioUser(workerSid, []),
+    });
+    expect(createSpy).toHaveBeenCalledWith(
+      'parameter account-sid',
+      { ...payload, createdBy: 'contact-creator' },
+      [],
+      expect.arrayContaining(payload.referrals),
     );
     expect(returnValue).toStrictEqual(mockContact);
   });
@@ -204,6 +239,7 @@ describe('createContact', () => {
     expect(createSpy).toHaveBeenCalledWith(
       'parameter account-sid',
       { ...payload, queueName: 'Q2', createdBy: 'contact-creator' },
+      [],
       [],
     );
     expect(returnValue).toStrictEqual(mockContact);
@@ -226,6 +262,7 @@ describe('createContact', () => {
       'parameter account-sid',
       { ...payload, queueName: 'Q2', createdBy: 'contact-creator' },
       [],
+      [],
     );
     expect(returnValue).toStrictEqual(mockContact);
   });
@@ -240,8 +277,59 @@ describe('createContact', () => {
       'parameter account-sid',
       { ...payload, queueName: undefined, createdBy: 'contact-creator' },
       [],
+      [],
     );
     expect(returnValue).toStrictEqual(mockContact);
+  });
+  test('referrals specified - these will be added to the database using the created contact ID', async () => {
+    const hourAgo = subHours(new Date(), 1);
+    const payload = {
+      ...sampleCreateContactPayload,
+      referrals: [
+        {
+          resourceId: 'TEST_RESOURCE_1',
+          referredAt: hourAgo.toISOString(),
+          resourceName: 'A test referred resource',
+        },
+        {
+          resourceId: 'TEST_RESOURCE_2',
+          referredAt: hourAgo.toISOString(),
+          resourceName: 'Another test referred resource',
+        },
+      ],
+    };
+
+    const createSpy = jest
+      .spyOn(contactDb, 'create')
+      .mockResolvedValue({ ...mockContact, id: 1234, referrals: payload.referrals });
+
+    const returnValue = await createContact('parameter account-sid', 'contact-creator', payload, {
+      can: () => true,
+      user: twilioUser(workerSid, []),
+    });
+    expect(createSpy).toHaveBeenCalledWith(
+      'parameter account-sid',
+      { ...sampleCreateContactPayload, createdBy: 'contact-creator' },
+      [],
+      [],
+    );
+
+    expect(returnValue).toStrictEqual({
+      ...mockContact,
+      // Dumb mock always returns same referral regardless of what's passed in
+      referrals: [
+        {
+          resourceId: 'TEST_RESOURCE_1',
+          referredAt: hourAgo.toISOString(),
+          resourceName: 'A test referred resource',
+        },
+        {
+          resourceId: 'TEST_RESOURCE_2',
+          referredAt: hourAgo.toISOString(),
+          resourceName: 'Another test referred resource',
+        },
+      ],
+    });
   });
 });
 
@@ -374,6 +462,7 @@ describe('searchContacts', () => {
           },
           details: jillSmith.rawJson,
           csamReports: [],
+          referrals: [],
         },
         {
           contactId: '1234',
@@ -393,6 +482,7 @@ describe('searchContacts', () => {
           },
           details: sarahPark.rawJson,
           csamReports: [],
+          referrals: [],
         },
       ],
     };

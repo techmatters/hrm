@@ -284,6 +284,7 @@ export const getCase = async (
   { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
 ): Promise<Case | undefined> => {
   const caseFromDb = await caseDb.getById(id, accountSid);
+
   if (caseFromDb) {
     return caseRecordToCase(mapContactTransformations({ can, user })(caseFromDb));
   }

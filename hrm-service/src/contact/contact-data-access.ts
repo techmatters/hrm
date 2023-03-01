@@ -25,10 +25,16 @@ import { SELECT_CONTACT_SEARCH } from './sql/contact-search-sql';
 import { endOfDay, parseISO, startOfDay } from 'date-fns';
 import { selectSingleContactByIdSql, selectSingleContactByTaskId } from './sql/contact-get-sql';
 import { insertContactSql, NewContactRecord } from './sql/contact-insert-sql';
-import { ContactRawJson, isS3StoredTranscriptPending, PersonInformation } from './contact-json';
+import {
+  ContactRawJson,
+  isS3StoredTranscriptPending,
+  PersonInformation,
+  ReferralWithoutContactId,
+} from './contact-json';
 import { createContactJob, ContactJobType } from '../contact-job/contact-job-data-access';
 import { isChatChannel } from './channelTypes';
 import { connectContactToCsamReports } from '../csam-report/csam-report';
+import { createReferralRecord } from '../referral/referral-data-access';
 
 type ExistingContactRecord = {
   id: number;
@@ -39,6 +45,7 @@ type ExistingContactRecord = {
 
 export type Contact = ExistingContactRecord & {
   csamReports: any[];
+  referrals?: ReferralWithoutContactId[];
 };
 
 export type SearchParameters = {
@@ -150,6 +157,7 @@ export const create = async (
   accountSid: string,
   newContact: NewContactRecord,
   csamReportIds: number[],
+  referrals: ReferralWithoutContactId[],
 ): Promise<Contact> => {
   return db.tx(async connection => {
     if (newContact.taskId) {
@@ -181,6 +189,21 @@ export const create = async (
         ? await connectContactToCsamReports(connection)(created.id, csamReportIds, accountSid)
         : [];
 
+    const createdReferrals = [];
+    if (referrals && referrals.length) {
+      // Do this sequentially, it's on a single connection in a transaction anyway.
+      for (const referral of referrals) {
+        const { contactId, ...withoutContactId } = await createReferralRecord(
+          accountSid,
+          {
+            ...referral,
+            contactId: created.id.toString(),
+          },
+          connection,
+        );
+        createdReferrals.push(withoutContactId);
+      }
+    }
     if (
       enableCreateContactJobsFlag &&
       isChatChannel(created.channel) &&
@@ -193,7 +216,7 @@ export const create = async (
       });
     }
 
-    return { ...created, csamReports };
+    return { ...created, csamReports, referrals: createdReferrals };
   });
 };
 

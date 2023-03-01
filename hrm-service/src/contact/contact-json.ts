@@ -13,6 +13,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
+import { Referral } from '../referral/referral-data-access';
 
 type NestedInformation = { name?: { firstName: string; lastName: string } };
 
@@ -61,7 +62,11 @@ export type ContactRawJson = {
   };
   contactlessTask?: { [key: string]: string | boolean };
   conversationMedia?: ConversationMedia[];
+  referrals?: Referral[];
 };
 
 export const getPersonsName = (person: PersonInformation) =>
   person.name ? `${person.name.firstName} ${person.name.lastName}` : '';
+
+// Represents a referral when part of a contact structure, so no contact ID
+export type ReferralWithoutContactId = Omit<Referral, 'contactId'>;
