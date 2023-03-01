@@ -16,11 +16,11 @@
 
 import {
   appendFailedAttemptPayload,
-  ContactJobType,
   ContactJobRecord,
   completeContactJob,
   getContactJobById,
 } from './contact-job-data-access';
+import { ContactJobType } from '@tech-matters/hrm-types/ContactJob';
 import { ContactJobCompleteProcessorError, ContactJobPollerError } from './contact-job-error';
 import {
   deleteCompletedContactJobsFromQueue,
@@ -75,7 +75,7 @@ export const processCompletedContactJob = async (completedJob: CompletedContactJ
   }
 };
 
-export const getAttemptNumber = async(completedJob: CompletedContactJobBody, contactJob: ContactJobRecord) => {
+export const getAttemptNumber = async (completedJob: CompletedContactJobBody, contactJob: ContactJobRecord) => {
   // Attempt number can be null when error occurs in lambda before job data is parsed
   // In this case we need to fetch the job from the database to get the attempt number
   if (completedJob.attemptNumber != null) {
@@ -83,7 +83,7 @@ export const getAttemptNumber = async(completedJob: CompletedContactJobBody, con
   }
 
   return  contactJob.numberOfAttempts;
-}
+};
 
 export const getContactJobOrFail = async (completedJob: CompletedContactJobBody) => {
   const contactJob = await getContactJobById(completedJob.jobId);
@@ -93,7 +93,7 @@ export const getContactJobOrFail = async (completedJob: CompletedContactJobBody)
   }
 
   return contactJob;
-}
+};
 
 export const handleSuccess = async (completedJob: CompletedContactJobBody) => {
   if (completedJob.attemptResult !== 'success') return;
@@ -108,7 +108,7 @@ export const handleSuccess = async (completedJob: CompletedContactJobBody) => {
   const markedComplete = await completeContactJob(completedJob.jobId, completionPayload);
 
   return markedComplete;
-}
+};
 
 export const handleFailure = async (completedJob: CompletedContactJobBody, jobMaxAttempts: number) => {
   if (completedJob.attemptResult === 'success') return;
@@ -117,7 +117,7 @@ export const handleFailure = async (completedJob: CompletedContactJobBody, jobMa
   let { attemptPayload } = completedJob;
 
   if (typeof attemptPayload !== 'string') {
-    attemptPayload = "Message did not contain attemptPayload. Likely DLQ'd from lambda"
+    attemptPayload = "Message did not contain attemptPayload. Likely DLQ'd from lambda";
   }
 
   // emit an error to pick up in metrics since completed queue is our
@@ -143,7 +143,7 @@ export const handleFailure = async (completedJob: CompletedContactJobBody, jobMa
   }
 
   return updated;
-}
+};
 
 export const pollAndProcessCompletedContactJobs = async (jobMaxAttempts: number) => {
   const polledCompletedJobs = await pollCompletedContactJobsFromQueue();

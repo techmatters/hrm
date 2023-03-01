@@ -16,7 +16,8 @@
 
 import * as SQSClient from '../../src/contact-job/client-sqs';
 import * as contactJobPublish from '../../src/contact-job/contact-job-publish';
-import { ContactJob, ContactJobType } from '../../src/contact-job/contact-job-data-access';
+import { ContactJob } from '../../src/contact-job/contact-job-data-access';
+import { ContactJobType } from '@tech-matters/hrm-types/ContactJob';
 import { ContactJobPollerError } from '../../src/contact-job/contact-job-error';
 import each from 'jest-each';
 import { PublishToContactJobsTopicParams } from '@tech-matters/hrm-types/ContactJob';

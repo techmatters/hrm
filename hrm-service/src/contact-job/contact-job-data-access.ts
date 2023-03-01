@@ -24,9 +24,7 @@ import {
   selectSingleContactJobByIdSql,
 } from './sql/contact-job-sql';
 
-export enum ContactJobType {
-  RETRIEVE_CONTACT_TRANSCRIPT = 'retrieve-transcript',
-}
+import { ContactJobType } from '@tech-matters/hrm-types/ContactJob';
 
 // Reflects the actual shape of a record in the ContactJobs table
 export type ContactJobRecord = {

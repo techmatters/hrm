@@ -21,8 +21,9 @@ import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/
 import {
   appendFailedAttemptPayload,
   createContactJob,
-  ContactJobType,
 } from '../../src/contact-job/contact-job-data-access';
+
+import { ContactJobType } from '@tech-matters/hrm-types/ContactJob';
 
 import { accountSid, contact1, workerSid } from '../mocks';
 import { headers, getRequest, getServer, useOpenRules } from '../server';

@@ -40,13 +40,18 @@ export type PublishToContactJobsTopicParams = PublishRetrieveContactTranscript;
 
 //====== Message payloads expected for the completed contact jobs ======//
 
+export enum ContactJobAttemptResult {
+  SUCCESS = 'success',
+  FAILURE = 'failure',
+}
+
 type CompletedContactJobMessageCommons<TSuccess, TFailure> =
   | {
-      attemptResult: 'success';
+      attemptResult: ContactJobAttemptResult.SUCCESS;
       attemptPayload: TSuccess;
     }
   | {
-      attemptResult: 'failure';
+      attemptResult: ContactJobAttemptResult.FAILURE;
       attemptPayload: TFailure;
     };
 

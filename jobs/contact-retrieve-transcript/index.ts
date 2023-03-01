@@ -19,6 +19,7 @@ import { SQS } from 'aws-sdk';
 
 import { ContactJobProcessorError } from '@tech-matters/hrm-job-errors';
 import { getSsmParameter, loadSsmCache } from '@tech-matters/hrm-ssm-cache';
+import { ContactJobAttemptResult } from '@tech-matters/hrm-types/ContactJob';
 import { exportTranscript } from './exportTranscript';
 import { uploadTranscript } from './uploadTranscript';
 
@@ -81,7 +82,7 @@ const processRecord = async (message: PublishToContactJobsTopicParams) => {
 
   const completedJob: CompletedContactJobBody = {
     ...message,
-    attemptResult: 'success',
+    attemptResult: ContactJobAttemptResult.SUCCESS,
     attemptPayload: uploadResults.Location,
   };
 
@@ -104,7 +105,7 @@ export const processRecordWithoutException = async (sqsRecord: SQSRecord): Promi
 
     const failedJob: CompletedContactJobBody = {
       ...message,
-      attemptResult: 'failure',
+      attemptResult: ContactJobAttemptResult.FAILURE,
       attemptPayload: errMessage,
     };
 
@@ -148,7 +149,7 @@ export const handler = async (event: SQSEvent): Promise<any> => {
       return {
         itemIdentifier: record.messageId,
       };
-    })
+    });
   }
 
 

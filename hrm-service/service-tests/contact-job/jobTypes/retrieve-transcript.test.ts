@@ -28,7 +28,11 @@ import { chatChannels } from '../../../src/contact/channelTypes';
 import { JOB_MAX_ATTEMPTS } from '../../../src/contact-job/contact-job-processor';
 
 // eslint-disable-next-line prettier/prettier
-import type { CompletedContactJobBody } from '@tech-matters/hrm-types/ContactJob';
+import {
+  CompletedContactJobBody,
+  ContactJobAttemptResult,
+  ContactJobType,
+} from '@tech-matters/hrm-types/ContactJob';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
 
 require('../mocks');
@@ -115,7 +119,7 @@ const createChatContact = async (channel: string, startedTimestamp: number) => {
   const jobs = await selectJobsByContactId(contact.id, contact.accountSid);
 
   const retrieveContactTranscriptJobs = jobs.filter(
-    j => j.jobType === contactJobApi.ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
+    j => j.jobType === ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
   );
 
   // This is already tested in contacts.tests, but won't harm having here
@@ -129,7 +133,10 @@ const createChatContact = async (channel: string, startedTimestamp: number) => {
   expect(retrieveContactTranscriptJob.numberOfAttempts).toBe(0);
   expect(retrieveContactTranscriptJob.completionPayload).toBeNull();
 
-  const failurePayload = await db.oneOrNone('SELECT * FROM "ContactJobsFailures" WHERE "contactJobId" = $1', [retrieveContactTranscriptJob.id]);
+  const failurePayload = await db.oneOrNone(
+    'SELECT * FROM "ContactJobsFailures" WHERE "contactJobId" = $1',
+    [retrieveContactTranscriptJob.id],
+  );
   expect(failurePayload).toBeNull();
 
   // Assign for cleanup
@@ -163,8 +170,9 @@ describe('publish retrieve-transcript job type', () => {
       return callback as any;
     });
 
-    const processorIntervalCallback =
-      contactJobProcessor.processContactJobs() as unknown as () => Promise<void>;
+    const processorIntervalCallback = (contactJobProcessor.processContactJobs() as unknown) as () => Promise<
+      void
+    >;
 
     await processorIntervalCallback();
 
@@ -195,7 +203,9 @@ describe('publish retrieve-transcript job type', () => {
 
     expect(updatedRetrieveContactTranscriptJob.completed).toBeNull();
 
-    expect(isAfter(updatedRetrieveContactTranscriptJob.lastAttempt!, startedTimestamp)).toBeTruthy();
+    expect(
+      isAfter(updatedRetrieveContactTranscriptJob.lastAttempt!, startedTimestamp),
+    ).toBeTruthy();
     expect(updatedRetrieveContactTranscriptJob.numberOfAttempts).toBe(1);
   });
 
@@ -224,8 +234,9 @@ describe('publish retrieve-transcript job type', () => {
         return callback as any;
       });
 
-      const processorIntervalCallback =
-        contactJobProcessor.processContactJobs() as unknown as () => Promise<void>;
+      const processorIntervalCallback = (contactJobProcessor.processContactJobs() as unknown) as () => Promise<
+        void
+      >;
 
       await processorIntervalCallback();
       await processorIntervalCallback();
@@ -256,7 +267,9 @@ describe('publish retrieve-transcript job type', () => {
         throw new Error('updatedRetrieveContactTranscriptJob is null!');
 
       expect(updatedRetrieveContactTranscriptJob.completed).toBeNull();
-      expect(isAfter(updatedRetrieveContactTranscriptJob.lastAttempt!, startedTimestamp)).toBeTruthy();
+      expect(
+        isAfter(updatedRetrieveContactTranscriptJob.lastAttempt!, startedTimestamp),
+      ).toBeTruthy();
       expect(updatedRetrieveContactTranscriptJob.numberOfAttempts).toBe(1);
     },
   );
@@ -282,13 +295,13 @@ describe('complete retrieve-transcript job type', () => {
         contactId: contact.id,
         filePath: 'the-path-file-sent',
         jobId: retrieveContactTranscriptJob.id,
-        jobType: contactJobApi.ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
+        jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
         serviceSid: contact.serviceSid,
         taskId: contact.taskId,
         twilioWorkerId: contact.twilioWorkerId,
         attemptPayload: 'some-url-here',
         attemptNumber: 1,
-        attemptResult: 'success',
+        attemptResult: ContactJobAttemptResult.SUCCESS,
       };
 
       // const pollCompletedContactJobsSpy =
@@ -321,8 +334,9 @@ describe('complete retrieve-transcript job type', () => {
         return callback as any;
       });
 
-      const processorIntervalCallback =
-        contactJobProcessor.processContactJobs() as unknown as () => Promise<void>;
+      const processorIntervalCallback = (contactJobProcessor.processContactJobs() as unknown) as () => Promise<
+        void
+      >;
 
       await processorIntervalCallback();
 
@@ -356,8 +370,9 @@ describe('complete retrieve-transcript job type', () => {
       if (!updatedRetrieveContactTranscriptJob)
         throw new Error('updatedRetrieveContactTranscriptJob is null!');
 
-
-      expect(isAfter(updatedRetrieveContactTranscriptJob.completed!, startedTimestamp)).toBeTruthy();
+      expect(
+        isAfter(updatedRetrieveContactTranscriptJob.completed!, startedTimestamp),
+      ).toBeTruthy();
       expect(updatedRetrieveContactTranscriptJob.completionPayload).toMatchObject({
         message: 'Job processed successfully',
         value: 'some-url-here',
@@ -394,7 +409,7 @@ describe('complete retrieve-transcript job type', () => {
       );
 
       const err = new Error('something went wrong');
-      const errToObject = Object.fromEntries(Object.getOwnPropertyNames(err).map(n => [n, err[n]]));
+      const errMessage = err instanceof Error ? err.message : String(err);
 
       const completedPayload: CompletedContactJobBody = {
         accountSid: retrieveContactTranscriptJob.accountSid,
@@ -402,13 +417,13 @@ describe('complete retrieve-transcript job type', () => {
         contactId: contact.id,
         filePath: 'the-path-file-sent',
         jobId: retrieveContactTranscriptJob.id,
-        jobType: contactJobApi.ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
+        jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
         serviceSid: contact.serviceSid,
         taskId: contact.taskId,
         twilioWorkerId: contact.twilioWorkerId,
-        attemptPayload: errToObject,
+        attemptPayload: errMessage,
         attemptNumber: !expectMarkedAsComplete ? 1 : JOB_MAX_ATTEMPTS,
-        attemptResult: 'failure',
+        attemptResult: ContactJobAttemptResult.FAILURE,
       };
 
       // const pollCompletedContactJobsSpy =
@@ -441,8 +456,9 @@ describe('complete retrieve-transcript job type', () => {
         return callback as any;
       });
 
-      const processorIntervalCallback =
-        contactJobProcessor.processContactJobs() as unknown as () => Promise<void>;
+      const processorIntervalCallback = (contactJobProcessor.processContactJobs() as unknown) as () => Promise<
+        void
+      >;
 
       await processorIntervalCallback();
 
@@ -462,17 +478,19 @@ describe('complete retrieve-transcript job type', () => {
       if (!updatedRetrieveContactTranscriptJob)
         throw new Error('updatedRetrieveContactTranscriptJob is null!');
 
-
-      const failurePayload = await db.oneOrNone('SELECT * FROM "ContactJobsFailures" WHERE "contactJobId" = $1 AND "attemptNumber" = $2', [retrieveContactTranscriptJob.id, completedPayload.attemptNumber]);
-      expect(
-        failurePayload.payload,
-      ).toMatchObject(completedPayload.attemptPayload);
+      const failurePayload = await db.oneOrNone(
+        'SELECT * FROM "ContactJobsFailures" WHERE "contactJobId" = $1 AND "attemptNumber" = $2',
+        [retrieveContactTranscriptJob.id, completedPayload.attemptNumber],
+      );
+      expect(failurePayload.payload).toMatch(completedPayload.attemptPayload);
 
       if (expectMarkedAsComplete) {
         // And previous job is not completed hence retrieved as due
         // expect(publishRetrieveContactTranscriptSpy).toHaveBeenCalledTimes(1);
 
-        expect(isAfter(updatedRetrieveContactTranscriptJob.completed!, startedTimestamp)).toBeTruthy();
+        expect(
+          isAfter(updatedRetrieveContactTranscriptJob.completed!, startedTimestamp),
+        ).toBeTruthy();
         expect(updatedRetrieveContactTranscriptJob.completionPayload).toMatchObject({
           message: 'Attempts limit reached',
         });

@@ -57,6 +57,8 @@ import * as referralDB from '../src/referral/referral-data-access';
 import { headers, getRequest, getServer, setRules, useOpenRules } from './server';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
 
+import { ContactJobType } from '@tech-matters/hrm-types/ContactJob';
+
 useOpenRules();
 const server = getServer();
 const request = getRequest(server);
@@ -582,7 +584,7 @@ describe('/contacts route', () => {
         },
       })),
     ).test(
-      `contacts with channel type $channel should create ${contactJobDataAccess.ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT} job`,
+      `contacts with channel type $channel should create ${ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT} job`,
       async ({ contact }) => {
         const res = await request
           .post(route)
@@ -595,7 +597,7 @@ describe('/contacts route', () => {
         const jobs = await selectJobsByContactId(createdContact.id, createdContact.accountSid);
 
         const retrieveContactTranscriptJobs = jobs.filter(
-          j => j.jobType === contactJobDataAccess.ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
+          j => j.jobType === ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
         );
         expect(retrieveContactTranscriptJobs).toHaveLength(1);
 
@@ -609,7 +611,7 @@ describe('/contacts route', () => {
         const jobs2 = await selectJobsByContactId(res.body.id, res.body.accountSid);
 
         const retrieveContactTranscriptJobs2 = jobs2.filter(
-          j => j.jobType === contactJobDataAccess.ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
+          j => j.jobType === ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
         );
         expect(retrieveContactTranscriptJobs2).toHaveLength(1);
 
@@ -644,7 +646,7 @@ describe('/contacts route', () => {
         },
       })),
     ).test(
-      `if contact with channel type $channel is not created, neither is ${contactJobDataAccess.ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT} job`,
+      `if contact with channel type $channel is not created, neither is ${ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT} job`,
       async ({ contact }) => {
         const insertContactSqlSpy = jest
           .spyOn(contactInsertSql, 'insertContactSql')
@@ -692,7 +694,7 @@ describe('/contacts route', () => {
         },
       })),
     ).test(
-      `if ${contactJobDataAccess.ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT} job creation fails with channel type $channel, the contact is not created either, and csams are not linked`,
+      `if ${ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT} job creation fails with channel type $channel, the contact is not created either, and csams are not linked`,
       async ({ contact }) => {
         const csamReportId = 'csam-report-id';
         const newReport = await csamReportApi.createCSAMReport(
