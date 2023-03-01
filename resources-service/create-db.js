@@ -56,7 +56,7 @@ async function create() {
       if (Number.parseInt(userCount) === 0) {
         console.log(`Creating user '${resourceUsername}' to manage resources schema`);
         await createUserConnection.none(`
-          CREATE USER ${resourceUsername} WITH PASSWORD '${resourcePassword}' VALID UNTIL 'infinity';
+          CREATE ROLE ${resourceUsername} WITH LOGIN PASSWORD '${resourcePassword}' VALID UNTIL 'infinity';
           GRANT CONNECT, CREATE ON DATABASE hrmdb TO ${resourceUsername};
         `);
       } else {
