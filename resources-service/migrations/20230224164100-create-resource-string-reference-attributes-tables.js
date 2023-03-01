@@ -96,6 +96,40 @@ module.exports = {
       EXECUTE FUNCTION resources."ResourcesLookupTables_updateSequence_trigger"();
     `);
     console.log('Trigger ResourceReferenceStringAttributes_update_trigger created');
+
+    await queryInterface.sequelize.query(`
+      ALTER TABLE resources."ResourceStringAttributes" ADD COLUMN IF NOT EXISTS "id" BIGSERIAL;
+    `);
+    console.log('Added id serial column to ResourceStringAttributes');
+    await queryInterface.sequelize.query(`
+      ALTER TABLE resources."ResourceStringAttributes" DROP CONSTRAINT IF EXISTS "FK_ResourceStringAttributes_Resources";
+    `);
+    console.log('Temporarily dropped ResourceStringAttributes foreign key constraint');
+    await queryInterface.sequelize.query(`
+      ALTER TABLE resources."ResourceStringAttributes" DROP CONSTRAINT IF EXISTS "ResourceStringAttributes_pkey";
+    `);
+    console.log('Removed ResourceStringAttributes old primary key');
+    await queryInterface.sequelize.query(`
+      ALTER TABLE resources."ResourceStringAttributes" DROP CONSTRAINT IF EXISTS "UQ_Account_Resource_Key_Language_Value";
+    `);
+    console.log(
+      'Removed ResourceStringAttributes unique constraint, in case it already existed for some reason',
+    );
+    await queryInterface.sequelize.query(`
+      ALTER TABLE resources."ResourceStringAttributes" ADD PRIMARY KEY (id, "accountSid");
+    `);
+    console.log('Added ResourceStringAttributes unique constraint');
+    await queryInterface.sequelize.query(`
+      ALTER TABLE resources."ResourceStringAttributes" ADD CONSTRAINT "UQ_Account_Resource_Key_Language_Value" UNIQUE ("resourceId", "accountSid", "key", "language", "value");
+    `);
+    console.log('Added ResourceStringAttributes unique constraint in place of old primary key');
+    await queryInterface.sequelize.query(`
+      ALTER TABLE resources."ResourceStringAttributes" ADD CONSTRAINT "FK_ResourceStringAttributes_Resources" FOREIGN KEY ("resourceId", "accountSid")
+            REFERENCES resources."Resources" (id, "accountSid") MATCH SIMPLE
+            ON UPDATE CASCADE
+            ON DELETE CASCADE;
+    `);
+    console.log('Put back temporarily removed ResourceStringAttributes foreign key constraint');
   },
 
   down: async queryInterface => {
