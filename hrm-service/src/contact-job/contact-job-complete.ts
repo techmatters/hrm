@@ -20,7 +20,7 @@ import {
   completeContactJob,
   getContactJobById,
 } from './contact-job-data-access';
-import { ContactJobType } from '@tech-matters/hrm-types/ContactJob';
+import { ContactJobAttemptResult, ContactJobType } from '@tech-matters/hrm-types/ContactJob';
 import { ContactJobCompleteProcessorError, ContactJobPollerError } from './contact-job-error';
 import {
   deleteCompletedContactJobsFromQueue,
@@ -38,6 +38,8 @@ import { assertExhaustive } from './assertExhaustive';
 // eslint-disable-next-line prettier/prettier
 import type {
   CompletedContactJobBody,
+  CompletedContactJobBodyFailure,
+  CompletedContactJobBodySuccess,
   CompletedRetrieveContactTranscript,
 } from '@tech-matters/hrm-types/ContactJob';
 
@@ -75,15 +77,7 @@ export const processCompletedContactJob = async (completedJob: CompletedContactJ
   }
 };
 
-export const getAttemptNumber = async (completedJob: CompletedContactJobBody, contactJob: ContactJobRecord) => {
-  // Attempt number can be null when error occurs in lambda before job data is parsed
-  // In this case we need to fetch the job from the database to get the attempt number
-  if (completedJob.attemptNumber != null) {
-    return completedJob.attemptNumber;
-  }
-
-  return  contactJob.numberOfAttempts;
-};
+export const getAttemptNumber = (completedJob: CompletedContactJobBody, contactJob: ContactJobRecord) =>  completedJob.attemptNumber ?? contactJob.numberOfAttempts;
 
 export const getContactJobOrFail = async (completedJob: CompletedContactJobBody) => {
   const contactJob = await getContactJobById(completedJob.jobId);
@@ -95,8 +89,7 @@ export const getContactJobOrFail = async (completedJob: CompletedContactJobBody)
   return contactJob;
 };
 
-export const handleSuccess = async (completedJob: CompletedContactJobBody) => {
-  if (completedJob.attemptResult !== 'success') return;
+export const handleSuccess = async (completedJob: CompletedContactJobBodySuccess) => {
 
   await processCompletedContactJob(completedJob);
 
@@ -110,8 +103,7 @@ export const handleSuccess = async (completedJob: CompletedContactJobBody) => {
   return markedComplete;
 };
 
-export const handleFailure = async (completedJob: CompletedContactJobBody, jobMaxAttempts: number) => {
-  if (completedJob.attemptResult === 'success') return;
+export const handleFailure = async (completedJob: CompletedContactJobBodyFailure, jobMaxAttempts: number) => {
 
   const { jobId } = completedJob;
   let { attemptPayload } = completedJob;
@@ -131,7 +123,7 @@ export const handleFailure = async (completedJob: CompletedContactJobBody, jobMa
   );
 
   const contactJob = await getContactJobOrFail(completedJob);
-  const attemptNumber = await getAttemptNumber(completedJob, contactJob);
+  const attemptNumber = getAttemptNumber(completedJob, contactJob);
 
   const updated = await appendFailedAttemptPayload(jobId, attemptNumber, attemptPayload);
 
@@ -165,7 +157,7 @@ export const pollAndProcessCompletedContactJobs = async (jobMaxAttempts: number)
 
         const completedJob: CompletedContactJobBody = JSON.parse(m.Body);
 
-        if (completedJob.attemptResult === 'success') {
+        if (completedJob.attemptResult === ContactJobAttemptResult.SUCCESS) {
           return await handleSuccess(completedJob);
         } else {
           return await handleFailure(completedJob, jobMaxAttempts);

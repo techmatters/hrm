@@ -59,3 +59,11 @@ export type CompletedRetrieveContactTranscript = PublishRetrieveContactTranscrip
   CompletedContactJobMessageCommons<string, any>;
 
 export type CompletedContactJobBody = CompletedRetrieveContactTranscript;
+
+export type CompletedContactJobBodySuccess = Omit<CompletedContactJobBody, 'attemptResult'> & {
+  attemptResult: ContactJobAttemptResult.SUCCESS;
+};
+
+export type CompletedContactJobBodyFailure = Omit<CompletedContactJobBody, 'attemptResult'> & {
+  attemptResult: ContactJobAttemptResult.FAILURE;
+};
