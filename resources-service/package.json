@@ -27,7 +27,10 @@
     "test:migrate": "run-s test:service:migrate",
     "db:create:schema": "node ./create-db",
     "db:create-migration": "sequelize migration:generate --name ",
-    "db:undo-last": "sequelize db:migrate:undo"
+    "db:undo-last": "sequelize db:migrate:undo",
+    "build-scripts": "tsc --project tsconfig.scripts.json",
+    "import-khp-json": "node ./scripts-dist/scripts/import-khp-resources.js",
+    "build-and-import-khp-json": "npm run build-scripts && npm run import-khp-json"
   },
   "repository": {
     "type": "git",

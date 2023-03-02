@@ -1,0 +1,3094 @@
+[
+  {
+    "resourceID": 1,
+    "agency": {
+      "objectId": "507f1f77bcf86cd799439011",
+      "name": {
+        "en": "Carleton Victoria Community Vocational Board - Employment Assistance Agency",
+        "fr": "Carleton Victoria Community Vocational Board - Employment Assistance Agency FR"
+      },
+      "details": {
+        "en": {
+          "alternateNames": "Carleton Victoria Community Vocational Board - Employment Assistance details",
+          "description": "Carleton Victoria Community Vocational Board - Employment Assistance description"
+        },
+        "fr": {
+          "alternateNames": "Carleton Victoria Community Vocational Board - Employment Assistance details FR",
+          "description": "Carleton Victoria Community Vocational Board - Employment Assistance description FR"
+        }
+      },
+      "isActive": true,
+      "isLocationPrivate": false,
+      "location": {
+        "address1": "123 Street Name",
+        "address2": "Unit 123",
+        "city": "Perth-Andover",
+        "county": "Victoria",
+        "province": "NB",
+        "country": "Canada",
+        "postalCode": "A1B 2C3"
+      },
+      "email": "sample@email.com",
+      "operations": {
+        "0": {
+          "en": {
+            "day": "Monday",
+            "hoursOfOperation": "12pm - 5pm",
+            "descriptionOfHours": "Walk-in only"
+          },
+          "fr": {
+            "day": "Lundi",
+            "hoursOfOperation": "12pm - 5pm",
+            "descriptionOfHours": "Sans rendez-vous"
+          }
+        },
+        "1": {
+          "en": {
+            "day": "Tuesday",
+            "hoursOfOperation": "12pm - 5pm",
+            "descriptionOfHours": "By appointment only"
+          },
+          "fr": {
+            "day": "Mardi",
+            "hoursOfOperation": "12pm - 5pm",
+            "descriptionOfHours": "Rendez-vous requis"
+          }
+        },
+        "2": {
+          "en": {
+            "day": "Wednesday",
+            "hoursOfOperation": "12pm - 5pm",
+            "descriptionOfHours": "By appointment only"
+          },
+          "fr": {
+            "day": "Mercredi",
+            "hoursOfOperation": "12pm - 5pm",
+            "descriptionOfHours": "Rendez-vous requis"
+          }
+        },
+        "3": {
+          "en": {
+            "day": "Thursday",
+            "hoursOfOperation": "12pm - 5pm",
+            "descriptionOfHours": "By appointment only"
+          },
+          "fr": {
+            "day": "Jeudi",
+            "hoursOfOperation": "12pm - 5pm",
+            "descriptionOfHours": "Rendez-vous requis"
+          }
+        },
+        "4": {
+          "en": {
+            "day": "Friday",
+            "hoursOfOperation": "12pm - 5pm",
+            "descriptionOfHours": "By appointment only"
+          },
+          "fr": {
+            "day": "Vendredi",
+            "hoursOfOperation": "12pm - 5pm",
+            "descriptionOfHours": "Rendez-vous requis"
+          }
+        },
+        "5": {
+          "en": {
+            "day": "Saturday",
+            "hoursOfOperation": null,
+            "descriptionOfHours": null
+          },
+          "fr": {
+            "day": "Samedi",
+            "hoursOfOperation": null,
+            "descriptionOfHours": null
+          }
+        },
+        "6": {
+          "en": {
+            "day": "Sunday",
+            "hoursOfOperation": null,
+            "descriptionOfHours": null
+          },
+          "fr": {
+            "day": "Dimanche",
+            "hoursOfOperation": null,
+            "descriptionOfHours": null
+          }
+        }
+      },
+      "phoneNumbers": {
+        "tollFree": "1800123456",
+        "hotline": "14289876543",
+        "outOfAreaLine": "14161234567",
+        "afterHoursLine": "14289876542",
+        "businessLine": "14289876540",
+        "fax": "14289876544",
+        "tty": "14289876545"
+      }
+    },
+    "sites": [
+      {
+        "objectId": "507f1f77bcf86cd799439011",
+        "name": {
+          "en": "Carleton Victoria Community Vocational Board Site",
+          "fr": "Carleton Victoria Community Vocational Board Site FR"
+        },
+        "details": {
+          "en": {
+            "alternateNames": "Carleton Victoria Community Vocational Board Site - Main",
+            "description": "Carleton Victoria Community Vocational Board Site description"
+          },
+          "fr": {
+            "alternateNames": "Carleton Victoria Community Vocational Board Site - Main FR",
+            "description": "Carleton Victoria Community Vocational Board Site description FR"
+          }
+        },
+        "isActive": true,
+        "isLocationPrivate": false,
+        "location": {
+          "address1": "123 Street Name",
+          "address2": "Suite 200",
+          "city": "Perth-Andover",
+          "county": "Victoria",
+          "province": "NB",
+          "country": "Canada",
+          "postalCode": "A1B 2C3"
+        },
+        "email": "sample@email.com",
+        "website": "http://cvcvb.ca/",
+        "operations": {
+          "0": {
+            "en": {
+              "day": "Monday",
+              "hoursOfOperation": "12pm - 5pm",
+              "descriptionOfHours": "Walk-in only"
+            },
+            "fr": {
+              "day": "Lundi",
+              "hoursOfOperation": "12pm - 5pm",
+              "descriptionOfHours": "Sans rendez-vous"
+            }
+          },
+          "1": {
+            "en": {
+              "day": "Tuesday",
+              "hoursOfOperation": "12pm - 5pm",
+              "descriptionOfHours": "By appointment only"
+            },
+            "fr": {
+              "day": "Mardi",
+              "hoursOfOperation": "12pm - 5pm",
+              "descriptionOfHours": "Rendez-vous requis"
+            }
+          },
+          "2": {
+            "en": {
+              "day": "Wednesday",
+              "hoursOfOperation": "12pm - 5pm",
+              "descriptionOfHours": "By appointment only"
+            },
+            "fr": {
+              "day": "Mercredi",
+              "hoursOfOperation": "12pm - 5pm",
+              "descriptionOfHours": "Rendez-vous requis"
+            }
+          },
+          "3": {
+            "en": {
+              "day": "Thursday",
+              "hoursOfOperation": "12pm - 5pm",
+              "descriptionOfHours": "By appointment only"
+            },
+            "fr": {
+              "day": "Jeudi",
+              "hoursOfOperation": "12pm - 5pm",
+              "descriptionOfHours": "Rendez-vous requis"
+            }
+          },
+          "4": {
+            "en": {
+              "day": "Friday",
+              "hoursOfOperation": "12pm - 5pm",
+              "descriptionOfHours": "By appointment only"
+            },
+            "fr": {
+              "day": "Vendredi",
+              "hoursOfOperation": "12pm - 5pm",
+              "descriptionOfHours": "Rendez-vous requis"
+            }
+          },
+          "5": {
+            "en": {
+              "day": "Saturday",
+              "hoursOfOperation": null,
+              "descriptionOfHours": null
+            },
+            "fr": {
+              "day": "Samedi",
+              "hoursOfOperation": null,
+              "descriptionOfHours": null
+            }
+          },
+          "6": {
+            "en": {
+              "day": "Sunday",
+              "hoursOfOperation": null,
+              "descriptionOfHours": null
+            },
+            "fr": {
+              "day": "Dimanche",
+              "hoursOfOperation": null,
+              "descriptionOfHours": null
+            }
+          }
+        },
+        "phoneNumbers": {
+          "tollFree": "1800123456",
+          "hotline": "14289876543",
+          "outOfAreaLine": "14161234567",
+          "afterHoursLine": "14289876542",
+          "businessLine": "14289876540",
+          "fax": "14289876544",
+          "tty": "14289876545"
+        }
+      }
+    ],
+    "nameDetails": {
+      "en": {
+        "official": "Carleton Victoria Community Vocational Board - Employment Assistance",
+        "alternate": "Carleton Victoria Community Vocational Board - Employment Assistance - Perth-Andover"
+      },
+      "fr": {
+        "official": "Carleton Victoria Community Vocational Board - Employment Assistance FR",
+        "alternate": "Carleton Victoria Community Vocational Board - Employment Assistance - Perth-Andover FR"
+      }
+    },
+    "name": {
+      "en": "Carleton Victoria Community Vocational Board - Employment Assistance",
+      "fr": "Carleton Victoria Community Vocational Board - Employment Assistance FR"
+    },
+    "physicalAddresses": {
+      "addresses1": [
+        "123 Street Name"
+      ],
+      "addresses2": [
+        "Unit 456"
+      ],
+      "addressesArePrivate": [
+        false
+      ],
+      "cities": [
+        "Perth-Andover"
+      ],
+      "counties": [
+        "Victoria"
+      ],
+      "provinces": [
+        "NB"
+      ],
+      "countries": [
+        "Canada"
+      ],
+      "postalCodes": [
+        "E7H 1Y5 "
+      ],
+      "descriptions": [
+        "Address Description"
+      ],
+      "longitudes": [
+        "-67.7174262"
+      ],
+      "latitudes": [
+        "46.715096"
+      ]
+    },
+    "mailingAddresses": {
+      "addresses1": [
+        "123 Street Name"
+      ],
+      "addresses2": [
+        "Unit 456"
+      ],
+      "cities": [
+        "Perth-Andover"
+      ],
+      "provinces": [
+        "NB"
+      ],
+      "postalCodes": [
+        "A1B 2C3"
+      ],
+      "countries": [
+        "Canada"
+      ],
+      "addressesArePrivate": [
+        false
+      ]
+    },
+    "operations": {
+      "0": {
+        "en": {
+          "day": "Monday",
+          "hoursOfOperation": "12pm - 5pm",
+          "descriptionOfHours": "Call for hours"
+        },
+        "fr": {
+          "day": "Lundi",
+          "hoursOfOperation": "12pm - 5pm",
+          "descriptionOfHours": "Call for hours FR"
+        }
+      },
+      "1": {
+        "en": {
+          "day": "Tuesday",
+          "hoursOfOperation": "12pm - 5pm",
+          "descriptionOfHours": "Call for hours"
+        },
+        "fr": {
+          "day": "Mardi",
+          "hoursOfOperation": "12pm - 5pm",
+          "descriptionOfHours": "Call for hours FR"
+        }
+      },
+      "2": {
+        "en": {
+          "day": "Wednesday",
+          "hoursOfOperation": "12pm - 5pm",
+          "descriptionOfHours": "Call for hours"
+        },
+        "fr": {
+          "day": "Mercredi",
+          "hoursOfOperation": "12pm - 5pm",
+          "descriptionOfHours": "Call for hours FR"
+        }
+      },
+      "3": {
+        "en": {
+          "day": "Thursday",
+          "hoursOfOperation": "12pm - 5pm",
+          "descriptionOfHours": "Call for hours"
+        },
+        "fr": {
+          "day": "Jeudi",
+          "hoursOfOperation": "12pm - 5pm",
+          "descriptionOfHours": "Call for hours FR"
+        }
+      },
+      "4": {
+        "en": {
+          "day": "Friday",
+          "hoursOfOperation": "12pm - 5pm",
+          "descriptionOfHours": "Call for hours"
+        },
+        "fr": {
+          "day": "Vendredi",
+          "hoursOfOperation": "12pm - 5pm",
+          "descriptionOfHours": "Call for hours FR"
+        }
+      },
+      "5": {
+        "en": {
+          "day": "Saturday",
+          "hoursOfOperation": null,
+          "descriptionOfHours": null
+        },
+        "fr": {
+          "day": "Samedi",
+          "hoursOfOperation": null,
+          "descriptionOfHours": null
+        }
+      },
+      "6": {
+        "en": {
+          "day": "Sunday",
+          "hoursOfOperation": null,
+          "descriptionOfHours": null
+        },
+        "fr": {
+          "day": "Dimanche",
+          "hoursOfOperation": null,
+          "descriptionOfHours": null
+        }
+      }
+    },
+    "phoneNumbers": [
+      {
+        "number": "4282736867",
+        "name": "First Last",
+        "description": {
+          "en": "phone number description",
+          "fr": "phone number description FR"
+        },
+        "isPrivate": false,
+        "type": "tty"
+      },
+      {
+        "number": "4283568185",
+        "name": "First Last",
+        "description": {
+          "en": "phone number description",
+          "fr": "phone number description FR"
+        },
+        "isPrivate": false,
+        "type": "hotline"
+      }
+    ],
+    "mainContact": {
+      "email": "sample@email.com",
+      "name": "First Last",
+      "title": {
+        "en": "Administrative Director",
+        "fr": "Administrative Director FR"
+      },
+      "phoneNumber": "4161234567",
+      "isPrivate": false
+    },
+    "website": "http://cvcvb.ca/",
+    "status": "Active",
+    "description": {
+      "en": "Offers instruction for people who need to acquire the basic skills and tools that are required to successfully apply for and secure employment, and retain a position once they have been hired. These programs offer information and guidance regarding preparing a resume, writing job application letters, completing job application questionnaires, responding to job ads and taking employment tests.  The programs may also offer tips regarding appropriate dress, personal appearance and interview techniques.",
+      "fr": "Offers instruction for people who need to acquire the basic skills and tools that are required to successfully apply for and secure employment, and retain a position once they have been hired. These programs offer information and guidance regarding preparing a resume, writing job application letters, completing job application questionnaires, responding to job ads and taking employment tests.  The programs may also offer tips regarding appropriate dress, personal appearance and interview techniques. FR"
+    },
+    "primaryLocationCity": "Perth-Andover",
+    "primaryLocationProvince": "NB",
+    "primaryLocationCounty": "Victoria",
+    "primaryLocationPostalCode": "A1B 2C3",
+    "primaryLocationPhone": "4161234567",
+    "primaryLocationIsPrivate": false,
+    "targetPopulations": [
+      "Open To All"
+    ],
+    "eligibilityMinAge": 10,
+    "eligibilityMaxAge": 20,
+    "interpretationTranslationServicesAvailable": true,
+    "feeStructureSource": "Free",
+    "howToAccessSupport": "Appointment Required",
+    "howIsServiceOffered": "In-Person Support",
+    "keywords": [
+      "education"
+    ],
+    "coverage": {
+      "en": "NB - Carleton County; NB - Victoria County;",
+      "fr": "NB - Carleton County; NB - Victoria County; FR"
+    },
+    "eligibilityDetails": {
+      "phrase": {
+        "en": "18 or older",
+        "fr": "18 or older FR"
+      },
+      "adult": true,
+      "family": false,
+      "gender": null,
+      "teen": false,
+      "child": false
+    },
+    "seniorOrgContact": {
+      "name": "First Last",
+      "title": {
+        "en": "Director of Partnerships",
+        "fr": "Director of Partnerships FR"
+      },
+      "emailAddress": "sample@email.com",
+      "phoneNumber": "4161234567",
+      "isPrivate": false
+    },
+    "accessibility": "Wheelchair Accessible",
+    "transportation": {
+      "en": "501 Bus",
+      "fr": "501 Bus FR"
+    },
+    "paymentMethod": "Free",
+    "applicationProcess": "Application process unknown. A step in the right direction would be to call or email to connect and learn more.",
+    "documentsRequired": [
+      "Health Card",
+      "Birth Certificate"
+    ],
+    "languages": [
+      {
+        "code": "en",
+        "language": "English"
+      },
+      {
+        "code": "fr",
+        "language": "French"
+      }
+    ],
+    "capacity": {
+      "en": {
+        "type": "capacity type",
+        "value": "capacity value"
+      },
+      "fr": {
+        "type": "capacity type FR",
+        "value": "capacity value FR"
+      }
+    },
+    "isHighlighted": false,
+    "lastVerified": "2018-06-22 10:21:19",
+    "volunteer": {
+      "en": {
+        "opportunities": "No",
+        "duties": "volunteer duties"
+      },
+      "fr": {
+        "opportunities": "No",
+        "duties": "volunteer duties FR"
+      }
+    },
+    "social": {
+      "facebook": "https://www.facebook.com/carleton_victoria/",
+      "instagram": "@carleton_victoria",
+      "twitter": "@carleton_victoria"
+    },
+    "available247": true,
+    "metadata": {
+      "en": {
+        "legalStatus": "Educational Institute",
+        "typicalWaitTime": "21 minutes",
+        "availableForDirectory": true,
+        "availableForReferral": true,
+        "availableForResearch": true,
+        "recordType": "RAM",
+        "fees": true
+      },
+      "fr": {
+        "legalStatus": "Educational Institute FR",
+        "typicalWaitTime": "21 minutes FR",
+        "availableForDirectory": true,
+        "availableForReferral": true,
+        "availableForResearch": true,
+        "recordType": "RAM",
+        "fees": true
+      },
+      "isHotline": true,
+      "isHelpline": false
+    },
+    "isPrivate": false,
+    "taxonomyCode": "HP1234-01",
+    "timestamps": {
+      "createdAt": "2013-04-01 00:00:00",
+      "updatedAt": "2018-06-22 10:21:19"
+    }
+  },
+  {
+    "resourceID": 2,
+    "agency": {
+      "objectId": "507f1f77bcf86cd799439012",
+      "name": {
+        "en": "Calgary Family Services - Child/Youth/Family Counselling",
+        "fr": "Calgary Family Services - Child/Youth/Family Counselling FR"
+      },
+      "details": {
+        "en": {
+          "alternateNames": "Calgary Family Services - Child/Youth/Family Counselling details",
+          "description": "Calgary Family Services - Child/Youth/Family Counselling description"
+        },
+        "fr": {
+          "alternateNames": "Calgary Family Services - Child/Youth/Family Counselling details FR",
+          "description": "Calgary Family Services - Child/Youth/Family Counselling description FR"
+        }
+      },
+      "isActive": true,
+      "isLocationPrivate": false,
+      "location": {
+        "address1": "123 Street Name",
+        "address2": "Suite 123",
+        "city": "Calgary",
+        "county": "Rocky View County",
+        "province": "AB",
+        "country": "Canada",
+        "postalCode": "A1B 2C3"
+      },
+      "email": "communications@calgaryfamily.org",
+      "operations": {
+        "0": {
+          "en": {
+            "day": "Monday",
+            "hoursOfOperation": "12pm - 5pm",
+            "descriptionOfHours": "Walk-in only"
+          },
+          "fr": {
+            "day": "Lundi",
+            "hoursOfOperation": "12pm - 5pm",
+            "descriptionOfHours": "Sans rendez-vous"
+          }
+        },
+        "1": {
+          "en": {
+            "day": "Tuesday",
+            "hoursOfOperation": "12pm - 5pm",
+            "descriptionOfHours": "By appointment only"
+          },
+          "fr": {
+            "day": "Mardi",
+            "hoursOfOperation": "12pm - 5pm",
+            "descriptionOfHours": "By appointment only"
+          }
+        },
+        "2": {
+          "en": {
+            "day": "Wednesday",
+            "hoursOfOperation": "12pm - 5pm",
+            "descriptionOfHours": "By appointment only"
+          },
+          "fr": {
+            "day": "Mercredi",
+            "hoursOfOperation": "12pm - 5pm",
+            "descriptionOfHours": "By appointment only"
+          }
+        },
+        "3": {
+          "en": {
+            "day": "Thursday",
+            "hoursOfOperation": "12pm - 5pm",
+            "descriptionOfHours": "By appointment only"
+          },
+          "fr": {
+            "day": "Jeudi",
+            "hoursOfOperation": "12pm - 5pm",
+            "descriptionOfHours": "By appointment only"
+          }
+        },
+        "4": {
+          "en": {
+            "day": "Friday",
+            "hoursOfOperation": "12pm - 5pm",
+            "descriptionOfHours": "By appointment only"
+          },
+          "fr": {
+            "day": "Vendredi",
+            "hoursOfOperation": "12pm - 5pm",
+            "descriptionOfHours": "By appointment only"
+          }
+        },
+        "5": {
+          "en": {
+            "day": "Saturday",
+            "hoursOfOperation": null,
+            "descriptionOfHours": null
+          },
+          "fr": {
+            "day": "Samedi",
+            "hoursOfOperation": null,
+            "descriptionOfHours": null
+          }
+        },
+        "6": {
+          "en": {
+            "day": "Sunday",
+            "hoursOfOperation": null,
+            "descriptionOfHours": null
+          },
+          "fr": {
+            "day": "Dimanche",
+            "hoursOfOperation": null,
+            "descriptionOfHours": null
+          }
+        }
+      },
+      "phoneNumbers": {
+        "tollFree": "1800123456",
+        "hotline": "14289876543",
+        "outOfAreaLine": "14161234567",
+        "afterHoursLine": "14289876542",
+        "businessLine": "14289876540",
+        "fax": "14289876544",
+        "tty": "14289876545"
+      }
+    },
+    "sites": [
+      {
+        "objectId": "507f1f77bcf86cd799439012",
+        "name": {
+          "en": "Calgary Family Services Site",
+          "fr": "Calgary Family Services Site FR"
+        },
+        "details": {
+          "en": {
+            "alternateNames": "Calgary Family Services Site - Main",
+            "description": "Calgary Family Services Site description"
+          },
+          "fr": {
+            "alternateNames": "Calgary Family Services Site - Main FR",
+            "description": "Calgary Family Services Site description FR"
+          }
+        },
+        "isActive": true,
+        "isLocationPrivate": false,
+        "location": {
+          "address1": "123 Street Name",
+          "address2": "Suite 200",
+          "city": "Calgary",
+          "county": "Rocky View County",
+          "province": "AB",
+          "country": "Canada",
+          "postalCode": "A1B 2C3"
+        },
+        "email": "communications@calgaryfamily.org",
+        "website": "https://www.calgaryfamily.org",
+        "operations": {
+          "0": {
+            "en": {
+              "day": "Monday",
+              "hoursOfOperation": "12pm - 5pm",
+              "descriptionOfHours": "Walk-in only"
+            },
+            "fr": {
+              "day": "Lundi",
+              "hoursOfOperation": "12pm - 5pm",
+              "descriptionOfHours": "Sans rendez-vous"
+            }
+          },
+          "1": {
+            "en": {
+              "day": "Tuesday",
+              "hoursOfOperation": "12pm - 5pm",
+              "descriptionOfHours": "By appointment only"
+            },
+            "fr": {
+              "day": "Mardi",
+              "hoursOfOperation": "12pm - 5pm",
+              "descriptionOfHours": "By appointment only"
+            }
+          },
+          "2": {
+            "en": {
+              "day": "Wednesday",
+              "hoursOfOperation": "12pm - 5pm",
+              "descriptionOfHours": "By appointment only"
+            },
+            "fr": {
+              "day": "Mercredi",
+              "hoursOfOperation": "12pm - 5pm",
+              "descriptionOfHours": "By appointment only"
+            }
+          },
+          "3": {
+            "en": {
+              "day": "Thursday",
+              "hoursOfOperation": "12pm - 5pm",
+              "descriptionOfHours": "By appointment only"
+            },
+            "fr": {
+              "day": "Jeudi",
+              "hoursOfOperation": "12pm - 5pm",
+              "descriptionOfHours": "By appointment only"
+            }
+          },
+          "4": {
+            "en": {
+              "day": "Friday",
+              "hoursOfOperation": "12pm - 5pm",
+              "descriptionOfHours": "By appointment only"
+            },
+            "fr": {
+              "day": "Vendredi",
+              "hoursOfOperation": "12pm - 5pm",
+              "descriptionOfHours": "By appointment only"
+            }
+          },
+          "5": {
+            "en": {
+              "day": "Saturday",
+              "hoursOfOperation": null,
+              "descriptionOfHours": null
+            },
+            "fr": {
+              "day": "Samedi",
+              "hoursOfOperation": null,
+              "descriptionOfHours": null
+            }
+          },
+          "6": {
+            "en": {
+              "day": "Sunday",
+              "hoursOfOperation": null,
+              "descriptionOfHours": null
+            },
+            "fr": {
+              "day": "Dimanche",
+              "hoursOfOperation": null,
+              "descriptionOfHours": null
+            }
+          }
+        },
+        "phoneNumbers": {
+          "tollFree": "1800123456",
+          "hotline": "14289876543",
+          "outOfAreaLine": "14161234567",
+          "afterHoursLine": "14289876542",
+          "businessLine": "14289876540",
+          "fax": "14289876544",
+          "tty": "14289876545"
+        }
+      }
+    ],
+    "nameDetails": {
+      "en": {
+        "official": "Calgary Family Services - Child/Youth/Family Counselling at Calgary Family Services",
+        "alternate": "Calgary Family Services - Child/Youth/Family Counselling at Calgary Family Services alternate"
+      },
+      "fr": {
+        "official": "Calgary Family Services - Child/Youth/Family Counselling at Calgary Family Services FR",
+        "alternate": "Calgary Family Services - Child/Youth/Family Counselling at Calgary Family Services alternate FR"
+      }
+    },
+    "name": {
+      "en": "Calgary Family Services - Child/Youth/Family Counselling at Calgary Family Services",
+      "fr": "Calgary Family Services - Child/Youth/Family Counselling at Calgary Family Services FR"
+    },
+    "physicalAddresses": {
+      "addresses1": [
+        "125 Woodward Avenue"
+      ],
+      "addresses2": [
+        "Suite 123"
+      ],
+      "addressesArePrivate": [
+        false
+      ],
+      "cities": [
+        "London"
+      ],
+      "counties": [
+        "Middlesex"
+      ],
+      "provinces": [
+        "ON"
+      ],
+      "countries": [
+        "Canada"
+      ],
+      "postalCodes": [
+        "N6H 2H1"
+      ],
+      "descriptions": [
+        "Address Description"
+      ],
+      "longitudes": [
+        "-81.2702407"
+      ],
+      "latitudes": [
+        "42.9878776"
+      ]
+    },
+    "mailingAddresses": {
+      "addresses1": [
+        "123 Street Name"
+      ],
+      "addresses2": [
+        "Suite 123"
+      ],
+      "cities": [
+        "Calgary"
+      ],
+      "provinces": [
+        "AB"
+      ],
+      "postalCodes": [
+        "N6H 2H1"
+      ],
+      "countries": [
+        "Canada"
+      ],
+      "addressesArePrivate": [
+        false
+      ]
+    },
+    "operations": {
+      "0": {
+        "en": {
+          "day": "Monday",
+          "hoursOfOperation": "12pm - 5pm",
+          "descriptionOfHours": "Call for hours"
+        },
+        "fr": {
+          "day": "Lundi",
+          "hoursOfOperation": "12pm - 5pm",
+          "descriptionOfHours": "Call for hours FR"
+        }
+      },
+      "1": {
+        "en": {
+          "day": "Tuesday",
+          "hoursOfOperation": "12pm - 5pm",
+          "descriptionOfHours": "Call for hours"
+        },
+        "fr": {
+          "day": "Mardi",
+          "hoursOfOperation": "12pm - 5pm",
+          "descriptionOfHours": "Call for hours FR"
+        }
+      },
+      "2": {
+        "en": {
+          "day": "Wednesday",
+          "hoursOfOperation": "12pm - 5pm",
+          "descriptionOfHours": "Call for hours"
+        },
+        "fr": {
+          "day": "Mercredi",
+          "hoursOfOperation": "12pm - 5pm",
+          "descriptionOfHours": "Call for hours FR"
+        }
+      },
+      "3": {
+        "en": {
+          "day": "Thursday",
+          "hoursOfOperation": "12pm - 5pm",
+          "descriptionOfHours": "Call for hours"
+        },
+        "fr": {
+          "day": "Jeudi",
+          "hoursOfOperation": "12pm - 5pm",
+          "descriptionOfHours": "Call for hours FR"
+        }
+      },
+      "4": {
+        "en": {
+          "day": "Friday",
+          "hoursOfOperation": "12pm - 5pm",
+          "descriptionOfHours": "Call for hours"
+        },
+        "fr": {
+          "day": "Vendredi",
+          "hoursOfOperation": "12pm - 5pm",
+          "descriptionOfHours": "Call for hours FR"
+        }
+      },
+      "5": {
+        "en": {
+          "day": "Saturday",
+          "hoursOfOperation": null,
+          "descriptionOfHours": null
+        },
+        "fr": {
+          "day": "Samedi",
+          "hoursOfOperation": null,
+          "descriptionOfHours": null
+        }
+      },
+      "6": {
+        "en": {
+          "day": "Sunday",
+          "hoursOfOperation": null,
+          "descriptionOfHours": null
+        },
+        "fr": {
+          "day": "Dimanche",
+          "hoursOfOperation": null,
+          "descriptionOfHours": null
+        }
+      }
+    },
+    "phoneNumbers": [
+      {
+        "number": "5194334273",
+        "name": "First Last",
+        "description": {
+          "en": "phone number description",
+          "fr": "phone number description FR"
+        },
+        "isPrivate": false,
+        "type": "fax"
+      },
+      {
+        "number": "5194330183",
+        "name": "First Last",
+        "description": {
+          "en": "phone number description",
+          "fr": "phone number description FR"
+        },
+        "isPrivate": false,
+        "type": "business"
+      }
+    ],
+    "mainContact": {
+      "email": "communications@calgaryfamily.org",
+      "name": "First Last",
+      "title": {
+        "en": "Administrative Director",
+        "fr": "Administrative Director FR"
+      },
+      "phoneNumber": "4161234567",
+      "isPrivate": false
+    },
+    "website": "https://www.calgaryfamily.org",
+    "status": "Active",
+    "description": {
+      "en": "Description",
+      "fr": "Description FR"
+    },
+    "primaryLocationCity": "Calgary",
+    "primaryLocationProvince": "AB",
+    "primaryLocationCounty": "Rocky View County",
+    "primaryLocationPostalCode": "A1B 2C3",
+    "primaryLocationPhone": "4032699888",
+    "primaryLocationIsPrivate": false,
+    "targetPopulations": [
+      "Open To All"
+    ],
+    "eligibilityMinAge": 10,
+    "eligibilityMaxAge": 20,
+    "interpretationTranslationServicesAvailable": true,
+    "feeStructureSource": "Free",
+    "howToAccessSupport": "Appointment Required",
+    "howIsServiceOffered": "In-Person Support",
+    "keywords": [
+      "education"
+    ],
+    "coverage": {
+      "en": "AB - Calgary;",
+      "fr": "AB - Calgary; FR"
+    },
+    "eligibilityDetails": {
+      "phrase": {
+        "en": "18 or older",
+        "fr": "18 or older FR"
+      },
+      "adult": false,
+      "family": false,
+      "gender": null,
+      "teen": false,
+      "child": false
+    },
+    "seniorOrgContact": {
+      "name": "First Last",
+      "title": {
+        "en": "Director of Partnerships",
+        "fr": "Director of Partnerships FR"
+      },
+      "emailAddress": "communications@calgaryfamily.org",
+      "phoneNumber": "4161234567",
+      "isPrivate": false
+    },
+    "accessibility": "Wheelchair Accessible",
+    "transportation": {
+      "en": "501 Bus",
+      "fr": "501 Bus FR"
+    },
+    "paymentMethod": "Free",
+    "applicationProcess": "Application process unknown. A step in the right direction would be to call or email to connect and learn more.",
+    "documentsRequired": [
+      "Health Card",
+      "Birth Certificate"
+    ],
+    "languages": [
+      {
+        "code": "en",
+        "language": "English"
+      },
+      {
+        "code": "fr",
+        "language": "French"
+      }
+    ],
+    "capacity": {
+      "en": {
+        "type": "capacity type",
+        "value": "capacity value"
+      },
+      "fr": {
+        "type": "capacity type FR",
+        "value": "capacity value FR"
+      }
+    },
+    "isHighlighted": false,
+    "lastVerified": "2013-08-23 10:33:00",
+    "volunteer": {
+      "en": {
+        "opportunities": "No",
+        "duties": "volunteer duties"
+      },
+      "fr": {
+        "opportunities": "No",
+        "duties": "volunteer duties FR"
+      }
+    },
+    "social": {
+      "facebook": "https://www.facebook.com/calgaryfamilyservice/",
+      "instagram": "@calgaryfamilyservice",
+      "twitter": "@calgaryfamilyservice"
+    },
+    "available247": true,
+    "metadata": {
+      "en": {
+        "legalStatus": "Family Services",
+        "typicalWaitTime": "21 minutes",
+        "availableForDirectory": true,
+        "availableForReferral": true,
+        "availableForResearch": true,
+        "recordType": "RAM",
+        "fees": true
+      },
+      "fr": {
+        "legalStatus": "Family Services FR",
+        "typicalWaitTime": "21 minutes FR",
+        "availableForDirectory": true,
+        "availableForReferral": true,
+        "availableForResearch": true,
+        "recordType": "RAM",
+        "fees": true
+      },
+      "isHotline": true,
+      "isHelpline": false
+    },
+    "isPrivate": false,
+    "taxonomyCode": "HP1234-01",
+    "timestamps": {
+      "createdAt": "2013-04-01 00:00:00",
+      "updatedAt": "2018-06-22 10:21:19"
+    }
+  },
+  {
+    "resourceID": 3,
+    "agency": {
+      "objectId": "507f1f77bcf86cd799439013",
+      "name": {
+        "en": "Family Service Thames Valley - Counselling",
+        "fr": "Family Service Thames Valley - Counselling FR"
+      },
+      "details": {
+        "en": {
+          "alternateNames": "Family Service Thames Valley - Counselling alternate name",
+          "description": "Offers a variety of counselling and assessment services for children, youth, and their families, as well as groups and couples."
+        },
+        "fr": {
+          "alternateNames": "Family Service Thames Valley - Counselling alternate name FR",
+          "description": "Offers a variety of counselling and assessment services for children, youth, and their families, as well as groups and couples. FR"
+        }
+      },
+      "isActive": true,
+      "isLocationPrivate": false,
+      "location": {
+        "address1": "125 Woodward Avenue",
+        "address2": "Suite 200",
+        "city": "London",
+        "county": "Middlesex",
+        "province": "ON",
+        "country": "Canada",
+        "postalCode": "N6H 2H1"
+      },
+      "email": "fstv@familyservicethamesvalley.com",
+      "operations": {
+        "0": {
+          "en": {
+            "day": "Monday",
+            "hoursOfOperation": "9am - 8pm",
+            "descriptionOfHours": "Call for hours"
+          },
+          "fr": {
+            "day": "Lundi",
+            "hoursOfOperation": "9am - 8pm",
+            "descriptionOfHours": "Call for hours FR"
+          }
+        },
+        "1": {
+          "en": {
+            "day": "Tuesday",
+            "hoursOfOperation": "9am - 5pm",
+            "descriptionOfHours": "Call for hours"
+          },
+          "fr": {
+            "day": "Mardi",
+            "hoursOfOperation": "9am - 5pm",
+            "descriptionOfHours": "Call for hours FR"
+          }
+        },
+        "2": {
+          "en": {
+            "day": "Wednesday",
+            "hoursOfOperation": "9am - 5pm",
+            "descriptionOfHours": "Call for hours"
+          },
+          "fr": {
+            "day": "Mercredi",
+            "hoursOfOperation": "9am - 5pm",
+            "descriptionOfHours": "Call for hours FR"
+          }
+        },
+        "3": {
+          "en": {
+            "day": "Thursday",
+            "hoursOfOperation": "9am - 8pm",
+            "descriptionOfHours": "Call for hours"
+          },
+          "fr": {
+            "day": "Jeudi",
+            "hoursOfOperation": "9am - 8pm",
+            "descriptionOfHours": "Call for hours FR"
+          }
+        },
+        "4": {
+          "en": {
+            "day": "Friday",
+            "hoursOfOperation": "9am - 4pm",
+            "descriptionOfHours": "Call for hours"
+          },
+          "fr": {
+            "day": "Vendredi",
+            "hoursOfOperation": "9am - 4pm",
+            "descriptionOfHours": "Call for hours FR"
+          }
+        },
+        "5": {
+          "en": {
+            "day": "Saturday",
+            "hoursOfOperation": null,
+            "descriptionOfHours": null
+          },
+          "fr": {
+            "day": "Samedi",
+            "hoursOfOperation": null,
+            "descriptionOfHours": null
+          }
+        },
+        "6": {
+          "en": {
+            "day": "Sunday",
+            "hoursOfOperation": null,
+            "descriptionOfHours": null
+          },
+          "fr": {
+            "day": "Dimanche",
+            "hoursOfOperation": null,
+            "descriptionOfHours": null
+          }
+        }
+      },
+      "phoneNumbers": {
+        "tollFree": "14161234567",
+        "hotline": "14161234567",
+        "outOfAreaLine": "14161234567",
+        "afterHoursLine": "14161234567",
+        "businessLine": "19-433-0183",
+        "fax": "519-433-4273",
+        "tty": "14161234567"
+      }
+    },
+    "sites": [
+      {
+        "objectId": "507f1f77bcf86cd799439013",
+        "name": {
+          "en": "Family Service Thames Valley - Counselling",
+          "fr": "Family Service Thames Valley - Counselling FR"
+        },
+        "details": {
+          "en": {
+            "alternateNames": "Family Service Thames Valley - Counselling",
+            "description": "Family Service Thames Valley - Counselling description"
+          },
+          "fr": {
+            "alternateNames": "Family Service Thames Valley - Counselling FR",
+            "description": "Family Service Thames Valley - Counselling FR"
+          }
+        },
+        "isActive": true,
+        "isLocationPrivate": false,
+        "location": {
+          "address1": "125 Woodward Avenue",
+          "address2": "Suite 200",
+          "city": "London",
+          "county": "Middlesex",
+          "province": "ON",
+          "country": "Canada",
+          "postalCode": "N6H 2H1"
+        },
+        "email": "fstv@familyservicethamesvalley.com",
+        "website": "http://www.familyservicethamesvalley.ca/",
+        "operations": {
+          "0": {
+            "en": {
+              "day": "Monday",
+              "hoursOfOperation": "9am - 8pm",
+              "descriptionOfHours": "Call for hours"
+            },
+            "fr": {
+              "day": "Lundi",
+              "hoursOfOperation": "9am - 8pm",
+              "descriptionOfHours": "Call for hours FR"
+            }
+          },
+          "1": {
+            "en": {
+              "day": "Tuesday",
+              "hoursOfOperation": "9am - 5pm",
+              "descriptionOfHours": "Call for hours"
+            },
+            "fr": {
+              "day": "Mardi",
+              "hoursOfOperation": "9am - 5pm",
+              "descriptionOfHours": "Call for hours FR"
+            }
+          },
+          "2": {
+            "en": {
+              "day": "Wednesday",
+              "hoursOfOperation": "9am - 5pm",
+              "descriptionOfHours": "Call for hours"
+            },
+            "fr": {
+              "day": "Mercredi",
+              "hoursOfOperation": "9am - 5pm",
+              "descriptionOfHours": "Call for hours FR"
+            }
+          },
+          "3": {
+            "en": {
+              "day": "Thursday",
+              "hoursOfOperation": "9am - 8pm",
+              "descriptionOfHours": "Call for hours"
+            },
+            "fr": {
+              "day": "Jeudi",
+              "hoursOfOperation": "9am - 8pm",
+              "descriptionOfHours": "Call for hours FR"
+            }
+          },
+          "4": {
+            "en": {
+              "day": "Friday",
+              "hoursOfOperation": "9am - 4pm",
+              "descriptionOfHours": "Call for hours"
+            },
+            "fr": {
+              "day": "Vendredi",
+              "hoursOfOperation": "9am - 4pm",
+              "descriptionOfHours": "Call for hours FR"
+            }
+          },
+          "5": {
+            "en": {
+              "day": "Saturday",
+              "hoursOfOperation": null,
+              "descriptionOfHours": null
+            },
+            "fr": {
+              "day": "Samedi",
+              "hoursOfOperation": null,
+              "descriptionOfHours": null
+            }
+          },
+          "6": {
+            "en": {
+              "day": "Sunday",
+              "hoursOfOperation": null,
+              "descriptionOfHours": null
+            },
+            "fr": {
+              "day": "Dimanche",
+              "hoursOfOperation": null,
+              "descriptionOfHours": null
+            }
+          }
+        },
+        "phoneNumbers": {
+          "tollFree": "1800123456",
+          "hotline": "14289876543",
+          "outOfAreaLine": "14161234567",
+          "afterHoursLine": "14289876542",
+          "businessLine": "14289876540",
+          "fax": "14289876544",
+          "tty": "14289876545"
+        }
+      },
+      {
+        "objectId": "507f1f77bcf86cd799439016",
+        "name": {
+          "en": "Family Service Thames Valley (Psychotherapy)",
+          "fr": "Family Service Thames Valley (Psychotherapy) FR"
+        },
+        "details": {
+          "en": {
+            "alternateNames": "Family Service Thames Valley (Psychotherapy)",
+            "description": "Family Service Thames Valley (Psychotherapy) description"
+          },
+          "fr": {
+            "alternateNames": "Family Service Thames Valley (Psychotherapy) FR",
+            "description": "Family Service Thames Valley (Psychotherapy) FR"
+          }
+        },
+        "isActive": true,
+        "isLocationPrivate": false,
+        "location": {
+          "address1": "300 Woodward Avenue",
+          "address2": "Suite 404",
+          "city": "London",
+          "county": "Middlesex",
+          "province": "ON",
+          "country": "Canada",
+          "postalCode": "N6H 2H2"
+        },
+        "email": "fstv@familyservicethamesvalley.com",
+        "website": "http://www.familyservicethamesvalley.ca/",
+        "operations": {
+          "0": {
+            "en": {
+              "day": "Monday",
+              "hoursOfOperation": "9am - 8pm",
+              "descriptionOfHours": "Call for hours"
+            },
+            "fr": {
+              "day": "Lundi",
+              "hoursOfOperation": "9am - 8pm",
+              "descriptionOfHours": "Call for hours FR"
+            }
+          },
+          "1": {
+            "en": {
+              "day": "Tuesday",
+              "hoursOfOperation": "9am - 5pm",
+              "descriptionOfHours": "Call for hours"
+            },
+            "fr": {
+              "day": "Mardi",
+              "hoursOfOperation": "9am - 5pm",
+              "descriptionOfHours": "Call for hours FR"
+            }
+          },
+          "2": {
+            "en": {
+              "day": "Wednesday",
+              "hoursOfOperation": "9am - 5pm",
+              "descriptionOfHours": "Call for hours"
+            },
+            "fr": {
+              "day": "Mercredi",
+              "hoursOfOperation": "9am - 5pm",
+              "descriptionOfHours": "Call for hours FR"
+            }
+          },
+          "3": {
+            "en": {
+              "day": "Thursday",
+              "hoursOfOperation": "9am - 8pm",
+              "descriptionOfHours": "Call for hours"
+            },
+            "fr": {
+              "day": "Jeudi",
+              "hoursOfOperation": "9am - 8pm",
+              "descriptionOfHours": "Call for hours FR"
+            }
+          },
+          "4": {
+            "en": {
+              "day": "Friday",
+              "hoursOfOperation": "9am - 4pm",
+              "descriptionOfHours": "Call for hours"
+            },
+            "fr": {
+              "day": "Vendredi",
+              "hoursOfOperation": "9am - 4pm",
+              "descriptionOfHours": "Call for hours FR"
+            }
+          },
+          "5": {
+            "en": {
+              "day": "Saturday",
+              "hoursOfOperation": null,
+              "descriptionOfHours": null
+            },
+            "fr": {
+              "day": "Samedi",
+              "hoursOfOperation": null,
+              "descriptionOfHours": null
+            }
+          },
+          "6": {
+            "en": {
+              "day": "Sunday",
+              "hoursOfOperation": null,
+              "descriptionOfHours": null
+            },
+            "fr": {
+              "day": "Dimanche",
+              "hoursOfOperation": null,
+              "descriptionOfHours": null
+            }
+          }
+        },
+        "phoneNumbers": {
+          "tollFree": "1800123456",
+          "hotline": "14289876543",
+          "outOfAreaLine": "14161234567",
+          "afterHoursLine": "14289876542",
+          "businessLine": "14289876540",
+          "fax": "14289876544",
+          "tty": "14289876545"
+        }
+      }
+    ],
+    "nameDetails": {
+      "en": {
+        "official": "Family Service Thames Valley - Counselling",
+        "alternate": "Family Service Thames Valley - Counselling"
+      },
+      "fr": {
+        "official": "Family Service Thames Valley - Counselling FR",
+        "alternate": "Family Service Thames Valley - Counselling FR"
+      }
+    },
+    "name": {
+      "en": "Family Service Thames Valley - Counselling",
+      "fr": "Family Service Thames Valley - Counselling FR"
+    },
+    "physicalAddresses": {
+      "addresses1": [
+        "125 Woodward Avenue"
+      ],
+      "addresses2": [
+        "Suite 200"
+      ],
+      "addressesArePrivate": [
+        false
+      ],
+      "cities": [
+        "London"
+      ],
+      "counties": [
+        "Middlesex"
+      ],
+      "provinces": [
+        "ON"
+      ],
+      "countries": [
+        "Canada"
+      ],
+      "postalCodes": [
+        "N6H 2H1"
+      ],
+      "descriptions": [
+        "Address Description"
+      ],
+      "longitudes": [
+        "-81.2702407"
+      ],
+      "latitudes": [
+        "42.9878776"
+      ]
+    },
+    "mailingAddresses": {
+      "addresses1": [
+        "125 Woodward Avenue"
+      ],
+      "addresses2": [
+        "Suite 200"
+      ],
+      "cities": [
+        "London"
+      ],
+      "provinces": [
+        "ON"
+      ],
+      "postalCodes": [
+        "N6H 2H1"
+      ],
+      "countries": [
+        "Canada"
+      ],
+      "addressesArePrivate": [
+        false
+      ]
+    },
+    "operations": {
+      "0": {
+        "en": {
+          "day": "Monday",
+          "hoursOfOperation": "9am - 8pm",
+          "descriptionOfHours": "Call for hours"
+        },
+        "fr": {
+          "day": "Lundi",
+          "hoursOfOperation": "9am - 8pm",
+          "descriptionOfHours": "Call for hours FR"
+        }
+      },
+      "1": {
+        "en": {
+          "day": "Tuesday",
+          "hoursOfOperation": "9am - 5pm",
+          "descriptionOfHours": "Call for hours"
+        },
+        "fr": {
+          "day": "Mardi",
+          "hoursOfOperation": "9am - 5pm",
+          "descriptionOfHours": "Call for hours FR"
+        }
+      },
+      "2": {
+        "en": {
+          "day": "Wednesday",
+          "hoursOfOperation": "9am - 5pm",
+          "descriptionOfHours": "Call for hours"
+        },
+        "fr": {
+          "day": "Mercredi",
+          "hoursOfOperation": "9am - 5pm",
+          "descriptionOfHours": "Call for hours FR"
+        }
+      },
+      "3": {
+        "en": {
+          "day": "Thursday",
+          "hoursOfOperation": "9am - 8pm",
+          "descriptionOfHours": "Call for hours"
+        },
+        "fr": {
+          "day": "Jeudi",
+          "hoursOfOperation": "9am - 8pm",
+          "descriptionOfHours": "Call for hours FR"
+        }
+      },
+      "4": {
+        "en": {
+          "day": "Friday",
+          "hoursOfOperation": "9am - 4pm",
+          "descriptionOfHours": "Call for hours"
+        },
+        "fr": {
+          "day": "Vendredi",
+          "hoursOfOperation": "9am - 4pm",
+          "descriptionOfHours": "Call for hours FR"
+        }
+      },
+      "5": {
+        "en": {
+          "day": "Saturday",
+          "hoursOfOperation": null,
+          "descriptionOfHours": null
+        },
+        "fr": {
+          "day": "Samedi",
+          "hoursOfOperation": null,
+          "descriptionOfHours": null
+        }
+      },
+      "6": {
+        "en": {
+          "day": "Sunday",
+          "hoursOfOperation": null,
+          "descriptionOfHours": null
+        },
+        "fr": {
+          "day": "Dimanche",
+          "hoursOfOperation": null,
+          "descriptionOfHours": null
+        }
+      }
+    },
+    "phoneNumbers": [
+      {
+        "number": "4282736867",
+        "name": "First Last",
+        "description": {
+          "en": "phone number description",
+          "fr": "phone number description FR"
+        },
+        "isPrivate": false,
+        "type": "phone"
+      },
+      {
+        "number": "4283568185",
+        "name": "First Last",
+        "description": {
+          "en": "phone number description",
+          "fr": "phone number description FR"
+        },
+        "isPrivate": false,
+        "type": "hotline"
+      }
+    ],
+    "mainContact": {
+      "email": "fstv@familyservicethamesvalley.com",
+      "name": "First Last",
+      "title": {
+        "en": "Director, Counselling Services",
+        "fr": "Director, Counselling Services FR"
+      },
+      "phoneNumber": "519 433-0183 x8222",
+      "isPrivate": false
+    },
+    "website": "http://www.familyservicethamesvalley.ca/",
+    "status": "Active",
+    "description": {
+      "en": "Offers instruction for people who need to acquire the basic skills and tools that are required to successfully apply for and secure employment, and retain a position once they have been hired. These programs offer information and guidance regarding preparing a resume, writing job application letters, completing job application questionnaires, responding to job ads and taking employment tests.  The programs may also offer tips regarding appropriate dress, personal appearance and interview techniques.",
+      "fr": "Offers instruction for people who need to acquire the basic skills and tools that are required to successfully apply for and secure employment, and retain a position once they have been hired. These programs offer information and guidance regarding preparing a resume, writing job application letters, completing job application questionnaires, responding to job ads and taking employment tests.  The programs may also offer tips regarding appropriate dress, personal appearance and interview techniques. FR"
+    },
+    "primaryLocationCity": "London",
+    "primaryLocationProvince": "ON",
+    "primaryLocationCounty": "Middlesex",
+    "primaryLocationPostalCode": "N6H 2H1",
+    "primaryLocationPhone": "4161234567",
+    "primaryLocationIsPrivate": false,
+    "targetPopulations": [
+      "Open To All"
+    ],
+    "eligibilityMinAge": 10,
+    "eligibilityMaxAge": 20,
+    "interpretationTranslationServicesAvailable": true,
+    "feeStructureSource": "Sliding Scale",
+    "howToAccessSupport": "Appointment Required",
+    "howIsServiceOffered": "In-Person Support",
+    "keywords": [
+      "education"
+    ],
+    "coverage": {
+      "en": "Residents of London & Middlesex",
+      "fr": "Residents of London & Middlesex FR"
+    },
+    "eligibilityDetails": {
+      "phrase": {
+        "en": "Residents of London & Middlesex.",
+        "fr": "Residents of London & Middlesex. FR"
+      },
+      "adult": false,
+      "family": false,
+      "gender": null,
+      "teen": false,
+      "child": false
+    },
+    "seniorOrgContact": {
+      "name": "First Last",
+      "title": {
+        "en": "Executive Director",
+        "fr": "Executive Director FR"
+      },
+      "emailAddress": "fstv@familyservicethamesvalley.com",
+      "phoneNumber": "5194330183x8108",
+      "isPrivate": false
+    },
+    "accessibility": "Wheelchair Accessible",
+    "transportation": {
+      "en": "Close to bus routes, 9, 17 & 20",
+      "fr": "Close to bus routes, 9, 17 & 20 FR"
+    },
+    "paymentMethod": "Free",
+    "applicationProcess": "Submit form in-person",
+    "documentsRequired": [
+      "No Documentation Required"
+    ],
+    "languages": [
+      {
+        "code": "en",
+        "language": "English"
+      },
+      {
+        "code": "fr",
+        "language": "French"
+      },
+      {
+        "code": "nl",
+        "language": "Dutch"
+      },
+      {
+        "code": "es",
+        "language": "Spanish"
+      }
+    ],
+    "capacity": {
+      "en": {
+        "type": "capacity type",
+        "value": "capacity value"
+      },
+      "fr": {
+        "type": "capacity type FR",
+        "value": "capacity value FR"
+      }
+    },
+    "isHighlighted": false,
+    "lastVerified": "2020-09-28 00:00:00",
+    "volunteer": {
+      "en": {
+        "opportunities": "No",
+        "duties": "volunteer duties"
+      },
+      "fr": {
+        "opportunities": "No",
+        "duties": "volunteer duties FR"
+      }
+    },
+    "social": {
+      "facebook": "https://www.facebook.com/familyservicethamesvalley/",
+      "instagram": "@familyservicethamesvalley",
+      "twitter": "@familyservicethamesvalley"
+    },
+    "available247": true,
+    "metadata": {
+      "en": {
+        "legalStatus": "Educational Institute",
+        "typicalWaitTime": "21 minutes",
+        "availableForDirectory": true,
+        "availableForReferral": true,
+        "availableForResearch": true,
+        "recordType": "RAM",
+        "fees": true
+      },
+      "fr": {
+        "legalStatus": "Educational Institute FR",
+        "typicalWaitTime": "21 minutes FR",
+        "availableForDirectory": true,
+        "availableForReferral": true,
+        "availableForResearch": true,
+        "recordType": "RAM",
+        "fees": true
+      },
+      "isHotline": true,
+      "isHelpline": false
+    },
+    "isPrivate": false,
+    "taxonomyCode": "RM-6500.1500; RF-3300; RF-2000; RF-2500; RX-8450.8000",
+    "timestamps": {
+      "createdAt": "2005-12-31 10:52:00",
+      "updatedAt": "2021-10-04 16:18:00"
+    }
+  },
+  {
+    "resourceID": 4,
+    "agency": {
+      "objectId": "507f1f77bcf86cd799439014",
+      "name": {
+        "en": "Sheguiandah First Nation - Sheguiandah Health Centre",
+        "fr": "Sheguiandah First Nation - Sheguiandah Health Centre FR"
+      },
+      "details": {
+        "en": {
+          "alternateNames": "Sheguiandah First Nation - Sheguiandah Health Centre alternate name",
+          "description": "Sheguiandah First Nation - Sheguiandah Health Centre"
+        },
+        "fr": {
+          "alternateNames": "Sheguiandah First Nation - Sheguiandah Health Centre alternate name FR",
+          "description": "Sheguiandah First Nation - Sheguiandah Health Centre FR"
+        }
+      },
+      "isActive": true,
+      "isLocationPrivate": false,
+      "location": {
+        "address1": "76 Ogemah Miikan",
+        "address2": "PO Box 101",
+        "city": "Sheguiandah First Nation",
+        "county": "Manitoulin",
+        "province": "ON",
+        "country": "Canada",
+        "postalCode": "P0P 1W0"
+      },
+      "email": "health-center@sheguiandahfn.ca",
+      "operations": {
+        "0": {
+          "en": {
+            "day": "Monday",
+            "hoursOfOperation": "8:30am - 4:30pm",
+            "descriptionOfHours": "Closed 12:00pm - 1:00pm"
+          },
+          "fr": {
+            "day": "Lundi",
+            "hoursOfOperation": "8:30am - 4:30pm",
+            "descriptionOfHours": "Closed 12:00pm - 1:00pm FR"
+          }
+        },
+        "1": {
+          "en": {
+            "day": "Tuesday",
+            "hoursOfOperation": "8:30am - 4:30pm",
+            "descriptionOfHours": "Closed 12:00pm - 1:00pm"
+          },
+          "fr": {
+            "day": "Mardi",
+            "hoursOfOperation": "8:30am - 4:30pm",
+            "descriptionOfHours": "Closed 12:00pm - 1:00pm FR"
+          }
+        },
+        "2": {
+          "en": {
+            "day": "Wednesday",
+            "hoursOfOperation": "8:30am - 4:30pm",
+            "descriptionOfHours": "Closed 12:00pm - 1:00pm"
+          },
+          "fr": {
+            "day": "Mercredi",
+            "hoursOfOperation": "8:30am - 4:30pm",
+            "descriptionOfHours": "Closed 12:00pm - 1:00pm FR"
+          }
+        },
+        "3": {
+          "en": {
+            "day": "Thursday",
+            "hoursOfOperation": "8:30am - 4:30pm",
+            "descriptionOfHours": "Closed 12:00pm - 1:00pm"
+          },
+          "fr": {
+            "day": "Jeudi",
+            "hoursOfOperation": "8:30am - 4:30pm",
+            "descriptionOfHours": "Closed 12:00pm - 1:00pm FR"
+          }
+        },
+        "4": {
+          "en": {
+            "day": "Friday",
+            "hoursOfOperation": "8:30am - 4pm",
+            "descriptionOfHours": "Closed 12:00pm - 1:00pm"
+          },
+          "fr": {
+            "day": "Vendredi",
+            "hoursOfOperation": "8:30am - 4pm",
+            "descriptionOfHours": "Closed 12:00pm - 1:00pm FR"
+          }
+        },
+        "5": {
+          "en": {
+            "day": "Saturday",
+            "hoursOfOperation": null,
+            "descriptionOfHours": null
+          },
+          "fr": {
+            "day": "Samedi",
+            "hoursOfOperation": null,
+            "descriptionOfHours": null
+          }
+        },
+        "6": {
+          "en": {
+            "day": "Sunday",
+            "hoursOfOperation": null,
+            "descriptionOfHours": null
+          },
+          "fr": {
+            "day": "Dimanche",
+            "hoursOfOperation": null,
+            "descriptionOfHours": null
+          }
+        }
+      },
+      "phoneNumbers": {
+        "tollFree": "14161234567",
+        "hotline": "14161234567",
+        "outOfAreaLine": "14161234567",
+        "afterHoursLine": "14161234567",
+        "businessLine": "705-368-1150",
+        "fax": "705-368-1151",
+        "tty": "14161234567"
+      }
+    },
+    "sites": [
+      {
+        "objectId": "507f1f77bcf86cd799439014",
+        "name": {
+          "en": "Sheguiandah First Nation - Sheguiandah Health Centre",
+          "fr": "Sheguiandah First Nation - Sheguiandah Health Centre FR"
+        },
+        "details": {
+          "en": {
+            "alternateNames": "Sheguiandah First Nation - Sheguiandah Health Centre",
+            "description": "Sheguiandah First Nation - Sheguiandah Health Centre description"
+          },
+          "fr": {
+            "alternateNames": "Sheguiandah First Nation - Sheguiandah Health Centre FR",
+            "description": "Sheguiandah First Nation - Sheguiandah Health Centre FR"
+          }
+        },
+        "isActive": true,
+        "isLocationPrivate": false,
+        "location": {
+          "address1": "76 Ogemah Miikan",
+          "address2": "PO Box 101",
+          "city": "Sheguiandah First Nation",
+          "county": "Manitoulin",
+          "province": "ON",
+          "country": "Canada",
+          "postalCode": "P0P 1W0"
+        },
+        "email": "health-center@sheguiandahfn.ca",
+        "website": "http://www.sheguiandahfn.ca/",
+        "operations": {
+          "0": {
+            "en": {
+              "day": "Monday",
+              "hoursOfOperation": "8:30am - 4:30pm",
+              "descriptionOfHours": "Closed 12:00pm - 1:00pm"
+            },
+            "fr": {
+              "day": "Lundi",
+              "hoursOfOperation": "8:30am - 4:30pm",
+              "descriptionOfHours": "Closed 12:00pm - 1:00pm FR"
+            }
+          },
+          "1": {
+            "en": {
+              "day": "Tuesday",
+              "hoursOfOperation": "8:30am - 4:30pm",
+              "descriptionOfHours": "Closed 12:00pm - 1:00pm"
+            },
+            "fr": {
+              "day": "Mardi",
+              "hoursOfOperation": "8:30am - 4:30pm",
+              "descriptionOfHours": "Closed 12:00pm - 1:00pm FR"
+            }
+          },
+          "2": {
+            "en": {
+              "day": "Wednesday",
+              "hoursOfOperation": "8:30am - 4:30pm",
+              "descriptionOfHours": "Closed 12:00pm - 1:00pm"
+            },
+            "fr": {
+              "day": "Mercredi",
+              "hoursOfOperation": "8:30am - 4:30pm",
+              "descriptionOfHours": "Closed 12:00pm - 1:00pm FR"
+            }
+          },
+          "3": {
+            "en": {
+              "day": "Thursday",
+              "hoursOfOperation": "8:30am - 4:30pm",
+              "descriptionOfHours": "Closed 12:00pm - 1:00pm"
+            },
+            "fr": {
+              "day": "Jeudi",
+              "hoursOfOperation": "8:30am - 4:30pm",
+              "descriptionOfHours": "Closed 12:00pm - 1:00pm FR"
+            }
+          },
+          "4": {
+            "en": {
+              "day": "Friday",
+              "hoursOfOperation": "8:30am - 4pm",
+              "descriptionOfHours": "Closed 12:00pm - 1:00pm"
+            },
+            "fr": {
+              "day": "Vendredi",
+              "hoursOfOperation": "8:30am - 4pm",
+              "descriptionOfHours": "Closed 12:00pm - 1:00pm FR"
+            }
+          },
+          "5": {
+            "en": {
+              "day": "Saturday",
+              "hoursOfOperation": null,
+              "descriptionOfHours": null
+            },
+            "fr": {
+              "day": "Samedi",
+              "hoursOfOperation": null,
+              "descriptionOfHours": null
+            }
+          },
+          "6": {
+            "en": {
+              "day": "Sunday",
+              "hoursOfOperation": null,
+              "descriptionOfHours": null
+            },
+            "fr": {
+              "day": "Dimanche",
+              "hoursOfOperation": null,
+              "descriptionOfHours": null
+            }
+          }
+        },
+        "phoneNumbers": {
+          "tollFree": "14161234567",
+          "hotline": "14161234567",
+          "outOfAreaLine": "14161234567",
+          "afterHoursLine": "14161234567",
+          "businessLine": "7053681150",
+          "fax": "7053681151",
+          "tty": "14161234567"
+        }
+      },
+      {
+        "objectId": "507f1f77bcf86cd799439017",
+        "name": {
+          "en": "Sheguiandah First Nation Community Clinic",
+          "fr": "Sheguiandah First Nation Community Clinic FR"
+        },
+        "details": {
+          "en": {
+            "alternateNames": "Sheguiandah First Nation Community Clinic",
+            "description": "Sheguiandah First Nation Community Clinic description"
+          },
+          "fr": {
+            "alternateNames": "Sheguiandah First Nation Community Clinic FR",
+            "description": "Sheguiandah First Nation Community Clinic FR"
+          }
+        },
+        "isActive": true,
+        "isLocationPrivate": false,
+        "location": {
+          "address1": "51 Ogemah Miikan",
+          "address2": "PO Box 51",
+          "city": "Sheguiandah First Nation",
+          "county": "Manitoulin",
+          "province": "ON",
+          "country": "Canada",
+          "postalCode": "P0P 1W5"
+        },
+        "email": "health-center@sheguiandahfn.ca",
+        "website": "http://www.sheguiandahfn.ca/",
+        "operations": {
+          "0": {
+            "en": {
+              "day": "Monday",
+              "hoursOfOperation": "8:30am - 4:30pm",
+              "descriptionOfHours": "Closed 12:00pm - 1:00pm"
+            },
+            "fr": {
+              "day": "Lundi",
+              "hoursOfOperation": "8:30am - 4:30pm",
+              "descriptionOfHours": "Closed 12:00pm - 1:00pm FR"
+            }
+          },
+          "1": {
+            "en": {
+              "day": "Tuesday",
+              "hoursOfOperation": "8:30am - 4:30pm",
+              "descriptionOfHours": "Closed 12:00pm - 1:00pm"
+            },
+            "fr": {
+              "day": "Mardi",
+              "hoursOfOperation": "8:30am - 4:30pm",
+              "descriptionOfHours": "Closed 12:00pm - 1:00pm FR"
+            }
+          },
+          "2": {
+            "en": {
+              "day": "Wednesday",
+              "hoursOfOperation": "8:30am - 4:30pm",
+              "descriptionOfHours": "Closed 12:00pm - 1:00pm"
+            },
+            "fr": {
+              "day": "Mercredi",
+              "hoursOfOperation": "8:30am - 4:30pm",
+              "descriptionOfHours": "Closed 12:00pm - 1:00pm FR"
+            }
+          },
+          "3": {
+            "en": {
+              "day": "Thursday",
+              "hoursOfOperation": "8:30am - 4:30pm",
+              "descriptionOfHours": "Closed 12:00pm - 1:00pm"
+            },
+            "fr": {
+              "day": "Jeudi",
+              "hoursOfOperation": "8:30am - 4:30pm",
+              "descriptionOfHours": "Closed 12:00pm - 1:00pm FR"
+            }
+          },
+          "4": {
+            "en": {
+              "day": "Friday",
+              "hoursOfOperation": "8:30am - 4pm",
+              "descriptionOfHours": "Closed 12:00pm - 1:00pm"
+            },
+            "fr": {
+              "day": "Vendredi",
+              "hoursOfOperation": "8:30am - 4pm",
+              "descriptionOfHours": "Closed 12:00pm - 1:00pm FR"
+            }
+          },
+          "5": {
+            "en": {
+              "day": "Saturday",
+              "hoursOfOperation": null,
+              "descriptionOfHours": null
+            },
+            "fr": {
+              "day": "Samedi",
+              "hoursOfOperation": null,
+              "descriptionOfHours": null
+            }
+          },
+          "6": {
+            "en": {
+              "day": "Sunday",
+              "hoursOfOperation": null,
+              "descriptionOfHours": null
+            },
+            "fr": {
+              "day": "Dimanche",
+              "hoursOfOperation": null,
+              "descriptionOfHours": null
+            }
+          }
+        },
+        "phoneNumbers": {
+          "tollFree": "14161234567",
+          "hotline": "14161234567",
+          "outOfAreaLine": "14161234567",
+          "afterHoursLine": "14161234567",
+          "businessLine": "7053681320",
+          "fax": "7053681154",
+          "tty": "14161234567"
+        }
+      }
+    ],
+    "nameDetails": {
+      "en": {
+        "official": "Sheguiandah First Nation - Sheguiandah Health Centre",
+        "alternate": "Sheguiandah First Nation - Sheguiandah Health Centre"
+      },
+      "fr": {
+        "official": "Sheguiandah First Nation - Sheguiandah Health Centre FR",
+        "alternate": "Sheguiandah First Nation - Sheguiandah Health Centre FR"
+      }
+    },
+    "name": {
+      "en": "Sheguiandah First Nation - Sheguiandah Health Centre",
+      "fr": "Sheguiandah First Nation - Sheguiandah Health Centre FR"
+    },
+    "physicalAddresses": {
+      "addresses1": [
+        "76 Ogemah Miikan"
+      ],
+      "addresses2": [
+        "PO Box 101"
+      ],
+      "addressesArePrivate": [
+        false
+      ],
+      "cities": [
+        "Sheguiandah First Nation"
+      ],
+      "counties": [
+        "Manitoulin"
+      ],
+      "provinces": [
+        "ON"
+      ],
+      "countries": [
+        "Canada"
+      ],
+      "postalCodes": [
+        "P0P 1W0"
+      ],
+      "descriptions": [
+        "Address Description"
+      ],
+      "longitudes": [
+        "-81.906589"
+      ],
+      "latitudes": [
+        "45.882268"
+      ]
+    },
+    "mailingAddresses": {
+      "addresses1": [
+        "76 Ogemah Miikan"
+      ],
+      "addresses2": [
+        "PO Box 101"
+      ],
+      "cities": [
+        "Sheguiandah First Nation"
+      ],
+      "provinces": [
+        "ON"
+      ],
+      "postalCodes": [
+        "P0P 1W0"
+      ],
+      "countries": [
+        "Canada"
+      ],
+      "addressesArePrivate": [
+        false
+      ]
+    },
+    "operations": {
+      "0": {
+        "en": {
+          "day": "Monday",
+          "hoursOfOperation": "8:30am - 4:30pm",
+          "descriptionOfHours": "Closed 12:00pm - 1:00pm"
+        },
+        "fr": {
+          "day": "Lundi",
+          "hoursOfOperation": "8:30am - 4:30pm",
+          "descriptionOfHours": "Closed 12:00pm - 1:00pm FR"
+        }
+      },
+      "1": {
+        "en": {
+          "day": "Tuesday",
+          "hoursOfOperation": "8:30am - 4:30pm",
+          "descriptionOfHours": "Closed 12:00pm - 1:00pm"
+        },
+        "fr": {
+          "day": "Mardi",
+          "hoursOfOperation": "8:30am - 4:30pm",
+          "descriptionOfHours": "Closed 12:00pm - 1:00pm FR"
+        }
+      },
+      "2": {
+        "en": {
+          "day": "Wednesday",
+          "hoursOfOperation": "8:30am - 4:30pm",
+          "descriptionOfHours": "Closed 12:00pm - 1:00pm"
+        },
+        "fr": {
+          "day": "Mercredi",
+          "hoursOfOperation": "8:30am - 4:30pm",
+          "descriptionOfHours": "Closed 12:00pm - 1:00pm FR"
+        }
+      },
+      "3": {
+        "en": {
+          "day": "Thursday",
+          "hoursOfOperation": "8:30am - 4:30pm",
+          "descriptionOfHours": "Closed 12:00pm - 1:00pm"
+        },
+        "fr": {
+          "day": "Jeudi",
+          "hoursOfOperation": "8:30am - 4:30pm",
+          "descriptionOfHours": "Closed 12:00pm - 1:00pm FR"
+        }
+      },
+      "4": {
+        "en": {
+          "day": "Friday",
+          "hoursOfOperation": "8:30am - 4pm",
+          "descriptionOfHours": "Closed 12:00pm - 1:00pm"
+        },
+        "fr": {
+          "day": "Vendredi",
+          "hoursOfOperation": "8:30am - 4pm",
+          "descriptionOfHours": "Closed 12:00pm - 1:00pm FR"
+        }
+      },
+      "5": {
+        "en": {
+          "day": "Saturday",
+          "hoursOfOperation": null,
+          "descriptionOfHours": null
+        },
+        "fr": {
+          "day": "Samedi",
+          "hoursOfOperation": null,
+          "descriptionOfHours": null
+        }
+      },
+      "6": {
+        "en": {
+          "day": "Sunday",
+          "hoursOfOperation": null,
+          "descriptionOfHours": null
+        },
+        "fr": {
+          "day": "Dimanche",
+          "hoursOfOperation": null,
+          "descriptionOfHours": null
+        }
+      }
+    },
+    "phoneNumbers": [
+      {
+        "number": "705-368-1151",
+        "name": "First Last",
+        "description": {
+          "en": "phone number description",
+          "fr": "phone number description FR"
+        },
+        "isPrivate": false,
+        "type": "fax"
+      },
+      {
+        "number": "705-368-1150",
+        "name": "First Last",
+        "description": {
+          "en": "phone number description",
+          "fr": "phone number description FR"
+        },
+        "isPrivate": false,
+        "type": "business"
+      }
+    ],
+    "mainContact": {
+      "email": "health-center@sheguiandahfn.ca",
+      "name": "First Last",
+      "title": {
+        "en": "Health Reception",
+        "fr": "Health Reception FR"
+      },
+      "phoneNumber": "705-368-1150 ext 221",
+      "isPrivate": false
+    },
+    "website": "http://www.sheguiandahfn.ca/",
+    "status": "Active",
+    "description": {
+      "en": "Sheguiandah First Nation - Sheguiandah Health Centre",
+      "fr": "Sheguiandah First Nation - Sheguiandah Health Centre FR"
+    },
+    "primaryLocationCity": "Sheguiandah First Nation",
+    "primaryLocationProvince": "ON",
+    "primaryLocationCounty": "Manitoulin",
+    "primaryLocationPostalCode": "P0P 1W0",
+    "primaryLocationPhone": "4161234567",
+    "primaryLocationIsPrivate": false,
+    "targetPopulations": [
+      "Open To All"
+    ],
+    "eligibilityMinAge": 10,
+    "eligibilityMaxAge": 20,
+    "interpretationTranslationServicesAvailable": true,
+    "feeStructureSource": "Sliding Scale",
+    "howToAccessSupport": "Appointment Required",
+    "howIsServiceOffered": "In-Person Support",
+    "keywords": [
+      "education"
+    ],
+    "coverage": {
+      "en": "coverage details ",
+      "fr": "coverage details FR"
+    },
+    "eligibilityDetails": {
+      "phrase": {
+        "en": "eligibility details.",
+        "fr": "eligibility details FR"
+      },
+      "adult": false,
+      "family": false,
+      "gender": null,
+      "teen": false,
+      "child": false
+    },
+    "seniorOrgContact": {
+      "name": "First Last",
+      "title": {
+        "en": "Health Administrator",
+        "fr": "Health Administrator FR"
+      },
+      "emailAddress": "health-center@sheguiandahfn.ca",
+      "phoneNumber": "705-368-1150 ext 238",
+      "isPrivate": false
+    },
+    "accessibility": "Wheelchair Accessible",
+    "transportation": {
+      "en": "Close to bus routes, 9, 17 & 20",
+      "fr": "Close to bus routes, 9, 17 & 20 FR"
+    },
+    "paymentMethod": "Free",
+    "applicationProcess": "Submit form in-person",
+    "documentsRequired": [
+      "Health Card",
+      "Birth Certificate"
+    ],
+    "languages": [
+      {
+        "code": "en",
+        "language": "English"
+      },
+      {
+        "code": "fr",
+        "language": "French"
+      }
+    ],
+    "capacity": {
+      "en": {
+        "type": "capacity type",
+        "value": "capacity value"
+      },
+      "fr": {
+        "type": "capacity type FR",
+        "value": "capacity value FR"
+      }
+    },
+    "isHighlighted": false,
+    "lastVerified": "2020-09-20 12:30:12",
+    "volunteer": {
+      "en": {
+        "opportunities": "No",
+        "duties": "volunteer duties"
+      },
+      "fr": {
+        "opportunities": "No",
+        "duties": "volunteer duties FR"
+      }
+    },
+    "social": {
+      "facebook": "https://www.facebook.com/sheguiandahfn/",
+      "instagram": "@sheguiandahfn",
+      "twitter": "@sheguiandahfn"
+    },
+    "available247": true,
+    "metadata": {
+      "en": {
+        "legalStatus": "Educational Institute",
+        "typicalWaitTime": "21 minutes",
+        "availableForDirectory": true,
+        "availableForReferral": true,
+        "availableForResearch": true,
+        "recordType": "RAM",
+        "fees": true
+      },
+      "fr": {
+        "legalStatus": "Educational Institute FR",
+        "typicalWaitTime": "21 minutes FR",
+        "availableForDirectory": true,
+        "availableForReferral": true,
+        "availableForResearch": true,
+        "recordType": "RAM",
+        "fees": true
+      },
+      "isHotline": true,
+      "isHelpline": false
+    },
+    "isPrivate": false,
+    "taxonomyCode": "0",
+    "timestamps": {
+      "createdAt": "2017-09-27 03:19:00",
+      "updatedAt": "2021-12-22 10:14:00"
+    }
+  },
+  {
+    "resourceID": 5,
+    "agency": {
+      "objectId": "507f1f77bcf86cd799439015",
+      "name": {
+        "en": "St. Lawrence College Student Success Facilitators",
+        "fr": "St. Lawrence College Student Success Facilitators FR"
+      },
+      "details": {
+        "en": {
+          "alternateNames": "St Lawrence College Brockville Campus Student Success Facilitators",
+          "description": "Student Success Facilitators provide support and resources to help students achieve their academic and personal goals.  Also assists students in adjusting to college life, finding college resources, obtaining a peer tutor, understanding how to develop the academic skills they will need, and more."
+        },
+        "fr": {
+          "alternateNames": "St Lawrence College Brockville Campus Student Success Facilitators FR",
+          "description": "Student Success Facilitators provide support and resources to help students achieve their academic and personal goals.  Also assists students in adjusting to college life, finding college resources, obtaining a peer tutor, understanding how to develop the academic skills they will need, and more. FR"
+        }
+      },
+      "isActive": true,
+      "isLocationPrivate": false,
+      "location": {
+        "address1": "123 College Street",
+        "address2": "Room 202",
+        "city": "Brockville",
+        "county": "Leeds And Grenville",
+        "province": "ON",
+        "country": "Canada",
+        "postalCode": "A1B 2C3"
+      },
+      "email": "sample@email.com",
+      "operations": {
+        "0": {
+          "en": {
+            "day": "Monday",
+            "hoursOfOperation": "8:30am - 4:30pm",
+            "descriptionOfHours": "Contact for hours"
+          },
+          "fr": {
+            "day": "Lundi",
+            "hoursOfOperation": "8:30am - 4:30pm",
+            "descriptionOfHours": "Contact for hours FR"
+          }
+        },
+        "1": {
+          "en": {
+            "day": "Tuesday",
+            "hoursOfOperation": "8:30am - 4:30pm",
+            "descriptionOfHours": "Contact for hours"
+          },
+          "fr": {
+            "day": "Mardi",
+            "hoursOfOperation": "8:30am - 4:30pm",
+            "descriptionOfHours": "Contact for hours FR"
+          }
+        },
+        "2": {
+          "en": {
+            "day": "Wednesday",
+            "hoursOfOperation": "8:30am - 4:30pm",
+            "descriptionOfHours": "Contact for hours"
+          },
+          "fr": {
+            "day": "Mercredi",
+            "hoursOfOperation": "8:30am - 4:30pm",
+            "descriptionOfHours": "Contact for hours FR"
+          }
+        },
+        "3": {
+          "en": {
+            "day": "Thursday",
+            "hoursOfOperation": "8:30am - 4:30pm",
+            "descriptionOfHours": "Contact for hours"
+          },
+          "fr": {
+            "day": "Jeudi",
+            "hoursOfOperation": "8:30am - 4:30pm",
+            "descriptionOfHours": "Contact for hours FR"
+          }
+        },
+        "4": {
+          "en": {
+            "day": "Friday",
+            "hoursOfOperation": "8:30am - 4pm",
+            "descriptionOfHours": "Contact for hours"
+          },
+          "fr": {
+            "day": "Vendredi",
+            "hoursOfOperation": "8:30am - 4pm",
+            "descriptionOfHours": "Contact for hours FR"
+          }
+        },
+        "5": {
+          "en": {
+            "day": "Saturday",
+            "hoursOfOperation": null,
+            "descriptionOfHours": null
+          },
+          "fr": {
+            "day": "Samedi",
+            "hoursOfOperation": null,
+            "descriptionOfHours": null
+          }
+        },
+        "6": {
+          "en": {
+            "day": "Sunday",
+            "hoursOfOperation": null,
+            "descriptionOfHours": null
+          },
+          "fr": {
+            "day": "Dimanche",
+            "hoursOfOperation": null,
+            "descriptionOfHours": null
+          }
+        }
+      },
+      "phoneNumbers": {
+        "tollFree": "14161234567",
+        "hotline": "14161234567",
+        "outOfAreaLine": "14161234567",
+        "afterHoursLine": "14161234567",
+        "businessLine": "613-345-0660 ext 3756",
+        "fax": "14161234567",
+        "tty": "14161234567"
+      }
+    },
+    "sites": [
+      {
+        "objectId": "507f1f77bcf86cd799439015",
+        "name": {
+          "en": "St. Lawrence College Brockville Campus",
+          "fr": "St. Lawrence College Brockville Campus FR"
+        },
+        "details": {
+          "en": {
+            "alternateNames": "St. Lawrence College Student Success Facilitators at St. Lawrence College Brockville Campus",
+            "description": "St. Lawrence College Brockville Campus description"
+          },
+          "fr": {
+            "alternateNames": "St. Lawrence College Student Success Facilitators at St. Lawrence College Brockville Campus FR",
+            "description": "St. Lawrence College Brockville Campus FR"
+          }
+        },
+        "isActive": true,
+        "isLocationPrivate": false,
+        "location": {
+          "address1": "123 College Street",
+          "address2": "Room 202",
+          "city": "Brockville",
+          "county": "Leeds And Grenville",
+          "province": "ON",
+          "country": "Canada",
+          "postalCode": "A1B 2C3"
+        },
+        "email": "sample@email.com",
+        "website": "http://www.stlawrencecollege.ca/campuses-and-services/services-and-facilities/student-success-facilitators",
+        "operations": {
+          "0": {
+            "en": {
+              "day": "Monday",
+              "hoursOfOperation": "8:30am - 4:30pm",
+              "descriptionOfHours": "Contact for hours"
+            },
+            "fr": {
+              "day": "Lundi",
+              "hoursOfOperation": "8:30am - 4:30pm",
+              "descriptionOfHours": "Contact for hours FR"
+            }
+          },
+          "1": {
+            "en": {
+              "day": "Tuesday",
+              "hoursOfOperation": "8:30am - 4:30pm",
+              "descriptionOfHours": "Contact for hours"
+            },
+            "fr": {
+              "day": "Mardi",
+              "hoursOfOperation": "8:30am - 4:30pm",
+              "descriptionOfHours": "Contact for hours FR"
+            }
+          },
+          "2": {
+            "en": {
+              "day": "Wednesday",
+              "hoursOfOperation": "8:30am - 4:30pm",
+              "descriptionOfHours": "Contact for hours"
+            },
+            "fr": {
+              "day": "Mercredi",
+              "hoursOfOperation": "8:30am - 4:30pm",
+              "descriptionOfHours": "Contact for hours FR"
+            }
+          },
+          "3": {
+            "en": {
+              "day": "Thursday",
+              "hoursOfOperation": "8:30am - 4:30pm",
+              "descriptionOfHours": "Contact for hours"
+            },
+            "fr": {
+              "day": "Jeudi",
+              "hoursOfOperation": "8:30am - 4:30pm",
+              "descriptionOfHours": "Contact for hours FR"
+            }
+          },
+          "4": {
+            "en": {
+              "day": "Friday",
+              "hoursOfOperation": "8:30am - 4pm",
+              "descriptionOfHours": "Contact for hours"
+            },
+            "fr": {
+              "day": "Vendredi",
+              "hoursOfOperation": "8:30am - 4pm",
+              "descriptionOfHours": "Contact for hours FR"
+            }
+          },
+          "5": {
+            "en": {
+              "day": "Saturday",
+              "hoursOfOperation": null,
+              "descriptionOfHours": null
+            },
+            "fr": {
+              "day": "Samedi",
+              "hoursOfOperation": null,
+              "descriptionOfHours": null
+            }
+          },
+          "6": {
+            "en": {
+              "day": "Sunday",
+              "hoursOfOperation": null,
+              "descriptionOfHours": null
+            },
+            "fr": {
+              "day": "Dimanche",
+              "hoursOfOperation": null,
+              "descriptionOfHours": null
+            }
+          }
+        },
+        "phoneNumbers": {
+          "tollFree": "14161234567",
+          "hotline": "14161234567",
+          "outOfAreaLine": "14161234567",
+          "afterHoursLine": "14161234567",
+          "businessLine": "613-345-0660 ext 3756",
+          "fax": "14161234567",
+          "tty": "14161234567"
+        }
+      }
+    ],
+    "nameDetails": {
+      "en": {
+        "official": "St. Lawrence College Student Success Facilitators at St. Lawrence College Brockville Campus",
+        "alternate": "St Lawrence College Brockville Campus Student Success Facilitators"
+      },
+      "fr": {
+        "official": "St. Lawrence College Student Success Facilitators at St. Lawrence College Brockville Campus FR",
+        "alternate": "St Lawrence College Brockville Campus Student Success Facilitators FR"
+      }
+    },
+    "name": {
+      "en": "St. Lawrence College Student Success Facilitators at St. Lawrence College Brockville Campus",
+      "fr": "St. Lawrence College Student Success Facilitators at St. Lawrence College Brockville Campus FR"
+    },
+    "physicalAddresses": {
+      "addresses1": [
+        "123 College Street"
+      ],
+      "addresses2": [
+        "Room 202"
+      ],
+      "addressesArePrivate": [
+        false
+      ],
+      "cities": [
+        "Brockville"
+      ],
+      "counties": [
+        "Leeds And Grenville"
+      ],
+      "provinces": [
+        "ON"
+      ],
+      "countries": [
+        "Canada"
+      ],
+      "postalCodes": [
+        "A1B 2C3"
+      ],
+      "descriptions": [
+        "Address Description"
+      ],
+      "longitudes": [
+        "-81.906589"
+      ],
+      "latitudes": [
+        "45.882268"
+      ]
+    },
+    "mailingAddresses": {
+      "addresses1": [
+        "123 College Street"
+      ],
+      "addresses2": [
+        "Room 202"
+      ],
+      "cities": [
+        "Brockville"
+      ],
+      "provinces": [
+        "ON"
+      ],
+      "postalCodes": [
+        "A1B 2C3"
+      ],
+      "countries": [
+        "Canada"
+      ],
+      "addressesArePrivate": [
+        false
+      ]
+    },
+    "operations": {
+      "0": {
+        "en": {
+          "day": "Monday",
+          "hoursOfOperation": "8:30am - 4:30pm",
+          "descriptionOfHours": "Contact for hours"
+        },
+        "fr": {
+          "day": "Lundi",
+          "hoursOfOperation": "8:30am - 4:30pm",
+          "descriptionOfHours": "Contact for hours FR"
+        }
+      },
+      "1": {
+        "en": {
+          "day": "Tuesday",
+          "hoursOfOperation": "8:30am - 4:30pm",
+          "descriptionOfHours": "Contact for hours"
+        },
+        "fr": {
+          "day": "Mardi",
+          "hoursOfOperation": "8:30am - 4:30pm",
+          "descriptionOfHours": "Contact for hours FR"
+        }
+      },
+      "2": {
+        "en": {
+          "day": "Wednesday",
+          "hoursOfOperation": "8:30am - 4:30pm",
+          "descriptionOfHours": "Contact for hours"
+        },
+        "fr": {
+          "day": "Mercredi",
+          "hoursOfOperation": "8:30am - 4:30pm",
+          "descriptionOfHours": "Contact for hours FR"
+        }
+      },
+      "3": {
+        "en": {
+          "day": "Thursday",
+          "hoursOfOperation": "8:30am - 4:30pm",
+          "descriptionOfHours": "Contact for hours"
+        },
+        "fr": {
+          "day": "Jeudi",
+          "hoursOfOperation": "8:30am - 4:30pm",
+          "descriptionOfHours": "Contact for hours FR"
+        }
+      },
+      "4": {
+        "en": {
+          "day": "Friday",
+          "hoursOfOperation": "8:30am - 4pm",
+          "descriptionOfHours": "Contact for hours"
+        },
+        "fr": {
+          "day": "Vendredi",
+          "hoursOfOperation": "8:30am - 4pm",
+          "descriptionOfHours": "Contact for hours FR"
+        }
+      },
+      "5": {
+        "en": {
+          "day": "Saturday",
+          "hoursOfOperation": null,
+          "descriptionOfHours": null
+        },
+        "fr": {
+          "day": "Samedi",
+          "hoursOfOperation": null,
+          "descriptionOfHours": null
+        }
+      },
+      "6": {
+        "en": {
+          "day": "Sunday",
+          "hoursOfOperation": null,
+          "descriptionOfHours": null
+        },
+        "fr": {
+          "day": "Dimanche",
+          "hoursOfOperation": null,
+          "descriptionOfHours": null
+        }
+      }
+    },
+    "phoneNumbers": [
+      {
+        "number": "613-345-0660 ext 3756",
+        "name": "First Last",
+        "description": {
+          "en": "phone number description",
+          "fr": "phone number description FR"
+        },
+        "isPrivate": false,
+        "type": "business"
+      }
+    ],
+    "mainContact": {
+      "email": "sample@email.com",
+      "name": "First Last",
+      "title": {
+        "en": "Student Success Facilitator",
+        "fr": "Student Success Facilitator FR"
+      },
+      "phoneNumber": "613-345-0660 ext 3756",
+      "isPrivate": false
+    },
+    "website": "http://www.stlawrencecollege.ca/campuses-and-services/services-and-facilities/student-success-facilitators",
+    "status": "Active",
+    "description": {
+      "en": "Student Success Facilitators provide support and resources to help students achieve their academic and personal goals.  Also assists students in adjusting to college life, finding college resources, obtaining a peer tutor, understanding how to develop the academic skills they will need, and more.",
+      "fr": "Student Success Facilitators provide support and resources to help students achieve their academic and personal goals.  Also assists students in adjusting to college life, finding college resources, obtaining a peer tutor, understanding how to develop the academic skills they will need, and more. FR"
+    },
+    "primaryLocationCity": "Brockville",
+    "primaryLocationProvince": "ON",
+    "primaryLocationCounty": "Leeds And Grenville",
+    "primaryLocationPostalCode": "A1B 2C3",
+    "primaryLocationPhone": "613-345-0660 ext 3756",
+    "primaryLocationIsPrivate": false,
+    "targetPopulations": [
+      "Open To All"
+    ],
+    "eligibilityMinAge": 10,
+    "eligibilityMaxAge": 20,
+    "interpretationTranslationServicesAvailable": true,
+    "feeStructureSource": "Free",
+    "howToAccessSupport": "Appointment Required",
+    "howIsServiceOffered": "In-Person Support",
+    "keywords": [
+      "education"
+    ],
+    "coverage": {
+      "en": "St. Lawrence College students ",
+      "fr": "St. Lawrence College students FR"
+    },
+    "eligibilityDetails": {
+      "phrase": {
+        "en": "Open to St. Lawrence College students",
+        "fr": "Open to St. Lawrence College students FR"
+      },
+      "adult": false,
+      "family": false,
+      "gender": null,
+      "teen": false,
+      "child": false
+    },
+    "seniorOrgContact": {
+      "name": "First Last",
+      "title": {
+        "en": "Health Administrator",
+        "fr": "Health Administrator FR"
+      },
+      "emailAddress": "sample@email.com",
+      "phoneNumber": "4161234567",
+      "isPrivate": false
+    },
+    "accessibility": "Wheelchair Accessible",
+    "transportation": {
+      "en": "Close to bus routes, 9, 17 & 20",
+      "fr": "Close to bus routes, 9, 17 & 20 FR"
+    },
+    "paymentMethod": "Free",
+    "applicationProcess": "Self Referral",
+    "documentsRequired": [
+      "Documents not specified - inquire for more information"
+    ],
+    "languages": [
+      {
+        "code": "en",
+        "language": "English"
+      }
+    ],
+    "capacity": {
+      "en": {
+        "type": "capacity type",
+        "value": "capacity value"
+      },
+      "fr": {
+        "type": "capacity type FR",
+        "value": "capacity value FR"
+      }
+    },
+    "isHighlighted": false,
+    "lastVerified": "2013-09-13 03:43:00",
+    "volunteer": {
+      "en": {
+        "opportunities": "No",
+        "duties": "volunteer duties"
+      },
+      "fr": {
+        "opportunities": "No",
+        "duties": "volunteer duties FR"
+      }
+    },
+    "social": {
+      "facebook": "https://www.facebook.com/stlawrencecollege/",
+      "instagram": "@stlawrencecollege",
+      "twitter": "@stlawrencecollege"
+    },
+    "available247": true,
+    "metadata": {
+      "en": {
+        "legalStatus": "Educational Institute",
+        "typicalWaitTime": "21 minutes",
+        "availableForDirectory": true,
+        "availableForReferral": true,
+        "availableForResearch": true,
+        "recordType": "G2T",
+        "fees": true
+      },
+      "fr": {
+        "legalStatus": "Educational Institute FR",
+        "typicalWaitTime": "21 minutes FR",
+        "availableForDirectory": true,
+        "availableForReferral": true,
+        "availableForResearch": true,
+        "recordType": "G2T",
+        "fees": true
+      },
+      "isHotline": true,
+      "isHelpline": false
+    },
+    "isPrivate": false,
+    "taxonomyCode": "0",
+    "timestamps": {
+      "createdAt": "2013-09-13 03:43:00",
+      "updatedAt": "2018-01-24 03:05:00"
+    }
+  }
+]
