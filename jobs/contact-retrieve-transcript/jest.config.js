@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-module.exports = (config) => {
+module.exports = config => {
   return (
     config || {
       preset: 'ts-jest',

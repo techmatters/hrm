@@ -71,7 +71,7 @@
     "docker:compose:jobs:up": "completed_sqs_queue_url=$(npx ts-node jobs/tests/getContactCompleteQueueUrl.ts) docker-compose -p hrm -f jobs/docker-compose.yml up -d",
     "docker:compose:localstack:up": "docker-compose -p hrm up -d",
     "docker:compose:service:up": "docker-compose -p hrm -f hrm-service/docker-compose.yml up -d",
-    "lint": "cross-env NODE_OPTIONS=--max-old-space-size=8096 eslint --ext ts .",
+    "lint": "cross-env eslint .",
     "lint:fix": "npm run lint -- --fix",
     "localstack:bootstrap": "wait-on http://localhost:4566 && cross-env AWS_REGION=eu-west-1 cdklocal bootstrap",
     "localstack:deploy": "cross-env AWS_REGION=eu-west-1 cdklocal deploy --all --outputs-file ./cdk/outputs.json",
