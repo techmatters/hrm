@@ -31,10 +31,12 @@ import {
   PersonInformation,
   ReferralWithoutContactId,
 } from './contact-json';
-import { createContactJob, ContactJobType } from '../contact-job/contact-job-data-access';
+import { createContactJob } from '../contact-job/contact-job-data-access';
 import { isChatChannel } from './channelTypes';
 import { connectContactToCsamReports } from '../csam-report/csam-report';
 import { createReferralRecord } from '../referral/referral-data-access';
+
+import { ContactJobType } from '@tech-matters/hrm-types';
 
 type ExistingContactRecord = {
   id: number;

@@ -14,18 +14,19 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { loadSsmCache as loadSsmCacheRoot } from '@tech-matters/hrm-ssm-cache';
+import { ContactJob } from '../../src/contact-job/contact-job-data-access';
+import { ContactJobType } from '@tech-matters/hrm-types';
 
-export { getSsmParameter, hasCacheExpired, ssmCache } from '@tech-matters/hrm-ssm-cache';
-
-const ssmCacheConfigs = [
-  {
-    path: `/${process.env.NODE_ENV}/${process.env.AWS_REGION ??
-      process.env.AWS_DEFAULT_REGION}/sqs/jobs/contact`,
-    regex: /queue-url-*/,
-  },
-];
-
-export const loadSsmCache = async () => {
-  await loadSsmCacheRoot({ configs: ssmCacheConfigs });
-};
+export const getContactJobMock = (overrides: Partial<ContactJob> = {}): ContactJob => ({
+  jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
+  jobId: 1,
+  accountSid: 'accountSid',
+  attemptNumber: 1,
+  contactId: 123,
+  taskId: 'taskId',
+  twilioWorkerId: 'twilioWorkerId',
+  serviceSid: 'serviceSid',
+  channelSid: 'channelSid',
+  filePath: 'filePath',
+  ...overrides,
+});

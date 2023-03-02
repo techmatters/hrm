@@ -19,6 +19,7 @@ import { SQS } from 'aws-sdk';
 
 import { ContactJobProcessorError } from '@tech-matters/hrm-job-errors';
 import { getSsmParameter } from '@tech-matters/hrm-ssm-cache';
+import { ContactJobAttemptResult } from '@tech-matters/hrm-types';
 
 // eslint-disable-next-line prettier/prettier
 import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
@@ -26,7 +27,7 @@ import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
 import type {
   CompletedContactJobBody,
   PublishToContactJobsTopicParams,
-} from '@tech-matters/hrm-types/ContactJob';
+} from '@tech-matters/hrm-types';
 
 //TODO: this is a placeholder for recording retrieval that doesn't actually do anything yet.
 
@@ -67,7 +68,7 @@ const processRecord = async (message: PublishToContactJobsTopicParams) => {
 
   const completedJob: CompletedContactJobBody = {
     ...message,
-    attemptResult: 'success',
+    attemptResult: ContactJobAttemptResult.SUCCESS,
     attemptPayload: 'NotARealRecordingUrl',
   };
 
@@ -90,7 +91,7 @@ export const processRecordWithoutException = async (sqsRecord: SQSRecord): Promi
 
     const failedJob: CompletedContactJobBody = {
       ...message,
-      attemptResult: 'failure',
+      attemptResult: ContactJobAttemptResult.FAILURE,
       attemptPayload: errMessage,
     };
 
