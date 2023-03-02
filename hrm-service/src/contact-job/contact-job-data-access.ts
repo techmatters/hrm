@@ -24,7 +24,7 @@ import {
   selectSingleContactJobByIdSql,
 } from './sql/contact-job-sql';
 
-import { ContactJobType } from '@tech-matters/hrm-types/ContactJob';
+import { ContactJobType } from '@tech-matters/hrm-types';
 
 // Reflects the actual shape of a record in the ContactJobs table
 export type ContactJobRecord = {

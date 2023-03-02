@@ -20,7 +20,7 @@ import {
   completeContactJob,
   getContactJobById,
 } from './contact-job-data-access';
-import { ContactJobAttemptResult, ContactJobType } from '@tech-matters/hrm-types/ContactJob';
+import { ContactJobAttemptResult, ContactJobType } from '@tech-matters/hrm-types';
 import { ContactJobCompleteProcessorError, ContactJobPollerError } from './contact-job-error';
 import {
   deleteCompletedContactJobsFromQueue,
@@ -41,7 +41,7 @@ import type {
   CompletedContactJobBodyFailure,
   CompletedContactJobBodySuccess,
   CompletedRetrieveContactTranscript,
-} from '@tech-matters/hrm-types/ContactJob';
+} from '@tech-matters/hrm-types';
 
 export const processCompletedRetrieveContactTranscript = async (
   completedJob: CompletedRetrieveContactTranscript,
@@ -83,6 +83,7 @@ export const getContactJobOrFail = async (completedJob: CompletedContactJobBody)
   const contactJob = await getContactJobById(completedJob.jobId);
 
   if (!contactJob) {
+    // TODO: this should probably be a fatal error that short circuits the retry logic
     throw new Error(`Could not find contact job with id ${completedJob.jobId}`);
   }
 

@@ -18,7 +18,7 @@ import { format } from 'date-fns';
 import { ContactJob, RetrieveContactTranscriptJob } from './contact-job-data-access';
 import { ContactJobPollerError } from './contact-job-error';
 import { publishToContactJobs } from './client-sqs';
-import { ContactJobType } from '@tech-matters/hrm-types/ContactJob';
+import { ContactJobType } from '@tech-matters/hrm-types';
 import { assertExhaustive } from './assertExhaustive';
 
 export const publishRetrieveContactTranscript = (contactJob: RetrieveContactTranscriptJob) => {
@@ -57,7 +57,6 @@ export const publishDueContactJobs = async (
   const publishedContactJobResult = await Promise.allSettled(
     dueContactJobs.map((dueJob: ContactJob) => {
       try {
-        console.log('dueJob.jobType', dueJob.jobType);
         switch (dueJob.jobType) {
           case ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT: {
             return publishRetrieveContactTranscript(dueJob);

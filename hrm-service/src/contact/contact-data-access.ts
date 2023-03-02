@@ -36,7 +36,7 @@ import { isChatChannel } from './channelTypes';
 import { connectContactToCsamReports } from '../csam-report/csam-report';
 import { createReferralRecord } from '../referral/referral-data-access';
 
-import { ContactJobType } from '@tech-matters/hrm-types/ContactJob';
+import { ContactJobType } from '@tech-matters/hrm-types';
 
 type ExistingContactRecord = {
   id: number;

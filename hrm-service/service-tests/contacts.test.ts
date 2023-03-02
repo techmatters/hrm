@@ -57,7 +57,7 @@ import * as referralDB from '../src/referral/referral-data-access';
 import { headers, getRequest, getServer, setRules, useOpenRules } from './server';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
 
-import { ContactJobType } from '@tech-matters/hrm-types/ContactJob';
+import { ContactJobType } from '@tech-matters/hrm-types';
 
 useOpenRules();
 const server = getServer();

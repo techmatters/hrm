@@ -27,5 +27,7 @@ services:
       - DOCKER_HOST=unix:///var/run/docker.sock
       - LAMBDA_EXECUTOR=docker-reuse
       - LAMBDA_NETWORK=bridge
+      - DISABLE_CORS_CHECKS=1
+      - DISABLE_CUSTOM_CORS_S3=1
     volumes:
       - '/var/run/docker.sock:/var/run/docker.sock'

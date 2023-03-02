@@ -20,11 +20,11 @@ import * as SQSClient from '../../src/contact-job/client-sqs';
 import * as contactJobDataAccess from '../../src/contact-job/contact-job-data-access';
 import * as contactJobComplete from '../../src/contact-job/contact-job-complete';
 import { ContactJobPollerError } from '../../src/contact-job/contact-job-error';
-import { ContactJobType, ContactJobAttemptResult } from '@tech-matters/hrm-types/ContactJob';
+import { ContactJobType, ContactJobAttemptResult } from '@tech-matters/hrm-types';
 import { JOB_MAX_ATTEMPTS } from '../../src/contact-job/contact-job-processor';
 
 // eslint-disable-next-line prettier/prettier
-import type { CompletedContactJobBody } from '@tech-matters/hrm-types/ContactJob';
+import type { CompletedContactJobBody } from '@tech-matters/hrm-types';
 
 jest.mock('../../src/contact-job/client-sqs');
 

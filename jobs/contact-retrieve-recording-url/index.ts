@@ -19,7 +19,7 @@ import { SQS } from 'aws-sdk';
 
 import { ContactJobProcessorError } from '@tech-matters/hrm-job-errors';
 import { getSsmParameter, loadSsmCache } from '@tech-matters/hrm-ssm-cache';
-import { ContactJobAttemptResult } from '@tech-matters/hrm-types/ContactJob';
+import { ContactJobAttemptResult } from '@tech-matters/hrm-types';
 
 // eslint-disable-next-line prettier/prettier
 import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
@@ -27,7 +27,7 @@ import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
 import type {
   CompletedContactJobBody,
   PublishToContactJobsTopicParams,
-} from '@tech-matters/hrm-types/ContactJob';
+} from '@tech-matters/hrm-types';
 
 //TODO: this is a placeholder for recording retrieval that doesn't actually do anything yet.
 

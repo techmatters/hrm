@@ -18,7 +18,7 @@ import { SQS } from 'aws-sdk';
 import { getSsmParameter } from '../config/ssmCache';
 
 // eslint-disable-next-line prettier/prettier
-import type { PublishToContactJobsTopicParams } from '@tech-matters/hrm-types/ContactJob';
+import type { PublishToContactJobsTopicParams } from '@tech-matters/hrm-types';
 
 let sqs: SQS;
 
