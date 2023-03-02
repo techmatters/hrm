@@ -36,17 +36,24 @@ export type ReferrableResourceRecord = {
 export const getById = async (
   accountSid: AccountSID,
   resourceId: string,
-): Promise<ReferrableResourceRecord | null> =>
-  db.task(async t =>
+): Promise<ReferrableResourceRecord | null> => {
+  const res = await db.task(async t =>
     t.oneOrNone(SELECT_RESOURCE_IN_IDS, { accountSid, resourceIds: [resourceId] }),
   );
+  console.debug('Retrieved resource:', JSON.stringify(res, null, 2));
+  return res;
+};
 
 export const getByIdList = async (
   accountSid: AccountSID,
   resourceIds: string[],
 ): Promise<ReferrableResourceRecord[]> => {
   console.debug('Retrieving resources with IDs:', resourceIds);
-  return db.task(async t => t.manyOrNone(SELECT_RESOURCE_IN_IDS, { accountSid, resourceIds }));
+  const res = await db.task(async t =>
+    t.manyOrNone(SELECT_RESOURCE_IN_IDS, { accountSid, resourceIds }),
+  );
+  console.debug('Retrieved resources:', JSON.stringify(res, null, 2));
+  return res;
 };
 
 export const getWhereNameContains = async (

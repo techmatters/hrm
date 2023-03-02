@@ -21,12 +21,13 @@ module.exports = {
       (
         id text COLLATE pg_catalog."default" NOT NULL,
         "accountSid" text COLLATE pg_catalog."default" NOT NULL,
+        "list" text COLLATE pg_catalog."default" NOT NULL,
         "value" text COLLATE pg_catalog."default" NOT NULL,
         "language" text COLLATE pg_catalog."default" NOT NULL,
         "info" JSONB,
         "lastUpdated" timestamp with time zone,
         "updateSequence"  bigint NOT NULL DEFAULT nextval('"Resources_updates_seq"'::regclass),
-        CONSTRAINT "ResourceReferenceStringAttributeValues_pkey" PRIMARY KEY (id, "accountSid")
+        CONSTRAINT "ResourceReferenceStringAttributeValues_pkey" PRIMARY KEY (id, "list", "accountSid")
       )
     `);
     console.log('Table "ResourceReferenceStringAttributeValues" created');
@@ -60,15 +61,16 @@ module.exports = {
         "accountSid" text COLLATE pg_catalog."default" NOT NULL,
         "resourceId" text COLLATE pg_catalog."default" NOT NULL,
         "key" text COLLATE pg_catalog."default" NOT NULL,
+        "list" text COLLATE pg_catalog."default" NOT NULL,
         "referenceId" text COLLATE pg_catalog."default" NOT NULL,
         "updateSequence"  bigint NOT NULL DEFAULT nextval('"Resources_updates_seq"'::regclass),
-        CONSTRAINT "ResourceReferenceStringAttribute_pkey" PRIMARY KEY ("resourceId", "accountSid", "key", "referenceId"),
+        CONSTRAINT "ResourceReferenceStringAttribute_pkey" PRIMARY KEY ("resourceId", "accountSid", "key", "list", "referenceId"),
         CONSTRAINT "FK_ResourceReferenceStringAttributes_Resources" FOREIGN KEY ("resourceId", "accountSid")
             REFERENCES resources."Resources" (id, "accountSid") MATCH SIMPLE
             ON UPDATE CASCADE
             ON DELETE CASCADE,
-        CONSTRAINT "FK_ResourceReferenceStringAttributes_ResourceReferenceStringAttributeValues" FOREIGN KEY ("referenceId", "accountSid")
-            REFERENCES resources."ResourceReferenceStringAttributeValues" (id, "accountSid") MATCH SIMPLE
+        CONSTRAINT "FK_ResourceReferenceStringAttributes_ResourceReferenceStringAttributeValues" FOREIGN KEY ("referenceId", "list", "accountSid")
+            REFERENCES resources."ResourceReferenceStringAttributeValues" (id, "list", "accountSid") MATCH SIMPLE
             ON UPDATE CASCADE
             ON DELETE CASCADE
       )

@@ -26,7 +26,10 @@ LEFT JOIN LATERAL (
         SELECT rrsa."key", rrsav."value", rrsav."language", rrsav."info"
         FROM 
         resources."ResourceReferenceStringAttributes" AS rrsa
-        INNER JOIN resources."ResourceReferenceStringAttributeValues" AS rrsav ON rrsav."accountSid" = rrsa."accountSid" AND rrsav."id" = rrsa."referenceId"
+        INNER JOIN resources."ResourceReferenceStringAttributeValues" AS rrsav  ON 
+          rrsav."accountSid" = rrsa."accountSid" 
+          AND rrsav."list" = rrsa."list" 
+          AND rrsav."id" = rrsa."referenceId"
         WHERE rrsa."accountSid" = r."accountSid" AND rrsa."resourceId" = r.id
     ) AS ra
 ) AS att ON true
