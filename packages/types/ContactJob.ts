@@ -33,20 +33,25 @@ export type PublishRetrieveContactTranscript = ContactJobMessageCommons & {
   jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT;
   serviceSid: string;
   channelSid: string;
-  filePath: string; // the file name as we want to save the transctipr in S3
+  filePath: string; // the file name as we want to save the transcript in S3
 };
 
 export type PublishToContactJobsTopicParams = PublishRetrieveContactTranscript;
 
 //====== Message payloads expected for the completed contact jobs ======//
 
+export enum ContactJobAttemptResult {
+  SUCCESS = 'success',
+  FAILURE = 'failure',
+}
+
 type CompletedContactJobMessageCommons<TSuccess, TFailure> =
   | {
-      attemptResult: 'success';
+      attemptResult: ContactJobAttemptResult.SUCCESS;
       attemptPayload: TSuccess;
     }
   | {
-      attemptResult: 'failure';
+      attemptResult: ContactJobAttemptResult.FAILURE;
       attemptPayload: TFailure;
     };
 
@@ -54,3 +59,11 @@ export type CompletedRetrieveContactTranscript = PublishRetrieveContactTranscrip
   CompletedContactJobMessageCommons<string, any>;
 
 export type CompletedContactJobBody = CompletedRetrieveContactTranscript;
+
+export type CompletedContactJobBodySuccess = Omit<CompletedContactJobBody, 'attemptResult'> & {
+  attemptResult: ContactJobAttemptResult.SUCCESS;
+};
+
+export type CompletedContactJobBodyFailure = Omit<CompletedContactJobBody, 'attemptResult'> & {
+  attemptResult: ContactJobAttemptResult.FAILURE;
+};
