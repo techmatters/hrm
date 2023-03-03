@@ -7,7 +7,7 @@ import {
   substitueCaptureTokens,
 } from './khp-aselo-converter';
 
-// TODO: Change to site ID when we have it
+// TODO: Change objectId to site ID when we have it
 const siteKey = (subsection: string) => (context: FieldMappingContext) => {
   const {
     rootResource,
@@ -19,6 +19,13 @@ const siteKey = (subsection: string) => (context: FieldMappingContext) => {
   )}`;
 };
 
+/*
+ * This defines all the mapping logic for a converting KHP resource to an Aselo resource.
+ * The mapping is defined as a tree of nodes, where each node represents a field in the Aselo resource.
+ * If the content of this node needs to be written to the Aselo DB, it should be provided a khpFieldMapping, khpAttributeMapping, or khpReferenceAttributeMapping function, depending on where the data should be written.
+ * Child nodes are defined with the `children` property.
+ * If the names of the child nodes are dynamic, e.g. one per language, or one per social media channel, the node should be named with a placeholder token, e.g. '{language}' or '{channel}'. This will make the importer process all child data nodes and capture their property under `captures` property of the context object for use generating keys, values & info etc..
+ */
 export const KHP_MAPPING_NODE: KhpMappingNode = {
   resourceID: khpResourceFieldMapping('id'),
   /*agency: {
