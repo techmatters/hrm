@@ -55,8 +55,8 @@ const hrmEnv = process.env.NODE_ENV;
 // ];
 
 const processRecord = async (message: PublishToContactJobsTopicParams) => {
-  const authToken = getSsmParameter(`/${hrmEnv}/twilio/${message.accountSid}/auth_token`);
-  const docsBucketName = getSsmParameter(`/${hrmEnv}/s3/${message.accountSid}/docs_bucket_name`);
+  const authToken = await getSsmParameter(`/${hrmEnv}/twilio/${message.accountSid}/auth_token`);
+  const docsBucketName = await getSsmParameter(`/${hrmEnv}/s3/${message.accountSid}/docs_bucket_name`);
 
   if (!authToken || !docsBucketName) {
     throw new Error('Missing required SSM params');
