@@ -57,7 +57,7 @@ export const processCompletedRetrieveContactTranscript = async (
     );
   }
 
-  (<S3StoredTranscript>conversationMedia[transcriptEntryIndex]).url = completedJob.attemptPayload;
+  (<S3StoredTranscript>conversationMedia[transcriptEntryIndex]).location = completedJob.attemptPayload;
 
   return updateConversationMedia(
     completedJob.accountSid,

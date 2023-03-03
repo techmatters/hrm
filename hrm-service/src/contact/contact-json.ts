@@ -34,7 +34,7 @@ export enum ContactMediaType {
 export type S3StoredTranscript = {
   store: 'S3';
   type: ContactMediaType.TRANSCRIPT;
-  url?: string;
+  location?: string;
 };
 
 type S3StoredMedia = S3StoredTranscript;
@@ -46,7 +46,7 @@ export const isTwilioStoredMedia = (m: ConversationMedia): m is TwilioStoredMedi
 export const isS3StoredTranscript = (m: ConversationMedia): m is S3StoredTranscript =>
   m.store === 'S3' && m.type === ContactMediaType.TRANSCRIPT;
 export const isS3StoredTranscriptPending = (m: ConversationMedia) =>
-  isS3StoredTranscript(m) && !m.url;
+  isS3StoredTranscript(m) && !m.location;
 
 /**
  * This and contained types are copied from Flex

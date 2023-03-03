@@ -104,7 +104,7 @@ const createChatContact = async (channel: string, startedTimestamp: number) => {
         {
           store: 'S3' as const,
           type: ContactMediaType.TRANSCRIPT,
-          url: undefined,
+          location: undefined,
         },
       ],
     },
@@ -343,7 +343,7 @@ describe('complete retrieve-transcript job type', () => {
       const expecteConversationMedia = [
         {
           store: 'S3',
-          url: completedPayload.attemptPayload,
+          location: completedPayload.attemptPayload,
           type: ContactMediaType.TRANSCRIPT,
         },
       ];

@@ -341,7 +341,7 @@ describe('pollAndProcessCompletedContactJobs', () => {
         serviceSid: 'serviceSid',
         channelSid: 'channelSid',
         filePath: 'filePath',
-        attemptPayload: 'some-url-here',
+        attemptPayload: { bucket: 'some-url-here', key: 'some-url-here' },
         attemptResult: ContactJobAttemptResult.FAILURE,
       };
       const contactJob = {
@@ -374,7 +374,7 @@ describe('pollAndProcessCompletedContactJobs', () => {
         serviceSid: 'serviceSid',
         channelSid: 'channelSid',
         filePath: 'filePath',
-        attemptPayload: 'some-url-here',
+        attemptPayload: { bucket: 'some-url-here', key: 'some-url-here' },
         attemptResult: ContactJobAttemptResult.FAILURE,
       };
 
