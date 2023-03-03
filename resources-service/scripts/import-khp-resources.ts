@@ -2,6 +2,8 @@ import * as fs from 'fs/promises';
 import * as process from 'process';
 import { mapKHPResource } from './khp-aselo-converter';
 import { KHP_MAPPING_NODE } from './khp-mapping';
+import { generateAseloReferenceSql, generateAseloResourceSql } from './generate-aselo-sql';
+import { db } from '../src/connection-pool';
 
 const loadSampleJson = async (): Promise<any[]> => {
   console.log(process.cwd());
@@ -11,8 +13,20 @@ const loadSampleJson = async (): Promise<any[]> => {
 
 const main = async () => {
   const sample = await loadSampleJson();
-  const resources = sample.map(sampleItem => mapKHPResource(KHP_MAPPING_NODE, sampleItem));
-  console.log(JSON.stringify(resources, null, 2));
+  const aseloResources = sample.map(sampleItem => mapKHPResource(KHP_MAPPING_NODE, sampleItem));
+  await fs.writeFile(
+    './resource-json/khp-sample-aselo.json',
+    JSON.stringify(aseloResources, null, 2),
+  );
+  const referenceSql = generateAseloReferenceSql(process.argv[2]);
+  await fs.writeFile('./resource-json/khp-sample-reference-data.sql', referenceSql);
+  await db.multi(referenceSql);
+
+  for (const resource of aseloResources) {
+    const resourceSql = generateAseloResourceSql(process.argv[2], resource);
+    await fs.writeFile(`./resource-json/khp-sample-resource-data-${resource.id}.json`, resourceSql);
+    await db.multi(resourceSql);
+  }
 };
 
 main().catch(console.error);

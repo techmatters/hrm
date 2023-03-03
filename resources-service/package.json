@@ -6,10 +6,11 @@
   "devDependencies": {
     "@tech-matters/testing": "^1.0.0",
     "@types/http-errors": "^2.0.1",
+    "date-fns": "^2.29.3",
+    "jest-each": "^29.2.1",
     "sequelize": "^6.28.0",
     "sequelize-cli": "^6.5.2",
-    "umzug": "^3.2.1",
-    "jest-each": "^29.2.1"
+    "umzug": "^3.2.1"
   },
   "scripts": {
     "migrate": "run-s db:create:schema test:service:ci:migrate",
@@ -29,8 +30,9 @@
     "db:create-migration": "sequelize migration:generate --name ",
     "db:undo-last": "sequelize db:migrate:undo",
     "build-scripts": "tsc --project tsconfig.scripts.json",
-    "import-khp-json": "node ./scripts-dist/scripts/import-khp-resources.js",
-    "build-and-import-khp-json": "npm run build-scripts && npm run import-khp-json"
+    "import-khp-json": "node ./scripts-dist/scripts/import-khp-resources.js AC_TEST",
+    "build-and-import-khp-json": "npm run build-scripts && npm run import-khp-json",
+    "test:import-khp-json": "cross-env POSTGRES_PORT=5433 RDS_USERNAME=hrm RDS_PASSWORD=postgres RESOURCES_PASSWORD=resources-password run-s -c build-scripts docker:compose:test:up db:create:schema test:service:ci:migrate import-khp-json docker:compose:test:down"
   },
   "repository": {
     "type": "git",

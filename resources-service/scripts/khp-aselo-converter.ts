@@ -1,3 +1,5 @@
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { parseISO } from 'date-fns';
 import {
   AseloResource,
   AttributeTable,
@@ -13,8 +15,8 @@ export type FieldMappingContext = {
 };
 
 type KhpResourceFieldMapping = {
-  field: 'id' | 'name' | 'createdAt' | 'updatedAt';
-  valueGenerator?: (context: FieldMappingContext) => any;
+  field: 'id' | 'name';
+  valueGenerator: (context: FieldMappingContext) => any;
 };
 type KhpAttributeMapping<T extends AttributeTable> = {
   keyGenerator: (context: FieldMappingContext) => string;
@@ -77,7 +79,7 @@ export const substitueCaptureTokens = (
 };
 
 export const khpResourceFieldMapping = (
-  field: 'id' | 'name' | 'createdAt' | 'updatedAt',
+  field: 'id' | 'name',
   value?: (context: FieldMappingContext) => any,
 ): KhpResourceFieldMapping => ({
   field,
@@ -99,7 +101,13 @@ export const khpAttributeMapping = <T extends AttributeTable>(
 ): KhpAttributeMapping<AttributeTable> => ({
   table,
   keyGenerator: typeof key === 'function' ? key : context => substitueCaptureTokens(key, context),
-  valueGenerator: typeof value === 'function' ? value : () => value,
+  valueGenerator:
+    typeof value === 'function'
+      ? value
+      : () =>
+          table === 'ResourceDateAttributes' && value && typeof value === 'string'
+            ? parseISO(value)
+            : value,
   infoGenerator: typeof info === 'function' ? info : () => info,
   languageGenerator: typeof language === 'function' ? language : () => language,
 });
@@ -126,8 +134,6 @@ export const mapKHPResource = (
   const resource: AseloResource = {
     id: '',
     name: '',
-    createdAt: new Date(0),
-    updatedAt: new Date(0),
     attributes: {
       ResourceStringAttributes: [],
       ResourceReferenceStringAttributes: [],

@@ -4,7 +4,7 @@ export type InlineAttributeTable =
   | 'ResourceNumberAttributes'
   | 'ResourceDateAttributes';
 
-type AseloInlineResourceAttribute<T extends InlineAttributeTable> = {
+export type AseloInlineResourceAttribute<T extends InlineAttributeTable> = {
   key: string;
   value: AttributeValue<T>;
   language: string;
@@ -14,8 +14,6 @@ type AseloInlineResourceAttribute<T extends InlineAttributeTable> = {
 export type AseloResource = {
   id: string;
   name: string;
-  createdAt: Date;
-  updatedAt: Date;
   attributes: {
     ResourceStringAttributes: AseloInlineResourceAttribute<'ResourceStringAttributes'>[];
     ResourceReferenceStringAttributes: {
