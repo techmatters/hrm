@@ -40,10 +40,15 @@ export type PublishToContactJobsTopicParams = PublishRetrieveContactTranscript;
 
 //====== Message payloads expected for the completed contact jobs ======//
 
+type CompleteRetrieveContactTranscriptTSuccess = {
+  bucket: string;
+  key: string;
+};
+
 type CompletedContactJobMessageCommons<TSuccess, TFailure> =
   | {
       attemptResult: 'success';
-      attemptPayload: { bucket: TSuccess; key: TSuccess };
+      attemptPayload: TSuccess;
     }
   | {
       attemptResult: 'failure';
@@ -51,6 +56,6 @@ type CompletedContactJobMessageCommons<TSuccess, TFailure> =
     };
 
 export type CompletedRetrieveContactTranscript = PublishRetrieveContactTranscript &
-  CompletedContactJobMessageCommons<string, any>;
+  CompletedContactJobMessageCommons<CompleteRetrieveContactTranscriptTSuccess, any>;
 
 export type CompletedContactJobBody = CompletedRetrieveContactTranscript;
