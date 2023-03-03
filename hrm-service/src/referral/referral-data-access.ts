@@ -57,19 +57,14 @@ export type Referral = {
   resourceName?: string;
 };
 
-export const createReferralRecord = (tx?: ITask<{}>) => async (
+export const createReferralRecord = (trxId?: string) => async (
   accountSid: string,
   referral: Referral,
 ): Promise<Referral> => {
   try {
     const statement = insertReferralSql({ resourceName: undefined, ...referral, accountSid });
 
-    // If a transaction is provided, use it
-    if (tx) {
-      return await tx.one(statement);
-    }
-
-    return await db.task(conn =>
+    return await db.txIf({ tag: trxId }, conn =>
       conn.one(statement),
     );
   } catch (err) {

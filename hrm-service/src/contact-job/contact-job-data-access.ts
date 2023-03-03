@@ -92,7 +92,7 @@ export const completeContactJob = async (
  * Add a new job to be completed to the ContactJobs queue
  * Requires tx: ITask to make the creation of the job part of the same transaction
  */
-export const createContactJob = (tx?: ITask<{}>) => async (
+export const createContactJob = (trxId?: string) => async (
   job: Pick<ContactJob, 'jobType' | 'resource' | 'additionalPayload'>,
 ): Promise<void> => {
   const contact = job.resource;
@@ -112,12 +112,7 @@ export const createContactJob = (tx?: ITask<{}>) => async (
     'ContactJobs',
   );
 
-  // If a transaction is provided, use it
-  if (tx) {
-    return tx.none(insertSql);
-  }
-
-  return db.task(conn => conn.none(insertSql));
+  return db.txIf({ tag: trxId }, conn => conn.none(insertSql));
 };
 
 export const appendFailedAttemptPayload = async (

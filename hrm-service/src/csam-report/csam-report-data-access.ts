@@ -69,21 +69,12 @@ export const getByContactId = async (contactId: number, accountSid: string) =>
     }),
   );
 
-export const updateContactIdByCsamReportIds = (tx?: ITask<{}>) => async (
+export const updateContactIdByCsamReportIds = (trxId?: string) => async (
   contactId: number,
   reportIds: CSAMReport['id'][],
   accountSid: string,
 ) => {
-  // If a transaction is provided, use it
-  if (tx) {
-    return tx.manyOrNone<CSAMReport>(updateContactIdByCsamReportIdsSql, {
-      contactId,
-      reportIds,
-      accountSid,
-    });
-  }
-
-  return db.task(conn =>
+  return db.txIf({ tag: trxId }, conn =>
     conn.manyOrNone<CSAMReport>(updateContactIdByCsamReportIdsSql, {
       contactId,
       reportIds,

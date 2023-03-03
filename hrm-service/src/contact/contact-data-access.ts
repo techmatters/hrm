@@ -149,7 +149,7 @@ const searchParametersToQueryParameters = (
   return queryParams;
 };
 
-export const create = (tx?: ITask<{}>) => async (
+export const create = (trxId?: string) => async (
   accountSid: string,
   newContact: NewContactRecord,
 ): Promise<{ contact: Contact; isNewRecord: boolean }> => {
@@ -182,12 +182,7 @@ export const create = (tx?: ITask<{}>) => async (
     return { contact: created, isNewRecord: true };
   };
 
-  // If a transaction is provided, use it
-  if (tx) {
-    return executeQuery(tx);
-  }
-
-  return db.tx(conn => executeQuery(conn));
+  return db.txIf({ tag: trxId, reusable: true }, conn => executeQuery(conn));
 };
 
 export const patch = async (

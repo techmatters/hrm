@@ -37,11 +37,12 @@ import { actionsMaps } from '../permissions';
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 // eslint-disable-next-line prettier/prettier
 import { connectContactToCsamReports, CSAMReport } from '../csam-report/csam-report';
-import { db } from '../connection-pool';
+// import { db } from '../connection-pool';
 import { createReferral } from '../referral/referral-model';
 import { ContactJobType, createContactJob } from '../contact-job/contact-job';
 import { isChatChannel } from '../contact/channelTypes';
 import { enableCreateContactJobsFlag } from '../featureFlags';
+import { randomUUID } from 'crypto';
 
 // Re export as is:
 export { updateConversationMedia, Contact } from './contact-data-access';
@@ -183,78 +184,79 @@ export const createContact = async (
   newContact: CreateContactPayload,
   { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
 ): Promise<Contact> => {
-  return db.tx(async connection => {
-    const { newContactPayload, csamReportsPayload, referralsPayload } = getNewContactPayload(
-      newContact,
-    );
+  const trxId = `create-contact-${randomUUID()}`;
+  // return db.tx(async connection => {
+  const { newContactPayload, csamReportsPayload, referralsPayload } = getNewContactPayload(
+    newContact,
+  );
 
-    const completeNewContact: NewContactRecord = {
-      ...newContactPayload,
-      helpline: newContactPayload.helpline ?? '',
-      number: newContactPayload.number ?? '',
-      channel: newContactPayload.channel ?? '',
-      timeOfContact: newContactPayload.timeOfContact
-        ? new Date(newContactPayload.timeOfContact)
-        : new Date(),
-      channelSid: newContactPayload.channelSid ?? '',
-      serviceSid: newContactPayload.serviceSid ?? '',
-      taskId: newContactPayload.taskId ?? '',
-      twilioWorkerId: newContactPayload.twilioWorkerId ?? '',
-      rawJson: newContactPayload.rawJson,
-      queueName:
-        // Checking in rawJson might be redundant, copied from Sequelize logic in contact-controller.js
-        newContactPayload.queueName || (<any>(newContactPayload.rawJson ?? {})).queueName,
-      createdBy,
-    };
+  const completeNewContact: NewContactRecord = {
+    ...newContactPayload,
+    helpline: newContactPayload.helpline ?? '',
+    number: newContactPayload.number ?? '',
+    channel: newContactPayload.channel ?? '',
+    timeOfContact: newContactPayload.timeOfContact
+      ? new Date(newContactPayload.timeOfContact)
+      : new Date(),
+    channelSid: newContactPayload.channelSid ?? '',
+    serviceSid: newContactPayload.serviceSid ?? '',
+    taskId: newContactPayload.taskId ?? '',
+    twilioWorkerId: newContactPayload.twilioWorkerId ?? '',
+    rawJson: newContactPayload.rawJson,
+    queueName:
+      // Checking in rawJson might be redundant, copied from Sequelize logic in contact-controller.js
+      newContactPayload.queueName || (<any>(newContactPayload.rawJson ?? {})).queueName,
+    createdBy,
+  };
 
-    // create contact record (may return an exiting one cause idempotence)
-    const { contact, isNewRecord } = await create(connection)(accountSid, completeNewContact);
+  // create contact record (may return an exiting one cause idempotence)
+  const { contact, isNewRecord } = await create(trxId)(accountSid, completeNewContact);
 
-    let contactResult: Contact;
+  let contactResult: Contact;
 
-    if (!isNewRecord) {
-      // if the contact already existed, skip the associations
-      contactResult = contact;
-    } else {
-      // associate csam reports
-      const csamReportIds = (csamReportsPayload ?? []).map(csr => csr.id);
-      const csamReports =
-        csamReportIds && csamReportIds.length
-          ? await connectContactToCsamReports(connection)(contact.id, csamReportIds, accountSid)
-          : [];
+  if (!isNewRecord) {
+    // if the contact already existed, skip the associations
+    contactResult = contact;
+  } else {
+    // associate csam reports
+    const csamReportIds = (csamReportsPayload ?? []).map(csr => csr.id);
+    const csamReports =
+      csamReportIds && csamReportIds.length
+        ? await connectContactToCsamReports(trxId)(contact.id, csamReportIds, accountSid)
+        : [];
 
-      // create resources referrals
-      const referrals = referralsPayload ?? [];
-      const createdReferrals = [];
+    // create resources referrals
+    const referrals = referralsPayload ?? [];
+    const createdReferrals = [];
 
-      if (referrals && referrals.length) {
-        // Do this sequentially, it's on a single connection in a transaction anyway.
-        for (const referral of referrals) {
-          const { contactId, ...withoutContactId } = await createReferral(connection)(accountSid, {
-            ...referral,
-            contactId: contact.id.toString(),
-          });
-          createdReferrals.push(withoutContactId);
-        }
-      }
-
-      // if pertinent, create retrieve-transcript job
-      if (shouldCreateRetrieveTranscript(contact)) {
-        await createContactJob(connection)({
-          jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
-          resource: contact,
-          additionalPayload: undefined,
+    if (referrals && referrals.length) {
+      // Do this sequentially, it's on a single connection in a transaction anyway.
+      for (const referral of referrals) {
+        const { contactId, ...withoutContactId } = await createReferral(trxId)(accountSid, {
+          ...referral,
+          contactId: contact.id.toString(),
         });
+        createdReferrals.push(withoutContactId);
       }
-
-      // Compose the final shape of a contact to return
-      contactResult = { ...contact, csamReports, referrals: createdReferrals };
     }
 
-    const applyTransformations = bindApplyTransformations(can, user);
+    // if pertinent, create retrieve-transcript job
+    if (shouldCreateRetrieveTranscript(contact)) {
+      await createContactJob(trxId)({
+        jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
+        resource: contact,
+        additionalPayload: undefined,
+      });
+    }
 
-    return applyTransformations(contactResult);
-  });
+    // Compose the final shape of a contact to return
+    contactResult = { ...contact, csamReports, referrals: createdReferrals };
+  }
+
+  const applyTransformations = bindApplyTransformations(can, user);
+
+  return applyTransformations(contactResult);
+  // });
 };
 
 export const patchContact = async (
