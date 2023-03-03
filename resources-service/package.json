@@ -30,9 +30,9 @@
     "db:create-migration": "sequelize migration:generate --name ",
     "db:undo-last": "sequelize db:migrate:undo",
     "build-scripts": "tsc --project tsconfig.scripts.json",
-    "import-khp-json": "node ./scripts-dist/scripts/import-khp-resources.js AC_TEST",
+    "import-khp-json": "node ./scripts-dist/scripts/import-khp-resources.js",
     "build-and-import-khp-json": "npm run build-scripts && npm run import-khp-json",
-    "test:import-khp-json": "cross-env POSTGRES_PORT=5433 RDS_USERNAME=hrm RDS_PASSWORD=postgres RESOURCES_PASSWORD=resources-password run-s -c build-scripts docker:compose:test:up db:create:schema test:service:ci:migrate import-khp-json docker:compose:test:down"
+    "test:import-khp-json": "cross-env POSTGRES_PORT=5433 RDS_USERNAME=hrm RDS_PASSWORD=postgres RESOURCES_PASSWORD=resources-password run-s -c build-scripts docker:compose:test:up db:create:schema test:service:ci:migrate \"import-khp-json AC_TEST\" docker:compose:test:down"
   },
   "repository": {
     "type": "git",

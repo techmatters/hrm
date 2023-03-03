@@ -13,6 +13,7 @@ const loadSampleJson = async (): Promise<any[]> => {
 
 const main = async () => {
   const sample = await loadSampleJson();
+  const onlyGenerateSql = process.argv[3] && process.argv[3].includes('only-generate-sql');
   const aseloResources = sample.map(sampleItem => mapKHPResource(KHP_MAPPING_NODE, sampleItem));
   await fs.writeFile(
     './resource-json/khp-sample-aselo.json',
@@ -20,12 +21,16 @@ const main = async () => {
   );
   const referenceSql = generateAseloReferenceSql(process.argv[2]);
   await fs.writeFile('./resource-json/khp-sample-reference-data.sql', referenceSql);
-  await db.multi(referenceSql);
+  if (!onlyGenerateSql) {
+    await db.multi(referenceSql);
+  }
 
   for (const resource of aseloResources) {
     const resourceSql = generateAseloResourceSql(process.argv[2], resource);
-    await fs.writeFile(`./resource-json/khp-sample-resource-data-${resource.id}.json`, resourceSql);
-    await db.multi(resourceSql);
+    await fs.writeFile(`./resource-json/khp-sample-resource-data-${resource.id}.sql`, resourceSql);
+    if (!onlyGenerateSql) {
+      await db.multi(resourceSql);
+    }
   }
 };
 
