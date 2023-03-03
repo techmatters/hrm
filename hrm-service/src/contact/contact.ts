@@ -23,7 +23,7 @@ import {
   search,
   SearchParameters,
 } from './contact-data-access';
-import { ContactRawJson, getPersonsName, isS3StoredTranscript } from './contact-json';
+import { ContactRawJson, getPersonsName, isS3StoredTranscript, ReferralWithoutContactId } from './contact-json';
 import { retrieveCategories } from './categories';
 import { getPaginationElements } from '../search';
 import { NewContactRecord } from './sql/contact-insert-sql';
@@ -61,14 +61,15 @@ export type SearchContact = {
   };
   details: ContactRawJson;
   csamReports: CSAMReport[];
+  referrals?: ReferralWithoutContactId[]
 };
 
 export type CreateContactPayloadWithFormProperty = Omit<NewContactRecord, 'rawJson'> & {
   form: ContactRawJson;
-} & { csamReports?: CSAMReport[] };
+} & { csamReports?: CSAMReport[], referrals?: ReferralWithoutContactId[] };
 
 export type CreateContactPayload =
-  | (NewContactRecord & { csamReports?: CSAMReport[] })
+  | (NewContactRecord & { csamReports?: CSAMReport[], referrals?: ReferralWithoutContactId[] })
   | CreateContactPayloadWithFormProperty;
 
 export const usesFormProperty = (
@@ -98,13 +99,11 @@ const permissionsBasedTransformations: PermissionsBasedTransformation[] = [
 export const bindApplyTransformations = (can: ReturnType<typeof setupCanForRules>, user: TwilioUser) => (
   contact: Contact,
 ) => {
-  const result = permissionsBasedTransformations.reduce(
+  return permissionsBasedTransformations.reduce(
     (transformed, { action, transformation }) =>
       !can(user, action, contact) ? transformation(transformed) : transformed,
     contact,
   );
-
-  return result;
 };
 
 export const getContactById = async (accountSid: string, contactId: number) => {
@@ -124,6 +123,7 @@ export const createContact = async (
   { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
 ): Promise<Contact> => {
   const rawJson = usesFormProperty(newContact) ? newContact.form : newContact.rawJson;
+  // const { referrals, ...withoutReferrals } = newContact;
   const completeNewContact: NewContactRecord = {
     ...newContact,
     helpline: newContact.helpline ?? '',
@@ -140,16 +140,16 @@ export const createContact = async (
       newContact.queueName || (<any>(rawJson ?? {})).queueName,
     createdBy,
   };
-
-  const created = await create(
+  const createdContact: Contact = await create(
     accountSid,
     completeNewContact,
     (newContact.csamReports ?? []).map(csr => csr.id),
+    newContact.referrals ?? [],
   );
 
   const applyTransformations = bindApplyTransformations(can, user);
 
-  return applyTransformations(created);
+  return applyTransformations(createdContact);
 };
 
 export const patchContact = async (
@@ -232,7 +232,7 @@ function convertContactsToSearchResults(contacts: Contact[]): SearchContact[] {
       const categories = retrieveCategories(caseInformation.categories);
       const counselor = contact.twilioWorkerId;
       const notes = contact.rawJson.caseInformation.callSummary;
-      const { channel, conversationDuration, createdBy, csamReports, helpline, taskId } = contact;
+      const { channel, conversationDuration, createdBy, csamReports, helpline, taskId, referrals } = contact;
 
       return {
         contactId: contactId.toString(),
@@ -251,6 +251,7 @@ function convertContactsToSearchResults(contacts: Contact[]): SearchContact[] {
           taskId,
         },
         csamReports,
+        referrals,
         details: contact.rawJson,
       };
     })

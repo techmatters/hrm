@@ -98,7 +98,9 @@ module.exports = {
   },
 
   down: async queryInterface => {
-    await queryInterface.sequelize.query(`DROP FUNCTION IF EXISTS resources."Resources"`);
+    await queryInterface.sequelize.query(
+      `DROP FUNCTION IF EXISTS resources."Resources_updateSequence_trigger"`,
+    );
     await queryInterface.sequelize.query(`DROP TABLE IF EXISTS resources."Resources"`);
     await queryInterface.sequelize.query(
       `DROP SEQUENCE IF EXISTS resources."Resources_updates_seq"`,

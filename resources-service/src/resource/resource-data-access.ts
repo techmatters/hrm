@@ -17,31 +17,43 @@
 import { db } from '../connection-pool';
 import { AccountSID } from '@tech-matters/twilio-worker-auth';
 import {
-  SELECT_RESOURCE_BY_ID,
   SELECT_RESOURCE_IDS_WHERE_NAME_CONTAINS,
   SELECT_RESOURCE_IN_IDS,
 } from './sql/resource-get-sql';
 
-export type ReferrableResourceSearchResult = {
-  name: string;
-  id: string;
+export type ReferrableResourceAttribute = {
+  value: string;
+  language: string;
+  info?: any;
 };
 
-// The full resource & the search result are synonyms for now, but the full resource should grow to be a superset
-export type ReferrableResource = ReferrableResourceSearchResult;
+export type ReferrableResourceRecord = {
+  name: string;
+  id: string;
+  attributes: (ReferrableResourceAttribute & { key: string })[];
+};
 
 export const getById = async (
   accountSid: AccountSID,
   resourceId: string,
-): Promise<ReferrableResource | null> =>
-  db.task(async t => t.oneOrNone(SELECT_RESOURCE_BY_ID, { accountSid, resourceId }));
+): Promise<ReferrableResourceRecord | null> => {
+  const res = await db.task(async t =>
+    t.oneOrNone(SELECT_RESOURCE_IN_IDS, { accountSid, resourceIds: [resourceId] }),
+  );
+  console.debug('Retrieved resource:', JSON.stringify(res, null, 2));
+  return res;
+};
 
 export const getByIdList = async (
   accountSid: AccountSID,
   resourceIds: string[],
-): Promise<ReferrableResource[]> => {
+): Promise<ReferrableResourceRecord[]> => {
   console.debug('Retrieving resources with IDs:', resourceIds);
-  return db.task(async t => t.manyOrNone(SELECT_RESOURCE_IN_IDS, { accountSid, resourceIds }));
+  const res = await db.task(async t =>
+    t.manyOrNone(SELECT_RESOURCE_IN_IDS, { accountSid, resourceIds }),
+  );
+  console.debug('Retrieved resources:', JSON.stringify(res, null, 2));
+  return res;
 };
 
 export const getWhereNameContains = async (

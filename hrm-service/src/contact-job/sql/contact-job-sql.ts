@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { selectContactsWithCsamReports } from '../../contact/sql/contact-get-sql';
+import { selectContactsWithRelations } from '../../contact/sql/contact-get-sql';
 
 export const PULL_DUE_JOBS_SQL = `
   WITH due AS (
@@ -22,7 +22,7 @@ export const PULL_DUE_JOBS_SQL = `
     WHERE "completed" IS NULL AND "numberOfAttempts" < $<jobMaxAttempts> AND ("lastAttempt" IS NULL OR "lastAttempt" <= $<lastAttemptedBefore>::TIMESTAMP WITH TIME ZONE) RETURNING *
   )
   SELECT due.*, to_jsonb(contacts.*) AS "resource" FROM due LEFT JOIN LATERAL (
-  ${selectContactsWithCsamReports(
+  ${selectContactsWithRelations(
     'Contacts',
   )} WHERE c."accountSid" = due."accountSid" AND c."id" = due."contactId") AS contacts ON true
 `;
@@ -40,3 +40,6 @@ export const ADD_FAILED_ATTEMPT_PAYLOAD = `
   VALUES ($<contactJobId>, $<attemptNumber>, $<attemptPayload:json>::JSONB, current_timestamp)
   RETURNING *
 `;
+
+export const selectSingleContactJobByIdSql = (table: string) =>
+  `SELECT * FROM "${table}" WHERE id = $(jobId)`;

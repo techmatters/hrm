@@ -161,6 +161,7 @@ export class ContactBuilder {
       ...(this.channel && { channel: this.channel }),
       ...(this.conversationDuration && { conversationDuration: this.conversationDuration }),
       csamReports: [],
+      referrals: [],
     };
   }
 }

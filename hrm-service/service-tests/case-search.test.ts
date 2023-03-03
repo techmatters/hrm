@@ -145,6 +145,7 @@ const insertSampleCases = async ({
         accounts[i % accounts.length],
         contactToCreate,
         [],
+        [],
       );
       connectedContact = await contactDb.connectToCase(
         savedContact.accountSid,
@@ -215,7 +216,6 @@ describe('/cases route', () => {
 
       beforeEach(async () => {
         createdCase = await caseApi.createCase(case1, accountSid, workerSid);
-
         const contactToCreate = fillNameAndPhone({
           ...contact1,
           twilioWorkerId: workerSid,
@@ -229,7 +229,7 @@ describe('/cases route', () => {
         contactToCreate.taskId = `TASK_SID`;
         contactToCreate.channelSid = `CHANNEL_SID`;
         contactToCreate.serviceSid = 'SERVICE_SID';
-        createdContact = await contactDb.create(accountSid, contactToCreate, []);
+        createdContact = await contactDb.create(accountSid, contactToCreate, [], []);
         createdContact = await contactDb.connectToCase(
           accountSid,
           createdContact.id.toString(),
@@ -251,6 +251,7 @@ describe('/cases route', () => {
       // eslint-disable-next-line jest/expect-expect
       test('should return 200 when populated', async () => {
         const response = await request.get(route).set(headers);
+
         validateSingleCaseResponse(response, createdCase, createdContact);
       });
     });
@@ -400,7 +401,6 @@ describe('/cases route', () => {
         })
         .set(headers);
 
-      console.log(response.body);
       expect(response.status).toBe(200);
 
       expect(<caseApi.Case>response.body.cases).toHaveLength(1);
@@ -501,7 +501,7 @@ describe('/cases route', () => {
           toCreate.channelSid = `CHANNEL_SID`;
           toCreate.serviceSid = 'SERVICE_SID';
           // Connects createdContact with createdCase2
-          createdContact = await contactDb.create(accountSid, toCreate, []);
+          createdContact = await contactDb.create(accountSid, toCreate, [], []);
           createdContact = await contactDb.connectToCase(
             accountSid,
             createdContact.id.toString(),

@@ -15,23 +15,27 @@
  */
 
 import { selectCoalesceCsamReportsByContactId } from '../../csam-report/sql/csam-report-get-sql';
+import { selectCoalesceReferralsByContactId } from '../../referral/sql/referral-get-sql';
 
 const ID_WHERE_CLAUSE = `WHERE c."accountSid" = $<accountSid> AND c."id" = $<contactId>`;
 const TASKID_WHERE_CLAUSE = `WHERE c."accountSid" = $<accountSid> AND c."taskId" = $<taskId>`;
 
-export const selectContactsWithCsamReports = (table: string) => `
-        SELECT c.*, reports."csamReports" 
+export const selectContactsWithRelations = (table: string) => `
+        SELECT c.*, reports."csamReports", joinedReferrals."referrals"
         FROM "${table}" c 
         LEFT JOIN LATERAL (
           ${selectCoalesceCsamReportsByContactId('c')}
-        ) reports ON true`;
+        ) reports ON true
+        LEFT JOIN LATERAL (
+          ${selectCoalesceReferralsByContactId('c')}
+        ) joinedReferrals ON true`;
 
 export const selectSingleContactByIdSql = (table: string) => `
-      ${selectContactsWithCsamReports(table)}
+      ${selectContactsWithRelations(table)}
       ${ID_WHERE_CLAUSE}`;
 
 export const selectSingleContactByTaskId = (table: string) => ` 
-      ${selectContactsWithCsamReports(table)}
+      ${selectContactsWithRelations(table)}
       ${TASKID_WHERE_CLAUSE}
       -- only take the latest, this ORDER / LIMIT clause would be redundant 
       ORDER BY c."createdAt" DESC LIMIT 1`;
