@@ -15,7 +15,7 @@ export const generateAseloReferenceSql = (accountSid: string): string =>
               ...referenceValue,
             },
             ['accountSid', 'list', 'id', 'value', 'language', 'info'],
-            'ResourceReferenceStringAttributeValues',
+            { schema: 'resources', table: 'ResourceReferenceStringAttributeValues' },
           )}
   ON CONFLICT ON CONSTRAINT "ResourceReferenceStringAttributeValues_pkey"
   DO UPDATE SET "value" = EXCLUDED."value", "info" = EXCLUDED."info"`,
@@ -33,7 +33,7 @@ export const generateAseloResourceSql = (
   sqlBatch.push(`${pgp.helpers.insert(
     { ...resourceRecord, accountSid },
     ['id', 'name', 'accountSid'],
-    'Resources',
+    { schema: 'resources', table: 'Resources' },
   )} 
   ON CONFLICT ON CONSTRAINT "Resources_pkey" 
   DO UPDATE SET "name" = EXCLUDED."name"`);
@@ -45,7 +45,7 @@ export const generateAseloResourceSql = (
   ] as const;
   sqlBatch.push(
     pgp.as.format(
-      `DELETE FROM "ResourceStringAttributes" WHERE "resourceId" = $<resourceId> AND "accountSid" = $<accountSid>`,
+      `DELETE FROM resources."ResourceStringAttributes" WHERE "resourceId" = $<resourceId> AND "accountSid" = $<accountSid>`,
       { resourceId: resourceRecord.id.toString(), accountSid },
     ),
   );
@@ -64,7 +64,7 @@ export const generateAseloResourceSql = (
               language,
             },
             ['accountSid', 'resourceId', 'key', 'value', 'language', 'info'],
-            'ResourceStringAttributes', // TODO: use table variable once they have been created
+            { schema: 'resources', table: 'ResourceStringAttributes' }, // TODO: use table variable once they have been created
           )}`,
         );
       }),
@@ -72,7 +72,7 @@ export const generateAseloResourceSql = (
   );
   sqlBatch.push(
     pgp.as.format(
-      `DELETE FROM "ResourceReferenceStringAttributes" WHERE "resourceId" = $<resourceId> AND "accountSid" = $<accountSid>`,
+      `DELETE FROM resources."ResourceReferenceStringAttributes" WHERE "resourceId" = $<resourceId> AND "accountSid" = $<accountSid>`,
       { resourceId: resourceRecord.id.toString(), accountSid },
     ),
   );
@@ -81,10 +81,10 @@ export const generateAseloResourceSql = (
     ...attributes.ResourceReferenceStringAttributes.map(attribute => {
       const { info, language, ...queryValues } = attribute;
       return pgp.as.format(
-        `INSERT INTO "ResourceReferenceStringAttributes" 
+        `INSERT INTO resources."ResourceReferenceStringAttributes" 
     ("accountSid", "resourceId", "key", "list", "referenceId") 
     SELECT $<accountSid>, $<resourceId>, $<key>, $<list>, "id" 
-      FROM "ResourceReferenceStringAttributeValues" 
+      FROM resources."ResourceReferenceStringAttributeValues" 
       WHERE "accountSid" = $<accountSid> AND "list" = $<list> AND "value" = $<value> AND "language" = $<language>`,
         { language: '', ...queryValues, accountSid, resourceId: resourceRecord.id },
       );

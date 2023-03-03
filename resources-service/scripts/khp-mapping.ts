@@ -379,8 +379,8 @@ export const KHP_RESOURCE_REFERENCES = {
       },
     },
     {
-      id: 'Canada/NB/Victoria/Perth-Andover',
-      value: 'Canada/NB/Victoria/Perth-Andover',
+      id: 'Canada/AB/Rocky View County/Calgary',
+      value: 'Canada/AB/Rocky View County/Calgary',
       info: {
         name: 'Calgary',
         county: 'Rocky View County',
