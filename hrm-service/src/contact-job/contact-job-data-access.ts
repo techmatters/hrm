@@ -14,7 +14,6 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { ITask } from 'pg-promise';
 import { db, pgp } from '../connection-pool';
 // eslint-disable-next-line prettier/prettier
 import type { Contact } from '../contact/contact-data-access';
@@ -23,6 +22,7 @@ import {
   PULL_DUE_JOBS_SQL,
   ADD_FAILED_ATTEMPT_PAYLOAD,
 } from './sql/contact-job-sql';
+import { txIfNotInOne } from '../sql';
 
 export enum ContactJobType {
   RETRIEVE_CONTACT_TRANSCRIPT = 'retrieve-transcript',
@@ -92,7 +92,7 @@ export const completeContactJob = async (
  * Add a new job to be completed to the ContactJobs queue
  * Requires tx: ITask to make the creation of the job part of the same transaction
  */
-export const createContactJob = (trxId?: string) => async (
+export const createContactJob = (tk?) =>  async (
   job: Pick<ContactJob, 'jobType' | 'resource' | 'additionalPayload'>,
 ): Promise<void> => {
   const contact = job.resource;
@@ -112,7 +112,7 @@ export const createContactJob = (trxId?: string) => async (
     'ContactJobs',
   );
 
-  return db.txIf({ tag: trxId }, conn => conn.none(insertSql));
+  return txIfNotInOne(tk, conn => conn.none(insertSql));
 };
 
 export const appendFailedAttemptPayload = async (

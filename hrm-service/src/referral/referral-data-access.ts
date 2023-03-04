@@ -15,13 +15,12 @@
  */
 
 // eslint-disable-next-line prettier/prettier
-import type { ITask } from 'pg-promise';
-import { db } from '../connection-pool';
 import { insertReferralSql } from './sql/referral-insert-sql';
 import {
   DatabaseForeignKeyViolationError,
   DatabaseUniqueConstraintViolationError,
   inferPostgresError,
+  txIfNotInOne,
 } from '../sql';
 
 // Working around the lack of a 'cause' property in the Error class for ES2020 - can be removed when we upgrade to ES2022
@@ -57,16 +56,14 @@ export type Referral = {
   resourceName?: string;
 };
 
-export const createReferralRecord = (trxId?: string) => async (
+export const createReferralRecord = (task?) => async (
   accountSid: string,
   referral: Referral,
 ): Promise<Referral> => {
   try {
     const statement = insertReferralSql({ resourceName: undefined, ...referral, accountSid });
 
-    return await db.txIf({ tag: trxId }, conn =>
-      conn.one(statement),
-    );
+    return await txIfNotInOne(task, conn => conn.one(statement));
   } catch (err) {
     const dbErr = inferPostgresError(err);
     if (

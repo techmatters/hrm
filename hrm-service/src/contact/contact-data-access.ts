@@ -31,6 +31,7 @@ import {
 } from './contact-json';
 // eslint-disable-next-line prettier/prettier
 import type { ITask } from 'pg-promise';
+import { txIfNotInOne } from '../sql';
 
 type ExistingContactRecord = {
   id: number;
@@ -149,12 +150,12 @@ const searchParametersToQueryParameters = (
   return queryParams;
 };
 
-export const create = (trxId?: string) => async (
+export const create = (task?) => async (
   accountSid: string,
   newContact: NewContactRecord,
 ): Promise<{ contact: Contact; isNewRecord: boolean }> => {
   // Inner query that will be executed in a pgp.ITask
-  const executeQuery = async (conn: ITask<{}>) => {
+  const executeQuery = async (conn: ITask<{ contact: Contact, isNewRecord: boolean }>) => {
     if (newContact.taskId) {
       const existingContact: Contact = await conn.oneOrNone<Contact>(
         selectSingleContactByTaskId('Contacts'),
@@ -182,7 +183,7 @@ export const create = (trxId?: string) => async (
     return { contact: created, isNewRecord: true };
   };
 
-  return db.txIf({ tag: trxId, reusable: true }, conn => executeQuery(conn));
+  return txIfNotInOne(task, executeQuery);
 };
 
 export const patch = async (
