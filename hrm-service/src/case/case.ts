@@ -308,7 +308,7 @@ export const searchCases = async (
   accountSid: string,
   listConfiguration: CaseListConfiguration,
   search: SearchParameters,
-  { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
+  { can, user, canOnlyViewOwnCases }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser; canOnlyViewOwnCases?: boolean },
 ): Promise<CaseSearchReturn> => {
   const { filters, helpline, counselor, closedCases, ...searchCriteria } = search;
   const caseFilters = filters ?? {};
@@ -320,6 +320,16 @@ export const searchCases = async (
     caseFilters.excludedStatuses.push('closed');
   }
   caseFilters.includeOrphans = caseFilters.includeOrphans ?? closedCases ?? true;
+
+  /**
+   * VIEW_CASE permission:
+   * If the user can only view his/her own cases, override caseFilters.counsellors.
+   * The search query already filters the cases given an array of counsellors.
+   */
+  if (canOnlyViewOwnCases) {
+    caseFilters.counsellors = [user.workerSid];
+  }
+
   const dbResult = await caseDb.search(listConfiguration, accountSid, searchCriteria, caseFilters);
   return {
     ...dbResult,

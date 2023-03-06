@@ -262,10 +262,22 @@ export const searchContacts = async (
   accountSid: string,
   searchParameters: SearchParameters,
   query,
-  { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
+  { can, user, canOnlyViewOwnContacts }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser; canOnlyViewOwnContacts: boolean },
 ): Promise<{ count: number; contacts: SearchContact[] }> => {
   const applyTransformations = bindApplyTransformations(can, user);
   const { limit, offset } = getPaginationElements(query);
+
+  /**
+   * VIEW_CONTACT permission:
+   * If the user can only view his/her own contacts, override searchParameters.counselor.
+   * The search query already filters the contacts based on the given counselor (workerSid).
+   */
+  if (canOnlyViewOwnContacts) {
+    searchParameters.counselor = user.workerSid;
+  }
+  console.log('>>>>>>');
+  console.log({ canOnlyViewOwnContacts });
+
   const unprocessedResults = await search(accountSid, searchParameters, limit, offset);
   return {
     count: unprocessedResults.count,
