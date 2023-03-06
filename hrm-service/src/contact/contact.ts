@@ -275,8 +275,6 @@ export const searchContacts = async (
   if (canOnlyViewOwnContacts) {
     searchParameters.counselor = user.workerSid;
   }
-  console.log('>>>>>>');
-  console.log({ canOnlyViewOwnContacts });
 
   const unprocessedResults = await search(accountSid, searchParameters, limit, offset);
   return {
