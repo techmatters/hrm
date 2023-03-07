@@ -85,7 +85,7 @@ describe('pollAndProcessCompletedContactJobs', () => {
       channelSid: 'channelSid',
       filePath: 'filePath',
       attemptResult: ContactJobAttemptResult.SUCCESS,
-      attemptPayload: { bucket: 'some-url-here', key: 'some-url-here' },   
+      attemptPayload: { bucket: 'some-url-here', key: 'some-url-here', url: 'some-url-here' },   
     };
     const validPayload = {
       Body: JSON.stringify(valid1),
@@ -131,7 +131,7 @@ describe('pollAndProcessCompletedContactJobs', () => {
       channelSid: 'channelSid',
       filePath: 'filePath',
       attemptResult: ContactJobAttemptResult.SUCCESS,
-      attemptPayload: { bucket: 'some-url-here', key: 'some-url-here' },  
+      attemptPayload: { bucket: 'some-url-here', key: 'some-url-here', url: 'some-url-here' },  
     };
 
     const validPayload1 = {
@@ -192,7 +192,7 @@ describe('pollAndProcessCompletedContactJobs', () => {
         channelSid: 'channelSid',
         filePath: 'filePath',
         attemptNumber: 1,
-        attemptPayload: { bucket: 'completionPayload', key: 'completionPayload' },
+        attemptPayload: { bucket: 'completionPayload', key: 'completionPayload', url: 'completionPayload' },
       },
       processCompletedFunction: 'processCompletedRetrieveContactTranscript',
     },
@@ -341,7 +341,7 @@ describe('pollAndProcessCompletedContactJobs', () => {
         serviceSid: 'serviceSid',
         channelSid: 'channelSid',
         filePath: 'filePath',
-        attemptPayload: { bucket: 'some-url-here', key: 'some-url-here' },
+        attemptPayload: { bucket: 'some-url-here', key: 'some-url-here', url: 'some-url-here' },
         attemptResult: ContactJobAttemptResult.FAILURE,
       };
       const contactJob = {
@@ -374,7 +374,7 @@ describe('pollAndProcessCompletedContactJobs', () => {
         serviceSid: 'serviceSid',
         channelSid: 'channelSid',
         filePath: 'filePath',
-        attemptPayload: { bucket: 'some-url-here', key: 'some-url-here' },
+        attemptPayload: { bucket: 'some-url-here', key: 'some-url-here', url: 'some-url-here' },
         attemptResult: ContactJobAttemptResult.FAILURE,
       };
 

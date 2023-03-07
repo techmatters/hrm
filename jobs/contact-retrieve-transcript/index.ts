@@ -86,6 +86,7 @@ const processRecord = async (message: PublishToContactJobsTopicParams) => {
     attemptPayload: {
       bucket: uploadResults.Bucket,
       key: uploadResults.Key,
+      url: uploadResults.Location,
     },
   };
 

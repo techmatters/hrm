@@ -43,6 +43,7 @@ export type PublishToContactJobsTopicParams = PublishRetrieveContactTranscript;
 type CompleteRetrieveContactTranscriptTSuccess = {
   bucket: string;
   key: string;
+  url: string;
 };
 export enum ContactJobAttemptResult {
   SUCCESS = 'success',

@@ -98,6 +98,7 @@ describe('contact-retrieve-transcript', () => {
     const attemptPayload = {
       bucket: 'contact-docs-bucket',
       key: message.filePath,
+      url: `http://localstack:4566/contact-docs-bucket/${message.filePath}`,
     };
 
     const sqsResp = await sendMessage({ message, lambdaName });

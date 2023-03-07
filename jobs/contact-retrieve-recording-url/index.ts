@@ -71,6 +71,7 @@ const processRecord = async (message: PublishToContactJobsTopicParams) => {
     attemptPayload: {
       bucket: 'NotARealRecordingUrl',
       key: 'NotARealRecordingUrl',
+      url: 'NotARealRecordingUrl',
     },
   };
 

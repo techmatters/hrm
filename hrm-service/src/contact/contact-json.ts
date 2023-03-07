@@ -35,6 +35,7 @@ export type S3StoredTranscript = {
   store: 'S3';
   type: ContactMediaType.TRANSCRIPT;
   location?: string;
+  url?: string;
 };
 
 type S3StoredMedia = S3StoredTranscript;
