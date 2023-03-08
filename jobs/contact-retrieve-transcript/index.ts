@@ -19,6 +19,7 @@ import { SQS } from 'aws-sdk';
 
 import { ContactJobProcessorError } from '@tech-matters/hrm-job-errors';
 import { getSsmParameter, loadSsmCache } from '@tech-matters/hrm-ssm-cache';
+import { ContactJobAttemptResult } from '@tech-matters/hrm-types';
 import { exportTranscript } from './exportTranscript';
 import { uploadTranscript } from './uploadTranscript';
 
@@ -28,7 +29,7 @@ import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
 import type {
   CompletedContactJobBody,
   PublishToContactJobsTopicParams,
-} from '@tech-matters/hrm-types/ContactJob';
+} from '@tech-matters/hrm-types';
 
 /**
  * This is based around latest SQS error handling that supports batchItemFailure responses.
@@ -53,8 +54,6 @@ const ssmCacheConfigs = [
 ];
 
 const processRecord = async (message: PublishToContactJobsTopicParams) => {
-  console.log(message);
-
   const authToken = getSsmParameter(`/${hrmEnv}/twilio/${message.accountSid}/auth_token`);
   const docsBucketName = getSsmParameter(`/${hrmEnv}/s3/${message.accountSid}/docs_bucket_name`);
 
@@ -83,8 +82,12 @@ const processRecord = async (message: PublishToContactJobsTopicParams) => {
 
   const completedJob: CompletedContactJobBody = {
     ...message,
-    attemptResult: 'success',
-    attemptPayload: uploadResults.Location,
+    attemptResult: ContactJobAttemptResult.SUCCESS,
+    attemptPayload: {
+      bucket: uploadResults.Bucket,
+      key: uploadResults.Key,
+      url: uploadResults.Location,
+    },
   };
 
   await sqs
@@ -106,7 +109,7 @@ export const processRecordWithoutException = async (sqsRecord: SQSRecord): Promi
 
     const failedJob: CompletedContactJobBody = {
       ...message,
-      attemptResult: 'failure',
+      attemptResult: ContactJobAttemptResult.FAILURE,
       attemptPayload: errMessage,
     };
 
@@ -136,8 +139,6 @@ export const handler = async (event: SQSEvent): Promise<any> => {
     const promises = event.Records.map(async sqsRecord => processRecordWithoutException(sqsRecord));
 
     await Promise.all(promises);
-
-    return response;
   } catch (err) {
     // SSM failures and other major setup exceptions will cause a failure of all messages sending them to DLQ
     // which should be the same as the completed queue right now.
@@ -153,7 +154,8 @@ export const handler = async (event: SQSEvent): Promise<any> => {
         itemIdentifier: record.messageId,
       };
     });
-
-    return response;
   }
+
+
+  return response;
 };

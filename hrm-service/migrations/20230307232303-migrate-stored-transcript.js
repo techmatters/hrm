@@ -14,18 +14,18 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { loadSsmCache as loadSsmCacheRoot } from '@tech-matters/hrm-ssm-cache';
-
-export { getSsmParameter, hasCacheExpired, ssmCache } from '@tech-matters/hrm-ssm-cache';
-
-const ssmCacheConfigs = [
-  {
-    path: `/${process.env.NODE_ENV}/${process.env.AWS_REGION ??
-      process.env.AWS_DEFAULT_REGION}/sqs/jobs/contact`,
-    regex: /queue-url-*/,
+module.exports = {
+  up: async queryInterface => {
+    await queryInterface.sequelize.query(`
+	UPDATE public."Contacts"
+	SET "rawJson" = jsonb_set("rawJson", '{"conversationMedia", 0, "location"}'::TEXT[], 
+			   jsonb_build_object(
+				   'bucket', (regexp_match("rawJson"->'conversationMedia'->0->>'url', 'https://(.*)\.s3\.(.*)amazonaws\.com/(.*)')::TEXT[])[1], 
+				   'key', (regexp_match("rawJson"->'conversationMedia'->0->>'url', 'https://(.*)\.s3\.(.*)amazonaws\.com/(.*)')::TEXT[])[3]
+			   )
+			   , true)
+	WHERE "rawJson"->'conversationMedia'->0->>'store' = 'S3' AND "rawJson"->'conversationMedia'->0->>'url' IS NOT NULL`);
   },
-];
 
-export const loadSsmCache = async () => {
-  await loadSsmCacheRoot({ configs: ssmCacheConfigs });
+  down: () => Promise.all([]),
 };

@@ -14,18 +14,4 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { loadSsmCache as loadSsmCacheRoot } from '@tech-matters/hrm-ssm-cache';
-
-export { getSsmParameter, hasCacheExpired, ssmCache } from '@tech-matters/hrm-ssm-cache';
-
-const ssmCacheConfigs = [
-  {
-    path: `/${process.env.NODE_ENV}/${process.env.AWS_REGION ??
-      process.env.AWS_DEFAULT_REGION}/sqs/jobs/contact`,
-    regex: /queue-url-*/,
-  },
-];
-
-export const loadSsmCache = async () => {
-  await loadSsmCacheRoot({ configs: ssmCacheConfigs });
-};
+export * from './ContactJob';

@@ -17,9 +17,21 @@
 export const SELECT_RESOURCE_IN_IDS = `SELECT r.id, r."name", att."attributes" FROM 
 resources."Resources" AS r 
 LEFT JOIN LATERAL (
-  SELECT COALESCE(jsonb_agg((SELECT attributeRow FROM (SELECT rsa."key", rsa."value", rsa."language", rsa."info") AS attributeRow)), '[]') AS attributes
-  FROM "ResourceStringAttributes" AS rsa
-  WHERE rsa."accountSid" = r."accountSid" AND rsa."resourceId" = r.id
+  SELECT COALESCE(jsonb_agg((SELECT attributeRow FROM (SELECT ra."key", ra."value", ra."language", ra."info") AS attributeRow)), '[]') AS attributes
+    FROM (
+        SELECT rsa."key", rsa."value", rsa."language", rsa."info" 
+        FROM resources."ResourceStringAttributes" AS rsa
+        WHERE rsa."accountSid" = r."accountSid" AND rsa."resourceId" = r.id
+      UNION ALL 
+        SELECT rrsa."key", rrsav."value", rrsav."language", rrsav."info"
+        FROM 
+        resources."ResourceReferenceStringAttributes" AS rrsa
+        INNER JOIN resources."ResourceReferenceStringAttributeValues" AS rrsav  ON 
+          rrsav."accountSid" = rrsa."accountSid" 
+          AND rrsav."list" = rrsa."list" 
+          AND rrsav."id" = rrsa."referenceId"
+        WHERE rrsa."accountSid" = r."accountSid" AND rrsa."resourceId" = r.id
+    ) AS ra
 ) AS att ON true
 WHERE r."accountSid" = $<accountSid> AND r."id" IN ($<resourceIds:csv>)
 `;

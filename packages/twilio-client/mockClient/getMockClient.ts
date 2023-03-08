@@ -27,6 +27,9 @@ export const getMockClient = () => {
               messages: {
                 list: () => chatMessageList,
               },
+              members: {
+                list: () => [],
+              },
             }),
           },
           users: {
