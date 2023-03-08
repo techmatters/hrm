@@ -19,6 +19,7 @@ import { headers, getRequest, getServer } from './server';
 import { db } from '../../src/connection-pool';
 import each from 'jest-each';
 import { ReferrableResource } from '../../src/resource/resource-model';
+import { ReferrableResourceAttribute } from '../../src/resource/resource-data-access';
 
 export const workerSid = 'WK-worker-sid';
 
@@ -400,9 +401,9 @@ describe('GET /resource', () => {
         const responseAttributeEntries = Object.entries(responseAttributes).sort(([keyA], [keyB]) =>
           keyA.localeCompare(keyB),
         );
-        const expectedAttributeEntries = Object.entries(expectedAttributes).sort(([keyA], [keyB]) =>
-          keyA.localeCompare(keyB),
-        );
+        const expectedAttributeEntries = Object.entries(
+          expectedAttributes as Record<string, ReferrableResourceAttribute[]>,
+        ).sort(([keyA], [keyB]) => keyA.localeCompare(keyB));
         expect(responseAttributeEntries).toHaveLength(expectedAttributeEntries.length);
         responseAttributeEntries.forEach(([key, value], index) => {
           const [expectedKey, expectedValue] = expectedAttributeEntries[index];
