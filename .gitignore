@@ -72,6 +72,7 @@ typings/
 
 # TSC output
 **/dist/
+**/*-dist/
 
 # CDK asset staging directory
 .cdk.staging
