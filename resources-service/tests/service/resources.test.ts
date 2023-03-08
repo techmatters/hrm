@@ -20,6 +20,7 @@ import { db } from '../../src/connection-pool';
 import each from 'jest-each';
 import { ReferrableResource } from '../../src/resource/resource-model';
 import { ReferrableResourceAttribute } from '../../src/resource/resource-data-access';
+import { AssertionError } from 'assert';
 
 export const workerSid = 'WK-worker-sid';
 
@@ -75,14 +76,18 @@ const verifyResourcesAttributes = (resource: ReferrableResource) => {
     const attribute = resource.attributes[`ATTRIBUTE_${attributeIdx}`];
     expect(attribute).toBeDefined();
     const expectedValues = (parseInt(attributeIdx) % 2) + 1;
-    expect(attribute).toHaveLength(expectedValues);
-    range(expectedValues).forEach(valueIdx => {
-      expect(attribute[parseInt(valueIdx)]).toStrictEqual({
-        info: { some: 'json' },
-        language: 'en-US',
-        value: `VALUE_${valueIdx}`,
+    if (Array.isArray(expectedValues)) {
+      expect(attribute).toHaveLength(expectedValues);
+      range(expectedValues).forEach(valueIdx => {
+        expect(attribute[parseInt(valueIdx)]).toStrictEqual({
+          info: { some: 'json' },
+          language: 'en-US',
+          value: `VALUE_${valueIdx}`,
+        });
       });
-    });
+    } else {
+      throw new AssertionError({ message: 'Expected attribute value to be an array' });
+    }
   });
 };
 

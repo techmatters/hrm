@@ -47,7 +47,7 @@ const attributeObjectGraphFromKeys = (
     const { key, ...withoutKey } = attribute;
     // Split on / but not on \/ (escaped /), but doesn't misinterpret preceding escaped \ (i.e. \\) as escaping the / (see unit tests)
     const attributeKeySections = key.split(/(?<!(?:[^\\]|^)\\(?:\\{2})*)\//).filter(s => s.length);
-    let currentObject = groupedAttributes;
+    let currentObject: ResourceAttributeNode = groupedAttributes as ResourceAttributeNode;
     attributeKeySections.forEach((escapedSection, index) => {
       const section = escapedSection.replace(/\\([\\\/])/g, '$1');
       if (index === attributeKeySections.length - 1) {
