@@ -40,6 +40,11 @@ export type PublishToContactJobsTopicParams = PublishRetrieveContactTranscript;
 
 //====== Message payloads expected for the completed contact jobs ======//
 
+type CompleteRetrieveContactTranscriptTSuccess = {
+  bucket: string;
+  key: string;
+  url: string;
+};
 export enum ContactJobAttemptResult {
   SUCCESS = 'success',
   FAILURE = 'failure',
@@ -56,7 +61,7 @@ type CompletedContactJobMessageCommons<TSuccess, TFailure> =
     };
 
 export type CompletedRetrieveContactTranscript = PublishRetrieveContactTranscript &
-  CompletedContactJobMessageCommons<string, any>;
+  CompletedContactJobMessageCommons<CompleteRetrieveContactTranscriptTSuccess, any>;
 
 export type CompletedContactJobBody = CompletedRetrieveContactTranscript;
 

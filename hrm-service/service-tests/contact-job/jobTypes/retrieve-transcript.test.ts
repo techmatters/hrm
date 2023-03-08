@@ -104,7 +104,7 @@ const createChatContact = async (channel: string, startedTimestamp: number) => {
         {
           store: 'S3' as const,
           type: ContactMediaType.TRANSCRIPT,
-          url: undefined,
+          location: undefined,
         },
       ],
     },
@@ -299,7 +299,7 @@ describe('complete retrieve-transcript job type', () => {
         serviceSid: contact.serviceSid,
         taskId: contact.taskId,
         twilioWorkerId: contact.twilioWorkerId,
-        attemptPayload: 'some-url-here',
+        attemptPayload: { bucket: 'some-url-here', key: 'some-url-here', url: 'some-url-here' },
         attemptNumber: 1,
         attemptResult: ContactJobAttemptResult.SUCCESS,
       };
@@ -343,8 +343,9 @@ describe('complete retrieve-transcript job type', () => {
       const expecteConversationMedia = [
         {
           store: 'S3',
-          url: completedPayload.attemptPayload,
+          location: completedPayload.attemptPayload,
           type: ContactMediaType.TRANSCRIPT,
+          url: completedPayload.attemptPayload.url,
         },
       ];
 
@@ -375,7 +376,7 @@ describe('complete retrieve-transcript job type', () => {
       ).toBeTruthy();
       expect(updatedRetrieveContactTranscriptJob.completionPayload).toMatchObject({
         message: 'Job processed successfully',
-        value: 'some-url-here',
+        value: { bucket: 'some-url-here', key: 'some-url-here', url: 'some-url-here' },
       });
 
       // Check the updated contact in the DB

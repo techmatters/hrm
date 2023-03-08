@@ -68,7 +68,11 @@ const processRecord = async (message: PublishToContactJobsTopicParams) => {
   const completedJob: CompletedContactJobBody = {
     ...message,
     attemptResult: ContactJobAttemptResult.SUCCESS,
-    attemptPayload: 'NotARealRecordingUrl',
+    attemptPayload: {
+      bucket: 'NotARealRecordingUrl',
+      key: 'NotARealRecordingUrl',
+      url: 'NotARealRecordingUrl',
+    },
   };
 
   await sqs
