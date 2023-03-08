@@ -32,6 +32,7 @@ import { actionsMaps } from '../permissions';
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 // eslint-disable-next-line prettier/prettier
 import type { CSAMReport } from '../csam-report/csam-report';
+import type { SearchPermissions } from '../permissions/search-permissions';
 
 // Re export as is:
 export { updateConversationMedia, Contact } from './contact-data-access';
@@ -262,10 +263,11 @@ export const searchContacts = async (
   accountSid: string,
   searchParameters: SearchParameters,
   query,
-  { can, user, canOnlyViewOwnContacts }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser; canOnlyViewOwnContacts: boolean },
+  { can, user, searchPermissions }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser; searchPermissions: SearchPermissions },
 ): Promise<{ count: number; contacts: SearchContact[] }> => {
   const applyTransformations = bindApplyTransformations(can, user);
   const { limit, offset } = getPaginationElements(query);
+  const { canOnlyViewOwnContacts } = searchPermissions;
 
   /**
    * VIEW_CONTACT permission:

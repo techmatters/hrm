@@ -38,6 +38,7 @@ import {
   bindApplyTransformations as bindApplyContactTransformations,
   getPersonsName,
 } from '../contact/contact';
+import type { SearchPermissions } from '../permissions/search-permissions';
 
 type CaseInfoSection = {
   id: string;
@@ -308,9 +309,10 @@ export const searchCases = async (
   accountSid: string,
   listConfiguration: CaseListConfiguration,
   search: SearchParameters,
-  { can, user, canOnlyViewOwnCases }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser; canOnlyViewOwnCases?: boolean },
+  { can, user, searchPermissions }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser; searchPermissions: SearchPermissions },
 ): Promise<CaseSearchReturn> => {
   const { filters, helpline, counselor, closedCases, ...searchCriteria } = search;
+  const { canOnlyViewOwnCases } = searchPermissions;
   const caseFilters = filters ?? {};
   caseFilters.helplines = caseFilters.helplines ?? (helpline ? helpline.split(';') : undefined);
   caseFilters.counsellors =

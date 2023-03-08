@@ -65,9 +65,8 @@ contactsRouter.put('/:contactId/connectToCase', publicEndpoint, async (req, res)
 
 contactsRouter.post('/search', publicEndpoint, async (req, res) => {
   const { accountSid } = req;
-  const { canOnlyViewOwnContacts } = req.searchPermissions;
 
-  const searchResults = await searchContacts(accountSid, req.body, req.query, { can: req.can, user: req.user, canOnlyViewOwnContacts });
+  const searchResults = await searchContacts(accountSid, req.body, req.query, { can: req.can, user: req.user, searchPermissions: req.searchPermissions });
   res.json(searchResults);
 });
 

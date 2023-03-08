@@ -39,12 +39,11 @@ const casesRouter = SafeRouter();
 casesRouter.get('/', publicEndpoint, async (req, res) => {
   const { accountSid } = req;
   const { sortDirection, sortBy, limit, offset, ...search } = req.query;
-  const { canOnlyViewOwnCases } = req.searchPermissions;
   const cases = await caseApi.searchCases(
     accountSid,
     { sortDirection, sortBy, limit, offset },
     { filters: { includeOrphans: false }, ...search },
-    { can: req.can, user: req.user, canOnlyViewOwnCases },
+    { can: req.can, user: req.user, searchPermissions: req.searchPermissions },
   );
   res.json(cases);
 });
@@ -145,11 +144,10 @@ casesRouter.delete('/:id', publicEndpoint, async (req, res) => {
 
 casesRouter.post('/search', publicEndpoint, async (req, res) => {
   const { accountSid } = req;
-  const { canOnlyViewOwnCases } = req.searchPermissions;
   const searchResults = await caseApi.searchCases(accountSid, req.query || {}, req.body || {}, {
     can: req.can,
     user: req.user,
-    canOnlyViewOwnCases,
+    searchPermissions: req.searchPermissions,
   });
   res.json(searchResults);
 });
