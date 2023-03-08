@@ -27,6 +27,7 @@
  * by the search contact/cases SQL queries.
  */
 
+// eslint-disable-next-line prettier/prettier
 import type { Request as ExpressRequest } from 'express';
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import isEqual from 'lodash/isEqual';
