@@ -363,6 +363,187 @@ describe('searchResources', () => {
         ],
       },
     },
+    {
+      description:
+        'Resource returned has attribute entries with keys that have forward slashes in their names - creates a nested object from the path',
+      attributeRecords: [
+        {
+          key: 'test/nested/attribute',
+          value: 'testValue',
+          language: 'Klingon',
+          info: { qa: 'pla' },
+        },
+      ],
+      expectedAttributes: {
+        test: {
+          nested: {
+            attribute: [{ value: 'testValue', language: 'Klingon', info: { qa: 'pla' } }],
+          },
+        },
+      },
+    },
+    {
+      description:
+        'Resource returned has attribute entries with path keys that share a common root - attributes with a common root path share a common root object',
+      attributeRecords: [
+        {
+          key: 'test/nested/attribute',
+          value: 'testValue',
+          language: 'Klingon',
+          info: { qa: 'pla' },
+        },
+        {
+          key: 'test/nested2/attribute',
+          value: 'testValue2',
+          language: 'Klingon',
+          info: { qa: 'pla' },
+        },
+      ],
+      expectedAttributes: {
+        test: {
+          nested: {
+            attribute: [{ value: 'testValue', language: 'Klingon', info: { qa: 'pla' } }],
+          },
+          nested2: {
+            attribute: [{ value: 'testValue2', language: 'Klingon', info: { qa: 'pla' } }],
+          },
+        },
+      },
+    },
+    {
+      description:
+        'Resource returned has attribute entries with forward slashes escaped with backslashes - removes backslashes and treats the forward slash as part of the path text',
+      attributeRecords: [
+        {
+          key: 'test/nested/attribute',
+          value: 'testValue',
+          language: 'Klingon',
+          info: { qa: 'pla' },
+        },
+        {
+          key: 'test/nested2\\/attribute',
+          value: 'testValue2',
+          language: 'Klingon',
+          info: { qa: 'pla' },
+        },
+      ],
+      expectedAttributes: {
+        test: {
+          nested: {
+            attribute: [{ value: 'testValue', language: 'Klingon', info: { qa: 'pla' } }],
+          },
+          'nested2/attribute': [{ value: 'testValue2', language: 'Klingon', info: { qa: 'pla' } }],
+        },
+      },
+    },
+    {
+      description:
+        'Resource returned has attribute keys with forward slashes after escaped backslash - unescapes backslash and treats the forward slash as a separator',
+      attributeRecords: [
+        {
+          key: 'test/nested/attribute',
+          value: 'testValue',
+          language: 'Klingon',
+          info: { qa: 'pla' },
+        },
+        {
+          key: 'test/nested2\\\\/attribute',
+          value: 'testValue2',
+          language: 'Klingon',
+          info: { qa: 'pla' },
+        },
+      ],
+      expectedAttributes: {
+        test: {
+          nested: {
+            attribute: [{ value: 'testValue', language: 'Klingon', info: { qa: 'pla' } }],
+          },
+          'nested2\\': {
+            attribute: [{ value: 'testValue2', language: 'Klingon', info: { qa: 'pla' } }],
+          },
+        },
+      },
+    },
+    {
+      description:
+        'Resource returned has attribute keys with adjacent forward slashes - treats adjacent forward slashes as a single separator',
+      attributeRecords: [
+        {
+          key: 'test///nested/attribute',
+          value: 'testValue',
+          language: 'Klingon',
+          info: { qa: 'pla' },
+        },
+        {
+          key: 'test/nested2////attribute',
+          value: 'testValue2',
+          language: 'Klingon',
+          info: { qa: 'pla' },
+        },
+      ],
+      expectedAttributes: {
+        test: {
+          nested: {
+            attribute: [{ value: 'testValue', language: 'Klingon', info: { qa: 'pla' } }],
+          },
+          nested2: {
+            attribute: [{ value: 'testValue2', language: 'Klingon', info: { qa: 'pla' } }],
+          },
+        },
+      },
+    },
+    {
+      description:
+        'Resource returned has attribute keys that form ancestor paths of other keys - values for ancestors are put on a __values__ property of the ancestor object',
+      attributeRecords: [
+        {
+          key: 'test/nested/attribute',
+          value: 'testValue',
+          language: 'Klingon',
+          info: { qa: 'pla' },
+        },
+        {
+          key: 'test/nested',
+          value: 'testValue2',
+          language: 'Klingon',
+          info: { qa: 'pla' },
+        },
+      ],
+      expectedAttributes: {
+        test: {
+          nested: {
+            attribute: [{ value: 'testValue', language: 'Klingon', info: { qa: 'pla' } }],
+            __values__: [{ value: 'testValue2', language: 'Klingon', info: { qa: 'pla' } }],
+          },
+        },
+      },
+    },
+    {
+      description:
+        'Resource returned has attribute keys that form ancestor paths of other keys but ancestor is added first - values for ancestors are still put on a __values__ property of the ancestor object',
+      attributeRecords: [
+        {
+          key: 'test/nested',
+          value: 'testValue2',
+          language: 'Klingon',
+          info: { qa: 'pla' },
+        },
+        {
+          key: 'test/nested/attribute',
+          value: 'testValue',
+          language: 'Klingon',
+          info: { qa: 'pla' },
+        },
+      ],
+      expectedAttributes: {
+        test: {
+          nested: {
+            attribute: [{ value: 'testValue', language: 'Klingon', info: { qa: 'pla' } }],
+            __values__: [{ value: 'testValue2', language: 'Klingon', info: { qa: 'pla' } }],
+          },
+        },
+      },
+    },
   ]).test('$description', async ({ attributeRecords, expectedAttributes }) => {
     const resultSet = [
       {
