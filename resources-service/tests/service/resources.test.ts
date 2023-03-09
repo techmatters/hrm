@@ -418,6 +418,35 @@ describe('GET /resource', () => {
         });
       },
     );
+    test('Referenced attribute slash separated key paths are returned as nested objects', async () => {
+      await db.none(`INSERT INTO resources."ResourceReferenceStringAttributes" 
+                ("accountSid", "resourceId", "key", "list", "referenceId") 
+                VALUES ('REFERENCES_TEST_ACCOUNT_0', 'RESOURCE_0', 'REFERENCE/KEY/6', 'LIST_6', 'REF_5_0')`);
+      const response = await request
+        .get(`/v0/accounts/REFERENCES_TEST_ACCOUNT_0/resources/resource/RESOURCE_0`)
+        .set(headers);
+      expect(response.status).toBe(200);
+      const expectedResult = {
+        id: 'RESOURCE_0',
+        name: 'Resource 0',
+        attributes: {
+          REFERENCE: {
+            KEY: {
+              6: [
+                {
+                  value: 'REFERENCE_VALUE_5',
+                  language: 'LANGUAGE_0',
+                  info: {
+                    [`property_6`]: `VALUE_5`,
+                  },
+                },
+              ],
+            },
+          },
+        },
+      };
+      expect(response.body).toStrictEqual(expectedResult);
+    });
   });
 });
 
