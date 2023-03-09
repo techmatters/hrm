@@ -67,7 +67,7 @@ export const setCacheDurationMilliseconds = (cacheDurationMilliseconds: number) 
   ssmCache.cacheDurationMilliseconds = cacheDurationMilliseconds;
 };
 
-export const parameterExistsInCache = (name: string) => ssmCache.values?.[name];
+export const parameterExistsInCache = (name: string): boolean => !!ssmCache.values[name];
 
 export const getSsmClient = () => {
   if (!ssm) {
@@ -115,7 +115,7 @@ export const getSsmParameter = async (name: string): Promise<string> => {
     throw new SsmParameterNotFound(`Parameter ${name} not found`);
   }
 
-  return ssmCache.values?.[name]?.value || '';
+  return ssmCache.values[name]?.value || '';
 };
 
 type LoadPaginatedParameters = {
