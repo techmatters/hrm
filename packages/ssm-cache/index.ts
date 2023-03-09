@@ -67,7 +67,8 @@ export const setCacheDurationMilliseconds = (cacheDurationMilliseconds: number) 
   ssmCache.cacheDurationMilliseconds = cacheDurationMilliseconds;
 };
 
-export const parameterExistsInCache = (name: string): boolean => !!ssmCache.values[name];
+// If the value is falsy, we take that to means that the parameter doesn't exist in addition to just a missing name
+export const parameterExistsInCache = (name: string): boolean => !!ssmCache.values[name]?.value;
 
 export const getSsmClient = () => {
   if (!ssm) {
@@ -169,12 +170,10 @@ export const loadSsmCache = async ({
   configs,
 }: LoadSsmCacheParameters) => {
   if (isConfigNotEmpty() && !hasCacheExpired()) return;
-
   if (cacheDurationMilliseconds) setCacheDurationMilliseconds(cacheDurationMilliseconds);
 
   ssmCache.expiryDate = new Date(Date.now() + ssmCache.cacheDurationMilliseconds);
 
   const promises = configs.map(async config => loadPaginated(config));
-
   await Promise.all(promises);
 };
