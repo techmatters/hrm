@@ -67,8 +67,7 @@ export const setCacheDurationMilliseconds = (cacheDurationMilliseconds: number) 
   ssmCache.cacheDurationMilliseconds = cacheDurationMilliseconds;
 };
 
-export const parameterExistsInCache = (name: string) =>
-  Object.prototype.hasOwnProperty.call(ssmCache.values, name) && ssmCache.values[name];
+export const parameterExistsInCache = (name: string) => ssmCache.values?.[name];
 
 export const getSsmClient = () => {
   if (!ssm) {
@@ -107,7 +106,6 @@ export const loadParameter = async (name: string) => {
 
 export const getSsmParameter = async (name: string): Promise<string> => {
   // If the cache doesn't have the requested parameter or if it is expired, load it
-
   if (!parameterExistsInCache(name) || hasParameterExpired(ssmCache.values[name])) {
     await loadParameter(name);
   }
@@ -117,7 +115,7 @@ export const getSsmParameter = async (name: string): Promise<string> => {
     throw new SsmParameterNotFound(`Parameter ${name} not found`);
   }
 
-  return ssmCache?.values[name]?.value || '';
+  return ssmCache.values?.[name]?.value || '';
 };
 
 type LoadPaginatedParameters = {

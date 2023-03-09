@@ -42,7 +42,7 @@ const sqs = new SQS();
 const completedQueueUrl = process.env.completed_sqs_queue_url as string;
 const hrmEnv = process.env.NODE_ENV;
 
-// # used for ssm-cache.LoadSsmCache() call. Leaving here for now in case we need it later.
+// # used for ssm-cache.LoadSsmCache() call. Leaving here for now in case we need it later. (rbd Mar 9 2023)
 // const ssmCacheConfigs = [
 //   {
 //     path: `/${hrmEnv}/twilio/`,
