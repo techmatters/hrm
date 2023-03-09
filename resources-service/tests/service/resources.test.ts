@@ -76,7 +76,7 @@ const verifyResourcesAttributes = (resource: ReferrableResource) => {
     const attribute = resource.attributes[`ATTRIBUTE_${attributeIdx}`];
     expect(attribute).toBeDefined();
     const expectedValues = (parseInt(attributeIdx) % 2) + 1;
-    if (Array.isArray(expectedValues)) {
+    if (Array.isArray(attribute)) {
       expect(attribute).toHaveLength(expectedValues);
       range(expectedValues).forEach(valueIdx => {
         expect(attribute[parseInt(valueIdx)]).toStrictEqual({
