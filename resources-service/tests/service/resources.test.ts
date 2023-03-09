@@ -19,6 +19,8 @@ import { headers, getRequest, getServer } from './server';
 import { db } from '../../src/connection-pool';
 import each from 'jest-each';
 import { ReferrableResource } from '../../src/resource/resource-model';
+import { ReferrableResourceAttribute } from '../../src/resource/resource-data-access';
+import { AssertionError } from 'assert';
 
 export const workerSid = 'WK-worker-sid';
 
@@ -74,14 +76,18 @@ const verifyResourcesAttributes = (resource: ReferrableResource) => {
     const attribute = resource.attributes[`ATTRIBUTE_${attributeIdx}`];
     expect(attribute).toBeDefined();
     const expectedValues = (parseInt(attributeIdx) % 2) + 1;
-    expect(attribute).toHaveLength(expectedValues);
-    range(expectedValues).forEach(valueIdx => {
-      expect(attribute[parseInt(valueIdx)]).toStrictEqual({
-        info: { some: 'json' },
-        language: 'en-US',
-        value: `VALUE_${valueIdx}`,
+    if (Array.isArray(attribute)) {
+      expect(attribute).toHaveLength(expectedValues);
+      range(expectedValues).forEach(valueIdx => {
+        expect(attribute[parseInt(valueIdx)]).toStrictEqual({
+          info: { some: 'json' },
+          language: 'en-US',
+          value: `VALUE_${valueIdx}`,
+        });
       });
-    });
+    } else {
+      throw new AssertionError({ message: 'Expected attribute value to be an array' });
+    }
   });
 };
 
@@ -400,9 +406,9 @@ describe('GET /resource', () => {
         const responseAttributeEntries = Object.entries(responseAttributes).sort(([keyA], [keyB]) =>
           keyA.localeCompare(keyB),
         );
-        const expectedAttributeEntries = Object.entries(expectedAttributes).sort(([keyA], [keyB]) =>
-          keyA.localeCompare(keyB),
-        );
+        const expectedAttributeEntries = Object.entries(
+          expectedAttributes as Record<string, ReferrableResourceAttribute[]>,
+        ).sort(([keyA], [keyB]) => keyA.localeCompare(keyB));
         expect(responseAttributeEntries).toHaveLength(expectedAttributeEntries.length);
         responseAttributeEntries.forEach(([key, value], index) => {
           const [expectedKey, expectedValue] = expectedAttributeEntries[index];
@@ -412,6 +418,35 @@ describe('GET /resource', () => {
         });
       },
     );
+    test('Referenced attribute slash separated key paths are returned as nested objects', async () => {
+      await db.none(`INSERT INTO resources."ResourceReferenceStringAttributes" 
+                ("accountSid", "resourceId", "key", "list", "referenceId") 
+                VALUES ('REFERENCES_TEST_ACCOUNT_0', 'RESOURCE_0', 'REFERENCE/KEY/6', 'LIST_6', 'REF_5_0')`);
+      const response = await request
+        .get(`/v0/accounts/REFERENCES_TEST_ACCOUNT_0/resources/resource/RESOURCE_0`)
+        .set(headers);
+      expect(response.status).toBe(200);
+      const expectedResult = {
+        id: 'RESOURCE_0',
+        name: 'Resource 0',
+        attributes: {
+          REFERENCE: {
+            KEY: {
+              6: [
+                {
+                  value: 'REFERENCE_VALUE_5',
+                  language: 'LANGUAGE_0',
+                  info: {
+                    [`property_6`]: `VALUE_5`,
+                  },
+                },
+              ],
+            },
+          },
+        },
+      };
+      expect(response.body).toStrictEqual(expectedResult);
+    });
   });
 });
 

@@ -94,7 +94,9 @@ export const KHP_MAPPING_NODE: KhpMappingNode = {
         children: {
           name: {
             children: {
-              '{language}': khpAttributeMapping('ResourceStringAttributes', siteKey('name')),
+              '{language}': khpAttributeMapping('ResourceStringAttributes', siteKey('name'), {
+                language: context => context.captures.language,
+              }),
             },
           },
           details: {
@@ -102,6 +104,7 @@ export const KHP_MAPPING_NODE: KhpMappingNode = {
               '{language}': khpAttributeMapping('ResourceStringAttributes', siteKey('details'), {
                 value: siteKey('details'),
                 info: context => context.currentValue,
+                language: context => context.captures.language,
               }),
             },
           },
@@ -144,6 +147,7 @@ export const KHP_MAPPING_NODE: KhpMappingNode = {
                     {
                       value: context => context.currentValue.day,
                       info: context => context.currentValue,
+                      language: context => context.captures.language,
                     },
                   ),
                 },
@@ -199,7 +203,9 @@ export const KHP_MAPPING_NODE: KhpMappingNode = {
       email: khpAttributeMapping('ResourceStringAttributes', 'mainContact/email'),
       title: {
         children: {
-          '{language}': khpAttributeMapping('ResourceStringAttributes', 'mainContact/title'),
+          '{language}': khpAttributeMapping('ResourceStringAttributes', 'mainContact/title', {
+            language: context => context.captures.language,
+          }),
         },
       },
       phoneNumber: khpAttributeMapping('ResourceStringAttributes', 'mainContact/phoneNumber'),

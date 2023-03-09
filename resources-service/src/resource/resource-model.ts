@@ -34,14 +34,41 @@ export type SearchParameters = {
 const EMPTY_RESULT = { totalCount: 0, results: [] };
 const MAX_SEARCH_RESULTS = 200;
 
-const groupAttributesByKeys = (
+type ResourceAttributeNode = Record<
+  string,
+  ReferrableResourceAttribute[] | Record<string, ReferrableResourceAttribute[]>
+>;
+
+const attributeObjectGraphFromKeys = (
   attributesWithKeys: (ReferrableResourceAttribute & { key: string })[],
-): Record<string, ReferrableResourceAttribute[]> => {
-  const groupedAttributes: Record<string, ReferrableResourceAttribute[]> = {};
+): ResourceAttributeNode => {
+  const groupedAttributes: ResourceAttributeNode = {};
   attributesWithKeys.forEach(attribute => {
-    groupedAttributes[attribute.key] = groupedAttributes[attribute.key] || [];
     const { key, ...withoutKey } = attribute;
-    groupedAttributes[attribute.key].push(withoutKey);
+    // Split on / but not on \/ (escaped /), but doesn't misinterpret preceding escaped \ (i.e. \\) as escaping the / (see unit tests)
+    const attributeKeySections = key.split(/(?<!(?:[^\\]|^)\\(?:\\{2})*)\//).filter(s => s.length);
+    let currentObject: ResourceAttributeNode = groupedAttributes as ResourceAttributeNode;
+    attributeKeySections.forEach((escapedSection, index) => {
+      const section = escapedSection.replace(/\\([\\\/])/g, '$1');
+      if (index === attributeKeySections.length - 1) {
+        currentObject[section] = currentObject[section] || [];
+        const currentValue = currentObject[section];
+        if (Array.isArray(currentValue)) {
+          currentValue.push(withoutKey);
+        } else {
+          // Workaround for when we attach a value to an intermediate node
+          currentValue.__values__ = [...(currentValue.__values__ ?? []), withoutKey];
+        }
+      } else {
+        currentObject[section] = currentObject[section] || {};
+        const currentValue = currentObject[section];
+        if (Array.isArray(currentValue)) {
+          // Workaround for when we attach a value to an intermediate node
+          currentObject[section] = { __values__: currentValue };
+        }
+      }
+      currentObject = currentObject[section] as ResourceAttributeNode;
+    });
   });
   return groupedAttributes;
 };
@@ -49,7 +76,7 @@ const groupAttributesByKeys = (
 export type ReferrableResource = {
   name: string;
   id: string;
-  attributes: Record<string, ReferrableResourceAttribute[]>;
+  attributes: ResourceAttributeNode;
 };
 
 // The full resource & the search result are synonyms for now, but the full resource should grow to be a superset
@@ -60,7 +87,7 @@ export const getResource = async (
   resourceId: string,
 ): Promise<ReferrableResource | null> => {
   const record = await getById(accountSid, resourceId);
-  return record ? { ...record, attributes: groupAttributesByKeys(record.attributes) } : null;
+  return record ? { ...record, attributes: attributeObjectGraphFromKeys(record.attributes) } : null;
 };
 
 export const searchResources = async (
@@ -99,7 +126,7 @@ export const searchResources = async (
   return {
     results: results.map(record => ({
       ...record,
-      attributes: groupAttributesByKeys(record.attributes),
+      attributes: attributeObjectGraphFromKeys(record.attributes),
     })),
     totalCount,
   };
