@@ -18,7 +18,11 @@ import { Twilio } from 'twilio';
 
 import { getMockClient } from './mockClient';
 
-let client: Twilio;
+type ClientCache = {
+  [accountSid: string]: Twilio;
+};
+
+let clientCache: ClientCache = {};
 
 const getClientOrMock = ({
   accountSid,
@@ -42,9 +46,9 @@ export const getClient = ({
   accountSid: string;
   authToken: string;
 }): Twilio => {
-  if (!client) {
-    client = getClientOrMock({ accountSid, authToken });
+  if (!clientCache[accountSid]) {
+    clientCache[accountSid] = getClientOrMock({ accountSid, authToken });
   }
 
-  return client;
+  return clientCache[accountSid];
 };
