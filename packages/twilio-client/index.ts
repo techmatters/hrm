@@ -22,7 +22,7 @@ type ClientCache = {
   [accountSid: string]: Twilio;
 };
 
-let clientCache: ClientCache = {};
+const clientCache: ClientCache = {};
 
 const getClientOrMock = ({
   accountSid,
