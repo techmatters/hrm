@@ -16,7 +16,7 @@
 
 import { Request, Response, Router } from 'express';
 import resourceRoutes from '../../../src/resource/resource-routes-v0';
-import { ReferrableResource, searchResources } from '../../../src/resource/resource-model';
+import { ReferrableResource, searchResourcesByName } from '../../../src/resource/resource-model';
 
 jest.mock('express', () => ({
   Router: jest.fn(),
@@ -27,7 +27,7 @@ jest.mock('../../../src/resource/resource-model', () => ({
 }));
 
 const mockRouterConstructor = Router as jest.Mock;
-const mockSearchResources = searchResources as jest.Mock<
+const mockSearchResources = searchResourcesByName as jest.Mock<
   Promise<{ totalCount: number; results: ReferrableResource[] }>
 >;
 

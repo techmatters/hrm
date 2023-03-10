@@ -21,8 +21,11 @@ import {
   getWhereNameContains,
   ReferrableResourceAttribute,
 } from './resource-data-access';
+import { searchResourcesDomain } from './resource-cloudsearch-client';
+import { SearchParameters } from './search-types';
+import { mapSearchParametersToKhpTermsAndFilters } from './khp-resource-search-mapping';
 
-export type SearchParameters = {
+export type SimpleSearchParameters = {
   ids: string[];
   nameSubstring?: string;
   pagination: {
@@ -90,9 +93,9 @@ export const getResource = async (
   return record ? { ...record, attributes: attributeObjectGraphFromKeys(record.attributes) } : null;
 };
 
-export const searchResources = async (
+export const searchResourcesByName = async (
   accountSid: AccountSID,
-  { nameSubstring, ids = [], pagination: { limit: unboundedLimit, start } }: SearchParameters,
+  { nameSubstring, ids = [], pagination: { limit: unboundedLimit, start } }: SimpleSearchParameters,
 ): Promise<{ totalCount: number; results: ReferrableResourceSearchResult[] }> => {
   const limit = Math.min(MAX_SEARCH_RESULTS, unboundedLimit);
   const { results: idsOfNameMatches, totalCount: nameSearchTotalCount } = nameSubstring
@@ -129,5 +132,36 @@ export const searchResources = async (
       attributes: attributeObjectGraphFromKeys(record.attributes),
     })),
     totalCount,
+  };
+};
+
+export const searchResources = async (
+  accountSid: AccountSID,
+  searchParameters: SearchParameters,
+): Promise<{ totalCount: number; results: ReferrableResourceSearchResult[] }> => {
+  const {
+    pagination: { limit: unboundedLimit, start },
+  } = searchParameters;
+  const limit = Math.min(MAX_SEARCH_RESULTS, unboundedLimit);
+  const { total, items } = await searchResourcesDomain(
+    mapSearchParametersToKhpTermsAndFilters(searchParameters),
+    start,
+    limit,
+  );
+  const orderedResourceIds: string[] = items.map(item => item.id);
+  const unsortedResourceList = await getByIdList(accountSid, orderedResourceIds);
+  const resourceMap = Object.fromEntries(
+    unsortedResourceList.map(resource => [resource.id, resource]),
+  );
+
+  // Add ALL the resources found looking up specific IDs to the paginated block of name search results
+  const orderedResults = orderedResourceIds.map(id => resourceMap[id]).filter(r => r);
+
+  return {
+    results: orderedResults.map(record => ({
+      ...record,
+      attributes: attributeObjectGraphFromKeys(record.attributes),
+    })),
+    totalCount: total,
   };
 };
