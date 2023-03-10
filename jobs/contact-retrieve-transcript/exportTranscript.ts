@@ -81,6 +81,7 @@ const getUser = async (client: ReturnType<typeof getClient>, serviceSid: string,
       url: user.url,
     };
   } catch (err) {
+    console.error('exportTranscript getUser error: ', err);
     if (err instanceof RestException && err.code === 20404) {
       return null;
     }
@@ -119,6 +120,7 @@ const getRole = async (
       isCounselor,
     };
   } catch (err) {
+    console.error('exportTranscript getRole error: ', err);
     if (err instanceof RestException && err.code === 20404) {
       return null;
     }
@@ -163,6 +165,9 @@ const getParticipants = async (
   return participants;
 };
 
+// TEMP utility to redact authToken in debug logs
+const redactString = (str: string) => `${str.substr(0, 1)}${"x".repeat(str.length - 2)}${str.substr(-1)}`;
+
 export const exportTranscript = async ({
   accountSid,
   authToken,
@@ -171,12 +176,19 @@ export const exportTranscript = async ({
 }: ExportTranscriptParams) => {
   // eslint-disable-next-line no-console
   console.log(
-    `Trying to export transcript with accountSid ${accountSid}, serviceSid ${serviceSid}, channelSid ${channelSid}`,
+    `Trying to export transcript with accountSid ${accountSid}, serviceSid ${serviceSid}, channelSid ${channelSid}, authToken: ${redactString(authToken)} `,
   );
 
   const client = getClient({ accountSid, authToken });
 
-  const messages = await getTransformedMessages(client, channelSid, serviceSid);
+  let messages;
+  try {
+    messages = await getTransformedMessages(client, channelSid, serviceSid);
+  } catch (err) {
+    console.error(`exportTranscript getTransformedMessages error: `, err);
+    throw err;
+  }
+
   const participants = await getParticipants(client, channelSid, serviceSid, messages);
 
   return {
