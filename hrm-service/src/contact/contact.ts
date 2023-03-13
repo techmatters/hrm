@@ -259,6 +259,18 @@ function convertContactsToSearchResults(contacts: Contact[]): SearchContact[] {
     .filter(contact => contact);
 }
 
+/**
+ * Check if the user can view any contact given:
+ * - search permissions
+ * - counsellor' search parameter
+ */
+const cannotViewAnyContactsGivenThisCounsellor = (user: TwilioUser, searchPermissions: SearchPermissions, counsellor?: string) => searchPermissions.canOnlyViewOwnContacts && counsellor &&  counsellor !== user.workerSid;
+
+/**
+ * If the counselors can only view contacts he/she owns, then we override searchParameters.counselor to workerSid
+ */
+const overrideCounsellor = (user: TwilioUser, searchPermissions: SearchPermissions, counsellor?: string) => searchPermissions.canOnlyViewOwnContacts ? user.workerSid : counsellor;
+
 export const searchContacts = async (
   accountSid: string,
   searchParameters: SearchParameters,
@@ -271,9 +283,17 @@ export const searchContacts = async (
 
   /**
    * VIEW_CONTACT permission:
-   * If the user can only view his/her own contacts, override searchParameters.counselor.
-   * The search query already filters the contacts based on the given counselor (workerSid).
+   * Handle filtering contacts according to: https://github.com/techmatters/hrm/pull/316#discussion_r1131118034
+   * The search query already filters the contacts based on the given counsellor (workerSid).
    */
+  if (cannotViewAnyContactsGivenThisCounsellor(user, searchPermissions, searchParameters.counselor)) {
+    return {
+      count: 0,
+      contacts: [],
+    };
+  } else {
+    searchParameters.counselor = overrideCounsellor(user, searchPermissions, searchParameters.counselor);
+  }
   if (canOnlyViewOwnContacts) {
     searchParameters.counselor = user.workerSid;
   }

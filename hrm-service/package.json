@@ -3,7 +3,6 @@
   "version": "0.0.0",
   "description": "The easiest way to run the tests locally is to run the test DB in docker.",
   "scripts": {
-    "preinstall": "echo \"Cannot install/remove dependencies from hrm-service folder. From the root folder, run: npm install @some-package -w hrm-service\" && exit 1",
     "start": "cd dist && node ./bin/www",
     "start:job-processor": "cd dist && node ./bin/jobProcessor",
     "migrate": "run-s test:service:ci:migrate",
