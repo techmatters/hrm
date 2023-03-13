@@ -18,7 +18,7 @@
 import { SQS } from 'aws-sdk';
 
 import { ContactJobProcessorError } from '@tech-matters/hrm-job-errors';
-import { getSsmParameter, loadSsmCache } from '@tech-matters/hrm-ssm-cache';
+import { getSsmParameter } from '@tech-matters/hrm-ssm-cache';
 import { ContactJobAttemptResult } from '@tech-matters/hrm-types';
 import { exportTranscript } from './exportTranscript';
 import { uploadTranscript } from './uploadTranscript';
@@ -42,20 +42,21 @@ const sqs = new SQS();
 const completedQueueUrl = process.env.completed_sqs_queue_url as string;
 const hrmEnv = process.env.NODE_ENV;
 
-const ssmCacheConfigs = [
-  {
-    path: `/${hrmEnv}/twilio/`,
-    regex: /auth_token/,
-  },
-  {
-    path: `/${hrmEnv}/s3/`,
-    regex: /docs_bucket_name/,
-  },
-];
+// # used for ssm-cache.LoadSsmCache() call. Leaving here for now in case we need it later. (rbd Mar 9 2023)
+// const ssmCacheConfigs = [
+//   {
+//     path: `/${hrmEnv}/twilio/`,
+//     regex: /auth_token/,
+//   },
+//   {
+//     path: `/${hrmEnv}/s3/`,
+//     regex: /docs_bucket_name/,
+//   },
+// ];
 
 const processRecord = async (message: PublishToContactJobsTopicParams) => {
-  const authToken = getSsmParameter(`/${hrmEnv}/twilio/${message.accountSid}/auth_token`);
-  const docsBucketName = getSsmParameter(`/${hrmEnv}/s3/${message.accountSid}/docs_bucket_name`);
+  const authToken = await getSsmParameter(`/${hrmEnv}/twilio/${message.accountSid}/auth_token`);
+  const docsBucketName = await getSsmParameter(`/${hrmEnv}/s3/${message.accountSid}/docs_bucket_name`);
 
   if (!authToken || !docsBucketName) {
     throw new Error('Missing required SSM params');
@@ -133,8 +134,6 @@ export const handler = async (event: SQSEvent): Promise<any> => {
     if (!hrmEnv) {
       throw new Error('Missing NODE_ENV ENV Variable');
     }
-
-    await loadSsmCache({ configs: ssmCacheConfigs });
 
     const promises = event.Records.map(async sqsRecord => processRecordWithoutException(sqsRecord));
 
