@@ -296,6 +296,10 @@ describe('searchCases', () => {
       const result = await caseApi.searchCases(accountSid, listConfig, search, {
         can: () => true,
         user: twilioUser(workerSid, []),
+        searchPermissions: {
+          canOnlyViewOwnCases: false,
+          canOnlyViewOwnContacts: false,
+        },
       });
 
       expect(searchSpy).toHaveBeenCalledWith(

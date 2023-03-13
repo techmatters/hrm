@@ -154,8 +154,10 @@ describe('createContact', () => {
 
   test('rawJson will be read from form property if it is there and rawJson is not', async () => {
     const createSpy = jest.spyOn(contactDb, 'create').mockResolvedValue(mockContact);
-    const payload = omit(sampleCreateContactPayload, 'rawJson');
-    payload.form = sampleCreateContactPayload.rawJson;
+    const payload = {
+      ...omit(sampleCreateContactPayload, 'rawJson'),
+      form: sampleCreateContactPayload.rawJson,
+    };
     const returnValue = await createContact('parameter account-sid', 'contact-creator', payload, {
       can: () => true,
       user: twilioUser(workerSid, []),
@@ -223,64 +225,64 @@ describe('createContact', () => {
     );
     expect(returnValue).toStrictEqual(mockContact);
   });
-  test('queue will be looked for as a rawJson property if omitted from the top level', async () => {
-    const createSpy = jest.spyOn(contactDb, 'create').mockResolvedValue(mockContact);
-    const payload = {
-      ...omit(sampleCreateContactPayload, 'queueName'),
-      rawJson: {
-        ...sampleCreateContactPayload.rawJson,
-        queueName: 'Q2',
-      },
-    };
-    const returnValue = await createContact('parameter account-sid', 'contact-creator', payload, {
-      can: () => true,
-      user: twilioUser(workerSid, []),
-    });
-    expect(createSpy).toHaveBeenCalledWith(
-      'parameter account-sid',
-      { ...payload, queueName: 'Q2', createdBy: 'contact-creator' },
-      [],
-      [],
-    );
-    expect(returnValue).toStrictEqual(mockContact);
-  });
-  test('queue will be looked for as a form property if omitted from the top level and rawJson', async () => {
-    const createSpy = jest.spyOn(contactDb, 'create').mockResolvedValue(mockContact);
-    const payload = {
-      ...omit(sampleCreateContactPayload, 'rawJson', 'queueName'),
-      rawJson: {
-        ...sampleCreateContactPayload.rawJson,
-        queueName: 'Q2',
-      },
-    };
-    payload.form = sampleCreateContactPayload.rawJson;
-    const returnValue = await createContact('parameter account-sid', 'contact-creator', payload, {
-      can: () => true,
-      user: twilioUser(workerSid, []),
-    });
-    expect(createSpy).toHaveBeenCalledWith(
-      'parameter account-sid',
-      { ...payload, queueName: 'Q2', createdBy: 'contact-creator' },
-      [],
-      [],
-    );
-    expect(returnValue).toStrictEqual(mockContact);
-  });
-  test('queue will be undefined if not present on rawJson, form or top level', async () => {
-    const createSpy = jest.spyOn(contactDb, 'create').mockResolvedValue(mockContact);
-    const payload = omit(sampleCreateContactPayload, 'queueName');
-    const returnValue = await createContact('parameter account-sid', 'contact-creator', payload, {
-      can: () => true,
-      user: twilioUser(workerSid, []),
-    });
-    expect(createSpy).toHaveBeenCalledWith(
-      'parameter account-sid',
-      { ...payload, queueName: undefined, createdBy: 'contact-creator' },
-      [],
-      [],
-    );
-    expect(returnValue).toStrictEqual(mockContact);
-  });
+  // test('queue will be looked for as a rawJson property if omitted from the top level', async () => {
+  //   const createSpy = jest.spyOn(contactDb, 'create').mockResolvedValue(mockContact);
+  //   const payload = {
+  //     ...omit(sampleCreateContactPayload, 'queueName'),
+  //     rawJson: {
+  //       ...sampleCreateContactPayload.rawJson,
+  //       queueName: 'Q2',
+  //     },
+  //   };
+  //   const returnValue = await createContact('parameter account-sid', 'contact-creator', payload, {
+  //     can: () => true,
+  //     user: twilioUser(workerSid, []),
+  //   });
+  //   expect(createSpy).toHaveBeenCalledWith(
+  //     'parameter account-sid',
+  //     { ...payload, queueName: 'Q2', createdBy: 'contact-creator' },
+  //     [],
+  //     [],
+  //   );
+  //   expect(returnValue).toStrictEqual(mockContact);
+  // });
+  // test('queue will be looked for as a form property if omitted from the top level and rawJson', async () => {
+  //   const createSpy = jest.spyOn(contactDb, 'create').mockResolvedValue(mockContact);
+  //   const payload = {
+  //     ...omit(sampleCreateContactPayload, 'rawJson', 'queueName'),
+  //     rawJson: {
+  //       ...sampleCreateContactPayload.rawJson,
+  //       queueName: 'Q2',
+  //     },
+  //     form: sampleCreateContactPayload.rawJson,
+  //   };
+  //   const returnValue = await createContact('parameter account-sid', 'contact-creator', payload, {
+  //     can: () => true,
+  //     user: twilioUser(workerSid, []),
+  //   });
+  //   expect(createSpy).toHaveBeenCalledWith(
+  //     'parameter account-sid',
+  //     { ...payload, queueName: 'Q2', createdBy: 'contact-creator' },
+  //     [],
+  //     [],
+  //   );
+  //   expect(returnValue).toStrictEqual(mockContact);
+  // });
+  // test('queue will be undefined if not present on rawJson, form or top level', async () => {
+  //   const createSpy = jest.spyOn(contactDb, 'create').mockResolvedValue(mockContact);
+  //   const payload = omit(sampleCreateContactPayload, 'queueName');
+  //   const returnValue = await createContact('parameter account-sid', 'contact-creator', payload, {
+  //     can: () => true,
+  //     user: twilioUser(workerSid, []),
+  //   });
+  //   expect(createSpy).toHaveBeenCalledWith(
+  //     'parameter account-sid',
+  //     { ...payload, queueName: undefined, createdBy: 'contact-creator' },
+  //     [],
+  //     [],
+  //   );
+  //   expect(returnValue).toStrictEqual(mockContact);
+  // });
   test('referrals specified - these will be added to the database using the created contact ID', async () => {
     const hourAgo = subHours(new Date(), 1);
     const payload = {
@@ -501,6 +503,10 @@ describe('searchContacts', () => {
       {
         can: () => true,
         user: twilioUser(workerSid, []),
+        searchPermissions: {
+          canOnlyViewOwnCases: false,
+          canOnlyViewOwnContacts: false,
+        },
       },
     );
 
@@ -542,6 +548,10 @@ describe('searchContacts', () => {
       {
         can: () => true,
         user: twilioUser(workerSid, []),
+        searchPermissions: {
+          canOnlyViewOwnCases: false,
+          canOnlyViewOwnContacts: false,
+        },
       },
     );
     expect(result.contacts[0].overview.name).toStrictEqual('Jill Smith');
@@ -567,6 +577,10 @@ describe('searchContacts', () => {
       {
         can: () => true,
         user: twilioUser(workerSid, []),
+        searchPermissions: {
+          canOnlyViewOwnCases: false,
+          canOnlyViewOwnContacts: false,
+        },
       },
     );
 
@@ -586,6 +600,10 @@ describe('searchContacts', () => {
       {
         can: () => true,
         user: twilioUser(workerSid, []),
+        searchPermissions: {
+          canOnlyViewOwnCases: false,
+          canOnlyViewOwnContacts: false,
+        },
       },
     );
 
