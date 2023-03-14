@@ -320,6 +320,104 @@ describe('searchCases', () => {
   );
 });
 
+describe('search cases permissions', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  each([
+    {
+      description: 'Supervisor can view others cases',
+      isSupervisor: true,
+      canOnlyViewOwnCases: false,
+      counsellors: ['any-worker-sid'],
+      overriddenCounsellors: ['any-worker-sid'],
+      shouldCallSearch: true,
+    },
+    {
+      description: 'Agent can view others cases',
+      isSupervisor: false,
+      canOnlyViewOwnCases: false,
+      counsellors: ['any-worker-sid'],
+      overriddenCounsellors: ['any-worker-sid'],
+      shouldCallSearch: true,
+    },
+    {
+      description: 'Agent cannot view others cases',
+      isSupervisor: false,
+      canOnlyViewOwnCases: true,
+      counsellors: ['any-worker-sid'],
+      shouldCallSearch: false,
+    },
+    {
+      description: 'Agent can view own cases',
+      isSupervisor: false,
+      canOnlyViewOwnCases: true,
+      counsellors: workerSid,
+      overriddenCounsellors: [workerSid],
+      shouldCallSearch: true,
+    },
+    {
+      description: 'Agent defaults to own cases when no counselor specified',
+      isSupervisor: false,
+      canOnlyViewOwnCases: true,
+      counsellors: undefined,
+      overriddenCounsellors: [workerSid],
+      shouldCallSearch: true,
+    },
+  ]).test(
+    '$description',
+    async ({
+      isSupervisor,
+      canOnlyViewOwnCases,
+      counsellors,
+      overriddenCounsellors,
+      shouldCallSearch,
+    }) => {
+      const searchParameters = {
+        helpline: 'helpline',
+        closedCases: true,
+        filters: {
+          counsellors,
+        },
+      };
+      const limitOffset = { limit: '10', offset: '0' };
+      const can = () => true;
+      const roles = [];
+      const user = { ...twilioUser(workerSid, roles), isSupervisor: isSupervisor };
+      const searchPermissions = {
+        canOnlyViewOwnCases,
+      };
+      const reqData = {
+        can,
+        user,
+        searchPermissions,
+      };
+
+      const searchSpy = jest.spyOn(caseDb, 'search').mockResolvedValue({ cases: [], count: 0 });
+      await caseApi.searchCases(accountSid, limitOffset, searchParameters, reqData);
+
+      if (shouldCallSearch) {
+        const overridenSearchParams = {
+          ...searchParameters,
+          filters: {
+            ...searchParameters.filters,
+            counsellors: overriddenCounsellors,
+          },
+        };
+        expect(searchSpy).toHaveBeenCalledWith(
+          limitOffset,
+          accountSid,
+          {},
+          overridenSearchParams.filters,
+        );
+      } else {
+        expect(searchSpy).not.toHaveBeenCalled();
+      }
+    },
+  );
+});
+
 describe('update existing case', () => {
   const caseId = 1;
 
