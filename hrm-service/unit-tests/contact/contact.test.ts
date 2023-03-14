@@ -13,6 +13,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
+import each from 'jest-each';
 import { mockTransaction, mockConnection } from '../mock-db';
 import * as contactDb from '../../src/contact/contact-data-access';
 import * as referralDb from '../../src/referral/referral-data-access';
@@ -609,4 +610,90 @@ describe('searchContacts', () => {
 
     expect(searchSpy).toHaveBeenCalledWith(accountSid, body, 10, 1000);
   });
+});
+
+describe('search contacts permissions', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  each([
+    {
+      description: 'Supervisor can view others contacts',
+      isSupervisor: true,
+      canOnlyViewOwnContacts: false,
+      counselorSearchParam: 'any-worker-sid',
+      overriddenCounselorSearchParam: 'any-worker-sid',
+      shouldCallSearch: true,
+    },
+    {
+      description: 'Agent can view others contacts',
+      isSupervisor: false,
+      canOnlyViewOwnContacts: false,
+      counselorSearchParam: 'any-worker-sid',
+      overriddenCounselorSearchParam: 'any-worker-sid',
+      shouldCallSearch: true,
+    },
+    {
+      description: 'Agent cannot view others contacts',
+      isSupervisor: false,
+      canOnlyViewOwnContacts: true,
+      counselorSearchParam: 'any-worker-sid',
+      shouldCallSearch: false,
+    },
+    {
+      description: 'Agent can view own contacts',
+      isSupervisor: false,
+      canOnlyViewOwnContacts: true,
+      counselorSearchParam: workerSid,
+      overriddenCounselorSearchParam: workerSid,
+      shouldCallSearch: true,
+    },
+    {
+      description: 'Agent defaults to own contacts when no counselor specified',
+      isSupervisor: false,
+      canOnlyViewOwnContacts: true,
+      counselorSearchParam: undefined,
+      overriddenCounselorSearchParam: workerSid,
+      shouldCallSearch: true,
+    },
+  ]).test(
+    '$description',
+    async ({
+      isSupervisor,
+      canOnlyViewOwnContacts,
+      counselorSearchParam,
+      overriddenCounselorSearchParam,
+      shouldCallSearch,
+    }) => {
+      const accountSid = 'account-sid';
+      const body = {
+        helpline: 'helpline',
+        onlyDataContacts: true,
+        counselor: counselorSearchParam,
+      };
+      const limitOffset = { limit: 10, offset: 0 };
+      const can = () => true;
+      const roles = [];
+      const user = { ...twilioUser(workerSid, roles), isSupervisor: isSupervisor };
+      const searchPermissions = {
+        canOnlyViewOwnContacts,
+      };
+      const reqData = {
+        can,
+        user,
+        searchPermissions,
+      };
+
+      const searchSpy = jest.spyOn(contactDb, 'search').mockResolvedValue({ count: 0, rows: [] });
+      await searchContacts(accountSid, body, limitOffset, reqData);
+
+      if (shouldCallSearch) {
+        const overridenBody = { ...body, counselor: overriddenCounselorSearchParam };
+        expect(searchSpy).toHaveBeenCalledWith(accountSid, overridenBody, 10, 0);
+      } else {
+        expect(searchSpy).not.toHaveBeenCalled();
+      }
+    },
+  );
 });
