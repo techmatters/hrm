@@ -8,6 +8,6 @@ export type SearchParameters = {
 };
 
 export type TermsAndFilters = {
-  searchTermsByIndex: Record<string, { term: string; weighting: string }>;
+  searchTermsByIndex: Record<string, { phrases: string[]; weighting: number }>;
   filters: Record<string, string | { value: string | boolean | number | Date; comparison: string }>;
 };

@@ -1,9 +1,13 @@
+import {
+  CloudSearchDomainClient,
+  SearchCommand,
+  SearchCommandOutput,
+} from '@aws-sdk/client-cloudsearch-domain';
 import { TermsAndFilters } from './search-types';
-import cloudSearchConfig from '../config/cloud-search';
-
 type SearchResultItem = {
   id: string;
-  context: string;
+  name?: string;
+  highlights: Record<string, string>;
 };
 
 type SearchResultSet = {
@@ -11,27 +15,32 @@ type SearchResultSet = {
   items: SearchResultItem[];
 };
 
+const client: CloudSearchDomainClient = new CloudSearchDomainClient({});
+
 export const searchResourcesDomain = async (
   { searchTermsByIndex, filters }: TermsAndFilters,
   start: number,
   limit: number,
 ): Promise<SearchResultSet> => {
-  console.debug(
-    'runResourceSearch',
-    { searchTermsByIndex, filters, start, limit },
-    cloudSearchConfig.url,
+  console.debug('searchResourcesDomain', { searchTermsByIndex, filters, start, limit });
+
+  const queryClauses = Object.entries(searchTermsByIndex).map(
+    ([index, { phrases, weighting }]) =>
+      `(field='${index}' boost=${weighting} ${phrases.map(p => `'${p}'`)})`,
   );
+
+  const command = new SearchCommand({ query: `(or ${queryClauses.join('')})` });
+  const { hits }: SearchCommandOutput = await client.send(command);
+  if (!hits) {
+    return { total: 0, items: [] };
+  }
+  const total = hits.found;
   return {
-    total: start + limit,
-    items: [
-      {
-        id: '1',
-        context: 'context 1',
-      },
-      {
-        id: '2',
-        context: 'context 2',
-      },
-    ],
+    total: total ?? 0,
+    items: (hits.hit ?? []).map(({ id, fields, highlights }) => ({
+      id: id ?? '',
+      name: ((fields ?? {}).name ?? [])[0],
+      highlights: highlights ?? {},
+    })),
   };
 };
