@@ -18,12 +18,14 @@ import { AccountSID } from '@tech-matters/twilio-worker-auth';
 import {
   getById,
   getByIdList,
+  getUnindexed,
   getWhereNameContains,
   ReferrableResourceAttribute,
+  ReferrableResourceRecord,
 } from './resource-data-access';
-import { searchResourcesDomain } from './resource-cloudsearch-client';
-import { SearchParameters } from './search-types';
-import { mapSearchParametersToKhpTermsAndFilters } from './khp-resource-search-mapping';
+import { searchResourcesDomain } from './search/resource-cloudsearch-client';
+import { SearchParameters } from './search/search-types';
+import { mapSearchParametersToKhpTermsAndFilters } from './search/khp-resource-search-mapping';
 
 export type SimpleSearchParameters = {
   ids: string[];
@@ -37,7 +39,7 @@ export type SimpleSearchParameters = {
 const EMPTY_RESULT = { totalCount: 0, results: [] };
 const MAX_SEARCH_RESULTS = 200;
 
-type ResourceAttributeNode = Record<
+export type ResourceAttributeNode = Record<
   string,
   ReferrableResourceAttribute[] | Record<string, ReferrableResourceAttribute[]>
 >;
@@ -93,6 +95,10 @@ export const getResource = async (
   return record ? { ...record, attributes: attributeObjectGraphFromKeys(record.attributes) } : null;
 };
 
+/**
+ * Legacy Search function, replaced by the cloudsearch search.
+ * Keeping it around as a fallback / body of example prod & test code but will remove once the cloudsearch search is fully implemented.
+ */
 export const searchResourcesByName = async (
   accountSid: AccountSID,
   { nameSubstring, ids = [], pagination: { limit: unboundedLimit, start } }: SimpleSearchParameters,
@@ -164,4 +170,19 @@ export const searchResources = async (
     })),
     totalCount: total,
   };
+};
+
+/**
+ * THIS FUNCTION PULLS DATA FOR MULTIPLE ACCOUNTS
+ * It must NEVER BE accessed from an endpoint that is accessible with a Twilio user auth token
+ * Maybe we should move it to a different file to make that clearer - or add security checking at this level.
+ */
+export const getUnindexedResources = async (
+  limit: number,
+): Promise<(ReferrableResource & { accountSid: AccountSID })[]> => {
+  const unindexedResources: ReferrableResourceRecord[] = await getUnindexed(limit);
+  return unindexedResources.map(record => ({
+    ...record,
+    attributes: attributeObjectGraphFromKeys(record.attributes),
+  }));
 };
