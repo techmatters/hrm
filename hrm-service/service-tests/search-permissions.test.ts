@@ -22,8 +22,8 @@ import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/
 import { db } from '../src/connection-pool';
 import { ConditionsSets, RulesFile } from '../src/permissions/rulesMap';
 import { headers, getRequest, getServer, setRules, defaultConfig, useOpenRules } from './server';
-import { SearchParameters as  ContactSearchParameters} from '../src/contact/contact-data-access';
-import { SearchParameters as  CaseSearchParameters} from '../src/case/case';
+import { SearchParameters as ContactSearchParameters } from '../src/contact/contact-data-access';
+import { SearchParameters as CaseSearchParameters } from '../src/case/case';
 
 useOpenRules();
 const server = getServer();
