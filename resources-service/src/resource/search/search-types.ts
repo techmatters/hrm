@@ -1,5 +1,5 @@
 export type SearchParameters = {
-  filters: Record<string, boolean | number | string | string[]>;
+  filters?: Record<string, boolean | number | string | string[]>;
   omniSearchTerm: string;
   pagination: {
     limit: number;

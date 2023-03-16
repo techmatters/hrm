@@ -15,9 +15,10 @@
  */
 
 import { IRouter, Request, Router } from 'express';
-import { getResource, searchResourcesByName } from './resource-model';
+import { getResource, searchResources, searchResourcesByName } from './resource-model';
 import { AccountSID } from '@tech-matters/twilio-worker-auth';
 import createError from 'http-errors';
+import { SearchParameters } from './search/search-types';
 
 const resourceRoutes = () => {
   const router: IRouter = Router();
@@ -30,9 +31,11 @@ const resourceRoutes = () => {
     res.json(referrableResource);
   });
 
-  router.post('/search', async (req: Request<{ nameSubstring: string; ids: string[] }>, res) => {
+  router.post('/search', async (req: Request<SearchParameters>, res) => {
     const { limit, start } = req.query;
-    const referrableResources = await searchResourcesByName(<AccountSID>req.accountSid, {
+    const referrableResources = await searchResources(<AccountSID>req.accountSid, {
+      filters: {},
+      omniSearchTerm: '',
       ...req.body,
       pagination: {
         limit: parseInt((limit as string) || '20'),
@@ -41,6 +44,21 @@ const resourceRoutes = () => {
     });
     res.json(referrableResources);
   });
+
+  router.post(
+    '/searchByName',
+    async (req: Request<{ nameSubstring: string; ids: string[] }>, res) => {
+      const { limit, start } = req.query;
+      const referrableResources = await searchResourcesByName(<AccountSID>req.accountSid, {
+        ...req.body,
+        pagination: {
+          limit: parseInt((limit as string) || '20'),
+          start: parseInt((start as string) || '0'),
+        },
+      });
+      res.json(referrableResources);
+    },
+  );
 
   return router;
 };

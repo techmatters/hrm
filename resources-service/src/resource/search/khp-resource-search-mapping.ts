@@ -12,7 +12,7 @@ export const mapSearchParametersToKhpTermsAndFilters = ({
   const phrases = omniSearchTerm.match(parseSearchTermRegex) ?? [];
   const everything = [
     ...phrases,
-    ...Object.values(filters).filter(f => f !== undefined && typeof f === 'string'),
+    ...Object.values(filters ?? {}).filter(f => f !== undefined && typeof f === 'string'),
   ] as string[];
   const nameTerm: TermsAndFilters['searchTermsByIndex'] = phrases.length
     ? { name: { phrases, weighting: 3 } }

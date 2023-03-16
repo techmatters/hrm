@@ -18,9 +18,12 @@ import env from 'dotenv';
 
 env.config();
 
-export default {
-  url:
-    process.env.RESOURCES_CLOUDSEARCH_URL ||
-    'https://search-development-resources-viaqtvfsicwsyyyl43pgnmodim.us-east-1.cloudsearch.amazonaws.com',
-  awsRegion: process.env.RESOURCES_CLOUDSEARCH_AWS_REGION || process.env.AWS_REGION || 'us-east-1',
+export default () => {
+  const searchUrl = process.env.RESOURCES_CLOUDSEARCH_SEARCH_URL;
+  if (!searchUrl) {
+    throw new Error('CloudSearch resources domain search URL is not defined in configuration');
+  }
+  return {
+    searchUrl,
+  };
 };
