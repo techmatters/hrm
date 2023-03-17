@@ -38,7 +38,6 @@ export const isReferrableResourceAttribute = (
   typeof attribute.language === 'string';
 
 export type ReferrableResourceRecord = {
-  accountSid: AccountSID;
   name: string;
   id: string;
   attributes: (ReferrableResourceAttribute & { key: string })[];

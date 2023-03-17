@@ -194,7 +194,9 @@ export const resourceModel = (cloudSearchConfig: CloudSearchConfig) => {
 export const getUnindexedResources = async (
   limit: number,
 ): Promise<(ReferrableResource & { accountSid: AccountSID })[]> => {
-  const unindexedResources: ReferrableResourceRecord[] = await getUnindexed(limit);
+  const unindexedResources: (ReferrableResourceRecord & {
+    accountSid: AccountSID;
+  })[] = await getUnindexed(limit);
   return unindexedResources.map(record => ({
     ...record,
     attributes: attributeObjectGraphFromKeys(record.attributes),
