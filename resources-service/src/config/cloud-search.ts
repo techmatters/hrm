@@ -18,11 +18,12 @@ import env from 'dotenv';
 
 env.config();
 
-export default () => {
-  const searchUrl = process.env.RESOURCES_CLOUDSEARCH_SEARCH_URL;
-  if (!searchUrl) {
-    throw new Error('CloudSearch resources domain search URL is not defined in configuration');
-  }
+export type CloudSearchConfig = {
+  searchUrl: URL;
+};
+
+export default (): CloudSearchConfig => {
+  const searchUrl = new URL(process.env.RESOURCES_CLOUDSEARCH_SEARCH_URL || '');
   return {
     searchUrl,
   };

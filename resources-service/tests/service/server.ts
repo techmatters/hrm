@@ -24,11 +24,16 @@ import {
 import express from 'express';
 
 import { configureService } from '../../src/service';
+import { CloudSearchConfig } from '../../src/config/cloud-search';
 
 export const defaultConfig: {
   authTokenLookup: (accountSid: string) => string;
+  cloudSearchConfig: CloudSearchConfig;
 } = {
   authTokenLookup: () => 'picernic basket',
+  cloudSearchConfig: {
+    searchUrl: new URL('https://resources.mock-cloudsearch.com'),
+  },
 };
 
 export const getServer = (config?: Partial<typeof defaultConfig>) => {

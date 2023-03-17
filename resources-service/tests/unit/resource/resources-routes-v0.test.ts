@@ -16,20 +16,26 @@
 
 import { Request, Response, Router } from 'express';
 import resourceRoutes from '../../../src/resource/resource-routes-v0';
-import { ReferrableResource, searchResourcesByName } from '../../../src/resource/resource-model';
+import { ReferrableResource, resourceModel } from '../../../src/resource/resource-model';
 
 jest.mock('express', () => ({
   Router: jest.fn(),
 }));
 
 jest.mock('../../../src/resource/resource-model', () => ({
-  searchResources: jest.fn(),
+  resourceModel: jest.fn(),
 }));
 
+const mockSearchResources: jest.Mock<Promise<{
+  totalCount: number;
+  results: ReferrableResource[];
+}>> = jest.fn();
+
+(<jest.Mock>resourceModel).mockReturnValue({
+  searchResourcesByName: mockSearchResources,
+});
+
 const mockRouterConstructor = Router as jest.Mock;
-const mockSearchResources = searchResourcesByName as jest.Mock<
-  Promise<{ totalCount: number; results: ReferrableResource[] }>
->;
 
 beforeEach(() => {
   mockRouterConstructor.mockReset();
@@ -49,13 +55,13 @@ describe('POST /search', () => {
     mockResponseJson.mockReset();
     mockRouterConstructor.mockImplementation(() => ({
       post: (path: string, handler: SearchRequestHandler) => {
-        if (path === '/search') {
+        if (path === '/searchByName') {
           searchRequestHandler = handler;
         }
       },
       get: () => {},
     }));
-    resourceRoutes();
+    resourceRoutes({ searchUrl: new URL('https://a.com') });
   });
 
   test('Takes limit & start from query string, search parameters from body and returns resources from model as JSON', async () => {
