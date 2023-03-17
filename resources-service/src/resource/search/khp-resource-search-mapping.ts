@@ -17,7 +17,7 @@
 import { SearchParameters, TermsAndFilters } from './search-types';
 
 /*
-This pattern matches individual words outside double quotes, or phrases enclosed in double quotes (without the quotes.
+This pattern matches individual words outside double quotes, or phrases enclosed in double quotes (without the quotes included in the match).
  */
 const parseSearchTermRegex = /(?<=")[^"]*(?=")|\b[\S]+\b/g;
 
