@@ -45,6 +45,7 @@ module.exports = {
   ignorePatterns: [
     'cdk.out/**',
     '**/dist/**',
+    '**/*-dist/**',
     '**/coverage/**',
     'node_modules/**',
     '**/node_modules/**',

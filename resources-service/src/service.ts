@@ -16,27 +16,30 @@
 
 import express from 'express';
 import 'express-async-errors';
-import { apiV0 } from './routes';
 import {
   addAccountSidMiddleware,
   getAuthorizationMiddleware,
 } from '@tech-matters/twilio-worker-auth';
+import generateCloudSearchConfig, { CloudSearchConfig } from './config/cloud-search';
+import { apiV0 } from './routes';
 
 type ResourceServiceCreationOptions = {
   webServer: ReturnType<typeof express>;
   authTokenLookup?: (accountSid: string) => string;
+  cloudSearchConfig?: CloudSearchConfig;
 };
 
 export const configureService = ({
   webServer,
   authTokenLookup,
+  cloudSearchConfig = generateCloudSearchConfig(),
 }: ResourceServiceCreationOptions) => {
   const authorizationMiddleware = getAuthorizationMiddleware(authTokenLookup);
   webServer.use(
     '/v0/accounts/:accountSid/resources',
     addAccountSidMiddleware,
     authorizationMiddleware,
-    apiV0(),
+    apiV0(cloudSearchConfig),
   );
   return webServer;
 };

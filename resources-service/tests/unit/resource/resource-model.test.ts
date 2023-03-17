@@ -19,7 +19,7 @@ import {
   getWhereNameContains,
   ReferrableResourceRecord,
 } from '../../../src/resource/resource-data-access';
-import { searchResourcesByName } from '../../../src/resource/resource-model';
+import { resourceModel } from '../../../src/resource/resource-model';
 import each from 'jest-each';
 
 jest.mock('../../../src/resource/resource-data-access', () => ({
@@ -32,7 +32,9 @@ const mockGetWhereNameContains = getWhereNameContains as jest.Mock<
   Promise<{ totalCount: number; results: string[] }>
 >;
 
-describe('searchResources', () => {
+const { searchResourcesByName } = resourceModel({ searchUrl: new URL('http://a.com') });
+
+describe('searchResourcesByName', () => {
   beforeEach(() => {
     mockGetByIdList.mockReset();
     mockGetWhereNameContains.mockReset();

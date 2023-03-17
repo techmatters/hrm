@@ -51,7 +51,10 @@ export const getById = async (
   const res = await db.task(async t =>
     t.oneOrNone(SELECT_RESOURCE_IN_IDS, { accountSid, resourceIds: [resourceId] }),
   );
-  console.debug('Retrieved resource:', JSON.stringify(res, null, 2));
+  console.debug('Retrieved resource:', res.id);
+  if (res) {
+    delete res.accountSid;
+  }
   return res;
 };
 
@@ -64,7 +67,7 @@ export const getByIdList = async (
   const res = await db.task(async t =>
     t.manyOrNone(SELECT_RESOURCE_IN_IDS, { accountSid, resourceIds }),
   );
-  console.debug('Retrieved resources:', JSON.stringify(res, null, 2));
+  console.debug('Retrieved resources:', res?.length);
   return res.map(rr => {
     const { accountSid: acct, ...rest } = rr;
     return rest;

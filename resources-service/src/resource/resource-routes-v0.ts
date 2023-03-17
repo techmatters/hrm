@@ -15,13 +15,16 @@
  */
 
 import { IRouter, Request, Router } from 'express';
-import { getResource, searchResources, searchResourcesByName } from './resource-model';
+import { resourceModel } from './resource-model';
 import { AccountSID } from '@tech-matters/twilio-worker-auth';
 import createError from 'http-errors';
 import { SearchParameters } from './search/search-types';
+import { CloudSearchConfig } from '../config/cloud-search';
 
-const resourceRoutes = () => {
+const resourceRoutes = (cloudSearchConfig: CloudSearchConfig) => {
   const router: IRouter = Router();
+
+  const { getResource, searchResources, searchResourcesByName } = resourceModel(cloudSearchConfig);
 
   router.get('/resource/:resourceId', async (req, res) => {
     const referrableResource = await getResource(<AccountSID>req.accountSid, req.params.resourceId);
