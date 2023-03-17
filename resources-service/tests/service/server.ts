@@ -37,6 +37,8 @@ export const defaultConfig: {
 };
 
 export const getServer = (config?: Partial<typeof defaultConfig>) => {
+  process.env.AWS_ACCESS_KEY_ID = 'mock-access-key';
+  process.env.AWS_SECRET_ACCESS_KEY = 'mock-secret-key';
   const withoutService = configureDefaultPreMiddlewares(express());
   const withService = configureService({
     ...defaultConfig,
