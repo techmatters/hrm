@@ -98,7 +98,9 @@ export const getWhereNameContains = async (
  */
 export const getUnindexed = async (
   limit: number,
-): Promise<(ReferrableResourceRecord & { accountSid: AccountSID })[]> => {
+): Promise<(ReferrableResourceRecord & {
+  accountSid: AccountSID;
+})[]> => {
   console.debug('Retrieving un-indexed resources');
   const res = await db.task(async t => t.manyOrNone(SELECT_UNINDEXED_RESOURCES, { limit }));
   console.debug(`Retrieved ${res.length} un-indexed resources`);

@@ -28,66 +28,6 @@ const siteKey = (subsection: string) => (context: FieldMappingContext) => {
  */
 export const KHP_MAPPING_NODE: KhpMappingNode = {
   resourceID: khpResourceFieldMapping('id'),
-  /*agency: {
-    children: {
-      name: {
-        children: {
-          '{language}': khpAttributeMapping('ResourceStringAttributes', 'agency/name', {
-            language: context => context.captures.language,
-          }),
-        },
-      },
-      details: {
-        children: {
-          '{language}': khpAttributeMapping('ResourceStringAttributes', 'agency/details', {
-            value: 'agency/details',
-            info: context => context.currentValue,
-            language: context => context.captures.language,
-          }),
-        },
-      },
-      isLocationPrivate: khpAttributeMapping(
-        'ResourceBooleanAttributes',
-        'agency/isLocationPrivate',
-      ),
-      location: {
-        children: {
-          address1: khpAttributeMapping('ResourceStringAttributes', 'agency/location/address1'),
-          address2: khpAttributeMapping('ResourceStringAttributes', 'agency/location/address2'),
-          city: khpAttributeMapping('ResourceStringAttributes', 'agency/location/city'),
-          county: khpAttributeMapping('ResourceStringAttributes', 'agency/location/county'),
-          province: khpReferenceAttributeMapping('agency/location/province', 'canadian-provinces'),
-          country: khpReferenceAttributeMapping('agency/location/country', 'khp-countries'),
-          postalCode: khpAttributeMapping('ResourceStringAttributes', 'agency/location/postalCode'),
-        },
-      },
-      email: khpAttributeMapping('ResourceStringAttributes', 'agency/email'),
-      operations: {
-        children: {
-          '{dayIndex}': {
-            children: {
-              '{language}': khpAttributeMapping(
-                'ResourceStringAttributes',
-                'agency/operations/{dayIndex}',
-                {
-                  value: context => context.currentValue.day,
-                  info: context => context.currentValue,
-                },
-              ),
-            },
-          },
-        },
-      },
-      phoneNumbers: {
-        children: {
-          '{phoneNumberType}': khpAttributeMapping(
-            'ResourceStringAttributes',
-            'agency/phone/{phoneNumberType}',
-          ),
-        },
-      },
-    },
-  },*/
   sites: {
     children: {
       '{siteIndex}': {
