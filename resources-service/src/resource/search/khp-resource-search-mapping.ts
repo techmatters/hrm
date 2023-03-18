@@ -22,10 +22,10 @@ This pattern matches individual words outside double quotes, or phrases enclosed
 const parseSearchTermRegex = /(?<=")[^"]*(?=")|\b[\S]+\b/g;
 
 export const mapSearchParametersToKhpTermsAndFilters = ({
-  omniSearchTerm,
+  generalSearchTerm,
   filters,
 }: SearchParameters): TermsAndFilters => {
-  const phrases = omniSearchTerm.match(parseSearchTermRegex) ?? [];
+  const phrases = generalSearchTerm.match(parseSearchTermRegex) ?? [];
   const everything = [
     ...phrases,
     ...Object.values(filters ?? {}).filter(f => f !== undefined && typeof f === 'string'),

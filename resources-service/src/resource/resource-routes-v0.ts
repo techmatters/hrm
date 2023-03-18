@@ -38,7 +38,7 @@ const resourceRoutes = (cloudSearchConfig: CloudSearchConfig) => {
     const { limit, start } = req.query;
     const referrableResources = await searchResources(<AccountSID>req.accountSid, {
       filters: {},
-      omniSearchTerm: '',
+      generalSearchTerm: '',
       ...req.body,
       pagination: {
         limit: parseInt((limit as string) || '20'),

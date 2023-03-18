@@ -63,7 +63,7 @@ const client = (domainConfig: CloudSearchConfig) => {
       const command = new SearchCommand({
         query,
         queryParser: 'structured',
-        filterQuery: `account_sid:${accountSid}`,
+        filterQuery: `account_sid:'${accountSid}'`,
         size: limit,
         start,
       });

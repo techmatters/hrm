@@ -144,7 +144,7 @@ describe('POST /search', () => {
    */
   const testCases: TestCaseParameters[] = [
     {
-      parameters: { omniSearchTerm: 'something' },
+      parameters: { generalSearchTerm: 'something' },
       limit: '3',
       condition: 'a term which matches nothing',
       expectationDescription: 'an empty result set with a totalCount of 0',
@@ -160,7 +160,7 @@ describe('POST /search', () => {
       expectedTotalCount: 0,
     },
     {
-      parameters: { omniSearchTerm: 'something' },
+      parameters: { generalSearchTerm: 'something' },
       limit: '3',
       start: '15',
       condition: 'a term which returns records which match resources in the DB',
@@ -216,7 +216,7 @@ describe('POST /search', () => {
       expectedTotalCount: 321,
     },
     {
-      parameters: { omniSearchTerm: 'something' },
+      parameters: { generalSearchTerm: 'something' },
       limit: '3',
       start: '15',
       condition: 'a search that returns a record where the name differs from the one in the DB',
@@ -271,7 +271,7 @@ describe('POST /search', () => {
       expectedTotalCount: 321,
     },
     {
-      parameters: { omniSearchTerm: 'something' },
+      parameters: { generalSearchTerm: 'something' },
       limit: '3',
       start: '15',
       condition: 'a search that returns a record with an ID that does not exist in the DB',
