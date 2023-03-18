@@ -26,6 +26,7 @@ import {
   ReferrableResourceAttribute,
 } from '../src/resource/resource-data-access';
 import { AccountSID } from '@tech-matters/twilio-worker-auth';
+import * as fs from 'fs/promises';
 
 type ResourcesCloudSearchDocument = {
   id: string;
@@ -45,6 +46,7 @@ const MIN_DOCUMENT_UPLOAD_DELAY_MILLISECONDS = 10000;
 let docBatch: ResourcesCloudSearchDocument[] = [];
 let nextUpload: Date | undefined;
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const cloudSearchDomainClient = new CloudSearchDomainClient({
   endpoint: cloudSearchConfig().searchUrl,
 });
@@ -100,7 +102,7 @@ const transformResourceToSearchDocument = (
     },
   };
 };
-
+let batchNo = 0;
 const uploadDocumentBatchAsap = async (batch: unknown[]) => {
   if (nextUpload) {
     const millisecondsToWait = differenceInMilliseconds(nextUpload, new Date());
@@ -110,12 +112,25 @@ const uploadDocumentBatchAsap = async (batch: unknown[]) => {
     await delay(millisecondsToWait);
   }
   console.log(`Uploading batch of ${batch.length} documents`);
+  await fs.appendFile(
+    `../resource-json/cloudsearch-documents/batch-${batchNo}.json`,
+    JSON.stringify(
+      new UploadDocumentsCommand({
+        contentType: 'application/json',
+        documents: JSON.stringify(batch),
+      }),
+      null,
+      2,
+    ),
+  );
+  /*
   await cloudSearchDomainClient.send(
     new UploadDocumentsCommand({
       contentType: 'application/json',
       documents: JSON.stringify(batch),
     }),
   );
+  */
 };
 
 async function uploadResource(accountSid: AccountSID, resource: ReferrableResource): Promise<void> {

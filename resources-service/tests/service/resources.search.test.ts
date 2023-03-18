@@ -155,7 +155,7 @@ describe('POST /search', () => {
         },
       },
       expectedCloudSearchQuery:
-        "(or (phrase field='name' boost=3 'something')(phrase field='search_terms_en_1' boost=2 'something')(phrase field='search_terms_en_2' boost=1 'something'))",
+        "(or (term field='name' boost=3 'something')(term field='search_terms_en_1' boost=2 'something')(term field='search_terms_en_2' boost=1 'something'))",
       expectedResults: [],
       expectedTotalCount: 0,
     },
@@ -195,7 +195,7 @@ describe('POST /search', () => {
         },
       },
       expectedCloudSearchQuery:
-        "(or (phrase field='name' boost=3 'something')(phrase field='search_terms_en_1' boost=2 'something')(phrase field='search_terms_en_2' boost=1 'something'))",
+        "(or (term field='name' boost=3 'something')(term field='search_terms_en_1' boost=2 'something')(term field='search_terms_en_2' boost=1 'something'))",
       expectedResults: [
         {
           id: 'RESOURCE_3',
@@ -250,7 +250,7 @@ describe('POST /search', () => {
         },
       },
       expectedCloudSearchQuery:
-        "(or (phrase field='name' boost=3 'something')(phrase field='search_terms_en_1' boost=2 'something')(phrase field='search_terms_en_2' boost=1 'something'))",
+        "(or (term field='name' boost=3 'something')(term field='search_terms_en_1' boost=2 'something')(term field='search_terms_en_2' boost=1 'something'))",
       expectedResults: [
         {
           id: 'RESOURCE_3',
@@ -306,7 +306,7 @@ describe('POST /search', () => {
         },
       },
       expectedCloudSearchQuery:
-        "(or (phrase field='name' boost=3 'something')(phrase field='search_terms_en_1' boost=2 'something')(phrase field='search_terms_en_2' boost=1 'something'))",
+        "(or (term field='name' boost=3 'something')(term field='search_terms_en_1' boost=2 'something')(term field='search_terms_en_2' boost=1 'something'))",
       expectedResults: [
         {
           id: 'RESOURCE_3',

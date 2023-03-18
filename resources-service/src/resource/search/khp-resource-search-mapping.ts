@@ -19,26 +19,28 @@ import { SearchParameters, TermsAndFilters } from './search-types';
 /*
 This pattern matches individual words outside double quotes, or phrases enclosed in double quotes (without the quotes included in the match).
  */
-const parseSearchTermRegex = /(?<=")[^"]*(?=")|\b[\S]+\b/g;
+const parseSearchTermRegex = /(?<phrase>(?<=")[^"]*(?="))|(?<term>\b[\S]+\b)/g;
 
 export const mapSearchParametersToKhpTermsAndFilters = ({
   generalSearchTerm,
   filters,
 }: SearchParameters): TermsAndFilters => {
-  const phrases = generalSearchTerm.match(parseSearchTermRegex) ?? [];
-  const everything = [
+  const matches = Array.from(generalSearchTerm.matchAll(parseSearchTermRegex) ?? []);
+  const phrases = matches.filter(m => m.groups!.phrase).map(m => m.groups!.phrase);
+  const terms = matches.filter(m => m.groups!.term).map(m => m.groups!.term);
+  const allPhrases = [
     ...phrases,
     ...Object.values(filters ?? {}).filter(f => f !== undefined && typeof f === 'string'),
   ] as string[];
-  const nameTerm: TermsAndFilters['searchTermsByIndex'] = phrases.length
-    ? { name: { phrases, weighting: 3 } }
-    : {};
-  const everthingElseTerm: TermsAndFilters['searchTermsByIndex'] = everything.length
-    ? {
-        search_terms_en_1: { phrases: everything, weighting: 2 },
-        search_terms_en_2: { phrases: everything, weighting: 1 },
-      }
-    : {};
+  const nameTerm: TermsAndFilters['searchTermsByIndex'] =
+    phrases.length || terms.length ? { name: { terms, phrases, weighting: 3 } } : {};
+  const everthingElseTerm: TermsAndFilters['searchTermsByIndex'] =
+    allPhrases.length || terms.length
+      ? {
+          search_terms_en_1: { terms, phrases: allPhrases, weighting: 2 },
+          search_terms_en_2: { terms, phrases: allPhrases, weighting: 1 },
+        }
+      : {};
   return {
     searchTermsByIndex: {
       ...nameTerm,
