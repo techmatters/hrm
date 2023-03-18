@@ -48,7 +48,7 @@ let nextUpload: Date | undefined;
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const cloudSearchDomainClient = new CloudSearchDomainClient({
-  endpoint: cloudSearchConfig().searchUrl,
+  endpoint: cloudSearchConfig().searchUrl.toString(),
 });
 
 /**
