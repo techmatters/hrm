@@ -355,7 +355,7 @@ describe('POST /search', () => {
       expect(path).toContain(`q=${expectedCloudSearchQuery}`);
       expect(path).toContain(`size=${limit}`);
       expect(path).toContain(`start=${start ?? '0'}`);
-      expect(path).toContain(`fq=account_sid:ACCOUNT_1`);
+      expect(path).toContain(`fq=account_sid:'ACCOUNT_1'`);
       expect(response.status).toBe(200);
       expect(response.body.totalCount).toBe(expectedTotalCount);
       expect(response.body.results).toHaveLength(expectedResults.length);
