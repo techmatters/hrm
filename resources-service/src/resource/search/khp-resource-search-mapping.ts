@@ -17,15 +17,15 @@
 import { SearchParameters, TermsAndFilters } from './search-types';
 
 /*
-This pattern matches individual words outside double quotes, or phrases enclosed in double quotes (without the quotes.
+This pattern matches individual words outside double quotes, or phrases enclosed in double quotes (without the quotes included in the match).
  */
 const parseSearchTermRegex = /(?<=")[^"]*(?=")|\b[\S]+\b/g;
 
 export const mapSearchParametersToKhpTermsAndFilters = ({
-  omniSearchTerm,
+  generalSearchTerm,
   filters,
 }: SearchParameters): TermsAndFilters => {
-  const phrases = omniSearchTerm.match(parseSearchTermRegex) ?? [];
+  const phrases = generalSearchTerm.match(parseSearchTermRegex) ?? [];
   const everything = [
     ...phrases,
     ...Object.values(filters ?? {}).filter(f => f !== undefined && typeof f === 'string'),

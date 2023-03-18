@@ -16,7 +16,7 @@
 
 export type SearchParameters = {
   filters?: Record<string, boolean | number | string | string[]>;
-  omniSearchTerm: string;
+  generalSearchTerm: string;
   pagination: {
     limit: number;
     start: number;

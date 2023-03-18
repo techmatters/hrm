@@ -35,6 +35,8 @@ type SearchResultSet = {
   items: SearchResultItem[];
 };
 
+const EMPTY_RESULT = { total: 0, items: [] };
+
 const client = (domainConfig: CloudSearchConfig) => {
   const domainClient: CloudSearchDomainClient = new CloudSearchDomainClient({
     endpoint: domainConfig.searchUrl.toString(),
@@ -47,6 +49,9 @@ const client = (domainConfig: CloudSearchConfig) => {
       start: number,
       limit: number,
     ): Promise<SearchResultSet> => {
+      // I'm a little concerned about how well sanitised this is. It might be possible to inject something
+      // However, since the query only returns names & IDs, and all we do is use the ID to look up from the DB...
+      // I'm not sure how much damage anyone could do by injecting something, beyond giving themselves an error message.
       const queryClauses = Object.entries(searchTermsByIndex).map(
         ([index, { phrases, weighting }]) =>
           `(phrase field='${index}' boost=${weighting} ${phrases.map(p => `'${p.replace(/'/g, `\\'`)}'`).join(' ')})`,
@@ -58,14 +63,14 @@ const client = (domainConfig: CloudSearchConfig) => {
       const command = new SearchCommand({
         query,
         queryParser: 'structured',
-        filterQuery: `account_sid:${accountSid}`,
+        filterQuery: `account_sid:'${accountSid}'`,
         size: limit,
         start,
       });
 
       const { hits }: SearchCommandOutput = await domainClient.send(command);
       if (!hits) {
-        return { total: 0, items: [] };
+        return EMPTY_RESULT;
       }
       const total = hits.found;
       return {

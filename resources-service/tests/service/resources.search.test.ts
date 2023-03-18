@@ -117,7 +117,7 @@ const verifyResourcesAttributes = (resource: ReferrableResource) => {
 };
 
 describe('POST /search', () => {
-  const basePath = '/v0/accounts/ACCOUNT_1/resources/search';
+  const basePath = '/v0/accounts/ACCOUNT_1/resources/newSearch';
 
   test('Should return 401 unauthorized with no auth headers', async () => {
     const response = await request.post(`${basePath}?start=0&limit=5`).send({
@@ -144,7 +144,7 @@ describe('POST /search', () => {
    */
   const testCases: TestCaseParameters[] = [
     {
-      parameters: { omniSearchTerm: 'something' },
+      parameters: { generalSearchTerm: 'something' },
       limit: '3',
       condition: 'a term which matches nothing',
       expectationDescription: 'an empty result set with a totalCount of 0',
@@ -160,7 +160,7 @@ describe('POST /search', () => {
       expectedTotalCount: 0,
     },
     {
-      parameters: { omniSearchTerm: 'something' },
+      parameters: { generalSearchTerm: 'something' },
       limit: '3',
       start: '15',
       condition: 'a term which returns records which match resources in the DB',
@@ -216,7 +216,7 @@ describe('POST /search', () => {
       expectedTotalCount: 321,
     },
     {
-      parameters: { omniSearchTerm: 'something' },
+      parameters: { generalSearchTerm: 'something' },
       limit: '3',
       start: '15',
       condition: 'a search that returns a record where the name differs from the one in the DB',
@@ -271,7 +271,7 @@ describe('POST /search', () => {
       expectedTotalCount: 321,
     },
     {
-      parameters: { omniSearchTerm: 'something' },
+      parameters: { generalSearchTerm: 'something' },
       limit: '3',
       start: '15',
       condition: 'a search that returns a record with an ID that does not exist in the DB',
@@ -355,7 +355,7 @@ describe('POST /search', () => {
       expect(path).toContain(`q=${expectedCloudSearchQuery}`);
       expect(path).toContain(`size=${limit}`);
       expect(path).toContain(`start=${start ?? '0'}`);
-      expect(path).toContain(`fq=account_sid:ACCOUNT_1`);
+      expect(path).toContain(`fq=account_sid:'ACCOUNT_1'`);
       expect(response.status).toBe(200);
       expect(response.body.totalCount).toBe(expectedTotalCount);
       expect(response.body.results).toHaveLength(expectedResults.length);
