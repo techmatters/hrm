@@ -52,11 +52,19 @@ const client = (domainConfig: CloudSearchConfig) => {
       // I'm a little concerned about how well sanitised this is. It might be possible to inject something
       // However, since the query only returns names & IDs, and all we do is use the ID to look up from the DB...
       // I'm not sure how much damage anyone could do by injecting something, beyond giving themselves an error message.
-      const queryClauses = Object.entries(searchTermsByIndex).map(
-        ([index, { phrases, weighting }]) =>
-          `(phrase field='${index}' boost=${weighting} ${phrases.map(p => `'${p.replace(/'/g, `\\'`)}'`).join(' ')})`,
+      const queryClauses = Object.entries(searchTermsByIndex).flatMap(
+        ([index, { phrases, terms, weighting }]) => {
+          const phraseClauses = phrases.map(p => `(phrase field='${index}' boost=${weighting} '${p.replace(/'/g, `\\'`)}')`);
+          if (terms.length) {
+            return [
+              ...phraseClauses,
+              `(term field='${index}' boost=${weighting} '${terms.map(t=>t.replace(/'/g, `\\'`)).join(' ')}')`,
+            ];
+          }
+          return phraseClauses;
+        },
       );
-
+      
       const query = `(or ${queryClauses.join('')})`;
       console.debug('searchResourcesDomain query', query);
 

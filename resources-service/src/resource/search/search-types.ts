@@ -24,6 +24,6 @@ export type SearchParameters = {
 };
 
 export type TermsAndFilters = {
-  searchTermsByIndex: Record<string, { phrases: string[]; weighting: number }>;
+  searchTermsByIndex: Record<string, { phrases: string[]; terms: string[]; weighting: number }>;
   filters: Record<string, string | { value: string | boolean | number | Date; comparison: string }>;
 };
