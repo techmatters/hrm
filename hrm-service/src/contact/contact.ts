@@ -32,6 +32,7 @@ import { actionsMaps } from '../permissions';
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 // eslint-disable-next-line prettier/prettier
 import type { CSAMReport } from '../csam-report/csam-report';
+import type { SearchPermissions } from '../permissions/search-permissions';
 
 // Re export as is:
 export { updateConversationMedia, Contact } from './contact-data-access';
@@ -258,14 +259,45 @@ function convertContactsToSearchResults(contacts: Contact[]): SearchContact[] {
     .filter(contact => contact);
 }
 
+/**
+ * Check if the user can view any contact given:
+ * - search permissions
+ * - counsellor' search parameter
+ */
+const cannotViewAnyContactsGivenThisCounsellor = (user: TwilioUser, searchPermissions: SearchPermissions, counsellor?: string) => searchPermissions.canOnlyViewOwnContacts && counsellor &&  counsellor !== user.workerSid;
+
+/**
+ * If the counselors can only view contacts he/she owns, then we override searchParameters.counselor to workerSid
+ */
+const overrideCounsellor = (user: TwilioUser, searchPermissions: SearchPermissions, counsellor?: string) => searchPermissions.canOnlyViewOwnContacts ? user.workerSid : counsellor;
+
 export const searchContacts = async (
   accountSid: string,
   searchParameters: SearchParameters,
   query,
-  { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
+  { can, user, searchPermissions }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser; searchPermissions: SearchPermissions },
 ): Promise<{ count: number; contacts: SearchContact[] }> => {
   const applyTransformations = bindApplyTransformations(can, user);
   const { limit, offset } = getPaginationElements(query);
+  const { canOnlyViewOwnContacts } = searchPermissions;
+
+  /**
+   * VIEW_CONTACT permission:
+   * Handle filtering contacts according to: https://github.com/techmatters/hrm/pull/316#discussion_r1131118034
+   * The search query already filters the contacts based on the given counsellor (workerSid).
+   */
+  if (cannotViewAnyContactsGivenThisCounsellor(user, searchPermissions, searchParameters.counselor)) {
+    return {
+      count: 0,
+      contacts: [],
+    };
+  } else {
+    searchParameters.counselor = overrideCounsellor(user, searchPermissions, searchParameters.counselor);
+  }
+  if (canOnlyViewOwnContacts) {
+    searchParameters.counselor = user.workerSid;
+  }
+
   const unprocessedResults = await search(accountSid, searchParameters, limit, offset);
   return {
     count: unprocessedResults.count,
