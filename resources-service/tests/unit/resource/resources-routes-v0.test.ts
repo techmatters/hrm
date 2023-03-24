@@ -55,7 +55,7 @@ describe('POST /search', () => {
     mockResponseJson.mockReset();
     mockRouterConstructor.mockImplementation(() => ({
       post: (path: string, handler: SearchRequestHandler) => {
-        if (path === '/search') {
+        if (path === '/searchByName') {
           searchRequestHandler = handler;
         }
       },

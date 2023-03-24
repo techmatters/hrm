@@ -24,6 +24,7 @@ import { setupCanForRules } from './setupCanForRules';
 import { RulesFile } from './rulesMap';
 // eslint-disable-next-line prettier/prettier
 import type { Request, Response, NextFunction } from 'express';
+import { getSearchPermissions, SearchPermissions } from './search-permissions';
 
 const canCache: Record<string, ReturnType<typeof setupCanForRules>> = {};
 
@@ -55,9 +56,11 @@ export const setupPermissions = (lookup: Permissions) => (req: Request, res: Res
   } else {
     applyPermissions(req, setupCanForRules(lookup.rules(accountSid)));
   }
+  //@ts-ignore TODO: Improve our custom Request type to override Express.Request
+  req.searchPermissions = getSearchPermissions(req, lookup.rules(accountSid));
   return next();
 };
 
-export type RequestWithPermissions = SafeRouterRequest & {
+export type RequestWithPermissions = SafeRouterRequest & SearchPermissions & {
   can: ReturnType<typeof setupCanForRules>
 };

@@ -34,7 +34,7 @@ const resourceRoutes = (cloudSearchConfig: CloudSearchConfig) => {
     res.json(referrableResource);
   });
 
-  router.post('/newSearch', async (req: Request<SearchParameters>, res) => {
+  router.post('/search', async (req: Request<SearchParameters>, res) => {
     const { limit, start } = req.query;
     const referrableResources = await searchResources(<AccountSID>req.accountSid, {
       filters: {},
@@ -48,17 +48,20 @@ const resourceRoutes = (cloudSearchConfig: CloudSearchConfig) => {
     res.json(referrableResources);
   });
 
-  router.post('/search', async (req: Request<{ nameSubstring: string; ids: string[] }>, res) => {
-    const { limit, start } = req.query;
-    const referrableResources = await searchResourcesByName(<AccountSID>req.accountSid, {
-      ...req.body,
-      pagination: {
-        limit: parseInt((limit as string) || '20'),
-        start: parseInt((start as string) || '0'),
-      },
-    });
-    res.json(referrableResources);
-  });
+  router.post(
+    '/searchByName',
+    async (req: Request<{ nameSubstring: string; ids: string[] }>, res) => {
+      const { limit, start } = req.query;
+      const referrableResources = await searchResourcesByName(<AccountSID>req.accountSid, {
+        ...req.body,
+        pagination: {
+          limit: parseInt((limit as string) || '20'),
+          start: parseInt((start as string) || '0'),
+        },
+      });
+      res.json(referrableResources);
+    },
+  );
 
   return router;
 };

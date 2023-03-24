@@ -1,4 +1,6 @@
 {
+  "viewContact": [["everyone"]],
+  "viewCase": [["everyone"]],
   "closeCase": [["everyone"]],
   "reopenCase": [["everyone"]],
   "caseStatusTransition": [["everyone"]],

@@ -17,8 +17,8 @@
 import createError from 'http-errors';
 import * as casesDb from './case-data-access';
 import * as caseApi from './case';
-import { SafeRouter, publicEndpoint, RequestWithPermissions } from '../permissions';
-import { getActions } from '../permissions';
+import { SafeRouter, publicEndpoint } from '../permissions';
+import { getActions, actionsMaps } from '../permissions';
 import asyncHandler from '../async-handler';
 import { getCase } from './case';
 
@@ -43,7 +43,7 @@ casesRouter.get('/', publicEndpoint, async (req, res) => {
     accountSid,
     { sortDirection, sortBy, limit, offset },
     { filters: { includeOrphans: false }, ...search },
-    { can: req.can, user: req.user },
+    { can: req.can, user: req.user, searchPermissions: req.searchPermissions },
   );
   res.json(cases);
 });
@@ -81,7 +81,32 @@ const canEditCase = asyncHandler(async (req, res, next) => {
   next();
 });
 
-casesRouter.get('/:id', publicEndpoint, async (req, res) => {
+/**
+ * It checks if the user can view the case according to the defined permission rules.
+ */
+const canViewCase = asyncHandler(async (req, res, next) => {
+  if (!req.isAuthorized()) {
+    const { accountSid, body, user, can } = req;
+    const { id } = req.params;
+    const caseObj = await getCase(id, accountSid, { can, user });
+
+    if (!caseObj) throw createError(404);
+
+    const actions = getActions(caseObj, body);
+    console.debug(`Actions attempted in case edit (case #${id})`, actions);
+    const canView = can(user, actionsMaps.case.VIEW_CASE, caseObj);
+
+    if (canView) {
+      req.authorize();
+    } else {
+      req.unauthorize();
+    }
+  }
+
+  next();
+});
+
+casesRouter.get('/:id', canViewCase, async (req, res) => {
   const { accountSid } = req;
   const { id } = req.params;
 
@@ -117,11 +142,12 @@ casesRouter.delete('/:id', publicEndpoint, async (req, res) => {
   res.sendStatus(200);
 });
 
-casesRouter.post('/search', publicEndpoint, async (req: RequestWithPermissions, res) => {
+casesRouter.post('/search', publicEndpoint, async (req, res) => {
   const { accountSid } = req;
   const searchResults = await caseApi.searchCases(accountSid, req.query || {}, req.body || {}, {
     can: req.can,
     user: req.user,
+    searchPermissions: req.searchPermissions,
   });
   res.json(searchResults);
 });
