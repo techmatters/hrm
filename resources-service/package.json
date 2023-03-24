@@ -34,7 +34,7 @@
     "build-and-import-khp-json": "npm run build-scripts && npm run import-khp-json",
     "test:import-khp-json": "cross-env POSTGRES_PORT=5433 RDS_USERNAME=hrm RDS_PASSWORD=postgres RESOURCES_PASSWORD=resources-password run-s -c build-scripts docker:compose:test:up db:create:schema test:service:ci:migrate \"import-khp-json AC_TEST\" docker:compose:test:down",
     "update-cloudsearch-domain": "node ./scripts-dist/scripts/update-cloudsearch-domain.js",
-    "build-and-update-cloudsearch-domain": "npm run build-scripts && npm run update-search-domain"
+    "build-and-update-cloudsearch-domain": "npm run build-scripts && npm run update-cloudsearch-domain"
   },
   "repository": {
     "type": "git",

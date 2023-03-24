@@ -123,14 +123,14 @@ const uploadDocumentBatchAsap = async (batch: unknown[]) => {
       2,
     ),
   );
-  /*
+
   await cloudSearchDomainClient.send(
     new UploadDocumentsCommand({
       contentType: 'application/json',
       documents: JSON.stringify(batch),
     }),
   );
-  */
+  batchNo++;
 };
 
 async function uploadResource(accountSid: AccountSID, resource: ReferrableResource): Promise<void> {
