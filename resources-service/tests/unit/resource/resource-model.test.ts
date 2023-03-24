@@ -19,7 +19,7 @@ import {
   getWhereNameContains,
   ReferrableResourceRecord,
 } from '../../../src/resource/resource-data-access';
-import { searchResources } from '../../../src/resource/resource-model';
+import { resourceModel } from '../../../src/resource/resource-model';
 import each from 'jest-each';
 
 jest.mock('../../../src/resource/resource-data-access', () => ({
@@ -32,7 +32,9 @@ const mockGetWhereNameContains = getWhereNameContains as jest.Mock<
   Promise<{ totalCount: number; results: string[] }>
 >;
 
-describe('searchResources', () => {
+const { searchResourcesByName } = resourceModel({ searchUrl: new URL('http://a.com') });
+
+describe('searchResourcesByName', () => {
   beforeEach(() => {
     mockGetByIdList.mockReset();
     mockGetWhereNameContains.mockReset();
@@ -53,7 +55,7 @@ describe('searchResources', () => {
       results: ['RESOURCE_1', 'RESOURCE_2'],
     });
     mockGetByIdList.mockResolvedValue(resultSet);
-    const res = await searchResources('AC_FAKE_ACCOUNT', {
+    const res = await searchResourcesByName('AC_FAKE_ACCOUNT', {
       nameSubstring: 'Res',
       ids: [],
       pagination: { limit: 5, start: 10 },
@@ -78,7 +80,7 @@ describe('searchResources', () => {
       results: ['RESOURCE_1', 'RESOURCE_2'],
     });
     mockGetByIdList.mockResolvedValue([]);
-    await searchResources('AC_FAKE_ACCOUNT', {
+    await searchResourcesByName('AC_FAKE_ACCOUNT', {
       nameSubstring: 'Res',
       ids: [],
       pagination: { limit: 500, start: 10 },
@@ -91,7 +93,7 @@ describe('searchResources', () => {
       { id: 'RESOURCE_2', name: 'Resource 2', attributes: [] },
     ];
     mockGetByIdList.mockResolvedValue(resultSet);
-    const res = await searchResources('AC_FAKE_ACCOUNT', {
+    const res = await searchResourcesByName('AC_FAKE_ACCOUNT', {
       ids: ['RESOURCE_1', 'RESOURCE_2'],
       pagination: { limit: 5, start: 0 },
     });
@@ -108,7 +110,7 @@ describe('searchResources', () => {
       { id: 'RESOURCE_4', name: 'Resource 4', attributes: [] },
     ];
     mockGetByIdList.mockResolvedValue(resultSet);
-    const res = await searchResources('AC_FAKE_ACCOUNT', {
+    const res = await searchResourcesByName('AC_FAKE_ACCOUNT', {
       ids: ['RESOURCE_3', 'RESOURCE_1', 'RESOURCE_2', 'RESOURCE_4'],
       pagination: { limit: 5, start: 2 },
     });
@@ -130,7 +132,7 @@ describe('searchResources', () => {
       { id: 'RESOURCE_4', name: 'Resource 4', attributes: [] },
     ];
     mockGetByIdList.mockResolvedValue(resultSet);
-    const res = await searchResources('AC_FAKE_ACCOUNT', {
+    const res = await searchResourcesByName('AC_FAKE_ACCOUNT', {
       ids: ['RESOURCE_3', 'RESOURCE_1', 'RESOURCE_2', 'RESOURCE_4'],
       pagination: { limit: 5, start: 0 },
     });
@@ -156,7 +158,7 @@ describe('searchResources', () => {
       { id: 'RESOURCE_4', name: 'Resource 4', attributes: [] },
     ];
     mockGetByIdList.mockResolvedValue(resultSet);
-    const res = await searchResources('AC_FAKE_ACCOUNT', {
+    const res = await searchResourcesByName('AC_FAKE_ACCOUNT', {
       ids: ['RESOURCE_3', 'RESOURCE_1', 'RESOURCE_2', 'RESOURCE_4'],
       pagination: { limit: 5, start: 0 },
     });
@@ -182,7 +184,7 @@ describe('searchResources', () => {
       { id: 'RESOURCE_4', name: 'Resource 4', attributes: [] },
     ];
     mockGetByIdList.mockResolvedValue(resultSet);
-    const res = await searchResources('AC_FAKE_ACCOUNT', {
+    const res = await searchResourcesByName('AC_FAKE_ACCOUNT', {
       ids: [
         'RESOURCE_3',
         'RESOURCE_3',
@@ -224,7 +226,7 @@ describe('searchResources', () => {
       { id: 'RESOURCE_4', name: 'Resource 4', attributes: [] },
     ];
     mockGetByIdList.mockResolvedValue(resultSet);
-    const res = await searchResources('AC_FAKE_ACCOUNT', {
+    const res = await searchResourcesByName('AC_FAKE_ACCOUNT', {
       ids: ['RESOURCE_3', 'RESOURCE_1', 'RESOURCE_2', 'RESOURCE_4'],
       pagination: { limit: 3, start: 10 },
     });
@@ -251,7 +253,7 @@ describe('searchResources', () => {
       { id: 'RESOURCE_4', name: 'Resource 4', attributes: [] },
     ];
     mockGetByIdList.mockResolvedValue(resultSet);
-    const res = await searchResources('AC_FAKE_ACCOUNT', {
+    const res = await searchResourcesByName('AC_FAKE_ACCOUNT', {
       nameSubstring: 'Res',
       ids: ['RESOURCE_3', 'RESOURCE_2', 'RESOURCE_4'],
       pagination: { limit: 10, start: 0 },
@@ -284,7 +286,7 @@ describe('searchResources', () => {
       { id: 'RESOURCE_4', name: 'Resource 4', attributes: [] },
     ];
     mockGetByIdList.mockResolvedValue(resultSet);
-    const res = await searchResources('AC_FAKE_ACCOUNT', {
+    const res = await searchResourcesByName('AC_FAKE_ACCOUNT', {
       nameSubstring: 'Res',
       ids: ['RESOURCE_3', 'RESOURCE_2', 'RESOURCE_4'],
       pagination: { limit: 10, start: 98 },
@@ -557,7 +559,7 @@ describe('searchResources', () => {
       results: ['RESOURCE_1'],
     });
     mockGetByIdList.mockResolvedValue(resultSet);
-    const res = await searchResources('AC_FAKE_ACCOUNT', {
+    const res = await searchResourcesByName('AC_FAKE_ACCOUNT', {
       nameSubstring: 'Res',
       ids: [],
       pagination: { limit: 5, start: 0 },

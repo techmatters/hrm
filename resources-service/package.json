@@ -45,11 +45,12 @@
   },
   "homepage": "https://github.com/techmatters/hrm#readme",
   "dependencies": {
+    "@aws-sdk/client-cloudsearch-domain": "^3.287.0",
     "@tech-matters/twilio-worker-auth": "^1.0.0",
     "dotenv": "^8.6.0",
     "express": "^4.17.1",
     "express-async-errors": "^3.1.1",
-    "pg-promise": "^10.15.4",
-    "http-errors": "^1.7.3"
+    "http-errors": "^1.7.3",
+    "pg-promise": "^10.15.4"
   }
 }

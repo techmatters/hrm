@@ -33,6 +33,13 @@ afterAll(done => {
   });
 });
 
+afterAll(async () => {
+  await db.multi(`
+DELETE FROM resources."ResourceReferenceStringAttributeValues";
+DELETE FROM resources."Resources"
+      `);
+});
+
 const range = (elements: number | string): string[] =>
   Array.from(Array(typeof elements === 'number' ? elements : parseInt(elements)).keys()).map(i =>
     i.toString(),
@@ -450,8 +457,8 @@ describe('GET /resource', () => {
   });
 });
 
-describe('POST /search', () => {
-  const basePath = '/v0/accounts/ACCOUNT_1/resources/search';
+describe('POST /searchByName', () => {
+  const basePath = '/v0/accounts/ACCOUNT_1/resources/searchByName';
 
   test('Should return 401 unauthorized with no auth headers', async () => {
     const response = await request.post(`${basePath}?start=0&limit=5`).send({

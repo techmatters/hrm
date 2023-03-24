@@ -14,7 +14,17 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-export * from './mock-pgpromise';
-export * from './mock-twilio-auth-endpoint';
-import { start, stop, mockttpServer } from './mocking-proxy';
-export const mockingProxy = { start, stop, mockttpServer };
+import env from 'dotenv';
+
+env.config();
+
+export type CloudSearchConfig = {
+  searchUrl: URL;
+};
+
+export default (): CloudSearchConfig => {
+  const searchUrl = new URL(process.env.RESOURCES_CLOUDSEARCH_SEARCH_URL || '');
+  return {
+    searchUrl,
+  };
+};
