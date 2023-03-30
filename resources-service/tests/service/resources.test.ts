@@ -414,7 +414,7 @@ describe('GET /resource', () => {
           keyA.localeCompare(keyB),
         );
         const expectedAttributeEntries = Object.entries(
-          expectedAttributes as Record<string, ReferrableResourceAttribute[]>,
+          expectedAttributes as Record<string, ReferrableResourceAttribute<unknown>[]>,
         ).sort(([keyA], [keyB]) => keyA.localeCompare(keyB));
         expect(responseAttributeEntries).toHaveLength(expectedAttributeEntries.length);
         responseAttributeEntries.forEach(([key, value], index) => {
