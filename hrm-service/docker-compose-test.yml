@@ -14,9 +14,17 @@
 
 services:
   db:
-    build:
-      context: ./
-      dockerfile: ./docker-database/Dockerfile-test
-    command: ["postgres", "-c", "log_statement=all"]
+    image: library/postgres:12.10
+
+    environment:
+      POSTGRES_USER: rdsadmin
+      POSTGRES_HOST_AUTH_METHOD: trust
+      POSTGRES_DB: hrmdb
+
+    volumes:
+      - ./service-tests/db-init/dump.sql:/docker-entrypoint-initdb.d/dump.sql
+
+    command: ['postgres', '-c', 'log_statement=all']
+
     ports:
-      - "5433:5432"
+      - '5433:5432'

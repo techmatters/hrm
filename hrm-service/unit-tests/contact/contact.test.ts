@@ -13,6 +13,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
+import each from 'jest-each';
 import { mockTransaction, mockConnection } from '../mock-db';
 import * as contactDb from '../../src/contact/contact-data-access';
 import {
@@ -207,27 +208,6 @@ describe('createContact', () => {
     expect(returnValue).toStrictEqual(mockContact);
   });
 
-  test('rawJson will be read from form property if it is there and rawJson is not', async () => {
-    const { connectCsamMock, createReferralMock, createContactJobMock, createContactMock } = spyOnContactAndAssociations();
-
-    const payload = omit(sampleCreateContactPayload, 'rawJson');
-    payload.form = sampleCreateContactPayload.rawJson;
-    const returnValue = await createContact('parameter account-sid', 'contact-creator', payload, {
-      can: () => true,
-      user: twilioUser(workerSid, []),
-    });
-    expect(createContactMock).toHaveBeenCalledWith(
-      'parameter account-sid',
-      { ...sampleCreateContactPayload, createdBy: 'contact-creator' },
-    );
-
-    expect(connectCsamMock).not.toHaveBeenCalled();
-    expect(createReferralMock).not.toHaveBeenCalled();
-    expect(createContactJobMock).not.toHaveBeenCalled();
-
-    expect(returnValue).toStrictEqual(mockContact);
-  });
-
   test('empty array will be passed for csamReportIds if csamReport property is missing', async () => {
     const { connectCsamMock, createReferralMock, createContactJobMock, createContactMock } = spyOnContactAndAssociations();
 
@@ -343,32 +323,6 @@ describe('createContact', () => {
     expect(returnValue).toStrictEqual(mockContact);
   });
 
-  test('queue will be looked for as a form property if omitted from the top level and rawJson', async () => {
-    const { connectCsamMock, createReferralMock, createContactJobMock, createContactMock } = spyOnContactAndAssociations();
-
-    const payload = {
-      ...omit(sampleCreateContactPayload, 'rawJson', 'queueName'),
-      rawJson: {
-        ...sampleCreateContactPayload.rawJson,
-        queueName: 'Q2',
-      },
-    };
-    payload.form = sampleCreateContactPayload.rawJson;
-    const returnValue = await createContact('parameter account-sid', 'contact-creator', payload, {
-      can: () => true,
-      user: twilioUser(workerSid, []),
-    });
-    expect(createContactMock).toHaveBeenCalledWith(
-      'parameter account-sid',
-      { ...omit(payload, 'form'), queueName: 'Q2', createdBy: 'contact-creator' },
-    );
-
-    expect(connectCsamMock).not.toHaveBeenCalled();
-    expect(createReferralMock).not.toHaveBeenCalled();
-    expect(createContactJobMock).not.toHaveBeenCalled();
-
-    expect(returnValue).toStrictEqual(mockContact);
-  });
 
   test('queue will be undefined if not present on rawJson, form or top level', async () => {
     const { connectCsamMock, createReferralMock, createContactJobMock, createContactMock } = spyOnContactAndAssociations();
@@ -605,6 +559,10 @@ describe('searchContacts', () => {
       {
         can: () => true,
         user: twilioUser(workerSid, []),
+        searchPermissions: {
+          canOnlyViewOwnCases: false,
+          canOnlyViewOwnContacts: false,
+        },
       },
     );
 
@@ -646,6 +604,10 @@ describe('searchContacts', () => {
       {
         can: () => true,
         user: twilioUser(workerSid, []),
+        searchPermissions: {
+          canOnlyViewOwnCases: false,
+          canOnlyViewOwnContacts: false,
+        },
       },
     );
     expect(result.contacts[0].overview.name).toStrictEqual('Jill Smith');
@@ -671,6 +633,10 @@ describe('searchContacts', () => {
       {
         can: () => true,
         user: twilioUser(workerSid, []),
+        searchPermissions: {
+          canOnlyViewOwnCases: false,
+          canOnlyViewOwnContacts: false,
+        },
       },
     );
 
@@ -690,9 +656,99 @@ describe('searchContacts', () => {
       {
         can: () => true,
         user: twilioUser(workerSid, []),
+        searchPermissions: {
+          canOnlyViewOwnCases: false,
+          canOnlyViewOwnContacts: false,
+        },
       },
     );
 
     expect(searchSpy).toHaveBeenCalledWith(accountSid, body, 10, 1000);
   });
+});
+
+describe('search contacts permissions', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  each([
+    {
+      description: 'Supervisor can view others contacts',
+      isSupervisor: true,
+      canOnlyViewOwnContacts: false,
+      counselorSearchParam: 'any-worker-sid',
+      overriddenCounselorSearchParam: 'any-worker-sid',
+      shouldCallSearch: true,
+    },
+    {
+      description: 'Agent can view others contacts',
+      isSupervisor: false,
+      canOnlyViewOwnContacts: false,
+      counselorSearchParam: 'any-worker-sid',
+      overriddenCounselorSearchParam: 'any-worker-sid',
+      shouldCallSearch: true,
+    },
+    {
+      description: 'Agent cannot view others contacts',
+      isSupervisor: false,
+      canOnlyViewOwnContacts: true,
+      counselorSearchParam: 'any-worker-sid',
+      shouldCallSearch: false,
+    },
+    {
+      description: 'Agent can view own contacts',
+      isSupervisor: false,
+      canOnlyViewOwnContacts: true,
+      counselorSearchParam: workerSid,
+      overriddenCounselorSearchParam: workerSid,
+      shouldCallSearch: true,
+    },
+    {
+      description: 'Agent defaults to own contacts when no counselor specified',
+      isSupervisor: false,
+      canOnlyViewOwnContacts: true,
+      counselorSearchParam: undefined,
+      overriddenCounselorSearchParam: workerSid,
+      shouldCallSearch: true,
+    },
+  ]).test(
+    '$description',
+    async ({
+      isSupervisor,
+      canOnlyViewOwnContacts,
+      counselorSearchParam,
+      overriddenCounselorSearchParam,
+      shouldCallSearch,
+    }) => {
+      const accountSid = 'account-sid';
+      const body = {
+        helpline: 'helpline',
+        onlyDataContacts: true,
+        counselor: counselorSearchParam,
+      };
+      const limitOffset = { limit: 10, offset: 0 };
+      const can = () => true;
+      const roles = [];
+      const user = { ...twilioUser(workerSid, roles), isSupervisor: isSupervisor };
+      const searchPermissions = {
+        canOnlyViewOwnContacts,
+      };
+      const reqData = {
+        can,
+        user,
+        searchPermissions,
+      };
+
+      const searchSpy = jest.spyOn(contactDb, 'search').mockResolvedValue({ count: 0, rows: [] });
+      await searchContacts(accountSid, body, limitOffset, reqData);
+
+      if (shouldCallSearch) {
+        const overridenBody = { ...body, counselor: overriddenCounselorSearchParam };
+        expect(searchSpy).toHaveBeenCalledWith(accountSid, overridenBody, 10, 0);
+      } else {
+        expect(searchSpy).not.toHaveBeenCalled();
+      }
+    },
+  );
 });

@@ -6,28 +6,33 @@
   "devDependencies": {
     "@tech-matters/testing": "^1.0.0",
     "@types/http-errors": "^2.0.1",
+    "date-fns": "^2.29.3",
+    "jest-each": "^29.2.1",
     "sequelize": "^6.28.0",
     "sequelize-cli": "^6.5.2",
-    "umzug": "^3.2.1",
-    "jest-each": "^29.2.1"
+    "umzug": "^3.2.1"
   },
   "scripts": {
     "migrate": "run-s db:create:schema test:service:ci:migrate",
     "docker:compose:test:up": "docker compose -f ../hrm-service/docker-compose-test.yml up -d",
     "docker:compose:test:down": "docker compose -f ../hrm-service/docker-compose-test.yml down",
     "test": "run-s test:unit test:service",
-    "test:run:watch": "cross-env AWS_REGION=eu-west-1 CI=true TWILIO_ACCOUNT_SID=ACxxx TWILIO_AUTH_TOKEN=xxxxxx RDS_PASSWORD=postgres RESOURCES_PASSWORD=resources-password jest --maxWorkers=1 --forceExit --watch",
+    "test:run:watch": "cross-env AWS_REGION=us-east-1 CI=true TWILIO_ACCOUNT_SID=ACxxx TWILIO_AUTH_TOKEN=xxxxxx RDS_PASSWORD=postgres RESOURCES_PASSWORD=resources-password jest --maxWorkers=1 --forceExit --watch",
     "test:unit": "jest tests/unit",
     "test:service": "cross-env POSTGRES_PORT=5433 RDS_USERNAME=hrm RDS_PASSWORD=postgres RESOURCES_PASSWORD=resources-password run-s -c docker:compose:test:up db:create:schema test:service:ci:migrate test:service:ci:run docker:compose:test:down",
     "test:service:ci": "RDS_USERNAME=rdsadmin RDS_PASSWORD=postgres RESOURCES_PASSWORD=resources-password run-s db:create:schema test:service:ci:migrate test:service:ci:run",
     "test:service:ci:migrate": "node ./db-migrate",
-    "test:service:ci:run": "cross-env AWS_REGION=eu-west-1 CI=true TWILIO_ACCOUNT_SID=ACxxx TWILIO_AUTH_TOKEN=xxxxxx jest --verbose --maxWorkers=1 --forceExit tests/service",
+    "test:service:ci:run": "cross-env AWS_REGION=us-east-1 CI=true TWILIO_ACCOUNT_SID=ACxxx TWILIO_AUTH_TOKEN=xxxxxx jest --verbose --maxWorkers=1 --forceExit tests/service",
     "test:coverage": "run-s docker:compose:test:up test:service:migrate test:coverage:run docker:compose:test:down",
-    "test:coverage:run": "cross-env POSTGRES_PORT=5433 AWS_REGION=eu-west-1 jest --verbose --maxWorkers=1 --coverage",
+    "test:coverage:run": "cross-env POSTGRES_PORT=5433 AWS_REGION=us-east-1 jest --verbose --maxWorkers=1 --coverage",
     "test:migrate": "run-s test:service:migrate",
     "db:create:schema": "node ./create-db",
     "db:create-migration": "sequelize migration:generate --name ",
-    "db:undo-last": "sequelize db:migrate:undo"
+    "db:undo-last": "sequelize db:migrate:undo",
+    "build-scripts": "tsc --project tsconfig.scripts.json",
+    "import-khp-json": "node ./scripts-dist/scripts/import-khp-resources.js",
+    "build-and-import-khp-json": "npm run build-scripts && npm run import-khp-json",
+    "test:import-khp-json": "cross-env POSTGRES_PORT=5433 RDS_USERNAME=hrm RDS_PASSWORD=postgres RESOURCES_PASSWORD=resources-password run-s -c build-scripts docker:compose:test:up db:create:schema test:service:ci:migrate \"import-khp-json AC_TEST\" docker:compose:test:down"
   },
   "repository": {
     "type": "git",
@@ -40,11 +45,12 @@
   },
   "homepage": "https://github.com/techmatters/hrm#readme",
   "dependencies": {
+    "@aws-sdk/client-cloudsearch-domain": "^3.287.0",
     "@tech-matters/twilio-worker-auth": "^1.0.0",
     "dotenv": "^8.6.0",
     "express": "^4.17.1",
     "express-async-errors": "^3.1.1",
-    "pg-promise": "^10.15.4",
-    "http-errors": "^1.7.3"
+    "http-errors": "^1.7.3",
+    "pg-promise": "^10.15.4"
   }
 }

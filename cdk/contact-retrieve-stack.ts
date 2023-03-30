@@ -44,7 +44,9 @@ export default class ContactRetrieveStack extends cdk.Stack {
   }) {
     super(scope, id, props);
 
-    const queue = new sqs.Queue(this, id);
+    const queue = new sqs.Queue(this, id, {
+      deadLetterQueue: { maxReceiveCount: 1, queue: params.completeQueue },
+    });
 
     new cdk.CfnOutput(this, `queueUrl`, {
       value: queue.queueUrl,

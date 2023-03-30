@@ -5,6 +5,7 @@
     { "path": "packages/http" },
     { "path": "packages/twilio-worker-auth" },
     { "path": "packages/ssm-cache" },
+    { "path": "packages/types" },
     { "path": "resources-service" },
     { "path": "hrm-service" }
   ]
