@@ -113,8 +113,6 @@ describe('createContact', () => {
       createContactJobMock,
       createContactMock,
     };
-
-    jest.spyOn(contactDb, 'create').mockReturnValue(createContactMock);
   };
 
   test("Passes payload down to data layer with user workerSid used for 'createdBy'", async () => {
@@ -307,7 +305,7 @@ describe('createContact', () => {
         queueName: 'Q2',
       },
     };
-    const returnValue = await createContact('parameter account-sid', 'contact-creator', payload, {
+    const returnValue = await createContact('parameter account-sid', 'contact-creator', payload as any, {
       can: () => true,
       user: twilioUser(workerSid, []),
     });
@@ -328,7 +326,7 @@ describe('createContact', () => {
     const { connectCsamMock, createReferralMock, createContactJobMock, createContactMock } = spyOnContactAndAssociations();
 
     const payload = omit(sampleCreateContactPayload, 'queueName');
-    const returnValue = await createContact('parameter account-sid', 'contact-creator', payload, {
+    const returnValue = await createContact('parameter account-sid', 'contact-creator', payload as any, {
       can: () => true,
       user: twilioUser(workerSid, []),
     });

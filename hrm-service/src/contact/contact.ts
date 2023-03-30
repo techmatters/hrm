@@ -13,6 +13,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
+
+import { ContactJobType } from '@tech-matters/hrm-types';
 import {
   connectToCase,
   Contact,
@@ -37,10 +39,11 @@ import { actionsMaps } from '../permissions';
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { connectContactToCsamReports, CSAMReport } from '../csam-report/csam-report';
 import { createReferral } from '../referral/referral-model';
-import { ContactJobType, createContactJob } from '../contact-job/contact-job';
-import { isChatChannel } from '../contact/channelTypes';
+import { createContactJob } from '../contact-job/contact-job';
+import { isChatChannel } from './channelTypes';
 import { enableCreateContactJobsFlag } from '../featureFlags';
 import { db } from '../connection-pool';
+// eslint-disable-next-line prettier/prettier
 import type { SearchPermissions } from '../permissions/search-permissions';
 
 // Re export as is:
