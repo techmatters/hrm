@@ -56,13 +56,15 @@ The db container created doesn't provide a volume on the host for storing data i
 
 This can be handy for some use cases like deterministic testing, but would get annoying for data to day dev. To allow your container to restart with the same data it had when it shut down, you should use `npm run docker:compose:db-persistent:up` instead.
 
+Run `npm run ssm:local` from the root directory to download required secrets for local development from AWS SSM Parameter Store.
+
 Run `npm run migrate` to run basic migrations against the database.
 
 #### Starting HRM service
 
 Build the HRM service, packages, and jobs by running `npm run build` from the root directory.
 
-Run `npm run ssm:local` from the root directory to download required secrets for local development from AWS SSM Parameter Store.
+If you haven't already, run `npm run ssm:local` from the root directory to download required secrets for local development from AWS SSM Parameter Store.
 
 Run `npm run start:service` from the root directory to start the HRM service.
 

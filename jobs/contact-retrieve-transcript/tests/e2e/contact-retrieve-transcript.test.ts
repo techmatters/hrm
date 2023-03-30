@@ -95,6 +95,11 @@ describe('contact-retrieve-transcript', () => {
 
   test('well formed message creates success message in complete queue and file in s3', async () => {
     const message = generateMockMessageBody();
+    const attemptPayload = {
+      bucket: 'contact-docs-bucket',
+      key: message.filePath,
+      url: `http://localstack:4566/contact-docs-bucket/${message.filePath}`,
+    };
 
     const sqsResp = await sendMessage({ message, lambdaName });
     expect(sqsResp).toHaveProperty('MessageId');
@@ -110,9 +115,7 @@ describe('contact-retrieve-transcript', () => {
     const sqsMessage = sqsResult?.Messages?.[0];
     const body = JSON.parse(sqsMessage?.Body || '');
     expect(body?.attemptResult).toEqual('success');
-    expect(body?.attemptPayload).toEqual(
-      `http://localstack:4566/contact-docs-bucket/${message.filePath}`,
-    );
+    expect(body?.attemptPayload).toEqual(attemptPayload);
   });
 
   test('message with bad accountSid produces failure message in complete queue', async () => {
@@ -129,8 +132,6 @@ describe('contact-retrieve-transcript', () => {
     const sqsMessage = sqsResult?.Messages?.[0];
     const body = JSON.parse(sqsMessage?.Body || '');
     expect(body?.attemptResult).toEqual('failure');
-    expect(body?.attemptPayload).toEqual(
-      'SSM parameter /local/twilio/badSid/auth_token not found in cache',
-    );
+    expect(body?.attemptPayload).toEqual('Parameter /local/twilio/badSid/auth_token not found.');
   });
 });

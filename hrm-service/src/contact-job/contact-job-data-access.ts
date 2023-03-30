@@ -14,7 +14,6 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { ITask } from 'pg-promise';
 import { db, pgp } from '../connection-pool';
 // eslint-disable-next-line prettier/prettier
 import type { Contact } from '../contact/contact-data-access';
@@ -22,11 +21,11 @@ import {
   COMPLETE_JOB_SQL,
   PULL_DUE_JOBS_SQL,
   ADD_FAILED_ATTEMPT_PAYLOAD,
+  selectSingleContactJobByIdSql,
 } from './sql/contact-job-sql';
+import { txIfNotInOne } from '../sql';
 
-export enum ContactJobType {
-  RETRIEVE_CONTACT_TRANSCRIPT = 'retrieve-transcript',
-}
+import { ContactJobType } from '@tech-matters/hrm-types';
 
 // Reflects the actual shape of a record in the ContactJobs table
 export type ContactJobRecord = {
@@ -54,6 +53,13 @@ export type RetrieveContactTranscriptJob = Job<string[] | null, null> & {
 };
 
 export type ContactJob = RetrieveContactTranscriptJob;
+
+export const getContactJobById = async (jobId: number): Promise<ContactJobRecord> =>
+  db.task(async connection =>
+    connection.oneOrNone<ContactJobRecord>(selectSingleContactJobByIdSql('ContactJobs'), {
+      jobId,
+    }),
+  );
 
 /**
  * Returns all the jobs that are considered 'due'
@@ -92,7 +98,7 @@ export const completeContactJob = async (
  * Add a new job to be completed to the ContactJobs queue
  * Requires tx: ITask to make the creation of the job part of the same transaction
  */
-export const createContactJob = (tx?: ITask<{}>) => async (
+export const createContactJob = (tk?) =>  async (
   job: Pick<ContactJob, 'jobType' | 'resource' | 'additionalPayload'>,
 ): Promise<void> => {
   const contact = job.resource;
@@ -112,12 +118,7 @@ export const createContactJob = (tx?: ITask<{}>) => async (
     'ContactJobs',
   );
 
-  // If a transaction is provided, use it
-  if (tx) {
-    return tx.none(insertSql);
-  }
-
-  return db.task(conn => conn.none(insertSql));
+  return txIfNotInOne(tk, conn => conn.none(insertSql));
 };
 
 export const appendFailedAttemptPayload = async (

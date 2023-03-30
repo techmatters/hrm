@@ -15,12 +15,16 @@
  */
 
 import { IRouter, Request, Router } from 'express';
-import { getResource, searchResources } from './resource-model';
+import { resourceModel } from './resource-model';
 import { AccountSID } from '@tech-matters/twilio-worker-auth';
 import createError from 'http-errors';
+import { SearchParameters } from './search/search-types';
+import { CloudSearchConfig } from '../config/cloud-search';
 
-const resourceRoutes = () => {
+const resourceRoutes = (cloudSearchConfig: CloudSearchConfig) => {
   const router: IRouter = Router();
+
+  const { getResource, searchResources, searchResourcesByName } = resourceModel(cloudSearchConfig);
 
   router.get('/resource/:resourceId', async (req, res) => {
     const referrableResource = await getResource(<AccountSID>req.accountSid, req.params.resourceId);
@@ -30,9 +34,11 @@ const resourceRoutes = () => {
     res.json(referrableResource);
   });
 
-  router.post('/search', async (req: Request<{ nameSubstring: string; ids: string[] }>, res) => {
+  router.post('/search', async (req: Request<SearchParameters>, res) => {
     const { limit, start } = req.query;
     const referrableResources = await searchResources(<AccountSID>req.accountSid, {
+      filters: {},
+      generalSearchTerm: '',
       ...req.body,
       pagination: {
         limit: parseInt((limit as string) || '20'),
@@ -41,6 +47,21 @@ const resourceRoutes = () => {
     });
     res.json(referrableResources);
   });
+
+  router.post(
+    '/searchByName',
+    async (req: Request<{ nameSubstring: string; ids: string[] }>, res) => {
+      const { limit, start } = req.query;
+      const referrableResources = await searchResourcesByName(<AccountSID>req.accountSid, {
+        ...req.body,
+        pagination: {
+          limit: parseInt((limit as string) || '20'),
+          start: parseInt((start as string) || '0'),
+        },
+      });
+      res.json(referrableResources);
+    },
+  );
 
   return router;
 };

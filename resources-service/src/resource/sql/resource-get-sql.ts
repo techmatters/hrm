@@ -14,9 +14,33 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-export const SELECT_RESOURCE_BY_ID = `SELECT id, "name" FROM resources."Resources" AS r WHERE r."accountSid" = $<accountSid> AND r."id" = $<resourceId>`;
+const SELECT_RESOURCES = `SELECT r.id, r."name", r."accountSid", att."attributes" FROM 
+resources."Resources" AS r 
+LEFT JOIN LATERAL (
+  SELECT COALESCE(jsonb_agg((SELECT attributeRow FROM (SELECT ra."key", ra."value", ra."language", ra."info") AS attributeRow)), '[]') AS attributes
+    FROM (
+        SELECT rsa."key", rsa."value", rsa."language", rsa."info" 
+        FROM resources."ResourceStringAttributes" AS rsa
+        WHERE rsa."accountSid" = r."accountSid" AND rsa."resourceId" = r.id
+      UNION ALL 
+        SELECT rrsa."key", rrsav."value", rrsav."language", rrsav."info" 
+        FROM 
+        resources."ResourceReferenceStringAttributes" AS rrsa
+        INNER JOIN resources."ResourceReferenceStringAttributeValues" AS rrsav  ON 
+          rrsav."accountSid" = rrsa."accountSid" 
+          AND rrsav."list" = rrsa."list" 
+          AND rrsav."id" = rrsa."referenceId"
+        WHERE rrsa."accountSid" = r."accountSid" AND rrsa."resourceId" = r.id
+    ) AS ra
+) AS att ON true`;
 
-export const SELECT_RESOURCE_IN_IDS = `SELECT id, "name" FROM resources."Resources" AS r WHERE r."accountSid" = $<accountSid> AND r."id" IN ($<resourceIds:csv>)`;
+export const SELECT_RESOURCE_IN_IDS = `${SELECT_RESOURCES}
+WHERE r."accountSid" = $<accountSid> AND r."id" IN ($<resourceIds:csv>)
+`;
+
+export const SELECT_UNINDEXED_RESOURCES = `${SELECT_RESOURCES}
+WHERE r."updateSequence" > (SELECT "lastIndexedUpdateSequence" FROM resources."Globals") ORDER BY r."updateSequence" LIMIT $<limit>
+`;
 
 export const SELECT_RESOURCE_IDS_WHERE_NAME_CONTAINS = `
   SELECT id 

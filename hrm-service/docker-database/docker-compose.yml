@@ -14,7 +14,17 @@
 
 services:
   db:
-    build: .
-    command: ["postgres", "-c", "log_statement=all"]
+    image: library/postgres:12.10
+
+    environment:
+      POSTGRES_USER: rdsadmin
+      POSTGRES_HOST_AUTH_METHOD: trust
+      POSTGRES_DB: hrmdb
+
+    volumes:
+      - ./hrmdb.sql:/docker-entrypoint-initdb.d/hrmdb.sql
+
+    command: ['postgres', '-c', 'log_statement=all']
+
     ports:
-      - "5432:5432"
+      - '5432:5432'

@@ -13,6 +13,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
+
+import { ContactJobType } from '@tech-matters/hrm-types';
 import {
   connectToCase,
   Contact,
@@ -35,13 +37,14 @@ import { NewContactRecord } from './sql/contact-insert-sql';
 import { setupCanForRules } from '../permissions/setupCanForRules';
 import { actionsMaps } from '../permissions';
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
-// eslint-disable-next-line prettier/prettier
 import { connectContactToCsamReports, CSAMReport } from '../csam-report/csam-report';
-import { db } from '../connection-pool';
 import { createReferral } from '../referral/referral-model';
-import { ContactJobType, createContactJob } from '../contact-job/contact-job';
-import { isChatChannel } from '../contact/channelTypes';
+import { createContactJob } from '../contact-job/contact-job';
+import { isChatChannel } from './channelTypes';
 import { enableCreateContactJobsFlag } from '../featureFlags';
+import { db } from '../connection-pool';
+// eslint-disable-next-line prettier/prettier
+import type { SearchPermissions } from '../permissions/search-permissions';
 
 // Re export as is:
 export { updateConversationMedia, Contact } from './contact-data-access';
@@ -183,7 +186,7 @@ export const createContact = async (
   newContact: CreateContactPayload,
   { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
 ): Promise<Contact> => {
-  return db.tx(async connection => {
+  return db.tx(async conn => {
     const { newContactPayload, csamReportsPayload, referralsPayload } = getNewContactPayload(
       newContact,
     );
@@ -208,7 +211,7 @@ export const createContact = async (
     };
 
     // create contact record (may return an exiting one cause idempotence)
-    const { contact, isNewRecord } = await create(connection)(accountSid, completeNewContact);
+    const { contact, isNewRecord } = await create(conn)(accountSid, completeNewContact);
 
     let contactResult: Contact;
 
@@ -220,7 +223,7 @@ export const createContact = async (
       const csamReportIds = (csamReportsPayload ?? []).map(csr => csr.id);
       const csamReports =
         csamReportIds && csamReportIds.length
-          ? await connectContactToCsamReports(connection)(contact.id, csamReportIds, accountSid)
+          ? await connectContactToCsamReports(conn)(contact.id, csamReportIds, accountSid)
           : [];
 
       // create resources referrals
@@ -230,7 +233,7 @@ export const createContact = async (
       if (referrals && referrals.length) {
         // Do this sequentially, it's on a single connection in a transaction anyway.
         for (const referral of referrals) {
-          const { contactId, ...withoutContactId } = await createReferral(connection)(accountSid, {
+          const { contactId, ...withoutContactId } = await createReferral(conn)(accountSid, {
             ...referral,
             contactId: contact.id.toString(),
           });
@@ -240,7 +243,7 @@ export const createContact = async (
 
       // if pertinent, create retrieve-transcript job
       if (shouldCreateRetrieveTranscript(contact)) {
-        await createContactJob(connection)({
+        await createContactJob(conn)({
           jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
           resource: contact,
           additionalPayload: undefined,
@@ -371,14 +374,45 @@ function convertContactsToSearchResults(contacts: Contact[]): SearchContact[] {
     .filter(contact => contact);
 }
 
+/**
+ * Check if the user can view any contact given:
+ * - search permissions
+ * - counsellor' search parameter
+ */
+const cannotViewAnyContactsGivenThisCounsellor = (user: TwilioUser, searchPermissions: SearchPermissions, counsellor?: string) => searchPermissions.canOnlyViewOwnContacts && counsellor &&  counsellor !== user.workerSid;
+
+/**
+ * If the counselors can only view contacts he/she owns, then we override searchParameters.counselor to workerSid
+ */
+const overrideCounsellor = (user: TwilioUser, searchPermissions: SearchPermissions, counsellor?: string) => searchPermissions.canOnlyViewOwnContacts ? user.workerSid : counsellor;
+
 export const searchContacts = async (
   accountSid: string,
   searchParameters: SearchParameters,
   query,
-  { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
+  { can, user, searchPermissions }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser; searchPermissions: SearchPermissions },
 ): Promise<{ count: number; contacts: SearchContact[] }> => {
   const applyTransformations = bindApplyTransformations(can, user);
   const { limit, offset } = getPaginationElements(query);
+  const { canOnlyViewOwnContacts } = searchPermissions;
+
+  /**
+   * VIEW_CONTACT permission:
+   * Handle filtering contacts according to: https://github.com/techmatters/hrm/pull/316#discussion_r1131118034
+   * The search query already filters the contacts based on the given counsellor (workerSid).
+   */
+  if (cannotViewAnyContactsGivenThisCounsellor(user, searchPermissions, searchParameters.counselor)) {
+    return {
+      count: 0,
+      contacts: [],
+    };
+  } else {
+    searchParameters.counselor = overrideCounsellor(user, searchPermissions, searchParameters.counselor);
+  }
+  if (canOnlyViewOwnContacts) {
+    searchParameters.counselor = user.workerSid;
+  }
+
   const unprocessedResults = await search(accountSid, searchParameters, limit, offset);
   return {
     count: unprocessedResults.count,

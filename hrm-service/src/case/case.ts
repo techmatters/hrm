@@ -38,6 +38,7 @@ import {
   bindApplyTransformations as bindApplyContactTransformations,
   getPersonsName,
 } from '../contact/contact';
+import type { SearchPermissions } from '../permissions/search-permissions';
 
 type CaseInfoSection = {
   id: string;
@@ -304,11 +305,23 @@ export type CaseSearchReturn = {
   count: number;
 };
 
+/**
+ * Check if the user can view any case given:
+ * - search permissions
+ * - counsellors' filter
+ */
+const cannotViewAnyCasesGivenTheseCounsellors = (user: TwilioUser, searchPermissions: SearchPermissions, counsellors?: string[]) => searchPermissions.canOnlyViewOwnCases && counsellors && counsellors.length > 0 && !counsellors.includes(user.workerSid);
+
+/**
+ * If the counselors can only view cases he/she owns, then we override caseFilters.counsellors to [workerSid]
+ */
+const overrideCounsellors = (user: TwilioUser, searchPermissions: SearchPermissions, counsellors?: string[]) => searchPermissions.canOnlyViewOwnCases ? [user.workerSid] : counsellors;
+
 export const searchCases = async (
   accountSid: string,
   listConfiguration: CaseListConfiguration,
   search: SearchParameters,
-  { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
+  { can, user, searchPermissions }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser; searchPermissions: SearchPermissions },
 ): Promise<CaseSearchReturn> => {
   const { filters, helpline, counselor, closedCases, ...searchCriteria } = search;
   const caseFilters = filters ?? {};
@@ -320,6 +333,21 @@ export const searchCases = async (
     caseFilters.excludedStatuses.push('closed');
   }
   caseFilters.includeOrphans = caseFilters.includeOrphans ?? closedCases ?? true;
+
+  /**
+   * VIEW_CASE permission:
+   * Handle filtering cases according to: https://github.com/techmatters/hrm/pull/316#discussion_r1131118034
+   * The search query already filters the cases given an array of counsellors.
+   */
+  if (cannotViewAnyCasesGivenTheseCounsellors(user, searchPermissions, caseFilters.counsellors)) {
+    return {
+      count: 0,
+      cases: [],
+    };
+  } else {
+    caseFilters.counsellors = overrideCounsellors(user, searchPermissions, caseFilters.counsellors);
+  }
+
   const dbResult = await caseDb.search(listConfiguration, accountSid, searchCriteria, caseFilters);
   return {
     ...dbResult,

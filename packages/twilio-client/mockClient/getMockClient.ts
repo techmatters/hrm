@@ -17,8 +17,13 @@
 import RestException from 'twilio/lib/base/RestException';
 import { chatMessageList } from './chatMessageList';
 
-export const getMockClient = () => {
+export const getMockClient = ({ accountSid }: { accountSid: string }) => {
   return {
+    tokens: {
+      toJSON: () => ({
+        accountSid,
+      }),
+    },
     chat: {
       v2: {
         services: () => ({
@@ -26,6 +31,9 @@ export const getMockClient = () => {
             get: () => ({
               messages: {
                 list: () => chatMessageList,
+              },
+              members: {
+                list: () => [],
               },
             }),
           },

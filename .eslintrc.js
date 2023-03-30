@@ -42,5 +42,12 @@ module.exports = {
     ecmaVersion: 2018, // Allows for the parsing of modern ECMAScript features
     sourceType: 'module', // Allows for the use of imports
   },
-  ignorePatterns: ['cdk.out/**', '**/dist/**', '**/coverage/**'],
+  ignorePatterns: [
+    'cdk.out/**',
+    '**/dist/**',
+    '**/*-dist/**',
+    '**/coverage/**',
+    'node_modules/**',
+    '**/node_modules/**',
+  ],
 };

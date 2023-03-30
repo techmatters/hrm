@@ -18,6 +18,7 @@ import { diff, Diff, DiffNew, DiffEdit, DiffArray } from 'deep-diff';
 
 export const actionsMaps = {
   case: {
+    VIEW_CASE: 'viewCase',
     CLOSE_CASE: 'closeCase',
     REOPEN_CASE: 'reopenCase',
     CASE_STATUS_TRANSITION: 'caseStatusTransition',
@@ -38,6 +39,7 @@ export const actionsMaps = {
     EDIT_FOLLOW_UP_DATE: 'editFollowUpDate',
   },
   contact: {
+    VIEW_CONTACT: 'viewContact',
     EDIT_CONTACT: 'editContact',
     VIEW_EXTERNAL_TRANSCRIPT: 'viewExternalTranscript',
   },

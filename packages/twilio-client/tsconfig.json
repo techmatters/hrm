@@ -1,7 +1,7 @@
 {
   "extends": "../tsconfig.packages-base.json",
-  "include": ["*.ts"],
+  "include": ["*.ts", "mockClient/*.ts"],
   "compilerOptions": {
-    "outDir": "./dist",
+    "outDir": "./dist"
   }
 }

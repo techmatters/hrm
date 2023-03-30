@@ -29,12 +29,21 @@ if (process.env.SSM_REGION) {
 
 let ssm: SSM;
 
-export type SsmCache = {
-  values: Record<string, string | undefined>;
-  expiryDate?: Date;
+export type SsmCacheParameter = {
+  value: string;
+  expiryDate: Date;
 };
 
-export const ssmCache: SsmCache = { values: {} };
+export type SsmCache = {
+  values: Record<string, SsmCacheParameter | undefined>;
+  expiryDate?: Date;
+  cacheDurationMilliseconds: number;
+};
+
+export const ssmCache: SsmCache = {
+  values: {},
+  cacheDurationMilliseconds: 3600000,
+};
 
 export class SsmParameterNotFound extends Error {
   constructor(message: string) {
@@ -46,24 +55,20 @@ export class SsmParameterNotFound extends Error {
   }
 }
 
-export const getSsmParameter = (name: string): string => {
-  if (!Object.prototype.hasOwnProperty.call(ssmCache.values, name)) {
-    throw new SsmParameterNotFound(`SSM parameter ${name} not found in cache`);
-  }
-
-  return ssmCache.values[name] || '';
-};
-
-export const addToCache = (regex: RegExp | undefined, { Name, Value }: SSM.Parameter) => {
-  if (!Name) return;
-  if (regex && !regex.test(Name)) return;
-
-  ssmCache.values[Name] = Value;
+export const hasParameterExpired = (parameter: SsmCacheParameter | undefined) => {
+  return !!(parameter?.expiryDate && new Date() > parameter.expiryDate);
 };
 
 export const hasCacheExpired = () => !!(ssmCache.expiryDate && new Date() > ssmCache.expiryDate);
 
 export const isConfigNotEmpty = () => !!Object.keys(ssmCache.values).length;
+
+export const setCacheDurationMilliseconds = (cacheDurationMilliseconds: number) => {
+  ssmCache.cacheDurationMilliseconds = cacheDurationMilliseconds;
+};
+
+// If the value is falsy, we take that to means that the parameter doesn't exist in addition to just a missing name
+export const parameterExistsInCache = (name: string): boolean => !!ssmCache.values[name]?.value;
 
 export const getSsmClient = () => {
   if (!ssm) {
@@ -71,6 +76,53 @@ export const getSsmClient = () => {
   }
 
   return ssm;
+};
+
+export const addToCache = (regex: RegExp | undefined, { Name, Value }: SSM.Parameter) => {
+  if (!Name) return;
+  if (regex && !regex.test(Name)) return;
+
+  ssmCache.values[Name] = {
+    value: Value || '',
+    expiryDate: new Date(Date.now() + ssmCache.cacheDurationMilliseconds),
+  };
+};
+
+export const loadParameter = async (name: string) => {
+  const params: SSM.GetParameterRequest = {
+    Name: name,
+    WithDecryption: true,
+  };
+
+  const { Parameter } = await getSsmClient()
+    .getParameter(params)
+    .promise();
+
+  if (!Parameter?.Name) {
+    return;
+  }
+
+  addToCache(undefined, Parameter);
+};
+
+export const getSsmParameter = async (name: string): Promise<string> => {
+  // If the cache doesn't have the requested parameter or if it is expired, load it
+  if (!parameterExistsInCache(name) || hasParameterExpired(ssmCache.values[name])) {
+    await loadParameter(name);
+  }
+
+  // If the cache still doesn't have the requested parameter, throw an error
+  if (!parameterExistsInCache(name)) {
+    throw new SsmParameterNotFound(`Parameter ${name} not found`);
+  }
+
+  return ssmCache.values[name]?.value || '';
+};
+
+type LoadPaginatedParameters = {
+  path: string;
+  regex?: RegExp;
+  nextToken?: string;
 };
 
 export const loadPaginated = async ({
@@ -114,20 +166,14 @@ export type LoadSsmCacheParameters = {
 };
 
 export const loadSsmCache = async ({
-  cacheDurationMilliseconds = 3600000,
+  cacheDurationMilliseconds,
   configs,
 }: LoadSsmCacheParameters) => {
   if (isConfigNotEmpty() && !hasCacheExpired()) return;
+  if (cacheDurationMilliseconds) setCacheDurationMilliseconds(cacheDurationMilliseconds);
 
-  ssmCache.expiryDate = new Date(Date.now() + cacheDurationMilliseconds);
+  ssmCache.expiryDate = new Date(Date.now() + ssmCache.cacheDurationMilliseconds);
 
   const promises = configs.map(async config => loadPaginated(config));
-
   await Promise.all(promises);
-};
-
-type LoadPaginatedParameters = {
-  path: string;
-  regex?: RegExp;
-  nextToken?: string;
 };
