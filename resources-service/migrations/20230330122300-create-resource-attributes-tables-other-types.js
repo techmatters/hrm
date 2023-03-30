@@ -22,7 +22,7 @@ module.exports = {
         "resourceId" text COLLATE pg_catalog."default" NOT NULL,
         "accountSid" text COLLATE pg_catalog."default" NOT NULL,
         "key" text COLLATE pg_catalog."default" NOT NULL,
-        "value" text COLLATE pg_catalog."default" NOT NULL,
+        "value" bool NOT NULL,
         "info" JSONB,
         "lastUpdated" timestamp with time zone,
         "updateSequence"  bigint NOT NULL DEFAULT nextval('"Resources_updates_seq"'::regclass),
