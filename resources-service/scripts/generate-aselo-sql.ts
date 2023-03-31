@@ -37,34 +37,55 @@ export const generateAseloResourceSql = (
   )} 
   ON CONFLICT ON CONSTRAINT "Resources_pkey" 
   DO UPDATE SET "name" = EXCLUDED."name"`);
-  const tables = [
+  const nonTranslatableTables = [
     'ResourceStringAttributes',
     'ResourceNumberAttributes',
     'ResourceBooleanAttributes',
-    'ResourceDateAttributes',
+    'ResourceDateTimeAttributes',
   ] as const;
   sqlBatch.push(
     pgp.as.format(
-      `DELETE FROM resources."ResourceStringAttributes" WHERE "resourceId" = $<resourceId> AND "accountSid" = $<accountSid>`,
+      `DELETE FROM resources."ResourceStringAttributes" WHERE "resourceId" = $<resourceId> AND "accountSid" = $<accountSid>;
+    DELETE FROM resources."ResourceNumberAttributes" WHERE "resourceId" = $<resourceId> AND "accountSid" = $<accountSid>;
+    DELETE FROM resources."ResourceBooleanAttributes" WHERE "resourceId" = $<resourceId> AND "accountSid" = $<accountSid>;
+    DELETE FROM resources."ResourceDateTimeAttributes" WHERE "resourceId" = $<resourceId> AND "accountSid" = $<accountSid>`,
       { resourceId: resourceRecord.id.toString(), accountSid },
     ),
   );
   sqlBatch.push(
-    ...tables.flatMap(table =>
+    ...attributes.ResourceStringAttributes.map(attribute => {
+      const { key, value, info, language } = attribute;
+      return pgp.as.format(
+        `${pgp.helpers.insert(
+          {
+            accountSid,
+            resourceId: resourceRecord.id,
+            key,
+            value,
+            info,
+            language,
+          },
+          ['accountSid', 'resourceId', 'key', 'value', 'language', 'info'],
+          { schema: 'resources', table: 'ResourceStringAttributes' },
+        )}`,
+      );
+    }),
+  );
+  sqlBatch.push(
+    ...nonTranslatableTables.flatMap(table =>
       attributes[table].map(attribute => {
-        const { key, value, info, language } = attribute;
+        const { key, value, info } = attribute;
         return pgp.as.format(
           `${pgp.helpers.insert(
             {
               accountSid,
               resourceId: resourceRecord.id,
               key,
-              value: value.toString(),
+              value,
               info,
-              language,
             },
-            ['accountSid', 'resourceId', 'key', 'value', 'language', 'info'],
-            { schema: 'resources', table: 'ResourceStringAttributes' }, // TODO: use table variable once they have been created
+            ['accountSid', 'resourceId', 'key', 'value', 'info'],
+            { schema: 'resources', table },
           )}`,
         );
       }),

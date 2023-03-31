@@ -4,6 +4,7 @@ import {
   KhpMappingNode,
   khpReferenceAttributeMapping,
   khpResourceFieldMapping,
+  khpTranslatableAttributeMapping,
   substitueCaptureTokens,
 } from './khp-aselo-converter';
 
@@ -94,14 +95,14 @@ export const KHP_MAPPING_NODE: KhpMappingNode = {
         children: {
           name: {
             children: {
-              '{language}': khpAttributeMapping('ResourceStringAttributes', siteKey('name'), {
+              '{language}': khpTranslatableAttributeMapping(siteKey('name'), {
                 language: context => context.captures.language,
               }),
             },
           },
           details: {
             children: {
-              '{language}': khpAttributeMapping('ResourceStringAttributes', siteKey('details'), {
+              '{language}': khpTranslatableAttributeMapping(siteKey('details'), {
                 value: siteKey('details'),
                 info: context => context.currentValue,
                 language: context => context.captures.language,
@@ -111,7 +112,7 @@ export const KHP_MAPPING_NODE: KhpMappingNode = {
           isActive: khpAttributeMapping('ResourceBooleanAttributes', siteKey('isActive')),
           isLocationPrivate: khpAttributeMapping(
             'ResourceBooleanAttributes',
-            'agency/isLocationPrivate',
+            siteKey('isLocationPrivate'),
           ),
           location: {
             children: {
@@ -141,15 +142,11 @@ export const KHP_MAPPING_NODE: KhpMappingNode = {
             children: {
               '{dayIndex}': {
                 children: {
-                  '{language}': khpAttributeMapping(
-                    'ResourceStringAttributes',
-                    siteKey('operations/{dayIndex}'),
-                    {
-                      value: context => context.currentValue.day,
-                      info: context => context.currentValue,
-                      language: context => context.captures.language,
-                    },
-                  ),
+                  '{language}': khpTranslatableAttributeMapping(siteKey('operations/{dayIndex}'), {
+                    value: context => context.currentValue.day,
+                    info: context => context.currentValue,
+                    language: context => context.captures.language,
+                  }),
                 },
               },
             },
@@ -169,7 +166,7 @@ export const KHP_MAPPING_NODE: KhpMappingNode = {
   name: khpResourceFieldMapping('name', context => context.currentValue.en),
   nameDetails: {
     children: {
-      '{language}': khpAttributeMapping('ResourceStringAttributes', 'nameDetails', {
+      '{language}': khpTranslatableAttributeMapping('nameDetails', {
         value: ctx => ctx.currentValue.official,
         info: context => context.currentValue,
         language: context => context.captures.language,
@@ -180,7 +177,7 @@ export const KHP_MAPPING_NODE: KhpMappingNode = {
     children: {
       '{dayIndex}': {
         children: {
-          '{language}': khpAttributeMapping('ResourceStringAttributes', 'operations/{dayIndex}', {
+          '{language}': khpTranslatableAttributeMapping('operations/{dayIndex}', {
             value: context => context.currentValue.day,
             info: context => context.currentValue,
             language: context => context.captures.language,
@@ -203,20 +200,20 @@ export const KHP_MAPPING_NODE: KhpMappingNode = {
       email: khpAttributeMapping('ResourceStringAttributes', 'mainContact/email'),
       title: {
         children: {
-          '{language}': khpAttributeMapping('ResourceStringAttributes', 'mainContact/title', {
+          '{language}': khpTranslatableAttributeMapping('mainContact/title', {
             language: context => context.captures.language,
           }),
         },
       },
       phoneNumber: khpAttributeMapping('ResourceStringAttributes', 'mainContact/phoneNumber'),
-      isPrivate: khpAttributeMapping('ResourceStringAttributes', 'mainContact/isPrivate'),
+      isPrivate: khpAttributeMapping('ResourceBooleanAttributes', 'mainContact/isPrivate'),
     },
   },
   website: khpAttributeMapping('ResourceStringAttributes', 'website'),
   status: khpReferenceAttributeMapping('status', 'khp-resource-statuses'),
   description: {
     children: {
-      '{language}': khpAttributeMapping('ResourceStringAttributes', 'description', {
+      '{language}': khpTranslatableAttributeMapping('description', {
         value: 'description',
         info: context => ({ text: context.currentValue }),
         language: context => context.captures.language,
@@ -264,7 +261,14 @@ export const KHP_MAPPING_NODE: KhpMappingNode = {
   keywords: khpAttributeMapping('ResourceStringAttributes', 'keywords'),
   accessibility: khpReferenceAttributeMapping('accessibility', 'khp-accessibility'),
   applicationProcess: khpReferenceAttributeMapping('applicationProcess', 'khp-application-process'),
-  documentsRequired: khpAttributeMapping('ResourceBooleanAttributes', 'documentsRequired'),
+  documentsRequired: {
+    children: {
+      '{documentIndex}': khpAttributeMapping(
+        'ResourceStringAttributes',
+        'documentsRequired/{documentIndex}',
+      ),
+    },
+  },
   languages: khpReferenceAttributeMapping('languages', 'khp-languages', {
     value: context => context.currentValue.language,
   }),
@@ -273,8 +277,8 @@ export const KHP_MAPPING_NODE: KhpMappingNode = {
   taxonomyCode: khpAttributeMapping('ResourceStringAttributes', 'taxonomyCode'),
   timestamps: {
     children: {
-      createdAt: khpAttributeMapping('ResourceDateAttributes', 'sourceCreatedAt'),
-      updatedAt: khpAttributeMapping('ResourceDateAttributes', 'sourceUpdatedAt'),
+      createdAt: khpAttributeMapping('ResourceDateTimeAttributes', 'sourceCreatedAt'),
+      updatedAt: khpAttributeMapping('ResourceDateTimeAttributes', 'sourceUpdatedAt'),
     },
   },
 };

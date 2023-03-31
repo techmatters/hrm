@@ -2,20 +2,25 @@ export type InlineAttributeTable =
   | 'ResourceStringAttributes'
   | 'ResourceBooleanAttributes'
   | 'ResourceNumberAttributes'
-  | 'ResourceDateAttributes';
+  | 'ResourceDateTimeAttributes';
 
 export type AseloInlineResourceAttribute<T extends InlineAttributeTable> = {
   key: string;
   value: AttributeValue<T>;
-  language: string;
   info: Record<string, any> | null;
+};
+
+export type AseloTranslatableResourceAttribute = AseloInlineResourceAttribute<
+  'ResourceStringAttributes'
+> & {
+  language: string;
 };
 
 export type AseloResource = {
   id: string;
   name: string;
   attributes: {
-    ResourceStringAttributes: AseloInlineResourceAttribute<'ResourceStringAttributes'>[];
+    ResourceStringAttributes: AseloTranslatableResourceAttribute[];
     ResourceReferenceStringAttributes: {
       key: string;
       value: string;
@@ -25,7 +30,7 @@ export type AseloResource = {
     }[];
     ResourceBooleanAttributes: AseloInlineResourceAttribute<'ResourceBooleanAttributes'>[];
     ResourceNumberAttributes: AseloInlineResourceAttribute<'ResourceNumberAttributes'>[];
-    ResourceDateAttributes: AseloInlineResourceAttribute<'ResourceDateAttributes'>[];
+    ResourceDateTimeAttributes: AseloInlineResourceAttribute<'ResourceDateTimeAttributes'>[];
   };
 };
 
@@ -35,6 +40,6 @@ export type AttributeValue<T extends AttributeTable> = T extends 'ResourceBoolea
   ? boolean
   : T extends 'ResourceNumberAttributes'
   ? number
-  : T extends 'ResourceDateAttributes'
+  : T extends 'ResourceDateTimeAttributes'
   ? Date
   : string;
