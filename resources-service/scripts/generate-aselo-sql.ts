@@ -38,7 +38,6 @@ export const generateAseloResourceSql = (
   ON CONFLICT ON CONSTRAINT "Resources_pkey" 
   DO UPDATE SET "name" = EXCLUDED."name"`);
   const nonTranslatableTables = [
-    'ResourceStringAttributes',
     'ResourceNumberAttributes',
     'ResourceBooleanAttributes',
     'ResourceDateTimeAttributes',
@@ -63,7 +62,7 @@ export const generateAseloResourceSql = (
             key,
             value,
             info,
-            language,
+            language: language ?? '',
           },
           ['accountSid', 'resourceId', 'key', 'value', 'language', 'info'],
           { schema: 'resources', table: 'ResourceStringAttributes' },
