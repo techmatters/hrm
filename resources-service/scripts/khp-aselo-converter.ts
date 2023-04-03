@@ -23,11 +23,16 @@ type KhpAttributeMapping<T extends AttributeTable> = {
   table: T;
   valueGenerator: (context: FieldMappingContext) => AttributeValue<T>;
   infoGenerator: (context: FieldMappingContext) => Record<string, any> | null;
-  languageGenerator: (context: FieldMappingContext) => string;
 };
 type KhpInlineAttributeMapping<T extends InlineAttributeTable> = KhpAttributeMapping<T>;
+
+type KhpTranslatableAttributeMapping = KhpAttributeMapping<'ResourceStringAttributes'> & {
+  languageGenerator: (context: FieldMappingContext) => string;
+};
+
 type KhpReferenceAttributeMapping = KhpAttributeMapping<'ResourceReferenceStringAttributes'> & {
   list: string;
+  languageGenerator: (context: FieldMappingContext) => string;
 };
 
 export type KhpMappingNode = {
@@ -50,6 +55,15 @@ const isKhpInlineAttributeMapping = <T extends InlineAttributeTable>(
     typeof mapping.keyGenerator === 'function' &&
     typeof mapping.valueGenerator === 'function' &&
     !mapping.list
+  );
+};
+
+const isKhpTranslatableAttributeMapping = (
+  mapping: any,
+): mapping is KhpTranslatableAttributeMapping => {
+  return (
+    typeof mapping?.languageGenerator === 'function' &&
+    isKhpInlineAttributeMapping<'ResourceStringAttributes'>(mapping)
   );
 };
 
@@ -92,11 +106,9 @@ export const khpAttributeMapping = <T extends AttributeTable>(
   {
     value = context => context.currentValue,
     info = () => null,
-    language = () => '',
   }: {
     value?: AttributeValue<AttributeTable> | ((context: FieldMappingContext) => AttributeValue<T>);
     info?: (context: FieldMappingContext) => Record<string, any> | null;
-    language?: string | ((context: FieldMappingContext) => string);
   } = {},
 ): KhpAttributeMapping<AttributeTable> => ({
   table,
@@ -105,10 +117,25 @@ export const khpAttributeMapping = <T extends AttributeTable>(
     typeof value === 'function'
       ? value
       : () =>
-          table === 'ResourceDateAttributes' && value && typeof value === 'string'
+          table === 'ResourceDateTimeAttributes' && value && typeof value === 'string'
             ? parseISO(value)
             : value,
   infoGenerator: typeof info === 'function' ? info : () => info,
+});
+
+export const khpTranslatableAttributeMapping = (
+  key: string | ((context: FieldMappingContext) => string),
+  {
+    value = context => context.currentValue,
+    info = () => null,
+    language = () => '',
+  }: {
+    value?: string | ((context: FieldMappingContext) => string);
+    info?: (context: FieldMappingContext) => Record<string, any> | null;
+    language?: string | ((context: FieldMappingContext) => string);
+  } = {},
+) => ({
+  ...khpAttributeMapping('ResourceStringAttributes', key, { value, info }),
   languageGenerator: typeof language === 'function' ? language : () => language,
 });
 
@@ -124,6 +151,7 @@ export const khpReferenceAttributeMapping = (
   } = {},
 ) => ({
   ...khpAttributeMapping('ResourceReferenceStringAttributes', key, data),
+  languageGenerator: typeof data.language === 'function' ? data.language : () => data.language,
   list,
 });
 
@@ -139,7 +167,7 @@ export const mapKHPResource = (
       ResourceReferenceStringAttributes: [],
       ResourceBooleanAttributes: [],
       ResourceNumberAttributes: [],
-      ResourceDateAttributes: [],
+      ResourceDateTimeAttributes: [],
     },
   };
 
@@ -175,11 +203,17 @@ export const mapKHPResource = (
             info: mapping.infoGenerator(context),
             list: mapping.list,
           });
-        } else if (isKhpInlineAttributeMapping(mapping)) {
+        } else if (isKhpTranslatableAttributeMapping(mapping)) {
           aseloResource.attributes[mapping.table].push({
             key: mapping.keyGenerator(context),
             value: mapping.valueGenerator(context),
             language: mapping.languageGenerator(context),
+            info: mapping.infoGenerator(context),
+          } as any);
+        } else if (isKhpInlineAttributeMapping(mapping)) {
+          aseloResource.attributes[mapping.table].push({
+            key: mapping.keyGenerator(context),
+            value: mapping.valueGenerator(context),
             info: mapping.infoGenerator(context),
           } as any);
         }

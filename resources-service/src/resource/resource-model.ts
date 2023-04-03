@@ -20,6 +20,8 @@ import {
   getByIdList,
   getWhereNameContains,
   ReferrableResourceAttribute,
+  ReferrableResourceRecord,
+  ReferrableResourceTranslatableAttribute,
 } from './resource-data-access';
 import resourceCloudSearchClient from './search/resource-cloudsearch-client';
 import { SearchParameters } from './search/search-types';
@@ -40,18 +42,38 @@ const MAX_SEARCH_RESULTS = 200;
 
 type ResourceAttributeNode = Record<
   string,
-  ReferrableResourceAttribute[] | Record<string, ReferrableResourceAttribute[]>
+  | (
+      | ReferrableResourceAttribute<string | boolean | number>
+      | ReferrableResourceTranslatableAttribute
+    )[]
+  | Record<
+      string,
+      (
+        | ReferrableResourceAttribute<string | boolean | number>
+        | ReferrableResourceTranslatableAttribute
+      )[]
+    >
 >;
 
-const attributeObjectGraphFromKeys = (
-  attributesWithKeys: (ReferrableResourceAttribute & { key: string })[],
-): ResourceAttributeNode => {
-  const groupedAttributes: ResourceAttributeNode = {};
+const resourceRecordToApiResource = (
+  resourceRecord: ReferrableResourceRecord,
+): ReferrableResource => {
+  const {
+    stringAttributes,
+    booleanAttributes,
+    numberAttributes,
+    datetimeAttributes,
+    ...withoutAttributes
+  } = resourceRecord;
+  const attributesWithKeys: (ReferrableResourceAttribute<string | boolean | number> & {
+    key: string;
+  })[] = [...stringAttributes, ...booleanAttributes, ...numberAttributes, ...datetimeAttributes];
+  const attributes: ResourceAttributeNode = {};
   attributesWithKeys.forEach(attribute => {
     const { key, ...withoutKey } = attribute;
     // Split on / but not on \/ (escaped /), but doesn't misinterpret preceding escaped \ (i.e. \\) as escaping the / (see unit tests)
     const attributeKeySections = key.split(/(?<!(?:[^\\]|^)\\(?:\\{2})*)\//).filter(s => s.length);
-    let currentObject: ResourceAttributeNode = groupedAttributes as ResourceAttributeNode;
+    let currentObject: ResourceAttributeNode = attributes as ResourceAttributeNode;
     attributeKeySections.forEach((escapedSection, index) => {
       const section = escapedSection.replace(/\\([\\\/])/g, '$1');
       if (index === attributeKeySections.length - 1) {
@@ -74,7 +96,11 @@ const attributeObjectGraphFromKeys = (
       currentObject = currentObject[section] as ResourceAttributeNode;
     });
   });
-  return groupedAttributes;
+
+  return {
+    ...withoutAttributes,
+    attributes,
+  };
 };
 
 export type ReferrableResource = {
@@ -95,9 +121,7 @@ export const resourceModel = (cloudSearchConfig: CloudSearchConfig) => {
       resourceId: string,
     ): Promise<ReferrableResource | null> => {
       const record = await getById(accountSid, resourceId);
-      return record
-        ? { ...record, attributes: attributeObjectGraphFromKeys(record.attributes) }
-        : null;
+      return record ? resourceRecordToApiResource(record) : null;
     },
 
     /**
@@ -142,10 +166,7 @@ export const resourceModel = (cloudSearchConfig: CloudSearchConfig) => {
       const totalCount = nameSearchTotalCount + (untrimmedResults.length - idsOfNameMatches.length);
       const results = untrimmedResults.slice(resultsStartIndex, resultsStartIndex + limit);
       return {
-        results: results.map(record => ({
-          ...record,
-          attributes: attributeObjectGraphFromKeys(record.attributes),
-        })),
+        results: results.map(record => resourceRecordToApiResource(record)),
         totalCount,
       };
     },
@@ -174,10 +195,7 @@ export const resourceModel = (cloudSearchConfig: CloudSearchConfig) => {
       const orderedResults = orderedResourceIds.map(id => resourceMap[id]).filter(r => r);
 
       return {
-        results: orderedResults.map(record => ({
-          ...record,
-          attributes: attributeObjectGraphFromKeys(record.attributes),
-        })),
+        results: orderedResults.map(record => resourceRecordToApiResource(record)),
         totalCount: total,
       };
     },

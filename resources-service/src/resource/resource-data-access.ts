@@ -21,16 +21,22 @@ import {
   SELECT_RESOURCE_IN_IDS,
 } from './sql/resource-get-sql';
 
-export type ReferrableResourceAttribute = {
-  value: string;
-  language: string;
+export type ReferrableResourceAttribute<T> = {
+  value: T;
   info?: any;
+};
+
+export type ReferrableResourceTranslatableAttribute = ReferrableResourceAttribute<string> & {
+  language: string;
 };
 
 export type ReferrableResourceRecord = {
   name: string;
   id: string;
-  attributes: (ReferrableResourceAttribute & { key: string })[];
+  stringAttributes: (ReferrableResourceTranslatableAttribute & { key: string })[];
+  booleanAttributes: (ReferrableResourceAttribute<boolean> & { key: string })[];
+  numberAttributes: (ReferrableResourceAttribute<number> & { key: string })[];
+  datetimeAttributes: (ReferrableResourceAttribute<string> & { key: string })[];
 };
 
 export const getById = async (
@@ -44,7 +50,7 @@ export const getById = async (
   if (res) {
     delete res.accountSid;
   }
-  return res;
+  return res as ReferrableResourceRecord;
 };
 
 export const getByIdList = async (
