@@ -15,6 +15,7 @@
     { "path": "jobs/contact-complete" },
     { "path": "jobs/contact-retrieve-recording-url" },
     { "path": "jobs/contact-retrieve-transcript" },
+    { "path": "jobs/resources-import-cloudsearch" },
     { "path": "hrm-service" }
   ]
 }
