@@ -34,6 +34,7 @@ on:
         options:
           - contact-retrieve-recording-url
           - contact-retrieve-transcript
+          - resources-import-cloudsearch
 
   workflow_call:
     secrets:
