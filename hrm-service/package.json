@@ -76,7 +76,7 @@
     "mockttp": "^3.2.2",
     "moment": "^2.29.4",
     "npm-run-all": "^4.1.5",
-    "sequelize": "^6.16.2",
+    "sequelize": "^6.29.0",
     "sequelize-cli": "^6.4.1",
     "sequelize-mock": "^0.10.2",
     "supertest": "^4.0.2",
