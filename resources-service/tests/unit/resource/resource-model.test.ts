@@ -56,6 +56,16 @@ mockSearchClient.mockReturnValue({
 const { searchResourcesByName, searchResources } = resourceModel({
   searchUrl: new URL('http://a.com'),
 });
+const emptyAttributes = {
+  stringAttributes: [],
+  booleanAttributes: [],
+  datetimeAttributes: [],
+  numberAttributes: [],
+};
+
+const addMissingEmptyAttributes = (
+  resources: (Pick<ReferrableResourceRecord, 'id' | 'name'> & Partial<ReferrableResourceRecord>)[],
+): ReferrableResourceRecord[] => resources.map(r => ({ ...emptyAttributes, ...r }));
 
 describe('searchResourcesByName', () => {
   beforeEach(() => {
@@ -67,17 +77,20 @@ describe('searchResourcesByName', () => {
       {
         id: 'RESOURCE_1',
         name: 'Resource 1',
-        attributes: [
+        stringAttributes: [
           { key: 'testAttribute', value: 'testValue', language: 'Klingon', info: { qa: 'pla' } },
         ],
       },
-      { id: 'RESOURCE_2', name: 'Resource 2', attributes: [] },
+      {
+        id: 'RESOURCE_2',
+        name: 'Resource 2',
+      },
     ];
     mockGetWhereNameContains.mockResolvedValue({
       totalCount: 123,
       results: ['RESOURCE_1', 'RESOURCE_2'],
     });
-    mockGetByIdList.mockResolvedValue(resultSet);
+    mockGetByIdList.mockResolvedValue(addMissingEmptyAttributes(resultSet));
     const res = await searchResourcesByName('AC_FAKE_ACCOUNT', {
       nameSubstring: 'Res',
       ids: [],
@@ -86,7 +99,8 @@ describe('searchResourcesByName', () => {
     expect(res.totalCount).toBe(123);
     expect(res.results).toStrictEqual(
       resultSet.map(r => ({
-        ...r,
+        id: r.id,
+        name: r.name,
         attributes: {
           ...(r.id === 'RESOURCE_1'
             ? { testAttribute: [{ value: 'testValue', language: 'Klingon', info: { qa: 'pla' } }] }
@@ -112,27 +126,51 @@ describe('searchResourcesByName', () => {
   });
   test('Id search only specified - looks up resources with getByIdList', async () => {
     const resultSet = [
-      { id: 'RESOURCE_1', name: 'Resource 1', attributes: [] },
-      { id: 'RESOURCE_2', name: 'Resource 2', attributes: [] },
+      {
+        id: 'RESOURCE_1',
+        name: 'Resource 1',
+      },
+      {
+        id: 'RESOURCE_2',
+        name: 'Resource 2',
+      },
     ];
-    mockGetByIdList.mockResolvedValue(resultSet);
+    mockGetByIdList.mockResolvedValue(addMissingEmptyAttributes(resultSet));
     const res = await searchResourcesByName('AC_FAKE_ACCOUNT', {
       ids: ['RESOURCE_1', 'RESOURCE_2'],
       pagination: { limit: 5, start: 0 },
     });
     expect(res.totalCount).toBe(2);
-    expect(res.results).toStrictEqual(resultSet.map(r => ({ ...r, attributes: {} })));
+    expect(res.results).toStrictEqual(
+      resultSet.map(r => ({
+        id: r.id,
+        name: r.name,
+        attributes: {},
+      })),
+    );
     expect(getWhereNameContains).not.toHaveBeenCalled();
     expect(getByIdList).toHaveBeenCalledWith('AC_FAKE_ACCOUNT', ['RESOURCE_1', 'RESOURCE_2']);
   });
   test('Id search only specified with start - skips {start} number of results', async () => {
     const resultSet = [
-      { id: 'RESOURCE_3', name: 'Resource 3', attributes: [] },
-      { id: 'RESOURCE_1', name: 'Resource 1', attributes: [] },
-      { id: 'RESOURCE_2', name: 'Resource 2', attributes: [] },
-      { id: 'RESOURCE_4', name: 'Resource 4', attributes: [] },
+      {
+        id: 'RESOURCE_3',
+        name: 'Resource 3',
+      },
+      {
+        id: 'RESOURCE_1',
+        name: 'Resource 1',
+      },
+      {
+        id: 'RESOURCE_2',
+        name: 'Resource 2',
+      },
+      {
+        id: 'RESOURCE_4',
+        name: 'Resource 4',
+      },
     ];
-    mockGetByIdList.mockResolvedValue(resultSet);
+    mockGetByIdList.mockResolvedValue(addMissingEmptyAttributes(resultSet));
     const res = await searchResourcesByName('AC_FAKE_ACCOUNT', {
       ids: ['RESOURCE_3', 'RESOURCE_1', 'RESOURCE_2', 'RESOURCE_4'],
       pagination: { limit: 5, start: 2 },
@@ -149,12 +187,24 @@ describe('searchResourcesByName', () => {
   });
   test('Id search where DB returns different order - restores original order', async () => {
     const resultSet = [
-      { id: 'RESOURCE_1', name: 'Resource 1', attributes: [] },
-      { id: 'RESOURCE_2', name: 'Resource 2', attributes: [] },
-      { id: 'RESOURCE_3', name: 'Resource 3', attributes: [] },
-      { id: 'RESOURCE_4', name: 'Resource 4', attributes: [] },
+      {
+        id: 'RESOURCE_1',
+        name: 'Resource 1',
+      },
+      {
+        id: 'RESOURCE_2',
+        name: 'Resource 2',
+      },
+      {
+        id: 'RESOURCE_3',
+        name: 'Resource 3',
+      },
+      {
+        id: 'RESOURCE_4',
+        name: 'Resource 4',
+      },
     ];
-    mockGetByIdList.mockResolvedValue(resultSet);
+    mockGetByIdList.mockResolvedValue(addMissingEmptyAttributes(resultSet));
     const res = await searchResourcesByName('AC_FAKE_ACCOUNT', {
       ids: ['RESOURCE_3', 'RESOURCE_1', 'RESOURCE_2', 'RESOURCE_4'],
       pagination: { limit: 5, start: 0 },
@@ -176,11 +226,20 @@ describe('searchResourcesByName', () => {
   });
   test('Id search where DB doesnt find all IDs - returns what it finds, respecting original order', async () => {
     const resultSet = [
-      { id: 'RESOURCE_1', name: 'Resource 1', attributes: [] },
-      { id: 'RESOURCE_2', name: 'Resource 2', attributes: [] },
-      { id: 'RESOURCE_4', name: 'Resource 4', attributes: [] },
+      {
+        id: 'RESOURCE_1',
+        name: 'Resource 1',
+      },
+      {
+        id: 'RESOURCE_2',
+        name: 'Resource 2',
+      },
+      {
+        id: 'RESOURCE_4',
+        name: 'Resource 4',
+      },
     ];
-    mockGetByIdList.mockResolvedValue(resultSet);
+    mockGetByIdList.mockResolvedValue(addMissingEmptyAttributes(resultSet));
     const res = await searchResourcesByName('AC_FAKE_ACCOUNT', {
       ids: ['RESOURCE_3', 'RESOURCE_1', 'RESOURCE_2', 'RESOURCE_4'],
       pagination: { limit: 5, start: 0 },
@@ -201,12 +260,24 @@ describe('searchResourcesByName', () => {
   });
   test('Id search with duplicates - restores order where each unique ID is first found', async () => {
     const resultSet = [
-      { id: 'RESOURCE_1', name: 'Resource 1', attributes: [] },
-      { id: 'RESOURCE_2', name: 'Resource 2', attributes: [] },
-      { id: 'RESOURCE_3', name: 'Resource 3', attributes: [] },
-      { id: 'RESOURCE_4', name: 'Resource 4', attributes: [] },
+      {
+        id: 'RESOURCE_1',
+        name: 'Resource 1',
+      },
+      {
+        id: 'RESOURCE_2',
+        name: 'Resource 2',
+      },
+      {
+        id: 'RESOURCE_3',
+        name: 'Resource 3',
+      },
+      {
+        id: 'RESOURCE_4',
+        name: 'Resource 4',
+      },
     ];
-    mockGetByIdList.mockResolvedValue(resultSet);
+    mockGetByIdList.mockResolvedValue(addMissingEmptyAttributes(resultSet));
     const res = await searchResourcesByName('AC_FAKE_ACCOUNT', {
       ids: [
         'RESOURCE_3',
@@ -243,12 +314,24 @@ describe('searchResourcesByName', () => {
   });
   test('Id search where start is past max available results - returns empty array but correct result', async () => {
     const resultSet = [
-      { id: 'RESOURCE_1', name: 'Resource 1', attributes: [] },
-      { id: 'RESOURCE_2', name: 'Resource 2', attributes: [] },
-      { id: 'RESOURCE_3', name: 'Resource 3', attributes: [] },
-      { id: 'RESOURCE_4', name: 'Resource 4', attributes: [] },
+      {
+        id: 'RESOURCE_1',
+        name: 'Resource 1',
+      },
+      {
+        id: 'RESOURCE_2',
+        name: 'Resource 2',
+      },
+      {
+        id: 'RESOURCE_3',
+        name: 'Resource 3',
+      },
+      {
+        id: 'RESOURCE_4',
+        name: 'Resource 4',
+      },
     ];
-    mockGetByIdList.mockResolvedValue(resultSet);
+    mockGetByIdList.mockResolvedValue(addMissingEmptyAttributes(resultSet));
     const res = await searchResourcesByName('AC_FAKE_ACCOUNT', {
       ids: ['RESOURCE_3', 'RESOURCE_1', 'RESOURCE_2', 'RESOURCE_4'],
       pagination: { limit: 3, start: 10 },
@@ -270,12 +353,24 @@ describe('searchResourcesByName', () => {
     });
 
     const resultSet = [
-      { id: 'RESOURCE_1', name: 'Resource 1', attributes: [] },
-      { id: 'RESOURCE_2', name: 'Resource 2', attributes: [] },
-      { id: 'RESOURCE_3', name: 'Resource 3', attributes: [] },
-      { id: 'RESOURCE_4', name: 'Resource 4', attributes: [] },
+      {
+        id: 'RESOURCE_1',
+        name: 'Resource 1',
+      },
+      {
+        id: 'RESOURCE_2',
+        name: 'Resource 2',
+      },
+      {
+        id: 'RESOURCE_3',
+        name: 'Resource 3',
+      },
+      {
+        id: 'RESOURCE_4',
+        name: 'Resource 4',
+      },
     ];
-    mockGetByIdList.mockResolvedValue(resultSet);
+    mockGetByIdList.mockResolvedValue(addMissingEmptyAttributes(resultSet));
     const res = await searchResourcesByName('AC_FAKE_ACCOUNT', {
       nameSubstring: 'Res',
       ids: ['RESOURCE_3', 'RESOURCE_2', 'RESOURCE_4'],
@@ -303,12 +398,24 @@ describe('searchResourcesByName', () => {
     });
 
     const resultSet = [
-      { id: 'RESOURCE_1', name: 'Resource 1', attributes: [] },
-      { id: 'RESOURCE_2', name: 'Resource 2', attributes: [] },
-      { id: 'RESOURCE_3', name: 'Resource 3', attributes: [] },
-      { id: 'RESOURCE_4', name: 'Resource 4', attributes: [] },
+      {
+        id: 'RESOURCE_1',
+        name: 'Resource 1',
+      },
+      {
+        id: 'RESOURCE_2',
+        name: 'Resource 2',
+      },
+      {
+        id: 'RESOURCE_3',
+        name: 'Resource 3',
+      },
+      {
+        id: 'RESOURCE_4',
+        name: 'Resource 4',
+      },
     ];
-    mockGetByIdList.mockResolvedValue(resultSet);
+    mockGetByIdList.mockResolvedValue(addMissingEmptyAttributes(resultSet));
     const res = await searchResourcesByName('AC_FAKE_ACCOUNT', {
       nameSubstring: 'Res',
       ids: ['RESOURCE_3', 'RESOURCE_2', 'RESOURCE_4'],
@@ -760,7 +867,6 @@ describe('searchResources', () => {
       {
         id: 'RESOURCE_1',
         name: 'Resource 1',
-        attributes: attributeRecords,
       },
     ];
     mockSearchClientSearch.mockResolvedValue({
@@ -773,7 +879,11 @@ describe('searchResources', () => {
       ],
       total: 1,
     });
-    mockGetByIdList.mockResolvedValue(resultSet);
+    mockGetByIdList.mockResolvedValue(
+      addMissingEmptyAttributes(
+        resultSet.map(rs => ({ ...rs, stringAttributes: attributeRecords })),
+      ),
+    );
     const res = await searchResources('AC_FAKE_ACCOUNT', {
       generalSearchTerm: 'Res',
       filters: {},

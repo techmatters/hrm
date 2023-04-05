@@ -22,9 +22,8 @@ import {
   SELECT_UNINDEXED_RESOURCES,
 } from './sql/resource-get-sql';
 
-export type ReferrableResourceAttribute = {
-  value: string;
-  language: string;
+export type ReferrableResourceAttribute<T> = {
+  value: T;
   info?: any;
 };
 
@@ -34,13 +33,19 @@ export const isReferrableResourceAttribute = (
   attribute &&
   (typeof attribute.value === 'string' ||
     typeof attribute.value === 'number' ||
-    typeof attribute.value === 'boolean') &&
-  typeof attribute.language === 'string';
+    typeof attribute.value === 'boolean');
+
+export type ReferrableResourceTranslatableAttribute = ReferrableResourceAttribute<string> & {
+  language: string;
+};
 
 export type ReferrableResourceRecord = {
   name: string;
   id: string;
-  attributes: (ReferrableResourceAttribute & { key: string })[];
+  stringAttributes: (ReferrableResourceTranslatableAttribute & { key: string })[];
+  booleanAttributes: (ReferrableResourceAttribute<boolean> & { key: string })[];
+  numberAttributes: (ReferrableResourceAttribute<number> & { key: string })[];
+  datetimeAttributes: (ReferrableResourceAttribute<string> & { key: string })[];
 };
 
 export const getById = async (
@@ -54,7 +59,7 @@ export const getById = async (
   if (res) {
     delete res.accountSid;
   }
-  return res;
+  return res as ReferrableResourceRecord;
 };
 
 export const getByIdList = async (

@@ -414,7 +414,7 @@ describe('GET /resource', () => {
           keyA.localeCompare(keyB),
         );
         const expectedAttributeEntries = Object.entries(
-          expectedAttributes as Record<string, ReferrableResourceAttribute[]>,
+          expectedAttributes as Record<string, ReferrableResourceAttribute<unknown>[]>,
         ).sort(([keyA], [keyB]) => keyA.localeCompare(keyB));
         expect(responseAttributeEntries).toHaveLength(expectedAttributeEntries.length);
         responseAttributeEntries.forEach(([key, value], index) => {
@@ -453,6 +453,59 @@ describe('GET /resource', () => {
         },
       };
       expect(response.body).toStrictEqual(expectedResult);
+    });
+  });
+
+  describe('Inline attributes of non string types', () => {
+    const dateVal = new Date(2010, 15, 11, 13, 30, 15);
+    beforeEach(async () => {
+      await db.multi(`
+INSERT INTO resources."ResourceBooleanAttributes" ("resourceId", "accountSid", "key", "value", "info") VALUES ('RESOURCE_1', 'ACCOUNT_1', 'BOOLEAN_ATTRIBUTE', true, '{ "some": "json" }');
+INSERT INTO resources."ResourceNumberAttributes" ("resourceId", "accountSid", "key", "value", "info") VALUES ('RESOURCE_1', 'ACCOUNT_1', 'NUMBER_ATTRIBUTE', 1337.42, '{ "some": "json" }');
+INSERT INTO resources."ResourceDateTimeAttributes" ("resourceId", "accountSid", "key", "value", "info") VALUES ('RESOURCE_1', 'ACCOUNT_1', 'DATETIME_ATTRIBUTE', '${dateVal.toISOString()}', '{ "some": "json" }');
+       `);
+    });
+    test('should return the resource with the attributes', async () => {
+      const response = await request.get(`${basePath}/RESOURCE_1`).set(headers);
+      expect(response.status).toBe(200);
+      expect(response.body).toStrictEqual({
+        id: 'RESOURCE_1',
+        name: 'Resource 1 (Account 1)',
+        attributes: {
+          BOOLEAN_ATTRIBUTE: [
+            {
+              value: true,
+              info: { some: 'json' },
+            },
+          ],
+          NUMBER_ATTRIBUTE: [
+            {
+              value: 1337.42,
+              info: { some: 'json' },
+            },
+          ],
+          DATETIME_ATTRIBUTE: [
+            {
+              value: dateVal.toISOString(),
+              info: { some: 'json' },
+            },
+          ],
+          ATTRIBUTE_0: [
+            {
+              value: 'VALUE_0',
+              language: 'en-US',
+              info: { some: 'json' },
+            },
+          ],
+        },
+      });
+    });
+    afterEach(async () => {
+      await db.multi(`
+DELETE FROM resources."ResourceBooleanAttributes";
+DELETE FROM resources."ResourceNumberAttributes";
+DELETE FROM resources."ResourceDateTimeAttributes";
+      `);
     });
   });
 });

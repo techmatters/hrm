@@ -7,12 +7,12 @@ A set of utility scripts to maintain the resources service & associated data
 Build first, then run:
 ````bash
 npm run build-scripts
-npm run import-khp-json ACxxx [-- --generate-sql-only]
+npm run import-khp-json ACxxx [-- --only-generate-sql]
 ````
 
 Single command:
 ````bash
-npm run build-and-import-khp-json ACxxx [-- --generate-sql-only]
+npm run build-and-import-khp-json ACxxx [-- --only-generate-sql]
 ````
 
 This script imports resources into the Aselo resource database from a JSON file. It is intended to be run from the root directory of the resources-service package.
@@ -31,7 +31,7 @@ Currently, the script is hardcoded to read the input from `./resource-json/khp-s
 
 The script has one mandatory argument, the SID of the Twilio account to import resources for. This argument must be first (see example above).
 
-It also has one optional argument, `--generate-sql-only`, which will cause the script to skip the final step of running the generated SQL statements against the target database. You can then take these scripts and run them manually in pgAdmin or similar, they will run against any database with a valid resources schema.
+It also has one optional argument, `--only-generate-sql`, which will cause the script to skip the final step of running the generated SQL statements against the target database. You can then take these scripts and run them manually in pgAdmin or similar, they will run against any database with a valid resources schema.
 
 ## update-cloudsearch-domain
 

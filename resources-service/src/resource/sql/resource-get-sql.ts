@@ -14,7 +14,16 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-const SELECT_RESOURCES = `SELECT r.id, r."name", r."accountSid", att."attributes" FROM 
+const SELECT_RESOURCES = `
+SELECT 
+    r.id, 
+    r."name", 
+    r."accountSid", 
+    stringAtt."attributes" AS "stringAttributes", 
+    booleanAtt."attributes" AS "booleanAttributes", 
+    numberAtt."attributes" AS "numberAttributes", 
+    datetimeAtt."attributes" AS "datetimeAttributes" 
+FROM 
 resources."Resources" AS r 
 LEFT JOIN LATERAL (
   SELECT COALESCE(jsonb_agg((SELECT attributeRow FROM (SELECT ra."key", ra."value", ra."language", ra."info") AS attributeRow)), '[]') AS attributes
@@ -32,7 +41,31 @@ LEFT JOIN LATERAL (
           AND rrsav."id" = rrsa."referenceId"
         WHERE rrsa."accountSid" = r."accountSid" AND rrsa."resourceId" = r.id
     ) AS ra
-) AS att ON true`;
+) AS stringAtt ON true
+LEFT JOIN LATERAL (
+  SELECT COALESCE(jsonb_agg((SELECT attributeRow FROM (SELECT ra."key", ra."value", ra."info") AS attributeRow)), '[]') AS attributes
+    FROM (
+      SELECT rba."key", rba."value", rba."info"
+        FROM resources."ResourceBooleanAttributes" AS rba
+        WHERE rba."accountSid" = r."accountSid" AND rba."resourceId" = r.id
+    ) AS ra
+) AS booleanAtt ON true
+LEFT JOIN LATERAL (
+  SELECT COALESCE(jsonb_agg((SELECT attributeRow FROM (SELECT ra."key", ra."value", ra."info") AS attributeRow)), '[]') AS attributes
+    FROM (
+      SELECT rna."key", rna."value", rna."info"
+        FROM resources."ResourceNumberAttributes" AS rna
+        WHERE rna."accountSid" = r."accountSid" AND rna."resourceId" = r.id
+    ) AS ra
+) AS numberAtt ON true
+LEFT JOIN LATERAL (
+  SELECT COALESCE(jsonb_agg((SELECT attributeRow FROM (SELECT ra."key", ra."value", ra."info") AS attributeRow)), '[]') AS attributes
+    FROM (
+        SELECT rdta."key", rdta."value", rdta."info" 
+        FROM resources."ResourceDateTimeAttributes" AS rdta
+        WHERE rdta."accountSid" = r."accountSid" AND rdta."resourceId" = r.id
+    ) AS ra
+) AS datetimeAtt ON true`;
 
 export const SELECT_RESOURCE_IN_IDS = `${SELECT_RESOURCES}
 WHERE r."accountSid" = $<accountSid> AND r."id" IN ($<resourceIds:csv>)
