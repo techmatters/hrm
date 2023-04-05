@@ -6,7 +6,7 @@
   "devDependencies": {
     "@tech-matters/testing": "^1.0.0",
     "@types/http-errors": "^2.0.1",
-    "date-fns": "^2.29.3",
+    "delay": "^5.0.0",
     "jest-each": "^29.2.1",
     "sequelize": "^6.28.0",
     "sequelize-cli": "^6.5.2",
@@ -32,7 +32,9 @@
     "build-scripts": "tsc --project tsconfig.scripts.json",
     "import-khp-json": "node ./scripts-dist/scripts/import-khp-resources.js",
     "build-and-import-khp-json": "npm run build-scripts && npm run import-khp-json",
-    "test:import-khp-json": "cross-env POSTGRES_PORT=5433 RDS_USERNAME=hrm RDS_PASSWORD=postgres RESOURCES_PASSWORD=resources-password run-s -c build-scripts docker:compose:test:up db:create:schema test:service:ci:migrate \"import-khp-json AC_TEST\" docker:compose:test:down"
+    "test:import-khp-json": "cross-env POSTGRES_PORT=5433 RDS_USERNAME=hrm RDS_PASSWORD=postgres RESOURCES_PASSWORD=resources-password run-s -c build-scripts docker:compose:test:up db:create:schema test:service:ci:migrate \"import-khp-json AC_TEST\" docker:compose:test:down",
+    "update-cloudsearch-domain": "node ./scripts-dist/scripts/update-cloudsearch-domain.js",
+    "build-and-update-cloudsearch-domain": "npm run build-scripts && npm run update-cloudsearch-domain"
   },
   "repository": {
     "type": "git",
@@ -47,6 +49,7 @@
   "dependencies": {
     "@aws-sdk/client-cloudsearch-domain": "^3.287.0",
     "@tech-matters/twilio-worker-auth": "^1.0.0",
+    "date-fns": "^2.29.3",
     "dotenv": "^8.6.0",
     "express": "^4.17.1",
     "express-async-errors": "^3.1.1",

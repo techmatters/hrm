@@ -30,7 +30,7 @@ type SearchResultItem = {
   highlights: Record<string, string>;
 };
 
-type SearchResultSet = {
+export type SearchResultSet = {
   total: number;
   items: SearchResultItem[];
 };

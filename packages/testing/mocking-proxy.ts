@@ -38,7 +38,7 @@ export async function start(): Promise<void> {
   await server.forAnyRequest().thenPassThrough();
   const global = createGlobalProxyAgent();
   // Filter local requests out from proxy to prevent loops.
-  global.NO_PROXY = 'localhost*,127.0.*,local.home*';
+  global.NO_PROXY = 'localhost*,127.0.*,local.home*,search-development-resources*';
   global.HTTP_PROXY = `http://localhost:${server.port}`;
 }
 

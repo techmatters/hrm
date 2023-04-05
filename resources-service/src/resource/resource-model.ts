@@ -18,6 +18,7 @@ import { AccountSID } from '@tech-matters/twilio-worker-auth';
 import {
   getById,
   getByIdList,
+  getUnindexed,
   getWhereNameContains,
   ReferrableResourceAttribute,
   ReferrableResourceRecord,
@@ -40,7 +41,7 @@ export type SimpleSearchParameters = {
 const EMPTY_RESULT = { totalCount: 0, results: [] };
 const MAX_SEARCH_RESULTS = 200;
 
-type ResourceAttributeNode = Record<
+export type ResourceAttributeNode = Record<
   string,
   | (
       | ReferrableResourceAttribute<string | boolean | number>
@@ -200,4 +201,21 @@ export const resourceModel = (cloudSearchConfig: CloudSearchConfig) => {
       };
     },
   };
+};
+
+/**
+ * THIS FUNCTION PULLS DATA FOR MULTIPLE ACCOUNTS
+ * It must NEVER BE accessed from an endpoint that is accessible with a Twilio user auth token
+ * Maybe we should move it to a different file to make that clearer - or add security checking at this level.
+ */
+export const getUnindexedResources = async (
+  limit: number,
+): Promise<(ReferrableResource & { accountSid: AccountSID })[]> => {
+  const unindexedResources: (ReferrableResourceRecord & {
+    accountSid: AccountSID;
+  })[] = await getUnindexed(limit);
+  return unindexedResources.map(({ accountSid, ...record }) => ({
+    ...resourceRecordToApiResource(record),
+    accountSid,
+  }));
 };
