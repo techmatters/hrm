@@ -29,7 +29,7 @@ export type ReferrableResourceAttribute<T> = {
 
 export const isReferrableResourceAttribute = (
   attribute: any,
-): attribute is ReferrableResourceAttribute =>
+): attribute is ReferrableResourceAttribute<unknown> =>
   attribute &&
   (typeof attribute.value === 'string' ||
     typeof attribute.value === 'number' ||

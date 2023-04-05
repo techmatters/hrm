@@ -462,7 +462,7 @@ describe('searchResources', () => {
     {
       id: 'RESOURCE_1',
       name: 'Resource 1',
-      attributes: [
+      stringAttributes: [
         { key: 'testAttribute', value: 'testValue', language: 'Klingon', info: { qa: 'pla' } },
       ],
     },
@@ -494,7 +494,7 @@ describe('searchResources', () => {
         ],
       },
       expectedTotal: 123,
-      resultsFromDb: baselineResultSet,
+      resultsFromDb: addMissingEmptyAttributes(baselineResultSet),
     },
     {
       description: 'Limit set higher than 200 - limit set to 200',
@@ -511,7 +511,7 @@ describe('searchResources', () => {
       },
       expectedSearchLimit: 200,
       expectedTotal: 1230,
-      resultsFromDb: baselineResultSet,
+      resultsFromDb: addMissingEmptyAttributes(baselineResultSet),
     },
     {
       description:
@@ -529,7 +529,7 @@ describe('searchResources', () => {
       },
       expectedSearchLimit: 200,
       expectedTotal: 1230,
-      resultsFromDb: baselineResultSet,
+      resultsFromDb: addMissingEmptyAttributes(baselineResultSet),
       expectedResults: [
         { id: 'RESOURCE_2', name: 'Resource 2', attributes: {} },
         {
@@ -558,7 +558,7 @@ describe('searchResources', () => {
       },
       expectedSearchLimit: 200,
       expectedTotal: 1230,
-      resultsFromDb: baselineResultSet,
+      resultsFromDb: addMissingEmptyAttributes(baselineResultSet),
     },
     {
       description:
@@ -576,7 +576,7 @@ describe('searchResources', () => {
       },
       expectedSearchLimit: 200,
       expectedTotal: 1230,
-      resultsFromDb: baselineResultSet,
+      resultsFromDb: addMissingEmptyAttributes(baselineResultSet),
     },
   ];
 
@@ -596,18 +596,26 @@ describe('searchResources', () => {
       expect(res.totalCount).toBe(expectedTotal);
       expect(res.results).toStrictEqual(
         expectedResults ??
-          resultsFromDb.map(r => ({
-            ...r,
-            attributes: {
-              ...(r.id === 'RESOURCE_1'
-                ? {
-                    testAttribute: [
-                      { value: 'testValue', language: 'Klingon', info: { qa: 'pla' } },
-                    ],
-                  }
-                : {}),
-            },
-          })),
+          resultsFromDb.map(
+            ({
+              stringAttributes,
+              booleanAttributes,
+              datetimeAttributes,
+              numberAttributes,
+              ...r
+            }) => ({
+              ...r,
+              attributes: {
+                ...(r.id === 'RESOURCE_1'
+                  ? {
+                      testAttribute: [
+                        { value: 'testValue', language: 'Klingon', info: { qa: 'pla' } },
+                      ],
+                    }
+                  : {}),
+              },
+            }),
+          ),
       );
       expect(mockMapSearchParametersToKhpTermsAndFilters).toHaveBeenCalledWith(input);
       expect(mockSearchClientSearch).toHaveBeenCalledWith(

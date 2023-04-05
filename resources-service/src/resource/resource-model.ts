@@ -214,8 +214,8 @@ export const getUnindexedResources = async (
   const unindexedResources: (ReferrableResourceRecord & {
     accountSid: AccountSID;
   })[] = await getUnindexed(limit);
-  return unindexedResources.map(record => ({
-    ...record,
-    attributes: attributeObjectGraphFromKeys(record.attributes),
+  return unindexedResources.map(({ accountSid, ...record }) => ({
+    ...resourceRecordToApiResource(record),
+    accountSid,
   }));
 };
