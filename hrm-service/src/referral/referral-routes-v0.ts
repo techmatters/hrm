@@ -33,7 +33,7 @@ export default () => {
         throw createError(400, 'Required referral property not present');
       }
       try {
-        res.json(await createReferral(accountSid, body));
+        res.json(await createReferral()(accountSid, body));
       } catch (err) {
         if (err instanceof DuplicateReferralError) {
           throw createError(400, err.message);

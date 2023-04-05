@@ -35,7 +35,7 @@ jest.mock('../../src/referral/referral-model', () => ({
 }));
 
 const mockSafeRouter = SafeRouter as jest.Mock;
-const mockCreateReferral = createReferral as jest.Mock<Promise<Referral>>;
+const mockCreateReferral = createReferral as jest.Mock<() => Promise<Referral>>;
 
 beforeEach(() => {
   mockSafeRouter.mockReset();
@@ -72,7 +72,8 @@ describe('POST /search', () => {
   });
 
   test('Passes referral from body and accountSid from request down to model', async () => {
-    mockCreateReferral.mockResolvedValue(validReferral);
+    const innerCreateReferral = jest.fn(() => Promise.resolve(validReferral));
+    mockCreateReferral.mockReturnValueOnce(innerCreateReferral);
     await createReferralRequestHandler(
       {
         body: validReferral,
@@ -80,7 +81,7 @@ describe('POST /search', () => {
       } as Request<Referral>,
       response,
     );
-    expect(mockCreateReferral).toHaveBeenCalledWith('AC1', validReferral);
+    expect(innerCreateReferral).toHaveBeenCalledWith('AC1', validReferral);
     expect(response.json).toHaveBeenCalledWith(validReferral);
   });
 
@@ -150,7 +151,9 @@ describe('POST /search', () => {
 
   test('No name - passes referral from body and accountSid from request down to model', async () => {
     const { resourceName, ...rest } = validReferral;
-    mockCreateReferral.mockResolvedValue(rest as Referral);
+    const innerCreateReferral = jest.fn(() => Promise.resolve(rest as Referral));
+
+    mockCreateReferral.mockReturnValueOnce(innerCreateReferral);
     await createReferralRequestHandler(
       {
         body: rest,
@@ -158,14 +161,16 @@ describe('POST /search', () => {
       } as Request<Referral>,
       response,
     );
-    expect(mockCreateReferral).toHaveBeenCalledWith('AC1', rest);
+    expect(innerCreateReferral).toHaveBeenCalledWith('AC1', rest);
     expect(response.json).toHaveBeenCalledWith(rest);
   });
 
   test('model throws orphaned referral error - throws 404', async () => {
-    mockCreateReferral.mockRejectedValue(
-      new OrphanedReferralError(validReferral.contactId, new Error()),
+    const innerCreateReferral = jest.fn(() =>
+      Promise.reject(new OrphanedReferralError(validReferral.contactId, new Error())),
     );
+
+    mockCreateReferral.mockReturnValueOnce(innerCreateReferral);
     try {
       await createReferralRequestHandler(
         {
@@ -182,7 +187,12 @@ describe('POST /search', () => {
   });
 
   test('model throws duplicate referral error - throws 400', async () => {
-    mockCreateReferral.mockRejectedValue(new DuplicateReferralError(new Error()));
+    const innerCreateReferral = jest.fn(() =>
+      Promise.reject(new DuplicateReferralError(new Error())),
+    );
+
+    mockCreateReferral.mockReturnValueOnce(innerCreateReferral);
+
     try {
       await createReferralRequestHandler(
         {

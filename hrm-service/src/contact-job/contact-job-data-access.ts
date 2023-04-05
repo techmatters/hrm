@@ -14,15 +14,16 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { ITask } from 'pg-promise';
 import { db, pgp } from '../connection-pool';
-import { Contact } from '../contact/contact-data-access';
+// eslint-disable-next-line prettier/prettier
+import type { Contact } from '../contact/contact-data-access';
 import {
   COMPLETE_JOB_SQL,
   PULL_DUE_JOBS_SQL,
   ADD_FAILED_ATTEMPT_PAYLOAD,
   selectSingleContactJobByIdSql,
 } from './sql/contact-job-sql';
+import { txIfNotInOne } from '../sql';
 
 import { ContactJobType } from '@tech-matters/hrm-types';
 
@@ -97,7 +98,7 @@ export const completeContactJob = async (
  * Add a new job to be completed to the ContactJobs queue
  * Requires tx: ITask to make the creation of the job part of the same transaction
  */
-export const createContactJob = (tx: ITask<{}>) => async (
+export const createContactJob = (tk?) =>  async (
   job: Pick<ContactJob, 'jobType' | 'resource' | 'additionalPayload'>,
 ): Promise<void> => {
   const contact = job.resource;
@@ -116,7 +117,8 @@ export const createContactJob = (tx: ITask<{}>) => async (
     null,
     'ContactJobs',
   );
-  return tx.none(insertSql);
+
+  return txIfNotInOne(tk, conn => conn.none(insertSql));
 };
 
 export const appendFailedAttemptPayload = async (

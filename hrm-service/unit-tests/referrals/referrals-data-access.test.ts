@@ -16,7 +16,7 @@
 
 import * as pgPromise from 'pg-promise';
 import { subHours } from 'date-fns';
-import { mockConnection, mockTask } from '../mock-db';
+import { mockConnection, mockTransaction } from '../mock-db';
 import * as referralDb from '../../src/referral/referral-data-access';
 import {
   DuplicateReferralError,
@@ -27,6 +27,7 @@ import {
   DatabaseUniqueConstraintViolationError,
   DatabaseError,
 } from '../../src/sql';
+import { getSqlStatement } from '@tech-matters/testing';
 
 let conn: pgPromise.ITask<unknown>;
 
@@ -44,13 +45,12 @@ describe('createReferralRecord', () => {
   };
 
   test('Runs a INSERT against the Referrals table on the DB', async () => {
-    mockTask(conn);
+    mockTransaction(conn);
     const oneSpy = jest.spyOn(conn, 'one').mockResolvedValue(validReferral);
 
-    const result = await referralDb.createReferralRecord('AC_FAKE', validReferral);
-
-    expect(oneSpy).toHaveBeenCalledWith(expect.stringContaining('Referrals'));
-    const insertSql = oneSpy.mock.calls[0][0];
+    const result = await referralDb.createReferralRecord()('AC_FAKE', validReferral);
+    const insertSql = getSqlStatement(oneSpy);
+    expect(insertSql).toContain('Referrals');
     expect(insertSql).toContain(validReferral.resourceId);
     expect(insertSql).toContain(validReferral.referredAt);
     expect(insertSql).toContain(validReferral.contactId);
@@ -60,12 +60,12 @@ describe('createReferralRecord', () => {
   });
 
   test('Inserts explicit NULL for resourceName if not provided', async () => {
-    mockTask(conn);
+    mockTransaction(conn);
 
     const { resourceName, ...withoutResourceName } = validReferral;
     const oneSpy = jest.spyOn(conn, 'one').mockResolvedValue(withoutResourceName);
 
-    const result = await referralDb.createReferralRecord('AC_FAKE', withoutResourceName);
+    const result = await referralDb.createReferralRecord()('AC_FAKE', withoutResourceName);
 
     expect(oneSpy).toHaveBeenCalledWith(expect.stringContaining('Referrals'));
     const insertSql = oneSpy.mock.calls[0][0];
@@ -78,65 +78,80 @@ describe('createReferralRecord', () => {
   });
 
   test('Query throws a foreign key violation against contact ID constraint - throws an OrphanedReferralError', async () => {
-    mockTask(conn);
+    mockTransaction(conn);
     const dbError: any = new Error();
     dbError.code = '23503';
     dbError.constraint = 'FK_Referrals_Contacts';
     dbError.table = 'Referrals';
     jest.spyOn(conn, 'one').mockRejectedValue(dbError);
 
-    await expect(referralDb.createReferralRecord('AC_FAKE', validReferral)).rejects.toThrow(
+    await expect(referralDb.createReferralRecord()('AC_FAKE', validReferral)).rejects.toThrow(
       OrphanedReferralError,
     );
   });
 
   test('Query throws a foreign key violation against other constraint - throws an DatabaseForeignKeyViolationError', async () => {
-    mockTask(conn);
+    mockTransaction(conn);
     const dbError: any = new Error();
     dbError.code = '23503';
     dbError.constraint = 'Other_Constraint';
     dbError.table = 'Referrals';
     jest.spyOn(conn, 'one').mockRejectedValue(dbError);
 
-    await expect(referralDb.createReferralRecord('AC_FAKE', validReferral)).rejects.toThrow(
+    await expect(referralDb.createReferralRecord()('AC_FAKE', validReferral)).rejects.toThrow(
       DatabaseForeignKeyViolationError,
     );
   });
 
   test('Query throws a unique constraint violation against primary key constraint - throws an DuplicateReferralError', async () => {
-    mockTask(conn);
+    mockTransaction(conn);
     const dbError: any = new Error();
     dbError.code = '23505';
     dbError.constraint = 'Referrals_pkey';
     dbError.table = 'Referrals';
     jest.spyOn(conn, 'one').mockRejectedValue(dbError);
 
-    await expect(referralDb.createReferralRecord('AC_FAKE', validReferral)).rejects.toThrow(
+    await expect(referralDb.createReferralRecord()('AC_FAKE', validReferral)).rejects.toThrow(
       DuplicateReferralError,
     );
   });
 
   test('Query throws a foreign key violation against other constraint - throws an DatabaseForeignKeyViolationError', async () => {
-    mockTask(conn);
+    mockTransaction(conn);
     const dbError: any = new Error();
     dbError.code = '23505';
     dbError.constraint = 'Other_Constraint';
     dbError.table = 'Referrals';
     jest.spyOn(conn, 'one').mockRejectedValue(dbError);
 
-    await expect(referralDb.createReferralRecord('AC_FAKE', validReferral)).rejects.toThrow(
+    await expect(referralDb.createReferralRecord()('AC_FAKE', validReferral)).rejects.toThrow(
       DatabaseUniqueConstraintViolationError,
     );
   });
 
   test('Query throws any other error - throws an DatabaseError wrapping the original', async () => {
-    mockTask(conn);
+    mockTransaction(conn);
     const originalError: any = new Error();
     originalError.code = 'OTHER_CODE';
     jest.spyOn(conn, 'one').mockRejectedValue(originalError);
 
-    await expect(referralDb.createReferralRecord('AC_FAKE', validReferral)).rejects.toThrow(
+    await expect(referralDb.createReferralRecord()('AC_FAKE', validReferral)).rejects.toThrow(
       new DatabaseError(originalError),
     );
+  });
+
+  test('Passed a task - uses task', async () => {
+    const mockTx = mockConnection();
+    const mockOuterTask = mockConnection();
+    mockTransaction(conn);
+    mockTransaction(mockOuterTask, mockTx);
+
+    const txOneSpy = jest.spyOn(mockTx, 'one').mockResolvedValue(validReferral);
+    const dbOneSpy = jest.spyOn(conn, 'one').mockResolvedValue(validReferral);
+
+    await referralDb.createReferralRecord(mockOuterTask)('AC_FAKE', validReferral);
+    expect(dbOneSpy).not.toHaveBeenCalled();
+    const insertSql = getSqlStatement(txOneSpy);
+    expect(insertSql).toContain('Referrals');
   });
 });

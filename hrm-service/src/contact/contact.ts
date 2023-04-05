@@ -14,6 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
+import { ContactJobType } from '@tech-matters/hrm-types';
 import {
   connectToCase,
   Contact,
@@ -23,15 +24,26 @@ import {
   search,
   SearchParameters,
 } from './contact-data-access';
-import { ContactRawJson, getPersonsName, isS3StoredTranscript, ReferralWithoutContactId } from './contact-json';
+import {
+  ContactRawJson,
+  getPersonsName,
+  isS3StoredTranscript,
+  isS3StoredTranscriptPending,
+  ReferralWithoutContactId,
+} from './contact-json';
 import { retrieveCategories } from './categories';
 import { getPaginationElements } from '../search';
 import { NewContactRecord } from './sql/contact-insert-sql';
 import { setupCanForRules } from '../permissions/setupCanForRules';
 import { actionsMaps } from '../permissions';
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
+import { connectContactToCsamReports, CSAMReport } from '../csam-report/csam-report';
+import { createReferral } from '../referral/referral-model';
+import { createContactJob } from '../contact-job/contact-job';
+import { isChatChannel } from './channelTypes';
+import { enableCreateContactJobsFlag } from '../featureFlags';
+import { db } from '../connection-pool';
 // eslint-disable-next-line prettier/prettier
-import type { CSAMReport } from '../csam-report/csam-report';
 import type { SearchPermissions } from '../permissions/search-permissions';
 
 // Re export as is:
@@ -62,15 +74,20 @@ export type SearchContact = {
   };
   details: ContactRawJson;
   csamReports: CSAMReport[];
-  referrals?: ReferralWithoutContactId[]
+  referrals?: ReferralWithoutContactId[];
 };
 
 export type CreateContactPayloadWithFormProperty = Omit<NewContactRecord, 'rawJson'> & {
   form: ContactRawJson;
-} & { csamReports?: CSAMReport[], referrals?: ReferralWithoutContactId[] };
+} & { csamReports?: CSAMReport[]; referrals?: ReferralWithoutContactId[] };
+
+type CreateContactPayloadWithRawJsonProperty = NewContactRecord & {
+  csamReports?: CSAMReport[];
+  referrals?: ReferralWithoutContactId[];
+};
 
 export type CreateContactPayload =
-  | (NewContactRecord & { csamReports?: CSAMReport[], referrals?: ReferralWithoutContactId[] })
+  | CreateContactPayloadWithRawJsonProperty
   | CreateContactPayloadWithFormProperty;
 
 export const usesFormProperty = (
@@ -97,9 +114,10 @@ const permissionsBasedTransformations: PermissionsBasedTransformation[] = [
   },
 ];
 
-export const bindApplyTransformations = (can: ReturnType<typeof setupCanForRules>, user: TwilioUser) => (
-  contact: Contact,
-) => {
+export const bindApplyTransformations = (
+  can: ReturnType<typeof setupCanForRules>,
+  user: TwilioUser,
+) => (contact: Contact) => {
   return permissionsBasedTransformations.reduce(
     (transformed, { action, transformation }) =>
       !can(user, action, contact) ? transformation(transformed) : transformed,
@@ -117,40 +135,129 @@ export const getContactById = async (accountSid: string, contactId: number) => {
   return contact;
 };
 
+const getNewContactPayload = (
+  newContact: CreateContactPayload,
+): {
+  newContactPayload: NewContactRecord;
+  csamReportsPayload?: CSAMReport[];
+  referralsPayload?: ReferralWithoutContactId[];
+} => {
+  if (usesFormProperty(newContact)) {
+    const {
+      csamReports: csamReportsPayload,
+      referrals: referralsPayload,
+      form,
+      ...rest
+    } = newContact;
+
+    return {
+      newContactPayload: {
+        ...rest,
+        rawJson: newContact.form,
+      },
+      csamReportsPayload,
+      referralsPayload,
+    };
+  }
+
+  const {
+    csamReports: csamReportsPayload,
+    referrals: referralsPayload,
+    form,
+    ...newContactPayload
+  } = newContact as CreateContactPayloadWithRawJsonProperty & { form?: any }; // typecast just to get rid of legacy form, if for some reason is here
+
+  return {
+    newContactPayload,
+    csamReportsPayload,
+    referralsPayload,
+  };
+};
+
+const shouldCreateRetrieveTranscript = (contact: Contact) =>
+  enableCreateContactJobsFlag &&
+  isChatChannel(contact.channel) &&
+  contact.rawJson?.conversationMedia?.some(isS3StoredTranscriptPending);
+
+// Creates a contact with all its related records within a single transaction
 export const createContact = async (
   accountSid: string,
   createdBy: string,
   newContact: CreateContactPayload,
   { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
 ): Promise<Contact> => {
-  const rawJson = usesFormProperty(newContact) ? newContact.form : newContact.rawJson;
-  // const { referrals, ...withoutReferrals } = newContact;
-  const completeNewContact: NewContactRecord = {
-    ...newContact,
-    helpline: newContact.helpline ?? '',
-    number: newContact.number ?? '',
-    channel: newContact.channel ?? '',
-    timeOfContact: newContact.timeOfContact ? new Date(newContact.timeOfContact) : new Date(),
-    channelSid: newContact.channelSid ?? '',
-    serviceSid: newContact.serviceSid ?? '',
-    taskId: newContact.taskId ?? '',
-    twilioWorkerId: newContact.twilioWorkerId ?? '',
-    rawJson,
-    queueName:
-      // Checking in rawJson might be redundant, copied from Sequelize logic in contact-controller.js
-      newContact.queueName || (<any>(rawJson ?? {})).queueName,
-    createdBy,
-  };
-  const createdContact: Contact = await create(
-    accountSid,
-    completeNewContact,
-    (newContact.csamReports ?? []).map(csr => csr.id),
-    newContact.referrals ?? [],
-  );
+  return db.tx(async conn => {
+    const { newContactPayload, csamReportsPayload, referralsPayload } = getNewContactPayload(
+      newContact,
+    );
 
-  const applyTransformations = bindApplyTransformations(can, user);
+    const completeNewContact: NewContactRecord = {
+      ...newContactPayload,
+      helpline: newContactPayload.helpline ?? '',
+      number: newContactPayload.number ?? '',
+      channel: newContactPayload.channel ?? '',
+      timeOfContact: newContactPayload.timeOfContact
+        ? new Date(newContactPayload.timeOfContact)
+        : new Date(),
+      channelSid: newContactPayload.channelSid ?? '',
+      serviceSid: newContactPayload.serviceSid ?? '',
+      taskId: newContactPayload.taskId ?? '',
+      twilioWorkerId: newContactPayload.twilioWorkerId ?? '',
+      rawJson: newContactPayload.rawJson,
+      queueName:
+        // Checking in rawJson might be redundant, copied from Sequelize logic in contact-controller.js
+        newContactPayload.queueName || (<any>(newContactPayload.rawJson ?? {})).queueName,
+      createdBy,
+    };
 
-  return applyTransformations(createdContact);
+    // create contact record (may return an exiting one cause idempotence)
+    const { contact, isNewRecord } = await create(conn)(accountSid, completeNewContact);
+
+    let contactResult: Contact;
+
+    if (!isNewRecord) {
+      // if the contact already existed, skip the associations
+      contactResult = contact;
+    } else {
+      // associate csam reports
+      const csamReportIds = (csamReportsPayload ?? []).map(csr => csr.id);
+      const csamReports =
+        csamReportIds && csamReportIds.length
+          ? await connectContactToCsamReports(conn)(contact.id, csamReportIds, accountSid)
+          : [];
+
+      // create resources referrals
+      const referrals = referralsPayload ?? [];
+      const createdReferrals = [];
+
+      if (referrals && referrals.length) {
+        // Do this sequentially, it's on a single connection in a transaction anyway.
+        for (const referral of referrals) {
+          const { contactId, ...withoutContactId } = await createReferral(conn)(accountSid, {
+            ...referral,
+            contactId: contact.id.toString(),
+          });
+          createdReferrals.push(withoutContactId);
+        }
+      }
+
+      // if pertinent, create retrieve-transcript job
+      if (shouldCreateRetrieveTranscript(contact)) {
+        await createContactJob(conn)({
+          jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
+          resource: contact,
+          additionalPayload: undefined,
+        });
+      }
+
+      // Compose the final shape of a contact to return
+      contactResult = { ...contact, csamReports, referrals: createdReferrals };
+    }
+
+    const applyTransformations = bindApplyTransformations(can, user);
+
+    return applyTransformations(contactResult);
+  });
 };
 
 export const patchContact = async (
@@ -233,7 +340,15 @@ function convertContactsToSearchResults(contacts: Contact[]): SearchContact[] {
       const categories = retrieveCategories(caseInformation.categories);
       const counselor = contact.twilioWorkerId;
       const notes = contact.rawJson.caseInformation.callSummary;
-      const { channel, conversationDuration, createdBy, csamReports, helpline, taskId, referrals } = contact;
+      const {
+        channel,
+        conversationDuration,
+        createdBy,
+        csamReports,
+        helpline,
+        taskId,
+        referrals,
+      } = contact;
 
       return {
         contactId: contactId.toString(),

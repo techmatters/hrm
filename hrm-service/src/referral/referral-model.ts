@@ -14,8 +14,4 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { createReferralRecord, Referral } from './referral-data-access';
-
-export const createReferral = async (accountSid: string, referral: Referral) => {
-  return createReferralRecord(accountSid, referral);
-};
+export { Referral, createReferralRecord as createReferral } from './referral-data-access';
