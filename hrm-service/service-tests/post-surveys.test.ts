@@ -91,6 +91,10 @@ describe('/postSurveys route', () => {
 
         expect(response.status).toBe(401);
         expect(response.body.error).toBe('Authorization failed');
+        const bookmarkResponse = await request.get(`${shouldExist}#/postSurveys`).set(basicHeaders);
+
+        expect(bookmarkResponse.status).toBe(401);
+        expect(bookmarkResponse.body.error).toBe('Authorization failed');
       });
 
       test('should return 200 (no matches)', async () => {
