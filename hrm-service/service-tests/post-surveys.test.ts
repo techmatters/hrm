@@ -79,6 +79,20 @@ describe('/postSurveys route', () => {
         expect(response.body.error).toBe('Authorization failed');
       });
 
+      test('returns 401 if you try to use basic auth', async () => {
+        const response = await request.get(shouldExist).set(basicHeaders);
+
+        expect(response.status).toBe(401);
+        expect(response.body.error).toBe('Authorization failed');
+      });
+
+      test('returns 401 if you try to fool it into allowing basic auth', async () => {
+        const response = await request.get(`${shouldExist}?x=/postSurveys`).set(basicHeaders);
+
+        expect(response.status).toBe(401);
+        expect(response.body.error).toBe('Authorization failed');
+      });
+
       test('should return 200 (no matches)', async () => {
         const response = await request.get(shouldNotExist).set(headers);
 
