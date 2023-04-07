@@ -18,7 +18,7 @@ import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/
 import * as mocks from './mocks';
 import { db } from '../src/connection-pool';
 import { create } from '../src/post-survey/post-survey-data-access';
-import { headers, getRequest, getServer, useOpenRules } from './server';
+import { headers, getRequest, getServer, useOpenRules, basicHeaders } from './server';
 
 useOpenRules();
 const server = getServer();
@@ -104,14 +104,14 @@ describe('/postSurveys route', () => {
 
     const body = { helpline, contactTaskId, taskId, data };
 
-    test('should return 401', async () => {
+    test('no auth should return 401', async () => {
       const response = await request.post(route).send(body);
 
       expect(response.status).toBe(401);
       expect(response.body.error).toBe('Authorization failed');
     });
 
-    test('should return 200', async () => {
+    test('Valid bearer auth should add post survey to DB', async () => {
       const response = await request
         .post(route)
         .set(headers)
@@ -123,6 +123,30 @@ describe('/postSurveys route', () => {
       const matchingRowsCount = await countPostSurveys(contactTaskId, taskId);
 
       expect(matchingRowsCount).toBe(1);
+    });
+
+    test('Invalid basic auth should return 401', async () => {
+      const response = await request
+        .post(route)
+        .set({ ...basicHeaders, Authorization: 'Basic ZX18' })
+        .send(body);
+
+      expect(response.status).toBe(401);
+      expect(response.body.error).toBe('Authorization failed');
+    });
+
+    test('Valid basic auth should add post survey to DB', async () => {
+      const response = await request
+        .post(route)
+        .set(basicHeaders)
+        .send(body);
+
+      expect(response.status).toBe(200);
+      expect(response.body.data).toEqual(body.data);
+
+      const matchingRowsCount = await countPostSurveys(contactTaskId, taskId);
+
+      expect(matchingRowsCount).toBe(2);
     });
   });
 });
