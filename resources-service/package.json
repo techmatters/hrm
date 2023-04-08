@@ -6,10 +6,12 @@
   "devDependencies": {
     "@tech-matters/testing": "^1.0.0",
     "@types/http-errors": "^2.0.1",
+    "@types/node": "^18.15.11",
     "delay": "^5.0.0",
     "jest-each": "^29.2.1",
     "sequelize": "^6.28.0",
     "sequelize-cli": "^6.5.2",
+    "tsx": "^3.12.6",
     "umzug": "^3.2.1"
   },
   "scripts": {
@@ -34,6 +36,7 @@
     "build-and-import-khp-json": "npm run build-scripts && npm run import-khp-json",
     "test:import-khp-json": "cross-env POSTGRES_PORT=5433 RDS_USERNAME=hrm RDS_PASSWORD=postgres RESOURCES_PASSWORD=resources-password run-s -c build-scripts docker:compose:test:up db:create:schema test:service:ci:migrate \"import-khp-json AC_TEST\" docker:compose:test:down",
     "update-cloudsearch-domain": "node ./scripts-dist/scripts/update-cloudsearch-domain.js",
+    "elasticsearch-create-index:local": "cross-env AWS_REGION=us-east-1 NODE_ENV=local SSM_ENDPOINT=http://localhost:4566 tsx ./scripts/elasticsearch-create-index.ts",
     "build-and-update-cloudsearch-domain": "npm run build-scripts && npm run update-cloudsearch-domain"
   },
   "repository": {
@@ -48,7 +51,11 @@
   "homepage": "https://github.com/techmatters/hrm#readme",
   "dependencies": {
     "@aws-sdk/client-cloudsearch-domain": "^3.287.0",
+    "@tech-matters/elasticsearch-client": "^1.0.0",
+    "@tech-matters/hrm-ssm-cache": "^1.0.0",
     "@tech-matters/twilio-worker-auth": "^1.0.0",
+    "@tech-matters/types": "^1.0.0",
+    "aws-sdk": "^2.1353.0",
     "date-fns": "^2.29.3",
     "dotenv": "^8.6.0",
     "express": "^4.17.1",

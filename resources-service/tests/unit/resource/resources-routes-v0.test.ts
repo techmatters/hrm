@@ -14,9 +14,11 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
+import { ReferrableResource } from '@tech-matters/types';
+
 import { Request, Response, Router } from 'express';
 import resourceRoutes from '../../../src/resource/resource-routes-v0';
-import { ReferrableResource, resourceModel } from '../../../src/resource/resource-model';
+import { resourceModel } from '../../../src/resource/resource-model';
 
 jest.mock('express', () => ({
   Router: jest.fn(),

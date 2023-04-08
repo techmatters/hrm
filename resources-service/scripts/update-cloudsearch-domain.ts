@@ -12,19 +12,19 @@ import {
   UploadDocumentsCommand,
 } from '@aws-sdk/client-cloudsearch-domain';
 
+import {
+  ReferrableResource,
+  ResourceAttributeNode,
+  isReferrableResourceAttribute,
+  ReferrableResourceAttribute,
+} from '@tech-matters/types';
+
 // eslint-disable-next-line import/no-extraneous-dependencies
 import delay from 'delay';
 import { addMilliseconds, differenceInMilliseconds, parseISO } from 'date-fns';
 import cloudSearchConfig from '../src/config/cloud-search';
-import {
-  getUnindexedResources,
-  ReferrableResource,
-  ResourceAttributeNode,
-} from '../src/resource/resource-model';
-import {
-  isReferrableResourceAttribute,
-  ReferrableResourceAttribute,
-} from '../src/resource/resource-data-access';
+import { getUnindexedResources } from '../src/resource/resource-model';
+
 import { AccountSID } from '@tech-matters/twilio-worker-auth';
 import * as fs from 'fs/promises';
 
@@ -89,10 +89,14 @@ const transformResourceToSearchDocument = (
     type: 'add',
     fields: {
       name: `${resource.name} | ${Object.values(
-        (resource.attributes.nameDetails ?? {}) as Record<string, ReferrableResourceAttribute[]>,
+        (resource.attributes.nameDetails ?? {}) as Record<
+          string,
+          ReferrableResourceAttribute<string>[]
+        >,
       )
         .flat()
-        .filter(rra => rra.language === 'en')
+        // TODO: this was breaking types
+        // .filter(rra => rra.language === 'en')
         .map(rra => rra.value)
         .join(' | ')}`,
       search_terms_en_1: extractStringsFromResourceAttributes(resource.attributes),

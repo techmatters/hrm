@@ -14,14 +14,13 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
+import { ReferrableResource } from '@tech-matters/types';
+
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import { headers, getRequest, getServer } from './server';
 import { db } from '../../src/connection-pool';
 import each from 'jest-each';
-import {
-  ReferrableResource,
-  ReferrableResourceSearchResult,
-} from '../../src/resource/resource-model';
+import { ReferrableResourceSearchResult } from '../../src/resource/resource-model';
 import { AssertionError } from 'assert';
 import { SearchParameters } from '../../src/resource/search/search-types';
 import { SearchResponse } from '@aws-sdk/client-cloudsearch-domain';

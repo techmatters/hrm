@@ -29,5 +29,15 @@ services:
       - LAMBDA_NETWORK=bridge
       - DISABLE_CORS_CHECKS=1
       - DISABLE_CUSTOM_CORS_S3=1
+      - ELASTIC_PASSWORD=changeme
     volumes:
       - '/var/run/docker.sock:/var/run/docker.sock'
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.7.0
+    restart: on-failure
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+    ports:
+      - ${HRM_ES_PORT:-9200}:9200

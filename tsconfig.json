@@ -7,14 +7,18 @@
     { "path": "packages/http" },
     { "path": "packages/job-errors" },
     { "path": "packages/ssm-cache" },
+    { "path": "packages/elasticsearch-client" },
     { "path": "packages/s3-client" },
     { "path": "packages/twilio-client" },
     { "path": "packages/twilio-worker-auth" },
     { "path": "packages/types" },
     { "path": "resources-service" },
+    { "path": "resources-service/tsconfig.scripts.json" },
     { "path": "jobs/contact-complete" },
     { "path": "jobs/contact-retrieve-recording-url" },
     { "path": "jobs/contact-retrieve-transcript" },
+    { "path": "jobs/resources-search-index" },
+    { "path": "jobs/resources-search-index-complete" },
     { "path": "hrm-service" }
   ]
 }

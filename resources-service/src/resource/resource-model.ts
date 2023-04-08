@@ -14,15 +14,19 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
+import {
+  ReferrableResourceAttribute,
+  ResourceAttributeNode,
+  ReferrableResource,
+} from '@tech-matters/types';
+
 import { AccountSID } from '@tech-matters/twilio-worker-auth';
 import {
   getById,
   getByIdList,
   getUnindexed,
   getWhereNameContains,
-  ReferrableResourceAttribute,
   ReferrableResourceRecord,
-  ReferrableResourceTranslatableAttribute,
 } from './resource-data-access';
 import resourceCloudSearchClient from './search/resource-cloudsearch-client';
 import { SearchParameters } from './search/search-types';
@@ -40,21 +44,6 @@ export type SimpleSearchParameters = {
 
 const EMPTY_RESULT = { totalCount: 0, results: [] };
 const MAX_SEARCH_RESULTS = 200;
-
-export type ResourceAttributeNode = Record<
-  string,
-  | (
-      | ReferrableResourceAttribute<string | boolean | number>
-      | ReferrableResourceTranslatableAttribute
-    )[]
-  | Record<
-      string,
-      (
-        | ReferrableResourceAttribute<string | boolean | number>
-        | ReferrableResourceTranslatableAttribute
-      )[]
-    >
->;
 
 const resourceRecordToApiResource = (
   resourceRecord: ReferrableResourceRecord,
@@ -102,12 +91,6 @@ const resourceRecordToApiResource = (
     ...withoutAttributes,
     attributes,
   };
-};
-
-export type ReferrableResource = {
-  name: string;
-  id: string;
-  attributes: ResourceAttributeNode;
 };
 
 // The full resource & the search result are synonyms for now, but the full resource should grow to be a superset

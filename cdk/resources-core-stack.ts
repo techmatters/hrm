@@ -14,19 +14,23 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { ContactJob } from '../../src/contact-job/contact-job-data-access';
-import { ContactJobType } from '@tech-matters/types';
+/* eslint-disable no-new */
+import * as cdk from '@aws-cdk/core';
+import * as ssm from '@aws-cdk/aws-ssm';
 
-export const getContactJobMock = (overrides: Partial<ContactJob> = {}): ContactJob => ({
-  jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
-  jobId: 1,
-  accountSid: 'accountSid',
-  attemptNumber: 1,
-  contactId: 123,
-  taskId: 'taskId',
-  twilioWorkerId: 'twilioWorkerId',
-  serviceSid: 'serviceSid',
-  channelSid: 'channelSid',
-  filePath: 'filePath',
-  ...overrides,
-});
+export default class ResourcesCoreStack extends cdk.Stack {
+  constructor({ scope, id, props }: { scope: cdk.App; id: string; props?: cdk.StackProps }) {
+    super(scope, id, props);
+
+    new ssm.StringParameter(this, 'resources_dev_user_es_host', {
+      parameterName: `/local/resources/${process.env.TWILIO_ACCOUNT_SID}/elasticsearch_config`,
+      stringValue: JSON.stringify({
+        node: 'http://localhost:9200',
+        auth: {
+          username: 'elastic',
+          password: 'changeme',
+        },
+      }),
+    });
+  }
+}
