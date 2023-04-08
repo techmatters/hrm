@@ -2,7 +2,10 @@ import { getSsmParameter } from '@tech-matters/hrm-ssm-cache';
 import { getClient } from '@tech-matters/elasticsearch-client';
 
 const addIndexIfNotExists = async () => {
-  const accountSid = await getSsmParameter(`/${process.env.NODE_ENV}/twilio/AS/account_sid`);
+  const accountSid = await getSsmParameter(
+    `/${process.env.NODE_ENV}/twilio/AS/account_sid`,
+    86400000, // 24 hours ttl
+  );
 
   const client = await getClient({ accountSid });
 
