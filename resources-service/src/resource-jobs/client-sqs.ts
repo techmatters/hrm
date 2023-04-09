@@ -18,7 +18,7 @@ import { SQS } from 'aws-sdk';
 import { getSsmParameter } from '@tech-matters/hrm-ssm-cache';
 
 // eslint-disable-next-line prettier/prettier
-import type { ResourcesSearchIndexPayload } from '@tech-matters/types';
+import { type ReferrableResource,  type ResourcesSearchIndexPayload, ResourcesJobType } from '@tech-matters/types';
 
 let sqs: SQS;
 
@@ -36,6 +36,7 @@ export const publishToResourcesJob = async (params: ResourcesSearchIndexPayload)
   try {
     const QueueUrl = await getSsmParameter(
       getJobQueueUrl(params.accountSid, 'contact'),
+      86400000,
     );
 
     return await getSqsClient()
@@ -47,4 +48,12 @@ export const publishToResourcesJob = async (params: ResourcesSearchIndexPayload)
   } catch (err) {
     console.error('Error trying to send message to SQS queue', err);
   }
+};
+
+export const publishSearchIndexJob = async (accountSid: string, resource: ReferrableResource) => {
+  await publishToResourcesJob({
+      accountSid,
+      jobType: ResourcesJobType.SEARCH_INDEX,
+      resource,
+  });
 };
