@@ -14,8 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { createIndex } from '@tech-matters/elasticsearch-client';
-
-const shortCode = process.argv[2] || 'as';
-
-createIndex({ shortCode, indexType: 'resources' });
+export * from './client';
+export * from './create-index';
+export * from './delete-index';
+export * from './index-document';

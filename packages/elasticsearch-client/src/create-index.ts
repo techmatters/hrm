@@ -14,8 +14,37 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { createIndex } from '@tech-matters/elasticsearch-client';
+import { getClient } from './client';
 
-const shortCode = process.argv[2] || 'as';
+import getAccountSid from './get-account-sid';
 
-createIndex({ shortCode, indexType: 'resources' });
+export const createIndex = async ({
+  shortCode,
+  accountSid,
+  indexType,
+}: {
+  shortCode: string;
+  accountSid?: string;
+  indexType: string;
+}) => {
+  if (!accountSid) {
+    accountSid = await getAccountSid(shortCode!);
+  }
+
+  const body = await require(`./config/${shortCode}/index-${indexType}`).body;
+
+  const client = await getClient({ accountSid });
+
+  const index = `${shortCode}-${indexType}`;
+
+  if (await client.indices.exists({ index })) {
+    return;
+  }
+
+  await client.indices.create({
+    index,
+    body,
+  });
+};
+
+export default createIndex;

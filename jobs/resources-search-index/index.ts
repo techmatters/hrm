@@ -19,7 +19,6 @@ import { ResourcesJobProcessorError } from '@tech-matters/hrm-job-errors';
 // eslint-disable-next-line prettier/prettier
 import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
 
-
 const processRecord = async (sqsRecord: SQSRecord) => {
   try {
     console.dir(sqsRecord);

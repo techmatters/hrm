@@ -32,5 +32,27 @@ export default class ResourcesCoreStack extends cdk.Stack {
         },
       }),
     });
+
+    new ssm.StringParameter(this, 'resources_test_user_1_es_host', {
+      parameterName: `/test/resources/ACCOUNT_1/elasticsearch_config`,
+      stringValue: JSON.stringify({
+        node: 'http://localhost:9200',
+        auth: {
+          username: 'elastic',
+          password: 'changeme',
+        },
+      }),
+    });
+
+    new ssm.StringParameter(this, 'resources_test_user_2_es_host', {
+      parameterName: `/test/resources/ACCOUNT_2/elasticsearch_config`,
+      stringValue: JSON.stringify({
+        node: 'http://localhost:9200',
+        auth: {
+          username: 'elastic',
+          password: 'changeme',
+        },
+      }),
+    });
   }
 }

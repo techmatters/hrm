@@ -106,6 +106,7 @@ export const resourceModel = (cloudSearchConfig: CloudSearchConfig) => {
       accountSid: AccountSID,
       resourceId: string,
     ): Promise<ReferrableResource | null> => {
+      console.log('getResource', { resourceId, accountSid });
       const record = await getById(accountSid, resourceId);
       return record ? resourceRecordToApiResource(record) : null;
     },

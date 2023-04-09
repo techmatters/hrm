@@ -14,8 +14,18 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { createIndex } from '@tech-matters/elasticsearch-client';
-
-const shortCode = process.argv[2] || 'as';
-
-createIndex({ shortCode, indexType: 'resources' });
+module.exports = config => {
+  return (
+    config || {
+      preset: 'ts-jest',
+      rootDir: './tests',
+      maxWorkers: 1,
+      globals: {
+        'ts-jest': {
+          // to give support to const enum. Not working, conflicting with module resolution
+          useExperimentalLanguageServer: true,
+        },
+      },
+    }
+  );
+};

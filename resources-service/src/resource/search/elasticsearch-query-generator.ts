@@ -18,9 +18,10 @@ import { AccountSID } from '@tech-matters/twilio-worker-auth';
 
 import { SearchParametersEs, SearchQuery, SearchQueryFilters } from './search-types';
 
-const KHP_ES_FIELDS = ['text_1.*^3', 'text_2.*^2'];
+const KHP_ES_FIELDS = ['text1*^3', 'text2.*^2'];
 
-const generateFilters = (filters: SearchParametersEs['filters']): SearchQueryFilters => {
+// TODO: this doesn't support range filters yet
+export const generateFilters = (filters: SearchParametersEs['filters']): SearchQueryFilters => {
   const returnFilters: SearchQueryFilters = [];
 
   if (!filters?.length) return returnFilters;
@@ -47,12 +48,13 @@ const generateFilters = (filters: SearchParametersEs['filters']): SearchQueryFil
 const generateElasticsearchQuery = (
   accountSid: AccountSID,
   searchParameters: SearchParametersEs,
+  shortCode: string = 'as', // TODO: remove this default value once we have a way to get the shortCode from the accountSid
 ) => {
   const { q, filters, pagination } = searchParameters;
   const { limit, start } = pagination;
 
   const query: SearchQuery = {
-    index: `${accountSid}-resources`,
+    index: `${shortCode}-resources`,
     body: {
       query: {
         bool: {

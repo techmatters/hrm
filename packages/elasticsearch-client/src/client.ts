@@ -29,6 +29,7 @@ const getSsmParameterKey = (accountSid: string) =>
   `/${process.env.NODE_ENV}/resources/${accountSid}/elasticsearch_config`;
 
 const getClientOrMock = async ({ accountSid }: { accountSid: string }): Promise<Client> => {
+  // TODO: mock client for unit tests
   // if (authToken === 'mockAuthToken') {
   //   const mock = (getMockClient({ accountSid }) as unknown) as Twilio;
   //   return mock;

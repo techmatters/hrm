@@ -54,16 +54,8 @@ export const body = {
     properties: {
       name: {
         type: 'keyword',
-        fields: {
-          en: {
-            type: 'keyword',
-          },
-          fr: {
-            type: 'keyword',
-          },
-        },
       },
-      text_1: {
+      text1: {
         type: 'text',
         fields: {
           en: {
@@ -76,7 +68,7 @@ export const body = {
           },
         },
       },
-      text_2: {
+      text2: {
         type: 'text',
         fields: {
           en: {
