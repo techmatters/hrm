@@ -27,3 +27,31 @@ export type TermsAndFilters = {
   searchTermsByIndex: Record<string, { phrases: string[]; terms: string[]; weighting: number }>;
   filters: Record<string, string | { value: string | boolean | number | Date; comparison: string }>;
 };
+
+export type SearchParametersEs = {
+  filters?: Record<string, boolean | number | string | string[]>;
+  q: string;
+  pagination: {
+    limit: number;
+    start: number;
+  };
+};
+
+export type SearchQueryFilters = Array<
+  | { terms: { [key: string]: string[] } }
+  | { term: { [key: string]: string | boolean | number | Date } }
+>;
+
+export type SearchQuery = {
+  index: string;
+  body: {
+    query: {
+      bool: {
+        filter?: SearchQueryFilters;
+        must: Array<{ query_string: { query: string; fields: string[] } }>;
+      };
+    };
+    from: number;
+    size: number;
+  };
+};

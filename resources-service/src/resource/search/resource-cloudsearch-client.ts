@@ -64,7 +64,7 @@ const client = (domainConfig: CloudSearchConfig) => {
           return phraseClauses;
         },
       );
-      
+
       const query = `(or ${queryClauses.join('')})`;
       console.debug('searchResourcesDomain query', query);
 

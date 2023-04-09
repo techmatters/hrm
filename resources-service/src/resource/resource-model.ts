@@ -29,9 +29,11 @@ import {
   ReferrableResourceRecord,
 } from './resource-data-access';
 import resourceCloudSearchClient from './search/resource-cloudsearch-client';
-import { SearchParameters } from './search/search-types';
+import { SearchParameters, SearchParametersEs } from './search/search-types';
 import { mapSearchParametersToKhpTermsAndFilters } from './search/khp-resource-search-mapping';
 import { CloudSearchConfig } from '../config/cloud-search';
+import elasticsearchClient from './search/elasticsearch-client';
+import generateElasticsearchQuery from './search/elasticsearch-query-generator';
 
 export type SimpleSearchParameters = {
   ids: string[];
@@ -169,6 +171,39 @@ export const resourceModel = (cloudSearchConfig: CloudSearchConfig) => {
         start,
         limit,
       );
+      const orderedResourceIds: string[] = items.map(item => item.id);
+      const unsortedResourceList = await getByIdList(accountSid, orderedResourceIds);
+      const resourceMap = Object.fromEntries(
+        unsortedResourceList.map(resource => [resource.id, resource]),
+      );
+
+      // Add ALL the resources found looking up specific IDs to the paginated block of name search results
+      const orderedResults = orderedResourceIds.map(id => resourceMap[id]).filter(r => r);
+
+      return {
+        results: orderedResults.map(record => resourceRecordToApiResource(record)),
+        totalCount: total,
+      };
+    },
+
+    searchResourcesEs: async (
+      accountSid: AccountSID,
+      searchParameters: SearchParametersEs,
+    ): Promise<{ totalCount: number; results: ReferrableResourceSearchResult[] }> => {
+      const {
+        pagination: { limit: unboundedLimit },
+      } = searchParameters;
+      const limit = Math.min(MAX_SEARCH_RESULTS, unboundedLimit);
+
+      const boundedSearchParameters = {
+        ...searchParameters,
+        pagination: { ...searchParameters.pagination, limit },
+      };
+
+      const query = generateElasticsearchQuery(accountSid, boundedSearchParameters);
+
+      const { total, items } = await elasticsearchClient.search(accountSid, query);
+
       const orderedResourceIds: string[] = items.map(item => item.id);
       const unsortedResourceList = await getByIdList(accountSid, orderedResourceIds);
       const resourceMap = Object.fromEntries(
