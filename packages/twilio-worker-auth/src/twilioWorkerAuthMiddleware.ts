@@ -40,7 +40,7 @@ declare global {
  * IMPORTANT: This kind of static key acces should never be used to retrieve sensitive information.
  */
 const canAccessResourceWithStaticKey = (path: string, method: string): boolean => {
-  return path === '/postSurveys' && method === 'POST';
+  return path.endsWith('/postSurveys') && method === 'POST';
 };
 
 type TokenValidatorResponse = { worker_sid: string; roles: string[] };
@@ -85,7 +85,7 @@ export const getAuthorizationMiddleware = (authTokenLookup: (accountSid: string)
   }
 
   if (authorization.startsWith('Basic')) {
-    if (canAccessResourceWithStaticKey(req.path, req.method)) {
+    if (canAccessResourceWithStaticKey(req.originalUrl, req.method)) {
       try {
         const staticSecretKey = `STATIC_KEY_${accountSid}`;
         const staticSecret = process.env[staticSecretKey];

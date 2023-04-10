@@ -69,3 +69,8 @@ export const headers = {
   'Content-Type': 'application/json',
   Authorization: `Bearer bearing a bear (rawr)`,
 };
+
+export const basicHeaders = {
+  'Content-Type': 'application/json',
+  Authorization: `Basic BBC`,
+};
