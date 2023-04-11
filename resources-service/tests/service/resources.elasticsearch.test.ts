@@ -48,7 +48,7 @@ afterAll(async () => {
       DELETE FROM resources."ResourceReferenceStringAttributeValues";
       DELETE FROM resources."Resources";
    `);
-  // await deleteIndex({ configId: 'as', accountSid: 'ACCOUNT_1', indexType });
+  await deleteIndex({ configId: 'as', accountSid: 'ACCOUNT_1', indexType });
 });
 
 const range = (elements: number | string): string[] =>

@@ -50,7 +50,7 @@ export const createIndex = async ({
     return;
   }
 
-  await client.indices.create({
+  return client.indices.create({
     index,
     body,
   });
