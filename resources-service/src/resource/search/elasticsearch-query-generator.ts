@@ -48,13 +48,12 @@ export const generateFilters = (filters: SearchParametersEs['filters']): SearchQ
 const generateElasticsearchQuery = (
   accountSid: AccountSID,
   searchParameters: SearchParametersEs,
-  shortCode: string = 'as', // TODO: remove this default value once we have a way to get the shortCode from the accountSid
 ) => {
   const { q, filters, pagination } = searchParameters;
   const { limit, start } = pagination;
 
   const query: SearchQuery = {
-    index: `${shortCode}-resources`,
+    index: `${accountSid.toLowerCase()}-resources`,
     body: {
       query: {
         bool: {

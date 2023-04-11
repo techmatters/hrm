@@ -19,13 +19,14 @@ import { getClient } from './client';
 import getAccountSid from './get-account-sid';
 
 export const deleteIndex = async ({
-  shortCode,
   accountSid,
   indexType,
+  shortCode,
 }: {
-  shortCode: string;
   accountSid?: string;
+  configId: string;
   indexType: string;
+  shortCode?: string;
 }) => {
   if (!accountSid) {
     accountSid = await getAccountSid(shortCode!);
@@ -33,7 +34,7 @@ export const deleteIndex = async ({
 
   const client = await getClient({ accountSid });
 
-  const index = `${shortCode}-${indexType}`;
+  const index = `${accountSid.toLowerCase()}-${indexType}`;
 
   const indexExists = await client.indices.exists({ index });
   if (!indexExists) {

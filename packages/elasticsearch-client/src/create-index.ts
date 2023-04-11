@@ -15,27 +15,36 @@
  */
 
 import { getClient } from './client';
+import getConfig from './get-config';
 
 import getAccountSid from './get-account-sid';
 
 export const createIndex = async ({
-  shortCode,
   accountSid,
+  configId = 'default',
   indexType,
+  shortCode,
 }: {
-  shortCode: string;
   accountSid?: string;
+  configId?: string;
   indexType: string;
+  shortCode?: string;
 }) => {
   if (!accountSid) {
     accountSid = await getAccountSid(shortCode!);
   }
 
-  const body = await require(`./config/${shortCode}/index-${indexType}`).body;
+  const indexConfig = await getConfig({
+    configId,
+    indexType,
+    configType: 'index',
+  });
+
+  const body = indexConfig.body;
 
   const client = await getClient({ accountSid });
 
-  const index = `${shortCode}-${indexType}`;
+  const index = `${accountSid.toLowerCase()}-${indexType}`;
 
   if (await client.indices.exists({ index })) {
     return;

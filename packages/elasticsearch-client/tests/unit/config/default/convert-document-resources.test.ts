@@ -1,4 +1,4 @@
-import { convertDocument } from '../../../../src/config/as/convert-document-resources';
+import { convertDocument } from '../../../../src/config/default/convert-document-resources';
 
 describe('convertDocument', () => {
   it('should convert a simple document', () => {
@@ -19,14 +19,8 @@ describe('convertDocument', () => {
 
     expect(document).toEqual({
       name: 'Resource',
-      text1: {
-        en: ['This is the english title'],
-        fr: ['This is the french title'],
-      },
-      text2: {
-        en: ['This is the description'],
-        fr: [],
-      },
+      text1: ['This is the english title', 'This is the french title'],
+      text2: ['This is the description'],
     });
   });
 });
