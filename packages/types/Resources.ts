@@ -62,5 +62,6 @@ type ResourcesJobMessageCommons = {
 
 export type ResourcesSearchIndexPayload = ResourcesJobMessageCommons & {
   jobType: ResourcesJobType.SEARCH_INDEX;
-  resource: ReferrableResource;
+  accountSid: string;
+  document: ReferrableResource;
 };

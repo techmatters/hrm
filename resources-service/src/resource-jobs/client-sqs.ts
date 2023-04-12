@@ -16,9 +16,12 @@
 
 import { SQS } from 'aws-sdk';
 import { getSsmParameter } from '@tech-matters/hrm-ssm-cache';
+import { sns } from '@tech-matters/sns-client';
 
 // eslint-disable-next-line prettier/prettier
 import { type ReferrableResource,  type ResourcesSearchIndexPayload, ResourcesJobType } from '@tech-matters/types';
+
+const RETRY_COUNT = 4;
 
 let sqs: SQS;
 
@@ -31,7 +34,7 @@ export const getSqsClient = () => {
 
 const getJobQueueUrl = (accountSid: string, jobType: string) => `/${process.env.NODE_ENV}/resources/${accountSid}/queue-url-${jobType}`;
 
-export const publishToResourcesJob = async (params: ResourcesSearchIndexPayload) => {
+export const publishToResourcesJob = async (params: ResourcesSearchIndexPayload, retryCount: number = 0): Promise<void> => {
   //TODO: more robust error handling/messaging
   try {
     const QueueUrl = await getSsmParameter(
@@ -39,19 +42,30 @@ export const publishToResourcesJob = async (params: ResourcesSearchIndexPayload)
       86400000,
     );
 
-    return await getSqsClient()
+    await getSqsClient()
       .sendMessage({
         MessageBody: JSON.stringify(params),
         QueueUrl,
       })
       .promise();
   } catch (err) {
-    console.error('Error trying to send message to SQS queue', err);
+    if (retryCount < RETRY_COUNT) {
+      console.error('Failed to publish to resources job. Retrying...', err);
+      await new Promise((resolve) => setTimeout(resolve, 250));
+      return publishToResourcesJob(params, retryCount + 1);
+    }
+
+    console.error('Failed to publish to resources job. Giving up.', err);
+
+    sns.publish({
+      Message: JSON.stringify(params) + err,
+      TopicArn: process.env.SNS_TOPIC_ARN || '',
+    });
   }
 };
 
-export const publishSearchIndexJob = async (accountSid: string, resource: ReferrableResource) => {
-  await publishToResourcesJob({
+export const publishSearchIndexJob = (accountSid: string, resource: ReferrableResource) => {
+  return publishToResourcesJob({
       accountSid,
       jobType: ResourcesJobType.SEARCH_INDEX,
       resource,

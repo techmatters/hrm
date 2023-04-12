@@ -56,6 +56,7 @@
     "@aws-sdk/client-cloudsearch-domain": "^3.287.0",
     "@tech-matters/elasticsearch-client": "^1.0.0",
     "@tech-matters/hrm-ssm-cache": "^1.0.0",
+    "@tech-matters/sns-client": "^1.0.0",
     "@tech-matters/twilio-worker-auth": "^1.0.0",
     "@tech-matters/types": "^1.0.0",
     "aws-sdk": "^2.1353.0",

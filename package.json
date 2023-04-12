@@ -16,9 +16,12 @@
     "@aws-cdk/aws-lambda-event-sources": "^1.176.0",
     "@aws-cdk/aws-lambda-nodejs": "^1.176.0",
     "@aws-cdk/aws-s3": "^1.176.0",
+    "@aws-cdk/aws-sns": "^1.198.1",
+    "@aws-cdk/aws-sns-subscriptions": "^1.198.1",
     "@aws-cdk/aws-sqs": "^1.176.0",
     "@aws-cdk/aws-ssm": "^1.176.0",
     "@aws-cdk/core": "^1.176.0",
+    "@maildrop/api": "^1.0.27",
     "dotenv": "^16.0.3"
   },
   "devDependencies": {

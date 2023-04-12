@@ -15,14 +15,21 @@
  */
 
 import { ResourcesJobProcessorError } from '@tech-matters/hrm-job-errors';
+import { indexDocument } from '@tech-matters/elasticsearch-client';
 
 // eslint-disable-next-line prettier/prettier
 import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
 
 const processRecord = async (sqsRecord: SQSRecord) => {
+  const message = JSON.parse(sqsRecord.body);
+  const { accountSid, resource } = message;
   try {
-    console.dir(sqsRecord);
-    // TODO: fill in the actual work!
+    await indexDocument({
+      indexType: 'resources',
+      id: resource.id,
+      document: resource,
+      accountSid,
+    });
   } catch (err) {
     console.error(new ResourcesJobProcessorError('Failed to process record'), err);
   }

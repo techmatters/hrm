@@ -10,6 +10,7 @@
     { "path": "packages/ssm-cache" },
     { "path": "packages/elasticsearch-client" },
     { "path": "packages/s3-client" },
+    { "path": "packages/sns-client" },
     { "path": "packages/twilio-client" },
     { "path": "packages/twilio-worker-auth" },
     { "path": "resources-service" },

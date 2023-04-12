@@ -23,11 +23,21 @@ export default class ResourcesCoreStack extends cdk.Stack {
     super(scope, id, props);
 
     const elasticsearchConfig = JSON.stringify({
-      node: 'http://localhost:9200',
+      node: 'http://elasticsearch:9200',
     });
 
     new ssm.StringParameter(this, 'resources_dev_user_es_host', {
       parameterName: `/local/resources/${process.env.TWILIO_ACCOUNT_SID}/elasticsearch_config`,
+      stringValue: elasticsearchConfig,
+    });
+
+    new ssm.StringParameter(this, 'resources_local_user_1_es_host', {
+      parameterName: `/local/resources/ACCOUNT_1/elasticsearch_config`,
+      stringValue: elasticsearchConfig,
+    });
+
+    new ssm.StringParameter(this, 'resources_local_user_2_es_host', {
+      parameterName: `/local/resources/ACCOUNT_2/elasticsearch_config`,
       stringValue: elasticsearchConfig,
     });
 

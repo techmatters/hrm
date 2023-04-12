@@ -15,9 +15,11 @@
  */
 
 /* eslint-disable no-new */
+import { EmailSubscription } from '@aws-cdk/aws-sns-subscriptions';
 import * as cdk from '@aws-cdk/core';
 import * as lambda from '@aws-cdk/aws-lambda';
 import * as lambdaNode from '@aws-cdk/aws-lambda-nodejs';
+import * as sns from '@aws-cdk/aws-sns';
 import * as sqs from '@aws-cdk/aws-sqs';
 import * as ssm from '@aws-cdk/aws-ssm';
 import { SqsEventSource } from '@aws-cdk/aws-lambda-event-sources';
@@ -59,6 +61,12 @@ export default class ResourcesCompleteStack extends cdk.Stack {
       description: 'The url of the complete queue',
     });
 
+    const snsTopic = new sns.Topic(this, 'notification_topic', {
+      displayName: 'Error Notification Topic',
+    });
+
+    snsTopic.addSubscription(new EmailSubscription('tm-aselo-resources-local@maildrop.cc'));
+
     if (params.skipLambda) return;
 
     const fn = new lambdaNode.NodejsFunction(this, 'fetchParams', {
@@ -72,7 +80,9 @@ export default class ResourcesCompleteStack extends cdk.Stack {
         S3_FORCE_PATH_STYLE: 'true',
         S3_REGION: 'us-east-1',
         SSM_ENDPOINT: 'http://localstack:4566',
+        SNS_ENDPOINT: 'http://localstack:4566',
         NODE_ENV: 'local',
+        SNS_TOPIC_ARN: snsTopic.topicArn,
       },
       bundling: { sourceMap: true },
     });
