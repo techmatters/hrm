@@ -20,5 +20,6 @@ services:
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=false
+      - action.auto_create_index=false
     ports:
       - ${HRM_ES_PORT:-9200}:9200

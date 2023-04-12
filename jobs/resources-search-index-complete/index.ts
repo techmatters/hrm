@@ -33,15 +33,13 @@ const processRecord = async (sqsRecord: SQSRecord) => {
   }
 };
 
-export const handler = async (event: SQSEvent): Promise<any> => {
+export const handler = async (event: SQSEvent): Promise<SQSBatchResponse> => {
   const response: SQSBatchResponse = { batchItemFailures: [] };
 
   try {
     const promises = event.Records.map(async sqsRecord => processRecord(sqsRecord));
 
     await Promise.all(promises);
-
-    return response;
   } catch (err) {
     console.error(new ResourcesJobProcessorError('Failed to init processor'), err);
 
@@ -54,7 +52,7 @@ export const handler = async (event: SQSEvent): Promise<any> => {
         itemIdentifier: record.messageId,
       };
     });
-
-    return response;
   }
+
+  return response;
 };

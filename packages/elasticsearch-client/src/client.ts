@@ -25,33 +25,28 @@ type ClientCache = {
 
 const clientCache: ClientCache = {};
 
-const getSsmParameterKey = (accountSid: string) =>
-  `/${process.env.NODE_ENV}/resources/${accountSid}/elasticsearch_config`;
+const getSsmParameterKey = () =>
+  `/${process.env.NODE_ENV}/resources/${process.env.AWS_REGION}/elasticsearch_config`;
 
-const getEsConfig = async ({ accountSid, config }: { accountSid: string; config: any }) => {
+//TODO: type for config
+const getEsConfig = async ({ config }: { config: any }) => {
   if (config) return config;
 
   if (process.env.ELASTICSEARCH_CONFIG) {
     return JSON.parse(process.env.ELASTICSEARCH_CONFIG);
   } else {
-    return JSON.parse(await getSsmParameter(getSsmParameterKey(accountSid)));
+    return JSON.parse(await getSsmParameter(getSsmParameterKey()));
   }
 };
 
-const getClientOrMock = async ({
-  accountSid,
-  config,
-}: {
-  accountSid: string;
-  config: any;
-}): Promise<Client> => {
+const getClientOrMock = async ({ config }: { config: any }): Promise<Client> => {
   // TODO: mock client for unit tests
   // if (authToken === 'mockAuthToken') {
-  //   const mock = (getMockClient({ accountSid }) as unknown) as Twilio;
+  //   const mock = (getMockClient({ config }) as unknown) as Twilio;
   //   return mock;
   // }
 
-  return new Client(await getEsConfig({ accountSid, config }));
+  return new Client(await getEsConfig({ config }));
 };
 
 export const getClient = async ({
@@ -62,7 +57,7 @@ export const getClient = async ({
   config?: any;
 }): Promise<Client> => {
   if (!clientCache[accountSid]) {
-    clientCache[accountSid] = await getClientOrMock({ accountSid, config });
+    clientCache[accountSid] = await getClientOrMock({ config });
   }
 
   return clientCache[accountSid];

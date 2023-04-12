@@ -20,7 +20,7 @@ import { indexDocument } from '@tech-matters/elasticsearch-client';
 // eslint-disable-next-line prettier/prettier
 import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
 
-export const handler = async (event: SQSEvent): Promise<any> => {
+export const handler = async (event: SQSEvent): Promise<SQSBatchResponse> => {
   const response: SQSBatchResponse = { batchItemFailures: [] };
 
   const processRecord = async (sqsRecord: SQSRecord) => {
