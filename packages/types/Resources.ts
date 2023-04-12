@@ -64,15 +64,3 @@ export type ResourcesSearchIndexPayload = ResourcesJobMessageCommons & {
   jobType: ResourcesJobType.SEARCH_INDEX;
   resource: ReferrableResource;
 };
-
-export type ResourcesIndexDocument = {
-  name: string;
-  text1: {
-    en: string[];
-    fr: string[];
-  };
-  text2: {
-    en: string[];
-    fr: string[];
-  };
-};

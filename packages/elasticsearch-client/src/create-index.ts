@@ -24,11 +24,13 @@ export const createIndex = async ({
   configId = 'default',
   indexType,
   shortCode,
+  skipWaitForCreation = false,
 }: {
   accountSid?: string;
   configId?: string;
   indexType: string;
   shortCode?: string;
+  skipWaitForCreation?: boolean;
 }) => {
   if (!accountSid) {
     accountSid = await getAccountSid(shortCode!);
@@ -37,7 +39,7 @@ export const createIndex = async ({
   const indexConfig = await getConfig({
     configId,
     indexType,
-    configType: 'index',
+    configType: 'create-index',
   });
 
   const body = indexConfig.body;
@@ -50,10 +52,23 @@ export const createIndex = async ({
     return;
   }
 
-  return client.indices.create({
+  const res = await client.indices.create({
     index,
     body,
   });
+
+  if (skipWaitForCreation) return res;
+
+  console.log(
+    await client.cluster.health({
+      index,
+      level: 'indices',
+      wait_for_status: 'yellow',
+      timeout: '10s',
+    }),
+  );
+
+  return res;
 };
 
 export default createIndex;

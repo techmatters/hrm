@@ -14,9 +14,4 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-export * from './client';
-export * from './create-index';
-export * from './delete-index';
-export * from './index-document';
-export * from './refresh-index';
-export * from './search';
+export const fields = ['text1*^3', 'text2.*^2'];

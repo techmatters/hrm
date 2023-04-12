@@ -23,7 +23,12 @@ import each from 'jest-each';
 import { ReferrableResourceSearchResult } from '../../src/resource/resource-model';
 import { AssertionError } from 'assert';
 import addHours from 'date-fns/addHours';
-import { createIndex, deleteIndex, indexDocument } from '@tech-matters/elasticsearch-client';
+import {
+  createIndex,
+  deleteIndex,
+  indexDocument,
+  refreshIndex,
+} from '@tech-matters/elasticsearch-client';
 
 export const workerSid = 'WK-worker-sid';
 
@@ -48,7 +53,8 @@ afterAll(async () => {
       DELETE FROM resources."ResourceReferenceStringAttributeValues";
       DELETE FROM resources."Resources";
    `);
-  await deleteIndex({ configId: 'as', accountSid: 'ACCOUNT_1', indexType });
+  await deleteIndex({ configId: 'default', accountSid: 'ACCOUNT_1', indexType });
+  await deleteIndex({ configId: 'default', accountSid: 'ACCOUNT_2', indexType });
 });
 
 const range = (elements: number | string): string[] =>
@@ -59,6 +65,7 @@ const range = (elements: number | string): string[] =>
 beforeAll(async () => {
   await mockingProxy.start();
   mockServer = await mockingProxy.mockttpServer();
+
   const accountResourceIdTuples: [string, string[]][] = [
     ['1', range(5)],
     ['2', range(2)],
@@ -77,33 +84,41 @@ beforeAll(async () => {
       }),
     )
     .join(';\n');
-  console.log(testResourceCreateSql); // handy for debugging
+  // console.log(testResourceCreateSql); // handy for debugging
   await db.multi(testResourceCreateSql);
 
-  await createIndex({ configId: 'as', accountSid: 'ACCOUNT_1', indexType });
+  await mockSuccessfulTwilioAuthentication(workerSid);
 
-  accountResourceIdTuples.flatMap(async ([accountIdx, resourceIdxs]) => {
-    const accountSid = `ACCOUNT_${accountIdx}`;
-    const configId = `act${accountIdx}`;
+  await Promise.all(
+    accountResourceIdTuples.flatMap(async ([accountIdx, resourceIdxs]) => {
+      const accountSid = `ACCOUNT_${accountIdx}`;
+      const configId = `act${accountIdx}`;
 
-    await createIndex({
-      configId,
-      accountSid,
-      indexType,
-    });
-    const basePath = `/v0/accounts/${accountSid}/resources/resource`;
-    resourceIdxs.flatMap(async resourceIdx => {
-      const dbResource = await request.get(`${basePath}/RESOURCE_${resourceIdx}`).set(headers);
-
-      await indexDocument({
-        accountSid,
-        document: dbResource.body,
-        id: dbResource.body.id,
+      await createIndex({
         configId,
+        accountSid,
         indexType,
       });
-    });
-  });
+
+      const basePath = `/v0/accounts/${accountSid}/resources/resource`;
+
+      await Promise.all(
+        resourceIdxs.flatMap(async resourceIdx => {
+          const dbResource = await request.get(`${basePath}/RESOURCE_${resourceIdx}`).set(headers);
+
+          await indexDocument({
+            accountSid,
+            document: dbResource.body,
+            id: dbResource.body.id,
+            configId,
+            indexType,
+          });
+        }),
+      );
+
+      await refreshIndex({ configId, accountSid, indexType });
+    }),
+  );
 });
 
 beforeEach(async () => {

@@ -22,10 +22,13 @@ type ConfigParams = {
 
 export const getConfig = async ({ configType, configId, indexType }: ConfigParams) => {
   let config: any = null;
+
+  const subPath = `${indexType}/${configType}`;
+
   try {
-    config = await require(`./config/${configId}/${configType}-${indexType}`);
+    config = await require(`./config/${configId}/${subPath}`);
   } catch (e) {
-    config = await require(`./config/default/${configType}-${indexType}`);
+    config = await require(`./config/default/${subPath}`);
   }
 
   return config;

@@ -14,9 +14,29 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-export * from './client';
-export * from './create-index';
-export * from './delete-index';
-export * from './index-document';
-export * from './refresh-index';
-export * from './search';
+import { getClient } from './client';
+
+import getAccountSid from './get-account-sid';
+
+export const refreshIndex = async ({
+  accountSid,
+  indexType,
+  shortCode,
+}: {
+  accountSid?: string;
+  configId?: string;
+  indexType: string;
+  shortCode?: string;
+}) => {
+  if (!accountSid) {
+    accountSid = await getAccountSid(shortCode!);
+  }
+
+  const client = await getClient({ accountSid });
+
+  const index = `${accountSid.toLowerCase()}-${indexType}`;
+
+  return client.indices.refresh({ index });
+};
+
+export default refreshIndex;

@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { convertDocument } from '../../../../src/config/default/convert-document-resources';
+import { convertDocument } from '../../../../src/config/default/resources/index-document';
 
 describe('convertDocument', () => {
   it('should convert a simple document', () => {

@@ -37,7 +37,7 @@ export const indexDocument = async ({
   const converter = await getConfig({
     configId,
     indexType,
-    configType: 'convert-document',
+    configType: 'index-document',
   });
 
   const index = `${accountSid.toLowerCase()}-${indexType}`;

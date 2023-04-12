@@ -41,6 +41,8 @@ export const deleteIndex = async ({
     return;
   }
 
+  console.log('Deleting index', index);
+
   return client.indices.delete({ index });
 };
 

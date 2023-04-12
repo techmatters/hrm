@@ -14,7 +14,13 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { ReferrableResource, ResourcesIndexDocument } from '@tech-matters/types';
+import { ReferrableResource } from '@tech-matters/types';
+
+export type ResourcesIndexDocument = {
+  name: string;
+  text1: string[];
+  text2: string[];
+};
 
 const HIGH_PRIORITY_ATTRIBUTES = ['title'];
 

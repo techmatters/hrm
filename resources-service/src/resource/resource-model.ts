@@ -18,9 +18,13 @@ import {
   ReferrableResourceAttribute,
   ResourceAttributeNode,
   ReferrableResource,
+  SearchParameters as SearchParametersEs,
 } from '@tech-matters/types';
 
 import { AccountSID } from '@tech-matters/twilio-worker-auth';
+
+import { search } from '@tech-matters/elasticsearch-client';
+
 import {
   getById,
   getByIdList,
@@ -29,11 +33,9 @@ import {
   ReferrableResourceRecord,
 } from './resource-data-access';
 import resourceCloudSearchClient from './search/resource-cloudsearch-client';
-import { SearchParameters, SearchParametersEs } from './search/search-types';
+import { SearchParameters } from './search/search-types';
 import { mapSearchParametersToKhpTermsAndFilters } from './search/khp-resource-search-mapping';
 import { CloudSearchConfig } from '../config/cloud-search';
-import elasticsearchClient from './search/elasticsearch-client';
-import generateElasticsearchQuery from './search/elasticsearch-query-generator';
 
 export type SimpleSearchParameters = {
   ids: string[];
@@ -106,7 +108,6 @@ export const resourceModel = (cloudSearchConfig: CloudSearchConfig) => {
       accountSid: AccountSID,
       resourceId: string,
     ): Promise<ReferrableResource | null> => {
-      console.log('getResource', { resourceId, accountSid });
       const record = await getById(accountSid, resourceId);
       return record ? resourceRecordToApiResource(record) : null;
     },
@@ -201,9 +202,11 @@ export const resourceModel = (cloudSearchConfig: CloudSearchConfig) => {
         pagination: { ...searchParameters.pagination, limit },
       };
 
-      const query = generateElasticsearchQuery(accountSid, boundedSearchParameters);
-
-      const { total, items } = await elasticsearchClient.search(accountSid, query);
+      const { total, items } = await search({
+        accountSid,
+        indexType: 'resources',
+        searchParameters: boundedSearchParameters,
+      });
 
       const orderedResourceIds: string[] = items.map(item => item.id);
       const unsortedResourceList = await getByIdList(accountSid, orderedResourceIds);

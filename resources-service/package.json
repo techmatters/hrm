@@ -15,15 +15,11 @@
     "umzug": "^3.2.1"
   },
   "scripts": {
-    "migrate": "run-s db:create:schema test:service:ci:migrate",
-    "docker:compose:elasticsearch:up": "docker compose -p hrm -f ./docker-compose.yml up -d",
-    "docker:compose:elasticsearch:down": "docker compose -p hrm -f ./docker-compose.yml down",
+    "migrate": "run-s db:create:schema test:service:ci:migrate es:create-index:local",
     "docker:compose:test:up": "run-p docker:compose:test:up:*",
     "docker:compose:test:up:db": "docker compose -f ../hrm-service/docker-compose-test.yml up -d db",
-    "docker:compose:test:up:elasticsearch": "run-s docker:compose:elasticsearch:up",
     "docker:compose:test:down": "run-p docker:compose:test:down:*",
     "docker:compose:test:down:db": "docker compose -f ../hrm-service/docker-compose-test.yml down db",
-    "docker:compose:test:down:elasticsearch": "run-s docker:compose:elasticsearch:down",
     "test": "run-s test:unit test:service",
     "test:run:watch": "cross-env AWS_REGION=us-east-1 CI=true TWILIO_ACCOUNT_SID=ACxxx TWILIO_AUTH_TOKEN=xxxxxx RDS_PASSWORD=postgres RESOURCES_PASSWORD=resources-password jest --maxWorkers=1 --forceExit --watch",
     "test:unit": "jest tests/unit",
