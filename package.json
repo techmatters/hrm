@@ -56,8 +56,10 @@
     "build": "tsc -b --verbose",
     "build-and-start": "run-s build start",
     "build-and-start:service": "run-s build start:service",
-    "start": "run-s start:localstack start:service",
+    "start": "run-s start:db start:localstack start:es start:service",
     "migrate": "npm run migrate --workspaces --if-present",
+    "start:db": "run-s docker:compose:db-persistent:up waiton:db migrate",
+    "start:es": "run-s docker:compose:es:up waiton:es es:create-index",
     "start:localstack": "cross-env AWS_REGION=us-east-1 run-s localstack:init",
     "start:service": "cross-env AWS_REGION=us-east-1 run-p start:service:*",
     "start:service:api": "cross-env AWS_REGION=us-east-1 SSM_ENDPOINT=http://localhost:4566 PORT=8080 npm run start -w hrm-service",
@@ -73,6 +75,7 @@
     "docker:compose:jobs:up": "completed_sqs_queue_url=$(npx ts-node jobs/tests/getContactCompleteQueueUrl.ts) docker-compose -p hrm -f jobs/docker-compose.yml up -d",
     "docker:compose:localstack:up": "docker-compose -p hrm up -d",
     "docker:compose:service:up": "docker-compose -p hrm -f hrm-service/docker-compose.yml up -d",
+    "es:create-index": "npm run es:create-index:local --workspaces --if-present",
     "lint": "cross-env eslint .",
     "lint:fix": "npm run lint -- --fix",
     "localstack:bootstrap": "wait-on http://localhost:4566 && cross-env AWS_REGION=us-east-1 cdklocal bootstrap",
@@ -106,6 +109,7 @@
     "license:check:windows": "docker run --rm -v %cd%:/src ghcr.io/google/addlicense -check -c \"Technology Matters\" -y \"2021-2023\" -ignore \".idea/**\" -ignore \"**/node_modules/**\" -ignore \"**/dist/**\" -ignore \"**/coverage/**\" -ignore \"cdk.out/**\" -ignore \"resources-service\\\\scripts\\\\**\" -ignore \"resources-service\\\\resource-json\\\\**\" -ignore \"**\\\\scripts-dist\\\\**\" -f license-header.tpl .",
     "license:add:windows:local": "addlicense -c \"Technology Matters\" -y \"2021-2023\" -ignore .idea\\\\** -ignore node_modules\\\\** -ignore \"**\\\\node_modules\\\\**\" -ignore \"**\\\\dist\\\\**\" -ignore \"**\\\\coverage\\\\**\" -ignore cdk.out\\\\** -ignore \"resources-service\\\\scripts\\\\**\" -ignore \"resources-service\\\\resource-json\\\\**\" -ignore \"**\\\\scripts-dist\\\\**\" -f license-header.tpl .",
     "license:check:windows:local": "addlicense -check -c \"Technology Matters\" -y \"2021-2023\" -ignore .idea\\\\** -ignore node_modules\\\\** -ignore \"**\\\\node_modules\\\\**\" -ignore \"**\\\\dist\\\\**\" -ignore \"**\\\\coverage\\\\**\" -ignore cdk.out\\\\** -ignore \"resources-service\\\\scripts\\\\**\" -ignore \"resources-service\\\\resource-json\\\\**\" -ignore \"**\\\\scripts-dist\\\\**\" -f license-header.tpl .",
+    "waiton:db": "wait-on tcp:5432",
     "waiton:es": "wait-on http-get://localhost:9200"
   }
 }

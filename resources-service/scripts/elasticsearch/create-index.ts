@@ -14,6 +14,8 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
+console.log(process.env.ELASTICSEARCH_CONFIG);
+
 import { createIndex } from '@tech-matters/elasticsearch-client';
 
 const shortCode = process.argv[2] || 'as';

@@ -59,14 +59,12 @@ export const createIndex = async ({
 
   if (skipWaitForCreation) return res;
 
-  console.log(
-    await client.cluster.health({
-      index,
-      level: 'indices',
-      wait_for_status: 'yellow',
-      timeout: '10s',
-    }),
-  );
+  await client.cluster.health({
+    index,
+    level: 'indices',
+    wait_for_status: 'yellow',
+    timeout: '10s',
+  });
 
   return res;
 };

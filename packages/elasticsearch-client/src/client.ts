@@ -31,6 +31,8 @@ const getSsmParameterKey = (accountSid: string) =>
 const getConfig = async ({ accountSid, config }: { accountSid: string; config: any }) => {
   if (config) return config;
 
+  console.log('getConfig() process.env.ELASTICSEARCH_CONFIG', process.env.ELASTICSEARCH_CONFIG);
+
   if (process.env.ELASTICSEARCH_CONFIG) {
     return JSON.parse(process.env.ELASTICSEARCH_CONFIG);
   } else {

@@ -128,8 +128,6 @@ export const search = async ({
 
   const query = generateElasticsearchQuery(accountSid, searchParameters, searchConfig.fields);
 
-  console.log('query', query);
-
   const esClient = await getClient({ accountSid });
 
   const { hits } = await esClient.search(query);

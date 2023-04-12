@@ -46,6 +46,8 @@ The primary test paths all do setup and teardown of required resources. This can
 
 #### Starting HRM db
 
+TLDR: you can just run `npm run start:db` from the root directory to start a docker container with a postgres database for the HRM service to use.
+
 From the root directory run `npm run docker:compose:db:up`. This will start a docker container with a postgres database for the HRM service to use.
 
 The HRM node service will update the schema to the latest version when you run it.
@@ -60,9 +62,11 @@ Run `npm run ssm:local` from the root directory to download required secrets for
 
 Run `npm run migrate` to run basic migrations against the database.
 
-#### Starting Elasticsearch
+#### Starting Elasticsearch.
 
-From the root directory run `npm run docker:compose:es:up`. This will start a docker container with an Elasticsearch database for the HRM service to use.
+TLDR: you can just run `npm run start:es` from the root directory to start a docker container with an Elasticsearch database for the HRM service to use.
+
+From the root directory run `npm run docker:compose:es:up`. This will start a docker container with an Elasticsearch database for the HRM service to use. Then run `npm run es:create-index` to create the indices.
 
 #### Starting HRM service
 
