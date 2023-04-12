@@ -43,6 +43,7 @@ export default class ResourcesJobsStack extends cdk.Stack {
     super(scope, id, props);
 
     const queue = new sqs.Queue(this, id, {
+      visibilityTimeout: cdk.Duration.seconds(8),
       deadLetterQueue: { maxReceiveCount: 1, queue: params.completeQueue },
     });
 

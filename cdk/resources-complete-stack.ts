@@ -15,7 +15,7 @@
  */
 
 /* eslint-disable no-new */
-import { EmailSubscription } from '@aws-cdk/aws-sns-subscriptions';
+import { SqsSubscription } from '@aws-cdk/aws-sns-subscriptions';
 import * as cdk from '@aws-cdk/core';
 import * as lambda from '@aws-cdk/aws-lambda';
 import * as lambdaNode from '@aws-cdk/aws-lambda-nodejs';
@@ -61,11 +61,29 @@ export default class ResourcesCompleteStack extends cdk.Stack {
       description: 'The url of the complete queue',
     });
 
+    const errorQueue = new sqs.Queue(this, `${id}-error`);
+
+    new ssm.StringParameter(this, `error-queue-url`, {
+      parameterName: `/local/us-east-1/sqs/jobs/resources/${id}/queue-url-error`,
+      stringValue: errorQueue.queueUrl,
+    });
+
+    // duplicated for test env
+    new ssm.StringParameter(this, `error-queue-url-test`, {
+      parameterName: `/test/us-east-1/sqs/jobs/resources/${id}/queue-url-error`,
+      stringValue: errorQueue.queueUrl,
+    });
+
+    new cdk.CfnOutput(this, 'errorQueueUrl', {
+      value: errorQueue.queueUrl,
+      description: 'The url of the error queue',
+    });
+
     const snsTopic = new sns.Topic(this, 'notification_topic', {
       displayName: 'Error Notification Topic',
     });
 
-    snsTopic.addSubscription(new EmailSubscription('tm-aselo-resources-local@maildrop.cc'));
+    snsTopic.addSubscription(new SqsSubscription(errorQueue));
 
     if (params.skipLambda) return;
 

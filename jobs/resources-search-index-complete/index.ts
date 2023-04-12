@@ -22,11 +22,12 @@ import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
 
 const processRecord = async (sqsRecord: SQSRecord) => {
   try {
-    sns.publish({
+    const res = await sns.publish({
       Message: sqsRecord.body,
       TopicArn: process.env.SNS_TOPIC_ARN || '',
-    });
-    // TODO: fill in the actual work!
+    }).promise();
+
+    console.log(res);
   } catch (err) {
     console.error(new ResourcesJobProcessorError('Failed to process record'), err);
   }

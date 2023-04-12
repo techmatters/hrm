@@ -20,47 +20,31 @@ import { indexDocument } from '@tech-matters/elasticsearch-client';
 // eslint-disable-next-line prettier/prettier
 import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
 
-const processRecord = async (sqsRecord: SQSRecord) => {
-  const message = JSON.parse(sqsRecord.body);
-
-  console.dir(message, { depth: null });
-
-  const { accountSid, document } = message;
-  // try {
-    await indexDocument({
-      indexType: 'resources',
-      id: document.id,
-      document: document,
-      accountSid,
-    });
-  // } catch (err) {
-  //   console.error(new ResourcesJobProcessorError('Failed to process record'), err);
-  // }
-};
-
 export const handler = async (event: SQSEvent): Promise<any> => {
   const response: SQSBatchResponse = { batchItemFailures: [] };
 
-  try {
-    const promises = event.Records.map(async sqsRecord => processRecord(sqsRecord));
+  const processRecord = async (sqsRecord: SQSRecord) => {
+    const message = JSON.parse(sqsRecord.body);
 
-    await Promise.all(promises);
+    const { accountSid, document } = message;
+    try {
+      await indexDocument({
+        indexType: 'resources',
+        id: document.id,
+        document,
+        accountSid,
+      });
+    } catch (err) {
+      console.error(new ResourcesJobProcessorError('Failed to process record'), err);
 
-    return response;
-  } catch (err) {
-    console.error(new ResourcesJobProcessorError('Failed to init processor'), err);
+      response.batchItemFailures.push({
+        itemIdentifier: sqsRecord.messageId,
+      });
+    }
+  };
 
-    // We fail all messages here and rely on SQS retry/DLQ because we hit
-    // a fatal error before we could process any of the messages. Once we
-    // start using this lambda, we'll need to be sure the internal retry
-    // logic is robust enough to handle transient errors.
-    response.batchItemFailures = event.Records.map(record => {
-      return {
-        itemIdentifier: record.messageId,
-      };
-    });
+  const promises = event.Records.map(async sqsRecord => processRecord(sqsRecord));
+  await Promise.all(promises);
 
-    throw err;
-    return response;
-  }
+  return response;
 };

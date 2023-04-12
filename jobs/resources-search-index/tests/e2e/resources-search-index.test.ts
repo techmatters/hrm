@@ -14,6 +14,8 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
+import { SQS } from 'aws-sdk';
+
 import {
   createIndex,
   deleteIndex,
@@ -25,7 +27,7 @@ import {
 import { SearchResults } from '@tech-matters/types';
 
 import { generateMockMessageBody } from '../generateMockMessageBody';
-// import { getStackOutput } from '../../../../cdk/cdkOutput';
+import { getStackOutput } from '../../../../cdk/cdkOutput';
 import { sendMessage } from '../../../tests/sendMessage';
 
 /**
@@ -35,11 +37,20 @@ import { sendMessage } from '../../../tests/sendMessage';
 
 jest.setTimeout(60000);
 
+const localstackEndpoint = 'http://localhost:4566';
+
 const accountSids = ['ACCOUNT_1', 'ACCOUNT_2'];
 
 const indexType = 'resources';
 
 const lambdaName = 'search-index';
+
+const completeOutput: any = getStackOutput('search-index-complete');
+const { errorQueueUrl } = completeOutput;
+
+const sqs = new SQS({
+  endpoint: localstackEndpoint,
+});
 
 export const waitForSearchResults = async ({
   message,
@@ -73,8 +84,28 @@ export const waitForSearchResults = async ({
   return result;
 };
 
+export const waitForSQSMessage = async ({
+  retryCount = 0,
+}: {
+  retryCount?: number;
+} = {}): Promise<SQS.ReceiveMessageResult | undefined> => {
+  let result;
+  try {
+    result = await sqs.receiveMessage({ QueueUrl: errorQueueUrl }).promise();
+    if (!result?.Messages) throw new Error('No messages');
+  } catch (err) {
+    if (retryCount < 200) {
+      await new Promise(resolve => setTimeout(resolve, 250));
+      return waitForSQSMessage({ retryCount: retryCount + 1 });
+    }
+  }
+
+  return result;
+};
+
 describe('resources-search-index', () => {
   beforeEach(async () => {
+    await sqs.purgeQueue({ QueueUrl: errorQueueUrl }).promise();
     await Promise.all(
       accountSids.map(async accountSid => {
         await getClient({
@@ -100,6 +131,8 @@ describe('resources-search-index', () => {
         });
       }),
     );
+
+    await sqs.purgeQueue({ QueueUrl: errorQueueUrl }).promise();
   });
 
   test('well formed message results in indexed document', async () => {
@@ -118,20 +151,24 @@ describe('resources-search-index', () => {
     expect(searchResult?.items[0].id).toEqual(message.document.id);
   });
 
-  // test('message with bad accountSid produces failure message in complete queue', async () => {
-  //   const message = { ...generateMockMessageBody(), accountSid: 'badSid' };
-  //   const sqsResp = await sendMessage({ message, lambdaName });
+  test('message with bad accountSid produces failure message in complete queue', async () => {
+    const message = { ...generateMockMessageBody(), accountSid: 'badSid' };
+    const sqsResp = await sendMessage({ message, lambdaName });
 
-  //   expect(sqsResp).toHaveProperty('MessageId');
+    expect(sqsResp).toHaveProperty('MessageId');
 
-  //   const sqsResult = await waitForSQSMessage();
-  //   expect(sqsResult).toBeDefined();
-  //   expect(sqsResult).toHaveProperty('Messages');
-  //   expect(sqsResult?.Messages).toHaveLength(1);
+    // For now the localstack SNS topic sends the message to an error queue
+    // instead of email so we can test it here.
+    const sqsResult = await waitForSQSMessage();
+    expect(sqsResult).toBeDefined();
+    expect(sqsResult).toHaveProperty('Messages');
+    expect(sqsResult?.Messages).toHaveLength(1);
 
-  //   const sqsMessage = sqsResult?.Messages?.[0];
-  //   const body = JSON.parse(sqsMessage?.Body || '');
-  //   expect(body?.attemptResult).toEqual('failure');
-  //   expect(body?.attemptPayload).toEqual('Parameter /local/twilio/badSid/auth_token not found.');
-  // });
+    const sqsMessage = sqsResult?.Messages?.[0];
+    const body = JSON.parse(sqsMessage?.Body || '');
+
+    const errorMessage = JSON.parse(body?.Message || '');
+
+    expect(errorMessage).toMatchObject(message);
+  });
 });
