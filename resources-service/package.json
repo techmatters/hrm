@@ -17,9 +17,9 @@
   "scripts": {
     "migrate": "run-s db:create:schema test:service:ci:migrate",
     "docker:compose:test:up": "run-p docker:compose:test:up:*",
-    "docker:compose:test:up:db": "docker compose -f ../hrm-service/docker-compose-test.yml up -d db",
+    "docker:compose:test:up:db": "docker compose -f ../hrm-service/docker-compose-test.yml up -d",
     "docker:compose:test:down": "run-p docker:compose:test:down:*",
-    "docker:compose:test:down:db": "docker compose -f ../hrm-service/docker-compose-test.yml down db",
+    "docker:compose:test:down:db": "docker compose -f ../hrm-service/docker-compose-test.yml down",
     "test": "run-s test:unit test:service",
     "test:run:watch": "cross-env AWS_REGION=us-east-1 CI=true TWILIO_ACCOUNT_SID=ACxxx TWILIO_AUTH_TOKEN=xxxxxx RDS_PASSWORD=postgres RESOURCES_PASSWORD=resources-password jest --maxWorkers=1 --forceExit --watch",
     "test:unit": "jest tests/unit",

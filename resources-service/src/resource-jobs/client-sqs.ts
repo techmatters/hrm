@@ -68,6 +68,6 @@ export const publishSearchIndexJob = (accountSid: string, resource: ReferrableRe
   return publishToResourcesJob({
       accountSid,
       jobType: ResourcesJobType.SEARCH_INDEX,
-      resource,
+      document: resource,
   });
 };
