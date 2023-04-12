@@ -60,6 +60,10 @@ Run `npm run ssm:local` from the root directory to download required secrets for
 
 Run `npm run migrate` to run basic migrations against the database.
 
+#### Starting Elasticsearch
+
+From the root directory run `npm run docker:compose:es:up`. This will start a docker container with an Elasticsearch database for the HRM service to use.
+
 #### Starting HRM service
 
 Build the HRM service, packages, and jobs by running `npm run build` from the root directory.

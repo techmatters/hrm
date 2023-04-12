@@ -28,6 +28,7 @@ import {
   deleteIndex,
   indexDocument,
   refreshIndex,
+  getClient,
 } from '@tech-matters/elasticsearch-client';
 
 export const workerSid = 'WK-worker-sid';
@@ -93,6 +94,13 @@ beforeAll(async () => {
     accountResourceIdTuples.flatMap(async ([accountIdx, resourceIdxs]) => {
       const accountSid = `ACCOUNT_${accountIdx}`;
       const configId = `act${accountIdx}`;
+
+      await getClient({
+        accountSid: 'ACCOUNT_1',
+        config: {
+          node: 'http://localhost:9200',
+        },
+      });
 
       await createIndex({
         configId,

@@ -22,37 +22,23 @@ export default class ResourcesCoreStack extends cdk.Stack {
   constructor({ scope, id, props }: { scope: cdk.App; id: string; props?: cdk.StackProps }) {
     super(scope, id, props);
 
+    const elasticsearchConfig = JSON.stringify({
+      node: 'http://localhost:9200',
+    });
+
     new ssm.StringParameter(this, 'resources_dev_user_es_host', {
       parameterName: `/local/resources/${process.env.TWILIO_ACCOUNT_SID}/elasticsearch_config`,
-      stringValue: JSON.stringify({
-        node: 'http://localhost:9200',
-        auth: {
-          username: 'elastic',
-          password: 'changeme',
-        },
-      }),
+      stringValue: elasticsearchConfig,
     });
 
     new ssm.StringParameter(this, 'resources_test_user_1_es_host', {
       parameterName: `/test/resources/ACCOUNT_1/elasticsearch_config`,
-      stringValue: JSON.stringify({
-        node: 'http://localhost:9200',
-        auth: {
-          username: 'elastic',
-          password: 'changeme',
-        },
-      }),
+      stringValue: elasticsearchConfig,
     });
 
     new ssm.StringParameter(this, 'resources_test_user_2_es_host', {
       parameterName: `/test/resources/ACCOUNT_2/elasticsearch_config`,
-      stringValue: JSON.stringify({
-        node: 'http://localhost:9200',
-        auth: {
-          username: 'elastic',
-          password: 'changeme',
-        },
-      }),
+      stringValue: elasticsearchConfig,
     });
   }
 }
