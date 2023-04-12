@@ -22,17 +22,20 @@ import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
 
 const processRecord = async (sqsRecord: SQSRecord) => {
   const message = JSON.parse(sqsRecord.body);
-  const { accountSid, resource } = message;
-  try {
+
+  console.dir(message, { depth: null });
+
+  const { accountSid, document } = message;
+  // try {
     await indexDocument({
       indexType: 'resources',
-      id: resource.id,
-      document: resource,
+      id: document.id,
+      document: document,
       accountSid,
     });
-  } catch (err) {
-    console.error(new ResourcesJobProcessorError('Failed to process record'), err);
-  }
+  // } catch (err) {
+  //   console.error(new ResourcesJobProcessorError('Failed to process record'), err);
+  // }
 };
 
 export const handler = async (event: SQSEvent): Promise<any> => {
@@ -57,6 +60,7 @@ export const handler = async (event: SQSEvent): Promise<any> => {
       };
     });
 
+    throw err;
     return response;
   }
 };

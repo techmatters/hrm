@@ -14,24 +14,15 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
+import { config } from './config';
+
 type ConfigParams = {
-  configType: string;
-  configId: string;
+  configId?: string;
   indexType: string;
 };
 
-export const getConfig = async ({ configType, configId, indexType }: ConfigParams) => {
-  let config: any = null;
-
-  const subPath = `${indexType}/${configType}`;
-
-  try {
-    config = await require(`./config/${configId}/${subPath}`);
-  } catch (e) {
-    config = await require(`./config/default/${subPath}`);
-  }
-
-  return config;
+export const getConfig = async ({ configId = 'default', indexType }: ConfigParams) => {
+  return config[configId][indexType];
 };
 
 export default getConfig;

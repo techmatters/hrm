@@ -120,13 +120,12 @@ export const search = async ({
     accountSid = await getAccountSid(shortCode!);
   }
 
-  const searchConfig = await getConfig({
+  const config = await getConfig({
     configId,
     indexType,
-    configType: 'search',
   });
 
-  const query = generateElasticsearchQuery(accountSid, searchParameters, searchConfig.fields);
+  const query = generateElasticsearchQuery(accountSid, searchParameters, config.searchFields);
 
   const esClient = await getClient({ accountSid });
 

@@ -14,38 +14,18 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import getConfig from './get-config';
-import { getClient } from './client';
-
-// TODO: handle document to body conversion based on a config file for this user/index
-
-export const indexDocument = async ({
-  accountSid,
-  configId = 'default',
-  document,
-  id,
-  indexType,
-}: {
-  accountSid: string;
-  configId?: string;
-  document: any;
-  id: string;
-  indexType: string;
-}) => {
-  const client = await getClient({ accountSid });
-
-  const config = await getConfig({
-    configId,
-    indexType,
-  });
-
-  const index = `${accountSid.toLowerCase()}-${indexType}`;
-
-  const body = config.convertDocument(document);
-
-  return client.index({
-    index,
-    id,
-    body,
-  });
+module.exports = config => {
+  return (
+    config || {
+      preset: 'ts-jest',
+      rootDir: './tests',
+      maxWorkers: 1,
+      globals: {
+        'ts-jest': {
+          // to give support to const enum. Not working, conflicting with module resolution
+          useExperimentalLanguageServer: true,
+        },
+      },
+    }
+  );
 };

@@ -15,6 +15,7 @@
     "@types/aws-lambda": "^8.10.108"
   },
   "scripts": {
+    "test:e2e": "jest tests/e2e",
     "docker:build": "docker build -t resources-search-index --build-arg lambda_name=resources-search-index -f ../Dockerfile ../../"
   }
 }

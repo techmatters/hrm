@@ -42,6 +42,10 @@ There are several types of tests, (unit, service, e2e). These can be run using w
 
 The primary test paths all do setup and teardown of required resources. This can add time to the test cycle. There are `:run` sub-scripts for tests that require setup and teardown like service and e2e tests. If you already have a test db docker container running, you can run these using workspaces by running something like `npm run -w hrm-service test:service:run` from the root directory. You can also run the tests by navigating into the package directory and running `npm run test:service:run`.
 
+### Running the Entire Stack locally
+
+run `npm start` from the root directory to start the local data backends, hrm-service, and hrm-jobs packages.
+
 ### Running HRM service locally
 
 #### Starting HRM db

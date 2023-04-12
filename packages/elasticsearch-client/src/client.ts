@@ -28,10 +28,8 @@ const clientCache: ClientCache = {};
 const getSsmParameterKey = (accountSid: string) =>
   `/${process.env.NODE_ENV}/resources/${accountSid}/elasticsearch_config`;
 
-const getConfig = async ({ accountSid, config }: { accountSid: string; config: any }) => {
+const getEsConfig = async ({ accountSid, config }: { accountSid: string; config: any }) => {
   if (config) return config;
-
-  console.log('getConfig() process.env.ELASTICSEARCH_CONFIG', process.env.ELASTICSEARCH_CONFIG);
 
   if (process.env.ELASTICSEARCH_CONFIG) {
     return JSON.parse(process.env.ELASTICSEARCH_CONFIG);
@@ -53,7 +51,7 @@ const getClientOrMock = async ({
   //   return mock;
   // }
 
-  return new Client(await getConfig({ accountSid, config }));
+  return new Client(await getEsConfig({ accountSid, config }));
 };
 
 export const getClient = async ({

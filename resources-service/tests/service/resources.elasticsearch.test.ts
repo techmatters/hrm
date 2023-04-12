@@ -54,8 +54,8 @@ afterAll(async () => {
       DELETE FROM resources."ResourceReferenceStringAttributeValues";
       DELETE FROM resources."Resources";
    `);
-  await deleteIndex({ configId: 'default', accountSid: 'ACCOUNT_1', indexType });
-  await deleteIndex({ configId: 'default', accountSid: 'ACCOUNT_2', indexType });
+  await deleteIndex({ accountSid: 'ACCOUNT_1', indexType });
+  await deleteIndex({ accountSid: 'ACCOUNT_2', indexType });
 });
 
 const range = (elements: number | string): string[] =>
@@ -93,7 +93,6 @@ beforeAll(async () => {
   await Promise.all(
     accountResourceIdTuples.flatMap(async ([accountIdx, resourceIdxs]) => {
       const accountSid = `ACCOUNT_${accountIdx}`;
-      const configId = `act${accountIdx}`;
 
       await getClient({
         accountSid: 'ACCOUNT_1',
@@ -103,7 +102,6 @@ beforeAll(async () => {
       });
 
       await createIndex({
-        configId,
         accountSid,
         indexType,
       });
@@ -118,13 +116,12 @@ beforeAll(async () => {
             accountSid,
             document: dbResource.body,
             id: dbResource.body.id,
-            configId,
             indexType,
           });
         }),
       );
 
-      await refreshIndex({ configId, accountSid, indexType });
+      await refreshIndex({ accountSid, indexType });
     }),
   );
 });

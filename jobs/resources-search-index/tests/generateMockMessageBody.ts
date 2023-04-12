@@ -14,38 +14,20 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import getConfig from './get-config';
-import { getClient } from './client';
+const accountSids = ['ACCOUNT_1', 'ACCOUNT_2'];
 
-// TODO: handle document to body conversion based on a config file for this user/index
-
-export const indexDocument = async ({
-  accountSid,
-  configId = 'default',
-  document,
-  id,
-  indexType,
-}: {
-  accountSid: string;
-  configId?: string;
-  document: any;
-  id: string;
-  indexType: string;
-}) => {
-  const client = await getClient({ accountSid });
-
-  const config = await getConfig({
-    configId,
-    indexType,
-  });
-
-  const index = `${accountSid.toLowerCase()}-${indexType}`;
-
-  const body = config.convertDocument(document);
-
-  return client.index({
-    index,
-    id,
-    body,
-  });
+export const generateMockMessageBody = () => {
+  const accountSid = accountSids[Math.floor(Math.random() * accountSids.length)];
+  const resourceId = Math.floor(Math.random() * 1000);
+  return {
+    accountSid,
+    jobType: 'resources-search-index',
+    document: {
+      id: `RESOURCE_${resourceId}`,
+      name: 'Resource 1',
+      attributes: [
+        { key: 'testAttribute', value: 'testValue', language: 'Klingon', info: { qa: 'pla' } },
+      ],
+    },
+  };
 };

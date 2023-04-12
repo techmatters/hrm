@@ -23,7 +23,7 @@
  * see: https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-query-string-query.html
  */
 
-export const body = {
+export const createIndexBody = {
   settings: {
     analysis: {
       filter: {

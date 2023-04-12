@@ -16,6 +16,6 @@
 
 import { deleteIndex } from '@tech-matters/elasticsearch-client';
 
-const configId = process.argv[2] || 'as';
+const shortCode = process.argv[2] || 'as';
 
-deleteIndex({ configId, indexType: 'resources' });
+deleteIndex({ shortCode, indexType: 'resources' });

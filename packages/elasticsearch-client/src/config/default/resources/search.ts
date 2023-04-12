@@ -14,4 +14,4 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-export const fields = ['text1*^3', 'text2.*^2'];
+export const searchFields = ['text1*^3', 'text2.*^2'];

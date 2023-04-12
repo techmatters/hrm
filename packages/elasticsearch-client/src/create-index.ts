@@ -36,16 +36,13 @@ export const createIndex = async ({
     accountSid = await getAccountSid(shortCode!);
   }
 
-  const indexConfig = await getConfig({
+  const config = await getConfig({
     configId,
     indexType,
-    configType: 'create-index',
   });
 
-  const body = indexConfig.body;
-
+  const body = config.createIndexBody;
   const client = await getClient({ accountSid });
-
   const index = `${accountSid.toLowerCase()}-${indexType}`;
 
   if (await client.indices.exists({ index })) {
