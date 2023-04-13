@@ -14,15 +14,23 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
+import {
+  ReferrableResourceAttribute,
+  ResourceAttributeNode,
+  ReferrableResource,
+  SearchParameters as SearchParametersEs,
+} from '@tech-matters/types';
+
 import { AccountSID } from '@tech-matters/twilio-worker-auth';
+
+import { search } from '@tech-matters/elasticsearch-client';
+
 import {
   getById,
   getByIdList,
   getUnindexed,
   getWhereNameContains,
-  ReferrableResourceAttribute,
   ReferrableResourceRecord,
-  ReferrableResourceTranslatableAttribute,
 } from './resource-data-access';
 import resourceCloudSearchClient from './search/resource-cloudsearch-client';
 import { SearchParameters } from './search/search-types';
@@ -40,21 +48,6 @@ export type SimpleSearchParameters = {
 
 const EMPTY_RESULT = { totalCount: 0, results: [] };
 const MAX_SEARCH_RESULTS = 200;
-
-export type ResourceAttributeNode = Record<
-  string,
-  | (
-      | ReferrableResourceAttribute<string | boolean | number>
-      | ReferrableResourceTranslatableAttribute
-    )[]
-  | Record<
-      string,
-      (
-        | ReferrableResourceAttribute<string | boolean | number>
-        | ReferrableResourceTranslatableAttribute
-      )[]
-    >
->;
 
 const resourceRecordToApiResource = (
   resourceRecord: ReferrableResourceRecord,
@@ -102,12 +95,6 @@ const resourceRecordToApiResource = (
     ...withoutAttributes,
     attributes,
   };
-};
-
-export type ReferrableResource = {
-  name: string;
-  id: string;
-  attributes: ResourceAttributeNode;
 };
 
 // The full resource & the search result are synonyms for now, but the full resource should grow to be a superset
@@ -186,6 +173,41 @@ export const resourceModel = (cloudSearchConfig: CloudSearchConfig) => {
         start,
         limit,
       );
+      const orderedResourceIds: string[] = items.map(item => item.id);
+      const unsortedResourceList = await getByIdList(accountSid, orderedResourceIds);
+      const resourceMap = Object.fromEntries(
+        unsortedResourceList.map(resource => [resource.id, resource]),
+      );
+
+      // Add ALL the resources found looking up specific IDs to the paginated block of name search results
+      const orderedResults = orderedResourceIds.map(id => resourceMap[id]).filter(r => r);
+
+      return {
+        results: orderedResults.map(record => resourceRecordToApiResource(record)),
+        totalCount: total,
+      };
+    },
+
+    searchResourcesEs: async (
+      accountSid: AccountSID,
+      searchParameters: SearchParametersEs,
+    ): Promise<{ totalCount: number; results: ReferrableResourceSearchResult[] }> => {
+      const {
+        pagination: { limit: unboundedLimit },
+      } = searchParameters;
+      const limit = Math.min(MAX_SEARCH_RESULTS, unboundedLimit);
+
+      const boundedSearchParameters = {
+        ...searchParameters,
+        pagination: { ...searchParameters.pagination, limit },
+      };
+
+      const { total, items } = await search({
+        accountSid,
+        indexType: 'resources',
+        searchParameters: boundedSearchParameters,
+      });
+
       const orderedResourceIds: string[] = items.map(item => item.id);
       const unsortedResourceList = await getByIdList(accountSid, orderedResourceIds);
       const resourceMap = Object.fromEntries(
