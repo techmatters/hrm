@@ -25,40 +25,53 @@ type ClientCache = {
 
 const clientCache: ClientCache = {};
 
-const getSsmParameterKey = () =>
-  `/${process.env.NODE_ENV}/resources/${process.env.AWS_REGION}/elasticsearch_config`;
+const getSsmParameterKey = (indexType: string) =>
+  `/${process.env.NODE_ENV}/${indexType}/${process.env.AWS_REGION}/elasticsearch_config`;
 
 //TODO: type for config
-const getEsConfig = async ({ config }: { config: any }) => {
+const getEsConfig = async ({ config, indexType }: { config: any; indexType: string }) => {
   if (config) return config;
 
   if (process.env.ELASTICSEARCH_CONFIG) {
     return JSON.parse(process.env.ELASTICSEARCH_CONFIG);
   } else {
-    return JSON.parse(await getSsmParameter(getSsmParameterKey()));
+    return JSON.parse(await getSsmParameter(getSsmParameterKey(indexType)));
   }
 };
 
-const getClientOrMock = async ({ config }: { config: any }): Promise<Client> => {
+const getClientOrMock = async ({
+  config,
+  indexType,
+}: {
+  config: any;
+  indexType: string;
+}): Promise<Client> => {
   // TODO: mock client for unit tests
   // if (authToken === 'mockAuthToken') {
   //   const mock = (getMockClient({ config }) as unknown) as Twilio;
   //   return mock;
   // }
 
-  return new Client(await getEsConfig({ config }));
+  return new Client(await getEsConfig({ config, indexType }));
 };
 
+/**
+ * Returns a client for the given accountSid/indexType. Currently clients are really only based on AWS region
+ * and we assume there will be a single multi-tenant ES cluster per region and or region/type. This may change
+ * in the future if we need to support single tenant ES clusters.
+ */
 export const getClient = async ({
   accountSid,
   config,
+  indexType = 'resources',
 }: {
   accountSid: string;
   config?: any;
+  indexType?: string;
 }): Promise<Client> => {
-  if (!clientCache[accountSid]) {
-    clientCache[accountSid] = await getClientOrMock({ config });
+  if (!clientCache[`${accountSid}-${indexType}`]) {
+    clientCache[`${accountSid}-${indexType}`] = await getClientOrMock({ config, indexType });
   }
 
-  return clientCache[accountSid];
+  return clientCache[`${accountSid}-${indexType}`];
 };

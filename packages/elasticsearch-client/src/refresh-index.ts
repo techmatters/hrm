@@ -18,13 +18,16 @@ import { getClient } from './client';
 
 import getAccountSid from './get-account-sid';
 
+/**
+ * Waits for an index refresh of pending changes to be completed. This is useful in tests
+ * where we want to make sure that the index is up to date before we test search results.
+ */
 export const refreshIndex = async ({
   accountSid,
   indexType,
   shortCode,
 }: {
   accountSid?: string;
-  configId?: string;
   indexType: string;
   shortCode?: string;
 }) => {

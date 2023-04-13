@@ -54,6 +54,10 @@ export const createIndex = async ({
     body,
   });
 
+  // This waits for the index to be created and for the shards to be allocated
+  // so that we can be sure that the index is ready to be used before returning.
+  // Can be skilled with the skipWaitForCreation flag if we are creating a bunch
+  // of indexes and want to check for them all after the fact.
   if (skipWaitForCreation) return res;
 
   await client.cluster.health({
@@ -62,7 +66,6 @@ export const createIndex = async ({
     wait_for_status: 'yellow',
     timeout: '10s',
   });
-
   return res;
 };
 

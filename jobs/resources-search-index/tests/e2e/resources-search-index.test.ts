@@ -38,13 +38,9 @@ import { sendMessage } from '../../../tests/sendMessage';
 jest.setTimeout(60000);
 
 const localstackEndpoint = 'http://localhost:4566';
-
 const accountSids = ['ACCOUNT_1', 'ACCOUNT_2'];
-
 const indexType = 'resources';
-
 const lambdaName = 'resources-search-index';
-
 const completeOutput: any = getStackOutput('resources-search-complete');
 const { errorQueueUrl } = completeOutput;
 
@@ -90,6 +86,7 @@ export const waitForSQSMessage = async ({
   retryCount?: number;
 } = {}): Promise<SQS.ReceiveMessageResult | undefined> => {
   let result;
+
   try {
     result = await sqs.receiveMessage({ QueueUrl: errorQueueUrl }).promise();
     if (!result?.Messages) throw new Error('No messages');
@@ -108,6 +105,9 @@ describe('resources-search-index', () => {
     await sqs.purgeQueue({ QueueUrl: errorQueueUrl }).promise();
     await Promise.all(
       accountSids.map(async accountSid => {
+        // This is a bit of a hack to get the client to connect to the localstack instance on localhost
+        // instead of using the localstack ssm parameter which points to the internal docker network
+        // address of the elasticsearch container: http://elasticsearch:9200
         await getClient({
           accountSid: accountSid,
           config: {
@@ -137,12 +137,10 @@ describe('resources-search-index', () => {
 
   test('well formed message results in indexed document', async () => {
     const message = generateMockMessageBody();
-
     const sqsResp = await sendMessage({ message, lambdaName });
     expect(sqsResp).toHaveProperty('MessageId');
 
     const searchResult = await waitForSearchResults({ message });
-
     expect(searchResult).toHaveProperty('total');
     expect(searchResult).toHaveProperty('items');
     expect(searchResult?.total).toEqual(1);
@@ -154,21 +152,19 @@ describe('resources-search-index', () => {
   test('message with bad accountSid produces failure message in complete queue', async () => {
     const message = { ...generateMockMessageBody(), accountSid: 'badSid' };
     const sqsResp = await sendMessage({ message, lambdaName });
-
     expect(sqsResp).toHaveProperty('MessageId');
 
     // For now the localstack SNS topic sends the message to an error queue
     // instead of email so we can test it here.
     const sqsResult = await waitForSQSMessage();
+
     expect(sqsResult).toBeDefined();
     expect(sqsResult).toHaveProperty('Messages');
     expect(sqsResult?.Messages).toHaveLength(1);
 
     const sqsMessage = sqsResult?.Messages?.[0];
     const body = JSON.parse(sqsMessage?.Body || '');
-
     const errorMessage = JSON.parse(body?.Message || '');
-
     expect(errorMessage).toMatchObject(message);
   });
 });

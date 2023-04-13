@@ -14,4 +14,5 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
+// List of searchable fields used to build the ES search query.
 export const searchFields = ['name.*^4', 'text1.*^3', 'text2.*^2'];

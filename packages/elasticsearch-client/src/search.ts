@@ -36,6 +36,12 @@ interface SearchTotalHits {
  * hits as a number in the total field. If track_total_hits is true, Elasticsearch returns
  * an object of type SearchTotalHits that provides more accurate information about the total
  * hits.
+ *
+ * For now we flatten the object and return the value. In the future we may want to use the
+ * relation field to determine if we need to do a second search to get the exact count.
+ *
+ * @param total the total hits as returned by Elasticsearch
+ * @returns the total hits as a number
  */
 const getTotalValue = (total: number | SearchTotalHits | undefined): number => {
   if (typeof total === 'object') return total.value;
@@ -43,8 +49,15 @@ const getTotalValue = (total: number | SearchTotalHits | undefined): number => {
   return total || 0;
 };
 
-// TODO: this doesn't support range filters yet
+/**
+ * This function takes a SearchParameters.filters object and returns a SearchQueryFilters object
+ * that can be used in the Elasticsearch query.
+ *
+ * @param filters the filters object from the SearchParameters
+ * @returns the filters object to be used in the Elasticsearch query
+ */
 export const generateFilters = (filters: SearchParameters['filters']): SearchQueryFilters => {
+  // TODO: this doesn't support range filters yet
   const returnFilters: SearchQueryFilters = [];
 
   if (!filters?.length) return returnFilters;
@@ -68,6 +81,15 @@ export const generateFilters = (filters: SearchParameters['filters']): SearchQue
   return returnFilters;
 };
 
+/**
+ * This function takes a SearchParameters object and returns a SearchQuery object that can be
+ * used to query Elasticsearch.
+ *
+ * @param accountSid the account sid
+ * @param searchParameters the search parameters
+ * @param fields the fields to search
+ * @returns the SearchQuery object
+ */
 export const generateElasticsearchQuery = (
   accountSid: string,
   searchParameters: SearchParameters,
@@ -103,6 +125,10 @@ export const generateElasticsearchQuery = (
   return query;
 };
 
+/**
+ * This function takes a SearchParameters object and returns a SearchResults object that contains
+ * the results of the search.
+ **/
 export const search = async ({
   accountSid,
   configId = 'default',
@@ -124,13 +150,9 @@ export const search = async ({
     configId,
     indexType,
   });
-
   const query = generateElasticsearchQuery(accountSid, searchParameters, config.searchFields);
-
   const esClient = await getClient({ accountSid });
-
   const { hits } = await esClient.search(query);
-
   const total = getTotalValue(hits.total);
 
   if (!total) return { total: 0, items: [] };
