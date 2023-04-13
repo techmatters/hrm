@@ -36,7 +36,9 @@ export const convertDocument = (resource: ReferrableResource): ResourcesIndexDoc
   const text1: string[] = [];
   const text2: string[] = [];
 
-  const pushToCorrectText = (key: string, value: string) => {
+  const pushToCorrectField = (key: string, value: string) => {
+    if (typeof value !== 'string') return;
+
     if (HIGH_PRIORITY_ATTRIBUTES.includes(key)) {
       text1.push(value);
     } else {
@@ -44,18 +46,20 @@ export const convertDocument = (resource: ReferrableResource): ResourcesIndexDoc
     }
   };
 
+  // TODO: this is leftover from an earlier iteration that was trying to divide things in a more complex way.
+  // I just tried to remove it and ended up fighting with types for 30 minutes, so I'm leaving it for now.
   const parseAttribute = (key: string, attribute: any) => {
-    pushToCorrectText(key, attribute.value);
+    pushToCorrectField(key, attribute.value);
   };
 
-  Object.entries(resource.attributes).map(([key, attributes]) => {
-    if (!Array.isArray(attributes)) {
-      return parseAttribute(key, attributes);
+  Object.entries(resource.attributes).forEach(([key, attributes]) => {
+    if (Array.isArray(attributes)) {
+      return attributes.map(attribute => {
+        parseAttribute(key, attribute);
+      });
     }
 
-    attributes.map(attribute => {
-      parseAttribute(key, attribute);
-    });
+    parseAttribute(key, attributes);
   });
 
   return {
