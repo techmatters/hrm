@@ -20,11 +20,11 @@ import * as SQSClient from '../../src/contact-job/client-sqs';
 import * as contactJobDataAccess from '../../src/contact-job/contact-job-data-access';
 import * as contactJobComplete from '../../src/contact-job/contact-job-complete';
 import { ContactJobPollerError } from '../../src/contact-job/contact-job-error';
-import { ContactJobType, ContactJobAttemptResult } from '@tech-matters/hrm-types';
+import { ContactJobType, ContactJobAttemptResult } from '@tech-matters/types';
 import { JOB_MAX_ATTEMPTS } from '../../src/contact-job/contact-job-processor';
 
 // eslint-disable-next-line prettier/prettier
-import type { CompletedContactJobBody } from '@tech-matters/hrm-types';
+import type { CompletedContactJobBody } from '@tech-matters/types';
 
 jest.mock('../../src/contact-job/client-sqs');
 
@@ -85,7 +85,7 @@ describe('pollAndProcessCompletedContactJobs', () => {
       channelSid: 'channelSid',
       filePath: 'filePath',
       attemptResult: ContactJobAttemptResult.SUCCESS,
-      attemptPayload: { bucket: 'some-url-here', key: 'some-url-here', url: 'some-url-here' },   
+      attemptPayload: { bucket: 'some-url-here', key: 'some-url-here', url: 'some-url-here' },
     };
     const validPayload = {
       Body: JSON.stringify(valid1),
@@ -131,7 +131,7 @@ describe('pollAndProcessCompletedContactJobs', () => {
       channelSid: 'channelSid',
       filePath: 'filePath',
       attemptResult: ContactJobAttemptResult.SUCCESS,
-      attemptPayload: { bucket: 'some-url-here', key: 'some-url-here', url: 'some-url-here' },  
+      attemptPayload: { bucket: 'some-url-here', key: 'some-url-here', url: 'some-url-here' },
     };
 
     const validPayload1 = {
