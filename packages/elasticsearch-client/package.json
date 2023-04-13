@@ -1,0 +1,19 @@
+{
+  "name": "@tech-matters/elasticsearch-client",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "scripts": {
+    "test:unit": "jest tests/unit"
+  },
+  "author": "",
+  "license": "AGPL",
+  "dependencies": {
+    "@elastic/elasticsearch": "^8.6.0",
+    "@tech-matters/hrm-ssm-cache": "^1.0.0",
+    "@tech-matters/types": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^18.15.11"
+  }
+}

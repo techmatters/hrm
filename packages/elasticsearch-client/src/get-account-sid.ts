@@ -14,16 +14,10 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-export class ContactJobProcessorError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'ContactJobProcessorError';
-  }
-}
+import { getSsmParameter } from '@tech-matters/hrm-ssm-cache';
 
-export class ResourcesJobProcessorError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'ResourcesJobProcessorError';
-  }
-}
+const getAccountSid = (configId: string) => {
+  return getSsmParameter(`/${process.env.NODE_ENV}/twilio/${configId.toUpperCase()}/account_sid`);
+};
+
+export default getAccountSid;

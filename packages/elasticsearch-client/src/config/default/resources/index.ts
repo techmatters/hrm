@@ -14,16 +14,6 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-export class ContactJobProcessorError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'ContactJobProcessorError';
-  }
-}
-
-export class ResourcesJobProcessorError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'ResourcesJobProcessorError';
-  }
-}
+export * from './create-index';
+export * from './index-document';
+export * from './search';

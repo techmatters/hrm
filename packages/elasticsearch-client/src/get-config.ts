@@ -14,16 +14,15 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-export class ContactJobProcessorError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'ContactJobProcessorError';
-  }
-}
+import { config } from './config';
 
-export class ResourcesJobProcessorError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'ResourcesJobProcessorError';
-  }
-}
+type ConfigParams = {
+  configId?: string;
+  indexType: string;
+};
+
+export const getConfig = async ({ configId = 'default', indexType }: ConfigParams) => {
+  return config[configId][indexType];
+};
+
+export default getConfig;

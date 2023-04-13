@@ -14,16 +14,32 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-export class ContactJobProcessorError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'ContactJobProcessorError';
-  }
-}
+import { getClient } from './client';
 
-export class ResourcesJobProcessorError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'ResourcesJobProcessorError';
+import getAccountSid from './get-account-sid';
+
+export const deleteIndex = async ({
+  accountSid,
+  indexType,
+  shortCode,
+}: {
+  accountSid?: string;
+  indexType: string;
+  shortCode?: string;
+}) => {
+  if (!accountSid) {
+    accountSid = await getAccountSid(shortCode!);
   }
-}
+
+  const client = await getClient({ accountSid });
+  const index = `${accountSid.toLowerCase()}-${indexType}`;
+
+  const indexExists = await client.indices.exists({ index });
+  if (!indexExists) {
+    return;
+  }
+
+  return client.indices.delete({ index });
+};
+
+export default deleteIndex;

@@ -14,16 +14,10 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-export class ContactJobProcessorError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'ContactJobProcessorError';
-  }
-}
+import * as defaultResources from './default/resources';
 
-export class ResourcesJobProcessorError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'ResourcesJobProcessorError';
-  }
-}
+export const config: Record<string, Record<string, any>> = {
+  default: {
+    resources: defaultResources,
+  },
+};

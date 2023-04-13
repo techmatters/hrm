@@ -14,16 +14,22 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-export class ContactJobProcessorError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'ContactJobProcessorError';
-  }
-}
+import { SNS } from 'aws-sdk';
 
-export class ResourcesJobProcessorError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'ResourcesJobProcessorError';
-  }
-}
+/**
+ * I extracted this out to a library because there isn't a great way to do overrides
+ * for the localstack env globally that I could find. It is a little weird, but
+ * drys up the setup a bit.
+ *
+ * Totally open to other ideas here.
+ * (rbd 10-10-22)
+ */
+const getSnsConf = () => {
+  const snsConfig: {
+    endpoint?: string;
+  } = process.env.SNS_ENDPOINT ? { endpoint: process.env.SNS_ENDPOINT } : {};
+
+  return snsConfig;
+};
+
+export const sns = new SNS(getSnsConf());

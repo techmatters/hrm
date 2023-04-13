@@ -14,16 +14,29 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-export class ContactJobProcessorError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'ContactJobProcessorError';
-  }
-}
+import { getClient } from './client';
 
-export class ResourcesJobProcessorError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'ResourcesJobProcessorError';
+import getAccountSid from './get-account-sid';
+
+export const refreshIndex = async ({
+  accountSid,
+  indexType,
+  shortCode,
+}: {
+  accountSid?: string;
+  configId?: string;
+  indexType: string;
+  shortCode?: string;
+}) => {
+  if (!accountSid) {
+    accountSid = await getAccountSid(shortCode!);
   }
-}
+
+  const client = await getClient({ accountSid });
+
+  const index = `${accountSid.toLowerCase()}-${indexType}`;
+
+  return client.indices.refresh({ index });
+};
+
+export default refreshIndex;
