@@ -54,8 +54,8 @@ afterAll(async () => {
       DELETE FROM resources."ResourceReferenceStringAttributeValues";
       DELETE FROM resources."Resources";
    `);
-  await deleteIndex({ accountSid: 'ACCOUNT_1', indexType });
-  await deleteIndex({ accountSid: 'ACCOUNT_2', indexType });
+  // await deleteIndex({ accountSid: 'ACCOUNT_1', indexType });
+  // await deleteIndex({ accountSid: 'ACCOUNT_2', indexType });
 });
 
 const range = (elements: number | string): string[] =>
@@ -195,9 +195,9 @@ describe('GET /search-es', () => {
       q: 'VALUE_0',
       limit: '3',
       start: '0',
-      condition: 'a term which returns records which match resources in the DB',
+      condition: 'a query which returns more records which match resources in the DB',
       expectationDescription:
-        'a result set of all the resources matching the IDs returned by Elasticsearch',
+        'a result set of all the resources matching the IDs returned by Elasticsearch and the correct total',
       expectedResults: [
         {
           id: 'RESOURCE_2',
@@ -221,8 +221,9 @@ describe('GET /search-es', () => {
       q: 'VALUE_1',
       limit: '3',
       start: '0',
-      condition: 'a search that returns a record where the name differs from the one in the DB',
-      expectationDescription: 'a result set using names from the DB',
+      condition: 'a query which returns records which match resources in the DB',
+      expectationDescription:
+        'a result set of all the resources matching the IDs returned by Elasticsearch',
       expectedResults: [
         {
           id: 'RESOURCE_3',
@@ -241,6 +242,21 @@ describe('GET /search-es', () => {
         },
       ],
       expectedTotalCount: 3,
+    },
+    {
+      q: '"RESOURCE 2"',
+      limit: '3',
+      start: '0',
+      condition: 'a query that matches a name phrase',
+      expectationDescription: 'a result set that matches the name',
+      expectedResults: [
+        {
+          id: 'RESOURCE_2',
+          name: 'Resource 2 (Account 1)',
+          attributes: expect.anything(),
+        },
+      ],
+      expectedTotalCount: 1,
     },
     // Test this in unit tests since we are actually querying ES now?
     // {

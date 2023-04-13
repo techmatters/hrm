@@ -54,6 +54,16 @@ export const createIndexBody = {
     properties: {
       name: {
         type: 'keyword',
+        fields: {
+          en: {
+            type: 'text',
+            analyzer: 'rebuilt_english',
+          },
+          fr: {
+            type: 'text',
+            analyzer: 'rebuilt_french',
+          },
+        },
       },
       text1: {
         type: 'text',
