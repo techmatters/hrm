@@ -163,7 +163,7 @@ describe('GET /search-es', () => {
   const basePath = '/v0/accounts/ACCOUNT_1/resources/search-es';
 
   test('Should return 401 unauthorized with no auth headers', async () => {
-    const response = await request.get(`${basePath}?q=*start=0&limit=5`);
+    const response = await request.post(`${basePath}?start=0&limit=5`).send({ q: '*' });
     expect(response.status).toBe(401);
     expect(response.body).toStrictEqual({ error: 'Authorization failed' });
   });
@@ -270,8 +270,11 @@ describe('GET /search-es', () => {
     'When specifying $condition, should return a 200 response and $expectationDescription',
     async ({ q, limit, start, expectedResults, expectedTotalCount }: TestCaseParameters) => {
       const response = await request
-        .get(`${basePath}/?q=${q}&limit=${limit}&start=${start}`)
-        .set(headers);
+        .post(`${basePath}/?limit=${limit}&start=${start}`)
+        .set(headers)
+        .send({
+          q,
+        });
 
       console.dir(response.body);
       expect(response.status).toBe(200);

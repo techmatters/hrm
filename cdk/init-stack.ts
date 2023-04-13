@@ -23,9 +23,9 @@ import ContactCompleteStack from './contact-complete-stack';
 import ContactCoreStack from './contact-core-stack';
 import ContactRetrieveStack from './contact-retrieve-stack';
 import LocalCoreStack from './local-core-stack';
-import ResourcesCompleteStack from './resources-complete-stack';
 import ResourcesCoreStack from './resources-core-stack';
-import ResourcesJobsStack from './resources-jobs-stack';
+import ResourcesSearchCompleteStack from './resources-search-complete-stack';
+import ResourcesSearchJobsStack from './resources-search-jobs-stack';
 
 dotenv.config({ path: './cdk/.env' });
 
@@ -106,9 +106,9 @@ new ResourcesCoreStack({
   },
 });
 
-const resourcesSearchIndexComplete = new ResourcesCompleteStack({
+const resourcesSearchIndexComplete = new ResourcesSearchCompleteStack({
   scope: app,
-  id: 'search-index-complete',
+  id: 'resources-search-complete',
   params: {
     skipLambda: false,
   },
@@ -117,9 +117,9 @@ const resourcesSearchIndexComplete = new ResourcesCompleteStack({
   },
 });
 
-new ResourcesJobsStack({
+new ResourcesSearchJobsStack({
   scope: app,
-  id: 'search-index',
+  id: 'resources-search-index',
   params: {
     completeQueue: resourcesSearchIndexComplete.completeQueue,
   },

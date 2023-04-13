@@ -19,7 +19,7 @@
     { "path": "jobs/contact-retrieve-recording-url" },
     { "path": "jobs/contact-retrieve-transcript" },
     { "path": "jobs/resources-search-index" },
-    { "path": "jobs/resources-search-index-complete" },
+    { "path": "jobs/resources-search-complete" },
     { "path": "hrm-service" }
   ]
 }

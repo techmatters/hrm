@@ -1,5 +1,5 @@
 {
-  "name": "@tech-matters/resources-search-index-complete",
+  "name": "@tech-matters/resources-search-complete",
   "version": "1.0.0",
   "description": "",
   "main": "dist/index.js",
@@ -16,6 +16,6 @@
     "@types/aws-lambda": "^8.10.108"
   },
   "scripts": {
-    "docker:build": "docker build -t resources-search-index-complete --build-arg lambda_name=resources-search-index-complete -f ../Dockerfile ../../"
+    "docker:build": "docker build -t resources-search-complete --build-arg lambda_name=resources-search-complete -f ../Dockerfile ../../"
   }
 }

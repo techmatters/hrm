@@ -43,9 +43,9 @@ const accountSids = ['ACCOUNT_1', 'ACCOUNT_2'];
 
 const indexType = 'resources';
 
-const lambdaName = 'search-index';
+const lambdaName = 'resources-search-index';
 
-const completeOutput: any = getStackOutput('search-index-complete');
+const completeOutput: any = getStackOutput('resources-search-complete');
 const { errorQueueUrl } = completeOutput;
 
 const sqs = new SQS({

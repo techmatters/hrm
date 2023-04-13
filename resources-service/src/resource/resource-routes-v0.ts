@@ -65,8 +65,9 @@ const resourceRoutes = (cloudSearchConfig: CloudSearchConfig) => {
     },
   );
 
-  router.get('/search-es', async (req, res) => {
-    const { q, limit, start, filters = {} } = req.query;
+  router.post('/search-es', async (req, res) => {
+    const { limit, start } = req.query;
+    const { q, filters = {} } = req.body;
 
     const referrableResources = await searchResourcesEs(<AccountSID>req.accountSid, {
       filters: filters as Record<string, string | boolean | number>,
@@ -76,6 +77,7 @@ const resourceRoutes = (cloudSearchConfig: CloudSearchConfig) => {
         start: parseInt((start as string) || '0'),
       },
     });
+
     res.json(referrableResources);
   });
 

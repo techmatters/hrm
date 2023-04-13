@@ -24,7 +24,7 @@ import * as sqs from '@aws-cdk/aws-sqs';
 import * as ssm from '@aws-cdk/aws-ssm';
 import { SqsEventSource } from '@aws-cdk/aws-lambda-event-sources';
 
-export default class ResourcesCompleteStack extends cdk.Stack {
+export default class ResourcesSearchCompleteStack extends cdk.Stack {
   public readonly completeQueue: sqs.Queue;
 
   constructor({
@@ -91,7 +91,7 @@ export default class ResourcesCompleteStack extends cdk.Stack {
       runtime: lambda.Runtime.NODEJS_16_X,
       memorySize: 512,
       handler: 'handler',
-      entry: `./jobs/resources-${id}/index.ts`,
+      entry: `./jobs/${id}/index.ts`,
       environment: {
         NODE_OPTIONS: '--enable-source-maps',
         S3_ENDPOINT: 'http://localstack:4566',
