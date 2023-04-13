@@ -28,8 +28,8 @@ const HIGH_PRIORITY_ATTRIBUTES = ['title'];
 export const convertDocument = (resource: ReferrableResource): ResourcesIndexDocument => {
   const { name } = resource;
 
-  // TODO: We may get better results if we join the array at index time instead of creating
-  // scoring for field arrays is a little unpredictable.
+  // TODO: We may get better results if we join the array at index time instead of passing an array.
+  // Scoring for field arrays is a little unpredictable.
   // We could also pass in a full field list as keywords and use a `copy_to` on the mapping
   // to copy to a single field that we use for search. This would allow us to filter on anything
   // and search on anything.

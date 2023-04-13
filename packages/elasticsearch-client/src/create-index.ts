@@ -56,7 +56,7 @@ export const createIndex = async ({
 
   // This waits for the index to be created and for the shards to be allocated
   // so that we can be sure that the index is ready to be used before returning.
-  // Can be skilled with the skipWaitForCreation flag if we are creating a bunch
+  // Can be skipped with the skipWaitForCreation flag if we are creating a bunch
   // of indexes and want to check for them all after the fact.
   if (skipWaitForCreation) return res;
 
