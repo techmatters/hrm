@@ -1,5 +1,5 @@
 {
-  "name": "@tech-matters/hrm-jobs-contact-complete",
+  "name": "@tech-matters/resources-search-complete",
   "version": "1.0.0",
   "description": "",
   "main": "dist/index.js",
@@ -8,13 +8,14 @@
   "dependencies": {
     "@tech-matters/hrm-job-errors": "^1.0.0",
     "@tech-matters/hrm-ssm-cache": "^1.0.0",
+    "@tech-matters/sns-client": "^1.0.0",
+    "@tech-matters/types": "^1.0.0",
     "aws-sdk": "^2.1225.0"
   },
   "devDependencies": {
-    "@tech-matters/types": "^1.0.0",
     "@types/aws-lambda": "^8.10.108"
   },
   "scripts": {
-    "docker:build": "docker build -t hrm-jobs-contact-complete --build-arg lambda_name=contact-complete -f ../Dockerfile ../../"
+    "docker:build": "docker build -t resources-search-complete --build-arg lambda_name=resources-search-complete -f ../Dockerfile ../../"
   }
 }

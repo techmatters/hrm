@@ -14,25 +14,20 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { SQS } from 'aws-sdk'; // eslint-disable-line import/no-extraneous-dependencies
-import { getStackOutput } from '../../cdk/cdkOutput';
+const accountSids = ['ACCOUNT_1', 'ACCOUNT_2'];
 
-export const sendMessage = async ({
-  lambdaName,
-  message,
-}: {
-  lambdaName: string;
-  message: object;
-}) => {
-  const sqs = new SQS({
-    endpoint: 'http://localstack:4566',
-    region: 'us-east-1',
-  });
-
-  const lambdaOutput: any = getStackOutput(lambdaName);
-  const params = {
-    MessageBody: JSON.stringify(message),
-    QueueUrl: lambdaOutput.queueUrl,
+export const generateMockMessageBody = () => {
+  const accountSid = accountSids[Math.floor(Math.random() * accountSids.length)];
+  const resourceId = Math.floor(Math.random() * 1000);
+  return {
+    accountSid,
+    jobType: 'resources-search-index',
+    document: {
+      id: `RESOURCE_${resourceId}`,
+      name: 'Resource 1',
+      attributes: [
+        { key: 'testAttribute', value: 'testValue', language: 'Klingon', info: { qa: 'pla' } },
+      ],
+    },
   };
-  return sqs.sendMessage(params).promise();
 };

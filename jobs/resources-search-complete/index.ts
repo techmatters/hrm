@@ -14,31 +14,34 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { ContactJobProcessorError } from '@tech-matters/hrm-job-errors';
+import { ResourcesJobProcessorError } from '@tech-matters/hrm-job-errors';
+import { sns } from '@tech-matters/sns-client';
 
 // eslint-disable-next-line prettier/prettier
 import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
 
 const processRecord = async (sqsRecord: SQSRecord) => {
   try {
-    console.dir(sqsRecord);
-    // TODO: fill in the actual work!
+    const res = await sns.publish({
+      Message: sqsRecord.body,
+      TopicArn: process.env.SNS_TOPIC_ARN || '',
+    }).promise();
+
+    console.log(res);
   } catch (err) {
-    console.error(new ContactJobProcessorError('Failed to process record'), err);
+    console.error(new ResourcesJobProcessorError('Failed to process record'), err);
   }
 };
 
-export const handler = async (event: SQSEvent): Promise<any> => {
+export const handler = async (event: SQSEvent): Promise<SQSBatchResponse> => {
   const response: SQSBatchResponse = { batchItemFailures: [] };
 
   try {
     const promises = event.Records.map(async sqsRecord => processRecord(sqsRecord));
 
     await Promise.all(promises);
-
-    return response;
   } catch (err) {
-    console.error(new ContactJobProcessorError('Failed to init processor'), err);
+    console.error(new ResourcesJobProcessorError('Failed to init processor'), err);
 
     // We fail all messages here and rely on SQS retry/DLQ because we hit
     // a fatal error before we could process any of the messages. Once we
@@ -49,7 +52,7 @@ export const handler = async (event: SQSEvent): Promise<any> => {
         itemIdentifier: record.messageId,
       };
     });
-
-    return response;
   }
+
+  return response;
 };
