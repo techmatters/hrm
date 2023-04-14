@@ -18,10 +18,10 @@ import each from 'jest-each';
 import { orderBy } from 'lodash';
 import { ReferrableResource } from '@tech-matters/types';
 
-import { getClient, SearchParameters, SearchResponse, Client } from '../../../src';
+import { IndexTypes, getClient, SearchParameters, SearchResponse, Client } from '../../../src';
 
 const accountSid = 'test-account-sid';
-const indexType = 'resources';
+const indexType = IndexTypes.RESOURCES;
 let client: Client;
 
 const documents: ReferrableResource[] = [

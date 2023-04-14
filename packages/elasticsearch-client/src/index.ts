@@ -19,3 +19,4 @@ export * from './create-index';
 export * from './delete-index';
 export * from './index-document';
 export * from './search';
+export * from './types';

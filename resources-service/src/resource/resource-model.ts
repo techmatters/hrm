@@ -23,6 +23,7 @@ import {
 import { AccountSID } from '@tech-matters/twilio-worker-auth';
 
 import {
+  IndexTypes,
   getClient,
   SearchParameters as SearchParametersEs,
 } from '@tech-matters/elasticsearch-client';
@@ -206,7 +207,7 @@ export const resourceModel = (cloudSearchConfig: CloudSearchConfig) => {
 
       const client = await getClient({
         accountSid,
-        indexType: 'resources',
+        indexType: IndexTypes.RESOURCES,
       });
 
       const { total, items } = await client.search({

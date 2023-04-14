@@ -15,17 +15,21 @@
  */
 
 import { config } from './config';
+import { ConfigIds, IndexTypes } from './types';
 
 export type GetConfigParams = {
-  configId?: string;
-  indexType: string;
+  configId?: ConfigIds;
+  indexType: IndexTypes;
 };
 
 // We will likely add complexity to this in the future. I started out using dynamic
 // imports but lambdas really don't like those. So for now we just have a single
 // config file that we load and then we can use the configId/indexType to get the
 // config we need for each ES function wrapper.
-export const getIndexConfig = async ({ configId = 'default', indexType }: GetConfigParams) => {
+export const getIndexConfig = async ({
+  configId = ConfigIds.DEFAULT,
+  indexType,
+}: GetConfigParams) => {
   return config[configId][indexType];
 };
 

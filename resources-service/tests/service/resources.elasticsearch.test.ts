@@ -23,11 +23,11 @@ import each from 'jest-each';
 import { ReferrableResourceSearchResult } from '../../src/resource/resource-model';
 import { AssertionError } from 'assert';
 import addHours from 'date-fns/addHours';
-import { Client, getClient } from '@tech-matters/elasticsearch-client';
+import { Client, IndexTypes, getClient } from '@tech-matters/elasticsearch-client';
 
 export const workerSid = 'WK-worker-sid';
 
-const indexType = 'resources';
+const indexType = IndexTypes.RESOURCES;
 const clients: Record<string, Client> = {};
 
 const server = getServer({

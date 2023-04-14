@@ -22,6 +22,7 @@ import indexDocument, { IndexDocumentExtraParams, IndexDocumentResponse } from '
 import getAccountSid from './get-account-sid';
 import getIndexConfig from './get-index-config';
 import search, { SearchExtraParams, SearchResponse } from './search';
+import { ConfigIds, IndexTypes } from './types';
 
 // import { getMockClient } from './mockClient';
 
@@ -35,13 +36,21 @@ export type Client = {
   search: (args: SearchExtraParams) => Promise<SearchResponse>;
 };
 
+type AccountSidOrShortCodeRequired =
+  | {
+      shortCode: string;
+      accountSid?: string;
+    }
+  | {
+      shortCode?: string;
+      accountSid: string;
+    };
+
 export type GetClientArgs = {
-  accountSid?: string;
   config?: ClientOptions;
-  configId?: string;
-  indexType: string;
-  shortCode?: string;
-};
+  configId?: ConfigIds;
+  indexType: IndexTypes;
+} & AccountSidOrShortCodeRequired;
 
 export type GetClientOrMockArgs = GetClientArgs & {
   index: string;
@@ -116,11 +125,13 @@ const getClientOrMock = async (params: GetClientOrMockArgs) => {
  * and or region/type. This may change in the future if we need to support single tenant ES clusters.
  */
 export const getClient = async (params: GetClientArgs): Promise<Client> => {
-  const { indexType, shortCode } = params;
-  let { accountSid } = params;
+  let accountSid;
+  const { indexType } = params;
 
-  if (!accountSid) {
-    accountSid = await getAccountSid(shortCode!);
+  if (params?.accountSid) {
+    accountSid = params.accountSid;
+  } else {
+    accountSid = await getAccountSid(params.shortCode!);
   }
 
   const index = `${accountSid.toLowerCase()}-${indexType}`;

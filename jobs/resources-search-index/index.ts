@@ -15,7 +15,7 @@
  */
 
 import { ResourcesJobProcessorError } from '@tech-matters/hrm-job-errors';
-import { getClient } from '@tech-matters/elasticsearch-client';
+import { getClient, IndexTypes } from '@tech-matters/elasticsearch-client';
 
 // eslint-disable-next-line prettier/prettier
 import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
@@ -28,7 +28,7 @@ export const handler = async (event: SQSEvent): Promise<SQSBatchResponse> => {
     const { accountSid, document } = message;
     const client = await getClient({
       accountSid,
-      indexType: 'resources',
+      indexType: IndexTypes.RESOURCES,
     });
 
     try {

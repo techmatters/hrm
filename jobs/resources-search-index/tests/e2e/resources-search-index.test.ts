@@ -16,7 +16,7 @@
 
 import { SQS } from 'aws-sdk';
 
-import { Client, getClient, SearchResponse } from '@tech-matters/elasticsearch-client';
+import { Client, IndexTypes, getClient, SearchResponse } from '@tech-matters/elasticsearch-client';
 
 import { generateMockMessageBody } from '../generateMockMessageBody';
 import { getStackOutput } from '../../../../cdk/cdkOutput';
@@ -31,7 +31,7 @@ jest.setTimeout(60000);
 
 const localstackEndpoint = 'http://localhost:4566';
 const accountSids = ['ACCOUNT_1', 'ACCOUNT_2'];
-const indexType = 'resources';
+const indexType = IndexTypes.RESOURCES;
 
 const lambdaName = 'resources-search-index';
 const completeOutput: any = getStackOutput('resources-search-complete');
