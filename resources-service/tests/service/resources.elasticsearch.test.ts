@@ -200,8 +200,8 @@ describe('GET /search-es', () => {
         'a result set of all the resources matching the IDs returned by Elasticsearch and the correct total',
       expectedResults: [
         {
-          id: 'RESOURCE_2',
-          name: 'Resource 2 (Account 1)',
+          id: 'RESOURCE_4',
+          name: 'Resource 4 (Account 1)',
           attributes: expect.anything(),
         },
         {
@@ -210,8 +210,8 @@ describe('GET /search-es', () => {
           attributes: expect.anything(),
         },
         {
-          id: 'RESOURCE_1',
-          name: 'Resource 1 (Account 1)',
+          id: 'RESOURCE_2',
+          name: 'Resource 2 (Account 1)',
           attributes: expect.anything(),
         },
       ],
@@ -226,13 +226,13 @@ describe('GET /search-es', () => {
         'a result set of all the resources matching the IDs returned by Elasticsearch',
       expectedResults: [
         {
-          id: 'RESOURCE_3',
-          name: 'Resource 3 (Account 1)',
+          id: 'RESOURCE_4',
+          name: 'Resource 4 (Account 1)',
           attributes: expect.anything(),
         },
         {
-          id: 'RESOURCE_4',
-          name: 'Resource 4 (Account 1)',
+          id: 'RESOURCE_3',
+          name: 'Resource 3 (Account 1)',
           attributes: expect.anything(),
         },
         {
@@ -242,6 +242,43 @@ describe('GET /search-es', () => {
         },
       ],
       expectedTotalCount: 3,
+    },
+    {
+      q: 'VALUE_2',
+      limit: '3',
+      start: '0',
+      condition: 'a query which returns records which match resources in the DB',
+      expectationDescription:
+        'a result set of all the resources matching the IDs returned by Elasticsearch',
+      expectedResults: [
+        {
+          id: 'RESOURCE_4',
+          name: 'Resource 4 (Account 1)',
+          attributes: expect.anything(),
+        },
+        {
+          id: 'RESOURCE_3',
+          name: 'Resource 3 (Account 1)',
+          attributes: expect.anything(),
+        },
+      ],
+      expectedTotalCount: 2,
+    },
+    {
+      q: 'VALUE_3',
+      limit: '3',
+      start: '0',
+      condition: 'a query which returns records which match resources in the DB',
+      expectationDescription:
+        'a result set of all the resources matching the IDs returned by Elasticsearch',
+      expectedResults: [
+        {
+          id: 'RESOURCE_4',
+          name: 'Resource 4 (Account 1)',
+          attributes: expect.anything(),
+        },
+      ],
+      expectedTotalCount: 1,
     },
     {
       q: '"RESOURCE 2"',

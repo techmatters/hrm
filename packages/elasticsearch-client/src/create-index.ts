@@ -41,7 +41,6 @@ export const createIndex = async ({
     indexType,
   });
 
-  const body = config.createIndexBody;
   const client = await getClient({ accountSid });
   const index = `${accountSid.toLowerCase()}-${indexType}`;
 
@@ -49,10 +48,8 @@ export const createIndex = async ({
     return;
   }
 
-  const res = await client.indices.create({
-    index,
-    body,
-  });
+  const params = config.getCreateIndexParams({ index });
+  const res = await client.indices.create(params);
 
   // This waits for the index to be created and for the shards to be allocated
   // so that we can be sure that the index is ready to be used before returning.

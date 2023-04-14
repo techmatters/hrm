@@ -16,40 +16,50 @@
 
 import { ReferrableResource } from '@tech-matters/types';
 
-export type ResourcesIndexDocument = {
-  name: string;
-  text1: string[];
-  text2: string[];
-};
+import {
+  isHighBoostGlobalField,
+  isMappingField,
+  mappingFields,
+  ResourcesIndexDocument,
+} from './config';
 
-// This is a list of attribute names that should be given higher priority in search results.
-const HIGH_PRIORITY_ATTRIBUTES = ['title'];
-
+// TODO: when we have more than one index and config type, we should probably make this a little more generic
+// and just import the config to generate it. Leaving here for now.
 export const convertDocument = (resource: ReferrableResource): ResourcesIndexDocument => {
   const { name } = resource;
+  const mappedFields: { [key: string]: string | string[] | number } = {};
+  const highBoostGlobal: string[] = [];
+  const LowBoostGlobal: string[] = [];
 
-  // TODO: We may get better results if we join the array at index time instead of passing an array.
-  // Scoring for field arrays is a little unpredictable.
-  // We could also pass in a full field list as keywords and use a `copy_to` on the mapping
-  // to copy to a single field that we use for search. This would allow us to filter on anything
-  // and search on anything.
-  const text1: string[] = [];
-  const text2: string[] = [];
-
-  const pushToCorrectField = (key: string, value: string) => {
-    if (typeof value !== 'string') return;
-
-    if (HIGH_PRIORITY_ATTRIBUTES.includes(key)) {
-      text1.push(value);
+  const pushToCorrectGlobalBoostField = (key: string, value: string) => {
+    if (isHighBoostGlobalField(key)) {
+      highBoostGlobal.push(value);
     } else {
-      text2.push(value);
+      LowBoostGlobal.push(value);
     }
   };
 
-  // TODO: this is leftover from an earlier iteration that was trying to divide things in a more complex way.
-  // I just tried to remove it and ended up fighting with types for 30 minutes, so I'm leaving it for now.
+  const pushToMappingField = (key: string, value: number | string | string[]) => {
+    //TODO: I dont' know what keywords field will actually look like should hanle arrays here
+    if (mappingFields![key].isArrayField) {
+      if (!mappedFields[key]) {
+        mappedFields[key] = [];
+      }
+
+      // TODO: not spending too much time on this, could we support multiple numbers in array mapped fields?
+      const mapField = mappedFields[key] as string[];
+      mapField.push(value.toString());
+    } else {
+      mappedFields[key] = value;
+    }
+  };
+
   const parseAttribute = (key: string, attribute: any) => {
-    pushToCorrectField(key, attribute.value);
+    if (isMappingField(key)) {
+      return pushToMappingField(key, attribute.value);
+    }
+
+    pushToCorrectGlobalBoostField(key, attribute.value);
   };
 
   Object.entries(resource.attributes).forEach(([key, attributes]) => {
@@ -64,7 +74,8 @@ export const convertDocument = (resource: ReferrableResource): ResourcesIndexDoc
 
   return {
     name,
-    text1,
-    text2,
+    high_boost_global: highBoostGlobal.join(' '),
+    low_boost_global: LowBoostGlobal.join(' '),
+    ...mappedFields,
   };
 };

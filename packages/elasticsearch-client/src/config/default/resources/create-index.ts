@@ -23,74 +23,101 @@
  * see: https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-query-string-query.html
  */
 
-export const createIndexBody = {
-  settings: {
-    analysis: {
-      filter: {
-        english_stemmer: {
-          type: 'stemmer',
-          language: 'english',
-        },
-        french_stemmer: {
-          type: 'stemmer',
-          language: 'french',
-        },
-      },
-      analyzer: {
-        rebuilt_english: {
-          type: 'custom',
-          tokenizer: 'standard',
-          filter: ['lowercase', 'english_stemmer'],
-        },
-        rebuilt_french: {
-          type: 'custom',
-          tokenizer: 'standard',
-          filter: ['lowercase', 'french_stemmer'],
-        },
-      },
-    },
-  },
-  mappings: {
-    properties: {
-      name: {
-        type: 'keyword',
-        fields: {
-          en: {
-            type: 'text',
-            analyzer: 'rebuilt_english',
+import {
+  IndicesCreateRequest,
+  // MappingKeywordProperty,
+  // MappingTextProperty,
+} from '@elastic/elasticsearch/lib/api/types';
+import { isHighBoostGlobalField, isStringField, mappingFields } from './config';
+
+// TODO: when we have more than one index and config type, we should probably make this a little more generic
+// and just import the config to generate it. Leaving here for now.
+export const getCreateIndexParams = ({ index }: { index: string }): IndicesCreateRequest => {
+  const createRequest: IndicesCreateRequest = {
+    index,
+    settings: {
+      analysis: {
+        filter: {
+          english_stemmer: {
+            type: 'stemmer',
+            language: 'english',
           },
-          fr: {
-            type: 'text',
-            analyzer: 'rebuilt_french',
+          french_stemmer: {
+            type: 'stemmer',
+            language: 'french',
           },
         },
-      },
-      text1: {
-        type: 'text',
-        fields: {
-          en: {
-            type: 'text',
-            analyzer: 'rebuilt_english',
+        analyzer: {
+          rebuilt_english: {
+            type: 'custom',
+            tokenizer: 'standard',
+            filter: ['lowercase', 'english_stemmer'],
           },
-          fr: {
-            type: 'text',
-            analyzer: 'rebuilt_french',
-          },
-        },
-      },
-      text2: {
-        type: 'text',
-        fields: {
-          en: {
-            type: 'text',
-            analyzer: 'rebuilt_english',
-          },
-          fr: {
-            type: 'text',
-            analyzer: 'rebuilt_french',
+          rebuilt_french: {
+            type: 'custom',
+            tokenizer: 'standard',
+            filter: ['lowercase', 'french_stemmer'],
           },
         },
       },
     },
-  },
+    mappings: {
+      properties: {
+        high_boost_global: {
+          type: 'text',
+          fields: {
+            en: {
+              type: 'text',
+              analyzer: 'rebuilt_english',
+            },
+            fr: {
+              type: 'text',
+              analyzer: 'rebuilt_french',
+            },
+          },
+        },
+        low_boost_global: {
+          type: 'text',
+          fields: {
+            en: {
+              type: 'text',
+              analyzer: 'rebuilt_english',
+            },
+            fr: {
+              type: 'text',
+              analyzer: 'rebuilt_french',
+            },
+          },
+        },
+      },
+    },
+  };
+
+  Object.entries(mappingFields).forEach(([key, value]) => {
+    createRequest!.mappings!.properties![key] = {
+      type: value.type,
+    };
+
+    if (!isStringField(value.type)) return;
+
+    // TODO: got tired of fighting with typescript
+    const property: any = createRequest!.mappings!.properties![key];
+
+    property.copy_to = isHighBoostGlobalField(key) ? 'high_boost_global' : 'low_boost_global';
+
+    if (value.hasLanguageFields) {
+      property.fields = {
+        en: {
+          type: 'text',
+          analyzer: 'rebuilt_english',
+        },
+        fr: {
+          type: 'text',
+          analyzer: 'rebuilt_french',
+        },
+      };
+    }
+  });
+
+  return createRequest;
 };

@@ -28,6 +28,12 @@ describe('convertDocument', () => {
           { value: 'This is the french title', language: 'fr' },
         ],
         description: [{ value: 'This is the description' }],
+        eligibilityMinAge: [{ value: 10 }],
+        eligibilityMaxAge: [{ value: 20 }],
+        feeStructure: [{ value: 'free' }],
+        keywords: [{ value: 'keyword1' }, { value: 'keyword2' }],
+        province: [{ value: 'ON' }],
+        city: [{ value: 'Toronto' }],
       },
     };
 
@@ -35,8 +41,14 @@ describe('convertDocument', () => {
 
     expect(document).toEqual({
       name: 'Resource',
-      text1: ['This is the english title', 'This is the french title'],
-      text2: ['This is the description'],
+      high_boost_global: 'This is the english title This is the french title',
+      low_boost_global: 'This is the description',
+      eligibilityMinAge: 10,
+      eligibilityMaxAge: 20,
+      city: 'Toronto',
+      feeStructure: 'free',
+      keywords: ['keyword1', 'keyword2'],
+      province: 'ON',
     });
   });
 });

@@ -60,7 +60,7 @@ export const generateFilters = (filters: SearchParameters['filters']): SearchQue
   // TODO: this doesn't support range filters yet
   const returnFilters: SearchQueryFilters = [];
 
-  if (!filters?.length) return returnFilters;
+  if (!filters || Object.keys(filters).length === 0) return returnFilters;
 
   Object.entries(filters).forEach(([key, value]) => {
     if (Array.isArray(value)) {

@@ -14,6 +14,6 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
+export * from './config';
 export * from './create-index';
 export * from './index-document';
-export * from './search';
