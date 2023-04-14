@@ -24,8 +24,7 @@
  */
 
 import { IndicesCreateRequest } from '@elastic/elasticsearch/lib/api/types';
-
-import { isHighBoostGlobalField, isStringField, mappingFields } from './config';
+import { isHighBoostGlobalField, isStringField, languageFields, mappingFields } from './config';
 
 // TODO: when we have more than one index and config type, we should probably make this a little more generic
 // and just import the config to generate it. Leaving here for now.
@@ -62,29 +61,11 @@ export const getCreateIndexParams = ({ index }: { index: string }): IndicesCreat
       properties: {
         high_boost_global: {
           type: 'text',
-          fields: {
-            en: {
-              type: 'text',
-              analyzer: 'rebuilt_english',
-            },
-            fr: {
-              type: 'text',
-              analyzer: 'rebuilt_french',
-            },
-          },
+          fields: languageFields,
         },
         low_boost_global: {
           type: 'text',
-          fields: {
-            en: {
-              type: 'text',
-              analyzer: 'rebuilt_english',
-            },
-            fr: {
-              type: 'text',
-              analyzer: 'rebuilt_french',
-            },
-          },
+          fields: languageFields,
         },
       },
     },
@@ -98,20 +79,10 @@ export const getCreateIndexParams = ({ index }: { index: string }): IndicesCreat
     if (!isStringField(value.type)) return;
 
     const property: any = createRequest!.mappings!.properties![key];
-
     property.copy_to = isHighBoostGlobalField(key) ? 'high_boost_global' : 'low_boost_global';
 
     if (value.hasLanguageFields) {
-      property.fields = {
-        en: {
-          type: 'text',
-          analyzer: 'rebuilt_english',
-        },
-        fr: {
-          type: 'text',
-          analyzer: 'rebuilt_french',
-        },
-      };
+      property.fields = languageFields;
     }
   });
 

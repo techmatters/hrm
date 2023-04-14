@@ -13,7 +13,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-
 import { Client as EsClient, ClientOptions } from '@elastic/elasticsearch';
 import { IndicesRefreshResponse } from '@elastic/elasticsearch/lib/api/types';
 import { getSsmParameter } from '@tech-matters/hrm-ssm-cache';
@@ -36,32 +35,6 @@ export type Client = {
   search: (args: SearchExtraParams) => Promise<SearchResponse>;
 };
 
-type ClientCache = {
-  [accountSid: string]: Client;
-};
-
-const clientCache: ClientCache = {};
-
-const getSsmParameterKey = (indexType: string) =>
-  `/${process.env.NODE_ENV}/${indexType}/${process.env.AWS_REGION}/elasticsearch_config`;
-
-//TODO: type for config
-const getEsConfig = async ({
-  config,
-  indexType,
-}: {
-  config: ClientOptions | undefined;
-  indexType: string;
-}) => {
-  if (config) return config;
-
-  if (process.env.ELASTICSEARCH_CONFIG) {
-    return JSON.parse(process.env.ELASTICSEARCH_CONFIG);
-  } else {
-    return JSON.parse(await getSsmParameter(getSsmParameterKey(indexType)));
-  }
-};
-
 export type GetClientArgs = {
   accountSid?: string;
   config?: ClientOptions;
@@ -80,6 +53,28 @@ export type PassThroughConfig = {
   client: EsClient;
 };
 
+type ClientCache = {
+  [accountSid: string]: Client;
+};
+
+const clientCache: ClientCache = {};
+const getConfigSsmParameterKey = (indexType: string) =>
+  `/${process.env.NODE_ENV}/${indexType}/${process.env.AWS_REGION}/elasticsearch_config`;
+
+//TODO: type for config
+const getEsConfig = async ({
+  config,
+  indexType,
+}: {
+  config: ClientOptions | undefined;
+  indexType: string;
+}) => {
+  if (config) return config;
+  if (process.env.ELASTICSEARCH_CONFIG) return JSON.parse(process.env.ELASTICSEARCH_CONFIG);
+
+  return JSON.parse(await getSsmParameter(getConfigSsmParameterKey(indexType)));
+};
+
 const getClientOrMock = async (params: GetClientOrMockArgs) => {
   // TODO: mock client for unit tests
   // if (authToken === 'mockAuthToken') {
@@ -88,14 +83,11 @@ const getClientOrMock = async (params: GetClientOrMockArgs) => {
   // }
 
   const { config, configId, index, indexType } = params;
-
   const client = new EsClient(await getEsConfig({ config, indexType }));
-
   const indexConfig = await getIndexConfig({
     configId,
     indexType,
   });
-
   const passThroughConfig = {
     index,
     indexConfig,
@@ -105,28 +97,23 @@ const getClientOrMock = async (params: GetClientOrMockArgs) => {
   return {
     client,
     index,
-
     /**
      * Waits for an index refresh of pending changes to be completed. This is useful in tests
      * where we want to make sure that the index is up to date before we test search results.
      */
     refreshIndex: () => client.indices.refresh({ index }),
-
     createIndex: (args: CreateIndexExtraParams) => createIndex({ ...passThroughConfig, ...args }),
-
     deleteIndex: () => deleteIndex(passThroughConfig),
-
     indexDocument: (args: IndexDocumentExtraParams) =>
       indexDocument({ ...passThroughConfig, ...args }),
-
     search: (args: SearchExtraParams) => search({ ...passThroughConfig, ...args }),
   };
 };
 
 /**
- * Returns a client for the given accountSid/indexType. Currently clients are really only based on AWS region
- * and we assume there will be a single multi-tenant ES cluster per region and or region/type. This may change
- * in the future if we need to support single tenant ES clusters.
+ * Returns a client for the given accountSid/indexType. Currently clients connections are really
+ * only based on AWS region and we assume there will be a single multi-tenant ES cluster per region
+ * and or region/type. This may change in the future if we need to support single tenant ES clusters.
  */
 export const getClient = async (params: GetClientArgs): Promise<Client> => {
   const { indexType, shortCode } = params;

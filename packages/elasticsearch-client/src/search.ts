@@ -16,10 +16,54 @@
 
 import { PassThroughConfig } from './client';
 
-interface SearchTotalHits {
+export type SearchQueryFilters = Array<
+  | { terms: { [key: string]: string[] } }
+  | { term: { [key: string]: string | boolean | number | Date } }
+>;
+
+export type SearchQuery = {
+  index: string;
+  body: {
+    query: {
+      bool: {
+        filter?: SearchQueryFilters;
+        must: Array<{ query_string: { query: string; fields: string[] } }>;
+      };
+    };
+    from: number;
+    size: number;
+  };
+};
+
+export type SearchExtraParams = {
+  searchParameters: SearchParameters;
+};
+
+export type SearchParams = PassThroughConfig & SearchExtraParams;
+
+export type SearchParameters = {
+  filters?: Record<string, boolean | number | string | string[]>;
+  q: string;
+  pagination: {
+    limit: number;
+    start: number;
+  };
+};
+
+export type SearchResponseItem = {
+  id: string;
+  highlights: Record<string, string[]> | undefined;
+};
+
+export type SearchResponse = {
+  total: number;
+  items: SearchResponseItem[];
+};
+
+type SearchTotalHits = {
   value: number;
   relation: 'eq' | 'gte';
-}
+};
 
 /**
  * f track_total_hits is false, Elasticsearch returns an approximate count of the total
@@ -75,7 +119,7 @@ export const generateFilters = (filters: SearchParameters['filters']): SearchQue
  * This function takes a SearchParameters object and returns a SearchQuery object that can be
  * used to query Elasticsearch.
  *
- * @param accountSid the account sid
+ * @param index the the index to search
  * @param searchParameters the search parameters
  * @param fields the fields to search
  * @returns the SearchQuery object
@@ -113,50 +157,6 @@ export const generateElasticsearchQuery = (
   }
 
   return query;
-};
-
-export type SearchExtraParams = {
-  searchParameters: SearchParameters;
-};
-
-export type SearchParams = PassThroughConfig & SearchExtraParams;
-
-export type SearchParameters = {
-  filters?: Record<string, boolean | number | string | string[]>;
-  q: string;
-  pagination: {
-    limit: number;
-    start: number;
-  };
-};
-
-export type SearchQueryFilters = Array<
-  | { terms: { [key: string]: string[] } }
-  | { term: { [key: string]: string | boolean | number | Date } }
->;
-
-export type SearchQuery = {
-  index: string;
-  body: {
-    query: {
-      bool: {
-        filter?: SearchQueryFilters;
-        must: Array<{ query_string: { query: string; fields: string[] } }>;
-      };
-    };
-    from: number;
-    size: number;
-  };
-};
-
-export type SearchResponseItem = {
-  id: string;
-  highlights: Record<string, string[]> | undefined;
-};
-
-export type SearchResponse = {
-  total: number;
-  items: SearchResponseItem[];
 };
 
 /**

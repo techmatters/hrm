@@ -15,5 +15,5 @@
  */
 
 export * from './config';
-export * from './create-index';
-export * from './index-document';
+export * from './get-create-index-params';
+export * from './convert-index-document';

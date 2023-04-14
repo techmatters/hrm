@@ -13,6 +13,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
+import { PropertyName, MappingProperty } from '@elastic/elasticsearch/lib/api/types';
 
 export type ResourcesCreateIndexConvertedDocument = {
   high_boost_global: string;
@@ -70,6 +71,17 @@ export const mappingFields: {
   },
   city: {
     type: 'keyword',
+  },
+};
+
+export const languageFields: Record<PropertyName, MappingProperty> = {
+  en: {
+    type: 'text',
+    analyzer: 'rebuilt_english',
+  },
+  fr: {
+    type: 'text',
+    analyzer: 'rebuilt_french',
   },
 };
 

@@ -16,15 +16,12 @@
 import { IndexResponse } from '@elastic/elasticsearch/lib/api/types';
 import { PassThroughConfig } from './client';
 
-// TODO: handle document to body conversion based on a config file for this user/index
-
 export type IndexDocumentExtraParams = {
   id: string;
   document: any;
 };
 
 export type IndexDocumentParams = PassThroughConfig & IndexDocumentExtraParams;
-
 export type IndexDocumentResponse = IndexResponse;
 
 export const indexDocument = async ({

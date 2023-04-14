@@ -15,7 +15,6 @@
  */
 
 import { ReferrableResource } from '@tech-matters/types';
-
 import {
   isHighBoostGlobalField,
   isMappingField,
@@ -40,7 +39,7 @@ export const convertIndexDocument = (
   };
 
   const pushToMappingField = (key: string, value: number | string | string[]) => {
-    //TODO: I dont' know what keywords field will actually look like should hanle arrays here
+    //TODO: I don't know what keywords field will actually look like should handle arrays here
     if (mappingFields![key].isArrayField) {
       if (!mappedFields[key]) {
         mappedFields[key] = [];
