@@ -14,17 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import {
-  SearchParameters,
-  SearchQuery,
-  SearchQueryFilters,
-  SearchResults,
-} from '@tech-matters/types';
-
-import { getClient } from './client';
-import getConfig from './get-config';
-
-import getAccountSid from './get-account-sid';
+import { PassThroughConfig } from './client';
 
 interface SearchTotalHits {
   value: number;
@@ -91,7 +81,7 @@ export const generateFilters = (filters: SearchParameters['filters']): SearchQue
  * @returns the SearchQuery object
  */
 export const generateElasticsearchQuery = (
-  accountSid: string,
+  index: string,
   searchParameters: SearchParameters,
   fields: string[],
 ) => {
@@ -99,7 +89,7 @@ export const generateElasticsearchQuery = (
   const { limit, start } = pagination;
 
   const query: SearchQuery = {
-    index: `${accountSid.toLowerCase()}-resources`,
+    index,
     body: {
       query: {
         bool: {
@@ -125,34 +115,62 @@ export const generateElasticsearchQuery = (
   return query;
 };
 
+export type SearchExtraParams = {
+  searchParameters: SearchParameters;
+};
+
+export type SearchParams = PassThroughConfig & SearchExtraParams;
+
+export type SearchParameters = {
+  filters?: Record<string, boolean | number | string | string[]>;
+  q: string;
+  pagination: {
+    limit: number;
+    start: number;
+  };
+};
+
+export type SearchQueryFilters = Array<
+  | { terms: { [key: string]: string[] } }
+  | { term: { [key: string]: string | boolean | number | Date } }
+>;
+
+export type SearchQuery = {
+  index: string;
+  body: {
+    query: {
+      bool: {
+        filter?: SearchQueryFilters;
+        must: Array<{ query_string: { query: string; fields: string[] } }>;
+      };
+    };
+    from: number;
+    size: number;
+  };
+};
+
+export type SearchResponseItem = {
+  id: string;
+  highlights: Record<string, string[]> | undefined;
+};
+
+export type SearchResponse = {
+  total: number;
+  items: SearchResponseItem[];
+};
+
 /**
- * This function takes a SearchParameters object and returns a SearchResults object that contains
+ * This function takes a SearchParameters object and returns a SearchResponseSearchResponse object that contains
  * the results of the search.
  **/
 export const search = async ({
-  accountSid,
-  configId = 'default',
-  indexType,
-  shortCode,
+  client,
+  index,
+  indexConfig,
   searchParameters,
-}: {
-  accountSid?: string;
-  configId?: string;
-  indexType: string;
-  shortCode?: string;
-  searchParameters: SearchParameters;
-}): Promise<SearchResults> => {
-  if (!accountSid) {
-    accountSid = await getAccountSid(shortCode!);
-  }
-
-  const config = await getConfig({
-    configId,
-    indexType,
-  });
-  const query = generateElasticsearchQuery(accountSid, searchParameters, config.searchFields);
-  const esClient = await getClient({ accountSid });
-  const { hits } = await esClient.search(query);
+}: SearchParams): Promise<SearchResponse> => {
+  const query = generateElasticsearchQuery(index, searchParameters, indexConfig.searchFields);
+  const { hits } = await client.search(query);
   const total = getTotalValue(hits.total);
 
   if (!total) return { total: 0, items: [] };
@@ -165,3 +183,5 @@ export const search = async ({
     })),
   };
 };
+
+export default search;

@@ -14,8 +14,8 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { createIndex } from '@tech-matters/elasticsearch-client';
+import { getClient } from '@tech-matters/elasticsearch-client';
 
 const shortCode = process.argv[2] || 'as';
 
-createIndex({ shortCode, indexType: 'resources' });
+getClient({ shortCode, indexType: 'resources' }).then(client => client.createIndex({}));

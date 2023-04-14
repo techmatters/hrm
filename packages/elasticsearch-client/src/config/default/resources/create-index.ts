@@ -23,11 +23,8 @@
  * see: https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-query-string-query.html
  */
 
-import {
-  IndicesCreateRequest,
-  // MappingKeywordProperty,
-  // MappingTextProperty,
-} from '@elastic/elasticsearch/lib/api/types';
+import { IndicesCreateRequest } from '@elastic/elasticsearch/lib/api/types';
+
 import { isHighBoostGlobalField, isStringField, mappingFields } from './config';
 
 // TODO: when we have more than one index and config type, we should probably make this a little more generic
@@ -100,7 +97,6 @@ export const getCreateIndexParams = ({ index }: { index: string }): IndicesCreat
 
     if (!isStringField(value.type)) return;
 
-    // TODO: got tired of fighting with typescript
     const property: any = createRequest!.mappings!.properties![key];
 
     property.copy_to = isHighBoostGlobalField(key) ? 'high_boost_global' : 'low_boost_global';

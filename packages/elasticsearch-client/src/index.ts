@@ -18,5 +18,4 @@ export * from './client';
 export * from './create-index';
 export * from './delete-index';
 export * from './index-document';
-export * from './refresh-index';
 export * from './search';

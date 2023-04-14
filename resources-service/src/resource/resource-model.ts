@@ -18,12 +18,14 @@ import {
   ReferrableResourceAttribute,
   ResourceAttributeNode,
   ReferrableResource,
-  SearchParameters as SearchParametersEs,
 } from '@tech-matters/types';
 
 import { AccountSID } from '@tech-matters/twilio-worker-auth';
 
-import { search } from '@tech-matters/elasticsearch-client';
+import {
+  getClient,
+  SearchParameters as SearchParametersEs,
+} from '@tech-matters/elasticsearch-client';
 
 import {
   getById,
@@ -202,9 +204,12 @@ export const resourceModel = (cloudSearchConfig: CloudSearchConfig) => {
         pagination: { ...searchParameters.pagination, limit },
       };
 
-      const { total, items } = await search({
+      const client = await getClient({
         accountSid,
         indexType: 'resources',
+      });
+
+      const { total, items } = await client.search({
         searchParameters: boundedSearchParameters,
       });
 

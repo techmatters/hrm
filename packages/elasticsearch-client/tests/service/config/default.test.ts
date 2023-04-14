@@ -16,19 +16,13 @@
 
 import each from 'jest-each';
 import { orderBy } from 'lodash';
-import { ReferrableResource, SearchParameters, SearchResults } from '@tech-matters/types';
+import { ReferrableResource } from '@tech-matters/types';
 
-import {
-  createIndex,
-  deleteIndex,
-  indexDocument,
-  refreshIndex,
-  getClient,
-  search,
-} from '../../../src';
+import { getClient, SearchParameters, SearchResponse, Client } from '../../../src';
 
 const accountSid = 'test-account-sid';
 const indexType = 'resources';
+let client: Client;
 
 const documents: ReferrableResource[] = [
   {
@@ -114,24 +108,23 @@ const documents: ReferrableResource[] = [
 ];
 
 afterAll(async () => {
-  await deleteIndex({ accountSid, indexType });
+  await client.deleteIndex();
 });
 
 beforeAll(async () => {
-  await getClient({
+  client = await getClient({
     accountSid,
     indexType,
     config: {
       node: 'http://localhost:9200',
     },
   });
-  await createIndex({ accountSid, indexType });
 
-  await Promise.all(
-    documents.map(document => indexDocument({ accountSid, indexType, id: document.id, document })),
-  );
+  await client.createIndex({});
 
-  await refreshIndex({ accountSid, indexType });
+  await Promise.all(documents.map(document => client.indexDocument({ id: document.id, document })));
+
+  await client.refreshIndex();
 });
 
 describe('Resources Default Search', () => {
@@ -139,7 +132,7 @@ describe('Resources Default Search', () => {
     searchParameters: SearchParameters;
     condition: string;
     expectationDescription: string;
-    expectedResults: SearchResults;
+    expectedResults: SearchResponse;
   };
 
   const testCases: TestCaseParameters[] = [
@@ -317,7 +310,7 @@ describe('Resources Default Search', () => {
   each(testCases).test(
     'When specifying $condition, should return a 200 response and $expectationDescription',
     async ({ searchParameters, expectedResults }) => {
-      const results = await search({ accountSid, indexType, searchParameters });
+      const results = await client.search({ searchParameters });
 
       expect(results.total).toEqual(expectedResults.total);
       expect(orderBy(results.items, 'id')).toEqual(orderBy(expectedResults.items, 'id'));

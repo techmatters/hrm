@@ -13,39 +13,34 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-
-import getConfig from './get-config';
-import { getClient } from './client';
+import { IndexResponse } from '@elastic/elasticsearch/lib/api/types';
+import { PassThroughConfig } from './client';
 
 // TODO: handle document to body conversion based on a config file for this user/index
 
+export type IndexDocumentExtraParams = {
+  id: string;
+  document: any;
+};
+
+export type IndexDocumentParams = PassThroughConfig & IndexDocumentExtraParams;
+
+export type IndexDocumentResponse = IndexResponse;
+
 export const indexDocument = async ({
-  accountSid,
-  configId = 'default',
+  client,
   document,
   id,
-  indexType,
-}: {
-  accountSid: string;
-  configId?: string;
-  document: any;
-  id: string;
-  indexType: string;
-}) => {
-  const client = await getClient({ accountSid });
-
-  const config = await getConfig({
-    configId,
-    indexType,
-  });
-
-  const index = `${accountSid.toLowerCase()}-${indexType}`;
-
-  const body = config.convertDocument(document);
+  index,
+  indexConfig,
+}: IndexDocumentParams): Promise<IndexDocumentResponse> => {
+  const convertedDocument = indexConfig.convertIndexDocument(document);
 
   return client.index({
     index,
     id,
-    body,
+    document: convertedDocument,
   });
 };
+
+export default indexDocument;

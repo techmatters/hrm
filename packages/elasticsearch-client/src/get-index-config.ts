@@ -14,32 +14,19 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { getClient } from './client';
+import { config } from './config';
 
-import getAccountSid from './get-account-sid';
-
-/**
- * Waits for an index refresh of pending changes to be completed. This is useful in tests
- * where we want to make sure that the index is up to date before we test search results.
- */
-export const refreshIndex = async ({
-  accountSid,
-  indexType,
-  shortCode,
-}: {
-  accountSid?: string;
+export type GetConfigParams = {
+  configId?: string;
   indexType: string;
-  shortCode?: string;
-}) => {
-  if (!accountSid) {
-    accountSid = await getAccountSid(shortCode!);
-  }
-
-  const client = await getClient({ accountSid });
-
-  const index = `${accountSid.toLowerCase()}-${indexType}`;
-
-  return client.indices.refresh({ index });
 };
 
-export default refreshIndex;
+// We will likely add complexity to this in the future. I started out using dynamic
+// imports but lambdas really don't like those. So for now we just have a single
+// config file that we load and then we can use the configId/indexType to get the
+// config we need for each ES function wrapper.
+export const getIndexConfig = async ({ configId = 'default', indexType }: GetConfigParams) => {
+  return config[configId][indexType];
+};
+
+export default getIndexConfig;

@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-export type ResourcesIndexDocument = {
+export type ResourcesCreateIndexConvertedDocument = {
   high_boost_global: string;
   low_boost_global: string;
   [key: string]: number | string | string[];
@@ -76,4 +76,5 @@ export const mappingFields: {
 export const isMappingField = (fieldName: string) => Object.keys(mappingFields).includes(fieldName);
 export const isHighBoostGlobalField = (fieldName: string) =>
   highBoostGlobalFields.includes(fieldName);
-export const isStringField = (fieldType: string) => stringFieldTypes.includes(fieldType);
+export const isStringField = (fieldType: string): fieldType is 'keyword' | 'text' =>
+  stringFieldTypes.includes(fieldType);

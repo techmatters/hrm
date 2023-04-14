@@ -20,12 +20,12 @@ import {
   isHighBoostGlobalField,
   isMappingField,
   mappingFields,
-  ResourcesIndexDocument,
+  ResourcesCreateIndexConvertedDocument,
 } from './config';
 
-// TODO: when we have more than one index and config type, we should probably make this a little more generic
-// and just import the config to generate it. Leaving here for now.
-export const convertDocument = (resource: ReferrableResource): ResourcesIndexDocument => {
+export const convertIndexDocument = (
+  resource: ReferrableResource,
+): ResourcesCreateIndexConvertedDocument => {
   const { name } = resource;
   const mappedFields: { [key: string]: string | string[] | number } = {};
   const highBoostGlobal: string[] = [];

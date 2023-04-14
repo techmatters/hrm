@@ -23,17 +23,12 @@ import each from 'jest-each';
 import { ReferrableResourceSearchResult } from '../../src/resource/resource-model';
 import { AssertionError } from 'assert';
 import addHours from 'date-fns/addHours';
-import {
-  createIndex,
-  deleteIndex,
-  indexDocument,
-  refreshIndex,
-  getClient,
-} from '@tech-matters/elasticsearch-client';
+import { Client, getClient } from '@tech-matters/elasticsearch-client';
 
 export const workerSid = 'WK-worker-sid';
 
 const indexType = 'resources';
+const clients: Record<string, Client> = {};
 
 const server = getServer({
   cloudSearchConfig: {
@@ -42,6 +37,8 @@ const server = getServer({
 });
 const request = getRequest(server);
 let mockServer: Awaited<ReturnType<typeof mockingProxy.mockttpServer>>;
+
+const accountSids = ['ACCOUNT_1', 'ACCOUNT_2'];
 
 afterAll(done => {
   mockingProxy.stop().finally(() => {
@@ -54,8 +51,9 @@ afterAll(async () => {
       DELETE FROM resources."ResourceReferenceStringAttributeValues";
       DELETE FROM resources."Resources";
    `);
-  await deleteIndex({ accountSid: 'ACCOUNT_1', indexType });
-  await deleteIndex({ accountSid: 'ACCOUNT_2', indexType });
+  accountSids.forEach(async accountSid => {
+    await clients[accountSid].deleteIndex();
+  });
 });
 
 const range = (elements: number | string): string[] =>
@@ -94,17 +92,16 @@ beforeAll(async () => {
     accountResourceIdTuples.flatMap(async ([accountIdx, resourceIdxs]) => {
       const accountSid = `ACCOUNT_${accountIdx}`;
 
-      await getClient({
-        accountSid: 'ACCOUNT_1',
+      const client = await getClient({
+        accountSid,
         config: {
           node: 'http://localhost:9200',
         },
-      });
-
-      await createIndex({
-        accountSid,
         indexType,
       });
+      clients[accountSid] = client;
+
+      await client.createIndex({});
 
       const basePath = `/v0/accounts/${accountSid}/resources/resource`;
 
@@ -112,16 +109,14 @@ beforeAll(async () => {
         resourceIdxs.flatMap(async resourceIdx => {
           const dbResource = await request.get(`${basePath}/RESOURCE_${resourceIdx}`).set(headers);
 
-          await indexDocument({
-            accountSid,
+          await client.indexDocument({
             document: dbResource.body,
             id: dbResource.body.id,
-            indexType,
           });
         }),
       );
 
-      await refreshIndex({ accountSid, indexType });
+      await client.refreshIndex();
     }),
   );
 });
