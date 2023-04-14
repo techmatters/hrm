@@ -32,8 +32,8 @@ const indexType = 'resources';
 
 const documents: ReferrableResource[] = [
   {
-    name: 'Carleton Victoria Community Vocational Board - Employment Assistance Agency',
-    id: 'carleton-toronto',
+    name: 'Employment Assistance Agency',
+    id: 'employment-toronto',
     attributes: {
       title: [
         { value: 'This is the english title', language: 'en', info: 'info about the title' },
@@ -41,11 +41,11 @@ const documents: ReferrableResource[] = [
       ],
       description: [
         {
-          value: 'Carleton Victoria Community Vocational Board - Employment Assistance description',
+          value: 'Employment Assistance description',
           language: 'en',
         },
         {
-          value: `Carleton Victoria Community Vocational Board - Description de l'aide à l'emploi`,
+          value: `Description de l'aide à l'emploi`,
           language: 'fr',
         },
       ],
@@ -59,8 +59,8 @@ const documents: ReferrableResource[] = [
   },
 
   {
-    name: 'Calgary Family Services - Child/Youth/Family Counselling at Calgary Family Services',
-    id: 'calgary-london',
+    name: 'Child/Youth/Family Counselling at counselling Family Services',
+    id: 'counselling-london',
     attributes: {
       title: [
         { value: 'This is the english title', language: 'en', info: 'info about the title' },
@@ -68,12 +68,11 @@ const documents: ReferrableResource[] = [
       ],
       description: [
         {
-          value:
-            'Calgary Family Services - Child/Youth/Family Counselling at Calgary Family Services description',
+          value: 'Child/Youth/Family Counselling Services description',
           language: 'en',
         },
         {
-          value: `Calgary Family Services - Counseling pour enfants/jeunes/familles à Calgary Family Services description`,
+          value: `Counseling pour enfants/jeunes/familles Services description`,
           language: 'fr',
         },
       ],
@@ -87,8 +86,8 @@ const documents: ReferrableResource[] = [
   },
 
   {
-    name: 'Calgary Family Services - Child/Youth/Family Counselling at Calgary Family Services',
-    id: 'calgary-toronto',
+    name: 'Child/Youth at counselling Family Services',
+    id: 'counselling-toronto',
     attributes: {
       title: [
         { value: 'This is the english title', language: 'en', info: 'info about the title' },
@@ -96,12 +95,11 @@ const documents: ReferrableResource[] = [
       ],
       description: [
         {
-          value:
-            'Calgary Family Services - Child/Youth/Family Counselling at Calgary Family Services description',
+          value: 'Child/Youth Counselling at counselling Family Services description',
           language: 'en',
         },
         {
-          value: `Calgary Family Services - Counseling pour enfants/jeunes/familles à Calgary Family Services description`,
+          value: `Counseling pour enfants/jeunes à counselling Family Services description`,
           language: 'fr',
         },
       ],
@@ -159,15 +157,15 @@ describe('Resources Default Search', () => {
         total: 3,
         items: [
           {
-            id: 'carleton-toronto',
+            id: 'employment-toronto',
             highlights: undefined,
           },
           {
-            id: 'calgary-toronto',
+            id: 'counselling-toronto',
             highlights: undefined,
           },
           {
-            id: 'calgary-london',
+            id: 'counselling-london',
             highlights: undefined,
           },
         ],
@@ -185,17 +183,17 @@ describe('Resources Default Search', () => {
           limit: 10,
         },
       },
-      condition: 'wildcard search query',
-      expectationDescription: 'should return all resources',
+      condition: 'wildcard search query with filtered by city: Toronto',
+      expectationDescription: 'should return all resources in city Toronto',
       expectedResults: {
         total: 2,
         items: [
           {
-            id: 'carleton-toronto',
+            id: 'employment-toronto',
             highlights: undefined,
           },
           {
-            id: 'calgary-toronto',
+            id: 'counselling-toronto',
             highlights: undefined,
           },
         ],
@@ -204,19 +202,19 @@ describe('Resources Default Search', () => {
 
     {
       searchParameters: {
-        q: 'Carleton',
+        q: 'employment',
         pagination: {
           start: 0,
           limit: 10,
         },
       },
-      condition: 'wildcard search query',
-      expectationDescription: 'should return all resources',
+      condition: 'employment search query',
+      expectationDescription: 'should return only resources that match employment',
       expectedResults: {
         total: 1,
         items: [
           {
-            id: 'carleton-toronto',
+            id: 'employment-toronto',
             highlights: undefined,
           },
         ],
@@ -225,7 +223,7 @@ describe('Resources Default Search', () => {
 
     {
       searchParameters: {
-        q: 'calgary',
+        q: 'counselling',
         filters: {
           city: ['Toronto'],
         },
@@ -234,13 +232,14 @@ describe('Resources Default Search', () => {
           limit: 10,
         },
       },
-      condition: 'wildcard search query',
-      expectationDescription: 'should return all resources',
+      condition: 'counselling search query with filter by city: Toronto',
+      expectationDescription:
+        'should return only resources that match counselling and are in Toronto',
       expectedResults: {
         total: 1,
         items: [
           {
-            id: 'calgary-toronto',
+            id: 'counselling-toronto',
             highlights: undefined,
           },
         ],
@@ -255,13 +254,59 @@ describe('Resources Default Search', () => {
           limit: 10,
         },
       },
-      condition: 'wildcard search query',
-      expectationDescription: 'should return all resources',
+      condition: 'search query in french',
+      expectationDescription: 'should return only resources that match french query',
       expectedResults: {
         total: 1,
         items: [
           {
-            id: 'carleton-toronto',
+            id: 'employment-toronto',
+            highlights: undefined,
+          },
+        ],
+      },
+    },
+
+    {
+      searchParameters: {
+        q: `youth`,
+        pagination: {
+          start: 0,
+          limit: 10,
+        },
+      },
+      condition: 'search query only in name',
+      expectationDescription: 'should return only resources that match query in the name',
+      expectedResults: {
+        total: 2,
+        items: [
+          {
+            id: 'counselling-toronto',
+            highlights: undefined,
+          },
+          {
+            id: 'counselling-london',
+            highlights: undefined,
+          },
+        ],
+      },
+    },
+
+    {
+      searchParameters: {
+        q: `"Family Counselling"`,
+        pagination: {
+          start: 0,
+          limit: 10,
+        },
+      },
+      condition: 'search query phrase',
+      expectationDescription: 'should return only resources that match phrase query exactly',
+      expectedResults: {
+        total: 1,
+        items: [
+          {
+            id: 'counselling-london',
             highlights: undefined,
           },
         ],
