@@ -16,6 +16,11 @@
 import { Client as EsClient, ClientOptions } from '@elastic/elasticsearch';
 import { IndicesRefreshResponse } from '@elastic/elasticsearch/lib/api/types';
 import { getSsmParameter } from '@tech-matters/hrm-ssm-cache';
+import {
+  indexDocumentBulk,
+  IndexDocumentBulkExtraParams,
+  IndexDocumentBulkResponse,
+} from './index-document-bulk';
 import { createIndex, CreateIndexExtraParams, CreateIndexResponse } from './create-index';
 import { deleteIndex, DeleteIndexResponse } from './delete-index';
 import { indexDocument, IndexDocumentExtraParams, IndexDocumentResponse } from './index-document';
@@ -32,6 +37,7 @@ export type Client = {
   createIndex: (args: CreateIndexExtraParams) => Promise<CreateIndexResponse>;
   deleteIndex: () => Promise<DeleteIndexResponse>;
   indexDocument: (args: IndexDocumentExtraParams) => Promise<IndexDocumentResponse>;
+  indexDocumentBulk: (args: IndexDocumentBulkExtraParams) => Promise<IndexDocumentBulkResponse>;
   search: (args: SearchExtraParams) => Promise<SearchResponse>;
 };
 
@@ -114,6 +120,8 @@ const getClientOrMock = async (params: GetClientOrMockArgs) => {
     deleteIndex: () => deleteIndex(passThroughConfig),
     indexDocument: (args: IndexDocumentExtraParams) =>
       indexDocument({ ...passThroughConfig, ...args }),
+    indexDocumentBulk: (args: IndexDocumentBulkExtraParams) =>
+      indexDocumentBulk({ ...passThroughConfig, ...args }),
     search: (args: SearchExtraParams) => search({ ...passThroughConfig, ...args }),
   };
 };
