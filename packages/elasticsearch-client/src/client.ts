@@ -16,13 +16,12 @@
 import { Client as EsClient, ClientOptions } from '@elastic/elasticsearch';
 import { IndicesRefreshResponse } from '@elastic/elasticsearch/lib/api/types';
 import { getSsmParameter } from '@tech-matters/hrm-ssm-cache';
-import createIndex, { CreateIndexExtraParams, CreateIndexResponse } from './create-index';
-import deleteIndex, { DeleteIndexResponse } from './delete-index';
-import indexDocument, { IndexDocumentExtraParams, IndexDocumentResponse } from './index-document';
+import { createIndex, CreateIndexExtraParams, CreateIndexResponse } from './create-index';
+import { deleteIndex, DeleteIndexResponse } from './delete-index';
+import { indexDocument, IndexDocumentExtraParams, IndexDocumentResponse } from './index-document';
 import getAccountSid from './get-account-sid';
-import getIndexConfig from './get-index-config';
-import search, { SearchExtraParams, SearchResponse } from './search';
-import { ConfigIds, IndexTypes } from './types';
+import { getIndexConfig, ConfigIds, IndexTypes } from './get-index-config';
+import { search, SearchExtraParams, SearchResponse } from './search';
 
 // import { getMockClient } from './mockClient';
 

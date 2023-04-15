@@ -14,9 +14,8 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-export * from './client';
-export * from './create-index';
-export * from './delete-index';
-export * from './index-document';
-export * from './search';
-export * from './types';
+export { getClient } from './client';
+
+// These types are enums so they need to be exported here in
+// addition to index.d.ts
+export { IndexTypes, ConfigIds } from './get-index-config';

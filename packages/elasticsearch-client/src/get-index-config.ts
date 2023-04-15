@@ -15,7 +15,14 @@
  */
 
 import { config } from './config';
-import { ConfigIds, IndexTypes } from './types';
+
+export enum IndexTypes {
+  RESOURCES = 'resources',
+}
+
+export enum ConfigIds {
+  DEFAULT = 'default',
+}
 
 export type GetConfigParams = {
   configId?: ConfigIds;

@@ -5,6 +5,7 @@
   "author": "",
   "license": "AGPL",
   "main": "dist/index.js",
+  "types": "src/index.ts",
   "directories": {
     "test": "tests"
   },

@@ -14,10 +14,16 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { getSsmParameter } from '@tech-matters/hrm-ssm-cache';
-
-export const getAccountSid = (shortCode: string) => {
-  return getSsmParameter(`/${process.env.NODE_ENV}/twilio/${shortCode.toUpperCase()}/account_sid`);
-};
-
-export default getAccountSid;
+/**
+ * We export our main interface that has a reduced set of methods from ./dist/index.js
+ * which is generated from src/index.ts. We want to keep types close to code, so we export
+ * the types from this file, and the implementation from ./dist/index.js. This allows us to
+ * reduce the default external interface of the package, while still allowing us to use
+ * the full interface internally and to export all types.
+ **/
+export * from './src/client';
+export * from './src/create-index';
+export * from './src/delete-index';
+export * from './src/get-index-config';
+export * from './src/index-document';
+export * from './src/search';

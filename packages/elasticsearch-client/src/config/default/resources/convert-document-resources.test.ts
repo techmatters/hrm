@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { convertIndexDocument } from '../../../../src/config/default/resources/convert-index-document';
+import { convertIndexDocument } from './convert-index-document';
 
 describe('convertIndexDocument', () => {
   it('should convert a simple document', () => {
