@@ -43,9 +43,7 @@ describe('Index Document', () => {
     const document = resourceDocuments[0];
 
     await client.indexDocument({ id: document.id, document });
-
     await new Promise(resolve => setTimeout(resolve, 1000));
-
     const response = await client.search({
       searchParameters: {
         q: `"${document.name}"`,

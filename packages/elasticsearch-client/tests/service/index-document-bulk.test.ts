@@ -46,9 +46,7 @@ describe('Index Documents Bulk', () => {
     }));
 
     await client.indexDocumentBulk({ documents });
-
     await client.refreshIndex();
-
     const response = await client.search({
       searchParameters: {
         q: `*`,
@@ -56,7 +54,6 @@ describe('Index Documents Bulk', () => {
     });
 
     expect(response.total).toBe(documents.length);
-
     documents.forEach(doc => {
       expect(response.items).toContainEqual({
         id: doc.id,
