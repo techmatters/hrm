@@ -26,4 +26,5 @@ export * from './src/create-index';
 export * from './src/delete-index';
 export * from './src/get-index-config';
 export * from './src/index-document';
+export * from './src/index-document-bulk';
 export * from './src/search';

@@ -51,9 +51,11 @@ afterAll(async () => {
       DELETE FROM resources."ResourceReferenceStringAttributeValues";
       DELETE FROM resources."Resources";
    `);
-  accountSids.forEach(async accountSid => {
-    await clients[accountSid].deleteIndex();
-  });
+  await Promise.all(
+    accountSids.map(async accountSid => {
+      await clients[accountSid].deleteIndex();
+    }),
+  );
 });
 
 const range = (elements: number | string): string[] =>

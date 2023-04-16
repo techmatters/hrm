@@ -36,3 +36,26 @@ export const sendMessage = async ({
   };
   return sqs.sendMessage(params).promise();
 };
+
+export const sendMessageBatch = async ({
+  lambdaName,
+  messages,
+}: {
+  lambdaName: string;
+  messages: object[];
+}) => {
+  const sqs = new SQS({
+    endpoint: 'http://localstack:4566',
+    region: 'us-east-1',
+  });
+
+  const lambdaOutput: any = getStackOutput(lambdaName);
+  const params = {
+    QueueUrl: lambdaOutput.queueUrl,
+    Entries: messages.map((message, index) => ({
+      Id: index.toString(), // TODO: may neet to be uuid at some point
+      MessageBody: JSON.stringify(message),
+    })),
+  };
+  return sqs.sendMessageBatch(params).promise();
+};
