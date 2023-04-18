@@ -45,6 +45,9 @@ export default class ResourcessearchJobsStack extends cdk.Stack {
     const queue = new sqs.Queue(this, id, {
       visibilityTimeout: cdk.Duration.seconds(8),
       deadLetterQueue: { maxReceiveCount: 1, queue: params.completeQueue },
+      fifo: true,
+      deduplicationScope: sqs.DeduplicationScope.MESSAGE_GROUP,
+      fifoThroughputLimit: sqs.FifoThroughputLimit.PER_MESSAGE_GROUP_ID,
     });
 
     new cdk.CfnOutput(this, `queueUrl`, {
