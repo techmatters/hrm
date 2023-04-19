@@ -14,13 +14,26 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import pgPromise from 'pg-promise';
-import config from './config/db';
+import { IRouter, Router } from 'express';
+import { ImportApiResource, ImportBatch } from './importTypes';
+import importService from './importService';
+import { AccountSID } from '@tech-matters/twilio-worker-auth';
 
-export const pgp = pgPromise<{}>({});
+type ImportRequestBody = {
+  importedResources: ImportApiResource[];
+  batch: ImportBatch;
+};
 
-export const db = pgp(
-  `postgres://${encodeURIComponent(config.username)}:${encodeURIComponent(config.password)}@${
-    config.host
-  }:${config.port}/${encodeURIComponent(config.database)}?&application_name=resources-service`,
-);
+const importRoutes = () => {
+  const router: IRouter = Router();
+
+  const { upsertResources } = importService();
+
+  router.post('/import', async ({ body, accountSid }, res) => {
+    const { importedResources, batch }: ImportRequestBody = body;
+    res.json(await upsertResources(accountSid as AccountSID, importedResources, batch));
+  });
+
+  return router;
+};
+export default importRoutes;

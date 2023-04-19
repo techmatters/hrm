@@ -22,7 +22,10 @@ import express from 'express';
  */
 console.log(new Date(Date.now()).toLocaleString() + ': trying to initialize www');
 import { configureService } from '../app';
-import { configureResourcesService } from '@tech-matters/resources-service';
+import {
+  configureInternalResourcesService,
+  configureResourcesService,
+} from '@tech-matters/resources-service';
 import debugFactory from 'debug';
 import http from 'http';
 import {
@@ -59,17 +62,31 @@ const app = configureDefaultPostMiddlewares(
   appWithResourcesService,
   Boolean(process.env.INCLUDE_ERROR_IN_RESPONSE),
 );
+
+const internalAppWithoutServices = configureDefaultPreMiddlewares(express());
+const internalAppWithResourcesService = configureInternalResourcesService({
+  webServer: internalAppWithoutServices,
+});
+const internalApp = configureDefaultPostMiddlewares(
+  internalAppWithResourcesService,
+  Boolean(process.env.INCLUDE_ERROR_IN_RESPONSE),
+);
 /**
  * Create HTTP server.
  */
 console.log(new Date(Date.now()).toLocaleString() + ': trying to create server');
-var server = http.createServer(app);
+const server = http.createServer(app).addListener('request', internalApp);
 console.log(new Date(Date.now()).toLocaleString() + ': created server, about to listen');
+const internalServer = http.createServer(internalApp);
+console.log(new Date(Date.now()).toLocaleString() + ': created internal server, about to listen');
 /**
  * Get port from environment and store in Express.
  */
 const port = normalizePort(process.env.PORT || '3000');
 app.set('port', port);
+// Port to access services that are only available from inside AWS
+const internalPort = normalizePort(process.env.INTERNAL_SERVICES_PORT || '3001');
+internalApp.set('port', internalPort);
 
 /**
  * Event listener for HTTP server "error" event.
@@ -101,12 +118,12 @@ function onError(error) {
  * Event listener for HTTP server "listening" event.
  */
 
-function onListening() {
-  var addr = server.address();
+const onListening = listenServer => () => {
+  var addr = listenServer.address();
   var bind = typeof addr === 'string' ? 'pipe ' + addr : 'port ' + addr.port;
   debug('Listening on ' + bind);
   console.log('Log listening on ' + bind);
-}
+};
 
 /**
  * Listen on provided port, on all network interfaces.
@@ -114,5 +131,8 @@ function onListening() {
 
 server.listen(port);
 server.on('error', onError);
-server.on('listening', onListening);
+server.on('listening', onListening(server));
+internalServer.listen(internalPort);
+internalServer.on('error', onError);
+internalServer.on('listening', onListening(internalServer));
 console.log(new Date(Date.now()).toLocaleString() + ': listening or not');
