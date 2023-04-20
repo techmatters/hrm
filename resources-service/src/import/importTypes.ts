@@ -41,13 +41,11 @@ export type AttributeValue<T extends AttributeTable> = T extends 'ResourceBoolea
   ? boolean
   : T extends 'ResourceNumberAttributes'
   ? number
-  : T extends 'ResourceDateTimeAttributes'
-  ? Date
   : string;
 
 export type ImportBatch = {
-  to: string;
-  from: string;
+  toDate: string;
+  fromDate: string;
   total: number;
 };
 

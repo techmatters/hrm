@@ -19,7 +19,7 @@ import { ImportApiResource, ImportBatch } from './importTypes';
 import importService from './importService';
 import { AccountSID } from '@tech-matters/twilio-worker-auth';
 
-type ImportRequestBody = {
+export type ImportRequestBody = {
   importedResources: ImportApiResource[];
   batch: ImportBatch;
 };

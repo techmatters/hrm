@@ -23,7 +23,7 @@ import {
 } from '@tech-matters/http';
 import express from 'express';
 
-import { configureService } from '../../src/service';
+import { configureInternalService, configureService } from '../../src/service';
 import { CloudSearchConfig } from '../../src/config/cloud-search';
 
 export const defaultConfig: {
@@ -48,9 +48,24 @@ export const getServer = (config?: Partial<typeof defaultConfig>) => {
   return configureDefaultPostMiddlewares(withService, true).listen();
 };
 
+export const getInternalServer = () => {
+  process.env.AWS_ACCESS_KEY_ID = 'mock-access-key';
+  process.env.AWS_SECRET_ACCESS_KEY = 'mock-secret-key';
+  const withoutService = configureDefaultPreMiddlewares(express());
+  const withService = configureInternalService({
+    webServer: withoutService,
+  });
+  return configureDefaultPostMiddlewares(withService, true).listen();
+};
+
 export const getRequest = (server: ReturnType<typeof getServer>) => supertest.agent(server);
 
 export const headers = {
   'Content-Type': 'application/json',
   Authorization: `Bearer bearing a bear (rawr)`,
+};
+
+export const internalHeaders = {
+  'Content-Type': 'application/json',
+  Authorization: `Basic BBC`,
 };

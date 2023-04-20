@@ -69,6 +69,7 @@ const authenticateWithStaticKey = (req: Request): boolean => {
 
       if (isStaticSecretValid) {
         req.user = twilioUser(`account-${accountSid}`, []);
+        console.log('Static key authentication succeeded!');
         return true;
       }
     } catch (err) {
@@ -115,6 +116,6 @@ export const getAuthorizationMiddleware = (authTokenLookup: (accountSid: string)
 };
 
 export const getStaticKeyAuthorizationMiddleware = () => async (req: Request, res: Response, next: NextFunction) => {
-  if (canAccessResourceWithStaticKey(req.originalUrl, req.method) && authenticateWithStaticKey(req)) return next();
+  if (authenticateWithStaticKey(req)) return next();
   return unauthorized(res);
 };

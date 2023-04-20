@@ -20,6 +20,7 @@ module.exports = config => {
       preset: 'ts-jest',
       rootDir: './tests',
       maxWorkers: 1,
+      setupFiles: ['<rootDir>/setTestEnvVars.js'],
     }
   );
 };
