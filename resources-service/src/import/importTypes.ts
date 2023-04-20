@@ -42,7 +42,6 @@ export type ImportApiResource = {
       key: string;
       value: string;
       language: string;
-      info: Record<string, any> | null;
       list: string;
     }[];
     ResourceBooleanAttributes: AseloInlineResourceAttribute<'ResourceBooleanAttributes'>[];

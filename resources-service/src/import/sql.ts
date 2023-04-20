@@ -93,14 +93,14 @@ export const generateUpsertSqlFromImportResource = (
 
   sqlBatch.push(
     ...attributes.ResourceReferenceStringAttributes.map(attribute => {
-      const { info, language, ...queryValues } = attribute;
+      const { language, ...queryValues } = attribute;
       return pgp.as.format(
         `INSERT INTO resources."ResourceReferenceStringAttributes" 
     ("accountSid", "resourceId", "key", "list", "referenceId") 
     SELECT $<accountSid>, $<resourceId>, $<key>, $<list>, "id" 
       FROM resources."ResourceReferenceStringAttributeValues" 
-      WHERE "accountSid" = $<accountSid> AND "list" = $<list> AND "value" = $<value> AND "language" = $<language>`,
-        { language: '', ...queryValues, accountSid, resourceId: resourceRecord.id },
+      WHERE "accountSid" = $<accountSid> AND "list" = $<list> AND "value" = $<value>`,
+        { ...queryValues, accountSid, resourceId: resourceRecord.id },
       );
     }),
   );

@@ -40,6 +40,27 @@ const workerSid = 'WK-worker-sid';
 
 const baselineDate = parseISO('2020-01-01T00:00:00.000Z');
 
+const populateSampleDbReferenceValues = async (count: number, valuesPerList: number) => {
+  const sql = range(count)
+    .flatMap(listIdx =>
+      range(valuesPerList).flatMap(
+        valueIdx =>
+          `INSERT INTO resources."ResourceReferenceStringAttributeValues" 
+            (id, "accountSid", "list", "value", "language", "info")
+            VALUES (
+              'REF_${listIdx}_${valueIdx}',
+              'AC000', 
+              'REFERENCE_LIST_${listIdx}',
+              'REFERENCE_VALUE_${valueIdx}', 
+              'REFERENCE_LANGUAGE', 
+              '{ "property": "VALUE" }');`,
+      ),
+    )
+    .join(';\n');
+  console.log(sql); // handy for debugging
+  await db.none(sql);
+};
+
 const populateSampleDbResources = async (count: number) => {
   const accountResourceIdTuples: [string, string[]][] = [['0', range(count)]];
   const testResourceCreateSql = accountResourceIdTuples
@@ -172,7 +193,14 @@ const generateImportResource = (resourceIdSuffix: string, updatedAt: Date): Impo
         info: { some: 'json' },
       },
     ],
-    ResourceReferenceStringAttributes: [],
+    ResourceReferenceStringAttributes: [
+      {
+        key: 'REFERENCE_ATTRIBUTE',
+        value: 'REFERENCE_VALUE_2',
+        language: 'REFERENCE_LANGUAGE',
+        list: 'REFERENCE_LIST_1',
+      },
+    ],
   },
 });
 
@@ -205,8 +233,16 @@ const generateApiResource = (resourceIdSuffix: string): ReferrableResource => ({
         info: { some: 'json' },
       },
     ],
+    REFERENCE_ATTRIBUTE: [
+      {
+        value: 'REFERENCE_VALUE_2',
+        language: 'REFERENCE_LANGUAGE',
+        info: { property: 'VALUE' },
+      },
+    ],
   },
 });
+
 const verifyImportState = async (expectedImportState?: ImportProgress) => {
   const result = await db.oneOrNone<{ ImportState: ImportProgress }>(
     `SELECT "importState" FROM resources."Accounts" WHERE "accountSid" = $<accountSid>`,
@@ -230,8 +266,10 @@ beforeEach(async () => {
   await db.multi(`
     DELETE FROM resources."Accounts";
     DELETE FROM resources."Resources";
+    DELETE FROM resources."ResourceReferenceStringAttributeValues";
   `);
-  await populateSampleDbResources(10);
+  await populateSampleDbReferenceValues(5, 3);
+  await populateSampleDbResources(5);
 });
 
 const newDefaultTestBatch = () => ({
@@ -261,6 +299,18 @@ describe('POST /import', () => {
     internalRequest
       .post(route)
       .set({ ...internalHeaders, Authorization: `Basic C64` })
+      .send(requestBody)
+      .expect(401);
+  });
+
+  test('Flex bearer token - should return 401', async () => {
+    const requestBody: ImportRequestBody = {
+      importedResources: [generateImportResource('100', baselineDate)],
+      batch: newDefaultTestBatch(),
+    };
+    internalRequest
+      .post(route)
+      .set(headers)
       .send(requestBody)
       .expect(401);
   });
@@ -337,6 +387,5 @@ describe('POST /import', () => {
       }
       await verifyImportState(expectedBatchProgressState);
     },
-    60 * 60 * 1000,
   );
 });
