@@ -53,6 +53,7 @@ const isGuest = (tokenResult: TokenValidatorResponse) =>
 const defaultTokenLookup = (accountSid: string) => process.env[`TWILIO_AUTH_TOKEN_${accountSid}`] ?? '';
 
 const authenticateWithStaticKey = (req: Request): boolean => {
+  console.debug('Static key authentication middleware executing!');
   if (!req.headers) return false;
   const { headers: { authorization }, accountSid } = req;
 
@@ -115,7 +116,7 @@ export const getAuthorizationMiddleware = (authTokenLookup: (accountSid: string)
   return unauthorized(res);
 };
 
-export const getStaticKeyAuthorizationMiddleware = () => async (req: Request, res: Response, next: NextFunction) => {
+export const staticKeyAuthorizationMiddleware = async (req: Request, res: Response, next: NextFunction) => {
   if (authenticateWithStaticKey(req)) return next();
   return unauthorized(res);
 };

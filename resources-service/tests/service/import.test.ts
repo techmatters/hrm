@@ -1,8 +1,24 @@
+/**
+ * Copyright (C) 2021-2023 Technology Matters
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see https://www.gnu.org/licenses/.
+ */
+
 import { getInternalServer, getRequest, getServer, headers } from './server';
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import { db } from '../../src/connection-pool';
 import range from './range';
-import { parseISO, addHours, subHours } from 'date-fns';
+import { parseISO, addHours, subHours, addSeconds } from 'date-fns';
 import { ImportRequestBody } from '../../src/import/importRoutesV0';
 import { ImportApiResource, ImportProgress } from '../../src/import/importTypes';
 import { internalHeaders } from './server';
@@ -10,10 +26,13 @@ import each from 'jest-each';
 import { ReferrableResource } from '../../src/resource/resource-model';
 import { AssertionError } from 'assert';
 import { UpsertImportedResourceResult } from '../../src/import/importDataAccess';
+import { AddressInfo } from 'net';
 
 const internalServer = getInternalServer();
+console.log(`Internal server started on port ${(internalServer.address() as AddressInfo).port}`);
 const internalRequest = getRequest(internalServer);
 const server = getServer();
+console.log(`Public server started on port ${(server.address() as AddressInfo).port}`);
 const request = getRequest(server);
 
 const accountSid = 'AC000';
@@ -26,19 +45,19 @@ const populateSampleDbResources = async (count: number) => {
   const testResourceCreateSql = accountResourceIdTuples
     .flatMap(([accountIdx, resourceIdxs]) =>
       resourceIdxs.flatMap(resourceIdx => {
-        const sql = `INSERT INTO resources."Resources" (id, "accountSid", "name") VALUES ('RESOURCE_${resourceIdx}', 'ACCOUNT_${accountIdx}', 'Resource ${resourceIdx} (Account AC00${accountIdx})')`;
+        const sql = `INSERT INTO resources."Resources" (id, "accountSid", "name") VALUES ('RESOURCE_${resourceIdx}', 'AC00${accountIdx}', 'Resource ${resourceIdx} (Account AC00${accountIdx})')`;
         const attributeSql = range(parseInt(resourceIdx)).flatMap(attributeIdx =>
           range((parseInt(attributeIdx) % 2) + 1).flatMap(valueIdx => [
-            `INSERT INTO resources."ResourceStringAttributes" ("resourceId", "accountSid", "key", "language", "value", "info") VALUES ('RESOURCE_${resourceIdx}', 'ACCOUNT_${accountIdx}', 'ATTRIBUTE_${attributeIdx}', 'en-US', 'VALUE_${valueIdx}', '{ "some": "json" }')`,
-            `INSERT INTO resources."ResourceDateTimeAttributes" ("resourceId", "accountSid", "key", "value", "info") VALUES ('RESOURCE_${resourceIdx}', 'ACCOUNT_${accountIdx}', 'DATETIME_ATTRIBUTE_${attributeIdx}', '${addHours(
+            `INSERT INTO resources."ResourceStringAttributes" ("resourceId", "accountSid", "key", "language", "value", "info") VALUES ('RESOURCE_${resourceIdx}', 'AC00${accountIdx}', 'ATTRIBUTE_${attributeIdx}', 'en-US', 'VALUE_${valueIdx}', '{ "some": "json" }')`,
+            `INSERT INTO resources."ResourceDateTimeAttributes" ("resourceId", "accountSid", "key", "value", "info") VALUES ('RESOURCE_${resourceIdx}', 'AC00${accountIdx}', 'DATETIME_ATTRIBUTE_${attributeIdx}', '${addHours(
               baselineDate,
               parseInt(valueIdx),
-            ).toISOString()}', '{ "datetime": "json" }')`,
-            `INSERT INTO resources."ResourceNumberAttributes" ("resourceId", "accountSid", "key", "value", "info") VALUES ('RESOURCE_${resourceIdx}', 'ACCOUNT_${accountIdx}', 'NUMBER_ATTRIBUTE_${attributeIdx}', ${valueIdx}, '{ "number": "json" }')`,
+            ).toISOString()}', '{ "some": "json" }')`,
+            `INSERT INTO resources."ResourceNumberAttributes" ("resourceId", "accountSid", "key", "value", "info") VALUES ('RESOURCE_${resourceIdx}', 'AC00${accountIdx}', 'NUMBER_ATTRIBUTE_${attributeIdx}', ${valueIdx}, '{ "some": "json" }')`,
             parseInt(valueIdx) < 2
-              ? `INSERT INTO resources."ResourceBooleanAttributes" ("resourceId", "accountSid", "key", "value", "info") VALUES ('RESOURCE_${resourceIdx}', 'ACCOUNT_${accountIdx}', 'BOOL_ATTRIBUTE_${attributeIdx}', '${Boolean(
+              ? `INSERT INTO resources."ResourceBooleanAttributes" ("resourceId", "accountSid", "key", "value", "info") VALUES ('RESOURCE_${resourceIdx}', 'AC00${accountIdx}', 'BOOL_ATTRIBUTE_${attributeIdx}', '${Boolean(
                   parseInt(valueIdx) % 2,
-                )}', '{ "bool": "json" }')`
+                )}', '{ "some": "json" }')`
               : '',
           ]),
         );
@@ -46,7 +65,7 @@ const populateSampleDbResources = async (count: number) => {
       }),
     )
     .join(';\n');
-  // console.log(testResourceCreateSql); // handy for debugging
+  console.log(testResourceCreateSql); // handy for debugging
   await db.multi(testResourceCreateSql);
 };
 
@@ -61,6 +80,7 @@ const verifyGeneratedResourcesAttributesByType = (
   resource: ReferrableResource,
   expectedValue: (valueIdx: string) => string | boolean | number,
   attributePrefix: string = '',
+  checkLanguage = true,
   maxValues = Number.MAX_SAFE_INTEGER,
 ) => {
   const [, resourceIdx] = resource.id.split('_');
@@ -71,11 +91,18 @@ const verifyGeneratedResourcesAttributesByType = (
     if (Array.isArray(attribute)) {
       expect(attribute).toHaveLength(expectedValues);
       range(expectedValues).forEach(valueIdx => {
-        expect(attribute[parseInt(valueIdx)]).toStrictEqual({
-          info: { some: 'json' },
-          language: 'en-US',
-          value: expectedValue(valueIdx),
-        });
+        expect(attribute[parseInt(valueIdx)]).toStrictEqual(
+          checkLanguage
+            ? {
+                info: { some: 'json' },
+                language: 'en-US',
+                value: expectedValue(valueIdx),
+              }
+            : {
+                info: { some: 'json' },
+                value: expectedValue(valueIdx),
+              },
+        );
       });
     } else {
       throw new AssertionError({ message: 'Expected attribute value to be an array' });
@@ -85,7 +112,7 @@ const verifyGeneratedResourcesAttributesByType = (
 
 const verifyGeneratedResourcesAttributes = async (resourceId: string) => {
   const response = await request
-    .get(`/v0/accounts/ACCOUNT_1/resources/resource/${resourceId}`)
+    .get(`/v0/accounts/${accountSid}/resources/resource/${resourceId}`)
     .set(headers);
   expect(response.status).toBe(200);
   const resource = response.body as ReferrableResource;
@@ -94,14 +121,21 @@ const verifyGeneratedResourcesAttributes = async (resourceId: string) => {
     resource,
     valueIdx => addHours(baselineDate, parseInt(valueIdx)).toISOString(),
     'DATETIME_',
+    false,
   );
   verifyGeneratedResourcesAttributesByType(
     resource,
     valueIdx => Boolean(parseInt(valueIdx) % 2),
     'BOOL_',
+    false,
     2,
   );
-  verifyGeneratedResourcesAttributesByType(resource, valueIdx => parseInt(valueIdx), 'NUMBER_');
+  verifyGeneratedResourcesAttributesByType(
+    resource,
+    valueIdx => parseInt(valueIdx),
+    'NUMBER_',
+    false,
+  );
 };
 
 const generateImportResource = (resourceIdSuffix: string, updatedAt: Date): ImportApiResource => ({
@@ -142,15 +176,46 @@ const generateImportResource = (resourceIdSuffix: string, updatedAt: Date): Impo
   },
 });
 
+const generateApiResource = (resourceIdSuffix: string): ReferrableResource => ({
+  id: `RESOURCE_${resourceIdSuffix}`,
+  name: `Resource ${resourceIdSuffix}`,
+  attributes: {
+    STRING_ATTRIBUTE: [
+      {
+        value: 'VALUE',
+        language: 'en-US',
+        info: { some: 'json' },
+      },
+    ],
+    DATETIME_ATTRIBUTE: [
+      {
+        value: baselineDate.toISOString(),
+        info: { some: 'json' },
+      },
+    ],
+    BOOL_ATTRIBUTE: [
+      {
+        value: true,
+        info: { some: 'json' },
+      },
+    ],
+    NUMBER_ATTRIBUTE: [
+      {
+        value: 1337,
+        info: { some: 'json' },
+      },
+    ],
+  },
+});
 const verifyImportState = async (expectedImportState?: ImportProgress) => {
   const result = await db.oneOrNone<{ ImportState: ImportProgress }>(
     `SELECT "importState" FROM resources."Accounts" WHERE "accountSid" = $<accountSid>`,
     { accountSid },
   );
   if (expectedImportState) {
-    await expect(result).toStrictEqual({ ImportState: expectedImportState });
+    await expect(result).toStrictEqual({ importState: expectedImportState });
   } else {
-    await expect(result).not.toBeDefined();
+    await expect(result).toBeFalsy();
   }
 };
 
@@ -159,13 +224,13 @@ beforeAll(async () => {
   await mockSuccessfulTwilioAuthentication(workerSid);
 });
 
-afterAll(async () => Promise.all([mockingProxy.stop(), server.close()]));
+afterAll(async () => Promise.all([mockingProxy.stop(), internalServer.close(), server.close()]));
 
 beforeEach(async () => {
   await db.multi(`
     DELETE FROM resources."Accounts";
     DELETE FROM resources."Resources";
-      `);
+  `);
   await populateSampleDbResources(10);
 });
 
@@ -218,9 +283,31 @@ describe('POST /import', () => {
       expectedResponse: [],
       expectedResourceUpdates: {},
     },
+    {
+      description:
+        'Single new resource - should return 200 with single update, and add a new resource',
+      requestBody: {
+        importedResources: [generateImportResource('100', addSeconds(baselineDate, 30))],
+        batch: newDefaultTestBatch(),
+      },
+      expectedResponse: [
+        {
+          id: 'RESOURCE_100',
+          success: true,
+        },
+      ],
+      expectedResourceUpdates: {
+        RESOURCE_100: generateApiResource('100'),
+      },
+      expectedBatchProgressState: {
+        ...newDefaultTestBatch(),
+        lastProcessedDate: addSeconds(baselineDate, 30).toISOString(),
+        lastProcessedId: 'RESOURCE_100',
+      },
+    },
   ];
 
-  each([testCases]).test(
+  each(testCases).test(
     '$description',
     async ({
       requestBody,
@@ -228,7 +315,6 @@ describe('POST /import', () => {
       expectedResourceUpdates,
       expectedBatchProgressState,
     }: ImportPostTestCaseParameters) => {
-      jest.setTimeout(30000);
       const { body, status } = await internalRequest
         .post(route)
         .set(internalHeaders)
@@ -243,13 +329,14 @@ describe('POST /import', () => {
       }
       for (const [resourceId, expectedResource] of Object.entries(expectedResourceUpdates)) {
         const response = await request
-          .get(`/v0/accounts/ACCOUNT_1/resources/resource/${resourceId}`)
+          .get(`/v0/accounts/${accountSid}/resources/resource/${resourceId}`)
           .set(headers);
         expect(response.status).toBe(200);
         const resource = response.body as ReferrableResource;
         expect(resource).toStrictEqual(expectedResource);
       }
-      verifyImportState(expectedBatchProgressState);
+      await verifyImportState(expectedBatchProgressState);
     },
+    60 * 60 * 1000,
   );
 });

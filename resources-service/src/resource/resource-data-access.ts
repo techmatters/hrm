@@ -55,9 +55,11 @@ export const getById = async (
   const res = await db.task(async t =>
     t.oneOrNone(SELECT_RESOURCE_IN_IDS, { accountSid, resourceIds: [resourceId] }),
   );
-  console.debug('Retrieved resource:', res.id);
   if (res) {
+    console.debug('Retrieved resource:', res.id);
     delete res.accountSid;
+  } else {
+    console.debug('Resource not found:', resourceId);
   }
   return res as ReferrableResourceRecord;
 };
