@@ -38,6 +38,7 @@ process.env.PERMISSIONS_dev = 'dev';
 process.env.PERMISSIONS_e2e = 'e2e';
 process.env.PERMISSIONS_notConfigured = '';
 process.env.PERMISSIONS_notExistsInRulesMap = 'notExistsInRulesMap';
+process.env.STATIC_KEY_ACCOUNT_SID = 'BBC';
 
 process.env.INCLUDE_ERROR_IN_RESPONSE = true;
 
