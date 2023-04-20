@@ -1,0 +1,19 @@
+{
+  "name": "@tech-matters/resources-import-normalized-consumer",
+  "version": "0.0.1",
+  "description": "",
+  "main": "dist/index.js",
+  "author": "",
+  "license": "AGPL",
+  "dependencies": {
+    "@tech-matters/hrm-ssm-cache": "^1.0.0",
+    "aws-sdk": "^2.1225.0"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.108",
+    "ts-node": "^10.9.1"
+  },
+  "scripts": {
+    "docker:build": "docker build -t resources-import-normalized-consumer --build-arg lambda_name=resources-import-normalized-consumer -f ../Dockerfile ../../"
+  }
+}
