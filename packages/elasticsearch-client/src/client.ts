@@ -102,7 +102,7 @@ const getClientOrMock = async (params: GetClientOrMockArgs) => {
     configId,
     indexType,
   });
-  const passThroughConfig = {
+  const passThroughConfig: PassThroughConfig = {
     index,
     indexConfig,
     client,
@@ -132,15 +132,10 @@ const getClientOrMock = async (params: GetClientOrMockArgs) => {
  * and or region/type. This may change in the future if we need to support single tenant ES clusters.
  */
 export const getClient = async (params: GetClientArgs): Promise<Client> => {
-  let accountSid;
+  let { accountSid } = params;
   const { indexType } = params;
 
-  if (params?.accountSid) {
-    accountSid = params.accountSid;
-  } else {
-    accountSid = await getAccountSid(params.shortCode!);
-  }
-
+  if (!accountSid) accountSid = await getAccountSid(params.shortCode!);
   const index = `${accountSid.toLowerCase()}-${indexType}`;
   if (!clientCache[index]) {
     clientCache[index] = await getClientOrMock({ ...params, accountSid, index });
