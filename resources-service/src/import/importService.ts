@@ -39,7 +39,9 @@ const importService = () => {
           const result = await upsert(accountSid, resource);
           results.push(result);
         }
-        const { id, updatedAt } = resources[resources.length - 1];
+        const { id, updatedAt } = resources.sort((a, b) =>
+          a.updatedAt > b.updatedAt ? 1 : a.updatedAt < b.updatedAt ? -1 : a.id > b.id ? 1 : -1,
+        )[resources.length - 1];
         await updateImportProgress(t)(accountSid, {
           ...batch,
           lastProcessedDate: updatedAt,

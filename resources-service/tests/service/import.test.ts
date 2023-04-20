@@ -335,7 +335,7 @@ describe('POST /import', () => {
     },
     {
       description:
-        'Single new resource - should return 200 with single update, and add a new resource',
+        'Single new resource - should return 200 with single update, and add a new resource to the DB',
       requestBody: {
         importedResources: [generateImportResource('100', addSeconds(baselineDate, 30))],
         batch: newDefaultTestBatch(),
@@ -348,6 +348,118 @@ describe('POST /import', () => {
       ],
       expectedResourceUpdates: {
         RESOURCE_100: generateApiResource('100'),
+      },
+      expectedBatchProgressState: {
+        ...newDefaultTestBatch(),
+        lastProcessedDate: addSeconds(baselineDate, 30).toISOString(),
+        lastProcessedId: 'RESOURCE_100',
+      },
+    },
+    {
+      description:
+        'Several new resources - should return 200 with an update per resource and add the new resources to the DB',
+      requestBody: {
+        importedResources: [
+          generateImportResource('100', addSeconds(baselineDate, 30)),
+          generateImportResource('101', addSeconds(baselineDate, 45)),
+        ],
+        batch: newDefaultTestBatch(),
+      },
+      expectedResponse: [
+        {
+          id: 'RESOURCE_100',
+          success: true,
+        },
+        {
+          id: 'RESOURCE_101',
+          success: true,
+        },
+      ],
+      expectedResourceUpdates: {
+        RESOURCE_100: generateApiResource('100'),
+        RESOURCE_101: generateApiResource('101'),
+      },
+      expectedBatchProgressState: {
+        ...newDefaultTestBatch(),
+        lastProcessedDate: addSeconds(baselineDate, 45).toISOString(),
+        lastProcessedId: 'RESOURCE_101',
+      },
+    },
+    {
+      description:
+        'Update single resource - should return 200 with single update, and replace a resource',
+      requestBody: {
+        importedResources: [generateImportResource('3', addSeconds(baselineDate, 40))],
+        batch: newDefaultTestBatch(),
+      },
+      expectedResponse: [
+        {
+          id: 'RESOURCE_3',
+          success: true,
+        },
+      ],
+      expectedResourceUpdates: {
+        RESOURCE_3: generateApiResource('3'),
+      },
+      expectedBatchProgressState: {
+        ...newDefaultTestBatch(),
+        lastProcessedDate: addSeconds(baselineDate, 40).toISOString(),
+        lastProcessedId: 'RESOURCE_3',
+      },
+    },
+    {
+      description:
+        'Mixed batch of additions and replacements - should return 200 with updates, and replace or add where appropriate',
+      requestBody: {
+        importedResources: [
+          generateImportResource('3', addSeconds(baselineDate, 40)),
+          generateImportResource('100', addSeconds(baselineDate, 50)),
+        ],
+        batch: newDefaultTestBatch(),
+      },
+      expectedResponse: [
+        {
+          id: 'RESOURCE_3',
+          success: true,
+        },
+        {
+          id: 'RESOURCE_100',
+          success: true,
+        },
+      ],
+      expectedResourceUpdates: {
+        RESOURCE_3: generateApiResource('3'),
+        RESOURCE_100: generateApiResource('100'),
+      },
+      expectedBatchProgressState: {
+        ...newDefaultTestBatch(),
+        lastProcessedDate: addSeconds(baselineDate, 50).toISOString(),
+        lastProcessedId: 'RESOURCE_100',
+      },
+    },
+    {
+      description:
+        'Resources out of order in batch - should return 200 with an update per resource and add the new resources to the DB',
+      requestBody: {
+        importedResources: [
+          generateImportResource('100', addSeconds(baselineDate, 30)),
+          generateImportResource('101', addSeconds(baselineDate, 15)),
+        ],
+        batch: newDefaultTestBatch(),
+      },
+      expectedResponse: [
+        {
+          id: 'RESOURCE_100',
+          success: true,
+        },
+        {
+          id: 'RESOURCE_101',
+          success: true,
+        },
+      ],
+      expectedResourceUpdates: {
+        RESOURCE_100: generateApiResource('100'),
+        RESOURCE_101: generateApiResource('101'),
       },
       expectedBatchProgressState: {
         ...newDefaultTestBatch(),
