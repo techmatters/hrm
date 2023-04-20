@@ -22,6 +22,7 @@ import {
 } from '@tech-matters/twilio-worker-auth';
 import generateCloudSearchConfig, { CloudSearchConfig } from './config/cloud-search';
 import { apiV0 } from './routes';
+import { getStaticKeyAuthorizationMiddleware } from '@tech-matters/twilio-worker-auth/dist/twilioWorkerAuthMiddleware';
 
 type ResourceServiceCreationOptions = {
   webServer: ReturnType<typeof express>;
@@ -40,6 +41,19 @@ export const configureService = ({
     addAccountSidMiddleware,
     authorizationMiddleware,
     apiV0(cloudSearchConfig),
+  );
+  return webServer;
+};
+
+type InternalResourceServiceCreationOptions = {
+  webServer: ReturnType<typeof express>;
+};
+
+export const configureInternalService = ({ webServer }: InternalResourceServiceCreationOptions) => {
+  webServer.use(
+    '/v0/accounts/:accountSid/resources',
+    addAccountSidMiddleware,
+    getStaticKeyAuthorizationMiddleware,
   );
   return webServer;
 };
