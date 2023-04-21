@@ -4,7 +4,9 @@
   "references": [
     { "path": "packages/http" },
     { "path": "packages/twilio-worker-auth" },
+    { "path": "packages/sns-client" },
     { "path": "packages/ssm-cache" },
+    { "path": "packages/elasticsearch-client" },
     { "path": "packages/types" },
     { "path": "resources-service" },
     { "path": "hrm-service" }

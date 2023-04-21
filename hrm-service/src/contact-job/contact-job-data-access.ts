@@ -25,7 +25,7 @@ import {
 } from './sql/contact-job-sql';
 import { txIfNotInOne } from '../sql';
 
-import { ContactJobType } from '@tech-matters/hrm-types';
+import { ContactJobType } from '@tech-matters/types';
 
 // Reflects the actual shape of a record in the ContactJobs table
 export type ContactJobRecord = {

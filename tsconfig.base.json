@@ -1,4 +1,5 @@
 {
+  "exclude": ["**/*.test.ts"],
   "compilerOptions": {
     "allowJs": true,
     "module": "commonjs",
@@ -11,6 +12,5 @@
   "ts-node": {
     "transpileOnly": true,
     "files": true
-  },
-
+  }
 }

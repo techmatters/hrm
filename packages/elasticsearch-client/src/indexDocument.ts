@@ -13,5 +13,31 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
+import { IndexResponse } from '@elastic/elasticsearch/lib/api/types';
+import { PassThroughConfig } from './client';
 
-export const searchFields = ['text1*^3', 'text2.*^2'];
+export type IndexDocumentExtraParams = {
+  id: string;
+  document: any;
+};
+
+export type IndexDocumentParams = PassThroughConfig & IndexDocumentExtraParams;
+export type IndexDocumentResponse = IndexResponse;
+
+export const indexDocument = async ({
+  client,
+  document,
+  id,
+  index,
+  indexConfig,
+}: IndexDocumentParams): Promise<IndexDocumentResponse> => {
+  const convertedDocument = indexConfig.convertIndexDocument(document);
+
+  return client.index({
+    index,
+    id,
+    document: convertedDocument,
+  });
+};
+
+export default indexDocument;

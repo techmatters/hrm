@@ -14,32 +14,20 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { getClient } from './client';
+const accountSids = ['ACCOUNT_1', 'ACCOUNT_2'];
 
-import getAccountSid from './get-account-sid';
-
-export const deleteIndex = async ({
-  accountSid,
-  indexType,
-  shortCode,
-}: {
-  accountSid?: string;
-  indexType: string;
-  shortCode?: string;
-}) => {
-  if (!accountSid) {
-    accountSid = await getAccountSid(shortCode!);
-  }
-
-  const client = await getClient({ accountSid });
-  const index = `${accountSid.toLowerCase()}-${indexType}`;
-
-  const indexExists = await client.indices.exists({ index });
-  if (!indexExists) {
-    return;
-  }
-
-  return client.indices.delete({ index });
+export const generateMockMessageBody = () => {
+  const accountSid = accountSids[Math.floor(Math.random() * accountSids.length)];
+  const resourceId = Math.floor(Math.random() * 1000);
+  return {
+    accountSid,
+    jobType: 'resources-search-index',
+    document: {
+      id: `RESOURCE_${resourceId}`,
+      name: `Resource ${resourceId}`,
+      attributes: [
+        { key: 'testAttribute', value: 'testValue', language: 'Klingon', info: { qa: 'pla' } },
+      ],
+    },
+  };
 };
-
-export default deleteIndex;

@@ -14,9 +14,9 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { convertDocument } from '../../../../src/config/default/resources/index-document';
+import { convertIndexDocument } from './convert-index-document';
 
-describe('convertDocument', () => {
+describe('convertIndexDocument', () => {
   it('should convert a simple document', () => {
     // TODO: need a real example of a document to test against because I still have no idea what these are supposed to look like
     const resource = {
@@ -28,15 +28,27 @@ describe('convertDocument', () => {
           { value: 'This is the french title', language: 'fr' },
         ],
         description: [{ value: 'This is the description' }],
+        eligibilityMinAge: [{ value: 10 }],
+        eligibilityMaxAge: [{ value: 20 }],
+        feeStructure: [{ value: 'free' }],
+        keywords: [{ value: 'keyword1' }, { value: 'keyword2' }],
+        province: [{ value: 'ON' }],
+        city: [{ value: 'Toronto' }],
       },
     };
 
-    const document = convertDocument(resource);
+    const document = convertIndexDocument(resource);
 
     expect(document).toEqual({
       name: 'Resource',
-      text1: ['This is the english title', 'This is the french title'],
-      text2: ['This is the description'],
+      high_boost_global: 'This is the english title This is the french title',
+      low_boost_global: 'This is the description',
+      eligibilityMinAge: 10,
+      eligibilityMaxAge: 20,
+      city: 'Toronto',
+      feeStructure: 'free',
+      keywords: ['keyword1', 'keyword2'],
+      province: 'ON',
     });
   });
 });

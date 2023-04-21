@@ -14,15 +14,18 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { config } from './config';
-
-type ConfigParams = {
-  configId?: string;
-  indexType: string;
+module.exports = config => {
+  return (
+    config || {
+      preset: 'ts-jest',
+      rootDir: './',
+      maxWorkers: 1,
+      globals: {
+        'ts-jest': {
+          // to give support to const enum. Not working, conflicting with module resolution
+          useExperimentalLanguageServer: true,
+        },
+      },
+    }
+  );
 };
-
-export const getConfig = async ({ configId = 'default', indexType }: ConfigParams) => {
-  return config[configId][indexType];
-};
-
-export default getConfig;

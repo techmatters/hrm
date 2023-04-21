@@ -29,5 +29,6 @@ services:
       - LAMBDA_NETWORK=bridge
       - DISABLE_CORS_CHECKS=1
       - DISABLE_CUSTOM_CORS_S3=1
+      - ELASTIC_PASSWORD=changeme
     volumes:
       - '/var/run/docker.sock:/var/run/docker.sock'

@@ -18,12 +18,15 @@ import {
   ReferrableResourceAttribute,
   ResourceAttributeNode,
   ReferrableResource,
-  SearchParameters as SearchParametersEs,
 } from '@tech-matters/types';
 
 import { AccountSID } from '@tech-matters/twilio-worker-auth';
 
-import { search } from '@tech-matters/elasticsearch-client';
+import {
+  IndexTypes,
+  getClient,
+  SearchParameters as SearchParametersEs,
+} from '@tech-matters/elasticsearch-client';
 
 import {
   getById,
@@ -192,19 +195,24 @@ export const resourceModel = (cloudSearchConfig: CloudSearchConfig) => {
       accountSid: AccountSID,
       searchParameters: SearchParametersEs,
     ): Promise<{ totalCount: number; results: ReferrableResourceSearchResult[] }> => {
-      const {
-        pagination: { limit: unboundedLimit },
-      } = searchParameters;
-      const limit = Math.min(MAX_SEARCH_RESULTS, unboundedLimit);
+      let boundedSearchParameters: SearchParametersEs = { ...searchParameters };
 
-      const boundedSearchParameters = {
-        ...searchParameters,
-        pagination: { ...searchParameters.pagination, limit },
-      };
+      if (boundedSearchParameters.pagination?.limit) {
+        const unboundedLimit = boundedSearchParameters.pagination.limit;
+        const limit = Math.min(MAX_SEARCH_RESULTS, unboundedLimit);
 
-      const { total, items } = await search({
+        boundedSearchParameters = {
+          ...boundedSearchParameters,
+          pagination: { ...boundedSearchParameters.pagination!, limit },
+        };
+      }
+
+      const client = await getClient({
         accountSid,
-        indexType: 'resources',
+        indexType: IndexTypes.RESOURCES,
+      });
+
+      const { total, items } = await client.search({
         searchParameters: boundedSearchParameters,
       });
 

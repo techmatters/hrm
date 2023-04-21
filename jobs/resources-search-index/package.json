@@ -1,0 +1,22 @@
+{
+  "name": "@tech-matters/resources-search-index",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "author": "",
+  "license": "AGPL",
+  "dependencies": {
+    "@tech-matters/elasticsearch-client": "^1.0.0",
+    "@tech-matters/hrm-job-errors": "^1.0.0",
+    "@tech-matters/hrm-ssm-cache": "^1.0.0",
+    "@tech-matters/types": "^1.0.0",
+    "aws-sdk": "^2.1225.0"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.108"
+  },
+  "scripts": {
+    "test:e2e": "jest tests/e2e",
+    "docker:build": "docker build -t resources-search-index --build-arg lambda_name=resources-search-index -f ../Dockerfile ../../"
+  }
+}
