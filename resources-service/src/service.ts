@@ -50,6 +50,11 @@ type InternalResourceServiceCreationOptions = {
 };
 
 export const configureInternalService = ({ webServer }: InternalResourceServiceCreationOptions) => {
+  webServer.get('/', (req, res) => {
+    res.json({
+      Message: 'Resources internal service is up and running!',
+    });
+  });
   webServer.use(
     '/v0/accounts/:accountSid/resources',
     addAccountSidMiddleware,

@@ -40,15 +40,10 @@ export const upsertImportedResource = (task?: ITask<{}>) => async (
   accountSid: AccountSID,
   resource: ImportApiResource,
 ): Promise<UpsertImportedResourceResult> => {
-  try {
-    return await txIfNotInOne(task, async tx => {
-      await tx.none(generateUpsertSqlFromImportResource(accountSid, resource));
-      return { id: resource.id, success: true };
-    });
-  } catch (error) {
-    console.error(`Error upserting resource ${resource.id}:`, error);
-    return { id: resource.id, success: false, error: error as Error };
-  }
+  return txIfNotInOne(task, async tx => {
+    await tx.none(generateUpsertSqlFromImportResource(accountSid, resource));
+    return { id: resource.id, success: true };
+  });
 };
 
 export const updateImportProgress = (task?: ITask<{}>) => async (
