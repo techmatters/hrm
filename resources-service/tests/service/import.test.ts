@@ -18,7 +18,7 @@ import { getInternalServer, getRequest, getServer, headers } from './server';
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import { db } from '../../src/connection-pool';
 import range from './range';
-import { parseISO, addHours, subHours, addSeconds } from 'date-fns';
+import { parseISO, addHours, subHours, addSeconds, subSeconds } from 'date-fns';
 import { ImportRequestBody } from '../../src/import/importRoutesV0';
 import { ImportApiResource, ImportProgress } from '../../src/import/importTypes';
 import { internalHeaders } from './server';
@@ -26,13 +26,10 @@ import each from 'jest-each';
 import { ReferrableResource } from '../../src/resource/resource-model';
 import { AssertionError } from 'assert';
 import { UpsertImportedResourceResult } from '../../src/import/importDataAccess';
-import { AddressInfo } from 'net';
 
 const internalServer = getInternalServer();
-console.log(`Internal server started on port ${(internalServer.address() as AddressInfo).port}`);
 const internalRequest = getRequest(internalServer);
 const server = getServer();
-console.log(`Public server started on port ${(server.address() as AddressInfo).port}`);
 const request = getRequest(server);
 
 const accountSid = 'AC000';
@@ -57,7 +54,7 @@ const populateSampleDbReferenceValues = async (count: number, valuesPerList: num
       ),
     )
     .join(';\n');
-  console.log(sql); // handy for debugging
+  // console.log(sql); // handy for debugging
   await db.none(sql);
 };
 
@@ -86,7 +83,7 @@ const populateSampleDbResources = async (count: number) => {
       }),
     )
     .join(';\n');
-  console.log(testResourceCreateSql); // handy for debugging
+  // console.log(testResourceCreateSql); // handy for debugging
   await db.multi(testResourceCreateSql);
 };
 
@@ -159,7 +156,11 @@ const verifyGeneratedResourcesAttributes = async (resourceId: string) => {
   );
 };
 
-const generateImportResource = (resourceIdSuffix: string, updatedAt: Date): ImportApiResource => ({
+const generateImportResource = (
+  resourceIdSuffix: string,
+  updatedAt: Date,
+  additionalAttributes: Partial<ImportApiResource['attributes']> = {},
+): ImportApiResource => ({
   id: `RESOURCE_${resourceIdSuffix}`,
   name: `Resource ${resourceIdSuffix}`,
   updatedAt: updatedAt.toISOString(),
@@ -171,6 +172,7 @@ const generateImportResource = (resourceIdSuffix: string, updatedAt: Date): Impo
         language: 'en-US',
         info: { some: 'json' },
       },
+      ...(additionalAttributes.ResourceStringAttributes ?? []),
     ],
     ResourceDateTimeAttributes: [
       {
@@ -178,6 +180,7 @@ const generateImportResource = (resourceIdSuffix: string, updatedAt: Date): Impo
         value: baselineDate.toISOString(),
         info: { some: 'json' },
       },
+      ...(additionalAttributes.ResourceDateTimeAttributes ?? []),
     ],
     ResourceNumberAttributes: [
       {
@@ -185,6 +188,7 @@ const generateImportResource = (resourceIdSuffix: string, updatedAt: Date): Impo
         value: 1337,
         info: { some: 'json' },
       },
+      ...(additionalAttributes.ResourceNumberAttributes ?? []),
     ],
     ResourceBooleanAttributes: [
       {
@@ -192,6 +196,7 @@ const generateImportResource = (resourceIdSuffix: string, updatedAt: Date): Impo
         value: true,
         info: { some: 'json' },
       },
+      ...(additionalAttributes.ResourceBooleanAttributes ?? []),
     ],
     ResourceReferenceStringAttributes: [
       {
@@ -200,11 +205,15 @@ const generateImportResource = (resourceIdSuffix: string, updatedAt: Date): Impo
         language: 'REFERENCE_LANGUAGE',
         list: 'REFERENCE_LIST_1',
       },
+      ...(additionalAttributes.ResourceReferenceStringAttributes ?? []),
     ],
   },
 });
 
-const generateApiResource = (resourceIdSuffix: string): ReferrableResource => ({
+const generateApiResource = (
+  resourceIdSuffix: string,
+  additionalAttributes: ReferrableResource['attributes'] = {},
+): ReferrableResource => ({
   id: `RESOURCE_${resourceIdSuffix}`,
   name: `Resource ${resourceIdSuffix}`,
   attributes: {
@@ -240,6 +249,7 @@ const generateApiResource = (resourceIdSuffix: string): ReferrableResource => ({
         info: { property: 'VALUE' },
       },
     ],
+    ...additionalAttributes,
   },
 });
 
@@ -467,6 +477,58 @@ describe('POST /import', () => {
         lastProcessedId: 'RESOURCE_100',
       },
     },
+    {
+      description:
+        'Resources with reference values not defined in the DB - adds the resource but omits those values',
+      requestBody: {
+        importedResources: [
+          generateImportResource('100', addSeconds(baselineDate, 30), {
+            ResourceReferenceStringAttributes: [
+              {
+                key: 'REFERENCE_ATTRIBUTE',
+                value: 'NOT_A_REFERENCE_VALUE',
+                language: 'REFERENCE_LANGUAGE',
+                list: 'REFERENCE_LIST_1',
+              },
+              {
+                key: 'REFERENCE_ATTRIBUTE',
+                value: 'REFERENCE_VALUE_1',
+                language: 'REFERENCE_LANGUAGE',
+                list: 'REFERENCE_LIST_2',
+              },
+            ],
+          }),
+        ],
+        batch: newDefaultTestBatch(),
+      },
+      expectedResponse: [
+        {
+          id: 'RESOURCE_100',
+          success: true,
+        },
+      ],
+      expectedResourceUpdates: {
+        RESOURCE_100: generateApiResource('100', {
+          REFERENCE_ATTRIBUTE: [
+            {
+              value: 'REFERENCE_VALUE_2',
+              language: 'REFERENCE_LANGUAGE',
+              info: { property: 'VALUE' },
+            },
+            {
+              value: 'REFERENCE_VALUE_1',
+              language: 'REFERENCE_LANGUAGE',
+              info: { property: 'VALUE' },
+            },
+          ],
+        }),
+      },
+      expectedBatchProgressState: {
+        ...newDefaultTestBatch(),
+        lastProcessedDate: addSeconds(baselineDate, 30).toISOString(),
+        lastProcessedId: 'RESOURCE_100',
+      },
+    },
   ];
 
   each(testCases).test(
@@ -500,4 +562,30 @@ describe('POST /import', () => {
       await verifyImportState(expectedBatchProgressState);
     },
   );
+
+  test('One malformed resource - rejects whole batch and returns 400', async () => {
+    const { id, ...missingIdResource } = generateImportResource('3', baselineDate);
+    const requestBody: ImportRequestBody = {
+      importedResources: [
+        generateImportResource('2', subSeconds(baselineDate, 15)),
+        missingIdResource as ImportApiResource,
+        generateImportResource('4', addSeconds(baselineDate, 15)),
+      ],
+      batch: newDefaultTestBatch(),
+    };
+    const response = await internalRequest
+      .post(route)
+      .set(internalHeaders)
+      .send(requestBody);
+    expect(response.body).toStrictEqual({
+      reason: 'missing field',
+      fields: ['id'],
+      resource: missingIdResource,
+    });
+    expect(response.status).toBe(400);
+    for (let resourceIdx = 0; resourceIdx < 5; resourceIdx++) {
+      const resourceId = `RESOURCE_${resourceIdx}`;
+      await verifyGeneratedResourcesAttributes(resourceId);
+    }
+  });
 });

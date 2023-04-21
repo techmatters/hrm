@@ -23,32 +23,63 @@ import {
 } from './importDataAccess';
 import { AccountSID } from '@tech-matters/twilio-worker-auth';
 
+export type ValidationFailure = {
+  reason: 'missing field';
+  fields: string[];
+  resource: ImportApiResource;
+};
+
+export const isValidationFailure = (result: any): result is ValidationFailure => {
+  return result.reason === 'missing field';
+};
+
+const REQUIRED_FIELDS = ['id', 'name', 'attributes', 'updatedAt'] as const;
+
 const importService = () => {
   return {
     upsertResources: async (
       accountSid: AccountSID,
       resources: ImportApiResource[],
       batch: ImportBatch,
-    ): Promise<UpsertImportedResourceResult[]> => {
+    ): Promise<UpsertImportedResourceResult[] | ValidationFailure> => {
       if (!resources?.length) return [];
-
-      const results: UpsertImportedResourceResult[] = [];
-      await db.tx(async t => {
-        const upsert = upsertImportedResource(t);
-        for (const resource of resources) {
-          const result = await upsert(accountSid, resource);
-          results.push(result);
-        }
-        const { id, updatedAt } = resources.sort((a, b) =>
-          a.updatedAt > b.updatedAt ? 1 : a.updatedAt < b.updatedAt ? -1 : a.id > b.id ? 1 : -1,
-        )[resources.length - 1];
-        await updateImportProgress(t)(accountSid, {
-          ...batch,
-          lastProcessedDate: updatedAt,
-          lastProcessedId: id,
+      try {
+        return await db.tx(async t => {
+          const results: UpsertImportedResourceResult[] = [];
+          const upsert = upsertImportedResource(t);
+          for (const resource of resources) {
+            const missingFields = REQUIRED_FIELDS.filter(field => !resource[field]);
+            if (missingFields.length) {
+              // Unfortunately I can't see a way to roll back a transaction other than throwing / rejecting
+              // Hence the messy throw & catch
+              const err = new Error();
+              (err as any).validationFailure = {
+                reason: 'missing field',
+                fields: missingFields,
+                resource,
+              };
+              throw err;
+            }
+            const result = await upsert(accountSid, resource);
+            results.push(result);
+          }
+          const { id, updatedAt } = resources.sort((a, b) =>
+            a.updatedAt > b.updatedAt ? 1 : a.updatedAt < b.updatedAt ? -1 : a.id > b.id ? 1 : -1,
+          )[resources.length - 1];
+          await updateImportProgress(t)(accountSid, {
+            ...batch,
+            lastProcessedDate: updatedAt,
+            lastProcessedId: id,
+          });
+          return results;
         });
-      });
-      return results;
+      } catch (e) {
+        const error = e as any;
+        if (error.validationFailure) {
+          return error.validationFailure;
+        }
+        throw error;
+      }
     },
   };
 };

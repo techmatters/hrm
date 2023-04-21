@@ -16,7 +16,7 @@
 
 import { IRouter, Router } from 'express';
 import { ImportApiResource, ImportBatch } from './importTypes';
-import importService from './importService';
+import importService, { isValidationFailure } from './importService';
 import { AccountSID } from '@tech-matters/twilio-worker-auth';
 
 export type ImportRequestBody = {
@@ -31,7 +31,11 @@ const importRoutes = () => {
 
   router.post('/import', async ({ body, accountSid }, res) => {
     const { importedResources, batch }: ImportRequestBody = body;
-    res.json(await upsertResources(accountSid as AccountSID, importedResources, batch));
+    const result = await upsertResources(accountSid as AccountSID, importedResources, batch);
+    if (isValidationFailure(result)) {
+      res.status(400).json(result);
+    }
+    res.json(result);
   });
 
   return router;

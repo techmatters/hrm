@@ -53,7 +53,6 @@ const isGuest = (tokenResult: TokenValidatorResponse) =>
 const defaultTokenLookup = (accountSid: string) => process.env[`TWILIO_AUTH_TOKEN_${accountSid}`] ?? '';
 
 const authenticateWithStaticKey = (req: Request): boolean => {
-  console.debug('Static key authentication middleware executing!');
   if (!req.headers) return false;
   const { headers: { authorization }, accountSid } = req;
 
@@ -70,11 +69,10 @@ const authenticateWithStaticKey = (req: Request): boolean => {
 
       if (isStaticSecretValid) {
         req.user = twilioUser(`account-${accountSid}`, []);
-        console.log('Static key authentication succeeded!');
         return true;
       }
     } catch (err) {
-      console.error('Static key authentication failed: ', err);
+      console.warn('Static key authentication failed: ', err);
     }
   }
   return false;
