@@ -23,6 +23,10 @@ import type { SQSEvent } from 'aws-lambda';
 
 const mockFetch = jest.fn();
 
+jest.mock('@tech-matters/hrm-ssm-cache', () => ({
+  getSsmParameter: () => 'static-key',
+}));
+
 jest.mock('node-fetch', () => ({
   ...jest.requireActual('node-fetch'),
   __esModule: true,

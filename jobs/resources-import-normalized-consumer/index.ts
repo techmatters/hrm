@@ -16,7 +16,7 @@
 
 import { ResourceImportProcessorError } from '@tech-matters/hrm-job-errors';
 import fetch from 'node-fetch';
-// import { getSsmParameter } from '@tech-matters/hrm-ssm-cache';
+import { getSsmParameter } from '@tech-matters/hrm-ssm-cache';
 // import { SQS } from 'aws-sdk';
 // eslint-disable-next-line prettier/prettier
 import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
@@ -44,9 +44,7 @@ const postNormalizedResourcesBody = async (accountSid: string, apiKey: string, m
 
 const upsertRecord = async (message: ImportRequestBody): Promise<void> => {
   const { accountSid } = message;
-  // TODO: actually use this to make the API call (they need to be created in SSM)
-  // const apiKey = await getSsmParameter(`/${hrmEnv}/twilio/${message.accountSid}/hrm_static_api_key`);
-  const apiKey = '';
+  const apiKey = await getSsmParameter(`/${hrmEnv}/twilio/${message.accountSid}/static_key`);
 
   const result = await postNormalizedResourcesBody(accountSid, apiKey, message);
 
