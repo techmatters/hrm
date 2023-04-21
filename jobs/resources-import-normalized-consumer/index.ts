@@ -23,7 +23,6 @@ import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
 // eslint-disable-next-line prettier/prettier
 import type { ImportRequestBody } from '@tech-matters/hrm-types';
 
-
 const resourcesBaseUrl = process.env.resources_base_url as string;
 const hrmEnv = process.env.NODE_ENV;
 
@@ -67,12 +66,12 @@ type ProcessedResult = {
   reason: Error;
 };
 
-export const upsertRecordWithoutException = async (sqsRecord: SQSRecord): Promise<ProcessedResult> => {
+const upsertRecordWithoutException = async (sqsRecord: SQSRecord): Promise<ProcessedResult> => {
   const message = JSON.parse(sqsRecord.body);
 
   try {
     await upsertRecord(message);
-    
+
     return {
       status: 'successs',
       messageId: sqsRecord.messageId, 
@@ -80,9 +79,9 @@ export const upsertRecordWithoutException = async (sqsRecord: SQSRecord): Promis
   } catch (err) {
     console.error(new ResourceImportProcessorError('Failed to process record'), err);
 
-    // TODO: Handle this (DLQ required)
-
     const errMessage = err instanceof Error ? err.message : String(err);
+
+    // TODO: Handle this (DLQ required)
     // const failedJob = { ... };
     // await sqs
     //   .sendMessage({
@@ -101,7 +100,6 @@ export const upsertRecordWithoutException = async (sqsRecord: SQSRecord): Promis
 
 export const handler = async (event: SQSEvent): Promise<SQSBatchResponse> => {
   const batchItemFailuresSet: Set<string> = new Set();
-  const response: SQSBatchResponse = { batchItemFailures: [] };
 
   try {
     if (!resourcesBaseUrl) {
@@ -121,15 +119,20 @@ export const handler = async (event: SQSEvent): Promise<SQSBatchResponse> => {
         batchItemFailuresSet.add(processed.messageId);
       }
     }
+
+    const response: SQSBatchResponse = { batchItemFailures: Array.from(batchItemFailuresSet).map(messageId => ({
+      itemIdentifier: messageId,
+    })), 
+    };
+    return response;
   } catch (err) {
     // SSM failures and other major setup exceptions will cause a failure of all messages sending them to DLQ
     // which should be the same as the completed queue right now.
     console.error(new ResourceImportProcessorError('Failed to init processor'), err);
 
-    response.batchItemFailures = Array.from(batchItemFailuresSet).map(messageId => ({
-      itemIdentifier: messageId,
-    }));
+    const response: SQSBatchResponse = { batchItemFailures: event.Records.map(record => ({
+      itemIdentifier: record.messageId,
+    })) };
+    return response;
   }
-
-  return response;
 };

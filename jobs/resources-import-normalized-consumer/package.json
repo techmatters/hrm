@@ -14,9 +14,12 @@
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.108",
+    "date-fns": "^2.29.3",
+    "jest-each": "^29.5.0",
     "ts-node": "^10.9.1"
   },
   "scripts": {
-    "docker:build": "docker build -t resources-import-normalized-consumer --build-arg lambda_name=resources-import-normalized-consumer -f ../Dockerfile ../../"
+    "docker:build": "docker build -t resources-import-normalized-consumer --build-arg lambda_name=resources-import-normalized-consumer -f ../Dockerfile ../../",
+    "test:unit": "jest tests/unit"
   }
 }
