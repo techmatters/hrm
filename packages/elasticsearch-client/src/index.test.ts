@@ -14,23 +14,13 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { config } from './config';
-import { ConfigIds, IndexTypes } from './types';
+import * as esClient from './index';
 
-export type GetConfigParams = {
-  configId?: ConfigIds;
-  indexType: IndexTypes;
-};
+const exportedKeys = ['getClient', 'IndexTypes', 'ConfigIds'];
 
-// We will likely add complexity to this in the future. I started out using dynamic
-// imports but lambdas really don't like those. So for now we just have a single
-// config file that we load and then we can use the configId/indexType to get the
-// config we need for each ES function wrapper.
-export const getIndexConfig = async ({
-  configId = ConfigIds.DEFAULT,
-  indexType,
-}: GetConfigParams) => {
-  return config[configId][indexType];
-};
-
-export default getIndexConfig;
+describe('Elasticsearch Client', () => {
+  it('should return a client', () => {
+    expect(esClient).toBeDefined();
+    expect(Object.keys(esClient).length).toBe(exportedKeys.length);
+  });
+});

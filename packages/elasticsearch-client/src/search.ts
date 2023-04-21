@@ -13,7 +13,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-
+import {
+  SearchRequest as ESSearchRequest,
+  SearchTotalHits as ESSearchTotalHits,
+} from '@elastic/elasticsearch/lib/api/types';
 import { PassThroughConfig } from './client';
 
 export type SearchQueryFilters = Array<
@@ -21,19 +24,7 @@ export type SearchQueryFilters = Array<
   | { term: { [key: string]: string | boolean | number | Date } }
 >;
 
-export type SearchQuery = {
-  index: string;
-  body: {
-    query: {
-      bool: {
-        filter?: SearchQueryFilters;
-        must: Array<{ query_string: { query: string; fields: string[] } }>;
-      };
-    };
-    from: number;
-    size: number;
-  };
-};
+export type SearchQuery = ESSearchRequest;
 
 export type SearchExtraParams = {
   searchParameters: SearchParameters;
@@ -44,7 +35,7 @@ export type SearchParams = PassThroughConfig & SearchExtraParams;
 export type SearchParameters = {
   filters?: Record<string, boolean | number | string | string[]>;
   q: string;
-  pagination: {
+  pagination?: {
     limit: number;
     start: number;
   };
@@ -60,10 +51,13 @@ export type SearchResponse = {
   items: SearchResponseItem[];
 };
 
-type SearchTotalHits = {
-  value: number;
-  relation: 'eq' | 'gte';
+export type SearchGenerateElasticsearchQueryParams = {
+  index: string;
+  searchParameters: SearchParameters;
+  fields: string[];
 };
+
+type SearchTotalHits = ESSearchTotalHits;
 
 /**
  * f track_total_hits is false, Elasticsearch returns an approximate count of the total
@@ -77,7 +71,7 @@ type SearchTotalHits = {
  * @param total the total hits as returned by Elasticsearch
  * @returns the total hits as a number
  */
-const getTotalValue = (total: number | SearchTotalHits | undefined): number => {
+export const getTotalValue = (total: number | SearchTotalHits | undefined): number => {
   if (typeof total === 'object') return total.value;
 
   return total || 0;
@@ -92,6 +86,7 @@ const getTotalValue = (total: number | SearchTotalHits | undefined): number => {
  */
 export const generateFilters = (filters: SearchParameters['filters']): SearchQueryFilters => {
   // TODO: this doesn't support range filters yet
+  // TODO: should we validate request filters against the index config?
   const returnFilters: SearchQueryFilters = [];
 
   if (!filters || Object.keys(filters).length === 0) return returnFilters;
@@ -124,36 +119,38 @@ export const generateFilters = (filters: SearchParameters['filters']): SearchQue
  * @param fields the fields to search
  * @returns the SearchQuery object
  */
-export const generateElasticsearchQuery = (
-  index: string,
-  searchParameters: SearchParameters,
-  fields: string[],
-) => {
+export const generateElasticsearchQuery = ({
+  index,
+  searchParameters,
+  fields,
+}: SearchGenerateElasticsearchQueryParams): SearchQuery => {
   const { q, filters, pagination } = searchParameters;
-  const { limit, start } = pagination;
 
   const query: SearchQuery = {
     index,
-    body: {
-      query: {
-        bool: {
-          must: [
-            {
-              query_string: {
-                query: q,
-                fields,
-              },
+    query: {
+      bool: {
+        must: [
+          {
+            query_string: {
+              query: q,
+              fields,
             },
-          ],
-        },
+          },
+        ],
       },
-      from: start,
-      size: limit,
     },
   };
 
+  if (pagination?.limit) {
+    query.size = pagination.limit;
+  }
+  if (pagination?.start) {
+    query.from = pagination.start;
+  }
+
   if (filters) {
-    query.body.query.bool.filter = generateFilters(filters);
+    query.query!.bool!.filter = generateFilters(filters);
   }
 
   return query;
@@ -169,7 +166,12 @@ export const search = async ({
   indexConfig,
   searchParameters,
 }: SearchParams): Promise<SearchResponse> => {
-  const query = generateElasticsearchQuery(index, searchParameters, indexConfig.searchFields);
+  const query = generateElasticsearchQuery({
+    index,
+    searchParameters,
+    fields: indexConfig.searchFields,
+  });
+
   const { hits } = await client.search(query);
   const total = getTotalValue(hits.total);
 

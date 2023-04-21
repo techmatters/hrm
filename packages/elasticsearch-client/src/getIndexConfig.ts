@@ -14,8 +14,30 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-export { getClient } from './client';
+import { config } from './config';
 
-// These types are enums so they need to be exported here in
-// addition to index.d.ts
-export { IndexTypes, ConfigIds } from './getIndexConfig';
+export enum IndexTypes {
+  RESOURCES = 'resources',
+}
+
+export enum ConfigIds {
+  DEFAULT = 'default',
+}
+
+export type GetConfigParams = {
+  configId?: ConfigIds;
+  indexType: IndexTypes;
+};
+
+// We will likely add complexity to this in the future. I started out using dynamic
+// imports but lambdas really don't like those. So for now we just have a single
+// config file that we load and then we can use the configId/indexType to get the
+// config we need for each ES function wrapper.
+export const getIndexConfig = async ({
+  configId = ConfigIds.DEFAULT,
+  indexType,
+}: GetConfigParams) => {
+  return config[configId][indexType];
+};
+
+export default getIndexConfig;

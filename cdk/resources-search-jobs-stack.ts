@@ -45,6 +45,12 @@ export default class ResourcessearchJobsStack extends cdk.Stack {
     const queue = new sqs.Queue(this, id, {
       visibilityTimeout: cdk.Duration.seconds(8),
       deadLetterQueue: { maxReceiveCount: 1, queue: params.completeQueue },
+      // Localstack fifo queues don't really work so don't bother with this
+      // see https://github.com/localstack/localstack/issues/6766
+      // fifo: true,
+      // deduplicationScope: sqs.DeduplicationScope.MESSAGE_GROUP,
+      // fifoThroughputLimit: sqs.FifoThroughputLimit.PER_MESSAGE_GROUP_ID,
+      // contentBasedDeduplication: true,
     });
 
     new cdk.CfnOutput(this, `queueUrl`, {
