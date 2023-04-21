@@ -104,7 +104,7 @@ export const handler = async (event: SQSEvent): Promise<SQSBatchResponse> => {
   const response: SQSBatchResponse = { batchItemFailures: [] };
 
   try {
-    if (!hrmResourcesApiUrl) {
+    if (!resourcesBaseUrl) {
       throw new Error('Missing completed_sqs_queue_url ENV Variable');
     }
 
