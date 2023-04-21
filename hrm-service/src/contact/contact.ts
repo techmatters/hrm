@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { ContactJobType } from '@tech-matters/hrm-types';
+import { ContactJobType } from '@tech-matters/types';
 import {
   connectToCase,
   Contact,

@@ -1,0 +1,9 @@
+{
+  "extends": "../tsconfig.packages-base.json",
+  "include": ["src/**/*.ts"],
+  "compilerOptions": {
+    "outDir": "./dist",
+    "allowJs": true,
+    "skipLibCheck": true
+  }
+}
