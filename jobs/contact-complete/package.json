@@ -11,7 +11,7 @@
     "aws-sdk": "^2.1225.0"
   },
   "devDependencies": {
-    "@tech-matters/hrm-types": "^1.0.0",
+    "@tech-matters/types": "^1.0.0",
     "@types/aws-lambda": "^8.10.108"
   },
   "scripts": {

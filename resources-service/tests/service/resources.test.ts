@@ -14,12 +14,12 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
+import { ReferrableResource, ReferrableResourceAttribute } from '@tech-matters/types';
+
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import { headers, getRequest, getServer } from './server';
 import { db } from '../../src/connection-pool';
 import each from 'jest-each';
-import { ReferrableResource } from '../../src/resource/resource-model';
-import { ReferrableResourceAttribute } from '../../src/resource/resource-data-access';
 import { AssertionError } from 'assert';
 
 export const workerSid = 'WK-worker-sid';
@@ -126,13 +126,13 @@ describe('GET /resource', () => {
               range((parseInt(valueIndex) % 2) + 1).map(
                 // alternate between 1 and 2  language values
                 languageIndex =>
-                  `INSERT INTO resources."ResourceReferenceStringAttributeValues" (id, "accountSid", "list", "value", "language", "info") 
+                  `INSERT INTO resources."ResourceReferenceStringAttributeValues" (id, "accountSid", "list", "value", "language", "info")
                         VALUES (
-                            'REF_${valueIndex}_${languageIndex}', 
-                            'REFERENCES_TEST_ACCOUNT_${accountIndex}', 
+                            'REF_${valueIndex}_${languageIndex}',
+                            'REFERENCES_TEST_ACCOUNT_${accountIndex}',
                             'LIST_${keyIndex}',
-                            'REFERENCE_VALUE_${valueIndex}', 
-                            'LANGUAGE_${languageIndex}', 
+                            'REFERENCE_VALUE_${valueIndex}',
+                            'LANGUAGE_${languageIndex}',
                             ${
                               languageIndex === '1'
                                 ? 'NULL'
@@ -166,7 +166,7 @@ describe('GET /resource', () => {
       {
         description: `Single referenced attribute value - returns referenced value`,
         setupSqlStatements: [
-          `INSERT INTO resources."ResourceReferenceStringAttributes" 
+          `INSERT INTO resources."ResourceReferenceStringAttributes"
             ("accountSid", "resourceId", "key", "list", "referenceId")
             VALUES ('REFERENCES_TEST_ACCOUNT_0','RESOURCE_0', 'REFERENCE_KEY_1', 'LIST_1', 'REF_0_0')`,
         ],
@@ -191,8 +191,8 @@ describe('GET /resource', () => {
         description: `Multiple referenced attribute values under same key - returns referenced values grouped under the key`,
         setupSqlStatements: range(3).map(
           valueIndex =>
-            `INSERT INTO resources."ResourceReferenceStringAttributes" 
-                ("accountSid", "resourceId", "key", "list", "referenceId") 
+            `INSERT INTO resources."ResourceReferenceStringAttributes"
+                ("accountSid", "resourceId", "key", "list", "referenceId")
                 VALUES ('REFERENCES_TEST_ACCOUNT_0', 'RESOURCE_0', 'REFERENCE_KEY_7', 'LIST_7', 'REF_${valueIndex}_0')`,
         ),
         expectedResult: {
@@ -213,8 +213,8 @@ describe('GET /resource', () => {
         description: `Multiple referenced attribute values under same key and value but different languages - returns referenced values grouped under the key`,
         setupSqlStatements: range(2).map(
           languageIndex =>
-            `INSERT INTO resources."ResourceReferenceStringAttributes" 
-                ("accountSid", "resourceId", "key", "list", "referenceId") 
+            `INSERT INTO resources."ResourceReferenceStringAttributes"
+                ("accountSid", "resourceId", "key", "list", "referenceId")
                 VALUES ('REFERENCES_TEST_ACCOUNT_0', 'RESOURCE_0', 'REFERENCE_KEY_5', 'LIST_5', 'REF_3_${languageIndex}')`,
         ),
         expectedResult: {
@@ -238,8 +238,8 @@ describe('GET /resource', () => {
         description: `Multiple referenced attribute values under different keys - returns referenced values under their respective keys`,
         setupSqlStatements: range(3).map(
           keyIndex =>
-            `INSERT INTO resources."ResourceReferenceStringAttributes" 
-                ("accountSid", "resourceId", "key", "list", "referenceId") 
+            `INSERT INTO resources."ResourceReferenceStringAttributes"
+                ("accountSid", "resourceId", "key", "list", "referenceId")
                 VALUES ('REFERENCES_TEST_ACCOUNT_0', 'RESOURCE_0', 'REFERENCE_KEY_${parseInt(
                   keyIndex,
                 ) + 6}', 'LIST_${parseInt(keyIndex) + 6}', 'REF_5_0')`,
@@ -266,11 +266,11 @@ describe('GET /resource', () => {
       {
         description: `Referenced attribute values and inline attributes under different keys - returns ALL values under their respective keys`,
         setupSqlStatements: [
-          `INSERT INTO resources."ResourceReferenceStringAttributes" 
-                ("accountSid", "resourceId", "key", "list", "referenceId") 
+          `INSERT INTO resources."ResourceReferenceStringAttributes"
+                ("accountSid", "resourceId", "key", "list", "referenceId")
                 VALUES ('REFERENCES_TEST_ACCOUNT_0', 'RESOURCE_0', 'REFERENCE_KEY_6', 'LIST_6', 'REF_5_0')`,
-          `INSERT INTO resources."ResourceStringAttributes" 
-                ("accountSid", "resourceId", "key", "value", "language") 
+          `INSERT INTO resources."ResourceStringAttributes"
+                ("accountSid", "resourceId", "key", "value", "language")
                 VALUES ('REFERENCES_TEST_ACCOUNT_0', 'RESOURCE_0', 'INLINE_KEY', 'INLINE_VALUE', 'INLINE_LANGUAGE')`,
         ],
         expectedResult: {
@@ -299,11 +299,11 @@ describe('GET /resource', () => {
       {
         description: `Referenced attribute values and inline attributes under same keys - returns all values under the one key`,
         setupSqlStatements: [
-          `INSERT INTO resources."ResourceReferenceStringAttributes" 
-                ("accountSid", "resourceId", "key", "list", "referenceId") 
+          `INSERT INTO resources."ResourceReferenceStringAttributes"
+                ("accountSid", "resourceId", "key", "list", "referenceId")
                 VALUES ('REFERENCES_TEST_ACCOUNT_0', 'RESOURCE_0', 'REFERENCE_KEY_6', 'LIST_6', 'REF_5_0')`,
-          `INSERT INTO resources."ResourceStringAttributes" 
-                ("accountSid", "resourceId", "key", "value", "language") 
+          `INSERT INTO resources."ResourceStringAttributes"
+                ("accountSid", "resourceId", "key", "value", "language")
                 VALUES ('REFERENCES_TEST_ACCOUNT_0', 'RESOURCE_0', 'REFERENCE_KEY_6', 'INLINE_VALUE', 'LANGUAGE_0')`,
         ],
         expectedResult: {
@@ -330,11 +330,11 @@ describe('GET /resource', () => {
       {
         description: `Referenced attribute values and inline attributes under same keys with same values but different languages - returns all values under the one key`,
         setupSqlStatements: [
-          `INSERT INTO resources."ResourceReferenceStringAttributes" 
-                ("accountSid", "resourceId", "key", "list", "referenceId") 
+          `INSERT INTO resources."ResourceReferenceStringAttributes"
+                ("accountSid", "resourceId", "key", "list", "referenceId")
                 VALUES ('REFERENCES_TEST_ACCOUNT_0', 'RESOURCE_0', 'REFERENCE_KEY_6', 'LIST_6', 'REF_5_0')`,
-          `INSERT INTO resources."ResourceStringAttributes" 
-                ("accountSid", "resourceId", "key", "value", "language") 
+          `INSERT INTO resources."ResourceStringAttributes"
+                ("accountSid", "resourceId", "key", "value", "language")
                 VALUES ('REFERENCES_TEST_ACCOUNT_0', 'RESOURCE_0', 'REFERENCE_KEY_6', 'REFERENCE_VALUE_5', 'INLINE_LANGUAGE')`,
         ],
         expectedResult: {
@@ -361,11 +361,11 @@ describe('GET /resource', () => {
       {
         description: `Referenced attribute values and inline attributes keys exist for same resource with same key value and language - returns both values`,
         setupSqlStatements: [
-          `INSERT INTO resources."ResourceReferenceStringAttributes" 
-                ("accountSid", "resourceId", "key", "list", "referenceId") 
+          `INSERT INTO resources."ResourceReferenceStringAttributes"
+                ("accountSid", "resourceId", "key", "list", "referenceId")
                 VALUES ('REFERENCES_TEST_ACCOUNT_0', 'RESOURCE_0', 'REFERENCE_KEY_6', 'LIST_6', 'REF_5_0')`,
-          `INSERT INTO resources."ResourceStringAttributes" 
-                ("accountSid", "resourceId", "key", "value", "language", "info") 
+          `INSERT INTO resources."ResourceStringAttributes"
+                ("accountSid", "resourceId", "key", "value", "language", "info")
                 VALUES ('REFERENCES_TEST_ACCOUNT_0', 'RESOURCE_0', 'REFERENCE_KEY_6', 'REFERENCE_VALUE_5', 'LANGUAGE_0', '{ "different": "info" }')`,
         ],
         expectedResult: {
@@ -426,8 +426,8 @@ describe('GET /resource', () => {
       },
     );
     test('Referenced attribute slash separated key paths are returned as nested objects', async () => {
-      await db.none(`INSERT INTO resources."ResourceReferenceStringAttributes" 
-                ("accountSid", "resourceId", "key", "list", "referenceId") 
+      await db.none(`INSERT INTO resources."ResourceReferenceStringAttributes"
+                ("accountSid", "resourceId", "key", "list", "referenceId")
                 VALUES ('REFERENCES_TEST_ACCOUNT_0', 'RESOURCE_0', 'REFERENCE/KEY/6', 'LIST_6', 'REF_5_0')`);
       const response = await request
         .get(`/v0/accounts/REFERENCES_TEST_ACCOUNT_0/resources/resource/RESOURCE_0`)
@@ -758,17 +758,17 @@ describe('POST /searchByName', () => {
   describe('Found resource has referenced attributes', () => {
     beforeEach(async () => {
       await db.multi(`
-INSERT INTO resources."ResourceReferenceStringAttributeValues" 
-  (id, "accountSid", "list", "value", "language", "info") 
+INSERT INTO resources."ResourceReferenceStringAttributeValues"
+  (id, "accountSid", "list", "value", "language", "info")
   VALUES (
-      'REF_SEARCH_TEST_ATTRIBUTE', 
-      'ACCOUNT_1', 
+      'REF_SEARCH_TEST_ATTRIBUTE',
+      'ACCOUNT_1',
       'REFERENCE_LIST',
-      'REFERENCE_VALUE', 
-      'REFERENCE_LANGUAGE', 
+      'REFERENCE_VALUE',
+      'REFERENCE_LANGUAGE',
       '{ "property": "VALUE" }');
-INSERT INTO resources."ResourceReferenceStringAttributes" 
-  ("accountSid", "resourceId", "key", "list", "referenceId") 
+INSERT INTO resources."ResourceReferenceStringAttributes"
+  ("accountSid", "resourceId", "key", "list", "referenceId")
   VALUES ('ACCOUNT_1', 'RESOURCE_1', 'REFERENCE_KEY', 'REFERENCE_LIST', 'REF_SEARCH_TEST_ATTRIBUTE');
       `);
     });

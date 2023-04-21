@@ -19,7 +19,7 @@ import { SQS } from 'aws-sdk';
 
 import { ContactJobProcessorError } from '@tech-matters/hrm-job-errors';
 import { getSsmParameter } from '@tech-matters/hrm-ssm-cache';
-import { ContactJobAttemptResult } from '@tech-matters/hrm-types';
+import { ContactJobAttemptResult } from '@tech-matters/types';
 import { exportTranscript } from './exportTranscript';
 import { uploadTranscript } from './uploadTranscript';
 
@@ -29,7 +29,7 @@ import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
 import type {
   CompletedContactJobBody,
   PublishToContactJobsTopicParams,
-} from '@tech-matters/hrm-types';
+} from '@tech-matters/types';
 
 /**
  * This is based around latest SQS error handling that supports batchItemFailure responses.

@@ -14,15 +14,20 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { config } from './config';
+const accountSids = ['ACCOUNT_1', 'ACCOUNT_2'];
 
-type ConfigParams = {
-  configId?: string;
-  indexType: string;
+export const generateMockMessageBody = () => {
+  const accountSid = accountSids[Math.floor(Math.random() * accountSids.length)];
+  const resourceId = Math.floor(Math.random() * 1000);
+  return {
+    accountSid,
+    jobType: 'resources-search-index',
+    document: {
+      id: `RESOURCE_${resourceId}`,
+      name: `Resource ${resourceId}`,
+      attributes: [
+        { key: 'testAttribute', value: 'testValue', language: 'Klingon', info: { qa: 'pla' } },
+      ],
+    },
+  };
 };
-
-export const getConfig = async ({ configId = 'default', indexType }: ConfigParams) => {
-  return config[configId][indexType];
-};
-
-export default getConfig;

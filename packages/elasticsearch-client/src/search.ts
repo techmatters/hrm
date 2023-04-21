@@ -13,41 +13,83 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-
 import {
-  SearchParameters,
-  SearchQuery,
-  SearchQueryFilters,
-  SearchResults,
-} from '@tech-matters/types';
+  SearchRequest as ESSearchRequest,
+  SearchTotalHits as ESSearchTotalHits,
+} from '@elastic/elasticsearch/lib/api/types';
+import { PassThroughConfig } from './client';
 
-import { getClient } from './client';
-import getConfig from './get-config';
+export type SearchQueryFilters = Array<
+  | { terms: { [key: string]: string[] } }
+  | { term: { [key: string]: string | boolean | number | Date } }
+>;
 
-import getAccountSid from './get-account-sid';
+export type SearchQuery = ESSearchRequest;
 
-interface SearchTotalHits {
-  value: number;
-  relation: 'eq' | 'gte';
-}
+export type SearchExtraParams = {
+  searchParameters: SearchParameters;
+};
+
+export type SearchParams = PassThroughConfig & SearchExtraParams;
+
+export type SearchParameters = {
+  filters?: Record<string, boolean | number | string | string[]>;
+  q: string;
+  pagination?: {
+    limit: number;
+    start: number;
+  };
+};
+
+export type SearchResponseItem = {
+  id: string;
+  highlights: Record<string, string[]> | undefined;
+};
+
+export type SearchResponse = {
+  total: number;
+  items: SearchResponseItem[];
+};
+
+export type SearchGenerateElasticsearchQueryParams = {
+  index: string;
+  searchParameters: SearchParameters;
+  fields: string[];
+};
+
+type SearchTotalHits = ESSearchTotalHits;
 
 /**
  * f track_total_hits is false, Elasticsearch returns an approximate count of the total
  * hits as a number in the total field. If track_total_hits is true, Elasticsearch returns
  * an object of type SearchTotalHits that provides more accurate information about the total
  * hits.
+ *
+ * For now we flatten the object and return the value. In the future we may want to use the
+ * relation field to determine if we need to do a second search to get the exact count.
+ *
+ * @param total the total hits as returned by Elasticsearch
+ * @returns the total hits as a number
  */
-const getTotalValue = (total: number | SearchTotalHits | undefined): number => {
+export const getTotalValue = (total: number | SearchTotalHits | undefined): number => {
   if (typeof total === 'object') return total.value;
 
   return total || 0;
 };
 
-// TODO: this doesn't support range filters yet
+/**
+ * This function takes a SearchParameters.filters object and returns a SearchQueryFilters object
+ * that can be used in the Elasticsearch query.
+ *
+ * @param filters the filters object from the SearchParameters
+ * @returns the filters object to be used in the Elasticsearch query
+ */
 export const generateFilters = (filters: SearchParameters['filters']): SearchQueryFilters => {
+  // TODO: this doesn't support range filters yet
+  // TODO: should we validate request filters against the index config?
   const returnFilters: SearchQueryFilters = [];
 
-  if (!filters?.length) return returnFilters;
+  if (!filters || Object.keys(filters).length === 0) return returnFilters;
 
   Object.entries(filters).forEach(([key, value]) => {
     if (Array.isArray(value)) {
@@ -68,69 +110,69 @@ export const generateFilters = (filters: SearchParameters['filters']): SearchQue
   return returnFilters;
 };
 
-export const generateElasticsearchQuery = (
-  accountSid: string,
-  searchParameters: SearchParameters,
-  fields: string[],
-) => {
+/**
+ * This function takes a SearchParameters object and returns a SearchQuery object that can be
+ * used to query Elasticsearch.
+ *
+ * @param index the the index to search
+ * @param searchParameters the search parameters
+ * @param fields the fields to search
+ * @returns the SearchQuery object
+ */
+export const generateElasticsearchQuery = ({
+  index,
+  searchParameters,
+  fields,
+}: SearchGenerateElasticsearchQueryParams): SearchQuery => {
   const { q, filters, pagination } = searchParameters;
-  const { limit, start } = pagination;
 
   const query: SearchQuery = {
-    index: `${accountSid.toLowerCase()}-resources`,
-    body: {
-      query: {
-        bool: {
-          must: [
-            {
-              query_string: {
-                query: q,
-                fields,
-              },
+    index,
+    query: {
+      bool: {
+        must: [
+          {
+            query_string: {
+              query: q,
+              fields,
             },
-          ],
-        },
+          },
+        ],
       },
-      from: start,
-      size: limit,
     },
   };
 
+  if (pagination?.limit) {
+    query.size = pagination.limit;
+  }
+  if (pagination?.start) {
+    query.from = pagination.start;
+  }
+
   if (filters) {
-    query.body.query.bool.filter = generateFilters(filters);
+    query.query!.bool!.filter = generateFilters(filters);
   }
 
   return query;
 };
 
+/**
+ * This function takes a SearchParameters object and returns a SearchResponseSearchResponse object that contains
+ * the results of the search.
+ **/
 export const search = async ({
-  accountSid,
-  configId = 'default',
-  indexType,
-  shortCode,
+  client,
+  index,
+  indexConfig,
   searchParameters,
-}: {
-  accountSid?: string;
-  configId?: string;
-  indexType: string;
-  shortCode?: string;
-  searchParameters: SearchParameters;
-}): Promise<SearchResults> => {
-  if (!accountSid) {
-    accountSid = await getAccountSid(shortCode!);
-  }
-
-  const config = await getConfig({
-    configId,
-    indexType,
+}: SearchParams): Promise<SearchResponse> => {
+  const query = generateElasticsearchQuery({
+    index,
+    searchParameters,
+    fields: indexConfig.searchFields,
   });
 
-  const query = generateElasticsearchQuery(accountSid, searchParameters, config.searchFields);
-
-  const esClient = await getClient({ accountSid });
-
-  const { hits } = await esClient.search(query);
-
+  const { hits } = await client.search(query);
   const total = getTotalValue(hits.total);
 
   if (!total) return { total: 0, items: [] };
@@ -143,3 +185,5 @@ export const search = async ({
     })),
   };
 };
+
+export default search;

@@ -14,38 +14,17 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import getConfig from './get-config';
-import { getClient } from './client';
+/* eslint-disable no-new */
+import * as cdk from '@aws-cdk/core';
+import * as ssm from '@aws-cdk/aws-ssm';
 
-// TODO: handle document to body conversion based on a config file for this user/index
+export default class LocalCoreStack extends cdk.Stack {
+  constructor({ scope, id, props }: { scope: cdk.App; id: string; props?: cdk.StackProps }) {
+    super(scope, id, props);
 
-export const indexDocument = async ({
-  accountSid,
-  configId = 'default',
-  document,
-  id,
-  indexType,
-}: {
-  accountSid: string;
-  configId?: string;
-  document: any;
-  id: string;
-  indexType: string;
-}) => {
-  const client = await getClient({ accountSid });
-
-  const config = await getConfig({
-    configId,
-    indexType,
-  });
-
-  const index = `${accountSid.toLowerCase()}-${indexType}`;
-
-  const body = config.convertDocument(document);
-
-  return client.index({
-    index,
-    id,
-    body,
-  });
-};
+    new ssm.StringParameter(this, 'account_sid_as', {
+      parameterName: `/local/twilio/AS/account_sid`,
+      stringValue: process.env.TWILIO_ACCOUNT_SID || 'mockAccountSid',
+    });
+  }
+}

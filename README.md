@@ -42,9 +42,15 @@ There are several types of tests, (unit, service, e2e). These can be run using w
 
 The primary test paths all do setup and teardown of required resources. This can add time to the test cycle. There are `:run` sub-scripts for tests that require setup and teardown like service and e2e tests. If you already have a test db docker container running, you can run these using workspaces by running something like `npm run -w hrm-service test:service:run` from the root directory. You can also run the tests by navigating into the package directory and running `npm run test:service:run`.
 
+### Running the Entire Stack locally
+
+run `npm start` from the root directory to start the local data backends, hrm-service, and hrm-jobs packages.
+
 ### Running HRM service locally
 
 #### Starting HRM db
+
+TLDR: you can just run `npm run start:db` from the root directory to start a docker container with a postgres database for the HRM service to use.
 
 From the root directory run `npm run docker:compose:db:up`. This will start a docker container with a postgres database for the HRM service to use.
 
@@ -59,6 +65,12 @@ This can be handy for some use cases like deterministic testing, but would get a
 Run `npm run ssm:local` from the root directory to download required secrets for local development from AWS SSM Parameter Store.
 
 Run `npm run migrate` to run basic migrations against the database.
+
+#### Starting Elasticsearch.
+
+TLDR: you can just run `npm run start:es` from the root directory to start a docker container with an Elasticsearch database for the HRM service to use.
+
+From the root directory run `npm run docker:compose:es:up`. This will start a docker container with an Elasticsearch database for the HRM service to use. Then run `npm run es:create-index` to create the indices.
 
 #### Starting HRM service
 

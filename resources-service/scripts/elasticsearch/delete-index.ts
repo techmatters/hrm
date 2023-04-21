@@ -14,32 +14,8 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { getClient } from './client';
+import { getClient, IndexTypes } from '@tech-matters/elasticsearch-client';
 
-import getAccountSid from './get-account-sid';
+const shortCode = process.argv[2] || 'as';
 
-export const deleteIndex = async ({
-  accountSid,
-  indexType,
-  shortCode,
-}: {
-  accountSid?: string;
-  indexType: string;
-  shortCode?: string;
-}) => {
-  if (!accountSid) {
-    accountSid = await getAccountSid(shortCode!);
-  }
-
-  const client = await getClient({ accountSid });
-  const index = `${accountSid.toLowerCase()}-${indexType}`;
-
-  const indexExists = await client.indices.exists({ index });
-  if (!indexExists) {
-    return;
-  }
-
-  return client.indices.delete({ index });
-};
-
-export default deleteIndex;
+getClient({ shortCode, indexType: IndexTypes.RESOURCES }).then(client => client.deleteIndex());

@@ -14,29 +14,13 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { getClient } from './client';
+import * as esClient from './index';
 
-import getAccountSid from './get-account-sid';
+const exportedKeys = ['getClient', 'IndexTypes', 'ConfigIds'];
 
-export const refreshIndex = async ({
-  accountSid,
-  indexType,
-  shortCode,
-}: {
-  accountSid?: string;
-  configId?: string;
-  indexType: string;
-  shortCode?: string;
-}) => {
-  if (!accountSid) {
-    accountSid = await getAccountSid(shortCode!);
-  }
-
-  const client = await getClient({ accountSid });
-
-  const index = `${accountSid.toLowerCase()}-${indexType}`;
-
-  return client.indices.refresh({ index });
-};
-
-export default refreshIndex;
+describe('Elasticsearch Client', () => {
+  it('should return a client', () => {
+    expect(esClient).toBeDefined();
+    expect(Object.keys(esClient).length).toBe(exportedKeys.length);
+  });
+});
