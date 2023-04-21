@@ -23,7 +23,7 @@ import {
   createContactJob,
 } from '../../src/contact-job/contact-job-data-access';
 
-import { ContactJobType } from '@tech-matters/hrm-types';
+import { ContactJobType } from '@tech-matters/types';
 
 import { accountSid, contact1, workerSid } from '../mocks';
 import { headers, getRequest, getServer, useOpenRules } from '../server';

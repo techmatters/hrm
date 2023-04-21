@@ -14,19 +14,30 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { ContactJob } from '../../src/contact-job/contact-job-data-access';
-import { ContactJobType } from '@tech-matters/types';
+import { config } from './config';
 
-export const getContactJobMock = (overrides: Partial<ContactJob> = {}): ContactJob => ({
-  jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
-  jobId: 1,
-  accountSid: 'accountSid',
-  attemptNumber: 1,
-  contactId: 123,
-  taskId: 'taskId',
-  twilioWorkerId: 'twilioWorkerId',
-  serviceSid: 'serviceSid',
-  channelSid: 'channelSid',
-  filePath: 'filePath',
-  ...overrides,
-});
+export enum IndexTypes {
+  RESOURCES = 'resources',
+}
+
+export enum ConfigIds {
+  DEFAULT = 'default',
+}
+
+export type GetConfigParams = {
+  configId?: ConfigIds;
+  indexType: IndexTypes;
+};
+
+// We will likely add complexity to this in the future. I started out using dynamic
+// imports but lambdas really don't like those. So for now we just have a single
+// config file that we load and then we can use the configId/indexType to get the
+// config we need for each ES function wrapper.
+export const getIndexConfig = async ({
+  configId = ConfigIds.DEFAULT,
+  indexType,
+}: GetConfigParams) => {
+  return config[configId][indexType];
+};
+
+export default getIndexConfig;

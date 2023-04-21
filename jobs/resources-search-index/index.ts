@@ -13,38 +13,99 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-
 import { ResourcesJobProcessorError } from '@tech-matters/hrm-job-errors';
-import { indexDocument } from '@tech-matters/elasticsearch-client';
+import { getClient, IndexTypes, IndexDocumentBulkDocuments, IndexDocumentBulkResponse } from '@tech-matters/elasticsearch-client';
+import { ResourcesSearchIndexPayload  } from '@tech-matters/types';
 
 // eslint-disable-next-line prettier/prettier
 import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
 
+const indexType = IndexTypes.RESOURCES;
+
+export type DocumentsByAccountSid = Record<string, IndexDocumentBulkDocuments>;
+
+export const convertDocumentsToBulkRequest = (messages: ResourcesSearchIndexPayload[] ) => messages.reduce((acc, message) => {
+    const { accountSid, document } = message;
+    if (!acc[accountSid]) {
+      acc[accountSid] = [];
+    }
+    acc[accountSid].push({
+      id: document.id,
+      document,
+    });
+    return acc;
+  }, {} as DocumentsByAccountSid);
+
+export const handleErrors = async (indexResp: IndexDocumentBulkResponse, addDocumentIdToFailures: any) => {
+  await Promise.all(indexResp?.items.map((item) => {
+    if (item.index?.status !== 201) {
+      console.error(new ResourcesJobProcessorError('Error indexing document'), item.index);
+      addDocumentIdToFailures(item.index!._id!);
+    }
+  }));
+};
+
+export const indexDocumentsBulk = async (documentsByAccountSid: DocumentsByAccountSid, addDocumentIdToFailures: any) => {
+  await Promise.all(Object.keys(documentsByAccountSid).map(async (accountSid) => {
+    const documents = documentsByAccountSid[accountSid];
+    const client = await getClient({ accountSid, indexType });
+    try {
+      const indexResp = await client.indexDocumentBulk({ documents });
+      handleErrors(indexResp, addDocumentIdToFailures);
+    } catch (err) {
+      console.error(new ResourcesJobProcessorError('Error calling indexDocumentBulk'), err);
+      documents.forEach(({ id }) => {
+        addDocumentIdToFailures(id);
+      });
+    }
+  }));
+};
+
+export const mapMessages = (records: SQSRecord[], addDocumentIdToMessageId: any): ResourcesSearchIndexPayload[] =>
+  records.map((record: SQSRecord) => {
+    const { messageId, body } = record;
+    const message = JSON.parse(body) as ResourcesSearchIndexPayload;
+    addDocumentIdToMessageId(message.document.id, messageId);
+
+    return message;
+  });
+
 export const handler = async (event: SQSEvent): Promise<SQSBatchResponse> => {
   const response: SQSBatchResponse = { batchItemFailures: [] };
 
-  const processRecord = async (sqsRecord: SQSRecord) => {
-    const message = JSON.parse(sqsRecord.body);
+  // We need to keep track of the documentId to messageId mapping so we can
+  // return the correct messageId in the batchItemFailures array on error.
+  const documentIdToMessageId: Record<string, string> = {};
 
-    const { accountSid, document } = message;
-    try {
-      await indexDocument({
-        indexType: 'resources',
-        id: document.id,
-        document,
-        accountSid,
-      });
-    } catch (err) {
-      console.error(new ResourcesJobProcessorError('Failed to process record'), err);
-
-      response.batchItemFailures.push({
-        itemIdentifier: sqsRecord.messageId,
-      });
-    }
+  // Passthrough function to add the documentId to the messageId mapping.
+  const addDocumentIdToMessageId = (documentId: string, messageId: string) => {
+    documentIdToMessageId[documentId] = messageId;
   };
 
-  const promises = event.Records.map(async sqsRecord => processRecord(sqsRecord));
-  await Promise.all(promises);
+  // Passthrough function to add the documentId to the batchItemFailures array.
+  const addDocumentIdToFailures = (documentId: string) =>
+  response.batchItemFailures.push({
+      itemIdentifier: documentIdToMessageId[documentId],
+    });
+
+  try {
+    // Map the messages and add the documentId to messageId mapping.
+    const messages = mapMessages(event.Records, addDocumentIdToMessageId);
+
+    // Convert the messages to a bulk requests grouped by accountSid.
+    const documentsByAccountSid = convertDocumentsToBulkRequest(messages);
+
+    // Iterates over groups of documents and index them using an accountSid specific client
+    await indexDocumentsBulk(documentsByAccountSid, addDocumentIdToFailures);
+  } catch (err) {
+    console.error(new ResourcesJobProcessorError('Failed to process search index request'), err);
+
+    response.batchItemFailures = event.Records.map(record => {
+      return {
+        itemIdentifier: record.messageId,
+      };
+    });
+  }
 
   return response;
 };

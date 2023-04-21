@@ -22,6 +22,10 @@ import * as dotenv from 'dotenv';
 import ContactCompleteStack from './contact-complete-stack';
 import ContactCoreStack from './contact-core-stack';
 import ContactRetrieveStack from './contact-retrieve-stack';
+import LocalCoreStack from './local-core-stack';
+import ResourcesCoreStack from './resources-core-stack';
+import ResourcesSearchCompleteStack from './resources-search-complete-stack';
+import ResourcesSearchJobsStack from './resources-search-jobs-stack';
 
 dotenv.config({ path: './cdk/.env' });
 
@@ -42,6 +46,14 @@ dotenv.config({ path: './cdk/.env' });
  */
 
 const app = new cdk.App();
+
+new LocalCoreStack({
+  scope: app,
+  id: 'local-core',
+  props: {
+    env: { region: app.node.tryGetContext('region') },
+  },
+});
 
 const contactCore = new ContactCoreStack({
   scope: app,
@@ -80,6 +92,36 @@ new ContactRetrieveStack({
   params: {
     completeQueue: contactComplete.completeQueue,
     docsBucket: contactCore.docsBucket,
+  },
+  props: {
+    env: { region: app.node.tryGetContext('region') },
+  },
+});
+
+new ResourcesCoreStack({
+  scope: app,
+  id: 'resources-core',
+  props: {
+    env: { region: app.node.tryGetContext('region') },
+  },
+});
+
+const resourcesSearchIndexComplete = new ResourcesSearchCompleteStack({
+  scope: app,
+  id: 'resources-search-complete',
+  params: {
+    skipLambda: false,
+  },
+  props: {
+    env: { region: app.node.tryGetContext('region') },
+  },
+});
+
+new ResourcesSearchJobsStack({
+  scope: app,
+  id: 'resources-search-index',
+  params: {
+    completeQueue: resourcesSearchIndexComplete.completeQueue,
   },
   props: {
     env: { region: app.node.tryGetContext('region') },

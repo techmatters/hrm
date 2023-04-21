@@ -13,5 +13,22 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
+import { IndicesDeleteResponse } from '@elastic/elasticsearch/lib/api/types';
+import { PassThroughConfig } from './client';
 
-export const searchFields = ['text1*^3', 'text2.*^2'];
+export type DeleteIndexParams = PassThroughConfig;
+export type DeleteIndexResponse = IndicesDeleteResponse | void;
+
+export const deleteIndex = async ({
+  client,
+  index,
+}: DeleteIndexParams): Promise<DeleteIndexResponse> => {
+  const indexExists = await client.indices.exists({ index });
+  if (!indexExists) {
+    return;
+  }
+
+  return client.indices.delete({ index });
+};
+
+export default deleteIndex;

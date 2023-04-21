@@ -13,33 +13,31 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
+import { IndexResponse } from '@elastic/elasticsearch/lib/api/types';
+import { PassThroughConfig } from './client';
 
-import { getClient } from './client';
-
-import getAccountSid from './get-account-sid';
-
-export const deleteIndex = async ({
-  accountSid,
-  indexType,
-  shortCode,
-}: {
-  accountSid?: string;
-  indexType: string;
-  shortCode?: string;
-}) => {
-  if (!accountSid) {
-    accountSid = await getAccountSid(shortCode!);
-  }
-
-  const client = await getClient({ accountSid });
-  const index = `${accountSid.toLowerCase()}-${indexType}`;
-
-  const indexExists = await client.indices.exists({ index });
-  if (!indexExists) {
-    return;
-  }
-
-  return client.indices.delete({ index });
+export type IndexDocumentExtraParams = {
+  id: string;
+  document: any;
 };
 
-export default deleteIndex;
+export type IndexDocumentParams = PassThroughConfig & IndexDocumentExtraParams;
+export type IndexDocumentResponse = IndexResponse;
+
+export const indexDocument = async ({
+  client,
+  document,
+  id,
+  index,
+  indexConfig,
+}: IndexDocumentParams): Promise<IndexDocumentResponse> => {
+  const convertedDocument = indexConfig.convertIndexDocument(document);
+
+  return client.index({
+    index,
+    id,
+    document: convertedDocument,
+  });
+};
+
+export default indexDocument;
