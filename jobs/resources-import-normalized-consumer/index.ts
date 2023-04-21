@@ -43,7 +43,7 @@ const postNormalizedResourcesBody = async (accountSid: string, apiKey: string, m
     return response;
 };
 
-const processRecord = async (message: ImportRequestBody): Promise<void> => {
+const upsertRecord = async (message: ImportRequestBody): Promise<void> => {
   const { accountSid } = message;
   // TODO: actually use this to make the API call (they need to be created in SSM)
   // const apiKey = await getSsmParameter(`/${hrmEnv}/twilio/${message.accountSid}/hrm_static_api_key`);
@@ -67,11 +67,11 @@ type ProcessedResult = {
   reason: Error;
 };
 
-export const processRecordWithoutException = async (sqsRecord: SQSRecord): Promise<ProcessedResult> => {
+export const upsertRecordWithoutException = async (sqsRecord: SQSRecord): Promise<ProcessedResult> => {
   const message = JSON.parse(sqsRecord.body);
 
   try {
-    await processRecord(message);
+    await upsertRecord(message);
     
     return {
       status: 'successs',
@@ -114,17 +114,13 @@ export const handler = async (event: SQSEvent): Promise<SQSBatchResponse> => {
 
     // This assumes messages are posted in the correct order by the producer
     // Syncronously wait for each message to be processed since order matters here
-    await event.Records.reduce(async (prevPromise, sqsRecord) => {
-      await prevPromise;
-
-      const processed = await processRecordWithoutException(sqsRecord);
+    for (const sqsRecord of event.Records) {
+      const processed = await upsertRecordWithoutException(sqsRecord);
 
       if (processed.status === 'failure') {
         batchItemFailuresSet.add(processed.messageId);
       }
-
-      return Promise.resolve();
-    }, Promise.resolve());
+    }
   } catch (err) {
     // SSM failures and other major setup exceptions will cause a failure of all messages sending them to DLQ
     // which should be the same as the completed queue right now.
