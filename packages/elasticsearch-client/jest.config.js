@@ -17,14 +17,14 @@
 module.exports = config => {
   return (
     config || {
-      transform: {
-        '^.+\\.tsx?$': ['@swc/jest'],
-      },
+      preset: 'ts-jest',
       rootDir: './',
-      maxWorkers: 3,
+      maxWorkers: 1,
       globals: {
-        // to give support to const enum. Not working, conflicting with module resolution
-        useExperimentalLanguageServer: true,
+        'ts-jest': {
+          // to give support to const enum. Not working, conflicting with module resolution
+          useExperimentalLanguageServer: true,
+        },
       },
     }
   );

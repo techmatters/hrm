@@ -22,8 +22,9 @@
  * the full interface internally and to export all types.
  **/
 export * from './src/client';
-export * from './src/create-index';
-export * from './src/delete-index';
-export * from './src/get-index-config';
-export * from './src/index-document';
+export * from './src/createIndex';
+export * from './src/deleteIndex';
+export * from './src/getIndexConfig';
+export * from './src/indexDocument';
+export * from './src/indexDocumentBulk';
 export * from './src/search';

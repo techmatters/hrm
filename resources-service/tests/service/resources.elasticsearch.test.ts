@@ -51,9 +51,11 @@ afterAll(async () => {
       DELETE FROM resources."ResourceReferenceStringAttributeValues";
       DELETE FROM resources."Resources";
    `);
-  accountSids.forEach(async accountSid => {
-    await clients[accountSid].deleteIndex();
-  });
+  await Promise.all(
+    accountSids.map(async accountSid => {
+      await clients[accountSid].deleteIndex();
+    }),
+  );
 });
 
 const range = (elements: number | string): string[] =>
@@ -324,7 +326,6 @@ describe('GET /search-es', () => {
           q,
         });
 
-      console.dir(response.body);
       expect(response.status).toBe(200);
       expect(response.body.totalCount).toBe(expectedTotalCount);
       expect(response.body.results).toHaveLength(expectedResults.length);

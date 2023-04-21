@@ -15,7 +15,7 @@
  */
 
 import { getClient, IndexTypes } from '../../src';
-import { Client } from '../../';
+import { Client } from '../..';
 import { resourceDocuments } from '../fixtures/resources';
 
 const accountSid = 'service-test-index-document';
@@ -38,19 +38,27 @@ beforeAll(async () => {
   await client.createIndex({});
 });
 
-describe('Index Document', () => {
-  test('should index a document and refresh automatically every second', async () => {
-    const document = resourceDocuments[0];
+describe('Index Documents Bulk', () => {
+  test('when passed a list of documents, should index all documents', async () => {
+    const documents = resourceDocuments.map(doc => ({
+      id: doc.id,
+      document: doc,
+    }));
 
-    await client.indexDocument({ id: document.id, document });
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await client.indexDocumentBulk({ documents });
+    await client.refreshIndex();
     const response = await client.search({
       searchParameters: {
-        q: `"${document.name}"`,
+        q: `*`,
       },
     });
 
-    expect(response.total).toBe(1);
-    expect(response.items[0].id).toBe(document.id);
+    expect(response.total).toBe(documents.length);
+    documents.forEach(doc => {
+      expect(response.items).toContainEqual({
+        id: doc.id,
+        hits: undefined,
+      });
+    });
   });
 });
