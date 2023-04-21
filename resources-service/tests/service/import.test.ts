@@ -19,8 +19,7 @@ import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/
 import { db } from '../../src/connection-pool';
 import range from './range';
 import { parseISO, addHours, subHours, addSeconds, subSeconds } from 'date-fns';
-import { ImportRequestBody } from '../../src/import/importRoutesV0';
-import { ImportApiResource, ImportProgress } from '../../src/import/importTypes';
+import { ImportApiResource, ImportProgress, ImportRequestBody } from '@tech-matters/hrm-types';
 import { internalHeaders } from './server';
 import each from 'jest-each';
 import { ReferrableResource } from '../../src/resource/resource-model';
@@ -294,6 +293,7 @@ describe('POST /import', () => {
     const requestBody: ImportRequestBody = {
       importedResources: [generateImportResource('100', baselineDate)],
       batch: newDefaultTestBatch(),
+      accountSid,
     };
     internalRequest
       .post(route)
@@ -305,6 +305,7 @@ describe('POST /import', () => {
     const requestBody: ImportRequestBody = {
       importedResources: [generateImportResource('100', baselineDate)],
       batch: newDefaultTestBatch(),
+      accountSid,
     };
     internalRequest
       .post(route)
@@ -317,6 +318,7 @@ describe('POST /import', () => {
     const requestBody: ImportRequestBody = {
       importedResources: [generateImportResource('100', baselineDate)],
       batch: newDefaultTestBatch(),
+      accountSid,
     };
     internalRequest
       .post(route)
@@ -339,6 +341,7 @@ describe('POST /import', () => {
       requestBody: {
         importedResources: [],
         batch: newDefaultTestBatch(),
+        accountSid,
       },
       expectedResponse: [],
       expectedResourceUpdates: {},
@@ -349,6 +352,7 @@ describe('POST /import', () => {
       requestBody: {
         importedResources: [generateImportResource('100', addSeconds(baselineDate, 30))],
         batch: newDefaultTestBatch(),
+        accountSid,
       },
       expectedResponse: [
         {
@@ -374,6 +378,7 @@ describe('POST /import', () => {
           generateImportResource('101', addSeconds(baselineDate, 45)),
         ],
         batch: newDefaultTestBatch(),
+        accountSid,
       },
       expectedResponse: [
         {
@@ -401,6 +406,7 @@ describe('POST /import', () => {
       requestBody: {
         importedResources: [generateImportResource('3', addSeconds(baselineDate, 40))],
         batch: newDefaultTestBatch(),
+        accountSid,
       },
       expectedResponse: [
         {
@@ -426,6 +432,7 @@ describe('POST /import', () => {
           generateImportResource('100', addSeconds(baselineDate, 50)),
         ],
         batch: newDefaultTestBatch(),
+        accountSid,
       },
       expectedResponse: [
         {
@@ -456,6 +463,7 @@ describe('POST /import', () => {
           generateImportResource('101', addSeconds(baselineDate, 15)),
         ],
         batch: newDefaultTestBatch(),
+        accountSid,
       },
       expectedResponse: [
         {
@@ -500,6 +508,7 @@ describe('POST /import', () => {
           }),
         ],
         batch: newDefaultTestBatch(),
+        accountSid,
       },
       expectedResponse: [
         {
@@ -572,6 +581,7 @@ describe('POST /import', () => {
         generateImportResource('4', addSeconds(baselineDate, 15)),
       ],
       batch: newDefaultTestBatch(),
+      accountSid,
     };
     const response = await internalRequest
       .post(route)
