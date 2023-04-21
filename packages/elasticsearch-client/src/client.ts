@@ -20,12 +20,12 @@ import {
   indexDocumentBulk,
   IndexDocumentBulkExtraParams,
   IndexDocumentBulkResponse,
-} from './index-document-bulk';
-import { createIndex, CreateIndexExtraParams, CreateIndexResponse } from './create-index';
-import { deleteIndex, DeleteIndexResponse } from './delete-index';
-import { indexDocument, IndexDocumentExtraParams, IndexDocumentResponse } from './index-document';
-import getAccountSid from './get-account-sid';
-import { getIndexConfig, ConfigIds, IndexTypes } from './get-index-config';
+} from './indexDocumentBulk';
+import { createIndex, CreateIndexExtraParams, CreateIndexResponse } from './createIndex';
+import { deleteIndex, DeleteIndexResponse } from './deleteIndex';
+import { indexDocument, IndexDocumentExtraParams, IndexDocumentResponse } from './indexDocument';
+import getAccountSid from './getAccountSid';
+import { getIndexConfig, ConfigIds, IndexTypes } from './getIndexConfig';
 import { search, SearchExtraParams, SearchResponse } from './search';
 
 // import { getMockClient } from './mockClient';
