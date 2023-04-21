@@ -66,11 +66,6 @@ describe('Test Bearer token', () => {
       }),
     },
     {
-      description: 'authorization header is missing',
-      shouldAuthorize: false,
-      validatorImplementation: async () => {}, // won't reach even this
-    },
-    {
       description: 'missing credentials (no authToken for given accountSid)',
       shouldAuthorize: false,
       validatorImplementation: async () => {}, // won't reach even this
@@ -120,4 +115,30 @@ describe('Test Bearer token', () => {
       }
     },
   );
+
+  test('Should reject when there is no authorization header', async () => {
+    const authorizationMiddleware = getAuthorizationMiddleware();
+
+    const nextFn = jest.fn();
+
+    const mockedReq: any = {
+      headers: {},
+      accountSid: `MOCKED_ACCOUNT`,
+    };
+
+    const mockedRes: any = {
+      _status: undefined,
+    };
+    mockedRes.status = (statusCode: number) => {
+      mockedRes._status = statusCode;
+      return mockedRes;
+    };
+    mockedRes.json = jest.fn();
+
+    const result = await authorizationMiddleware(mockedReq, mockedRes, nextFn);
+
+    expect(nextFn).not.toHaveBeenCalled();
+    expect(unauthorized).toHaveBeenCalled();
+    expect(result).toMatchObject(unauthorized(mockedRes));
+  });
 });
