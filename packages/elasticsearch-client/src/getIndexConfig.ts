@@ -14,5 +14,30 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-// List of searchable fields used to build the ES search query.
-export const searchFields = ['name.*^4', 'text1.*^3', 'text2.*^2'];
+import { config } from './config';
+
+export enum IndexTypes {
+  RESOURCES = 'resources',
+}
+
+export enum ConfigIds {
+  DEFAULT = 'default',
+}
+
+export type GetConfigParams = {
+  configId?: ConfigIds;
+  indexType: IndexTypes;
+};
+
+// We will likely add complexity to this in the future. I started out using dynamic
+// imports but lambdas really don't like those. So for now we just have a single
+// config file that we load and then we can use the configId/indexType to get the
+// config we need for each ES function wrapper.
+export const getIndexConfig = async ({
+  configId = ConfigIds.DEFAULT,
+  indexType,
+}: GetConfigParams) => {
+  return config[configId][indexType];
+};
+
+export default getIndexConfig;

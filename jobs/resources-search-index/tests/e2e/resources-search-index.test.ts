@@ -16,19 +16,11 @@
 
 import { SQS } from 'aws-sdk';
 
-import {
-  createIndex,
-  deleteIndex,
-  getClient,
-  refreshIndex,
-  search,
-} from '@tech-matters/elasticsearch-client';
-
-import { SearchResults } from '@tech-matters/types';
+import { Client, IndexTypes, getClient, SearchResponse } from '@tech-matters/elasticsearch-client';
 
 import { generateMockMessageBody } from '../generateMockMessageBody';
 import { getStackOutput } from '../../../../cdk/cdkOutput';
-import { sendMessage } from '../../../tests/sendMessage';
+import { sendMessage, sendMessageBatch } from '../../../tests/sendMessage';
 
 /**
  * TODO: This is a super dirty proof of concept for e2e tests.
@@ -39,7 +31,8 @@ jest.setTimeout(60000);
 
 const localstackEndpoint = 'http://localhost:4566';
 const accountSids = ['ACCOUNT_1', 'ACCOUNT_2'];
-const indexType = 'resources';
+const indexType = IndexTypes.RESOURCES;
+
 const lambdaName = 'resources-search-index';
 const completeOutput: any = getStackOutput('resources-search-complete');
 const { errorQueueUrl } = completeOutput;
@@ -48,23 +41,28 @@ const sqs = new SQS({
   endpoint: localstackEndpoint,
 });
 
-export const waitForSearchResults = async ({
+export const waitForSearchResponse = async ({
+  client,
   message,
+  expectEmpty = false,
   retryCount = 0,
+  retryLimit = 60,
 }: {
+  client: Awaited<ReturnType<typeof getClient>>;
   message: ReturnType<typeof generateMockMessageBody>;
+  expectEmpty?: boolean;
   retryCount?: number;
-}): Promise<SearchResults | undefined> => {
-  await refreshIndex({
-    accountSid: message.accountSid,
-    indexType,
-  });
+  retryLimit?: number;
+}): Promise<SearchResponse | undefined> => {
+  if (expectEmpty) {
+    // This is a hack to wait for the job... There isn't a great way to do this.
+    await new Promise(resolve => setTimeout(resolve, 3000));
+  }
+  await client.refreshIndex();
 
-  const result = await search({
-    accountSid: message.accountSid,
-    indexType,
+  const result = await client.search({
     searchParameters: {
-      q: message.document.attributes[0].value,
+      q: `"${message.document.name}"`,
       pagination: {
         limit: 10,
         start: 0,
@@ -72,9 +70,14 @@ export const waitForSearchResults = async ({
     },
   });
 
-  if (result.total === 0 && retryCount < 60) {
+  if (expectEmpty) {
+    expect(result.total).toBe(0);
+    return;
+  }
+
+  if (result.total === 0 && retryCount < retryLimit) {
     await new Promise(resolve => setTimeout(resolve, 250));
-    return waitForSearchResults({ message, retryCount: retryCount + 1 });
+    return waitForSearchResponse({ client, message, retryLimit, retryCount: retryCount + 1 });
   }
 
   return result;
@@ -92,7 +95,7 @@ export const waitForSQSMessage = async ({
     if (!result?.Messages) throw new Error('No messages');
   } catch (err) {
     if (retryCount < 200) {
-      await new Promise(resolve => setTimeout(resolve, 250));
+      await new Promise(resolve => setTimeout(resolve, 500));
       return waitForSQSMessage({ retryCount: retryCount + 1 });
     }
   }
@@ -101,23 +104,23 @@ export const waitForSQSMessage = async ({
 };
 
 describe('resources-search-index', () => {
+  const clients: Record<string, Client> = {};
   beforeEach(async () => {
     await sqs.purgeQueue({ QueueUrl: errorQueueUrl }).promise();
     await Promise.all(
       accountSids.map(async accountSid => {
-        // This is a bit of a hack to get the client to connect to the localstack instance on localhost
-        // instead of using the localstack ssm parameter which points to the internal docker network
-        // address of the elasticsearch container: http://elasticsearch:9200
-        await getClient({
+        const client = await getClient({
           accountSid: accountSid,
+          indexType,
           config: {
             node: 'http://localhost:9200',
           },
         });
-        await createIndex({
-          accountSid,
-          indexType,
-        });
+        clients[accountSid] = client;
+        // This is a bit of a hack to get the client to connect to the localstack instance on localhost
+        // instead of using the localstack ssm parameter which points to the internal docker network
+        // address of the elasticsearch container: http://elasticsearch:9200
+        await client.createIndex({});
       }),
     );
   });
@@ -125,22 +128,26 @@ describe('resources-search-index', () => {
   afterEach(async () => {
     await Promise.all(
       accountSids.map(async accountSid => {
-        await deleteIndex({
-          accountSid,
-          indexType,
-        });
+        await clients[accountSid].deleteIndex();
       }),
     );
 
     await sqs.purgeQueue({ QueueUrl: errorQueueUrl }).promise();
   });
 
-  test('well formed message results in indexed document', async () => {
+  test('well formed single message results in indexed document', async () => {
     const message = generateMockMessageBody();
-    const sqsResp = await sendMessage({ message, lambdaName });
+    const sqsResp = await sendMessage({
+      // messageGroupId: message.document.id,
+      message,
+      lambdaName,
+    });
     expect(sqsResp).toHaveProperty('MessageId');
 
-    const searchResult = await waitForSearchResults({ message });
+    const searchResult = await waitForSearchResponse({
+      client: clients[message.accountSid],
+      message,
+    });
     expect(searchResult).toHaveProperty('total');
     expect(searchResult).toHaveProperty('items');
     expect(searchResult?.total).toEqual(1);
@@ -149,9 +156,101 @@ describe('resources-search-index', () => {
     expect(searchResult?.items[0].id).toEqual(message.document.id);
   });
 
+  test('well formed bulk messages results in bulk indexed document', async () => {
+    const messages = [...Array(5)].map(() => generateMockMessageBody());
+
+    const sqsResp = await sendMessageBatch({
+      // groupIdProperty: 'document',
+      // groupIdField: 'id',
+      messages,
+      lambdaName,
+    });
+    expect(sqsResp).toHaveProperty('ResponseMetadata');
+
+    await Promise.all(
+      messages.map(async message => {
+        const searchResult = await waitForSearchResponse({
+          client: clients[message.accountSid],
+          message,
+          retryLimit: 10,
+        });
+        expect(searchResult).toHaveProperty('total');
+        expect(searchResult).toHaveProperty('items');
+        expect(searchResult?.total).toEqual(1);
+        expect(searchResult?.items).toHaveLength(1);
+        expect(searchResult?.items[0]).toHaveProperty('id');
+        expect(searchResult?.items[0].id).toEqual(message.document.id);
+      }),
+    );
+  });
+
+  // Localstack fifo queues don't really work so don't bother with this for now
+  // see https://github.com/localstack/localstack/issues/6766
+  // test('well formed bulk messages with single document update results in index of final document', async () => {
+  //   const baseMessage = generateMockMessageBody();
+  //   const messages = [...Array(5)].map(idx => ({
+  //     ...baseMessage,
+  //     document: { ...baseMessage.document, name: `${baseMessage.document.name} ${idx}` },
+  //   }));
+
+  //   const sqsResp = await sendMessageBatch({
+  //     groupIdProperty: 'document',
+  //     groupIdField: 'id',
+  //     messages,
+  //     lambdaName,
+  //   });
+  //   expect(sqsResp).toHaveProperty('ResponseMetadata');
+
+  //   for (const [idx, message] of messages.entries()) {
+  //     const isFinal = idx === messages.length - 1;
+  //     const searchResult = await waitForSearchResponse({
+  //       client: clients[message.accountSid],
+  //       message,
+  //       retryLimit: 10,
+  //       expectEmpty: !isFinal,
+  //     });
+  //     expect(searchResult).toHaveProperty('total');
+  //     expect(searchResult).toHaveProperty('items');
+
+  //     if (!isFinal) return;
+
+  //     expect(searchResult?.total).toEqual(1);
+  //     expect(searchResult?.items).toHaveLength(1);
+  //     expect(searchResult?.items[0]).toHaveProperty('id');
+  //     expect(searchResult?.items[0].id).toEqual(message.document.id);
+  //   }
+  // });
+
   test('message with bad accountSid produces failure message in complete queue', async () => {
     const message = { ...generateMockMessageBody(), accountSid: 'badSid' };
-    const sqsResp = await sendMessage({ message, lambdaName });
+    const sqsResp = await sendMessage({
+      // messageGroupId: message.document.id,
+      message,
+      lambdaName,
+    });
+    expect(sqsResp).toHaveProperty('MessageId');
+
+    // For now the localstack SNS topic sends the message to an error queue
+    // instead of email so we can test it here.
+    const sqsResult = await waitForSQSMessage();
+
+    expect(sqsResult).toBeDefined();
+    expect(sqsResult).toHaveProperty('Messages');
+    expect(sqsResult?.Messages).toHaveLength(1);
+
+    const sqsMessage = sqsResult?.Messages?.[0];
+    const body = JSON.parse(sqsMessage?.Body || '');
+    const errorMessage = JSON.parse(body?.Message || '');
+    expect(errorMessage).toMatchObject(message);
+  });
+
+  test('message with malformed document produces failure message in complete queue', async () => {
+    const message = { hi: 'i am a bad message' };
+    const sqsResp = await sendMessage({
+      // messageGroupId: 'doesNotMatter',
+      message,
+      lambdaName,
+    });
     expect(sqsResp).toHaveProperty('MessageId');
 
     // For now the localstack SNS topic sends the message to an error queue

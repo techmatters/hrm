@@ -34,7 +34,14 @@ export const getSqsClient = () => {
 
 const getJobQueueUrl = (accountSid: string, jobType: string) => `/${process.env.NODE_ENV}/resources/${accountSid}/queue-url-${jobType}`;
 
-export const publishToResourcesJob = async (params: ResourcesSearchIndexPayload, retryCount: number = 0): Promise<void> => {
+export type PublishToResourcesJobParams = {
+  params: ResourcesSearchIndexPayload;
+  retryCount?: number;
+  messageGroupId?: string;
+};
+
+
+export const publishToResourcesJob = async ({ params, retryCount = 0, messageGroupId }: PublishToResourcesJobParams): Promise<void> => {
   //TODO: more robust error handling/messaging
   try {
     const QueueUrl = await getSsmParameter(
@@ -42,17 +49,23 @@ export const publishToResourcesJob = async (params: ResourcesSearchIndexPayload,
       86400000,
     );
 
+    const message: SQS.Types.SendMessageRequest = {
+      MessageBody: JSON.stringify(params),
+      QueueUrl,
+    };
+
+    if (messageGroupId) {
+      message.MessageGroupId = messageGroupId;
+    }
+
     await getSqsClient()
-      .sendMessage({
-        MessageBody: JSON.stringify(params),
-        QueueUrl,
-      })
+      .sendMessage(message)
       .promise();
   } catch (err) {
     if (retryCount < RETRY_COUNT) {
       console.error('Failed to publish to resources job. Retrying...', err);
       await new Promise((resolve) => setTimeout(resolve, 250));
-      return publishToResourcesJob(params, retryCount + 1);
+      return publishToResourcesJob({ params, retryCount: retryCount + 1, messageGroupId });
     }
 
     console.error('Failed to publish to resources job. Giving up.', err);
@@ -66,8 +79,11 @@ export const publishToResourcesJob = async (params: ResourcesSearchIndexPayload,
 
 export const publishSearchIndexJob = (accountSid: string, resource: ReferrableResource) => {
   return publishToResourcesJob({
+    params: {
       accountSid,
       jobType: ResourcesJobType.SEARCH_INDEX,
       document: resource,
+    },
+    messageGroupId: `${accountSid}:${resource.id}`,
   });
 };

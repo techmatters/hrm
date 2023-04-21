@@ -14,8 +14,8 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { deleteIndex } from '@tech-matters/elasticsearch-client';
+import { getClient, IndexTypes } from '@tech-matters/elasticsearch-client';
 
 const shortCode = process.argv[2] || 'as';
 
-deleteIndex({ shortCode, indexType: 'resources' });
+getClient({ shortCode, indexType: IndexTypes.RESOURCES }).then(client => client.deleteIndex());

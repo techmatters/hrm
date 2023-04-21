@@ -16,4 +16,3 @@
 
 export * from './ContactJob';
 export * from './Resources';
-export * from './Search';

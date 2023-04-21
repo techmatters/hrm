@@ -20,9 +20,42 @@ import { getStackOutput } from '../../cdk/cdkOutput';
 export const sendMessage = async ({
   lambdaName,
   message,
+  messageGroupId,
 }: {
   lambdaName: string;
   message: object;
+  messageGroupId?: string;
+}) => {
+  const sqs = new SQS({
+    endpoint: 'http://localstack:4566',
+    region: 'us-east-1',
+  });
+
+  const lambdaOutput: any = getStackOutput(lambdaName);
+  const params: SQS.Types.SendMessageRequest = {
+    MessageBody: JSON.stringify(message),
+    QueueUrl: lambdaOutput.queueUrl,
+  };
+
+  // Localstack fifo queues don't really work so don't bother with this for now
+  // see https://github.com/localstack/localstack/issues/6766
+  if (messageGroupId) {
+    params.MessageGroupId = messageGroupId;
+  }
+
+  return sqs.sendMessage(params).promise();
+};
+
+export const sendMessageBatch = async ({
+  lambdaName,
+  messages,
+  groupIdProperty,
+  groupIdField,
+}: {
+  lambdaName: string;
+  messages: object[];
+  groupIdProperty?: string;
+  groupIdField?: string;
 }) => {
   const sqs = new SQS({
     endpoint: 'http://localstack:4566',
@@ -31,8 +64,22 @@ export const sendMessage = async ({
 
   const lambdaOutput: any = getStackOutput(lambdaName);
   const params = {
-    MessageBody: JSON.stringify(message),
     QueueUrl: lambdaOutput.queueUrl,
+    Entries: messages.map((message: Record<string, any>, index) => {
+      const param: SQS.Types.SendMessageBatchRequestEntry = {
+        Id: index.toString(), // TODO: may neet to be uuid at some point
+        MessageBody: JSON.stringify(message),
+      };
+
+      // Localstack fifo queues don't really work so don't bother with this for now
+      // see https://github.com/localstack/localstack/issues/6766
+      if (groupIdProperty && groupIdField) {
+        param.MessageGroupId = message[groupIdProperty][groupIdField];
+      }
+
+      return param;
+    }),
   };
-  return sqs.sendMessage(params).promise();
+
+  return sqs.sendMessageBatch(params).promise();
 };

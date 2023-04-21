@@ -3,6 +3,7 @@
   "include": ["src/**/*.ts"],
   "compilerOptions": {
     "outDir": "./dist",
-    "allowJs": true
+    "allowJs": true,
+    "skipLibCheck": true
   }
 }

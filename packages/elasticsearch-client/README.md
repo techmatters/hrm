@@ -4,7 +4,7 @@ This package provides a client for the Elasticsearch REST API and abstracts away
 
 ## Configuration
 
-There is currently only one index/user combonation, but there will be more in the fututre. The configuration is stored in the `config` directory and is loaded by the `getConfig()` function in `src/get-config.js`.
+There is currently only one index/user combonation, but there will be more in the fututre. The configuration is stored in the `config` directory and is loaded by the `getIndexConfig()` function in `src/get-config.js`.
 
 There are currently 3 types of configuration for any given index/user combination:
 
