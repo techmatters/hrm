@@ -16,122 +16,35 @@
 
 import each from 'jest-each';
 import { orderBy } from 'lodash';
-import { ReferrableResource, SearchParameters, SearchResults } from '@tech-matters/types';
 
-import {
-  createIndex,
-  deleteIndex,
-  indexDocument,
-  refreshIndex,
-  getClient,
-  search,
-} from '../../../src';
+import { getClient, IndexTypes } from '../../../src';
+import { SearchParameters, SearchResponse, Client } from '../../../';
+import { resourceDocuments } from '../../fixtures/resources';
 
 const accountSid = 'test-account-sid';
-const indexType = 'resources';
-
-const documents: ReferrableResource[] = [
-  {
-    name: 'Employment Assistance Agency',
-    id: 'employment-toronto',
-    attributes: {
-      title: [
-        { value: 'This is the english title', language: 'en', info: 'info about the title' },
-        { value: 'This is the french title', language: 'fr' },
-      ],
-      description: [
-        {
-          value: 'Employment Assistance description',
-          language: 'en',
-        },
-        {
-          value: `Description de l'aide à l'emploi`,
-          language: 'fr',
-        },
-      ],
-      eligibilityMinAge: [{ value: 10 }],
-      eligibilityMaxAge: [{ value: 20 }],
-      feeStructure: [{ value: 'free' }],
-      keywords: [{ value: 'keyword1' }, { value: 'keyword2' }],
-      province: [{ value: 'ON' }],
-      city: [{ value: 'Toronto' }],
-    },
-  },
-
-  {
-    name: 'Child/Youth/Family Counselling at counselling Family Services',
-    id: 'counselling-london',
-    attributes: {
-      title: [
-        { value: 'This is the english title', language: 'en', info: 'info about the title' },
-        { value: 'This is the french title', language: 'fr' },
-      ],
-      description: [
-        {
-          value: 'Child/Youth/Family Counselling Services description',
-          language: 'en',
-        },
-        {
-          value: `Counseling pour enfants/jeunes/familles Services description`,
-          language: 'fr',
-        },
-      ],
-      eligibilityMinAge: [{ value: 3 }],
-      eligibilityMaxAge: [{ value: 5 }],
-      feeStructure: [{ value: 'free' }],
-      keywords: [{ value: 'keyword1' }, { value: 'keyword2' }, { value: 'keyword3' }],
-      province: [{ value: 'ON' }],
-      city: [{ value: 'London' }],
-    },
-  },
-
-  {
-    name: 'Child/Youth at counselling Family Services',
-    id: 'counselling-toronto',
-    attributes: {
-      title: [
-        { value: 'This is the english title', language: 'en', info: 'info about the title' },
-        { value: 'This is the french title', language: 'fr' },
-      ],
-      description: [
-        {
-          value: 'Child/Youth Counselling at counselling Family Services description',
-          language: 'en',
-        },
-        {
-          value: `Counseling pour enfants/jeunes à counselling Family Services description`,
-          language: 'fr',
-        },
-      ],
-      eligibilityMinAge: [{ value: 3 }],
-      eligibilityMaxAge: [{ value: 5 }],
-      feeStructure: [{ value: 'free' }],
-      keywords: [{ value: 'keyword1' }, { value: 'keyword2' }, { value: 'keyword3' }],
-      province: [{ value: 'ON' }],
-      city: [{ value: 'Toronto' }],
-    },
-  },
-];
+const indexType = IndexTypes.RESOURCES;
+let client: Client;
 
 afterAll(async () => {
-  await deleteIndex({ accountSid, indexType });
+  await client.deleteIndex();
 });
 
 beforeAll(async () => {
-  await getClient({
+  client = await getClient({
     accountSid,
     indexType,
     config: {
       node: 'http://localhost:9200',
     },
   });
-  await createIndex({ accountSid, indexType });
+
+  await client.createIndex({});
 
   await Promise.all(
-    documents.map(document => indexDocument({ accountSid, indexType, id: document.id, document })),
+    resourceDocuments.map(document => client.indexDocument({ id: document.id, document })),
   );
 
-  await refreshIndex({ accountSid, indexType });
+  await client.refreshIndex();
 });
 
 describe('Resources Default Search', () => {
@@ -139,7 +52,7 @@ describe('Resources Default Search', () => {
     searchParameters: SearchParameters;
     condition: string;
     expectationDescription: string;
-    expectedResults: SearchResults;
+    expectedResults: SearchResponse;
   };
 
   const testCases: TestCaseParameters[] = [
@@ -317,7 +230,7 @@ describe('Resources Default Search', () => {
   each(testCases).test(
     'When specifying $condition, should return a 200 response and $expectationDescription',
     async ({ searchParameters, expectedResults }) => {
-      const results = await search({ accountSid, indexType, searchParameters });
+      const results = await client.search({ searchParameters });
 
       expect(results.total).toEqual(expectedResults.total);
       expect(orderBy(results.items, 'id')).toEqual(orderBy(expectedResults.items, 'id'));

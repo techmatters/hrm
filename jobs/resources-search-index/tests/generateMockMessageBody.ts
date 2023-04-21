@@ -24,7 +24,7 @@ export const generateMockMessageBody = () => {
     jobType: 'resources-search-index',
     document: {
       id: `RESOURCE_${resourceId}`,
-      name: 'Resource 1',
+      name: `Resource ${resourceId}`,
       attributes: [
         { key: 'testAttribute', value: 'testValue', language: 'Klingon', info: { qa: 'pla' } },
       ],

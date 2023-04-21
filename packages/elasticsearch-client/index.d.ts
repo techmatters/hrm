@@ -14,32 +14,17 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { getClient } from './client';
-
-import getAccountSid from './get-account-sid';
-
-export const deleteIndex = async ({
-  accountSid,
-  indexType,
-  shortCode,
-}: {
-  accountSid?: string;
-  indexType: string;
-  shortCode?: string;
-}) => {
-  if (!accountSid) {
-    accountSid = await getAccountSid(shortCode!);
-  }
-
-  const client = await getClient({ accountSid });
-  const index = `${accountSid.toLowerCase()}-${indexType}`;
-
-  const indexExists = await client.indices.exists({ index });
-  if (!indexExists) {
-    return;
-  }
-
-  return client.indices.delete({ index });
-};
-
-export default deleteIndex;
+/**
+ * We export our main interface that has a reduced set of methods from ./dist/index.js
+ * which is generated from src/index.ts. We want to keep types close to code, so we export
+ * the types from this file, and the implementation from ./dist/index.js. This allows us to
+ * reduce the default external interface of the package, while still allowing us to use
+ * the full interface internally and to export all types.
+ **/
+export * from './src/client';
+export * from './src/createIndex';
+export * from './src/deleteIndex';
+export * from './src/getIndexConfig';
+export * from './src/indexDocument';
+export * from './src/indexDocumentBulk';
+export * from './src/search';

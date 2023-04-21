@@ -13,20 +13,22 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
+import { IndicesDeleteResponse } from '@elastic/elasticsearch/lib/api/types';
+import { PassThroughConfig } from './client';
 
-import { config } from './config';
+export type DeleteIndexParams = PassThroughConfig;
+export type DeleteIndexResponse = IndicesDeleteResponse | void;
 
-type ConfigParams = {
-  configId?: string;
-  indexType: string;
+export const deleteIndex = async ({
+  client,
+  index,
+}: DeleteIndexParams): Promise<DeleteIndexResponse> => {
+  const indexExists = await client.indices.exists({ index });
+  if (!indexExists) {
+    return;
+  }
+
+  return client.indices.delete({ index });
 };
 
-// We will likely add complexity to this in the future. I started out using dynamic
-// imports but lambdas really don't like those. So for now we just have a single
-// config file that we load and then we can use the configId/indexType to get the
-// config we need for each ES function wrapper.
-export const getConfig = async ({ configId = 'default', indexType }: ConfigParams) => {
-  return config[configId][indexType];
-};
-
-export default getConfig;
+export default deleteIndex;

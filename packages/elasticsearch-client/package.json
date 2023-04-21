@@ -3,8 +3,9 @@
   "version": "1.0.0",
   "description": "",
   "main": "dist/index.js",
+  "types": "index.d.ts",
   "scripts": {
-    "test:unit": "jest tests/unit",
+    "test:unit": "jest src",
     "test:service": "jest tests/service"
   },
   "author": "",

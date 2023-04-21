@@ -15,17 +15,16 @@
  */
 
 import { ReferrableResource } from '@tech-matters/types';
-
 import {
   isHighBoostGlobalField,
   isMappingField,
   mappingFields,
-  ResourcesIndexDocument,
+  ResourcesCreateIndexConvertedDocument,
 } from './config';
 
-// TODO: when we have more than one index and config type, we should probably make this a little more generic
-// and just import the config to generate it. Leaving here for now.
-export const convertDocument = (resource: ReferrableResource): ResourcesIndexDocument => {
+export const convertIndexDocument = (
+  resource: ReferrableResource,
+): ResourcesCreateIndexConvertedDocument => {
   const { name } = resource;
   const mappedFields: { [key: string]: string | string[] | number } = {};
   const highBoostGlobal: string[] = [];
@@ -40,7 +39,7 @@ export const convertDocument = (resource: ReferrableResource): ResourcesIndexDoc
   };
 
   const pushToMappingField = (key: string, value: number | string | string[]) => {
-    //TODO: I dont' know what keywords field will actually look like should hanle arrays here
+    //TODO: I don't know what keywords field will actually look like should handle arrays here
     if (mappingFields![key].isArrayField) {
       if (!mappedFields[key]) {
         mappedFields[key] = [];

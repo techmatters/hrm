@@ -13,42 +13,27 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
+import { IndicesCreateResponse } from '@elastic/elasticsearch/lib/api/types';
+import { PassThroughConfig } from './client';
 
-import { getClient } from './client';
-import getConfig from './get-config';
+export type CreateIndexExtraParams = {
+  skipWaitForCreation?: boolean;
+};
 
-import getAccountSid from './get-account-sid';
+export type CreateIndexParams = PassThroughConfig & CreateIndexExtraParams;
+export type CreateIndexResponse = IndicesCreateResponse | void;
 
 export const createIndex = async ({
-  accountSid,
-  configId = 'default',
-  indexType,
-  shortCode,
+  client,
+  index,
+  indexConfig,
   skipWaitForCreation = false,
-}: {
-  accountSid?: string;
-  configId?: string;
-  indexType: string;
-  shortCode?: string;
-  skipWaitForCreation?: boolean;
-}) => {
-  if (!accountSid) {
-    accountSid = await getAccountSid(shortCode!);
-  }
-
-  const config = await getConfig({
-    configId,
-    indexType,
-  });
-
-  const client = await getClient({ accountSid });
-  const index = `${accountSid.toLowerCase()}-${indexType}`;
-
+}: CreateIndexParams): Promise<CreateIndexResponse> => {
   if (await client.indices.exists({ index })) {
     return;
   }
 
-  const params = config.getCreateIndexParams({ index });
+  const params = indexConfig.getCreateIndexParams({ index });
   const res = await client.indices.create(params);
 
   // This waits for the index to be created and for the shards to be allocated

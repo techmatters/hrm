@@ -14,9 +14,9 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { convertDocument } from '../../../../src/config/default/resources/index-document';
+import { convertIndexDocument } from './convert-index-document';
 
-describe('convertDocument', () => {
+describe('convertIndexDocument', () => {
   it('should convert a simple document', () => {
     // TODO: need a real example of a document to test against because I still have no idea what these are supposed to look like
     const resource = {
@@ -37,7 +37,7 @@ describe('convertDocument', () => {
       },
     };
 
-    const document = convertDocument(resource);
+    const document = convertIndexDocument(resource);
 
     expect(document).toEqual({
       name: 'Resource',
