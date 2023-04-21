@@ -25,7 +25,6 @@
     "dotenv": "^16.0.3"
   },
   "devDependencies": {
-    "@swc/jest": "^0.2.26",
     "@tsconfig/node16": "^1.0.3",
     "@types/aws-lambda": "^8.10.108",
     "@types/jest": "^26.0.24",

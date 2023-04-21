@@ -5,8 +5,8 @@
   "main": "dist/index.js",
   "types": "index.d.ts",
   "scripts": {
-    "test:unit": "jest --maxWorkers=3 src",
-    "test:service": "jest --maxWorkers=1 tests/service"
+    "test:unit": "jest src",
+    "test:service": "jest tests/service"
   },
   "author": "",
   "license": "AGPL",
