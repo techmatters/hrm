@@ -14,38 +14,13 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import getConfig from './get-config';
-import { getClient } from './client';
+import * as esClient from './index';
 
-// TODO: handle document to body conversion based on a config file for this user/index
+const exportedKeys = ['getClient', 'IndexTypes', 'ConfigIds'];
 
-export const indexDocument = async ({
-  accountSid,
-  configId = 'default',
-  document,
-  id,
-  indexType,
-}: {
-  accountSid: string;
-  configId?: string;
-  document: any;
-  id: string;
-  indexType: string;
-}) => {
-  const client = await getClient({ accountSid });
-
-  const config = await getConfig({
-    configId,
-    indexType,
+describe('Elasticsearch Client', () => {
+  it('should return a client', () => {
+    expect(esClient).toBeDefined();
+    expect(Object.keys(esClient).length).toBe(exportedKeys.length);
   });
-
-  const index = `${accountSid.toLowerCase()}-${indexType}`;
-
-  const body = config.convertDocument(document);
-
-  return client.index({
-    index,
-    id,
-    body,
-  });
-};
+});

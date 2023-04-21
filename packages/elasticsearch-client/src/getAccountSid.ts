@@ -14,29 +14,10 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { getClient } from './client';
+import { getSsmParameter } from '@tech-matters/hrm-ssm-cache';
 
-import getAccountSid from './get-account-sid';
-
-export const refreshIndex = async ({
-  accountSid,
-  indexType,
-  shortCode,
-}: {
-  accountSid?: string;
-  configId?: string;
-  indexType: string;
-  shortCode?: string;
-}) => {
-  if (!accountSid) {
-    accountSid = await getAccountSid(shortCode!);
-  }
-
-  const client = await getClient({ accountSid });
-
-  const index = `${accountSid.toLowerCase()}-${indexType}`;
-
-  return client.indices.refresh({ index });
+export const getAccountSid = (shortCode: string) => {
+  return getSsmParameter(`/${process.env.NODE_ENV}/twilio/${shortCode.toUpperCase()}/account_sid`);
 };
 
-export default refreshIndex;
+export default getAccountSid;

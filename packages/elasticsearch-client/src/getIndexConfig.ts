@@ -16,13 +16,28 @@
 
 import { config } from './config';
 
-type ConfigParams = {
-  configId?: string;
-  indexType: string;
+export enum IndexTypes {
+  RESOURCES = 'resources',
+}
+
+export enum ConfigIds {
+  DEFAULT = 'default',
+}
+
+export type GetConfigParams = {
+  configId?: ConfigIds;
+  indexType: IndexTypes;
 };
 
-export const getConfig = async ({ configId = 'default', indexType }: ConfigParams) => {
+// We will likely add complexity to this in the future. I started out using dynamic
+// imports but lambdas really don't like those. So for now we just have a single
+// config file that we load and then we can use the configId/indexType to get the
+// config we need for each ES function wrapper.
+export const getIndexConfig = async ({
+  configId = ConfigIds.DEFAULT,
+  indexType,
+}: GetConfigParams) => {
   return config[configId][indexType];
 };
 
-export default getConfig;
+export default getIndexConfig;

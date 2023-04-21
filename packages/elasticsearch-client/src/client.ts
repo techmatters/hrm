@@ -13,52 +13,133 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-
-import { Client } from '@elastic/elasticsearch';
+import { Client as EsClient, ClientOptions } from '@elastic/elasticsearch';
+import { IndicesRefreshResponse } from '@elastic/elasticsearch/lib/api/types';
 import { getSsmParameter } from '@tech-matters/hrm-ssm-cache';
+import {
+  indexDocumentBulk,
+  IndexDocumentBulkExtraParams,
+  IndexDocumentBulkResponse,
+} from './indexDocumentBulk';
+import { createIndex, CreateIndexExtraParams, CreateIndexResponse } from './createIndex';
+import { deleteIndex, DeleteIndexResponse } from './deleteIndex';
+import { indexDocument, IndexDocumentExtraParams, IndexDocumentResponse } from './indexDocument';
+import getAccountSid from './getAccountSid';
+import { getIndexConfig, ConfigIds, IndexTypes } from './getIndexConfig';
+import { search, SearchExtraParams, SearchResponse } from './search';
 
 // import { getMockClient } from './mockClient';
+
+export type Client = {
+  client: EsClient;
+  index: string;
+  refreshIndex: () => Promise<IndicesRefreshResponse>;
+  createIndex: (args: CreateIndexExtraParams) => Promise<CreateIndexResponse>;
+  deleteIndex: () => Promise<DeleteIndexResponse>;
+  indexDocument: (args: IndexDocumentExtraParams) => Promise<IndexDocumentResponse>;
+  indexDocumentBulk: (args: IndexDocumentBulkExtraParams) => Promise<IndexDocumentBulkResponse>;
+  search: (args: SearchExtraParams) => Promise<SearchResponse>;
+};
+
+type AccountSidOrShortCodeRequired =
+  | {
+      shortCode: string;
+      accountSid?: string;
+    }
+  | {
+      shortCode?: string;
+      accountSid: string;
+    };
+
+export type GetClientArgs = {
+  config?: ClientOptions;
+  configId?: ConfigIds;
+  indexType: IndexTypes;
+} & AccountSidOrShortCodeRequired;
+
+export type GetClientOrMockArgs = GetClientArgs & {
+  index: string;
+};
+
+export type PassThroughConfig = {
+  index: string;
+  indexConfig: any;
+  client: EsClient;
+};
 
 type ClientCache = {
   [accountSid: string]: Client;
 };
 
 const clientCache: ClientCache = {};
-
-const getSsmParameterKey = () =>
-  `/${process.env.NODE_ENV}/resources/${process.env.AWS_REGION}/elasticsearch_config`;
+const getConfigSsmParameterKey = (indexType: string) =>
+  `/${process.env.NODE_ENV}/${indexType}/${process.env.AWS_REGION}/elasticsearch_config`;
 
 //TODO: type for config
-const getEsConfig = async ({ config }: { config: any }) => {
+const getEsConfig = async ({
+  config,
+  indexType,
+}: {
+  config: ClientOptions | undefined;
+  indexType: string;
+}) => {
   if (config) return config;
+  if (process.env.ELASTICSEARCH_CONFIG) return JSON.parse(process.env.ELASTICSEARCH_CONFIG);
 
-  if (process.env.ELASTICSEARCH_CONFIG) {
-    return JSON.parse(process.env.ELASTICSEARCH_CONFIG);
-  } else {
-    return JSON.parse(await getSsmParameter(getSsmParameterKey()));
-  }
+  return JSON.parse(await getSsmParameter(getConfigSsmParameterKey(indexType)));
 };
 
-const getClientOrMock = async ({ config }: { config: any }): Promise<Client> => {
+const getClientOrMock = async (params: GetClientOrMockArgs) => {
   // TODO: mock client for unit tests
   // if (authToken === 'mockAuthToken') {
   //   const mock = (getMockClient({ config }) as unknown) as Twilio;
   //   return mock;
   // }
 
-  return new Client(await getEsConfig({ config }));
+  const { config, configId, index, indexType } = params;
+  const client = new EsClient(await getEsConfig({ config, indexType }));
+  const indexConfig = await getIndexConfig({
+    configId,
+    indexType,
+  });
+  const passThroughConfig: PassThroughConfig = {
+    index,
+    indexConfig,
+    client,
+  };
+
+  return {
+    client,
+    index,
+    /**
+     * Waits for an index refresh of pending changes to be completed. This is useful in tests
+     * where we want to make sure that the index is up to date before we test search results.
+     */
+    refreshIndex: () => client.indices.refresh({ index }),
+    createIndex: (args: CreateIndexExtraParams) => createIndex({ ...passThroughConfig, ...args }),
+    deleteIndex: () => deleteIndex(passThroughConfig),
+    indexDocument: (args: IndexDocumentExtraParams) =>
+      indexDocument({ ...passThroughConfig, ...args }),
+    indexDocumentBulk: (args: IndexDocumentBulkExtraParams) =>
+      indexDocumentBulk({ ...passThroughConfig, ...args }),
+    search: (args: SearchExtraParams) => search({ ...passThroughConfig, ...args }),
+  };
 };
 
-export const getClient = async ({
-  accountSid,
-  config,
-}: {
-  accountSid: string;
-  config?: any;
-}): Promise<Client> => {
-  if (!clientCache[accountSid]) {
-    clientCache[accountSid] = await getClientOrMock({ config });
+/**
+ * Returns a client for the given accountSid/indexType. Currently clients connections are really
+ * only based on AWS region and we assume there will be a single multi-tenant ES cluster per region
+ * and or region/type. This may change in the future if we need to support single tenant ES clusters.
+ */
+export const getClient = async (params: GetClientArgs): Promise<Client> => {
+  let { accountSid } = params;
+  const { indexType } = params;
+
+  if (!accountSid) accountSid = await getAccountSid(params.shortCode!);
+  const index = `${accountSid.toLowerCase()}-${indexType}`;
+  if (!clientCache[index]) {
+    clientCache[index] = await getClientOrMock({ ...params, accountSid, index });
   }
 
-  return clientCache[accountSid];
+  return clientCache[index];
 };

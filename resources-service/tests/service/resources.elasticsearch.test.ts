@@ -23,17 +23,12 @@ import each from 'jest-each';
 import { ReferrableResourceSearchResult } from '../../src/resource/resource-model';
 import { AssertionError } from 'assert';
 import addHours from 'date-fns/addHours';
-import {
-  createIndex,
-  deleteIndex,
-  indexDocument,
-  refreshIndex,
-  getClient,
-} from '@tech-matters/elasticsearch-client';
+import { Client, IndexTypes, getClient } from '@tech-matters/elasticsearch-client';
 
 export const workerSid = 'WK-worker-sid';
 
-const indexType = 'resources';
+const indexType = IndexTypes.RESOURCES;
+const clients: Record<string, Client> = {};
 
 const server = getServer({
   cloudSearchConfig: {
@@ -42,6 +37,8 @@ const server = getServer({
 });
 const request = getRequest(server);
 let mockServer: Awaited<ReturnType<typeof mockingProxy.mockttpServer>>;
+
+const accountSids = ['ACCOUNT_1', 'ACCOUNT_2'];
 
 afterAll(done => {
   mockingProxy.stop().finally(() => {
@@ -54,8 +51,11 @@ afterAll(async () => {
       DELETE FROM resources."ResourceReferenceStringAttributeValues";
       DELETE FROM resources."Resources";
    `);
-  // await deleteIndex({ accountSid: 'ACCOUNT_1', indexType });
-  // await deleteIndex({ accountSid: 'ACCOUNT_2', indexType });
+  await Promise.all(
+    accountSids.map(async accountSid => {
+      await clients[accountSid].deleteIndex();
+    }),
+  );
 });
 
 const range = (elements: number | string): string[] =>
@@ -94,17 +94,16 @@ beforeAll(async () => {
     accountResourceIdTuples.flatMap(async ([accountIdx, resourceIdxs]) => {
       const accountSid = `ACCOUNT_${accountIdx}`;
 
-      await getClient({
-        accountSid: 'ACCOUNT_1',
+      const client = await getClient({
+        accountSid,
         config: {
           node: 'http://localhost:9200',
         },
-      });
-
-      await createIndex({
-        accountSid,
         indexType,
       });
+      clients[accountSid] = client;
+
+      await client.createIndex({});
 
       const basePath = `/v0/accounts/${accountSid}/resources/resource`;
 
@@ -112,16 +111,14 @@ beforeAll(async () => {
         resourceIdxs.flatMap(async resourceIdx => {
           const dbResource = await request.get(`${basePath}/RESOURCE_${resourceIdx}`).set(headers);
 
-          await indexDocument({
-            accountSid,
+          await client.indexDocument({
             document: dbResource.body,
             id: dbResource.body.id,
-            indexType,
           });
         }),
       );
 
-      await refreshIndex({ accountSid, indexType });
+      await client.refreshIndex();
     }),
   );
 });
@@ -200,8 +197,8 @@ describe('GET /search-es', () => {
         'a result set of all the resources matching the IDs returned by Elasticsearch and the correct total',
       expectedResults: [
         {
-          id: 'RESOURCE_2',
-          name: 'Resource 2 (Account 1)',
+          id: 'RESOURCE_4',
+          name: 'Resource 4 (Account 1)',
           attributes: expect.anything(),
         },
         {
@@ -210,8 +207,8 @@ describe('GET /search-es', () => {
           attributes: expect.anything(),
         },
         {
-          id: 'RESOURCE_1',
-          name: 'Resource 1 (Account 1)',
+          id: 'RESOURCE_2',
+          name: 'Resource 2 (Account 1)',
           attributes: expect.anything(),
         },
       ],
@@ -226,13 +223,13 @@ describe('GET /search-es', () => {
         'a result set of all the resources matching the IDs returned by Elasticsearch',
       expectedResults: [
         {
-          id: 'RESOURCE_3',
-          name: 'Resource 3 (Account 1)',
+          id: 'RESOURCE_4',
+          name: 'Resource 4 (Account 1)',
           attributes: expect.anything(),
         },
         {
-          id: 'RESOURCE_4',
-          name: 'Resource 4 (Account 1)',
+          id: 'RESOURCE_3',
+          name: 'Resource 3 (Account 1)',
           attributes: expect.anything(),
         },
         {
@@ -242,6 +239,43 @@ describe('GET /search-es', () => {
         },
       ],
       expectedTotalCount: 3,
+    },
+    {
+      q: 'VALUE_2',
+      limit: '3',
+      start: '0',
+      condition: 'a query which returns records which match resources in the DB',
+      expectationDescription:
+        'a result set of all the resources matching the IDs returned by Elasticsearch',
+      expectedResults: [
+        {
+          id: 'RESOURCE_4',
+          name: 'Resource 4 (Account 1)',
+          attributes: expect.anything(),
+        },
+        {
+          id: 'RESOURCE_3',
+          name: 'Resource 3 (Account 1)',
+          attributes: expect.anything(),
+        },
+      ],
+      expectedTotalCount: 2,
+    },
+    {
+      q: 'VALUE_3',
+      limit: '3',
+      start: '0',
+      condition: 'a query which returns records which match resources in the DB',
+      expectationDescription:
+        'a result set of all the resources matching the IDs returned by Elasticsearch',
+      expectedResults: [
+        {
+          id: 'RESOURCE_4',
+          name: 'Resource 4 (Account 1)',
+          attributes: expect.anything(),
+        },
+      ],
+      expectedTotalCount: 1,
     },
     {
       q: '"RESOURCE 2"',
@@ -292,7 +326,6 @@ describe('GET /search-es', () => {
           q,
         });
 
-      console.dir(response.body);
       expect(response.status).toBe(200);
       expect(response.body.totalCount).toBe(expectedTotalCount);
       expect(response.body.results).toHaveLength(expectedResults.length);

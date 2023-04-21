@@ -13,27 +13,16 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
+import { IndicesDeleteResponse } from '@elastic/elasticsearch/lib/api/types';
+import { PassThroughConfig } from './client';
 
-import { getClient } from './client';
-
-import getAccountSid from './get-account-sid';
+export type DeleteIndexParams = PassThroughConfig;
+export type DeleteIndexResponse = IndicesDeleteResponse | void;
 
 export const deleteIndex = async ({
-  accountSid,
-  indexType,
-  shortCode,
-}: {
-  accountSid?: string;
-  indexType: string;
-  shortCode?: string;
-}) => {
-  if (!accountSid) {
-    accountSid = await getAccountSid(shortCode!);
-  }
-
-  const client = await getClient({ accountSid });
-  const index = `${accountSid.toLowerCase()}-${indexType}`;
-
+  client,
+  index,
+}: DeleteIndexParams): Promise<DeleteIndexResponse> => {
   const indexExists = await client.indices.exists({ index });
   if (!indexExists) {
     return;
