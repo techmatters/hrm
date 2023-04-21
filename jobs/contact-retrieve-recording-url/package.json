@@ -10,7 +10,7 @@
     "@tech-matters/hrm-ssm-cache": "^1.0.0",
     "@tech-matters/hrm-twilio-client": "^1.0.0",
     "@tech-matters/types": "^1.0.0",
-    "aws-sdk": "^2.1225.0",
+    "aws-sdk": "^2.1363.0",
     "twilio": "^3.80.0",
     "util": "^0.12.4"
   },

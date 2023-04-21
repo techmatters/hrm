@@ -9,6 +9,6 @@
   "author": "",
   "license": "AGPL",
   "dependencies": {
-    "aws-sdk": "^2.1225.0"
+    "aws-sdk": "^2.1363.0"
   }
 }

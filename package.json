@@ -35,7 +35,7 @@
     "@typescript-eslint/parser": "^5.40.1",
     "aws-cdk": "^2.45.0",
     "aws-cdk-local": "^2.15.0",
-    "aws-sdk": "^2.1231.0",
+    "aws-sdk": "^2.1363.0",
     "cross-env": "^7.0.3",
     "esbuild": "^0.15.13",
     "eslint": "^8.2.0",
