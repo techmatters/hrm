@@ -15,3 +15,4 @@
  */
 
 export * from './ContactJob';
+export * from './ResourcesImport';

@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { ImportApiResource, ImportProgress } from './importTypes';
+import { ImportApiResource, ImportProgress } from '@tech-matters/hrm-types';
 import { generateUpdateImportProgressSql, generateUpsertSqlFromImportResource } from './sql';
 import { AccountSID } from '@tech-matters/twilio-worker-auth';
 import { ITask } from 'pg-promise';

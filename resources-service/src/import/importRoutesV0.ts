@@ -15,14 +15,9 @@
  */
 
 import { IRouter, Router } from 'express';
-import { ImportApiResource, ImportBatch } from './importTypes';
+import { ImportRequestBody } from '@tech-matters/hrm-types';
 import importService, { isValidationFailure } from './importService';
 import { AccountSID } from '@tech-matters/twilio-worker-auth';
-
-export type ImportRequestBody = {
-  importedResources: ImportApiResource[];
-  batch: ImportBatch;
-};
 
 const importRoutes = () => {
   const router: IRouter = Router();

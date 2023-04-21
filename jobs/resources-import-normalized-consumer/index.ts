@@ -16,24 +16,18 @@
 
 import { ResourceImportProcessorError } from '@tech-matters/hrm-job-errors';
 import fetch from 'node-fetch';
+// import { getSsmParameter } from '@tech-matters/hrm-ssm-cache';
 // import { SQS } from 'aws-sdk';
 // eslint-disable-next-line prettier/prettier
 import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
-
-// TODO: Move this to be a shared package?
 // eslint-disable-next-line prettier/prettier
-import type { ImportRequestBody } from '../../resources-service/src/import/importRoutesV0';
-// import { getSsmParameter } from '@tech-matters/hrm-ssm-cache';
+import type { ImportRequestBody } from '@tech-matters/hrm-types';
 
-// This is the type we'll expect the messages in the normalized queue to be published
-type NormalizedResourcesBody = ImportRequestBody & {
-  accountSid: string;
-};
 
 const hrmResourcesApiUrl = process.env.hrm_resources_api_url as string;
 const hrmEnv = process.env.NODE_ENV;
 
-const postNormalizedResourcesBody = async (apiKey: string, message: NormalizedResourcesBody) => {
+const postNormalizedResourcesBody = async (apiKey: string, message: ImportRequestBody) => {
     const url = `${hrmResourcesApiUrl}/import`;
 
     const options = {
@@ -49,7 +43,7 @@ const postNormalizedResourcesBody = async (apiKey: string, message: NormalizedRe
     return response;
 };
 
-const processRecord = async (message: NormalizedResourcesBody): Promise<void> => {
+const processRecord = async (message: ImportRequestBody): Promise<void> => {
   // TODO: actually use this to make the API call (they need to be created in SSM)
   // const apiKey = await getSsmParameter(`/${hrmEnv}/twilio/${message.accountSid}/hrm_static_api_key`);
   const apiKey = '';
