@@ -84,6 +84,6 @@ export const publishSearchIndexJob = (accountSid: string, resource: ReferrableRe
       jobType: ResourcesJobType.SEARCH_INDEX,
       document: resource,
     },
-    messageGroupId: resource.id,
+    messageGroupId: `${accountSid}:${resource.id}`,
   });
 };
