@@ -326,7 +326,6 @@ describe('GET /search-es', () => {
           q,
         });
 
-      console.dir(response.body);
       expect(response.status).toBe(200);
       expect(response.body.totalCount).toBe(expectedTotalCount);
       expect(response.body.results).toHaveLength(expectedResults.length);

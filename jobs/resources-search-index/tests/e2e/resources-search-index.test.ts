@@ -44,14 +44,20 @@ const sqs = new SQS({
 export const waitForSearchResponse = async ({
   client,
   message,
+  expectEmpty = false,
   retryCount = 0,
   retryLimit = 60,
 }: {
   client: Awaited<ReturnType<typeof getClient>>;
   message: ReturnType<typeof generateMockMessageBody>;
+  expectEmpty?: boolean;
   retryCount?: number;
   retryLimit?: number;
 }): Promise<SearchResponse | undefined> => {
+  if (expectEmpty) {
+    // This is a hack to wait for the job... There isn't a great way to do this.
+    await new Promise(resolve => setTimeout(resolve, 3000));
+  }
   await client.refreshIndex();
 
   const result = await client.search({
@@ -63,6 +69,11 @@ export const waitForSearchResponse = async ({
       },
     },
   });
+
+  if (expectEmpty) {
+    expect(result.total).toBe(0);
+    return;
+  }
 
   if (result.total === 0 && retryCount < retryLimit) {
     await new Promise(resolve => setTimeout(resolve, 250));
@@ -126,7 +137,11 @@ describe('resources-search-index', () => {
 
   test('well formed single message results in indexed document', async () => {
     const message = generateMockMessageBody();
-    const sqsResp = await sendMessage({ message, lambdaName });
+    const sqsResp = await sendMessage({
+      // messageGroupId: message.document.id,
+      message,
+      lambdaName,
+    });
     expect(sqsResp).toHaveProperty('MessageId');
 
     const searchResult = await waitForSearchResponse({
@@ -144,7 +159,12 @@ describe('resources-search-index', () => {
   test('well formed bulk messages results in bulk indexed document', async () => {
     const messages = [...Array(5)].map(() => generateMockMessageBody());
 
-    const sqsResp = await sendMessageBatch({ messages, lambdaName });
+    const sqsResp = await sendMessageBatch({
+      // groupIdProperty: 'document',
+      // groupIdField: 'id',
+      messages,
+      lambdaName,
+    });
     expect(sqsResp).toHaveProperty('ResponseMetadata');
 
     await Promise.all(
@@ -164,9 +184,50 @@ describe('resources-search-index', () => {
     );
   });
 
+  // Localstack fifo queues don't really work so don't bother with this for now
+  // see https://github.com/localstack/localstack/issues/6766
+  // test('well formed bulk messages with single document update results in index of final document', async () => {
+  //   const baseMessage = generateMockMessageBody();
+  //   const messages = [...Array(5)].map(idx => ({
+  //     ...baseMessage,
+  //     document: { ...baseMessage.document, name: `${baseMessage.document.name} ${idx}` },
+  //   }));
+
+  //   const sqsResp = await sendMessageBatch({
+  //     groupIdProperty: 'document',
+  //     groupIdField: 'id',
+  //     messages,
+  //     lambdaName,
+  //   });
+  //   expect(sqsResp).toHaveProperty('ResponseMetadata');
+
+  //   for (const [idx, message] of messages.entries()) {
+  //     const isFinal = idx === messages.length - 1;
+  //     const searchResult = await waitForSearchResponse({
+  //       client: clients[message.accountSid],
+  //       message,
+  //       retryLimit: 10,
+  //       expectEmpty: !isFinal,
+  //     });
+  //     expect(searchResult).toHaveProperty('total');
+  //     expect(searchResult).toHaveProperty('items');
+
+  //     if (!isFinal) return;
+
+  //     expect(searchResult?.total).toEqual(1);
+  //     expect(searchResult?.items).toHaveLength(1);
+  //     expect(searchResult?.items[0]).toHaveProperty('id');
+  //     expect(searchResult?.items[0].id).toEqual(message.document.id);
+  //   }
+  // });
+
   test('message with bad accountSid produces failure message in complete queue', async () => {
     const message = { ...generateMockMessageBody(), accountSid: 'badSid' };
-    const sqsResp = await sendMessage({ message, lambdaName });
+    const sqsResp = await sendMessage({
+      // messageGroupId: message.document.id,
+      message,
+      lambdaName,
+    });
     expect(sqsResp).toHaveProperty('MessageId');
 
     // For now the localstack SNS topic sends the message to an error queue
@@ -185,7 +246,11 @@ describe('resources-search-index', () => {
 
   test('message with malformed document produces failure message in complete queue', async () => {
     const message = { hi: 'i am a bad message' };
-    const sqsResp = await sendMessage({ message, lambdaName });
+    const sqsResp = await sendMessage({
+      // messageGroupId: 'doesNotMatter',
+      message,
+      lambdaName,
+    });
     expect(sqsResp).toHaveProperty('MessageId');
 
     // For now the localstack SNS topic sends the message to an error queue
