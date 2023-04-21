@@ -29,11 +29,13 @@ on:
       lambda_name:
         description: 'HRM lambda name'
         required: true
-        default: contact-retrieve-recording-url
+        default: contact-retrieve-transcript
         type: choice
         options:
           - contact-retrieve-recording-url
           - contact-retrieve-transcript
+          - resources-search-complete
+          - resources-search-index
 
   workflow_call:
     secrets:
