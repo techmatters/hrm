@@ -1,3 +1,19 @@
+/**
+ * Copyright (C) 2021-2023 Technology Matters
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see https://www.gnu.org/licenses/.
+ */
+
 import { ImportApiResource, ImportBatch } from './importTypes';
 import { db } from '../connection-pool';
 import {
@@ -7,30 +23,63 @@ import {
 } from './importDataAccess';
 import { AccountSID } from '@tech-matters/twilio-worker-auth';
 
+export type ValidationFailure = {
+  reason: 'missing field';
+  fields: string[];
+  resource: ImportApiResource;
+};
+
+export const isValidationFailure = (result: any): result is ValidationFailure => {
+  return result.reason === 'missing field';
+};
+
+const REQUIRED_FIELDS = ['id', 'name', 'attributes', 'updatedAt'] as const;
+
 const importService = () => {
   return {
     upsertResources: async (
       accountSid: AccountSID,
       resources: ImportApiResource[],
       batch: ImportBatch,
-    ): Promise<UpsertImportedResourceResult[]> => {
+    ): Promise<UpsertImportedResourceResult[] | ValidationFailure> => {
       if (!resources?.length) return [];
-
-      const results: UpsertImportedResourceResult[] = [];
-      await db.tx(async t => {
-        const upsert = upsertImportedResource(t);
-        for (const resource of resources) {
-          const result = await upsert(accountSid, resource);
-          results.push(result);
-        }
-        const { id, updatedAt } = resources[resources.length - 1];
-        await updateImportProgress(t)(accountSid, {
-          ...batch,
-          lastProcessedDate: updatedAt,
-          lastProcessedId: id,
+      try {
+        return await db.tx(async t => {
+          const results: UpsertImportedResourceResult[] = [];
+          const upsert = upsertImportedResource(t);
+          for (const resource of resources) {
+            const missingFields = REQUIRED_FIELDS.filter(field => !resource[field]);
+            if (missingFields.length) {
+              // Unfortunately I can't see a way to roll back a transaction other than throwing / rejecting
+              // Hence the messy throw & catch
+              const err = new Error();
+              (err as any).validationFailure = {
+                reason: 'missing field',
+                fields: missingFields,
+                resource,
+              };
+              throw err;
+            }
+            const result = await upsert(accountSid, resource);
+            results.push(result);
+          }
+          const { id, updatedAt } = resources.sort((a, b) =>
+            a.updatedAt > b.updatedAt ? 1 : a.updatedAt < b.updatedAt ? -1 : a.id > b.id ? 1 : -1,
+          )[resources.length - 1];
+          await updateImportProgress(t)(accountSid, {
+            ...batch,
+            lastProcessedDate: updatedAt,
+            lastProcessedId: id,
+          });
+          return results;
         });
-      });
-      return results;
+      } catch (e) {
+        const error = e as any;
+        if (error.validationFailure) {
+          return error.validationFailure;
+        }
+        throw error;
+      }
     },
   };
 };

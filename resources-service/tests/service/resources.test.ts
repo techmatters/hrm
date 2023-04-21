@@ -21,6 +21,7 @@ import each from 'jest-each';
 import { ReferrableResource } from '../../src/resource/resource-model';
 import { ReferrableResourceAttribute } from '../../src/resource/resource-data-access';
 import { AssertionError } from 'assert';
+import range from './range';
 
 export const workerSid = 'WK-worker-sid';
 
@@ -39,11 +40,6 @@ DELETE FROM resources."ResourceReferenceStringAttributeValues";
 DELETE FROM resources."Resources"
       `);
 });
-
-const range = (elements: number | string): string[] =>
-  Array.from(Array(typeof elements === 'number' ? elements : parseInt(elements)).keys()).map(i =>
-    i.toString(),
-  );
 
 beforeAll(async () => {
   await mockingProxy.start();

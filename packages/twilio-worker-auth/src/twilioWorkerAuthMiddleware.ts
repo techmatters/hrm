@@ -72,7 +72,7 @@ const authenticateWithStaticKey = (req: Request): boolean => {
         return true;
       }
     } catch (err) {
-      console.error('Static key authentication failed: ', err);
+      console.warn('Static key authentication failed: ', err);
     }
   }
   return false;
@@ -109,12 +109,12 @@ export const getAuthorizationMiddleware = (authTokenLookup: (accountSid: string)
     }
   }
 
-  if (canAccessResourceWithStaticKey(req.path, req.method) && authenticateWithStaticKey(req)) return next();
+  if (canAccessResourceWithStaticKey(req.originalUrl, req.method) && authenticateWithStaticKey(req)) return next();
 
   return unauthorized(res);
 };
 
-export const getStaticKeyAuthorizationMiddleware = () => async (req: Request, res: Response, next: NextFunction) => {
-  if (canAccessResourceWithStaticKey(req.path, req.method) && authenticateWithStaticKey(req)) return next();
+export const staticKeyAuthorizationMiddleware = async (req: Request, res: Response, next: NextFunction) => {
+  if (authenticateWithStaticKey(req)) return next();
   return unauthorized(res);
 };
