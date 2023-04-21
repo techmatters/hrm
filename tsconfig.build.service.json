@@ -3,6 +3,7 @@
   "files": [],
   "references": [
     { "path": "packages/http" },
+    { "path": "packages/jwt" },
     { "path": "packages/twilio-worker-auth" },
     { "path": "packages/ssm-cache" },
     { "path": "packages/types" },

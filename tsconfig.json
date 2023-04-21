@@ -6,6 +6,7 @@
     { "path": "packages/testing" },
     { "path": "packages/http" },
     { "path": "packages/job-errors" },
+    { "path": "packages/jwt" },
     { "path": "packages/ssm-cache" },
     { "path": "packages/s3-client" },
     { "path": "packages/twilio-client" },
