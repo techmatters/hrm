@@ -24,11 +24,11 @@ import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
 import type { ImportRequestBody } from '@tech-matters/hrm-types';
 
 
-const hrmResourcesApiUrl = process.env.hrm_resources_api_url as string;
+const resourcesBaseUrl = process.env.resources_base_url as string;
 const hrmEnv = process.env.NODE_ENV;
 
-const postNormalizedResourcesBody = async (apiKey: string, message: ImportRequestBody) => {
-    const url = `${hrmResourcesApiUrl}/import`;
+const postNormalizedResourcesBody = async (accountSid: string, apiKey: string, message: ImportRequestBody) => {
+    const url = `https://${resourcesBaseUrl}/v0/accounts/${accountSid}/resources/import`;
 
     const options = {
       method: 'POST',
@@ -44,11 +44,12 @@ const postNormalizedResourcesBody = async (apiKey: string, message: ImportReques
 };
 
 const processRecord = async (message: ImportRequestBody): Promise<void> => {
+  const { accountSid } = message;
   // TODO: actually use this to make the API call (they need to be created in SSM)
   // const apiKey = await getSsmParameter(`/${hrmEnv}/twilio/${message.accountSid}/hrm_static_api_key`);
   const apiKey = '';
 
-  const result = await postNormalizedResourcesBody(apiKey, message);
+  const result = await postNormalizedResourcesBody(accountSid, apiKey, message);
 
   if (!result.ok) {
     const error = await result.json();
