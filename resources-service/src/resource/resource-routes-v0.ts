@@ -24,7 +24,9 @@ import { CloudSearchConfig } from '../config/cloud-search';
 const resourceRoutes = (cloudSearchConfig: CloudSearchConfig) => {
   const router: IRouter = Router();
 
-  const { getResource, searchResources, searchResourcesByName } = resourceModel(cloudSearchConfig);
+  const { getResource, searchResources, searchResourcesByName, searchResourcesEs } = resourceModel(
+    cloudSearchConfig,
+  );
 
   router.get('/resource/:resourceId', async (req, res) => {
     const referrableResource = await getResource(<AccountSID>req.accountSid, req.params.resourceId);
@@ -62,6 +64,22 @@ const resourceRoutes = (cloudSearchConfig: CloudSearchConfig) => {
       res.json(referrableResources);
     },
   );
+
+  router.post('/search-es', async (req, res) => {
+    const { limit, start } = req.query;
+    const { q, filters = {} } = req.body;
+
+    const referrableResources = await searchResourcesEs(<AccountSID>req.accountSid, {
+      filters: filters as Record<string, string | boolean | number>,
+      q: q as string,
+      pagination: {
+        limit: parseInt((limit as string) || '20'),
+        start: parseInt((start as string) || '0'),
+      },
+    });
+
+    res.json(referrableResources);
+  });
 
   return router;
 };

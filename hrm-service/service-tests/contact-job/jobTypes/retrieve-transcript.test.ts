@@ -32,7 +32,7 @@ import {
   CompletedContactJobBody,
   ContactJobAttemptResult,
   ContactJobType,
-} from '@tech-matters/hrm-types';
+} from '@tech-matters/types';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
 
 require('../mocks');
