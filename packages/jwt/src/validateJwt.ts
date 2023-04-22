@@ -14,26 +14,84 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 import jwt from 'jsonwebtoken';
-import { CommonParams, JwtGrants } from './types';
+import { CommonParams, Jwt, JwtGrant } from './types';
 import { getSecret } from './getSecret';
 
 export type ValidateJwtParams = CommonParams & {
   token: string;
 };
 
-export const validateJwt = ({
+export type ValidateJwtPermissionParams = ValidateJwtParams & {
+  permission: string;
+};
+
+export type ValidateJwtResult = {
+  success: boolean;
+  message?: string;
+  grant?: JwtGrant;
+  issuer?: string;
+};
+
+export type DecodeJwtResult = {
+  success: boolean;
+  message?: string;
+  decodedJwt?: Jwt;
+};
+
+export const JWT_BAD_SUBJECT = 'JWT subject does not match accountSid';
+
+export const decodeJwt = async ({
   accountSid,
-  authToken,
   token,
-}: ValidateJwtParams): JwtGrants | false => {
-  let decoded: any;
+}: ValidateJwtParams): Promise<DecodeJwtResult> => {
   try {
-    decoded = jwt.verify(token, getSecret(authToken));
+    const decodedJwt = jwt.verify(token, await getSecret(accountSid)) as Jwt;
+    return {
+      success: true,
+      decodedJwt,
+    };
   } catch (e) {
-    return false;
+    return {
+      success: false,
+      message: `Error decoding JWT: ${e}`,
+    };
+  }
+};
+
+export const validateJwt = async ({
+  accountSid,
+  token,
+}: ValidateJwtParams): Promise<ValidateJwtResult> => {
+  let decodeRes = await decodeJwt({ accountSid, token });
+
+  if (!decodeRes.success) {
+    return {
+      success: false,
+      message: decodeRes.message,
+    };
   }
 
-  if (decoded.accountSid !== accountSid) return false;
+  if (decodeRes.decodedJwt?.sub !== accountSid) {
+    return {
+      success: false,
+      message: JWT_BAD_SUBJECT,
+    };
+  }
 
-  return decoded.grants;
+  return {
+    success: true,
+    grant: decodeRes.decodedJwt?.grant,
+    issuer: decodeRes.decodedJwt?.iss,
+  };
+};
+
+export const validateJwtPermission = async ({
+  accountSid,
+  token,
+  permission,
+}: ValidateJwtPermissionParams): Promise<boolean> => {
+  const result = await validateJwt({ accountSid, token });
+  if (!result.success) return false;
+
+  return result.grant!.permissions.includes(permission);
 };

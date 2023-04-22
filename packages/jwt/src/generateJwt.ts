@@ -16,25 +16,29 @@
 
 import jwt from 'jsonwebtoken';
 
-import { CommonParams, JwtGrants } from './types';
+import { CommonParams, Jwt } from './types';
 import { getSecret } from './getSecret';
 
 export type GenerateJwtParams = CommonParams & {
-  grants: JwtGrants;
+  permissions: string[];
   expirationSeconds?: number;
+  issuer: string;
 };
 
-export const generateJwt = ({
+export const generateJwt = async ({
   accountSid,
-  authToken,
-  grants,
   expirationSeconds = 30, // Expires in 30 seconds
+  issuer,
+  permissions,
 }: GenerateJwtParams) => {
-  const payload = {
-    accountSid,
+  const payload: Jwt = {
+    sub: accountSid,
+    iss: issuer,
     exp: Math.floor(Date.now() / 1000) + expirationSeconds,
-    grants,
+    grant: {
+      permissions,
+    },
   };
 
-  return jwt.sign(payload, getSecret(authToken));
+  return jwt.sign(payload, await getSecret(accountSid));
 };

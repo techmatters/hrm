@@ -13,12 +13,18 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-export type JwtGrants = {
-  worker_sid: string;
-  roles: string[];
-};
 
 export type CommonParams = {
   accountSid: string;
-  authToken: string;
+};
+
+export type JwtGrant = {
+  permissions: string[];
+};
+
+export type Jwt = {
+  sub: string; // The subject of the JWT (i.e., the user or entity that is being authenticated).
+  exp: number; // The expiration time for the JWT.
+  iss: string; // The entity that issued the JWT.
+  grant: JwtGrant;
 };

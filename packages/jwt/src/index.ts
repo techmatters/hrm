@@ -14,5 +14,5 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-export * from './generateJwt';
-export * from './validateJwt';
+export { generateJwt } from './generateJwt';
+export { decodeJwt, validateJwt, validateJwtPermission, JWT_BAD_SUBJECT } from './validateJwt';

@@ -14,8 +14,31 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-export const getSecret = (authToken: string): string => {
-  const internalToken =
-    process.env.NODE_ENV === 'test' ? 'mock' : process.env.INTERNAL_JWT_TOKEN_SECRET;
+export const getInternalToken = async (): Promise<string> => {
+  let internalToken = process.env.INTERNAL_JWT_TOKEN_SECRET;
+
+  if (!internalToken) {
+    //TODO: load from ssm
+  }
+
+  //TODO: remove ! after implementing ssm
+  return internalToken!;
+};
+
+export const getAuthToken = async (accountSid: string): Promise<string> => {
+  let authToken = process.env[`TWILIO_AUTH_TOKEN_${accountSid}`];
+
+  if (!authToken) {
+    //TODO: load from ssm
+  }
+
+  //TODO: remove ! after implementing ssm
+  return authToken!;
+};
+
+export const getSecret = async (accountSid: string): Promise<string> => {
+  const internalToken = await getInternalToken();
+  const authToken = await getAuthToken(accountSid);
+
   return `${internalToken}:${authToken}`;
 };

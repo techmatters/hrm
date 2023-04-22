@@ -18,27 +18,29 @@ import { generateJwt } from './generateJwt';
 import { validateJwt } from './validateJwt';
 
 const accountSid = 'mockAccountSid';
-const authToken = 'mockAuthToken';
-const grants = {
-  worker_sid: 'mockWorkerSid',
-  roles: ['mockRole'],
-};
+const permissions = ['mockPermission'];
+const issuer = 'mockIssuer';
+
+process.env.TWILIO_AUTH_TOKEN_mockAccountSid = 'mockAuthToken';
+process.env.INTERNAL_JWT_TOKEN_SECRET = 'mockInternalToken';
 
 describe('validateJwt', () => {
   let token: string;
-  beforeAll(() => {
-    token = generateJwt({ accountSid, authToken, grants });
+  beforeAll(async () => {
+    token = await generateJwt({ accountSid, issuer, permissions });
   });
 
-  it('validateJwt should generate a valid JWT', () => {
-    const returnedGrants = validateJwt({ accountSid, authToken, token });
+  it('validateJwt should generate a valid JWT', async () => {
+    const resp = await validateJwt({ accountSid, token });
 
-    expect(returnedGrants).toEqual(grants);
+    expect(resp.success).toEqual(true);
+    expect(resp.grant!.permissions).toEqual(permissions);
   });
 
-  it('validateJwt should return false if the JWT is invalid', () => {
-    const returnedGrants = validateJwt({ accountSid, authToken: 'invalid', token });
+  it('validateJwt should return false if the JWT is invalid', async () => {
+    const resp = await validateJwt({ accountSid: 'badAccountSid', token });
 
-    expect(returnedGrants).toEqual(false);
+    expect(resp.success).toEqual(false);
+    expect(resp.message).toEqual('Error decoding JWT: JsonWebTokenError: invalid signature');
   });
 });
