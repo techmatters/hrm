@@ -22,7 +22,7 @@ import { parseISO, addHours, subHours, addSeconds, subSeconds } from 'date-fns';
 import { ImportApiResource, ImportProgress, ImportRequestBody } from '@tech-matters/hrm-types';
 import { internalHeaders } from './server';
 import each from 'jest-each';
-import { ReferrableResource } from '../../src/resource/resource-model';
+import { ReferrableResource } from '@tech-matters/types';
 import { AssertionError } from 'assert';
 import { UpsertImportedResourceResult } from '../../src/import/importDataAccess';
 

@@ -16,3 +16,4 @@
 
 export * from './ContactJob';
 export * from './ResourcesImport';
+export * from './Resources';

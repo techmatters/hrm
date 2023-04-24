@@ -18,7 +18,7 @@ module.exports = config => {
   return (
     config || {
       preset: 'ts-jest',
-      rootDir: './tests',
+      rootDir: './',
       maxWorkers: 1,
       globals: {
         'ts-jest': {

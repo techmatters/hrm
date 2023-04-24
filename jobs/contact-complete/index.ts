@@ -19,21 +19,6 @@ import { ContactJobProcessorError } from '@tech-matters/hrm-job-errors';
 // eslint-disable-next-line prettier/prettier
 import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
 
-/**
- * I went ahead and created this placeholder for the completed queue processor lambda.
- *
- * It looks like Gian is still working on this in an hrm-services loop, but I don't
- * think it is a big deal to have this in place. I'm happy to remove it if it is too
- * soon.
- * (rbd - 10/10/22)
- */
-
-/**
- * This is based around latest SQS error handling that supports batchItemFailure responses.
- *
- * Reference: https://docs.aws.amazon.com/lambda/latest/dg/with-sqs.html#services-sqs-batchfailurereporting
- */
-
 const processRecord = async (sqsRecord: SQSRecord) => {
   try {
     console.dir(sqsRecord);

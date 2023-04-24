@@ -14,6 +14,11 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
+import {
+  ReferrableResourceTranslatableAttribute,
+  ReferrableResourceAttribute,
+} from '@tech-matters/types';
+
 import { db } from '../connection-pool';
 import { AccountSID } from '@tech-matters/twilio-worker-auth';
 import {
@@ -21,23 +26,6 @@ import {
   SELECT_RESOURCE_IN_IDS,
   SELECT_UNINDEXED_RESOURCES,
 } from './sql/resource-get-sql';
-
-export type ReferrableResourceAttribute<T> = {
-  value: T;
-  info?: any;
-};
-
-export const isReferrableResourceAttribute = (
-  attribute: any,
-): attribute is ReferrableResourceAttribute<unknown> =>
-  attribute &&
-  (typeof attribute.value === 'string' ||
-    typeof attribute.value === 'number' ||
-    typeof attribute.value === 'boolean');
-
-export type ReferrableResourceTranslatableAttribute = ReferrableResourceAttribute<string> & {
-  language: string;
-};
 
 export type ReferrableResourceRecord = {
   name: string;
