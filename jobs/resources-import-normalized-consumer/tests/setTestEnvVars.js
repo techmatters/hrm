@@ -14,5 +14,5 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-process.env.resources_base_url = 'development-url';
+process.env.internal_resources_base_url = 'development-url';
 process.env.NODE_ENV = 'development';
