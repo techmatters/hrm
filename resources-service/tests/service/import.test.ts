@@ -19,7 +19,7 @@ import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/
 import { db } from '../../src/connection-pool';
 import range from './range';
 import { parseISO, addHours, subHours, addSeconds, subSeconds } from 'date-fns';
-import { ImportApiResource, ImportProgress, ImportRequestBody } from '@tech-matters/hrm-types';
+import { ImportApiResource, ImportProgress, ImportRequestBody } from '@tech-matters/types';
 import { internalHeaders } from './server';
 import each from 'jest-each';
 import { ReferrableResource } from '@tech-matters/types';

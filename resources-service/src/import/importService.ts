@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { ImportApiResource, ImportBatch } from '@tech-matters/hrm-types';
+import { ImportApiResource, ImportBatch } from '@tech-matters/types';
 import { db } from '../connection-pool';
 import {
   updateImportProgress,
