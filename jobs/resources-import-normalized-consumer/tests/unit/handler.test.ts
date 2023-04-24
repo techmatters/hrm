@@ -18,7 +18,7 @@ import parseISO from 'date-fns/parseISO';
 import { handler } from '../../index';
 import each from 'jest-each';
 // eslint-disable-next-line prettier/prettier
-import type { ImportApiResource, ImportRequestBody } from '@tech-matters/hrm-types';
+import type { ImportApiResource, ImportRequestBody } from '@tech-matters/types';
 import type { SQSEvent } from 'aws-lambda';
 
 const mockFetch = jest.fn();

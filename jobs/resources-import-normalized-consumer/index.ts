@@ -21,7 +21,7 @@ import { getSsmParameter } from '@tech-matters/hrm-ssm-cache';
 // eslint-disable-next-line prettier/prettier
 import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
 // eslint-disable-next-line prettier/prettier
-import type { ImportRequestBody } from '@tech-matters/hrm-types';
+import type { ImportRequestBody } from '@tech-matters/types';
 
 const internalResourcesBaseUrl = process.env.internal_resources_base_url as string;
 const hrmEnv = process.env.NODE_ENV;
