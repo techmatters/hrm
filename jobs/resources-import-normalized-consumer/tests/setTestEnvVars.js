@@ -14,23 +14,5 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-export class ContactJobProcessorError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'ContactJobProcessorError';
-  }
-}
-
-export class ResourceImportProcessorError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'ResourceImportProcessorError';
-  }
-}
-
-export class ResourcesJobProcessorError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'ResourcesJobProcessorError';
-  }
-}
+process.env.internal_resources_base_url = 'development-url';
+process.env.NODE_ENV = 'development';

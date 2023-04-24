@@ -68,3 +68,9 @@ export type ImportProgress = ImportBatch & {
   lastProcessedDate: string;
   lastProcessedId: string;
 };
+
+export type ImportRequestBody = {
+  importedResources: ImportApiResource[];
+  batch: ImportBatch;
+  accountSid: string;
+};

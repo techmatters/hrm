@@ -14,25 +14,19 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { IRouter, Router } from 'express';
-import { ImportRequestBody } from '@tech-matters/hrm-types';
-import importService, { isValidationFailure } from './importService';
-import { AccountSID } from '@tech-matters/twilio-worker-auth';
-
-const importRoutes = () => {
-  const router: IRouter = Router();
-
-  const { upsertResources } = importService();
-
-  router.post('/import', async ({ body, accountSid }, res) => {
-    const { importedResources, batch }: ImportRequestBody = body;
-    const result = await upsertResources(accountSid as AccountSID, importedResources, batch);
-    if (isValidationFailure(result)) {
-      res.status(400).json(result);
+module.exports = config => {
+  return (
+    config || {
+      preset: 'ts-jest',
+      rootDir: './tests',
+      maxWorkers: 1,
+      setupFiles: ['<rootDir>/setTestEnvVars.js'],
+      globals: {
+        'ts-jest': {
+          // to give support to const enum. Not working, conflicting with module resolution
+          useExperimentalLanguageServer: true,
+        },
+      },
     }
-    res.json(result);
-  });
-
-  return router;
+  );
 };
-export default importRoutes;
