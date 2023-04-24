@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { getClient, type TwilioClient } from '@tech-matters/twilio-client';
+import { getClient, TwilioClient } from '@tech-matters/twilio-client';
 
 import RestException from 'twilio/lib/base/RestException';
 // eslint-disable-next-line prettier/prettier
