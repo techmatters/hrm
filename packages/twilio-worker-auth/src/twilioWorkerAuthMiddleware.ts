@@ -52,6 +52,32 @@ const isGuest = (tokenResult: TokenValidatorResponse) =>
 
 const defaultTokenLookup = (accountSid: string) => process.env[`TWILIO_AUTH_TOKEN_${accountSid}`] ?? '';
 
+const authenticateWithStaticKey = (req: Request): boolean => {
+  if (!req.headers) return false;
+  const { headers: { authorization }, accountSid } = req;
+
+  if (accountSid && authorization && authorization.startsWith('Basic')) {
+    try {
+      const staticSecretKey = `STATIC_KEY_${accountSid}`;
+      const staticSecret = process.env[staticSecretKey];
+      const requestSecret = authorization.replace('Basic ', '');
+
+      const isStaticSecretValid =
+        staticSecret &&
+        requestSecret &&
+        crypto.timingSafeEqual(Buffer.from(requestSecret), Buffer.from(staticSecret));
+
+      if (isStaticSecretValid) {
+        req.user = twilioUser(`account-${accountSid}`, []);
+        return true;
+      }
+    } catch (err) {
+      console.warn('Static key authentication failed: ', err);
+    }
+  }
+  return false;
+};
+
 export const getAuthorizationMiddleware = (authTokenLookup: (accountSid: string) => string = defaultTokenLookup) => async (req: Request, res: Response, next: NextFunction) => {
   if (!req || !req.headers || !req.headers.authorization) {
     return unauthorized(res);
@@ -76,7 +102,6 @@ export const getAuthorizationMiddleware = (authTokenLookup: (accountSid: string)
       if (!isWorker(tokenResult) || isGuest(tokenResult)) {
         return unauthorized(res);
       }
-
       req.user = twilioUser(tokenResult.worker_sid, tokenResult.roles);
       return next();
     } catch (err) {
@@ -84,27 +109,12 @@ export const getAuthorizationMiddleware = (authTokenLookup: (accountSid: string)
     }
   }
 
-  if (authorization.startsWith('Basic')) {
-    if (canAccessResourceWithStaticKey(req.originalUrl, req.method)) {
-      try {
-        const staticSecretKey = `STATIC_KEY_${accountSid}`;
-        const staticSecret = process.env[staticSecretKey];
-        const requestSecret = authorization.replace('Basic ', '');
+  if (canAccessResourceWithStaticKey(req.originalUrl, req.method) && authenticateWithStaticKey(req)) return next();
 
-        const isStaticSecretValid =
-          staticSecret &&
-          requestSecret &&
-          crypto.timingSafeEqual(Buffer.from(requestSecret), Buffer.from(staticSecret));
+  return unauthorized(res);
+};
 
-        if (isStaticSecretValid) {
-          req.user = twilioUser(`account-${accountSid}`, []);
-          return next();
-        }
-      } catch (err) {
-        console.error('Static key authentication failed: ', err);
-      }
-    }
-  }
-
+export const staticKeyAuthorizationMiddleware = async (req: Request, res: Response, next: NextFunction) => {
+  if (authenticateWithStaticKey(req)) return next();
   return unauthorized(res);
 };

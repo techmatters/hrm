@@ -14,21 +14,9 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { IRouter, Router } from 'express';
-import resourceRoutes from './resource/resource-routes-v0';
-import { CloudSearchConfig } from './config/cloud-search';
-import importRoutes from './import/importRoutesV0';
+const range = (elements: number | string): string[] =>
+  Array.from(Array(typeof elements === 'number' ? elements : parseInt(elements)).keys()).map(i =>
+    i.toString(),
+  );
 
-export const apiV0 = (cloudSearchConfig: CloudSearchConfig) => {
-  const router: IRouter = Router();
-
-  router.use(resourceRoutes(cloudSearchConfig));
-  return router;
-};
-
-export const internalApiV0 = () => {
-  const router: IRouter = Router();
-
-  router.use(importRoutes());
-  return router;
-};
+export default range;

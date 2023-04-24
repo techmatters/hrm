@@ -15,20 +15,29 @@
  */
 
 import { IRouter, Router } from 'express';
-import resourceRoutes from './resource/resource-routes-v0';
-import { CloudSearchConfig } from './config/cloud-search';
-import importRoutes from './import/importRoutesV0';
+import { ImportApiResource, ImportBatch } from './importTypes';
+import importService, { isValidationFailure } from './importService';
+import { AccountSID } from '@tech-matters/twilio-worker-auth';
 
-export const apiV0 = (cloudSearchConfig: CloudSearchConfig) => {
-  const router: IRouter = Router();
-
-  router.use(resourceRoutes(cloudSearchConfig));
-  return router;
+export type ImportRequestBody = {
+  importedResources: ImportApiResource[];
+  batch: ImportBatch;
 };
 
-export const internalApiV0 = () => {
+const importRoutes = () => {
   const router: IRouter = Router();
 
-  router.use(importRoutes());
+  const { upsertResources } = importService();
+
+  router.post('/import', async ({ body, accountSid }, res) => {
+    const { importedResources, batch }: ImportRequestBody = body;
+    const result = await upsertResources(accountSid as AccountSID, importedResources, batch);
+    if (isValidationFailure(result)) {
+      res.status(400).json(result);
+    }
+    res.json(result);
+  });
+
   return router;
 };
+export default importRoutes;

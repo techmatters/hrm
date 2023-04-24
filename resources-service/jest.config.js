@@ -26,6 +26,7 @@ module.exports = config => {
           useExperimentalLanguageServer: true,
         },
       },
+      setupFiles: ['<rootDir>/tests/setTestEnvVars.js'],
     }
   );
 };

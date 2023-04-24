@@ -5,6 +5,7 @@
   "main": "dist/index.js",
   "devDependencies": {
     "@tech-matters/testing": "^1.0.0",
+    "@tech-matters/types": "^1.0.0",
     "@types/http-errors": "^2.0.1",
     "@types/node": "^18.15.11",
     "delay": "^5.0.0",
@@ -33,8 +34,8 @@
     "db:create:schema": "node ./create-db",
     "db:create-migration": "sequelize migration:generate --name ",
     "db:undo-last": "sequelize db:migrate:undo",
-    "es:create-index:local": "cross-env AWS_REGION=us-east-1 SSM_ENDPOINT=http://localhost:4566 NODE_ENV=local ELASTICSEARCH_CONFIG='{\"node\": \"http://localhost:9200\"}' tsx ./scripts/elasticsearch/create-index.ts",
-    "es:delete-index:local": "cross-env AWS_REGION=us-east-1 SSM_ENDPOINT=http://localhost:4566 NODE_ENV=local ELASTICSEARCH_CONFIG='{\"node\": \"http://localhost:9200\"}' tsx ./scripts/elasticsearch/delete-index.ts",
+    "es:create-index:local": "cross-env AWS_REGION=us-east-1 SSM_ENDPOINT=http://localhost:4566 NODE_ENV=local ELASTICSEARCH_CONFIG_node=http://localhost:9200 tsx ./scripts/elasticsearch/create-index.ts",
+    "es:delete-index:local": "cross-env AWS_REGION=us-east-1 SSM_ENDPOINT=http://localhost:4566 NODE_ENV=local ELASTICSEARCH_CONFIG_node=http://localhost:9200 tsx ./scripts/elasticsearch/delete-index.ts",
     "build-scripts": "tsc --project tsconfig.scripts.json",
     "import-khp-json": "node ./scripts-dist/scripts/import-khp-resources.js",
     "build-and-import-khp-json": "npm run build-scripts && npm run import-khp-json",
