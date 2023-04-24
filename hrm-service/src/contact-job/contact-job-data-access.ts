@@ -140,8 +140,8 @@ export const appendFailedAttemptPayload = async (
 export const getPendingCleanupJobs = async (
   accountSid: string,
   cleanupRetentionDays: number,
-): Promise<ContactJobRecord[]> => {
-  return db.task(tx => tx.manyOrNone<ContactJobRecord>(PENDING_CLEANUP_JOBS, { accountSid, cleanupRetentionDays }));
+): Promise<RetrieveContactTranscriptJob[]> => {
+  return db.task(tx => tx.manyOrNone<RetrieveContactTranscriptJob>(PENDING_CLEANUP_JOBS, { accountSid, cleanupRetentionDays }));
 };
 
 export const getPendingCleanupJobAccountSids = async (

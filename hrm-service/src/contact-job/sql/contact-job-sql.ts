@@ -33,11 +33,17 @@ export const COMPLETE_JOB_SQL = `
 export const DELETE_JOB_SQL = `DELETE FROM "ContactJobs" WHERE id = $<jobId> AND "accountSid" = $<accountSid>`;
 
 export const PENDING_CLEANUP_JOBS = `
+WITH due AS (
   SELECT * FROM "ContactJobs" WHERE
     "cleanupStatus" = 'pending'
     AND "accountSid" = $<accountSid>
     AND "completed" IS NOT NULL
-    AND "completed" < (current_timestamp - interval '$<cleanupRetentionDays> day')`;
+    AND "completed" < (current_timestamp - interval '$<cleanupRetentionDays> day')
+  )
+  SELECT due.*, to_jsonb(contacts.*) AS "resource" FROM due LEFT JOIN LATERAL (
+  ${selectContactsWithRelations(
+    'Contacts',
+  )} WHERE c."accountSid" = due."accountSid" AND c."id" = due."contactId") AS contacts ON true`;
 
 export const PENDING_CLEANUP_JOB_ACCOUNT_SIDS = `
   SELECT DISTINCT "accountSid" FROM "ContactJobs" WHERE
