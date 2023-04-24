@@ -26,7 +26,7 @@ import type { ImportRequestBody } from '@tech-matters/hrm-types';
 const internalResourcesBaseUrl = process.env.internal_resources_base_url as string;
 const hrmEnv = process.env.NODE_ENV;
 
-const postNormalizedResourcesBody = async (accountSid: string, apiKey: string, message: ImportRequestBody) => {
+const postResourcesBody = async (accountSid: string, apiKey: string, message: ImportRequestBody) => {
     const url = `https://${internalResourcesBaseUrl}/v0/accounts/${accountSid}/resources/import`;
 
     const options = {
@@ -46,7 +46,7 @@ const upsertRecord = async (message: ImportRequestBody): Promise<void> => {
   const { accountSid } = message;
   const apiKey = await getSsmParameter(`/${hrmEnv}/twilio/${message.accountSid}/static_key`);
 
-  const result = await postNormalizedResourcesBody(accountSid, apiKey, message);
+  const result = await postResourcesBody(accountSid, apiKey, message);
 
   if (!result.ok) {
     const error = await result.json();

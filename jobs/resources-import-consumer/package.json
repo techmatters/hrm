@@ -1,5 +1,5 @@
 {
-  "name": "@tech-matters/resources-import-normalized-consumer",
+  "name": "@tech-matters/hrm-resources-import-consumer",
   "version": "0.0.1",
   "description": "",
   "main": "dist/index.js",
@@ -20,7 +20,7 @@
     "ts-node": "^10.9.1"
   },
   "scripts": {
-    "docker:build": "docker build -t resources-import-normalized-consumer --build-arg lambda_name=resources-import-normalized-consumer -f ../Dockerfile ../../",
+    "docker:build": "docker build -t resources-import-consumer --build-arg lambda_name=resources-import-consumer -f ../Dockerfile ../../",
     "test:unit": "jest tests/unit"
   }
 }
