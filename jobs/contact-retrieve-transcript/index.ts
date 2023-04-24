@@ -18,7 +18,7 @@
 import { SQS } from 'aws-sdk';
 
 import { ContactJobProcessorError } from '@tech-matters/hrm-job-errors';
-import { getSsmParameter } from '@tech-matters/hrm-ssm-cache';
+import { getSsmParameter } from '@tech-matters/ssm-cache';
 import { ContactJobAttemptResult } from '@tech-matters/types';
 import { exportTranscript } from './exportTranscript';
 import { uploadTranscript } from './uploadTranscript';

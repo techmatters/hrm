@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-jest.mock('@tech-matters/hrm-ssm-cache');
+jest.mock('@tech-matters/ssm-cache');
 
 jest.mock('aws-sdk', () => {
   const SQSMocked = {

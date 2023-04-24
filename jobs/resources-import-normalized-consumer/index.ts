@@ -16,7 +16,7 @@
 
 import { ResourceImportProcessorError } from '@tech-matters/hrm-job-errors';
 import fetch from 'node-fetch';
-import { getSsmParameter } from '@tech-matters/hrm-ssm-cache';
+import { getSsmParameter } from '@tech-matters/ssm-cache';
 // import { SQS } from 'aws-sdk';
 // eslint-disable-next-line prettier/prettier
 import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
@@ -72,7 +72,7 @@ const upsertRecordWithoutException = async (sqsRecord: SQSRecord): Promise<Proce
 
     return {
       status: 'successs',
-      messageId: sqsRecord.messageId, 
+      messageId: sqsRecord.messageId,
     };
   } catch (err) {
     console.error(new ResourceImportProcessorError('Failed to process record'), err);
@@ -90,7 +90,7 @@ const upsertRecordWithoutException = async (sqsRecord: SQSRecord): Promise<Proce
 
     return {
       status: 'failure',
-      messageId: sqsRecord.messageId, 
+      messageId: sqsRecord.messageId,
       reason: new Error(errMessage),
     };
   }
@@ -120,7 +120,7 @@ export const handler = async (event: SQSEvent): Promise<SQSBatchResponse> => {
 
     const response: SQSBatchResponse = { batchItemFailures: Array.from(batchItemFailuresSet).map(messageId => ({
       itemIdentifier: messageId,
-    })), 
+    })),
     };
     return response;
   } catch (err) {

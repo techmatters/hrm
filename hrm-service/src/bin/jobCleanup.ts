@@ -18,7 +18,6 @@ import { handleSignals } from './handleSignals';
 
 const gracefulExit = async () => {
   //TODO: this should probably handle closing any running processes and open db connections
-  clearInterval(processorIntervalId);
 };
 
 handleSignals(gracefulExit);

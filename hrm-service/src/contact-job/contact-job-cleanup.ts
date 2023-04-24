@@ -1,5 +1,5 @@
 import { ContactJobType } from '@tech-matters/types';
-import { getClient } from '@tech-matters/hrm-twilio-client';
+import { getClient } from '@tech-matters/twilio-client';
 import { getSsmParameter } from '../config/ssmCache';
 import {
   deleteContactJob,
@@ -10,23 +10,8 @@ import {
 
 const MAX_CLEANUP_JOB_RETENTION_DAYS = 365;
 
-export const cleanupContactJobs = async (): Promise<void> => {
-  const accountSids = await getPendingCleanupJobAccountSids(MAX_CLEANUP_JOB_RETENTION_DAYS);
-
-  for (const accountSid of accountSids) {
-    const cleanupRetentionDays =
-      (await getSsmParameter(
-        `/${process.env.NODE_ENV}/hrm/jobs/${accountSid}/contact/cleanup-retention-days`,
-      )) || MAX_CLEANUP_JOB_RETENTION_DAYS;
-    const pendingJobs = await getPendingCleanupJobs(accountSid, cleanupRetentionDays as number);
-
-    for (const job of pendingJobs) {
-    }
-  }
-};
-
 export const cleanupRetrieveContactTranscriptJob = async (job: ContactJobRecord): Promise<void> => {
-  const { acccountSid } = job;
+  const { accountSid } = job;
   const client = await getClient({ accountSid });
   try {
     await client.chat.v2
@@ -51,5 +36,21 @@ export const cleanupRetrieveContactTranscriptJob = async (job: ContactJobRecord)
 export const cleanupContactJob = async (job: ContactJobRecord): Promise<void> => {
   if (job.jobType === ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT) {
     await cleanupRetrieveContactTranscriptJob(job);
+  }
+};
+
+export const cleanupContactJobs = async (): Promise<void> => {
+  const accountSids = await getPendingCleanupJobAccountSids(MAX_CLEANUP_JOB_RETENTION_DAYS);
+
+  for (const accountSid of accountSids) {
+    const cleanupRetentionDays =
+      (await getSsmParameter(
+        `/${process.env.NODE_ENV}/hrm/jobs/${accountSid}/contact/cleanup-retention-days`,
+      )) || MAX_CLEANUP_JOB_RETENTION_DAYS;
+    const pendingJobs = await getPendingCleanupJobs(accountSid, cleanupRetentionDays as number);
+
+    for (const job of pendingJobs) {
+      await cleanupContactJob(job);
+    }
   }
 };

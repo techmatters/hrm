@@ -15,13 +15,15 @@
  */
 
 import { Twilio } from 'twilio';
-import { getSsmParameter } from '@tech-matters/hrm-ssm-cache';
+import { getSsmParameter } from '@tech-matters/ssm-cache';
 
 import { getMockClient } from './mockClient';
 
 type ClientCache = {
   [accountSid: string]: Twilio;
 };
+
+export type TwilioClient = Twilio;
 
 const clientCache: ClientCache = {};
 
