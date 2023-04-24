@@ -18,9 +18,11 @@ import { db, pgp } from '../connection-pool';
 // eslint-disable-next-line prettier/prettier
 import type { Contact } from '../contact/contact-data-access';
 import {
-  COMPLETE_JOB_SQL,
-  PULL_DUE_JOBS_SQL,
   ADD_FAILED_ATTEMPT_PAYLOAD,
+  COMPLETE_JOB_SQL,
+  PENDING_CLEANUP_JOBS,
+  PENDING_CLEANUP_JOB_ACCOUNT_SIDS,
+  PULL_DUE_JOBS_SQL,
   selectSingleContactJobByIdSql,
 } from './sql/contact-job-sql';
 import { txIfNotInOne } from '../sql';
@@ -133,3 +135,16 @@ export const appendFailedAttemptPayload = async (
       attemptPayload,
     }),
   );
+
+export const getPendingCleanupJobs = async (
+  accountSid: string,
+  cleanupRetentionDays: number,
+): Promise<ContactJobRecord[]> => {
+  return db.task(tx => tx.manyOrNone<ContactJobRecord>(PENDING_CLEANUP_JOBS, { accountSid, cleanupRetentionDays }));
+};
+
+export const getPendingCleanupJobAccountSids = async (
+  maxCleanupRetentionDays: number,
+): Promise<string[]> => {
+  return db.task(tx => tx.manyOrNone<string>(PENDING_CLEANUP_JOB_ACCOUNT_SIDS, { maxCleanupRetentionDays }));
+};
