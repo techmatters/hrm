@@ -23,11 +23,11 @@ import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
 // eslint-disable-next-line prettier/prettier
 import type { ImportRequestBody } from '@tech-matters/hrm-types';
 
-const resourcesBaseUrl = process.env.resources_base_url as string;
+const internalResourcesBaseUrl = process.env.resources_base_url as string;
 const hrmEnv = process.env.NODE_ENV;
 
 const postNormalizedResourcesBody = async (accountSid: string, apiKey: string, message: ImportRequestBody) => {
-    const url = `https://${resourcesBaseUrl}/v0/accounts/${accountSid}/resources/import`;
+    const url = `https://${internalResourcesBaseUrl}/v0/accounts/${accountSid}/resources/import`;
 
     const options = {
       method: 'POST',
@@ -100,7 +100,7 @@ export const handler = async (event: SQSEvent): Promise<SQSBatchResponse> => {
   const batchItemFailuresSet: Set<string> = new Set();
 
   try {
-    if (!resourcesBaseUrl) {
+    if (!internalResourcesBaseUrl) {
       throw new Error('Missing completed_sqs_queue_url ENV Variable');
     }
 
