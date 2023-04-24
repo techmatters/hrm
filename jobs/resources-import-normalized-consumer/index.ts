@@ -23,7 +23,7 @@ import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
 // eslint-disable-next-line prettier/prettier
 import type { ImportRequestBody } from '@tech-matters/hrm-types';
 
-const internalResourcesBaseUrl = process.env.resources_base_url as string;
+const internalResourcesBaseUrl = process.env.internal_resources_base_url as string;
 const hrmEnv = process.env.NODE_ENV;
 
 const postNormalizedResourcesBody = async (accountSid: string, apiKey: string, message: ImportRequestBody) => {
