@@ -20,3 +20,10 @@ export class ContactJobProcessorError extends Error {
     this.name = 'ContactJobProcessorError';
   }
 }
+
+export class ResourcesJobProcessorError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ResourcesJobProcessorError';
+  }
+}

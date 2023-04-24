@@ -1,0 +1,21 @@
+{
+  "name": "@tech-matters/resources-search-complete",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "author": "",
+  "license": "AGPL",
+  "dependencies": {
+    "@tech-matters/hrm-job-errors": "^1.0.0",
+    "@tech-matters/hrm-ssm-cache": "^1.0.0",
+    "@tech-matters/sns-client": "^1.0.0",
+    "@tech-matters/types": "^1.0.0",
+    "aws-sdk": "^2.1225.0"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.108"
+  },
+  "scripts": {
+    "docker:build": "docker build -t resources-search-complete --build-arg lambda_name=resources-search-complete -f ../Dockerfile ../../"
+  }
+}

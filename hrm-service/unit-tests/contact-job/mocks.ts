@@ -15,7 +15,7 @@
  */
 
 import { ContactJob } from '../../src/contact-job/contact-job-data-access';
-import { ContactJobType } from '@tech-matters/hrm-types';
+import { ContactJobType } from '@tech-matters/types';
 
 export const getContactJobMock = (overrides: Partial<ContactJob> = {}): ContactJob => ({
   jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
