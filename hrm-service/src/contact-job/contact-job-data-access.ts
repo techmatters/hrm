@@ -20,6 +20,7 @@ import type { Contact } from '../contact/contact-data-access';
 import {
   ADD_FAILED_ATTEMPT_PAYLOAD,
   COMPLETE_JOB_SQL,
+  DELETE_JOB_SQL,
   PENDING_CLEANUP_JOBS,
   PENDING_CLEANUP_JOB_ACCOUNT_SIDS,
   PULL_DUE_JOBS_SQL,
@@ -147,4 +148,8 @@ export const getPendingCleanupJobAccountSids = async (
   maxCleanupRetentionDays: number,
 ): Promise<string[]> => {
   return db.task(tx => tx.manyOrNone<string>(PENDING_CLEANUP_JOB_ACCOUNT_SIDS, { maxCleanupRetentionDays }));
+};
+
+export const deleteContactJob = async (accountSid: string, jobId: number): Promise<void> => {
+  return db.task(tx => tx.none(DELETE_JOB_SQL, { jobId }));
 };

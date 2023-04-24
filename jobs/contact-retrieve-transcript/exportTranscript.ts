@@ -174,7 +174,7 @@ export const exportTranscript = async ({
     `Trying to export transcript with accountSid ${accountSid}, serviceSid ${serviceSid}, channelSid ${channelSid}`,
   );
 
-  const client = getClient({ accountSid, authToken });
+  const client = await getClient({ accountSid, authToken });
 
   const messages = await getTransformedMessages(client, channelSid, serviceSid);
   const participants = await getParticipants(client, channelSid, serviceSid, messages);

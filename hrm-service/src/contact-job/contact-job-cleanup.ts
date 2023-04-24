@@ -1,7 +1,12 @@
 import { ContactJobType } from '@tech-matters/types';
-import {getClient} from '@tech-matters/twilio-client';
+import { getClient } from '@tech-matters/hrm-twilio-client';
 import { getSsmParameter } from '../config/ssmCache';
-import { getPendingCleanupJobs, getPendingCleanupJobAccountSids } from './contact-job-data-access';
+import {
+  deleteContactJob,
+  ContactJobRecord,
+  getPendingCleanupJobs,
+  getPendingCleanupJobAccountSids,
+} from './contact-job-data-access';
 
 const MAX_CLEANUP_JOB_RETENTION_DAYS = 365;
 
@@ -16,9 +21,31 @@ export const cleanupContactJobs = async (): Promise<void> => {
     const pendingJobs = await getPendingCleanupJobs(accountSid, cleanupRetentionDays as number);
 
     for (const job of pendingJobs) {
-
     }
   }
+};
+
+export const cleanupRetrieveContactTranscriptJob = async (job: ContactJobRecord): Promise<void> => {
+  const { acccountSid } = job;
+  const client = await getClient({ accountSid });
+  try {
+    await client.chat.v2
+      .services('your-service-sid')
+      .channels('your-channel-sid')
+      .remove();
+  } catch (err) {
+    if (err instanceof RestException && err.status === 404) {
+      console.log(`Channel ${job.channelSid} not found, skipping cleanup`);
+      return;
+    }
+
+    console.error(
+      `Error cleaning up twilio channel ${job.channelSid} for job ${job.jobId}: ${err}`,
+    );
+    return;
+  }
+
+  await deleteContactJob(job.accountSid, job.jobId);
 };
 
 export const cleanupContactJob = async (job: ContactJobRecord): Promise<void> => {
@@ -26,5 +53,3 @@ export const cleanupContactJob = async (job: ContactJobRecord): Promise<void> =>
     await cleanupRetrieveContactTranscriptJob(job);
   }
 };
-
-const cleanupRetrieveContactTranscriptJob = async (job: ContactJobRecord): Promise<void> => {
