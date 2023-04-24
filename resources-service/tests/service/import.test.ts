@@ -23,7 +23,7 @@ import { ImportRequestBody } from '../../src/import/importRoutesV0';
 import { ImportApiResource, ImportProgress } from '../../src/import/importTypes';
 import { internalHeaders } from './server';
 import each from 'jest-each';
-import { ReferrableResource } from '../../src/resource/resource-model';
+import { ReferrableResource } from '@tech-matters/types';
 import { AssertionError } from 'assert';
 import { UpsertImportedResourceResult } from '../../src/import/importDataAccess';
 

@@ -83,8 +83,18 @@ const getEsConfig = async ({
   config: ClientOptions | undefined;
   indexType: string;
 }) => {
+  console.log('config', config);
   if (config) return config;
-  if (process.env.ELASTICSEARCH_CONFIG) return JSON.parse(process.env.ELASTICSEARCH_CONFIG);
+  const envConfigEntries = Object.entries(process.env)
+    .filter(([key]) => key.startsWith('ELASTICSEARCH_CONFIG_'))
+    .map(([varName, value]) => [varName.substring('ELASTICSEARCH_CONFIG_'.length), value]);
+  console.log('envConfigEntries', envConfigEntries);
+  if (process.env.ELASTICSEARCH_CONFIG || envConfigEntries.length) {
+    return {
+      ...(process.env.ELASTICSEARCH_CONFIG ? JSON.parse(process.env.ELASTICSEARCH_CONFIG) : {}),
+      ...Object.fromEntries(envConfigEntries),
+    };
+  }
 
   return JSON.parse(await getSsmParameter(getConfigSsmParameterKey(indexType)));
 };
