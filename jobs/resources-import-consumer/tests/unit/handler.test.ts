@@ -112,7 +112,7 @@ const generateSQSEventRecord = (messageId: string, body: ImportRequestBody): SQS
   awsRegion: 'us-east-1',
 });
 
-describe('resources-import-normalized-consumer handler', () => {
+describe('resources-import-consumer handler', () => {
   each([
     {
       when: 'single message',

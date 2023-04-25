@@ -34,7 +34,7 @@ on:
         options:
           - contact-retrieve-recording-url
           - contact-retrieve-transcript
-          - resources-import-normalized-consumer
+          - resources-import-consumer
           - resources-search-complete
           - resources-search-index
 
