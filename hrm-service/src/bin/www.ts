@@ -75,7 +75,7 @@ const internalApp = configureDefaultPostMiddlewares(
  * Create HTTP server.
  */
 console.log(new Date(Date.now()).toLocaleString() + ': trying to create server');
-const server = http.createServer(app).addListener('request', internalApp);
+const server = http.createServer(app);
 console.log(new Date(Date.now()).toLocaleString() + ': created server, about to listen');
 const internalServer = http.createServer(internalApp);
 console.log(new Date(Date.now()).toLocaleString() + ': created internal server, about to listen');
