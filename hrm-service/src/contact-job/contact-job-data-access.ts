@@ -21,10 +21,12 @@ import {
   ADD_FAILED_ATTEMPT_PAYLOAD,
   COMPLETE_JOB_SQL,
   DELETE_JOB_SQL,
-  PENDING_CLEANUP_JOBS,
-  PENDING_CLEANUP_JOB_ACCOUNT_SIDS,
+  PENDING_CLEANUP_JOBS_SQL,
+  PENDING_CLEANUP_JOB_ACCOUNT_SIDS_SQL,
   PULL_DUE_JOBS_SQL,
   selectSingleContactJobByIdSql,
+  UPDATE_JOB_CLEANUP_ACTIVE_SQL,
+  UPDATE_JOB_CLEANUP_PENDING_SQL,
 } from './sql/contact-job-sql';
 import { txIfNotInOne } from '../sql';
 
@@ -141,15 +143,28 @@ export const getPendingCleanupJobs = async (
   accountSid: string,
   cleanupRetentionDays: number,
 ): Promise<RetrieveContactTranscriptJob[]> => {
-  return db.task(tx => tx.manyOrNone<RetrieveContactTranscriptJob>(PENDING_CLEANUP_JOBS, { accountSid, cleanupRetentionDays }));
+  return db.task(tx => tx.manyOrNone<RetrieveContactTranscriptJob>(PENDING_CLEANUP_JOBS_SQL, { accountSid, cleanupRetentionDays }));
 };
 
 export const getPendingCleanupJobAccountSids = async (
   maxCleanupRetentionDays: number,
 ): Promise<string[]> => {
-  return db.task(tx => tx.manyOrNone<string>(PENDING_CLEANUP_JOB_ACCOUNT_SIDS, { maxCleanupRetentionDays }));
+  const ret = await db.task(tx => tx.manyOrNone(PENDING_CLEANUP_JOB_ACCOUNT_SIDS_SQL, { maxCleanupRetentionDays }));
+  return ret?.map(r => r.accountSid);
 };
 
 export const deleteContactJob = async (accountSid: string, jobId: number): Promise<void> => {
-  return db.task(tx => tx.none(DELETE_JOB_SQL, { jobId }));
+  return db.task(tx => tx.none(DELETE_JOB_SQL, { accountSid, jobId }));
+};
+
+export const setContactJobCleanupActive = async (
+  jobId: number,
+): Promise<void> => {
+  return db.task(tx => tx.none(UPDATE_JOB_CLEANUP_ACTIVE_SQL, { jobId }));
+};
+
+export const setContactJobCleanupPending = async (
+  jobId: number,
+): Promise<void> => {
+  return db.task(tx => tx.none(UPDATE_JOB_CLEANUP_PENDING_SQL, { jobId }));
 };

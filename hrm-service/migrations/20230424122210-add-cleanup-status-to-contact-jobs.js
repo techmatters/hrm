@@ -19,19 +19,25 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface) {
-    await queryInterface.sequelize.query(
-      `CREATE TYPE contactJobCleanupStatus AS ENUM ('pending', 'active', 'complete');`,
-    );
+    await queryInterface.sequelize.query(`
+      DO $$ BEGIN
+        CREATE TYPE contactJobCleanupStatus AS ENUM ('not_ready', 'pending', 'active', 'complete');
+      EXCEPTION
+        WHEN duplicate_object THEN null;
+      END $$;
+    `);
+
     await queryInterface.sequelize.query(`
       ALTER TABLE IF EXISTS public."ContactJobs"
-          ADD COLUMN IF NOT EXISTS "cleanupStatus" contactJobCleanupStatus;
+        ADD COLUMN IF NOT EXISTS "cleanupStatus" contactJobCleanupStatus NOT NULL DEFAULT 'not_ready',
+        ADD COLUMN IF NOT EXISTS "lastCleanup" timestamp with time zone
     `);
   },
 
   async down(queryInterface) {
     await queryInterface.sequelize.query(`
       ALTER TABLE IF EXISTS public."ContactJobs"
-          DROP COLUMN IF EXISTS "cleanupStatus";
+        DROP COLUMN IF EXISTS "cleanupStatus";
     `);
     await queryInterface.sequelize.query(`DROP TYPE contactJobCleanupStatus;`);
   },

@@ -23,48 +23,57 @@ import {
   RetrieveContactTranscriptJob,
   getPendingCleanupJobs,
   getPendingCleanupJobAccountSids,
+  setContactJobCleanupActive,
+  setContactJobCleanupPending,
 } from './contact-job-data-access';
 
 const MAX_CLEANUP_JOB_RETENTION_DAYS = 365;
 
-export const cleanupRetrieveContactTranscriptJob = async (
-  job: RetrieveContactTranscriptJob,
-): Promise<void> => {
+export const cleanupTranscript = async (job: RetrieveContactTranscriptJob): Promise<boolean> => {
   const { accountSid, id } = job;
   const { channelSid } = job.resource;
+  await setContactJobCleanupActive(id);
   const client = await getClient({ accountSid });
   try {
     await client.chat.v2
-      .services('your-service-sid')
-      .channels('your-channel-sid')
+      .services(job.resource.serviceSid)
+      .channels(job.resource.channelSid)
       .remove();
   } catch (err) {
     if (err instanceof RestException && err.status === 404) {
-      console.log(`Channel ${channelSid} not found, skipping cleanup`);
-      return;
+      console.log(`Channel ${channelSid} not found, assuming it has already been deleteed`);
+    } else {
+      console.error(`Error cleaning up twilio channel ${channelSid} for job ${id}: ${err}`);
+      await setContactJobCleanupPending(id);
+      return false;
     }
-
-    console.error(`Error cleaning up twilio channel ${channelSid} for job ${id}: ${err}`);
-    return;
   }
 
-  await deleteContactJob(accountSid, id);
-
-  console.log(`Successfully cleaned up contact job ${id}`);
+  return true;
 };
 
 export const cleanupContactJob = async (job: RetrieveContactTranscriptJob): Promise<void> => {
   if (job.jobType === ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT) {
-    await cleanupRetrieveContactTranscriptJob(job);
+    if (!(await cleanupTranscript(job))) return;
   }
+
+  const { accountSid, id } = job;
+  await deleteContactJob(accountSid, id);
+  console.log(`Successfully cleaned up contact job ${id}`);
 };
 
-const getCleanupRetentionDays = async (accountSid): Promise<number | undefined> =>
-  parseInt(
-    await getSsmParameter(
-      `/${process.env.NODE_ENV}/hrm/jobs/${accountSid}/contact/cleanup-retention-days`,
-    ),
-  ) || MAX_CLEANUP_JOB_RETENTION_DAYS;
+const getCleanupRetentionDays = async (accountSid): Promise<number | undefined> => {
+  let ssmRetentionDays: number;
+  try {
+    ssmRetentionDays =
+      parseInt(await getSsmParameter(`/twilio/${accountSid}/cleanupJobRetentionDays`)) ||
+      MAX_CLEANUP_JOB_RETENTION_DAYS;
+  } catch {
+    ssmRetentionDays = MAX_CLEANUP_JOB_RETENTION_DAYS;
+  }
+
+  return Math.min(MAX_CLEANUP_JOB_RETENTION_DAYS, ssmRetentionDays);
+};
 
 export const cleanupContactJobs = async (): Promise<void> => {
   const accountSids = await getPendingCleanupJobAccountSids(MAX_CLEANUP_JOB_RETENTION_DAYS);

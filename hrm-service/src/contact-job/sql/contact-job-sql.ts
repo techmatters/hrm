@@ -16,6 +16,12 @@
 
 import { selectContactsWithRelations } from '../../contact/sql/contact-get-sql';
 
+export enum ContactJobCleanupStatus {
+  PENDING = 'pending',
+  ACTIVE = 'active',
+  COMPLETED = 'completed',
+}
+
 export const ADD_FAILED_ATTEMPT_PAYLOAD = `
   INSERT INTO "ContactJobsFailures" ("contactJobId", "attemptNumber", "payload", "createdAt")
   VALUES ($<contactJobId>, $<attemptNumber>, $<attemptPayload:json>::JSONB, current_timestamp)
@@ -25,41 +31,63 @@ export const ADD_FAILED_ATTEMPT_PAYLOAD = `
 export const COMPLETE_JOB_SQL = `
   UPDATE "ContactJobs" SET
       "completed" = CURRENT_TIMESTAMP,
-      "completionPayload" = $<completionPayload:json>::JSONB
+      "completionPayload" = $<completionPayload:json>::JSONB,
+      "cleanupStatus" = '${ContactJobCleanupStatus.PENDING}'
   WHERE "id" = $<id>
   RETURNING *
 `;
 
 export const DELETE_JOB_SQL = `DELETE FROM "ContactJobs" WHERE id = $<jobId> AND "accountSid" = $<accountSid>`;
 
-export const PENDING_CLEANUP_JOBS = `
+export const PENDING_CLEANUP_JOBS_SQL = `
 WITH due AS (
-  SELECT * FROM "ContactJobs" WHERE
-    "cleanupStatus" = 'pending'
+  SELECT * FROM "ContactJobs"
+  WHERE
+    "cleanupStatus" = '${ContactJobCleanupStatus.PENDING}'
     AND "accountSid" = $<accountSid>
     AND "completed" IS NOT NULL
     AND "completed" < (current_timestamp - interval '$<cleanupRetentionDays> day')
   )
-  SELECT due.*, to_jsonb(contacts.*) AS "resource" FROM due LEFT JOIN LATERAL (
+  SELECT due.*, to_jsonb(contacts.*) AS "resource"
+  FROM due LEFT JOIN LATERAL (
   ${selectContactsWithRelations(
     'Contacts',
-  )} WHERE c."accountSid" = due."accountSid" AND c."id" = due."contactId") AS contacts ON true`;
+  )} WHERE c."accountSid" = due."accountSid" AND c."id" = due."contactId") AS contacts ON true
+`;
 
-export const PENDING_CLEANUP_JOB_ACCOUNT_SIDS = `
-  SELECT DISTINCT "accountSid" FROM "ContactJobs" WHERE
-    "cleanupStatus" = 'pending'
+export const PENDING_CLEANUP_JOB_ACCOUNT_SIDS_SQL = `
+  SELECT DISTINCT "accountSid" FROM "ContactJobs"
+  WHERE
+    "cleanupStatus" = '${ContactJobCleanupStatus.PENDING}'
     AND "completed" IS NOT NULL
-    AND "completed" < (current_timestamp - interval '$<maxCleanupRetentionDays> day')`;
+    AND "completed" < (current_timestamp - interval '$<maxCleanupRetentionDays> day')
+`;
 
 export const PULL_DUE_JOBS_SQL = `
   WITH due AS (
     UPDATE "ContactJobs" SET "lastAttempt" = CURRENT_TIMESTAMP, "numberOfAttempts" = "numberOfAttempts" + 1
     WHERE "completed" IS NULL AND "numberOfAttempts" < $<jobMaxAttempts> AND ("lastAttempt" IS NULL OR "lastAttempt" <= $<lastAttemptedBefore>::TIMESTAMP WITH TIME ZONE) RETURNING *
   )
-  SELECT due.*, to_jsonb(contacts.*) AS "resource" FROM due LEFT JOIN LATERAL (
+  SELECT due.*, to_jsonb(contacts.*) AS "resource"
+  FROM due LEFT JOIN LATERAL (
   ${selectContactsWithRelations(
     'Contacts',
   )} WHERE c."accountSid" = due."accountSid" AND c."id" = due."contactId") AS contacts ON true
+`;
+
+export const UPDATE_JOB_CLEANUP_ACTIVE_SQL = `
+  UPDATE "ContactJobs"
+  SET "lastCleanup" = CURRENT_TIMESTAMP,
+    "cleanupStatus" = '${ContactJobCleanupStatus.ACTIVE}'
+  WHERE
+    "id" = $<jobId>
+`;
+
+export const UPDATE_JOB_CLEANUP_PENDING_SQL = `
+  UPDATE "ContactJobs"
+    "cleanupStatus" = '${ContactJobCleanupStatus.PENDING}'
+  WHERE
+    "id" = $<jobId>
 `;
 
 export const selectSingleContactJobByIdSql = (table: string) =>

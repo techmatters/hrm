@@ -27,7 +27,7 @@ export const getMockClient = ({ accountSid }: { accountSid: string }) => {
     chat: {
       v2: {
         services: () => ({
-          channels: {
+          channels: () => ({
             get: () => ({
               messages: {
                 list: () => chatMessageList,
@@ -36,7 +36,8 @@ export const getMockClient = ({ accountSid }: { accountSid: string }) => {
                 list: () => [],
               },
             }),
-          },
+            remove: () => {},
+          }),
           users: {
             get: (identity: string) => {
               let userData: {

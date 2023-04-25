@@ -42,16 +42,25 @@ const getClientOrMock = ({
   return new Twilio(accountSid, authToken);
 };
 
+export const getAuthToken = async (
+  accountSid: string,
+  authToken: string | undefined,
+): Promise<string> => {
+  if (authToken) return authToken;
+
+  if (process.env.TWILIO_AUTH_TOKEN) return process.env.TWILIO_AUTH_TOKEN;
+
+  return getSsmParameter(`/${process.env.NODE_ENV}/twilio/${accountSid}/auth_token`);
+};
+
 export const getClient = async ({
   accountSid,
-  authToken,
+  authToken: authTokenParam,
 }: {
   accountSid: string;
   authToken?: string;
 }): Promise<Twilio> => {
-  if (!authToken) {
-    authToken = await getSsmParameter(`/${process.env.NODE_ENV}/twilio/${accountSid}/auth_token`);
-  }
+  const authToken = await getAuthToken(accountSid, authTokenParam);
 
   if (!clientCache[accountSid]) {
     clientCache[accountSid] = getClientOrMock({ accountSid, authToken });
