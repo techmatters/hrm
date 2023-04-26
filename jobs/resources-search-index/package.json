@@ -7,7 +7,7 @@
   "license": "AGPL",
   "dependencies": {
     "@tech-matters/elasticsearch-client": "^1.0.0",
-    "@tech-matters/hrm-job-errors": "^1.0.0",
+    "@tech-matters/job-errors": "^1.0.0",
     "@tech-matters/ssm-cache": "^1.0.0",
     "@tech-matters/types": "^1.0.0",
     "aws-sdk": "^2.1225.0"

@@ -30,3 +30,10 @@ export class ContactJobPollerError extends Error {
     this.name = 'ContactJobPollerError';
   }
 }
+
+export class ContactJobCleanupError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ContactJobCleanupError';
+  }
+}

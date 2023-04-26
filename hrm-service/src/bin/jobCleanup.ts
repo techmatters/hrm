@@ -15,9 +15,12 @@
  */
 
 import { handleSignals } from './handleSignals';
+import { cleanupContactJobs } from '../contact-job/contact-job-cleanup';
 
 const gracefulExit = async () => {
   //TODO: this should probably handle closing any running processes and open db connections
 };
+
+cleanupContactJobs();
 
 handleSignals(gracefulExit);

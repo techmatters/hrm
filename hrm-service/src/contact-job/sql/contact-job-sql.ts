@@ -77,7 +77,8 @@ export const PULL_DUE_JOBS_SQL = `
 
 export const UPDATE_JOB_CLEANUP_ACTIVE_SQL = `
   UPDATE "ContactJobs"
-  SET "lastCleanup" = CURRENT_TIMESTAMP,
+  SET
+    "lastCleanup" = CURRENT_TIMESTAMP,
     "cleanupStatus" = '${ContactJobCleanupStatus.ACTIVE}'
   WHERE
     "id" = $<jobId>
@@ -85,7 +86,7 @@ export const UPDATE_JOB_CLEANUP_ACTIVE_SQL = `
 
 export const UPDATE_JOB_CLEANUP_PENDING_SQL = `
   UPDATE "ContactJobs"
-    "cleanupStatus" = '${ContactJobCleanupStatus.PENDING}'
+  SET "cleanupStatus" = '${ContactJobCleanupStatus.PENDING}'
   WHERE
     "id" = $<jobId>
 `;

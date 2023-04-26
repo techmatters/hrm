@@ -26,6 +26,7 @@ import {
   setContactJobCleanupActive,
   setContactJobCleanupPending,
 } from './contact-job-data-access';
+import { ContactJobCleanupError } from './contact-job-error';
 
 const MAX_CLEANUP_JOB_RETENTION_DAYS = 365;
 
@@ -34,6 +35,7 @@ export const cleanupTranscript = async (job: RetrieveContactTranscriptJob): Prom
   const { channelSid } = job.resource;
   await setContactJobCleanupActive(id);
   const client = await getClient({ accountSid });
+  //TODO: validate that url payload actually exists on resource and throw big error if not
   try {
     await client.chat.v2
       .services(job.resource.serviceSid)
@@ -41,9 +43,13 @@ export const cleanupTranscript = async (job: RetrieveContactTranscriptJob): Prom
       .remove();
   } catch (err) {
     if (err instanceof RestException && err.status === 404) {
-      console.log(`Channel ${channelSid} not found, assuming it has already been deleteed`);
+      console.log(`Channel ${channelSid} not found, assuming it has already been deleted`);
     } else {
-      console.error(`Error cleaning up twilio channel ${channelSid} for job ${id}: ${err}`);
+      console.error(
+        new ContactJobCleanupError(
+          `Error cleaning up twilio channel ${channelSid} for job ${id}: ${err}`,
+        ),
+      );
       await setContactJobCleanupPending(id);
       return false;
     }
@@ -72,18 +78,25 @@ const getCleanupRetentionDays = async (accountSid): Promise<number | undefined> 
     ssmRetentionDays = MAX_CLEANUP_JOB_RETENTION_DAYS;
   }
 
+  // For now we are limiting the retention days to 365 days for all jobs and allowing for a
+  // global override on a per account basis. This may need to epand to be more granular in the
+  // future.
   return Math.min(MAX_CLEANUP_JOB_RETENTION_DAYS, ssmRetentionDays);
 };
 
 export const cleanupContactJobs = async (): Promise<void> => {
-  const accountSids = await getPendingCleanupJobAccountSids(MAX_CLEANUP_JOB_RETENTION_DAYS);
+  try {
+    const accountSids = await getPendingCleanupJobAccountSids(MAX_CLEANUP_JOB_RETENTION_DAYS);
 
-  for (const accountSid of accountSids) {
-    const cleanupRetentionDays = await getCleanupRetentionDays(accountSid);
-    const pendingJobs = await getPendingCleanupJobs(accountSid, cleanupRetentionDays);
+    for (const accountSid of accountSids) {
+      const cleanupRetentionDays = await getCleanupRetentionDays(accountSid);
+      const pendingJobs = await getPendingCleanupJobs(accountSid, cleanupRetentionDays);
 
-    for (const job of pendingJobs) {
-      await cleanupContactJob(job);
+      for (const job of pendingJobs) {
+        await cleanupContactJob(job);
+      }
     }
+  } catch (err) {
+    throw new ContactJobCleanupError(`Error cleaning up contact jobs: ${err}`);
   }
 };

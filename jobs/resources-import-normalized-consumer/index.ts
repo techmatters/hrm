@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { ResourceImportProcessorError } from '@tech-matters/hrm-job-errors';
+import { ResourceImportProcessorError } from '@tech-matters/job-errors';
 import fetch from 'node-fetch';
 import { getSsmParameter } from '@tech-matters/ssm-cache';
 // import { SQS } from 'aws-sdk';
