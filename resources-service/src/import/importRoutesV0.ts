@@ -15,7 +15,7 @@
  */
 
 import { IRouter, Router } from 'express';
-import { ImportRequestBody } from '@tech-matters/hrm-types';
+import { ImportRequestBody } from '@tech-matters/types';
 import importService, { isValidationFailure } from './importService';
 import { AccountSID } from '@tech-matters/twilio-worker-auth';
 

@@ -18,7 +18,7 @@ import parseISO from 'date-fns/parseISO';
 import { handler } from '../../index';
 import each from 'jest-each';
 // eslint-disable-next-line prettier/prettier
-import type { ImportApiResource, ImportRequestBody } from '@tech-matters/hrm-types';
+import type { ImportApiResource, ImportRequestBody } from '@tech-matters/types';
 import type { SQSEvent } from 'aws-lambda';
 
 const mockFetch = jest.fn();
@@ -112,7 +112,7 @@ const generateSQSEventRecord = (messageId: string, body: ImportRequestBody): SQS
   awsRegion: 'us-east-1',
 });
 
-describe('resources-import-normalized-consumer handler', () => {
+describe('resources-import-consumer handler', () => {
   each([
     {
       when: 'single message',
