@@ -27,12 +27,31 @@ import {
   setContactJobCleanupPending,
 } from './contact-job-data-access';
 import { ContactJobCleanupError } from './contact-job-error';
+import { isS3StoredTranscript } from '../contact/contact';
 
 const MAX_CLEANUP_JOB_RETENTION_DAYS = 365;
 
-export const cleanupTranscript = async (job: RetrieveContactTranscriptJob): Promise<boolean> => {
+/**
+ * Delete the twilio channel associated with a completed transcript job
+ *
+ * @param job
+ * @returns true if the channel was deleted, false if it was not
+ */
+export const deleteTranscript = async (job: RetrieveContactTranscriptJob): Promise<boolean> => {
   const { accountSid, id } = job;
   const { channelSid } = job.resource;
+
+  // Double check that the related contact has a transcript stored in S3
+  if (!job.resource?.rawJson?.conversationMedia?.some(isS3StoredTranscript)) {
+    console.error(
+      new ContactJobCleanupError(
+        `job ${id} does not have a transcript stored in S3, skipping cleanup`,
+      ),
+    );
+    await setContactJobCleanupPending(id);
+    return false;
+  }
+
   await setContactJobCleanupActive(id);
   const client = await getClient({ accountSid });
   //TODO: validate that url payload actually exists on resource and throw big error if not
@@ -58,9 +77,15 @@ export const cleanupTranscript = async (job: RetrieveContactTranscriptJob): Prom
   return true;
 };
 
+/**
+ * Delete a contact job and any associated resources
+ * @param job
+ * @returns void
+ * @throws ContactJobCleanupError
+ */
 export const cleanupContactJob = async (job: RetrieveContactTranscriptJob): Promise<void> => {
   if (job.jobType === ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT) {
-    if (!(await cleanupTranscript(job))) return;
+    if (!(await deleteTranscript(job))) return;
   }
 
   const { accountSid, id } = job;
@@ -68,6 +93,11 @@ export const cleanupContactJob = async (job: RetrieveContactTranscriptJob): Prom
   console.log(`Successfully cleaned up contact job ${id}`);
 };
 
+/**
+ * Get the number of days to retain cleanup jobs for a given account
+ * @param accountSid
+ * @returns number of days to retain cleanup jobs
+ */
 const getCleanupRetentionDays = async (accountSid): Promise<number | undefined> => {
   let ssmRetentionDays: number;
   try {
@@ -84,6 +114,11 @@ const getCleanupRetentionDays = async (accountSid): Promise<number | undefined> 
   return Math.min(MAX_CLEANUP_JOB_RETENTION_DAYS, ssmRetentionDays);
 };
 
+/**
+ * Cleanup all pending cleanup jobs
+ * @returns void
+ * @throws ContactJobCleanupError
+ */
 export const cleanupContactJobs = async (): Promise<void> => {
   try {
     const accountSids = await getPendingCleanupJobAccountSids(MAX_CLEANUP_JOB_RETENTION_DAYS);
@@ -97,6 +132,7 @@ export const cleanupContactJobs = async (): Promise<void> => {
       }
     }
   } catch (err) {
-    throw new ContactJobCleanupError(`Error cleaning up contact jobs: ${err}`);
+    throw err;
+    // throw new ContactJobCleanupError(`Error cleaning up contact jobs: ${err}`);
   }
 };
