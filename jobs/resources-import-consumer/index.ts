@@ -16,7 +16,7 @@
 
 import { ResourceImportProcessorError } from '@tech-matters/hrm-job-errors';
 import { getSsmParameter } from '@tech-matters/hrm-ssm-cache';
-import fetch from 'node-fetch';
+import http from 'node:http';
 
 // eslint-disable-next-line prettier/prettier
 import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
@@ -29,17 +29,47 @@ const hrmEnv = process.env.NODE_ENV;
 const postResourcesBody = async (accountSid: string, apiKey: string, message: ImportRequestBody) => {
     const url = `https://${internalResourcesBaseUrl}/v0/accounts/${accountSid}/resources/import`;
 
+    const body = JSON.stringify(message);
+
     const options = {
       method: 'POST',
       headers: {
         Accept: 'application/json',
         'Content-Type': 'application/json',
         'Authentication': `Basic ${apiKey}`,
+        'Content-Length': Buffer.byteLength(body),
       },
-      body: JSON.stringify(message),
     };
 
-    const response = await fetch(url, options);
+    const response = await new Promise((resolve, reject) => {
+      console.log('Sending request to', url);
+      const req = http.request(url, options, res => {
+        console.log('Response received');
+        let result = '';
+
+        res.on('data', chunk => {
+          console.log('Data received');
+          result += chunk;
+        });
+
+        res.on('end', () => {
+          console.log('Received end');
+          if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+            resolve(result);
+          } else {
+            reject(new Error(`HTTP request failed with status code ${res.statusCode}`));
+          }
+        });
+      });
+
+      req.on('error', error => {
+        reject(error);
+      });
+
+      req.write(body);
+      req.end();
+    });
+
     return response;
 };
 
@@ -47,13 +77,7 @@ const upsertRecord = async (message: ImportRequestBody): Promise<void> => {
   const { accountSid } = message;
   const apiKey = await getSsmParameter(`/${hrmEnv}/twilio/${message.accountSid}/static_key`);
 
-  const result = await postResourcesBody(accountSid, apiKey, message);
-
-  if (!result.ok) {
-    const error = await result.json();
-    // throw so the wrapper function catches and swallows this error
-    throw new Error(String(error));
-  }
+  await postResourcesBody(accountSid, apiKey, message);
 };
 
 type ProcessedResult = {
