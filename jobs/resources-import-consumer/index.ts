@@ -16,7 +16,8 @@
 
 import { ResourceImportProcessorError } from '@tech-matters/hrm-job-errors';
 import { getSsmParameter } from '@tech-matters/hrm-ssm-cache';
-// import { SQS } from 'aws-sdk';
+import fetch from 'node-fetch';
+
 // eslint-disable-next-line prettier/prettier
 import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
 // eslint-disable-next-line prettier/prettier
@@ -33,11 +34,11 @@ const postResourcesBody = async (accountSid: string, apiKey: string, message: Im
       headers: {
         Accept: 'application/json',
         'Content-Type': 'application/json',
-        // 'Authentication': `Basic ${apiKey}`,
+        'Authentication': `Basic ${apiKey}`,
       },
       body: JSON.stringify(message),
     };
-    // @ts-ignore Node 18 bundles global fetch, but @types/node does not yet
+
     const response = await fetch(url, options);
     return response;
 };
@@ -51,7 +52,7 @@ const upsertRecord = async (message: ImportRequestBody): Promise<void> => {
   if (!result.ok) {
     const error = await result.json();
     // throw so the wrapper function catches and swallows this error
-    throw new Error(error);
+    throw new Error(String(error));
   }
 };
 
@@ -78,15 +79,6 @@ const upsertRecordWithoutException = async (sqsRecord: SQSRecord): Promise<Proce
     console.error(new ResourceImportProcessorError('Failed to process record'), err);
 
     const errMessage = err instanceof Error ? err.message : String(err);
-
-    // TODO: Handle this (DLQ required)
-    // const failedJob = { ... };
-    // await sqs
-    //   .sendMessage({
-    //     MessageBody: JSON.stringify(failedJob),
-    //     QueueUrl: completedQueueUrl,
-    //   })
-    //   .promise();
 
     return {
       status: 'failure',
