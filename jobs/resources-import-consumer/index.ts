@@ -27,7 +27,7 @@ const internalResourcesBaseUrl = process.env.internal_resources_base_url as stri
 const hrmEnv = process.env.NODE_ENV;
 
 const postResourcesBody = async (accountSid: string, apiKey: string, message: ImportRequestBody) => {
-    const url = `https://${internalResourcesBaseUrl}/v0/accounts/${accountSid}/resources/import`;
+    const url = `${internalResourcesBaseUrl}/v0/accounts/${accountSid}/resources/import`;
 
     const body = JSON.stringify(message);
 
