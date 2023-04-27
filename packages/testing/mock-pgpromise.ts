@@ -87,9 +87,15 @@ export const mockTransaction = (db: IDatabase<unknown>, mockConn: pgPromise.ITas
 };
 
 // eslint-disable-next-line prettier/prettier
-type PgQueryParameters = [query: QueryParam, values?:any] | [query: QueryParam, values?:any, cb?: any, thisArg?: any];
+type PgQuerySpy = jest.SpyInstance<any, [query: QueryParam, values?:any]> | jest.SpyInstance<any, [query: QueryParam, values:any, cb: any, thisArg?: any]>;
 
-export const getSqlStatement = (mockQueryMethod: jest.SpyInstance<any, PgQueryParameters>, callIndex = -1): string => {
+export const getSqlStatement = (mockQueryMethod: PgQuerySpy, callIndex = -1): string => {
+  expect(mockQueryMethod).toHaveBeenCalled();
+  return mockQueryMethod.mock.calls[callIndex < 0 ? mockQueryMethod.mock.calls.length + callIndex : callIndex][0].toString();
+};
+
+
+export const getSqlStatementFromNone = (mockQueryMethod: jest.SpyInstance<any, [query: QueryParam, values?:any]>, callIndex = -1): string => {
   expect(mockQueryMethod).toHaveBeenCalled();
   return mockQueryMethod.mock.calls[callIndex < 0 ? mockQueryMethod.mock.calls.length + callIndex : callIndex][0].toString();
 };
