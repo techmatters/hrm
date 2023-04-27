@@ -15,7 +15,6 @@
  */
 
 import { ResourceImportProcessorError } from '@tech-matters/hrm-job-errors';
-import fetch from 'node-fetch';
 import { getSsmParameter } from '@tech-matters/hrm-ssm-cache';
 // import { SQS } from 'aws-sdk';
 // eslint-disable-next-line prettier/prettier
@@ -38,6 +37,7 @@ const postResourcesBody = async (accountSid: string, apiKey: string, message: Im
       },
       body: JSON.stringify(message),
     };
+    // @ts-ignore Node 18 bundles global fetch, but @types/node does not yet
     const response = await fetch(url, options);
     return response;
 };
