@@ -61,7 +61,7 @@ export type AttributeValue<T extends AttributeTable> = T extends 'ResourceBoolea
 export type ImportBatch = {
   toDate: string;
   fromDate: string;
-  total: number;
+  remaining: number;
 };
 
 export type ImportProgress = ImportBatch & {

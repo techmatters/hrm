@@ -284,7 +284,7 @@ beforeEach(async () => {
 const newDefaultTestBatch = () => ({
   toDate: addHours(baselineDate, 1).toISOString(),
   fromDate: subHours(baselineDate, 2).toISOString(),
-  total: 100,
+  remaining: 100,
 });
 
 describe('POST /import', () => {

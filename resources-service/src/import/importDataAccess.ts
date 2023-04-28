@@ -15,7 +15,11 @@
  */
 
 import { ImportApiResource, ImportProgress } from '@tech-matters/types';
-import { generateUpdateImportProgressSql, generateUpsertSqlFromImportResource } from './sql';
+import {
+  generateUpdateImportProgressSql,
+  generateUpsertSqlFromImportResource,
+  SELECT_IMPORT_PROGRESS_SQL,
+} from './sql';
 import { AccountSID } from '@tech-matters/twilio-worker-auth';
 import { ITask } from 'pg-promise';
 import { db } from '../connection-pool';
@@ -53,4 +57,12 @@ export const updateImportProgress = (task?: ITask<{}>) => async (
   await txIfNotInOne(task, async tx => {
     await tx.none(generateUpdateImportProgressSql(accountSid, progress));
   });
+};
+
+/**
+ * Reads the current import progress from the database for the specified account
+ */
+export const getImportProgress = async (accountSid: AccountSID): Promise<ImportProgress> => {
+  const result = await db.oneOrNone(SELECT_IMPORT_PROGRESS_SQL, { accountSid });
+  return result || { accountSid };
 };

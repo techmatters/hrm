@@ -22,7 +22,7 @@ import { AccountSID } from '@tech-matters/twilio-worker-auth';
 const importRoutes = () => {
   const router: IRouter = Router();
 
-  const { upsertResources } = importService();
+  const { upsertResources, readImportProgress } = importService();
 
   router.post('/import', async ({ body, accountSid }, res) => {
     const { importedResources, batch }: ImportRequestBody = body;
@@ -31,6 +31,10 @@ const importRoutes = () => {
       res.status(400).json(result);
     }
     res.json(result);
+  });
+
+  router.get('/import', async ({ accountSid }, res) => {
+    res.json(await readImportProgress(accountSid as AccountSID));
   });
 
   return router;
