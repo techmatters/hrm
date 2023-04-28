@@ -284,7 +284,7 @@ beforeEach(async () => {
 const newDefaultTestBatch = () => ({
   toDate: addHours(baselineDate, 1).toISOString(),
   fromDate: subHours(baselineDate, 2).toISOString(),
-  total: 100,
+  remaining: 100,
 });
 
 describe('POST /import', () => {
@@ -293,7 +293,6 @@ describe('POST /import', () => {
     const requestBody: ImportRequestBody = {
       importedResources: [generateImportResource('100', baselineDate)],
       batch: newDefaultTestBatch(),
-      accountSid,
     };
     internalRequest
       .post(route)
@@ -305,7 +304,6 @@ describe('POST /import', () => {
     const requestBody: ImportRequestBody = {
       importedResources: [generateImportResource('100', baselineDate)],
       batch: newDefaultTestBatch(),
-      accountSid,
     };
     internalRequest
       .post(route)
@@ -318,7 +316,6 @@ describe('POST /import', () => {
     const requestBody: ImportRequestBody = {
       importedResources: [generateImportResource('100', baselineDate)],
       batch: newDefaultTestBatch(),
-      accountSid,
     };
     internalRequest
       .post(route)
@@ -341,7 +338,6 @@ describe('POST /import', () => {
       requestBody: {
         importedResources: [],
         batch: newDefaultTestBatch(),
-        accountSid,
       },
       expectedResponse: [],
       expectedResourceUpdates: {},
@@ -352,7 +348,6 @@ describe('POST /import', () => {
       requestBody: {
         importedResources: [generateImportResource('100', addSeconds(baselineDate, 30))],
         batch: newDefaultTestBatch(),
-        accountSid,
       },
       expectedResponse: [
         {
@@ -378,7 +373,6 @@ describe('POST /import', () => {
           generateImportResource('101', addSeconds(baselineDate, 45)),
         ],
         batch: newDefaultTestBatch(),
-        accountSid,
       },
       expectedResponse: [
         {
@@ -406,7 +400,6 @@ describe('POST /import', () => {
       requestBody: {
         importedResources: [generateImportResource('3', addSeconds(baselineDate, 40))],
         batch: newDefaultTestBatch(),
-        accountSid,
       },
       expectedResponse: [
         {
@@ -432,7 +425,6 @@ describe('POST /import', () => {
           generateImportResource('100', addSeconds(baselineDate, 50)),
         ],
         batch: newDefaultTestBatch(),
-        accountSid,
       },
       expectedResponse: [
         {
@@ -463,7 +455,6 @@ describe('POST /import', () => {
           generateImportResource('101', addSeconds(baselineDate, 15)),
         ],
         batch: newDefaultTestBatch(),
-        accountSid,
       },
       expectedResponse: [
         {
@@ -508,7 +499,6 @@ describe('POST /import', () => {
           }),
         ],
         batch: newDefaultTestBatch(),
-        accountSid,
       },
       expectedResponse: [
         {
@@ -581,7 +571,6 @@ describe('POST /import', () => {
         generateImportResource('4', addSeconds(baselineDate, 15)),
       ],
       batch: newDefaultTestBatch(),
-      accountSid,
     };
     const response = await internalRequest
       .post(route)
@@ -597,5 +586,123 @@ describe('POST /import', () => {
       const resourceId = `RESOURCE_${resourceIdx}`;
       await verifyGeneratedResourcesAttributes(resourceId);
     }
+  });
+});
+
+describe('GET /v0/accounts/:accountSid/import/progress', () => {
+  const route = `/v0/accounts/${accountSid}/resources/import/progress`;
+  const importRoute = `/v0/accounts/${accountSid}/resources/import`;
+  test('No static key - should return 401', async () => {
+    internalRequest.get(route).expect(401);
+  });
+
+  test('Incorrect static key - should return 401', async () => {
+    internalRequest
+      .get(route)
+      .set({ ...internalHeaders, Authorization: `Basic C64` })
+      .expect(401);
+  });
+
+  test('Flex bearer token - should return 401', async () => {
+    internalRequest
+      .get(route)
+      .set(headers)
+      .expect(401);
+  });
+
+  test('Nothing ever imported for account - returns 404', async () => {
+    internalRequest
+      .get(route)
+      .set(internalHeaders)
+      .expect(404);
+  });
+
+  test('Only attempted empty import - returns 404', async () => {
+    const requestBody: ImportRequestBody = {
+      importedResources: [],
+      batch: newDefaultTestBatch(),
+    };
+    await internalRequest
+      .post(importRoute)
+      .set(internalHeaders)
+      .send(requestBody);
+    internalRequest
+      .get(route)
+      .set(internalHeaders)
+      .expect(404);
+  });
+
+  test('Only attempted fail import - returns 404', async () => {
+    const requestBody: ImportRequestBody = {
+      importedResources: [
+        generateImportResource('99', addSeconds(baselineDate, 60)),
+        generateImportResource('100', addSeconds(baselineDate, 50)),
+        generateImportResource('101', addSeconds(baselineDate, 50)),
+      ],
+      batch: newDefaultTestBatch(),
+    };
+    delete (requestBody.importedResources[0] as any).name;
+    await internalRequest
+      .post(importRoute)
+      .set(internalHeaders)
+      .send(requestBody)
+      .expect(400);
+    internalRequest
+      .get(route)
+      .set(internalHeaders)
+      .expect(404);
+  });
+
+  test('Prior successful import - returns the importState set during that import', async () => {
+    const expectedProgress = {
+      ...newDefaultTestBatch(),
+      lastProcessedDate: addSeconds(baselineDate, 50).toISOString(),
+      lastProcessedId: 'RESOURCE_100',
+    };
+    const requestBody: ImportRequestBody = {
+      importedResources: [generateImportResource('100', addSeconds(baselineDate, 50))],
+      batch: newDefaultTestBatch(),
+    };
+    await internalRequest
+      .post(importRoute)
+      .set(internalHeaders)
+      .send(requestBody)
+      .expect(200);
+    await verifyImportState(expectedProgress);
+    const response = await internalRequest.get(route).set(internalHeaders);
+    expect(response.status).toBe(200);
+    expect(response.body).toStrictEqual(expectedProgress);
+  });
+
+  test('Multiple prior successful imports - returns the importState set during the most recent import', async () => {
+    const expectedProgress = {
+      ...newDefaultTestBatch(),
+      remaining: 99,
+      lastProcessedDate: addSeconds(baselineDate, 40).toISOString(),
+      lastProcessedId: 'RESOURCE_54',
+    };
+    const firstRequestBody: ImportRequestBody = {
+      importedResources: [generateImportResource('100', addSeconds(baselineDate, 50))],
+      batch: newDefaultTestBatch(),
+    };
+    const secondRequestBody: ImportRequestBody = {
+      importedResources: [generateImportResource('54', addSeconds(baselineDate, 40))],
+      batch: { ...newDefaultTestBatch(), remaining: 99 },
+    };
+    await internalRequest
+      .post(importRoute)
+      .set(internalHeaders)
+      .send(firstRequestBody)
+      .expect(200);
+    await internalRequest
+      .post(importRoute)
+      .set(internalHeaders)
+      .send(secondRequestBody)
+      .expect(200);
+    await verifyImportState(expectedProgress);
+
+    const response = await internalRequest.get(route).set(internalHeaders);
+    expect(response.status).toBe(200);
+    expect(response.body).toStrictEqual(expectedProgress);
   });
 });

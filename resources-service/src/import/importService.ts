@@ -14,9 +14,10 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { ImportApiResource, ImportBatch } from '@tech-matters/types';
+import { ImportApiResource, ImportBatch, ImportProgress } from '@tech-matters/types';
 import { db } from '../connection-pool';
 import {
+  getImportState,
   updateImportProgress,
   upsertImportedResource,
   UpsertImportedResourceResult,
@@ -84,6 +85,8 @@ const importService = () => {
         throw error;
       }
     },
+    readImportProgress: (accountSid: AccountSID): Promise<ImportProgress | undefined> =>
+      getImportState(accountSid),
   };
 };
 

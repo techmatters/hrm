@@ -120,3 +120,7 @@ export const generateUpdateImportProgressSql = (accountSid: AccountSID, progress
     ON CONFLICT ON CONSTRAINT "Accounts_pkey" 
     DO UPDATE SET "importState" = EXCLUDED."importState"
   `);
+
+export const SELECT_IMPORT_PROGRESS_SQL = `
+  SELECT "importState" FROM resources."Accounts" WHERE "accountSid" = $<accountSid>
+`;

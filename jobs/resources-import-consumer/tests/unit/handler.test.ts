@@ -95,7 +95,7 @@ const generateImportResource = (
   },
 });
 
-const generateSQSEventRecord = (messageId: string, body: ImportRequestBody): SQSEvent['Records'][number] => ({
+const generateSQSEventRecord = (messageId: string, body: ImportRequestBody & { accountSid: string }): SQSEvent['Records'][number] => ({
   messageId,
   body: JSON.stringify(body),
   receiptHandle: 'receiptHandle',
@@ -128,7 +128,7 @@ describe('resources-import-consumer handler', () => {
             batch: {
               fromDate: Date.now().toString(),
               toDate: Date.now().toString(),
-              total: 1,
+              remaining: 1,
             },
           }),
         ],
@@ -148,7 +148,7 @@ describe('resources-import-consumer handler', () => {
             batch: {
               fromDate: Date.now().toString(),
               toDate: Date.now().toString(),
-              total: 1,
+              remaining: 1,
             },
           }),
         ],
@@ -169,7 +169,7 @@ describe('resources-import-consumer handler', () => {
             batch: {
               fromDate: Date.now().toString(),
               toDate: Date.now().toString(),
-              total: 1,
+              remaining: 1,
             },
           }),
           generateSQSEventRecord('message-2', {
@@ -178,7 +178,7 @@ describe('resources-import-consumer handler', () => {
             batch: {
               fromDate: Date.now().toString(),
               toDate: Date.now().toString(),
-              total: 1,
+              remaining: 1,
             },
           }),
           generateSQSEventRecord('message-3', {
@@ -187,7 +187,7 @@ describe('resources-import-consumer handler', () => {
             batch: {
               fromDate: Date.now().toString(),
               toDate: Date.now().toString(),
-              total: 1,
+              remaining: 1,
             },
           }),
         ],
@@ -210,7 +210,7 @@ describe('resources-import-consumer handler', () => {
             batch: {
               fromDate: Date.now().toString(),
               toDate: Date.now().toString(),
-              total: 1,
+              remaining: 1,
             },
           }),
           generateSQSEventRecord('message-2', {
@@ -219,7 +219,7 @@ describe('resources-import-consumer handler', () => {
             batch: {
               fromDate: Date.now().toString(),
               toDate: Date.now().toString(),
-              total: 1,
+              remaining: 1,
             },
           }),
           generateSQSEventRecord('message-3', {
@@ -228,7 +228,7 @@ describe('resources-import-consumer handler', () => {
             batch: {
               fromDate: Date.now().toString(),
               toDate: Date.now().toString(),
-              total: 1,
+              remaining: 1,
             },
           }),
         ],
