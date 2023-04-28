@@ -79,26 +79,33 @@ export const getSsmClient = () => {
 };
 
 export const addToCache = (regex: RegExp | undefined, { Name, Value }: SSM.Parameter) => {
+  console.log('addToCache: called with', regex, Name, Value);
   if (!Name) return;
   if (regex && !regex.test(Name)) return;
 
+  console.log('addToCache: adding to ssm cache');
   ssmCache.values[Name] = {
     value: Value || '',
     expiryDate: new Date(Date.now() + ssmCache.cacheDurationMilliseconds),
   };
+  console.log('addToCache: added to ssm cache');
 };
 
 export const loadParameter = async (name: string) => {
+  console.log('loadParameter: called with', name);
   const params: SSM.GetParameterRequest = {
     Name: name,
     WithDecryption: true,
   };
 
+  console.log('loadParameter: calling getSsmClient');
   const { Parameter } = await getSsmClient()
     .getParameter(params)
     .promise();
 
+  console.log('loadParameter: getSsmClient returned');
   if (!Parameter?.Name) {
+    console.log('loadParameter: Parameter?.Name missing');
     return;
   }
 
