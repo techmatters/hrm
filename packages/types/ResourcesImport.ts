@@ -72,5 +72,4 @@ export type ImportProgress = ImportBatch & {
 export type ImportRequestBody = {
   importedResources: ImportApiResource[];
   batch: ImportBatch;
-  accountSid: string;
 };

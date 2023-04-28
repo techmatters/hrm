@@ -18,6 +18,7 @@ import { IRouter, Router } from 'express';
 import { ImportRequestBody } from '@tech-matters/types';
 import importService, { isValidationFailure } from './importService';
 import { AccountSID } from '@tech-matters/twilio-worker-auth';
+import createError from 'http-errors';
 
 const importRoutes = () => {
   const router: IRouter = Router();
@@ -29,12 +30,20 @@ const importRoutes = () => {
     const result = await upsertResources(accountSid as AccountSID, importedResources, batch);
     if (isValidationFailure(result)) {
       res.status(400).json(result);
+    } else {
+      res.json(result);
     }
-    res.json(result);
   });
 
-  router.get('/import', async ({ accountSid }, res) => {
-    res.json(await readImportProgress(accountSid as AccountSID));
+  router.get('/import/progress', async ({ accountSid }, res) => {
+    const progress = await readImportProgress(accountSid as AccountSID);
+    if (progress) {
+      res.json(progress);
+    } else {
+      throw createError(404, {
+        message: "No import progress found, it's possible that no import has been started yet.",
+      });
+    }
   });
 
   return router;

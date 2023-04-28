@@ -62,7 +62,9 @@ export const updateImportProgress = (task?: ITask<{}>) => async (
 /**
  * Reads the current import progress from the database for the specified account
  */
-export const getImportProgress = async (accountSid: AccountSID): Promise<ImportProgress> => {
+export const getImportState = async (
+  accountSid: AccountSID,
+): Promise<ImportProgress | undefined> => {
   const result = await db.oneOrNone(SELECT_IMPORT_PROGRESS_SQL, { accountSid });
-  return result || { accountSid };
+  return result?.importState;
 };

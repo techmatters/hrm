@@ -17,7 +17,7 @@
 import { ImportApiResource, ImportBatch, ImportProgress } from '@tech-matters/types';
 import { db } from '../connection-pool';
 import {
-  getImportProgress,
+  getImportState,
   updateImportProgress,
   upsertImportedResource,
   UpsertImportedResourceResult,
@@ -82,8 +82,8 @@ const importService = () => {
         throw error;
       }
     },
-    readImportProgress: (accountSid: AccountSID): Promise<ImportProgress> =>
-      getImportProgress(accountSid),
+    readImportProgress: (accountSid: AccountSID): Promise<ImportProgress | undefined> =>
+      getImportState(accountSid),
   };
 };
 
