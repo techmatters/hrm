@@ -16,8 +16,7 @@
 
 import { ResourceImportProcessorError } from '@tech-matters/hrm-job-errors';
 import { getSsmParameter } from '@tech-matters/hrm-ssm-cache';
-import http from 'node:http';
-
+// import { SQS } from 'aws-sdk';
 // eslint-disable-next-line prettier/prettier
 import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
 // eslint-disable-next-line prettier/prettier
@@ -29,47 +28,18 @@ const hrmEnv = process.env.NODE_ENV;
 const postResourcesBody = async (accountSid: string, apiKey: string, message: ImportRequestBody) => {
     const url = `${internalResourcesBaseUrl}/v0/accounts/${accountSid}/resources/import`;
 
-    const body = JSON.stringify(message);
-
     const options = {
       method: 'POST',
       headers: {
         Accept: 'application/json',
         'Content-Type': 'application/json',
         'Authentication': `Basic ${apiKey}`,
-        'Content-Length': Buffer.byteLength(body),
       },
+      body: JSON.stringify(message),
     };
 
-    const response = await new Promise((resolve, reject) => {
-      console.log('Sending request to', url);
-      const req = http.request(url, options, res => {
-        console.log('Response received');
-        let result = '';
-
-        res.on('data', chunk => {
-          console.log('Data received');
-          result += chunk;
-        });
-
-        res.on('end', () => {
-          console.log('Received end');
-          if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
-            resolve(result);
-          } else {
-            reject(new Error(`HTTP request failed with status code ${res.statusCode}`));
-          }
-        });
-      });
-
-      req.on('error', error => {
-        reject(error);
-      });
-
-      req.write(body);
-      req.end();
-    });
-
+    // @ts-ignore global fetch available because node 18
+    const response = await fetch(url, options);
     return response;
 };
 
@@ -77,7 +47,14 @@ const upsertRecord = async (message: ImportRequestBody): Promise<void> => {
   const { accountSid } = message;
   const apiKey = await getSsmParameter(`/${hrmEnv}/twilio/${message.accountSid}/static_key`);
 
-  await postResourcesBody(accountSid, apiKey, message);
+  const result = await postResourcesBody(accountSid, apiKey, message);
+
+  console.log('postResourcesBody result: ', result);
+  if (!result.ok) {
+    const error = await result.json();
+    // throw so the wrapper function catches and swallows this error
+    throw new Error(error);
+  }
 };
 
 type ProcessedResult = {
@@ -103,6 +80,15 @@ const upsertRecordWithoutException = async (sqsRecord: SQSRecord): Promise<Proce
     console.error(new ResourceImportProcessorError('Failed to process record'), err);
 
     const errMessage = err instanceof Error ? err.message : String(err);
+
+    // TODO: Handle this (DLQ required)
+    // const failedJob = { ... };
+    // await sqs
+    //   .sendMessage({
+    //     MessageBody: JSON.stringify(failedJob),
+    //     QueueUrl: completedQueueUrl,
+    //   })
+    //   .promise();
 
     return {
       status: 'failure',
