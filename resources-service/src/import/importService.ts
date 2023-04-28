@@ -61,9 +61,12 @@ const importService = () => {
               throw err;
             }
             const result = await upsert(accountSid, resource);
+            if (!result.success) {
+              throw result.error;
+            }
             results.push(result);
           }
-          const { id, updatedAt } = resources.sort((a, b) =>
+          const { id, updatedAt } = [...resources].sort((a, b) =>
             a.updatedAt > b.updatedAt ? 1 : a.updatedAt < b.updatedAt ? -1 : a.id > b.id ? 1 : -1,
           )[resources.length - 1];
           await updateImportProgress(t)(accountSid, {
