@@ -109,11 +109,13 @@ export const getSsmParameter = async (
   name: string,
   cacheDurationMilliseconds?: number,
 ): Promise<string> => {
+  console.log('getSsmParameter: called with', name);
   const oldCacheDurationMilliseconds = ssmCache.cacheDurationMilliseconds;
   if (cacheDurationMilliseconds) setCacheDurationMilliseconds(cacheDurationMilliseconds);
 
   // If the cache doesn't have the requested parameter or if it is expired, load it
   if (!parameterExistsInCache(name) || hasParameterExpired(ssmCache.values[name])) {
+    console.log('getSsmParameter: inside if condition, loadParameter parameter being called');
     await loadParameter(name);
   }
   setCacheDurationMilliseconds(oldCacheDurationMilliseconds);
@@ -123,6 +125,7 @@ export const getSsmParameter = async (
     throw new SsmParameterNotFound(`Parameter ${name} not found`);
   }
 
+  console.log('getSsmParameter: returning', ssmCache.values[name]?.value || '');
   return ssmCache.values[name]?.value || '';
 };
 
