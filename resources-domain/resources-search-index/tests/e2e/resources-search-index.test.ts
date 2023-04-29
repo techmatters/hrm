@@ -20,7 +20,7 @@ import { Client, IndexTypes, getClient, SearchResponse } from '@tech-matters/ela
 
 import { generateMockMessageBody } from '../generateMockMessageBody';
 import { getStackOutput } from '../../../../cdk/cdkOutput';
-import { sendMessage, sendMessageBatch } from '../../../tests/sendMessage';
+import { sendMessage, sendMessageBatch } from '../../../../jobs/tests/sendMessage';
 
 /**
  * TODO: This is a super dirty proof of concept for e2e tests.
