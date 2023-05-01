@@ -46,13 +46,10 @@ const postResourcesBody = async (accountSid: string, apiKey: string, message: Im
 const upsertRecord = async (message: ImportRequestBody): Promise<void> => {
   const { accountSid } = message;
 
-  console.log('upsertRecord: trying to get SSM param');
   const apiKey = await getSsmParameter(`/${hrmEnv}/twilio/${message.accountSid}/static_key`);
   
-  console.log('upsertRecord: trying postResourcesBody', message);
   const result = await postResourcesBody(accountSid, apiKey, message);
   
-  console.log('upsertRecord: completed', result);
   if (!result.ok) {
     const error = await result.json();
     // throw so the wrapper function catches and swallows this error
@@ -93,7 +90,6 @@ const upsertRecordWithoutException = async (sqsRecord: SQSRecord): Promise<Proce
 };
 
 export const handler = async (event: SQSEvent): Promise<SQSBatchResponse> => {
-  console.log('handler started');
   const batchItemFailuresSet: Set<string> = new Set();
 
   try {
@@ -108,7 +104,6 @@ export const handler = async (event: SQSEvent): Promise<SQSBatchResponse> => {
     // This assumes messages are posted in the correct order by the producer
     // Syncronously wait for each message to be processed since order matters here
     for (const sqsRecord of event.Records) {
-      console.log('Processing record', sqsRecord);
       const processed = await upsertRecordWithoutException(sqsRecord);
 
       if (processed.status === 'failure') {
