@@ -133,23 +133,6 @@ jobs:
           cluster: ${{ inputs.environment }}-ecs-cluster
           wait-for-service-stability: true
 
-      - name: Download current ECS task definition for the scheduled cleanup job
-        run: aws ecs describe-task-definition --task-definition ${{ inputs.environment }}-hrm-scheduled-task-job_cleanup --query taskDefinition > task-definition-hrm-scheduled-task-job_cleanup.json
-
-      - name: Fill in the new image ID in the Amazon ECS task definition
-        id: task-def-scheduled-task-job_cleanup
-        uses: aws-actions/amazon-ecs-render-task-definition@v1
-        with:
-          task-definition: task-definition-hrm-scheduled-task-job_cleanup.json
-          container-name: ${{ inputs.environment }}-hrm-scheduled-task-job_cleanup
-          image: ${{ env.DOCKER_IMAGE }}
-
-      - name: Deploy Amazon ECS task definition for the scheduled cleanup job
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
-        with:
-          task-definition: ${{ steps.task-def-scheduled-task-job_cleanup.outputs.task-definition }}
-          cluster: ${{ inputs.environment }}-ecs-cluster
-
       - name: Download current ECS task definition for the api service
         run: aws ecs describe-task-definition --task-definition ${{ inputs.environment }}-hrm-task --query taskDefinition > task-definition.json
 
@@ -168,6 +151,23 @@ jobs:
           service: ${{ inputs.environment }}-ecs-service
           cluster: ${{ inputs.environment }}-ecs-cluster
           wait-for-service-stability: true
+
+      - name: Download current ECS task definition for the scheduled job
+        run: aws ecs describe-task-definition --task-definition ${{ inputs.environment }}-hrm-scheduled-task --query taskDefinition > task-definition-hrm-scheduled-task.json
+
+      - name: Fill in the new image ID in the Amazon ECS task definition
+        id: task-def-scheduled-task
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition-hrm-scheduled-task.json
+          container-name: ${{ inputs.environment }}-hrm-scheduled-task
+          image: ${{ env.DOCKER_IMAGE }}
+
+      - name: Deploy Amazon ECS task definition scheduled tasks
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.task-def-scheduled-task.outputs.task-definition }}
+          cluster: ${{ inputs.environment }}-ecs-cluster
 
       # reconfigure AWS credentials to use the default region for SSM Parameter Store.
       # aws-actions/configure-aws-credentials@v1 overrides env.AWS_DEFAULT_REGION, so
