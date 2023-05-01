@@ -123,6 +123,8 @@ export const cleanupContactJobs = async (): Promise<void> => {
   try {
     const accountSids = await getPendingCleanupJobAccountSids(MAX_CLEANUP_JOB_RETENTION_DAYS);
 
+    console.log(`Cleaning up contact jobs for accounts: ${accountSids}`);
+
     for (const accountSid of accountSids) {
       const cleanupRetentionDays = await getCleanupRetentionDays(accountSid);
       const pendingJobs = await getPendingCleanupJobs(accountSid, cleanupRetentionDays);
