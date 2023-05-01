@@ -27,11 +27,8 @@ jest.mock('@tech-matters/ssm-cache', () => ({
   getSsmParameter: () => 'static-key',
 }));
 
-jest.mock('node-fetch', () => ({
-  ...jest.requireActual('node-fetch'),
-  __esModule: true,
-  default: () => mockFetch(),
-}));
+// @ts-ignore
+global.fetch = mockFetch;
 
 beforeEach(() => {
   jest.resetAllMocks();

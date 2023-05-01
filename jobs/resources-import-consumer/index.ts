@@ -15,7 +15,6 @@
  */
 
 import { ResourceImportProcessorError } from '@tech-matters/job-errors';
-import fetch from 'node-fetch';
 import { getSsmParameter } from '@tech-matters/ssm-cache';
 // import { SQS } from 'aws-sdk';
 // eslint-disable-next-line prettier/prettier
@@ -27,23 +26,26 @@ const internalResourcesBaseUrl = process.env.internal_resources_base_url as stri
 const hrmEnv = process.env.NODE_ENV;
 
 const postResourcesBody = async (accountSid: string, apiKey: string, message: ImportRequestBody) => {
-    const url = `https://${internalResourcesBaseUrl}/v0/accounts/${accountSid}/resources/import`;
+    const url = `${internalResourcesBaseUrl}/v0/accounts/${accountSid}/resources/import`;
 
     const options = {
       method: 'POST',
       headers: {
         Accept: 'application/json',
         'Content-Type': 'application/json',
-        // 'Authentication': `Basic ${apiKey}`,
+        'Authorization': `Basic ${apiKey}`,
       },
       body: JSON.stringify(message),
     };
+
+    // @ts-ignore global fetch available because node 18
     const response = await fetch(url, options);
     return response;
 };
 
 const upsertRecord = async (message: ImportRequestBody): Promise<void> => {
   const { accountSid } = message;
+
   const apiKey = await getSsmParameter(`/${hrmEnv}/twilio/${message.accountSid}/static_key`);
 
   const result = await postResourcesBody(accountSid, apiKey, message);
@@ -78,15 +80,6 @@ const upsertRecordWithoutException = async (sqsRecord: SQSRecord): Promise<Proce
     console.error(new ResourceImportProcessorError('Failed to process record'), err);
 
     const errMessage = err instanceof Error ? err.message : String(err);
-
-    // TODO: Handle this (DLQ required)
-    // const failedJob = { ... };
-    // await sqs
-    //   .sendMessage({
-    //     MessageBody: JSON.stringify(failedJob),
-    //     QueueUrl: completedQueueUrl,
-    //   })
-    //   .promise();
 
     return {
       status: 'failure',
