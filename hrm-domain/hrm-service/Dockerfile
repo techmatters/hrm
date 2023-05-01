@@ -20,7 +20,9 @@ FROM node:16-alpine as build
 # dependency in package.json can be resolved
 COPY packages /tmp/build/packages
 COPY resources-domain/resources-service /tmp/build/resources-domain/resources-service
+COPY resources-domain/tsconfig.json /tmp/build/resources-domain/tsconfig.json
 COPY hrm-domain/hrm-service /tmp/build/hrm-domain/hrm-service
+COPY hrm-domain/tsconfig.json /tmp/build/hrm-domain/tsconfig.json
 COPY package.json package-lock.json tsconfig.base.json tsconfig.build.service.json /tmp/build/
 
 RUN cd /tmp/build \
