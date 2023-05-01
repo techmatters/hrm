@@ -12,7 +12,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see https://www.gnu.org/licenses/.
 
-FROM public.ecr.aws/lambda/nodejs:16 as build
+FROM public.ecr.aws/lambda/nodejs:18 as build
 
 ARG lambda_name
 ENV lambda_name ${lambda_name}
