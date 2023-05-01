@@ -33,7 +33,7 @@ const postResourcesBody = async (accountSid: string, apiKey: string, message: Im
       headers: {
         Accept: 'application/json',
         'Content-Type': 'application/json',
-        'Authentication': `Basic ${apiKey}`,
+        'Authorization': `Basic ${apiKey}`,
       },
       body: JSON.stringify(message),
     };
