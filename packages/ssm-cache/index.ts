@@ -79,33 +79,26 @@ export const getSsmClient = () => {
 };
 
 export const addToCache = (regex: RegExp | undefined, { Name, Value }: SSM.Parameter) => {
-  console.log('addToCache: called with', regex, Name, Value);
   if (!Name) return;
   if (regex && !regex.test(Name)) return;
 
-  console.log('addToCache: adding to ssm cache');
   ssmCache.values[Name] = {
     value: Value || '',
     expiryDate: new Date(Date.now() + ssmCache.cacheDurationMilliseconds),
   };
-  console.log('addToCache: added to ssm cache');
 };
 
 export const loadParameter = async (name: string) => {
-  console.log('loadParameter: called with', name);
   const params: SSM.GetParameterRequest = {
     Name: name,
     WithDecryption: true,
   };
 
-  console.log('loadParameter: calling getSsmClient');
   const { Parameter } = await getSsmClient()
     .getParameter(params)
     .promise();
 
-  console.log('loadParameter: getSsmClient returned');
   if (!Parameter?.Name) {
-    console.log('loadParameter: Parameter?.Name missing');
     return;
   }
 
@@ -116,13 +109,11 @@ export const getSsmParameter = async (
   name: string,
   cacheDurationMilliseconds?: number,
 ): Promise<string> => {
-  console.log('getSsmParameter: called with', name);
   const oldCacheDurationMilliseconds = ssmCache.cacheDurationMilliseconds;
   if (cacheDurationMilliseconds) setCacheDurationMilliseconds(cacheDurationMilliseconds);
 
   // If the cache doesn't have the requested parameter or if it is expired, load it
   if (!parameterExistsInCache(name) || hasParameterExpired(ssmCache.values[name])) {
-    console.log('getSsmParameter: inside if condition, loadParameter parameter being called');
     await loadParameter(name);
   }
   setCacheDurationMilliseconds(oldCacheDurationMilliseconds);
@@ -132,7 +123,6 @@ export const getSsmParameter = async (
     throw new SsmParameterNotFound(`Parameter ${name} not found`);
   }
 
-  console.log('getSsmParameter: returning', ssmCache.values[name]?.value || '');
   return ssmCache.values[name]?.value || '';
 };
 
