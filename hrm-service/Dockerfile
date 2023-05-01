@@ -36,7 +36,8 @@ RUN cd /tmp/build \
 
 WORKDIR /home/node
 
-COPY hrm-service/docker-entrypoint /usr/local/bin/docker-entrypoint
+COPY hrm-service/docker-entrypoint.sh /usr/local/bin/docker-entrypoint
+COPY hrm-service/docker-entrypoint.scheduled.sh /usr/local/bin/docker-entrypoint.scheduled
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint"]
 
 # RUN npm test
