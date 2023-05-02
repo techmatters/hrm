@@ -30,7 +30,7 @@ RUN cd /tmp/build \
     && npx tsc -b tsconfig.build.service.json --verbose \
     && cp -r hrm-domain/hrm-service/* /home/node/ \
     && cp -r packages /home/node/ \
-    && cp -r resources-domain/resources-service /home/node/ \
+    && cp -r resources-domain/resources-service /home/node/resources-domain/ \
     && cp -r node_modules /home/node/ \
     && rm -rf /tmp/* \
     && rm -rf /root/.cache \
