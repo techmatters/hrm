@@ -25,13 +25,6 @@ on:
           - development
           - staging
           - production
-      lambda_domain:
-        description: 'HRM lambda domain'
-        required: true
-        type: choice
-        options:
-          - hrm
-          - resources
 
       lambda_name:
         description: 'HRM lambda name'
@@ -57,11 +50,6 @@ on:
         type: string
         default: development
         required: true
-
-      lambda_domain:
-        description: 'hrm lambda domain'
-        required: true
-        type: string
       lambda_name:
         description: 'hrm lambda name'
         required: true
@@ -111,7 +99,7 @@ jobs:
           file: ./jobs/Dockerfile
           build-args: |
             lambda_name=${{ inputs.lambda_name }}
-            lambda_dir=${{ inputs.lambda_domain }}-domain
+            lambda_dir=${{ (startsWith(inputs.lambda_name, 'resources') && 'resources') || 'hrm' }}-domain
           push: true
           tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:live,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
 
