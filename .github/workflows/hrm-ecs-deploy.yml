@@ -183,7 +183,9 @@ jobs:
           cluster: ${{ inputs.environment }}-ecs-cluster
 
       - name: Update EventBridge target
-        run: ./.github/workflows/scripts/update-event-bridge-target.sh "${{ inputs.environment }}-hrm-scheduled-task" "${{ steps.scheduled-task-definition.outputs.task-definition-arn }}"
+        run: |
+          chmod +x ./.github/workflows/scripts/update-event-bridge-target.sh
+          ./.github/workflows/scripts/update-event-bridge-target.sh "${{ inputs.environment }}-hrm-scheduled-task" "${{ steps.scheduled-task-definition.outputs.task-definition-arn }}"
 
       # reconfigure AWS credentials to use the default region for SSM Parameter Store.
       # aws-actions/configure-aws-credentials@v1 overrides env.AWS_DEFAULT_REGION, so
