@@ -6,6 +6,6 @@
     { "path": "packages/job-errors" },
     { "path": "packages/ssm-cache" },
     { "path": "packages/sns-client" },
-    { "path": "jobs/resources-search-complete" }
+    { "path": "resources-domain/resources-search-complete" }
   ]
 }

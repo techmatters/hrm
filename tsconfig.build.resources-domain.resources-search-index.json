@@ -6,6 +6,6 @@
     { "path": "packages/job-errors" },
     { "path": "packages/ssm-cache" },
     { "path": "packages/elasticsearch-client" },
-    { "path": "jobs/resources-search-index" }
+    { "path": "resources-domain/resources-search-index" }
   ]
 }

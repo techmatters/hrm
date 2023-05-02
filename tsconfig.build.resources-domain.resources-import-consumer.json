@@ -3,6 +3,6 @@
   "files": [],
   "references": [
     { "path": "packages/ssm-cache" },
-    { "path": "jobs/resources-import-consumer" }
+    { "path": "resources-domain/resources-import-consumer" }
   ]
 }
