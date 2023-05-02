@@ -27,9 +27,10 @@ for ruleName in $ruleNames; do
         targetId=$(echo "${target}" | jq -r '.Id')
         targetArn=$(echo "${target}" | jq -r '.Arn')
         targetRoleArn=$(echo "${target}" | jq -r '.RoleArn')
+        targetJson=$(printf '{"Id":"%s","Arn":"%s","RoleArn":"%s","EcsParameters":{"TaskDefinitionArn":"%s"}}' "$targetId" "$targetArn" "$targetRoleArn" "$ecsTaskDefinition" | sed "s/'/\\\'/g")
         aws events put-targets \
             --rule "$ruleName" \
-            --targets "Id=$targetId,Arn=$targetArn,RoleArn=$targetRoleArn,EcsParameters={\"TaskDefinitionArn\":\"$ecsTaskDefinition\"}"
+            --targets "${targetJson}"
 
         returnCode=0
     done
