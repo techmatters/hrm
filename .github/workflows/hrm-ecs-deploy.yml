@@ -90,6 +90,12 @@ jobs:
           echo "regions=$(echo $regions)" >> $GITHUB_OUTPUT
           echo "docker_image=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ inputs.environment }}-hrm-${{ github.sha }}" >> $GITHUB_OUTPUT
 
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: workflow-scripts-artifacts
+          path: .github/workflows/scripts
+
   deploy_ecs:
     needs: deploy_docker
     name: Deploy to Amazon ECS
@@ -104,6 +110,12 @@ jobs:
       DOCKER_IMAGE: ${{ needs.deploy_docker.outputs.docker_image }}
 
     steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: workflow-scripts-artifacts
+          path: .github/workflows/scripts
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -125,13 +137,13 @@ jobs:
           container-name: ${{ inputs.environment }}-hrm-job-processor
           image: ${{ env.DOCKER_IMAGE }}
 
-      - name: Deploy Amazon ECS task definition for the job processor
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
-        with:
-          task-definition: ${{ steps.task-def-job-processor.outputs.task-definition }}
-          service: ${{ inputs.environment }}-job-processor
-          cluster: ${{ inputs.environment }}-ecs-cluster
-          wait-for-service-stability: true
+      # - name: Deploy Amazon ECS task definition for the job processor
+      #   uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+      #   with:
+      #     task-definition: ${{ steps.task-def-job-processor.outputs.task-definition }}
+      #     service: ${{ inputs.environment }}-job-processor
+      #     cluster: ${{ inputs.environment }}-ecs-cluster
+      #     wait-for-service-stability: true
 
       - name: Download current ECS task definition for the api service
         run: aws ecs describe-task-definition --task-definition ${{ inputs.environment }}-hrm-task --query taskDefinition > task-definition.json
@@ -144,13 +156,13 @@ jobs:
           container-name: ${{ inputs.environment }}-hrm-container
           image: ${{ env.DOCKER_IMAGE }}
 
-      - name: Deploy Amazon ECS task definition for the api service
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
-        with:
-          task-definition: ${{ steps.task-def.outputs.task-definition }}
-          service: ${{ inputs.environment }}-ecs-service
-          cluster: ${{ inputs.environment }}-ecs-cluster
-          wait-for-service-stability: true
+      # - name: Deploy Amazon ECS task definition for the api service
+      #   uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+      #   with:
+      #     task-definition: ${{ steps.task-def.outputs.task-definition }}
+      #     service: ${{ inputs.environment }}-ecs-service
+      #     cluster: ${{ inputs.environment }}-ecs-cluster
+      #     wait-for-service-stability: true
 
       - name: Download current ECS task definition for scheduled tasks
         run: aws ecs describe-task-definition --task-definition ${{ inputs.environment }}-hrm-scheduled-task --query taskDefinition > task-definition-hrm-scheduled-task.json
