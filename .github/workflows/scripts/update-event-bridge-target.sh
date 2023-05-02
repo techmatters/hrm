@@ -19,6 +19,7 @@ eventRuleNamePrefix=$1
 ecsTaskDefinition=$2
 
 ruleNames=$(aws events list-rules --name-prefix "${eventRuleNamePrefix}" | jq -r '.Rules[] | .Name')
+returnCode=1
 for ruleName in $ruleNames; do
     aws events list-targets-by-rule --rule "$ruleName" > /tmp/event-bridge-targets.json
     targets=$(jq '.Targets' /tmp/event-bridge-targets.json)
@@ -29,5 +30,12 @@ for ruleName in $ruleNames; do
         aws events put-targets \
             --rule "$ruleName" \
             --targets "Id=$targetId,Arn=$targetArn,RoleArn=$targetRoleArn,EcsParameters={\"TaskDefinitionArn\":\"$ecsTaskDefinition\"}"
+
+        returnCode=0
     done
 done
+
+if [ $returnCode -eq 1 ]; then
+    echo "No event bridge targets found for rule name prefix: $eventRuleNamePrefix"
+fi
+exit $returnCode
