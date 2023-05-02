@@ -25,6 +25,13 @@ on:
           - development
           - staging
           - production
+      lambda_domain:
+        description: 'HRM lambda domai'
+        required: true
+        type: choice
+        options:
+          - hrm
+          - resources
 
       lambda_name:
         description: 'HRM lambda name'
@@ -54,10 +61,7 @@ on:
       lambda_domain:
         description: 'hrm lambda name'
         required: true
-        type: choice
-        options:
-          - hrm
-          - resources
+        type: string
       lambda_name:
         description: 'hrm lambda name'
         required: true
