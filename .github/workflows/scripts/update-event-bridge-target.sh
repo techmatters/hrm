@@ -23,7 +23,7 @@ returnCode=1
 for ruleName in $ruleNames; do
     targets=$(aws events list-targets-by-rule --rule "$ruleName" | jq '.Targets')
     for target in $(echo "${targets}" | jq -c '.[]'); do
-        targetJson=$(echo "$target" | jq '{ Id, Arn, RoleArn, EcsParameters }' | jq --arg ecsTaskDefinition "$ecsTaskDefinition" '.EcsParameters.TaskDefinitionArn = $ecsTaskDefinition')
+        targetJson=$(echo "$target" | jq '{ Id, Arn, RoleArn, Input, EcsParameters }' | jq --arg ecsTaskDefinition "$ecsTaskDefinition" '.EcsParameters.TaskDefinitionArn = $ecsTaskDefinition')
         aws events put-targets \
             --rule "$ruleName" \
             --targets "${targetJson}"
