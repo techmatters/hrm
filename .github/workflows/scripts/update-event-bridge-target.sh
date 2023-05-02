@@ -21,7 +21,7 @@ ecsTaskDefinition=$2
 ruleNames=$(aws events list-rules --name-prefix "${eventRuleNamePrefix}" | jq -r '.Rules[] | .Name')
 returnCode=1
 for ruleName in $ruleNames; do
-    targets=$(aws events list-targets-by-rule --rule "$ruleName" | jq '.Targets' /tmp/event-bridge-targets.json)
+    targets=$(aws events list-targets-by-rule --rule "$ruleName" | jq '.Targets')
     for target in $(echo "${targets}" | jq -c '.[]'); do
         targetJson=$(echo "$target" | jq '{ Id, Arn, RoleArn, EcsParameters }' | jq --arg ecsTaskDefinition "$ecsTaskDefinition" '.EcsParameters.TaskDefinitionArn = $ecsTaskDefinition')
         aws events put-targets \
