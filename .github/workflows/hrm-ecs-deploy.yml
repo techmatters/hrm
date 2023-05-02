@@ -137,13 +137,13 @@ jobs:
           container-name: ${{ inputs.environment }}-hrm-job-processor
           image: ${{ env.DOCKER_IMAGE }}
 
-      - name: Deploy Amazon ECS task definition for the job processor
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
-        with:
-          task-definition: ${{ steps.task-def-job-processor.outputs.task-definition }}
-          service: ${{ inputs.environment }}-job-processor
-          cluster: ${{ inputs.environment }}-ecs-cluster
-          wait-for-service-stability: true
+      # - name: Deploy Amazon ECS task definition for the job processor
+      #   uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+      #   with:
+      #     task-definition: ${{ steps.task-def-job-processor.outputs.task-definition }}
+      #     service: ${{ inputs.environment }}-job-processor
+      #     cluster: ${{ inputs.environment }}-ecs-cluster
+      #     wait-for-service-stability: true
 
       - name: Download current ECS task definition for the api service
         run: aws ecs describe-task-definition --task-definition ${{ inputs.environment }}-hrm-task --query taskDefinition > task-definition.json
@@ -156,13 +156,13 @@ jobs:
           container-name: ${{ inputs.environment }}-hrm-container
           image: ${{ env.DOCKER_IMAGE }}
 
-      - name: Deploy Amazon ECS task definition for the api service
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
-        with:
-          task-definition: ${{ steps.task-def.outputs.task-definition }}
-          service: ${{ inputs.environment }}-ecs-service
-          cluster: ${{ inputs.environment }}-ecs-cluster
-          wait-for-service-stability: true
+      # - name: Deploy Amazon ECS task definition for the api service
+      #   uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+      #   with:
+      #     task-definition: ${{ steps.task-def.outputs.task-definition }}
+      #     service: ${{ inputs.environment }}-ecs-service
+      #     cluster: ${{ inputs.environment }}-ecs-cluster
+      #     wait-for-service-stability: true
 
       - name: Download current ECS task definition for scheduled tasks
         run: aws ecs describe-task-definition --task-definition ${{ inputs.environment }}-hrm-scheduled-task --query taskDefinition > task-definition-hrm-scheduled-task.json
