@@ -24,10 +24,7 @@ for ruleName in $ruleNames; do
     aws events list-targets-by-rule --rule "$ruleName" > /tmp/event-bridge-targets.json
     targets=$(jq '.Targets' /tmp/event-bridge-targets.json)
     for target in $(echo "${targets}" | jq -c '.[]'); do
-        targetId=$(echo "${target}" | jq -r '.Id')
-        targetArn=$(echo "${target}" | jq -r '.Arn')
-        targetRoleArn=$(echo "${target}" | jq -r '.RoleArn')
-        targetJson=$(printf '{"Id":"%s","Arn":"%s","RoleArn":"%s","EcsParameters":{"TaskDefinitionArn":"%s"}}' "$targetId" "$targetArn" "$targetRoleArn" "$ecsTaskDefinition" | sed "s/'/\\\'/g")
+        targetJson=$(echo "$target" | jq '{ Id, Arn, RoleArn, EcsParameters }' | jq --arg ecsTaskDefinition "$ecsTaskDefinition" '.EcsParameters.TaskDefinitionArn = $ecsTaskDefinition')
         aws events put-targets \
             --rule "$ruleName" \
             --targets "${targetJson}"
