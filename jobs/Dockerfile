@@ -26,23 +26,21 @@ COPY jobs/${lambda_name} /tmp/build/jobs/${lambda_name}
 COPY jobs/tsconfig.json /tmp/build/jobs/tsconfig.json
 COPY package.json package-lock.json tsconfig.json tsconfig.base.json tsconfig.build.jobs.${lambda_name}.json /tmp/build/
 
-RUN cd /tmp/build \
+RUN yum install -y rsync \
+    && cd /tmp/build \
     && npm ci -w jobs/${lambda_name} -w packages/* \
     && npx tsc -b tsconfig.build.jobs.${lambda_name}.json \
     && cp jobs/${lambda_name}/dist/*.js /var/task/ \
     && cp -r packages /var/task/ \
-    && cp -r node_modules /var/task/ \
-    && rm -rf /var/task/node_modules/typescript \
-    && rm -rf /tmp/* \
-    && rm -rf /root/.cache \
-    && rm -rf /root/.npm \
-    && rm -rf /usr/local/share/.cache \
-    && rm -rf /usr/local/lib/node_modules
+    && cp -r node_modules /var/task/
+
+# Ignore errors if node_modules is not present
+RUN rsync -a jobs/${lambda_name}/node_modules/ /var/task/node_modules; exit 0
 
 # The added layers from our build increase image size significantly. This flattens the image
 # to reduce the size of the final image.
-FROM scratch
-COPY --from=build / /
+FROM public.ecr.aws/lambda/nodejs:16
+COPY --from=build /var/task /var/task
 
 # all of this is a little more fragile than I would like because we have to duplicate the parent repo
 # at https://github.com/aws/aws-lambda-base-images/blob/nodejs16.x/Dockerfile.nodejs16.x

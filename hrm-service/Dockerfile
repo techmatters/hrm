@@ -23,16 +23,20 @@ COPY resources-service /tmp/build/resources-service
 COPY hrm-service /tmp/build/hrm-service
 COPY package.json package-lock.json tsconfig.base.json tsconfig.build.service.json /tmp/build/
 
-RUN cd /tmp/build \
+RUN apk add --no-cache rsync \
+    && cd /tmp/build \
     && npm ci -w=hrm-service -w packages/* -w resources-service \
     && npx tsc -b tsconfig.build.service.json \
     && cp -r hrm-service/* /home/node/ \
     && cp -r packages /home/node/ \
     && cp -r resources-service /home/node/ \
-    && cp -r node_modules /home/node/ \
-    && rm -rf /tmp/* \
-    && rm -rf /root/.cache \
-    && rm -rf /usr/local/share/.cache
+    && cp -r node_modules /home/node/
+
+# Ignore errors if node_modules is not present
+RUN rsync -a hrm-service/node_modules/ /home/node/node_modules; exit 0
+
+FROM node:16-alpine
+COPY --from=build /home/node /home/node
 
 WORKDIR /home/node
 
