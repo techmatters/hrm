@@ -39,6 +39,8 @@ const getClientOrMock = ({
     return mock;
   }
 
+  console.log('Creating Twilio client', { accountSid, authToken });
+
   return new Twilio(accountSid, authToken);
 };
 
@@ -48,8 +50,10 @@ export const getAuthToken = async (
 ): Promise<string> => {
   if (authToken) return authToken;
 
+  console.log('checking for env var');
   if (process.env.TWILIO_AUTH_TOKEN) return process.env.TWILIO_AUTH_TOKEN;
 
+  console.log('checking for ssm param', `/${process.env.NODE_ENV}/twilio/${accountSid}/auth_token`);
   return getSsmParameter(`/${process.env.NODE_ENV}/twilio/${accountSid}/auth_token`);
 };
 
