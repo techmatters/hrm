@@ -75,12 +75,12 @@ const cleanUpDB = async () => {
 };
 
 beforeAll(async () => {
-  await Promise.all([mockingProxy.start(), mockSuccessfulTwilioAuthentication(userTwilioWorkerId)]);
+  await mockingProxy.start();
+  await mockSuccessfulTwilioAuthentication(userTwilioWorkerId);
 });
 
 afterAll(async () => {
-  await mockingProxy.stop();
-  server.close();
+  await Promise.all([mockingProxy.stop(), server.close()]);
 });
 
 beforeEach(async () => {
