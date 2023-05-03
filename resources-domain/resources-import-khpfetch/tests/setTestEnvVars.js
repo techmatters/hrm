@@ -13,7 +13,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import './fetch';
-export * from './ContactJob';
-export * from './ResourcesImport';
-export * from './Resources';
+
+process.env.internal_resources_base_url = 'development-url';
+process.env.NODE_ENV = 'development';
