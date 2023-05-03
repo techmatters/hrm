@@ -53,7 +53,7 @@ const createCase = async (twilioWorkerId: string) => {
   const info =
     '{"summary":"something summary","perpetrators":[],"households":[],"incidents":[],"documents":[],"referrals":[],"counsellorNotes":[]}';
 
-  db.task(t =>
+  await db.task(t =>
     t.none(
       `INSERT INTO "Cases" ("createdAt", "updatedAt", status, helpline, info, "twilioWorkerId", "accountSid", "createdBy", "updatedBy") VALUES ('${date}','${date}','open','helpline','${info}','${twilioWorkerId}','${accountSid}','${twilioWorkerId}','${twilioWorkerId}');`,
     ),
@@ -61,13 +61,13 @@ const createCase = async (twilioWorkerId: string) => {
 };
 
 const cleanUpDB = async () => {
-  db.task(t =>
+  await db.task(t =>
     t.none(
       `DELETE FROM "Contacts" WHERE "twilioWorkerId" IN ('${userTwilioWorkerId}', '${anotherUserTwilioWorkerId}');`,
     ),
   );
 
-  db.task(t =>
+  await db.task(t =>
     t.none(
       `DELETE FROM "Cases" WHERE "twilioWorkerId" IN ('${userTwilioWorkerId}', '${anotherUserTwilioWorkerId}');`,
     ),
@@ -75,8 +75,7 @@ const cleanUpDB = async () => {
 };
 
 beforeAll(async () => {
-  await mockingProxy.start();
-  await mockSuccessfulTwilioAuthentication(userTwilioWorkerId);
+  await Promise.all([mockingProxy.start(), mockSuccessfulTwilioAuthentication(userTwilioWorkerId)]);
 });
 
 afterAll(async () => {
