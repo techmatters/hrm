@@ -9,12 +9,12 @@
     "@tech-matters/hrm-job-errors": "^1.0.0",
     "@tech-matters/hrm-ssm-cache": "^1.0.0",
     "@tech-matters/types": "^1.0.0",
-    "aws-sdk": "^2.1225.0",
-    "node-fetch": "^2.6.9"
+    "aws-sdk": "^2.1225.0"
   },
   "devDependencies": {
+    "@tsconfig/node16": "^1.0.3",
     "@types/aws-lambda": "^8.10.108",
-    "@types/node-fetch": "^2.6.3",
+    "@types/node": "^18.16.2",
     "date-fns": "^2.29.3",
     "jest-each": "^29.5.0",
     "ts-node": "^10.9.1"
