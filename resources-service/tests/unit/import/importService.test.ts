@@ -46,7 +46,7 @@ const BLANK_ATTRIBUTES: ImportApiResource['attributes'] = {
 };
 
 const BASELINE_BATCH: ImportBatch = {
-  total: 100,
+  remaining: 100,
   fromDate: subHours(BASELINE_DATE, 12).toISOString(),
   toDate: BASELINE_DATE.toISOString(),
 };

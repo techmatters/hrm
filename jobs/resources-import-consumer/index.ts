@@ -39,17 +39,14 @@ const postResourcesBody = async (accountSid: string, apiKey: string, message: Im
     };
 
     // @ts-ignore global fetch available because node 18
-    const response = await fetch(url, options);
-    return response;
+    return fetch(url, options);
 };
 
-const upsertRecord = async (message: ImportRequestBody): Promise<void> => {
-  const { accountSid } = message;
+const upsertRecord = async (accountSid: string, body: ImportRequestBody): Promise<void> => {
+  const apiKey = await getSsmParameter(`/${hrmEnv}/twilio/${accountSid}/static_key`);
 
-  const apiKey = await getSsmParameter(`/${hrmEnv}/twilio/${message.accountSid}/static_key`);
-  
-  const result = await postResourcesBody(accountSid, apiKey, message);
-  
+  const result = await postResourcesBody(accountSid, apiKey, body);
+
   if (!result.ok) {
     const error = await result.json();
     // throw so the wrapper function catches and swallows this error
@@ -58,7 +55,7 @@ const upsertRecord = async (message: ImportRequestBody): Promise<void> => {
 };
 
 type ProcessedResult = {
-  status: 'successs';
+  status: 'success';
   messageId: SQSRecord['messageId'];
 } | {
   status: 'failure';
@@ -67,13 +64,13 @@ type ProcessedResult = {
 };
 
 const upsertRecordWithoutException = async (sqsRecord: SQSRecord): Promise<ProcessedResult> => {
-  const message = JSON.parse(sqsRecord.body);
+  const { accountSid, ...body } = JSON.parse(sqsRecord.body);
 
   try {
-    await upsertRecord(message);
+    await upsertRecord(accountSid, body);
 
     return {
-      status: 'successs',
+      status: 'success',
       messageId: sqsRecord.messageId, 
     };
   } catch (err) {
@@ -111,19 +108,17 @@ export const handler = async (event: SQSEvent): Promise<SQSBatchResponse> => {
       }
     }
 
-    const response: SQSBatchResponse = { batchItemFailures: Array.from(batchItemFailuresSet).map(messageId => ({
-      itemIdentifier: messageId,
-    })), 
+    return { batchItemFailures: Array.from(batchItemFailuresSet).map(messageId => ({
+        itemIdentifier: messageId,
+      })),
     };
-    return response;
   } catch (err) {
     // SSM failures and other major setup exceptions will cause a failure of all messages sending them to DLQ
     // which should be the same as the completed queue right now.
     console.error(new ResourceImportProcessorError('Failed to init processor'), err);
 
-    const response: SQSBatchResponse = { batchItemFailures: event.Records.map(record => ({
-      itemIdentifier: record.messageId,
-    })) };
-    return response;
+    return { batchItemFailures: event.Records.map(record => ({
+        itemIdentifier: record.messageId,
+      })) };
   }
 };

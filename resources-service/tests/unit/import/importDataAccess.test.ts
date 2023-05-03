@@ -152,7 +152,7 @@ describe('updateImportProgress', () => {
     await updateImportProgress()('AC_FAKE', {
       fromDate: subHours(BASELINE_DATE, 12).toISOString(),
       toDate: BASELINE_DATE.toISOString(),
-      total: 1234,
+      remaining: 1234,
       lastProcessedDate: subHours(BASELINE_DATE, 6).toISOString(),
       lastProcessedId: 'TEST_RESOURCE',
     });
