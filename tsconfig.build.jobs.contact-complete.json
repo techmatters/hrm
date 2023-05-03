@@ -5,6 +5,6 @@
     { "path": "packages/job-errors" },
     { "path": "packages/ssm-cache" },
     { "path": "packages/types" },
-    { "path": "jobs/contact-retrieve-complete" }
+    { "path": "jobs/contact-complete" }
   ]
 }

@@ -12,6 +12,7 @@
     "aws-sdk": "^2.1225.0"
   },
   "devDependencies": {
+    "@tsconfig/node16": "^1.0.3",
     "@types/aws-lambda": "^8.10.108",
     "@types/node": "^18.16.2",
     "date-fns": "^2.29.3",
