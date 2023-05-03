@@ -19,6 +19,7 @@ import { db, pgp } from '../connection-pool';
 import type { Contact } from '../contact/contact-data-access';
 import {
   ADD_FAILED_ATTEMPT_PAYLOAD,
+  ContactJobCleanupStatus,
   COMPLETE_JOB_SQL,
   DELETE_JOB_SQL,
   PENDING_CLEANUP_JOBS_SQL,
@@ -89,13 +90,16 @@ export const pullDueContactJobs = async (
  * Mark a job complete and record the completionPayload for posterity
  * @param id
  * @param completionPayload
+ * @param wasSuccessful
  */
 export const completeContactJob = async (
   id: number,
   completionPayload: any,
+  wasSuccessful: boolean = true,
 ): Promise<ContactJobRecord> => {
+  const cleanupStatus = wasSuccessful ? ContactJobCleanupStatus.PENDING : ContactJobCleanupStatus.NOT_READY;
   return db.task(tx => {
-    return tx.oneOrNone(COMPLETE_JOB_SQL, { id, completionPayload });
+    return tx.oneOrNone(COMPLETE_JOB_SQL, { id, completionPayload, cleanupStatus });
   });
 };
 

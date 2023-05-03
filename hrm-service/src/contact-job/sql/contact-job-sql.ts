@@ -17,6 +17,7 @@
 import { selectContactsWithRelations } from '../../contact/sql/contact-get-sql';
 
 export enum ContactJobCleanupStatus {
+  NOT_READY = 'not_ready',
   PENDING = 'pending',
   ACTIVE = 'active',
   COMPLETED = 'completed',
@@ -32,7 +33,7 @@ export const COMPLETE_JOB_SQL = `
   UPDATE "ContactJobs" SET
       "completed" = CURRENT_TIMESTAMP,
       "completionPayload" = $<completionPayload:json>::JSONB,
-      "cleanupStatus" = '${ContactJobCleanupStatus.PENDING}'
+      "cleanupStatus" = '$<cleanupStatus>'
   WHERE "id" = $<id>
   RETURNING *
 `;
