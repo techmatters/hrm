@@ -52,6 +52,7 @@ const backDateJob = (jobId: string) => db.oneOrNone(`UPDATE "ContactJobs" SET "c
 
 beforeAll(async () => {
   process.env.TWILIO_AUTH_TOKEN = 'mockAuthToken';
+  process.env.TWILIO_CLIENT_USE_ENV_AUTH_TOKEN = 'true';
   const client = await getClient({ accountSid });
   twilioSpy = jest.spyOn(client.chat.v2, 'services');
 
