@@ -38,6 +38,7 @@ const postResourcesBody = async (accountSid: string, apiKey: string, message: Im
       body: JSON.stringify(message),
     };
 
+    // @ts-ignore global fetch available because node 18
     return fetch(url, options);
 };
 
