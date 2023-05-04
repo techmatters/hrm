@@ -13,7 +13,20 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import './fetch';
-export * from './ContactJob';
-export * from './ResourcesImport';
-export * from './Resources';
+
+module.exports = config => {
+  return (
+    config || {
+      preset: 'ts-jest',
+      rootDir: './tests',
+      maxWorkers: 1,
+      setupFiles: ['<rootDir>/setTestEnvVars.js'],
+      globals: {
+        'ts-jest': {
+          // to give support to const enum. Not working, conflicting with module resolution
+          useExperimentalLanguageServer: true,
+        },
+      },
+    }
+  );
+};
