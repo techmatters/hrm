@@ -25,12 +25,12 @@ export const generateUpsertSqlFromImportResource = (
   const sqlBatch: string[] = [];
 
   sqlBatch.push(`${pgp.helpers.insert(
-    { ...resourceRecord, accountSid },
-    ['id', 'name', 'accountSid'],
+    { ...resourceRecord, accountSid, created: resourceRecord.updatedAt },
+    ['id', 'name', 'accountSid', 'created'],
     { schema: 'resources', table: 'Resources' },
   )} 
   ON CONFLICT ON CONSTRAINT "Resources_pkey" 
-  DO UPDATE SET "name" = EXCLUDED."name"`);
+  DO UPDATE SET "name" = EXCLUDED."name", "lastUpdated" = EXCLUDED."lastUpdated"`);
   const nonTranslatableTables = [
     'ResourceNumberAttributes',
     'ResourceBooleanAttributes',
@@ -120,3 +120,7 @@ export const generateUpdateImportProgressSql = (accountSid: AccountSID, progress
     ON CONFLICT ON CONSTRAINT "Accounts_pkey" 
     DO UPDATE SET "importState" = EXCLUDED."importState"
   `);
+
+export const SELECT_IMPORT_PROGRESS_SQL = `
+  SELECT "importState" FROM resources."Accounts" WHERE "accountSid" = $<accountSid>
+`;
