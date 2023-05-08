@@ -21,7 +21,7 @@ import each from 'jest-each';
 import type { ImportApiResource, ImportProgress } from '@tech-matters/types';
 import { ScheduledEvent } from 'aws-lambda';
 import { Response } from 'undici';
-import { addSeconds } from 'date-fns';
+import { addMilliseconds, addSeconds, subHours, subMinutes } from 'date-fns';
 import { publishToImportConsumer, ResourceMessage } from '../../clientSqs';
 const mockFetch: jest.Mock<ReturnType<typeof fetch>> = jest.fn();
 
@@ -73,12 +73,12 @@ const generateKhpResource = (updatedAt: Date, resourceId: number): KhpApiResourc
   },
 });
 
-const generateResourceMessage = (updatedAt: Date, resourceId: string, remaining: number): ResourceMessage => (
+const generateResourceMessage = (updatedAt: Date, resourceId: string, batchFromDate: Date, remaining: number): ResourceMessage => (
   { 
     accountSid: ACCOUNT_SID,
     batch: {
 
-      fromDate: new Date(0).toISOString(),
+      fromDate: batchFromDate.toISOString(),
       toDate: testNow.toISOString(),
       remaining,
     },
@@ -127,8 +127,26 @@ const testCases: HandlerTestCase[] = [
       },
     ],
     expectedPublishedMessages: [
-      generateResourceMessage(baselineDate, '1', 2),
-      generateResourceMessage(addSeconds(baselineDate, 1), '2', 1),
+      generateResourceMessage(baselineDate, '1', new Date(0), 2),
+      generateResourceMessage(addSeconds(baselineDate, 1), '2', new Date(0), 1),
+    ],
+  }, {
+    description: 'if there is import progress and the batch is complete and the API returns all available resources in range, should start another batch and send them all',
+    importProgressResponse: { fromDate: new Date(0).toISOString(), toDate: subHours(testNow, 1).toISOString(), remaining: 0, lastProcessedDate: subHours(testNow, 1).toISOString(), lastProcessedId: 'IGNORED' },
+    externalApiResponse: { data: [
+        generateKhpResource(subMinutes(testNow, 10), 1),
+        generateKhpResource(subMinutes(testNow, 5), 2),
+      ], totalResults:2 },
+    expectedExternalApiCallParameters: [
+      {
+        fromDate:addMilliseconds(subHours(testNow, 1), 1).toISOString(),
+        toDate:testNow.toISOString(),
+        limit: '1000',
+      },
+    ],
+    expectedPublishedMessages: [
+      generateResourceMessage(subMinutes(testNow, 10), '1', addMilliseconds(subHours(testNow, 1), 1), 2),
+      generateResourceMessage(subMinutes(testNow, 5), '2', addMilliseconds(subHours(testNow, 1), 1), 1),
     ],
   },
 ];
