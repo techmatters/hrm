@@ -20,11 +20,16 @@ set -e
 eventRuleNamePrefix=$1
 ecsTaskDefinition=$2
 
+# Targets aren't directly queryable, so we have to get the rules and then get the targets for each rule
 ruleNames=$(aws events list-rules --name-prefix "${eventRuleNamePrefix}" | jq -r '.Rules[] | .Name')
 returnCode=1
 for ruleName in $ruleNames; do
     targets=$(aws events list-targets-by-rule --rule "$ruleName" | jq '.Targets')
+
+    # now that we have our targets, we can update the ECS task definition target with the new task definition arn
     for target in $(echo "${targets}" | jq -c '.[]'); do
+        # Individual fields on the target can't be updated, so we have to update the entire target. The fancy bit of jq at
+        # the end is used to parse the entire target, but update only the task definition arn
         targetJson=$(echo "$target" | jq '{ Id, Arn, RoleArn, Input, EcsParameters }' | jq --arg ecsTaskDefinition "$ecsTaskDefinition" '.EcsParameters.TaskDefinitionArn = $ecsTaskDefinition')
         aws events put-targets \
             --rule "$ruleName" \
