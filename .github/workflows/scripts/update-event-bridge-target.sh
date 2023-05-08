@@ -13,6 +13,8 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see https://www.gnu.org/licenses/.
 
+# This script updates the ECS task definition to update the ECS task definition with the new ECS task tag for all event bridge targets
+
 set -e
 
 eventRuleNamePrefix=$1

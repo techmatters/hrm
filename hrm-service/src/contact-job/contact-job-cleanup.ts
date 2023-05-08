@@ -19,6 +19,7 @@ import { getClient } from '@tech-matters/twilio-client';
 import RestException from 'twilio/lib/base/RestException';
 import { getSsmParameter } from '../config/ssmCache';
 import {
+  ContactJob,
   deleteContactJob,
   RetrieveContactTranscriptJob,
   getPendingCleanupJobs,
@@ -54,7 +55,6 @@ export const deleteTranscript = async (job: RetrieveContactTranscriptJob): Promi
 
   await setContactJobCleanupActive(id);
   const client = await getClient({ accountSid });
-  //TODO: validate that url payload actually exists on resource and throw big error if not
   try {
     await client.chat.v2
       .services(job.resource.serviceSid)
@@ -83,7 +83,7 @@ export const deleteTranscript = async (job: RetrieveContactTranscriptJob): Promi
  * @returns void
  * @throws ContactJobCleanupError
  */
-export const cleanupContactJob = async (job: RetrieveContactTranscriptJob): Promise<void> => {
+export const cleanupContactJob = async (job: ContactJob): Promise<void> => {
   if (job.jobType === ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT) {
     if (!(await deleteTranscript(job))) return;
   }
@@ -134,7 +134,6 @@ export const cleanupContactJobs = async (): Promise<void> => {
       }
     }
   } catch (err) {
-    throw err;
-    // throw new ContactJobCleanupError(`Error cleaning up contact jobs: ${err}`);
+    throw new ContactJobCleanupError(`Error cleaning up contact jobs: ${err}`);
   }
 };
