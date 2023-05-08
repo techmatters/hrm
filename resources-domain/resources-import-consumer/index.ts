@@ -91,7 +91,7 @@ export const handler = async (event: SQSEvent): Promise<SQSBatchResponse> => {
 
   try {
     if (!internalResourcesBaseUrl) {
-      throw new Error('Missing completed_sqs_queue_url ENV Variable');
+      throw new Error('Missing internal_resources_base_url ENV Variable');
     }
 
     if (!hrmEnv) {

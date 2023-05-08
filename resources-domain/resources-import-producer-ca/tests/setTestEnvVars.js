@@ -14,5 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-process.env.internal_resources_base_url = 'development-url';
+process.env.internal_resources_base_url = 'https://development-url';
 process.env.NODE_ENV = 'development';
+process.env.EXTERNAL_API_BASE_URL = 'https://external-url';
+process.env.ACCOUNT_SID = 'AC000';
