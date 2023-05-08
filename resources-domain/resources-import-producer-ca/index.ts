@@ -21,8 +21,8 @@ import type { AccountSID } from '@tech-matters/twilio-worker-auth/dist';
 import sortedIndexBy from 'lodash/sortedIndexBy';
 import parseISO from 'date-fns/parseISO';
 import addMilliseconds from 'date-fns/addMilliseconds';
-import { ImportRequestBody } from '@tech-matters/types';
-// const importResourcesSqsQueueUrl = new URL(process.env.import_resources_sqs_queue_url ?? '');
+import { publishToImportConsumer, ResourceMessage } from './clientSqs';
+
 const internalResourcesBaseUrl = new URL(process.env.internal_resources_base_url ?? '');
 const hrmEnv = process.env.NODE_ENV;
 const configuredAccountSid = process.env.ACCOUNT_SID as AccountSID;
@@ -63,8 +63,12 @@ export type KhpApiResponse = {
   totalResults: number;
 };
 
-export type ResourceMessage = ImportRequestBody & { accountSid: AccountSID };
-
+/**
+ * Stub implementation of a routine to transform the resources provided by the KHP API to the ImportApiResource format used by the write lambda
+ * @param khpReferenceNumber
+ * @param name
+ * @param updatedAt
+ */
 const transformKhpResourceToApiResource = ({ khpReferenceNumber, name, timestamps: { updatedAt } }: KhpApiResource): ImportApiResource => ({
   id: khpReferenceNumber.toString(),
   updatedAt,
@@ -118,22 +122,21 @@ const pullUpdates = async (from: Date, to: Date, lastKhpReferenceNumber: number 
   }
 };
 
-const sendUpdates = async (resources: KhpApiResource[], importBatch: ImportBatch, publisher: (message: ResourceMessage) => Promise<void>): Promise<void> => {
+const sendUpdates = async (resources: KhpApiResource[], importBatch: ImportBatch): Promise<void> => {
   let { remaining } = importBatch;
   for (const khpResource of resources) {
     const transformedResource: ResourceMessage = {
       batch: { ...importBatch, remaining },
-      importedResources: [transformKhpResourceToApiResource(khpResource)], //TODO: Actually transform the resource
+      importedResources: [transformKhpResourceToApiResource(khpResource)],
       accountSid: configuredAccountSid,
     };
-    await publisher(transformedResource);
+    await publishToImportConsumer(transformedResource);
     remaining--;
   }
 };
 
 export const handler = async (
   event: ScheduledEvent,
-  publisher: (message: ResourceMessage) => Promise<void> = async (msg) => console.log('Would publish:', msg),
 ): Promise<void> => {
   console.log('Triggered by event:', JSON.stringify(event));
   if (!internalResourcesBaseUrl) {
@@ -172,6 +175,6 @@ export const handler = async (
   if (isHttpError(updatedResources)) {
     throw new Error(`Failed to retrieve updates: ${updatedResources.status} (${updatedResources.statusText}). Response body: ${updatedResources.body}`);
   } else {
-    await sendUpdates(updatedResources.data, { ...importBatch, remaining: updatedResources.totalResults }, publisher);
+    await sendUpdates(updatedResources.data, { ...importBatch, remaining: updatedResources.totalResults });
   }
 };

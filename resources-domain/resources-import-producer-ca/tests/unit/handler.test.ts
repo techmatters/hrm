@@ -15,13 +15,14 @@
  */
 
 import parseISO from 'date-fns/parseISO';
-import { handler, HttpError, isHttpError, KhpApiResource, KhpApiResponse, ResourceMessage } from '../../index';
+import { handler, HttpError, isHttpError, KhpApiResource, KhpApiResponse } from '../../index';
 import each from 'jest-each';
 // eslint-disable-next-line prettier/prettier
 import type { ImportApiResource, ImportProgress } from '@tech-matters/types';
 import { ScheduledEvent } from 'aws-lambda';
 import { Response } from 'undici';
 import { addSeconds } from 'date-fns';
+import { publishToImportConsumer, ResourceMessage } from '../../clientSqs';
 const mockFetch: jest.Mock<ReturnType<typeof fetch>> = jest.fn();
 
 const EMPTY_ATTRIBUTES: ImportApiResource['attributes'] = {
@@ -38,11 +39,18 @@ jest.mock('@tech-matters/hrm-ssm-cache', () => ({
   getSsmParameter: () => 'static-key',
 }));
 
+jest.mock('../../clientSqs', () => ({
+  publishToImportConsumer: jest.fn(),
+}));
+
 // @ts-ignore
 global.fetch = mockFetch;
 
+const mockPublisher = publishToImportConsumer as jest.MockedFunction<typeof publishToImportConsumer>;
+
 beforeEach(() => {
   jest.resetAllMocks();
+  mockPublisher.mockResolvedValue(Promise.resolve({} as any));
 });
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -127,8 +135,7 @@ const testCases: HandlerTestCase[] = [
 
 describe('resources-import-producer-ca handler', () => {
   each(testCases.slice(1)).test('$description', async ({ importProgressResponse, externalApiResponse, expectedExternalApiCallParameters, expectedPublishedMessages }: HandlerTestCase) => {
-    const mockPublisher = jest.fn();
-    mockPublisher.mockResolvedValue(Promise.resolve());
+
     mockFetch.mockResolvedValueOnce({
       ok: !isHttpError(importProgressResponse),
       json: () => Promise.resolve(importProgressResponse),
@@ -142,7 +149,7 @@ describe('resources-import-producer-ca handler', () => {
       status: isHttpError(externalApiResponse) ? externalApiResponse.status : 200,
       statusText: isHttpError(externalApiResponse) ? externalApiResponse.statusText : 'OK',
     } as Response);
-    await handler({} as ScheduledEvent, mockPublisher);
+    await handler({} as ScheduledEvent);
     expect(mockFetch).toHaveBeenCalledTimes(expectedExternalApiCallParameters.length + 1);
     expect(mockFetch.mock.calls[0][0]).toEqual(new URL(`https://development-url/v0/accounts/AC000/resources/import/progress`));
     expect(mockFetch.mock.calls.length).toEqual(expectedExternalApiCallParameters.length + 1);
