@@ -2,6 +2,7 @@
   "extends": "../tsconfig.packages-base.json",
   "include": ["*.ts"],
   "compilerOptions": {
-    "outDir": "./dist"
-  }
+    "outDir": "./dist",
+    "typeRoots": ["./type-decl", "../node_modules/@types"]
+  },
 }
