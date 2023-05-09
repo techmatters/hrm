@@ -18,6 +18,7 @@
     { "path": "hrm-domain/contact-retrieve-transcript" },
     { "path": "resources-domain/resources-service/tsconfig.scripts.json" },
     { "path": "resources-domain/resources-import-consumer" },
+    { "path": "resources-domain/resources-import-producer-ca" },
     { "path": "resources-domain/resources-search-index" },
     { "path": "resources-domain/resources-search-complete" },
     { "path": "resources-domain/resources-service" },

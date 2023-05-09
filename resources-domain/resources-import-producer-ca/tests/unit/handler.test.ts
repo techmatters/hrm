@@ -20,10 +20,12 @@ import each from 'jest-each';
 // eslint-disable-next-line prettier/prettier
 import type { ImportApiResource, ImportProgress } from '@tech-matters/types';
 import { ScheduledEvent } from 'aws-lambda';
-import { Response } from 'undici';
 import { addMilliseconds, addSeconds, subHours, subMinutes } from 'date-fns';
 import { publishToImportConsumer, ResourceMessage } from '../../clientSqs';
 import getConfig from '../../config';
+import { Response } from 'undici';
+
+declare var fetch: typeof import('undici').fetch;
 
 jest.mock('@tech-matters/hrm-ssm-cache', () => ({
   getSsmParameter: () => 'static-key',

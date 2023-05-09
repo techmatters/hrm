@@ -17,12 +17,14 @@
 // eslint-disable-next-line prettier/prettier
 import type { ScheduledEvent } from 'aws-lambda';
 import type { ImportApiResource, ImportBatch, ImportProgress } from '@tech-matters/types';
-import type { AccountSID } from '@tech-matters/twilio-worker-auth/dist';
+import type { AccountSID } from '@tech-matters/twilio-worker-auth';
 import sortedIndexBy from 'lodash/sortedIndexBy';
 import parseISO from 'date-fns/parseISO';
 import addMilliseconds from 'date-fns/addMilliseconds';
 import { publishToImportConsumer, ResourceMessage } from './clientSqs';
 import getConfig from './config';
+
+declare var fetch: typeof import('undici').fetch;
 
 const updateBatchSize = Number(process.env.UPDATE_BATCH_SIZE ?? 1000);
 const maxAttempts = Number(process.env.MAX_RESOURCE_ATTEMPTS ?? 100);

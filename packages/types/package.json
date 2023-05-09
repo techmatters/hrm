@@ -6,6 +6,7 @@
   "license": "AGPL",
   "devDependencies": {},
   "main": "dist/index.js",
+  "typings": "dist/index.d.ts",
   "types": "index.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
