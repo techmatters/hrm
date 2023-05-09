@@ -15,7 +15,7 @@
  */
 
 import { SQS } from 'aws-sdk'; // eslint-disable-line import/no-extraneous-dependencies
-import { getStackOutput } from '../../cdk/cdkOutput';
+import { getStackOutput } from '../cdk/cdkOutput';
 
 export const sendMessage = async ({
   lambdaName,

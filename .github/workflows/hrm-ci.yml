@@ -73,7 +73,7 @@ jobs:
           # POSTGRES_PASSWORD - superuser password
           postgresql password: postgres
           # POSTGRES_INIT_SCRIPTS - directory containing DB init scripts
-          postgresql init scripts: hrm-service/service-tests/db-init
+          postgresql init scripts: test-support/db-init
 
       - name: Run Service Tests
         run: npm run test:service:ci

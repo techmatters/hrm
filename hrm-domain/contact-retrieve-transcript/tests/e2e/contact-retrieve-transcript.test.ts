@@ -17,7 +17,7 @@
 import { S3, SQS } from 'aws-sdk';
 import { generateMockMessageBody } from '../generateMockMessageBody';
 import { getStackOutput } from '../../../../cdk/cdkOutput';
-import { sendMessage } from '../../../tests/sendMessage';
+import { sendMessage } from '../../../../test-support/sendMessage';
 
 /**
  * TODO: This is a super dirty proof of concept for e2e tests.

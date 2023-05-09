@@ -19,28 +19,32 @@ FROM node:16-alpine as build
 # copy the hrm-lib package and labmdas folders so that the file: based
 # dependency in package.json can be resolved
 COPY packages /tmp/build/packages
-COPY resources-service /tmp/build/resources-service
-COPY hrm-service /tmp/build/hrm-service
+COPY resources-domain/resources-service /tmp/build/resources-domain/resources-service
+COPY resources-domain/tsconfig.json /tmp/build/resources-domain/tsconfig.json
+COPY hrm-domain/hrm-service /tmp/build/hrm-domain/hrm-service
+COPY hrm-domain/tsconfig.json /tmp/build/hrm-domain/tsconfig.json
 COPY package.json package-lock.json tsconfig.base.json tsconfig.build.service.json /tmp/build/
 
 RUN apk add --no-cache rsync \
     && cd /tmp/build \
-    && npm ci -w=hrm-service -w packages/* -w resources-service \
+    && npm ci -w=hrm-domain/hrm-service -w packages/* -w resources-domain/resources-service \
     && npx tsc -b tsconfig.build.service.json \
-    && cp -r hrm-service/* /home/node/ \
+    && cp -r hrm-domain/hrm-service/* /home/node/ \
     && cp -r packages /home/node/ \
-    && cp -r resources-service /home/node/ \
+    && mkdir -p /home/node/resources-domain/ \
+    && cp -r resources-domain/resources-service /home/node/resources-domain/resources-service \
     && cp -r node_modules /home/node/
 
 # Ignore errors if node_modules is not present
-RUN rsync -a hrm-service/node_modules/ /home/node/node_modules; exit 0
+RUN rsync -a hrm-domain/hrm-service/node_modules/ /home/node/node_modules; exit 0
 
 FROM node:16-alpine
 COPY --from=build /home/node /home/node
 
 WORKDIR /home/node
 
-COPY hrm-service/docker-entrypoint /usr/local/bin/docker-entrypoint
+COPY hrm-domain/hrm-service/docker-entrypoint /usr/local/bin/docker-entrypoint
+RUN chmod +x /usr/local/bin/docker-entrypoint
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint"]
 
 # RUN npm test

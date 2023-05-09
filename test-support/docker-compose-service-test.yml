@@ -22,7 +22,7 @@ services:
       POSTGRES_DB: hrmdb
 
     volumes:
-      - ./service-tests/db-init/dump.sql:/docker-entrypoint-initdb.d/dump.sql
+      - ./db-init/dump.sql:/docker-entrypoint-initdb.d/dump.sql
 
     command: ['postgres', '-c', 'log_statement=all']
 

@@ -5,7 +5,7 @@
     { "path": "packages/types" },
     { "path": "packages/job-errors" },
     { "path": "packages/ssm-cache" },
-    { "path": "packages/elasticsearch-client" },
-    { "path": "jobs/resources-search-index" }
+    { "path": "packages/sns-client" },
+    { "path": "resources-domain/resources-search-complete" }
   ]
 }

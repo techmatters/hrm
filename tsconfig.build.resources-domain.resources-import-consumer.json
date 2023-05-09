@@ -4,6 +4,6 @@
   "references": [
     { "path": "packages/job-errors" },
     { "path": "packages/ssm-cache" },
-    { "path": "jobs/resources-import-consumer" }
+    { "path": "resources-domain/resources-import-consumer" }
   ]
 }

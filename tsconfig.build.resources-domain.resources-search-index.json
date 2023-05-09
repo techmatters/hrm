@@ -2,9 +2,10 @@
   "extends": "./tsconfig.base.json",
   "files": [],
   "references": [
+    { "path": "packages/types" },
     { "path": "packages/job-errors" },
     { "path": "packages/ssm-cache" },
-    { "path": "packages/types" },
-    { "path": "jobs/contact-complete" }
+    { "path": "packages/elasticsearch-client" },
+    { "path": "resources-domain/resources-search-index" }
   ]
 }

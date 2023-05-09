@@ -14,6 +14,6 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { getStackOutput } from '../../cdk/cdkOutput';
+import { getStackOutput } from '../cdk/cdkOutput';
 
 console.log(getStackOutput('contact-complete').queueUrl.replace('localhost', 'localstack'));

@@ -8,7 +8,7 @@
     { "path": "packages/ssm-cache" },
     { "path": "packages/elasticsearch-client" },
     { "path": "packages/types" },
-    { "path": "resources-service" },
-    { "path": "hrm-service" }
+    { "path": "resources-domain/resources-service" },
+    { "path": "hrm-domain/hrm-service" }
   ]
 }
