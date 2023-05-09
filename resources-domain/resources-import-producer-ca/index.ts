@@ -22,13 +22,8 @@ import sortedIndexBy from 'lodash/sortedIndexBy';
 import parseISO from 'date-fns/parseISO';
 import addMilliseconds from 'date-fns/addMilliseconds';
 import { publishToImportConsumer, ResourceMessage } from './clientSqs';
+import getConfig from './config';
 
-const internalResourcesBaseUrl = new URL(process.env.internal_resources_base_url ?? '');
-const hrmEnv = process.env.NODE_ENV;
-const configuredAccountSid = process.env.ACCOUNT_SID as AccountSID;
-const externalApiBaseUrl = new URL(process.env.EXTERNAL_API_BASE_URL ?? '');
-const externalApiAuthorizationHeader = process.env.EXTERNAL_API_AUTH_HEADER ?? '';
-const externalApiKey = process.env.EXTERNAL_API_KEY ?? '';
 const updateBatchSize = Number(process.env.UPDATE_BATCH_SIZE ?? 1000);
 const maxAttempts = Number(process.env.MAX_RESOURCE_ATTEMPTS ?? 100);
 
@@ -42,9 +37,12 @@ export const isHttpError = <T>(value: any): value is HttpError<T> => {
   return typeof value?.status === 'number' && typeof value?.statusText === 'string' && typeof value?.body !== 'undefined';
 };
 
-const retrieveCurrentStatus = async (accountSid: AccountSID): Promise<ImportProgress | HttpError> => {
+const retrieveCurrentStatus = (internalResourcesBaseUrl: URL, internalResourcesApiKey: string) => async (accountSid: AccountSID): Promise<ImportProgress | HttpError> => {
   const response  = await fetch(new URL(`/v0/accounts/${accountSid}/resources/import/progress`, internalResourcesBaseUrl), {
     method: 'GET',
+    headers: {
+      Authorization: `Basic ${internalResourcesApiKey}`,
+    },
   });
   if (response.ok) {
     return response.json() as Promise<ImportProgress>;
@@ -83,54 +81,57 @@ const transformKhpResourceToApiResource = ({ khpReferenceNumber, name, timestamp
   
 });
 
-const pullUpdates = async (from: Date, to: Date, lastKhpReferenceNumber: number = 0, limit = updateBatchSize): Promise<KhpApiResponse | HttpError> => {
-  const response = await fetch(new URL(`api/resources?sort=updatedAt&fromDate=${from.toISOString()}&toDate=${to.toISOString()}&limit=${updateBatchSize}`, externalApiBaseUrl), {
-    headers: {
-      'Authorization': externalApiAuthorizationHeader,
-      'x-api-key': externalApiKey,
-    },
-    method: 'GET',
-  });
-  if (response.ok) {
-    const { data:fullResults, totalResults } = await response.json() as KhpApiResponse;
-    const batchStartIndex = limit - updateBatchSize;
-    const batch = fullResults.slice(batchStartIndex);
-    const maxIndex = sortedIndexBy(batch, { timestamps: { updatedAt: addMilliseconds(from, 1).toISOString() } } as KhpApiResource, resource => parseISO(resource.timestamps.updatedAt) );
-    const index = sortedIndexBy(batch.slice(0, maxIndex), { khpReferenceNumber: lastKhpReferenceNumber } as KhpApiResource, 'resourceID');
-    
-    if (index && (batchStartIndex + index + updateBatchSize) <= fullResults.length && fullResults.length < totalResults) {
-      // We had to search into the initial batch to find the 'real' index amongst records with the same updated timestamp.
-      // Either we found the 'real' index in the batch and we are just requerying to ensure we have a full size batch to process
-      // Or we didn't find the 'real' index in the batch and we need to pull again with another full batch's worth of records added to keep looking.
-      if (limit < maxAttempts * updateBatchSize) {
-        return pullUpdates(from, to, lastKhpReferenceNumber, batchStartIndex + index);
+const pullUpdates = (externalApiBaseUrl: URL, externalApiKey: string, externalApiAuthorizationHeader: string) => {
+  const configuredPullUpdates = async (from: Date, to: Date, lastKhpReferenceNumber: number = 0, limit = updateBatchSize): Promise<KhpApiResponse | HttpError> => {
+    const response = await fetch(new URL(`api/resources?sort=updatedAt&fromDate=${from.toISOString()}&toDate=${to.toISOString()}&limit=${updateBatchSize}`, externalApiBaseUrl), {
+      headers: {
+        'Authorization': externalApiAuthorizationHeader,
+        'x-api-key': externalApiKey,
+      },
+      method: 'GET',
+    });
+    if (response.ok) {
+      const { data:fullResults, totalResults } = await response.json() as KhpApiResponse;
+      const batchStartIndex = limit - updateBatchSize;
+      const batch = fullResults.slice(batchStartIndex);
+      const maxIndex = sortedIndexBy(batch, { timestamps: { updatedAt: addMilliseconds(from, 1).toISOString() } } as KhpApiResource, resource => parseISO(resource.timestamps.updatedAt) );
+      const index = sortedIndexBy(batch.slice(0, maxIndex), { khpReferenceNumber: lastKhpReferenceNumber } as KhpApiResource, 'resourceID');
+
+      if (index && (batchStartIndex + index + updateBatchSize) <= fullResults.length && fullResults.length < totalResults) {
+        // We had to search into the initial batch to find the 'real' index amongst records with the same updated timestamp.
+        // Either we found the 'real' index in the batch and we are just requerying to ensure we have a full size batch to process
+        // Or we didn't find the 'real' index in the batch and we need to pull again with another full batch's worth of records added to keep looking.
+        if (limit < maxAttempts * updateBatchSize) {
+          return configuredPullUpdates(from, to, lastKhpReferenceNumber, batchStartIndex + index);
+        } else {
+          throw new Error(`Unable to find last processed resource after trawling ${limit} resources.`);
+        }
       } else {
-        throw new Error(`Unable to find last processed resource after trawling ${limit} resources.`);
+        return {
+          data:batch.slice(index),
+          totalResults: totalResults - (batchStartIndex + index),
+        };
       }
     } else {
       return {
-        data:batch.slice(index),
-        totalResults: totalResults - (batchStartIndex + index),
+        status: response.status,
+        statusText: response.statusText,
+        body: await response.text(),
       };
     }
-  } else {
-    return {
-      status: response.status,
-      statusText: response.statusText,
-      body: await response.text(),
-    };
-  }
+  };
+  return configuredPullUpdates;
 };
 
-const sendUpdates = async (resources: KhpApiResource[], importBatch: ImportBatch): Promise<void> => {
+const sendUpdates = (accountSid: AccountSID, importResourcesSqsQueueUrl: URL) => async (resources: KhpApiResource[], importBatch: ImportBatch): Promise<void> => {
   let { remaining } = importBatch;
   for (const khpResource of resources) {
     const transformedResource: ResourceMessage = {
       batch: { ...importBatch, remaining },
       importedResources: [transformKhpResourceToApiResource(khpResource)],
-      accountSid: configuredAccountSid,
+      accountSid,
     };
-    await publishToImportConsumer(transformedResource);
+    await publishToImportConsumer(importResourcesSqsQueueUrl)(transformedResource);
     remaining--;
   }
 };
@@ -139,15 +140,18 @@ export const handler = async (
   event: ScheduledEvent,
 ): Promise<void> => {
   console.log('Triggered by event:', JSON.stringify(event));
-  if (!internalResourcesBaseUrl) {
-    throw new Error('Missing internal resources base url');
-  }
 
-  if (!hrmEnv) {
-    throw new Error('Missing NODE_ENV');
-  }
+  const {
+    accountSid,
+    importApiBaseUrl,
+    importApiAuthHeader,
+    importApiKey,
+    internalResourcesBaseUrl,
+    internalResourcesApiKey,
+    importResourcesSqsQueueUrl } = await getConfig();
+  const configuredPull = pullUpdates(importApiBaseUrl, importApiKey, importApiAuthHeader);
 
-  const progress = await retrieveCurrentStatus(configuredAccountSid);
+  const progress = await retrieveCurrentStatus(internalResourcesBaseUrl, internalResourcesApiKey)(accountSid);
   let importBatch: Omit<ImportBatch, 'remaining'>;
   let updatedResources: KhpApiResponse | HttpError;
   const now = new Date();
@@ -155,7 +159,7 @@ export const handler = async (
     // No record of any import being attempted, start from scratch
     if (progress.status === 404) {
       console.debug('No import in progress detected for account, starting from scratch');
-      updatedResources = await pullUpdates(new Date(0), now);
+      updatedResources = await configuredPull(new Date(0), now);
       importBatch = {
         toDate: now.toISOString(),
         fromDate: new Date(0).toISOString(),
@@ -166,7 +170,7 @@ export const handler = async (
   } else {
     // Resume importing based on the state left by the last import.
     const fromDate = addMilliseconds(parseISO(progress.lastProcessedDate), (progress.lastProcessedId && progress.remaining) ? 0 : 1);
-    updatedResources = await pullUpdates(fromDate, now, parseInt(progress.lastProcessedId));
+    updatedResources = await configuredPull(fromDate, now, parseInt(progress.lastProcessedId));
     importBatch = {
       fromDate: fromDate.toISOString(),
       toDate: now.toISOString(),
@@ -175,6 +179,6 @@ export const handler = async (
   if (isHttpError(updatedResources)) {
     throw new Error(`Failed to retrieve updates: ${updatedResources.status} (${updatedResources.statusText}). Response body: ${updatedResources.body}`);
   } else {
-    await sendUpdates(updatedResources.data, { ...importBatch, remaining: updatedResources.totalResults });
+    await sendUpdates(accountSid, importResourcesSqsQueueUrl)(updatedResources.data, { ...importBatch, remaining: updatedResources.totalResults });
   }
 };

@@ -21,19 +21,17 @@ import type { ImportRequestBody } from '@tech-matters/types';
 // eslint-disable-next-line prettier/prettier
 import type { AccountSID } from '@tech-matters/twilio-worker-auth';
 
-const importResourcesSqsQueueUrl = new URL(process.env.import_resources_sqs_queue_url ?? '');
 
 let sqs: SQS;
 
-export const getSqsClient = () => {
+const getSqsClient = () => {
   if (!sqs) {
     sqs = new SQS();
   }
   return sqs;
 };
 
-export const publishToImportConsumer = async (params: ResourceMessage) => {
-
+export const publishToImportConsumer = (importResourcesSqsQueueUrl: URL) => async (params: ResourceMessage) => {
   //TODO: more robust error handling/messaging
   try {
     const QueueUrl = importResourcesSqsQueueUrl.toString();
