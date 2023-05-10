@@ -14,13 +14,12 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { ImportApiResource, ImportProgress } from '@tech-matters/types';
+import { AccountSID, ImportApiResource, ImportProgress } from '@tech-matters/types';
 import {
   generateUpdateImportProgressSql,
   generateUpsertSqlFromImportResource,
   SELECT_IMPORT_PROGRESS_SQL,
 } from './sql';
-import { AccountSID } from '@tech-matters/twilio-worker-auth';
 import { ITask } from 'pg-promise';
 import { db } from '../connection-pool';
 

@@ -15,8 +15,7 @@
  */
 
 import { pgp } from '../connection-pool';
-import { ImportProgress, ImportApiResource } from '@tech-matters/types';
-import { AccountSID } from '@tech-matters/twilio-worker-auth';
+import { AccountSID, ImportProgress, ImportApiResource } from '@tech-matters/types';
 
 export const generateUpsertSqlFromImportResource = (
   accountSid: string,

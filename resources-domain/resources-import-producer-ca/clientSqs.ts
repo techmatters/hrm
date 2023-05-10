@@ -17,9 +17,8 @@
 import { SQS } from 'aws-sdk';
 
 // eslint-disable-next-line prettier/prettier
-import type { ImportRequestBody } from '@tech-matters/types';
+import type { AccountSID, ImportRequestBody } from '@tech-matters/types';
 // eslint-disable-next-line prettier/prettier
-import type { AccountSID } from '@tech-matters/twilio-worker-auth';
 
 
 let sqs: SQS;

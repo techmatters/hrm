@@ -15,12 +15,11 @@
  */
 
 import {
+  AccountSID,
   ReferrableResourceAttribute,
   ResourceAttributeNode,
   ReferrableResource,
 } from '@tech-matters/types';
-
-import { AccountSID } from '@tech-matters/twilio-worker-auth';
 
 import {
   IndexTypes,

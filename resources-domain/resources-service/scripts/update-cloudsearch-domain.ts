@@ -41,7 +41,7 @@ import { addMilliseconds, differenceInMilliseconds, parseISO } from 'date-fns';
 import cloudSearchConfig from '../src/config/cloud-search';
 import { getUnindexedResources } from '../src/resource/resource-model';
 
-import { AccountSID } from '@tech-matters/twilio-worker-auth';
+import { AccountSID } from '@tech-matters/types';
 import * as fs from 'fs/promises';
 
 type ResourcesCloudSearchDocument = {

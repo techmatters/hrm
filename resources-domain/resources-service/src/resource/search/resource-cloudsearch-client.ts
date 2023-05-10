@@ -22,7 +22,7 @@ import {
 // eslint-disable-next-line prettier/prettier
 import type { CloudSearchConfig } from '../../config/cloud-search';
 import { TermsAndFilters } from './search-types';
-import { AccountSID } from '@tech-matters/twilio-worker-auth';
+import { AccountSID } from '@tech-matters/types';
 
 type SearchResultItem = {
   id: string;

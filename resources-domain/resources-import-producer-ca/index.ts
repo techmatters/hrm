@@ -16,8 +16,7 @@
 
 // eslint-disable-next-line prettier/prettier
 import type { ScheduledEvent } from 'aws-lambda';
-import type { ImportApiResource, ImportBatch, ImportProgress } from '@tech-matters/types';
-import type { AccountSID } from '@tech-matters/twilio-worker-auth';
+import type { AccountSID, ImportApiResource, ImportBatch, ImportProgress } from '@tech-matters/types';
 import sortedIndexBy from 'lodash/sortedIndexBy';
 import parseISO from 'date-fns/parseISO';
 import addMilliseconds from 'date-fns/addMilliseconds';

@@ -15,7 +15,7 @@
  */
 
 // eslint-disable-next-line prettier/prettier
-import type { AccountSID } from '@tech-matters/twilio-worker-auth';
+import type { AccountSID } from '@tech-matters/types';
 import { getSsmParameter } from '@tech-matters/hrm-ssm-cache';
 
 const getConfig = async () => {
