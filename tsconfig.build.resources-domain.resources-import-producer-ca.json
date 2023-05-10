@@ -4,6 +4,6 @@
   "references": [
     { "path": "packages/types" },
     { "path": "packages/ssm-cache" },
-    { "path": "resources-domain/resources-import-producer-ca" }
+    { "path": "resources-domain/resources-import-producer" }
   ]
 }

@@ -35,7 +35,7 @@ on:
           - contact-retrieve-recording-url
           - contact-retrieve-transcript
           - resources-import-consumer
-          - resources-import-producer-ca
+          - resources-import-producer
           - resources-search-complete
           - resources-search-index
 

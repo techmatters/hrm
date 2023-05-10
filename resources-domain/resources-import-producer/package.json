@@ -1,5 +1,5 @@
 {
-  "name": "@tech-matters/resources-import-producer-ca",
+  "name": "@tech-matters/resources-import-producer",
   "version": "0.0.1",
   "description": "",
   "main": "dist/index.js",
@@ -21,7 +21,7 @@
     "undici": "^5.22.0"
   },
   "scripts": {
-    "docker:build": "docker build -t resources-import-khp --build-arg lambda_name=resources-import-producer-ca -f ../Dockerfile ../../",
+    "docker:build": "docker build -t resources-import-khp --build-arg lambda_name=resources-import-producer -f ../Dockerfile ../../",
     "test:unit": "jest tests/unit"
   }
 }

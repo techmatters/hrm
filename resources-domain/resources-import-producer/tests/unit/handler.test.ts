@@ -170,7 +170,7 @@ const testCases: HandlerTestCase[] = [
   },
 ];
 
-describe('resources-import-producer-ca handler', () => {
+describe('resources-import-producer handler', () => {
   each(testCases.slice(1)).test('$description', async ({ importProgressResponse, externalApiResponse, expectedExternalApiCallParameters, expectedPublishedMessages }: HandlerTestCase) => {
 
     mockFetch.mockResolvedValueOnce({
