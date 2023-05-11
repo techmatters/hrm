@@ -97,6 +97,8 @@ const pullUpdates = (externalApiBaseUrl: URL, externalApiKey: string, externalAp
       method: 'GET',
     });
     if (response.ok) {
+      // NB: This batch resuming isn't really tested but it should get removed when we migrate to Arctic's proposed time sequencey API.
+      // The logic for resuming that should be more straightforward.
       const { data:fullResults, totalResults } = await response.json() as KhpApiResponse;
       const batchStartIndex = limit - updateBatchSize;
       const batch = fullResults.slice(batchStartIndex);
@@ -104,7 +106,7 @@ const pullUpdates = (externalApiBaseUrl: URL, externalApiKey: string, externalAp
       const index = sortedIndexBy(batch.slice(0, maxIndex), { objectId: lastObjectId } as KhpApiResource, 'resourceID');
 
       if (index && (batchStartIndex + index + updateBatchSize) <= fullResults.length && fullResults.length < totalResults) {
-        // We had to search into the initial batch to find the 'real' index amongst records with the same updated timestamp.
+       // We had to search into the initial batch to find the 'real' index amongst records with the same updated timestamp.
         // Either we found the 'real' index in the batch and we are just requerying to ensure we have a full size batch to process
         // Or we didn't find the 'real' index in the batch and we need to pull again with another full batch's worth of records added to keep looking.
         if (limit < maxAttempts * updateBatchSize) {
