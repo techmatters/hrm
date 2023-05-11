@@ -132,7 +132,7 @@ jobs:
 
     env:
       DOCKER_IMAGE: ${{ needs.build_lambda.outputs.docker_image }}
-      LAMBDA_INSTANCE_NAME: (inputs.lambda_instance_id != '' && '${{ inputs.lambda_name }}-${{ inputs.lambda_instance_id }}') || inputs.lambda_name
+      LAMBDA_INSTANCE_NAME: ${{ (inputs.lambda_instance_id != '' && '${{ inputs.lambda_name }}-${{ inputs.lambda_instance_id }}') || inputs.lambda_name }}
 
     steps:
       - name: Configure AWS credentials
