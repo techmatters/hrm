@@ -56,7 +56,7 @@ const retrieveCurrentStatus = (internalResourcesBaseUrl: URL, internalResourcesA
   }
 };
 
-export type KhpApiResource = ({ khpReferenceNumber: number, timestamps: { updatedAt: string } } & Record<string, any>);
+export type KhpApiResource = ({ khpReferenceNumber: number, updatedAt: string } & Record<string, any>);
 export type KhpApiResponse = {
   data: KhpApiResource[];
   totalResults: number;
@@ -95,7 +95,7 @@ const pullUpdates = (externalApiBaseUrl: URL, externalApiKey: string, externalAp
       const { data:fullResults, totalResults } = await response.json() as KhpApiResponse;
       const batchStartIndex = limit - updateBatchSize;
       const batch = fullResults.slice(batchStartIndex);
-      const maxIndex = sortedIndexBy(batch, { timestamps: { updatedAt: addMilliseconds(from, 1).toISOString() } } as KhpApiResource, resource => parseISO(resource.timestamps.updatedAt) );
+      const maxIndex = sortedIndexBy(batch, { updatedAt: addMilliseconds(from, 1).toISOString() } as KhpApiResource, resource => parseISO(resource.timestamps.updatedAt) );
       const index = sortedIndexBy(batch.slice(0, maxIndex), { khpReferenceNumber: lastKhpReferenceNumber } as KhpApiResource, 'resourceID');
 
       if (index && (batchStartIndex + index + updateBatchSize) <= fullResults.length && fullResults.length < totalResults) {

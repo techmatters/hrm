@@ -87,9 +87,7 @@ type HandlerTestCase = {
 const generateKhpResource = (updatedAt: Date, resourceId: number): KhpApiResource => ({
   khpReferenceNumber: resourceId,
   name: `Resource ${resourceId}`,
-  timestamps: {
-    updatedAt: updatedAt.toISOString(),
-  },
+  updatedAt: updatedAt.toISOString(),
 });
 
 const generateResourceMessage = (updatedAt: Date, resourceId: string, batchFromDate: Date, remaining: number): ResourceMessage => (
