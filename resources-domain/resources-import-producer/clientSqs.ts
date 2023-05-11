@@ -38,6 +38,7 @@ export const publishToImportConsumer = (importResourcesSqsQueueUrl: URL) => asyn
     return await getSqsClient()
       .sendMessage({
         MessageBody: JSON.stringify(params),
+        MessageGroupId: `${params.accountSid}/${params.importedResources[0]?.id ?? '__EMPTY_BATCH'}`,
         QueueUrl,
       })
       .promise();
