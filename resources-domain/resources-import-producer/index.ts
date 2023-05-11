@@ -68,19 +68,24 @@ export type KhpApiResponse = {
  * @param name
  * @param updatedAt
  */
-const transformKhpResourceToApiResource = ({ objectId, name: { en: name }, updatedAt }: KhpApiResource): ImportApiResource => ({
-  id: objectId,
-  updatedAt,
-  name,
-  attributes: {
-    ResourceStringAttributes: [],
-    ResourceNumberAttributes: [],
-    ResourceBooleanAttributes: [],
-    ResourceDateTimeAttributes: [],
-    ResourceReferenceStringAttributes: [],
-  },
-  
-});
+const transformKhpResourceToApiResource = ({ objectId, name: { en: name }, updatedAt }: KhpApiResource): ImportApiResource => {
+  if (!objectId || !name || !updatedAt) {
+    throw new Error(`Invalid resource provided, missing required parameter: ${JSON.stringify({ objectId, name, updatedAt })}`);
+  }
+
+  return {
+    id: objectId,
+    updatedAt,
+    name,
+    attributes: {
+      ResourceStringAttributes: [],
+      ResourceNumberAttributes: [],
+      ResourceBooleanAttributes: [],
+      ResourceDateTimeAttributes: [],
+      ResourceReferenceStringAttributes: [],
+    },
+  };
+};
 
 const pullUpdates = (externalApiBaseUrl: URL, externalApiKey: string, externalApiAuthorizationHeader: string) => {
   const configuredPullUpdates = async (from: Date, to: Date, lastObjectId: string = '', limit = updateBatchSize): Promise<KhpApiResponse | HttpError> => {
@@ -128,12 +133,16 @@ const sendUpdates = (accountSid: AccountSID, importResourcesSqsQueueUrl: URL) =>
   let { remaining } = importBatch;
   for (const khpResource of resources) {
     remaining--;
-    const transformedResource: ResourceMessage = {
-      batch: { ...importBatch, remaining },
-      importedResources: [transformKhpResourceToApiResource(khpResource)],
-      accountSid,
-    };
-    await publishToImportConsumer(importResourcesSqsQueueUrl)(transformedResource);
+    try {
+      const transformedResource: ResourceMessage = {
+        batch: { ...importBatch, remaining },
+        importedResources: [transformKhpResourceToApiResource(khpResource)],
+        accountSid,
+      };
+      await publishToImportConsumer(importResourcesSqsQueueUrl)(transformedResource);
+    } catch (error) {
+      console.error(`Unable to read or send resource ${JSON.stringify(khpResource)}:`, error);
+    }
   }
 };
 
