@@ -3,6 +3,5 @@
   "include": ["*.ts"],
   "compilerOptions": {
     "outDir": "./dist",
-    "typeRoots": ["./type-decl", "../node_modules/@types"]
   },
 }

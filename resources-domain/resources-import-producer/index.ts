@@ -141,7 +141,7 @@ const sendUpdates = (accountSid: AccountSID, importResourcesSqsQueueUrl: URL) =>
       };
       await publishToImportConsumer(importResourcesSqsQueueUrl)(transformedResource);
     } catch (error) {
-      console.error(`Unable to read or send resource ${JSON.stringify(khpResource)}:`, error);
+      console.error(`Unable to transform & send resource ${JSON.stringify(khpResource)}:`, error);
     }
   }
 };
