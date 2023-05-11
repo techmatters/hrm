@@ -38,6 +38,11 @@ on:
           - resources-import-producer
           - resources-search-complete
           - resources-search-index
+      lambda_instance_id:
+        description: The instance ID of the lambda to deploy. Currently only needed for resources-import-producer, where it is the lower case helpline code
+        required: false
+        type: string
+        default: ''
 
   workflow_call:
     secrets:
