@@ -56,7 +56,7 @@ const retrieveCurrentStatus = (internalResourcesBaseUrl: URL, internalResourcesA
   }
 };
 
-export type KhpApiResource = ({ khpReferenceNumber: number, updatedAt: string } & Record<string, any>);
+export type KhpApiResource = ({ objectId: string, updatedAt: string, name: { en: string } & Record<string, string> } & Record<string, any>);
 export type KhpApiResponse = {
   data: KhpApiResource[];
   totalResults: number;
@@ -68,8 +68,8 @@ export type KhpApiResponse = {
  * @param name
  * @param updatedAt
  */
-const transformKhpResourceToApiResource = ({ khpReferenceNumber, name, updatedAt }: KhpApiResource): ImportApiResource => ({
-  id: khpReferenceNumber.toString(),
+const transformKhpResourceToApiResource = ({ objectId, name: { en: name }, updatedAt }: KhpApiResource): ImportApiResource => ({
+  id: objectId,
   updatedAt,
   name,
   attributes: {
@@ -83,7 +83,7 @@ const transformKhpResourceToApiResource = ({ khpReferenceNumber, name, updatedAt
 });
 
 const pullUpdates = (externalApiBaseUrl: URL, externalApiKey: string, externalApiAuthorizationHeader: string) => {
-  const configuredPullUpdates = async (from: Date, to: Date, lastKhpReferenceNumber: number = 0, limit = updateBatchSize): Promise<KhpApiResponse | HttpError> => {
+  const configuredPullUpdates = async (from: Date, to: Date, lastObjectId: string = '', limit = updateBatchSize): Promise<KhpApiResponse | HttpError> => {
     const response = await fetch(new URL(`api/resources?sort=updatedAt&fromDate=${from.toISOString()}&toDate=${to.toISOString()}&limit=${updateBatchSize}`, externalApiBaseUrl), {
       headers: {
         'Authorization': externalApiAuthorizationHeader,
@@ -96,14 +96,14 @@ const pullUpdates = (externalApiBaseUrl: URL, externalApiKey: string, externalAp
       const batchStartIndex = limit - updateBatchSize;
       const batch = fullResults.slice(batchStartIndex);
       const maxIndex = sortedIndexBy(batch, { updatedAt: addMilliseconds(from, 1).toISOString() } as KhpApiResource, resource => parseISO(resource.updatedAt) );
-      const index = sortedIndexBy(batch.slice(0, maxIndex), { khpReferenceNumber: lastKhpReferenceNumber } as KhpApiResource, 'resourceID');
+      const index = sortedIndexBy(batch.slice(0, maxIndex), { objectId: lastObjectId } as KhpApiResource, 'resourceID');
 
       if (index && (batchStartIndex + index + updateBatchSize) <= fullResults.length && fullResults.length < totalResults) {
         // We had to search into the initial batch to find the 'real' index amongst records with the same updated timestamp.
         // Either we found the 'real' index in the batch and we are just requerying to ensure we have a full size batch to process
         // Or we didn't find the 'real' index in the batch and we need to pull again with another full batch's worth of records added to keep looking.
         if (limit < maxAttempts * updateBatchSize) {
-          return configuredPullUpdates(from, to, lastKhpReferenceNumber, batchStartIndex + index);
+          return configuredPullUpdates(from, to, lastObjectId, batchStartIndex + index);
         } else {
           throw new Error(`Unable to find last processed resource after trawling ${limit} resources.`);
         }
@@ -127,13 +127,13 @@ const pullUpdates = (externalApiBaseUrl: URL, externalApiKey: string, externalAp
 const sendUpdates = (accountSid: AccountSID, importResourcesSqsQueueUrl: URL) => async (resources: KhpApiResource[], importBatch: ImportBatch): Promise<void> => {
   let { remaining } = importBatch;
   for (const khpResource of resources) {
+    remaining--;
     const transformedResource: ResourceMessage = {
       batch: { ...importBatch, remaining },
       importedResources: [transformKhpResourceToApiResource(khpResource)],
       accountSid,
     };
     await publishToImportConsumer(importResourcesSqsQueueUrl)(transformedResource);
-    remaining--;
   }
 };
 
@@ -171,7 +171,7 @@ export const handler = async (
   } else {
     // Resume importing based on the state left by the last import.
     const fromDate = addMilliseconds(parseISO(progress.lastProcessedDate), (progress.lastProcessedId && progress.remaining) ? 0 : 1);
-    updatedResources = await configuredPull(fromDate, now, parseInt(progress.lastProcessedId));
+    updatedResources = await configuredPull(fromDate, now, progress.lastProcessedId);
     importBatch = {
       fromDate: fromDate.toISOString(),
       toDate: now.toISOString(),
