@@ -69,14 +69,14 @@ export type KhpApiResponse = {
  * @param updatedAt
  */
 const transformKhpResourceToApiResource = ({ objectId, name: { en: name }, updatedAt }: KhpApiResource): ImportApiResource => {
-  if (!objectId || !name || !updatedAt) {
-    throw new Error(`Invalid resource provided, missing required parameter: ${JSON.stringify({ objectId, name, updatedAt })}`);
+  if (!objectId || !updatedAt) {
+    throw new Error(`Invalid resource provided, missing required parameter: ${JSON.stringify({ objectId, updatedAt })}`);
   }
 
   return {
     id: objectId,
     updatedAt,
-    name,
+    name: name ?? 'NAME MISSING',
     attributes: {
       ResourceStringAttributes: [],
       ResourceNumberAttributes: [],
