@@ -14,11 +14,16 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
+type ResourceStringAttributes = 'ResourceStringAttributes';
+type ResourceBooleanAttributes = 'ResourceBooleanAttributes';
+type ResourceNumberAttributes = 'ResourceNumberAttributes';
+type ResourceDateTimeAttributes = 'ResourceDateTimeAttributes';
+
 export type InlineAttributeTable =
-  | 'ResourceStringAttributes'
-  | 'ResourceBooleanAttributes'
-  | 'ResourceNumberAttributes'
-  | 'ResourceDateTimeAttributes';
+  | ResourceStringAttributes
+  | ResourceBooleanAttributes
+  | ResourceNumberAttributes
+  | ResourceDateTimeAttributes;
 
 export type AseloInlineResourceAttribute<T extends InlineAttributeTable> = {
   key: string;
@@ -52,11 +57,15 @@ export type ImportApiResource = {
 
 export type AttributeTable = InlineAttributeTable | 'ResourceReferenceStringAttributes';
 
-export type AttributeValue<T extends AttributeTable> = T extends 'ResourceBooleanAttributes'
+export type AttributeValue<T extends AttributeTable> = T extends ResourceBooleanAttributes
   ? boolean
-  : T extends 'ResourceNumberAttributes'
+  : T extends ResourceNumberAttributes
   ? number
   : string;
+
+export const isResourceDateTimeAttributes = (s: string): s is ResourceDateTimeAttributes => {
+  return Boolean(s && typeof s === 'string' && s === 'ResourceDateTimeAttributes');
+};
 
 export type ImportBatch = {
   toDate: string;
