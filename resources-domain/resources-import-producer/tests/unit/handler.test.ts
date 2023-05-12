@@ -20,9 +20,24 @@ import each from 'jest-each';
 // eslint-disable-next-line prettier/prettier
 import type { ImportApiResource, ImportProgress } from '@tech-matters/types';
 import { ScheduledEvent } from 'aws-lambda';
-import { Response } from 'undici';
 import { addMilliseconds, addSeconds, subHours, subMinutes } from 'date-fns';
 import { publishToImportConsumer, ResourceMessage } from '../../clientSqs';
+import getConfig from '../../config';
+import { Response } from 'undici';
+
+declare var fetch: typeof import('undici').fetch;
+
+jest.mock('@tech-matters/hrm-ssm-cache', () => ({
+  getSsmParameter: () => 'static-key',
+}));
+
+jest.mock('../../clientSqs', () => ({
+  publishToImportConsumer: jest.fn(),
+}));
+
+jest.mock('../../config', () => jest.fn());
+
+
 const mockFetch: jest.Mock<ReturnType<typeof fetch>> = jest.fn();
 
 const EMPTY_ATTRIBUTES: ImportApiResource['attributes'] = {
@@ -33,24 +48,28 @@ const EMPTY_ATTRIBUTES: ImportApiResource['attributes'] = {
   ResourceDateTimeAttributes: [],
 };
 
-const ACCOUNT_SID = 'AC000';
-
-jest.mock('@tech-matters/hrm-ssm-cache', () => ({
-  getSsmParameter: () => 'static-key',
-}));
-
-jest.mock('../../clientSqs', () => ({
-  publishToImportConsumer: jest.fn(),
-}));
+const MOCK_CONFIG: Awaited<ReturnType<typeof getConfig>> = {
+  accountSid: 'AC000',
+  internalResourcesBaseUrl: new URL('https://development-url'),
+  internalResourcesApiKey: 'MOCK_INTERNAL_API_KEY',
+  importApiAuthHeader: 'MOCK_AUTH_HEADER',
+  importApiKey: 'MOCK_EXTERNAL_API_KEY',
+  importResourcesSqsQueueUrl: new URL('https://queue-url'),
+  importApiBaseUrl: new URL('https://external-url'),
+};
 
 // @ts-ignore
 global.fetch = mockFetch;
 
 const mockPublisher = publishToImportConsumer as jest.MockedFunction<typeof publishToImportConsumer>;
+const mockConfiguredPublisher: jest.MockedFunction<ReturnType<typeof publishToImportConsumer>> = jest.fn();
+
 
 beforeEach(() => {
   jest.resetAllMocks();
-  mockPublisher.mockResolvedValue(Promise.resolve({} as any));
+  mockConfiguredPublisher.mockResolvedValue(Promise.resolve({} as any));
+  mockPublisher.mockReturnValue(mockConfiguredPublisher);
+  (getConfig as jest.MockedFunction<typeof getConfig>).mockResolvedValue(MOCK_CONFIG);
 });
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -65,19 +84,18 @@ type HandlerTestCase = {
   expectedPublishedMessages: ResourceMessage[];
 };
 
-const generateKhpResource = (updatedAt: Date, resourceId: number): KhpApiResource => ({
-  khpReferenceNumber: resourceId,
-  name: `Resource ${resourceId}`,
-  timestamps: {
-    updatedAt: updatedAt.toISOString(),
+const generateKhpResource = (updatedAt: Date, resourceId: string): KhpApiResource => ({
+  objectId: resourceId,
+  name: {
+    en:`Resource ${resourceId}`,
   },
+  updatedAt: updatedAt.toISOString(),
 });
 
 const generateResourceMessage = (updatedAt: Date, resourceId: string, batchFromDate: Date, remaining: number): ResourceMessage => (
   { 
-    accountSid: ACCOUNT_SID,
+    accountSid: MOCK_CONFIG.accountSid,
     batch: {
-
       fromDate: batchFromDate.toISOString(),
       toDate: testNow.toISOString(),
       remaining,
@@ -116,8 +134,8 @@ const testCases: HandlerTestCase[] = [
     description: 'if there is no import progress and the API returns all available resources in range, should send them all',
     importProgressResponse: { status: 404, statusText: 'Not Found', body: {} },
     externalApiResponse: { data: [
-        generateKhpResource(baselineDate, 1),
-        generateKhpResource(addSeconds(baselineDate, 1), 2),
+        generateKhpResource(baselineDate, '1'),
+        generateKhpResource(addSeconds(baselineDate, 1), '2'),
       ], totalResults:2 },
     expectedExternalApiCallParameters: [
       {
@@ -127,15 +145,15 @@ const testCases: HandlerTestCase[] = [
       },
     ],
     expectedPublishedMessages: [
-      generateResourceMessage(baselineDate, '1', new Date(0), 2),
-      generateResourceMessage(addSeconds(baselineDate, 1), '2', new Date(0), 1),
+      generateResourceMessage(baselineDate, '1', new Date(0), 1),
+      generateResourceMessage(addSeconds(baselineDate, 1), '2', new Date(0), 0),
     ],
   }, {
     description: 'if there is import progress and the batch is complete and the API returns all available resources in range, should start another batch and send them all',
     importProgressResponse: { fromDate: new Date(0).toISOString(), toDate: subHours(testNow, 1).toISOString(), remaining: 0, lastProcessedDate: subHours(testNow, 1).toISOString(), lastProcessedId: 'IGNORED' },
     externalApiResponse: { data: [
-        generateKhpResource(subMinutes(testNow, 10), 1),
-        generateKhpResource(subMinutes(testNow, 5), 2),
+        generateKhpResource(subMinutes(testNow, 10), '1'),
+        generateKhpResource(subMinutes(testNow, 5), '2'),
       ], totalResults:2 },
     expectedExternalApiCallParameters: [
       {
@@ -145,14 +163,14 @@ const testCases: HandlerTestCase[] = [
       },
     ],
     expectedPublishedMessages: [
-      generateResourceMessage(subMinutes(testNow, 10), '1', addMilliseconds(subHours(testNow, 1), 1), 2),
-      generateResourceMessage(subMinutes(testNow, 5), '2', addMilliseconds(subHours(testNow, 1), 1), 1),
+      generateResourceMessage(subMinutes(testNow, 10), '1', addMilliseconds(subHours(testNow, 1), 1), 1),
+      generateResourceMessage(subMinutes(testNow, 5), '2', addMilliseconds(subHours(testNow, 1), 1), 0),
     ],
   },
 ];
 
-describe('resources-import-producer-ca handler', () => {
-  each(testCases.slice(1)).test('$description', async ({ importProgressResponse, externalApiResponse, expectedExternalApiCallParameters, expectedPublishedMessages }: HandlerTestCase) => {
+describe('resources-import-producer handler', () => {
+  each(testCases).test('$description', async ({ importProgressResponse, externalApiResponse, expectedExternalApiCallParameters, expectedPublishedMessages }: HandlerTestCase) => {
 
     mockFetch.mockResolvedValueOnce({
       ok: !isHttpError(importProgressResponse),
@@ -170,18 +188,31 @@ describe('resources-import-producer-ca handler', () => {
     await handler({} as ScheduledEvent);
     expect(mockFetch).toHaveBeenCalledTimes(expectedExternalApiCallParameters.length + 1);
     expect(mockFetch.mock.calls[0][0]).toEqual(new URL(`https://development-url/v0/accounts/AC000/resources/import/progress`));
+    expect(mockFetch.mock.calls[0][1]).toEqual({
+      method: 'GET',
+      headers: {
+        Authorization: `Basic ${MOCK_CONFIG.internalResourcesApiKey}`,
+      },
+    });
     expect(mockFetch.mock.calls.length).toEqual(expectedExternalApiCallParameters.length + 1);
     expectedExternalApiCallParameters.forEach((expectedParameters, idx) => {
-      const url: URL = mockFetch.mock.calls[idx + 1][0];
+      const [url, options]: [URL, any] = mockFetch.mock.calls[idx + 1];
       Object.entries(expectedParameters).forEach(([key, value]) => {
         expect(url.searchParams.get(key)).toEqual(value);
       });
       expect(url.searchParams.get('sort')).toEqual('updatedAt');
       expect(url.toString().startsWith(`https://external-url/api/resources`)).toBeTruthy();
+      expect(options).toStrictEqual({
+        method: 'GET',
+        headers: {
+          Authorization: MOCK_CONFIG.importApiAuthHeader,
+          'x-api-key': MOCK_CONFIG.importApiKey,
+        },
+      });
     });
-    expect(mockPublisher).toHaveBeenCalledTimes(expectedPublishedMessages.length);
+    expect(mockConfiguredPublisher).toHaveBeenCalledTimes(expectedPublishedMessages.length);
     expectedPublishedMessages.forEach((expectedMessage, idx) => {
-      expect(mockPublisher.mock.calls[idx][0]).toEqual(expectedMessage);
+      expect(mockConfiguredPublisher.mock.calls[idx][0]).toEqual(expectedMessage);
     });
   });
 });

@@ -35,9 +35,14 @@ on:
           - contact-retrieve-recording-url
           - contact-retrieve-transcript
           - resources-import-consumer
-          - resources-import-producer-ca
+          - resources-import-producer
           - resources-search-complete
           - resources-search-index
+      lambda_instance_id:
+        description: The instance ID of the lambda to deploy. Currently only needed for resources-import-producer, where it is the lower case helpline code
+        required: false
+        type: string
+        default: ''
 
   workflow_call:
     secrets:
@@ -55,6 +60,11 @@ on:
         description: 'hrm lambda name'
         required: true
         type: string
+      lambda_instance_id:
+        description: The instance ID of the lambda to deploy. Currently only needed for resources-import-producer, where it is the lower case helpline code
+        required: false
+        type: string
+        default: ''
       send-slack-message:
         description: 'Specifies if should send a Slack message at the end of successful run. Defaults to true'
         required: false
@@ -122,6 +132,7 @@ jobs:
 
     env:
       DOCKER_IMAGE: ${{ needs.build_lambda.outputs.docker_image }}
+      LAMBDA_INSTANCE_NAME: ${{ (inputs.lambda_instance_id != '' && format('{0}-{1}', inputs.lambda_name, inputs.lambda_instance_id)) || inputs.lambda_name }}
 
     steps:
       - name: Configure AWS credentials
@@ -140,7 +151,7 @@ jobs:
       - name: Update Lambda and Publish
         run: |
           DOCKER_IMAGE=$(echo "${{ env.DOCKER_IMAGE }}" | sed -r 's/${{ env.PRIMARY_AWS_REGION }}/${{ matrix.region }}/g')
-          aws lambda update-function-code --function-name ${{ inputs.environment }}-hrm-${{ inputs.lambda_name }} --image-uri "$DOCKER_IMAGE" --publish
+          aws lambda update-function-code --function-name ${{ inputs.environment }}-hrm-${{ env.LAMBDA_INSTANCE_NAME }} --image-uri "$DOCKER_IMAGE" --publish
 
       # reconfigure AWS credentials to use the default region for SSM Parameter Store.
       # aws-actions/configure-aws-credentials@v1 overrides env.AWS_DEFAULT_REGION, so
@@ -171,7 +182,7 @@ jobs:
         uses: slackapi/slack-github-action@v1.14.0
         with:
           channel-id: ${{ env.ASELO_DEPLOYS_CHANNEL_ID }}
-          slack-message: '`[HRM lambdas - ${{ inputs.lambda_name }}]` Deployment of ${{ github.ref_type }} `${{ github.ref_name }}` requested by `${{ github.triggering_actor }}` completed with SHA ${{ github.sha }} to region `${{ matrix.region }}`, environment `${{ inputs.environment }}` :rocket:.'
+          slack-message: '`[HRM lambdas - ${{ env.LAMBDA_INSTANCE_NAME }}]` Deployment of ${{ github.ref_type }} `${{ github.ref_name }}` requested by `${{ github.triggering_actor }}` completed with SHA ${{ github.sha }} to region `${{ matrix.region }}`, environment `${{ inputs.environment }}` :rocket:.'
         env:
           SLACK_BOT_TOKEN: ${{ env.GITHUB_ACTIONS_SLACK_BOT_TOKEN }}
         if: ${{ inputs.send-slack-message != 'false' }}

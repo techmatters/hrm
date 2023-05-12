@@ -41,7 +41,7 @@ RUN rsync -a ${lambda_dir}/${lambda_name}/node_modules/ /var/task/node_modules; 
 
 # The added layers from our build increase image size significantly. This flattens the image
 # to reduce the size of the final image.
-FROM public.ecr.aws/lambda/nodejs:16
+FROM public.ecr.aws/lambda/nodejs:18
 COPY --from=build /var/task /var/task
 
 # all of this is a little more fragile than I would like because we have to duplicate the parent repo

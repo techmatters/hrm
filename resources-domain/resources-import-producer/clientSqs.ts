@@ -17,23 +17,20 @@
 import { SQS } from 'aws-sdk';
 
 // eslint-disable-next-line prettier/prettier
-import type { ImportRequestBody } from '@tech-matters/types';
+import type { AccountSID, ImportRequestBody } from '@tech-matters/types';
 // eslint-disable-next-line prettier/prettier
-import type { AccountSID } from '@tech-matters/twilio-worker-auth';
 
-const importResourcesSqsQueueUrl = new URL(process.env.import_resources_sqs_queue_url ?? '');
 
 let sqs: SQS;
 
-export const getSqsClient = () => {
+const getSqsClient = () => {
   if (!sqs) {
     sqs = new SQS();
   }
   return sqs;
 };
 
-export const publishToImportConsumer = async (params: ResourceMessage) => {
-
+export const publishToImportConsumer = (importResourcesSqsQueueUrl: URL) => async (params: ResourceMessage) => {
   //TODO: more robust error handling/messaging
   try {
     const QueueUrl = importResourcesSqsQueueUrl.toString();
@@ -41,6 +38,7 @@ export const publishToImportConsumer = async (params: ResourceMessage) => {
     return await getSqsClient()
       .sendMessage({
         MessageBody: JSON.stringify(params),
+        MessageGroupId: `${params.accountSid}/${params.importedResources[0]?.id ?? '__EMPTY_BATCH'}`,
         QueueUrl,
       })
       .promise();

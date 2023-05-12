@@ -1,4 +1,4 @@
-import { ImportApiResource } from '@tech-matters/types';
+import type { ImportApiResource } from '@tech-matters/types';
 import { KhpApiResource } from '.';
 import {
   FieldMappingContext,

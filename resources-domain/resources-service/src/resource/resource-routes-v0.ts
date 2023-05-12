@@ -16,7 +16,7 @@
 
 import { IRouter, Request, Router } from 'express';
 import { resourceModel } from './resource-model';
-import { AccountSID } from '@tech-matters/twilio-worker-auth';
+import { AccountSID } from '@tech-matters/types';
 import createError from 'http-errors';
 import { SearchParameters } from './search/search-types';
 import { CloudSearchConfig } from '../config/cloud-search';

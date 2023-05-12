@@ -17,9 +17,8 @@
 import { subHours, subSeconds } from 'date-fns';
 import { mockConnection, mockTransaction } from '../mock-db';
 import { updateImportProgress, upsertImportedResource } from '../../../src/import/importDataAccess';
-import { ImportApiResource, ImportBatch, ImportProgress } from '@tech-matters/types';
+import { AccountSID, ImportApiResource, ImportBatch, ImportProgress } from '@tech-matters/types';
 import importService from '../../../src/import/importService';
-import { AccountSID } from '@tech-matters/twilio-worker-auth/dist';
 jest.mock('../../../src/import/importDataAccess', () => ({
   updateImportProgress: jest.fn(),
   upsertImportedResource: jest.fn(),

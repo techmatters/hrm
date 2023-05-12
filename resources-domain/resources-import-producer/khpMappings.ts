@@ -14,11 +14,11 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import {
+// eslint-disable-next-line prettier/prettier
+import type {
   AttributeTable,
   AttributeValue,
   InlineAttributeTable,
-  isResourceDateTimeAttributes,
 } from '@tech-matters/types';
 import parseISO from 'date-fns/parseISO';
 
@@ -168,7 +168,7 @@ export const khpAttributeMapping = <T extends AttributeTable>(
     typeof value === 'function'
       ? value
       : () =>
-          isResourceDateTimeAttributes(table) && value && typeof value === 'string'
+          table === 'ResourceDateTimeAttributes' && value && typeof value === 'string'
             ? parseISO(value).toString()
             : value,
   infoGenerator: typeof info === 'function' ? info : () => info,

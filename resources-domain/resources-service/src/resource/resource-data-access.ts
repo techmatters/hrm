@@ -15,12 +15,12 @@
  */
 
 import {
+  AccountSID,
   ReferrableResourceTranslatableAttribute,
   ReferrableResourceAttribute,
 } from '@tech-matters/types';
 
 import { db } from '../connection-pool';
-import { AccountSID } from '@tech-matters/twilio-worker-auth';
 import {
   SELECT_RESOURCE_IDS_WHERE_NAME_CONTAINS,
   SELECT_RESOURCE_IN_IDS,

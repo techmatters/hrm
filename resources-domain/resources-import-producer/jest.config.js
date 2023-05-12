@@ -14,4 +14,17 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-declare var fetch: typeof import('undici').fetch;
+module.exports = config => {
+  return (
+    config || {
+      preset: 'ts-jest',
+      rootDir: './tests',
+      globals: {
+        'ts-jest': {
+          // to give support to const enum. Not working, conflicting with module resolution
+          useExperimentalLanguageServer: true,
+        },
+      },
+    }
+  );
+};
