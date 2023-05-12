@@ -12,6 +12,26 @@ import each from 'jest-each';
 
 const startedDate = Date.now().toString();
 
+const mergeWithCleanResource = (
+  partialResource: Omit<Partial<ImportApiResource>, 'attributes'> & {
+    attributes?: Partial<ImportApiResource['attributes']>;
+  } = {},
+): ImportApiResource => ({
+  ...{
+    id: partialResource.id || '',
+    updatedAt: partialResource.updatedAt || '',
+    name: partialResource.name || '',
+    attributes: {
+      ResourceStringAttributes: partialResource.attributes?.ResourceStringAttributes || [],
+      ResourceNumberAttributes: partialResource.attributes?.ResourceNumberAttributes || [],
+      ResourceBooleanAttributes: partialResource.attributes?.ResourceBooleanAttributes || [],
+      ResourceDateTimeAttributes: partialResource.attributes?.ResourceDateTimeAttributes || [],
+      ResourceReferenceStringAttributes:
+        partialResource.attributes?.ResourceReferenceStringAttributes || [],
+    },
+  },
+});
+
 describe('transformExternalResourceToApiResource - Simple mapping, flat structure', () => {
   const testCases: {
     description: string;
@@ -27,18 +47,7 @@ describe('transformExternalResourceToApiResource - Simple mapping, flat structur
         attribute: attributeMapping('ResourceBooleanAttributes', 'booleanAttribute'),
       },
       resource: {},
-      expectedFromResource: () => ({
-        id: '',
-        updatedAt: '',
-        name: '',
-        attributes: {
-          ResourceStringAttributes: [],
-          ResourceNumberAttributes: [],
-          ResourceBooleanAttributes: [],
-          ResourceDateTimeAttributes: [],
-          ResourceReferenceStringAttributes: [],
-        },
-      }),
+      expectedFromResource: () => mergeWithCleanResource(),
     },
     // Top level resource
     {
@@ -54,18 +63,12 @@ describe('transformExternalResourceToApiResource - Simple mapping, flat structur
         updatedAt: startedDate,
         khpReferenceNumber: 'resource-1',
       },
-      expectedFromResource: r => ({
-        id: r.khpReferenceNumber,
-        updatedAt: r.updatedAt,
-        name: r.name.en,
-        attributes: {
-          ResourceStringAttributes: [],
-          ResourceNumberAttributes: [],
-          ResourceBooleanAttributes: [],
-          ResourceDateTimeAttributes: [],
-          ResourceReferenceStringAttributes: [],
-        },
-      }),
+      expectedFromResource: r =>
+        mergeWithCleanResource({
+          id: r.khpReferenceNumber,
+          updatedAt: r.updatedAt,
+          name: r.name.en,
+        }),
     },
     // ResourceBooleanAttributes
     {
@@ -76,24 +79,18 @@ describe('transformExternalResourceToApiResource - Simple mapping, flat structur
       resource: {
         attribute: true,
       },
-      expectedFromResource: () => ({
-        id: '',
-        updatedAt: '',
-        name: '',
-        attributes: {
-          ResourceStringAttributes: [],
-          ResourceNumberAttributes: [],
-          ResourceBooleanAttributes: [
-            {
-              info: null,
-              key: 'booleanAttribute',
-              value: true,
-            },
-          ],
-          ResourceDateTimeAttributes: [],
-          ResourceReferenceStringAttributes: [],
-        },
-      }),
+      expectedFromResource: () =>
+        mergeWithCleanResource({
+          attributes: {
+            ResourceBooleanAttributes: [
+              {
+                info: null,
+                key: 'booleanAttribute',
+                value: true,
+              },
+            ],
+          },
+        }),
     },
     {
       description: 'ResourceBooleanAttributes - with info',
@@ -105,24 +102,18 @@ describe('transformExternalResourceToApiResource - Simple mapping, flat structur
       resource: {
         attribute: true,
       },
-      expectedFromResource: () => ({
-        id: '',
-        updatedAt: '',
-        name: '',
-        attributes: {
-          ResourceStringAttributes: [],
-          ResourceNumberAttributes: [],
-          ResourceBooleanAttributes: [
-            {
-              info: { attribute: true },
-              key: 'booleanAttribute',
-              value: true,
-            },
-          ],
-          ResourceDateTimeAttributes: [],
-          ResourceReferenceStringAttributes: [],
-        },
-      }),
+      expectedFromResource: () =>
+        mergeWithCleanResource({
+          attributes: {
+            ResourceBooleanAttributes: [
+              {
+                info: { attribute: true },
+                key: 'booleanAttribute',
+                value: true,
+              },
+            ],
+          },
+        }),
     },
     // ResourceStringAttributes
     {
@@ -133,25 +124,19 @@ describe('transformExternalResourceToApiResource - Simple mapping, flat structur
       resource: {
         attribute: 'some string',
       },
-      expectedFromResource: () => ({
-        id: '',
-        updatedAt: '',
-        name: '',
-        attributes: {
-          ResourceStringAttributes: [
-            {
-              language: null,
-              info: null,
-              key: 'stringAttribute',
-              value: 'some string',
-            },
-          ],
-          ResourceNumberAttributes: [],
-          ResourceBooleanAttributes: [],
-          ResourceDateTimeAttributes: [],
-          ResourceReferenceStringAttributes: [],
-        },
-      }),
+      expectedFromResource: () =>
+        mergeWithCleanResource({
+          attributes: {
+            ResourceStringAttributes: [
+              {
+                language: null,
+                info: null,
+                key: 'stringAttribute',
+                value: 'some string',
+              },
+            ],
+          },
+        }),
     },
     {
       description: 'ResourceStringAttributes - with info',
@@ -163,25 +148,19 @@ describe('transformExternalResourceToApiResource - Simple mapping, flat structur
       resource: {
         attribute: 'some string',
       },
-      expectedFromResource: () => ({
-        id: '',
-        updatedAt: '',
-        name: '',
-        attributes: {
-          ResourceStringAttributes: [
-            {
-              language: null,
-              info: { attribute: 'some string' },
-              key: 'stringAttribute',
-              value: 'some string',
-            },
-          ],
-          ResourceNumberAttributes: [],
-          ResourceBooleanAttributes: [],
-          ResourceDateTimeAttributes: [],
-          ResourceReferenceStringAttributes: [],
-        },
-      }),
+      expectedFromResource: () =>
+        mergeWithCleanResource({
+          attributes: {
+            ResourceStringAttributes: [
+              {
+                language: null,
+                info: { attribute: 'some string' },
+                key: 'stringAttribute',
+                value: 'some string',
+              },
+            ],
+          },
+        }),
     },
     // Translatable ResourceStringAttributes
     {
@@ -196,25 +175,19 @@ describe('transformExternalResourceToApiResource - Simple mapping, flat structur
         },
       },
       resource: { attribute: { en: 'some string' } },
-      expectedFromResource: () => ({
-        id: '',
-        updatedAt: '',
-        name: '',
-        attributes: {
-          ResourceStringAttributes: [
-            {
-              language: 'en',
-              info: null,
-              key: 'translatableAttribute/en',
-              value: 'some string',
-            },
-          ],
-          ResourceNumberAttributes: [],
-          ResourceBooleanAttributes: [],
-          ResourceDateTimeAttributes: [],
-          ResourceReferenceStringAttributes: [],
-        },
-      }),
+      expectedFromResource: () =>
+        mergeWithCleanResource({
+          attributes: {
+            ResourceStringAttributes: [
+              {
+                language: 'en',
+                info: null,
+                key: 'translatableAttribute/en',
+                value: 'some string',
+              },
+            ],
+          },
+        }),
     },
     {
       description: 'TranslatableAttributeMapping - with info',
@@ -229,25 +202,19 @@ describe('transformExternalResourceToApiResource - Simple mapping, flat structur
         },
       },
       resource: { attribute: { en: 'some string' } },
-      expectedFromResource: () => ({
-        id: '',
-        updatedAt: '',
-        name: '',
-        attributes: {
-          ResourceStringAttributes: [
-            {
-              language: 'en',
-              info: { attribute: 'some string' },
-              key: 'translatableAttribute/en',
-              value: 'some string',
-            },
-          ],
-          ResourceNumberAttributes: [],
-          ResourceBooleanAttributes: [],
-          ResourceDateTimeAttributes: [],
-          ResourceReferenceStringAttributes: [],
-        },
-      }),
+      expectedFromResource: () =>
+        mergeWithCleanResource({
+          attributes: {
+            ResourceStringAttributes: [
+              {
+                language: 'en',
+                info: { attribute: 'some string' },
+                key: 'translatableAttribute/en',
+                value: 'some string',
+              },
+            ],
+          },
+        }),
     },
     // ResourceNumberAttributes
     {
@@ -258,24 +225,18 @@ describe('transformExternalResourceToApiResource - Simple mapping, flat structur
       resource: {
         attribute: 1,
       },
-      expectedFromResource: () => ({
-        id: '',
-        updatedAt: '',
-        name: '',
-        attributes: {
-          ResourceStringAttributes: [],
-          ResourceNumberAttributes: [
-            {
-              info: null,
-              key: 'numberAttribute',
-              value: 1,
-            },
-          ],
-          ResourceBooleanAttributes: [],
-          ResourceDateTimeAttributes: [],
-          ResourceReferenceStringAttributes: [],
-        },
-      }),
+      expectedFromResource: () =>
+        mergeWithCleanResource({
+          attributes: {
+            ResourceNumberAttributes: [
+              {
+                info: null,
+                key: 'numberAttribute',
+                value: 1,
+              },
+            ],
+          },
+        }),
     },
     {
       description: 'ResourceNumberAttributes - with info',
@@ -287,24 +248,18 @@ describe('transformExternalResourceToApiResource - Simple mapping, flat structur
       resource: {
         attribute: 1,
       },
-      expectedFromResource: () => ({
-        id: '',
-        updatedAt: '',
-        name: '',
-        attributes: {
-          ResourceStringAttributes: [],
-          ResourceNumberAttributes: [
-            {
-              info: { attribute: 1 },
-              key: 'numberAttribute',
-              value: 1,
-            },
-          ],
-          ResourceBooleanAttributes: [],
-          ResourceDateTimeAttributes: [],
-          ResourceReferenceStringAttributes: [],
-        },
-      }),
+      expectedFromResource: () =>
+        mergeWithCleanResource({
+          attributes: {
+            ResourceNumberAttributes: [
+              {
+                info: { attribute: 1 },
+                key: 'numberAttribute',
+                value: 1,
+              },
+            ],
+          },
+        }),
     },
     // ResourceDateTimeAttributes
     {
@@ -315,24 +270,18 @@ describe('transformExternalResourceToApiResource - Simple mapping, flat structur
       resource: {
         attribute: startedDate,
       },
-      expectedFromResource: () => ({
-        id: '',
-        updatedAt: '',
-        name: '',
-        attributes: {
-          ResourceStringAttributes: [],
-          ResourceNumberAttributes: [],
-          ResourceBooleanAttributes: [],
-          ResourceDateTimeAttributes: [
-            {
-              info: null,
-              key: 'dateAttribute',
-              value: startedDate,
-            },
-          ],
-          ResourceReferenceStringAttributes: [],
-        },
-      }),
+      expectedFromResource: () =>
+        mergeWithCleanResource({
+          attributes: {
+            ResourceDateTimeAttributes: [
+              {
+                info: null,
+                key: 'dateAttribute',
+                value: startedDate,
+              },
+            ],
+          },
+        }),
     },
     {
       description: 'ResourceDateTimeAttributes - with info',
@@ -344,24 +293,18 @@ describe('transformExternalResourceToApiResource - Simple mapping, flat structur
       resource: {
         attribute: startedDate,
       },
-      expectedFromResource: () => ({
-        id: '',
-        updatedAt: '',
-        name: '',
-        attributes: {
-          ResourceStringAttributes: [],
-          ResourceNumberAttributes: [],
-          ResourceBooleanAttributes: [],
-          ResourceDateTimeAttributes: [
-            {
-              info: { attribute: startedDate },
-              key: 'dateAttribute',
-              value: startedDate,
-            },
-          ],
-          ResourceReferenceStringAttributes: [],
-        },
-      }),
+      expectedFromResource: () =>
+        mergeWithCleanResource({
+          attributes: {
+            ResourceDateTimeAttributes: [
+              {
+                info: { attribute: startedDate },
+                key: 'dateAttribute',
+                value: startedDate,
+              },
+            ],
+          },
+        }),
     },
     // ResourceReferenceStringAttributes
     {
@@ -374,25 +317,19 @@ describe('transformExternalResourceToApiResource - Simple mapping, flat structur
       resource: {
         attribute: { id: 'ref-id', value: 'reference value' },
       },
-      expectedFromResource: () => ({
-        id: '',
-        updatedAt: '',
-        name: '',
-        attributes: {
-          ResourceStringAttributes: [],
-          ResourceNumberAttributes: [],
-          ResourceBooleanAttributes: [],
-          ResourceDateTimeAttributes: [],
-          ResourceReferenceStringAttributes: [
-            {
-              language: null,
-              key: 'referenceAttribute',
-              value: 'ref-id',
-              list: 'some-list',
-            },
-          ],
-        },
-      }),
+      expectedFromResource: () =>
+        mergeWithCleanResource({
+          attributes: {
+            ResourceReferenceStringAttributes: [
+              {
+                language: null,
+                key: 'referenceAttribute',
+                value: 'ref-id',
+                list: 'some-list',
+              },
+            ],
+          },
+        }),
     },
   ];
 
@@ -422,18 +359,7 @@ describe('transformExternalResourceToApiResource - More mapping, nested structur
         },
       },
       resource: {},
-      expectedFromResource: () => ({
-        id: '',
-        updatedAt: '',
-        name: '',
-        attributes: {
-          ResourceStringAttributes: [],
-          ResourceNumberAttributes: [],
-          ResourceBooleanAttributes: [],
-          ResourceDateTimeAttributes: [],
-          ResourceReferenceStringAttributes: [],
-        },
-      }),
+      expectedFromResource: () => mergeWithCleanResource(),
     },
     // Top level resource
     {
@@ -454,18 +380,12 @@ describe('transformExternalResourceToApiResource - More mapping, nested structur
           updatedAt: startedDate,
         },
       },
-      expectedFromResource: r => ({
-        id: r.importantObject.id,
-        updatedAt: r.importantObject.updatedAt,
-        name: r.importantObject.name.en,
-        attributes: {
-          ResourceStringAttributes: [],
-          ResourceNumberAttributes: [],
-          ResourceBooleanAttributes: [],
-          ResourceDateTimeAttributes: [],
-          ResourceReferenceStringAttributes: [],
-        },
-      }),
+      expectedFromResource: r =>
+        mergeWithCleanResource({
+          id: r.importantObject.id,
+          updatedAt: r.importantObject.updatedAt,
+          name: r.importantObject.name.en,
+        }),
     },
     // ResourceBooleanAttributes
     {
@@ -483,29 +403,23 @@ describe('transformExternalResourceToApiResource - More mapping, nested structur
           booleanAttribute2: false,
         },
       },
-      expectedFromResource: () => ({
-        id: '',
-        updatedAt: '',
-        name: '',
-        attributes: {
-          ResourceStringAttributes: [],
-          ResourceNumberAttributes: [],
-          ResourceBooleanAttributes: [
-            {
-              info: null,
-              key: 'booleanAttribute1',
-              value: true,
-            },
-            {
-              info: null,
-              key: 'booleanAttribute2',
-              value: false,
-            },
-          ],
-          ResourceDateTimeAttributes: [],
-          ResourceReferenceStringAttributes: [],
-        },
-      }),
+      expectedFromResource: () =>
+        mergeWithCleanResource({
+          attributes: {
+            ResourceBooleanAttributes: [
+              {
+                info: null,
+                key: 'booleanAttribute1',
+                value: true,
+              },
+              {
+                info: null,
+                key: 'booleanAttribute2',
+                value: false,
+              },
+            ],
+          },
+        }),
     },
     // ResourceStringAttributes
     {
@@ -523,31 +437,25 @@ describe('transformExternalResourceToApiResource - More mapping, nested structur
           stringAttribute2: 'another string',
         },
       },
-      expectedFromResource: () => ({
-        id: '',
-        updatedAt: '',
-        name: '',
-        attributes: {
-          ResourceStringAttributes: [
-            {
-              language: null,
-              info: null,
-              key: 'stringAttribute1',
-              value: 'some string',
-            },
-            {
-              language: null,
-              info: null,
-              key: 'stringAttribute2',
-              value: 'another string',
-            },
-          ],
-          ResourceNumberAttributes: [],
-          ResourceBooleanAttributes: [],
-          ResourceDateTimeAttributes: [],
-          ResourceReferenceStringAttributes: [],
-        },
-      }),
+      expectedFromResource: () =>
+        mergeWithCleanResource({
+          attributes: {
+            ResourceStringAttributes: [
+              {
+                language: null,
+                info: null,
+                key: 'stringAttribute1',
+                value: 'some string',
+              },
+              {
+                language: null,
+                info: null,
+                key: 'stringAttribute2',
+                value: 'another string',
+              },
+            ],
+          },
+        }),
     },
     // Translatable ResourceStringAttributes
     {
@@ -576,31 +484,25 @@ describe('transformExternalResourceToApiResource - More mapping, nested structur
           },
         },
       },
-      expectedFromResource: () => ({
-        id: '',
-        updatedAt: '',
-        name: '',
-        attributes: {
-          ResourceStringAttributes: [
-            {
-              language: 'en',
-              info: null,
-              key: 'translatableAttribute/en/stringAttribute1',
-              value: 'some string',
-            },
-            {
-              language: 'en',
-              info: null,
-              key: 'translatableAttribute/en/stringAttribute2',
-              value: 'another string',
-            },
-          ],
-          ResourceNumberAttributes: [],
-          ResourceBooleanAttributes: [],
-          ResourceDateTimeAttributes: [],
-          ResourceReferenceStringAttributes: [],
-        },
-      }),
+      expectedFromResource: () =>
+        mergeWithCleanResource({
+          attributes: {
+            ResourceStringAttributes: [
+              {
+                language: 'en',
+                info: null,
+                key: 'translatableAttribute/en/stringAttribute1',
+                value: 'some string',
+              },
+              {
+                language: 'en',
+                info: null,
+                key: 'translatableAttribute/en/stringAttribute2',
+                value: 'another string',
+              },
+            ],
+          },
+        }),
     },
     // ResourceNumberAttributes
     {
@@ -618,29 +520,23 @@ describe('transformExternalResourceToApiResource - More mapping, nested structur
           numberAttribute2: 2,
         },
       },
-      expectedFromResource: () => ({
-        id: '',
-        updatedAt: '',
-        name: '',
-        attributes: {
-          ResourceStringAttributes: [],
-          ResourceNumberAttributes: [
-            {
-              info: null,
-              key: 'numberAttribute1',
-              value: 1,
-            },
-            {
-              info: null,
-              key: 'numberAttribute2',
-              value: 2,
-            },
-          ],
-          ResourceBooleanAttributes: [],
-          ResourceDateTimeAttributes: [],
-          ResourceReferenceStringAttributes: [],
-        },
-      }),
+      expectedFromResource: () =>
+        mergeWithCleanResource({
+          attributes: {
+            ResourceNumberAttributes: [
+              {
+                info: null,
+                key: 'numberAttribute1',
+                value: 1,
+              },
+              {
+                info: null,
+                key: 'numberAttribute2',
+                value: 2,
+              },
+            ],
+          },
+        }),
     },
     // ResourceDateTimeAttributes
     {
@@ -658,29 +554,23 @@ describe('transformExternalResourceToApiResource - More mapping, nested structur
           dateAttribute2: startedDate,
         },
       },
-      expectedFromResource: () => ({
-        id: '',
-        updatedAt: '',
-        name: '',
-        attributes: {
-          ResourceStringAttributes: [],
-          ResourceNumberAttributes: [],
-          ResourceBooleanAttributes: [],
-          ResourceDateTimeAttributes: [
-            {
-              info: null,
-              key: 'dateAttribute1',
-              value: startedDate,
-            },
-            {
-              info: null,
-              key: 'dateAttribute2',
-              value: startedDate,
-            },
-          ],
-          ResourceReferenceStringAttributes: [],
-        },
-      }),
+      expectedFromResource: () =>
+        mergeWithCleanResource({
+          attributes: {
+            ResourceDateTimeAttributes: [
+              {
+                info: null,
+                key: 'dateAttribute1',
+                value: startedDate,
+              },
+              {
+                info: null,
+                key: 'dateAttribute2',
+                value: startedDate,
+              },
+            ],
+          },
+        }),
     },
     // ResourceReferenceStringAttributes
     {
@@ -700,31 +590,25 @@ describe('transformExternalResourceToApiResource - More mapping, nested structur
           referenceAttribute2: { id: 'ref-2', value: 'reference value 2' },
         },
       },
-      expectedFromResource: () => ({
-        id: '',
-        updatedAt: '',
-        name: '',
-        attributes: {
-          ResourceStringAttributes: [],
-          ResourceNumberAttributes: [],
-          ResourceBooleanAttributes: [],
-          ResourceDateTimeAttributes: [],
-          ResourceReferenceStringAttributes: [
-            {
-              language: null,
-              key: 'referenceAttribute1',
-              value: 'ref-1',
-              list: 'some-list',
-            },
-            {
-              language: null,
-              key: 'referenceAttribute2',
-              value: 'ref-2',
-              list: 'some-list',
-            },
-          ],
-        },
-      }),
+      expectedFromResource: () =>
+        mergeWithCleanResource({
+          attributes: {
+            ResourceReferenceStringAttributes: [
+              {
+                language: null,
+                key: 'referenceAttribute1',
+                value: 'ref-1',
+                list: 'some-list',
+              },
+              {
+                language: null,
+                key: 'referenceAttribute2',
+                value: 'ref-2',
+                list: 'some-list',
+              },
+            ],
+          },
+        }),
     },
   ];
 
