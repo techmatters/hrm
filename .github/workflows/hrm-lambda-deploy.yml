@@ -109,7 +109,7 @@ jobs:
         run: |
           # output to logs
           jq -c --arg lambda_name "${{ inputs.lambda_name }}" --arg env "${{ inputs.environment }}" '[.[$env] | to_entries[] | . as $region_entry | if $region_entry.value["lambda-groups"][$lambda_name] then $region_entry.value["lambda-groups"][$lambda_name][] else $lambda_name end | {region: $region_entry.key, lambda: .}]' ./.github/workflows/config/environment-region-map.json
-          matrix_json=$(jq -c --arg lambda_name "${{ inputs.lambda_name }}" --arg env "${{ inputs.environment }}" '[.[$env] | to_entries[] | . as $region_entry | if $region_entry.value["lambda-groups"][$lambda_name] then $region_entry.value["lambda-groups"][$lambda_name][] else $lambda_name end | {region: $region_entry.key, lambda: .}]' ./.github/workflows/config/environment-region-map.json
+          matrix_json=$(jq -c --arg lambda_name "${{ inputs.lambda_name }}" --arg env "${{ inputs.environment }}" '[.[$env] | to_entries[] | . as $region_entry | if $region_entry.value["lambda-groups"][$lambda_name] then $region_entry.value["lambda-groups"][$lambda_name][] else $lambda_name end | {region: $region_entry.key, lambda: .}]' ./.github/workflows/config/environment-region-map.json)
           echo "matrix_json=$matrix_json" >> $GITHUB_OUTPUT
           echo "docker_image=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}" >> $GITHUB_OUTPUT
 
