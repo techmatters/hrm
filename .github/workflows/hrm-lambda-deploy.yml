@@ -104,6 +104,14 @@ jobs:
           push: true
           tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:live,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
 
+      # The matrix build supports `lambda-groups` defined in the environment-region-map.json file
+      # This allows us to deploy multiple lambdas to specific env/region combos that use a common docker image
+      # That is some pretty intense JQ, but it works.
+      # The current behavior is: If a key that matches the lambda name is found in the lambda-groups object, then
+      # created separate entries for each region/lambda combo. Otherwise, just use the lambda name and deploy to all
+      # regions that exist for that environment.
+      # matrices don't support complex object structures, so we generate a a flat array of objects that contain the
+      # region and lambda name. If there are multiple lambdas, the region will be repeated for each lambda.
       - name: Generate output
         id: generate-output
         run: |
