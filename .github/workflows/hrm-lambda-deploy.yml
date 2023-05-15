@@ -79,13 +79,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Test
-        id: test
-        run: |
-          jq --version
-          cat ./.github/workflows/config/environment-region-map.json
-          jq --arg lambda_name "${{ inputs.lambda_name }}" --arg env "${{ inputs.environment }}" '{include: [(.[$env] | to_entries[] | {region: .key, lambda: (if .value[$lambda_name] == null then [$lambda_name] else .value[$lambda_name] end)})]}' ./.github/workflows/config/environment-region-map.json
-
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -115,6 +108,8 @@ jobs:
         id: generate-output
         run: |
           jq --version
+          cat ./.github/workflows/config/environment-region-map.json
+          jq --arg lambda_name "${{ inputs.lambda_name }}" --arg env "${{ inputs.environment }}" '{include: [(.[$env] | to_entries[] | {region: .key, lambda: (if .value[$lambda_name] == null then [$lambda_name] else .value[$lambda_name] end)})]}' ./.github/workflows/config/environment-region-map.json
           matrix_json=$(jq --arg lambda_name "${{ inputs.lambda_name }}" --arg env "${{ inputs.environment }}" '{include: [(.[$env] | to_entries[] | {region: .key, lambda: (if .value[$lambda_name] == null then [$lambda_name] else .value[$lambda_name] end)})]}' ./.github/workflows/config/environment-region-map.json)
           echo "matrix_json=$matrix_json" >> $GITHUB_OUTPUT
           echo "docker_image=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}" >> $GITHUB_OUTPUT
