@@ -93,16 +93,17 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Build and Push Docker Image
-        uses: docker/build-push-action@v4
-        with:
-          context: ./
-          file: ./jobs/Dockerfile
-          build-args: |
-            lambda_name=${{ inputs.lambda_name }}
-            lambda_dir=${{ (startsWith(inputs.lambda_name, 'resources') && 'resources') || 'hrm' }}-domain
-          push: true
-          tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:live,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+      # TODO: uncomment this once debugged
+      # - name: Build and Push Docker Image
+      #   uses: docker/build-push-action@v4
+      #   with:
+      #     context: ./
+      #     file: ./jobs/Dockerfile
+      #     build-args: |
+      #       lambda_name=${{ inputs.lambda_name }}
+      #       lambda_dir=${{ (startsWith(inputs.lambda_name, 'resources') && 'resources') || 'hrm' }}-domain
+      #     push: true
+      #     tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:live,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
 
       - name: Generate output
         id: generate-output
@@ -142,6 +143,7 @@ jobs:
       # that is pushed in the primary region available in all other regions.
       - name: Update Lambda and Publish
         run: |
+          echo "${{ matrix.include }}"
           DOCKER_IMAGE=$(echo "${{ env.DOCKER_IMAGE }}" | sed -r 's/${{ env.PRIMARY_AWS_REGION }}/${{ matrix.include.region }}/g')
           aws lambda update-function-code --function-name ${{ inputs.environment }}-hrm-${{ matrix.include.lambda }} --image-uri "$DOCKER_IMAGE" --publish
 
