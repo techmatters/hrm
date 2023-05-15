@@ -2,7 +2,10 @@
   "development": {
     "us-east-1": {
       "lambda-groups": {
-        "resources-import-producer": ["resources-import-producer-as"]
+        "resources-import-producer": [
+          "resources-import-producer-as",
+          "resources-import-producer-e2e"
+        ]
       }
     }
   },
