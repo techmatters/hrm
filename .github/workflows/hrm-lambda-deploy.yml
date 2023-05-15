@@ -132,7 +132,7 @@ jobs:
 
     strategy:
       fail-fast: false
-      matrix: ${{ fromJson(needs.generate_deploy_lambda_matrix.outputs.matrix) }}
+      matrix: ${{ fromJson(needs.build_lambda.outputs.matrix) }}
 
     env:
       DOCKER_IMAGE: ${{ needs.build_lambda.outputs.docker_image }}
