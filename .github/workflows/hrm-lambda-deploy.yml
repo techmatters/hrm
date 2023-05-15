@@ -83,8 +83,8 @@ jobs:
         id: test
         run: |
           jq --version
-          matrix_json=$(jq --arg lambda_name "${{ inputs.lambda_name }}" --arg env "${{ inputs.environment }}" '{include: [(.[$env] | to_entries[] | {region: .key, lambda: (if .value[$lambda_name] == null then [$lambda_name] else .value[$lambda_name] end)})]}' ./.github/workflows/config/environment-region-map.json)
-          echo "matrix_json=$matrix_json" >> $GITHUB_OUTPUT
+          cat ./.github/workflows/config/environment-region-map.json
+          jq --arg lambda_name "${{ inputs.lambda_name }}" --arg env "${{ inputs.environment }}" '{include: [(.[$env] | to_entries[] | {region: .key, lambda: (if .value[$lambda_name] == null then [$lambda_name] else .value[$lambda_name] end)})]}' ./.github/workflows/config/environment-region-map.json
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
