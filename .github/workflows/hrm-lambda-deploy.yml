@@ -93,17 +93,16 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      # TODO: uncomment this once debugged
-      # - name: Build and Push Docker Image
-      #   uses: docker/build-push-action@v4
-      #   with:
-      #     context: ./
-      #     file: ./jobs/Dockerfile
-      #     build-args: |
-      #       lambda_name=${{ inputs.lambda_name }}
-      #       lambda_dir=${{ (startsWith(inputs.lambda_name, 'resources') && 'resources') || 'hrm' }}-domain
-      #     push: true
-      #     tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:live,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./
+          file: ./jobs/Dockerfile
+          build-args: |
+            lambda_name=${{ inputs.lambda_name }}
+            lambda_dir=${{ (startsWith(inputs.lambda_name, 'resources') && 'resources') || 'hrm' }}-domain
+          push: true
+          tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:live,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
 
       - name: Generate output
         id: generate-output
@@ -143,9 +142,8 @@ jobs:
       # that is pushed in the primary region available in all other regions.
       - name: Update Lambda and Publish
         run: |
-          echo "${{ toJson(matrix) }}"
-          DOCKER_IMAGE=$(echo "${{ env.DOCKER_IMAGE }}" | sed -r 's/${{ env.PRIMARY_AWS_REGION }}/${{ matrix.include.region }}/g')
-          aws lambda update-function-code --function-name ${{ inputs.environment }}-hrm-${{ matrix.include.lambda }} --image-uri "$DOCKER_IMAGE" --publish
+          DOCKER_IMAGE=$(echo "${{ env.DOCKER_IMAGE }}" | sed -r 's/${{ env.PRIMARY_AWS_REGION }}/${{ matrix.region }}/g')
+          aws lambda update-function-code --function-name ${{ inputs.environment }}-hrm-${{ matrix.lambda }} --image-uri "$DOCKER_IMAGE" --publish
 
       # reconfigure AWS credentials to use the default region for SSM Parameter Store.
       # aws-actions/configure-aws-credentials@v2 overrides env.AWS_DEFAULT_REGION, so
@@ -176,7 +174,7 @@ jobs:
         uses: slackapi/slack-github-action@v1.14.0
         with:
           channel-id: ${{ env.ASELO_DEPLOYS_CHANNEL_ID }}
-          slack-message: '`[HRM lambdas - ${{ matrix.include.lambda }}]` Deployment of ${{ github.ref_type }} `${{ github.ref_name }}` requested by `${{ github.triggering_actor }}` completed with SHA ${{ github.sha }} to region `${{ matrix.region }}`, environment `${{ inputs.environment }}` :rocket:.'
+          slack-message: '`[HRM lambdas - ${{ matrix.lambda }}]` Deployment of ${{ github.ref_type }} `${{ github.ref_name }}` requested by `${{ github.triggering_actor }}` completed with SHA ${{ github.sha }} to region `${{ matrix.region }}`, environment `${{ inputs.environment }}` :rocket:.'
         env:
           SLACK_BOT_TOKEN: ${{ env.GITHUB_ACTIONS_SLACK_BOT_TOKEN }}
         if: ${{ inputs.send-slack-message != 'false' }}
