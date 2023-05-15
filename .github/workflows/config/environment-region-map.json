@@ -1,26 +1,41 @@
 {
   "development": {
     "us-east-1": {
-      "resources-import-producer": ["resources-import-producer-as"]
+      "lambda-groups": {
+        "resources-import-producer": ["resources-import-producer-as"]
+      }
     }
   },
   "staging": {
     "us-east-1": {
-      "resources-import-producer": ["resources-import-producer-khp"]
+      "lambda-groups": {
+        "resources-import-producer": [
+          "resources-import-producer-as",
+          "resources-import-producer-khp"
+        ]
+      }
     },
     "eu-west-1": {
-      "resources-import-producer": []
+      "lambda-groups": {
+        "resources-import-producer": []
+      }
     }
   },
   "production": {
     "us-east-1": {
-      "resources-import-producer": []
+      "lambda-groups": {
+        "resources-import-producer": []
+      }
     },
     "eu-west-1": {
-      "resources-import-producer": []
+      "lambda-groups": {
+        "resources-import-producer": []
+      }
     },
     "ca-central-1": {
-      "resources-import-producer": ["resources-import-producer-khp"]
+      "lambda-groups": {
+        "resources-import-producer": ["resources-import-producer-khp"]
+      }
     }
   }
 }
