@@ -125,11 +125,6 @@ jobs:
           echo "matrix_json=$matrix_json" >> $GITHUB_OUTPUT
           echo "docker_image=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}" >> $GITHUB_OUTPUT
 
-  generate_deploy_lambda_matrix:
-    needs: build_lambda
-    name: Generate deploy lambda matrix
-    runs-on: ubuntu-latest
-
   deploy_lambdas:
     needs: build_lambda
     name: Deploy to Amazon ECS
