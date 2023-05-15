@@ -79,6 +79,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
+      - name: Test
+        id: test
+        run: |
+          jq --version
+          matrix_json=$(jq --arg lambda_name "${{ inputs.lambda_name }}" --arg env "${{ inputs.environment }}" '{include: [(.[$env] | to_entries[] | {region: .key, lambda: (if .value[$lambda_name] == null then [$lambda_name] else .value[$lambda_name] end)})]}' ./.github/workflows/config/environment-region-map.json)
+          echo "matrix_json=$matrix_json" >> $GITHUB_OUTPUT
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -107,6 +114,7 @@ jobs:
       - name: Generate output
         id: generate-output
         run: |
+          jq --version
           matrix_json=$(jq --arg lambda_name "${{ inputs.lambda_name }}" --arg env "${{ inputs.environment }}" '{include: [(.[$env] | to_entries[] | {region: .key, lambda: (if .value[$lambda_name] == null then [$lambda_name] else .value[$lambda_name] end)})]}' ./.github/workflows/config/environment-region-map.json)
           echo "matrix_json=$matrix_json" >> $GITHUB_OUTPUT
           echo "docker_image=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}" >> $GITHUB_OUTPUT
@@ -122,7 +130,6 @@ jobs:
 
     env:
       DOCKER_IMAGE: ${{ needs.build_lambda.outputs.docker_image }}
-      LAMBDA_INSTANCE_NAME: ${{ (inputs.lambda_instance_id != '' && format('{0}-{1}', inputs.lambda_name, inputs.lambda_instance_id)) || inputs.lambda_name }}
 
     steps:
       - name: Configure AWS credentials
@@ -141,7 +148,7 @@ jobs:
       - name: Update Lambda and Publish
         run: |
           DOCKER_IMAGE=$(echo "${{ env.DOCKER_IMAGE }}" | sed -r 's/${{ env.PRIMARY_AWS_REGION }}/${{ matrix.region }}/g')
-          aws lambda update-function-code --function-name ${{ inputs.environment }}-hrm-${{ env.LAMBDA_INSTANCE_NAME }} --image-uri "$DOCKER_IMAGE" --publish
+          aws lambda update-function-code --function-name ${{ inputs.environment }}-hrm-${{ inputs.lambda_name }} --image-uri "$DOCKER_IMAGE" --publish
 
       # reconfigure AWS credentials to use the default region for SSM Parameter Store.
       # aws-actions/configure-aws-credentials@v2 overrides env.AWS_DEFAULT_REGION, so
