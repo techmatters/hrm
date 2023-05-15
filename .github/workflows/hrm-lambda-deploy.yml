@@ -38,11 +38,6 @@ on:
           - resources-import-producer
           - resources-search-complete
           - resources-search-index
-      lambda_instance_id:
-        description: The instance ID of the lambda to deploy. Currently only needed for resources-import-producer, where it is the lower case helpline code
-        required: false
-        type: string
-        default: ''
 
   workflow_call:
     secrets:
@@ -60,11 +55,6 @@ on:
         description: 'hrm lambda name'
         required: true
         type: string
-      lambda_instance_id:
-        description: The instance ID of the lambda to deploy. Currently only needed for resources-import-producer, where it is the lower case helpline code
-        required: false
-        type: string
-        default: ''
       send-slack-message:
         description: 'Specifies if should send a Slack message at the end of successful run. Defaults to true'
         required: false
@@ -90,7 +80,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -104,7 +94,7 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v1
 
       - name: Build and Push Docker Image
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v4
         with:
           context: ./
           file: ./jobs/Dockerfile
@@ -117,7 +107,7 @@ jobs:
       - name: Generate output
         id: generate-output
         run: |
-          matrix_json=$(jq --argjson lambda_name "${{ inputs.lambda_name }}" --argjson env "${{ inputs.environment }}" '{
+          matrix_json=$(jq --arg lambda_name "${{ inputs.lambda_name }}" --arg env "${{ inputs.environment }}" '{
               include: [
                 (.[$env] | to_entries[] | {region: .key, lambda: (if .value[$lambda_name] == null then [$lambda_name] else .value[$lambda_name] end)})
               ]
@@ -140,7 +130,7 @@ jobs:
 
     steps:
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -158,10 +148,10 @@ jobs:
           aws lambda update-function-code --function-name ${{ inputs.environment }}-hrm-${{ env.LAMBDA_INSTANCE_NAME }} --image-uri "$DOCKER_IMAGE" --publish
 
       # reconfigure AWS credentials to use the default region for SSM Parameter Store.
-      # aws-actions/configure-aws-credentials@v1 overrides env.AWS_DEFAULT_REGION, so
+      # aws-actions/configure-aws-credentials@v2 overrides env.AWS_DEFAULT_REGION, so
       # we name our env var PRIMARY_AWS_REGION to avoid that.
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
