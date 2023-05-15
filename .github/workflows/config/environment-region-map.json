@@ -1,5 +1,26 @@
 {
-  "development": ["us-east-1"],
-  "staging": ["us-east-1", "eu-west-1"],
-  "production": ["us-east-1", "eu-west-1", "ca-central-1"]
+  "development": {
+    "us-east-1": {
+      "resources-import-producer": ["resources-import-producer-as"]
+    }
+  },
+  "staging": {
+    "us-east-1": {
+      "resources-import-producer": ["resources-import-producer-khp"]
+    },
+    "eu-west-1": {
+      "resources-import-producer": []
+    }
+  },
+  "production": {
+    "us-east-1": {
+      "resources-import-producer": []
+    },
+    "eu-west-1": {
+      "resources-import-producer": []
+    },
+    "ca-central-1": {
+      "resources-import-producer": ["resources-import-producer-khp"]
+    }
+  }
 }
