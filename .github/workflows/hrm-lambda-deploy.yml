@@ -143,7 +143,7 @@ jobs:
       # that is pushed in the primary region available in all other regions.
       - name: Update Lambda and Publish
         run: |
-          echo "${{ matrix.include }}"
+          echo "${{ matrix }}"
           DOCKER_IMAGE=$(echo "${{ env.DOCKER_IMAGE }}" | sed -r 's/${{ env.PRIMARY_AWS_REGION }}/${{ matrix.include.region }}/g')
           aws lambda update-function-code --function-name ${{ inputs.environment }}-hrm-${{ matrix.include.lambda }} --image-uri "$DOCKER_IMAGE" --publish
 
