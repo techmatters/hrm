@@ -107,11 +107,7 @@ jobs:
       - name: Generate output
         id: generate-output
         run: |
-          matrix_json=$(jq --arg lambda_name "${{ inputs.lambda_name }}" --arg env "${{ inputs.environment }}" '{
-              include: [
-                (.[$env] | to_entries[] | {region: .key, lambda: (if .value[$lambda_name] == null then [$lambda_name] else .value[$lambda_name] end)})
-              ]
-            }' ./.github/workflows/config/environment-region-map.json)
+          matrix_json=$(jq --arg lambda_name "${{ inputs.lambda_name }}" --arg env "${{ inputs.environment }}" '{include: [(.[$env] | to_entries[] | {region: .key, lambda: (if .value[$lambda_name] == null then [$lambda_name] else .value[$lambda_name] end)})]}' ./.github/workflows/config/environment-region-map.json)
           echo "matrix_json=$matrix_json" >> $GITHUB_OUTPUT
           echo "docker_image=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}" >> $GITHUB_OUTPUT
 
