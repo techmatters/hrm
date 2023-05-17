@@ -30,7 +30,6 @@ import {
 import {
   getById,
   getByIdList,
-  getUnindexed,
   getWhereNameContains,
   ReferrableResourceRecord,
 } from './resource-data-access';
@@ -56,14 +55,22 @@ const resourceRecordToApiResource = (
 ): ReferrableResource => {
   const {
     stringAttributes,
+    referenceStringAttributes,
     booleanAttributes,
     numberAttributes,
-    datetimeAttributes,
+    dateTimeAttributes,
+    lastUpdated,
     ...withoutAttributes
   } = resourceRecord;
   const attributesWithKeys: (ReferrableResourceAttribute<string | boolean | number> & {
     key: string;
-  })[] = [...stringAttributes, ...booleanAttributes, ...numberAttributes, ...datetimeAttributes];
+  })[] = [
+    ...stringAttributes,
+    ...booleanAttributes,
+    ...numberAttributes,
+    ...dateTimeAttributes,
+    ...referenceStringAttributes,
+  ];
   const attributes: ResourceAttributeNode = {};
   attributesWithKeys.forEach(attribute => {
     const { key, ...withoutKey } = attribute;
@@ -230,21 +237,4 @@ export const resourceModel = (cloudSearchConfig: CloudSearchConfig) => {
       };
     },
   };
-};
-
-/**
- * THIS FUNCTION PULLS DATA FOR MULTIPLE ACCOUNTS
- * It must NEVER BE accessed from an endpoint that is accessible with a Twilio user auth token
- * Maybe we should move it to a different file to make that clearer - or add security checking at this level.
- */
-export const getUnindexedResources = async (
-  limit: number,
-): Promise<(ReferrableResource & { accountSid: AccountSID })[]> => {
-  const unindexedResources: (ReferrableResourceRecord & {
-    accountSid: AccountSID;
-  })[] = await getUnindexed(limit);
-  return unindexedResources.map(({ accountSid, ...record }) => ({
-    ...resourceRecordToApiResource(record),
-    accountSid,
-  }));
 };

@@ -24,16 +24,17 @@ import { db } from '../connection-pool';
 import {
   SELECT_RESOURCE_IDS_WHERE_NAME_CONTAINS,
   SELECT_RESOURCE_IN_IDS,
-  SELECT_UNINDEXED_RESOURCES,
 } from './sql/resource-get-sql';
 
 export type ReferrableResourceRecord = {
   name: string;
   id: string;
+  lastUpdated: string;
   stringAttributes: (ReferrableResourceTranslatableAttribute & { key: string })[];
+  referenceStringAttributes: (ReferrableResourceTranslatableAttribute & { key: string })[];
   booleanAttributes: (ReferrableResourceAttribute<boolean> & { key: string })[];
   numberAttributes: (ReferrableResourceAttribute<number> & { key: string })[];
-  datetimeAttributes: (ReferrableResourceAttribute<string> & { key: string })[];
+  dateTimeAttributes: (ReferrableResourceAttribute<string> & { key: string })[];
 };
 
 export const getById = async (
@@ -86,20 +87,4 @@ export const getWhereNameContains = async (
     totalCount: countResultSet[0].totalCount,
     results: dataResultSet.map(record => record.id),
   };
-};
-
-/**
- * THIS FUNCTION PULLS DATA FOR MULTIPLE ACCOUNTS
- * It must NEVER BE accessed from an endpoint that is accessible with a Twilio user auth token
- * Maybe we should move it to a different file to make that clearer - or add security checking at this level.
- */
-export const getUnindexed = async (
-  limit: number,
-): Promise<(ReferrableResourceRecord & {
-  accountSid: AccountSID;
-})[]> => {
-  console.debug('Retrieving un-indexed resources');
-  const res = await db.task(async t => t.manyOrNone(SELECT_UNINDEXED_RESOURCES, { limit }));
-  console.debug(`Retrieved ${res.length} un-indexed resources`);
-  return res;
 };

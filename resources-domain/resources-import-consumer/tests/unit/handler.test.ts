@@ -18,7 +18,7 @@ import parseISO from 'date-fns/parseISO';
 import { handler } from '../../index';
 import each from 'jest-each';
 // eslint-disable-next-line prettier/prettier
-import type { ImportApiResource, ImportRequestBody } from '@tech-matters/types';
+import type { FlatResource, ImportRequestBody } from '@tech-matters/types';
 import type { SQSEvent } from 'aws-lambda';
 
 const mockFetch = jest.fn();
@@ -40,56 +40,54 @@ const baselineDate = parseISO('2020-01-01T00:00:00.000Z');
 
 const generateImportResource = (
   resourceIdSuffix: string,
-  updatedAt: Date,
-  additionalAttributes: Partial<ImportApiResource['attributes']> = {},
-): ImportApiResource => ({
+  lastUpdated: Date,
+  additionalAttributes: Partial<FlatResource> = {},
+): FlatResource => ({
   id: `RESOURCE_${resourceIdSuffix}`,
   name: `Resource ${resourceIdSuffix}`,
-  updatedAt: updatedAt.toISOString(),
-  attributes: {
-    ResourceStringAttributes: [
+  lastUpdated: lastUpdated.toISOString(),
+    stringAttributes: [
       {
         key: 'STRING_ATTRIBUTE',
         value: 'VALUE',
         language: 'en-US',
         info: { some: 'json' },
       },
-      ...(additionalAttributes.ResourceStringAttributes ?? []),
+      ...(additionalAttributes.stringAttributes ?? []),
     ],
-    ResourceDateTimeAttributes: [
+    dateTimeAttributes: [
       {
         key: 'DATETIME_ATTRIBUTE',
         value: baselineDate.toISOString(),
         info: { some: 'json' },
       },
-      ...(additionalAttributes.ResourceDateTimeAttributes ?? []),
+      ...(additionalAttributes.dateTimeAttributes ?? []),
     ],
-    ResourceNumberAttributes: [
+    numberAttributes: [
       {
         key: 'NUMBER_ATTRIBUTE',
         value: 1337,
         info: { some: 'json' },
       },
-      ...(additionalAttributes.ResourceNumberAttributes ?? []),
+      ...(additionalAttributes.numberAttributes ?? []),
     ],
-    ResourceBooleanAttributes: [
+    booleanAttributes: [
       {
         key: 'BOOL_ATTRIBUTE',
         value: true,
         info: { some: 'json' },
       },
-      ...(additionalAttributes.ResourceBooleanAttributes ?? []),
+      ...(additionalAttributes.booleanAttributes ?? []),
     ],
-    ResourceReferenceStringAttributes: [
+    referenceStringAttributes: [
       {
         key: 'REFERENCE_ATTRIBUTE',
         value: 'REFERENCE_VALUE_2',
         language: 'REFERENCE_LANGUAGE',
         list: 'REFERENCE_LIST_1',
       },
-      ...(additionalAttributes.ResourceReferenceStringAttributes ?? []),
+      ...(additionalAttributes.referenceStringAttributes ?? []),
     ],
-  },
 });
 
 const generateSQSEventRecord = (messageId: string, body: ImportRequestBody & { accountSid: string }): SQSEvent['Records'][number] => ({

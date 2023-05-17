@@ -16,7 +16,7 @@
 
 // eslint-disable-next-line prettier/prettier
 import type { ScheduledEvent } from 'aws-lambda';
-import type { AccountSID, ImportApiResource, ImportBatch, ImportProgress } from '@tech-matters/types';
+import type { AccountSID, FlatResource, ImportBatch, ImportProgress } from '@tech-matters/types';
 import sortedIndexBy from 'lodash/sortedIndexBy';
 import parseISO from 'date-fns/parseISO';
 import addMilliseconds from 'date-fns/addMilliseconds';
@@ -68,22 +68,20 @@ export type KhpApiResponse = {
  * @param name
  * @param updatedAt
  */
-const transformKhpResourceToApiResource = ({ objectId, name: { en: name }, updatedAt }: KhpApiResource): ImportApiResource => {
+const transformKhpResourceToApiResource = ({ objectId, name: { en: name }, updatedAt }: KhpApiResource): FlatResource => {
   if (!objectId || !updatedAt) {
     throw new Error(`Invalid resource provided, missing required parameter: ${JSON.stringify({ objectId, updatedAt })}`);
   }
 
   return {
     id: objectId,
-    updatedAt,
+    lastUpdated: updatedAt,
     name: name ?? 'NAME MISSING',
-    attributes: {
-      ResourceStringAttributes: [],
-      ResourceNumberAttributes: [],
-      ResourceBooleanAttributes: [],
-      ResourceDateTimeAttributes: [],
-      ResourceReferenceStringAttributes: [],
-    },
+    stringAttributes: [],
+      numberAttributes: [],
+      booleanAttributes: [],
+      dateTimeAttributes: [],
+      referenceStringAttributes: [],
   };
 };
 
