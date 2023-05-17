@@ -32,7 +32,7 @@ import {
   getByIdList,
   getWhereNameContains,
   ReferrableResourceRecord,
-} from './resource-data-access';
+} from './resourceDataAccess';
 import resourceCloudSearchClient from './search/resource-cloudsearch-client';
 import { SearchParameters } from './search/search-types';
 import { mapSearchParametersToKhpTermsAndFilters } from './search/khp-resource-search-mapping';
@@ -109,7 +109,7 @@ const resourceRecordToApiResource = (
 // The full resource & the search result are synonyms for now, but the full resource should grow to be a superset
 export type ReferrableResourceSearchResult = ReferrableResource;
 
-export const resourceModel = (cloudSearchConfig: CloudSearchConfig) => {
+export const resourceService = (cloudSearchConfig: CloudSearchConfig) => {
   const cloudSearchClient = resourceCloudSearchClient(cloudSearchConfig);
 
   return {

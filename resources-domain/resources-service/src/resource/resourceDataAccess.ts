@@ -24,7 +24,7 @@ import { db } from '../connection-pool';
 import {
   SELECT_RESOURCE_IDS_WHERE_NAME_CONTAINS,
   SELECT_RESOURCE_IN_IDS,
-} from './sql/resource-get-sql';
+} from './sql/resourceGetSql';
 
 export type ReferrableResourceRecord = {
   name: string;

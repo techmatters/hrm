@@ -18,11 +18,11 @@ import {
   getByIdList,
   getWhereNameContains,
   ReferrableResourceRecord,
-} from '../../../src/resource/resource-data-access';
+} from '../../../src/resource/resourceDataAccess';
 import {
   ReferrableResourceSearchResult,
-  resourceModel,
-} from '../../../src/resource/resource-model';
+  resourceService,
+} from '../../../src/resource/resourceService';
 import searchClient, {
   SearchResultSet,
 } from '../../../src/resource/search/resource-cloudsearch-client';
@@ -31,7 +31,7 @@ import { mapSearchParametersToKhpTermsAndFilters } from '../../../src/resource/s
 import { SearchParameters, TermsAndFilters } from '../../../src/resource/search/search-types';
 import { BLANK_ATTRIBUTES } from '../mockResources';
 
-jest.mock('../../../src/resource/resource-data-access', () => ({
+jest.mock('../../../src/resource/resourceDataAccess', () => ({
   getByIdList: jest.fn(),
   getWhereNameContains: jest.fn(),
 }));
@@ -54,7 +54,7 @@ mockSearchClient.mockReturnValue({
   search: mockSearchClientSearch,
 });
 
-const { searchResourcesByName, searchResources } = resourceModel({
+const { searchResourcesByName, searchResources } = resourceService({
   searchUrl: new URL('http://a.com'),
 });
 

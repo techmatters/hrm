@@ -20,7 +20,7 @@ import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/
 import { headers, getRequest, getServer } from './server';
 import { db } from '../../src/connection-pool';
 import each from 'jest-each';
-import { ReferrableResourceSearchResult } from '../../src/resource/resource-model';
+import { ReferrableResourceSearchResult } from '../../src/resource/resourceService';
 import { AssertionError } from 'assert';
 import addHours from 'date-fns/addHours';
 import { Client, IndexTypes, getClient } from '@tech-matters/elasticsearch-client';

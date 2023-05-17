@@ -15,7 +15,7 @@
  */
 
 import { IRouter, Request, Router } from 'express';
-import { resourceModel } from './resource-model';
+import { resourceService } from './resourceService';
 import { AccountSID } from '@tech-matters/types';
 import createError from 'http-errors';
 import { SearchParameters } from './search/search-types';
@@ -24,9 +24,12 @@ import { CloudSearchConfig } from '../config/cloud-search';
 const resourceRoutes = (cloudSearchConfig: CloudSearchConfig) => {
   const router: IRouter = Router();
 
-  const { getResource, searchResources, searchResourcesByName, searchResourcesEs } = resourceModel(
-    cloudSearchConfig,
-  );
+  const {
+    getResource,
+    searchResources,
+    searchResourcesByName,
+    searchResourcesEs,
+  } = resourceService(cloudSearchConfig);
 
   router.get('/resource/:resourceId', async (req, res) => {
     const referrableResource = await getResource(<AccountSID>req.accountSid, req.params.resourceId);
