@@ -48,9 +48,9 @@ const upsertRecord = async (accountSid: string, body: ImportRequestBody): Promis
   const result = await postResourcesBody(accountSid, apiKey, body);
 
   if (!result.ok) {
-    const error = await result.json();
+    const responseBody = await result.json();
     // throw so the wrapper function catches and swallows this error
-    throw new Error(error);
+    throw new Error(`Resources import POST returned ${result.status} (${result.statusText}). Response body: ${JSON.stringify(responseBody)}`);
   }
 };
 
@@ -91,7 +91,7 @@ export const handler = async (event: SQSEvent): Promise<SQSBatchResponse> => {
 
   try {
     if (!internalResourcesBaseUrl) {
-      throw new Error('Missing completed_sqs_queue_url ENV Variable');
+      throw new Error('Missing internal_resources_base_url ENV Variable');
     }
 
     if (!hrmEnv) {
