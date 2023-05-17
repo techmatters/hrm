@@ -43,76 +43,214 @@ const siteKey = (subsection: string) => (context: FieldMappingContext) => {
  * Child nodes are defined within the `children` property. This are processed recursively.
  * If the names of the child nodes are dynamic, e.g. one per language, or one per social media channel, the node should be named with a placeholder token, e.g. '{language}' or '{channel}'. This will make the importer process all child data nodes and capture their property under `captures` property of the context object for use generating keys, values & info etc..
  */
-export const KHP_MAPPING_NODE: MappingNode = {
-  khpReferenceNumber: resourceFieldMapping('id'),
-  // TODO: revisit this since it's all empty in the samples
-  sites: {
-    children: {
-      '{siteIndex}': {
-        children: {
-          name: {
-            children: {
-              '{language}': translatableAttributeMapping(siteKey('name'), {
-                language: ctx => ctx.captures.language,
-              }),
-            },
-          },
-          details: {
-            children: {
-              '{language}': translatableAttributeMapping(siteKey('details'), {
-                value: siteKey('details'),
+
+const KHP_MAPPING_NODE_SITES: { children: MappingNode } = {
+  children: {
+    '{siteIndex}': {
+      children: {
+        notes: {
+          children: {
+            '{noteIndex}': attributeMapping(
+              'ResourceStringAttributes',
+              siteKey('notes/{noteIndex}'),
+              {
+                value: ctx => ctx.currentValue.note,
                 info: ctx => ctx.currentValue,
-                language: ctx => ctx.captures.language,
-              }),
-            },
+              },
+            ),
           },
-          isActive: attributeMapping('ResourceBooleanAttributes', siteKey('isActive')),
-          isLocationPrivate: attributeMapping(
-            'ResourceBooleanAttributes',
-            siteKey('isLocationPrivate'),
-          ),
-          location: {
-            children: {
-              address1: attributeMapping('ResourceStringAttributes', siteKey('location/address1')),
-              address2: attributeMapping('ResourceStringAttributes', siteKey('location/address2')),
-              city: attributeMapping('ResourceStringAttributes', siteKey('location/city')),
-              county: attributeMapping('ResourceStringAttributes', siteKey('location/county')),
-              // TODO: need a sample to see what we use as id here
-              // province: referenceAttributeMapping(siteKey('location/province'), 'provinces'),
-              // country: referenceAttributeMapping(siteKey('location/country'), 'countries'),
-              postalCode: attributeMapping(
-                'ResourceStringAttributes',
-                siteKey('location/postalCode'),
-              ),
-            },
+        },
+        verifications: {
+          children: {
+            '{verificationIndex}': attributeMapping(
+              'ResourceStringAttributes',
+              'verifications/{verificationIndex}',
+              {
+                value: ctx => ctx.currentValue.name,
+                info: ctx => ctx.currentValue,
+              },
+            ),
           },
-          email: attributeMapping('ResourceStringAttributes', siteKey('email')),
-          operations: {
-            children: {
-              '{dayIndex}': {
-                children: {
-                  '{language}': translatableAttributeMapping(siteKey('operations/{dayIndex}'), {
-                    value: ctx => ctx.currentValue.day,
-                    info: ctx => ctx.currentValue,
-                    language: ctx => ctx.captures.language,
-                  }),
-                },
+        },
+        social: {
+          children: {
+            '{app}': attributeMapping('ResourceStringAttributes', siteKey('social/{app}')),
+          },
+        },
+        legalStatus: attributeMapping('ResourceStringAttributes', siteKey('legalStatus')),
+        khpReferenceNumber: attributeMapping(
+          'ResourceNumberAttributes',
+          siteKey('khpReferenceNumber'),
+        ),
+        agencyReferenceNumber: attributeMapping(
+          'ResourceStringAttributes',
+          siteKey('agencyReferenceNumber'),
+        ),
+        agency: {
+          children: {
+            '{language}': translatableAttributeMapping(siteKey('agency'), {
+              value: ctx => ctx.currentValue.alternate,
+              info: ctx => ctx.currentValue,
+              language: ctx => ctx.captures.language,
+            }),
+          },
+        },
+        nameEN: translatableAttributeMapping('name', { language: 'en' }),
+        nameFR: translatableAttributeMapping('name', { language: 'fr' }),
+        nameDetails: {
+          children: {
+            '{language}': translatableAttributeMapping(siteKey('nameDetails'), {
+              value: ctx => ctx.currentValue.alternate,
+              language: ctx => ctx.captures.language,
+              info: ctx => ctx.currentValue,
+            }),
+          },
+        },
+        isActive: attributeMapping('ResourceBooleanAttributes', siteKey('isActive')),
+        isLocationPrivate: attributeMapping(
+          'ResourceBooleanAttributes',
+          siteKey('isLocationPrivate'),
+        ),
+        location: {
+          children: {
+            address1: attributeMapping('ResourceStringAttributes', siteKey('location/address1')),
+            address2: attributeMapping('ResourceStringAttributes', siteKey('location/address2')),
+            city: referenceAttributeMapping(siteKey('location/city'), 'cities', {
+              value: ctx => ctx.currentValue,
+            }),
+            county: referenceAttributeMapping(siteKey('location/county'), 'counties', {
+              value: ctx => ctx.currentValue,
+            }),
+            province: referenceAttributeMapping(siteKey('location/province'), 'provinces', {
+              value: ctx => ctx.currentValue,
+            }),
+            country: referenceAttributeMapping(siteKey('location/country'), 'countries', {
+              value: ctx => ctx.currentValue,
+            }),
+            postalCode: attributeMapping(
+              'ResourceStringAttributes',
+              siteKey('location/postalCode'),
+            ),
+            description: attributeMapping(
+              'ResourceStringAttributes',
+              siteKey('location/description'),
+            ),
+            longitude: attributeMapping('ResourceNumberAttributes', 'location/longitude'),
+            latitude: attributeMapping('ResourceNumberAttributes', 'location/latitude'),
+          },
+        },
+        mailingAddress: {
+          children: {
+            address1: attributeMapping('ResourceStringAttributes', siteKey('location/address1')),
+            address2: attributeMapping('ResourceStringAttributes', siteKey('location/address2')),
+            city: referenceAttributeMapping(siteKey('location/city'), 'cities', {
+              value: ctx => ctx.currentValue,
+            }),
+            county: referenceAttributeMapping(siteKey('location/county'), 'counties', {
+              value: ctx => ctx.currentValue,
+            }),
+            province: referenceAttributeMapping(siteKey('location/province'), 'provinces', {
+              value: ctx => ctx.currentValue,
+            }),
+            country: referenceAttributeMapping(siteKey('location/country'), 'countries', {
+              value: ctx => ctx.currentValue,
+            }),
+            postalCode: attributeMapping(
+              'ResourceStringAttributes',
+              siteKey('location/postalCode'),
+            ),
+          },
+        },
+        operations: {
+          children: {
+            '{dayIndex}': {
+              children: {
+                '{language}': translatableAttributeMapping(siteKey('operations/{dayIndex}'), {
+                  value: ctx => ctx.currentValue.day,
+                  info: ctx => ctx.currentValue,
+                  language: ctx => ctx.captures.language,
+                }),
               },
             },
           },
-          phoneNumbers: {
-            children: {
-              '{phoneNumberType}': attributeMapping(
-                'ResourceStringAttributes',
-                siteKey('phone/{phoneNumberType}'),
-              ),
-            },
+        },
+        accessibility: {
+          children: {
+            '{language}': translatableAttributeMapping(siteKey('accessibility'), {
+              language: ctx => ctx.captures.language,
+            }),
           },
         },
+        transportation: {
+          children: {
+            '{language}': translatableAttributeMapping(siteKey('transportation'), {
+              language: ctx => ctx.captures.language,
+            }),
+          },
+        },
+        email: attributeMapping('ResourceStringAttributes', siteKey('email')),
+        website: {
+          children: {
+            '{language}': translatableAttributeMapping(siteKey('website'), {
+              language: ctx => ctx.captures.language,
+            }),
+          },
+        },
+        phoneNumbers: {
+          children: {
+            '{phoneNumberType}': attributeMapping(
+              'ResourceStringAttributes',
+              siteKey('phone/{phoneNumberType}'),
+              {
+                value: ctx => ctx.currentValue.name || ctx.currentValue.number,
+                info: ctx => ctx.currentValue,
+              },
+            ),
+          },
+        },
+        contacts: {
+          children: {
+            '{contactIndex}': attributeMapping(
+              'ResourceStringAttributes',
+              siteKey('contacts/{contactIndex}'),
+              {
+                value: ctx => ctx.currentValue.name,
+                info: ctx => ctx.currentValue,
+              },
+            ),
+          },
+        },
+        retiredAt: attributeMapping('ResourceDateTimeAttributes', siteKey('retiredAt')),
+        createdAt: attributeMapping('ResourceDateTimeAttributes', siteKey('createdAt')),
+        updatedAt: attributeMapping('ResourceDateTimeAttributes', siteKey('updatedAt')),
       },
     },
   },
+};
+
+// TODO: this is an array of arrays, is this shape correct?
+const KHP_MAPPING_NODE_TAXONOMIES: { children: MappingNode } = {
+  children: {
+    '{arrayIndex}': {
+      children: {
+        '{taxonomyIndex}': referenceAttributeMapping(
+          'taxonomies/{arrayIndex}/{taxonomyIndex}',
+          'khp-taxonomy-codes',
+          { value: ctx => ctx.currentValue.code },
+        ),
+      },
+    },
+  },
+};
+
+export const KHP_MAPPING_NODE: MappingNode = {
+  khpReferenceNumber: resourceFieldMapping('id'),
+  sites: KHP_MAPPING_NODE_SITES,
+  taxonomies: KHP_MAPPING_NODE_TAXONOMIES,
   name: resourceFieldMapping('name', ctx => ctx.currentValue.en || ctx.currentValue.fr),
+  updatedAt: resourceFieldMapping('updatedAt'),
+  createdAt: attributeMapping('ResourceDateTimeAttributes', 'sourceCreatedAt'),
+  retiredAt: attributeMapping('ResourceDateTimeAttributes', 'sourceRetiredAt'),
   nameDetails: {
     children: {
       '{language}': translatableAttributeMapping('nameDetails', {
@@ -125,7 +263,6 @@ export const KHP_MAPPING_NODE: MappingNode = {
   applicationProcess: {
     children: {
       '{language}': translatableAttributeMapping('applicationProcess', {
-        value: ctx => ctx.currentValue,
         language: ctx => ctx.captures.language,
       }),
     },
@@ -139,40 +276,41 @@ export const KHP_MAPPING_NODE: MappingNode = {
       }),
     },
   },
-  // TODO: this are all null in the samples, I don't know what to map to
-  // social: {
-  //   children: {
-
-  //   }
-  // }
+  social: {
+    children: {
+      '{app}': attributeMapping('ResourceStringAttributes', siteKey('social/{app}')),
+    },
+  },
   eligibilityDetails: {
     children: {
       phrase: {
         children: {
           '{language}': translatableAttributeMapping('phrase', {
-            value: ctx => ctx.currentValue,
             language: ctx => ctx.captures.language,
           }),
         },
       },
+      adult: attributeMapping('ResourceBooleanAttributes', 'adult'),
+      child: attributeMapping('ResourceBooleanAttributes', 'child'),
+      family: attributeMapping('ResourceBooleanAttributes', 'family'),
+      teen: attributeMapping('ResourceBooleanAttributes', 'teen'),
+      gender: attributeMapping('ResourceStringAttributes', 'gender'),
     },
   },
   website: {
     children: {
       '{language}': translatableAttributeMapping('website', {
-        value: ctx => ctx.currentValue,
         language: ctx => ctx.captures.language,
       }),
     },
   },
-  // TODO: is this one correct?
   metadata: {
     children: {
+      isHotline: attributeMapping('ResourceBooleanAttributes', 'isHotline'),
+      isHelpline: attributeMapping('ResourceBooleanAttributes', 'isHelpline'),
       '{language}': {
         children: {
           '{property}': translatableAttributeMapping('metadata/{property}', {
-            // TODO: I'm sure this is not correct, but some seem to be objects and others strings? Or nulls are strings too?
-            value: ctx => ctx.captures.property,
             info: ctx => ctx.currentValue,
             language: ctx => ctx.captures.language,
           }),
@@ -180,37 +318,81 @@ export const KHP_MAPPING_NODE: MappingNode = {
       },
     },
   },
-  // TODO: this are all null in the samples, I don't know what to map to
-  // transportation: {
-  //   children: {
-  //     '{language}': translatableAttributeMapping('transportation', {
-
-  //     })
-  //   }
-  // }
+  transportation: {
+    children: {
+      '{language}': translatableAttributeMapping('transportation', {
+        language: ctx => ctx.captures.language,
+      }),
+    },
+  },
   seniorOrgContact: {
     children: {
       title: {
         children: {
           '{language}': translatableAttributeMapping('seniorOrgContact', {
-            value: ctx => ctx.currentValue,
             language: ctx => ctx.captures.language,
           }),
         },
       },
-      isPrivate: attributeMapping('ResourceBooleanAttributes', 'isPrivate', {
-        value: ctx => ctx.currentValue,
-      }),
-      name: attributeMapping('ResourceStringAttributes', 'name', {
-        value: ctx => ctx.currentValue,
-      }),
+      isPrivate: attributeMapping('ResourceBooleanAttributes', 'isPrivate', {}),
+      name: attributeMapping('ResourceStringAttributes', 'name', {}),
       // I'm assuming this one, since it's always null
-      email: attributeMapping('ResourceStringAttributes', 'email', {
-        value: ctx => ctx.currentValue,
-      }),
+      email: attributeMapping('ResourceStringAttributes', 'email', {}),
       // I'm assuming this one, since it's always "false" (no, not false, string "false")
-      phone: attributeMapping('ResourceStringAttributes', 'phone', {
-        value: ctx => ctx.currentValue,
+      phone: attributeMapping('ResourceStringAttributes', 'phone', {}),
+    },
+  },
+  recordType: attributeMapping('ResourceStringAttributes', 'recordType'),
+  feeStructureSourceFreeText: attributeMapping(
+    'ResourceStringAttributes',
+    'feeStructureSourceFreeText',
+  ),
+  feeStructureSourceFreeTextEn: attributeMapping(
+    'ResourceStringAttributes',
+    'feeStructureSourceFreeTextEn',
+  ),
+  feeStructureSourceFreeTextFr: attributeMapping(
+    'ResourceStringAttributes',
+    'feeStructureSourceFreeTextFr',
+  ),
+  howToAccessSupport: referenceAttributeMapping('howToAccessSupport', 'khp-how-to-access-support', {
+    // W use objectId or the name for this referrable resources?
+    value: ctx => ctx.currentValue.objectId,
+    // value: ctx => ctx.currentValue.en || ctx.currentValue.fr,
+  }),
+  isHighlighted: attributeMapping('ResourceBooleanAttributes', 'isHighlighted'),
+  // This is an array of strings. Is this shape better or we want the individual strings as attributes?
+  keywords: attributeMapping('ResourceStringAttributes', 'keywords', {
+    value: ctx => ctx.currentValue.join(' '),
+    info: ctx => ({ keywords: ctx.currentValue }),
+  }),
+  notes: {
+    children: {
+      '{noteIndex}': attributeMapping('ResourceStringAttributes', siteKey('notes/{noteIndex}'), {
+        value: ctx => ctx.currentValue.note,
+        info: ctx => ctx.currentValue,
+      }),
+    },
+  },
+  // This are objects. Are we fine treating the note as string and the rest in info, or better to separate in attributes?
+  verifications: {
+    children: {
+      '{verificationIndex}': attributeMapping(
+        'ResourceStringAttributes',
+        'verifications/{verificationIndex}',
+        {
+          value: ctx => ctx.currentValue.name,
+          info: ctx => ctx.currentValue,
+        },
+      ),
+    },
+  },
+  agency: {
+    children: {
+      '{language}': translatableAttributeMapping(siteKey('agency'), {
+        value: ctx => ctx.currentValue.alternate,
+        info: ctx => ctx.currentValue,
+        language: ctx => ctx.captures.language,
       }),
     },
   },
@@ -221,7 +403,6 @@ export const KHP_MAPPING_NODE: MappingNode = {
     children: {
       '{language}': translatableAttributeMapping('description', {
         // TODO: this was previously mapped as 'description' (string). Was that intended?
-        value: ctx => ctx.currentValue,
         info: context => ({ text: context.currentValue }),
         language: ctx => ctx.captures.language,
       }),
@@ -397,21 +578,19 @@ export const KHP_MAPPING_NODE: MappingNode = {
       }),
     },
   },
-  // TODO: need samples to see what to sue as value
-  // targetPopulations: {
-  //   children: {
-  //     '{targetPopulationIndex}': referenceAttributeMapping(
-  //       'targetPopulation/{targetPopulationIndex}',
-  //       'khp-target-populations',
-  //     ),
-  //   },
-  // },
-  // TODO: this is always an empty array
-  // targetPopulations: {
-  //   children: {
-
-  //   }
-  // }
+  targetPopulations: {
+    children: {
+      '{targetPopulationIndex}': referenceAttributeMapping(
+        'targetPopulation/{targetPopulationIndex}',
+        'khp-target-populations',
+        {
+          // We use objectId or the name for this referrable resources?
+          value: ctx => ctx.currentValue.objectId,
+          // value: ctx => ctx.currentValue.en || ctx.currentValue.fr,
+        },
+      ),
+    },
+  },
   eligibilityMinAge: attributeMapping('ResourceNumberAttributes', 'eligibilityMinAge', {
     value: ctx => ctx.currentValue,
   }),
@@ -453,10 +632,7 @@ export const KHP_MAPPING_NODE: MappingNode = {
       }),
     },
   },
-  // TODO: this is null in all the samples
-  // paymentMethod: {
-
-  // }
+  paymentMethod: attributeMapping('ResourceStringAttributes', 'paymentMethod'),
   operations: {
     children: {
       '{dayIndex}': {
@@ -470,17 +646,20 @@ export const KHP_MAPPING_NODE: MappingNode = {
       },
     },
   },
-  // TODO: this is an array. Should we instead map like languages: { chidlren: { ... }}?
-  languages: referenceAttributeMapping('languages', 'khp-languages', {
-    value: context => context.currentValue.language,
-  }),
+  languages: {
+    children: {
+      '{languageIndex}': referenceAttributeMapping('languages/{languageIndex}', 'khp-languages', {
+        value: context => context.currentValue.language,
+      }),
+    },
+  },
   interpretationTranslationServicesAvailable: attributeMapping(
     'ResourceBooleanAttributes',
     'interpretationTranslationServicesAvailable',
   ),
   available247: attributeMapping('ResourceBooleanAttributes', 'available247'),
   feeStructureSource: referenceAttributeMapping('feeStructureSource', 'khp-fee-structure-source', {
-    // TODO: we use objectId or the name for this referrable resources?
+    // We use objectId or the name for this referrable resources?
     value: ctx => ctx.currentValue.objectId,
     // value: ctx => ctx.currentValue.en || ctx.currentValue.fr,
   }),
@@ -488,63 +667,25 @@ export const KHP_MAPPING_NODE: MappingNode = {
     'howIsServiceOffered',
     'khp-how-is-service-offered',
     {
-      // TODO: we use objectId or the name for this referrable resources?
+      // We use objectId or the name for this referrable resources?
       value: ctx => ctx.currentValue.objectId,
       // value: ctx => ctx.currentValue.en || ctx.currentValue.fr,
     },
   ),
   accessibility: referenceAttributeMapping('accessibility', 'khp-accessibility', {
-    // TODO: we use objectId or the name for this referrable resources?
+    // We use objectId or the name for this referrable resources?
     value: ctx => ctx.currentValue.objectId,
     // value: ctx => ctx.currentValue.en || ctx.currentValue.fr,
   }),
-  howToAccessSupport: referenceAttributeMapping('howToAccessSupport', 'khp-how-to-access-support', {
-    // TODO: we use objectId or the name for this referrable resources?
-    value: ctx => ctx.currentValue.objectId,
-    // value: ctx => ctx.currentValue.en || ctx.currentValue.fr,
-  }),
-  isHighlighted: attributeMapping('ResourceBooleanAttributes', 'isHighlighted', {
-    value: ctx => ctx.currentValue,
-  }),
-  keywords: attributeMapping('ResourceStringAttributes', 'keywords', {
-    value: ctx => ctx.currentValue.join(' '),
-    info: ctx => ({ keywords: ctx.currentValue }),
-  }),
-  createdAt: attributeMapping('ResourceDateTimeAttributes', 'sourceCreatedAt'),
-  updatedAt: resourceFieldMapping('updatedAt'),
-  retiredAt: attributeMapping('ResourceDateTimeAttributes', 'sourceRetiredAt'),
-  // TODO: this is an array of arrays, is this shape correct?
-  taxonomies: {
+  volunteer: {
     children: {
-      '{arrayIndex}': {
-        children: {
-          '{taxonomyIndex}': referenceAttributeMapping(
-            'taxonomies/{arrayIndex}/{taxonomyIndex}',
-            'khp-taxonomy-codes',
-            { value: ctx => ctx.currentValue.code },
-          ),
-        },
-      },
+      '{language}': translatableAttributeMapping('volunteer', {
+        value: ctx => ctx.currentValue.opportunities,
+        info: ctx => ctx.currentValue,
+        language: ctx => ctx.captures.language,
+      }),
     },
   },
-  // TODO: this is an empty array
-  // notes: {
-
-  // }
-  verifications: {
-    children: {
-      '{verificationIndex}': attributeMapping(
-        'ResourceStringAttributes',
-        'verifications/{verificationIndex}',
-        {
-          value: ctx => ctx.currentValue.name,
-          info: ctx => ctx.currentValue,
-        },
-      ),
-    },
-  },
-  // TODO: this one is absent in the new sample
-  // status: referenceAttributeMapping('status', 'khp-resource-statuses'),
 };
 
 export const KHP_RESOURCE_REFERENCES = {
