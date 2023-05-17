@@ -19,6 +19,7 @@ import {
   ReferrableResourceAttribute,
   ResourceAttributeNode,
   ReferrableResource,
+  FlatResource,
 } from '@tech-matters/types';
 
 import {
@@ -27,12 +28,7 @@ import {
   SearchParameters as SearchParametersEs,
 } from '@tech-matters/elasticsearch-client';
 
-import {
-  getById,
-  getByIdList,
-  getWhereNameContains,
-  ReferrableResourceRecord,
-} from './resourceDataAccess';
+import { getById, getByIdList, getWhereNameContains } from './resourceDataAccess';
 import resourceCloudSearchClient from './search/resource-cloudsearch-client';
 import { SearchParameters } from './search/search-types';
 import { mapSearchParametersToKhpTermsAndFilters } from './search/khp-resource-search-mapping';
@@ -50,9 +46,7 @@ export type SimpleSearchParameters = {
 const EMPTY_RESULT = { totalCount: 0, results: [] };
 const MAX_SEARCH_RESULTS = 200;
 
-const resourceRecordToApiResource = (
-  resourceRecord: ReferrableResourceRecord,
-): ReferrableResource => {
+const resourceRecordToApiResource = (resourceRecord: FlatResource): ReferrableResource => {
   const {
     stringAttributes,
     referenceStringAttributes,
@@ -64,6 +58,7 @@ const resourceRecordToApiResource = (
   } = resourceRecord;
   const attributesWithKeys: (ReferrableResourceAttribute<string | boolean | number> & {
     key: string;
+    list?: string;
   })[] = [
     ...stringAttributes,
     ...booleanAttributes,
@@ -73,7 +68,7 @@ const resourceRecordToApiResource = (
   ];
   const attributes: ResourceAttributeNode = {};
   attributesWithKeys.forEach(attribute => {
-    const { key, ...withoutKey } = attribute;
+    const { key, list, ...withoutKey } = attribute;
     // Split on / but not on \/ (escaped /), but doesn't misinterpret preceding escaped \ (i.e. \\) as escaping the / (see unit tests)
     const attributeKeySections = key.split(/(?<!(?:[^\\]|^)\\(?:\\{2})*)\//).filter(s => s.length);
     let currentObject: ResourceAttributeNode = attributes as ResourceAttributeNode;

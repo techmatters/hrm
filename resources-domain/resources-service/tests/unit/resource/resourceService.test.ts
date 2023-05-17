@@ -14,11 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import {
-  getByIdList,
-  getWhereNameContains,
-  ReferrableResourceRecord,
-} from '../../../src/resource/resourceDataAccess';
+import { getByIdList, getWhereNameContains } from '../../../src/resource/resourceDataAccess';
 import {
   ReferrableResourceSearchResult,
   resourceService,
@@ -30,6 +26,7 @@ import each from 'jest-each';
 import { mapSearchParametersToKhpTermsAndFilters } from '../../../src/resource/search/khp-resource-search-mapping';
 import { SearchParameters, TermsAndFilters } from '../../../src/resource/search/search-types';
 import { BLANK_ATTRIBUTES } from '../mockResources';
+import { FlatResource } from '@tech-matters/types';
 
 jest.mock('../../../src/resource/resourceDataAccess', () => ({
   getByIdList: jest.fn(),
@@ -40,7 +37,7 @@ jest.mock('../../../src/resource/search/resource-cloudsearch-client');
 
 jest.mock('../../../src/resource/search/khp-resource-search-mapping');
 
-const mockGetByIdList = getByIdList as jest.Mock<Promise<ReferrableResourceRecord[]>>;
+const mockGetByIdList = getByIdList as jest.Mock<Promise<FlatResource[]>>;
 const mockGetWhereNameContains = getWhereNameContains as jest.Mock<
   Promise<{ totalCount: number; results: string[] }>
 >;
@@ -60,7 +57,7 @@ const { searchResourcesByName, searchResources } = resourceService({
 
 const BASELINE_DATE = new Date('2021-01-01T00:00:00.000Z');
 
-const generateResourceRecord = (identifier: string): ReferrableResourceRecord => ({
+const generateResourceRecord = (identifier: string): FlatResource => ({
   id: `RESOURCE_${identifier}`,
   name: `Resource ${identifier}`,
   lastUpdated: BASELINE_DATE.toISOString(),
@@ -366,7 +363,7 @@ describe('searchResources', () => {
     mockMapSearchParametersToKhpTermsAndFilters.mockReturnValue(EMPTY_SEARCH_TERMS);
   });
 
-  const baselineResultSet: ReferrableResourceRecord[] = [
+  const baselineResultSet: FlatResource[] = [
     {
       ...generateResourceRecord('1'),
       stringAttributes: [
@@ -380,7 +377,7 @@ describe('searchResources', () => {
     description: string;
     input: SearchParameters;
     resultsFromCloudSearch: SearchResultSet;
-    resultsFromDb: ReferrableResourceRecord[];
+    resultsFromDb: FlatResource[];
     expectedSearchLimit?: number; // Would normally be limit provided in user input, except for some special cases
     expectedTotal: number;
     expectedResults?: ReferrableResourceSearchResult[]; // Would normally be results from DB, except for some special cases

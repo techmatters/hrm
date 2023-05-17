@@ -25,7 +25,7 @@ jest.mock('express', () => ({
 }));
 
 jest.mock('../../../src/resource/resourceService', () => ({
-  resourceModel: jest.fn(),
+  resourceService: jest.fn(),
 }));
 
 const mockSearchResources: jest.Mock<Promise<{

@@ -14,11 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import {
-  AccountSID,
-  ReferrableResourceTranslatableAttribute,
-  ReferrableResourceAttribute,
-} from '@tech-matters/types';
+import { AccountSID, FlatResource } from '@tech-matters/types';
 
 import { db } from '../connection-pool';
 import {
@@ -26,21 +22,10 @@ import {
   SELECT_RESOURCE_IN_IDS,
 } from './sql/resourceGetSql';
 
-export type ReferrableResourceRecord = {
-  name: string;
-  id: string;
-  lastUpdated: string;
-  stringAttributes: (ReferrableResourceTranslatableAttribute & { key: string })[];
-  referenceStringAttributes: (ReferrableResourceTranslatableAttribute & { key: string })[];
-  booleanAttributes: (ReferrableResourceAttribute<boolean> & { key: string })[];
-  numberAttributes: (ReferrableResourceAttribute<number> & { key: string })[];
-  dateTimeAttributes: (ReferrableResourceAttribute<string> & { key: string })[];
-};
-
 export const getById = async (
   accountSid: AccountSID,
   resourceId: string,
-): Promise<ReferrableResourceRecord | null> => {
+): Promise<FlatResource | null> => {
   const res = await db.task(async t =>
     t.oneOrNone(SELECT_RESOURCE_IN_IDS, { accountSid, resourceIds: [resourceId] }),
   );
@@ -50,13 +35,13 @@ export const getById = async (
   } else {
     console.debug('Resource not found:', resourceId);
   }
-  return res as ReferrableResourceRecord;
+  return res;
 };
 
 export const getByIdList = async (
   accountSid: AccountSID,
   resourceIds: string[],
-): Promise<ReferrableResourceRecord[]> => {
+): Promise<FlatResource[]> => {
   if (!resourceIds.length) return [];
   console.debug('Retrieving resources with IDs:', resourceIds);
   const res = await db.task(async t =>

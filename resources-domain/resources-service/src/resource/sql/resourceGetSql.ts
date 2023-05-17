@@ -36,7 +36,7 @@ LEFT JOIN LATERAL (
     ) AS ra
 ) AS stringAtt ON true
 LEFT JOIN LATERAL (
-  SELECT COALESCE(jsonb_agg((SELECT attributeRow FROM (SELECT ra."key", ra."value", ra."language", ra."info") AS attributeRow)), '[]') AS attributes
+  SELECT COALESCE(jsonb_agg((SELECT attributeRow FROM (SELECT ra."key", ra."list", ra."value", ra."language", ra."info") AS attributeRow)), '[]') AS attributes
     FROM (
       SELECT rrsa."key", rrsav."value", rrsav."language", rrsav."info", rrsav."list"
         FROM 
