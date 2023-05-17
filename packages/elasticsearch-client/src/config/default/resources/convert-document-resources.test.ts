@@ -15,26 +15,40 @@
  */
 
 import { convertIndexDocument } from './convert-index-document';
+import { FlatResource } from '@tech-matters/types';
+
+const BASELINE_DATE = new Date('2021-01-01T00:00:00.000Z');
 
 describe('convertIndexDocument', () => {
   it('should convert a simple document', () => {
     // TODO: need a real example of a document to test against because I still have no idea what these are supposed to look like
-    const resource = {
+    const resource: FlatResource = {
       name: 'Resource',
       id: '1234',
-      attributes: {
-        title: [
-          { value: 'This is the english title', language: 'en', info: 'info about the title' },
-          { value: 'This is the french title', language: 'fr' },
-        ],
-        description: [{ value: 'This is the description' }],
-        eligibilityMinAge: [{ value: 10 }],
-        eligibilityMaxAge: [{ value: 20 }],
-        feeStructure: [{ value: 'free' }],
-        keywords: [{ value: 'keyword1' }, { value: 'keyword2' }],
-        province: [{ value: 'ON' }],
-        city: [{ value: 'Toronto' }],
-      },
+      lastUpdated: BASELINE_DATE.toISOString(),
+      stringAttributes: [
+        {
+          key: 'title',
+          value: 'This is the english title',
+          language: 'en',
+          info: 'info about the title',
+        },
+        { key: 'title', value: 'This is the french title', language: 'fr' },
+        { key: 'description', value: 'This is the description', language: '' },
+        { key: 'keywords', value: 'keyword1', language: '' },
+        { key: 'keywords', value: 'keyword2', language: '' },
+      ],
+      numberAttributes: [
+        { key: 'eligibilityMinAge', value: 10 },
+        { key: 'eligibilityMaxAge', value: 20 },
+      ],
+      booleanAttributes: [],
+      dateTimeAttributes: [],
+      referenceStringAttributes: [
+        { key: 'feeStructure', list: 'feeStructures', value: 'free', language: '' },
+        { key: 'province', list: 'provinces', value: 'ON', language: '' },
+        { key: 'city', list: 'cities', value: 'Toronto', language: '' },
+      ],
     };
 
     const document = convertIndexDocument(resource);

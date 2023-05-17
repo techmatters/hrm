@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { ReferrableResource } from '@tech-matters/types';
+import { FlatResource, ReferrableResourceAttribute } from '@tech-matters/types';
 import {
   isHighBoostGlobalField,
   isMappingField,
@@ -23,9 +23,8 @@ import {
 } from './config';
 
 export const convertIndexDocument = (
-  resource: ReferrableResource,
+  resource: FlatResource,
 ): ResourcesCreateIndexConvertedDocument => {
-  const { name } = resource;
   const mappedFields: { [key: string]: string | string[] | number } = {};
   const highBoostGlobal: string[] = [];
   const LowBoostGlobal: string[] = [];
@@ -38,7 +37,7 @@ export const convertIndexDocument = (
     }
   };
 
-  const pushToMappingField = (key: string, value: number | string | string[]) => {
+  const pushToMappingField = (key: string, value: number | string | boolean) => {
     //TODO: I don't know what keywords field will actually look like should handle arrays here
     if (mappingFields![key].isArrayField) {
       if (!mappedFields[key]) {
@@ -49,26 +48,29 @@ export const convertIndexDocument = (
       const mapField = mappedFields[key] as string[];
       mapField.push(value.toString());
     } else {
-      mappedFields[key] = value;
+      mappedFields[key] = typeof value === 'boolean' ? value.toString() : value;
     }
   };
 
-  const parseAttribute = (key: string, attribute: any) => {
+  const parseAttribute = (
+    key: string,
+    { value }: ReferrableResourceAttribute<boolean | string | number>,
+  ) => {
     if (isMappingField(key)) {
-      return pushToMappingField(key, attribute.value);
+      return pushToMappingField(key, value);
     }
-
-    pushToCorrectGlobalBoostField(key, attribute.value);
+    // We don't really want booleans & numbers in the general purpose buckets
+    if (typeof value === 'string') {
+      pushToCorrectGlobalBoostField(key, value);
+    }
   };
 
-  Object.entries(resource.attributes).forEach(([key, attributes]) => {
-    if (Array.isArray(attributes)) {
-      return attributes.map(attribute => {
-        parseAttribute(key, attribute);
-      });
-    }
+  const { id, name, lastUpdated, ...attributeArrays } = resource;
 
-    parseAttribute(key, attributes);
+  Object.values(attributeArrays).forEach(attributes => {
+    attributes.forEach(({ key, ...attribute }) => {
+      parseAttribute(key, attribute);
+    });
   });
 
   return {

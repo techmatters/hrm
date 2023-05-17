@@ -63,7 +63,7 @@ type ResourcesJobMessageCommons = {
 export type ResourcesSearchIndexPayload = ResourcesJobMessageCommons & {
   jobType: ResourcesJobType.SEARCH_INDEX;
   accountSid: string;
-  document: ReferrableResource;
+  document: FlatResource;
 };
 
 export type FlatResource = {
