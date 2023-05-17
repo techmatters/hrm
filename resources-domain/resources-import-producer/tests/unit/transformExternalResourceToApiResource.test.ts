@@ -48,6 +48,95 @@ const mergeWithCleanResource = (
   },
 });
 
+describe('transformExternalResourceToApiResource - dynamic captures', () => {
+  test('Dynamic capture only - captures all the keys', async () => {
+    const resource = {
+      attribute: {
+        key1: 'value 1',
+        key2: 'value 2',
+      },
+    };
+
+    const mapping: MappingNode = {
+      attribute: {
+        children: {
+          '{key}': attributeMapping('ResourceStringAttributes', '{key}'),
+        },
+      },
+    };
+
+    const expected: ImportApiResource = mergeWithCleanResource({
+      attributes: {
+        ResourceStringAttributes: [
+          {
+            key: 'key1',
+            value: 'value 1',
+            info: null,
+            language: null,
+          },
+          {
+            key: 'key2',
+            value: 'value 2',
+            info: null,
+            language: null,
+          },
+        ],
+      },
+    });
+
+    const result = transformExternalResourceToApiResource(mapping, resource);
+    expect(result).toMatchObject(expected);
+  });
+
+  test('Dynamic capture and static mapping - captures only the non-static keys', async () => {
+    const resource = {
+      attribute: {
+        another: true,
+        key1: 'value 1',
+        key2: 'value 2',
+      },
+    };
+
+    const mapping: MappingNode = {
+      attribute: {
+        children: {
+          another: attributeMapping('ResourceBooleanAttributes', 'another'),
+          '{key}': attributeMapping('ResourceStringAttributes', '{key}'),
+        },
+      },
+    };
+
+    const expected: ImportApiResource = mergeWithCleanResource({
+      attributes: {
+        ResourceStringAttributes: [
+          {
+            key: 'key1',
+            value: 'value 1',
+            info: null,
+            language: null,
+          },
+          {
+            key: 'key2',
+            value: 'value 2',
+            info: null,
+            language: null,
+          },
+        ],
+        ResourceBooleanAttributes: [
+          {
+            key: 'another',
+            value: true,
+            info: null,
+          },
+        ],
+      },
+    });
+
+    const result = transformExternalResourceToApiResource(mapping, resource);
+    expect(result).toMatchObject(expected);
+  });
+});
+
 describe('transformExternalResourceToApiResource - Simple mapping, flat structure', () => {
   const testCases: {
     description: string;
@@ -409,7 +498,7 @@ describe('transformExternalResourceToApiResource - More mapping, nested structur
       mapping: {
         booleans: {
           children: {
-            '{proeprty}': attributeMapping('ResourceBooleanAttributes', '{proeprty}'),
+            '{property}': attributeMapping('ResourceBooleanAttributes', '{property}'),
           },
         },
       },
@@ -443,7 +532,7 @@ describe('transformExternalResourceToApiResource - More mapping, nested structur
       mapping: {
         strings: {
           children: {
-            '{proeprty}': attributeMapping('ResourceStringAttributes', '{proeprty}'),
+            '{property}': attributeMapping('ResourceStringAttributes', '{property}'),
           },
         },
       },
@@ -679,12 +768,12 @@ describe('transformExternalResourceToApiResource - More mapping, nested structur
       },
       booleans: {
         children: {
-          '{proeprty}': attributeMapping('ResourceBooleanAttributes', '{proeprty}'),
+          '{property}': attributeMapping('ResourceBooleanAttributes', '{property}'),
         },
       },
       strings: {
         children: {
-          '{proeprty}': attributeMapping('ResourceStringAttributes', '{proeprty}'),
+          '{property}': attributeMapping('ResourceStringAttributes', '{property}'),
         },
       },
       translatableStrings: {

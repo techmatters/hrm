@@ -138,7 +138,18 @@ const mapNode = (
 ): ImportApiResource => {
   Object.entries(mappingNode).forEach(([property, { children, ...mapping }]) => {
     const captureProperty = property.match(/{(?<captureProperty>.*)}/)?.groups?.captureProperty;
-    const dataProperties: string[] = (captureProperty ? Object.keys(dataNode) : [property])
+    console.log(captureProperty);
+    console.log(dataNode);
+    console.log(mappingNode);
+
+    // If there are sibling keys to the dynamic capture, treat them as static
+    const { [`{${captureProperty}}`]: capturePropertyMapping, ...staticMappings } = captureProperty ? mappingNode : {};
+    const staticKeys = Object.keys(staticMappings);
+    const rawDataProperties = captureProperty 
+    ? Object.keys(dataNode).filter(k => !staticKeys.includes(k)) 
+    : [property];
+
+    const dataProperties: string[] = rawDataProperties
       // Escape forward slashes in path segments
       .map(p => p.replace('/', '\\/'));
     dataProperties.forEach(dataProperty => {
@@ -172,7 +183,8 @@ const mapNode = (
       // Recurse on the children node(s) if any
       if (children) {
         // eslint-disable-next-line @typescript-eslint/naming-convention
-        const { _id, objectId, ...rest } = children;
+        const { _id, ...rest } = children;
+        // const { _id, objectId, ...rest } = children;
         mapNode(rest, dataPropertyValue, context, aseloResource);
       }
     });

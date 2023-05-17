@@ -179,12 +179,12 @@ export const translatableAttributeMapping = (
   {
     value = context => context.currentValue,
     info = () => null,
-    language = () => null,
+    language,
   }: {
     value?: ValueOrContextConsumerFunc<string>;
     info?: ContextConsumerFunc<Record<string, any> | null>;
-    language?: ValueOrContextConsumerFunc<string | null>;
-  } = {},
+    language: ValueOrContextConsumerFunc<string | null>;
+  },
 ): TranslatableAttributeMapping => {
   const mappingResult = attributeMapping('ResourceStringAttributes', key, {
     value,
