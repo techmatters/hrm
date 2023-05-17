@@ -23,7 +23,6 @@ import {
   translatableAttributeMapping,
 } from '../../mappers';
 import { ImportApiResource } from '@tech-matters/types';
-import { KhpApiResource } from '../..';
 import each from 'jest-each';
 
 const startedDate = Date.now().toString();
@@ -141,8 +140,8 @@ describe('transformExternalResourceToApiResource - Simple mapping, flat structur
   const testCases: {
     description: string;
     mapping: MappingNode;
-    resource: Partial<KhpApiResource>;
-    expectedFromResource: (r: KhpApiResource) => ImportApiResource;
+    resource: Record<string, any>;
+    expectedFromResource: (r: Record<string, any>) => ImportApiResource;
   }[] = [
     // Base case
     {
@@ -449,8 +448,8 @@ describe('transformExternalResourceToApiResource - More mapping, nested structur
   const testCases: {
     description: string;
     mapping: MappingNode;
-    resource: Partial<KhpApiResource>;
-    expectedFromResource: (r: KhpApiResource) => ImportApiResource;
+    resource: Record<string, any>;
+    expectedFromResource: (r: Record<string, any>) => ImportApiResource;
   }[] = [
     // Base case
     {
