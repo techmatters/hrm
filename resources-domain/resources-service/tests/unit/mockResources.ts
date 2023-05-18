@@ -16,7 +16,7 @@
 
 import { FlatResource } from '@tech-matters/types';
 
-export const BLANK_ATTRIBUTES: Omit<FlatResource, 'id' | 'name' | 'lastUpdated'> = {
+export const BLANK_ATTRIBUTES: Omit<FlatResource, 'id' | 'name' | 'lastUpdated' | 'accountSid'> = {
   stringAttributes: [],
   referenceStringAttributes: [],
   booleanAttributes: [],

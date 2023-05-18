@@ -63,18 +63,16 @@ export type KhpApiResponse = {
 };
 
 /**
- * Stub implementation of a routine to transform the resources provided by the KHP API to the ImportApiResource format used by the write lambda
- * @param khpReferenceNumber
- * @param name
- * @param updatedAt
+ * Stub implementation of a routine to transform the resources provided by the KHP API to the ImportApiResource format used by the write lambda.
  */
-const transformKhpResourceToApiResource = ({ objectId, name: { en: name }, updatedAt }: KhpApiResource): FlatResource => {
+const transformKhpResourceToApiResource = ({ objectId, name: { en: name }, updatedAt }: KhpApiResource, accountSid: AccountSID): FlatResource => {
   if (!objectId || !updatedAt) {
     throw new Error(`Invalid resource provided, missing required parameter: ${JSON.stringify({ objectId, updatedAt })}`);
   }
 
   return {
     id: objectId,
+    accountSid,
     lastUpdated: updatedAt,
     name: name ?? 'NAME MISSING',
     stringAttributes: [],
@@ -136,7 +134,7 @@ const sendUpdates = (accountSid: AccountSID, importResourcesSqsQueueUrl: URL) =>
     try {
       const transformedResource: ResourceMessage = {
         batch: { ...importBatch, remaining },
-        importedResources: [transformKhpResourceToApiResource(khpResource)],
+        importedResources: [transformKhpResourceToApiResource(khpResource, accountSid)],
         accountSid,
       };
       await publishToImportConsumer(importResourcesSqsQueueUrl)(transformedResource);

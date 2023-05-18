@@ -14,10 +14,11 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-export {
-  getAuthorizationMiddleware,
-  adminAuthorizationMiddleware,
-  staticKeyAuthorizationMiddleware,
-} from './twilioWorkerAuthMiddleware';
-export { addAccountSidMiddleware } from './addAccountSidMiddleware';
-export { twilioUser, TwilioUser } from './twilioUser';
+import { SELECT_RESOURCES } from '../../resource/sql/resourceGetSql';
+
+export const SELECT_RESOURCE_BY_UPDATEDAT = `${SELECT_RESOURCES}
+WHERE ($<accountSid> IS NULL OR r."accountSid" = $<accountSid>) AND r."updatedAt" >= $<lastUpdatedFrom> AND ($<lastUpdatedTo> IS NULL OR r."updatedAt" <= $<lastUpdatedTo>)
+ORDER BY r."updatedAt"
+LIMIT $<limit>
+OFFSET $<start>
+`;

@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-const SELECT_RESOURCES = `
+export const SELECT_RESOURCES = `
 SELECT 
     r.id, 
     r."name", 

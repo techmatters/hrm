@@ -14,10 +14,22 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-export {
-  getAuthorizationMiddleware,
-  adminAuthorizationMiddleware,
-  staticKeyAuthorizationMiddleware,
-} from './twilioWorkerAuthMiddleware';
-export { addAccountSidMiddleware } from './addAccountSidMiddleware';
-export { twilioUser, TwilioUser } from './twilioUser';
+import { IRouter, Router } from 'express';
+import newAdminSearchService, { ResponseType } from './adminSearchService';
+
+const adminSearchRoutes = () => {
+  const router: IRouter = Router();
+  const adminSearchService = newAdminSearchService();
+
+  router.post('/search/reindex', async ({ body, query }, res) => {
+    const result = await adminSearchService.reindex(
+      body,
+      query.responseType === 'verbose' ? ResponseType.VERBOSE : ResponseType.CONCISE,
+    );
+    res.status(200).json(result);
+  });
+
+  return router;
+};
+
+export default adminSearchRoutes;

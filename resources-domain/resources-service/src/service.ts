@@ -19,10 +19,11 @@ import 'express-async-errors';
 import {
   addAccountSidMiddleware,
   getAuthorizationMiddleware,
+  staticKeyAuthorizationMiddleware,
+  adminAuthorizationMiddleware,
 } from '@tech-matters/twilio-worker-auth';
 import generateCloudSearchConfig, { CloudSearchConfig } from './config/cloud-search';
-import { apiV0, internalApiV0 } from './routes';
-import { staticKeyAuthorizationMiddleware } from '@tech-matters/twilio-worker-auth/dist/twilioWorkerAuthMiddleware';
+import { adminApiV0, apiV0, internalApiV0 } from './routes';
 
 type ResourceServiceCreationOptions = {
   webServer: ReturnType<typeof express>;
@@ -61,5 +62,6 @@ export const configureInternalService = ({ webServer }: InternalResourceServiceC
     staticKeyAuthorizationMiddleware,
     internalApiV0(),
   );
+  webServer.use('v0/admin', adminAuthorizationMiddleware('SEARCH_REINDEXER'), adminApiV0());
   return webServer;
 };

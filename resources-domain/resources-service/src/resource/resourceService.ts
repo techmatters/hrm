@@ -54,6 +54,7 @@ const resourceRecordToApiResource = (resourceRecord: FlatResource): ReferrableRe
     numberAttributes,
     dateTimeAttributes,
     lastUpdated,
+    accountSid,
     ...withoutAttributes
   } = resourceRecord;
   const attributesWithKeys: (ReferrableResourceAttribute<string | boolean | number> & {
