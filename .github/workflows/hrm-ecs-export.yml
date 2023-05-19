@@ -1,0 +1,162 @@
+# Copyright (C) 2021-2023 Technology Matters
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published
+# by the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see https://www.gnu.org/licenses/.
+
+name: HRM Export and (Re)populate the S3 bucket
+
+on:
+  workflow_dispatch:
+    secrets:
+      AWS_ACCESS_KEY_ID:
+        required: true
+      AWS_SECRET_ACCESS_KEY:
+        required: true
+    inputs:
+      start-date:
+        description: 'Start date for the S3 population (YYYY-MM-DD)'
+        required: true
+      end-date:
+        description: 'End date for the S3 population (YYYY-MM-DD)'
+        required: true
+      environment:
+        description: HRM environment to deploy.
+        default: development
+        required: true
+        type: choice
+        options:
+          - development
+          - staging
+          - production
+      region:
+        description: AWS region to update. E.G = us-east-1, eu-west-1 (must match with the AWS environment value). Default value = us-east-1
+        type: string
+        default: us-east-1
+        required: true
+      send-slack-message:
+        description: 'Specifies if should send a Slack message at the end of successful run. Defaults to true'
+        required: false
+        default: 'true'
+        type: string
+
+env:
+  ECR_REPOSITORY: ${{ inputs.environment }}-hrm
+
+jobs:
+  execute-ecs-task:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ inputs.region }}
+          # this plugin sets the AWS account ID to a secret which is not allowed in outputs
+          # we have to disable that so env.DOCKER_IMAGE will work
+          mask-aws-account-id: 'no'
+      
+      # Run the task definition and add to env
+      - name: Run Task Definition
+        run: |
+          task_definition=$(aws ecs describe-task-definition --task-definition ${{ inputs.environment }}-hrm-task --query taskDefinition.taskDefinitionArn)
+          echo task_definition=$task_definition >> $GITHUB_ENV
+      
+      # Command to trigger the execution of the ECS task. 
+      - name: Trigger ECS Task
+        id: ecs-task
+        run: |
+          aws ecs run-task \
+            --cluster ${{ inputs.environment }}-hrm-task \
+            --task-definition ${{ env.task_definition }} \
+            --network-configuration "awsvpcConfiguration={subnets=['<your-subnet-id>'],securityGroups=['<your-security-group-id>'],assignPublicIp='ENABLED'}" \
+            --overrides '{
+              "containerOverrides": [
+                {
+                  "name": "${{ inputs.environment }}-hrm-scheduled-task",
+                  "command": [
+                    "npm", 
+                    "run", 
+                    "start:khp-data-pull",
+                    "${{ github.event.inputs.start-date }}",
+                    "${{ github.event.inputs.end-date }}"
+                  ]
+                }
+              ]
+            }'
+
+      # Ensures that the workflow doesn't proceed until the ECS task has finished 
+      # executing. This step prevents any potential race conditions or incorrect 
+      # assumptions about the task's status.
+      - name: Wait for ECS Task Completion
+        id: ecs-task-status
+        run: |
+          aws ecs wait tasks-stopped \
+            --cluster ${{ inputs.environment }}-hrm-task \
+            --tasks ${{ steps.ecs-task.outputs.task-id }}
+
+      #  Retrieve the output of the ECS task that was triggered and extract 
+      # the desired information from it. 
+      - name: Get ECS Task Output
+        id: ecs-task-output
+        run: |
+          aws ecs describe-tasks \
+            --cluster ${{ inputs.environment }}-hrm-task \
+            --tasks ${{ steps.ecs-task.outputs.task-id }} \
+            --query "tasks[0].containers[0].command[1:3]" \
+            --output text
+
+      # Extracts the relevant information from the ECS task output 
+      # allowing us to process the task output and extract specific data that is needed
+      - name: Extract S3 Bucket Info
+        id: s3-bucket-info
+        run: |
+          start_date=$(echo "${{ steps.ecs-task-output.outputs.stdout }}" | awk '{print $1}')
+          end_date=$(echo "${{ steps.ecs-task-output.outputs.stdout }}" | awk '{print $2}')
+
+          echo "::set-output name=start-date::$start_date"
+          echo "::set-output name=end-date::$end_date"
+
+      # responsible for uploading files to the S3 bucket based on the extracted 
+      # start date and end date. 
+      - name: Populate S3 Bucket
+        if: ${{ steps.ecs-task-status.outputs.tasksStopped == 'true' }}
+        run: |
+          aws s3 cp /path/to/local/files s3://your-bucket-name/path/to/s3/location --recursive
+
+      # Set any env vars needed from Parameter Store here
+      - name: Set GITHUB_ACTIONS_SLACK_BOT_TOKEN
+        uses: 'marvinpinto/action-inject-ssm-secrets@latest'
+        with:
+          ssm_parameter: 'GITHUB_ACTIONS_SLACK_BOT_TOKEN'
+          env_variable_name: 'GITHUB_ACTIONS_SLACK_BOT_TOKEN'
+
+      - name: Set ASELO_DEPLOYS_CHANNEL_ID
+        uses: 'marvinpinto/action-inject-ssm-secrets@latest'
+        with:
+          ssm_parameter: 'ASELO_DEPLOYS_CHANNEL_ID'
+          env_variable_name: 'ASELO_DEPLOYS_CHANNEL_ID'
+
+      # Send Slack notifying success
+      - name: Slack Aselo channel
+        id: slack
+        uses: slackapi/slack-github-action@v1.14.0
+        with:
+          channel-id: ${{ env.ASELO_DEPLOYS_CHANNEL_ID }}
+          slack-message: '`[HRM]` Deployment of ${{ github.ref_type }} `${{ github.ref_name }}` requested by `${{ github.triggering_actor }}` completed with SHA ${{ github.sha }} to region `${{ inputs.region }}`, environment `${{ inputs.environment }}` :rocket:.'
+        env:
+          SLACK_BOT_TOKEN: ${{ env.GITHUB_ACTIONS_SLACK_BOT_TOKEN }}
+        if: ${{ inputs.send-slack-message != 'false' }}
