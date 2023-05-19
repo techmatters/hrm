@@ -138,9 +138,6 @@ const mapNode = (
 ): ImportApiResource => {
   Object.entries(mappingNode).forEach(([property, { children, ...mapping }]) => {
     const captureProperty = property.match(/{(?<captureProperty>.*)}/)?.groups?.captureProperty;
-    console.log(captureProperty);
-    console.log(dataNode);
-    console.log(mappingNode);
 
     // If there are sibling keys to the dynamic capture, treat them as static
     const { [`{${captureProperty}}`]: capturePropertyMapping, ...staticMappings } = captureProperty ? mappingNode : {};

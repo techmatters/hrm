@@ -158,7 +158,7 @@ describe('Simple mappings with flat structure', () => {
       description:
         'when mapping resourceFieldMapping on id, name and updatedAt, should add those as top level properties of resource',
       mapping: {
-        khpReferenceNumber: resourceFieldMapping('id'),
+        objectId: resourceFieldMapping('id'),
         name: resourceFieldMapping('name', ctx => ctx.currentValue.en),
         updatedAt: resourceFieldMapping('updatedAt'),
       },
@@ -166,11 +166,10 @@ describe('Simple mappings with flat structure', () => {
         name: { en: 'resource-1' },
         objectId: 'resource-1',
         updatedAt: startedDate,
-        khpReferenceNumber: 'resource-1',
       },
       expectedFromResource: r =>
         mergeWithCleanResource({
-          id: r.khpReferenceNumber,
+          id: r.objectId,
           updatedAt: r.updatedAt,
           name: r.name.en,
         }),

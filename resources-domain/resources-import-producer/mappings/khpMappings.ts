@@ -244,7 +244,7 @@ const KHP_MAPPING_NODE_TAXONOMIES: { children: MappingNode } = {
 };
 
 export const KHP_MAPPING_NODE: MappingNode = {
-  khpReferenceNumber: resourceFieldMapping('id'),
+  objectId: resourceFieldMapping('id'),
   sites: KHP_MAPPING_NODE_SITES,
   taxonomies: KHP_MAPPING_NODE_TAXONOMIES,
   name: resourceFieldMapping('name', ctx => ctx.currentValue.en || ctx.currentValue.fr),
