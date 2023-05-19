@@ -45,8 +45,6 @@ let testQueueUrl: URL;
 beforeAll(async () => {
   await mockingProxy.start();
   await sqsService.listen({ port: parseInt(process.env.LOCAL_SQS_PORT!) });
-  const queues = await sqsClient.listQueues().promise();
-  console.log('Queues', queues);
   await mockSuccessfulTwilioAuthentication(WORKER_SID);
   const mockttp = await mockingProxy.mockttpServer();
   await mockttp.forPost(/(.*)mock-ssm(.*)/).thenCallback(async req => {

@@ -15,7 +15,7 @@
  */
 
 import { AccountSID, FlatResource } from '@tech-matters/types';
-import { db, pgp } from '../connection-pool';
+import { db } from '../connection-pool';
 import { generateSelectResourcesForReindexSql } from './sql/adminSearchSql';
 
 export const getResourcesByUpdatedDateForReindexing = async ({
@@ -33,16 +33,6 @@ export const getResourcesByUpdatedDateForReindexing = async ({
   start?: number;
   limit?: number;
 }): Promise<FlatResource[]> => {
-  console.log(
-    pgp.as.format(generateSelectResourcesForReindexSql(Boolean(resourceIds)), {
-      lastUpdatedFrom,
-      lastUpdatedTo,
-      accountSid,
-      resourceIds,
-      start,
-      limit,
-    }),
-  );
   return db.task(async tx => {
     return tx.manyOrNone(generateSelectResourcesForReindexSql(Boolean(resourceIds)), {
       lastUpdatedFrom,
