@@ -22,6 +22,7 @@
   },
   "scripts": {
     "docker:build": "docker build -t resources-import-khp --build-arg lambda_name=resources-import-producer -f ../Dockerfile ../../",
-    "test:unit": "jest tests/unit"
+    "test:unit": "jest tests/unit",
+    "test": "jest"
   }
 }
