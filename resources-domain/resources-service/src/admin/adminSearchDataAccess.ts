@@ -18,7 +18,7 @@ import { AccountSID, FlatResource } from '@tech-matters/types';
 import { db } from '../connection-pool';
 import { generateSelectResourcesForReindexSql } from './sql/adminSearchSql';
 
-export const getResourcesByUpdatedDateForReindexing = async ({
+export const getResourcesBatchForReindexing = async ({
   lastUpdatedFrom,
   lastUpdatedTo,
   accountSid,

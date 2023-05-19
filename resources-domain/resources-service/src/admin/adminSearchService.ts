@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { getResourcesByUpdatedDateForReindexing } from './adminSearchDataAccess';
+import { getResourcesBatchForReindexing } from './adminSearchDataAccess';
 import { AccountSID } from '@tech-matters/types';
 import { publishSearchIndexJob } from '../resource-jobs/client-sqs';
 
@@ -60,7 +60,7 @@ const newAdminSearchService = ({ reindexDbBatchSize }: AdminSearchServiceConfigu
 
       // Keep querying the DB for resources to index until we get less than the batch size, which means we've reached the end
       while (previousBatchResultCount === reindexDbBatchSize) {
-        const resourcesToIndex = await getResourcesByUpdatedDateForReindexing({
+        const resourcesToIndex = await getResourcesBatchForReindexing({
           ...params,
           start: batchesSent * reindexDbBatchSize,
           limit: reindexDbBatchSize,
