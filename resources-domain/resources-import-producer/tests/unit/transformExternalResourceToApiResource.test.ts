@@ -466,7 +466,7 @@ describe('Simple mapping, nested structure', () => {
     // Base case
     {
       description:
-        'Node contains an empty value when we expected something to map, stop recursing (nested)',
+        'when node contains empty value and is expecteded something to map,  should stop recursing',
       mapping: {
         attribute: {
           children: {
