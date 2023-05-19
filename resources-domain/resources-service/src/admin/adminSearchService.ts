@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 import {
-  getResourcesByUpdatedDateForReindexing,
+  getResourcesBatchForReindexing,
   streamResourcesForReindexing,
 } from './adminSearchDataAccess';
 import { AccountSID } from '@tech-matters/types';
@@ -65,7 +65,7 @@ const newAdminSearchService = ({ reindexDbBatchSize }: AdminSearchServiceConfigu
 
       // Keep querying the DB for resources to index until we get less than the batch size, which means we've reached the end
       while (previousBatchResultCount === reindexDbBatchSize) {
-        const resourcesToIndex = await getResourcesByUpdatedDateForReindexing({
+        const resourcesToIndex = await getResourcesBatchForReindexing({
           ...params,
           start: batchesSent * reindexDbBatchSize,
           limit: reindexDbBatchSize,
@@ -114,42 +114,40 @@ const newAdminSearchService = ({ reindexDbBatchSize }: AdminSearchServiceConfigu
         successfullySubmitted: [],
         failedToSubmit: [],
       };
-      const resourcesStream: ReadableStream = await streamResourcesForReindexing(params);
+      const resourcesStream: ReadableStream = await streamResourcesForReindexing({
+        ...params,
+        batchSize: reindexDbBatchSize,
+      });
 
       return new Promise(resolve => {
         resourcesStream.pipe(
           new Writable({
             objectMode: true,
             highWaterMark: reindexDbBatchSize,
-            write: (resource, _, callback) => {
-              publishSearchIndexJob(resource.accountSid, resource)
-                .then(() => {
-                  response.successfulSubmissionCount++;
-                  if (responseType === ResponseType.VERBOSE) {
-                    response.successfullySubmitted.push(resource.id);
-                  }
-                })
-                .catch(error => {
-                  response.submissionErrorCount++;
-                  if (
-                    responseType === ResponseType.VERBOSE &&
-                    response.submissionErrorCount <= 50
-                  ) {
-                    if (response.submissionErrorCount === 50) {
-                      response.failedToSubmit.push({
-                        resourceId: resource.id,
-                        error: new Error('Stopping logging errors after 50'),
-                      });
-                    }
+            write: async (resource, _, callback) => {
+              try {
+                await publishSearchIndexJob(resource.accountSid, resource);
+                response.successfulSubmissionCount++;
+                if (responseType === ResponseType.VERBOSE) {
+                  response.successfullySubmitted.push(resource.id);
+                }
+              } catch (error) {
+                response.submissionErrorCount++;
+                if (responseType === ResponseType.VERBOSE && response.submissionErrorCount <= 50) {
+                  if (response.submissionErrorCount === 50) {
                     response.failedToSubmit.push({
                       resourceId: resource.id,
-                      error: error as Error,
+                      error: new Error('Stopping logging errors after 50'),
                     });
                   }
-                })
-                .finally(() => {
-                  callback();
-                });
+                  response.failedToSubmit.push({
+                    resourceId: resource.id,
+                    error: error as Error,
+                  });
+                }
+              } finally {
+                callback();
+              }
             },
             destroy: () => {
               resolve(

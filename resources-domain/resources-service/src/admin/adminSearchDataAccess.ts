@@ -20,7 +20,7 @@ import { generateSelectResourcesForReindexSql } from './sql/adminSearchSql';
 import QueryStream from 'pg-query-stream';
 import ReadableStream = NodeJS.ReadableStream;
 
-export const getResourcesByUpdatedDateForReindexing = async ({
+export const getResourcesBatchForReindexing = async ({
   lastUpdatedFrom,
   lastUpdatedTo,
   accountSid,
@@ -52,15 +52,13 @@ export const streamResourcesForReindexing = async ({
   lastUpdatedTo,
   accountSid,
   resourceIds,
-  start = 0,
-  limit = 1000,
+  batchSize = 1000,
 }: {
   lastUpdatedFrom?: string;
   lastUpdatedTo?: string;
   accountSid?: AccountSID;
   resourceIds?: string[];
-  start?: number;
-  limit?: number;
+  batchSize?: number;
 }): Promise<ReadableStream> => {
   const qs = new QueryStream(
     pgp.as.format(generateSelectResourcesForReindexSql(Boolean(resourceIds)), {
@@ -68,11 +66,11 @@ export const streamResourcesForReindexing = async ({
       lastUpdatedTo,
       accountSid,
       resourceIds,
-      start,
-      limit,
+      start: 0,
+      limit: Number.MAX_SAFE_INTEGER,
     }),
     [],
-    { batchSize: 4 },
+    { highWaterMark: batchSize },
   );
 
   return new Promise(resolve => {
