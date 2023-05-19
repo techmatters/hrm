@@ -72,7 +72,7 @@ jobs:
       # Run the task definition and add to env
       - name: Run Task Definition
         run: |
-          task_definition=$(aws ecs describe-task-definition --task-definition ${{ inputs.environment }}-hrm-task --query taskDefinition.taskDefinitionArn)
+          task_definition=$(aws ecs describe-task-definition --task-definition ${{ env.ECR_REPOSITORY }}-task --query taskDefinition.taskDefinitionArn)
           echo task_definition=$task_definition >> $GITHUB_ENV
       
       # Command to trigger the execution of the ECS task. 
@@ -80,13 +80,13 @@ jobs:
         id: ecs-task
         run: |
           aws ecs run-task \
-            --cluster ${{ inputs.environment }}-hrm-task \
+            --cluster ${{ env.ECR_REPOSITORY }}-task \
             --task-definition ${{ env.task_definition }} \
             --network-configuration "awsvpcConfiguration={subnets=['<your-subnet-id>'],securityGroups=['<your-security-group-id>'],assignPublicIp='ENABLED'}" \
             --overrides '{
               "containerOverrides": [
                 {
-                  "name": "${{ inputs.environment }}-hrm-scheduled-task",
+                  "name": "${{ env.ECR_REPOSITORY }}-scheduled-task",
                   "command": [
                     "npm", 
                     "run", 
@@ -105,7 +105,7 @@ jobs:
         id: ecs-task-status
         run: |
           aws ecs wait tasks-stopped \
-            --cluster ${{ inputs.environment }}-hrm-task \
+            --cluster ${{ env.ECR_REPOSITORY }}-task \
             --tasks ${{ steps.ecs-task.outputs.task-id }}
 
       #  Retrieve the output of the ECS task that was triggered and extract 
@@ -114,7 +114,7 @@ jobs:
         id: ecs-task-output
         run: |
           aws ecs describe-tasks \
-            --cluster ${{ inputs.environment }}-hrm-task \
+            --cluster ${{ env.ECR_REPOSITORY }}-task \
             --tasks ${{ steps.ecs-task.outputs.task-id }} \
             --query "tasks[0].containers[0].command[1:3]" \
             --output text
