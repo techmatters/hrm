@@ -39,16 +39,18 @@ export type VerboseSearchReindexResult = ConciseSearchReindexResult & {
   failedToSubmit: { resourceId: string; error: Error }[];
 };
 
-const newAdminSearchService = () => {
+export type AdminSearchServiceConfiguration = {
+  reindexDbBatchSize: number;
+};
+
+const newAdminSearchService = ({ reindexDbBatchSize }: AdminSearchServiceConfiguration) => {
   return {
     reindex: async (
       params: SearchReindexParams,
       responseType: ResponseType,
     ): Promise<ConciseSearchReindexResult | VerboseSearchReindexResult> => {
-      const resourcesToIndex = await getResourcesByUpdatedDateForReindexing(params);
-
-      console.log('resources found to index', resourcesToIndex.length);
-
+      let previousBatchResultCount = reindexDbBatchSize,
+        batchesSent = 0;
       let response: VerboseSearchReindexResult = {
         successfulSubmissionCount: 0,
         submissionErrorCount: 0,
@@ -56,25 +58,37 @@ const newAdminSearchService = () => {
         failedToSubmit: [],
       };
 
-      for (const resource of resourcesToIndex) {
-        try {
-          await publishSearchIndexJob(resource.accountSid, resource);
-          response.successfulSubmissionCount++;
-          if (responseType === ResponseType.VERBOSE) {
-            response.successfullySubmitted.push(resource.id);
-          }
-        } catch (error) {
-          response.submissionErrorCount++;
-          if (responseType === ResponseType.VERBOSE && response.submissionErrorCount <= 50) {
-            if (response.submissionErrorCount === 50) {
-              response.failedToSubmit.push({
-                resourceId: resource.id,
-                error: new Error('Stopping logging errors after 50'),
-              });
+      // Keep querying the DB for resources to index until we get less than the batch size, which means we've reached the end
+      while (previousBatchResultCount === reindexDbBatchSize) {
+        const resourcesToIndex = await getResourcesByUpdatedDateForReindexing({
+          ...params,
+          start: batchesSent * reindexDbBatchSize,
+          limit: reindexDbBatchSize,
+        });
+        previousBatchResultCount = resourcesToIndex.length;
+        console.log('resources found to index', resourcesToIndex.length);
+
+        for (const resource of resourcesToIndex) {
+          try {
+            await publishSearchIndexJob(resource.accountSid, resource);
+            response.successfulSubmissionCount++;
+            if (responseType === ResponseType.VERBOSE) {
+              response.successfullySubmitted.push(resource.id);
             }
-            response.failedToSubmit.push({ resourceId: resource.id, error: error as Error });
+          } catch (error) {
+            response.submissionErrorCount++;
+            if (responseType === ResponseType.VERBOSE && response.submissionErrorCount <= 50) {
+              if (response.submissionErrorCount === 50) {
+                response.failedToSubmit.push({
+                  resourceId: resource.id,
+                  error: new Error('Stopping logging errors after 50'),
+                });
+              }
+              response.failedToSubmit.push({ resourceId: resource.id, error: error as Error });
+            }
           }
         }
+        batchesSent++;
       }
 
       return responseType === ResponseType.CONCISE

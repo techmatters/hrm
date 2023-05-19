@@ -48,9 +48,13 @@ export const configureService = ({
 
 type InternalResourceServiceCreationOptions = {
   webServer: ReturnType<typeof express>;
+  reindexDbBatchSize?: number;
 };
 
-export const configureInternalService = ({ webServer }: InternalResourceServiceCreationOptions) => {
+export const configureInternalService = ({
+  webServer,
+  reindexDbBatchSize = 1000,
+}: InternalResourceServiceCreationOptions) => {
   webServer.get('/', (req, res) => {
     res.json({
       Message: 'Resources internal service is up and running!',
@@ -65,7 +69,7 @@ export const configureInternalService = ({ webServer }: InternalResourceServiceC
   webServer.use(
     '/v0/resources/admin',
     adminAuthorizationMiddleware('SEARCH_REINDEXER'),
-    adminApiV0(),
+    adminApiV0({ reindexDbBatchSize }),
   );
   return webServer;
 };

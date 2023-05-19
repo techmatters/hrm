@@ -19,6 +19,7 @@ import resourceRoutes from './resource/resourceRoutesV0';
 import { CloudSearchConfig } from './config/cloud-search';
 import importRoutes from './import/importRoutesV0';
 import adminSearchRoutes from './admin/adminSearchRoutesV0';
+import { AdminSearchServiceConfiguration } from './admin/adminSearchService';
 
 export const apiV0 = (cloudSearchConfig: CloudSearchConfig) => {
   const router: IRouter = Router();
@@ -34,9 +35,9 @@ export const internalApiV0 = () => {
   return router;
 };
 
-export const adminApiV0 = () => {
+export const adminApiV0 = (config: AdminSearchServiceConfiguration) => {
   const router: IRouter = Router();
 
-  router.use(adminSearchRoutes());
+  router.use(adminSearchRoutes(config));
   return router;
 };

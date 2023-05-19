@@ -15,11 +15,15 @@
  */
 
 import { IRouter, Router } from 'express';
-import newAdminSearchService, { ResponseType, SearchReindexParams } from './adminSearchService';
+import newAdminSearchService, {
+  AdminSearchServiceConfiguration,
+  ResponseType,
+  SearchReindexParams,
+} from './adminSearchService';
 
-const adminSearchRoutes = () => {
+const adminSearchRoutes = (serviceConfig: AdminSearchServiceConfiguration) => {
   const router: IRouter = Router();
-  const adminSearchService = newAdminSearchService();
+  const adminSearchService = newAdminSearchService(serviceConfig);
 
   router.post('/search/reindex', async ({ body, query }, res) => {
     const params: SearchReindexParams = body;
