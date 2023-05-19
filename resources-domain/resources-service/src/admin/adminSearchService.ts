@@ -20,6 +20,7 @@ import { publishSearchIndexJob } from '../resource-jobs/client-sqs';
 export type SearchReindexParams = {
   resourceIds?: string[];
   lastUpdatedFrom?: string;
+  lastUpdatedTo?: string;
   accountSid?: AccountSID;
 };
 
@@ -44,11 +45,7 @@ const newAdminSearchService = () => {
       params: SearchReindexParams,
       responseType: ResponseType,
     ): Promise<ConciseSearchReindexResult | VerboseSearchReindexResult> => {
-      const { lastUpdatedFrom, accountSid } = params;
-      const resourcesToIndex = await getResourcesByUpdatedDateForReindexing({
-        lastUpdatedFrom,
-        accountSid,
-      });
+      const resourcesToIndex = await getResourcesByUpdatedDateForReindexing(params);
 
       console.log('resources found to index', resourcesToIndex.length);
 

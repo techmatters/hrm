@@ -16,35 +16,39 @@
 
 import { AccountSID, FlatResource } from '@tech-matters/types';
 import { db, pgp } from '../connection-pool';
-import { SELECT_RESOURCE_BY_LASTUPDATED } from './sql/adminSearchSql';
+import { generateSelectResourcesForReindexSql } from './sql/adminSearchSql';
 
 export const getResourcesByUpdatedDateForReindexing = async ({
   lastUpdatedFrom,
   lastUpdatedTo,
   accountSid,
+  resourceIds,
   start = 0,
   limit = 1000,
 }: {
   lastUpdatedFrom?: string;
   lastUpdatedTo?: string;
   accountSid?: AccountSID;
+  resourceIds?: string[];
   start?: number;
   limit?: number;
 }): Promise<FlatResource[]> => {
   console.log(
-    pgp.as.format(SELECT_RESOURCE_BY_LASTUPDATED, {
+    pgp.as.format(generateSelectResourcesForReindexSql(Boolean(resourceIds)), {
       lastUpdatedFrom,
       lastUpdatedTo,
       accountSid,
+      resourceIds,
       start,
       limit,
     }),
   );
   return db.task(async tx => {
-    return tx.manyOrNone(SELECT_RESOURCE_BY_LASTUPDATED, {
+    return tx.manyOrNone(generateSelectResourcesForReindexSql(Boolean(resourceIds)), {
       lastUpdatedFrom,
       lastUpdatedTo,
       accountSid,
+      resourceIds,
       start,
       limit,
     });

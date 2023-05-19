@@ -16,8 +16,14 @@
 
 import { SELECT_RESOURCES } from '../../resource/sql/resourceGetSql';
 
-export const SELECT_RESOURCE_BY_LASTUPDATED = `${SELECT_RESOURCES}
-WHERE ($<accountSid> IS NULL OR r."accountSid" = $<accountSid>) AND r."lastUpdated" >= $<lastUpdatedFrom> AND ($<lastUpdatedTo> IS NULL OR r."lastUpdated" <= $<lastUpdatedTo>)
+export const generateSelectResourcesForReindexSql = (
+  resourceIdsSpecified: boolean,
+) => `${SELECT_RESOURCES}
+WHERE 
+  ($<accountSid> IS NULL OR r."accountSid" = $<accountSid>) 
+  AND ($<lastUpdatedFrom> IS NULL OR r."lastUpdated" >= $<lastUpdatedFrom>)
+  AND ($<lastUpdatedTo> IS NULL OR r."lastUpdated" <= $<lastUpdatedTo>)
+  ${resourceIdsSpecified ? 'AND r."id" IN ($<resourceIds:csv>)' : ''}
 ORDER BY r."lastUpdated", r."accountSid", r."id"
 LIMIT $<limit>
 OFFSET $<start>

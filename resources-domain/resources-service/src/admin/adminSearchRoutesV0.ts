@@ -15,13 +15,20 @@
  */
 
 import { IRouter, Router } from 'express';
-import newAdminSearchService, { ResponseType } from './adminSearchService';
+import newAdminSearchService, { ResponseType, SearchReindexParams } from './adminSearchService';
 
 const adminSearchRoutes = () => {
   const router: IRouter = Router();
   const adminSearchService = newAdminSearchService();
 
   router.post('/search/reindex', async ({ body, query }, res) => {
+    const params: SearchReindexParams = body;
+    if (params.resourceIds && !params.accountSid) {
+      res.status(400).json({
+        message: 'accountSid must be specified if resourceIds are specified',
+      });
+      return;
+    }
     const result = await adminSearchService.reindex(
       body,
       query.responseType === 'verbose' ? ResponseType.VERBOSE : ResponseType.CONCISE,
