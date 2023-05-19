@@ -47,8 +47,8 @@ const mergeWithCleanResource = (
   },
 });
 
-describe('transformExternalResourceToApiResource - dynamic captures', () => {
-  test('Dynamic capture only - captures all the keys', async () => {
+describe('Dynamic captures', () => {
+  test('Mapping an attribute with dynamic capture only - should captures all the keys', async () => {
     const resource = {
       attribute: {
         key1: 'value 1',
@@ -87,7 +87,7 @@ describe('transformExternalResourceToApiResource - dynamic captures', () => {
     expect(result).toMatchObject(expected);
   });
 
-  test('Dynamic capture and static mapping - captures only the non-static keys', async () => {
+  test('Mapping an attribute with dynamica and static capture - should capture only the non-static keys', async () => {
     const resource = {
       attribute: {
         another: true,
@@ -136,7 +136,7 @@ describe('transformExternalResourceToApiResource - dynamic captures', () => {
   });
 });
 
-describe('transformExternalResourceToApiResource - Simple mapping, flat structure', () => {
+describe('Simple mappings with flat structure', () => {
   const testCases: {
     description: string;
     mapping: MappingNode;
@@ -146,7 +146,7 @@ describe('transformExternalResourceToApiResource - Simple mapping, flat structur
     // Base case
     {
       description:
-        'Node contains an empty value when we expected something to map, stop recursing (flat)',
+        'when node contains empty value and is expecteded something to map,  should stop recursing',
       mapping: {
         attribute: attributeMapping('ResourceBooleanAttributes', 'booleanAttribute'),
       },
@@ -155,7 +155,8 @@ describe('transformExternalResourceToApiResource - Simple mapping, flat structur
     },
     // Top level resource
     {
-      description: 'resourceFieldMapping on id, name and updatedAt',
+      description:
+        'when mapping resourceFieldMapping on id, name and updatedAt, should add those as top level properties of resource',
       mapping: {
         khpReferenceNumber: resourceFieldMapping('id'),
         name: resourceFieldMapping('name', ctx => ctx.currentValue.en),
@@ -176,7 +177,8 @@ describe('transformExternalResourceToApiResource - Simple mapping, flat structur
     },
     // ResourceBooleanAttributes
     {
-      description: 'ResourceBooleanAttributes - no info',
+      description:
+        'when mapping ResourceBooleanAttributes without info property - should add ResourceBooleanAttributes record with null info',
       mapping: {
         attribute: attributeMapping('ResourceBooleanAttributes', 'booleanAttribute'),
       },
@@ -197,7 +199,8 @@ describe('transformExternalResourceToApiResource - Simple mapping, flat structur
         }),
     },
     {
-      description: 'ResourceBooleanAttributes - with info',
+      description:
+        'when mapping ResourceBooleanAttributes with info property - should add ResourceBooleanAttributes record with populated info',
       mapping: {
         attribute: attributeMapping('ResourceBooleanAttributes', 'booleanAttribute', {
           info: ctx => ({ attribute: ctx.currentValue }),
@@ -221,7 +224,8 @@ describe('transformExternalResourceToApiResource - Simple mapping, flat structur
     },
     // ResourceStringAttributes
     {
-      description: 'ResourceStringAttributes - no info',
+      description:
+        'when mapping ResourceStringAttributes without info property - should add ResourceStringAttributes record with null info',
       mapping: {
         attribute: attributeMapping('ResourceStringAttributes', 'stringAttribute'),
       },
@@ -243,7 +247,8 @@ describe('transformExternalResourceToApiResource - Simple mapping, flat structur
         }),
     },
     {
-      description: 'ResourceStringAttributes - with info',
+      description:
+        'when mapping ResourceStringAttributes with info property - should add ResourceStringAttributes record with populated info',
       mapping: {
         attribute: attributeMapping('ResourceStringAttributes', 'stringAttribute', {
           info: ctx => ({ attribute: ctx.currentValue }),
@@ -268,7 +273,8 @@ describe('transformExternalResourceToApiResource - Simple mapping, flat structur
     },
     // Translatable ResourceStringAttributes
     {
-      description: 'TranslatableAttributeMapping - no info',
+      description:
+        'when mapping Translatable ResourceStringAttributes without info property - should add Translatable ResourceStringAttributes record with null info',
       mapping: {
         attribute: {
           children: {
@@ -294,7 +300,8 @@ describe('transformExternalResourceToApiResource - Simple mapping, flat structur
         }),
     },
     {
-      description: 'TranslatableAttributeMapping - with info',
+      description:
+        'when mapping Translatable ResourceStringAttributes with info property - should add Translatable ResourceStringAttributes record with populated info',
       mapping: {
         attribute: {
           children: {
@@ -322,7 +329,8 @@ describe('transformExternalResourceToApiResource - Simple mapping, flat structur
     },
     // ResourceNumberAttributes
     {
-      description: 'ResourceNumberAttributes - no info',
+      description:
+        'when mapping ResourceNumberAttributes without info property - should add ResourceNumberAttributes record with null info',
       mapping: {
         attribute: attributeMapping('ResourceNumberAttributes', 'numberAttribute'),
       },
@@ -343,7 +351,8 @@ describe('transformExternalResourceToApiResource - Simple mapping, flat structur
         }),
     },
     {
-      description: 'ResourceNumberAttributes - with info',
+      description:
+        'when mapping ResourceNumberAttributes with info property - should add ResourceNumberAttributes record with populated info',
       mapping: {
         attribute: attributeMapping('ResourceNumberAttributes', 'numberAttribute', {
           info: ctx => ({ attribute: ctx.currentValue }),
@@ -367,7 +376,8 @@ describe('transformExternalResourceToApiResource - Simple mapping, flat structur
     },
     // ResourceDateTimeAttributes
     {
-      description: 'ResourceDateTimeAttributes - no info',
+      description:
+        'when mapping ResourceDateTimeAttributes without info property - should add ResourceDateTimeAttributes record with null info',
       mapping: {
         attribute: attributeMapping('ResourceDateTimeAttributes', 'dateAttribute'),
       },
@@ -388,7 +398,8 @@ describe('transformExternalResourceToApiResource - Simple mapping, flat structur
         }),
     },
     {
-      description: 'ResourceDateTimeAttributes - with info',
+      description:
+        'when mapping ResourceDateTimeAttributes with info property - should add ResourceDateTimeAttributes record with populated info',
       mapping: {
         attribute: attributeMapping('ResourceDateTimeAttributes', 'dateAttribute', {
           info: ctx => ({ attribute: ctx.currentValue }),
@@ -412,7 +423,8 @@ describe('transformExternalResourceToApiResource - Simple mapping, flat structur
     },
     // ResourceReferenceStringAttributes
     {
-      description: 'ResourceReferenceStringAttributes - no info',
+      description:
+        'when mapping ResourceReferenceStringAttributes - should add ResourceReferenceStringAttributes record',
       mapping: {
         attribute: referenceAttributeMapping('referenceAttribute', 'some-list', {
           value: ctx => ctx.currentValue.id,
@@ -444,7 +456,7 @@ describe('transformExternalResourceToApiResource - Simple mapping, flat structur
   });
 });
 
-describe('transformExternalResourceToApiResource - More mapping, nested structure', () => {
+describe('Simple mapping, nested structure', () => {
   const testCases: {
     description: string;
     mapping: MappingNode;
@@ -467,7 +479,8 @@ describe('transformExternalResourceToApiResource - More mapping, nested structur
     },
     // Top level resource
     {
-      description: 'resourceFieldMapping on id, name and updatedAt',
+      description:
+        'when mapping resourceFieldMapping on id, name and updatedAt, should add those as top level properties of resource',
       mapping: {
         importantObject: {
           children: {
@@ -493,7 +506,8 @@ describe('transformExternalResourceToApiResource - More mapping, nested structur
     },
     // ResourceBooleanAttributes
     {
-      description: 'ResourceBooleanAttributes',
+      description:
+        'when mapping ResourceBooleanAttributes without info property - should add ResourceBooleanAttributes records with null info',
       mapping: {
         booleans: {
           children: {
@@ -527,7 +541,8 @@ describe('transformExternalResourceToApiResource - More mapping, nested structur
     },
     // ResourceStringAttributes
     {
-      description: 'ResourceStringAttributes',
+      description:
+        'when mapping ResourceStringAttributes without info property - should add ResourceStringAttributes records with null info',
       mapping: {
         strings: {
           children: {
@@ -563,7 +578,8 @@ describe('transformExternalResourceToApiResource - More mapping, nested structur
     },
     // Translatable ResourceStringAttributes
     {
-      description: 'TranslatableAttributeMapping',
+      description:
+        'when mapping Translatable ResourceStringAttributes without info property - should add Translatable ResourceStringAttributes records with null info',
       mapping: {
         strings: {
           children: {
@@ -610,7 +626,8 @@ describe('transformExternalResourceToApiResource - More mapping, nested structur
     },
     // ResourceNumberAttributes
     {
-      description: 'ResourceNumberAttributes',
+      description:
+        'when mapping ResourceNumberAttributes without info property - should add ResourceNumberAttributes records with null info',
       mapping: {
         numbers: {
           children: {
@@ -644,7 +661,8 @@ describe('transformExternalResourceToApiResource - More mapping, nested structur
     },
     // ResourceDateTimeAttributes
     {
-      description: 'ResourceDateTimeAttributes',
+      description:
+        'when mapping ResourceDateTimeAttributes without info property - should add ResourceDateTimeAttributes records with null info',
       mapping: {
         dates: {
           children: {
@@ -678,7 +696,8 @@ describe('transformExternalResourceToApiResource - More mapping, nested structur
     },
     // ResourceReferenceStringAttributes
     {
-      description: 'ResourceReferenceStringAttributes',
+      description:
+        'when mapping ResourceReferenceStringAttributes without info property - should add ResourceReferenceStringAttributes records with null info',
       mapping: {
         references: {
           children: {
@@ -722,7 +741,7 @@ describe('transformExternalResourceToApiResource - More mapping, nested structur
     expect(result).toMatchObject(expected);
   });
 
-  test('All together now! 🎵', async () => {
+  test('when mapping all kinds of attributes - should add each kind of record under corresponding record.attributes key', async () => {
     const resource = {
       importantObject: {
         id: 'resource-1',
