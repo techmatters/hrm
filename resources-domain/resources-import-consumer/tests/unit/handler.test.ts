@@ -43,6 +43,7 @@ const generateImportResource = (
   lastUpdated: Date,
   additionalAttributes: Partial<FlatResource> = {},
 ): FlatResource => ({
+  accountSid,
   id: `RESOURCE_${resourceIdSuffix}`,
   name: `Resource ${resourceIdSuffix}`,
   lastUpdated: lastUpdated.toISOString(),
