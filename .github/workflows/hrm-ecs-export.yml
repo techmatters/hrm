@@ -74,6 +74,8 @@ jobs:
         run: |
           task_definition=$(aws ecs describe-task-definition --task-definition ${{ env.ECR_REPOSITORY }}-task --query taskDefinition.taskDefinitionArn)
           echo task_definition=$task_definition >> $GITHUB_ENV
+          echo subnets=$task_definition | jq -r '.networkMode == "awsvpc" | if . then .networkConfiguration.awsvpcConfiguration.subnets | join(",") else empty end' >> $GITHUB_ENV
+          echo = security_group=$task_definition | jq -r '.networkMode == "awsvpc" | if . then .networkConfiguration.awsvpcConfiguration.securityGroups | join(",") else empty end' >> $GITHUB_ENV
       
       # Command to trigger the execution of the ECS task. 
       - name: Trigger ECS Task
@@ -81,8 +83,9 @@ jobs:
         run: |
           aws ecs run-task \
             --cluster ${{ env.ECR_REPOSITORY }}-task \
+            --launch-type FARGATE \
             --task-definition ${{ env.task_definition }} \
-            --network-configuration "awsvpcConfiguration={subnets=['<your-subnet-id>'],securityGroups=['<your-security-group-id>'],assignPublicIp='ENABLED'}" \
+            --network-configuration "awsvpcConfiguration={subnets=['env.subnets'],securityGroups=['env.security_group'],assignPublicIp='ENABLED'}" \
             --overrides '{
               "containerOverrides": [
                 {
