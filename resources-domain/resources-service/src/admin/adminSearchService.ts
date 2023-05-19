@@ -13,9 +13,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { getResourcesByUpdatedDateForReindexing } from './adminSearchDataAccess';
+import {
+  getResourcesByUpdatedDateForReindexing,
+  streamResourcesForReindexing,
+} from './adminSearchDataAccess';
 import { AccountSID } from '@tech-matters/types';
 import { publishSearchIndexJob } from '../resource-jobs/client-sqs';
+import ReadableStream = NodeJS.ReadableStream;
+import { Writable } from 'stream';
 
 export type SearchReindexParams = {
   resourceIds?: string[];
@@ -45,7 +50,7 @@ export type AdminSearchServiceConfiguration = {
 
 const newAdminSearchService = ({ reindexDbBatchSize }: AdminSearchServiceConfiguration) => {
   return {
-    reindex: async (
+    reindexBatches: async (
       params: SearchReindexParams,
       responseType: ResponseType,
     ): Promise<ConciseSearchReindexResult | VerboseSearchReindexResult> => {
@@ -97,6 +102,68 @@ const newAdminSearchService = ({ reindexDbBatchSize }: AdminSearchServiceConfigu
             submissionErrorCount: response.submissionErrorCount,
           }
         : response;
+    },
+
+    reindexStream: async (
+      params: SearchReindexParams,
+      responseType: ResponseType,
+    ): Promise<ConciseSearchReindexResult | VerboseSearchReindexResult> => {
+      let response: VerboseSearchReindexResult = {
+        successfulSubmissionCount: 0,
+        submissionErrorCount: 0,
+        successfullySubmitted: [],
+        failedToSubmit: [],
+      };
+      const resourcesStream: ReadableStream = await streamResourcesForReindexing(params);
+
+      return new Promise(resolve => {
+        resourcesStream.pipe(
+          new Writable({
+            objectMode: true,
+            highWaterMark: reindexDbBatchSize,
+            write: (resource, _, callback) => {
+              publishSearchIndexJob(resource.accountSid, resource)
+                .then(() => {
+                  response.successfulSubmissionCount++;
+                  if (responseType === ResponseType.VERBOSE) {
+                    response.successfullySubmitted.push(resource.id);
+                  }
+                })
+                .catch(error => {
+                  response.submissionErrorCount++;
+                  if (
+                    responseType === ResponseType.VERBOSE &&
+                    response.submissionErrorCount <= 50
+                  ) {
+                    if (response.submissionErrorCount === 50) {
+                      response.failedToSubmit.push({
+                        resourceId: resource.id,
+                        error: new Error('Stopping logging errors after 50'),
+                      });
+                    }
+                    response.failedToSubmit.push({
+                      resourceId: resource.id,
+                      error: error as Error,
+                    });
+                  }
+                })
+                .finally(() => {
+                  callback();
+                });
+            },
+            destroy: () => {
+              resolve(
+                responseType === ResponseType.CONCISE
+                  ? {
+                      successfulSubmissionCount: response.successfulSubmissionCount,
+                      submissionErrorCount: response.submissionErrorCount,
+                    }
+                  : response,
+              );
+            },
+          }),
+        );
+      });
     },
   };
 };

@@ -17,6 +17,8 @@
 import { AccountSID, FlatResource } from '@tech-matters/types';
 import { db, pgp } from '../connection-pool';
 import { generateSelectResourcesForReindexSql } from './sql/adminSearchSql';
+import QueryStream from 'pg-query-stream';
+import ReadableStream = NodeJS.ReadableStream;
 
 export const getResourcesByUpdatedDateForReindexing = async ({
   lastUpdatedFrom,
@@ -33,16 +35,6 @@ export const getResourcesByUpdatedDateForReindexing = async ({
   start?: number;
   limit?: number;
 }): Promise<FlatResource[]> => {
-  console.log(
-    pgp.as.format(generateSelectResourcesForReindexSql(Boolean(resourceIds)), {
-      lastUpdatedFrom,
-      lastUpdatedTo,
-      accountSid,
-      resourceIds,
-      start,
-      limit,
-    }),
-  );
   return db.task(async tx => {
     return tx.manyOrNone(generateSelectResourcesForReindexSql(Boolean(resourceIds)), {
       lastUpdatedFrom,
@@ -51,6 +43,41 @@ export const getResourcesByUpdatedDateForReindexing = async ({
       resourceIds,
       start,
       limit,
+    });
+  });
+};
+
+export const streamResourcesForReindexing = async ({
+  lastUpdatedFrom,
+  lastUpdatedTo,
+  accountSid,
+  resourceIds,
+  start = 0,
+  limit = 1000,
+}: {
+  lastUpdatedFrom?: string;
+  lastUpdatedTo?: string;
+  accountSid?: AccountSID;
+  resourceIds?: string[];
+  start?: number;
+  limit?: number;
+}): Promise<ReadableStream> => {
+  const qs = new QueryStream(
+    pgp.as.format(generateSelectResourcesForReindexSql(Boolean(resourceIds)), {
+      lastUpdatedFrom,
+      lastUpdatedTo,
+      accountSid,
+      resourceIds,
+      start,
+      limit,
+    }),
+    [],
+    { batchSize: 4 },
+  );
+
+  return new Promise(resolve => {
+    db.stream(qs, resultStream => {
+      resolve(resultStream);
     });
   });
 };
