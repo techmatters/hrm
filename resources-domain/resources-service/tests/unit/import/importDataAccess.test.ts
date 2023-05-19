@@ -19,7 +19,7 @@ import { subHours } from 'date-fns';
 import { mockConnection, mockTransaction } from '../mock-db';
 import { updateImportProgress, upsertImportedResource } from '../../../src/import/importDataAccess';
 import { getSqlStatement } from '@tech-matters/testing';
-import { BLANK_ATTRIBUTES } from '../mockResources';
+import { BLANK_ATTRIBUTES } from '../../mockResources';
 
 let conn: pgPromise.ITask<unknown>;
 

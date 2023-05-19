@@ -60,6 +60,7 @@ const importService = () => {
               };
               throw err;
             }
+            console.log(`Upserting ${accountSid}/${resource.id}`);
             const result = await upsert(accountSid, resource);
             if (!result.success) {
               throw result.error;

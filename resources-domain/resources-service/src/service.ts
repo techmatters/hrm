@@ -62,6 +62,10 @@ export const configureInternalService = ({ webServer }: InternalResourceServiceC
     staticKeyAuthorizationMiddleware,
     internalApiV0(),
   );
-  webServer.use('v0/admin', adminAuthorizationMiddleware('SEARCH_REINDEXER'), adminApiV0());
+  webServer.use(
+    '/v0/resources/admin',
+    adminAuthorizationMiddleware('SEARCH_REINDEXER'),
+    adminApiV0(),
+  );
   return webServer;
 };

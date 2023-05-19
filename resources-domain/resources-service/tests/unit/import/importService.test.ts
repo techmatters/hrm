@@ -19,7 +19,7 @@ import { mockConnection, mockTransaction } from '../mock-db';
 import { updateImportProgress, upsertImportedResource } from '../../../src/import/importDataAccess';
 import { AccountSID, FlatResource, ImportBatch, ImportProgress } from '@tech-matters/types';
 import importService from '../../../src/import/importService';
-import { BLANK_ATTRIBUTES } from '../mockResources';
+import { BLANK_ATTRIBUTES } from '../../mockResources';
 jest.mock('../../../src/import/importDataAccess', () => ({
   updateImportProgress: jest.fn(),
   upsertImportedResource: jest.fn(),

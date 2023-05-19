@@ -73,3 +73,8 @@ export const internalHeaders = {
   'Content-Type': 'application/json',
   Authorization: `Basic BBC`,
 };
+
+export const adminHeaders = {
+  'Content-Type': 'application/json',
+  Authorization: `Basic Fast`,
+};

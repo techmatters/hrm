@@ -25,7 +25,7 @@ import searchClient, {
 import each from 'jest-each';
 import { mapSearchParametersToKhpTermsAndFilters } from '../../../src/resource/search/khp-resource-search-mapping';
 import { SearchParameters, TermsAndFilters } from '../../../src/resource/search/search-types';
-import { BLANK_ATTRIBUTES } from '../mockResources';
+import { BLANK_ATTRIBUTES } from '../../mockResources';
 import { FlatResource } from '@tech-matters/types';
 
 jest.mock('../../../src/resource/resourceDataAccess', () => ({

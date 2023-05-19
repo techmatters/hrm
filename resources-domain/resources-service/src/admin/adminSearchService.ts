@@ -19,7 +19,7 @@ import { publishSearchIndexJob } from '../resource-jobs/client-sqs';
 
 export type SearchReindexParams = {
   resourceIds?: string[];
-  lastUpdatedFrom?: Date;
+  lastUpdatedFrom?: string;
   accountSid?: AccountSID;
 };
 
@@ -50,6 +50,8 @@ const newAdminSearchService = () => {
         accountSid,
       });
 
+      console.log('resources found to index', resourcesToIndex.length);
+
       let response: VerboseSearchReindexResult = {
         successfulSubmissionCount: 0,
         submissionErrorCount: 0,
@@ -57,22 +59,26 @@ const newAdminSearchService = () => {
         failedToSubmit: [],
       };
 
-      await Promise.all(
-        resourcesToIndex.map(async resource => {
-          try {
-            await publishSearchIndexJob(resource.accountSid, resource);
-            response.successfulSubmissionCount++;
-            if (responseType === ResponseType.VERBOSE) {
-              response.successfullySubmitted.push(resource.id);
-            }
-          } catch (error) {
-            response.submissionErrorCount++;
-            if (responseType === ResponseType.VERBOSE) {
-              response.failedToSubmit.push({ resourceId: resource.id, error: error as Error });
-            }
+      for (const resource of resourcesToIndex) {
+        try {
+          await publishSearchIndexJob(resource.accountSid, resource);
+          response.successfulSubmissionCount++;
+          if (responseType === ResponseType.VERBOSE) {
+            response.successfullySubmitted.push(resource.id);
           }
-        }),
-      );
+        } catch (error) {
+          response.submissionErrorCount++;
+          if (responseType === ResponseType.VERBOSE && response.submissionErrorCount <= 50) {
+            if (response.submissionErrorCount === 50) {
+              response.failedToSubmit.push({
+                resourceId: resource.id,
+                error: new Error('Stopping logging errors after 50'),
+              });
+            }
+            response.failedToSubmit.push({ resourceId: resource.id, error: error as Error });
+          }
+        }
+      }
 
       return responseType === ResponseType.CONCISE
         ? {

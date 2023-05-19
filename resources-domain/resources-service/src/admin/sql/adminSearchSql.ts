@@ -16,9 +16,9 @@
 
 import { SELECT_RESOURCES } from '../../resource/sql/resourceGetSql';
 
-export const SELECT_RESOURCE_BY_UPDATEDAT = `${SELECT_RESOURCES}
-WHERE ($<accountSid> IS NULL OR r."accountSid" = $<accountSid>) AND r."updatedAt" >= $<lastUpdatedFrom> AND ($<lastUpdatedTo> IS NULL OR r."updatedAt" <= $<lastUpdatedTo>)
-ORDER BY r."updatedAt"
+export const SELECT_RESOURCE_BY_LASTUPDATED = `${SELECT_RESOURCES}
+WHERE ($<accountSid> IS NULL OR r."accountSid" = $<accountSid>) AND r."lastUpdated" >= $<lastUpdatedFrom> AND ($<lastUpdatedTo> IS NULL OR r."lastUpdated" <= $<lastUpdatedTo>)
+ORDER BY r."lastUpdated", r."accountSid", r."id"
 LIMIT $<limit>
 OFFSET $<start>
 `;

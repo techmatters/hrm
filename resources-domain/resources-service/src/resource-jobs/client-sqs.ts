@@ -28,7 +28,14 @@ let sqs: SQS;
 
 export const getSqsClient = () => {
   if (!sqs) {
-    sqs = new SQS();
+    if (process.env.LOCAL_SQS_PORT) {
+      // For testing only
+      sqs = new SQS({
+        endpoint: `http://localhost:${process.env.LOCAL_SQS_PORT}`,
+      });
+    } else {
+      sqs = new SQS();
+    }
   }
   return sqs;
 };
@@ -46,7 +53,7 @@ export const publishToResourcesJob = async ({ params, retryCount = 0, messageGro
   //TODO: more robust error handling/messaging
   try {
     const QueueUrl = await getSsmParameter(
-      getJobQueueUrl(params.accountSid, 'contact'),
+      getJobQueueUrl(params.accountSid, params.jobType),
       86400000,
     );
 
