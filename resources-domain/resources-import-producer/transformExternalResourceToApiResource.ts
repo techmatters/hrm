@@ -15,7 +15,7 @@
  */
 
 // eslint-disable-next-line prettier/prettier
-import type { FlatResource, InlineAttributeProperty } from '@tech-matters/types';
+import type { AccountSID, FlatResource, InlineAttributeProperty } from '@tech-matters/types';
 import { KhpApiResource } from '.';
 import {
   FieldMappingContext,
@@ -192,9 +192,11 @@ const mapNode = (
 
 export const transformExternalResourceToApiResource = <T>(
   resourceMapping: MappingNode,
+  accountSid: AccountSID,
   khpResource: T,
 ): FlatResource => {
   const resource: FlatResource = {
+    accountSid,
     id: '',
     lastUpdated: '',
     name: '',
@@ -214,6 +216,7 @@ export const transformExternalResourceToApiResource = <T>(
 };
 
 export const transformKhpResourceToApiResource = (
+  accountSid: AccountSID,
   khpResource: KhpApiResource,
 ): FlatResource =>
-transformExternalResourceToApiResource(mappings.khp.KHP_MAPPING_NODE, khpResource);
+transformExternalResourceToApiResource(mappings.khp.KHP_MAPPING_NODE, accountSid, khpResource);
