@@ -21,6 +21,7 @@ import { AccountSID } from '@tech-matters/types';
 import { publishSearchIndexJob } from '../resource-jobs/client-sqs';
 import ReadableStream = NodeJS.ReadableStream;
 import { Writable } from 'stream';
+import { pipeline } from 'stream/promises';
 
 export type SearchReindexParams = {
   resourceIds?: string[];
@@ -118,50 +119,49 @@ const newAdminSearchService = ({ reindexDbBatchSize }: AdminSearchServiceConfigu
         ...params,
         batchSize: reindexDbBatchSize,
       });
+      await pipeline(
+        resourcesStream,
+        new Writable({
+          objectMode: true,
+          highWaterMark: reindexDbBatchSize,
+          write: async (resource, _, callback) => {
+            try {
+              await publishSearchIndexJob(resource.accountSid, resource);
+              response.successfulSubmissionCount++;
+              if (responseType === ResponseType.VERBOSE) {
+                response.successfullySubmitted.push(resource.id);
+              }
+            } catch (error) {
+              response.submissionErrorCount++;
 
-      return new Promise(resolve => {
-        resourcesStream.pipe(
-          new Writable({
-            objectMode: true,
-            highWaterMark: reindexDbBatchSize,
-            write: async (resource, _, callback) => {
-              try {
-                await publishSearchIndexJob(resource.accountSid, resource);
-                response.successfulSubmissionCount++;
-                if (responseType === ResponseType.VERBOSE) {
-                  response.successfullySubmitted.push(resource.id);
-                }
-              } catch (error) {
-                response.submissionErrorCount++;
-                if (responseType === ResponseType.VERBOSE && response.submissionErrorCount <= 50) {
-                  if (response.submissionErrorCount === 50) {
-                    response.failedToSubmit.push({
-                      resourceId: resource.id,
-                      error: new Error('Stopping logging errors after 50'),
-                    });
-                  }
+              // We could possibly double down on the streaming pattern and return the response as a JSON stream
+              // This should probably only be done in a more streaming friendly format like CSV or JSONL
+              // We could return the full content in a CSV if the client specifies an 'text/csv' accept header, or the current version for 'application/json'
+              // But this is is very likely to be a 'YAGNI' feature, so I'm leaving it out for now
+              if (responseType === ResponseType.VERBOSE && response.submissionErrorCount <= 50) {
+                if (response.submissionErrorCount === 50) {
                   response.failedToSubmit.push({
                     resourceId: resource.id,
-                    error: error as Error,
+                    error: new Error('Stopping logging errors after 50'),
                   });
                 }
-              } finally {
-                callback();
+                response.failedToSubmit.push({
+                  resourceId: resource.id,
+                  error: error as Error,
+                });
               }
-            },
-            destroy: () => {
-              resolve(
-                responseType === ResponseType.CONCISE
-                  ? {
-                      successfulSubmissionCount: response.successfulSubmissionCount,
-                      submissionErrorCount: response.submissionErrorCount,
-                    }
-                  : response,
-              );
-            },
-          }),
-        );
-      });
+            } finally {
+              callback();
+            }
+          },
+        }),
+      );
+      return responseType === ResponseType.CONCISE
+        ? {
+            successfulSubmissionCount: response.successfulSubmissionCount,
+            submissionErrorCount: response.submissionErrorCount,
+          }
+        : response;
     },
   };
 };

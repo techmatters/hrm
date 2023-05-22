@@ -73,6 +73,7 @@ export const streamResourcesForReindexing = async ({
     { highWaterMark: batchSize },
   );
 
+  // Expose the readable stream to the caller as a promise for further pipelining
   return new Promise(resolve => {
     db.stream(qs, resultStream => {
       resolve(resultStream);
