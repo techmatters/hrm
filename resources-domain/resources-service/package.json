@@ -38,12 +38,7 @@
     "db:undo-last": "sequelize db:migrate:undo",
     "es:create-index:local": "cross-env AWS_REGION=us-east-1 SSM_ENDPOINT=http://localhost:4566 NODE_ENV=local ELASTICSEARCH_CONFIG_node=http://localhost:9200 tsx ./scripts/elasticsearch/create-index.ts",
     "es:delete-index:local": "cross-env AWS_REGION=us-east-1 SSM_ENDPOINT=http://localhost:4566 NODE_ENV=local ELASTICSEARCH_CONFIG_node=http://localhost:9200 tsx ./scripts/elasticsearch/delete-index.ts",
-    "build-scripts": "tsc --project tsconfig.scripts.json",
-    "import-khp-json": "node ./scripts-dist/scripts/import-khp-resources.js",
-    "build-and-import-khp-json": "npm run build-scripts && npm run import-khp-json",
-    "test:import-khp-json": "cross-env POSTGRES_PORT=5433 RDS_USERNAME=hrm RDS_PASSWORD=postgres RESOURCES_PASSWORD=resources-password run-s -c build-scripts docker:compose:test:up db:create:schema test:service:ci:migrate \"import-khp-json AC_TEST\" docker:compose:test:down",
-    "update-cloudsearch-domain": "node ./scripts-dist/scripts/update-cloudsearch-domain.js",
-    "build-and-update-cloudsearch-domain": "npm run build-scripts && npm run update-cloudsearch-domain"
+    "build-scripts": "tsc --project tsconfig.scripts.json"
   },
   "repository": {
     "type": "git",

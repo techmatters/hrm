@@ -13,34 +13,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { FlatResource } from './Resources';
 
-export type InlineAttributeProperty =
-  | 'stringAttributes'
-  | 'booleanAttributes'
-  | 'numberAttributes'
-  | 'dateTimeAttributes';
+import * as khp from './khpMappings';
 
-export type AttributeProperty = InlineAttributeProperty | 'referenceStringAttributes';
-
-export type AttributeValue<T extends AttributeProperty> = T extends 'booleanAttributes'
-  ? boolean
-  : T extends 'numberAttributes'
-  ? number
-  : string;
-
-export type ImportBatch = {
-  toDate: string;
-  fromDate: string;
-  remaining: number;
-};
-
-export type ImportProgress = ImportBatch & {
-  lastProcessedDate: string;
-  lastProcessedId: string;
-};
-
-export type ImportRequestBody = {
-  importedResources: FlatResource[];
-  batch: ImportBatch;
+export default {
+  khp,
 };
