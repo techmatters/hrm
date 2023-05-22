@@ -16,12 +16,13 @@
 
 // eslint-disable-next-line prettier/prettier
 import type { ScheduledEvent } from 'aws-lambda';
-import type { AccountSID, FlatResource, ImportBatch, ImportProgress } from '@tech-matters/types';
+import type { AccountSID, ImportBatch, ImportProgress } from '@tech-matters/types';
 import sortedIndexBy from 'lodash/sortedIndexBy';
 import parseISO from 'date-fns/parseISO';
 import addMilliseconds from 'date-fns/addMilliseconds';
 import { publishToImportConsumer, ResourceMessage } from './clientSqs';
 import getConfig from './config';
+import { transformKhpResourceToApiResource } from './transformExternalResourceToApiResource';
 
 declare var fetch: typeof import('undici').fetch;
 
@@ -60,27 +61,6 @@ export type KhpApiResource = ({ objectId: string, updatedAt: string, name: { en:
 export type KhpApiResponse = {
   data: KhpApiResource[];
   totalResults: number;
-};
-
-/**
- * Stub implementation of a routine to transform the resources provided by the KHP API to the ImportApiResource format used by the write lambda.
- */
-const transformKhpResourceToApiResource = ({ objectId, name: { en: name }, updatedAt }: KhpApiResource, accountSid: AccountSID): FlatResource => {
-  if (!objectId || !updatedAt) {
-    throw new Error(`Invalid resource provided, missing required parameter: ${JSON.stringify({ objectId, updatedAt })}`);
-  }
-
-  return {
-    id: objectId,
-    accountSid,
-    lastUpdated: updatedAt,
-    name: name ?? 'NAME MISSING',
-    stringAttributes: [],
-      numberAttributes: [],
-      booleanAttributes: [],
-      dateTimeAttributes: [],
-      referenceStringAttributes: [],
-  };
 };
 
 const pullUpdates = (externalApiBaseUrl: URL, externalApiKey: string, externalApiAuthorizationHeader: string) => {
