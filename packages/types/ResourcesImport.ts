@@ -30,7 +30,7 @@ export type AseloInlineResourceAttribute<T extends InlineAttributeTable> = {
 export type AseloTranslatableResourceAttribute = AseloInlineResourceAttribute<
   'ResourceStringAttributes'
 > & {
-  language: string;
+  language: string | null;
 };
 
 export type ImportApiResource = {
@@ -42,7 +42,7 @@ export type ImportApiResource = {
     ResourceReferenceStringAttributes: {
       key: string;
       value: string;
-      language: string;
+      language: string | null;
       list: string;
     }[];
     ResourceBooleanAttributes: AseloInlineResourceAttribute<'ResourceBooleanAttributes'>[];
