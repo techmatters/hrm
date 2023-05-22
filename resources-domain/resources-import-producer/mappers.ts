@@ -16,9 +16,9 @@
 
 // eslint-disable-next-line prettier/prettier
 import type {
-  AttributeTable,
+  AttributeProperty,
   AttributeValue,
-  InlineAttributeTable,
+  InlineAttributeProperty,
 } from '@tech-matters/types';
 import parseISO from 'date-fns/parseISO';
 
@@ -39,57 +39,53 @@ type ValueOrContextConsumerFunc<T> = T | ContextConsumerFunc<T>;
 const isContextConsumerFunc = <T>(
   fun: ValueOrContextConsumerFunc<T>,
 ): fun is ContextConsumerFunc<T> => {
-  if (typeof fun === 'function') {
-    return true;
-  }
-
-  return false;
+  return typeof fun === 'function';
 };
 
 /**
  * Maps the only properties of a resource that belong to the resources table: id and name. Any other property will be mapped into one of the attributes tables.
  */
 export type ResourceFieldMapping = {
-  field: 'id' | 'name' | 'updatedAt';
+  field: 'id' | 'name' | 'lastUpdated';
   valueGenerator: ContextConsumerFunc<any>;
 };
 
 /**
- * Maps a resource attribute to the corresponding AttributeTable.
- * The next types are refinements on this one to specify the context needed to map to the refined AttributeTable
+ * Maps a resource attribute to the corresponding AttributeProperty.
+ * The next types are refinements on this one to specify the context needed to map to the refined AttributeProperty
  */
-// type AttributeMapping<T extends AttributeTable> = {
-type AttributeMapping<T extends AttributeTable> = {
-  table: T;
+// type AttributeMapping<T extends AttributeProperty> = {
+type AttributeMapping<T extends AttributeProperty> = {
+  property: T;
   keyGenerator: ContextConsumerFunc<string>;
   valueGenerator: ContextConsumerFunc<AttributeValue<T>>;
   infoGenerator: ContextConsumerFunc<Record<string, any> | null>;
 };
 
-export type InlineAttributeMapping<T extends InlineAttributeTable> = AttributeMapping<T>;
+export type InlineAttributeMapping<T extends InlineAttributeProperty> = AttributeMapping<T>;
 
-export type TranslatableAttributeMapping = AttributeMapping<'ResourceStringAttributes'> & {
-  languageGenerator: ContextConsumerFunc<string | null>;
+export type TranslatableAttributeMapping = AttributeMapping<'stringAttributes'> & {
+  languageGenerator: ContextConsumerFunc<string>;
 };
 
 export type ReferenceAttributeMapping = Omit<
-  AttributeMapping<'ResourceReferenceStringAttributes'>,
+  AttributeMapping<'referenceStringAttributes'>,
   'infoGenerator'
 > & {
   list: string;
-  languageGenerator: ContextConsumerFunc<string | null>;
+  languageGenerator: ContextConsumerFunc<string>;
 };
 
 export const isResourceFieldMapping = (mapping: any): mapping is ResourceFieldMapping => {
   return mapping && mapping.field;
 };
 
-export const isInlineAttributeMapping = <T extends InlineAttributeTable>(
+export const isInlineAttributeMapping = <T extends InlineAttributeProperty>(
   mapping: any,
 ): mapping is InlineAttributeMapping<T> => {
   return (
     mapping &&
-    mapping.table &&
+    mapping.property &&
     typeof mapping.keyGenerator === 'function' &&
     typeof mapping.valueGenerator === 'function' &&
     !mapping.list
@@ -101,7 +97,7 @@ export const isReferenceAttributeMapping = (
 ): mapping is ReferenceAttributeMapping => {
   return (
     mapping &&
-    mapping.table === 'ResourceReferenceStringAttributes' &&
+    mapping.property === 'referenceStringAttributes' &&
     typeof mapping.keyGenerator === 'function' &&
     typeof mapping.valueGenerator === 'function' &&
     typeof mapping.list === 'string' &&
@@ -114,7 +110,7 @@ export const isTranslatableAttributeMapping = (
 ): mapping is TranslatableAttributeMapping => {
   return (
     typeof mapping?.languageGenerator === 'function' &&
-    isInlineAttributeMapping<'ResourceStringAttributes'>(mapping)
+    isInlineAttributeMapping<'stringAttributes'>(mapping)
   );
 };
 
@@ -125,7 +121,7 @@ export const isTranslatableAttributeMapping = (
 export type MappingNode = {
   [key: string]: (
     | ResourceFieldMapping
-    | AttributeMapping<AttributeTable>
+    | AttributeMapping<AttributeProperty>
     | ReferenceAttributeMapping
     | {}
   ) & {
@@ -144,15 +140,15 @@ export const substitueCaptureTokens = (
 };
 
 export const resourceFieldMapping = (
-  field: 'id' | 'name' | 'updatedAt',
+  field: 'id' | 'name' | 'lastUpdated',
   value?: ContextConsumerFunc<string>, // can we refine this type?
 ): ResourceFieldMapping => ({
   field,
   valueGenerator: value || (context => context.currentValue),
 });
 
-export const attributeMapping = <T extends AttributeTable>(
-  table: T,
+export const attributeMapping = <T extends AttributeProperty>(
+  property: T,
   key: ValueOrContextConsumerFunc<string>,
   {
     value = context => context.currentValue,
@@ -161,14 +157,14 @@ export const attributeMapping = <T extends AttributeTable>(
     value?: ValueOrContextConsumerFunc<AttributeValue<T>>;
     info?: ContextConsumerFunc<Record<string, any> | null>;
   } = {},
-): AttributeMapping<AttributeTable> => ({
-  table,
+): AttributeMapping<AttributeProperty> => ({
+  property,
   keyGenerator: typeof key === 'function' ? key : context => substitueCaptureTokens(key, context),
   valueGenerator:
     typeof value === 'function'
       ? value
       : () =>
-          table === 'ResourceDateTimeAttributes' && value && typeof value === 'string'
+          property === 'dateTimeAttributes' && value && typeof value === 'string'
             ? parseISO(value).toString()
             : value,
   infoGenerator: typeof info === 'function' ? info : () => info,
@@ -183,16 +179,16 @@ export const translatableAttributeMapping = (
   }: {
     value?: ValueOrContextConsumerFunc<string>;
     info?: ContextConsumerFunc<Record<string, any> | null>;
-    language: ValueOrContextConsumerFunc<string | null>;
+    language: ValueOrContextConsumerFunc<string>;
   },
 ): TranslatableAttributeMapping => {
-  const mappingResult = attributeMapping('ResourceStringAttributes', key, {
+  const mappingResult = attributeMapping('stringAttributes', key, {
     value,
     info,
   });
 
   // This case should be impossible but we gotta help TS
-  if (!isInlineAttributeMapping<'ResourceStringAttributes'>(mappingResult)) {
+  if (!isInlineAttributeMapping<'stringAttributes'>(mappingResult)) {
     throw new Error(
       `Panic! mappingResult is not InlineAttributeMapping<ResourceStringAttributes>: ${mappingResult}`,
     );
@@ -208,12 +204,12 @@ export const referenceAttributeMapping = (
   key: ValueOrContextConsumerFunc<string>,
   list: string,
   data: {
-    value: ValueOrContextConsumerFunc<AttributeValue<'ResourceReferenceStringAttributes'>>;
+    value: ValueOrContextConsumerFunc<AttributeValue<'referenceStringAttributes'>>;
     language?: ValueOrContextConsumerFunc<string>;
   },
 ): ReferenceAttributeMapping => {
   const { infoGenerator, ...mappingResult } = attributeMapping(
-    'ResourceReferenceStringAttributes',
+    'referenceStringAttributes',
     key,
     data,
   );
@@ -234,7 +230,7 @@ export const referenceAttributeMapping = (
     };
   }
 
-  const languageGeneratorResult = data.language || null;
+  const languageGeneratorResult = data.language || '';
 
   return {
     ...mapping,

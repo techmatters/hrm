@@ -22,28 +22,21 @@ import {
   referenceAttributeMapping,
   translatableAttributeMapping,
 } from '../../mappers';
-import { ImportApiResource } from '@tech-matters/types';
+import { FlatResource } from '@tech-matters/types';
 import each from 'jest-each';
 
 const startedDate = Date.now().toString();
 
-const mergeWithCleanResource = (
-  partialResource: Omit<Partial<ImportApiResource>, 'attributes'> & {
-    attributes?: Partial<ImportApiResource['attributes']>;
-  } = {},
-): ImportApiResource => ({
+const mergeWithCleanResource = (partialResource: Partial<FlatResource> = {}): FlatResource => ({
   ...{
     id: partialResource.id || '',
-    updatedAt: partialResource.updatedAt || '',
+    lastUpdated: partialResource.lastUpdated || '',
     name: partialResource.name || '',
-    attributes: {
-      ResourceStringAttributes: partialResource.attributes?.ResourceStringAttributes || [],
-      ResourceNumberAttributes: partialResource.attributes?.ResourceNumberAttributes || [],
-      ResourceBooleanAttributes: partialResource.attributes?.ResourceBooleanAttributes || [],
-      ResourceDateTimeAttributes: partialResource.attributes?.ResourceDateTimeAttributes || [],
-      ResourceReferenceStringAttributes:
-        partialResource.attributes?.ResourceReferenceStringAttributes || [],
-    },
+    stringAttributes: partialResource.stringAttributes || [],
+    numberAttributes: partialResource.numberAttributes || [],
+    booleanAttributes: partialResource.booleanAttributes || [],
+    dateTimeAttributes: partialResource.dateTimeAttributes || [],
+    referenceStringAttributes: partialResource.referenceStringAttributes || [],
   },
 });
 
@@ -59,28 +52,26 @@ describe('Dynamic captures', () => {
     const mapping: MappingNode = {
       attribute: {
         children: {
-          '{key}': attributeMapping('ResourceStringAttributes', '{key}'),
+          '{key}': attributeMapping('stringAttributes', '{key}'),
         },
       },
     };
 
-    const expected: ImportApiResource = mergeWithCleanResource({
-      attributes: {
-        ResourceStringAttributes: [
-          {
-            key: 'key1',
-            value: 'value 1',
-            info: null,
-            language: null,
-          },
-          {
-            key: 'key2',
-            value: 'value 2',
-            info: null,
-            language: null,
-          },
-        ],
-      },
+    const expected: FlatResource = mergeWithCleanResource({
+      stringAttributes: [
+        {
+          key: 'key1',
+          value: 'value 1',
+          info: null,
+          language: '',
+        },
+        {
+          key: 'key2',
+          value: 'value 2',
+          info: null,
+          language: '',
+        },
+      ],
     });
 
     const result = transformExternalResourceToApiResource(mapping, resource);
@@ -99,36 +90,34 @@ describe('Dynamic captures', () => {
     const mapping: MappingNode = {
       attribute: {
         children: {
-          another: attributeMapping('ResourceBooleanAttributes', 'another'),
-          '{key}': attributeMapping('ResourceStringAttributes', '{key}'),
+          another: attributeMapping('booleanAttributes', 'another'),
+          '{key}': attributeMapping('stringAttributes', '{key}'),
         },
       },
     };
 
-    const expected: ImportApiResource = mergeWithCleanResource({
-      attributes: {
-        ResourceStringAttributes: [
-          {
-            key: 'key1',
-            value: 'value 1',
-            info: null,
-            language: null,
-          },
-          {
-            key: 'key2',
-            value: 'value 2',
-            info: null,
-            language: null,
-          },
-        ],
-        ResourceBooleanAttributes: [
-          {
-            key: 'another',
-            value: true,
-            info: null,
-          },
-        ],
-      },
+    const expected: FlatResource = mergeWithCleanResource({
+      stringAttributes: [
+        {
+          key: 'key1',
+          value: 'value 1',
+          info: null,
+          language: '',
+        },
+        {
+          key: 'key2',
+          value: 'value 2',
+          info: null,
+          language: '',
+        },
+      ],
+      booleanAttributes: [
+        {
+          key: 'another',
+          value: true,
+          info: null,
+        },
+      ],
     });
 
     const result = transformExternalResourceToApiResource(mapping, resource);
@@ -141,14 +130,14 @@ describe('Simple mappings with flat structure', () => {
     description: string;
     mapping: MappingNode;
     resource: Record<string, any>;
-    expectedFromResource: (r: Record<string, any>) => ImportApiResource;
+    expectedFromResource: (r: Record<string, any>) => FlatResource;
   }[] = [
     // Base case
     {
       description:
         'when node contains empty value and is expecteded something to map,  should stop recursing',
       mapping: {
-        attribute: attributeMapping('ResourceBooleanAttributes', 'booleanAttribute'),
+        attribute: attributeMapping('booleanAttributes', 'booleanAttribute'),
       },
       resource: {},
       expectedFromResource: () => mergeWithCleanResource(),
@@ -160,7 +149,7 @@ describe('Simple mappings with flat structure', () => {
       mapping: {
         objectId: resourceFieldMapping('id'),
         name: resourceFieldMapping('name', ctx => ctx.currentValue.en),
-        updatedAt: resourceFieldMapping('updatedAt'),
+        updatedAt: resourceFieldMapping('lastUpdated'),
       },
       resource: {
         name: { en: 'resource-1' },
@@ -170,38 +159,36 @@ describe('Simple mappings with flat structure', () => {
       expectedFromResource: r =>
         mergeWithCleanResource({
           id: r.objectId,
-          updatedAt: r.updatedAt,
+          lastUpdated: r.updatedAt,
           name: r.name.en,
         }),
     },
-    // ResourceBooleanAttributes
+    // booleanAttributes
     {
       description:
-        'when mapping ResourceBooleanAttributes without info property - should add ResourceBooleanAttributes record with null info',
+        'when mapping booleanAttributes without info property - should add booleanAttributes record with null info',
       mapping: {
-        attribute: attributeMapping('ResourceBooleanAttributes', 'booleanAttribute'),
+        attribute: attributeMapping('booleanAttributes', 'booleanAttribute'),
       },
       resource: {
         attribute: true,
       },
       expectedFromResource: () =>
         mergeWithCleanResource({
-          attributes: {
-            ResourceBooleanAttributes: [
-              {
-                info: null,
-                key: 'booleanAttribute',
-                value: true,
-              },
-            ],
-          },
+          booleanAttributes: [
+            {
+              info: null,
+              key: 'booleanAttribute',
+              value: true,
+            },
+          ],
         }),
     },
     {
       description:
-        'when mapping ResourceBooleanAttributes with info property - should add ResourceBooleanAttributes record with populated info',
+        'when mapping booleanAttributes with info property - should add booleanAttributes record with populated info',
       mapping: {
-        attribute: attributeMapping('ResourceBooleanAttributes', 'booleanAttribute', {
+        attribute: attributeMapping('booleanAttributes', 'booleanAttribute', {
           info: ctx => ({ attribute: ctx.currentValue }),
         }),
       },
@@ -210,46 +197,42 @@ describe('Simple mappings with flat structure', () => {
       },
       expectedFromResource: () =>
         mergeWithCleanResource({
-          attributes: {
-            ResourceBooleanAttributes: [
-              {
-                info: { attribute: true },
-                key: 'booleanAttribute',
-                value: true,
-              },
-            ],
-          },
+          booleanAttributes: [
+            {
+              info: { attribute: true },
+              key: 'booleanAttribute',
+              value: true,
+            },
+          ],
         }),
     },
-    // ResourceStringAttributes
+    // stringAttributes
     {
       description:
         'when mapping ResourceStringAttributes without info property - should add ResourceStringAttributes record with null info',
       mapping: {
-        attribute: attributeMapping('ResourceStringAttributes', 'stringAttribute'),
+        attribute: attributeMapping('stringAttributes', 'stringAttribute'),
       },
       resource: {
         attribute: 'some string',
       },
       expectedFromResource: () =>
         mergeWithCleanResource({
-          attributes: {
-            ResourceStringAttributes: [
-              {
-                language: null,
-                info: null,
-                key: 'stringAttribute',
-                value: 'some string',
-              },
-            ],
-          },
+          stringAttributes: [
+            {
+              language: '',
+              info: null,
+              key: 'stringAttribute',
+              value: 'some string',
+            },
+          ],
         }),
     },
     {
       description:
         'when mapping ResourceStringAttributes with info property - should add ResourceStringAttributes record with populated info',
       mapping: {
-        attribute: attributeMapping('ResourceStringAttributes', 'stringAttribute', {
+        attribute: attributeMapping('stringAttributes', 'stringAttribute', {
           info: ctx => ({ attribute: ctx.currentValue }),
         }),
       },
@@ -258,22 +241,20 @@ describe('Simple mappings with flat structure', () => {
       },
       expectedFromResource: () =>
         mergeWithCleanResource({
-          attributes: {
-            ResourceStringAttributes: [
-              {
-                language: null,
-                info: { attribute: 'some string' },
-                key: 'stringAttribute',
-                value: 'some string',
-              },
-            ],
-          },
+          stringAttributes: [
+            {
+              language: '',
+              info: { attribute: 'some string' },
+              key: 'stringAttribute',
+              value: 'some string',
+            },
+          ],
         }),
     },
     // Translatable ResourceStringAttributes
     {
       description:
-        'when mapping Translatable ResourceStringAttributes without info property - should add Translatable ResourceStringAttributes record with null info',
+        'when mapping Translatable stringAttributes without info property - should add Translatable ResourceStringAttributes record with null info',
       mapping: {
         attribute: {
           children: {
@@ -286,16 +267,14 @@ describe('Simple mappings with flat structure', () => {
       resource: { attribute: { en: 'some string' } },
       expectedFromResource: () =>
         mergeWithCleanResource({
-          attributes: {
-            ResourceStringAttributes: [
-              {
-                language: 'en',
-                info: null,
-                key: 'translatableAttribute/en',
-                value: 'some string',
-              },
-            ],
-          },
+          stringAttributes: [
+            {
+              language: 'en',
+              info: null,
+              key: 'translatableAttribute/en',
+              value: 'some string',
+            },
+          ],
         }),
     },
     {
@@ -314,46 +293,42 @@ describe('Simple mappings with flat structure', () => {
       resource: { attribute: { en: 'some string' } },
       expectedFromResource: () =>
         mergeWithCleanResource({
-          attributes: {
-            ResourceStringAttributes: [
-              {
-                language: 'en',
-                info: { attribute: 'some string' },
-                key: 'translatableAttribute/en',
-                value: 'some string',
-              },
-            ],
-          },
+          stringAttributes: [
+            {
+              language: 'en',
+              info: { attribute: 'some string' },
+              key: 'translatableAttribute/en',
+              value: 'some string',
+            },
+          ],
         }),
     },
-    // ResourceNumberAttributes
+    // numberAttributes
     {
       description:
-        'when mapping ResourceNumberAttributes without info property - should add ResourceNumberAttributes record with null info',
+        'when mapping numberAttributes without info property - should add numberAttributes record with null info',
       mapping: {
-        attribute: attributeMapping('ResourceNumberAttributes', 'numberAttribute'),
+        attribute: attributeMapping('numberAttributes', 'numberAttribute'),
       },
       resource: {
         attribute: 1,
       },
       expectedFromResource: () =>
         mergeWithCleanResource({
-          attributes: {
-            ResourceNumberAttributes: [
-              {
-                info: null,
-                key: 'numberAttribute',
-                value: 1,
-              },
-            ],
-          },
+          numberAttributes: [
+            {
+              info: null,
+              key: 'numberAttribute',
+              value: 1,
+            },
+          ],
         }),
     },
     {
       description:
-        'when mapping ResourceNumberAttributes with info property - should add ResourceNumberAttributes record with populated info',
+        'when mapping numberAttributes with info property - should add numberAttributes record with populated info',
       mapping: {
-        attribute: attributeMapping('ResourceNumberAttributes', 'numberAttribute', {
+        attribute: attributeMapping('numberAttributes', 'numberAttribute', {
           info: ctx => ({ attribute: ctx.currentValue }),
         }),
       },
@@ -362,45 +337,41 @@ describe('Simple mappings with flat structure', () => {
       },
       expectedFromResource: () =>
         mergeWithCleanResource({
-          attributes: {
-            ResourceNumberAttributes: [
-              {
-                info: { attribute: 1 },
-                key: 'numberAttribute',
-                value: 1,
-              },
-            ],
-          },
+          numberAttributes: [
+            {
+              info: { attribute: 1 },
+              key: 'numberAttribute',
+              value: 1,
+            },
+          ],
         }),
     },
-    // ResourceDateTimeAttributes
+    // dateTimeAttributes
     {
       description:
-        'when mapping ResourceDateTimeAttributes without info property - should add ResourceDateTimeAttributes record with null info',
+        'when mapping dateTimeAttributes without info property - should add dateTimeAttributes record with null info',
       mapping: {
-        attribute: attributeMapping('ResourceDateTimeAttributes', 'dateAttribute'),
+        attribute: attributeMapping('dateTimeAttributes', 'dateAttribute'),
       },
       resource: {
         attribute: startedDate,
       },
       expectedFromResource: () =>
         mergeWithCleanResource({
-          attributes: {
-            ResourceDateTimeAttributes: [
-              {
-                info: null,
-                key: 'dateAttribute',
-                value: startedDate,
-              },
-            ],
-          },
+          dateTimeAttributes: [
+            {
+              info: null,
+              key: 'dateAttribute',
+              value: startedDate,
+            },
+          ],
         }),
     },
     {
       description:
-        'when mapping ResourceDateTimeAttributes with info property - should add ResourceDateTimeAttributes record with populated info',
+        'when mapping dateTimeAttributes with info property - should add dateTimeAttributes record with populated info',
       mapping: {
-        attribute: attributeMapping('ResourceDateTimeAttributes', 'dateAttribute', {
+        attribute: attributeMapping('dateTimeAttributes', 'dateAttribute', {
           info: ctx => ({ attribute: ctx.currentValue }),
         }),
       },
@@ -409,21 +380,19 @@ describe('Simple mappings with flat structure', () => {
       },
       expectedFromResource: () =>
         mergeWithCleanResource({
-          attributes: {
-            ResourceDateTimeAttributes: [
-              {
-                info: { attribute: startedDate },
-                key: 'dateAttribute',
-                value: startedDate,
-              },
-            ],
-          },
+          dateTimeAttributes: [
+            {
+              info: { attribute: startedDate },
+              key: 'dateAttribute',
+              value: startedDate,
+            },
+          ],
         }),
     },
-    // ResourceReferenceStringAttributes
+    // referenceStringAttributes
     {
       description:
-        'when mapping ResourceReferenceStringAttributes - should add ResourceReferenceStringAttributes record',
+        'when mapping referenceStringAttributes - should add referenceStringAttributes record',
       mapping: {
         attribute: referenceAttributeMapping('referenceAttribute', 'some-list', {
           value: ctx => ctx.currentValue.id,
@@ -434,16 +403,14 @@ describe('Simple mappings with flat structure', () => {
       },
       expectedFromResource: () =>
         mergeWithCleanResource({
-          attributes: {
-            ResourceReferenceStringAttributes: [
-              {
-                language: null,
-                key: 'referenceAttribute',
-                value: 'ref-id',
-                list: 'some-list',
-              },
-            ],
-          },
+          referenceStringAttributes: [
+            {
+              language: '',
+              key: 'referenceAttribute',
+              value: 'ref-id',
+              list: 'some-list',
+            },
+          ],
         }),
     },
   ];
@@ -460,7 +427,7 @@ describe('Simple mapping, nested structure', () => {
     description: string;
     mapping: MappingNode;
     resource: Record<string, any>;
-    expectedFromResource: (r: Record<string, any>) => ImportApiResource;
+    expectedFromResource: (r: Record<string, any>) => FlatResource;
   }[] = [
     // Base case
     {
@@ -469,7 +436,7 @@ describe('Simple mapping, nested structure', () => {
       mapping: {
         attribute: {
           children: {
-            nested: attributeMapping('ResourceBooleanAttributes', 'booleanAttribute'),
+            nested: attributeMapping('booleanAttributes', 'booleanAttribute'),
           },
         },
       },
@@ -485,7 +452,7 @@ describe('Simple mapping, nested structure', () => {
           children: {
             id: resourceFieldMapping('id'),
             name: resourceFieldMapping('name', ctx => ctx.currentValue.en),
-            updatedAt: resourceFieldMapping('updatedAt'),
+            updatedAt: resourceFieldMapping('lastUpdated'),
           },
         },
       },
@@ -499,18 +466,18 @@ describe('Simple mapping, nested structure', () => {
       expectedFromResource: r =>
         mergeWithCleanResource({
           id: r.importantObject.id,
-          updatedAt: r.importantObject.updatedAt,
+          lastUpdated: r.importantObject.updatedAt,
           name: r.importantObject.name.en,
         }),
     },
-    // ResourceBooleanAttributes
+    // booleanAttributes
     {
       description:
-        'when mapping ResourceBooleanAttributes without info property - should add ResourceBooleanAttributes records with null info',
+        'when mapping booleanAttributes without info property - should add booleanAttributes records with null info',
       mapping: {
         booleans: {
           children: {
-            '{property}': attributeMapping('ResourceBooleanAttributes', '{property}'),
+            '{property}': attributeMapping('booleanAttributes', '{property}'),
           },
         },
       },
@@ -522,20 +489,18 @@ describe('Simple mapping, nested structure', () => {
       },
       expectedFromResource: () =>
         mergeWithCleanResource({
-          attributes: {
-            ResourceBooleanAttributes: [
-              {
-                info: null,
-                key: 'booleanAttribute1',
-                value: true,
-              },
-              {
-                info: null,
-                key: 'booleanAttribute2',
-                value: false,
-              },
-            ],
-          },
+          booleanAttributes: [
+            {
+              info: null,
+              key: 'booleanAttribute1',
+              value: true,
+            },
+            {
+              info: null,
+              key: 'booleanAttribute2',
+              value: false,
+            },
+          ],
         }),
     },
     // ResourceStringAttributes
@@ -545,7 +510,7 @@ describe('Simple mapping, nested structure', () => {
       mapping: {
         strings: {
           children: {
-            '{property}': attributeMapping('ResourceStringAttributes', '{property}'),
+            '{property}': attributeMapping('stringAttributes', '{property}'),
           },
         },
       },
@@ -557,22 +522,20 @@ describe('Simple mapping, nested structure', () => {
       },
       expectedFromResource: () =>
         mergeWithCleanResource({
-          attributes: {
-            ResourceStringAttributes: [
-              {
-                language: null,
-                info: null,
-                key: 'stringAttribute1',
-                value: 'some string',
-              },
-              {
-                language: null,
-                info: null,
-                key: 'stringAttribute2',
-                value: 'another string',
-              },
-            ],
-          },
+          stringAttributes: [
+            {
+              language: '',
+              info: null,
+              key: 'stringAttribute1',
+              value: 'some string',
+            },
+            {
+              language: '',
+              info: null,
+              key: 'stringAttribute2',
+              value: 'another string',
+            },
+          ],
         }),
     },
     // Translatable ResourceStringAttributes
@@ -605,32 +568,30 @@ describe('Simple mapping, nested structure', () => {
       },
       expectedFromResource: () =>
         mergeWithCleanResource({
-          attributes: {
-            ResourceStringAttributes: [
-              {
-                language: 'en',
-                info: null,
-                key: 'translatableAttribute/en/stringAttribute1',
-                value: 'some string',
-              },
-              {
-                language: 'en',
-                info: null,
-                key: 'translatableAttribute/en/stringAttribute2',
-                value: 'another string',
-              },
-            ],
-          },
+          stringAttributes: [
+            {
+              language: 'en',
+              info: null,
+              key: 'translatableAttribute/en/stringAttribute1',
+              value: 'some string',
+            },
+            {
+              language: 'en',
+              info: null,
+              key: 'translatableAttribute/en/stringAttribute2',
+              value: 'another string',
+            },
+          ],
         }),
     },
-    // ResourceNumberAttributes
+    // numberAttributes
     {
       description:
-        'when mapping ResourceNumberAttributes without info property - should add ResourceNumberAttributes records with null info',
+        'when mapping numberAttributes without info property - should add numberAttributes records with null info',
       mapping: {
         numbers: {
           children: {
-            '{property}': attributeMapping('ResourceNumberAttributes', '{property}'),
+            '{property}': attributeMapping('numberAttributes', '{property}'),
           },
         },
       },
@@ -642,30 +603,28 @@ describe('Simple mapping, nested structure', () => {
       },
       expectedFromResource: () =>
         mergeWithCleanResource({
-          attributes: {
-            ResourceNumberAttributes: [
-              {
-                info: null,
-                key: 'numberAttribute1',
-                value: 1,
-              },
-              {
-                info: null,
-                key: 'numberAttribute2',
-                value: 2,
-              },
-            ],
-          },
+          numberAttributes: [
+            {
+              info: null,
+              key: 'numberAttribute1',
+              value: 1,
+            },
+            {
+              info: null,
+              key: 'numberAttribute2',
+              value: 2,
+            },
+          ],
         }),
     },
-    // ResourceDateTimeAttributes
+    // dateTimeAttributes
     {
       description:
-        'when mapping ResourceDateTimeAttributes without info property - should add ResourceDateTimeAttributes records with null info',
+        'when mapping dateTimeAttributes without info property - should add dateTimeAttributes records with null info',
       mapping: {
         dates: {
           children: {
-            '{property}': attributeMapping('ResourceDateTimeAttributes', '{property}'),
+            '{property}': attributeMapping('dateTimeAttributes', '{property}'),
           },
         },
       },
@@ -677,26 +636,24 @@ describe('Simple mapping, nested structure', () => {
       },
       expectedFromResource: () =>
         mergeWithCleanResource({
-          attributes: {
-            ResourceDateTimeAttributes: [
-              {
-                info: null,
-                key: 'dateAttribute1',
-                value: startedDate,
-              },
-              {
-                info: null,
-                key: 'dateAttribute2',
-                value: startedDate,
-              },
-            ],
-          },
+          dateTimeAttributes: [
+            {
+              info: null,
+              key: 'dateAttribute1',
+              value: startedDate,
+            },
+            {
+              info: null,
+              key: 'dateAttribute2',
+              value: startedDate,
+            },
+          ],
         }),
     },
-    // ResourceReferenceStringAttributes
+    // referenceStringAttributes
     {
       description:
-        'when mapping ResourceReferenceStringAttributes without info property - should add ResourceReferenceStringAttributes records with null info',
+        'when mapping referenceStringAttributes without info property - should add referenceStringAttributes records with null info',
       mapping: {
         references: {
           children: {
@@ -714,22 +671,20 @@ describe('Simple mapping, nested structure', () => {
       },
       expectedFromResource: () =>
         mergeWithCleanResource({
-          attributes: {
-            ResourceReferenceStringAttributes: [
-              {
-                language: null,
-                key: 'referenceAttribute1',
-                value: 'ref-1',
-                list: 'some-list',
-              },
-              {
-                language: null,
-                key: 'referenceAttribute2',
-                value: 'ref-2',
-                list: 'some-list',
-              },
-            ],
-          },
+          referenceStringAttributes: [
+            {
+              language: '',
+              key: 'referenceAttribute1',
+              value: 'ref-1',
+              list: 'some-list',
+            },
+            {
+              language: '',
+              key: 'referenceAttribute2',
+              value: 'ref-2',
+              list: 'some-list',
+            },
+          ],
         }),
     },
   ];
@@ -780,17 +735,17 @@ describe('Simple mapping, nested structure', () => {
         children: {
           id: resourceFieldMapping('id'),
           name: resourceFieldMapping('name', ctx => ctx.currentValue.en),
-          updatedAt: resourceFieldMapping('updatedAt'),
+          updatedAt: resourceFieldMapping('lastUpdated'),
         },
       },
       booleans: {
         children: {
-          '{property}': attributeMapping('ResourceBooleanAttributes', '{property}'),
+          '{property}': attributeMapping('booleanAttributes', '{property}'),
         },
       },
       strings: {
         children: {
-          '{property}': attributeMapping('ResourceStringAttributes', '{property}'),
+          '{property}': attributeMapping('stringAttributes', '{property}'),
         },
       },
       translatableStrings: {
@@ -809,12 +764,12 @@ describe('Simple mapping, nested structure', () => {
       },
       numbers: {
         children: {
-          '{property}': attributeMapping('ResourceNumberAttributes', '{property}'),
+          '{property}': attributeMapping('numberAttributes', '{property}'),
         },
       },
       dates: {
         children: {
-          '{property}': attributeMapping('ResourceDateTimeAttributes', '{property}'),
+          '{property}': attributeMapping('dateTimeAttributes', '{property}'),
         },
       },
       references: {
@@ -826,88 +781,87 @@ describe('Simple mapping, nested structure', () => {
       },
     };
 
-    const expected: ImportApiResource = {
+    const expected: FlatResource = {
       id: resource.importantObject.id,
-      updatedAt: resource.importantObject.updatedAt,
+      lastUpdated: resource.importantObject.updatedAt,
       name: resource.importantObject.name.en,
-      attributes: {
-        ResourceBooleanAttributes: [
-          {
-            info: null,
-            key: 'booleanAttribute1',
-            value: true,
-          },
-          {
-            info: null,
-            key: 'booleanAttribute2',
-            value: false,
-          },
-        ],
-        ResourceStringAttributes: [
-          {
-            language: null,
-            info: null,
-            key: 'stringAttribute1',
-            value: 'some string',
-          },
-          {
-            language: null,
-            info: null,
-            key: 'stringAttribute2',
-            value: 'another string',
-          },
-          {
-            language: 'en',
-            info: null,
-            key: 'translatableAttribute/en/stringAttribute1',
-            value: 'some string',
-          },
-          {
-            language: 'en',
-            info: null,
-            key: 'translatableAttribute/en/stringAttribute2',
-            value: 'another string',
-          },
-        ],
-        ResourceNumberAttributes: [
-          {
-            info: null,
-            key: 'numberAttribute1',
-            value: 1,
-          },
-          {
-            info: null,
-            key: 'numberAttribute2',
-            value: 2,
-          },
-        ],
-        ResourceDateTimeAttributes: [
-          {
-            info: null,
-            key: 'dateAttribute1',
-            value: startedDate,
-          },
-          {
-            info: null,
-            key: 'dateAttribute2',
-            value: startedDate,
-          },
-        ],
-        ResourceReferenceStringAttributes: [
-          {
-            language: null,
-            key: 'referenceAttribute1',
-            value: 'ref-1',
-            list: 'some-list',
-          },
-          {
-            language: null,
-            key: 'referenceAttribute2',
-            value: 'ref-2',
-            list: 'some-list',
-          },
-        ],
-      },
+
+      booleanAttributes: [
+        {
+          info: null,
+          key: 'booleanAttribute1',
+          value: true,
+        },
+        {
+          info: null,
+          key: 'booleanAttribute2',
+          value: false,
+        },
+      ],
+      stringAttributes: [
+        {
+          language: '',
+          info: null,
+          key: 'stringAttribute1',
+          value: 'some string',
+        },
+        {
+          language: '',
+          info: null,
+          key: 'stringAttribute2',
+          value: 'another string',
+        },
+        {
+          language: 'en',
+          info: null,
+          key: 'translatableAttribute/en/stringAttribute1',
+          value: 'some string',
+        },
+        {
+          language: 'en',
+          info: null,
+          key: 'translatableAttribute/en/stringAttribute2',
+          value: 'another string',
+        },
+      ],
+      numberAttributes: [
+        {
+          info: null,
+          key: 'numberAttribute1',
+          value: 1,
+        },
+        {
+          info: null,
+          key: 'numberAttribute2',
+          value: 2,
+        },
+      ],
+      dateTimeAttributes: [
+        {
+          info: null,
+          key: 'dateAttribute1',
+          value: startedDate,
+        },
+        {
+          info: null,
+          key: 'dateAttribute2',
+          value: startedDate,
+        },
+      ],
+      referenceStringAttributes: [
+        {
+          language: '',
+          key: 'referenceAttribute1',
+          value: 'ref-1',
+          list: 'some-list',
+        },
+        {
+          language: '',
+          key: 'referenceAttribute2',
+          value: 'ref-2',
+          list: 'some-list',
+        },
+      ],
     };
 
     const result = transformExternalResourceToApiResource(mapping, resource);
