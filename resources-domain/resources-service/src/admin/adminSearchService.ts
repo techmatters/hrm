@@ -17,7 +17,7 @@ import {
   getResourcesBatchForReindexing,
   streamResourcesForReindexing,
 } from './adminSearchDataAccess';
-import { AccountSID } from '@tech-matters/types';
+import { AccountSID, FlatResource } from '@tech-matters/types';
 import { publishSearchIndexJob } from '../resource-jobs/client-sqs';
 import ReadableStream = NodeJS.ReadableStream;
 import { Writable } from 'stream';
@@ -49,6 +49,35 @@ export type AdminSearchServiceConfiguration = {
   reindexDbBatchSize: number;
 };
 
+const sendResourceAndRecordResult = async (
+  resource: FlatResource,
+  response: VerboseSearchReindexResult,
+  responseType: ResponseType,
+): Promise<void> => {
+  // We could possibly double down on the streaming pattern and return the response as a JSON stream
+  // This should probably only be done in a more streaming friendly format like CSV or JSONL
+  // We could return the full content in a CSV if the client specifies an 'text/csv' accept header, or the current version for 'application/json'
+  // But this is is very likely to be a 'YAGNI' feature, so I'm leaving it out for now
+  try {
+    await publishSearchIndexJob(resource.accountSid, resource);
+    response.successfulSubmissionCount++;
+    if (responseType === ResponseType.VERBOSE) {
+      response.successfullySubmitted.push(resource.id);
+    }
+  } catch (error) {
+    response.submissionErrorCount++;
+    if (responseType === ResponseType.VERBOSE && response.submissionErrorCount <= 50) {
+      if (response.submissionErrorCount === 50) {
+        response.failedToSubmit.push({
+          resourceId: resource.id,
+          error: new Error('Stopping logging errors after 50'),
+        });
+      }
+      response.failedToSubmit.push({ resourceId: resource.id, error: error as Error });
+    }
+  }
+};
+
 const newAdminSearchService = ({ reindexDbBatchSize }: AdminSearchServiceConfiguration) => {
   return {
     reindexBatches: async (
@@ -75,24 +104,7 @@ const newAdminSearchService = ({ reindexDbBatchSize }: AdminSearchServiceConfigu
         console.log('resources found to index', resourcesToIndex.length);
 
         for (const resource of resourcesToIndex) {
-          try {
-            await publishSearchIndexJob(resource.accountSid, resource);
-            response.successfulSubmissionCount++;
-            if (responseType === ResponseType.VERBOSE) {
-              response.successfullySubmitted.push(resource.id);
-            }
-          } catch (error) {
-            response.submissionErrorCount++;
-            if (responseType === ResponseType.VERBOSE && response.submissionErrorCount <= 50) {
-              if (response.submissionErrorCount === 50) {
-                response.failedToSubmit.push({
-                  resourceId: resource.id,
-                  error: new Error('Stopping logging errors after 50'),
-                });
-              }
-              response.failedToSubmit.push({ resourceId: resource.id, error: error as Error });
-            }
-          }
+          await sendResourceAndRecordResult(resource, response, responseType);
         }
         batchesSent++;
       }
@@ -121,35 +133,15 @@ const newAdminSearchService = ({ reindexDbBatchSize }: AdminSearchServiceConfigu
       });
       await pipeline(
         resourcesStream,
+        // I think in Node 19+ you can use async iterator functions directly in a pipeline, instead of Writeable / Readable / Transform streams
+        // https://darkmannn.dev/posts/nodejs-in-2023-streams-streams-vs-async-generators
+        // But I couldn't get it working in Node 18 so doing it old school with a Writable stream.
         new Writable({
           objectMode: true,
           highWaterMark: reindexDbBatchSize,
           write: async (resource, _, callback) => {
             try {
-              await publishSearchIndexJob(resource.accountSid, resource);
-              response.successfulSubmissionCount++;
-              if (responseType === ResponseType.VERBOSE) {
-                response.successfullySubmitted.push(resource.id);
-              }
-            } catch (error) {
-              response.submissionErrorCount++;
-
-              // We could possibly double down on the streaming pattern and return the response as a JSON stream
-              // This should probably only be done in a more streaming friendly format like CSV or JSONL
-              // We could return the full content in a CSV if the client specifies an 'text/csv' accept header, or the current version for 'application/json'
-              // But this is is very likely to be a 'YAGNI' feature, so I'm leaving it out for now
-              if (responseType === ResponseType.VERBOSE && response.submissionErrorCount <= 50) {
-                if (response.submissionErrorCount === 50) {
-                  response.failedToSubmit.push({
-                    resourceId: resource.id,
-                    error: new Error('Stopping logging errors after 50'),
-                  });
-                }
-                response.failedToSubmit.push({
-                  resourceId: resource.id,
-                  error: error as Error,
-                });
-              }
+              await sendResourceAndRecordResult(resource, response, responseType);
             } finally {
               callback();
             }
