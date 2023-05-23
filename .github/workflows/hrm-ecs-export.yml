@@ -111,35 +111,6 @@ jobs:
             --cluster ${{ env.ECR_REPOSITORY }}-task \
             --tasks ${{ steps.ecs-task.outputs.task-id }}
 
-      #  Retrieve the output of the ECS task that was triggered and extract 
-      # the desired information from it. 
-      - name: Get ECS Task Output
-        id: ecs-task-output
-        run: |
-          aws ecs describe-tasks \
-            --cluster ${{ env.ECR_REPOSITORY }}-task \
-            --tasks ${{ steps.ecs-task.outputs.task-id }} \
-            --query "tasks[0].containers[0].command[1:3]" \
-            --output text
-
-      # Extracts the relevant information from the ECS task output 
-      # allowing us to process the task output and extract specific data that is needed
-      - name: Extract S3 Bucket Info
-        id: s3-bucket-info
-        run: |
-          start_date=$(echo "${{ steps.ecs-task-output.outputs.stdout }}" | awk '{print $1}')
-          end_date=$(echo "${{ steps.ecs-task-output.outputs.stdout }}" | awk '{print $2}')
-
-          echo "::set-output name=start-date::$start_date"
-          echo "::set-output name=end-date::$end_date"
-
-      # responsible for uploading files to the S3 bucket based on the extracted 
-      # start date and end date. 
-      - name: Populate S3 Bucket
-        if: ${{ steps.ecs-task-status.outputs.tasksStopped == 'true' }}
-        run: |
-          aws s3 cp /path/to/local/files s3://your-bucket-name/path/to/s3/location --recursive
-
       # Set any env vars needed from Parameter Store here
       - name: Set GITHUB_ACTIONS_SLACK_BOT_TOKEN
         uses: 'marvinpinto/action-inject-ssm-secrets@latest'
