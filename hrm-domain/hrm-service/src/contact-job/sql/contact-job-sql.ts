@@ -33,7 +33,7 @@ export const COMPLETE_JOB_SQL = `
   UPDATE "ContactJobs" SET
       "completed" = CURRENT_TIMESTAMP,
       "completionPayload" = $<completionPayload:json>::JSONB,
-      "cleanupStatus" = '$<cleanupStatus>'
+      "cleanupStatus" = $<cleanupStatus>
   WHERE "id" = $<id>
   RETURNING *
 `;

@@ -319,6 +319,7 @@ describe('pollAndProcessCompletedContactJobs', () => {
           completionPayload: {
             message: 'Attempts limit reached',
           },
+          wasSuccessful: false,
         });
       } else {
         expect(completeContactJobSpy).not.toHaveBeenCalled();

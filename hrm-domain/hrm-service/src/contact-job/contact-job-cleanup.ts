@@ -58,7 +58,7 @@ export const deleteTranscript = async (job: RetrieveContactTranscriptJob): Promi
   try {
     await client.chat.v2
       .services(job.resource.serviceSid)
-      .channels(job.resource.channelSid)
+      .channels.get(job.resource.channelSid)
       .remove();
   } catch (err) {
     if (err instanceof RestException && err.status === 404) {
@@ -102,8 +102,11 @@ const getCleanupRetentionDays = async (accountSid): Promise<number | undefined> 
   let ssmRetentionDays: number;
   try {
     ssmRetentionDays =
-      parseInt(await getSsmParameter(`/twilio/${accountSid}/cleanupJobRetentionDays`)) ||
-      MAX_CLEANUP_JOB_RETENTION_DAYS;
+      parseInt(
+        await getSsmParameter(
+          `/${process.env.NODE_ENV}/twilio/${accountSid}/cleanupJobRetentionDays`,
+        ),
+      ) || MAX_CLEANUP_JOB_RETENTION_DAYS;
   } catch {
     ssmRetentionDays = MAX_CLEANUP_JOB_RETENTION_DAYS;
   }
