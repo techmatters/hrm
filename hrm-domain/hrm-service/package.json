@@ -6,6 +6,7 @@
     "start": "cd dist && node ./bin/www",
     "start:job-processor": "cd dist && node ./bin/jobProcessor",
     "start:job-cleanup": "cd dist && node ./bin/jobCleanup",
+    "start:job-cleanup:local": "AWS_REGION=us-east-1 SSM_ENDPOINT=http://localhost:4566 run-s start:job-cleanup",
     "migrate": "run-s test:service:ci:migrate",
     "docker:build": "docker build -t hrm-service -f Dockerfile ../",
     "docker:compose:test:up": "docker compose -f ../../test-support/docker-compose-service-test.yml up -d",

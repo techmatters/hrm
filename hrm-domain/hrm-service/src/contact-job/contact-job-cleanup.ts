@@ -54,8 +54,8 @@ export const deleteTranscript = async (job: RetrieveContactTranscriptJob): Promi
   }
 
   await setContactJobCleanupActive(id);
-  const client = await getClient({ accountSid });
   try {
+    const client = await getClient({ accountSid });
     await client.chat.v2
       .services(job.resource.serviceSid)
       .channels.get(job.resource.channelSid)
@@ -126,7 +126,7 @@ export const cleanupContactJobs = async (): Promise<void> => {
   try {
     const accountSids = await getPendingCleanupJobAccountSids(MAX_CLEANUP_JOB_RETENTION_DAYS);
 
-    console.log(`Cleaning up contact jobs for accounts: ${accountSids}`);
+    console.log(`Cleaning up contact jobs for accounts:`, accountSids);
 
     for (const accountSid of accountSids) {
       const cleanupRetentionDays = await getCleanupRetentionDays(accountSid);
