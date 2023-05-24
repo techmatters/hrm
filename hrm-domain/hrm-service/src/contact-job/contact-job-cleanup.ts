@@ -104,7 +104,7 @@ const getCleanupRetentionDays = async (accountSid): Promise<number | undefined> 
     ssmRetentionDays =
       parseInt(
         await getSsmParameter(
-          `/${process.env.NODE_ENV}/twilio/${accountSid}/cleanupJobRetentionDays`,
+          `/${process.env.NODE_ENV}/hrm/${accountSid}/transcript_retention_days`,
         ),
       ) || MAX_CLEANUP_JOB_RETENTION_DAYS;
   } catch {
