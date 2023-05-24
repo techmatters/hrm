@@ -5,6 +5,7 @@
   "scripts": {
     "start": "cd dist && node ./bin/www",
     "start:job-processor": "cd dist && node ./bin/jobProcessor",
+    "start:khp-data-pull": "cd dist && node ./bin/khpDataPull",
     "migrate": "run-s test:service:ci:migrate",
     "docker:build": "docker build -t hrm-service -f Dockerfile ../",
     "docker:compose:test:up": "docker compose -f ../../test-support/docker-compose-service-test.yml up -d",
