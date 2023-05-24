@@ -92,11 +92,15 @@ export const pullDueContactJobs = async (
  * @param completionPayload
  * @param wasSuccessful
  */
-export const completeContactJob = async (
+export const completeContactJob = async ({
+  id,
+  completionPayload,
+  wasSuccessful = true,
+}: {
   id: number,
   completionPayload: any,
-  wasSuccessful: boolean = true,
-): Promise<ContactJobRecord> => {
+  wasSuccessful?: boolean,
+}): Promise<ContactJobRecord> => {
   const cleanupStatus = wasSuccessful ? ContactJobCleanupStatus.PENDING : ContactJobCleanupStatus.NOT_READY;
   return db.task(tx => {
     return tx.oneOrNone(COMPLETE_JOB_SQL, { id, completionPayload, cleanupStatus });

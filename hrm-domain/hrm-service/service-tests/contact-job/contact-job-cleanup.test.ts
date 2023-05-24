@@ -84,7 +84,7 @@ describe('cleanupContactJobs', () => {
     });
 
     let job = await db.oneOrNone('SELECT * FROM "ContactJobs" WHERE "contactId" = $1', [contact.id]);
-    job = await completeContactJob(job.id, completionPayload);
+    job = await completeContactJob({ id: job.id, completionPayload });
     job = await db.oneOrNone('UPDATE "ContactJobs" SET "completed" = NULL WHERE "id" = $1 RETURNING *', [job.id]);
 
     await cleanupContactJobs();
@@ -112,7 +112,7 @@ describe('cleanupContactJobs', () => {
     });
 
     let job = await db.oneOrNone('SELECT * FROM "ContactJobs" WHERE "contactId" = $1', [contact.id]);
-    job = await completeContactJob(job.id, completionPayload);
+    job = await completeContactJob({ id: job.id, completionPayload });
     job = await backDateJob(job.id);
     await cleanupContactJobs();
 
@@ -139,7 +139,7 @@ describe('cleanupContactJobs', () => {
 
     let job = await db.oneOrNone('SELECT * FROM "ContactJobs" WHERE "contactId" = $1', [contact.id]);
 
-    job = await completeContactJob(job.id, completionPayload);
+    job = await completeContactJob({ id: job.id, completionPayload });
     job = await backDateJob(job.id);
     await updateConversationMedia(accountSid, job.contactId, [completionPayload]);
     await cleanupContactJobs();
