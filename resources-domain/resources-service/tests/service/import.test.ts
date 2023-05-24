@@ -19,7 +19,7 @@ import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/
 import { db } from '../../src/connection-pool';
 import range from './range';
 import { parseISO, addHours, subHours, addSeconds, subSeconds } from 'date-fns';
-import { ImportApiResource, ImportProgress, ImportRequestBody } from '@tech-matters/types';
+import { FlatResource, ImportProgress, ImportRequestBody } from '@tech-matters/types';
 import { internalHeaders } from './server';
 import each from 'jest-each';
 import { ReferrableResource } from '@tech-matters/types';
@@ -157,56 +157,60 @@ const verifyGeneratedResourcesAttributes = async (resourceId: string) => {
 
 const generateImportResource = (
   resourceIdSuffix: string,
-  updatedAt: Date,
-  additionalAttributes: Partial<ImportApiResource['attributes']> = {},
-): ImportApiResource => ({
+  lastUpdated: Date,
+  {
+    stringAttributes,
+    referenceStringAttributes,
+    numberAttributes,
+    dateTimeAttributes,
+    booleanAttributes,
+  }: Partial<FlatResource> = {},
+): FlatResource => ({
   id: `RESOURCE_${resourceIdSuffix}`,
   name: `Resource ${resourceIdSuffix}`,
-  updatedAt: updatedAt.toISOString(),
-  attributes: {
-    ResourceStringAttributes: [
-      {
-        key: 'STRING_ATTRIBUTE',
-        value: 'VALUE',
-        language: 'en-US',
-        info: { some: 'json' },
-      },
-      ...(additionalAttributes.ResourceStringAttributes ?? []),
-    ],
-    ResourceDateTimeAttributes: [
-      {
-        key: 'DATETIME_ATTRIBUTE',
-        value: baselineDate.toISOString(),
-        info: { some: 'json' },
-      },
-      ...(additionalAttributes.ResourceDateTimeAttributes ?? []),
-    ],
-    ResourceNumberAttributes: [
-      {
-        key: 'NUMBER_ATTRIBUTE',
-        value: 1337,
-        info: { some: 'json' },
-      },
-      ...(additionalAttributes.ResourceNumberAttributes ?? []),
-    ],
-    ResourceBooleanAttributes: [
-      {
-        key: 'BOOL_ATTRIBUTE',
-        value: true,
-        info: { some: 'json' },
-      },
-      ...(additionalAttributes.ResourceBooleanAttributes ?? []),
-    ],
-    ResourceReferenceStringAttributes: [
-      {
-        key: 'REFERENCE_ATTRIBUTE',
-        value: 'REFERENCE_VALUE_2',
-        language: 'REFERENCE_LANGUAGE',
-        list: 'REFERENCE_LIST_1',
-      },
-      ...(additionalAttributes.ResourceReferenceStringAttributes ?? []),
-    ],
-  },
+  lastUpdated: lastUpdated.toISOString(),
+  stringAttributes: [
+    {
+      key: 'STRING_ATTRIBUTE',
+      value: 'VALUE',
+      language: 'en-US',
+      info: { some: 'json' },
+    },
+    ...(stringAttributes ?? []),
+  ],
+  dateTimeAttributes: [
+    {
+      key: 'DATETIME_ATTRIBUTE',
+      value: baselineDate.toISOString(),
+      info: { some: 'json' },
+    },
+    ...(dateTimeAttributes ?? []),
+  ],
+  numberAttributes: [
+    {
+      key: 'NUMBER_ATTRIBUTE',
+      value: 1337,
+      info: { some: 'json' },
+    },
+    ...(numberAttributes ?? []),
+  ],
+  booleanAttributes: [
+    {
+      key: 'BOOL_ATTRIBUTE',
+      value: true,
+      info: { some: 'json' },
+    },
+    ...(booleanAttributes ?? []),
+  ],
+  referenceStringAttributes: [
+    {
+      key: 'REFERENCE_ATTRIBUTE',
+      value: 'REFERENCE_VALUE_2',
+      language: 'REFERENCE_LANGUAGE',
+      list: 'REFERENCE_LIST_1',
+    },
+    ...(referenceStringAttributes ?? []),
+  ],
 });
 
 const generateApiResource = (
@@ -482,7 +486,7 @@ describe('POST /import', () => {
       requestBody: {
         importedResources: [
           generateImportResource('100', addSeconds(baselineDate, 30), {
-            ResourceReferenceStringAttributes: [
+            referenceStringAttributes: [
               {
                 key: 'REFERENCE_ATTRIBUTE',
                 value: 'NOT_A_REFERENCE_VALUE',
@@ -567,7 +571,7 @@ describe('POST /import', () => {
     const requestBody: ImportRequestBody = {
       importedResources: [
         generateImportResource('2', subSeconds(baselineDate, 15)),
-        missingIdResource as ImportApiResource,
+        missingIdResource as FlatResource,
         generateImportResource('4', addSeconds(baselineDate, 15)),
       ],
       batch: newDefaultTestBatch(),

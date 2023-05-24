@@ -18,7 +18,7 @@ import parseISO from 'date-fns/parseISO';
 import { handler, HttpError, isHttpError, KhpApiResource, KhpApiResponse } from '../../index';
 import each from 'jest-each';
 // eslint-disable-next-line prettier/prettier
-import type { ImportApiResource, ImportProgress } from '@tech-matters/types';
+import type { FlatResource, ImportProgress } from '@tech-matters/types';
 import { ScheduledEvent } from 'aws-lambda';
 import { addMilliseconds, addSeconds, subHours, subMinutes } from 'date-fns';
 import { publishToImportConsumer, ResourceMessage } from '../../clientSqs';
@@ -40,12 +40,12 @@ jest.mock('../../config', () => jest.fn());
 
 const mockFetch: jest.Mock<ReturnType<typeof fetch>> = jest.fn();
 
-const EMPTY_ATTRIBUTES: ImportApiResource['attributes'] = {
-  ResourceStringAttributes: [],
-  ResourceReferenceStringAttributes: [],
-  ResourceBooleanAttributes: [],
-  ResourceNumberAttributes: [],
-  ResourceDateTimeAttributes: [],
+const EMPTY_ATTRIBUTES: Omit<FlatResource, 'id' | 'name' | 'lastUpdated'> = {
+  stringAttributes: [],
+  referenceStringAttributes: [],
+  booleanAttributes: [],
+  numberAttributes: [],
+  dateTimeAttributes: [],
 };
 
 const MOCK_CONFIG: Awaited<ReturnType<typeof getConfig>> = {
@@ -92,7 +92,7 @@ const generateKhpResource = (updatedAt: Date, resourceId: string): KhpApiResourc
   updatedAt: updatedAt.toISOString(),
 });
 
-const generateResourceMessage = (updatedAt: Date, resourceId: string, batchFromDate: Date, remaining: number): ResourceMessage => (
+const generateResourceMessage = (lastUpdated: Date, resourceId: string, batchFromDate: Date, remaining: number): ResourceMessage => (
   { 
     accountSid: MOCK_CONFIG.accountSid,
     batch: {
@@ -103,8 +103,8 @@ const generateResourceMessage = (updatedAt: Date, resourceId: string, batchFromD
     importedResources: [{
       id: resourceId,
       name: `Resource ${resourceId}`,
-      attributes: EMPTY_ATTRIBUTES,
-      updatedAt: updatedAt.toISOString(),
+      lastUpdated: lastUpdated.toISOString(),
+      ...EMPTY_ATTRIBUTES,
     }],
   });
 

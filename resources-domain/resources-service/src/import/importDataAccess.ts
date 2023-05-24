@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { AccountSID, ImportApiResource, ImportProgress } from '@tech-matters/types';
+import { AccountSID, FlatResource, ImportProgress } from '@tech-matters/types';
 import {
   generateUpdateImportProgressSql,
   generateUpsertSqlFromImportResource,
@@ -41,7 +41,7 @@ export type UpsertImportedResourceResult = {
 
 export const upsertImportedResource = (task?: ITask<{}>) => async (
   accountSid: AccountSID,
-  resource: ImportApiResource,
+  resource: FlatResource,
 ): Promise<UpsertImportedResourceResult> => {
   return txIfNotInOne(task, async tx => {
     await tx.none(generateUpsertSqlFromImportResource(accountSid, resource));

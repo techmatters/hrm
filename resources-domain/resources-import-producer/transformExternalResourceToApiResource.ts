@@ -15,7 +15,7 @@
  */
 
 // eslint-disable-next-line prettier/prettier
-import type { ImportApiResource, InlineAttributeTable } from '@tech-matters/types';
+import type { FlatResource, InlineAttributeProperty } from '@tech-matters/types';
 import { KhpApiResource } from '.';
 import {
   FieldMappingContext,
@@ -33,7 +33,7 @@ import mappings from './mappings';
 
 const pushResourceFieldMapping = ({ aseloResource, context, mapping }: {
   mapping: Omit<ResourceFieldMapping, 'children'>, 
-  aseloResource: ImportApiResource,
+  aseloResource: FlatResource,
   context: FieldMappingContext
 }): void => {
   aseloResource[mapping.field] = mapping.valueGenerator(context);
@@ -41,10 +41,10 @@ const pushResourceFieldMapping = ({ aseloResource, context, mapping }: {
 
 const pushReferenceAttributeMapping = ({ aseloResource, context, mapping }: {
   mapping: Omit<ReferenceAttributeMapping, 'children'>, 
-  aseloResource: ImportApiResource,
+  aseloResource: FlatResource,
   context: FieldMappingContext
 }): void => {
-  aseloResource.attributes.ResourceReferenceStringAttributes.push({
+  aseloResource.referenceStringAttributes.push({
     key: mapping.keyGenerator(context),
     value: mapping.valueGenerator(context),
     language: mapping.languageGenerator(context),
@@ -54,10 +54,10 @@ const pushReferenceAttributeMapping = ({ aseloResource, context, mapping }: {
 
 const pushTranslatableAttributeMapping = ({ aseloResource, context, mapping }: {
   mapping: Omit<TranslatableAttributeMapping, 'children'>, 
-  aseloResource: ImportApiResource,
+  aseloResource: FlatResource,
   context: FieldMappingContext
 }): void => {
-  aseloResource.attributes[mapping.table].push({
+  aseloResource[mapping.property].push({
     key: mapping.keyGenerator(context),
     value: mapping.valueGenerator(context),
     language: mapping.languageGenerator(context),
@@ -65,52 +65,52 @@ const pushTranslatableAttributeMapping = ({ aseloResource, context, mapping }: {
   });
 };
 
-const pushInlineAttributeMapping = <T extends InlineAttributeTable>({ aseloResource, context, mapping }: {
+const pushInlineAttributeMapping = <T extends InlineAttributeProperty>({ aseloResource, context, mapping }: {
   mapping: Omit<InlineAttributeMapping<T>, 'children'>, 
-  aseloResource: ImportApiResource,
+  aseloResource: FlatResource,
   context: FieldMappingContext
 }): void => {
-  if (mapping.table === 'ResourceStringAttributes') {
+  if (mapping.property === 'stringAttributes') {
     const value = mapping.valueGenerator(context);
     if (typeof value !== 'string') {
-      throw new Error(`Wrong value provided to ResourceStringAttributes: mapping ${JSON.stringify(mapping)} and value ${value}`);
+      throw new Error(`Wrong value provided to stringAttributes: mapping ${JSON.stringify(mapping)} and value ${value}`);
     }
 
-    aseloResource.attributes.ResourceStringAttributes.push({
+    aseloResource.stringAttributes.push({
       key: mapping.keyGenerator(context),
       value,
       info: mapping.infoGenerator(context),
-      language: null,
+      language: '',
     });
-  } else if (mapping.table === 'ResourceBooleanAttributes') {
+  } else if (mapping.property === 'booleanAttributes') {
     const value = mapping.valueGenerator(context);
     if (typeof value !== 'boolean') {
       throw new Error(`Wrong value provided to ResourceBooleanAttributes: mapping ${JSON.stringify(mapping)} and value ${value}`);
     }
 
-    aseloResource.attributes.ResourceBooleanAttributes.push({
+    aseloResource.booleanAttributes.push({
       key: mapping.keyGenerator(context),
       value,
       info: mapping.infoGenerator(context),
     });
-  } else if (mapping.table ===  'ResourceNumberAttributes') {
+  } else if (mapping.property ===  'numberAttributes') {
     const value = mapping.valueGenerator(context);
     if (typeof value !== 'number') {
       throw new Error(`Wrong value provided to ResourceNumberAttributes: mapping ${JSON.stringify(mapping)} and value ${value}`);
     }
 
-    aseloResource.attributes.ResourceNumberAttributes.push({
+    aseloResource.numberAttributes.push({
       key: mapping.keyGenerator(context),
       value,
       info: mapping.infoGenerator(context),
     });
-  } else if (mapping.table === 'ResourceDateTimeAttributes') {
+  } else if (mapping.property === 'dateTimeAttributes') {
     const value = mapping.valueGenerator(context);
     if (typeof value !== 'string') {
       throw new Error(`Wrong value provided to ResourceDateTimeAttributes: mapping ${JSON.stringify(mapping)} and value ${value}`);
     }
 
-    aseloResource.attributes.ResourceDateTimeAttributes.push({
+    aseloResource.dateTimeAttributes.push({
       key: mapping.keyGenerator(context),
       value,
       info: mapping.infoGenerator(context),
@@ -134,8 +134,8 @@ const mapNode = (
   mappingNode: MappingNode,
   dataNode: any,
   parentContext: FieldMappingContext,
-  aseloResource: ImportApiResource,
-): ImportApiResource => {
+  aseloResource: FlatResource,
+): FlatResource => {
   Object.entries(mappingNode).forEach(([property, { children, ...mapping }]) => {
     const captureProperty = property.match(/{(?<captureProperty>.*)}/)?.groups?.captureProperty;
 
@@ -193,18 +193,16 @@ const mapNode = (
 export const transformExternalResourceToApiResource = <T>(
   resourceMapping: MappingNode,
   khpResource: T,
-): ImportApiResource => {
-  const resource: ImportApiResource = {
+): FlatResource => {
+  const resource: FlatResource = {
     id: '',
-    updatedAt: '',
+    lastUpdated: '',
     name: '',
-    attributes: {
-      ResourceStringAttributes: [],
-      ResourceNumberAttributes: [],
-      ResourceBooleanAttributes: [],
-      ResourceDateTimeAttributes: [],
-      ResourceReferenceStringAttributes: [],
-    },
+    stringAttributes: [],
+    numberAttributes: [],
+    booleanAttributes: [],
+    dateTimeAttributes: [],
+    referenceStringAttributes: [],
   };
 
   return mapNode(
@@ -217,5 +215,5 @@ export const transformExternalResourceToApiResource = <T>(
 
 export const transformKhpResourceToApiResource = (
   khpResource: KhpApiResource,
-): ImportApiResource =>
+): FlatResource =>
 transformExternalResourceToApiResource(mappings.khp.KHP_MAPPING_NODE, khpResource);

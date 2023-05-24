@@ -17,8 +17,9 @@
 import { subHours, subSeconds } from 'date-fns';
 import { mockConnection, mockTransaction } from '../mock-db';
 import { updateImportProgress, upsertImportedResource } from '../../../src/import/importDataAccess';
-import { AccountSID, ImportApiResource, ImportBatch, ImportProgress } from '@tech-matters/types';
+import { AccountSID, FlatResource, ImportBatch, ImportProgress } from '@tech-matters/types';
 import importService from '../../../src/import/importService';
+import { BLANK_ATTRIBUTES } from '../mockResources';
 jest.mock('../../../src/import/importDataAccess', () => ({
   updateImportProgress: jest.fn(),
   upsertImportedResource: jest.fn(),
@@ -36,38 +37,30 @@ let mockUpsert: jest.MockedFunction<ReturnType<typeof upsertImportedResource>> =
 
 const BASELINE_DATE = new Date(2012, 11, 4);
 
-const BLANK_ATTRIBUTES: ImportApiResource['attributes'] = {
-  ResourceStringAttributes: [],
-  ResourceReferenceStringAttributes: [],
-  ResourceBooleanAttributes: [],
-  ResourceNumberAttributes: [],
-  ResourceDateTimeAttributes: [],
-};
-
 const BASELINE_BATCH: ImportBatch = {
   remaining: 100,
   fromDate: subHours(BASELINE_DATE, 12).toISOString(),
   toDate: BASELINE_DATE.toISOString(),
 };
 
-const SAMPLE_RESOURCES: ImportApiResource[] = [
+const SAMPLE_RESOURCES: FlatResource[] = [
   {
     name: 'Test Resource 50',
     id: 'TEST_RESOURCE_50',
-    attributes: BLANK_ATTRIBUTES,
-    updatedAt: subSeconds(BASELINE_DATE, 1).toISOString(),
+    lastUpdated: subSeconds(BASELINE_DATE, 1).toISOString(),
+    ...BLANK_ATTRIBUTES,
   },
   {
     name: 'Test Resource 1',
     id: 'TEST_RESOURCE_1',
-    attributes: BLANK_ATTRIBUTES,
-    updatedAt: subHours(BASELINE_DATE, 6).toISOString(),
+    lastUpdated: subHours(BASELINE_DATE, 6).toISOString(),
+    ...BLANK_ATTRIBUTES,
   },
   {
     name: 'Test Resource 20',
     id: 'TEST_RESOURCE_20',
-    attributes: BLANK_ATTRIBUTES,
-    updatedAt: subSeconds(BASELINE_DATE, 30).toISOString(),
+    lastUpdated: subSeconds(BASELINE_DATE, 30).toISOString(),
+    ...BLANK_ATTRIBUTES,
   },
 ];
 
@@ -165,8 +158,8 @@ describe('upsertResources', () => {
 
   test('A resource fails validation - rolls back transaction & returns validation error', async () => {
     const brokenResources = [...SAMPLE_RESOURCES];
-    const { name, updatedAt, ...invalidResource } = brokenResources[1];
-    brokenResources[1] = invalidResource as ImportApiResource;
+    const { name, lastUpdated, ...invalidResource } = brokenResources[1];
+    brokenResources[1] = invalidResource as FlatResource;
     const result = await upsertResources('AC_FAKE', brokenResources, BASELINE_BATCH);
     expect(mockUpsertImportedResource).toHaveBeenCalledWith(expect.anything());
 
@@ -179,7 +172,7 @@ describe('upsertResources', () => {
     expect(result).toEqual({
       resource: brokenResources[1],
       reason: 'missing field',
-      fields: ['name', 'updatedAt'],
+      fields: ['name', 'lastUpdated'],
     });
   });
 

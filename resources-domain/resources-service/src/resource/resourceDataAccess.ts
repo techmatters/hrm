@@ -14,32 +14,18 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import {
-  AccountSID,
-  ReferrableResourceTranslatableAttribute,
-  ReferrableResourceAttribute,
-} from '@tech-matters/types';
+import { AccountSID, FlatResource } from '@tech-matters/types';
 
 import { db } from '../connection-pool';
 import {
   SELECT_RESOURCE_IDS_WHERE_NAME_CONTAINS,
   SELECT_RESOURCE_IN_IDS,
-  SELECT_UNINDEXED_RESOURCES,
-} from './sql/resource-get-sql';
-
-export type ReferrableResourceRecord = {
-  name: string;
-  id: string;
-  stringAttributes: (ReferrableResourceTranslatableAttribute & { key: string })[];
-  booleanAttributes: (ReferrableResourceAttribute<boolean> & { key: string })[];
-  numberAttributes: (ReferrableResourceAttribute<number> & { key: string })[];
-  datetimeAttributes: (ReferrableResourceAttribute<string> & { key: string })[];
-};
+} from './sql/resourceGetSql';
 
 export const getById = async (
   accountSid: AccountSID,
   resourceId: string,
-): Promise<ReferrableResourceRecord | null> => {
+): Promise<FlatResource | null> => {
   const res = await db.task(async t =>
     t.oneOrNone(SELECT_RESOURCE_IN_IDS, { accountSid, resourceIds: [resourceId] }),
   );
@@ -49,13 +35,13 @@ export const getById = async (
   } else {
     console.debug('Resource not found:', resourceId);
   }
-  return res as ReferrableResourceRecord;
+  return res;
 };
 
 export const getByIdList = async (
   accountSid: AccountSID,
   resourceIds: string[],
-): Promise<ReferrableResourceRecord[]> => {
+): Promise<FlatResource[]> => {
   if (!resourceIds.length) return [];
   console.debug('Retrieving resources with IDs:', resourceIds);
   const res = await db.task(async t =>
@@ -86,20 +72,4 @@ export const getWhereNameContains = async (
     totalCount: countResultSet[0].totalCount,
     results: dataResultSet.map(record => record.id),
   };
-};
-
-/**
- * THIS FUNCTION PULLS DATA FOR MULTIPLE ACCOUNTS
- * It must NEVER BE accessed from an endpoint that is accessible with a Twilio user auth token
- * Maybe we should move it to a different file to make that clearer - or add security checking at this level.
- */
-export const getUnindexed = async (
-  limit: number,
-): Promise<(ReferrableResourceRecord & {
-  accountSid: AccountSID;
-})[]> => {
-  console.debug('Retrieving un-indexed resources');
-  const res = await db.task(async t => t.manyOrNone(SELECT_UNINDEXED_RESOURCES, { limit }));
-  console.debug(`Retrieved ${res.length} un-indexed resources`);
-  return res;
 };

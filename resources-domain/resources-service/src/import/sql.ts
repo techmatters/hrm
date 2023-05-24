@@ -15,26 +15,27 @@
  */
 
 import { pgp } from '../connection-pool';
-import { AccountSID, ImportProgress, ImportApiResource } from '@tech-matters/types';
+import { AccountSID, ImportProgress, FlatResource } from '@tech-matters/types';
 
 export const generateUpsertSqlFromImportResource = (
   accountSid: string,
-  { attributes, ...resourceRecord }: ImportApiResource,
+  { stringAttributes, referenceStringAttributes, ...resourceRecord }: FlatResource,
 ): string => {
   const sqlBatch: string[] = [];
 
   sqlBatch.push(`${pgp.helpers.insert(
-    { ...resourceRecord, accountSid, created: resourceRecord.updatedAt },
+    { ...resourceRecord, accountSid, created: resourceRecord.lastUpdated },
     ['id', 'name', 'accountSid', 'created'],
     { schema: 'resources', table: 'Resources' },
   )} 
   ON CONFLICT ON CONSTRAINT "Resources_pkey" 
   DO UPDATE SET "name" = EXCLUDED."name", "lastUpdated" = EXCLUDED."lastUpdated"`);
   const nonTranslatableTables = [
-    'ResourceNumberAttributes',
-    'ResourceBooleanAttributes',
-    'ResourceDateTimeAttributes',
+    { property: 'numberAttributes', table: 'ResourceNumberAttributes' },
+    { property: 'booleanAttributes', table: 'ResourceBooleanAttributes' },
+    { property: 'dateTimeAttributes', table: 'ResourceDateTimeAttributes' },
   ] as const;
+
   sqlBatch.push(
     pgp.as.format(
       `DELETE FROM resources."ResourceStringAttributes" WHERE "resourceId" = $<resourceId> AND "accountSid" = $<accountSid>;
@@ -45,7 +46,7 @@ export const generateUpsertSqlFromImportResource = (
     ),
   );
   sqlBatch.push(
-    ...attributes.ResourceStringAttributes.map(attribute => {
+    ...stringAttributes.map(attribute => {
       const { key, value, info, language } = attribute;
       return pgp.as.format(
         `${pgp.helpers.insert(
@@ -64,8 +65,8 @@ export const generateUpsertSqlFromImportResource = (
     }),
   );
   sqlBatch.push(
-    ...nonTranslatableTables.flatMap(table =>
-      attributes[table].map(attribute => {
+    ...nonTranslatableTables.flatMap(({ property, table }) =>
+      resourceRecord[property].map(attribute => {
         const { key, value, info } = attribute;
         return pgp.as.format(
           `${pgp.helpers.insert(
@@ -91,7 +92,7 @@ export const generateUpsertSqlFromImportResource = (
   );
 
   sqlBatch.push(
-    ...attributes.ResourceReferenceStringAttributes.map(attribute => {
+    ...referenceStringAttributes.map(attribute => {
       const { language, ...queryValues } = attribute;
       return pgp.as.format(
         `INSERT INTO resources."ResourceReferenceStringAttributes" 

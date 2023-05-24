@@ -19,6 +19,7 @@ import {
   ReferrableResourceAttribute,
   ResourceAttributeNode,
   ReferrableResource,
+  FlatResource,
 } from '@tech-matters/types';
 
 import {
@@ -27,13 +28,7 @@ import {
   SearchParameters as SearchParametersEs,
 } from '@tech-matters/elasticsearch-client';
 
-import {
-  getById,
-  getByIdList,
-  getUnindexed,
-  getWhereNameContains,
-  ReferrableResourceRecord,
-} from './resource-data-access';
+import { getById, getByIdList, getWhereNameContains } from './resourceDataAccess';
 import resourceCloudSearchClient from './search/resource-cloudsearch-client';
 import { SearchParameters } from './search/search-types';
 import { mapSearchParametersToKhpTermsAndFilters } from './search/khp-resource-search-mapping';
@@ -51,22 +46,29 @@ export type SimpleSearchParameters = {
 const EMPTY_RESULT = { totalCount: 0, results: [] };
 const MAX_SEARCH_RESULTS = 200;
 
-const resourceRecordToApiResource = (
-  resourceRecord: ReferrableResourceRecord,
-): ReferrableResource => {
+const resourceRecordToApiResource = (resourceRecord: FlatResource): ReferrableResource => {
   const {
     stringAttributes,
+    referenceStringAttributes,
     booleanAttributes,
     numberAttributes,
-    datetimeAttributes,
+    dateTimeAttributes,
+    lastUpdated,
     ...withoutAttributes
   } = resourceRecord;
   const attributesWithKeys: (ReferrableResourceAttribute<string | boolean | number> & {
     key: string;
-  })[] = [...stringAttributes, ...booleanAttributes, ...numberAttributes, ...datetimeAttributes];
+    list?: string;
+  })[] = [
+    ...stringAttributes,
+    ...booleanAttributes,
+    ...numberAttributes,
+    ...dateTimeAttributes,
+    ...referenceStringAttributes,
+  ];
   const attributes: ResourceAttributeNode = {};
   attributesWithKeys.forEach(attribute => {
-    const { key, ...withoutKey } = attribute;
+    const { key, list, ...withoutKey } = attribute;
     // Split on / but not on \/ (escaped /), but doesn't misinterpret preceding escaped \ (i.e. \\) as escaping the / (see unit tests)
     const attributeKeySections = key.split(/(?<!(?:[^\\]|^)\\(?:\\{2})*)\//).filter(s => s.length);
     let currentObject: ResourceAttributeNode = attributes as ResourceAttributeNode;
@@ -102,7 +104,7 @@ const resourceRecordToApiResource = (
 // The full resource & the search result are synonyms for now, but the full resource should grow to be a superset
 export type ReferrableResourceSearchResult = ReferrableResource;
 
-export const resourceModel = (cloudSearchConfig: CloudSearchConfig) => {
+export const resourceService = (cloudSearchConfig: CloudSearchConfig) => {
   const cloudSearchClient = resourceCloudSearchClient(cloudSearchConfig);
 
   return {
@@ -230,21 +232,4 @@ export const resourceModel = (cloudSearchConfig: CloudSearchConfig) => {
       };
     },
   };
-};
-
-/**
- * THIS FUNCTION PULLS DATA FOR MULTIPLE ACCOUNTS
- * It must NEVER BE accessed from an endpoint that is accessible with a Twilio user auth token
- * Maybe we should move it to a different file to make that clearer - or add security checking at this level.
- */
-export const getUnindexedResources = async (
-  limit: number,
-): Promise<(ReferrableResource & { accountSid: AccountSID })[]> => {
-  const unindexedResources: (ReferrableResourceRecord & {
-    accountSid: AccountSID;
-  })[] = await getUnindexed(limit);
-  return unindexedResources.map(({ accountSid, ...record }) => ({
-    ...resourceRecordToApiResource(record),
-    accountSid,
-  }));
 };

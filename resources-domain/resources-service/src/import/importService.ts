@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { AccountSID, ImportApiResource, ImportBatch, ImportProgress } from '@tech-matters/types';
+import { AccountSID, FlatResource, ImportBatch, ImportProgress } from '@tech-matters/types';
 import { db } from '../connection-pool';
 import {
   getImportState,
@@ -26,20 +26,20 @@ import {
 export type ValidationFailure = {
   reason: 'missing field';
   fields: string[];
-  resource: ImportApiResource;
+  resource: FlatResource;
 };
 
 export const isValidationFailure = (result: any): result is ValidationFailure => {
   return result.reason === 'missing field';
 };
 
-const REQUIRED_FIELDS = ['id', 'name', 'attributes', 'updatedAt'] as const;
+const REQUIRED_FIELDS = ['id', 'name', 'lastUpdated'] as const;
 
 const importService = () => {
   return {
     upsertResources: async (
       accountSid: AccountSID,
-      resources: ImportApiResource[],
+      resources: FlatResource[],
       batch: ImportBatch,
     ): Promise<UpsertImportedResourceResult[] | ValidationFailure> => {
       if (!resources?.length) return [];
@@ -66,12 +66,18 @@ const importService = () => {
             }
             results.push(result);
           }
-          const { id, updatedAt } = [...resources].sort((a, b) =>
-            a.updatedAt > b.updatedAt ? 1 : a.updatedAt < b.updatedAt ? -1 : a.id > b.id ? 1 : -1,
+          const { id, lastUpdated } = [...resources].sort((a, b) =>
+            a.lastUpdated > b.lastUpdated
+              ? 1
+              : a.lastUpdated < b.lastUpdated
+              ? -1
+              : a.id > b.id
+              ? 1
+              : -1,
           )[resources.length - 1];
           await updateImportProgress(t)(accountSid, {
             ...batch,
-            lastProcessedDate: updatedAt,
+            lastProcessedDate: lastUpdated,
             lastProcessedId: id,
           });
           return results;
