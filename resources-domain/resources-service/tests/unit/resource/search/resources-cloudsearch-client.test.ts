@@ -22,7 +22,7 @@ import {
 import client, {
   SearchResultSet,
 } from '../../../../src/resource/search/resource-cloudsearch-client';
-import { AccountSID } from '@tech-matters/twilio-worker-auth';
+import { AccountSID } from '@tech-matters/types';
 import { TermsAndFilters } from '../../../../src/resource/search/search-types';
 import each from 'jest-each';
 

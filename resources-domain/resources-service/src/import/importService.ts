@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { ImportApiResource, ImportBatch, ImportProgress } from '@tech-matters/types';
+import { AccountSID, ImportApiResource, ImportBatch, ImportProgress } from '@tech-matters/types';
 import { db } from '../connection-pool';
 import {
   getImportState,
@@ -22,7 +22,6 @@ import {
   upsertImportedResource,
   UpsertImportedResourceResult,
 } from './importDataAccess';
-import { AccountSID } from '@tech-matters/twilio-worker-auth';
 
 export type ValidationFailure = {
   reason: 'missing field';

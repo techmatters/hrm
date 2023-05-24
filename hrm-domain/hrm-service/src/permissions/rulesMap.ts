@@ -38,15 +38,9 @@ const zaRules = require('../../permission-rules/za.json');
 const zmRules = require('../../permission-rules/zm.json');
 const zwRules = require('../../permission-rules/zw.json');
 
-import { actionsMaps, Actions } from './actions';
+import { actionsMaps, Actions, TargetKind } from './actions';
 
-export const conditionTypes = [
-  'isSupervisor',
-  'isCreator',
-  'isCaseOpen',
-  'isOwner',
-  'everyone',
-] as const;
+const conditionTypes = ['isSupervisor', 'isCreator', 'isCaseOpen', 'isOwner', 'everyone'] as const;
 export type Condition = typeof conditionTypes[number];
 export type ConditionsSet = Condition[];
 export type ConditionsSets = ConditionsSet[];
@@ -63,6 +57,31 @@ export const isRulesFile = (rules: any): rules is RulesFile =>
   Object.values(actionsMaps).every(map =>
     Object.values(map).every(action => isConditionsSets(rules[action])),
   );
+
+// Defines which actions are supported on each TargetKind
+const supportedTargetKindActions: { [k in TargetKind]: ConditionsSet } = {
+  case: ['isSupervisor', 'isCreator', 'isCaseOpen', 'everyone'],
+  contact: ['isSupervisor', 'isOwner', 'everyone'],
+  postSurvey: ['isSupervisor', 'everyone'],
+};
+
+const isValidTargetKind = (kind: string, css: ConditionsSets) =>
+  css.every(cs => cs.every(c => supportedTargetKindActions[kind].includes(c)));
+
+const validateTargetKindActions = (rules: RulesFile) =>
+  Object.entries(actionsMaps)
+    .map(([kind, map]) =>
+      Object.values(map).reduce((accum, action) => {
+        return {
+          ...accum,
+          [action]: isValidTargetKind(kind, rules[action]),
+        };
+      }, {}),
+    )
+    .reduce<{ [k in Actions]: boolean }>((accum, obj) => ({ ...accum, ...obj }), {} as any);
+
+const isValidTargetKindActions = (validated: { [k in Actions]: boolean }) =>
+  Object.values(validated).every(Boolean);
 
 const rulesMapDef = {
   br: brRules,
@@ -90,12 +109,25 @@ const rulesMapDef = {
   e2e: e2eRules,
 } as const;
 
-const validRulesMap = () =>
+export const validRulesMap = () =>
   // This type assertion is legit as long as we check that every entry in rulesMapDef is indeed a RulesFile
   Object.entries(rulesMapDef).reduce<{ [k in keyof typeof rulesMapDef]: RulesFile }>(
     (accum, [k, rules]) => {
-      if (!isRulesFile(rules))
+      if (!isRulesFile(rules)) {
         throw new Error(`Error: rules file for ${k} is not a valid RulesFile`);
+      }
+
+      const validated = validateTargetKindActions(rules);
+      if (!isValidTargetKindActions(validated)) {
+        const invalidActions = Object.entries(validated)
+          .filter(([, val]) => !val)
+          .map(([key]) => key);
+        throw new Error(
+          `Error: rules file for ${k} contains invalid actions mappings: ${JSON.stringify(
+            invalidActions,
+          )}`,
+        );
+      }
 
       return { ...accum, [k]: rules };
     },

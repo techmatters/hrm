@@ -15,9 +15,8 @@
  */
 
 import { IRouter, Router } from 'express';
-import { ImportRequestBody } from '@tech-matters/types';
+import { AccountSID, ImportRequestBody } from '@tech-matters/types';
 import importService, { isValidationFailure } from './importService';
-import { AccountSID } from '@tech-matters/twilio-worker-auth';
 import createError from 'http-errors';
 
 const importRoutes = () => {
