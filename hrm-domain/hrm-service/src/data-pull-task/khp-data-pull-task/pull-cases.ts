@@ -34,7 +34,6 @@ export const pullCases = async (startDate: Date, endDate: Date) => {
   const { s3Client, accountSid, bucketName } = await getContext();
 
   const searchParams = getSearchParams(startDate, endDate);
-
   const searchCasesResult = await caseApi.searchCases(
     accountSid,
     noLimitsOrOffset,

@@ -22,7 +22,6 @@ import isValid from 'date-fns/isValid';
 
 import { pullCases } from './pull-cases';
 import { pullContacts } from './pull-contacts';
-import { pullReferrals } from './pull-referrals';
 
 const hasNoDateArgs = (args: any) =>
   args['start-date'] === undefined && args['end-date'] === undefined;
@@ -68,9 +67,5 @@ export const pullData = async (args: any) => {
     ? getDateRangeForPast12Hours()
     : getDateRangeFromArgs(args);
 
-  await Promise.all([
-    pullCases(startDate, endDate),
-    pullContacts(startDate, endDate),
-    pullReferrals(startDate, endDate),
-  ]);
+  await Promise.all([pullCases(startDate, endDate), pullContacts(startDate, endDate)]);
 };

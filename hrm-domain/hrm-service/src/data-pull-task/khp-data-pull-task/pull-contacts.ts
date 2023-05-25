@@ -16,9 +16,9 @@
 
 import format from 'date-fns/format';
 import formatISO from 'date-fns/formatISO';
-import parseISO from 'date-fns/parseISO';
 
 import { getContext, noLimitsOrOffset, maxPermissions } from './context';
+import type { Contact } from '../../contact/contact-data-access';
 import * as contactApi from '../../contact/contact';
 
 const getSearchParams = (startDate: Date, endDate: Date) => ({
@@ -31,20 +31,27 @@ export const pullContacts = async (startDate: Date, endDate: Date) => {
   const { s3Client, accountSid, bucketName } = await getContext();
 
   const searchParams = getSearchParams(startDate, endDate);
-
+  const originalFormat = true;
   const searchContactsResult = await contactApi.searchContacts(
     accountSid,
     searchParams,
     noLimitsOrOffset,
     maxPermissions,
+    originalFormat,
   );
 
-  const { contacts } = searchContactsResult;
+  // Here we can safely cast to Contact[] because we're passing originalFormat: true
+  const { contacts } = <{ contacts: Contact[] }>searchContactsResult;
 
   const Bucket = bucketName;
   const uploadPromises = contacts.map(contact => {
-    const date = format(parseISO(contact.overview.dateTime), 'yyyy/MM/dd');
-    const Key = `hrm-data/${date}/contacts/${contact.contactId}.json`;
+    /*
+      Contact type is slightly wrong. The instance object actually has:
+      1) 'totalCount' property, which I think is wrong, so I'm deleting it
+    */
+    delete (contact as any).totalCount;
+    const date = format(contact.createdAt, 'yyyy/MM/dd');
+    const Key = `hrm-data/${date}/contacts/${contact.id}.json`;
     const Body = JSON.stringify(contact);
     const params = { Bucket, Key, Body };
 
