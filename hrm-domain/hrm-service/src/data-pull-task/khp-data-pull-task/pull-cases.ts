@@ -17,8 +17,9 @@
 import format from 'date-fns/format';
 import formatISO from 'date-fns/formatISO';
 
-import { getContext, noLimitsOrOffset, maxPermissions } from './context';
+import { getContext, maxPermissions } from './context';
 import * as caseApi from '../../case/case';
+import { autoPaginate, defaultLimitAndOffset } from './auto-paginate';
 
 const getSearchParams = (startDate: Date, endDate: Date) => ({
   filters: {
@@ -33,14 +34,13 @@ export const pullCases = async (startDate: Date, endDate: Date) => {
   const { s3Client, accountSid, bucketName } = await getContext();
 
   const searchParams = getSearchParams(startDate, endDate);
-  const searchCasesResult = await caseApi.searchCases(
+
+  const cases = await autoPaginate(caseApi.searchCases, [
     accountSid,
-    noLimitsOrOffset,
+    defaultLimitAndOffset,
     searchParams,
     maxPermissions,
-  );
-
-  const { cases } = searchCasesResult;
+  ]);
 
   const mapContactsToId = (contacts: Required<{ id: number }>[]) =>
     contacts.map(contact => contact.id);

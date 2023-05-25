@@ -46,15 +46,6 @@ export const getContext = async (): Promise<Context> => {
   return context;
 };
 
-/**
- * If there're more contacts/case than 1000,
- * we're not exporting these extra data, right now.
- *
- * TODO: use offset field, and continue looping until all data
- * is fetched.
- */
-export const noLimitsOrOffset = {};
-
 export const maxPermissions = {
   can: () => true,
   user: {

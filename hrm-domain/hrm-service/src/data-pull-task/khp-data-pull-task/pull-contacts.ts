@@ -17,9 +17,9 @@
 import format from 'date-fns/format';
 import formatISO from 'date-fns/formatISO';
 
-import { getContext, noLimitsOrOffset, maxPermissions } from './context';
-import { Contact } from '../../contact/contact-data-access';
+import { getContext, maxPermissions } from './context';
 import * as contactApi from '../../contact/contact';
+import { autoPaginate, defaultLimitAndOffset } from './auto-paginate';
 
 const getSearchParams = (startDate: Date, endDate: Date) => ({
   dateFrom: formatISO(startDate),
@@ -32,16 +32,14 @@ export const pullContacts = async (startDate: Date, endDate: Date) => {
 
   const searchParams = getSearchParams(startDate, endDate);
   const originalFormat = true;
-  const searchContactsResult = await contactApi.searchContacts(
+
+  const contacts = await autoPaginate(contactApi.searchContacts, [
     accountSid,
     searchParams,
-    noLimitsOrOffset,
+    defaultLimitAndOffset,
     maxPermissions,
     originalFormat,
-  );
-
-  // Here we can safely cast to Contact[] because we're passing originalFormat: true
-  const { contacts } = <{ contacts: Contact[] }>searchContactsResult;
+  ]);
 
   const Bucket = bucketName;
   const uploadPromises = contacts.map(contact => {
