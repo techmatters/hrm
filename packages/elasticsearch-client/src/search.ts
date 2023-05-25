@@ -17,7 +17,8 @@ import {
   SearchRequest as ESSearchRequest,
   SearchTotalHits as ESSearchTotalHits,
 } from '@elastic/elasticsearch/lib/api/types';
-import { PassThroughConfig } from './client';
+import { SearchConfiguration } from './config/searchConfiguration';
+import { Client } from '@elastic/elasticsearch';
 
 export type SearchQueryFilters = Array<
   | { terms: { [key: string]: string[] } }
@@ -30,7 +31,10 @@ export type SearchExtraParams = {
   searchParameters: SearchParameters;
 };
 
-export type SearchParams = PassThroughConfig & SearchExtraParams;
+export type SearchParams = SearchExtraParams & {
+  searchConfig: SearchConfiguration;
+  client: Client;
+};
 
 export type SearchParameters = {
   filters?: Record<string, boolean | number | string | string[]>;
@@ -162,14 +166,13 @@ export const generateElasticsearchQuery = ({
  **/
 export const search = async ({
   client,
-  index,
-  indexConfig,
+  searchConfig: { searchFields, indexName: index },
   searchParameters,
 }: SearchParams): Promise<SearchResponse> => {
   const query = generateElasticsearchQuery({
     index,
     searchParameters,
-    fields: indexConfig.searchFields,
+    fields: searchFields,
   });
 
   const { hits } = await client.search(query);

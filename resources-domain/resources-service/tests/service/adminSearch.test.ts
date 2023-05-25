@@ -14,7 +14,6 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import sqslite from 'sqslite';
 import { adminHeaders, getInternalServer, getRequest, headers, internalHeaders } from './server';
 import { SearchReindexParams } from '../../src/admin/adminSearchService';
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
@@ -25,6 +24,7 @@ import { generateImportResource as newImportResourceGenerator } from '../mockRes
 import range from './range';
 import { SQS } from 'aws-sdk';
 import { db } from '../../src/connection-pool';
+const sqslite = require('sqslite');
 
 const internalServer = getInternalServer();
 const internalRequest = getRequest(internalServer);

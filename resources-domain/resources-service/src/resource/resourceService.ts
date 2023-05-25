@@ -23,7 +23,6 @@ import {
 } from '@tech-matters/types';
 
 import {
-  IndexTypes,
   getClient,
   SearchParameters as SearchParametersEs,
 } from '@tech-matters/elasticsearch-client';
@@ -33,6 +32,10 @@ import resourceCloudSearchClient from './search/resource-cloudsearch-client';
 import { SearchParameters } from './search/search-types';
 import { mapSearchParametersToKhpTermsAndFilters } from './search/khp-resource-search-mapping';
 import { CloudSearchConfig } from '../config/cloud-search';
+import {
+  RESOURCE_INDEX_TYPE,
+  resourceSearchConfiguration,
+} from '@tech-matters/resources-search-config';
 
 export type SimpleSearchParameters = {
   ids: string[];
@@ -209,10 +212,12 @@ export const resourceService = (cloudSearchConfig: CloudSearchConfig) => {
         };
       }
 
-      const client = await getClient({
-        accountSid,
-        indexType: IndexTypes.RESOURCES,
-      });
+      const client = (
+        await getClient({
+          accountSid,
+          indexType: RESOURCE_INDEX_TYPE,
+        })
+      ).searchClient(resourceSearchConfiguration);
 
       const { total, items } = await client.search({
         searchParameters: boundedSearchParameters,

@@ -24,11 +24,18 @@
  */
 
 import { IndicesCreateRequest } from '@elastic/elasticsearch/lib/api/types';
-import { isHighBoostGlobalField, isStringField, languageFields, mappingFields } from './config';
+import {
+  IndexConfiguration,
+  isHighBoostGlobalField,
+  isStringField,
+} from '../../indexConfiguration';
 
 // TODO: when we have more than one index and config type, we should probably make this a little more generic
 // and just import the config to generate it. Leaving here for now.
-export const getCreateIndexParams = ({ index }: { index: string }): IndicesCreateRequest => {
+export const getCreateIndexParams = (
+  indexConfig: Omit<IndexConfiguration, 'getCreateIndexParams'>,
+): IndicesCreateRequest => {
+  const { indexName: index, mappingFields, languageFields } = indexConfig;
   const createRequest: IndicesCreateRequest = {
     index,
     settings: {
@@ -79,7 +86,9 @@ export const getCreateIndexParams = ({ index }: { index: string }): IndicesCreat
     if (!isStringField(value.type)) return;
 
     const property: any = createRequest!.mappings!.properties![key];
-    property.copy_to = isHighBoostGlobalField(key) ? 'high_boost_global' : 'low_boost_global';
+    property.copy_to = isHighBoostGlobalField(indexConfig, key)
+      ? 'high_boost_global'
+      : 'low_boost_global';
 
     if (value.hasLanguageFields) {
       property.fields = languageFields;

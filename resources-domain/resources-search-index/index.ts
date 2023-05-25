@@ -15,14 +15,15 @@
  */
 import { ResourcesJobProcessorError } from '@tech-matters/hrm-job-errors';
 import { getClient, IndexTypes, IndexDocumentBulkDocuments, IndexDocumentBulkResponse } from '@tech-matters/elasticsearch-client';
-import { ResourcesSearchIndexPayload  } from '@tech-matters/types';
+import { FlatResource, ResourcesSearchIndexPayload } from '@tech-matters/types';
 
 // eslint-disable-next-line prettier/prettier
 import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
+import { resourceIndexConfiguration } from '@tech-matters/resources-search-config';
 
 const indexType = IndexTypes.RESOURCES;
 
-export type DocumentsByAccountSid = Record<string, IndexDocumentBulkDocuments>;
+export type DocumentsByAccountSid = Record<string, IndexDocumentBulkDocuments<FlatResource>>;
 
 export const convertDocumentsToBulkRequest = (messages: ResourcesSearchIndexPayload[] ) => messages.reduce((acc, message) => {
     const { accountSid, document } = message;
@@ -48,7 +49,7 @@ export const handleErrors = async (indexResp: IndexDocumentBulkResponse, addDocu
 export const indexDocumentsBulk = async (documentsByAccountSid: DocumentsByAccountSid, addDocumentIdToFailures: any) => {
   await Promise.all(Object.keys(documentsByAccountSid).map(async (accountSid) => {
     const documents = documentsByAccountSid[accountSid];
-    const client = await getClient({ accountSid, indexType });
+    const client = (await getClient({ accountSid, indexType })).indexClient(resourceIndexConfiguration);
     try {
       const indexResp = await client.indexDocumentBulk({ documents });
       await handleErrors(indexResp, addDocumentIdToFailures);

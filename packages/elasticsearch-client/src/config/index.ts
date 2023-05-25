@@ -21,3 +21,9 @@ export const config: Record<string, Record<string, any>> = {
     resources: defaultResources,
   },
 };
+
+export type CreateIndexConvertedDocument = {
+  high_boost_global: string;
+  low_boost_global: string;
+  [key: string]: number | string | string[];
+};
