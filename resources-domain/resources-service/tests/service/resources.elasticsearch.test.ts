@@ -23,12 +23,16 @@ import each from 'jest-each';
 import { ReferrableResourceSearchResult } from '../../src/resource/resourceService';
 import { AssertionError } from 'assert';
 import addHours from 'date-fns/addHours';
-import { Client, IndexTypes, getClient } from '@tech-matters/elasticsearch-client';
+import { Client, getClient } from '@tech-matters/elasticsearch-client';
 import { getById } from '../../src/resource/resourceDataAccess';
+import {
+  RESOURCE_INDEX_TYPE,
+  resourceIndexConfiguration,
+} from '@tech-matters/resources-search-config/dist/index';
 
 export const workerSid = 'WK-worker-sid';
 
-const indexType = IndexTypes.RESOURCES;
+const indexType = RESOURCE_INDEX_TYPE;
 const clients: Record<string, Client> = {};
 
 const server = getServer({
@@ -54,7 +58,7 @@ afterAll(async () => {
    `);
   await Promise.all(
     accountSids.map(async accountSid => {
-      await clients[accountSid].deleteIndex();
+      await clients[accountSid].indexClient(resourceIndexConfiguration).deleteIndex();
     }),
   );
 });
@@ -103,8 +107,8 @@ beforeAll(async () => {
         indexType,
       });
       clients[accountSid] = client;
-
-      await client.createIndex({});
+      const indexClient = client.indexClient(resourceIndexConfiguration);
+      await indexClient.createIndex({});
 
       await Promise.all(
         resourceIdxs.flatMap(async resourceIdx => {
@@ -114,14 +118,14 @@ beforeAll(async () => {
             throw new Error(`Resource ${resourceIdx} not found`);
           }
 
-          await client.indexDocument({
+          await indexClient.indexDocument({
             document: dbResource,
             id: dbResource.id,
           });
         }),
       );
 
-      await client.refreshIndex();
+      await indexClient.refreshIndex();
     }),
   );
 });
