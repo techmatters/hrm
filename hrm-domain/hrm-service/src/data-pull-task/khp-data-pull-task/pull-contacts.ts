@@ -50,7 +50,7 @@ export const pullContacts = async (startDate: Date, endDate: Date) => {
       1) 'totalCount' property, which I think is wrong, so I'm deleting it
     */
     delete (contact as any).totalCount;
-    const date = format(contact.createdAt, 'yyyy/MM/dd');
+    const date = format(contact.updatedAt, 'yyyy/MM/dd');
     const Key = `hrm-data/${date}/contacts/${contact.id}.json`;
     const Body = JSON.stringify(contact);
     const params = { Bucket, Key, Body };

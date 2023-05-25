@@ -22,8 +22,7 @@ import * as caseApi from '../../case/case';
 
 const getSearchParams = (startDate: Date, endDate: Date) => ({
   filters: {
-    // TODO: should use updatedAt instead?
-    createdAt: {
+    updatedAt: {
       from: formatISO(startDate),
       to: formatISO(endDate),
     },
@@ -56,10 +55,10 @@ export const pullCases = async (startDate: Date, endDate: Date) => {
     /*
       Case type is slightly wrong. The instance object actually has:
       1) 'totalCount' property, which I think is wrong, so I'm deleting it
-      2) 'createdAt' property is actually a Date instead of a string, so I'm explicitaly converting it to Date
+      2) 'updatedAt' property is actually a Date instead of a string, so I'm explicitaly converting it to Date
     */
     delete (cas as any).totalCount;
-    const date = format((cas.createdAt as unknown) as Date, 'yyyy/MM/dd');
+    const date = format((cas.updatedAt as unknown) as Date, 'yyyy/MM/dd');
     const Key = `hrm-data/${date}/cases/${cas.id}.json`;
     const Body = JSON.stringify(cas);
     const params = { Bucket, Key, Body };
