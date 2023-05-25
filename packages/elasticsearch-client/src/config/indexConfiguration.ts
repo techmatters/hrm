@@ -16,7 +16,7 @@
 
 // eslint-disable-next-line prettier/prettier
 import type { PropertyName, MappingProperty, IndicesCreateRequest } from '@elastic/elasticsearch/lib/api/types';
-import { getCreateIndexParams } from './default/resources';
+import { getCreateIndexParams } from './getCreateIndexParams';
 import { CreateIndexConvertedDocument } from './index';
 
 export type IndexConfiguration<T = any> = {

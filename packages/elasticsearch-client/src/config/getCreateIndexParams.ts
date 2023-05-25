@@ -24,14 +24,13 @@
  */
 
 import { IndicesCreateRequest } from '@elastic/elasticsearch/lib/api/types';
-import {
-  IndexConfiguration,
-  isHighBoostGlobalField,
-  isStringField,
-} from '../../indexConfiguration';
+import { IndexConfiguration, isHighBoostGlobalField, isStringField } from './indexConfiguration';
 
-// TODO: when we have more than one index and config type, we should probably make this a little more generic
-// and just import the config to generate it. Leaving here for now.
+/**
+ * This function is used to make a request to create the index in ES.
+ * It is the default implementation of the getCreateIndexParams function that will be used if an override is not provided in the index configuration.
+ * @param indexConfig
+ */
 export const getCreateIndexParams = (
   indexConfig: Omit<IndexConfiguration, 'getCreateIndexParams'>,
 ): IndicesCreateRequest => {
