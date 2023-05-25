@@ -14,14 +14,12 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 import { ResourcesJobProcessorError } from '@tech-matters/hrm-job-errors';
-import { getClient, IndexTypes, IndexDocumentBulkDocuments, IndexDocumentBulkResponse } from '@tech-matters/elasticsearch-client';
+import { getClient, IndexDocumentBulkDocuments, IndexDocumentBulkResponse } from '@tech-matters/elasticsearch-client';
 import { FlatResource, ResourcesSearchIndexPayload } from '@tech-matters/types';
 
 // eslint-disable-next-line prettier/prettier
 import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
-import { resourceIndexConfiguration } from '@tech-matters/resources-search-config';
-
-const indexType = IndexTypes.RESOURCES;
+import { RESOURCE_INDEX_TYPE, resourceIndexConfiguration } from '@tech-matters/resources-search-config';
 
 export type DocumentsByAccountSid = Record<string, IndexDocumentBulkDocuments<FlatResource>>;
 
@@ -49,7 +47,7 @@ export const handleErrors = async (indexResp: IndexDocumentBulkResponse, addDocu
 export const indexDocumentsBulk = async (documentsByAccountSid: DocumentsByAccountSid, addDocumentIdToFailures: any) => {
   await Promise.all(Object.keys(documentsByAccountSid).map(async (accountSid) => {
     const documents = documentsByAccountSid[accountSid];
-    const client = (await getClient({ accountSid, indexType })).indexClient(resourceIndexConfiguration);
+    const client = (await getClient({ accountSid, indexType: RESOURCE_INDEX_TYPE })).indexClient(resourceIndexConfiguration);
     try {
       const indexResp = await client.indexDocumentBulk({ documents });
       await handleErrors(indexResp, addDocumentIdToFailures);
