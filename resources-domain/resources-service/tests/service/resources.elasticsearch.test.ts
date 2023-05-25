@@ -28,7 +28,7 @@ import { getById } from '../../src/resource/resourceDataAccess';
 import {
   RESOURCE_INDEX_TYPE,
   resourceIndexConfiguration,
-} from '@tech-matters/resources-search-config/dist/index';
+} from '@tech-matters/resources-search-config';
 
 export const workerSid = 'WK-worker-sid';
 
