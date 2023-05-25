@@ -13,14 +13,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-
-import * as defaultResources from './default/resources';
-
-export const config: Record<string, Record<string, any>> = {
-  default: {
-    resources: defaultResources,
-  },
-};
+export * from './indexConfiguration';
+export * from './searchConfiguration';
+export * from './getCreateIndexParams';
 
 export type CreateIndexConvertedDocument = {
   high_boost_global: string;

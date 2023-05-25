@@ -13,10 +13,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { IndexConfiguration, newIndexConfiguration } from '@tech-matters/elasticsearch-client';
+import {
+  IndexConfiguration,
+  SearchConfiguration,
+  newIndexConfiguration,
+} from '@tech-matters/elasticsearch-client';
 import { FlatResource } from '@tech-matters/types';
 import { convertIndexDocument } from './convertIndexDocument';
-import { SearchConfiguration } from '@tech-matters/elasticsearch-client/dist/config/searchConfiguration';
 
 export const resourceIndexConfiguration: IndexConfiguration<FlatResource> = newIndexConfiguration({
   // List of searchable fields used to build the ES search query.

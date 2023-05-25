@@ -29,3 +29,4 @@ export * from './src/indexDocumentBulk';
 export * from './src/search';
 export * from './src/config';
 export * from './src/config/indexConfiguration';
+export * from './src/config/searchConfiguration';
