@@ -18,7 +18,7 @@ import format from 'date-fns/format';
 import formatISO from 'date-fns/formatISO';
 
 import { getContext, noLimitsOrOffset, maxPermissions } from './context';
-import type { Contact } from '../../contact/contact-data-access';
+import { Contact } from '../../contact/contact-data-access';
 import * as contactApi from '../../contact/contact';
 
 const getSearchParams = (startDate: Date, endDate: Date) => ({
