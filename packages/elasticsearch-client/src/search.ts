@@ -17,7 +17,7 @@ import {
   SearchRequest as ESSearchRequest,
   SearchTotalHits as ESSearchTotalHits,
 } from '@elastic/elasticsearch/lib/api/types';
-import { SearchConfiguration } from './config/searchConfiguration';
+import { SearchConfiguration } from './config';
 import { Client } from '@elastic/elasticsearch';
 
 export type SearchQueryFilters = Array<
@@ -32,6 +32,7 @@ export type SearchExtraParams = {
 };
 
 export type SearchParams = SearchExtraParams & {
+  index: string;
   searchConfig: SearchConfiguration;
   client: Client;
 };
@@ -166,7 +167,8 @@ export const generateElasticsearchQuery = ({
  **/
 export const search = async ({
   client,
-  searchConfig: { searchFields, indexName: index },
+  index,
+  searchConfig: { searchFields },
   searchParameters,
 }: SearchParams): Promise<SearchResponse> => {
   const query = generateElasticsearchQuery({

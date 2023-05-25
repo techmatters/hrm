@@ -15,6 +15,5 @@
  */
 
 export type SearchConfiguration = {
-  indexName: string;
   searchFields: string[];
 };

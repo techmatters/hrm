@@ -20,7 +20,6 @@ import { getCreateIndexParams } from './getCreateIndexParams';
 import { CreateIndexConvertedDocument } from './index';
 
 export type IndexConfiguration<T = any> = {
-  indexName: string;
   highBoostGlobalFields: string[];
   mappingFields: {
     [key: string]: {
@@ -30,7 +29,7 @@ export type IndexConfiguration<T = any> = {
     };
   };
   languageFields: Record<PropertyName, MappingProperty>
-  getCreateIndexParams: () => IndicesCreateRequest
+  getCreateIndexParams: (indexName: string) => IndicesCreateRequest
   convertToIndexDocument: (sourceEntity: T) => CreateIndexConvertedDocument
 };
 const stringFieldTypes = ['text', 'keyword'];
@@ -45,6 +44,6 @@ export const isStringField = (fieldType: string): fieldType is 'keyword' | 'text
 type IndexConfigurationOptions<T> = Omit<IndexConfiguration<T>, 'getCreateIndexParams'> & Partial<IndexConfiguration<T>>;
 
 export const newIndexConfiguration = <T>(configuration: IndexConfigurationOptions<T>): IndexConfiguration<T> => ({
-  getCreateIndexParams: () => getCreateIndexParams(configuration),
+  getCreateIndexParams: (index: string) => getCreateIndexParams(configuration, index),
   ...configuration,
 });

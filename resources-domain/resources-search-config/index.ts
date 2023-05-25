@@ -22,9 +22,6 @@ import { FlatResource } from '@tech-matters/types';
 import { convertIndexDocument } from './convertIndexDocument';
 
 export const resourceIndexConfiguration: IndexConfiguration<FlatResource> = newIndexConfiguration({
-  // List of searchable fields used to build the ES search query.
-  indexName: 'resources',
-
   // This is a list of attribute names that should be given higher priority in search results.
   highBoostGlobalFields: ['title'],
 
@@ -72,7 +69,6 @@ export const resourceIndexConfiguration: IndexConfiguration<FlatResource> = newI
 });
 
 export const resourceSearchConfiguration: SearchConfiguration = {
-  indexName: 'resources',
   searchFields: [
     'name.*^4',
     'keywords.*^4',

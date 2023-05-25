@@ -21,8 +21,7 @@ import { deleteIndex } from './deleteIndex';
 import { indexDocument, IndexDocumentExtraParams } from './indexDocument';
 import getAccountSid from './getAccountSid';
 import { search, SearchExtraParams } from './search';
-import { SearchConfiguration } from './config/searchConfiguration';
-import { IndexConfiguration } from './config/indexConfiguration';
+import { SearchConfiguration, IndexConfiguration } from './config';
 
 // import { getMockClient } from './mockClient';
 type AccountSidOrShortCodeRequired =
@@ -89,7 +88,7 @@ const getClientOrMock = async ({ config, index, indexType }: GetClientOrMockArgs
     client,
     index,
     searchClient: (searchConfig: SearchConfiguration) => ({
-      search: (args: SearchExtraParams) => search({ client, searchConfig, ...args }),
+      search: (args: SearchExtraParams) => search({ client, index, searchConfig, ...args }),
     }),
     indexClient: <T>(indexConfig: IndexConfiguration<T>) => {
       const passThroughConfig: PassThroughConfig<T> = {

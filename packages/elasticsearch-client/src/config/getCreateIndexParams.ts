@@ -30,11 +30,13 @@ import { IndexConfiguration, isHighBoostGlobalField, isStringField } from './ind
  * This function is used to make a request to create the index in ES.
  * It is the default implementation of the getCreateIndexParams function that will be used if an override is not provided in the index configuration.
  * @param indexConfig
+ * @param index
  */
 export const getCreateIndexParams = (
   indexConfig: Omit<IndexConfiguration, 'getCreateIndexParams'>,
+  index: string,
 ): IndicesCreateRequest => {
-  const { indexName: index, mappingFields, languageFields } = indexConfig;
+  const { mappingFields, languageFields } = indexConfig;
   const createRequest: IndicesCreateRequest = {
     index,
     settings: {

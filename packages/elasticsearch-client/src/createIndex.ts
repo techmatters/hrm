@@ -33,7 +33,7 @@ export const createIndex = async ({
     return;
   }
 
-  const params = indexConfig.getCreateIndexParams();
+  const params = indexConfig.getCreateIndexParams(index);
   const res = await client.indices.create(params);
 
   // This waits for the index to be created and for the shards to be allocated
