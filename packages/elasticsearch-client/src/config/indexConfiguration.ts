@@ -19,14 +19,18 @@ import type { PropertyName, MappingProperty, IndicesCreateRequest } from '@elast
 import { getCreateIndexParams } from './getCreateIndexParams';
 import { CreateIndexConvertedDocument } from './index';
 
-export type IndexConfiguration<T = any> = {
+export type MappingField<TAttribute> = {
+  type: 'integer' | 'keyword' | 'text' | 'boolean';
+  hasLanguageFields?: boolean;
+  isArrayField?: boolean;
+  attributeKeyPattern?: RegExp;
+  indexValueGenerator?: (attribute: TAttribute) => boolean | string | number;
+};
+
+export type IndexConfiguration<T = any, TAttribute = any> = {
   highBoostGlobalFields: string[];
   mappingFields: {
-    [key: string]: {
-      type: 'integer' | 'keyword' | 'text';
-      hasLanguageFields?: boolean;
-      isArrayField?: boolean;
-    };
+    [key: string]: MappingField<TAttribute>;
   };
   languageFields: Record<PropertyName, MappingProperty>
   getCreateIndexParams: (indexName: string) => IndicesCreateRequest
@@ -34,8 +38,11 @@ export type IndexConfiguration<T = any> = {
 };
 const stringFieldTypes = ['text', 'keyword'];
 
-export const isMappingField = ({ mappingFields }: Pick<IndexConfiguration, 'mappingFields'>, fieldName: string) =>
-  Object.keys(mappingFields).includes(fieldName);
+export const getMappingField = <TAttribute>({ mappingFields }: Pick<IndexConfiguration<any, TAttribute>, 'mappingFields'>, fieldName: string): { name:string, field: MappingField<TAttribute> } | undefined => {
+  if (Object.keys(mappingFields).includes(fieldName)) return { name: fieldName, field:mappingFields[fieldName] };
+  const [name, field] = Object.entries(mappingFields).find(([, { attributeKeyPattern }]) => attributeKeyPattern?.test(fieldName)) ?? [];
+  return name && field ? { name, field } : undefined;
+};
 export const isHighBoostGlobalField = ({ highBoostGlobalFields }: Pick<IndexConfiguration, 'highBoostGlobalFields'>, fieldName: string) =>
   highBoostGlobalFields.includes(fieldName);
 export const isStringField = (fieldType: string): fieldType is 'keyword' | 'text' =>

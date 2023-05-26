@@ -18,12 +18,15 @@ import {
   SearchConfiguration,
   newIndexConfiguration,
 } from '@tech-matters/elasticsearch-client';
-import { FlatResource } from '@tech-matters/types';
+import { FlatResource, ReferrableResourceAttribute } from '@tech-matters/types';
 import { convertIndexDocument } from './convertIndexDocument';
 
-export const resourceIndexConfiguration: IndexConfiguration<FlatResource> = newIndexConfiguration({
+export const resourceIndexConfiguration: IndexConfiguration<
+  FlatResource,
+  ReferrableResourceAttribute<any>
+> = newIndexConfiguration({
   // This is a list of attribute names that should be given higher priority in search results.
-  highBoostGlobalFields: ['title'],
+  highBoostGlobalFields: ['description', 'province', 'city', 'targetPopulation', 'feeStructure'],
 
   mappingFields: {
     // TODO: this may change to a range field depending on discussion around what they really want to search for.
@@ -31,7 +34,6 @@ export const resourceIndexConfiguration: IndexConfiguration<FlatResource> = newI
     // Having a range of ages and then passing in a range of ages to search for seems like a strange way to do it.
     eligibilityMinAge: {
       type: 'integer',
-      hasLanguageFields: true,
     },
     eligibilityMaxAge: {
       type: 'integer',
@@ -42,17 +44,29 @@ export const resourceIndexConfiguration: IndexConfiguration<FlatResource> = newI
     },
     feeStructure: {
       type: 'keyword',
-      hasLanguageFields: true,
     },
-    keywords: {
+    targetPopulation: {
       type: 'keyword',
-      isArrayField: true,
+    },
+    howIsServiceOffered: {
+      type: 'keyword',
+    },
+    interpretationTranslationServicesAvailable: {
+      type: 'boolean',
     },
     province: {
       type: 'keyword',
+      isArrayField: true,
+      attributeKeyPattern: /(.*)\/province$/,
+      indexValueGenerator: ({ value, info }: ReferrableResourceAttribute<string>) =>
+        `${info?.name ?? ''} ${value}`,
     },
     city: {
       type: 'keyword',
+      isArrayField: true,
+      attributeKeyPattern: /(.*)\/city$/,
+      indexValueGenerator: ({ value, info }: ReferrableResourceAttribute<string>) =>
+        `${info?.name ?? ''} ${value}`,
     },
   },
   languageFields: {
@@ -69,14 +83,7 @@ export const resourceIndexConfiguration: IndexConfiguration<FlatResource> = newI
 });
 
 export const resourceSearchConfiguration: SearchConfiguration = {
-  searchFields: [
-    'name.*^4',
-    'keywords.*^4',
-    'high_boost_global.*^3',
-    'low_boost_global.*^2',
-    '*',
-    '*.*',
-  ],
+  searchFields: ['name.*^4', 'id.*^4', 'high_boost_global.*^3', 'low_boost_global.*^2', '*', '*.*'],
 };
 
 export const RESOURCE_INDEX_TYPE = 'resources';
