@@ -14,22 +14,16 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-jest.mock('@tech-matters/ssm-cache');
+import { handleSignals } from './handleSignals';
+import { cleanupContactJobs } from '../contact-job/contact-job-cleanup';
+import { enableCleanupJobs } from '../featureFlags';
 
-jest.mock('aws-sdk', () => {
-  const SQSMocked = {
-    deleteMessage: () => jest.fn(),
-    receiveMessage: jest.fn(() => {
-      return {
-        promise: jest.fn().mockResolvedValue({
-          Messages: [],
-        }),
-      };
-    }),
-    sendMessage: jest.fn().mockReturnThis(),
-    promise: jest.fn(),
-  };
-  return {
-    SQS: jest.fn(() => SQSMocked),
-  };
-});
+const gracefulExit = async () => {
+  //TODO: this should probably handle closing any running processes and open db connections
+};
+
+if (enableCleanupJobs) {
+  cleanupContactJobs();
+
+  handleSignals(gracefulExit);
+}

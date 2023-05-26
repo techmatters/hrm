@@ -15,7 +15,7 @@
  */
 
 import { SQS } from 'aws-sdk';
-import { getSsmParameter } from '@tech-matters/hrm-ssm-cache';
+import { getSsmParameter } from '@tech-matters/ssm-cache';
 import { sns } from '@tech-matters/sns-client';
 
 // eslint-disable-next-line prettier/prettier

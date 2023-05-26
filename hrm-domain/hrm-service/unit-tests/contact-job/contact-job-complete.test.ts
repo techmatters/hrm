@@ -229,9 +229,12 @@ describe('pollAndProcessCompletedContactJobs', () => {
       const result = await contactJobComplete.pollAndProcessCompletedContactJobs(JOB_MAX_ATTEMPTS);
 
       expect(processCompletedFunctionSpy).toHaveBeenCalledWith(job);
-      expect(completeContactJobSpy).toHaveBeenCalledWith(job.jobId, {
-        message: 'Job processed successfully',
-        value: job.attemptPayload,
+      expect(completeContactJobSpy).toHaveBeenCalledWith({
+        id: job.jobId,
+        completionPayload: {
+          message: 'Job processed successfully',
+          value: job.attemptPayload,
+        },
       });
       expect(deletedCompletedContactJobsSpy).toHaveBeenCalledWith(validPayload.ReceiptHandle);
 
@@ -311,8 +314,12 @@ describe('pollAndProcessCompletedContactJobs', () => {
       expect(deletedCompletedContactJobsSpy).toHaveBeenCalledWith(validPayload.ReceiptHandle);
 
       if (expectMarkedAsComplete) {
-        expect(completeContactJobSpy).toHaveBeenCalledWith(job.jobId, {
-          message: 'Attempts limit reached',
+        expect(completeContactJobSpy).toHaveBeenCalledWith({
+          id: job.jobId,
+          completionPayload: {
+            message: 'Attempts limit reached',
+          },
+          wasSuccessful: false,
         });
       } else {
         expect(completeContactJobSpy).not.toHaveBeenCalled();

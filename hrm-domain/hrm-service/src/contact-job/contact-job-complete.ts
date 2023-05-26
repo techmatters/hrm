@@ -100,7 +100,7 @@ export const handleSuccess = async (completedJob: CompletedContactJobBodySuccess
     message: 'Job processed successfully',
     value: completedJob.attemptPayload,
   };
-  const markedComplete = await completeContactJob(completedJob.jobId, completionPayload);
+  const markedComplete = await completeContactJob({ id: completedJob.jobId, completionPayload });
 
   return markedComplete;
 };
@@ -131,7 +131,7 @@ export const handleFailure = async (completedJob: CompletedContactJobBodyFailure
 
   if (attemptNumber >= jobMaxAttempts) {
     const completionPayload = { message: 'Attempts limit reached' };
-    const markedComplete = await completeContactJob(completedJob.jobId, completionPayload);
+    const markedComplete = await completeContactJob({ id: completedJob.jobId, completionPayload, wasSuccessful: false });
 
     return markedComplete;
   }

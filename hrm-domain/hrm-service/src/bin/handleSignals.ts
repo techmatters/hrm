@@ -14,22 +14,26 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-jest.mock('@tech-matters/ssm-cache');
+const stopSignals = [
+  'SIGHUP',
+  'SIGINT',
+  'SIGQUIT',
+  'SIGILL',
+  'SIGTRAP',
+  'SIGABRT',
+  'SIGBUS',
+  'SIGFPE',
+  'SIGUSR1',
+  'SIGSEGV',
+  'SIGUSR2',
+  'SIGTERM',
+];
 
-jest.mock('aws-sdk', () => {
-  const SQSMocked = {
-    deleteMessage: () => jest.fn(),
-    receiveMessage: jest.fn(() => {
-      return {
-        promise: jest.fn().mockResolvedValue({
-          Messages: [],
-        }),
-      };
-    }),
-    sendMessage: jest.fn().mockReturnThis(),
-    promise: jest.fn(),
-  };
-  return {
-    SQS: jest.fn(() => SQSMocked),
-  };
-});
+export const handleSignals = async (callback: () => Promise<void>) => {
+  stopSignals.forEach(signal => {
+    process.on(signal, async () => {
+      console.log(`Caught ${signal}, stopping...`);
+      await callback();
+    });
+  });
+};

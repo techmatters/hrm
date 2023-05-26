@@ -82,7 +82,7 @@ const membersList = [
   },
 ];
 
-jest.mock('@tech-matters/hrm-twilio-client', () => {
+jest.mock('@tech-matters/twilio-client', () => {
   const mockClient = {
     chat: {
       v2: {
