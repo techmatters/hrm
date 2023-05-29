@@ -38,6 +38,9 @@ export const resourceIndexConfiguration: IndexConfiguration<
     eligibilityMaxAge: {
       type: 'integer',
     },
+    id: {
+      type: 'keyword',
+    },
     name: {
       type: 'keyword',
       hasLanguageFields: true,
