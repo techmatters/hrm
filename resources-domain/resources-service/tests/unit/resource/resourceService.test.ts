@@ -35,10 +35,6 @@ jest.mock('@tech-matters/elasticsearch-client', () => ({
   getClient: jest.fn(),
 }));
 
-jest.mock('../../../src/resource/search/resource-cloudsearch-client');
-
-jest.mock('../../../src/resource/search/khp-resource-search-mapping');
-
 let mockGetClient = getClient as jest.Mock<ReturnType<typeof getClient>>;
 
 const mockGetByIdList = getByIdList as jest.Mock<Promise<FlatResource[]>>;
