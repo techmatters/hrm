@@ -63,5 +63,19 @@ type ResourcesJobMessageCommons = {
 export type ResourcesSearchIndexPayload = ResourcesJobMessageCommons & {
   jobType: ResourcesJobType.SEARCH_INDEX;
   accountSid: string;
-  document: ReferrableResource;
+  document: FlatResource;
+};
+
+export type FlatResource = {
+  name: string;
+  id: string;
+  lastUpdated: string;
+  stringAttributes: (ReferrableResourceTranslatableAttribute & { key: string })[];
+  referenceStringAttributes: (ReferrableResourceTranslatableAttribute & {
+    key: string;
+    list: string;
+  })[];
+  booleanAttributes: (ReferrableResourceAttribute<boolean> & { key: string })[];
+  numberAttributes: (ReferrableResourceAttribute<number> & { key: string })[];
+  dateTimeAttributes: (ReferrableResourceAttribute<string> & { key: string })[];
 };

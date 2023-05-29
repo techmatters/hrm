@@ -43,8 +43,10 @@ COPY --from=build /home/node /home/node
 
 WORKDIR /home/node
 
-COPY hrm-domain/hrm-service/docker-entrypoint /usr/local/bin/docker-entrypoint
+
+COPY hrm-domain/hrm-service/docker-entrypoint.sh /usr/local/bin/docker-entrypoint
 RUN chmod +x /usr/local/bin/docker-entrypoint
+
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint"]
 
 # RUN npm test

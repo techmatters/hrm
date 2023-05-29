@@ -15,11 +15,11 @@
  */
 
 import { SQS } from 'aws-sdk';
-import { getSsmParameter } from '@tech-matters/hrm-ssm-cache';
+import { getSsmParameter } from '@tech-matters/ssm-cache';
 import { sns } from '@tech-matters/sns-client';
 
 // eslint-disable-next-line prettier/prettier
-import { type ReferrableResource,  type ResourcesSearchIndexPayload, ResourcesJobType } from '@tech-matters/types';
+import { type FlatResource,  type ResourcesSearchIndexPayload, ResourcesJobType } from '@tech-matters/types';
 
 const RETRY_COUNT = 4;
 
@@ -77,7 +77,7 @@ export const publishToResourcesJob = async ({ params, retryCount = 0, messageGro
   }
 };
 
-export const publishSearchIndexJob = (accountSid: string, resource: ReferrableResource) => {
+export const publishSearchIndexJob = (accountSid: string, resource: FlatResource) => {
   return publishToResourcesJob({
     params: {
       accountSid,

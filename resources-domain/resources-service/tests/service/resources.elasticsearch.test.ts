@@ -20,10 +20,11 @@ import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/
 import { headers, getRequest, getServer } from './server';
 import { db } from '../../src/connection-pool';
 import each from 'jest-each';
-import { ReferrableResourceSearchResult } from '../../src/resource/resource-model';
+import { ReferrableResourceSearchResult } from '../../src/resource/resourceService';
 import { AssertionError } from 'assert';
 import addHours from 'date-fns/addHours';
 import { Client, IndexTypes, getClient } from '@tech-matters/elasticsearch-client';
+import { getById } from '../../src/resource/resourceDataAccess';
 
 export const workerSid = 'WK-worker-sid';
 
@@ -92,7 +93,7 @@ beforeAll(async () => {
 
   await Promise.all(
     accountResourceIdTuples.flatMap(async ([accountIdx, resourceIdxs]) => {
-      const accountSid = `ACCOUNT_${accountIdx}`;
+      const accountSid = `ACCOUNT_${accountIdx}` as const;
 
       const client = await getClient({
         accountSid,
@@ -105,15 +106,17 @@ beforeAll(async () => {
 
       await client.createIndex({});
 
-      const basePath = `/v0/accounts/${accountSid}/resources/resource`;
-
       await Promise.all(
         resourceIdxs.flatMap(async resourceIdx => {
-          const dbResource = await request.get(`${basePath}/RESOURCE_${resourceIdx}`).set(headers);
+          const dbResource = await getById(accountSid, `RESOURCE_${resourceIdx}`);
+
+          if (!dbResource) {
+            throw new Error(`Resource ${resourceIdx} not found`);
+          }
 
           await client.indexDocument({
-            document: dbResource.body,
-            id: dbResource.body.id,
+            document: dbResource,
+            id: dbResource.id,
           });
         }),
       );

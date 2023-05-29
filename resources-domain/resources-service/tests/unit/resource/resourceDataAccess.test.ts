@@ -16,7 +16,7 @@
 
 import * as pgPromise from 'pg-promise';
 import { mockConnection, mockTask } from '../mock-db';
-import * as resourceDb from '../../../src/resource/resource-data-access';
+import * as resourceDb from '../../../src/resource/resourceDataAccess';
 
 let conn: pgPromise.ITask<unknown>;
 

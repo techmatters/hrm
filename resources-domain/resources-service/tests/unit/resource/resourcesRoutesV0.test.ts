@@ -17,15 +17,15 @@
 import { ReferrableResource } from '@tech-matters/types';
 
 import { Request, Response, Router } from 'express';
-import resourceRoutes from '../../../src/resource/resource-routes-v0';
-import { resourceModel } from '../../../src/resource/resource-model';
+import resourceRoutes from '../../../src/resource/resourceRoutesV0';
+import { resourceService } from '../../../src/resource/resourceService';
 
 jest.mock('express', () => ({
   Router: jest.fn(),
 }));
 
-jest.mock('../../../src/resource/resource-model', () => ({
-  resourceModel: jest.fn(),
+jest.mock('../../../src/resource/resourceService', () => ({
+  resourceService: jest.fn(),
 }));
 
 const mockSearchResources: jest.Mock<Promise<{
@@ -33,7 +33,7 @@ const mockSearchResources: jest.Mock<Promise<{
   results: ReferrableResource[];
 }>> = jest.fn();
 
-(<jest.Mock>resourceModel).mockReturnValue({
+(<jest.Mock>resourceService).mockReturnValue({
   searchResourcesByName: mockSearchResources,
 });
 

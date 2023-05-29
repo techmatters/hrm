@@ -14,22 +14,12 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-jest.mock('@tech-matters/ssm-cache');
+import { FlatResource } from '@tech-matters/types';
 
-jest.mock('aws-sdk', () => {
-  const SQSMocked = {
-    deleteMessage: () => jest.fn(),
-    receiveMessage: jest.fn(() => {
-      return {
-        promise: jest.fn().mockResolvedValue({
-          Messages: [],
-        }),
-      };
-    }),
-    sendMessage: jest.fn().mockReturnThis(),
-    promise: jest.fn(),
-  };
-  return {
-    SQS: jest.fn(() => SQSMocked),
-  };
-});
+export const BLANK_ATTRIBUTES: Omit<FlatResource, 'id' | 'name' | 'lastUpdated'> = {
+  stringAttributes: [],
+  referenceStringAttributes: [],
+  booleanAttributes: [],
+  numberAttributes: [],
+  dateTimeAttributes: [],
+};

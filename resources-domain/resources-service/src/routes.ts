@@ -15,7 +15,7 @@
  */
 
 import { IRouter, Router } from 'express';
-import resourceRoutes from './resource/resource-routes-v0';
+import resourceRoutes from './resource/resourceRoutesV0';
 import { CloudSearchConfig } from './config/cloud-search';
 import importRoutes from './import/importRoutesV0';
 

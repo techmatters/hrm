@@ -90,6 +90,12 @@ jobs:
           echo "regions=$(echo $regions)" >> $GITHUB_OUTPUT
           echo "docker_image=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ inputs.environment }}-hrm-${{ github.sha }}" >> $GITHUB_OUTPUT
 
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: workflow-scripts-artifacts
+          path: .github/workflows/scripts
+
   deploy_ecs:
     needs: deploy_docker
     name: Deploy to Amazon ECS
@@ -104,6 +110,12 @@ jobs:
       DOCKER_IMAGE: ${{ needs.deploy_docker.outputs.docker_image }}
 
     steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: workflow-scripts-artifacts
+          path: .github/workflows/scripts
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -151,6 +163,29 @@ jobs:
           service: ${{ inputs.environment }}-ecs-service
           cluster: ${{ inputs.environment }}-ecs-cluster
           wait-for-service-stability: true
+
+      - name: Download current ECS task definition for scheduled tasks
+        run: aws ecs describe-task-definition --task-definition ${{ inputs.environment }}-hrm-scheduled-task --query taskDefinition > task-definition-hrm-scheduled-task.json
+
+      - name: Fill in the new image ID in the Amazon ECS task definition
+        id: task-def-scheduled-task
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition-hrm-scheduled-task.json
+          container-name: ${{ inputs.environment }}-hrm-scheduled-task
+          image: ${{ env.DOCKER_IMAGE }}
+
+      - name: Deploy Amazon ECS task definition scheduled tasks
+        id: scheduled-task-definition
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.task-def-scheduled-task.outputs.task-definition }}
+          cluster: ${{ inputs.environment }}-ecs-cluster
+
+      - name: Update EventBridge target
+        run: |
+          chmod +x ./.github/workflows/scripts/update-event-bridge-target.sh
+          ./.github/workflows/scripts/update-event-bridge-target.sh "${{ inputs.environment }}-hrm-scheduled-task" "${{ steps.scheduled-task-definition.outputs.task-definition-arn }}"
 
       # reconfigure AWS credentials to use the default region for SSM Parameter Store.
       # aws-actions/configure-aws-credentials@v1 overrides env.AWS_DEFAULT_REGION, so
