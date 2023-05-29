@@ -14,9 +14,9 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { loadSsmCache as loadSsmCacheRoot } from '@tech-matters/hrm-ssm-cache';
+import { loadSsmCache as loadSsmCacheRoot } from '@tech-matters/ssm-cache';
 
-export { getSsmParameter, hasCacheExpired, ssmCache } from '@tech-matters/hrm-ssm-cache';
+export { getSsmParameter, hasCacheExpired, ssmCache } from '@tech-matters/ssm-cache';
 
 const ssmCacheConfigs = [
   {
