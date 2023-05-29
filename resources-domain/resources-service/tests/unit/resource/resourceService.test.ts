@@ -18,42 +18,35 @@ import { getByIdList, getWhereNameContains } from '../../../src/resource/resourc
 import {
   ReferrableResourceSearchResult,
   resourceService,
+  SearchParameters,
 } from '../../../src/resource/resourceService';
-import searchClient, {
-  SearchResultSet,
-} from '../../../src/resource/search/resource-cloudsearch-client';
 import each from 'jest-each';
-import { mapSearchParametersToKhpTermsAndFilters } from '../../../src/resource/search/khp-resource-search-mapping';
-import { SearchParameters, TermsAndFilters } from '../../../src/resource/search/search-types';
 import { BLANK_ATTRIBUTES } from '../../mockResources';
 import { FlatResource } from '@tech-matters/types';
+import { getClient, SearchResponse } from '@tech-matters/elasticsearch-client';
 
 jest.mock('../../../src/resource/resourceDataAccess', () => ({
   getByIdList: jest.fn(),
   getWhereNameContains: jest.fn(),
 }));
 
+jest.mock('@tech-matters/elasticsearch-client', () => ({
+  ...jest.requireActual('@tech-matters/elasticsearch-client'),
+  getClient: jest.fn(),
+}));
+
 jest.mock('../../../src/resource/search/resource-cloudsearch-client');
 
 jest.mock('../../../src/resource/search/khp-resource-search-mapping');
+
+let mockGetClient = getClient as jest.Mock<ReturnType<typeof getClient>>;
 
 const mockGetByIdList = getByIdList as jest.Mock<Promise<FlatResource[]>>;
 const mockGetWhereNameContains = getWhereNameContains as jest.Mock<
   Promise<{ totalCount: number; results: string[] }>
 >;
 
-const mockSearchClientSearch = jest.fn() as jest.Mock<
-  ReturnType<ReturnType<typeof searchClient>['search']>
->;
-const mockSearchClient = searchClient as jest.Mock<ReturnType<typeof searchClient>>;
-
-mockSearchClient.mockReturnValue({
-  search: mockSearchClientSearch,
-});
-
-const { searchResourcesByName, searchResources } = resourceService({
-  searchUrl: new URL('http://a.com'),
-});
+const { searchResourcesByName, searchResources } = resourceService();
 
 const BASELINE_DATE = new Date('2021-01-01T00:00:00.000Z');
 const ACCOUNT_SID = 'AC_FAKE_ACCOUNT';
@@ -345,24 +338,24 @@ describe('searchResourcesByName', () => {
   });
 });
 
-const mockMapSearchParametersToKhpTermsAndFilters = mapSearchParametersToKhpTermsAndFilters as jest.Mock<
-  TermsAndFilters
->;
-
-const EMPTY_SEARCH_TERMS: TermsAndFilters = {
-  filters: {},
-  searchTermsByIndex: {},
-};
-
 describe('searchResources', () => {
+  const mockEsSearch: jest.Mock<ReturnType<
+    ReturnType<Awaited<ReturnType<typeof getClient>>['searchClient']>['search']
+  >> = jest.fn();
   beforeEach(() => {
     mockGetByIdList.mockReset();
-    mockSearchClientSearch.mockReset();
-    mockSearchClient.mockReturnValue({
-      search: mockSearchClientSearch,
+    mockEsSearch.mockReset();
+    mockGetClient.mockReset();
+    mockGetClient.mockResolvedValue({
+      client: {} as any,
+      index: `${ACCOUNT_SID}-resources`,
+      indexClient: jest.fn(),
+      searchClient: () => {
+        return {
+          search: mockEsSearch,
+        };
+      },
     });
-    mockMapSearchParametersToKhpTermsAndFilters.mockReset();
-    mockMapSearchParametersToKhpTermsAndFilters.mockReturnValue(EMPTY_SEARCH_TERMS);
   });
 
   const baselineResultSet: FlatResource[] = [
@@ -378,25 +371,26 @@ describe('searchResources', () => {
   type SearchResourcesTestCaseParameters = {
     description: string;
     input: SearchParameters;
-    resultsFromCloudSearch: SearchResultSet;
+    resultsFromElasticSearch: SearchResponse;
     resultsFromDb: FlatResource[];
     expectedSearchLimit?: number; // Would normally be limit provided in user input, except for some special cases
     expectedTotal: number;
     expectedResults?: ReferrableResourceSearchResult[]; // Would normally be results from DB, except for some special cases
   };
+
   const searchResourcesTestCases: SearchResourcesTestCaseParameters[] = [
     {
       description:
-        'General Search Term and no filters provided - converts parameters, calls cloudsearch client, looks up the returned IDs in the DB and returns the result',
+        'General Search Term and no filters provided - converts parameters, calls ElasticSearch client, looks up the returned IDs in the DB and returns the result',
       input: {
         generalSearchTerm: 'Res',
         pagination: { limit: 5, start: 10 },
       },
-      resultsFromCloudSearch: {
+      resultsFromElasticSearch: {
         total: 123,
         items: [
-          { id: 'RESOURCE_1', name: 'Resource 1', highlights: {} },
-          { id: 'RESOURCE_2', name: 'Resource 2', highlights: {} },
+          { id: 'RESOURCE_1', highlights: {} },
+          { id: 'RESOURCE_2', highlights: {} },
         ],
       },
       expectedTotal: 123,
@@ -408,11 +402,11 @@ describe('searchResources', () => {
         generalSearchTerm: 'Res',
         pagination: { limit: 500, start: 10 },
       },
-      resultsFromCloudSearch: {
+      resultsFromElasticSearch: {
         total: 1230,
         items: [
-          { id: 'RESOURCE_1', name: 'Resource 1', highlights: {} },
-          { id: 'RESOURCE_2', name: 'Resource 2', highlights: {} },
+          { id: 'RESOURCE_1', highlights: {} },
+          { id: 'RESOURCE_2', highlights: {} },
         ],
       },
       expectedSearchLimit: 200,
@@ -421,16 +415,16 @@ describe('searchResources', () => {
     },
     {
       description:
-        'Results from DB are in a different order to the results from CloudSearch - results are sorted by CloudSearch order',
+        'Results from DB are in a different order to the results from ElasticSearch - results are sorted by ElasticSearch order',
       input: {
         generalSearchTerm: 'Res',
         pagination: { limit: 500, start: 10 },
       },
-      resultsFromCloudSearch: {
+      resultsFromElasticSearch: {
         total: 1230,
         items: [
-          { id: 'RESOURCE_2', name: 'Resource 2', highlights: {} },
-          { id: 'RESOURCE_1', name: 'Resource 1', highlights: {} },
+          { id: 'RESOURCE_2', highlights: {} },
+          { id: 'RESOURCE_1', highlights: {} },
         ],
       },
       expectedSearchLimit: 200,
@@ -449,35 +443,17 @@ describe('searchResources', () => {
     },
     {
       description:
-        'CloudSearch returns IDs that are not in the DB - results are filtered to only include IDs in the DB',
+        'ElasticSearch returns IDs that are not in the DB - results are filtered to only include IDs in the DB',
       input: {
         generalSearchTerm: 'Res',
         pagination: { limit: 500, start: 10 },
       },
-      resultsFromCloudSearch: {
+      resultsFromElasticSearch: {
         total: 1230,
         items: [
-          { id: 'RESOURCE_1', name: 'Resource 1', highlights: {} },
-          { id: 'RESOURCE_3', name: 'Resource 3', highlights: {} },
-          { id: 'RESOURCE_2', name: 'Resource 2', highlights: {} },
-        ],
-      },
-      expectedSearchLimit: 200,
-      expectedTotal: 1230,
-      resultsFromDb: baselineResultSet,
-    },
-    {
-      description:
-        "CloudSearch returns names that don't match the name in the DB - uses database name instead of CloudSearch name",
-      input: {
-        generalSearchTerm: 'Res',
-        pagination: { limit: 500, start: 10 },
-      },
-      resultsFromCloudSearch: {
-        total: 1230,
-        items: [
-          { id: 'RESOURCE_1', name: 'Search Resource 1', highlights: {} },
-          { id: 'RESOURCE_2', name: 'Search Resource 2', highlights: {} },
+          { id: 'RESOURCE_1', highlights: {} },
+          { id: 'RESOURCE_3', highlights: {} },
+          { id: 'RESOURCE_2', highlights: {} },
         ],
       },
       expectedSearchLimit: 200,
@@ -489,14 +465,14 @@ describe('searchResources', () => {
   each(searchResourcesTestCases).test(
     '$description',
     async ({
-      resultsFromCloudSearch,
+      resultsFromElasticSearch,
       input,
       resultsFromDb,
       expectedTotal,
       expectedSearchLimit,
       expectedResults,
     }: SearchResourcesTestCaseParameters) => {
-      mockSearchClientSearch.mockResolvedValue(resultsFromCloudSearch);
+      mockEsSearch.mockResolvedValue(resultsFromElasticSearch);
       mockGetByIdList.mockResolvedValue(resultsFromDb);
       const res = await searchResources(ACCOUNT_SID, input);
       expect(res.totalCount).toBe(expectedTotal);
@@ -526,16 +502,19 @@ describe('searchResources', () => {
             }),
           ),
       );
-      expect(mockMapSearchParametersToKhpTermsAndFilters).toHaveBeenCalledWith(input);
-      expect(mockSearchClientSearch).toHaveBeenCalledWith(
-        ACCOUNT_SID,
-        EMPTY_SEARCH_TERMS,
-        input.pagination.start,
-        expectedSearchLimit ?? input.pagination.limit,
-      );
+      const { generalSearchTerm, ...esInput } = { ...input, q: input.generalSearchTerm };
+      expect(mockEsSearch).toHaveBeenCalledWith({
+        searchParameters: {
+          ...esInput,
+          pagination: {
+            ...esInput.pagination,
+            limit: expectedSearchLimit ?? esInput.pagination.limit,
+          },
+        },
+      });
       expect(getByIdList).toHaveBeenCalledWith(
         ACCOUNT_SID,
-        resultsFromCloudSearch.items.map(i => i.id),
+        resultsFromElasticSearch.items.map(i => i.id),
       );
     },
   );
@@ -781,11 +760,10 @@ describe('searchResources', () => {
     },
   ]).test('$description', async ({ attributeRecords, expectedAttributes }) => {
     const resultSet = [generateResourceRecord('1')];
-    mockSearchClientSearch.mockResolvedValue({
+    mockEsSearch.mockResolvedValue({
       items: [
         {
           id: 'RESOURCE_1',
-          name: 'Resource 1',
           highlights: {},
         },
       ],

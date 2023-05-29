@@ -18,18 +18,11 @@ import { IRouter, Request, Router } from 'express';
 import { resourceService } from './resourceService';
 import { AccountSID } from '@tech-matters/types';
 import createError from 'http-errors';
-import { SearchParameters } from './search/search-types';
-import { CloudSearchConfig } from '../config/cloud-search';
 
-const resourceRoutes = (cloudSearchConfig: CloudSearchConfig) => {
+const resourceRoutes = () => {
   const router: IRouter = Router();
 
-  const {
-    getResource,
-    searchResources,
-    searchResourcesByName,
-    searchResourcesEs,
-  } = resourceService(cloudSearchConfig);
+  const { getResource, searchResourcesByName, searchResources } = resourceService();
 
   router.get('/resource/:resourceId', async (req, res) => {
     const referrableResource = await getResource(<AccountSID>req.accountSid, req.params.resourceId);
@@ -37,20 +30,6 @@ const resourceRoutes = (cloudSearchConfig: CloudSearchConfig) => {
       throw createError(404);
     }
     res.json(referrableResource);
-  });
-
-  router.post('/search', async (req: Request<SearchParameters>, res) => {
-    const { limit, start } = req.query;
-    const referrableResources = await searchResources(<AccountSID>req.accountSid, {
-      filters: {},
-      generalSearchTerm: '',
-      ...req.body,
-      pagination: {
-        limit: parseInt((limit as string) || '20'),
-        start: parseInt((start as string) || '0'),
-      },
-    });
-    res.json(referrableResources);
   });
 
   router.post(
@@ -68,13 +47,13 @@ const resourceRoutes = (cloudSearchConfig: CloudSearchConfig) => {
     },
   );
 
-  router.post('/search-es', async (req, res) => {
+  router.post('/search', async (req, res) => {
     const { limit, start } = req.query;
-    const { q, filters = {} } = req.body;
 
-    const referrableResources = await searchResourcesEs(<AccountSID>req.accountSid, {
-      filters: filters as Record<string, string | boolean | number>,
-      q: q as string,
+    const referrableResources = await searchResources(<AccountSID>req.accountSid, {
+      filters: {},
+      generalSearchTerm: '',
+      ...req.body,
       pagination: {
         limit: parseInt((limit as string) || '20'),
         start: parseInt((start as string) || '0'),
