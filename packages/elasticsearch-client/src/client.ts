@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 import { Client as EsClient, ClientOptions } from '@elastic/elasticsearch';
-import { getSsmParameter } from '@tech-matters/hrm-ssm-cache';
+import { getSsmParameter } from '@tech-matters/ssm-cache';
 import { indexDocumentBulk, IndexDocumentBulkExtraParams } from './indexDocumentBulk';
 import { createIndex, CreateIndexExtraParams } from './createIndex';
 import { deleteIndex } from './deleteIndex';
