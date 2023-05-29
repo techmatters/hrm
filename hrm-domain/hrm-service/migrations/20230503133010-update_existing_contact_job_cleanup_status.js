@@ -14,22 +14,19 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-jest.mock('@tech-matters/ssm-cache');
+'use strict';
 
-jest.mock('aws-sdk', () => {
-  const SQSMocked = {
-    deleteMessage: () => jest.fn(),
-    receiveMessage: jest.fn(() => {
-      return {
-        promise: jest.fn().mockResolvedValue({
-          Messages: [],
-        }),
-      };
-    }),
-    sendMessage: jest.fn().mockReturnThis(),
-    promise: jest.fn(),
-  };
-  return {
-    SQS: jest.fn(() => SQSMocked),
-  };
-});
+/** @type {import('sequelize-cli').Migration} */
+module.exports = {
+  async up(queryInterface) {
+    await queryInterface.sequelize.query(`
+      UPDATE "ContactJobs"
+      SET "cleanupStatus" = 'pending'
+      WHERE "completionPayload"->>'message' != 'Attempts limit reached'
+    `);
+  },
+
+  async down() {
+    // There is no going back safely.
+  },
+};

@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { ResourcesJobProcessorError } from '@tech-matters/hrm-job-errors';
+import { ResourcesJobProcessorError } from '@tech-matters/job-errors';
 import { sns } from '@tech-matters/sns-client';
 
 // eslint-disable-next-line prettier/prettier

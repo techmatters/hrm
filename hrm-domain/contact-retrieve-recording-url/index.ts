@@ -17,8 +17,8 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { SQS } from 'aws-sdk';
 
-import { ContactJobProcessorError } from '@tech-matters/hrm-job-errors';
-import { getSsmParameter } from '@tech-matters/hrm-ssm-cache';
+import { ContactJobProcessorError } from '@tech-matters/job-errors';
+import { getSsmParameter } from '@tech-matters/ssm-cache';
 import { ContactJobAttemptResult } from '@tech-matters/types';
 
 // eslint-disable-next-line prettier/prettier

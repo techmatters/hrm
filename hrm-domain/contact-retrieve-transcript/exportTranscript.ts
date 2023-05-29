@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { getClient } from '@tech-matters/hrm-twilio-client';
+import { getClient, TwilioClient } from '@tech-matters/twilio-client';
 
 import RestException from 'twilio/lib/base/RestException';
 // eslint-disable-next-line prettier/prettier
@@ -39,7 +39,7 @@ export type ExportTranscripParticipants = {
 const GUEST_ROLE_CHANNEL = 'guest';
 
 const getTransformedMessages = async (
-  client: ReturnType<typeof getClient>,
+  client: TwilioClient,
   channelSid: string,
   serviceSid: string,
 ) => {
@@ -59,7 +59,7 @@ const getTransformedMessages = async (
   }));
 };
 
-const getUser = async (client: ReturnType<typeof getClient>, serviceSid: string, from: string) => {
+const getUser = async (client: TwilioClient, serviceSid: string, from: string) => {
   try {
     const user = await client.chat.v2
       .services(serviceSid)
@@ -89,7 +89,7 @@ const getUser = async (client: ReturnType<typeof getClient>, serviceSid: string,
 };
 
 const getRole = async (
-  client: ReturnType<typeof getClient>,
+  client: TwilioClient,
   serviceSid: string,
   user: Awaited<ReturnType<typeof getUser>>,
   member: MemberInstance | null,
@@ -127,7 +127,7 @@ const getRole = async (
 };
 
 const getParticipants = async (
-  client: ReturnType<typeof getClient>,
+  client: TwilioClient,
   channelSid: string,
   serviceSid: string,
   messages: Awaited<ReturnType<typeof getTransformedMessages>>,
@@ -174,7 +174,7 @@ export const exportTranscript = async ({
     `Trying to export transcript with accountSid ${accountSid}, serviceSid ${serviceSid}, channelSid ${channelSid}`,
   );
 
-  const client = getClient({ accountSid, authToken });
+  const client = await getClient({ accountSid, authToken });
 
   const messages = await getTransformedMessages(client, channelSid, serviceSid);
   const participants = await getParticipants(client, channelSid, serviceSid, messages);
