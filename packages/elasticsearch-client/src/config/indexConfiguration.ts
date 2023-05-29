@@ -36,12 +36,18 @@ export type IndexConfiguration<T = any, TAttribute = any> = {
   getCreateIndexParams: (indexName: string) => IndicesCreateRequest
   convertToIndexDocument: (sourceEntity: T) => CreateIndexConvertedDocument
 };
+
+export type FieldAndMapping<TAttribute> = {
+  field: string;
+  mapping: MappingField<TAttribute>;
+};
+
 const stringFieldTypes = ['text', 'keyword'];
 
-export const getMappingField = <TAttribute>({ mappingFields }: Pick<IndexConfiguration<any, TAttribute>, 'mappingFields'>, fieldName: string): { name:string, field: MappingField<TAttribute> } | undefined => {
-  if (Object.keys(mappingFields).includes(fieldName)) return { name: fieldName, field:mappingFields[fieldName] };
-  const [name, field] = Object.entries(mappingFields).find(([, { attributeKeyPattern }]) => attributeKeyPattern?.test(fieldName)) ?? [];
-  return name && field ? { name, field } : undefined;
+export const getMappingField = <TAttribute>({ mappingFields }: Pick<IndexConfiguration<any, TAttribute>, 'mappingFields'>, fieldName: string): FieldAndMapping<TAttribute> | undefined => {
+  if (Object.keys(mappingFields).includes(fieldName)) return { field: fieldName, mapping:mappingFields[fieldName] };
+  const [field, mapping] = Object.entries(mappingFields).find(([, { attributeKeyPattern }]) => attributeKeyPattern?.test(fieldName)) ?? [];
+  return mapping && field ? { field, mapping } : undefined;
 };
 export const isHighBoostGlobalField = ({ highBoostGlobalFields }: Pick<IndexConfiguration, 'highBoostGlobalFields'>, fieldName: string) =>
   highBoostGlobalFields.includes(fieldName);

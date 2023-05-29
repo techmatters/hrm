@@ -19,6 +19,7 @@ import {
   isHighBoostGlobalField,
   CreateIndexConvertedDocument,
   getMappingField,
+  FieldAndMapping,
 } from '@tech-matters/elasticsearch-client';
 import { resourceIndexConfiguration } from './index';
 
@@ -36,22 +37,24 @@ export const convertIndexDocument = (resource: FlatResource): CreateIndexConvert
     }
   };
 
-  const pushToMappingField = (key: string, value: number | string | boolean) => {
-    const mapping = mappingFields![key];
+  const pushValueToMappedField = (
+    { field, mapping }: FieldAndMapping<ReferrableResourceAttribute<boolean | string | number>>,
+    value: boolean | string | number,
+  ) => {
     if (mapping.isArrayField) {
-      if (!mappedFields[key]) {
-        mappedFields[key] = [];
+      if (!mappedFields[field]) {
+        mappedFields[field] = [];
       }
 
-      const mapField = mappedFields[key] as typeof value[];
+      const mapField = mappedFields[field] as typeof value[];
       mapField.push(value);
     } else {
       if (mapping.hasLanguageFields) {
         console.warn(
-          `Possible misconfiguration - mapping field '${key}' has the hasLanguageFields flag set but not the isArrayField: a multi-language field should normally be an array, otherwise the languages for different languages will be overwrite each other.`,
+          `Possible misconfiguration - mapping field '${field}' has the hasLanguageFields flag set but not the isArrayField: a multi-language field should normally be an array, otherwise the languages for different languages will be overwrite each other.`,
         );
       }
-      mappedFields[key] = value;
+      mappedFields[field] = value;
     }
   };
 
@@ -59,11 +62,11 @@ export const convertIndexDocument = (resource: FlatResource): CreateIndexConvert
     key: string,
     attribute: ReferrableResourceAttribute<boolean | string | number>,
   ) => {
-    const mapping = getMappingField(resourceIndexConfiguration, key);
-    if (mapping) {
-      return pushToMappingField(
-        mapping.name,
-        mapping.field.indexValueGenerator?.(attribute) ?? attribute.value,
+    const fieldAndMapping = getMappingField(resourceIndexConfiguration, key);
+    if (fieldAndMapping) {
+      return pushValueToMappedField(
+        fieldAndMapping,
+        fieldAndMapping.mapping.indexValueGenerator?.(attribute) ?? attribute.value,
       );
     }
     // We don't really want booleans & numbers in the general purpose buckets
@@ -79,8 +82,8 @@ export const convertIndexDocument = (resource: FlatResource): CreateIndexConvert
       parseAttribute(key, attribute);
     });
   });
-  pushToMappingField('id', id);
-  pushToMappingField('name', name);
+  pushValueToMappedField({ field: 'id', mapping: mappingFields.id }, id);
+  pushValueToMappedField({ field: 'name', mapping: mappingFields.name }, name);
 
   return {
     id,
