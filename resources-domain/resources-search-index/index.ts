@@ -51,7 +51,7 @@ export const indexDocumentsBulk = async (documentsByAccountSid: DocumentsByAccou
     const client = await getClient({ accountSid, indexType });
     try {
       const indexResp = await client.indexDocumentBulk({ documents });
-      handleErrors(indexResp, addDocumentIdToFailures);
+      await handleErrors(indexResp, addDocumentIdToFailures);
     } catch (err) {
       console.error(new ResourcesJobProcessorError('Error calling indexDocumentBulk'), err);
       documents.forEach(({ id }) => {
@@ -72,7 +72,7 @@ export const mapMessages = (records: SQSRecord[], addDocumentIdToMessageId: any)
 
 export const handler = async (event: SQSEvent): Promise<SQSBatchResponse> => {
   const response: SQSBatchResponse = { batchItemFailures: [] };
-
+  console.debug('Received event:', JSON.stringify(event, null, 2));
   // We need to keep track of the documentId to messageId mapping so we can
   // return the correct messageId in the batchItemFailures array on error.
   const documentIdToMessageId: Record<string, string> = {};
@@ -84,19 +84,22 @@ export const handler = async (event: SQSEvent): Promise<SQSBatchResponse> => {
 
   // Passthrough function to add the documentId to the batchItemFailures array.
   const addDocumentIdToFailures = (documentId: string) =>
-  response.batchItemFailures.push({
+    response.batchItemFailures.push({
       itemIdentifier: documentIdToMessageId[documentId],
     });
 
   try {
     // Map the messages and add the documentId to messageId mapping.
     const messages = mapMessages(event.Records, addDocumentIdToMessageId);
+    console.debug('Mapped messages:', JSON.stringify(messages, null, 2));
 
     // Convert the messages to a bulk requests grouped by accountSid.
     const documentsByAccountSid = convertDocumentsToBulkRequest(messages);
+    console.debug('Converted documents to bulk request:', JSON.stringify(documentsByAccountSid, null, 2));
 
     // Iterates over groups of documents and index them using an accountSid specific client
     await indexDocumentsBulk(documentsByAccountSid, addDocumentIdToFailures);
+    console.debug(`Successfully indexed documents`);
   } catch (err) {
     console.error(new ResourcesJobProcessorError('Failed to process search index request'), err);
 

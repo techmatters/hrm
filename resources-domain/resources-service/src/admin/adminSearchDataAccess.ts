@@ -15,8 +15,10 @@
  */
 
 import { AccountSID, FlatResource } from '@tech-matters/types';
-import { db } from '../connection-pool';
+import { db, pgp } from '../connection-pool';
 import { generateSelectResourcesForReindexSql } from './sql/adminSearchSql';
+import QueryStream from 'pg-query-stream';
+import ReadableStream = NodeJS.ReadableStream;
 
 export const getResourcesBatchForReindexing = async ({
   lastUpdatedFrom,
@@ -41,6 +43,40 @@ export const getResourcesBatchForReindexing = async ({
       resourceIds,
       start,
       limit,
+    });
+  });
+};
+
+export const streamResourcesForReindexing = async ({
+  lastUpdatedFrom,
+  lastUpdatedTo,
+  accountSid,
+  resourceIds,
+  batchSize = 1000,
+}: {
+  lastUpdatedFrom?: string;
+  lastUpdatedTo?: string;
+  accountSid?: AccountSID;
+  resourceIds?: string[];
+  batchSize?: number;
+}): Promise<ReadableStream> => {
+  const qs = new QueryStream(
+    pgp.as.format(generateSelectResourcesForReindexSql(Boolean(resourceIds)), {
+      lastUpdatedFrom,
+      lastUpdatedTo,
+      accountSid,
+      resourceIds,
+      start: 0,
+      limit: Number.MAX_SAFE_INTEGER,
+    }),
+    [],
+    { highWaterMark: batchSize },
+  );
+
+  // Expose the readable stream to the caller as a promise for further pipelining
+  return new Promise(resolve => {
+    db.stream(qs, resultStream => {
+      resolve(resultStream);
     });
   });
 };

@@ -33,7 +33,7 @@ const adminSearchRoutes = (serviceConfig: AdminSearchServiceConfiguration) => {
       });
       return;
     }
-    const result = await adminSearchService.reindex(
+    const result = await adminSearchService.reindexStream(
       body,
       query.responseType === 'verbose' ? ResponseType.VERBOSE : ResponseType.CONCISE,
     );

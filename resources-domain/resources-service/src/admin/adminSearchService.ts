@@ -13,9 +13,15 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { getResourcesBatchForReindexing } from './adminSearchDataAccess';
-import { AccountSID } from '@tech-matters/types';
+import {
+  getResourcesBatchForReindexing,
+  streamResourcesForReindexing,
+} from './adminSearchDataAccess';
+import { AccountSID, FlatResource } from '@tech-matters/types';
 import { publishSearchIndexJob } from '../resource-jobs/client-sqs';
+import ReadableStream = NodeJS.ReadableStream;
+import { Writable } from 'stream';
+import { pipeline } from 'stream/promises';
 
 export type SearchReindexParams = {
   resourceIds?: string[];
@@ -43,9 +49,38 @@ export type AdminSearchServiceConfiguration = {
   reindexDbBatchSize: number;
 };
 
+const sendResourceAndRecordResult = async (
+  resource: FlatResource,
+  response: VerboseSearchReindexResult,
+  responseType: ResponseType,
+): Promise<void> => {
+  // We could possibly double down on the streaming pattern and return the response as a JSON stream
+  // This should probably only be done in a more streaming friendly format like CSV or JSONL
+  // We could return the full content in a CSV if the client specifies an 'text/csv' accept header, or the current version for 'application/json'
+  // But this is is very likely to be a 'YAGNI' feature, so I'm leaving it out for now
+  try {
+    await publishSearchIndexJob(resource.accountSid, resource);
+    response.successfulSubmissionCount++;
+    if (responseType === ResponseType.VERBOSE) {
+      response.successfullySubmitted.push(resource.id);
+    }
+  } catch (error) {
+    response.submissionErrorCount++;
+    if (responseType === ResponseType.VERBOSE && response.submissionErrorCount <= 50) {
+      if (response.submissionErrorCount === 50) {
+        response.failedToSubmit.push({
+          resourceId: resource.id,
+          error: new Error('Stopping logging errors after 50'),
+        });
+      }
+      response.failedToSubmit.push({ resourceId: resource.id, error: error as Error });
+    }
+  }
+};
+
 const newAdminSearchService = ({ reindexDbBatchSize }: AdminSearchServiceConfiguration) => {
   return {
-    reindex: async (
+    reindexBatches: async (
       params: SearchReindexParams,
       responseType: ResponseType,
     ): Promise<ConciseSearchReindexResult | VerboseSearchReindexResult> => {
@@ -69,28 +104,50 @@ const newAdminSearchService = ({ reindexDbBatchSize }: AdminSearchServiceConfigu
         console.log('resources found to index', resourcesToIndex.length);
 
         for (const resource of resourcesToIndex) {
-          try {
-            await publishSearchIndexJob(resource.accountSid, resource);
-            response.successfulSubmissionCount++;
-            if (responseType === ResponseType.VERBOSE) {
-              response.successfullySubmitted.push(resource.id);
-            }
-          } catch (error) {
-            response.submissionErrorCount++;
-            if (responseType === ResponseType.VERBOSE && response.submissionErrorCount <= 50) {
-              if (response.submissionErrorCount === 50) {
-                response.failedToSubmit.push({
-                  resourceId: resource.id,
-                  error: new Error('Stopping logging errors after 50'),
-                });
-              }
-              response.failedToSubmit.push({ resourceId: resource.id, error: error as Error });
-            }
-          }
+          await sendResourceAndRecordResult(resource, response, responseType);
         }
         batchesSent++;
       }
 
+      return responseType === ResponseType.CONCISE
+        ? {
+            successfulSubmissionCount: response.successfulSubmissionCount,
+            submissionErrorCount: response.submissionErrorCount,
+          }
+        : response;
+    },
+
+    reindexStream: async (
+      params: SearchReindexParams,
+      responseType: ResponseType,
+    ): Promise<ConciseSearchReindexResult | VerboseSearchReindexResult> => {
+      let response: VerboseSearchReindexResult = {
+        successfulSubmissionCount: 0,
+        submissionErrorCount: 0,
+        successfullySubmitted: [],
+        failedToSubmit: [],
+      };
+      const resourcesStream: ReadableStream = await streamResourcesForReindexing({
+        ...params,
+        batchSize: reindexDbBatchSize,
+      });
+      await pipeline(
+        resourcesStream,
+        // I think in Node 19+ you can use async iterator functions directly in a pipeline, instead of Writeable / Readable / Transform streams
+        // https://darkmannn.dev/posts/nodejs-in-2023-streams-streams-vs-async-generators
+        // But I couldn't get it working in Node 18 so doing it old school with a Writable stream.
+        new Writable({
+          objectMode: true,
+          highWaterMark: reindexDbBatchSize,
+          write: async (resource, _, callback) => {
+            try {
+              await sendResourceAndRecordResult(resource, response, responseType);
+            } finally {
+              callback();
+            }
+          },
+        }),
+      );
       return responseType === ResponseType.CONCISE
         ? {
             successfulSubmissionCount: response.successfulSubmissionCount,
