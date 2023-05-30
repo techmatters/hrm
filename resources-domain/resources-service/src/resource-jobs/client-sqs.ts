@@ -19,7 +19,8 @@ import { getSsmParameter } from '@tech-matters/ssm-cache';
 import { sns } from '@tech-matters/sns-client';
 
 // eslint-disable-next-line prettier/prettier
-import { type FlatResource,  type ResourcesSearchIndexPayload, ResourcesJobType } from '@tech-matters/types';
+import type { FlatResource, ResourcesSearchIndexPayload } from '@tech-matters/types';
+import { ResourcesJobType } from '@tech-matters/types';
 
 const RETRY_COUNT = 4;
 
@@ -27,7 +28,14 @@ let sqs: SQS;
 
 export const getSqsClient = () => {
   if (!sqs) {
-    sqs = new SQS();
+    if (process.env.LOCAL_SQS_PORT) {
+      // For testing only
+      sqs = new SQS({
+        endpoint: `http://localhost:${process.env.LOCAL_SQS_PORT}`,
+      });
+    } else {
+      sqs = new SQS();
+    }
   }
   return sqs;
 };
@@ -45,7 +53,7 @@ export const publishToResourcesJob = async ({ params, retryCount = 0, messageGro
   //TODO: more robust error handling/messaging
   try {
     const QueueUrl = await getSsmParameter(
-      getJobQueueUrl(params.accountSid, 'contact'),
+      getJobQueueUrl(params.accountSid, params.jobType),
       86400000,
     );
 
@@ -74,6 +82,8 @@ export const publishToResourcesJob = async ({ params, retryCount = 0, messageGro
       Message: JSON.stringify(params) + err,
       TopicArn: process.env.SNS_TOPIC_ARN || '',
     });
+
+    throw err;
   }
 };
 

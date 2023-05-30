@@ -65,7 +65,7 @@ export const convertIndexDocument = (
     }
   };
 
-  const { id, name, lastUpdated, ...attributeArrays } = resource;
+  const { id, name, lastUpdated, accountSid, ...attributeArrays } = resource;
 
   Object.values(attributeArrays).forEach(attributes => {
     attributes.forEach(({ key, ...attribute }) => {

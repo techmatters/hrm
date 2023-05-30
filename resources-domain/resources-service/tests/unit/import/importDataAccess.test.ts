@@ -18,20 +18,12 @@ import * as pgPromise from 'pg-promise';
 import { subHours } from 'date-fns';
 import { mockConnection, mockTransaction } from '../mock-db';
 import { updateImportProgress, upsertImportedResource } from '../../../src/import/importDataAccess';
-import { FlatResource } from '@tech-matters/types';
 import { getSqlStatement } from '@tech-matters/testing';
+import { BLANK_ATTRIBUTES } from '../../mockResources';
 
 let conn: pgPromise.ITask<unknown>;
 
 const BASELINE_DATE = new Date(2012, 11, 4);
-
-const BLANK_ATTRIBUTES: Omit<FlatResource, 'id' | 'name' | 'lastUpdated'> = {
-  stringAttributes: [],
-  referenceStringAttributes: [],
-  booleanAttributes: [],
-  numberAttributes: [],
-  dateTimeAttributes: [],
-};
 
 beforeEach(() => {
   conn = mockConnection();
@@ -44,6 +36,7 @@ describe('upsertImportedResource', () => {
     const result = await upsertImportedResource()('AC_FAKE', {
       name: 'Test Resource',
       id: 'TEST_RESOURCE',
+      accountSid: 'AC_FAKE',
       lastUpdated: BASELINE_DATE.toISOString(),
       ...BLANK_ATTRIBUTES,
     });
@@ -61,6 +54,7 @@ describe('upsertImportedResource', () => {
     const result = await upsertImportedResource()('AC_FAKE', {
       name: 'Test Resource',
       id: 'TEST_RESOURCE',
+      accountSid: 'AC_FAKE',
       ...BLANK_ATTRIBUTES,
       stringAttributes: [
         {
@@ -115,6 +109,7 @@ describe('upsertImportedResource', () => {
     mockTransaction(conn);
     const noneSpy = jest.spyOn(conn, 'none').mockResolvedValue(null);
     const result = await upsertImportedResource()('AC_FAKE', {
+      accountSid: 'AC_FAKE',
       name: 'Test Resource',
       id: 'TEST_RESOURCE',
       ...BLANK_ATTRIBUTES,

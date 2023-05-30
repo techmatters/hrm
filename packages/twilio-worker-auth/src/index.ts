@@ -14,6 +14,10 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-export { getAuthorizationMiddleware } from './twilioWorkerAuthMiddleware';
+export {
+  getAuthorizationMiddleware,
+  adminAuthorizationMiddleware,
+  staticKeyAuthorizationMiddleware,
+} from './twilioWorkerAuthMiddleware';
 export { addAccountSidMiddleware } from './addAccountSidMiddleware';
 export { twilioUser, TwilioUser } from './twilioUser';

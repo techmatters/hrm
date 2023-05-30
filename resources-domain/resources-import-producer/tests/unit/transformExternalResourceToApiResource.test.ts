@@ -22,13 +22,15 @@ import {
   referenceAttributeMapping,
   translatableAttributeMapping,
 } from '../../mappers';
-import { FlatResource } from '@tech-matters/types';
+import { AccountSID, FlatResource } from '@tech-matters/types';
 import each from 'jest-each';
 
 const startedDate = Date.now().toString();
+const ACCOUNT_SID: AccountSID = 'AC000';
 
 const mergeWithCleanResource = (partialResource: Partial<FlatResource> = {}): FlatResource => ({
   ...{
+    accountSid: ACCOUNT_SID,
     id: partialResource.id || '',
     lastUpdated: partialResource.lastUpdated || '',
     name: partialResource.name || '',
@@ -74,7 +76,7 @@ describe('Dynamic captures', () => {
       ],
     });
 
-    const result = transformExternalResourceToApiResource(mapping, resource);
+    const result = transformExternalResourceToApiResource(mapping, ACCOUNT_SID, resource);
     expect(result).toMatchObject(expected);
   });
 
@@ -120,7 +122,7 @@ describe('Dynamic captures', () => {
       ],
     });
 
-    const result = transformExternalResourceToApiResource(mapping, resource);
+    const result = transformExternalResourceToApiResource(mapping, ACCOUNT_SID, resource);
     expect(result).toMatchObject(expected);
   });
 });
@@ -417,7 +419,7 @@ describe('Simple mappings with flat structure', () => {
 
   each(testCases).test('$description', async ({ mapping, resource, expectedFromResource }) => {
     const expected = expectedFromResource(resource);
-    const result = transformExternalResourceToApiResource(mapping, resource);
+    const result = transformExternalResourceToApiResource(mapping, ACCOUNT_SID, resource);
     expect(result).toMatchObject(expected);
   });
 });
@@ -691,7 +693,7 @@ describe('Simple mapping, nested structure', () => {
 
   each(testCases).test('$description', async ({ mapping, resource, expectedFromResource }) => {
     const expected = expectedFromResource(resource);
-    const result = transformExternalResourceToApiResource(mapping, resource);
+    const result = transformExternalResourceToApiResource(mapping, ACCOUNT_SID, resource);
     expect(result).toMatchObject(expected);
   });
 
@@ -782,6 +784,7 @@ describe('Simple mapping, nested structure', () => {
     };
 
     const expected: FlatResource = {
+      accountSid: ACCOUNT_SID,
       id: resource.importantObject.id,
       lastUpdated: resource.importantObject.updatedAt,
       name: resource.importantObject.name.en,
@@ -864,7 +867,7 @@ describe('Simple mapping, nested structure', () => {
       ],
     };
 
-    const result = transformExternalResourceToApiResource(mapping, resource);
+    const result = transformExternalResourceToApiResource(mapping, ACCOUNT_SID, resource);
     expect(result).toMatchObject(expected);
   });
 });

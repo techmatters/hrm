@@ -40,7 +40,7 @@ jest.mock('../../config', () => jest.fn());
 
 const mockFetch: jest.Mock<ReturnType<typeof fetch>> = jest.fn();
 
-const EMPTY_ATTRIBUTES: Omit<FlatResource, 'id' | 'name' | 'lastUpdated'> = {
+const EMPTY_ATTRIBUTES: Omit<FlatResource, 'id' | 'name' | 'lastUpdated' | 'accountSid'> = {
   stringAttributes: [],
   referenceStringAttributes: [],
   booleanAttributes: [],
@@ -101,6 +101,7 @@ const generateResourceMessage = (lastUpdated: Date, resourceId: string, batchFro
       remaining,
     },
     importedResources: [{
+      accountSid: MOCK_CONFIG.accountSid,
       id: resourceId,
       name: `Resource ${resourceId}`,
       lastUpdated: lastUpdated.toISOString(),

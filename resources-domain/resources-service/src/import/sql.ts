@@ -24,8 +24,13 @@ export const generateUpsertSqlFromImportResource = (
   const sqlBatch: string[] = [];
 
   sqlBatch.push(`${pgp.helpers.insert(
-    { ...resourceRecord, accountSid, created: resourceRecord.lastUpdated },
-    ['id', 'name', 'accountSid', 'created'],
+    {
+      ...resourceRecord,
+      accountSid,
+      created: resourceRecord.lastUpdated,
+      lastUpdated: resourceRecord.lastUpdated,
+    },
+    ['id', 'name', 'accountSid', 'created', 'lastUpdated'],
     { schema: 'resources', table: 'Resources' },
   )} 
   ON CONFLICT ON CONSTRAINT "Resources_pkey" 

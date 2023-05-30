@@ -50,11 +50,16 @@ export const getServer = (config?: Partial<typeof defaultConfig>) => {
   return configureDefaultPostMiddlewares(withService, true).listen();
 };
 
+const defaultInternalServiceConfig = {
+  reindexDbBatchSize: 4,
+};
+
 export const getInternalServer = () => {
   process.env.AWS_ACCESS_KEY_ID = 'mock-access-key';
   process.env.AWS_SECRET_ACCESS_KEY = 'mock-secret-key';
   const withoutService = configureDefaultPreMiddlewares(express());
   const withService = configureInternalService({
+    ...defaultInternalServiceConfig,
     webServer: withoutService,
   });
   return configureDefaultPostMiddlewares(withService, true).listen();
@@ -70,4 +75,9 @@ export const headers = {
 export const internalHeaders = {
   'Content-Type': 'application/json',
   Authorization: `Basic BBC`,
+};
+
+export const adminHeaders = {
+  'Content-Type': 'application/json',
+  Authorization: `Basic Fast`,
 };

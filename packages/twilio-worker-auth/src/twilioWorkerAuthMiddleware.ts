@@ -52,13 +52,13 @@ const isGuest = (tokenResult: TokenValidatorResponse) =>
 
 const defaultTokenLookup = (accountSid: string) => process.env[`TWILIO_AUTH_TOKEN_${accountSid}`] ?? '';
 
-const authenticateWithStaticKey = (req: Request): boolean => {
+const authenticateWithStaticKey = (req: Request, loginId: string | undefined): boolean => {
   if (!req.headers) return false;
-  const { headers: { authorization }, accountSid } = req;
+  const { headers: { authorization } } = req;
 
-  if (accountSid && authorization && authorization.startsWith('Basic')) {
+  if (loginId && authorization && authorization.startsWith('Basic')) {
     try {
-      const staticSecretKey = `STATIC_KEY_${accountSid}`;
+      const staticSecretKey = `STATIC_KEY_${loginId}`;
       const staticSecret = process.env[staticSecretKey];
       const requestSecret = authorization.replace('Basic ', '');
 
@@ -68,7 +68,7 @@ const authenticateWithStaticKey = (req: Request): boolean => {
         crypto.timingSafeEqual(Buffer.from(requestSecret), Buffer.from(staticSecret));
 
       if (isStaticSecretValid) {
-        req.user = twilioUser(`account-${accountSid}`, []);
+        req.user = twilioUser(`account-${loginId}`, []);
         return true;
       }
     } catch (err) {
@@ -109,12 +109,18 @@ export const getAuthorizationMiddleware = (authTokenLookup: (accountSid: string)
     }
   }
 
-  if (canAccessResourceWithStaticKey(req.originalUrl, req.method) && authenticateWithStaticKey(req)) return next();
+  if (canAccessResourceWithStaticKey(req.originalUrl, req.method) && authenticateWithStaticKey(req, accountSid)) return next();
 
   return unauthorized(res);
 };
 
 export const staticKeyAuthorizationMiddleware = async (req: Request, res: Response, next: NextFunction) => {
-  if (authenticateWithStaticKey(req)) return next();
+  if (authenticateWithStaticKey(req, req.accountSid)) return next();
   return unauthorized(res);
 };
+
+export const adminAuthorizationMiddleware = (adminLoginId: string) => async (req: Request, res: Response, next: NextFunction) => {
+  if (authenticateWithStaticKey(req, adminLoginId)) return next();
+  return unauthorized(res);
+};
+

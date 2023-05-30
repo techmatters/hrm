@@ -48,10 +48,7 @@ export const getByIdList = async (
     t.manyOrNone(SELECT_RESOURCE_IN_IDS, { accountSid, resourceIds }),
   );
   console.debug('Retrieved resources:', res?.length);
-  return res.map(rr => {
-    const { accountSid: acct, ...rest } = rr;
-    return rest;
-  });
+  return res;
 };
 
 export const getWhereNameContains = async (

@@ -114,7 +114,7 @@ const sendUpdates = (accountSid: AccountSID, importResourcesSqsQueueUrl: URL) =>
     try {
       const transformedResource: ResourceMessage = {
         batch: { ...importBatch, remaining },
-        importedResources: [transformKhpResourceToApiResource(khpResource)],
+        importedResources: [transformKhpResourceToApiResource(accountSid, khpResource)],
         accountSid,
       };
       await publishToImportConsumer(importResourcesSqsQueueUrl)(transformedResource);

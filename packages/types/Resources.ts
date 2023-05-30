@@ -13,6 +13,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
+import { AccountSID } from './twilio';
 
 export type ReferrableResourceAttribute<T> = {
   value: T;
@@ -52,7 +53,7 @@ export type ReferrableResource = {
   attributes: ResourceAttributeNode;
 };
 
-export enum ResourcesJobType {
+export const enum ResourcesJobType {
   SEARCH_INDEX = 'search-index',
 }
 
@@ -67,6 +68,7 @@ export type ResourcesSearchIndexPayload = ResourcesJobMessageCommons & {
 };
 
 export type FlatResource = {
+  accountSid: AccountSID;
   name: string;
   id: string;
   lastUpdated: string;

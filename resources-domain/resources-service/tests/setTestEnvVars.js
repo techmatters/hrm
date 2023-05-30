@@ -15,3 +15,5 @@
  */
 
 process.env.STATIC_KEY_AC000 = 'BBC';
+process.env.STATIC_KEY_SEARCH_REINDEXER = 'Fast';
+process.env.LOCAL_SQS_PORT = '3010';

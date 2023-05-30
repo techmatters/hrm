@@ -23,6 +23,7 @@ describe('convertIndexDocument', () => {
   it('should convert a simple document', () => {
     // TODO: need a real example of a document to test against because I still have no idea what these are supposed to look like
     const resource: FlatResource = {
+      accountSid: 'AC_FAKE',
       name: 'Resource',
       id: '1234',
       lastUpdated: BASELINE_DATE.toISOString(),

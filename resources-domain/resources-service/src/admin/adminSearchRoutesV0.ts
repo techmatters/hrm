@@ -15,29 +15,32 @@
  */
 
 import { IRouter, Router } from 'express';
-import resourceRoutes from './resource/resourceRoutesV0';
-import { CloudSearchConfig } from './config/cloud-search';
-import importRoutes from './import/importRoutesV0';
-import adminSearchRoutes from './admin/adminSearchRoutesV0';
-import { AdminSearchServiceConfiguration } from './admin/adminSearchService';
+import newAdminSearchService, {
+  AdminSearchServiceConfiguration,
+  ResponseType,
+  SearchReindexParams,
+} from './adminSearchService';
 
-export const apiV0 = (cloudSearchConfig: CloudSearchConfig) => {
+const adminSearchRoutes = (serviceConfig: AdminSearchServiceConfiguration) => {
   const router: IRouter = Router();
+  const adminSearchService = newAdminSearchService(serviceConfig);
 
-  router.use(resourceRoutes(cloudSearchConfig));
+  router.post('/search/reindex', async ({ body, query }, res) => {
+    const params: SearchReindexParams = body;
+    if (params.resourceIds && !params.accountSid) {
+      res.status(400).json({
+        message: 'accountSid must be specified if resourceIds are specified',
+      });
+      return;
+    }
+    const result = await adminSearchService.reindex(
+      body,
+      query.responseType === 'verbose' ? ResponseType.VERBOSE : ResponseType.CONCISE,
+    );
+    res.status(200).json(result);
+  });
+
   return router;
 };
 
-export const internalApiV0 = () => {
-  const router: IRouter = Router();
-
-  router.use(importRoutes());
-  return router;
-};
-
-export const adminApiV0 = (config: AdminSearchServiceConfiguration) => {
-  const router: IRouter = Router();
-
-  router.use(adminSearchRoutes(config));
-  return router;
-};
+export default adminSearchRoutes;

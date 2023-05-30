@@ -19,10 +19,11 @@ import 'express-async-errors';
 import {
   addAccountSidMiddleware,
   getAuthorizationMiddleware,
+  staticKeyAuthorizationMiddleware,
+  adminAuthorizationMiddleware,
 } from '@tech-matters/twilio-worker-auth';
 import generateCloudSearchConfig, { CloudSearchConfig } from './config/cloud-search';
-import { apiV0, internalApiV0 } from './routes';
-import { staticKeyAuthorizationMiddleware } from '@tech-matters/twilio-worker-auth/dist/twilioWorkerAuthMiddleware';
+import { adminApiV0, apiV0, internalApiV0 } from './routes';
 
 type ResourceServiceCreationOptions = {
   webServer: ReturnType<typeof express>;
@@ -47,9 +48,13 @@ export const configureService = ({
 
 type InternalResourceServiceCreationOptions = {
   webServer: ReturnType<typeof express>;
+  reindexDbBatchSize?: number;
 };
 
-export const configureInternalService = ({ webServer }: InternalResourceServiceCreationOptions) => {
+export const configureInternalService = ({
+  webServer,
+  reindexDbBatchSize = 1000,
+}: InternalResourceServiceCreationOptions) => {
   webServer.get('/', (req, res) => {
     res.json({
       Message: 'Resources internal service is up and running!',
@@ -60,6 +65,11 @@ export const configureInternalService = ({ webServer }: InternalResourceServiceC
     addAccountSidMiddleware,
     staticKeyAuthorizationMiddleware,
     internalApiV0(),
+  );
+  webServer.use(
+    '/v0/resources/admin',
+    adminAuthorizationMiddleware('SEARCH_REINDEXER'),
+    adminApiV0({ reindexDbBatchSize }),
   );
   return webServer;
 };

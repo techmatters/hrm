@@ -25,7 +25,7 @@ import searchClient, {
 import each from 'jest-each';
 import { mapSearchParametersToKhpTermsAndFilters } from '../../../src/resource/search/khp-resource-search-mapping';
 import { SearchParameters, TermsAndFilters } from '../../../src/resource/search/search-types';
-import { BLANK_ATTRIBUTES } from '../mockResources';
+import { BLANK_ATTRIBUTES } from '../../mockResources';
 import { FlatResource } from '@tech-matters/types';
 
 jest.mock('../../../src/resource/resourceDataAccess', () => ({
@@ -56,8 +56,10 @@ const { searchResourcesByName, searchResources } = resourceService({
 });
 
 const BASELINE_DATE = new Date('2021-01-01T00:00:00.000Z');
+const ACCOUNT_SID = 'AC_FAKE_ACCOUNT';
 
 const generateResourceRecord = (identifier: string): FlatResource => ({
+  accountSid: ACCOUNT_SID,
   id: `RESOURCE_${identifier}`,
   name: `Resource ${identifier}`,
   lastUpdated: BASELINE_DATE.toISOString(),
@@ -84,7 +86,7 @@ describe('searchResourcesByName', () => {
       results: ['RESOURCE_1', 'RESOURCE_2'],
     });
     mockGetByIdList.mockResolvedValue(resultSet);
-    const res = await searchResourcesByName('AC_FAKE_ACCOUNT', {
+    const res = await searchResourcesByName(ACCOUNT_SID, {
       nameSubstring: 'Res',
       ids: [],
       pagination: { limit: 5, start: 10 },
@@ -101,8 +103,8 @@ describe('searchResourcesByName', () => {
         },
       })),
     );
-    expect(getWhereNameContains).toHaveBeenCalledWith('AC_FAKE_ACCOUNT', 'Res', 10, 5);
-    expect(getByIdList).toHaveBeenCalledWith('AC_FAKE_ACCOUNT', ['RESOURCE_1', 'RESOURCE_2']);
+    expect(getWhereNameContains).toHaveBeenCalledWith(ACCOUNT_SID, 'Res', 10, 5);
+    expect(getByIdList).toHaveBeenCalledWith(ACCOUNT_SID, ['RESOURCE_1', 'RESOURCE_2']);
   });
   test('Limit over 200 - forces limit to 100', async () => {
     mockGetWhereNameContains.mockResolvedValue({
@@ -110,17 +112,17 @@ describe('searchResourcesByName', () => {
       results: ['RESOURCE_1', 'RESOURCE_2'],
     });
     mockGetByIdList.mockResolvedValue([]);
-    await searchResourcesByName('AC_FAKE_ACCOUNT', {
+    await searchResourcesByName(ACCOUNT_SID, {
       nameSubstring: 'Res',
       ids: [],
       pagination: { limit: 500, start: 10 },
     });
-    expect(getWhereNameContains).toHaveBeenCalledWith('AC_FAKE_ACCOUNT', 'Res', 10, 200);
+    expect(getWhereNameContains).toHaveBeenCalledWith(ACCOUNT_SID, 'Res', 10, 200);
   });
   test('Id search only specified - looks up resources with getByIdList', async () => {
     const resultSet = [generateResourceRecord('1'), generateResourceRecord('2')];
     mockGetByIdList.mockResolvedValue(resultSet);
-    const res = await searchResourcesByName('AC_FAKE_ACCOUNT', {
+    const res = await searchResourcesByName(ACCOUNT_SID, {
       ids: ['RESOURCE_1', 'RESOURCE_2'],
       pagination: { limit: 5, start: 0 },
     });
@@ -133,7 +135,7 @@ describe('searchResourcesByName', () => {
       })),
     );
     expect(getWhereNameContains).not.toHaveBeenCalled();
-    expect(getByIdList).toHaveBeenCalledWith('AC_FAKE_ACCOUNT', ['RESOURCE_1', 'RESOURCE_2']);
+    expect(getByIdList).toHaveBeenCalledWith(ACCOUNT_SID, ['RESOURCE_1', 'RESOURCE_2']);
   });
   test('Id search only specified with start - skips {start} number of results', async () => {
     const resultSet = [
@@ -143,7 +145,7 @@ describe('searchResourcesByName', () => {
       generateResourceRecord('4'),
     ];
     mockGetByIdList.mockResolvedValue(resultSet);
-    const res = await searchResourcesByName('AC_FAKE_ACCOUNT', {
+    const res = await searchResourcesByName(ACCOUNT_SID, {
       ids: ['RESOURCE_3', 'RESOURCE_1', 'RESOURCE_2', 'RESOURCE_4'],
       pagination: { limit: 5, start: 2 },
     });
@@ -152,7 +154,7 @@ describe('searchResourcesByName', () => {
       resultSet.slice(2).map(r => ({ id: r.id, name: r.name, attributes: {} })),
     );
     expect(getWhereNameContains).not.toHaveBeenCalled();
-    expect(getByIdList).toHaveBeenCalledWith('AC_FAKE_ACCOUNT', [
+    expect(getByIdList).toHaveBeenCalledWith(ACCOUNT_SID, [
       'RESOURCE_3',
       'RESOURCE_1',
       'RESOURCE_2',
@@ -167,7 +169,7 @@ describe('searchResourcesByName', () => {
       generateResourceRecord('4'),
     ];
     mockGetByIdList.mockResolvedValue(resultSet);
-    const res = await searchResourcesByName('AC_FAKE_ACCOUNT', {
+    const res = await searchResourcesByName(ACCOUNT_SID, {
       ids: ['RESOURCE_3', 'RESOURCE_1', 'RESOURCE_2', 'RESOURCE_4'],
       pagination: { limit: 5, start: 0 },
     });
@@ -179,7 +181,7 @@ describe('searchResourcesByName', () => {
       { id: 'RESOURCE_4', name: 'Resource 4', attributes: {} },
     ]);
     expect(getWhereNameContains).not.toHaveBeenCalled();
-    expect(getByIdList).toHaveBeenCalledWith('AC_FAKE_ACCOUNT', [
+    expect(getByIdList).toHaveBeenCalledWith(ACCOUNT_SID, [
       'RESOURCE_3',
       'RESOURCE_1',
       'RESOURCE_2',
@@ -193,7 +195,7 @@ describe('searchResourcesByName', () => {
       generateResourceRecord('4'),
     ];
     mockGetByIdList.mockResolvedValue(resultSet);
-    const res = await searchResourcesByName('AC_FAKE_ACCOUNT', {
+    const res = await searchResourcesByName(ACCOUNT_SID, {
       ids: ['RESOURCE_3', 'RESOURCE_1', 'RESOURCE_2', 'RESOURCE_4'],
       pagination: { limit: 5, start: 0 },
     });
@@ -204,7 +206,7 @@ describe('searchResourcesByName', () => {
       { id: 'RESOURCE_4', name: 'Resource 4', attributes: {} },
     ]);
     expect(getWhereNameContains).not.toHaveBeenCalled();
-    expect(getByIdList).toHaveBeenCalledWith('AC_FAKE_ACCOUNT', [
+    expect(getByIdList).toHaveBeenCalledWith(ACCOUNT_SID, [
       'RESOURCE_3',
       'RESOURCE_1',
       'RESOURCE_2',
@@ -219,7 +221,7 @@ describe('searchResourcesByName', () => {
       generateResourceRecord('4'),
     ];
     mockGetByIdList.mockResolvedValue(resultSet);
-    const res = await searchResourcesByName('AC_FAKE_ACCOUNT', {
+    const res = await searchResourcesByName(ACCOUNT_SID, {
       ids: [
         'RESOURCE_3',
         'RESOURCE_3',
@@ -241,7 +243,7 @@ describe('searchResourcesByName', () => {
       { id: 'RESOURCE_4', name: 'Resource 4', attributes: {} },
     ]);
     expect(getWhereNameContains).not.toHaveBeenCalled();
-    expect(getByIdList).toHaveBeenCalledWith('AC_FAKE_ACCOUNT', [
+    expect(getByIdList).toHaveBeenCalledWith(ACCOUNT_SID, [
       'RESOURCE_3',
       'RESOURCE_3',
       'RESOURCE_3',
@@ -261,14 +263,14 @@ describe('searchResourcesByName', () => {
       generateResourceRecord('4'),
     ];
     mockGetByIdList.mockResolvedValue(resultSet);
-    const res = await searchResourcesByName('AC_FAKE_ACCOUNT', {
+    const res = await searchResourcesByName(ACCOUNT_SID, {
       ids: ['RESOURCE_3', 'RESOURCE_1', 'RESOURCE_2', 'RESOURCE_4'],
       pagination: { limit: 3, start: 10 },
     });
     expect(res.totalCount).toBe(4);
     expect(res.results).toStrictEqual([]);
     expect(getWhereNameContains).not.toHaveBeenCalled();
-    expect(getByIdList).toHaveBeenCalledWith('AC_FAKE_ACCOUNT', [
+    expect(getByIdList).toHaveBeenCalledWith(ACCOUNT_SID, [
       'RESOURCE_3',
       'RESOURCE_1',
       'RESOURCE_2',
@@ -288,7 +290,7 @@ describe('searchResourcesByName', () => {
       generateResourceRecord('4'),
     ];
     mockGetByIdList.mockResolvedValue(resultSet);
-    const res = await searchResourcesByName('AC_FAKE_ACCOUNT', {
+    const res = await searchResourcesByName(ACCOUNT_SID, {
       nameSubstring: 'Res',
       ids: ['RESOURCE_3', 'RESOURCE_2', 'RESOURCE_4'],
       pagination: { limit: 10, start: 0 },
@@ -300,8 +302,8 @@ describe('searchResourcesByName', () => {
       { id: 'RESOURCE_3', name: 'Resource 3', attributes: {} },
       { id: 'RESOURCE_2', name: 'Resource 2', attributes: {} },
     ]);
-    expect(getWhereNameContains).toHaveBeenCalledWith('AC_FAKE_ACCOUNT', 'Res', 0, 10);
-    expect(getByIdList).toHaveBeenCalledWith('AC_FAKE_ACCOUNT', [
+    expect(getWhereNameContains).toHaveBeenCalledWith(ACCOUNT_SID, 'Res', 0, 10);
+    expect(getByIdList).toHaveBeenCalledWith(ACCOUNT_SID, [
       'RESOURCE_1',
       'RESOURCE_4',
       'RESOURCE_3',
@@ -321,7 +323,7 @@ describe('searchResourcesByName', () => {
       generateResourceRecord('4'),
     ];
     mockGetByIdList.mockResolvedValue(resultSet);
-    const res = await searchResourcesByName('AC_FAKE_ACCOUNT', {
+    const res = await searchResourcesByName(ACCOUNT_SID, {
       nameSubstring: 'Res',
       ids: ['RESOURCE_3', 'RESOURCE_2', 'RESOURCE_4'],
       pagination: { limit: 10, start: 98 },
@@ -333,8 +335,8 @@ describe('searchResourcesByName', () => {
       { id: 'RESOURCE_3', name: 'Resource 3', attributes: {} },
       { id: 'RESOURCE_2', name: 'Resource 2', attributes: {} },
     ]);
-    expect(getWhereNameContains).toHaveBeenCalledWith('AC_FAKE_ACCOUNT', 'Res', 98, 10);
-    expect(getByIdList).toHaveBeenCalledWith('AC_FAKE_ACCOUNT', [
+    expect(getWhereNameContains).toHaveBeenCalledWith(ACCOUNT_SID, 'Res', 98, 10);
+    expect(getByIdList).toHaveBeenCalledWith(ACCOUNT_SID, [
       'RESOURCE_1',
       'RESOURCE_4',
       'RESOURCE_3',
@@ -496,7 +498,7 @@ describe('searchResources', () => {
     }: SearchResourcesTestCaseParameters) => {
       mockSearchClientSearch.mockResolvedValue(resultsFromCloudSearch);
       mockGetByIdList.mockResolvedValue(resultsFromDb);
-      const res = await searchResources('AC_FAKE_ACCOUNT', input);
+      const res = await searchResources(ACCOUNT_SID, input);
       expect(res.totalCount).toBe(expectedTotal);
       expect(res.results).toStrictEqual(
         expectedResults ??
@@ -508,6 +510,7 @@ describe('searchResources', () => {
               numberAttributes,
               referenceStringAttributes,
               lastUpdated,
+              accountSid,
               ...r
             }) => ({
               ...r,
@@ -525,13 +528,13 @@ describe('searchResources', () => {
       );
       expect(mockMapSearchParametersToKhpTermsAndFilters).toHaveBeenCalledWith(input);
       expect(mockSearchClientSearch).toHaveBeenCalledWith(
-        'AC_FAKE_ACCOUNT',
+        ACCOUNT_SID,
         EMPTY_SEARCH_TERMS,
         input.pagination.start,
         expectedSearchLimit ?? input.pagination.limit,
       );
       expect(getByIdList).toHaveBeenCalledWith(
-        'AC_FAKE_ACCOUNT',
+        ACCOUNT_SID,
         resultsFromCloudSearch.items.map(i => i.id),
       );
     },
@@ -791,7 +794,7 @@ describe('searchResources', () => {
     mockGetByIdList.mockResolvedValue(
       resultSet.map(rs => ({ ...rs, stringAttributes: attributeRecords })),
     );
-    const res = await searchResources('AC_FAKE_ACCOUNT', {
+    const res = await searchResources(ACCOUNT_SID, {
       generalSearchTerm: 'Res',
       filters: {},
       pagination: { limit: 5, start: 0 },

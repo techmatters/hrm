@@ -14,12 +14,17 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { FlatResource } from '@tech-matters/types';
+import { SELECT_RESOURCES } from '../../resource/sql/resourceGetSql';
 
-export const BLANK_ATTRIBUTES: Omit<FlatResource, 'id' | 'name' | 'lastUpdated'> = {
-  stringAttributes: [],
-  referenceStringAttributes: [],
-  booleanAttributes: [],
-  numberAttributes: [],
-  dateTimeAttributes: [],
-};
+export const generateSelectResourcesForReindexSql = (
+  resourceIdsSpecified: boolean,
+) => `${SELECT_RESOURCES}
+WHERE 
+  ($<accountSid> IS NULL OR r."accountSid" = $<accountSid>) 
+  AND ($<lastUpdatedFrom> IS NULL OR r."lastUpdated" >= $<lastUpdatedFrom>)
+  AND ($<lastUpdatedTo> IS NULL OR r."lastUpdated" <= $<lastUpdatedTo>)
+  ${resourceIdsSpecified ? 'AND r."id" IN ($<resourceIds:csv>)' : ''}
+ORDER BY r."lastUpdated", r."accountSid", r."id"
+LIMIT $<limit>
+OFFSET $<start>
+`;

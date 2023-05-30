@@ -25,6 +25,7 @@ import each from 'jest-each';
 import { ReferrableResource } from '@tech-matters/types';
 import { AssertionError } from 'assert';
 import { UpsertImportedResourceResult } from '../../src/import/importDataAccess';
+import { generateImportResource as newImportResourceGenerator } from '../mockResources';
 
 const internalServer = getInternalServer();
 const internalRequest = getRequest(internalServer);
@@ -35,6 +36,7 @@ const accountSid = 'AC000';
 const workerSid = 'WK-worker-sid';
 
 const baselineDate = parseISO('2020-01-01T00:00:00.000Z');
+const generateImportResource = newImportResourceGenerator(baselineDate, accountSid);
 
 const populateSampleDbReferenceValues = async (count: number, valuesPerList: number) => {
   const sql = range(count)
@@ -154,64 +156,6 @@ const verifyGeneratedResourcesAttributes = async (resourceId: string) => {
     false,
   );
 };
-
-const generateImportResource = (
-  resourceIdSuffix: string,
-  lastUpdated: Date,
-  {
-    stringAttributes,
-    referenceStringAttributes,
-    numberAttributes,
-    dateTimeAttributes,
-    booleanAttributes,
-  }: Partial<FlatResource> = {},
-): FlatResource => ({
-  id: `RESOURCE_${resourceIdSuffix}`,
-  name: `Resource ${resourceIdSuffix}`,
-  lastUpdated: lastUpdated.toISOString(),
-  stringAttributes: [
-    {
-      key: 'STRING_ATTRIBUTE',
-      value: 'VALUE',
-      language: 'en-US',
-      info: { some: 'json' },
-    },
-    ...(stringAttributes ?? []),
-  ],
-  dateTimeAttributes: [
-    {
-      key: 'DATETIME_ATTRIBUTE',
-      value: baselineDate.toISOString(),
-      info: { some: 'json' },
-    },
-    ...(dateTimeAttributes ?? []),
-  ],
-  numberAttributes: [
-    {
-      key: 'NUMBER_ATTRIBUTE',
-      value: 1337,
-      info: { some: 'json' },
-    },
-    ...(numberAttributes ?? []),
-  ],
-  booleanAttributes: [
-    {
-      key: 'BOOL_ATTRIBUTE',
-      value: true,
-      info: { some: 'json' },
-    },
-    ...(booleanAttributes ?? []),
-  ],
-  referenceStringAttributes: [
-    {
-      key: 'REFERENCE_ATTRIBUTE',
-      value: 'REFERENCE_VALUE_2',
-      language: 'REFERENCE_LANGUAGE',
-      list: 'REFERENCE_LIST_1',
-    },
-    ...(referenceStringAttributes ?? []),
-  ],
-});
 
 const generateApiResource = (
   resourceIdSuffix: string,
