@@ -15,7 +15,7 @@
  */
 import { Client as EsClient, ClientOptions } from '@elastic/elasticsearch';
 import { IndicesRefreshResponse } from '@elastic/elasticsearch/lib/api/types';
-import { getSsmParameter } from '@tech-matters/hrm-ssm-cache';
+import { getSsmParameter } from '@tech-matters/ssm-cache';
 import {
   indexDocumentBulk,
   IndexDocumentBulkExtraParams,

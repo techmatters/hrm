@@ -35,6 +35,7 @@ export const getMockClient = ({ accountSid }: { accountSid: string }) => {
               members: {
                 list: () => [],
               },
+              remove: () => {},
             }),
           },
           users: {

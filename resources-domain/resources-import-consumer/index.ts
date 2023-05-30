@@ -14,8 +14,8 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { ResourceImportProcessorError } from '@tech-matters/hrm-job-errors';
-import { getSsmParameter } from '@tech-matters/hrm-ssm-cache';
+import { ResourceImportProcessorError } from '@tech-matters/job-errors';
+import { getSsmParameter } from '@tech-matters/ssm-cache';
 // import { SQS } from 'aws-sdk';
 // eslint-disable-next-line prettier/prettier
 import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
@@ -71,7 +71,7 @@ const upsertRecordWithoutException = async (sqsRecord: SQSRecord): Promise<Proce
 
     return {
       status: 'success',
-      messageId: sqsRecord.messageId, 
+      messageId: sqsRecord.messageId,
     };
   } catch (err) {
     console.error(new ResourceImportProcessorError('Failed to process record'), err);
@@ -80,7 +80,7 @@ const upsertRecordWithoutException = async (sqsRecord: SQSRecord): Promise<Proce
 
     return {
       status: 'failure',
-      messageId: sqsRecord.messageId, 
+      messageId: sqsRecord.messageId,
       reason: new Error(errMessage),
     };
   }

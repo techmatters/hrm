@@ -34,6 +34,7 @@ on:
         options:
           - us-east-1
           - eu-west-1
+          - ca-central-1
 
   workflow_call:
     secrets:

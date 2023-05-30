@@ -1,5 +1,5 @@
 {
-  "name": "@tech-matters/hrm-ssm-cache",
+  "name": "@tech-matters/ssm-cache",
   "version": "1.0.0",
   "main": "dist/index.js",
   "directories": {
