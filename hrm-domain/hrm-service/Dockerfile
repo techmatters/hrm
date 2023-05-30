@@ -27,7 +27,7 @@ COPY package.json package-lock.json tsconfig.base.json tsconfig.build.service.js
 
 RUN apk add --no-cache rsync \
     && cd /tmp/build \
-    && npm ci -w=hrm-domain/hrm-service -w packages/* -w resources-domain/resources-service \
+    && npm ci -w=hrm-domain/hrm-service -w packages/* -w resources-domain/resources-search-config -w resources-domain/resources-service \
     && npx tsc -b tsconfig.build.service.json \
     && cp -r hrm-domain/hrm-service/* /home/node/ \
     && cp -r packages /home/node/ \
