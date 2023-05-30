@@ -25,6 +25,7 @@ const getSearchParams = (startDate: Date, endDate: Date) => ({
   dateFrom: formatISO(startDate),
   dateTo: formatISO(endDate),
   onlyDataContacts: false,
+  shouldIncludeUpdatedAt: true,
 });
 
 export const pullContacts = async (startDate: Date, endDate: Date) => {
