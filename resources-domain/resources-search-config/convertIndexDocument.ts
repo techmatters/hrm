@@ -15,22 +15,22 @@
  */
 
 import { FlatResource, ReferrableResourceAttribute } from '@tech-matters/types';
+import { CreateIndexConvertedDocument } from '@tech-matters/elasticsearch-client';
 import {
   isHighBoostGlobalField,
-  CreateIndexConvertedDocument,
   getMappingField,
-  FieldAndMapping,
-} from '@tech-matters/elasticsearch-client';
+  resourceIndexDocumentMappings,
+} from './resourceIndexDocumentMappings';
 import { resourceIndexConfiguration } from './index';
 
 export const convertIndexDocument = (resource: FlatResource): CreateIndexConvertedDocument => {
-  const { mappingFields } = resourceIndexConfiguration;
+  const { mappingFields } = resourceIndexDocumentMappings;
   const mappedFields: { [key: string]: string | string[] | number | boolean } = {};
   const highBoostGlobal: string[] = [];
   const lowBoostGlobal: string[] = [];
 
   const pushToCorrectGlobalBoostField = (key: string, value: string) => {
-    if (isHighBoostGlobalField(resourceIndexConfiguration, key)) {
+    if (isHighBoostGlobalField(resourceIndexDocumentMappings, key)) {
       highBoostGlobal.push(value);
     } else {
       lowBoostGlobal.push(value);

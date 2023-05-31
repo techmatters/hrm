@@ -30,18 +30,19 @@ import {
   MappingTextProperty,
 } from '@elastic/elasticsearch/lib/api/types';
 import { IndexConfiguration, isHighBoostGlobalField, isStringField } from './indexConfiguration';
+import { IndicesCreateRequest } from '@elastic/elasticsearch/lib/api/types';
+import {
+  isHighBoostGlobalField,
+  isStringField,
+  resourceIndexDocumentMappings,
+} from './resourceIndexDocumentMappings';
 
 /**
- * This function is used to make a request to create the index in ES.
- * It is the default implementation of the getCreateIndexParams function that will be used if an override is not provided in the index configuration.
- * @param indexConfig
+ * This function is used to make a request to create the resources search index in ES.
  * @param index
  */
-export const getCreateIndexParams = (
-  indexConfig: Omit<IndexConfiguration, 'getCreateIndexParams'>,
-  index: string,
-): IndicesCreateRequest => {
-  const { mappingFields, languageFields } = indexConfig;
+export const getCreateIndexParams = (index: string): IndicesCreateRequest => {
+  const { mappingFields, languageFields } = resourceIndexDocumentMappings;
 
   const convertMappingFieldsToProperties = () =>
     Object.fromEntries(

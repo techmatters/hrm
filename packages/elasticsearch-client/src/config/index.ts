@@ -15,7 +15,6 @@
  */
 export * from './indexConfiguration';
 export * from './searchConfiguration';
-export * from './getCreateIndexParams';
 
 export type CreateIndexConvertedDocument = {
   high_boost_global: string;

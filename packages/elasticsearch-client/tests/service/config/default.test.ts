@@ -18,16 +18,18 @@ import each from 'jest-each';
 import { orderBy } from 'lodash';
 
 import { getClient } from '../../../src';
-import { SearchParameters, SearchResponse, Client } from '../../../';
+import { SearchParameters, SearchResponse, Client, IndexClient } from '../../../';
 import { resourceDocuments } from '../../fixtures/resources';
 import {
+  RESOURCE_INDEX_TYPE,
   resourceIndexConfiguration,
   resourceSearchConfiguration,
 } from '@tech-matters/resources-search-config';
+import { FlatResource } from '@tech-matters/types/dist/Resources';
 
 const accountSid = 'test-account-sid';
-const indexType = 'RESOURCE_INDEX_TYPE';
-let indexClient: ReturnType<Client['indexClient']>;
+const indexType = RESOURCE_INDEX_TYPE;
+let indexClient: IndexClient<FlatResource>;
 let searchClient: ReturnType<Client['searchClient']>;
 
 afterAll(async () => {

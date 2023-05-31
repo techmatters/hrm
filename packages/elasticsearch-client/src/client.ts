@@ -15,13 +15,18 @@
  */
 import { Client as EsClient, ClientOptions } from '@elastic/elasticsearch';
 import { getSsmParameter } from '@tech-matters/ssm-cache';
-import { indexDocumentBulk, IndexDocumentBulkExtraParams } from './indexDocumentBulk';
-import { createIndex, CreateIndexExtraParams } from './createIndex';
-import { deleteIndex } from './deleteIndex';
-import { indexDocument, IndexDocumentExtraParams } from './indexDocument';
+import {
+  indexDocumentBulk,
+  IndexDocumentBulkExtraParams,
+  IndexDocumentBulkResponse,
+} from './indexDocumentBulk';
+import { createIndex, CreateIndexExtraParams, CreateIndexResponse } from './createIndex';
+import { deleteIndex, DeleteIndexResponse } from './deleteIndex';
+import { indexDocument, IndexDocumentExtraParams, IndexDocumentResponse } from './indexDocument';
 import getAccountSid from './getAccountSid';
 import { search, SearchExtraParams } from './search';
 import { SearchConfiguration, IndexConfiguration } from './config';
+import { IndicesRefreshResponse } from '@elastic/elasticsearch/lib/api/types';
 
 // import { getMockClient } from './mockClient';
 type AccountSidOrShortCodeRequired =
@@ -76,6 +81,17 @@ const getEsConfig = async ({
   return JSON.parse(await getSsmParameter(getConfigSsmParameterKey(indexType)));
 };
 
+/**
+ * Created this type explicitly because ReturnType<> doesn't work with generics
+ */
+export type IndexClient<T> = {
+  indexDocument: (args: IndexDocumentExtraParams<T>) => Promise<IndexDocumentResponse>;
+  refreshIndex: () => Promise<IndicesRefreshResponse>;
+  indexDocumentBulk: (args: IndexDocumentBulkExtraParams<T>) => Promise<IndexDocumentBulkResponse>;
+  createIndex: (args: CreateIndexExtraParams) => Promise<CreateIndexResponse>;
+  deleteIndex: () => Promise<DeleteIndexResponse>;
+};
+
 const getClientOrMock = async ({ config, index, indexType }: GetClientOrMockArgs) => {
   // TODO: mock client for unit tests
   // if (authToken === 'mockAuthToken') {
@@ -90,7 +106,7 @@ const getClientOrMock = async ({ config, index, indexType }: GetClientOrMockArgs
     searchClient: (searchConfig: SearchConfiguration) => ({
       search: (args: SearchExtraParams) => search({ client, index, searchConfig, ...args }),
     }),
-    indexClient: <T>(indexConfig: IndexConfiguration<T>) => {
+    indexClient: <T>(indexConfig: IndexConfiguration<T>): IndexClient<T> => {
       const passThroughConfig: PassThroughConfig<T> = {
         index,
         indexConfig,
