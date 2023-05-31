@@ -29,8 +29,6 @@ import {
   MappingProperty,
   MappingTextProperty,
 } from '@elastic/elasticsearch/lib/api/types';
-import { IndexConfiguration, isHighBoostGlobalField, isStringField } from './indexConfiguration';
-import { IndicesCreateRequest } from '@elastic/elasticsearch/lib/api/types';
 import {
   isHighBoostGlobalField,
   isStringField,
