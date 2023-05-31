@@ -55,6 +55,7 @@ export type SearchParameters = {
   dateTo?: string;
   contactNumber?: string;
   onlyDataContacts: boolean;
+  shouldIncludeUpdatedAt?: boolean;
 };
 
 /**
@@ -125,6 +126,7 @@ const searchParametersToQueryParameters = (
       counselor: undefined,
       contactNumber: undefined,
       onlyDataContacts: false,
+      shouldIncludeUpdatedAt: false,
     },
     ...restOfSearch,
     helpline: helpline || undefined, // ensure empty strings are replaced with nulls
