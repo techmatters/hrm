@@ -15,16 +15,17 @@
  */
 
 import { getClient } from '../../src';
-import { Client } from '../../';
+import { Client, IndexClient } from '../../';
 import { resourceDocuments } from '../fixtures/resources';
 import {
   resourceIndexConfiguration,
   resourceSearchConfiguration,
 } from '@tech-matters/resources-search-config';
+import { FlatResource } from '@tech-matters/types';
 
 const accountSid = 'service-test-index-document';
 const indexType = 'resources';
-let indexClient: ReturnType<Client['indexClient']>;
+let indexClient: IndexClient<FlatResource>;
 let searchClient: ReturnType<Client['searchClient']>;
 
 afterAll(async () => {
