@@ -51,7 +51,7 @@ export const getCreateIndexParams = (index: string): IndicesCreateRequest => {
 
         if (isStringField(value.type)) {
           const stringProperty = property as MappingTextProperty | MappingKeywordProperty;
-          stringProperty.copy_to = isHighBoostGlobalField(indexConfig, key)
+          stringProperty.copy_to = isHighBoostGlobalField(resourceIndexDocumentMappings, key)
             ? 'high_boost_global'
             : 'low_boost_global';
           if (value.hasLanguageFields) {
