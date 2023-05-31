@@ -20,8 +20,8 @@ import {
   isHighBoostGlobalField,
   getMappingField,
   resourceIndexDocumentMappings,
+  FieldAndMapping,
 } from './resourceIndexDocumentMappings';
-import { resourceIndexConfiguration } from './index';
 
 export const convertIndexDocument = (resource: FlatResource): CreateIndexConvertedDocument => {
   const { mappingFields } = resourceIndexDocumentMappings;
@@ -38,7 +38,7 @@ export const convertIndexDocument = (resource: FlatResource): CreateIndexConvert
   };
 
   const pushValueToMappedField = (
-    { field, mapping }: FieldAndMapping<ReferrableResourceAttribute<boolean | string | number>>,
+    { field, mapping }: FieldAndMapping,
     value: boolean | string | number,
   ) => {
     if (mapping.isArrayField) {
@@ -62,7 +62,7 @@ export const convertIndexDocument = (resource: FlatResource): CreateIndexConvert
     key: string,
     attribute: ReferrableResourceAttribute<boolean | string | number>,
   ) => {
-    const fieldAndMapping = getMappingField(resourceIndexConfiguration, key);
+    const fieldAndMapping = getMappingField(resourceIndexDocumentMappings, key);
     if (fieldAndMapping) {
       return pushValueToMappedField(
         fieldAndMapping,

@@ -41,8 +41,12 @@ export type FieldAndMapping = {
 
 const stringFieldTypes = ['text', 'keyword'];
 
-export const isMappingField = ({ mappingFields }: Pick<ResourceIndexDocumentMappings, 'mappingFields'>, fieldName: string) =>
-  Object.keys(mappingFields).includes(fieldName);
+export const getMappingField = ({ mappingFields }: Pick<ResourceIndexDocumentMappings, 'mappingFields'>, fieldName: string): FieldAndMapping | undefined => {
+  if (Object.keys(mappingFields).includes(fieldName)) return { field: fieldName, mapping:mappingFields[fieldName] };
+  const [field, mapping] = Object.entries(mappingFields).find(([, { attributeKeyPattern }]) => attributeKeyPattern?.test(fieldName)) ?? [];
+  return mapping && field ? { field, mapping } : undefined;
+};
+
 export const isHighBoostGlobalField = ({ highBoostGlobalFields }: Pick<ResourceIndexDocumentMappings, 'highBoostGlobalFields'>, fieldName: string) =>
   highBoostGlobalFields.includes(fieldName);
 
