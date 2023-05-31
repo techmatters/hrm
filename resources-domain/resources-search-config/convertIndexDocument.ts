@@ -15,21 +15,21 @@
  */
 
 import { FlatResource, ReferrableResourceAttribute } from '@tech-matters/types';
+import { CreateIndexConvertedDocument } from '@tech-matters/elasticsearch-client';
 import {
   isHighBoostGlobalField,
   isMappingField,
-  CreateIndexConvertedDocument,
-} from '@tech-matters/elasticsearch-client';
-import { resourceIndexConfiguration } from './index';
+  resourceIndexDocumentMappings,
+} from './resourceIndexDocumentMappings';
 
 export const convertIndexDocument = (resource: FlatResource): CreateIndexConvertedDocument => {
-  const { mappingFields } = resourceIndexConfiguration;
-  const mappedFields: { [key: string]: string | string[] | number } = {};
+  const { mappingFields } = resourceIndexDocumentMappings;
+  const mappedFields: { [key: string]: string | string[] | number | boolean } = {};
   const highBoostGlobal: string[] = [];
   const LowBoostGlobal: string[] = [];
 
   const pushToCorrectGlobalBoostField = (key: string, value: string) => {
-    if (isHighBoostGlobalField(resourceIndexConfiguration, key)) {
+    if (isHighBoostGlobalField(resourceIndexDocumentMappings, key)) {
       highBoostGlobal.push(value);
     } else {
       LowBoostGlobal.push(value);
@@ -55,7 +55,7 @@ export const convertIndexDocument = (resource: FlatResource): CreateIndexConvert
     key: string,
     { value }: ReferrableResourceAttribute<boolean | string | number>,
   ) => {
-    if (isMappingField(resourceIndexConfiguration, key)) {
+    if (isMappingField(resourceIndexDocumentMappings, key)) {
       return pushToMappingField(key, value);
     }
     // We don't really want booleans & numbers in the general purpose buckets

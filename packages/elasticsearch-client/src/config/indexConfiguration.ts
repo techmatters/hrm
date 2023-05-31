@@ -15,35 +15,10 @@
  */
 
 // eslint-disable-next-line prettier/prettier
-import type { PropertyName, MappingProperty, IndicesCreateRequest } from '@elastic/elasticsearch/lib/api/types';
-import { getCreateIndexParams } from './getCreateIndexParams';
+import type { IndicesCreateRequest } from '@elastic/elasticsearch/lib/api/types';
 import { CreateIndexConvertedDocument } from './index';
 
 export type IndexConfiguration<T = any> = {
-  highBoostGlobalFields: string[];
-  mappingFields: {
-    [key: string]: {
-      type: 'integer' | 'keyword' | 'text';
-      hasLanguageFields?: boolean;
-      isArrayField?: boolean;
-    };
-  };
-  languageFields: Record<PropertyName, MappingProperty>
   getCreateIndexParams: (indexName: string) => IndicesCreateRequest
   convertToIndexDocument: (sourceEntity: T) => CreateIndexConvertedDocument
 };
-const stringFieldTypes = ['text', 'keyword'];
-
-export const isMappingField = ({ mappingFields }: Pick<IndexConfiguration, 'mappingFields'>, fieldName: string) =>
-  Object.keys(mappingFields).includes(fieldName);
-export const isHighBoostGlobalField = ({ highBoostGlobalFields }: Pick<IndexConfiguration, 'highBoostGlobalFields'>, fieldName: string) =>
-  highBoostGlobalFields.includes(fieldName);
-export const isStringField = (fieldType: string): fieldType is 'keyword' | 'text' =>
-  stringFieldTypes.includes(fieldType);
-
-type IndexConfigurationOptions<T> = Omit<IndexConfiguration<T>, 'getCreateIndexParams'> & Partial<IndexConfiguration<T>>;
-
-export const newIndexConfiguration = <T>(configuration: IndexConfigurationOptions<T>): IndexConfiguration<T> => ({
-  getCreateIndexParams: (index: string) => getCreateIndexParams(configuration, index),
-  ...configuration,
-});

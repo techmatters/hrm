@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { getClient, IndexTypes } from '../../src';
+import { getClient } from '../../src';
 import { Client } from '../../';
 import { resourceDocuments } from '../fixtures/resources';
 import {
@@ -23,7 +23,7 @@ import {
 } from '@tech-matters/resources-search-config';
 
 const accountSid = 'service-test-index-document';
-const indexType = IndexTypes.RESOURCES;
+const indexType = 'resources';
 let indexClient: ReturnType<Client['indexClient']>;
 let searchClient: ReturnType<Client['searchClient']>;
 
