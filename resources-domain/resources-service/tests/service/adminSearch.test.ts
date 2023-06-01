@@ -61,7 +61,9 @@ beforeAll(async () => {
   });
 });
 
-afterAll(async () => Promise.all([mockingProxy.stop(), internalServer.close()]));
+afterAll(async () =>
+  Promise.all([mockingProxy.stop(), internalServer.close(), sqsService.close()]),
+);
 
 beforeEach(async () => {
   const { QueueUrl } = await sqsClient

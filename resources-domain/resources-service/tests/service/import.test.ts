@@ -240,7 +240,9 @@ beforeAll(async () => {
   ]);
 });
 
-afterAll(async () => Promise.all([mockingProxy.stop(), internalServer.close(), server.close()]));
+afterAll(async () =>
+  Promise.all([mockingProxy.stop(), internalServer.close(), server.close(), sqsService.close()]),
+);
 
 beforeEach(async () => {
   await db.multi(`
