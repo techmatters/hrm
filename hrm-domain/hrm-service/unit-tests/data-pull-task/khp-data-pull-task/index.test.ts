@@ -57,7 +57,7 @@ describe('KHP Data Pull - Params', () => {
     const expectedEndDate = new Date();
     const expectedStartDate = subHours(expectedEndDate, 12);
 
-    await pullData();
+    await Promise.all([pullData(), pullData(null, null), pullData('', '')]);
 
     assertSpyHasBeenCalledWithRouhly(pullContactsSpy, expectedStartDate, expectedEndDate);
     assertSpyHasBeenCalledWithRouhly(pullCasesSpy, expectedStartDate, expectedEndDate);

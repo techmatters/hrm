@@ -21,6 +21,9 @@ import isValid from 'date-fns/isValid';
 import { pullCases } from './pull-cases';
 import { pullContacts } from './pull-contacts';
 
+const isNullUndefinedOrEmptyString = (value: string) =>
+  value === null || value === undefined || value === '';
+
 const getDateRangeForPast12Hours = () => {
   const endDate = new Date();
   const startDate = subHours(endDate, 12);
@@ -48,7 +51,8 @@ const getDateRangeFromArgs = (startDateISO?: string, endDateISO?: string) => {
  * In this scenario, it will pull data for the last 12h.
  */
 export const pullData = async (startDateISO?: string, endDateISO?: string) => {
-  const hasNoDateArgs = startDateISO === undefined && endDateISO === undefined;
+  const hasNoDateArgs =
+    isNullUndefinedOrEmptyString(startDateISO) && isNullUndefinedOrEmptyString(endDateISO);
 
   const { startDate, endDate } = hasNoDateArgs
     ? getDateRangeForPast12Hours()
