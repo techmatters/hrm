@@ -102,7 +102,7 @@ const generateTermFilter = (field: string, filterValue: FilterValue) => {
  * @param filters the filters object from the SearchParameters
  * @returns the filters object to be used in the Elasticsearch query
  */
-export const generateFilters = (
+const generateFilters = (
   searchConfiguration: SearchConfiguration,
   filters: SearchParameters['filters'],
 ): { filterClauses: QueryDslQueryContainer[]; filterSearchClause?: QueryDslQueryContainer } => {
@@ -139,9 +139,8 @@ export const generateFilters = (
           filterClauses.push(generateTermFilter(targetField, value));
           break;
       }
-    }
-    // If there is no explicit mapping, but it isn't a string or a string array, still treat it as a term filter
-    if (!Array.isArray(value) && typeof value !== 'string') {
+    } else if (!Array.isArray(value) && typeof value !== 'string') {
+      // If there is no explicit mapping, but it isn't a string or a string array, still treat it as a term filter
       filterClauses.push(generateTermFilter(targetField, value));
     } else {
       // Otherwise add to the bucket of high priority additional search terms
@@ -185,11 +184,13 @@ export const generateElasticsearchQuery = (
       },
     },
   ];
-  const filterPart: { filters?: QueryDslQueryContainer[] } = {};
+  const filterPart: { filter?: QueryDslQueryContainer[] } = {};
 
   if (filters) {
     const { filterClauses, filterSearchClause } = generateFilters(searchConfiguration, filters);
-    filterPart.filters = filterClauses;
+    if (filterClauses.length > 0) {
+      filterPart.filter = filterClauses;
+    }
     if (filterSearchClause) {
       queryClauses.push(filterSearchClause);
     }
