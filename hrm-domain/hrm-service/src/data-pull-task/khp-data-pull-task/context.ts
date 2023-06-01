@@ -15,7 +15,7 @@
  */
 
 import { S3 } from 'aws-sdk';
-import { getSsmParameter } from '@tech-matters/hrm-ssm-cache';
+import { getSsmParameter } from '@tech-matters/ssm-cache';
 
 const sanitizeEnv = (env: string) => (env === 'local' ? 'development' : env);
 
