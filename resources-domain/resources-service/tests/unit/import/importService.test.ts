@@ -20,10 +20,21 @@ import { updateImportProgress, upsertImportedResource } from '../../../src/impor
 import { AccountSID, FlatResource, ImportBatch, ImportProgress } from '@tech-matters/types';
 import importService from '../../../src/import/importService';
 import { BLANK_ATTRIBUTES } from '../../mockResources';
+import { publishSearchIndexJob } from '../../../src/resource-jobs/client-sqs';
+
 jest.mock('../../../src/import/importDataAccess', () => ({
   updateImportProgress: jest.fn(),
   upsertImportedResource: jest.fn(),
 }));
+
+jest.mock('../../../src/resource-jobs/client-sqs.ts', () => ({
+  publishSearchIndexJob: jest.fn(),
+}));
+
+const mockPublishSearchIndexJob = publishSearchIndexJob as jest.MockedFunction<
+  typeof publishSearchIndexJob
+>;
+
 const conn = mockConnection();
 
 const mockUpdateImportProgress = updateImportProgress as jest.MockedFunction<
@@ -77,6 +88,7 @@ beforeEach(() => {
   mockUpsertImportedResource.mockReturnValue(mockUpsert);
   mockUpsert.mockImplementation((accountSid, { id }) => Promise.resolve({ id, success: true }));
   upsertResources = importService().upsertResources;
+  mockPublishSearchIndexJob.mockResolvedValue(undefined);
 });
 
 afterEach(() => {
@@ -88,6 +100,7 @@ describe('upsertResources', () => {
     await upsertResources(ACCOUNT_SID, [], BASELINE_BATCH);
     expect(mockUpsertImportedResource).not.toHaveBeenCalled();
     expect(mockUpdateImportProgress).not.toHaveBeenCalled();
+    expect(mockPublishSearchIndexJob).not.toHaveBeenCalled();
   });
   test('Several resources - inserted in document order in a transaction, and update progress set to ID with latest updated date in batch', async () => {
     const result = await upsertResources(ACCOUNT_SID, SAMPLE_RESOURCES, BASELINE_BATCH);
@@ -102,6 +115,13 @@ describe('upsertResources', () => {
       lastProcessedId: 'TEST_RESOURCE_50',
       lastProcessedDate: subSeconds(BASELINE_DATE, 1).toISOString(),
     });
+
+    expect(mockPublishSearchIndexJob).toHaveBeenCalledTimes(3);
+    mockPublishSearchIndexJob.mock.calls.forEach(([accountSid, resource], index) => {
+      expect(accountSid).toBe(ACCOUNT_SID);
+      expect(resource).toEqual(SAMPLE_RESOURCES[index]);
+    });
+
     expect(result).toEqual(SAMPLE_RESOURCES.map(({ id }) => ({ id, success: true })));
   });
   test('A resource update throws - aborts transaction & throws', async () => {
@@ -205,6 +225,29 @@ describe('upsertResources', () => {
     );
     expect(mockUpsertImportedResource).toHaveBeenCalledWith(expect.anything());
     expect(mockUpsert).toHaveBeenCalledTimes(3);
+    expect(mockUpdateProgress).toHaveBeenCalledWith<[AccountSID, ImportProgress]>(ACCOUNT_SID, {
+      ...BASELINE_BATCH,
+      lastProcessedId: 'TEST_RESOURCE_50',
+      lastProcessedDate: subSeconds(BASELINE_DATE, 1).toISOString(),
+    });
+  });
+
+  test('Publishing to the reindex queue throws - continues', async () => {
+    mockPublishSearchIndexJob.mockImplementation(() => {
+      throw new Error('bork');
+    });
+    try {
+      await upsertResources(ACCOUNT_SID, SAMPLE_RESOURCES, BASELINE_BATCH);
+    } catch (err) {
+      // Bug in jest still counts async functions where errors are caught as rejections
+      // While this is far from ideal, the interactions being verified below prove the code kept running after the error
+    }
+    expect(mockUpsertImportedResource).toHaveBeenCalledWith(expect.anything());
+    expect(mockUpsert).toHaveBeenCalledTimes(3);
+    mockUpsert.mock.calls.forEach(([accountSid, resource], index) => {
+      expect(accountSid).toBe(ACCOUNT_SID);
+      expect(resource).toEqual(SAMPLE_RESOURCES[index]);
+    });
     expect(mockUpdateProgress).toHaveBeenCalledWith<[AccountSID, ImportProgress]>(ACCOUNT_SID, {
       ...BASELINE_BATCH,
       lastProcessedId: 'TEST_RESOURCE_50',

@@ -15,16 +15,18 @@
  */
 
 import sqslite from 'sqslite';
-import { adminHeaders, getInternalServer, getRequest, headers, internalHeaders } from './server';
+import { adminHeaders, getInternalServer, getRequest, headers } from './server';
 import { SearchReindexParams } from '../../src/admin/adminSearchService';
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import { addDays, parseISO, subDays } from 'date-fns';
 import each from 'jest-each';
-import { AccountSID, FlatResource, ImportRequestBody, ResourcesJobType } from '@tech-matters/types';
+import { AccountSID, FlatResource, ResourcesJobType } from '@tech-matters/types';
 import { generateImportResource as newImportResourceGenerator } from '../mockResources';
 import range from './range';
 import { SQS } from 'aws-sdk';
 import { db } from '../../src/connection-pool';
+import { mockSsmParameters } from '../mockSsm';
+import { upsertImportedResource } from '../../src/import/importDataAccess';
 
 const internalServer = getInternalServer();
 const internalRequest = getRequest(internalServer);
@@ -47,31 +49,13 @@ beforeAll(async () => {
   await sqsService.listen({ port: parseInt(process.env.LOCAL_SQS_PORT!) });
   await mockSuccessfulTwilioAuthentication(WORKER_SID);
   const mockttp = await mockingProxy.mockttpServer();
-  await mockttp.forPost(/(.*)mock-ssm(.*)/).thenCallback(async req => {
-    const { Name: name }: { Name: string } = ((await req.body.getJson()) as { Name: string }) ?? {
-      Name: '',
-    };
-    if (/\/(test|local|development)\/resources\/AC[0-9]+\/queue-url-search-index/.test(name)) {
-      return {
-        status: 200,
-        body: JSON.stringify({
-          Parameter: {
-            ARN: 'string',
-            DataType: 'text',
-            LastModifiedDate: 0,
-            Name: name,
-            Selector: 'string',
-            SourceResult: 'string',
-            Type: 'SecureString',
-            Value: testQueueUrl.toString(),
-            Version: 3,
-          },
-        }),
-      };
-    } else {
-      return { status: 404 };
-    }
-  });
+  await mockSsmParameters(mockttp, [
+    {
+      pathPattern: /\/(test|local|development)\/resources\/AC[0-9]+\/queue-url-search-index/,
+      valueGenerator: () => testQueueUrl.toString(),
+    },
+  ]);
+
   ACCOUNT_SIDS.forEach(accountSid => {
     process.env[`STATIC_KEY_${accountSid}`] = 'BBC';
   });
@@ -142,21 +126,11 @@ describe('POST /search/reindex', () => {
         ).join('\n;'),
       ),
     );
+    const upserter = upsertImportedResource();
     await Promise.all(
-      dbResources.map(([acc, accountResources]) => {
-        const body: ImportRequestBody = {
-          importedResources: accountResources,
-          batch: {
-            fromDate: subDays(BASELINE_DATE, 10).toISOString(),
-            toDate: addDays(BASELINE_DATE, 10).toISOString(),
-            remaining: 10,
-          },
-        };
-        return internalRequest
-          .post(`/v0/accounts/${acc}/resources/import`)
-          .set(internalHeaders)
-          .send(body);
-      }),
+      dbResources.flatMap(([acc, accountResources]) =>
+        accountResources.map(resource => upserter(acc, resource)),
+      ),
     );
   });
 

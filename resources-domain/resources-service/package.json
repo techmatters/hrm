@@ -15,7 +15,8 @@
     "sequelize-cli": "^6.5.2",
     "sqslite": "^2.1.1",
     "tsx": "^3.12.6",
-    "umzug": "^3.2.1"
+    "umzug": "^3.2.1",
+    "mockttp": "^3.2.2"
   },
   "scripts": {
     "migrate": "run-s db:create:schema test:service:ci:migrate",

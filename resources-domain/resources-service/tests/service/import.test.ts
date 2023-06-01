@@ -19,18 +19,33 @@ import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/
 import { db } from '../../src/connection-pool';
 import range from './range';
 import { parseISO, addHours, subHours, addSeconds, subSeconds } from 'date-fns';
-import { FlatResource, ImportProgress, ImportRequestBody } from '@tech-matters/types';
+import {
+  FlatResource,
+  ImportProgress,
+  ImportRequestBody,
+  ResourcesJobType,
+} from '@tech-matters/types';
 import { internalHeaders } from './server';
 import each from 'jest-each';
 import { ReferrableResource } from '@tech-matters/types';
 import { AssertionError } from 'assert';
 import { UpsertImportedResourceResult } from '../../src/import/importDataAccess';
 import { generateImportResource as newImportResourceGenerator } from '../mockResources';
+import sqslite from 'sqslite';
+import { SQS } from 'aws-sdk';
+import { mockSsmParameters } from '../mockSsm';
 
 const internalServer = getInternalServer();
 const internalRequest = getRequest(internalServer);
 const server = getServer();
 const request = getRequest(server);
+
+const sqsService = sqslite({});
+const sqsClient = new SQS({
+  endpoint: `http://localhost:${process.env.LOCAL_SQS_PORT}`,
+});
+
+let testQueueUrl: URL;
 
 const accountSid = 'AC000';
 const workerSid = 'WK-worker-sid';
@@ -214,7 +229,15 @@ const verifyImportState = async (expectedImportState?: ImportProgress) => {
 
 beforeAll(async () => {
   await mockingProxy.start();
+  await sqsService.listen({ port: parseInt(process.env.LOCAL_SQS_PORT!) });
+  const mockttp = await mockingProxy.mockttpServer();
   await mockSuccessfulTwilioAuthentication(workerSid);
+  await mockSsmParameters(mockttp, [
+    {
+      pathPattern: /\/(test|local|development)\/resources\/AC[0-9]+\/queue-url-search-index/,
+      valueGenerator: () => testQueueUrl.toString(),
+    },
+  ]);
 });
 
 afterAll(async () => Promise.all([mockingProxy.stop(), internalServer.close(), server.close()]));
@@ -227,6 +250,21 @@ beforeEach(async () => {
   `);
   await populateSampleDbReferenceValues(5, 3);
   await populateSampleDbResources(5);
+
+  const { QueueUrl } = await sqsClient
+    .createQueue({
+      QueueName: `test-hrm-resources-search-index-pending`,
+    })
+    .promise();
+  testQueueUrl = new URL(QueueUrl!);
+});
+
+afterEach(async () => {
+  await sqsClient
+    .deleteQueue({
+      QueueUrl: testQueueUrl.toString(),
+    })
+    .promise();
 });
 
 const newDefaultTestBatch = () => ({
@@ -292,7 +330,7 @@ describe('POST /import', () => {
     },
     {
       description:
-        'Single new resource - should return 200 with single update, and add a new resource to the DB',
+        'Single new resource - should return 200 with single update, add a new resource to the DB and publish it to the resources search index queue',
       requestBody: {
         importedResources: [generateImportResource('100', addSeconds(baselineDate, 30))],
         batch: newDefaultTestBatch(),
@@ -314,7 +352,7 @@ describe('POST /import', () => {
     },
     {
       description:
-        'Several new resources - should return 200 with an update per resource and add the new resources to the DB',
+        'Several new resources - should return 200 with an update per resource, adds the new resources to the DB and publishes them to the search index queue',
       requestBody: {
         importedResources: [
           generateImportResource('100', addSeconds(baselineDate, 30)),
@@ -498,6 +536,7 @@ describe('POST /import', () => {
           await verifyGeneratedResourcesAttributes(resourceId);
         }
       }
+
       for (const [resourceId, expectedResource] of Object.entries(expectedResourceUpdates)) {
         const response = await request
           .get(`/v0/accounts/${accountSid}/resources/resource/${resourceId}`)
@@ -507,6 +546,30 @@ describe('POST /import', () => {
         expect(resource).toStrictEqual(expectedResource);
       }
       await verifyImportState(expectedBatchProgressState);
+
+      const { importedResources } = requestBody;
+
+      const receivedMessages: FlatResource[] = [];
+      while (receivedMessages.length <= importedResources.length) {
+        const { Messages } = await sqsClient
+          .receiveMessage({
+            QueueUrl: testQueueUrl.toString(),
+            MaxNumberOfMessages: 10,
+            WaitTimeSeconds: 0.5,
+          })
+          .promise();
+        if (!Messages?.length) {
+          break;
+        }
+        receivedMessages.push(...(Messages ?? []).map(message => JSON.parse(message.Body ?? '')));
+      }
+      expect(receivedMessages.length).toEqual(importedResources.length);
+      const expectedMessages = importedResources.map(resource => ({
+        accountSid: resource.accountSid,
+        document: resource,
+        jobType: ResourcesJobType.SEARCH_INDEX,
+      }));
+      expect(receivedMessages).toStrictEqual(expectedMessages);
     },
   );
 
