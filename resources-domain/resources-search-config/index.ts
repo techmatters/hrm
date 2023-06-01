@@ -19,7 +19,29 @@ import { convertIndexDocument } from './convertIndexDocument';
 import { getCreateIndexParams } from './getCreateIndexParams';
 
 export const resourceSearchConfiguration: SearchConfiguration = {
-  searchFields: ['name.*^4', 'id.*^4', 'high_boost_global.*^3', 'low_boost_global.*^2', '*', '*.*'],
+  searchFieldBoosts: {
+    name: 4,
+    id: 4,
+    high_boost_global: 3,
+    low_boost_global: 2,
+    '*': 1,
+    '*.*': 1,
+  },
+  filterMappings: {
+    eligibilityMinAge: {
+      type: 'range',
+      targetField: 'eligibilityMaxAge',
+      operator: 'lte',
+    },
+    eligibilityMaxAge: {
+      type: 'range',
+      targetField: 'eligibilityMinAge',
+      operator: 'gte',
+    },
+    interpretationTranslationServicesAvailable: {
+      type: 'term',
+    },
+  },
 };
 
 export const resourceIndexConfiguration: IndexConfiguration<FlatResource> = {

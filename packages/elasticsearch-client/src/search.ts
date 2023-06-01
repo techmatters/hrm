@@ -14,16 +14,12 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 import {
+  QueryDslQueryContainer,
   SearchRequest as ESSearchRequest,
   SearchTotalHits as ESSearchTotalHits,
 } from '@elastic/elasticsearch/lib/api/types';
-import { SearchConfiguration } from './config';
+import { getQuerySearchFields, SearchConfiguration } from './config';
 import { Client } from '@elastic/elasticsearch';
-
-export type SearchQueryFilters = Array<
-  | { terms: { [key: string]: string[] } }
-  | { term: { [key: string]: string | boolean | number | Date } }
->;
 
 export type SearchQuery = ESSearchRequest;
 
@@ -59,7 +55,6 @@ export type SearchResponse = {
 export type SearchGenerateElasticsearchQueryParams = {
   index: string;
   searchParameters: SearchParameters;
-  fields: string[];
 };
 
 type SearchTotalHits = ESSearchTotalHits;
@@ -82,67 +77,130 @@ export const getTotalValue = (total: number | SearchTotalHits | undefined): numb
   return total || 0;
 };
 
+type FilterValue = boolean | number | string | Date | string[];
+
+const generateTermFilter = (field: string, filterValue: FilterValue) => {
+  if (Array.isArray(filterValue)) {
+    return {
+      terms: {
+        [field]: filterValue,
+      },
+    };
+  } else {
+    return {
+      term: {
+        [field as string]: filterValue,
+      },
+    };
+  }
+};
 /**
  * This function takes a SearchParameters.filters object and returns a SearchQueryFilters object
  * that can be used in the Elasticsearch query.
  *
+ * @param searchConfiguration - contains mappings and searchFields used to generate the query correctly
  * @param filters the filters object from the SearchParameters
  * @returns the filters object to be used in the Elasticsearch query
  */
-export const generateFilters = (filters: SearchParameters['filters']): SearchQueryFilters => {
-  // TODO: this doesn't support range filters yet
+export const generateFilters = (
+  searchConfiguration: SearchConfiguration,
+  filters: SearchParameters['filters'],
+): { filterClauses: QueryDslQueryContainer[]; filterSearchClause?: QueryDslQueryContainer } => {
   // TODO: should we validate request filters against the index config?
-  const returnFilters: SearchQueryFilters = [];
+  // Currently doesn't support:
+  // - nested fields
+  // - fancy date range filters like time zones or relative ranges
+  // - range filters with multiple clauses
+  // Implement as required!
 
-  if (!filters || Object.keys(filters).length === 0) return returnFilters;
-
-  Object.entries(filters).forEach(([key, value]) => {
-    if (Array.isArray(value)) {
-      returnFilters.push({
-        terms: {
-          [key]: value,
-        },
-      });
+  const filterClauses: QueryDslQueryContainer[] = [];
+  const filtersAsSearchTerms: string[] = [];
+  Object.entries(filters ?? {}).forEach(([key, value]) => {
+    const mapping = searchConfiguration.filterMappings[key];
+    const targetField = mapping?.targetField ?? key;
+    if (mapping) {
+      switch (mapping.type) {
+        case 'range':
+          if (!Array.isArray(value)) {
+            filterClauses.push({
+              range: {
+                [targetField]: {
+                  [mapping.operator]: value,
+                },
+              },
+            });
+          } else {
+            console.warn(
+              `Array filter values not supported for range filters: ${key}, mapped to ${mapping.targetField}, values: ${value}. Treating as a term filter.`,
+            );
+          }
+          break;
+        case 'term':
+          filterClauses.push(generateTermFilter(targetField, value));
+          break;
+      }
+    }
+    // If there is no explicit mapping, but it isn't a string or a string array, still treat it as a term filter
+    if (!Array.isArray(value) && typeof value !== 'string') {
+      filterClauses.push(generateTermFilter(targetField, value));
     } else {
-      returnFilters.push({
-        term: {
-          [key as string]: value,
-        },
-      });
+      // Otherwise add to the bucket of high priority additional search terms
+      filtersAsSearchTerms.push(...(Array.isArray(value) ? value : [value]));
     }
   });
-
-  return returnFilters;
+  return {
+    filterClauses,
+    filterSearchClause:
+      filtersAsSearchTerms.length === 0
+        ? undefined
+        : {
+            multi_match: {
+              query: filtersAsSearchTerms.join(' '),
+              fields: getQuerySearchFields(searchConfiguration, 1), // boost up the terms specified as filters a little
+              type: 'cross_fields',
+            },
+          },
+  };
 };
 
 /**
  * This function takes a SearchParameters object and returns a SearchQuery object that can be
  * used to query Elasticsearch.
  *
+ * @param searchConfiguration - contains filter mappings and search field configuration used to generate the query correctly
  * @param index the the index to search
  * @param searchParameters the search parameters
- * @param fields the fields to search
  * @returns the SearchQuery object
  */
-export const generateElasticsearchQuery = ({
-  index,
-  searchParameters,
-  fields,
-}: SearchGenerateElasticsearchQueryParams): SearchQuery => {
+export const generateElasticsearchQuery = (
+  searchConfiguration: SearchConfiguration,
+  { index, searchParameters }: SearchGenerateElasticsearchQueryParams,
+): SearchQuery => {
   const { q, filters, pagination } = searchParameters;
+  const queryClauses: QueryDslQueryContainer[] = [
+    {
+      simple_query_string: {
+        query: q,
+        fields: getQuerySearchFields(searchConfiguration),
+      },
+    },
+  ];
+  const filterPart: { filters?: QueryDslQueryContainer[] } = {};
+
+  if (filters) {
+    const { filterClauses, filterSearchClause } = generateFilters(searchConfiguration, filters);
+    filterPart.filters = filterClauses;
+    if (filterSearchClause) {
+      queryClauses.push(filterSearchClause);
+    }
+  }
 
   const query: SearchQuery = {
     index,
     query: {
       bool: {
-        must: [
-          {
-            query_string: {
-              query: q,
-              fields,
-            },
-          },
-        ],
+        must: queryClauses,
+        ...filterPart,
       },
     },
   };
@@ -152,10 +210,6 @@ export const generateElasticsearchQuery = ({
   }
   if (pagination?.start) {
     query.from = pagination.start;
-  }
-
-  if (filters) {
-    query.query!.bool!.filter = generateFilters(filters);
   }
 
   return query;
@@ -168,13 +222,12 @@ export const generateElasticsearchQuery = ({
 export const search = async ({
   client,
   index,
-  searchConfig: { searchFields },
+  searchConfig,
   searchParameters,
 }: SearchParams): Promise<SearchResponse> => {
-  const query = generateElasticsearchQuery({
+  const query = generateElasticsearchQuery(searchConfig, {
     index,
     searchParameters,
-    fields: searchFields,
   });
 
   const { hits } = await client.search(query);
