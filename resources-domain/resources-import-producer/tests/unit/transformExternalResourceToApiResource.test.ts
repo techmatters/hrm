@@ -14,14 +14,14 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { transformExternalResourceToApiResource } from '../../transformExternalResourceToApiResource';
+import { transformExternalResourceToApiResource } from '../../src/transformExternalResourceToApiResource';
 import {
   MappingNode,
   resourceFieldMapping,
   attributeMapping,
   referenceAttributeMapping,
   translatableAttributeMapping,
-} from '../../mappers';
+} from '../../src/mappers';
 import { AccountSID, FlatResource } from '@tech-matters/types';
 import each from 'jest-each';
 
