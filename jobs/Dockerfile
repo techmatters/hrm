@@ -25,12 +25,13 @@ ENV lambda_name ${lambda_name}
 # dependency in package.json can be resolved
 COPY packages /tmp/build/packages
 COPY ${lambda_dir}/${lambda_name} /tmp/build/${lambda_dir}/${lambda_name}
+COPY ${lambda_dir}/packages /tmp/build/resource-domain/packages
 COPY ${lambda_dir}/tsconfig.json /tmp/build/${lambda_dir}/tsconfig.json
 COPY package.json package-lock.json tsconfig.json tsconfig.base.json tsconfig.build.${lambda_dir}.${lambda_name}.json /tmp/build/
 
 RUN yum install -y rsync \
     && cd /tmp/build \
-    && npm ci -w ${lambda_dir}/${lambda_name} -w packages/* \
+    && npm ci -w ${lambda_dir}/${lambda_name} -w packages/* -w ${lambda_dir}/packages/* \
     && npx tsc -b tsconfig.build.${lambda_dir}.${lambda_name}.json --verbose \
     && cp ${lambda_dir}/${lambda_name}/dist/*.js /var/task/ \
     && cp -r packages /var/task/ \
