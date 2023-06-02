@@ -181,10 +181,7 @@ const mapNode = (
 
       // Recurse on the children node(s) if any
       if (children) {
-        // eslint-disable-next-line @typescript-eslint/naming-convention
-        const { _id, ...rest } = children;
-        // const { _id, objectId, ...rest } = children;
-        mapNode(rest, dataPropertyValue, context, aseloResource);
+        mapNode(children, dataPropertyValue, context, aseloResource);
       }
     });
   });

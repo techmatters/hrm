@@ -14,7 +14,10 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { transformExternalResourceToApiResource } from '../../src/transformExternalResourceToApiResource';
+import {
+  transformExternalResourceToApiResource,
+  transformKhpResourceToApiResource,
+} from '../../src/transformExternalResourceToApiResource';
 import {
   MappingNode,
   resourceFieldMapping,
@@ -869,5 +872,387 @@ describe('Simple mapping, nested structure', () => {
 
     const result = transformExternalResourceToApiResource(mapping, ACCOUNT_SID, resource);
     expect(result).toMatchObject(expected);
+  });
+
+  test('Bug repro', () => {
+    console.log(
+      JSON.stringify(
+        transformKhpResourceToApiResource('AC000', {
+          nameDetails: {
+            en: {
+              alternate: 'alternate name 1',
+              official: null,
+            },
+            fr: {
+              alternate: 'alternate name 1 fr',
+              official: null,
+            },
+          },
+          applicationProcess: {
+            en: 'application process',
+            fr: 'application process fr',
+          },
+          capacity: {
+            en: {
+              type: 'capacity type',
+              value: 'capacity value',
+            },
+            fr: {
+              type: 'capacity type fr',
+              value: 'capacity value fr',
+            },
+          },
+          social: {
+            facebook: 'facebook link',
+            instagram: 'insta link',
+            twitter: 'twitter link',
+          },
+          eligibilityDetails: {
+            phrase: {
+              fr: 'eligibility phrase fr',
+              en: 'eligibility phrase',
+            },
+          },
+          website: {
+            en: null,
+            fr: null,
+          },
+          metadata: {
+            en: {
+              availableForDirectory: 'true',
+              availableForReferral: 'true',
+              availableForResearch: 'false',
+              fees: 'fees info',
+              recordType: 'record type',
+              typicalWaitTime: 'waiting time estimation',
+              legalStatus: 'legal status',
+              _id: '646e5007e997982f03739094',
+              general: null,
+            },
+            fr: {
+              availableForDirectory: 'true',
+              availableForReferral: 'true',
+              availableForResearch: 'false',
+              fees: 'fees info',
+              recordType: 'record type',
+              typicalWaitTime: 'waiting time estimation',
+              legalStatus: 'legal status',
+              _id: '646e5007e997982f03739095',
+              general: null,
+            },
+          },
+          transportation: {
+            en: null,
+            fr: null,
+          },
+          seniorOrgContact: {
+            title: {
+              en: 'contact title',
+              fr: 'contact title fr',
+            },
+            email: 'email',
+            isPrivate: false,
+            name: 'senior org contact name',
+            phone: '4161111111',
+          },
+          khpReferenceNumber: 123123123,
+          lastVerifiedOn: '2022-03-21T17:29:47.416Z',
+          description: {
+            en: 'description',
+            fr: 'description fr',
+            _id: '646e5007e997982f03739085',
+          },
+          isActive: true,
+          name: {
+            en: 'resource name',
+            fr: 'resource name fr',
+            _id: '646e5007e997982f03739086',
+          },
+          recordType: 'RAM',
+          mailingAddresses: [],
+          physicalAddresses: [
+            {
+              address1: 'address1',
+              address2: 'address2',
+              isPrivate: false,
+              city: 'city',
+              county: 'county',
+              province: 'prvince',
+              country: 'country',
+              postalCode: 'postal code',
+              description: 'description',
+              longitude: 24,
+              latitude: -92.3,
+              _id: '646e5007e997982f03739087',
+            },
+          ],
+          primaryLocationCity: 'primary city',
+          primaryLocationCounty: 'primary county',
+          primaryLocationPostalCode: 'primary postal code',
+          primaryLocationPhone: 'primary phone',
+          primaryLocationAddress1: 'primary address 1',
+          primaryLocationAddress2: 'primary address 2',
+          primaryLocationProvince: 'primary province',
+          primaryLocationIsPrivate: true,
+          coverage: [
+            {
+              en: 'coverage',
+              fr: 'coverage fr',
+              _id: '646e5007e997982f03739088',
+            },
+          ],
+          targetPopulations: [
+            {
+              en: 'valueen',
+              fr: 'valuefr',
+              objectId: '6442ee0f802efc8a0b47245b',
+            },
+          ],
+          eligibilityMinAge: 10,
+          eligibilityMaxAge: 99,
+          phoneNumbers: [
+            {
+              description: {
+                en: 'description',
+                fr: 'description fr',
+              },
+              type: 'phone',
+              isPrivate: false,
+              name: 'phone name',
+              nameFR: null,
+              number: '4161111111',
+              _id: '646e5007e997982f03739089',
+            },
+          ],
+          mainContact: {
+            title: {
+              en: 'contact title',
+              fr: 'contact title fr',
+            },
+            email: 'email',
+            isPrivate: false,
+            name: 'contact name',
+            phone: '4161111111',
+            _id: '646e5007e997982f0373908a',
+          },
+          documentsRequired: [
+            {
+              en: 'documents required',
+              fr: 'documents required fr',
+              objectId: '6442ee0f802efc8a0b47245e',
+            },
+          ],
+          operations: [
+            {
+              '0': {
+                fr: {
+                  day: 'day',
+                  hoursOfOperation: 'hours of operation',
+                  descriptionOfHours: 'description of hours',
+                },
+                en: {
+                  day: 'day',
+                  hoursOfOperation: 'hours of operation',
+                  descriptionOfHours: 'description of hours',
+                },
+                _id: '646e5007e997982f0373908c',
+              },
+              '1': {
+                fr: {
+                  day: 'day',
+                  hoursOfOperation: 'hours of operation',
+                  descriptionOfHours: 'description of hours',
+                },
+                en: {
+                  day: 'day',
+                  hoursOfOperation: 'hours of operation',
+                  descriptionOfHours: 'description of hours',
+                },
+                _id: '646e5007e997982f0373908d',
+              },
+              '2': {
+                fr: {
+                  day: 'day',
+                  hoursOfOperation: 'hours of operation',
+                  descriptionOfHours: 'description of hours',
+                },
+                en: {
+                  day: 'day',
+                  hoursOfOperation: 'hours of operation',
+                  descriptionOfHours: 'description of hours',
+                },
+                _id: '646e5007e997982f0373908e',
+              },
+              '3': {
+                fr: {
+                  day: 'day',
+                  hoursOfOperation: 'hours of operation',
+                  descriptionOfHours: 'description of hours',
+                },
+                en: {
+                  day: 'day',
+                  hoursOfOperation: 'hours of operation',
+                  descriptionOfHours: 'description of hours',
+                },
+                _id: '646e5007e997982f0373908f',
+              },
+              '4': {
+                fr: {
+                  day: 'day',
+                  hoursOfOperation: 'hours of operation',
+                  descriptionOfHours: 'description of hours',
+                },
+                en: {
+                  day: 'day',
+                  hoursOfOperation: 'hours of operation',
+                  descriptionOfHours: 'description of hours',
+                },
+                _id: '646e5007e997982f03739090',
+              },
+              '5': {
+                fr: {
+                  day: 'day',
+                  hoursOfOperation: 'hours of operation',
+                  descriptionOfHours: 'description of hours',
+                },
+                en: {
+                  day: 'day',
+                  hoursOfOperation: 'hours of operation',
+                  descriptionOfHours: 'description of hours',
+                },
+                _id: '646e5007e997982f03739091',
+              },
+              '6': {
+                fr: {
+                  day: 'day',
+                  hoursOfOperation: 'hours of operation',
+                  descriptionOfHours: 'description of hours',
+                },
+                en: {
+                  day: 'day',
+                  hoursOfOperation: 'hours of operation',
+                  descriptionOfHours: 'description of hours',
+                },
+                _id: '646e5007e997982f03739092',
+              },
+              _id: '646e5007e997982f0373908b',
+            },
+          ],
+          languages: [
+            {
+              code: 'en',
+              language: 'english',
+              _id: '646e5007e997982f03739093',
+            },
+          ],
+          interpretationTranslationServicesAvailable: true,
+          available247: true,
+          feeStructureSourceFreeTextEn: null,
+          feeStructureSourceFreeTextFr: null,
+          feeStructureSource: [
+            {
+              en: 'valueen',
+              fr: 'valuefr',
+              objectId: '646e5007e997982f03739075',
+            },
+          ],
+          howIsServiceOffered: [
+            {
+              en: 'valueen',
+              fr: 'valuefr',
+              objectId: '646e5007e997982f0373907d',
+            },
+          ],
+          accessibility: {
+            en: 'valueen',
+            fr: 'valuefr',
+            objectId: '6442ee0f802efc8a0b47246a',
+          },
+          howToAccessSupport: [
+            {
+              en: 'valueen',
+              fr: 'valuefr',
+              objectId: '646e5007e997982f03739079',
+            },
+          ],
+          isHighlighted: true,
+          keywords: ['keyword1', 'keyword2'],
+          retiredAt: null,
+          lastUpdatedBy: null,
+          createdAt: '2023-05-24T17:57:27.765Z',
+          updatedAt: '2023-05-24T17:57:27.765Z',
+          objectId: '646e5007e997982f03739084',
+          taxonomies: [
+            [
+              {
+                code: 'code',
+                nameEN: 'taxonomy sample',
+                nameFR: 'taxonomy sample FR',
+                level: 5,
+                retiredAt: null,
+                createdAt: '2023-05-24T17:57:27.741Z',
+                updatedAt: '2023-05-24T17:57:27.741Z',
+                objectId: '646e5007e997982f03739082',
+              },
+            ],
+          ],
+          notes: [
+            {
+              name:
+                'Note from bulk upload - Wed May 24 2023 17:57:27 GMT+0000 (Coordinated Universal Time)',
+              email: 'sample email1',
+              phone: null,
+              role: null,
+              source: 'Bulk Upload-Wed May 24 2023 17:57:27 GMT+0000 (Coordinated Universal Time)',
+              note: 'sample note 1',
+              priority: null,
+              createdAt: '2023-05-24T17:57:27.710Z',
+              updatedAt: '2023-05-24T17:57:27.710Z',
+              objectId: '646e5007e997982f03739065',
+            },
+            {
+              name:
+                'Note from bulk upload - Wed May 24 2023 17:57:27 GMT+0000 (Coordinated Universal Time)',
+              email: 'sample email2',
+              phone: null,
+              role: null,
+              source: 'Bulk Upload-Wed May 24 2023 17:57:27 GMT+0000 (Coordinated Universal Time)',
+              note: 'sample note 2',
+              priority: null,
+              createdAt: '2023-05-24T17:57:27.712Z',
+              updatedAt: '2023-05-24T17:57:27.712Z',
+              objectId: '646e5007e997982f03739067',
+            },
+          ],
+          verifications: [
+            {
+              name: 'verification name 1',
+              title: 'title1',
+              email: 'verification email1',
+              phone: 'phone1',
+              hasVerified: false,
+              requestSent: false,
+              createdAt: '2023-05-24T17:57:27.716Z',
+              updatedAt: '2023-05-24T17:57:27.716Z',
+              objectId: '646e5007e997982f0373906b',
+            },
+            {
+              name: 'verification name 2',
+              title: 'title2',
+              email: 'verification email2',
+              phone: 'phone2',
+              hasVerified: false,
+              requestSent: false,
+              createdAt: '2023-05-24T17:57:27.717Z',
+              updatedAt: '2023-05-24T17:57:27.717Z',
+              objectId: '646e5007e997982f0373906d',
+            },
+          ],
+          sites: [],
+        }),
+        null,
+        2,
+      ),
+    );
   });
 });

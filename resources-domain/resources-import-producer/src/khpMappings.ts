@@ -604,13 +604,19 @@ export const KHP_MAPPING_NODE: MappingNode = {
   paymentMethod: attributeMapping('stringAttributes', 'paymentMethod'),
   operations: {
     children: {
-      '{dayIndex}': {
+      '{operationSetIndex}': {
         children: {
-          '{language}': translatableAttributeMapping('operations/{dayIndex}', {
-            value: context => context.currentValue.day,
-            info: context => context.currentValue,
-            language: context => context.captures.language,
-          }),
+          '{dayIndex}': {
+            children: {
+              '{language}': translatableAttributeMapping('operations/{dayIndex}', {
+                value: context => context.currentValue.day,
+                info: context => context.currentValue,
+                language: context => context.captures.language,
+              }),
+              _id: { children: {} },
+            },
+          },
+          _id: { children: {} },
         },
       },
     },
