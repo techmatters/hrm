@@ -33,7 +33,7 @@ RUN yum install -y rsync \
     && cd /tmp/build \
     && npm ci -w ${lambda_dir}/${lambda_name} -w packages/* -w ${lambda_dir}/packages/* \
     && npx tsc -b tsconfig.build.${lambda_dir}.${lambda_name}.json --verbose \
-    && cp ${lambda_dir}/${lambda_name}/dist/. /var/task/ \
+    && cp ${lambda_dir}/${lambda_name}/dist/*.js /var/task/ \
     && cp -r packages /var/task/ \
     && cp -r node_modules /var/task/
 

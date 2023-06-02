@@ -22,7 +22,7 @@ import {
   attributeMapping,
   translatableAttributeMapping,
   referenceAttributeMapping,
-} from '../mappers';
+} from './mappers';
 
 // TODO: Change objectId to site ID when we have it
 const siteKey = (subsection: string) => (context: FieldMappingContext) => {

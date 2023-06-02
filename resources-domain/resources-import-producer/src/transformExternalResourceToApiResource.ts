@@ -29,7 +29,7 @@ import {
   isResourceFieldMapping,
   isTranslatableAttributeMapping,
 } from './mappers';
-import mappings from './mappings';
+import * as khp from './khpMappings';
 
 const pushResourceFieldMapping = ({ aseloResource, context, mapping }: {
   mapping: Omit<ResourceFieldMapping, 'children'>, 
@@ -219,4 +219,4 @@ export const transformKhpResourceToApiResource = (
   accountSid: AccountSID,
   khpResource: KhpApiResource,
 ): FlatResource =>
-transformExternalResourceToApiResource(mappings.khp.KHP_MAPPING_NODE, accountSid, khpResource);
+transformExternalResourceToApiResource(khp.KHP_MAPPING_NODE, accountSid, khpResource);
