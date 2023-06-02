@@ -73,7 +73,8 @@ const pushInlineAttributeMapping = <T extends InlineAttributeProperty>({ aseloRe
   if (mapping.property === 'stringAttributes') {
     const value = mapping.valueGenerator(context);
     if (typeof value !== 'string') {
-      throw new Error(`Wrong value provided to stringAttributes: mapping ${JSON.stringify(mapping)} and value ${value}`);
+      console.info(`Wrong value provided to stringAttributes: mapping ${JSON.stringify(mapping)} and value ${value} - omitting attribute`);
+      return;
     }
 
     aseloResource.stringAttributes.push({
@@ -85,7 +86,8 @@ const pushInlineAttributeMapping = <T extends InlineAttributeProperty>({ aseloRe
   } else if (mapping.property === 'booleanAttributes') {
     const value = mapping.valueGenerator(context);
     if (typeof value !== 'boolean') {
-      throw new Error(`Wrong value provided to ResourceBooleanAttributes: mapping ${JSON.stringify(mapping)} and value ${value}`);
+      console.info(`Wrong value provided to ResourceBooleanAttributes: mapping ${JSON.stringify(mapping)} and value ${value} - omitting attribute`);
+      return;
     }
 
     aseloResource.booleanAttributes.push({
@@ -96,7 +98,8 @@ const pushInlineAttributeMapping = <T extends InlineAttributeProperty>({ aseloRe
   } else if (mapping.property ===  'numberAttributes') {
     const value = mapping.valueGenerator(context);
     if (typeof value !== 'number') {
-      throw new Error(`Wrong value provided to ResourceNumberAttributes: mapping ${JSON.stringify(mapping)} and value ${value}`);
+      console.info(`Wrong value provided to ResourceNumberAttributes: mapping ${JSON.stringify(mapping)} and value ${value} - omitting attribute`);
+      return;
     }
 
     aseloResource.numberAttributes.push({
@@ -107,7 +110,8 @@ const pushInlineAttributeMapping = <T extends InlineAttributeProperty>({ aseloRe
   } else if (mapping.property === 'dateTimeAttributes') {
     const value = mapping.valueGenerator(context);
     if (typeof value !== 'string') {
-      throw new Error(`Wrong value provided to ResourceDateTimeAttributes: mapping ${JSON.stringify(mapping)} and value ${value}`);
+      console.info(`Wrong value provided to ResourceDateTimeAttributes: mapping ${JSON.stringify(mapping)} and value ${value} - omitting attribute`);
+      return;
     }
 
     aseloResource.dateTimeAttributes.push({
@@ -116,7 +120,7 @@ const pushInlineAttributeMapping = <T extends InlineAttributeProperty>({ aseloRe
       info: mapping.infoGenerator(context),
     });
   } else {
-    throw new Error(`Unhandled case for provided mapping: mapping ${JSON.stringify(mapping)}`);
+    console.warn(`Unhandled case for provided mapping: mapping ${JSON.stringify(mapping)}`);
   }
 };
 
