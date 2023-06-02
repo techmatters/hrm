@@ -34,6 +34,7 @@ export const createIndex = async ({
   }
 
   const params = indexConfig.getCreateIndexParams(index);
+  console.log('Creating index', index, JSON.stringify(params, null, 2));
   const res = await client.indices.create(params);
 
   // This waits for the index to be created and for the shards to be allocated

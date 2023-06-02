@@ -230,6 +230,7 @@ export const search = async ({
     index,
     searchParameters,
   });
+  console.debug('search query', JSON.stringify(query, null, 2));
 
   const { hits } = await client.search(query);
   const total = getTotalValue(hits.total);

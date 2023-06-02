@@ -21,7 +21,7 @@ import { IndicesCreateRequest } from '@elastic/elasticsearch/lib/api/types';
 import type { PropertyName, MappingProperty } from '@elastic/elasticsearch/lib/api/types';
 
 /**
- * This is a C&P or the resources search configuration
+ * This is almost a a C&P or the resources search configuration
  * TODO: Replace with a simplified test configuration
  */
 
@@ -48,8 +48,12 @@ export type FieldAndMapping = {
 
 const stringFieldTypes = ['text', 'keyword'];
 
-export const isMappingField = ({ mappingFields }: Pick<ResourceIndexDocumentMappings, 'mappingFields'>, fieldName: string) =>
-  Object.keys(mappingFields).includes(fieldName);
+export const getMappingField = ({ mappingFields }: Pick<ResourceIndexDocumentMappings, 'mappingFields'>, fieldName: string): FieldAndMapping | undefined => {
+  if (Object.keys(mappingFields).includes(fieldName)) return { field: fieldName, mapping:mappingFields[fieldName] };
+  const [field, mapping] = Object.entries(mappingFields).find(([, { attributeKeyPattern }]) => attributeKeyPattern?.test(fieldName)) ?? [];
+  return mapping && field ? { field, mapping } : undefined;
+};
+
 export const isHighBoostGlobalField = ({ highBoostGlobalFields }: Pick<ResourceIndexDocumentMappings, 'highBoostGlobalFields'>, fieldName: string) =>
   highBoostGlobalFields.includes(fieldName);
 
@@ -59,36 +63,19 @@ export const isStringField = (fieldType: string): fieldType is 'keyword' | 'text
 
 export const resourceIndexDocumentMappings: ResourceIndexDocumentMappings = {
   // This is a list of attribute names that should be given higher priority in search results.
-  highBoostGlobalFields: ['description', 'province', 'city', 'targetPopulation', 'feeStructure'],
+  highBoostGlobalFields: ['description', 'city'],
 
   mappingFields: {
     // TODO: this may change to a range field depending on discussion around what they really want to search for.
     // Is it likely that they want to put in a child age and find resources where the child age is between eligibilityMinAge and eligibilityMaxAge?
     // Having a range of ages and then passing in a range of ages to search for seems like a strange way to do it.
-    eligibilityMinAge: {
-      type: 'integer',
-    },
-    eligibilityMaxAge: {
-      type: 'integer',
-    },
-    id: {
-      type: 'keyword',
-    },
+
     name: {
       type: 'keyword',
       hasLanguageFields: true,
     },
     feeStructure: {
       type: 'keyword',
-    },
-    targetPopulation: {
-      type: 'keyword',
-    },
-    howIsServiceOffered: {
-      type: 'keyword',
-    },
-    interpretationTranslationServicesAvailable: {
-      type: 'boolean',
     },
     province: {
       type: 'keyword',
@@ -100,7 +87,6 @@ export const resourceIndexDocumentMappings: ResourceIndexDocumentMappings = {
     city: {
       type: 'keyword',
       isArrayField: true,
-      attributeKeyPattern: /(.*)\/city$/,
       indexValueGenerator: ({ value, info }: ReferrableResourceAttribute<string>) =>
         `${info?.name ?? ''} ${value}`,
     },
@@ -118,14 +104,15 @@ export const resourceIndexDocumentMappings: ResourceIndexDocumentMappings = {
 };
 
 export const resourceSearchConfiguration: SearchConfiguration = {
-  searchFields: [
-    'name.*^4',
-    'keywords.*^4',
-    'high_boost_global.*^3',
-    'low_boost_global.*^2',
-    '*',
-    '*.*',
-  ],
+  searchFieldBoosts: {
+    'name.*': 4,
+    'high_boost_global.*':3,
+    'low_boost_global.*': 2,
+    '*': 1,
+    '*.*': 1,
+  },
+  filterMappings: {
+  },
 };
 
 export const resourceIndexConfiguration: IndexConfiguration<FlatResource> = {
@@ -133,41 +120,51 @@ export const resourceIndexConfiguration: IndexConfiguration<FlatResource> = {
     const { mappingFields } = resourceIndexDocumentMappings;
     const mappedFields: { [key: string]: string | string[] | number | boolean } = {};
     const highBoostGlobal: string[] = [];
-    const LowBoostGlobal: string[] = [];
+    const lowBoostGlobal: string[] = [];
 
     const pushToCorrectGlobalBoostField = (key: string, value: string) => {
       if (isHighBoostGlobalField(resourceIndexDocumentMappings, key)) {
         highBoostGlobal.push(value);
       } else {
-        LowBoostGlobal.push(value);
+        lowBoostGlobal.push(value);
       }
     };
 
-    const pushToMappingField = (key: string, value: number | string | boolean) => {
-      //TODO: I don't know what keywords field will actually look like should handle arrays here
-      if (mappingFields![key].isArrayField) {
-        if (!mappedFields[key]) {
-          mappedFields[key] = [];
+    const pushValueToMappedField = (
+      { field, mapping }: FieldAndMapping,
+      value: boolean | string | number,
+    ) => {
+      if (mapping.isArrayField) {
+        if (!mappedFields[field]) {
+          mappedFields[field] = [];
         }
 
-        // TODO: not spending too much time on this, could we support multiple numbers in array mapped fields?
-        const mapField = mappedFields[key] as string[];
-        mapField.push(value.toString());
+        const mapField = mappedFields[field] as typeof value[];
+        mapField.push(value);
       } else {
-        mappedFields[key] = typeof value === 'boolean' ? value.toString() : value;
+        if (mapping.hasLanguageFields) {
+          console.warn(
+            `Possible misconfiguration - mapping field '${field}' has the hasLanguageFields flag set but not the isArrayField: a multi-language field should normally be an array, otherwise the languages for different languages will be overwrite each other.`,
+          );
+        }
+        mappedFields[field] = value;
       }
     };
 
     const parseAttribute = (
       key: string,
-      { value }: ReferrableResourceAttribute<boolean | string | number>,
+      attribute: ReferrableResourceAttribute<boolean | string | number>,
     ) => {
-      if (isMappingField(resourceIndexDocumentMappings, key)) {
-        return pushToMappingField(key, value);
+      const fieldAndMapping = getMappingField(resourceIndexDocumentMappings, key);
+      if (fieldAndMapping) {
+        return pushValueToMappedField(
+          fieldAndMapping,
+          fieldAndMapping.mapping.indexValueGenerator?.(attribute) ?? attribute.value,
+        );
       }
       // We don't really want booleans & numbers in the general purpose buckets
-      if (typeof value === 'string') {
-        pushToCorrectGlobalBoostField(key, value);
+      if (typeof attribute.value === 'string') {
+        pushToCorrectGlobalBoostField(key, attribute.value);
       }
     };
 
@@ -178,17 +175,21 @@ export const resourceIndexConfiguration: IndexConfiguration<FlatResource> = {
         parseAttribute(key, attribute as any);
       });
     });
+    pushValueToMappedField({ field: 'name', mapping: mappingFields.name }, name);
 
-    return {
+    const doc = {
+      id,
       name,
       high_boost_global: highBoostGlobal.join(' '),
-      low_boost_global: LowBoostGlobal.join(' '),
+      low_boost_global: lowBoostGlobal.join(' '),
       ...mappedFields,
     };
+    console.debug('Indexing document: ', doc);
+    return doc;
   },
   getCreateIndexParams: (index: string): IndicesCreateRequest => {
-    const { mappingFields, languageFields } = resourceIndexDocumentMappings;
-    const createRequest: IndicesCreateRequest = {
+    const { languageFields } = resourceIndexDocumentMappings;
+    return {
       index,
       settings: {
         analysis: {
@@ -226,27 +227,21 @@ export const resourceIndexConfiguration: IndexConfiguration<FlatResource> = {
             type: 'text',
             fields: languageFields,
           },
+          name: {
+            type: 'text',
+            fields: languageFields,
+            copy_to: 'high_boost_global',
+          },
+          id: {
+            type: 'text',
+            copy_to: 'high_boost_global',
+          },
+          city: {
+            type: 'text',
+            copy_to: 'low_boost_global',
+          },
         },
       },
     };
-
-    Object.entries(mappingFields).forEach(([key, value]) => {
-      createRequest!.mappings!.properties![key] = {
-        type: value.type,
-      };
-
-      if (!isStringField(value.type)) return;
-
-      const property: any = createRequest!.mappings!.properties![key];
-      property.copy_to = isHighBoostGlobalField(resourceIndexDocumentMappings, key)
-        ? 'high_boost_global'
-        : 'low_boost_global';
-
-      if (value.hasLanguageFields) {
-        property.fields = languageFields;
-      }
-    });
-
-    return createRequest;
   },
 };
