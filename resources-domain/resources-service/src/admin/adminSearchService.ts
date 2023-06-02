@@ -41,8 +41,8 @@ export type ConciseSearchReindexResult = {
 };
 
 export type VerboseSearchReindexResult = ConciseSearchReindexResult & {
-  successfullySubmitted: string[];
-  failedToSubmit: { resourceId: string; error: Error }[];
+  successfullySubmitted: { resourceId: string; accountSid: string }[];
+  failedToSubmit: { resourceId: string; accountSid: string; error: Error }[];
 };
 
 export type AdminSearchServiceConfiguration = {
@@ -62,18 +62,26 @@ const sendResourceAndRecordResult = async (
     await publishSearchIndexJob(resource.accountSid, resource);
     response.successfulSubmissionCount++;
     if (responseType === ResponseType.VERBOSE) {
-      response.successfullySubmitted.push(resource.id);
+      response.successfullySubmitted.push({
+        resourceId: resource.id,
+        accountSid: resource.accountSid,
+      });
     }
   } catch (error) {
     response.submissionErrorCount++;
     if (responseType === ResponseType.VERBOSE && response.submissionErrorCount <= 50) {
       if (response.submissionErrorCount === 50) {
         response.failedToSubmit.push({
+          accountSid: resource.accountSid,
           resourceId: resource.id,
           error: new Error('Stopping logging errors after 50'),
         });
       }
-      response.failedToSubmit.push({ resourceId: resource.id, error: error as Error });
+      response.failedToSubmit.push({
+        accountSid: resource.accountSid,
+        resourceId: resource.id,
+        error: error as Error,
+      });
     }
   }
 };

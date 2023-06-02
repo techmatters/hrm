@@ -14,8 +14,8 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { convertIndexDocument } from './convert-index-document';
 import { FlatResource } from '@tech-matters/types';
+import { resourceIndexConfiguration } from '../index';
 
 const BASELINE_DATE = new Date('2021-01-01T00:00:00.000Z');
 
@@ -52,7 +52,7 @@ describe('convertIndexDocument', () => {
       ],
     };
 
-    const document = convertIndexDocument(resource);
+    const document = resourceIndexConfiguration.convertToIndexDocument(resource);
 
     expect(document).toEqual({
       name: 'Resource',

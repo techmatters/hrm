@@ -14,20 +14,27 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { getClient, IndexTypes } from '../../src';
-import { Client } from '../..';
+import { getClient } from '../../src';
+import { Client, IndexClient } from '../..';
 import { resourceDocuments } from '../fixtures/resources';
+import {
+  resourceIndexConfiguration,
+  resourceSearchConfiguration,
+} from '@tech-matters/resources-search-config';
+import { FlatResource } from '@tech-matters/types/dist/Resources';
 
 const accountSid = 'service-test-index-document';
-const indexType = IndexTypes.RESOURCES;
-let client: Client;
+const indexType = 'resources';
+
+let indexClient: IndexClient<FlatResource>;
+let searchClient: ReturnType<Client['searchClient']>;
 
 afterAll(async () => {
-  await client.deleteIndex();
+  await indexClient.deleteIndex();
 });
 
 beforeAll(async () => {
-  client = await getClient({
+  const client = await getClient({
     accountSid,
     indexType,
     config: {
@@ -35,7 +42,10 @@ beforeAll(async () => {
     },
   });
 
-  await client.createIndex({});
+  indexClient = client.indexClient(resourceIndexConfiguration);
+  searchClient = client.searchClient(resourceSearchConfiguration);
+
+  await indexClient.createIndex({});
 });
 
 describe('Index Documents Bulk', () => {
@@ -45,9 +55,9 @@ describe('Index Documents Bulk', () => {
       document: doc,
     }));
 
-    await client.indexDocumentBulk({ documents });
-    await client.refreshIndex();
-    const response = await client.search({
+    await indexClient.indexDocumentBulk({ documents });
+    await indexClient.refreshIndex();
+    const response = await searchClient.search({
       searchParameters: {
         q: `*`,
       },

@@ -16,30 +16,30 @@
 import { BulkResponse } from '@elastic/elasticsearch/lib/api/types';
 import { PassThroughConfig } from './client';
 
-export type IndexDocumentBulkDocumentItem = {
+export type IndexDocumentBulkDocumentItem<T> = {
   id: string;
-  document: any;
+  document: T;
 };
 
-export type IndexDocumentBulkDocuments = IndexDocumentBulkDocumentItem[];
+export type IndexDocumentBulkDocuments<T> = IndexDocumentBulkDocumentItem<T>[];
 
-export type IndexDocumentBulkExtraParams = {
-  documents: IndexDocumentBulkDocuments;
+export type IndexDocumentBulkExtraParams<T> = {
+  documents: IndexDocumentBulkDocuments<T>;
 };
 
-export type IndexDocumentBulkParams = PassThroughConfig & IndexDocumentBulkExtraParams;
+export type IndexDocumentBulkParams<T> = PassThroughConfig<T> & IndexDocumentBulkExtraParams<T>;
 
 export type IndexDocumentBulkResponse = BulkResponse;
 
-export const indexDocumentBulk = async ({
+export const indexDocumentBulk = async <T>({
   client,
   index,
   indexConfig,
   documents,
-}: IndexDocumentBulkParams): Promise<IndexDocumentBulkResponse> => {
+}: IndexDocumentBulkParams<T>): Promise<IndexDocumentBulkResponse> => {
   const body = documents.flatMap(({ id, document }) => [
     { index: { _index: index, _id: id } },
-    indexConfig.convertIndexDocument(document),
+    indexConfig.convertToIndexDocument(document),
   ]);
 
   return client.bulk({
