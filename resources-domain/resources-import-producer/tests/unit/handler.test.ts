@@ -31,11 +31,11 @@ jest.mock('@tech-matters/ssm-cache', () => ({
   getSsmParameter: () => 'static-key',
 }));
 
-jest.mock('../../clientSqs', () => ({
+jest.mock('../../src/clientSqs', () => ({
   publishToImportConsumer: jest.fn(),
 }));
 
-jest.mock('../../config', () => jest.fn());
+jest.mock('../../src/config', () => jest.fn());
 
 
 const mockFetch: jest.Mock<ReturnType<typeof fetch>> = jest.fn();
