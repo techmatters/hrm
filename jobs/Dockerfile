@@ -25,7 +25,7 @@ ENV lambda_name ${lambda_name}
 # dependency in package.json can be resolved
 COPY packages /tmp/build/packages
 COPY ${lambda_dir}/${lambda_name} /tmp/build/${lambda_dir}/${lambda_name}
-COPY ${lambda_dir}/packages /tmp/build/resource-domain/packages
+COPY ${lambda_dir}/packages /tmp/build/${lambda_dir}/packages
 COPY ${lambda_dir}/tsconfig.json /tmp/build/${lambda_dir}/tsconfig.json
 COPY package.json package-lock.json tsconfig.json tsconfig.base.json tsconfig.build.${lambda_dir}.${lambda_name}.json /tmp/build/
 

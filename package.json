@@ -6,7 +6,7 @@
   "license": "AGPL",
   "workspaces": [
     "packages/*",
-    "resources-domain/packages/*",
+    "hrm-domain/packages/*",
     "hrm-domain/*",
     "resources-domain/packages/*",
     "resources-domain/*"
