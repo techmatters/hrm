@@ -70,10 +70,11 @@ const pushInlineAttributeMapping = <T extends InlineAttributeProperty>({ aseloRe
   aseloResource: FlatResource,
   context: FieldMappingContext
 }): void => {
+  const value = mapping.valueGenerator(context);
+  const key = mapping.keyGenerator(context);
   if (mapping.property === 'stringAttributes') {
-    const value = mapping.valueGenerator(context);
     if (typeof value !== 'string') {
-      console.info(`Wrong value provided to stringAttributes: mapping ${JSON.stringify(mapping)} and value ${value} - omitting attribute`);
+      console.info(`Wrong value provided to stringAttributes: key ${key} and value ${value} - omitting attribute`);
       return;
     }
 
@@ -84,9 +85,8 @@ const pushInlineAttributeMapping = <T extends InlineAttributeProperty>({ aseloRe
       language: '',
     });
   } else if (mapping.property === 'booleanAttributes') {
-    const value = mapping.valueGenerator(context);
     if (typeof value !== 'boolean') {
-      console.info(`Wrong value provided to ResourceBooleanAttributes: mapping ${JSON.stringify(mapping)} and value ${value} - omitting attribute`);
+      console.info(`Wrong value provided to ResourceBooleanAttributes: key ${key} and value ${value} - omitting attribute`);
       return;
     }
 
@@ -96,9 +96,8 @@ const pushInlineAttributeMapping = <T extends InlineAttributeProperty>({ aseloRe
       info: mapping.infoGenerator(context),
     });
   } else if (mapping.property ===  'numberAttributes') {
-    const value = mapping.valueGenerator(context);
     if (typeof value !== 'number') {
-      console.info(`Wrong value provided to ResourceNumberAttributes: mapping ${JSON.stringify(mapping)} and value ${value} - omitting attribute`);
+      console.info(`Wrong value provided to ResourceNumberAttributes: mapping ${key} and value ${value} - omitting attribute`);
       return;
     }
 
@@ -108,14 +107,13 @@ const pushInlineAttributeMapping = <T extends InlineAttributeProperty>({ aseloRe
       info: mapping.infoGenerator(context),
     });
   } else if (mapping.property === 'dateTimeAttributes') {
-    const value = mapping.valueGenerator(context);
     if (typeof value !== 'string') {
-      console.info(`Wrong value provided to ResourceDateTimeAttributes: mapping ${JSON.stringify(mapping)} and value ${value} - omitting attribute`);
+      console.info(`Wrong value provided to ResourceDateTimeAttributes: key:${key} and value ${value} - omitting attribute`);
       return;
     }
 
     aseloResource.dateTimeAttributes.push({
-      key: mapping.keyGenerator(context),
+      key,
       value,
       info: mapping.infoGenerator(context),
     });
