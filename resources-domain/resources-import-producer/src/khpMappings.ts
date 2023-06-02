@@ -259,7 +259,7 @@ export const KHP_MAPPING_NODE: MappingNode = {
   },
   social: {
     children: {
-      '{app}': attributeMapping('stringAttributes', siteKey('social/{app}')),
+      '{app}': attributeMapping('stringAttributes', 'social/{app}'),
     },
   },
   eligibilityDetails: {
@@ -346,7 +346,7 @@ export const KHP_MAPPING_NODE: MappingNode = {
   }),
   notes: {
     children: {
-      '{noteIndex}': attributeMapping('stringAttributes', siteKey('notes/{noteIndex}'), {
+      '{noteIndex}': attributeMapping('stringAttributes', 'notes/{noteIndex}', {
         value: ctx => ctx.currentValue.note,
         info: ctx => ctx.currentValue,
       }),
@@ -367,7 +367,7 @@ export const KHP_MAPPING_NODE: MappingNode = {
   },
   agency: {
     children: {
-      '{language}': translatableAttributeMapping(siteKey('agency'), {
+      '{language}': translatableAttributeMapping('agency', {
         value: ctx => ctx.currentValue.alternate,
         info: ctx => ctx.currentValue,
         language: ctx => ctx.captures.language,
