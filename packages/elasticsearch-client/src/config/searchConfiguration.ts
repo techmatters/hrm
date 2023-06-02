@@ -14,6 +14,38 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-export type SearchConfiguration = {
-  searchFields: string[];
+/**
+ * Used if you need to alias a text filter in the API to a different field in the index.
+ */
+type TermFilterMapping = {
+  type: 'term';
+  targetField?: string;
 };
+
+const rangeFilterOperators = ['gt', 'gte', 'lt', 'lte'] as const;
+export type RangeFilterOperator = typeof rangeFilterOperators[number];
+
+/**
+ * Used to specify an incoming filter as a range filter.
+ * If no mapping is specified for
+ */
+type RangeFilterMapping = {
+  type: 'range';
+  targetField?: string;
+  operator: RangeFilterOperator;
+};
+
+type FilterMapping = TermFilterMapping | RangeFilterMapping;
+
+export type SearchConfiguration = {
+  searchFieldBoosts: Record<string, number>;
+  filterMappings: Record<string, FilterMapping>;
+};
+
+export const getQuerySearchFields = (
+  searchConfiguration: SearchConfiguration,
+  boostAdjustment = 0,
+): string[] =>
+  Object.entries(searchConfiguration.searchFieldBoosts).map(
+    ([field, boost]) => `${field}^${boost + boostAdjustment}`,
+  );

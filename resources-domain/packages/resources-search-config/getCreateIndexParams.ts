@@ -23,7 +23,12 @@
  * see: https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-query-string-query.html
  */
 
-import { IndicesCreateRequest } from '@elastic/elasticsearch/lib/api/types';
+import {
+  IndicesCreateRequest,
+  MappingKeywordProperty,
+  MappingProperty,
+  MappingTextProperty,
+} from '@elastic/elasticsearch/lib/api/types';
 import {
   isHighBoostGlobalField,
   isStringField,
@@ -36,7 +41,29 @@ import {
  */
 export const getCreateIndexParams = (index: string): IndicesCreateRequest => {
   const { mappingFields, languageFields } = resourceIndexDocumentMappings;
-  const createRequest: IndicesCreateRequest = {
+
+  const convertMappingFieldsToProperties = () =>
+    Object.fromEntries(
+      Object.entries(mappingFields).map(([key, value]) => {
+        const property: MappingProperty = {
+          type: value.type,
+        };
+
+        if (isStringField(value.type)) {
+          const stringProperty = property as MappingTextProperty | MappingKeywordProperty;
+          stringProperty.copy_to = isHighBoostGlobalField(resourceIndexDocumentMappings, key)
+            ? 'high_boost_global'
+            : 'low_boost_global';
+          if (value.hasLanguageFields) {
+            property.fields = languageFields;
+          }
+        }
+
+        return [key, property];
+      }),
+    );
+
+  return {
     index,
     settings: {
       analysis: {
@@ -74,26 +101,8 @@ export const getCreateIndexParams = (index: string): IndicesCreateRequest => {
           type: 'text',
           fields: languageFields,
         },
+        ...convertMappingFieldsToProperties(),
       },
     },
   };
-
-  Object.entries(mappingFields).forEach(([key, value]) => {
-    createRequest!.mappings!.properties![key] = {
-      type: value.type,
-    };
-
-    if (!isStringField(value.type)) return;
-
-    const property: any = createRequest!.mappings!.properties![key];
-    property.copy_to = isHighBoostGlobalField(resourceIndexDocumentMappings, key)
-      ? 'high_boost_global'
-      : 'low_boost_global';
-
-    if (value.hasLanguageFields) {
-      property.fields = languageFields;
-    }
-  });
-
-  return createRequest;
 };
