@@ -27,7 +27,7 @@ import { Response } from 'undici';
 
 declare var fetch: typeof import('undici').fetch;
 
-jest.mock('@tech-matters/hrm-ssm-cache', () => ({
+jest.mock('@tech-matters/ssm-cache', () => ({
   getSsmParameter: () => 'static-key',
 }));
 
