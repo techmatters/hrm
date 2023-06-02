@@ -14,14 +14,18 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { getClient } from '@tech-matters/elasticsearch-client';
-import {
-  RESOURCE_INDEX_TYPE,
-  resourceIndexConfiguration,
-} from '@tech-matters/resources-search-config';
-
-const shortCode = process.argv[2] || 'as';
-
-getClient({ shortCode, indexType: RESOURCE_INDEX_TYPE }).then(client =>
-  client.indexClient(resourceIndexConfiguration).deleteIndex(),
-);
+module.exports = config => {
+  return (
+    config || {
+      preset: 'ts-jest',
+      rootDir: './',
+      maxWorkers: 1,
+      globals: {
+        'ts-jest': {
+          // to give support to const enum. Not working, conflicting with module resolution
+          useExperimentalLanguageServer: true,
+        },
+      },
+    }
+  );
+};

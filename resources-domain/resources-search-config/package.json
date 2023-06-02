@@ -1,0 +1,16 @@
+{
+  "name": "@tech-matters/resources-search-config",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "author": "",
+  "license": "AGPL",
+  "dependencies": {
+    "@tech-matters/elasticsearch-client": "^1.0.0",
+    "@tech-matters/types": "^1.0.0",
+    "@elastic/elasticsearch": "^8.7.0"
+  },
+  "devDependencies": {
+    "@tsconfig/node16": "^1.0.3"
+  }
+}

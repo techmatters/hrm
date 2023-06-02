@@ -13,15 +13,25 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
+import { IndexConfiguration, SearchConfiguration } from '@tech-matters/elasticsearch-client';
+import { FlatResource } from '@tech-matters/types';
+import { convertIndexDocument } from './convertIndexDocument';
+import { getCreateIndexParams } from './getCreateIndexParams';
 
-import { getClient } from '@tech-matters/elasticsearch-client';
-import {
-  RESOURCE_INDEX_TYPE,
-  resourceIndexConfiguration,
-} from '@tech-matters/resources-search-config';
+export const resourceSearchConfiguration: SearchConfiguration = {
+  searchFields: [
+    'name.*^4',
+    'keywords.*^4',
+    'high_boost_global.*^3',
+    'low_boost_global.*^2',
+    '*',
+    '*.*',
+  ],
+};
 
-const shortCode = process.argv[2] || 'as';
+export const resourceIndexConfiguration: IndexConfiguration<FlatResource> = {
+  convertToIndexDocument: convertIndexDocument,
+  getCreateIndexParams,
+};
 
-getClient({ shortCode, indexType: RESOURCE_INDEX_TYPE }).then(client =>
-  client.indexClient(resourceIndexConfiguration).deleteIndex(),
-);
+export const RESOURCE_INDEX_TYPE = 'resources';
