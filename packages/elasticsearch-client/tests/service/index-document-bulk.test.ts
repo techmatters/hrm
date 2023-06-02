@@ -17,11 +17,8 @@
 import { getClient } from '../../src';
 import { Client, IndexClient } from '../..';
 import { resourceDocuments } from '../fixtures/resources';
-import {
-  resourceIndexConfiguration,
-  resourceSearchConfiguration,
-} from '@tech-matters/resources-search-config';
 import { FlatResource } from '@tech-matters/types/dist/Resources';
+import { resourceIndexConfiguration, resourceSearchConfiguration } from '../fixtures/configuration';
 
 const accountSid = 'service-test-index-document';
 const indexType = 'resources';
