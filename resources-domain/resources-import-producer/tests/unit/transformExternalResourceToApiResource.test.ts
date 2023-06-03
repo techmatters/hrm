@@ -28,7 +28,7 @@ import {
 import { AccountSID, FlatResource } from '@tech-matters/types';
 import each from 'jest-each';
 
-const startedDate = Date.now().toString();
+const startedDate = new Date().toISOString();
 const ACCOUNT_SID: AccountSID = 'AC000';
 
 const mergeWithCleanResource = (partialResource: Partial<FlatResource> = {}): FlatResource => ({
@@ -83,7 +83,7 @@ describe('Dynamic captures', () => {
     expect(result).toMatchObject(expected);
   });
 
-  test('Mapping an attribute with dynamica and static capture - should capture only the non-static keys', async () => {
+  test('Mapping an attribute with dynamic and static capture - should capture only the non-static keys', async () => {
     const resource = {
       attribute: {
         another: true,
