@@ -23,13 +23,13 @@ import {
   MappingNode,
   ReferenceAttributeMapping,
   ResourceFieldMapping,
-  TranslatableAttributeMapping,
   isInlineAttributeMapping,
   isReferenceAttributeMapping,
   isResourceFieldMapping,
   isTranslatableAttributeMapping,
 } from './mappers';
 import * as khp from './khpMappings';
+import { isValid, parseISO } from 'date-fns';
 
 const pushResourceFieldMapping = ({ aseloResource, context, mapping }: {
   mapping: Omit<ResourceFieldMapping, 'children'>, 
@@ -44,26 +44,22 @@ const pushReferenceAttributeMapping = ({ aseloResource, context, mapping }: {
   aseloResource: FlatResource,
   context: FieldMappingContext
 }): void => {
+  const value = mapping.valueGenerator(context);
+  const key = mapping.keyGenerator(context);
+
+  if (typeof value !== 'string') {
+    console.info(`Wrong value provided to referenceStringAttributes: key ${key} and value ${value} - omitting attribute`);
+    return;
+  }
+
   aseloResource.referenceStringAttributes.push({
     key: mapping.keyGenerator(context),
-    value: mapping.valueGenerator(context),
+    value: mapping.valueGenerator(context) ?? '',
     language: mapping.languageGenerator(context),
     list: mapping.list,
   });
 };
 
-const pushTranslatableAttributeMapping = ({ aseloResource, context, mapping }: {
-  mapping: Omit<TranslatableAttributeMapping, 'children'>, 
-  aseloResource: FlatResource,
-  context: FieldMappingContext
-}): void => {
-  aseloResource[mapping.property].push({
-    key: mapping.keyGenerator(context),
-    value: mapping.valueGenerator(context),
-    language: mapping.languageGenerator(context),
-    info: mapping.infoGenerator(context),
-  });
-};
 
 const pushInlineAttributeMapping = <T extends InlineAttributeProperty>({ aseloResource, context, mapping }: {
   mapping: Omit<InlineAttributeMapping<T>, 'children'>, 
@@ -72,6 +68,7 @@ const pushInlineAttributeMapping = <T extends InlineAttributeProperty>({ aseloRe
 }): void => {
   const value = mapping.valueGenerator(context);
   const key = mapping.keyGenerator(context);
+
   if (mapping.property === 'stringAttributes') {
     if (typeof value !== 'string') {
       console.info(`Wrong value provided to stringAttributes: key ${key} and value ${value} - omitting attribute`);
@@ -79,10 +76,10 @@ const pushInlineAttributeMapping = <T extends InlineAttributeProperty>({ aseloRe
     }
 
     aseloResource.stringAttributes.push({
-      key: mapping.keyGenerator(context),
+      key,
       value,
       info: mapping.infoGenerator(context),
-      language: '',
+      language: isTranslatableAttributeMapping(mapping) ? mapping.languageGenerator(context) : '',
     });
   } else if (mapping.property === 'booleanAttributes') {
     if (typeof value !== 'boolean') {
@@ -91,7 +88,7 @@ const pushInlineAttributeMapping = <T extends InlineAttributeProperty>({ aseloRe
     }
 
     aseloResource.booleanAttributes.push({
-      key: mapping.keyGenerator(context),
+      key,
       value,
       info: mapping.infoGenerator(context),
     });
@@ -102,12 +99,12 @@ const pushInlineAttributeMapping = <T extends InlineAttributeProperty>({ aseloRe
     }
 
     aseloResource.numberAttributes.push({
-      key: mapping.keyGenerator(context),
+      key,
       value,
       info: mapping.infoGenerator(context),
     });
   } else if (mapping.property === 'dateTimeAttributes') {
-    if (typeof value !== 'string') {
+    if (typeof value !== 'string' || !isValid(parseISO(value))) {
       console.info(`Wrong value provided to ResourceDateTimeAttributes: key:${key} and value ${value} - omitting attribute`);
       return;
     }
@@ -173,8 +170,6 @@ const mapNode = (
         pushResourceFieldMapping({ aseloResource, mapping, context });
       } else if (isReferenceAttributeMapping(mapping)) {
         pushReferenceAttributeMapping({ aseloResource, mapping, context });
-      } else if (isTranslatableAttributeMapping(mapping)) {
-        pushTranslatableAttributeMapping({ aseloResource, mapping, context });
       } else if (isInlineAttributeMapping(mapping)) {
         pushInlineAttributeMapping({ aseloResource, mapping, context });
       }
