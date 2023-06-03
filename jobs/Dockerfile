@@ -35,6 +35,7 @@ RUN yum install -y rsync \
     && npx tsc -b tsconfig.build.${lambda_dir}.${lambda_name}.json --verbose \
     && cp ${lambda_dir}/${lambda_name}/dist/*.js /var/task/ \
     && cp -r packages /var/task/ \
+    && cp -r ${lambda_dir}/packages /var/task/${lambda_dir}/ \
     && cp -r node_modules /var/task/
 
 # Ignore errors if node_modules is not present
