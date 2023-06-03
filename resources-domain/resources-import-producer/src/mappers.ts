@@ -28,6 +28,7 @@ import parseISO from 'date-fns/parseISO';
  */
 export type FieldMappingContext = {
   currentValue?: any;
+  parentValue?: any;
   captures: Record<string, string>;
   path: string[];
   rootResource: any;

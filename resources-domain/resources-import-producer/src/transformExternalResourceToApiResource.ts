@@ -68,6 +68,12 @@ const pushInlineAttributeMapping = <T extends InlineAttributeProperty>({ aseloRe
 }): void => {
   const value = mapping.valueGenerator(context);
   const key = mapping.keyGenerator(context);
+  let info = mapping.infoGenerator(context) ?? null;
+
+  if (typeof info !== 'object' && info !== null) {
+    console.warn(`Wrong value provided to info: key ${key} and info ${value} - setting info as null`);
+    info = null;
+  }
 
   if (mapping.property === 'stringAttributes') {
     if (typeof value !== 'string') {
@@ -158,6 +164,7 @@ const mapNode = (
 
       const context: FieldMappingContext = {
         ...parentContext,
+        parentValue: parentContext.currentValue,
         currentValue: dataPropertyValue,
         path: [...parentContext.path, dataProperty],
       };
