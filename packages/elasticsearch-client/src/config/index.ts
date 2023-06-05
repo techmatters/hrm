@@ -13,11 +13,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
+export * from './indexConfiguration';
+export * from './searchConfiguration';
 
-import * as defaultResources from './default/resources';
-
-export const config: Record<string, Record<string, any>> = {
-  default: {
-    resources: defaultResources,
-  },
+export type CreateIndexConvertedDocument = {
+  high_boost_global: string;
+  low_boost_global: string;
+  [key: string]: number | string | string[];
 };

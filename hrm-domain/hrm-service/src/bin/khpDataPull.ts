@@ -14,6 +14,9 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-export * from './config';
-export * from './get-create-index-params';
-export * from './convert-index-document';
+import { pullData } from '../data-pull-task/khp-data-pull-task';
+
+const startDateISO = process.argv[2];
+const endDateISO = process.argv[3];
+
+pullData(startDateISO, endDateISO);

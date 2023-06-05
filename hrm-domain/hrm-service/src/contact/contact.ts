@@ -391,7 +391,8 @@ export const searchContacts = async (
   searchParameters: SearchParameters,
   query,
   { can, user, searchPermissions }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser; searchPermissions: SearchPermissions },
-): Promise<{ count: number; contacts: SearchContact[] }> => {
+  originalFormat?: boolean,
+): Promise<{ count: number; contacts: SearchContact[] | Contact[] }> => {
   const applyTransformations = bindApplyTransformations(can, user);
   const { limit, offset } = getPaginationElements(query);
   const { canOnlyViewOwnContacts } = searchPermissions;
@@ -414,8 +415,10 @@ export const searchContacts = async (
   }
 
   const unprocessedResults = await search(accountSid, searchParameters, limit, offset);
+  const contacts = unprocessedResults.rows.map(applyTransformations);
+
   return {
     count: unprocessedResults.count,
-    contacts: convertContactsToSearchResults(unprocessedResults.rows.map(applyTransformations)),
+    contacts: originalFormat ? contacts : convertContactsToSearchResults(contacts),
   };
 };

@@ -71,10 +71,18 @@ export const SELECT_CONTACT_SEARCH = `
           OR regexp_replace("rawJson"#>>'{callerInformation,phone2}', '\\D', '', 'g') ILIKE $<phoneNumberPattern>
         )
         AND (
-          $<dateFrom> IS NULL OR contacts."timeOfContact" >= $<dateFrom>
+          $<dateFrom> IS NULL
+          OR contacts."timeOfContact" >= $<dateFrom>
+          OR (
+            $<shouldIncludeUpdatedAt> = true AND contacts."updatedAt" >= $<dateFrom>
+          )
         )
         AND (
-          $<dateTo> IS NULL OR contacts."timeOfContact" <= $<dateTo>
+          $<dateTo> IS NULL
+          OR contacts."timeOfContact" <= $<dateTo>
+          OR (
+            $<shouldIncludeUpdatedAt> = true AND contacts."updatedAt" <= $<dateTo>
+          )
         )
         AND (
           $<contactNumber> IS NULL OR contacts."number" = $<contactNumber> 

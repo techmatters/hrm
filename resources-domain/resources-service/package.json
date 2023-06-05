@@ -17,7 +17,8 @@
     "tsx": "^3.12.6",
     "umzug": "^3.2.1",
     "undici": "^5.22.1",
-    "yargs": "^17.7.2"
+    "yargs": "^17.7.2",
+    "mockttp": "^3.2.2"
   },
   "scripts": {
     "migrate": "run-s db:create:schema test:service:ci:migrate",
@@ -60,6 +61,7 @@
     "@tech-matters/sns-client": "^1.0.0",
     "@tech-matters/twilio-worker-auth": "^1.0.0",
     "@tech-matters/types": "^1.0.0",
+    "@tech-matters/resources-search-config": "^1.0.0",
     "aws-sdk": "^2.1353.0",
     "date-fns": "^2.29.3",
     "dotenv": "^8.6.0",
