@@ -55,15 +55,15 @@ describe('convertIndexDocument', () => {
     const document = resourceIndexConfiguration.convertToIndexDocument(resource);
 
     expect(document).toEqual({
-      name: 'Resource',
-      high_boost_global: 'This is the english title This is the french title',
-      low_boost_global: 'This is the description',
+      id: '1234',
+      name: ['Resource'],
+      high_boost_global: 'This is the description',
+      low_boost_global: 'This is the english title This is the french title keyword1 keyword2',
       eligibilityMinAge: 10,
       eligibilityMaxAge: 20,
-      city: 'Toronto',
+      city: [' Toronto'],
       feeStructure: 'free',
-      keywords: ['keyword1', 'keyword2'],
-      province: 'ON',
+      province: [' ON'],
     });
   });
 });

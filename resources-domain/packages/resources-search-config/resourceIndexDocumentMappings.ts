@@ -74,6 +74,7 @@ export const resourceIndexDocumentMappings: ResourceIndexDocumentMappings = {
     name: {
       type: 'keyword',
       hasLanguageFields: true,
+      isArrayField: true,
     },
     feeStructure: {
       type: 'keyword',
