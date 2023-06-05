@@ -351,15 +351,6 @@ export const KHP_MAPPING_NODE: MappingNode = {
       ),
     },
   },
-  agency: {
-    children: {
-      '{language}': translatableAttributeMapping('agency', {
-        value: ctx => ctx.currentValue.alternate,
-        info: ctx => ctx.currentValue,
-        language: ctx => ctx.captures.language,
-      }),
-    },
-  },
   lastVerifiedOn: attributeMapping('stringAttributes', 'lastVerifiedOn', {
     value: ctx => ctx.currentValue,
   }),
