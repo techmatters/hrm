@@ -65,17 +65,20 @@ export type KhpApiResponse = {
 
 const pullUpdates = (externalApiBaseUrl: URL, externalApiKey: string, externalApiAuthorizationHeader: string) => {
   const configuredPullUpdates = async (from: Date, to: Date, lastObjectId: string = '', limit = updateBatchSize): Promise<KhpApiResponse | HttpError> => {
-    const response = await fetch(new URL(`api/resources?sort=updatedAt&fromDate=${from.toISOString()}&toDate=${to.toISOString()}&limit=${updateBatchSize}`, externalApiBaseUrl), {
+    const fetchUrl = new URL(`api/resources?sort=updatedAt&fromDate=${from.toISOString()}&toDate=${to.toISOString()}&limit=${updateBatchSize}`, externalApiBaseUrl);
+    const response = await fetch(fetchUrl, {
       headers: {
         'Authorization': externalApiAuthorizationHeader,
         'x-api-key': externalApiKey,
       },
       method: 'GET',
     });
+
     if (response.ok) {
       // NB: This batch resuming isn't really tested but it should get removed when we migrate to Arctic's proposed time sequencey API.
       // The logic for resuming that should be more straightforward.
       const { data:fullResults, totalResults } = await response.json() as KhpApiResponse;
+      console.info(`[GET ${fetchUrl}] Retrieved ${fullResults.length} resources of ${totalResults} from ${from.toISOString()} to ${to.toISOString()}.`);
       const batchStartIndex = limit - updateBatchSize;
       const batch = fullResults.slice(batchStartIndex);
       const maxIndex = sortedIndexBy(batch, { updatedAt: addMilliseconds(from, 1).toISOString() } as KhpApiResource, resource => parseISO(resource.updatedAt) );
