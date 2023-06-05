@@ -19,8 +19,10 @@ FROM node:16-alpine as build
 # copy the hrm-lib package and labmdas folders so that the file: based
 # dependency in package.json can be resolved
 COPY packages /tmp/build/packages
+COPY resources-domain/packages /tmp/build/resources-domain/packages
 COPY resources-domain/resources-service /tmp/build/resources-domain/resources-service
 COPY resources-domain/tsconfig.json /tmp/build/resources-domain/tsconfig.json
+COPY hrm-domain/packages /tmp/build/hrm-domain/packages
 COPY hrm-domain/hrm-service /tmp/build/hrm-domain/hrm-service
 COPY hrm-domain/tsconfig.json /tmp/build/hrm-domain/tsconfig.json
 COPY package.json package-lock.json tsconfig.base.json tsconfig.build.service.json /tmp/build/
