@@ -17,7 +17,7 @@
 import {
   FieldMappingContext,
   MappingNode,
-  substitueCaptureTokens,
+  substituteCaptureTokens,
   resourceFieldMapping,
   attributeMapping,
   translatableAttributeMapping,
@@ -30,7 +30,7 @@ const siteKey = (subsection: string) => (context: FieldMappingContext) => {
     rootResource,
     captures: { siteIndex },
   } = context;
-  return `site/${rootResource.sites[siteIndex].objectId}/${substitueCaptureTokens(
+  return `site/${rootResource.sites[siteIndex].objectId}/${substituteCaptureTokens(
     subsection,
     context,
   )}`;
@@ -79,15 +79,6 @@ const KHP_MAPPING_NODE_SITES: { children: MappingNode } = {
           'stringAttributes',
           siteKey('agencyReferenceNumber'),
         ),
-        agency: {
-          children: {
-            '{language}': translatableAttributeMapping(siteKey('agency'), {
-              value: ctx => ctx.currentValue.alternate,
-              info: ctx => ctx.currentValue,
-              language: ctx => ctx.captures.language,
-            }),
-          },
-        },
         nameEN: translatableAttributeMapping('name', { language: 'en' }),
         nameFR: translatableAttributeMapping('name', { language: 'fr' }),
         nameDetails: {
@@ -123,25 +114,6 @@ const KHP_MAPPING_NODE_SITES: { children: MappingNode } = {
             latitude: attributeMapping('numberAttributes', 'location/latitude'),
           },
         },
-        mailingAddress: {
-          children: {
-            address1: attributeMapping('stringAttributes', siteKey('location/address1')),
-            address2: attributeMapping('stringAttributes', siteKey('location/address2')),
-            city: referenceAttributeMapping(siteKey('location/city'), 'cities', {
-              value: ctx => ctx.currentValue,
-            }),
-            county: referenceAttributeMapping(siteKey('location/county'), 'counties', {
-              value: ctx => ctx.currentValue,
-            }),
-            province: referenceAttributeMapping(siteKey('location/province'), 'provinces', {
-              value: ctx => ctx.currentValue,
-            }),
-            country: referenceAttributeMapping(siteKey('location/country'), 'countries', {
-              value: ctx => ctx.currentValue,
-            }),
-            postalCode: attributeMapping('stringAttributes', siteKey('location/postalCode')),
-          },
-        },
         operations: {
           children: {
             '{dayIndex}': {
@@ -151,6 +123,7 @@ const KHP_MAPPING_NODE_SITES: { children: MappingNode } = {
                   info: ctx => ctx.currentValue,
                   language: ctx => ctx.captures.language,
                 }),
+                _id: {},
               },
             },
           },
@@ -292,7 +265,6 @@ export const KHP_MAPPING_NODE: MappingNode = {
       '{language}': {
         children: {
           '{property}': translatableAttributeMapping('metadata/{property}', {
-            info: ctx => ctx.currentValue,
             language: ctx => ctx.captures.language,
           }),
         },
@@ -315,12 +287,12 @@ export const KHP_MAPPING_NODE: MappingNode = {
           }),
         },
       },
-      isPrivate: attributeMapping('booleanAttributes', 'isPrivate', {}),
-      name: attributeMapping('stringAttributes', 'name', {}),
+      isPrivate: attributeMapping('booleanAttributes', 'isPrivate'),
+      name: attributeMapping('stringAttributes', 'name'),
       // I'm assuming this one, since it's always null
-      email: attributeMapping('stringAttributes', 'email', {}),
+      email: attributeMapping('stringAttributes', 'email'),
       // I'm assuming this one, since it's always "false" (no, not false, string "false")
-      phone: attributeMapping('stringAttributes', 'phone', {}),
+      phone: attributeMapping('stringAttributes', 'phone'),
     },
   },
   recordType: attributeMapping('stringAttributes', 'recordType'),
@@ -430,10 +402,14 @@ export const KHP_MAPPING_NODE: MappingNode = {
   primaryLocationIsPrivate: attributeMapping('booleanAttributes', 'primaryLocationIsPrivate'),
   coverage: {
     children: {
-      '{language}': translatableAttributeMapping('coverage', {
-        value: ctx => ctx.currentValue,
-        language: ctx => ctx.captures.language,
-      }),
+      '{coverageIndex}': {
+        children: {
+          '{language}': translatableAttributeMapping('coverage/{coverageIndex}', {
+            value: ctx => ctx.currentValue,
+            language: ctx => ctx.captures.language,
+          }),
+        },
+      },
     },
   },
   targetPopulations: {
@@ -484,10 +460,19 @@ export const KHP_MAPPING_NODE: MappingNode = {
   },
   documentsRequired: {
     children: {
-      '{documentIndex}': translatableAttributeMapping('documentsRequired/{documentIndex}', {
-        value: ctx => ctx.currentValue,
-        language: ctx => ctx.captures.language,
-      }),
+      '{documentIndex}': {
+        children: {
+          objectId: { children: {} },
+          '{language}': referenceAttributeMapping(
+            'documentsRequired/{documentIndex}',
+            'documentsRequired',
+            {
+              value: ctx => ctx.parentValue.en,
+              language: ctx => ctx.captures.language,
+            },
+          ),
+        },
+      },
     },
   },
   paymentMethod: attributeMapping('stringAttributes', 'paymentMethod'),
@@ -497,14 +482,18 @@ export const KHP_MAPPING_NODE: MappingNode = {
         children: {
           '{dayIndex}': {
             children: {
-              '{language}': translatableAttributeMapping('operations/{dayIndex}', {
-                value: context => context.currentValue.day,
-                info: context => context.currentValue,
-                language: context => context.captures.language,
-              }),
+              '{language}': translatableAttributeMapping(
+                'operations/{operationSetIndex}/{dayIndex}',
+                {
+                  value: context => context.currentValue.day,
+                  info: context => context.currentValue,
+                  language: context => context.captures.language,
+                },
+              ),
               _id: { children: {} },
             },
           },
+          siteId: translatableAttributeMapping('operations/{operationSetIndex}/siteId'),
           _id: { children: {} },
         },
       },
