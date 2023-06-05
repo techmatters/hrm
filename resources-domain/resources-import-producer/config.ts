@@ -16,7 +16,7 @@
 
 // eslint-disable-next-line prettier/prettier
 import type { AccountSID } from '@tech-matters/types';
-import { getSsmParameter } from '@tech-matters/hrm-ssm-cache';
+import { getSsmParameter } from '@tech-matters/ssm-cache';
 
 const getConfig = async () => {
   const deploymentEnvironment = process.env.NODE_ENV;

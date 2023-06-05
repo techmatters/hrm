@@ -5,6 +5,7 @@
   "scripts": {
     "start": "cd dist && node ./bin/www",
     "start:job-processor": "cd dist && node ./bin/jobProcessor",
+    "start:khp-data-pull": "cd dist && node ./bin/khpDataPull",
     "start:job-cleanup": "cd dist && node ./bin/jobCleanup",
     "start:job-cleanup:local": "AWS_REGION=us-east-1 SSM_ENDPOINT=http://localhost:4566 run-s start:job-cleanup",
     "migrate": "run-s test:service:ci:migrate",

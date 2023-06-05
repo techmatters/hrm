@@ -22,6 +22,7 @@ import {
   upsertImportedResource,
   UpsertImportedResourceResult,
 } from './importDataAccess';
+import { publishSearchIndexJob } from '../resource-jobs/client-sqs';
 
 export type ValidationFailure = {
   reason: 'missing field';
@@ -66,6 +67,13 @@ const importService = () => {
               throw result.error;
             }
             results.push(result);
+            try {
+              await publishSearchIndexJob(resource.accountSid, resource);
+            } catch (e) {
+              console.error(
+                `Failed to publish search index job for ${resource.accountSid}/${resource.id}`,
+              );
+            }
           }
           const { id, lastUpdated } = [...resources].sort((a, b) =>
             a.lastUpdated > b.lastUpdated
@@ -81,6 +89,7 @@ const importService = () => {
             lastProcessedDate: lastUpdated,
             lastProcessedId: id,
           });
+
           return results;
         });
       } catch (e) {

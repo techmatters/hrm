@@ -112,6 +112,7 @@ describe('search', () => {
     dateFrom: undefined,
     dateTo: undefined,
     onlyDataContacts: false,
+    shouldIncludeUpdatedAt: false,
     dataCallTypes: expect.arrayContaining([
       'Someone calling about a child',
       'Child calling about self',
