@@ -75,9 +75,14 @@ const pushInlineAttributeMapping = <T extends InlineAttributeProperty>({ aseloRe
     info = null;
   }
 
+  if (value === null || value === undefined) {
+    console.debug(`No value provided to stringAttributes: key ${key} and value ${value} - omitting attribute`);
+    return;
+  }
+
   if (mapping.property === 'stringAttributes') {
     if (typeof value !== 'string') {
-      console.info(`Wrong value provided to stringAttributes: key ${key} and value ${value} - omitting attribute`);
+      console.warn(`Wrong value provided to stringAttributes: key ${key} and value ${value} - omitting attribute`);
       return;
     }
 
