@@ -608,7 +608,7 @@ describe('searchContacts', () => {
         },
       },
     );
-    expect(result.contacts[0].overview.name).toStrictEqual('Jill Smith');
+    expect((result.contacts[0] as SearchContact).overview.name).toStrictEqual('Jill Smith');
   });
 
   test('Call search without limit / offset, a default limit and offset 0', async () => {
