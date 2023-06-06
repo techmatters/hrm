@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { AccountSID, FlatResource, ImportProgress } from '@tech-matters/types';
+import { AccountSID, FlatResource, ImportFlatResource, ImportProgress } from '@tech-matters/types';
 import {
   generateUpdateImportProgressSql,
   generateUpsertSqlFromImportResource,
@@ -22,6 +22,7 @@ import {
 } from './sql';
 import { ITask } from 'pg-promise';
 import { db } from '../connection-pool';
+import { SELECT_RESOURCE_IN_IDS } from '../resource/sql/resourceGetSql';
 
 const txIfNotInOne = async <T>(
   task: ITask<{}> | undefined,
@@ -33,19 +34,35 @@ const txIfNotInOne = async <T>(
   return db.tx(work);
 };
 
-export type UpsertImportedResourceResult = {
-  id: string;
-  success: boolean;
-  error?: Error;
-};
+export type UpsertImportedResourceResult =
+  | {
+      success: true;
+      resource: FlatResource;
+    }
+  | {
+      id: string;
+      success: false;
+      error: Error;
+    };
 
 export const upsertImportedResource = (task?: ITask<{}>) => async (
   accountSid: AccountSID,
-  resource: FlatResource,
+  resource: ImportFlatResource,
 ): Promise<UpsertImportedResourceResult> => {
   return txIfNotInOne(task, async tx => {
     await tx.none(generateUpsertSqlFromImportResource(accountSid, resource));
-    return { id: resource.id, success: true };
+    const savedResource: FlatResource | null = await tx.oneOrNone(SELECT_RESOURCE_IN_IDS, {
+      accountSid,
+      resourceIds: [resource.id],
+    });
+    if (savedResource) {
+      return { resource: savedResource, success: true };
+    }
+    return {
+      id: resource.id,
+      success: false,
+      error: new Error('Upserted resource not found in DB after saving'),
+    };
   });
 };
 

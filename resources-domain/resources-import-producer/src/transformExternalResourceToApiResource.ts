@@ -15,7 +15,7 @@
  */
 
 // eslint-disable-next-line prettier/prettier
-import type { AccountSID, FlatResource, InlineAttributeProperty } from '@tech-matters/types';
+import type { AccountSID, ImportFlatResource, InlineAttributeProperty } from '@tech-matters/types';
 import { KhpApiResource } from '.';
 import {
   FieldMappingContext,
@@ -33,41 +33,58 @@ import { isValid, parseISO } from 'date-fns';
 
 const pushResourceFieldMapping = ({ aseloResource, context, mapping }: {
   mapping: Omit<ResourceFieldMapping, 'children'>, 
-  aseloResource: FlatResource,
+  aseloResource: ImportFlatResource,
   context: FieldMappingContext
 }): void => {
   aseloResource[mapping.field] = mapping.valueGenerator(context);
 };
 
 const pushReferenceAttributeMapping = ({ aseloResource, context, mapping }: {
-  mapping: Omit<ReferenceAttributeMapping, 'children'>, 
-  aseloResource: FlatResource,
+  mapping:ReferenceAttributeMapping,
+  aseloResource: ImportFlatResource,
   context: FieldMappingContext
 }): void => {
-  const value = mapping.valueGenerator(context);
-  const key = mapping.keyGenerator(context);
-
-  if (value === null || value === undefined) {
-    console.debug(`No value provided to referenceStringAttributes: key ${key} and value ${value} - omitting attribute`);
-    return;
-  }
-  if (typeof value !== 'string') {
-    console.info(`Wrong value provided to referenceStringAttributes: key ${key} and value ${value} - omitting attribute`);
-    return;
-  }
-
-  aseloResource.referenceStringAttributes.push({
+  const attribute = {
     key: mapping.keyGenerator(context),
-    value: mapping.valueGenerator(context) ?? '',
     language: mapping.languageGenerator(context),
     list: mapping.list,
-  });
+  };
+  if ('valueGenerator' in mapping) {
+    const value = mapping.valueGenerator(context);
+
+    if (value === null || value === undefined) {
+      console.debug(`No value provided to referenceStringAttributes: key ${attribute.key} and value ${value} - omitting attribute`);
+      return;
+    }
+    if (typeof value !== 'string') {
+      console.info(`Wrong value provided to referenceStringAttributes: key ${attribute.key} and value ${value} - omitting attribute`);
+      return;
+    }
+    aseloResource.referenceStringAttributes.push({
+      ...attribute,
+      value,
+    });
+  } else if ('idGenerator' in mapping) {
+    const id = mapping.idGenerator(context);
+    if (id === null || id === undefined) {
+      console.debug(`No id provided to referenceStringAttributes: key ${attribute.key} and id ${id} - omitting attribute`);
+      return;
+    }
+    if (typeof id !== 'string') {
+      console.info(`Wrong id type provided to referenceNumberAttributes: key ${attribute.key} and id ${id} - omitting attribute`);
+      return;
+    }
+    aseloResource.referenceStringAttributes.push({
+      ...attribute,
+      id,
+    });
+  }
 };
 
 
 const pushInlineAttributeMapping = <T extends InlineAttributeProperty>({ aseloResource, context, mapping }: {
   mapping: Omit<InlineAttributeMapping<T>, 'children'>, 
-  aseloResource: FlatResource,
+  aseloResource: ImportFlatResource,
   context: FieldMappingContext
 }): void => {
   const value = mapping.valueGenerator(context);
@@ -148,8 +165,8 @@ const mapNode = (
   mappingNode: MappingNode,
   dataNode: any,
   parentContext: FieldMappingContext,
-  aseloResource: FlatResource,
-): FlatResource => {
+  aseloResource: ImportFlatResource,
+): ImportFlatResource => {
   Object.entries(mappingNode).forEach(([property, { children, ...mapping }]) => {
     const captureProperty = property.match(/{(?<captureProperty>.*)}/)?.groups?.captureProperty;
 
@@ -204,8 +221,8 @@ export const transformExternalResourceToApiResource = <T>(
   resourceMapping: MappingNode,
   accountSid: AccountSID,
   khpResource: T,
-): FlatResource => {
-  const resource: FlatResource = {
+): ImportFlatResource => {
+  const resource: ImportFlatResource = {
     accountSid,
     id: '',
     lastUpdated: '',
@@ -228,5 +245,5 @@ export const transformExternalResourceToApiResource = <T>(
 export const transformKhpResourceToApiResource = (
   accountSid: AccountSID,
   khpResource: KhpApiResource,
-): FlatResource =>
+): ImportFlatResource =>
 transformExternalResourceToApiResource(khp.KHP_MAPPING_NODE, accountSid, khpResource);

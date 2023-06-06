@@ -71,11 +71,17 @@ export type TranslatableAttributeMapping = AttributeMapping<'stringAttributes'> 
 
 export type ReferenceAttributeMapping = Omit<
   AttributeMapping<'referenceStringAttributes'>,
-  'infoGenerator'
+  'infoGenerator' | 'valueGenerator'
 > & {
   list: string;
   languageGenerator: ContextConsumerFunc<string>;
-};
+} & (
+  {
+    valueGenerator: ContextConsumerFunc<AttributeValue<'referenceStringAttributes'>>;
+  } | {
+    idGenerator: ContextConsumerFunc<string>;
+  }
+);
 
 export const isResourceFieldMapping = (mapping: any): mapping is ResourceFieldMapping => {
   return mapping && mapping.field;
@@ -100,7 +106,7 @@ export const isReferenceAttributeMapping = (
     mapping &&
     mapping.property === 'referenceStringAttributes' &&
     typeof mapping.keyGenerator === 'function' &&
-    typeof mapping.valueGenerator === 'function' &&
+    (typeof mapping.valueGenerator === 'function' || typeof mapping.idGenerator === 'function') &&
     typeof mapping.list === 'string' &&
     mapping.list
   );
@@ -205,23 +211,32 @@ export const referenceAttributeMapping = (
   key: ValueOrContextConsumerFunc<string>,
   list: string,
   data: {
-    value: ValueOrContextConsumerFunc<AttributeValue<'referenceStringAttributes'>>;
     language?: ValueOrContextConsumerFunc<string>;
-  },
+  } & ({
+    value: ValueOrContextConsumerFunc<AttributeValue<'referenceStringAttributes'>>;
+  } | {
+    id: ValueOrContextConsumerFunc<string>;
+  }),
 ): ReferenceAttributeMapping => {
-  const { infoGenerator, ...mappingResult } = attributeMapping(
-    'referenceStringAttributes',
-    key,
-    data,
-  );
-
-  const mapping = {
-    ...mappingResult,
+  
+  const mapping: Omit<ReferenceAttributeMapping, 'languageGenerator'> = {
+    property: 'referenceStringAttributes',
+    keyGenerator: typeof key === 'function' ? key : context => substituteCaptureTokens(key, context),
     list,
+    ...(
+      'value' in data ? {
+        valueGenerator:
+          typeof data.value === 'function'
+            ? data.value
+            : () => data.value,
+      } : {
+        idGenerator: data.id === 'function' ? data.id : () => data.id,
+      }
+    ),
   };
   // This case should be impossible but we gotta help TS
   if (!isReferenceAttributeMapping(mapping)) {
-    throw new Error(`Panic! mappingResult is not ReferenceAttributeMapping: ${mappingResult}`);
+    throw new Error(`Panic! mapping is not ReferenceAttributeMapping: ${mapping}`);
   }
 
   if (isContextConsumerFunc(data.language)) {

@@ -529,7 +529,7 @@ export const KHP_MAPPING_NODE: MappingNode = {
             'howIsServiceOffered/{howIsServiceOfferedIndex}',
             'khp-how-is-service-offered',
             {
-              value: ctx => ctx.parentValue.en,
+              value: ctx => ctx.parentValue.objectId,
               language: ctx => ctx.captures.language,
               // value: ctx => ctx.currentValue.en || ctx.currentValue.fr,
             },
@@ -540,7 +540,7 @@ export const KHP_MAPPING_NODE: MappingNode = {
   },
   accessibility: referenceAttributeMapping('accessibility', 'khp-accessibility', {
     // We use objectId or the name for this referrable resources?
-    value: ctx => ctx.currentValue.objectId,
+    id: ctx => ctx.currentValue.objectId,
     // value: ctx => ctx.currentValue.en || ctx.currentValue.fr,
   }),
   volunteer: {

@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { FlatResource } from './Resources';
+import { FlatResource, ReferrableResourceTranslatableAttribute } from './Resources';
 
 export type InlineAttributeProperty =
   | 'stringAttributes'
@@ -40,7 +40,21 @@ export type ImportProgress = ImportBatch & {
   lastProcessedId: string;
 };
 
+/**
+ * Type that allows reference attributes to be specified by ID rathger than value when importing
+ */
+export type ReferrableResourceReferenceAttribute = (
+  | ReferrableResourceTranslatableAttribute
+  | (Omit<ReferrableResourceTranslatableAttribute, 'value'> & { id: string })
+) & {
+  list: string;
+};
+export type ImportFlatResource = Omit<FlatResource, 'referenceStringAttributes'> & {
+  referenceStringAttributes: (ReferrableResourceReferenceAttribute & {
+    key: string;
+  })[];
+};
 export type ImportRequestBody = {
-  importedResources: FlatResource[];
+  importedResources: ImportFlatResource[];
   batch: ImportBatch;
 };

@@ -18,7 +18,7 @@ import parseISO from 'date-fns/parseISO';
 import { handler } from '../../index';
 import each from 'jest-each';
 // eslint-disable-next-line prettier/prettier
-import type { FlatResource, ImportRequestBody } from '@tech-matters/types';
+import type { ImportFlatResource, ImportRequestBody } from '@tech-matters/types';
 import type { SQSEvent } from 'aws-lambda';
 
 const mockFetch = jest.fn();
@@ -41,8 +41,8 @@ const baselineDate = parseISO('2020-01-01T00:00:00.000Z');
 const generateImportResource = (
   resourceIdSuffix: string,
   lastUpdated: Date,
-  additionalAttributes: Partial<FlatResource> = {},
-): FlatResource => ({
+  additionalAttributes: Partial<ImportFlatResource> = {},
+): ImportFlatResource => ({
   accountSid,
   id: `RESOURCE_${resourceIdSuffix}`,
   name: `Resource ${resourceIdSuffix}`,
