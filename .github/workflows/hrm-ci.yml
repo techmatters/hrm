@@ -35,17 +35,17 @@ jobs:
         run: npm run lint
   build-containers:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        lambda_name:
+          - contact-retrieve-recording-url
+          - contact-retrieve-transcript
+          - resources-import-consumer
+          - resources-import-producer
+          - resources-search-complete
+          - resources-search-index
     steps:
       - name: Build Lambda Docker Images
-        strategy:
-          matrix:
-            lambda_name:
-              - contact-retrieve-recording-url
-              - contact-retrieve-transcript
-              - resources-import-consumer
-              - resources-import-producer
-              - resources-search-complete
-              - resources-search-index
         uses: docker/build-push-action@v4
         with:
           context: ./
