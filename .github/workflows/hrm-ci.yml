@@ -45,6 +45,8 @@ jobs:
           - resources-search-complete
           - resources-search-index
     steps:
+      - name: Checkout Branch
+        uses: actions/checkout@v2
       - name: Build Lambda Docker Images
         uses: docker/build-push-action@v4
         with:
