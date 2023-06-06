@@ -74,8 +74,8 @@ export type FlatResource = {
   lastUpdated: string;
   stringAttributes: (ReferrableResourceTranslatableAttribute & { key: string })[];
   referenceStringAttributes: (ReferrableResourceTranslatableAttribute & {
-    key: string;
     list: string;
+    key: string;
   })[];
   booleanAttributes: (ReferrableResourceAttribute<boolean> & { key: string })[];
   numberAttributes: (ReferrableResourceAttribute<number> & { key: string })[];

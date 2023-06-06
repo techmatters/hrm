@@ -15,11 +15,11 @@
  */
 
 import { pgp } from '../connection-pool';
-import { AccountSID, ImportProgress, FlatResource } from '@tech-matters/types';
+import { AccountSID, ImportProgress, ImportFlatResource } from '@tech-matters/types';
 
 export const generateUpsertSqlFromImportResource = (
   accountSid: string,
-  { stringAttributes, referenceStringAttributes, ...resourceRecord }: FlatResource,
+  { stringAttributes, referenceStringAttributes, ...resourceRecord }: ImportFlatResource,
 ): string => {
   const sqlBatch: string[] = [];
 
@@ -99,14 +99,26 @@ export const generateUpsertSqlFromImportResource = (
   sqlBatch.push(
     ...referenceStringAttributes.map(attribute => {
       const { language, ...queryValues } = attribute;
-      return pgp.as.format(
-        `INSERT INTO resources."ResourceReferenceStringAttributes" 
-    ("accountSid", "resourceId", "key", "list", "referenceId") 
-    SELECT $<accountSid>, $<resourceId>, $<key>, $<list>, "id" 
-      FROM resources."ResourceReferenceStringAttributeValues" 
-      WHERE "accountSid" = $<accountSid> AND "list" = $<list> AND "value" = $<value>`,
-        { ...queryValues, accountSid, resourceId: resourceRecord.id },
-      );
+      if ('value' in queryValues) {
+        return pgp.as.format(
+          `INSERT INTO resources."ResourceReferenceStringAttributes" 
+        ("accountSid", "resourceId", "key", "list", "referenceId") 
+      SELECT $<accountSid>, $<resourceId>, $<key>, $<list>, "id" 
+        FROM resources."ResourceReferenceStringAttributeValues" 
+        WHERE "accountSid" = $<accountSid> AND "list" = $<list> AND "value" = $<value>`,
+          { ...queryValues, accountSid, resourceId: resourceRecord.id },
+        );
+      } else {
+        // We still do the sub select to ensure we omit any orphaned reference values rather than causing a FK violation
+        return pgp.as.format(
+          `INSERT INTO resources."ResourceReferenceStringAttributes" 
+        ("accountSid", "resourceId", "key", "list", "referenceId") 
+      SELECT $<accountSid>, $<resourceId>, $<key>, $<list>, "id" 
+        FROM resources."ResourceReferenceStringAttributeValues" 
+        WHERE "accountSid" = $<accountSid> AND "list" = $<list> AND "id" = $<id>`,
+          { ...queryValues, accountSid, resourceId: resourceRecord.id },
+        );
+      }
     }),
   );
   return sqlBatch.join(';\n');

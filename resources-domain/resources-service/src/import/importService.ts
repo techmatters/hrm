@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { AccountSID, FlatResource, ImportBatch, ImportProgress } from '@tech-matters/types';
+import { AccountSID, ImportFlatResource, ImportBatch, ImportProgress } from '@tech-matters/types';
 import { db } from '../connection-pool';
 import {
   getImportState,
@@ -27,7 +27,13 @@ import { publishSearchIndexJob } from '../resource-jobs/client-sqs';
 export type ValidationFailure = {
   reason: 'missing field';
   fields: string[];
-  resource: FlatResource;
+  resource: ImportFlatResource;
+};
+
+type ImportedResourceResult = {
+  id: string;
+  success: boolean;
+  error?: Error;
 };
 
 export const isValidationFailure = (result: any): result is ValidationFailure => {
@@ -40,9 +46,9 @@ const importService = () => {
   return {
     upsertResources: async (
       accountSid: AccountSID,
-      resources: FlatResource[],
+      resources: ImportFlatResource[],
       batch: ImportBatch,
-    ): Promise<UpsertImportedResourceResult[] | ValidationFailure> => {
+    ): Promise<ImportedResourceResult[] | ValidationFailure> => {
       if (!resources?.length) return [];
       try {
         return await db.tx(async t => {
@@ -68,7 +74,7 @@ const importService = () => {
             }
             results.push(result);
             try {
-              await publishSearchIndexJob(resource.accountSid, resource);
+              await publishSearchIndexJob(resource.accountSid, result.resource);
             } catch (e) {
               console.error(
                 `Failed to publish search index job for ${resource.accountSid}/${resource.id}`,
@@ -90,7 +96,18 @@ const importService = () => {
             lastProcessedId: id,
           });
 
-          return results;
+          return results.map(result =>
+            result.success
+              ? {
+                  id: result.resource.id,
+                  success: result.success,
+                }
+              : {
+                  id: result.id,
+                  success: result.success,
+                  error: result.error,
+                },
+          );
         });
       } catch (e) {
         const error = e as any;
