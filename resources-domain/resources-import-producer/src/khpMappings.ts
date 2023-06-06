@@ -508,7 +508,7 @@ export const KHP_MAPPING_NODE: MappingNode = {
         children: {
           objectId: { children: {} },
           '{language}': referenceAttributeMapping(
-            'feeStructureSource/{feeStructureSourceIndex}',
+            'feeStructure/{feeStructureSourceIndex}',
             'khp-fee-structure-source',
             {
               value: ctx => ctx.parentValue.en,
