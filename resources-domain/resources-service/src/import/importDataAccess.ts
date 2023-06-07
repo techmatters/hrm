@@ -16,6 +16,7 @@
 
 import { AccountSID, FlatResource, ImportProgress } from '@tech-matters/types';
 import {
+  DELETE_RESOURCE_ATTRIBUTES_SQL,
   generateUpdateImportProgressSql,
   generateUpsertSqlFromImportResource,
   SELECT_IMPORT_PROGRESS_SQL,
@@ -44,7 +45,12 @@ export const upsertImportedResource = (task?: ITask<{}>) => async (
   resource: FlatResource,
 ): Promise<UpsertImportedResourceResult> => {
   return txIfNotInOne(task, async tx => {
-    await tx.none(generateUpsertSqlFromImportResource(accountSid, resource));
+    await tx.none(DELETE_RESOURCE_ATTRIBUTES_SQL, {
+      resourceId: resource.id.toString(),
+      accountSid,
+    });
+    const { sql, values } = generateUpsertSqlFromImportResource(accountSid, resource);
+    await tx.none(sql, values);
     return { id: resource.id, success: true };
   });
 };
