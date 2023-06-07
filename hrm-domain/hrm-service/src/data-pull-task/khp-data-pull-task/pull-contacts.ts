@@ -60,8 +60,9 @@ export const pullContacts = async (startDate: Date, endDate: Date) => {
   try {
     await Promise.all(uploadPromises);
     console.log('>> KHP Contacts were pulled successfully!');
-  } catch {
+  } catch (err) {
     console.error('>> Error in KHP Data Pull: Contacts');
+    console.error(err);
     // TODO: Should throw an error?
   }
 };
