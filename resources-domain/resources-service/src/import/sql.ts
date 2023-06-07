@@ -17,7 +17,7 @@
 import { pgp } from '../connection-pool';
 import { AccountSID, ImportProgress, FlatResource } from '@tech-matters/types';
 
-export const DELETE_RESOURCE_ATTRIBUTES_SQL = `DELETE FROM resources."ResourceStringAttributes" WHERE "resourceId" = $<resourceId> AND "accountSid" = $<accountSid>;
+const DELETE_RESOURCE_ATTRIBUTES_SQL = `DELETE FROM resources."ResourceStringAttributes" WHERE "resourceId" = $<resourceId> AND "accountSid" = $<accountSid>;
     DELETE FROM resources."ResourceNumberAttributes" WHERE "resourceId" = $<resourceId> AND "accountSid" = $<accountSid>;
     DELETE FROM resources."ResourceBooleanAttributes" WHERE "resourceId" = $<resourceId> AND "accountSid" = $<accountSid>;
     DELETE FROM resources."ResourceDateTimeAttributes" WHERE "resourceId" = $<resourceId> AND "accountSid" = $<accountSid>`;
@@ -30,12 +30,13 @@ export const generateUpsertSqlFromImportResource = (
   const values = {
     accountSid,
     resourceId: resourceRecord.id.toString(),
-    referenceStringAttributes: referenceStringAttributes.map((attribute, index) => {
-      const { language, ...queryValues } = attribute;
-      return [`attribute_${index}`, queryValues];
-    }),
+    referenceStringAttributes: Object.fromEntries(
+      referenceStringAttributes.map((attribute, index) => {
+        const { language, ...queryValues } = attribute;
+        return [`attribute_${index}`, queryValues];
+      }),
+    ),
   };
-
   sqlBatch.push(`${pgp.helpers.insert(
     {
       ...resourceRecord,
@@ -55,12 +56,7 @@ export const generateUpsertSqlFromImportResource = (
     { property: 'dateTimeAttributes', table: 'ResourceDateTimeAttributes' },
   ] as const;
 
-  sqlBatch.push(
-    `DELETE FROM resources."ResourceStringAttributes" WHERE "resourceId" = $<resourceId> AND "accountSid" = $<accountSid>;
-    DELETE FROM resources."ResourceNumberAttributes" WHERE "resourceId" = $<resourceId> AND "accountSid" = $<accountSid>;
-    DELETE FROM resources."ResourceBooleanAttributes" WHERE "resourceId" = $<resourceId> AND "accountSid" = $<accountSid>;
-    DELETE FROM resources."ResourceDateTimeAttributes" WHERE "resourceId" = $<resourceId> AND "accountSid" = $<accountSid>`,
-  );
+  sqlBatch.push(DELETE_RESOURCE_ATTRIBUTES_SQL);
   sqlBatch.push(
     ...stringAttributes.map(attribute => {
       const { key, value, info, language } = attribute;
@@ -105,7 +101,7 @@ export const generateUpsertSqlFromImportResource = (
       const attributeValuesKey = `referenceStringAttributes.attribute_${index}`;
       return `INSERT INTO resources."ResourceReferenceStringAttributes" 
     ("accountSid", "resourceId", "key", "list", "referenceId") 
-    SELECT $<accountSid>, $<${attributeValuesKey}.sourceId>, $<${attributeValuesKey}.key>, $<${attributeValuesKey}.list>, "id" 
+    SELECT $<accountSid>, $<resourceId>, $<${attributeValuesKey}.key>, $<${attributeValuesKey}.list>, "id" 
       FROM resources."ResourceReferenceStringAttributeValues" 
       WHERE "accountSid" = $<accountSid> AND "list" = $<${attributeValuesKey}.list> AND "value" = $<${attributeValuesKey}.value>`;
     }),
