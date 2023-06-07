@@ -83,19 +83,17 @@ export function convertToPostgreSQLQuery(
       values.push(...nestedResult.values);
     } else if (Array.isArray(paramValue)) {
       let singleValueAdded = false;
-      let csvValuesAdded = false;
       const positions = [];
       const csvValues = [];
       query = query.replace(tokenRegex, (match, formatSpecifier) => {
         switch (formatSpecifier) {
           case ':csv':
-            if (csvValuesAdded) {
+            if (csvValues.length === 0) {
               paramValue.forEach((value: any) => {
                 csvValues.push(value ?? null);
-                positions.push(`$${values.length + valueCount}`);
+                positions.push(`$${values.length + csvValues.length + valueCount}`);
               });
               console.debug(`Mapping $${positions.join(', ')} to ${key}, values: ${paramValue}`);
-              csvValuesAdded = true;
             }
             return positions.join(', ');
           case ':json':
@@ -120,6 +118,7 @@ export function convertToPostgreSQLQuery(
             return `$${values.length + valueCount}`;
         }
       });
+      values.push(...csvValues);
     } else {
       let singleValueAdded = false;
       query = query.replace(tokenRegex, () => {
