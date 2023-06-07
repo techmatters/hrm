@@ -22,6 +22,7 @@ import { caseSectionUpsertSql, deleteMissingCaseSectionsSql } from './sql/case-s
 import { DELETE_BY_ID } from './sql/case-delete-sql';
 import { selectSingleCaseByIdSql } from './sql/case-get-sql';
 import { Contact } from '../contact/contact-data-access';
+import { parameterizedQuery } from '../parameterizedQuery';
 
 export type CaseRecordCommon = {
   info: any;
@@ -159,7 +160,9 @@ export const search = async (
       limit: limit,
       offset: offset,
     };
-    const result: CaseWithCount[] = await connection.any<CaseWithCount>(statement, queryValues);
+    const result: CaseWithCount[] = await connection.manyOrNone<CaseWithCount>(
+      parameterizedQuery(statement, queryValues),
+    );
     const totalCount: number = result.length ? result[0].totalCount : 0;
     return { rows: result, count: totalCount };
   });
