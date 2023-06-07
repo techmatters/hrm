@@ -30,9 +30,12 @@ RUN apk add --no-cache rsync \
     && cd /tmp/build \
     && npm ci -w hrm-domain/hrm-service -w packages/* -w resources-domain/resources-search-config -w resources-domain/resources-service \
     && npx tsc -b tsconfig.build.service.json \
+    && mkdir -p /home/node/hrm-domain/ \
+    && cp -r hrm-domain/packages /home/node/hrm-domain/packages/ \
     && cp -r hrm-domain/hrm-service/* /home/node/ \
     && cp -r packages /home/node/ \
     && mkdir -p /home/node/resources-domain/ \
+    && cp -r resources-domain/packages /home/node/resources-domain/packages/ \
     && cp -r resources-domain/resources-service /home/node/resources-domain/resources-service \
     && cp -r resources-domain/resources-search-config /home/node/resources-domain/resources-search-config \
     && cp -r node_modules /home/node/
