@@ -109,7 +109,7 @@ export function convertToPostgreSQLQuery(
             return `$${values.length + valueCount}`;
           default:
             if (!singleValueAdded) {
-              values.push(JSON.stringify(paramValue));
+              values.push(paramValue);
               singleValueAdded = true;
               console.debug(
                 `Mapping $${values.length + valueCount} to ${key}, value: ${paramValue}`,
