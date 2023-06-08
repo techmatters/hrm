@@ -19,14 +19,7 @@ import { convertIndexDocument } from './convertIndexDocument';
 import { getCreateIndexParams } from './getCreateIndexParams';
 
 export const resourceSearchConfiguration: SearchConfiguration = {
-  searchFields: [
-    'name.*^4',
-    'keywords.*^4',
-    'high_boost_global.*^3',
-    'low_boost_global.*^2',
-    '*',
-    '*.*',
-  ],
+  searchFields: ['name.*^4', 'id.*^4', 'high_boost_global.*^3', 'low_boost_global.*^2', '*', '*.*'],
 };
 
 export const resourceIndexConfiguration: IndexConfiguration<FlatResource> = {

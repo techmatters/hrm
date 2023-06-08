@@ -18,49 +18,60 @@ import { FlatResource, ReferrableResourceAttribute } from '@tech-matters/types';
 import { CreateIndexConvertedDocument } from '@tech-matters/elasticsearch-client';
 import {
   isHighBoostGlobalField,
-  isMappingField,
+  getMappingField,
   resourceIndexDocumentMappings,
+  FieldAndMapping,
 } from './resourceIndexDocumentMappings';
 
 export const convertIndexDocument = (resource: FlatResource): CreateIndexConvertedDocument => {
   const { mappingFields } = resourceIndexDocumentMappings;
   const mappedFields: { [key: string]: string | string[] | number | boolean } = {};
   const highBoostGlobal: string[] = [];
-  const LowBoostGlobal: string[] = [];
+  const lowBoostGlobal: string[] = [];
 
   const pushToCorrectGlobalBoostField = (key: string, value: string) => {
     if (isHighBoostGlobalField(resourceIndexDocumentMappings, key)) {
       highBoostGlobal.push(value);
     } else {
-      LowBoostGlobal.push(value);
+      lowBoostGlobal.push(value);
     }
   };
 
-  const pushToMappingField = (key: string, value: number | string | boolean) => {
-    //TODO: I don't know what keywords field will actually look like should handle arrays here
-    if (mappingFields![key].isArrayField) {
-      if (!mappedFields[key]) {
-        mappedFields[key] = [];
+  const pushValueToMappedField = (
+    { field, mapping }: FieldAndMapping,
+    value: boolean | string | number,
+  ) => {
+    if (mapping.isArrayField) {
+      if (!mappedFields[field]) {
+        mappedFields[field] = [];
       }
 
-      // TODO: not spending too much time on this, could we support multiple numbers in array mapped fields?
-      const mapField = mappedFields[key] as string[];
-      mapField.push(value.toString());
+      const mapField = mappedFields[field] as typeof value[];
+      mapField.push(value);
     } else {
-      mappedFields[key] = typeof value === 'boolean' ? value.toString() : value;
+      if (mapping.hasLanguageFields) {
+        console.warn(
+          `Possible misconfiguration - mapping field '${field}' has the hasLanguageFields flag set but not the isArrayField: a multi-language field should normally be an array, otherwise the languages for different languages will be overwrite each other.`,
+        );
+      }
+      mappedFields[field] = value;
     }
   };
 
   const parseAttribute = (
     key: string,
-    { value }: ReferrableResourceAttribute<boolean | string | number>,
+    attribute: ReferrableResourceAttribute<boolean | string | number>,
   ) => {
-    if (isMappingField(resourceIndexDocumentMappings, key)) {
-      return pushToMappingField(key, value);
+    const fieldAndMapping = getMappingField(resourceIndexDocumentMappings, key);
+    if (fieldAndMapping) {
+      return pushValueToMappedField(
+        fieldAndMapping,
+        fieldAndMapping.mapping.indexValueGenerator?.(attribute) ?? attribute.value,
+      );
     }
     // We don't really want booleans & numbers in the general purpose buckets
-    if (typeof value === 'string') {
-      pushToCorrectGlobalBoostField(key, value);
+    if (typeof attribute.value === 'string') {
+      pushToCorrectGlobalBoostField(key, attribute.value);
     }
   };
 
@@ -71,11 +82,14 @@ export const convertIndexDocument = (resource: FlatResource): CreateIndexConvert
       parseAttribute(key, attribute);
     });
   });
+  pushValueToMappedField({ field: 'id', mapping: mappingFields.id }, id);
+  pushValueToMappedField({ field: 'name', mapping: mappingFields.name }, name);
 
   return {
+    id,
     name,
     high_boost_global: highBoostGlobal.join(' '),
-    low_boost_global: LowBoostGlobal.join(' '),
+    low_boost_global: lowBoostGlobal.join(' '),
     ...mappedFields,
   };
 };

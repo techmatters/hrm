@@ -11,7 +11,7 @@
   "author": "",
   "license": "AGPL",
   "dependencies": {
-    "@elastic/elasticsearch": "^8.6.0",
+    "@elastic/elasticsearch": "^8.7.0",
     "@tech-matters/ssm-cache": "^1.0.0",
     "@tech-matters/types": "^1.0.0"
   },

@@ -16,22 +16,15 @@
 
 import {
   AccountSID,
+  FlatResource,
+  ReferrableResource,
   ReferrableResourceAttribute,
   ResourceAttributeNode,
-  ReferrableResource,
-  FlatResource,
 } from '@tech-matters/types';
 
-import {
-  getClient,
-  SearchParameters as SearchParametersEs,
-} from '@tech-matters/elasticsearch-client';
+import { getClient } from '@tech-matters/elasticsearch-client';
 
 import { getById, getByIdList, getWhereNameContains } from './resourceDataAccess';
-import resourceCloudSearchClient from './search/resource-cloudsearch-client';
-import { SearchParameters } from './search/search-types';
-import { mapSearchParametersToKhpTermsAndFilters } from './search/khp-resource-search-mapping';
-import { CloudSearchConfig } from '../config/cloud-search';
 import {
   RESOURCE_INDEX_TYPE,
   resourceSearchConfiguration,
@@ -108,9 +101,16 @@ const resourceRecordToApiResource = (resourceRecord: FlatResource): ReferrableRe
 // The full resource & the search result are synonyms for now, but the full resource should grow to be a superset
 export type ReferrableResourceSearchResult = ReferrableResource;
 
-export const resourceService = (cloudSearchConfig: CloudSearchConfig) => {
-  const cloudSearchClient = resourceCloudSearchClient(cloudSearchConfig);
+export type SearchParameters = {
+  filters?: Record<string, boolean | number | string | string[]>;
+  generalSearchTerm: string;
+  pagination: {
+    limit: number;
+    start: number;
+  };
+};
 
+export const resourceService = () => {
   return {
     getResource: async (
       accountSid: AccountSID,
@@ -171,46 +171,15 @@ export const resourceService = (cloudSearchConfig: CloudSearchConfig) => {
       accountSid: AccountSID,
       searchParameters: SearchParameters,
     ): Promise<{ totalCount: number; results: ReferrableResourceSearchResult[] }> => {
-      const {
-        pagination: { limit: unboundedLimit, start },
-      } = searchParameters;
-      const limit = Math.min(MAX_SEARCH_RESULTS, unboundedLimit);
-      const { total, items } = await cloudSearchClient.search(
-        accountSid,
-        mapSearchParametersToKhpTermsAndFilters(searchParameters),
-        start,
-        limit,
-      );
-      const orderedResourceIds: string[] = items.map(item => item.id);
-      const unsortedResourceList = await getByIdList(accountSid, orderedResourceIds);
-      const resourceMap = Object.fromEntries(
-        unsortedResourceList.map(resource => [resource.id, resource]),
+      const limit = Math.min(
+        MAX_SEARCH_RESULTS,
+        searchParameters.pagination?.limit ?? Number.MAX_SAFE_INTEGER,
       );
 
-      // Add ALL the resources found looking up specific IDs to the paginated block of name search results
-      const orderedResults = orderedResourceIds.map(id => resourceMap[id]).filter(r => r);
-
-      return {
-        results: orderedResults.map(record => resourceRecordToApiResource(record)),
-        totalCount: total,
+      const boundedSearchParameters: SearchParameters = {
+        ...searchParameters,
+        pagination: { ...searchParameters.pagination!, limit },
       };
-    },
-
-    searchResourcesEs: async (
-      accountSid: AccountSID,
-      searchParameters: SearchParametersEs,
-    ): Promise<{ totalCount: number; results: ReferrableResourceSearchResult[] }> => {
-      let boundedSearchParameters: SearchParametersEs = { ...searchParameters };
-
-      if (boundedSearchParameters.pagination?.limit) {
-        const unboundedLimit = boundedSearchParameters.pagination.limit;
-        const limit = Math.min(MAX_SEARCH_RESULTS, unboundedLimit);
-
-        boundedSearchParameters = {
-          ...boundedSearchParameters,
-          pagination: { ...boundedSearchParameters.pagination!, limit },
-        };
-      }
 
       const client = (
         await getClient({
@@ -218,9 +187,12 @@ export const resourceService = (cloudSearchConfig: CloudSearchConfig) => {
           indexType: RESOURCE_INDEX_TYPE,
         })
       ).searchClient(resourceSearchConfiguration);
-
+      const { generalSearchTerm, ...esSearchParameters } = {
+        ...boundedSearchParameters,
+        q: boundedSearchParameters.generalSearchTerm,
+      };
       const { total, items } = await client.search({
-        searchParameters: boundedSearchParameters,
+        searchParameters: esSearchParameters,
       });
 
       const orderedResourceIds: string[] = items.map(item => item.id);

@@ -43,7 +43,7 @@ beforeEach(() => {
   mockRouterConstructor.mockReset();
 });
 
-describe('POST /search', () => {
+describe('POST /searchByName', () => {
   type SearchRequestHandler = (
     req: Request<{ nameSubstring: string; ids: string[] }>,
     res: Response,
@@ -63,7 +63,7 @@ describe('POST /search', () => {
       },
       get: () => {},
     }));
-    resourceRoutes({ searchUrl: new URL('https://a.com') });
+    resourceRoutes();
   });
 
   test('Takes limit & start from query string, search parameters from body and returns resources from model as JSON', async () => {
