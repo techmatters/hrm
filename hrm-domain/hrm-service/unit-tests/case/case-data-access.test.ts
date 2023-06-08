@@ -124,14 +124,14 @@ describe('search', () => {
         description: 'should use a default limit and offset 0 when neither specified',
         filters: { helplines: ['fakeHelpline'] },
         expectedDbParameters: { limit: expect.any(Number), offset: 0 },
-        expectedInSql: ['"id" DESC', 'fakeHelpline'],
+        expectedInSql: ['"id" DESC'],
       },
       {
         description: 'should use a specified limit and offset 0 when only limit is specified',
         filters: { helplines: ['fakeHelpline'] },
         listConfig: { limit: 45 },
         expectedDbParameters: { limit: 45, offset: 0 },
-        expectedInSql: ['"id" DESC', 'fakeHelpline'],
+        expectedInSql: ['"id" DESC'],
       },
       {
         description:
@@ -139,21 +139,21 @@ describe('search', () => {
         filters: { helplines: ['fakeHelpline'] },
         listConfig: { offset: 30 },
         expectedDbParameters: { limit: expect.any(Number), offset: 30 },
-        expectedInSql: ['"id" DESC', 'fakeHelpline'],
+        expectedInSql: ['"id" DESC'],
       },
       {
         description: 'should use a specified limit and offset when both are present',
         filters: { helplines: ['fakeHelpline'] },
         listConfig: { limit: 45, offset: 30 },
         expectedDbParameters: { limit: 45, offset: 30 },
-        expectedInSql: ['"id" DESC', 'fakeHelpline'],
+        expectedInSql: ['"id" DESC'],
       },
       {
         description: 'should use a default limit and/or offset when either are NaN',
         filters: { helplines: ['fakeHelpline'] },
         listConfig: { limit: NaN, offset: NaN },
         expectedDbParameters: { limit: expect.any(Number), offset: 0 },
-        expectedInSql: ['"id" DESC', 'fakeHelpline'],
+        expectedInSql: ['"id" DESC'],
       },
       {
         description: "should generate SQL without helpline filter if one isn't set",

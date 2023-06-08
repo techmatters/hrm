@@ -129,9 +129,18 @@ describe('upsertImportedResource', () => {
     expect(insertSql).toContain('Test Resource');
     expect(insertSql).toContain(BASELINE_DATE.toISOString());
     expect(insertSql).toContain('AC_FAKE');
-    expect(insertSql).toContain('Test Reference Attribute');
-    expect(insertSql).toContain('Test Reference Value');
-    expect(insertSql).toContain("List o'' strings");
+    const parameters = noneSpy.mock.calls[noneSpy.mock.calls.length - 1][1];
+    expect(parameters).toStrictEqual({
+      accountSid: 'AC_FAKE',
+      resourceId: 'TEST_RESOURCE',
+      referenceStringAttributes: {
+        attribute_0: {
+          key: 'Test Reference Attribute',
+          value: 'Test Reference Value',
+          list: "List o' strings",
+        },
+      },
+    });
     expect(result).toStrictEqual({ id: 'TEST_RESOURCE', success: true });
   });
 });

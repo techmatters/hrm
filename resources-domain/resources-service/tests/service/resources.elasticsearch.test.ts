@@ -28,7 +28,7 @@ import { getById } from '../../src/resource/resourceDataAccess';
 
 export const workerSid = 'WK-worker-sid';
 
-const indexType = IndexTypes.RESOURCES;
+const indexType = 'resources' as IndexTypes; // Jest no likey the enums
 const clients: Record<string, Client> = {};
 
 const server = getServer({

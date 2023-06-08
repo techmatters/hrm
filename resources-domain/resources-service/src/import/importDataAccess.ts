@@ -44,7 +44,8 @@ export const upsertImportedResource = (task?: ITask<{}>) => async (
   resource: FlatResource,
 ): Promise<UpsertImportedResourceResult> => {
   return txIfNotInOne(task, async tx => {
-    await tx.none(generateUpsertSqlFromImportResource(accountSid, resource));
+    const { sql, values } = generateUpsertSqlFromImportResource(accountSid, resource);
+    await tx.none(sql, values);
     return { id: resource.id, success: true };
   });
 };

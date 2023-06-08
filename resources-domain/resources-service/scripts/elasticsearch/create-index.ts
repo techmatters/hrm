@@ -18,4 +18,6 @@ import { getClient, IndexTypes } from '@tech-matters/elasticsearch-client';
 
 const shortCode = process.argv[2] || 'as';
 
-getClient({ shortCode, indexType: IndexTypes.RESOURCES }).then(client => client.createIndex({}));
+getClient({ shortCode, indexType: 'resources' as IndexTypes }).then(client =>
+  client.createIndex({}),
+);

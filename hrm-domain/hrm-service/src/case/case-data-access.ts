@@ -148,6 +148,7 @@ export const search = async (
   const { count, rows } = await db.task(async connection => {
     const statement = selectCaseSearch(filters, orderClause);
     const queryValues = {
+      ...filters,
       accountSid,
       firstName: searchCriteria.firstName ? `%${searchCriteria.firstName}%` : null,
       lastName: searchCriteria.lastName ? `%${searchCriteria.lastName}%` : null,
@@ -177,6 +178,10 @@ export const update = async (
 ): Promise<CaseRecord> => {
   const result = await db.tx(async transaction => {
     const caseUpdateSqlStatements = [selectSingleCaseByIdSql('Cases')];
+    const statementValues = {
+      accountSid,
+      caseId: id,
+    };
     if (caseRecordUpdates.info) {
       const allSections: CaseSectionRecord[] = caseRecordUpdates.caseSections ?? [];
       if (allSections.length) {
@@ -190,23 +195,20 @@ export const update = async (
         idsBySectionType[caseSection.sectionType].push(caseSection.sectionId);
         return idsBySectionType;
       }, <Record<string, string[]>>{});
-      caseUpdateSqlStatements.push(deleteMissingCaseSectionsSql(caseSectionIdsByType));
+      const { sql, values } = deleteMissingCaseSectionsSql(caseSectionIdsByType);
+      Object.assign(statementValues, values);
+      caseUpdateSqlStatements.push(sql);
     }
     caseUpdateSqlStatements.push(updateByIdSql(caseRecordUpdates));
     caseUpdateSqlStatements.push(selectSingleCaseByIdSql('Cases'));
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const [original, ...restOfOutput] = await transaction.multi<CaseRecord>(
+    const output = await transaction.multi<CaseRecord>(
       caseUpdateSqlStatements.join(`;
     `),
-      {
-        accountSid,
-        caseId: id,
-      },
+      statementValues,
     );
-    const updated = restOfOutput.pop();
-
-    return updated;
+    return output.pop();
   });
   return result.length ? result[0] : void 0;
 };
