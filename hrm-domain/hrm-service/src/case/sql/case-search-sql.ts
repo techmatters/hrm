@@ -19,15 +19,8 @@ import { SELECT_CASE_SECTIONS } from './case-sections-sql';
 import { CaseListFilters, DateExistsCondition, DateFilter } from '../case-data-access';
 import { leftJoinCsamReportsOnFK } from '../../csam-report/sql/csam-report-get-sql';
 import { leftJoinReferralsOnFK } from '../../referral/sql/referral-get-sql';
-
-export const OrderByDirection = {
-  ascendingNullsLast: 'ASC NULLS LAST',
-  descendingNullsLast: 'DESC NULLS LAST',
-  ascending: 'ASC',
-  descending: 'DESC',
-} as const;
-
-export type OrderByDirectionType = typeof OrderByDirection[keyof typeof OrderByDirection];
+import { OrderByDirection } from '@tech-matters/sql';
+import { OrderByDirectionType } from '@tech-matters/sql/dist/ordering';
 
 export const OrderByColumn = {
   ID: 'id',

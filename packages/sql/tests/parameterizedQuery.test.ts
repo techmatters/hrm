@@ -1,6 +1,6 @@
-import { convertToPostgreSQLQuery } from '../src/parameterizedQuery';
+import { parameterizedQuery } from '../dist';
 
-describe('convertToPostgreSQLQuery', () => {
+describe('parameterizedQuery', () => {
   const testCases = [
     {
       description:
@@ -90,9 +90,8 @@ describe('convertToPostgreSQLQuery', () => {
   ];
 
   test.each(testCases)('$description', ({ sql, params, expectedQuery, expectedValues }) => {
-    const { query, values } = convertToPostgreSQLQuery(sql, params);
-
-    expect(query).toBe(expectedQuery);
+    const { text, values } = parameterizedQuery(sql, params);
+    expect(text).toBe(expectedQuery);
     expect(values).toEqual(expectedValues);
   });
 });

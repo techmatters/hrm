@@ -20,8 +20,8 @@ import {
   DatabaseForeignKeyViolationError,
   DatabaseUniqueConstraintViolationError,
   inferPostgresError,
-  txIfNotInOne,
-} from '../sql';
+} from '@tech-matters/sql';
+import { txIfNotInOne } from '../connection-pool';
 
 // Working around the lack of a 'cause' property in the Error class for ES2020 - can be removed when we upgrade to ES2022
 export class DuplicateReferralError extends Error {

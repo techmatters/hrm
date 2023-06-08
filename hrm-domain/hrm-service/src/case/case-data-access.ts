@@ -17,12 +17,13 @@
 import { db, pgp } from '../connection-pool';
 import { getPaginationElements } from '../search';
 import { updateByIdSql } from './sql/case-update-sql';
-import { OrderByColumnType, OrderByDirectionType, selectCaseSearch } from './sql/case-search-sql';
+import { OrderByColumnType, selectCaseSearch } from './sql/case-search-sql';
 import { caseSectionUpsertSql, deleteMissingCaseSectionsSql } from './sql/case-sections-sql';
 import { DELETE_BY_ID } from './sql/case-delete-sql';
 import { selectSingleCaseByIdSql } from './sql/case-get-sql';
 import { Contact } from '../contact/contact-data-access';
-import { parameterizedQuery } from '../parameterizedQuery';
+import { parameterizedQuery } from '@tech-matters/sql';
+import { OrderByDirectionType } from '@tech-matters/sql/dist/ordering';
 
 export type CaseRecordCommon = {
   info: any;
@@ -134,7 +135,7 @@ export const getById = async (
   return db.task(async connection => {
     const statement = selectSingleCaseByIdSql('Cases');
     const queryValues = { accountSid, caseId };
-    return connection.oneOrNone<CaseRecord>(statement, queryValues);
+    return connection.oneOrNone<CaseRecord>(parameterizedQuery(statement, queryValues));
   });
 };
 

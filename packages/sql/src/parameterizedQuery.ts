@@ -14,7 +14,8 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { ParameterizedQuery } from 'pg-promise';
+// eslint-disable-next-line prettier/prettier
+import type { ParameterizedQuery } from 'pg-promise';
 
 function isJSONValue(token: string, sql: string): boolean {
   // If any of the tokens mark it as JSON, treat it as JSON everywhere
@@ -83,8 +84,8 @@ export function convertToPostgreSQLQuery(
       values.push(...nestedResult.values);
     } else if (Array.isArray(paramValue)) {
       let singleValueAdded = false;
-      const positions = [];
-      const csvValues = [];
+      const positions: string[] = [];
+      const csvValues: string[] = [];
       query = query.replace(tokenRegex, (match, formatSpecifier) => {
         switch (formatSpecifier) {
           case ':csv':

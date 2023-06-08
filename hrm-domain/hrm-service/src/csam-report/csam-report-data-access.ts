@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { db } from '../connection-pool';
+import { db, txIfNotInOne } from '../connection-pool';
 import { insertCSAMReportSql } from './sql/csam-report-insert-sql';
 import {
   selectSingleCsamReportByIdSql,
@@ -24,7 +24,6 @@ import {
   updateContactIdByCsamReportIdsSql,
   updateAcknowledgedByCsamReportIdSql,
 } from './sql/csam-report-update-sql';
-import { txIfNotInOne } from '../sql';
 
 export type NewCSAMReport = {
   reportType: 'counsellor-generated' | 'self-generated';

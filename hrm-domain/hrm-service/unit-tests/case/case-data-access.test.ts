@@ -21,7 +21,12 @@ import * as caseDb from '../../src/case/case-data-access';
 import each from 'jest-each';
 import { db } from '../../src/connection-pool';
 import { OrderByColumn } from '../../src/case/sql/case-search-sql';
-import { expectValuesInSql, getSqlStatement } from '@tech-matters/testing';
+import {
+  expectValuesInSql,
+  getParameterizedSqlStatement,
+  getSqlStatement,
+} from '@tech-matters/testing';
+import { ParameterizedQuery } from 'pg-promise';
 
 const accountSid = 'account-sid';
 let conn: pgPromise.ITask<unknown>;
@@ -46,10 +51,11 @@ describe('getById', () => {
 
     const result = await caseDb.getById(caseId, accountSid);
 
-    expect(oneOrNoneSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Cases'),
-      expect.objectContaining({ accountSid, caseId }),
-    );
+    expect(oneOrNoneSpy).toHaveBeenCalledWith(expect.any(ParameterizedQuery));
+    const px = oneOrNoneSpy.mock.calls[0][0] as ParameterizedQuery;
+    expect(px.text).toContain('Cases');
+
+    expect(px.values).toStrictEqual([accountSid, caseId]);
     expect(result).toStrictEqual(caseFromDB);
   });
 
@@ -59,10 +65,11 @@ describe('getById', () => {
 
     const result = await caseDb.getById(caseId, accountSid);
 
-    expect(oneOrNoneSpy).toHaveBeenCalledWith(
-      expect.stringContaining('CSAMReports'),
-      expect.objectContaining({ accountSid, caseId }),
-    );
+    expect(oneOrNoneSpy).toHaveBeenCalledWith(expect.any(ParameterizedQuery));
+    const px = oneOrNoneSpy.mock.calls[0][0] as ParameterizedQuery;
+    expect(px.text).toContain('CSAMReports');
+
+    expect(px.values).toStrictEqual([accountSid, caseId]);
     expect(result).not.toBeDefined();
   });
 });
@@ -217,13 +224,15 @@ describe('search', () => {
           { ...createMockCaseRecord({ id: 2 }), totalCount: 1337 },
           { ...createMockCaseRecord({ id: 1 }), totalCount: 1337 },
         ];
-        const anySpy = jest.spyOn(conn, 'any').mockResolvedValue(dbResult);
+        const manyOrNoneSpy = jest.spyOn(conn, 'manyOrNone').mockResolvedValue(dbResult);
         const result = await caseDb.search(listConfig, accountSid, {}, filters);
-        expect(anySpy).toHaveBeenCalledWith(
-          expect.stringContaining('Cases'),
-          expect.objectContaining({ ...expectedDbParameters, accountSid }),
-        );
-        const sql = getSqlStatement(anySpy);
+        expect(manyOrNoneSpy).toHaveBeenCalledWith(expect.any(ParameterizedQuery));
+        const pq = manyOrNoneSpy.mock.calls[0][0] as ParameterizedQuery;
+        expect(pq.text).toContain('Cases');
+        Object.values({ ...expectedDbParameters, accountSid }).forEach(expected => {
+          expect(pq.values).toContainEqual(expected);
+        });
+        const sql = getParameterizedSqlStatement(manyOrNoneSpy);
         expectedInSql.forEach(expected => {
           expect(sql).toContain(expected);
         });
@@ -292,19 +301,22 @@ describe('search', () => {
       dbResult,
       expectedResult = dbResult,
     }) => {
-      const anySpy = jest.spyOn(conn, 'any').mockResolvedValue(dbResult);
+      const manyOrNoneSpy = jest.spyOn(conn, 'manyOrNone').mockResolvedValue(dbResult);
       const result = await caseDb.search(listConfig, accountSid, {}, filters);
-      expect(anySpy).toHaveBeenCalledWith(
-        expect.stringContaining('Cases'),
-        expect.objectContaining({
-          contactNumber: null,
-          firstName: null,
-          lastName: null,
-          ...expectedDbParameters,
-          accountSid,
-        }),
-      );
-      const statementExecuted = getSqlStatement(anySpy);
+      expect(manyOrNoneSpy).toHaveBeenCalledWith(expect.any(ParameterizedQuery));
+      const pq = manyOrNoneSpy.mock.calls[0][0] as ParameterizedQuery;
+
+      expect(pq.text).toContain('Cases');
+      Object.values({
+        contactNumber: null,
+        firstName: null,
+        lastName: null,
+        ...expectedDbParameters,
+        accountSid,
+      }).forEach(expected => {
+        expect(pq.values).toContainEqual(expected);
+      });
+      const statementExecuted = getParameterizedSqlStatement(manyOrNoneSpy);
       expect(statementExecuted).toContain('Contacts');
       expect(statementExecuted).toContain('CSAMReports');
       expect(result.count).toEqual(1337);
@@ -331,22 +343,20 @@ describe('update', () => {
 
   test('runs update SQL against cases table with provided ID.', async () => {
     const caseUpdateResult = createMockCaseRecord(caseUpdate);
-    const multiSpy = jest.spyOn(tx, 'multi').mockResolvedValue([
-      [{ ...createMockCaseRecord({}), id: caseId }],
-      [2], //Simulate outputs from caseSection queries
-      [{ ...caseUpdateResult, id: caseId }],
-    ]);
-
+    const oneOrNoneSpy = jest
+      .spyOn(tx, 'oneOrNone')
+      .mockResolvedValue({ ...caseUpdateResult, id: caseId });
+    const noneSpy = jest.spyOn(tx, 'none');
     const result = await caseDb.update(caseId, caseUpdate, accountSid);
-    const updateSql = getSqlStatement(multiSpy);
+    const updateSql = getParameterizedSqlStatement(noneSpy);
+    const selectSql = getParameterizedSqlStatement(oneOrNoneSpy);
     expect(updateSql).toContain('Cases');
-    expect(updateSql).toContain('Contacts');
-    expect(updateSql).toContain('CSAMReports');
+    expect(selectSql).toContain('Cases');
+    expect(selectSql).toContain('Contacts');
+    expect(selectSql).toContain('CSAMReports');
     expectValuesInSql(updateSql, { info: caseUpdate.info, status: caseUpdate.status });
-    expect(multiSpy).toHaveBeenCalledWith(
-      expect.any(String),
-      expect.objectContaining({ accountSid, caseId }),
-    );
+    expect(noneSpy).toHaveBeenCalledWith(expect.any(ParameterizedQuery));
+    expect(oneOrNoneSpy).toHaveBeenCalledWith(expect.any(ParameterizedQuery));
     expect(result).toStrictEqual({ ...caseUpdateResult, id: caseId });
   });
 });

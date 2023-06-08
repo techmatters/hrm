@@ -14,23 +14,13 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import pgPromise, { ITask } from 'pg-promise';
-import config from './config/db';
+export { parameterizedQuery } from './parameterizedQuery';
+export {
+  DatabaseUniqueConstraintViolationError,
+  DatabaseForeignKeyViolationError,
+  DatabaseError,
+  DatabaseConstraintViolationError,
+  inferPostgresError,
+} from './error';
 
-export const pgp = pgPromise({});
-
-export const db = pgp(
-  `postgres://${encodeURIComponent(config.username)}:${encodeURIComponent(config.password)}@${
-    config.host
-  }:${config.port}/${encodeURIComponent(config.database)}?&application_name=hrm-service`,
-);
-
-export const txIfNotInOne = async <T>(
-  task: ITask<T> | undefined,
-  work: (y: ITask<T>) => Promise<T>,
-): Promise<T> => {
-  if (task) {
-    return task.txIf(work);
-  }
-  return db.tx(work);
-};
+export { OrderByDirection } from './ordering';

@@ -18,11 +18,14 @@ import * as pgPromise from 'pg-promise';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import * as pgMocking from '@tech-matters/testing';
 import { db } from '../src/connection-pool';
-
-jest.mock('../src/connection-pool', () => ({
-  db: pgMocking.createMockConnection(),
-  pgp: jest.requireActual('../src/connection-pool').pgp,
-}));
+jest.mock('../src/connection-pool', () => {
+  const mockDb = pgMocking.createMockConnection();
+  return {
+    db: mockDb,
+    pgp: jest.requireActual('../src/connection-pool').pgp,
+    txIfNotInOne: jest.fn().mockImplementation((tx, work) => (tx ?? mockDb).tx(work)),
+  };
+});
 
 export const mockConnection = pgMocking.createMockConnection;
 
