@@ -14,8 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-// eslint-disable-next-line prettier/prettier
-import type { ParameterizedQuery } from 'pg-promise';
+import { ParameterizedQuery } from 'pg-promise';
 
 function isJSONValue(token: string, sql: string): boolean {
   // If any of the tokens mark it as JSON, treat it as JSON everywhere
@@ -132,7 +131,7 @@ export function convertToPostgreSQLQuery(
       });
     }
   });
-  console.debug('Parameterized query:', query, values);
+  // console.debug('Parameterized query:', query, values);
   return { query, values };
 }
 

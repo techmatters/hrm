@@ -102,7 +102,7 @@ describe('createCase', () => {
       twilioWorkerId: 'twilio-worker-id',
     });
     const oneSpy = jest.spyOn(tx, 'one').mockResolvedValue({ ...caseFromDB, id: 1337 });
-
+    const noneSpy = jest.spyOn(tx, 'none');
     const result = await caseDb.create(caseFromDB, accountSid);
     const insertSql = getSqlStatement(oneSpy, -2);
     const { caseSections, ...caseWithoutSections } = caseFromDB;
@@ -112,7 +112,7 @@ describe('createCase', () => {
       createdAt: expect.anything(),
       updatedAt: expect.anything(),
     });
-    const insertSectionSql = getSqlStatement(oneSpy, -1);
+    const insertSectionSql = getSqlStatement(noneSpy);
     expectValuesInSql(insertSectionSql, {
       ...caseSections[0],
       caseId: 1337,
@@ -368,11 +368,10 @@ describe('delete', () => {
     const oneOrNoneSpy = jest.spyOn(db, 'oneOrNone').mockResolvedValue(caseFromDB);
 
     const result = await caseDb.deleteById(caseId, accountSid);
-
-    expect(oneOrNoneSpy).toHaveBeenCalledWith(expect.stringContaining('Cases'), [
-      accountSid,
-      caseId,
-    ]);
+    expect(oneOrNoneSpy).toHaveBeenCalledWith(expect.any(ParameterizedQuery));
+    const pq = oneOrNoneSpy.mock.calls[0][0] as ParameterizedQuery;
+    expect(pq.text).toContain('Cases');
+    expect(pq.values).toStrictEqual([accountSid, caseId]);
     expect(result).toStrictEqual(caseFromDB);
   });
   test('returns nothing if nothing at the specified ID exists to delete', async () => {
@@ -381,10 +380,10 @@ describe('delete', () => {
 
     const result = await caseDb.deleteById(caseId, accountSid);
 
-    expect(oneOrNoneSpy).toHaveBeenCalledWith(expect.stringContaining('Cases'), [
-      accountSid,
-      caseId,
-    ]);
+    expect(oneOrNoneSpy).toHaveBeenCalledWith(expect.any(ParameterizedQuery));
+    const pq = oneOrNoneSpy.mock.calls[0][0] as ParameterizedQuery;
+    expect(pq.text).toContain('Cases');
+    expect(pq.values).toStrictEqual([accountSid, caseId]);
     expect(result).not.toBeDefined();
   });
 });

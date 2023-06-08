@@ -24,6 +24,7 @@ import { selectSingleCaseByIdSql } from './sql/case-get-sql';
 import { Contact } from '../contact/contact-data-access';
 import { parameterizedQuery } from '@tech-matters/sql';
 import { OrderByDirectionType } from '@tech-matters/sql/dist/ordering';
+import { ParameterizedQuery } from 'pg-promise';
 
 export type CaseRecordCommon = {
   info: any;
@@ -116,11 +117,12 @@ export const create = async (
       let inserted: CaseRecord = await transaction.one(statement);
       if ((caseSections ?? []).length) {
         const allSections = caseSections.map(s => ({ ...s, caseId: inserted.id, accountSid }));
-        const sectionStatement = `${caseSectionUpsertSql(allSections)};${selectSingleCaseByIdSql(
-          'Cases',
-        )}`;
+
         const queryValues = { accountSid, caseId: inserted.id };
-        inserted = await transaction.one(sectionStatement, queryValues);
+        await transaction.none(caseSectionUpsertSql(allSections));
+        inserted = await transaction.one(
+          parameterizedQuery(selectSingleCaseByIdSql('Cases'), queryValues),
+        );
       }
 
       return inserted;
@@ -172,7 +174,7 @@ export const search = async (
 };
 
 export const deleteById = async (id, accountSid) => {
-  return db.oneOrNone(DELETE_BY_ID, [accountSid, id]);
+  return db.oneOrNone(new ParameterizedQuery({ text: DELETE_BY_ID, values: [accountSid, id] }));
 };
 
 export const update = async (
