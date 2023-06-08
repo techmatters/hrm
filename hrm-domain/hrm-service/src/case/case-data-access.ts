@@ -179,8 +179,8 @@ export const update = async (
   caseRecordUpdates: Partial<NewCaseRecord>,
   accountSid: string,
 ): Promise<CaseRecord> => {
-  const result = await db.tx(async transaction => {
-    const caseUpdateSqlStatements = [selectSingleCaseByIdSql('Cases')];
+  return db.tx(async transaction => {
+    const caseUpdateSqlStatements = [];
     const statementValues = {
       accountSid,
       caseId: id,
@@ -202,16 +202,22 @@ export const update = async (
       Object.assign(statementValues, values);
       caseUpdateSqlStatements.push(sql);
     }
-    caseUpdateSqlStatements.push(updateByIdSql(caseRecordUpdates));
-    caseUpdateSqlStatements.push(selectSingleCaseByIdSql('Cases'));
+    const caseUpdateQuery = updateByIdSql(caseRecordUpdates);
+    // If there are preceding statements, put them in a CTE so we can run a single prepared statement
+    const fullUpdateQuery = caseUpdateSqlStatements.length
+      ? `WITH
+      ${caseUpdateSqlStatements.map((statement, i) => `q${i} AS (${statement})`).join(`,
+      `)}
+      ${caseUpdateQuery}`
+      : caseUpdateQuery;
+    await transaction.none(parameterizedQuery(fullUpdateQuery, statementValues));
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const output = await transaction.multi<CaseRecord>(
-      caseUpdateSqlStatements.join(`;
-    `),
-      statementValues,
+    return transaction.oneOrNone(
+      parameterizedQuery(selectSingleCaseByIdSql('Cases'), {
+        accountSid,
+        caseId: id,
+      }),
     );
-    return output.pop();
   });
-  return result.length ? result[0] : void 0;
 };

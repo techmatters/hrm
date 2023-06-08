@@ -93,7 +93,7 @@ export function convertToPostgreSQLQuery(
                 csvValues.push(value ?? null);
                 positions.push(`$${values.length + csvValues.length + valueCount}`);
               });
-              console.debug(`Mapping $${positions.join(', ')} to ${key}, values: ${paramValue}`);
+              console.debug(`Mapping ${positions.join(', ')} to ${key}, values: ${paramValue}`);
             }
             return positions.join(', ');
           case ':json':
@@ -131,7 +131,7 @@ export function convertToPostgreSQLQuery(
       });
     }
   });
-
+  console.debug('Parameterized query:', query, values);
   return { query, values };
 }
 
