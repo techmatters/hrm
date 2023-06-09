@@ -176,8 +176,7 @@ export const update = async (
   caseRecordUpdates: Partial<NewCaseRecord>,
   accountSid: string,
 ): Promise<CaseRecord> => {
-  const result = await db.tx(async transaction => {
-    const caseUpdateSqlStatements = [selectSingleCaseByIdSql('Cases')];
+  return db.tx(async transaction => {
     const statementValues = {
       accountSid,
       caseId: id,
@@ -185,9 +184,7 @@ export const update = async (
     if (caseRecordUpdates.info) {
       const allSections: CaseSectionRecord[] = caseRecordUpdates.caseSections ?? [];
       if (allSections.length) {
-        caseUpdateSqlStatements.push(
-          caseSectionUpsertSql(allSections.map(s => ({ ...s, accountSid }))),
-        );
+        await transaction.none(caseSectionUpsertSql(allSections.map(s => ({ ...s, accountSid }))));
       }
       // Map case sections into a list of ids grouped by category, which allows a more concise DELETE SQL statement to be generated
       const caseSectionIdsByType = allSections.reduce((idsBySectionType, caseSection) => {
@@ -197,18 +194,10 @@ export const update = async (
       }, <Record<string, string[]>>{});
       const { sql, values } = deleteMissingCaseSectionsSql(caseSectionIdsByType);
       Object.assign(statementValues, values);
-      caseUpdateSqlStatements.push(sql);
+      await transaction.none(sql, statementValues);
     }
-    caseUpdateSqlStatements.push(updateByIdSql(caseRecordUpdates));
-    caseUpdateSqlStatements.push(selectSingleCaseByIdSql('Cases'));
+    await transaction.none(updateByIdSql(caseRecordUpdates, accountSid, id), statementValues);
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const output = await transaction.multi<CaseRecord>(
-      caseUpdateSqlStatements.join(`;
-    `),
-      statementValues,
-    );
-    return output.pop();
+    return transaction.oneOrNone(selectSingleCaseByIdSql('Cases'), statementValues);
   });
-  return result.length ? result[0] : void 0;
 };
