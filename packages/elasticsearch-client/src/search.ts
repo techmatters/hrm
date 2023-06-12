@@ -177,12 +177,16 @@ export const generateElasticsearchQuery = (
 ): SearchQuery => {
   const { q, filters, pagination } = searchParameters;
   const queryClauses: QueryDslQueryContainer[] = [
-    {
-      simple_query_string: {
-        query: q,
-        fields: getQuerySearchFields(searchConfiguration),
-      },
-    },
+    q
+      ? {
+          simple_query_string: {
+            query: q,
+            fields: getQuerySearchFields(searchConfiguration),
+          },
+        }
+      : {
+          match_all: {},
+        },
   ];
   const filterPart: { filter?: QueryDslQueryContainer[] } = {};
 
