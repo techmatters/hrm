@@ -69,8 +69,9 @@ export const pullCases = async (startDate: Date, endDate: Date) => {
   try {
     await Promise.all(uploadPromises);
     console.log('>> KHP Cases were pulled successfully!');
-  } catch {
+  } catch (err) {
     console.error('>> Error in KHP Data Pull: Cases');
+    console.error(err);
     // TODO: Should throw an error?
   }
 };
