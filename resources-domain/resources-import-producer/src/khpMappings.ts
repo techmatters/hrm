@@ -91,39 +91,43 @@ const KHP_MAPPING_NODE_SITES: { children: MappingNode } = {
           },
         },
         isActive: attributeMapping('booleanAttributes', siteKey('isActive')),
-        isLocationPrivate: attributeMapping('booleanAttributes', siteKey('isLocationPrivate')),
-        location: {
-          children: {
-            address1: attributeMapping('stringAttributes', siteKey('location/address1')),
-            address2: attributeMapping('stringAttributes', siteKey('location/address2')),
-            city: referenceAttributeMapping(siteKey('location/city'), 'cities', {
-              value: ctx => ctx.currentValue,
-            }),
-            county: referenceAttributeMapping(siteKey('location/county'), 'counties', {
-              value: ctx => ctx.currentValue,
-            }),
-            province: referenceAttributeMapping(siteKey('location/province'), 'provinces', {
-              value: ctx => ctx.currentValue,
-            }),
-            country: referenceAttributeMapping(siteKey('location/country'), 'countries', {
-              value: ctx => ctx.currentValue,
-            }),
-            postalCode: attributeMapping('stringAttributes', siteKey('location/postalCode')),
-            description: attributeMapping('stringAttributes', siteKey('location/description')),
-            longitude: attributeMapping('numberAttributes', 'location/longitude'),
-            latitude: attributeMapping('numberAttributes', 'location/latitude'),
+        primaryLocationIsPrivate: attributeMapping(
+          'booleanAttributes',
+          siteKey('isLocationPrivate'),
+        ),
+        primaryLocationAddress1: attributeMapping('stringAttributes', siteKey('location/address1')),
+        primaryLocationAddress2: attributeMapping('stringAttributes', siteKey('location/address2')),
+        primaryLocationCity: referenceAttributeMapping(siteKey('location/city'), 'cities', {
+          value: ctx => ctx.currentValue,
+        }),
+        primaryLocationCounty: referenceAttributeMapping(siteKey('location/county'), 'counties', {
+          value: ctx => ctx.currentValue,
+        }),
+        primaryLocationProvince: referenceAttributeMapping(
+          siteKey('location/province'),
+          'provinces',
+          {
+            value: ctx => ctx.currentValue,
           },
-        },
+        ),
+        primaryLocationPostalCode: attributeMapping(
+          'stringAttributes',
+          siteKey('location/postalCode'),
+        ),
         operations: {
           children: {
-            '{dayIndex}': {
+            '{siteOperationSetIndex}': {
               children: {
-                '{language}': translatableAttributeMapping(siteKey('operations/{dayIndex}'), {
-                  value: ctx => ctx.currentValue.day,
-                  info: ctx => ctx.currentValue,
-                  language: ctx => ctx.captures.language,
-                }),
-                _id: {},
+                '{dayIndex}': {
+                  children: {
+                    '{language}': translatableAttributeMapping(siteKey('operations/{dayIndex}'), {
+                      value: ctx => ctx.currentValue.day,
+                      info: ctx => ctx.currentValue,
+                      language: ctx => ctx.captures.language,
+                    }),
+                    _id: {},
+                  },
+                },
               },
             },
           },
@@ -177,6 +181,7 @@ const KHP_MAPPING_NODE_SITES: { children: MappingNode } = {
         retiredAt: attributeMapping('dateTimeAttributes', siteKey('retiredAt')),
         createdAt: attributeMapping('dateTimeAttributes', siteKey('createdAt')),
         updatedAt: attributeMapping('dateTimeAttributes', siteKey('updatedAt')),
+        objectId: attributeMapping('stringAttributes', siteKey('siteId')),
       },
     },
   },
