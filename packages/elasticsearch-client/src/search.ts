@@ -44,6 +44,7 @@ export type SearchParameters = {
 
 export type SearchResponseItem = {
   id: string;
+  name?: string;
   highlights: Record<string, string[]> | undefined;
 };
 
@@ -245,6 +246,7 @@ export const search = async ({
     total,
     items: hits.hits.map(hit => ({
       id: hit._id,
+      name: hit.fields?.name,
       highlights: hit.highlight,
     })),
   };
