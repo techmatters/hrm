@@ -14,16 +14,18 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-export type SearchParameters = {
-  filters?: Record<string, boolean | number | string | string[]>;
-  generalSearchTerm: string;
-  pagination: {
-    limit: number;
-    start: number;
-  };
-};
-
-export type TermsAndFilters = {
-  searchTermsByIndex: Record<string, { phrases: string[]; terms: string[]; weighting: number }>;
-  filters: Record<string, string | { value: string | boolean | number | Date; comparison: string }>;
+module.exports = config => {
+  return (
+    config || {
+      preset: 'ts-jest',
+      rootDir: './',
+      maxWorkers: 1,
+      globals: {
+        'ts-jest': {
+          // to give support to const enum. Not working, conflicting with module resolution
+          useExperimentalLanguageServer: true,
+        },
+      },
+    }
+  );
 };

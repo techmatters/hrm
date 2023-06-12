@@ -23,13 +23,47 @@
  * see: https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-query-string-query.html
  */
 
-import { IndicesCreateRequest } from '@elastic/elasticsearch/lib/api/types';
-import { isHighBoostGlobalField, isStringField, languageFields, mappingFields } from './config';
+import {
+  IndicesCreateRequest,
+  MappingKeywordProperty,
+  MappingProperty,
+  MappingTextProperty,
+} from '@elastic/elasticsearch/lib/api/types';
+import {
+  isHighBoostGlobalField,
+  isStringField,
+  resourceIndexDocumentMappings,
+} from './resourceIndexDocumentMappings';
 
-// TODO: when we have more than one index and config type, we should probably make this a little more generic
-// and just import the config to generate it. Leaving here for now.
-export const getCreateIndexParams = ({ index }: { index: string }): IndicesCreateRequest => {
-  const createRequest: IndicesCreateRequest = {
+/**
+ * This function is used to make a request to create the resources search index in ES.
+ * @param index
+ */
+export const getCreateIndexParams = (index: string): IndicesCreateRequest => {
+  const { mappingFields, languageFields } = resourceIndexDocumentMappings;
+
+  const convertMappingFieldsToProperties = () =>
+    Object.fromEntries(
+      Object.entries(mappingFields).map(([key, value]) => {
+        const property: MappingProperty = {
+          type: value.type,
+        };
+
+        if (isStringField(value.type)) {
+          const stringProperty = property as MappingTextProperty | MappingKeywordProperty;
+          stringProperty.copy_to = isHighBoostGlobalField(resourceIndexDocumentMappings, key)
+            ? 'high_boost_global'
+            : 'low_boost_global';
+          if (value.hasLanguageFields) {
+            property.fields = languageFields;
+          }
+        }
+
+        return [key, property];
+      }),
+    );
+
+  return {
     index,
     settings: {
       analysis: {
@@ -67,24 +101,8 @@ export const getCreateIndexParams = ({ index }: { index: string }): IndicesCreat
           type: 'text',
           fields: languageFields,
         },
+        ...convertMappingFieldsToProperties(),
       },
     },
   };
-
-  Object.entries(mappingFields).forEach(([key, value]) => {
-    createRequest!.mappings!.properties![key] = {
-      type: value.type,
-    };
-
-    if (!isStringField(value.type)) return;
-
-    const property: any = createRequest!.mappings!.properties![key];
-    property.copy_to = isHighBoostGlobalField(key) ? 'high_boost_global' : 'low_boost_global';
-
-    if (value.hasLanguageFields) {
-      property.fields = languageFields;
-    }
-  });
-
-  return createRequest;
 };

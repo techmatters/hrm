@@ -15,7 +15,10 @@
     "sequelize-cli": "^6.5.2",
     "sqslite": "^2.1.1",
     "tsx": "^3.12.6",
-    "umzug": "^3.2.1"
+    "umzug": "^3.2.1",
+    "undici": "^5.22.1",
+    "yargs": "^17.7.2",
+    "mockttp": "^3.2.2"
   },
   "scripts": {
     "migrate": "run-s db:create:schema test:service:ci:migrate",
@@ -38,7 +41,8 @@
     "db:undo-last": "sequelize db:migrate:undo",
     "es:create-index:local": "cross-env AWS_REGION=us-east-1 SSM_ENDPOINT=http://localhost:4566 NODE_ENV=local ELASTICSEARCH_CONFIG_node=http://localhost:9200 tsx ./scripts/elasticsearch/create-index.ts",
     "es:delete-index:local": "cross-env AWS_REGION=us-east-1 SSM_ENDPOINT=http://localhost:4566 NODE_ENV=local ELASTICSEARCH_CONFIG_node=http://localhost:9200 tsx ./scripts/elasticsearch/delete-index.ts",
-    "build-scripts": "tsc --project tsconfig.scripts.json"
+    "build-scripts": "tsc --project tsconfig.scripts.json",
+    "reindex": "tsx ./scripts/elasticsearch/reindexResources.ts"
   },
   "repository": {
     "type": "git",
@@ -57,6 +61,7 @@
     "@tech-matters/sns-client": "^1.0.0",
     "@tech-matters/twilio-worker-auth": "^1.0.0",
     "@tech-matters/types": "^1.0.0",
+    "@tech-matters/resources-search-config": "^1.0.0",
     "aws-sdk": "^2.1353.0",
     "date-fns": "^2.29.3",
     "dotenv": "^8.6.0",

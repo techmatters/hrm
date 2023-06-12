@@ -16,15 +16,14 @@
 
 import { IRouter, Router } from 'express';
 import resourceRoutes from './resource/resourceRoutesV0';
-import { CloudSearchConfig } from './config/cloud-search';
 import importRoutes from './import/importRoutesV0';
 import adminSearchRoutes from './admin/adminSearchRoutesV0';
 import { AdminSearchServiceConfiguration } from './admin/adminSearchService';
 
-export const apiV0 = (cloudSearchConfig: CloudSearchConfig) => {
+export const apiV0 = () => {
   const router: IRouter = Router();
 
-  router.use(resourceRoutes(cloudSearchConfig));
+  router.use(resourceRoutes());
   return router;
 };
 

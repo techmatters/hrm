@@ -14,10 +14,14 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { getClient, IndexTypes } from '@tech-matters/elasticsearch-client';
+import { getClient } from '@tech-matters/elasticsearch-client';
+import {
+  RESOURCE_INDEX_TYPE,
+  resourceIndexConfiguration,
+} from '@tech-matters/resources-search-config';
 
 const shortCode = process.argv[2] || 'as';
 
-getClient({ shortCode, indexType: 'resources' as IndexTypes }).then(client =>
-  client.createIndex({}),
+getClient({ shortCode, indexType: RESOURCE_INDEX_TYPE }).then(client =>
+  client.indexClient(resourceIndexConfiguration).createIndex({}),
 );
