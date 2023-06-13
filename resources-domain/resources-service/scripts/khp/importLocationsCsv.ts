@@ -17,7 +17,7 @@ const CANADIAN_PROVINCE_NAME_CODE_MAP = {
   Quebec: 'QC',
   Saskatchewan: 'SK',
   Yukon: 'YT',
-};
+} as const;
 
 const CANADIAN_PROVINCE_CODE_FR_MAP = {
   AB: 'Alberta',
@@ -33,7 +33,7 @@ const CANADIAN_PROVINCE_CODE_FR_MAP = {
   NT: 'Territoires du Nord-Ouest',
   NU: 'Nunavut',
   QC: 'Québec',
-};
+} as const;
 
 const TARGET_FILE_PATH = './reference-data/khp_cities_20230612.sql';
 const main = async () => {
