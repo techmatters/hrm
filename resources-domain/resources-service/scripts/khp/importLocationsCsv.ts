@@ -1,4 +1,5 @@
-import csv from 'csv-parser';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { parse } from 'csv-parse';
 import fs from 'fs';
 import { pgp } from '../../src/connection-pool';
 
@@ -31,56 +32,61 @@ const CANADIAN_PROVINCE_CODE_FR_MAP = {
   YT: 'Yukon',
   NT: 'Territoires du Nord-Ouest',
   NU: 'Nunavut',
+  QC: 'Québec',
 };
 
-const TARGET_FILE_PATH = './resource-json/khp_cities_20230612.sql';
+const TARGET_FILE_PATH = './reference-data/khp_cities_20230612.sql';
+const main = async () => {
+  if (process.argv.length < 3) {
+    console.error('Usage: node importLocationsCsv.js <accountSid>');
+    process.exit(1);
+  }
+  const sqlFile = fs.createWriteStream(TARGET_FILE_PATH);
+  const csvLines = fs
+    .createReadStream('./reference-data/khp_cities_20230612.csv')
+    .pipe(parse({ fromLine: 2 }));
+  sqlFile.write(`--- PROVINCES ---\n\n`);
 
-const sqlFile = fs.createWriteStream(TARGET_FILE_PATH);
-fs.createReadStream('./resource-json/khp_cities_20230612.csv')
-  .pipe(
-    csv({
-      mapValues: ({
-        value: {
-          ['Province / territory, english']: province,
-          ['Geographic name, english']: cityEn,
-          ['Geographic name, french']: cityFr,
-        },
-      }) => {
-        const provinceCode = CANADIAN_PROVINCE_NAME_CODE_MAP[province];
-        return pgp.as.format(
-          `
-    INSERT INTO resources."ResourceReferenceStringAttributeValues" ("accountSid", "list", "id", "value", "language", "info") VALUES ('cities', $<id>, $<value>, "en", $<info>);\n
-    INSERT INTO resources."ResourceReferenceStringAttributeValues" ("accountSid", "list", "id", "value", "language", "info") VALUES ('cities', $<idFr>, $<value>, "fr", $<infoFr>);\n`,
-          {
-            id: `CA-${provinceCode}-${cityEn}-en`,
-            idFr: `CA-${provinceCode}-${cityEn}-fr`,
-            value: `CA/${provinceCode}/${cityEn}`,
-            info: { name: cityEn },
-            infoFr: { name: cityFr },
-          },
-        );
-      },
-    }),
-  )
-  .pipe(sqlFile)
-  .on('end', () => {});
-fs.appendFileSync(
-  TARGET_FILE_PATH,
-  `--- PROVINCES ---\n\n
-  ${Object.entries(CANADIAN_PROVINCE_NAME_CODE_MAP)
-    .map(([name, code]) => {
-      return pgp.as.format(
+  Object.entries(CANADIAN_PROVINCE_NAME_CODE_MAP).forEach(([name, code]) => {
+    sqlFile.write(
+      pgp.as.format(
         `
-    INSERT INTO resources."ResourceReferenceStringAttributeValues" ("accountSid", "list", "id", "value", "language", "info") VALUES ('provinces', $<id>, $<value>, "en", $<info>);\n
-    INSERT INTO resources."ResourceReferenceStringAttributeValues" ("accountSid", "list", "id", "value", "language", "info") VALUES ('provinces', $<idFr>, $<value>, "fr", $<infoFr>);\n`,
+INSERT INTO resources."ResourceReferenceStringAttributeValues" ("accountSid", "list", "id", "value", "language", "info") VALUES ($<accountSid>, 'provinces', $<id>, $<value>, 'en', $<info>);
+INSERT INTO resources."ResourceReferenceStringAttributeValues" ("accountSid", "list", "id", "value", "language", "info") VALUES ($<accountSid>, 'provinces', $<idFr>, $<value>, 'fr', $<infoFr>);`,
         {
+          accountSid: process.argv[2],
           id: `CA-${code}-en`,
           idFr: `CA-${code}-fr`,
           value: `CA/${code}`,
           info: { name },
           infoFr: { name: CANADIAN_PROVINCE_CODE_FR_MAP[code] },
         },
-      );
-    })
-    .join('\n')}`,
-);
+      ),
+    );
+  });
+  sqlFile.write('\n\n--- CITIES ---\n\n');
+  for await (const line of csvLines) {
+    const [cityEn, cityFr, , , province] = line;
+    const provinceCode = CANADIAN_PROVINCE_NAME_CODE_MAP[province];
+    const sqlStatement = pgp.as.format(
+      `
+INSERT INTO resources."ResourceReferenceStringAttributeValues" ("accountSid", "list", "id", "value", "language", "info") VALUES ($<accountSid>, 'cities', $<id>, $<value>, 'en', $<info>);
+INSERT INTO resources."ResourceReferenceStringAttributeValues" ("accountSid", "list", "id", "value", "language", "info") VALUES ($<accountSid>, 'cities', $<idFr>, $<value>, 'fr', $<infoFr>);`,
+      {
+        accountSid: process.argv[2],
+        id: `CA-${provinceCode}-${cityEn}-en`,
+        idFr: `CA-${provinceCode}-${cityEn}-fr`,
+        value: `CA/${provinceCode}/${cityEn}`,
+        info: { name: cityEn },
+        infoFr: { name: cityFr },
+      },
+    );
+    sqlFile.write(sqlStatement);
+  }
+  sqlFile.end();
+};
+
+main().catch(err => {
+  console.error(err);
+  process.exit(1);
+});
