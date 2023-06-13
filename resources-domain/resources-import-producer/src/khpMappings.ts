@@ -310,14 +310,10 @@ export const KHP_MAPPING_NODE: MappingNode = {
       '{howToAccessSupportIndex}': {
         children: {
           objectId: { children: {} },
-          '{language}': referenceAttributeMapping(
+          '{language}': translatableAttributeMapping(
             'howToAccessSupport/{howToAccessSupportIndex}',
-            'khp-how-to-access-support',
             {
-              // W use objectId or the name for this referrable resources?
-              value: ctx => ctx.parentValue.en,
               language: ctx => ctx.captures.language,
-              // value: ctx => ctx.currentValue.en || ctx.currentValue.fr,
             },
           ),
         },
@@ -373,12 +369,13 @@ export const KHP_MAPPING_NODE: MappingNode = {
       return ['CA', primaryLocationProvince, ctx.currentValue].join('/');
     },
   }),
-  primaryLocationCounty: referenceAttributeMapping('primaryLocationCounty', 'counties', {
+  primaryLocationCounty: translatableAttributeMapping('primaryLocationCounty', {
     value: ctx => {
       const { primaryLocationProvince } = ctx.rootResource;
       // TODO: No top level country, assumes always CA?
       return ['CA', primaryLocationProvince, ctx.currentValue].join('/');
     },
+    info: ctx => ({ name: ctx.currentValue }),
   }),
   primaryLocationProvince: referenceAttributeMapping('primaryLocationProvince', 'provinces', {
     value: ctx => {
@@ -396,8 +393,20 @@ export const KHP_MAPPING_NODE: MappingNode = {
       '{coverageIndex}': {
         children: {
           '{language}': translatableAttributeMapping('coverage/{coverageIndex}', {
-            value: ctx => ctx.currentValue,
+            value: ctx => ctx.parentValue._id,
             language: ctx => ctx.captures.language,
+            info: ctx => {
+              try {
+                return {
+                  siteId: ctx.parentValue.siteId,
+                  ...JSON.parse(ctx.currentValue),
+                };
+              } catch (e) {
+                return {
+                  siteId: ctx.parentValue.siteId,
+                };
+              }
+            },
           }),
         },
       },
@@ -405,15 +414,14 @@ export const KHP_MAPPING_NODE: MappingNode = {
   },
   targetPopulations: {
     children: {
-      '{targetPopulationIndex}': referenceAttributeMapping(
-        'targetPopulation/{targetPopulationIndex}',
-        'khp-target-populations',
-        {
-          // We use objectId or the name for this referrable resources?
-          value: ctx => ctx.currentValue.objectId,
-          // value: ctx => ctx.currentValue.en || ctx.currentValue.fr,
+      '{targetPopulationIndex}': {
+        children: {
+          '{language}': translatableAttributeMapping('targetPopulation/{targetPopulationIndex}', {
+            language: ctx => ctx.captures.language,
+          }),
+          objectId: {},
         },
-      ),
+      },
     },
   },
   eligibilityMinAge: attributeMapping('numberAttributes', 'eligibilityMinAge', {
@@ -538,11 +546,14 @@ export const KHP_MAPPING_NODE: MappingNode = {
       },
     },
   },
-  accessibility: referenceAttributeMapping('accessibility', 'khp-accessibility', {
-    // We use objectId or the name for this referrable resources?
-    value: ctx => ctx.currentValue.objectId,
-    // value: ctx => ctx.currentValue.en || ctx.currentValue.fr,
-  }),
+  accessibility: {
+    children: {
+      objectId: { children: {} },
+      '{language}': translatableAttributeMapping('accessibility', {
+        language: ctx => ctx.captures.language,
+      }),
+    },
+  },
   volunteer: {
     children: {
       '{language}': translatableAttributeMapping('volunteer', {
