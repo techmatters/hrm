@@ -82,8 +82,9 @@ INSERT INTO resources."ResourceReferenceStringAttributeValues" ("accountSid", "l
   });
   sqlFile.write('\n\n--- CITIES ---\n\n');
   for await (const line of csvLines) {
-    const [cityEn, cityFr, , , province] = line;
-    const provinceCode = CANADIAN_PROVINCE_NAME_CODE_MAP[province];
+    const [cityEn, cityFr, , , province] = line as string[];
+    const provinceCode =
+      CANADIAN_PROVINCE_NAME_CODE_MAP[province as keyof typeof CANADIAN_PROVINCE_NAME_CODE_MAP];
     const sqlStatement = pgp.as.format(
       `
 INSERT INTO resources."ResourceReferenceStringAttributeValues" ("accountSid", "list", "id", "value", "language", "info") VALUES ($<accountSid>, 'cities', $<id>, $<value>, 'en', $<info>);

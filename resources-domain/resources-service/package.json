@@ -10,7 +10,6 @@
     "@types/http-errors": "^2.0.1",
     "@types/node": "^18.15.11",
     "csv-parse": "^5.4.0",
-    "csv-parser": "^3.0.0",
     "delay": "^5.0.0",
     "jest-each": "^29.2.1",
     "mockttp": "^3.2.2",
