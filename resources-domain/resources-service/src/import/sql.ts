@@ -33,7 +33,7 @@ export const generateUpsertSqlFromImportResource = (
     ['id', 'name', 'accountSid', 'created', 'lastUpdated'],
     { schema: 'resources', table: 'Resources' },
   )} 
-  ON CONFLICT ON CONSTRAINT "Resources_pkey" 
+  ON CONFLICT ("id", "accountSid")
   DO UPDATE SET "name" = EXCLUDED."name", "lastUpdated" = EXCLUDED."lastUpdated"`);
   const nonTranslatableTables = [
     { property: 'numberAttributes', table: 'ResourceNumberAttributes' },
