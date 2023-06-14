@@ -124,14 +124,14 @@ describe('search', () => {
         description: 'should use a default limit and offset 0 when neither specified',
         filters: { helplines: ['fakeHelpline'] },
         expectedDbParameters: { limit: expect.any(Number), offset: 0 },
-        expectedInSql: ['"id" DESC', 'fakeHelpline'],
+        expectedInSql: ['"id" DESC'],
       },
       {
         description: 'should use a specified limit and offset 0 when only limit is specified',
         filters: { helplines: ['fakeHelpline'] },
         listConfig: { limit: 45 },
         expectedDbParameters: { limit: 45, offset: 0 },
-        expectedInSql: ['"id" DESC', 'fakeHelpline'],
+        expectedInSql: ['"id" DESC'],
       },
       {
         description:
@@ -139,21 +139,21 @@ describe('search', () => {
         filters: { helplines: ['fakeHelpline'] },
         listConfig: { offset: 30 },
         expectedDbParameters: { limit: expect.any(Number), offset: 30 },
-        expectedInSql: ['"id" DESC', 'fakeHelpline'],
+        expectedInSql: ['"id" DESC'],
       },
       {
         description: 'should use a specified limit and offset when both are present',
         filters: { helplines: ['fakeHelpline'] },
         listConfig: { limit: 45, offset: 30 },
         expectedDbParameters: { limit: 45, offset: 30 },
-        expectedInSql: ['"id" DESC', 'fakeHelpline'],
+        expectedInSql: ['"id" DESC'],
       },
       {
         description: 'should use a default limit and/or offset when either are NaN',
         filters: { helplines: ['fakeHelpline'] },
         listConfig: { limit: NaN, offset: NaN },
         expectedDbParameters: { limit: expect.any(Number), offset: 0 },
-        expectedInSql: ['"id" DESC', 'fakeHelpline'],
+        expectedInSql: ['"id" DESC'],
       },
       {
         description: "should generate SQL without helpline filter if one isn't set",
@@ -331,19 +331,18 @@ describe('update', () => {
 
   test('runs update SQL against cases table with provided ID.', async () => {
     const caseUpdateResult = createMockCaseRecord(caseUpdate);
-    const multiSpy = jest.spyOn(tx, 'multi').mockResolvedValue([
-      [{ ...createMockCaseRecord({}), id: caseId }],
-      [2], //Simulate outputs from caseSection queries
-      [{ ...caseUpdateResult, id: caseId }],
-    ]);
-
+    const oneOrNoneSpy = jest
+      .spyOn(tx, 'oneOrNone')
+      .mockResolvedValue({ ...caseUpdateResult, id: caseId });
+    const noneSpy = jest.spyOn(tx, 'none');
     const result = await caseDb.update(caseId, caseUpdate, accountSid);
-    const updateSql = getSqlStatement(multiSpy);
-    expect(updateSql).toContain('Cases');
-    expect(updateSql).toContain('Contacts');
-    expect(updateSql).toContain('CSAMReports');
+    const updateSql = getSqlStatement(noneSpy, 1);
+    const selectSql = getSqlStatement(oneOrNoneSpy);
+    expect(selectSql).toContain('Cases');
+    expect(selectSql).toContain('Contacts');
+    expect(selectSql).toContain('CSAMReports');
     expectValuesInSql(updateSql, { info: caseUpdate.info, status: caseUpdate.status });
-    expect(multiSpy).toHaveBeenCalledWith(
+    expect(oneOrNoneSpy).toHaveBeenCalledWith(
       expect.any(String),
       expect.objectContaining({ accountSid, caseId }),
     );

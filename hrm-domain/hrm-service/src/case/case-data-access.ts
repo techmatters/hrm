@@ -148,6 +148,7 @@ export const search = async (
   const { count, rows } = await db.task(async connection => {
     const statement = selectCaseSearch(filters, orderClause);
     const queryValues = {
+      ...filters,
       accountSid,
       firstName: searchCriteria.firstName ? `%${searchCriteria.firstName}%` : null,
       lastName: searchCriteria.lastName ? `%${searchCriteria.lastName}%` : null,
@@ -175,14 +176,15 @@ export const update = async (
   caseRecordUpdates: Partial<NewCaseRecord>,
   accountSid: string,
 ): Promise<CaseRecord> => {
-  const result = await db.tx(async transaction => {
-    const caseUpdateSqlStatements = [selectSingleCaseByIdSql('Cases')];
+  return db.tx(async transaction => {
+    const statementValues = {
+      accountSid,
+      caseId: id,
+    };
     if (caseRecordUpdates.info) {
       const allSections: CaseSectionRecord[] = caseRecordUpdates.caseSections ?? [];
       if (allSections.length) {
-        caseUpdateSqlStatements.push(
-          caseSectionUpsertSql(allSections.map(s => ({ ...s, accountSid }))),
-        );
+        await transaction.none(caseSectionUpsertSql(allSections.map(s => ({ ...s, accountSid }))));
       }
       // Map case sections into a list of ids grouped by category, which allows a more concise DELETE SQL statement to be generated
       const caseSectionIdsByType = allSections.reduce((idsBySectionType, caseSection) => {
@@ -190,23 +192,12 @@ export const update = async (
         idsBySectionType[caseSection.sectionType].push(caseSection.sectionId);
         return idsBySectionType;
       }, <Record<string, string[]>>{});
-      caseUpdateSqlStatements.push(deleteMissingCaseSectionsSql(caseSectionIdsByType));
+      const { sql, values } = deleteMissingCaseSectionsSql(caseSectionIdsByType);
+      Object.assign(statementValues, values);
+      await transaction.none(sql, statementValues);
     }
-    caseUpdateSqlStatements.push(updateByIdSql(caseRecordUpdates));
-    caseUpdateSqlStatements.push(selectSingleCaseByIdSql('Cases'));
+    await transaction.none(updateByIdSql(caseRecordUpdates, accountSid, id), statementValues);
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const [original, ...restOfOutput] = await transaction.multi<CaseRecord>(
-      caseUpdateSqlStatements.join(`;
-    `),
-      {
-        accountSid,
-        caseId: id,
-      },
-    );
-    const updated = restOfOutput.pop();
-
-    return updated;
+    return transaction.oneOrNone(selectSingleCaseByIdSql('Cases'), statementValues);
   });
-  return result.length ? result[0] : void 0;
 };
