@@ -79,8 +79,8 @@ const KHP_MAPPING_NODE_SITES: { children: MappingNode } = {
           'stringAttributes',
           siteKey('agencyReferenceNumber'),
         ),
-        nameEN: translatableAttributeMapping('name', { language: 'en' }),
-        nameFR: translatableAttributeMapping('name', { language: 'fr' }),
+        nameEN: translatableAttributeMapping(siteKey('name'), { language: 'en' }),
+        nameFR: translatableAttributeMapping(siteKey('name'), { language: 'fr' }),
         nameDetails: {
           children: {
             '{language}': translatableAttributeMapping(siteKey('nameDetails'), {
