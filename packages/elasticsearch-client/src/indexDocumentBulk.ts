@@ -42,6 +42,8 @@ export const indexDocumentBulk = async <T>({
     indexConfig.convertToIndexDocument(document),
   ]);
 
+  console.log('Bulk index resources body', body);
+
   return client.bulk({
     body,
   });
