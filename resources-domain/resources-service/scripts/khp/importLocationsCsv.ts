@@ -52,12 +52,16 @@ const CANADIAN_PROVINCE_CODE_FR_MAP = {
 } as const;
 
 const TARGET_FILE_PATH = './reference-data/khp_cities_20230612.sql';
+const TARGET_JSON_CITIES_FILE_PATH = './reference-data/khp_cities_20230612.json';
+const TARGET_JSON_PROVINCES_FILE_PATH = './reference-data/khp_provinces_20230612.json';
 const main = async () => {
   if (process.argv.length < 3) {
     console.error('Usage: node importLocationsCsv.js <accountSid>');
     process.exit(1);
   }
   const sqlFile = fs.createWriteStream(TARGET_FILE_PATH);
+  const provincesJson = [];
+  const citiesJson = [];
   const csvLines = fs
     .createReadStream('./reference-data/khp_cities_20230612.csv')
     .pipe(parse({ fromLine: 2 }));
@@ -79,6 +83,10 @@ INSERT INTO resources."ResourceReferenceStringAttributeValues" ("accountSid", "l
         },
       ),
     );
+    provincesJson.push({
+      label: name,
+      value: `CA/${code}`,
+    });
   });
   sqlFile.write('\n\n--- CITIES ---\n\n');
   for await (const line of csvLines) {
@@ -99,8 +107,14 @@ INSERT INTO resources."ResourceReferenceStringAttributeValues" ("accountSid", "l
       },
     );
     sqlFile.write(sqlStatement);
+    citiesJson.push({
+      label: cityEn,
+      value: `CA/${provinceCode}/${cityEn}`,
+    });
   }
   sqlFile.end();
+  fs.writeFileSync(TARGET_JSON_CITIES_FILE_PATH, JSON.stringify(citiesJson, null, 2));
+  fs.writeFileSync(TARGET_JSON_PROVINCES_FILE_PATH, JSON.stringify(provincesJson, null, 2));
 };
 
 main().catch(err => {
