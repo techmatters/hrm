@@ -100,14 +100,14 @@ export const resourceIndexDocumentMappings: ResourceIndexDocumentMappings = {
     province: {
       type: 'keyword',
       isArrayField: true,
-      attributeKeyPattern: /(.*)\/([pP])rovince$/,
+      attributeKeyPattern: /(.*)([pP])rovince$/,
       indexValueGenerator: ({ value, info }: ReferrableResourceAttribute<string>) =>
         `${info?.name ?? ''} ${value}`,
     },
     city: {
       type: 'keyword',
       isArrayField: true,
-      attributeKeyPattern: /(.*)\/[cC]ity$/,
+      attributeKeyPattern: /(.*)[cC]ity$/,
       indexValueGenerator: ({ value, info }: ReferrableResourceAttribute<string>) =>
         `${info?.name ?? ''} ${value}`,
     },
