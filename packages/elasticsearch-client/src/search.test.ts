@@ -200,7 +200,7 @@ describe('Search', () => {
                 {
                   simple_query_string: {
                     fields: ['title^2'],
-                    query: '"Toronto" "Vancouver"',
+                    query: '("Toronto" | "Vancouver")',
                     default_operator: 'AND',
                   },
                 },
