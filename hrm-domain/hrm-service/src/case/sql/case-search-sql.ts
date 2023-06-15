@@ -16,12 +16,7 @@
 
 import { pgp } from '../../connection-pool';
 import { SELECT_CASE_SECTIONS } from './case-sections-sql';
-import {
-  CaseListFilters,
-  DateExistsCondition,
-  DateFilter,
-  CategoryFilter,
-} from '../case-data-access';
+import { CaseListFilters, DateExistsCondition, DateFilter } from '../case-data-access';
 import { leftJoinCsamReportsOnFK } from '../../csam-report/sql/csam-report-get-sql';
 import { leftJoinReferralsOnFK } from '../../referral/sql/referral-get-sql';
 
@@ -88,6 +83,7 @@ const enum FilterableDateField {
 
 const dateFilterCondition = (
   field: FilterableDateField,
+  filterName: string,
   filter: DateFilter,
 ): string | undefined => {
   let existsCondition: string | undefined;
@@ -97,13 +93,11 @@ const dateFilterCondition = (
     existsCondition = `(${field} IS NULL)`;
   }
   if (filter.to || filter.from) {
-    return pgp.as.format(
-      `(($<from> IS NULL OR ${field} >= $<from>::TIMESTAMP WITH TIME ZONE) 
-            AND ($<to> IS NULL OR ${field} <= $<to>::TIMESTAMP WITH TIME ZONE)
-            ${existsCondition ? ` AND ${existsCondition}` : ''})`,
-      filter,
-      { def: null },
-    );
+    filter.to = filter.to ?? null;
+    filter.from = filter.from ?? null;
+    return `(($<${filterName}.from> IS NULL OR ${field} >= $<${filterName}.from>::TIMESTAMP WITH TIME ZONE) 
+            AND ($<${filterName}.to> IS NULL OR ${field} <= $<${filterName}.to>::TIMESTAMP WITH TIME ZONE)
+            ${existsCondition ? ` AND ${existsCondition}` : ''})`;
   }
   return existsCondition;
 };
@@ -120,10 +114,6 @@ INNER JOIN jsonb_to_recordset($<categories:json>) AS requiredCategories(category
 ON requiredCategories.category = availableCategories.category AND requiredCategories.subcategory = availableCategories.subcategory
 )`;
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const bulkCategoriesCondition = (categories: CategoryFilter[]): string =>
-  pgp.as.format(CATEGORIES_FILTER_SQL, { categories });
-
 const filterSql = ({
   counsellors,
   statuses,
@@ -137,30 +127,26 @@ const filterSql = ({
 }: CaseListFilters) => {
   const filterSqlClauses: string[] = [];
   if (helplines && helplines.length) {
-    filterSqlClauses.push(pgp.as.format(`cases."helpline" IN ($<helplines:csv>)`, { helplines }));
+    filterSqlClauses.push(`cases."helpline" IN ($<helplines:csv>)`);
   }
   if (counsellors && counsellors.length) {
-    filterSqlClauses.push(
-      pgp.as.format(`cases."twilioWorkerId" IN ($<counsellors:csv>)`, { counsellors }),
-    );
+    filterSqlClauses.push(`cases."twilioWorkerId" IN ($<counsellors:csv>)`);
   }
   if (excludedStatuses && excludedStatuses.length) {
-    filterSqlClauses.push(
-      pgp.as.format(`cases."status" NOT IN ($<excludedStatuses:csv>)`, { excludedStatuses }),
-    );
+    filterSqlClauses.push(`cases."status" NOT IN ($<excludedStatuses:csv>)`);
   }
   if (statuses && statuses.length) {
-    filterSqlClauses.push(pgp.as.format(`cases."status" IN ($<statuses:csv>)`, { statuses }));
+    filterSqlClauses.push(`cases."status" IN ($<statuses:csv>)`);
   }
   filterSqlClauses.push(
     ...[
-      dateFilterCondition(FilterableDateField.CREATED_AT, createdAt),
-      dateFilterCondition(FilterableDateField.UPDATED_AT, updatedAt),
-      dateFilterCondition(FilterableDateField.FOLLOW_UP_DATE, followUpDate),
+      dateFilterCondition(FilterableDateField.CREATED_AT, 'createdAt', createdAt),
+      dateFilterCondition(FilterableDateField.UPDATED_AT, 'updatedAt', updatedAt),
+      dateFilterCondition(FilterableDateField.FOLLOW_UP_DATE, 'followUpDate', followUpDate),
     ].filter(sql => sql),
   );
   if (categories && categories.length) {
-    filterSqlClauses.push(bulkCategoriesCondition(categories));
+    filterSqlClauses.push(CATEGORIES_FILTER_SQL);
   }
   if (!includeOrphans) {
     filterSqlClauses.push(`jsonb_array_length(contacts."connectedContacts") > 0`);
