@@ -154,10 +154,10 @@ const generateFilters = (
       filtersAsSearchTerms.length === 0
         ? undefined
         : {
-            multi_match: {
-              query: filtersAsSearchTerms.join(' '),
+            simple_query_string: {
+              query: filtersAsSearchTerms.map(t => `"${t.replace('"', '\\"')}"`).join(' '),
               fields: getQuerySearchFields(searchConfiguration, 1), // boost up the terms specified as filters a little
-              type: 'cross_fields',
+              default_operator: 'and',
             },
           },
   };
