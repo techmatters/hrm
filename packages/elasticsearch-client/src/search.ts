@@ -157,7 +157,7 @@ const generateFilters = (
             simple_query_string: {
               query: filtersAsSearchTerms.map(t => `"${t.replace('"', '\\"')}"`).join(' '),
               fields: getQuerySearchFields(searchConfiguration, 1), // boost up the terms specified as filters a little
-              default_operator: 'and',
+              default_operator: 'AND',
             },
           },
   };
