@@ -31,12 +31,12 @@ export const resourceSearchConfiguration: SearchConfiguration = {
     minEligibleAge: {
       type: 'range',
       targetField: 'eligibilityMaxAge',
-      operator: 'lte',
+      operator: 'gte',
     },
     maxEligibleAge: {
       type: 'range',
       targetField: 'eligibilityMinAge',
-      operator: 'gte',
+      operator: 'lte',
     },
     interpretationTranslationServicesAvailable: {
       type: 'term',

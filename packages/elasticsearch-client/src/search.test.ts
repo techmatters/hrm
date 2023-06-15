@@ -103,10 +103,10 @@ describe('Search', () => {
                   },
                 },
                 {
-                  multi_match: {
+                  simple_query_string: {
                     fields: ['title^2'],
-                    query: 'Toronto',
-                    type: 'cross_fields',
+                    query: '"Toronto"',
+                    default_operator: 'AND',
                   },
                 },
               ],
@@ -148,10 +148,10 @@ describe('Search', () => {
                   },
                 },
                 {
-                  multi_match: {
+                  simple_query_string: {
                     fields: ['title^2'],
-                    query: 'Toronto',
-                    type: 'cross_fields',
+                    query: '"Toronto"',
+                    default_operator: 'AND',
                   },
                 },
               ],
@@ -198,10 +198,10 @@ describe('Search', () => {
                   },
                 },
                 {
-                  multi_match: {
+                  simple_query_string: {
                     fields: ['title^2'],
-                    query: 'Toronto Vancouver',
-                    type: 'cross_fields',
+                    query: '("Toronto" | "Vancouver")',
+                    default_operator: 'AND',
                   },
                 },
               ],

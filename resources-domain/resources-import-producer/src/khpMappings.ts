@@ -79,8 +79,8 @@ const KHP_MAPPING_NODE_SITES: { children: MappingNode } = {
           'stringAttributes',
           siteKey('agencyReferenceNumber'),
         ),
-        nameEN: translatableAttributeMapping('name', { language: 'en' }),
-        nameFR: translatableAttributeMapping('name', { language: 'fr' }),
+        nameEN: translatableAttributeMapping(siteKey('name'), { language: 'en' }),
+        nameFR: translatableAttributeMapping(siteKey('name'), { language: 'fr' }),
         nameDetails: {
           children: {
             '{language}': translatableAttributeMapping(siteKey('nameDetails'), {
@@ -93,22 +93,22 @@ const KHP_MAPPING_NODE_SITES: { children: MappingNode } = {
         isActive: attributeMapping('booleanAttributes', siteKey('isActive')),
         location: {
           children: {
-            address1: attributeMapping('stringAttributes', siteKey('location/address1')),
-            address2: attributeMapping('stringAttributes', siteKey('location/address2')),
+            address1: translatableAttributeMapping(siteKey('location/address1')),
+            address2: translatableAttributeMapping(siteKey('location/address2')),
             city: referenceAttributeMapping(siteKey('location/city'), 'cities', {
-              value: ctx => ctx.currentValue,
+              value: ctx => `CA/${ctx.parentValue.province}/${ctx.currentValue}`,
             }),
-            county: referenceAttributeMapping(siteKey('location/county'), 'counties', {
+            county: translatableAttributeMapping(siteKey('location/county'), {
               value: ctx => ctx.currentValue,
             }),
             province: referenceAttributeMapping(siteKey('location/province'), 'provinces', {
+              value: ctx => `CA/${ctx.currentValue}`,
+            }),
+            country: translatableAttributeMapping(siteKey('location/country'), {
               value: ctx => ctx.currentValue,
             }),
-            country: referenceAttributeMapping(siteKey('location/country'), 'countries', {
-              value: ctx => ctx.currentValue,
-            }),
-            postalCode: attributeMapping('stringAttributes', siteKey('location/postalCode')),
-            description: attributeMapping('stringAttributes', siteKey('location/description')),
+            postalCode: translatableAttributeMapping(siteKey('location/postalCode')),
+            description: translatableAttributeMapping(siteKey('location/description')),
             longitude: attributeMapping('numberAttributes', 'location/longitude'),
             latitude: attributeMapping('numberAttributes', 'location/latitude'),
           },
@@ -369,14 +369,7 @@ export const KHP_MAPPING_NODE: MappingNode = {
       return ['CA', primaryLocationProvince, ctx.currentValue].join('/');
     },
   }),
-  primaryLocationCounty: translatableAttributeMapping('primaryLocationCounty', {
-    value: ctx => {
-      const { primaryLocationProvince } = ctx.rootResource;
-      // TODO: No top level country, assumes always CA?
-      return ['CA', primaryLocationProvince, ctx.currentValue].join('/');
-    },
-    info: ctx => ({ name: ctx.currentValue }),
-  }),
+  primaryLocationCounty: attributeMapping('stringAttributes', 'primaryLocationCounty'),
   primaryLocationProvince: referenceAttributeMapping('primaryLocationProvince', 'provinces', {
     value: ctx => {
       // TODO: No top level country, assumes always CA?

@@ -80,6 +80,8 @@ export const getTotalValue = (total: number | SearchTotalHits | undefined): numb
 
 type FilterValue = boolean | number | string | Date | string[];
 
+const toPhrase = (value: string) => `"${value.replace(/"/g, '\\"')}"`;
+
 const generateTermFilter = (field: string, filterValue: FilterValue) => {
   if (Array.isArray(filterValue)) {
     return {
@@ -145,7 +147,9 @@ const generateFilters = (
       filterClauses.push(generateTermFilter(targetField, value));
     } else {
       // Otherwise add to the bucket of high priority additional search terms
-      filtersAsSearchTerms.push(...(Array.isArray(value) ? value : [value]));
+      const terms = Array.isArray(value) ? value : [value];
+      const clause = terms.map(toPhrase).join(' | ');
+      filtersAsSearchTerms.push(terms.length > 1 ? `(${clause})` : clause);
     }
   });
   return {
@@ -154,10 +158,10 @@ const generateFilters = (
       filtersAsSearchTerms.length === 0
         ? undefined
         : {
-            multi_match: {
+            simple_query_string: {
               query: filtersAsSearchTerms.join(' '),
               fields: getQuerySearchFields(searchConfiguration, 1), // boost up the terms specified as filters a little
-              type: 'cross_fields',
+              default_operator: 'AND',
             },
           },
   };

@@ -45,18 +45,32 @@ export const caseSectionUpsertSql = (sections: CaseSectionRecord[]): string =>
   ON CONFLICT ON CONSTRAINT "CaseSections_pkey" 
   DO UPDATE SET "createdBy" = EXCLUDED."createdBy", "createdAt" = EXCLUDED."createdAt", "updatedBy" = EXCLUDED."updatedBy", "updatedAt" = EXCLUDED."updatedAt", "sectionTypeSpecificData" = EXCLUDED."sectionTypeSpecificData"`;
 
-export const deleteMissingCaseSectionsSql = (idsByType: Record<string, string[]>): string => {
+// eslint-disable-next-line prettier/prettier
+export const deleteMissingCaseSectionsSql = (idsByType: Record<string, string[]>): { sql: string, values: Record<string, { ids: string[], type: string }> } => {
   const idsByTypeEntries = Object.entries(idsByType).filter(([, ids]) => ids.length);
+  // eslint-disable-next-line prettier/prettier
+  const deleteValues: Record<string, { ids: string[], type: string }> = {};
+  const whereClauses: string[] = [];
   if (idsByTypeEntries.length) {
-    const sectionTypeWhereExpression = pgp.as.format(
-      idsByTypeEntries
-        .map(([type, ids]) =>
-          pgp.as.format(`"sectionType" = $<type> AND "sectionId" IN ($<ids:csv>)`, { type, ids }),
-        )
-        .join(' OR '),
-    );
-    return `DELETE FROM "CaseSections" WHERE "caseId" = $<caseId> AND "accountSid" = $<accountSid> AND NOT (${sectionTypeWhereExpression})`;
+    idsByTypeEntries.forEach(([type, ids], index) => {
+      whereClauses.push(
+        `"sectionType" = $<section_${index}.type> AND "sectionId" IN ($<section_${index}.ids:csv>)`,
+      );
+      deleteValues[`section_${index}`] = {
+        ids,
+        type,
+      };
+    });
+    return {
+      sql: `DELETE FROM "CaseSections" WHERE "caseId" = $<caseId> AND "accountSid" = $<accountSid> AND NOT (${whereClauses.join(
+        ' OR ',
+      )})`,
+      values: deleteValues,
+    };
   } else {
-    return `DELETE FROM "CaseSections" WHERE "caseId" = $<caseId> AND "accountSid" = $<accountSid>`;
+    return {
+      sql: `DELETE FROM "CaseSections" WHERE "caseId" = $<caseId> AND "accountSid" = $<accountSid>`,
+      values: {},
+    };
   }
 };
