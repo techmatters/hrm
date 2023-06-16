@@ -28,15 +28,15 @@ export const resourceSearchConfiguration: SearchConfiguration = {
     '*.*': 1,
   },
   filterMappings: {
-    eligibilityMinAge: {
+    minEligibleAge: {
       type: 'range',
       targetField: 'eligibilityMaxAge',
-      operator: 'lte',
+      operator: 'gte',
     },
-    eligibilityMaxAge: {
+    maxEligibleAge: {
       type: 'range',
       targetField: 'eligibilityMinAge',
-      operator: 'gte',
+      operator: 'lte',
     },
     interpretationTranslationServicesAvailable: {
       type: 'term',

@@ -79,8 +79,8 @@ const KHP_MAPPING_NODE_SITES: { children: MappingNode } = {
           'stringAttributes',
           siteKey('agencyReferenceNumber'),
         ),
-        nameEN: translatableAttributeMapping('name', { language: 'en' }),
-        nameFR: translatableAttributeMapping('name', { language: 'fr' }),
+        nameEN: translatableAttributeMapping(siteKey('name'), { language: 'en' }),
+        nameFR: translatableAttributeMapping(siteKey('name'), { language: 'fr' }),
         nameDetails: {
           children: {
             '{language}': translatableAttributeMapping(siteKey('nameDetails'), {
@@ -91,25 +91,24 @@ const KHP_MAPPING_NODE_SITES: { children: MappingNode } = {
           },
         },
         isActive: attributeMapping('booleanAttributes', siteKey('isActive')),
-        isLocationPrivate: attributeMapping('booleanAttributes', siteKey('isLocationPrivate')),
         location: {
           children: {
-            address1: attributeMapping('stringAttributes', siteKey('location/address1')),
-            address2: attributeMapping('stringAttributes', siteKey('location/address2')),
+            address1: translatableAttributeMapping(siteKey('location/address1')),
+            address2: translatableAttributeMapping(siteKey('location/address2')),
             city: referenceAttributeMapping(siteKey('location/city'), 'cities', {
-              value: ctx => ctx.currentValue,
+              value: ctx => `CA/${ctx.parentValue.province}/${ctx.currentValue}`,
             }),
-            county: referenceAttributeMapping(siteKey('location/county'), 'counties', {
+            county: translatableAttributeMapping(siteKey('location/county'), {
               value: ctx => ctx.currentValue,
             }),
             province: referenceAttributeMapping(siteKey('location/province'), 'provinces', {
+              value: ctx => `CA/${ctx.currentValue}`,
+            }),
+            country: translatableAttributeMapping(siteKey('location/country'), {
               value: ctx => ctx.currentValue,
             }),
-            country: referenceAttributeMapping(siteKey('location/country'), 'countries', {
-              value: ctx => ctx.currentValue,
-            }),
-            postalCode: attributeMapping('stringAttributes', siteKey('location/postalCode')),
-            description: attributeMapping('stringAttributes', siteKey('location/description')),
+            postalCode: translatableAttributeMapping(siteKey('location/postalCode')),
+            description: translatableAttributeMapping(siteKey('location/description')),
             longitude: attributeMapping('numberAttributes', 'location/longitude'),
             latitude: attributeMapping('numberAttributes', 'location/latitude'),
           },
@@ -177,6 +176,7 @@ const KHP_MAPPING_NODE_SITES: { children: MappingNode } = {
         retiredAt: attributeMapping('dateTimeAttributes', siteKey('retiredAt')),
         createdAt: attributeMapping('dateTimeAttributes', siteKey('createdAt')),
         updatedAt: attributeMapping('dateTimeAttributes', siteKey('updatedAt')),
+        objectId: attributeMapping('stringAttributes', siteKey('siteId')),
       },
     },
   },
@@ -310,14 +310,10 @@ export const KHP_MAPPING_NODE: MappingNode = {
       '{howToAccessSupportIndex}': {
         children: {
           objectId: { children: {} },
-          '{language}': referenceAttributeMapping(
+          '{language}': translatableAttributeMapping(
             'howToAccessSupport/{howToAccessSupportIndex}',
-            'khp-how-to-access-support',
             {
-              // W use objectId or the name for this referrable resources?
-              value: ctx => ctx.parentValue.en,
               language: ctx => ctx.captures.language,
-              // value: ctx => ctx.currentValue.en || ctx.currentValue.fr,
             },
           ),
         },
@@ -349,15 +345,6 @@ export const KHP_MAPPING_NODE: MappingNode = {
           info: ctx => ctx.currentValue,
         },
       ),
-    },
-  },
-  agency: {
-    children: {
-      '{language}': translatableAttributeMapping('agency', {
-        value: ctx => ctx.currentValue.alternate,
-        info: ctx => ctx.currentValue,
-        language: ctx => ctx.captures.language,
-      }),
     },
   },
   lastVerifiedOn: attributeMapping('stringAttributes', 'lastVerifiedOn', {
@@ -399,8 +386,20 @@ export const KHP_MAPPING_NODE: MappingNode = {
       '{coverageIndex}': {
         children: {
           '{language}': translatableAttributeMapping('coverage/{coverageIndex}', {
-            value: ctx => ctx.currentValue,
+            value: ctx => ctx.parentValue._id,
             language: ctx => ctx.captures.language,
+            info: ctx => {
+              try {
+                return {
+                  siteId: ctx.parentValue.siteId,
+                  ...JSON.parse(ctx.currentValue),
+                };
+              } catch (e) {
+                return {
+                  siteId: ctx.parentValue.siteId,
+                };
+              }
+            },
           }),
         },
       },
@@ -408,15 +407,14 @@ export const KHP_MAPPING_NODE: MappingNode = {
   },
   targetPopulations: {
     children: {
-      '{targetPopulationIndex}': referenceAttributeMapping(
-        'targetPopulation/{targetPopulationIndex}',
-        'khp-target-populations',
-        {
-          // We use objectId or the name for this referrable resources?
-          value: ctx => ctx.currentValue.objectId,
-          // value: ctx => ctx.currentValue.en || ctx.currentValue.fr,
+      '{targetPopulationIndex}': {
+        children: {
+          '{language}': translatableAttributeMapping('targetPopulation/{targetPopulationIndex}', {
+            language: ctx => ctx.captures.language,
+          }),
+          objectId: {},
         },
-      ),
+      },
     },
   },
   eligibilityMinAge: attributeMapping('numberAttributes', 'eligibilityMinAge', {
@@ -511,7 +509,7 @@ export const KHP_MAPPING_NODE: MappingNode = {
         children: {
           objectId: { children: {} },
           '{language}': referenceAttributeMapping(
-            'feeStructureSource/{feeStructureSourceIndex}',
+            'feeStructure/{feeStructureSourceIndex}',
             'khp-fee-structure-source',
             {
               value: ctx => ctx.parentValue.en,
@@ -541,11 +539,14 @@ export const KHP_MAPPING_NODE: MappingNode = {
       },
     },
   },
-  accessibility: referenceAttributeMapping('accessibility', 'khp-accessibility', {
-    // We use objectId or the name for this referrable resources?
-    value: ctx => ctx.currentValue.objectId,
-    // value: ctx => ctx.currentValue.en || ctx.currentValue.fr,
-  }),
+  accessibility: {
+    children: {
+      objectId: { children: {} },
+      '{language}': translatableAttributeMapping('accessibility', {
+        language: ctx => ctx.captures.language,
+      }),
+    },
+  },
   volunteer: {
     children: {
       '{language}': translatableAttributeMapping('volunteer', {

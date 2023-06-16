@@ -37,7 +37,7 @@ export const generateUpsertSqlFromImportResource = (
     ['id', 'name', 'accountSid', 'created', 'lastUpdated'],
     { schema: 'resources', table: 'Resources' },
   )} 
-  ON CONFLICT ON CONSTRAINT "Resources_pkey" 
+  ON CONFLICT ("id", "accountSid") 
   DO UPDATE SET "name" = EXCLUDED."name", "lastUpdated" = EXCLUDED."lastUpdated"`);
 
   const nonTranslatableTables = [
@@ -98,7 +98,9 @@ export const generateUpsertSqlFromImportResource = (
     ("accountSid", "resourceId", "key", "list", "referenceId") 
     SELECT $<accountSid>, $<resourceId>, $<key>, $<list>, "id" 
       FROM resources."ResourceReferenceStringAttributeValues" 
-      WHERE "accountSid" = $<accountSid> AND "list" = $<list> AND "value" = $<value>`,
+      WHERE "accountSid" = $<accountSid> AND "list" = $<list> AND "value" = $<value>
+  ON CONFLICT ("accountSid", "resourceId", "key", "list", "referenceId") 
+  DO NOTHING`,
         { ...attribute, accountSid, resourceId: resourceRecord.id },
       );
     }),

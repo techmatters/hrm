@@ -439,7 +439,7 @@ describe('searchResources', () => {
     },
     {
       description:
-        'ElasticSearch returns IDs that are not in the DB - results are filtered to only include IDs in the DB',
+        'ElasticSearch returns IDs that are not in the DB - missing resource placeholders are added for IDs missing in the DB',
       input: {
         generalSearchTerm: 'Res',
         pagination: { limit: 500, start: 10 },
@@ -448,13 +448,24 @@ describe('searchResources', () => {
         total: 1230,
         items: [
           { id: 'RESOURCE_1', highlights: {} },
-          { id: 'RESOURCE_3', highlights: {} },
+          { id: 'RESOURCE_3', name: 'Resource 3 Name (from search index)', highlights: {} },
           { id: 'RESOURCE_2', highlights: {} },
         ],
       },
       expectedSearchLimit: 200,
       expectedTotal: 1230,
       resultsFromDb: baselineResultSet,
+      expectedResults: [
+        {
+          id: 'RESOURCE_1',
+          name: 'Resource 1',
+          attributes: {
+            testAttribute: [{ value: 'testValue', language: 'Klingon', info: { qa: 'pla' } }],
+          },
+        },
+        { id: 'RESOURCE_3', name: 'Resource 3 Name (from search index)', _status: 'missing' },
+        { id: 'RESOURCE_2', name: 'Resource 2', attributes: {} },
+      ],
     },
   ];
 

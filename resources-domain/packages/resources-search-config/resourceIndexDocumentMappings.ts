@@ -83,6 +83,7 @@ export const resourceIndexDocumentMappings: ResourceIndexDocumentMappings = {
     name: {
       type: 'keyword',
       hasLanguageFields: true,
+      isArrayField: true,
     },
     feeStructure: {
       type: 'keyword',
@@ -99,14 +100,14 @@ export const resourceIndexDocumentMappings: ResourceIndexDocumentMappings = {
     province: {
       type: 'keyword',
       isArrayField: true,
-      attributeKeyPattern: /(.*)\/province$/,
+      attributeKeyPattern: /(.*)([pP])rovince$/,
       indexValueGenerator: ({ value, info }: ReferrableResourceAttribute<string>) =>
         `${info?.name ?? ''} ${value}`,
     },
     city: {
       type: 'keyword',
       isArrayField: true,
-      attributeKeyPattern: /(.*)\/city$/,
+      attributeKeyPattern: /(.*)[cC]ity$/,
       indexValueGenerator: ({ value, info }: ReferrableResourceAttribute<string>) =>
         `${info?.name ?? ''} ${value}`,
     },

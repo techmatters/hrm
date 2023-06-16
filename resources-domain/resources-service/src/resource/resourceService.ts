@@ -30,6 +30,16 @@ import {
   resourceSearchConfiguration,
 } from '@tech-matters/resources-search-config';
 
+// Represents a resource whose ID was returned by a search, but which is not in the database
+export type MissingResource = {
+  id: string;
+  name: string;
+  _status: 'missing';
+};
+
+const isMissingResource = (resource: FlatResource | MissingResource): resource is MissingResource =>
+  '_status' in resource && resource._status === 'missing';
+
 export type SimpleSearchParameters = {
   ids: string[];
   nameSubstring?: string;
@@ -99,7 +109,7 @@ const resourceRecordToApiResource = (resourceRecord: FlatResource): ReferrableRe
 };
 
 // The full resource & the search result are synonyms for now, but the full resource should grow to be a superset
-export type ReferrableResourceSearchResult = ReferrableResource;
+export type ReferrableResourceSearchResult = ReferrableResource | MissingResource;
 
 export type SearchParameters = {
   filters?: Record<string, boolean | number | string | string[]>;
@@ -202,10 +212,14 @@ export const resourceService = () => {
       );
 
       // Add ALL the resources found looking up specific IDs to the paginated block of name search results
-      const orderedResults = orderedResourceIds.map(id => resourceMap[id]).filter(r => r);
+      const orderedResults = items.map(
+        ({ id, name }) => resourceMap[id] ?? { id, name, _status: 'missing' },
+      );
 
       return {
-        results: orderedResults.map(record => resourceRecordToApiResource(record)),
+        results: orderedResults.map(record =>
+          isMissingResource(record) ? record : resourceRecordToApiResource(record),
+        ),
         totalCount: total,
       };
     },

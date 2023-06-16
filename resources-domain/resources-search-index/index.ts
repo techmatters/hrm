@@ -37,7 +37,8 @@ export const convertDocumentsToBulkRequest = (messages: ResourcesSearchIndexPayl
 
 export const handleErrors = async (indexResp: IndexDocumentBulkResponse, addDocumentIdToFailures: any) => {
   await Promise.all(indexResp?.items.map((item) => {
-    if (item.index?.status !== 201) {
+    // 201 for creating a new index document and 200 for updating an existing one
+    if (![200, 201].includes(item.index?.status ?? 0)) {
       console.error(new ResourcesJobProcessorError('Error indexing document'), item.index);
       addDocumentIdToFailures(item.index!._id!);
     }

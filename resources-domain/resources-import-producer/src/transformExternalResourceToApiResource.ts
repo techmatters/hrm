@@ -47,6 +47,10 @@ const pushReferenceAttributeMapping = ({ aseloResource, context, mapping }: {
   const value = mapping.valueGenerator(context);
   const key = mapping.keyGenerator(context);
 
+  if (value === null || value === undefined) {
+    console.debug(`No value provided to referenceStringAttributes: key ${key} and value ${value} - omitting attribute`);
+    return;
+  }
   if (typeof value !== 'string') {
     console.info(`Wrong value provided to referenceStringAttributes: key ${key} and value ${value} - omitting attribute`);
     return;
@@ -75,9 +79,14 @@ const pushInlineAttributeMapping = <T extends InlineAttributeProperty>({ aseloRe
     info = null;
   }
 
+  if (value === null || value === undefined) {
+    console.debug(`No value provided to ${mapping.property}: key ${key} and value ${value} - omitting attribute`);
+    return;
+  }
+
   if (mapping.property === 'stringAttributes') {
     if (typeof value !== 'string') {
-      console.info(`Wrong value provided to stringAttributes: key ${key} and value ${value} - omitting attribute`);
+      console.warn(`Wrong value provided to stringAttributes: key ${key} and value ${value} - omitting attribute`);
       return;
     }
 
