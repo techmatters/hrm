@@ -51,6 +51,11 @@ const CANADIAN_PROVINCE_CODE_FR_MAP = {
   QC: 'Québec',
 } as const;
 
+type FilterOption = {
+  value: string;
+  label: string;
+};
+
 const TARGET_FILE_PATH = './reference-data/khp_cities_20230612.sql';
 const TARGET_JSON_CITIES_FILE_PATH = './reference-data/khp_cities_20230612.json';
 const TARGET_JSON_PROVINCES_FILE_PATH = './reference-data/khp_provinces_20230612.json';
@@ -60,8 +65,9 @@ const main = async () => {
     process.exit(1);
   }
   const sqlFile = fs.createWriteStream(TARGET_FILE_PATH);
-  const provincesJson = [];
-  const citiesJson = [];
+
+  const provincesJson: FilterOption[] = [];
+  const citiesJson: FilterOption[] = [];
   const csvLines = fs
     .createReadStream('./reference-data/khp_cities_20230612.csv')
     .pipe(parse({ fromLine: 2 }));
