@@ -23,4 +23,4 @@ export {
   inferPostgresError,
 } from './error';
 
-export { OrderByDirection } from './ordering';
+export { OrderByDirection, OrderByDirectionType } from './ordering';

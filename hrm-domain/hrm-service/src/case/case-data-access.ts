@@ -22,8 +22,7 @@ import { caseSectionUpsertSql, deleteMissingCaseSectionsSql } from './sql/case-s
 import { DELETE_BY_ID } from './sql/case-delete-sql';
 import { selectSingleCaseByIdSql } from './sql/case-get-sql';
 import { Contact } from '../contact/contact-data-access';
-import { parameterizedQuery } from '@tech-matters/sql';
-import { OrderByDirectionType } from '@tech-matters/sql/dist/ordering';
+import { parameterizedQuery, OrderByDirectionType } from '@tech-matters/sql';
 import { ParameterizedQuery } from 'pg-promise';
 
 export type CaseRecordCommon = {
