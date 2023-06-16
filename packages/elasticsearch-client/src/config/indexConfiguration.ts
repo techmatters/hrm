@@ -14,6 +14,11 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-export * from './config';
-export * from './get-create-index-params';
-export * from './convert-index-document';
+// eslint-disable-next-line prettier/prettier
+import type { IndicesCreateRequest } from '@elastic/elasticsearch/lib/api/types';
+import { CreateIndexConvertedDocument } from './index';
+
+export type IndexConfiguration<T = any> = {
+  getCreateIndexParams: (indexName: string) => IndicesCreateRequest
+  convertToIndexDocument: (sourceEntity: T) => CreateIndexConvertedDocument
+};

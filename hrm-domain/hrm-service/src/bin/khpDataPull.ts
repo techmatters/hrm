@@ -16,27 +16,7 @@
 
 import { pullData } from '../data-pull-task/khp-data-pull-task';
 
-/**
- * Returns an object with the arguments passed to the script.
- *
- * Example:
- * > npm run start:khp-data-pull -- --start-date=2023-05-01 --end-date=2023-05-30
- *
- * returns:
- * { start-date: '2023-05-01', end-date: '2023-05-30' }
- */
-// Question: Should use a lib for this?
-const getNamedArgs = () => {
-  const args = process.argv.slice(2);
-  return args.reduce((acc, currentArg) => {
-    if (!currentArg.startsWith('--') || !currentArg.includes('=')) return acc;
+const startDateISO = process.argv[2];
+const endDateISO = process.argv[3];
 
-    const indexOfEqual = currentArg.indexOf('=');
-    const name = currentArg.substring(2, indexOfEqual);
-    const value = currentArg.substring(indexOfEqual + 1);
-
-    return { ...acc, [name]: value };
-  }, {});
-};
-
-pullData(getNamedArgs());
+pullData(startDateISO, endDateISO);

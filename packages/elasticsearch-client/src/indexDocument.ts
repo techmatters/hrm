@@ -16,22 +16,22 @@
 import { IndexResponse } from '@elastic/elasticsearch/lib/api/types';
 import { PassThroughConfig } from './client';
 
-export type IndexDocumentExtraParams = {
+export type IndexDocumentExtraParams<T> = {
   id: string;
-  document: any;
+  document: T;
 };
 
-export type IndexDocumentParams = PassThroughConfig & IndexDocumentExtraParams;
+export type IndexDocumentParams<T> = PassThroughConfig<T> & IndexDocumentExtraParams<T>;
 export type IndexDocumentResponse = IndexResponse;
 
-export const indexDocument = async ({
+export const indexDocument = async <T>({
   client,
   document,
   id,
   index,
   indexConfig,
-}: IndexDocumentParams): Promise<IndexDocumentResponse> => {
-  const convertedDocument = indexConfig.convertIndexDocument(document);
+}: IndexDocumentParams<T>): Promise<IndexDocumentResponse> => {
+  const convertedDocument = indexConfig.convertToIndexDocument(document);
 
   return client.index({
     index,

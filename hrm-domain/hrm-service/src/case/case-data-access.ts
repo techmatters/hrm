@@ -191,9 +191,7 @@ export const update = async (
     if (caseRecordUpdates.info) {
       const allSections: CaseSectionRecord[] = caseRecordUpdates.caseSections ?? [];
       if (allSections.length) {
-        caseUpdateSqlStatements.push(
-          caseSectionUpsertSql(allSections.map(s => ({ ...s, accountSid }))),
-        );
+        await transaction.none(caseSectionUpsertSql(allSections.map(s => ({ ...s, accountSid }))));
       }
       // Map case sections into a list of ids grouped by category, which allows a more concise DELETE SQL statement to be generated
       const caseSectionIdsByType = allSections.reduce((idsBySectionType, caseSection) => {
@@ -203,7 +201,7 @@ export const update = async (
       }, <Record<string, string[]>>{});
       const { sql, values } = deleteMissingCaseSectionsSql(caseSectionIdsByType);
       Object.assign(statementValues, values);
-      caseUpdateSqlStatements.push(sql);
+      await transaction.none(sql, statementValues);
     }
     const caseUpdateQuery = updateByIdSql(caseRecordUpdates);
     // If there are preceding statements, put them in a CTE so we can run a single prepared statement

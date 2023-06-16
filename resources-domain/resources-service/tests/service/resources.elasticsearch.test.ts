@@ -23,19 +23,19 @@ import each from 'jest-each';
 import { ReferrableResourceSearchResult } from '../../src/resource/resourceService';
 import { AssertionError } from 'assert';
 import addHours from 'date-fns/addHours';
-import { Client, IndexTypes, getClient } from '@tech-matters/elasticsearch-client';
+import { Client, getClient } from '@tech-matters/elasticsearch-client';
 import { getById } from '../../src/resource/resourceDataAccess';
+import {
+  RESOURCE_INDEX_TYPE,
+  resourceIndexConfiguration,
+} from '@tech-matters/resources-search-config';
 
 export const workerSid = 'WK-worker-sid';
 
-const indexType = IndexTypes.RESOURCES;
+const indexType = RESOURCE_INDEX_TYPE;
 const clients: Record<string, Client> = {};
 
-const server = getServer({
-  cloudSearchConfig: {
-    searchUrl: new URL('https://resources.mock-elasticsearch.com'),
-  },
-});
+const server = getServer();
 const request = getRequest(server);
 let mockServer: Awaited<ReturnType<typeof mockingProxy.mockttpServer>>;
 
@@ -54,7 +54,7 @@ afterAll(async () => {
    `);
   await Promise.all(
     accountSids.map(async accountSid => {
-      await clients[accountSid].deleteIndex();
+      await clients[accountSid].indexClient(resourceIndexConfiguration).deleteIndex();
     }),
   );
 });
@@ -103,8 +103,8 @@ beforeAll(async () => {
         indexType,
       });
       clients[accountSid] = client;
-
-      await client.createIndex({});
+      const indexClient = client.indexClient(resourceIndexConfiguration);
+      await indexClient.createIndex({});
 
       await Promise.all(
         resourceIdxs.flatMap(async resourceIdx => {
@@ -114,14 +114,14 @@ beforeAll(async () => {
             throw new Error(`Resource ${resourceIdx} not found`);
           }
 
-          await client.indexDocument({
+          await indexClient.indexDocument({
             document: dbResource,
             id: dbResource.id,
           });
         }),
       );
 
-      await client.refreshIndex();
+      await indexClient.refreshIndex();
     }),
   );
 });
@@ -159,17 +159,19 @@ const verifyResourcesAttributes = (resource: ReferrableResource) => {
   });
 };
 
-describe('GET /search-es', () => {
-  const basePath = '/v0/accounts/ACCOUNT_1/resources/search-es';
+describe('GET /search', () => {
+  const basePath = '/v0/accounts/ACCOUNT_1/resources/search';
 
   test('Should return 401 unauthorized with no auth headers', async () => {
-    const response = await request.post(`${basePath}?start=0&limit=5`).send({ q: '*' });
+    const response = await request
+      .post(`${basePath}?start=0&limit=5`)
+      .send({ generalSearchTerm: '*' });
     expect(response.status).toBe(401);
     expect(response.body).toStrictEqual({ error: 'Authorization failed' });
   });
 
   type TestCaseParameters = {
-    q: string;
+    generalSearchTerm: string;
     limit?: string;
     start?: string;
     condition: string;
@@ -183,7 +185,7 @@ describe('GET /search-es', () => {
    */
   const testCases: TestCaseParameters[] = [
     {
-      q: 'VALUE_12',
+      generalSearchTerm: 'VALUE_12',
       limit: '3',
       start: '0',
       condition: 'a term which matches nothing',
@@ -192,7 +194,7 @@ describe('GET /search-es', () => {
       expectedTotalCount: 0,
     },
     {
-      q: 'VALUE_0',
+      generalSearchTerm: 'VALUE_0',
       limit: '3',
       start: '0',
       condition: 'a query which returns more records which match resources in the DB',
@@ -218,7 +220,7 @@ describe('GET /search-es', () => {
       expectedTotalCount: 4,
     },
     {
-      q: 'VALUE_1',
+      generalSearchTerm: 'VALUE_1',
       limit: '3',
       start: '0',
       condition: 'a query which returns records which match resources in the DB',
@@ -244,7 +246,7 @@ describe('GET /search-es', () => {
       expectedTotalCount: 3,
     },
     {
-      q: 'VALUE_2',
+      generalSearchTerm: 'VALUE_2',
       limit: '3',
       start: '0',
       condition: 'a query which returns records which match resources in the DB',
@@ -265,7 +267,7 @@ describe('GET /search-es', () => {
       expectedTotalCount: 2,
     },
     {
-      q: 'VALUE_3',
+      generalSearchTerm: 'VALUE_3',
       limit: '3',
       start: '0',
       condition: 'a query which returns records which match resources in the DB',
@@ -281,7 +283,7 @@ describe('GET /search-es', () => {
       expectedTotalCount: 1,
     },
     {
-      q: '"RESOURCE 2"',
+      generalSearchTerm: '"RESOURCE 2"',
       limit: '3',
       start: '0',
       condition: 'a query that matches a name phrase',
@@ -321,12 +323,18 @@ describe('GET /search-es', () => {
 
   each(testCases).test(
     'When specifying $condition, should return a 200 response and $expectationDescription',
-    async ({ q, limit, start, expectedResults, expectedTotalCount }: TestCaseParameters) => {
+    async ({
+      generalSearchTerm,
+      limit,
+      start,
+      expectedResults,
+      expectedTotalCount,
+    }: TestCaseParameters) => {
       const response = await request
         .post(`${basePath}/?limit=${limit}&start=${start}`)
         .set(headers)
         .send({
-          q,
+          generalSearchTerm,
         });
 
       expect(response.status).toBe(200);
