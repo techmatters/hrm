@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { OrderByDirection } from './sql';
+import { OrderByDirection } from '@tech-matters/sql';
 
 export type PaginationQuery = {
   limit?: string;

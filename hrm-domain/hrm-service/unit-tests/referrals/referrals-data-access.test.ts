@@ -16,18 +16,18 @@
 
 import * as pgPromise from 'pg-promise';
 import { subHours } from 'date-fns';
+import {
+  DatabaseForeignKeyViolationError,
+  DatabaseUniqueConstraintViolationError,
+  DatabaseError,
+} from '@tech-matters/sql';
+import { getSqlStatement } from '@tech-matters/testing';
 import { mockConnection, mockTransaction } from '../mock-db';
 import * as referralDb from '../../src/referral/referral-data-access';
 import {
   DuplicateReferralError,
   OrphanedReferralError,
 } from '../../src/referral/referral-data-access';
-import {
-  DatabaseForeignKeyViolationError,
-  DatabaseUniqueConstraintViolationError,
-  DatabaseError,
-} from '../../src/sql';
-import { getSqlStatement } from '@tech-matters/testing';
 
 let conn: pgPromise.ITask<unknown>;
 

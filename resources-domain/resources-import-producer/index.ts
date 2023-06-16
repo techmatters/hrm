@@ -65,7 +65,7 @@ export type KhpApiResponse = {
 
 const pullUpdates = (externalApiBaseUrl: URL, externalApiKey: string, externalApiAuthorizationHeader: string) => {
   const configuredPullUpdates = async (from: Date, to: Date, lastObjectId: string = '', limit = updateBatchSize): Promise<KhpApiResponse | HttpError> => {
-    const response = await fetch(new URL(`api/resources?sort=updatedAt&fromDate=${from.toISOString()}&toDate=${to.toISOString()}&limit=${updateBatchSize}`, externalApiBaseUrl), {
+    const response = await fetch(new URL(`api/resources?sort=updatedAt&dateType=updatedAt&startDate=${from.toISOString()}&endDate=${to.toISOString()}&limit=${updateBatchSize}`, externalApiBaseUrl), {
       headers: {
         'Authorization': externalApiAuthorizationHeader,
         'x-api-key': externalApiKey,

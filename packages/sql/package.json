@@ -1,0 +1,30 @@
+{
+  "name": "@tech-matters/sql",
+  "version": "1.0.0",
+  "description": "SQL lib to help Aselo service conform to common practices when using pg-promise",
+  "author": "",
+  "license": "AGPL",
+  "main": "dist/index.js",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.17.1",
+    "http-errors": "^2.0.0",
+    "morgan": "^1.10.0",
+    "pg-promise": "^10.11.1"
+  },
+  "scripts": {
+    "test:unit": "jest tests/unit"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/techmatters/hrm.git"
+  },
+  "keywords": [],
+  "bugs": {
+    "url": "https://github.com/techmatters/hrm/issues"
+  },
+  "homepage": "https://github.com/techmatters/hrm#readme",
+  "devDependencies": {
+    "@types/morgan": "^1.9.4"
+  }
+}

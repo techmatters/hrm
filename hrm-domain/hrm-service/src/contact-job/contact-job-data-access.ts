@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { db, pgp } from '../connection-pool';
+import { db, pgp, txIfNotInOne } from '../connection-pool';
 // eslint-disable-next-line prettier/prettier
 import type { Contact } from '../contact/contact-data-access';
 import {
@@ -29,7 +29,6 @@ import {
   UPDATE_JOB_CLEANUP_ACTIVE_SQL,
   UPDATE_JOB_CLEANUP_PENDING_SQL,
 } from './sql/contact-job-sql';
-import { txIfNotInOne } from '../sql';
 
 import { ContactJobType } from '@tech-matters/types';
 

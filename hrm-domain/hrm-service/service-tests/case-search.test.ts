@@ -1284,6 +1284,20 @@ describe('/cases route', () => {
         await caseDb.deleteById(createdCase.id, accountSid);
         useOpenRules();
       });
+
+      test('Should throw error promptly with malformed input', async () => {
+        const start = Date.now();
+        const response = await request
+          .post(`${route}/search`)
+          .query({ limit: 20, offset: 0 })
+          .set(headers)
+          .send({
+            filters: { createdAt: { from: '${contactNumber}' } },
+            contactNumber: "=')) and (select pg_sleep(5)) is null AND ((1=1) --",
+          });
+        expect(response.ok).toBeFalsy();
+        expect(Date.now() - start).toBeLessThan(2000);
+      }, 10000);
     });
   });
 });

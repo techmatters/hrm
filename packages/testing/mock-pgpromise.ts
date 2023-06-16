@@ -15,7 +15,7 @@
  */
 
 import * as pgPromise from 'pg-promise';
-import { IDatabase, QueryParam } from 'pg-promise';
+import { IDatabase, ParameterizedQuery, QueryParam } from 'pg-promise';
 
 export function createMockConnection<T = unknown>(): pgPromise.ITask<T> {
   return {
@@ -94,6 +94,10 @@ export const getSqlStatement = (mockQueryMethod: PgQuerySpy, callIndex = -1): st
   return mockQueryMethod.mock.calls[callIndex < 0 ? mockQueryMethod.mock.calls.length + callIndex : callIndex][0].toString();
 };
 
+export const getParameterizedSqlStatement = (mockQueryMethod: PgQuerySpy, callIndex = -1): string => {
+  expect(mockQueryMethod).toHaveBeenCalled();
+  return (mockQueryMethod.mock.calls[callIndex < 0 ? mockQueryMethod.mock.calls.length + callIndex : callIndex][0] as ParameterizedQuery).text.toString();
+};
 
 export const getSqlStatementFromNone = (mockQueryMethod: jest.SpyInstance<any, [query: QueryParam, values?:any]>, callIndex = -1): string => {
   expect(mockQueryMethod).toHaveBeenCalled();

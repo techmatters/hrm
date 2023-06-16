@@ -17,11 +17,13 @@
 import { db, pgp } from '../connection-pool';
 import { getPaginationElements } from '../search';
 import { updateByIdSql } from './sql/case-update-sql';
-import { OrderByColumnType, OrderByDirectionType, selectCaseSearch } from './sql/case-search-sql';
+import { OrderByColumnType, selectCaseSearch } from './sql/case-search-sql';
 import { caseSectionUpsertSql, deleteMissingCaseSectionsSql } from './sql/case-sections-sql';
 import { DELETE_BY_ID } from './sql/case-delete-sql';
 import { selectSingleCaseByIdSql } from './sql/case-get-sql';
 import { Contact } from '../contact/contact-data-access';
+import { parameterizedQuery, OrderByDirectionType } from '@tech-matters/sql';
+import { ParameterizedQuery } from 'pg-promise';
 
 export type CaseRecordCommon = {
   info: any;
@@ -114,11 +116,12 @@ export const create = async (
       let inserted: CaseRecord = await transaction.one(statement);
       if ((caseSections ?? []).length) {
         const allSections = caseSections.map(s => ({ ...s, caseId: inserted.id, accountSid }));
-        const sectionStatement = `${caseSectionUpsertSql(allSections)};${selectSingleCaseByIdSql(
-          'Cases',
-        )}`;
+
         const queryValues = { accountSid, caseId: inserted.id };
-        inserted = await transaction.one(sectionStatement, queryValues);
+        await transaction.none(caseSectionUpsertSql(allSections));
+        inserted = await transaction.one(
+          parameterizedQuery(selectSingleCaseByIdSql('Cases'), queryValues),
+        );
       }
 
       return inserted;
@@ -133,7 +136,7 @@ export const getById = async (
   return db.task(async connection => {
     const statement = selectSingleCaseByIdSql('Cases');
     const queryValues = { accountSid, caseId };
-    return connection.oneOrNone<CaseRecord>(statement, queryValues);
+    return connection.oneOrNone<CaseRecord>(parameterizedQuery(statement, queryValues));
   });
 };
 
@@ -159,7 +162,9 @@ export const search = async (
       limit: limit,
       offset: offset,
     };
-    const result: CaseWithCount[] = await connection.any<CaseWithCount>(statement, queryValues);
+    const result: CaseWithCount[] = await connection.manyOrNone<CaseWithCount>(
+      parameterizedQuery(statement, queryValues),
+    );
     const totalCount: number = result.length ? result[0].totalCount : 0;
     return { rows: result, count: totalCount };
   });
@@ -168,7 +173,7 @@ export const search = async (
 };
 
 export const deleteById = async (id, accountSid) => {
-  return db.oneOrNone(DELETE_BY_ID, [accountSid, id]);
+  return db.oneOrNone(new ParameterizedQuery({ text: DELETE_BY_ID, values: [accountSid, id] }));
 };
 
 export const update = async (
@@ -177,6 +182,7 @@ export const update = async (
   accountSid: string,
 ): Promise<CaseRecord> => {
   return db.tx(async transaction => {
+    const caseUpdateSqlStatements = [];
     const statementValues = {
       accountSid,
       caseId: id,
@@ -196,8 +202,22 @@ export const update = async (
       Object.assign(statementValues, values);
       await transaction.none(sql, statementValues);
     }
-    await transaction.none(updateByIdSql(caseRecordUpdates, accountSid, id), statementValues);
+    const caseUpdateQuery = updateByIdSql(caseRecordUpdates);
+    // If there are preceding statements, put them in a CTE so we can run a single prepared statement
+    const fullUpdateQuery = caseUpdateSqlStatements.length
+      ? `WITH
+      ${caseUpdateSqlStatements.map((statement, i) => `q${i} AS (${statement})`).join(`,
+      `)}
+      ${caseUpdateQuery}`
+      : caseUpdateQuery;
+    await transaction.none(parameterizedQuery(fullUpdateQuery, statementValues));
 
-    return transaction.oneOrNone(selectSingleCaseByIdSql('Cases'), statementValues);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    return transaction.oneOrNone(
+      parameterizedQuery(selectSingleCaseByIdSql('Cases'), {
+        accountSid,
+        caseId: id,
+      }),
+    );
   });
 };

@@ -26,14 +26,7 @@ const updateCaseColumnSet = new pgp.helpers.ColumnSet(
   { table: 'Cases' },
 );
 
-export const updateByIdSql = (
-  updatedValues: Record<string, unknown>,
-  accountSid: string,
-  caseId: string,
-) => `
+export const updateByIdSql = (updatedValues: Record<string, unknown>) => `
         ${pgp.helpers.update(updatedValues, updateCaseColumnSet)} 
-        ${pgp.as.format(`WHERE "Cases"."accountSid" = $<accountSid> AND "Cases"."id" = $<caseId>`, {
-          accountSid,
-          caseId,
-        })} 
+          WHERE "Cases"."accountSid" = $<accountSid> AND "Cases"."id" = $<caseId> 
 `;

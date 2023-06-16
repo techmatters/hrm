@@ -19,15 +19,8 @@ import { SELECT_CASE_SECTIONS } from './case-sections-sql';
 import { CaseListFilters, DateExistsCondition, DateFilter } from '../case-data-access';
 import { leftJoinCsamReportsOnFK } from '../../csam-report/sql/csam-report-get-sql';
 import { leftJoinReferralsOnFK } from '../../referral/sql/referral-get-sql';
-
-export const OrderByDirection = {
-  ascendingNullsLast: 'ASC NULLS LAST',
-  descendingNullsLast: 'DESC NULLS LAST',
-  ascending: 'ASC',
-  descending: 'DESC',
-} as const;
-
-export type OrderByDirectionType = typeof OrderByDirection[keyof typeof OrderByDirection];
+import { OrderByDirection } from '@tech-matters/sql';
+import { OrderByDirectionType } from '@tech-matters/sql/dist/ordering';
 
 export const OrderByColumn = {
   ID: 'id',
@@ -95,8 +88,8 @@ const dateFilterCondition = (
   if (filter.to || filter.from) {
     filter.to = filter.to ?? null;
     filter.from = filter.from ?? null;
-    return `(($<${filterName}.from> IS NULL OR ${field} >= $<${filterName}.from>::TIMESTAMP WITH TIME ZONE) 
-            AND ($<${filterName}.to> IS NULL OR ${field} <= $<${filterName}.to>::TIMESTAMP WITH TIME ZONE)
+    return `(($<${filterName}.from>::TIMESTAMP WITH TIME ZONE IS NULL OR ${field} >= $<${filterName}.from>::TIMESTAMP WITH TIME ZONE) 
+            AND ($<${filterName}.to>::TIMESTAMP WITH TIME ZONE IS NULL OR ${field} <= $<${filterName}.to>::TIMESTAMP WITH TIME ZONE)
             ${existsCondition ? ` AND ${existsCondition}` : ''})`;
   }
   return existsCondition;
@@ -160,15 +153,15 @@ const nameAndPhoneNumberSearchSql = (
   lastNameSources: string[],
   phoneNumberColumns: string[],
 ) =>
-  `CASE WHEN $<firstName> IS NULL THEN TRUE
+  `CASE WHEN $<firstName>::text IS NULL THEN TRUE
         ELSE ${firstNameSources.map(fns => `${fns} ILIKE $<firstName>`).join('\n OR ')}
         END
       AND
-        CASE WHEN $<lastName> IS NULL THEN TRUE
+        CASE WHEN $<lastName>::text IS NULL THEN TRUE
         ELSE ${lastNameSources.map(lns => `${lns} ILIKE $<lastName>`).join('\n OR ')}
         END
       AND
-        CASE WHEN $<phoneNumber> IS NULL THEN TRUE
+        CASE WHEN $<phoneNumber>::text IS NULL THEN TRUE
         ELSE (
           ${phoneNumberColumns
             .map(pn => `regexp_replace(${pn}, '\\D', '', 'g') ILIKE $<phoneNumber>`)
@@ -178,7 +171,7 @@ const nameAndPhoneNumberSearchSql = (
 
 const SEARCH_WHERE_CLAUSE = `(
       -- search on childInformation of connectedContacts
-      ($<firstName> IS NULL AND $<lastName> IS NULL AND $<phoneNumber> IS NULL) OR
+      ($<firstName>::text IS NULL AND $<lastName>::text IS NULL AND $<phoneNumber>::text IS NULL) OR
       EXISTS (
         SELECT 1 FROM "Contacts" c WHERE c."caseId" = cases.id  AND c."accountSid" = cases."accountSid"
           AND (
@@ -236,7 +229,7 @@ const SEARCH_WHERE_CLAUSE = `(
       )
     )
     AND (
-      $<contactNumber> IS NULL OR
+      $<contactNumber>::text IS NULL OR
       EXISTS (
         SELECT 1 FROM "Contacts" c WHERE c."caseId" = cases.id AND c."accountSid" = cases."accountSid" AND c.number = $<contactNumber>
       )
@@ -277,7 +270,7 @@ export const selectCaseSearch = (
     `WHERE
     (info IS NULL OR jsonb_typeof(info) = 'object')
     AND
-      $<accountSid> IS NOT NULL AND cases."accountSid" = $<accountSid>`,
+      $<accountSid>::text IS NOT NULL AND cases."accountSid" = $<accountSid>`,
     SEARCH_WHERE_CLAUSE,
     filterSql(filters),
   ].filter(sql => sql).join(`

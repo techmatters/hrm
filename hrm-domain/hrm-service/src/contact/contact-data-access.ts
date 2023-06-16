@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-
+import { txIfNotInOne } from '../connection-pool';
 import { db } from '../connection-pool';
 import {
   UPDATE_CASEID_BY_ID,
@@ -31,7 +31,6 @@ import {
 } from './contact-json';
 // eslint-disable-next-line prettier/prettier
 import type { ITask } from 'pg-promise';
-import { txIfNotInOne } from '../sql';
 
 type ExistingContactRecord = {
   id: number;
