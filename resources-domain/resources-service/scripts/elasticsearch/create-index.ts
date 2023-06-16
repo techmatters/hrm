@@ -22,6 +22,6 @@ import {
 
 const shortCode = process.argv[2] || 'as';
 
-getClient({ shortCode, indexType: RESOURCE_INDEX_TYPE }).then(client =>
-  client.indexClient(resourceIndexConfiguration).createIndex({}),
-);
+getClient({ shortCode, indexType: RESOURCE_INDEX_TYPE }).then(client => {
+  client.indexClient(resourceIndexConfiguration).createIndex({});
+});

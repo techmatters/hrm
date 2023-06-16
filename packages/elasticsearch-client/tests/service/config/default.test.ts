@@ -20,15 +20,14 @@ import { orderBy } from 'lodash';
 import { getClient } from '../../../src';
 import { SearchParameters, SearchResponse, Client, IndexClient } from '../../../';
 import { resourceDocuments } from '../../fixtures/resources';
+import { FlatResource } from '@tech-matters/types/dist/Resources';
 import {
-  RESOURCE_INDEX_TYPE,
   resourceIndexConfiguration,
   resourceSearchConfiguration,
-} from '@tech-matters/resources-search-config';
-import { FlatResource } from '@tech-matters/types/dist/Resources';
+} from '../../fixtures/configuration';
 
 const accountSid = 'test-account-sid';
-const indexType = RESOURCE_INDEX_TYPE;
+const indexType = 'resources';
 let indexClient: IndexClient<FlatResource>;
 let searchClient: ReturnType<Client['searchClient']>;
 

@@ -17,12 +17,12 @@
 import {
   FieldMappingContext,
   MappingNode,
-  substitueCaptureTokens,
+  substituteCaptureTokens,
   resourceFieldMapping,
   attributeMapping,
   translatableAttributeMapping,
   referenceAttributeMapping,
-} from '../mappers';
+} from './mappers';
 
 // TODO: Change objectId to site ID when we have it
 const siteKey = (subsection: string) => (context: FieldMappingContext) => {
@@ -30,7 +30,7 @@ const siteKey = (subsection: string) => (context: FieldMappingContext) => {
     rootResource,
     captures: { siteIndex },
   } = context;
-  return `site/${rootResource.sites[siteIndex].objectId}/${substitueCaptureTokens(
+  return `site/${rootResource.sites[siteIndex].objectId}/${substituteCaptureTokens(
     subsection,
     context,
   )}`;
@@ -79,17 +79,8 @@ const KHP_MAPPING_NODE_SITES: { children: MappingNode } = {
           'stringAttributes',
           siteKey('agencyReferenceNumber'),
         ),
-        agency: {
-          children: {
-            '{language}': translatableAttributeMapping(siteKey('agency'), {
-              value: ctx => ctx.currentValue.alternate,
-              info: ctx => ctx.currentValue,
-              language: ctx => ctx.captures.language,
-            }),
-          },
-        },
-        nameEN: translatableAttributeMapping('name', { language: 'en' }),
-        nameFR: translatableAttributeMapping('name', { language: 'fr' }),
+        nameEN: translatableAttributeMapping(siteKey('name'), { language: 'en' }),
+        nameFR: translatableAttributeMapping(siteKey('name'), { language: 'fr' }),
         nameDetails: {
           children: {
             '{language}': translatableAttributeMapping(siteKey('nameDetails'), {
@@ -100,46 +91,26 @@ const KHP_MAPPING_NODE_SITES: { children: MappingNode } = {
           },
         },
         isActive: attributeMapping('booleanAttributes', siteKey('isActive')),
-        isLocationPrivate: attributeMapping('booleanAttributes', siteKey('isLocationPrivate')),
         location: {
           children: {
-            address1: attributeMapping('stringAttributes', siteKey('location/address1')),
-            address2: attributeMapping('stringAttributes', siteKey('location/address2')),
+            address1: translatableAttributeMapping(siteKey('location/address1')),
+            address2: translatableAttributeMapping(siteKey('location/address2')),
             city: referenceAttributeMapping(siteKey('location/city'), 'cities', {
-              value: ctx => ctx.currentValue,
+              value: ctx => `CA/${ctx.parentValue.province}/${ctx.currentValue}`,
             }),
-            county: referenceAttributeMapping(siteKey('location/county'), 'counties', {
+            county: translatableAttributeMapping(siteKey('location/county'), {
               value: ctx => ctx.currentValue,
             }),
             province: referenceAttributeMapping(siteKey('location/province'), 'provinces', {
+              value: ctx => `CA/${ctx.currentValue}`,
+            }),
+            country: translatableAttributeMapping(siteKey('location/country'), {
               value: ctx => ctx.currentValue,
             }),
-            country: referenceAttributeMapping(siteKey('location/country'), 'countries', {
-              value: ctx => ctx.currentValue,
-            }),
-            postalCode: attributeMapping('stringAttributes', siteKey('location/postalCode')),
-            description: attributeMapping('stringAttributes', siteKey('location/description')),
+            postalCode: translatableAttributeMapping(siteKey('location/postalCode')),
+            description: translatableAttributeMapping(siteKey('location/description')),
             longitude: attributeMapping('numberAttributes', 'location/longitude'),
             latitude: attributeMapping('numberAttributes', 'location/latitude'),
-          },
-        },
-        mailingAddress: {
-          children: {
-            address1: attributeMapping('stringAttributes', siteKey('location/address1')),
-            address2: attributeMapping('stringAttributes', siteKey('location/address2')),
-            city: referenceAttributeMapping(siteKey('location/city'), 'cities', {
-              value: ctx => ctx.currentValue,
-            }),
-            county: referenceAttributeMapping(siteKey('location/county'), 'counties', {
-              value: ctx => ctx.currentValue,
-            }),
-            province: referenceAttributeMapping(siteKey('location/province'), 'provinces', {
-              value: ctx => ctx.currentValue,
-            }),
-            country: referenceAttributeMapping(siteKey('location/country'), 'countries', {
-              value: ctx => ctx.currentValue,
-            }),
-            postalCode: attributeMapping('stringAttributes', siteKey('location/postalCode')),
           },
         },
         operations: {
@@ -151,6 +122,7 @@ const KHP_MAPPING_NODE_SITES: { children: MappingNode } = {
                   info: ctx => ctx.currentValue,
                   language: ctx => ctx.captures.language,
                 }),
+                _id: {},
               },
             },
           },
@@ -204,6 +176,7 @@ const KHP_MAPPING_NODE_SITES: { children: MappingNode } = {
         retiredAt: attributeMapping('dateTimeAttributes', siteKey('retiredAt')),
         createdAt: attributeMapping('dateTimeAttributes', siteKey('createdAt')),
         updatedAt: attributeMapping('dateTimeAttributes', siteKey('updatedAt')),
+        objectId: attributeMapping('stringAttributes', siteKey('siteId')),
       },
     },
   },
@@ -259,7 +232,7 @@ export const KHP_MAPPING_NODE: MappingNode = {
   },
   social: {
     children: {
-      '{app}': attributeMapping('stringAttributes', siteKey('social/{app}')),
+      '{app}': attributeMapping('stringAttributes', 'social/{app}'),
     },
   },
   eligibilityDetails: {
@@ -292,7 +265,6 @@ export const KHP_MAPPING_NODE: MappingNode = {
       '{language}': {
         children: {
           '{property}': translatableAttributeMapping('metadata/{property}', {
-            info: ctx => ctx.currentValue,
             language: ctx => ctx.captures.language,
           }),
         },
@@ -315,12 +287,12 @@ export const KHP_MAPPING_NODE: MappingNode = {
           }),
         },
       },
-      isPrivate: attributeMapping('booleanAttributes', 'isPrivate', {}),
-      name: attributeMapping('stringAttributes', 'name', {}),
+      isPrivate: attributeMapping('booleanAttributes', 'isPrivate'),
+      name: attributeMapping('stringAttributes', 'name'),
       // I'm assuming this one, since it's always null
-      email: attributeMapping('stringAttributes', 'email', {}),
+      email: attributeMapping('stringAttributes', 'email'),
       // I'm assuming this one, since it's always "false" (no, not false, string "false")
-      phone: attributeMapping('stringAttributes', 'phone', {}),
+      phone: attributeMapping('stringAttributes', 'phone'),
     },
   },
   recordType: attributeMapping('stringAttributes', 'recordType'),
@@ -333,11 +305,21 @@ export const KHP_MAPPING_NODE: MappingNode = {
     'stringAttributes',
     'feeStructureSourceFreeTextFr',
   ),
-  howToAccessSupport: referenceAttributeMapping('howToAccessSupport', 'khp-how-to-access-support', {
-    // W use objectId or the name for this referrable resources?
-    value: ctx => ctx.currentValue.objectId,
-    // value: ctx => ctx.currentValue.en || ctx.currentValue.fr,
-  }),
+  howToAccessSupport: {
+    children: {
+      '{howToAccessSupportIndex}': {
+        children: {
+          objectId: { children: {} },
+          '{language}': translatableAttributeMapping(
+            'howToAccessSupport/{howToAccessSupportIndex}',
+            {
+              language: ctx => ctx.captures.language,
+            },
+          ),
+        },
+      },
+    },
+  },
   isHighlighted: attributeMapping('booleanAttributes', 'isHighlighted'),
   // This is an array of strings. Is this shape better or we want the individual strings as attributes?
   keywords: attributeMapping('stringAttributes', 'keywords', {
@@ -346,7 +328,7 @@ export const KHP_MAPPING_NODE: MappingNode = {
   }),
   notes: {
     children: {
-      '{noteIndex}': attributeMapping('stringAttributes', siteKey('notes/{noteIndex}'), {
+      '{noteIndex}': attributeMapping('stringAttributes', 'notes/{noteIndex}', {
         value: ctx => ctx.currentValue.note,
         info: ctx => ctx.currentValue,
       }),
@@ -365,15 +347,6 @@ export const KHP_MAPPING_NODE: MappingNode = {
       ),
     },
   },
-  agency: {
-    children: {
-      '{language}': translatableAttributeMapping(siteKey('agency'), {
-        value: ctx => ctx.currentValue.alternate,
-        info: ctx => ctx.currentValue,
-        language: ctx => ctx.captures.language,
-      }),
-    },
-  },
   lastVerifiedOn: attributeMapping('stringAttributes', 'lastVerifiedOn', {
     value: ctx => ctx.currentValue,
   }),
@@ -389,131 +362,6 @@ export const KHP_MAPPING_NODE: MappingNode = {
   isActive: attributeMapping('booleanAttributes', 'isActive', {
     value: ctx => ctx.currentValue,
   }),
-  mailingAddresses: {
-    children: {
-      '{addressIndex}': {
-        children: {
-          address1: attributeMapping(
-            'stringAttributes',
-            'mailingAddresses/{addressIndex}/address1',
-            {
-              value: ctx => ctx.currentValue,
-            },
-          ),
-          address2: attributeMapping(
-            'stringAttributes',
-            'mailingAddresses/{addressIndex}/address2',
-            {
-              value: ctx => ctx.currentValue,
-            },
-          ),
-          isPrivate: attributeMapping(
-            'booleanAttributes',
-            'mailingAddresses/{addressIndex}/isActive',
-            {
-              value: ctx => ctx.currentValue,
-            },
-          ),
-          city: referenceAttributeMapping('mailingAddresses/{addressIndex}/city', 'cities', {
-            value: ctx => {
-              const { city, province, country } = ctx.currentValue;
-              return [country, province, city].join('/');
-            },
-          }),
-          province: referenceAttributeMapping(
-            'mailingAddresses/{addressIndex}/province',
-            'provinces',
-            {
-              value: ctx => {
-                const { province, country } = ctx.currentValue;
-                return [country, province].join('/');
-              },
-            },
-          ),
-          country: referenceAttributeMapping(
-            'mailingAddresses/{addressIndex}/country',
-            'countries',
-            {
-              value: ctx => ctx.currentValue.country,
-            },
-          ),
-          postalCode: attributeMapping(
-            'stringAttributes',
-            'mailingAddresses/{addressIndex}/postalCode',
-          ),
-        },
-      },
-    },
-  },
-  physicalAddresses: {
-    children: {
-      '{addressIndex}': {
-        children: {
-          address1: attributeMapping(
-            'stringAttributes',
-            'physicalAddresses/{addressIndex}/address1',
-            {
-              value: ctx => ctx.currentValue,
-            },
-          ),
-          address2: attributeMapping(
-            'stringAttributes',
-            'physicalAddresses/{addressIndex}/address2',
-            {
-              value: ctx => ctx.currentValue,
-            },
-          ),
-          isPrivate: attributeMapping(
-            'booleanAttributes',
-            'physicalAddresses/{addressIndex}/isActive',
-            {
-              value: ctx => ctx.currentValue,
-            },
-          ),
-          city: referenceAttributeMapping('physicalAddresses/{addressIndex}/city', 'cities', {
-            value: ctx => {
-              const { city, county, province, country } = ctx.currentValue;
-              return [country, province, county, city].join('/');
-            },
-          }),
-          county: attributeMapping('stringAttributes', 'physicalAddresses/{addressIndex}/country'),
-          province: referenceAttributeMapping(
-            'physicalAddresses/{addressIndex}/province',
-            'provinces',
-            {
-              value: ctx => {
-                const { province, country } = ctx.currentValue;
-                return [country, province].join('/');
-              },
-            },
-          ),
-          country: referenceAttributeMapping(
-            'physicalAddresses/{addressIndex}/country',
-            'countries',
-            {
-              value: ctx => ctx.currentValue.country,
-            },
-          ),
-          postalCode: attributeMapping(
-            'stringAttributes',
-            'physicalAddresses/{addressIndex}/postalCode',
-          ),
-          description: attributeMapping(
-            'stringAttributes',
-            'physicalAddresses/{addressIndex}/description',
-          ),
-          longitude: attributeMapping(
-            'numberAttributes',
-            'physicalAddresses/{addressIndex}/longitude',
-          ),
-          latitude: attributeMapping(
-            'numberAttributes',
-            'physicalAddresses/{addressIndex}/latitude',
-          ),
-        },
-      },
-    },
-  },
   primaryLocationCity: referenceAttributeMapping('primaryLocationCity', 'cities', {
     value: ctx => {
       const { primaryLocationProvince } = ctx.rootResource;
@@ -521,13 +369,7 @@ export const KHP_MAPPING_NODE: MappingNode = {
       return ['CA', primaryLocationProvince, ctx.currentValue].join('/');
     },
   }),
-  primaryLocationCounty: referenceAttributeMapping('primaryLocationCounty', 'counties', {
-    value: ctx => {
-      const { primaryLocationProvince } = ctx.rootResource;
-      // TODO: No top level country, assumes always CA?
-      return ['CA', primaryLocationProvince, ctx.currentValue].join('/');
-    },
-  }),
+  primaryLocationCounty: attributeMapping('stringAttributes', 'primaryLocationCounty'),
   primaryLocationProvince: referenceAttributeMapping('primaryLocationProvince', 'provinces', {
     value: ctx => {
       // TODO: No top level country, assumes always CA?
@@ -541,23 +383,38 @@ export const KHP_MAPPING_NODE: MappingNode = {
   primaryLocationIsPrivate: attributeMapping('booleanAttributes', 'primaryLocationIsPrivate'),
   coverage: {
     children: {
-      '{language}': translatableAttributeMapping('coverage', {
-        value: ctx => ctx.currentValue,
-        language: ctx => ctx.captures.language,
-      }),
+      '{coverageIndex}': {
+        children: {
+          '{language}': translatableAttributeMapping('coverage/{coverageIndex}', {
+            value: ctx => ctx.parentValue._id,
+            language: ctx => ctx.captures.language,
+            info: ctx => {
+              try {
+                return {
+                  siteId: ctx.parentValue.siteId,
+                  ...JSON.parse(ctx.currentValue),
+                };
+              } catch (e) {
+                return {
+                  siteId: ctx.parentValue.siteId,
+                };
+              }
+            },
+          }),
+        },
+      },
     },
   },
   targetPopulations: {
     children: {
-      '{targetPopulationIndex}': referenceAttributeMapping(
-        'targetPopulation/{targetPopulationIndex}',
-        'khp-target-populations',
-        {
-          // We use objectId or the name for this referrable resources?
-          value: ctx => ctx.currentValue.objectId,
-          // value: ctx => ctx.currentValue.en || ctx.currentValue.fr,
+      '{targetPopulationIndex}': {
+        children: {
+          '{language}': translatableAttributeMapping('targetPopulation/{targetPopulationIndex}', {
+            language: ctx => ctx.captures.language,
+          }),
+          objectId: {},
         },
-      ),
+      },
     },
   },
   eligibilityMinAge: attributeMapping('numberAttributes', 'eligibilityMinAge', {
@@ -595,22 +452,41 @@ export const KHP_MAPPING_NODE: MappingNode = {
   },
   documentsRequired: {
     children: {
-      '{documentIndex}': translatableAttributeMapping('documentsRequired/{documentIndex}', {
-        value: ctx => ctx.currentValue,
-        language: ctx => ctx.captures.language,
-      }),
+      '{documentIndex}': {
+        children: {
+          objectId: { children: {} },
+          '{language}': referenceAttributeMapping(
+            'documentsRequired/{documentIndex}',
+            'documentsRequired',
+            {
+              value: ctx => ctx.parentValue.en,
+              language: ctx => ctx.captures.language,
+            },
+          ),
+        },
+      },
     },
   },
   paymentMethod: attributeMapping('stringAttributes', 'paymentMethod'),
   operations: {
     children: {
-      '{dayIndex}': {
+      '{operationSetIndex}': {
         children: {
-          '{language}': translatableAttributeMapping('operations/{dayIndex}', {
-            value: context => context.currentValue.day,
-            info: context => context.currentValue,
-            language: context => context.captures.language,
-          }),
+          '{dayIndex}': {
+            children: {
+              '{language}': translatableAttributeMapping(
+                'operations/{operationSetIndex}/{dayIndex}',
+                {
+                  value: context => context.currentValue.day,
+                  info: context => context.currentValue,
+                  language: context => context.captures.language,
+                },
+              ),
+              _id: { children: {} },
+            },
+          },
+          siteId: translatableAttributeMapping('operations/{operationSetIndex}/siteId'),
+          _id: { children: {} },
         },
       },
     },
@@ -627,25 +503,50 @@ export const KHP_MAPPING_NODE: MappingNode = {
     'interpretationTranslationServicesAvailable',
   ),
   available247: attributeMapping('booleanAttributes', 'available247'),
-  feeStructureSource: referenceAttributeMapping('feeStructureSource', 'khp-fee-structure-source', {
-    // We use objectId or the name for this referrable resources?
-    value: ctx => ctx.currentValue.objectId,
-    // value: ctx => ctx.currentValue.en || ctx.currentValue.fr,
-  }),
-  howIsServiceOffered: referenceAttributeMapping(
-    'howIsServiceOffered',
-    'khp-how-is-service-offered',
-    {
-      // We use objectId or the name for this referrable resources?
-      value: ctx => ctx.currentValue.objectId,
-      // value: ctx => ctx.currentValue.en || ctx.currentValue.fr,
+  feeStructureSource: {
+    children: {
+      '{feeStructureSourceIndex}': {
+        children: {
+          objectId: { children: {} },
+          '{language}': referenceAttributeMapping(
+            'feeStructure/{feeStructureSourceIndex}',
+            'khp-fee-structure-source',
+            {
+              value: ctx => ctx.parentValue.en,
+              language: ctx => ctx.captures.language,
+              // value: ctx => ctx.currentValue.en || ctx.currentValue.fr,
+            },
+          ),
+        },
+      },
     },
-  ),
-  accessibility: referenceAttributeMapping('accessibility', 'khp-accessibility', {
-    // We use objectId or the name for this referrable resources?
-    value: ctx => ctx.currentValue.objectId,
-    // value: ctx => ctx.currentValue.en || ctx.currentValue.fr,
-  }),
+  },
+
+  howIsServiceOffered: {
+    children: {
+      '{howIsServiceOfferedIndex}': {
+        children: {
+          '{language}': referenceAttributeMapping(
+            'howIsServiceOffered/{howIsServiceOfferedIndex}',
+            'khp-how-is-service-offered',
+            {
+              value: ctx => ctx.parentValue.en,
+              language: ctx => ctx.captures.language,
+              // value: ctx => ctx.currentValue.en || ctx.currentValue.fr,
+            },
+          ),
+        },
+      },
+    },
+  },
+  accessibility: {
+    children: {
+      objectId: { children: {} },
+      '{language}': translatableAttributeMapping('accessibility', {
+        language: ctx => ctx.captures.language,
+      }),
+    },
+  },
   volunteer: {
     children: {
       '{language}': translatableAttributeMapping('volunteer', {

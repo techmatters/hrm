@@ -15,14 +15,14 @@
  */
 
 import parseISO from 'date-fns/parseISO';
-import { handler, HttpError, isHttpError, KhpApiResource, KhpApiResponse } from '../../index';
+import { handler, HttpError, isHttpError, KhpApiResource, KhpApiResponse } from '../../src';
 import each from 'jest-each';
 // eslint-disable-next-line prettier/prettier
 import type { FlatResource, ImportProgress } from '@tech-matters/types';
 import { ScheduledEvent } from 'aws-lambda';
 import { addMilliseconds, addSeconds, subHours, subMinutes } from 'date-fns';
-import { publishToImportConsumer, ResourceMessage } from '../../clientSqs';
-import getConfig from '../../config';
+import { publishToImportConsumer, ResourceMessage } from '../../src/clientSqs';
+import getConfig from '../../src/config';
 import { Response } from 'undici';
 
 declare var fetch: typeof import('undici').fetch;
@@ -31,11 +31,11 @@ jest.mock('@tech-matters/ssm-cache', () => ({
   getSsmParameter: () => 'static-key',
 }));
 
-jest.mock('../../clientSqs', () => ({
+jest.mock('../../src/clientSqs', () => ({
   publishToImportConsumer: jest.fn(),
 }));
 
-jest.mock('../../config', () => jest.fn());
+jest.mock('../../src/config', () => jest.fn());
 
 
 const mockFetch: jest.Mock<ReturnType<typeof fetch>> = jest.fn();
@@ -125,8 +125,8 @@ const testCases: HandlerTestCase[] = [
     externalApiResponse: { data: [], totalResults: 0 },
     expectedExternalApiCallParameters: [
       {
-        fromDate: new Date(0).toISOString(),
-        toDate: testNow.toISOString(),
+        startDate: new Date(0).toISOString(),
+        endDate: testNow.toISOString(),
         limit: '1000',
       },
     ],
@@ -140,8 +140,8 @@ const testCases: HandlerTestCase[] = [
       ], totalResults:2 },
     expectedExternalApiCallParameters: [
       {
-        fromDate:new Date(0).toISOString(),
-        toDate:testNow.toISOString(),
+        startDate: new Date(0).toISOString(),
+        endDate: testNow.toISOString(),
         limit: '1000',
       },
     ],
@@ -158,8 +158,8 @@ const testCases: HandlerTestCase[] = [
       ], totalResults:2 },
     expectedExternalApiCallParameters: [
       {
-        fromDate:addMilliseconds(subHours(testNow, 1), 1).toISOString(),
-        toDate:testNow.toISOString(),
+        startDate: addMilliseconds(subHours(testNow, 1), 1).toISOString(),
+        endDate: testNow.toISOString(),
         limit: '1000',
       },
     ],
@@ -202,6 +202,7 @@ describe('resources-import-producer handler', () => {
         expect(url.searchParams.get(key)).toEqual(value);
       });
       expect(url.searchParams.get('sort')).toEqual('updatedAt');
+      expect(url.searchParams.get('dateType')).toEqual('updatedAt');
       expect(url.toString().startsWith(`https://external-url/api/resources`)).toBeTruthy();
       expect(options).toStrictEqual({
         method: 'GET',

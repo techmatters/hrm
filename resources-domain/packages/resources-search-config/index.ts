@@ -20,23 +20,23 @@ import { getCreateIndexParams } from './getCreateIndexParams';
 
 export const resourceSearchConfiguration: SearchConfiguration = {
   searchFieldBoosts: {
-    name: 4,
-    id: 4,
-    high_boost_global: 3,
-    low_boost_global: 2,
+    'name.*': 4,
+    'id.*': 4,
+    'high_boost_global.*': 3,
+    'low_boost_global.*': 2,
     '*': 1,
     '*.*': 1,
   },
   filterMappings: {
-    eligibilityMinAge: {
+    minEligibleAge: {
       type: 'range',
       targetField: 'eligibilityMaxAge',
-      operator: 'lte',
+      operator: 'gte',
     },
-    eligibilityMaxAge: {
+    maxEligibleAge: {
       type: 'range',
       targetField: 'eligibilityMinAge',
-      operator: 'gte',
+      operator: 'lte',
     },
     interpretationTranslationServicesAvailable: {
       type: 'term',

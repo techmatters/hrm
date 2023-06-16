@@ -14,18 +14,22 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { transformExternalResourceToApiResource } from '../../transformExternalResourceToApiResource';
+import {
+  transformExternalResourceToApiResource,
+  transformKhpResourceToApiResource,
+} from '../../src/transformExternalResourceToApiResource';
 import {
   MappingNode,
   resourceFieldMapping,
   attributeMapping,
   referenceAttributeMapping,
   translatableAttributeMapping,
-} from '../../mappers';
+} from '../../src/mappers';
 import { AccountSID, FlatResource } from '@tech-matters/types';
 import each from 'jest-each';
+import { khpResourceWithoutSites, khpResourceWithSites } from '../fixtures/sampleResources';
 
-const startedDate = Date.now().toString();
+const startedDate = new Date().toISOString();
 const ACCOUNT_SID: AccountSID = 'AC000';
 
 const mergeWithCleanResource = (partialResource: Partial<FlatResource> = {}): FlatResource => ({
@@ -80,7 +84,7 @@ describe('Dynamic captures', () => {
     expect(result).toMatchObject(expected);
   });
 
-  test('Mapping an attribute with dynamica and static capture - should capture only the non-static keys', async () => {
+  test('Mapping an attribute with dynamic and static capture - should capture only the non-static keys', async () => {
     const resource = {
       attribute: {
         another: true,
@@ -869,5 +873,36 @@ describe('Simple mapping, nested structure', () => {
 
     const result = transformExternalResourceToApiResource(mapping, ACCOUNT_SID, resource);
     expect(result).toMatchObject(expected);
+  });
+});
+
+/**
+ * Not the most scientific tests, but a vehicle to verify we are handling the real data correctly as it evolves.
+ */
+describe('Mapping valid sample resources should produce no warnings', () => {
+  type TestCase = {
+    description: string;
+    resource: any;
+  };
+
+  const testCases: TestCase[] = [
+    {
+      description: 'KHP resource with no sites',
+      resource: khpResourceWithoutSites,
+    },
+    {
+      description: 'KHP resource with sites',
+      resource: khpResourceWithSites,
+    },
+  ];
+
+  each(testCases).test('$description', ({ resource }) => {
+    const warnSpy = jest.spyOn(console, 'warn');
+    try {
+      console.log(JSON.stringify(transformKhpResourceToApiResource('AC000', resource), null, 2));
+      expect(warnSpy).not.toHaveBeenCalled();
+    } finally {
+      warnSpy.mockRestore();
+    }
   });
 });

@@ -28,6 +28,7 @@ import parseISO from 'date-fns/parseISO';
  */
 export type FieldMappingContext = {
   currentValue?: any;
+  parentValue?: any;
   captures: Record<string, string>;
   path: string[];
   rootResource: any;
@@ -129,12 +130,12 @@ export type MappingNode = {
   };
 };
 
-export const substitueCaptureTokens = (
+export const substituteCaptureTokens = (
   keyTemplate: string,
   context: FieldMappingContext,
 ): string => {
   return keyTemplate.replace(
-    /{(?<captureToken>.*)}/g,
+    /{(?<captureToken>.+?)}/g,
     (_, captureTokenProperty) => context.captures[captureTokenProperty],
   );
 };
@@ -159,7 +160,7 @@ export const attributeMapping = <T extends AttributeProperty>(
   } = {},
 ): AttributeMapping<AttributeProperty> => ({
   property,
-  keyGenerator: typeof key === 'function' ? key : context => substitueCaptureTokens(key, context),
+  keyGenerator: typeof key === 'function' ? key : context => substituteCaptureTokens(key, context),
   valueGenerator:
     typeof value === 'function'
       ? value
@@ -179,8 +180,8 @@ export const translatableAttributeMapping = (
   }: {
     value?: ValueOrContextConsumerFunc<string>;
     info?: ContextConsumerFunc<Record<string, any> | null>;
-    language: ValueOrContextConsumerFunc<string>;
-  },
+    language?: ValueOrContextConsumerFunc<string>;
+  } = {},
 ): TranslatableAttributeMapping => {
   const mappingResult = attributeMapping('stringAttributes', key, {
     value,
@@ -196,7 +197,7 @@ export const translatableAttributeMapping = (
 
   return {
     ...mappingResult,
-    languageGenerator: typeof language === 'function' ? language : () => language,
+    languageGenerator: typeof language === 'function' ? language : () => language ?? '',
   };
 };
 
