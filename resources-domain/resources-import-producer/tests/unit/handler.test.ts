@@ -125,8 +125,8 @@ const testCases: HandlerTestCase[] = [
     externalApiResponse: { data: [], totalResults: 0 },
     expectedExternalApiCallParameters: [
       {
-        fromDate: new Date(0).toISOString(),
-        toDate: testNow.toISOString(),
+        startDate: new Date(0).toISOString(),
+        endDate: testNow.toISOString(),
         limit: '1000',
       },
     ],
@@ -140,8 +140,8 @@ const testCases: HandlerTestCase[] = [
       ], totalResults:2 },
     expectedExternalApiCallParameters: [
       {
-        fromDate:new Date(0).toISOString(),
-        toDate:testNow.toISOString(),
+        startDate:new Date(0).toISOString(),
+        endDate:testNow.toISOString(),
         limit: '1000',
       },
     ],
@@ -158,8 +158,8 @@ const testCases: HandlerTestCase[] = [
       ], totalResults:2 },
     expectedExternalApiCallParameters: [
       {
-        fromDate:addMilliseconds(subHours(testNow, 1), 1).toISOString(),
-        toDate:testNow.toISOString(),
+        startDate:addMilliseconds(subHours(testNow, 1), 1).toISOString(),
+        endDate:testNow.toISOString(),
         limit: '1000',
       },
     ],
