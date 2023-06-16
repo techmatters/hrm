@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { parameterizedQuery } from '../dist';
+import { parameterizedQuery } from '../src';
 
 describe('parameterizedQuery', () => {
   const testCases = [
