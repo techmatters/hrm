@@ -1,5 +1,59 @@
 {
-  "development": ["us-east-1"],
-  "staging": ["us-east-1", "eu-west-1"],
-  "production": ["us-east-1", "eu-west-1", "ca-central-1"]
+  "development": {
+    "us-east-1": {
+      "lambda-groups": {
+        "resources-import-consumer": ["resources-import-consumer"],
+        "resources-import-producer": ["resources-import-producer-as"],
+        "resources-search-complete": ["resources-search-complete"],
+        "resources-search-index": ["resources-search-index"]
+      }
+    }
+  },
+  "staging": {
+    "us-east-1": {
+      "lambda-groups": {
+        "resources-import-consumer": ["resources-import-consumer"],
+        "resources-import-producer": [
+          "resources-import-producer-as",
+          "resources-import-producer-khp"
+        ],
+        "resources-search-complete": ["resources-search-complete"],
+        "resources-search-index": ["resources-search-index"]
+      }
+    },
+    "eu-west-1": {
+      "lambda-groups": {
+        "resources-import-consumer": [],
+        "resources-import-producer": [],
+        "resources-search-complete": [],
+        "resources-search-index": []
+      }
+    }
+  },
+  "production": {
+    "us-east-1": {
+      "lambda-groups": {
+        "resources-import-consumer": [],
+        "resources-import-producer": [],
+        "resources-search-complete": [],
+        "resources-search-index": []
+      }
+    },
+    "eu-west-1": {
+      "lambda-groups": {
+        "resources-import-consumer": [],
+        "resources-import-producer": [],
+        "resources-search-complete": [],
+        "resources-search-index": []
+      }
+    },
+    "ca-central-1": {
+      "lambda-groups": {
+        "resources-import-consumer": [],
+        "resources-import-producer": [],
+        "resources-search-complete": [],
+        "resources-search-index": []
+      }
+    }
+  }
 }

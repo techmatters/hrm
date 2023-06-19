@@ -18,14 +18,14 @@ import * as twilioClient from '../../index';
 
 describe('getClient', () => {
   it('when called in a single session with multiple accountSids should return twilio client for multiple accounts', async () => {
-    const clientAccountSid1 = twilioClient.getClient({
+    const clientAccountSid1 = await twilioClient.getClient({
       accountSid: 'accountSid1',
       authToken: 'mockAuthToken',
     });
 
     expect(clientAccountSid1.tokens.toJSON().accountSid).toBe('accountSid1');
 
-    const clientAccountSid2 = twilioClient.getClient({
+    const clientAccountSid2 = await twilioClient.getClient({
       accountSid: 'accountSid2',
       authToken: 'mockAuthToken',
     });

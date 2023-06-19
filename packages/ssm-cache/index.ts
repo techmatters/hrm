@@ -105,11 +105,18 @@ export const loadParameter = async (name: string) => {
   addToCache(undefined, Parameter);
 };
 
-export const getSsmParameter = async (name: string): Promise<string> => {
+export const getSsmParameter = async (
+  name: string,
+  cacheDurationMilliseconds?: number,
+): Promise<string> => {
+  const oldCacheDurationMilliseconds = ssmCache.cacheDurationMilliseconds;
+  if (cacheDurationMilliseconds) setCacheDurationMilliseconds(cacheDurationMilliseconds);
+
   // If the cache doesn't have the requested parameter or if it is expired, load it
   if (!parameterExistsInCache(name) || hasParameterExpired(ssmCache.values[name])) {
     await loadParameter(name);
   }
+  setCacheDurationMilliseconds(oldCacheDurationMilliseconds);
 
   // If the cache still doesn't have the requested parameter, throw an error
   if (!parameterExistsInCache(name)) {

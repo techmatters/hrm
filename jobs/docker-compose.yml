@@ -46,3 +46,21 @@ services:
       - completed_sqs_queue_url
     env_file:
       - ../.env.localstack
+
+  resources-import-consumer:
+    image: hrm-resources-import-consumer
+    ports:
+      - '9003:8080'
+    environment:
+      - completed_sqs_queue_url
+    env_file:
+      - ../.env.localstack
+
+  resources-import-producuer:
+    image: hrm-resources-import-producer
+    ports:
+      - '9004:8080'
+    environment:
+      - completed_sqs_queue_url
+    env_file:
+      - ../.env.localstack

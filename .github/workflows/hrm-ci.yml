@@ -38,6 +38,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Run Elasticsearch
+        uses: elastic/elastic-github-actions/elasticsearch@master
+        with:
+          stack-version: 8.7.0
+          security-enabled: false
+
       - name: Checkout Branch
         uses: actions/checkout@v2
 
@@ -67,7 +73,7 @@ jobs:
           # POSTGRES_PASSWORD - superuser password
           postgresql password: postgres
           # POSTGRES_INIT_SCRIPTS - directory containing DB init scripts
-          postgresql init scripts: hrm-service/service-tests/db-init
+          postgresql init scripts: test-support/db-init
 
       - name: Run Service Tests
         run: npm run test:service:ci

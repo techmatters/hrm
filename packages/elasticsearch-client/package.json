@@ -1,0 +1,23 @@
+{
+  "name": "@tech-matters/elasticsearch-client",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "types": "index.d.ts",
+  "scripts": {
+    "test:unit": "jest src",
+    "test:service": "jest tests/service/config"
+  },
+  "author": "",
+  "license": "AGPL",
+  "dependencies": {
+    "@elastic/elasticsearch": "^8.7.0",
+    "@tech-matters/ssm-cache": "^1.0.0",
+    "@tech-matters/types": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^18.15.11",
+    "jest-each": "^29.5.0",
+    "lodash": "^4.17.21"
+  }
+}

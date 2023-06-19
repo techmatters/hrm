@@ -20,3 +20,17 @@ export class ContactJobProcessorError extends Error {
     this.name = 'ContactJobProcessorError';
   }
 }
+
+export class ResourceImportProcessorError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ResourceImportProcessorError';
+  }
+}
+
+export class ResourcesJobProcessorError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ResourcesJobProcessorError';
+  }
+}

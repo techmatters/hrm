@@ -15,12 +15,15 @@
  */
 
 import { Twilio } from 'twilio';
+import { getSsmParameter } from '@tech-matters/ssm-cache';
 
 import { getMockClient } from './mockClient';
 
 type ClientCache = {
   [accountSid: string]: Twilio;
 };
+
+export type TwilioClient = Twilio;
 
 const clientCache: ClientCache = {};
 
@@ -39,13 +42,28 @@ const getClientOrMock = ({
   return new Twilio(accountSid, authToken);
 };
 
-export const getClient = ({
+export const getAuthToken = async (
+  accountSid: string,
+  authToken: string | undefined,
+): Promise<string> => {
+  if (authToken) return authToken;
+
+  if (process.env.TWILIO_CLIENT_USE_ENV_AUTH_TOKEN && process.env.TWILIO_AUTH_TOKEN) {
+    return process.env.TWILIO_AUTH_TOKEN;
+  }
+
+  return getSsmParameter(`/${process.env.NODE_ENV}/twilio/${accountSid}/auth_token`);
+};
+
+export const getClient = async ({
   accountSid,
-  authToken,
+  authToken: authTokenParam,
 }: {
   accountSid: string;
-  authToken: string;
-}): Twilio => {
+  authToken?: string;
+}): Promise<Twilio> => {
+  const authToken = await getAuthToken(accountSid, authTokenParam);
+
   if (!clientCache[accountSid]) {
     clientCache[accountSid] = getClientOrMock({ accountSid, authToken });
   }

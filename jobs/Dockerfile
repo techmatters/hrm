@@ -12,8 +12,10 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see https://www.gnu.org/licenses/.
 
-FROM public.ecr.aws/lambda/nodejs:16 as build
+FROM public.ecr.aws/lambda/nodejs:18 as build
 
+ARG lambda_dir
+ENV lambda_dir ${lambda_dir}
 ARG lambda_name
 ENV lambda_name ${lambda_name}
 
@@ -22,27 +24,28 @@ ENV lambda_name ${lambda_name}
 # copy the hrm-lib package and labmdas folders so that the file: based
 # dependency in package.json can be resolved
 COPY packages /tmp/build/packages
-COPY jobs/${lambda_name} /tmp/build/jobs/${lambda_name}
-COPY jobs/tsconfig.json /tmp/build/jobs/tsconfig.json
-COPY package.json package-lock.json tsconfig.json tsconfig.base.json tsconfig.build.jobs.${lambda_name}.json /tmp/build/
+COPY ${lambda_dir}/${lambda_name} /tmp/build/${lambda_dir}/${lambda_name}
+COPY ${lambda_dir}/packages /tmp/build/${lambda_dir}/packages
+COPY ${lambda_dir}/tsconfig.json /tmp/build/${lambda_dir}/tsconfig.json
+COPY package.json package-lock.json tsconfig.json tsconfig.base.json tsconfig.build.${lambda_dir}.${lambda_name}.json /tmp/build/
 
-RUN cd /tmp/build \
-    && npm ci -w jobs/${lambda_name} -w packages/* \
-    && npx tsc -b tsconfig.build.jobs.${lambda_name}.json \
-    && cp jobs/${lambda_name}/dist/*.js /var/task/ \
+RUN yum install -y rsync \
+    && cd /tmp/build \
+    && npm ci -w ${lambda_dir}/${lambda_name} -w packages/* -w ${lambda_dir}/packages/* \
+    && npx tsc -b tsconfig.build.${lambda_dir}.${lambda_name}.json --verbose \
+    && cp ${lambda_dir}/${lambda_name}/dist/*.js /var/task/ \
     && cp -r packages /var/task/ \
-    && cp -r node_modules /var/task/ \
-    && rm -rf /var/task/node_modules/typescript \
-    && rm -rf /tmp/* \
-    && rm -rf /root/.cache \
-    && rm -rf /root/.npm \
-    && rm -rf /usr/local/share/.cache \
-    && rm -rf /usr/local/lib/node_modules
+    && mkdir /var/task/${lambda_dir} \
+    && cp -r ${lambda_dir}/packages /var/task/${lambda_dir}/packages/ \
+    && cp -r node_modules /var/task/
+
+# Ignore errors if node_modules is not present
+RUN rsync -a ${lambda_dir}/${lambda_name}/node_modules/ /var/task/node_modules; exit 0
 
 # The added layers from our build increase image size significantly. This flattens the image
 # to reduce the size of the final image.
-FROM scratch
-COPY --from=build / /
+FROM public.ecr.aws/lambda/nodejs:18
+COPY --from=build /var/task /var/task
 
 # all of this is a little more fragile than I would like because we have to duplicate the parent repo
 # at https://github.com/aws/aws-lambda-base-images/blob/nodejs16.x/Dockerfile.nodejs16.x
