@@ -33,6 +33,43 @@ jobs:
 
       - name: Run Lint
         run: npm run lint
+  build-lambda-containers:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        lambda_name:
+          - contact-retrieve-recording-url
+          - contact-retrieve-transcript
+          - resources-import-consumer
+          - resources-import-producer
+          - resources-search-complete
+          - resources-search-index
+    steps:
+      - name: Checkout Branch
+        uses: actions/checkout@v2
+      - name: Build Lambda Docker Images
+        uses: docker/build-push-action@v4
+        with:
+          context: ./
+          file: ./jobs/Dockerfile
+          build-args: |
+            lambda_name=${{ matrix.lambda_name }}
+            lambda_dir=${{ (startsWith(matrix.lambda_name, 'resources') && 'resources') || 'hrm' }}-domain
+          push: false
+          tags: ${{ matrix.lambda_name }}-ci-test
+
+  build-service-container:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Branch
+        uses: actions/checkout@v2
+      - name: Build Service Docker Image
+        uses: docker/build-push-action@v2
+        with:
+          context: ./
+          file: ./hrm-domain/hrm-service/Dockerfile
+          push: false
+          tags: hrm-service-ci-test
 
   test:
     runs-on: ubuntu-latest
