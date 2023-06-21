@@ -24,10 +24,13 @@ const getConfig = async () => {
     throw new Error('Missing NODE_ENV');
   }
   const helplineShortCode = process.env.helpline_short_code ?? 'as';
+  console.debug(`helplineShortCode: ${helplineShortCode}`);
 
   const accountSid: AccountSID = (await getSsmParameter(
     `/${deploymentEnvironment}/twilio/${helplineShortCode.toUpperCase()}/account_sid`,
   )) as AccountSID;
+
+  console.debug(`/${deploymentEnvironment}/twilio/${helplineShortCode.toUpperCase()}/account_sid value: ${accountSid}`);
   const [importApiBaseUrl, importApiKey, importApiAuthHeader, internalResourcesApiKey]  = await Promise.all([
 
     getSsmParameter(
