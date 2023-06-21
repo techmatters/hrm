@@ -18,11 +18,11 @@
 import type { AccountSID } from '@tech-matters/types';
 import { getSsmParameter } from '@tech-matters/ssm-cache';
 
-const debugGetSsmParameter = async (path: string) => {
+const debugGetSsmParameter = async (path: string, showValue = false) => {
   console.debug(`Getting SSM parameter: ${path}`);
   try {
     const value = await getSsmParameter(path);
-    console.debug(`Got SSM parameter: ${path} value: ${value}`);
+    console.debug(`Got SSM parameter: ${path} value: ${showValue ? value : value.replace(/./g, '*')}`);
     return value;
   } catch (e) {
     console.error(`Error getting SSM parameter: ${path}`, e);
@@ -45,7 +45,7 @@ const getConfig = async () => {
   const [importApiBaseUrl, importApiKey, importApiAuthHeader, internalResourcesApiKey]  = await Promise.all([
 
     debugGetSsmParameter(
-      `/${deploymentEnvironment}/resources/${accountSid}/import_api/base_url`,
+      `/${deploymentEnvironment}/resources/${accountSid}/import_api/base_url`, true,
     ),
     debugGetSsmParameter(
     `/${deploymentEnvironment}/resources/${accountSid}/import_api/api_key`,
