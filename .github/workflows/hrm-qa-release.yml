@@ -84,6 +84,8 @@ jobs:
 
       - name: Install Flex Plugin
         uses: ./flex-plugins/.github/actions/install-flex-plugin
+        with:
+          path: ./flex-plugins
 
       # Build Playwright
       - name: Install e2e-tests dependencies
