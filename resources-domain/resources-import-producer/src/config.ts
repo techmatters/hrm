@@ -18,28 +18,42 @@
 import type { AccountSID } from '@tech-matters/types';
 import { getSsmParameter } from '@tech-matters/ssm-cache';
 
+const debugGetSsmParameter = async (path: string, logValue = false) => {
+  console.debug(`Getting SSM parameter: ${path}`);
+  try {
+    const value = await getSsmParameter(path);
+    console.debug(`Got SSM parameter: ${path} value: ${logValue ? value : value.replace(/./g, '*')}`);
+    return value;
+  } catch (e) {
+    console.error(`Error getting SSM parameter: ${path}`, e);
+    throw e;
+  }
+};
+
 const getConfig = async () => {
   const deploymentEnvironment = process.env.NODE_ENV;
   if (!deploymentEnvironment) {
     throw new Error('Missing NODE_ENV');
   }
   const helplineShortCode = process.env.helpline_short_code ?? 'as';
+  console.debug(`helplineShortCode: ${helplineShortCode}`);
 
-  const accountSid: AccountSID = (await getSsmParameter(
+  const accountSid: AccountSID = (await debugGetSsmParameter(
     `/${deploymentEnvironment}/twilio/${helplineShortCode.toUpperCase()}/account_sid`,
   )) as AccountSID;
+
   const [importApiBaseUrl, importApiKey, importApiAuthHeader, internalResourcesApiKey]  = await Promise.all([
 
-    getSsmParameter(
-      `/${deploymentEnvironment}/resources/${accountSid}/import_api/base_url`,
+    debugGetSsmParameter(
+      `/${deploymentEnvironment}/resources/${accountSid}/import_api/base_url`, true,
     ),
-    getSsmParameter(
+    debugGetSsmParameter(
     `/${deploymentEnvironment}/resources/${accountSid}/import_api/api_key`,
     ),
-    getSsmParameter(
+    debugGetSsmParameter(
       `/${deploymentEnvironment}/resources/${accountSid}/import_api/auth_header`,
     ),
-    getSsmParameter(`/${deploymentEnvironment}/twilio/${accountSid}/static_key`),
+    debugGetSsmParameter(`/${deploymentEnvironment}/twilio/${accountSid}/static_key`),
   ]);
   return {
     importResourcesSqsQueueUrl: new URL(process.env.pending_sqs_queue_url ?? ''),
