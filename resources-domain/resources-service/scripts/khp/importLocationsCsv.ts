@@ -20,19 +20,19 @@ import fs from 'fs';
 import { pgp } from '../../src/connection-pool';
 
 const CANADIAN_PROVINCE_NAME_CODE_MAP = {
-  Alberta: 'AB',
-  'British Columbia': 'BC',
-  Manitoba: 'MB',
-  'New Brunswick': 'NB',
-  'Newfoundland and Labrador': 'NL',
-  'Northwest Territories': 'NT',
-  'Nova Scotia': 'NS',
-  Nunavut: 'NU',
-  Ontario: 'ON',
-  'Prince Edward Island': 'PE',
-  Quebec: 'QC',
-  Saskatchewan: 'SK',
-  Yukon: 'YT',
+  Alberta: ['AB', 48],
+  'British Columbia': ['BC', 59],
+  Manitoba: ['MB', 46],
+  'New Brunswick': ['NB', 13],
+  'Newfoundland and Labrador': ['NL', 10],
+  'Northwest Territories': ['NT', 61],
+  'Nova Scotia': ['NS', 12],
+  Nunavut: ['NU', 62],
+  Ontario: ['ON', 35],
+  'Prince Edward Island': ['PE', 11],
+  Quebec: ['QC', 24],
+  Saskatchewan: ['SK', 47],
+  Yukon: ['YT', 60],
 } as const;
 
 const CANADIAN_PROVINCE_CODE_FR_MAP = {
@@ -56,36 +56,45 @@ type FilterOption = {
   label: string;
 };
 
-const TARGET_FILE_PATH = './reference-data/khp_cities_20230612.sql';
-const TARGET_JSON_CITIES_FILE_PATH = './reference-data/khp_cities_20230612.json';
-const TARGET_JSON_PROVINCES_FILE_PATH = './reference-data/khp_provinces_20230612.json';
 const main = async () => {
   if (process.argv.length < 3) {
     console.error('Usage: node importLocationsCsv.js <accountSid>');
     process.exit(1);
   }
-  const sqlFile = fs.createWriteStream(TARGET_FILE_PATH);
+  const accountSid = process.argv[2];
+  const targetFilePath = `./reference-data/khp_cities_with_codes_20230622_${accountSid}.sql`;
+  const targetJsonCitiesFilePath = `./reference-data/khp_cities_with_codes_20230622_${accountSid}.json`;
+  const targetJsonProvincesFilePath = `./reference-data/khp_provinces_20230622_${accountSid}.json`;
+  const sqlFile = fs.createWriteStream(targetFilePath);
 
   const provincesJson: FilterOption[] = [];
   const citiesJson: FilterOption[] = [];
   const csvLines = fs
-    .createReadStream('./reference-data/khp_cities_20230612.csv')
+    .createReadStream('./reference-data/khp_cities_with_codes_20230622.csv')
     .pipe(parse({ fromLine: 2 }));
   sqlFile.write(`--- PROVINCES ---\n\n`);
 
-  Object.entries(CANADIAN_PROVINCE_NAME_CODE_MAP).forEach(([name, code]) => {
+  Object.entries(CANADIAN_PROVINCE_NAME_CODE_MAP).forEach(([name, [code, geographicCode]]) => {
     sqlFile.write(
       pgp.as.format(
         `
-INSERT INTO resources."ResourceReferenceStringAttributeValues" ("accountSid", "list", "id", "value", "language", "info") VALUES ($<accountSid>, 'provinces', $<id>, $<value>, 'en', $<info>);
-INSERT INTO resources."ResourceReferenceStringAttributeValues" ("accountSid", "list", "id", "value", "language", "info") VALUES ($<accountSid>, 'provinces', $<idFr>, $<value>, 'fr', $<infoFr>);`,
+INSERT INTO resources."ResourceReferenceStringAttributeValues" ("accountSid", "list", "id", "value", "language", "info") VALUES ($<accountSid>, 'provinces', $<id>, $<value>, 'en', $<info>)
+ON CONFLICT DO NOTHING;
+INSERT INTO resources."ResourceReferenceStringAttributeValues" ("accountSid", "list", "id", "value", "language", "info") VALUES ($<accountSid>, 'provinces', $<idFr>, $<value>, 'fr', $<infoFr>)
+ON CONFLICT DO NOTHING;
+UPDATE resources."ResourceReferenceStringAttributes" SET "referenceId" = $<id> WHERE "accountSid" = $<accountSid> AND "list" = 'provinces' AND "referenceId" = $<oldId>;
+UPDATE resources."ResourceReferenceStringAttributes" SET "referenceId" = $<idFr> WHERE "accountSid" = $<accountSid> AND "list" = 'provinces' AND "referenceId" = $<oldIdFr>;
+DELETE FROM resources."ResourceReferenceStringAttributeValues" WHERE "accountSid" = $<accountSid> AND "list" = 'provinces' AND "id" IN ($<oldId>, $<oldIdFr>);
+`,
         {
-          accountSid: process.argv[2],
-          id: `CA-${code}-en`,
-          idFr: `CA-${code}-fr`,
+          accountSid,
+          id: `CA-${geographicCode}-en`,
+          idFr: `CA-${geographicCode}-fr`,
           value: `CA/${code}`,
-          info: { name },
+          info: { name, geographicCode },
           infoFr: { name: CANADIAN_PROVINCE_CODE_FR_MAP[code] },
+          oldId: `CA-${code}-en`,
+          oldIdFr: `CA-${code}-fr`,
         },
       ),
     );
@@ -96,31 +105,47 @@ INSERT INTO resources."ResourceReferenceStringAttributeValues" ("accountSid", "l
   });
   sqlFile.write('\n\n--- CITIES ---\n\n');
   for await (const line of csvLines) {
-    const [cityEn, cityFr, , , province] = line as string[];
-    const provinceCode =
-      CANADIAN_PROVINCE_NAME_CODE_MAP[province as keyof typeof CANADIAN_PROVINCE_NAME_CODE_MAP];
+    const [geographicCode, cityEn, cityFr, csdType, , province] = line as string[];
+    const [provinceCode] = CANADIAN_PROVINCE_NAME_CODE_MAP[
+      province as keyof typeof CANADIAN_PROVINCE_NAME_CODE_MAP
+    ];
     const sqlStatement = pgp.as.format(
       `
-INSERT INTO resources."ResourceReferenceStringAttributeValues" ("accountSid", "list", "id", "value", "language", "info") VALUES ($<accountSid>, 'cities', $<id>, $<value>, 'en', $<info>);
-INSERT INTO resources."ResourceReferenceStringAttributeValues" ("accountSid", "list", "id", "value", "language", "info") VALUES ($<accountSid>, 'cities', $<idFr>, $<value>, 'fr', $<infoFr>);`,
+INSERT INTO resources."ResourceReferenceStringAttributeValues" ("accountSid", "list", "id", "value", "language", "info") VALUES ($<accountSid>, 'cities', $<id>, $<value>, 'en', $<info>)
+ON CONFLICT DO NOTHING;;
+INSERT INTO resources."ResourceReferenceStringAttributeValues" ("accountSid", "list", "id", "value", "language", "info") VALUES ($<accountSid>, 'cities', $<idFr>, $<value>, 'fr', $<infoFr>)
+ON CONFLICT DO NOTHING;
+UPDATE resources."ResourceReferenceStringAttributes" SET "referenceId" = $<id> WHERE "accountSid" = $<accountSid> AND "list" = 'cities' AND "referenceId" = $<oldId>;
+UPDATE resources."ResourceReferenceStringAttributes" SET "referenceId" = $<idFr> WHERE "accountSid" = $<accountSid> AND "list" = 'cities' AND "referenceId" = $<oldIdFr>;
+DELETE FROM resources."ResourceReferenceStringAttributeValues" WHERE "accountSid" = $<accountSid> AND "list" = 'provinces' AND "id" IN ($<oldId>, $<oldIdFr>);
+`,
       {
         accountSid: process.argv[2],
-        id: `CA-${provinceCode}-${cityEn}-en`,
-        idFr: `CA-${provinceCode}-${cityEn}-fr`,
+        id: `CA-${geographicCode}-en`,
+        idFr: `CA-${geographicCode}-fr`,
         value: `CA/${provinceCode}/${cityEn}`,
-        info: { name: cityEn },
-        infoFr: { name: cityFr },
+        info: { name: cityEn, geographicCode, csdType },
+        infoFr: { name: cityFr, geographicCode, csdType },
+        oldId: `CA-${provinceCode}-${cityEn}-en`,
+        oldIdFr: `CA-${provinceCode}-${cityEn}-fr`,
       },
     );
     sqlFile.write(sqlStatement);
-    citiesJson.push({
-      label: cityEn,
-      value: `CA/${provinceCode}/${cityEn}`,
-    });
+    if (
+      csdType === 'Town' ||
+      csdType === 'City' ||
+      csdType === 'Ville' ||
+      csdType === 'Municipalité'
+    ) {
+      citiesJson.push({
+        label: cityEn,
+        value: `CA/${provinceCode}/${cityEn}`,
+      });
+    }
   }
   sqlFile.end();
-  fs.writeFileSync(TARGET_JSON_CITIES_FILE_PATH, JSON.stringify(citiesJson, null, 2));
-  fs.writeFileSync(TARGET_JSON_PROVINCES_FILE_PATH, JSON.stringify(provincesJson, null, 2));
+  fs.writeFileSync(targetJsonCitiesFilePath, JSON.stringify(citiesJson, null, 2));
+  fs.writeFileSync(targetJsonProvincesFilePath, JSON.stringify(provincesJson, null, 2));
 };
 
 main().catch(err => {
