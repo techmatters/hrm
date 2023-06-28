@@ -15,7 +15,7 @@
         "resources-import-consumer": ["resources-import-consumer"],
         "resources-import-producer": [
           "resources-import-producer-as",
-          "resources-import-producer-khp"
+          "resources-import-producer-ca"
         ],
         "resources-search-complete": ["resources-search-complete"],
         "resources-search-index": ["resources-search-index"]
