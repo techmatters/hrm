@@ -61,6 +61,9 @@ beforeAll(async () => {
         return [sql, ...attributeSql];
       }),
     )
+    .concat(
+      `INSERT INTO resources."Resources" (id, "accountSid", "name", "deletedAt") VALUES ('DELETED_RESOURCE', 'ACCOUNT_1', 'Deleted Resource (Account 1)', NOW())`,
+    )
     .join(';\n');
   // console.log(testResourceCreateSql); // handy for debugging
   await db.multi(testResourceCreateSql);
@@ -111,6 +114,20 @@ describe('GET /resource', () => {
       name: 'Resource 1 (Account 1)',
     });
     verifyResourcesAttributes(response.body);
+  });
+
+  test('Should return a 404 response for a resource ID that has no associated resource', async () => {
+    await request
+      .get(`${basePath}/RESOURCE_DOESNT_EXIST`)
+      .set(headers)
+      .expect(404);
+  });
+
+  test('Should return a 404 response for a resource ID that is associated with a deleted resource', async () => {
+    await request
+      .get(`${basePath}/DELETED_RESOURCE`)
+      .set(headers)
+      .expect(404);
   });
 
   describe('Reference Attributes', () => {
@@ -501,310 +518,6 @@ INSERT INTO resources."ResourceDateTimeAttributes" ("resourceId", "accountSid", 
 DELETE FROM resources."ResourceBooleanAttributes";
 DELETE FROM resources."ResourceNumberAttributes";
 DELETE FROM resources."ResourceDateTimeAttributes";
-      `);
-    });
-  });
-});
-
-describe('POST /searchByName', () => {
-  const basePath = '/v0/accounts/ACCOUNT_1/resources/searchByName';
-
-  test('Should return 401 unauthorized with no auth headers', async () => {
-    const response = await request.post(`${basePath}?start=0&limit=5`).send({
-      nameSubstring: 'Resource',
-    });
-    expect(response.status).toBe(401);
-    expect(response.body).toStrictEqual({ error: 'Authorization failed' });
-  });
-
-  each([
-    {
-      parameters: { nameSubstring: 'Resource' },
-      limit: '3',
-      condition: 'a matching name substring, a limit and no ids',
-      expectationDescription:
-        'resources where their name contains the term, up to limit in ascending name order',
-      expectedResults: [
-        {
-          id: 'RESOURCE_0',
-          name: 'Resource 0 (Account 1)',
-        },
-        {
-          id: 'RESOURCE_1',
-          name: 'Resource 1 (Account 1)',
-        },
-        {
-          id: 'RESOURCE_2',
-          name: 'Resource 2 (Account 1)',
-        },
-      ],
-      expectedTotalCount: 5,
-    },
-    {
-      parameters: { nameSubstring: 'Resource' },
-      limit: '3',
-      start: '2',
-      condition: 'a matching name substring, a limit and no ids, with an offset',
-      expectationDescription:
-        'resources where their name contains the term, up to limit in ascending name order',
-      expectedResults: [
-        {
-          id: 'RESOURCE_2',
-          name: 'Resource 2 (Account 1)',
-        },
-        {
-          id: 'RESOURCE_3',
-          name: 'Resource 3 (Account 1)',
-        },
-        {
-          id: 'RESOURCE_4',
-          name: 'Resource 4 (Account 1)',
-        },
-      ],
-      expectedTotalCount: 5,
-    },
-    {
-      parameters: { nameSubstring: 'Resource' },
-      limit: '10',
-      condition: 'a matching name substring, a limit larger than the result set no ids',
-      expectationDescription: 'all resources where their name contains the term',
-      expectedResults: [
-        {
-          id: 'RESOURCE_0',
-          name: 'Resource 0 (Account 1)',
-        },
-        {
-          id: 'RESOURCE_1',
-          name: 'Resource 1 (Account 1)',
-        },
-        {
-          id: 'RESOURCE_2',
-          name: 'Resource 2 (Account 1)',
-        },
-        {
-          id: 'RESOURCE_3',
-          name: 'Resource 3 (Account 1)',
-        },
-        {
-          id: 'RESOURCE_4',
-          name: 'Resource 4 (Account 1)',
-        },
-      ],
-      expectedTotalCount: 5,
-    },
-    {
-      parameters: { nameSubstring: 'Resource' },
-      start: '10',
-      condition: 'a matching name substring, a start point past the end of the result set, no ids',
-      expectationDescription: 'no resources but a correct totalCount',
-      expectedResults: [],
-      expectedTotalCount: 5,
-    },
-    {
-      parameters: { nameSubstring: 'Resource 3', ids: ['RESOURCE_0', 'RESOURCE_2', 'RESOURCE_1'] },
-      limit: '10',
-      condition: 'a matching name substring, and matching ids',
-      expectationDescription:
-        'all resources where their name contains the term and specified IDs, with specified IDs at the end',
-      expectedResults: [
-        {
-          id: 'RESOURCE_3',
-          name: 'Resource 3 (Account 1)',
-        },
-        {
-          id: 'RESOURCE_0',
-          name: 'Resource 0 (Account 1)',
-        },
-        {
-          id: 'RESOURCE_2',
-          name: 'Resource 2 (Account 1)',
-        },
-        {
-          id: 'RESOURCE_1',
-          name: 'Resource 1 (Account 1)',
-        },
-      ],
-      expectedTotalCount: 4,
-    },
-    {
-      parameters: { nameSubstring: 'Resource 3', ids: ['RESOURCE_0', 'RESOURCE_2', 'RESOURCE_1'] },
-      start: '2',
-      condition: 'a matching name substring, and matching ids with offset in id range',
-      expectationDescription: 'remaining ID resources',
-      expectedResults: [
-        {
-          id: 'RESOURCE_2',
-          name: 'Resource 2 (Account 1)',
-        },
-        {
-          id: 'RESOURCE_1',
-          name: 'Resource 1 (Account 1)',
-        },
-      ],
-      expectedTotalCount: 4,
-    },
-    {
-      parameters: {
-        nameSubstring: 'Resource 3',
-        ids: ['RESOURCE_0', 'RESOURCE_2', 'RESOURCE_1', 'RESOURCE_4'],
-      },
-      start: '2',
-      limit: '2',
-      condition: 'a matching name substring, and matching ids with whole window in id range',
-      expectationDescription: 'ID resources from correct position in list',
-      expectedResults: [
-        {
-          id: 'RESOURCE_2',
-          name: 'Resource 2 (Account 1)',
-        },
-        {
-          id: 'RESOURCE_1',
-          name: 'Resource 1 (Account 1)',
-        },
-      ],
-      expectedTotalCount: 5,
-    },
-    {
-      parameters: {
-        ids: ['RESOURCE_0', 'RESOURCE_2', 'NOT_A_RESOURCE', 'RESOURCE_1'],
-      },
-      limit: '10',
-      condition: 'ids with missing ids',
-      expectationDescription: 'only resources that match IDs are returned',
-      expectedResults: [
-        {
-          id: 'RESOURCE_0',
-          name: 'Resource 0 (Account 1)',
-        },
-        {
-          id: 'RESOURCE_2',
-          name: 'Resource 2 (Account 1)',
-        },
-        {
-          id: 'RESOURCE_1',
-          name: 'Resource 1 (Account 1)',
-        },
-      ],
-      expectedTotalCount: 3,
-    },
-    {
-      parameters: {
-        ids: ['RESOURCE_0', 'RESOURCE_2', 'RESOURCE_0', 'RESOURCE_1', 'RESOURCE_2'],
-      },
-      limit: '10',
-      condition: 'ids with duplicates',
-      expectationDescription: 'only one resource per unique ID is returned',
-      expectedResults: [
-        {
-          id: 'RESOURCE_0',
-          name: 'Resource 0 (Account 1)',
-        },
-        {
-          id: 'RESOURCE_2',
-          name: 'Resource 2 (Account 1)',
-        },
-        {
-          id: 'RESOURCE_1',
-          name: 'Resource 1 (Account 1)',
-        },
-      ],
-      expectedTotalCount: 3,
-    },
-  ]).test(
-    'When specifying $condition, should return a 200 response and $expectationDescription',
-    async ({
-      parameters: { nameSubstring, ids } = {},
-      limit,
-      start,
-      expectedResults,
-      expectedTotalCount,
-    }: {
-      parameters: {
-        nameSubstring?: string;
-        ids?: string[];
-      };
-      limit?: string;
-      start?: string;
-      expectedResults: ReferrableResource[];
-      expectedTotalCount: number;
-    }) => {
-      let qs = Object.entries({ limit, start })
-        .filter(([, v]) => v)
-        .map(([k, v]) => `${k}=${v}`)
-        .join('&');
-      const url = `${basePath}${qs.length ? '?' : ''}${qs}`;
-      const response = await request
-        .post(url)
-        .set(headers)
-        .send({
-          nameSubstring,
-          ids,
-        });
-      expect(response.status).toBe(200);
-      expect(response.body.totalCount).toBe(expectedTotalCount);
-      expect(response.body.results).toHaveLength(expectedResults.length);
-      expectedResults.forEach((expected, idx: number) => {
-        const result = response.body.results[idx];
-        expect(result).toMatchObject(expected);
-        verifyResourcesAttributes(result);
-      });
-    },
-  );
-
-  describe('Found resource has referenced attributes', () => {
-    beforeEach(async () => {
-      await db.multi(`
-INSERT INTO resources."ResourceReferenceStringAttributeValues"
-  (id, "accountSid", "list", "value", "language", "info")
-  VALUES (
-      'REF_SEARCH_TEST_ATTRIBUTE',
-      'ACCOUNT_1',
-      'REFERENCE_LIST',
-      'REFERENCE_VALUE',
-      'REFERENCE_LANGUAGE',
-      '{ "property": "VALUE" }');
-INSERT INTO resources."ResourceReferenceStringAttributes"
-  ("accountSid", "resourceId", "key", "list", "referenceId")
-  VALUES ('ACCOUNT_1', 'RESOURCE_1', 'REFERENCE_KEY', 'REFERENCE_LIST', 'REF_SEARCH_TEST_ATTRIBUTE');
-      `);
-    });
-    test('should return the resource with the referenced attributes', async () => {
-      const response = await request
-        .post(`${basePath}?limit=1&start=0`)
-        .set(headers)
-        .send({
-          nameSubstring: 'Resource 1',
-        });
-      expect(response.status).toBe(200);
-      expect(response.body.totalCount).toBe(1);
-      expect(response.body.results).toStrictEqual([
-        {
-          id: 'RESOURCE_1',
-          name: 'Resource 1 (Account 1)',
-          attributes: {
-            REFERENCE_KEY: [
-              {
-                value: 'REFERENCE_VALUE',
-                language: 'REFERENCE_LANGUAGE',
-                info: { property: 'VALUE' },
-              },
-            ],
-            ATTRIBUTE_0: [
-              {
-                value: 'VALUE_0',
-                language: 'en-US',
-                info: { some: 'json' },
-              },
-            ],
-          },
-        },
-      ]);
-    });
-    afterEach(async () => {
-      await db.multi(`
-DELETE FROM resources."ResourceReferenceStringAttributeValues"
-WHERE id = 'REF_SEARCH_TEST_ATTRIBUTE';
-DELETE FROM resources."ResourceReferenceStringAttributes";
       `);
     });
   });

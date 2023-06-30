@@ -28,10 +28,18 @@ export const convertDocumentsToBulkRequest = (messages: ResourcesSearchIndexPayl
     if (!acc[accountSid]) {
       acc[accountSid] = [];
     }
-    acc[accountSid].push({
-      id: document.id,
-      document,
-    });
+    if (document.deletedAt) {
+      acc[accountSid].push({
+        action: 'delete',
+        id: document.id,
+      });
+    } else {
+      acc[accountSid].push({
+        action: 'index',
+        id: document.id,
+        document,
+      });
+    }
     return acc;
   }, {} as DocumentsByAccountSid);
 

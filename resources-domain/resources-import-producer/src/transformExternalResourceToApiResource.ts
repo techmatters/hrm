@@ -209,6 +209,7 @@ export const transformExternalResourceToApiResource = <T>(
     accountSid,
     id: '',
     lastUpdated: '',
+    deletedAt: '',
     name: '',
     stringAttributes: [],
     numberAttributes: [],

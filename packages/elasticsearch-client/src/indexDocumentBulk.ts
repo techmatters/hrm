@@ -13,13 +13,20 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { BulkResponse } from '@elastic/elasticsearch/lib/api/types';
+import { BulkRequest, BulkResponse } from '@elastic/elasticsearch/lib/api/types';
 import { PassThroughConfig } from './client';
 
 export type IndexDocumentBulkDocumentItem<T> = {
   id: string;
-  document: T;
-};
+} & (
+  | {
+      action: 'index';
+      document: T;
+    }
+  | {
+      action: 'delete';
+    }
+);
 
 export type IndexDocumentBulkDocuments<T> = IndexDocumentBulkDocumentItem<T>[];
 
@@ -37,10 +44,18 @@ export const indexDocumentBulk = async <T>({
   indexConfig,
   documents,
 }: IndexDocumentBulkParams<T>): Promise<IndexDocumentBulkResponse> => {
-  const body = documents.flatMap(({ id, document }) => [
-    { index: { _index: index, _id: id } },
-    indexConfig.convertToIndexDocument(document),
-  ]);
+  const body: BulkRequest['operations'] = documents.flatMap(
+    (documentItem): BulkRequest['operations'] => {
+      if (documentItem.action === 'delete') {
+        return [{ delete: { _index: index, _id: documentItem.id } }];
+      } else {
+        return [
+          { index: { _index: index, _id: documentItem.id } },
+          indexConfig.convertToIndexDocument(documentItem.document),
+        ];
+      }
+    },
+  );
 
   console.log('Bulk index resources body', body);
 
