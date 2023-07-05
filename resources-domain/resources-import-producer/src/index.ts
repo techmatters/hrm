@@ -24,10 +24,6 @@ import { transformKhpResourceToApiResource } from './transformExternalResourceTo
 
 declare var fetch: typeof import('undici').fetch;
 
-const maxApiResources = Number(process.env.MAX_API_RESOUCES ?? 100);
-const updateBatchSize = Number(process.env.UPDATE_BATCH_SIZE ?? 1000);
-const maxRequests = Number(process.env.MAX_RESOURCE_REQUESTS ?? 50);
-
 export type HttpError<T = any> = {
   status: number;
   statusText: string;
@@ -71,7 +67,7 @@ export type KhpApiResponse = {
   nextFrom?: TimeSequence;
 };
 
-const pullUpdates = (externalApiBaseUrl: URL, externalApiKey: string, externalApiAuthorizationHeader: string) => async (from: TimeSequence, to: TimeSequence, remaining = maxApiResources): Promise<KhpApiResponse | HttpError> => {
+const pullUpdates = (externalApiBaseUrl: URL, externalApiKey: string, externalApiAuthorizationHeader: string, maxApiResources: number) => async (from: TimeSequence, to: TimeSequence, remaining = maxApiResources): Promise<KhpApiResponse | HttpError> => {
     const fetchUrl = new URL(`api/resources?startSequence=${from}&endSequence=${to}&limit=${Math.min(remaining, maxApiResources)}`, externalApiBaseUrl);
     const response = await fetch(fetchUrl, {
       headers: {
@@ -116,8 +112,8 @@ const sendUpdates = (accountSid: AccountSID, importResourcesSqsQueueUrl: URL) =>
   }
 };
 
-const describeRemaining = (batchRemaining: number, rangeRemaining: number | undefined): string =>
-  `${updateBatchSize - batchRemaining} resources imported with ${batchRemaining} left in batch, ${rangeRemaining ?? 'unknown number of resources'} left in sequence range`;
+const describeRemaining = (batchSize: number, batchRemaining: number, rangeRemaining: number | undefined): string =>
+  `${batchSize - batchRemaining} resources imported with ${batchRemaining} left in batch, ${rangeRemaining ?? 'unknown number of resources'} left in sequence range`;
 
 export const handler = async (
   event: ScheduledEvent,
@@ -131,8 +127,12 @@ export const handler = async (
     importApiKey,
     internalResourcesBaseUrl,
     internalResourcesApiKey,
-    importResourcesSqsQueueUrl } = await getConfig();
-  const configuredPull = pullUpdates(importApiBaseUrl, importApiKey, importApiAuthHeader);
+    importResourcesSqsQueueUrl,
+    maxBatchSize,
+    maxRequests,
+    maxApiSize,
+  } = await getConfig();
+  const configuredPull = pullUpdates(importApiBaseUrl, importApiKey, importApiAuthHeader, maxApiSize);
   const configuredSend = sendUpdates(accountSid, importResourcesSqsQueueUrl);
 
   const progress = await retrieveCurrentStatus(internalResourcesBaseUrl, internalResourcesApiKey)(accountSid);
@@ -143,18 +143,18 @@ export const handler = async (
 
   // Fair bit of state to track over each loop...
   let nextFrom = progress ? nextTimeSequence(progress.importSequenceId ?? `${parseISO(progress.lastProcessedDate).valueOf()}-0`) : '0-0';
-  let remaining = updateBatchSize;
+  let remaining = maxBatchSize;
   let totalRemaining: number | undefined;
   let requestsMade = 0;
 
   while (remaining > 0) {
     if (requestsMade >= maxRequests) {
-      console.warn(`Reached max requests (${maxRequests}) for this batch, aborting after ${describeRemaining(remaining, totalRemaining)} processed.`);
+      console.warn(`Reached max requests (${maxRequests}) for this batch, aborting after ${describeRemaining(maxBatchSize, remaining, totalRemaining)} processed.`);
       return;
     }
     const result = await configuredPull(nextFrom, now, remaining);
     if (isHttpError(result)) {
-      console.error(`Error calling import API, aborting after ${describeRemaining(remaining, totalRemaining)}.`);
+      console.error(`Error calling import API, aborting after ${describeRemaining(maxBatchSize, remaining, totalRemaining)}.`);
       throw new Error(`Failed to retrieve updates: ${result.status} (${result.statusText}). Response body: ${result.body}. `);
     }
     remaining = remaining - result.data.length;
@@ -163,10 +163,10 @@ export const handler = async (
     if (result.nextFrom) {
       nextFrom = result.nextFrom;
     } else {
-      console.info(`Import operation complete due to there being no more resources to import, ${describeRemaining(remaining, totalRemaining)}`);
+      console.info(`Import operation complete due to there being no more resources to import, ${describeRemaining(maxBatchSize, remaining, totalRemaining)}`);
       return;
     }
   }
-  console.info(`Import operation complete due to importing the maximum of batch resources, ${describeRemaining(remaining, totalRemaining)}`);
+  console.info(`Import operation complete due to importing the maximum of batch resources, ${describeRemaining(maxBatchSize, remaining, totalRemaining)}`);
 
 };

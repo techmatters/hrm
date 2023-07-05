@@ -56,6 +56,9 @@ const MOCK_CONFIG: Awaited<ReturnType<typeof getConfig>> = {
   importApiKey: 'MOCK_EXTERNAL_API_KEY',
   importResourcesSqsQueueUrl: new URL('https://queue-url'),
   importApiBaseUrl: new URL('https://external-url'),
+  maxBatchSize: 6,
+  maxApiSize: 3,
+  maxRequests: 10,
 };
 
 // @ts-ignore
@@ -132,7 +135,7 @@ const testCases: HandlerTestCase[] = [
       {
         startSequence: '0-0',
         endSequence: timeSequenceFromDate(testNow),
-        limit: '100',
+        limit: MOCK_CONFIG.maxApiSize.toString(),
       },
     ],
     expectedPublishedMessages: [],
@@ -147,7 +150,7 @@ const testCases: HandlerTestCase[] = [
       {
         startSequence: '0-0',
         endSequence: timeSequenceFromDate(testNow),
-        limit: '100',
+        limit: MOCK_CONFIG.maxApiSize.toString(),
       },
     ],
     expectedPublishedMessages: [
@@ -165,7 +168,7 @@ const testCases: HandlerTestCase[] = [
       {
         startSequence: timeSequenceFromDate(subHours(testNow, 1), 1),
         endSequence: timeSequenceFromDate(testNow),
-        limit: '100',
+        limit: MOCK_CONFIG.maxApiSize.toString(),
       },
     ],
     expectedPublishedMessages: [

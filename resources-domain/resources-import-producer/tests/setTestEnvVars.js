@@ -14,18 +14,5 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-module.exports = config => {
-  return (
-    config || {
-      preset: 'ts-jest',
-      rootDir: './tests',
-      setupFiles: ['<rootDir>/setTestEnvVars.js'],
-      globals: {
-        'ts-jest': {
-          // to give support to const enum. Not working, conflicting with module resolution
-          useExperimentalLanguageServer: true,
-        },
-      },
-    }
-  );
-};
+process.env.MAX_API_RESOURCES = '3';
+process.env.UPDATE_BATCH_SIZE = '6';
