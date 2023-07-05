@@ -17,7 +17,13 @@
 import { subHours, subSeconds } from 'date-fns';
 import { mockConnection, mockTransaction } from '../mock-db';
 import { updateImportProgress, upsertImportedResource } from '../../../src/import/importDataAccess';
-import { AccountSID, FlatResource, ImportBatch, ImportProgress } from '@tech-matters/types';
+import {
+  AccountSID,
+  FlatResource,
+  ImportBatch,
+  ImportProgress,
+  TimeSequence,
+} from '@tech-matters/types';
 import importService from '../../../src/import/importService';
 import { BLANK_ATTRIBUTES } from '../../mockResources';
 import { publishSearchIndexJob } from '../../../src/resource-jobs/client-sqs';
@@ -46,13 +52,16 @@ const mockUpsertImportedResource = upsertImportedResource as jest.MockedFunction
 >;
 let mockUpsert: jest.MockedFunction<ReturnType<typeof upsertImportedResource>> = jest.fn();
 
+const timeSequenceFromDate = (date: Date, sequence = 0): TimeSequence =>
+  `${date.valueOf()}-${sequence}`;
+
 const BASELINE_DATE = new Date(2012, 11, 4);
 const ACCOUNT_SID: AccountSID = 'AC_FAKE';
 
 const BASELINE_BATCH: ImportBatch = {
   remaining: 100,
-  fromDate: subHours(BASELINE_DATE, 12).toISOString(),
-  toDate: BASELINE_DATE.toISOString(),
+  fromSequence: timeSequenceFromDate(subHours(BASELINE_DATE, 12)),
+  toSequence: timeSequenceFromDate(BASELINE_DATE),
 };
 
 const SAMPLE_RESOURCES: FlatResource[] = [
