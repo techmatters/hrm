@@ -20,10 +20,14 @@ import { mockConnection, mockTransaction } from '../mock-db';
 import { updateImportProgress, upsertImportedResource } from '../../../src/import/importDataAccess';
 import { getSqlStatement } from '@tech-matters/testing';
 import { BLANK_ATTRIBUTES } from '../../mockResources';
+import { TimeSequence } from '@tech-matters/types/dist/Resources';
 
 let conn: pgPromise.ITask<unknown>;
 
 const BASELINE_DATE = new Date(2012, 11, 4);
+
+const timeSequenceFromDate = (date: Date, sequence = 0): TimeSequence =>
+  `${date.valueOf()}-${sequence}`;
 
 beforeEach(() => {
   conn = mockConnection();
@@ -138,8 +142,8 @@ describe('updateImportProgress', () => {
     mockTransaction(conn);
     const noneSpy = jest.spyOn(conn, 'none').mockResolvedValue(null);
     await updateImportProgress()('AC_FAKE', {
-      fromDate: subHours(BASELINE_DATE, 12).toISOString(),
-      toDate: BASELINE_DATE.toISOString(),
+      fromSequence: timeSequenceFromDate(subHours(BASELINE_DATE, 12)),
+      toSequence: timeSequenceFromDate(BASELINE_DATE),
       remaining: 1234,
       lastProcessedDate: subHours(BASELINE_DATE, 6).toISOString(),
       lastProcessedId: 'TEST_RESOURCE',
@@ -148,8 +152,8 @@ describe('updateImportProgress', () => {
     expect(insertSql).toContain('Accounts');
     expect(insertSql).toContain('1234');
     expect(insertSql).toContain('AC_FAKE');
-    expect(insertSql).toContain(BASELINE_DATE.toISOString());
-    expect(insertSql).toContain(subHours(BASELINE_DATE, 12).toISOString());
+    expect(insertSql).toContain(timeSequenceFromDate(BASELINE_DATE));
+    expect(insertSql).toContain(timeSequenceFromDate(subHours(BASELINE_DATE, 12)));
     expect(insertSql).toContain(subHours(BASELINE_DATE, 6).toISOString());
   });
 });
