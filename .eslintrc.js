@@ -15,14 +15,16 @@
  */
 
 module.exports = {
-  extends: ['airbnb-typescript/base', 'plugin:prettier/recommended'],
-  plugins: ['prettier', 'jest', 'import'],
+  extends: ['airbnb-typescript/base', 'plugin:prettier/recommended', 'plugin:sonarjs/recommended'],
+  plugins: ['prettier', 'jest', 'import', 'sonarjs'],
   rules: {
     'prettier/prettier': ['error'],
     'no-console': 'off',
     '@typescript-eslint/indent': 'off',
     '@typescript-eslint/quotes': 'off',
     'import/prefer-default-export': 'off',
+    'sonarjs/no-duplicate-string': 'off',
+    'sonarjs/no-nested-template-literals': 'off',
   },
   settings: {
     'import/resolver': {
