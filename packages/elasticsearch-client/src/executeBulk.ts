@@ -16,7 +16,7 @@
 import { BulkRequest, BulkResponse } from '@elastic/elasticsearch/lib/api/types';
 import { PassThroughConfig } from './client';
 
-export type IndexDocumentBulkDocumentItem<T> = {
+export type BulkOperation<T> = {
   id: string;
 } & (
   | {
@@ -28,22 +28,22 @@ export type IndexDocumentBulkDocumentItem<T> = {
     }
 );
 
-export type IndexDocumentBulkDocuments<T> = IndexDocumentBulkDocumentItem<T>[];
+export type BulkOperations<T> = BulkOperation<T>[];
 
-export type IndexDocumentBulkExtraParams<T> = {
-  documents: IndexDocumentBulkDocuments<T>;
+export type ExecuteBulkExtraParams<T> = {
+  documents: BulkOperations<T>;
 };
 
-export type IndexDocumentBulkParams<T> = PassThroughConfig<T> & IndexDocumentBulkExtraParams<T>;
+export type ExecuteBulkParams<T> = PassThroughConfig<T> & ExecuteBulkExtraParams<T>;
 
-export type IndexDocumentBulkResponse = BulkResponse;
+export type ExecuteBulkResponse = BulkResponse;
 
-export const indexDocumentBulk = async <T>({
+export const executeBulk = async <T>({
   client,
   index,
   indexConfig,
   documents,
-}: IndexDocumentBulkParams<T>): Promise<IndexDocumentBulkResponse> => {
+}: ExecuteBulkParams<T>): Promise<ExecuteBulkResponse> => {
   const body: BulkRequest['operations'] = documents.flatMap(
     (documentItem): BulkRequest['operations'] => {
       if (documentItem.action === 'delete') {

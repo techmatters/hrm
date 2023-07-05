@@ -15,11 +15,7 @@
  */
 import { Client as EsClient, ClientOptions } from '@elastic/elasticsearch';
 import { getSsmParameter } from '@tech-matters/ssm-cache';
-import {
-  indexDocumentBulk,
-  IndexDocumentBulkExtraParams,
-  IndexDocumentBulkResponse,
-} from './indexDocumentBulk';
+import { executeBulk, ExecuteBulkExtraParams, ExecuteBulkResponse } from './executeBulk';
 import { createIndex, CreateIndexExtraParams, CreateIndexResponse } from './createIndex';
 import { deleteIndex, DeleteIndexResponse } from './deleteIndex';
 import { indexDocument, IndexDocumentExtraParams, IndexDocumentResponse } from './indexDocument';
@@ -87,7 +83,7 @@ const getEsConfig = async ({
 export type IndexClient<T> = {
   indexDocument: (args: IndexDocumentExtraParams<T>) => Promise<IndexDocumentResponse>;
   refreshIndex: () => Promise<IndicesRefreshResponse>;
-  indexDocumentBulk: (args: IndexDocumentBulkExtraParams<T>) => Promise<IndexDocumentBulkResponse>;
+  executeBulk: (args: ExecuteBulkExtraParams<T>) => Promise<ExecuteBulkResponse>;
   createIndex: (args: CreateIndexExtraParams) => Promise<CreateIndexResponse>;
   deleteIndex: () => Promise<DeleteIndexResponse>;
 };
@@ -124,8 +120,8 @@ const getClientOrMock = async ({ config, index, indexType }: GetClientOrMockArgs
         deleteIndex: () => deleteIndex(passThroughConfig),
         indexDocument: (args: IndexDocumentExtraParams<T>) =>
           indexDocument({ ...passThroughConfig, ...args }),
-        indexDocumentBulk: (args: IndexDocumentBulkExtraParams<T>) =>
-          indexDocumentBulk({ ...passThroughConfig, ...args }),
+        executeBulk: (args: ExecuteBulkExtraParams<T>) =>
+          executeBulk({ ...passThroughConfig, ...args }),
       };
     },
   };
