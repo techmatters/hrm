@@ -24,6 +24,7 @@ import {
   ImportProgress,
   ImportRequestBody,
   ResourcesJobType,
+  TimeSequence,
 } from '@tech-matters/types';
 import { internalHeaders } from './server';
 import each from 'jest-each';
@@ -269,9 +270,12 @@ afterEach(async () => {
     .promise();
 });
 
+const timeSequenceFromDate = (date: Date, sequence = 0): TimeSequence =>
+  `${date.valueOf()}-${sequence}`;
+
 const newDefaultTestBatch = () => ({
-  toDate: addHours(baselineDate, 1).toISOString(),
-  fromDate: subHours(baselineDate, 2).toISOString(),
+  toSequence: timeSequenceFromDate(addHours(baselineDate, 1)),
+  fromSequence: timeSequenceFromDate(subHours(baselineDate, 2)),
   remaining: 100,
 });
 
