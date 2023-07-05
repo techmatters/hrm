@@ -25,7 +25,7 @@ export * from './src/client';
 export * from './src/createIndex';
 export * from './src/deleteIndex';
 export * from './src/indexDocument';
-export * from './src/indexDocumentBulk';
+export * from './src/executeBulk';
 export * from './src/search';
 export * from './src/config';
 export * from './src/config/indexConfiguration';
