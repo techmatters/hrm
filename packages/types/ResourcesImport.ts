@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { FlatResource } from './Resources';
+import { FlatResource, TimeSequence } from './Resources';
 
 export type InlineAttributeProperty =
   | 'stringAttributes'
@@ -30,14 +30,16 @@ export type AttributeValue<T extends AttributeProperty> = T extends 'booleanAttr
   : string;
 
 export type ImportBatch = {
-  toDate: string;
-  fromDate: string;
+  toSequence: string;
+  fromSequence: string;
   remaining: number;
 };
 
 export type ImportProgress = ImportBatch & {
   lastProcessedDate: string;
   lastProcessedId: string;
+  // Leave vestigal support for no sequence ID, so it's easier to manually reset the import progress if required
+  importSequenceId?: TimeSequence;
 };
 
 export type ImportRequestBody = {

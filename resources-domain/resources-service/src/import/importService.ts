@@ -13,8 +13,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-
-import { AccountSID, FlatResource, ImportBatch, ImportProgress } from '@tech-matters/types';
+import parseISO from 'date-fns/parseISO';
+import {
+  AccountSID,
+  FlatResource,
+  ImportBatch,
+  ImportProgress,
+  TimeSequence,
+} from '@tech-matters/types';
 import { db } from '../connection-pool';
 import {
   getImportState,
@@ -35,6 +41,17 @@ export const isValidationFailure = (result: any): result is ValidationFailure =>
 };
 
 const REQUIRED_FIELDS = ['id', 'name', 'lastUpdated'] as const;
+
+/**
+ * Unfortunately the timestamp-with-sequence identifiers are not padded to be alphabetically sortable
+ * So they require a custom comparator
+ */
+
+const compareTimeSequences = (a: TimeSequence, b: TimeSequence) => {
+  const [aTime, aSequence] = a.split('-').map(Number);
+  const [bTime, bSequence] = b.split('-').map(Number);
+  return aTime - bTime || aSequence - bSequence;
+};
 
 const importService = () => {
   return {
@@ -76,13 +93,10 @@ const importService = () => {
             }
           }
           const { id, lastUpdated } = [...resources].sort((a, b) =>
-            a.lastUpdated > b.lastUpdated
-              ? 1
-              : a.lastUpdated < b.lastUpdated
-              ? -1
-              : a.id > b.id
-              ? 1
-              : -1,
+            compareTimeSequences(
+              a.importSequenceId || `${parseISO(a.lastUpdated).valueOf()}-0`,
+              b.importSequenceId || `${parseISO(b.lastUpdated).valueOf()}-0`,
+            ),
           )[resources.length - 1];
           await updateImportProgress(t)(accountSid, {
             ...batch,

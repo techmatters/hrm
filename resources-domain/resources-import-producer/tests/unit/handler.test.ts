@@ -18,9 +18,9 @@ import parseISO from 'date-fns/parseISO';
 import { handler, HttpError, isHttpError, KhpApiResource, KhpApiResponse } from '../../src';
 import each from 'jest-each';
 // eslint-disable-next-line prettier/prettier
-import type { FlatResource, ImportProgress } from '@tech-matters/types';
+import type { FlatResource, ImportProgress, TimeSequence } from '@tech-matters/types';
 import { ScheduledEvent } from 'aws-lambda';
-import { addMilliseconds, addSeconds, subHours, subMinutes } from 'date-fns';
+import { addSeconds, subHours, subMinutes } from 'date-fns';
 import { publishToImportConsumer, ResourceMessage } from '../../src/clientSqs';
 import getConfig from '../../src/config';
 import { Response } from 'undici';
@@ -84,20 +84,23 @@ type HandlerTestCase = {
   expectedPublishedMessages: ResourceMessage[];
 };
 
+const timeSequenceFromDate = (date: Date, sequence = 0): TimeSequence => `${date.valueOf()}-${sequence}`;
+
 const generateKhpResource = (updatedAt: Date, resourceId: string): KhpApiResource => ({
   objectId: resourceId,
   name: {
     en:`Resource ${resourceId}`,
   },
   updatedAt: updatedAt.toISOString(),
+  timeSequence: timeSequenceFromDate(updatedAt),
 });
 
-const generateResourceMessage = (lastUpdated: Date, resourceId: string, batchFromDate: Date, remaining: number): ResourceMessage => (
+const generateResourceMessage = (lastUpdated: Date, resourceId: string, batchFromSequence: TimeSequence, remaining: number): ResourceMessage => (
   { 
     accountSid: MOCK_CONFIG.accountSid,
     batch: {
-      fromDate: batchFromDate.toISOString(),
-      toDate: testNow.toISOString(),
+      fromSequence: batchFromSequence,
+      toSequence: timeSequenceFromDate(testNow),
       remaining,
     },
     importedResources: [{
@@ -105,6 +108,7 @@ const generateResourceMessage = (lastUpdated: Date, resourceId: string, batchFro
       id: resourceId,
       name: `Resource ${resourceId}`,
       lastUpdated: lastUpdated.toISOString(),
+      importSequenceId: timeSequenceFromDate(lastUpdated),
       deletedAt: '',
       ...EMPTY_ATTRIBUTES,
     }],
@@ -126,9 +130,9 @@ const testCases: HandlerTestCase[] = [
     externalApiResponse: { data: [], totalResults: 0 },
     expectedExternalApiCallParameters: [
       {
-        startDate: new Date(0).toISOString(),
-        endDate: testNow.toISOString(),
-        limit: '1000',
+        startSequence: '0-0',
+        endSequence: timeSequenceFromDate(testNow),
+        limit: '100',
       },
     ],
     expectedPublishedMessages: [],
@@ -141,32 +145,32 @@ const testCases: HandlerTestCase[] = [
       ], totalResults:2 },
     expectedExternalApiCallParameters: [
       {
-        startDate: new Date(0).toISOString(),
-        endDate: testNow.toISOString(),
-        limit: '1000',
+        startSequence: '0-0',
+        endSequence: timeSequenceFromDate(testNow),
+        limit: '100',
       },
     ],
     expectedPublishedMessages: [
-      generateResourceMessage(baselineDate, '1', new Date(0), 1),
-      generateResourceMessage(addSeconds(baselineDate, 1), '2', new Date(0), 0),
+      generateResourceMessage(baselineDate, '1', '0-0', 1),
+      generateResourceMessage(addSeconds(baselineDate, 1), '2', '0-0', 0),
     ],
   }, {
     description: 'if there is import progress and the batch is complete and the API returns all available resources in range, should start another batch and send them all',
-    importProgressResponse: { fromDate: new Date(0).toISOString(), toDate: subHours(testNow, 1).toISOString(), remaining: 0, lastProcessedDate: subHours(testNow, 1).toISOString(), lastProcessedId: 'IGNORED' },
+    importProgressResponse: { fromSequence: '0-0', toSequence: timeSequenceFromDate(subHours(testNow, 1)), remaining: 0, lastProcessedDate: subHours(testNow, 1).toISOString(), lastProcessedId: 'IGNORED' },
     externalApiResponse: { data: [
         generateKhpResource(subMinutes(testNow, 10), '1'),
         generateKhpResource(subMinutes(testNow, 5), '2'),
       ], totalResults:2 },
     expectedExternalApiCallParameters: [
       {
-        startDate: addMilliseconds(subHours(testNow, 1), 1).toISOString(),
-        endDate: testNow.toISOString(),
-        limit: '1000',
+        startSequence: timeSequenceFromDate(subHours(testNow, 1), 1),
+        endSequence: timeSequenceFromDate(testNow),
+        limit: '100',
       },
     ],
     expectedPublishedMessages: [
-      generateResourceMessage(subMinutes(testNow, 10), '1', addMilliseconds(subHours(testNow, 1), 1), 1),
-      generateResourceMessage(subMinutes(testNow, 5), '2', addMilliseconds(subHours(testNow, 1), 1), 0),
+      generateResourceMessage(subMinutes(testNow, 10), '1', timeSequenceFromDate(subHours(testNow, 1), 1), 1),
+      generateResourceMessage(subMinutes(testNow, 5), '2', timeSequenceFromDate(subHours(testNow, 1), 1), 0),
     ],
   },
 ];
@@ -202,8 +206,6 @@ describe('resources-import-producer handler', () => {
       Object.entries(expectedParameters).forEach(([key, value]) => {
         expect(url.searchParams.get(key)).toEqual(value);
       });
-      expect(url.searchParams.get('sort')).toEqual('updatedAt');
-      expect(url.searchParams.get('dateType')).toEqual('updatedAt');
       expect(url.toString().startsWith(`https://external-url/api/resources`)).toBeTruthy();
       expect(options).toStrictEqual({
         method: 'GET',

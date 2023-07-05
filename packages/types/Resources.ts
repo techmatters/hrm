@@ -15,6 +15,9 @@
  */
 import { AccountSID } from './twilio';
 
+// eslint-disable-next-line prettier/prettier
+export type TimeSequence = `${number}-${number}`;
+
 export type ReferrableResourceAttribute<T> = {
   value: T;
   info?: any;
@@ -73,6 +76,7 @@ export type FlatResource = {
   id: string;
   lastUpdated: string;
   deletedAt?: string;
+  importSequenceId?: TimeSequence;
   stringAttributes: (ReferrableResourceTranslatableAttribute & { key: string })[];
   referenceStringAttributes: (ReferrableResourceTranslatableAttribute & {
     key: string;

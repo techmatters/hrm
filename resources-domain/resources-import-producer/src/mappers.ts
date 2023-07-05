@@ -47,7 +47,7 @@ const isContextConsumerFunc = <T>(
  * Maps the only properties of a resource that belong to the resources table: id and name. Any other property will be mapped into one of the attributes tables.
  */
 export type ResourceFieldMapping = {
-  field: 'id' | 'name' | 'lastUpdated' | 'deletedAt';
+  field: 'id' | 'name' | 'lastUpdated' | 'deletedAt' | 'importSequenceId';
   valueGenerator: ContextConsumerFunc<any>;
 };
 
@@ -141,7 +141,7 @@ export const substituteCaptureTokens = (
 };
 
 export const resourceFieldMapping = (
-  field: 'id' | 'name' | 'lastUpdated' | 'deletedAt',
+  field: 'id' | 'name' | 'lastUpdated' | 'deletedAt' | 'importSequenceId',
   value?: ContextConsumerFunc<string>, // can we refine this type?
 ): ResourceFieldMapping => ({
   field,

@@ -16,18 +16,17 @@
 
 // eslint-disable-next-line prettier/prettier
 import type { ScheduledEvent } from 'aws-lambda';
-import type { AccountSID, ImportBatch, ImportProgress } from '@tech-matters/types';
-import sortedIndexBy from 'lodash/sortedIndexBy';
+import type { AccountSID, ImportBatch, ImportProgress, TimeSequence } from '@tech-matters/types';
 import parseISO from 'date-fns/parseISO';
-import addMilliseconds from 'date-fns/addMilliseconds';
 import { publishToImportConsumer, ResourceMessage } from './clientSqs';
 import getConfig from './config';
 import { transformKhpResourceToApiResource } from './transformExternalResourceToApiResource';
 
 declare var fetch: typeof import('undici').fetch;
 
+const maxApiResources = Number(process.env.MAX_API_RESOUCES ?? 100);
 const updateBatchSize = Number(process.env.UPDATE_BATCH_SIZE ?? 1000);
-const maxAttempts = Number(process.env.MAX_RESOURCE_ATTEMPTS ?? 100);
+const maxRequests = Number(process.env.MAX_RESOURCE_REQUESTS ?? 50);
 
 export type HttpError<T = any> = {
   status: number;
@@ -39,7 +38,12 @@ export const isHttpError = <T>(value: any): value is HttpError<T> => {
   return typeof value?.status === 'number' && typeof value?.statusText === 'string' && typeof value?.body !== 'undefined';
 };
 
-const retrieveCurrentStatus = (internalResourcesBaseUrl: URL, internalResourcesApiKey: string) => async (accountSid: AccountSID): Promise<ImportProgress | HttpError> => {
+const nextTimeSequence = (timeSequence: TimeSequence): TimeSequence => {
+  const [timestamp, sequence] = timeSequence.split('-');
+  return `${Number(timestamp)}-${Number(sequence) + 1}`;
+};
+
+const retrieveCurrentStatus = (internalResourcesBaseUrl: URL, internalResourcesApiKey: string) => async (accountSid: AccountSID): Promise<ImportProgress | undefined | HttpError> => {
   const response  = await fetch(new URL(`/v0/accounts/${accountSid}/resources/import/progress`, internalResourcesBaseUrl), {
     method: 'GET',
     headers: {
@@ -49,6 +53,9 @@ const retrieveCurrentStatus = (internalResourcesBaseUrl: URL, internalResourcesA
   if (response.ok) {
     return response.json() as Promise<ImportProgress>;
   } else {
+    if (response.status === 404) {
+      return undefined;
+    }
     return {
       status: response.status,
       statusText: response.statusText,
@@ -61,11 +68,11 @@ export type KhpApiResource = ({ objectId: string, updatedAt: string, name: { en:
 export type KhpApiResponse = {
   data: KhpApiResource[];
   totalResults: number;
+  nextFrom?: TimeSequence;
 };
 
-const pullUpdates = (externalApiBaseUrl: URL, externalApiKey: string, externalApiAuthorizationHeader: string) => {
-  const configuredPullUpdates = async (from: Date, to: Date, lastObjectId: string = '', limit = updateBatchSize): Promise<KhpApiResponse | HttpError> => {
-    const fetchUrl = new URL(`api/resources?sort=updatedAt&dateType=updatedAt&startDate=${from.toISOString()}&endDate=${to.toISOString()}&limit=${updateBatchSize}`, externalApiBaseUrl);
+const pullUpdates = (externalApiBaseUrl: URL, externalApiKey: string, externalApiAuthorizationHeader: string) => async (from: TimeSequence, to: TimeSequence, remaining = maxApiResources): Promise<KhpApiResponse | HttpError> => {
+    const fetchUrl = new URL(`api/resources?startSequence=${from}&endSequence=${to}&limit=${Math.min(remaining, maxApiResources)}`, externalApiBaseUrl);
     const response = await fetch(fetchUrl, {
       headers: {
         'Authorization': externalApiAuthorizationHeader,
@@ -75,30 +82,14 @@ const pullUpdates = (externalApiBaseUrl: URL, externalApiKey: string, externalAp
     });
 
     if (response.ok) {
-      // NB: This batch resuming isn't really tested but it should get removed when we migrate to Arctic's proposed time sequencey API.
-      // The logic for resuming that should be more straightforward.
-      const { data:fullResults, totalResults } = await response.json() as KhpApiResponse;
-      console.info(`[GET ${fetchUrl}] Retrieved ${fullResults.length} resources of ${totalResults} from ${from.toISOString()} to ${to.toISOString()}.`);
-      const batchStartIndex = limit - updateBatchSize;
-      const batch = fullResults.slice(batchStartIndex);
-      const maxIndex = sortedIndexBy(batch, { updatedAt: addMilliseconds(from, 1).toISOString() } as KhpApiResource, resource => parseISO(resource.updatedAt) );
-      const index = sortedIndexBy(batch.slice(0, maxIndex), { objectId: lastObjectId } as KhpApiResource, 'resourceID');
-
-      if (index && (batchStartIndex + index + updateBatchSize) <= fullResults.length && fullResults.length < totalResults) {
-       // We had to search into the initial batch to find the 'real' index amongst records with the same updated timestamp.
-        // Either we found the 'real' index in the batch and we are just requerying to ensure we have a full size batch to process
-        // Or we didn't find the 'real' index in the batch and we need to pull again with another full batch's worth of records added to keep looking.
-        if (limit < maxAttempts * updateBatchSize) {
-          return configuredPullUpdates(from, to, lastObjectId, batchStartIndex + index);
-        } else {
-          throw new Error(`Unable to find last processed resource after trawling ${limit} resources.`);
-        }
-      } else {
-        return {
-          data:batch.slice(index),
-          totalResults: totalResults - (batchStartIndex + index),
-        };
-      }
+      const { data: fullResults, totalResults } = await response.json() as KhpApiResponse;
+      console.info(`[GET ${fetchUrl}] Retrieved ${fullResults.length} resources of ${totalResults} from ${from} to ${to}.`);
+      return {
+        data: fullResults,
+        totalResults,
+        // Provide the 'startSequence' of the next request, if there are more results to retrieve.
+        nextFrom: (fullResults.length && fullResults.length < totalResults) ? nextTimeSequence(fullResults[fullResults.length - 1].timeSequence as TimeSequence) : undefined,
+      };
     } else {
       return {
         status: response.status,
@@ -107,8 +98,6 @@ const pullUpdates = (externalApiBaseUrl: URL, externalApiKey: string, externalAp
       };
     }
   };
-  return configuredPullUpdates;
-};
 
 const sendUpdates = (accountSid: AccountSID, importResourcesSqsQueueUrl: URL) => async (resources: KhpApiResource[], importBatch: ImportBatch): Promise<void> => {
   let { remaining } = importBatch;
@@ -127,10 +116,13 @@ const sendUpdates = (accountSid: AccountSID, importResourcesSqsQueueUrl: URL) =>
   }
 };
 
+const describeRemaining = (batchRemaining: number, rangeRemaining: number | undefined): string =>
+  `${updateBatchSize - batchRemaining} resources imported with ${batchRemaining} left in batch, ${rangeRemaining ?? 'unknown number of resources'} left in sequence range`;
+
 export const handler = async (
   event: ScheduledEvent,
 ): Promise<void> => {
-  console.log('Triggered by event:', JSON.stringify(event));
+  console.debug('Triggered by event:', JSON.stringify(event));
 
   const {
     accountSid,
@@ -141,35 +133,40 @@ export const handler = async (
     internalResourcesApiKey,
     importResourcesSqsQueueUrl } = await getConfig();
   const configuredPull = pullUpdates(importApiBaseUrl, importApiKey, importApiAuthHeader);
+  const configuredSend = sendUpdates(accountSid, importResourcesSqsQueueUrl);
 
   const progress = await retrieveCurrentStatus(internalResourcesBaseUrl, internalResourcesApiKey)(accountSid);
-  let importBatch: Omit<ImportBatch, 'remaining'>;
-  let updatedResources: KhpApiResponse | HttpError;
-  const now = new Date();
+  const now: TimeSequence = `${Date.now()}-0`;
   if (isHttpError(progress)) {
-    // No record of any import being attempted, start from scratch
-    if (progress.status === 404) {
-      console.debug('No import in progress detected for account, starting from scratch');
-      updatedResources = await configuredPull(new Date(0), now);
-      importBatch = {
-        toDate: now.toISOString(),
-        fromDate: new Date(0).toISOString(),
-      };
-    } else {
-      throw new Error(`Failed to retrieve import progress: ${progress.status} (${progress.statusText}). Response body: ${progress.body}`);
+    throw new Error(`Failed to retrieve import progress: ${progress.status} (${progress.statusText}). Response body: ${progress.body}`);
+  }
+
+  // Fair bit of state to track over each loop...
+  let nextFrom = progress ? nextTimeSequence(progress.importSequenceId ?? `${parseISO(progress.lastProcessedDate).valueOf()}-0`) : '0-0';
+  let remaining = updateBatchSize;
+  let totalRemaining: number | undefined;
+  let requestsMade = 0;
+
+  while (remaining > 0) {
+    if (requestsMade >= maxRequests) {
+      console.warn(`Reached max requests (${maxRequests}) for this batch, aborting after ${describeRemaining(remaining, totalRemaining)} processed.`);
+      return;
     }
-  } else {
-    // Resume importing based on the state left by the last import.
-    const fromDate = addMilliseconds(parseISO(progress.lastProcessedDate), (progress.lastProcessedId && progress.remaining) ? 0 : 1);
-    updatedResources = await configuredPull(fromDate, now, progress.lastProcessedId);
-    importBatch = {
-      fromDate: fromDate.toISOString(),
-      toDate: now.toISOString(),
-    };
+    const result = await configuredPull(nextFrom, now, remaining);
+    if (isHttpError(result)) {
+      console.error(`Error calling import API, aborting after ${describeRemaining(remaining, totalRemaining)}.`);
+      throw new Error(`Failed to retrieve updates: ${result.status} (${result.statusText}). Response body: ${result.body}. `);
+    }
+    remaining = remaining - result.data.length;
+    totalRemaining = result.totalResults - result.data.length;
+    await configuredSend(result.data, { fromSequence: nextFrom, toSequence: now, remaining: result.totalResults });
+    if (result.nextFrom) {
+      nextFrom = result.nextFrom;
+    } else {
+      console.info(`Import operation complete due to there being no more resources to import, ${describeRemaining(remaining, totalRemaining)}`);
+      return;
+    }
   }
-  if (isHttpError(updatedResources)) {
-    throw new Error(`Failed to retrieve updates: ${updatedResources.status} (${updatedResources.statusText}). Response body: ${updatedResources.body}`);
-  } else {
-    await sendUpdates(accountSid, importResourcesSqsQueueUrl)(updatedResources.data, { ...importBatch, remaining: updatedResources.totalResults });
-  }
+  console.info(`Import operation complete due to importing the maximum of batch resources, ${describeRemaining(remaining, totalRemaining)}`);
+
 };
