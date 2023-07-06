@@ -74,20 +74,19 @@ const reindexResources = async <T extends boolean>(
   reindexParameters: SearchReindexParams,
   verbose: T,
 ): Promise<ReindexReturnType<T>> => {
-  const resp = await fetch(
-    new URL(
-      `v0/resources/admin/search/reindex?responseType=${verbose ? 'verbose' : 'concise'}`,
-      internalResourcesUrl,
-    ).toString(),
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Basic ${authKey}`,
-      },
-      body: JSON.stringify(reindexParameters),
-    },
+  const reindexUrl = new URL(
+    `v0/resources/admin/search/reindex?responseType=${verbose ? 'verbose' : 'concise'}`,
+    internalResourcesUrl,
   );
+  console.info(`Submitting reindex request to ${reindexUrl}`);
+  const resp = await fetch(reindexUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Basic ${authKey}`,
+    },
+    body: JSON.stringify(reindexParameters),
+  });
   if (resp.ok) {
     return (await resp.json()) as ReindexReturnType<typeof verbose>;
   } else {
