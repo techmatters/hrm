@@ -153,6 +153,7 @@ export const handler = async (
       return;
     }
     const result = await configuredPull(nextFrom, now, remaining);
+    requestsMade++;
     if (isHttpError(result)) {
       console.error(`Error calling import API, aborting after ${describeRemaining(maxBatchSize, remaining, totalRemaining)}.`);
       throw new Error(`Failed to retrieve updates: ${result.status} (${result.statusText}). Response body: ${result.body}. `);
