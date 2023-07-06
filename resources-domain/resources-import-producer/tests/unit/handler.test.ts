@@ -98,7 +98,8 @@ const generateKhpResource = (updatedAt: Date, resourceId: string): KhpApiResourc
   timeSequence: timeSequenceFromDate(updatedAt),
 });
 
-const generateResourceMessage = (lastUpdated: Date, resourceId: string, batchFromSequence: TimeSequence, remaining: number): ResourceMessage => (
+const generateResourceMessage = 
+  (lastUpdated: Date, resourceId: string, batchFromSequence: TimeSequence, remaining: number): ResourceMessage => (
   { 
     accountSid: MOCK_CONFIG.accountSid,
     batch: {
@@ -159,7 +160,14 @@ const testCases: HandlerTestCase[] = [
     ],
   }, {
     description: 'if there is import progress with no importSequenceId and the API returns all available resources in range, should start another batch and send them all',
-    importProgressResponse: { fromSequence: '0-0', toSequence: timeSequenceFromDate(subHours(testNow, 1)), remaining: 0, lastProcessedDate: subHours(testNow, 1).toISOString(), lastProcessedId: 'IGNORED' },
+    importProgressResponse: { 
+      fromSequence: '0-0', 
+      toSequence: 
+        timeSequenceFromDate(subHours(testNow, 1)), 
+      remaining: 0, 
+      lastProcessedDate: subHours(testNow, 1).toISOString(), 
+      lastProcessedId: 'IGNORED',
+    },
     externalApiResponses: [{ data: [
         generateKhpResource(subMinutes(testNow, 10), '1'),
         generateKhpResource(subMinutes(testNow, 5), '2'),
@@ -172,12 +180,28 @@ const testCases: HandlerTestCase[] = [
       },
     ],
     expectedPublishedMessages: [
-      generateResourceMessage(subMinutes(testNow, 10), '1', timeSequenceFromDate(subHours(testNow, 1), 1), 1),
-      generateResourceMessage(subMinutes(testNow, 5), '2', timeSequenceFromDate(subHours(testNow, 1), 1), 0),
+      generateResourceMessage(
+        subMinutes(testNow, 10), '1', 
+        timeSequenceFromDate(subHours(testNow, 1), 1), 
+        1,
+      ),
+      generateResourceMessage(
+        subMinutes(testNow, 5), 
+        '2', 
+        timeSequenceFromDate(subHours(testNow, 1), 1), 
+        0,
+      ),
     ],
   }, {
     description: 'if there is import progress and there are more resources than the API limit but less than the batch limit, it should keep requesting until it gets them all',
-    importProgressResponse: { fromSequence: '0-0', toSequence: timeSequenceFromDate(subHours(testNow, 1)), remaining: 0, lastProcessedDate: subHours(testNow, 1).toISOString(), lastProcessedId: 'IGNORED', importSequenceId: '1234-0' },
+    importProgressResponse: { 
+      fromSequence: '0-0', 
+      toSequence: timeSequenceFromDate(subHours(testNow, 1)), 
+      remaining: 0, 
+      lastProcessedDate: subHours(testNow, 1).toISOString(), 
+      lastProcessedId: 'IGNORED', 
+      importSequenceId: '1234-0', 
+    },
     externalApiResponses: [
       { data: [
         generateKhpResource(subMinutes(testNow, 25), '1'),
@@ -205,12 +229,29 @@ const testCases: HandlerTestCase[] = [
       generateResourceMessage(subMinutes(testNow, 25), '1', '1234-1', 4),
       generateResourceMessage(subMinutes(testNow, 20), '2', '1234-1', 3),
       generateResourceMessage(subMinutes(testNow, 15), '3', '1234-1', 2),
-      generateResourceMessage(subMinutes(testNow, 10), '4', timeSequenceFromDate(subMinutes(testNow, 15), 1), 1),
-      generateResourceMessage(subMinutes(testNow, 5), '5', timeSequenceFromDate(subMinutes(testNow, 15), 1), 0),
+      generateResourceMessage(
+        subMinutes(testNow, 10), 
+        '4', 
+        timeSequenceFromDate(subMinutes(testNow, 15), 1), 
+        1,
+      ),
+      generateResourceMessage(
+        subMinutes(testNow, 5), 
+        '5', 
+        timeSequenceFromDate(subMinutes(testNow, 15), 1), 
+        0,
+      ),
     ],
   }, {
     description: 'if there is import progress and there are more resources than the batch limit, it should keep requesting until the batch limit is reached',
-    importProgressResponse: { fromSequence: '0-0', toSequence: timeSequenceFromDate(subHours(testNow, 1)), remaining: 0, lastProcessedDate: subHours(testNow, 1).toISOString(), lastProcessedId: 'IGNORED', importSequenceId: '1234-0' },
+    importProgressResponse: { 
+      fromSequence: '0-0', 
+      toSequence: timeSequenceFromDate(subHours(testNow, 1)), 
+      remaining: 0, 
+      lastProcessedDate: subHours(testNow, 1).toISOString(), 
+      lastProcessedId: 'IGNORED', 
+      importSequenceId: '1234-0',
+    },
     externalApiResponses: [
       { data: [
           generateKhpResource(subMinutes(testNow, 25), '1'),
@@ -239,13 +280,33 @@ const testCases: HandlerTestCase[] = [
       generateResourceMessage(subMinutes(testNow, 25), '1', '1234-1', 99),
       generateResourceMessage(subMinutes(testNow, 20), '2', '1234-1', 98),
       generateResourceMessage(subMinutes(testNow, 15), '3', '1234-1', 97),
-      generateResourceMessage(subMinutes(testNow, 10), '4', timeSequenceFromDate(subMinutes(testNow, 15), 1), 96),
-      generateResourceMessage(subMinutes(testNow, 5), '5', timeSequenceFromDate(subMinutes(testNow, 15), 1), 95),
-      generateResourceMessage(subMinutes(testNow, 1), '6', timeSequenceFromDate(subMinutes(testNow, 15), 1), 94),
+      generateResourceMessage(
+        subMinutes(testNow, 10), 
+        '4', 
+        timeSequenceFromDate(subMinutes(testNow, 15), 1), 
+        96,
+      ),
+      generateResourceMessage(
+        subMinutes(testNow, 5), 
+        '5', 
+        timeSequenceFromDate(subMinutes(testNow, 15), 1), 
+        95),
+      generateResourceMessage(
+        subMinutes(testNow, 1), 
+        '6', 
+        timeSequenceFromDate(subMinutes(testNow, 15), 1), 
+        94),
     ],
   }, {
     description: 'if the API reports inconsistent total counts that could result in an infinite loop, it should stop requesting once the request limit is reached',
-    importProgressResponse: { fromSequence: '0-0', toSequence: timeSequenceFromDate(subHours(testNow, 1)), remaining: 0, lastProcessedDate: subHours(testNow, 1).toISOString(), lastProcessedId: 'IGNORED', importSequenceId: '1234-0' },
+    importProgressResponse: { 
+      fromSequence: '0-0', 
+      toSequence: timeSequenceFromDate(subHours(testNow, 1)), 
+      remaining: 0, 
+      lastProcessedDate: subHours(testNow, 1).toISOString(), 
+      lastProcessedId: 'IGNORED', 
+      importSequenceId: '1234-0', 
+    },
     externalApiResponses: [
       ...new Array(20).fill({ data: [
           generateKhpResource(subMinutes(testNow, 25), '1'),
@@ -265,14 +326,24 @@ const testCases: HandlerTestCase[] = [
     ],
     expectedPublishedMessages: [
       generateResourceMessage(subMinutes(testNow, 25), '1', '1234-1', 99),
-      ...new Array(3).fill(generateResourceMessage(subMinutes(testNow, 25), '1', timeSequenceFromDate(subMinutes(testNow, 25), 1), 99)),
+      ...new Array(3).fill(
+        generateResourceMessage(
+          subMinutes(testNow, 25), 
+          '1', 
+          timeSequenceFromDate(subMinutes(testNow, 25), 1), 
+          99,
+        ),
+      ),
     ],
   },
 ];
 
 describe('resources-import-producer handler', () => {
-  each(testCases).test('$description', async ({ importProgressResponse, externalApiResponses, expectedExternalApiCallParameters, expectedPublishedMessages }: HandlerTestCase) => {
-
+  each(testCases).test('$description', async ({
+    importProgressResponse,
+    externalApiResponses,
+    expectedExternalApiCallParameters,
+    expectedPublishedMessages }: HandlerTestCase) => {
     let mocked = mockFetch.mockResolvedValueOnce({
       ok: !isHttpError(importProgressResponse),
       json: () => Promise.resolve(importProgressResponse),
