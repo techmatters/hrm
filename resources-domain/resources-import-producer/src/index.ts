@@ -80,12 +80,19 @@ const pullUpdates = (externalApiBaseUrl: URL, externalApiKey: string, externalAp
     if (response.ok) {
       const { data: fullResults, totalResults } = await response.json() as KhpApiResponse;
       console.info(`[GET ${fetchUrl}] Retrieved ${fullResults.length} resources of ${totalResults} from ${from} to ${to}.`);
-      return {
+
+      const result = {
         data: fullResults,
         totalResults,
-        // Provide the 'startSequence' of the next request, if there are more results to retrieve.
-        nextFrom: (fullResults.length && fullResults.length < totalResults) ? nextTimeSequence(fullResults[fullResults.length - 1].timeSequence as TimeSequence) : undefined,
       };
+
+      if (fullResults.length && fullResults.length < totalResults)  {
+        // There is more left to retrieve from this range, provide the 'fromSequence' value for the next request
+        return {
+          ...result,
+          nextFrom: nextTimeSequence(fullResults[fullResults.length - 1].timeSequence as TimeSequence),
+        };
+      } else return result;
     } else {
       return {
         status: response.status,
