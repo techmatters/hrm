@@ -7,7 +7,7 @@ A set of utility scripts to maintain the resources service & associated data
 ### reindexResources
 
 ````bash
-npm run reindexResources [-- [--environment <environment>] [--accountSid <accountSid>] [--to <to>] [--from <from>] [--resourceId <resourceId> ...] [--verbose]]
+npm run reindex [-- [--environment <environment>] [--accountSid <accountSid>] [--to <to>] [--from <from>] [--resourceId <resourceId> ...] [--verbose]]
 ````
 
 This script kicks off a reindex of the ElasticSearch resources index, taking resources from the database and uploading them to the ElasticSearch index.
