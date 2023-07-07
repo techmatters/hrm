@@ -31,7 +31,7 @@ COPY package.json package-lock.json tsconfig.json tsconfig.base.json tsconfig.bu
 
 RUN yum install -y rsync \
     && cd /tmp/build \
-    && npm ci -w ${lambda_dir}/${lambda_name} -w packages/* -w ${lambda_dir}/packages/* --verbose \
+    && npm ci -w ${lambda_dir}/${lambda_name} -w packages/* -w ${lambda_dir}/packages/* \
     && npx tsc -b tsconfig.build.${lambda_dir}.${lambda_name}.json --verbose \
     && cp ${lambda_dir}/${lambda_name}/dist/*.js /var/task/ \
     && cp -r packages /var/task/ \
