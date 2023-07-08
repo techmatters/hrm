@@ -25,6 +25,7 @@ import { deleteIndex, DeleteIndexResponse } from './deleteIndex';
 import { indexDocument, IndexDocumentExtraParams, IndexDocumentResponse } from './indexDocument';
 import getAccountSid from './getAccountSid';
 import { search, SearchExtraParams } from './search';
+import { suggest, SuggestExtraParams } from './suggest';
 import { SearchConfiguration, IndexConfiguration } from './config';
 import { IndicesRefreshResponse } from '@elastic/elasticsearch/lib/api/types';
 
@@ -105,6 +106,7 @@ const getClientOrMock = async ({ config, index, indexType }: GetClientOrMockArgs
     index,
     searchClient: (searchConfig: SearchConfiguration) => ({
       search: (args: SearchExtraParams) => search({ client, index, searchConfig, ...args }),
+      suggest: (args: SuggestExtraParams) => suggest({ client, index, searchConfig, ...args }),
     }),
     indexClient: <T>(indexConfig: IndexConfiguration<T>): IndexClient<T> => {
       const passThroughConfig: PassThroughConfig<T> = {

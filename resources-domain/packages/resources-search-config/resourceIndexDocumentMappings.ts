@@ -15,23 +15,43 @@
  */
 
 // eslint-disable-next-line prettier/prettier
-import type { PropertyName, MappingProperty } from '@elastic/elasticsearch/lib/api/types';
+import type {
+  PropertyName,
+  MappingKeywordProperty,
+  MappingProperty,
+  MappingTextProperty } from '@elastic/elasticsearch/lib/api/types';
 import { ReferrableResourceAttribute } from '@tech-matters/types/dist/Resources';
 
+export type MappingFieldType = 'integer' | 'keyword' | 'text' | 'boolean' | 'date' | 'completion';
+
 export type MappingField = {
-  type: 'integer' | 'keyword' | 'text' | 'boolean';
+  type: MappingFieldType
+
+  // hasLanguageFields is used to indicate that this field has language fields that should be indexed individually
   hasLanguageFields?: boolean;
+
+  // isArrayField is used to indicate that this field is an array field and should be indexed as such
   isArrayField?: boolean;
+
+  // The attributeKeyPattern is used to match attribute keys to this field when the field name does not match the attribute key
   attributeKeyPattern?: RegExp;
+
+  // The copyTo field is used to copy the value of this field to other fields
+  copyTo?: string[];
+
+  // The indexValueGenerator is used to generate the value that should be indexed for this field
   indexValueGenerator?: (attribute: ReferrableResourceAttribute<any>) => boolean | string | number;
 };
+
+export type ResourceLanguageField = Record<PropertyName, MappingProperty>
+
 
 export type ResourceIndexDocumentMappings = {
   highBoostGlobalFields: string[];
   mappingFields: {
     [key: string]: MappingField;
   };
-  languageFields: Record<PropertyName, MappingProperty>
+  languageFields: ResourceLanguageField
 };
 
 export type FieldAndMapping = {
@@ -51,8 +71,12 @@ const stringFieldTypes = ['text', 'keyword'];
  * @param fieldName
  */
 export const getMappingField = ({ mappingFields }: Pick<ResourceIndexDocumentMappings, 'mappingFields'>, fieldName: string): FieldAndMapping | undefined => {
-  if (Object.keys(mappingFields).includes(fieldName)) return { field: fieldName, mapping:mappingFields[fieldName] };
+  if (Object.keys(mappingFields).includes(fieldName)) {
+    return { field: fieldName, mapping:mappingFields[fieldName] };
+  }
+
   const [field, mapping] = Object.entries(mappingFields).find(([, { attributeKeyPattern }]) => attributeKeyPattern?.test(fieldName)) ?? [];
+
   return mapping && field ? { field, mapping } : undefined;
 };
 
@@ -61,7 +85,6 @@ export const isHighBoostGlobalField = ({ highBoostGlobalFields }: Pick<ResourceI
 
 export const isStringField = (fieldType: string): fieldType is 'keyword' | 'text' =>
   stringFieldTypes.includes(fieldType);
-
 
 export const resourceIndexDocumentMappings: ResourceIndexDocumentMappings = {
   // This is a list of attribute names that should be given higher priority in search results.
@@ -81,9 +104,15 @@ export const resourceIndexDocumentMappings: ResourceIndexDocumentMappings = {
       type: 'keyword',
     },
     name: {
-      type: 'keyword',
+      type: 'text',
       hasLanguageFields: true,
       isArrayField: true,
+      copyTo: ['nameCompletion'],
+    },
+    nameCompletion: {
+      type: 'completion',
+      hasLanguageFields: true,
+      attributeKeyPattern: /^name$/,
     },
     feeStructure: {
       type: 'keyword',
@@ -122,4 +151,45 @@ export const resourceIndexDocumentMappings: ResourceIndexDocumentMappings = {
       analyzer: 'rebuilt_french',
     },
   },
+};
+
+export const getMappingFieldNamesByType = (targetType: MappingFieldType) => (
+  Object.entries(resourceIndexDocumentMappings.mappingFields)
+    .filter(([, { type }]) => type === targetType)
+    .map(([fieldName]) => fieldName)
+);
+
+const convertStringMappingFieldToProperty = (key: string, property: MappingProperty, propConfig: MappingField): MappingProperty=> {
+  const stringProperty = property as MappingTextProperty | MappingKeywordProperty;
+
+  stringProperty.copy_to = isHighBoostGlobalField(resourceIndexDocumentMappings, key)
+    ? ['high_boost_global']
+    : ['low_boost_global'];
+
+  if (propConfig.hasLanguageFields) {
+    stringProperty.fields = resourceIndexDocumentMappings.languageFields;
+  }
+
+  if (propConfig.copyTo) {
+    stringProperty.copy_to = [...stringProperty.copy_to, ...propConfig.copyTo];
+  }
+
+  return stringProperty as MappingProperty;
+};
+
+export const convertMappingFieldsToProperties = (): Record<string, MappingProperty> => {
+  const properties: Record<string, MappingProperty> = {};
+
+  Object.entries(resourceIndexDocumentMappings.mappingFields).map(([key, propConfig]) => {
+    let property: MappingProperty = {};
+
+    if (isStringField(propConfig.type)) {
+      property = convertStringMappingFieldToProperty(key, property, propConfig);
+    }
+
+    property.type = propConfig.type;
+    properties[key] = property;
+  });
+
+  return properties;
 };

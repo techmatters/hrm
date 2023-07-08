@@ -232,6 +232,9 @@ export const resourceIndexConfiguration: IndexConfiguration<FlatResource> = {
             fields: languageFields,
             copy_to: 'high_boost_global',
           },
+          name_completion: {
+            type: 'completion',
+          },
           id: {
             type: 'text',
             copy_to: 'high_boost_global',
@@ -244,4 +247,5 @@ export const resourceIndexConfiguration: IndexConfiguration<FlatResource> = {
       },
     };
   },
+  generateSuggestQuery: ({prefix, size}: SuggestParameters) => ({}) as SearchSuggester,
 };

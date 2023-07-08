@@ -15,10 +15,12 @@
  */
 
 // eslint-disable-next-line prettier/prettier
-import type { IndicesCreateRequest } from '@elastic/elasticsearch/lib/api/types';
+import type { IndicesCreateRequest, SearchSuggester } from '@elastic/elasticsearch/lib/api/types';
 import { CreateIndexConvertedDocument } from './index';
+import { SuggestParameters } from '../suggest';
 
 export type IndexConfiguration<T = any> = {
   getCreateIndexParams: (indexName: string) => IndicesCreateRequest
   convertToIndexDocument: (sourceEntity: T) => CreateIndexConvertedDocument
+  generateSuggestQuery?: (suggestParameters: SuggestParameters) => SearchSuggester
 };
