@@ -338,6 +338,10 @@ describe('searchResources', () => {
   const mockEsSearch: jest.Mock<ReturnType<
     ReturnType<Awaited<ReturnType<typeof getClient>>['searchClient']>['search']
   >> = jest.fn();
+  const mockEsSuggest: jest.Mock<ReturnType<
+    ReturnType<Awaited<ReturnType<typeof getClient>>['searchClient']>['suggest']
+  >> = jest.fn();
+
   beforeEach(() => {
     mockGetByIdList.mockReset();
     mockEsSearch.mockReset();
@@ -349,6 +353,7 @@ describe('searchResources', () => {
       searchClient: () => {
         return {
           search: mockEsSearch,
+          suggest: mockEsSuggest,
         };
       },
     });
