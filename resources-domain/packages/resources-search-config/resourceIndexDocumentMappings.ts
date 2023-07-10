@@ -43,7 +43,7 @@ export type MappingField = {
   indexValueGenerator?: (attribute: ReferrableResourceAttribute<any>) => boolean | string | number;
 };
 
-export type ResourceLanguageField = Record<PropertyName, MappingProperty>
+export type ResourceLanguageField = Record<PropertyName, MappingProperty>;
 
 
 export type ResourceIndexDocumentMappings = {

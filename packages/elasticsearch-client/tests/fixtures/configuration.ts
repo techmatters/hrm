@@ -249,5 +249,9 @@ export const resourceIndexConfiguration: IndexConfiguration<FlatResource> = {
       },
     };
   },
-  generateSuggestQuery: ({prefix, size}: SuggestParameters) => ({}) as SearchSuggester,
+  //TODO: fill this in once we have a better idea of what the suggester should look like
+  generateSuggestQuery: ({ prefix, size }: SuggestParameters) => ({
+    prefix,
+    size,
+  }) as SearchSuggester,
 };
