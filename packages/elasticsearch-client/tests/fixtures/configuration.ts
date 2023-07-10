@@ -14,11 +14,13 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { CreateIndexConvertedDocument, IndexConfiguration, SearchConfiguration } from '../../src';
 import { FlatResource, ReferrableResourceAttribute } from '@tech-matters/types/Resources';
 import { IndicesCreateRequest } from '@elastic/elasticsearch/lib/api/types';
 // eslint-disable-next-line prettier/prettier
-import type { PropertyName, MappingProperty } from '@elastic/elasticsearch/lib/api/types';
+import type { MappingProperty, PropertyName, SearchSuggester } from '@elastic/elasticsearch/lib/api/types';
+
+import { CreateIndexConvertedDocument, IndexConfiguration, SearchConfiguration } from '../../src';
+import { SuggestParameters } from '../../src/suggest';
 
 /**
  * This is almost a a C&P or the resources search configuration

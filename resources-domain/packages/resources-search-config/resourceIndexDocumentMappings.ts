@@ -107,12 +107,13 @@ export const resourceIndexDocumentMappings: ResourceIndexDocumentMappings = {
       type: 'text',
       hasLanguageFields: true,
       isArrayField: true,
-      copyTo: ['nameCompletion'],
     },
-    nameCompletion: {
+    taxonomyLevelName: {
+      type: 'keyword',
+      copyTo: ['taxonomyLevelNameCompletion'],
+    },
+    taxonomyLevelNameCompletion: {
       type: 'completion',
-      hasLanguageFields: true,
-      attributeKeyPattern: /^name$/,
     },
     feeStructure: {
       type: 'keyword',

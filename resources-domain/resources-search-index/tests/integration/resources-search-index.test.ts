@@ -16,14 +16,19 @@
 
 import { SQS } from 'aws-sdk';
 
-import { Client, IndexTypes, getClient, SearchResponse } from '@tech-matters/elasticsearch-client';
+import { IndexClient, getClient } from '@tech-matters/elasticsearch-client';
+
+import {
+  RESOURCE_INDEX_TYPE,
+  resourceSearchConfiguration,
+} from '@tech-matters/resources-search-config';
 
 import { generateMockMessageBody } from '../generateMockMessageBody';
 import { getStackOutput } from '../../../../cdk/cdkOutput';
 import { sendMessage, sendMessageBatch } from '../../../../test-support/sendMessage';
 
 /**
- * TODO: This is a super dirty proof of concept for e2e tests.
+ * TODO: This is a super dirty proof of concept for integration tests.
  * It needs cleanup.
  */
 
@@ -31,7 +36,7 @@ jest.setTimeout(60000);
 
 const localstackEndpoint = 'http://localhost:4566';
 const accountSids = ['ACCOUNT_1', 'ACCOUNT_2'];
-const indexType = IndexTypes.RESOURCES;
+const indexType = RESOURCE_INDEX_TYPE;
 
 const lambdaName = 'resources-search-index';
 const completeOutput: any = getStackOutput('resources-search-complete');
@@ -104,23 +109,35 @@ export const waitForSQSMessage = async ({
 };
 
 describe('resources-search-index', () => {
-  const clients: Record<string, Client> = {};
+  const searchClients: Record<string, any> = {};
+  const indexClients: Record<string, IndexClient> = {};
   beforeEach(async () => {
     await sqs.purgeQueue({ QueueUrl: errorQueueUrl }).promise();
     await Promise.all(
       accountSids.map(async accountSid => {
-        const client = await getClient({
-          accountSid: accountSid,
-          indexType,
-          config: {
-            node: 'http://localhost:9200',
-          },
-        });
-        clients[accountSid] = client;
+        searchClients[accountSid] = (
+          await getClient({
+            accountSid: accountSid,
+            indexType,
+            config: {
+              node: 'http://localhost:9200',
+            },
+          })
+        ).searchClient(resourceSearchConfiguration);
+
+        indexClients[accountSid] = (
+          await getClient({
+            accountSid: accountSid,
+            indexType,
+            config: {
+              node: 'http://localhost:9200',
+            },
+          })
+        ).searchClient(resourceSearchConfiguration);
         // This is a bit of a hack to get the client to connect to the localstack instance on localhost
         // instead of using the localstack ssm parameter which points to the internal docker network
         // address of the elasticsearch container: http://elasticsearch:9200
-        await client.createIndex({});
+        await indexClients[accountSid].createIndex({});
       }),
     );
   });
