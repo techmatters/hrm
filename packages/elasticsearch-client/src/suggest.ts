@@ -48,10 +48,5 @@ export const suggest = async ({
   const res = await client.search(suggestQuery);
   console.dir(res, { depth: null });
 
-  // const suggestions = body.suggest['resource-suggest'][0].options.map(option => {
-  //   return {
-  //     id: option._source.id,
-  //     name: option._source.name,
-  //   };
-  // });
+  // TODO: Implement return once we have a testable response
 };
