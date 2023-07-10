@@ -235,11 +235,7 @@ export const resourceService = () => {
         })
       ).searchClient(resourceSearchConfiguration);
 
-      await client.suggest({ suggestParameters });
-
-      // TODO: Implement this once we have a fully implemented endpoint
-      // const { items } = await client.suggest(suggestParameters);
-      // return items.map(item => item.text);
+      return client.suggest({ suggestParameters });
     },
   };
 };

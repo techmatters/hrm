@@ -181,7 +181,7 @@ const convertStringMappingFieldToProperty = (key: string, property: MappingPrope
 export const convertMappingFieldsToProperties = (): Record<string, MappingProperty> => {
   const properties: Record<string, MappingProperty> = {};
 
-  Object.entries(resourceIndexDocumentMappings.mappingFields).map(([key, propConfig]) => {
+  Object.entries(resourceIndexDocumentMappings.mappingFields).forEach(([key, propConfig]) => {
     let property: MappingProperty = {};
 
     if (isStringField(propConfig.type)) {

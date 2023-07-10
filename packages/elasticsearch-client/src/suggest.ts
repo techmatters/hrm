@@ -48,5 +48,5 @@ export const suggest = async ({
   const res = await client.search(suggestQuery);
   console.dir(res, { depth: null });
 
-  // TODO: Implement return once we have a testable response
+  return res.suggest;
 };
