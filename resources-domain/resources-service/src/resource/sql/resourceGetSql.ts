@@ -74,17 +74,5 @@ LEFT JOIN LATERAL (
 ) AS datetimeAtt ON true`;
 
 export const SELECT_RESOURCE_IN_IDS = `${SELECT_RESOURCES}
-WHERE r."accountSid" = $<accountSid> AND r."id" IN ($<resourceIds:csv>)
-`;
-
-export const SELECT_RESOURCE_IDS_WHERE_NAME_CONTAINS = `
-  SELECT id 
-  FROM resources."Resources" AS r 
-  WHERE r."accountSid" = $<accountSid> AND r."name" ILIKE $<namePattern>
-  ORDER BY r."name"
-  LIMIT $<limit>
-  OFFSET $<start>;
-  SELECT count(*)::INTEGER AS "totalCount" 
-  FROM resources."Resources" AS r 
-  WHERE r."accountSid" = $<accountSid> AND r."name" ILIKE $<namePattern>
+WHERE r."accountSid" = $<accountSid> AND r."id" IN ($<resourceIds:csv>) AND r."deletedAt" IS NULL
 `;

@@ -16,7 +16,10 @@
 
 import { AccountSID, FlatResource } from '@tech-matters/types';
 
-export const BLANK_ATTRIBUTES: Omit<FlatResource, 'id' | 'name' | 'lastUpdated' | 'accountSid'> = {
+export const BLANK_ATTRIBUTES: Omit<
+  FlatResource,
+  'id' | 'name' | 'lastUpdated' | 'deletedAt' | 'accountSid'
+> = {
   stringAttributes: [],
   referenceStringAttributes: [],
   booleanAttributes: [],

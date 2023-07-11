@@ -105,6 +105,7 @@ const generateResourceMessage = (lastUpdated: Date, resourceId: string, batchFro
       id: resourceId,
       name: `Resource ${resourceId}`,
       lastUpdated: lastUpdated.toISOString(),
+      deletedAt: '',
       ...EMPTY_ATTRIBUTES,
     }],
   });
