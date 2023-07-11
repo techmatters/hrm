@@ -56,7 +56,7 @@ const resourceRoutes = () => {
       prefix: prefix as string,
     });
 
-    res.json(referrableResources);
+    res.json(suggestions);
   });
 
   return router;
