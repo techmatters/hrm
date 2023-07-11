@@ -504,33 +504,30 @@ describe('GET /suggest', () => {
       .get(`${basePath}?size=5&prefix=sugg`)
       .set(headers)
       .send();
+
     expect(response.status).toBe(200);
     expect(response.body).toHaveProperty('taxonomyLevelNameCompletion');
-    expect(response.body.taxonomyLevelNameCompletion).toStrictEqual({
-      text: 'sugg',
-      length: 4,
-      options: [
-        {
-          text: 'suggest_0',
-          score: 1,
-        },
-        {
-          text: 'suggest_1',
-          score: 1,
-        },
-        {
-          text: 'suggest_2',
-          score: 1,
-        },
-        {
-          text: 'suggest_3',
-          score: 1,
-        },
-        {
-          text: 'suggest_4',
-          score: 1,
-        },
-      ],
-    });
+    expect(response.body.taxonomyLevelNameCompletion).toStrictEqual([
+      {
+        text: 'suggest_0',
+        score: 1,
+      },
+      {
+        text: 'suggest_1',
+        score: 1,
+      },
+      {
+        text: 'suggest_2',
+        score: 1,
+      },
+      {
+        text: 'suggest_3',
+        score: 1,
+      },
+      {
+        text: 'suggest_4',
+        score: 1,
+      },
+    ]);
   });
 });

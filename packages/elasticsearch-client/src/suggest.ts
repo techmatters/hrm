@@ -38,11 +38,7 @@ export type SuggestResponseOption = {
   score: number;
 };
 
-export type SuggestResponseEntry = {
-  text: string;
-  length: number;
-  options: SuggestResponseOption[];
-};
+export type SuggestResponseEntry = SuggestResponseOption[];
 
 export type SuggestResponse = Record<string, SuggestResponseEntry>;
 
@@ -69,17 +65,11 @@ export const suggest = async ({
 
   Object.entries(res.suggest).forEach(([key, value]) => {
     const options = value[0].options as SearchCompletionSuggestOption[];
-    suggestions[key] = {
-      text: value[0].text,
-      length: value[0].length,
-      options: options.map(option => ({
-        text: option.text,
-        score: option._score!,
-      })),
-    };
+    suggestions[key] = options.map(option => ({
+      text: option.text,
+      score: option._score!,
+    }));
   });
-
-  console.dir(suggestions);
 
   return suggestions;
 };
