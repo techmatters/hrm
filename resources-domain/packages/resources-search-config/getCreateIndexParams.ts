@@ -23,15 +23,9 @@
  * see: https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-query-string-query.html
  */
 
+import { IndicesCreateRequest } from '@elastic/elasticsearch/lib/api/types';
 import {
-  IndicesCreateRequest,
-  MappingKeywordProperty,
-  MappingProperty,
-  MappingTextProperty,
-} from '@elastic/elasticsearch/lib/api/types';
-import {
-  isHighBoostGlobalField,
-  isStringField,
+  convertMappingFieldsToProperties,
   resourceIndexDocumentMappings,
 } from './resourceIndexDocumentMappings';
 
@@ -40,28 +34,7 @@ import {
  * @param index
  */
 export const getCreateIndexParams = (index: string): IndicesCreateRequest => {
-  const { mappingFields, languageFields } = resourceIndexDocumentMappings;
-
-  const convertMappingFieldsToProperties = () =>
-    Object.fromEntries(
-      Object.entries(mappingFields).map(([key, value]) => {
-        const property: MappingProperty = {
-          type: value.type,
-        };
-
-        if (isStringField(value.type)) {
-          const stringProperty = property as MappingTextProperty | MappingKeywordProperty;
-          stringProperty.copy_to = isHighBoostGlobalField(resourceIndexDocumentMappings, key)
-            ? 'high_boost_global'
-            : 'low_boost_global';
-          if (value.hasLanguageFields) {
-            property.fields = languageFields;
-          }
-        }
-
-        return [key, property];
-      }),
-    );
+  const { languageFields } = resourceIndexDocumentMappings;
 
   return {
     index,

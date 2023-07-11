@@ -22,7 +22,7 @@ import createError from 'http-errors';
 const resourceRoutes = () => {
   const router: IRouter = Router();
 
-  const { getResource, searchResources } = resourceService();
+  const { getResource, searchResources, getResourceTermSuggestions } = resourceService();
 
   router.get('/resource/:resourceId', async (req, res) => {
     const referrableResource = await getResource(<AccountSID>req.accountSid, req.params.resourceId);
@@ -46,6 +46,17 @@ const resourceRoutes = () => {
     });
 
     res.json(referrableResources);
+  });
+
+  router.get('/suggest', async (req, res) => {
+    const { size, prefix } = req.query;
+
+    const suggestions = await getResourceTermSuggestions(<AccountSID>req.accountSid, {
+      size: parseInt((size as string) || '10'),
+      prefix: prefix as string,
+    });
+
+    res.json(suggestions);
   });
 
   return router;

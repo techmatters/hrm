@@ -27,6 +27,7 @@ export * from './src/deleteIndex';
 export * from './src/indexDocument';
 export * from './src/executeBulk';
 export * from './src/search';
+export * from './src/suggest';
 export * from './src/config';
 export * from './src/config/indexConfiguration';
 export * from './src/config/searchConfiguration';
