@@ -42,11 +42,11 @@ export const suggest = async ({
 
   const suggestQuery = {
     index,
+    _source: false,
     suggest: generateSuggestQuery(suggestParameters),
   };
 
   const res = await client.search(suggestQuery);
-  console.dir(res, { depth: null });
 
   return res.suggest;
 };

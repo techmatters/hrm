@@ -68,7 +68,7 @@ const resourceRoutes = () => {
     res.json(referrableResources);
   });
 
-  router.get('/suggestion', async (req, res) => {
+  router.get('/suggest', async (req, res) => {
     const { size, prefix } = req.query;
 
     const referrableResources = await getResourceTermSuggestions(<AccountSID>req.accountSid, {

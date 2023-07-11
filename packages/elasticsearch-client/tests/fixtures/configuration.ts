@@ -17,10 +17,9 @@
 import { FlatResource, ReferrableResourceAttribute } from '@tech-matters/types/Resources';
 import { IndicesCreateRequest } from '@elastic/elasticsearch/lib/api/types';
 // eslint-disable-next-line prettier/prettier
-import type { MappingProperty, PropertyName, SearchSuggester } from '@elastic/elasticsearch/lib/api/types';
+import type { MappingProperty, PropertyName } from '@elastic/elasticsearch/lib/api/types';
 
 import { CreateIndexConvertedDocument, IndexConfiguration, SearchConfiguration } from '../../src';
-import { SuggestParameters } from '../../src/suggest';
 
 /**
  * This is almost a a C&P or the resources search configuration
@@ -249,9 +248,4 @@ export const resourceIndexConfiguration: IndexConfiguration<FlatResource> = {
       },
     };
   },
-  //TODO: fill this in once we have a better idea of what the suggester should look like
-  generateSuggestQuery: ({ prefix, size }: SuggestParameters) => ({
-    prefix,
-    size,
-  }) as SearchSuggester,
 };

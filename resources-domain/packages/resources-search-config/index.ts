@@ -43,12 +43,12 @@ export const resourceSearchConfiguration: SearchConfiguration = {
       type: 'term',
     },
   },
+  generateSuggestQuery,
 };
 
 export const resourceIndexConfiguration: IndexConfiguration<FlatResource> = {
   convertToIndexDocument: convertIndexDocument,
   getCreateIndexParams,
-  generateSuggestQuery,
 };
 
 export const RESOURCE_INDEX_TYPE = 'resources';

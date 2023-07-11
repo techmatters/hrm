@@ -14,6 +14,9 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
+import { SearchSuggester } from '@elastic/elasticsearch/lib/api/types';
+import { SuggestParameters } from '../suggest';
+
 /**
  * Used if you need to alias a text filter in the API to a different field in the index.
  */
@@ -40,6 +43,7 @@ type FilterMapping = TermFilterMapping | RangeFilterMapping;
 export type SearchConfiguration = {
   searchFieldBoosts: Record<string, number>;
   filterMappings: Record<string, FilterMapping>;
+  generateSuggestQuery?: (suggestParameters: SuggestParameters) => SearchSuggester;
 };
 
 export const getQuerySearchFields = (
