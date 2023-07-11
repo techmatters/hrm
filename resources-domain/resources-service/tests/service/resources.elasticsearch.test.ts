@@ -29,6 +29,7 @@ import {
   RESOURCE_INDEX_TYPE,
   resourceIndexConfiguration,
 } from '@tech-matters/resources-search-config';
+import range from './range';
 
 export const workerSid = 'WK-worker-sid';
 
@@ -59,11 +60,6 @@ afterAll(async () => {
   );
 });
 
-const range = (elements: number | string): string[] =>
-  Array.from(Array(typeof elements === 'number' ? elements : parseInt(elements)).keys()).map(i =>
-    i.toString(),
-  );
-
 beforeAll(async () => {
   await mockingProxy.start();
   mockServer = await mockingProxy.mockttpServer();
@@ -72,7 +68,7 @@ beforeAll(async () => {
     ['1', range(5)],
     ['2', range(2)],
   ];
-  const testResourceCreateSql = accountResourceIdTuples
+  let testResourceCreateSql = accountResourceIdTuples
     .flatMap(([accountIdx, resourceIdxs]) =>
       resourceIdxs.flatMap(resourceIdx => {
         const sql = `INSERT INTO resources."Resources" (id, "accountSid", "name") VALUES ('RESOURCE_${resourceIdx}', 'ACCOUNT_${accountIdx}', 'Resource ${resourceIdx} (Account ${accountIdx})')`;
@@ -82,10 +78,15 @@ beforeAll(async () => {
               `INSERT INTO resources."ResourceStringAttributes" ("resourceId", "accountSid", "key", "language", "value", "info") VALUES ('RESOURCE_${resourceIdx}', 'ACCOUNT_${accountIdx}', 'ATTRIBUTE_${attributeIdx}', 'en-US', 'VALUE_${valueIdx}', '{ "some": "json" }')`,
           ),
         );
-        return [sql, ...attributeSql];
+        const suggestSql = [
+          `INSERT INTO resources."ResourceStringAttributes" ("resourceId", "accountSid", "key", "language", "value", "info") VALUES ('RESOURCE_${resourceIdx}', 'ACCOUNT_${accountIdx}', 'taxonomyLevelName', 'en-US', 'suggest_${resourceIdx}', '{ "some": "json" }')`,
+        ];
+
+        return [sql, ...attributeSql, ...suggestSql];
       }),
     )
     .join(';\n');
+
   // console.log(testResourceCreateSql); // handy for debugging
   await db.multi(testResourceCreateSql);
 
@@ -486,5 +487,47 @@ describe('GET /search', () => {
   DELETE FROM resources."ResourceDateTimeAttributes";
         `);
     });
+  });
+});
+
+describe('GET /suggest', () => {
+  const basePath = '/v0/accounts/ACCOUNT_1/resources/suggest';
+
+  test('Should return 401 unauthorized with no auth headers', async () => {
+    const response = await request.get(`${basePath}?size=5&prefix=sugg`).send();
+    expect(response.status).toBe(401);
+    expect(response.body).toStrictEqual({ error: 'Authorization failed' });
+  });
+
+  test('Should return valid suggestions when authenticated', async () => {
+    const response = await request
+      .get(`${basePath}?size=5&prefix=sugg`)
+      .set(headers)
+      .send();
+
+    expect(response.status).toBe(200);
+    expect(response.body).toHaveProperty('taxonomyLevelNameCompletion');
+    expect(response.body.taxonomyLevelNameCompletion).toStrictEqual([
+      {
+        text: 'suggest_0',
+        score: 1,
+      },
+      {
+        text: 'suggest_1',
+        score: 1,
+      },
+      {
+        text: 'suggest_2',
+        score: 1,
+      },
+      {
+        text: 'suggest_3',
+        score: 1,
+      },
+      {
+        text: 'suggest_4',
+        score: 1,
+      },
+    ]);
   });
 });

@@ -22,7 +22,7 @@ import {
   ResourceAttributeNode,
 } from '@tech-matters/types';
 
-import { getClient } from '@tech-matters/elasticsearch-client';
+import { getClient, SuggestParameters } from '@tech-matters/elasticsearch-client';
 
 import { getById, getByIdList } from './resourceDataAccess';
 import {
@@ -174,6 +174,20 @@ export const resourceService = () => {
         ),
         totalCount: total,
       };
+    },
+
+    getResourceTermSuggestions: async (
+      accountSid: AccountSID,
+      suggestParameters: SuggestParameters,
+    ) => {
+      const client = (
+        await getClient({
+          accountSid,
+          indexType: RESOURCE_INDEX_TYPE,
+        })
+      ).searchClient(resourceSearchConfiguration);
+
+      return client.suggest({ suggestParameters });
     },
   };
 };
