@@ -506,41 +506,29 @@ describe('GET /suggest', () => {
       .send();
     expect(response.status).toBe(200);
     expect(response.body).toHaveProperty('taxonomyLevelNameCompletion');
-    expect(response.body.taxonomyLevelNameCompletion).toHaveLength(1);
-    expect(response.body.taxonomyLevelNameCompletion[0]).toStrictEqual({
+    expect(response.body.taxonomyLevelNameCompletion).toStrictEqual({
       text: 'sugg',
-      offset: 0,
       length: 4,
       options: [
         {
           text: 'suggest_0',
-          _index: 'account_1-resources',
-          _id: 'RESOURCE_0',
-          _score: 1,
+          score: 1,
         },
         {
           text: 'suggest_1',
-          _index: 'account_1-resources',
-          _id: 'RESOURCE_1',
-          _score: 1,
+          score: 1,
         },
         {
           text: 'suggest_2',
-          _index: 'account_1-resources',
-          _id: 'RESOURCE_2',
-          _score: 1,
+          score: 1,
         },
         {
           text: 'suggest_3',
-          _index: 'account_1-resources',
-          _id: 'RESOURCE_3',
-          _score: 1,
+          score: 1,
         },
         {
           text: 'suggest_4',
-          _index: 'account_1-resources',
-          _id: 'RESOURCE_4',
-          _score: 1,
+          score: 1,
         },
       ],
     });

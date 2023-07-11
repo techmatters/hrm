@@ -15,6 +15,7 @@
  */
 
 import { Client } from '@elastic/elasticsearch';
+import { SearchCompletionSuggestOption } from '@elastic/elasticsearch/lib/api/types';
 
 export type SuggestParameters = {
   prefix: string;
@@ -32,12 +33,25 @@ export type SuggestParams = {
   searchConfig: any;
 };
 
+export type SuggestResponseOption = {
+  text: string;
+  score: number;
+};
+
+export type SuggestResponseEntry = {
+  text: string;
+  length: number;
+  options: SuggestResponseOption[];
+};
+
+export type SuggestResponse = Record<string, SuggestResponseEntry>;
+
 export const suggest = async ({
   client,
   index,
   searchConfig,
   suggestParameters,
-}: SuggestParams) => {
+}: SuggestParams): Promise<SuggestResponse> => {
   const { generateSuggestQuery } = searchConfig;
 
   const suggestQuery = {
@@ -47,6 +61,25 @@ export const suggest = async ({
   };
 
   const res = await client.search(suggestQuery);
+  const suggestions: SuggestResponse = {};
 
-  return res.suggest;
+  if (!res.suggest) {
+    return suggestions;
+  }
+
+  Object.entries(res.suggest).forEach(([key, value]) => {
+    const options = value[0].options as SearchCompletionSuggestOption[];
+    suggestions[key] = {
+      text: value[0].text,
+      length: value[0].length,
+      options: options.map(option => ({
+        text: option.text,
+        score: option._score!,
+      })),
+    };
+  });
+
+  console.dir(suggestions);
+
+  return suggestions;
 };
