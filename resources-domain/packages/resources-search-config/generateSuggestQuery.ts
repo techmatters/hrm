@@ -18,6 +18,8 @@ import { SearchSuggester } from '@elastic/elasticsearch/lib/api/types';
 import { SuggestParameters } from '@tech-matters/elasticsearch-client';
 import { getMappingFieldNamesByType } from './resourceIndexDocumentMappings';
 
+// TODO: this should probably be moved to the elasticsearch-client package, but the config/client splitting
+// makes it a bit tricky to do that right now.
 export const generateSuggestQuery = ({ prefix, size }: SuggestParameters): SearchSuggester => {
   const suggestQuery: SearchSuggester = {};
 

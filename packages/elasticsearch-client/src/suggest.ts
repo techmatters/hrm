@@ -42,7 +42,7 @@ export const suggest = async ({
 
   const suggestQuery = {
     index,
-    _source: false,
+    _source: false, // disable return of source document info to improve response time
     suggest: generateSuggestQuery(suggestParameters),
   };
 
