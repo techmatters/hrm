@@ -51,7 +51,7 @@ const resourceRoutes = () => {
   router.get('/suggest', async (req, res) => {
     const { size, prefix } = req.query;
 
-    const referrableResources = await getResourceTermSuggestions(<AccountSID>req.accountSid, {
+    const suggestions = await getResourceTermSuggestions(<AccountSID>req.accountSid, {
       size: parseInt((size as string) || '10'),
       prefix: prefix as string,
     });
