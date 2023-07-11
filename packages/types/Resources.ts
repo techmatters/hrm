@@ -72,6 +72,7 @@ export type FlatResource = {
   name: string;
   id: string;
   lastUpdated: string;
+  deletedAt?: string;
   stringAttributes: (ReferrableResourceTranslatableAttribute & { key: string })[];
   referenceStringAttributes: (ReferrableResourceTranslatableAttribute & {
     key: string;

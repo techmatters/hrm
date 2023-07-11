@@ -75,7 +75,7 @@ export const convertIndexDocument = (resource: FlatResource): CreateIndexConvert
     }
   };
 
-  const { id, name, lastUpdated, accountSid, ...attributeArrays } = resource;
+  const { id, name, lastUpdated, deletedAt, accountSid, ...attributeArrays } = resource;
 
   Object.values(attributeArrays).forEach(attributes => {
     attributes.forEach(({ key, ...attribute }) => {

@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { IRouter, Request, Router } from 'express';
+import { IRouter, Router } from 'express';
 import { resourceService } from './resourceService';
 import { AccountSID } from '@tech-matters/types';
 import createError from 'http-errors';
@@ -22,7 +22,7 @@ import createError from 'http-errors';
 const resourceRoutes = () => {
   const router: IRouter = Router();
 
-  const { getResource, searchResourcesByName, searchResources } = resourceService();
+  const { getResource, searchResources } = resourceService();
 
   router.get('/resource/:resourceId', async (req, res) => {
     const referrableResource = await getResource(<AccountSID>req.accountSid, req.params.resourceId);
@@ -31,21 +31,6 @@ const resourceRoutes = () => {
     }
     res.json(referrableResource);
   });
-
-  router.post(
-    '/searchByName',
-    async (req: Request<{ nameSubstring: string; ids: string[] }>, res) => {
-      const { limit, start } = req.query;
-      const referrableResources = await searchResourcesByName(<AccountSID>req.accountSid, {
-        ...req.body,
-        pagination: {
-          limit: parseInt((limit as string) || '20'),
-          start: parseInt((start as string) || '0'),
-        },
-      });
-      res.json(referrableResources);
-    },
-  );
 
   router.post('/search', async (req, res) => {
     const { limit, start } = req.query;
