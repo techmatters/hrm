@@ -58,10 +58,10 @@ export function createMockConnection<T = unknown>(): pgPromise.ITask<T> {
 }
 
 export const mockTask = (db: IDatabase<unknown>, mockConn: pgPromise.ITask<unknown>) => {
-  // @ts-ignore
   jest
     .spyOn(db, 'task')
     .mockImplementation(
+      // @ts-ignore
       (action: (connection: pgPromise.ITask<unknown>) => Promise<any>) => {
         return action(mockConn);
       },
@@ -73,36 +73,36 @@ export const mockTransaction = (
   mockTx: pgPromise.ITask<unknown> | undefined = undefined,
 ) => {
   if (mockTx) {
-    // @ts-ignore
     jest
       .spyOn(mockConn, 'tx')
       .mockImplementation(
+        // @ts-ignore
         (action: (connection: pgPromise.ITask<unknown>) => Promise<any>) => {
           return action(mockTx);
         },
       );
-    // @ts-ignore
     jest
       .spyOn(mockConn, 'txIf')
       .mockImplementation(
+        // @ts-ignore
         (action: (connection: pgPromise.ITask<unknown>) => Promise<any>) => {
           return action(mockTx);
         },
       );
     mockTask(db, mockConn);
   } else {
-    // @ts-ignore
     jest
       .spyOn(db, 'tx')
       .mockImplementation(
+        // @ts-ignore
         (action: (connection: pgPromise.ITask<unknown>) => Promise<any>) => {
           return action(mockConn);
         },
       );
-    // @ts-ignore
     jest
       .spyOn(db, 'txIf')
       .mockImplementation(
+        // @ts-ignore
         (action: (connection: pgPromise.ITask<unknown>) => Promise<any>) => {
           return action(mockConn);
         },
