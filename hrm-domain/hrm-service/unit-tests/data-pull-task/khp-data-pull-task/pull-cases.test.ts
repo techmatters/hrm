@@ -34,7 +34,7 @@ jest.mock('../../../src/contact/contact');
 jest.mock('../../../src/data-pull-task/khp-data-pull-task/context');
 
 const getExpectedS3Params = (cas: caseApi.Case) => {
-  const date = format((cas.updatedAt as unknown) as Date, 'yyyy/MM/dd');
+  const date = format(cas.updatedAt as unknown as Date, 'yyyy/MM/dd');
   return {
     Bucket: bucketName,
     Key: `hrm-data/${date}/cases/${cas.id}.json`,
@@ -48,9 +48,9 @@ const promiseSpy = jest.fn();
 beforeEach(() => {
   uploadSpy = jest.fn().mockReturnValue({ promise: promiseSpy });
 
-  const s3Client = ({
+  const s3Client = {
     upload: uploadSpy,
-  } as unknown) as S3;
+  } as unknown as S3;
 
   const getContextResponse = Promise.resolve({
     accountSid,
@@ -84,7 +84,9 @@ describe('KHP Data Pull - Pull Cases', () => {
       cases: [],
     });
 
-    const searchCasesSpy = jest.spyOn(caseApi, 'searchCases').mockReturnValue(searchCasesResponse);
+    const searchCasesSpy = jest
+      .spyOn(caseApi, 'searchCases')
+      .mockReturnValue(searchCasesResponse);
 
     await pullCases(startDate, endDate);
 
@@ -108,8 +110,8 @@ describe('KHP Data Pull - Pull Cases', () => {
       createdBy: 'Wkxxx',
       updatedBy: 'Wkxxx',
       accountSid,
-      createdAt: (addDays(startDate, 1) as unknown) as string, // The type defines this as string, but it's actually as Date
-      updatedAt: (addDays(startDate, 1) as unknown) as string,
+      createdAt: addDays(startDate, 1) as unknown as string, // The type defines this as string, but it's actually as Date
+      updatedAt: addDays(startDate, 1) as unknown as string,
     };
 
     const case2 = {
@@ -123,8 +125,8 @@ describe('KHP Data Pull - Pull Cases', () => {
       createdBy: 'Wkxxx',
       updatedBy: 'Wkxxx',
       accountSid,
-      createdAt: (addDays(startDate, 2) as unknown) as string,
-      updatedAt: (addDays(startDate, 2) as unknown) as string,
+      createdAt: addDays(startDate, 2) as unknown as string,
+      updatedAt: addDays(startDate, 2) as unknown as string,
     };
 
     const searchCasesResponse = Promise.resolve({

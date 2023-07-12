@@ -18,7 +18,11 @@ import { getSsmParameter } from '@tech-matters/ssm-cache';
 import { executeBulk, ExecuteBulkExtraParams, ExecuteBulkResponse } from './executeBulk';
 import { createIndex, CreateIndexExtraParams, CreateIndexResponse } from './createIndex';
 import { deleteIndex, DeleteIndexResponse } from './deleteIndex';
-import { indexDocument, IndexDocumentExtraParams, IndexDocumentResponse } from './indexDocument';
+import {
+  indexDocument,
+  IndexDocumentExtraParams,
+  IndexDocumentResponse,
+} from './indexDocument';
 import getAccountSid from './getAccountSid';
 import { search, SearchExtraParams } from './search';
 import { suggest, SuggestExtraParams } from './suggest';
@@ -66,11 +70,16 @@ const getEsConfig = async ({
   if (config) return config;
   const envConfigEntries = Object.entries(process.env)
     .filter(([key]) => key.startsWith('ELASTICSEARCH_CONFIG_'))
-    .map(([varName, value]) => [varName.substring('ELASTICSEARCH_CONFIG_'.length), value]);
+    .map(([varName, value]) => [
+      varName.substring('ELASTICSEARCH_CONFIG_'.length),
+      value,
+    ]);
   console.log('envConfigEntries', envConfigEntries);
   if (process.env.ELASTICSEARCH_CONFIG || envConfigEntries.length) {
     return {
-      ...(process.env.ELASTICSEARCH_CONFIG ? JSON.parse(process.env.ELASTICSEARCH_CONFIG) : {}),
+      ...(process.env.ELASTICSEARCH_CONFIG
+        ? JSON.parse(process.env.ELASTICSEARCH_CONFIG)
+        : {}),
       ...Object.fromEntries(envConfigEntries),
     };
   }
@@ -101,8 +110,10 @@ const getClientOrMock = async ({ config, index, indexType }: GetClientOrMockArgs
     client,
     index,
     searchClient: (searchConfig: SearchConfiguration) => ({
-      search: (args: SearchExtraParams) => search({ client, index, searchConfig, ...args }),
-      suggest: (args: SuggestExtraParams) => suggest({ client, index, searchConfig, ...args }),
+      search: (args: SearchExtraParams) =>
+        search({ client, index, searchConfig, ...args }),
+      suggest: (args: SuggestExtraParams) =>
+        suggest({ client, index, searchConfig, ...args }),
     }),
     indexClient: <T>(indexConfig: IndexConfiguration<T>): IndexClient<T> => {
       const passThroughConfig: PassThroughConfig<T> = {

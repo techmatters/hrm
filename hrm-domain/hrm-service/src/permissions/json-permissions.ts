@@ -22,10 +22,13 @@ export const getPermissionsConfigName = (accountSid: string) => {
 
   const permissionsConfigName = process.env[permissionsKey];
 
-  if (!permissionsConfigName) throw new Error(`No permissions set for account ${accountSid}.`);
+  if (!permissionsConfigName)
+    throw new Error(`No permissions set for account ${accountSid}.`);
 
   if (!rulesMap[permissionsConfigName])
-    throw new Error(`Permissions rules with name ${permissionsConfigName} missing in rules map.`);
+    throw new Error(
+      `Permissions rules with name ${permissionsConfigName} missing in rules map.`,
+    );
 
   return permissionsConfigName;
 };

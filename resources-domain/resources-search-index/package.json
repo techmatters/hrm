@@ -19,6 +19,6 @@
   },
   "scripts": {
     "test:integration": "jest tests/integration",
-    "docker:build": "docker build -t resources-search-index --build-arg lambda_name=resources-search-index -f ../Dockerfile ../../"
+    "docker:build": "docker build -t resources-search-index --build-arg lambda_name=resources-search-index --build-arg lambda_dir=resources-domain -f ../../jobs/Dockerfile ../../"
   }
 }

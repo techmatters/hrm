@@ -19,14 +19,15 @@ import { getClient } from '@tech-matters/twilio-client';
 
 import { db } from '../../src/connection-pool';
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
-import {
-  createContactJob,
-} from '../../src/contact-job/contact-job-data-access';
+import { createContactJob } from '../../src/contact-job/contact-job-data-access';
 import { updateConversationMedia } from '../../src/contact/contact';
 import { ContactMediaType } from '../../src/contact/contact-json';
 import { getById as getContactById } from '../../src/contact/contact-data-access';
 import { cleanupContactJobs } from '../../src/contact-job/contact-job-cleanup';
-import { completeContactJob, getContactJobById } from '../../src/contact-job/contact-job-data-access';
+import {
+  completeContactJob,
+  getContactJobById,
+} from '../../src/contact-job/contact-job-data-access';
 import { accountSid, contact1, workerSid } from '../mocks';
 import { headers, getRequest, getServer, useOpenRules } from '../server';
 
@@ -36,7 +37,6 @@ useOpenRules();
 const server = getServer();
 const request = getRequest(server);
 
-// eslint-disable-next-line prettier/prettier
 import type { Contact } from '../../src/contact/contact-data-access';
 
 let twilioSpy: jest.SpyInstance;
@@ -48,7 +48,11 @@ const completionPayload = {
   url: 'https://some/fake/url',
 };
 
-const backDateJob = (jobId: string) => db.oneOrNone(`UPDATE "ContactJobs" SET "completed" = (current_timestamp - interval '366 day') WHERE "id" = $1 RETURNING *`, [jobId]);
+const backDateJob = (jobId: string) =>
+  db.oneOrNone(
+    `UPDATE "ContactJobs" SET "completed" = (current_timestamp - interval '366 day') WHERE "id" = $1 RETURNING *`,
+    [jobId],
+  );
 
 beforeAll(async () => {
   process.env.TWILIO_AUTH_TOKEN = 'mockAuthToken';
@@ -83,9 +87,14 @@ describe('cleanupContactJobs', () => {
       });
     });
 
-    let job = await db.oneOrNone('SELECT * FROM "ContactJobs" WHERE "contactId" = $1', [contact.id]);
+    let job = await db.oneOrNone('SELECT * FROM "ContactJobs" WHERE "contactId" = $1', [
+      contact.id,
+    ]);
     job = await completeContactJob({ id: job.id, completionPayload });
-    job = await db.oneOrNone('UPDATE "ContactJobs" SET "completed" = NULL WHERE "id" = $1 RETURNING *', [job.id]);
+    job = await db.oneOrNone(
+      'UPDATE "ContactJobs" SET "completed" = NULL WHERE "id" = $1 RETURNING *',
+      [job.id],
+    );
 
     await cleanupContactJobs();
     job = await getContactJobById(job.id);
@@ -111,7 +120,9 @@ describe('cleanupContactJobs', () => {
       });
     });
 
-    let job = await db.oneOrNone('SELECT * FROM "ContactJobs" WHERE "contactId" = $1', [contact.id]);
+    let job = await db.oneOrNone('SELECT * FROM "ContactJobs" WHERE "contactId" = $1', [
+      contact.id,
+    ]);
     job = await completeContactJob({ id: job.id, completionPayload });
     job = await backDateJob(job.id);
     await cleanupContactJobs();
@@ -137,7 +148,9 @@ describe('cleanupContactJobs', () => {
       });
     });
 
-    let job = await db.oneOrNone('SELECT * FROM "ContactJobs" WHERE "contactId" = $1', [contact.id]);
+    let job = await db.oneOrNone('SELECT * FROM "ContactJobs" WHERE "contactId" = $1', [
+      contact.id,
+    ]);
 
     job = await completeContactJob({ id: job.id, completionPayload });
     job = await backDateJob(job.id);

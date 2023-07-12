@@ -16,10 +16,13 @@
 
 import { FlatResource, ReferrableResourceAttribute } from '@tech-matters/types/Resources';
 import { IndicesCreateRequest } from '@elastic/elasticsearch/lib/api/types';
-// eslint-disable-next-line prettier/prettier
 import type { MappingProperty, PropertyName } from '@elastic/elasticsearch/lib/api/types';
 
-import { CreateIndexConvertedDocument, IndexConfiguration, SearchConfiguration } from '../../src';
+import {
+  CreateIndexConvertedDocument,
+  IndexConfiguration,
+  SearchConfiguration,
+} from '../../src';
 
 /**
  * This is almost a a C&P or the resources search configuration
@@ -31,7 +34,9 @@ export type MappingField = {
   hasLanguageFields?: boolean;
   isArrayField?: boolean;
   attributeKeyPattern?: RegExp;
-  indexValueGenerator?: (attribute: ReferrableResourceAttribute<any>) => boolean | string | number;
+  indexValueGenerator?: (
+    attribute: ReferrableResourceAttribute<any>,
+  ) => boolean | string | number;
 };
 
 export type ResourceIndexDocumentMappings = {
@@ -39,7 +44,7 @@ export type ResourceIndexDocumentMappings = {
   mappingFields: {
     [key: string]: MappingField;
   };
-  languageFields: Record<PropertyName, MappingProperty>
+  languageFields: Record<PropertyName, MappingProperty>;
 };
 
 export type FieldAndMapping = {
@@ -49,18 +54,26 @@ export type FieldAndMapping = {
 
 const stringFieldTypes = ['text', 'keyword'];
 
-export const getMappingField = ({ mappingFields }: Pick<ResourceIndexDocumentMappings, 'mappingFields'>, fieldName: string): FieldAndMapping | undefined => {
-  if (Object.keys(mappingFields).includes(fieldName)) return { field: fieldName, mapping:mappingFields[fieldName] };
-  const [field, mapping] = Object.entries(mappingFields).find(([, { attributeKeyPattern }]) => attributeKeyPattern?.test(fieldName)) ?? [];
+export const getMappingField = (
+  { mappingFields }: Pick<ResourceIndexDocumentMappings, 'mappingFields'>,
+  fieldName: string,
+): FieldAndMapping | undefined => {
+  if (Object.keys(mappingFields).includes(fieldName))
+    return { field: fieldName, mapping: mappingFields[fieldName] };
+  const [field, mapping] =
+    Object.entries(mappingFields).find(
+      ([, { attributeKeyPattern }]) => attributeKeyPattern?.test(fieldName),
+    ) ?? [];
   return mapping && field ? { field, mapping } : undefined;
 };
 
-export const isHighBoostGlobalField = ({ highBoostGlobalFields }: Pick<ResourceIndexDocumentMappings, 'highBoostGlobalFields'>, fieldName: string) =>
-  highBoostGlobalFields.includes(fieldName);
+export const isHighBoostGlobalField = (
+  { highBoostGlobalFields }: Pick<ResourceIndexDocumentMappings, 'highBoostGlobalFields'>,
+  fieldName: string,
+) => highBoostGlobalFields.includes(fieldName);
 
 export const isStringField = (fieldType: string): fieldType is 'keyword' | 'text' =>
   stringFieldTypes.includes(fieldType);
-
 
 export const resourceIndexDocumentMappings: ResourceIndexDocumentMappings = {
   // This is a list of attribute names that should be given higher priority in search results.
@@ -107,13 +120,12 @@ export const resourceIndexDocumentMappings: ResourceIndexDocumentMappings = {
 export const resourceSearchConfiguration: SearchConfiguration = {
   searchFieldBoosts: {
     'name.*': 4,
-    'high_boost_global.*':3,
+    'high_boost_global.*': 3,
     'low_boost_global.*': 2,
     '*': 1,
     '*.*': 1,
   },
-  filterMappings: {
-  },
+  filterMappings: {},
 };
 
 export const resourceIndexConfiguration: IndexConfiguration<FlatResource> = {
@@ -140,7 +152,7 @@ export const resourceIndexConfiguration: IndexConfiguration<FlatResource> = {
           mappedFields[field] = [];
         }
 
-        const mapField = mappedFields[field] as typeof value[];
+        const mapField = mappedFields[field] as (typeof value)[];
         mapField.push(value);
       } else {
         if (mapping.hasLanguageFields) {
@@ -169,7 +181,15 @@ export const resourceIndexConfiguration: IndexConfiguration<FlatResource> = {
       }
     };
 
-    const { id, name, lastUpdated, accountSid, importSequenceId, deletedAt, ...attributeArrays } = resource;
+    const {
+      id,
+      name,
+      lastUpdated,
+      accountSid,
+      importSequenceId,
+      deletedAt,
+      ...attributeArrays
+    } = resource;
 
     Object.values(attributeArrays).forEach(attributes => {
       attributes.forEach(({ key, ...attribute }) => {

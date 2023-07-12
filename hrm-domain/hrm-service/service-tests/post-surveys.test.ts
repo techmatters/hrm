@@ -33,7 +33,10 @@ const deleteAllPostSurveys = async () =>
   `),
   );
 
-const countPostSurveys = async (contactTaskId: string, taskId: string): Promise<number> => {
+const countPostSurveys = async (
+  contactTaskId: string,
+  taskId: string,
+): Promise<number> => {
   const row = await db.task(connection =>
     connection.any(
       `
@@ -51,7 +54,9 @@ beforeAll(async () => {
   await deleteAllPostSurveys();
 });
 
-afterAll(async () => Promise.all([mockingProxy.stop(), deleteAllPostSurveys(), server.close()]));
+afterAll(async () =>
+  Promise.all([mockingProxy.stop(), deleteAllPostSurveys(), server.close()]),
+);
 // afterEach(async () => PostSurvey.destroy(postSurveys2DestroyQuery));
 
 describe('/postSurveys route', () => {
@@ -87,11 +92,15 @@ describe('/postSurveys route', () => {
       });
 
       test('returns 401 if you try to fool it into allowing basic auth', async () => {
-        const response = await request.get(`${shouldExist}?x=/postSurveys`).set(basicHeaders);
+        const response = await request
+          .get(`${shouldExist}?x=/postSurveys`)
+          .set(basicHeaders);
 
         expect(response.status).toBe(401);
         expect(response.body.error).toBe('Authorization failed');
-        const bookmarkResponse = await request.get(`${shouldExist}#/postSurveys`).set(basicHeaders);
+        const bookmarkResponse = await request
+          .get(`${shouldExist}#/postSurveys`)
+          .set(basicHeaders);
 
         expect(bookmarkResponse.status).toBe(401);
         expect(bookmarkResponse.body.error).toBe('Authorization failed');
@@ -130,10 +139,7 @@ describe('/postSurveys route', () => {
     });
 
     test('Valid bearer auth should add post survey to DB', async () => {
-      const response = await request
-        .post(route)
-        .set(headers)
-        .send(body);
+      const response = await request.post(route).set(headers).send(body);
 
       expect(response.status).toBe(200);
       expect(response.body.data).toEqual(body.data);
@@ -154,10 +160,7 @@ describe('/postSurveys route', () => {
     });
 
     test('Valid basic auth should add post survey to DB', async () => {
-      const response = await request
-        .post(route)
-        .set(basicHeaders)
-        .send(body);
+      const response = await request.post(route).set(basicHeaders).send(body);
 
       expect(response.status).toBe(200);
       expect(response.body.data).toEqual(body.data);

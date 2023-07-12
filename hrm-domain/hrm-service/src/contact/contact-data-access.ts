@@ -22,14 +22,16 @@ import {
 } from './sql/contact-update-sql';
 import { SELECT_CONTACT_SEARCH } from './sql/contact-search-sql';
 import { endOfDay, parseISO, startOfDay } from 'date-fns';
-import { selectSingleContactByIdSql, selectSingleContactByTaskId } from './sql/contact-get-sql';
+import {
+  selectSingleContactByIdSql,
+  selectSingleContactByTaskId,
+} from './sql/contact-get-sql';
 import { insertContactSql, NewContactRecord } from './sql/contact-insert-sql';
 import {
   ContactRawJson,
   PersonInformation,
   ReferralWithoutContactId,
 } from './contact-json';
-// eslint-disable-next-line prettier/prettier
 import type { ITask } from 'pg-promise';
 import { txIfNotInOne } from '../sql';
 
@@ -152,41 +154,45 @@ const searchParametersToQueryParameters = (
   return queryParams;
 };
 
-export const create = (task?) => async (
-  accountSid: string,
-  newContact: NewContactRecord,
-): Promise<{ contact: Contact; isNewRecord: boolean }> => {
-  // Inner query that will be executed in a pgp.ITask
-  const executeQuery = async (conn: ITask<{ contact: Contact, isNewRecord: boolean }>) => {
-    if (newContact.taskId) {
-      const existingContact: Contact = await conn.oneOrNone<Contact>(
-        selectSingleContactByTaskId('Contacts'),
-        {
-          accountSid,
-          taskId: newContact.taskId,
-        },
-      );
-      if (existingContact) {
-        // A contact with the same task ID already exists, return it
-        return { contact: existingContact, isNewRecord: false };
+export const create =
+  (task?) =>
+  async (
+    accountSid: string,
+    newContact: NewContactRecord,
+  ): Promise<{ contact: Contact; isNewRecord: boolean }> => {
+    // Inner query that will be executed in a pgp.ITask
+    const executeQuery = async (
+      conn: ITask<{ contact: Contact; isNewRecord: boolean }>,
+    ) => {
+      if (newContact.taskId) {
+        const existingContact: Contact = await conn.oneOrNone<Contact>(
+          selectSingleContactByTaskId('Contacts'),
+          {
+            accountSid,
+            taskId: newContact.taskId,
+          },
+        );
+        if (existingContact) {
+          // A contact with the same task ID already exists, return it
+          return { contact: existingContact, isNewRecord: false };
+        }
       }
-    }
 
-    const now = new Date();
-    const created: Contact = await conn.one<Contact>(
-      insertContactSql({
-        ...newContact,
-        accountSid,
-        createdAt: now,
-        updatedAt: now,
-      }),
-    );
+      const now = new Date();
+      const created: Contact = await conn.one<Contact>(
+        insertContactSql({
+          ...newContact,
+          accountSid,
+          createdAt: now,
+          updatedAt: now,
+        }),
+      );
 
-    return { contact: created, isNewRecord: true };
+      return { contact: created, isNewRecord: true };
+    };
+
+    return txIfNotInOne(task, executeQuery);
   };
-
-  return txIfNotInOne(task, executeQuery);
-};
 
 export const patch = async (
   accountSid: string,
@@ -194,11 +200,14 @@ export const patch = async (
   contactUpdates: ContactUpdates,
 ): Promise<Contact | undefined> => {
   return db.task(async connection => {
-    const updatedContact: Contact = await connection.oneOrNone<Contact>(UPDATE_RAWJSON_BY_ID, {
-      accountSid,
-      contactId,
-      ...contactUpdates,
-    });
+    const updatedContact: Contact = await connection.oneOrNone<Contact>(
+      UPDATE_RAWJSON_BY_ID,
+      {
+        accountSid,
+        contactId,
+        ...contactUpdates,
+      },
+    );
     return updatedContact;
   });
 };
@@ -209,11 +218,14 @@ export const connectToCase = async (
   caseId: string,
 ): Promise<Contact | undefined> => {
   return db.task(async connection => {
-    const updatedContact: Contact = await connection.oneOrNone<Contact>(UPDATE_CASEID_BY_ID, {
-      accountSid,
-      contactId,
-      caseId,
-    });
+    const updatedContact: Contact = await connection.oneOrNone<Contact>(
+      UPDATE_CASEID_BY_ID,
+      {
+        accountSid,
+        contactId,
+        caseId,
+      },
+    );
     return updatedContact;
   });
 };
@@ -233,13 +245,15 @@ export const search = async (
   offset: number,
 ): Promise<{ rows: Contact[]; count: number }> => {
   return db.task(async connection => {
-    const searchResults: (Contact & { totalCount: number })[] = await connection.manyOrNone<
-      Contact & { totalCount: number }
-    >(
-      SELECT_CONTACT_SEARCH,
-      searchParametersToQueryParameters(accountSid, searchParameters, limit, offset),
-    );
-    return { rows: searchResults, count: searchResults.length ? searchResults[0].totalCount : 0 };
+    const searchResults: (Contact & { totalCount: number })[] =
+      await connection.manyOrNone<Contact & { totalCount: number }>(
+        SELECT_CONTACT_SEARCH,
+        searchParametersToQueryParameters(accountSid, searchParameters, limit, offset),
+      );
+    return {
+      rows: searchResults,
+      count: searchResults.length ? searchResults[0].totalCount : 0,
+    };
   });
 };
 

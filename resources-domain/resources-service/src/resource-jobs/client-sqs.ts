@@ -18,7 +18,6 @@ import { SQS } from 'aws-sdk';
 import { getSsmParameter } from '@tech-matters/ssm-cache';
 import { sns } from '@tech-matters/sns-client';
 
-// eslint-disable-next-line prettier/prettier
 import type { FlatResource, ResourcesSearchIndexPayload } from '@tech-matters/types';
 import { ResourcesJobType } from '@tech-matters/types';
 
@@ -40,7 +39,8 @@ export const getSqsClient = () => {
   return sqs;
 };
 
-const getJobQueueUrl = (accountSid: string, jobType: string) => `/${process.env.NODE_ENV}/resources/${accountSid}/queue-url-${jobType}`;
+const getJobQueueUrl = (accountSid: string, jobType: string) =>
+  `/${process.env.NODE_ENV}/resources/${accountSid}/queue-url-${jobType}`;
 
 export type PublishToResourcesJobParams = {
   params: ResourcesSearchIndexPayload;
@@ -48,8 +48,11 @@ export type PublishToResourcesJobParams = {
   messageGroupId?: string;
 };
 
-
-export const publishToResourcesJob = async ({ params, retryCount = 0, messageGroupId }: PublishToResourcesJobParams): Promise<void> => {
+export const publishToResourcesJob = async ({
+  params,
+  retryCount = 0,
+  messageGroupId,
+}: PublishToResourcesJobParams): Promise<void> => {
   //TODO: more robust error handling/messaging
   try {
     const QueueUrl = await getSsmParameter(
@@ -66,14 +69,16 @@ export const publishToResourcesJob = async ({ params, retryCount = 0, messageGro
       message.MessageGroupId = messageGroupId;
     }
 
-    await getSqsClient()
-      .sendMessage(message)
-      .promise();
+    await getSqsClient().sendMessage(message).promise();
   } catch (err) {
     if (retryCount < RETRY_COUNT) {
       console.error('Failed to publish to resources job. Retrying...', err);
-      await new Promise((resolve) => setTimeout(resolve, 250));
-      return publishToResourcesJob({ params, retryCount: retryCount + 1, messageGroupId });
+      await new Promise(resolve => setTimeout(resolve, 250));
+      return publishToResourcesJob({
+        params,
+        retryCount: retryCount + 1,
+        messageGroupId,
+      });
     }
 
     console.error('Failed to publish to resources job. Giving up.', err);

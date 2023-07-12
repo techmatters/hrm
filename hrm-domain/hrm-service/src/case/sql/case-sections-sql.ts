@@ -15,13 +15,12 @@
  */
 
 import { pgp } from '../../connection-pool';
-// eslint-disable-next-line prettier/prettier
 import { CaseSectionRecord } from '../case-data-access';
 
 /**
  * Is this FILTER (WHERE cs."caseId" IS NOT NULL) needed? Won't cs."caseId" always be not null as "caseId" is part of the PK?
  */
-export const SELECT_CASE_SECTIONS = `SELECT 
+export const SELECT_CASE_SECTIONS = `SELECT
          COALESCE(jsonb_agg(DISTINCT cs.*) FILTER (WHERE cs."caseId" IS NOT NULL), '[]') AS "caseSections"
                      FROM "CaseSections" cs
                      WHERE cs."caseId" = cases.id AND cs."accountSid" = cases."accountSid"`;
@@ -41,15 +40,15 @@ export const caseSectionUpsertSql = (sections: CaseSectionRecord[]): string =>
       'accountSid',
     ],
     'CaseSections',
-  )} 
-  ON CONFLICT ON CONSTRAINT "CaseSections_pkey" 
+  )}
+  ON CONFLICT ON CONSTRAINT "CaseSections_pkey"
   DO UPDATE SET "createdBy" = EXCLUDED."createdBy", "createdAt" = EXCLUDED."createdAt", "updatedBy" = EXCLUDED."updatedBy", "updatedAt" = EXCLUDED."updatedAt", "sectionTypeSpecificData" = EXCLUDED."sectionTypeSpecificData"`;
 
-// eslint-disable-next-line prettier/prettier
-export const deleteMissingCaseSectionsSql = (idsByType: Record<string, string[]>): { sql: string, values: Record<string, { ids: string[], type: string }> } => {
+export const deleteMissingCaseSectionsSql = (
+  idsByType: Record<string, string[]>,
+): { sql: string; values: Record<string, { ids: string[]; type: string }> } => {
   const idsByTypeEntries = Object.entries(idsByType).filter(([, ids]) => ids.length);
-  // eslint-disable-next-line prettier/prettier
-  const deleteValues: Record<string, { ids: string[], type: string }> = {};
+  const deleteValues: Record<string, { ids: string[]; type: string }> = {};
   const whereClauses: string[] = [];
   if (idsByTypeEntries.length) {
     idsByTypeEntries.forEach(([type, ids], index) => {

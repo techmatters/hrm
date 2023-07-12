@@ -14,8 +14,11 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-// eslint-disable-next-line prettier/prettier
-import type { AccountSID, FlatResource, InlineAttributeProperty } from '@tech-matters/types';
+import type {
+  AccountSID,
+  FlatResource,
+  InlineAttributeProperty,
+} from '@tech-matters/types';
 import { KhpApiResource } from '.';
 import {
   FieldMappingContext,
@@ -31,28 +34,40 @@ import {
 import * as khp from './khpMappings';
 import { isValid, parseISO } from 'date-fns';
 
-const pushResourceFieldMapping = ({ aseloResource, context, mapping }: {
-  mapping: Omit<ResourceFieldMapping, 'children'>, 
-  aseloResource: FlatResource,
-  context: FieldMappingContext
+const pushResourceFieldMapping = ({
+  aseloResource,
+  context,
+  mapping,
+}: {
+  mapping: Omit<ResourceFieldMapping, 'children'>;
+  aseloResource: FlatResource;
+  context: FieldMappingContext;
 }): void => {
   aseloResource[mapping.field] = mapping.valueGenerator(context);
 };
 
-const pushReferenceAttributeMapping = ({ aseloResource, context, mapping }: {
-  mapping: Omit<ReferenceAttributeMapping, 'children'>, 
-  aseloResource: FlatResource,
-  context: FieldMappingContext
+const pushReferenceAttributeMapping = ({
+  aseloResource,
+  context,
+  mapping,
+}: {
+  mapping: Omit<ReferenceAttributeMapping, 'children'>;
+  aseloResource: FlatResource;
+  context: FieldMappingContext;
 }): void => {
   const value = mapping.valueGenerator(context);
   const key = mapping.keyGenerator(context);
 
   if (value === null || value === undefined) {
-    console.debug(`No value provided to referenceStringAttributes: key ${key} and value ${value} - omitting attribute`);
+    console.debug(
+      `No value provided to referenceStringAttributes: key ${key} and value ${value} - omitting attribute`,
+    );
     return;
   }
   if (typeof value !== 'string') {
-    console.info(`Wrong value provided to referenceStringAttributes: key ${key} and value ${value} - omitting attribute`);
+    console.info(
+      `Wrong value provided to referenceStringAttributes: key ${key} and value ${value} - omitting attribute`,
+    );
     return;
   }
 
@@ -64,29 +79,38 @@ const pushReferenceAttributeMapping = ({ aseloResource, context, mapping }: {
   });
 };
 
-
-const pushInlineAttributeMapping = <T extends InlineAttributeProperty>({ aseloResource, context, mapping }: {
-  mapping: Omit<InlineAttributeMapping<T>, 'children'>, 
-  aseloResource: FlatResource,
-  context: FieldMappingContext
+const pushInlineAttributeMapping = <T extends InlineAttributeProperty>({
+  aseloResource,
+  context,
+  mapping,
+}: {
+  mapping: Omit<InlineAttributeMapping<T>, 'children'>;
+  aseloResource: FlatResource;
+  context: FieldMappingContext;
 }): void => {
   const value = mapping.valueGenerator(context);
   const key = mapping.keyGenerator(context);
   let info = mapping.infoGenerator(context) ?? null;
 
   if (typeof info !== 'object' && info !== null) {
-    console.warn(`Wrong value provided to info: key ${key} and info ${value} - setting info as null`);
+    console.warn(
+      `Wrong value provided to info: key ${key} and info ${value} - setting info as null`,
+    );
     info = null;
   }
 
   if (value === null || value === undefined) {
-    console.debug(`No value provided to ${mapping.property}: key ${key} and value ${value} - omitting attribute`);
+    console.debug(
+      `No value provided to ${mapping.property}: key ${key} and value ${value} - omitting attribute`,
+    );
     return;
   }
 
   if (mapping.property === 'stringAttributes') {
     if (typeof value !== 'string') {
-      console.warn(`Wrong value provided to stringAttributes: key ${key} and value ${value} - omitting attribute`);
+      console.warn(
+        `Wrong value provided to stringAttributes: key ${key} and value ${value} - omitting attribute`,
+      );
       return;
     }
 
@@ -94,11 +118,15 @@ const pushInlineAttributeMapping = <T extends InlineAttributeProperty>({ aseloRe
       key,
       value,
       info: mapping.infoGenerator(context),
-      language: isTranslatableAttributeMapping(mapping) ? mapping.languageGenerator(context) : '',
+      language: isTranslatableAttributeMapping(mapping)
+        ? mapping.languageGenerator(context)
+        : '',
     });
   } else if (mapping.property === 'booleanAttributes') {
     if (typeof value !== 'boolean') {
-      console.info(`Wrong value provided to ResourceBooleanAttributes: key ${key} and value ${value} - omitting attribute`);
+      console.info(
+        `Wrong value provided to ResourceBooleanAttributes: key ${key} and value ${value} - omitting attribute`,
+      );
       return;
     }
 
@@ -107,9 +135,11 @@ const pushInlineAttributeMapping = <T extends InlineAttributeProperty>({ aseloRe
       value,
       info: mapping.infoGenerator(context),
     });
-  } else if (mapping.property ===  'numberAttributes') {
+  } else if (mapping.property === 'numberAttributes') {
     if (typeof value !== 'number') {
-      console.info(`Wrong value provided to ResourceNumberAttributes: mapping ${key} and value ${value} - omitting attribute`);
+      console.info(
+        `Wrong value provided to ResourceNumberAttributes: mapping ${key} and value ${value} - omitting attribute`,
+      );
       return;
     }
 
@@ -120,7 +150,9 @@ const pushInlineAttributeMapping = <T extends InlineAttributeProperty>({ aseloRe
     });
   } else if (mapping.property === 'dateTimeAttributes') {
     if (typeof value !== 'string' || !isValid(parseISO(value))) {
-      console.info(`Wrong value provided to ResourceDateTimeAttributes: key:${key} and value ${value} - omitting attribute`);
+      console.info(
+        `Wrong value provided to ResourceDateTimeAttributes: key:${key} and value ${value} - omitting attribute`,
+      );
       return;
     }
 
@@ -130,7 +162,9 @@ const pushInlineAttributeMapping = <T extends InlineAttributeProperty>({ aseloRe
       info: mapping.infoGenerator(context),
     });
   } else {
-    console.warn(`Unhandled case for provided mapping: mapping ${JSON.stringify(mapping)}`);
+    console.warn(
+      `Unhandled case for provided mapping: mapping ${JSON.stringify(mapping)}`,
+    );
   }
 };
 
@@ -151,14 +185,16 @@ const mapNode = (
   aseloResource: FlatResource,
 ): FlatResource => {
   Object.entries(mappingNode).forEach(([property, { children, ...mapping }]) => {
-    const captureProperty = property.match(/{(?<captureProperty>.*)}/)?.groups?.captureProperty;
+    const captureProperty = property.match(/{(?<captureProperty>.*)}/)?.groups
+      ?.captureProperty;
 
     // If there are sibling keys to the dynamic capture, treat them as static
-    const { [`{${captureProperty}}`]: capturePropertyMapping, ...staticMappings } = captureProperty ? mappingNode : {};
+    const { [`{${captureProperty}}`]: capturePropertyMapping, ...staticMappings } =
+      captureProperty ? mappingNode : {};
     const staticKeys = Object.keys(staticMappings);
-    const rawDataProperties = captureProperty 
-    ? Object.keys(dataNode).filter(k => !staticKeys.includes(k)) 
-    : [property];
+    const rawDataProperties = captureProperty
+      ? Object.keys(dataNode).filter(k => !staticKeys.includes(k))
+      : [property];
 
     const dataProperties: string[] = rawDataProperties
       // Escape forward slashes in path segments
@@ -230,4 +266,4 @@ export const transformKhpResourceToApiResource = (
   accountSid: AccountSID,
   khpResource: KhpApiResource,
 ): FlatResource =>
-transformExternalResourceToApiResource(khp.KHP_MAPPING_NODE, accountSid, khpResource);
+  transformExternalResourceToApiResource(khp.KHP_MAPPING_NODE, accountSid, khpResource);

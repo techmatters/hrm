@@ -23,7 +23,9 @@ import {
   FieldAndMapping,
 } from './resourceIndexDocumentMappings';
 
-export const convertIndexDocument = (resource: FlatResource): CreateIndexConvertedDocument => {
+export const convertIndexDocument = (
+  resource: FlatResource,
+): CreateIndexConvertedDocument => {
   const { mappingFields } = resourceIndexDocumentMappings;
   const mappedFields: { [key: string]: string | string[] | number | boolean } = {};
   const highBoostGlobal: string[] = [];
@@ -46,7 +48,7 @@ export const convertIndexDocument = (resource: FlatResource): CreateIndexConvert
         mappedFields[field] = [];
       }
 
-      const mapField = mappedFields[field] as typeof value[];
+      const mapField = mappedFields[field] as (typeof value)[];
       mapField.push(value);
     } else {
       if (mapping.hasLanguageFields) {

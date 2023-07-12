@@ -84,7 +84,8 @@ const startAuthorization = (req, res, next) => {
  * @param {*} res
  * @param {*} next
  */
-const blockUnauthorized = (req, res, next) => (req.isAuthorized() ? next() : unauthorized(res));
+const blockUnauthorized = (req, res, next) =>
+  req.isAuthorized() ? next() : unauthorized(res);
 
 /**
  * Includes two middlewares in the list of handlers:
@@ -109,13 +110,15 @@ const expressHttpMethods = [
   'options',
   'head',
 ] as const;
-type ExpressHttpMethod = typeof expressHttpMethods[number];
+type ExpressHttpMethod = (typeof expressHttpMethods)[number];
 type ExpressHttpMethodImpl = (path: string, ...handlers: any) => Router;
 /**
  * Overrides the HTTP methods to include the permissions middlewares in the list of handlers
  * @param {*} router
  */
-const overrideHTTPMethods = (router: Router): Record<ExpressHttpMethod, ExpressHttpMethodImpl> =>
+const overrideHTTPMethods = (
+  router: Router,
+): Record<ExpressHttpMethod, ExpressHttpMethodImpl> =>
   <Record<ExpressHttpMethod, ExpressHttpMethodImpl>>(
     Object.fromEntries(
       expressHttpMethods.map(method => [

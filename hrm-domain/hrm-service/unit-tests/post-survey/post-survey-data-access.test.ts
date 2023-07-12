@@ -58,7 +58,9 @@ test('filterByContactTaskId runs query using account and contact task ids, and r
       updatedAt: subDays(baselineDate, 2),
     },
   ];
-  const manyOrNoneSpy = jest.spyOn(conn, 'manyOrNone').mockResolvedValue(postSurveysFromDB);
+  const manyOrNoneSpy = jest
+    .spyOn(conn, 'manyOrNone')
+    .mockResolvedValue(postSurveysFromDB);
 
   const result = await filterByContactTaskId(accountSid, contactTaskId);
 

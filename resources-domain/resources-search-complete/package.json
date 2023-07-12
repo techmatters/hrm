@@ -17,6 +17,6 @@
     "@types/aws-lambda": "^8.10.108"
   },
   "scripts": {
-    "docker:build": "docker build -t resources-search-complete --build-arg lambda_name=resources-search-complete -f ../Dockerfile ../../"
+    "docker:build": "docker build -t resources-search-complete --build-arg lambda_name=resources-search-complete --build-arg lambda_dir=resources-domain -f ../../jobs/Dockerfile ../../"
   }
 }

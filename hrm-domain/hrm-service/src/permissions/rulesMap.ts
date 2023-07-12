@@ -40,8 +40,14 @@ const zwRules = require('../../permission-rules/zw.json');
 
 import { actionsMaps, Actions, TargetKind } from './actions';
 
-const conditionTypes = ['isSupervisor', 'isCreator', 'isCaseOpen', 'isOwner', 'everyone'] as const;
-export type Condition = typeof conditionTypes[number];
+const conditionTypes = [
+  'isSupervisor',
+  'isCreator',
+  'isCaseOpen',
+  'isOwner',
+  'everyone',
+] as const;
+export type Condition = (typeof conditionTypes)[number];
 export type ConditionsSet = Condition[];
 export type ConditionsSets = ConditionsSet[];
 
@@ -78,7 +84,10 @@ const validateTargetKindActions = (rules: RulesFile) =>
         };
       }, {}),
     )
-    .reduce<{ [k in Actions]: boolean }>((accum, obj) => ({ ...accum, ...obj }), {} as any);
+    .reduce<{ [k in Actions]: boolean }>(
+      (accum, obj) => ({ ...accum, ...obj }),
+      {} as any,
+    );
 
 const isValidTargetKindActions = (validated: { [k in Actions]: boolean }) =>
   Object.values(validated).every(Boolean);

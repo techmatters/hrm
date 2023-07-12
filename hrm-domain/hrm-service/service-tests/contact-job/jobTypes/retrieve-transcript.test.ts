@@ -22,12 +22,14 @@ import { withTaskId, accountSid, workerSid } from '../../mocks';
 import * as contactJobApi from '../../../src/contact-job/contact-job-data-access';
 import { db } from '../../../src/connection-pool';
 import '../../case-validation';
-import { ContactMediaType, isS3StoredTranscriptPending } from '../../../src/contact/contact-json';
+import {
+  ContactMediaType,
+  isS3StoredTranscriptPending,
+} from '../../../src/contact/contact-json';
 import { Contact } from '../../../src/contact/contact';
 import { chatChannels } from '../../../src/contact/channelTypes';
 import { JOB_MAX_ATTEMPTS } from '../../../src/contact-job/contact-job-processor';
 
-// eslint-disable-next-line prettier/prettier
 import {
   CompletedContactJobBody,
   ContactJobAttemptResult,
@@ -111,10 +113,15 @@ const createChatContact = async (channel: string, startedTimestamp: number) => {
     channel,
     taskId: `${withTaskId.taskId}-${channel}`,
   };
-  const contact = await contactApi.createContact(accountSid, workerSid, contactTobeCreated, {
-    can: () => true,
-    user: twilioUser(workerSid, []),
-  });
+  const contact = await contactApi.createContact(
+    accountSid,
+    workerSid,
+    contactTobeCreated,
+    {
+      can: () => true,
+      user: twilioUser(workerSid, []),
+    },
+  );
 
   const jobs = await selectJobsByContactId(contact.id, contact.accountSid);
 
@@ -158,7 +165,10 @@ describe('publish retrieve-transcript job type', () => {
       startedTimestamp,
     );
 
-    const publishDueContactJobsSpy = jest.spyOn(contactJobPublish, 'publishDueContactJobs');
+    const publishDueContactJobsSpy = jest.spyOn(
+      contactJobPublish,
+      'publishDueContactJobs',
+    );
     const publishRetrieveContactTranscriptSpy = jest.spyOn(
       contactJobPublish,
       'publishRetrieveContactTranscript',
@@ -170,9 +180,8 @@ describe('publish retrieve-transcript job type', () => {
       return callback as any;
     });
 
-    const processorIntervalCallback = (contactJobProcessor.processContactJobs() as unknown) as () => Promise<
-      void
-    >;
+    const processorIntervalCallback =
+      contactJobProcessor.processContactJobs() as unknown as () => Promise<void>;
 
     await processorIntervalCallback();
 
@@ -222,7 +231,10 @@ describe('publish retrieve-transcript job type', () => {
         startedTimestamp,
       );
 
-      const publishDueContactJobsSpy = jest.spyOn(contactJobPublish, 'publishDueContactJobs');
+      const publishDueContactJobsSpy = jest.spyOn(
+        contactJobPublish,
+        'publishDueContactJobs',
+      );
       const publishRetrieveContactTranscriptSpy = jest.spyOn(
         contactJobPublish,
         'publishRetrieveContactTranscript',
@@ -234,9 +246,8 @@ describe('publish retrieve-transcript job type', () => {
         return callback as any;
       });
 
-      const processorIntervalCallback = (contactJobProcessor.processContactJobs() as unknown) as () => Promise<
-        void
-      >;
+      const processorIntervalCallback =
+        contactJobProcessor.processContactJobs() as unknown as () => Promise<void>;
 
       await processorIntervalCallback();
       await processorIntervalCallback();
@@ -299,7 +310,11 @@ describe('complete retrieve-transcript job type', () => {
         serviceSid: contact.serviceSid,
         taskId: contact.taskId,
         twilioWorkerId: contact.twilioWorkerId,
-        attemptPayload: { bucket: 'some-url-here', key: 'some-url-here', url: 'some-url-here' },
+        attemptPayload: {
+          bucket: 'some-url-here',
+          key: 'some-url-here',
+          url: 'some-url-here',
+        },
         attemptNumber: 1,
         attemptResult: ContactJobAttemptResult.SUCCESS,
       };
@@ -320,13 +335,19 @@ describe('complete retrieve-transcript job type', () => {
         contactJobComplete,
         'processCompletedRetrieveContactTranscript',
       );
-      const publishDueContactJobsSpy = jest.spyOn(contactJobPublish, 'publishDueContactJobs');
+      const publishDueContactJobsSpy = jest.spyOn(
+        contactJobPublish,
+        'publishDueContactJobs',
+      );
       const publishRetrieveContactTranscriptSpy = jest.spyOn(
         contactJobPublish,
         'publishRetrieveContactTranscript',
       );
 
-      const updateConversationMediaSpy = jest.spyOn(contactApi, 'updateConversationMedia');
+      const updateConversationMediaSpy = jest.spyOn(
+        contactApi,
+        'updateConversationMedia',
+      );
 
       // Mock setInterval to return the internal cb instead than it's interval id, so we can call it when we want
       // const setIntervalSpy =
@@ -334,9 +355,8 @@ describe('complete retrieve-transcript job type', () => {
         return callback as any;
       });
 
-      const processorIntervalCallback = (contactJobProcessor.processContactJobs() as unknown) as () => Promise<
-        void
-      >;
+      const processorIntervalCallback =
+        contactJobProcessor.processContactJobs() as unknown as () => Promise<void>;
 
       await processorIntervalCallback();
 
@@ -350,7 +370,9 @@ describe('complete retrieve-transcript job type', () => {
       ];
 
       // Expect that proper code flow was executed
-      expect(processCompletedRetrieveContactTranscriptSpy).toHaveBeenCalledWith(completedPayload);
+      expect(processCompletedRetrieveContactTranscriptSpy).toHaveBeenCalledWith(
+        completedPayload,
+      );
       expect(updateConversationMediaSpy).toHaveBeenCalledWith(
         completedPayload.accountSid,
         completedPayload.contactId,
@@ -385,7 +407,9 @@ describe('complete retrieve-transcript job type', () => {
       );
 
       expect(updatedContact?.rawJson?.conversationMedia).toHaveLength(1);
-      expect(updatedContact?.rawJson?.conversationMedia).toMatchObject(expecteConversationMedia);
+      expect(updatedContact?.rawJson?.conversationMedia).toMatchObject(
+        expecteConversationMedia,
+      );
     },
   );
 
@@ -443,13 +467,19 @@ describe('complete retrieve-transcript job type', () => {
         contactJobComplete,
         'processCompletedRetrieveContactTranscript',
       );
-      const publishDueContactJobsSpy = jest.spyOn(contactJobPublish, 'publishDueContactJobs');
+      const publishDueContactJobsSpy = jest.spyOn(
+        contactJobPublish,
+        'publishDueContactJobs',
+      );
       // const publishRetrieveContactTranscriptSpy = jest.spyOn(
       //   contactJobPublish,
       //   'publishRetrieveContactTranscript',
       // );
 
-      const updateConversationMediaSpy = jest.spyOn(contactApi, 'updateConversationMedia');
+      const updateConversationMediaSpy = jest.spyOn(
+        contactApi,
+        'updateConversationMedia',
+      );
 
       // Mock setInterval to return the internal cb instead than it's interval id, so we can call it when we want
       // const setIntervalSpy =
@@ -457,9 +487,8 @@ describe('complete retrieve-transcript job type', () => {
         return callback as any;
       });
 
-      const processorIntervalCallback = (contactJobProcessor.processContactJobs() as unknown) as () => Promise<
-        void
-      >;
+      const processorIntervalCallback =
+        contactJobProcessor.processContactJobs() as unknown as () => Promise<void>;
 
       await processorIntervalCallback();
 

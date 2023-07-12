@@ -30,7 +30,12 @@ describe('getById', () => {
       name: 'Fake Resource',
       id: 'FAKE_RESOURCE',
       attributes: [
-        { key: 'attribute1', value: 'value1', language: 'es-ES', info: { some: 'stuff' } },
+        {
+          key: 'attribute1',
+          value: 'value1',
+          language: 'es-ES',
+          info: { some: 'stuff' },
+        },
       ],
     };
     mockTask(conn);

@@ -41,7 +41,9 @@ export const configureDefaultPostMiddlewares = (
     res.locals.message = err.message;
     res.locals.error = includeErrorInResponse ? err : {};
 
-    const error = includeErrorInResponse ? { message: err.message, error: err.stack } : {};
+    const error = includeErrorInResponse
+      ? { message: err.message, error: err.stack }
+      : {};
 
     res.status(err.status || 500);
     res.json(error);

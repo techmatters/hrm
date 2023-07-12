@@ -17,7 +17,11 @@
 import { publicEndpoint, SafeRouter } from '../permissions';
 import { Request, Response } from 'express';
 import { createReferral } from './referral-model';
-import { DuplicateReferralError, OrphanedReferralError, Referral } from './referral-data-access';
+import {
+  DuplicateReferralError,
+  OrphanedReferralError,
+  Referral,
+} from './referral-data-access';
 import createError from 'http-errors';
 import { isValid, parseISO } from 'date-fns';
 

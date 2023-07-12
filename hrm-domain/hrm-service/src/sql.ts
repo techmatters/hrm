@@ -68,7 +68,11 @@ export const inferPostgresError = (rawError: Error): DatabaseError => {
   const errorBlob = rawError as any;
   switch (errorBlob.code) {
     case '23503':
-      return new DatabaseForeignKeyViolationError(rawError, errorBlob.table, errorBlob.constraint);
+      return new DatabaseForeignKeyViolationError(
+        rawError,
+        errorBlob.table,
+        errorBlob.constraint,
+      );
     case '23505':
       return new DatabaseUniqueConstraintViolationError(
         rawError,

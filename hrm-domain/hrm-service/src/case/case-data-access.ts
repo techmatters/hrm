@@ -17,8 +17,15 @@
 import { db, pgp } from '../connection-pool';
 import { getPaginationElements } from '../search';
 import { updateByIdSql } from './sql/case-update-sql';
-import { OrderByColumnType, OrderByDirectionType, selectCaseSearch } from './sql/case-search-sql';
-import { caseSectionUpsertSql, deleteMissingCaseSectionsSql } from './sql/case-sections-sql';
+import {
+  OrderByColumnType,
+  OrderByDirectionType,
+  selectCaseSearch,
+} from './sql/case-search-sql';
+import {
+  caseSectionUpsertSql,
+  deleteMissingCaseSectionsSql,
+} from './sql/case-sections-sql';
 import { DELETE_BY_ID } from './sql/case-delete-sql';
 import { selectSingleCaseByIdSql } from './sql/case-get-sql';
 import { Contact } from '../contact/contact-data-access';
@@ -113,10 +120,14 @@ export const create = async (
       const statement = `${pgp.helpers.insert(caseRecord, null, 'Cases')} RETURNING *`;
       let inserted: CaseRecord = await transaction.one(statement);
       if ((caseSections ?? []).length) {
-        const allSections = caseSections.map(s => ({ ...s, caseId: inserted.id, accountSid }));
-        const sectionStatement = `${caseSectionUpsertSql(allSections)};${selectSingleCaseByIdSql(
-          'Cases',
-        )}`;
+        const allSections = caseSections.map(s => ({
+          ...s,
+          caseId: inserted.id,
+          accountSid,
+        }));
+        const sectionStatement = `${caseSectionUpsertSql(
+          allSections,
+        )};${selectSingleCaseByIdSql('Cases')}`;
         const queryValues = { accountSid, caseId: inserted.id };
         inserted = await transaction.one(sectionStatement, queryValues);
       }
@@ -143,7 +154,8 @@ export const search = async (
   searchCriteria: CaseSearchCriteria = {},
   filters: CaseListFilters = {},
 ): Promise<{ cases: readonly CaseRecord[]; count: number }> => {
-  const { limit, offset, sortBy, sortDirection } = getPaginationElements(listConfiguration);
+  const { limit, offset, sortBy, sortDirection } =
+    getPaginationElements(listConfiguration);
   const orderClause = [{ sortBy, sortDirection }];
   const { count, rows } = await db.task(async connection => {
     const statement = selectCaseSearch(filters, orderClause);
@@ -159,7 +171,10 @@ export const search = async (
       limit: limit,
       offset: offset,
     };
-    const result: CaseWithCount[] = await connection.any<CaseWithCount>(statement, queryValues);
+    const result: CaseWithCount[] = await connection.any<CaseWithCount>(
+      statement,
+      queryValues,
+    );
     const totalCount: number = result.length ? result[0].totalCount : 0;
     return { rows: result, count: totalCount };
   });
@@ -184,19 +199,28 @@ export const update = async (
     if (caseRecordUpdates.info) {
       const allSections: CaseSectionRecord[] = caseRecordUpdates.caseSections ?? [];
       if (allSections.length) {
-        await transaction.none(caseSectionUpsertSql(allSections.map(s => ({ ...s, accountSid }))));
+        await transaction.none(
+          caseSectionUpsertSql(allSections.map(s => ({ ...s, accountSid }))),
+        );
       }
       // Map case sections into a list of ids grouped by category, which allows a more concise DELETE SQL statement to be generated
-      const caseSectionIdsByType = allSections.reduce((idsBySectionType, caseSection) => {
-        idsBySectionType[caseSection.sectionType] = idsBySectionType[caseSection.sectionType] ?? [];
-        idsBySectionType[caseSection.sectionType].push(caseSection.sectionId);
-        return idsBySectionType;
-      }, <Record<string, string[]>>{});
+      const caseSectionIdsByType = allSections.reduce(
+        (idsBySectionType, caseSection) => {
+          idsBySectionType[caseSection.sectionType] =
+            idsBySectionType[caseSection.sectionType] ?? [];
+          idsBySectionType[caseSection.sectionType].push(caseSection.sectionId);
+          return idsBySectionType;
+        },
+        <Record<string, string[]>>{},
+      );
       const { sql, values } = deleteMissingCaseSectionsSql(caseSectionIdsByType);
       Object.assign(statementValues, values);
       await transaction.none(sql, statementValues);
     }
-    await transaction.none(updateByIdSql(caseRecordUpdates, accountSid, id), statementValues);
+    await transaction.none(
+      updateByIdSql(caseRecordUpdates, accountSid, id),
+      statementValues,
+    );
 
     return transaction.oneOrNone(selectSingleCaseByIdSql('Cases'), statementValues);
   });

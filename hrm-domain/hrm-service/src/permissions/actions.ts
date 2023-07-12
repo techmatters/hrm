@@ -73,25 +73,34 @@ const DELETED_PROPERTY = 'D';
  *   [ 'info', 'perpetrators' ] when adding a new perpetrator
  *   [ 'info', 'perpetrators', 0, 'perpetrator', 'phone1' ] when editin an existing perpetrator
  */
-const isPathTarget = (target: string[]) => (changePath: string[]): boolean =>
-  target.every((value, index) => changePath[index] === value) &&
-  target.length === changePath.length;
+const isPathTarget =
+  (target: string[]) =>
+  (changePath: string[]): boolean =>
+    target.every((value, index) => changePath[index] === value) &&
+    target.length === changePath.length;
 
-const isDescendantPathTarget = (target: string[]) => (changePath: string[]): boolean =>
-  target.every((value, index) => changePath[index] === value) && target.length < changePath.length;
+const isDescendantPathTarget =
+  (target: string[]) =>
+  (changePath: string[]): boolean =>
+    target.every((value, index) => changePath[index] === value) &&
+    target.length < changePath.length;
 
 const isPathTargetsStatus = isPathTarget(['status']);
 const isPathTargetsInfo = isDescendantPathTarget(['info']);
 
-const isNewKind = <T>(change: Diff<T>): change is DiffNew<T> => change.kind === NEW_PROPERTY;
+const isNewKind = <T>(change: Diff<T>): change is DiffNew<T> =>
+  change.kind === NEW_PROPERTY;
 
-const isArrayKind = <T>(change: Diff<T>): change is DiffArray<T> => change.kind === ARRAY_CHANGED;
+const isArrayKind = <T>(change: Diff<T>): change is DiffArray<T> =>
+  change.kind === ARRAY_CHANGED;
 
 const isNewOrAddKind = <T>(change: Diff<T>) => isNewKind(change) || isArrayKind(change);
 
-const isEditKind = <T>(change: Diff<T>): change is DiffEdit<T> => change.kind === EDITED_PROPERTY;
+const isEditKind = <T>(change: Diff<T>): change is DiffEdit<T> =>
+  change.kind === EDITED_PROPERTY;
 
-const isAddOrEditKind = <T>(change: Diff<T>) => isNewOrAddKind(change) || isEditKind(change);
+const isAddOrEditKind = <T>(change: Diff<T>) =>
+  isNewOrAddKind(change) || isEditKind(change);
 
 const isCloseCase = (change: Diff<any>) =>
   isEditKind(change) && isPathTargetsStatus(change.path) && change.rhs === 'closed';
@@ -157,7 +166,9 @@ function sortedSections(original: any): any {
     };
 
     if (original.info.counsellorNotes) {
-      sortedInfo.counsellorNotes = [...original.info.counsellorNotes.sort(sectionCompare)];
+      sortedInfo.counsellorNotes = [
+        ...original.info.counsellorNotes.sort(sectionCompare),
+      ];
     }
 
     if (original.info.referrals) {
@@ -203,7 +214,11 @@ export const getActions = (original: any, updated: any) => {
   );
   const ignoredProperties = ['createdAt', 'updatedAt', 'connectedContacts'];
   const preFilter = (path: any, key: string) => ignoredProperties.includes(key);
-  const changes = diff(sortedSections(partialOriginal), sortedSections(updated), preFilter);
+  const changes = diff(
+    sortedSections(partialOriginal),
+    sortedSections(updated),
+    preFilter,
+  );
 
   const actions = [];
   if (changes) {
@@ -211,7 +226,8 @@ export const getActions = (original: any, updated: any) => {
       if (isPathTargetsStatus(change.path)) {
         if (isCloseCase(change)) actions.push(actionsMaps.case.CLOSE_CASE);
         if (isReopenCase(change)) actions.push(actionsMaps.case.REOPEN_CASE);
-        if (isCaseStatusTransition(change)) actions.push(actionsMaps.case.CASE_STATUS_TRANSITION);
+        if (isCaseStatusTransition(change))
+          actions.push(actionsMaps.case.CASE_STATUS_TRANSITION);
       }
 
       if (isPathTargetsInfo(change.path)) {

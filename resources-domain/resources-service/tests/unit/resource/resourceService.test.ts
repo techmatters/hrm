@@ -53,12 +53,16 @@ const generateResourceRecord = (identifier: string): FlatResource => ({
 });
 
 describe('searchResources', () => {
-  const mockEsSearch: jest.Mock<ReturnType<
-    ReturnType<Awaited<ReturnType<typeof getClient>>['searchClient']>['search']
-  >> = jest.fn();
-  const mockEsSuggest: jest.Mock<ReturnType<
-    ReturnType<Awaited<ReturnType<typeof getClient>>['searchClient']>['suggest']
-  >> = jest.fn();
+  const mockEsSearch: jest.Mock<
+    ReturnType<
+      ReturnType<Awaited<ReturnType<typeof getClient>>['searchClient']>['search']
+    >
+  > = jest.fn();
+  const mockEsSuggest: jest.Mock<
+    ReturnType<
+      ReturnType<Awaited<ReturnType<typeof getClient>>['searchClient']>['suggest']
+    >
+  > = jest.fn();
 
   beforeEach(() => {
     mockGetByIdList.mockReset();
@@ -81,7 +85,12 @@ describe('searchResources', () => {
     {
       ...generateResourceRecord('1'),
       stringAttributes: [
-        { key: 'testAttribute', value: 'testValue', language: 'Klingon', info: { qa: 'pla' } },
+        {
+          key: 'testAttribute',
+          value: 'testValue',
+          language: 'Klingon',
+          info: { qa: 'pla' },
+        },
       ],
     },
     generateResourceRecord('2'),
@@ -155,7 +164,9 @@ describe('searchResources', () => {
           id: 'RESOURCE_1',
           name: 'Resource 1',
           attributes: {
-            testAttribute: [{ value: 'testValue', language: 'Klingon', info: { qa: 'pla' } }],
+            testAttribute: [
+              { value: 'testValue', language: 'Klingon', info: { qa: 'pla' } },
+            ],
           },
         },
       ],
@@ -171,7 +182,11 @@ describe('searchResources', () => {
         total: 1230,
         items: [
           { id: 'RESOURCE_1', highlights: {} },
-          { id: 'RESOURCE_3', name: 'Resource 3 Name (from search index)', highlights: {} },
+          {
+            id: 'RESOURCE_3',
+            name: 'Resource 3 Name (from search index)',
+            highlights: {},
+          },
           { id: 'RESOURCE_2', highlights: {} },
         ],
       },
@@ -183,10 +198,16 @@ describe('searchResources', () => {
           id: 'RESOURCE_1',
           name: 'Resource 1',
           attributes: {
-            testAttribute: [{ value: 'testValue', language: 'Klingon', info: { qa: 'pla' } }],
+            testAttribute: [
+              { value: 'testValue', language: 'Klingon', info: { qa: 'pla' } },
+            ],
           },
         },
-        { id: 'RESOURCE_3', name: 'Resource 3 Name (from search index)', _status: 'missing' },
+        {
+          id: 'RESOURCE_3',
+          name: 'Resource 3 Name (from search index)',
+          _status: 'missing',
+        },
         { id: 'RESOURCE_2', name: 'Resource 2', attributes: {} },
       ],
     },
@@ -254,32 +275,66 @@ describe('searchResources', () => {
       description:
         'Resource returned has multiple attribute entries with different keys and values - returns resource with an attribute object and a property for each key',
       attributeRecords: [
-        { key: 'testAttribute', value: 'testValue', language: 'Klingon', info: { qa: 'pla' } },
-        { key: 'testAttribute2', value: 'testValue2', language: 'Klingon', info: { qa: 'pla' } },
+        {
+          key: 'testAttribute',
+          value: 'testValue',
+          language: 'Klingon',
+          info: { qa: 'pla' },
+        },
+        {
+          key: 'testAttribute2',
+          value: 'testValue2',
+          language: 'Klingon',
+          info: { qa: 'pla' },
+        },
       ],
       expectedAttributes: {
         testAttribute: [{ value: 'testValue', language: 'Klingon', info: { qa: 'pla' } }],
-        testAttribute2: [{ value: 'testValue2', language: 'Klingon', info: { qa: 'pla' } }],
+        testAttribute2: [
+          { value: 'testValue2', language: 'Klingon', info: { qa: 'pla' } },
+        ],
       },
     },
     {
       description:
         'Resource returned has multiple attribute entries with different keys and same value - returns resource with an attribute object and a property for each key',
       attributeRecords: [
-        { key: 'testAttribute', value: 'testValue', language: 'Klingon', info: { qa: 'pla' } },
-        { key: 'testAttribute2', value: 'testValue', language: 'Klingon', info: { qa: 'pla' } },
+        {
+          key: 'testAttribute',
+          value: 'testValue',
+          language: 'Klingon',
+          info: { qa: 'pla' },
+        },
+        {
+          key: 'testAttribute2',
+          value: 'testValue',
+          language: 'Klingon',
+          info: { qa: 'pla' },
+        },
       ],
       expectedAttributes: {
         testAttribute: [{ value: 'testValue', language: 'Klingon', info: { qa: 'pla' } }],
-        testAttribute2: [{ value: 'testValue', language: 'Klingon', info: { qa: 'pla' } }],
+        testAttribute2: [
+          { value: 'testValue', language: 'Klingon', info: { qa: 'pla' } },
+        ],
       },
     },
     {
       description:
         'Resource returned has multiple attribute entries with different values and same keys - returns resource with an attribute object and a property with an array entry for each value',
       attributeRecords: [
-        { key: 'testAttribute', value: 'testValue', language: 'Klingon', info: { qa: 'pla' } },
-        { key: 'testAttribute', value: 'testValue2', language: 'Klingon', info: { qa: 'pla' } },
+        {
+          key: 'testAttribute',
+          value: 'testValue',
+          language: 'Klingon',
+          info: { qa: 'pla' },
+        },
+        {
+          key: 'testAttribute',
+          value: 'testValue2',
+          language: 'Klingon',
+          info: { qa: 'pla' },
+        },
       ],
       expectedAttributes: {
         testAttribute: [
@@ -292,7 +347,12 @@ describe('searchResources', () => {
       description:
         'Resource returned has multiple attribute entries with same values and same keys but different languages - returns resource with an attribute object and a property with an array entry for each language',
       attributeRecords: [
-        { key: 'testAttribute', value: 'testValue', language: 'Klingon', info: { qa: 'pla' } },
+        {
+          key: 'testAttribute',
+          value: 'testValue',
+          language: 'Klingon',
+          info: { qa: 'pla' },
+        },
         {
           key: 'testAttribute',
           value: 'testValue',
@@ -349,7 +409,9 @@ describe('searchResources', () => {
             attribute: [{ value: 'testValue', language: 'Klingon', info: { qa: 'pla' } }],
           },
           nested2: {
-            attribute: [{ value: 'testValue2', language: 'Klingon', info: { qa: 'pla' } }],
+            attribute: [
+              { value: 'testValue2', language: 'Klingon', info: { qa: 'pla' } },
+            ],
           },
         },
       },
@@ -376,7 +438,9 @@ describe('searchResources', () => {
           nested: {
             attribute: [{ value: 'testValue', language: 'Klingon', info: { qa: 'pla' } }],
           },
-          'nested2/attribute': [{ value: 'testValue2', language: 'Klingon', info: { qa: 'pla' } }],
+          'nested2/attribute': [
+            { value: 'testValue2', language: 'Klingon', info: { qa: 'pla' } },
+          ],
         },
       },
     },
@@ -403,7 +467,9 @@ describe('searchResources', () => {
             attribute: [{ value: 'testValue', language: 'Klingon', info: { qa: 'pla' } }],
           },
           'nested2\\': {
-            attribute: [{ value: 'testValue2', language: 'Klingon', info: { qa: 'pla' } }],
+            attribute: [
+              { value: 'testValue2', language: 'Klingon', info: { qa: 'pla' } },
+            ],
           },
         },
       },
@@ -431,7 +497,9 @@ describe('searchResources', () => {
             attribute: [{ value: 'testValue', language: 'Klingon', info: { qa: 'pla' } }],
           },
           nested2: {
-            attribute: [{ value: 'testValue2', language: 'Klingon', info: { qa: 'pla' } }],
+            attribute: [
+              { value: 'testValue2', language: 'Klingon', info: { qa: 'pla' } },
+            ],
           },
         },
       },
@@ -457,7 +525,9 @@ describe('searchResources', () => {
         test: {
           nested: {
             attribute: [{ value: 'testValue', language: 'Klingon', info: { qa: 'pla' } }],
-            __values__: [{ value: 'testValue2', language: 'Klingon', info: { qa: 'pla' } }],
+            __values__: [
+              { value: 'testValue2', language: 'Klingon', info: { qa: 'pla' } },
+            ],
           },
         },
       },
@@ -483,7 +553,9 @@ describe('searchResources', () => {
         test: {
           nested: {
             attribute: [{ value: 'testValue', language: 'Klingon', info: { qa: 'pla' } }],
-            __values__: [{ value: 'testValue2', language: 'Klingon', info: { qa: 'pla' } }],
+            __values__: [
+              { value: 'testValue2', language: 'Klingon', info: { qa: 'pla' } },
+            ],
           },
         },
       },

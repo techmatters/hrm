@@ -20,7 +20,10 @@ import { getMappingFieldNamesByType } from './resourceIndexDocumentMappings';
 
 // TODO: this should probably be moved to the elasticsearch-client package, but the config/client splitting
 // makes it a bit tricky to do that right now.
-export const generateSuggestQuery = ({ prefix, size }: SuggestParameters): SearchSuggester => {
+export const generateSuggestQuery = ({
+  prefix,
+  size,
+}: SuggestParameters): SearchSuggester => {
   const suggestQuery: SearchSuggester = {};
 
   getMappingFieldNamesByType('completion').forEach(fieldName => {

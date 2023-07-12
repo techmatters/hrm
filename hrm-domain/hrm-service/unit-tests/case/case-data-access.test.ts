@@ -37,7 +37,9 @@ describe('getById', () => {
       helpline: 'helpline',
       status: 'open',
       info: {
-        counsellorNotes: [{ note: 'Child with covid-19', twilioWorkerId: 'contact-adder' }],
+        counsellorNotes: [
+          { note: 'Child with covid-19', twilioWorkerId: 'contact-adder' },
+        ],
       },
       twilioWorkerId: 'twilio-worker-id',
     });
@@ -78,7 +80,9 @@ describe('createCase', () => {
       helpline: 'helpline',
       status: 'open',
       info: {
-        counsellorNotes: [{ note: 'Child with covid-19', twilioWorkerId: 'contact-adder' }],
+        counsellorNotes: [
+          { note: 'Child with covid-19', twilioWorkerId: 'contact-adder' },
+        ],
       },
       caseSections: [
         {
@@ -127,7 +131,8 @@ describe('search', () => {
         expectedInSql: ['"id" DESC'],
       },
       {
-        description: 'should use a specified limit and offset 0 when only limit is specified',
+        description:
+          'should use a specified limit and offset 0 when only limit is specified',
         filters: { helplines: ['fakeHelpline'] },
         listConfig: { limit: 45 },
         expectedDbParameters: { limit: 45, offset: 0 },
@@ -185,7 +190,8 @@ describe('search', () => {
         notExpectedInSql: ['jimmyjab'],
       },
       {
-        description: "should use default 'id' column for ordering if order specified but no column",
+        description:
+          "should use default 'id' column for ordering if order specified but no column",
         listConfig: {
           limit: 100,
           offset: 25,
@@ -195,7 +201,8 @@ describe('search', () => {
         expectedInSql: ['"id" DESC', '"id" ASC NULLS LAST,'],
       },
       {
-        description: 'should use default DESC NULLS LAST sort if only sort column is specified',
+        description:
+          'should use default DESC NULLS LAST sort if only sort column is specified',
         listConfig: {
           limit: 100,
           offset: 25,
@@ -246,7 +253,9 @@ describe('search', () => {
           helpline: 'helpline',
           status: 'open',
           info: {
-            counsellorNotes: [{ note: 'Child with covid-19', twilioWorkerId: 'contact-adder' }],
+            counsellorNotes: [
+              { note: 'Child with covid-19', twilioWorkerId: 'contact-adder' },
+            ],
           },
           twilioWorkerId: 'twilio-worker-id',
           totalCount: 1337,
@@ -263,7 +272,9 @@ describe('search', () => {
           helpline: 'helpline',
           status: 'open',
           info: {
-            counsellorNotes: [{ note: 'Child with covid-19', twilioWorkerId: 'contact-adder' }],
+            counsellorNotes: [
+              { note: 'Child with covid-19', twilioWorkerId: 'contact-adder' },
+            ],
           },
           twilioWorkerId: 'twilio-worker-id',
           connectedContacts: [

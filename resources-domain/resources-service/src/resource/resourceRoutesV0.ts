@@ -25,7 +25,10 @@ const resourceRoutes = () => {
   const { getResource, searchResources, getResourceTermSuggestions } = resourceService();
 
   router.get('/resource/:resourceId', async (req, res) => {
-    const referrableResource = await getResource(<AccountSID>req.accountSid, req.params.resourceId);
+    const referrableResource = await getResource(
+      <AccountSID>req.accountSid,
+      req.params.resourceId,
+    );
     if (!referrableResource) {
       throw createError(404);
     }

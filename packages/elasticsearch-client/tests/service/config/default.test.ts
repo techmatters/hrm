@@ -49,7 +49,9 @@ beforeAll(async () => {
   await indexClient.createIndex({});
 
   await Promise.all(
-    resourceDocuments.map(document => indexClient.indexDocument({ id: document.id, document })),
+    resourceDocuments.map(document =>
+      indexClient.indexDocument({ id: document.id, document }),
+    ),
   );
 
   await indexClient.refreshIndex();
@@ -222,7 +224,8 @@ describe('Resources Default Search', () => {
         },
       },
       condition: 'search query phrase',
-      expectationDescription: 'should return only resources that match phrase query exactly',
+      expectationDescription:
+        'should return only resources that match phrase query exactly',
       expectedResults: {
         total: 1,
         items: [

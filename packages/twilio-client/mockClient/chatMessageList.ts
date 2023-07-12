@@ -31,8 +31,7 @@ export const chatMessageList = [
     index: 0,
     type: 'text',
     media: null,
-    url:
-      'https://chat.twilio.com/v2/Services/IS43c487114db441beaad322a360117882/Channels/mockChannelSid/Messages/IM1d8801dc8d0d432787fa896add069ff4',
+    url: 'https://chat.twilio.com/v2/Services/IS43c487114db441beaad322a360117882/Channels/mockChannelSid/Messages/IM1d8801dc8d0d432787fa896add069ff4',
   },
   {
     sid: 'IMcb5f654265c342b19e0e945978178c27',
@@ -46,13 +45,11 @@ export const chatMessageList = [
     lastUpdatedBy: null,
     wasEdited: false,
     from: 'Bot',
-    body:
-      'Welcome to the helpline. To help us better serve you, please answer the following three questions.',
+    body: 'Welcome to the helpline. To help us better serve you, please answer the following three questions.',
     index: 1,
     type: 'text',
     media: null,
-    url:
-      'https://chat.twilio.com/v2/Services/IS43c487114db441beaad322a360117882/Channels/mockChannelSid/Messages/IMcb5f654265c342b19e0e945978178c27',
+    url: 'https://chat.twilio.com/v2/Services/IS43c487114db441beaad322a360117882/Channels/mockChannelSid/Messages/IMcb5f654265c342b19e0e945978178c27',
   },
   {
     sid: 'IMd04c579e2d9146809b89bb14bebdc131',
@@ -70,8 +67,7 @@ export const chatMessageList = [
     index: 2,
     type: 'text',
     media: null,
-    url:
-      'https://chat.twilio.com/v2/Services/IS43c487114db441beaad322a360117882/Channels/mockChannelSid/Messages/IMd04c579e2d9146809b89bb14bebdc131',
+    url: 'https://chat.twilio.com/v2/Services/IS43c487114db441beaad322a360117882/Channels/mockChannelSid/Messages/IMd04c579e2d9146809b89bb14bebdc131',
   },
   {
     sid: 'IM7745e2f09fe24952bd0a5ac63d418125',
@@ -89,8 +85,7 @@ export const chatMessageList = [
     index: 3,
     type: 'text',
     media: null,
-    url:
-      'https://chat.twilio.com/v2/Services/IS43c487114db441beaad322a360117882/Channels/mockChannelSid/Messages/IM7745e2f09fe24952bd0a5ac63d418125',
+    url: 'https://chat.twilio.com/v2/Services/IS43c487114db441beaad322a360117882/Channels/mockChannelSid/Messages/IM7745e2f09fe24952bd0a5ac63d418125',
   },
   {
     sid: 'IMb950ebc71b2d4ce2b77e8a37e0f38474',
@@ -108,8 +103,7 @@ export const chatMessageList = [
     index: 4,
     type: 'text',
     media: null,
-    url:
-      'https://chat.twilio.com/v2/Services/IS43c487114db441beaad322a360117882/Channels/mockChannelSid/Messages/IMb950ebc71b2d4ce2b77e8a37e0f38474',
+    url: 'https://chat.twilio.com/v2/Services/IS43c487114db441beaad322a360117882/Channels/mockChannelSid/Messages/IMb950ebc71b2d4ce2b77e8a37e0f38474',
   },
   {
     sid: 'IMe754a52e29a24c6c97eb593897af4c14',
@@ -127,8 +121,7 @@ export const chatMessageList = [
     index: 5,
     type: 'text',
     media: null,
-    url:
-      'https://chat.twilio.com/v2/Services/IS43c487114db441beaad322a360117882/Channels/mockChannelSid/Messages/IMe754a52e29a24c6c97eb593897af4c14',
+    url: 'https://chat.twilio.com/v2/Services/IS43c487114db441beaad322a360117882/Channels/mockChannelSid/Messages/IMe754a52e29a24c6c97eb593897af4c14',
   },
   {
     sid: 'IM07d8109028a34535a6998ac2d8a6ce44',
@@ -146,8 +139,7 @@ export const chatMessageList = [
     index: 6,
     type: 'text',
     media: null,
-    url:
-      'https://chat.twilio.com/v2/Services/IS43c487114db441beaad322a360117882/Channels/mockChannelSid/Messages/IM07d8109028a34535a6998ac2d8a6ce44',
+    url: 'https://chat.twilio.com/v2/Services/IS43c487114db441beaad322a360117882/Channels/mockChannelSid/Messages/IM07d8109028a34535a6998ac2d8a6ce44',
   },
   {
     sid: 'IM251449804147470ca6177ff5ef9a46c7',
@@ -165,8 +157,7 @@ export const chatMessageList = [
     index: 7,
     type: 'text',
     media: null,
-    url:
-      'https://chat.twilio.com/v2/Services/IS43c487114db441beaad322a360117882/Channels/mockChannelSid/Messages/IM251449804147470ca6177ff5ef9a46c7',
+    url: 'https://chat.twilio.com/v2/Services/IS43c487114db441beaad322a360117882/Channels/mockChannelSid/Messages/IM251449804147470ca6177ff5ef9a46c7',
   },
   {
     sid: 'IMce453c64c02044e588d8a0956f266500',
@@ -184,8 +175,7 @@ export const chatMessageList = [
     index: 8,
     type: 'text',
     media: null,
-    url:
-      'https://chat.twilio.com/v2/Services/IS43c487114db441beaad322a360117882/Channels/mockChannelSid/Messages/IMce453c64c02044e588d8a0956f266500',
+    url: 'https://chat.twilio.com/v2/Services/IS43c487114db441beaad322a360117882/Channels/mockChannelSid/Messages/IMce453c64c02044e588d8a0956f266500',
   },
   {
     sid: 'IMe9ab0d8644bc4b04befa861e3767c138',
@@ -203,8 +193,7 @@ export const chatMessageList = [
     index: 9,
     type: 'text',
     media: null,
-    url:
-      'https://chat.twilio.com/v2/Services/IS43c487114db441beaad322a360117882/Channels/mockChannelSid/Messages/IMe9ab0d8644bc4b04befa861e3767c138',
+    url: 'https://chat.twilio.com/v2/Services/IS43c487114db441beaad322a360117882/Channels/mockChannelSid/Messages/IMe9ab0d8644bc4b04befa861e3767c138',
   },
   {
     sid: 'IM7684825a0d894a23a21f453996d0bb9a',
@@ -222,8 +211,7 @@ export const chatMessageList = [
     index: 10,
     type: 'text',
     media: null,
-    url:
-      'https://chat.twilio.com/v2/Services/IS43c487114db441beaad322a360117882/Channels/mockChannelSid/Messages/IM7684825a0d894a23a21f453996d0bb9a',
+    url: 'https://chat.twilio.com/v2/Services/IS43c487114db441beaad322a360117882/Channels/mockChannelSid/Messages/IM7684825a0d894a23a21f453996d0bb9a',
   },
   {
     sid: 'IM60ddc06082094156adee9f7e9eccd514',
@@ -241,8 +229,7 @@ export const chatMessageList = [
     index: 11,
     type: 'text',
     media: null,
-    url:
-      'https://chat.twilio.com/v2/Services/IS43c487114db441beaad322a360117882/Channels/mockChannelSid/Messages/IM60ddc06082094156adee9f7e9eccd514',
+    url: 'https://chat.twilio.com/v2/Services/IS43c487114db441beaad322a360117882/Channels/mockChannelSid/Messages/IM60ddc06082094156adee9f7e9eccd514',
   },
   {
     sid: 'IM9bf687da5e294eec8feecf3a5893b558',
@@ -260,8 +247,7 @@ export const chatMessageList = [
     index: 12,
     type: 'text',
     media: null,
-    url:
-      'https://chat.twilio.com/v2/Services/IS43c487114db441beaad322a360117882/Channels/mockChannelSid/Messages/IM9bf687da5e294eec8feecf3a5893b558',
+    url: 'https://chat.twilio.com/v2/Services/IS43c487114db441beaad322a360117882/Channels/mockChannelSid/Messages/IM9bf687da5e294eec8feecf3a5893b558',
   },
   {
     sid: 'IMcb381fd326ad43d6b5662e880fc4df35',
@@ -275,12 +261,10 @@ export const chatMessageList = [
     lastUpdatedBy: null,
     wasEdited: false,
     from: 'Bot',
-    body:
-      'The counsellor has left the chat. Thank you for reaching out. Please contact us again if you need more help.',
+    body: 'The counsellor has left the chat. Thank you for reaching out. Please contact us again if you need more help.',
     index: 13,
     type: 'text',
     media: null,
-    url:
-      'https://chat.twilio.com/v2/Services/IS43c487114db441beaad322a360117882/Channels/mockChannelSid/Messages/IMcb381fd326ad43d6b5662e880fc4df35',
+    url: 'https://chat.twilio.com/v2/Services/IS43c487114db441beaad322a360117882/Channels/mockChannelSid/Messages/IMcb381fd326ad43d6b5662e880fc4df35',
   },
 ];

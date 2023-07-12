@@ -21,7 +21,10 @@ import {
   getContactJobById,
 } from './contact-job-data-access';
 import { ContactJobAttemptResult, ContactJobType } from '@tech-matters/types';
-import { ContactJobCompleteProcessorError, ContactJobPollerError } from './contact-job-error';
+import {
+  ContactJobCompleteProcessorError,
+  ContactJobPollerError,
+} from './contact-job-error';
 import {
   deleteCompletedContactJobsFromQueue,
   pollCompletedContactJobsFromQueue,
@@ -35,7 +38,6 @@ import {
 
 import { assertExhaustive } from './assertExhaustive';
 
-// eslint-disable-next-line prettier/prettier
 import type {
   CompletedContactJobBody,
   CompletedContactJobBodyFailure,
@@ -57,8 +59,10 @@ export const processCompletedRetrieveContactTranscript = async (
     );
   }
 
-  (<S3StoredTranscript>conversationMedia[transcriptEntryIndex]).location = completedJob.attemptPayload;
-  (<S3StoredTranscript>conversationMedia[transcriptEntryIndex]).url = completedJob.attemptPayload.url;
+  (<S3StoredTranscript>conversationMedia[transcriptEntryIndex]).location =
+    completedJob.attemptPayload;
+  (<S3StoredTranscript>conversationMedia[transcriptEntryIndex]).url =
+    completedJob.attemptPayload.url;
 
   return updateConversationMedia(
     completedJob.accountSid,
@@ -67,7 +71,9 @@ export const processCompletedRetrieveContactTranscript = async (
   );
 };
 
-export const processCompletedContactJob = async (completedJob: CompletedContactJobBody) => {
+export const processCompletedContactJob = async (
+  completedJob: CompletedContactJobBody,
+) => {
   switch (completedJob.jobType) {
     case ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT: {
       return processCompletedRetrieveContactTranscript(completedJob);
@@ -78,7 +84,10 @@ export const processCompletedContactJob = async (completedJob: CompletedContactJ
   }
 };
 
-export const getAttemptNumber = (completedJob: CompletedContactJobBody, contactJob: ContactJobRecord) =>  completedJob.attemptNumber ?? contactJob.numberOfAttempts;
+export const getAttemptNumber = (
+  completedJob: CompletedContactJobBody,
+  contactJob: ContactJobRecord,
+) => completedJob.attemptNumber ?? contactJob.numberOfAttempts;
 
 export const getContactJobOrFail = async (completedJob: CompletedContactJobBody) => {
   const contactJob = await getContactJobById(completedJob.jobId);
@@ -92,7 +101,6 @@ export const getContactJobOrFail = async (completedJob: CompletedContactJobBody)
 };
 
 export const handleSuccess = async (completedJob: CompletedContactJobBodySuccess) => {
-
   await processCompletedContactJob(completedJob);
 
   // Mark the job as completed
@@ -100,13 +108,18 @@ export const handleSuccess = async (completedJob: CompletedContactJobBodySuccess
     message: 'Job processed successfully',
     value: completedJob.attemptPayload,
   };
-  const markedComplete = await completeContactJob({ id: completedJob.jobId, completionPayload });
+  const markedComplete = await completeContactJob({
+    id: completedJob.jobId,
+    completionPayload,
+  });
 
   return markedComplete;
 };
 
-export const handleFailure = async (completedJob: CompletedContactJobBodyFailure, jobMaxAttempts: number) => {
-
+export const handleFailure = async (
+  completedJob: CompletedContactJobBodyFailure,
+  jobMaxAttempts: number,
+) => {
   const { jobId } = completedJob;
   let { attemptPayload } = completedJob;
 
@@ -131,7 +144,11 @@ export const handleFailure = async (completedJob: CompletedContactJobBodyFailure
 
   if (attemptNumber >= jobMaxAttempts) {
     const completionPayload = { message: 'Attempts limit reached' };
-    const markedComplete = await completeContactJob({ id: completedJob.jobId, completionPayload, wasSuccessful: false });
+    const markedComplete = await completeContactJob({
+      id: completedJob.jobId,
+      completionPayload,
+      wasSuccessful: false,
+    });
 
     return markedComplete;
   }
@@ -147,7 +164,9 @@ export const pollAndProcessCompletedContactJobs = async (jobMaxAttempts: number)
   const { Messages: messages } = polledCompletedJobs;
 
   if (!Array.isArray(messages)) {
-    throw new ContactJobPollerError(`polledCompletedJobs returned invalid messages format ${messages}`);
+    throw new ContactJobPollerError(
+      `polledCompletedJobs returned invalid messages format ${messages}`,
+    );
   }
 
   const completedJobs = await Promise.allSettled(
@@ -165,7 +184,11 @@ export const pollAndProcessCompletedContactJobs = async (jobMaxAttempts: number)
           return await handleFailure(completedJob, jobMaxAttempts);
         }
       } catch (err) {
-        console.error(new ContactJobPollerError('Failed to process CompletedContactJobBody:'), m, err);
+        console.error(
+          new ContactJobPollerError('Failed to process CompletedContactJobBody:'),
+          m,
+          err,
+        );
         return Promise.reject(err);
       }
     }),

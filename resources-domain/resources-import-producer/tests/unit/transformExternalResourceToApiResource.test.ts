@@ -27,12 +27,17 @@ import {
 } from '../../src/mappers';
 import { AccountSID, FlatResource } from '@tech-matters/types';
 import each from 'jest-each';
-import { khpResourceWithoutSites, khpResourceWithSites } from '../fixtures/sampleResources';
+import {
+  khpResourceWithoutSites,
+  khpResourceWithSites,
+} from '../fixtures/sampleResources';
 
 const startedDate = new Date().toISOString();
 const ACCOUNT_SID: AccountSID = 'AC000';
 
-const mergeWithCleanResource = (partialResource: Partial<FlatResource> = {}): FlatResource => ({
+const mergeWithCleanResource = (
+  partialResource: Partial<FlatResource> = {},
+): FlatResource => ({
   ...{
     accountSid: ACCOUNT_SID,
     id: partialResource.id || '',
@@ -264,9 +269,12 @@ describe('Simple mappings with flat structure', () => {
       mapping: {
         attribute: {
           children: {
-            '{language}': translatableAttributeMapping('translatableAttribute/{language}', {
-              language: ctx => ctx.captures.language,
-            }),
+            '{language}': translatableAttributeMapping(
+              'translatableAttribute/{language}',
+              {
+                language: ctx => ctx.captures.language,
+              },
+            ),
           },
         },
       },
@@ -289,10 +297,13 @@ describe('Simple mappings with flat structure', () => {
       mapping: {
         attribute: {
           children: {
-            '{language}': translatableAttributeMapping('translatableAttribute/{language}', {
-              language: ctx => ctx.captures.language,
-              info: ctx => ({ attribute: ctx.currentValue }),
-            }),
+            '{language}': translatableAttributeMapping(
+              'translatableAttribute/{language}',
+              {
+                language: ctx => ctx.captures.language,
+                info: ctx => ({ attribute: ctx.currentValue }),
+              },
+            ),
           },
         },
       },
@@ -421,11 +432,18 @@ describe('Simple mappings with flat structure', () => {
     },
   ];
 
-  each(testCases).test('$description', async ({ mapping, resource, expectedFromResource }) => {
-    const expected = expectedFromResource(resource);
-    const result = transformExternalResourceToApiResource(mapping, ACCOUNT_SID, resource);
-    expect(result).toMatchObject(expected);
-  });
+  each(testCases).test(
+    '$description',
+    async ({ mapping, resource, expectedFromResource }) => {
+      const expected = expectedFromResource(resource);
+      const result = transformExternalResourceToApiResource(
+        mapping,
+        ACCOUNT_SID,
+        resource,
+      );
+      expect(result).toMatchObject(expected);
+    },
+  );
 });
 
 describe('Simple mapping, nested structure', () => {
@@ -554,7 +572,8 @@ describe('Simple mapping, nested structure', () => {
             '{language}': {
               children: {
                 '{property}': translatableAttributeMapping(
-                  ctx => `translatableAttribute/${ctx.captures.language}/${ctx.captures.property}`,
+                  ctx =>
+                    `translatableAttribute/${ctx.captures.language}/${ctx.captures.property}`,
                   {
                     language: ctx => ctx.captures.language,
                   },
@@ -695,11 +714,18 @@ describe('Simple mapping, nested structure', () => {
     },
   ];
 
-  each(testCases).test('$description', async ({ mapping, resource, expectedFromResource }) => {
-    const expected = expectedFromResource(resource);
-    const result = transformExternalResourceToApiResource(mapping, ACCOUNT_SID, resource);
-    expect(result).toMatchObject(expected);
-  });
+  each(testCases).test(
+    '$description',
+    async ({ mapping, resource, expectedFromResource }) => {
+      const expected = expectedFromResource(resource);
+      const result = transformExternalResourceToApiResource(
+        mapping,
+        ACCOUNT_SID,
+        resource,
+      );
+      expect(result).toMatchObject(expected);
+    },
+  );
 
   test('when mapping all kinds of attributes - should add each kind of record under corresponding record.attributes key', async () => {
     const resource = {
@@ -759,7 +785,8 @@ describe('Simple mapping, nested structure', () => {
           '{language}': {
             children: {
               '{property}': translatableAttributeMapping(
-                ctx => `translatableAttribute/${ctx.captures.language}/${ctx.captures.property}`,
+                ctx =>
+                  `translatableAttribute/${ctx.captures.language}/${ctx.captures.property}`,
                 {
                   language: ctx => ctx.captures.language,
                 },
@@ -899,7 +926,9 @@ describe('Mapping valid sample resources should produce no warnings', () => {
   each(testCases).test('$description', ({ resource }) => {
     const warnSpy = jest.spyOn(console, 'warn');
     try {
-      console.log(JSON.stringify(transformKhpResourceToApiResource('AC000', resource), null, 2));
+      console.log(
+        JSON.stringify(transformKhpResourceToApiResource('AC000', resource), null, 2),
+      );
       expect(warnSpy).not.toHaveBeenCalled();
     } finally {
       warnSpy.mockRestore();

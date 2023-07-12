@@ -71,28 +71,28 @@ export const getByContactId = async (contactId: number, accountSid: string) =>
     }),
   );
 
-export const updateContactIdByCsamReportIds = (task?) => async (
-  contactId: number,
-  reportIds: CSAMReport['id'][],
-  accountSid: string,
-): Promise<CSAMReport[]> => {
-  return txIfNotInOne(task, conn =>
-    conn.manyOrNone<CSAMReport>(updateContactIdByCsamReportIdsSql, {
-      contactId,
-      reportIds,
-      accountSid,
-    }),
-  );
-};
+export const updateContactIdByCsamReportIds =
+  (task?) =>
+  async (
+    contactId: number,
+    reportIds: CSAMReport['id'][],
+    accountSid: string,
+  ): Promise<CSAMReport[]> => {
+    return txIfNotInOne(task, conn =>
+      conn.manyOrNone<CSAMReport>(updateContactIdByCsamReportIdsSql, {
+        contactId,
+        reportIds,
+        accountSid,
+      }),
+    );
+  };
 
-export const updateAcknowledgedByCsamReportId = (acknowledged: boolean) => async (
-  reportId: number,
-  accountSid: string,
-) =>
-  db.task(async connection =>
-    connection.oneOrNone<CSAMReport>(updateAcknowledgedByCsamReportIdSql, {
-      reportId,
-      accountSid,
-      acknowledged,
-    }),
-  );
+export const updateAcknowledgedByCsamReportId =
+  (acknowledged: boolean) => async (reportId: number, accountSid: string) =>
+    db.task(async connection =>
+      connection.oneOrNone<CSAMReport>(updateAcknowledgedByCsamReportIdSql, {
+        reportId,
+        accountSid,
+        acknowledged,
+      }),
+    );

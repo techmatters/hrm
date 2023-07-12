@@ -48,7 +48,10 @@ export const generateUpsertSqlFromImportResource = (
   ] as const;
 
   sqlBatch.push(
-    pgp.as.format(DELETE_RESOURCE_ATTRIBUTES_SQL, { resourceId: resourceRecord.id, accountSid }),
+    pgp.as.format(DELETE_RESOURCE_ATTRIBUTES_SQL, {
+      resourceId: resourceRecord.id,
+      accountSid,
+    }),
   );
   sqlBatch.push(
     ...stringAttributes.map(attribute => {
@@ -109,7 +112,10 @@ export const generateUpsertSqlFromImportResource = (
   return sqlBatch.join(';\n');
 };
 
-export const generateUpdateImportProgressSql = (accountSid: AccountSID, progress: ImportProgress) =>
+export const generateUpdateImportProgressSql = (
+  accountSid: AccountSID,
+  progress: ImportProgress,
+) =>
   `
     ${pgp.helpers.insert(
       {

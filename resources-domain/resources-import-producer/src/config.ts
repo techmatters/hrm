@@ -14,7 +14,6 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-// eslint-disable-next-line prettier/prettier
 import type { AccountSID } from '@tech-matters/types';
 import { getSsmParameter } from '@tech-matters/ssm-cache';
 
@@ -22,7 +21,9 @@ const debugGetSsmParameter = async (path: string, logValue = false) => {
   console.debug(`Getting SSM parameter: ${path}`);
   try {
     const value = await getSsmParameter(path);
-    console.debug(`Got SSM parameter: ${path} value: ${logValue ? value : value.replace(/./g, '*')}`);
+    console.debug(
+      `Got SSM parameter: ${path} value: ${logValue ? value : value.replace(/./g, '*')}`,
+    );
     return value;
   } catch (e) {
     console.error(`Error getting SSM parameter: ${path}`, e);
@@ -42,19 +43,20 @@ const getConfig = async () => {
     `/${deploymentEnvironment}/twilio/${helplineShortCode.toUpperCase()}/account_sid`,
   )) as AccountSID;
 
-  const [importApiBaseUrl, importApiKey, importApiAuthHeader, internalResourcesApiKey]  = await Promise.all([
-
-    debugGetSsmParameter(
-      `/${deploymentEnvironment}/resources/${accountSid}/import_api/base_url`, true,
-    ),
-    debugGetSsmParameter(
-    `/${deploymentEnvironment}/resources/${accountSid}/import_api/api_key`,
-    ),
-    debugGetSsmParameter(
-      `/${deploymentEnvironment}/resources/${accountSid}/import_api/auth_header`,
-    ),
-    debugGetSsmParameter(`/${deploymentEnvironment}/twilio/${accountSid}/static_key`),
-  ]);
+  const [importApiBaseUrl, importApiKey, importApiAuthHeader, internalResourcesApiKey] =
+    await Promise.all([
+      debugGetSsmParameter(
+        `/${deploymentEnvironment}/resources/${accountSid}/import_api/base_url`,
+        true,
+      ),
+      debugGetSsmParameter(
+        `/${deploymentEnvironment}/resources/${accountSid}/import_api/api_key`,
+      ),
+      debugGetSsmParameter(
+        `/${deploymentEnvironment}/resources/${accountSid}/import_api/auth_header`,
+      ),
+      debugGetSsmParameter(`/${deploymentEnvironment}/twilio/${accountSid}/static_key`),
+    ]);
   return {
     importResourcesSqsQueueUrl: new URL(process.env.pending_sqs_queue_url ?? ''),
     internalResourcesBaseUrl: new URL(process.env.internal_resources_base_url ?? ''),

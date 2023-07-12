@@ -51,7 +51,8 @@ beforeAll(async () => {
   const mockttp = await mockingProxy.mockttpServer();
   await mockSsmParameters(mockttp, [
     {
-      pathPattern: /\/(test|local|development)\/resources\/AC[0-9]+\/queue-url-search-index/,
+      pathPattern:
+        /\/(test|local|development)\/resources\/AC[0-9]+\/queue-url-search-index/,
       valueGenerator: () => testQueueUrl.toString(),
     },
   ]);
@@ -88,7 +89,10 @@ describe('POST /search/reindex', () => {
     const accountSid: AccountSID = `AC${accountIdx}`;
     const generateImportResource = newImportResourceGenerator(BASELINE_DATE, accountSid);
     const accountResources: FlatResource[] = range(10).map(resourceIdx => {
-      return generateImportResource(resourceIdx, addDays(BASELINE_DATE, parseInt(resourceIdx) - 5));
+      return generateImportResource(
+        resourceIdx,
+        addDays(BASELINE_DATE, parseInt(resourceIdx) - 5),
+      );
     });
     return [accountSid, accountResources] as const;
   });
@@ -140,10 +144,7 @@ describe('POST /search/reindex', () => {
     const requestBody: SearchReindexParams = {
       lastUpdatedFrom: BASELINE_DATE.toISOString(),
     };
-    internalRequest
-      .post(route)
-      .send(requestBody)
-      .expect(401);
+    internalRequest.post(route).send(requestBody).expect(401);
   });
 
   test('Incorrect static key - should return 401', async () => {
@@ -161,11 +162,7 @@ describe('POST /search/reindex', () => {
     const requestBody: SearchReindexParams = {
       lastUpdatedFrom: BASELINE_DATE.toISOString(),
     };
-    internalRequest
-      .post(route)
-      .set(headers)
-      .send(requestBody)
-      .expect(401);
+    internalRequest.post(route).set(headers).send(requestBody).expect(401);
   });
 
   const testCases: ParametersTestCase[] = [
@@ -178,9 +175,12 @@ describe('POST /search/reindex', () => {
       ),
     },
     {
-      description: 'Only account set - sends all resources for that account to be reindexed',
+      description:
+        'Only account set - sends all resources for that account to be reindexed',
       accountSid: 'AC2',
-      expectedResourcesPublished: sortedResources.filter(resource => resource.accountSid === 'AC2'),
+      expectedResourcesPublished: sortedResources.filter(
+        resource => resource.accountSid === 'AC2',
+      ),
     },
     {
       description:
@@ -226,7 +226,8 @@ describe('POST /search/reindex', () => {
       ),
     },
     {
-      description: 'Everything set - sends resources that match all filters to be reindexed',
+      description:
+        'Everything set - sends resources that match all filters to be reindexed',
       accountSid: 'AC2',
       resourceIds: ['RESOURCE_1', 'RESOURCE_3', 'RESOURCE_5'],
       lastUpdatedFrom: subDays(BASELINE_DATE, 2),
@@ -273,7 +274,9 @@ describe('POST /search/reindex', () => {
         if (!Messages?.length) {
           break;
         }
-        receivedMessages.push(...(Messages ?? []).map(message => JSON.parse(message.Body ?? '')));
+        receivedMessages.push(
+          ...(Messages ?? []).map(message => JSON.parse(message.Body ?? '')),
+        );
       }
       expect(receivedMessages.length).toEqual(expectedResourcesPublished.length);
       const expectedMessages = expectedResourcesPublished.map(resource => ({
@@ -291,11 +294,7 @@ describe('POST /search/reindex', () => {
     const requestBody: SearchReindexParams = {
       resourceIds: ['RESOURCE_1', 'RESOURCE_3', 'RESOURCE_5'],
     };
-    await internalRequest
-      .post(route)
-      .set(adminHeaders)
-      .send(requestBody)
-      .expect(400);
+    await internalRequest.post(route).set(adminHeaders).send(requestBody).expect(400);
     const { Messages } = await sqsClient
       .receiveMessage({
         QueueUrl: testQueueUrl.toString(),

@@ -26,7 +26,12 @@ export const generateMockMessageBody = () => {
       id: `RESOURCE_${resourceId}`,
       name: `Resource ${resourceId}`,
       attributes: [
-        { key: 'testAttribute', value: 'testValue', language: 'Klingon', info: { qa: 'pla' } },
+        {
+          key: 'testAttribute',
+          value: 'testValue',
+          language: 'Klingon',
+          info: { qa: 'pla' },
+        },
       ],
     },
   };

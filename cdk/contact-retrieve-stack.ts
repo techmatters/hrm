@@ -100,7 +100,10 @@ export default class ContactRetrieveStack extends cdk.Stack {
       simple case.
       (rbd 08/10/22)
     */
-    const splitCompleteQueueUrl = cdk.Fn.split('localhost', params.completeQueue.queueUrl);
+    const splitCompleteQueueUrl = cdk.Fn.split(
+      'localhost',
+      params.completeQueue.queueUrl,
+    );
     const completedQueueUrl = cdk.Fn.join('localstack', [
       cdk.Fn.select(0, splitCompleteQueueUrl),
       cdk.Fn.select(1, splitCompleteQueueUrl),
@@ -126,7 +129,9 @@ export default class ContactRetrieveStack extends cdk.Stack {
       deadLetterQueue: params.completeQueue,
     });
 
-    fn.addEventSource(new SqsEventSource(queue, { batchSize: 10, reportBatchItemFailures: true }));
+    fn.addEventSource(
+      new SqsEventSource(queue, { batchSize: 10, reportBatchItemFailures: true }),
+    );
 
     fn.addToRolePolicy(
       new iam.PolicyStatement({

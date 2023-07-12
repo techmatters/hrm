@@ -17,14 +17,16 @@
 import { SQS } from 'aws-sdk';
 import { getSsmParameter } from '../config/ssmCache';
 
-// eslint-disable-next-line prettier/prettier
 import type { PublishToContactJobsTopicParams } from '@tech-matters/types';
 
 let sqs: SQS;
 
-const COMPLETED_QUEUE_SSM_PATH = `/${process.env.NODE_ENV}/${process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION}/sqs/jobs/contact/queue-url-complete`;
-const JOB_QUEUE_SSM_PATH_BASE = `/${process.env.NODE_ENV}/${process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION}/sqs/jobs/contact/queue-url-`;
-
+const COMPLETED_QUEUE_SSM_PATH = `/${process.env.NODE_ENV}/${
+  process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
+}/sqs/jobs/contact/queue-url-complete`;
+const JOB_QUEUE_SSM_PATH_BASE = `/${process.env.NODE_ENV}/${
+  process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
+}/sqs/jobs/contact/queue-url-`;
 
 export const getSqsClient = () => {
   if (!sqs) {
@@ -61,12 +63,9 @@ export const deleteCompletedContactJobsFromQueue = async (ReceiptHandle: string)
 };
 
 export const publishToContactJobs = async (params: PublishToContactJobsTopicParams) => {
-
   //TODO: more robust error handling/messaging
   try {
-    const QueueUrl = await getSsmParameter(
-      `${JOB_QUEUE_SSM_PATH_BASE}${params.jobType}`,
-    );
+    const QueueUrl = await getSsmParameter(`${JOB_QUEUE_SSM_PATH_BASE}${params.jobType}`);
 
     return await getSqsClient()
       .sendMessage({
