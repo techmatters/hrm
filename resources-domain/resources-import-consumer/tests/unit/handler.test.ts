@@ -20,6 +20,7 @@ import each from 'jest-each';
 // eslint-disable-next-line prettier/prettier
 import type { FlatResource, ImportRequestBody } from '@tech-matters/types';
 import type { SQSEvent } from 'aws-lambda';
+import { TimeSequence } from '@tech-matters/types';
 
 const mockFetch = jest.fn();
 
@@ -33,6 +34,9 @@ global.fetch = mockFetch;
 beforeEach(() => {
   jest.resetAllMocks();
 });
+
+const timeSequenceFromDate = (date: Date, sequence = 0): TimeSequence =>
+  `${date.valueOf()}-${sequence}`;
 
 const accountSid = 'AC000';
 
@@ -122,8 +126,8 @@ describe('resources-import-consumer handler', () => {
             accountSid,
             importedResources: [generateImportResource('100', baselineDate)],
             batch: {
-              fromDate: Date.now().toString(),
-              toDate: Date.now().toString(),
+              fromSequence: timeSequenceFromDate(new Date()),
+              toSequence: timeSequenceFromDate(new Date()),
               remaining: 1,
             },
           }),
@@ -142,8 +146,8 @@ describe('resources-import-consumer handler', () => {
             accountSid,
             importedResources: [generateImportResource('100', baselineDate)],
             batch: {
-              fromDate: Date.now().toString(),
-              toDate: Date.now().toString(),
+              fromSequence: timeSequenceFromDate(new Date()),
+              toSequence: timeSequenceFromDate(new Date()),
               remaining: 1,
             },
           }),
@@ -163,8 +167,8 @@ describe('resources-import-consumer handler', () => {
             accountSid,
             importedResources: [generateImportResource('1', baselineDate)],
             batch: {
-              fromDate: Date.now().toString(),
-              toDate: Date.now().toString(),
+              fromSequence: timeSequenceFromDate(new Date()),
+              toSequence: timeSequenceFromDate(new Date()),
               remaining: 1,
             },
           }),
@@ -172,8 +176,8 @@ describe('resources-import-consumer handler', () => {
             accountSid,
             importedResources: [generateImportResource('2', baselineDate)],
             batch: {
-              fromDate: Date.now().toString(),
-              toDate: Date.now().toString(),
+              fromSequence: timeSequenceFromDate(new Date()),
+              toSequence: timeSequenceFromDate(new Date()),
               remaining: 1,
             },
           }),
@@ -181,8 +185,8 @@ describe('resources-import-consumer handler', () => {
             accountSid,
             importedResources: [generateImportResource('3', baselineDate)],
             batch: {
-              fromDate: Date.now().toString(),
-              toDate: Date.now().toString(),
+              fromSequence: timeSequenceFromDate(new Date()),
+              toSequence: timeSequenceFromDate(new Date()),
               remaining: 1,
             },
           }),
@@ -204,8 +208,8 @@ describe('resources-import-consumer handler', () => {
             accountSid,
             importedResources: [generateImportResource('1', baselineDate)],
             batch: {
-              fromDate: Date.now().toString(),
-              toDate: Date.now().toString(),
+              fromSequence: timeSequenceFromDate(new Date()),
+              toSequence: timeSequenceFromDate(new Date()),
               remaining: 1,
             },
           }),
@@ -213,8 +217,8 @@ describe('resources-import-consumer handler', () => {
             accountSid,
             importedResources: [generateImportResource('2', baselineDate)],
             batch: {
-              fromDate: Date.now().toString(),
-              toDate: Date.now().toString(),
+              fromSequence: timeSequenceFromDate(new Date()),
+              toSequence: timeSequenceFromDate(new Date()),
               remaining: 1,
             },
           }),
@@ -222,8 +226,8 @@ describe('resources-import-consumer handler', () => {
             accountSid,
             importedResources: [generateImportResource('3', baselineDate)],
             batch: {
-              fromDate: Date.now().toString(),
-              toDate: Date.now().toString(),
+              fromSequence: timeSequenceFromDate(new Date()),
+              toSequence: timeSequenceFromDate(new Date()),
               remaining: 1,
             },
           }),

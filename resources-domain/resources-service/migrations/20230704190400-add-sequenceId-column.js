@@ -14,17 +14,18 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import env from 'dotenv';
+module.exports = {
+  up: async queryInterface => {
+    await queryInterface.sequelize.query(`
+      ALTER TABLE IF EXISTS resources."Resources" ADD COLUMN IF NOT EXISTS "importSequenceId" text;
+    `);
+    console.log('"Resources"."importSequenceId" column added');
+  },
 
-env.config();
-
-export type CloudSearchConfig = {
-  searchUrl: URL;
-};
-
-export default (): CloudSearchConfig => {
-  const searchUrl = new URL(process.env.RESOURCES_CLOUDSEARCH_SEARCH_URL || '');
-  return {
-    searchUrl,
-  };
+  down: async queryInterface => {
+    await queryInterface.sequelize.query(
+      `ALTER TABLE IF EXISTS resources."Resources" DROP COLUMN IF EXISTS "importSequenceId";`,
+    );
+    console.log('"Resources"."importSequenceId" column dropped');
+  },
 };

@@ -18,9 +18,9 @@ import parseISO from 'date-fns/parseISO';
 import { handler, HttpError, isHttpError, KhpApiResource, KhpApiResponse } from '../../src';
 import each from 'jest-each';
 // eslint-disable-next-line prettier/prettier
-import type { FlatResource, ImportProgress } from '@tech-matters/types';
+import type { FlatResource, ImportProgress, TimeSequence } from '@tech-matters/types';
 import { ScheduledEvent } from 'aws-lambda';
-import { addMilliseconds, addSeconds, subHours, subMinutes } from 'date-fns';
+import { addSeconds, subHours, subMinutes } from 'date-fns';
 import { publishToImportConsumer, ResourceMessage } from '../../src/clientSqs';
 import getConfig from '../../src/config';
 import { Response } from 'undici';
@@ -56,6 +56,9 @@ const MOCK_CONFIG: Awaited<ReturnType<typeof getConfig>> = {
   importApiKey: 'MOCK_EXTERNAL_API_KEY',
   importResourcesSqsQueueUrl: new URL('https://queue-url'),
   importApiBaseUrl: new URL('https://external-url'),
+  maxBatchSize: 6,
+  maxApiSize: 3,
+  maxRequests: 4,
 };
 
 // @ts-ignore
@@ -79,10 +82,12 @@ const testNow = parseISO('2025-01-01T00:00:00.000Z');
 type HandlerTestCase = {
   description: string;
   importProgressResponse: ImportProgress | HttpError;
-  externalApiResponse: KhpApiResponse | HttpError;
+  externalApiResponses: (KhpApiResponse | HttpError)[];
   expectedExternalApiCallParameters: Record<string, string>[];
   expectedPublishedMessages: ResourceMessage[];
 };
+
+const timeSequenceFromDate = (date: Date, sequence = 0): TimeSequence => `${date.valueOf()}-${sequence}`;
 
 const generateKhpResource = (updatedAt: Date, resourceId: string): KhpApiResource => ({
   objectId: resourceId,
@@ -90,14 +95,16 @@ const generateKhpResource = (updatedAt: Date, resourceId: string): KhpApiResourc
     en:`Resource ${resourceId}`,
   },
   updatedAt: updatedAt.toISOString(),
+  timeSequence: timeSequenceFromDate(updatedAt),
 });
 
-const generateResourceMessage = (lastUpdated: Date, resourceId: string, batchFromDate: Date, remaining: number): ResourceMessage => (
+const generateResourceMessage = 
+  (lastUpdated: Date, resourceId: string, batchFromSequence: TimeSequence, remaining: number): ResourceMessage => (
   { 
     accountSid: MOCK_CONFIG.accountSid,
     batch: {
-      fromDate: batchFromDate.toISOString(),
-      toDate: testNow.toISOString(),
+      fromSequence: batchFromSequence,
+      toSequence: timeSequenceFromDate(testNow),
       remaining,
     },
     importedResources: [{
@@ -105,6 +112,7 @@ const generateResourceMessage = (lastUpdated: Date, resourceId: string, batchFro
       id: resourceId,
       name: `Resource ${resourceId}`,
       lastUpdated: lastUpdated.toISOString(),
+      importSequenceId: timeSequenceFromDate(lastUpdated),
       deletedAt: '',
       ...EMPTY_ATTRIBUTES,
     }],
@@ -123,70 +131,235 @@ const testCases: HandlerTestCase[] = [
   {
     description: 'if there is no import progress and the API returns nothing, should send nothing',
     importProgressResponse: { status: 404, statusText: 'Not Found', body: {} },
-    externalApiResponse: { data: [], totalResults: 0 },
+    externalApiResponses: [{ data: [], totalResults: 0 }],
     expectedExternalApiCallParameters: [
       {
-        startDate: new Date(0).toISOString(),
-        endDate: testNow.toISOString(),
-        limit: '1000',
+        startSequence: '0-0',
+        endSequence: timeSequenceFromDate(testNow),
+        limit: MOCK_CONFIG.maxApiSize.toString(),
       },
     ],
     expectedPublishedMessages: [],
   }, {
     description: 'if there is no import progress and the API returns all available resources in range, should send them all',
     importProgressResponse: { status: 404, statusText: 'Not Found', body: {} },
-    externalApiResponse: { data: [
+    externalApiResponses: [{ data: [
         generateKhpResource(baselineDate, '1'),
         generateKhpResource(addSeconds(baselineDate, 1), '2'),
-      ], totalResults:2 },
+      ], totalResults:2 }],
     expectedExternalApiCallParameters: [
       {
-        startDate: new Date(0).toISOString(),
-        endDate: testNow.toISOString(),
-        limit: '1000',
+        startSequence: '0-0',
+        endSequence: timeSequenceFromDate(testNow),
+        limit: MOCK_CONFIG.maxApiSize.toString(),
       },
     ],
     expectedPublishedMessages: [
-      generateResourceMessage(baselineDate, '1', new Date(0), 1),
-      generateResourceMessage(addSeconds(baselineDate, 1), '2', new Date(0), 0),
+      generateResourceMessage(baselineDate, '1', '0-0', 1),
+      generateResourceMessage(addSeconds(baselineDate, 1), '2', '0-0', 0),
     ],
   }, {
-    description: 'if there is import progress and the batch is complete and the API returns all available resources in range, should start another batch and send them all',
-    importProgressResponse: { fromDate: new Date(0).toISOString(), toDate: subHours(testNow, 1).toISOString(), remaining: 0, lastProcessedDate: subHours(testNow, 1).toISOString(), lastProcessedId: 'IGNORED' },
-    externalApiResponse: { data: [
+    description: 'if there is import progress with no importSequenceId and the API returns all available resources in range, should start another batch and send them all',
+    importProgressResponse: { 
+      fromSequence: '0-0', 
+      toSequence: 
+        timeSequenceFromDate(subHours(testNow, 1)), 
+      remaining: 0, 
+      lastProcessedDate: subHours(testNow, 1).toISOString(), 
+      lastProcessedId: 'IGNORED',
+    },
+    externalApiResponses: [{ data: [
         generateKhpResource(subMinutes(testNow, 10), '1'),
         generateKhpResource(subMinutes(testNow, 5), '2'),
-      ], totalResults:2 },
+      ], totalResults:2 }],
     expectedExternalApiCallParameters: [
       {
-        startDate: addMilliseconds(subHours(testNow, 1), 1).toISOString(),
-        endDate: testNow.toISOString(),
-        limit: '1000',
+        startSequence: timeSequenceFromDate(subHours(testNow, 1), 1),
+        endSequence: timeSequenceFromDate(testNow),
+        limit: MOCK_CONFIG.maxApiSize.toString(),
       },
     ],
     expectedPublishedMessages: [
-      generateResourceMessage(subMinutes(testNow, 10), '1', addMilliseconds(subHours(testNow, 1), 1), 1),
-      generateResourceMessage(subMinutes(testNow, 5), '2', addMilliseconds(subHours(testNow, 1), 1), 0),
+      generateResourceMessage(
+        subMinutes(testNow, 10), '1', 
+        timeSequenceFromDate(subHours(testNow, 1), 1), 
+        1,
+      ),
+      generateResourceMessage(
+        subMinutes(testNow, 5), 
+        '2', 
+        timeSequenceFromDate(subHours(testNow, 1), 1), 
+        0,
+      ),
+    ],
+  }, {
+    description: 'if there is import progress and there are more resources than the API limit but less than the batch limit, it should keep requesting until it gets them all',
+    importProgressResponse: { 
+      fromSequence: '0-0', 
+      toSequence: timeSequenceFromDate(subHours(testNow, 1)), 
+      remaining: 0, 
+      lastProcessedDate: subHours(testNow, 1).toISOString(), 
+      lastProcessedId: 'IGNORED', 
+      importSequenceId: '1234-0', 
+    },
+    externalApiResponses: [
+      { data: [
+        generateKhpResource(subMinutes(testNow, 25), '1'),
+        generateKhpResource(subMinutes(testNow, 20), '2'),
+        generateKhpResource(subMinutes(testNow, 15), '3'),
+      ], totalResults:5 },
+      { data: [
+          generateKhpResource(subMinutes(testNow, 10), '4'),
+          generateKhpResource(subMinutes(testNow, 5), '5'),
+        ], totalResults:2 },
+    ],
+    expectedExternalApiCallParameters: [
+      {
+        startSequence: '1234-1',
+        endSequence: timeSequenceFromDate(testNow),
+        limit: MOCK_CONFIG.maxApiSize.toString(),
+      },
+      {
+        startSequence: timeSequenceFromDate(subMinutes(testNow, 15), 1),
+        endSequence: timeSequenceFromDate(testNow),
+        limit: MOCK_CONFIG.maxApiSize.toString(),
+      },
+    ],
+    expectedPublishedMessages: [
+      generateResourceMessage(subMinutes(testNow, 25), '1', '1234-1', 4),
+      generateResourceMessage(subMinutes(testNow, 20), '2', '1234-1', 3),
+      generateResourceMessage(subMinutes(testNow, 15), '3', '1234-1', 2),
+      generateResourceMessage(
+        subMinutes(testNow, 10), 
+        '4', 
+        timeSequenceFromDate(subMinutes(testNow, 15), 1), 
+        1,
+      ),
+      generateResourceMessage(
+        subMinutes(testNow, 5), 
+        '5', 
+        timeSequenceFromDate(subMinutes(testNow, 15), 1), 
+        0,
+      ),
+    ],
+  }, {
+    description: 'if there is import progress and there are more resources than the batch limit, it should keep requesting until the batch limit is reached',
+    importProgressResponse: { 
+      fromSequence: '0-0', 
+      toSequence: timeSequenceFromDate(subHours(testNow, 1)), 
+      remaining: 0, 
+      lastProcessedDate: subHours(testNow, 1).toISOString(), 
+      lastProcessedId: 'IGNORED', 
+      importSequenceId: '1234-0',
+    },
+    externalApiResponses: [
+      { data: [
+          generateKhpResource(subMinutes(testNow, 25), '1'),
+          generateKhpResource(subMinutes(testNow, 20), '2'),
+          generateKhpResource(subMinutes(testNow, 15), '3'),
+        ], totalResults:100 },
+      { data: [
+          generateKhpResource(subMinutes(testNow, 10), '4'),
+          generateKhpResource(subMinutes(testNow, 5), '5'),
+          generateKhpResource(subMinutes(testNow, 1), '6'),
+        ], totalResults:97 },
+    ],
+    expectedExternalApiCallParameters: [
+      {
+        startSequence: '1234-1',
+        endSequence: timeSequenceFromDate(testNow),
+        limit: MOCK_CONFIG.maxApiSize.toString(),
+      },
+      {
+        startSequence: timeSequenceFromDate(subMinutes(testNow, 15), 1),
+        endSequence: timeSequenceFromDate(testNow),
+        limit: MOCK_CONFIG.maxApiSize.toString(),
+      },
+    ],
+    expectedPublishedMessages: [
+      generateResourceMessage(subMinutes(testNow, 25), '1', '1234-1', 99),
+      generateResourceMessage(subMinutes(testNow, 20), '2', '1234-1', 98),
+      generateResourceMessage(subMinutes(testNow, 15), '3', '1234-1', 97),
+      generateResourceMessage(
+        subMinutes(testNow, 10), 
+        '4', 
+        timeSequenceFromDate(subMinutes(testNow, 15), 1), 
+        96,
+      ),
+      generateResourceMessage(
+        subMinutes(testNow, 5), 
+        '5', 
+        timeSequenceFromDate(subMinutes(testNow, 15), 1), 
+        95),
+      generateResourceMessage(
+        subMinutes(testNow, 1), 
+        '6', 
+        timeSequenceFromDate(subMinutes(testNow, 15), 1), 
+        94),
+    ],
+  }, {
+    description: 'if the API reports inconsistent total counts that could result in an infinite loop, it should stop requesting once the request limit is reached',
+    importProgressResponse: { 
+      fromSequence: '0-0', 
+      toSequence: timeSequenceFromDate(subHours(testNow, 1)), 
+      remaining: 0, 
+      lastProcessedDate: subHours(testNow, 1).toISOString(), 
+      lastProcessedId: 'IGNORED', 
+      importSequenceId: '1234-0', 
+    },
+    externalApiResponses: [
+      ...new Array(20).fill({ data: [
+          generateKhpResource(subMinutes(testNow, 25), '1'),
+        ], totalResults:100 }),
+    ],
+    expectedExternalApiCallParameters: [
+      {
+        startSequence: '1234-1',
+        endSequence: timeSequenceFromDate(testNow),
+        limit: MOCK_CONFIG.maxApiSize.toString(),
+      },
+      ...new Array(3).fill({
+        startSequence: timeSequenceFromDate(subMinutes(testNow, 25), 1),
+        endSequence: timeSequenceFromDate(testNow),
+        limit: MOCK_CONFIG.maxApiSize.toString(),
+      }),
+    ],
+    expectedPublishedMessages: [
+      generateResourceMessage(subMinutes(testNow, 25), '1', '1234-1', 99),
+      ...new Array(3).fill(
+        generateResourceMessage(
+          subMinutes(testNow, 25), 
+          '1', 
+          timeSequenceFromDate(subMinutes(testNow, 25), 1), 
+          99,
+        ),
+      ),
     ],
   },
 ];
 
 describe('resources-import-producer handler', () => {
-  each(testCases).test('$description', async ({ importProgressResponse, externalApiResponse, expectedExternalApiCallParameters, expectedPublishedMessages }: HandlerTestCase) => {
-
-    mockFetch.mockResolvedValueOnce({
+  each(testCases).test('$description', async ({
+    importProgressResponse,
+    externalApiResponses,
+    expectedExternalApiCallParameters,
+    expectedPublishedMessages }: HandlerTestCase) => {
+    let mocked = mockFetch.mockResolvedValueOnce({
       ok: !isHttpError(importProgressResponse),
       json: () => Promise.resolve(importProgressResponse),
       text: () => Promise.resolve(JSON.stringify(importProgressResponse)),
       status: isHttpError(importProgressResponse) ? importProgressResponse.status : 200,
       statusText: isHttpError(importProgressResponse) ? importProgressResponse.statusText : 'OK',
-    } as Response).mockResolvedValue({
-      ok: !isHttpError(externalApiResponse),
-      json: () => Promise.resolve(externalApiResponse),
-      text: () => Promise.resolve(JSON.stringify(externalApiResponse)),
-      status: isHttpError(externalApiResponse) ? externalApiResponse.status : 200,
-      statusText: isHttpError(externalApiResponse) ? externalApiResponse.statusText : 'OK',
     } as Response);
+    externalApiResponses.forEach(externalApiResponse => {
+      mocked = mocked.mockResolvedValueOnce({
+        ok: !isHttpError(externalApiResponse),
+        json: () => Promise.resolve(externalApiResponse),
+        text: () => Promise.resolve(JSON.stringify(externalApiResponse)),
+        status: isHttpError(externalApiResponse) ? externalApiResponse.status : 200,
+        statusText: isHttpError(externalApiResponse) ? externalApiResponse.statusText : 'OK',
+      } as Response);
+    });
     await handler({} as ScheduledEvent);
     expect(mockFetch).toHaveBeenCalledTimes(expectedExternalApiCallParameters.length + 1);
     expect(mockFetch.mock.calls[0][0]).toEqual(new URL(`https://development-url/v0/accounts/AC000/resources/import/progress`));
@@ -202,8 +375,6 @@ describe('resources-import-producer handler', () => {
       Object.entries(expectedParameters).forEach(([key, value]) => {
         expect(url.searchParams.get(key)).toEqual(value);
       });
-      expect(url.searchParams.get('sort')).toEqual('updatedAt');
-      expect(url.searchParams.get('dateType')).toEqual('updatedAt');
       expect(url.toString().startsWith(`https://external-url/api/resources`)).toBeTruthy();
       expect(options).toStrictEqual({
         method: 'GET',
