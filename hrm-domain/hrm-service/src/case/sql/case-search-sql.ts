@@ -27,7 +27,8 @@ export const OrderByDirection = {
   descending: 'DESC',
 } as const;
 
-export type OrderByDirectionType = typeof OrderByDirection[keyof typeof OrderByDirection];
+export type OrderByDirectionType =
+  (typeof OrderByDirection)[keyof typeof OrderByDirection];
 
 export const OrderByColumn = {
   ID: 'id',
@@ -37,7 +38,7 @@ export const OrderByColumn = {
   FOLLOW_UP_DATE: 'info.followUpDate',
 } as const;
 
-export type OrderByColumnType = typeof OrderByColumn[keyof typeof OrderByColumn];
+export type OrderByColumnType = (typeof OrderByColumn)[keyof typeof OrderByColumn];
 
 const ORDER_BY_FIELDS: Record<OrderByColumnType, string> = {
   id: pgp.as.name('id'),
@@ -142,7 +143,11 @@ const filterSql = ({
     ...[
       dateFilterCondition(FilterableDateField.CREATED_AT, 'createdAt', createdAt),
       dateFilterCondition(FilterableDateField.UPDATED_AT, 'updatedAt', updatedAt),
-      dateFilterCondition(FilterableDateField.FOLLOW_UP_DATE, 'followUpDate', followUpDate),
+      dateFilterCondition(
+        FilterableDateField.FOLLOW_UP_DATE,
+        'followUpDate',
+        followUpDate,
+      ),
     ].filter(sql => sql),
   );
   if (categories && categories.length) {
@@ -265,7 +270,10 @@ const selectCasesPaginatedSql = (
   orderByClause: string,
   havingClause: string = '',
 ) => `
-SELECT * FROM (${selectCasesUnorderedSql(whereClause, havingClause)}) "unordered" ${orderByClause}
+SELECT * FROM (${selectCasesUnorderedSql(
+  whereClause,
+  havingClause,
+)}) "unordered" ${orderByClause}
 LIMIT $<limit>
 OFFSET $<offset>`;
 

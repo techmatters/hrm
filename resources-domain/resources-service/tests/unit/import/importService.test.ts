@@ -16,7 +16,10 @@
 
 import { subHours, subSeconds } from 'date-fns';
 import { mockConnection, mockTransaction } from '../mock-db';
-import { updateImportProgress, upsertImportedResource } from '../../../src/import/importDataAccess';
+import {
+  updateImportProgress,
+  upsertImportedResource,
+} from '../../../src/import/importDataAccess';
 import {
   AccountSID,
   FlatResource,
@@ -46,11 +49,13 @@ const conn = mockConnection();
 const mockUpdateImportProgress = updateImportProgress as jest.MockedFunction<
   typeof updateImportProgress
 >;
-let mockUpdateProgress: jest.MockedFunction<ReturnType<typeof updateImportProgress>> = jest.fn();
+let mockUpdateProgress: jest.MockedFunction<ReturnType<typeof updateImportProgress>> =
+  jest.fn();
 const mockUpsertImportedResource = upsertImportedResource as jest.MockedFunction<
   typeof upsertImportedResource
 >;
-let mockUpsert: jest.MockedFunction<ReturnType<typeof upsertImportedResource>> = jest.fn();
+let mockUpsert: jest.MockedFunction<ReturnType<typeof upsertImportedResource>> =
+  jest.fn();
 
 const timeSequenceFromDate = (date: Date, sequence = 0): TimeSequence =>
   `${date.valueOf()}-${sequence}`;
@@ -95,7 +100,9 @@ beforeEach(() => {
   mockUpdateImportProgress.mockReturnValue(mockUpdateProgress);
 
   mockUpsertImportedResource.mockReturnValue(mockUpsert);
-  mockUpsert.mockImplementation((accountSid, { id }) => Promise.resolve({ id, success: true }));
+  mockUpsert.mockImplementation((accountSid, { id }) =>
+    Promise.resolve({ id, success: true }),
+  );
   upsertResources = importService().upsertResources;
   mockPublishSearchIndexJob.mockResolvedValue(undefined);
 });
@@ -119,11 +126,14 @@ describe('upsertResources', () => {
       expect(accountSid).toBe(ACCOUNT_SID);
       expect(resource).toEqual(SAMPLE_RESOURCES[index]);
     });
-    expect(mockUpdateProgress).toHaveBeenCalledWith<[AccountSID, ImportProgress]>(ACCOUNT_SID, {
-      ...BASELINE_BATCH,
-      lastProcessedId: 'TEST_RESOURCE_50',
-      lastProcessedDate: subSeconds(BASELINE_DATE, 1).toISOString(),
-    });
+    expect(mockUpdateProgress).toHaveBeenCalledWith<[AccountSID, ImportProgress]>(
+      ACCOUNT_SID,
+      {
+        ...BASELINE_BATCH,
+        lastProcessedId: 'TEST_RESOURCE_50',
+        lastProcessedDate: subSeconds(BASELINE_DATE, 1).toISOString(),
+      },
+    );
 
     expect(mockPublishSearchIndexJob).toHaveBeenCalledTimes(3);
     mockPublishSearchIndexJob.mock.calls.forEach(([accountSid, resource], index) => {
@@ -141,9 +151,9 @@ describe('upsertResources', () => {
       }
       return { id, success: true };
     });
-    await expect(upsertResources(ACCOUNT_SID, SAMPLE_RESOURCES, BASELINE_BATCH)).rejects.toThrow(
-      bork,
-    );
+    await expect(
+      upsertResources(ACCOUNT_SID, SAMPLE_RESOURCES, BASELINE_BATCH),
+    ).rejects.toThrow(bork);
     expect(mockUpsertImportedResource).toHaveBeenCalledWith(expect.anything());
     expect(mockUpsert).toHaveBeenCalledTimes(2);
     mockUpsert.mock.calls.slice(0, 2).forEach(([accountSid, resource], index) => {
@@ -160,9 +170,9 @@ describe('upsertResources', () => {
       }
       return { id, success: true };
     });
-    await expect(upsertResources(ACCOUNT_SID, SAMPLE_RESOURCES, BASELINE_BATCH)).rejects.toThrow(
-      bork,
-    );
+    await expect(
+      upsertResources(ACCOUNT_SID, SAMPLE_RESOURCES, BASELINE_BATCH),
+    ).rejects.toThrow(bork);
     expect(mockUpsertImportedResource).toHaveBeenCalledWith(expect.anything());
     expect(mockUpsert).toHaveBeenCalledTimes(2);
     mockUpsert.mock.calls.slice(0, 2).forEach(([accountSid, resource], index) => {
@@ -176,9 +186,9 @@ describe('upsertResources', () => {
     mockUpsert.mockImplementation(async (accountSid, { id }) => {
       return { id, success: false, error: bork };
     });
-    await expect(upsertResources(ACCOUNT_SID, SAMPLE_RESOURCES, BASELINE_BATCH)).rejects.toThrow(
-      bork,
-    );
+    await expect(
+      upsertResources(ACCOUNT_SID, SAMPLE_RESOURCES, BASELINE_BATCH),
+    ).rejects.toThrow(bork);
     expect(mockUpsertImportedResource).toHaveBeenCalledWith(expect.anything());
 
     expect(mockUpsert).toHaveBeenCalledTimes(1);
@@ -212,16 +222,19 @@ describe('upsertResources', () => {
   test('Progress update rejects - rolls back transaction & throws error', async () => {
     const bork = new Error('bork');
     mockUpdateProgress.mockRejectedValue(bork);
-    await expect(upsertResources(ACCOUNT_SID, SAMPLE_RESOURCES, BASELINE_BATCH)).rejects.toThrow(
-      bork,
-    );
+    await expect(
+      upsertResources(ACCOUNT_SID, SAMPLE_RESOURCES, BASELINE_BATCH),
+    ).rejects.toThrow(bork);
     expect(mockUpsertImportedResource).toHaveBeenCalledWith(expect.anything());
     expect(mockUpsert).toHaveBeenCalledTimes(3);
-    expect(mockUpdateProgress).toHaveBeenCalledWith<[AccountSID, ImportProgress]>(ACCOUNT_SID, {
-      ...BASELINE_BATCH,
-      lastProcessedId: 'TEST_RESOURCE_50',
-      lastProcessedDate: subSeconds(BASELINE_DATE, 1).toISOString(),
-    });
+    expect(mockUpdateProgress).toHaveBeenCalledWith<[AccountSID, ImportProgress]>(
+      ACCOUNT_SID,
+      {
+        ...BASELINE_BATCH,
+        lastProcessedId: 'TEST_RESOURCE_50',
+        lastProcessedDate: subSeconds(BASELINE_DATE, 1).toISOString(),
+      },
+    );
   });
 
   test('Progress update throws - rolls back transaction & throws error', async () => {
@@ -229,16 +242,19 @@ describe('upsertResources', () => {
     mockUpdateProgress.mockImplementation(() => {
       throw bork;
     });
-    await expect(upsertResources(ACCOUNT_SID, SAMPLE_RESOURCES, BASELINE_BATCH)).rejects.toThrow(
-      bork,
-    );
+    await expect(
+      upsertResources(ACCOUNT_SID, SAMPLE_RESOURCES, BASELINE_BATCH),
+    ).rejects.toThrow(bork);
     expect(mockUpsertImportedResource).toHaveBeenCalledWith(expect.anything());
     expect(mockUpsert).toHaveBeenCalledTimes(3);
-    expect(mockUpdateProgress).toHaveBeenCalledWith<[AccountSID, ImportProgress]>(ACCOUNT_SID, {
-      ...BASELINE_BATCH,
-      lastProcessedId: 'TEST_RESOURCE_50',
-      lastProcessedDate: subSeconds(BASELINE_DATE, 1).toISOString(),
-    });
+    expect(mockUpdateProgress).toHaveBeenCalledWith<[AccountSID, ImportProgress]>(
+      ACCOUNT_SID,
+      {
+        ...BASELINE_BATCH,
+        lastProcessedId: 'TEST_RESOURCE_50',
+        lastProcessedDate: subSeconds(BASELINE_DATE, 1).toISOString(),
+      },
+    );
   });
 
   test('Publishing to the reindex queue throws - continues', async () => {
@@ -257,10 +273,13 @@ describe('upsertResources', () => {
       expect(accountSid).toBe(ACCOUNT_SID);
       expect(resource).toEqual(SAMPLE_RESOURCES[index]);
     });
-    expect(mockUpdateProgress).toHaveBeenCalledWith<[AccountSID, ImportProgress]>(ACCOUNT_SID, {
-      ...BASELINE_BATCH,
-      lastProcessedId: 'TEST_RESOURCE_50',
-      lastProcessedDate: subSeconds(BASELINE_DATE, 1).toISOString(),
-    });
+    expect(mockUpdateProgress).toHaveBeenCalledWith<[AccountSID, ImportProgress]>(
+      ACCOUNT_SID,
+      {
+        ...BASELINE_BATCH,
+        lastProcessedId: 'TEST_RESOURCE_50',
+        lastProcessedDate: subSeconds(BASELINE_DATE, 1).toISOString(),
+      },
+    );
   });
 });

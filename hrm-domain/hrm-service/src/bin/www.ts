@@ -57,7 +57,9 @@ function normalizePort(val) {
 
 const appWithoutServices = configureDefaultPreMiddlewares(express());
 const appWithHrmService = configureService({ webServer: appWithoutServices });
-const appWithResourcesService = configureResourcesService({ webServer: appWithHrmService });
+const appWithResourcesService = configureResourcesService({
+  webServer: appWithHrmService,
+});
 const app = configureDefaultPostMiddlewares(
   appWithResourcesService,
   Boolean(process.env.INCLUDE_ERROR_IN_RESPONSE),
@@ -78,7 +80,9 @@ console.log(new Date(Date.now()).toLocaleString() + ': trying to create server')
 const server = http.createServer(app);
 console.log(new Date(Date.now()).toLocaleString() + ': created server, about to listen');
 const internalServer = http.createServer(internalApp);
-console.log(new Date(Date.now()).toLocaleString() + ': created internal server, about to listen');
+console.log(
+  new Date(Date.now()).toLocaleString() + ': created internal server, about to listen',
+);
 /**
  * Get port from environment and store in Express.
  */

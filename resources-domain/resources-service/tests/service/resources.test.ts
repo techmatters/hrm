@@ -117,17 +117,11 @@ describe('GET /resource', () => {
   });
 
   test('Should return a 404 response for a resource ID that has no associated resource', async () => {
-    await request
-      .get(`${basePath}/RESOURCE_DOESNT_EXIST`)
-      .set(headers)
-      .expect(404);
+    await request.get(`${basePath}/RESOURCE_DOESNT_EXIST`).set(headers).expect(404);
   });
 
   test('Should return a 404 response for a resource ID that is associated with a deleted resource', async () => {
-    await request
-      .get(`${basePath}/DELETED_RESOURCE`)
-      .set(headers)
-      .expect(404);
+    await request.get(`${basePath}/DELETED_RESOURCE`).set(headers).expect(404);
   });
 
   describe('Reference Attributes', () => {
@@ -253,9 +247,9 @@ describe('GET /resource', () => {
           keyIndex =>
             `INSERT INTO resources."ResourceReferenceStringAttributes"
                 ("accountSid", "resourceId", "key", "list", "referenceId")
-                VALUES ('REFERENCES_TEST_ACCOUNT_0', 'RESOURCE_0', 'REFERENCE_KEY_${parseInt(
-                  keyIndex,
-                ) + 6}', 'LIST_${parseInt(keyIndex) + 6}', 'REF_5_0')`,
+                VALUES ('REFERENCES_TEST_ACCOUNT_0', 'RESOURCE_0', 'REFERENCE_KEY_${
+                  parseInt(keyIndex) + 6
+                }', 'LIST_${parseInt(keyIndex) + 6}', 'REF_5_0')`,
         ),
         expectedResult: {
           id: 'RESOURCE_0',
@@ -417,14 +411,13 @@ describe('GET /resource', () => {
           .get(`/v0/accounts/REFERENCES_TEST_ACCOUNT_0/resources/resource/RESOURCE_0`)
           .set(headers);
         expect(response.status).toBe(200);
-        const {
-          attributes: responseAttributes,
-          ...responseWithoutAttributes
-        } = response.body as ReferrableResource;
-        const { attributes: expectedAttributes, ...expectedWithoutAttributes } = expectedResult;
+        const { attributes: responseAttributes, ...responseWithoutAttributes } =
+          response.body as ReferrableResource;
+        const { attributes: expectedAttributes, ...expectedWithoutAttributes } =
+          expectedResult;
         expect(responseWithoutAttributes).toStrictEqual(expectedWithoutAttributes);
-        const responseAttributeEntries = Object.entries(responseAttributes).sort(([keyA], [keyB]) =>
-          keyA.localeCompare(keyB),
+        const responseAttributeEntries = Object.entries(responseAttributes).sort(
+          ([keyA], [keyB]) => keyA.localeCompare(keyB),
         );
         const expectedAttributeEntries = Object.entries(
           expectedAttributes as Record<string, ReferrableResourceAttribute<unknown>[]>,

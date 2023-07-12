@@ -86,7 +86,9 @@ const sendResourceAndRecordResult = async (
   }
 };
 
-const newAdminSearchService = ({ reindexDbBatchSize }: AdminSearchServiceConfiguration) => {
+const newAdminSearchService = ({
+  reindexDbBatchSize,
+}: AdminSearchServiceConfiguration) => {
   return {
     reindexBatches: async (
       params: SearchReindexParams,

@@ -17,17 +17,16 @@
 /**
  * At search endpoints, permision rules cannot be applied as middlewares.
  * This is due to the fact the the user CAN always call POST /search.
- * 
+ *
  * For example: if a user can only VIEW_CASES that he/she is the owner, this logic needs
  * to be part of the search query itself, that will filter out cases not owned by the user.
  * The user should never get 403 Forbidden. In the least privileged scenario, the user will get an HTTP 200
  * with response body [].
- * 
+ *
  * This file creates the 'searchPermissions' that will be added the Request object. It will later be used
  * by the search contact/cases SQL queries.
  */
 
-// eslint-disable-next-line prettier/prettier
 import type { Request as ExpressRequest } from 'express';
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import isEqual from 'lodash/isEqual';
@@ -47,7 +46,11 @@ export type SearchPermissions = {
 
 type TargetRule = Partial<Record<keyof RulesFile, ConditionsSet>>;
 
-const applySearchCasesPermissions =  (req: Request, searchPermissions: SearchPermissions, checkRule: ReturnType<typeof buildCheckRule>) => {
+const applySearchCasesPermissions = (
+  req: Request,
+  searchPermissions: SearchPermissions,
+  checkRule: ReturnType<typeof buildCheckRule>,
+) => {
   const { isSupervisor } = req.user;
   const canViewAsSupervisor = isSupervisor && checkRule({ viewCase: ['isSupervisor'] });
   const canViewAsOwner = checkRule({ viewCase: ['isCreator'] });
@@ -59,9 +62,14 @@ const applySearchCasesPermissions =  (req: Request, searchPermissions: SearchPer
   };
 };
 
-const applySearchContactsPermissions =  (req: Request, searchPermissions: SearchPermissions, checkRule: ReturnType<typeof buildCheckRule>) => {
+const applySearchContactsPermissions = (
+  req: Request,
+  searchPermissions: SearchPermissions,
+  checkRule: ReturnType<typeof buildCheckRule>,
+) => {
   const { isSupervisor } = req.user;
-  const canViewAsSupervisor = isSupervisor && checkRule({ viewContact: ['isSupervisor'] });
+  const canViewAsSupervisor =
+    isSupervisor && checkRule({ viewContact: ['isSupervisor'] });
   const canViewAsOwner = checkRule({ viewContact: ['isOwner'] });
   const canOnlyViewOwnContacts = !canViewAsSupervisor && canViewAsOwner;
 
@@ -73,7 +81,7 @@ const applySearchContactsPermissions =  (req: Request, searchPermissions: Search
 
 /**
  * This function returns a function that check if a given rule exists.
- * 
+ *
  * Usage:
  * const checkRule = buildCheckRule(rulesFile);
  * checkRule({ viewContact: ['isOwner'] }); // returns true or false
@@ -81,7 +89,8 @@ const applySearchContactsPermissions =  (req: Request, searchPermissions: Search
  */
 const buildCheckRule = (rulesFile: RulesFile) => (targetRule: TargetRule) => {
   const rule = Object.keys(targetRule)[0];
-  const conditionSetIsEqual = conditionSet => isEqual(sortBy(conditionSet), sortBy(targetRule[rule]));
+  const conditionSetIsEqual = conditionSet =>
+    isEqual(sortBy(conditionSet), sortBy(targetRule[rule]));
   return rulesFile[rule].some(conditionSetIsEqual);
 };
 

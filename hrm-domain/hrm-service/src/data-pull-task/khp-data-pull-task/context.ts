@@ -32,8 +32,12 @@ let context;
 
 export const getContext = async (): Promise<Context> => {
   if (!context) {
-    const accountSid = await getSsmParameter(`/${hrmEnv}/twilio/${shortCode}/account_sid`);
-    const bucketName = await getSsmParameter(`/${hrmEnv}/s3/${accountSid}/docs_bucket_name`);
+    const accountSid = await getSsmParameter(
+      `/${hrmEnv}/twilio/${shortCode}/account_sid`,
+    );
+    const bucketName = await getSsmParameter(
+      `/${hrmEnv}/s3/${accountSid}/docs_bucket_name`,
+    );
     const s3Client = new S3();
 
     return {

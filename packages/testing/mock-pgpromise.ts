@@ -59,49 +59,83 @@ export function createMockConnection<T = unknown>(): pgPromise.ITask<T> {
 
 export const mockTask = (db: IDatabase<unknown>, mockConn: pgPromise.ITask<unknown>) => {
   // @ts-ignore
-  jest.spyOn(db, 'task').mockImplementation((action: (connection: pgPromise.ITask<unknown>)=>Promise<any>)=> {
-    return action(mockConn);
-  });
+  jest
+    .spyOn(db, 'task')
+    .mockImplementation(
+      (action: (connection: pgPromise.ITask<unknown>) => Promise<any>) => {
+        return action(mockConn);
+      },
+    );
 };
-export const mockTransaction = (db: IDatabase<unknown>, mockConn: pgPromise.ITask<unknown>, mockTx: pgPromise.ITask<unknown> | undefined = undefined) => {
+export const mockTransaction = (
+  db: IDatabase<unknown>,
+  mockConn: pgPromise.ITask<unknown>,
+  mockTx: pgPromise.ITask<unknown> | undefined = undefined,
+) => {
   if (mockTx) {
     // @ts-ignore
-    jest.spyOn(mockConn, 'tx').mockImplementation((action: (connection: pgPromise.ITask<unknown>) => Promise<any>) => {
-      return action(mockTx);
-    });
+    jest
+      .spyOn(mockConn, 'tx')
+      .mockImplementation(
+        (action: (connection: pgPromise.ITask<unknown>) => Promise<any>) => {
+          return action(mockTx);
+        },
+      );
     // @ts-ignore
-    jest.spyOn(mockConn, 'txIf').mockImplementation((action: (connection: pgPromise.ITask<unknown>)=>Promise<any>)=> {
-      return action(mockTx);
-    });
+    jest
+      .spyOn(mockConn, 'txIf')
+      .mockImplementation(
+        (action: (connection: pgPromise.ITask<unknown>) => Promise<any>) => {
+          return action(mockTx);
+        },
+      );
     mockTask(db, mockConn);
   } else {
     // @ts-ignore
-    jest.spyOn(db, 'tx').mockImplementation((action: (connection: pgPromise.ITask<unknown>)=>Promise<any>)=> {
-      return action(mockConn);
-    });
+    jest
+      .spyOn(db, 'tx')
+      .mockImplementation(
+        (action: (connection: pgPromise.ITask<unknown>) => Promise<any>) => {
+          return action(mockConn);
+        },
+      );
     // @ts-ignore
-    jest.spyOn(db, 'txIf').mockImplementation((action: (connection: pgPromise.ITask<unknown>)=>Promise<any>)=> {
-      return action(mockConn);
-    });
+    jest
+      .spyOn(db, 'txIf')
+      .mockImplementation(
+        (action: (connection: pgPromise.ITask<unknown>) => Promise<any>) => {
+          return action(mockConn);
+        },
+      );
   }
 };
 
-// eslint-disable-next-line prettier/prettier
-type PgQuerySpy = jest.SpyInstance<any, [query: QueryParam, values?:any]> | jest.SpyInstance<any, [query: QueryParam, values?:any, cb?: any, thisArg?: any]>;
+type PgQuerySpy =
+  | jest.SpyInstance<any, [query: QueryParam, values?: any]>
+  | jest.SpyInstance<any, [query: QueryParam, values?: any, cb?: any, thisArg?: any]>;
 
 export const getSqlStatement = (mockQueryMethod: PgQuerySpy, callIndex = -1): string => {
   expect(mockQueryMethod).toHaveBeenCalled();
-  return mockQueryMethod.mock.calls[callIndex < 0 ? mockQueryMethod.mock.calls.length + callIndex : callIndex][0].toString();
+  return mockQueryMethod.mock.calls[
+    callIndex < 0 ? mockQueryMethod.mock.calls.length + callIndex : callIndex
+  ][0].toString();
 };
 
-
-export const getSqlStatementFromNone = (mockQueryMethod: jest.SpyInstance<any, [query: QueryParam, values?:any]>, callIndex = -1): string => {
+export const getSqlStatementFromNone = (
+  mockQueryMethod: jest.SpyInstance<any, [query: QueryParam, values?: any]>,
+  callIndex = -1,
+): string => {
   expect(mockQueryMethod).toHaveBeenCalled();
-  return mockQueryMethod.mock.calls[callIndex < 0 ? mockQueryMethod.mock.calls.length + callIndex : callIndex][0].toString();
+  return mockQueryMethod.mock.calls[
+    callIndex < 0 ? mockQueryMethod.mock.calls.length + callIndex : callIndex
+  ][0].toString();
 };
 
-export const expectValuesInSql = (sql: string,  expectedValues: Record<string, any>): void => {
-  Object.entries(expectedValues).forEach(([key, val] )=> {
+export const expectValuesInSql = (
+  sql: string,
+  expectedValues: Record<string, any>,
+): void => {
+  Object.entries(expectedValues).forEach(([key, val]) => {
     expect(sql).toContain(key);
     if (val && typeof val !== 'function' && typeof val !== 'object') {
       expect(sql).toContain(val.toString());

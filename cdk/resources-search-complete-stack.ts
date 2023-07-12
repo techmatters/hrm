@@ -106,7 +106,10 @@ export default class ResourcesSearchCompleteStack extends cdk.Stack {
     });
 
     fn.addEventSource(
-      new SqsEventSource(this.completeQueue, { batchSize: 10, reportBatchItemFailures: true }),
+      new SqsEventSource(this.completeQueue, {
+        batchSize: 10,
+        reportBatchItemFailures: true,
+      }),
     );
   }
 }

@@ -22,7 +22,9 @@ module.exports = {
     await queryInterface.sequelize.query(`
       ALTER TABLE public."Referrals" ALTER CONSTRAINT "FK_Referrals_Contacts" DEFERRABLE INITIALLY DEFERRED;
     `);
-    console.log('Constraint "FK_Referrals_Contacts" altered (DEFERRABLE INITIALLY DEFERRED)');
+    console.log(
+      'Constraint "FK_Referrals_Contacts" altered (DEFERRABLE INITIALLY DEFERRED)',
+    );
 
     await queryInterface.sequelize.query(`
       CREATE INDEX IF NOT EXISTS "Referrals_contactId_accountSid_idx" ON public."Referrals" 

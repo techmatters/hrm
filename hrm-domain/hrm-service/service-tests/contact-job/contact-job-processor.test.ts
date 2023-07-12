@@ -59,9 +59,11 @@ afterEach(async () => {
 describe('processContactJobs', () => {
   test('calling processContactJobs twice does not spans another processor', async () => {
     // Mock setInterval to return the internal cb instead than it's interval id, so we can call it when we want
-    const setIntervalSpy = jest.spyOn(timers, 'setInterval').mockImplementation(callback => {
-      return callback as any;
-    });
+    const setIntervalSpy = jest
+      .spyOn(timers, 'setInterval')
+      .mockImplementation(callback => {
+        return callback as any;
+      });
 
     const processorSpy = jest.spyOn(contactJobProcessor, 'processContactJobs');
 
@@ -83,9 +85,8 @@ describe('processContactJobs', () => {
       .mockImplementation(() => Promise.resolve(undefined) as any);
     const publishSpy = jest.spyOn(contactJobPublish, 'publishDueContactJobs');
 
-    const processorIntervalCallback = (contactJobProcessor.processContactJobs() as unknown) as () => Promise<
-      void
-    >;
+    const processorIntervalCallback =
+      contactJobProcessor.processContactJobs() as unknown as () => Promise<void>;
 
     await processorIntervalCallback();
 
@@ -118,9 +119,8 @@ describe('processContactJobs', () => {
         throw new Error('Aaaw, snap!');
       });
 
-    const processorIntervalCallback = (contactJobProcessor.processContactJobs() as unknown) as () => Promise<
-      void
-    >;
+    const processorIntervalCallback =
+      contactJobProcessor.processContactJobs() as unknown as () => Promise<void>;
 
     await processorIntervalCallback();
 

@@ -39,24 +39,25 @@ export type UpsertImportedResourceResult = {
   error?: Error;
 };
 
-export const upsertImportedResource = (task?: ITask<{}>) => async (
-  accountSid: AccountSID,
-  resource: FlatResource,
-): Promise<UpsertImportedResourceResult> => {
-  return txIfNotInOne(task, async tx => {
-    await tx.none(generateUpsertSqlFromImportResource(accountSid, resource));
-    return { id: resource.id, success: true };
-  });
-};
+export const upsertImportedResource =
+  (task?: ITask<{}>) =>
+  async (
+    accountSid: AccountSID,
+    resource: FlatResource,
+  ): Promise<UpsertImportedResourceResult> => {
+    return txIfNotInOne(task, async tx => {
+      await tx.none(generateUpsertSqlFromImportResource(accountSid, resource));
+      return { id: resource.id, success: true };
+    });
+  };
 
-export const updateImportProgress = (task?: ITask<{}>) => async (
-  accountSid: AccountSID,
-  progress: ImportProgress,
-): Promise<void> => {
-  await txIfNotInOne(task, async tx => {
-    await tx.none(generateUpdateImportProgressSql(accountSid, progress));
-  });
-};
+export const updateImportProgress =
+  (task?: ITask<{}>) =>
+  async (accountSid: AccountSID, progress: ImportProgress): Promise<void> => {
+    await txIfNotInOne(task, async tx => {
+      await tx.none(generateUpdateImportProgressSql(accountSid, progress));
+    });
+  };
 
 /**
  * Reads the current import progress from the database for the specified account

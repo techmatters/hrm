@@ -27,62 +27,64 @@ export const BLANK_ATTRIBUTES: Omit<
   dateTimeAttributes: [],
 };
 
-export const generateImportResource = (baselineDate: Date, accountSid: AccountSID) => (
-  resourceIdSuffix: string,
-  lastUpdated: Date,
-  {
-    stringAttributes,
-    referenceStringAttributes,
-    numberAttributes,
-    dateTimeAttributes,
-    booleanAttributes,
-  }: Partial<FlatResource> = {},
-): FlatResource => ({
-  accountSid,
-  id: `RESOURCE_${resourceIdSuffix}`,
-  name: `Resource ${resourceIdSuffix}`,
-  lastUpdated: lastUpdated.toISOString(),
-  stringAttributes: [
+export const generateImportResource =
+  (baselineDate: Date, accountSid: AccountSID) =>
+  (
+    resourceIdSuffix: string,
+    lastUpdated: Date,
     {
-      key: 'STRING_ATTRIBUTE',
-      value: 'VALUE',
-      language: 'en-US',
-      info: { some: 'json' },
-    },
-    ...(stringAttributes ?? []),
-  ],
-  dateTimeAttributes: [
-    {
-      key: 'DATETIME_ATTRIBUTE',
-      value: baselineDate.toISOString(),
-      info: { some: 'json' },
-    },
-    ...(dateTimeAttributes ?? []),
-  ],
-  numberAttributes: [
-    {
-      key: 'NUMBER_ATTRIBUTE',
-      value: 1337,
-      info: { some: 'json' },
-    },
-    ...(numberAttributes ?? []),
-  ],
-  booleanAttributes: [
-    {
-      key: 'BOOL_ATTRIBUTE',
-      value: true,
-      info: { some: 'json' },
-    },
-    ...(booleanAttributes ?? []),
-  ],
-  referenceStringAttributes: [
-    {
-      key: 'REFERENCE_ATTRIBUTE',
-      value: 'REFERENCE_VALUE_2',
-      language: 'REFERENCE_LANGUAGE',
-      list: 'REFERENCE_LIST_1',
-      info: null,
-    },
-    ...(referenceStringAttributes ?? []),
-  ],
-});
+      stringAttributes,
+      referenceStringAttributes,
+      numberAttributes,
+      dateTimeAttributes,
+      booleanAttributes,
+    }: Partial<FlatResource> = {},
+  ): FlatResource => ({
+    accountSid,
+    id: `RESOURCE_${resourceIdSuffix}`,
+    name: `Resource ${resourceIdSuffix}`,
+    lastUpdated: lastUpdated.toISOString(),
+    stringAttributes: [
+      {
+        key: 'STRING_ATTRIBUTE',
+        value: 'VALUE',
+        language: 'en-US',
+        info: { some: 'json' },
+      },
+      ...(stringAttributes ?? []),
+    ],
+    dateTimeAttributes: [
+      {
+        key: 'DATETIME_ATTRIBUTE',
+        value: baselineDate.toISOString(),
+        info: { some: 'json' },
+      },
+      ...(dateTimeAttributes ?? []),
+    ],
+    numberAttributes: [
+      {
+        key: 'NUMBER_ATTRIBUTE',
+        value: 1337,
+        info: { some: 'json' },
+      },
+      ...(numberAttributes ?? []),
+    ],
+    booleanAttributes: [
+      {
+        key: 'BOOL_ATTRIBUTE',
+        value: true,
+        info: { some: 'json' },
+      },
+      ...(booleanAttributes ?? []),
+    ],
+    referenceStringAttributes: [
+      {
+        key: 'REFERENCE_ATTRIBUTE',
+        value: 'REFERENCE_VALUE_2',
+        language: 'REFERENCE_LANGUAGE',
+        list: 'REFERENCE_LIST_1',
+        info: null,
+      },
+      ...(referenceStringAttributes ?? []),
+    ],
+  });

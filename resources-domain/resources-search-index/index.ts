@@ -14,16 +14,23 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 import { ResourcesJobProcessorError } from '@tech-matters/job-errors';
-import { getClient, BulkOperations, ExecuteBulkResponse } from '@tech-matters/elasticsearch-client';
+import {
+  getClient,
+  BulkOperations,
+  ExecuteBulkResponse,
+} from '@tech-matters/elasticsearch-client';
 import { FlatResource, ResourcesSearchIndexPayload } from '@tech-matters/types';
 
-// eslint-disable-next-line prettier/prettier
 import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
-import { RESOURCE_INDEX_TYPE, resourceIndexConfiguration } from '@tech-matters/resources-search-config';
+import {
+  RESOURCE_INDEX_TYPE,
+  resourceIndexConfiguration,
+} from '@tech-matters/resources-search-config';
 
 export type DocumentsByAccountSid = Record<string, BulkOperations<FlatResource>>;
 
-export const convertDocumentsToBulkRequest = (messages: ResourcesSearchIndexPayload[] ) => messages.reduce((acc, message) => {
+export const convertDocumentsToBulkRequest = (messages: ResourcesSearchIndexPayload[]) =>
+  messages.reduce((acc, message) => {
     const { accountSid, document } = message;
     if (!acc[accountSid]) {
       acc[accountSid] = [];
@@ -43,33 +50,51 @@ export const convertDocumentsToBulkRequest = (messages: ResourcesSearchIndexPayl
     return acc;
   }, {} as DocumentsByAccountSid);
 
-export const handleErrors = async (indexResp: ExecuteBulkResponse, addDocumentIdToFailures: any) => {
-  await Promise.all(indexResp?.items.map((item) => {
-    // 201 for creating a new index document and 200 for updating an existing one
-    if (![200, 201].includes(item.index?.status ?? 0)) {
-      console.error(new ResourcesJobProcessorError('Error indexing document'), item.index);
-      addDocumentIdToFailures(item.index!._id!);
-    }
-  }));
+export const handleErrors = async (
+  indexResp: ExecuteBulkResponse,
+  addDocumentIdToFailures: any,
+) => {
+  await Promise.all(
+    indexResp?.items.map(item => {
+      // 201 for creating a new index document and 200 for updating an existing one
+      if (![200, 201].includes(item.index?.status ?? 0)) {
+        console.error(
+          new ResourcesJobProcessorError('Error indexing document'),
+          item.index,
+        );
+        addDocumentIdToFailures(item.index!._id!);
+      }
+    }),
+  );
 };
 
-export const executeBulk = async (documentsByAccountSid: DocumentsByAccountSid, addDocumentIdToFailures: any) => {
-  await Promise.all(Object.keys(documentsByAccountSid).map(async (accountSid) => {
-    const documents = documentsByAccountSid[accountSid];
-    const client = (await getClient({ accountSid, indexType: RESOURCE_INDEX_TYPE })).indexClient(resourceIndexConfiguration);
-    try {
-      const indexResp = await client.executeBulk({ documents });
-      await handleErrors(indexResp, addDocumentIdToFailures);
-    } catch (err) {
-      console.error(new ResourcesJobProcessorError('Error calling executeBulk'), err);
-      documents.forEach(({ id }) => {
-        addDocumentIdToFailures(id);
-      });
-    }
-  }));
+export const executeBulk = async (
+  documentsByAccountSid: DocumentsByAccountSid,
+  addDocumentIdToFailures: any,
+) => {
+  await Promise.all(
+    Object.keys(documentsByAccountSid).map(async accountSid => {
+      const documents = documentsByAccountSid[accountSid];
+      const client = (
+        await getClient({ accountSid, indexType: RESOURCE_INDEX_TYPE })
+      ).indexClient(resourceIndexConfiguration);
+      try {
+        const indexResp = await client.executeBulk({ documents });
+        await handleErrors(indexResp, addDocumentIdToFailures);
+      } catch (err) {
+        console.error(new ResourcesJobProcessorError('Error calling executeBulk'), err);
+        documents.forEach(({ id }) => {
+          addDocumentIdToFailures(id);
+        });
+      }
+    }),
+  );
 };
 
-export const mapMessages = (records: SQSRecord[], addDocumentIdToMessageId: any): ResourcesSearchIndexPayload[] =>
+export const mapMessages = (
+  records: SQSRecord[],
+  addDocumentIdToMessageId: any,
+): ResourcesSearchIndexPayload[] =>
   records.map((record: SQSRecord) => {
     const { messageId, body } = record;
     const message = JSON.parse(body) as ResourcesSearchIndexPayload;
@@ -103,13 +128,19 @@ export const handler = async (event: SQSEvent): Promise<SQSBatchResponse> => {
 
     // Convert the messages to a bulk requests grouped by accountSid.
     const documentsByAccountSid = convertDocumentsToBulkRequest(messages);
-    console.debug('Converted documents to bulk request:', JSON.stringify(documentsByAccountSid, null, 2));
+    console.debug(
+      'Converted documents to bulk request:',
+      JSON.stringify(documentsByAccountSid, null, 2),
+    );
 
     // Iterates over groups of documents and index them using an accountSid specific client
     await executeBulk(documentsByAccountSid, addDocumentIdToFailures);
     console.debug(`Successfully indexed documents`);
   } catch (err) {
-    console.error(new ResourcesJobProcessorError('Failed to process search index request'), err);
+    console.error(
+      new ResourcesJobProcessorError('Failed to process search index request'),
+      err,
+    );
 
     response.batchItemFailures = event.Records.map(record => {
       return {

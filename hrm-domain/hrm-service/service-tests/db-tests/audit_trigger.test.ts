@@ -247,7 +247,9 @@ describe('CaseSections_audit_trigger', () => {
       timestamp_clock: expect.toParseAsDate(),
     };
 
-    const caseSectionAudits = await db.task(t => t.manyOrNone(selectCreatedCaseSectionAudits()));
+    const caseSectionAudits = await db.task(t =>
+      t.manyOrNone(selectCreatedCaseSectionAudits()),
+    );
 
     expect(caseSectionAudits).toHaveLength(1);
 
@@ -285,7 +287,9 @@ describe('CaseSections_audit_trigger', () => {
       timestamp_clock: expect.toParseAsDate(),
     };
 
-    const caseSectionAudits = await db.task(t => t.manyOrNone(selectCreatedCaseSectionAudits()));
+    const caseSectionAudits = await db.task(t =>
+      t.manyOrNone(selectCreatedCaseSectionAudits()),
+    );
 
     expect(caseSectionAudits).toHaveLength(2);
 
@@ -320,7 +324,9 @@ describe('CaseSections_audit_trigger', () => {
       timestamp_clock: expect.toParseAsDate(),
     };
 
-    const caseSectionAudits = await db.task(t => t.manyOrNone(selectCreatedCaseSectionAudits()));
+    const caseSectionAudits = await db.task(t =>
+      t.manyOrNone(selectCreatedCaseSectionAudits()),
+    );
 
     expect(caseSectionAudits).toHaveLength(3);
 

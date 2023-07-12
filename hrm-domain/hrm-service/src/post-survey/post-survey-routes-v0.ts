@@ -14,23 +14,28 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-// eslint-disable-next-line prettier/prettier
 import type { Request, Response } from 'express';
-import { SafeRouter, publicEndpoint, actionsMaps, RequestWithPermissions } from '../permissions';
+import {
+  SafeRouter,
+  publicEndpoint,
+  actionsMaps,
+  RequestWithPermissions,
+} from '../permissions';
 import { NewPostSurvey, PostSurvey } from './post-survey-data-access';
 import { createPostSurvey, getPostSurveysByContactTaskId } from './post-survey';
 
 const postSurveysRouter = SafeRouter();
 
-postSurveysRouter.post('/', publicEndpoint, async (
-  req: Request<NewPostSurvey>,
-  res: Response<PostSurvey>,
-) => {
-  const { accountSid } = req;
+postSurveysRouter.post(
+  '/',
+  publicEndpoint,
+  async (req: Request<NewPostSurvey>, res: Response<PostSurvey>) => {
+    const { accountSid } = req;
 
-  const createdPostSurvey = await createPostSurvey(accountSid, req.body);
-  res.json(createdPostSurvey);
-});
+    const createdPostSurvey = await createPostSurvey(accountSid, req.body);
+    res.json(createdPostSurvey);
+  },
+);
 
 const canViewPostSurvey = (req: RequestWithPermissions, res, next) => {
   if (!req.isAuthorized()) {
@@ -47,15 +52,16 @@ const canViewPostSurvey = (req: RequestWithPermissions, res, next) => {
   next();
 };
 
-postSurveysRouter.get('/contactTaskId/:id', canViewPostSurvey, async (
-  req: Request,
-  res: Response,
-) => {
-  const { accountSid } = req;
-  const { id } = req.params;
+postSurveysRouter.get(
+  '/contactTaskId/:id',
+  canViewPostSurvey,
+  async (req: Request, res: Response) => {
+    const { accountSid } = req;
+    const { id } = req.params;
 
-  const postSurveys = await getPostSurveysByContactTaskId(accountSid, id);
-  res.json(postSurveys);
-});
+    const postSurveys = await getPostSurveysByContactTaskId(accountSid, id);
+    res.json(postSurveys);
+  },
+);
 
 export default postSurveysRouter.expressRouter;

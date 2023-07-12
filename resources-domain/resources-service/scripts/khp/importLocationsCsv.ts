@@ -74,10 +74,11 @@ const main = async () => {
     .pipe(parse({ fromLine: 2 }));
   sqlFile.write(`--- PROVINCES ---\n\n`);
 
-  Object.entries(CANADIAN_PROVINCE_NAME_CODE_MAP).forEach(([name, [code, geographicCode]]) => {
-    sqlFile.write(
-      pgp.as.format(
-        `
+  Object.entries(CANADIAN_PROVINCE_NAME_CODE_MAP).forEach(
+    ([name, [code, geographicCode]]) => {
+      sqlFile.write(
+        pgp.as.format(
+          `
 INSERT INTO resources."ResourceReferenceStringAttributeValues" ("accountSid", "list", "id", "value", "language", "info") VALUES ($<accountSid>, 'provinces', $<id>, $<value>, 'en', $<info>)
 ON CONFLICT DO NOTHING;
 INSERT INTO resources."ResourceReferenceStringAttributeValues" ("accountSid", "list", "id", "value", "language", "info") VALUES ($<accountSid>, 'provinces', $<idFr>, $<value>, 'fr', $<infoFr>)
@@ -86,29 +87,31 @@ UPDATE resources."ResourceReferenceStringAttributes" SET "referenceId" = $<id> W
 UPDATE resources."ResourceReferenceStringAttributes" SET "referenceId" = $<idFr> WHERE "accountSid" = $<accountSid> AND "list" = 'provinces' AND "referenceId" = $<oldIdFr>;
 DELETE FROM resources."ResourceReferenceStringAttributeValues" WHERE "accountSid" = $<accountSid> AND "list" = 'provinces' AND "id" IN ($<oldId>, $<oldIdFr>);
 `,
-        {
-          accountSid,
-          id: `CA-${geographicCode}-en`,
-          idFr: `CA-${geographicCode}-fr`,
-          value: `CA/${code}`,
-          info: { name, geographicCode },
-          infoFr: { name: CANADIAN_PROVINCE_CODE_FR_MAP[code] },
-          oldId: `CA-${code}-en`,
-          oldIdFr: `CA-${code}-fr`,
-        },
-      ),
-    );
-    provincesJson.push({
-      label: name,
-      value: `CA/${code}`,
-    });
-  });
+          {
+            accountSid,
+            id: `CA-${geographicCode}-en`,
+            idFr: `CA-${geographicCode}-fr`,
+            value: `CA/${code}`,
+            info: { name, geographicCode },
+            infoFr: { name: CANADIAN_PROVINCE_CODE_FR_MAP[code] },
+            oldId: `CA-${code}-en`,
+            oldIdFr: `CA-${code}-fr`,
+          },
+        ),
+      );
+      provincesJson.push({
+        label: name,
+        value: `CA/${code}`,
+      });
+    },
+  );
   sqlFile.write('\n\n--- CITIES ---\n\n');
   for await (const line of csvLines) {
     const [geographicCode, cityEn, cityFr, csdType, , province] = line as string[];
-    const [provinceCode] = CANADIAN_PROVINCE_NAME_CODE_MAP[
-      province as keyof typeof CANADIAN_PROVINCE_NAME_CODE_MAP
-    ];
+    const [provinceCode] =
+      CANADIAN_PROVINCE_NAME_CODE_MAP[
+        province as keyof typeof CANADIAN_PROVINCE_NAME_CODE_MAP
+      ];
     const sqlStatement = pgp.as.format(
       `
 INSERT INTO resources."ResourceReferenceStringAttributeValues" ("accountSid", "list", "id", "value", "language", "info") VALUES ($<accountSid>, 'cities', $<id>, $<value>, 'en', $<info>)

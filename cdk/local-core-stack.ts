@@ -19,7 +19,15 @@ import * as cdk from '@aws-cdk/core';
 import * as ssm from '@aws-cdk/aws-ssm';
 
 export default class LocalCoreStack extends cdk.Stack {
-  constructor({ scope, id, props }: { scope: cdk.App; id: string; props?: cdk.StackProps }) {
+  constructor({
+    scope,
+    id,
+    props,
+  }: {
+    scope: cdk.App;
+    id: string;
+    props?: cdk.StackProps;
+  }) {
     super(scope, id, props);
 
     new ssm.StringParameter(this, 'account_sid_as', {

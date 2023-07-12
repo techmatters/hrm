@@ -108,7 +108,10 @@ const generateTermFilter = (field: string, filterValue: FilterValue) => {
 const generateFilters = (
   searchConfiguration: SearchConfiguration,
   filters: SearchParameters['filters'],
-): { filterClauses: QueryDslQueryContainer[]; filterSearchClause?: QueryDslQueryContainer } => {
+): {
+  filterClauses: QueryDslQueryContainer[];
+  filterSearchClause?: QueryDslQueryContainer;
+} => {
   // TODO: should we validate request filters against the index config?
   // Currently doesn't support:
   // - nested fields
@@ -196,7 +199,10 @@ export const generateElasticsearchQuery = (
   const filterPart: { filter?: QueryDslQueryContainer[] } = {};
 
   if (filters) {
-    const { filterClauses, filterSearchClause } = generateFilters(searchConfiguration, filters);
+    const { filterClauses, filterSearchClause } = generateFilters(
+      searchConfiguration,
+      filters,
+    );
     if (filterClauses.length > 0) {
       filterPart.filter = filterClauses;
     }

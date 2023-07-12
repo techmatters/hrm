@@ -389,10 +389,7 @@ describe('GET /search', () => {
       const url = `${basePath}?limit=5&start=0`;
 
       // Act
-      const response = await request
-        .post(url)
-        .set(headers)
-        .send({ q: 'something' });
+      const response = await request.post(url).set(headers).send({ q: 'something' });
 
       // Assert
       expect(response.status).toBe(200);

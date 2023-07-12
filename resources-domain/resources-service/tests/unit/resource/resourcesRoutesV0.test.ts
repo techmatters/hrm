@@ -29,10 +29,12 @@ jest.mock('../../../src/resource/resourceService', () => ({
   resourceService: jest.fn(),
 }));
 
-const mockSearchResources: jest.Mock<Promise<{
-  totalCount: number;
-  results: ReferrableResource[];
-}>> = jest.fn();
+const mockSearchResources: jest.Mock<
+  Promise<{
+    totalCount: number;
+    results: ReferrableResource[];
+  }>
+> = jest.fn();
 
 (<jest.Mock>resourceService).mockReturnValue({
   searchResources: mockSearchResources,

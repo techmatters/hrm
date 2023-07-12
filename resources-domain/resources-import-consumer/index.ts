@@ -17,32 +17,37 @@
 import { ResourceImportProcessorError } from '@tech-matters/job-errors';
 import { getSsmParameter } from '@tech-matters/ssm-cache';
 // import { SQS } from 'aws-sdk';
-// eslint-disable-next-line prettier/prettier
 import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
-// eslint-disable-next-line prettier/prettier
 import type { ImportRequestBody } from '@tech-matters/types';
 
 const internalResourcesBaseUrl = process.env.internal_resources_base_url as string;
 const hrmEnv = process.env.NODE_ENV;
 
-const postResourcesBody = async (accountSid: string, apiKey: string, message: ImportRequestBody) => {
-    const url = `${internalResourcesBaseUrl}/v0/accounts/${accountSid}/resources/import`;
+const postResourcesBody = async (
+  accountSid: string,
+  apiKey: string,
+  message: ImportRequestBody,
+) => {
+  const url = `${internalResourcesBaseUrl}/v0/accounts/${accountSid}/resources/import`;
 
-    const options = {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-        'Authorization': `Basic ${apiKey}`,
-      },
-      body: JSON.stringify(message),
-    };
+  const options = {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      Authorization: `Basic ${apiKey}`,
+    },
+    body: JSON.stringify(message),
+  };
 
-    // @ts-ignore global fetch available because node 18
-    return fetch(url, options);
+  // @ts-ignore global fetch available because node 18
+  return fetch(url, options);
 };
 
-const upsertRecord = async (accountSid: string, body: ImportRequestBody): Promise<void> => {
+const upsertRecord = async (
+  accountSid: string,
+  body: ImportRequestBody,
+): Promise<void> => {
   const apiKey = await getSsmParameter(`/${hrmEnv}/twilio/${accountSid}/static_key`);
 
   const result = await postResourcesBody(accountSid, apiKey, body);
@@ -50,20 +55,28 @@ const upsertRecord = async (accountSid: string, body: ImportRequestBody): Promis
   if (!result.ok) {
     const responseBody = await result.json();
     // throw so the wrapper function catches and swallows this error
-    throw new Error(`Resources import POST returned ${result.status} (${result.statusText}). Response body: ${JSON.stringify(responseBody)}`);
+    throw new Error(
+      `Resources import POST returned ${result.status} (${
+        result.statusText
+      }). Response body: ${JSON.stringify(responseBody)}`,
+    );
   }
 };
 
-type ProcessedResult = {
-  status: 'success';
-  messageId: SQSRecord['messageId'];
-} | {
-  status: 'failure';
-  messageId: SQSRecord['messageId'];
-  reason: Error;
-};
+type ProcessedResult =
+  | {
+      status: 'success';
+      messageId: SQSRecord['messageId'];
+    }
+  | {
+      status: 'failure';
+      messageId: SQSRecord['messageId'];
+      reason: Error;
+    };
 
-const upsertRecordWithoutException = async (sqsRecord: SQSRecord): Promise<ProcessedResult> => {
+const upsertRecordWithoutException = async (
+  sqsRecord: SQSRecord,
+): Promise<ProcessedResult> => {
   const { accountSid, ...body } = JSON.parse(sqsRecord.body);
 
   try {
@@ -108,7 +121,8 @@ export const handler = async (event: SQSEvent): Promise<SQSBatchResponse> => {
       }
     }
 
-    return { batchItemFailures: Array.from(batchItemFailuresSet).map(messageId => ({
+    return {
+      batchItemFailures: Array.from(batchItemFailuresSet).map(messageId => ({
         itemIdentifier: messageId,
       })),
     };
@@ -117,8 +131,10 @@ export const handler = async (event: SQSEvent): Promise<SQSBatchResponse> => {
     // which should be the same as the completed queue right now.
     console.error(new ResourceImportProcessorError('Failed to init processor'), err);
 
-    return { batchItemFailures: event.Records.map(record => ({
+    return {
+      batchItemFailures: event.Records.map(record => ({
         itemIdentifier: record.messageId,
-      })) };
+      })),
+    };
   }
 };

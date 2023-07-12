@@ -47,7 +47,8 @@ expect.extend({
       const pass = receivedDate.valueOf() === expectedDate.valueOf();
       return {
         pass,
-        message: () => `Expected '${received}' to be the same as '${expectedDate.toISOString()}'`,
+        message: () =>
+          `Expected '${received}' to be the same as '${expectedDate.toISOString()}'`,
       };
     }
 
@@ -65,7 +66,10 @@ export const without = (original, ...property) => {
   return output;
 };
 
-export const convertCaseInfoToExpectedInfo = (input: any, accountSid: string | null = null) => {
+export const convertCaseInfoToExpectedInfo = (
+  input: any,
+  accountSid: string | null = null,
+) => {
   if (!input || !input.info) return { ...input };
   const expectedCase = {
     ...input,
@@ -135,8 +139,16 @@ export const validateCaseListResponse = (actual, expectedCaseAndContactModels, c
   );
 };
 
-export const validateSingleCaseResponse = (actual, expectedCaseModel, expectedContactModel) => {
-  validateCaseListResponse(actual, [{ case: expectedCaseModel, contact: expectedContactModel }], 1);
+export const validateSingleCaseResponse = (
+  actual,
+  expectedCaseModel,
+  expectedContactModel,
+) => {
+  validateCaseListResponse(
+    actual,
+    [{ case: expectedCaseModel, contact: expectedContactModel }],
+    1,
+  );
 };
 
 export const fillNameAndPhone = (

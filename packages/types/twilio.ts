@@ -14,6 +14,4 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-
-// eslint-disable-next-line prettier/prettier
 export type AccountSID = `AC${string}`;

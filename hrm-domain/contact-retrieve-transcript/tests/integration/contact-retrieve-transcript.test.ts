@@ -132,6 +132,8 @@ describe('contact-retrieve-transcript', () => {
     const sqsMessage = sqsResult?.Messages?.[0];
     const body = JSON.parse(sqsMessage?.Body || '');
     expect(body?.attemptResult).toEqual('failure');
-    expect(body?.attemptPayload).toEqual('Parameter /local/twilio/badSid/auth_token not found.');
+    expect(body?.attemptPayload).toEqual(
+      'Parameter /local/twilio/badSid/auth_token not found.',
+    );
   });
 });

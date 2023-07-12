@@ -59,7 +59,8 @@ export const hasParameterExpired = (parameter: SsmCacheParameter | undefined) =>
   return !!(parameter?.expiryDate && new Date() > parameter.expiryDate);
 };
 
-export const hasCacheExpired = () => !!(ssmCache.expiryDate && new Date() > ssmCache.expiryDate);
+export const hasCacheExpired = () =>
+  !!(ssmCache.expiryDate && new Date() > ssmCache.expiryDate);
 
 export const isConfigNotEmpty = () => !!Object.keys(ssmCache.values).length;
 
@@ -68,7 +69,8 @@ export const setCacheDurationMilliseconds = (cacheDurationMilliseconds: number) 
 };
 
 // If the value is falsy, we take that to means that the parameter doesn't exist in addition to just a missing name
-export const parameterExistsInCache = (name: string): boolean => !!ssmCache.values[name]?.value;
+export const parameterExistsInCache = (name: string): boolean =>
+  !!ssmCache.values[name]?.value;
 
 export const getSsmClient = () => {
   if (!ssm) {
@@ -94,9 +96,7 @@ export const loadParameter = async (name: string) => {
     WithDecryption: true,
   };
 
-  const { Parameter } = await getSsmClient()
-    .getParameter(params)
-    .promise();
+  const { Parameter } = await getSsmClient().getParameter(params).promise();
 
   if (!Parameter?.Name) {
     return;
@@ -146,9 +146,7 @@ export const loadPaginated = async ({
 
   if (nextToken) params.NextToken = nextToken;
 
-  const resp = await getSsmClient()
-    .getParametersByPath(params)
-    .promise();
+  const resp = await getSsmClient().getParametersByPath(params).promise();
 
   resp.Parameters?.forEach(p => addToCache(regex, p));
 

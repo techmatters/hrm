@@ -110,7 +110,10 @@ casesRouter.get('/:id', canViewCase, async (req, res) => {
   const { accountSid } = req;
   const { id } = req.params;
 
-  const caseFromDB = await caseApi.getCase(id, accountSid, { can: req.can, user: req.user });
+  const caseFromDB = await caseApi.getCase(id, accountSid, {
+    can: req.can,
+    user: req.user,
+  });
 
   if (!caseFromDB) {
     throw createError(404);
@@ -144,11 +147,16 @@ casesRouter.delete('/:id', publicEndpoint, async (req, res) => {
 
 casesRouter.post('/search', publicEndpoint, async (req, res) => {
   const { accountSid } = req;
-  const searchResults = await caseApi.searchCases(accountSid, req.query || {}, req.body || {}, {
-    can: req.can,
-    user: req.user,
-    searchPermissions: req.searchPermissions,
-  });
+  const searchResults = await caseApi.searchCases(
+    accountSid,
+    req.query || {},
+    req.body || {},
+    {
+      can: req.can,
+      user: req.user,
+      searchPermissions: req.searchPermissions,
+    },
+  );
   res.json(searchResults);
 });
 

@@ -38,7 +38,9 @@ const MAX_CLEANUP_JOB_RETENTION_DAYS = 365;
  * @param job
  * @returns true if the channel was deleted, false if it was not
  */
-export const deleteTranscript = async (job: RetrieveContactTranscriptJob): Promise<boolean> => {
+export const deleteTranscript = async (
+  job: RetrieveContactTranscriptJob,
+): Promise<boolean> => {
   const { accountSid, id } = job;
   const { channelSid } = job.resource;
 
@@ -62,7 +64,9 @@ export const deleteTranscript = async (job: RetrieveContactTranscriptJob): Promi
       .remove();
   } catch (err) {
     if (err instanceof RestException && err.status === 404) {
-      console.log(`Channel ${channelSid} not found, assuming it has already been deleted`);
+      console.log(
+        `Channel ${channelSid} not found, assuming it has already been deleted`,
+      );
     } else {
       console.error(
         new ContactJobCleanupError(
@@ -124,7 +128,9 @@ const getCleanupRetentionDays = async (accountSid): Promise<number | undefined> 
  */
 export const cleanupContactJobs = async (): Promise<void> => {
   try {
-    const accountSids = await getPendingCleanupJobAccountSids(MAX_CLEANUP_JOB_RETENTION_DAYS);
+    const accountSids = await getPendingCleanupJobAccountSids(
+      MAX_CLEANUP_JOB_RETENTION_DAYS,
+    );
 
     console.log(`Cleaning up contact jobs for accounts:`, accountSids);
 

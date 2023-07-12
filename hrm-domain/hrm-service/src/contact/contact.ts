@@ -43,7 +43,6 @@ import { createContactJob } from '../contact-job/contact-job';
 import { isChatChannel } from './channelTypes';
 import { enableCreateContactJobsFlag } from '../featureFlags';
 import { db } from '../connection-pool';
-// eslint-disable-next-line prettier/prettier
 import type { SearchPermissions } from '../permissions/search-permissions';
 
 // Re export as is:
@@ -98,12 +97,14 @@ const filterExternalTranscripts = (contact: Contact) => ({
   ...contact,
   rawJson: {
     ...contact.rawJson,
-    conversationMedia: contact.rawJson.conversationMedia?.filter(m => !isS3StoredTranscript(m)),
+    conversationMedia: contact.rawJson.conversationMedia?.filter(
+      m => !isS3StoredTranscript(m),
+    ),
   },
 });
 
 type PermissionsBasedTransformation = {
-  action: typeof actionsMaps['contact'][keyof typeof actionsMaps['contact']];
+  action: (typeof actionsMaps)['contact'][keyof (typeof actionsMaps)['contact']];
   transformation: (contact: Contact) => Contact;
 };
 
@@ -114,16 +115,14 @@ const permissionsBasedTransformations: PermissionsBasedTransformation[] = [
   },
 ];
 
-export const bindApplyTransformations = (
-  can: ReturnType<typeof setupCanForRules>,
-  user: TwilioUser,
-) => (contact: Contact) => {
-  return permissionsBasedTransformations.reduce(
-    (transformed, { action, transformation }) =>
-      !can(user, action, contact) ? transformation(transformed) : transformed,
-    contact,
-  );
-};
+export const bindApplyTransformations =
+  (can: ReturnType<typeof setupCanForRules>, user: TwilioUser) => (contact: Contact) => {
+    return permissionsBasedTransformations.reduce(
+      (transformed, { action, transformation }) =>
+        !can(user, action, contact) ? transformation(transformed) : transformed,
+      contact,
+    );
+  };
 
 export const getContactById = async (accountSid: string, contactId: number) => {
   const contact = await getById(accountSid, contactId);
@@ -187,9 +186,8 @@ export const createContact = async (
   { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
 ): Promise<Contact> => {
   return db.tx(async conn => {
-    const { newContactPayload, csamReportsPayload, referralsPayload } = getNewContactPayload(
-      newContact,
-    );
+    const { newContactPayload, csamReportsPayload, referralsPayload } =
+      getNewContactPayload(newContact);
 
     const completeNewContact: NewContactRecord = {
       ...newContactPayload,
@@ -233,10 +231,13 @@ export const createContact = async (
       if (referrals && referrals.length) {
         // Do this sequentially, it's on a single connection in a transaction anyway.
         for (const referral of referrals) {
-          const { contactId, ...withoutContactId } = await createReferral(conn)(accountSid, {
-            ...referral,
-            contactId: contact.id.toString(),
-          });
+          const { contactId, ...withoutContactId } = await createReferral(conn)(
+            accountSid,
+            {
+              ...referral,
+              contactId: contact.id.toString(),
+            },
+          );
           createdReferrals.push(withoutContactId);
         }
       }
@@ -379,18 +380,35 @@ function convertContactsToSearchResults(contacts: Contact[]): SearchContact[] {
  * - search permissions
  * - counsellor' search parameter
  */
-const cannotViewAnyContactsGivenThisCounsellor = (user: TwilioUser, searchPermissions: SearchPermissions, counsellor?: string) => searchPermissions.canOnlyViewOwnContacts && counsellor &&  counsellor !== user.workerSid;
+const cannotViewAnyContactsGivenThisCounsellor = (
+  user: TwilioUser,
+  searchPermissions: SearchPermissions,
+  counsellor?: string,
+) =>
+  searchPermissions.canOnlyViewOwnContacts && counsellor && counsellor !== user.workerSid;
 
 /**
  * If the counselors can only view contacts he/she owns, then we override searchParameters.counselor to workerSid
  */
-const overrideCounsellor = (user: TwilioUser, searchPermissions: SearchPermissions, counsellor?: string) => searchPermissions.canOnlyViewOwnContacts ? user.workerSid : counsellor;
+const overrideCounsellor = (
+  user: TwilioUser,
+  searchPermissions: SearchPermissions,
+  counsellor?: string,
+) => (searchPermissions.canOnlyViewOwnContacts ? user.workerSid : counsellor);
 
 export const searchContacts = async (
   accountSid: string,
   searchParameters: SearchParameters,
   query,
-  { can, user, searchPermissions }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser; searchPermissions: SearchPermissions },
+  {
+    can,
+    user,
+    searchPermissions,
+  }: {
+    can: ReturnType<typeof setupCanForRules>;
+    user: TwilioUser;
+    searchPermissions: SearchPermissions;
+  },
   originalFormat?: boolean,
 ): Promise<{ count: number; contacts: SearchContact[] | Contact[] }> => {
   const applyTransformations = bindApplyTransformations(can, user);
@@ -402,13 +420,23 @@ export const searchContacts = async (
    * Handle filtering contacts according to: https://github.com/techmatters/hrm/pull/316#discussion_r1131118034
    * The search query already filters the contacts based on the given counsellor (workerSid).
    */
-  if (cannotViewAnyContactsGivenThisCounsellor(user, searchPermissions, searchParameters.counselor)) {
+  if (
+    cannotViewAnyContactsGivenThisCounsellor(
+      user,
+      searchPermissions,
+      searchParameters.counselor,
+    )
+  ) {
     return {
       count: 0,
       contacts: [],
     };
   } else {
-    searchParameters.counselor = overrideCounsellor(user, searchPermissions, searchParameters.counselor);
+    searchParameters.counselor = overrideCounsellor(
+      user,
+      searchPermissions,
+      searchParameters.counselor,
+    );
   }
   if (canOnlyViewOwnContacts) {
     searchParameters.counselor = user.workerSid;

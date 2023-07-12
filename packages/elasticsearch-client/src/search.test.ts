@@ -57,7 +57,8 @@ describe('Search', () => {
           },
         },
         condition: 'a searchParameters object with only a q parameter',
-        expectationDescription: 'should return a SearchQuery object with only a query property',
+        expectationDescription:
+          'should return a SearchQuery object with only a query property',
         expectedResults: {
           index,
           query: {
@@ -276,7 +277,8 @@ describe('Search', () => {
             },
           },
         },
-        condition: 'a searchParameters object with a q and a mapped range filter parameters',
+        condition:
+          'a searchParameters object with a q and a mapped range filter parameters',
         expectationDescription:
           'should return a SearchQuery object with a general query and a range filter',
         expectedResults: {
@@ -408,7 +410,9 @@ describe('Search', () => {
     each(testCases).test(
       'When passed a $condition, $expectationDescription',
       ({ config, parameters, expectedResults }) => {
-        expect(search.generateElasticsearchQuery(config, parameters)).toEqual(expectedResults);
+        expect(search.generateElasticsearchQuery(config, parameters)).toEqual(
+          expectedResults,
+        );
       },
     );
   });

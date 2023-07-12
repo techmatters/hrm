@@ -16,7 +16,12 @@
 
 import { SQS } from 'aws-sdk';
 
-import { Client, getClient, IndexClient, SearchResponse } from '@tech-matters/elasticsearch-client';
+import {
+  Client,
+  getClient,
+  IndexClient,
+  SearchResponse,
+} from '@tech-matters/elasticsearch-client';
 import { FlatResource } from '@tech-matters/types/dist/Resources';
 
 import {

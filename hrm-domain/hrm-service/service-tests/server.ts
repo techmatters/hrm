@@ -63,7 +63,8 @@ export const getServer = (config?: Partial<typeof defaultConfig>) => {
   return configureDefaultPostMiddlewares(withService, true).listen();
 };
 
-export const getRequest = (server: ReturnType<typeof getServer>) => supertest.agent(server);
+export const getRequest = (server: ReturnType<typeof getServer>) =>
+  supertest.agent(server);
 
 export const headers = {
   'Content-Type': 'application/json',

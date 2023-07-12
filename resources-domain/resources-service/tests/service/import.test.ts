@@ -235,14 +235,20 @@ beforeAll(async () => {
   await mockSuccessfulTwilioAuthentication(workerSid);
   await mockSsmParameters(mockttp, [
     {
-      pathPattern: /\/(test|local|development)\/resources\/AC[0-9]+\/queue-url-search-index/,
+      pathPattern:
+        /\/(test|local|development)\/resources\/AC[0-9]+\/queue-url-search-index/,
       valueGenerator: () => testQueueUrl.toString(),
     },
   ]);
 });
 
 afterAll(async () =>
-  Promise.all([mockingProxy.stop(), internalServer.close(), server.close(), sqsService.close()]),
+  Promise.all([
+    mockingProxy.stop(),
+    internalServer.close(),
+    server.close(),
+    sqsService.close(),
+  ]),
 );
 
 beforeEach(async () => {
@@ -286,10 +292,7 @@ describe('POST /import', () => {
       importedResources: [generateImportResource('100', baselineDate)],
       batch: newDefaultTestBatch(),
     };
-    internalRequest
-      .post(route)
-      .send(requestBody)
-      .expect(401);
+    internalRequest.post(route).send(requestBody).expect(401);
   });
 
   test('Incorrect static key - should return 401', async () => {
@@ -309,11 +312,7 @@ describe('POST /import', () => {
       importedResources: [generateImportResource('100', baselineDate)],
       batch: newDefaultTestBatch(),
     };
-    internalRequest
-      .post(route)
-      .set(headers)
-      .send(requestBody)
-      .expect(401);
+    internalRequest.post(route).set(headers).send(requestBody).expect(401);
   });
 
   type ImportPostTestCaseParameters = {
@@ -543,7 +542,9 @@ describe('POST /import', () => {
         }
       }
 
-      for (const [resourceId, expectedResource] of Object.entries(expectedResourceUpdates)) {
+      for (const [resourceId, expectedResource] of Object.entries(
+        expectedResourceUpdates,
+      )) {
         const response = await request
           .get(`/v0/accounts/${accountSid}/resources/resource/${resourceId}`)
           .set(headers);
@@ -567,7 +568,9 @@ describe('POST /import', () => {
         if (!Messages?.length) {
           break;
         }
-        receivedMessages.push(...(Messages ?? []).map(message => JSON.parse(message.Body ?? '')));
+        receivedMessages.push(
+          ...(Messages ?? []).map(message => JSON.parse(message.Body ?? '')),
+        );
       }
       expect(receivedMessages.length).toEqual(importedResources.length);
       const expectedMessages = importedResources.map(resource => ({
@@ -621,17 +624,11 @@ describe('GET /v0/accounts/:accountSid/import/progress', () => {
   });
 
   test('Flex bearer token - should return 401', async () => {
-    internalRequest
-      .get(route)
-      .set(headers)
-      .expect(401);
+    internalRequest.get(route).set(headers).expect(401);
   });
 
   test('Nothing ever imported for account - returns 404', async () => {
-    internalRequest
-      .get(route)
-      .set(internalHeaders)
-      .expect(404);
+    internalRequest.get(route).set(internalHeaders).expect(404);
   });
 
   test('Only attempted empty import - returns 404', async () => {
@@ -639,14 +636,8 @@ describe('GET /v0/accounts/:accountSid/import/progress', () => {
       importedResources: [],
       batch: newDefaultTestBatch(),
     };
-    await internalRequest
-      .post(importRoute)
-      .set(internalHeaders)
-      .send(requestBody);
-    internalRequest
-      .get(route)
-      .set(internalHeaders)
-      .expect(404);
+    await internalRequest.post(importRoute).set(internalHeaders).send(requestBody);
+    internalRequest.get(route).set(internalHeaders).expect(404);
   });
 
   test('Only attempted fail import - returns 404', async () => {
@@ -664,10 +655,7 @@ describe('GET /v0/accounts/:accountSid/import/progress', () => {
       .set(internalHeaders)
       .send(requestBody)
       .expect(400);
-    internalRequest
-      .get(route)
-      .set(internalHeaders)
-      .expect(404);
+    internalRequest.get(route).set(internalHeaders).expect(404);
   });
 
   test('Prior successful import - returns the importState set during that import', async () => {

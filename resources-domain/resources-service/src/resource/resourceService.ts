@@ -37,8 +37,9 @@ export type MissingResource = {
   _status: 'missing';
 };
 
-const isMissingResource = (resource: FlatResource | MissingResource): resource is MissingResource =>
-  '_status' in resource && resource._status === 'missing';
+const isMissingResource = (
+  resource: FlatResource | MissingResource,
+): resource is MissingResource => '_status' in resource && resource._status === 'missing';
 
 export type SimpleSearchParameters = {
   ids: string[];
@@ -51,7 +52,9 @@ export type SimpleSearchParameters = {
 
 const MAX_SEARCH_RESULTS = 200;
 
-const resourceRecordToApiResource = (resourceRecord: FlatResource): ReferrableResource => {
+const resourceRecordToApiResource = (
+  resourceRecord: FlatResource,
+): ReferrableResource => {
   const {
     stringAttributes,
     referenceStringAttributes,
@@ -76,7 +79,9 @@ const resourceRecordToApiResource = (resourceRecord: FlatResource): ReferrableRe
   attributesWithKeys.forEach(attribute => {
     const { key, list, ...withoutKey } = attribute;
     // Split on / but not on \/ (escaped /), but doesn't misinterpret preceding escaped \ (i.e. \\) as escaping the / (see unit tests)
-    const attributeKeySections = key.split(/(?<!(?:[^\\]|^)\\(?:\\{2})*)\//).filter(s => s.length);
+    const attributeKeySections = key
+      .split(/(?<!(?:[^\\]|^)\\(?:\\{2})*)\//)
+      .filter(s => s.length);
     let currentObject: ResourceAttributeNode = attributes as ResourceAttributeNode;
     attributeKeySections.forEach((escapedSection, index) => {
       const section = escapedSection.replace(/\\([\\\/])/g, '$1');

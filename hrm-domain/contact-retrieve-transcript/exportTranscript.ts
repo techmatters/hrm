@@ -17,7 +17,6 @@
 import { getClient, TwilioClient } from '@tech-matters/twilio-client';
 
 import RestException from 'twilio/lib/base/RestException';
-// eslint-disable-next-line prettier/prettier
 import type { MemberInstance } from 'twilio/lib/rest/chat/v2/service/channel/member';
 
 export type ExportTranscriptParams = {
@@ -61,10 +60,7 @@ const getTransformedMessages = async (
 
 const getUser = async (client: TwilioClient, serviceSid: string, from: string) => {
   try {
-    const user = await client.chat.v2
-      .services(serviceSid)
-      .users.get(from)
-      .fetch();
+    const user = await client.chat.v2.services(serviceSid).users.get(from).fetch();
 
     // Full object contains circular references that can't be converted to json in addition to unnecessary data
     return {
@@ -108,9 +104,9 @@ const getRole = async (
     }
 
     const channelRole = await client.chat.v2
-    .services(serviceSid)
-    .roles.get(member.roleSid)
-    .fetch();
+      .services(serviceSid)
+      .roles.get(member.roleSid)
+      .fetch();
 
     const isCounselor = channelRole.friendlyName !== GUEST_ROLE_CHANNEL;
 

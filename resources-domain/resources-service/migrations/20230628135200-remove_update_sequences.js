@@ -93,7 +93,9 @@ module.exports = {
     await queryInterface.sequelize.query(
       `ALTER TABLE resources."ResourceReferenceStringAttributes" DROP COLUMN IF EXISTS "updateSequence"`,
     );
-    console.log('Column "updateSequence" dropped from table "ResourceReferenceStringAttributes"');
+    console.log(
+      'Column "updateSequence" dropped from table "ResourceReferenceStringAttributes"',
+    );
     await queryInterface.sequelize.query(
       `ALTER TABLE resources."ResourceReferenceStringAttributeValues" DROP COLUMN IF EXISTS "updateSequence", DROP COLUMN IF EXISTS "lastUpdated"`,
     );
@@ -176,7 +178,8 @@ module.exports = {
     `);
     console.log('Trigger Resources_update_trigger created');
 
-    await queryInterface.sequelize.query(`CREATE UNIQUE INDEX "Resources_updateSequence_idx"
+    await queryInterface.sequelize
+      .query(`CREATE UNIQUE INDEX "Resources_updateSequence_idx"
       ON resources."Resources" USING btree
       ("updateSequence" DESC NULLS LAST)
       TABLESPACE pg_default;`);
@@ -195,27 +198,35 @@ module.exports = {
         ADD COLUMN IF NOT EXISTS "updateSequence" bigint DEFAULT nextval('resources."Resources_updates_seq"'::regclass) NOT NULL, 
         ADD COLUMN IF NOT EXISTS "lastUpdated" timestamp with time zone;;
     `);
-    console.log('Table "ResourceDateTimeAttributes" updateSequence, lastUpdated columns added');
+    console.log(
+      'Table "ResourceDateTimeAttributes" updateSequence, lastUpdated columns added',
+    );
 
     await queryInterface.sequelize.query(`
       ALTER TABLE IF EXISTS resources."ResourceNumberAttributes" 
         ADD COLUMN IF NOT EXISTS "updateSequence" bigint DEFAULT nextval('resources."Resources_updates_seq"'::regclass) NOT NULL,
         ADD COLUMN IF NOT EXISTS "lastUpdated" timestamp with time zone;
     `);
-    console.log('Table "ResourceNumberAttributes" updateSequence, lastUpdated columns added');
+    console.log(
+      'Table "ResourceNumberAttributes" updateSequence, lastUpdated columns added',
+    );
 
     await queryInterface.sequelize.query(`
       ALTER TABLE IF EXISTS resources."ResourceBooleanAttributes" 
         ADD COLUMN IF NOT EXISTS "updateSequence" bigint DEFAULT nextval('resources."Resources_updates_seq"'::regclass) NOT NULL, 
         ADD COLUMN IF NOT EXISTS "lastUpdated" timestamp with time zone;
     `);
-    console.log('Table "ResourceBooleanAttributes" updateSequence, lastUpdated columns added');
+    console.log(
+      'Table "ResourceBooleanAttributes" updateSequence, lastUpdated columns added',
+    );
 
     await queryInterface.sequelize.query(`
       ALTER TABLE IF EXISTS resources."ResourceStringReferenceAttributes" 
         ADD COLUMN IF NOT EXISTS "updateSequence" bigint DEFAULT nextval('resources."Resources_updates_seq"'::regclass) NOT NULL,
     `);
-    console.log('Table "ResourceStringReferenceAttributeValues" updateSequence column added');
+    console.log(
+      'Table "ResourceStringReferenceAttributeValues" updateSequence column added',
+    );
 
     await queryInterface.sequelize.query(`
       ALTER TABLE IF EXISTS resources."ResourceStringReferenceAttributeValues" 

@@ -48,9 +48,9 @@ const promiseSpy = jest.fn();
 beforeEach(() => {
   uploadSpy = jest.fn().mockReturnValue({ promise: promiseSpy });
 
-  const s3Client = ({
+  const s3Client = {
     upload: uploadSpy,
-  } as unknown) as S3;
+  } as unknown as S3;
 
   const getContextResponse = Promise.resolve({
     accountSid,

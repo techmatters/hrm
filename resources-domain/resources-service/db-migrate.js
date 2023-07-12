@@ -71,7 +71,10 @@ async function migrate() {
   const timeoutPoint = Date.now() + CONNECT_ATTEMPT_SECONDS * 1000;
   let ret;
   let lastErr;
-  console.log('Umzug migration starting.', pathLib.join(process.cwd(), './migrations/*.js'));
+  console.log(
+    'Umzug migration starting.',
+    pathLib.join(process.cwd(), './migrations/*.js'),
+  );
   while (Date.now() < timeoutPoint) {
     try {
       // eslint-disable-next-line no-await-in-loop

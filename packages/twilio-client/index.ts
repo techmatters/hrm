@@ -35,7 +35,7 @@ const getClientOrMock = ({
   authToken: string;
 }): Twilio => {
   if (authToken === 'mockAuthToken') {
-    const mock = (getMockClient({ accountSid }) as unknown) as Twilio;
+    const mock = getMockClient({ accountSid }) as unknown as Twilio;
     return mock;
   }
 

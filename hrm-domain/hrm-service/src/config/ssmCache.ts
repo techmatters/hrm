@@ -20,8 +20,9 @@ export { getSsmParameter, hasCacheExpired, ssmCache } from '@tech-matters/ssm-ca
 
 const ssmCacheConfigs = [
   {
-    path: `/${process.env.NODE_ENV}/${process.env.AWS_REGION ??
-      process.env.AWS_DEFAULT_REGION}/sqs/jobs/contact`,
+    path: `/${process.env.NODE_ENV}/${
+      process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
+    }/sqs/jobs/contact`,
     regex: /queue-url-*/,
   },
 ];

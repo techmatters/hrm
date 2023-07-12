@@ -331,7 +331,9 @@ describe('/cases/:id route - PUT', () => {
           update.info = { ...originalCase.info, ...caseUpdate.info, ...infoUpdate };
         }
 
-        setRules(ruleFileWithOnePermittedOrDeniedAction(actionToTest, !testingDeniedCase));
+        setRules(
+          ruleFileWithOnePermittedOrDeniedAction(actionToTest, !testingDeniedCase),
+        );
         const permittedResponse = await request
           .put(subRoute(originalCase.id))
           .set(headers)

@@ -21,7 +21,9 @@ import { publishToContactJobs } from './client-sqs';
 import { ContactJobType } from '@tech-matters/types';
 import { assertExhaustive } from './assertExhaustive';
 
-export const publishRetrieveContactTranscript = (contactJob: RetrieveContactTranscriptJob) => {
+export const publishRetrieveContactTranscript = (
+  contactJob: RetrieveContactTranscriptJob,
+) => {
   const {
     accountSid,
     id: contactId,
@@ -66,7 +68,11 @@ export const publishDueContactJobs = async (
             assertExhaustive(dueJob as never);
         }
       } catch (err) {
-        console.error(new ContactJobPollerError('Failed to publish due job:'), dueJob, err);
+        console.error(
+          new ContactJobPollerError('Failed to publish due job:'),
+          dueJob,
+          err,
+        );
         return Promise.reject(err);
       }
     }),

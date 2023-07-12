@@ -113,7 +113,9 @@ describe('getSsmParameter', () => {
     };
     ssmParams = [ssmParam];
 
-    await expect(SsmCache.getSsmParameter(ssmParams[0].Name)).resolves.toEqual(ssmParams[0].Value);
+    await expect(SsmCache.getSsmParameter(ssmParams[0].Name)).resolves.toEqual(
+      ssmParams[0].Value,
+    );
 
     expect(loadParameterSpy).toHaveBeenCalledTimes(2);
   });
@@ -130,7 +132,9 @@ describe('getSsmParameter', () => {
     };
     ssmParams = [ssmParam];
 
-    await expect(SsmCache.getSsmParameter(ssmParams[0].Name)).resolves.toEqual(ssmParams[0].Value);
+    await expect(SsmCache.getSsmParameter(ssmParams[0].Name)).resolves.toEqual(
+      ssmParams[0].Value,
+    );
 
     expect(loadParameterSpy).toHaveBeenCalledTimes(3);
 
@@ -140,7 +144,9 @@ describe('getSsmParameter', () => {
     };
     ssmParams = [newSsmParam];
 
-    await expect(SsmCache.getSsmParameter(newSsmParam.Name)).resolves.toEqual(newSsmParam.Value);
+    await expect(SsmCache.getSsmParameter(newSsmParam.Name)).resolves.toEqual(
+      newSsmParam.Value,
+    );
 
     expect(loadParameterSpy).toHaveBeenCalledTimes(4);
   });

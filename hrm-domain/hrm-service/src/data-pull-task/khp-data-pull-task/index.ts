@@ -50,9 +50,13 @@ const getDateRangeFromArgs = (startDateISO?: string, endDateISO?: string) => {
  * This function can also be called without start-date and end-date.
  * In this scenario, it will pull data for the last 12h.
  */
-export const pullData = async (startDateISO?: string | null, endDateISO?: string | null) => {
+export const pullData = async (
+  startDateISO?: string | null,
+  endDateISO?: string | null,
+) => {
   const hasNoDateArgs =
-    isNullUndefinedOrEmptyString(startDateISO) && isNullUndefinedOrEmptyString(endDateISO);
+    isNullUndefinedOrEmptyString(startDateISO) &&
+    isNullUndefinedOrEmptyString(endDateISO);
 
   const { startDate, endDate } = hasNoDateArgs
     ? getDateRangeForPast12Hours()

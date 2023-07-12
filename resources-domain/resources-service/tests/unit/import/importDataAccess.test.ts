@@ -17,7 +17,10 @@
 import * as pgPromise from 'pg-promise';
 import { subHours } from 'date-fns';
 import { mockConnection, mockTransaction } from '../mock-db';
-import { updateImportProgress, upsertImportedResource } from '../../../src/import/importDataAccess';
+import {
+  updateImportProgress,
+  upsertImportedResource,
+} from '../../../src/import/importDataAccess';
 import { getSqlStatement } from '@tech-matters/testing';
 import { BLANK_ATTRIBUTES } from '../../mockResources';
 import { TimeSequence } from '@tech-matters/types/dist/Resources';

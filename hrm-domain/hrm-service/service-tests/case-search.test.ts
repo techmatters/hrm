@@ -32,7 +32,11 @@ import * as contactDb from '../src/contact/contact-data-access';
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import * as mocks from './mocks';
 import { ruleFileWithOneActionOverride } from './permissions-overrides';
-import { connectContactToCase, createContact, isS3StoredTranscript } from '../src/contact/contact';
+import {
+  connectContactToCase,
+  createContact,
+  isS3StoredTranscript,
+} from '../src/contact/contact';
 import { headers, getRequest, getServer, setRules, useOpenRules } from './server';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
 
@@ -134,7 +138,8 @@ const insertSampleCases = async ({
           childInformation: {},
           callType: '',
         };
-        contactToCreate.rawJson.caseInformation = contactToCreate.rawJson.caseInformation ?? {
+        contactToCreate.rawJson.caseInformation = contactToCreate.rawJson
+          .caseInformation ?? {
           categories: {},
         };
         contactToCreate.rawJson.caseInformation.categories = categories;
@@ -291,12 +296,15 @@ describe('/cases route', () => {
           expectedTotalCount: 5,
         },
         {
-          description: 'should return all cases for account & helpline when helpline is specified',
+          description:
+            'should return all cases for account & helpline when helpline is specified',
           listRoute: `/v0/accounts/${accounts[0]}/cases?helpline=${helplines[1]}`,
           expectedCasesAndContacts: () =>
             createdCasesAndContacts
               .filter(
-                ccc => ccc.case.accountSid === accounts[0] && ccc.case.helpline === helplines[1],
+                ccc =>
+                  ccc.case.accountSid === accounts[0] &&
+                  ccc.case.helpline === helplines[1],
               )
               .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
           expectedTotalCount: 1,
@@ -340,7 +348,9 @@ describe('/cases route', () => {
           expectedCasesAndContacts: () =>
             createdCasesAndContacts
               .filter(
-                ccc => ccc.case.accountSid === accounts[0] && ccc.case.helpline === helplines[0],
+                ccc =>
+                  ccc.case.accountSid === accounts[0] &&
+                  ccc.case.helpline === helplines[0],
               )
               .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id)
               .slice(1, 2),
@@ -350,7 +360,11 @@ describe('/cases route', () => {
         '$description',
         async ({ listRoute, expectedCasesAndContacts, expectedTotalCount }) => {
           const response = await request.get(listRoute).set(headers);
-          validateCaseListResponse(response, expectedCasesAndContacts(), expectedTotalCount);
+          validateCaseListResponse(
+            response,
+            expectedCasesAndContacts(),
+            expectedTotalCount,
+          );
         },
       );
     });
@@ -405,7 +419,9 @@ describe('/cases route', () => {
 
       expect(
         (<caseApi.Case[]>response.body.cases).every(caseObj =>
-          caseObj.connectedContacts?.every(c => Array.isArray(c.rawJson?.conversationMedia)),
+          caseObj.connectedContacts?.every(c =>
+            Array.isArray(c.rawJson?.conversationMedia),
+          ),
         ),
       ).toBeTruthy();
 
@@ -489,9 +505,17 @@ describe('/cases route', () => {
         const searchTestRunStart = new Date().toISOString();
 
         beforeEach(async () => {
-          createdCase1 = await caseApi.createCase(withHouseholds(case1), accountSid, workerSid);
+          createdCase1 = await caseApi.createCase(
+            withHouseholds(case1),
+            accountSid,
+            workerSid,
+          );
           createdCase2 = await caseApi.createCase(case1, accountSid, workerSid);
-          createdCase3 = await caseApi.createCase(withPerpetrators(case1), accountSid, workerSid);
+          createdCase3 = await caseApi.createCase(
+            withPerpetrators(case1),
+            accountSid,
+            workerSid,
+          );
           const toCreate = fillNameAndPhone({ ...contact1, twilioWorkerId: workerSid });
 
           toCreate.timeOfContact = new Date();
@@ -602,10 +626,16 @@ describe('/cases route', () => {
           const body = {
             closedCases: false,
           };
-          await caseApi.updateCase(createdCase2.id, { status: 'closed' }, accountSid, workerSid, {
-            user: twilioUser(workerSid, []),
-            can: () => true,
-          });
+          await caseApi.updateCase(
+            createdCase2.id,
+            { status: 'closed' },
+            accountSid,
+            workerSid,
+            {
+              user: twilioUser(workerSid, []),
+              can: () => true,
+            },
+          );
           const response = await request
             .post(subRoute)
             .query({ limit: 20, offset: 0 })
@@ -632,16 +662,25 @@ describe('/cases route', () => {
           cases: [
             {
               ...case1,
-              info: { ...case1.info, perpetrators: [{ perpetrator: { phone1: '111 222 333' } }] },
+              info: {
+                ...case1.info,
+                perpetrators: [{ perpetrator: { phone1: '111 222 333' } }],
+              },
             },
             {
               ...case1,
-              info: { ...case1.info, perpetrators: [{ perpetrator: { phone1: '444 555 666' } }] },
+              info: {
+                ...case1.info,
+                perpetrators: [{ perpetrator: { phone1: '444 555 666' } }],
+              },
             },
             case1,
             {
               ...case1,
-              info: { ...case1.info, households: [{ household: { phone1: '111 222 333' } }] },
+              info: {
+                ...case1.info,
+                households: [{ household: { phone1: '111 222 333' } }],
+              },
             },
           ],
         };
@@ -673,7 +712,9 @@ describe('/cases route', () => {
             expectedCasesAndContacts: sampleCasesAndContacts =>
               sampleCasesAndContacts
                 .filter(
-                  ccc => ccc.case.accountSid === accounts[0] && ccc.case.helpline === helplines[1],
+                  ccc =>
+                    ccc.case.accountSid === accounts[0] &&
+                    ccc.case.helpline === helplines[1],
                 )
                 .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
             expectedTotalCount: 1,
@@ -744,7 +785,9 @@ describe('/cases route', () => {
             expectedCasesAndContacts: sampleCasesAndContacts =>
               sampleCasesAndContacts
                 .filter(
-                  ccc => ccc.case.accountSid === accounts[0] && ccc.case.helpline === helplines[0],
+                  ccc =>
+                    ccc.case.accountSid === accounts[0] &&
+                    ccc.case.helpline === helplines[0],
                 )
                 .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id)
                 .slice(1, 2),
@@ -761,7 +804,8 @@ describe('/cases route', () => {
             expectedTotalCount: 5,
           },
           {
-            description: 'should find phone number matches on attached households and perpetrators',
+            description:
+              'should find phone number matches on attached households and perpetrators',
             searchRoute: `/v0/accounts/${accounts[0]}/cases/search?`,
             body: {
               phoneNumber: '111 222 333',
@@ -802,7 +846,8 @@ describe('/cases route', () => {
             expectedTotalCount: 5,
           },
           {
-            description: 'should find phone number matches on attached households and perpetrators',
+            description:
+              'should find phone number matches on attached households and perpetrators',
             searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
             body: {
               phoneNumber: '111 222 333',
@@ -1075,7 +1120,8 @@ describe('/cases route', () => {
             expectedTotalCount: 10,
           },
           {
-            description: 'should include only cases matching category if one is specified',
+            description:
+              'should include only cases matching category if one is specified',
             searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
             body: {
               filters: <CaseListFilters>{
@@ -1185,10 +1231,7 @@ describe('/cases route', () => {
           }) => {
             const createdCasesAndContacts = await insertSampleCases(sampleConfig);
             try {
-              const response = await request
-                .post(searchRoute)
-                .set(headers)
-                .send(body);
+              const response = await request.post(searchRoute).set(headers).send(body);
               validateCaseListResponse(
                 response,
                 expectedCasesAndContacts(createdCasesAndContacts),
@@ -1257,7 +1300,9 @@ describe('/cases route', () => {
 
         expect(
           (<caseApi.Case[]>response.body.cases).every(caseObj =>
-            caseObj.connectedContacts?.every(c => Array.isArray(c.rawJson?.conversationMedia)),
+            caseObj.connectedContacts?.every(c =>
+              Array.isArray(c.rawJson?.conversationMedia),
+            ),
           ),
         ).toBeTruthy();
 

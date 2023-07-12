@@ -79,7 +79,9 @@ module.exports = {
         onDelete: 'SET NULL',
       });
       await queryInterface.addColumn('Contacts', 'timestamp', { type: Sequelize.BIGINT });
-      await queryInterface.addColumn('Contacts', 'reservationId', { type: Sequelize.STRING });
+      await queryInterface.addColumn('Contacts', 'reservationId', {
+        type: Sequelize.STRING,
+      });
       await transaction.commit();
     } catch (err) {
       await transaction.rollback();

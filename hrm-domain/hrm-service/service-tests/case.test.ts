@@ -20,7 +20,11 @@ import each from 'jest-each';
 
 import { db } from '../src/connection-pool';
 import * as caseApi from '../src/case/case';
-import { createContact, connectContactToCase, isS3StoredTranscript } from '../src/contact/contact';
+import {
+  createContact,
+  connectContactToCase,
+  isS3StoredTranscript,
+} from '../src/contact/contact';
 import { Case } from '../src/case/case';
 import * as caseDb from '../src/case/case-data-access';
 import { convertCaseInfoToExpectedInfo, without } from './case-validation';
@@ -93,10 +97,7 @@ describe('/cases route', () => {
       expect(response.body.error).toBe('Authorization failed');
     });
     test('should return 200', async () => {
-      const response = await request
-        .post(route)
-        .set(headers)
-        .send(case1);
+      const response = await request.post(route).set(headers).send(case1);
 
       expect(response.status).toBe(200);
       expect(response.body).toStrictEqual(expected);
@@ -265,7 +266,9 @@ describe('/cases route', () => {
       });
 
       test('Should return 200', async () => {
-        const response = await request.get(subRoute(cases.populated.id)).set({ ...headers });
+        const response = await request
+          .get(subRoute(cases.populated.id))
+          .set({ ...headers });
 
         expect(response.status).toBe(200);
 
@@ -653,11 +656,13 @@ describe('/cases route', () => {
           // Check that in each case, createdAt is not changed
           expect(fromDb.createdAt).toStrictEqual(caseBeforeUpdate.createdAt);
           // Check that in each case, updatedAt is greater than createdAt
-          expect(isBefore(new Date(fromDb.createdAt), new Date(fromDb.updatedAt))).toBe(true);
-          // Check that in each case, updatedAt is greater it was before
-          expect(isBefore(new Date(caseBeforeUpdate.updatedAt), new Date(fromDb.updatedAt))).toBe(
+          expect(isBefore(new Date(fromDb.createdAt), new Date(fromDb.updatedAt))).toBe(
             true,
           );
+          // Check that in each case, updatedAt is greater it was before
+          expect(
+            isBefore(new Date(caseBeforeUpdate.updatedAt), new Date(fromDb.updatedAt)),
+          ).toBe(true);
         },
       );
 

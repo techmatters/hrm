@@ -13,7 +13,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { IndexConfiguration, SearchConfiguration } from '@tech-matters/elasticsearch-client';
+import {
+  IndexConfiguration,
+  SearchConfiguration,
+} from '@tech-matters/elasticsearch-client';
 import { FlatResource } from '@tech-matters/types';
 import { convertIndexDocument } from './convertIndexDocument';
 import { getCreateIndexParams } from './getCreateIndexParams';

@@ -19,7 +19,6 @@ import crypto from 'crypto';
 
 import { twilioUser, TwilioUser } from './twilioUser';
 import { unauthorized } from '@tech-matters/http';
-// eslint-disable-next-line prettier/prettier
 import type { Request, Response, NextFunction } from 'express';
 
 declare global {
@@ -29,7 +28,6 @@ declare global {
     }
   }
 }
-
 
 /**
  * Helper to whitelist the requests that other parts of the system (external to HRM, like Serverless functions) can perform on HRM.
@@ -50,11 +48,17 @@ const isWorker = (tokenResult: TokenValidatorResponse) =>
 const isGuest = (tokenResult: TokenValidatorResponse) =>
   Array.isArray(tokenResult.roles) && tokenResult.roles.includes('guest');
 
-const defaultTokenLookup = (accountSid: string) => process.env[`TWILIO_AUTH_TOKEN_${accountSid}`] ?? '';
+const defaultTokenLookup = (accountSid: string) =>
+  process.env[`TWILIO_AUTH_TOKEN_${accountSid}`] ?? '';
 
-const authenticateWithStaticKey = (req: Request, loginId: string | undefined): boolean => {
+const authenticateWithStaticKey = (
+  req: Request,
+  loginId: string | undefined,
+): boolean => {
   if (!req.headers) return false;
-  const { headers: { authorization } } = req;
+  const {
+    headers: { authorization },
+  } = req;
 
   if (loginId && authorization && authorization.startsWith('Basic')) {
     try {
@@ -78,49 +82,59 @@ const authenticateWithStaticKey = (req: Request, loginId: string | undefined): b
   return false;
 };
 
-export const getAuthorizationMiddleware = (authTokenLookup: (accountSid: string) => string = defaultTokenLookup) => async (req: Request, res: Response, next: NextFunction) => {
-  if (!req || !req.headers || !req.headers.authorization) {
-    return unauthorized(res);
-  }
-
-  const { authorization } = req.headers;
-  const { accountSid } = req;
-  if (!accountSid) return unauthorized(res);
-
-  if (authorization.startsWith('Bearer')) {
-    const token = authorization.replace('Bearer ', '');
-    try {
-      const authToken = authTokenLookup(accountSid);
-      if (!authToken) {
-        console.error(`authToken not provided for the accountSid ${accountSid}.`);
-        return unauthorized(res);
-      }
-
-      const tokenResult = <TokenValidatorResponse>(
-        await TokenValidator(token, accountSid, authToken)
-      );
-      if (!isWorker(tokenResult) || isGuest(tokenResult)) {
-        return unauthorized(res);
-      }
-      req.user = twilioUser(tokenResult.worker_sid, tokenResult.roles);
-      return next();
-    } catch (err) {
-      console.error('Token authentication failed: ', err);
+export const getAuthorizationMiddleware =
+  (authTokenLookup: (accountSid: string) => string = defaultTokenLookup) =>
+  async (req: Request, res: Response, next: NextFunction) => {
+    if (!req || !req.headers || !req.headers.authorization) {
+      return unauthorized(res);
     }
-  }
 
-  if (canAccessResourceWithStaticKey(req.originalUrl, req.method) && authenticateWithStaticKey(req, accountSid)) return next();
+    const { authorization } = req.headers;
+    const { accountSid } = req;
+    if (!accountSid) return unauthorized(res);
 
-  return unauthorized(res);
-};
+    if (authorization.startsWith('Bearer')) {
+      const token = authorization.replace('Bearer ', '');
+      try {
+        const authToken = authTokenLookup(accountSid);
+        if (!authToken) {
+          console.error(`authToken not provided for the accountSid ${accountSid}.`);
+          return unauthorized(res);
+        }
 
-export const staticKeyAuthorizationMiddleware = async (req: Request, res: Response, next: NextFunction) => {
+        const tokenResult = <TokenValidatorResponse>(
+          await TokenValidator(token, accountSid, authToken)
+        );
+        if (!isWorker(tokenResult) || isGuest(tokenResult)) {
+          return unauthorized(res);
+        }
+        req.user = twilioUser(tokenResult.worker_sid, tokenResult.roles);
+        return next();
+      } catch (err) {
+        console.error('Token authentication failed: ', err);
+      }
+    }
+
+    if (
+      canAccessResourceWithStaticKey(req.originalUrl, req.method) &&
+      authenticateWithStaticKey(req, accountSid)
+    )
+      return next();
+
+    return unauthorized(res);
+  };
+
+export const staticKeyAuthorizationMiddleware = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   if (authenticateWithStaticKey(req, req.accountSid)) return next();
   return unauthorized(res);
 };
 
-export const adminAuthorizationMiddleware = (adminLoginId: string) => async (req: Request, res: Response, next: NextFunction) => {
-  if (authenticateWithStaticKey(req, adminLoginId)) return next();
-  return unauthorized(res);
-};
-
+export const adminAuthorizationMiddleware =
+  (adminLoginId: string) => async (req: Request, res: Response, next: NextFunction) => {
+    if (authenticateWithStaticKey(req, adminLoginId)) return next();
+    return unauthorized(res);
+  };

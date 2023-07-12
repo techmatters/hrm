@@ -58,7 +58,8 @@ describe('convertIndexDocument', () => {
       id: '1234',
       name: ['Resource'],
       high_boost_global: 'This is the description',
-      low_boost_global: 'This is the english title This is the french title keyword1 keyword2',
+      low_boost_global:
+        'This is the english title This is the french title keyword1 keyword2',
       eligibilityMinAge: 10,
       eligibilityMaxAge: 20,
       city: [' Toronto'],

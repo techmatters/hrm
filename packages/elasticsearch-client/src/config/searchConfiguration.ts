@@ -26,7 +26,7 @@ type TermFilterMapping = {
 };
 
 const rangeFilterOperators = ['gt', 'gte', 'lt', 'lte'] as const;
-export type RangeFilterOperator = typeof rangeFilterOperators[number];
+export type RangeFilterOperator = (typeof rangeFilterOperators)[number];
 
 /**
  * Used to specify an incoming filter as a range filter.

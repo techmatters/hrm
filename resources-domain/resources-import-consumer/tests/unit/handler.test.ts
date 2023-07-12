@@ -17,7 +17,6 @@
 import parseISO from 'date-fns/parseISO';
 import { handler } from '../../index';
 import each from 'jest-each';
-// eslint-disable-next-line prettier/prettier
 import type { FlatResource, ImportRequestBody } from '@tech-matters/types';
 import type { SQSEvent } from 'aws-lambda';
 import { TimeSequence } from '@tech-matters/types';
@@ -51,59 +50,62 @@ const generateImportResource = (
   id: `RESOURCE_${resourceIdSuffix}`,
   name: `Resource ${resourceIdSuffix}`,
   lastUpdated: lastUpdated.toISOString(),
-    stringAttributes: [
-      {
-        key: 'STRING_ATTRIBUTE',
-        value: 'VALUE',
-        language: 'en-US',
-        info: { some: 'json' },
-      },
-      ...(additionalAttributes.stringAttributes ?? []),
-    ],
-    dateTimeAttributes: [
-      {
-        key: 'DATETIME_ATTRIBUTE',
-        value: baselineDate.toISOString(),
-        info: { some: 'json' },
-      },
-      ...(additionalAttributes.dateTimeAttributes ?? []),
-    ],
-    numberAttributes: [
-      {
-        key: 'NUMBER_ATTRIBUTE',
-        value: 1337,
-        info: { some: 'json' },
-      },
-      ...(additionalAttributes.numberAttributes ?? []),
-    ],
-    booleanAttributes: [
-      {
-        key: 'BOOL_ATTRIBUTE',
-        value: true,
-        info: { some: 'json' },
-      },
-      ...(additionalAttributes.booleanAttributes ?? []),
-    ],
-    referenceStringAttributes: [
-      {
-        key: 'REFERENCE_ATTRIBUTE',
-        value: 'REFERENCE_VALUE_2',
-        language: 'REFERENCE_LANGUAGE',
-        list: 'REFERENCE_LIST_1',
-      },
-      ...(additionalAttributes.referenceStringAttributes ?? []),
-    ],
+  stringAttributes: [
+    {
+      key: 'STRING_ATTRIBUTE',
+      value: 'VALUE',
+      language: 'en-US',
+      info: { some: 'json' },
+    },
+    ...(additionalAttributes.stringAttributes ?? []),
+  ],
+  dateTimeAttributes: [
+    {
+      key: 'DATETIME_ATTRIBUTE',
+      value: baselineDate.toISOString(),
+      info: { some: 'json' },
+    },
+    ...(additionalAttributes.dateTimeAttributes ?? []),
+  ],
+  numberAttributes: [
+    {
+      key: 'NUMBER_ATTRIBUTE',
+      value: 1337,
+      info: { some: 'json' },
+    },
+    ...(additionalAttributes.numberAttributes ?? []),
+  ],
+  booleanAttributes: [
+    {
+      key: 'BOOL_ATTRIBUTE',
+      value: true,
+      info: { some: 'json' },
+    },
+    ...(additionalAttributes.booleanAttributes ?? []),
+  ],
+  referenceStringAttributes: [
+    {
+      key: 'REFERENCE_ATTRIBUTE',
+      value: 'REFERENCE_VALUE_2',
+      language: 'REFERENCE_LANGUAGE',
+      list: 'REFERENCE_LIST_1',
+    },
+    ...(additionalAttributes.referenceStringAttributes ?? []),
+  ],
 });
 
-const generateSQSEventRecord = (messageId: string, body: ImportRequestBody & { accountSid: string }): SQSEvent['Records'][number] => ({
+const generateSQSEventRecord = (
+  messageId: string,
+  body: ImportRequestBody & { accountSid: string },
+): SQSEvent['Records'][number] => ({
   messageId,
   body: JSON.stringify(body),
   receiptHandle: 'receiptHandle',
   attributes: {
-    'ApproximateReceiveCount': '1',
-    'SentTimestamp': '1545082649183',
-    'SenderId': 'SenderId',
-    'ApproximateFirstReceiveTimestamp': '1545082649185',
+    ApproximateReceiveCount: '1',
+    SentTimestamp: '1545082649183',
+    SenderId: 'SenderId',
+    ApproximateFirstReceiveTimestamp: '1545082649185',
   },
   messageAttributes: {},
   md5OfBody: 'md5OfBody',
@@ -139,7 +141,7 @@ describe('resources-import-consumer handler', () => {
       condition: 'upsert fails',
       expectedOutcouome: 'batchItemFailures with the message',
       mockSetup: () => mockFetch.mockRejectedValueOnce(new Error('Panic!')),
-      expected: { batchItemFailures: [ { itemIdentifier: "message-1" } ] },
+      expected: { batchItemFailures: [{ itemIdentifier: 'message-1' }] },
       event: {
         Records: [
           generateSQSEventRecord('message-1', {
@@ -158,8 +160,7 @@ describe('resources-import-consumer handler', () => {
       when: 'multiple messages',
       condition: 'upsert succeeds',
       expectedOutcouome: 'empty batchItemFailures',
-      mockSetup: () => mockFetch
-        .mockResolvedValue({ ok: true }),
+      mockSetup: () => mockFetch.mockResolvedValue({ ok: true }),
       expected: { batchItemFailures: [] },
       event: {
         Records: [
@@ -197,12 +198,13 @@ describe('resources-import-consumer handler', () => {
       when: 'multiple messages',
       condition: 'one upsert fails',
       expectedOutcouome: 'batchItemFailures containing only the failing one',
-      mockSetup: () => mockFetch
-        .mockResolvedValueOnce({ ok: true })
-        .mockRejectedValueOnce(new Error('Panic!'))
-        .mockResolvedValueOnce({ ok: true }),
-        expected: { batchItemFailures: [ { itemIdentifier: "message-2" } ] },
-        event: {
+      mockSetup: () =>
+        mockFetch
+          .mockResolvedValueOnce({ ok: true })
+          .mockRejectedValueOnce(new Error('Panic!'))
+          .mockResolvedValueOnce({ ok: true }),
+      expected: { batchItemFailures: [{ itemIdentifier: 'message-2' }] },
+      event: {
         Records: [
           generateSQSEventRecord('message-1', {
             accountSid,
@@ -234,11 +236,14 @@ describe('resources-import-consumer handler', () => {
         ],
       },
     },
-  ]).test('when $when, if $condition, should return $expectedOutcouome', async ({ mockSetup, expected, event }) => {
-    mockSetup();
+  ]).test(
+    'when $when, if $condition, should return $expectedOutcouome',
+    async ({ mockSetup, expected, event }) => {
+      mockSetup();
 
-    const result = await handler(event);
+      const result = await handler(event);
 
-    expect(result).toMatchObject(expected);
-  });
+      expect(result).toMatchObject(expected);
+    },
+  );
 });

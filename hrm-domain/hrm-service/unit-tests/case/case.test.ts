@@ -272,7 +272,8 @@ describe('searchCases', () => {
       expectedCases: [{ ...caseWithoutContact, childName: '', categories: {} }],
     },
     {
-      description: 'list cases without helpline - sends offset & limit to db layer but no helpline',
+      description:
+        'list cases without helpline - sends offset & limit to db layer but no helpline',
       listConfig: { offset: 30, limit: 45 },
       casesFromDb: [caseRecordWithoutContact],
       expectedCases: [{ ...caseWithoutContact, childName: '', categories: {} }],
@@ -394,7 +395,9 @@ describe('search cases permissions', () => {
         searchPermissions,
       };
 
-      const searchSpy = jest.spyOn(caseDb, 'search').mockResolvedValue({ cases: [], count: 0 });
+      const searchSpy = jest
+        .spyOn(caseDb, 'search')
+        .mockResolvedValue({ cases: [], count: 0 });
       await caseApi.searchCases(accountSid, limitOffset, searchParameters, reqData);
 
       if (shouldCallSearch) {
@@ -506,10 +509,16 @@ describe('update existing case', () => {
         .mockImplementation(() => Promise.resolve(createMockCaseRecord(dbResponse)));
       jest.spyOn(caseDb, 'getById').mockResolvedValue(existingCaseObject);
 
-      const returned = await caseApi.updateCase(caseId, updateCaseObject, accountSid, workerSid, {
-        can: () => true,
-        user: twilioUser(workerSid, []),
-      });
+      const returned = await caseApi.updateCase(
+        caseId,
+        updateCaseObject,
+        accountSid,
+        workerSid,
+        {
+          can: () => true,
+          user: twilioUser(workerSid, []),
+        },
+      );
       expect(updateSpy).toHaveBeenCalledWith(caseId, expectedDbCaseParameter, accountSid);
       expect(returned).toStrictEqual(expectedResponse);
     },

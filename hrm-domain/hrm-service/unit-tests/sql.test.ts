@@ -30,7 +30,8 @@ describe('inferPostgresError', () => {
     const inferredError = inferPostgresError(originalError);
     expect(inferredError).toBeInstanceOf(DatabaseForeignKeyViolationError);
     expect(inferredError.cause).toBe(originalError);
-    const fkError: DatabaseForeignKeyViolationError = inferredError as DatabaseForeignKeyViolationError;
+    const fkError: DatabaseForeignKeyViolationError =
+      inferredError as DatabaseForeignKeyViolationError;
     expect(fkError.table).toBe(originalError.table);
     expect(fkError.constraint).toBe(originalError.constraint);
   });
@@ -42,7 +43,8 @@ describe('inferPostgresError', () => {
     const inferredError = inferPostgresError(originalError);
     expect(inferredError).toBeInstanceOf(DatabaseUniqueConstraintViolationError);
     expect(inferredError.cause).toBe(originalError);
-    const fkError: DatabaseForeignKeyViolationError = inferredError as DatabaseUniqueConstraintViolationError;
+    const fkError: DatabaseForeignKeyViolationError =
+      inferredError as DatabaseUniqueConstraintViolationError;
     expect(fkError.table).toBe(originalError.table);
     expect(fkError.constraint).toBe(originalError.constraint);
   });

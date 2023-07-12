@@ -22,7 +22,9 @@ export const mockSsmParameters = async (
   parameters: { pathPattern: RegExp; valueGenerator: () => string }[],
 ) => {
   await mockttp.forPost(/(.*)mock-ssm(.*)/).thenCallback(async req => {
-    const { Name: name }: { Name: string } = ((await req.body.getJson()) as { Name: string }) ?? {
+    const { Name: name }: { Name: string } = ((await req.body.getJson()) as {
+      Name: string;
+    }) ?? {
       Name: '',
     };
     for (const parameter of parameters) {

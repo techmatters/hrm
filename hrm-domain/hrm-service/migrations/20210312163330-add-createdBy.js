@@ -19,9 +19,15 @@ module.exports = {
   up: (queryInterface, Sequelize) => {
     return queryInterface.sequelize.transaction(t => {
       return Promise.all([
-        queryInterface.addColumn('Contacts', 'createdBy', Sequelize.STRING, { transaction: t }),
-        queryInterface.addColumn('Cases', 'createdBy', Sequelize.STRING, { transaction: t }),
-        queryInterface.addColumn('CaseAudits', 'createdBy', Sequelize.STRING, { transaction: t }),
+        queryInterface.addColumn('Contacts', 'createdBy', Sequelize.STRING, {
+          transaction: t,
+        }),
+        queryInterface.addColumn('Cases', 'createdBy', Sequelize.STRING, {
+          transaction: t,
+        }),
+        queryInterface.addColumn('CaseAudits', 'createdBy', Sequelize.STRING, {
+          transaction: t,
+        }),
       ]);
     });
   },

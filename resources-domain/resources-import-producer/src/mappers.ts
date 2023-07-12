@@ -14,7 +14,6 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-// eslint-disable-next-line prettier/prettier
 import type {
   AttributeProperty,
   AttributeValue,
@@ -63,7 +62,8 @@ type AttributeMapping<T extends AttributeProperty> = {
   infoGenerator: ContextConsumerFunc<Record<string, any> | null>;
 };
 
-export type InlineAttributeMapping<T extends InlineAttributeProperty> = AttributeMapping<T>;
+export type InlineAttributeMapping<T extends InlineAttributeProperty> =
+  AttributeMapping<T>;
 
 export type TranslatableAttributeMapping = AttributeMapping<'stringAttributes'> & {
   languageGenerator: ContextConsumerFunc<string>;
@@ -160,7 +160,8 @@ export const attributeMapping = <T extends AttributeProperty>(
   } = {},
 ): AttributeMapping<AttributeProperty> => ({
   property,
-  keyGenerator: typeof key === 'function' ? key : context => substituteCaptureTokens(key, context),
+  keyGenerator:
+    typeof key === 'function' ? key : context => substituteCaptureTokens(key, context),
   valueGenerator:
     typeof value === 'function'
       ? value
@@ -221,7 +222,9 @@ export const referenceAttributeMapping = (
   };
   // This case should be impossible but we gotta help TS
   if (!isReferenceAttributeMapping(mapping)) {
-    throw new Error(`Panic! mappingResult is not ReferenceAttributeMapping: ${mappingResult}`);
+    throw new Error(
+      `Panic! mappingResult is not ReferenceAttributeMapping: ${mappingResult}`,
+    );
   }
 
   if (isContextConsumerFunc(data.language)) {

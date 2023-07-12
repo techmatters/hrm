@@ -14,7 +14,6 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-// eslint-disable-next-line prettier/prettier
 import { insertReferralSql } from './sql/referral-insert-sql';
 import {
   DatabaseForeignKeyViolationError,
@@ -56,28 +55,31 @@ export type Referral = {
   resourceName?: string;
 };
 
-export const createReferralRecord = (task?) => async (
-  accountSid: string,
-  referral: Referral,
-): Promise<Referral> => {
-  try {
-    const statement = insertReferralSql({ resourceName: undefined, ...referral, accountSid });
+export const createReferralRecord =
+  (task?) =>
+  async (accountSid: string, referral: Referral): Promise<Referral> => {
+    try {
+      const statement = insertReferralSql({
+        resourceName: undefined,
+        ...referral,
+        accountSid,
+      });
 
-    return await txIfNotInOne(task, conn => conn.one(statement));
-  } catch (err) {
-    const dbErr = inferPostgresError(err);
-    if (
-      dbErr instanceof DatabaseUniqueConstraintViolationError &&
-      dbErr.constraint === 'Referrals_pkey'
-    ) {
-      throw new DuplicateReferralError(dbErr);
+      return await txIfNotInOne(task, conn => conn.one(statement));
+    } catch (err) {
+      const dbErr = inferPostgresError(err);
+      if (
+        dbErr instanceof DatabaseUniqueConstraintViolationError &&
+        dbErr.constraint === 'Referrals_pkey'
+      ) {
+        throw new DuplicateReferralError(dbErr);
+      }
+      if (
+        dbErr instanceof DatabaseForeignKeyViolationError &&
+        dbErr.constraint === 'FK_Referrals_Contacts'
+      ) {
+        throw new OrphanedReferralError(referral.contactId, dbErr);
+      }
+      throw dbErr;
     }
-    if (
-      dbErr instanceof DatabaseForeignKeyViolationError &&
-      dbErr.constraint === 'FK_Referrals_Contacts'
-    ) {
-      throw new OrphanedReferralError(referral.contactId, dbErr);
-    }
-    throw dbErr;
-  }
-};
+  };

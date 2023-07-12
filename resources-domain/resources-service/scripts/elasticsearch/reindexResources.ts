@@ -111,9 +111,14 @@ const reindexResources = async <T extends boolean>(
 };
 
 const main = async () => {
-  const { a: accountSid, e: environment, r: resourceIds, t: to, f: from, v: verbose } = yargs(
-    process.argv.slice(2),
-  )
+  const {
+    a: accountSid,
+    e: environment,
+    r: resourceIds,
+    t: to,
+    f: from,
+    v: verbose,
+  } = yargs(process.argv.slice(2))
     .options({
       e: {
         alias: 'environment',
@@ -185,12 +190,18 @@ const main = async () => {
     lastUpdatedTo: to,
   };
   if (verbose) {
-    const response = await reindexResources(internalResourcesUrl, authKey, reindexParameters, true);
+    const response = await reindexResources(
+      internalResourcesUrl,
+      authKey,
+      reindexParameters,
+      true,
+    );
     console.info(
       `Reindex complete, the following ${response.successfulSubmissionCount} resources successfully submitted for reindexing`,
       response.successfullySubmitted
         .map(
-          ({ accountSid: resourceAccountSid, resourceId }) => `${resourceAccountSid}/${resourceId}`,
+          ({ accountSid: resourceAccountSid, resourceId }) =>
+            `${resourceAccountSid}/${resourceId}`,
         )
         .join(', '),
     );
@@ -198,9 +209,13 @@ const main = async () => {
       console.error(
         `There were also these ${response.submissionErrorCount} resources that failed to submit for reindexing:`,
       );
-      response.failedToSubmit.forEach(({ accountSid: resourceAccountSid, resourceId, error }) => {
-        console.error(`Resource ID: ${resourceAccountSid}/${resourceId}, Error: ${error}`);
-      });
+      response.failedToSubmit.forEach(
+        ({ accountSid: resourceAccountSid, resourceId, error }) => {
+          console.error(
+            `Resource ID: ${resourceAccountSid}/${resourceId}, Error: ${error}`,
+          );
+        },
+      );
     }
   } else {
     const response = await reindexResources(

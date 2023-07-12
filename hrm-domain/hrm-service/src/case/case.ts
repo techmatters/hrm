@@ -32,7 +32,6 @@ import {
 import { randomUUID } from 'crypto';
 import { Contact } from '../contact/contact-data-access';
 import { setupCanForRules } from '../permissions/setupCanForRules';
-// eslint-disable-next-line prettier/prettier
 import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import {
   bindApplyTransformations as bindApplyContactTransformations,
@@ -50,14 +49,8 @@ type CaseInfoSection = {
 const getSectionSpecificDataFromNotesOrReferrals = (
   caseSection: CaseInfoSection,
 ): Record<string, any> => {
-  const {
-    id,
-    twilioWorkerId,
-    createdAt,
-    updatedBy,
-    updatedAt,
-    ...sectionSpecificData
-  } = caseSection;
+  const { id, twilioWorkerId, createdAt, updatedBy, updatedAt, ...sectionSpecificData } =
+    caseSection;
   return sectionSpecificData;
 };
 
@@ -66,7 +59,10 @@ export const WELL_KNOWN_CASE_SECTION_NAMES: Record<
   { sectionTypeName: string; getSectionSpecificData: (section: any) => any }
 > = {
   households: { getSectionSpecificData: s => s.household, sectionTypeName: 'household' },
-  perpetrators: { getSectionSpecificData: s => s.perpetrator, sectionTypeName: 'perpetrator' },
+  perpetrators: {
+    getSectionSpecificData: s => s.perpetrator,
+    sectionTypeName: 'perpetrator',
+  },
   incidents: { getSectionSpecificData: s => s.incident, sectionTypeName: 'incident' },
   counsellorNotes: {
     getSectionSpecificData: getSectionSpecificDataFromNotesOrReferrals,
@@ -166,24 +162,28 @@ const addCategoriesAndChildName = (caseItem: CaseRecord) => {
  * @param inputCase
  * @param workerSid
  */
-const caseToCaseRecord = (inputCase: Partial<Case>, workerSid: string): Partial<NewCaseRecord> => {
+const caseToCaseRecord = (
+  inputCase: Partial<Case>,
+  workerSid: string,
+): Partial<NewCaseRecord> => {
   const info = inputCase.info ?? {};
-  const caseSections: CaseSectionRecord[] = Object.entries(WELL_KNOWN_CASE_SECTION_NAMES).flatMap(
-    ([sectionName, { getSectionSpecificData, sectionTypeName }]) =>
-      (info[sectionName] ?? []).map(section => {
-        const caseSectionRecordToUpsert: CaseSectionRecord = {
-          caseId: inputCase.id,
-          sectionType: sectionTypeName,
-          sectionId: section.id ?? randomUUID(),
-          createdBy: section.twilioWorkerId ?? workerSid,
-          createdAt: section.createdAt ?? new Date().toISOString(),
-          updatedBy: section.updatedBy,
-          updatedAt: section.updatedAt,
-          sectionTypeSpecificData: getSectionSpecificData(section),
-          accountSid: section.accountSid,
-        };
-        return caseSectionRecordToUpsert;
-      }),
+  const caseSections: CaseSectionRecord[] = Object.entries(
+    WELL_KNOWN_CASE_SECTION_NAMES,
+  ).flatMap(([sectionName, { getSectionSpecificData, sectionTypeName }]) =>
+    (info[sectionName] ?? []).map(section => {
+      const caseSectionRecordToUpsert: CaseSectionRecord = {
+        caseId: inputCase.id,
+        sectionType: sectionTypeName,
+        sectionId: section.id ?? randomUUID(),
+        createdBy: section.twilioWorkerId ?? workerSid,
+        createdAt: section.createdAt ?? new Date().toISOString(),
+        updatedBy: section.updatedBy,
+        updatedAt: section.updatedAt,
+        sectionTypeSpecificData: getSectionSpecificData(section),
+        accountSid: section.accountSid,
+      };
+      return caseSectionRecordToUpsert;
+    }),
   );
   return {
     ...inputCase,
@@ -210,23 +210,19 @@ const caseRecordToCase = (record: CaseRecord): Case => {
   return output;
 };
 
-const mapContactTransformations = ({
-  can,
-  user,
-}: {
-  can: ReturnType<typeof setupCanForRules>;
-  user: TwilioUser;
-}) => (caseRecord: CaseRecord) => {
-  const applyTransformations = bindApplyContactTransformations(can, user);
-  const withTransformedContacts = {
-    ...caseRecord,
-    ...(caseRecord.connectedContacts && {
-      connectedContacts: caseRecord.connectedContacts.map(applyTransformations),
-    }),
-  };
+const mapContactTransformations =
+  ({ can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser }) =>
+  (caseRecord: CaseRecord) => {
+    const applyTransformations = bindApplyContactTransformations(can, user);
+    const withTransformedContacts = {
+      ...caseRecord,
+      ...(caseRecord.connectedContacts && {
+        connectedContacts: caseRecord.connectedContacts.map(applyTransformations),
+      }),
+    };
 
-  return withTransformedContacts;
-};
+    return withTransformedContacts;
+  };
 
 export const createCase = async (
   body: Partial<Case>,
@@ -310,22 +306,43 @@ export type CaseSearchReturn = {
  * - search permissions
  * - counsellors' filter
  */
-const cannotViewAnyCasesGivenTheseCounsellors = (user: TwilioUser, searchPermissions: SearchPermissions, counsellors?: string[]) => searchPermissions.canOnlyViewOwnCases && counsellors && counsellors.length > 0 && !counsellors.includes(user.workerSid);
+const cannotViewAnyCasesGivenTheseCounsellors = (
+  user: TwilioUser,
+  searchPermissions: SearchPermissions,
+  counsellors?: string[],
+) =>
+  searchPermissions.canOnlyViewOwnCases &&
+  counsellors &&
+  counsellors.length > 0 &&
+  !counsellors.includes(user.workerSid);
 
 /**
  * If the counselors can only view cases he/she owns, then we override caseFilters.counsellors to [workerSid]
  */
-const overrideCounsellors = (user: TwilioUser, searchPermissions: SearchPermissions, counsellors?: string[]) => searchPermissions.canOnlyViewOwnCases ? [user.workerSid] : counsellors;
+const overrideCounsellors = (
+  user: TwilioUser,
+  searchPermissions: SearchPermissions,
+  counsellors?: string[],
+) => (searchPermissions.canOnlyViewOwnCases ? [user.workerSid] : counsellors);
 
 export const searchCases = async (
   accountSid: string,
   listConfiguration: CaseListConfiguration,
   search: SearchParameters,
-  { can, user, searchPermissions }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser; searchPermissions: SearchPermissions },
+  {
+    can,
+    user,
+    searchPermissions,
+  }: {
+    can: ReturnType<typeof setupCanForRules>;
+    user: TwilioUser;
+    searchPermissions: SearchPermissions;
+  },
 ): Promise<CaseSearchReturn> => {
   const { filters, helpline, counselor, closedCases, ...searchCriteria } = search;
   const caseFilters = filters ?? {};
-  caseFilters.helplines = caseFilters.helplines ?? (helpline ? helpline.split(';') : undefined);
+  caseFilters.helplines =
+    caseFilters.helplines ?? (helpline ? helpline.split(';') : undefined);
   caseFilters.counsellors =
     caseFilters.counsellors ?? (counselor ? counselor.split(';') : undefined);
   caseFilters.excludedStatuses = caseFilters.excludedStatuses ?? [];
@@ -339,18 +356,35 @@ export const searchCases = async (
    * Handle filtering cases according to: https://github.com/techmatters/hrm/pull/316#discussion_r1131118034
    * The search query already filters the cases given an array of counsellors.
    */
-  if (cannotViewAnyCasesGivenTheseCounsellors(user, searchPermissions, caseFilters.counsellors)) {
+  if (
+    cannotViewAnyCasesGivenTheseCounsellors(
+      user,
+      searchPermissions,
+      caseFilters.counsellors,
+    )
+  ) {
     return {
       count: 0,
       cases: [],
     };
   } else {
-    caseFilters.counsellors = overrideCounsellors(user, searchPermissions, caseFilters.counsellors);
+    caseFilters.counsellors = overrideCounsellors(
+      user,
+      searchPermissions,
+      caseFilters.counsellors,
+    );
   }
 
-  const dbResult = await caseDb.search(listConfiguration, accountSid, searchCriteria, caseFilters);
+  const dbResult = await caseDb.search(
+    listConfiguration,
+    accountSid,
+    searchCriteria,
+    caseFilters,
+  );
   return {
     ...dbResult,
-    cases: dbResult.cases.map(mapContactTransformations({ can, user })).map(caseRecordToCase),
+    cases: dbResult.cases
+      .map(mapContactTransformations({ can, user }))
+      .map(caseRecordToCase),
   };
 };

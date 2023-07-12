@@ -65,14 +65,8 @@ beforeAll(async () => {
 
 beforeEach(async () => {
   const responses = await Promise.all([
-    request
-      .post(`/v0/accounts/${accountSid}/contacts`)
-      .set(headers)
-      .send(contact1),
-    request
-      .post(`/v0/accounts/${accountSid}/contacts`)
-      .set(headers)
-      .send(contact2),
+    request.post(`/v0/accounts/${accountSid}/contacts`).set(headers).send(contact1),
+    request.post(`/v0/accounts/${accountSid}/contacts`).set(headers).send(contact2),
   ]);
   [existingContactId, otherExistingContactId] = responses.map(r => r.body.id);
   console.log('Contact IDs for test:', existingContactId, otherExistingContactId);
@@ -103,10 +97,7 @@ describe('POST /', () => {
   });
 
   test('Contact ID exists - creates referral and returns it back', async () => {
-    const response = await request
-      .post(route)
-      .set(headers)
-      .send(validBody);
+    const response = await request.post(route).set(headers).send(validBody);
 
     expect(response.status).toBe(200);
     expect(response.body).toStrictEqual(validBody);
@@ -124,18 +115,12 @@ describe('POST /', () => {
   });
 
   test('Referral with same contact ID, resource ID and referredAt date already exists - return 400', async () => {
-    const firstResponse = await request
-      .post(route)
-      .set(headers)
-      .send(validBody);
+    const firstResponse = await request.post(route).set(headers).send(validBody);
 
     expect(firstResponse.status).toBe(200);
     expect(await referralExistsInDb(validBody)).toBe(true);
 
-    const secondResponse = await request
-      .post(route)
-      .set(headers)
-      .send(validBody);
+    const secondResponse = await request.post(route).set(headers).send(validBody);
 
     expect(secondResponse.status).toBe(400);
     expect(await referralExistsInDb(validBody)).toBe(true);
@@ -157,18 +142,12 @@ describe('POST /', () => {
   ]).test(
     'Referral which duplicates an existing one but with different $changeDescription creates another record',
     async ({ secondBodyChanges }) => {
-      const firstResponse = await request
-        .post(route)
-        .set(headers)
-        .send(validBody);
+      const firstResponse = await request.post(route).set(headers).send(validBody);
 
       expect(firstResponse.status).toBe(200);
 
       const secondBody = { ...validBody, ...secondBodyChanges() };
-      const secondResponse = await request
-        .post(route)
-        .set(headers)
-        .send(secondBody);
+      const secondResponse = await request.post(route).set(headers).send(secondBody);
       expect(secondResponse.status).toBe(200);
       expect(secondResponse.body).toStrictEqual(secondBody);
       expect(await referralExistsInDb(secondBody)).toBe(true);
@@ -186,12 +165,13 @@ describe('POST /', () => {
     },
   ]).test(
     'Referral has no $missingField returns a 400',
-    async ({ missingField }: { missingField: 'resourceId' | 'contactId' | 'referredAt' }) => {
+    async ({
+      missingField,
+    }: {
+      missingField: 'resourceId' | 'contactId' | 'referredAt';
+    }) => {
       const { [missingField]: removed, ...secondBody } = validBody;
-      const response = await request
-        .post(route)
-        .set(headers)
-        .send(secondBody);
+      const response = await request.post(route).set(headers).send(secondBody);
 
       expect(response.status).toBe(400);
     },

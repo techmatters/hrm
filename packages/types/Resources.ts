@@ -15,7 +15,6 @@
  */
 import { AccountSID } from './twilio';
 
-// eslint-disable-next-line prettier/prettier
 export type TimeSequence = `${number}-${number}`;
 
 export type ReferrableResourceAttribute<T> = {
@@ -31,9 +30,10 @@ export const isReferrableResourceAttribute = (
     typeof attribute.value === 'number' ||
     typeof attribute.value === 'boolean');
 
-export type ReferrableResourceTranslatableAttribute = ReferrableResourceAttribute<string> & {
-  language: string;
-};
+export type ReferrableResourceTranslatableAttribute =
+  ReferrableResourceAttribute<string> & {
+    language: string;
+  };
 
 export type ResourceAttributeNode = Record<
   string,

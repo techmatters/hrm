@@ -15,7 +15,6 @@
  */
 
 import { db, pgp } from '../connection-pool';
-// eslint-disable-next-line prettier/prettier
 import type { Contact } from '../contact/contact-data-access';
 import {
   ADD_FAILED_ATTEMPT_PAYLOAD,
@@ -97,11 +96,13 @@ export const completeContactJob = async ({
   completionPayload,
   wasSuccessful = true,
 }: {
-  id: number,
-  completionPayload: any,
-  wasSuccessful?: boolean,
+  id: number;
+  completionPayload: any;
+  wasSuccessful?: boolean;
 }): Promise<ContactJobRecord> => {
-  const cleanupStatus = wasSuccessful ? ContactJobCleanupStatus.PENDING : ContactJobCleanupStatus.NOT_READY;
+  const cleanupStatus = wasSuccessful
+    ? ContactJobCleanupStatus.PENDING
+    : ContactJobCleanupStatus.NOT_READY;
   return db.task(tx => {
     return tx.oneOrNone(COMPLETE_JOB_SQL, { id, completionPayload, cleanupStatus });
   });
@@ -111,28 +112,30 @@ export const completeContactJob = async ({
  * Add a new job to be completed to the ContactJobs queue
  * Requires tx: ITask to make the creation of the job part of the same transaction
  */
-export const createContactJob = (tk?) =>  async (
-  job: Pick<ContactJob, 'jobType' | 'resource' | 'additionalPayload'>,
-): Promise<void> => {
-  const contact = job.resource;
-  const insertSql = pgp.helpers.insert(
-    {
-      requested: new Date().toISOString(),
-      jobType: job.jobType,
-      contactId: contact.id,
-      accountSid: contact.accountSid,
-      additionalPayload: job.additionalPayload,
-      lastAttempt: null,
-      numberOfAttempts: 0,
-      completed: null,
-      completionPayload: null,
-    },
-    null,
-    'ContactJobs',
-  );
+export const createContactJob =
+  (tk?) =>
+  async (
+    job: Pick<ContactJob, 'jobType' | 'resource' | 'additionalPayload'>,
+  ): Promise<void> => {
+    const contact = job.resource;
+    const insertSql = pgp.helpers.insert(
+      {
+        requested: new Date().toISOString(),
+        jobType: job.jobType,
+        contactId: contact.id,
+        accountSid: contact.accountSid,
+        additionalPayload: job.additionalPayload,
+        lastAttempt: null,
+        numberOfAttempts: 0,
+        completed: null,
+        completionPayload: null,
+      },
+      null,
+      'ContactJobs',
+    );
 
-  return txIfNotInOne(tk, conn => conn.none(insertSql));
-};
+    return txIfNotInOne(tk, conn => conn.none(insertSql));
+  };
 
 export const appendFailedAttemptPayload = async (
   contactJobId: ContactJob['id'],
@@ -151,28 +154,34 @@ export const getPendingCleanupJobs = async (
   accountSid: string,
   cleanupRetentionDays: number,
 ): Promise<RetrieveContactTranscriptJob[]> => {
-  return db.task(tx => tx.manyOrNone<RetrieveContactTranscriptJob>(PENDING_CLEANUP_JOBS_SQL, { accountSid, cleanupRetentionDays }));
+  return db.task(tx =>
+    tx.manyOrNone<RetrieveContactTranscriptJob>(PENDING_CLEANUP_JOBS_SQL, {
+      accountSid,
+      cleanupRetentionDays,
+    }),
+  );
 };
 
 export const getPendingCleanupJobAccountSids = async (
   maxCleanupRetentionDays: number,
 ): Promise<string[]> => {
-  const ret = await db.task(tx => tx.manyOrNone(PENDING_CLEANUP_JOB_ACCOUNT_SIDS_SQL, { maxCleanupRetentionDays }));
+  const ret = await db.task(tx =>
+    tx.manyOrNone(PENDING_CLEANUP_JOB_ACCOUNT_SIDS_SQL, { maxCleanupRetentionDays }),
+  );
   return ret?.map(r => r.accountSid);
 };
 
-export const deleteContactJob = async (accountSid: string, jobId: number): Promise<void> => {
+export const deleteContactJob = async (
+  accountSid: string,
+  jobId: number,
+): Promise<void> => {
   return db.task(tx => tx.none(DELETE_JOB_SQL, { accountSid, jobId }));
 };
 
-export const setContactJobCleanupActive = async (
-  jobId: number,
-): Promise<void> => {
+export const setContactJobCleanupActive = async (jobId: number): Promise<void> => {
   return db.task(tx => tx.none(UPDATE_JOB_CLEANUP_ACTIVE_SQL, { jobId }));
 };
 
-export const setContactJobCleanupPending = async (
-  jobId: number,
-): Promise<void> => {
+export const setContactJobCleanupPending = async (jobId: number): Promise<void> => {
   return db.task(tx => tx.none(UPDATE_JOB_CLEANUP_PENDING_SQL, { jobId }));
 };

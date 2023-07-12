@@ -16,9 +16,14 @@
 
 import { SafeRouter, publicEndpoint, actionsMaps } from '../permissions';
 import createError from 'http-errors';
-import { patchContact, connectContactToCase, searchContacts, createContact, getContactById } from './contact';
+import {
+  patchContact,
+  connectContactToCase,
+  searchContacts,
+  createContact,
+  getContactById,
+} from './contact';
 import asyncHandler from '../async-handler';
-// eslint-disable-next-line prettier/prettier
 import type { Request, Response, NextFunction } from 'express';
 
 const contactsRouter = SafeRouter();
@@ -35,7 +40,10 @@ const contactsRouter = SafeRouter();
 contactsRouter.post('/', publicEndpoint, async (req, res) => {
   const { accountSid, user } = req;
 
-  const contact = await createContact(accountSid, user.workerSid, req.body, { can: req.can, user });
+  const contact = await createContact(accountSid, user.workerSid, req.body, {
+    can: req.can,
+    user,
+  });
   res.json(contact);
 });
 
@@ -66,7 +74,11 @@ contactsRouter.put('/:contactId/connectToCase', publicEndpoint, async (req, res)
 contactsRouter.post('/search', publicEndpoint, async (req, res) => {
   const { accountSid } = req;
 
-  const searchResults = await searchContacts(accountSid, req.body, req.query, { can: req.can, user: req.user, searchPermissions: req.searchPermissions });
+  const searchResults = await searchContacts(accountSid, req.body, req.query, {
+    can: req.can,
+    user: req.user,
+    searchPermissions: req.searchPermissions,
+  });
   res.json(searchResults);
 });
 
@@ -92,7 +104,10 @@ const canEditContact = asyncHandler(async (req, res, next) => {
         req.unauthorize();
       }
     } catch (err) {
-      if (err instanceof Error && err.message.toLowerCase().includes('contact not found')) {
+      if (
+        err instanceof Error &&
+        err.message.toLowerCase().includes('contact not found')
+      ) {
         throw createError(404);
       } else {
         throw createError(500);
@@ -103,18 +118,32 @@ const canEditContact = asyncHandler(async (req, res, next) => {
   next();
 });
 
-contactsRouter.patch('/:contactId', validatePatchPayload, canEditContact, async (req, res) => {
-  const { accountSid, user } = req;
-  const { contactId } = req.params;
+contactsRouter.patch(
+  '/:contactId',
+  validatePatchPayload,
+  canEditContact,
+  async (req, res) => {
+    const { accountSid, user } = req;
+    const { contactId } = req.params;
 
-  try {
-    const contact = await patchContact(accountSid, user.workerSid, contactId, req.body, { can: req.can, user });
-    res.json(contact);
-  } catch (err) {
-    if (err.message.toLowerCase().includes('contact not found')) {
-      throw createError(404);
-    } else throw err;
-  }
-});
+    try {
+      const contact = await patchContact(
+        accountSid,
+        user.workerSid,
+        contactId,
+        req.body,
+        {
+          can: req.can,
+          user,
+        },
+      );
+      res.json(contact);
+    } catch (err) {
+      if (err.message.toLowerCase().includes('contact not found')) {
+        throw createError(404);
+      } else throw err;
+    }
+  },
+);
 
 export default contactsRouter.expressRouter;

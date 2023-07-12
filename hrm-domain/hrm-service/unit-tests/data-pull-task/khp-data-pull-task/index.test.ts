@@ -72,8 +72,14 @@ describe('KHP Data Pull - Params', () => {
 
     await pullData(startDateISO, endDateISO);
 
-    expect(pullContactsSpy).toHaveBeenCalledWith(parseISO(startDateISO), parseISO(endDateISO));
-    expect(pullCasesSpy).toHaveBeenCalledWith(parseISO(startDateISO), parseISO(endDateISO));
+    expect(pullContactsSpy).toHaveBeenCalledWith(
+      parseISO(startDateISO),
+      parseISO(endDateISO),
+    );
+    expect(pullCasesSpy).toHaveBeenCalledWith(
+      parseISO(startDateISO),
+      parseISO(endDateISO),
+    );
   });
 
   test('No end-date should default to now', async () => {

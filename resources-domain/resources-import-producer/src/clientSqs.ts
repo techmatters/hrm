@@ -16,10 +16,7 @@
 
 import { SQS } from 'aws-sdk';
 
-// eslint-disable-next-line prettier/prettier
 import type { AccountSID, ImportRequestBody } from '@tech-matters/types';
-// eslint-disable-next-line prettier/prettier
-
 
 let sqs: SQS;
 
@@ -30,20 +27,23 @@ const getSqsClient = () => {
   return sqs;
 };
 
-export const publishToImportConsumer = (importResourcesSqsQueueUrl: URL) => async (params: ResourceMessage) => {
-  //TODO: more robust error handling/messaging
-  try {
-    const QueueUrl = importResourcesSqsQueueUrl.toString();
+export const publishToImportConsumer =
+  (importResourcesSqsQueueUrl: URL) => async (params: ResourceMessage) => {
+    //TODO: more robust error handling/messaging
+    try {
+      const QueueUrl = importResourcesSqsQueueUrl.toString();
 
-    return await getSqsClient()
-      .sendMessage({
-        MessageBody: JSON.stringify(params),
-        MessageGroupId: `${params.accountSid}/${params.importedResources[0]?.id ?? '__EMPTY_BATCH'}`,
-        QueueUrl,
-      })
-      .promise();
-  } catch (err) {
-    console.error('Error trying to send message to SQS queue', err);
-  }
-};
+      return await getSqsClient()
+        .sendMessage({
+          MessageBody: JSON.stringify(params),
+          MessageGroupId: `${params.accountSid}/${
+            params.importedResources[0]?.id ?? '__EMPTY_BATCH'
+          }`,
+          QueueUrl,
+        })
+        .promise();
+    } catch (err) {
+      console.error('Error trying to send message to SQS queue', err);
+    }
+  };
 export type ResourceMessage = ImportRequestBody & { accountSid: AccountSID };
