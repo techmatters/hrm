@@ -21,7 +21,7 @@
     "ts-node": "^10.9.1"
   },
   "scripts": {
-    "docker:build": "docker build -t hrm-jobs-contact-retrieve-transcript --build-arg lambda_name=contact-retrieve-transcript -f ../Dockerfile ../../",
+    "docker:build": "docker build -t hrm-jobs-contact-retrieve-transcript --build-arg lambda_name=contact-retrieve-transcript --build-arg lambda_dir=hrm-domain -f ../../jobs/Dockerfile ../../",
     "test:integration": "jest tests/integration",
     "test:unit": "jest tests/unit"
   }
