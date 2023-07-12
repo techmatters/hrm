@@ -14,11 +14,18 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-// eslint-disable-next-line prettier/prettier
-import type { IndicesCreateRequest } from '@elastic/elasticsearch/lib/api/types';
-import { CreateIndexConvertedDocument } from './index';
+module.exports = {
+  up: async queryInterface => {
+    await queryInterface.sequelize.query(`
+      ALTER TABLE IF EXISTS resources."Resources" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP WITH TIME ZONE;
+    `);
+    console.log('Table "Resources" deletedAt column added');
+  },
 
-export type IndexConfiguration<T = any> = {
-  getCreateIndexParams: (indexName: string) => IndicesCreateRequest
-  convertToIndexDocument: (sourceEntity: T) => CreateIndexConvertedDocument
+  down: async queryInterface => {
+    await queryInterface.sequelize.query(
+      `ALTER TABLE IF EXISTS resources."Resources" DROP COLUMN IF EXISTS "deletedAt";`,
+    );
+    console.log('Table "Resources" deletedAt column added');
+  },
 };

@@ -15,16 +15,13 @@
  */
 import { Client as EsClient, ClientOptions } from '@elastic/elasticsearch';
 import { getSsmParameter } from '@tech-matters/ssm-cache';
-import {
-  indexDocumentBulk,
-  IndexDocumentBulkExtraParams,
-  IndexDocumentBulkResponse,
-} from './indexDocumentBulk';
+import { executeBulk, ExecuteBulkExtraParams, ExecuteBulkResponse } from './executeBulk';
 import { createIndex, CreateIndexExtraParams, CreateIndexResponse } from './createIndex';
 import { deleteIndex, DeleteIndexResponse } from './deleteIndex';
 import { indexDocument, IndexDocumentExtraParams, IndexDocumentResponse } from './indexDocument';
 import getAccountSid from './getAccountSid';
 import { search, SearchExtraParams } from './search';
+import { suggest, SuggestExtraParams } from './suggest';
 import { SearchConfiguration, IndexConfiguration } from './config';
 import { IndicesRefreshResponse } from '@elastic/elasticsearch/lib/api/types';
 
@@ -87,7 +84,7 @@ const getEsConfig = async ({
 export type IndexClient<T> = {
   indexDocument: (args: IndexDocumentExtraParams<T>) => Promise<IndexDocumentResponse>;
   refreshIndex: () => Promise<IndicesRefreshResponse>;
-  indexDocumentBulk: (args: IndexDocumentBulkExtraParams<T>) => Promise<IndexDocumentBulkResponse>;
+  executeBulk: (args: ExecuteBulkExtraParams<T>) => Promise<ExecuteBulkResponse>;
   createIndex: (args: CreateIndexExtraParams) => Promise<CreateIndexResponse>;
   deleteIndex: () => Promise<DeleteIndexResponse>;
 };
@@ -105,6 +102,7 @@ const getClientOrMock = async ({ config, index, indexType }: GetClientOrMockArgs
     index,
     searchClient: (searchConfig: SearchConfiguration) => ({
       search: (args: SearchExtraParams) => search({ client, index, searchConfig, ...args }),
+      suggest: (args: SuggestExtraParams) => suggest({ client, index, searchConfig, ...args }),
     }),
     indexClient: <T>(indexConfig: IndexConfiguration<T>): IndexClient<T> => {
       const passThroughConfig: PassThroughConfig<T> = {
@@ -124,8 +122,8 @@ const getClientOrMock = async ({ config, index, indexType }: GetClientOrMockArgs
         deleteIndex: () => deleteIndex(passThroughConfig),
         indexDocument: (args: IndexDocumentExtraParams<T>) =>
           indexDocument({ ...passThroughConfig, ...args }),
-        indexDocumentBulk: (args: IndexDocumentBulkExtraParams<T>) =>
-          indexDocumentBulk({ ...passThroughConfig, ...args }),
+        executeBulk: (args: ExecuteBulkExtraParams<T>) =>
+          executeBulk({ ...passThroughConfig, ...args }),
       };
     },
   };

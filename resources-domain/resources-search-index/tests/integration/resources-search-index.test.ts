@@ -16,14 +16,21 @@
 
 import { SQS } from 'aws-sdk';
 
-import { Client, IndexTypes, getClient, SearchResponse } from '@tech-matters/elasticsearch-client';
+import { Client, getClient, IndexClient, SearchResponse } from '@tech-matters/elasticsearch-client';
+import { FlatResource } from '@tech-matters/types/dist/Resources';
+
+import {
+  RESOURCE_INDEX_TYPE,
+  resourceSearchConfiguration,
+  resourceIndexConfiguration,
+} from '@tech-matters/resources-search-config';
 
 import { generateMockMessageBody } from '../generateMockMessageBody';
 import { getStackOutput } from '../../../../cdk/cdkOutput';
 import { sendMessage, sendMessageBatch } from '../../../../test-support/sendMessage';
 
 /**
- * TODO: This is a super dirty proof of concept for e2e tests.
+ * TODO: This is a super dirty proof of concept for integration tests.
  * It needs cleanup.
  */
 
@@ -31,7 +38,7 @@ jest.setTimeout(60000);
 
 const localstackEndpoint = 'http://localhost:4566';
 const accountSids = ['ACCOUNT_1', 'ACCOUNT_2'];
-const indexType = IndexTypes.RESOURCES;
+const indexType = RESOURCE_INDEX_TYPE;
 
 const lambdaName = 'resources-search-index';
 const completeOutput: any = getStackOutput('resources-search-complete');
@@ -42,13 +49,15 @@ const sqs = new SQS({
 });
 
 export const waitForSearchResponse = async ({
-  client,
+  indexClient,
+  searchClient,
   message,
   expectEmpty = false,
   retryCount = 0,
   retryLimit = 60,
 }: {
-  client: Awaited<ReturnType<typeof getClient>>;
+  indexClient: IndexClient<FlatResource>;
+  searchClient: ReturnType<Client['searchClient']>;
   message: ReturnType<typeof generateMockMessageBody>;
   expectEmpty?: boolean;
   retryCount?: number;
@@ -58,9 +67,9 @@ export const waitForSearchResponse = async ({
     // This is a hack to wait for the job... There isn't a great way to do this.
     await new Promise(resolve => setTimeout(resolve, 3000));
   }
-  await client.refreshIndex();
+  await indexClient.refreshIndex();
 
-  const result = await client.search({
+  const result = await searchClient.search({
     searchParameters: {
       q: `"${message.document.name}"`,
       pagination: {
@@ -77,7 +86,13 @@ export const waitForSearchResponse = async ({
 
   if (result.total === 0 && retryCount < retryLimit) {
     await new Promise(resolve => setTimeout(resolve, 250));
-    return waitForSearchResponse({ client, message, retryLimit, retryCount: retryCount + 1 });
+    return waitForSearchResponse({
+      indexClient,
+      searchClient,
+      message,
+      retryLimit,
+      retryCount: retryCount + 1,
+    });
   }
 
   return result;
@@ -104,7 +119,8 @@ export const waitForSQSMessage = async ({
 };
 
 describe('resources-search-index', () => {
-  const clients: Record<string, Client> = {};
+  const searchClients: Record<string, any> = {};
+  const indexClients: Record<string, IndexClient<FlatResource>> = {};
   beforeEach(async () => {
     await sqs.purgeQueue({ QueueUrl: errorQueueUrl }).promise();
     await Promise.all(
@@ -116,11 +132,13 @@ describe('resources-search-index', () => {
             node: 'http://localhost:9200',
           },
         });
-        clients[accountSid] = client;
+        searchClients[accountSid] = client.searchClient(resourceSearchConfiguration);
+        indexClients[accountSid] = client.indexClient(resourceIndexConfiguration);
+
         // This is a bit of a hack to get the client to connect to the localstack instance on localhost
         // instead of using the localstack ssm parameter which points to the internal docker network
         // address of the elasticsearch container: http://elasticsearch:9200
-        await client.createIndex({});
+        await indexClients[accountSid].createIndex({});
       }),
     );
   });
@@ -128,7 +146,7 @@ describe('resources-search-index', () => {
   afterEach(async () => {
     await Promise.all(
       accountSids.map(async accountSid => {
-        await clients[accountSid].deleteIndex();
+        await indexClients[accountSid].deleteIndex();
       }),
     );
 
@@ -145,7 +163,8 @@ describe('resources-search-index', () => {
     expect(sqsResp).toHaveProperty('MessageId');
 
     const searchResult = await waitForSearchResponse({
-      client: clients[message.accountSid],
+      indexClient: indexClients[message.accountSid],
+      searchClient: searchClients[message.accountSid],
       message,
     });
     expect(searchResult).toHaveProperty('total');
@@ -170,7 +189,8 @@ describe('resources-search-index', () => {
     await Promise.all(
       messages.map(async message => {
         const searchResult = await waitForSearchResponse({
-          client: clients[message.accountSid],
+          indexClient: indexClients[message.accountSid],
+          searchClient: searchClients[message.accountSid],
           message,
           retryLimit: 10,
         });
@@ -204,7 +224,7 @@ describe('resources-search-index', () => {
   //   for (const [idx, message] of messages.entries()) {
   //     const isFinal = idx === messages.length - 1;
   //     const searchResult = await waitForSearchResponse({
-  //       client: clients[message.accountSid],
+  //       client: searchClients[message.accountSid],
   //       message,
   //       retryLimit: 10,
   //       expectEmpty: !isFinal,

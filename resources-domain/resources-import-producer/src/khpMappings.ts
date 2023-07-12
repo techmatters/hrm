@@ -204,7 +204,7 @@ export const KHP_MAPPING_NODE: MappingNode = {
   name: resourceFieldMapping('name', ctx => ctx.currentValue.en || ctx.currentValue.fr),
   updatedAt: resourceFieldMapping('lastUpdated'),
   createdAt: attributeMapping('dateTimeAttributes', 'sourceCreatedAt'),
-  retiredAt: attributeMapping('dateTimeAttributes', 'sourceRetiredAt'),
+  retiredAt: resourceFieldMapping('deletedAt'),
   nameDetails: {
     children: {
       '{language}': translatableAttributeMapping('nameDetails', {

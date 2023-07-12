@@ -14,11 +14,12 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { ReferrableResource } from '@tech-matters/types';
+import { AccountSID, ReferrableResource } from '@tech-matters/types';
 
 import { Request, Response, Router } from 'express';
 import resourceRoutes from '../../../src/resource/resourceRoutesV0';
 import { resourceService } from '../../../src/resource/resourceService';
+import { SearchParameters } from '@tech-matters/elasticsearch-client/dist/search';
 
 jest.mock('express', () => ({
   Router: jest.fn(),
@@ -34,7 +35,7 @@ const mockSearchResources: jest.Mock<Promise<{
 }>> = jest.fn();
 
 (<jest.Mock>resourceService).mockReturnValue({
-  searchResourcesByName: mockSearchResources,
+  searchResources: mockSearchResources,
 });
 
 const mockRouterConstructor = Router as jest.Mock;
@@ -43,9 +44,9 @@ beforeEach(() => {
   mockRouterConstructor.mockReset();
 });
 
-describe('POST /searchByName', () => {
+describe('POST /search', () => {
   type SearchRequestHandler = (
-    req: Request<{ nameSubstring: string; ids: string[] }>,
+    req: Partial<Request<Partial<SearchParameters>>> & { accountSid: AccountSID },
     res: Response,
   ) => Promise<void>;
 
@@ -57,7 +58,7 @@ describe('POST /searchByName', () => {
     mockResponseJson.mockReset();
     mockRouterConstructor.mockImplementation(() => ({
       post: (path: string, handler: SearchRequestHandler) => {
-        if (path === '/searchByName') {
+        if (path === '/search') {
           searchRequestHandler = handler;
         }
       },
@@ -87,14 +88,14 @@ describe('POST /searchByName', () => {
     await searchRequestHandler(
       {
         query: { limit: '1337', start: '42' } as any,
-        body: { nameSubstring: 'Reso', ids: ['RESOURCE_1', 'RESOURCE_2', 'RESOURCE_3'] },
+        body: { generalSearchTerm: 'Reso' },
         accountSid: 'AC1',
-      } as Request<{ nameSubstring: string; ids: string[] }>,
+      },
       response,
     );
     expect(mockSearchResources).toHaveBeenCalledWith('AC1', {
-      nameSubstring: 'Reso',
-      ids: ['RESOURCE_1', 'RESOURCE_2', 'RESOURCE_3'],
+      generalSearchTerm: 'Reso',
+      filters: {},
       pagination: { limit: 1337, start: 42 },
     });
     expect(response.json).toHaveBeenCalledWith(modelResult);
@@ -109,14 +110,14 @@ describe('POST /searchByName', () => {
     await searchRequestHandler(
       {
         query: {} as any,
-        body: { nameSubstring: 'Reso', ids: ['RESOURCE_1', 'RESOURCE_2', 'RESOURCE_3'] },
+        body: { generalSearchTerm: 'Reso' },
         accountSid: 'AC1',
-      } as Request<{ nameSubstring: string; ids: string[] }>,
+      },
       response,
     );
     expect(mockSearchResources).toHaveBeenCalledWith('AC1', {
-      nameSubstring: 'Reso',
-      ids: ['RESOURCE_1', 'RESOURCE_2', 'RESOURCE_3'],
+      generalSearchTerm: 'Reso',
+      filters: {},
       pagination: { limit: 20, start: 0 },
     });
     expect(response.json).toHaveBeenCalledWith(modelResult);
@@ -131,19 +132,47 @@ describe('POST /searchByName', () => {
     await searchRequestHandler(
       {
         query: { limit: 'some', start: 'crap' } as any,
-        body: { nameSubstring: 'Reso', ids: ['RESOURCE_1', 'RESOURCE_2', 'RESOURCE_3'] },
+        body: { generalSearchTerm: 'Reso' },
         accountSid: 'AC1',
-      } as Request<{ nameSubstring: string; ids: string[] }>,
+      },
       response,
     );
     expect(mockSearchResources).toHaveBeenCalledWith('AC1', {
-      nameSubstring: 'Reso',
-      ids: ['RESOURCE_1', 'RESOURCE_2', 'RESOURCE_3'],
+      generalSearchTerm: 'Reso',
+      filters: {},
       pagination: { limit: 20, start: 0 },
     });
     expect(response.json).toHaveBeenCalledWith(modelResult);
   });
-  test('nameSubstring and ids missing - calls model without them', async () => {
+  test('generalSearchTerm and filters present - calls service with them', async () => {
+    const modelResult = {
+      totalCount: 100,
+      results: [],
+    };
+    mockSearchResources.mockResolvedValue(modelResult);
+    await searchRequestHandler(
+      {
+        query: {} as any,
+        body: {
+          generalSearchTerm: 'Reso',
+          filters: {
+            some: 'filter',
+          },
+        },
+        accountSid: 'AC1',
+      },
+      response,
+    );
+    expect(mockSearchResources).toHaveBeenCalledWith('AC1', {
+      generalSearchTerm: 'Reso',
+      filters: {
+        some: 'filter',
+      },
+      pagination: { limit: 20, start: 0 },
+    });
+    expect(response.json).toHaveBeenCalledWith(modelResult);
+  });
+  test('generalSearchTerm and filters missing - calls service without them', async () => {
     const modelResult = {
       totalCount: 100,
       results: [],
@@ -154,10 +183,12 @@ describe('POST /searchByName', () => {
         query: {} as any,
         body: {},
         accountSid: 'AC1',
-      } as Request<{ nameSubstring: string; ids: string[] }>,
+      },
       response,
     );
     expect(mockSearchResources).toHaveBeenCalledWith('AC1', {
+      generalSearchTerm: '',
+      filters: {},
       pagination: { limit: 20, start: 0 },
     });
     expect(response.json).toHaveBeenCalledWith(modelResult);
@@ -172,10 +203,12 @@ describe('POST /searchByName', () => {
       {
         query: {} as any,
         accountSid: 'AC1',
-      } as Request<{ nameSubstring: string; ids: string[] }>,
+      },
       response,
     );
     expect(mockSearchResources).toHaveBeenCalledWith('AC1', {
+      generalSearchTerm: '',
+      filters: {},
       pagination: { limit: 20, start: 0 },
     });
     expect(response.json).toHaveBeenCalledWith(modelResult);

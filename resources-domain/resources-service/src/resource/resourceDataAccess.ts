@@ -17,10 +17,7 @@
 import { AccountSID, FlatResource } from '@tech-matters/types';
 
 import { db } from '../connection-pool';
-import {
-  SELECT_RESOURCE_IDS_WHERE_NAME_CONTAINS,
-  SELECT_RESOURCE_IN_IDS,
-} from './sql/resourceGetSql';
+import { SELECT_RESOURCE_IN_IDS } from './sql/resourceGetSql';
 
 export const getById = async (
   accountSid: AccountSID,
@@ -49,24 +46,4 @@ export const getByIdList = async (
   );
   console.debug('Retrieved resources:', res?.length);
   return res;
-};
-
-export const getWhereNameContains = async (
-  accountSid: AccountSID,
-  nameSubstring: string,
-  start: number,
-  limit: number,
-): Promise<{ totalCount: number; results: string[] }> => {
-  const [dataResultSet, countResultSet] = await db.task(async t =>
-    t.multi(SELECT_RESOURCE_IDS_WHERE_NAME_CONTAINS, {
-      accountSid,
-      namePattern: `%${nameSubstring}%`,
-      start,
-      limit,
-    }),
-  );
-  return {
-    totalCount: countResultSet[0].totalCount,
-    results: dataResultSet.map(record => record.id),
-  };
 };

@@ -17,6 +17,7 @@ import { IndexConfiguration, SearchConfiguration } from '@tech-matters/elasticse
 import { FlatResource } from '@tech-matters/types';
 import { convertIndexDocument } from './convertIndexDocument';
 import { getCreateIndexParams } from './getCreateIndexParams';
+import { generateSuggestQuery } from './generateSuggestQuery';
 
 export const resourceSearchConfiguration: SearchConfiguration = {
   searchFieldBoosts: {
@@ -42,6 +43,7 @@ export const resourceSearchConfiguration: SearchConfiguration = {
       type: 'term',
     },
   },
+  generateSuggestQuery,
 };
 
 export const resourceIndexConfiguration: IndexConfiguration<FlatResource> = {

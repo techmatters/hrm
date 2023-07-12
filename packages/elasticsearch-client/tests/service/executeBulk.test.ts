@@ -15,7 +15,7 @@
  */
 
 import { getClient } from '../../src';
-import { Client, IndexClient } from '../..';
+import { BulkOperations, Client, IndexClient } from '../..';
 import { resourceDocuments } from '../fixtures/resources';
 import { FlatResource } from '@tech-matters/types/dist/Resources';
 import { resourceIndexConfiguration, resourceSearchConfiguration } from '../fixtures/configuration';
@@ -47,12 +47,13 @@ beforeAll(async () => {
 
 describe('Index Documents Bulk', () => {
   test('when passed a list of documents, should index all documents', async () => {
-    const documents = resourceDocuments.map(doc => ({
+    const documents: BulkOperations<FlatResource> = resourceDocuments.map(doc => ({
+      action: 'index',
       id: doc.id,
       document: doc,
     }));
 
-    await indexClient.indexDocumentBulk({ documents });
+    await indexClient.executeBulk({ documents });
     await indexClient.refreshIndex();
     const response = await searchClient.search({
       searchParameters: {

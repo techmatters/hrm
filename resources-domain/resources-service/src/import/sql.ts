@@ -33,6 +33,7 @@ export const generateUpsertSqlFromImportResource = (
       accountSid,
       created: resourceRecord.lastUpdated,
       lastUpdated: resourceRecord.lastUpdated,
+      deletedAt: resourceRecord.deletedAt || null,
     },
     ['id', 'name', 'accountSid', 'created', 'lastUpdated'],
     { schema: 'resources', table: 'Resources' },
