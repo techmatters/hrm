@@ -58,14 +58,12 @@ export function createMockConnection<T = unknown>(): pgPromise.ITask<T> {
 }
 
 export const mockTask = (db: IDatabase<unknown>, mockConn: pgPromise.ITask<unknown>) => {
-  jest
-    .spyOn(db, 'task')
-    .mockImplementation(
-      // @ts-ignore
-      (action: (connection: pgPromise.ITask<unknown>) => Promise<any>) => {
-        return action(mockConn);
-      },
-    );
+  jest.spyOn(db, 'task').mockImplementation(
+    // @ts-ignore
+    (action: (connection: pgPromise.ITask<unknown>) => Promise<any>) => {
+      return action(mockConn);
+    },
+  );
 };
 export const mockTransaction = (
   db: IDatabase<unknown>,
@@ -73,40 +71,32 @@ export const mockTransaction = (
   mockTx: pgPromise.ITask<unknown> | undefined = undefined,
 ) => {
   if (mockTx) {
-    jest
-      .spyOn(mockConn, 'tx')
-      .mockImplementation(
-        // @ts-ignore
-        (action: (connection: pgPromise.ITask<unknown>) => Promise<any>) => {
-          return action(mockTx);
-        },
-      );
-    jest
-      .spyOn(mockConn, 'txIf')
-      .mockImplementation(
-        // @ts-ignore
-        (action: (connection: pgPromise.ITask<unknown>) => Promise<any>) => {
-          return action(mockTx);
-        },
-      );
+    jest.spyOn(mockConn, 'tx').mockImplementation(
+      // @ts-ignore
+      (action: (connection: pgPromise.ITask<unknown>) => Promise<any>) => {
+        return action(mockTx);
+      },
+    );
+    jest.spyOn(mockConn, 'txIf').mockImplementation(
+      // @ts-ignore
+      (action: (connection: pgPromise.ITask<unknown>) => Promise<any>) => {
+        return action(mockTx);
+      },
+    );
     mockTask(db, mockConn);
   } else {
-    jest
-      .spyOn(db, 'tx')
-      .mockImplementation(
-        // @ts-ignore
-        (action: (connection: pgPromise.ITask<unknown>) => Promise<any>) => {
-          return action(mockConn);
-        },
-      );
-    jest
-      .spyOn(db, 'txIf')
-      .mockImplementation(
-        // @ts-ignore
-        (action: (connection: pgPromise.ITask<unknown>) => Promise<any>) => {
-          return action(mockConn);
-        },
-      );
+    jest.spyOn(db, 'tx').mockImplementation(
+      // @ts-ignore
+      (action: (connection: pgPromise.ITask<unknown>) => Promise<any>) => {
+        return action(mockConn);
+      },
+    );
+    jest.spyOn(db, 'txIf').mockImplementation(
+      // @ts-ignore
+      (action: (connection: pgPromise.ITask<unknown>) => Promise<any>) => {
+        return action(mockConn);
+      },
+    );
   }
 };
 

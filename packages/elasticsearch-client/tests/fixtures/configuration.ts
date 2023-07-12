@@ -61,8 +61,8 @@ export const getMappingField = (
   if (Object.keys(mappingFields).includes(fieldName))
     return { field: fieldName, mapping: mappingFields[fieldName] };
   const [field, mapping] =
-    Object.entries(mappingFields).find(([, { attributeKeyPattern }]) =>
-      attributeKeyPattern?.test(fieldName),
+    Object.entries(mappingFields).find(
+      ([, { attributeKeyPattern }]) => attributeKeyPattern?.test(fieldName),
     ) ?? [];
   return mapping && field ? { field, mapping } : undefined;
 };

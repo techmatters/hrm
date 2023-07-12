@@ -204,12 +204,15 @@ export const update = async (
         );
       }
       // Map case sections into a list of ids grouped by category, which allows a more concise DELETE SQL statement to be generated
-      const caseSectionIdsByType = allSections.reduce((idsBySectionType, caseSection) => {
-        idsBySectionType[caseSection.sectionType] =
-          idsBySectionType[caseSection.sectionType] ?? [];
-        idsBySectionType[caseSection.sectionType].push(caseSection.sectionId);
-        return idsBySectionType;
-      }, <Record<string, string[]>>{});
+      const caseSectionIdsByType = allSections.reduce(
+        (idsBySectionType, caseSection) => {
+          idsBySectionType[caseSection.sectionType] =
+            idsBySectionType[caseSection.sectionType] ?? [];
+          idsBySectionType[caseSection.sectionType].push(caseSection.sectionId);
+          return idsBySectionType;
+        },
+        <Record<string, string[]>>{},
+      );
       const { sql, values } = deleteMissingCaseSectionsSql(caseSectionIdsByType);
       Object.assign(statementValues, values);
       await transaction.none(sql, statementValues);

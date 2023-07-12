@@ -418,27 +418,30 @@ describe('/cases route', () => {
       expect(<caseApi.Case>response.body.cases).toHaveLength(1);
 
       expect(
-        (<caseApi.Case[]>response.body.cases).every(caseObj =>
-          caseObj.connectedContacts?.every(c =>
-            Array.isArray(c.rawJson?.conversationMedia),
-          ),
+        (<caseApi.Case[]>response.body.cases).every(
+          caseObj =>
+            caseObj.connectedContacts?.every(c =>
+              Array.isArray(c.rawJson?.conversationMedia),
+            ),
         ),
       ).toBeTruthy();
 
       if (expectTranscripts) {
         expect(
-          (<caseApi.Case[]>response.body.cases).every(caseObj =>
-            caseObj.connectedContacts?.every(c =>
-              c.rawJson?.conversationMedia?.some(isS3StoredTranscript),
-            ),
+          (<caseApi.Case[]>response.body.cases).every(
+            caseObj =>
+              caseObj.connectedContacts?.every(
+                c => c.rawJson?.conversationMedia?.some(isS3StoredTranscript),
+              ),
           ),
         ).toBeTruthy();
       } else {
         expect(
-          (<caseApi.Case[]>response.body.cases).every(caseObj =>
-            caseObj.connectedContacts?.every(c =>
-              c.rawJson?.conversationMedia?.some(isS3StoredTranscript),
-            ),
+          (<caseApi.Case[]>response.body.cases).every(
+            caseObj =>
+              caseObj.connectedContacts?.every(
+                c => c.rawJson?.conversationMedia?.some(isS3StoredTranscript),
+              ),
           ),
         ).toBeFalsy();
       }
@@ -1299,27 +1302,30 @@ describe('/cases route', () => {
         expect(<caseApi.Case>response.body.cases).toHaveLength(1);
 
         expect(
-          (<caseApi.Case[]>response.body.cases).every(caseObj =>
-            caseObj.connectedContacts?.every(c =>
-              Array.isArray(c.rawJson?.conversationMedia),
-            ),
+          (<caseApi.Case[]>response.body.cases).every(
+            caseObj =>
+              caseObj.connectedContacts?.every(c =>
+                Array.isArray(c.rawJson?.conversationMedia),
+              ),
           ),
         ).toBeTruthy();
 
         if (expectTranscripts) {
           expect(
-            (<caseApi.Case[]>response.body.cases).every(caseObj =>
-              caseObj.connectedContacts?.every(c =>
-                c.rawJson?.conversationMedia?.some(isS3StoredTranscript),
-              ),
+            (<caseApi.Case[]>response.body.cases).every(
+              caseObj =>
+                caseObj.connectedContacts?.every(
+                  c => c.rawJson?.conversationMedia?.some(isS3StoredTranscript),
+                ),
             ),
           ).toBeTruthy();
         } else {
           expect(
-            (<caseApi.Case[]>response.body.cases).every(caseObj =>
-              caseObj.connectedContacts?.every(c =>
-                c.rawJson?.conversationMedia?.some(isS3StoredTranscript),
-              ),
+            (<caseApi.Case[]>response.body.cases).every(
+              caseObj =>
+                caseObj.connectedContacts?.every(
+                  c => c.rawJson?.conversationMedia?.some(isS3StoredTranscript),
+                ),
             ),
           ).toBeFalsy();
         }
