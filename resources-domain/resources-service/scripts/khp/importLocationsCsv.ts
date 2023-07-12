@@ -112,7 +112,7 @@ DELETE FROM resources."ResourceReferenceStringAttributeValues" WHERE "accountSid
     const sqlStatement = pgp.as.format(
       `
 INSERT INTO resources."ResourceReferenceStringAttributeValues" ("accountSid", "list", "id", "value", "language", "info") VALUES ($<accountSid>, 'cities', $<id>, $<value>, 'en', $<info>)
-ON CONFLICT DO NOTHING;;
+ON CONFLICT DO NOTHING;
 INSERT INTO resources."ResourceReferenceStringAttributeValues" ("accountSid", "list", "id", "value", "language", "info") VALUES ($<accountSid>, 'cities', $<idFr>, $<value>, 'fr', $<infoFr>)
 ON CONFLICT DO NOTHING;
 UPDATE resources."ResourceReferenceStringAttributes" SET "referenceId" = $<id> WHERE "accountSid" = $<accountSid> AND "list" = 'cities' AND "referenceId" = $<oldId>;
