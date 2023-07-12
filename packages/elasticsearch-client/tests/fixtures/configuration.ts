@@ -169,7 +169,7 @@ export const resourceIndexConfiguration: IndexConfiguration<FlatResource> = {
       }
     };
 
-    const { id, name, lastUpdated, accountSid, ...attributeArrays } = resource;
+    const { id, name, lastUpdated, accountSid, importSequenceId, deletedAt, ...attributeArrays } = resource;
 
     Object.values(attributeArrays).forEach(attributes => {
       attributes.forEach(({ key, ...attribute }) => {
