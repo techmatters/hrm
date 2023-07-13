@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { ResourcesJobProcessorError } from '@tech-matters/job-errors';
+import { ResourceIndexProcessorError } from '@tech-matters/job-errors';
 import {
   getClient,
   BulkOperations,
@@ -59,7 +59,7 @@ export const handleErrors = async (
       // 201 for creating a new index document and 200 for updating an existing one
       if (![200, 201].includes(item.index?.status ?? 0)) {
         console.error(
-          new ResourcesJobProcessorError('Error indexing document'),
+          new ResourceIndexProcessorError('Error indexing document'),
           item.index,
         );
         addDocumentIdToFailures(item.index!._id!);
@@ -82,7 +82,7 @@ export const executeBulk = async (
         const indexResp = await client.executeBulk({ documents });
         await handleErrors(indexResp, addDocumentIdToFailures);
       } catch (err) {
-        console.error(new ResourcesJobProcessorError('Error calling executeBulk'), err);
+        console.error(new ResourceIndexProcessorError('Error calling executeBulk'), err);
         documents.forEach(({ id }) => {
           addDocumentIdToFailures(id);
         });
@@ -138,7 +138,7 @@ export const handler = async (event: SQSEvent): Promise<SQSBatchResponse> => {
     console.debug(`Successfully indexed documents`);
   } catch (err) {
     console.error(
-      new ResourcesJobProcessorError('Failed to process search index request'),
+      new ResourceIndexProcessorError('Failed to process search index request'),
       err,
     );
 

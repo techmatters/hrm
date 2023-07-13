@@ -4,8 +4,8 @@
       "lambda-groups": {
         "resources-import-consumer": ["resources-import-consumer"],
         "resources-import-producer": ["resources-import-producer-as"],
-        "resources-search-complete": ["resources-search-complete"],
-        "resources-search-index": ["resources-search-index"]
+        "resources-search-index": ["resources-search-index"],
+        "job-complete": ["resources-import-complete","resources-search-complete"]
       }
     }
   },
@@ -17,8 +17,8 @@
           "resources-import-producer-as",
           "resources-import-producer-ca"
         ],
-        "resources-search-complete": ["resources-search-complete"],
-        "resources-search-index": ["resources-search-index"]
+        "resources-search-index": ["resources-search-index"],
+        "job-complete": ["resources-import-complete","resources-search-complete"]
       }
     },
     "eu-west-1": {

@@ -36,8 +36,8 @@ on:
           - contact-retrieve-transcript
           - resources-import-consumer
           - resources-import-producer
-          - resources-search-complete
           - resources-search-index
+          - job-complete
 
   workflow_call:
     secrets:
@@ -100,7 +100,7 @@ jobs:
           file: ./jobs/Dockerfile
           build-args: |
             lambda_name=${{ inputs.lambda_name }}
-            lambda_dir=${{ (startsWith(inputs.lambda_name, 'resources') && 'resources') || 'hrm' }}-domain
+            lambda_dir=${{ (startsWith(inputs.lambda_name, 'job') && 'jobs') || (startsWith(inputs.lambda_name, 'resources-domain') && 'resources') || 'hrm-domain' }}
           push: true
           tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:live,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
 
@@ -110,7 +110,7 @@ jobs:
       # The current behavior is: If a key that matches the lambda name is found in the lambda-groups object, then
       # created separate entries for each region/lambda combo. Otherwise, just use the lambda name and deploy to all
       # regions that exist for that environment.
-      # matrices don't support complex object structures, so we generate a a flat array of objects that contain the
+      # matrices don't support complex object structures, so we generate a flat array of objects that contain the
       # region and lambda name. If there are multiple lambdas, the region will be repeated for each lambda.
       - name: Generate output
         id: generate-output

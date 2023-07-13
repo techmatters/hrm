@@ -14,23 +14,22 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { ResourcesJobProcessorError } from '@tech-matters/job-errors';
+import { CompletedJobProcessorError } from '@tech-matters/job-errors';
 import { sns } from '@tech-matters/sns-client';
 
+// eslint-disable-next-line prettier/prettier
 import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
 
 const processRecord = async (sqsRecord: SQSRecord) => {
   try {
-    const res = await sns
-      .publish({
-        Message: sqsRecord.body,
-        TopicArn: process.env.SNS_TOPIC_ARN || '',
-      })
-      .promise();
+    const res = await sns.publish({
+      Message: sqsRecord.body,
+      TopicArn: process.env.SNS_TOPIC_ARN || '',
+    }).promise();
 
     console.log(res);
   } catch (err) {
-    console.error(new ResourcesJobProcessorError('Failed to process record'), err);
+    console.error(new CompletedJobProcessorError('Failed to process record'), err);
   }
 };
 
@@ -42,7 +41,7 @@ export const handler = async (event: SQSEvent): Promise<SQSBatchResponse> => {
 
     await Promise.all(promises);
   } catch (err) {
-    console.error(new ResourcesJobProcessorError('Failed to init processor'), err);
+    console.error(new CompletedJobProcessorError('Failed to init processor'), err);
 
     // We fail all messages here and rely on SQS retry/DLQ because we hit
     // a fatal error before we could process any of the messages. Once we

@@ -40,9 +40,9 @@ jobs:
         lambda_name:
           - contact-retrieve-recording-url
           - contact-retrieve-transcript
+          - job-complete
           - resources-import-consumer
           - resources-import-producer
-          - resources-search-complete
           - resources-search-index
     steps:
       - name: Checkout Branch
@@ -54,7 +54,7 @@ jobs:
           file: ./jobs/Dockerfile
           build-args: |
             lambda_name=${{ matrix.lambda_name }}
-            lambda_dir=${{ (startsWith(matrix.lambda_name, 'resources') && 'resources') || 'hrm' }}-domain
+            lambda_dir=${{ (startsWith(inputs.lambda_name, 'job') && 'jobs') || (startsWith(inputs.lambda_name, 'resources-domain') && 'resources') || 'hrm-domain' }}
           push: false
           tags: ${{ matrix.lambda_name }}-ci-test
 
