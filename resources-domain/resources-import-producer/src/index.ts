@@ -25,6 +25,7 @@ import parseISO from 'date-fns/parseISO';
 import { publishToImportConsumer, ResourceMessage } from './clientSqs';
 import getConfig from './config';
 import { transformKhpResourceToApiResource } from './transformExternalResourceToApiResource';
+import path from 'path';
 
 declare var fetch: typeof import('undici').fetch;
 
@@ -100,10 +101,13 @@ const pullUpdates =
     remaining = maxApiResources,
   ): Promise<KhpApiResponse | HttpError> => {
     const fetchUrl = new URL(
-      `api/resources?startSequence=${from}&endSequence=${to}&limit=${Math.min(
-        remaining,
-        maxApiResources,
-      )}`,
+      path.join(
+        externalApiBaseUrl.pathname,
+        `api/resources?startSequence=${from}&endSequence=${to}&limit=${Math.min(
+          remaining,
+          maxApiResources,
+        )}`,
+      ),
       externalApiBaseUrl,
     );
     const response = await fetch(fetchUrl, {
