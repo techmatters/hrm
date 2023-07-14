@@ -41,9 +41,9 @@ jobs:
         lambda_name:
           - contact-retrieve-recording-url
           - contact-retrieve-transcript
+          - job-complete
           - resources-import-consumer
           - resources-import-producer
-          - resources-search-complete
           - resources-search-index
     uses: ./.github/workflows/hrm-lambda-deploy.yml
     secrets:

@@ -1,5 +1,5 @@
 {
-  "name": "@tech-matters/resources-search-complete",
+  "name": "@tech-matters/job-complete",
   "version": "1.0.0",
   "description": "",
   "main": "dist/index.js",
@@ -17,6 +17,6 @@
     "@types/aws-lambda": "^8.10.108"
   },
   "scripts": {
-    "docker:build": "docker build -t resources-search-complete --build-arg lambda_name=resources-search-complete --build-arg lambda_dir=resources-domain -f ../../jobs/Dockerfile ../../"
+    "docker:build": "docker build -t job-complete --build-arg lambda_name=job-complete -f ../Dockerfile ../../"
   }
 }
