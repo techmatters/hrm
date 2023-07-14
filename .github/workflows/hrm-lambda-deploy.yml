@@ -100,7 +100,7 @@ jobs:
           file: ./jobs/Dockerfile
           build-args: |
             lambda_name=${{ inputs.lambda_name }}
-            lambda_dir=${{ (startsWith(inputs.lambda_name, 'job') && 'jobs') || (startsWith(inputs.lambda_name, 'resources-domain') && 'resources') || 'hrm-domain' }}
+            lambda_dir=${{ (startsWith(inputs.lambda_name, 'job') && 'jobs') || (startsWith(inputs.lambda_name, 'resources') && 'resources-domain') || 'hrm-domain' }}
           push: true
           tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:live,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
 
