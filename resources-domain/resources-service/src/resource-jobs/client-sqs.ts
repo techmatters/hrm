@@ -41,7 +41,9 @@ export const getSqsClient = () => {
 
 // will pick between more URLs as & when we interact with more queues directly from the resources resvice
 const getJobQueueUrl = () =>
-  `/${process.env.NODE_ENV}/${process.env.SERVICE_REGION}/sqs/jobs/hrm-resources-search/queue-url-index`;
+  `/${process.env.NODE_ENV}/${
+    process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
+  }/sqs/jobs/hrm-resources-search/queue-url-index`;
 
 export type PublishToResourcesJobParams = {
   params: ResourcesSearchIndexPayload;
