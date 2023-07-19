@@ -3,7 +3,7 @@
     "us-east-1": {
       "lambda-groups": {
         "resources-import-consumer": ["resources-import-consumer"],
-        "resources-import-producer": ["resources-import-producer-as"],
+        "resources-import-producer": ["resources-import-producer-as", "resources-import-producer-e2e"],
         "resources-search-index": ["resources-search-index"],
         "job-complete": ["resources-import-complete","resources-search-complete"]
       }

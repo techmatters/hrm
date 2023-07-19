@@ -236,7 +236,7 @@ beforeAll(async () => {
   await mockSsmParameters(mockttp, [
     {
       pathPattern:
-        /\/(test|local|development)\/resources\/AC[0-9]+\/queue-url-search-index/,
+        /\/(test|local|development)\/xx-fake-1\/sqs\/jobs\/hrm-resources-search\/queue-url-index/,
       valueGenerator: () => testQueueUrl.toString(),
     },
   ]);

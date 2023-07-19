@@ -39,8 +39,11 @@ export const getSqsClient = () => {
   return sqs;
 };
 
-const getJobQueueUrl = (accountSid: string, jobType: string) =>
-  `/${process.env.NODE_ENV}/resources/${accountSid}/queue-url-${jobType}`;
+// will pick between more URLs as & when we interact with more queues directly from the resources resvice
+const getJobQueueUrl = () =>
+  `/${process.env.NODE_ENV}/${
+    process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
+  }/sqs/jobs/hrm-resources-search/queue-url-index`;
 
 export type PublishToResourcesJobParams = {
   params: ResourcesSearchIndexPayload;
@@ -55,10 +58,7 @@ export const publishToResourcesJob = async ({
 }: PublishToResourcesJobParams): Promise<void> => {
   //TODO: more robust error handling/messaging
   try {
-    const QueueUrl = await getSsmParameter(
-      getJobQueueUrl(params.accountSid, params.jobType),
-      86400000,
-    );
+    const QueueUrl = await getSsmParameter(getJobQueueUrl(), 86400000);
 
     const message: SQS.Types.SendMessageRequest = {
       MessageBody: JSON.stringify(params),
