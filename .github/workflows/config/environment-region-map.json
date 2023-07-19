@@ -24,8 +24,8 @@
       "lambda-groups": {
         "resources-import-consumer": [],
         "resources-import-producer": [],
-        "resources-search-complete": [],
-        "resources-search-index": []
+        "resources-search-index": [],
+        "job-complete": []
       }
     }
   },
@@ -34,24 +34,24 @@
       "lambda-groups": {
         "resources-import-consumer": ["resources-import-complete","resources-search-complete"],
         "resources-import-producer": ["resources-import-producer-as"],
-        "resources-search-complete": ["resources-search-index"],
-        "resources-search-index": ["resources-import-complete","resources-search-complete"]
+        "resources-search-index": ["resources-search-index"],
+        "job-complete": ["resources-import-complete","resources-search-complete"]
       }
     },
     "eu-west-1": {
       "lambda-groups": {
         "resources-import-consumer": [],
         "resources-import-producer": [],
-        "resources-search-complete": [],
-        "resources-search-index": []
+        "resources-search-index": [],
+        "job-complete": []
       }
     },
     "ca-central-1": {
       "lambda-groups": {
         "resources-import-consumer": [],
         "resources-import-producer": [],
-        "resources-search-complete": [],
-        "resources-search-index": []
+        "resources-search-index": [],
+        "job-complete": []
       }
     }
   }
