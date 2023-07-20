@@ -59,8 +59,15 @@ const sendResourceAndRecordResult = async (
   // We could return the full content in a CSV if the client specifies an 'text/csv' accept header, or the current version for 'application/json'
   // But this is is very likely to be a 'YAGNI' feature, so I'm leaving it out for now
   try {
+    console.debug('Queueing resource for reindexing:', resource?.id);
     await publishSearchIndexJob(resource.accountSid, resource);
     response.successfulSubmissionCount++;
+    console.debug(
+      'Queued resource for reindexing:',
+      resource?.id,
+      'Successfully sent:',
+      response.successfulSubmissionCount,
+    );
     if (responseType === ResponseType.VERBOSE) {
       response.successfullySubmitted.push({
         resourceId: resource.id,
@@ -69,12 +76,17 @@ const sendResourceAndRecordResult = async (
     }
   } catch (error) {
     response.submissionErrorCount++;
+    console.error(
+      `Failed to queue resource for reindexing (${response.submissionErrorCount} failed so far):`,
+      resource?.id,
+      error,
+    );
     if (responseType === ResponseType.VERBOSE && response.submissionErrorCount <= 50) {
       if (response.submissionErrorCount === 50) {
         response.failedToSubmit.push({
           accountSid: resource.accountSid,
           resourceId: resource.id,
-          error: new Error('Stopping logging errors after 50'),
+          error: new Error('Stopping returning errors after 50'),
         });
       }
       response.failedToSubmit.push({
@@ -137,10 +149,13 @@ const newAdminSearchService = ({
         successfullySubmitted: [],
         failedToSubmit: [],
       };
+      console.debug('Querying DB for resources to index', params);
       const resourcesStream: ReadableStream = await streamResourcesForReindexing({
         ...params,
         batchSize: reindexDbBatchSize,
       });
+
+      console.debug('Piping resources to queue for reindexing', params);
       await pipeline(
         resourcesStream,
         // I think in Node 19+ you can use async iterator functions directly in a pipeline, instead of Writeable / Readable / Transform streams
