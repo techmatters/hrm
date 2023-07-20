@@ -48,10 +48,10 @@
     },
     "ca-central-1": {
       "lambda-groups": {
-        "resources-import-consumer": [],
-        "resources-import-producer": [],
-        "resources-search-index": [],
-        "job-complete": []
+        "resources-import-consumer": ["resources-import-consumer"],
+        "resources-import-producer": ["resources-import-producer-ca"],
+        "resources-search-index": ["resources-search-index"],
+        "job-complete": ["resources-import-complete","resources-search-complete"]
       }
     }
   }
