@@ -22,7 +22,6 @@ import { db } from '../../src/connection-pool';
 import each from 'jest-each';
 import { ReferrableResourceSearchResult } from '../../src/resource/resourceService';
 import { AssertionError } from 'assert';
-import addHours from 'date-fns/addHours';
 import { Client, getClient } from '@tech-matters/elasticsearch-client';
 import { getById } from '../../src/resource/resourceDataAccess';
 import {
@@ -38,7 +37,6 @@ const clients: Record<string, Client> = {};
 
 const server = getServer();
 const request = getRequest(server);
-let mockServer: Awaited<ReturnType<typeof mockingProxy.mockttpServer>>;
 
 const accountSids = ['ACCOUNT_1', 'ACCOUNT_2'];
 
@@ -62,7 +60,6 @@ afterAll(async () => {
 
 beforeAll(async () => {
   await mockingProxy.start();
-  mockServer = await mockingProxy.mockttpServer();
 
   const accountResourceIdTuples: [string, string[]][] = [
     ['1', range(5)],
@@ -79,7 +76,7 @@ beforeAll(async () => {
           ),
         );
         const suggestSql = [
-          `INSERT INTO resources."ResourceStringAttributes" ("resourceId", "accountSid", "key", "language", "value", "info") VALUES ('RESOURCE_${resourceIdx}', 'ACCOUNT_${accountIdx}', 'taxonomyLevelName', 'en-US', 'suggest_${resourceIdx}', '{ "some": "json" }')`,
+          `INSERT INTO resources."ResourceStringAttributes" ("resourceId", "accountSid", "key", "language", "value", "info") VALUES ('RESOURCE_${resourceIdx}', 'ACCOUNT_${accountIdx}', 'taxonomies/0/0', 'en-US', 'suggest_${resourceIdx}', '{ "some": "json" }')`,
         ];
 
         return [sql, ...attributeSql, ...suggestSql];
@@ -348,143 +345,6 @@ describe('GET /search', () => {
       });
     },
   );
-
-  // TODO: test in unit tests?
-  describe.skip('Inline attributes of non string types', () => {
-    const dateVal = new Date(2010, 15, 11, 13, 30, 15);
-    beforeEach(async () => {
-      await db.multi(`
-  INSERT INTO resources."ResourceBooleanAttributes" ("resourceId", "accountSid", "key", "value", "info") VALUES ('RESOURCE_1', 'ACCOUNT_1', 'BOOLEAN_ATTRIBUTE', true, '{ "some": "json" }');
-  INSERT INTO resources."ResourceNumberAttributes" ("resourceId", "accountSid", "key", "value", "info") VALUES ('RESOURCE_1', 'ACCOUNT_1', 'NUMBER_ATTRIBUTE', 1337.42, '{ "some": "json" }');
-  INSERT INTO resources."ResourceDateTimeAttributes" ("resourceId", "accountSid", "key", "value", "info") VALUES ('RESOURCE_1', 'ACCOUNT_1', 'DATETIME_ATTRIBUTE', '${dateVal.toISOString()}', '{ "some": "json" }');
-  INSERT INTO resources."ResourceBooleanAttributes" ("resourceId", "accountSid", "key", "value", "info") VALUES ('RESOURCE_2', 'ACCOUNT_1', 'BOOLEAN_ATTRIBUTE', false, '{ "some": "json" }');
-  INSERT INTO resources."ResourceNumberAttributes" ("resourceId", "accountSid", "key", "value", "info") VALUES ('RESOURCE_2', 'ACCOUNT_1', 'NUMBER_ATTRIBUTE', 666, '{ "some": "json" }');
-  INSERT INTO resources."ResourceDateTimeAttributes" ("resourceId", "accountSid", "key", "value", "info") VALUES ('RESOURCE_2', 'ACCOUNT_1', 'DATETIME_ATTRIBUTE', '${addHours(
-    dateVal,
-    2,
-  ).toISOString()}', '{ "some": "json" }');
-         `);
-    });
-    test('should return the resource with the attributes', async () => {
-      // Arrange
-      await mockServer
-        .forGet(/https:\/\/resources\.mock-elasticsearch\.com\/2013-01-01\/search(.*)/)
-        .thenJson(200, {
-          hits: {
-            found: 2,
-            hit: [
-              {
-                id: 'RESOURCE_1',
-                name: 'Resource 1 (Account 1)',
-                attributes: expect.anything(),
-              },
-              {
-                id: 'RESOURCE_2',
-                name: 'Resource 2 (Account 1)',
-                attributes: expect.anything(),
-              },
-            ],
-          },
-        });
-      const url = `${basePath}?limit=5&start=0`;
-
-      // Act
-      const response = await request.post(url).set(headers).send({ q: 'something' });
-
-      // Assert
-      expect(response.status).toBe(200);
-      expect(response.body.totalCount).toBe(2);
-      expect(response.body.results).toHaveLength(2);
-
-      expect(response.status).toBe(200);
-      expect(response.body).toStrictEqual({
-        totalCount: 2,
-        results: [
-          {
-            id: 'RESOURCE_1',
-            name: 'Resource 1 (Account 1)',
-            attributes: {
-              BOOLEAN_ATTRIBUTE: [
-                {
-                  value: true,
-                  info: { some: 'json' },
-                },
-              ],
-              NUMBER_ATTRIBUTE: [
-                {
-                  value: 1337.42,
-                  info: { some: 'json' },
-                },
-              ],
-              DATETIME_ATTRIBUTE: [
-                {
-                  value: dateVal.toISOString(),
-                  info: { some: 'json' },
-                },
-              ],
-              ATTRIBUTE_0: [
-                {
-                  value: 'VALUE_0',
-                  language: 'en-US',
-                  info: { some: 'json' },
-                },
-              ],
-            },
-          },
-          {
-            id: 'RESOURCE_2',
-            name: 'Resource 2 (Account 1)',
-            attributes: {
-              BOOLEAN_ATTRIBUTE: [
-                {
-                  value: false,
-                  info: { some: 'json' },
-                },
-              ],
-              NUMBER_ATTRIBUTE: [
-                {
-                  value: 666,
-                  info: { some: 'json' },
-                },
-              ],
-              DATETIME_ATTRIBUTE: [
-                {
-                  value: addHours(dateVal, 2).toISOString(),
-                  info: { some: 'json' },
-                },
-              ],
-              ATTRIBUTE_0: [
-                {
-                  value: 'VALUE_0',
-                  language: 'en-US',
-                  info: { some: 'json' },
-                },
-              ],
-              ATTRIBUTE_1: [
-                {
-                  value: 'VALUE_0',
-                  language: 'en-US',
-                  info: { some: 'json' },
-                },
-                {
-                  value: 'VALUE_1',
-                  language: 'en-US',
-                  info: { some: 'json' },
-                },
-              ],
-            },
-          },
-        ],
-      });
-    });
-    afterEach(async () => {
-      await db.multi(`
-  DELETE FROM resources."ResourceBooleanAttributes";
-  DELETE FROM resources."ResourceNumberAttributes";
-  DELETE FROM resources."ResourceDateTimeAttributes";
-        `);
-    });
-  });
 });
 
 describe('GET /suggest', () => {
