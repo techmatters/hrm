@@ -66,7 +66,7 @@ export type FieldAndMapping = {
   mapping: MappingField;
 };
 
-const stringFieldTypes = ['text', 'keyword'];
+const stringFieldTypes = ['text', 'keyword', 'completion'];
 
 /**
  * Returns the mapping field for the given field name.
