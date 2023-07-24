@@ -14,9 +14,8 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { ContactJobProcessorError } from '@tech-matters/hrm-job-errors';
+import { ContactJobProcessorError } from '@tech-matters/job-errors';
 
-// eslint-disable-next-line prettier/prettier
 import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
 
 const processRecord = async (sqsRecord: SQSRecord) => {

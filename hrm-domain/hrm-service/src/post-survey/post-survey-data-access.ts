@@ -35,10 +35,16 @@ export const filterByContactTaskId = async (
   contactTaskId: string,
 ): Promise<PostSurvey[]> =>
   db.task(async connection =>
-    connection.manyOrNone(SELECT_POST_SURVEYS_BY_CONTACT_TASK, { accountSid, contactTaskId }),
+    connection.manyOrNone(SELECT_POST_SURVEYS_BY_CONTACT_TASK, {
+      accountSid,
+      contactTaskId,
+    }),
   );
 
-export const create = (accountSid: string, postSurvey: NewPostSurvey): Promise<PostSurvey> => {
+export const create = (
+  accountSid: string,
+  postSurvey: NewPostSurvey,
+): Promise<PostSurvey> => {
   const now = new Date();
   return db.task(async connection =>
     connection.one<PostSurvey>(

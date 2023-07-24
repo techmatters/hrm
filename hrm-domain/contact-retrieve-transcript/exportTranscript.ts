@@ -14,10 +14,9 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { getClient } from '@tech-matters/hrm-twilio-client';
+import { getClient, TwilioClient } from '@tech-matters/twilio-client';
 
 import RestException from 'twilio/lib/base/RestException';
-// eslint-disable-next-line prettier/prettier
 import type { MemberInstance } from 'twilio/lib/rest/chat/v2/service/channel/member';
 
 export type ExportTranscriptParams = {
@@ -39,7 +38,7 @@ export type ExportTranscripParticipants = {
 const GUEST_ROLE_CHANNEL = 'guest';
 
 const getTransformedMessages = async (
-  client: ReturnType<typeof getClient>,
+  client: TwilioClient,
   channelSid: string,
   serviceSid: string,
 ) => {
@@ -59,12 +58,9 @@ const getTransformedMessages = async (
   }));
 };
 
-const getUser = async (client: ReturnType<typeof getClient>, serviceSid: string, from: string) => {
+const getUser = async (client: TwilioClient, serviceSid: string, from: string) => {
   try {
-    const user = await client.chat.v2
-      .services(serviceSid)
-      .users.get(from)
-      .fetch();
+    const user = await client.chat.v2.services(serviceSid).users.get(from).fetch();
 
     // Full object contains circular references that can't be converted to json in addition to unnecessary data
     return {
@@ -89,7 +85,7 @@ const getUser = async (client: ReturnType<typeof getClient>, serviceSid: string,
 };
 
 const getRole = async (
-  client: ReturnType<typeof getClient>,
+  client: TwilioClient,
   serviceSid: string,
   user: Awaited<ReturnType<typeof getUser>>,
   member: MemberInstance | null,
@@ -108,9 +104,9 @@ const getRole = async (
     }
 
     const channelRole = await client.chat.v2
-    .services(serviceSid)
-    .roles.get(member.roleSid)
-    .fetch();
+      .services(serviceSid)
+      .roles.get(member.roleSid)
+      .fetch();
 
     const isCounselor = channelRole.friendlyName !== GUEST_ROLE_CHANNEL;
 
@@ -127,7 +123,7 @@ const getRole = async (
 };
 
 const getParticipants = async (
-  client: ReturnType<typeof getClient>,
+  client: TwilioClient,
   channelSid: string,
   serviceSid: string,
   messages: Awaited<ReturnType<typeof getTransformedMessages>>,
@@ -174,7 +170,7 @@ export const exportTranscript = async ({
     `Trying to export transcript with accountSid ${accountSid}, serviceSid ${serviceSid}, channelSid ${channelSid}`,
   );
 
-  const client = getClient({ accountSid, authToken });
+  const client = await getClient({ accountSid, authToken });
 
   const messages = await getTransformedMessages(client, channelSid, serviceSid);
   const participants = await getParticipants(client, channelSid, serviceSid, messages);

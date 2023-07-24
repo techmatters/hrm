@@ -20,21 +20,23 @@ import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/
 import { headers, getRequest, getServer } from './server';
 import { db } from '../../src/connection-pool';
 import each from 'jest-each';
-import { ReferrableResourceSearchResult } from '../../src/resource/resource-model';
+import { ReferrableResourceSearchResult } from '../../src/resource/resourceService';
 import { AssertionError } from 'assert';
 import addHours from 'date-fns/addHours';
-import { Client, IndexTypes, getClient } from '@tech-matters/elasticsearch-client';
+import { Client, getClient } from '@tech-matters/elasticsearch-client';
+import { getById } from '../../src/resource/resourceDataAccess';
+import {
+  RESOURCE_INDEX_TYPE,
+  resourceIndexConfiguration,
+} from '@tech-matters/resources-search-config';
+import range from './range';
 
 export const workerSid = 'WK-worker-sid';
 
-const indexType = IndexTypes.RESOURCES;
+const indexType = RESOURCE_INDEX_TYPE;
 const clients: Record<string, Client> = {};
 
-const server = getServer({
-  cloudSearchConfig: {
-    searchUrl: new URL('https://resources.mock-elasticsearch.com'),
-  },
-});
+const server = getServer();
 const request = getRequest(server);
 let mockServer: Awaited<ReturnType<typeof mockingProxy.mockttpServer>>;
 
@@ -53,15 +55,10 @@ afterAll(async () => {
    `);
   await Promise.all(
     accountSids.map(async accountSid => {
-      await clients[accountSid].deleteIndex();
+      await clients[accountSid].indexClient(resourceIndexConfiguration).deleteIndex();
     }),
   );
 });
-
-const range = (elements: number | string): string[] =>
-  Array.from(Array(typeof elements === 'number' ? elements : parseInt(elements)).keys()).map(i =>
-    i.toString(),
-  );
 
 beforeAll(async () => {
   await mockingProxy.start();
@@ -71,7 +68,7 @@ beforeAll(async () => {
     ['1', range(5)],
     ['2', range(2)],
   ];
-  const testResourceCreateSql = accountResourceIdTuples
+  let testResourceCreateSql = accountResourceIdTuples
     .flatMap(([accountIdx, resourceIdxs]) =>
       resourceIdxs.flatMap(resourceIdx => {
         const sql = `INSERT INTO resources."Resources" (id, "accountSid", "name") VALUES ('RESOURCE_${resourceIdx}', 'ACCOUNT_${accountIdx}', 'Resource ${resourceIdx} (Account ${accountIdx})')`;
@@ -81,10 +78,15 @@ beforeAll(async () => {
               `INSERT INTO resources."ResourceStringAttributes" ("resourceId", "accountSid", "key", "language", "value", "info") VALUES ('RESOURCE_${resourceIdx}', 'ACCOUNT_${accountIdx}', 'ATTRIBUTE_${attributeIdx}', 'en-US', 'VALUE_${valueIdx}', '{ "some": "json" }')`,
           ),
         );
-        return [sql, ...attributeSql];
+        const suggestSql = [
+          `INSERT INTO resources."ResourceStringAttributes" ("resourceId", "accountSid", "key", "language", "value", "info") VALUES ('RESOURCE_${resourceIdx}', 'ACCOUNT_${accountIdx}', 'taxonomyLevelName', 'en-US', 'suggest_${resourceIdx}', '{ "some": "json" }')`,
+        ];
+
+        return [sql, ...attributeSql, ...suggestSql];
       }),
     )
     .join(';\n');
+
   // console.log(testResourceCreateSql); // handy for debugging
   await db.multi(testResourceCreateSql);
 
@@ -92,7 +94,7 @@ beforeAll(async () => {
 
   await Promise.all(
     accountResourceIdTuples.flatMap(async ([accountIdx, resourceIdxs]) => {
-      const accountSid = `ACCOUNT_${accountIdx}`;
+      const accountSid = `ACCOUNT_${accountIdx}` as const;
 
       const client = await getClient({
         accountSid,
@@ -102,23 +104,25 @@ beforeAll(async () => {
         indexType,
       });
       clients[accountSid] = client;
-
-      await client.createIndex({});
-
-      const basePath = `/v0/accounts/${accountSid}/resources/resource`;
+      const indexClient = client.indexClient(resourceIndexConfiguration);
+      await indexClient.createIndex({});
 
       await Promise.all(
         resourceIdxs.flatMap(async resourceIdx => {
-          const dbResource = await request.get(`${basePath}/RESOURCE_${resourceIdx}`).set(headers);
+          const dbResource = await getById(accountSid, `RESOURCE_${resourceIdx}`);
 
-          await client.indexDocument({
-            document: dbResource.body,
-            id: dbResource.body.id,
+          if (!dbResource) {
+            throw new Error(`Resource ${resourceIdx} not found`);
+          }
+
+          await indexClient.indexDocument({
+            document: dbResource,
+            id: dbResource.id,
           });
         }),
       );
 
-      await client.refreshIndex();
+      await indexClient.refreshIndex();
     }),
   );
 });
@@ -156,17 +160,19 @@ const verifyResourcesAttributes = (resource: ReferrableResource) => {
   });
 };
 
-describe('GET /search-es', () => {
-  const basePath = '/v0/accounts/ACCOUNT_1/resources/search-es';
+describe('GET /search', () => {
+  const basePath = '/v0/accounts/ACCOUNT_1/resources/search';
 
   test('Should return 401 unauthorized with no auth headers', async () => {
-    const response = await request.post(`${basePath}?start=0&limit=5`).send({ q: '*' });
+    const response = await request
+      .post(`${basePath}?start=0&limit=5`)
+      .send({ generalSearchTerm: '*' });
     expect(response.status).toBe(401);
     expect(response.body).toStrictEqual({ error: 'Authorization failed' });
   });
 
   type TestCaseParameters = {
-    q: string;
+    generalSearchTerm: string;
     limit?: string;
     start?: string;
     condition: string;
@@ -180,7 +186,7 @@ describe('GET /search-es', () => {
    */
   const testCases: TestCaseParameters[] = [
     {
-      q: 'VALUE_12',
+      generalSearchTerm: 'VALUE_12',
       limit: '3',
       start: '0',
       condition: 'a term which matches nothing',
@@ -189,7 +195,7 @@ describe('GET /search-es', () => {
       expectedTotalCount: 0,
     },
     {
-      q: 'VALUE_0',
+      generalSearchTerm: 'VALUE_0',
       limit: '3',
       start: '0',
       condition: 'a query which returns more records which match resources in the DB',
@@ -215,7 +221,7 @@ describe('GET /search-es', () => {
       expectedTotalCount: 4,
     },
     {
-      q: 'VALUE_1',
+      generalSearchTerm: 'VALUE_1',
       limit: '3',
       start: '0',
       condition: 'a query which returns records which match resources in the DB',
@@ -241,7 +247,7 @@ describe('GET /search-es', () => {
       expectedTotalCount: 3,
     },
     {
-      q: 'VALUE_2',
+      generalSearchTerm: 'VALUE_2',
       limit: '3',
       start: '0',
       condition: 'a query which returns records which match resources in the DB',
@@ -262,7 +268,7 @@ describe('GET /search-es', () => {
       expectedTotalCount: 2,
     },
     {
-      q: 'VALUE_3',
+      generalSearchTerm: 'VALUE_3',
       limit: '3',
       start: '0',
       condition: 'a query which returns records which match resources in the DB',
@@ -278,7 +284,7 @@ describe('GET /search-es', () => {
       expectedTotalCount: 1,
     },
     {
-      q: '"RESOURCE 2"',
+      generalSearchTerm: '"RESOURCE 2"',
       limit: '3',
       start: '0',
       condition: 'a query that matches a name phrase',
@@ -318,12 +324,18 @@ describe('GET /search-es', () => {
 
   each(testCases).test(
     'When specifying $condition, should return a 200 response and $expectationDescription',
-    async ({ q, limit, start, expectedResults, expectedTotalCount }: TestCaseParameters) => {
+    async ({
+      generalSearchTerm,
+      limit,
+      start,
+      expectedResults,
+      expectedTotalCount,
+    }: TestCaseParameters) => {
       const response = await request
         .post(`${basePath}/?limit=${limit}&start=${start}`)
         .set(headers)
         .send({
-          q,
+          generalSearchTerm,
         });
 
       expect(response.status).toBe(200);
@@ -377,10 +389,7 @@ describe('GET /search-es', () => {
       const url = `${basePath}?limit=5&start=0`;
 
       // Act
-      const response = await request
-        .post(url)
-        .set(headers)
-        .send({ q: 'something' });
+      const response = await request.post(url).set(headers).send({ q: 'something' });
 
       // Assert
       expect(response.status).toBe(200);
@@ -475,5 +484,47 @@ describe('GET /search-es', () => {
   DELETE FROM resources."ResourceDateTimeAttributes";
         `);
     });
+  });
+});
+
+describe('GET /suggest', () => {
+  const basePath = '/v0/accounts/ACCOUNT_1/resources/suggest';
+
+  test('Should return 401 unauthorized with no auth headers', async () => {
+    const response = await request.get(`${basePath}?size=5&prefix=sugg`).send();
+    expect(response.status).toBe(401);
+    expect(response.body).toStrictEqual({ error: 'Authorization failed' });
+  });
+
+  test('Should return valid suggestions when authenticated', async () => {
+    const response = await request
+      .get(`${basePath}?size=5&prefix=sugg`)
+      .set(headers)
+      .send();
+
+    expect(response.status).toBe(200);
+    expect(response.body).toHaveProperty('taxonomyLevelNameCompletion');
+    expect(response.body.taxonomyLevelNameCompletion).toStrictEqual([
+      {
+        text: 'suggest_0',
+        score: 1,
+      },
+      {
+        text: 'suggest_1',
+        score: 1,
+      },
+      {
+        text: 'suggest_2',
+        score: 1,
+      },
+      {
+        text: 'suggest_3',
+        score: 1,
+      },
+      {
+        text: 'suggest_4',
+        score: 1,
+      },
+    ]);
   });
 });

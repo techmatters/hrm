@@ -15,14 +15,15 @@
  */
 
 import { IRouter, Router } from 'express';
-import resourceRoutes from './resource/resource-routes-v0';
-import { CloudSearchConfig } from './config/cloud-search';
+import resourceRoutes from './resource/resourceRoutesV0';
 import importRoutes from './import/importRoutesV0';
+import adminSearchRoutes from './admin/adminSearchRoutesV0';
+import { AdminSearchServiceConfiguration } from './admin/adminSearchService';
 
-export const apiV0 = (cloudSearchConfig: CloudSearchConfig) => {
+export const apiV0 = () => {
   const router: IRouter = Router();
 
-  router.use(resourceRoutes(cloudSearchConfig));
+  router.use(resourceRoutes());
   return router;
 };
 
@@ -30,5 +31,12 @@ export const internalApiV0 = () => {
   const router: IRouter = Router();
 
   router.use(importRoutes());
+  return router;
+};
+
+export const adminApiV0 = (config: AdminSearchServiceConfiguration) => {
+  const router: IRouter = Router();
+
+  router.use(adminSearchRoutes(config));
   return router;
 };

@@ -19,22 +19,40 @@ import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/
 import { db } from '../../src/connection-pool';
 import range from './range';
 import { parseISO, addHours, subHours, addSeconds, subSeconds } from 'date-fns';
-import { ImportApiResource, ImportProgress, ImportRequestBody } from '@tech-matters/types';
+import {
+  FlatResource,
+  ImportProgress,
+  ImportRequestBody,
+  ResourcesJobType,
+  TimeSequence,
+} from '@tech-matters/types';
 import { internalHeaders } from './server';
 import each from 'jest-each';
 import { ReferrableResource } from '@tech-matters/types';
 import { AssertionError } from 'assert';
 import { UpsertImportedResourceResult } from '../../src/import/importDataAccess';
+import { generateImportResource as newImportResourceGenerator } from '../mockResources';
+import sqslite from 'sqslite';
+import { SQS } from 'aws-sdk';
+import { mockSsmParameters } from '../mockSsm';
 
 const internalServer = getInternalServer();
 const internalRequest = getRequest(internalServer);
 const server = getServer();
 const request = getRequest(server);
 
+const sqsService = sqslite({});
+const sqsClient = new SQS({
+  endpoint: `http://localhost:${process.env.LOCAL_SQS_PORT}`,
+});
+
+let testQueueUrl: URL;
+
 const accountSid = 'AC000';
 const workerSid = 'WK-worker-sid';
 
 const baselineDate = parseISO('2020-01-01T00:00:00.000Z');
+const generateImportResource = newImportResourceGenerator(baselineDate, accountSid);
 
 const populateSampleDbReferenceValues = async (count: number, valuesPerList: number) => {
   const sql = range(count)
@@ -155,60 +173,6 @@ const verifyGeneratedResourcesAttributes = async (resourceId: string) => {
   );
 };
 
-const generateImportResource = (
-  resourceIdSuffix: string,
-  updatedAt: Date,
-  additionalAttributes: Partial<ImportApiResource['attributes']> = {},
-): ImportApiResource => ({
-  id: `RESOURCE_${resourceIdSuffix}`,
-  name: `Resource ${resourceIdSuffix}`,
-  updatedAt: updatedAt.toISOString(),
-  attributes: {
-    ResourceStringAttributes: [
-      {
-        key: 'STRING_ATTRIBUTE',
-        value: 'VALUE',
-        language: 'en-US',
-        info: { some: 'json' },
-      },
-      ...(additionalAttributes.ResourceStringAttributes ?? []),
-    ],
-    ResourceDateTimeAttributes: [
-      {
-        key: 'DATETIME_ATTRIBUTE',
-        value: baselineDate.toISOString(),
-        info: { some: 'json' },
-      },
-      ...(additionalAttributes.ResourceDateTimeAttributes ?? []),
-    ],
-    ResourceNumberAttributes: [
-      {
-        key: 'NUMBER_ATTRIBUTE',
-        value: 1337,
-        info: { some: 'json' },
-      },
-      ...(additionalAttributes.ResourceNumberAttributes ?? []),
-    ],
-    ResourceBooleanAttributes: [
-      {
-        key: 'BOOL_ATTRIBUTE',
-        value: true,
-        info: { some: 'json' },
-      },
-      ...(additionalAttributes.ResourceBooleanAttributes ?? []),
-    ],
-    ResourceReferenceStringAttributes: [
-      {
-        key: 'REFERENCE_ATTRIBUTE',
-        value: 'REFERENCE_VALUE_2',
-        language: 'REFERENCE_LANGUAGE',
-        list: 'REFERENCE_LIST_1',
-      },
-      ...(additionalAttributes.ResourceReferenceStringAttributes ?? []),
-    ],
-  },
-});
-
 const generateApiResource = (
   resourceIdSuffix: string,
   additionalAttributes: ReferrableResource['attributes'] = {},
@@ -266,10 +230,26 @@ const verifyImportState = async (expectedImportState?: ImportProgress) => {
 
 beforeAll(async () => {
   await mockingProxy.start();
+  await sqsService.listen({ port: parseInt(process.env.LOCAL_SQS_PORT!) });
+  const mockttp = await mockingProxy.mockttpServer();
   await mockSuccessfulTwilioAuthentication(workerSid);
+  await mockSsmParameters(mockttp, [
+    {
+      pathPattern:
+        /\/(test|local|development)\/xx-fake-1\/sqs\/jobs\/hrm-resources-search\/queue-url-index/,
+      valueGenerator: () => testQueueUrl.toString(),
+    },
+  ]);
 });
 
-afterAll(async () => Promise.all([mockingProxy.stop(), internalServer.close(), server.close()]));
+afterAll(async () =>
+  Promise.all([
+    mockingProxy.stop(),
+    internalServer.close(),
+    server.close(),
+    sqsService.close(),
+  ]),
+);
 
 beforeEach(async () => {
   await db.multi(`
@@ -279,11 +259,29 @@ beforeEach(async () => {
   `);
   await populateSampleDbReferenceValues(5, 3);
   await populateSampleDbResources(5);
+
+  const { QueueUrl } = await sqsClient
+    .createQueue({
+      QueueName: `test-hrm-resources-search-index-pending`,
+    })
+    .promise();
+  testQueueUrl = new URL(QueueUrl!);
 });
 
+afterEach(async () => {
+  await sqsClient
+    .deleteQueue({
+      QueueUrl: testQueueUrl.toString(),
+    })
+    .promise();
+});
+
+const timeSequenceFromDate = (date: Date, sequence = 0): TimeSequence =>
+  `${date.valueOf()}-${sequence}`;
+
 const newDefaultTestBatch = () => ({
-  toDate: addHours(baselineDate, 1).toISOString(),
-  fromDate: subHours(baselineDate, 2).toISOString(),
+  toSequence: timeSequenceFromDate(addHours(baselineDate, 1)),
+  fromSequence: timeSequenceFromDate(subHours(baselineDate, 2)),
   remaining: 100,
 });
 
@@ -294,10 +292,7 @@ describe('POST /import', () => {
       importedResources: [generateImportResource('100', baselineDate)],
       batch: newDefaultTestBatch(),
     };
-    internalRequest
-      .post(route)
-      .send(requestBody)
-      .expect(401);
+    internalRequest.post(route).send(requestBody).expect(401);
   });
 
   test('Incorrect static key - should return 401', async () => {
@@ -317,11 +312,7 @@ describe('POST /import', () => {
       importedResources: [generateImportResource('100', baselineDate)],
       batch: newDefaultTestBatch(),
     };
-    internalRequest
-      .post(route)
-      .set(headers)
-      .send(requestBody)
-      .expect(401);
+    internalRequest.post(route).set(headers).send(requestBody).expect(401);
   });
 
   type ImportPostTestCaseParameters = {
@@ -344,7 +335,7 @@ describe('POST /import', () => {
     },
     {
       description:
-        'Single new resource - should return 200 with single update, and add a new resource to the DB',
+        'Single new resource - should return 200 with single update, add a new resource to the DB and publish it to the resources search index queue',
       requestBody: {
         importedResources: [generateImportResource('100', addSeconds(baselineDate, 30))],
         batch: newDefaultTestBatch(),
@@ -366,7 +357,7 @@ describe('POST /import', () => {
     },
     {
       description:
-        'Several new resources - should return 200 with an update per resource and add the new resources to the DB',
+        'Several new resources - should return 200 with an update per resource, adds the new resources to the DB and publishes them to the search index queue',
       requestBody: {
         importedResources: [
           generateImportResource('100', addSeconds(baselineDate, 30)),
@@ -482,7 +473,7 @@ describe('POST /import', () => {
       requestBody: {
         importedResources: [
           generateImportResource('100', addSeconds(baselineDate, 30), {
-            ResourceReferenceStringAttributes: [
+            referenceStringAttributes: [
               {
                 key: 'REFERENCE_ATTRIBUTE',
                 value: 'NOT_A_REFERENCE_VALUE',
@@ -550,7 +541,10 @@ describe('POST /import', () => {
           await verifyGeneratedResourcesAttributes(resourceId);
         }
       }
-      for (const [resourceId, expectedResource] of Object.entries(expectedResourceUpdates)) {
+
+      for (const [resourceId, expectedResource] of Object.entries(
+        expectedResourceUpdates,
+      )) {
         const response = await request
           .get(`/v0/accounts/${accountSid}/resources/resource/${resourceId}`)
           .set(headers);
@@ -559,6 +553,32 @@ describe('POST /import', () => {
         expect(resource).toStrictEqual(expectedResource);
       }
       await verifyImportState(expectedBatchProgressState);
+
+      const { importedResources } = requestBody;
+
+      const receivedMessages: FlatResource[] = [];
+      while (receivedMessages.length <= importedResources.length) {
+        const { Messages } = await sqsClient
+          .receiveMessage({
+            QueueUrl: testQueueUrl.toString(),
+            MaxNumberOfMessages: 10,
+            WaitTimeSeconds: 0.5,
+          })
+          .promise();
+        if (!Messages?.length) {
+          break;
+        }
+        receivedMessages.push(
+          ...(Messages ?? []).map(message => JSON.parse(message.Body ?? '')),
+        );
+      }
+      expect(receivedMessages.length).toEqual(importedResources.length);
+      const expectedMessages = importedResources.map(resource => ({
+        accountSid: resource.accountSid,
+        document: resource,
+        jobType: ResourcesJobType.SEARCH_INDEX,
+      }));
+      expect(receivedMessages).toStrictEqual(expectedMessages);
     },
   );
 
@@ -567,7 +587,7 @@ describe('POST /import', () => {
     const requestBody: ImportRequestBody = {
       importedResources: [
         generateImportResource('2', subSeconds(baselineDate, 15)),
-        missingIdResource as ImportApiResource,
+        missingIdResource as FlatResource,
         generateImportResource('4', addSeconds(baselineDate, 15)),
       ],
       batch: newDefaultTestBatch(),
@@ -604,17 +624,11 @@ describe('GET /v0/accounts/:accountSid/import/progress', () => {
   });
 
   test('Flex bearer token - should return 401', async () => {
-    internalRequest
-      .get(route)
-      .set(headers)
-      .expect(401);
+    internalRequest.get(route).set(headers).expect(401);
   });
 
   test('Nothing ever imported for account - returns 404', async () => {
-    internalRequest
-      .get(route)
-      .set(internalHeaders)
-      .expect(404);
+    internalRequest.get(route).set(internalHeaders).expect(404);
   });
 
   test('Only attempted empty import - returns 404', async () => {
@@ -622,14 +636,8 @@ describe('GET /v0/accounts/:accountSid/import/progress', () => {
       importedResources: [],
       batch: newDefaultTestBatch(),
     };
-    await internalRequest
-      .post(importRoute)
-      .set(internalHeaders)
-      .send(requestBody);
-    internalRequest
-      .get(route)
-      .set(internalHeaders)
-      .expect(404);
+    await internalRequest.post(importRoute).set(internalHeaders).send(requestBody);
+    internalRequest.get(route).set(internalHeaders).expect(404);
   });
 
   test('Only attempted fail import - returns 404', async () => {
@@ -647,10 +655,7 @@ describe('GET /v0/accounts/:accountSid/import/progress', () => {
       .set(internalHeaders)
       .send(requestBody)
       .expect(400);
-    internalRequest
-      .get(route)
-      .set(internalHeaders)
-      .expect(404);
+    internalRequest.get(route).set(internalHeaders).expect(404);
   });
 
   test('Prior successful import - returns the importState set during that import', async () => {

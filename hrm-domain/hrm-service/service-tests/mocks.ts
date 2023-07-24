@@ -16,7 +16,10 @@
 
 import { Case } from '../src/case/case';
 import { channelTypes } from '../src/contact/channelTypes';
-import { ContactMediaType, CreateContactPayloadWithFormProperty } from '../src/contact/contact';
+import {
+  ContactMediaType,
+  CreateContactPayloadWithFormProperty,
+} from '../src/contact/contact';
 import { Contact } from '../src/contact/contact-data-access';
 
 export const accountSid = 'ACCOUNT_SID';

@@ -166,6 +166,8 @@ module.exports = {
   },
   down: async queryInterface => {
     await queryInterface.sequelize.query(`DROP TABLE public."CaseSections"`);
-    await queryInterface.sequelize.query(`DROP SEQUENCE public."CaseSections_sectionId_seq"`);
+    await queryInterface.sequelize.query(
+      `DROP SEQUENCE public."CaseSections_sectionId_seq"`,
+    );
   },
 };

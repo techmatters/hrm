@@ -18,8 +18,10 @@
  * @param {string[]} accumulator
  * @param {[string, boolean]} currentValue
  */
-const subcatsReducer = (accumulator: string[], [subcat, bool]: [string, boolean]): string[] =>
-  bool ? [...accumulator, subcat] : accumulator;
+const subcatsReducer = (
+  accumulator: string[],
+  [subcat, bool]: [string, boolean],
+): string[] => (bool ? [...accumulator, subcat] : accumulator);
 
 /**
  * @param {{ [category: string]: string[] }} accumulator

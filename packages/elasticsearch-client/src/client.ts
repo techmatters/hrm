@@ -14,33 +14,22 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 import { Client as EsClient, ClientOptions } from '@elastic/elasticsearch';
-import { IndicesRefreshResponse } from '@elastic/elasticsearch/lib/api/types';
-import { getSsmParameter } from '@tech-matters/hrm-ssm-cache';
-import {
-  indexDocumentBulk,
-  IndexDocumentBulkExtraParams,
-  IndexDocumentBulkResponse,
-} from './indexDocumentBulk';
+import { getSsmParameter } from '@tech-matters/ssm-cache';
+import { executeBulk, ExecuteBulkExtraParams, ExecuteBulkResponse } from './executeBulk';
 import { createIndex, CreateIndexExtraParams, CreateIndexResponse } from './createIndex';
 import { deleteIndex, DeleteIndexResponse } from './deleteIndex';
-import { indexDocument, IndexDocumentExtraParams, IndexDocumentResponse } from './indexDocument';
+import {
+  indexDocument,
+  IndexDocumentExtraParams,
+  IndexDocumentResponse,
+} from './indexDocument';
 import getAccountSid from './getAccountSid';
-import { getIndexConfig, ConfigIds, IndexTypes } from './getIndexConfig';
-import { search, SearchExtraParams, SearchResponse } from './search';
+import { search, SearchExtraParams } from './search';
+import { suggest, SuggestExtraParams } from './suggest';
+import { SearchConfiguration, IndexConfiguration } from './config';
+import { IndicesRefreshResponse } from '@elastic/elasticsearch/lib/api/types';
 
 // import { getMockClient } from './mockClient';
-
-export type Client = {
-  client: EsClient;
-  index: string;
-  refreshIndex: () => Promise<IndicesRefreshResponse>;
-  createIndex: (args: CreateIndexExtraParams) => Promise<CreateIndexResponse>;
-  deleteIndex: () => Promise<DeleteIndexResponse>;
-  indexDocument: (args: IndexDocumentExtraParams) => Promise<IndexDocumentResponse>;
-  indexDocumentBulk: (args: IndexDocumentBulkExtraParams) => Promise<IndexDocumentBulkResponse>;
-  search: (args: SearchExtraParams) => Promise<SearchResponse>;
-};
-
 type AccountSidOrShortCodeRequired =
   | {
       shortCode: string;
@@ -53,25 +42,19 @@ type AccountSidOrShortCodeRequired =
 
 export type GetClientArgs = {
   config?: ClientOptions;
-  configId?: ConfigIds;
-  indexType: IndexTypes;
+  indexType: string;
 } & AccountSidOrShortCodeRequired;
 
 export type GetClientOrMockArgs = GetClientArgs & {
   index: string;
 };
 
-export type PassThroughConfig = {
+export type PassThroughConfig<T> = {
   index: string;
-  indexConfig: any;
+  indexConfig: IndexConfiguration<T>;
   client: EsClient;
 };
 
-type ClientCache = {
-  [accountSid: string]: Client;
-};
-
-const clientCache: ClientCache = {};
 const getConfigSsmParameterKey = (indexType: string) =>
   `/${process.env.NODE_ENV}/${indexType}/${process.env.AWS_REGION}/elasticsearch_config`;
 
@@ -87,11 +70,16 @@ const getEsConfig = async ({
   if (config) return config;
   const envConfigEntries = Object.entries(process.env)
     .filter(([key]) => key.startsWith('ELASTICSEARCH_CONFIG_'))
-    .map(([varName, value]) => [varName.substring('ELASTICSEARCH_CONFIG_'.length), value]);
+    .map(([varName, value]) => [
+      varName.substring('ELASTICSEARCH_CONFIG_'.length),
+      value,
+    ]);
   console.log('envConfigEntries', envConfigEntries);
   if (process.env.ELASTICSEARCH_CONFIG || envConfigEntries.length) {
     return {
-      ...(process.env.ELASTICSEARCH_CONFIG ? JSON.parse(process.env.ELASTICSEARCH_CONFIG) : {}),
+      ...(process.env.ELASTICSEARCH_CONFIG
+        ? JSON.parse(process.env.ELASTICSEARCH_CONFIG)
+        : {}),
       ...Object.fromEntries(envConfigEntries),
     };
   }
@@ -99,42 +87,66 @@ const getEsConfig = async ({
   return JSON.parse(await getSsmParameter(getConfigSsmParameterKey(indexType)));
 };
 
-const getClientOrMock = async (params: GetClientOrMockArgs) => {
+/**
+ * Created this type explicitly because ReturnType<> doesn't work with generics
+ */
+export type IndexClient<T> = {
+  indexDocument: (args: IndexDocumentExtraParams<T>) => Promise<IndexDocumentResponse>;
+  refreshIndex: () => Promise<IndicesRefreshResponse>;
+  executeBulk: (args: ExecuteBulkExtraParams<T>) => Promise<ExecuteBulkResponse>;
+  createIndex: (args: CreateIndexExtraParams) => Promise<CreateIndexResponse>;
+  deleteIndex: () => Promise<DeleteIndexResponse>;
+};
+
+const getClientOrMock = async ({ config, index, indexType }: GetClientOrMockArgs) => {
   // TODO: mock client for unit tests
   // if (authToken === 'mockAuthToken') {
   //   const mock = (getMockClient({ config }) as unknown) as Twilio;
   //   return mock;
   // }
 
-  const { config, configId, index, indexType } = params;
   const client = new EsClient(await getEsConfig({ config, indexType }));
-  const indexConfig = await getIndexConfig({
-    configId,
-    indexType,
-  });
-  const passThroughConfig: PassThroughConfig = {
-    index,
-    indexConfig,
-    client,
-  };
-
   return {
     client,
     index,
-    /**
-     * Waits for an index refresh of pending changes to be completed. This is useful in tests
-     * where we want to make sure that the index is up to date before we test search results.
-     */
-    refreshIndex: () => client.indices.refresh({ index }),
-    createIndex: (args: CreateIndexExtraParams) => createIndex({ ...passThroughConfig, ...args }),
-    deleteIndex: () => deleteIndex(passThroughConfig),
-    indexDocument: (args: IndexDocumentExtraParams) =>
-      indexDocument({ ...passThroughConfig, ...args }),
-    indexDocumentBulk: (args: IndexDocumentBulkExtraParams) =>
-      indexDocumentBulk({ ...passThroughConfig, ...args }),
-    search: (args: SearchExtraParams) => search({ ...passThroughConfig, ...args }),
+    searchClient: (searchConfig: SearchConfiguration) => ({
+      search: (args: SearchExtraParams) =>
+        search({ client, index, searchConfig, ...args }),
+      suggest: (args: SuggestExtraParams) =>
+        suggest({ client, index, searchConfig, ...args }),
+    }),
+    indexClient: <T>(indexConfig: IndexConfiguration<T>): IndexClient<T> => {
+      const passThroughConfig: PassThroughConfig<T> = {
+        index,
+        indexConfig,
+        client,
+      };
+
+      return {
+        /**
+         * Waits for an index refresh of pending changes to be completed. This is useful in tests
+         * where we want to make sure that the index is up to date before we test search results.
+         */
+        refreshIndex: () => client.indices.refresh({ index }),
+        createIndex: (args: CreateIndexExtraParams) =>
+          createIndex({ ...passThroughConfig, ...args }),
+        deleteIndex: () => deleteIndex(passThroughConfig),
+        indexDocument: (args: IndexDocumentExtraParams<T>) =>
+          indexDocument({ ...passThroughConfig, ...args }),
+        executeBulk: (args: ExecuteBulkExtraParams<T>) =>
+          executeBulk({ ...passThroughConfig, ...args }),
+      };
+    },
   };
 };
+
+export type Client = Awaited<ReturnType<typeof getClientOrMock>>;
+
+type ClientCache = {
+  [accountSid: string]: Client;
+};
+
+const clientCache: ClientCache = {};
 
 /**
  * Returns a client for the given accountSid/indexType. Currently clients connections are really

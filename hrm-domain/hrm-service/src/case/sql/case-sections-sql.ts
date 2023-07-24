@@ -15,13 +15,12 @@
  */
 
 import { pgp } from '../../connection-pool';
-// eslint-disable-next-line prettier/prettier
 import { CaseSectionRecord } from '../case-data-access';
 
 /**
  * Is this FILTER (WHERE cs."caseId" IS NOT NULL) needed? Won't cs."caseId" always be not null as "caseId" is part of the PK?
  */
-export const SELECT_CASE_SECTIONS = `SELECT 
+export const SELECT_CASE_SECTIONS = `SELECT
          COALESCE(jsonb_agg(DISTINCT cs.*) FILTER (WHERE cs."caseId" IS NOT NULL), '[]') AS "caseSections"
                      FROM "CaseSections" cs
                      WHERE cs."caseId" = cases.id AND cs."accountSid" = cases."accountSid"`;
@@ -41,22 +40,36 @@ export const caseSectionUpsertSql = (sections: CaseSectionRecord[]): string =>
       'accountSid',
     ],
     'CaseSections',
-  )} 
-  ON CONFLICT ON CONSTRAINT "CaseSections_pkey" 
+  )}
+  ON CONFLICT ON CONSTRAINT "CaseSections_pkey"
   DO UPDATE SET "createdBy" = EXCLUDED."createdBy", "createdAt" = EXCLUDED."createdAt", "updatedBy" = EXCLUDED."updatedBy", "updatedAt" = EXCLUDED."updatedAt", "sectionTypeSpecificData" = EXCLUDED."sectionTypeSpecificData"`;
 
-export const deleteMissingCaseSectionsSql = (idsByType: Record<string, string[]>): string => {
+export const deleteMissingCaseSectionsSql = (
+  idsByType: Record<string, string[]>,
+): { sql: string; values: Record<string, { ids: string[]; type: string }> } => {
   const idsByTypeEntries = Object.entries(idsByType).filter(([, ids]) => ids.length);
+  const deleteValues: Record<string, { ids: string[]; type: string }> = {};
+  const whereClauses: string[] = [];
   if (idsByTypeEntries.length) {
-    const sectionTypeWhereExpression = pgp.as.format(
-      idsByTypeEntries
-        .map(([type, ids]) =>
-          pgp.as.format(`"sectionType" = $<type> AND "sectionId" IN ($<ids:csv>)`, { type, ids }),
-        )
-        .join(' OR '),
-    );
-    return `DELETE FROM "CaseSections" WHERE "caseId" = $<caseId> AND "accountSid" = $<accountSid> AND NOT (${sectionTypeWhereExpression})`;
+    idsByTypeEntries.forEach(([type, ids], index) => {
+      whereClauses.push(
+        `"sectionType" = $<section_${index}.type> AND "sectionId" IN ($<section_${index}.ids:csv>)`,
+      );
+      deleteValues[`section_${index}`] = {
+        ids,
+        type,
+      };
+    });
+    return {
+      sql: `DELETE FROM "CaseSections" WHERE "caseId" = $<caseId> AND "accountSid" = $<accountSid> AND NOT (${whereClauses.join(
+        ' OR ',
+      )})`,
+      values: deleteValues,
+    };
   } else {
-    return `DELETE FROM "CaseSections" WHERE "caseId" = $<caseId> AND "accountSid" = $<accountSid>`;
+    return {
+      sql: `DELETE FROM "CaseSections" WHERE "caseId" = $<caseId> AND "accountSid" = $<accountSid>`,
+      values: {},
+    };
   }
 };

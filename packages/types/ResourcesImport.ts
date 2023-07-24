@@ -13,63 +13,36 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
+import { FlatResource, TimeSequence } from './Resources';
 
-export type InlineAttributeTable =
-  | 'ResourceStringAttributes'
-  | 'ResourceBooleanAttributes'
-  | 'ResourceNumberAttributes'
-  | 'ResourceDateTimeAttributes';
+export type InlineAttributeProperty =
+  | 'stringAttributes'
+  | 'booleanAttributes'
+  | 'numberAttributes'
+  | 'dateTimeAttributes';
 
-export type AseloInlineResourceAttribute<T extends InlineAttributeTable> = {
-  key: string;
-  value: AttributeValue<T>;
-  info: Record<string, any> | null;
-};
+export type AttributeProperty = InlineAttributeProperty | 'referenceStringAttributes';
 
-export type AseloTranslatableResourceAttribute = AseloInlineResourceAttribute<
-  'ResourceStringAttributes'
-> & {
-  language: string;
-};
-
-export type ImportApiResource = {
-  id: string;
-  name: string;
-  updatedAt: string;
-  attributes: {
-    ResourceStringAttributes: AseloTranslatableResourceAttribute[];
-    ResourceReferenceStringAttributes: {
-      key: string;
-      value: string;
-      language: string;
-      list: string;
-    }[];
-    ResourceBooleanAttributes: AseloInlineResourceAttribute<'ResourceBooleanAttributes'>[];
-    ResourceNumberAttributes: AseloInlineResourceAttribute<'ResourceNumberAttributes'>[];
-    ResourceDateTimeAttributes: AseloInlineResourceAttribute<'ResourceDateTimeAttributes'>[];
-  };
-};
-
-export type AttributeTable = InlineAttributeTable | 'ResourceReferenceStringAttributes';
-
-export type AttributeValue<T extends AttributeTable> = T extends 'ResourceBooleanAttributes'
+export type AttributeValue<T extends AttributeProperty> = T extends 'booleanAttributes'
   ? boolean
-  : T extends 'ResourceNumberAttributes'
+  : T extends 'numberAttributes'
   ? number
   : string;
 
 export type ImportBatch = {
-  toDate: string;
-  fromDate: string;
+  toSequence: string;
+  fromSequence: string;
   remaining: number;
 };
 
 export type ImportProgress = ImportBatch & {
   lastProcessedDate: string;
   lastProcessedId: string;
+  // Leave vestigal support for no sequence ID, so it's easier to manually reset the import progress if required
+  importSequenceId?: TimeSequence;
 };
 
 export type ImportRequestBody = {
-  importedResources: ImportApiResource[];
+  importedResources: FlatResource[];
   batch: ImportBatch;
 };

@@ -136,9 +136,12 @@ describe('Test that all actions work fine (no one)', () => {
       },
       user: supervisor,
     })),
-  ).test('Action $action should return false', async ({ action, postSurveyObj, user }) => {
-    expect(can(user, action, postSurveyObj)).toBeFalsy();
-  });
+  ).test(
+    'Action $action should return false',
+    async ({ action, postSurveyObj, user }) => {
+      expect(can(user, action, postSurveyObj)).toBeFalsy();
+    },
+  );
 });
 
 /**
@@ -196,9 +199,12 @@ describe('Test that an empty set of conditions does not grants permissions', () 
       },
       user: supervisor,
     })),
-  ).test('Action $action should return false', async ({ action, postSurveyObj, user }) => {
-    expect(can(user, action, postSurveyObj)).toBeFalsy();
-  });
+  ).test(
+    'Action $action should return false',
+    async ({ action, postSurveyObj, user }) => {
+      expect(can(user, action, postSurveyObj)).toBeFalsy();
+    },
+  );
 });
 
 const addPrettyConditionsSets = t => ({

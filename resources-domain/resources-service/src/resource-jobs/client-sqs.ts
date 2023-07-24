@@ -15,11 +15,11 @@
  */
 
 import { SQS } from 'aws-sdk';
-import { getSsmParameter } from '@tech-matters/hrm-ssm-cache';
+import { getSsmParameter } from '@tech-matters/ssm-cache';
 import { sns } from '@tech-matters/sns-client';
 
-// eslint-disable-next-line prettier/prettier
-import { type ReferrableResource,  type ResourcesSearchIndexPayload, ResourcesJobType } from '@tech-matters/types';
+import type { FlatResource, ResourcesSearchIndexPayload } from '@tech-matters/types';
+import { ResourcesJobType } from '@tech-matters/types';
 
 const RETRY_COUNT = 4;
 
@@ -27,12 +27,23 @@ let sqs: SQS;
 
 export const getSqsClient = () => {
   if (!sqs) {
-    sqs = new SQS();
+    if (process.env.LOCAL_SQS_PORT) {
+      // For testing only
+      sqs = new SQS({
+        endpoint: `http://localhost:${process.env.LOCAL_SQS_PORT}`,
+      });
+    } else {
+      sqs = new SQS();
+    }
   }
   return sqs;
 };
 
-const getJobQueueUrl = (accountSid: string, jobType: string) => `/${process.env.NODE_ENV}/resources/${accountSid}/queue-url-${jobType}`;
+// will pick between more URLs as & when we interact with more queues directly from the resources resvice
+const getJobQueueUrl = () =>
+  `/${process.env.NODE_ENV}/${
+    process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
+  }/sqs/jobs/hrm-resources-search/queue-url-index`;
 
 export type PublishToResourcesJobParams = {
   params: ResourcesSearchIndexPayload;
@@ -40,14 +51,14 @@ export type PublishToResourcesJobParams = {
   messageGroupId?: string;
 };
 
-
-export const publishToResourcesJob = async ({ params, retryCount = 0, messageGroupId }: PublishToResourcesJobParams): Promise<void> => {
+export const publishToResourcesJob = async ({
+  params,
+  retryCount = 0,
+  messageGroupId,
+}: PublishToResourcesJobParams): Promise<void> => {
   //TODO: more robust error handling/messaging
   try {
-    const QueueUrl = await getSsmParameter(
-      getJobQueueUrl(params.accountSid, 'contact'),
-      86400000,
-    );
+    const QueueUrl = await getSsmParameter(getJobQueueUrl(), 86400000);
 
     const message: SQS.Types.SendMessageRequest = {
       MessageBody: JSON.stringify(params),
@@ -58,14 +69,16 @@ export const publishToResourcesJob = async ({ params, retryCount = 0, messageGro
       message.MessageGroupId = messageGroupId;
     }
 
-    await getSqsClient()
-      .sendMessage(message)
-      .promise();
+    await getSqsClient().sendMessage(message).promise();
   } catch (err) {
     if (retryCount < RETRY_COUNT) {
       console.error('Failed to publish to resources job. Retrying...', err);
-      await new Promise((resolve) => setTimeout(resolve, 250));
-      return publishToResourcesJob({ params, retryCount: retryCount + 1, messageGroupId });
+      await new Promise(resolve => setTimeout(resolve, 250));
+      return publishToResourcesJob({
+        params,
+        retryCount: retryCount + 1,
+        messageGroupId,
+      });
     }
 
     console.error('Failed to publish to resources job. Giving up.', err);
@@ -74,10 +87,12 @@ export const publishToResourcesJob = async ({ params, retryCount = 0, messageGro
       Message: JSON.stringify(params) + err,
       TopicArn: process.env.SNS_TOPIC_ARN || '',
     });
+
+    throw err;
   }
 };
 
-export const publishSearchIndexJob = (accountSid: string, resource: ReferrableResource) => {
+export const publishSearchIndexJob = (accountSid: string, resource: FlatResource) => {
   return publishToResourcesJob({
     params: {
       accountSid,

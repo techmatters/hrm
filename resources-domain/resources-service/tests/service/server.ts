@@ -24,24 +24,17 @@ import {
 import express from 'express';
 
 import { configureInternalService, configureService } from '../../src/service';
-import { CloudSearchConfig } from '../../src/config/cloud-search';
 
 export const defaultConfig: {
   authTokenLookup: (accountSid: string) => string;
-  cloudSearchConfig: CloudSearchConfig;
 } = {
   authTokenLookup: () => 'picernic basket',
-  cloudSearchConfig: {
-    searchUrl: new URL('https://resources.mock-cloudsearch.com'),
-  },
 };
 
 export const getServer = (config?: Partial<typeof defaultConfig>) => {
   process.env.AWS_ACCESS_KEY_ID = 'mock-access-key';
   process.env.AWS_SECRET_ACCESS_KEY = 'mock-secret-key';
-  process.env.ELASTICSEARCH_CONFIG = JSON.stringify({
-    node: 'http://localhost:9200',
-  });
+  process.env.ELASTICSEARCH_CONFIG_node = 'http://localhost:9200';
 
   const withoutService = configureDefaultPreMiddlewares(express());
   const withService = configureService({
@@ -52,17 +45,23 @@ export const getServer = (config?: Partial<typeof defaultConfig>) => {
   return configureDefaultPostMiddlewares(withService, true).listen();
 };
 
+const defaultInternalServiceConfig = {
+  reindexDbBatchSize: 4,
+};
+
 export const getInternalServer = () => {
   process.env.AWS_ACCESS_KEY_ID = 'mock-access-key';
   process.env.AWS_SECRET_ACCESS_KEY = 'mock-secret-key';
   const withoutService = configureDefaultPreMiddlewares(express());
   const withService = configureInternalService({
+    ...defaultInternalServiceConfig,
     webServer: withoutService,
   });
   return configureDefaultPostMiddlewares(withService, true).listen();
 };
 
-export const getRequest = (server: ReturnType<typeof getServer>) => supertest.agent(server);
+export const getRequest = (server: ReturnType<typeof getServer>) =>
+  supertest.agent(server);
 
 export const headers = {
   'Content-Type': 'application/json',
@@ -72,4 +71,9 @@ export const headers = {
 export const internalHeaders = {
   'Content-Type': 'application/json',
   Authorization: `Basic BBC`,
+};
+
+export const adminHeaders = {
+  'Content-Type': 'application/json',
+  Authorization: `Basic Fast`,
 };

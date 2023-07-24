@@ -89,7 +89,8 @@ module.exports = {
     `);
     console.log('Trigger Resources_update_trigger created');
 
-    await queryInterface.sequelize.query(`CREATE UNIQUE INDEX "Resources_updateSequence_idx"
+    await queryInterface.sequelize
+      .query(`CREATE UNIQUE INDEX "Resources_updateSequence_idx"
       ON resources."Resources" USING btree
       ("updateSequence" DESC NULLS LAST)
       TABLESPACE pg_default;`);

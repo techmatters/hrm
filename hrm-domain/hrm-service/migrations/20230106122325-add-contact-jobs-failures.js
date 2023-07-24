@@ -72,15 +72,21 @@ module.exports = {
   },
 
   async down(queryInterface) {
-    await queryInterface.sequelize.query(`DROP INDEX IF EXISTS "ContactJobs_poll_due_idx";`);
+    await queryInterface.sequelize.query(
+      `DROP INDEX IF EXISTS "ContactJobs_poll_due_idx";`,
+    );
 
     await queryInterface.sequelize.query(`
       ALTER TABLE IF EXISTS public."ContactJobs"
           ADD COLUMN IF NOT EXISTS "failedAttemptsPayloads" jsonb;
     `);
 
-    await queryInterface.sequelize.query(`DROP TABLE IF EXISTS public."ContactJobsFailures"`);
+    await queryInterface.sequelize.query(
+      `DROP TABLE IF EXISTS public."ContactJobsFailures"`,
+    );
 
-    await queryInterface.sequelize.query(`DROP SEQUENCE public."ContactJobsFailures_id_seq"`);
+    await queryInterface.sequelize.query(
+      `DROP SEQUENCE public."ContactJobsFailures_id_seq"`,
+    );
   },
 };

@@ -7,9 +7,10 @@
   "license": "AGPL",
   "dependencies": {
     "@tech-matters/elasticsearch-client": "^1.0.0",
-    "@tech-matters/hrm-job-errors": "^1.0.0",
-    "@tech-matters/hrm-ssm-cache": "^1.0.0",
+    "@tech-matters/job-errors": "^1.0.0",
+    "@tech-matters/ssm-cache": "^1.0.0",
     "@tech-matters/types": "^1.0.0",
+    "@tech-matters/resources-search-config": "^1.0.0",
     "aws-sdk": "^2.1225.0"
   },
   "devDependencies": {
@@ -17,7 +18,7 @@
     "@types/aws-lambda": "^8.10.108"
   },
   "scripts": {
-    "test:e2e": "jest tests/e2e",
-    "docker:build": "docker build -t resources-search-index --build-arg lambda_name=resources-search-index -f ../Dockerfile ../../"
+    "test:integration": "jest tests/integration",
+    "docker:build": "docker build -t resources-search-index --build-arg lambda_name=resources-search-index --build-arg lambda_dir=resources-domain -f ../../jobs/Dockerfile ../../"
   }
 }

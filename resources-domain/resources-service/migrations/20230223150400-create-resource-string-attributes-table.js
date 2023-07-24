@@ -68,7 +68,9 @@ module.exports = {
     await queryInterface.sequelize.query(
       `ALTER FUNCTION resources."ResourcesLookupTables_updateSequence_trigger"() OWNER TO resources`,
     );
-    console.log('Function "ResourcesLookupTables_updateSequence_trigger" ownership altered.');
+    console.log(
+      'Function "ResourcesLookupTables_updateSequence_trigger" ownership altered.',
+    );
 
     await queryInterface.sequelize.query(`
       CREATE TRIGGER "ResourceStringAttributes_update_trigger"

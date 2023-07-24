@@ -65,7 +65,10 @@ describe('createReferralRecord', () => {
     const { resourceName, ...withoutResourceName } = validReferral;
     const oneSpy = jest.spyOn(conn, 'one').mockResolvedValue(withoutResourceName);
 
-    const result = await referralDb.createReferralRecord()('AC_FAKE', withoutResourceName);
+    const result = await referralDb.createReferralRecord()(
+      'AC_FAKE',
+      withoutResourceName,
+    );
 
     expect(oneSpy).toHaveBeenCalledWith(expect.stringContaining('Referrals'));
     const insertSql = oneSpy.mock.calls[0][0];
@@ -85,9 +88,9 @@ describe('createReferralRecord', () => {
     dbError.table = 'Referrals';
     jest.spyOn(conn, 'one').mockRejectedValue(dbError);
 
-    await expect(referralDb.createReferralRecord()('AC_FAKE', validReferral)).rejects.toThrow(
-      OrphanedReferralError,
-    );
+    await expect(
+      referralDb.createReferralRecord()('AC_FAKE', validReferral),
+    ).rejects.toThrow(OrphanedReferralError);
   });
 
   test('Query throws a foreign key violation against other constraint - throws an DatabaseForeignKeyViolationError', async () => {
@@ -98,9 +101,9 @@ describe('createReferralRecord', () => {
     dbError.table = 'Referrals';
     jest.spyOn(conn, 'one').mockRejectedValue(dbError);
 
-    await expect(referralDb.createReferralRecord()('AC_FAKE', validReferral)).rejects.toThrow(
-      DatabaseForeignKeyViolationError,
-    );
+    await expect(
+      referralDb.createReferralRecord()('AC_FAKE', validReferral),
+    ).rejects.toThrow(DatabaseForeignKeyViolationError);
   });
 
   test('Query throws a unique constraint violation against primary key constraint - throws an DuplicateReferralError', async () => {
@@ -111,9 +114,9 @@ describe('createReferralRecord', () => {
     dbError.table = 'Referrals';
     jest.spyOn(conn, 'one').mockRejectedValue(dbError);
 
-    await expect(referralDb.createReferralRecord()('AC_FAKE', validReferral)).rejects.toThrow(
-      DuplicateReferralError,
-    );
+    await expect(
+      referralDb.createReferralRecord()('AC_FAKE', validReferral),
+    ).rejects.toThrow(DuplicateReferralError);
   });
 
   test('Query throws a foreign key violation against other constraint - throws an DatabaseForeignKeyViolationError', async () => {
@@ -124,9 +127,9 @@ describe('createReferralRecord', () => {
     dbError.table = 'Referrals';
     jest.spyOn(conn, 'one').mockRejectedValue(dbError);
 
-    await expect(referralDb.createReferralRecord()('AC_FAKE', validReferral)).rejects.toThrow(
-      DatabaseUniqueConstraintViolationError,
-    );
+    await expect(
+      referralDb.createReferralRecord()('AC_FAKE', validReferral),
+    ).rejects.toThrow(DatabaseUniqueConstraintViolationError);
   });
 
   test('Query throws any other error - throws an DatabaseError wrapping the original', async () => {
@@ -135,9 +138,9 @@ describe('createReferralRecord', () => {
     originalError.code = 'OTHER_CODE';
     jest.spyOn(conn, 'one').mockRejectedValue(originalError);
 
-    await expect(referralDb.createReferralRecord()('AC_FAKE', validReferral)).rejects.toThrow(
-      new DatabaseError(originalError),
-    );
+    await expect(
+      referralDb.createReferralRecord()('AC_FAKE', validReferral),
+    ).rejects.toThrow(new DatabaseError(originalError));
   });
 
   test('Passed a task - uses task', async () => {

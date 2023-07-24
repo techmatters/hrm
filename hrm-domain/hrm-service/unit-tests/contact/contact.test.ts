@@ -29,7 +29,6 @@ import * as referralApi from '../../src/referral/referral-model';
 import * as contactJobsApi from '../../src/contact-job/contact-job';
 import { ContactBuilder } from './contact-builder';
 import { omit } from 'lodash';
-// eslint-disable-next-line prettier/prettier
 import type { CSAMReport } from '../../src/csam-report/csam-report';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
 import { subHours } from 'date-fns';
@@ -93,18 +92,33 @@ describe('createContact', () => {
     cotactJobMockReturn,
     contactMockReturn,
   }: {
-    csamMockReturn?: ReturnType<typeof csamReportsApi.connectContactToCsamReports>,
-    referralMockReturn?: ReturnType<typeof referralApi.createReferral>,
-    cotactJobMockReturn?: ReturnType<typeof contactJobsApi.createContactJob>,
-    contactMockReturn?: ReturnType<typeof contactDb.create>,
+    csamMockReturn?: ReturnType<typeof csamReportsApi.connectContactToCsamReports>;
+    referralMockReturn?: ReturnType<typeof referralApi.createReferral>;
+    cotactJobMockReturn?: ReturnType<typeof contactJobsApi.createContactJob>;
+    contactMockReturn?: ReturnType<typeof contactDb.create>;
   } = {}) => {
     const connectCsamMock = jest.fn(csamMockReturn || (() => Promise.resolve([])));
-    jest.spyOn(csamReportsApi, 'connectContactToCsamReports').mockReturnValue(connectCsamMock);
-    const createReferralMock = jest.fn(referralMockReturn || (() => Promise.resolve({ contactId: '1234', referredAt: new Date().toISOString(), resourceId: 'TEST_RESOURCE_ID' })));
+    jest
+      .spyOn(csamReportsApi, 'connectContactToCsamReports')
+      .mockReturnValue(connectCsamMock);
+    const createReferralMock = jest.fn(
+      referralMockReturn ||
+        (() =>
+          Promise.resolve({
+            contactId: '1234',
+            referredAt: new Date().toISOString(),
+            resourceId: 'TEST_RESOURCE_ID',
+          })),
+    );
     jest.spyOn(referralApi, 'createReferral').mockReturnValue(createReferralMock);
-    const createContactJobMock = jest.fn(cotactJobMockReturn || (() => Promise.resolve()));
+    const createContactJobMock = jest.fn(
+      cotactJobMockReturn || (() => Promise.resolve()),
+    );
     jest.spyOn(contactJobsApi, 'createContactJob').mockReturnValue(createContactJobMock);
-    const createContactMock = jest.fn(contactMockReturn || (() => Promise.resolve({ contact: mockContact, isNewRecord: true })));
+    const createContactMock = jest.fn(
+      contactMockReturn ||
+        (() => Promise.resolve({ contact: mockContact, isNewRecord: true })),
+    );
     jest.spyOn(contactDb, 'create').mockReturnValue(createContactMock);
 
     return {
@@ -116,7 +130,12 @@ describe('createContact', () => {
   };
 
   test("Passes payload down to data layer with user workerSid used for 'createdBy'", async () => {
-    const { connectCsamMock, createReferralMock, createContactJobMock, createContactMock } = spyOnContactAndAssociations();
+    const {
+      connectCsamMock,
+      createReferralMock,
+      createContactJobMock,
+      createContactMock,
+    } = spyOnContactAndAssociations();
     const returnValue = await createContact(
       'parameter account-sid',
       'contact-creator',
@@ -126,10 +145,10 @@ describe('createContact', () => {
         user: twilioUser(workerSid, []),
       },
     );
-    expect(createContactMock).toHaveBeenCalledWith(
-      'parameter account-sid',
-      { ...sampleCreateContactPayload, createdBy: 'contact-creator' },
-    );
+    expect(createContactMock).toHaveBeenCalledWith('parameter account-sid', {
+      ...sampleCreateContactPayload,
+      createdBy: 'contact-creator',
+    });
 
     expect(connectCsamMock).not.toHaveBeenCalled();
     expect(createReferralMock).not.toHaveBeenCalled();
@@ -139,7 +158,12 @@ describe('createContact', () => {
   });
 
   test('Missing values are converted to empty strings for several fields', async () => {
-    const { connectCsamMock, createReferralMock, createContactJobMock, createContactMock } = spyOnContactAndAssociations();
+    const {
+      connectCsamMock,
+      createReferralMock,
+      createContactJobMock,
+      createContactMock,
+    } = spyOnContactAndAssociations();
 
     const minimalPayload = omit(
       sampleCreateContactPayload,
@@ -160,20 +184,17 @@ describe('createContact', () => {
         user: twilioUser(workerSid, []),
       },
     );
-    expect(createContactMock).toHaveBeenCalledWith(
-      'parameter account-sid',
-      {
-        ...minimalPayload,
-        createdBy: 'contact-creator',
-        helpline: '',
-        number: '',
-        channel: '',
-        channelSid: '',
-        serviceSid: '',
-        taskId: '',
-        twilioWorkerId: '',
-      },
-    );
+    expect(createContactMock).toHaveBeenCalledWith('parameter account-sid', {
+      ...minimalPayload,
+      createdBy: 'contact-creator',
+      helpline: '',
+      number: '',
+      channel: '',
+      channelSid: '',
+      serviceSid: '',
+      taskId: '',
+      twilioWorkerId: '',
+    });
 
     expect(connectCsamMock).not.toHaveBeenCalled();
     expect(createReferralMock).not.toHaveBeenCalled();
@@ -183,21 +204,28 @@ describe('createContact', () => {
   });
 
   test('Missing timeOfContact value is substituted with current date', async () => {
-    const { connectCsamMock, createReferralMock, createContactJobMock, createContactMock } = spyOnContactAndAssociations();
+    const {
+      connectCsamMock,
+      createReferralMock,
+      createContactJobMock,
+      createContactMock,
+    } = spyOnContactAndAssociations();
 
     const payload = omit(sampleCreateContactPayload, 'timeOfContact');
-    const returnValue = await createContact('parameter account-sid', 'contact-creator', payload, {
-      can: () => true,
-      user: twilioUser(workerSid, []),
-    });
-    expect(createContactMock).toHaveBeenCalledWith(
+    const returnValue = await createContact(
       'parameter account-sid',
+      'contact-creator',
+      payload,
       {
-        ...payload,
-        timeOfContact: expect.any(Date),
-        createdBy: 'contact-creator',
+        can: () => true,
+        user: twilioUser(workerSid, []),
       },
     );
+    expect(createContactMock).toHaveBeenCalledWith('parameter account-sid', {
+      ...payload,
+      timeOfContact: expect.any(Date),
+      createdBy: 'contact-creator',
+    });
 
     expect(connectCsamMock).not.toHaveBeenCalled();
     expect(createReferralMock).not.toHaveBeenCalled();
@@ -207,17 +235,27 @@ describe('createContact', () => {
   });
 
   test('empty array will be passed for csamReportIds if csamReport property is missing', async () => {
-    const { connectCsamMock, createReferralMock, createContactJobMock, createContactMock } = spyOnContactAndAssociations();
+    const {
+      connectCsamMock,
+      createReferralMock,
+      createContactJobMock,
+      createContactMock,
+    } = spyOnContactAndAssociations();
 
     const payload = omit(sampleCreateContactPayload, 'csamReport');
-    const returnValue = await createContact('parameter account-sid', 'contact-creator', payload, {
-      can: () => true,
-      user: twilioUser(workerSid, []),
-    });
-    expect(createContactMock).toHaveBeenCalledWith(
+    const returnValue = await createContact(
       'parameter account-sid',
-      { ...payload, createdBy: 'contact-creator' },
+      'contact-creator',
+      payload,
+      {
+        can: () => true,
+        user: twilioUser(workerSid, []),
+      },
     );
+    expect(createContactMock).toHaveBeenCalledWith('parameter account-sid', {
+      ...payload,
+      createdBy: 'contact-creator',
+    });
 
     expect(connectCsamMock).not.toHaveBeenCalled();
     expect(createReferralMock).not.toHaveBeenCalled();
@@ -239,8 +277,14 @@ describe('createContact', () => {
       twilioWorkerId: 'contact-creator',
     }));
 
-    const { connectCsamMock, createReferralMock, createContactJobMock, createContactMock } = spyOnContactAndAssociations({
-      csamMockReturn: (contactId: number) => Promise.resolve(csamReports.map(r => ({ ...r, contactId }))),
+    const {
+      connectCsamMock,
+      createReferralMock,
+      createContactJobMock,
+      createContactMock,
+    } = spyOnContactAndAssociations({
+      csamMockReturn: (contactId: number) =>
+        Promise.resolve(csamReports.map(r => ({ ...r, contactId }))),
     });
 
     const payload = {
@@ -251,17 +295,24 @@ describe('createContact', () => {
       can: () => true,
       user: twilioUser(workerSid, []),
     });
-    expect(createContactMock).toHaveBeenCalledWith(
-      accountSid,
-      { ...sampleCreateContactPayload, createdBy: 'contact-creator' },
-    );
+    expect(createContactMock).toHaveBeenCalledWith(accountSid, {
+      ...sampleCreateContactPayload,
+      createdBy: 'contact-creator',
+    });
 
     expect(connectCsamMock).toHaveBeenCalledTimes(1);
-    expect(connectCsamMock).toHaveBeenCalledWith(mockContact.id, payload.csamReports.map(r => r.id), 'parameter account-sid');
+    expect(connectCsamMock).toHaveBeenCalledWith(
+      mockContact.id,
+      payload.csamReports.map(r => r.id),
+      'parameter account-sid',
+    );
     expect(createReferralMock).not.toHaveBeenCalled();
     expect(createContactJobMock).not.toHaveBeenCalled();
 
-    expect(returnValue).toStrictEqual({ ...mockContact, csamReports: csamReports.map(r => ({ ...r, contactId: mockContact.id })) });
+    expect(returnValue).toStrictEqual({
+      ...mockContact,
+      csamReports: csamReports.map(r => ({ ...r, contactId: mockContact.id })),
+    });
   });
 
   test('referrals will be passed if populated', async () => {
@@ -270,25 +321,41 @@ describe('createContact', () => {
       { referredAt: new Date().toISOString(), resourceId: 'TEST_RESOURCE_ID_2' },
     ];
 
-    const { connectCsamMock, createReferralMock, createContactJobMock, createContactMock } = spyOnContactAndAssociations({
-      referralMockReturn: (accountSid: string, referral: referralApi.Referral) => Promise.resolve(referral),
+    const {
+      connectCsamMock,
+      createReferralMock,
+      createContactJobMock,
+      createContactMock,
+    } = spyOnContactAndAssociations({
+      referralMockReturn: (accountSid: string, referral: referralApi.Referral) =>
+        Promise.resolve(referral),
     });
 
     const payload = {
       ...sampleCreateContactPayload,
       referrals,
     };
-    const returnValue = await createContact('parameter account-sid', 'contact-creator', payload, {
-      can: () => true,
-      user: twilioUser(workerSid, []),
-    });
-    expect(createContactMock).toHaveBeenCalledWith(
+    const returnValue = await createContact(
       'parameter account-sid',
-      { ...sampleCreateContactPayload, createdBy: 'contact-creator' },
+      'contact-creator',
+      payload,
+      {
+        can: () => true,
+        user: twilioUser(workerSid, []),
+      },
     );
+    expect(createContactMock).toHaveBeenCalledWith('parameter account-sid', {
+      ...sampleCreateContactPayload,
+      createdBy: 'contact-creator',
+    });
 
     expect(createReferralMock).toHaveBeenCalledTimes(2);
-    referrals.forEach(referral => expect(createReferralMock).toHaveBeenCalledWith('parameter account-sid', { ...referral, contactId: mockContact.id.toString() }));
+    referrals.forEach(referral =>
+      expect(createReferralMock).toHaveBeenCalledWith('parameter account-sid', {
+        ...referral,
+        contactId: mockContact.id.toString(),
+      }),
+    );
     expect(connectCsamMock).not.toHaveBeenCalled();
     expect(createContactJobMock).not.toHaveBeenCalled();
 
@@ -296,7 +363,12 @@ describe('createContact', () => {
   });
 
   test('queue will be looked for as a rawJson property if omitted from the top level', async () => {
-    const { connectCsamMock, createReferralMock, createContactJobMock, createContactMock } = spyOnContactAndAssociations();
+    const {
+      connectCsamMock,
+      createReferralMock,
+      createContactJobMock,
+      createContactMock,
+    } = spyOnContactAndAssociations();
 
     const payload = {
       ...omit(sampleCreateContactPayload, 'queueName'),
@@ -305,14 +377,20 @@ describe('createContact', () => {
         queueName: 'Q2',
       },
     };
-    const returnValue = await createContact('parameter account-sid', 'contact-creator', payload as any, {
-      can: () => true,
-      user: twilioUser(workerSid, []),
-    });
-    expect(createContactMock).toHaveBeenCalledWith(
+    const returnValue = await createContact(
       'parameter account-sid',
-      { ...payload, queueName: 'Q2', createdBy: 'contact-creator' },
+      'contact-creator',
+      payload as any,
+      {
+        can: () => true,
+        user: twilioUser(workerSid, []),
+      },
     );
+    expect(createContactMock).toHaveBeenCalledWith('parameter account-sid', {
+      ...payload,
+      queueName: 'Q2',
+      createdBy: 'contact-creator',
+    });
 
     expect(connectCsamMock).not.toHaveBeenCalled();
     expect(createReferralMock).not.toHaveBeenCalled();
@@ -321,19 +399,29 @@ describe('createContact', () => {
     expect(returnValue).toStrictEqual(mockContact);
   });
 
-
   test('queue will be undefined if not present on rawJson, form or top level', async () => {
-    const { connectCsamMock, createReferralMock, createContactJobMock, createContactMock } = spyOnContactAndAssociations();
+    const {
+      connectCsamMock,
+      createReferralMock,
+      createContactJobMock,
+      createContactMock,
+    } = spyOnContactAndAssociations();
 
     const payload = omit(sampleCreateContactPayload, 'queueName');
-    const returnValue = await createContact('parameter account-sid', 'contact-creator', payload as any, {
-      can: () => true,
-      user: twilioUser(workerSid, []),
-    });
-    expect(createContactMock).toHaveBeenCalledWith(
+    const returnValue = await createContact(
       'parameter account-sid',
-      { ...payload, queueName: undefined, createdBy: 'contact-creator' },
+      'contact-creator',
+      payload as any,
+      {
+        can: () => true,
+        user: twilioUser(workerSid, []),
+      },
     );
+    expect(createContactMock).toHaveBeenCalledWith('parameter account-sid', {
+      ...payload,
+      queueName: undefined,
+      createdBy: 'contact-creator',
+    });
 
     expect(connectCsamMock).not.toHaveBeenCalled();
     expect(createReferralMock).not.toHaveBeenCalled();
@@ -358,8 +446,14 @@ describe('createContact', () => {
       },
     ];
 
-    const { connectCsamMock, createReferralMock, createContactJobMock, createContactMock } = spyOnContactAndAssociations({
-      referralMockReturn: (accountSid: string, referral: referralApi.Referral) => Promise.resolve(referral),
+    const {
+      connectCsamMock,
+      createReferralMock,
+      createContactJobMock,
+      createContactMock,
+    } = spyOnContactAndAssociations({
+      referralMockReturn: (accountSid: string, referral: referralApi.Referral) =>
+        Promise.resolve(referral),
     });
 
     const payload = {
@@ -367,18 +461,28 @@ describe('createContact', () => {
       referrals,
     };
 
-    const returnValue = await createContact('parameter account-sid', 'contact-creator', payload, {
-      can: () => true,
-      user: twilioUser(workerSid, []),
-    });
-
-    expect(createContactMock).toHaveBeenCalledWith(
+    const returnValue = await createContact(
       'parameter account-sid',
-      { ...sampleCreateContactPayload, createdBy: 'contact-creator' },
+      'contact-creator',
+      payload,
+      {
+        can: () => true,
+        user: twilioUser(workerSid, []),
+      },
     );
 
+    expect(createContactMock).toHaveBeenCalledWith('parameter account-sid', {
+      ...sampleCreateContactPayload,
+      createdBy: 'contact-creator',
+    });
+
     expect(createReferralMock).toHaveBeenCalledTimes(2);
-    referrals.forEach(referral => expect(createReferralMock).toHaveBeenCalledWith('parameter account-sid', { ...referral, contactId: mockContact.id.toString() }));
+    referrals.forEach(referral =>
+      expect(createReferralMock).toHaveBeenCalledWith('parameter account-sid', {
+        ...referral,
+        contactId: mockContact.id.toString(),
+      }),
+    );
     expect(connectCsamMock).not.toHaveBeenCalled();
     expect(createContactJobMock).not.toHaveBeenCalled();
 
@@ -391,11 +495,19 @@ describe('createContact', () => {
 
 describe('connectContactToCase', () => {
   test('Returns contact produced by data access layer', async () => {
-    const connectSpy = jest.spyOn(contactDb, 'connectToCase').mockResolvedValue(mockContact);
-    const result = await connectContactToCase('accountSid', 'case-connector', '1234', '4321', {
-      can: () => true,
-      user: twilioUser(workerSid, []),
-    });
+    const connectSpy = jest
+      .spyOn(contactDb, 'connectToCase')
+      .mockResolvedValue(mockContact);
+    const result = await connectContactToCase(
+      'accountSid',
+      'case-connector',
+      '1234',
+      '4321',
+      {
+        can: () => true,
+        user: twilioUser(workerSid, []),
+      },
+    );
     expect(connectSpy).toHaveBeenCalledWith('accountSid', '1234', '4321');
     expect(result).toStrictEqual(mockContact);
   });
@@ -431,10 +543,16 @@ describe('patchContact', () => {
   };
   test('Passes callerInformation, childInformation, caseInformation & categories to data layer as separate properties', async () => {
     const patchSpy = jest.spyOn(contactDb, 'patch').mockResolvedValue(mockContact);
-    const result = await patchContact('accountSid', 'contact-patcher', '1234', samplePatch, {
-      can: () => true,
-      user: twilioUser(workerSid, []),
-    });
+    const result = await patchContact(
+      'accountSid',
+      'contact-patcher',
+      '1234',
+      samplePatch,
+      {
+        can: () => true,
+        user: twilioUser(workerSid, []),
+      },
+    );
     expect(result).toStrictEqual(mockContact);
     expect(patchSpy).toHaveBeenCalledWith('accountSid', '1234', {
       updatedBy: 'contact-patcher',
@@ -608,7 +726,9 @@ describe('searchContacts', () => {
         },
       },
     );
-    expect(result.contacts[0].overview.name).toStrictEqual('Jill Smith');
+    expect((result.contacts[0] as SearchContact).overview.name).toStrictEqual(
+      'Jill Smith',
+    );
   });
 
   test('Call search without limit / offset, a default limit and offset 0', async () => {
@@ -623,7 +743,9 @@ describe('searchContacts', () => {
       contactNumber: '+123456',
       onlyDataContacts: true,
     };
-    const searchSpy = jest.spyOn(contactDb, 'search').mockResolvedValue({ count: 0, rows: [] });
+    const searchSpy = jest
+      .spyOn(contactDb, 'search')
+      .mockResolvedValue({ count: 0, rows: [] });
     await searchContacts(
       accountSid,
       body,
@@ -646,7 +768,9 @@ describe('searchContacts', () => {
       helpline: 'helpline',
       onlyDataContacts: true,
     };
-    const searchSpy = jest.spyOn(contactDb, 'search').mockResolvedValue({ count: 0, rows: [] });
+    const searchSpy = jest
+      .spyOn(contactDb, 'search')
+      .mockResolvedValue({ count: 0, rows: [] });
     await searchContacts(
       accountSid,
       body,
@@ -738,7 +862,9 @@ describe('search contacts permissions', () => {
         searchPermissions,
       };
 
-      const searchSpy = jest.spyOn(contactDb, 'search').mockResolvedValue({ count: 0, rows: [] });
+      const searchSpy = jest
+        .spyOn(contactDb, 'search')
+        .mockResolvedValue({ count: 0, rows: [] });
       await searchContacts(accountSid, body, limitOffset, reqData);
 
       if (shouldCallSearch) {

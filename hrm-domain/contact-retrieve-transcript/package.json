@@ -6,10 +6,10 @@
   "author": "",
   "license": "AGPL",
   "dependencies": {
-    "@tech-matters/hrm-job-errors": "^1.0.0",
+    "@tech-matters/job-errors": "^1.0.0",
     "@tech-matters/hrm-s3-client": "^1.0.0",
-    "@tech-matters/hrm-ssm-cache": "^1.0.0",
-    "@tech-matters/hrm-twilio-client": "^1.0.0",
+    "@tech-matters/ssm-cache": "^1.0.0",
+    "@tech-matters/twilio-client": "^1.0.0",
     "@tech-matters/types": "^1.0.0",
     "aws-sdk": "^2.1225.0",
     "twilio": "^3.83.3",
@@ -21,8 +21,8 @@
     "ts-node": "^10.9.1"
   },
   "scripts": {
-    "docker:build": "docker build -t hrm-jobs-contact-retrieve-transcript --build-arg lambda_name=contact-retrieve-transcript -f ../Dockerfile ../../",
-    "test:e2e": "jest tests/e2e",
+    "docker:build": "docker build -t hrm-jobs-contact-retrieve-transcript --build-arg lambda_name=contact-retrieve-transcript --build-arg lambda_dir=hrm-domain -f ../../jobs/Dockerfile ../../",
+    "test:integration": "jest tests/integration",
     "test:unit": "jest tests/unit"
   }
 }

@@ -1,5 +1,58 @@
 {
-  "development": ["us-east-1"],
-  "staging": ["us-east-1", "eu-west-1"],
-  "production": ["us-east-1", "eu-west-1", "ca-central-1"]
+  "development": {
+    "us-east-1": {
+      "lambda-groups": {
+        "resources-import-consumer": ["resources-import-consumer"],
+        "resources-import-producer": ["resources-import-producer-as", "resources-import-producer-e2e"],
+        "resources-search-index": ["resources-search-index"],
+        "job-complete": ["resources-import-complete","resources-search-complete"]
+      }
+    }
+  },
+  "staging": {
+    "us-east-1": {
+      "lambda-groups": {
+        "resources-import-consumer": ["resources-import-consumer"],
+        "resources-import-producer": [
+          "resources-import-producer-ca"
+        ],
+        "resources-search-index": ["resources-search-index"],
+        "job-complete": ["resources-import-complete","resources-search-complete"]
+      }
+    },
+    "eu-west-1": {
+      "lambda-groups": {
+        "resources-import-consumer": [],
+        "resources-import-producer": [],
+        "resources-search-index": [],
+        "job-complete": []
+      }
+    }
+  },
+  "production": {
+    "us-east-1": {
+      "lambda-groups": {
+        "resources-import-consumer": ["resources-import-consumer"],
+        "resources-import-producer": ["resources-import-producer-as"],
+        "resources-search-index": ["resources-search-index"],
+        "job-complete": ["resources-import-complete","resources-search-complete"]
+      }
+    },
+    "eu-west-1": {
+      "lambda-groups": {
+        "resources-import-consumer": [],
+        "resources-import-producer": [],
+        "resources-search-index": [],
+        "job-complete": []
+      }
+    },
+    "ca-central-1": {
+      "lambda-groups": {
+        "resources-import-consumer": ["resources-import-consumer"],
+        "resources-import-producer": ["resources-import-producer-ca"],
+        "resources-search-index": ["resources-search-index"],
+        "job-complete": ["resources-import-complete","resources-search-complete"]
+      }
+    }
+  }
 }

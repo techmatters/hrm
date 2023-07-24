@@ -28,3 +28,4 @@ services:
 
     ports:
       - '5433:5432'
+

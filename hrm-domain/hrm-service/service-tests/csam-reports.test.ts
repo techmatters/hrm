@@ -96,7 +96,8 @@ describe('/csamReports', () => {
           },
         },
         {
-          description: 'when reportType is "counsellor-generated" and no csamReportId is provided',
+          description:
+            'when reportType is "counsellor-generated" and no csamReportId is provided',
           csamReport: {
             twilioWorkerId: workerSid,
             reportType: 'counsellor-generated',
@@ -105,10 +106,7 @@ describe('/csamReports', () => {
       ];
 
       each(testCases).test('$description', async ({ csamReport }) => {
-        const response = await request
-          .post(route)
-          .set(headers)
-          .send(csamReport);
+        const response = await request.post(route).set(headers).send(csamReport);
 
         expect(response.status).toBe(422);
       });
@@ -123,7 +121,8 @@ describe('/csamReports', () => {
         }[] = [
           // with contact
           {
-            description: 'when reportType is "counsellor-generated", twilioWorkerId preset',
+            description:
+              'when reportType is "counsellor-generated", twilioWorkerId preset',
             csamReport: {
               twilioWorkerId: workerSid,
               reportType: 'counsellor-generated',
@@ -140,7 +139,8 @@ describe('/csamReports', () => {
             contact: contact1,
           },
           {
-            description: 'when reportType is "counsellor-generated", twilioWorkerId absent',
+            description:
+              'when reportType is "counsellor-generated", twilioWorkerId absent',
             csamReport: {
               reportType: 'counsellor-generated',
               csamReportId: 'csam-report-id',
@@ -154,10 +154,12 @@ describe('/csamReports', () => {
           },
         ];
 
-        const testCases = testCasesWithContact.flatMap(({ contact, description, ...rest }) => [
-          { ...rest, description: description + ' without contact' },
-          { ...rest, contact, description: description + ' with contact' },
-        ]);
+        const testCases = testCasesWithContact.flatMap(
+          ({ contact, description, ...rest }) => [
+            { ...rest, description: description + ' without contact' },
+            { ...rest, contact, description: description + ' with contact' },
+          ],
+        );
 
         each(testCases).test('$description', async ({ csamReport, contact }) => {
           let csamReportToSave;
@@ -183,10 +185,7 @@ describe('/csamReports', () => {
             createdAt: expect.toParseAsDate(),
           };
 
-          const response = await request
-            .post(route)
-            .set(headers)
-            .send(csamReportToSave);
+          const response = await request.post(route).set(headers).send(csamReportToSave);
 
           expect(response.status).toBe(200);
           if (contact) {
@@ -195,7 +194,10 @@ describe('/csamReports', () => {
             expect(response.body.contactId).toBeNull();
           }
 
-          const reportFromDB = await csamReportsApi.getCSAMReport(response.body.id, accountSid);
+          const reportFromDB = await csamReportsApi.getCSAMReport(
+            response.body.id,
+            accountSid,
+          );
 
           if (!reportFromDB) {
             throw new Error('reportFromDB is undefined');
@@ -246,10 +248,7 @@ describe('/csamReports', () => {
       ];
 
       each(testCases).test('Invalid contactId, $description', async ({ csamReport }) => {
-        const response = await request
-          .post(route)
-          .set(headers)
-          .send(csamReport);
+        const response = await request.post(route).set(headers).send(csamReport);
 
         expect(response.status).toBe(500);
         expect(response.body.message).toContain(
@@ -264,7 +263,10 @@ describe('/csamReports', () => {
           .post(contactRoute)
           .set(headers)
           .send(contact1);
-        let csamReportWithContactId = { ...csamReport, contactId: contactResponse.body.id };
+        let csamReportWithContactId = {
+          ...csamReport,
+          contactId: contactResponse.body.id,
+        };
 
         const response = await request
           .post(route.replace(accountSid, 'another-account-sid'))
@@ -293,7 +295,9 @@ describe('/csamReports', () => {
               reportId: 99999999,
             },
           ]).test('$description', async ({ reportId }) => {
-            const response = await request.post(`${route}/${reportId}/acknowledge`).set(headers);
+            const response = await request
+              .post(`${route}/${reportId}/acknowledge`)
+              .set(headers);
 
             expect(response.status).toBe(404);
           });
@@ -324,10 +328,12 @@ describe('/csamReports', () => {
             },
           ];
 
-          const testCases = testCasesWithContact.flatMap(({ contact, description, ...rest }) => [
-            { ...rest, description: description + ' without contact' },
-            { ...rest, contact, description: description + ' with contact' },
-          ]);
+          const testCases = testCasesWithContact.flatMap(
+            ({ contact, description, ...rest }) => [
+              { ...rest, description: description + ' without contact' },
+              { ...rest, contact, description: description + ' with contact' },
+            ],
+          );
 
           each(testCases).test('$description', async ({ csamReport, contact }) => {
             let csamReportToSave;

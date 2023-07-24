@@ -13,8 +13,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-
-import { ImportApiResource, ImportBatch, ImportProgress } from '@tech-matters/types';
+import parseISO from 'date-fns/parseISO';
+import {
+  AccountSID,
+  FlatResource,
+  ImportBatch,
+  ImportProgress,
+  TimeSequence,
+} from '@tech-matters/types';
 import { db } from '../connection-pool';
 import {
   getImportState,
@@ -22,25 +28,36 @@ import {
   upsertImportedResource,
   UpsertImportedResourceResult,
 } from './importDataAccess';
-import { AccountSID } from '@tech-matters/twilio-worker-auth';
+import { publishSearchIndexJob } from '../resource-jobs/client-sqs';
 
 export type ValidationFailure = {
   reason: 'missing field';
   fields: string[];
-  resource: ImportApiResource;
+  resource: FlatResource;
 };
 
 export const isValidationFailure = (result: any): result is ValidationFailure => {
   return result.reason === 'missing field';
 };
 
-const REQUIRED_FIELDS = ['id', 'name', 'attributes', 'updatedAt'] as const;
+const REQUIRED_FIELDS = ['id', 'name', 'lastUpdated'] as const;
+
+/**
+ * Unfortunately the timestamp-with-sequence identifiers are not padded to be alphabetically sortable
+ * So they require a custom comparator
+ */
+
+const compareTimeSequences = (a: TimeSequence, b: TimeSequence) => {
+  const [aTime, aSequence] = a.split('-').map(Number);
+  const [bTime, bSequence] = b.split('-').map(Number);
+  return aTime - bTime || aSequence - bSequence;
+};
 
 const importService = () => {
   return {
     upsertResources: async (
       accountSid: AccountSID,
-      resources: ImportApiResource[],
+      resources: FlatResource[],
       batch: ImportBatch,
     ): Promise<UpsertImportedResourceResult[] | ValidationFailure> => {
       if (!resources?.length) return [];
@@ -61,20 +78,32 @@ const importService = () => {
               };
               throw err;
             }
+            console.debug(`Upserting ${accountSid}/${resource.id}`);
             const result = await upsert(accountSid, resource);
             if (!result.success) {
               throw result.error;
             }
             results.push(result);
+            try {
+              await publishSearchIndexJob(resource.accountSid, resource);
+            } catch (e) {
+              console.error(
+                `Failed to publish search index job for ${resource.accountSid}/${resource.id}`,
+              );
+            }
           }
-          const { id, updatedAt } = [...resources].sort((a, b) =>
-            a.updatedAt > b.updatedAt ? 1 : a.updatedAt < b.updatedAt ? -1 : a.id > b.id ? 1 : -1,
+          const { id, lastUpdated } = [...resources].sort((a, b) =>
+            compareTimeSequences(
+              a.importSequenceId || `${parseISO(a.lastUpdated).valueOf()}-0`,
+              b.importSequenceId || `${parseISO(b.lastUpdated).valueOf()}-0`,
+            ),
           )[resources.length - 1];
           await updateImportProgress(t)(accountSid, {
             ...batch,
-            lastProcessedDate: updatedAt,
+            lastProcessedDate: lastUpdated,
             lastProcessedId: id,
           });
+
           return results;
         });
       } catch (e) {

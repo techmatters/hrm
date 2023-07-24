@@ -16,7 +16,7 @@
 import { IndicesDeleteResponse } from '@elastic/elasticsearch/lib/api/types';
 import { PassThroughConfig } from './client';
 
-export type DeleteIndexParams = PassThroughConfig;
+export type DeleteIndexParams = PassThroughConfig<any>;
 export type DeleteIndexResponse = IndicesDeleteResponse | void;
 
 export const deleteIndex = async ({

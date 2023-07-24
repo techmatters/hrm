@@ -15,71 +15,75 @@
  */
 
 import { pgp } from '../connection-pool';
-import { ImportProgress, ImportApiResource } from '@tech-matters/types';
-import { AccountSID } from '@tech-matters/twilio-worker-auth';
+import { AccountSID, ImportProgress, FlatResource } from '@tech-matters/types';
+
+const DELETE_RESOURCE_ATTRIBUTES_SQL = `DELETE FROM resources."ResourceStringAttributes" WHERE "resourceId" = $<resourceId> AND "accountSid" = $<accountSid>;
+    DELETE FROM resources."ResourceNumberAttributes" WHERE "resourceId" = $<resourceId> AND "accountSid" = $<accountSid>;
+    DELETE FROM resources."ResourceBooleanAttributes" WHERE "resourceId" = $<resourceId> AND "accountSid" = $<accountSid>;
+    DELETE FROM resources."ResourceDateTimeAttributes" WHERE "resourceId" = $<resourceId> AND "accountSid" = $<accountSid>`;
 
 export const generateUpsertSqlFromImportResource = (
   accountSid: string,
-  { attributes, ...resourceRecord }: ImportApiResource,
+  { stringAttributes, referenceStringAttributes, ...resourceRecord }: FlatResource,
 ): string => {
   const sqlBatch: string[] = [];
-
   sqlBatch.push(`${pgp.helpers.insert(
-    { ...resourceRecord, accountSid, created: resourceRecord.updatedAt },
-    ['id', 'name', 'accountSid', 'created'],
+    {
+      ...resourceRecord,
+      accountSid,
+      created: resourceRecord.lastUpdated,
+      lastUpdated: resourceRecord.lastUpdated,
+      deletedAt: resourceRecord.deletedAt || null,
+    },
+    ['id', 'name', 'accountSid', 'created', 'lastUpdated'],
     { schema: 'resources', table: 'Resources' },
   )} 
-  ON CONFLICT ON CONSTRAINT "Resources_pkey" 
+  ON CONFLICT ("id", "accountSid") 
   DO UPDATE SET "name" = EXCLUDED."name", "lastUpdated" = EXCLUDED."lastUpdated"`);
+
   const nonTranslatableTables = [
-    'ResourceNumberAttributes',
-    'ResourceBooleanAttributes',
-    'ResourceDateTimeAttributes',
+    { property: 'numberAttributes', table: 'ResourceNumberAttributes' },
+    { property: 'booleanAttributes', table: 'ResourceBooleanAttributes' },
+    { property: 'dateTimeAttributes', table: 'ResourceDateTimeAttributes' },
   ] as const;
+
   sqlBatch.push(
-    pgp.as.format(
-      `DELETE FROM resources."ResourceStringAttributes" WHERE "resourceId" = $<resourceId> AND "accountSid" = $<accountSid>;
-    DELETE FROM resources."ResourceNumberAttributes" WHERE "resourceId" = $<resourceId> AND "accountSid" = $<accountSid>;
-    DELETE FROM resources."ResourceBooleanAttributes" WHERE "resourceId" = $<resourceId> AND "accountSid" = $<accountSid>;
-    DELETE FROM resources."ResourceDateTimeAttributes" WHERE "resourceId" = $<resourceId> AND "accountSid" = $<accountSid>`,
-      { resourceId: resourceRecord.id.toString(), accountSid },
-    ),
+    pgp.as.format(DELETE_RESOURCE_ATTRIBUTES_SQL, {
+      resourceId: resourceRecord.id,
+      accountSid,
+    }),
   );
   sqlBatch.push(
-    ...attributes.ResourceStringAttributes.map(attribute => {
+    ...stringAttributes.map(attribute => {
       const { key, value, info, language } = attribute;
-      return pgp.as.format(
-        `${pgp.helpers.insert(
+      return pgp.helpers.insert(
+        {
+          accountSid,
+          resourceId: resourceRecord.id,
+          key,
+          value,
+          info,
+          language: language ?? '',
+        },
+        ['accountSid', 'resourceId', 'key', 'value', 'language', 'info'],
+        { schema: 'resources', table: 'ResourceStringAttributes' },
+      );
+    }),
+  );
+  sqlBatch.push(
+    ...nonTranslatableTables.flatMap(({ property, table }) =>
+      resourceRecord[property].map(attribute => {
+        const { key, value, info } = attribute;
+        return pgp.helpers.insert(
           {
             accountSid,
             resourceId: resourceRecord.id,
             key,
             value,
             info,
-            language: language ?? '',
           },
-          ['accountSid', 'resourceId', 'key', 'value', 'language', 'info'],
-          { schema: 'resources', table: 'ResourceStringAttributes' },
-        )}`,
-      );
-    }),
-  );
-  sqlBatch.push(
-    ...nonTranslatableTables.flatMap(table =>
-      attributes[table].map(attribute => {
-        const { key, value, info } = attribute;
-        return pgp.as.format(
-          `${pgp.helpers.insert(
-            {
-              accountSid,
-              resourceId: resourceRecord.id,
-              key,
-              value,
-              info,
-            },
-            ['accountSid', 'resourceId', 'key', 'value', 'info'],
-            { schema: 'resources', table },
-          )}`,
+          ['accountSid', 'resourceId', 'key', 'value', 'info'],
+          { schema: 'resources', table },
         );
       }),
     ),
@@ -87,28 +91,32 @@ export const generateUpsertSqlFromImportResource = (
   sqlBatch.push(
     pgp.as.format(
       `DELETE FROM resources."ResourceReferenceStringAttributes" WHERE "resourceId" = $<resourceId> AND "accountSid" = $<accountSid>`,
-      { resourceId: resourceRecord.id.toString(), accountSid },
+      { resourceId: resourceRecord.id, accountSid },
     ),
   );
 
   sqlBatch.push(
-    ...attributes.ResourceReferenceStringAttributes.map(attribute => {
-      const { language, ...queryValues } = attribute;
+    ...referenceStringAttributes.map(attribute => {
       return pgp.as.format(
         `INSERT INTO resources."ResourceReferenceStringAttributes" 
     ("accountSid", "resourceId", "key", "list", "referenceId") 
     SELECT $<accountSid>, $<resourceId>, $<key>, $<list>, "id" 
       FROM resources."ResourceReferenceStringAttributeValues" 
-      WHERE "accountSid" = $<accountSid> AND "list" = $<list> AND "value" = $<value>`,
-        { ...queryValues, accountSid, resourceId: resourceRecord.id },
+      WHERE "accountSid" = $<accountSid> AND "list" = $<list> AND "value" = $<value>
+  ON CONFLICT ("accountSid", "resourceId", "key", "list", "referenceId") 
+  DO NOTHING`,
+        { ...attribute, accountSid, resourceId: resourceRecord.id },
       );
     }),
   );
   return sqlBatch.join(';\n');
 };
 
-export const generateUpdateImportProgressSql = (accountSid: AccountSID, progress: ImportProgress) =>
-  pgp.as.format(`
+export const generateUpdateImportProgressSql = (
+  accountSid: AccountSID,
+  progress: ImportProgress,
+) =>
+  `
     ${pgp.helpers.insert(
       {
         accountSid,
@@ -119,7 +127,7 @@ export const generateUpdateImportProgressSql = (accountSid: AccountSID, progress
     )}
     ON CONFLICT ON CONSTRAINT "Accounts_pkey" 
     DO UPDATE SET "importState" = EXCLUDED."importState"
-  `);
+  `;
 
 export const SELECT_IMPORT_PROGRESS_SQL = `
   SELECT "importState" FROM resources."Accounts" WHERE "accountSid" = $<accountSid>

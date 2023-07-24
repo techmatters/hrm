@@ -48,7 +48,9 @@ export function processContactJobs() {
         const publishedContactJobResult = await publishDueContactJobs(dueContactJobs);
       } catch (err) {
         console.error(
-          new ContactJobPollerError('JOB PROCESSING SWEEP ABORTED DUE TO UNHANDLED ERROR'),
+          new ContactJobPollerError(
+            'JOB PROCESSING SWEEP ABORTED DUE TO UNHANDLED ERROR',
+          ),
           err,
         );
       }

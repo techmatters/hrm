@@ -43,7 +43,10 @@ import {
 import './case-validation';
 import * as caseApi from '../src/case/case';
 import * as caseDb from '../src/case/case-data-access';
-import { CreateContactPayloadWithFormProperty, PatchPayload } from '../src/contact/contact';
+import {
+  CreateContactPayloadWithFormProperty,
+  PatchPayload,
+} from '../src/contact/contact';
 import * as contactApi from '../src/contact/contact';
 import * as contactDb from '../src/contact/contact-data-access';
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
@@ -63,7 +66,8 @@ useOpenRules();
 const server = getServer();
 const request = getRequest(server);
 
-const { form, ...contact1WithRawJsonProp } = contact1 as CreateContactPayloadWithFormProperty;
+const { form, ...contact1WithRawJsonProp } =
+  contact1 as CreateContactPayloadWithFormProperty;
 
 /**
  *
@@ -256,7 +260,8 @@ describe('/contacts route', () => {
       },
       {
         contact: another1,
-        changeDescription: 'callType is Child calling about self (with variations in the form)',
+        changeDescription:
+          'callType is Child calling about self (with variations in the form)',
       },
       {
         contact: another2,
@@ -304,10 +309,7 @@ describe('/contacts route', () => {
 
         const expected = expectedGetContact || contact;
 
-        const res = await request
-          .post(route)
-          .set(headers)
-          .send(contact);
+        const res = await request.post(route).set(headers).send(contact);
 
         expect(res.status).toBe(200);
         expect(res.body.referrals).toStrictEqual(contact.referrals || []);
@@ -331,14 +333,8 @@ describe('/contacts route', () => {
     );
 
     test('Idempotence on create contact', async () => {
-      const response = await request
-        .post(route)
-        .set(headers)
-        .send(withTaskId);
-      const subsequentResponse = await request
-        .post(route)
-        .set(headers)
-        .send(withTaskId);
+      const response = await request.post(route).set(headers).send(withTaskId);
+      const subsequentResponse = await request.post(route).set(headers).send(withTaskId);
 
       // both should succeed
       expect(response.status).toBe(200);
@@ -364,7 +360,10 @@ describe('/contacts route', () => {
       expect(response.body.csamReports).toHaveLength(0);
 
       // No new report is created
-      const maybeReport = await csamReportApi.getCSAMReport(notExistingCsamReport.id, accountSid);
+      const maybeReport = await csamReportApi.getCSAMReport(
+        notExistingCsamReport.id,
+        accountSid,
+      );
       expect(maybeReport).toBeNull();
 
       await deleteContactById(response.body.id, response.body.accountSid);
@@ -456,10 +455,7 @@ describe('/contacts route', () => {
           throw new Error('Ups');
         });
 
-      const res = await request
-        .post(route)
-        .set(headers)
-        .send(contact);
+      const res = await request.post(route).set(headers).send(contact);
 
       expect(res.status).toBe(500);
 
@@ -498,10 +494,7 @@ describe('/contacts route', () => {
       };
 
       // Create contact with referrals
-      const response = await request
-        .post(route)
-        .set(headers)
-        .send(contact);
+      const response = await request.post(route).set(headers).send(contact);
 
       expect(response.status).toBe(200);
 
@@ -551,10 +544,7 @@ describe('/contacts route', () => {
           throw new Error('Ups');
         });
 
-      const res = await request
-        .post(route)
-        .set(headers)
-        .send(contact);
+      const res = await request.post(route).set(headers).send(contact);
 
       expect(createReferralSpy).toHaveBeenCalled();
       expect(res.status).toBe(500);
@@ -586,15 +576,15 @@ describe('/contacts route', () => {
     ).test(
       `contacts with channel type $channel should create ${ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT} job`,
       async ({ contact }) => {
-        const res = await request
-          .post(route)
-          .set(headers)
-          .send(contact);
+        const res = await request.post(route).set(headers).send(contact);
 
         expect(res.status).toBe(200);
 
         const createdContact = await contactDb.getById(accountSid, res.body.id);
-        const jobs = await selectJobsByContactId(createdContact.id, createdContact.accountSid);
+        const jobs = await selectJobsByContactId(
+          createdContact.id,
+          createdContact.accountSid,
+        );
 
         const retrieveContactTranscriptJobs = jobs.filter(
           j => j.jobType === ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
@@ -602,10 +592,7 @@ describe('/contacts route', () => {
         expect(retrieveContactTranscriptJobs).toHaveLength(1);
 
         // Test that idempotence applies to jobs too
-        const res2 = await request
-          .post(route)
-          .set(headers)
-          .send(contact);
+        const res2 = await request.post(route).set(headers).send(contact);
 
         expect(res2.status).toBe(200);
         const jobs2 = await selectJobsByContactId(res.body.id, res.body.accountSid);
@@ -620,7 +607,9 @@ describe('/contacts route', () => {
         expect(attemptedContact).not.toBeNull();
 
         await Promise.all(
-          retrieveContactTranscriptJobs.map(j => deleteContactJobById(j.id, j.accountSid)),
+          retrieveContactTranscriptJobs.map(j =>
+            deleteContactJobById(j.id, j.accountSid),
+          ),
         );
         await deleteContactById(res.body.id, res.body.accountSid);
       },
@@ -656,10 +645,7 @@ describe('/contacts route', () => {
 
         const createContactJobSpy = jest.spyOn(contactJobDataAccess, 'createContactJob');
 
-        const res = await request
-          .post(route)
-          .set(headers)
-          .send(contact);
+        const res = await request.post(route).set(headers).send(contact);
 
         expect(res.status).toBe(500);
 
@@ -713,10 +699,7 @@ describe('/contacts route', () => {
           });
 
         const contactWithCsam = { ...contact, csamReports: [newReport] };
-        const res = await request
-          .post(route)
-          .set(headers)
-          .send(contactWithCsam);
+        const res = await request.post(route).set(headers).send(contactWithCsam);
 
         expect(res.status).toBe(500);
 
@@ -755,20 +738,23 @@ describe('/contacts route', () => {
         useOpenRules();
       }
 
-      const res = await request
-        .post(route)
-        .set(headers)
-        .send(withTaskIdAndTranscript);
+      const res = await request.post(route).set(headers).send(withTaskIdAndTranscript);
 
-      expect(Array.isArray((<contactApi.Contact>res.body).rawJson?.conversationMedia)).toBeTruthy();
+      expect(
+        Array.isArray((<contactApi.Contact>res.body).rawJson?.conversationMedia),
+      ).toBeTruthy();
 
       if (expectTranscripts) {
         expect(
-          (<contactApi.Contact>res.body).rawJson?.conversationMedia?.some(isS3StoredTranscript),
+          (<contactApi.Contact>res.body).rawJson?.conversationMedia?.some(
+            isS3StoredTranscript,
+          ),
         ).toBeTruthy();
       } else {
         expect(
-          (<contactApi.Contact>res.body).rawJson?.conversationMedia?.some(isS3StoredTranscript),
+          (<contactApi.Contact>res.body).rawJson?.conversationMedia?.some(
+            isS3StoredTranscript,
+          ),
         ).toBeFalsy();
       }
 
@@ -861,16 +847,13 @@ describe('/contacts route', () => {
             invalidContact,
             withCSAMReports,
             oneWeekBefore,
-          ].map(c => () =>
-            request
-              .post(route)
-              .set(headers)
-              .send(c),
-          ),
+          ].map(c => () => request.post(route).set(headers).send(c)),
         );
 
         createdContacts = responses.map(r => r.body);
-        const withCSAMReportsId = createdContacts.find(c => c.queueName === 'withCSAMReports')!.id;
+        const withCSAMReportsId = createdContacts.find(
+          c => c.queueName === 'withCSAMReports',
+        )!.id;
         // Retrieve the csam reports that should be connected to withCSAMReports
         const updatedCsamReports = await csamReportApi.getCsamReportsByContactId(
           withCSAMReportsId,
@@ -883,7 +866,9 @@ describe('/contacts route', () => {
       afterAll(async () => {
         await Promise.all(csamReports.map(c => deleteCsamReportById(c.id, c.accountSid)));
         await Promise.all(
-          createdContacts.filter(c => c.id).map(c => deleteContactById(c.id, c.accountSid)),
+          createdContacts
+            .filter(c => c.id)
+            .map(c => deleteContactById(c.id, c.accountSid)),
         );
       });
 
@@ -960,7 +945,9 @@ describe('/contacts route', () => {
             expect(response.status).toBe(200);
             // invalidContact will return null from the search endpoint, exclude it here
             expect(contacts.length).toBe(createdContacts.length - 1);
-            const createdContactsByTimeOfContact = createdContacts.sort(compareTimeOfContactDesc);
+            const createdContactsByTimeOfContact = createdContacts.sort(
+              compareTimeOfContactDesc,
+            );
             createdContactsByTimeOfContact.forEach(c => {
               const searchContact = contacts.find(results => results.contactId === c.id);
               if (searchContact) {
@@ -980,7 +967,9 @@ describe('/contacts route', () => {
             expect(response.status).toBe(200);
             // invalidContact will return null, and nonData1, nonData2, broken1 and broken2 are not data contact types
             expect(contacts.length).toBe(createdContacts.length - 5);
-            const createdContactsByTimeOfContact = createdContacts.sort(compareTimeOfContactDesc);
+            const createdContactsByTimeOfContact = createdContacts.sort(
+              compareTimeOfContactDesc,
+            );
             createdContactsByTimeOfContact
               .filter(
                 c =>
@@ -990,7 +979,9 @@ describe('/contacts route', () => {
                   ),
               )
               .forEach(c => {
-                const searchContact = contacts.find(results => results.contactId === c.id);
+                const searchContact = contacts.find(
+                  results => results.contactId === c.id,
+                );
                 if (searchContact) {
                   // Check that all contacts contains the appropriate info
                   expect(c.rawJson).toMatchObject(searchContact.details);
@@ -1107,7 +1098,9 @@ describe('/contacts route', () => {
 
             // Expect all but invalid and oneWeekBefore
             expect(contacts).toHaveLength(createdContacts.length - 2);
-            const createdContactsByTimeOfContact = createdContacts.sort(compareTimeOfContactDesc);
+            const createdContactsByTimeOfContact = createdContacts.sort(
+              compareTimeOfContactDesc,
+            );
             createdContactsByTimeOfContact.forEach(c => {
               const searchContact = contacts.find(results => results.contactId === c.id);
               if (searchContact) {
@@ -1126,13 +1119,17 @@ describe('/contacts route', () => {
 
             const { contacts } = response.body;
             expect(contacts.length).toBe(1);
-            const withCSAMReports = createdContacts.find(c => c.queueName === 'withCSAMReports');
+            const withCSAMReports = createdContacts.find(
+              c => c.queueName === 'withCSAMReports',
+            );
 
             if (!withCSAMReports) {
               throw new Error('withCSAMReports is undefined');
             }
 
-            expect(contacts.find(c => withCSAMReports.id.toString() === c.contactId)).toBeDefined();
+            expect(
+              contacts.find(c => withCSAMReports.id.toString() === c.contactId),
+            ).toBeDefined();
             expect(contacts[0].details).toMatchObject(withCSAMReports.rawJson);
             contacts[0].csamReports.forEach(r => {
               expect(csamReports.find(r2 => r2.id === r.id)).toMatchObject({
@@ -1144,7 +1141,13 @@ describe('/contacts route', () => {
           },
         },
         {
-          body: { firstName: 'jh', lastName: 'he', counselor: '', contactNumber: '', helpline: '' },
+          body: {
+            firstName: 'jh',
+            lastName: 'he',
+            counselor: '',
+            contactNumber: '',
+            helpline: '',
+          },
           changeDescription: 'empty strings should be ignored',
           expectCallback: response => {
             expect(response.status).toBe(200);
@@ -1195,14 +1198,11 @@ describe('/contacts route', () => {
           useOpenRules();
         }
 
-        const res = await request
-          .post(`${route}/search`)
-          .set(headers)
-          .send({
-            dateFrom: createdContact.createdAt,
-            dateTo: createdContact.createdAt,
-            firstName: 'withTaskIdAndTranscript',
-          });
+        const res = await request.post(`${route}/search`).set(headers).send({
+          dateFrom: createdContact.createdAt,
+          dateTo: createdContact.createdAt,
+          firstName: 'withTaskIdAndTranscript',
+        });
 
         expect(res.status).toBe(200);
         expect(res.body.count).toBe(1);
@@ -1215,15 +1215,15 @@ describe('/contacts route', () => {
 
         if (expectTranscripts) {
           expect(
-            (<contactApi.SearchContact>res.body.contacts[0]).details?.conversationMedia?.some(
-              isS3StoredTranscript,
-            ),
+            (<contactApi.SearchContact>(
+              res.body.contacts[0]
+            )).details?.conversationMedia?.some(isS3StoredTranscript),
           ).toBeTruthy();
         } else {
           expect(
-            (<contactApi.SearchContact>res.body.contacts[0]).details?.conversationMedia?.some(
-              isS3StoredTranscript,
-            ),
+            (<contactApi.SearchContact>(
+              res.body.contacts[0]
+            )).details?.conversationMedia?.some(isS3StoredTranscript),
           ).toBeFalsy();
         }
 
@@ -1282,17 +1282,16 @@ describe('/contacts route', () => {
 
         await csamReportApi.acknowledgeCsamReport(newReport1.id, accountSid);
 
-        const res = await request
-          .post(`${route}/search`)
-          .set(headers)
-          .send({
-            firstName: 'Test CSAM filter',
-          });
+        const res = await request.post(`${route}/search`).set(headers).send({
+          firstName: 'Test CSAM filter',
+        });
 
         expect(res.status).toBe(200);
         expect(res.body.count).toBe(1);
 
-        expect((<contactApi.SearchContact>res.body.contacts[0]).csamReports).toHaveLength(2);
+        expect((<contactApi.SearchContact>res.body.contacts[0]).csamReports).toHaveLength(
+          2,
+        );
         expect(
           (<contactApi.SearchContact>res.body.contacts[0]).csamReports.find(
             r => r.id === newReport3.id,
@@ -1691,11 +1690,15 @@ describe('/contacts route', () => {
 
         if (expectTranscripts) {
           expect(
-            (<contactApi.Contact>res.body).rawJson?.conversationMedia?.some(isS3StoredTranscript),
+            (<contactApi.Contact>res.body).rawJson?.conversationMedia?.some(
+              isS3StoredTranscript,
+            ),
           ).toBeTruthy();
         } else {
           expect(
-            (<contactApi.Contact>res.body).rawJson?.conversationMedia?.some(isS3StoredTranscript),
+            (<contactApi.Contact>res.body).rawJson?.conversationMedia?.some(
+              isS3StoredTranscript,
+            ),
           ).toBeFalsy();
         }
 
@@ -1719,10 +1722,15 @@ describe('/contacts route', () => {
     const byGreaterId = (a, b) => b.id - a.id;
 
     beforeEach(async () => {
-      createdContact = await contactApi.createContact(accountSid, workerSid, <any>contact1, {
-        user: twilioUser(workerSid, []),
-        can: () => true,
-      });
+      createdContact = await contactApi.createContact(
+        accountSid,
+        workerSid,
+        <any>contact1,
+        {
+          user: twilioUser(workerSid, []),
+          can: () => true,
+        },
+      );
       createdCase = await caseApi.createCase(case1, accountSid, workerSid);
       anotherCreatedCase = await caseApi.createCase(case2, accountSid, workerSid);
       const contactToBeDeleted = await contactApi.createContact(
@@ -1777,7 +1785,9 @@ describe('/contacts route', () => {
       const countCasesAudits = async () =>
         parseInt(
           (
-            await db.task(t => t.any(`SELECT COUNT(*) FROM "Audits" WHERE "tableName" = 'Cases'`))
+            await db.task(t =>
+              t.any(`SELECT COUNT(*) FROM "Audits" WHERE "tableName" = 'Cases'`),
+            )
           )[0].count,
           10,
         );

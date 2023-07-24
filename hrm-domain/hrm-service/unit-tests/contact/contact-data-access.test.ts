@@ -19,7 +19,10 @@ import { mockConnection, mockTask, mockTransaction } from '../mock-db';
 import { search, create } from '../../src/contact/contact-data-access';
 import { endOfDay, startOfDay } from 'date-fns';
 import { ContactBuilder } from './contact-builder';
-import { NewContactRecord, insertContactSql } from '../../src/contact/sql/contact-insert-sql';
+import {
+  NewContactRecord,
+  insertContactSql,
+} from '../../src/contact/sql/contact-insert-sql';
 
 jest.mock('../../src/contact/sql/contact-insert-sql', () => ({
   insertContactSql: jest.fn().mockReturnValue('MOCKED INSERT STATEMENT'),
@@ -69,7 +72,9 @@ describe('create', () => {
       createdAt: expect.anything(),
       accountSid: 'parameter account-sid',
     });
-    expect(conn.one).toHaveBeenCalledWith(expect.stringContaining('MOCKED INSERT STATEMENT'));
+    expect(conn.one).toHaveBeenCalledWith(
+      expect.stringContaining('MOCKED INSERT STATEMENT'),
+    );
     expect(created).toStrictEqual({
       contact: returnValue,
       isNewRecord: true,
@@ -90,7 +95,9 @@ describe('create', () => {
       createdAt: expect.anything(),
       accountSid: 'parameter account-sid',
     });
-    expect(conn.one).toHaveBeenCalledWith(expect.stringContaining('MOCKED INSERT STATEMENT'));
+    expect(conn.one).toHaveBeenCalledWith(
+      expect.stringContaining('MOCKED INSERT STATEMENT'),
+    );
     expect(created).toStrictEqual({
       contact: returnValue,
       isNewRecord: true,
@@ -112,6 +119,7 @@ describe('search', () => {
     dateFrom: undefined,
     dateTo: undefined,
     onlyDataContacts: false,
+    shouldIncludeUpdatedAt: false,
     dataCallTypes: expect.arrayContaining([
       'Someone calling about a child',
       'Child calling about self',

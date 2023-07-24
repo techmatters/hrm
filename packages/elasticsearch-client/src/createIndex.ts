@@ -20,7 +20,7 @@ export type CreateIndexExtraParams = {
   skipWaitForCreation?: boolean;
 };
 
-export type CreateIndexParams = PassThroughConfig & CreateIndexExtraParams;
+export type CreateIndexParams = PassThroughConfig<any> & CreateIndexExtraParams;
 export type CreateIndexResponse = IndicesCreateResponse | void;
 
 export const createIndex = async ({
@@ -33,7 +33,8 @@ export const createIndex = async ({
     return;
   }
 
-  const params = indexConfig.getCreateIndexParams({ index });
+  const params = indexConfig.getCreateIndexParams(index);
+  console.log('Creating index', index, JSON.stringify(params, null, 2));
   const res = await client.indices.create(params);
 
   // This waits for the index to be created and for the shards to be allocated

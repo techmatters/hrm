@@ -14,15 +14,12 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 import {
+  QueryDslQueryContainer,
   SearchRequest as ESSearchRequest,
   SearchTotalHits as ESSearchTotalHits,
 } from '@elastic/elasticsearch/lib/api/types';
-import { PassThroughConfig } from './client';
-
-export type SearchQueryFilters = Array<
-  | { terms: { [key: string]: string[] } }
-  | { term: { [key: string]: string | boolean | number | Date } }
->;
+import { getQuerySearchFields, SearchConfiguration } from './config';
+import { Client } from '@elastic/elasticsearch';
 
 export type SearchQuery = ESSearchRequest;
 
@@ -30,7 +27,11 @@ export type SearchExtraParams = {
   searchParameters: SearchParameters;
 };
 
-export type SearchParams = PassThroughConfig & SearchExtraParams;
+export type SearchParams = SearchExtraParams & {
+  index: string;
+  searchConfig: SearchConfiguration;
+  client: Client;
+};
 
 export type SearchParameters = {
   filters?: Record<string, boolean | number | string | string[]>;
@@ -43,6 +44,7 @@ export type SearchParameters = {
 
 export type SearchResponseItem = {
   id: string;
+  name?: string;
   highlights: Record<string, string[]> | undefined;
 };
 
@@ -54,7 +56,6 @@ export type SearchResponse = {
 export type SearchGenerateElasticsearchQueryParams = {
   index: string;
   searchParameters: SearchParameters;
-  fields: string[];
 };
 
 type SearchTotalHits = ESSearchTotalHits;
@@ -77,67 +78,145 @@ export const getTotalValue = (total: number | SearchTotalHits | undefined): numb
   return total || 0;
 };
 
+type FilterValue = boolean | number | string | Date | string[];
+
+const toPhrase = (value: string) => `"${value.replace(/"/g, '\\"')}"`;
+
+const generateTermFilter = (field: string, filterValue: FilterValue) => {
+  if (Array.isArray(filterValue)) {
+    return {
+      terms: {
+        [field]: filterValue,
+      },
+    };
+  } else {
+    return {
+      term: {
+        [field as string]: filterValue,
+      },
+    };
+  }
+};
 /**
  * This function takes a SearchParameters.filters object and returns a SearchQueryFilters object
  * that can be used in the Elasticsearch query.
  *
+ * @param searchConfiguration - contains mappings and searchFields used to generate the query correctly
  * @param filters the filters object from the SearchParameters
  * @returns the filters object to be used in the Elasticsearch query
  */
-export const generateFilters = (filters: SearchParameters['filters']): SearchQueryFilters => {
-  // TODO: this doesn't support range filters yet
+const generateFilters = (
+  searchConfiguration: SearchConfiguration,
+  filters: SearchParameters['filters'],
+): {
+  filterClauses: QueryDslQueryContainer[];
+  filterSearchClause?: QueryDslQueryContainer;
+} => {
   // TODO: should we validate request filters against the index config?
-  const returnFilters: SearchQueryFilters = [];
+  // Currently doesn't support:
+  // - nested fields
+  // - fancy date range filters like time zones or relative ranges
+  // - range filters with multiple clauses
+  // Implement as required!
 
-  if (!filters || Object.keys(filters).length === 0) return returnFilters;
-
-  Object.entries(filters).forEach(([key, value]) => {
-    if (Array.isArray(value)) {
-      returnFilters.push({
-        terms: {
-          [key]: value,
-        },
-      });
+  const filterClauses: QueryDslQueryContainer[] = [];
+  const filtersAsSearchTerms: string[] = [];
+  Object.entries(filters ?? {}).forEach(([key, value]) => {
+    const mapping = searchConfiguration.filterMappings[key];
+    const targetField = mapping?.targetField ?? key;
+    if (mapping) {
+      switch (mapping.type) {
+        case 'range':
+          if (!Array.isArray(value)) {
+            filterClauses.push({
+              range: {
+                [targetField]: {
+                  [mapping.operator]: value,
+                },
+              },
+            });
+          } else {
+            console.warn(
+              `Array filter values not supported for range filters: ${key}, mapped to ${mapping.targetField}, values: ${value}. Treating as a term filter.`,
+            );
+          }
+          break;
+        case 'term':
+          filterClauses.push(generateTermFilter(targetField, value));
+          break;
+      }
+    } else if (!Array.isArray(value) && typeof value !== 'string') {
+      // If there is no explicit mapping, but it isn't a string or a string array, still treat it as a term filter
+      filterClauses.push(generateTermFilter(targetField, value));
     } else {
-      returnFilters.push({
-        term: {
-          [key as string]: value,
-        },
-      });
+      // Otherwise add to the bucket of high priority additional search terms
+      const terms = Array.isArray(value) ? value : [value];
+      const clause = terms.map(toPhrase).join(' | ');
+      filtersAsSearchTerms.push(terms.length > 1 ? `(${clause})` : clause);
     }
   });
-
-  return returnFilters;
+  return {
+    filterClauses,
+    filterSearchClause:
+      filtersAsSearchTerms.length === 0
+        ? undefined
+        : {
+            simple_query_string: {
+              query: filtersAsSearchTerms.join(' '),
+              fields: getQuerySearchFields(searchConfiguration, 1), // boost up the terms specified as filters a little
+              default_operator: 'AND',
+            },
+          },
+  };
 };
 
 /**
  * This function takes a SearchParameters object and returns a SearchQuery object that can be
  * used to query Elasticsearch.
  *
+ * @param searchConfiguration - contains filter mappings and search field configuration used to generate the query correctly
  * @param index the the index to search
  * @param searchParameters the search parameters
- * @param fields the fields to search
  * @returns the SearchQuery object
  */
-export const generateElasticsearchQuery = ({
-  index,
-  searchParameters,
-  fields,
-}: SearchGenerateElasticsearchQueryParams): SearchQuery => {
+export const generateElasticsearchQuery = (
+  searchConfiguration: SearchConfiguration,
+  { index, searchParameters }: SearchGenerateElasticsearchQueryParams,
+): SearchQuery => {
   const { q, filters, pagination } = searchParameters;
+  const queryClauses: QueryDslQueryContainer[] = [
+    q
+      ? {
+          simple_query_string: {
+            query: q,
+            fields: getQuerySearchFields(searchConfiguration),
+          },
+        }
+      : {
+          match_all: {},
+        },
+  ];
+  const filterPart: { filter?: QueryDslQueryContainer[] } = {};
+
+  if (filters) {
+    const { filterClauses, filterSearchClause } = generateFilters(
+      searchConfiguration,
+      filters,
+    );
+    if (filterClauses.length > 0) {
+      filterPart.filter = filterClauses;
+    }
+    if (filterSearchClause) {
+      queryClauses.push(filterSearchClause);
+    }
+  }
 
   const query: SearchQuery = {
     index,
     query: {
       bool: {
-        must: [
-          {
-            query_string: {
-              query: q,
-              fields,
-            },
-          },
-        ],
+        must: queryClauses,
+        ...filterPart,
       },
     },
   };
@@ -147,10 +226,6 @@ export const generateElasticsearchQuery = ({
   }
   if (pagination?.start) {
     query.from = pagination.start;
-  }
-
-  if (filters) {
-    query.query!.bool!.filter = generateFilters(filters);
   }
 
   return query;
@@ -163,14 +238,14 @@ export const generateElasticsearchQuery = ({
 export const search = async ({
   client,
   index,
-  indexConfig,
+  searchConfig,
   searchParameters,
 }: SearchParams): Promise<SearchResponse> => {
-  const query = generateElasticsearchQuery({
+  const query = generateElasticsearchQuery(searchConfig, {
     index,
     searchParameters,
-    fields: indexConfig.searchFields,
   });
+  console.debug('search query', JSON.stringify(query, null, 2));
 
   const { hits } = await client.search(query);
   const total = getTotalValue(hits.total);
@@ -181,6 +256,7 @@ export const search = async ({
     total,
     items: hits.hits.map(hit => ({
       id: hit._id,
+      name: hit.fields?.name,
       highlights: hit.highlight,
     })),
   };

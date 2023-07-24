@@ -87,7 +87,9 @@ module.exports = {
       DROP TRIGGER IF EXISTS "ResourceReferenceStringAttributes_update_trigger"
       ON resources."ResourceReferenceStringAttributes";
     `);
-    console.log('Trigger ResourceReferenceStringAttributes_update_trigger dropped (if it existed)');
+    console.log(
+      'Trigger ResourceReferenceStringAttributes_update_trigger dropped (if it existed)',
+    );
 
     await queryInterface.sequelize.query(`
       CREATE TRIGGER "ResourceReferenceStringAttributes_update_trigger"
@@ -114,14 +116,18 @@ module.exports = {
     await queryInterface.sequelize.query(`
       ALTER TABLE resources."ResourceStringAttributes" ADD PRIMARY KEY (id, "accountSid");
     `);
-    console.log('Added ResourceStringAttributes unique constraint in place of old primary key');
+    console.log(
+      'Added ResourceStringAttributes unique constraint in place of old primary key',
+    );
     await queryInterface.sequelize.query(`
       ALTER TABLE resources."ResourceStringAttributes" ADD CONSTRAINT "FK_ResourceStringAttributes_Resources" FOREIGN KEY ("resourceId", "accountSid")
             REFERENCES resources."Resources" (id, "accountSid") MATCH SIMPLE
             ON UPDATE CASCADE
             ON DELETE CASCADE;
     `);
-    console.log('Put back temporarily removed ResourceStringAttributes foreign key constraint');
+    console.log(
+      'Put back temporarily removed ResourceStringAttributes foreign key constraint',
+    );
   },
 
   down: async queryInterface => {

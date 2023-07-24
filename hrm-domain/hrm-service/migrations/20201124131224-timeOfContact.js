@@ -16,7 +16,9 @@
 
 module.exports = {
   up: (queryInterface, Sequelize) => {
-    return queryInterface.addColumn('Contacts', 'timeOfContact', { type: Sequelize.DATE });
+    return queryInterface.addColumn('Contacts', 'timeOfContact', {
+      type: Sequelize.DATE,
+    });
   },
 
   down: queryInterface => {

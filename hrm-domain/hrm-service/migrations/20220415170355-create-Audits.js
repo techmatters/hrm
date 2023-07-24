@@ -28,7 +28,9 @@ module.exports = {
     );
     console.log('Sequence "Audits_id_seq" created');
 
-    await queryInterface.sequelize.query(`ALTER SEQUENCE public."Audits_id_seq" OWNER TO hrm`);
+    await queryInterface.sequelize.query(
+      `ALTER SEQUENCE public."Audits_id_seq" OWNER TO hrm`,
+    );
     console.log('Sequence "Audits_id_seq" ownership altered.');
 
     await queryInterface.sequelize.query(
@@ -48,7 +50,9 @@ module.exports = {
     );
     console.log('Table "Audits" created');
 
-    await queryInterface.sequelize.query(`ALTER TABLE IF EXISTS public."Audits" OWNER TO hrm`);
+    await queryInterface.sequelize.query(
+      `ALTER TABLE IF EXISTS public."Audits" OWNER TO hrm`,
+    );
     console.log('Table "Audits" ownership altered.');
 
     await queryInterface.sequelize.query(`
@@ -88,7 +92,9 @@ module.exports = {
     `);
     console.log('Function "audit_trigger" created.');
 
-    await queryInterface.sequelize.query(`ALTER FUNCTION public.audit_trigger() OWNER TO hrm`);
+    await queryInterface.sequelize.query(
+      `ALTER FUNCTION public.audit_trigger() OWNER TO hrm`,
+    );
     console.log('Function "audit_trigger" ownership altered.');
 
     await queryInterface.sequelize.query(`
@@ -129,7 +135,9 @@ module.exports = {
     await queryInterface.sequelize.query(
       `DROP TRIGGER IF EXISTS "Cases_audit_trigger" ON public."Cases";`,
     );
-    await queryInterface.sequelize.query(`DROP FUNCTION IF EXISTS public.audit_trigger();`);
+    await queryInterface.sequelize.query(
+      `DROP FUNCTION IF EXISTS public.audit_trigger();`,
+    );
     await queryInterface.sequelize.query(`DROP TABLE public."Audits"`);
     await queryInterface.sequelize.query(`DROP SEQUENCE public."Audits_id_seq"`);
   },

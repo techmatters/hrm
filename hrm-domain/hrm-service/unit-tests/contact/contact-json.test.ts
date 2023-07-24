@@ -29,11 +29,13 @@ describe('getPersonsName', () => {
     );
   });
   test('Name property has populated firstName - first name with space after', () => {
-    expect(getPersonsName({ name: { firstName: 'Lorna', lastName: '' } })).toEqual('Lorna ');
+    expect(getPersonsName({ name: { firstName: 'Lorna', lastName: '' } })).toEqual(
+      'Lorna ',
+    );
   });
   test('Name property has populated firstName & lastName - space between', () => {
-    expect(getPersonsName({ name: { firstName: 'Lorna', lastName: 'Ballantyne' } })).toEqual(
-      'Lorna Ballantyne',
-    );
+    expect(
+      getPersonsName({ name: { firstName: 'Lorna', lastName: 'Ballantyne' } }),
+    ).toEqual('Lorna Ballantyne');
   });
 });

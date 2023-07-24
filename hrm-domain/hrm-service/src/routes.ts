@@ -24,7 +24,10 @@ import referrals from './referral/referral-routes-v0';
 import permissions from './permissions/permissions-routes-v0';
 import { Permissions } from './permissions';
 
-export const HRM_ROUTES: { path: string; routerFactory: (rules: Permissions) => Router }[] = [
+export const HRM_ROUTES: {
+  path: string;
+  routerFactory: (rules: Permissions) => Router;
+}[] = [
   { path: '/contacts', routerFactory: () => contacts },
   { path: '/cases', routerFactory: () => cases },
   { path: '/postSurveys', routerFactory: () => postSurveys },

@@ -17,20 +17,26 @@
 import each from 'jest-each';
 import { orderBy } from 'lodash';
 
-import { getClient, IndexTypes } from '../../../src';
-import { SearchParameters, SearchResponse, Client } from '../../../';
+import { getClient } from '../../../src';
+import { SearchParameters, SearchResponse, Client, IndexClient } from '../../../';
 import { resourceDocuments } from '../../fixtures/resources';
+import { FlatResource } from '@tech-matters/types/dist/Resources';
+import {
+  resourceIndexConfiguration,
+  resourceSearchConfiguration,
+} from '../../fixtures/configuration';
 
 const accountSid = 'test-account-sid';
-const indexType = IndexTypes.RESOURCES;
-let client: Client;
+const indexType = 'resources';
+let indexClient: IndexClient<FlatResource>;
+let searchClient: ReturnType<Client['searchClient']>;
 
 afterAll(async () => {
-  await client.deleteIndex();
+  await indexClient.deleteIndex();
 });
 
 beforeAll(async () => {
-  client = await getClient({
+  const client = await getClient({
     accountSid,
     indexType,
     config: {
@@ -38,13 +44,17 @@ beforeAll(async () => {
     },
   });
 
-  await client.createIndex({});
+  indexClient = client.indexClient(resourceIndexConfiguration);
+  searchClient = client.searchClient(resourceSearchConfiguration);
+  await indexClient.createIndex({});
 
   await Promise.all(
-    resourceDocuments.map(document => client.indexDocument({ id: document.id, document })),
+    resourceDocuments.map(document =>
+      indexClient.indexDocument({ id: document.id, document }),
+    ),
   );
 
-  await client.refreshIndex();
+  await indexClient.refreshIndex();
 });
 
 describe('Resources Default Search', () => {
@@ -214,7 +224,8 @@ describe('Resources Default Search', () => {
         },
       },
       condition: 'search query phrase',
-      expectationDescription: 'should return only resources that match phrase query exactly',
+      expectationDescription:
+        'should return only resources that match phrase query exactly',
       expectedResults: {
         total: 1,
         items: [
@@ -230,7 +241,7 @@ describe('Resources Default Search', () => {
   each(testCases).test(
     'When specifying $condition, should return a 200 response and $expectationDescription',
     async ({ searchParameters, expectedResults }) => {
-      const results = await client.search({ searchParameters });
+      const results = await searchClient.search({ searchParameters });
 
       expect(results.total).toEqual(expectedResults.total);
       expect(orderBy(results.items, 'id')).toEqual(orderBy(expectedResults.items, 'id'));

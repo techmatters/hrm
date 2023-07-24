@@ -35,6 +35,7 @@ export const getMockClient = ({ accountSid }: { accountSid: string }) => {
               members: {
                 list: () => [],
               },
+              remove: () => {},
             }),
           },
           users: {
@@ -79,8 +80,7 @@ export const getMockClient = ({ accountSid }: { accountSid: string }) => {
                       user_bindings:
                         'https://chat.twilio.com/v2/Services/IS43c487114db441beaad322a360117882/Users/US40ef90af89f848e882eff1dc0b4f1a4d/Bindings',
                     },
-                    url:
-                      'https://chat.twilio.com/v2/Services/IS43c487114db441beaad322a360117882/Users/US40ef90af89f848e882eff1dc0b4f1a4d',
+                    url: 'https://chat.twilio.com/v2/Services/IS43c487114db441beaad322a360117882/Users/US40ef90af89f848e882eff1dc0b4f1a4d',
                   };
                   break;
                 case 'mockAdminUserIdentity':
@@ -103,8 +103,7 @@ export const getMockClient = ({ accountSid }: { accountSid: string }) => {
                       user_bindings:
                         'https://chat.twilio.com/v2/Services/IS43c487114db441beaad322a360117882/Users/USdafdc1c00a9244e3bdce2bf51b77907d/Bindings',
                     },
-                    url:
-                      'https://chat.twilio.com/v2/Services/IS43c487114db441beaad322a360117882/Users/USdafdc1c00a9244e3bdce2bf51b77907d',
+                    url: 'https://chat.twilio.com/v2/Services/IS43c487114db441beaad322a360117882/Users/USdafdc1c00a9244e3bdce2bf51b77907d',
                   };
                   break;
                 default:
@@ -149,8 +148,7 @@ export const getMockClient = ({ accountSid }: { accountSid: string }) => {
                     permissions: ['createChannel', 'joinChannel', 'editOwnUserInfo'],
                     dateCreated: new Date('2019-12-17T09:58:37.000Z'),
                     dateUpdated: new Date('2019-12-17T09:58:37.000Z'),
-                    url:
-                      'https://chat.twilio.com/v2/Services/IS43c487114db441beaad322a360117882/Roles/mockServiceUserRoleSid',
+                    url: 'https://chat.twilio.com/v2/Services/IS43c487114db441beaad322a360117882/Roles/mockServiceUserRoleSid',
                   };
                   break;
                 case 'mockAdminRoleSid':
@@ -172,8 +170,7 @@ export const getMockClient = ({ accountSid }: { accountSid: string }) => {
                     ],
                     dateCreated: new Date('2019-12-17T09:58:40.000Z'),
                     dateUpdated: new Date('2019-12-17T09:58:40.000Z'),
-                    url:
-                      'https://chat.twilio.com/v2/Services/IS43c487114db441beaad322a360117882/Roles/mockAdminRoleSid',
+                    url: 'https://chat.twilio.com/v2/Services/IS43c487114db441beaad322a360117882/Roles/mockAdminRoleSid',
                   };
                   break;
                 default:

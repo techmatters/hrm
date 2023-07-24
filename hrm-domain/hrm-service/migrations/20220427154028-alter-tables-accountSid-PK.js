@@ -19,7 +19,9 @@
 module.exports = {
   up: async queryInterface => {
     // Remove cases without account ID
-    await queryInterface.sequelize.query('DELETE FROM public."Cases" WHERE "accountSid" IS NULL');
+    await queryInterface.sequelize.query(
+      'DELETE FROM public."Cases" WHERE "accountSid" IS NULL',
+    );
     console.log('Removed cases with NULL accountSid');
     // Modify Cases PK
     await queryInterface.sequelize.query(
@@ -132,7 +134,9 @@ module.exports = {
     );
     console.log('Dropped PK from "Cases"');
 
-    await queryInterface.sequelize.query('ALTER TABLE public."Cases" ADD PRIMARY KEY ("id");');
+    await queryInterface.sequelize.query(
+      'ALTER TABLE public."Cases" ADD PRIMARY KEY ("id");',
+    );
     console.log('Reverted PK to "Cases"');
 
     // Revert Contacts PK
@@ -141,7 +145,9 @@ module.exports = {
     );
     console.log('Dropped PK from "Contacts"');
 
-    await queryInterface.sequelize.query('ALTER TABLE public."Contacts" ADD PRIMARY KEY ("id");');
+    await queryInterface.sequelize.query(
+      'ALTER TABLE public."Contacts" ADD PRIMARY KEY ("id");',
+    );
     console.log('Reverted PK to "Contacts"');
 
     // Revert PostSurveys PK

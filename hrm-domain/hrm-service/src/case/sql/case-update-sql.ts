@@ -15,7 +15,6 @@
  */
 
 import { pgp } from '../../connection-pool';
-import { selectSingleCaseByIdSql } from './case-get-sql';
 
 const VALID_CASE_UPDATE_FIELDS = ['info', 'status', 'updatedAt', 'updatedBy'];
 
@@ -27,10 +26,17 @@ const updateCaseColumnSet = new pgp.helpers.ColumnSet(
   { table: 'Cases' },
 );
 
-export const updateByIdSql = (updatedValues: Record<string, unknown>) => `WITH updated AS (
+export const updateByIdSql = (
+  updatedValues: Record<string, unknown>,
+  accountSid: string,
+  caseId: string,
+) => `
         ${pgp.helpers.update(updatedValues, updateCaseColumnSet)} 
-          WHERE "Cases"."accountSid" = $<accountSid> AND "Cases"."id" = $<caseId> 
-          RETURNING *
-      )
-      ${selectSingleCaseByIdSql('updated')}
+        ${pgp.as.format(
+          `WHERE "Cases"."accountSid" = $<accountSid> AND "Cases"."id" = $<caseId>`,
+          {
+            accountSid,
+            caseId,
+          },
+        )} 
 `;

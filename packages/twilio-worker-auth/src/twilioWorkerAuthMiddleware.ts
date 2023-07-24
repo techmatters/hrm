@@ -19,7 +19,6 @@ import crypto from 'crypto';
 
 import { twilioUser, TwilioUser } from './twilioUser';
 import { unauthorized } from '@tech-matters/http';
-// eslint-disable-next-line prettier/prettier
 import type { Request, Response, NextFunction } from 'express';
 
 declare global {
@@ -29,7 +28,6 @@ declare global {
     }
   }
 }
-
 
 /**
  * Helper to whitelist the requests that other parts of the system (external to HRM, like Serverless functions) can perform on HRM.
@@ -50,15 +48,21 @@ const isWorker = (tokenResult: TokenValidatorResponse) =>
 const isGuest = (tokenResult: TokenValidatorResponse) =>
   Array.isArray(tokenResult.roles) && tokenResult.roles.includes('guest');
 
-const defaultTokenLookup = (accountSid: string) => process.env[`TWILIO_AUTH_TOKEN_${accountSid}`] ?? '';
+const defaultTokenLookup = (accountSid: string) =>
+  process.env[`TWILIO_AUTH_TOKEN_${accountSid}`] ?? '';
 
-const authenticateWithStaticKey = (req: Request): boolean => {
+const authenticateWithStaticKey = (
+  req: Request,
+  loginId: string | undefined,
+): boolean => {
   if (!req.headers) return false;
-  const { headers: { authorization }, accountSid } = req;
+  const {
+    headers: { authorization },
+  } = req;
 
-  if (accountSid && authorization && authorization.startsWith('Basic')) {
+  if (loginId && authorization && authorization.startsWith('Basic')) {
     try {
-      const staticSecretKey = `STATIC_KEY_${accountSid}`;
+      const staticSecretKey = `STATIC_KEY_${loginId}`;
       const staticSecret = process.env[staticSecretKey];
       const requestSecret = authorization.replace('Basic ', '');
 
@@ -68,7 +72,7 @@ const authenticateWithStaticKey = (req: Request): boolean => {
         crypto.timingSafeEqual(Buffer.from(requestSecret), Buffer.from(staticSecret));
 
       if (isStaticSecretValid) {
-        req.user = twilioUser(`account-${accountSid}`, []);
+        req.user = twilioUser(`account-${loginId}`, []);
         return true;
       }
     } catch (err) {
@@ -78,43 +82,59 @@ const authenticateWithStaticKey = (req: Request): boolean => {
   return false;
 };
 
-export const getAuthorizationMiddleware = (authTokenLookup: (accountSid: string) => string = defaultTokenLookup) => async (req: Request, res: Response, next: NextFunction) => {
-  if (!req || !req.headers || !req.headers.authorization) {
-    return unauthorized(res);
-  }
-
-  const { authorization } = req.headers;
-  const { accountSid } = req;
-  if (!accountSid) return unauthorized(res);
-
-  if (authorization.startsWith('Bearer')) {
-    const token = authorization.replace('Bearer ', '');
-    try {
-      const authToken = authTokenLookup(accountSid);
-      if (!authToken) {
-        console.error(`authToken not provided for the accountSid ${accountSid}.`);
-        return unauthorized(res);
-      }
-
-      const tokenResult = <TokenValidatorResponse>(
-        await TokenValidator(token, accountSid, authToken)
-      );
-      if (!isWorker(tokenResult) || isGuest(tokenResult)) {
-        return unauthorized(res);
-      }
-      req.user = twilioUser(tokenResult.worker_sid, tokenResult.roles);
-      return next();
-    } catch (err) {
-      console.error('Token authentication failed: ', err);
+export const getAuthorizationMiddleware =
+  (authTokenLookup: (accountSid: string) => string = defaultTokenLookup) =>
+  async (req: Request, res: Response, next: NextFunction) => {
+    if (!req || !req.headers || !req.headers.authorization) {
+      return unauthorized(res);
     }
-  }
 
-  if (canAccessResourceWithStaticKey(req.originalUrl, req.method) && authenticateWithStaticKey(req)) return next();
+    const { authorization } = req.headers;
+    const { accountSid } = req;
+    if (!accountSid) return unauthorized(res);
 
+    if (authorization.startsWith('Bearer')) {
+      const token = authorization.replace('Bearer ', '');
+      try {
+        const authToken = authTokenLookup(accountSid);
+        if (!authToken) {
+          console.error(`authToken not provided for the accountSid ${accountSid}.`);
+          return unauthorized(res);
+        }
+
+        const tokenResult = <TokenValidatorResponse>(
+          await TokenValidator(token, accountSid, authToken)
+        );
+        if (!isWorker(tokenResult) || isGuest(tokenResult)) {
+          return unauthorized(res);
+        }
+        req.user = twilioUser(tokenResult.worker_sid, tokenResult.roles);
+        return next();
+      } catch (err) {
+        console.error('Token authentication failed: ', err);
+      }
+    }
+
+    if (
+      canAccessResourceWithStaticKey(req.originalUrl, req.method) &&
+      authenticateWithStaticKey(req, accountSid)
+    )
+      return next();
+
+    return unauthorized(res);
+  };
+
+export const staticKeyAuthorizationMiddleware = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  if (authenticateWithStaticKey(req, req.accountSid)) return next();
   return unauthorized(res);
 };
 
-export const staticKeyAuthorizationMiddleware = async (req: Request, res: Response, next: NextFunction) => {
-  if (authenticateWithStaticKey(req)) return next();
-  return unauthorized(res);
-};
+export const adminAuthorizationMiddleware =
+  (adminLoginId: string) => async (req: Request, res: Response, next: NextFunction) => {
+    if (authenticateWithStaticKey(req, adminLoginId)) return next();
+    return unauthorized(res);
+  };

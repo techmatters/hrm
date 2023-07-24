@@ -6,8 +6,8 @@
   "author": "",
   "license": "AGPL",
   "dependencies": {
-    "@tech-matters/hrm-job-errors": "^1.0.0",
-    "@tech-matters/hrm-ssm-cache": "^1.0.0",
+    "@tech-matters/job-errors": "^1.0.0",
+    "@tech-matters/ssm-cache": "^1.0.0",
     "@tech-matters/types": "^1.0.0",
     "aws-sdk": "^2.1225.0"
   },
@@ -20,7 +20,7 @@
     "ts-node": "^10.9.1"
   },
   "scripts": {
-    "docker:build": "docker build -t resources-import-consumer --build-arg lambda_name=resources-import-consumer -f ../Dockerfile ../../",
+    "docker:build": "docker build -t resources-import-consumer --build-arg lambda_name=resources-import-consumer --build-arg lambda_dir=resources-domain -f ../../jobs/Dockerfile ../../",
     "test:unit": "jest tests/unit"
   }
 }

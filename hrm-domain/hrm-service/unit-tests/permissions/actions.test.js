@@ -95,7 +95,8 @@ each([
       actionsMaps.case.ADD_HOUSEHOLD,
       actionsMaps.case.ADD_PERPETRATOR,
     ],
-    conditionDescription: 'adding more than one property (test multiple additions not exhaustive)',
+    conditionDescription:
+      'adding more than one property (test multiple additions not exhaustive)',
   },
 ]).test(
   "Should return '$expectedCondition' actions list when '$conditionDescription'",
@@ -143,7 +144,10 @@ each([
     caseFromDB: caseWithProperties,
     update: {
       info: {
-        incidents: [{ incident: { property: 'property' } }, { incident: { property: 'second' } }],
+        incidents: [
+          { incident: { property: 'property' } },
+          { incident: { property: 'second' } },
+        ],
       },
     },
     expectedCondition: [actionsMaps.case.ADD_INCIDENT],
@@ -186,7 +190,10 @@ each([
     update: {
       info: {
         counsellorNotes: ['note 1', 'note 2'],
-        incidents: [{ incident: { property: 'property' } }, { incident: { property: 'second' } }],
+        incidents: [
+          { incident: { property: 'property' } },
+          { incident: { property: 'second' } },
+        ],
         referrals: [{ property: 'property' }, { property: 'second' }],
         households: [
           { household: { property: 'property' } },
@@ -205,7 +212,8 @@ each([
       actionsMaps.case.ADD_HOUSEHOLD,
       actionsMaps.case.ADD_PERPETRATOR,
     ],
-    conditionDescription: 'adding more than one property (test multiple additions not exhaustive)',
+    conditionDescription:
+      'adding more than one property (test multiple additions not exhaustive)',
   },
 ]).test(
   "Should return '$expectedCondition' actions list when '$conditionDescription'",
@@ -278,13 +286,15 @@ each([
       actionsMaps.case.EDIT_HOUSEHOLD,
       actionsMaps.case.EDIT_PERPETRATOR,
     ],
-    conditionDescription: 'editing more than one property (test multiple editions not exhaustive)',
+    conditionDescription:
+      'editing more than one property (test multiple editions not exhaustive)',
   },
   {
     caseFromDB: caseWithProperties,
     update: { status: 'another' },
     expectedCondition: [actionsMaps.case.CASE_STATUS_TRANSITION],
-    conditionDescription: 'transitioning from a not-closed status to aother not-closed status',
+    conditionDescription:
+      'transitioning from a not-closed status to aother not-closed status',
   },
   {
     caseFromDB: caseWithProperties,

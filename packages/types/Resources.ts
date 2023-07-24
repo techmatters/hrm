@@ -13,6 +13,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
+import { AccountSID } from './twilio';
+
+export type TimeSequence = `${number}-${number}`;
 
 export type ReferrableResourceAttribute<T> = {
   value: T;
@@ -27,9 +30,10 @@ export const isReferrableResourceAttribute = (
     typeof attribute.value === 'number' ||
     typeof attribute.value === 'boolean');
 
-export type ReferrableResourceTranslatableAttribute = ReferrableResourceAttribute<string> & {
-  language: string;
-};
+export type ReferrableResourceTranslatableAttribute =
+  ReferrableResourceAttribute<string> & {
+    language: string;
+  };
 
 export type ResourceAttributeNode = Record<
   string,
@@ -52,7 +56,7 @@ export type ReferrableResource = {
   attributes: ResourceAttributeNode;
 };
 
-export enum ResourcesJobType {
+export const enum ResourcesJobType {
   SEARCH_INDEX = 'search-index',
 }
 
@@ -63,5 +67,22 @@ type ResourcesJobMessageCommons = {
 export type ResourcesSearchIndexPayload = ResourcesJobMessageCommons & {
   jobType: ResourcesJobType.SEARCH_INDEX;
   accountSid: string;
-  document: ReferrableResource;
+  document: FlatResource;
+};
+
+export type FlatResource = {
+  accountSid: AccountSID;
+  name: string;
+  id: string;
+  lastUpdated: string;
+  deletedAt?: string;
+  importSequenceId?: TimeSequence;
+  stringAttributes: (ReferrableResourceTranslatableAttribute & { key: string })[];
+  referenceStringAttributes: (ReferrableResourceTranslatableAttribute & {
+    key: string;
+    list: string;
+  })[];
+  booleanAttributes: (ReferrableResourceAttribute<boolean> & { key: string })[];
+  numberAttributes: (ReferrableResourceAttribute<number> & { key: string })[];
+  dateTimeAttributes: (ReferrableResourceAttribute<string> & { key: string })[];
 };

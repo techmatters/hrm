@@ -28,9 +28,16 @@ export class ResourceImportProcessorError extends Error {
   }
 }
 
-export class ResourcesJobProcessorError extends Error {
+export class ResourceIndexProcessorError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = 'ResourcesJobProcessorError';
+    this.name = 'ResourceImportProcessorError';
+  }
+}
+
+export class CompletedJobProcessorError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'CompletedJobProcessorError';
   }
 }

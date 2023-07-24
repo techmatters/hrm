@@ -14,10 +14,12 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { getSsmParameter } from '@tech-matters/hrm-ssm-cache';
+import { getSsmParameter } from '@tech-matters/ssm-cache';
 
 export const getAccountSid = (shortCode: string) => {
-  return getSsmParameter(`/${process.env.NODE_ENV}/twilio/${shortCode.toUpperCase()}/account_sid`);
+  return getSsmParameter(
+    `/${process.env.NODE_ENV}/twilio/${shortCode.toUpperCase()}/account_sid`,
+  );
 };
 
 export default getAccountSid;

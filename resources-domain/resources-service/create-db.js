@@ -37,18 +37,16 @@ async function create() {
   const timeoutPoint = Date.now() + CONNECT_ATTEMPT_SECONDS * 1000;
 
   const createUserConnection = pgp(
-    `postgres://${encodeURIComponent(config.username)}:${encodeURIComponent(config.password)}@${
-      config.host
-    }:${config.port}/${encodeURIComponent(
+    `postgres://${encodeURIComponent(config.username)}:${encodeURIComponent(
+      config.password,
+    )}@${config.host}:${config.port}/${encodeURIComponent(
       config.database,
     )}?&application_name=resources-db-create-script`,
   );
 
   while (Date.now() < timeoutPoint) {
     try {
-      const {
-        userCount,
-      } = await createUserConnection.one(
+      const { userCount } = await createUserConnection.one(
         `SELECT COUNT(*) AS "userCount" FROM pg_user where usename = $<resourceUsername>`,
         { resourceUsername },
       );
@@ -78,9 +76,9 @@ async function create() {
   }
 
   const createSchemaConnection = pgp(
-    `postgres://${encodeURIComponent(resourceUsername)}:${encodeURIComponent(resourcePassword)}@${
-      config.host
-    }:${config.port}/${encodeURIComponent(
+    `postgres://${encodeURIComponent(resourceUsername)}:${encodeURIComponent(
+      resourcePassword,
+    )}@${config.host}:${config.port}/${encodeURIComponent(
       config.database,
     )}?&application_name=resources-db-create-script`,
   );

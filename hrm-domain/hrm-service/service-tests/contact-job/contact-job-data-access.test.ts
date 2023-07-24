@@ -32,7 +32,6 @@ useOpenRules();
 const server = getServer();
 const request = getRequest(server);
 
-// eslint-disable-next-line prettier/prettier
 import type { Contact } from '../../src/contact/contact-data-access';
 
 beforeAll(async () => {
@@ -62,9 +61,12 @@ describe('appendFailedAttemptPayload', () => {
       });
     });
 
-    const job = await db.oneOrNone('SELECT * FROM "ContactJobs" WHERE "contactId" = $1', [contact.id]);
+    const job = await db.oneOrNone('SELECT * FROM "ContactJobs" WHERE "contactId" = $1', [
+      contact.id,
+    ]);
 
-    const payload = "SSM parameter /development/s3/AC6a65d4fbbc731e64e1c94e9806675c3b/docs_bucket_name not found in cache";
+    const payload =
+      'SSM parameter /development/s3/AC6a65d4fbbc731e64e1c94e9806675c3b/docs_bucket_name not found in cache';
 
     const promises = [...Array(100)].map(async (_, i) => {
       await appendFailedAttemptPayload(job.id, i, { test: i, payload });

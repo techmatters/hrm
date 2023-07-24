@@ -17,15 +17,13 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { SQS } from 'aws-sdk';
 
-import { ContactJobProcessorError } from '@tech-matters/hrm-job-errors';
-import { getSsmParameter } from '@tech-matters/hrm-ssm-cache';
+import { ContactJobProcessorError } from '@tech-matters/job-errors';
+import { getSsmParameter } from '@tech-matters/ssm-cache';
 import { ContactJobAttemptResult } from '@tech-matters/types';
 import { exportTranscript } from './exportTranscript';
 import { uploadTranscript } from './uploadTranscript';
 
-// eslint-disable-next-line prettier/prettier
 import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
-// eslint-disable-next-line prettier/prettier
 import type {
   CompletedContactJobBody,
   PublishToContactJobsTopicParams,
@@ -55,8 +53,12 @@ const hrmEnv = process.env.NODE_ENV;
 // ];
 
 const processRecord = async (message: PublishToContactJobsTopicParams) => {
-  const authToken = await getSsmParameter(`/${hrmEnv}/twilio/${message.accountSid}/auth_token`);
-  const docsBucketName = await getSsmParameter(`/${hrmEnv}/s3/${message.accountSid}/docs_bucket_name`);
+  const authToken = await getSsmParameter(
+    `/${hrmEnv}/twilio/${message.accountSid}/auth_token`,
+  );
+  const docsBucketName = await getSsmParameter(
+    `/${hrmEnv}/s3/${message.accountSid}/docs_bucket_name`,
+  );
 
   if (!authToken || !docsBucketName) {
     throw new Error('Missing required SSM params');
@@ -99,7 +101,9 @@ const processRecord = async (message: PublishToContactJobsTopicParams) => {
     .promise();
 };
 
-export const processRecordWithoutException = async (sqsRecord: SQSRecord): Promise<void> => {
+export const processRecordWithoutException = async (
+  sqsRecord: SQSRecord,
+): Promise<void> => {
   const message = JSON.parse(sqsRecord.body);
   try {
     await processRecord(message);
@@ -135,7 +139,9 @@ export const handler = async (event: SQSEvent): Promise<any> => {
       throw new Error('Missing NODE_ENV ENV Variable');
     }
 
-    const promises = event.Records.map(async sqsRecord => processRecordWithoutException(sqsRecord));
+    const promises = event.Records.map(async sqsRecord =>
+      processRecordWithoutException(sqsRecord),
+    );
 
     await Promise.all(promises);
   } catch (err) {
@@ -154,7 +160,6 @@ export const handler = async (event: SQSEvent): Promise<any> => {
       };
     });
   }
-
 
   return response;
 };

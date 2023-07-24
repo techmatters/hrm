@@ -16,6 +16,7 @@
 
 import each from 'jest-each';
 import * as search from './search';
+import { SearchConfiguration } from './config';
 
 describe('Search', () => {
   describe('getTotalValue', () => {
@@ -28,24 +29,9 @@ describe('Search', () => {
     });
   });
 
-  describe('generateFilters', () => {
-    test('when passed an empty object, should return an empty array', () => {
-      expect(search.generateFilters({})).toEqual([]);
-    });
-
-    test('when passed a filters object, should return an array of filters', () => {
-      expect(search.generateFilters({ city: ['Toronto'] })).toEqual([
-        {
-          terms: {
-            city: ['Toronto'],
-          },
-        },
-      ]);
-    });
-  });
-
   describe('generateElasticsearchQuery', () => {
     type TestCaseParameters = {
+      config: SearchConfiguration;
       parameters: search.SearchGenerateElasticsearchQueryParams;
       condition: string;
       expectationDescription: string;
@@ -53,27 +39,34 @@ describe('Search', () => {
     };
 
     const index = 'resources';
-    const fields = ['title'];
+    const searchFieldBoosts = {
+      title: 1,
+    };
+    const expectedFields = ['title^1'];
 
     const testCases: TestCaseParameters[] = [
       {
+        config: {
+          searchFieldBoosts,
+          filterMappings: {},
+        },
         parameters: {
           index,
           searchParameters: {
             q: 'test',
           },
-          fields,
         },
         condition: 'a searchParameters object with only a q parameter',
-        expectationDescription: 'should return a SearchQuery object with only a query property',
+        expectationDescription:
+          'should return a SearchQuery object with only a query property',
         expectedResults: {
           index,
           query: {
             bool: {
               must: [
                 {
-                  query_string: {
-                    fields,
+                  simple_query_string: {
+                    fields: expectedFields,
                     query: 'test',
                   },
                 },
@@ -83,6 +76,10 @@ describe('Search', () => {
         },
       },
       {
+        config: {
+          searchFieldBoosts,
+          filterMappings: {},
+        },
         parameters: {
           index,
           searchParameters: {
@@ -91,7 +88,6 @@ describe('Search', () => {
               city: ['Toronto'],
             },
           },
-          fields,
         },
         condition: 'a searchParameters object with a q and filters parameter',
         expectationDescription:
@@ -102,16 +98,16 @@ describe('Search', () => {
             bool: {
               must: [
                 {
-                  query_string: {
-                    fields,
+                  simple_query_string: {
+                    fields: expectedFields,
                     query: 'test',
                   },
                 },
-              ],
-              filter: [
                 {
-                  terms: {
-                    city: ['Toronto'],
+                  simple_query_string: {
+                    fields: ['title^2'],
+                    query: '"Toronto"',
+                    default_operator: 'AND',
                   },
                 },
               ],
@@ -120,6 +116,10 @@ describe('Search', () => {
         },
       },
       {
+        config: {
+          searchFieldBoosts,
+          filterMappings: {},
+        },
         parameters: {
           index,
           searchParameters: {
@@ -132,19 +132,218 @@ describe('Search', () => {
               start: 10,
             },
           },
-          fields,
         },
-        condition: 'a searchParameters object with a q, filters, and pagination parameter',
+        condition:
+          'a searchParameters object with a q, unmapped string filters, and pagination parameter',
         expectationDescription:
-          'should return a SearchQuery object with a query, filter, size, and from property',
+          'should return a SearchQuery object with a general search query, a boosted query for filter terms, size, and from property',
         expectedResults: {
           index,
           query: {
             bool: {
               must: [
                 {
-                  query_string: {
-                    fields,
+                  simple_query_string: {
+                    fields: expectedFields,
+                    query: 'test',
+                  },
+                },
+                {
+                  simple_query_string: {
+                    fields: ['title^2'],
+                    query: '"Toronto"',
+                    default_operator: 'AND',
+                  },
+                },
+              ],
+              /*filter: [
+                {
+                  terms: {
+                    city: ['Toronto'],
+                  },
+                },
+              ]*/
+            },
+          },
+          size: 10,
+          from: 10,
+        },
+      },
+      {
+        config: {
+          searchFieldBoosts,
+          filterMappings: {},
+        },
+        parameters: {
+          index,
+          searchParameters: {
+            q: 'test',
+            filters: {
+              city: ['Toronto', 'Vancouver'],
+            },
+          },
+        },
+        condition:
+          'a searchParameters object with a q an unmapped filters parameter with an array value',
+        expectationDescription:
+          'should return a SearchQuery object with a general query and a boosted filter query property',
+        expectedResults: {
+          index,
+          query: {
+            bool: {
+              must: [
+                {
+                  simple_query_string: {
+                    fields: expectedFields,
+                    query: 'test',
+                  },
+                },
+                {
+                  simple_query_string: {
+                    fields: ['title^2'],
+                    query: '("Toronto" | "Vancouver")',
+                    default_operator: 'AND',
+                  },
+                },
+              ],
+            },
+          },
+        },
+      },
+      {
+        config: {
+          searchFieldBoosts,
+          filterMappings: {},
+        },
+        parameters: {
+          index,
+          searchParameters: {
+            q: 'test',
+            filters: {
+              code: 1234,
+            },
+          },
+        },
+        condition:
+          'a searchParameters object with a q an unmapped filter parameter with an number value',
+        expectationDescription:
+          'should return a SearchQuery object with a general query and a term filter',
+        expectedResults: {
+          index,
+          query: {
+            bool: {
+              must: [
+                {
+                  simple_query_string: {
+                    fields: expectedFields,
+                    query: 'test',
+                  },
+                },
+              ],
+              filter: [
+                {
+                  term: {
+                    code: 1234,
+                  },
+                },
+              ],
+            },
+          },
+        },
+      },
+      {
+        config: {
+          searchFieldBoosts,
+          filterMappings: {
+            minAge: {
+              type: 'range',
+              operator: 'gte',
+              targetField: 'maxAge',
+            },
+            maxAge: {
+              type: 'range',
+              operator: 'lte',
+              targetField: 'minAge',
+            },
+          },
+        },
+        parameters: {
+          index,
+          searchParameters: {
+            q: 'test',
+            filters: {
+              minAge: 10,
+              maxAge: 20,
+            },
+          },
+        },
+        condition:
+          'a searchParameters object with a q and a mapped range filter parameters',
+        expectationDescription:
+          'should return a SearchQuery object with a general query and a range filter',
+        expectedResults: {
+          index,
+          query: {
+            bool: {
+              must: [
+                {
+                  simple_query_string: {
+                    fields: expectedFields,
+                    query: 'test',
+                  },
+                },
+              ],
+              filter: [
+                {
+                  range: {
+                    maxAge: {
+                      gte: 10,
+                    },
+                  },
+                },
+                {
+                  range: {
+                    minAge: {
+                      lte: 20,
+                    },
+                  },
+                },
+              ],
+            },
+          },
+        },
+      },
+      {
+        config: {
+          searchFieldBoosts,
+          filterMappings: {
+            cities: {
+              type: 'term',
+              targetField: 'canadian_cities',
+            },
+          },
+        },
+        parameters: {
+          index,
+          searchParameters: {
+            q: 'test',
+            filters: {
+              cities: ['Toronto', 'Vancouver'],
+            },
+          },
+        },
+        condition:
+          'a searchParameters object with a q and mapped term filter parameter with an array value',
+        expectationDescription:
+          'should return a SearchQuery object with a general query and terms filter',
+        expectedResults: {
+          index,
+          query: {
+            bool: {
+              must: [
+                {
+                  simple_query_string: {
+                    fields: expectedFields,
                     query: 'test',
                   },
                 },
@@ -152,22 +351,68 @@ describe('Search', () => {
               filter: [
                 {
                   terms: {
-                    city: ['Toronto'],
+                    canadian_cities: ['Toronto', 'Vancouver'],
                   },
                 },
               ],
             },
           },
-          size: 10,
-          from: 10,
+        },
+      },
+      {
+        config: {
+          searchFieldBoosts,
+          filterMappings: {
+            city: {
+              type: 'term',
+              targetField: 'canadian_city',
+            },
+          },
+        },
+        parameters: {
+          index,
+          searchParameters: {
+            q: 'test',
+            filters: {
+              city: 'Toronto',
+            },
+          },
+        },
+        condition:
+          'a searchParameters object with a q and mapped term filter parameter with a single value',
+        expectationDescription:
+          'should return a SearchQuery object with a general query and term filter',
+        expectedResults: {
+          index,
+          query: {
+            bool: {
+              must: [
+                {
+                  simple_query_string: {
+                    fields: expectedFields,
+                    query: 'test',
+                  },
+                },
+              ],
+              filter: [
+                {
+                  term: {
+                    canadian_city: 'Toronto',
+                  },
+                },
+              ],
+            },
+          },
         },
       },
     ];
 
     each(testCases).test(
       'When passed a $condition, $expectationDescription',
-      ({ parameters, expectedResults }) => {
-        expect(search.generateElasticsearchQuery(parameters)).toEqual(expectedResults);
+      ({ config, parameters, expectedResults }) => {
+        expect(search.generateElasticsearchQuery(config, parameters)).toEqual(
+          expectedResults,
+        );
       },
     );
   });

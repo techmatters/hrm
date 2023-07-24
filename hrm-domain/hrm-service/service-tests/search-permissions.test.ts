@@ -21,7 +21,14 @@ import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/
 
 import { db } from '../src/connection-pool';
 import { ConditionsSets, RulesFile } from '../src/permissions/rulesMap';
-import { headers, getRequest, getServer, setRules, defaultConfig, useOpenRules } from './server';
+import {
+  headers,
+  getRequest,
+  getServer,
+  setRules,
+  defaultConfig,
+  useOpenRules,
+} from './server';
 import { SearchParameters as ContactSearchParameters } from '../src/contact/contact-data-access';
 import { SearchParameters as CaseSearchParameters } from '../src/case/case';
 
@@ -120,10 +127,7 @@ describe('search contacts permissions', () => {
       onlyDataContacts: false,
     };
 
-    const response = await request
-      .post(route)
-      .set(headers)
-      .send(searchParams);
+    const response = await request.post(route).set(headers).send(searchParams);
 
     expect(response.status).toBe(200);
     expect(response.body.count).toBe(0);
@@ -141,10 +145,7 @@ describe('search contacts permissions', () => {
       onlyDataContacts: false,
     };
 
-    const response = await request
-      .post(route)
-      .set(headers)
-      .send(searchParams);
+    const response = await request.post(route).set(headers).send(searchParams);
 
     expect(response.status).toBe(200);
     expect(response.body.count).toBe(1);
@@ -162,10 +163,7 @@ describe('search contacts permissions', () => {
       onlyDataContacts: false,
     };
 
-    const response = await request
-      .post(route)
-      .set(headers)
-      .send(searchParams);
+    const response = await request.post(route).set(headers).send(searchParams);
 
     expect(response.status).toBe(200);
     expect(response.body.count).toBe(2);
@@ -188,10 +186,7 @@ describe('search cases permissions', () => {
       },
     };
 
-    const response = await request
-      .post(route)
-      .set(headers)
-      .send(searchParams);
+    const response = await request.post(route).set(headers).send(searchParams);
 
     expect(response.status).toBe(200);
     expect(response.body.count).toBe(0);
@@ -210,10 +205,7 @@ describe('search cases permissions', () => {
       },
     };
 
-    const response = await request
-      .post(route)
-      .set(headers)
-      .send(searchParams);
+    const response = await request.post(route).set(headers).send(searchParams);
 
     expect(response.status).toBe(200);
     expect(response.body.count).toBe(1);
@@ -232,10 +224,7 @@ describe('search cases permissions', () => {
       },
     };
 
-    const response = await request
-      .post(route)
-      .set(headers)
-      .send(searchParams);
+    const response = await request.post(route).set(headers).send(searchParams);
 
     expect(response.status).toBe(200);
     expect(response.body.count).toBe(2);
