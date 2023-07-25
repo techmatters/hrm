@@ -36,11 +36,18 @@ export const convertDocumentsToBulkRequest = (messages: ResourcesSearchIndexPayl
       acc[accountSid] = [];
     }
     if (document.deletedAt) {
+      console.debug('Delete Document for resource ID:', document.id);
       acc[accountSid].push({
         action: 'delete',
         id: document.id,
       });
     } else {
+      console.debug(
+        'Index Document for resource ID:',
+        document.id,
+        'Converted document:',
+        document,
+      );
       acc[accountSid].push({
         action: 'index',
         id: document.id,

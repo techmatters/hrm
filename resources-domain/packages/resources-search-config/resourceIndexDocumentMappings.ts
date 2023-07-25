@@ -77,20 +77,17 @@ const stringFieldTypes = ['text', 'keyword'];
  * @param mappingFields
  * @param fieldName
  */
-export const getMappingField = (
+export const getMappingFields = (
   { mappingFields }: Pick<ResourceIndexDocumentMappings, 'mappingFields'>,
   fieldName: string,
-): FieldAndMapping | undefined => {
+): FieldAndMapping[] => {
   if (Object.keys(mappingFields).includes(fieldName)) {
-    return { field: fieldName, mapping: mappingFields[fieldName] };
+    return [{ field: fieldName, mapping: mappingFields[fieldName] }];
   }
 
-  const [field, mapping] =
-    Object.entries(mappingFields).find(
-      ([, { attributeKeyPattern }]) => attributeKeyPattern?.test(fieldName),
-    ) ?? [];
-
-  return mapping && field ? { field, mapping } : undefined;
+  return Object.entries(mappingFields)
+    .filter(([, { attributeKeyPattern }]) => attributeKeyPattern?.test(fieldName))
+    .map(([field, mapping]) => ({ field, mapping }));
 };
 
 export const isHighBoostGlobalField = (
@@ -131,10 +128,13 @@ export const resourceIndexDocumentMappings: ResourceIndexDocumentMappings = {
     },
     taxonomyLevelName: {
       type: 'keyword',
-      copyTo: ['taxonomyLevelNameCompletion'],
+      isArrayField: true,
+      attributeKeyPattern: /^taxonomies\/.*$/,
     },
     taxonomyLevelNameCompletion: {
       type: 'completion',
+      isArrayField: true,
+      attributeKeyPattern: /^taxonomies\/.*$/,
     },
     feeStructure: {
       type: 'keyword',
