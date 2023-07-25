@@ -66,7 +66,7 @@ export type FieldAndMapping = {
   mapping: MappingField;
 };
 
-const stringFieldTypes = ['text', 'keyword', 'completion'];
+const stringFieldTypes = ['text', 'keyword'];
 
 /**
  * Returns the mapping field for the given field name.
@@ -95,9 +95,8 @@ export const isHighBoostGlobalField = (
   fieldName: string,
 ) => highBoostGlobalFields.includes(fieldName);
 
-export const isStringField = (
-  fieldType: string,
-): fieldType is 'keyword' | 'text' | 'completion' => stringFieldTypes.includes(fieldType);
+export const isStringField = (fieldType: string): fieldType is 'keyword' | 'text' =>
+  stringFieldTypes.includes(fieldType);
 
 export const resourceIndexDocumentMappings: ResourceIndexDocumentMappings = {
   // This is a list of attribute names that should be given higher priority in search results.
