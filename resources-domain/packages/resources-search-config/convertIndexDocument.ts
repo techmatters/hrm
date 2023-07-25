@@ -65,7 +65,7 @@ export const convertIndexDocument = (
     attribute: ReferrableResourceAttribute<boolean | string | number>,
   ) => {
     const fieldAndMappings = getMappingFields(resourceIndexDocumentMappings, key);
-    if (fieldAndMappings.length) {
+    if (fieldAndMappings.length > 0) {
       for (const fieldAndMapping of fieldAndMappings) {
         pushValueToMappedField(
           fieldAndMapping,
