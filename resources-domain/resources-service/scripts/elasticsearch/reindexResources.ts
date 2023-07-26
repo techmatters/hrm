@@ -185,6 +185,12 @@ const main = async () => {
     reindexParameters,
     true,
   );
+  if (!response.ok) {
+    throw new Error(`Failed to submit reindex request: ${response.statusText}`);
+  }
+  if (!response.body) {
+    throw new Error(`Failed to get response body from reindex request`);
+  }
   console.log(`Response headers received, receiving results...`);
 
   for await (const chunk of response.body) {
