@@ -257,7 +257,7 @@ describe('POST /search/reindex', () => {
         resourceIds,
         accountSid,
       };
-      const { body } = await internalRequest
+      const { text } = await internalRequest
         .post(route)
         .set(adminHeaders)
         .send(requestBody)
@@ -285,8 +285,28 @@ describe('POST /search/reindex', () => {
         jobType: ResourcesJobType.SEARCH_INDEX,
       }));
       expect(receivedMessages).toStrictEqual(expectedMessages);
-      expect(body.successfulSubmissionCount).toEqual(expectedResourcesPublished.length);
-      expect(body.submissionErrorCount).toEqual(0);
+
+      type PublishResult = {
+        status: string;
+        resourceAccountSid: string;
+        resourceId: string;
+        timestamp: Date;
+      };
+
+      const results: PublishResult[] = text
+        .split('\n')
+        .filter(line => line.trim())
+        .map(line => {
+          const [timestamp, resourceAccountSid, resourceId, status] = line.split(',');
+          return {
+            timestamp: parseISO(timestamp),
+            resourceAccountSid,
+            resourceId,
+            status,
+          };
+        });
+      expect(results.every(({ status }) => status === 'Success')).toBeTruthy();
+      expect(results.length).toEqual(expectedResourcesPublished.length);
     },
   );
 

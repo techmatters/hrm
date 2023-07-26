@@ -17,7 +17,6 @@
 import { IRouter, Router } from 'express';
 import newAdminSearchService, {
   AdminSearchServiceConfiguration,
-  ResponseType,
   SearchReindexParams,
 } from './adminSearchService';
 
@@ -25,7 +24,7 @@ const adminSearchRoutes = (serviceConfig: AdminSearchServiceConfiguration) => {
   const router: IRouter = Router();
   const adminSearchService = newAdminSearchService(serviceConfig);
 
-  router.post('/search/reindex', async ({ body, query }, res) => {
+  router.post('/search/reindex', async ({ body }, res, next) => {
     const params: SearchReindexParams = body;
     if (params.resourceIds && !params.accountSid) {
       res.status(400).json({
@@ -33,11 +32,12 @@ const adminSearchRoutes = (serviceConfig: AdminSearchServiceConfiguration) => {
       });
       return;
     }
-    const result = await adminSearchService.reindexStream(
-      body,
-      query.responseType === 'verbose' ? ResponseType.VERBOSE : ResponseType.CONCISE,
-    );
-    res.status(200).json(result);
+    const resultStream = await adminSearchService.reindexStream(body);
+    resultStream.on('error', err => {
+      next(err);
+    });
+    res.status(200).setHeader('Content-Type', 'text/csv');
+    resultStream.pipe(res);
   });
 
   return router;
