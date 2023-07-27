@@ -173,6 +173,7 @@ const main = async () => {
       'Found the HRM .env file but failed to find the auth key under a STATIC_KEY_SEARCH_REINDEXER entry',
     );
   }
+  console.log(`Found auth key ${authKey}`);
   const reindexParameters: SearchReindexParams = {
     accountSid: accountSid as AccountSID,
     resourceIds: resourceIds?.map(rid => rid.toString()),
@@ -192,10 +193,11 @@ const main = async () => {
     throw new Error(`Failed to get response body from reindex request`);
   }
   console.log(`Response headers received, receiving results...`);
-
+  //const decoder = new TextDecoder('utf-8');
   for await (const chunk of response.body) {
     if (verbose) {
-      console.log(chunk.toString());
+      process.stdout.write(chunk);
+      //console.log(decoder.decode(chunk));
     }
   }
   console.log(`All results received, reindex complete`);
