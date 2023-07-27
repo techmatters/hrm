@@ -37,6 +37,9 @@ const adminSearchRoutes = (serviceConfig: AdminSearchServiceConfiguration) => {
       next(err);
     });
     res.status(200).setHeader('Content-Type', 'text/csv');
+
+    // Streaming data over a long lived HTTP connection like this wouldn't be a good idea for a externally facing production endpoint.
+    // But for an internal admin endpoint it solves the problem without having to build in more stuff like persistent state or events.
     resultStream.pipe(res);
   });
 
