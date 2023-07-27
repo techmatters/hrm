@@ -193,11 +193,10 @@ const main = async () => {
     throw new Error(`Failed to get response body from reindex request`);
   }
   console.log(`Response headers received, receiving results...`);
-  //const decoder = new TextDecoder('utf-8');
+
   for await (const chunk of response.body) {
     if (verbose) {
       process.stdout.write(chunk);
-      //console.log(decoder.decode(chunk));
     }
   }
   console.log(`All results received, reindex complete`);
