@@ -17,14 +17,10 @@
 import { ECS, EC2, S3 } from 'aws-sdk';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import yargs from 'yargs';
-import {
-  ConciseSearchReindexResult,
-  SearchReindexParams,
-  VerboseSearchReindexResult,
-} from '../../src/admin/adminSearchService';
+import { SearchReindexParams } from '../../src/admin/adminSearchService';
 import { AccountSID } from '@tech-matters/types';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { fetch } from 'undici';
+import { fetch, Response } from 'undici';
 
 const ecs = new ECS();
 const ec2 = new EC2();
@@ -78,18 +74,12 @@ const findTaskPrivateIp = async (params: { cluster: string; serviceName: string 
   return privateIpAddress;
 };
 
-type ReindexReturnType<T extends boolean> = T extends true
-  ? VerboseSearchReindexResult
-  : T extends false
-  ? ConciseSearchReindexResult
-  : never;
-
 const reindexResources = async <T extends boolean>(
   internalResourcesUrl: URL,
   authKey: string,
   reindexParameters: SearchReindexParams,
   verbose: T,
-): Promise<ReindexReturnType<T>> => {
+): Promise<Response> => {
   const reindexUrl = new URL(
     `v0/resources/admin/search/reindex?responseType=${verbose ? 'verbose' : 'concise'}`,
     internalResourcesUrl,
@@ -104,7 +94,7 @@ const reindexResources = async <T extends boolean>(
     body: JSON.stringify(reindexParameters),
   });
   if (resp.ok) {
-    return (await resp.json()) as ReindexReturnType<typeof verbose>;
+    return resp;
   } else {
     throw new Error(`Failed to submit request: ${resp.statusText}`);
   }
@@ -183,56 +173,33 @@ const main = async () => {
       'Found the HRM .env file but failed to find the auth key under a STATIC_KEY_SEARCH_REINDEXER entry',
     );
   }
+  console.log(`Found auth key ${authKey}`);
   const reindexParameters: SearchReindexParams = {
     accountSid: accountSid as AccountSID,
     resourceIds: resourceIds?.map(rid => rid.toString()),
     lastUpdatedFrom: from,
     lastUpdatedTo: to,
   };
-  if (verbose) {
-    const response = await reindexResources(
-      internalResourcesUrl,
-      authKey,
-      reindexParameters,
-      true,
-    );
-    console.info(
-      `Reindex complete, the following ${response.successfulSubmissionCount} resources successfully submitted for reindexing`,
-      response.successfullySubmitted
-        .map(
-          ({ accountSid: resourceAccountSid, resourceId }) =>
-            `${resourceAccountSid}/${resourceId}`,
-        )
-        .join(', '),
-    );
-    if (response.submissionErrorCount) {
-      console.error(
-        `There were also these ${response.submissionErrorCount} resources that failed to submit for reindexing:`,
-      );
-      response.failedToSubmit.forEach(
-        ({ accountSid: resourceAccountSid, resourceId, error }) => {
-          console.error(
-            `Resource ID: ${resourceAccountSid}/${resourceId}, Error: ${error}`,
-          );
-        },
-      );
-    }
-  } else {
-    const response = await reindexResources(
-      internalResourcesUrl,
-      authKey,
-      reindexParameters,
-      false,
-    );
-    console.info(
-      `Reindex complete, ${response.successfulSubmissionCount} resources successfully submitted for reindexing`,
-    );
-    if (response.submissionErrorCount) {
-      console.error(
-        `There were also ${response.submissionErrorCount} resources that failed to submit for reindexing:`,
-      );
+  const response = await reindexResources(
+    internalResourcesUrl,
+    authKey,
+    reindexParameters,
+    true,
+  );
+  if (!response.ok) {
+    throw new Error(`Failed to submit reindex request: ${response.statusText}`);
+  }
+  if (!response.body) {
+    throw new Error(`Failed to get response body from reindex request`);
+  }
+  console.log(`Response headers received, receiving results...`);
+
+  for await (const chunk of response.body) {
+    if (verbose) {
+      process.stdout.write(chunk);
     }
   }
+  console.log(`All results received, reindex complete`);
 };
 
 main().catch(err => {
