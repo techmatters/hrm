@@ -17,7 +17,7 @@
 import { subHours, subSeconds } from 'date-fns';
 import { mockConnection, mockTransaction } from '../mock-db';
 import {
-  recordImportError,
+  insertImportError,
   updateImportProgress,
   upsertImportedResource,
 } from '../../../src/import/importDataAccess';
@@ -35,7 +35,7 @@ import { publishSearchIndexJob } from '../../../src/resource-jobs/client-sqs';
 jest.mock('../../../src/import/importDataAccess', () => ({
   updateImportProgress: jest.fn(),
   upsertImportedResource: jest.fn(),
-  recordImportError: jest.fn(),
+  insertImportError: jest.fn(),
 }));
 
 jest.mock('../../../src/resource-jobs/client-sqs.ts', () => ({
@@ -59,10 +59,10 @@ const mockUpsertImportedResource = upsertImportedResource as jest.MockedFunction
 
 let mockUpsert: jest.MockedFunction<ReturnType<typeof upsertImportedResource>> =
   jest.fn();
-let mockRecordImportError = recordImportError as jest.MockedFunction<
-  typeof recordImportError
+let mockRecordImportError = insertImportError as jest.MockedFunction<
+  typeof insertImportError
 >;
-let mockRecordError: jest.MockedFunction<ReturnType<typeof recordImportError>> =
+let mockRecordError: jest.MockedFunction<ReturnType<typeof insertImportError>> =
   jest.fn();
 const timeSequenceFromDate = (date: Date, sequence = 0): TimeSequence =>
   `${date.valueOf()}-${sequence}`;

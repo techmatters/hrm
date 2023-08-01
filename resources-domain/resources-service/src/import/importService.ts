@@ -24,7 +24,7 @@ import {
 import { db } from '../connection-pool';
 import {
   getImportState,
-  recordImportError,
+  insertImportError,
   updateImportProgress,
   upsertImportedResource,
   UpsertImportedResourceResult,
@@ -124,7 +124,7 @@ const importService = () => {
           } - rolling back upserts in this message.`,
           error,
         );
-        await recordImportError()(
+        await insertImportError()(
           accountSid,
           error.resource?.id,
           batch,

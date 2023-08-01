@@ -20,7 +20,9 @@ import { db } from '../../src/connection-pool';
 import range from './range';
 import { parseISO, addHours, subHours, addSeconds, subSeconds } from 'date-fns';
 import {
+  AccountSID,
   FlatResource,
+  ImportBatch,
   ImportProgress,
   ImportRequestBody,
   ResourcesJobType,
@@ -256,6 +258,8 @@ beforeEach(async () => {
     DELETE FROM resources."Accounts";
     DELETE FROM resources."Resources";
     DELETE FROM resources."ResourceReferenceStringAttributeValues";
+    DELETE FROM resources."ImportBatches";
+    DELETE FROM resources."ImportErrors";
   `);
   await populateSampleDbReferenceValues(5, 3);
   await populateSampleDbResources(5);
@@ -321,6 +325,14 @@ describe('POST /import', () => {
     expectedResponse: UpsertImportedResourceResult[];
     expectedResourceUpdates: Record<string, ReferrableResource>;
     expectedBatchProgressState?: ImportProgress;
+  };
+
+  type BatchRecord = {
+    batchId: string;
+    batchContext: ImportBatch;
+    accountSid: AccountSID;
+    successCount: number;
+    failureCount: number;
   };
 
   const testCases: ImportPostTestCaseParameters[] = [
@@ -554,7 +566,7 @@ describe('POST /import', () => {
       }
       await verifyImportState(expectedBatchProgressState);
 
-      const { importedResources } = requestBody;
+      const { importedResources, batch } = requestBody;
 
       const receivedMessages: FlatResource[] = [];
       while (receivedMessages.length <= importedResources.length) {
@@ -579,18 +591,44 @@ describe('POST /import', () => {
         jobType: ResourcesJobType.SEARCH_INDEX,
       }));
       expect(receivedMessages).toStrictEqual(expectedMessages);
+
+      const importBatchRecords = await db.task(async conn => {
+        return conn.manyOrNone<BatchRecord>(`SELECT * FROM "resources"."ImportBatches"`);
+      });
+      if (importedResources.length) {
+        expect(importBatchRecords.length).toBe(1);
+        expect(importBatchRecords[0].batchId).toBe(
+          `${batch.fromSequence}-${batch.toSequence}/${batch.remaining}`,
+        );
+        const resourcesByLastUpdatedDescending = [...importedResources].sort((r1, r2) =>
+          r2.lastUpdated.localeCompare(r1.lastUpdated),
+        );
+        const latestResource = resourcesByLastUpdatedDescending[0];
+
+        expect(importBatchRecords[0].batchContext).toStrictEqual({
+          ...batch,
+          lastProcessedId: latestResource.id,
+          lastProcessedDate: latestResource.lastUpdated,
+        });
+        expect(importBatchRecords[0].accountSid).toBe(accountSid);
+        expect(importBatchRecords[0].successCount).toBe(importedResources.length);
+        expect(importBatchRecords[0].failureCount).toBe(0);
+      } else {
+        expect(importBatchRecords.length).toBe(0);
+      }
     },
   );
 
   test('One malformed resource - rejects whole batch and returns 400', async () => {
     const { id, ...missingIdResource } = generateImportResource('3', baselineDate);
+    const batch = newDefaultTestBatch();
     const requestBody: ImportRequestBody = {
       importedResources: [
         generateImportResource('2', subSeconds(baselineDate, 15)),
         missingIdResource as FlatResource,
         generateImportResource('4', addSeconds(baselineDate, 15)),
       ],
-      batch: newDefaultTestBatch(),
+      batch,
     };
     const response = await internalRequest
       .post(route)
@@ -606,6 +644,43 @@ describe('POST /import', () => {
       const resourceId = `RESOURCE_${resourceIdx}`;
       await verifyGeneratedResourcesAttributes(resourceId);
     }
+
+    const importBatchRecords = await db.task(async conn => {
+      return conn.manyOrNone<BatchRecord>(`SELECT * FROM "resources"."ImportBatches"`);
+    });
+
+    expect(importBatchRecords.length).toBe(1);
+    const [
+      { batchId, batchContext, accountSid: batchAccountSid, failureCount, successCount },
+    ] = importBatchRecords;
+    expect(batchId).toBe(`${batch.fromSequence}-${batch.toSequence}/${batch.remaining}`);
+    expect(batchContext).toStrictEqual(batch);
+    expect(batchAccountSid).toBe(accountSid);
+    expect(successCount).toBe(0);
+    expect(failureCount).toBe(3);
+
+    const importErrors = await db.task(async conn => {
+      return conn.manyOrNone(`SELECT * FROM "resources"."ImportErrors"`);
+    });
+
+    expect(importErrors.length).toBe(1);
+    const [
+      {
+        batchId: errorBatchId,
+        rejectedBatch,
+        error,
+        resourceId,
+        accountSid: errorAccountSid,
+      },
+    ] = importErrors;
+    expect(errorBatchId).toBe(
+      `${batch.fromSequence}-${batch.toSequence}/${batch.remaining}`,
+    );
+
+    expect(rejectedBatch).toStrictEqual(requestBody.importedResources);
+    expect(resourceId).toBeFalsy();
+    expect(errorAccountSid).toBe(accountSid);
+    expect(error).toBeDefined();
   });
 });
 

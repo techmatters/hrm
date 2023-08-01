@@ -15,14 +15,15 @@
  */
 
 import * as pgPromise from 'pg-promise';
-import { subHours } from 'date-fns';
+import { addSeconds, subHours } from 'date-fns';
 import { mockConnection, mockTransaction } from '../mock-db';
 import {
+  insertImportError,
   updateImportProgress,
   upsertImportedResource,
 } from '../../../src/import/importDataAccess';
 import { getSqlStatement } from '@tech-matters/testing';
-import { BLANK_ATTRIBUTES } from '../../mockResources';
+import { BLANK_ATTRIBUTES, generateImportResource } from '../../mockResources';
 import { TimeSequence } from '@tech-matters/types/dist/Resources';
 
 let conn: pgPromise.ITask<unknown>;
@@ -169,6 +170,51 @@ describe('updateImportProgress', () => {
     expect(insertBatchSql).toContain('ImportBatches');
     expect(insertBatchSql).toContain('4242');
     expect(insertProgressSql).toContain('AC_FAKE');
+    expect(insertBatchSql).toContain(timeSequenceFromDate(BASELINE_DATE));
+    expect(insertBatchSql).toContain(timeSequenceFromDate(subHours(BASELINE_DATE, 12)));
+  });
+});
+
+describe('insertImportError', () => {
+  test('Should increment failureCount of the batch in importBatches and add an entry in ImportErrors', async () => {
+    const error = {
+      message: 'Test Error',
+    };
+    mockTransaction(conn);
+    const noneSpy = jest.spyOn(conn, 'none').mockResolvedValue(null);
+    const generator = generateImportResource(BASELINE_DATE, 'AC_FAKE');
+    const rejectedBatch = [
+      generator('4320', addSeconds(BASELINE_DATE, 1)),
+      generator('4321', addSeconds(BASELINE_DATE, 2)),
+      generator('4322', addSeconds(BASELINE_DATE, 3)),
+    ];
+    await insertImportError()(
+      'AC_FAKE',
+      'RESOURCE_4321',
+      {
+        fromSequence: timeSequenceFromDate(subHours(BASELINE_DATE, 12)),
+        toSequence: timeSequenceFromDate(BASELINE_DATE),
+        remaining: 1234,
+      },
+      error,
+      rejectedBatch,
+    );
+    const insertErrorSql = getSqlStatement(noneSpy, 0);
+    expect(insertErrorSql).toContain('ImportErrors');
+    expect(insertErrorSql).toContain('RESOURCE_4320');
+    expect(insertErrorSql).toContain(addSeconds(BASELINE_DATE, 1).toISOString());
+    expect(insertErrorSql).toContain('RESOURCE_4321');
+    expect(insertErrorSql).toContain(addSeconds(BASELINE_DATE, 2).toISOString());
+    expect(insertErrorSql).toContain('RESOURCE_4322');
+    expect(insertErrorSql).toContain(addSeconds(BASELINE_DATE, 3).toISOString());
+    expect(insertErrorSql).toContain('AC_FAKE');
+    expect(insertErrorSql).toContain(timeSequenceFromDate(BASELINE_DATE));
+    expect(insertErrorSql).toContain(timeSequenceFromDate(subHours(BASELINE_DATE, 12)));
+
+    const insertBatchSql = getSqlStatement(noneSpy, 1);
+    expect(insertBatchSql).toContain('ImportBatches');
+    expect(insertBatchSql).toContain('1234');
+    expect(insertBatchSql).toContain('AC_FAKE');
     expect(insertBatchSql).toContain(timeSequenceFromDate(BASELINE_DATE));
     expect(insertBatchSql).toContain(timeSequenceFromDate(subHours(BASELINE_DATE, 12)));
   });

@@ -86,7 +86,7 @@ export const updateImportProgress =
     });
   };
 
-export const recordImportError =
+export const insertImportError =
   (task?: ITask<{}>) =>
   async (
     accountSid: AccountSID,
@@ -97,7 +97,7 @@ export const recordImportError =
   ) => {
     await txIfNotInOne(task, async tx => {
       const batchId = getBatchId(batch);
-      await db.none(
+      await tx.none(
         generateInsertImportErrorSql(
           accountSid,
           resourceId,
