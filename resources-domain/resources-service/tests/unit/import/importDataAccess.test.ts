@@ -144,19 +144,32 @@ describe('updateImportProgress', () => {
   test('Should upsert progress against account key', async () => {
     mockTransaction(conn);
     const noneSpy = jest.spyOn(conn, 'none').mockResolvedValue(null);
-    await updateImportProgress()('AC_FAKE', {
-      fromSequence: timeSequenceFromDate(subHours(BASELINE_DATE, 12)),
-      toSequence: timeSequenceFromDate(BASELINE_DATE),
-      remaining: 1234,
-      lastProcessedDate: subHours(BASELINE_DATE, 6).toISOString(),
-      lastProcessedId: 'TEST_RESOURCE',
-    });
-    const insertSql = getSqlStatement(noneSpy);
-    expect(insertSql).toContain('Accounts');
-    expect(insertSql).toContain('1234');
-    expect(insertSql).toContain('AC_FAKE');
-    expect(insertSql).toContain(timeSequenceFromDate(BASELINE_DATE));
-    expect(insertSql).toContain(timeSequenceFromDate(subHours(BASELINE_DATE, 12)));
-    expect(insertSql).toContain(subHours(BASELINE_DATE, 6).toISOString());
+    await updateImportProgress()(
+      'AC_FAKE',
+      {
+        fromSequence: timeSequenceFromDate(subHours(BASELINE_DATE, 12)),
+        toSequence: timeSequenceFromDate(BASELINE_DATE),
+        remaining: 1234,
+        lastProcessedDate: subHours(BASELINE_DATE, 6).toISOString(),
+        lastProcessedId: 'TEST_RESOURCE',
+      },
+      4242,
+    );
+    const insertProgressSql = getSqlStatement(noneSpy, 0);
+    expect(insertProgressSql).toContain('Accounts');
+    expect(insertProgressSql).toContain('1234');
+    expect(insertProgressSql).toContain('AC_FAKE');
+    expect(insertProgressSql).toContain(timeSequenceFromDate(BASELINE_DATE));
+    expect(insertProgressSql).toContain(
+      timeSequenceFromDate(subHours(BASELINE_DATE, 12)),
+    );
+    expect(insertProgressSql).toContain(subHours(BASELINE_DATE, 6).toISOString());
+
+    const insertBatchSql = getSqlStatement(noneSpy, 1);
+    expect(insertBatchSql).toContain('ImportBatches');
+    expect(insertBatchSql).toContain('4242');
+    expect(insertProgressSql).toContain('AC_FAKE');
+    expect(insertBatchSql).toContain(timeSequenceFromDate(BASELINE_DATE));
+    expect(insertBatchSql).toContain(timeSequenceFromDate(subHours(BASELINE_DATE, 12)));
   });
 });

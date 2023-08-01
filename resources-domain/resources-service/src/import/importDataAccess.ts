@@ -14,14 +14,24 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { AccountSID, FlatResource, ImportProgress } from '@tech-matters/types';
 import {
+  AccountSID,
+  FlatResource,
+  ImportBatch,
+  ImportProgress,
+} from '@tech-matters/types';
+import {
+  generateInsertImportErrorSql,
+  generateUpdateImportBatchRecordSql,
   generateUpdateImportProgressSql,
   generateUpsertSqlFromImportResource,
   SELECT_IMPORT_PROGRESS_SQL,
 } from './sql';
 import { ITask } from 'pg-promise';
 import { db } from '../connection-pool';
+
+const getBatchId = (batch: ImportBatch): string =>
+  `${batch.fromSequence}-${batch.toSequence}/${batch.remaining}`;
 
 const txIfNotInOne = async <T>(
   task: ITask<{}> | undefined,
@@ -45,17 +55,66 @@ export const upsertImportedResource =
     accountSid: AccountSID,
     resource: FlatResource,
   ): Promise<UpsertImportedResourceResult> => {
-    return txIfNotInOne(task, async tx => {
-      await tx.none(generateUpsertSqlFromImportResource(accountSid, resource));
-      return { id: resource.id, success: true };
-    });
+    try {
+      return await txIfNotInOne(task, async tx => {
+        await tx.none(generateUpsertSqlFromImportResource(accountSid, resource));
+        return { id: resource.id, success: true };
+      });
+    } catch (error) {
+      return { id: resource.id, success: false, error: error as Error };
+    }
   };
 
 export const updateImportProgress =
   (task?: ITask<{}>) =>
-  async (accountSid: AccountSID, progress: ImportProgress): Promise<void> => {
+  async (
+    accountSid: AccountSID,
+    progress: ImportProgress,
+    processed: number,
+  ): Promise<void> => {
     await txIfNotInOne(task, async tx => {
       await tx.none(generateUpdateImportProgressSql(accountSid, progress));
+      await tx.none(
+        generateUpdateImportBatchRecordSql(
+          accountSid,
+          getBatchId(progress),
+          progress,
+          processed,
+          0,
+        ),
+      );
+    });
+  };
+
+export const recordImportError =
+  (task?: ITask<{}>) =>
+  async (
+    accountSid: AccountSID,
+    resourceId: string,
+    batch: ImportBatch,
+    error: any,
+    rejectedBatch: FlatResource[],
+  ) => {
+    await txIfNotInOne(task, async tx => {
+      const batchId = getBatchId(batch);
+      await db.none(
+        generateInsertImportErrorSql(
+          accountSid,
+          resourceId,
+          batchId,
+          error,
+          rejectedBatch,
+        ),
+      );
+      await tx.none(
+        generateUpdateImportBatchRecordSql(
+          accountSid,
+          batchId,
+          batch,
+          0,
+          rejectedBatch.length,
+        ),
+      );
     });
   };
 
