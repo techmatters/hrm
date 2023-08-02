@@ -22,7 +22,7 @@ import { ErrorRequestHandler } from 'express-serve-static-core';
 
 export const configureDefaultPreMiddlewares = (webServer: Express): Express => {
   webServer.use(httpLogger);
-  webServer.use(express.json());
+  webServer.use(express.json({ limit: '50mb' }));
   webServer.use(express.urlencoded({ extended: false }));
   webServer.use(cors());
   return webServer;
