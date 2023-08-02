@@ -434,22 +434,14 @@ export const KHP_MAPPING_NODE: MappingNode = {
     children: {
       '{coverageIndex}': {
         children: {
-          '{language}': translatableAttributeMapping('coverage/{coverageIndex}', {
-            value: ctx => ctx.parentValue._id,
-            language: ctx => ctx.captures.language,
-            info: ctx => {
-              try {
-                return {
-                  siteId: ctx.parentValue.siteId,
-                  ...JSON.parse(ctx.currentValue),
-                };
-              } catch (e) {
-                return {
-                  siteId: ctx.parentValue.siteId,
-                };
-              }
+          '{language}': translatableAttributeMapping(
+            ({ parentValue, captures }) =>
+              `coverage/${parentValue._id ?? captures.coverageIndex}`,
+            {
+              language: ({ captures }) => captures.language,
+              info: ({ parentValue }) => parentValue,
             },
-          }),
+          ),
         },
       },
     },
@@ -507,11 +499,13 @@ export const KHP_MAPPING_NODE: MappingNode = {
       '{documentIndex}': {
         children: {
           objectId: { children: {} },
-          '{language}': referenceAttributeMapping(
-            'documentsRequired/{documentIndex}',
-            'documentsRequired',
+          '{language}': translatableAttributeMapping(
+            ctx =>
+              `documentsRequired/${
+                ctx.parentValue.objectId ?? ctx.captures.documentIndex
+              }`,
             {
-              value: ctx => ctx.parentValue.en,
+              value: ctx => ctx.parentValue[ctx.captures.language],
               language: ctx => ctx.captures.language,
             },
           ),
@@ -545,11 +539,12 @@ export const KHP_MAPPING_NODE: MappingNode = {
   },
   languages: {
     children: {
-      '{languageIndex}': referenceAttributeMapping(
-        'languages/{languageIndex}',
-        'khp-languages',
+      '{languageIndex}': translatableAttributeMapping(
+        context =>
+          `languages/${context.currentValue._id ?? context.captures.languageIndex}`,
         {
-          value: context => context.currentValue.language,
+          value: context => context.currentValue.code,
+          info: context => context.currentValue,
         },
       ),
     },
