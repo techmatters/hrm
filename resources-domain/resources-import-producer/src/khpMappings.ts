@@ -64,7 +64,7 @@ const KHP_MAPPING_NODE_SITES: { children: MappingNode } = {
           children: {
             '{verificationIndex}': attributeMapping(
               'stringAttributes',
-              'verifications/{verificationIndex}',
+              siteKey('verifications/{verificationIndex}'),
               {
                 value: ctx => ctx.currentValue.name,
                 info: ctx => ctx.currentValue,
@@ -120,8 +120,11 @@ const KHP_MAPPING_NODE_SITES: { children: MappingNode } = {
             }),
             postalCode: translatableAttributeMapping(siteKey('location/postalCode')),
             description: translatableAttributeMapping(siteKey('location/description')),
-            longitude: attributeMapping('numberAttributes', 'location/longitude'),
-            latitude: attributeMapping('numberAttributes', 'location/latitude'),
+            longitude: attributeMapping(
+              'numberAttributes',
+              siteKey('location/longitude'),
+            ),
+            latitude: attributeMapping('numberAttributes', siteKey('location/latitude')),
           },
         },
         operations: {
