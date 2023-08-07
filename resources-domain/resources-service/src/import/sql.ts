@@ -15,7 +15,12 @@
  */
 
 import { pgp } from '../connection-pool';
-import { AccountSID, ImportProgress, FlatResource } from '@tech-matters/types';
+import {
+  AccountSID,
+  ImportProgress,
+  FlatResource,
+  ImportBatch,
+} from '@tech-matters/types';
 
 const DELETE_RESOURCE_ATTRIBUTES_SQL = `DELETE FROM resources."ResourceStringAttributes" WHERE "resourceId" = $<resourceId> AND "accountSid" = $<accountSid>;
     DELETE FROM resources."ResourceNumberAttributes" WHERE "resourceId" = $<resourceId> AND "accountSid" = $<accountSid>;
@@ -128,6 +133,48 @@ export const generateUpdateImportProgressSql = (
     ON CONFLICT ON CONSTRAINT "Accounts_pkey" 
     DO UPDATE SET "importState" = EXCLUDED."importState"
   `;
+
+export const generateUpdateImportBatchRecordSql = (
+  accountSid: AccountSID,
+  batchId: string,
+  batchContext: ImportBatch,
+  successCount: number,
+  failureCount: number,
+) =>
+  `
+    ${pgp.helpers.insert(
+      {
+        accountSid,
+        batchId,
+        successCount,
+        failureCount,
+        batchContext,
+      },
+      ['accountSid', 'batchId', 'successCount', 'failureCount', 'batchContext'],
+      { schema: 'resources', table: 'ImportBatches' },
+    )}
+    ON CONFLICT ON CONSTRAINT "ImportBatches_pkey" 
+    DO UPDATE SET "failureCount" = EXCLUDED."failureCount" + "ImportBatches"."failureCount", "successCount" = EXCLUDED."successCount" + "ImportBatches"."successCount"
+  `;
+
+export const generateInsertImportErrorSql = (
+  accountSid: AccountSID,
+  resourceId: string,
+  batchId: string,
+  error: any,
+  rejectedBatch: FlatResource[],
+) =>
+  pgp.helpers.insert(
+    {
+      accountSid,
+      batchId,
+      resourceId,
+      error,
+      rejectedBatch,
+    },
+    ['accountSid', 'batchId', 'resourceId', 'error', 'rejectedBatch:json'],
+    { schema: 'resources', table: 'ImportErrors' },
+  );
 
 export const SELECT_IMPORT_PROGRESS_SQL = `
   SELECT "importState" FROM resources."Accounts" WHERE "accountSid" = $<accountSid>

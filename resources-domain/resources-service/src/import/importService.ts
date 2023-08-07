@@ -24,11 +24,13 @@ import {
 import { db } from '../connection-pool';
 import {
   getImportState,
+  insertImportError,
   updateImportProgress,
   upsertImportedResource,
   UpsertImportedResourceResult,
 } from './importDataAccess';
 import { publishSearchIndexJob } from '../resource-jobs/client-sqs';
+const { serializeError } = require('serialize-error');
 
 export type ValidationFailure = {
   reason: 'missing field';
@@ -70,20 +72,24 @@ const importService = () => {
             if (missingFields.length) {
               // Unfortunately I can't see a way to roll back a transaction other than throwing / rejecting
               // Hence the messy throw & catch
-              const err = new Error();
-              (err as any).validationFailure = {
+              const err = new Error() as any;
+              err.validationFailure = {
                 reason: 'missing field',
                 fields: missingFields,
-                resource,
               };
+              err.resource = resource;
               throw err;
             }
             console.debug(`Upserting ${accountSid}/${resource.id}`);
             const result = await upsert(accountSid, resource);
             if (!result.success) {
-              throw result.error;
+              const dbErr = new Error('Error inserting resource into database.') as any;
+              dbErr.resource = resource;
+              dbErr.cause = result.error;
+              throw dbErr;
             }
             results.push(result);
+
             try {
               await publishSearchIndexJob(resource.accountSid, resource);
             } catch (e) {
@@ -98,18 +104,35 @@ const importService = () => {
               b.importSequenceId || `${parseISO(b.lastUpdated).valueOf()}-0`,
             ),
           )[resources.length - 1];
-          await updateImportProgress(t)(accountSid, {
-            ...batch,
-            lastProcessedDate: lastUpdated,
-            lastProcessedId: id,
-          });
+          await updateImportProgress(t)(
+            accountSid,
+            {
+              ...batch,
+              lastProcessedDate: lastUpdated,
+              lastProcessedId: id,
+            },
+            resources.length,
+          );
 
           return results;
         });
       } catch (e) {
         const error = e as any;
+        console.error(
+          `Failed to upsert ${accountSid}/${
+            error.resource?.id ?? 'unknown'
+          } - rolling back upserts in this message.`,
+          error,
+        );
+        await insertImportError()(
+          accountSid,
+          error.resource?.id,
+          batch,
+          serializeError(error),
+          resources,
+        );
         if (error.validationFailure) {
-          return error.validationFailure;
+          return { ...error.validationFailure, resource: error.resource };
         }
         throw error;
       }
