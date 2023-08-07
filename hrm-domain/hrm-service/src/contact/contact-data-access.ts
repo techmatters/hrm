@@ -34,6 +34,7 @@ import {
 } from './contact-json';
 import type { ITask } from 'pg-promise';
 import { txIfNotInOne } from '../sql';
+import { ConversationMedia } from '../conversation-media/conversation-media-data-access';
 
 type ExistingContactRecord = {
   id: number;
@@ -45,6 +46,7 @@ type ExistingContactRecord = {
 export type Contact = ExistingContactRecord & {
   csamReports: any[];
   referrals?: ReferralWithoutContactId[];
+  conversationMedia?: ConversationMedia[];
 };
 
 export type SearchParameters = {
