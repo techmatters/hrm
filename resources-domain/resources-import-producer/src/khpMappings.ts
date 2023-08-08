@@ -435,20 +435,16 @@ export const KHP_MAPPING_NODE: MappingNode = {
   ),
   coverage: {
     children: {
-      '{coverageIndex}': {
-        children: {
-          '{language}': translatableAttributeMapping(
-            ({ parentValue, captures }) =>
-              `coverage/${parentValue._id ?? captures.coverageIndex}`,
-            {
-              language: ({ captures }) => captures.language,
-              info: ({ parentValue }) => parentValue,
-            },
-          ),
-          siteId: { children: {} },
-          _id: { children: {} },
+      '{coverageIndex}': translatableAttributeMapping(
+        ({ currentValue, captures }) =>
+          `coverage/${currentValue._id ?? captures.coverageIndex}`,
+        {
+          language: ({ captures }) => captures.language,
+          info: ({ currentValue }) => currentValue,
+          value: ({ currentValue, captures }) =>
+            `coverage/${currentValue._id ?? captures.coverageIndex}`,
         },
-      },
+      ),
     },
   },
   targetPopulations: {
