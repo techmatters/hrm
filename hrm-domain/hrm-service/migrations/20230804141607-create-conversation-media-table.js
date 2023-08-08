@@ -68,6 +68,8 @@ module.exports = {
       `DROP INDEX public."fki_ConversationMedias_contactId_accountSid_Contact_id_accountSid_fk"`,
     );
     await queryInterface.sequelize.query(`DROP TABLE public."ConversationMedias"`);
-    await queryInterface.sequelize.query(`DROP SEQUENCE public."ConversationMedias_id_seq"`);
+    await queryInterface.sequelize.query(
+      `DROP SEQUENCE public."ConversationMedias_id_seq"`,
+    );
   },
 };
