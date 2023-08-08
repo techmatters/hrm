@@ -445,6 +445,8 @@ export const KHP_MAPPING_NODE: MappingNode = {
               info: ({ parentValue }) => parentValue,
             },
           ),
+          siteId: { children: {} },
+          _id: { children: {} },
         },
       },
     },
