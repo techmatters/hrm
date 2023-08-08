@@ -24,14 +24,7 @@ import {
   search,
   SearchParameters,
 } from './contact-data-access';
-import {
-  ContactRawJson,
-  ConversationMediaWithoutContactId,
-  getPersonsName,
-  isS3StoredTranscript,
-  isS3StoredTranscriptPending,
-  ReferralWithoutContactId,
-} from './contact-json';
+import { ContactRawJson, getPersonsName, ReferralWithoutContactId } from './contact-json';
 import { retrieveCategories } from './categories';
 import { getPaginationElements } from '../search';
 import { NewContactRecord } from './sql/contact-insert-sql';
@@ -45,10 +38,17 @@ import { isChatChannel } from './channelTypes';
 import { enableCreateContactJobsFlag } from '../featureFlags';
 import { db } from '../connection-pool';
 import type { SearchPermissions } from '../permissions/search-permissions';
-import { LegacyConversationMedia } from '../conversation-media/conversation-media-data-access';
+import {
+  ConversationMedia,
+  createConversationMedia,
+  isS3StoredTranscript,
+  isS3StoredTranscriptPending,
+  LegacyConversationMedia,
+  NewConversationMedia,
+} from '../conversation-media/conversation-media';
 
 // Re export as is:
-export { updateConversationMedia, Contact } from './contact-data-access';
+// export { updateConversationMedia, Contact } from './contact-data-access';
 export * from './contact-json';
 
 export type PatchPayload = {
@@ -80,12 +80,16 @@ export type SearchContact = {
 
 export type CreateContactPayloadWithFormProperty = Omit<NewContactRecord, 'rawJson'> & {
   form: ContactRawJson;
-} & { csamReports?: CSAMReport[]; referrals?: ReferralWithoutContactId[]; conversationMedia?: ConversationMediaWithoutContactId[] };
+} & {
+  csamReports?: CSAMReport[];
+  referrals?: ReferralWithoutContactId[];
+  conversationMedia?: NewConversationMedia[];
+};
 
 type CreateContactPayloadWithRawJsonProperty = NewContactRecord & {
   csamReports?: CSAMReport[];
   referrals?: ReferralWithoutContactId[];
-  conversationMedia?: ConversationMediaWithoutContactId[]
+  conversationMedia?: NewConversationMedia[];
 };
 
 export type CreateContactPayload =
@@ -96,6 +100,7 @@ export const usesFormProperty = (
   p: CreateContactPayload,
 ): p is CreateContactPayloadWithFormProperty => (<any>p).form && !(<any>p).rawJson;
 
+// TODO: Filter conversation media here
 const filterExternalTranscripts = (contact: Contact) => ({
   ...contact,
   rawJson: {
@@ -137,14 +142,16 @@ export const getContactById = async (accountSid: string, contactId: number) => {
   return contact;
 };
 
-const legacyConversationMediaAdapter = (cm: LegacyConversationMedia): ConversationMediaWithoutContactId  => {
-  const { store, ...rest } = cm;
+const legacyConversationMediaAdapter = (
+  cm: LegacyConversationMedia,
+): NewConversationMedia => {
+  const { store: storeType, ...rest } = cm;
   return {
-  storeType: store,
-  storeTypeSpecificData: {
-    ...rest,
-  },
-};
+    storeType,
+    storeTypeSpecificData: {
+      ...rest,
+    },
+  } as NewConversationMedia;
 };
 
 const getNewContactPayload = (
@@ -153,7 +160,7 @@ const getNewContactPayload = (
   newContactPayload: NewContactRecord;
   csamReportsPayload?: CSAMReport[];
   referralsPayload?: ReferralWithoutContactId[];
-  conversationMediaPayload?: ConversationMediaWithoutContactId[]
+  conversationMediaPayload?: NewConversationMedia[];
 } => {
   if (usesFormProperty(newContact)) {
     const {
@@ -164,8 +171,11 @@ const getNewContactPayload = (
       ...rest
     } = newContact;
 
-    const conversationMediaPayload = conversationMedia ? conversationMedia : 
-      form.conversationMedia ? form.conversationMedia.map(legacyConversationMediaAdapter) : []; // prioritize new format, but allow legacy Flex clients to send conversationMedia
+    const conversationMediaPayload = conversationMedia
+      ? conversationMedia
+      : form.conversationMedia
+      ? form.conversationMedia.map(legacyConversationMediaAdapter)
+      : []; // prioritize new format, but allow legacy Flex clients to send conversationMedia
 
     return {
       newContactPayload: {
@@ -186,8 +196,11 @@ const getNewContactPayload = (
     ...newContactPayload
   } = newContact as CreateContactPayloadWithRawJsonProperty & { form?: any }; // typecast just to get rid of legacy form, if for some reason is here
 
-  const conversationMediaPayload = conversationMedia ? conversationMedia : 
-    newContactPayload.rawJson.conversationMedia ? newContactPayload.rawJson.conversationMedia.map(legacyConversationMediaAdapter) : []; // prioritize new format, but allow legacy Flex clients to send conversationMedia
+  const conversationMediaPayload = conversationMedia
+    ? conversationMedia
+    : newContactPayload.rawJson.conversationMedia
+    ? newContactPayload.rawJson.conversationMedia.map(legacyConversationMediaAdapter)
+    : []; // prioritize new format, but allow legacy Flex clients to send conversationMedia
 
   return {
     newContactPayload,
@@ -197,10 +210,16 @@ const getNewContactPayload = (
   };
 };
 
-// const shouldCreateRetrieveTranscript = (contact: Contact) =>
-//   enableCreateContactJobsFlag &&
-//   isChatChannel(contact.channel) &&
-//   contact.rawJson?.conversationMedia?.some(isS3StoredTranscriptPending);
+const findS3StoredTranscriptPending = (
+  contact: Contact,
+  conversationMedia: ConversationMedia[],
+) => {
+  if (enableCreateContactJobsFlag && isChatChannel(contact.channel)) {
+    return conversationMedia.find(isS3StoredTranscriptPending);
+  }
+
+  return null;
+};
 
 // Creates a contact with all its related records within a single transaction
 export const createContact = async (
@@ -210,8 +229,12 @@ export const createContact = async (
   { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
 ): Promise<Contact> => {
   return db.tx(async conn => {
-    const { newContactPayload, csamReportsPayload, referralsPayload, conversationMediaPayload } =
-      getNewContactPayload(newContact);
+    const {
+      newContactPayload,
+      csamReportsPayload,
+      referralsPayload,
+      conversationMediaPayload,
+    } = getNewContactPayload(newContact);
 
     const completeNewContact: NewContactRecord = {
       ...newContactPayload,
@@ -266,20 +289,38 @@ export const createContact = async (
         }
       }
 
-      // TODO:
-      // Create ConversationMedia record here
+      const createdConversationMedia: ConversationMedia[] = [];
+      if (conversationMediaPayload && conversationMediaPayload.length) {
+        for (const cm of conversationMediaPayload) {
+          const conversationMedia = await createConversationMedia(conn)(accountSid, {
+            contactId: contact.id,
+            ...cm,
+          });
+
+          createdConversationMedia.push(conversationMedia);
+        }
+      }
 
       // if pertinent, create retrieve-transcript job
-      if (shouldCreateRetrieveTranscript(contact)) {
+      const pendingTranscript = findS3StoredTranscriptPending(
+        contact,
+        createdConversationMedia,
+      );
+      if (pendingTranscript) {
         await createContactJob(conn)({
           jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
           resource: contact,
-          additionalPayload: undefined,
+          additionalPayload: { conversationMediaId: pendingTranscript.id },
         });
       }
 
       // Compose the final shape of a contact to return
-      contactResult = { ...contact, csamReports, referrals: createdReferrals };
+      contactResult = {
+        ...contact,
+        csamReports,
+        referrals: createdReferrals,
+        conversationMedia: createdConversationMedia,
+      };
     }
 
     const applyTransformations = bindApplyTransformations(can, user);

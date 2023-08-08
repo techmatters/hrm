@@ -14,28 +14,12 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { pgp } from '../../connection-pool';
-import type { NewConversationMedia } from '../conversation-media-data-access';
+import { ID_WHERE_CLAUSE } from './conversation-media-get-sql';
 
-export const insertConversationMediaSql = (
-  conversationMedia: NewConversationMedia & {
-    contactId: number;
-    accountSid: string;
-    createdAt: Date;
-    updatedAt: Date;
-  },
-) => `
-${pgp.helpers.insert(
-  conversationMedia,
-  [
-    'contactId',
-    'storeType',
-    'accountSid',
-    'storeTypeSpecificData',
-    'createdAt',
-    'updatedAt',
-  ],
-  'ConversationMedias',
-)}
+export const UPDATE_SPECIFIC_DATA_BY_ID = `
+  UPDATE "ConversationMedias" 
+  SET 
+    "storeTypeSpecificData" = $<storeTypeSpecificData>
+  ${ID_WHERE_CLAUSE}
   RETURNING *
 `;

@@ -14,6 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
+import { db } from '../connection-pool';
 import {
   DuplicateReferralError,
   OrphanedReferralError,
@@ -24,27 +25,9 @@ import {
   inferPostgresError,
   txIfNotInOne,
 } from '../sql';
+import { selectSingleConversationMediaByIdSql } from './sql/conversation-media-get-sql';
 import { insertConversationMediaSql } from './sql/conversation-media-insert-sql';
-
-/**
- * Legacy types, used until everything is migrated
- */
-
-export type LegacyTwilioStoredMedia = {
-  store: 'twilio';
-  reservationSid: string;
-};
-
-export type LegacyS3StoredTranscript = {
-  store: 'S3';
-  type: S3ContactMediaType.TRANSCRIPT;
-  location?: string;
-  url?: string;
-};
-
-type LegacyS3StoredMedia = LegacyS3StoredTranscript;
-
-export type LegacyConversationMedia = LegacyTwilioStoredMedia | LegacyS3StoredMedia;
+import { UPDATE_SPECIFIC_DATA_BY_ID } from './sql/conversation-media-update-sql';
 
 /**
  *
@@ -76,7 +59,7 @@ type NewS3StoredTranscript = {
     url?: string;
   };
 };
-type S3StoredTranscript = ConversationMediaCommons & NewS3StoredTranscript;
+export type S3StoredTranscript = ConversationMediaCommons & NewS3StoredTranscript;
 export type ConversationMedia = TwilioStoredMedia | S3StoredTranscript;
 
 export type NewConversationMedia = NewTwilioStoredMedia | NewS3StoredTranscript;
@@ -89,34 +72,60 @@ export const isS3StoredTranscript = (m: ConversationMedia): m is S3StoredTranscr
 export const isS3StoredTranscriptPending = (m: ConversationMedia) =>
   isS3StoredTranscript(m) && !m.storeTypeSpecificData?.location;
 
-export const createConversationMediaRecord = (task?) => async (
-  accountSid: string,
-  conversationMedia: NewConversationMedia & { contactId: number },
-): Promise<ConversationMedia> => {
-  try {
-    const now = new Date();
-    const statement = insertConversationMediaSql({
-      ...conversationMedia,
-      accountSid,
-      createdAt: now,
-      updatedAt: now,
-    });
+export const create =
+  (task?) =>
+  async (
+    accountSid: string,
+    conversationMedia: NewConversationMedia & { contactId: number },
+  ): Promise<ConversationMedia> => {
+    try {
+      const now = new Date();
+      const statement = insertConversationMediaSql({
+        ...conversationMedia,
+        accountSid,
+        createdAt: now,
+        updatedAt: now,
+      });
 
-    return await txIfNotInOne(task, conn => conn.one(statement));
-  } catch (err) {
-    const dbErr = inferPostgresError(err);
-    if (
-      dbErr instanceof DatabaseUniqueConstraintViolationError &&
-      dbErr.constraint === 'ConversationMedias_pkey'
-    ) {
-      throw new DuplicateReferralError(dbErr);
+      return await txIfNotInOne(task, conn => conn.one(statement));
+    } catch (err) {
+      const dbErr = inferPostgresError(err);
+      if (
+        dbErr instanceof DatabaseUniqueConstraintViolationError &&
+        dbErr.constraint === 'ConversationMedias_pkey'
+      ) {
+        throw new DuplicateReferralError(dbErr);
+      }
+      if (
+        dbErr instanceof DatabaseForeignKeyViolationError &&
+        dbErr.constraint === 'ConversationMedias_contactId_Contact_id_fk'
+      ) {
+        throw new OrphanedReferralError(conversationMedia.contactId.toString(), dbErr);
+      }
+      throw dbErr;
     }
-    if (
-      dbErr instanceof DatabaseForeignKeyViolationError &&
-      dbErr.constraint === 'ConversationMedias_contactId_Contact_id_fk'
-    ) {
-      throw new OrphanedReferralError(conversationMedia.contactId.toString(), dbErr);
-    }
-    throw dbErr;
-  }
-};
+  };
+
+export const getById = async (
+  accountSid: string,
+  id: number,
+): Promise<ConversationMedia> =>
+  db.task(async connection =>
+    connection.oneOrNone<ConversationMedia>(selectSingleConversationMediaByIdSql, {
+      accountSid,
+      id,
+    }),
+  );
+
+export const updateSpecificData = async (
+  accountSid: string,
+  id: ConversationMedia['id'],
+  storeTypeSpecificData: ConversationMedia['storeTypeSpecificData'],
+): Promise<void> =>
+  db.task(async connection =>
+    connection.none(UPDATE_SPECIFIC_DATA_BY_ID, {
+      accountSid,
+      id,
+      storeTypeSpecificData,
+    }),
+  );

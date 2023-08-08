@@ -13,10 +13,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import {
-  ConversationMedia,
-  LegacyConversationMedia,
-} from '../conversation-media/conversation-media-data-access';
+import { LegacyConversationMedia } from '../conversation-media/conversation-media';
 import { Referral } from '../referral/referral-data-access';
 
 type NestedInformation = { name?: { firstName: string; lastName: string } };
@@ -47,8 +44,3 @@ export const getPersonsName = (person: PersonInformation) =>
 
 // Represents a referral when part of a contact structure, so no contact ID
 export type ReferralWithoutContactId = Omit<Referral, 'contactId'>;
-
-export type ConversationMediaWithoutContactId = Pick<
-  ConversationMedia,
-  'storeType' | 'storeTypeSpecificData'
->;
