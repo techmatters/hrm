@@ -100,16 +100,41 @@ export const usesFormProperty = (
   p: CreateContactPayload,
 ): p is CreateContactPayloadWithFormProperty => (<any>p).form && !(<any>p).rawJson;
 
+const intoNewConversationMedia = (cm: LegacyConversationMedia): NewConversationMedia => {
+  const { store: storeType, ...rest } = cm;
+  return {
+    storeType,
+    storeTypeSpecificData: {
+      ...rest,
+    },
+  } as NewConversationMedia;
+};
+
+const intoLegacyConversationMedia = (cm: ConversationMedia): LegacyConversationMedia => {
+  const { storeType, storeTypeSpecificData } = cm;
+  return {
+    store: storeType,
+    ...storeTypeSpecificData,
+  } as LegacyConversationMedia;
+};
+
 // TODO: Filter conversation media here
-const filterExternalTranscripts = (contact: Contact) => ({
-  ...contact,
-  rawJson: {
-    ...contact.rawJson,
-    conversationMedia: contact.rawJson.conversationMedia?.filter(
-      m => !isS3StoredTranscript(m),
-    ),
-  },
-});
+const filterExternalTranscripts = (contact: Contact): Contact => {
+  const { conversationMedia, ...rest } = contact;
+
+  const filteredConversationMedia = conversationMedia.filter(
+    m => !isS3StoredTranscript(m),
+  );
+
+  return {
+    ...rest,
+    rawJson: {
+      ...contact.rawJson,
+      conversationMedia: filteredConversationMedia.map(intoLegacyConversationMedia),
+    },
+    conversationMedia: filteredConversationMedia,
+  };
+};
 
 type PermissionsBasedTransformation = {
   action: (typeof actionsMaps)['contact'][keyof (typeof actionsMaps)['contact']];
@@ -142,18 +167,6 @@ export const getContactById = async (accountSid: string, contactId: number) => {
   return contact;
 };
 
-const legacyConversationMediaAdapter = (
-  cm: LegacyConversationMedia,
-): NewConversationMedia => {
-  const { store: storeType, ...rest } = cm;
-  return {
-    storeType,
-    storeTypeSpecificData: {
-      ...rest,
-    },
-  } as NewConversationMedia;
-};
-
 const getNewContactPayload = (
   newContact: CreateContactPayload,
 ): {
@@ -174,7 +187,7 @@ const getNewContactPayload = (
     const conversationMediaPayload = conversationMedia
       ? conversationMedia
       : form.conversationMedia
-      ? form.conversationMedia.map(legacyConversationMediaAdapter)
+      ? form.conversationMedia.map(intoNewConversationMedia)
       : []; // prioritize new format, but allow legacy Flex clients to send conversationMedia
 
     return {
@@ -199,7 +212,7 @@ const getNewContactPayload = (
   const conversationMediaPayload = conversationMedia
     ? conversationMedia
     : newContactPayload.rawJson.conversationMedia
-    ? newContactPayload.rawJson.conversationMedia.map(legacyConversationMediaAdapter)
+    ? newContactPayload.rawJson.conversationMedia.map(intoNewConversationMedia)
     : []; // prioritize new format, but allow legacy Flex clients to send conversationMedia
 
   return {

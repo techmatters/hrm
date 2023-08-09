@@ -27,7 +27,7 @@ import {
 } from '../sql';
 import { selectSingleConversationMediaByIdSql } from './sql/conversation-media-get-sql';
 import { insertConversationMediaSql } from './sql/conversation-media-insert-sql';
-import { UPDATE_SPECIFIC_DATA_BY_ID } from './sql/conversation-media-update-sql';
+import { updateSpecificDataByIdSql } from './sql/conversation-media-update-sql';
 
 /**
  *
@@ -123,7 +123,7 @@ export const updateSpecificData = async (
   storeTypeSpecificData: ConversationMedia['storeTypeSpecificData'],
 ): Promise<void> =>
   db.task(async connection =>
-    connection.none(UPDATE_SPECIFIC_DATA_BY_ID, {
+    connection.none(updateSpecificDataByIdSql, {
       accountSid,
       id,
       storeTypeSpecificData,

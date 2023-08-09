@@ -11,36 +11,36 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see https://www.gnu.org/licenses/.
+ * along with this progracm.  If not, see https://www.gnu.org/licenses/.
  */
 
-export const ID_WHERE_CLAUSE = `WHERE r."accountSid" = $<accountSid> AND r."id" = $<id>`;
-const CONTACT_ID_WHERE_CLAUSE = `WHERE r."accountSid" = $<accountSid> AND r."contactId" = $<contactId>`;
+export const ID_WHERE_CLAUSE = `WHERE cm."accountSid" = $<accountSid> AND cm."id" = $<id>`;
+const CONTACT_ID_WHERE_CLAUSE = `WHERE cm."accountSid" = $<accountSid> AND cm."contactId" = $<contactId>`;
 
 export const selectSingleConversationMediaByIdSql = `
-  SELECT r.*
-  FROM "ConversationMedias" r
+  SELECT cm.*
+  FROM "ConversationMedias" cm
   ${ID_WHERE_CLAUSE}
 `;
 
 export const selectConversationMediaByContactIdSql = `
-  SELECT r.*
-  FROM "ConversationMedias" r
+  SELECT cm.*
+  FROM "ConversationMedias" cm
   ${CONTACT_ID_WHERE_CLAUSE}
 `;
 
 // Queries used in other modules for JOINs
 
 const onFkFilteredClause = (contactAlias: string) => `
-  r."contactId" = "${contactAlias}".id AND r."accountSid" = "${contactAlias}"."accountSid"
+  cm."contactId" = "${contactAlias}".id AND cm."accountSid" = "${contactAlias}"."accountSid"
 `;
 
 export const selectCoalesceConversationMediasByContactId = (contactAlias: string) => `
-  SELECT COALESCE(jsonb_agg(to_jsonb(r)), '[]') AS  "conversationMedia"
-  FROM "ConversationMedias" r
+  SELECT COALESCE(jsonb_agg(to_jsonb(cm)), '[]') AS  "conversationMedia"
+  FROM "ConversationMedias" cm
   WHERE ${onFkFilteredClause(contactAlias)}
 `;
 
 export const leftJoinConversationMediasOnFK = (contactAlias: string) => `
-  LEFT JOIN "ConversationMedias" r ON ${onFkFilteredClause(contactAlias)}
+  LEFT JOIN "ConversationMedias" cm ON ${onFkFilteredClause(contactAlias)}
 `;
