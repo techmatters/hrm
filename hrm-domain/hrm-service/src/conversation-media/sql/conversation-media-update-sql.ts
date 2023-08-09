@@ -17,9 +17,8 @@
 import { ID_WHERE_CLAUSE } from './conversation-media-get-sql';
 
 export const updateSpecificDataByIdSql = `
-  UPDATE "ConversationMedias" 
+  UPDATE "ConversationMedias" cm
   SET 
     "storeTypeSpecificData" = $<storeTypeSpecificData>
   ${ID_WHERE_CLAUSE}
-  RETURNING *
 `;
