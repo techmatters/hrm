@@ -106,15 +106,6 @@ module.exports = {
     console.log('Trigger ResourceStringAttributes_audit_trigger created');
 
     await queryInterface.sequelize.query(`
-      CREATE TRIGGER "Globals_audit_trigger"
-      AFTER INSERT OR DELETE OR UPDATE 
-      ON resources."Globals"
-      FOR EACH ROW
-      EXECUTE FUNCTION resources.audit_trigger();
-    `);
-    console.log('Trigger Globals_audit_trigger created');
-
-    await queryInterface.sequelize.query(`
       CREATE TRIGGER "ResourceReferenceStringAttributeValues_audit_trigger"
       AFTER INSERT OR DELETE OR UPDATE 
       ON resources."ResourceReferenceStringAttributeValues"
@@ -195,7 +186,7 @@ module.exports = {
       `DROP TRIGGER IF EXISTS "ResourceReferenceStringAttributes_audit_trigger" ON resources."ResourceReferenceStringAttributes";`,
     );
     await queryInterface.sequelize.query(
-      `DROP TRIGGER IF EXISTS "Globals_audit_trigger" ON resources."Globals";`,
+      `DROP FUNCTION IF EXISTS resources.audit_trigger();`,
     );
     await queryInterface.sequelize.query(`DROP TABLE resources."Audits"`);
     await queryInterface.sequelize.query(`DROP SEQUENCE resources."Audits_id_seq"`);
