@@ -118,6 +118,7 @@ export default class ResourcessearchJobsStack extends cdk.Stack {
       // TODO: change this back to 16 once it isn't broken upstream
       runtime: lambda.Runtime.NODEJS_16_X,
       memorySize: 512,
+      timeout: cdk.Duration.seconds(10),
       handler: 'handler',
       entry: `./resources-domain/${id}/index.ts`,
       environment: {
