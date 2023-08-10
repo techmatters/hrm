@@ -64,7 +64,7 @@ const KHP_MAPPING_NODE_SITES: { children: MappingNode } = {
           children: {
             '{verificationIndex}': attributeMapping(
               'stringAttributes',
-              'verifications/{verificationIndex}',
+              siteKey('verifications/{verificationIndex}'),
               {
                 value: ctx => ctx.currentValue.name,
                 info: ctx => ctx.currentValue,
@@ -120,8 +120,11 @@ const KHP_MAPPING_NODE_SITES: { children: MappingNode } = {
             }),
             postalCode: translatableAttributeMapping(siteKey('location/postalCode')),
             description: translatableAttributeMapping(siteKey('location/description')),
-            longitude: attributeMapping('numberAttributes', 'location/longitude'),
-            latitude: attributeMapping('numberAttributes', 'location/latitude'),
+            longitude: attributeMapping(
+              'numberAttributes',
+              siteKey('location/longitude'),
+            ),
+            latitude: attributeMapping('numberAttributes', siteKey('location/latitude')),
           },
         },
         operations: {
@@ -432,18 +435,16 @@ export const KHP_MAPPING_NODE: MappingNode = {
   ),
   coverage: {
     children: {
-      '{coverageIndex}': {
-        children: {
-          '{language}': translatableAttributeMapping(
-            ({ parentValue, captures }) =>
-              `coverage/${parentValue._id ?? captures.coverageIndex}`,
-            {
-              language: ({ captures }) => captures.language,
-              info: ({ parentValue }) => parentValue,
-            },
-          ),
+      '{coverageIndex}': translatableAttributeMapping(
+        ({ currentValue, captures }) =>
+          `coverage/${currentValue._id ?? captures.coverageIndex}`,
+        {
+          language: ({ captures }) => captures.language,
+          info: ({ currentValue }) => currentValue,
+          value: ({ currentValue, captures }) =>
+            `coverage/${currentValue._id ?? captures.coverageIndex}`,
         },
-      },
+      ),
     },
   },
   targetPopulations: {
