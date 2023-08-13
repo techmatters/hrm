@@ -25,12 +25,12 @@ COPY resources-domain/tsconfig.json /tmp/build/resources-domain/tsconfig.json
 COPY hrm-domain/packages /tmp/build/hrm-domain/packages
 COPY hrm-domain/hrm-service /tmp/build/hrm-domain/hrm-service
 COPY hrm-domain/tsconfig.json /tmp/build/hrm-domain/tsconfig.json
-COPY package.json package-lock.json tsconfig.base.json tsconfig.build.service.json /tmp/build/
+COPY package.json package-lock.json tsconfig.base.json hrm-domain/hrm-service/tsconfig.build.json /tmp/build/
 
 RUN apk add --no-cache rsync \
     && cd /tmp/build \
     && npm ci -w=hrm-domain/hrm-service -w packages/* -w resources-domain/resources-service -w resources-domain/packages/* \
-    && npx tsc -b tsconfig.build.service.json \
+    && npx tsc -b tsconfig.build.json \
     && cp -r hrm-domain/hrm-service/* /home/node/ \
     && cp -r packages /home/node/ \
     && mkdir -p /home/node/resources-domain/ \

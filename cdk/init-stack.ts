@@ -86,18 +86,6 @@ new ContactRetrieveStack({
   },
 });
 
-new ContactRetrieveStack({
-  scope: app,
-  id: 'retrieve-recording-url',
-  params: {
-    completeQueue: contactComplete.completeQueue,
-    docsBucket: contactCore.docsBucket,
-  },
-  props: {
-    env: { region: app.node.tryGetContext('region') },
-  },
-});
-
 new ResourcesCoreStack({
   scope: app,
   id: 'resources-core',
