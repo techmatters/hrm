@@ -38,7 +38,6 @@ jobs:
     strategy:
       matrix:
         lambda_name:
-          - contact-retrieve-recording-url
           - contact-retrieve-transcript
           - job-complete
           - resources-import-consumer
