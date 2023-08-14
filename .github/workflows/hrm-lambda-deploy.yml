@@ -32,7 +32,6 @@ on:
         default: contact-retrieve-transcript
         type: choice
         options:
-          - contact-retrieve-recording-url
           - contact-retrieve-transcript
           - resources-import-consumer
           - resources-import-producer
