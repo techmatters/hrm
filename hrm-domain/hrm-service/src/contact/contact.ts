@@ -14,6 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
+import omit from 'lodash/omit';
 import { ContactJobType } from '@tech-matters/types';
 import {
   connectToCase,
@@ -100,6 +101,7 @@ export const usesFormProperty = (
   p: CreateContactPayload,
 ): p is CreateContactPayloadWithFormProperty => (<any>p).form && !(<any>p).rawJson;
 
+// TODO: Remove once all Flex clients are using new ConversationMedia model
 const intoNewConversationMedia = (cm: LegacyConversationMedia): NewConversationMedia => {
   const { store: storeType, ...rest } = cm;
   return {
@@ -109,7 +111,7 @@ const intoNewConversationMedia = (cm: LegacyConversationMedia): NewConversationM
     },
   } as NewConversationMedia;
 };
-
+// TODO: Remove once all Flex clients are using new ConversationMedia model
 const intoLegacyConversationMedia = (cm: ConversationMedia): LegacyConversationMedia => {
   const { storeType, storeTypeSpecificData } = cm;
   return {
@@ -117,21 +119,25 @@ const intoLegacyConversationMedia = (cm: ConversationMedia): LegacyConversationM
     ...storeTypeSpecificData,
   } as LegacyConversationMedia;
 };
+// TODO: Remove once all Flex clients are using new ConversationMedia model
+const addLegacyConversationMedia = (contact: Contact): Contact => {
+  return {
+    ...contact,
+    rawJson: {
+      ...contact.rawJson,
+      conversationMedia: contact.conversationMedia.map(intoLegacyConversationMedia),
+    },
+  };
+};
 
-// TODO: Filter conversation media here
 const filterExternalTranscripts = (contact: Contact): Contact => {
   const { conversationMedia, ...rest } = contact;
-
   const filteredConversationMedia = conversationMedia.filter(
     m => !isS3StoredTranscript(m),
   );
 
   return {
     ...rest,
-    rawJson: {
-      ...contact.rawJson,
-      conversationMedia: filteredConversationMedia.map(intoLegacyConversationMedia),
-    },
     conversationMedia: filteredConversationMedia,
   };
 };
@@ -150,11 +156,16 @@ const permissionsBasedTransformations: PermissionsBasedTransformation[] = [
 
 export const bindApplyTransformations =
   (can: ReturnType<typeof setupCanForRules>, user: TwilioUser) => (contact: Contact) => {
-    return permissionsBasedTransformations.reduce(
+    const permissionsBasedTransformed = permissionsBasedTransformations.reduce(
       (transformed, { action, transformation }) =>
         !can(user, action, contact) ? transformation(transformed) : transformed,
       contact,
     );
+
+    // TODO: Remove once all Flex clients are using new ConversationMedia model
+    const transformed = addLegacyConversationMedia(permissionsBasedTransformed);
+
+    return transformed;
   };
 
 export const getContactById = async (accountSid: string, contactId: number) => {
@@ -209,14 +220,16 @@ const getNewContactPayload = (
     ...newContactPayload
   } = newContact as CreateContactPayloadWithRawJsonProperty & { form?: any }; // typecast just to get rid of legacy form, if for some reason is here
 
+  const { conversationMedia: legacyConversationMedia } = newContactPayload.rawJson;
+
   const conversationMediaPayload = conversationMedia
     ? conversationMedia
-    : newContactPayload.rawJson.conversationMedia
-    ? newContactPayload.rawJson.conversationMedia.map(intoNewConversationMedia)
+    : legacyConversationMedia
+    ? legacyConversationMedia.map(intoNewConversationMedia)
     : []; // prioritize new format, but allow legacy Flex clients to send conversationMedia
 
   return {
-    newContactPayload,
+    newContactPayload: omit(newContactPayload, 'rawJson.conversationMedia'),
     csamReportsPayload,
     referralsPayload,
     conversationMediaPayload,
@@ -430,6 +443,7 @@ function convertContactsToSearchResults(contacts: Contact[]): SearchContact[] {
         helpline,
         taskId,
         referrals,
+        conversationMedia,
       } = contact;
 
       return {
@@ -450,6 +464,7 @@ function convertContactsToSearchResults(contacts: Contact[]): SearchContact[] {
         },
         csamReports,
         referrals,
+        conversationMedia,
         details: contact.rawJson,
       };
     })
