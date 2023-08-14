@@ -49,7 +49,7 @@ import {
 } from '../conversation-media/conversation-media';
 
 // Re export as is:
-// export { updateConversationMedia, Contact } from './contact-data-access';
+export { Contact } from './contact-data-access';
 export * from './contact-json';
 
 export type PatchPayload = {
@@ -77,6 +77,7 @@ export type SearchContact = {
   details: ContactRawJson;
   csamReports: CSAMReport[];
   referrals?: ReferralWithoutContactId[];
+  conversationMedia: ConversationMedia[];
 };
 
 export type CreateContactPayloadWithFormProperty = Omit<NewContactRecord, 'rawJson'> & {
@@ -120,15 +121,16 @@ const intoLegacyConversationMedia = (cm: ConversationMedia): LegacyConversationM
   } as LegacyConversationMedia;
 };
 // TODO: Remove once all Flex clients are using new ConversationMedia model
-const addLegacyConversationMedia = (contact: Contact): Contact => {
-  return {
-    ...contact,
-    rawJson: {
-      ...contact.rawJson,
-      conversationMedia: contact.conversationMedia.map(intoLegacyConversationMedia),
-    },
-  };
-};
+const addLegacyConversationMedia = (contact: Contact): Contact =>
+  contact.conversationMedia?.length
+    ? {
+        ...contact,
+        rawJson: {
+          ...contact.rawJson,
+          conversationMedia: contact.conversationMedia.map(intoLegacyConversationMedia),
+        },
+      }
+    : contact;
 
 const filterExternalTranscripts = (contact: Contact): Contact => {
   const { conversationMedia, ...rest } = contact;

@@ -17,6 +17,7 @@
 import { S3ContactMediaType } from './conversation-media-data-access';
 
 export {
+  S3ContactMediaType,
   NewConversationMedia,
   ConversationMedia,
   isS3StoredTranscript,
