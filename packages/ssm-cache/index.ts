@@ -14,7 +14,13 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { SSM } from 'aws-sdk';
+import {
+  SSMClient,
+  GetParameterCommand,
+  GetParametersByPathCommand,
+  GetParametersByPathCommandInput,
+  Parameter as SsmParameter,
+} from '@aws-sdk/client-ssm';
 
 // This is based around the pattern found in https://github.com/ryands17/lambda-ssm-cache
 
@@ -27,7 +33,7 @@ if (process.env.SSM_REGION) {
   ssmConfig.region = process.env.SSM_REGION;
 }
 
-let ssm: SSM;
+let ssm: SSMClient;
 
 export type SsmCacheParameter = {
   value: string;
@@ -74,13 +80,13 @@ export const parameterExistsInCache = (name: string): boolean =>
 
 export const getSsmClient = () => {
   if (!ssm) {
-    ssm = new SSM(ssmConfig);
+    ssm = new SSMClient(ssmConfig);
   }
 
   return ssm;
 };
 
-export const addToCache = (regex: RegExp | undefined, { Name, Value }: SSM.Parameter) => {
+export const addToCache = (regex: RegExp | undefined, { Name, Value }: SsmParameter) => {
   if (!Name) return;
   if (regex && !regex.test(Name)) return;
 
@@ -91,12 +97,14 @@ export const addToCache = (regex: RegExp | undefined, { Name, Value }: SSM.Param
 };
 
 export const loadParameter = async (name: string) => {
-  const params: SSM.GetParameterRequest = {
+  const params = {
     Name: name,
     WithDecryption: true,
   };
 
-  const { Parameter } = await getSsmClient().getParameter(params).promise();
+  const command = new GetParameterCommand(params);
+
+  const { Parameter } = await getSsmClient().send(command);
 
   if (!Parameter?.Name) {
     return;
@@ -137,7 +145,7 @@ export const loadPaginated = async ({
   regex,
   nextToken,
 }: LoadPaginatedParameters): Promise<void> => {
-  const params: SSM.GetParametersByPathRequest = {
+  const params: GetParametersByPathCommandInput = {
     MaxResults: 10, // 10 is max allowed by AWS
     Path: path,
     Recursive: true,
@@ -146,7 +154,9 @@ export const loadPaginated = async ({
 
   if (nextToken) params.NextToken = nextToken;
 
-  const resp = await getSsmClient().getParametersByPath(params).promise();
+  const command = new GetParametersByPathCommand(params);
+
+  const resp = await getSsmClient().send(command);
 
   resp.Parameters?.forEach(p => addToCache(regex, p));
 

@@ -14,7 +14,12 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { SQS } from 'aws-sdk'; // eslint-disable-line import/no-extraneous-dependencies
+import {
+  sendSqsMessage,
+  SendSqsMessageParams,
+  sendSqsMessageBatch,
+  SendSqsMessageBatchMessage,
+} from '@aws-sdk/client-sqs';
 import { getStackOutput } from '../cdk/cdkOutput';
 
 export const sendMessage = async ({
@@ -26,24 +31,19 @@ export const sendMessage = async ({
   message: object;
   messageGroupId?: string;
 }) => {
-  const sqs = new SQS({
-    endpoint: 'http://localstack:4566',
-    region: 'us-east-1',
-  });
-
   const lambdaOutput: any = getStackOutput(lambdaName);
-  const params: SQS.Types.SendMessageRequest = {
-    MessageBody: JSON.stringify(message),
-    QueueUrl: lambdaOutput.queueUrl,
+  const params: SendSqsMessageParams = {
+    message: JSON.stringify(message),
+    queueUrl: lambdaOutput.queueUrl,
   };
 
   // Localstack fifo queues don't really work so don't bother with this for now
   // see https://github.com/localstack/localstack/issues/6766
   if (messageGroupId) {
-    params.MessageGroupId = messageGroupId;
+    params.messageGroupId = messageGroupId;
   }
 
-  return sqs.sendMessage(params).promise();
+  return sendSqsMessage(params);
 };
 
 export const sendMessageBatch = async ({
@@ -57,29 +57,24 @@ export const sendMessageBatch = async ({
   groupIdProperty?: string;
   groupIdField?: string;
 }) => {
-  const sqs = new SQS({
-    endpoint: 'http://localstack:4566',
-    region: 'us-east-1',
-  });
-
   const lambdaOutput: any = getStackOutput(lambdaName);
   const params = {
-    QueueUrl: lambdaOutput.queueUrl,
-    Entries: messages.map((message: Record<string, any>, index) => {
-      const param: SQS.Types.SendMessageBatchRequestEntry = {
-        Id: index.toString(), // TODO: may neet to be uuid at some point
-        MessageBody: JSON.stringify(message),
+    queueUrl: lambdaOutput.queueUrl,
+    messages: messages.map((message: Record<string, any>, index) => {
+      const param: SendSqsMessageBatchMessage = {
+        id: index.toString(), // TODO: may neet to be uuid at some point
+        message: JSON.stringify(message),
       };
 
       // Localstack fifo queues don't really work so don't bother with this for now
       // see https://github.com/localstack/localstack/issues/6766
       if (groupIdProperty && groupIdField) {
-        param.MessageGroupId = message[groupIdProperty][groupIdField];
+        param.messageGroupId = message[groupIdProperty][groupIdField];
       }
 
       return param;
     }),
   };
 
-  return sqs.sendMessageBatch(params).promise();
+  return sendSqsMessageBatch(params);
 };

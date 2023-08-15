@@ -13,8 +13,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-
-import { S3, SQS } from 'aws-sdk';
+import { getS3Object } from '@tech-matters/s3-client';
+import { purgeSqsQueue, receiveSqsMessage } from '@tech-matters/sqs-client';
 import { generateMockMessageBody } from '../generateMockMessageBody';
 import { getStackOutput } from '../../../../cdk/cdkOutput';
 import { sendMessage } from '../../../../test-support/sendMessage';
@@ -26,21 +26,8 @@ import { sendMessage } from '../../../../test-support/sendMessage';
 
 jest.setTimeout(60000);
 
-const localstackEndpoint = 'http://localhost:4566';
-
 const completeOutput: any = getStackOutput('contact-complete');
 const { queueUrl } = completeOutput;
-
-// TODO: modularize all of this setup for reuse
-const s3 = new S3({
-  region: 'us-east-1',
-  endpoint: localstackEndpoint,
-  s3ForcePathStyle: true,
-});
-
-const sqs = new SQS({
-  endpoint: localstackEndpoint,
-});
 
 const lambdaName = 'retrieve-transcript';
 
@@ -50,15 +37,15 @@ export const waitForS3Object = async ({
 }: {
   message: ReturnType<typeof generateMockMessageBody>;
   retryCount?: number;
-}): Promise<S3.GetObjectOutput | undefined> => {
+}): Promise<ReturnType<typeof getS3Object> | undefined> => {
   const params = {
-    Bucket: 'contact-docs-bucket',
-    Key: message.filePath,
+    bucket: 'contact-docs-bucket',
+    key: message.filePath,
   };
 
   let result;
   try {
-    result = await s3.getObject(params).promise();
+    result = await getS3Object(params);
   } catch (err) {
     if (retryCount < 60) {
       await new Promise(resolve => setTimeout(resolve, 250));
@@ -73,10 +60,10 @@ export const waitForSQSMessage = async ({
   retryCount = 0,
 }: {
   retryCount?: number;
-} = {}): Promise<SQS.ReceiveMessageResult | undefined> => {
+} = {}): Promise<ReturnType<typeof receiveSqsMessage> | undefined> => {
   let result;
   try {
-    result = await sqs.receiveMessage({ QueueUrl: queueUrl }).promise();
+    result = await receiveSqsMessage({ queueUrl });
     if (!result?.Messages) throw new Error('No messages');
   } catch (err) {
     if (retryCount < 60) {
@@ -90,7 +77,7 @@ export const waitForSQSMessage = async ({
 
 describe('contact-retrieve-transcript', () => {
   beforeEach(async () => {
-    await sqs.purgeQueue({ QueueUrl: queueUrl }).promise();
+    await purgeSqsQueue({ queueUrl });
   });
 
   test('well formed message creates success message in complete queue and file in s3', async () => {

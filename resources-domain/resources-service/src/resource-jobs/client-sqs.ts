@@ -14,30 +14,14 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { SQS } from 'aws-sdk';
 import { getSsmParameter } from '@tech-matters/ssm-cache';
-import { sns } from '@tech-matters/sns-client';
+import { publishSns } from '@tech-matters/sns-client';
+import { sendSqsMessage, SendSqsMessageParams } from '@tech-matters/sqs-client';
 
 import type { FlatResource, ResourcesSearchIndexPayload } from '@tech-matters/types';
 import { ResourcesJobType } from '@tech-matters/types';
 
 const RETRY_COUNT = 4;
-
-let sqs: SQS;
-
-export const getSqsClient = () => {
-  if (!sqs) {
-    if (process.env.LOCAL_SQS_PORT) {
-      // For testing only
-      sqs = new SQS({
-        endpoint: `http://localhost:${process.env.LOCAL_SQS_PORT}`,
-      });
-    } else {
-      sqs = new SQS();
-    }
-  }
-  return sqs;
-};
 
 // will pick between more URLs as & when we interact with more queues directly from the resources resvice
 const getJobQueueUrl = () =>
@@ -58,18 +42,18 @@ export const publishToResourcesJob = async ({
 }: PublishToResourcesJobParams): Promise<void> => {
   //TODO: more robust error handling/messaging
   try {
-    const QueueUrl = await getSsmParameter(getJobQueueUrl(), 86400000);
+    const queueUrl = await getSsmParameter(getJobQueueUrl(), 86400000);
 
-    const message: SQS.Types.SendMessageRequest = {
-      MessageBody: JSON.stringify(params),
-      QueueUrl,
+    const message: SendSqsMessageParams = {
+      message: JSON.stringify(params),
+      queueUrl,
     };
 
     if (messageGroupId) {
-      message.MessageGroupId = messageGroupId;
+      message.messageGroupId = messageGroupId;
     }
 
-    await getSqsClient().sendMessage(message).promise();
+    await sendSqsMessage(message);
   } catch (err) {
     if (retryCount < RETRY_COUNT) {
       console.error('Failed to publish to resources job. Retrying...', err);
@@ -83,9 +67,9 @@ export const publishToResourcesJob = async ({
 
     console.error('Failed to publish to resources job. Giving up.', err);
 
-    sns.publish({
-      Message: JSON.stringify(params) + err,
-      TopicArn: process.env.SNS_TOPIC_ARN || '',
+    await publishSns({
+      message: JSON.stringify(params) + err,
+      topicArn: process.env.SNS_TOPIC_ARN || '',
     });
 
     throw err;

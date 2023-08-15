@@ -14,6 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
+// TODO: needs to be converted to aws-sdk-v3
 import { ECS, EC2, S3 } from 'aws-sdk';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import yargs from 'yargs';

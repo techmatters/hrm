@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { SNS } from 'aws-sdk';
+import { PublishCommand, SNSClient } from '@aws-sdk/client-sns';
 
 /**
  * I extracted this out to a library because there isn't a great way to do overrides
@@ -32,4 +32,20 @@ const getSnsConf = () => {
   return snsConfig;
 };
 
-export const sns = new SNS(getSnsConf());
+export const sns = new SNSClient(getSnsConf());
+
+export type PublishSnsParams = {
+  topicArn: string;
+  message: string;
+};
+
+export const publishSns = async (params: PublishSnsParams) => {
+  const { topicArn, message } = params;
+
+  const command = new PublishCommand({
+    TopicArn: topicArn,
+    Message: message,
+  });
+
+  return sns.send(command);
+};

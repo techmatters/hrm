@@ -15,6 +15,10 @@
  */
 
 import { isAfter } from 'date-fns';
+import { SSMClient } from '@aws-sdk/client-ssm';
+import { mockClient } from 'aws-sdk-client-mock';
+
+const mockSSMClient = mockClient(SSMClient);
 
 import * as SsmCache from '../../index';
 
@@ -24,29 +28,6 @@ let ssmParams = [
     Value: 'value',
   },
 ];
-
-jest.mock('aws-sdk', () => {
-  const SSMMocked = {
-    getParametersByPath: () => {
-      return {
-        promise: jest.fn().mockResolvedValue({
-          Parameters: ssmParams,
-        }),
-      };
-    },
-    getParameter: () => {
-      return {
-        promise: jest.fn().mockResolvedValue({
-          Parameter: ssmParams[0],
-        }),
-      };
-    },
-    promise: jest.fn(),
-  };
-  return {
-    SSM: jest.fn(() => SSMMocked),
-  };
-});
 
 describe('addToCache', () => {
   it('should add a value to the cache with matching regex', async () => {
@@ -91,6 +72,7 @@ describe('getSsmParameter', () => {
     SsmCache.addToCache(/param/, ssmParam);
 
     expect(await SsmCache.getSsmParameter(ssmParam.Name)).toEqual(ssmParam.Value);
+    expect(mockSSMClient).toBeCalledTimes(1);
   });
 
   it('should attempt to load parameter and throw an error if the parameter is not found', async () => {

@@ -15,21 +15,17 @@
  */
 
 jest.mock('@tech-matters/ssm-cache');
-
-jest.mock('aws-sdk', () => {
-  const SQSMocked = {
-    deleteMessage: () => jest.fn(),
-    receiveMessage: jest.fn(() => {
-      return {
-        promise: jest.fn().mockResolvedValue({
-          Messages: [],
-        }),
-      };
-    }),
-    sendMessage: jest.fn().mockReturnThis(),
-    promise: jest.fn(),
-  };
+jest.mock('@tech-matters/sqs-client', () => {
   return {
-    SQS: jest.fn(() => SQSMocked),
+    deleteSqsMessage: () => jest.fn(),
+    receiveSqsMessage: () =>
+      jest.fn(() => {
+        return {
+          promise: jest.fn().mockResolvedValue({
+            Messages: [],
+          }),
+        };
+      }),
+    sendSqsMessage: () => jest.fn().mockReturnThis(),
   };
 });

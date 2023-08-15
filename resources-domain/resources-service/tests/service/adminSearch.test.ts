@@ -23,6 +23,8 @@ import each from 'jest-each';
 import { AccountSID, FlatResource, ResourcesJobType } from '@tech-matters/types';
 import { generateImportResource as newImportResourceGenerator } from '../mockResources';
 import range from './range';
+
+// TODO: needs to be converted to aws-sdk-v3
 import { SQS } from 'aws-sdk';
 import { db } from '../../src/connection-pool';
 import { mockSsmParameters } from '../mockSsm';

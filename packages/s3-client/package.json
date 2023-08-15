@@ -1,5 +1,5 @@
 {
-  "name": "@tech-matters/hrm-s3-client",
+  "name": "@tech-matters/s3-client",
   "version": "1.0.0",
   "description": "",
   "main": "dist/index.js",
@@ -9,6 +9,7 @@
   "author": "",
   "license": "AGPL",
   "dependencies": {
-    "aws-sdk": "^2.1225.0"
+    "@aws-sdk/client-s3": "^3.388.0",
+    "@aws-sdk/s3-request-presigner": "^3.388.0"
   }
 }
