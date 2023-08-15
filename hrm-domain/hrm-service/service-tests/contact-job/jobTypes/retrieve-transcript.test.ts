@@ -23,7 +23,6 @@ import * as contactJobApi from '../../../src/contact-job/contact-job-data-access
 import { db } from '../../../src/connection-pool';
 import '../../case-validation';
 import * as conversationMediaApi from '../../../src/conversation-media/conversation-media';
-import { Contact } from '../../../src/contact/contact';
 import { chatChannels } from '../../../src/contact/channelTypes';
 import { JOB_MAX_ATTEMPTS } from '../../../src/contact-job/contact-job-processor';
 
@@ -33,7 +32,6 @@ import {
   ContactJobType,
 } from '@tech-matters/types';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
-import omit from 'lodash/omit';
 
 const { S3ContactMediaType, isS3StoredTranscriptPending } = conversationMediaApi;
 

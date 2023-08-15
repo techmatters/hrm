@@ -24,10 +24,7 @@ import {
   isS3StoredTranscriptPending,
   updateConversationMediaData,
 } from '../../src/conversation-media/conversation-media';
-import {
-  S3ContactMediaType,
-  createConversationMedia,
-} from '../../src/conversation-media/conversation-media';
+import { S3ContactMediaType } from '../../src/conversation-media/conversation-media';
 import { getById as getContactById } from '../../src/contact/contact-data-access';
 import * as cleanupContactJobsApi from '../../src/contact-job/contact-job-cleanup';
 import {
