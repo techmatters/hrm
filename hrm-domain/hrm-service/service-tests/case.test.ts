@@ -20,11 +20,7 @@ import each from 'jest-each';
 
 import { db } from '../src/connection-pool';
 import * as caseApi from '../src/case/case';
-import {
-  createContact,
-  connectContactToCase,
-  isS3StoredTranscript,
-} from '../src/contact/contact';
+import { createContact, connectContactToCase } from '../src/contact/contact';
 import { Case } from '../src/case/case';
 import * as caseDb from '../src/case/case-data-access';
 import { convertCaseInfoToExpectedInfo, without } from './case-validation';
@@ -36,6 +32,7 @@ import * as mocks from './mocks';
 import { ruleFileWithOneActionOverride } from './permissions-overrides';
 import { headers, getRequest, getServer, setRules, useOpenRules } from './server';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
+import { isS3StoredTranscript } from '../src/conversation-media/conversation-media';
 
 useOpenRules();
 const server = getServer();
@@ -328,13 +325,13 @@ describe('/cases route', () => {
         if (expectTranscripts) {
           expect(
             (<caseApi.Case>response.body).connectedContacts?.every(
-              c => c.rawJson?.conversationMedia?.some(isS3StoredTranscript),
+              c => c.conversationMedia?.some(isS3StoredTranscript),
             ),
           ).toBeTruthy();
         } else {
           expect(
             (<caseApi.Case>response.body).connectedContacts?.every(
-              c => c.rawJson?.conversationMedia?.some(isS3StoredTranscript),
+              c => c.conversationMedia?.some(isS3StoredTranscript),
             ),
           ).toBeFalsy();
         }
@@ -717,13 +714,13 @@ describe('/cases route', () => {
         if (expectTranscripts) {
           expect(
             (<caseApi.Case>response.body).connectedContacts?.every(
-              c => c.rawJson?.conversationMedia?.some(isS3StoredTranscript),
+              c => c.conversationMedia?.some(isS3StoredTranscript),
             ),
           ).toBeTruthy();
         } else {
           expect(
             (<caseApi.Case>response.body).connectedContacts?.every(
-              c => c.rawJson?.conversationMedia?.some(isS3StoredTranscript),
+              c => c.conversationMedia?.some(isS3StoredTranscript),
             ),
           ).toBeFalsy();
         }

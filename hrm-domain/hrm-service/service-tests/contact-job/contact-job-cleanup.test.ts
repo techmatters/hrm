@@ -20,10 +20,16 @@ import { getClient } from '@tech-matters/twilio-client';
 import { db } from '../../src/connection-pool';
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import { createContactJob } from '../../src/contact-job/contact-job-data-access';
-import { updateConversationMedia } from '../../src/contact/contact';
-import { ContactMediaType } from '../../src/contact/contact-json';
+import {
+  isS3StoredTranscriptPending,
+  updateConversationMediaData,
+} from '../../src/conversation-media/conversation-media';
+import {
+  S3ContactMediaType,
+  createConversationMedia,
+} from '../../src/conversation-media/conversation-media';
 import { getById as getContactById } from '../../src/contact/contact-data-access';
-import { cleanupContactJobs } from '../../src/contact-job/contact-job-cleanup';
+import * as cleanupContactJobsApi from '../../src/contact-job/contact-job-cleanup';
 import {
   completeContactJob,
   getContactJobById,
@@ -43,7 +49,7 @@ let twilioSpy: jest.SpyInstance;
 
 const completionPayload = {
   store: 'S3' as 'S3',
-  type: ContactMediaType.TRANSCRIPT,
+  type: S3ContactMediaType.TRANSCRIPT,
   location: 'some/fake/location',
   url: 'https://some/fake/url',
 };
@@ -75,7 +81,9 @@ describe('cleanupContactJobs', () => {
     const res = await request
       .post(`/v0/accounts/${accountSid}/contacts`)
       .set(headers)
-      .send(contact1);
+      .send({
+        ...contact1,
+      });
 
     const contact = res.body as Contact;
 
@@ -83,7 +91,9 @@ describe('cleanupContactJobs', () => {
       createContactJob(connection)({
         jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
         resource: contact,
-        additionalPayload: undefined,
+        additionalPayload: {
+          conversationMediaId: 9999,
+        },
       });
     });
 
@@ -96,7 +106,7 @@ describe('cleanupContactJobs', () => {
       [job.id],
     );
 
-    await cleanupContactJobs();
+    await cleanupContactJobsApi.cleanupContactJobs();
     job = await getContactJobById(job.id);
 
     // Before complete, cleanup shouldn't happen
@@ -108,7 +118,17 @@ describe('cleanupContactJobs', () => {
     const res = await request
       .post(`/v0/accounts/${accountSid}/contacts`)
       .set(headers)
-      .send(contact1);
+      .send({
+        ...contact1,
+        conversationMedia: [
+          {
+            storeType: 'S3',
+            storeTypeSpecificData: {
+              type: S3ContactMediaType.TRANSCRIPT,
+            },
+          },
+        ],
+      });
 
     const contact = res.body as Contact;
 
@@ -116,16 +136,21 @@ describe('cleanupContactJobs', () => {
       createContactJob(connection)({
         jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
         resource: contact,
-        additionalPayload: undefined,
+        additionalPayload: {
+          conversationMediaId: contact.conversationMedia?.find(
+            isS3StoredTranscriptPending,
+          )?.id!,
+        },
       });
     });
 
     let job = await db.oneOrNone('SELECT * FROM "ContactJobs" WHERE "contactId" = $1', [
       contact.id,
     ]);
+
     job = await completeContactJob({ id: job.id, completionPayload });
     job = await backDateJob(job.id);
-    await cleanupContactJobs();
+    await cleanupContactJobsApi.cleanupContactJobs();
 
     // No conversationMedia, cleanup shouldn't happen
     expect(job).not.toBeNull();
@@ -136,7 +161,17 @@ describe('cleanupContactJobs', () => {
     const res = await request
       .post(`/v0/accounts/${accountSid}/contacts`)
       .set(headers)
-      .send(contact1);
+      .send({
+        ...contact1,
+        conversationMedia: [
+          {
+            storeType: 'S3',
+            storeTypeSpecificData: {
+              type: S3ContactMediaType.TRANSCRIPT,
+            },
+          },
+        ],
+      });
 
     const contact = res.body as Contact;
 
@@ -144,7 +179,11 @@ describe('cleanupContactJobs', () => {
       createContactJob(connection)({
         jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
         resource: contact,
-        additionalPayload: undefined,
+        additionalPayload: {
+          conversationMediaId: contact.conversationMedia?.find(
+            isS3StoredTranscriptPending,
+          )?.id!,
+        },
       });
     });
 
@@ -154,8 +193,12 @@ describe('cleanupContactJobs', () => {
 
     job = await completeContactJob({ id: job.id, completionPayload });
     job = await backDateJob(job.id);
-    await updateConversationMedia(accountSid, job.contactId, [completionPayload]);
-    await cleanupContactJobs();
+    await updateConversationMediaData(
+      accountSid,
+      job.additionalPayload.conversationMediaId,
+      completionPayload,
+    );
+    await cleanupContactJobsApi.cleanupContactJobs();
 
     // After complete with valid payload, cleanup should happen
     job = await getContactJobById(job.id);

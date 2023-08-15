@@ -22,10 +22,7 @@ import { withTaskId, accountSid, workerSid } from '../../mocks';
 import * as contactJobApi from '../../../src/contact-job/contact-job-data-access';
 import { db } from '../../../src/connection-pool';
 import '../../case-validation';
-import {
-  ContactMediaType,
-  isS3StoredTranscriptPending,
-} from '../../../src/contact/contact-json';
+import * as conversationMediaApi from '../../../src/conversation-media/conversation-media';
 import { Contact } from '../../../src/contact/contact';
 import { chatChannels } from '../../../src/contact/channelTypes';
 import { JOB_MAX_ATTEMPTS } from '../../../src/contact-job/contact-job-processor';
@@ -36,9 +33,11 @@ import {
   ContactJobType,
 } from '@tech-matters/types';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
+import omit from 'lodash/omit';
+
+const { S3ContactMediaType, isS3StoredTranscriptPending } = conversationMediaApi;
 
 require('../mocks');
-
 // eslint-disable-next-line @typescript-eslint/no-shadow
 const selectJobsByContactId = (contactId: number, accountSid: string) =>
   db.task(t =>
@@ -91,7 +90,11 @@ afterEach(async () => {
 
 afterAll(async () => {
   await db.tx(async trx => {
-    const contactIds = await trx.manyOrNone('DELETE FROM "ContactJobs" RETURNING *');
+    const contactIds = (
+      await trx.manyOrNone<contactJobApi.ContactJob>(
+        'DELETE FROM "ContactJobs" RETURNING *',
+      )
+    ).map(j => j.contactId);
     if (contactIds.length)
       await trx.none(`DELETE FROM "Contacts" WHERE id IN (${contactIds.join(',')})`);
   });
@@ -105,7 +108,7 @@ const createChatContact = async (channel: string, startedTimestamp: number) => {
       conversationMedia: [
         {
           store: 'S3' as const,
-          type: ContactMediaType.TRANSCRIPT,
+          type: S3ContactMediaType.TRANSCRIPT,
           location: undefined,
         },
       ],
@@ -200,6 +203,11 @@ describe('publish retrieve-transcript job type', () => {
       numberOfAttempts: 1,
       resource: {
         ...contact,
+        conversationMedia: contact.conversationMedia?.map(cm => ({
+          ...cm,
+          createdAt: expect.toParseAsDate(cm.createdAt),
+          updatedAt: expect.toParseAsDate(cm.updatedAt),
+        })),
         createdAt: expect.toParseAsDate(contact.createdAt),
         updatedAt: expect.toParseAsDate(contact.updatedAt),
         timeOfContact: expect.toParseAsDate(contact.timeOfContact),
@@ -262,6 +270,11 @@ describe('publish retrieve-transcript job type', () => {
         numberOfAttempts: 1,
         resource: {
           ...contact,
+          conversationMedia: contact.conversationMedia?.map(cm => ({
+            ...cm,
+            createdAt: expect.toParseAsDate(cm.createdAt),
+            updatedAt: expect.toParseAsDate(cm.updatedAt),
+          })),
           createdAt: expect.toParseAsDate(contact.createdAt),
           updatedAt: expect.toParseAsDate(contact.updatedAt),
           timeOfContact: expect.toParseAsDate(contact.timeOfContact),
@@ -304,6 +317,9 @@ describe('complete retrieve-transcript job type', () => {
         accountSid: retrieveContactTranscriptJob.accountSid,
         channelSid: contact.channelSid,
         contactId: contact.id,
+        conversationMediaId: contact.conversationMedia?.find(
+          conversationMediaApi.isS3StoredTranscript,
+        )?.id,
         filePath: 'the-path-file-sent',
         jobId: retrieveContactTranscriptJob.id,
         jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
@@ -331,6 +347,10 @@ describe('complete retrieve-transcript job type', () => {
         }),
       );
 
+      jest
+        .spyOn(SQSClient, 'deleteCompletedContactJobsFromQueue')
+        .mockImplementation(() => Promise.resolve() as any);
+
       const processCompletedRetrieveContactTranscriptSpy = jest.spyOn(
         contactJobComplete,
         'processCompletedRetrieveContactTranscript',
@@ -344,11 +364,6 @@ describe('complete retrieve-transcript job type', () => {
         'publishRetrieveContactTranscript',
       );
 
-      const updateConversationMediaSpy = jest.spyOn(
-        contactApi,
-        'updateConversationMedia',
-      );
-
       // Mock setInterval to return the internal cb instead than it's interval id, so we can call it when we want
       // const setIntervalSpy =
       jest.spyOn(timers, 'setInterval').mockImplementation(callback => {
@@ -360,23 +375,19 @@ describe('complete retrieve-transcript job type', () => {
 
       await processorIntervalCallback();
 
-      const expecteConversationMedia = [
-        {
-          store: 'S3',
-          location: completedPayload.attemptPayload,
-          type: ContactMediaType.TRANSCRIPT,
-          url: completedPayload.attemptPayload.url,
+      const expectedConversationMedia = {
+        type: 'transcript',
+        location: {
+          bucket: 'some-url-here',
+          key: 'some-url-here',
+          url: 'some-url-here',
         },
-      ];
+        url: 'some-url-here',
+      };
 
       // Expect that proper code flow was executed
       expect(processCompletedRetrieveContactTranscriptSpy).toHaveBeenCalledWith(
         completedPayload,
-      );
-      expect(updateConversationMediaSpy).toHaveBeenCalledWith(
-        completedPayload.accountSid,
-        completedPayload.contactId,
-        expecteConversationMedia,
       );
 
       // Publish face is invoked
@@ -402,14 +413,17 @@ describe('complete retrieve-transcript job type', () => {
       });
 
       // Check the updated contact in the DB
-      const updatedContact = await db.task(async t =>
-        t.oneOrNone<Contact>(`SELECT * FROM "Contacts" WHERE id = ${contact.id}`),
+      const updatedConversationMedias = await db.task(async t =>
+        t.manyOrNone<conversationMediaApi.ConversationMedia>(
+          `SELECT * FROM "ConversationMedias" WHERE "contactId" = ${contact.id}`,
+        ),
       );
 
-      expect(updatedContact?.rawJson?.conversationMedia).toHaveLength(1);
-      expect(updatedContact?.rawJson?.conversationMedia).toMatchObject(
-        expecteConversationMedia,
-      );
+      expect(updatedConversationMedias).toHaveLength(1);
+      expect(
+        updatedConversationMedias?.find(conversationMediaApi.isS3StoredTranscript)
+          ?.storeTypeSpecificData,
+      ).toMatchObject(expectedConversationMedia);
     },
   );
 
@@ -440,6 +454,9 @@ describe('complete retrieve-transcript job type', () => {
         accountSid: retrieveContactTranscriptJob.accountSid,
         channelSid: contact.channelSid,
         contactId: contact.id,
+        conversationMediaId: contact.conversationMedia?.find(
+          conversationMediaApi.isS3StoredTranscript,
+        )?.id,
         filePath: 'the-path-file-sent',
         jobId: retrieveContactTranscriptJob.id,
         jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
@@ -462,6 +479,9 @@ describe('complete retrieve-transcript job type', () => {
           ],
         }),
       );
+      jest
+        .spyOn(SQSClient, 'deleteCompletedContactJobsFromQueue')
+        .mockImplementation(() => Promise.resolve() as any);
 
       const processCompletedRetrieveContactTranscriptSpy = jest.spyOn(
         contactJobComplete,
@@ -477,8 +497,8 @@ describe('complete retrieve-transcript job type', () => {
       // );
 
       const updateConversationMediaSpy = jest.spyOn(
-        contactApi,
-        'updateConversationMedia',
+        conversationMediaApi,
+        'updateConversationMediaData',
       );
 
       // Mock setInterval to return the internal cb instead than it's interval id, so we can call it when we want
@@ -532,13 +552,13 @@ describe('complete retrieve-transcript job type', () => {
       }
 
       // Check the updated contact in the DB
-      const updatedContact = await db.task(async t =>
-        t.oneOrNone<Contact>(`SELECT * FROM "Contacts" WHERE id = ${contact.id}`),
+      const conversationMedias = await db.task(async t =>
+        t.manyOrNone<conversationMediaApi.ConversationMedia>(
+          `SELECT * FROM "ConversationMedias" WHERE "contactId" = ${contact.id}`,
+        ),
       );
 
-      expect(
-        updatedContact?.rawJson?.conversationMedia?.every(isS3StoredTranscriptPending),
-      ).toBeTruthy();
+      expect(conversationMedias.every(isS3StoredTranscriptPending)).toBeTruthy();
     },
   );
 });
