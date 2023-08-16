@@ -439,7 +439,6 @@ export const KHP_MAPPING_NODE: MappingNode = {
         ({ currentValue, captures }) =>
           `coverage/${currentValue._id ?? captures.coverageIndex}`,
         {
-          language: ({ captures }) => captures.language,
           info: ({ currentValue }) => currentValue,
           value: ({ currentValue, captures }) =>
             `coverage/${currentValue._id ?? captures.coverageIndex}`,
