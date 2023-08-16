@@ -14,20 +14,18 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { PublishCommand, SNSClient } from '@aws-sdk/client-sns';
+import { PublishCommand, SNSClient, SNSClientConfig } from '@aws-sdk/client-sns';
 
-/**
- * I extracted this out to a library because there isn't a great way to do overrides
- * for the localstack env globally that I could find. It is a little weird, but
- * drys up the setup a bit.
- *
- * Totally open to other ideas here.
- * (rbd 10-10-22)
- */
+const convertToEndpoint = (endpointUrl: string) => {
+  const url: URL = new URL(endpointUrl);
+  return {
+    url: url,
+  };
+};
 const getSnsConf = () => {
-  const snsConfig: {
-    endpoint?: string;
-  } = process.env.SNS_ENDPOINT ? { endpoint: process.env.SNS_ENDPOINT } : {};
+  const snsConfig: SNSClientConfig = process.env.SNS_ENDPOINT
+    ? { endpoint: convertToEndpoint(process.env.SNS_ENDPOINT) }
+    : {};
 
   return snsConfig;
 };

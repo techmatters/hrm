@@ -14,14 +14,31 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
+// TODO: needs to be converted to aws-sdk-v3
+import { SQS } from 'aws-sdk';
 import { getSsmParameter } from '@tech-matters/ssm-cache';
 import { publishSns } from '@tech-matters/sns-client';
-import { sendSqsMessage, SendSqsMessageParams } from '@tech-matters/sqs-client';
 
 import type { FlatResource, ResourcesSearchIndexPayload } from '@tech-matters/types';
 import { ResourcesJobType } from '@tech-matters/types';
 
 const RETRY_COUNT = 4;
+
+let sqs: SQS;
+
+export const getSqsClient = () => {
+  if (!sqs) {
+    if (process.env.LOCAL_SQS_PORT) {
+      // For testing only
+      sqs = new SQS({
+        endpoint: `http://localhost:${process.env.LOCAL_SQS_PORT}`,
+      });
+    } else {
+      sqs = new SQS();
+    }
+  }
+  return sqs;
+};
 
 // will pick between more URLs as & when we interact with more queues directly from the resources resvice
 const getJobQueueUrl = () =>
@@ -42,18 +59,18 @@ export const publishToResourcesJob = async ({
 }: PublishToResourcesJobParams): Promise<void> => {
   //TODO: more robust error handling/messaging
   try {
-    const queueUrl = await getSsmParameter(getJobQueueUrl(), 86400000);
+    const QueueUrl = await getSsmParameter(getJobQueueUrl(), 86400000);
 
-    const message: SendSqsMessageParams = {
-      message: JSON.stringify(params),
-      queueUrl,
+    const message: SQS.Types.SendMessageRequest = {
+      MessageBody: JSON.stringify(params),
+      QueueUrl,
     };
 
     if (messageGroupId) {
-      message.messageGroupId = messageGroupId;
+      message.MessageGroupId = messageGroupId;
     }
 
-    await sendSqsMessage(message);
+    await getSqsClient().sendMessage(message).promise();
   } catch (err) {
     if (retryCount < RETRY_COUNT) {
       console.error('Failed to publish to resources job. Retrying...', err);

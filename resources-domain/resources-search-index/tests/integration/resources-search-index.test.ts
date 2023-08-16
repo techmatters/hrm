@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { purgeSqsQueue, receiveSqsMessage } from '@tech-matters/sqs-client';
+import { SQS } from 'aws-sdk';
 
 import {
   Client,
@@ -41,12 +41,17 @@ import { sendMessage, sendMessageBatch } from '../../../../test-support/sendMess
 
 jest.setTimeout(60000);
 
+const localstackEndpoint = 'http://localhost:4566';
 const accountSids = ['ACCOUNT_1', 'ACCOUNT_2'];
 const indexType = RESOURCE_INDEX_TYPE;
 
 const lambdaName = 'resources-search-index';
 const completeOutput: any = getStackOutput('resources-search-complete');
-const { errorQueueUrl: queueUrl } = completeOutput;
+const { errorQueueUrl } = completeOutput;
+
+const sqs = new SQS({
+  endpoint: localstackEndpoint,
+});
 
 export const waitForSearchResponse = async ({
   indexClient,
@@ -106,7 +111,7 @@ export const waitForSQSMessage = async ({
   let result;
 
   try {
-    result = await receiveSqsMessage({ queueUrl });
+    result = await sqs.receiveMessage({ QueueUrl: errorQueueUrl }).promise();
     if (!result?.Messages) throw new Error('No messages');
   } catch (err) {
     if (retryCount < 200) {
@@ -122,7 +127,7 @@ describe('resources-search-index', () => {
   const searchClients: Record<string, any> = {};
   const indexClients: Record<string, IndexClient<FlatResource>> = {};
   beforeEach(async () => {
-    await purgeSqsQueue({ queueUrl });
+    await sqs.purgeQueue({ QueueUrl: errorQueueUrl }).promise();
     await Promise.all(
       accountSids.map(async accountSid => {
         const client = await getClient({
@@ -150,7 +155,7 @@ describe('resources-search-index', () => {
       }),
     );
 
-    await purgeSqsQueue({ queueUrl });
+    await sqs.purgeQueue({ QueueUrl: errorQueueUrl }).promise();
   });
 
   test('well formed single message results in indexed document', async () => {

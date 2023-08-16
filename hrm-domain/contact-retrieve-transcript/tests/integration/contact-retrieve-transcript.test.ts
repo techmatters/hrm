@@ -64,8 +64,10 @@ export const waitForSQSMessage = async ({
   let result;
   try {
     result = await receiveSqsMessage({ queueUrl });
+    console.dir(result);
     if (!result?.Messages) throw new Error('No messages');
   } catch (err) {
+    console.dir(err);
     if (retryCount < 60) {
       await new Promise(resolve => setTimeout(resolve, 250));
       return waitForSQSMessage({ retryCount: retryCount + 1 });
@@ -85,14 +87,14 @@ describe('contact-retrieve-transcript', () => {
     const attemptPayload = {
       bucket: 'contact-docs-bucket',
       key: message.filePath,
-      url: `http://localstack:4566/contact-docs-bucket/${message.filePath}`,
     };
 
     const sqsResp = await sendMessage({ message, lambdaName });
     expect(sqsResp).toHaveProperty('MessageId');
 
     const s3Result = await waitForS3Object({ message });
-    expect(s3Result).toHaveProperty('Body');
+    expect(s3Result).toBeDefined();
+    expect(JSON.parse(s3Result!)).toHaveProperty('contactId');
 
     const sqsResult = await waitForSQSMessage();
     expect(sqsResult).toBeDefined();
@@ -100,6 +102,7 @@ describe('contact-retrieve-transcript', () => {
     expect(sqsResult?.Messages).toHaveLength(1);
 
     const sqsMessage = sqsResult?.Messages?.[0];
+    console.log(sqsMessage);
     const body = JSON.parse(sqsMessage?.Body || '');
     expect(body?.attemptResult).toEqual('success');
     expect(body?.attemptPayload).toEqual(attemptPayload);
@@ -117,6 +120,7 @@ describe('contact-retrieve-transcript', () => {
     expect(sqsResult?.Messages).toHaveLength(1);
 
     const sqsMessage = sqsResult?.Messages?.[0];
+    console.log(sqsMessage);
     const body = JSON.parse(sqsMessage?.Body || '');
     expect(body?.attemptResult).toEqual('failure');
     expect(body?.attemptPayload).toEqual(

@@ -290,7 +290,7 @@ export const withTaskIdAndTranscript = {
       {
         store: 'S3' as const,
         type: ContactMediaType.TRANSCRIPT,
-        url: undefined,
+        location: 'https://example.com/transcript',
       },
     ],
   },

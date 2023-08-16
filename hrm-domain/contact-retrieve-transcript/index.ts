@@ -53,6 +53,7 @@ const processRecord = async (message: PublishToContactJobsTopicParams) => {
   );
 
   if (!authToken || !docsBucketName) {
+    console.log('Missing required SSM params');
     throw new Error('Missing required SSM params');
   }
 
@@ -111,6 +112,8 @@ export const processRecordWithoutException = async (
       attemptResult: ContactJobAttemptResult.FAILURE,
       attemptPayload: errMessage,
     };
+
+    console.log('Sending failed job to completed queue', failedJob);
 
     await sendSqsMessage({
       queueUrl: completedQueueUrl,

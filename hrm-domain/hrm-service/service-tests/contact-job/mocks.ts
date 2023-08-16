@@ -22,6 +22,7 @@ jest.mock('@tech-matters/sqs-client', () => {
       jest.fn(() => {
         return {
           promise: jest.fn().mockResolvedValue({
+            $metadata: {},
             Messages: [],
           }),
         };

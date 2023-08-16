@@ -10,8 +10,7 @@
     "@tech-matters/job-errors": "^1.0.0",
     "@tech-matters/ssm-cache": "^1.0.0",
     "@tech-matters/types": "^1.0.0",
-    "@tech-matters/resources-search-config": "^1.0.0",
-    "aws-sdk": "^2.1225.0"
+    "@tech-matters/resources-search-config": "^1.0.0"
   },
   "devDependencies": {
     "@tsconfig/node16": "^1.0.3",

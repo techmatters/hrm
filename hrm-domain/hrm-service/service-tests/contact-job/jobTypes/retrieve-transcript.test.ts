@@ -313,7 +313,6 @@ describe('complete retrieve-transcript job type', () => {
         attemptPayload: {
           bucket: 'some-url-here',
           key: 'some-url-here',
-          url: 'some-url-here',
         },
         attemptNumber: 1,
         attemptResult: ContactJobAttemptResult.SUCCESS,
@@ -322,6 +321,7 @@ describe('complete retrieve-transcript job type', () => {
       // const pollCompletedContactJobsSpy =
       jest.spyOn(SQSClient, 'pollCompletedContactJobsFromQueue').mockImplementation(() =>
         Promise.resolve({
+          $metadata: {},
           Messages: [
             {
               ReceiptHandle: retrieveContactTranscriptJob.id.toString(),
@@ -365,7 +365,6 @@ describe('complete retrieve-transcript job type', () => {
           store: 'S3',
           location: completedPayload.attemptPayload,
           type: ContactMediaType.TRANSCRIPT,
-          url: completedPayload.attemptPayload.url,
         },
       ];
 
@@ -398,7 +397,7 @@ describe('complete retrieve-transcript job type', () => {
       ).toBeTruthy();
       expect(updatedRetrieveContactTranscriptJob.completionPayload).toMatchObject({
         message: 'Job processed successfully',
-        value: { bucket: 'some-url-here', key: 'some-url-here', url: 'some-url-here' },
+        value: { bucket: 'some-url-here', key: 'some-url-here' },
       });
 
       // Check the updated contact in the DB
@@ -454,6 +453,7 @@ describe('complete retrieve-transcript job type', () => {
       // const pollCompletedContactJobsSpy =
       jest.spyOn(SQSClient, 'pollCompletedContactJobsFromQueue').mockImplementation(() =>
         Promise.resolve({
+          $metadata: {},
           Messages: [
             {
               ReceiptHandle: retrieveContactTranscriptJob.id.toString(),

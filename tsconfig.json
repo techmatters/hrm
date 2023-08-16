@@ -11,6 +11,7 @@
     { "path": "packages/elasticsearch-client" },
     { "path": "packages/s3-client" },
     { "path": "packages/sns-client" },
+    { "path": "packages/sqs-client" },
     { "path": "packages/twilio-client" },
     { "path": "packages/twilio-worker-auth" },
     { "path": "jobs/job-complete" },

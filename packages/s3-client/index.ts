@@ -19,6 +19,7 @@ import {
   GetObjectCommand,
   PutObjectCommand,
   S3Client,
+  S3ClientConfig,
   UploadPartCommand,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl as awsGetSignedUrl } from '@aws-sdk/s3-request-presigner';
@@ -66,15 +67,20 @@ export const GET_SIGNED_URL_METHODS = {
 
 export type GetSignedUrlMethods = keyof typeof GET_SIGNED_URL_METHODS;
 
+const convertToEndpoint = (endpointUrl: string) => {
+  const url: URL = new URL(endpointUrl);
+  return {
+    url: url,
+  };
+};
+
 const getS3Conf = () => {
-  const s3Config: {
-    endpoint?: string;
-    s3ForcePathStyle?: boolean;
-    region?: string;
-  } = process.env.S3_ENDPOINT ? { endpoint: process.env.S3_ENDPOINT } : {};
+  const s3Config: S3ClientConfig = process.env.S3_ENDPOINT
+    ? { endpoint: convertToEndpoint(process.env.S3_ENDPOINT) }
+    : {};
 
   if (process.env.S3_FORCE_PATH_STYLE) {
-    s3Config.s3ForcePathStyle = !!process.env.S3_FORCE_PATH_STYLE;
+    s3Config.forcePathStyle = !!process.env.S3_FORCE_PATH_STYLE;
   }
 
   if (process.env.S3_REGION) {

@@ -23,23 +23,32 @@ import {
   SQSClient,
 } from '@aws-sdk/client-sqs';
 
+const convertToEndpoint = (endpointUrl: string) => {
+  const url: URL = new URL(endpointUrl);
+  return {
+    url: url,
+  };
+};
+
 const getSqsConfig = () => {
   if (process.env.SQS_ENDPOINT) {
     return {
-      endpoint: process.env.SQS_ENDPOINT,
+      region: 'us-east-1',
+      endpoint: convertToEndpoint(process.env.SQS_ENDPOINT),
     };
   }
 
   if (process.env.LOCAL_SQS_PORT) {
     return {
-      endpoint: `http://localhost:${process.env.LOCAL_SQS_PORT}`,
+      region: 'us-east-1',
+      endpoint: convertToEndpoint(`http://localhost:${process.env.LOCAL_SQS_PORT}`),
     };
   }
 
   return {};
 };
 
-const sqs = new SQSClient(getSqsConfig);
+const sqs = new SQSClient(getSqsConfig());
 
 export type DeleteSqsMessageParams = {
   queueUrl: string;

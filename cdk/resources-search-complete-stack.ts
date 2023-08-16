@@ -99,6 +99,7 @@ export default class ResourcesSearchCompleteStack extends cdk.Stack {
         S3_REGION: 'us-east-1',
         SSM_ENDPOINT: 'http://localstack:4566',
         SNS_ENDPOINT: 'http://localstack:4566',
+        SQS_ENDPOINT: 'http://localstack:4566',
         NODE_ENV: 'local',
         SNS_TOPIC_ARN: snsTopic.topicArn,
       },

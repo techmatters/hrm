@@ -16,17 +16,21 @@
 
 import {
   SSMClient,
+  SSMClientConfig,
   GetParameterCommand,
   GetParametersByPathCommand,
   GetParametersByPathCommandInput,
   Parameter as SsmParameter,
 } from '@aws-sdk/client-ssm';
 
-// This is based around the pattern found in https://github.com/ryands17/lambda-ssm-cache
-
-// This allows endpoint override for localstack I haven't found a better way to do this globally yet
-const ssmConfig: { endpoint?: string; region?: string } = process.env.SSM_ENDPOINT
-  ? { endpoint: process.env.SSM_ENDPOINT }
+const convertToEndpoint = (endpointUrl: string) => {
+  const url: URL = new URL(endpointUrl);
+  return {
+    url: url,
+  };
+};
+const ssmConfig: SSMClientConfig = process.env.SSM_ENDPOINT
+  ? { endpoint: convertToEndpoint(process.env.SSM_ENDPOINT) }
   : {};
 
 if (process.env.SSM_REGION) {

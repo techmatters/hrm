@@ -57,6 +57,7 @@ describe('pollAndProcessCompletedContactJobs', () => {
     const sqsSpy = jest
       .spyOn(SQSClient, 'pollCompletedContactJobsFromQueue')
       .mockImplementation(async () => ({
+        $metadata: {},
         Messages: [],
       }));
 
@@ -92,7 +93,6 @@ describe('pollAndProcessCompletedContactJobs', () => {
       attemptPayload: {
         bucket: 'some-url-here',
         key: 'some-url-here',
-        url: 'some-url-here',
       },
     };
     const validPayload = {
@@ -103,6 +103,7 @@ describe('pollAndProcessCompletedContactJobs', () => {
     jest
       .spyOn(SQSClient, 'pollCompletedContactJobsFromQueue')
       .mockImplementation(async () => ({
+        $metadata: {},
         Messages: [invalidPayload, validPayload],
       }));
     const errorSpy = jest.spyOn(console, 'error');
@@ -146,7 +147,6 @@ describe('pollAndProcessCompletedContactJobs', () => {
       attemptPayload: {
         bucket: 'some-url-here',
         key: 'some-url-here',
-        url: 'some-url-here',
       },
     };
 
@@ -164,6 +164,7 @@ describe('pollAndProcessCompletedContactJobs', () => {
     jest
       .spyOn(SQSClient, 'pollCompletedContactJobsFromQueue')
       .mockImplementation(async () => ({
+        $metadata: {},
         Messages: [validPayload1, validPayload2],
       }));
     const errorSpy = jest.spyOn(console, 'error');
@@ -215,7 +216,6 @@ describe('pollAndProcessCompletedContactJobs', () => {
         attemptPayload: {
           bucket: 'completionPayload',
           key: 'completionPayload',
-          url: 'completionPayload',
         },
       },
       processCompletedFunction: 'processCompletedRetrieveContactTranscript',
@@ -241,6 +241,7 @@ describe('pollAndProcessCompletedContactJobs', () => {
       jest
         .spyOn(SQSClient, 'pollCompletedContactJobsFromQueue')
         .mockImplementation(async () => ({
+          $metadata: {},
           Messages: [validPayload],
         }));
       const deletedCompletedContactJobsSpy = jest.spyOn(
@@ -328,6 +329,7 @@ describe('pollAndProcessCompletedContactJobs', () => {
       jest
         .spyOn(SQSClient, 'pollCompletedContactJobsFromQueue')
         .mockImplementation(async () => ({
+          $metadata: {},
           Messages: [validPayload],
         }));
       const deletedCompletedContactJobsSpy = jest.spyOn(
@@ -391,7 +393,6 @@ describe('pollAndProcessCompletedContactJobs', () => {
         attemptPayload: {
           bucket: 'some-url-here',
           key: 'some-url-here',
-          url: 'some-url-here',
         },
         attemptResult: ContactJobAttemptResult.FAILURE,
       };
@@ -428,7 +429,6 @@ describe('pollAndProcessCompletedContactJobs', () => {
         attemptPayload: {
           bucket: 'some-url-here',
           key: 'some-url-here',
-          url: 'some-url-here',
         },
         attemptResult: ContactJobAttemptResult.FAILURE,
       };

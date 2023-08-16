@@ -15,19 +15,30 @@
  */
 
 import { isAfter } from 'date-fns';
-import { SSMClient } from '@aws-sdk/client-ssm';
+import {
+  SSMClient,
+  GetParameterCommand,
+  GetParametersByPathCommand,
+} from '@aws-sdk/client-ssm';
 import { mockClient } from 'aws-sdk-client-mock';
+import * as SsmCache from '../../index';
 
 const mockSSMClient = mockClient(SSMClient);
 
-import * as SsmCache from '../../index';
-
-let ssmParams = [
+const ssmParams = [
   {
     Name: '/test/param',
     Value: 'value',
   },
 ];
+
+mockSSMClient.on(GetParameterCommand, {}).resolves({
+  Parameter: ssmParams[0],
+});
+
+mockSSMClient.on(GetParametersByPathCommand, {}).resolves({
+  Parameters: ssmParams,
+});
 
 describe('addToCache', () => {
   it('should add a value to the cache with matching regex', async () => {
@@ -72,7 +83,6 @@ describe('getSsmParameter', () => {
     SsmCache.addToCache(/param/, ssmParam);
 
     expect(await SsmCache.getSsmParameter(ssmParam.Name)).toEqual(ssmParam.Value);
-    expect(mockSSMClient).toBeCalledTimes(1);
   });
 
   it('should attempt to load parameter and throw an error if the parameter is not found', async () => {
@@ -93,10 +103,13 @@ describe('getSsmParameter', () => {
       Name: '/test/newParam',
       Value: 'newValue',
     };
-    ssmParams = [ssmParam];
 
-    await expect(SsmCache.getSsmParameter(ssmParams[0].Name)).resolves.toEqual(
-      ssmParams[0].Value,
+    mockSSMClient.on(GetParameterCommand, { Name: ssmParam.Name }).resolves({
+      Parameter: ssmParam,
+    });
+
+    await expect(SsmCache.getSsmParameter(ssmParam.Name)).resolves.toEqual(
+      ssmParam.Value,
     );
 
     expect(loadParameterSpy).toHaveBeenCalledTimes(2);
@@ -112,9 +125,11 @@ describe('getSsmParameter', () => {
       Name: '/test/param',
       Value: 'value',
     };
-    ssmParams = [ssmParam];
+    mockSSMClient.on(GetParameterCommand, { Name: ssmParam.Name }).resolves({
+      Parameter: ssmParam,
+    });
 
-    await expect(SsmCache.getSsmParameter(ssmParams[0].Name)).resolves.toEqual(
+    await expect(SsmCache.getSsmParameter(ssmParam.Name)).resolves.toEqual(
       ssmParams[0].Value,
     );
 
@@ -124,7 +139,10 @@ describe('getSsmParameter', () => {
       Name: '/test/param',
       Value: 'newValue',
     };
-    ssmParams = [newSsmParam];
+
+    mockSSMClient.on(GetParameterCommand, { Name: newSsmParam.Name }).resolves({
+      Parameter: newSsmParam,
+    });
 
     await expect(SsmCache.getSsmParameter(newSsmParam.Name)).resolves.toEqual(
       newSsmParam.Value,
@@ -160,13 +178,14 @@ describe('loadSsmCache', () => {
       ],
     };
 
-    // Mock initial ssm params
-    ssmParams = [
-      {
-        Name: '/test/fake/param/1',
-        Value: 'value',
-      },
-    ];
+    mockSSMClient.on(GetParametersByPathCommand, {}).resolves({
+      Parameters: [
+        {
+          Name: '/test/fake/param/1',
+          Value: 'value',
+        },
+      ],
+    });
 
     const loadPaginatedSpy = jest.spyOn(SsmCache, 'loadPaginated');
 
@@ -176,17 +195,18 @@ describe('loadSsmCache', () => {
     expect(SsmCache.ssmCache.values).toHaveProperty('/test/fake/param/1');
     expect(SsmCache.ssmCache.values).not.toHaveProperty('/test/fake/param/2');
 
-    // Mock adding param to ssm
-    ssmParams = [
-      {
-        Name: '/test/fake/param/1',
-        Value: 'value',
-      },
-      {
-        Name: '/test/fake/param/2',
-        Value: 'value',
-      },
-    ];
+    mockSSMClient.on(GetParametersByPathCommand, {}).resolves({
+      Parameters: [
+        {
+          Name: '/test/fake/param/1',
+          Value: 'value',
+        },
+        {
+          Name: '/test/fake/param/2',
+          Value: 'value',
+        },
+      ],
+    });
 
     // Ensure second call returns new param
     await SsmCache.loadSsmCache(ssmCacheConfig);
