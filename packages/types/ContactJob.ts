@@ -66,13 +66,9 @@ export type CompletedRetrieveContactTranscript = PublishRetrieveContactTranscrip
 
 export type CompletedContactJobBody = CompletedRetrieveContactTranscript;
 
-export type CompletedContactJobBodySuccess = Omit<
-  CompletedContactJobBody,
-  'attemptResult'
-> & {
+export type CompletedContactJobBodySuccess = CompletedContactJobBody & {
   attemptResult: ContactJobAttemptResult.SUCCESS;
 };
-
 export type CompletedContactJobBodyFailure = Omit<
   CompletedContactJobBody,
   'attemptResult'
