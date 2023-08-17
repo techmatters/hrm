@@ -16,7 +16,6 @@
 
 import { ResourceImportProcessorError } from '@tech-matters/job-errors';
 import { getSsmParameter } from '@tech-matters/ssm-cache';
-// import { SQS } from 'aws-sdk';
 import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
 import type { ImportRequestBody } from '@tech-matters/types';
 

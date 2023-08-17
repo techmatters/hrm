@@ -35,6 +35,8 @@ import { AssertionError } from 'assert';
 import { UpsertImportedResourceResult } from '../../src/import/importDataAccess';
 import { generateImportResource as newImportResourceGenerator } from '../mockResources';
 import sqslite from 'sqslite';
+
+// TODO: needs to be converted to aws-sdk-v3
 import { SQS } from 'aws-sdk';
 import { mockSsmParameters } from '../mockSsm';
 
@@ -61,14 +63,14 @@ const populateSampleDbReferenceValues = async (count: number, valuesPerList: num
     .flatMap(listIdx =>
       range(valuesPerList).flatMap(
         valueIdx =>
-          `INSERT INTO resources."ResourceReferenceStringAttributeValues" 
+          `INSERT INTO resources."ResourceReferenceStringAttributeValues"
             (id, "accountSid", "list", "value", "language", "info")
             VALUES (
               'REF_${listIdx}_${valueIdx}',
-              'AC000', 
+              'AC000',
               'REFERENCE_LIST_${listIdx}',
-              'REFERENCE_VALUE_${valueIdx}', 
-              'REFERENCE_LANGUAGE', 
+              'REFERENCE_VALUE_${valueIdx}',
+              'REFERENCE_LANGUAGE',
               '{ "property": "VALUE" }');`,
       ),
     )

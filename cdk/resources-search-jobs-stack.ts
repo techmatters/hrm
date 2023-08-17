@@ -116,8 +116,9 @@ export default class ResourcessearchJobsStack extends cdk.Stack {
 
     const fn = new lambdaNode.NodejsFunction(this, 'fetchParams', {
       // TODO: change this back to 16 once it isn't broken upstream
-      runtime: lambda.Runtime.NODEJS_16_X,
+      runtime: lambda.Runtime.NODEJS_18_X,
       memorySize: 512,
+      timeout: cdk.Duration.seconds(10),
       handler: 'handler',
       entry: `./resources-domain/${id}/index.ts`,
       environment: {
@@ -126,6 +127,7 @@ export default class ResourcessearchJobsStack extends cdk.Stack {
         S3_FORCE_PATH_STYLE: 'true',
         S3_REGION: 'us-east-1',
         SSM_ENDPOINT: 'http://localstack:4566',
+        SQS_ENDPOINT: 'http://localstack:4566',
         NODE_ENV: 'local',
         completed_sqs_queue_url: completedQueueUrl,
       },

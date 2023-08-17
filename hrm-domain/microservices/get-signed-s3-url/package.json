@@ -1,5 +1,5 @@
 {
-  "name": "@tech-matters/hrm-jobs-contact-complete",
+  "name": "@tech-matters/hrm-microservice-get-signed-s3-url",
   "version": "1.0.0",
   "description": "",
   "main": "dist/index.js",

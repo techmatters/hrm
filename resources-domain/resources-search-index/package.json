@@ -8,17 +8,17 @@
   "dependencies": {
     "@tech-matters/elasticsearch-client": "^1.0.0",
     "@tech-matters/job-errors": "^1.0.0",
-    "@tech-matters/ssm-cache": "^1.0.0",
-    "@tech-matters/types": "^1.0.0",
     "@tech-matters/resources-search-config": "^1.0.0",
-    "aws-sdk": "^2.1225.0"
+    "@tech-matters/sqs-client": "^1.0.0",
+    "@tech-matters/ssm-cache": "^1.0.0",
+    "@tech-matters/types": "^1.0.0"
   },
   "devDependencies": {
     "@tsconfig/node16": "^1.0.3",
     "@types/aws-lambda": "^8.10.108"
   },
   "scripts": {
-    "test:integration": "jest tests/integration",
+    "test:integration": "cross-env SQS_ENDPOINT=http://localhost:4566 jest tests/integration",
     "docker:build": "docker build -t resources-search-index --build-arg lambda_name=resources-search-index --build-arg lambda_dir=resources-domain -f ../../jobs/Dockerfile ../../"
   }
 }

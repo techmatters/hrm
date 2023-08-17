@@ -5,6 +5,7 @@
   "references": [
     { "path": "packages/job-errors" },
     { "path": "packages/ssm-cache" },
+    { "path": "packages/sqs-client" },
     { "path": "packages/types" },
     { "path": "hrm-domain/contact-complete" }
   ]

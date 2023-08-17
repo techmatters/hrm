@@ -88,8 +88,9 @@ export default class ResourcesSearchCompleteStack extends cdk.Stack {
     if (params.skipLambda) return;
 
     const fn = new lambdaNode.NodejsFunction(this, 'fetchParams', {
-      runtime: lambda.Runtime.NODEJS_16_X,
+      runtime: lambda.Runtime.NODEJS_18_X,
       memorySize: 512,
+      timeout: cdk.Duration.seconds(10),
       handler: 'handler',
       entry: `./jobs/job-complete/index.ts`,
       environment: {
@@ -99,6 +100,7 @@ export default class ResourcesSearchCompleteStack extends cdk.Stack {
         S3_REGION: 'us-east-1',
         SSM_ENDPOINT: 'http://localstack:4566',
         SNS_ENDPOINT: 'http://localstack:4566',
+        SQS_ENDPOINT: 'http://localstack:4566',
         NODE_ENV: 'local',
         SNS_TOPIC_ARN: snsTopic.topicArn,
       },

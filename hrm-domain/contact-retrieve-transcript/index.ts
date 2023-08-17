@@ -15,27 +15,19 @@
  */
 
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { SQS } from 'aws-sdk';
+import { sendSqsMessage } from '@tech-matters/sqs-client';
+import { putS3Object } from '@tech-matters/s3-client';
 
 import { ContactJobProcessorError } from '@tech-matters/job-errors';
 import { getSsmParameter } from '@tech-matters/ssm-cache';
 import { ContactJobAttemptResult } from '@tech-matters/types';
 import { exportTranscript } from './exportTranscript';
-import { uploadTranscript } from './uploadTranscript';
 
 import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
 import type {
   CompletedContactJobBody,
   PublishToContactJobsTopicParams,
 } from '@tech-matters/types';
-
-/**
- * This is based around latest SQS error handling that supports batchItemFailure responses.
- *
- * Reference: https://docs.aws.amazon.com/lambda/latest/dg/with-sqs.html#services-sqs-batchfailurereporting
- */
-
-const sqs = new SQS();
 
 const completedQueueUrl = process.env.completed_sqs_queue_url as string;
 const hrmEnv = process.env.NODE_ENV;
@@ -61,44 +53,47 @@ const processRecord = async (message: PublishToContactJobsTopicParams) => {
   );
 
   if (!authToken || !docsBucketName) {
+    console.log('Missing required SSM params');
     throw new Error('Missing required SSM params');
   }
 
+  const { accountSid, channelSid, serviceSid, contactId, taskId, twilioWorkerId } =
+    message;
+
   const transcript = await exportTranscript({
     authToken,
-    accountSid: message.accountSid,
-    channelSid: message.channelSid,
-    serviceSid: message.serviceSid,
+    accountSid,
+    channelSid,
+    serviceSid,
   });
 
-  const uploadResults = await uploadTranscript({
-    transcript,
-    docsBucketName,
-    accountSid: message.accountSid,
-    contactId: message.contactId,
-    filePath: message.filePath,
-    taskId: message.taskId,
-    twilioWorkerId: message.twilioWorkerId,
-    serviceSid: message.serviceSid,
-    channelSid: message.channelSid,
+  await putS3Object({
+    bucket: docsBucketName,
+    key: message.filePath,
+    body: JSON.stringify({
+      transcript,
+      accountSid,
+      contactId,
+      taskId,
+      twilioWorkerId,
+      serviceSid,
+      channelSid,
+    }),
   });
 
   const completedJob: CompletedContactJobBody = {
     ...message,
     attemptResult: ContactJobAttemptResult.SUCCESS,
     attemptPayload: {
-      bucket: uploadResults.Bucket,
-      key: uploadResults.Key,
-      url: uploadResults.Location,
+      bucket: docsBucketName,
+      key: message.filePath,
     },
   };
 
-  await sqs
-    .sendMessage({
-      MessageBody: JSON.stringify(completedJob),
-      QueueUrl: completedQueueUrl,
-    })
-    .promise();
+  await sendSqsMessage({
+    queueUrl: completedQueueUrl,
+    message: JSON.stringify(completedJob),
+  });
 };
 
 export const processRecordWithoutException = async (
@@ -118,12 +113,12 @@ export const processRecordWithoutException = async (
       attemptPayload: errMessage,
     };
 
-    await sqs
-      .sendMessage({
-        MessageBody: JSON.stringify(failedJob),
-        QueueUrl: completedQueueUrl,
-      })
-      .promise();
+    console.log('Sending failed job to completed queue', failedJob);
+
+    await sendSqsMessage({
+      queueUrl: completedQueueUrl,
+      message: JSON.stringify(failedJob),
+    });
   }
 };
 

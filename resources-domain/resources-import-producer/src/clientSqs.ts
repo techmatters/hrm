@@ -14,34 +14,23 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { SQS } from 'aws-sdk';
+import { sendSqsMessage } from '@tech-matters/sqs-client';
 
 import type { AccountSID, ImportRequestBody } from '@tech-matters/types';
-
-let sqs: SQS;
-
-const getSqsClient = () => {
-  if (!sqs) {
-    sqs = new SQS();
-  }
-  return sqs;
-};
 
 export const publishToImportConsumer =
   (importResourcesSqsQueueUrl: URL) => async (params: ResourceMessage) => {
     //TODO: more robust error handling/messaging
     try {
-      const QueueUrl = importResourcesSqsQueueUrl.toString();
+      const queueUrl = importResourcesSqsQueueUrl.toString();
 
-      return await getSqsClient()
-        .sendMessage({
-          MessageBody: JSON.stringify(params),
-          MessageGroupId: `${params.accountSid}/${
-            params.importedResources[0]?.id ?? '__EMPTY_BATCH'
-          }`,
-          QueueUrl,
-        })
-        .promise();
+      return await sendSqsMessage({
+        message: JSON.stringify(params),
+        queueUrl,
+        messageGroupId: `${params.accountSid}/${
+          params.importedResources[0]?.id ?? '__EMPTY_BATCH'
+        }`,
+      });
     } catch (err) {
       console.error('Error trying to send message to SQS queue', err);
     }

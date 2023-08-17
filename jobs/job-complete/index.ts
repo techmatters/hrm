@@ -15,19 +15,17 @@
  */
 
 import { CompletedJobProcessorError } from '@tech-matters/job-errors';
-import { sns } from '@tech-matters/sns-client';
+import { publishSns } from '@tech-matters/sns-client';
 
 // eslint-disable-next-line prettier/prettier
 import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
 
 const processRecord = async (sqsRecord: SQSRecord) => {
   try {
-    const res = await sns
-      .publish({
-        Message: sqsRecord.body,
-        TopicArn: process.env.SNS_TOPIC_ARN || '',
-      })
-      .promise();
+    const res = await publishSns({
+      message: sqsRecord.body,
+      topicArn: process.env.SNS_TOPIC_ARN || '',
+    });
 
     console.log(res);
   } catch (err) {

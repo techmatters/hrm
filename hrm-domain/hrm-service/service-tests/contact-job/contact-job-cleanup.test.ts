@@ -45,7 +45,6 @@ const completionPayload = {
   store: 'S3' as 'S3',
   type: ContactMediaType.TRANSCRIPT,
   location: 'some/fake/location',
-  url: 'https://some/fake/url',
 };
 
 const backDateJob = (jobId: string) =>

@@ -14,7 +14,6 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { S3 } from 'aws-sdk';
 import { getSsmParameter } from '@tech-matters/ssm-cache';
 
 const sanitizeEnv = (env: string) => (env === 'local' ? 'development' : env);
@@ -24,8 +23,7 @@ const shortCode = hrmEnv === 'development' ? 'AS' : 'CA';
 
 type Context = {
   accountSid: string;
-  bucketName: string;
-  s3Client: S3;
+  bucket: string;
 };
 
 let context;
@@ -35,15 +33,11 @@ export const getContext = async (): Promise<Context> => {
     const accountSid = await getSsmParameter(
       `/${hrmEnv}/twilio/${shortCode}/account_sid`,
     );
-    const bucketName = await getSsmParameter(
-      `/${hrmEnv}/s3/${accountSid}/docs_bucket_name`,
-    );
-    const s3Client = new S3();
+    const bucket = await getSsmParameter(`/${hrmEnv}/s3/${accountSid}/docs_bucket_name`);
 
     return {
       accountSid,
-      bucketName,
-      s3Client,
+      bucket,
     };
   }
 

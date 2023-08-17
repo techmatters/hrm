@@ -18,7 +18,6 @@ import parseISO from 'date-fns/parseISO';
 import formatISO from 'date-fns/formatISO';
 import format from 'date-fns/format';
 import addDays from 'date-fns/addDays';
-import { S3 } from 'aws-sdk';
 
 import * as contactApi from '../../../src/contact/contact';
 import * as context from '../../../src/data-pull-task/khp-data-pull-task/context';
@@ -28,34 +27,34 @@ import { pullContacts } from '../../../src/data-pull-task/khp-data-pull-task/pul
 const { maxPermissions } = context;
 
 const accountSid = 'ACxxx';
-const bucketName = 'docs-bucket';
+const bucket = 'docs-bucket';
 
 jest.mock('../../../src/contact/contact');
 jest.mock('../../../src/data-pull-task/khp-data-pull-task/context');
 
+let putS3ObjectSpy = jest.fn();
+jest.mock('@tech-matters/s3-client', () => {
+  return {
+    putS3Object: (params: any) => {
+      putS3ObjectSpy(params);
+      return Promise.resolve();
+    },
+  };
+});
+
 const getExpectedS3Params = (contact: contactApi.Contact) => {
   const date = format(contact.updatedAt!, 'yyyy/MM/dd');
   return {
-    Bucket: bucketName,
-    Key: `hrm-data/${date}/contacts/${contact.id}.json`,
-    Body: JSON.stringify(contact),
+    bucket,
+    key: `hrm-data/${date}/contacts/${contact.id}.json`,
+    body: JSON.stringify(contact),
   };
 };
 
-let uploadSpy;
-const promiseSpy = jest.fn();
-
 beforeEach(() => {
-  uploadSpy = jest.fn().mockReturnValue({ promise: promiseSpy });
-
-  const s3Client = {
-    upload: uploadSpy,
-  } as unknown as S3;
-
   const getContextResponse = Promise.resolve({
     accountSid,
-    bucketName,
-    s3Client,
+    bucket,
   });
 
   jest.spyOn(context, 'getContext').mockReturnValue(getContextResponse);
@@ -123,9 +122,9 @@ describe('KHP Data Pull - Pull Contacts', () => {
 
     await pullContacts(startDate, endDate);
 
-    expect(uploadSpy).toHaveBeenCalledWith(getExpectedS3Params(contact1));
-    expect(uploadSpy).toHaveBeenCalledWith(getExpectedS3Params(contact2));
+    expect(putS3ObjectSpy).toHaveBeenCalledWith(getExpectedS3Params(contact1));
+    expect(putS3ObjectSpy).toHaveBeenCalledWith(getExpectedS3Params(contact2));
 
-    expect(promiseSpy).toBeCalledTimes(2);
+    expect(putS3ObjectSpy).toBeCalledTimes(2);
   });
 });
