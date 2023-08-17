@@ -62,8 +62,9 @@ export default class ContactCompleteStack extends cdk.Stack {
     if (params.skipLambda) return;
 
     const fn = new lambdaNode.NodejsFunction(this, 'fetchParams', {
-      runtime: lambda.Runtime.NODEJS_16_X,
+      runtime: lambda.Runtime.NODEJS_18_X,
       memorySize: 512,
+      timeout: cdk.Duration.seconds(10),
       handler: 'handler',
       entry: `./hrm-domain/${id}/index.ts`,
       environment: {

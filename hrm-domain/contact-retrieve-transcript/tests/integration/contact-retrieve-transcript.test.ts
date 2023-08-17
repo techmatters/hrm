@@ -64,10 +64,8 @@ export const waitForSQSMessage = async ({
   let result;
   try {
     result = await receiveSqsMessage({ queueUrl });
-    console.dir(result);
     if (!result?.Messages) throw new Error('No messages');
   } catch (err) {
-    console.dir(err);
     if (retryCount < 60) {
       await new Promise(resolve => setTimeout(resolve, 250));
       return waitForSQSMessage({ retryCount: retryCount + 1 });
@@ -102,7 +100,6 @@ describe('contact-retrieve-transcript', () => {
     expect(sqsResult?.Messages).toHaveLength(1);
 
     const sqsMessage = sqsResult?.Messages?.[0];
-    console.log(sqsMessage);
     const body = JSON.parse(sqsMessage?.Body || '');
     expect(body?.attemptResult).toEqual('success');
     expect(body?.attemptPayload).toEqual(attemptPayload);
@@ -120,7 +117,6 @@ describe('contact-retrieve-transcript', () => {
     expect(sqsResult?.Messages).toHaveLength(1);
 
     const sqsMessage = sqsResult?.Messages?.[0];
-    console.log(sqsMessage);
     const body = JSON.parse(sqsMessage?.Body || '');
     expect(body?.attemptResult).toEqual('failure');
     expect(body?.attemptPayload).toEqual(
