@@ -29,13 +29,28 @@ const convertToEndpoint = (endpointUrl: string) => {
     url: url,
   };
 };
-const ssmConfig: SSMClientConfig = process.env.SSM_ENDPOINT
-  ? { endpoint: convertToEndpoint(process.env.SSM_ENDPOINT) }
-  : {};
 
-if (process.env.SSM_REGION) {
-  ssmConfig.region = process.env.SSM_REGION;
-}
+const getSsmConfig = () => {
+  const ssmConfig: SSMClientConfig = {};
+
+  if (process.env.SSM_ENDPOINT) {
+    ssmConfig.region = 'us-east-1';
+    ssmConfig.endpoint = convertToEndpoint(process.env.SSM_ENDPOINT);
+  }
+
+  if (process.env.LOCAL_SSM_PORT) {
+    ssmConfig.region = 'us-east-1';
+    ssmConfig.endpoint = convertToEndpoint(
+      `http://localhost:${process.env.LOCAL_SSM_PORT}`,
+    );
+  }
+
+  if (process.env.SSM_REGION) {
+    ssmConfig.region = process.env.SSM_REGION;
+  }
+
+  return ssmConfig;
+};
 
 let ssm: SSMClient;
 
@@ -84,7 +99,7 @@ export const parameterExistsInCache = (name: string): boolean =>
 
 export const getSsmClient = () => {
   if (!ssm) {
-    ssm = new SSMClient(ssmConfig);
+    ssm = new SSMClient(getSsmConfig());
   }
 
   return ssm;

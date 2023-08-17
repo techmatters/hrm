@@ -75,9 +75,15 @@ const convertToEndpoint = (endpointUrl: string) => {
 };
 
 const getS3Conf = () => {
-  const s3Config: S3ClientConfig = process.env.S3_ENDPOINT
-    ? { endpoint: convertToEndpoint(process.env.S3_ENDPOINT) }
-    : {};
+  const s3Config: S3ClientConfig = {};
+
+  if (process.env.S3_ENDPOINT) {
+    s3Config.endpoint = convertToEndpoint(process.env.S3_ENDPOINT);
+  } else if (process.env.LOCAL_S3_PORT) {
+    s3Config.endpoint = convertToEndpoint(
+      `http://localhost:${process.env.LOCAL_SQS_PORT}`,
+    );
+  }
 
   if (process.env.S3_FORCE_PATH_STYLE) {
     s3Config.forcePathStyle = !!process.env.S3_FORCE_PATH_STYLE;

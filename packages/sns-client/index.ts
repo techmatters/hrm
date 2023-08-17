@@ -22,15 +22,26 @@ const convertToEndpoint = (endpointUrl: string) => {
     url: url,
   };
 };
-const getSnsConf = () => {
-  const snsConfig: SNSClientConfig = process.env.SNS_ENDPOINT
-    ? { endpoint: convertToEndpoint(process.env.SNS_ENDPOINT) }
-    : {};
 
-  return snsConfig;
+const getSnsConfig = (): SNSClientConfig => {
+  if (process.env.SNS_ENDPOINT) {
+    return {
+      region: 'us-east-1',
+      endpoint: convertToEndpoint(process.env.SNS_ENDPOINT),
+    };
+  }
+
+  if (process.env.LOCAL_SNS_PORT) {
+    return {
+      region: 'us-east-1',
+      endpoint: convertToEndpoint(`http://localhost:${process.env.LOCAL_SNS_PORT}`),
+    };
+  }
+
+  return {};
 };
 
-export const sns = new SNSClient(getSnsConf());
+export const sns = new SNSClient(getSnsConfig());
 
 export type PublishSnsParams = {
   topicArn: string;
