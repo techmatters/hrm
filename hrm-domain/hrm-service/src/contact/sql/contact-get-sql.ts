@@ -14,6 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
+import { selectCoalesceConversationMediasByContactId } from '../../conversation-media/sql/conversation-media-get-sql';
 import { selectCoalesceCsamReportsByContactId } from '../../csam-report/sql/csam-report-get-sql';
 import { selectCoalesceReferralsByContactId } from '../../referral/sql/referral-get-sql';
 
@@ -21,14 +22,17 @@ const ID_WHERE_CLAUSE = `WHERE c."accountSid" = $<accountSid> AND c."id" = $<con
 const TASKID_WHERE_CLAUSE = `WHERE c."accountSid" = $<accountSid> AND c."taskId" = $<taskId>`;
 
 export const selectContactsWithRelations = (table: string) => `
-        SELECT c.*, reports."csamReports", joinedReferrals."referrals"
+        SELECT c.*, reports."csamReports", joinedReferrals."referrals", media."conversationMedia"
         FROM "${table}" c 
         LEFT JOIN LATERAL (
           ${selectCoalesceCsamReportsByContactId('c')}
         ) reports ON true
         LEFT JOIN LATERAL (
           ${selectCoalesceReferralsByContactId('c')}
-        ) joinedReferrals ON true`;
+        ) joinedReferrals ON true
+        LEFT JOIN LATERAL (
+          ${selectCoalesceConversationMediasByContactId('c')}
+        ) media ON true`;
 
 export const selectSingleContactByIdSql = (table: string) => `
       ${selectContactsWithRelations(table)}

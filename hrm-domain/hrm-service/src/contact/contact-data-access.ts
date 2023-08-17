@@ -15,11 +15,7 @@
  */
 
 import { db } from '../connection-pool';
-import {
-  UPDATE_CASEID_BY_ID,
-  UPDATE_RAWJSON_BY_ID,
-  UPDATE_CONVERSATION_MEDIA_BY_ID,
-} from './sql/contact-update-sql';
+import { UPDATE_CASEID_BY_ID, UPDATE_RAWJSON_BY_ID } from './sql/contact-update-sql';
 import { SELECT_CONTACT_SEARCH } from './sql/contact-search-sql';
 import { endOfDay, parseISO, startOfDay } from 'date-fns';
 import {
@@ -27,13 +23,10 @@ import {
   selectSingleContactByTaskId,
 } from './sql/contact-get-sql';
 import { insertContactSql, NewContactRecord } from './sql/contact-insert-sql';
-import {
-  ContactRawJson,
-  PersonInformation,
-  ReferralWithoutContactId,
-} from './contact-json';
+import { PersonInformation, ReferralWithoutContactId } from './contact-json';
 import type { ITask } from 'pg-promise';
 import { txIfNotInOne } from '../sql';
+import { ConversationMedia } from '../conversation-media/conversation-media';
 
 type ExistingContactRecord = {
   id: number;
@@ -45,6 +38,7 @@ type ExistingContactRecord = {
 export type Contact = ExistingContactRecord & {
   csamReports: any[];
   referrals?: ReferralWithoutContactId[];
+  conversationMedia?: ConversationMedia[];
 };
 
 export type SearchParameters = {
@@ -256,16 +250,3 @@ export const search = async (
     };
   });
 };
-
-export const updateConversationMedia = async (
-  accountSid: string,
-  contactId: number,
-  conversationMedia: ContactRawJson['conversationMedia'],
-): Promise<void> =>
-  db.task(async connection =>
-    connection.none(UPDATE_CONVERSATION_MEDIA_BY_ID, {
-      accountSid,
-      contactId,
-      conversationMedia,
-    }),
-  );

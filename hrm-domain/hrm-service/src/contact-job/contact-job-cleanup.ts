@@ -28,7 +28,10 @@ import {
   setContactJobCleanupPending,
 } from './contact-job-data-access';
 import { ContactJobCleanupError } from './contact-job-error';
-import { isS3StoredTranscript } from '../contact/contact';
+import {
+  getConversationMediaById,
+  isS3StoredTranscript,
+} from '../conversation-media/conversation-media';
 
 const MAX_CLEANUP_JOB_RETENTION_DAYS = 365;
 
@@ -45,7 +48,15 @@ export const deleteTranscript = async (
   const { channelSid } = job.resource;
 
   // Double check that the related contact has a transcript stored in S3
-  if (!job.resource?.rawJson?.conversationMedia?.some(isS3StoredTranscript)) {
+  const conversationMedia = await getConversationMediaById(
+    accountSid,
+    job.additionalPayload.conversationMediaId,
+  );
+
+  if (
+    !isS3StoredTranscript(conversationMedia) ||
+    !conversationMedia.storeTypeSpecificData.location
+  ) {
     console.error(
       new ContactJobCleanupError(
         `job ${id} does not have a transcript stored in S3, skipping cleanup`,

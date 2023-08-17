@@ -34,6 +34,7 @@ export type PublishRetrieveContactTranscript = ContactJobMessageCommons & {
   serviceSid: string;
   channelSid: string;
   filePath: string; // the file name as we want to save the transcript in S3
+  conversationMediaId: number;
 };
 
 export type PublishToContactJobsTopicParams = PublishRetrieveContactTranscript;
@@ -64,13 +65,9 @@ export type CompletedRetrieveContactTranscript = PublishRetrieveContactTranscrip
 
 export type CompletedContactJobBody = CompletedRetrieveContactTranscript;
 
-export type CompletedContactJobBodySuccess = Omit<
-  CompletedContactJobBody,
-  'attemptResult'
-> & {
+export type CompletedContactJobBodySuccess = CompletedContactJobBody & {
   attemptResult: ContactJobAttemptResult.SUCCESS;
 };
-
 export type CompletedContactJobBodyFailure = Omit<
   CompletedContactJobBody,
   'attemptResult'

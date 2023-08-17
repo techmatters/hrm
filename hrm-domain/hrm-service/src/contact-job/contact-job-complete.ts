@@ -29,12 +29,6 @@ import {
   deleteCompletedContactJobsFromQueue,
   pollCompletedContactJobsFromQueue,
 } from './client-sqs';
-import {
-  getContactById,
-  updateConversationMedia,
-  S3StoredTranscript,
-  isS3StoredTranscriptPending,
-} from '../contact/contact';
 
 import { assertExhaustive } from './assertExhaustive';
 
@@ -44,35 +38,37 @@ import type {
   CompletedContactJobBodySuccess,
   CompletedRetrieveContactTranscript,
 } from '@tech-matters/types';
+import {
+  ConversationMedia,
+  getConversationMediaById,
+  updateConversationMediaData,
+} from '../conversation-media/conversation-media';
 
 export const processCompletedRetrieveContactTranscript = async (
-  completedJob: CompletedRetrieveContactTranscript,
+  completedJob: CompletedRetrieveContactTranscript & {
+    attemptResult: ContactJobAttemptResult.SUCCESS;
+  },
 ) => {
-  const contact = await getContactById(completedJob.accountSid, completedJob.contactId);
-  const { conversationMedia } = contact.rawJson;
-
-  const transcriptEntryIndex = conversationMedia?.findIndex(isS3StoredTranscriptPending);
-
-  if (transcriptEntryIndex < 0) {
-    throw new ContactJobPollerError(
-      `Contact with id ${contact.id} does not have a pending transcript entry in conversationMedia`,
-    );
-  }
-
-  (<S3StoredTranscript>conversationMedia[transcriptEntryIndex]).location =
-    completedJob.attemptPayload;
-  (<S3StoredTranscript>conversationMedia[transcriptEntryIndex]).url =
-    completedJob.attemptPayload.url;
-
-  return updateConversationMedia(
+  const conversationMedia = await getConversationMediaById(
     completedJob.accountSid,
-    completedJob.contactId,
-    conversationMedia,
+    completedJob.conversationMediaId,
+  );
+
+  const storeTypeSpecificData: ConversationMedia['storeTypeSpecificData'] = {
+    ...conversationMedia.storeTypeSpecificData,
+    location: completedJob.attemptPayload,
+    url: completedJob.attemptPayload.url,
+  };
+
+  return updateConversationMediaData(
+    completedJob.accountSid,
+    completedJob.conversationMediaId,
+    storeTypeSpecificData,
   );
 };
 
 export const processCompletedContactJob = async (
-  completedJob: CompletedContactJobBody,
+  completedJob: CompletedContactJobBodySuccess,
 ) => {
   switch (completedJob.jobType) {
     case ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT: {
