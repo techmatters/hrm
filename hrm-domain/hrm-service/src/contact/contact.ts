@@ -121,15 +121,19 @@ const intoLegacyConversationMedia = (cm: ConversationMedia): LegacyConversationM
   } as LegacyConversationMedia;
 };
 // TODO: Remove once all Flex clients are using new ConversationMedia model
-const addLegacyConversationMedia = (contact: Contact): Contact => ({
-  ...contact,
-  rawJson: {
-    ...contact.rawJson,
-    conversationMedia: contact.conversationMedia?.length
-      ? contact.conversationMedia.map(intoLegacyConversationMedia)
-      : undefined,
-  },
-});
+const addLegacyConversationMedia = (contact: Contact): Contact =>
+  contact.conversationMedia?.length
+    ? {
+        ...contact,
+        rawJson: {
+          ...contact.rawJson,
+          conversationMedia: contact.conversationMedia.map(intoLegacyConversationMedia),
+        },
+      }
+    : {
+        ...contact,
+        rawJson: omit(contact.rawJson, 'conversationMedia'),
+      };
 
 const filterExternalTranscripts = (contact: Contact): Contact => {
   const { conversationMedia, ...rest } = contact;

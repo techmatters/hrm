@@ -527,7 +527,7 @@ describe('update existing case', () => {
 
 test('update non existing case', async () => {
   const nonExistingCaseId = 1;
-  jest.spyOn(caseDb, 'update').mockImplementation(() => null);
+  jest.spyOn(caseDb, 'update').mockImplementation(() => null as any);
 
   const updateCaseObject = {
     info: {

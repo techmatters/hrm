@@ -47,6 +47,7 @@ const mockContact: contactDb.Contact = {
   csamReports: [],
   referrals: [],
   conversationMedia: [],
+  rawJson: {} as any,
 };
 
 describe('createContact', () => {
