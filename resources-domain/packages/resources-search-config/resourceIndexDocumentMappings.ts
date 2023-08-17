@@ -152,6 +152,7 @@ export const resourceIndexDocumentMappings: ResourceIndexDocumentMappings = {
     languages: {
       type: 'keyword',
       isArrayField: true,
+      attributeKeyPattern: /^languages\/.*$/,
       indexValueGenerator: ({ value, info }: ReferrableResourceAttribute<string>) =>
         `${info?.language ?? ''} ${value}`,
     },
