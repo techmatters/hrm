@@ -47,7 +47,11 @@ let twilioSpy: jest.SpyInstance;
 const completionPayload = {
   store: 'S3' as 'S3',
   type: S3ContactMediaType.TRANSCRIPT,
-  location: 'some/fake/location',
+  location: {
+    bucket: 'bucket',
+    key: 'key',
+    url: 'https://some/fake/url',
+  },
   url: 'https://some/fake/url',
 };
 

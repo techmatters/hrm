@@ -864,17 +864,23 @@ describe('/contacts route', () => {
 
       const res = await request.post(route).set(headers).send(withTaskIdAndTranscript);
 
-      expect(
-        Array.isArray((<contactApi.Contact>res.body).rawJson?.conversationMedia),
-      ).toBeTruthy();
-
       if (expectTranscripts) {
         expect(
           (<contactApi.Contact>res.body).conversationMedia?.some(isS3StoredTranscript),
         ).toBeTruthy();
+        expect(
+          (<contactApi.Contact>res.body).rawJson?.conversationMedia?.some(
+            cm => cm.store === 'S3',
+          ),
+        ).toBeTruthy();
       } else {
         expect(
           (<contactApi.Contact>res.body).conversationMedia?.some(isS3StoredTranscript),
+        ).toBeFalsy();
+        expect(
+          (<contactApi.Contact>res.body).rawJson?.conversationMedia?.some(
+            cm => cm.store === 'S3',
+          ),
         ).toBeFalsy();
       }
 
@@ -1327,23 +1333,27 @@ describe('/contacts route', () => {
         expect(res.status).toBe(200);
         expect(res.body.count).toBe(1);
 
-        expect(
-          Array.isArray(
-            (<contactApi.SearchContact>res.body.contacts[0]).details?.conversationMedia,
-          ),
-        ).toBeTruthy();
-
         if (expectTranscripts) {
           expect(
             (<contactApi.SearchContact>res.body.contacts[0]).conversationMedia?.some(
               isS3StoredTranscript,
             ),
           ).toBeTruthy();
+          expect(
+            (<contactApi.SearchContact>(
+              res.body.contacts[0]
+            )).details.conversationMedia?.some(cm => cm.store === 'S3'),
+          ).toBeTruthy();
         } else {
           expect(
             (<contactApi.SearchContact>res.body.contacts[0]).conversationMedia?.some(
               isS3StoredTranscript,
             ),
+          ).toBeFalsy();
+          expect(
+            (<contactApi.SearchContact>(
+              res.body.contacts[0]
+            )).details.conversationMedia?.some(cm => cm.store === 'S3'),
           ).toBeFalsy();
         }
 
@@ -1804,17 +1814,23 @@ describe('/contacts route', () => {
           .set(headers)
           .send({ rawJson: createdContact.rawJson });
 
-        expect(
-          Array.isArray((<contactApi.Contact>res.body).rawJson?.conversationMedia),
-        ).toBeTruthy();
-
         if (expectTranscripts) {
           expect(
             (<contactApi.Contact>res.body).conversationMedia?.some(isS3StoredTranscript),
           ).toBeTruthy();
+          expect(
+            (<contactApi.Contact>res.body).rawJson?.conversationMedia?.some(
+              cm => cm.store === 'S3',
+            ),
+          ).toBeTruthy();
         } else {
           expect(
             (<contactApi.Contact>res.body).conversationMedia?.some(isS3StoredTranscript),
+          ).toBeFalsy();
+          expect(
+            (<contactApi.Contact>res.body).rawJson?.conversationMedia?.some(
+              cm => cm.store === 'S3',
+            ),
           ).toBeFalsy();
         }
 
