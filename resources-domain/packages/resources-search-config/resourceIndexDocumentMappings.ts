@@ -105,6 +105,7 @@ export const resourceIndexDocumentMappings: ResourceIndexDocumentMappings = {
     'province',
     'city',
     'targetPopulation',
+    'languages',
     'feeStructure',
   ],
 
@@ -147,6 +148,13 @@ export const resourceIndexDocumentMappings: ResourceIndexDocumentMappings = {
     },
     interpretationTranslationServicesAvailable: {
       type: 'boolean',
+    },
+    languages: {
+      type: 'keyword',
+      isArrayField: true,
+      attributeKeyPattern: /^languages\/.*$/,
+      indexValueGenerator: ({ value, info }: ReferrableResourceAttribute<string>) =>
+        `${info?.language ?? ''} ${value}`,
     },
     province: {
       type: 'keyword',
