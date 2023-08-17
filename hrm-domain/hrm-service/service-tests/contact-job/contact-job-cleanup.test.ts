@@ -50,7 +50,6 @@ const completionPayload = {
   location: {
     bucket: 'bucket',
     key: 'key',
-    url: 'https://some/fake/url',
   },
 };
 

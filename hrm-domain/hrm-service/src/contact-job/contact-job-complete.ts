@@ -57,7 +57,6 @@ export const processCompletedRetrieveContactTranscript = async (
   const storeTypeSpecificData: ConversationMedia['storeTypeSpecificData'] = {
     ...conversationMedia.storeTypeSpecificData,
     location: completedJob.attemptPayload,
-    url: completedJob.attemptPayload.url,
   };
 
   return updateConversationMediaData(

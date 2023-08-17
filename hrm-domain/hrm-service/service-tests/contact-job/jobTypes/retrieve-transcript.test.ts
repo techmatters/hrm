@@ -378,7 +378,6 @@ describe('complete retrieve-transcript job type', () => {
         location: {
           bucket: 'some-url-here',
           key: 'some-url-here',
-          url: 'some-url-here',
         },
       };
 
