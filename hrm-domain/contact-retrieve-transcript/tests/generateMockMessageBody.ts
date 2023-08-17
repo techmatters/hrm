@@ -14,17 +14,26 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
+import {
+  ContactJobType,
+  type PublishRetrieveContactTranscript,
+} from '@tech-matters/types';
+
 const accountSids = ['testSid1', 'testSid2'];
 
-export const generateMockMessageBody = () => {
+export const generateMockMessageBody = (): PublishRetrieveContactTranscript => {
   const accountSid = accountSids[Math.floor(Math.random() * accountSids.length)];
   return {
     jobId: Math.floor(Math.random() * 1000000),
     accountSid,
     contactId: Math.floor(Math.random() * 1000000),
-    jobType: 'retrieve-contact-transcript',
+    jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
     filePath: `${accountSid}/testFilePath-${Math.floor(Math.random() * 1000000)}`,
     serviceSid: 'testServiceSid',
     channelSid: 'testChannelSid',
+    taskId: 'testTaskId',
+    twilioWorkerId: 'testTwilioWorkerId',
+    conversationMediaId: Math.floor(Math.random() * 1000000),
+    attemptNumber: Math.floor(Math.random() * 20),
   };
 };

@@ -46,6 +46,8 @@ const mockContact: contactDb.Contact = {
   accountSid: 'accountSid',
   csamReports: [],
   referrals: [],
+  conversationMedia: [],
+  rawJson: {} as any,
 };
 
 describe('createContact', () => {
@@ -637,6 +639,7 @@ describe('searchContacts', () => {
           details: jillSmith.rawJson,
           csamReports: [],
           referrals: [],
+          conversationMedia: [],
         },
         {
           contactId: '1234',
@@ -657,6 +660,7 @@ describe('searchContacts', () => {
           details: sarahPark.rawJson,
           csamReports: [],
           referrals: [],
+          conversationMedia: [],
         },
       ],
     };

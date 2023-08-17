@@ -65,10 +65,3 @@ RETURNING *
 )
 ${selectSingleContactByIdSql('updated')}
 `;
-
-export const UPDATE_CONVERSATION_MEDIA_BY_ID = `
-  UPDATE "Contacts"
-  SET
-    "rawJson" = COALESCE("rawJson", '{}'::JSONB) || jsonb_build_object('conversationMedia', COALESCE($<conversationMedia:json>::JSONB, "rawJson"->'conversationMedia', '[]'::JSONB))
-  ${ID_WHERE_CLAUSE}
-`;

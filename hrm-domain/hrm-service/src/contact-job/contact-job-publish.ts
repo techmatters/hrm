@@ -48,6 +48,7 @@ export const publishRetrieveContactTranscript = (
     twilioWorkerId,
     filePath,
     attemptNumber: contactJob.numberOfAttempts,
+    conversationMediaId: contactJob.additionalPayload.conversationMediaId,
   });
 };
 

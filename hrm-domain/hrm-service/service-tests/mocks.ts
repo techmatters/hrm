@@ -16,10 +16,8 @@
 
 import { Case } from '../src/case/case';
 import { channelTypes } from '../src/contact/channelTypes';
-import {
-  ContactMediaType,
-  CreateContactPayloadWithFormProperty,
-} from '../src/contact/contact';
+import { CreateContactPayloadWithFormProperty } from '../src/contact/contact';
+import { S3ContactMediaType } from '../src/conversation-media/conversation-media';
 import { Contact } from '../src/contact/contact-data-access';
 
 export const accountSid = 'ACCOUNT_SID';
@@ -289,7 +287,7 @@ export const withTaskIdAndTranscript = {
     conversationMedia: [
       {
         store: 'S3' as const,
-        type: ContactMediaType.TRANSCRIPT,
+        type: S3ContactMediaType.TRANSCRIPT,
         url: undefined,
       },
     ],

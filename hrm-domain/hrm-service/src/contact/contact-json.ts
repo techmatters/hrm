@@ -13,6 +13,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
+import { LegacyConversationMedia } from '../conversation-media/conversation-media';
 import { Referral } from '../referral/referral-data-access';
 
 type NestedInformation = { name?: { firstName: string; lastName: string } };
@@ -20,34 +21,6 @@ type NestedInformation = { name?: { firstName: string; lastName: string } };
 export type PersonInformation = NestedInformation & {
   [key: string]: string | boolean | NestedInformation[keyof NestedInformation]; // having NestedInformation[keyof NestedInformation] makes type looser here because of this https://github.com/microsoft/TypeScript/issues/17867. Possible/future solution https://github.com/microsoft/TypeScript/pull/29317
 };
-
-export type TwilioStoredMedia = {
-  store: 'twilio';
-  reservationSid: string;
-};
-
-export enum ContactMediaType {
-  // RECORDING = 'recording',
-  TRANSCRIPT = 'transcript',
-}
-
-export type S3StoredTranscript = {
-  store: 'S3';
-  type: ContactMediaType.TRANSCRIPT;
-  location?: string;
-  url?: string;
-};
-
-type S3StoredMedia = S3StoredTranscript;
-
-export type ConversationMedia = TwilioStoredMedia | S3StoredMedia;
-
-export const isTwilioStoredMedia = (m: ConversationMedia): m is TwilioStoredMedia =>
-  m.store === 'twilio';
-export const isS3StoredTranscript = (m: ConversationMedia): m is S3StoredTranscript =>
-  m.store === 'S3' && m.type === ContactMediaType.TRANSCRIPT;
-export const isS3StoredTranscriptPending = (m: ConversationMedia) =>
-  isS3StoredTranscript(m) && !m.location;
 
 /**
  * This and contained types are copied from Flex
@@ -62,7 +35,7 @@ export type ContactRawJson = {
     [key: string]: string | boolean | Record<string, Record<string, boolean>>;
   };
   contactlessTask?: { [key: string]: string | boolean };
-  conversationMedia?: ConversationMedia[];
+  conversationMedia?: LegacyConversationMedia[];
   referrals?: Referral[];
 };
 

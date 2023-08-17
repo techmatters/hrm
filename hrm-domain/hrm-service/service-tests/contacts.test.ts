@@ -18,11 +18,12 @@ import each from 'jest-each';
 import { subHours, subDays } from 'date-fns';
 
 import { db } from '../src/connection-pool';
+import { ContactRawJson } from '../src/contact/contact-json';
 import {
-  ContactMediaType,
-  ContactRawJson,
+  NewConversationMedia,
+  S3ContactMediaType,
   isS3StoredTranscript,
-} from '../src/contact/contact-json';
+} from '../src/conversation-media/conversation-media';
 import {
   accountSid,
   contact1,
@@ -57,6 +58,7 @@ import { selectSingleContactByTaskId } from '../src/contact/sql/contact-get-sql'
 import { ruleFileWithOneActionOverride } from './permissions-overrides';
 import * as csamReportApi from '../src/csam-report/csam-report';
 import * as referralDB from '../src/referral/referral-data-access';
+import * as conversationMediaDB from '../src/conversation-media/conversation-media-data-access';
 import { headers, getRequest, getServer, setRules, useOpenRules } from './server';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
 
@@ -184,6 +186,15 @@ const deleteReferralsByContactId = (contactId: number, accountSid: string) =>
   db.task(t =>
     t.manyOrNone(`
       DELETE FROM "Referrals"
+      WHERE "contactId" = ${contactId} AND "accountSid" = '${accountSid}';
+    `),
+  );
+
+// eslint-disable-next-line @typescript-eslint/no-shadow
+const deleteConversationMediaByContactId = (contactId: number, accountSid: string) =>
+  db.task(t =>
+    t.manyOrNone(`
+      DELETE FROM "ConversationMedias"
       WHERE "contactId" = ${contactId} AND "accountSid" = '${accountSid}';
     `),
   );
@@ -554,6 +565,119 @@ describe('/contacts route', () => {
       expect(attemptedContact).toBeNull();
     });
 
+    ////////////////////////////////////////
+    ////////////////////////////////////////
+    ////////////////////////////////////////
+    ////////////////////////////////////////
+    ////////////////////////////////////////
+    ////////////////////////////////////////
+    ////////////////////////////////////////
+    ////////////////////////////////////////
+
+    test('Connects to conversation media', async () => {
+      const cm1: NewConversationMedia = {
+        storeType: 'S3',
+        storeTypeSpecificData: {
+          type: S3ContactMediaType.TRANSCRIPT,
+        },
+      };
+
+      const cm2: NewConversationMedia = {
+        storeType: 'twilio',
+        storeTypeSpecificData: {
+          reservationSid: 'reservationSid',
+        },
+      };
+
+      const contact = {
+        ...withTaskId,
+        form: {
+          ...withTaskId.form,
+        },
+        conversationMedia: [cm1, cm2],
+        channel: 'web',
+        taskId: `${withTaskId.taskId}-web-conversation-media`,
+      };
+
+      // Create contact with conversation media
+      const response = await request.post(route).set(headers).send(contact);
+
+      expect(response.status).toBe(200);
+
+      const createdConversationMedia = await db.task(t =>
+        t.many(`
+          SELECT * FROM "ConversationMedias" WHERE "contactId" = ${response.body.id}
+      `),
+      );
+
+      if (!createdConversationMedia || !createdConversationMedia.length) {
+        throw new Error('createdConversationMedia is empty');
+      }
+
+      createdConversationMedia.forEach(r => {
+        expect(r.contactId).toBeDefined();
+        expect(r.contactId).toEqual(response.body.id);
+      });
+
+      // Test the association
+      expect((response.body as contactDb.Contact).conversationMedia).toHaveLength(2);
+
+      // Remove records to not interfere with following tests
+      await deleteJobsByContactId(response.body.id, response.body.accountSid);
+      await deleteConversationMediaByContactId(
+        response.body.id,
+        response.body.accountSid,
+      );
+      await deleteContactById(response.body.id, response.body.accountSid);
+    });
+
+    test(`If creating convfersation media fails, the contact is not created either`, async () => {
+      const cm1: NewConversationMedia = {
+        storeType: 'S3',
+        storeTypeSpecificData: {
+          type: S3ContactMediaType.TRANSCRIPT,
+        },
+      };
+
+      const contact = {
+        ...withTaskId,
+        form: {
+          ...withTaskId.form,
+        },
+        conversationMedia: [cm1],
+        channel: 'web',
+        taskId: `${withTaskId.taskId}-web-conversation-media`,
+      };
+
+      const createConversationMediaSpy = jest
+        .spyOn(conversationMediaDB, 'create')
+        .mockImplementationOnce(() => {
+          throw new Error('Ups');
+        });
+
+      const res = await request.post(route).set(headers).send(contact);
+
+      expect(createConversationMediaSpy).toHaveBeenCalled();
+      expect(res.status).toBe(500);
+
+      const attemptedContact = await getContactByTaskId(contact.taskId, accountSid);
+
+      expect(attemptedContact).toBeNull();
+    });
+
+    ////////////////////////////////////////
+    ////////////////////////////////////////
+    ////////////////////////////////////////
+    ////////////////////////////////////////
+    ////////////////////////////////////////
+    ////////////////////////////////////////
+    ////////////////////////////////////////
+    ////////////////////////////////////////
+    ////////////////////////////////////////
+    ////////////////////////////////////////
+    ////////////////////////////////////////
+    ////////////////////////////////////////
+
     each(
       chatChannels.map(channel => ({
         channel,
@@ -564,7 +688,7 @@ describe('/contacts route', () => {
             conversationMedia: [
               {
                 store: 'S3',
-                type: ContactMediaType.TRANSCRIPT,
+                type: S3ContactMediaType.TRANSCRIPT,
                 url: undefined,
               },
             ],
@@ -625,7 +749,7 @@ describe('/contacts route', () => {
             conversationMedia: [
               {
                 store: 'S3',
-                type: ContactMediaType.TRANSCRIPT,
+                type: S3ContactMediaType.TRANSCRIPT,
                 url: undefined,
               },
             ],
@@ -670,7 +794,7 @@ describe('/contacts route', () => {
             conversationMedia: [
               {
                 store: 'S3',
-                type: ContactMediaType.TRANSCRIPT,
+                type: S3ContactMediaType.TRANSCRIPT,
                 url: undefined,
               },
             ],
@@ -740,20 +864,22 @@ describe('/contacts route', () => {
 
       const res = await request.post(route).set(headers).send(withTaskIdAndTranscript);
 
-      expect(
-        Array.isArray((<contactApi.Contact>res.body).rawJson?.conversationMedia),
-      ).toBeTruthy();
-
       if (expectTranscripts) {
         expect(
+          (<contactApi.Contact>res.body).conversationMedia?.some(isS3StoredTranscript),
+        ).toBeTruthy();
+        expect(
           (<contactApi.Contact>res.body).rawJson?.conversationMedia?.some(
-            isS3StoredTranscript,
+            cm => cm.store === 'S3',
           ),
         ).toBeTruthy();
       } else {
         expect(
+          (<contactApi.Contact>res.body).conversationMedia?.some(isS3StoredTranscript),
+        ).toBeFalsy();
+        expect(
           (<contactApi.Contact>res.body).rawJson?.conversationMedia?.some(
-            isS3StoredTranscript,
+            cm => cm.store === 'S3',
           ),
         ).toBeFalsy();
       }
@@ -1207,23 +1333,27 @@ describe('/contacts route', () => {
         expect(res.status).toBe(200);
         expect(res.body.count).toBe(1);
 
-        expect(
-          Array.isArray(
-            (<contactApi.SearchContact>res.body.contacts[0]).details?.conversationMedia,
-          ),
-        ).toBeTruthy();
-
         if (expectTranscripts) {
+          expect(
+            (<contactApi.SearchContact>res.body.contacts[0]).conversationMedia?.some(
+              isS3StoredTranscript,
+            ),
+          ).toBeTruthy();
           expect(
             (<contactApi.SearchContact>(
               res.body.contacts[0]
-            )).details?.conversationMedia?.some(isS3StoredTranscript),
+            )).details.conversationMedia?.some(cm => cm.store === 'S3'),
           ).toBeTruthy();
         } else {
           expect(
+            (<contactApi.SearchContact>res.body.contacts[0]).conversationMedia?.some(
+              isS3StoredTranscript,
+            ),
+          ).toBeFalsy();
+          expect(
             (<contactApi.SearchContact>(
               res.body.contacts[0]
-            )).details?.conversationMedia?.some(isS3StoredTranscript),
+            )).details.conversationMedia?.some(cm => cm.store === 'S3'),
           ).toBeFalsy();
         }
 
@@ -1684,20 +1814,22 @@ describe('/contacts route', () => {
           .set(headers)
           .send({ rawJson: createdContact.rawJson });
 
-        expect(
-          Array.isArray((<contactApi.Contact>res.body).rawJson?.conversationMedia),
-        ).toBeTruthy();
-
         if (expectTranscripts) {
           expect(
+            (<contactApi.Contact>res.body).conversationMedia?.some(isS3StoredTranscript),
+          ).toBeTruthy();
+          expect(
             (<contactApi.Contact>res.body).rawJson?.conversationMedia?.some(
-              isS3StoredTranscript,
+              cm => cm.store === 'S3',
             ),
           ).toBeTruthy();
         } else {
           expect(
+            (<contactApi.Contact>res.body).conversationMedia?.some(isS3StoredTranscript),
+          ).toBeFalsy();
+          expect(
             (<contactApi.Contact>res.body).rawJson?.conversationMedia?.some(
-              isS3StoredTranscript,
+              cm => cm.store === 'S3',
             ),
           ).toBeFalsy();
         }

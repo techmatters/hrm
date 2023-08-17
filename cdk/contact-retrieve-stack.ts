@@ -113,6 +113,7 @@ export default class ContactRetrieveStack extends cdk.Stack {
       // TODO: change this back to 16 once it isn't broken upstream
       runtime: lambda.Runtime.NODEJS_16_X,
       memorySize: 512,
+      timeout: cdk.Duration.seconds(10),
       handler: 'handler',
       entry: `./hrm-domain/contact-${id}/index.ts`,
       environment: {
