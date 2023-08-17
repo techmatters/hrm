@@ -61,6 +61,39 @@ module.exports = {
       CREATE INDEX IF NOT EXISTS "fki_ConversationMedias_contactId_accountSid_Contact_id_accountSid_fk" ON public."ConversationMedias" USING btree
         ("contactId" ASC NULLS LAST, "accountSid" COLLATE pg_catalog."default" ASC NULLS LAST)
       `);
+
+    await queryInterface.sequelize.query(`
+      INSERT INTO "ConversationMedias" ("contactId", "accountSid", "createdAt", "updatedAt", "storeType", "storeTypeSpecificData")
+      SELECT
+        contacts.id AS "contactId",
+        contacts."accountSid" AS "accountSid",
+        contacts."createdAt" AS "createdAt",
+        contacts."createdAt" AS "updatedAt",
+        cm.store AS "storeType",
+        jsonb_build_object('reservationSid' ,cm."reservationSid") AS "storeTypeSpecificData"
+      FROM
+      "Contacts" AS contacts
+      INNER JOIN LATERAL
+        jsonb_to_recordset(contacts."rawJson"::JSONB->'conversationMedia') AS
+        cm("store" text, "reservationSid" text) ON store = 'twilio'
+      UNION ALL
+      SELECT
+        contacts.id AS "contactId",
+        contacts."accountSid" AS "accountSid",
+        contacts."createdAt" AS "createdAt",
+        contacts."createdAt" AS "updatedAt",
+        cm.store AS "storeType",
+        jsonb_build_object(
+          'type', cm."type",
+        'location', cm."location",
+        'url', cm."url"
+        ) AS "storeTypeSpecificData"
+      FROM
+      "Contacts" AS contacts
+      INNER JOIN LATERAL
+        jsonb_to_recordset(contacts."rawJson"::JSONB->'conversationMedia') AS
+        cm("store" text, "type" text, "location" jsonb, "url" text) ON store = 'S3'
+    `);
   },
 
   down: async queryInterface => {
