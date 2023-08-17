@@ -39,19 +39,22 @@ import type {
   CompletedRetrieveContactTranscript,
 } from '@tech-matters/types';
 import {
+  ConversationMedia,
   getConversationMediaById,
   updateConversationMediaData,
 } from '../conversation-media/conversation-media';
 
 export const processCompletedRetrieveContactTranscript = async (
-  completedJob: CompletedRetrieveContactTranscript,
+  completedJob: CompletedRetrieveContactTranscript & {
+    attemptResult: ContactJobAttemptResult.SUCCESS;
+  },
 ) => {
   const conversationMedia = await getConversationMediaById(
     completedJob.accountSid,
     completedJob.conversationMediaId,
   );
 
-  const storeTypeSpecificData = {
+  const storeTypeSpecificData: ConversationMedia['storeTypeSpecificData'] = {
     ...conversationMedia.storeTypeSpecificData,
     location: completedJob.attemptPayload,
     url: completedJob.attemptPayload.url,
@@ -65,7 +68,7 @@ export const processCompletedRetrieveContactTranscript = async (
 };
 
 export const processCompletedContactJob = async (
-  completedJob: CompletedContactJobBody,
+  completedJob: CompletedContactJobBodySuccess,
 ) => {
   switch (completedJob.jobType) {
     case ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT: {

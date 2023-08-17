@@ -37,7 +37,11 @@ export type LegacyTwilioStoredMedia = {
 export type LegacyS3StoredTranscript = {
   store: 'S3';
   type: S3ContactMediaType.TRANSCRIPT;
-  location?: string;
+  location?: {
+    bucket: string;
+    key: string;
+    url: string;
+  };
   url?: string;
 };
 

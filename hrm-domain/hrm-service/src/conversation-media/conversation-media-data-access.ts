@@ -55,7 +55,11 @@ type NewS3StoredTranscript = {
   storeType: 'S3';
   storeTypeSpecificData: {
     type: S3ContactMediaType.TRANSCRIPT;
-    location?: string;
+    location?: {
+      bucket: string;
+      key: string;
+      url: string;
+    };
     url?: string;
   };
 };
