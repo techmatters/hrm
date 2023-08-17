@@ -164,6 +164,7 @@ export class ContactBuilder {
       }),
       csamReports: [],
       referrals: [],
+      conversationMedia: [],
     };
   }
 }

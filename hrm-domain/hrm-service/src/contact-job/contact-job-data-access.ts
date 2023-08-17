@@ -31,6 +31,7 @@ import {
 import { txIfNotInOne } from '../sql';
 
 import { ContactJobType } from '@tech-matters/types';
+import { ConversationMedia } from '../conversation-media/conversation-media';
 
 // Reflects the actual shape of a record in the ContactJobs table
 export type ContactJobRecord = {
@@ -47,13 +48,19 @@ export type ContactJobRecord = {
 };
 
 // ContactJob base interface, picks the properties used from ContactJobRecord plus the resource Contact
-type Job<TComplete, TAdditional> = ContactJobRecord & {
+type Job<TComplete, TAdditional> = Omit<
+  ContactJobRecord,
+  'completionPayload' | 'additionalPayload'
+> & {
   completionPayload: TComplete;
   additionalPayload: TAdditional;
   resource: Contact;
 };
 
-export type RetrieveContactTranscriptJob = Job<string[] | null, null> & {
+export type RetrieveContactTranscriptJob = Job<
+  string[] | null,
+  { conversationMediaId: ConversationMedia['id'] }
+> & {
   jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT;
 };
 
