@@ -48,7 +48,7 @@ module.exports = {
           "timestamp_clock"
         ) VALUES (
           current_user,                         -- the current DB user
-          TG_TABLE_NAME,                        -- target tabla name
+          TG_TABLE_NAME,                        -- target table name
           TG_OP,                                -- operation performed on target row
           to_jsonb(OLD),                        -- target record previous state
           to_jsonb(NEW),                        -- target record new state
