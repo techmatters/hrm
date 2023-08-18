@@ -13,9 +13,93 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
+import fetch from 'node-fetch';
+import { deleteS3Object, putS3Object } from '@tech-matters/s3-client';
+import { handler } from '../../index';
+import { mockQueryStringParameters, newAlbEvent } from '../__mocks__';
+
+const bucket = mockQueryStringParameters.bucket;
+const bodyObject = { test: 'test' };
+const body = JSON.stringify(bodyObject);
 
 describe('get-signed-s3-url', () => {
-  it('fake test', () => {
-    expect(true).toBe(true);
+  let key: string;
+
+  beforeAll(async () => {
+    key = `${Math.floor(Math.random() * 1000000)}/test-file.json`;
+    await putS3Object({
+      bucket,
+      key,
+      body,
+    });
+  });
+
+  afterAll(async () => {
+    await deleteS3Object({
+      bucket,
+      key,
+    });
+  });
+
+  it('should retrieve valid media url for contactRecording', async () => {
+    const event = newAlbEvent({
+      queryStringParameters: {
+        ...mockQueryStringParameters,
+        key,
+      },
+    });
+
+    const response = await handler(event);
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toBeDefined();
+    const respBody = JSON.parse(response.body!);
+    expect(respBody.media_url).toBeDefined();
+
+    const fetchResponse = await fetch(respBody.media_url);
+    expect(fetchResponse.status).toBe(200);
+    const fetchBody = await fetchResponse.json();
+    expect(fetchBody).toEqual(bodyObject);
+  });
+
+  it('should throw a 500 error for missing method', async () => {
+    const event = newAlbEvent({
+      queryStringParameters: {
+        ...mockQueryStringParameters,
+        method: undefined,
+      },
+    });
+
+    const response = await handler(event);
+    expect(response.statusCode).toBe(500);
+  });
+
+  it('should throw a 500 error for invalid method', async () => {
+    const event = newAlbEvent({
+      queryStringParameters: {
+        ...mockQueryStringParameters,
+        method: 'invalid-method',
+      },
+    });
+
+    const response = await handler(event);
+    expect(response.statusCode).toBe(500);
+  });
+
+  it('should throw a 404 error for signed s3 link for invalid key', async () => {
+    const event = newAlbEvent({
+      queryStringParameters: {
+        ...mockQueryStringParameters,
+        key: 'invalid-key',
+      },
+    });
+
+    const response = await handler(event);
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toBeDefined();
+    const respBody = JSON.parse(response.body!);
+    expect(respBody.media_url).toBeDefined();
+
+    const fetchResponse = await fetch(respBody.media_url);
+    expect(fetchResponse.status).toBe(404);
   });
 });

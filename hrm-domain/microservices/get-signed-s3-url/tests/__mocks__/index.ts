@@ -2,7 +2,7 @@ import type { ALBEvent } from 'aws-lambda';
 
 export const mockQueryStringParameters = {
   method: 'getObject',
-  bucket: 'test-bucket',
+  bucket: 'contact-docs-bucket',
   key: 'test-key',
   accountSid: 'test-account-sid',
   requestType: 'contactRecording',
