@@ -272,16 +272,16 @@ export const KHP_MAPPING_NODE: MappingNode = {
     children: {
       phrase: {
         children: {
-          '{language}': translatableAttributeMapping('phrase', {
+          '{language}': translatableAttributeMapping('eligibility/phrase', {
             language: ctx => ctx.captures.language,
           }),
         },
       },
-      adult: attributeMapping('booleanAttributes', 'adult'),
-      child: attributeMapping('booleanAttributes', 'child'),
-      family: attributeMapping('booleanAttributes', 'family'),
-      teen: attributeMapping('booleanAttributes', 'teen'),
-      gender: attributeMapping('stringAttributes', 'gender'),
+      adult: attributeMapping('booleanAttributes', 'eligibility/adult'),
+      child: attributeMapping('booleanAttributes', 'eligibility/child'),
+      family: attributeMapping('booleanAttributes', 'eligibility/family'),
+      teen: attributeMapping('booleanAttributes', 'eligibility/teen'),
+      gender: attributeMapping('stringAttributes', 'eligibility/gender'),
     },
   },
   website: {
