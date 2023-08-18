@@ -23,6 +23,16 @@ import {
   SuccessResult,
 } from '@tech-matters/types';
 
+export const ERROR_MESSAGES = {
+  MISSING_QUERY_STRING_PARAMETERS: 'Missing queryStringParameters',
+  MISSING_REQUIRED_QUERY_STRING_PARAMETERS:
+    'Missing required queryStringParameters: method, bucket, key, accountSid, requestType',
+  INVALID_METHOD: 'Invalid method',
+  INVALID_REQUEST_TYPE: 'Invalid requestType',
+  MISSING_REQUIRED_PARAMETERS_FOR_REQUEST_TYPE:
+    'Missing required parameters for requestType',
+};
+
 export type Parameters = {
   method: GetSignedUrlMethods;
   bucket: string;
@@ -41,7 +51,7 @@ export type ParseParametersResult = ErrorResult | ParseParametersSuccess;
 const methods = ['getObject', 'putObject', 'deleteObject'];
 
 const requestTypes = {
-  recordingUrlProvider: {
+  contactRecording: {
     requiredParameters: ['contactId'],
   },
 };
@@ -50,22 +60,22 @@ export const parseParameters = (event: ALBEvent): ParseParametersResult => {
   const { queryStringParameters } = event;
 
   if (!queryStringParameters) {
-    return newErrorResult({ message: 'Missing queryStringParameters' });
+    return newErrorResult({ message: ERROR_MESSAGES.MISSING_QUERY_STRING_PARAMETERS });
   }
 
   const { method, bucket, key, accountSid, requestType } = queryStringParameters;
 
   if (!method || !bucket || !key || !accountSid || !requestType) {
     return newErrorResult({
-      message:
-        'Missing required queryStringParameters: method, bucket, key, accountSid, requestType',
+      message: ERROR_MESSAGES.MISSING_REQUIRED_QUERY_STRING_PARAMETERS,
     });
   }
 
-  if (!methods.includes(method)) return newErrorResult({ message: 'Invalid method' });
+  if (!methods.includes(method))
+    return newErrorResult({ message: ERROR_MESSAGES.INVALID_METHOD });
 
   if (!Object.keys(requestTypes).includes(requestType)) {
-    return newErrorResult({ message: 'Invalid requestType' });
+    return newErrorResult({ message: ERROR_MESSAGES.INVALID_REQUEST_TYPE });
   }
 
   const requestTypeConfig = requestTypes[requestType as keyof typeof requestTypes];
@@ -76,7 +86,7 @@ export const parseParameters = (event: ALBEvent): ParseParametersResult => {
 
   if (missingRequiredParameters.length > 0) {
     return newErrorResult({
-      message: `Missing required parameters: ${missingRequiredParameters.join(', ')}`,
+      message: ERROR_MESSAGES.MISSING_REQUIRED_PARAMETERS_FOR_REQUEST_TYPE,
     });
   }
 
