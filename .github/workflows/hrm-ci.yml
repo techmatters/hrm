@@ -53,7 +53,7 @@ jobs:
           file: ./lambdas/Dockerfile
           build-args: |
             lambda_name=${{ matrix.lambda_name }}
-            lambda_dir=${{ (startsWith(matrix.lambda_name, 'job') && 'jobs') || (startsWith(matrix.lambda_name, 'resources') && 'resources-domain') || 'hrm-domain' }}
+            lambda_dir=${{ (startsWith(matrix.lambda_name, 'job') && 'lambdas') || (startsWith(matrix.lambda_name, 'resources') && 'resources-domain') || 'hrm-domain' }}
           push: false
           tags: ${{ matrix.lambda_name }}-ci-test
 

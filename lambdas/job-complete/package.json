@@ -16,6 +16,6 @@
     "@types/aws-lambda": "^8.10.108"
   },
   "scripts": {
-    "docker:build": "docker build -t job-complete --build-arg lambda_name=job-complete --build-arg lambda_dir=jobs -f ../Dockerfile ../../"
+    "docker:build": "docker build -t job-complete --build-arg lambda_name=job-complete --build-arg lambda_dir=lambdas -f ../Dockerfile ../../"
   }
 }

@@ -7,6 +7,6 @@
     { "path": "packages/job-errors" },
     { "path": "packages/ssm-cache" },
     { "path": "packages/sns-client" },
-    { "path": "jobs/job-complete" }
+    { "path": "lambdas/job-complete" }
   ]
 }
