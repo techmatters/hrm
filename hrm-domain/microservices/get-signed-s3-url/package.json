@@ -13,6 +13,7 @@
     "@tech-matters/types": "^1.0.0"
   },
   "devDependencies": {
+    "@aws-sdk/s3-request-presigner": "^3.391.0",
     "@tsconfig/node16": "^1.0.3",
     "@types/aws-lambda": "^8.10.108",
     "jest-mock": "^29.6.2",
