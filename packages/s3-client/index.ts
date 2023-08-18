@@ -36,14 +36,6 @@ export type GetS3ObjectParams = {
   responseContentType?: string;
 };
 
-export type GetSignedUrlParams = {
-  method: string;
-  bucket: string;
-  key: string;
-  body?: string;
-  contentType?: string;
-};
-
 export type PutS3ObjectParams = {
   bucket: string;
   key: string;
@@ -66,6 +58,14 @@ export const GET_SIGNED_URL_METHODS = {
 };
 
 export type GetSignedUrlMethods = keyof typeof GET_SIGNED_URL_METHODS;
+
+export type GetSignedUrlParams = {
+  method: GetSignedUrlMethods;
+  bucket: string;
+  key: string;
+  body?: string;
+  contentType?: string;
+};
 
 const convertToEndpoint = (endpointUrl: string) => {
   const url: URL = new URL(endpointUrl);
@@ -157,11 +157,9 @@ export const putS3Object = async (params: PutS3ObjectParams) => {
   return s3Client.send(command);
 };
 
-export const getSignedUrl = async (
-  method: GetSignedUrlMethods,
-  params: GetSignedUrlParams,
-) => {
+export const getSignedUrl = async (params: GetSignedUrlParams) => {
   const {
+    method,
     bucket: Bucket,
     key: Key,
     body: Body,

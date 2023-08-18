@@ -92,7 +92,7 @@ export default class ResourcesSearchCompleteStack extends cdk.Stack {
       memorySize: 512,
       timeout: cdk.Duration.seconds(10),
       handler: 'handler',
-      entry: `./jobs/job-complete/index.ts`,
+      entry: `./lambdas/job-complete/index.ts`,
       environment: {
         NODE_OPTIONS: '--enable-source-maps',
         S3_ENDPOINT: 'http://localstack:4566',

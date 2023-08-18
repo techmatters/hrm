@@ -15,38 +15,62 @@
  */
 
 import type { ALBEvent, ALBResult } from 'aws-lambda';
+import {
+  isErrorResult,
+  ErrorResult,
+  SuccessResult,
+  newErrorResult,
+  newSuccessResult,
+} from '@tech-matters/types';
+import { handleAlbEvent } from '@tech-matters/alb-handler';
+import { authenticate } from '@tech-matters/hrm-authentication';
+import { getSignedUrl } from '@tech-matters/s3-client';
+import { parseParameters } from './parseParameters';
 
-const headers = {
-  'Content-Type': 'application/json',
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET,OPTIONS',
-  'Access-Control-Allow-Headers':
-    'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
+export type GetSignedS3UrlSuccess = SuccessResult & {
+  result: {
+    media_url: string;
+  };
+};
+
+export type GetSignedS3UrlResult = GetSignedS3UrlSuccess | ErrorResult;
+
+const getSignedS3Url = async (event: ALBEvent): Promise<GetSignedS3UrlResult> => {
+  const parseParametersResult = parseParameters(event);
+  if (isErrorResult(parseParametersResult)) {
+    return parseParametersResult;
+  }
+
+  const authenticateResult = await authenticate();
+  if (isErrorResult(authenticateResult)) {
+    return authenticateResult;
+  }
+
+  const { method, bucket, key } = parseParametersResult.result;
+
+  try {
+    const getSignedUrlResult = await getSignedUrl({
+      method,
+      bucket,
+      key,
+    });
+
+    return newSuccessResult({
+      result: {
+        media_url: getSignedUrlResult,
+      },
+    });
+  } catch (error) {
+    return newErrorResult({
+      message: error as string,
+    });
+  }
+};
+
+const methodHandlers = {
+  GET: getSignedS3Url,
 };
 
 export const handler = async (event: ALBEvent): Promise<ALBResult> => {
-  if (event.httpMethod === 'GET') {
-    try {
-      return {
-        statusCode: 200,
-        headers,
-        body: JSON.stringify({ message: 'success' }),
-      };
-    } catch (err) {
-      // eslint-disable-next-line no-console
-      console.error(err);
-      return {
-        statusCode: 500,
-        headers,
-        body: JSON.stringify(err),
-      };
-    }
-  }
-
-  // Send HTTP 405: Method Not Allowed
-  return {
-    statusCode: 405,
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message: 'Error: Method Not Allowed' }),
-  };
+  return handleAlbEvent({ event, methodHandlers });
 };

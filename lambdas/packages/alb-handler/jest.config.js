@@ -13,10 +13,19 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-export * from './ContactJob';
-export * from './ResourcesImport';
-export * from './Resources';
-export * from './Results';
-export * from './twilio';
 
-export type ObjectValues<T> = T[keyof T];
+module.exports = config => {
+  return (
+    config || {
+      preset: 'ts-jest',
+      rootDir: './',
+      maxWorkers: 1,
+      globals: {
+        'ts-jest': {
+          // to give support to const enum. Not working, conflicting with module resolution
+          useExperimentalLanguageServer: true,
+        },
+      },
+    }
+  );
+};

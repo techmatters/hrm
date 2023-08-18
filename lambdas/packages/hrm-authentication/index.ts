@@ -13,10 +13,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-export * from './ContactJob';
-export * from './ResourcesImport';
-export * from './Resources';
-export * from './Results';
-export * from './twilio';
+import { newSuccessResult, ErrorResult, SuccessResult } from '@tech-matters/types';
 
-export type ObjectValues<T> = T[keyof T];
+export type AuthenticateSuccessResult = SuccessResult & {
+  result: true;
+};
+
+export type AuthenticateResult = ErrorResult | AuthenticateSuccessResult;
+
+export const authenticate = async (): Promise<AuthenticateResult> => {
+  return newSuccessResult({ result: true });
+};

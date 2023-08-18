@@ -6,11 +6,13 @@
   "author": "",
   "license": "AGPL",
   "dependencies": {
+    "@tech-matters/alb-handler": "^1.0.0",
+    "@tech-matters/hrm-authentication": "^1.0.0",
     "@tech-matters/s3-client": "^1.0.0",
-    "@tech-matters/ssm-cache": "^1.0.0"
+    "@tech-matters/ssm-cache": "^1.0.0",
+    "@tech-matters/types": "^1.0.0"
   },
   "devDependencies": {
-    "@tech-matters/types": "^1.0.0",
     "@tsconfig/node16": "^1.0.3",
     "@types/aws-lambda": "^8.10.108"
   },

@@ -50,7 +50,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: ./
-          file: ./jobs/Dockerfile
+          file: ./lambdas/Dockerfile
           build-args: |
             lambda_name=${{ matrix.lambda_name }}
             lambda_dir=${{ (startsWith(matrix.lambda_name, 'job') && 'jobs') || (startsWith(matrix.lambda_name, 'resources') && 'resources-domain') || 'hrm-domain' }}
