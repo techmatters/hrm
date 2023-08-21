@@ -37,25 +37,40 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        lambda_name:
-          - contact-retrieve-transcript
-          - job-complete
-          - resources-import-consumer
-          - resources-import-producer
-          - resources-search-index
+        lambda_path:
+          - hrm-domain/lambdas/files-urls
+          - hrm-domain/lambdas/contact-complete
+          - hrm-domain/lambdas/contact-retrieve-recording-url
+          - hrm-domain/lambdas/contact-retrieve-transcript
+          - lambdas/job-complete
+          - resources-domain/lambdas/import-consumer
+          - resources-domain/lambdas/import-producer
+          - resources-domain/lambdas/search-index
+
     steps:
       - name: Checkout Branch
         uses: actions/checkout@v2
+
+      - name: Set Build Args
+        run: |
+          lambda_full_path=${{ matrix.lambda_path }}
+          # Extracting directory and lambda name from the lambda path
+          build_lambda_dir=$(dirname $lambda_full_path)
+          build_lambda_name=$(basename $lambda_full_path)
+
+          echo "build_lambda_name=$build_lambda_name" >> $GITHUB_ENV
+          echo "build_lambda_dir=$build_lambda_dir" >> $GITHUB_ENV
+
       - name: Build Lambda Docker Images
         uses: docker/build-push-action@v4
         with:
           context: ./
           file: ./lambdas/Dockerfile
           build-args: |
-            lambda_name=${{ matrix.lambda_name }}
-            lambda_dir=${{ (startsWith(matrix.lambda_name, 'job') && 'lambdas') || (startsWith(matrix.lambda_name, 'resources') && 'resources-domain') || 'hrm-domain' }}
+            lambda_name=${{ env.build_lambda_name }}
+            lambda_dir=${{ env.build_lambda_dir }}
           push: false
-          tags: ${{ matrix.lambda_name }}-ci-test
+          tags: ${{ env.build_lambda_name }}:ci-test
 
   build-service-container:
     runs-on: ubuntu-latest

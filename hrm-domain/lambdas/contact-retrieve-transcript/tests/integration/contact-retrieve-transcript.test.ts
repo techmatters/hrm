@@ -16,8 +16,8 @@
 import { getS3Object } from '@tech-matters/s3-client';
 import { purgeSqsQueue, receiveSqsMessage } from '@tech-matters/sqs-client';
 import { generateMockMessageBody } from '../generateMockMessageBody';
-import { getStackOutput } from '../../../../cdk/cdkOutput';
-import { sendMessage } from '../../../../test-support/sendMessage';
+import { getStackOutput } from '../../../../../cdk/cdkOutput';
+import { sendMessage } from '../../../../../test-support/sendMessage';
 
 /**
  * TODO: This is a super dirty proof of concept for e2e tests.

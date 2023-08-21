@@ -31,8 +31,8 @@ import {
 } from '@tech-matters/resources-search-config';
 
 import { generateMockMessageBody } from '../generateMockMessageBody';
-import { getStackOutput } from '../../../../cdk/cdkOutput';
-import { sendMessage, sendMessageBatch } from '../../../../test-support/sendMessage';
+import { getStackOutput } from '../../../../../cdk/cdkOutput';
+import { sendMessage, sendMessageBatch } from '../../../../../test-support/sendMessage';
 
 /**
  * TODO: This is a super dirty proof of concept for integration tests.
