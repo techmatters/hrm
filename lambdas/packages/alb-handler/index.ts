@@ -16,9 +16,22 @@
 import type { ALBEvent, ALBResult } from 'aws-lambda';
 import { isErrorResult } from '@tech-matters/types';
 
+const METHODS = {
+  GET: 'GET',
+  POST: 'POST',
+  PUT: 'PUT',
+  DELETE: 'DELETE',
+} as const;
+
+export type Methods = (typeof METHODS)[keyof typeof METHODS];
+
+export type MethodHandler = (event: ALBEvent) => Promise<any>;
+
+export type MethodHandlers = Partial<Record<Methods, MethodHandler>>;
+
 export type HandleAlbEventParams = {
   event: ALBEvent;
-  methodHandlers: Record<string, any>;
+  methodHandlers: MethodHandlers;
 };
 
 export type GetHeadersParams = {
@@ -37,7 +50,7 @@ export const handleAlbEvent = async ({
   event,
   methodHandlers,
 }: HandleAlbEventParams): Promise<ALBResult> => {
-  const methodHandler = methodHandlers[event.httpMethod];
+  const methodHandler = methodHandlers[event.httpMethod as Methods];
   if (!methodHandler) {
     return {
       statusCode: 405,

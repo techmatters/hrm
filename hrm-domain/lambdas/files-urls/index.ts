@@ -15,10 +15,10 @@
  */
 
 import type { ALBEvent, ALBResult } from 'aws-lambda';
-import { handleAlbEvent } from '@tech-matters/alb-handler';
+import { handleAlbEvent, MethodHandlers } from '@tech-matters/alb-handler';
 import getSignedS3Url from './getSignedS3Url';
 
-const methodHandlers = {
+const methodHandlers: MethodHandlers = {
   GET: getSignedS3Url,
 };
 
