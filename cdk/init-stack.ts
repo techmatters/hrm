@@ -107,7 +107,7 @@ const resourcesSearchIndexComplete = new ResourcesSearchCompleteStack({
 
 new ResourcesSearchJobsStack({
   scope: app,
-  id: 'resources-search-index',
+  id: 'search-index',
   params: {
     completeQueue: resourcesSearchIndexComplete.completeQueue,
   },

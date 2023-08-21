@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-describe('get-signed-s3-url', () => {
+describe('hrm-authentication', () => {
   it('fake test', () => {
     expect(true).toBe(true);
   });

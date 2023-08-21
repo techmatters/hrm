@@ -19,7 +19,7 @@
     "ts-node": "^10.9.1"
   },
   "scripts": {
-    "docker:build": "docker build -t resources-import-consumer --build-arg lambda_name=resources-import-consumer --build-arg lambda_dir=resources-domain -f ../../lambdas/Dockerfile ../../",
+    "docker:build": "docker build -t resources-import-consumer --build-arg lambda_name=import-consumer --build-arg lambda_dir=resources-domain/lambdas -f ../../../lambdas/Dockerfile ../../../",
     "test:unit": "jest tests/unit"
   }
 }

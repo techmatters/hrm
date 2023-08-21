@@ -3,10 +3,9 @@
   "extends": "./tsconfig.base.json",
   "files": [],
   "references": [
-    { "path": "packages/job-errors" },
+    { "path": "packages/types" },
     { "path": "packages/ssm-cache" },
     { "path": "packages/sqs-client" },
-    { "path": "packages/types" },
-    { "path": "hrm-domain/contact-complete" }
+    { "path": "resources-domain/lambdas/import-producer" }
   ]
 }

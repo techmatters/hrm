@@ -1,5 +1,5 @@
 {
-  "name": "@tech-matters/hrm-microservice-get-signed-s3-url",
+  "name": "@tech-matters/hrm-files-urls",
   "version": "1.0.0",
   "description": "",
   "main": "dist/index.js",
@@ -20,7 +20,7 @@
     "node-fetch": "^2.5.10"
   },
   "scripts": {
-    "docker:build": "docker build -t hrm-microservice-get-signed-s3-url --build-arg lambda_name=get-signed-s3-url --build-arg lambda_dir=hrm-domain/microservices -f ../../../lambdas/Dockerfile ../../../",
+    "docker:build": "docker build -t hrm-files-urls --build-arg lambda_name=files-urls --build-arg lambda_dir=hrm-domain/lambdas -f ../../../lambdas/Dockerfile ../../../",
     "test:integration": "cross-env S3_FORCE_PATH_STYLE=true S3_ENDPOINT=http://localhost:4566 SSM_ENDPOINT=http://localhost:4566 jest tests/integration",
     "test:unit": "jest tests/unit",
     "test": "npm run test:unit && npm run test:integration"

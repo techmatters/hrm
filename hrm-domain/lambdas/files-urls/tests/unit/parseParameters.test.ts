@@ -16,7 +16,12 @@
 import type { ALBEvent } from 'aws-lambda';
 import { newErrorResult, newSuccessResult } from '@tech-matters/types';
 import { parseParameters, ERROR_MESSAGES } from '../../parseParameters';
-import { mockQueryStringParameters, newAlbEvent } from '../__mocks__';
+import {
+  mockPathParameters,
+  mockQueryStringParameters,
+  newAlbEvent,
+  mockPath,
+} from '../__mocks__';
 
 describe('parseParameters', () => {
   it('should return a 500 error for missing query string options', async () => {
@@ -48,10 +53,7 @@ describe('parseParameters', () => {
 
   it('should return a 500 error for invalid requestType', async () => {
     const event = newAlbEvent({
-      queryStringParameters: {
-        ...mockQueryStringParameters,
-        requestType: 'invalidRequestType',
-      },
+      path: mockPath({ requestType: 'invalidRequestType' }),
     });
     const result = await parseParameters(event);
     expect(result).toEqual(
@@ -86,6 +88,7 @@ describe('parseParameters', () => {
       newSuccessResult({
         result: {
           ...mockQueryStringParameters,
+          ...mockPathParameters,
         },
       }),
     );

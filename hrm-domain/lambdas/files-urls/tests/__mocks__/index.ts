@@ -16,12 +16,20 @@
 
 import type { ALBEvent } from 'aws-lambda';
 
+export const mockPathParameters = {
+  accountSid: 'test-account-sid',
+  requestType: 'contactRecordings',
+};
+
+export const mockPath = ({
+  accountSid = 'test-account-sid',
+  requestType = 'contactRecordings',
+}: MockPathParameters) => `/v0/accounts/${accountSid}/files/${requestType}`;
+
 export const mockQueryStringParameters = {
   method: 'getObject',
   bucket: 'contact-docs-bucket',
   key: 'test-key',
-  accountSid: 'test-account-sid',
-  requestType: 'contactRecording',
   contactId: 'test-contact-id',
 };
 
@@ -35,8 +43,13 @@ export const albEventBase = {
   },
   body: '',
   isBase64Encoded: false,
-  path: '/lambdas/getSignedS3Url',
+  path: mockPath({}),
   queryStringParameters: mockQueryStringParameters,
+};
+
+export type MockPathParameters = {
+  accountSid?: string;
+  requestType?: string;
 };
 
 export const newAlbEvent = (partial: any): ALBEvent => {

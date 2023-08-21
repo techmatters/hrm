@@ -16,6 +16,6 @@
     "@types/aws-lambda": "^8.10.108"
   },
   "scripts": {
-    "docker:build": "docker build -t hrm-jobs-contact-complete --build-arg lambda_name=contact-complete --build-arg lambda_dir=hrm-domain -f ../../lambdas/Dockerfile ../../"
+    "docker:build": "docker build -t hrm-jobs-contact-complete --build-arg lambda_name=contact-complete --build-arg lambda_dir=hrm-domain/lambdas -f ../../../lambdas/Dockerfile ../../../"
   }
 }

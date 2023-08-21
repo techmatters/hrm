@@ -8,9 +8,10 @@
     "packages/*",
     "lambdas/packages/*",
     "lambdas/*",
-    "hrm-domain/microservices/*",
+    "hrm-domain/lambdas/*",
     "hrm-domain/packages/*",
     "hrm-domain/*",
+    "resources-domain/lambdas/*",
     "resources-domain/packages/*",
     "resources-domain/*"
   ],

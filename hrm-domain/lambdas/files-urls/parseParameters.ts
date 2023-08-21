@@ -51,19 +51,32 @@ export type ParseParametersResult = ErrorResult | ParseParametersSuccess;
 const methods = ['getObject', 'putObject', 'deleteObject'];
 
 const requestTypes = {
-  contactRecording: {
+  contactRecordings: {
     requiredParameters: ['contactId'],
   },
 };
 
+const parsePathParameters = (
+  path: string,
+): { accountSid?: string; requestType?: string } => {
+  const accountSidMatch = /\/accounts\/([^\/]+)/.exec(path);
+  const requestTypeMatch = /\/([^\/]+)$/.exec(path);
+
+  return {
+    accountSid: accountSidMatch ? accountSidMatch[1] : undefined,
+    requestType: requestTypeMatch ? requestTypeMatch[1] : undefined,
+  };
+};
+
 export const parseParameters = (event: ALBEvent): ParseParametersResult => {
-  const { queryStringParameters } = event;
+  const { path, queryStringParameters } = event;
 
   if (!queryStringParameters) {
     return newErrorResult({ message: ERROR_MESSAGES.MISSING_QUERY_STRING_PARAMETERS });
   }
 
-  const { method, bucket, key, accountSid, requestType } = queryStringParameters;
+  const { method, bucket, key } = queryStringParameters;
+  const { accountSid, requestType } = parsePathParameters(path);
 
   if (!method || !bucket || !key || !accountSid || !requestType) {
     return newErrorResult({

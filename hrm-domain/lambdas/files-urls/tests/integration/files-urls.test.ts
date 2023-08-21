@@ -22,7 +22,7 @@ const bucket = mockQueryStringParameters.bucket;
 const bodyObject = { test: 'test' };
 const body = JSON.stringify(bodyObject);
 
-describe('get-signed-s3-url', () => {
+describe('files-urls', () => {
   let key: string;
 
   beforeAll(async () => {
@@ -48,6 +48,8 @@ describe('get-signed-s3-url', () => {
         key,
       },
     });
+
+    console.log('event', event);
 
     const response = await handler(event);
     expect(response.statusCode).toBe(200);

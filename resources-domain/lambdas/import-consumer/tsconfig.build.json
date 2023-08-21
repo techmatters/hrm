@@ -5,10 +5,6 @@
   "references": [
     { "path": "packages/job-errors" },
     { "path": "packages/ssm-cache" },
-    { "path": "packages/s3-client" },
-    { "path": "packages/sqs-client" },
-    { "path": "packages/twilio-client" },
-    { "path": "packages/types" },
-    { "path": "hrm-domain/contact-retrieve-transcript" }
+    { "path": "resources-domain/lambdas/import-consumer" }
   ]
 }

@@ -7,6 +7,6 @@
     { "path": "packages/s3-client" },
     { "path": "lambdas/packages/alb-handler" },
     { "path": "lambdas/packages/hrm-authentication" },
-    { "path": "hrm-domain/microservices/get-signed-s3-url" }
+    { "path": "hrm-domain/lambdas/files-urls" }
   ]
 }

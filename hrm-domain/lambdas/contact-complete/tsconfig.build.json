@@ -3,11 +3,10 @@
   "extends": "./tsconfig.base.json",
   "files": [],
   "references": [
-    { "path": "packages/types" },
     { "path": "packages/job-errors" },
     { "path": "packages/ssm-cache" },
-    { "path": "packages/elasticsearch-client" },
-    { "path": "resources-domain/packages/resources-search-config" },
-    { "path": "resources-domain/resources-search-index" }
+    { "path": "packages/sqs-client" },
+    { "path": "packages/types" },
+    { "path": "hrm-domain/lambdas/contact-complete" }
   ]
 }

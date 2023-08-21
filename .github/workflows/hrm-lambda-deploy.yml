@@ -26,18 +26,19 @@ on:
           - staging
           - production
 
-      image_name:
-        description: 'ECR Image name'
+      lambda_path:
+        description: 'Lambda path'
         required: true
-        default: contact-retrieve-transcript
         type: choice
         options:
-          - microservice-get-signed-s3-url
-          - contact-retrieve-transcript
-          - resources-import-consumer
-          - resources-import-producer
-          - resources-search-index
-          - job-complete
+          - hrm-domain/lambdas/files-urls
+          - hrm-domain/lambdas/contact-complete
+          - hrm-domain/lambdas/contact-retrieve-recording-url
+          - hrm-domain/lambdas/contact-retrieve-transcript
+          - lambdas/job-complete
+          - resources-domain/lambdas/import-consumer
+          - resources-domain/lambdas/import-producer
+          - resources-domain/lambdas/search-index
 
   workflow_call:
     secrets:
@@ -51,8 +52,8 @@ on:
         type: string
         default: development
         required: true
-      image_name:
-        description: 'ECR Image name'
+      lambda_path:
+        description: 'Lambda path'
         required: true
         type: string
       send-slack-message:
@@ -62,7 +63,7 @@ on:
         type: string
 
 env:
-  ECR_REPOSITORY: ${{ inputs.environment }}/hrm-${{ inputs.image_name }}
+  ECR_REPOSITORY: ${{ format('{0}/hrm-{1}', inputs.environment, replace(replace(replace(inputs.lambda_path, '-domain/lambdas/', '-'), 'lambdas/', ''), '/', '-')) }}
   # if anything is set as a secret, it can't be used in outputs. So we need to set it as an env var
   PRIMARY_AWS_REGION: us-east-1
 
@@ -95,18 +96,10 @@ jobs:
 
       - name: Set Build Args
         run: |
-          build_lambda_name=${{ inputs.image_name }}
-          # if the lambdaname starts with microservices, it's a microservice
-          if [[ $build_lambda_name == microservice* ]]; then
-            build_lambda_name=${build_lambda_name#microservice-}
-            build_lambda_dir=hrm-domain/microservices
-          elif [[ $build_lambda_name == resources* ]]; then
-            build_lambda_dir=resources-domain
-          elif [[ $build_lambda_name == job* ]]; then
-            build_lambda_dir=jobs
-          else
-            build_lambda_dir=hrm-domain
-          fi
+          lambda_full_path=${{ inputs.lambda_path }}
+          # Extracting directory and lambda name from the lambda path
+          build_lambda_dir=$(dirname $lambda_full_path)
+          build_lambda_name=$(basename $lambda_full_path)
 
           echo "build_lambda_name=$build_lambda_name" >> $GITHUB_ENV
           echo "build_lambda_dir=$build_lambda_dir" >> $GITHUB_ENV
@@ -134,7 +127,7 @@ jobs:
         id: generate-output
         run: |
           # output to logs
-          matrix_json=$(jq -c --arg image_name "${{ inputs.image_name }}" --arg env "${{ inputs.environment }}" '[.[$env][] | {region: ., lambda: $image_name}]' ./.github/workflows/config/config.json)
+          matrix_json=$(jq -c --arg env "${{ inputs.environment }}" '[.[$env][] | {region: .}]' ./.github/workflows/config/config.json)
           echo "matrix_json=$matrix_json" >> $GITHUB_OUTPUT
           echo "docker_image=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}" >> $GITHUB_OUTPUT
 
@@ -202,7 +195,7 @@ jobs:
         uses: slackapi/slack-github-action@v1.14.0
         with:
           channel-id: ${{ env.ASELO_DEPLOYS_CHANNEL_ID }}
-          slack-message: '`[HRM lambdas - ${{ matrix.lambda }}]` Deployment of ${{ github.ref_type }} `${{ github.ref_name }}` requested by `${{ github.triggering_actor }}` completed with SHA ${{ github.sha }} to region `${{ matrix.region }}`, environment `${{ inputs.environment }}` :rocket:.'
+          slack-message: '`[HRM lambdas - ${{ env.ECR_REPOSITORY }}]` Deployment of ${{ github.ref_type }} `${{ github.ref_name }}` requested by `${{ github.triggering_actor }}` completed with SHA ${{ github.sha }} to region `${{ matrix.region }}`, environment `${{ inputs.environment }}` :rocket:.'
         env:
           SLACK_BOT_TOKEN: ${{ env.GITHUB_ACTIONS_SLACK_BOT_TOKEN }}
         if: ${{ inputs.send-slack-message != 'false' }}
