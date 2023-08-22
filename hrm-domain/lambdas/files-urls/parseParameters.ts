@@ -70,33 +70,29 @@ const parsePathParameters = (
 
 export const parseParameters = (event: ALBEvent): ParseParametersResult => {
   const { path, queryStringParameters } = event;
-
   if (!queryStringParameters) {
     return newErrorResult({ message: ERROR_MESSAGES.MISSING_QUERY_STRING_PARAMETERS });
   }
 
   const { method, bucket, key } = queryStringParameters;
   const { accountSid, requestType } = parsePathParameters(path);
-
   if (!method || !bucket || !key || !accountSid || !requestType) {
     return newErrorResult({
       message: ERROR_MESSAGES.MISSING_REQUIRED_QUERY_STRING_PARAMETERS,
     });
   }
 
-  if (!methods.includes(method))
+  if (!methods.includes(method)) {
     return newErrorResult({ message: ERROR_MESSAGES.INVALID_METHOD });
-
+  }
   if (!Object.keys(requestTypes).includes(requestType)) {
     return newErrorResult({ message: ERROR_MESSAGES.INVALID_REQUEST_TYPE });
   }
 
   const requestTypeConfig = requestTypes[requestType as keyof typeof requestTypes];
-
   const missingRequiredParameters = requestTypeConfig.requiredParameters.filter(
     requiredParameter => !queryStringParameters[requiredParameter],
   );
-
   if (missingRequiredParameters.length > 0) {
     return newErrorResult({
       message: ERROR_MESSAGES.MISSING_REQUIRED_PARAMETERS_FOR_REQUEST_TYPE,
