@@ -173,7 +173,15 @@ jobs:
           fi
 
           for LAMBDA in $LAMBDA_FUNCTIONS; do
-            aws lambda update-function-code --function-name $LAMBDA --image-uri "$DOCKER_IMAGE" --publish
+            OUTPUT=$(aws lambda update-function-code --function-name $LAMBDA --image-uri "$DOCKER_IMAGE" --publish)
+            NEW_VERSION=$(echo "$OUTPUT" | jq -r '.Version')
+
+            ALIAS_EXISTS=$(aws lambda get-alias --function-name $LAMBDA --name live || echo "not_exists")
+            if [ "$ALIAS_EXISTS" == "not_exists" ]; then
+              aws lambda create-alias --function-name $LAMBDA --name live --function-version $NEW_VERSION
+            else
+              aws lambda update-alias --function-name $LAMBDA --name live --function-version $NEW_VERSION
+            fi
           done
 
       # reconfigure AWS credentials to use the default region for SSM Parameter Store.
