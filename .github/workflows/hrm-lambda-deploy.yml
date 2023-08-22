@@ -166,8 +166,14 @@ jobs:
           DOCKER_IMAGE=$(echo "${{ env.DOCKER_IMAGE }}" | sed -r 's/${{ env.PRIMARY_AWS_REGION }}/${{ matrix.region }}/g')
           DOCKER_IMAGE_BASE=$(echo "$DOCKER_IMAGE" | cut -d':' -f1)
           LAMBDA_FUNCTIONS=$(aws lambda list-functions --query "Functions[?contains(Description, 'ecr_image:${DOCKER_IMAGE_BASE}')].FunctionName" --output text)
+
+          if [ -z "$LAMBDA_FUNCTIONS" ]; then
+            echo "Error: No Lambda functions found for image $DOCKER_IMAGE_BASE"
+            exit 1
+          fi
+
           for LAMBDA in $LAMBDA_FUNCTIONS; do
-              aws lambda update-function-code --function-name $LAMBDA --image-uri "$DOCKER_IMAGE" --publish
+            aws lambda update-function-code --function-name $LAMBDA --image-uri "$DOCKER_IMAGE" --publish
           done
 
       # reconfigure AWS credentials to use the default region for SSM Parameter Store.
