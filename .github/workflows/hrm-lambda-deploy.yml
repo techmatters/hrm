@@ -62,7 +62,6 @@ on:
         type: string
 
 env:
-  ECR_REPOSITORY: ${{ format('{0}/hrm-{1}', inputs.environment, replace(replace(replace(inputs.lambda_path, '-domain/lambdas/', '-'), 'lambdas/', ''), '/', '-')) }}
   # if anything is set as a secret, it can't be used in outputs. So we need to set it as an env var
   PRIMARY_AWS_REGION: us-east-1
 
@@ -100,6 +99,10 @@ jobs:
           build_lambda_dir=$(dirname $lambda_full_path)
           build_lambda_name=$(basename $lambda_full_path)
 
+          repo_name="${lambda_full_path//-domain\/lambdas\//-}"
+          repo_name="${repo_name//lambdas\//}"
+          repo_name="${repo_name//\//-}"
+          echo "ecr_repository=${{ inputs.environment }}/hrm-$repo_name" >> $GITHUB_ENV
           echo "build_lambda_name=$build_lambda_name" >> $GITHUB_ENV
           echo "build_lambda_dir=$build_lambda_dir" >> $GITHUB_ENV
 
@@ -112,7 +115,7 @@ jobs:
             lambda_name=${{ env.build_lambda_name }}
             lambda_dir=${{ env.build_lambda_dir }}
           push: true
-          tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:live,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+          tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.ecr_repository }}:live,${{ steps.login-ecr.outputs.registry }}/${{ env.ecr_repository }}:${{ github.sha }}
 
       # The matrix build supports `lambda-groups` defined in the environment-region-map.json file
       # This allows us to deploy multiple lambdas to specific env/region combos that use a common docker image
@@ -128,7 +131,7 @@ jobs:
           # output to logs
           matrix_json=$(jq -c --arg env "${{ inputs.environment }}" '[.[$env][] | {region: .}]' ./.github/workflows/config/config.json)
           echo "matrix_json=$matrix_json" >> $GITHUB_OUTPUT
-          echo "docker_image=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}" >> $GITHUB_OUTPUT
+          echo "docker_image=${{ steps.login-ecr.outputs.registry }}/${{ env.ecr_repository }}:${{ github.sha }}" >> $GITHUB_OUTPUT
 
   deploy_lambdas:
     needs: build_lambda
@@ -194,7 +197,7 @@ jobs:
         uses: slackapi/slack-github-action@v1.14.0
         with:
           channel-id: ${{ env.ASELO_DEPLOYS_CHANNEL_ID }}
-          slack-message: '`[HRM lambdas - ${{ env.ECR_REPOSITORY }}]` Deployment of ${{ github.ref_type }} `${{ github.ref_name }}` requested by `${{ github.triggering_actor }}` completed with SHA ${{ github.sha }} to region `${{ matrix.region }}`, environment `${{ inputs.environment }}` :rocket:.'
+          slack-message: '`[HRM lambdas - ${{ inputs.lambda_path }}]` Deployment of ${{ github.ref_type }} `${{ github.ref_name }}` requested by `${{ github.triggering_actor }}` completed with SHA ${{ github.sha }} to region `${{ matrix.region }}`, environment `${{ inputs.environment }}` :rocket:.'
         env:
           SLACK_BOT_TOKEN: ${{ env.GITHUB_ACTIONS_SLACK_BOT_TOKEN }}
         if: ${{ inputs.send-slack-message != 'false' }}
