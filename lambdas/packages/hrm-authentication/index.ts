@@ -13,7 +13,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { newSuccessResult, ErrorResult, SuccessResult } from '@tech-matters/types';
+import {
+  newErrorResult,
+  newSuccessResult,
+  ErrorResult,
+  SuccessResult,
+} from '@tech-matters/types';
 
 export type AuthenticateSuccessResult = SuccessResult & {
   result: true;
@@ -21,6 +26,24 @@ export type AuthenticateSuccessResult = SuccessResult & {
 
 export type AuthenticateResult = ErrorResult | AuthenticateSuccessResult;
 
-export const authenticate = async (): Promise<AuthenticateResult> => {
-  return newSuccessResult({ result: true });
+export type AuthenticateParameters = {
+  accountSid: string;
+  method: string;
+  objectType: string;
+  objectId?: string;
+  fileType: string;
+};
+
+export const authenticate = async (
+  params: AuthenticateParameters,
+): Promise<AuthenticateResult> => {
+  const { accountSid } = params;
+
+  if (accountSid === 'mockAccountSid') {
+    return newSuccessResult({ result: true });
+  }
+
+  return newErrorResult({
+    message: 'Invalid accountSid',
+  });
 };

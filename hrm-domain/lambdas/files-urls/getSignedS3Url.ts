@@ -51,7 +51,13 @@ const getSignedS3Url = async (event: ALBEvent): Promise<GetSignedS3UrlResult> =>
     fileType,
   });
 
-  const authenticateResult = await authenticate();
+  const authenticateResult = await authenticate({
+    accountSid,
+    method,
+    objectType,
+    objectId,
+    fileType,
+  });
   if (isErrorResult(authenticateResult)) {
     return authenticateResult;
   }
