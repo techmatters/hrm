@@ -100,6 +100,7 @@ jobs:
           build_lambda_name=$(basename $lambda_full_path)
 
           repo_name="${lambda_full_path//-domain\/lambdas\//-}"
+          repo_name="${repo_name#hrm-}"
           repo_name="${repo_name//lambdas\//}"
           repo_name="${repo_name//\//-}"
           echo "ecr_repository=${{ inputs.environment }}/hrm-$repo_name" >> $GITHUB_ENV
