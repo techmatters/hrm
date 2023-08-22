@@ -40,6 +40,8 @@ RUN yum install -y rsync \
     && cp ${lambda_dir}/${lambda_name}/dist/*.js /var/task/ \
     && cp -r packages /var/task/ \
     && mkdir -p /var/task/${lambda_dir} \
+    && mkdir -p /var/task/lambdas \
+    && cp -r lambdas/packages /var/task/lambdas/ \
     && cp -r ${lambda_dir}/packages /var/task/${lambda_dir}/packages/ \
     && cp -r node_modules /var/task/
 
