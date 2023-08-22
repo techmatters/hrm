@@ -44,8 +44,8 @@ jest.setTimeout(60000);
 const accountSids = ['ACCOUNT_1', 'ACCOUNT_2'];
 const indexType = RESOURCE_INDEX_TYPE;
 
-const lambdaName = 'resources-search-index';
-const completeOutput: any = getStackOutput('resources-search-complete');
+const lambdaName = 'search-index';
+const completeOutput: any = getStackOutput('search-complete');
 const { errorQueueUrl: queueUrl } = completeOutput;
 
 export const waitForSearchResponse = async ({

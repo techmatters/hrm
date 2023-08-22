@@ -96,7 +96,7 @@ new ResourcesCoreStack({
 
 const resourcesSearchIndexComplete = new ResourcesSearchCompleteStack({
   scope: app,
-  id: 'resources-search-complete',
+  id: 'search-complete',
   params: {
     skipLambda: false,
   },
