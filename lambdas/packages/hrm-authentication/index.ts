@@ -21,7 +21,6 @@ import {
 } from '@tech-matters/types';
 
 const mockBuckets = ['mockBucket', 'contact-docs-bucket'];
-const mockAccountSids = ['mockAccountSid'];
 
 export type AuthenticateSuccessResult = SuccessResult & {
   result: true;
