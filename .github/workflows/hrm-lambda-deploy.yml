@@ -130,7 +130,7 @@ jobs:
         id: generate-output
         run: |
           # output to logs
-          matrix_json=$(jq -c --arg env "${{ inputs.environment }}" '[.[$env][] | {region: .}]' ./.github/workflows/config/config.json)
+          matrix_json=$(jq -c --arg env "${{ inputs.environment }}" '[.[$env][] | {region: .}]' ./.github/workflows/config/environment-region-map.json)
           echo "matrix_json=$matrix_json" >> $GITHUB_OUTPUT
           echo "docker_image=${{ steps.login-ecr.outputs.registry }}/${{ env.ecr_repository }}:${{ github.sha }}" >> $GITHUB_OUTPUT
 
