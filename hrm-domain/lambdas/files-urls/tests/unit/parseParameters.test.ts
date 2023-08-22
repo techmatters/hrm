@@ -16,12 +16,7 @@
 import type { ALBEvent } from 'aws-lambda';
 import { newErrorResult, newSuccessResult } from '@tech-matters/types';
 import { parseParameters, ERROR_MESSAGES } from '../../parseParameters';
-import {
-  mockPathParameters,
-  mockQueryStringParameters,
-  newAlbEvent,
-  mockPath,
-} from '../__mocks__';
+import { mockPathParameters, mockQueryStringParameters, newAlbEvent } from '../__mocks__';
 
 describe('parseParameters', () => {
   it('should return a 500 error for missing query string options', async () => {
@@ -51,30 +46,34 @@ describe('parseParameters', () => {
     );
   });
 
-  it('should return a 500 error for invalid requestType', async () => {
-    const event = newAlbEvent({
-      path: mockPath({ requestType: 'invalidRequestType' }),
-    });
-    const result = await parseParameters(event);
-    expect(result).toEqual(
-      newErrorResult({
-        message: ERROR_MESSAGES.INVALID_REQUEST_TYPE,
-      }),
-    );
-  });
-
-  it('should return a 500 error for missing required parameters for requestType', async () => {
+  it('should return a 500 error for invalid fileType', async () => {
     const event = newAlbEvent({
       queryStringParameters: {
         ...mockQueryStringParameters,
-        contactId: undefined,
-        requestType: 'contactRecording',
+        fileType: 'invalidFileType',
       },
     });
     const result = await parseParameters(event);
     expect(result).toEqual(
       newErrorResult({
-        message: ERROR_MESSAGES.MISSING_REQUIRED_PARAMETERS_FOR_REQUEST_TYPE,
+        message: ERROR_MESSAGES.INVALID_FILE_TYPE,
+      }),
+    );
+  });
+
+  it('should return a 500 error for missing required parameters for fileType', async () => {
+    const event = newAlbEvent({
+      queryStringParameters: {
+        ...mockQueryStringParameters,
+        objectType: 'contacts',
+        objectId: undefined,
+        fileType: 'recording',
+      },
+    });
+    const result = await parseParameters(event);
+    expect(result).toEqual(
+      newErrorResult({
+        message: ERROR_MESSAGES.MISSING_REQUIRED_PARAMETERS_FOR_FILE_TYPE,
       }),
     );
   });

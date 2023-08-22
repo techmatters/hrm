@@ -23,14 +23,23 @@ import {
   SuccessResult,
 } from '@tech-matters/types';
 
+const methods = ['getObject', 'putObject', 'deleteObject'];
+
+const objectTypes = {
+  contacts: {
+    requiredParameters: ['objectId'],
+    fileTypes: ['recording'],
+  },
+};
+
 export const ERROR_MESSAGES = {
   MISSING_QUERY_STRING_PARAMETERS: 'Missing queryStringParameters',
   MISSING_REQUIRED_QUERY_STRING_PARAMETERS:
-    'Missing required queryStringParameters: method, bucket, key, accountSid, requestType',
+    'Missing required queryStringParameters: method, bucket, key, accountSid, fileType',
   INVALID_METHOD: 'Invalid method',
-  INVALID_REQUEST_TYPE: 'Invalid requestType',
-  MISSING_REQUIRED_PARAMETERS_FOR_REQUEST_TYPE:
-    'Missing required parameters for requestType',
+  INVALID_OBJECT_TYPE: 'Invalid objectType',
+  INVALID_FILE_TYPE: 'Invalid fileType',
+  MISSING_REQUIRED_PARAMETERS_FOR_FILE_TYPE: 'Missing required parameters for fileType',
 };
 
 export type Parameters = {
@@ -38,8 +47,9 @@ export type Parameters = {
   bucket: string;
   key: string;
   accountSid: string;
-  requestType: string;
-  contactId?: string;
+  fileType: string;
+  objectType: string;
+  objectId?: string;
 };
 
 export type ParseParametersSuccess = SuccessResult & {
@@ -48,23 +58,15 @@ export type ParseParametersSuccess = SuccessResult & {
 
 export type ParseParametersResult = ErrorResult | ParseParametersSuccess;
 
-const methods = ['getObject', 'putObject', 'deleteObject'];
-
-const requestTypes = {
-  contactRecordings: {
-    requiredParameters: ['contactId'],
-  },
+export type ParsePathParametersResult = {
+  accountSid?: string;
 };
 
-const parsePathParameters = (
-  path: string,
-): { accountSid?: string; requestType?: string } => {
-  const accountSidMatch = /\/accounts\/([^\/]+)/.exec(path);
-  const requestTypeMatch = /\/([^\/]+)$/.exec(path);
+const parsePathParameters = (path: string): ParsePathParametersResult => {
+  const accountSidAndObjectMatch = /\/accounts\/([^\/]+)/.exec(path);
 
   return {
-    accountSid: accountSidMatch ? accountSidMatch[1] : undefined,
-    requestType: requestTypeMatch ? requestTypeMatch[1] : undefined,
+    accountSid: accountSidAndObjectMatch ? accountSidAndObjectMatch[1] : undefined,
   };
 };
 
@@ -74,9 +76,9 @@ export const parseParameters = (event: ALBEvent): ParseParametersResult => {
     return newErrorResult({ message: ERROR_MESSAGES.MISSING_QUERY_STRING_PARAMETERS });
   }
 
-  const { method, bucket, key } = queryStringParameters;
-  const { accountSid, requestType } = parsePathParameters(path);
-  if (!method || !bucket || !key || !accountSid || !requestType) {
+  const { method, bucket, key, objectType, objectId, fileType } = queryStringParameters;
+  const { accountSid } = parsePathParameters(path);
+  if (!method || !bucket || !key || !accountSid || !objectType || !fileType) {
     return newErrorResult({
       message: ERROR_MESSAGES.MISSING_REQUIRED_QUERY_STRING_PARAMETERS,
     });
@@ -85,17 +87,24 @@ export const parseParameters = (event: ALBEvent): ParseParametersResult => {
   if (!methods.includes(method)) {
     return newErrorResult({ message: ERROR_MESSAGES.INVALID_METHOD });
   }
-  if (!Object.keys(requestTypes).includes(requestType)) {
-    return newErrorResult({ message: ERROR_MESSAGES.INVALID_REQUEST_TYPE });
+
+  const objectTypeConfig = objectTypes[objectType as keyof typeof objectTypes];
+
+  if (!objectTypeConfig) {
+    return newErrorResult({ message: ERROR_MESSAGES.INVALID_OBJECT_TYPE });
   }
 
-  const requestTypeConfig = requestTypes[requestType as keyof typeof requestTypes];
-  const missingRequiredParameters = requestTypeConfig.requiredParameters.filter(
+  if (!objectTypeConfig.fileTypes.includes(fileType)) {
+    return newErrorResult({ message: ERROR_MESSAGES.INVALID_FILE_TYPE });
+  }
+
+  const missingRequiredParameters = objectTypeConfig.requiredParameters.filter(
     requiredParameter => !queryStringParameters[requiredParameter],
   );
+
   if (missingRequiredParameters.length > 0) {
     return newErrorResult({
-      message: ERROR_MESSAGES.MISSING_REQUIRED_PARAMETERS_FOR_REQUEST_TYPE,
+      message: ERROR_MESSAGES.MISSING_REQUIRED_PARAMETERS_FOR_FILE_TYPE,
     });
   }
 
@@ -105,8 +114,9 @@ export const parseParameters = (event: ALBEvent): ParseParametersResult => {
       bucket,
       key,
       accountSid,
-      requestType,
-      contactId: queryStringParameters.contactId,
+      fileType,
+      objectType,
+      objectId,
     },
   });
 };
