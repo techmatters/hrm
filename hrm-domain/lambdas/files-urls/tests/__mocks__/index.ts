@@ -17,14 +17,14 @@
 import type { ALBEvent } from 'aws-lambda';
 
 export const mockPathParameters = {
-  accountSid: 'test-account-sid',
+  accountSid: 'mockAccountSid',
 };
 
 export type MockPathParameters = {
   accountSid?: string;
 };
 
-export const mockPath = ({ accountSid = 'test-account-sid' }: MockPathParameters) =>
+export const mockPath = ({ accountSid = 'mockAccountSid' }: MockPathParameters) =>
   `/v0/accounts/${accountSid}/files/url`;
 
 export const mockQueryStringParameters = {

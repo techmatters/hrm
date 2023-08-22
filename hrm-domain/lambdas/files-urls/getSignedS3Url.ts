@@ -40,29 +40,26 @@ const getSignedS3Url = async (event: ALBEvent): Promise<GetSignedS3UrlResult> =>
     return parseParametersResult;
   }
 
-  const { accountSid, method, objectType, objectId, fileType } =
+  const { accountSid, bucket, key, method, objectType, objectId, fileType } =
     parseParametersResult.result;
-
-  console.log('authenticating', {
-    accountSid,
-    method,
-    objectType,
-    objectId,
-    fileType,
-  });
 
   const authenticateResult = await authenticate({
     accountSid,
-    method,
     objectType,
     objectId,
-    fileType,
+    type: 'files-urls',
+    requestData: {
+      fileType,
+      method,
+      bucket,
+      key,
+    },
   });
   if (isErrorResult(authenticateResult)) {
     return authenticateResult;
   }
 
-  const { bucket, key } = parseParametersResult.result;
+  const {} = parseParametersResult.result;
 
   try {
     const getSignedUrlResult = await getSignedUrl({

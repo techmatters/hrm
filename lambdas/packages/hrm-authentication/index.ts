@@ -20,26 +20,40 @@ import {
   SuccessResult,
 } from '@tech-matters/types';
 
+const mockBuckets = ['mockBucket', 'contact-docs-bucket'];
+const mockAccountSids = ['mockAccountSid'];
+
 export type AuthenticateSuccessResult = SuccessResult & {
   result: true;
 };
 
 export type AuthenticateResult = ErrorResult | AuthenticateSuccessResult;
 
+export type AuthenticateFilesUrlsRequestData = {
+  method: string;
+  bucket: string;
+  key: string;
+  fileType: string;
+};
+
 export type AuthenticateParameters = {
   accountSid: string;
-  method: string;
   objectType: string;
-  objectId?: string;
-  fileType: string;
+  objectId: string;
+  // TODO: improve this type system
+  type: string;
+  requestData: AuthenticateFilesUrlsRequestData;
 };
 
 export const authenticate = async (
   params: AuthenticateParameters,
 ): Promise<AuthenticateResult> => {
-  const { accountSid } = params;
+  const { requestData } = params;
 
-  if (accountSid === 'mockAccountSid') {
+  console.log('authenticate', params);
+
+  // This is a quick and dirty way to lock this down so we can test with fake data without exposing real data in the test environment
+  if (mockBuckets.includes(requestData.bucket)) {
     return newSuccessResult({ result: true });
   }
 
