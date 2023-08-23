@@ -14,18 +14,45 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { isErrorResult, newSuccessResult } from '@tech-matters/types';
+import {
+  FileTypes,
+  FileMethods,
+  fileTypes,
+  fileMethods,
+  isErrorResult,
+  newSuccessResult,
+} from '@tech-matters/types';
 import { HrmAuthenticateParameters, HrmAuthenticateResult } from './index';
 import callHrmApi from './callHrmApi';
 
 export const mockBuckets = ['mockBucket', 'contact-docs-bucket'];
 
+export const getPermission = ({
+  fileType,
+  method,
+}: {
+  fileType: FileTypes;
+  method: FileMethods;
+}) => {
+  return `${fileMethods[method]}${fileTypes[fileType]}`;
+};
+
+export type HrmAuthenticateFilesUrlsRequestData = {
+  method: FileMethods;
+  bucket: string;
+  key: string;
+  fileType: FileTypes;
+};
+
 export const authUrlPathGenerator = ({
   accountSid,
-  objectType,
   objectId,
+  objectType,
+  requestData: { bucket, key, fileType, method },
 }: HrmAuthenticateParameters) => {
-  return `v0/accounts/${accountSid}/${objectType}/${objectId}/auth/filesUrls`;
+  const permission = getPermission({ fileType, method });
+
+  return `v0/accounts/${accountSid}/permissions/${permission}?objectType=${objectType}&objectId=${objectId}?bucket=${bucket}?key=${key}`;
 };
 
 const filesUrlsAuthenticator = async (

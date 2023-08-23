@@ -29,7 +29,7 @@ const methods = ['getObject', 'putObject', 'deleteObject'];
 const objectTypes = {
   contacts: {
     requiredParameters: ['objectId'],
-    fileTypes: ['recording'],
+    fileTypes: ['recording', 'transcript'],
   },
 };
 

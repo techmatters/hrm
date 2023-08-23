@@ -14,10 +14,19 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-const fileTypes = {
-  recording: 'recording',
-  transcript: 'transcript',
-  caseFile: 'caseFile',
+// These maps are kinda temp hacks until we refactor the hrm permission system.
+// They allow us to map an s3 method and file type to the hrm permission name.
+export const fileTypes = {
+  recording: 'Recording',
+  transcript: 'ExternalTranscript',
 } as const;
 
-export type FileTypes = (typeof fileTypes)[keyof typeof fileTypes];
+export type FileTypes = keyof typeof fileTypes;
+
+export const fileMethods = {
+  getObject: 'view',
+  putObject: 'create',
+  deleteObject: 'delete',
+} as const;
+
+export type FileMethods = keyof typeof fileMethods;

@@ -43,6 +43,9 @@ const getSignedS3Url = async (event: ALBEvent): Promise<GetSignedS3UrlResult> =>
   const { accountSid, bucket, key, method, objectType, objectId, fileType } =
     parseParametersResult.result;
 
+  //Basic ${Buffer.from(`token:${flexJWE}`).toString('base64')}
+  //TODO: convert authHeader to plaintext Bearer token
+
   const authenticateResult = await authenticate({
     accountSid,
     objectType,
