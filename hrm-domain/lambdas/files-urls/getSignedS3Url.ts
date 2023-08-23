@@ -34,6 +34,23 @@ export type GetSignedS3UrlSuccess = SuccessResult & {
 
 export type GetSignedS3UrlResult = GetSignedS3UrlSuccess | ErrorResult;
 
+/**
+ * Twilio insights sends a basic auth header with the username as the string token and the password as the flexJWE.
+ * This function converts that to a bearer token for use with the hrm-authentication package.
+ *
+ * example from https://www.twilio.com/docs/flex/developer/insights/playback-recordings-custom-storage#validate-the-flex-jwe-token:
+ * Basic ${Buffer.from(`token:${flexJWE}`).toString('base64')}
+ **/
+export const convertBasicAuthHeader = (authHeader: string): string => {
+  const [type, token] = authHeader.split(' ');
+  if (type == 'Bearer') return authHeader;
+
+  const [username, password] = Buffer.from(token, 'base64').toString().split(':');
+  if (username == 'token') return `Bearer ${password}`;
+
+  return authHeader;
+};
+
 const getSignedS3Url = async (event: ALBEvent): Promise<GetSignedS3UrlResult> => {
   const parseParametersResult = parseParameters(event);
   if (isErrorResult(parseParametersResult)) {
@@ -43,14 +60,11 @@ const getSignedS3Url = async (event: ALBEvent): Promise<GetSignedS3UrlResult> =>
   const { accountSid, bucket, key, method, objectType, objectId, fileType } =
     parseParametersResult.result;
 
-  //Basic ${Buffer.from(`token:${flexJWE}`).toString('base64')}
-  //TODO: convert authHeader to plaintext Bearer token
-
   const authenticateResult = await authenticate({
     accountSid,
     objectType,
     objectId,
-    authHeader: event.headers?.Authorization!,
+    authHeader: convertBasicAuthHeader(event.headers?.Authorization!),
     type: 'filesUrls',
     requestData: {
       fileType,
