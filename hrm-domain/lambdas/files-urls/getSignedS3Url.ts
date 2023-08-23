@@ -42,6 +42,8 @@ export type GetSignedS3UrlResult = GetSignedS3UrlSuccess | ErrorResult;
  * Basic ${Buffer.from(`token:${flexJWE}`).toString('base64')}
  **/
 export const convertBasicAuthHeader = (authHeader: string): string => {
+  if (!authHeader) return authHeader;
+
   const [type, token] = authHeader.split(' ');
   if (type == 'Bearer') return authHeader;
 
