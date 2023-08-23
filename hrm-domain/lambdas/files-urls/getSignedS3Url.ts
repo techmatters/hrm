@@ -79,8 +79,6 @@ const getSignedS3Url = async (event: ALBEvent): Promise<GetSignedS3UrlResult> =>
     return authenticateResult;
   }
 
-  const {} = parseParametersResult.result;
-
   try {
     const getSignedUrlResult = await getSignedUrl({
       method,
