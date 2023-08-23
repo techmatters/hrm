@@ -49,7 +49,22 @@ export const newSuccessResult = ({
 
 export type SuccessResult = ReturnType<typeof newSuccessResult>;
 
-export type Result = SuccessResult | ErrorResult;
+export type NewUnneededResultParams = {
+  message: string;
+};
+export const newUnneededResult = ({ message }: NewUnneededResultParams) => ({
+  status: 'unneeded',
+  message,
+});
+export type UnneededResult = ReturnType<typeof newUnneededResult>;
+
+export type Result = SuccessResult | ErrorResult | UnneededResult;
 
 export const isErrorResult = (result: Result): result is ErrorResult =>
   result.status === 'error';
+
+export const isSuccessResult = (result: Result): result is SuccessResult =>
+  result.status === 'success';
+
+export const isUnneededResult = (result: Result): result is UnneededResult =>
+  result.status === 'unneeded';

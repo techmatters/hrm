@@ -21,6 +21,7 @@ import {
   newSuccessResult,
   ErrorResult,
   SuccessResult,
+  FileTypes,
 } from '@tech-matters/types';
 
 const methods = ['getObject', 'putObject', 'deleteObject'];
@@ -47,7 +48,7 @@ export type Parameters = {
   bucket: string;
   key: string;
   accountSid: string;
-  fileType: string;
+  fileType: FileTypes;
   objectType: string;
   objectId?: string;
 };

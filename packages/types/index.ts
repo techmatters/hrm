@@ -14,6 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 export * from './ContactJob';
+export * from './Files';
 export * from './ResourcesImport';
 export * from './Resources';
 export * from './Results';

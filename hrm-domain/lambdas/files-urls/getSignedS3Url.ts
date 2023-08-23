@@ -47,7 +47,8 @@ const getSignedS3Url = async (event: ALBEvent): Promise<GetSignedS3UrlResult> =>
     accountSid,
     objectType,
     objectId,
-    type: 'files-urls',
+    authHeader: event.headers?.Authorization!,
+    type: 'filesUrls',
     requestData: {
       fileType,
       method,
