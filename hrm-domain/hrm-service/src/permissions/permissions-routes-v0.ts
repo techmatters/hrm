@@ -40,5 +40,22 @@ export default (permissions: Permissions) => {
     }
   });
 
+  permissionsRouter.get(
+    '/:action',
+    publicEndpoint,
+    (req: Request, res: Response, next) => {
+      const { accountSid, user } = req;
+      const { action } = req.params;
+      const { objectType, objectId, bucket, key } = req.query;
+
+      try {
+        res.json({ message: 'ok' });
+      } catch (err) {
+        // TODO: better error handling?
+        throw createError(500);
+      }
+    },
+  );
+
   return permissionsRouter.expressRouter;
 };
