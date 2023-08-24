@@ -17,9 +17,6 @@
 import { pgp } from '../../connection-pool';
 import { SELECT_CASE_SECTIONS } from './case-sections-sql';
 import { CaseListFilters, DateExistsCondition, DateFilter } from '../case-data-access';
-import { leftJoinCsamReportsOnFK } from '../../csam-report/sql/csam-report-get-sql';
-import { leftJoinReferralsOnFK } from '../../referral/sql/referral-get-sql';
-import { leftJoinConversationMediasOnFK } from '../../conversation-media/sql/conversation-media-get-sql';
 
 export const OrderByDirection = {
   ascendingNullsLast: 'ASC NULLS LAST',
@@ -65,19 +62,8 @@ const generateOrderByClause = (clauses: OrderByClauseItem[]): string => {
 };
 
 const SELECT_CONTACTS = `SELECT COALESCE(jsonb_agg(DISTINCT contacts.*) FILTER (WHERE contacts."caseId" IS NOT NULL), '[]') AS "connectedContacts"
-FROM (
-  SELECT
-    c.*,
-    COALESCE(jsonb_agg(DISTINCT r.*) FILTER (WHERE r.id IS NOT NULL), '[]') AS "csamReports",
-    COALESCE(jsonb_agg(DISTINCT referral.*) FILTER (WHERE referral IS NOT NULL), '[]') AS "referrals",
-    COALESCE(jsonb_agg(DISTINCT cm.*) FILTER (WHERE cm IS NOT NULL), '[]') AS "conversationMedia"
-  FROM "Contacts" c 
-  ${leftJoinCsamReportsOnFK('c')}
-  ${leftJoinReferralsOnFK('c')}
-  ${leftJoinConversationMediasOnFK('c')}
-  WHERE c."caseId" = "cases".id AND c."accountSid" = "cases"."accountSid"
-  GROUP BY c."accountSid", c.id
-) AS contacts WHERE contacts."caseId" = cases.id AND contacts."accountSid" = cases."accountSid"`;
+FROM "permittedFullContacts"(cases."accountSid", NULL) AS contacts 
+WHERE contacts."caseId" = cases.id AND contacts."accountSid" = cases."accountSid"`;
 
 const enum FilterableDateField {
   CREATED_AT = 'cases."createdAt"::TIMESTAMP WITH TIME ZONE',

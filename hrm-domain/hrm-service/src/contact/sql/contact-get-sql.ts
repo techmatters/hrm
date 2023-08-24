@@ -14,32 +14,12 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { selectCoalesceConversationMediasByContactId } from '../../conversation-media/sql/conversation-media-get-sql';
-import { selectCoalesceCsamReportsByContactId } from '../../csam-report/sql/csam-report-get-sql';
-import { selectCoalesceReferralsByContactId } from '../../referral/sql/referral-get-sql';
+export const SELECT_SINGLE_CONTACT_BY_ID = `
+      SELECT c.* FROM "permittedFullContacts"($<accountSid>, NULL) c
+      WHERE c."id" = $<contactId>`;
 
-const ID_WHERE_CLAUSE = `WHERE c."accountSid" = $<accountSid> AND c."id" = $<contactId>`;
-const TASKID_WHERE_CLAUSE = `WHERE c."accountSid" = $<accountSid> AND c."taskId" = $<taskId>`;
-
-export const selectContactsWithRelations = (table: string) => `
-        SELECT c.*, reports."csamReports", joinedReferrals."referrals", media."conversationMedia"
-        FROM "${table}" c 
-        LEFT JOIN LATERAL (
-          ${selectCoalesceCsamReportsByContactId('c')}
-        ) reports ON true
-        LEFT JOIN LATERAL (
-          ${selectCoalesceReferralsByContactId('c')}
-        ) joinedReferrals ON true
-        LEFT JOIN LATERAL (
-          ${selectCoalesceConversationMediasByContactId('c')}
-        ) media ON true`;
-
-export const selectSingleContactByIdSql = (table: string) => `
-      ${selectContactsWithRelations(table)}
-      ${ID_WHERE_CLAUSE}`;
-
-export const selectSingleContactByTaskId = (table: string) => ` 
-      ${selectContactsWithRelations(table)}
-      ${TASKID_WHERE_CLAUSE}
+export const SELECT_SINGLE_CONTACT_BY_TASKSID = `
+      SELECT c.* FROM "permittedFullContacts"($<accountSid>, NULL) c
+      WHERE c."taskId" = $<taskId>
       -- only take the latest, this ORDER / LIMIT clause would be redundant 
       ORDER BY c."createdAt" DESC LIMIT 1`;

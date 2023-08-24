@@ -62,7 +62,7 @@ describe('getById', () => {
     const result = await caseDb.getById(caseId, accountSid);
 
     expect(oneOrNoneSpy).toHaveBeenCalledWith(
-      expect.stringContaining('CSAMReports'),
+      expect.stringContaining('permittedFullContacts'),
       expect.objectContaining({ accountSid, caseId }),
     );
     expect(result).not.toBeDefined();
@@ -316,8 +316,7 @@ describe('search', () => {
         }),
       );
       const statementExecuted = getSqlStatement(anySpy);
-      expect(statementExecuted).toContain('Contacts');
-      expect(statementExecuted).toContain('CSAMReports');
+      expect(statementExecuted).toContain('permittedFullContacts');
       expect(result.count).toEqual(1337);
       expect(result.cases).toStrictEqual(expectedResult);
     },
@@ -350,8 +349,7 @@ describe('update', () => {
     const updateSql = getSqlStatement(noneSpy, 1);
     const selectSql = getSqlStatement(oneOrNoneSpy);
     expect(selectSql).toContain('Cases');
-    expect(selectSql).toContain('Contacts');
-    expect(selectSql).toContain('CSAMReports');
+    expect(selectSql).toContain('permittedFullContacts');
     expectValuesInSql(updateSql, { info: caseUpdate.info, status: caseUpdate.status });
     expect(oneOrNoneSpy).toHaveBeenCalledWith(
       expect.any(String),

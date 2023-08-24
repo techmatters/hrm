@@ -19,8 +19,8 @@ import { UPDATE_CASEID_BY_ID, UPDATE_RAWJSON_BY_ID } from './sql/contact-update-
 import { SELECT_CONTACT_SEARCH } from './sql/contact-search-sql';
 import { endOfDay, parseISO, startOfDay } from 'date-fns';
 import {
-  selectSingleContactByIdSql,
-  selectSingleContactByTaskId,
+  SELECT_SINGLE_CONTACT_BY_ID,
+  SELECT_SINGLE_CONTACT_BY_TASKSID,
 } from './sql/contact-get-sql';
 import { insertContactSql, NewContactRecord } from './sql/contact-insert-sql';
 import { PersonInformation, ReferralWithoutContactId } from './contact-json';
@@ -160,7 +160,7 @@ export const create =
     ) => {
       if (newContact.taskId) {
         const existingContact: Contact = await conn.oneOrNone<Contact>(
-          selectSingleContactByTaskId('Contacts'),
+          SELECT_SINGLE_CONTACT_BY_TASKSID,
           {
             accountSid,
             taskId: newContact.taskId,
@@ -226,7 +226,7 @@ export const connectToCase = async (
 
 export const getById = async (accountSid: string, contactId: number): Promise<Contact> =>
   db.task(async connection =>
-    connection.oneOrNone<Contact>(selectSingleContactByIdSql('Contacts'), {
+    connection.oneOrNone<Contact>(SELECT_SINGLE_CONTACT_BY_ID, {
       accountSid,
       contactId,
     }),

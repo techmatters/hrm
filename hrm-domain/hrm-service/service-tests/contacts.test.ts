@@ -54,7 +54,7 @@ import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/
 import * as contactJobDataAccess from '../src/contact-job/contact-job-data-access';
 import { chatChannels } from '../src/contact/channelTypes';
 import * as contactInsertSql from '../src/contact/sql/contact-insert-sql';
-import { selectSingleContactByTaskId } from '../src/contact/sql/contact-get-sql';
+import { SELECT_SINGLE_CONTACT_BY_TASKSID } from '../src/contact/sql/contact-get-sql';
 import { ruleFileWithOneActionOverride } from './permissions-overrides';
 import * as csamReportApi from '../src/csam-report/csam-report';
 import * as referralDB from '../src/referral/referral-data-access';
@@ -125,7 +125,7 @@ const cleanupReferrals = () =>
 
 // eslint-disable-next-line @typescript-eslint/no-shadow
 const getContactByTaskId = (taskId: string, accountSid: string) =>
-  db.oneOrNone(selectSingleContactByTaskId('Contacts'), { accountSid, taskId });
+  db.oneOrNone(SELECT_SINGLE_CONTACT_BY_TASKSID, { accountSid, taskId });
 
 // eslint-disable-next-line @typescript-eslint/no-shadow
 const deleteContactById = (id: number, accountSid: string) =>

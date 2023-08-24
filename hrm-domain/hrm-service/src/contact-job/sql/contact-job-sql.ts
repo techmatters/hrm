@@ -14,8 +14,6 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { selectContactsWithRelations } from '../../contact/sql/contact-get-sql';
-
 export enum ContactJobCleanupStatus {
   NOT_READY = 'not_ready',
   PENDING = 'pending',
@@ -49,11 +47,9 @@ WITH due AS (
     AND "completed" IS NOT NULL
     AND "completed" < (current_timestamp - interval '$<cleanupRetentionDays> day')
   )
-  SELECT due.*, to_jsonb(contacts.*) AS "resource"
-  FROM due LEFT JOIN LATERAL (
-  ${selectContactsWithRelations(
-    'Contacts',
-  )} WHERE c."accountSid" = due."accountSid" AND c."id" = due."contactId") AS contacts ON true
+  SELECT due.*, to_jsonb(contacts.*) AS "resource"FROM due 
+  LEFT JOIN public."permittedFullContacts"(due."accountSid", NULL) AS contacts 
+  ON contacts."id" = due."contactId"
 `;
 
 export const PENDING_CLEANUP_JOB_ACCOUNT_SIDS_SQL = `
@@ -69,11 +65,9 @@ export const PULL_DUE_JOBS_SQL = `
     UPDATE "ContactJobs" SET "lastAttempt" = CURRENT_TIMESTAMP, "numberOfAttempts" = "numberOfAttempts" + 1
     WHERE "completed" IS NULL AND "numberOfAttempts" < $<jobMaxAttempts> AND ("lastAttempt" IS NULL OR "lastAttempt" <= $<lastAttemptedBefore>::TIMESTAMP WITH TIME ZONE) RETURNING *
   )
-  SELECT due.*, to_jsonb(contacts.*) AS "resource"
-  FROM due LEFT JOIN LATERAL (
-  ${selectContactsWithRelations(
-    'Contacts',
-  )} WHERE c."accountSid" = due."accountSid" AND c."id" = due."contactId") AS contacts ON true
+  SELECT due.*, to_jsonb(contacts.*) AS "resource" FROM due 
+  LEFT JOIN public."permittedFullContacts"(due."accountSid", NULL) AS contacts 
+  ON contacts."id" = due."contactId"
 `;
 
 export const UPDATE_JOB_CLEANUP_ACTIVE_SQL = `
