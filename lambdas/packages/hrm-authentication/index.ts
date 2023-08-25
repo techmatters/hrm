@@ -13,14 +13,34 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { newSuccessResult, ErrorResult, SuccessResult } from '@tech-matters/types';
+import { ErrorResult, SuccessResult } from '@tech-matters/types';
+import filesUrlsAuthenticator, {
+  HrmAuthenticateFilesUrlsRequestData,
+} from './filesUrlsAuthenticator';
 
-export type AuthenticateSuccessResult = SuccessResult & {
-  result: true;
+const types = {
+  filesUrls: (params: HrmAuthenticateParameters) => filesUrlsAuthenticator(params),
 };
 
-export type AuthenticateResult = ErrorResult | AuthenticateSuccessResult;
+export type HrmAuthenticateTypes = keyof typeof types;
 
-export const authenticate = async (): Promise<AuthenticateResult> => {
-  return newSuccessResult({ result: true });
+export type HrmAuthenticateSuccessResult = SuccessResult<true>;
+
+export type HrmAuthenticateResult = ErrorResult | HrmAuthenticateSuccessResult;
+
+export type HrmAuthenticateParameters = {
+  accountSid: string;
+  objectType: string;
+  objectId?: string;
+  type: HrmAuthenticateTypes;
+  authHeader: string;
+  requestData: HrmAuthenticateFilesUrlsRequestData;
+};
+
+export const authenticate = async (
+  params: HrmAuthenticateParameters,
+): Promise<HrmAuthenticateResult> => {
+  console.log('authenticate', params);
+
+  return types[params.type](params);
 };

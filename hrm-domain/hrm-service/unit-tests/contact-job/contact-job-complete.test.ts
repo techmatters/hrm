@@ -61,9 +61,8 @@ describe('pollAndProcessCompletedContactJobs', () => {
         Messages: [],
       }));
 
-    const result = await contactJobComplete.pollAndProcessCompletedContactJobs(
-      JOB_MAX_ATTEMPTS,
-    );
+    const result =
+      await contactJobComplete.pollAndProcessCompletedContactJobs(JOB_MAX_ATTEMPTS);
 
     expect(sqsSpy).toHaveBeenCalled();
     expect(Array.isArray(result)).toBeTruthy();
@@ -116,9 +115,8 @@ describe('pollAndProcessCompletedContactJobs', () => {
       .spyOn(contactJobDataAccess, 'completeContactJob')
       .mockImplementation(async () => 'done' as any);
 
-    const result = await contactJobComplete.pollAndProcessCompletedContactJobs(
-      JOB_MAX_ATTEMPTS,
-    );
+    const result =
+      await contactJobComplete.pollAndProcessCompletedContactJobs(JOB_MAX_ATTEMPTS);
 
     expect(processCompletedRetrieveContactTranscriptSpy).toHaveBeenCalledTimes(1);
     expect(errorSpy).toHaveBeenCalledTimes(1);
@@ -182,9 +180,8 @@ describe('pollAndProcessCompletedContactJobs', () => {
       .spyOn(contactJobDataAccess, 'completeContactJob')
       .mockImplementation(async () => 'done' as any);
 
-    const result = await contactJobComplete.pollAndProcessCompletedContactJobs(
-      JOB_MAX_ATTEMPTS,
-    );
+    const result =
+      await contactJobComplete.pollAndProcessCompletedContactJobs(JOB_MAX_ATTEMPTS);
 
     expect(processCompletedRetrieveContactTranscriptSpy).toHaveBeenCalledTimes(2);
     expect(errorSpy).toHaveBeenCalledTimes(1);
@@ -258,9 +255,8 @@ describe('pollAndProcessCompletedContactJobs', () => {
         .spyOn(contactJobDataAccess, 'completeContactJob')
         .mockImplementation(async () => validPayload as any);
 
-      const result = await contactJobComplete.pollAndProcessCompletedContactJobs(
-        JOB_MAX_ATTEMPTS,
-      );
+      const result =
+        await contactJobComplete.pollAndProcessCompletedContactJobs(JOB_MAX_ATTEMPTS);
 
       expect(processCompletedFunctionSpy).toHaveBeenCalledWith(job);
       expect(completeContactJobSpy).toHaveBeenCalledWith({
@@ -350,9 +346,8 @@ describe('pollAndProcessCompletedContactJobs', () => {
         .spyOn(contactJobDataAccess, 'appendFailedAttemptPayload')
         .mockImplementation(() => job);
 
-      const result = await contactJobComplete.pollAndProcessCompletedContactJobs(
-        JOB_MAX_ATTEMPTS,
-      );
+      const result =
+        await contactJobComplete.pollAndProcessCompletedContactJobs(JOB_MAX_ATTEMPTS);
 
       expect(processCompletedFunctionSpy).not.toHaveBeenCalled();
       expect(deletedCompletedContactJobsSpy).toHaveBeenCalledWith(

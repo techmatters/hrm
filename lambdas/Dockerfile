@@ -28,6 +28,8 @@ COPY lambdas/tsconfig.json /tmp/build/lambdas/tsconfig.json
 COPY lambdas/packages /tmp/build/lambdas/packages
 COPY ${lambda_dir}/${lambda_name} /tmp/build/${lambda_dir}/${lambda_name}
 COPY ${lambda_dir}/packages /tmp/build/${lambda_dir}/packages
+COPY ${lambda_dir}/../packages /tmp/build/${lambda_dir}/../packages
+COPY ${lambda_dir}/../tsconfig.json /tmp/build/${lambda_dir}/../tsconfig.json
 COPY ${lambda_dir}/tsconfig.json /tmp/build/${lambda_dir}/tsconfig.json
 COPY package.json package-lock.json tsconfig.json tsconfig.base.json ${lambda_dir}/${lambda_name}/tsconfig.build.json /tmp/build/
 
@@ -38,6 +40,8 @@ RUN yum install -y rsync \
     && cp ${lambda_dir}/${lambda_name}/dist/*.js /var/task/ \
     && cp -r packages /var/task/ \
     && mkdir -p /var/task/${lambda_dir} \
+    && mkdir -p /var/task/lambdas \
+    && cp -r lambdas/packages /var/task/lambdas/ \
     && cp -r ${lambda_dir}/packages /var/task/${lambda_dir}/packages/ \
     && cp -r node_modules /var/task/
 
