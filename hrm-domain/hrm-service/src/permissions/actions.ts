@@ -42,6 +42,7 @@ export const actionsMaps = {
     VIEW_CONTACT: 'viewContact',
     EDIT_CONTACT: 'editContact',
     VIEW_EXTERNAL_TRANSCRIPT: 'viewExternalTranscript',
+    VIEW_RECORDING: 'viewRecording',
   },
   postSurvey: {
     VIEW_POST_SURVEY: 'viewPostSurvey',
