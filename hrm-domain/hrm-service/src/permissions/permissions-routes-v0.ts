@@ -17,7 +17,10 @@
 import { SafeRouter, publicEndpoint, Permissions } from '../permissions';
 import type { Request, Response } from 'express';
 import createError from 'http-errors';
-import { canPerformActionsOnObject } from './canPerformActionOnObject';
+import {
+  canPerformActionsOnObject,
+  isValidFileLocation,
+} from './canPerformActionOnObject';
 import { isTargetKind, isValidSetOfActionsForTarget } from './actions';
 
 export default (permissions: Permissions) => {
@@ -72,6 +75,7 @@ export default (permissions: Permissions) => {
 
   permissionsRouter.get('/:action', publicEndpoint, async (req, res, next) => {
     const { accountSid, user, can } = req;
+    const { bucket, key } = req.query;
 
     try {
       const parsed = parseActionGetPayload({
@@ -79,6 +83,7 @@ export default (permissions: Permissions) => {
         objectType: req.query.objectType,
         objectId: req.query.objectId,
       });
+
       if (!parsed.valid) {
         return next(createError(400, parsed.message));
       }
@@ -93,6 +98,29 @@ export default (permissions: Permissions) => {
         can,
         user,
       });
+
+      if (!canPerform) {
+        return next(createError(403, 'user cant perform action on resource'));
+      }
+
+      if (bucket && key) {
+        const isValidLocation = await isValidFileLocation({
+          accountSid,
+          targetKind: objectType,
+          objectId,
+          bucket,
+          key,
+        });
+
+        if (!isValidLocation) {
+          return next(
+            createError(
+              403,
+              'bucket and key pair does not represent a valid conversation media for the given resource',
+            ),
+          );
+        }
+      }
 
       res.json({ canPerform });
     } catch (err) {

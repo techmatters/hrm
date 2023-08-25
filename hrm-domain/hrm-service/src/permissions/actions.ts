@@ -55,11 +55,6 @@ export const isTargetKind = (s: string): s is TargetKind => Boolean(actionsMaps[
 export type ActionsOnTargetKind<T extends TargetKind> =
   (typeof actionsMaps)[T][keyof (typeof actionsMaps)[T]];
 
-export type TargetKindWithActions<T extends TargetKind> = {
-  targetKind: T;
-  actions: ActionsOnTargetKind<T>[];
-};
-
 export const isValidSetOfActionsForTarget = <T extends TargetKind>(
   targetKind: T,
   actions: unknown,

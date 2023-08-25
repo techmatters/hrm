@@ -15,11 +15,15 @@
  */
 
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
-import { ActionsOnTargetKind, TargetKind, TargetKindWithActions } from './actions';
+import { ActionsOnTargetKind, TargetKind } from './actions';
 import { setupCanForRules } from './setupCanForRules';
 import { getContactById } from '../contact/contact';
 import { getCase as getCaseById } from '../case/case';
 import { assertExhaustive } from '../contact-job/assertExhaustive';
+import {
+  getConversationMediaByContactId,
+  isS3StoredTranscript,
+} from '../conversation-media/conversation-media';
 
 export const canPerformActionsOnObject = async <T extends TargetKind>({
   accountSid,
@@ -31,9 +35,11 @@ export const canPerformActionsOnObject = async <T extends TargetKind>({
 }: {
   accountSid: string;
   objectId: number;
+  targetKind: T;
+  actions: ActionsOnTargetKind<T>[];
   can: ReturnType<typeof setupCanForRules>;
   user: TwilioUser;
-} & TargetKindWithActions<T>) => {
+}) => {
   switch (targetKind) {
     case 'contact': {
       const object = await getContactById(accountSid, objectId);
@@ -54,6 +60,45 @@ export const canPerformActionsOnObject = async <T extends TargetKind>({
       return (<ActionsOnTargetKind<'postSurvey'>[]>actions).every(action =>
         can(user, action, null),
       );
+    }
+    default: {
+      assertExhaustive(targetKind);
+    }
+  }
+};
+
+export const isValidFileLocation = async ({
+  accountSid,
+  targetKind,
+  objectId,
+  bucket,
+  key,
+}: {
+  accountSid: string;
+  targetKind: TargetKind;
+  objectId: number;
+  bucket: string;
+  key: string;
+}) => {
+  switch (targetKind) {
+    case 'contact': {
+      const conversationMedia = await getConversationMediaByContactId(
+        accountSid,
+        objectId,
+      );
+
+      return conversationMedia.some(
+        cm =>
+          isS3StoredTranscript(cm) &&
+          cm.storeTypeSpecificData?.location?.bucket === bucket &&
+          cm.storeTypeSpecificData?.location?.key === key,
+      );
+    }
+    case 'case': {
+      return false;
+    }
+    case 'postSurvey': {
+      return false;
     }
     default: {
       assertExhaustive(targetKind);
