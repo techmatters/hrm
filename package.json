@@ -8,9 +8,10 @@
     "packages/*",
     "lambdas/packages/*",
     "lambdas/*",
-    "hrm-domain/microservices/*",
+    "hrm-domain/lambdas/*",
     "hrm-domain/packages/*",
     "hrm-domain/*",
+    "resources-domain/lambdas/*",
     "resources-domain/packages/*",
     "resources-domain/*"
   ],
@@ -31,6 +32,7 @@
   },
   "devDependencies": {
     "@tsconfig/node16": "^1.0.3",
+    "@tsconfig/node18": "^18.2.1",
     "@types/aws-lambda": "^8.10.119",
     "@types/jest": "^26.0.24",
     "@types/node": "^16.18.0",

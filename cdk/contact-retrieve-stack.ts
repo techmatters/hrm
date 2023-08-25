@@ -115,7 +115,7 @@ export default class ContactRetrieveStack extends cdk.Stack {
       memorySize: 512,
       timeout: cdk.Duration.seconds(10),
       handler: 'handler',
-      entry: `./hrm-domain/contact-${id}/index.ts`,
+      entry: `./hrm-domain/lambdas/contact-${id}/index.ts`,
       environment: {
         NODE_OPTIONS: '--enable-source-maps',
         S3_ENDPOINT: 'http://localstack:4566',

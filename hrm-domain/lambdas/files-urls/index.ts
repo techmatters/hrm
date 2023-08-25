@@ -13,11 +13,15 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-export * from './ContactJob';
-export * from './Files';
-export * from './ResourcesImport';
-export * from './Resources';
-export * from './Results';
-export * from './twilio';
 
-export type ObjectValues<T> = T[keyof T];
+import type { ALBEvent, ALBResult } from 'aws-lambda';
+import { handleAlbEvent, MethodHandlers } from '@tech-matters/alb-handler';
+import getSignedS3Url from './getSignedS3Url';
+
+const methodHandlers: MethodHandlers = {
+  GET: getSignedS3Url,
+};
+
+export const handler = async (event: ALBEvent): Promise<ALBResult> => {
+  return handleAlbEvent({ event, methodHandlers });
+};
