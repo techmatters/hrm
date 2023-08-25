@@ -43,8 +43,8 @@ const callHrmApi = async ({ urlPath, requestData, authHeader }: CallHrmApiParame
     });
   }
 
-  const result = await response.json();
-  return newSuccessResult({ result });
+  const data = await response.json();
+  return newSuccessResult({ data });
 };
 
 export default callHrmApi;

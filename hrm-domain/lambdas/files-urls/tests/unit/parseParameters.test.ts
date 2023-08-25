@@ -85,7 +85,7 @@ describe('parseParameters', () => {
     const result = await parseParameters(event);
     expect(result).toEqual(
       newSuccessResult({
-        result: {
+        data: {
           ...mockQueryStringParameters,
           ...mockPathParameters,
         },

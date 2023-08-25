@@ -36,6 +36,6 @@ describe('getSignedS3Url', () => {
     });
 
     const result = await getSignedS3Url(event);
-    expect(result).toEqual(newSuccessResult({ result: { media_url: mockSignedUrl } }));
+    expect(result).toEqual(newSuccessResult({ data: { media_url: mockSignedUrl } }));
   });
 });
