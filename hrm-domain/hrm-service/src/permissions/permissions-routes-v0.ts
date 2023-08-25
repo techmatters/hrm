@@ -17,6 +17,8 @@
 import { SafeRouter, publicEndpoint, Permissions } from '../permissions';
 import type { Request, Response } from 'express';
 import createError from 'http-errors';
+import { canPerformActionsOnObject } from './canPerformActionOnObject';
+import { isTargetKind, isValidSetOfActionsForTarget } from './actions';
 
 export default (permissions: Permissions) => {
   const permissionsRouter = SafeRouter();
@@ -40,22 +42,64 @@ export default (permissions: Permissions) => {
     }
   });
 
-  permissionsRouter.get(
-    '/:action',
-    publicEndpoint,
-    (req: Request, res: Response, next) => {
-      const { accountSid, user } = req;
-      const { action } = req.params;
-      const { objectType, objectId, bucket, key } = req.query;
+  const parseActionGetPayload = ({
+    action,
+    objectType,
+    objectId,
+  }: {
+    action: string;
+    objectType: any;
+    objectId: any;
+  }) => {
+    if (!objectType || !isTargetKind(objectType)) {
+      return { valid: false, message: 'invalid objectType' } as const;
+    }
+    if (!objectId || !Number.isInteger(parseInt(objectId, 10))) {
+      return { valid: false, message: 'invalid objectId' } as const;
+    }
 
-      try {
-        res.json({ message: 'ok' });
-      } catch (err) {
-        // TODO: better error handling?
-        throw createError(500);
+    const actions = [action];
+
+    if (!action || !isValidSetOfActionsForTarget(objectType, actions)) {
+      return { valid: false, message: 'invalid action for objectType' } as const;
+    }
+
+    return {
+      valid: true,
+      validPayload: { actions, objectType, objectId },
+    } as const;
+  };
+
+  permissionsRouter.get('/:action', publicEndpoint, async (req, res, next) => {
+    const { accountSid, user, can } = req;
+
+    try {
+      const parsed = parseActionGetPayload({
+        action: req.params.action,
+        objectType: req.query.objectType,
+        objectId: req.query.objectId,
+      });
+      if (!parsed.valid) {
+        return next(createError(400, parsed.message));
       }
-    },
-  );
+
+      const { objectType, actions, objectId } = parsed.validPayload;
+
+      const canPerform = await canPerformActionsOnObject({
+        accountSid,
+        targetKind: objectType,
+        actions,
+        objectId,
+        can,
+        user,
+      });
+
+      res.json({ canPerform });
+    } catch (err) {
+      // TODO: better error handling?
+      throw createError(500);
+    }
+  });
 
   return permissionsRouter.expressRouter;
 };
