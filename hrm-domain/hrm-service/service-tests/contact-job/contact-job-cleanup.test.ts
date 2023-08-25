@@ -50,9 +50,7 @@ const completionPayload = {
   location: {
     bucket: 'bucket',
     key: 'key',
-    url: 'https://some/fake/url',
   },
-  url: 'https://some/fake/url',
 };
 
 const backDateJob = (jobId: string) =>

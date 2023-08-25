@@ -14,9 +14,10 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
+// TODO: needs to be converted to aws-sdk-v3
 import { SQS } from 'aws-sdk';
 import { getSsmParameter } from '@tech-matters/ssm-cache';
-import { sns } from '@tech-matters/sns-client';
+import { publishSns } from '@tech-matters/sns-client';
 
 import type { FlatResource, ResourcesSearchIndexPayload } from '@tech-matters/types';
 import { ResourcesJobType } from '@tech-matters/types';
@@ -83,9 +84,9 @@ export const publishToResourcesJob = async ({
 
     console.error('Failed to publish to resources job. Giving up.', err);
 
-    sns.publish({
-      Message: JSON.stringify(params) + err,
-      TopicArn: process.env.SNS_TOPIC_ARN || '',
+    await publishSns({
+      message: JSON.stringify(params) + err,
+      topicArn: process.env.SNS_TOPIC_ARN || '',
     });
 
     throw err;

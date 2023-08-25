@@ -14,22 +14,47 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { SNS } from 'aws-sdk';
+import { PublishCommand, SNSClient, SNSClientConfig } from '@aws-sdk/client-sns';
 
-/**
- * I extracted this out to a library because there isn't a great way to do overrides
- * for the localstack env globally that I could find. It is a little weird, but
- * drys up the setup a bit.
- *
- * Totally open to other ideas here.
- * (rbd 10-10-22)
- */
-const getSnsConf = () => {
-  const snsConfig: {
-    endpoint?: string;
-  } = process.env.SNS_ENDPOINT ? { endpoint: process.env.SNS_ENDPOINT } : {};
-
-  return snsConfig;
+const convertToEndpoint = (endpointUrl: string) => {
+  const url: URL = new URL(endpointUrl);
+  return {
+    url: url,
+  };
 };
 
-export const sns = new SNS(getSnsConf());
+const getSnsConfig = (): SNSClientConfig => {
+  if (process.env.SNS_ENDPOINT) {
+    return {
+      region: 'us-east-1',
+      endpoint: convertToEndpoint(process.env.SNS_ENDPOINT),
+    };
+  }
+
+  if (process.env.LOCAL_SNS_PORT) {
+    return {
+      region: 'us-east-1',
+      endpoint: convertToEndpoint(`http://localhost:${process.env.LOCAL_SNS_PORT}`),
+    };
+  }
+
+  return {};
+};
+
+export const sns = new SNSClient(getSnsConfig());
+
+export type PublishSnsParams = {
+  topicArn: string;
+  message: string;
+};
+
+export const publishSns = async (params: PublishSnsParams) => {
+  const { topicArn, message } = params;
+
+  const command = new PublishCommand({
+    TopicArn: topicArn,
+    Message: message,
+  });
+
+  return sns.send(command);
+};

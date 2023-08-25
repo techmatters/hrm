@@ -6,7 +6,7 @@
 # Build dependencies
 node_modules
 
-dist
+**/dist
 
 # Environment (contains sensitive data)
 .env

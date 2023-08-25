@@ -26,17 +26,18 @@ on:
           - staging
           - production
 
-      lambda_name:
-        description: 'HRM lambda name'
+      lambda_path:
+        description: 'Lambda path'
         required: true
-        default: contact-retrieve-transcript
         type: choice
         options:
-          - contact-retrieve-transcript
-          - resources-import-consumer
-          - resources-import-producer
-          - resources-search-index
-          - job-complete
+          - hrm-domain/lambdas/files-urls
+          - hrm-domain/lambdas/contact-complete
+          - hrm-domain/lambdas/contact-retrieve-transcript
+          - lambdas/job-complete
+          - resources-domain/lambdas/import-consumer
+          - resources-domain/lambdas/import-producer
+          - resources-domain/lambdas/search-index
 
   workflow_call:
     secrets:
@@ -50,8 +51,8 @@ on:
         type: string
         default: development
         required: true
-      lambda_name:
-        description: 'hrm lambda name'
+      lambda_path:
+        description: 'Lambda path'
         required: true
         type: string
       send-slack-message:
@@ -61,7 +62,6 @@ on:
         type: string
 
 env:
-  ECR_REPOSITORY: ${{ inputs.environment }}/hrm-${{ inputs.lambda_name }}
   # if anything is set as a secret, it can't be used in outputs. So we need to set it as an env var
   PRIMARY_AWS_REGION: us-east-1
 
@@ -92,16 +92,31 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
+      - name: Set Build Args
+        run: |
+          lambda_full_path=${{ inputs.lambda_path }}
+          # Extracting directory and lambda name from the lambda path
+          build_lambda_dir=$(dirname $lambda_full_path)
+          build_lambda_name=$(basename $lambda_full_path)
+
+          repo_name="${lambda_full_path//-domain\/lambdas\//-}"
+          repo_name="${repo_name#hrm-}"
+          repo_name="${repo_name//lambdas\//}"
+          repo_name="${repo_name//\//-}"
+          echo "ecr_repository=${{ inputs.environment }}/hrm-$repo_name" >> $GITHUB_ENV
+          echo "build_lambda_name=$build_lambda_name" >> $GITHUB_ENV
+          echo "build_lambda_dir=$build_lambda_dir" >> $GITHUB_ENV
+
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v4
         with:
           context: ./
-          file: ./jobs/Dockerfile
+          file: ./lambdas/Dockerfile
           build-args: |
-            lambda_name=${{ inputs.lambda_name }}
-            lambda_dir=${{ (startsWith(inputs.lambda_name, 'job') && 'jobs') || (startsWith(inputs.lambda_name, 'resources') && 'resources-domain') || 'hrm-domain' }}
+            lambda_name=${{ env.build_lambda_name }}
+            lambda_dir=${{ env.build_lambda_dir }}
           push: true
-          tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:live,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+          tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.ecr_repository }}:live,${{ steps.login-ecr.outputs.registry }}/${{ env.ecr_repository }}:${{ github.sha }}
 
       # The matrix build supports `lambda-groups` defined in the environment-region-map.json file
       # This allows us to deploy multiple lambdas to specific env/region combos that use a common docker image
@@ -115,10 +130,9 @@ jobs:
         id: generate-output
         run: |
           # output to logs
-          jq -c --arg lambda_name "${{ inputs.lambda_name }}" --arg env "${{ inputs.environment }}" '[.[$env] | to_entries[] | . as $region_entry | if $region_entry.value["lambda-groups"][$lambda_name] then $region_entry.value["lambda-groups"][$lambda_name][] else $lambda_name end | {region: $region_entry.key, lambda: .}]' ./.github/workflows/config/environment-region-map.json
-          matrix_json=$(jq -c --arg lambda_name "${{ inputs.lambda_name }}" --arg env "${{ inputs.environment }}" '[.[$env] | to_entries[] | . as $region_entry | if $region_entry.value["lambda-groups"][$lambda_name] then $region_entry.value["lambda-groups"][$lambda_name][] else $lambda_name end | {region: $region_entry.key, lambda: .}]' ./.github/workflows/config/environment-region-map.json)
+          matrix_json=$(jq -c --arg env "${{ inputs.environment }}" '[.[$env][] | {region: .}]' ./.github/workflows/config/environment-region-map.json)
           echo "matrix_json=$matrix_json" >> $GITHUB_OUTPUT
-          echo "docker_image=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}" >> $GITHUB_OUTPUT
+          echo "docker_image=${{ steps.login-ecr.outputs.registry }}/${{ env.ecr_repository }}:${{ github.sha }}" >> $GITHUB_OUTPUT
 
   deploy_lambdas:
     needs: build_lambda
@@ -150,7 +164,25 @@ jobs:
       - name: Update Lambda and Publish
         run: |
           DOCKER_IMAGE=$(echo "${{ env.DOCKER_IMAGE }}" | sed -r 's/${{ env.PRIMARY_AWS_REGION }}/${{ matrix.region }}/g')
-          aws lambda update-function-code --function-name ${{ inputs.environment }}-hrm-${{ matrix.lambda }} --image-uri "$DOCKER_IMAGE" --publish
+          DOCKER_IMAGE_BASE=$(echo "$DOCKER_IMAGE" | cut -d':' -f1)
+          LAMBDA_FUNCTIONS=$(aws lambda list-functions --query "Functions[?contains(Description, 'ecr_image:${DOCKER_IMAGE_BASE}')].FunctionName" --output text)
+
+          if [ -z "$LAMBDA_FUNCTIONS" ]; then
+            echo "Error: No Lambda functions found for image $DOCKER_IMAGE_BASE"
+            exit 1
+          fi
+
+          for LAMBDA in $LAMBDA_FUNCTIONS; do
+            OUTPUT=$(aws lambda update-function-code --function-name $LAMBDA --image-uri "$DOCKER_IMAGE" --publish)
+            NEW_VERSION=$(echo "$OUTPUT" | jq -r '.Version')
+
+            ALIAS_EXISTS=$(aws lambda get-alias --function-name $LAMBDA --name live || echo "not_exists")
+            if [ "$ALIAS_EXISTS" == "not_exists" ]; then
+              aws lambda create-alias --function-name $LAMBDA --name live --function-version $NEW_VERSION
+            else
+              aws lambda update-alias --function-name $LAMBDA --name live --function-version $NEW_VERSION
+            fi
+          done
 
       # reconfigure AWS credentials to use the default region for SSM Parameter Store.
       # aws-actions/configure-aws-credentials@v2 overrides env.AWS_DEFAULT_REGION, so
@@ -181,7 +213,7 @@ jobs:
         uses: slackapi/slack-github-action@v1.14.0
         with:
           channel-id: ${{ env.ASELO_DEPLOYS_CHANNEL_ID }}
-          slack-message: '`[HRM lambdas - ${{ matrix.lambda }}]` Deployment of ${{ github.ref_type }} `${{ github.ref_name }}` requested by `${{ github.triggering_actor }}` completed with SHA ${{ github.sha }} to region `${{ matrix.region }}`, environment `${{ inputs.environment }}` :rocket:.'
+          slack-message: '`[HRM lambdas - ${{ inputs.lambda_path }}]` Deployment of ${{ github.ref_type }} `${{ github.ref_name }}` requested by `${{ github.triggering_actor }}` completed with SHA ${{ github.sha }} to region `${{ matrix.region }}`, environment `${{ inputs.environment }}` :rocket:.'
         env:
           SLACK_BOT_TOKEN: ${{ env.GITHUB_ACTIONS_SLACK_BOT_TOKEN }}
         if: ${{ inputs.send-slack-message != 'false' }}

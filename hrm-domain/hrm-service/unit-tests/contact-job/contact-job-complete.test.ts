@@ -57,12 +57,12 @@ describe('pollAndProcessCompletedContactJobs', () => {
     const sqsSpy = jest
       .spyOn(SQSClient, 'pollCompletedContactJobsFromQueue')
       .mockImplementation(async () => ({
+        $metadata: {},
         Messages: [],
       }));
 
-    const result = await contactJobComplete.pollAndProcessCompletedContactJobs(
-      JOB_MAX_ATTEMPTS,
-    );
+    const result =
+      await contactJobComplete.pollAndProcessCompletedContactJobs(JOB_MAX_ATTEMPTS);
 
     expect(sqsSpy).toHaveBeenCalled();
     expect(Array.isArray(result)).toBeTruthy();
@@ -93,7 +93,6 @@ describe('pollAndProcessCompletedContactJobs', () => {
       attemptPayload: {
         bucket: 'some-url-here',
         key: 'some-url-here',
-        url: 'some-url-here',
       },
     };
     const validPayload = {
@@ -104,6 +103,7 @@ describe('pollAndProcessCompletedContactJobs', () => {
     jest
       .spyOn(SQSClient, 'pollCompletedContactJobsFromQueue')
       .mockImplementation(async () => ({
+        $metadata: {},
         Messages: [invalidPayload, validPayload],
       }));
     const errorSpy = jest.spyOn(console, 'error');
@@ -115,9 +115,8 @@ describe('pollAndProcessCompletedContactJobs', () => {
       .spyOn(contactJobDataAccess, 'completeContactJob')
       .mockImplementation(async () => 'done' as any);
 
-    const result = await contactJobComplete.pollAndProcessCompletedContactJobs(
-      JOB_MAX_ATTEMPTS,
-    );
+    const result =
+      await contactJobComplete.pollAndProcessCompletedContactJobs(JOB_MAX_ATTEMPTS);
 
     expect(processCompletedRetrieveContactTranscriptSpy).toHaveBeenCalledTimes(1);
     expect(errorSpy).toHaveBeenCalledTimes(1);
@@ -148,7 +147,6 @@ describe('pollAndProcessCompletedContactJobs', () => {
       attemptPayload: {
         bucket: 'some-url-here',
         key: 'some-url-here',
-        url: 'some-url-here',
       },
     };
 
@@ -166,6 +164,7 @@ describe('pollAndProcessCompletedContactJobs', () => {
     jest
       .spyOn(SQSClient, 'pollCompletedContactJobsFromQueue')
       .mockImplementation(async () => ({
+        $metadata: {},
         Messages: [validPayload1, validPayload2],
       }));
     const errorSpy = jest.spyOn(console, 'error');
@@ -181,9 +180,8 @@ describe('pollAndProcessCompletedContactJobs', () => {
       .spyOn(contactJobDataAccess, 'completeContactJob')
       .mockImplementation(async () => 'done' as any);
 
-    const result = await contactJobComplete.pollAndProcessCompletedContactJobs(
-      JOB_MAX_ATTEMPTS,
-    );
+    const result =
+      await contactJobComplete.pollAndProcessCompletedContactJobs(JOB_MAX_ATTEMPTS);
 
     expect(processCompletedRetrieveContactTranscriptSpy).toHaveBeenCalledTimes(2);
     expect(errorSpy).toHaveBeenCalledTimes(1);
@@ -218,7 +216,6 @@ describe('pollAndProcessCompletedContactJobs', () => {
         attemptPayload: {
           bucket: 'completionPayload',
           key: 'completionPayload',
-          url: 'completionPayload',
         },
       },
       processCompletedFunction: 'processCompletedRetrieveContactTranscript',
@@ -244,6 +241,7 @@ describe('pollAndProcessCompletedContactJobs', () => {
       jest
         .spyOn(SQSClient, 'pollCompletedContactJobsFromQueue')
         .mockImplementation(async () => ({
+          $metadata: {},
           Messages: [validPayload],
         }));
       const deletedCompletedContactJobsSpy = jest.spyOn(
@@ -257,9 +255,8 @@ describe('pollAndProcessCompletedContactJobs', () => {
         .spyOn(contactJobDataAccess, 'completeContactJob')
         .mockImplementation(async () => validPayload as any);
 
-      const result = await contactJobComplete.pollAndProcessCompletedContactJobs(
-        JOB_MAX_ATTEMPTS,
-      );
+      const result =
+        await contactJobComplete.pollAndProcessCompletedContactJobs(JOB_MAX_ATTEMPTS);
 
       expect(processCompletedFunctionSpy).toHaveBeenCalledWith(job);
       expect(completeContactJobSpy).toHaveBeenCalledWith({
@@ -332,6 +329,7 @@ describe('pollAndProcessCompletedContactJobs', () => {
       jest
         .spyOn(SQSClient, 'pollCompletedContactJobsFromQueue')
         .mockImplementation(async () => ({
+          $metadata: {},
           Messages: [validPayload],
         }));
       const deletedCompletedContactJobsSpy = jest.spyOn(
@@ -348,9 +346,8 @@ describe('pollAndProcessCompletedContactJobs', () => {
         .spyOn(contactJobDataAccess, 'appendFailedAttemptPayload')
         .mockImplementation(() => job);
 
-      const result = await contactJobComplete.pollAndProcessCompletedContactJobs(
-        JOB_MAX_ATTEMPTS,
-      );
+      const result =
+        await contactJobComplete.pollAndProcessCompletedContactJobs(JOB_MAX_ATTEMPTS);
 
       expect(processCompletedFunctionSpy).not.toHaveBeenCalled();
       expect(deletedCompletedContactJobsSpy).toHaveBeenCalledWith(
@@ -396,7 +393,6 @@ describe('pollAndProcessCompletedContactJobs', () => {
         attemptPayload: {
           bucket: 'some-url-here',
           key: 'some-url-here',
-          url: 'some-url-here',
         },
         attemptResult: ContactJobAttemptResult.FAILURE,
       };
@@ -435,7 +431,6 @@ describe('pollAndProcessCompletedContactJobs', () => {
         attemptPayload: {
           bucket: 'some-url-here',
           key: 'some-url-here',
-          url: 'some-url-here',
         },
         attemptResult: ContactJobAttemptResult.FAILURE,
       };

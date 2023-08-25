@@ -689,7 +689,6 @@ describe('/contacts route', () => {
               {
                 store: 'S3',
                 type: S3ContactMediaType.TRANSCRIPT,
-                url: undefined,
               },
             ],
           },
@@ -750,7 +749,6 @@ describe('/contacts route', () => {
               {
                 store: 'S3',
                 type: S3ContactMediaType.TRANSCRIPT,
-                url: undefined,
               },
             ],
           },
@@ -795,7 +793,6 @@ describe('/contacts route', () => {
               {
                 store: 'S3',
                 type: S3ContactMediaType.TRANSCRIPT,
-                url: undefined,
               },
             ],
           },

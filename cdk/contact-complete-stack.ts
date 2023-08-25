@@ -62,17 +62,18 @@ export default class ContactCompleteStack extends cdk.Stack {
     if (params.skipLambda) return;
 
     const fn = new lambdaNode.NodejsFunction(this, 'fetchParams', {
-      runtime: lambda.Runtime.NODEJS_16_X,
+      runtime: lambda.Runtime.NODEJS_18_X,
       memorySize: 512,
       timeout: cdk.Duration.seconds(10),
       handler: 'handler',
-      entry: `./hrm-domain/${id}/index.ts`,
+      entry: `./hrm-domain/lambdas/${id}/index.ts`,
       environment: {
         NODE_OPTIONS: '--enable-source-maps',
         S3_ENDPOINT: 'http://localstack:4566',
         S3_FORCE_PATH_STYLE: 'true',
         S3_REGION: 'us-east-1',
         SSM_ENDPOINT: 'http://localstack:4566',
+        SQS_ENDPOINT: 'http://localstack:4566',
       },
       bundling: { sourceMap: true },
     });

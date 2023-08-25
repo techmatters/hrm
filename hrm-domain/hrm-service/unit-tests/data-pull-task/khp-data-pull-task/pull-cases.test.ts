@@ -18,7 +18,6 @@ import parseISO from 'date-fns/parseISO';
 import formatISO from 'date-fns/formatISO';
 import format from 'date-fns/format';
 import addDays from 'date-fns/addDays';
-import { S3 } from 'aws-sdk';
 
 import * as caseApi from '../../../src/case/case';
 import * as context from '../../../src/data-pull-task/khp-data-pull-task/context';
@@ -28,34 +27,34 @@ import { pullCases } from '../../../src/data-pull-task/khp-data-pull-task/pull-c
 const { maxPermissions } = context;
 
 const accountSid = 'ACxxx';
-const bucketName = 'docs-bucket';
+const bucket = 'docs-bucket';
 
 jest.mock('../../../src/contact/contact');
 jest.mock('../../../src/data-pull-task/khp-data-pull-task/context');
 
+let putS3ObjectSpy = jest.fn();
+jest.mock('@tech-matters/s3-client', () => {
+  return {
+    putS3Object: (params: any) => {
+      putS3ObjectSpy(params);
+      return Promise.resolve();
+    },
+  };
+});
+
 const getExpectedS3Params = (cas: caseApi.Case) => {
   const date = format(cas.updatedAt as unknown as Date, 'yyyy/MM/dd');
   return {
-    Bucket: bucketName,
-    Key: `hrm-data/${date}/cases/${cas.id}.json`,
-    Body: JSON.stringify(cas),
+    bucket,
+    key: `hrm-data/${date}/cases/${cas.id}.json`,
+    body: JSON.stringify(cas),
   };
 };
 
-let uploadSpy;
-const promiseSpy = jest.fn();
-
 beforeEach(() => {
-  uploadSpy = jest.fn().mockReturnValue({ promise: promiseSpy });
-
-  const s3Client = {
-    upload: uploadSpy,
-  } as unknown as S3;
-
   const getContextResponse = Promise.resolve({
     accountSid,
-    bucketName,
-    s3Client,
+    bucket,
   });
 
   jest.spyOn(context, 'getContext').mockReturnValue(getContextResponse);
@@ -138,9 +137,8 @@ describe('KHP Data Pull - Pull Cases', () => {
 
     await pullCases(startDate, endDate);
 
-    expect(uploadSpy).toHaveBeenCalledWith(getExpectedS3Params(case1));
-    expect(uploadSpy).toHaveBeenCalledWith(getExpectedS3Params(case2));
-
-    expect(promiseSpy).toBeCalledTimes(2);
+    expect(putS3ObjectSpy).toHaveBeenCalledWith(getExpectedS3Params(case1));
+    expect(putS3ObjectSpy).toHaveBeenCalledWith(getExpectedS3Params(case2));
+    expect(putS3ObjectSpy).toBeCalledTimes(2);
   });
 });

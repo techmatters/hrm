@@ -93,9 +93,8 @@ const newAdminSearchService = ({
           objectMode: true,
           highWaterMark: reindexDbBatchSize,
           async transform(resource, _, callback) {
-            const { accountSid, resourceId, error } = await sendResourceAndRecordResult(
-              resource,
-            );
+            const { accountSid, resourceId, error } =
+              await sendResourceAndRecordResult(resource);
 
             this.push(
               `${new Date().toISOString()},${accountSid},${resourceId},${

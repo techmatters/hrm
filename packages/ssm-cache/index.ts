@@ -14,20 +14,45 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { SSM } from 'aws-sdk';
+import {
+  SSMClient,
+  SSMClientConfig,
+  GetParameterCommand,
+  GetParametersByPathCommand,
+  GetParametersByPathCommandInput,
+  Parameter as SsmParameter,
+} from '@aws-sdk/client-ssm';
 
-// This is based around the pattern found in https://github.com/ryands17/lambda-ssm-cache
+const convertToEndpoint = (endpointUrl: string) => {
+  const url: URL = new URL(endpointUrl);
+  return {
+    url: url,
+  };
+};
 
-// This allows endpoint override for localstack I haven't found a better way to do this globally yet
-const ssmConfig: { endpoint?: string; region?: string } = process.env.SSM_ENDPOINT
-  ? { endpoint: process.env.SSM_ENDPOINT }
-  : {};
+const getSsmConfig = () => {
+  const ssmConfig: SSMClientConfig = {};
 
-if (process.env.SSM_REGION) {
-  ssmConfig.region = process.env.SSM_REGION;
-}
+  if (process.env.SSM_ENDPOINT) {
+    ssmConfig.region = 'us-east-1';
+    ssmConfig.endpoint = convertToEndpoint(process.env.SSM_ENDPOINT);
+  }
 
-let ssm: SSM;
+  if (process.env.LOCAL_SSM_PORT) {
+    ssmConfig.region = 'us-east-1';
+    ssmConfig.endpoint = convertToEndpoint(
+      `http://localhost:${process.env.LOCAL_SSM_PORT}`,
+    );
+  }
+
+  if (process.env.SSM_REGION) {
+    ssmConfig.region = process.env.SSM_REGION;
+  }
+
+  return ssmConfig;
+};
+
+let ssm: SSMClient;
 
 export type SsmCacheParameter = {
   value: string;
@@ -74,13 +99,13 @@ export const parameterExistsInCache = (name: string): boolean =>
 
 export const getSsmClient = () => {
   if (!ssm) {
-    ssm = new SSM(ssmConfig);
+    ssm = new SSMClient(getSsmConfig());
   }
 
   return ssm;
 };
 
-export const addToCache = (regex: RegExp | undefined, { Name, Value }: SSM.Parameter) => {
+export const addToCache = (regex: RegExp | undefined, { Name, Value }: SsmParameter) => {
   if (!Name) return;
   if (regex && !regex.test(Name)) return;
 
@@ -91,12 +116,14 @@ export const addToCache = (regex: RegExp | undefined, { Name, Value }: SSM.Param
 };
 
 export const loadParameter = async (name: string) => {
-  const params: SSM.GetParameterRequest = {
+  const params = {
     Name: name,
     WithDecryption: true,
   };
 
-  const { Parameter } = await getSsmClient().getParameter(params).promise();
+  const command = new GetParameterCommand(params);
+
+  const { Parameter } = await getSsmClient().send(command);
 
   if (!Parameter?.Name) {
     return;
@@ -137,7 +164,7 @@ export const loadPaginated = async ({
   regex,
   nextToken,
 }: LoadPaginatedParameters): Promise<void> => {
-  const params: SSM.GetParametersByPathRequest = {
+  const params: GetParametersByPathCommandInput = {
     MaxResults: 10, // 10 is max allowed by AWS
     Path: path,
     Recursive: true,
@@ -146,7 +173,9 @@ export const loadPaginated = async ({
 
   if (nextToken) params.NextToken = nextToken;
 
-  const resp = await getSsmClient().getParametersByPath(params).promise();
+  const command = new GetParametersByPathCommand(params);
+
+  const resp = await getSsmClient().send(command);
 
   resp.Parameters?.forEach(p => addToCache(regex, p));
 
