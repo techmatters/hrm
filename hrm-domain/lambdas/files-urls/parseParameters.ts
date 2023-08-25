@@ -15,20 +15,19 @@
  */
 
 import { ALBEvent } from 'aws-lambda';
-import { GetSignedUrlMethods } from '@tech-matters/s3-client';
+import { GetSignedUrlMethods, GET_SIGNED_URL_METHODS } from '@tech-matters/s3-client';
 import {
   newErrorResult,
   newSuccessResult,
   ErrorResult,
   SuccessResult,
+  FileTypes,
 } from '@tech-matters/types';
-
-const methods = ['getObject', 'putObject', 'deleteObject'];
 
 const objectTypes = {
   contacts: {
     requiredParameters: ['objectId'],
-    fileTypes: ['recording'],
+    fileTypes: ['recording', 'transcript'],
   },
 };
 
@@ -47,20 +46,19 @@ export type Parameters = {
   bucket: string;
   key: string;
   accountSid: string;
-  fileType: string;
+  fileType: FileTypes;
   objectType: string;
   objectId?: string;
 };
 
-export type ParseParametersSuccess = SuccessResult & {
-  result: Parameters;
-};
-
-export type ParseParametersResult = ErrorResult | ParseParametersSuccess;
+export type ParseParametersResult = ErrorResult | SuccessResult<Parameters>;
 
 export type ParsePathParametersResult = {
   accountSid?: string;
 };
+
+const isSignedUrlMethod = (method: string): method is GetSignedUrlMethods =>
+  Object.keys(GET_SIGNED_URL_METHODS).includes(method);
 
 const parsePathParameters = (path: string): ParsePathParametersResult => {
   const accountSidAndObjectMatch = /\/accounts\/([^\/]+)/.exec(path);
@@ -84,7 +82,7 @@ export const parseParameters = (event: ALBEvent): ParseParametersResult => {
     });
   }
 
-  if (!methods.includes(method)) {
+  if (!isSignedUrlMethod(method)) {
     return newErrorResult({ message: ERROR_MESSAGES.INVALID_METHOD });
   }
 
@@ -94,7 +92,7 @@ export const parseParameters = (event: ALBEvent): ParseParametersResult => {
     return newErrorResult({ message: ERROR_MESSAGES.INVALID_OBJECT_TYPE });
   }
 
-  if (!objectTypeConfig.fileTypes.includes(fileType)) {
+  if (!objectTypeConfig.fileTypes.includes(fileType as FileTypes)) {
     return newErrorResult({ message: ERROR_MESSAGES.INVALID_FILE_TYPE });
   }
 
@@ -109,12 +107,12 @@ export const parseParameters = (event: ALBEvent): ParseParametersResult => {
   }
 
   return newSuccessResult({
-    result: {
+    data: {
       method,
       bucket,
       key,
       accountSid,
-      fileType,
+      fileType: fileType as FileTypes,
       objectType,
       objectId,
     },

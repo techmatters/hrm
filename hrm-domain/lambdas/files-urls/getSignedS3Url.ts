@@ -26,13 +26,32 @@ import { authenticate } from '@tech-matters/hrm-authentication';
 import { getSignedUrl } from '@tech-matters/s3-client';
 import { parseParameters } from './parseParameters';
 
-export type GetSignedS3UrlSuccess = SuccessResult & {
-  result: {
-    media_url: string;
-  };
+export type GetSignedS3UrlSuccessResultData = {
+  media_url: string;
 };
 
-export type GetSignedS3UrlResult = GetSignedS3UrlSuccess | ErrorResult;
+export type GetSignedS3UrlResult =
+  | SuccessResult<GetSignedS3UrlSuccessResultData>
+  | ErrorResult;
+
+/**
+ * Twilio insights sends a basic auth header with the username as the string token and the password as the flexJWE.
+ * This function converts that to a bearer token for use with the hrm-authentication package.
+ *
+ * example from https://www.twilio.com/docs/flex/developer/insights/playback-recordings-custom-storage#validate-the-flex-jwe-token:
+ * Basic ${Buffer.from(`token:${flexJWE}`).toString('base64')}
+ **/
+export const convertBasicAuthHeader = (authHeader: string): string => {
+  if (!authHeader) return authHeader;
+
+  const [type, token] = authHeader.split(' ');
+  if (type == 'Bearer') return authHeader;
+
+  const [username, password] = Buffer.from(token, 'base64').toString().split(':');
+  if (username == 'token') return `Bearer ${password}`;
+
+  return authHeader;
+};
 
 const getSignedS3Url = async (event: ALBEvent): Promise<GetSignedS3UrlResult> => {
   const parseParametersResult = parseParameters(event);
@@ -41,13 +60,14 @@ const getSignedS3Url = async (event: ALBEvent): Promise<GetSignedS3UrlResult> =>
   }
 
   const { accountSid, bucket, key, method, objectType, objectId, fileType } =
-    parseParametersResult.result;
+    parseParametersResult.data;
 
   const authenticateResult = await authenticate({
     accountSid,
     objectType,
     objectId,
-    type: 'files-urls',
+    authHeader: convertBasicAuthHeader(event.headers?.Authorization!),
+    type: 'filesUrls',
     requestData: {
       fileType,
       method,
@@ -59,8 +79,6 @@ const getSignedS3Url = async (event: ALBEvent): Promise<GetSignedS3UrlResult> =>
     return authenticateResult;
   }
 
-  const {} = parseParametersResult.result;
-
   try {
     const getSignedUrlResult = await getSignedUrl({
       method,
@@ -69,7 +87,7 @@ const getSignedS3Url = async (event: ALBEvent): Promise<GetSignedS3UrlResult> =>
     });
 
     return newSuccessResult({
-      result: {
+      data: {
         media_url: getSignedUrlResult,
       },
     });

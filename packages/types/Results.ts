@@ -16,40 +16,57 @@
 
 export type NewErrorResultParams = {
   message: string;
-  body?: any;
   statusCode?: number;
+  name?: string;
 };
 
 export const newErrorResult = ({
-  body,
   message,
   statusCode = 500,
+  name = 'Error',
 }: NewErrorResultParams) => ({
   status: 'error',
-  body,
   message,
   statusCode,
+  name,
 });
 
 export type ErrorResult = ReturnType<typeof newErrorResult>;
 
-export type NewSuccessResultParms = {
-  result: any;
+//TODO: use generic type for result
+export type NewSuccessResultParms<TData> = {
+  data: TData;
   statusCode?: number;
 };
 
-export const newSuccessResult = ({
-  result,
+export const newSuccessResult = <TData>({
+  data,
   statusCode = 200,
-}: NewSuccessResultParms) => ({
+}: NewSuccessResultParms<TData>) => ({
   status: 'success',
-  result,
+  data,
   statusCode,
 });
 
-export type SuccessResult = ReturnType<typeof newSuccessResult>;
+export type SuccessResult<TData> = ReturnType<typeof newSuccessResult<TData>>;
 
-export type Result = SuccessResult | ErrorResult;
+export type NewUnneededResultParams = {
+  message: string;
+};
+export const newUnneededResult = ({ message }: NewUnneededResultParams) => ({
+  status: 'unneeded',
+  message,
+});
+export type UnneededResult = ReturnType<typeof newUnneededResult>;
 
-export const isErrorResult = (result: Result): result is ErrorResult =>
+export type Result<TData> = SuccessResult<TData> | ErrorResult | UnneededResult;
+
+export const isErrorResult = (result: Result<any>): result is ErrorResult =>
   result.status === 'error';
+
+export const isSuccessResult = <TData>(
+  result: Result<TData>,
+): result is SuccessResult<TData> => result.status === 'success';
+
+export const isUnneededResult = (result: Result<any>): result is UnneededResult =>
+  result.status === 'unneeded';

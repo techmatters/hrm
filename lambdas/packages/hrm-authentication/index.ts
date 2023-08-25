@@ -13,50 +13,34 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import {
-  newErrorResult,
-  newSuccessResult,
-  ErrorResult,
-  SuccessResult,
-} from '@tech-matters/types';
+import { ErrorResult, SuccessResult } from '@tech-matters/types';
+import filesUrlsAuthenticator, {
+  HrmAuthenticateFilesUrlsRequestData,
+} from './filesUrlsAuthenticator';
 
-const mockBuckets = ['mockBucket', 'contact-docs-bucket'];
-
-export type AuthenticateSuccessResult = SuccessResult & {
-  result: true;
+const types = {
+  filesUrls: (params: HrmAuthenticateParameters) => filesUrlsAuthenticator(params),
 };
 
-export type AuthenticateResult = ErrorResult | AuthenticateSuccessResult;
+export type HrmAuthenticateTypes = keyof typeof types;
 
-export type AuthenticateFilesUrlsRequestData = {
-  method: string;
-  bucket: string;
-  key: string;
-  fileType: string;
-};
+export type HrmAuthenticateSuccessResult = SuccessResult<true>;
 
-export type AuthenticateParameters = {
+export type HrmAuthenticateResult = ErrorResult | HrmAuthenticateSuccessResult;
+
+export type HrmAuthenticateParameters = {
   accountSid: string;
   objectType: string;
-  objectId: string;
-  // TODO: improve this type system
-  type: string;
-  requestData: AuthenticateFilesUrlsRequestData;
+  objectId?: string;
+  type: HrmAuthenticateTypes;
+  authHeader: string;
+  requestData: HrmAuthenticateFilesUrlsRequestData;
 };
 
 export const authenticate = async (
-  params: AuthenticateParameters,
-): Promise<AuthenticateResult> => {
-  const { requestData } = params;
-
+  params: HrmAuthenticateParameters,
+): Promise<HrmAuthenticateResult> => {
   console.log('authenticate', params);
 
-  // This is a quick and dirty way to lock this down so we can test with fake data without exposing real data in the test environment
-  if (mockBuckets.includes(requestData.bucket)) {
-    return newSuccessResult({ result: true });
-  }
-
-  return newErrorResult({
-    message: 'Invalid accountSid',
-  });
+  return types[params.type](params);
 };
