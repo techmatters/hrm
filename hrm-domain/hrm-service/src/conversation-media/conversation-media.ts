@@ -25,6 +25,7 @@ export {
   isTwilioStoredMedia,
   create as createConversationMedia,
   getById as getConversationMediaById,
+  getByContactId as getConversationMediaByContactId,
   updateSpecificData as updateConversationMediaData,
 } from './conversation-media-data-access';
 

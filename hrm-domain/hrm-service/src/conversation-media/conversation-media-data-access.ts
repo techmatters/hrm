@@ -25,7 +25,10 @@ import {
   inferPostgresError,
   txIfNotInOne,
 } from '../sql';
-import { selectSingleConversationMediaByIdSql } from './sql/conversation-media-get-sql';
+import {
+  selectConversationMediaByContactIdSql,
+  selectSingleConversationMediaByIdSql,
+} from './sql/conversation-media-get-sql';
 import { insertConversationMediaSql } from './sql/conversation-media-insert-sql';
 import { updateSpecificDataByIdSql } from './sql/conversation-media-update-sql';
 
@@ -118,6 +121,17 @@ export const getById = async (
     connection.oneOrNone<ConversationMedia>(selectSingleConversationMediaByIdSql, {
       accountSid,
       id,
+    }),
+  );
+
+export const getByContactId = async (
+  accountSid: string,
+  contactId: number,
+): Promise<ConversationMedia[]> =>
+  db.task(async connection =>
+    connection.manyOrNone<ConversationMedia>(selectConversationMediaByContactIdSql, {
+      accountSid,
+      contactId,
     }),
   );
 
