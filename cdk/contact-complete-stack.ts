@@ -66,7 +66,7 @@ export default class ContactCompleteStack extends cdk.Stack {
       memorySize: 512,
       timeout: cdk.Duration.seconds(10),
       handler: 'handler',
-      entry: `./hrm-domain/${id}/index.ts`,
+      entry: `./hrm-domain/lambdas/${id}/index.ts`,
       environment: {
         NODE_OPTIONS: '--enable-source-maps',
         S3_ENDPOINT: 'http://localstack:4566',

@@ -96,7 +96,7 @@ new ResourcesCoreStack({
 
 const resourcesSearchIndexComplete = new ResourcesSearchCompleteStack({
   scope: app,
-  id: 'resources-search-complete',
+  id: 'search-complete',
   params: {
     skipLambda: false,
   },
@@ -107,7 +107,7 @@ const resourcesSearchIndexComplete = new ResourcesSearchCompleteStack({
 
 new ResourcesSearchJobsStack({
   scope: app,
-  id: 'resources-search-index',
+  id: 'search-index',
   params: {
     completeQueue: resourcesSearchIndexComplete.completeQueue,
   },
