@@ -26,13 +26,13 @@ import { authenticate } from '@tech-matters/hrm-authentication';
 import { getSignedUrl } from '@tech-matters/s3-client';
 import { parseParameters } from './parseParameters';
 
-export type GetSignedS3UrlSuccess = SuccessResult & {
-  result: {
-    media_url: string;
-  };
+export type GetSignedS3UrlSuccessResultData = {
+  media_url: string;
 };
 
-export type GetSignedS3UrlResult = GetSignedS3UrlSuccess | ErrorResult;
+export type GetSignedS3UrlResult =
+  | SuccessResult<GetSignedS3UrlSuccessResultData>
+  | ErrorResult;
 
 /**
  * Twilio insights sends a basic auth header with the username as the string token and the password as the flexJWE.
@@ -60,7 +60,7 @@ const getSignedS3Url = async (event: ALBEvent): Promise<GetSignedS3UrlResult> =>
   }
 
   const { accountSid, bucket, key, method, objectType, objectId, fileType } =
-    parseParametersResult.result;
+    parseParametersResult.data;
 
   const authenticateResult = await authenticate({
     accountSid,
@@ -87,7 +87,7 @@ const getSignedS3Url = async (event: ALBEvent): Promise<GetSignedS3UrlResult> =>
     });
 
     return newSuccessResult({
-      result: {
+      data: {
         media_url: getSignedUrlResult,
       },
     });

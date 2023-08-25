@@ -24,16 +24,14 @@ const types = {
 
 export type HrmAuthenticateTypes = keyof typeof types;
 
-export type HrmAuthenticateSuccessResult = SuccessResult & {
-  result: true;
-};
+export type HrmAuthenticateSuccessResult = SuccessResult<true>;
 
 export type HrmAuthenticateResult = ErrorResult | HrmAuthenticateSuccessResult;
 
 export type HrmAuthenticateParameters = {
   accountSid: string;
   objectType: string;
-  objectId: string;
+  objectId?: string;
   type: HrmAuthenticateTypes;
   authHeader: string;
   requestData: HrmAuthenticateFilesUrlsRequestData;

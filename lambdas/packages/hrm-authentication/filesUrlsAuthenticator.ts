@@ -62,7 +62,7 @@ const filesUrlsAuthenticator = async (
 
   // This is a quick and dirty way to lock this down so we can test with fake data without exposing real data in the test environment
   if (mockBuckets.includes(requestData.bucket)) {
-    return newSuccessResult({ result: true });
+    return newSuccessResult({ data: true });
   }
 
   const result = await callHrmApi({
@@ -74,7 +74,7 @@ const filesUrlsAuthenticator = async (
     return result;
   }
 
-  return newSuccessResult({ result: true });
+  return newSuccessResult({ data: true });
 };
 
 export default filesUrlsAuthenticator;
