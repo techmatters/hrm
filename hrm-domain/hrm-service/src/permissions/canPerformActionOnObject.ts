@@ -15,7 +15,7 @@
  */
 
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
-import { ActionsOnTargetKind, TargetKind } from './actions';
+import { TargetKind, isValidSetOfActionsForTarget } from './actions';
 import { setupCanForRules } from './setupCanForRules';
 import { getContactById } from '../contact/contact';
 import { getCase as getCaseById } from '../case/case';
@@ -24,6 +24,7 @@ import {
   getConversationMediaByContactId,
   isS3StoredTranscript,
 } from '../conversation-media/conversation-media';
+import { Result, newErrorResult, newSuccessResult } from '@tech-matters/types';
 
 export const canPerformActionsOnObject = async <T extends TargetKind>({
   accountSid,
@@ -36,34 +37,45 @@ export const canPerformActionsOnObject = async <T extends TargetKind>({
   accountSid: string;
   objectId: number;
   targetKind: T;
-  actions: ActionsOnTargetKind<T>[];
+  actions: string[];
   can: ReturnType<typeof setupCanForRules>;
   user: TwilioUser;
-}) => {
-  switch (targetKind) {
-    case 'contact': {
-      const object = await getContactById(accountSid, objectId);
+}): Promise<Result<boolean>> => {
+  try {
+    if (!isValidSetOfActionsForTarget(targetKind, actions)) {
+      return newErrorResult({
+        message: 'invalid actions for objectType',
+        statusCode: 400,
+      });
+    }
 
-      return (<ActionsOnTargetKind<'contact'>[]>actions).every(action =>
-        can(user, action, object),
-      );
-    }
-    case 'case': {
-      const object = await getCaseById(objectId, accountSid, { can, user });
+    switch (targetKind) {
+      case 'contact': {
+        const object = await getContactById(accountSid, objectId);
 
-      return (<ActionsOnTargetKind<'case'>[]>actions).every(action =>
-        can(user, action, object),
-      );
+        const canPerform = actions.every(action => can(user, action, object));
+
+        return newSuccessResult({ data: canPerform });
+      }
+      case 'case': {
+        const object = await getCaseById(objectId, accountSid, { can, user });
+
+        const canPerform = actions.every(action => can(user, action, object));
+
+        return newSuccessResult({ data: canPerform });
+      }
+      case 'postSurvey': {
+        // Nothing from the target param is being used for postSurvey target kind, we can pass null for now
+        const canPerform = actions.every(action => can(user, action, null));
+
+        return newSuccessResult({ data: canPerform });
+      }
+      default: {
+        assertExhaustive(targetKind);
+      }
     }
-    case 'postSurvey': {
-      // Nothing from the target param is being used for postSurvey target kind, we can pass null for now
-      return (<ActionsOnTargetKind<'postSurvey'>[]>actions).every(action =>
-        can(user, action, null),
-      );
-    }
-    default: {
-      assertExhaustive(targetKind);
-    }
+  } catch (err) {
+    return newErrorResult({ message: (err as Error).message });
   }
 };
 
@@ -79,29 +91,35 @@ export const isValidFileLocation = async ({
   objectId: number;
   bucket: string;
   key: string;
-}) => {
-  switch (targetKind) {
-    case 'contact': {
-      const conversationMedia = await getConversationMediaByContactId(
-        accountSid,
-        objectId,
-      );
+}): Promise<Result<boolean>> => {
+  try {
+    switch (targetKind) {
+      case 'contact': {
+        const conversationMedia = await getConversationMediaByContactId(
+          accountSid,
+          objectId,
+        );
 
-      return conversationMedia.some(
-        cm =>
-          isS3StoredTranscript(cm) &&
-          cm.storeTypeSpecificData?.location?.bucket === bucket &&
-          cm.storeTypeSpecificData?.location?.key === key,
-      );
+        const isValid = conversationMedia.some(
+          cm =>
+            isS3StoredTranscript(cm) &&
+            cm.storeTypeSpecificData?.location?.bucket === bucket &&
+            cm.storeTypeSpecificData?.location?.key === key,
+        );
+
+        return newSuccessResult({ data: isValid });
+      }
+      case 'case': {
+        return newSuccessResult({ data: false });
+      }
+      case 'postSurvey': {
+        return newSuccessResult({ data: false });
+      }
+      default: {
+        assertExhaustive(targetKind);
+      }
     }
-    case 'case': {
-      return false;
-    }
-    case 'postSurvey': {
-      return false;
-    }
-    default: {
-      assertExhaustive(targetKind);
-    }
+  } catch (err) {
+    return newErrorResult({ message: (err as Error).message });
   }
 };

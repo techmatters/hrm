@@ -21,13 +21,18 @@ import {
   canPerformActionsOnObject,
   isValidFileLocation,
 } from './canPerformActionOnObject';
-import { isTargetKind, isValidSetOfActionsForTarget } from './actions';
+import { TargetKind, isTargetKind } from './actions';
+import {
+  Result,
+  isErrorResult,
+  newErrorResult,
+  newSuccessResult,
+} from '@tech-matters/types';
 
 export default (permissions: Permissions) => {
   const permissionsRouter = SafeRouter();
   permissionsRouter.get('/', publicEndpoint, (req: Request, res: Response, next) => {
     try {
-      //@ts-ignore TODO: Improve our custom Request type to override Express.Request
       const { accountSid } = req;
       if (!permissions.rules) {
         return next(
@@ -46,65 +51,63 @@ export default (permissions: Permissions) => {
   });
 
   const parseActionGetPayload = ({
-    action,
     objectType,
     objectId,
   }: {
-    action: string;
-    objectType: any;
-    objectId: any;
-  }) => {
+    objectType?: string;
+    objectId?: string;
+  }): Result<{
+    objectType: TargetKind;
+    objectId: number;
+  }> => {
     if (!objectType || !isTargetKind(objectType)) {
-      return { valid: false, message: 'invalid objectType' } as const;
-    }
-    if (!objectId || !Number.isInteger(parseInt(objectId, 10))) {
-      return { valid: false, message: 'invalid objectId' } as const;
+      return newErrorResult({ message: 'invalid objectType', statusCode: 400 });
     }
 
-    const actions = [action];
-
-    if (!action || !isValidSetOfActionsForTarget(objectType, actions)) {
-      return { valid: false, message: 'invalid action for objectType' } as const;
+    const parsedId = parseInt(objectId, 10);
+    if (!objectId || !Number.isInteger(parsedId)) {
+      return newErrorResult({ message: 'invalid objectId', statusCode: 400 });
     }
 
-    return {
-      valid: true,
-      validPayload: { actions, objectType, objectId },
-    } as const;
+    return newSuccessResult({ data: { objectType, objectId: parsedId } });
   };
 
   permissionsRouter.get('/:action', publicEndpoint, async (req, res, next) => {
     const { accountSid, user, can } = req;
     const { bucket, key } = req.query;
+    const { action } = req.params;
 
     try {
-      const parsed = parseActionGetPayload({
-        action: req.params.action,
+      const parseResult = parseActionGetPayload({
         objectType: req.query.objectType,
         objectId: req.query.objectId,
       });
 
-      if (!parsed.valid) {
-        return next(createError(400, parsed.message));
+      if (isErrorResult(parseResult)) {
+        return next(createError(parseResult.statusCode, parseResult.message));
       }
 
-      const { objectType, actions, objectId } = parsed.validPayload;
+      const { objectType, objectId } = parseResult.data;
 
-      const canPerform = await canPerformActionsOnObject({
+      const canPerformResult = await canPerformActionsOnObject({
         accountSid,
         targetKind: objectType,
-        actions,
+        actions: [action],
         objectId,
         can,
         user,
       });
 
-      if (!canPerform) {
+      if (isErrorResult(canPerformResult)) {
+        return next(createError(canPerformResult.statusCode, canPerformResult.message));
+      }
+
+      if (!canPerformResult.data) {
         return next(createError(403, 'user cant perform action on resource'));
       }
 
       if (bucket && key) {
-        const isValidLocation = await isValidFileLocation({
+        const isValidLocationResult = await isValidFileLocation({
           accountSid,
           targetKind: objectType,
           objectId,
@@ -112,7 +115,13 @@ export default (permissions: Permissions) => {
           key,
         });
 
-        if (!isValidLocation) {
+        if (isErrorResult(isValidLocationResult)) {
+          return next(
+            createError(isValidLocationResult.statusCode, isValidLocationResult.message),
+          );
+        }
+
+        if (!isValidLocationResult.data) {
           return next(
             createError(
               403,
@@ -122,10 +131,12 @@ export default (permissions: Permissions) => {
         }
       }
 
-      res.json({ canPerform });
+      // TODO: what do we expect here?
+      res.json({ message: 'all good :)' });
     } catch (err) {
-      // TODO: better error handling?
-      throw createError(500);
+      return next(
+        createError(500, err instanceof Error ? err.message : JSON.stringify(err)),
+      );
     }
   });
 
