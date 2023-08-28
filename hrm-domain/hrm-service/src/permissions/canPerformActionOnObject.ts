@@ -40,7 +40,7 @@ export const canPerformActionsOnObject = async <T extends TargetKind>({
   actions: string[];
   can: ReturnType<typeof setupCanForRules>;
   user: TwilioUser;
-}): Promise<Result<boolean>> => {
+}): Promise<Result<true>> => {
   try {
     if (!isValidSetOfActionsForTarget(targetKind, actions)) {
       return newErrorResult({
@@ -55,20 +55,26 @@ export const canPerformActionsOnObject = async <T extends TargetKind>({
 
         const canPerform = actions.every(action => can(user, action, object));
 
-        return newSuccessResult({ data: canPerform });
+        return canPerform
+          ? newSuccessResult({ data: canPerform })
+          : newErrorResult({ message: 'Not allowed', statusCode: 403 });
       }
       case 'case': {
         const object = await getCaseById(objectId, accountSid, { can, user });
 
         const canPerform = actions.every(action => can(user, action, object));
 
-        return newSuccessResult({ data: canPerform });
+        return canPerform
+          ? newSuccessResult({ data: canPerform })
+          : newErrorResult({ message: 'Not allowed', statusCode: 403 });
       }
       case 'postSurvey': {
         // Nothing from the target param is being used for postSurvey target kind, we can pass null for now
         const canPerform = actions.every(action => can(user, action, null));
 
-        return newSuccessResult({ data: canPerform });
+        return canPerform
+          ? newSuccessResult({ data: canPerform })
+          : newErrorResult({ message: 'Not allowed', statusCode: 403 });
       }
       default: {
         assertExhaustive(targetKind);
@@ -91,7 +97,7 @@ export const isValidFileLocation = async ({
   objectId: number;
   bucket: string;
   key: string;
-}): Promise<Result<boolean>> => {
+}): Promise<Result<true>> => {
   try {
     switch (targetKind) {
       case 'contact': {
@@ -107,13 +113,15 @@ export const isValidFileLocation = async ({
             cm.storeTypeSpecificData?.location?.key === key,
         );
 
-        return newSuccessResult({ data: isValid });
+        return isValid
+          ? newSuccessResult({ data: isValid })
+          : newErrorResult({ message: 'Not allowed', statusCode: 403 });
       }
       case 'case': {
-        return newSuccessResult({ data: false });
+        return newErrorResult({ message: 'Not allowed', statusCode: 403 });
       }
       case 'postSurvey': {
-        return newSuccessResult({ data: false });
+        return newErrorResult({ message: 'Not allowed', statusCode: 403 });
       }
       default: {
         assertExhaustive(targetKind);

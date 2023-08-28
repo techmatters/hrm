@@ -102,10 +102,6 @@ export default (permissions: Permissions) => {
         return next(createError(canPerformResult.statusCode, canPerformResult.message));
       }
 
-      if (!canPerformResult.data) {
-        return next(createError(403, 'user cant perform action on resource'));
-      }
-
       if (bucket && key) {
         const isValidLocationResult = await isValidFileLocation({
           accountSid,
@@ -118,15 +114,6 @@ export default (permissions: Permissions) => {
         if (isErrorResult(isValidLocationResult)) {
           return next(
             createError(isValidLocationResult.statusCode, isValidLocationResult.message),
-          );
-        }
-
-        if (!isValidLocationResult.data) {
-          return next(
-            createError(
-              403,
-              'bucket and key pair does not represent a valid conversation media for the given resource',
-            ),
           );
         }
       }
