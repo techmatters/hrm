@@ -92,7 +92,7 @@ export default (permissions: Permissions) => {
       const canPerformResult = await canPerformActionsOnObject({
         accountSid,
         targetKind: objectType,
-        actions: [action],
+        actions: [action] as any,
         objectId,
         can,
         user,
@@ -100,6 +100,10 @@ export default (permissions: Permissions) => {
 
       if (isErrorResult(canPerformResult)) {
         return next(createError(canPerformResult.statusCode, canPerformResult.message));
+      }
+
+      if (!canPerformResult.data) {
+        return next(createError(403, 'Not allowed'));
       }
 
       if (bucket && key) {
@@ -115,6 +119,10 @@ export default (permissions: Permissions) => {
           return next(
             createError(isValidLocationResult.statusCode, isValidLocationResult.message),
           );
+        }
+
+        if (!isValidLocationResult.data) {
+          return next(createError(403, 'Not allowed'));
         }
       }
 

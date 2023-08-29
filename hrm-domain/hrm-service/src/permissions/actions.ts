@@ -52,21 +52,6 @@ export const actionsMaps = {
 export type TargetKind = keyof typeof actionsMaps;
 export const isTargetKind = (s: string): s is TargetKind => Boolean(actionsMaps[s]);
 
-export type ActionsOnTargetKind<T extends TargetKind> =
-  (typeof actionsMaps)[T][keyof (typeof actionsMaps)[T]];
-
-export const isValidSetOfActionsForTarget = <T extends TargetKind>(
-  targetKind: T,
-  actions: unknown,
-): actions is ActionsOnTargetKind<T>[] => {
-  const validActionsOnTarget = Object.values(actionsMaps[targetKind]);
-  return (
-    Array.isArray(actions) &&
-    actionsMaps[targetKind] &&
-    actions.every(action => validActionsOnTarget.includes(action))
-  );
-};
-
 /**
  * Utility type that given an object with any nesting depth, will return the union of all the leaves that are of type "string"
  */
@@ -75,6 +60,18 @@ type NestedStringValues<T> = T extends object
   : never;
 
 export type Actions = NestedStringValues<typeof actionsMaps>;
+
+export const isValidSetOfActionsForTarget = <T extends TargetKind>(
+  targetKind: T,
+  actions: unknown,
+): actions is Actions[] => {
+  const validActionsOnTarget = Object.values(actionsMaps[targetKind]);
+  return (
+    Array.isArray(actions) &&
+    actionsMaps[targetKind] &&
+    actions.every(action => validActionsOnTarget.includes(action))
+  );
+};
 
 // deep-diff lib kinds:
 const NEW_PROPERTY = 'N';

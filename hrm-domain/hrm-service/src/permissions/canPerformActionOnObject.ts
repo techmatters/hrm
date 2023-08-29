@@ -40,7 +40,7 @@ export const canPerformActionsOnObject = async <T extends TargetKind>({
   actions: string[];
   can: ReturnType<typeof setupCanForRules>;
   user: TwilioUser;
-}): Promise<Result<true>> => {
+}): Promise<Result<boolean>> => {
   try {
     if (!isValidSetOfActionsForTarget(targetKind, actions)) {
       return newErrorResult({
@@ -55,26 +55,20 @@ export const canPerformActionsOnObject = async <T extends TargetKind>({
 
         const canPerform = actions.every(action => can(user, action, object));
 
-        return canPerform
-          ? newSuccessResult({ data: canPerform })
-          : newErrorResult({ message: 'Not allowed', statusCode: 403 });
+        return newSuccessResult({ data: canPerform });
       }
       case 'case': {
         const object = await getCaseById(objectId, accountSid, { can, user });
 
         const canPerform = actions.every(action => can(user, action, object));
 
-        return canPerform
-          ? newSuccessResult({ data: canPerform })
-          : newErrorResult({ message: 'Not allowed', statusCode: 403 });
+        return newSuccessResult({ data: canPerform });
       }
       case 'postSurvey': {
         // Nothing from the target param is being used for postSurvey target kind, we can pass null for now
         const canPerform = actions.every(action => can(user, action, null));
 
-        return canPerform
-          ? newSuccessResult({ data: canPerform })
-          : newErrorResult({ message: 'Not allowed', statusCode: 403 });
+        return newSuccessResult({ data: canPerform });
       }
       default: {
         assertExhaustive(targetKind);
