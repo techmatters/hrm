@@ -25,7 +25,7 @@ import {
 import { HrmAuthenticateParameters, HrmAuthenticateResult } from './index';
 import callHrmApi from './callHrmApi';
 
-export const mockBuckets = ['mockBucket', 'contact-docs-bucket'];
+export const mockBuckets = ['mock-bucket', 'docs-bucket'];
 
 export const getPermission = ({
   fileType,

@@ -15,17 +15,13 @@
  */
 
 /* eslint-disable no-new */
-import { SqsSubscription } from '@aws-cdk/aws-sns-subscriptions';
-import * as cdk from '@aws-cdk/core';
-import * as lambda from '@aws-cdk/aws-lambda';
-import * as lambdaNode from '@aws-cdk/aws-lambda-nodejs';
-import * as sns from '@aws-cdk/aws-sns';
-import * as sqs from '@aws-cdk/aws-sqs';
-import * as ssm from '@aws-cdk/aws-ssm';
-import { SqsEventSource } from '@aws-cdk/aws-lambda-event-sources';
+import * as cdk from 'aws-cdk-lib';
+import * as lambdaNode from 'aws-cdk-lib/aws-lambda-nodejs';
+import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
+import { SqsSubscription } from 'aws-cdk-lib/aws-sns-subscriptions';
 
 export default class ResourcesSearchCompleteStack extends cdk.Stack {
-  public readonly completeQueue: sqs.Queue;
+  public readonly completeQueue: cdk.aws_sqs.Queue;
 
   constructor({
     scope,
@@ -43,15 +39,16 @@ export default class ResourcesSearchCompleteStack extends cdk.Stack {
     props?: cdk.StackProps;
   }) {
     super(scope, id, props);
-    this.completeQueue = new sqs.Queue(this, id);
 
-    new ssm.StringParameter(this, `complete-queue-url`, {
+    this.completeQueue = new cdk.aws_sqs.Queue(this, id);
+
+    new cdk.aws_ssm.StringParameter(this, `complete-queue-url`, {
       parameterName: `/local/us-east-1/sqs/jobs/resources/${id}/queue-url-complete`,
       stringValue: this.completeQueue.queueUrl,
     });
 
     // duplicated for test env
-    new ssm.StringParameter(this, `complete-queue-url-test`, {
+    new cdk.aws_ssm.StringParameter(this, `complete-queue-url-test`, {
       parameterName: `/test/us-east-1/sqs/jobs/resources/${id}/queue-url-complete`,
       stringValue: this.completeQueue.queueUrl,
     });
@@ -61,15 +58,15 @@ export default class ResourcesSearchCompleteStack extends cdk.Stack {
       description: 'The url of the complete queue',
     });
 
-    const errorQueue = new sqs.Queue(this, `${id}-error`);
+    const errorQueue = new cdk.aws_sqs.Queue(this, `${id}-error`);
 
-    new ssm.StringParameter(this, `error-queue-url`, {
+    new cdk.aws_ssm.StringParameter(this, `error-queue-url`, {
       parameterName: `/local/us-east-1/sqs/jobs/resources/${id}/queue-url-error`,
       stringValue: errorQueue.queueUrl,
     });
 
     // duplicated for test env
-    new ssm.StringParameter(this, `error-queue-url-test`, {
+    new cdk.aws_ssm.StringParameter(this, `error-queue-url-test`, {
       parameterName: `/test/us-east-1/sqs/jobs/resources/${id}/queue-url-error`,
       stringValue: errorQueue.queueUrl,
     });
@@ -79,7 +76,7 @@ export default class ResourcesSearchCompleteStack extends cdk.Stack {
       description: 'The url of the error queue',
     });
 
-    const snsTopic = new sns.Topic(this, 'notification_topic', {
+    const snsTopic = new cdk.aws_sns.Topic(this, 'notification_topic', {
       displayName: 'Error Notification Topic',
     });
 
@@ -88,7 +85,7 @@ export default class ResourcesSearchCompleteStack extends cdk.Stack {
     if (params.skipLambda) return;
 
     const fn = new lambdaNode.NodejsFunction(this, 'fetchParams', {
-      runtime: lambda.Runtime.NODEJS_18_X,
+      runtime: cdk.aws_lambda.Runtime.NODEJS_18_X,
       memorySize: 512,
       timeout: cdk.Duration.seconds(10),
       handler: 'handler',

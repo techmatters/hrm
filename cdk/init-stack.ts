@@ -16,18 +16,26 @@
  */
 
 /* eslint-disable no-new */
-import * as cdk from '@aws-cdk/core';
+import { App } from 'aws-cdk-lib';
 import * as dotenv from 'dotenv';
 
 import ContactCompleteStack from './contact-complete-stack';
 import ContactCoreStack from './contact-core-stack';
 import ContactRetrieveStack from './contact-retrieve-stack';
+import HrmMicoservicesStack from './hrm-micoroservices-stack';
 import LocalCoreStack from './local-core-stack';
 import ResourcesCoreStack from './resources-core-stack';
 import ResourcesSearchCompleteStack from './resources-search-complete-stack';
 import ResourcesSearchJobsStack from './resources-search-jobs-stack';
-
+import downloadAssets from './download-assets';
 dotenv.config({ path: './cdk/.env' });
+
+const accountSids = [
+  process.env.TWILIO_ACCOUNT_SID || 'mockAccountSid',
+  'mockAccountSid1',
+  'testSid1',
+  'testSid2',
+];
 
 /**
  * We use AWS-CDK to configure localstack because it is the most common example
@@ -45,73 +53,90 @@ dotenv.config({ path: './cdk/.env' });
  * (rbd 14-10-22)
  */
 
-const app = new cdk.App();
+async function main() {
+  const assets = await downloadAssets({ accountSids });
+  const app = new App();
 
-new LocalCoreStack({
-  scope: app,
-  id: 'local-core',
-  props: {
-    env: { region: app.node.tryGetContext('region') },
-  },
-});
+  const localCore = new LocalCoreStack({
+    scope: app,
+    id: 'local-core',
+    params: {
+      accountSids,
+      assets,
+    },
+    props: {
+      env: { region: app.node.tryGetContext('region') },
+    },
+  });
 
-const contactCore = new ContactCoreStack({
-  scope: app,
-  id: 'contact-core',
-  props: {
-    env: { region: app.node.tryGetContext('region') },
-  },
-});
+  new ContactCoreStack({
+    scope: app,
+    id: 'contact-core',
+    props: {
+      env: { region: app.node.tryGetContext('region') },
+    },
+  });
 
-const contactComplete = new ContactCompleteStack({
-  scope: app,
-  id: 'contact-complete',
-  params: {
-    skipLambda: true, // for now the lambda to process complete queue is disabled
-  },
-  props: {
-    env: { region: app.node.tryGetContext('region') },
-  },
-});
+  const contactComplete = new ContactCompleteStack({
+    scope: app,
+    id: 'contact-complete',
+    params: {
+      skipLambda: true, // for now the lambda to process complete queue is disabled
+    },
+    props: {
+      env: { region: app.node.tryGetContext('region') },
+    },
+  });
 
-new ContactRetrieveStack({
-  scope: app,
-  id: 'retrieve-transcript',
-  params: {
-    completeQueue: contactComplete.completeQueue,
-    docsBucket: contactCore.docsBucket,
-  },
-  props: {
-    env: { region: app.node.tryGetContext('region') },
-  },
-});
+  new ContactRetrieveStack({
+    scope: app,
+    id: 'retrieve-transcript',
+    params: {
+      completeQueue: contactComplete.completeQueue,
+      docsBucket: localCore.docsBucket,
+    },
+    props: {
+      env: { region: app.node.tryGetContext('region') },
+    },
+  });
 
-new ResourcesCoreStack({
-  scope: app,
-  id: 'resources-core',
-  props: {
-    env: { region: app.node.tryGetContext('region') },
-  },
-});
+  new ResourcesCoreStack({
+    scope: app,
+    id: 'resources-core',
+    props: {
+      env: { region: app.node.tryGetContext('region') },
+    },
+  });
 
-const resourcesSearchIndexComplete = new ResourcesSearchCompleteStack({
-  scope: app,
-  id: 'search-complete',
-  params: {
-    skipLambda: false,
-  },
-  props: {
-    env: { region: app.node.tryGetContext('region') },
-  },
-});
+  const resourcesSearchIndexComplete = new ResourcesSearchCompleteStack({
+    scope: app,
+    id: 'search-complete',
+    params: {
+      skipLambda: false,
+    },
+    props: {
+      env: { region: app.node.tryGetContext('region') },
+    },
+  });
 
-new ResourcesSearchJobsStack({
-  scope: app,
-  id: 'search-index',
-  params: {
-    completeQueue: resourcesSearchIndexComplete.completeQueue,
-  },
-  props: {
-    env: { region: app.node.tryGetContext('region') },
-  },
-});
+  new ResourcesSearchJobsStack({
+    scope: app,
+    id: 'search-index',
+    params: {
+      completeQueue: resourcesSearchIndexComplete.completeQueue,
+    },
+    props: {
+      env: { region: app.node.tryGetContext('region') },
+    },
+  });
+
+  new HrmMicoservicesStack({
+    scope: app,
+    id: 'hrm-microservices',
+    props: {
+      env: { region: app.node.tryGetContext('region') },
+    },
+  });
+}
+
+main();

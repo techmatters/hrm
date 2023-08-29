@@ -39,7 +39,7 @@ export const waitForS3Object = async ({
   retryCount?: number;
 }): Promise<ReturnType<typeof getS3Object> | undefined> => {
   const params = {
-    bucket: 'contact-docs-bucket',
+    bucket: 'docs-bucket',
     key: message.filePath,
   };
 
@@ -83,7 +83,7 @@ describe('contact-retrieve-transcript', () => {
   test('well formed message creates success message in complete queue and file in s3', async () => {
     const message = generateMockMessageBody();
     const attemptPayload = {
-      bucket: 'contact-docs-bucket',
+      bucket: 'docs-bucket',
       key: message.filePath,
     };
 

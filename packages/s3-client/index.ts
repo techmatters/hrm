@@ -74,15 +74,20 @@ const convertToEndpoint = (endpointUrl: string) => {
   };
 };
 
+const getS3EndpointOverride = () => {
+  if (process.env.S3_ENDPOINT) {
+    return convertToEndpoint(process.env.S3_ENDPOINT);
+  } else if (process.env.LOCAL_S3_PORT) {
+    return convertToEndpoint(`http://localhost:${process.env.LOCAL_S3_PORT}`);
+  }
+};
+
 const getS3Conf = () => {
   const s3Config: S3ClientConfig = {};
 
-  if (process.env.S3_ENDPOINT) {
-    s3Config.endpoint = convertToEndpoint(process.env.S3_ENDPOINT);
-  } else if (process.env.LOCAL_S3_PORT) {
-    s3Config.endpoint = convertToEndpoint(
-      `http://localhost:${process.env.LOCAL_SQS_PORT}`,
-    );
+  const endpointOverride = getS3EndpointOverride();
+  if (endpointOverride) {
+    s3Config.endpoint = endpointOverride;
   }
 
   if (process.env.S3_FORCE_PATH_STYLE) {
@@ -92,10 +97,30 @@ const getS3Conf = () => {
   if (process.env.S3_REGION) {
     s3Config.region = process.env.S3_REGION;
   }
+
+  console.log(`s3Config: ${JSON.stringify(s3Config)}`);
+
   return s3Config;
 };
 
 const s3Client = new S3Client(getS3Conf());
+
+/**
+ * This is a workaround for localstack.  The localstack s3 service
+ * returns a url https://localhost/ when you call getSignedUrl.  This
+ * function converts that url to the correct localstack url.
+ */
+export const convertLocalstackUrl = (url: string) => {
+  const endpointOverride = getS3EndpointOverride();
+  if (!endpointOverride) return url;
+
+  if ('url' in endpointOverride) {
+    const endpointUrl = endpointOverride.url.toString();
+    return url.replace('https://localhost/', endpointUrl);
+  }
+
+  return url;
+};
 
 export const deleteS3Object = async (params: DeleteS3ObjectParams) => {
   const { bucket: Bucket, key: Key } = params;
@@ -173,7 +198,10 @@ export const getSignedUrl = async (params: GetSignedUrlParams) => {
     ContentType,
   });
 
-  return awsGetSignedUrl(s3Client, command, { expiresIn: 3600 });
+  const signedUrl = await awsGetSignedUrl(s3Client, command, { expiresIn: 3600 });
+
+  // Dirty hack, around localstack returning https://localhost/ as the url
+  return convertLocalstackUrl(signedUrl);
 };
 
 export const uploadS3Part = async (params: UploadPartParams) => {

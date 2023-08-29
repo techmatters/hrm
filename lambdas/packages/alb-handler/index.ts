@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import type { ALBEvent, ALBResult } from 'aws-lambda';
+import type { ALBEvent, ALBResult, APIGatewayEvent } from 'aws-lambda';
 import { isErrorResult, isSuccessResult, Result } from '@tech-matters/types';
 
 const METHODS = {
@@ -23,14 +23,18 @@ const METHODS = {
   DELETE: 'DELETE',
 } as const;
 
+export type AlbHandlerEvent = ALBEvent | APIGatewayEvent;
+
+export type AlbHandlerResult = ALBResult;
+
 export type Methods = (typeof METHODS)[keyof typeof METHODS];
 
-export type MethodHandler = (event: ALBEvent) => Promise<any>;
+export type MethodHandler = (event: AlbHandlerEvent) => Promise<any>;
 
 export type MethodHandlers = Partial<Record<Methods, MethodHandler>>;
 
 export type HandleAlbEventParams = {
-  event: ALBEvent;
+  event: AlbHandlerEvent;
   methodHandlers: MethodHandlers;
 };
 
@@ -49,7 +53,7 @@ export const getHeaders = ({ allowedMethods }: GetHeadersParams) => ({
 export const handleAlbEvent = async ({
   event,
   methodHandlers,
-}: HandleAlbEventParams): Promise<ALBResult> => {
+}: HandleAlbEventParams): Promise<AlbHandlerResult> => {
   const methodHandler = methodHandlers[event.httpMethod as Methods];
   if (!methodHandler) {
     return {
@@ -78,7 +82,7 @@ export const handleAlbEvent = async ({
   }
 
   return {
-    statusCode: 404,
+    statusCode: 500,
     headers: getHeaders({ allowedMethods: Object.keys(methodHandlers) }),
   };
 };

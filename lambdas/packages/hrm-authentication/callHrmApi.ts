@@ -15,6 +15,7 @@
  */
 
 import { newErrorResult, newSuccessResult } from '@tech-matters/types';
+import { URLSearchParams } from 'url';
 
 export type CallHrmApiParameters = {
   urlPath: string;
@@ -23,16 +24,18 @@ export type CallHrmApiParameters = {
 };
 
 const callHrmApi = async ({ urlPath, requestData, authHeader }: CallHrmApiParameters) => {
-  const body = requestData ? JSON.stringify(requestData) : undefined;
+  const params = new URLSearchParams(requestData).toString();
+  const fullUrl = params
+    ? `${process.env.HRM_BASE_URL}/${urlPath}?${params}`
+    : `${process.env.HRM_BASE_URL}/${urlPath}`;
 
   // @ts-ignore global fetch available because node 18
-  const response = await fetch(`${process.env.HRM_BASE_URL}/${urlPath}`, {
-    method: 'POST',
+  const response = await fetch(fullUrl, {
+    method: 'GET',
     headers: {
       'Content-Type': 'application/json',
       Authorization: authHeader,
     },
-    body,
   });
 
   if (!response.ok) {

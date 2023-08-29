@@ -14,72 +14,59 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-/* eslint-disable no-new */
 import * as cdk from 'aws-cdk-lib';
-import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
-import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
+import * as lambdaNode from 'aws-cdk-lib/aws-lambda-nodejs';
 
-export default class ContactCompleteStack extends cdk.Stack {
-  public readonly completeQueue: cdk.aws_sqs.Queue;
+export default class HrmMicoservicesStack extends cdk.Stack {
+  // Your existing class members here
 
   constructor({
     scope,
     id,
-    params = {
-      skipLambda: false,
-    },
     props,
   }: {
     scope: cdk.App;
     id: string;
-    params?: {
-      skipLambda: boolean;
-    };
     props?: cdk.StackProps;
   }) {
     super(scope, id, props);
-    this.completeQueue = new cdk.aws_sqs.Queue(this, id);
 
-    new cdk.aws_ssm.StringParameter(this, `complete-queue-url`, {
-      parameterName: `/local/us-east-1/sqs/jobs/contact/queue-url-complete`,
-      stringValue: this.completeQueue.queueUrl,
+    const api = new cdk.aws_apigateway.RestApi(this, 'hrmMicroservicesApi', {
+      restApiName: 'HRM Microservices',
     });
 
-    // duplicated for test env
-    new cdk.aws_ssm.StringParameter(this, `complete-queue-url-test`, {
-      parameterName: `/test/us-east-1/sqs/jobs/contact/queue-url-complete`,
-      stringValue: this.completeQueue.queueUrl,
+    new cdk.CfnOutput(this, 'apiUrl', {
+      value: api.url,
+      description: 'The url of the HRM Microservices API',
     });
 
-    new cdk.CfnOutput(this, 'queueUrl', {
-      value: this.completeQueue.queueUrl,
-      description: 'The url of the complete queue',
-    });
+    const v0 = api.root.addResource('v0');
+    const accounts = v0.addResource('accounts');
+    const accountProxy = accounts.addResource('{account_id}');
 
-    if (params.skipLambda) return;
-
-    const fn = new NodejsFunction(this, 'fetchParams', {
+    const filesUrlsLambda = new lambdaNode.NodejsFunction(this, 'filesUrls', {
       runtime: cdk.aws_lambda.Runtime.NODEJS_18_X,
       memorySize: 512,
       timeout: cdk.Duration.seconds(10),
       handler: 'handler',
-      entry: `./hrm-domain/lambdas/${id}/index.ts`,
+      entry: `./hrm-domain/lambdas/files-urls/index.ts`,
       environment: {
         NODE_OPTIONS: '--enable-source-maps',
         S3_ENDPOINT: 'http://localstack:4566',
         S3_FORCE_PATH_STYLE: 'true',
         S3_REGION: 'us-east-1',
         SSM_ENDPOINT: 'http://localstack:4566',
+        SNS_ENDPOINT: 'http://localstack:4566',
         SQS_ENDPOINT: 'http://localstack:4566',
+        NODE_ENV: 'local',
+        HRM_BASE_URL: 'http://host.docker.internal:8080',
       },
       bundling: { sourceMap: true },
     });
 
-    fn.addEventSource(
-      new SqsEventSource(this.completeQueue, {
-        batchSize: 10,
-        reportBatchItemFailures: true,
-      }),
-    );
+    const files = accountProxy.addResource('files');
+    const urls = files.addResource('urls');
+
+    urls.addMethod('GET', new cdk.aws_apigateway.LambdaIntegration(filesUrlsLambda));
   }
 }

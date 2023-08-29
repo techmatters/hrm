@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import type { ALBEvent } from 'aws-lambda';
+import { AlbHandlerEvent } from '@tech-matters/alb-handler';
 import {
   isErrorResult,
   ErrorResult,
@@ -53,7 +53,7 @@ export const convertBasicAuthHeader = (authHeader: string): string => {
   return authHeader;
 };
 
-const getSignedS3Url = async (event: ALBEvent): Promise<GetSignedS3UrlResult> => {
+const getSignedS3Url = async (event: AlbHandlerEvent): Promise<GetSignedS3UrlResult> => {
   const parseParametersResult = parseParameters(event);
   if (isErrorResult(parseParametersResult)) {
     return parseParametersResult;
