@@ -40,9 +40,7 @@ export type LegacyS3StoredTranscript = {
   location?: {
     bucket: string;
     key: string;
-    url: string;
   };
-  url?: string;
 };
 
 type LegacyS3StoredMedia = LegacyS3StoredTranscript;

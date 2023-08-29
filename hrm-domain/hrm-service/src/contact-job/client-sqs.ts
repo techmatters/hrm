@@ -14,12 +14,14 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { SQS } from 'aws-sdk';
+import {
+  deleteSqsMessage,
+  receiveSqsMessage,
+  sendSqsMessage,
+} from '@tech-matters/sqs-client';
 import { getSsmParameter } from '../config/ssmCache';
 
 import type { PublishToContactJobsTopicParams } from '@tech-matters/types';
-
-let sqs: SQS;
 
 const COMPLETED_QUEUE_SSM_PATH = `/${process.env.NODE_ENV}/${
   process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
@@ -28,35 +30,30 @@ const JOB_QUEUE_SSM_PATH_BASE = `/${process.env.NODE_ENV}/${
   process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
 }/sqs/jobs/contact/queue-url-`;
 
-export const getSqsClient = () => {
-  if (!sqs) {
-    sqs = new SQS();
+export const pollCompletedContactJobsFromQueue = async (): ReturnType<
+  typeof receiveSqsMessage
+> => {
+  try {
+    const queueUrl = await getSsmParameter(COMPLETED_QUEUE_SSM_PATH);
+
+    return await receiveSqsMessage({
+      queueUrl,
+      maxNumberOfMessages: 10,
+      waitTimeSeconds: 0,
+    });
+  } catch (err) {
+    console.error('Error trying to poll messages from SQS queue', err);
   }
-  return sqs;
 };
 
-export const pollCompletedContactJobsFromQueue =
-  async (): Promise<SQS.Types.ReceiveMessageResult> => {
-    try {
-      const QueueUrl = await getSsmParameter(COMPLETED_QUEUE_SSM_PATH);
-
-      return await getSqsClient()
-        .receiveMessage({
-          QueueUrl,
-          MaxNumberOfMessages: 10,
-          WaitTimeSeconds: 0,
-        })
-        .promise();
-    } catch (err) {
-      console.error('Error trying to poll messages from SQS queue', err);
-    }
-  };
-
-export const deleteCompletedContactJobsFromQueue = async (ReceiptHandle: string) => {
+export const deleteCompletedContactJobsFromQueue = async (receiptHandle: string) => {
   try {
-    const QueueUrl = await getSsmParameter(COMPLETED_QUEUE_SSM_PATH);
+    const queueUrl = await getSsmParameter(COMPLETED_QUEUE_SSM_PATH);
 
-    return await getSqsClient().deleteMessage({ QueueUrl, ReceiptHandle }).promise();
+    return await deleteSqsMessage({
+      queueUrl,
+      receiptHandle,
+    });
   } catch (err) {
     console.error('Error trying to delete message from SQS queue', err);
   }
@@ -65,14 +62,12 @@ export const deleteCompletedContactJobsFromQueue = async (ReceiptHandle: string)
 export const publishToContactJobs = async (params: PublishToContactJobsTopicParams) => {
   //TODO: more robust error handling/messaging
   try {
-    const QueueUrl = await getSsmParameter(`${JOB_QUEUE_SSM_PATH_BASE}${params.jobType}`);
+    const queueUrl = await getSsmParameter(`${JOB_QUEUE_SSM_PATH_BASE}${params.jobType}`);
 
-    return await getSqsClient()
-      .sendMessage({
-        MessageBody: JSON.stringify(params),
-        QueueUrl,
-      })
-      .promise();
+    return await sendSqsMessage({
+      queueUrl,
+      message: JSON.stringify(params),
+    });
   } catch (err) {
     console.error('Error trying to send message to SQS queue', err);
   }

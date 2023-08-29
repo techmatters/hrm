@@ -1,0 +1,12 @@
+// This file is copied to the root at build time, so all paths are relative to the root
+{
+  "extends": "./tsconfig.base.json",
+  "files": [],
+  "references": [
+    { "path": "packages/job-errors" },
+    { "path": "packages/ssm-cache" },
+    { "path": "packages/sqs-client" },
+    { "path": "packages/types" },
+    { "path": "hrm-domain/lambdas/contact-complete" }
+  ]
+}

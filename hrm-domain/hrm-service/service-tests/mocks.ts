@@ -288,7 +288,10 @@ export const withTaskIdAndTranscript = {
       {
         store: 'S3' as const,
         type: S3ContactMediaType.TRANSCRIPT,
-        url: undefined,
+        location: {
+          bucket: 'mockBucket',
+          key: 'mockKey',
+        },
       },
     ],
   },

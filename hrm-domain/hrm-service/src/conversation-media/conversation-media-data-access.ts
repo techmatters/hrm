@@ -58,9 +58,7 @@ type NewS3StoredTranscript = {
     location?: {
       bucket: string;
       key: string;
-      url: string;
     };
-    url?: string;
   };
 };
 export type S3StoredTranscript = ConversationMediaCommons & NewS3StoredTranscript;

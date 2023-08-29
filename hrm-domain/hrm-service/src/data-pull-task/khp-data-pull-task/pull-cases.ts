@@ -16,6 +16,7 @@
 
 import format from 'date-fns/format';
 import formatISO from 'date-fns/formatISO';
+import { putS3Object } from '@tech-matters/s3-client';
 
 import { getContext, maxPermissions } from './context';
 import * as caseApi from '../../case/case';
@@ -31,7 +32,7 @@ const getSearchParams = (startDate: Date, endDate: Date) => ({
 });
 
 export const pullCases = async (startDate: Date, endDate: Date) => {
-  const { s3Client, accountSid, bucketName } = await getContext();
+  const { accountSid, bucket } = await getContext();
 
   const searchParams = getSearchParams(startDate, endDate);
 
@@ -50,7 +51,6 @@ export const pullCases = async (startDate: Date, endDate: Date) => {
     connectedContacts: mapContactsToId(cas.connectedContacts),
   }));
 
-  const Bucket = bucketName;
   const uploadPromises = casesWithContactIdOnly.map(cas => {
     /*
       Case type is slightly wrong. The instance object actually has:
@@ -59,11 +59,11 @@ export const pullCases = async (startDate: Date, endDate: Date) => {
     */
     delete (cas as any).totalCount;
     const date = format(cas.updatedAt as unknown as Date, 'yyyy/MM/dd');
-    const Key = `hrm-data/${date}/cases/${cas.id}.json`;
-    const Body = JSON.stringify(cas);
-    const params = { Bucket, Key, Body };
+    const key = `hrm-data/${date}/cases/${cas.id}.json`;
+    const body = JSON.stringify(cas);
+    const params = { bucket, key, body };
 
-    return s3Client.upload(params).promise();
+    return putS3Object(params);
   });
 
   try {

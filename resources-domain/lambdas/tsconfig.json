@@ -1,0 +1,16 @@
+{
+  "extends": "@tsconfig/node16/tsconfig.json",
+  "compilerOptions": {
+    "esModuleInterop": true,
+    "lib": ["ES2022"],
+    "strict": true,
+    "allowSyntheticDefaultImports": true,
+    "allowJs": true,
+    "checkJs": true,
+    "resolveJsonModule": true
+  },
+  "ts-node": {
+    "transpileOnly": true,
+    "files": true
+  }
+}
