@@ -91,7 +91,7 @@ export const isValidFileLocation = async ({
   objectId: number;
   bucket: string;
   key: string;
-}): Promise<Result<true>> => {
+}): Promise<Result<boolean>> => {
   try {
     switch (targetKind) {
       case 'contact': {
@@ -107,15 +107,13 @@ export const isValidFileLocation = async ({
             cm.storeTypeSpecificData?.location?.key === key,
         );
 
-        return isValid
-          ? newSuccessResult({ data: isValid })
-          : newErrorResult({ message: 'Not allowed', statusCode: 403 });
+        return newSuccessResult({ data: isValid });
       }
       case 'case': {
-        return newErrorResult({ message: 'Not allowed', statusCode: 403 });
+        return newSuccessResult({ data: false });
       }
       case 'postSurvey': {
-        return newErrorResult({ message: 'Not allowed', statusCode: 403 });
+        return newSuccessResult({ data: false });
       }
       default: {
         assertExhaustive(targetKind);
