@@ -23,6 +23,7 @@
   "scripts": {
     "docker:build": "docker build -t hrm-jobs-contact-retrieve-transcript --build-arg lambda_name=contact-retrieve-transcript --build-arg lambda_dir=hrm-domain/lambdas -f ../../../lambdas/Dockerfile ../../../",
     "test:integration": "cross-env S3_FORCE_PATH_STYLE=true S3_ENDPOINT=http://localhost:4566 SQS_ENDPOINT=http://localhost:4566 jest tests/integration",
-    "test:unit": "jest tests/unit"
+    "test:unit": "jest tests/unit",
+    "test": "npm run test:unit && npm run test:integration"
   }
 }
