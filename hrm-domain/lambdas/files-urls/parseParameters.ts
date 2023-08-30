@@ -25,7 +25,7 @@ import {
 } from '@tech-matters/types';
 
 const objectTypes = {
-  contacts: {
+  contact: {
     requiredParameters: ['objectId'],
     fileTypes: ['recording', 'transcript'],
   },
