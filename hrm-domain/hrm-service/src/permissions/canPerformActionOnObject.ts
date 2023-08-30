@@ -15,7 +15,12 @@
  */
 
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
-import { TargetKind, isValidSetOfActionsForTarget } from './actions';
+import {
+  Actions,
+  TargetKind,
+  actionsMaps,
+  isValidSetOfActionsForTarget,
+} from './actions';
 import { setupCanForRules } from './setupCanForRules';
 import { getContactById } from '../contact/contact';
 import { getCase as getCaseById } from '../case/case';
@@ -76,6 +81,23 @@ export const canPerformActionsOnObject = async <T extends TargetKind>({
     }
   } catch (err) {
     return newErrorResult({ message: (err as Error).message });
+  }
+};
+
+export const isFilesRelatedAction = (targetKind: TargetKind, action: Actions) => {
+  switch (targetKind) {
+    case 'contact': {
+      return action === 'viewExternalTranscript' || action === 'viewRecording';
+    }
+    case 'case': {
+      return false;
+    }
+    case 'postSurvey': {
+      return false;
+    }
+    default: {
+      assertExhaustive(targetKind);
+    }
   }
 };
 

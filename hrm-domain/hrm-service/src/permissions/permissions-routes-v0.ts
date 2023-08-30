@@ -19,6 +19,7 @@ import type { Request, Response } from 'express';
 import createError from 'http-errors';
 import {
   canPerformActionsOnObject,
+  isFilesRelatedAction,
   isValidFileLocation,
 } from './canPerformActionOnObject';
 import { TargetKind, isTargetKind } from './actions';
@@ -53,9 +54,11 @@ export default (permissions: Permissions) => {
   const parseActionGetPayload = ({
     objectType,
     objectId,
+    action,
   }: {
     objectType?: string;
     objectId?: string;
+    action: string;
   }): Result<{
     objectType: TargetKind;
     objectId: number;
@@ -81,6 +84,7 @@ export default (permissions: Permissions) => {
       const parseResult = parseActionGetPayload({
         objectType: req.query.objectType,
         objectId: req.query.objectId,
+        action,
       });
 
       if (isErrorResult(parseResult)) {
@@ -92,7 +96,7 @@ export default (permissions: Permissions) => {
       const canPerformResult = await canPerformActionsOnObject({
         accountSid,
         targetKind: objectType,
-        actions: [action] as any,
+        actions: [action],
         objectId,
         can,
         user,
@@ -106,7 +110,7 @@ export default (permissions: Permissions) => {
         return next(createError(403, 'Not allowed'));
       }
 
-      if (bucket && key) {
+      if (isFilesRelatedAction(objectType, action)) {
         const isValidLocationResult = await isValidFileLocation({
           accountSid,
           targetKind: objectType,
