@@ -25,6 +25,7 @@ export {
   isTwilioStoredMedia,
   create as createConversationMedia,
   getById as getConversationMediaById,
+  getByContactId as getConversationMediaByContactId,
   updateSpecificData as updateConversationMediaData,
 } from './conversation-media-data-access';
 
@@ -43,7 +44,16 @@ export type LegacyS3StoredTranscript = {
   };
 };
 
-type LegacyS3StoredMedia = LegacyS3StoredTranscript;
+export type LegacyS3StoredRecording = {
+  store: 'S3';
+  type: S3ContactMediaType.RECORDING;
+  location?: {
+    bucket: string;
+    key: string;
+  };
+};
+
+type LegacyS3StoredMedia = LegacyS3StoredTranscript | LegacyS3StoredRecording;
 
 export type LegacyConversationMedia = LegacyTwilioStoredMedia | LegacyS3StoredMedia;
 /** */

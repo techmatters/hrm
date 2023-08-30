@@ -42,6 +42,7 @@ export const actionsMaps = {
     VIEW_CONTACT: 'viewContact',
     EDIT_CONTACT: 'editContact',
     VIEW_EXTERNAL_TRANSCRIPT: 'viewExternalTranscript',
+    VIEW_RECORDING: 'viewRecording',
   },
   postSurvey: {
     VIEW_POST_SURVEY: 'viewPostSurvey',
@@ -59,6 +60,18 @@ type NestedStringValues<T> = T extends object
   : never;
 
 export type Actions = NestedStringValues<typeof actionsMaps>;
+
+export const isValidSetOfActionsForTarget = <T extends TargetKind>(
+  targetKind: T,
+  actions: unknown,
+): actions is Actions[] => {
+  const validActionsOnTarget = Object.values(actionsMaps[targetKind]);
+  return (
+    Array.isArray(actions) &&
+    actionsMaps[targetKind] &&
+    actions.every(action => validActionsOnTarget.includes(action))
+  );
+};
 
 // deep-diff lib kinds:
 const NEW_PROPERTY = 'N';

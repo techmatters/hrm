@@ -68,6 +68,7 @@
     "build-and-start": "run-s build start",
     "build-and-start:service": "run-s build start:service",
     "start": "run-s start:db start:localstack start:es start:service",
+    "start:light": "run-s start:db start:localstack start:service",
     "migrate": "npm run migrate --workspaces --if-present",
     "start:db": "run-s docker:compose:db-persistent:up waiton:db migrate",
     "start:es": "run-s docker:compose:es:up waiton:es es:create-index",

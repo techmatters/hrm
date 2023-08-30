@@ -34,6 +34,7 @@ process.env.PERMISSIONS_za = 'za';
 process.env.PERMISSIONS_zm = 'zm';
 process.env.PERMISSIONS_zw = 'zw';
 process.env.PERMISSIONS_open = 'open';
+process.env.PERMISSIONS_closed = 'closed';
 process.env.PERMISSIONS_demo = 'demo';
 process.env.PERMISSIONS_dev = 'dev';
 process.env.PERMISSIONS_e2e = 'e2e';

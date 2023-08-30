@@ -17,12 +17,23 @@
 import { SafeRouter, publicEndpoint, Permissions } from '../permissions';
 import type { Request, Response } from 'express';
 import createError from 'http-errors';
+import {
+  canPerformActionsOnObject,
+  isFilesRelatedAction,
+  isValidFileLocation,
+} from './canPerformActionOnObject';
+import { TargetKind, isTargetKind } from './actions';
+import {
+  Result,
+  isErrorResult,
+  newErrorResult,
+  newSuccessResult,
+} from '@tech-matters/types';
 
 export default (permissions: Permissions) => {
   const permissionsRouter = SafeRouter();
   permissionsRouter.get('/', publicEndpoint, (req: Request, res: Response, next) => {
     try {
-      //@ts-ignore TODO: Improve our custom Request type to override Express.Request
       const { accountSid } = req;
       if (!permissions.rules) {
         return next(
@@ -37,6 +48,91 @@ export default (permissions: Permissions) => {
       res.json(rules);
     } catch (err) {
       return next(createError(500, err.message));
+    }
+  });
+
+  const parseActionGetPayload = ({
+    objectType,
+    objectId,
+  }: {
+    objectType?: string;
+    objectId?: string;
+  }): Result<{
+    objectType: TargetKind;
+    objectId: number;
+  }> => {
+    if (!objectType || !isTargetKind(objectType)) {
+      return newErrorResult({ message: 'invalid objectType', statusCode: 400 });
+    }
+
+    const parsedId = parseInt(objectId, 10);
+    if (!objectId || !Number.isInteger(parsedId)) {
+      return newErrorResult({ message: 'invalid objectId', statusCode: 400 });
+    }
+
+    return newSuccessResult({ data: { objectType, objectId: parsedId } });
+  };
+
+  permissionsRouter.get('/:action', publicEndpoint, async (req, res, next) => {
+    const { accountSid, user, can } = req;
+    const { bucket, key } = req.query;
+    const { action } = req.params;
+
+    try {
+      const parseResult = parseActionGetPayload({
+        objectType: req.query.objectType,
+        objectId: req.query.objectId,
+      });
+
+      if (isErrorResult(parseResult)) {
+        return next(createError(parseResult.statusCode, parseResult.message));
+      }
+
+      const { objectType, objectId } = parseResult.data;
+
+      const canPerformResult = await canPerformActionsOnObject({
+        accountSid,
+        targetKind: objectType,
+        actions: [action],
+        objectId,
+        can,
+        user,
+      });
+
+      if (isErrorResult(canPerformResult)) {
+        return next(createError(canPerformResult.statusCode, canPerformResult.message));
+      }
+
+      if (!canPerformResult.data) {
+        return next(createError(403, 'Not allowed'));
+      }
+
+      if (isFilesRelatedAction(objectType, action)) {
+        const isValidLocationResult = await isValidFileLocation({
+          accountSid,
+          targetKind: objectType,
+          objectId,
+          bucket,
+          key,
+        });
+
+        if (isErrorResult(isValidLocationResult)) {
+          return next(
+            createError(isValidLocationResult.statusCode, isValidLocationResult.message),
+          );
+        }
+
+        if (!isValidLocationResult.data) {
+          return next(createError(403, 'Not allowed'));
+        }
+      }
+
+      // TODO: what do we expect here?
+      res.json({ message: 'all good :)' });
+    } catch (err) {
+      return next(
+        createError(500, err instanceof Error ? err.message : JSON.stringify(err)),
+      );
     }
   });
 
