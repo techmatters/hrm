@@ -25,6 +25,7 @@ import {
   isS3StoredTranscript,
 } from '../conversation-media/conversation-media';
 import { Result, newErrorResult, newSuccessResult } from '@tech-matters/types';
+import { isS3StoredConversationMedia } from '../conversation-media/conversation-media-data-access';
 
 export const canPerformActionsOnObject = async <T extends TargetKind>({
   accountSid,
@@ -119,7 +120,7 @@ export const isValidFileLocation = async ({
 
         const isValid = conversationMedia.some(
           cm =>
-            isS3StoredTranscript(cm) &&
+            isS3StoredConversationMedia(cm) &&
             cm.storeTypeSpecificData?.location?.bucket === bucket &&
             cm.storeTypeSpecificData?.location?.key === key,
         );

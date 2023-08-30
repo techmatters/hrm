@@ -77,10 +77,9 @@ type NewS3StoredRecording = {
 };
 export type S3StoredTranscript = ConversationMediaCommons & NewS3StoredTranscript;
 export type S3StoredRecording = ConversationMediaCommons & NewS3StoredRecording;
-export type ConversationMedia =
-  | TwilioStoredMedia
-  | S3StoredTranscript
-  | S3StoredRecording;
+export type S3StoredConversationMedia = S3StoredTranscript | S3StoredRecording;
+
+export type ConversationMedia = TwilioStoredMedia | S3StoredConversationMedia;
 
 export type NewConversationMedia =
   | NewTwilioStoredMedia
@@ -94,6 +93,12 @@ export const isS3StoredTranscript = (m: ConversationMedia): m is S3StoredTranscr
   m.storeType === 'S3' && m.storeTypeSpecificData?.type === S3ContactMediaType.TRANSCRIPT;
 export const isS3StoredTranscriptPending = (m: ConversationMedia) =>
   isS3StoredTranscript(m) && !m.storeTypeSpecificData?.location;
+export const isS3StoredRecording = (m: ConversationMedia): m is S3StoredRecording =>
+  m.storeType === 'S3' && m.storeTypeSpecificData?.type === S3ContactMediaType.RECORDING;
+export const isS3StoredConversationMedia = (
+  m: ConversationMedia,
+): m is S3StoredConversationMedia =>
+  isS3StoredTranscriptPending(m) || isS3StoredRecording(m);
 
 export const create =
   (task?) =>
