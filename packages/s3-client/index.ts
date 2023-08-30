@@ -116,7 +116,10 @@ export const convertLocalstackUrl = (url: string) => {
 
   if ('url' in endpointOverride) {
     const endpointUrl = endpointOverride.url.toString();
-    return url.replace('https://localhost/', endpointUrl);
+    return url.replace(
+      'https://localhost/',
+      endpointUrl.replace('localstack', 'localhost'),
+    );
   }
 
   return url;
