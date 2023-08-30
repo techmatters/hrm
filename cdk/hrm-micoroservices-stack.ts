@@ -40,6 +40,11 @@ export default class HrmMicoservicesStack extends cdk.Stack {
       description: 'The url of the HRM Microservices API',
     });
 
+    new cdk.aws_ssm.StringParameter(this, `microservice-api-url`, {
+      parameterName: `/local/hrm/microservice/api-url`,
+      stringValue: api.url,
+    });
+
     const v0 = api.root.addResource('v0');
     const accounts = v0.addResource('accounts');
     const accountProxy = accounts.addResource('{account_id}');
