@@ -15,10 +15,18 @@
  */
 
 import each from 'jest-each';
-import { rulesMap } from '../src/permissions';
+import { actionsMaps, rulesMap } from '../src/permissions';
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
-import { workerSid } from './mocks';
+import { withTaskId, workerSid } from './mocks';
 import { headers, getRequest, getServer } from './server';
+import {
+  NewConversationMedia,
+  S3ContactMediaType,
+} from '../src/conversation-media/conversation-media';
+import { db } from '../src/connection-pool';
+import * as contactDB from '../src/contact/contact-data-access';
+import * as conversationMediaDB from '../src/conversation-media/conversation-media-data-access';
+import { NewContactRecord } from '../src/contact/sql/contact-insert-sql';
 
 const server = getServer({
   permissions: undefined,
@@ -81,4 +89,136 @@ describe('/permissions route', () => {
       },
     );
   });
+});
+
+// eslint-disable-next-line @typescript-eslint/no-shadow
+const deleteContactById = (id: number, accountSid: string) =>
+  db.task(t =>
+    t.none(`
+      DELETE FROM "Contacts"
+      WHERE "id" = ${id} AND "accountSid" = '${accountSid}';
+  `),
+  );
+
+// eslint-disable-next-line @typescript-eslint/no-shadow
+const deleteJobsByContactId = (contactId: number, accountSid: string) =>
+  db.task(t =>
+    t.manyOrNone(`
+      DELETE FROM "ContactJobs"
+      WHERE "contactId" = ${contactId} AND "accountSid" = '${accountSid}';
+    `),
+  );
+
+// eslint-disable-next-line @typescript-eslint/no-shadow
+const deleteConversationMediaByContactId = (contactId: number, accountSid: string) =>
+  db.task(t =>
+    t.manyOrNone(`
+      DELETE FROM "ConversationMedias"
+      WHERE "contactId" = ${contactId} AND "accountSid" = '${accountSid}';
+    `),
+  );
+
+describe('/permissions/:action route with contact objectType', () => {
+  const accountSids = ['open', 'closed'];
+  let createdContacts = {
+    open: null,
+    closed: null,
+  };
+  const bucket = 'bucket';
+  const key = 'key';
+
+  beforeAll(async () => {
+    await Promise.all(
+      accountSids.map(async accountSid => {
+        const cm1: NewConversationMedia = {
+          storeType: 'S3',
+          storeTypeSpecificData: {
+            type: S3ContactMediaType.TRANSCRIPT,
+            location: { bucket, key },
+          },
+        };
+
+        const cm2: NewConversationMedia = {
+          storeType: 'S3',
+          storeTypeSpecificData: {
+            type: S3ContactMediaType.RECORDING,
+            location: { bucket, key },
+          },
+        };
+
+        const contact: NewContactRecord = {
+          ...withTaskId,
+          rawJson: {
+            ...withTaskId.form,
+          },
+          channel: 'web',
+          taskId: `${withTaskId.taskId}-${accountSid}`,
+          timeOfContact: new Date(),
+          channelSid: 'channelSid',
+          serviceSid: 'serviceSid',
+        };
+
+        const { contact: createdContact } = await contactDB.create()(accountSid, contact);
+        createdContacts[accountSid] = createdContact;
+
+        await Promise.all(
+          [cm1, cm2].map(async cm => {
+            await conversationMediaDB.create()(accountSid, {
+              ...cm,
+              contactId: createdContact.id,
+            });
+          }),
+        );
+      }),
+    );
+  });
+
+  afterAll(async () => {
+    await Promise.all(
+      accountSids.map(async createdContactsKey => {
+        const contact = createdContacts[createdContactsKey];
+        // Remove records to not interfere with following tests
+        await deleteJobsByContactId(contact?.id, contact?.accountSid);
+        await deleteConversationMediaByContactId(contact?.id, contact?.accountSid);
+        await deleteContactById(contact?.id, contact?.accountSid);
+      }),
+    );
+  });
+
+  each(
+    accountSids
+      .flatMap(accountSid => [
+        {
+          action: actionsMaps.contact.VIEW_EXTERNAL_TRANSCRIPT,
+          accountSid,
+          shouldHavePermission: accountSid === 'open',
+        },
+        {
+          action: actionsMaps.contact.VIEW_RECORDING,
+          accountSid,
+          shouldHavePermission: accountSid === 'open',
+        },
+      ])
+      .flatMap(testCase => [
+        { ...testCase, key: 'invalid', bucket, shouldBeValid: false },
+        { ...testCase, key, bucket: 'invalid', shouldBeValid: false },
+        { ...testCase, key, bucket, shouldBeValid: true },
+      ])
+      .map(testCase => ({
+        ...testCase,
+        expectedStatusCode:
+          testCase.shouldHavePermission && testCase.shouldBeValid ? 200 : 403,
+      })),
+  ).test(
+    'when action is $action, parmissions validity is $shouldHavePermission, location validity is $shouldBeValid - then expect $expectedStatusCode',
+    // eslint-disable-next-line @typescript-eslint/no-shadow
+    async ({ action, accountSid, bucket, key, expectedStatusCode }) => {
+      const contact = createdContacts[accountSid];
+      const objectId = contact.id;
+      const route = `/v0/accounts/${accountSid}/permissions/${action}?objectType=contact&objectId=${objectId}&bucket=${bucket}&key=${key}`;
+      const res = await request.get(route).set(headers);
+
+      expect(res.statusCode).toBe(expectedStatusCode);
+    },
+  );
 });

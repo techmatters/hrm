@@ -49,16 +49,16 @@ export const newSuccessResult = <TData>({
 
 export type SuccessResult<TData> = ReturnType<typeof newSuccessResult<TData>>;
 
-export type NewUnneededResultParams = {
-  message: string;
-};
-export const newUnneededResult = ({ message }: NewUnneededResultParams) => ({
-  status: 'unneeded',
-  message,
-});
-export type UnneededResult = ReturnType<typeof newUnneededResult>;
+// export type NewUnneededResultParams = {
+//   message: string;
+// };
+// export const newUnneededResult = ({ message }: NewUnneededResultParams) => ({
+//   status: 'unneeded',
+//   message,
+// });
+// export type UnneededResult = ReturnType<typeof newUnneededResult>;
 
-export type Result<TData> = SuccessResult<TData> | ErrorResult | UnneededResult;
+export type Result<TData> = SuccessResult<TData> | ErrorResult; // | UnneededResult;
 
 export const isErrorResult = (result: Result<any>): result is ErrorResult =>
   result.status === 'error';
@@ -67,5 +67,5 @@ export const isSuccessResult = <TData>(
   result: Result<TData>,
 ): result is SuccessResult<TData> => result.status === 'success';
 
-export const isUnneededResult = (result: Result<any>): result is UnneededResult =>
-  result.status === 'unneeded';
+// export const isUnneededResult = (result: Result<any>): result is UnneededResult =>
+//   result.status === 'unneeded';

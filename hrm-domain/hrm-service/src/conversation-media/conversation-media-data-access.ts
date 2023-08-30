@@ -25,7 +25,10 @@ import {
   inferPostgresError,
   txIfNotInOne,
 } from '../sql';
-import { selectSingleConversationMediaByIdSql } from './sql/conversation-media-get-sql';
+import {
+  selectConversationMediaByContactIdSql,
+  selectSingleConversationMediaByIdSql,
+} from './sql/conversation-media-get-sql';
 import { insertConversationMediaSql } from './sql/conversation-media-insert-sql';
 import { updateSpecificDataByIdSql } from './sql/conversation-media-update-sql';
 
@@ -41,7 +44,7 @@ type ConversationMediaCommons = {
 };
 
 export enum S3ContactMediaType {
-  // RECORDING = 'recording',
+  RECORDING = 'recording',
   TRANSCRIPT = 'transcript',
 }
 
@@ -61,10 +64,28 @@ type NewS3StoredTranscript = {
     };
   };
 };
-export type S3StoredTranscript = ConversationMediaCommons & NewS3StoredTranscript;
-export type ConversationMedia = TwilioStoredMedia | S3StoredTranscript;
 
-export type NewConversationMedia = NewTwilioStoredMedia | NewS3StoredTranscript;
+type NewS3StoredRecording = {
+  storeType: 'S3';
+  storeTypeSpecificData: {
+    type: S3ContactMediaType.RECORDING;
+    location?: {
+      bucket: string;
+      key: string;
+    };
+  };
+};
+export type S3StoredTranscript = ConversationMediaCommons & NewS3StoredTranscript;
+export type S3StoredRecording = ConversationMediaCommons & NewS3StoredRecording;
+export type ConversationMedia =
+  | TwilioStoredMedia
+  | S3StoredTranscript
+  | S3StoredRecording;
+
+export type NewConversationMedia =
+  | NewTwilioStoredMedia
+  | NewS3StoredTranscript
+  | NewS3StoredRecording;
 
 export const isTwilioStoredMedia = (m: ConversationMedia): m is TwilioStoredMedia =>
   m.storeType === 'twilio';
@@ -116,6 +137,17 @@ export const getById = async (
     connection.oneOrNone<ConversationMedia>(selectSingleConversationMediaByIdSql, {
       accountSid,
       id,
+    }),
+  );
+
+export const getByContactId = async (
+  accountSid: string,
+  contactId: number,
+): Promise<ConversationMedia[]> =>
+  db.task(async connection =>
+    connection.manyOrNone<ConversationMedia>(selectConversationMediaByContactIdSql, {
+      accountSid,
+      contactId,
     }),
   );
 

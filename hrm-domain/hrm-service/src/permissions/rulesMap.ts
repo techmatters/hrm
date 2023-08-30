@@ -15,6 +15,7 @@
  */
 
 const openRules = require('../../permission-rules/open.json');
+const closedRules = require('../../permission-rules/closed.json');
 const demoRules = require('../../permission-rules/demo.json');
 const devRules = require('../../permission-rules/dev.json');
 const e2eRules = require('../../permission-rules/e2e.json');
@@ -113,6 +114,7 @@ const rulesMapDef = {
   zm: zmRules,
   zw: zwRules,
   open: openRules,
+  closed: closedRules,
   demo: demoRules,
   dev: devRules,
   e2e: e2eRules,
