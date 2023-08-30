@@ -15,12 +15,7 @@
  */
 
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
-import {
-  Actions,
-  TargetKind,
-  actionsMaps,
-  isValidSetOfActionsForTarget,
-} from './actions';
+import { Actions, TargetKind, isValidSetOfActionsForTarget } from './actions';
 import { setupCanForRules } from './setupCanForRules';
 import { getContactById } from '../contact/contact';
 import { getCase as getCaseById } from '../case/case';

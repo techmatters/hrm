@@ -54,11 +54,9 @@ export default (permissions: Permissions) => {
   const parseActionGetPayload = ({
     objectType,
     objectId,
-    action,
   }: {
     objectType?: string;
     objectId?: string;
-    action: string;
   }): Result<{
     objectType: TargetKind;
     objectId: number;
@@ -84,7 +82,6 @@ export default (permissions: Permissions) => {
       const parseResult = parseActionGetPayload({
         objectType: req.query.objectType,
         objectId: req.query.objectId,
-        action,
       });
 
       if (isErrorResult(parseResult)) {
