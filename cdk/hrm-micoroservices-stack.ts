@@ -64,7 +64,7 @@ export default class HrmMicoservicesStack extends cdk.Stack {
         SNS_ENDPOINT: 'http://localstack:4566',
         SQS_ENDPOINT: 'http://localstack:4566',
         NODE_ENV: 'local',
-        HRM_BASE_URL: 'http://host.docker.internal:8080',
+        HRM_BASE_URL: 'http://172.17.0.1:8080',
       },
       bundling: { sourceMap: true },
     });

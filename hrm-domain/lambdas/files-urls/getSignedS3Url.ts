@@ -62,11 +62,13 @@ const getSignedS3Url = async (event: AlbHandlerEvent): Promise<GetSignedS3UrlRes
   const { accountSid, bucket, key, method, objectType, objectId, fileType } =
     parseParametersResult.data;
 
+  const authorization = event.headers?.Authorization || event.headers?.authorization;
+
   const authenticateResult = await authenticate({
     accountSid,
     objectType,
     objectId,
-    authHeader: convertBasicAuthHeader(event.headers?.Authorization!),
+    authHeader: convertBasicAuthHeader(authorization!),
     type: 'filesUrls',
     requestData: {
       fileType,

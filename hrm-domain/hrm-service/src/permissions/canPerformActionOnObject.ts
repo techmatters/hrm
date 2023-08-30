@@ -22,10 +22,9 @@ import { getCase as getCaseById } from '../case/case';
 import { assertExhaustive } from '../contact-job/assertExhaustive';
 import {
   getConversationMediaByContactId,
-  isS3StoredTranscript,
+  isS3StoredConversationMedia,
 } from '../conversation-media/conversation-media';
 import { Result, newErrorResult, newSuccessResult } from '@tech-matters/types';
-import { isS3StoredConversationMedia } from '../conversation-media/conversation-media-data-access';
 
 export const canPerformActionsOnObject = async <T extends TargetKind>({
   accountSid,
