@@ -15,8 +15,7 @@
  */
 
 /* eslint-disable no-new */
-import * as cdk from '@aws-cdk/core';
-import * as ssm from '@aws-cdk/aws-ssm';
+import * as cdk from 'aws-cdk-lib';
 
 export default class ResourcesCoreStack extends cdk.Stack {
   constructor({
@@ -34,12 +33,12 @@ export default class ResourcesCoreStack extends cdk.Stack {
       node: 'http://elasticsearch:9200',
     });
 
-    new ssm.StringParameter(this, 'resources_local_es_host', {
+    new cdk.aws_ssm.StringParameter(this, 'resources_local_es_host', {
       parameterName: `/local/resources/us-east-1/elasticsearch_config`,
       stringValue: elasticsearchConfig,
     });
 
-    new ssm.StringParameter(this, 'resources_test_es_host', {
+    new cdk.aws_ssm.StringParameter(this, 'resources_test_es_host', {
       parameterName: `/test/resources/us-east-1/elasticsearch_config`,
       stringValue: elasticsearchConfig,
     });

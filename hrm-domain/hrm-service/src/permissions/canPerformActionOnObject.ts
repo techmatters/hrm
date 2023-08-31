@@ -22,7 +22,7 @@ import { getCase as getCaseById } from '../case/case';
 import { assertExhaustive } from '../contact-job/assertExhaustive';
 import {
   getConversationMediaByContactId,
-  isS3StoredTranscript,
+  isS3StoredConversationMedia,
 } from '../conversation-media/conversation-media';
 import { Result, newErrorResult, newSuccessResult } from '@tech-matters/types';
 
@@ -119,7 +119,7 @@ export const isValidFileLocation = async ({
 
         const isValid = conversationMedia.some(
           cm =>
-            isS3StoredTranscript(cm) &&
+            isS3StoredConversationMedia(cm) &&
             cm.storeTypeSpecificData?.location?.bucket === bucket &&
             cm.storeTypeSpecificData?.location?.key === key,
         );

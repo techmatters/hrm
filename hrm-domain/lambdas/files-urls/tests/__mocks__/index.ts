@@ -29,9 +29,9 @@ export const mockPath = ({ accountSid = 'mockAccountSid' }: MockPathParameters) 
 
 export const mockQueryStringParameters = {
   method: 'getObject',
-  bucket: 'contact-docs-bucket',
+  bucket: 'docs-bucket',
   key: 'test-key',
-  objectType: 'contacts',
+  objectType: 'contact',
   objectId: 'test-object-id',
   fileType: 'recording',
 };

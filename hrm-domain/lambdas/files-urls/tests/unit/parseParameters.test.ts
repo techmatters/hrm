@@ -65,7 +65,7 @@ describe('parseParameters', () => {
     const event = newAlbEvent({
       queryStringParameters: {
         ...mockQueryStringParameters,
-        objectType: 'contacts',
+        objectType: 'contact',
         objectId: undefined,
         fileType: 'recording',
       },

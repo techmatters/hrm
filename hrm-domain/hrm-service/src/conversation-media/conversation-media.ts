@@ -22,6 +22,8 @@ export {
   ConversationMedia,
   isS3StoredTranscript,
   isS3StoredTranscriptPending,
+  isS3StoredRecording,
+  isS3StoredConversationMedia,
   isTwilioStoredMedia,
   create as createConversationMedia,
   getById as getConversationMediaById,

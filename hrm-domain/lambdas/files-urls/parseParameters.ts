@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { ALBEvent } from 'aws-lambda';
+import { AlbHandlerEvent } from '@tech-matters/alb-handler';
 import { GetSignedUrlMethods, GET_SIGNED_URL_METHODS } from '@tech-matters/s3-client';
 import {
   newErrorResult,
@@ -25,7 +25,7 @@ import {
 } from '@tech-matters/types';
 
 const objectTypes = {
-  contacts: {
+  contact: {
     requiredParameters: ['objectId'],
     fileTypes: ['recording', 'transcript'],
   },
@@ -68,7 +68,7 @@ const parsePathParameters = (path: string): ParsePathParametersResult => {
   };
 };
 
-export const parseParameters = (event: ALBEvent): ParseParametersResult => {
+export const parseParameters = (event: AlbHandlerEvent): ParseParametersResult => {
   const { path, queryStringParameters } = event;
   if (!queryStringParameters) {
     return newErrorResult({ message: ERROR_MESSAGES.MISSING_QUERY_STRING_PARAMETERS });

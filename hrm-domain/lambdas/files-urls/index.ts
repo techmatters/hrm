@@ -14,14 +14,18 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import type { ALBEvent, ALBResult } from 'aws-lambda';
-import { handleAlbEvent, MethodHandlers } from '@tech-matters/alb-handler';
+import {
+  AlbHandlerEvent,
+  AlbHandlerResult,
+  handleAlbEvent,
+  MethodHandlers,
+} from '@tech-matters/alb-handler';
 import getSignedS3Url from './getSignedS3Url';
 
 const methodHandlers: MethodHandlers = {
   GET: getSignedS3Url,
 };
 
-export const handler = async (event: ALBEvent): Promise<ALBResult> => {
+export const handler = async (event: AlbHandlerEvent): Promise<AlbHandlerResult> => {
   return handleAlbEvent({ event, methodHandlers });
 };

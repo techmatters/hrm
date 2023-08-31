@@ -25,7 +25,7 @@ import {
 import { HrmAuthenticateParameters, HrmAuthenticateResult } from './index';
 import callHrmApi from './callHrmApi';
 
-export const mockBuckets = ['mockBucket', 'contact-docs-bucket'];
+export const mockBuckets = ['mock-bucket'];
 
 export const getPermission = ({
   fileType,
@@ -52,7 +52,7 @@ export const authUrlPathGenerator = ({
 }: HrmAuthenticateParameters) => {
   const permission = getPermission({ fileType, method });
 
-  return `v0/accounts/${accountSid}/permissions/${permission}?objectType=${objectType}&objectId=${objectId}?bucket=${bucket}?key=${key}`;
+  return `v0/accounts/${accountSid}/permissions/${permission}?objectType=${objectType}&objectId=${objectId}&bucket=${bucket}&key=${key}`;
 };
 
 const filesUrlsAuthenticator = async (

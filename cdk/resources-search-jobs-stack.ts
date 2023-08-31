@@ -15,13 +15,9 @@
  */
 
 /* eslint-disable no-new */
-import * as cdk from '@aws-cdk/core';
-import * as iam from '@aws-cdk/aws-iam';
-import * as lambda from '@aws-cdk/aws-lambda';
-import * as lambdaNode from '@aws-cdk/aws-lambda-nodejs';
-import * as sqs from '@aws-cdk/aws-sqs';
-import * as ssm from '@aws-cdk/aws-ssm';
-import { SqsEventSource } from '@aws-cdk/aws-lambda-event-sources';
+import * as cdk from 'aws-cdk-lib';
+import * as lambdaNode from 'aws-cdk-lib/aws-lambda-nodejs';
+import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 
 export default class ResourcessearchJobsStack extends cdk.Stack {
   constructor({
@@ -35,14 +31,14 @@ export default class ResourcessearchJobsStack extends cdk.Stack {
     scope: cdk.Construct;
     id: string;
     params: {
-      completeQueue: sqs.Queue;
+      completeQueue?: sqs.Queue;
       skipLambda?: boolean;
     };
     props?: cdk.StackProps;
   }) {
     super(scope, id, props);
 
-    const queue = new sqs.Queue(this, id, {
+    const queue = new cdk.aws_sqs.Queue(this, id, {
       visibilityTimeout: cdk.Duration.seconds(8),
       deadLetterQueue: { maxReceiveCount: 1, queue: params.completeQueue },
       // Localstack fifo queues don't really work so don't bother with this
@@ -58,13 +54,13 @@ export default class ResourcessearchJobsStack extends cdk.Stack {
       description: `The url of the ${id} queue`,
     });
 
-    new ssm.StringParameter(this, `${id}-queue-url`, {
+    new cdk.aws_ssm.StringParameter(this, `${id}-queue-url`, {
       parameterName: `/local/resources/${process.env.TWILIO_ACCOUNT_SID}/queue-url-${id}`,
       stringValue: queue.queueUrl,
     });
 
     // duplicated for test env
-    new ssm.StringParameter(this, `${id}-queue-url-test`, {
+    new cdk.aws_ssm.StringParameter(this, `${id}-queue-url-test`, {
       parameterName: `/test/resources/${process.env.TWILIO_ACCOUNT_SID}/queue-url-${id}`,
       stringValue: queue.queueUrl,
     });
@@ -115,8 +111,8 @@ export default class ResourcessearchJobsStack extends cdk.Stack {
     ]);
 
     const fn = new lambdaNode.NodejsFunction(this, 'fetchParams', {
-      // TODO: change this back to 16 once it isn't broken upstream
-      runtime: lambda.Runtime.NODEJS_18_X,
+      // TODO: change this back to 18 once it isn't broken upstream
+      runtime: cdk.aws_lambda.Runtime.NODEJS_16_X,
       memorySize: 512,
       timeout: cdk.Duration.seconds(10),
       handler: 'handler',
@@ -141,7 +137,7 @@ export default class ResourcessearchJobsStack extends cdk.Stack {
     );
 
     fn.addToRolePolicy(
-      new iam.PolicyStatement({
+      new cdk.aws_iam.PolicyStatement({
         actions: ['ssm:GetParametersByPath'],
         resources: [`arn:aws:ssm:${this.region}:*:parameter/local/*`],
       }),

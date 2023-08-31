@@ -28,7 +28,7 @@ export const sendMessage = async ({
   messageGroupId?: string;
 }) => {
   const sqs = new SQS({
-    endpoint: 'http://localstack:4566',
+    endpoint: 'http://localhost:4566',
     region: 'us-east-1',
   });
 
@@ -59,7 +59,7 @@ export const sendMessageBatch = async ({
   groupIdField?: string;
 }) => {
   const sqs = new SQS({
-    endpoint: 'http://localstack:4566',
+    endpoint: 'http://localhost:4566',
     region: 'us-east-1',
   });
 

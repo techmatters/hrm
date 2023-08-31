@@ -33,7 +33,6 @@ export const newErrorResult = ({
 
 export type ErrorResult = ReturnType<typeof newErrorResult>;
 
-//TODO: use generic type for result
 export type NewSuccessResultParms<TData> = {
   data: TData;
   statusCode?: number;

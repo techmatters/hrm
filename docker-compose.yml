@@ -15,7 +15,7 @@
 version: '3'
 services:
   localstack:
-    image: localstack/localstack
+    image: localstack/localstack:2.2.0
     ports:
       - '127.0.0.1:4566:4566' # LocalStack Gateway
       - '127.0.0.1:4510-4559:4510-4559' # external services port range
@@ -32,3 +32,5 @@ services:
       - ELASTIC_PASSWORD=changeme
     volumes:
       - '/var/run/docker.sock:/var/run/docker.sock'
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
