@@ -31,7 +31,7 @@ export const mockQueryStringParameters = {
   method: 'getObject',
   bucket: 'docs-bucket',
   key: 'test-key',
-  objectType: 'contacts',
+  objectType: 'contact',
   objectId: 'test-object-id',
   fileType: 'recording',
 };
