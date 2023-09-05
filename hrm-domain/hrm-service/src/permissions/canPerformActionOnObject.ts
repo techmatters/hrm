@@ -24,7 +24,7 @@ import {
   getConversationMediaByContactId,
   isS3StoredConversationMedia,
 } from '../conversation-media/conversation-media';
-import { Result, newErrorResult, newSuccessResult } from '@tech-matters/types';
+import { Result as R } from '@tech-matters/types';
 
 export const canPerformActionsOnObject = async <T extends TargetKind>({
   accountSid,
@@ -40,10 +40,10 @@ export const canPerformActionsOnObject = async <T extends TargetKind>({
   actions: string[];
   can: ReturnType<typeof setupCanForRules>;
   user: TwilioUser;
-}): Promise<Result<boolean>> => {
+}): Promise<R.TResult<boolean>> => {
   try {
     if (!isValidSetOfActionsForTarget(targetKind, actions)) {
-      return newErrorResult({
+      return R.err({
         message: 'invalid actions for objectType',
         statusCode: 400,
       });
@@ -55,27 +55,27 @@ export const canPerformActionsOnObject = async <T extends TargetKind>({
 
         const canPerform = actions.every(action => can(user, action, object));
 
-        return newSuccessResult({ data: canPerform });
+        return R.ok({ data: canPerform });
       }
       case 'case': {
         const object = await getCaseById(objectId, accountSid, { can, user });
 
         const canPerform = actions.every(action => can(user, action, object));
 
-        return newSuccessResult({ data: canPerform });
+        return R.ok({ data: canPerform });
       }
       case 'postSurvey': {
         // Nothing from the target param is being used for postSurvey target kind, we can pass null for now
         const canPerform = actions.every(action => can(user, action, null));
 
-        return newSuccessResult({ data: canPerform });
+        return R.ok({ data: canPerform });
       }
       default: {
         assertExhaustive(targetKind);
       }
     }
   } catch (err) {
-    return newErrorResult({ message: (err as Error).message });
+    return R.err({ message: (err as Error).message });
   }
 };
 
@@ -108,7 +108,7 @@ export const isValidFileLocation = async ({
   objectId: number;
   bucket: string;
   key: string;
-}): Promise<Result<boolean>> => {
+}): Promise<R.TResult<boolean>> => {
   try {
     switch (targetKind) {
       case 'contact': {
@@ -124,19 +124,19 @@ export const isValidFileLocation = async ({
             cm.storeTypeSpecificData?.location?.key === key,
         );
 
-        return newSuccessResult({ data: isValid });
+        return R.ok({ data: isValid });
       }
       case 'case': {
-        return newSuccessResult({ data: false });
+        return R.ok({ data: false });
       }
       case 'postSurvey': {
-        return newSuccessResult({ data: false });
+        return R.ok({ data: false });
       }
       default: {
         assertExhaustive(targetKind);
       }
     }
   } catch (err) {
-    return newErrorResult({ message: (err as Error).message });
+    return R.err({ message: (err as Error).message });
   }
 };

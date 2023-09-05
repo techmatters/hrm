@@ -23,12 +23,7 @@ import {
   isValidFileLocation,
 } from './canPerformActionOnObject';
 import { TargetKind, isTargetKind } from './actions';
-import {
-  Result,
-  isErrorResult,
-  newErrorResult,
-  newSuccessResult,
-} from '@tech-matters/types';
+import { Result as R } from '@tech-matters/types';
 
 export default (permissions: Permissions) => {
   const permissionsRouter = SafeRouter();
@@ -57,20 +52,20 @@ export default (permissions: Permissions) => {
   }: {
     objectType?: string;
     objectId?: string;
-  }): Result<{
+  }): R.TResult<{
     objectType: TargetKind;
     objectId: number;
   }> => {
     if (!objectType || !isTargetKind(objectType)) {
-      return newErrorResult({ message: 'invalid objectType', statusCode: 400 });
+      return R.err({ message: 'invalid objectType', statusCode: 400 });
     }
 
     const parsedId = parseInt(objectId, 10);
     if (!objectId || !Number.isInteger(parsedId)) {
-      return newErrorResult({ message: 'invalid objectId', statusCode: 400 });
+      return R.err({ message: 'invalid objectId', statusCode: 400 });
     }
 
-    return newSuccessResult({ data: { objectType, objectId: parsedId } });
+    return R.ok({ data: { objectType, objectId: parsedId } });
   };
 
   permissionsRouter.get('/:action', publicEndpoint, async (req, res, next) => {
@@ -84,7 +79,7 @@ export default (permissions: Permissions) => {
         objectId: req.query.objectId,
       });
 
-      if (isErrorResult(parseResult)) {
+      if (R.isErr(parseResult)) {
         return next(createError(parseResult.statusCode, parseResult.message));
       }
 
@@ -99,7 +94,7 @@ export default (permissions: Permissions) => {
         user,
       });
 
-      if (isErrorResult(canPerformResult)) {
+      if (R.isErr(canPerformResult)) {
         return next(createError(canPerformResult.statusCode, canPerformResult.message));
       }
 
@@ -116,7 +111,7 @@ export default (permissions: Permissions) => {
           key,
         });
 
-        if (isErrorResult(isValidLocationResult)) {
+        if (R.isErr(isValidLocationResult)) {
           return next(
             createError(isValidLocationResult.statusCode, isValidLocationResult.message),
           );

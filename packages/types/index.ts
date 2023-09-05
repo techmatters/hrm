@@ -17,7 +17,7 @@ export * from './ContactJob';
 export * from './Files';
 export * from './ResourcesImport';
 export * from './Resources';
-export * from './Result';
+export * as Result from './Result';
 export * from './twilio';
 
 export type ObjectValues<T> = T[keyof T];

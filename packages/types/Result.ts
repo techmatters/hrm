@@ -31,7 +31,7 @@ type ErrorResult = ResultBase & {
   name: string;
 };
 
-const err = ({
+export const err = ({
   message,
   statusCode = 500,
   name = 'Error',
@@ -54,7 +54,7 @@ type NewSuccessResultParms<TData> = {
   statusCode?: number;
 };
 
-const ok = <TData>({
+export const ok = <TData>({
   data,
   statusCode = 200,
 }: NewSuccessResultParms<TData>): SuccessResult<TData> => ({
@@ -64,24 +64,16 @@ const ok = <TData>({
   statusCode,
 });
 
-type TResult<TData> = SuccessResult<TData> | ErrorResult;
+export type TResult<TData> = SuccessResult<TData> | ErrorResult;
 
 const isResult = (r: unknown): r is TResult<any> =>
   Boolean(r) && (r as any)._tag === 'Result';
 
-const isErr = (result: TResult<any>): result is ErrorResult =>
+export const isErr = (result: TResult<any>): result is ErrorResult =>
   isResult(result) && result.status === 'error';
 
-const isOk = <TData>(result: TResult<TData>): result is SuccessResult<TData> =>
+export const isOk = <TData>(result: TResult<TData>): result is SuccessResult<TData> =>
   isResult(result) && result.status === 'success';
 
 // const map: <A, B>(f: (a: A) => B) => (fa: TResult<A>) => TResult<B> = f => fa =>
 //   isErr(fa) ? fa : ok({ data: f(fa.data) });
-
-export const Result = {
-  isErr,
-  err,
-  isOk,
-  ok,
-  // map,
-};
