@@ -15,7 +15,7 @@
  */
 
 type ResultBase = {
-  _tag: 'Resource';
+  readonly _tag: 'Result';
 };
 
 type NewErrorResultParams = {
@@ -36,7 +36,7 @@ export const err = ({
   statusCode = 500,
   name = 'Error',
 }: NewErrorResultParams): ErrorResult => ({
-  _tag: 'Resource',
+  _tag: 'Result',
   status: 'error',
   message,
   statusCode,
@@ -58,7 +58,7 @@ export const ok = <TData>({
   data,
   statusCode = 200,
 }: NewSuccessResultParms<TData>): SuccessResult<TData> => ({
-  _tag: 'Resource',
+  _tag: 'Result',
   status: 'success',
   data,
   statusCode,
@@ -66,14 +66,10 @@ export const ok = <TData>({
 
 export type TResult<TData> = SuccessResult<TData> | ErrorResult;
 
-const isResult = (r: unknown): r is TResult<any> =>
-  Boolean(r) && (r as any)._tag === 'Result';
+const isResult = (r: unknown): r is TResult<any> => (r as any)?._tag === 'Result';
 
 export const isErr = (result: TResult<any>): result is ErrorResult =>
   isResult(result) && result.status === 'error';
 
 export const isOk = <TData>(result: TResult<TData>): result is SuccessResult<TData> =>
   isResult(result) && result.status === 'success';
-
-// const map: <A, B>(f: (a: A) => B) => (fa: TResult<A>) => TResult<B> = f => fa =>
-//   isErr(fa) ? fa : ok({ data: f(fa.data) });

@@ -19,8 +19,7 @@ import {
   FileMethods,
   fileTypes,
   fileMethods,
-  isErrorResult,
-  newSuccessResult,
+  Result as R,
 } from '@tech-matters/types';
 import { HrmAuthenticateParameters, HrmAuthenticateResult } from './index';
 import callHrmApi from './callHrmApi';
@@ -62,7 +61,7 @@ const filesUrlsAuthenticator = async (
 
   // This is a quick and dirty way to lock this down so we can test with fake data without exposing real data in the test environment
   if (mockBuckets.includes(requestData.bucket)) {
-    return newSuccessResult({ data: true });
+    return R.ok({ data: true });
   }
 
   const result = await callHrmApi({
@@ -70,11 +69,11 @@ const filesUrlsAuthenticator = async (
     authHeader,
     requestData,
   });
-  if (isErrorResult(result)) {
+  if (R.isErr(result)) {
     return result;
   }
 
-  return newSuccessResult({ data: true });
+  return R.ok({ data: true });
 };
 
 export default filesUrlsAuthenticator;

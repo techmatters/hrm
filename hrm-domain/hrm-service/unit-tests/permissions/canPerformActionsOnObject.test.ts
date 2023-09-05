@@ -15,7 +15,7 @@
  */
 
 import each from 'jest-each';
-import { isErrorResult, isSuccessResult } from '@tech-matters/types';
+import { Result as R } from '@tech-matters/types';
 
 import { canPerformActionsOnObject } from '../../src/permissions/canPerformActionOnObject';
 import { actionsMaps } from '../../src/permissions/actions';
@@ -96,10 +96,10 @@ describe('canPerformActionsOnObject', () => {
       }
 
       if (success) {
-        expect(isSuccessResult(result)).toBeTruthy();
-        expect(isSuccessResult(result) && result.data).toBe(shouldCan);
+        expect(R.isOk(result)).toBeTruthy();
+        expect(R.isOk(result) && result.data).toBe(shouldCan);
       } else {
-        expect(isErrorResult(result)).toBeTruthy();
+        expect(R.isErr(result)).toBeTruthy();
       }
     },
   );
