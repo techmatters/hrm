@@ -40,7 +40,5 @@ export type HrmAuthenticateParameters = {
 export const authenticate = async (
   params: HrmAuthenticateParameters,
 ): Promise<HrmAuthenticateResult> => {
-  console.log('authenticate', params);
-
   return types[params.type](params);
 };
