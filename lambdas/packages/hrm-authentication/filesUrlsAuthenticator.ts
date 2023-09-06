@@ -52,7 +52,16 @@ export const authUrlPathGenerator = ({
 }: HrmAuthenticateParameters) => {
   const permission = getPermission({ fileType, method });
 
-  return `v0/accounts/${accountSid}/permissions/${permission}?objectType=${objectType}&objectId=${objectId}&bucket=${bucket}&key=${key}`;
+  if (!objectId) throw new Error('objectId is required');
+  const params = new URLSearchParams({
+    objectType,
+    objectId,
+    bucket,
+    key,
+    permission,
+  }).toString();
+
+  return `v0/accounts/${accountSid}/permissions/${permission}?${params}`;
 };
 
 const filesUrlsAuthenticator = async (
