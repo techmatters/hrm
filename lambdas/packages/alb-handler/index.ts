@@ -59,19 +59,19 @@ export const handleAlbEvent = async ({
   event,
   methodHandlers,
 }: HandleAlbEventParams): Promise<AlbHandlerResult> => {
-  const methodHandler = methodHandlers[event.httpMethod as Methods];
-  if (!methodHandler) {
-    return {
-      statusCode: 405,
-      headers: getHeaders({ allowedMethods: Object.keys(methodHandlers) }),
-    };
-  }
-
   if (event.httpMethod === 'OPTIONS') {
     return {
       statusCode: 200,
       headers: getHeaders({ allowedMethods: Object.keys(methodHandlers) }),
       body: '',
+    };
+  }
+
+  const methodHandler = methodHandlers[event.httpMethod as Methods];
+  if (!methodHandler) {
+    return {
+      statusCode: 405,
+      headers: getHeaders({ allowedMethods: Object.keys(methodHandlers) }),
     };
   }
 
