@@ -42,10 +42,15 @@ export type GetHeadersParams = {
   allowedMethods: string[];
 };
 
+export const getAllAllowedMethods = (allowedMethods: string[]) => [
+  ...allowedMethods,
+  'OPTIONS',
+];
+
 export const getHeaders = ({ allowedMethods }: GetHeadersParams) => ({
   'Content-Type': 'application/json',
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': `OPTIONS,${allowedMethods.join(',')}`,
+  'Access-Control-Allow-Methods': `${getAllAllowedMethods(allowedMethods).join(',')}`,
   'Access-Control-Allow-Headers':
     'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
 });
@@ -59,6 +64,14 @@ export const handleAlbEvent = async ({
     return {
       statusCode: 405,
       headers: getHeaders({ allowedMethods: Object.keys(methodHandlers) }),
+    };
+  }
+
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers: getHeaders({ allowedMethods: Object.keys(methodHandlers) }),
+      body: '',
     };
   }
 

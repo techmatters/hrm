@@ -29,9 +29,6 @@ const callHrmApi = async ({ urlPath, requestData, authHeader }: CallHrmApiParame
     ? `${process.env.HRM_BASE_URL}/${urlPath}?${params}`
     : `${process.env.HRM_BASE_URL}/${urlPath}`;
 
-  console.log('fullUrl', fullUrl);
-  console.log('authHeader', authHeader);
-
   // @ts-ignore global fetch available because node 18
   const response = await fetch(fullUrl, {
     method: 'GET',
