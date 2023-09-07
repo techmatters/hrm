@@ -46,29 +46,37 @@ export type HrmAuthenticateFilesUrlsRequestData = {
 
 export const authUrlPathGenerator = ({
   accountSid,
-  objectId,
-  objectType,
-  requestData: { bucket, key, fileType, method },
+  requestData: { fileType, method },
 }: HrmAuthenticateParameters) => {
   const permission = getPermission({ fileType, method });
 
-  return `v0/accounts/${accountSid}/permissions/${permission}?objectType=${objectType}&objectId=${objectId}&bucket=${bucket}&key=${key}`;
+  return `v0/accounts/${accountSid}/permissions/${permission}`;
 };
 
 const filesUrlsAuthenticator = async (
   params: HrmAuthenticateParameters,
 ): Promise<HrmAuthenticateResult> => {
-  const { authHeader, requestData } = params;
+  const {
+    objectId,
+    objectType,
+    authHeader,
+    requestData: { bucket, key },
+  } = params;
 
   // This is a quick and dirty way to lock this down so we can test with fake data without exposing real data in the test environment
-  if (mockBuckets.includes(requestData.bucket)) {
+  if (mockBuckets.includes(bucket)) {
     return newSuccessResult({ data: true });
   }
 
   const result = await callHrmApi({
     urlPath: authUrlPathGenerator(params),
     authHeader,
-    requestData,
+    requestData: {
+      objectType,
+      objectId,
+      bucket,
+      key,
+    },
   });
   if (isErrorResult(result)) {
     return result;
