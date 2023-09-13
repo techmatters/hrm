@@ -29,6 +29,10 @@ const objectTypes = {
     requiredParameters: ['objectId'],
     fileTypes: ['recording', 'transcript'],
   },
+  case: {
+    requiredParameters: ['objectId'],
+    fileTypes: ['document'],
+  },
 };
 
 export const ERROR_MESSAGES = {
