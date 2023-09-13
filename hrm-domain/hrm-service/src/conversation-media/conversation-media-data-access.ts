@@ -97,8 +97,7 @@ export const isS3StoredRecording = (m: ConversationMedia): m is S3StoredRecordin
   m.storeType === 'S3' && m.storeTypeSpecificData?.type === S3ContactMediaType.RECORDING;
 export const isS3StoredConversationMedia = (
   m: ConversationMedia,
-): m is S3StoredConversationMedia =>
-  isS3StoredTranscriptPending(m) || isS3StoredRecording(m);
+): m is S3StoredConversationMedia => isS3StoredTranscript(m) || isS3StoredRecording(m);
 
 export const create =
   (task?) =>
