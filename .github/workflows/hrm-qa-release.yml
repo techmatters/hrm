@@ -40,12 +40,12 @@ jobs:
       matrix:
         lambda_path:
           - hrm-domain/lambdas/files-urls
-          - hrm-domain/lambdas/contact-complete
           - hrm-domain/lambdas/contact-retrieve-transcript
           - lambdas/job-complete
           - resources-domain/lambdas/import-consumer
           - resources-domain/lambdas/import-producer
           - resources-domain/lambdas/search-index
+
     uses: ./.github/workflows/hrm-lambda-deploy.yml
     secrets:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
