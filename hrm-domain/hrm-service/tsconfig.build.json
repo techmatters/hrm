@@ -5,6 +5,7 @@
   "references": [
     { "path": "packages/http" },
     { "path": "packages/twilio-worker-auth" },
+    { "path": "packages/s3-client" },
     { "path": "packages/sns-client" },
     { "path": "packages/ssm-cache" },
     { "path": "packages/sqs-client" },
