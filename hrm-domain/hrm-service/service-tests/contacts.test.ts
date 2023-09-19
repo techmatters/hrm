@@ -1229,7 +1229,7 @@ describe('/contacts route', () => {
         },
         {
           changeDescription:
-            'with date filters as local times (should filter one hour before for a CST day, because an hour before is the previous day)',
+            'with date filters as local times - should apply them correctly adjusted',
           body: {
             dateFrom: formatInTimeZone(
               startTestsTimeStamp,
