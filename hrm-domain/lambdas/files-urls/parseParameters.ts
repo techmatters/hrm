@@ -21,8 +21,9 @@ import {
   newSuccessResult,
   ErrorResult,
   SuccessResult,
-  FileTypes,
 } from '@tech-matters/types';
+
+import { FileTypes } from '@tech-matters/hrm-authentication';
 
 const objectTypes = {
   contact: {

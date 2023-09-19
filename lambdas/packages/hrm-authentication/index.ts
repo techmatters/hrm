@@ -42,3 +42,5 @@ export const authenticate = async (
 ): Promise<HrmAuthenticateResult> => {
   return types[params.type](params);
 };
+
+export { FileTypes } from './filesUrlsAuthenticator';

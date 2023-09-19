@@ -14,27 +14,54 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import {
-  FileTypes,
-  FileMethods,
-  fileTypes,
-  fileMethods,
-  isErrorResult,
-  newSuccessResult,
-} from '@tech-matters/types';
+import { isErrorResult, newSuccessResult } from '@tech-matters/types';
 import { HrmAuthenticateParameters, HrmAuthenticateResult } from './index';
 import callHrmApi from './callHrmApi';
 
 export const mockBuckets = ['mock-bucket'];
 
+const objectTypes = {
+  contact: 'contact',
+  case: 'case',
+} as const;
+
+export type ObjectTypes = keyof typeof objectTypes;
+
+export const fileTypes = {
+  recording: 'Recording',
+  transcript: 'ExternalTranscript',
+  document: 'Case',
+} as const;
+
+export type FileTypes = keyof typeof fileTypes;
+
+export type FileMethods = 'getObject' | 'putObject' | 'deleteObject';
+
+export const fileMethods = {
+  contact: {
+    getObject: 'view',
+  },
+  case: {
+    getObject: 'view',
+    putObject: 'view',
+    deleteObject: 'view',
+  },
+} as const;
+
 export const getPermission = ({
+  objectType,
   fileType,
   method,
 }: {
+  objectType: string;
   fileType: FileTypes;
   method: FileMethods;
 }) => {
-  return `${fileMethods[method]}${fileTypes[fileType]}`;
+  if (!fileTypes[fileType]) throw new Error('Invalid fileType');
+  // @ts-ignore
+  if (!fileMethods[objectType]?.[method]) throw new Error('Invalid method');
+  // @ts-ignore
+  return `${fileMethods[objectType][method]}${fileTypes[fileType]}`;
 };
 
 export type HrmAuthenticateFilesUrlsRequestData = {
@@ -46,9 +73,10 @@ export type HrmAuthenticateFilesUrlsRequestData = {
 
 export const authUrlPathGenerator = ({
   accountSid,
+  objectType,
   requestData: { fileType, method },
 }: HrmAuthenticateParameters) => {
-  const permission = getPermission({ fileType, method });
+  const permission = getPermission({ objectType, fileType, method });
 
   return `v0/accounts/${accountSid}/permissions/${permission}`;
 };
