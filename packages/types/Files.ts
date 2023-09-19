@@ -19,6 +19,7 @@
 export const fileTypes = {
   recording: 'Recording',
   transcript: 'ExternalTranscript',
+  document: 'Case',
 } as const;
 
 export type FileTypes = keyof typeof fileTypes;
