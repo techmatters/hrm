@@ -15,7 +15,8 @@
  */
 
 import each from 'jest-each';
-import { subHours, subDays } from 'date-fns';
+import { subHours, subDays, parseISO, subSeconds, addSeconds } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
 
 import { db } from '../src/connection-pool';
 import { ContactRawJson } from '../src/contact/contact-json';
@@ -881,8 +882,9 @@ describe('/contacts route', () => {
 
       let createdContacts: contactDb.Contact[] = [];
       let csamReports = new Array<csamReportApi.CSAMReport>();
+      const [currentUTCDateString] = new Date().toISOString().split('T');
 
-      const startTestsTimeStamp = new Date();
+      const startTestsTimeStamp = parseISO(`${currentUTCDateString}T06:00:00.000Z`);
 
       beforeAll(async () => {
         // Clean what's been created so far
@@ -1189,6 +1191,20 @@ describe('/contacts route', () => {
           },
         },
         {
+          changeDescription: 'Test date filters (should match oneWeekBefore only)',
+          body: {
+            dateFrom: subDays(startTestsTimeStamp, 8).toISOString(),
+            dateTo: subDays(startTestsTimeStamp, 5).toISOString(),
+          },
+          expectCallback: response => {
+            expect(response.status).toBe(200);
+            const { contacts } = response.body;
+
+            expect(contacts).toHaveLength(1);
+            expect(contacts[0].details).toMatchObject(noHelpline.form);
+          },
+        },
+        {
           changeDescription: 'Test date filters (should all but oneWeekBefore)',
           body: {
             dateFrom: subHours(startTestsTimeStamp, 1).toISOString(),
@@ -1199,6 +1215,34 @@ describe('/contacts route', () => {
 
             // Expect all but invalid and oneWeekBefore
             expect(contacts).toHaveLength(createdContacts.length - 2);
+            const createdContactsByTimeOfContact = createdContacts.sort(
+              compareTimeOfContactDesc,
+            );
+            createdContactsByTimeOfContact.forEach(c => {
+              const searchContact = contacts.find(results => results.contactId === c.id);
+              if (searchContact) {
+                // Check that all contacts contains the appropriate info
+                expect(c.rawJson).toMatchObject(searchContact.details);
+              }
+            });
+          },
+        },
+        {
+          changeDescription:
+            'with date filters as local times - should apply them correctly adjusted',
+          body: {
+            dateFrom: formatInTimeZone(
+              startTestsTimeStamp,
+              '-06:00',
+              'yyyy-MM-dd HH:mm:ssXXX',
+            ),
+          },
+          expectCallback: response => {
+            expect(response.status).toBe(200);
+            const { contacts } = response.body;
+
+            // Expect all but invalid and oneWeekBefore
+            expect(contacts).toHaveLength(createdContacts.length - 3);
             const createdContactsByTimeOfContact = createdContacts.sort(
               compareTimeOfContactDesc,
             );
@@ -1299,11 +1343,14 @@ describe('/contacts route', () => {
           useOpenRules();
         }
 
-        const res = await request.post(`${route}/search`).set(headers).send({
-          dateFrom: createdContact.createdAt,
-          dateTo: createdContact.createdAt,
-          firstName: 'withTaskIdAndTranscript',
-        });
+        const res = await request
+          .post(`${route}/search`)
+          .set(headers)
+          .send({
+            dateFrom: subSeconds(createdContact.createdAt, 1).toISOString(),
+            dateTo: addSeconds(createdContact.createdAt, 1).toISOString(),
+            firstName: 'withTaskIdAndTranscript',
+          });
 
         expect(res.status).toBe(200);
         expect(res.body.count).toBe(1);

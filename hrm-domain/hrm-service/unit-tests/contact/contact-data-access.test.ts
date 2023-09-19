@@ -17,7 +17,6 @@
 import * as pgPromise from 'pg-promise';
 import { mockConnection, mockTask, mockTransaction } from '../mock-db';
 import { search, create } from '../../src/contact/contact-data-access';
-import { endOfDay, startOfDay } from 'date-fns';
 import { ContactBuilder } from './contact-builder';
 import {
   NewContactRecord,
@@ -137,23 +136,23 @@ describe('search', () => {
     });
   });
 
-  test('dateTo / dateFrom parameters - sets them to the start and end of day respectively', async () => {
+  test('dateTo / dateFrom parameters - converts them to UTC', async () => {
     jest.spyOn(conn, 'manyOrNone').mockResolvedValue([]);
     mockTask(conn);
     await search(
       ACCOUNT_SID,
       {
         onlyDataContacts: false,
-        dateFrom: new Date('2000-05-15T12:00:00Z').toISOString(),
-        dateTo: new Date('2000-05-25T12:00:00Z').toISOString(),
+        dateFrom: '2000-05-15T17:00:00+05:00',
+        dateTo: '2000-05-25T08:00:00-04:00',
       },
       42,
       1337,
     );
     expect(conn.manyOrNone).toHaveBeenCalledWith(expect.any(String), {
       ...emptySearch,
-      dateFrom: startOfDay(new Date('2000-05-15T12:00:00Z')).toISOString(),
-      dateTo: endOfDay(new Date('2000-05-25T12:00:00Z')).toISOString(),
+      dateFrom: new Date('2000-05-15T12:00:00Z').toISOString(),
+      dateTo: new Date('2000-05-25T12:00:00Z').toISOString(),
       limit: 42,
       offset: 1337,
     });
