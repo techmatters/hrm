@@ -15,17 +15,14 @@
  */
 
 import { isErrorResult, newSuccessResult } from '@tech-matters/types';
-import { HrmAuthenticateParameters, HrmAuthenticateResult } from './index';
+import {
+  HrmAuthenticateParameters,
+  HrmAuthenticateResult,
+  HRMAuthenticationObjectTypes,
+} from './index';
 import callHrmApi from './callHrmApi';
 
 export const mockBuckets = ['mock-bucket'];
-
-const objectTypes = {
-  contact: 'contact',
-  case: 'case',
-} as const;
-
-export type ObjectTypes = keyof typeof objectTypes;
 
 export const fileTypes = {
   recording: 'Recording',
@@ -37,7 +34,10 @@ export type FileTypes = keyof typeof fileTypes;
 
 export type FileMethods = 'getObject' | 'putObject' | 'deleteObject';
 
-export const fileMethods = {
+export const fileMethods: Record<
+  HRMAuthenticationObjectTypes,
+  Partial<Record<FileMethods, string>>
+> = {
   contact: {
     getObject: 'view',
   },
@@ -53,14 +53,12 @@ export const getPermission = ({
   fileType,
   method,
 }: {
-  objectType: string;
+  objectType: HRMAuthenticationObjectTypes;
   fileType: FileTypes;
   method: FileMethods;
 }) => {
   if (!fileTypes[fileType]) throw new Error('Invalid fileType');
-  // @ts-ignore
   if (!fileMethods[objectType]?.[method]) throw new Error('Invalid method');
-  // @ts-ignore
   return `${fileMethods[objectType][method]}${fileTypes[fileType]}`;
 };
 
