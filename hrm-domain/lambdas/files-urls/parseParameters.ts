@@ -21,13 +21,22 @@ import {
   newSuccessResult,
   ErrorResult,
   SuccessResult,
-  FileTypes,
 } from '@tech-matters/types';
 
-const objectTypes = {
+import {
+  FileTypes,
+  HRMAuthenticationObjectTypes,
+  isAuthenticationObjectType,
+} from '@tech-matters/hrm-authentication';
+
+const objectTypes: Record<HRMAuthenticationObjectTypes, Record<string, string[]>> = {
   contact: {
     requiredParameters: ['objectId'],
     fileTypes: ['recording', 'transcript'],
+  },
+  case: {
+    requiredParameters: ['objectId'],
+    fileTypes: ['document'],
   },
 };
 
@@ -47,7 +56,7 @@ export type Parameters = {
   key: string;
   accountSid: string;
   fileType: FileTypes;
-  objectType: string;
+  objectType: HRMAuthenticationObjectTypes;
   objectId?: string;
 };
 
@@ -88,7 +97,7 @@ export const parseParameters = (event: AlbHandlerEvent): ParseParametersResult =
 
   const objectTypeConfig = objectTypes[objectType as keyof typeof objectTypes];
 
-  if (!objectTypeConfig) {
+  if (!objectTypeConfig || !isAuthenticationObjectType(objectType)) {
     return newErrorResult({ message: ERROR_MESSAGES.INVALID_OBJECT_TYPE });
   }
 
