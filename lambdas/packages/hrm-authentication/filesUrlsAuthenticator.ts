@@ -14,27 +14,52 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
+import { isErrorResult, newSuccessResult } from '@tech-matters/types';
 import {
-  FileTypes,
-  FileMethods,
-  fileTypes,
-  fileMethods,
-  isErrorResult,
-  newSuccessResult,
-} from '@tech-matters/types';
-import { HrmAuthenticateParameters, HrmAuthenticateResult } from './index';
+  HrmAuthenticateParameters,
+  HrmAuthenticateResult,
+  HRMAuthenticationObjectTypes,
+} from './index';
 import callHrmApi from './callHrmApi';
 
 export const mockBuckets = ['mock-bucket'];
 
+export const fileTypes = {
+  recording: 'Recording',
+  transcript: 'ExternalTranscript',
+  document: 'Case',
+} as const;
+
+export type FileTypes = keyof typeof fileTypes;
+
+export type FileMethods = 'getObject' | 'putObject' | 'deleteObject';
+
+export const fileMethods: Record<
+  HRMAuthenticationObjectTypes,
+  Partial<Record<FileMethods, string>>
+> = {
+  contact: {
+    getObject: 'view',
+  },
+  case: {
+    getObject: 'view',
+    putObject: 'view',
+    deleteObject: 'view',
+  },
+} as const;
+
 export const getPermission = ({
+  objectType,
   fileType,
   method,
 }: {
+  objectType: HRMAuthenticationObjectTypes;
   fileType: FileTypes;
   method: FileMethods;
 }) => {
-  return `${fileMethods[method]}${fileTypes[fileType]}`;
+  if (!fileTypes[fileType]) throw new Error('Invalid fileType');
+  if (!fileMethods[objectType]?.[method]) throw new Error('Invalid method');
+  return `${fileMethods[objectType][method]}${fileTypes[fileType]}`;
 };
 
 export type HrmAuthenticateFilesUrlsRequestData = {
@@ -46,9 +71,10 @@ export type HrmAuthenticateFilesUrlsRequestData = {
 
 export const authUrlPathGenerator = ({
   accountSid,
+  objectType,
   requestData: { fileType, method },
 }: HrmAuthenticateParameters) => {
-  const permission = getPermission({ fileType, method });
+  const permission = getPermission({ objectType, fileType, method });
 
   return `v0/accounts/${accountSid}/permissions/${permission}`;
 };
