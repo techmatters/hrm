@@ -15,7 +15,7 @@
  */
 
 import { db } from '../connection-pool';
-import { UPDATE_CASEID_BY_ID, UPDATE_RAWJSON_BY_ID } from './sql/contact-update-sql';
+import { UPDATE_CASEID_BY_ID, UPDATE_CONTACT_BY_ID } from './sql/contact-update-sql';
 import { SELECT_CONTACT_SEARCH } from './sql/contact-search-sql';
 import { parseISO } from 'date-fns';
 import {
@@ -23,16 +23,17 @@ import {
   selectSingleContactByTaskId,
 } from './sql/contact-get-sql';
 import { insertContactSql, NewContactRecord } from './sql/contact-insert-sql';
-import { PersonInformation, ReferralWithoutContactId } from './contact-json';
+import { ContactRawJson, ReferralWithoutContactId } from './contact-json';
 import type { ITask } from 'pg-promise';
 import { txIfNotInOne } from '../sql';
 import { ConversationMedia } from '../conversation-media/conversation-media';
 
-type ExistingContactRecord = {
+export type ExistingContactRecord = {
   id: number;
   accountSid: string;
   createdAt?: Date;
   updatedAt?: Date;
+  updatedBy?: string;
 } & Partial<NewContactRecord>;
 
 export type Contact = ExistingContactRecord & {
@@ -58,12 +59,32 @@ export type SearchParameters = {
  * Represents the individual parts of the contact that can be overwritten in a patch operation
  * Each of these parameters will overwrite the specific part of the contact it relates to completely, but leave the rest of the contact data unmodified
  */
-export type ContactUpdates = {
-  childInformation?: PersonInformation;
-  callerInformation?: PersonInformation;
-  caseInformation?: Record<string, string | boolean>;
-  categories?: Record<string, Record<string, boolean>>;
-  updatedBy: string;
+export type ContactUpdates = Omit<
+  ExistingContactRecord,
+  'id' | 'accountSid' | 'rawJson'
+> &
+  Partial<ContactRawJson>;
+
+const BLANK_CONTACT_UPDATES: ContactUpdates = {
+  caseInformation: undefined,
+  callerInformation: undefined,
+  categories: undefined,
+  childInformation: undefined,
+  contactlessTask: undefined,
+  callType: undefined,
+  definitionVersion: undefined,
+  queueName: undefined,
+  helpline: undefined,
+  channel: undefined,
+  number: undefined,
+  conversationMedia: undefined,
+  timeOfContact: undefined,
+  taskId: undefined,
+  channelSid: undefined,
+  serviceSid: undefined,
+  caseId: undefined,
+  twilioWorkerId: undefined,
+  conversationDuration: undefined,
 };
 
 // Intentionally adding only the types of interest here
@@ -188,23 +209,26 @@ export const create =
     return txIfNotInOne(task, executeQuery);
   };
 
-export const patch = async (
-  accountSid: string,
-  contactId: string,
-  contactUpdates: ContactUpdates,
-): Promise<Contact | undefined> => {
-  return db.task(async connection => {
-    const updatedContact: Contact = await connection.oneOrNone<Contact>(
-      UPDATE_RAWJSON_BY_ID,
-      {
-        accountSid,
-        contactId,
-        ...contactUpdates,
-      },
-    );
-    return updatedContact;
-  });
-};
+export const patch =
+  (task?) =>
+  async (
+    accountSid: string,
+    contactId: string,
+    contactUpdates: ContactUpdates,
+  ): Promise<Contact | undefined> => {
+    return txIfNotInOne(task, async connection => {
+      const updatedContact: Contact = await connection.oneOrNone<Contact>(
+        UPDATE_CONTACT_BY_ID,
+        {
+          ...BLANK_CONTACT_UPDATES,
+          accountSid,
+          contactId,
+          ...contactUpdates,
+        },
+      );
+      return updatedContact;
+    });
+  };
 
 export const connectToCase = async (
   accountSid: string,

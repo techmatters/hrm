@@ -21,19 +21,21 @@ import each from 'jest-each';
 import * as caseApi from '../src/case/case';
 import { Case, getCase } from '../src/case/case';
 import * as caseDb from '../src/case/case-data-access';
+import { CaseListFilters, DateExistsCondition } from '../src/case/case-data-access';
 import { db } from '../src/connection-pool';
 import {
+  addLegacyCategoriesToContact,
   fillNameAndPhone,
   validateCaseListResponse,
   validateSingleCaseResponse,
 } from './case-validation';
-import { CaseListFilters, DateExistsCondition } from '../src/case/case-data-access';
 import * as contactDb from '../src/contact/contact-data-access';
+import { Contact } from '../src/contact/contact-data-access';
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import * as mocks from './mocks';
 import { ruleFileWithOneActionOverride } from './permissions-overrides';
 import { connectContactToCase, createContact } from '../src/contact/contact';
-import { headers, getRequest, getServer, setRules, useOpenRules } from './server';
+import { getRequest, getServer, headers, setRules, useOpenRules } from './server';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
 import { isS3StoredTranscript } from '../src/conversation-media/conversation-media';
 
@@ -42,13 +44,6 @@ const server = getServer();
 const request = getRequest(server);
 
 const { case1, contact1, accountSid, workerSid } = mocks;
-
-type Contact = contactDb.Contact;
-
-type CaseWithContact = {
-  case: Case;
-  contact: any;
-};
 
 type InsertSampleCaseSettings = {
   sampleSize: number;
@@ -62,9 +57,13 @@ type InsertSampleCaseSettings = {
   createdAtGenerator?: (idx: number) => string;
   updatedAtGenerator?: (idx: number) => string;
   followUpDateGenerator?: (idx: number) => string;
-  categoriesGenerator?: (idx: number) => Record<string, Record<string, boolean>>;
+  categoriesGenerator?: (idx: number) => Record<string, string[]>;
 };
 
+export type CaseWithContact = {
+  case: Case;
+  contact: Contact;
+};
 const insertSampleCases = async ({
   sampleSize,
   accounts,
@@ -111,7 +110,7 @@ const insertSampleCases = async ({
       accounts[i % accounts.length],
       workers[i % workers.length],
     );
-    let connectedContact: Contact;
+    let connectedContact: contactDb.Contact;
     if (contactNames[i % contactNames.length]) {
       const contactToCreate = fillNameAndPhone(
         {
@@ -130,18 +129,15 @@ const insertSampleCases = async ({
       const categories = categoriesGenerator(i);
       if (categories) {
         contactToCreate.rawJson = contactToCreate.rawJson ?? {
-          caseInformation: { categories: {} },
+          caseInformation: {},
+          categories: {},
           callerInformation: {},
           childInformation: {},
           callType: '',
         };
-        contactToCreate.rawJson.caseInformation = contactToCreate.rawJson
-          .caseInformation ?? {
-          categories: {},
-        };
-        contactToCreate.rawJson.caseInformation.categories = categories;
-      } else if (contactToCreate.rawJson?.caseInformation) {
-        delete contactToCreate.rawJson.caseInformation.categories;
+        contactToCreate.rawJson.categories = categories;
+      } else if (contactToCreate.rawJson) {
+        delete contactToCreate.rawJson.categories;
       }
       const { contact: savedContact } = await contactDb.create()(
         accounts[i % accounts.length],
@@ -212,7 +208,7 @@ describe('/cases route', () => {
     });
     describe('With single record', () => {
       let createdCase;
-      let createdContact: Contact;
+      let createdContact: contactDb.Contact;
 
       beforeEach(async () => {
         createdCase = await caseApi.createCase(case1, accountSid, workerSid);
@@ -359,7 +355,7 @@ describe('/cases route', () => {
           const response = await request.get(listRoute).set(headers);
           validateCaseListResponse(
             response,
-            expectedCasesAndContacts(),
+            addLegacyCategoriesToContact(expectedCasesAndContacts()),
             expectedTotalCount,
           );
         },
@@ -507,7 +503,7 @@ describe('/cases route', () => {
         let createdCase1;
         let createdCase2;
         let createdCase3;
-        let createdContact: Contact;
+        let createdContact: contactDb.Contact;
         const subRoute = `${route}/search`;
         const searchTestRunStart = new Date().toISOString();
 
@@ -696,7 +692,19 @@ describe('/cases route', () => {
           accounts: ['ACCOUNT_SID_1'],
           contactNumbers: [undefined, '111 222 333', '444 555 666', '111 222 333'],
         };
-        each([
+
+        type SearchTest = {
+          description: string;
+          searchRoute: string;
+          sampleConfig: InsertSampleCaseSettings;
+          expectedCasesAndContacts: (
+            sampleCasesAndContacts: CaseWithContact[],
+          ) => CaseWithContact[];
+          body?: any;
+          expectedTotalCount: number;
+        };
+
+        const testCases: SearchTest[] = [
           {
             description:
               'should return all cases for account when no helpline, limit or offset is specified',
@@ -1138,20 +1146,14 @@ describe('/cases route', () => {
             sampleConfig: <InsertSampleCaseSettings>{
               ...SEARCHABLE_CONTACT_PHONE_NUMBER_SAMPLE_CONFIG,
               categoriesGenerator: idx => ({
-                a: {
-                  aa: true,
-                  ab: !!(idx % 2),
-                },
-                b: {
-                  ba: !(idx % 3),
-                  bb: false,
-                },
+                a: ['aa', ...(!!(idx % 2) ? ['ab'] : [])],
+                b: !(idx % 3) ? ['ba'] : [],
               }),
             },
             expectedCasesAndContacts: sampleCasesAndContacts =>
               sampleCasesAndContacts
                 .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id)
-                .filter(ccc => ccc.contact.rawJson.caseInformation.categories.a.ab),
+                .filter(ccc => ccc.contact.rawJson.categories.a.includes('ab')),
             expectedTotalCount: 5,
           },
           {
@@ -1170,14 +1172,8 @@ describe('/cases route', () => {
             sampleConfig: <InsertSampleCaseSettings>{
               ...SEARCHABLE_CONTACT_PHONE_NUMBER_SAMPLE_CONFIG,
               categoriesGenerator: idx => ({
-                a: {
-                  aa: true,
-                  ab: !(idx % 2),
-                },
-                b: {
-                  ba: !(idx % 3),
-                  bb: false,
-                },
+                a: ['aa', ...(!(idx % 2) ? ['ab'] : [])],
+                b: !(idx % 3) ? ['ba'] : [],
               }),
             },
             expectedCasesAndContacts: sampleCasesAndContacts =>
@@ -1185,9 +1181,9 @@ describe('/cases route', () => {
                 .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id)
                 .filter(
                   ccc =>
-                    ccc.contact.rawJson.caseInformation.categories.a.ab ||
-                    ccc.contact.rawJson.caseInformation.categories.b.ba ||
-                    ccc.contact.rawJson.caseInformation.categories.b.bb,
+                    ccc.contact.rawJson.categories.a.includes('ab') ||
+                    ccc.contact.rawJson.categories.b.includes('ba') ||
+                    ccc.contact.rawJson.categories.b.includes('bb'),
                 ),
             expectedTotalCount: 7,
           },
@@ -1206,14 +1202,8 @@ describe('/cases route', () => {
             sampleConfig: <InsertSampleCaseSettings>{
               ...SEARCHABLE_CONTACT_PHONE_NUMBER_SAMPLE_CONFIG,
               categoriesGenerator: idx => ({
-                a: {
-                  aa: true,
-                  "a'b\n,.!\t:{}": !(idx % 2),
-                },
-                "'b\n\r,.!	:{}": {
-                  ba: !(idx % 3),
-                  bb: false,
-                },
+                a: ['aa', ...(!(idx % 2) ? ["a'b\n,.!\t:{}"] : [])],
+                "'b\n\r,.!	:{}": !(idx % 3) ? ['ba'] : [],
               }),
             },
             expectedCasesAndContacts: sampleCasesAndContacts =>
@@ -1221,13 +1211,15 @@ describe('/cases route', () => {
                 .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id)
                 .filter(
                   ccc =>
-                    ccc.contact.rawJson.caseInformation.categories.a["a'b\n,.!\t:{}"] ||
-                    ccc.contact.rawJson.caseInformation.categories["'b\n\r,.!	:{}"].ba ||
-                    ccc.contact.rawJson.caseInformation.categories["'b\n\r,.!	:{}"].bb,
+                    ccc.contact.rawJson.categories.a.includes("a'b\n,.!\t:{}") ||
+                    ccc.contact.rawJson.categories["'b\n\r,.!	:{}"].includes('ba') ||
+                    ccc.contact.rawJson.categories["'b\n\r,.!	:{}"].includes('bb'),
                 ),
             expectedTotalCount: 7,
           },
-        ]).test(
+        ];
+
+        each(testCases).test(
           '$description',
           async ({
             sampleConfig,
@@ -1241,7 +1233,12 @@ describe('/cases route', () => {
               const response = await request.post(searchRoute).set(headers).send(body);
               validateCaseListResponse(
                 response,
-                expectedCasesAndContacts(createdCasesAndContacts),
+                expectedCasesAndContacts(
+                  createdCasesAndContacts.map(cc => ({
+                    case: cc.case,
+                    contact: addLegacyCategoriesToContact(cc?.contact),
+                  })),
+                ),
                 expectedTotalCount,
               );
             } finally {

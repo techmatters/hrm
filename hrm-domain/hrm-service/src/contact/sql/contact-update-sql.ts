@@ -18,38 +18,29 @@ import { selectSingleContactByIdSql } from './contact-get-sql';
 
 const ID_WHERE_CLAUSE = `WHERE "accountSid" = $<accountSid> AND "id"=$<contactId>`;
 
-export const UPDATE_RAWJSON_BY_ID = `WITH updated AS (
+export const UPDATE_CONTACT_BY_ID = `WITH updated AS (
 UPDATE "Contacts" 
 SET "rawJson" = COALESCE("rawJson", '{}'::JSONB) 
--- Case Information and / or category patch
-  || (
-  -- non category case information supplied
-      CASE WHEN $<caseInformation> IS NOT NULL 
-      THEN (
-        jsonb_build_object(
-          'caseInformation', 
-          $<caseInformation>::JSONB || 
-          CASE WHEN $<categories> IS NOT NULL 
-          THEN 
-            -- New categories are supplied along with new case information, so overwrite those too
-            jsonb_build_object('categories', $<categories>::JSONB) 
-          ELSE 
-            -- Ensure the existing categories are retained if no new ones are supplied
-            CASE WHEN "rawJson"->'caseInformation'->'categories' IS NOT NULL THEN jsonb_build_object('categories', "rawJson"->'caseInformation'->'categories') ELSE '{}'::JSONB END
-          END
-        )
-      ) 
-      ELSE 
-        CASE WHEN $<categories> IS NOT NULL 
-        -- New categories are supplied but not other case information, so overwrite the categories property whilst leaving all the other case information properties as is.
-        THEN jsonb_build_object('caseInformation', COALESCE("rawJson"->'caseInformation', '{}'::JSONB) || jsonb_build_object('categories', $<categories>::JSONB))
-        ELSE '{}'::JSONB END 
-      END
-  )
+  || (CASE WHEN $<caseInformation> IS NOT NULL THEN jsonb_build_object('caseInformation', $<caseInformation>::JSONB) ELSE '{}'::JSONB END)
+  || (CASE WHEN $<categories> IS NOT NULL THEN jsonb_build_object('categories', $<categories>::JSONB) ELSE '{}'::JSONB END)
   || (CASE WHEN $<callerInformation> IS NOT NULL THEN jsonb_build_object('callerInformation', $<callerInformation>::JSONB) ELSE '{}'::JSONB END)
-  || (CASE WHEN $<childInformation> IS NOT NULL THEN jsonb_build_object('childInformation', $<childInformation>::JSONB) ELSE '{}'::JSONB END),
+  || (CASE WHEN $<childInformation> IS NOT NULL THEN jsonb_build_object('childInformation', $<childInformation>::JSONB) ELSE '{}'::JSONB END)
+  || (CASE WHEN $<contactlessTask> IS NOT NULL THEN jsonb_build_object('contactlessTask', $<contactlessTask>::JSONB) ELSE '{}'::JSONB END)
+  || (CASE WHEN $<callType> IS NOT NULL THEN jsonb_build_object('callType', $<callType>) ELSE '{}'::JSONB END)
+  || (CASE WHEN $<definitionVersion> IS NOT NULL THEN jsonb_build_object('definitionVersion', $<definitionVersion>) ELSE '{}'::JSONB END),
   "updatedBy" = $<updatedBy>,
-  "updatedAt" = CURRENT_TIMESTAMP
+  "queueName" =   COALESCE($<queueName>, "queueName"),
+  "twilioWorkerId" =   COALESCE($<twilioWorkerId>, "twilioWorkerId"),
+  "helpline" =   COALESCE($<helpline>, "helpline"),
+  "channel" =   COALESCE($<channel>, "channel"),
+  "number" =   COALESCE($<number>, "number"),
+  "conversationDuration" =   COALESCE($<conversationDuration>, "conversationDuration"),
+  "timeOfContact" =   COALESCE($<timeOfContact>, "timeOfContact"),
+  "taskId" =   COALESCE($<taskId>, "taskId"),
+  "channelSid" =   COALESCE($<channelSid>, "channelSid"),
+  "serviceSid" =   COALESCE($<serviceSid>, "serviceSid"),
+  "updatedAt" = CURRENT_TIMESTAMP,
+  "caseId" =   COALESCE($<caseId>, "caseId")
 ${ID_WHERE_CLAUSE}
 RETURNING *
 )

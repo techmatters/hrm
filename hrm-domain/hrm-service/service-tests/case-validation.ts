@@ -16,7 +16,12 @@
 
 import { WELL_KNOWN_CASE_SECTION_NAMES } from '../src/case/case';
 import { NewContactRecord } from '../src/contact/sql/contact-insert-sql';
-import { CreateContactPayloadWithFormProperty } from '../src/contact/contact';
+import {
+  ContactRawJson,
+  CreateContactPayload,
+  WithLegacyCategories,
+} from '../src/contact/contact';
+import { Contact } from '../src/contact/contact-data-access';
 
 declare global {
   namespace jest {
@@ -96,6 +101,30 @@ export const convertCaseInfoToExpectedInfo = (
   return expectedCase;
 };
 
+export const addLegacyCategoriesToContact = (
+  contact: Contact,
+): WithLegacyCategories<Contact> => {
+  if (contact?.rawJson) {
+    const legacyCategoryEntries = Object.entries(contact.rawJson.categories ?? {}).map(
+      ([category, subcategoryList]) => [
+        category,
+        Object.fromEntries(subcategoryList.map(sc => [sc, true])),
+      ],
+    );
+    return {
+      ...contact,
+      rawJson: {
+        ...contact.rawJson,
+        caseInformation: {
+          ...contact.rawJson.caseInformation,
+          categories: Object.fromEntries(legacyCategoryEntries),
+        },
+      },
+    };
+  }
+  return contact as WithLegacyCategories<Contact>;
+};
+
 export const validateCaseListResponse = (actual, expectedCaseAndContactModels, count) => {
   expect(actual.status).toBe(200);
   if (count === 0) {
@@ -124,15 +153,12 @@ export const validateCaseListResponse = (actual, expectedCaseAndContactModels, c
 
       expect(actual.body.cases[index].connectedContacts).toStrictEqual([
         expect.objectContaining({
-          ...expectedContactModel,
+          ...addLegacyCategoriesToContact(expectedContactModel),
           csamReports: [],
           referrals: [],
           timeOfContact: expect.toParseAsDate(expectedContactModel.timeOfContact),
           createdAt: expect.toParseAsDate(expectedContactModel.createdAt),
           updatedAt: expect.toParseAsDate(expectedContactModel.updatedAt),
-          rawJson: {
-            ...expectedContactModel.rawJson,
-          },
         }),
       ]);
     },
@@ -152,7 +178,7 @@ export const validateSingleCaseResponse = (
 };
 
 export const fillNameAndPhone = (
-  contact: CreateContactPayloadWithFormProperty,
+  contact: CreateContactPayload,
   name = {
     firstName: 'Maria',
     lastName: 'Silva',
@@ -162,10 +188,10 @@ export const fillNameAndPhone = (
   const modifiedContact: NewContactRecord = {
     ...contact,
     rawJson: {
-      ...contact.form,
+      ...(contact.rawJson as ContactRawJson),
       childInformation: {
-        ...contact.form.childInformation,
-        name,
+        ...contact.rawJson.childInformation,
+        ...name,
       },
     },
     number,
