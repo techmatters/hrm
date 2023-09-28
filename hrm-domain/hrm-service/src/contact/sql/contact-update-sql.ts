@@ -14,9 +14,12 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { selectSingleContactByIdSql } from './contact-get-sql';
-
 const ID_WHERE_CLAUSE = `WHERE "accountSid" = $<accountSid> AND "id"=$<contactId>`;
+
+const SELECT_FULL_CONTACT_WITH_UPDATED = `
+      SELECT c.*, relations."csamReports", relations."referrals", relations."conversationMedia"
+      FROM "updated" c LEFT JOIN LATERAL "contactRelations"($<accountSid>, c.id) relations ON true
+      `;
 
 export const UPDATE_RAWJSON_BY_ID = `WITH updated AS (
 UPDATE "Contacts" 
@@ -53,7 +56,7 @@ SET "rawJson" = COALESCE("rawJson", '{}'::JSONB)
 ${ID_WHERE_CLAUSE}
 RETURNING *
 )
-${selectSingleContactByIdSql('updated')}
+${SELECT_FULL_CONTACT_WITH_UPDATED}
 `;
 
 export const UPDATE_CASEID_BY_ID = `WITH updated AS (
@@ -63,5 +66,5 @@ SET
 ${ID_WHERE_CLAUSE}
 RETURNING *
 )
-${selectSingleContactByIdSql('updated')}
+${SELECT_FULL_CONTACT_WITH_UPDATED}
 `;

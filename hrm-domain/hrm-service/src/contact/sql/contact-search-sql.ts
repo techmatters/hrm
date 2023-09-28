@@ -14,26 +14,12 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { selectCoalesceConversationMediasByContactId } from '../../conversation-media/sql/conversation-media-get-sql';
-import { selectCoalesceCsamReportsByContactId } from '../../csam-report/sql/csam-report-get-sql';
-import { selectCoalesceReferralsByContactId } from '../../referral/sql/referral-get-sql';
-
 export const SELECT_CONTACT_SEARCH = `
         SELECT 
         (count(*) OVER())::INTEGER AS "totalCount",
-        contacts.*, reports."csamReports", joinedReferrals."referrals", media."conversationMedia"
-        FROM "Contacts" contacts
-        LEFT JOIN LATERAL (
-          ${selectCoalesceCsamReportsByContactId('contacts')}
-        ) reports ON true
-        LEFT JOIN LATERAL (
-          ${selectCoalesceReferralsByContactId('contacts')}
-        ) joinedReferrals ON true
-        LEFT JOIN LATERAL (
-          ${selectCoalesceConversationMediasByContactId('contacts')}
-        ) media ON true
-        WHERE contacts."accountSid" = $<accountSid>
-        AND ($<helpline> IS NULL OR contacts."helpline" = $<helpline>)
+        contacts.*
+        FROM "permittedFullContacts"($<accountSid>, $<counselor>) contacts
+        WHERE ($<helpline> IS NULL OR contacts."helpline" = $<helpline>)
         AND (
           ($<lastNamePattern> IS NULL AND $<firstNamePattern> IS NULL)
           OR (
@@ -62,9 +48,6 @@ export const SELECT_CONTACT_SEARCH = `
               OR "rawJson"->'callerInformation'->'name'->>'firstName' ILIKE $<firstNamePattern>
             )
           )
-        )
-        AND (
-          $<counselor> IS NULL OR contacts."twilioWorkerId" = $<counselor>
         )
         AND (
           $<phoneNumberPattern> IS NULL

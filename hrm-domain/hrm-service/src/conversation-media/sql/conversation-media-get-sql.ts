@@ -28,19 +28,3 @@ export const selectConversationMediaByContactIdSql = `
   FROM "ConversationMedias" cm
   ${CONTACT_ID_WHERE_CLAUSE}
 `;
-
-// Queries used in other modules for JOINs
-
-const onFkFilteredClause = (contactAlias: string) => `
-  cm."contactId" = "${contactAlias}".id AND cm."accountSid" = "${contactAlias}"."accountSid"
-`;
-
-export const selectCoalesceConversationMediasByContactId = (contactAlias: string) => `
-  SELECT COALESCE(jsonb_agg(to_jsonb(cm)), '[]') AS  "conversationMedia"
-  FROM "ConversationMedias" cm
-  WHERE ${onFkFilteredClause(contactAlias)}
-`;
-
-export const leftJoinConversationMediasOnFK = (contactAlias: string) => `
-  LEFT JOIN "ConversationMedias" cm ON ${onFkFilteredClause(contactAlias)}
-`;
