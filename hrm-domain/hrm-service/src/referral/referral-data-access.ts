@@ -21,6 +21,7 @@ import {
   inferPostgresError,
   txIfNotInOne,
 } from '../sql';
+import { DELETE_CONTACT_REFERRALS_SQL } from './sql/referral-delete-sql';
 
 // Working around the lack of a 'cause' property in the Error class for ES2020 - can be removed when we upgrade to ES2022
 export class DuplicateReferralError extends Error {
@@ -82,4 +83,13 @@ export const createReferralRecord =
       }
       throw dbErr;
     }
+  };
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const deleteContactReferrals =
+  (task?) =>
+  (accountSid: string, contactId: string): Promise<Referral[]> => {
+    return txIfNotInOne(task, conn =>
+      conn.manyOrNone(DELETE_CONTACT_REFERRALS_SQL, { accountSid, contactId }),
+    );
   };
