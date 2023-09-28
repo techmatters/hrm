@@ -22,6 +22,7 @@ import {
   searchContacts,
   createContact,
   getContactById,
+  addConversationMediaToContact,
 } from './contact';
 import asyncHandler from '../async-handler';
 import type { Request, Response, NextFunction } from 'express';
@@ -130,6 +131,33 @@ contactsRouter.patch(
       const contact = await patchContact(
         accountSid,
         user.workerSid,
+        contactId,
+        req.body,
+        {
+          can: req.can,
+          user,
+        },
+      );
+      res.json(contact);
+    } catch (err) {
+      if (err.message.toLowerCase().includes('contact not found')) {
+        throw createError(404);
+      } else throw err;
+    }
+  },
+);
+
+contactsRouter.post(
+  '/:contactId/conversationMedia',
+  validatePatchPayload,
+  canEditContact,
+  async (req, res) => {
+    const { accountSid, user } = req;
+    const { contactId } = req.params;
+
+    try {
+      const contact = await addConversationMediaToContact(
+        accountSid,
         contactId,
         req.body,
         {
