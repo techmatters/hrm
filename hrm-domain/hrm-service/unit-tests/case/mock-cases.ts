@@ -79,7 +79,6 @@ export const createMockCase = (partial: Partial<Case>): Case => {
   return Object.assign(
     {
       ...record,
-      childName: '',
       categories: {},
     },
     partial,

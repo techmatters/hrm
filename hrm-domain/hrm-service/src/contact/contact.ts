@@ -89,7 +89,7 @@ export type SearchContact = {
     createdBy: string;
     taskId: string;
   };
-  details: ContactRawJson;
+  details: WithLegacyCategories<Contact>['rawJson'];
   csamReports: CSAMReport[];
   referrals?: ReferralWithoutContactId[];
   conversationMedia: ConversationMedia[];
