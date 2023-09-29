@@ -407,6 +407,47 @@ export const connectContactToCase = async (
   return applyTransformations(updated);
 };
 
+export const addConversationMediaToContact = async (
+  accountSid: string,
+  contactId: string,
+  conversationMediaPayload: ConversationMedia[],
+  { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
+): Promise<Contact> => {
+  const contact = await getById(accountSid, parseInt(contactId));
+  return db.tx(async conn => {
+    const createdConversationMedia: ConversationMedia[] = [];
+    if (conversationMediaPayload && conversationMediaPayload.length) {
+      for (const cm of conversationMediaPayload) {
+        const conversationMedia = await createConversationMedia(conn)(accountSid, {
+          contactId,
+          ...cm,
+        });
+
+        createdConversationMedia.push(conversationMedia);
+      }
+    }
+
+    // if pertinent, create retrieve-transcript job
+    const pendingTranscript = findS3StoredTranscriptPending(
+      contact,
+      createdConversationMedia,
+    );
+    if (pendingTranscript) {
+      await createContactJob(conn)({
+        jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
+        resource: contact,
+        additionalPayload: { conversationMediaId: pendingTranscript.id },
+      });
+    }
+    const applyTransformations = bindApplyTransformations(can, user);
+    const updated = {
+      ...contact,
+      conversationMedia: [...contact.conversationMedia, ...createdConversationMedia],
+    };
+    return applyTransformations(updated);
+  });
+};
+
 function isNullOrEmptyObject(obj) {
   return obj == null || Object.keys(obj).length === 0;
 }
