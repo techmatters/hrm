@@ -147,7 +147,7 @@ contactsRouter.patch(
   },
 );
 
-contactsRouter.post('/:contactId/conversationMedia', async (req, res) => {
+contactsRouter.post('/:contactId/conversationMedia', publicEndpoint, async (req, res) => {
   const { accountSid, user } = req;
   const { contactId } = req.params;
 
