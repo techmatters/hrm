@@ -1,3 +1,18 @@
+/**
+ * Copyright (C) 2021-2023 Technology Matters
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see https://www.gnu.org/licenses/.
+ */
 'use strict';
 
 /** @type {import('sequelize-cli').Migration} */
@@ -59,11 +74,18 @@ module.exports = {
         CONSTRAINT "Identifiers_pkey" PRIMARY KEY ("id", "accountSid")
       )
     `);
-    console.log("Table 'Profiles' created.");
+    console.log("Table 'Identifiers' created.");
     await queryInterface.sequelize.query(`
-      ALTER TABLE IF EXISTS public."Profiles" OWNER to hrm;
+      ALTER TABLE IF EXISTS public."Identifiers" OWNER to hrm;
     `);
-    console.log("Table 'Profiles' ownership altered.");
+    console.log("Table 'Identifiers' ownership altered.");
+    await queryInterface.sequelize.query(`
+    CREATE INDEX IF NOT EXISTS "Identifiers_identifier_accountSid" ON public."Identifiers" USING btree
+      ("identifier" ASC NULLS LAST, "accountSid" COLLATE pg_catalog."default" ASC NULLS LAST)
+    `);
+    console.log(
+      "Index 'fki_ProfilesToProfileFlags_profileId_accountSid_Profiles_id_accountSid_fk' created.",
+    );
 
     // ProfileFlags
     await queryInterface.sequelize.query(`
@@ -212,19 +234,19 @@ module.exports = {
 
     // Add profileId and identifierId columns to Contacts table
     await queryInterface.sequelize.query(`
-      ALTER TABLE IF EXISTS public."Contacts" ADD COLUMN "profileId" integer;
+      ALTER TABLE IF EXISTS public."Contacts" ADD COLUMN IF NOT EXISTS "profileId" integer;
 
-      ALTER TABLE IF EXISTS public."Contacts" ADD CONSTRAINT "Contacts_profileId_Profiles_id_fk"
-      FOREIGN KEY ("profileId", "accountSid") REFERENCES public."Profiles" (id, "accountSid") MATCH SIMPLE ON UPDATE CASCADE ON DELETE SET NULL;
+      --ALTER TABLE IF EXISTS public."Contacts" ADD CONSTRAINT "Contacts_profileId_Profiles_id_fk"
+      --FOREIGN KEY ("profileId", "accountSid") REFERENCES public."Profiles" (id, "accountSid") MATCH SIMPLE ON UPDATE CASCADE ON DELETE SET NULL;
       
-      ALTER TABLE IF EXISTS public."Contacts" ADD COLUMN "identifierId" integer;
+      ALTER TABLE IF EXISTS public."Contacts" ADD COLUMN IF NOT EXISTS "identifierId" integer;
       
-      ALTER TABLE IF EXISTS public."Contacts" ADD CONSTRAINT "Contacts_identifierId_Identifiers_id_fk" 
-      FOREIGN KEY ("identifierId", "accountSid") REFERENCES public."Identifiers" (id, "accountSid") MATCH SIMPLE ON UPDATE CASCADE ON DELETE SET NULL;
+      --ALTER TABLE IF EXISTS public."Contacts" ADD CONSTRAINT "Contacts_identifierId_Identifiers_id_fk" 
+      --FOREIGN KEY ("identifierId", "accountSid") REFERENCES public."Identifiers" (id, "accountSid") MATCH SIMPLE ON UPDATE CASCADE ON DELETE SET NULL;
     `);
 
     // Populate profileId and identifierId columns on Contacts
-    await queryInterface.sequelize(`
+    await queryInterface.sequelize.query(`
       DO $$
         DECLARE tmp RECORD;
       BEGIN
@@ -242,6 +264,11 @@ module.exports = {
     console.log(
       '"profileId" and "identifierId" columns added to "Contacts" table and populated',
     );
+
+    await queryInterface.sequelize.query(`
+      ALTER TABLE IF EXISTS public."Contacts" ALTER COLUMN "profileId" SET NOT NULL; 
+      ALTER TABLE IF EXISTS public."Contacts" ALTER COLUMN "identifierId" SET NOT NULL; 
+    `);
   },
 
   down: async queryInterface => {},
