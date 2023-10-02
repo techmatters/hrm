@@ -15,7 +15,7 @@
  */
 
 import omit from 'lodash/omit';
-import { ContactJobType } from '@tech-matters/types';
+import { ContactJobType, isErrorResult } from '@tech-matters/types';
 import {
   connectToCase,
   Contact,
@@ -47,6 +47,10 @@ import {
   LegacyConversationMedia,
   NewConversationMedia,
 } from '../conversation-media/conversation-media';
+import {
+  createIdentifierAndProfile,
+  getIdentifierWithProfile,
+} from '../client-profile/client-profile';
 
 // Re export as is:
 export { Contact } from './contact-data-access';
@@ -267,6 +271,32 @@ export const createContact = async (
       conversationMediaPayload,
     } = getNewContactPayload(newContact);
 
+    let profileId: number, identifierId: number;
+
+    const profileResult = await getIdentifierWithProfile(conn)(
+      accountSid,
+      newContactPayload.number,
+    );
+
+    if (isErrorResult(profileResult)) {
+      // Throw to make the transaction to rollback
+      throw new Error(
+        `Failed creating contact: profile result returned error variant ${profileResult.message}`,
+      );
+    }
+
+    if (profileResult.data?.profileId && profileResult.data?.identifierId) {
+      profileId = profileResult.data?.profileId;
+      identifierId = profileResult.data?.identifierId;
+    } else {
+      const { identifier, profile } = await createIdentifierAndProfile(conn)(accountSid, {
+        identifier: newContactPayload.number,
+      });
+
+      profileId = profile.id;
+      identifierId = identifier.id;
+    }
+
     const completeNewContact: NewContactRecord = {
       ...newContactPayload,
       helpline: newContactPayload.helpline ?? '',
@@ -284,6 +314,8 @@ export const createContact = async (
         // Checking in rawJson might be redundant, copied from Sequelize logic in contact-controller.js
         newContactPayload.queueName || (<any>(newContactPayload.rawJson ?? {})).queueName,
       createdBy,
+      profileId,
+      identifierId,
     };
 
     // create contact record (may return an exiting one cause idempotence)
