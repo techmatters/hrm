@@ -496,11 +496,11 @@ function convertContactsToSearchResults(
       }
 
       const contactId = contact.id;
-      const dateTime = contact.timeOfContact;
+      const dateTime = contact.timeOfContact?.toISOString() ?? '--';
       const customerNumber = contact.number;
       const { callType, categories } = contact.rawJson;
       const counselor = contact.twilioWorkerId;
-      const notes = contact.rawJson.caseInformation.callSummary;
+      const notes = contact.rawJson.caseInformation.callSummary ?? '--';
       const {
         channel,
         conversationDuration,
@@ -516,7 +516,7 @@ function convertContactsToSearchResults(
         contactId: contactId.toString(),
         overview: {
           helpline,
-          dateTime: dateTime.toISOString(),
+          dateTime,
           customerNumber,
           callType,
           categories,
