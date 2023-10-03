@@ -30,8 +30,8 @@ export type NewContactRecord = {
   taskId?: string;
   channelSid?: string;
   serviceSid?: string;
-  profileId: number;
-  identifierId: number;
+  profileId?: number;
+  identifierId?: number;
 };
 
 export const insertContactSql = (

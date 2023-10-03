@@ -105,7 +105,7 @@ export const getIdentifierWithProfile =
   async (
     accountSid: string,
     identifier: string,
-  ): Promise<Result<{ identifierId: number; profileId: number }>> => {
+  ): Promise<Result<{ identifierId: number; profileId: number } | null>> => {
     try {
       const record = await txIfNotInOne<{ identifierId: number; profileId: number }>(
         task,
