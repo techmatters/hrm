@@ -32,12 +32,25 @@ import { omit } from 'lodash';
 import type { CSAMReport } from '../../src/csam-report/csam-report';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
 import { subHours } from 'date-fns';
+import { newSuccessResult } from '@tech-matters/types';
+import * as clientProfilesApi from '../../src/client-profile/client-profile';
+
 jest.mock('../../src/contact/contact-data-access');
+// jest.mock('../../src/client-profile/client-profile', () => ({
+//   getIdentifierWithProfile: () => async () =>
+//     ,
+// }));
 jest.mock('../../src/referral/referral-data-access', () => ({
   createReferralRecord: () => async () => ({}),
 }));
 // jest.mock('../../src/csam-report/csam-report-data-access');
 // jest.mock('../../src/contact-job/contact-job-data-access');
+
+const getIdentifierWithProfileSpy = jest
+  .spyOn(clientProfilesApi, 'getIdentifierWithProfile')
+  .mockImplementation(
+    () => async () => newSuccessResult({ data: { identifierId: 1, profileId: 1 } }),
+  );
 
 const workerSid = 'WORKER_SID';
 
@@ -86,6 +99,8 @@ describe('createContact', () => {
     number: "that's numberwang",
     channelSid: 'a channel',
     serviceSid: 'a service',
+    profileId: 1,
+    identifierId: 1,
   };
 
   const spyOnContactAndAssociations = ({
@@ -159,6 +174,47 @@ describe('createContact', () => {
     expect(returnValue).toStrictEqual(mockContact);
   });
 
+  test("If no identifier record exists for 'number', call createIdentifierAndProfile", async () => {
+    const {
+      connectCsamMock,
+      createReferralMock,
+      createContactJobMock,
+      createContactMock,
+    } = spyOnContactAndAssociations();
+
+    getIdentifierWithProfileSpy.mockImplementationOnce(
+      () => async () => newSuccessResult({ data: null }),
+    );
+
+    jest
+      .spyOn(clientProfilesApi, 'createIdentifierAndProfile')
+      .mockImplementationOnce(
+        () => async () => ({ identifier: { id: 2 }, profile: { id: 2 } }) as any,
+      );
+
+    const returnValue = await createContact(
+      'parameter account-sid',
+      'contact-creator',
+      sampleCreateContactPayload,
+      {
+        can: () => true,
+        user: twilioUser(workerSid, []),
+      },
+    );
+    expect(createContactMock).toHaveBeenCalledWith('parameter account-sid', {
+      ...sampleCreateContactPayload,
+      createdBy: 'contact-creator',
+      profileId: 2,
+      identifierId: 2,
+    });
+
+    expect(connectCsamMock).not.toHaveBeenCalled();
+    expect(createReferralMock).not.toHaveBeenCalled();
+    expect(createContactJobMock).not.toHaveBeenCalled();
+
+    expect(returnValue).toStrictEqual(mockContact);
+  });
+
   test('Missing values are converted to empty strings for several fields', async () => {
     const {
       connectCsamMock,
@@ -196,6 +252,8 @@ describe('createContact', () => {
       serviceSid: '',
       taskId: '',
       twilioWorkerId: '',
+      profileId: undefined,
+      identifierId: undefined,
     });
 
     expect(connectCsamMock).not.toHaveBeenCalled();
