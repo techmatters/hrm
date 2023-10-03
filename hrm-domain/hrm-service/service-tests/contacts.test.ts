@@ -62,8 +62,9 @@ import * as referralDB from '../src/referral/referral-data-access';
 import * as conversationMediaDB from '../src/conversation-media/conversation-media-data-access';
 import { headers, getRequest, getServer, setRules, useOpenRules } from './server';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
+import * as clientProfilesApi from '../src/client-profile/client-profile';
 
-import { ContactJobType } from '@tech-matters/types';
+import { ContactJobType, newSuccessResult } from '@tech-matters/types';
 
 useOpenRules();
 const server = getServer();
@@ -200,6 +201,24 @@ const deleteConversationMediaByContactId = (contactId: number, accountSid: strin
     `),
   );
 
+// eslint-disable-next-line @typescript-eslint/no-shadow
+const deleteProfileById = (id: number, accountSid: string) =>
+  db.task(t =>
+    t.none(`
+        DELETE FROM "Profiles"
+        WHERE "id" = ${id} AND "accountSid" = '${accountSid}';
+    `),
+  );
+
+// eslint-disable-next-line @typescript-eslint/no-shadow
+const deleteIdentifierById = (id: number, accountSid: string) =>
+  db.task(t =>
+    t.none(`
+        DELETE FROM "Identifiers"
+        WHERE "id" = ${id} AND "accountSid" = '${accountSid}';
+    `),
+  );
+
 beforeAll(async () => {
   await mockingProxy.start();
   await mockSuccessfulTwilioAuthentication(workerSid);
@@ -218,6 +237,10 @@ afterAll(async () => {
   await cleanupCases();
   await mockingProxy.stop();
   server.close();
+});
+
+beforeEach(() => {
+  jest.clearAllMocks();
 });
 
 describe('/contacts route', () => {
@@ -655,6 +678,135 @@ describe('/contacts route', () => {
       const attemptedContact = await getContactByTaskId(contact.taskId, accountSid);
 
       expect(attemptedContact).toBeNull();
+    });
+
+    test(`If retrieving identifier and profile, the contact is not created either`, async () => {
+      const contact = {
+        ...withTaskId,
+        form: {
+          ...withTaskId.form,
+        },
+        channel: 'web',
+        taskId: `${withTaskId.taskId}-identifier`,
+        number: 'identifier',
+      };
+
+      jest
+        .spyOn(clientProfilesApi, 'getIdentifierWithProfile')
+        .mockImplementationOnce(() => async () => {
+          throw new Error('Ups');
+        });
+
+      const res = await request.post(route).set(headers).send(contact);
+
+      expect(res.status).toBe(500);
+
+      const attemptedContact = await getContactByTaskId(contact.taskId, accountSid);
+
+      expect(attemptedContact).toBeNull();
+    });
+
+    test(`If identifier and profile exist, the contact is created using them`, async () => {
+      const contact = {
+        ...withTaskId,
+        form: {
+          ...withTaskId.form,
+        },
+        channel: 'web',
+        taskId: `${withTaskId.taskId}-identifier`,
+        number: 'identifier',
+      };
+
+      const { identifier, profile } =
+        await clientProfilesApi.createIdentifierAndProfile()(accountSid, {
+          identifier: contact.number,
+        });
+
+      jest.spyOn(clientProfilesApi, 'getIdentifierWithProfile');
+      const createIdentifierAndProfileSpy = jest.spyOn(
+        clientProfilesApi,
+        'createIdentifierAndProfile',
+      );
+
+      // Create contact with conversation media
+      const response = await request.post(route).set(headers).send(contact);
+
+      expect(response.status).toBe(200);
+      expect(createIdentifierAndProfileSpy).not.toHaveBeenCalled();
+      expect(response.body.profileId).toBe(profile.id);
+      expect(response.body.identifierId).toBe(identifier.id);
+
+      // Remove records to not interfere with following tests
+      await deleteJobsByContactId(response.body.id, response.body.accountSid);
+      await deleteContactById(response.body.id, response.body.accountSid);
+      await deleteProfileById(profile.id, response.body.accountSid);
+      await deleteIdentifierById(identifier.id, response.body.accountSid);
+    });
+
+    test(`If identifier and profile don't exist, they are created and the contact is created using them`, async () => {
+      const contact = {
+        ...withTaskId,
+        form: {
+          ...withTaskId.form,
+        },
+        channel: 'web',
+        taskId: `${withTaskId.taskId}-identifier`,
+        number: 'identifier',
+      };
+
+      jest.spyOn(clientProfilesApi, 'getIdentifierWithProfile');
+      const createIdentifierAndProfileSpy = jest.spyOn(
+        clientProfilesApi,
+        'createIdentifierAndProfile',
+      );
+
+      // Create contact with conversation media
+      const response = await request.post(route).set(headers).send(contact);
+
+      expect(response.status).toBe(200);
+      expect(createIdentifierAndProfileSpy).toHaveBeenCalled();
+      expect(response.body.profileId).toBeDefined();
+      expect(response.body.identifierId).toBeDefined();
+
+      // Remove records to not interfere with following tests
+      await deleteJobsByContactId(response.body.id, response.body.accountSid);
+      await deleteContactById(response.body.id, response.body.accountSid);
+      await deleteProfileById(response.body.profileId, response.body.accountSid);
+      await deleteIdentifierById(response.body.identifierId, response.body.accountSid);
+    });
+
+    test(`If number is not present in the contact payload, no identifier nor profile is created and they are null in the contact record`, async () => {
+      const contact = {
+        ...withTaskId,
+        form: {
+          ...withTaskId.form,
+        },
+        channel: 'web',
+        taskId: `${withTaskId.taskId}-identifier`,
+        number: undefined,
+      };
+
+      const getIdentifierWithProfileSpy = jest.spyOn(
+        clientProfilesApi,
+        'getIdentifierWithProfile',
+      );
+      const createIdentifierAndProfileSpy = jest.spyOn(
+        clientProfilesApi,
+        'createIdentifierAndProfile',
+      );
+
+      // Create contact with conversation media
+      const response = await request.post(route).set(headers).send(contact);
+
+      expect(response.status).toBe(200);
+      expect(getIdentifierWithProfileSpy).not.toHaveBeenCalled();
+      expect(createIdentifierAndProfileSpy).not.toHaveBeenCalled();
+      expect(response.body.profileId).toBeNull();
+      expect(response.body.identifierId).toBeNull();
+
+      // Remove records to not interfere with following tests
+      await deleteJobsByContactId(response.body.id, response.body.accountSid);
+      await deleteContactById(response.body.id, response.body.accountSid);
     });
 
     each(
