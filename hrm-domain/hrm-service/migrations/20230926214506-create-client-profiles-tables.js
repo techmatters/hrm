@@ -195,7 +195,7 @@ module.exports = {
     ("profileId" ASC NULLS LAST, "accountSid" COLLATE pg_catalog."default" ASC NULLS LAST)
     `);
     console.log(
-      "Index 'fki_ProfilesToIdentifiers_identifierId_accountSid_Identifiers_id_accountSid_fk' created.",
+      "Index 'fki_ProfilesToIdentifiers_profileId_accountSid_Profiles_id_accountSid_fk' created.",
     );
     await queryInterface.sequelize.query(`
     CREATE INDEX IF NOT EXISTS "fki_ProfilesToIdentifiers_identifierId_accountSid_Identifiers_id_accountSid_fk" ON public."ProfilesToIdentifiers" USING btree
@@ -236,13 +236,13 @@ module.exports = {
     await queryInterface.sequelize.query(`
       ALTER TABLE IF EXISTS public."Contacts" ADD COLUMN IF NOT EXISTS "profileId" integer;
 
-      --ALTER TABLE IF EXISTS public."Contacts" ADD CONSTRAINT "Contacts_profileId_Profiles_id_fk"
-      --FOREIGN KEY ("profileId", "accountSid") REFERENCES public."Profiles" (id, "accountSid") MATCH SIMPLE ON UPDATE CASCADE ON DELETE SET NULL;
+      ALTER TABLE IF EXISTS public."Contacts" ADD CONSTRAINT "Contacts_profileId_Profiles_id_fk"
+      FOREIGN KEY ("profileId", "accountSid") REFERENCES public."Profiles" (id, "accountSid") MATCH SIMPLE ON UPDATE CASCADE ON DELETE SET NULL;
       
       ALTER TABLE IF EXISTS public."Contacts" ADD COLUMN IF NOT EXISTS "identifierId" integer;
       
-      --ALTER TABLE IF EXISTS public."Contacts" ADD CONSTRAINT "Contacts_identifierId_Identifiers_id_fk" 
-      --FOREIGN KEY ("identifierId", "accountSid") REFERENCES public."Identifiers" (id, "accountSid") MATCH SIMPLE ON UPDATE CASCADE ON DELETE SET NULL;
+      ALTER TABLE IF EXISTS public."Contacts" ADD CONSTRAINT "Contacts_identifierId_Identifiers_id_fk" 
+      FOREIGN KEY ("identifierId", "accountSid") REFERENCES public."Identifiers" (id, "accountSid") MATCH SIMPLE ON UPDATE CASCADE ON DELETE SET NULL;
     `);
 
     // Populate profileId and identifierId columns on Contacts
@@ -270,6 +270,36 @@ module.exports = {
     await queryInterface.sequelize.query(`
       ALTER TABLE IF EXISTS public."Contacts" DROP COLUMN "profileId"; 
       ALTER TABLE IF EXISTS public."Contacts" DROP COLUMN "identifierId"; 
+    `);
+    await queryInterface.sequelize.query(`
+      DROP INDEX IF EXISTS "fki_ProfilesToIdentifiers_identifierId_accountSid_Identifiers_id_accountSid_fk"
+    `);
+    await queryInterface.sequelize.query(`
+      DROP INDEX IF EXISTS "fki_ProfilesToIdentifiers_profileId_accountSid_Profiles_id_accountSid_fk"
+    `);
+    await queryInterface.sequelize.query(`
+      DROP TABLE IF EXISTS public."ProfilesToIdentifiers"
+    `);
+    await queryInterface.sequelize.query(`
+      DROP TABLE IF EXISTS public."ProfileFlags"
+    `);
+    await queryInterface.sequelize.query(`
+      DROP SEQUENCE IF EXISTS public."ProfileFlags_id_seq"
+    `);
+    await queryInterface.sequelize.query(`
+      DROP INDEX IF EXISTS "Identifiers_identifier_accountSid"
+    `);
+    await queryInterface.sequelize.query(`
+      DROP CREATE TABLE IF EXISTS public."Identifiers"
+    `);
+    await queryInterface.sequelize.query(`
+      DROP SEQUENCE IF EXISTS public."Identifiers_id_seq"
+    `);
+    await queryInterface.sequelize.query(`
+      DROP CREATE TABLE IF EXISTS public."Profiles"
+    `);
+    await queryInterface.sequelize.query(`
+      DROP SEQUENCE IF EXISTS public."Profiles_id_seq"
     `);
   },
 };
