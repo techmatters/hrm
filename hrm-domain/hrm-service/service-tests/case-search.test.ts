@@ -223,6 +223,8 @@ describe('/cases route', () => {
           taskId: `TASK_SID`,
           channelSid: `CHANNEL_SID`,
           serviceSid: 'SERVICE_SID',
+          profileId: undefined,
+          identifierId: undefined,
         });
 
         contactToCreate.timeOfContact = new Date();
