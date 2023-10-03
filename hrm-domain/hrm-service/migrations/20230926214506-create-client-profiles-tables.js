@@ -214,7 +214,7 @@ module.exports = {
         -- Insert one identifier per distinct numnber-accountSid pair
         INSERT INTO "Identifiers" ("identifier", "accountSid", "createdAt", "updatedAt")
           SELECT DISTINCT "number" as "identifier", "accountSid", current_timestamp as "createdAt", current_timestamp as "updatedAt" 
-          FROM "Contacts";
+          FROM "Contacts" WHERE "number" IS NOT NULL;
         
           -- For each new Identifier
           FOR identifier IN (SELECT * FROM "Identifiers") LOOP
@@ -264,12 +264,12 @@ module.exports = {
     console.log(
       '"profileId" and "identifierId" columns added to "Contacts" table and populated',
     );
-
-    await queryInterface.sequelize.query(`
-      ALTER TABLE IF EXISTS public."Contacts" ALTER COLUMN "profileId" SET NOT NULL; 
-      ALTER TABLE IF EXISTS public."Contacts" ALTER COLUMN "identifierId" SET NOT NULL; 
-    `);
   },
 
-  down: async queryInterface => {},
+  down: async queryInterface => {
+    await queryInterface.sequelize.query(`
+      ALTER TABLE IF EXISTS public."Contacts" DROP COLUMN "profileId"; 
+      ALTER TABLE IF EXISTS public."Contacts" DROP COLUMN "identifierId"; 
+    `);
+  },
 };

@@ -273,28 +273,33 @@ export const createContact = async (
 
     let profileId: number, identifierId: number;
 
-    const profileResult = await getIdentifierWithProfile(conn)(
-      accountSid,
-      newContactPayload.number,
-    );
-
-    if (isErrorResult(profileResult)) {
-      // Throw to make the transaction to rollback
-      throw new Error(
-        `Failed creating contact: profile result returned error variant ${profileResult.message}`,
+    if (newContactPayload.number) {
+      const profileResult = await getIdentifierWithProfile(conn)(
+        accountSid,
+        newContactPayload.number,
       );
-    }
 
-    if (profileResult.data?.profileId && profileResult.data?.identifierId) {
-      profileId = profileResult.data?.profileId;
-      identifierId = profileResult.data?.identifierId;
-    } else {
-      const { identifier, profile } = await createIdentifierAndProfile(conn)(accountSid, {
-        identifier: newContactPayload.number,
-      });
+      if (isErrorResult(profileResult)) {
+        // Throw to make the transaction to rollback
+        throw new Error(
+          `Failed creating contact: profile result returned error variant ${profileResult.message}`,
+        );
+      }
 
-      profileId = profile.id;
-      identifierId = identifier.id;
+      if (profileResult.data?.profileId && profileResult.data?.identifierId) {
+        profileId = profileResult.data?.profileId;
+        identifierId = profileResult.data?.identifierId;
+      } else {
+        const { identifier, profile } = await createIdentifierAndProfile(conn)(
+          accountSid,
+          {
+            identifier: newContactPayload.number,
+          },
+        );
+
+        profileId = profile.id;
+        identifierId = identifier.id;
+      }
     }
 
     const completeNewContact: NewContactRecord = {
