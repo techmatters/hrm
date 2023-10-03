@@ -64,7 +64,7 @@ import { headers, getRequest, getServer, setRules, useOpenRules } from './server
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
 import * as clientProfilesApi from '../src/client-profile/client-profile';
 
-import { ContactJobType, newSuccessResult } from '@tech-matters/types';
+import { ContactJobType } from '@tech-matters/types';
 
 useOpenRules();
 const server = getServer();
