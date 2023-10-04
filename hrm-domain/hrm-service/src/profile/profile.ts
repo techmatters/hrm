@@ -14,8 +14,8 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 export {
-  ClientIdentifier,
-  ClientProfile,
+  Identifier,
+  Profile,
   createIdentifierAndProfile,
   getIdentifierWithProfile,
 } from './profile-data-access';

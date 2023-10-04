@@ -32,14 +32,11 @@ type RecordCommons = {
   updatedAt?: Date;
 };
 
-export type ClientIdentifier = NewIdentifierRecord & RecordCommons;
+export type Identifier = NewIdentifierRecord & RecordCommons;
 
-const createClientIdentifier =
+const createIdentifier =
   (task?) =>
-  async (
-    accountSid: string,
-    identifier: NewIdentifierRecord,
-  ): Promise<ClientIdentifier> => {
+  async (accountSid: string, identifier: NewIdentifierRecord): Promise<Identifier> => {
     const now = new Date();
 
     const statement = insertIdentifierSql({
@@ -49,14 +46,14 @@ const createClientIdentifier =
       accountSid,
     });
 
-    return txIfNotInOne<ClientIdentifier>(task, conn => conn.one(statement));
+    return txIfNotInOne<Identifier>(task, conn => conn.one(statement));
   };
 
-export type ClientProfile = NewProfileRecord & RecordCommons;
+export type Profile = NewProfileRecord & RecordCommons;
 
-const createClientProfile =
+const createProfile =
   (task?) =>
-  async (accountSid: string, profile: NewProfileRecord): Promise<ClientProfile> => {
+  async (accountSid: string, profile: NewProfileRecord): Promise<Profile> => {
     const now = new Date();
 
     const statement = insertProfileSql({
@@ -66,7 +63,7 @@ const createClientProfile =
       accountSid,
     });
 
-    return txIfNotInOne<ClientProfile>(task, conn => conn.one(statement));
+    return txIfNotInOne<Profile>(task, conn => conn.one(statement));
   };
 
 export const createIdentifierAndProfile =
@@ -74,14 +71,14 @@ export const createIdentifierAndProfile =
   async (
     accountSid: string,
     payload: NewIdentifierRecord,
-  ): Promise<{ identifier: ClientIdentifier; profile: ClientProfile }> => {
+  ): Promise<{ identifier: Identifier; profile: Profile }> => {
     return txIfNotInOne<{
-      identifier: ClientIdentifier;
-      profile: ClientProfile;
+      identifier: Identifier;
+      profile: Profile;
     }>(task, async t => {
       const [newIdentifier, newProfile] = await Promise.all([
-        createClientIdentifier(t)(accountSid, payload),
-        createClientProfile(t)(accountSid, { name: null }),
+        createIdentifier(t)(accountSid, payload),
+        createProfile(t)(accountSid, { name: null }),
       ]);
 
       // Link the profile and identifier

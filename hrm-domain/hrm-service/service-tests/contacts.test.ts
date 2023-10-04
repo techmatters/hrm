@@ -62,7 +62,7 @@ import * as referralDB from '../src/referral/referral-data-access';
 import * as conversationMediaDB from '../src/conversation-media/conversation-media-data-access';
 import { headers, getRequest, getServer, setRules, useOpenRules } from './server';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
-import * as clientProfilesApi from '../src/profile/profile';
+import * as profilesApi from '../src/profile/profile';
 
 import { ContactJobType } from '@tech-matters/types';
 
@@ -692,7 +692,7 @@ describe('/contacts route', () => {
       };
 
       jest
-        .spyOn(clientProfilesApi, 'getIdentifierWithProfile')
+        .spyOn(profilesApi, 'getIdentifierWithProfile')
         .mockImplementationOnce(() => async () => {
           throw new Error('Ups');
         });
@@ -717,14 +717,16 @@ describe('/contacts route', () => {
         number: 'identifier',
       };
 
-      const { identifier, profile } =
-        await clientProfilesApi.createIdentifierAndProfile()(accountSid, {
+      const { identifier, profile } = await profilesApi.createIdentifierAndProfile()(
+        accountSid,
+        {
           identifier: contact.number,
-        });
+        },
+      );
 
-      jest.spyOn(clientProfilesApi, 'getIdentifierWithProfile');
+      jest.spyOn(profilesApi, 'getIdentifierWithProfile');
       const createIdentifierAndProfileSpy = jest.spyOn(
-        clientProfilesApi,
+        profilesApi,
         'createIdentifierAndProfile',
       );
 
@@ -754,9 +756,9 @@ describe('/contacts route', () => {
         number: 'identifier',
       };
 
-      jest.spyOn(clientProfilesApi, 'getIdentifierWithProfile');
+      jest.spyOn(profilesApi, 'getIdentifierWithProfile');
       const createIdentifierAndProfileSpy = jest.spyOn(
-        clientProfilesApi,
+        profilesApi,
         'createIdentifierAndProfile',
       );
 
@@ -787,11 +789,11 @@ describe('/contacts route', () => {
       };
 
       const getIdentifierWithProfileSpy = jest.spyOn(
-        clientProfilesApi,
+        profilesApi,
         'getIdentifierWithProfile',
       );
       const createIdentifierAndProfileSpy = jest.spyOn(
-        clientProfilesApi,
+        profilesApi,
         'createIdentifierAndProfile',
       );
 

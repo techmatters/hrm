@@ -33,7 +33,7 @@ import type { CSAMReport } from '../../src/csam-report/csam-report';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
 import { subHours } from 'date-fns';
 import { newSuccessResult } from '@tech-matters/types';
-import * as clientProfilesApi from '../../src/profile/profile';
+import * as profilesApi from '../../src/profile/profile';
 
 jest.mock('../../src/contact/contact-data-access');
 // jest.mock('../../src/profile/profile', () => ({
@@ -47,7 +47,7 @@ jest.mock('../../src/referral/referral-data-access', () => ({
 // jest.mock('../../src/contact-job/contact-job-data-access');
 
 const getIdentifierWithProfileSpy = jest
-  .spyOn(clientProfilesApi, 'getIdentifierWithProfile')
+  .spyOn(profilesApi, 'getIdentifierWithProfile')
   .mockImplementation(
     () => async () => newSuccessResult({ data: { identifierId: 1, profileId: 1 } }),
   );
@@ -187,7 +187,7 @@ describe('createContact', () => {
     );
 
     jest
-      .spyOn(clientProfilesApi, 'createIdentifierAndProfile')
+      .spyOn(profilesApi, 'createIdentifierAndProfile')
       .mockImplementationOnce(
         () => async () => ({ identifier: { id: 2 }, profile: { id: 2 } }) as any,
       );
