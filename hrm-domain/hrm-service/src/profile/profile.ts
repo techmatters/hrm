@@ -18,4 +18,4 @@ export {
   ClientProfile,
   createIdentifierAndProfile,
   getIdentifierWithProfile,
-} from './client-profile-data-access';
+} from './profile-data-access';

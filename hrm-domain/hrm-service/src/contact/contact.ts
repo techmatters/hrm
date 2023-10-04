@@ -47,10 +47,7 @@ import {
   LegacyConversationMedia,
   NewConversationMedia,
 } from '../conversation-media/conversation-media';
-import {
-  createIdentifierAndProfile,
-  getIdentifierWithProfile,
-} from '../client-profile/client-profile';
+import { createIdentifierAndProfile, getIdentifierWithProfile } from '../profile/profile';
 
 // Re export as is:
 export { Contact } from './contact-data-access';

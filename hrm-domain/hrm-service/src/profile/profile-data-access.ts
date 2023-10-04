@@ -21,9 +21,9 @@ import {
   insertIdentifierSql,
   insertProfileSql,
   insertProfileToIdentifierSql,
-} from './sql/client-profile-insert-sql';
+} from './sql/profile-insert-sql';
 import { txIfNotInOne } from '../sql';
-import { joinProfilesIdentifiersSql } from './sql/client-profile-get-sql';
+import { joinProfilesIdentifiersSql } from './sql/profile-get-sql';
 
 type RecordCommons = {
   id: number;

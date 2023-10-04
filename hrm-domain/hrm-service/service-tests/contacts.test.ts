@@ -62,7 +62,7 @@ import * as referralDB from '../src/referral/referral-data-access';
 import * as conversationMediaDB from '../src/conversation-media/conversation-media-data-access';
 import { headers, getRequest, getServer, setRules, useOpenRules } from './server';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
-import * as clientProfilesApi from '../src/client-profile/client-profile';
+import * as clientProfilesApi from '../src/profile/profile';
 
 import { ContactJobType } from '@tech-matters/types';
 

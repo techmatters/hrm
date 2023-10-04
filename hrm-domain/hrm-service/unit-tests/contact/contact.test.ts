@@ -33,10 +33,10 @@ import type { CSAMReport } from '../../src/csam-report/csam-report';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
 import { subHours } from 'date-fns';
 import { newSuccessResult } from '@tech-matters/types';
-import * as clientProfilesApi from '../../src/client-profile/client-profile';
+import * as clientProfilesApi from '../../src/profile/profile';
 
 jest.mock('../../src/contact/contact-data-access');
-// jest.mock('../../src/client-profile/client-profile', () => ({
+// jest.mock('../../src/profile/profile', () => ({
 //   getIdentifierWithProfile: () => async () =>
 //     ,
 // }));
