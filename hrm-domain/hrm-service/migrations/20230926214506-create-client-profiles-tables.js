@@ -83,9 +83,7 @@ module.exports = {
     CREATE INDEX IF NOT EXISTS "Identifiers_identifier_accountSid" ON public."Identifiers" USING btree
       ("identifier" ASC NULLS LAST, "accountSid" COLLATE pg_catalog."default" ASC NULLS LAST)
     `);
-    console.log(
-      "Index 'fki_ProfilesToProfileFlags_profileId_accountSid_Profiles_id_accountSid_fk' created.",
-    );
+    console.log("Index 'Identifiers_identifier_accountSid' created.");
 
     // ProfileFlags
     await queryInterface.sequelize.query(`
@@ -104,12 +102,12 @@ module.exports = {
     await queryInterface.sequelize.query(`
       CREATE TABLE IF NOT EXISTS public."ProfileFlags"
       (
-        id integer NOT NULL DEFAULT nextval('"ProfileFlags_id_seq"'::regclass),
+        id integer UNIQUE NOT NULL DEFAULT nextval('"ProfileFlags_id_seq"'::regclass),
         "name" text COLLATE pg_catalog."default" NOT NULL,
-        "accountSid" text COLLATE pg_catalog."default" NOT NULL,
+        "accountSid" text COLLATE pg_catalog."default",
         "createdAt" timestamp with time zone NOT NULL,
         "updatedAt" timestamp with time zone NOT NULL,
-        CONSTRAINT "ProfileFlags_pkey" PRIMARY KEY ("id", "accountSid")
+        CONSTRAINT "ProfileFlags_pkey" PRIMARY KEY ("id")
       )
     `);
     console.log("Table 'ProfileFlags' created.");
@@ -117,13 +115,19 @@ module.exports = {
       ALTER TABLE IF EXISTS public."ProfileFlags" OWNER to hrm;
     `);
     console.log("Table 'ProfileFlags' ownership altered.");
+    await queryInterface.sequelize.query(`
+    CREATE INDEX IF NOT EXISTS "ProfileFlags_accountSid" ON public."ProfileFlags" USING btree
+      ("accountSid" COLLATE pg_catalog."default" ASC NULLS LAST)
+    `);
+    console.log("Index 'ProfileFlags_accountSid' created.");
 
-    //
-    // TODO: if we populate the ProfileFlags table, we'll need accountSid, which we have now,
-    //       but we wont when a new helpline is added.
-    //       Do we have a plan to "auto-populate" this table on new accounts?
-    //      Wouldn't be better to let each helpline populate this when they need it?
-    //
+    // Add default blocked and abusive flags
+    await queryInterface.sequelize.query(`
+      INSERT INTO "ProfileFlags" ("name", "accountSid", "createdAt", "updatedAt")
+      VALUES ('blocked', NULL, current_timestamp, current_timestamp);
+      INSERT INTO "ProfileFlags" ("name", "accountSid", "createdAt", "updatedAt")
+      VALUES ('abusive', NULL, current_timestamp, current_timestamp);    
+    `);
 
     // ProfilesToProfileFlags
     await queryInterface.sequelize.query(`
@@ -139,8 +143,8 @@ module.exports = {
           REFERENCES public."Profiles" (id, "accountSid") MATCH SIMPLE
           ON UPDATE CASCADE
           ON DELETE CASCADE,
-        CONSTRAINT "ProfilesToProfileFlags_profileFlagId_ProfileFlags_id_fk" FOREIGN KEY ("profileFlagId", "accountSid")
-          REFERENCES public."ProfileFlags" (id, "accountSid") MATCH SIMPLE
+        CONSTRAINT "ProfilesToProfileFlags_profileFlagId_ProfileFlags_id_fk" FOREIGN KEY ("profileFlagId")
+          REFERENCES public."ProfileFlags" (id) MATCH SIMPLE
           ON UPDATE CASCADE
           ON DELETE CASCADE
       )
@@ -191,15 +195,15 @@ module.exports = {
     `);
     console.log("Table 'ProfilesToIdentifiers' ownership altered.");
     await queryInterface.sequelize.query(`
-    CREATE INDEX IF NOT EXISTS "fki_ProfilesToIdentifiers_profileId_accountSid_Profiles_id_accountSid_fk" ON public."ProfilesToIdentifiers" USING btree
-    ("profileId" ASC NULLS LAST, "accountSid" COLLATE pg_catalog."default" ASC NULLS LAST)
+      CREATE INDEX IF NOT EXISTS "fki_ProfilesToIdentifiers_profileId_accountSid_Profiles_id_accountSid_fk" ON public."ProfilesToIdentifiers" USING btree
+      ("profileId" ASC NULLS LAST, "accountSid" COLLATE pg_catalog."default" ASC NULLS LAST)
     `);
     console.log(
       "Index 'fki_ProfilesToIdentifiers_profileId_accountSid_Profiles_id_accountSid_fk' created.",
     );
     await queryInterface.sequelize.query(`
-    CREATE INDEX IF NOT EXISTS "fki_ProfilesToIdentifiers_identifierId_accountSid_Identifiers_id_accountSid_fk" ON public."ProfilesToIdentifiers" USING btree
-    ("identifierId" ASC NULLS LAST, "accountSid" COLLATE pg_catalog."default" ASC NULLS LAST)
+      CREATE INDEX IF NOT EXISTS "fki_ProfilesToIdentifiers_identifierId_accountSid_Identifiers_id_accountSid_fk" ON public."ProfilesToIdentifiers" USING btree
+      ("identifierId" ASC NULLS LAST, "accountSid" COLLATE pg_catalog."default" ASC NULLS LAST)
     `);
     console.log(
       "Index 'fki_ProfilesToIdentifiers_identifierId_accountSid_Identifiers_id_accountSid_fk' created.",
@@ -207,42 +211,48 @@ module.exports = {
 
     // Add existing identifiers to Identifiers table
     await queryInterface.sequelize.query(`
-    DO $$    
-      DECLARE identifier public."Identifiers";
-      DECLARE profile public."Profiles";
-    BEGIN
+      DO $$    
+        DECLARE identifier public."Identifiers";
+        DECLARE profile public."Profiles";
+      BEGIN
         -- Insert one identifier per distinct numnber-accountSid pair
         INSERT INTO "Identifiers" ("identifier", "accountSid", "createdAt", "updatedAt")
-          SELECT DISTINCT "number" as "identifier", "accountSid", current_timestamp as "createdAt", current_timestamp as "updatedAt" 
-          FROM "Contacts" WHERE "number" IS NOT NULL;
+        SELECT DISTINCT "number" as "identifier", "accountSid", current_timestamp as "createdAt", current_timestamp as "updatedAt" 
+        FROM "Contacts" WHERE "number" IS NOT NULL;
         
-          -- For each new Identifier
-          FOR identifier IN (SELECT * FROM "Identifiers") LOOP
+        -- For each new Identifier
+        FOR identifier IN (SELECT * FROM "Identifiers") LOOP
           -- Create a "blank" Profile
           INSERT INTO "Profiles"("name", "accountSid", "createdAt", "updatedAt")
           VALUES (NULL, identifier."accountSid", current_timestamp, current_timestamp)
           RETURNING * INTO profile;
-          
+        
           -- Link the profile to the identifier
           INSERT INTO "ProfilesToIdentifiers"("profileId", "identifierId", "accountSid", "createdAt", "updatedAt")
           VALUES (profile.id, identifier.id, identifier."accountSid", current_timestamp, current_timestamp);
-          
-          END LOOP;
-          END$$  
-          `);
+        
+        END LOOP;
+      END$$  
+    `);
     console.log('Profiles, Identifiers and relations populated');
 
-    // Add profileId and identifierId columns to Contacts table
+    // Add profileId and identifierId columns to Contacts table, and create indexes on them
     await queryInterface.sequelize.query(`
       ALTER TABLE IF EXISTS public."Contacts" ADD COLUMN IF NOT EXISTS "profileId" integer;
 
       ALTER TABLE IF EXISTS public."Contacts" ADD CONSTRAINT "Contacts_profileId_Profiles_id_fk"
       FOREIGN KEY ("profileId", "accountSid") REFERENCES public."Profiles" (id, "accountSid") MATCH SIMPLE ON UPDATE CASCADE ON DELETE SET NULL;
       
+      CREATE INDEX IF NOT EXISTS "Contacts_profileId_accountSid" ON public."Contacts" USING btree
+      ("profileId" ASC NULLS LAST, "accountSid" COLLATE pg_catalog."default" ASC NULLS LAST);
+
       ALTER TABLE IF EXISTS public."Contacts" ADD COLUMN IF NOT EXISTS "identifierId" integer;
       
       ALTER TABLE IF EXISTS public."Contacts" ADD CONSTRAINT "Contacts_identifierId_Identifiers_id_fk" 
       FOREIGN KEY ("identifierId", "accountSid") REFERENCES public."Identifiers" (id, "accountSid") MATCH SIMPLE ON UPDATE CASCADE ON DELETE SET NULL;
+
+      CREATE INDEX IF NOT EXISTS "Contacts_identifierId_accountSid" ON public."Contacts" USING btree
+      ("identifierId" ASC NULLS LAST, "accountSid" COLLATE pg_catalog."default" ASC NULLS LAST)
     `);
 
     // Populate profileId and identifierId columns on Contacts
@@ -256,7 +266,7 @@ module.exports = {
         ) LOOP
       
           UPDATE "Contacts" SET "profileId" = tmp."profileId", "identifierId" = tmp."identifierId"
-        WHERE "number" = tmp."identifier" AND "accountSid" = tmp."accountSid";
+          WHERE "number" = tmp."identifier" AND "accountSid" = tmp."accountSid";
       
         END LOOP;
       END$$
@@ -268,6 +278,8 @@ module.exports = {
 
   down: async queryInterface => {
     await queryInterface.sequelize.query(`
+      DROP INDEX IF EXISTS "Contacts_profileId_accountSid";
+      DROP INDEX IF EXISTS "Contacts_identifierId_accountSid";
       ALTER TABLE IF EXISTS public."Contacts" DROP COLUMN "profileId"; 
       ALTER TABLE IF EXISTS public."Contacts" DROP COLUMN "identifierId"; 
     `);
