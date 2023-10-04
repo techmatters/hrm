@@ -20,7 +20,7 @@ import {
   NewProfileRecord,
   insertIdentifierSql,
   insertProfileSql,
-  insertProfileToIdentifierSql,
+  associateProfileToIdentifierSql,
 } from './sql/profile-insert-sql';
 import { txIfNotInOne } from '../sql';
 import { joinProfilesIdentifiersSql } from './sql/profile-get-sql';
@@ -84,7 +84,7 @@ export const createIdentifierAndProfile =
       // Link the profile and identifier
       const now = new Date();
       await t.none(
-        insertProfileToIdentifierSql({
+        associateProfileToIdentifierSql({
           accountSid,
           profileId: newIdentifier.id,
           identifierId: newProfile.id,

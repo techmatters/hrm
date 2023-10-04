@@ -55,7 +55,7 @@ export type NewProfileToIdentifierRecord = {
   identifierId: number;
 };
 
-export const insertProfileToIdentifierSql = (
+export const associateProfileToIdentifierSql = (
   profileToIdentifier: NewProfileToIdentifierRecord & {
     accountSid: string;
     createdAt: Date;
