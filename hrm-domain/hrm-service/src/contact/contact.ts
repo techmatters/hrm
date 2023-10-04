@@ -208,7 +208,7 @@ export const bindApplyTransformations =
     );
 
     // TODO: Remove once all Flex clients are using new ConversationMedia model
-    const transformed = addLegacyConversationMedia(permissionsBasedTransformed); // This must be the last step in the transformations
+    const transformed = addLegacyConversationMedia(permissionsBasedTransformed); // This must be the last step in the transformations, except for the legacy categories
 
     return includeLegacyCategories(transformed);
   };
