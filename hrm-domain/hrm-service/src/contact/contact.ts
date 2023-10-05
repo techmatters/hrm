@@ -47,7 +47,7 @@ import {
   LegacyConversationMedia,
   NewConversationMedia,
 } from '../conversation-media/conversation-media';
-import { createIdentifierAndProfile, getIdentifierWithProfile } from '../profile/profile';
+import { getOrCreateProfileWithIdentifier } from '../profile/profile';
 
 // Re export as is:
 export { Contact } from './contact-data-access';
@@ -268,35 +268,16 @@ export const createContact = async (
       conversationMediaPayload,
     } = getNewContactPayload(newContact);
 
-    let profileId: number, identifierId: number;
+    const profileResult = await getOrCreateProfileWithIdentifier(conn)(
+      newContactPayload.number,
+      accountSid,
+    );
 
-    if (newContactPayload.number) {
-      const profileResult = await getIdentifierWithProfile(conn)(
-        accountSid,
-        newContactPayload.number,
+    if (isErrorResult(profileResult)) {
+      // Throw to make the transaction to rollback
+      throw new Error(
+        `Failed creating contact: profile result returned error variant ${profileResult.message}`,
       );
-
-      if (isErrorResult(profileResult)) {
-        // Throw to make the transaction to rollback
-        throw new Error(
-          `Failed creating contact: profile result returned error variant ${profileResult.message}`,
-        );
-      }
-
-      if (profileResult.data?.profileId && profileResult.data?.identifierId) {
-        profileId = profileResult.data?.profileId;
-        identifierId = profileResult.data?.identifierId;
-      } else {
-        const { identifier, profile } = await createIdentifierAndProfile(conn)(
-          accountSid,
-          {
-            identifier: newContactPayload.number,
-          },
-        );
-
-        profileId = profile.id;
-        identifierId = identifier.id;
-      }
     }
 
     const completeNewContact: NewContactRecord = {
@@ -316,8 +297,8 @@ export const createContact = async (
         // Checking in rawJson might be redundant, copied from Sequelize logic in contact-controller.js
         newContactPayload.queueName || (<any>(newContactPayload.rawJson ?? {})).queueName,
       createdBy,
-      profileId,
-      identifierId,
+      profileId: profileResult.data.profile.id,
+      identifierId: profileResult.data.identifier.id,
     };
 
     // create contact record (may return an exiting one cause idempotence)

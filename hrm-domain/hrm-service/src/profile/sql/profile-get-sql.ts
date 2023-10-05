@@ -23,7 +23,7 @@ const WHERE_IDENTIFIER_CLAUSE =
 // `;
 
 export const joinProfilesIdentifiersSql = `
-SELECT "identifierId", "profileId" FROM 
+SELECT ROW_TO_JSON(ids.*) as "identifier", ROW_TO_JSON(profiles.*) as "profile" FROM 
  (
     SELECT * FROM "Identifiers"
     ${WHERE_IDENTIFIER_CLAUSE}

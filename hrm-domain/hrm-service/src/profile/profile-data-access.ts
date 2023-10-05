@@ -71,50 +71,60 @@ export const createIdentifierAndProfile =
   async (
     accountSid: string,
     payload: NewIdentifierRecord,
-  ): Promise<{ identifier: Identifier; profile: Profile }> => {
-    return txIfNotInOne<{
-      identifier: Identifier;
-      profile: Profile;
-    }>(task, async t => {
-      const [newIdentifier, newProfile] = await Promise.all([
-        createIdentifier(t)(accountSid, payload),
-        createProfile(t)(accountSid, { name: null }),
-      ]);
+  ): Promise<Result<{ identifier: Identifier; profile: Profile }>> => {
+    try {
+      return await txIfNotInOne<
+        Result<{
+          identifier: Identifier;
+          profile: Profile;
+        }>
+      >(task, async t => {
+        const [newIdentifier, newProfile] = await Promise.all([
+          createIdentifier(t)(accountSid, payload),
+          createProfile(t)(accountSid, { name: null }),
+        ]);
 
-      // Link the profile and identifier
-      const now = new Date();
-      await t.none(
-        associateProfileToIdentifierSql({
-          accountSid,
-          profileId: newIdentifier.id,
-          identifierId: newProfile.id,
-          createdAt: now,
-          updatedAt: now,
-        }),
-      );
+        // Link the profile and identifier
+        const now = new Date();
+        await t.none(
+          associateProfileToIdentifierSql({
+            accountSid,
+            profileId: newIdentifier.id,
+            identifierId: newProfile.id,
+            createdAt: now,
+            updatedAt: now,
+          }),
+        );
 
-      return { identifier: newIdentifier, profile: newProfile };
-    });
+        return newSuccessResult({
+          data: { identifier: newIdentifier, profile: newProfile },
+        });
+      });
+    } catch (err) {
+      return newErrorResult({
+        message: err instanceof Error ? err.message : String(err),
+      });
+    }
   };
 
 export const getIdentifierWithProfile =
   (task?) =>
   async (
     accountSid: string,
-    identifier: string,
-  ): Promise<Result<{ identifierId: number; profileId: number } | null>> => {
+    idx: string,
+  ): Promise<Result<{ identifier: Identifier; profile: Profile } | null>> => {
     try {
-      const record = await txIfNotInOne<{ identifierId: number; profileId: number }>(
-        task,
-        async connection => {
-          return connection.oneOrNone(joinProfilesIdentifiersSql, {
-            accountSid,
-            identifier,
-          });
-        },
-      );
+      const data = await txIfNotInOne<{
+        identifier: Identifier;
+        profile: Profile;
+      }>(task, async connection => {
+        return connection.oneOrNone(joinProfilesIdentifiersSql, {
+          accountSid,
+          identifier: idx,
+        });
+      });
 
-      return newSuccessResult({ data: record });
+      return newSuccessResult({ data: data });
     } catch (err) {
       return newErrorResult({
         message: err instanceof Error ? err.message : String(err),
