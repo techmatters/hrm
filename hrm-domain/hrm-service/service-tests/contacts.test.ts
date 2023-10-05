@@ -62,9 +62,9 @@ import * as referralDB from '../src/referral/referral-data-access';
 import * as conversationMediaDB from '../src/conversation-media/conversation-media-data-access';
 import { headers, getRequest, getServer, setRules, useOpenRules } from './server';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
-import * as profilesApi from '../src/profile/profile';
+import * as profilesDB from '../src/profile/profile-data-access';
 
-import { ContactJobType } from '@tech-matters/types';
+import { ContactJobType, isErrorResult } from '@tech-matters/types';
 
 useOpenRules();
 const server = getServer();
@@ -692,7 +692,7 @@ describe('/contacts route', () => {
       };
 
       jest
-        .spyOn(profilesApi, 'getIdentifierWithProfile')
+        .spyOn(profilesDB, 'getIdentifierWithProfile')
         .mockImplementationOnce(() => async () => {
           throw new Error('Ups');
         });
@@ -706,7 +706,7 @@ describe('/contacts route', () => {
       expect(attemptedContact).toBeNull();
     });
 
-    test(`If identifier and profile exist, the contact is created using them`, async () => {
+    test.only(`If identifier and profile exist, the contact is created using them`, async () => {
       const contact = {
         ...withTaskId,
         form: {
@@ -717,16 +717,19 @@ describe('/contacts route', () => {
         number: 'identifier',
       };
 
-      const { identifier, profile } = await profilesApi.createIdentifierAndProfile()(
-        accountSid,
-        {
-          identifier: contact.number,
-        },
-      );
+      const profileResult = await profilesDB.createIdentifierAndProfile()(accountSid, {
+        identifier: contact.number,
+      });
 
-      jest.spyOn(profilesApi, 'getIdentifierWithProfile');
+      if (isErrorResult(profileResult)) {
+        expect(false).toBeTruthy();
+        return;
+      }
+
+      const { identifier, profile } = profileResult.data;
+
       const createIdentifierAndProfileSpy = jest.spyOn(
-        profilesApi,
+        profilesDB,
         'createIdentifierAndProfile',
       );
 
@@ -756,9 +759,8 @@ describe('/contacts route', () => {
         number: 'identifier',
       };
 
-      jest.spyOn(profilesApi, 'getIdentifierWithProfile');
       const createIdentifierAndProfileSpy = jest.spyOn(
-        profilesApi,
+        profilesDB,
         'createIdentifierAndProfile',
       );
 
@@ -789,11 +791,11 @@ describe('/contacts route', () => {
       };
 
       const getIdentifierWithProfileSpy = jest.spyOn(
-        profilesApi,
+        profilesDB,
         'getIdentifierWithProfile',
       );
       const createIdentifierAndProfileSpy = jest.spyOn(
-        profilesApi,
+        profilesDB,
         'createIdentifierAndProfile',
       );
 
