@@ -84,7 +84,7 @@ contactsRouter.post('/search', publicEndpoint, async (req, res) => {
 });
 
 const validatePatchPayload = (req: Request, res: Response, next: NextFunction) => {
-  if (!req.body || !req.body.rawJson) {
+  if (typeof req.body !== 'object' || Array.isArray(req.body)) {
     throw createError(400);
   }
 
