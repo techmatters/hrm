@@ -33,23 +33,23 @@ import type { CSAMReport } from '../../src/csam-report/csam-report';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
 import { subHours } from 'date-fns';
 import { newSuccessResult } from '@tech-matters/types';
-import * as profilesApi from '../../src/profile/profile';
+import * as profilesDB from '../../src/profile/profile-data-access';
 
 jest.mock('../../src/contact/contact-data-access');
-// jest.mock('../../src/profile/profile', () => ({
-//   getIdentifierWithProfile: () => async () =>
-//     ,
-// }));
 jest.mock('../../src/referral/referral-data-access', () => ({
   createReferralRecord: () => async () => ({}),
 }));
-// jest.mock('../../src/csam-report/csam-report-data-access');
-// jest.mock('../../src/contact-job/contact-job-data-access');
 
 const getIdentifierWithProfileSpy = jest
-  .spyOn(profilesApi, 'getIdentifierWithProfile')
+  .spyOn(profilesDB, 'getIdentifierWithProfile')
   .mockImplementation(
-    () => async () => newSuccessResult({ data: { identifierId: 1, profileId: 1 } }),
+    () => async () =>
+      newSuccessResult({
+        data: {
+          identifier: { id: 1 } as profilesDB.Identifier,
+          profile: { id: 1 } as profilesDB.Profile,
+        },
+      }),
   );
 
 const workerSid = 'WORKER_SID';
@@ -186,11 +186,12 @@ describe('createContact', () => {
       () => async () => newSuccessResult({ data: null }),
     );
 
-    jest
-      .spyOn(profilesApi, 'createIdentifierAndProfile')
-      .mockImplementationOnce(
-        () => async () => ({ identifier: { id: 2 }, profile: { id: 2 } }) as any,
-      );
+    jest.spyOn(profilesDB, 'createIdentifierAndProfile').mockImplementationOnce(
+      () => async () =>
+        newSuccessResult({
+          data: { identifier: { id: 2 }, profile: { id: 2 } },
+        }) as any,
+    );
 
     const returnValue = await createContact(
       'parameter account-sid',
