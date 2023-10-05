@@ -25,7 +25,3 @@ export const selectCoalesceReferralsByContactId = (contactAlias: string) => `
   FROM "Referrals" referral
   WHERE ${onFkFilteredClause(contactAlias)}
 `;
-
-export const leftJoinReferralsOnFK = (contactAlias: string) => `
-  LEFT JOIN "Referrals" referral ON ${onFkFilteredClause(contactAlias)}
-`;
