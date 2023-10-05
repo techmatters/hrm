@@ -1818,28 +1818,31 @@ describe('/contacts route', () => {
         const response = await request
           .patch(subRoute(nonExistingContactId))
           .set(headers)
-          .send({
-            notRawJson: { some: 'crap' },
-          });
+          .send([]);
 
         expect(response.status).toBe(400);
       });
 
-      test('no body should return 400', async () => {
-        const contactToBeDeleted = await contactApi.createContact(
+      test('no body should be a noop', async () => {
+        const createdContact = await contactApi.createContact(
           accountSid,
           workerSid,
           <any>contact1,
           { user: twilioUser(workerSid, []), can: () => true },
         );
-        const nonExistingContactId = contactToBeDeleted.id;
-        await deleteContactById(contactToBeDeleted.id, contactToBeDeleted.accountSid);
         const response = await request
-          .patch(subRoute(nonExistingContactId))
+          .patch(subRoute(createdContact.id))
           .set(headers)
           .send();
 
-        expect(response.status).toBe(400);
+        expect(response.status).toBe(200);
+        expect(response.body).toStrictEqual({
+          ...createdContact,
+          timeOfContact: expect.toParseAsDate(createdContact.timeOfContact),
+          createdAt: expect.toParseAsDate(createdContact.createdAt),
+          updatedAt: expect.toParseAsDate(),
+          updatedBy: workerSid,
+        });
       });
 
       each([
