@@ -36,7 +36,7 @@ export const getOrCreateProfileWithIdentifier =
   ): Promise<Result<{ identifier: Identifier; profile: Profile }>> => {
     try {
       if (!idx) {
-        return newSuccessResult({ data: { identifier: null, profile: null } });
+        return newSuccessResult({ data: null });
       }
 
       const profileResult = await getIdentifierWithProfile(task)(accountSid, idx);
@@ -45,7 +45,7 @@ export const getOrCreateProfileWithIdentifier =
         return profileResult;
       }
 
-      if (profileResult.data !== null) {
+      if (profileResult.data) {
         return profileResult;
       }
 

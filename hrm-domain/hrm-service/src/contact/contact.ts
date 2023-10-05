@@ -297,8 +297,8 @@ export const createContact = async (
         // Checking in rawJson might be redundant, copied from Sequelize logic in contact-controller.js
         newContactPayload.queueName || (<any>(newContactPayload.rawJson ?? {})).queueName,
       createdBy,
-      profileId: profileResult.data.profile.id,
-      identifierId: profileResult.data.identifier.id,
+      profileId: profileResult.data?.profile.id,
+      identifierId: profileResult.data?.identifier.id,
     };
 
     // create contact record (may return an exiting one cause idempotence)

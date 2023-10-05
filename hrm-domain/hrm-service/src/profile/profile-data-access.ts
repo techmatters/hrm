@@ -117,12 +117,12 @@ export const getIdentifierWithProfile =
       const data = await txIfNotInOne<{
         identifier: Identifier;
         profile: Profile;
-      }>(task, async connection => {
-        return connection.oneOrNone(joinProfilesIdentifiersSql, {
+      }>(task, async connection =>
+        connection.oneOrNone(joinProfilesIdentifiersSql, {
           accountSid,
           identifier: idx,
-        });
-      });
+        }),
+      );
 
       return newSuccessResult({ data: data });
     } catch (err) {
