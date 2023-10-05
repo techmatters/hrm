@@ -26,7 +26,13 @@ import {
   createIdentifierAndProfile,
   getIdentifierWithProfile,
 } from './profile-data-access';
-export { Identifier, Profile };
+import { searchCases } from '../case/case';
+import { searchContacts } from '../contact/contact';
+import { PaginationQuery } from '../search';
+import { setupCanForRules } from '../permissions/setupCanForRules';
+import { SearchPermissions } from '../permissions/search-permissions';
+import { TwilioUser } from '@tech-matters/twilio-worker-auth';
+export { Identifier, Profile, getIdentifierWithProfile };
 
 export const getOrCreateProfileWithIdentifier =
   (task?) =>
@@ -58,3 +64,51 @@ export const getOrCreateProfileWithIdentifier =
       });
     }
   };
+
+export const getProfilesByIdentifier = async (
+  accountSid: string,
+  idx: string,
+  query: Pick<PaginationQuery, 'limit' | 'offset'>,
+  ctx: {
+    can: ReturnType<typeof setupCanForRules>;
+    user: TwilioUser;
+    searchPermissions: SearchPermissions;
+  },
+): Promise<
+  Result<
+    {
+      profile: Profile;
+      contacts: Awaited<ReturnType<typeof searchContacts>>;
+      cases: Awaited<ReturnType<typeof searchCases>>;
+    }[]
+  >
+> => {
+  try {
+    const profilesResult = await getIdentifierWithProfile()(accountSid, idx);
+
+    if (isErrorResult(profilesResult)) {
+      return profilesResult;
+    }
+
+    const { profile } = profilesResult.data;
+
+    const profiles = [profile];
+
+    const result = await Promise.all(
+      profiles.map(async p => {
+        const [contacts, cases] = await Promise.all([
+          searchContacts(accountSid, { contactNumber: idx }, query, ctx),
+          searchCases(accountSid, query, { contactNumber: idx }, ctx),
+        ]);
+
+        return { profile: p, contacts, cases };
+      }),
+    );
+
+    return newSuccessResult({ data: result });
+  } catch (err) {
+    return newErrorResult({
+      message: err instanceof Error ? err.message : String(err),
+    });
+  }
+};
