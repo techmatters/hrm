@@ -50,7 +50,7 @@ export type SearchParameters = {
   dateFrom?: string;
   dateTo?: string;
   contactNumber?: string;
-  onlyDataContacts: boolean;
+  onlyDataContacts?: boolean;
   shouldIncludeUpdatedAt?: boolean;
 };
 
