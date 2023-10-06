@@ -40,7 +40,3 @@ export const selectCoalesceConversationMediasByContactId = (contactAlias: string
   FROM "ConversationMedias" cm
   WHERE ${onFkFilteredClause(contactAlias)}
 `;
-
-export const leftJoinConversationMediasOnFK = (contactAlias: string) => `
-  LEFT JOIN "ConversationMedias" cm ON ${onFkFilteredClause(contactAlias)}
-`;
