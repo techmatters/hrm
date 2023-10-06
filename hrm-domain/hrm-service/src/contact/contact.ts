@@ -56,7 +56,7 @@ export * from './contact-json';
 
 export type WithLegacyCategories<T extends Contact | NewContactRecord | PatchPayload> =
   Omit<T, 'rawJson'> & {
-    rawJson: Partial<
+    rawJson?: Partial<
       Omit<ContactRawJson, 'caseInformation'> & {
         caseInformation: Record<
           string,
@@ -70,7 +70,7 @@ export type PatchPayload = Omit<
   ExistingContactRecord,
   'id' | 'accountSid' | 'updatedAt' | 'rawJson'
 > & {
-  rawJson: Partial<ContactRawJson>;
+  rawJson?: Partial<ContactRawJson>;
   referrals?: ReferralWithoutContactId[];
 };
 

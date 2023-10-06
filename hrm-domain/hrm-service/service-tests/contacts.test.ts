@@ -45,7 +45,11 @@ import {
 import './case-validation';
 import * as caseApi from '../src/case/case';
 import * as caseDb from '../src/case/case-data-access';
-import { PatchPayload, WithLegacyCategories } from '../src/contact/contact';
+import {
+  CreateContactPayload,
+  PatchPayload,
+  WithLegacyCategories,
+} from '../src/contact/contact';
 import * as contactApi from '../src/contact/contact';
 import * as contactDb from '../src/contact/contact-data-access';
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
@@ -1496,7 +1500,7 @@ describe('/contacts route', () => {
           await deleteContactById(createdContact.id, createdContact.accountSid);
         }
       });
-      describe('Blank rawJson', () => {
+      describe('rawJson changes', () => {
         const sampleRawJson: ContactRawJson = {
           ...(contact1.rawJson as ContactRawJson),
           categories: {
@@ -1515,6 +1519,30 @@ describe('/contacts route', () => {
           },
         };
         const tests: TestOptions[] = [
+          {
+            description: 'set callType to data call type',
+            patch: {
+              callType: 'Child calling about self',
+            },
+            expected: {
+              callType: 'Child calling about self',
+              caseInformation: {
+                categories: {},
+              },
+            },
+          },
+          {
+            description: 'set callType to non data call type',
+            patch: {
+              callType: 'Hang up',
+            },
+            expected: {
+              callType: 'Hang up',
+              caseInformation: {
+                categories: {},
+              },
+            },
+          },
           {
             description: 'add child information',
             patch: {
@@ -1608,6 +1636,29 @@ describe('/contacts route', () => {
               categories: {
                 category1: ['subcategory1', 'subcategory2'],
               },
+            },
+          },
+
+          {
+            description: 'overwrite callType as data call type',
+            original: sampleRawJson,
+            patch: {
+              callType: 'Child calling about self',
+            },
+            expected: {
+              ...sampleRawJsonWithLegacyCategories,
+              callType: 'Child calling about self',
+            },
+          },
+          {
+            description: 'overwrite callType as non data call type',
+            original: sampleRawJson,
+            patch: {
+              callType: 'Hang up',
+            },
+            expected: {
+              ...sampleRawJsonWithLegacyCategories,
+              callType: 'Hang up',
             },
           },
           {
@@ -1736,8 +1787,8 @@ describe('/contacts route', () => {
 
               expect(response.status).toBe(200);
               const { categories, ...caseInformationWithoutLegacyCategories } =
-                expected.caseInformation ?? {};
-              const expectedInDb: Partial<ContactRawJson> = expected.caseInformation
+                expected?.caseInformation ?? {};
+              const expectedInDb: Partial<ContactRawJson> = expected?.caseInformation
                 ? {
                     ...expected,
                     caseInformation: caseInformationWithoutLegacyCategories as Record<
@@ -1749,8 +1800,8 @@ describe('/contacts route', () => {
               // Bodge a corner case where an absent caseInformation is untouched by the patch operation
               if (
                 !original?.caseInformation &&
-                !patch.caseInformation &&
-                !patch.categories
+                !patch?.caseInformation &&
+                !patch?.categories
               ) {
                 delete expectedInDb.caseInformation;
               }
@@ -1774,6 +1825,119 @@ describe('/contacts route', () => {
                 updatedAt: expect.toParseAsDate(),
                 updatedBy: workerSid,
                 rawJson: expectedInDb,
+                csamReports: [],
+                referrals: [],
+              });
+            } finally {
+              await deleteContactById(createdContact.id, createdContact.accountSid);
+            }
+          },
+        );
+      });
+
+      describe('Changes outside rawJson', () => {
+        type FullPatchTestOptions = {
+          patch: PatchPayload;
+          description: string;
+          originalDifferences?: PatchPayload;
+          expectedDifferences?: PatchPayload;
+        };
+
+        const testCases: FullPatchTestOptions[] = [
+          {
+            description: 'patches conversationDuration',
+            patch: {
+              conversationDuration: 1337,
+            },
+            expectedDifferences: {
+              conversationDuration: 1337,
+            },
+            originalDifferences: {
+              conversationDuration: 42,
+            },
+          },
+        ];
+        each(testCases).test(
+          'should $description if that is specified in the payload',
+          async ({
+            patch,
+            expectedDifferences,
+            originalDifferences,
+          }: FullPatchTestOptions) => {
+            const original: CreateContactPayload = {
+              ...contact1,
+              ...originalDifferences,
+              rawJson: {
+                ...contact1.rawJson,
+                ...originalDifferences?.rawJson,
+              },
+            };
+            const createdContact = await contactApi.createContact(
+              accountSid,
+              workerSid,
+              original,
+              { user: twilioUser(workerSid, []), can: () => true },
+            );
+            const expected: WithLegacyCategories<contactDb.Contact> = {
+              ...createdContact,
+              ...expectedDifferences,
+              rawJson: {
+                ...createdContact.rawJson,
+                ...expectedDifferences?.rawJson,
+                caseInformation: {
+                  ...createdContact.rawJson!.caseInformation,
+                  ...expectedDifferences?.rawJson?.caseInformation,
+                  categories: {},
+                },
+              },
+            };
+            try {
+              const existingContactId = createdContact.id;
+              const response = await request
+                .patch(subRoute(existingContactId))
+                .set(headers)
+                .send(patch);
+
+              expect(response.status).toBe(200);
+              const { categories, ...caseInformationWithoutLegacyCategories } =
+                expected.rawJson?.caseInformation ?? {};
+              const expectedInDb: contactApi.Contact = expected.rawJson?.caseInformation
+                ? ({
+                    ...expected,
+                    rawJson: {
+                      ...expected.rawJson,
+                      caseInformation: caseInformationWithoutLegacyCategories as Record<
+                        string,
+                        string | boolean
+                      >,
+                    },
+                  } as contactApi.Contact)
+                : (expected as contactApi.Contact);
+              // Bodge a corner case where an absent caseInformation is untouched by the patch operation
+              if (
+                !original.rawJson?.caseInformation &&
+                !patch.rawJson?.caseInformation &&
+                !patch.rawJson?.categories
+              ) {
+                delete (expectedInDb.rawJson as any).caseInformation;
+              }
+              expect(response.body).toStrictEqual({
+                ...expected,
+                timeOfContact: expect.toParseAsDate(expected.timeOfContact),
+                createdAt: expect.toParseAsDate(expected.createdAt),
+                updatedAt: expect.toParseAsDate(),
+                updatedBy: workerSid,
+                referrals: [],
+              });
+              // Test the association
+              expect(response.body.csamReports).toHaveLength(0);
+              const savedContact = await contactDb.getById(accountSid, existingContactId);
+
+              expect(savedContact).toStrictEqual({
+                ...expectedInDb,
+                createdAt: expect.toParseAsDate(createdContact.createdAt),
+                updatedAt: expect.toParseAsDate(),
+                updatedBy: workerSid,
                 csamReports: [],
                 referrals: [],
               });
