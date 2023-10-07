@@ -20,10 +20,11 @@ import {
   connectToCase,
   Contact,
   create,
+  SearchQueryFunction,
   getById,
   patch,
   search,
-  SearchParameters,
+  searchByProfileId,
 } from './contact-data-access';
 import { ContactRawJson, getPersonsName, ReferralWithoutContactId } from './contact-json';
 import { retrieveCategories } from './categories';
@@ -512,57 +513,68 @@ const overrideCounsellor = (
   counsellor?: string,
 ) => (searchPermissions.canOnlyViewOwnContacts ? user.workerSid : counsellor);
 
-export const searchContacts = async (
-  accountSid: string,
-  searchParameters: SearchParameters,
-  query,
-  {
-    can,
-    user,
-    searchPermissions,
-  }: {
-    can: ReturnType<typeof setupCanForRules>;
-    user: TwilioUser;
-    searchPermissions: SearchPermissions;
-  },
-  originalFormat?: boolean,
-): Promise<{ count: number; contacts: SearchContact[] | Contact[] }> => {
-  const applyTransformations = bindApplyTransformations(can, user);
-  const { limit, offset } = getPaginationElements(query);
-  const { canOnlyViewOwnContacts } = searchPermissions;
+const generalizedSearchContacts =
+  <T extends { counselor?: string }>(searchQuery: SearchQueryFunction<T>) =>
+  async (
+    accountSid: string,
+    searchParameters: T,
+    query,
+    {
+      can,
+      user,
+      searchPermissions,
+    }: {
+      can: ReturnType<typeof setupCanForRules>;
+      user: TwilioUser;
+      searchPermissions: SearchPermissions;
+    },
+    originalFormat?: boolean,
+  ): Promise<{ count: number; contacts: SearchContact[] | Contact[] }> => {
+    const applyTransformations = bindApplyTransformations(can, user);
+    const { limit, offset } = getPaginationElements(query);
+    const { canOnlyViewOwnContacts } = searchPermissions;
 
-  /**
-   * VIEW_CONTACT permission:
-   * Handle filtering contacts according to: https://github.com/techmatters/hrm/pull/316#discussion_r1131118034
-   * The search query already filters the contacts based on the given counsellor (workerSid).
-   */
-  if (
-    cannotViewAnyContactsGivenThisCounsellor(
-      user,
-      searchPermissions,
-      searchParameters.counselor,
-    )
-  ) {
-    return {
-      count: 0,
-      contacts: [],
-    };
-  } else {
-    searchParameters.counselor = overrideCounsellor(
-      user,
-      searchPermissions,
-      searchParameters.counselor,
+    /**
+     * VIEW_CONTACT permission:
+     * Handle filtering contacts according to: https://github.com/techmatters/hrm/pull/316#discussion_r1131118034
+     * The search query already filters the contacts based on the given counsellor (workerSid).
+     */
+    if (
+      cannotViewAnyContactsGivenThisCounsellor(
+        user,
+        searchPermissions,
+        searchParameters.counselor,
+      )
+    ) {
+      return {
+        count: 0,
+        contacts: [],
+      };
+    } else {
+      searchParameters.counselor = overrideCounsellor(
+        user,
+        searchPermissions,
+        searchParameters.counselor,
+      );
+    }
+    if (canOnlyViewOwnContacts) {
+      searchParameters.counselor = user.workerSid;
+    }
+
+    const unprocessedResults = await searchQuery(
+      accountSid,
+      searchParameters,
+      limit,
+      offset,
     );
-  }
-  if (canOnlyViewOwnContacts) {
-    searchParameters.counselor = user.workerSid;
-  }
+    const contacts = unprocessedResults.rows.map(applyTransformations);
 
-  const unprocessedResults = await search(accountSid, searchParameters, limit, offset);
-  const contacts = unprocessedResults.rows.map(applyTransformations);
-
-  return {
-    count: unprocessedResults.count,
-    contacts: originalFormat ? contacts : convertContactsToSearchResults(contacts),
+    return {
+      count: unprocessedResults.count,
+      contacts: originalFormat ? contacts : convertContactsToSearchResults(contacts),
+    };
   };
-};
+
+export const searchContacts = generalizedSearchContacts(search);
+
+export const searchContactsByProfileId = generalizedSearchContacts(searchByProfileId);

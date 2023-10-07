@@ -27,7 +27,7 @@ import {
   getIdentifierWithProfile,
 } from './profile-data-access';
 import { searchCases } from '../case/case';
-import { searchContacts } from '../contact/contact';
+import { searchContactsByProfileId } from '../contact/contact';
 import { PaginationQuery } from '../search';
 import { setupCanForRules } from '../permissions/setupCanForRules';
 import { SearchPermissions } from '../permissions/search-permissions';
@@ -78,7 +78,7 @@ export const getProfilesByIdentifier = async (
   Result<
     {
       profile: Profile;
-      contacts: Awaited<ReturnType<typeof searchContacts>>;
+      contacts: Awaited<ReturnType<typeof searchContactsByProfileId>>;
       cases: Awaited<ReturnType<typeof searchCases>>;
     }[]
   >
@@ -97,7 +97,7 @@ export const getProfilesByIdentifier = async (
     const result = await Promise.all(
       profiles.map(async p => {
         const [contacts, cases] = await Promise.all([
-          searchContacts(accountSid, { contactNumber: idx }, query, ctx),
+          searchContactsByProfileId(accountSid, { profileId: p.id }, query, ctx),
           searchCases(accountSid, query, { contactNumber: idx }, ctx),
         ]);
 
