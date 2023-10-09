@@ -174,7 +174,6 @@ describe('createContact', () => {
       'channel',
       'channelSid',
       'serviceSid',
-      'taskId',
       'twilioWorkerId',
     );
     const returnValue = await createContact(
@@ -607,6 +606,7 @@ describe('searchContacts', () => {
       .build();
     const sarahPark = new ContactBuilder()
       .withId(1234)
+      .withTaskId('sarah-park-task')
       .withChildFirstName('Sarah')
       .withChildLastName('Park')
       .withCallSummary('Young pregnant woman')

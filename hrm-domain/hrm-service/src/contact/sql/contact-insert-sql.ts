@@ -16,6 +16,7 @@
 
 import { pgp } from '../../connection-pool';
 import { ContactRawJson } from '../contact-json';
+import { selectSingleContactByTaskId } from './contact-get-sql';
 
 export type NewContactRecord = {
   rawJson: ContactRawJson;
@@ -27,7 +28,7 @@ export type NewContactRecord = {
   channel?: string;
   conversationDuration: number;
   timeOfContact?: Date;
-  taskId?: string;
+  taskId: string;
   channelSid?: string;
   serviceSid?: string;
 };
@@ -35,6 +36,7 @@ export type NewContactRecord = {
 export const insertContactSql = (
   contact: NewContactRecord & { accountSid: string; createdAt: Date; updatedAt: Date },
 ) => `
+WITH inserted AS (
   ${pgp.helpers.insert(
     contact,
     [
@@ -56,5 +58,15 @@ export const insertContactSql = (
     ],
     'Contacts',
   )}
+  ON CONFLICT ("taskId", "accountSid") DO NOTHING
   RETURNING *
-`;
+)
+SELECT "inserted".*, NULL AS "csamReports", NULL AS "referrals", NULL AS "conversationMedia", true AS "isNewRecord" FROM inserted
+UNION
+SELECT "existing".*, false AS "isNewRecord" FROM 
+(
+    ${pgp.as.format(selectSingleContactByTaskId('Contacts'), {
+      taskId: contact.taskId,
+      accountSid: contact.accountSid,
+    })}
+) AS existing WHERE existing.id NOT IN (SELECT id FROM inserted)`;
