@@ -24,7 +24,7 @@ import {
   getConversationMediaByContactId,
   isS3StoredConversationMedia,
 } from '../conversation-media/conversation-media';
-import { TResult, err, ok } from '@tech-matters/types';
+import { TResult, newErr, newOk } from '@tech-matters/types';
 
 export const canPerformActionsOnObject = async <T extends TargetKind>({
   accountSid,
@@ -43,7 +43,7 @@ export const canPerformActionsOnObject = async <T extends TargetKind>({
 }): Promise<TResult<boolean>> => {
   try {
     if (!isValidSetOfActionsForTarget(targetKind, actions)) {
-      return err({
+      return newErr({
         message: 'invalid actions for objectType',
         statusCode: 400,
       });
@@ -55,27 +55,27 @@ export const canPerformActionsOnObject = async <T extends TargetKind>({
 
         const canPerform = actions.every(action => can(user, action, object));
 
-        return ok({ data: canPerform });
+        return newOk({ data: canPerform });
       }
       case 'case': {
         const object = await getCaseById(objectId, accountSid, { can, user });
 
         const canPerform = actions.every(action => can(user, action, object));
 
-        return ok({ data: canPerform });
+        return newOk({ data: canPerform });
       }
       case 'postSurvey': {
         // Nothing from the target param is being used for postSurvey target kind, we can pass null for now
         const canPerform = actions.every(action => can(user, action, null));
 
-        return ok({ data: canPerform });
+        return newOk({ data: canPerform });
       }
       default: {
         assertExhaustive(targetKind);
       }
     }
   } catch (error) {
-    return err({ message: (error as Error).message });
+    return newErr({ message: (error as Error).message });
   }
 };
 
@@ -124,19 +124,19 @@ export const isValidFileLocation = async ({
             cm.storeTypeSpecificData?.location?.key === key,
         );
 
-        return ok({ data: isValid });
+        return newOk({ data: isValid });
       }
       case 'case': {
-        return ok({ data: false });
+        return newOk({ data: false });
       }
       case 'postSurvey': {
-        return ok({ data: false });
+        return newOk({ data: false });
       }
       default: {
         assertExhaustive(targetKind);
       }
     }
   } catch (error) {
-    return err({ message: (error as Error).message });
+    return newErr({ message: (error as Error).message });
   }
 };

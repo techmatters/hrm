@@ -23,7 +23,7 @@ import {
   isValidFileLocation,
 } from './canPerformActionOnObject';
 import { TargetKind, isTargetKind } from './actions';
-import { TResult, err, isErr, ok } from '@tech-matters/types';
+import { TResult, newErr, isErr, newOk } from '@tech-matters/types';
 
 export default (permissions: Permissions) => {
   const permissionsRouter = SafeRouter();
@@ -57,15 +57,15 @@ export default (permissions: Permissions) => {
     objectId: number;
   }> => {
     if (!objectType || !isTargetKind(objectType)) {
-      return err({ message: 'invalid objectType', statusCode: 400 });
+      return newErr({ message: 'invalid objectType', statusCode: 400 });
     }
 
     const parsedId = parseInt(objectId, 10);
     if (!objectId || !Number.isInteger(parsedId)) {
-      return err({ message: 'invalid objectId', statusCode: 400 });
+      return newErr({ message: 'invalid objectId', statusCode: 400 });
     }
 
-    return ok({ data: { objectType, objectId: parsedId } });
+    return newOk({ data: { objectType, objectId: parsedId } });
   };
 
   permissionsRouter.get('/:action', publicEndpoint, async (req, res, next) => {
@@ -126,7 +126,7 @@ export default (permissions: Permissions) => {
       res.json({ message: 'all good :)' });
     } catch (error) {
       return next(
-        createError(500, error instanceof Error ? error.message : JSON.stringify(err)),
+        createError(500, error instanceof Error ? error.message : JSON.stringify(newErr)),
       );
     }
   });

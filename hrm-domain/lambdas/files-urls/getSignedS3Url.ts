@@ -15,7 +15,7 @@
  */
 
 import { AlbHandlerEvent } from '@tech-matters/alb-handler';
-import { TResult, err, isErr, ok } from '@tech-matters/types';
+import { TResult, newErr, isErr, newOk } from '@tech-matters/types';
 import { authenticate } from '@tech-matters/hrm-authentication';
 import { getSignedUrl } from '@tech-matters/s3-client';
 import { parseParameters } from './parseParameters';
@@ -80,13 +80,13 @@ const getSignedS3Url = async (event: AlbHandlerEvent): Promise<GetSignedS3UrlRes
       key,
     });
 
-    return ok({
+    return newOk({
       data: {
         media_url: getSignedUrlResult,
       },
     });
   } catch (error) {
-    return err({
+    return newErr({
       message: error as string,
     });
   }

@@ -31,7 +31,7 @@ type ErrorResult = ResultBase & {
   name: string;
 };
 
-export const err = ({
+export const newErr = ({
   message,
   statusCode = 500,
   name = 'Error',
@@ -54,7 +54,7 @@ type NewSuccessResultParms<TData> = {
   statusCode?: number;
 };
 
-export const ok = <TData>({
+export const newOk = <TData>({
   data,
   statusCode = 200,
 }: NewSuccessResultParms<TData>): SuccessResult<TData> => ({
