@@ -15,7 +15,7 @@
  */
 
 import omit from 'lodash/omit';
-import { ContactJobType, isErrorResult } from '@tech-matters/types';
+import { ContactJobType, isErr } from '@tech-matters/types';
 import {
   connectToCase,
   Contact,
@@ -274,7 +274,7 @@ export const createContact = async (
       accountSid,
     );
 
-    if (isErrorResult(profileResult)) {
+    if (isErr(profileResult)) {
       // Throw to make the transaction to rollback
       throw new Error(
         `Failed creating contact: profile result returned error variant ${profileResult.message}`,
@@ -421,6 +421,47 @@ export const connectContactToCase = async (
 
   const applyTransformations = bindApplyTransformations(can, user);
   return applyTransformations(updated);
+};
+
+export const addConversationMediaToContact = async (
+  accountSid: string,
+  contactId: string,
+  conversationMediaPayload: ConversationMedia[],
+  { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
+): Promise<Contact> => {
+  const contact = await getById(accountSid, parseInt(contactId));
+  return db.tx(async conn => {
+    const createdConversationMedia: ConversationMedia[] = [];
+    if (conversationMediaPayload && conversationMediaPayload.length) {
+      for (const cm of conversationMediaPayload) {
+        const conversationMedia = await createConversationMedia(conn)(accountSid, {
+          contactId,
+          ...cm,
+        });
+
+        createdConversationMedia.push(conversationMedia);
+      }
+    }
+
+    // if pertinent, create retrieve-transcript job
+    const pendingTranscript = findS3StoredTranscriptPending(
+      contact,
+      createdConversationMedia,
+    );
+    if (pendingTranscript) {
+      await createContactJob(conn)({
+        jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
+        resource: contact,
+        additionalPayload: { conversationMediaId: pendingTranscript.id },
+      });
+    }
+    const applyTransformations = bindApplyTransformations(can, user);
+    const updated = {
+      ...contact,
+      conversationMedia: [...contact.conversationMedia, ...createdConversationMedia],
+    };
+    return applyTransformations(updated);
+  });
 };
 
 function isNullOrEmptyObject(obj) {

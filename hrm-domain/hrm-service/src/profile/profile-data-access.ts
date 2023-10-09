@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { Result, newSuccessResult, newErrorResult } from '@tech-matters/types';
+import { TResult, newOk, newErr } from '@tech-matters/types';
 
 import {
   NewIdentifierRecord,
@@ -71,10 +71,10 @@ export const createIdentifierAndProfile =
   async (
     accountSid: string,
     payload: NewIdentifierRecord,
-  ): Promise<Result<{ identifier: Identifier; profile: Profile }>> => {
+  ): Promise<TResult<{ identifier: Identifier; profile: Profile }>> => {
     try {
       return await txIfNotInOne<
-        Result<{
+        TResult<{
           identifier: Identifier;
           profile: Profile;
         }>
@@ -96,12 +96,12 @@ export const createIdentifierAndProfile =
           }),
         );
 
-        return newSuccessResult({
+        return newOk({
           data: { identifier: newIdentifier, profile: newProfile },
         });
       });
     } catch (err) {
-      return newErrorResult({
+      return newErr({
         message: err instanceof Error ? err.message : String(err),
       });
     }
@@ -112,7 +112,7 @@ export const getIdentifierWithProfile =
   async (
     accountSid: string,
     idx: string,
-  ): Promise<Result<{ identifier: Identifier; profile: Profile } | null>> => {
+  ): Promise<TResult<{ identifier: Identifier; profile: Profile } | null>> => {
     try {
       const data = await txIfNotInOne<{
         identifier: Identifier;
@@ -124,9 +124,9 @@ export const getIdentifierWithProfile =
         }),
       );
 
-      return newSuccessResult({ data: data });
+      return newOk({ data: data });
     } catch (err) {
-      return newErrorResult({
+      return newErr({
         message: err instanceof Error ? err.message : String(err),
       });
     }

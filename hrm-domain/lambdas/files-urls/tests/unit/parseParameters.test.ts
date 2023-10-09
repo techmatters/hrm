@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 import type { ALBEvent } from 'aws-lambda';
-import { newErrorResult, newSuccessResult } from '@tech-matters/types';
+import { newOk, newErr } from '@tech-matters/types';
 import { parseParameters, ERROR_MESSAGES } from '../../parseParameters';
 import { mockPathParameters, mockQueryStringParameters, newAlbEvent } from '../__mocks__';
 
@@ -25,7 +25,7 @@ describe('parseParameters', () => {
     } as ALBEvent;
     const result = await parseParameters(event);
     expect(result).toEqual(
-      newErrorResult({
+      newErr({
         message: ERROR_MESSAGES.MISSING_REQUIRED_QUERY_STRING_PARAMETERS,
       }),
     );
@@ -40,7 +40,7 @@ describe('parseParameters', () => {
     });
     const result = await parseParameters(event);
     expect(result).toEqual(
-      newErrorResult({
+      newErr({
         message: ERROR_MESSAGES.INVALID_METHOD,
       }),
     );
@@ -55,7 +55,7 @@ describe('parseParameters', () => {
     });
     const result = await parseParameters(event);
     expect(result).toEqual(
-      newErrorResult({
+      newErr({
         message: ERROR_MESSAGES.INVALID_FILE_TYPE,
       }),
     );
@@ -72,7 +72,7 @@ describe('parseParameters', () => {
     });
     const result = await parseParameters(event);
     expect(result).toEqual(
-      newErrorResult({
+      newErr({
         message: ERROR_MESSAGES.MISSING_REQUIRED_PARAMETERS_FOR_FILE_TYPE,
       }),
     );
@@ -84,7 +84,7 @@ describe('parseParameters', () => {
     });
     const result = await parseParameters(event);
     expect(result).toEqual(
-      newSuccessResult({
+      newOk({
         data: {
           ...mockQueryStringParameters,
           ...mockPathParameters,

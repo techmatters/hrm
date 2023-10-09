@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { isErrorResult, newSuccessResult } from '@tech-matters/types';
+import { newOk, isErr } from '@tech-matters/types';
 import {
   HrmAuthenticateParameters,
   HrmAuthenticateResult,
@@ -91,7 +91,7 @@ const filesUrlsAuthenticator = async (
 
   // This is a quick and dirty way to lock this down so we can test with fake data without exposing real data in the test environment
   if (mockBuckets.includes(bucket)) {
-    return newSuccessResult({ data: true });
+    return newOk({ data: true });
   }
 
   const result = await callHrmApi({
@@ -104,11 +104,11 @@ const filesUrlsAuthenticator = async (
       key,
     },
   });
-  if (isErrorResult(result)) {
+  if (isErr(result)) {
     return result;
   }
 
-  return newSuccessResult({ data: true });
+  return newOk({ data: true });
 };
 
 export default filesUrlsAuthenticator;
