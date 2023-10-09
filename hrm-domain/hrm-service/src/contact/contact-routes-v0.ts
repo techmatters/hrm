@@ -101,6 +101,7 @@ contactsRouter.post('/search', publicEndpoint, async (req, res) => {
   res.json(searchResults);
 });
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const validatePatchPayload = ({ body }: Request, res: Response, next: NextFunction) => {
   if (typeof body !== 'object' || Array.isArray(body)) {
     throw createError(400);
@@ -140,8 +141,9 @@ const canEditContact = asyncHandler(async (req, res, next) => {
 
 contactsRouter.patch(
   '/:contactId',
-  validatePatchPayload,
+  // validatePatchPayload,
   // canEditContact,
+  publicEndpoint,
   async (req, res) => {
     const { accountSid, user } = req;
     const { contactId } = req.params;
