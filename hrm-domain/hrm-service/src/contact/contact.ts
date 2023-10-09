@@ -270,24 +270,25 @@ export const createContact = async (
           conversationMediaPayload,
         } = getNewContactPayload(newContact);
 
-    const completeNewContact: NewContactRecord = {
-      ...newContactPayload,
-      helpline: newContactPayload.helpline ?? '',
-      number: newContactPayload.number ?? '',
-      channel: newContactPayload.channel ?? '',
-      timeOfContact: newContactPayload.timeOfContact
-        ? new Date(newContactPayload.timeOfContact)
-        : new Date(),
-      channelSid: newContactPayload.channelSid ?? '',
-      serviceSid: newContactPayload.serviceSid ?? '',
-      taskId: newContactPayload.taskId ?? '',
-      twilioWorkerId: newContactPayload.twilioWorkerId ?? '',
-      rawJson: newContactPayload.rawJson,
-      queueName:
-        // Checking in rawJson might be redundant, copied from Sequelize logic in contact-controller.js
-        newContactPayload.queueName || (<any>(newContactPayload.rawJson ?? {})).queueName,
-      createdBy,
-    };
+        const completeNewContact: NewContactRecord = {
+          ...newContactPayload,
+          helpline: newContactPayload.helpline ?? '',
+          number: newContactPayload.number ?? '',
+          channel: newContactPayload.channel ?? '',
+          timeOfContact: newContactPayload.timeOfContact
+            ? new Date(newContactPayload.timeOfContact)
+            : new Date(),
+          channelSid: newContactPayload.channelSid ?? '',
+          serviceSid: newContactPayload.serviceSid ?? '',
+          taskId: newContactPayload.taskId ?? '',
+          twilioWorkerId: newContactPayload.twilioWorkerId ?? '',
+          rawJson: newContactPayload.rawJson,
+          queueName:
+            // Checking in rawJson might be redundant, copied from Sequelize logic in contact-controller.js
+            newContactPayload.queueName ||
+            (<any>(newContactPayload.rawJson ?? {})).queueName,
+          createdBy,
+        };
 
         // create contact record (may return an exiting one cause idempotence)
         const { contact, isNewRecord } = await create(conn)(
@@ -316,19 +317,19 @@ export const createContact = async (
           const referrals = referralsPayload ?? [];
           const createdReferrals = [];
 
-      if (referrals && referrals.length) {
-        // Do this sequentially, it's on a single connection in a transaction anyway.
-        for (const referral of referrals) {
-          const { contactId, ...withoutContactId } = await createReferral(conn)(
-            accountSid,
-            {
-              ...referral,
-              contactId: contact.id.toString(),
-            },
-          );
-          createdReferrals.push(withoutContactId);
-        }
-      }
+          if (referrals && referrals.length) {
+            // Do this sequentially, it's on a single connection in a transaction anyway.
+            for (const referral of referrals) {
+              const { contactId, ...withoutContactId } = await createReferral(conn)(
+                accountSid,
+                {
+                  ...referral,
+                  contactId: contact.id.toString(),
+                },
+              );
+              createdReferrals.push(withoutContactId);
+            }
+          }
 
           const createdConversationMedia: ConversationMedia[] = [];
           if (conversationMediaPayload && conversationMediaPayload.length) {
