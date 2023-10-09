@@ -40,7 +40,3 @@ export const selectCoalesceCsamReportsByContactId = (contactAlias: string) => `
   FROM "CSAMReports" r
   WHERE ${onFkFilteredClause(contactAlias)}
 `;
-
-export const leftJoinCsamReportsOnFK = (contactAlias: string) => `
-  LEFT JOIN "CSAMReports" r ON ${onFkFilteredClause(contactAlias)}
-`;
