@@ -211,7 +211,6 @@ describe('createContact', () => {
       'channel',
       'channelSid',
       'serviceSid',
-      'taskId',
       'twilioWorkerId',
     );
 
