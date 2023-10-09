@@ -70,7 +70,7 @@ export const getProfilesByIdentifier = async (
     searchPermissions: SearchPermissions;
   },
 ): Promise<
-  Result<
+  TResult<
     {
       profile: Profile;
       contacts: Awaited<ReturnType<typeof searchContactsByProfileId>>;
@@ -81,7 +81,7 @@ export const getProfilesByIdentifier = async (
   try {
     const profilesResult = await getIdentifierWithProfile()(accountSid, idx);
 
-    if (isErrorResult(profilesResult)) {
+    if (isErr(profilesResult)) {
       return profilesResult;
     }
 
@@ -100,9 +100,9 @@ export const getProfilesByIdentifier = async (
       }),
     );
 
-    return newSuccessResult({ data: result });
+    return newOk({ data: result });
   } catch (err) {
-    return newErrorResult({
+    return newErr({
       message: err instanceof Error ? err.message : String(err),
     });
   }

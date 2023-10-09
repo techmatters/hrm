@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { isErrorResult } from '@tech-matters/types';
+import { isErr } from '@tech-matters/types';
 import createError from 'http-errors';
 
 import { SafeRouter, publicEndpoint } from '../permissions';
@@ -39,7 +39,7 @@ profilesRouter.get('/identifier/:identifier', publicEndpoint, async (req, res, n
       },
     );
 
-    if (isErrorResult(result)) {
+    if (isErr(result)) {
       return next(createError(result.statusCode, result.message));
     }
 
