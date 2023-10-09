@@ -22,6 +22,7 @@ import {
   searchContacts,
   createContact,
   getContactById,
+  addConversationMediaToContact,
 } from './contact';
 import asyncHandler from '../async-handler';
 import type { Request, Response, NextFunction } from 'express';
@@ -145,5 +146,22 @@ contactsRouter.patch(
     }
   },
 );
+
+contactsRouter.post('/:contactId/conversationMedia', async (req, res) => {
+  const { accountSid, user } = req;
+  const { contactId } = req.params;
+
+  try {
+    const contact = await addConversationMediaToContact(accountSid, contactId, req.body, {
+      can: req.can,
+      user,
+    });
+    res.json(contact);
+  } catch (err) {
+    if (err.message.toLowerCase().includes('contact not found')) {
+      throw createError(404);
+    } else throw err;
+  }
+});
 
 export default contactsRouter.expressRouter;

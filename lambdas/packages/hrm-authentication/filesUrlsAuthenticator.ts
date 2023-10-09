@@ -14,7 +14,9 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
+import { isErrorResult, newSuccessResult } from '@tech-matters/types';
 import {
+<<<<<<< HEAD
   FileTypes,
   FileMethods,
   fileTypes,
@@ -22,18 +24,52 @@ import {
   Result as R,
 } from '@tech-matters/types';
 import { HrmAuthenticateParameters, HrmAuthenticateResult } from './index';
+=======
+  HrmAuthenticateParameters,
+  HrmAuthenticateResult,
+  HRMAuthenticationObjectTypes,
+} from './index';
+>>>>>>> origin/master
 import callHrmApi from './callHrmApi';
 
 export const mockBuckets = ['mock-bucket'];
 
+export const fileTypes = {
+  recording: 'Recording',
+  transcript: 'ExternalTranscript',
+  document: 'Case',
+} as const;
+
+export type FileTypes = keyof typeof fileTypes;
+
+export type FileMethods = 'getObject' | 'putObject' | 'deleteObject';
+
+export const fileMethods: Record<
+  HRMAuthenticationObjectTypes,
+  Partial<Record<FileMethods, string>>
+> = {
+  contact: {
+    getObject: 'view',
+  },
+  case: {
+    getObject: 'view',
+    putObject: 'view',
+    deleteObject: 'view',
+  },
+} as const;
+
 export const getPermission = ({
+  objectType,
   fileType,
   method,
 }: {
+  objectType: HRMAuthenticationObjectTypes;
   fileType: FileTypes;
   method: FileMethods;
 }) => {
-  return `${fileMethods[method]}${fileTypes[fileType]}`;
+  if (!fileTypes[fileType]) throw new Error('Invalid fileType');
+  if (!fileMethods[objectType]?.[method]) throw new Error('Invalid method');
+  return `${fileMethods[objectType][method]}${fileTypes[fileType]}`;
 };
 
 export type HrmAuthenticateFilesUrlsRequestData = {
@@ -45,29 +81,38 @@ export type HrmAuthenticateFilesUrlsRequestData = {
 
 export const authUrlPathGenerator = ({
   accountSid,
-  objectId,
   objectType,
-  requestData: { bucket, key, fileType, method },
+  requestData: { fileType, method },
 }: HrmAuthenticateParameters) => {
-  const permission = getPermission({ fileType, method });
+  const permission = getPermission({ objectType, fileType, method });
 
-  return `v0/accounts/${accountSid}/permissions/${permission}?objectType=${objectType}&objectId=${objectId}&bucket=${bucket}&key=${key}`;
+  return `v0/accounts/${accountSid}/permissions/${permission}`;
 };
 
 const filesUrlsAuthenticator = async (
   params: HrmAuthenticateParameters,
 ): Promise<HrmAuthenticateResult> => {
-  const { authHeader, requestData } = params;
+  const {
+    objectId,
+    objectType,
+    authHeader,
+    requestData: { bucket, key },
+  } = params;
 
   // This is a quick and dirty way to lock this down so we can test with fake data without exposing real data in the test environment
-  if (mockBuckets.includes(requestData.bucket)) {
+  if (mockBuckets.includes(bucket)) {
     return R.ok({ data: true });
   }
 
   const result = await callHrmApi({
     urlPath: authUrlPathGenerator(params),
     authHeader,
-    requestData,
+    requestData: {
+      objectType,
+      objectId,
+      bucket,
+      key,
+    },
   });
   if (R.isErr(result)) {
     return result;

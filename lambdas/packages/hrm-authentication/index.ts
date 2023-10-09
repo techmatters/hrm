@@ -22,13 +22,24 @@ const types = {
   filesUrls: (params: HrmAuthenticateParameters) => filesUrlsAuthenticator(params),
 };
 
+const objectTypes = {
+  contact: 'contact',
+  case: 'case',
+} as const;
+
+export type HRMAuthenticationObjectTypes = keyof typeof objectTypes;
+
+export const isAuthenticationObjectType = (
+  type: string,
+): type is HRMAuthenticationObjectTypes => Object.keys(objectTypes).includes(type);
+
 export type HrmAuthenticateTypes = keyof typeof types;
 
 export type HrmAuthenticateResult = R.TResult<true>;
 
 export type HrmAuthenticateParameters = {
   accountSid: string;
-  objectType: string;
+  objectType: HRMAuthenticationObjectTypes;
   objectId?: string;
   type: HrmAuthenticateTypes;
   authHeader: string;
@@ -38,7 +49,7 @@ export type HrmAuthenticateParameters = {
 export const authenticate = async (
   params: HrmAuthenticateParameters,
 ): Promise<HrmAuthenticateResult> => {
-  console.log('authenticate', params);
-
   return types[params.type](params);
 };
+
+export { FileTypes } from './filesUrlsAuthenticator';

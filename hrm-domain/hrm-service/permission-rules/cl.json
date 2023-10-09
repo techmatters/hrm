@@ -22,5 +22,5 @@
   "editContact":  [["everyone"]],
   "viewPostSurvey":  [["isSupervisor"]],
   "viewExternalTranscript": [["everyone"]],
-  "viewRecording": []
+  "viewRecording": [["everyone"]]
 }

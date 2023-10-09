@@ -16,12 +16,31 @@
 
 import { AlbHandlerEvent } from '@tech-matters/alb-handler';
 import { GetSignedUrlMethods, GET_SIGNED_URL_METHODS } from '@tech-matters/s3-client';
+<<<<<<< HEAD
 import { Result as R, FileTypes } from '@tech-matters/types';
+=======
+import {
+  newErrorResult,
+  newSuccessResult,
+  ErrorResult,
+  SuccessResult,
+} from '@tech-matters/types';
+>>>>>>> origin/master
 
-const objectTypes = {
+import {
+  FileTypes,
+  HRMAuthenticationObjectTypes,
+  isAuthenticationObjectType,
+} from '@tech-matters/hrm-authentication';
+
+const objectTypes: Record<HRMAuthenticationObjectTypes, Record<string, string[]>> = {
   contact: {
     requiredParameters: ['objectId'],
     fileTypes: ['recording', 'transcript'],
+  },
+  case: {
+    requiredParameters: ['objectId'],
+    fileTypes: ['document'],
   },
 };
 
@@ -41,7 +60,7 @@ export type Parameters = {
   key: string;
   accountSid: string;
   fileType: FileTypes;
-  objectType: string;
+  objectType: HRMAuthenticationObjectTypes;
   objectId?: string;
 };
 
@@ -82,7 +101,7 @@ export const parseParameters = (event: AlbHandlerEvent): ParseParametersResult =
 
   const objectTypeConfig = objectTypes[objectType as keyof typeof objectTypes];
 
-  if (!objectTypeConfig) {
+  if (!objectTypeConfig || !isAuthenticationObjectType(objectType)) {
     return R.err({ message: ERROR_MESSAGES.INVALID_OBJECT_TYPE });
   }
 

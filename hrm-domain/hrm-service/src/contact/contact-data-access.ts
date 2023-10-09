@@ -17,7 +17,7 @@
 import { db } from '../connection-pool';
 import { UPDATE_CASEID_BY_ID, UPDATE_RAWJSON_BY_ID } from './sql/contact-update-sql';
 import { SELECT_CONTACT_SEARCH } from './sql/contact-search-sql';
-import { endOfDay, parseISO, startOfDay } from 'date-fns';
+import { parseISO } from 'date-fns';
 import {
   selectSingleContactByIdSql,
   selectSingleContactByTaskId,
@@ -128,8 +128,8 @@ const searchParametersToQueryParameters = (
     helpline: helpline || undefined, // ensure empty strings are replaced with nulls
     contactNumber: contactNumber || undefined, // ensure empty strings are replaced with nulls
     counselor: counselor || undefined, // ensure empty strings are replaced with nulls
-    dateFrom: dateFrom ? startOfDay(parseISO(dateFrom)).toISOString() : undefined,
-    dateTo: dateTo ? endOfDay(parseISO(dateTo)).toISOString() : undefined,
+    dateFrom: dateFrom ? parseISO(dateFrom).toISOString() : undefined,
+    dateTo: dateTo ? parseISO(dateTo).toISOString() : undefined,
     accountSid,
 
     dataCallTypes: Object.values(callTypes),

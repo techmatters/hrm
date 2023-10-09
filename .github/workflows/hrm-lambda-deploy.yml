@@ -32,7 +32,6 @@ on:
         type: choice
         options:
           - hrm-domain/lambdas/files-urls
-          - hrm-domain/lambdas/contact-complete
           - hrm-domain/lambdas/contact-retrieve-transcript
           - lambdas/job-complete
           - resources-domain/lambdas/import-consumer
@@ -168,8 +167,8 @@ jobs:
           LAMBDA_FUNCTIONS=$(aws lambda list-functions --query "Functions[?contains(Description, 'ecr_image:${DOCKER_IMAGE_BASE}')].FunctionName" --output text)
 
           if [ -z "$LAMBDA_FUNCTIONS" ]; then
-            echo "Error: No Lambda functions found for image $DOCKER_IMAGE_BASE"
-            exit 1
+            echo "Warning: No Lambda functions found for image $DOCKER_IMAGE_BASE"
+            exit 0
           fi
 
           for LAMBDA in $LAMBDA_FUNCTIONS; do
