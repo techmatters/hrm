@@ -15,7 +15,7 @@
  */
 
 import omit from 'lodash/omit';
-import { ContactJobType, isErrorResult } from '@tech-matters/types';
+import { ContactJobType, isErr } from '@tech-matters/types';
 import {
   connectToCase,
   Contact,
@@ -273,7 +273,7 @@ export const createContact = async (
       accountSid,
     );
 
-    if (isErrorResult(profileResult)) {
+    if (isErr(profileResult)) {
       // Throw to make the transaction to rollback
       throw new Error(
         `Failed creating contact: profile result returned error variant ${profileResult.message}`,

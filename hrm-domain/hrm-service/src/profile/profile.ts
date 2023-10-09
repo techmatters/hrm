@@ -14,12 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import {
-  Result,
-  isErrorResult,
-  newErrorResult,
-  newSuccessResult,
-} from '@tech-matters/types';
+import { TResult, isErr, newErr, newOk } from '@tech-matters/types';
 import {
   Identifier,
   Profile,
@@ -33,15 +28,15 @@ export const getOrCreateProfileWithIdentifier =
   async (
     idx: string,
     accountSid: string,
-  ): Promise<Result<{ identifier: Identifier; profile: Profile }>> => {
+  ): Promise<TResult<{ identifier: Identifier; profile: Profile }>> => {
     try {
       if (!idx) {
-        return newSuccessResult({ data: null });
+        return newOk({ data: null });
       }
 
       const profileResult = await getIdentifierWithProfile(task)(accountSid, idx);
 
-      if (isErrorResult(profileResult)) {
+      if (isErr(profileResult)) {
         return profileResult;
       }
 
@@ -53,7 +48,7 @@ export const getOrCreateProfileWithIdentifier =
         identifier: idx,
       });
     } catch (err) {
-      return newErrorResult({
+      return newErr({
         message: err instanceof Error ? err.message : String(err),
       });
     }

@@ -64,7 +64,7 @@ import { headers, getRequest, getServer, setRules, useOpenRules } from './server
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
 import * as profilesDB from '../src/profile/profile-data-access';
 
-import { ContactJobType, isErrorResult } from '@tech-matters/types';
+import { ContactJobType, isErr } from '@tech-matters/types';
 
 useOpenRules();
 const server = getServer();
@@ -721,7 +721,7 @@ describe('/contacts route', () => {
         identifier: contact.number,
       });
 
-      if (isErrorResult(profileResult)) {
+      if (isErr(profileResult)) {
         expect(false).toBeTruthy();
         return;
       }

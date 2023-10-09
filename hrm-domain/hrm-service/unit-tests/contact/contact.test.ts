@@ -32,7 +32,7 @@ import { omit } from 'lodash';
 import type { CSAMReport } from '../../src/csam-report/csam-report';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
 import { subHours } from 'date-fns';
-import { newSuccessResult } from '@tech-matters/types';
+import { newOk } from '@tech-matters/types';
 import * as profilesDB from '../../src/profile/profile-data-access';
 
 jest.mock('../../src/contact/contact-data-access');
@@ -44,7 +44,7 @@ const getIdentifierWithProfileSpy = jest
   .spyOn(profilesDB, 'getIdentifierWithProfile')
   .mockImplementation(
     () => async () =>
-      newSuccessResult({
+      newOk({
         data: {
           identifier: { id: 1 } as profilesDB.Identifier,
           profile: { id: 1 } as profilesDB.Profile,
@@ -183,12 +183,12 @@ describe('createContact', () => {
     } = spyOnContactAndAssociations();
 
     getIdentifierWithProfileSpy.mockImplementationOnce(
-      () => async () => newSuccessResult({ data: null }),
+      () => async () => newOk({ data: null }),
     );
 
     jest.spyOn(profilesDB, 'createIdentifierAndProfile').mockImplementationOnce(
       () => async () =>
-        newSuccessResult({
+        newOk({
           data: { identifier: { id: 2 }, profile: { id: 2 } },
         }) as any,
     );
