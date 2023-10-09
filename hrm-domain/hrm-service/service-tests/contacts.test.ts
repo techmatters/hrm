@@ -242,6 +242,7 @@ describe('/contacts route', () => {
       {
         contact: {
           ...contact1,
+          taskId: 'contact-1-task-sid-2',
           referrals: [
             {
               resourceId: 'TEST_RESOURCE',
@@ -296,7 +297,7 @@ describe('/contacts route', () => {
           conversationDuration: null,
           accountSid: null,
           timeOfContact: null,
-          taskId: null,
+          taskId: 'empty-contact-tasksid',
           channelSid: null,
           serviceSid: null,
         },
@@ -309,7 +310,7 @@ describe('/contacts route', () => {
           channel: '',
           conversationDuration: null,
           accountSid: '',
-          taskId: '',
+          taskId: 'empty-contact-tasksid',
           channelSid: '',
           serviceSid: '',
         },
@@ -353,6 +354,24 @@ describe('/contacts route', () => {
 
       // but should both return the same entity (i.e. the second call didn't create one)
       expect(subsequentResponse.body.id).toBe(response.body.id);
+    });
+
+    test('Concurrent idempotence on create contact', async () => {
+      const responses = await Promise.all([
+        request.post(route).set(headers).send(withTaskId),
+        request.post(route).set(headers).send(withTaskId),
+        request.post(route).set(headers).send(withTaskId),
+        request.post(route).set(headers).send(withTaskId),
+        request.post(route).set(headers).send(withTaskId),
+        request.post(route).set(headers).send(withTaskId),
+      ]);
+
+      // all should succeed
+      responses.forEach(response => expect(response.status).toBe(200));
+      const expectedId = responses[0].body.id;
+      // but should both return the same entity (i.e. only one call created one)
+
+      responses.forEach(response => expect(response.body.id).toBe(expectedId));
     });
 
     test('Connects to CSAM reports (not existing csam report id, do nothing)', async () => {
@@ -918,11 +937,13 @@ describe('/contacts route', () => {
         // Create some contacts to work with
         const oneHourBefore = {
           ...another2,
+          taskId: 'oneHourBefore-tasksid-2',
           timeOfContact: subHours(startTestsTimeStamp, 1).toISOString(), // one hour before
         };
 
         const oneWeekBefore = {
           ...noHelpline,
+          taskId: 'oneWeekBefore-tasksid-2',
           timeOfContact: subDays(startTestsTimeStamp, 7).toISOString(), // one hour before
         };
 
@@ -930,14 +951,15 @@ describe('/contacts route', () => {
 
         const withCSAMReports = {
           ...noHelpline,
+          taskId: 'withCSAMReports-tasksid-2',
           queueName: 'withCSAMReports',
           number: '123412341234',
           csamReports: [newReport1, newReport2],
         };
         const responses = await resolveSequentially(
           [
-            { ...contact1, taskId: 'contact-1-task' },
-            { ...contact2, taskId: 'contact-2-task' },
+            { ...contact1, taskId: 'contact1-tasksid-2' },
+            { ...contact2, taskId: 'contact2-tasksid-2' },
             broken1,
             broken2,
             nonData1,
@@ -1005,8 +1027,8 @@ describe('/contacts route', () => {
             expect(c1.csamReports).toHaveLength(0);
             expect(c2.csamReports).toHaveLength(0);
             // Test the association
-            expect(c1.overview.taskId).toBe('contact-1-task');
-            expect(c2.overview.taskId).toBe('contact-2-task');
+            expect(c1.overview.taskId).toBe('contact1-tasksid-2');
+            expect(c2.overview.taskId).toBe('contact2-tasksid-2');
             expect(count).toBe(2);
             expect(contacts.length).toBe(2);
           },
@@ -1026,8 +1048,8 @@ describe('/contacts route', () => {
             expect(c1.csamReports).toHaveLength(0);
             expect(c2.csamReports).toHaveLength(0);
             // Test the association
-            expect(c1.overview.taskId).toBe('contact-1-task');
-            expect(c2.overview.taskId).toBe('contact-2-task');
+            expect(c1.overview.taskId).toBe('contact1-tasksid-2');
+            expect(c2.overview.taskId).toBe('contact2-tasksid-2');
             expect(count).toBe(2);
           },
         },
@@ -2091,7 +2113,7 @@ describe('/contacts route', () => {
       const contactToBeDeleted = await contactApi.createContact(
         accountSid,
         workerSid,
-        <any>contact1,
+        <any>contact2,
         { user: twilioUser(workerSid, []), can: () => true },
       );
       const caseToBeDeleted = await caseApi.createCase(case1, accountSid, workerSid);

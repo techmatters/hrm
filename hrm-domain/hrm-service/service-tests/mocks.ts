@@ -70,6 +70,7 @@ export const contact1: CreateContactPayload = {
       streetAddress: '',
     },
   },
+  taskId: 'contact1-task-sid',
   twilioWorkerId: 'WK-worker-sid',
   createdBy: 'WK-worker-sid',
   helpline: '',
@@ -128,6 +129,7 @@ export const contact2: CreateContactPayload = {
     },
   },
   twilioWorkerId: 'WK-worker-sid',
+  taskId: 'contact2-task-sid',
   createdBy: 'WK-worker-sid',
   helpline: '',
   queueName: '',
@@ -138,6 +140,7 @@ export const contact2: CreateContactPayload = {
 
 export const nonData1: CreateContactPayload = {
   ...contact1,
+  taskId: 'nonData1-task-sid',
   rawJson: {
     callType: 'Joke',
     childInformation: {},
@@ -148,6 +151,7 @@ export const nonData1: CreateContactPayload = {
 };
 export const nonData2: CreateContactPayload = {
   ...contact2,
+  taskId: 'nonData2-task-sid',
   rawJson: {
     callType: 'Blank',
     childInformation: {},
@@ -159,10 +163,12 @@ export const nonData2: CreateContactPayload = {
 // Non data contacts with actual information
 export const broken1: CreateContactPayload = {
   ...contact1,
+  taskId: 'broken1-task-sid',
   rawJson: { ...contact1.rawJson, callType: 'Joke' },
 };
 export const broken2: CreateContactPayload = {
   ...contact2,
+  taskId: 'broken2-task-sid',
   rawJson: { ...contact2.rawJson, callType: 'Blank' },
 };
 
@@ -180,12 +186,14 @@ export const anotherCaller: Contact['rawJson']['callerInformation'] = {
 
 export const another1: CreateContactPayload = {
   ...contact1,
+  taskId: 'another1-task-sid',
   rawJson: { ...contact1.rawJson, childInformation: anotherChild },
   helpline: 'Helpline 1',
 };
 
 export const another2: CreateContactPayload = {
   ...contact2,
+  taskId: 'another2-task-sid',
   rawJson: {
     ...contact2.rawJson,
     callerInformation: {
@@ -205,6 +213,7 @@ export const another2: CreateContactPayload = {
 
 export const noHelpline: CreateContactPayload = {
   ...another1,
+  taskId: 'noHelpline-task-sid',
   helpline: '',
 };
 

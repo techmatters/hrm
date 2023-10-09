@@ -18,10 +18,7 @@ import { db } from '../connection-pool';
 import { UPDATE_CASEID_BY_ID, UPDATE_CONTACT_BY_ID } from './sql/contact-update-sql';
 import { SELECT_CONTACT_SEARCH } from './sql/contact-search-sql';
 import { parseISO } from 'date-fns';
-import {
-  selectSingleContactByIdSql,
-  selectSingleContactByTaskId,
-} from './sql/contact-get-sql';
+import { selectSingleContactByIdSql } from './sql/contact-get-sql';
 import { insertContactSql, NewContactRecord } from './sql/contact-insert-sql';
 import { ContactRawJson, ReferralWithoutContactId } from './contact-json';
 import type { ITask } from 'pg-promise';
@@ -169,44 +166,29 @@ const searchParametersToQueryParameters = (
   return queryParams;
 };
 
+type CreateResultRecord = Contact & { isNewRecord: boolean };
+type CreateResult = { contact: Contact; isNewRecord: boolean };
+
 export const create =
   (task?) =>
-  async (
-    accountSid: string,
-    newContact: NewContactRecord,
-  ): Promise<{ contact: Contact; isNewRecord: boolean }> => {
-    // Inner query that will be executed in a pgp.ITask
-    const executeQuery = async (
-      conn: ITask<{ contact: Contact; isNewRecord: boolean }>,
-    ) => {
-      if (newContact.taskId) {
-        const existingContact: Contact = await conn.oneOrNone<Contact>(
-          selectSingleContactByTaskId('Contacts'),
-          {
-            accountSid,
-            taskId: newContact.taskId,
-          },
-        );
-        if (existingContact) {
-          // A contact with the same task ID already exists, return it
-          return { contact: existingContact, isNewRecord: false };
-        }
-      }
+  async (accountSid: string, newContact: NewContactRecord): Promise<CreateResult> => {
+    return txIfNotInOne(
+      task,
+      async (conn: ITask<{ contact: Contact; isNewRecord: boolean }>) => {
+        const now = new Date();
+        const { isNewRecord, ...created }: CreateResultRecord =
+          await conn.one<CreateResultRecord>(
+            insertContactSql({
+              ...newContact,
+              accountSid,
+              createdAt: now,
+              updatedAt: now,
+            }),
+          );
 
-      const now = new Date();
-      const created: Contact = await conn.one<Contact>(
-        insertContactSql({
-          ...newContact,
-          accountSid,
-          createdAt: now,
-          updatedAt: now,
-        }),
-      );
-
-      return { contact: created, isNewRecord: true };
-    };
-
-    return txIfNotInOne(task, executeQuery);
+        return { contact: created, isNewRecord };
+      },
+    );
   };
 
 export const patch =
