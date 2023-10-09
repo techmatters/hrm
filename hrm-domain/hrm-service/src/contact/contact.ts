@@ -232,7 +232,7 @@ export const getContactByTaskId = async (
 ) => {
   const contact = await getByTaskSid(accountSid, taskId);
 
-  return bindApplyTransformations(can, user)(contact);
+  return contact ? bindApplyTransformations(can, user)(contact) : undefined;
 };
 
 const getNewContactPayload = (
