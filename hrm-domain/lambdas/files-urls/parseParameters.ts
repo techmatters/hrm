@@ -16,12 +16,7 @@
 
 import { AlbHandlerEvent } from '@tech-matters/alb-handler';
 import { GetSignedUrlMethods, GET_SIGNED_URL_METHODS } from '@tech-matters/s3-client';
-import {
-  newErrorResult,
-  newSuccessResult,
-  ErrorResult,
-  SuccessResult,
-} from '@tech-matters/types';
+import { newErr, newOk, TResult } from '@tech-matters/types';
 
 import {
   FileTypes,
@@ -60,7 +55,7 @@ export type Parameters = {
   objectId?: string;
 };
 
-export type ParseParametersResult = ErrorResult | SuccessResult<Parameters>;
+export type ParseParametersResult = TResult<Parameters>;
 
 export type ParsePathParametersResult = {
   accountSid?: string;
@@ -80,29 +75,29 @@ const parsePathParameters = (path: string): ParsePathParametersResult => {
 export const parseParameters = (event: AlbHandlerEvent): ParseParametersResult => {
   const { path, queryStringParameters } = event;
   if (!queryStringParameters) {
-    return newErrorResult({ message: ERROR_MESSAGES.MISSING_QUERY_STRING_PARAMETERS });
+    return newErr({ message: ERROR_MESSAGES.MISSING_QUERY_STRING_PARAMETERS });
   }
 
   const { method, bucket, key, objectType, objectId, fileType } = queryStringParameters;
   const { accountSid } = parsePathParameters(path);
   if (!method || !bucket || !key || !accountSid || !objectType || !fileType) {
-    return newErrorResult({
+    return newErr({
       message: ERROR_MESSAGES.MISSING_REQUIRED_QUERY_STRING_PARAMETERS,
     });
   }
 
   if (!isSignedUrlMethod(method)) {
-    return newErrorResult({ message: ERROR_MESSAGES.INVALID_METHOD });
+    return newErr({ message: ERROR_MESSAGES.INVALID_METHOD });
   }
 
   const objectTypeConfig = objectTypes[objectType as keyof typeof objectTypes];
 
   if (!objectTypeConfig || !isAuthenticationObjectType(objectType)) {
-    return newErrorResult({ message: ERROR_MESSAGES.INVALID_OBJECT_TYPE });
+    return newErr({ message: ERROR_MESSAGES.INVALID_OBJECT_TYPE });
   }
 
   if (!objectTypeConfig.fileTypes.includes(fileType as FileTypes)) {
-    return newErrorResult({ message: ERROR_MESSAGES.INVALID_FILE_TYPE });
+    return newErr({ message: ERROR_MESSAGES.INVALID_FILE_TYPE });
   }
 
   const missingRequiredParameters = objectTypeConfig.requiredParameters.filter(
@@ -110,12 +105,12 @@ export const parseParameters = (event: AlbHandlerEvent): ParseParametersResult =
   );
 
   if (missingRequiredParameters.length > 0) {
-    return newErrorResult({
+    return newErr({
       message: ERROR_MESSAGES.MISSING_REQUIRED_PARAMETERS_FOR_FILE_TYPE,
     });
   }
 
-  return newSuccessResult({
+  return newOk({
     data: {
       method,
       bucket,
