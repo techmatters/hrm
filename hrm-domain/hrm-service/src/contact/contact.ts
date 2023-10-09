@@ -47,6 +47,7 @@ import {
   LegacyConversationMedia,
   NewConversationMedia,
 } from '../conversation-media/conversation-media';
+import { DatabaseUniqueConstraintViolationError, inferPostgresError } from '../sql';
 
 // Re export as is:
 export { Contact } from './contact-data-access';
@@ -259,13 +260,15 @@ export const createContact = async (
   newContact: CreateContactPayload,
   { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
 ): Promise<Contact> => {
-  return db.tx(async conn => {
-    const {
-      newContactPayload,
-      csamReportsPayload,
-      referralsPayload,
-      conversationMediaPayload,
-    } = getNewContactPayload(newContact);
+  for (let retries = 1; retries < 4; retries++) {
+    try {
+      return await db.tx(async conn => {
+        const {
+          newContactPayload,
+          csamReportsPayload,
+          referralsPayload,
+          conversationMediaPayload,
+        } = getNewContactPayload(newContact);
 
     const completeNewContact: NewContactRecord = {
       ...newContactPayload,
@@ -286,25 +289,32 @@ export const createContact = async (
       createdBy,
     };
 
-    // create contact record (may return an exiting one cause idempotence)
-    const { contact, isNewRecord } = await create(conn)(accountSid, completeNewContact);
+        // create contact record (may return an exiting one cause idempotence)
+        const { contact, isNewRecord } = await create(conn)(
+          accountSid,
+          completeNewContact,
+        );
 
-    let contactResult: Contact;
+        let contactResult: Contact;
 
-    if (!isNewRecord) {
-      // if the contact already existed, skip the associations
-      contactResult = contact;
-    } else {
-      // associate csam reports
-      const csamReportIds = (csamReportsPayload ?? []).map(csr => csr.id);
-      const csamReports =
-        csamReportIds && csamReportIds.length
-          ? await connectContactToCsamReports(conn)(contact.id, csamReportIds, accountSid)
-          : [];
+        if (!isNewRecord) {
+          // if the contact already existed, skip the associations
+          contactResult = contact;
+        } else {
+          // associate csam reports
+          const csamReportIds = (csamReportsPayload ?? []).map(csr => csr.id);
+          const csamReports =
+            csamReportIds && csamReportIds.length
+              ? await connectContactToCsamReports(conn)(
+                  contact.id,
+                  csamReportIds,
+                  accountSid,
+                )
+              : [];
 
-      // create resources referrals
-      const referrals = referralsPayload ?? [];
-      const createdReferrals = [];
+          // create resources referrals
+          const referrals = referralsPayload ?? [];
+          const createdReferrals = [];
 
       if (referrals && referrals.length) {
         // Do this sequentially, it's on a single connection in a transaction anyway.
@@ -320,44 +330,66 @@ export const createContact = async (
         }
       }
 
-      const createdConversationMedia: ConversationMedia[] = [];
-      if (conversationMediaPayload && conversationMediaPayload.length) {
-        for (const cm of conversationMediaPayload) {
-          const conversationMedia = await createConversationMedia(conn)(accountSid, {
-            contactId: contact.id,
-            ...cm,
-          });
+          const createdConversationMedia: ConversationMedia[] = [];
+          if (conversationMediaPayload && conversationMediaPayload.length) {
+            for (const cm of conversationMediaPayload) {
+              const conversationMedia = await createConversationMedia(conn)(accountSid, {
+                contactId: contact.id,
+                ...cm,
+              });
 
-          createdConversationMedia.push(conversationMedia);
+              createdConversationMedia.push(conversationMedia);
+            }
+          }
+
+          // if pertinent, create retrieve-transcript job
+          const pendingTranscript = findS3StoredTranscriptPending(
+            contact,
+            createdConversationMedia,
+          );
+          if (pendingTranscript) {
+            await createContactJob(conn)({
+              jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
+              resource: contact,
+              additionalPayload: { conversationMediaId: pendingTranscript.id },
+            });
+          }
+
+          // Compose the final shape of a contact to return
+          contactResult = {
+            ...contact,
+            csamReports,
+            referrals: createdReferrals,
+            conversationMedia: createdConversationMedia,
+          };
         }
-      }
 
-      // if pertinent, create retrieve-transcript job
-      const pendingTranscript = findS3StoredTranscriptPending(
-        contact,
-        createdConversationMedia,
-      );
-      if (pendingTranscript) {
-        await createContactJob(conn)({
-          jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
-          resource: contact,
-          additionalPayload: { conversationMediaId: pendingTranscript.id },
-        });
-      }
+        const applyTransformations = bindApplyTransformations(can, user);
 
-      // Compose the final shape of a contact to return
-      contactResult = {
-        ...contact,
-        csamReports,
-        referrals: createdReferrals,
-        conversationMedia: createdConversationMedia,
-      };
+        return applyTransformations(contactResult);
+      });
+    } catch (error) {
+      // This operation can fail with a unique constraint violation if a contact with the same ID is being created concurrently
+      // It shoulds only every need to retry once, but we'll do it 3 times just in case
+      const postgresError = inferPostgresError(error);
+      if (
+        postgresError instanceof DatabaseUniqueConstraintViolationError &&
+        postgresError.constraint === 'Contacts_taskId_accountSid_idx'
+      ) {
+        if (retries === 1) {
+          console.log(
+            `Retrying createContact due to taskId conflict - it should return the existing contact with this taskId next attempt (retry #${retries})`,
+          );
+        } else {
+          console.warn(
+            `Retrying createContact due to taskId conflict - it shouldn't have taken more than 1 retry to return the existing contact with this taskId but we are on retry #${retries} :-/`,
+          );
+        }
+      } else {
+        throw postgresError;
+      }
     }
-
-    const applyTransformations = bindApplyTransformations(can, user);
-
-    return applyTransformations(contactResult);
-  });
+  }
 };
 
 export const patchContact = async (
