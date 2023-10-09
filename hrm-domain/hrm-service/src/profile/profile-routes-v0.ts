@@ -43,8 +43,10 @@ profilesRouter.get('/identifier/:identifier', publicEndpoint, async (req, res, n
       return next(createError(result.statusCode, result.message));
     }
 
+    console.log(`>>> 6 Returning ${result.data.length} items`);
     res.json(result.data);
   } catch (err) {
+    console.log(`>>> Error: ${err.message}`);
     return next(createError(500, err.message));
   }
 });

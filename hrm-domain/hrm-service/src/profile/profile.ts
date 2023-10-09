@@ -40,14 +40,17 @@ export const getOrCreateProfileWithIdentifier =
     idx: string,
     accountSid: string,
   ): Promise<Result<{ identifier: Identifier; profile: Profile }>> => {
+    console.log('>>> start getOrCreateProfileWithIdentifier');
     try {
       if (!idx) {
+        console.log('>>>idx is null');
         return newSuccessResult({ data: null });
       }
 
       const profileResult = await getIdentifierWithProfile(task)(accountSid, idx);
 
       if (isErrorResult(profileResult)) {
+        console.log('>>>profileResult is error');
         return profileResult;
       }
 
@@ -59,6 +62,7 @@ export const getOrCreateProfileWithIdentifier =
         identifier: idx,
       });
     } catch (err) {
+      console.log('>>>error in try/catch', err, err?.message);
       return newErrorResult({
         message: err instanceof Error ? err.message : String(err),
       });
@@ -87,24 +91,31 @@ export const getProfilesByIdentifier = async (
     const profilesResult = await getIdentifierWithProfile()(accountSid, idx);
 
     if (isErrorResult(profilesResult)) {
+      console.log(`>>> Error while fetching profiles: ${profilesResult}`);
       return profilesResult;
     }
 
     const { profile } = profilesResult.data;
+    console.log(`>>> 3 Found profile ${profile.id} for ${idx}`);
 
     const profiles = [profile];
 
     const result = await Promise.all(
       profiles.map(async p => {
+        console.log(`>>> 4 Fetching contacts for profile ${p.id}`);
         const [contacts, cases] = await Promise.all([
           searchContactsByProfileId(accountSid, { profileId: p.id }, query, ctx),
           searchCases(accountSid, query, { contactNumber: idx }, ctx),
         ]);
 
+        console.log(`>>> 4 Found ${contacts.count} contacts for profile ${p.id}`);
+        console.log(`>>> 4 Found ${cases.count} cases for profile ${p.id}`);
+
         return { profile: p, contacts, cases };
       }),
     );
 
+    console.log(`>>> 5 Returning ${result.length} results`);
     return newSuccessResult({ data: result });
   } catch (err) {
     return newErrorResult({

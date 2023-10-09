@@ -88,8 +88,11 @@ export const txIfNotInOne = async <T>(
   task: ITask<T> | undefined,
   work: (y: ITask<T>) => Promise<T>,
 ): Promise<T> => {
+  console.log('>>> 1.01 start txIfNotInOne');
   if (task) {
+    console.log('>>> using task');
     return task.txIf(work);
   }
+  console.log('>>> using db');
   return db.tx(work);
 };

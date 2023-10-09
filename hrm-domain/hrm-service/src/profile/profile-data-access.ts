@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 import { Result, newSuccessResult, newErrorResult } from '@tech-matters/types';
-
+import { db } from '../connection-pool';
 import {
   NewIdentifierRecord,
   NewProfileRecord,
@@ -114,18 +114,37 @@ export const getIdentifierWithProfile =
     idx: string,
   ): Promise<Result<{ identifier: Identifier; profile: Profile } | null>> => {
     try {
+      console.log('>>> 1 start getIdentifierWithProfile', idx, accountSid);
+
       const data = await txIfNotInOne<{
         identifier: Identifier;
         profile: Profile;
-      }>(task, async connection =>
-        connection.oneOrNone(joinProfilesIdentifiersSql, {
+      }>(task, async connection => {
+        console.log('>>> 1.1 getIdentifierWithProfile connection', connection);
+        console.log('>>> 1.2 getIdentifierWithProfile task', task);
+
+        // const getAllProfiles = async () => {
+        //   const query = 'SELECT * FROM Profiles';
+        //   const result = await db.any(query);
+        //   console.log('>>> 1.3 getAllProfiles Result:', result);
+        //   return result;
+        // };
+
+        // const profiles = getAllProfiles();
+        // console.log('>>> 1.3 getAllProfiles profiles:', profiles);
+
+        const result = await connection.oneOrNone(joinProfilesIdentifiersSql, {
           accountSid,
           identifier: idx,
-        }),
-      );
+        });
+        console.log('>>> 2 getIdentifierWithProfile Result:', result);
+        return result;
+      });
+      console.log('>>> 3 getIdentifierWithProfile data:', data);
 
       return newSuccessResult({ data: data });
     } catch (err) {
+      console.log('>>> Error: ', err);
       return newErrorResult({
         message: err instanceof Error ? err.message : String(err),
       });
