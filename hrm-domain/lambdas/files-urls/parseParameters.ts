@@ -16,16 +16,7 @@
 
 import { AlbHandlerEvent } from '@tech-matters/alb-handler';
 import { GetSignedUrlMethods, GET_SIGNED_URL_METHODS } from '@tech-matters/s3-client';
-<<<<<<< HEAD
-import { Result as R, FileTypes } from '@tech-matters/types';
-=======
-import {
-  newErrorResult,
-  newSuccessResult,
-  ErrorResult,
-  SuccessResult,
-} from '@tech-matters/types';
->>>>>>> origin/master
+import { err, ok, TResult } from '@tech-matters/types';
 
 import {
   FileTypes,
@@ -64,7 +55,7 @@ export type Parameters = {
   objectId?: string;
 };
 
-export type ParseParametersResult = R.TResult<Parameters>;
+export type ParseParametersResult = TResult<Parameters>;
 
 export type ParsePathParametersResult = {
   accountSid?: string;
@@ -84,29 +75,29 @@ const parsePathParameters = (path: string): ParsePathParametersResult => {
 export const parseParameters = (event: AlbHandlerEvent): ParseParametersResult => {
   const { path, queryStringParameters } = event;
   if (!queryStringParameters) {
-    return R.err({ message: ERROR_MESSAGES.MISSING_QUERY_STRING_PARAMETERS });
+    return err({ message: ERROR_MESSAGES.MISSING_QUERY_STRING_PARAMETERS });
   }
 
   const { method, bucket, key, objectType, objectId, fileType } = queryStringParameters;
   const { accountSid } = parsePathParameters(path);
   if (!method || !bucket || !key || !accountSid || !objectType || !fileType) {
-    return R.err({
+    return err({
       message: ERROR_MESSAGES.MISSING_REQUIRED_QUERY_STRING_PARAMETERS,
     });
   }
 
   if (!isSignedUrlMethod(method)) {
-    return R.err({ message: ERROR_MESSAGES.INVALID_METHOD });
+    return err({ message: ERROR_MESSAGES.INVALID_METHOD });
   }
 
   const objectTypeConfig = objectTypes[objectType as keyof typeof objectTypes];
 
   if (!objectTypeConfig || !isAuthenticationObjectType(objectType)) {
-    return R.err({ message: ERROR_MESSAGES.INVALID_OBJECT_TYPE });
+    return err({ message: ERROR_MESSAGES.INVALID_OBJECT_TYPE });
   }
 
   if (!objectTypeConfig.fileTypes.includes(fileType as FileTypes)) {
-    return R.err({ message: ERROR_MESSAGES.INVALID_FILE_TYPE });
+    return err({ message: ERROR_MESSAGES.INVALID_FILE_TYPE });
   }
 
   const missingRequiredParameters = objectTypeConfig.requiredParameters.filter(
@@ -114,12 +105,12 @@ export const parseParameters = (event: AlbHandlerEvent): ParseParametersResult =
   );
 
   if (missingRequiredParameters.length > 0) {
-    return R.err({
+    return err({
       message: ERROR_MESSAGES.MISSING_REQUIRED_PARAMETERS_FOR_FILE_TYPE,
     });
   }
 
-  return R.ok({
+  return ok({
     data: {
       method,
       bucket,

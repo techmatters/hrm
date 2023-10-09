@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 import type { ALBEvent, ALBResult, APIGatewayEvent } from 'aws-lambda';
-import { Result as R } from '@tech-matters/types';
+import { TResult, isErr, isOk } from '@tech-matters/types';
 
 const METHODS = {
   GET: 'GET',
@@ -75,9 +75,9 @@ export const handleAlbEvent = async ({
     };
   }
 
-  const result: R.TResult<any> = await methodHandler(event);
+  const result: TResult<any> = await methodHandler(event);
 
-  if (R.isOk<any>(result)) {
+  if (isOk<any>(result)) {
     return {
       statusCode: 200,
       headers: getHeaders({ allowedMethods: Object.keys(methodHandlers) }),
@@ -85,7 +85,7 @@ export const handleAlbEvent = async ({
     };
   }
 
-  if (R.isErr(result)) {
+  if (isErr(result)) {
     console.error(result.message);
     return {
       statusCode: result.statusCode,

@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { Result as R } from '@tech-matters/types';
+import { err, ok } from '@tech-matters/types';
 import { URLSearchParams } from 'url';
 
 export type CallHrmApiParameters = {
@@ -40,14 +40,14 @@ const callHrmApi = async ({ urlPath, requestData, authHeader }: CallHrmApiParame
 
   if (!response.ok) {
     const error = await response.json();
-    return R.err({
+    return err({
       message: error.message,
       statusCode: response.status,
     });
   }
 
   const data = await response.json();
-  return R.ok({ data });
+  return ok({ data });
 };
 
 export default callHrmApi;

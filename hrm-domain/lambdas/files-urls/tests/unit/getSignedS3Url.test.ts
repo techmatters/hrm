@@ -14,14 +14,14 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 import { mocked } from 'jest-mock';
-import { newSuccessResult } from '@tech-matters/types';
+import { ok } from '@tech-matters/types';
 import { getSignedUrl as awsGetSignedUrl } from '@aws-sdk/s3-request-presigner';
 import getSignedS3Url from '../../getSignedS3Url';
 import { mockQueryStringParameters, mockSignedUrl, newAlbEvent } from '../__mocks__';
 
 jest.mock('@tech-matters/hrm-authentication', () => ({
   ...jest.requireActual('@tech-matters/hrm-authentication'),
-  authenticate: () => Promise.resolve(newSuccessResult({ data: 'ok :)' })),
+  authenticate: () => Promise.resolve(ok({ data: 'ok :)' })),
 }));
 jest.mock('@aws-sdk/s3-request-presigner');
 
@@ -40,6 +40,6 @@ describe('getSignedS3Url', () => {
     });
 
     const result = await getSignedS3Url(event);
-    expect(result).toEqual(newSuccessResult({ data: { media_url: mockSignedUrl } }));
+    expect(result).toEqual(ok({ data: { media_url: mockSignedUrl } }));
   });
 });

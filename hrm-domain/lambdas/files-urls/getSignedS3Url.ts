@@ -15,7 +15,7 @@
  */
 
 import { AlbHandlerEvent } from '@tech-matters/alb-handler';
-import { Result as R } from '@tech-matters/types';
+import { TResult, err, isErr, ok } from '@tech-matters/types';
 import { authenticate } from '@tech-matters/hrm-authentication';
 import { getSignedUrl } from '@tech-matters/s3-client';
 import { parseParameters } from './parseParameters';
@@ -24,7 +24,7 @@ export type GetSignedS3UrlSuccessResultData = {
   media_url: string;
 };
 
-export type GetSignedS3UrlResult = R.TResult<GetSignedS3UrlSuccessResultData>;
+export type GetSignedS3UrlResult = TResult<GetSignedS3UrlSuccessResultData>;
 
 /**
  * Twilio insights sends a basic auth header with the username as the string token and the password as the flexJWE.
@@ -47,7 +47,7 @@ export const convertBasicAuthHeader = (authHeader: string): string => {
 
 const getSignedS3Url = async (event: AlbHandlerEvent): Promise<GetSignedS3UrlResult> => {
   const parseParametersResult = parseParameters(event);
-  if (R.isErr(parseParametersResult)) {
+  if (isErr(parseParametersResult)) {
     return parseParametersResult;
   }
 
@@ -69,7 +69,7 @@ const getSignedS3Url = async (event: AlbHandlerEvent): Promise<GetSignedS3UrlRes
       key,
     },
   });
-  if (R.isErr(authenticateResult)) {
+  if (isErr(authenticateResult)) {
     return authenticateResult;
   }
 
@@ -80,13 +80,13 @@ const getSignedS3Url = async (event: AlbHandlerEvent): Promise<GetSignedS3UrlRes
       key,
     });
 
-    return R.ok({
+    return ok({
       data: {
         media_url: getSignedUrlResult,
       },
     });
   } catch (error) {
-    return R.err({
+    return err({
       message: error as string,
     });
   }
