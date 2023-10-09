@@ -35,7 +35,7 @@ module.exports = {
     );
     console.log('Cleared out contacts with duplicate taskIds');
     await queryInterface.sequelize
-      .query(`CREATE UNIQUE INDEX IF NOT EXISTS "Contacts_taskId_idx"
+      .query(`CREATE UNIQUE INDEX IF NOT EXISTS "Contacts_taskId_accountSid_idx"
                   ON public."Contacts" USING btree
                   ("taskId" COLLATE pg_catalog."default" ASC NULLS LAST, "accountSid" COLLATE pg_catalog."default" ASC NULLS LAST)
                   TABLESPACE pg_default`);

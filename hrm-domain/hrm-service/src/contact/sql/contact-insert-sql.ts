@@ -37,37 +37,61 @@ export type NewContactRecord = {
 export const insertContactSql = (
   contact: NewContactRecord & { accountSid: string; createdAt: Date; updatedAt: Date },
 ) => `
-WITH inserted AS (
-  ${pgp.helpers.insert(
-    contact,
-    [
-      'accountSid',
-      'rawJson',
-      'queueName',
-      'twilioWorkerId',
-      'createdBy',
-      'createdAt',
-      'updatedAt',
-      'helpline',
-      'channel',
-      'number',
-      'conversationDuration',
-      'timeOfContact',
-      'taskId',
-      'channelSid',
-      'serviceSid',
-    ],
-    'Contacts',
-  )}
-  ON CONFLICT ("taskId", "accountSid") DO NOTHING
-  RETURNING *
-)
-SELECT "inserted".*, NULL AS "csamReports", NULL AS "referrals", NULL AS "conversationMedia", true AS "isNewRecord" FROM inserted
-UNION
-SELECT "existing".*, false AS "isNewRecord" FROM 
-(
-    ${pgp.as.format(selectSingleContactByTaskId('Contacts'), {
-      taskId: contact.taskId,
-      accountSid: contact.accountSid,
-    })}
-) AS existing WHERE existing.id NOT IN (SELECT id FROM inserted)`;
+  WITH existing AS (
+      ${pgp.as.format(selectSingleContactByTaskId('Contacts'), {
+        taskId: contact.taskId,
+        accountSid: contact.accountSid,
+      })}
+  ), inserted AS (
+    ${pgp.as.format(
+      `INSERT INTO "Contacts" (
+      "accountSid",
+      "rawJson",
+      "queueName",
+      "twilioWorkerId",
+      "createdBy",
+      "createdAt",
+      "updatedAt",
+      "helpline",
+      "channel",
+      "number",
+      "conversationDuration",
+      "timeOfContact",
+      "taskId",
+      "channelSid",
+      "serviceSid"
+    ) (SELECT 
+        $<accountSid>, 
+        $<rawJson>, 
+        $<queueName>, 
+        $<twilioWorkerId>, 
+        $<createdBy>, 
+        $<createdAt>, 
+        $<updatedAt>, 
+        $<helpline>, 
+        $<channel>, 
+        $<number>, 
+        $<conversationDuration>, 
+        $<timeOfContact>, 
+        $<taskId>, 
+        $<channelSid>, 
+        $<serviceSid>
+      WHERE NOT EXISTS (
+        ${pgp.as.format(selectSingleContactByTaskId('Contacts'), {
+          taskId: contact.taskId,
+          accountSid: contact.accountSid,
+        })}
+      )
+    )
+    RETURNING *`,
+      {
+        ...contact,
+        taskId: contact.taskId,
+        accountSid: contact.accountSid,
+      },
+    )}
+  )
+  SELECT "existing".*, false AS "isNewRecord" FROM "existing"
+  UNION
+  SELECT "inserted".*, NULL AS "csamReports", NULL AS "referrals", NULL AS "conversationMedia", true AS "isNewRecord" FROM "inserted"
+`;
