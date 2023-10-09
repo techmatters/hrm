@@ -49,7 +49,7 @@ contactsRouter.post('/', publicEndpoint, async (req, res) => {
   res.json(contact);
 });
 
-contactsRouter.get('/byTaskId/:taskSid', publicEndpoint, async (req, res) => {
+contactsRouter.get('/byTaskSid/:taskSid', publicEndpoint, async (req, res) => {
   const { accountSid, user, can } = req;
   const contact = await getContactByTaskId(accountSid, req.params.taskSid, {
     can: req.can,

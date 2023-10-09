@@ -243,12 +243,12 @@ export const getById = async (accountSid: string, contactId: number): Promise<Co
 
 export const getByTaskSid = async (
   accountSid: string,
-  taskSid: string,
+  taskId: string,
 ): Promise<Contact> =>
   db.task(async connection =>
     connection.oneOrNone<Contact>(selectSingleContactByTaskId('Contacts'), {
       accountSid,
-      taskSid,
+      taskId,
     }),
   );
 
