@@ -23,6 +23,7 @@ import {
   createContact,
   getContactById,
   addConversationMediaToContact,
+  getContactByTaskId,
 } from './contact';
 import asyncHandler from '../async-handler';
 import type { Request, Response, NextFunction } from 'express';
@@ -45,6 +46,23 @@ contactsRouter.post('/', publicEndpoint, async (req, res) => {
     can: req.can,
     user,
   });
+  res.json(contact);
+});
+
+contactsRouter.get('/byTaskId/:taskSid', publicEndpoint, async (req, res) => {
+  const { accountSid, user, can } = req;
+  const contact = await getContactByTaskId(accountSid, req.params.taskSid, {
+    can: req.can,
+    user,
+  });
+  if (!contact) {
+    throw createError(404);
+  }
+  if (!req.isAuthorized()) {
+    if (!can(user, actionsMaps.contact.VIEW_CONTACT, contact)) {
+      createError(401);
+    }
+  }
   res.json(contact);
 });
 

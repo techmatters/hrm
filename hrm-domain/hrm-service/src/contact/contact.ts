@@ -22,6 +22,7 @@ import {
   create,
   ExistingContactRecord,
   getById,
+  getByTaskSid,
   patch,
   search,
   SearchParameters,
@@ -222,6 +223,20 @@ export const getContactById = async (accountSid: string, contactId: number) => {
   }
 
   return contact;
+};
+
+export const getContactByTaskId = async (
+  accountSid: string,
+  taskId: string,
+  { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
+) => {
+  const contact = await getByTaskSid(accountSid, taskId);
+
+  if (!contact) {
+    throw new Error(`Contact not found with task id ${taskId}`);
+  }
+
+  return bindApplyTransformations(can, user)(contact);
 };
 
 const getNewContactPayload = (
