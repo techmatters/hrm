@@ -141,9 +141,8 @@ const canEditContact = asyncHandler(async (req, res, next) => {
 
 contactsRouter.patch(
   '/:contactId',
-  // validatePatchPayload,
-  // canEditContact,
-  publicEndpoint,
+  validatePatchPayload,
+  canEditContact,
   async (req, res) => {
     const { accountSid, user } = req;
     const { contactId } = req.params;

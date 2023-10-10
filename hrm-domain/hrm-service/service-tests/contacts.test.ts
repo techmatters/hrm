@@ -1996,11 +1996,10 @@ describe('/contacts route', () => {
         const contactToBeDeleted = await contactApi.createContact(
           accountSid,
           workerSid,
-          <any>contact1,
+          <any>{ ...contact1, taskId: 'malformed-task-id' },
           { user: twilioUser(workerSid, []), can: () => true },
         );
         const nonExistingContactId = contactToBeDeleted.id;
-        await deleteContactById(contactToBeDeleted.id, contactToBeDeleted.accountSid);
         const response = await request
           .patch(subRoute(nonExistingContactId))
           .set(headers)
