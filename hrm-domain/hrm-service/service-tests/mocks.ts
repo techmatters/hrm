@@ -70,6 +70,7 @@ export const contact1: CreateContactPayloadWithFormProperty = {
       streetAddress: '',
     },
   },
+  taskId: 'contact1-task-sid',
   twilioWorkerId: 'WK-worker-sid',
   createdBy: 'WK-worker-sid',
   helpline: '',
@@ -128,6 +129,7 @@ export const contact2: CreateContactPayloadWithFormProperty = {
     },
   },
   twilioWorkerId: 'WK-worker-sid',
+  taskId: 'contact2-task-sid',
   createdBy: 'WK-worker-sid',
   helpline: '',
   queueName: '',
@@ -138,6 +140,7 @@ export const contact2: CreateContactPayloadWithFormProperty = {
 
 export const nonData1: CreateContactPayloadWithFormProperty = {
   ...contact1,
+  taskId: 'nonData1-task-sid',
   form: {
     callType: 'Joke',
     childInformation: {},
@@ -147,6 +150,7 @@ export const nonData1: CreateContactPayloadWithFormProperty = {
 };
 export const nonData2: CreateContactPayloadWithFormProperty = {
   ...contact2,
+  taskId: 'nonData2-task-sid',
   form: {
     callType: 'Blank',
     childInformation: {},
@@ -157,10 +161,12 @@ export const nonData2: CreateContactPayloadWithFormProperty = {
 // Non data contacts with actual information
 export const broken1: CreateContactPayloadWithFormProperty = {
   ...contact1,
+  taskId: 'broken1-task-sid',
   form: { ...contact1.form, callType: 'Joke' },
 };
 export const broken2: CreateContactPayloadWithFormProperty = {
   ...contact2,
+  taskId: 'broken2-task-sid',
   form: { ...contact2.form, callType: 'Blank' },
 };
 
@@ -178,12 +184,14 @@ export const anotherCaller: Contact['rawJson']['callerInformation'] = {
 
 export const another1: CreateContactPayloadWithFormProperty = {
   ...contact1,
+  taskId: 'another1-task-sid',
   form: { ...contact1.form, childInformation: anotherChild },
   helpline: 'Helpline 1',
 };
 
 export const another2: CreateContactPayloadWithFormProperty = {
   ...contact2,
+  taskId: 'another2-task-sid',
   form: {
     ...contact2.form,
     callerInformation: {
@@ -203,6 +211,7 @@ export const another2: CreateContactPayloadWithFormProperty = {
 
 export const noHelpline: CreateContactPayloadWithFormProperty = {
   ...another1,
+  taskId: 'noHelpline-task-sid',
   helpline: '',
 };
 

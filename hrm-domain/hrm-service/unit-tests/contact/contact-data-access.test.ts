@@ -34,7 +34,7 @@ beforeEach(() => {
 });
 
 describe('create', () => {
-  const sampleNewContact: NewContactRecord = {
+  const sampleNewContact: NewContactRecord & { isNewRecord: boolean } = {
     rawJson: {
       childInformation: {
         firstName: 'Lorna',
@@ -56,10 +56,11 @@ describe('create', () => {
     number: undefined,
     channelSid: undefined,
     serviceSid: undefined,
+    isNewRecord: true,
   };
 
-  test('No task ID specified in payload - runs SQL to insert new record and connect CSAM reports, using current date for created / updated and accountSid parameter', async () => {
-    const returnValue = new ContactBuilder().build();
+  test('Task ID specified in payload that is already associated with a contact - returns that contact', async () => {
+    const returnValue = { ...new ContactBuilder().build(), isNewRecord: false };
     mockTransaction(conn);
 
     jest.spyOn(conn, 'one').mockResolvedValue(returnValue);
@@ -74,22 +75,22 @@ describe('create', () => {
     expect(conn.one).toHaveBeenCalledWith(
       expect.stringContaining('MOCKED INSERT STATEMENT'),
     );
+    const { isNewRecord, ...returnedContact } = returnValue;
     expect(created).toStrictEqual({
-      contact: returnValue,
-      isNewRecord: true,
+      contact: returnedContact,
+      isNewRecord: false,
     });
   });
 
   test('Task ID specified in payload that is not already associated with a contact - creates contact as expected', async () => {
-    const returnValue = new ContactBuilder().build();
-    const sampleContactWithTaskId = { ...sampleNewContact, taskId: 'A TASK' };
+    const returnValue = { ...new ContactBuilder().build(), isNewRecord: true };
     mockTransaction(conn);
 
     jest.spyOn(conn, 'one').mockResolvedValue(returnValue);
 
-    const created = await create()('parameter account-sid', sampleContactWithTaskId);
+    const created = await create()('parameter account-sid', sampleNewContact);
     expect(insertContactSql).toHaveBeenCalledWith({
-      ...sampleContactWithTaskId,
+      ...sampleNewContact,
       updatedAt: expect.anything(),
       createdAt: expect.anything(),
       accountSid: 'parameter account-sid',
@@ -97,8 +98,9 @@ describe('create', () => {
     expect(conn.one).toHaveBeenCalledWith(
       expect.stringContaining('MOCKED INSERT STATEMENT'),
     );
+    const { isNewRecord, ...returnedContact } = returnValue;
     expect(created).toStrictEqual({
-      contact: returnValue,
+      contact: returnedContact,
       isNewRecord: true,
     });
   });

@@ -69,6 +69,11 @@ beforeAll(async () => {
   await mockSuccessfulTwilioAuthentication(workerSid);
 });
 
+afterEach(async () => {
+  await db.none(`DELETE FROM "ContactJobs"`);
+  await db.none(`DELETE FROM "Contacts"`);
+});
+
 afterAll(async () => {
   delete process.env.TWILIO_AUTH_TOKEN;
   await mockingProxy.stop();

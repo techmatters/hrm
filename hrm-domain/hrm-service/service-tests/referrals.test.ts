@@ -72,7 +72,11 @@ beforeEach(async () => {
   console.log('Contact IDs for test:', existingContactId, otherExistingContactId);
 });
 
-afterAll(async () => Promise.all([mockingProxy.stop(), clearDownDb(), server.close()]));
+afterEach(async () => {
+  await clearDownDb();
+});
+
+afterAll(async () => Promise.all([mockingProxy.stop(), server.close()]));
 
 const route = `/v0/accounts/${accountSid}/referrals`;
 

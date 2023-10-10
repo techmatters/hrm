@@ -174,7 +174,6 @@ describe('createContact', () => {
       'channel',
       'channelSid',
       'serviceSid',
-      'taskId',
       'twilioWorkerId',
     );
     const returnValue = await createContact(
@@ -194,7 +193,7 @@ describe('createContact', () => {
       channel: '',
       channelSid: '',
       serviceSid: '',
-      taskId: '',
+      taskId: 'a task',
       twilioWorkerId: '',
     });
 
@@ -607,6 +606,7 @@ describe('searchContacts', () => {
       .build();
     const sarahPark = new ContactBuilder()
       .withId(1234)
+      .withTaskId('sarah-park-task')
       .withChildFirstName('Sarah')
       .withChildLastName('Park')
       .withCallSummary('Young pregnant woman')
@@ -645,7 +645,7 @@ describe('searchContacts', () => {
           contactId: '1234',
           overview: {
             helpline: undefined,
-            taskId: undefined,
+            taskId: 'sarah-park-task',
             dateTime: '2020-03-15T00:00:00.000Z',
             name: '', // Legacy property, not used in Flex v2.1+
             customerNumber: 'Anonymous',
