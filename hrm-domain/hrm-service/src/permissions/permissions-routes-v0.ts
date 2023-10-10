@@ -23,12 +23,7 @@ import {
   isValidFileLocation,
 } from './canPerformActionOnObject';
 import { TargetKind, isTargetKind } from './actions';
-import {
-  Result,
-  isErrorResult,
-  newErrorResult,
-  newSuccessResult,
-} from '@tech-matters/types';
+import { TResult, newErr, isErr, newOk } from '@tech-matters/types';
 
 export default (permissions: Permissions) => {
   const permissionsRouter = SafeRouter();
@@ -46,8 +41,8 @@ export default (permissions: Permissions) => {
       const rules = permissions.rules(accountSid);
 
       res.json(rules);
-    } catch (err) {
-      return next(createError(500, err.message));
+    } catch (error) {
+      return next(createError(500, error.message));
     }
   });
 
@@ -57,20 +52,20 @@ export default (permissions: Permissions) => {
   }: {
     objectType?: string;
     objectId?: string;
-  }): Result<{
+  }): TResult<{
     objectType: TargetKind;
     objectId: number;
   }> => {
     if (!objectType || !isTargetKind(objectType)) {
-      return newErrorResult({ message: 'invalid objectType', statusCode: 400 });
+      return newErr({ message: 'invalid objectType', statusCode: 400 });
     }
 
     const parsedId = parseInt(objectId, 10);
     if (!objectId || !Number.isInteger(parsedId)) {
-      return newErrorResult({ message: 'invalid objectId', statusCode: 400 });
+      return newErr({ message: 'invalid objectId', statusCode: 400 });
     }
 
-    return newSuccessResult({ data: { objectType, objectId: parsedId } });
+    return newOk({ data: { objectType, objectId: parsedId } });
   };
 
   permissionsRouter.get('/:action', publicEndpoint, async (req, res, next) => {
@@ -84,7 +79,7 @@ export default (permissions: Permissions) => {
         objectId: req.query.objectId,
       });
 
-      if (isErrorResult(parseResult)) {
+      if (isErr(parseResult)) {
         return next(createError(parseResult.statusCode, parseResult.message));
       }
 
@@ -99,7 +94,7 @@ export default (permissions: Permissions) => {
         user,
       });
 
-      if (isErrorResult(canPerformResult)) {
+      if (isErr(canPerformResult)) {
         return next(createError(canPerformResult.statusCode, canPerformResult.message));
       }
 
@@ -116,7 +111,7 @@ export default (permissions: Permissions) => {
           key,
         });
 
-        if (isErrorResult(isValidLocationResult)) {
+        if (isErr(isValidLocationResult)) {
           return next(
             createError(isValidLocationResult.statusCode, isValidLocationResult.message),
           );
@@ -129,9 +124,9 @@ export default (permissions: Permissions) => {
 
       // TODO: what do we expect here?
       res.json({ message: 'all good :)' });
-    } catch (err) {
+    } catch (error) {
       return next(
-        createError(500, err instanceof Error ? err.message : JSON.stringify(err)),
+        createError(500, error instanceof Error ? error.message : JSON.stringify(newErr)),
       );
     }
   });

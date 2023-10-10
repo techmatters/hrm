@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { ErrorResult, SuccessResult } from '@tech-matters/types';
+import { TResult } from '@tech-matters/types';
 import filesUrlsAuthenticator, {
   HrmAuthenticateFilesUrlsRequestData,
 } from './filesUrlsAuthenticator';
@@ -35,9 +35,7 @@ export const isAuthenticationObjectType = (
 
 export type HrmAuthenticateTypes = keyof typeof types;
 
-export type HrmAuthenticateSuccessResult = SuccessResult<true>;
-
-export type HrmAuthenticateResult = ErrorResult | HrmAuthenticateSuccessResult;
+export type HrmAuthenticateResult = TResult<true>;
 
 export type HrmAuthenticateParameters = {
   accountSid: string;
