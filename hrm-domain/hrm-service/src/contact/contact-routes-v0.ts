@@ -26,6 +26,7 @@ import {
 } from './contact';
 import asyncHandler from '../async-handler';
 import type { Request, Response, NextFunction } from 'express';
+import { connectToCase } from './contact-data-access';
 
 const contactsRouter = SafeRouter();
 
@@ -67,6 +68,21 @@ contactsRouter.put('/:contactId/connectToCase', publicEndpoint, async (req, res)
       err.message.toLowerCase().includes('violates foreign key constraint') ||
       err.message.toLowerCase().includes('contact not found')
     ) {
+      throw createError(404);
+    } else throw err;
+  }
+});
+
+contactsRouter.delete('/:contactId/removeFromCase', publicEndpoint, async (req, res) => {
+  const { accountSid } = req;
+  const { contactId } = req.params;
+  const caseId = null;
+
+  try {
+    const deleteContact = await connectToCase(accountSid, contactId, caseId);
+    res.json(deleteContact);
+  } catch (err) {
+    if (err.message.toLowerCase().includes('contact not found')) {
       throw createError(404);
     } else throw err;
   }
