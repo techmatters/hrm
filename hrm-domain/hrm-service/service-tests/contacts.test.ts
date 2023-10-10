@@ -55,7 +55,6 @@ import * as contactDb from '../src/contact/contact-data-access';
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import * as contactJobDataAccess from '../src/contact-job/contact-job-data-access';
 import { chatChannels } from '../src/contact/channelTypes';
-import * as contactInsertSql from '../src/contact/sql/contact-insert-sql';
 import { selectSingleContactByTaskId } from '../src/contact/sql/contact-get-sql';
 import { ruleFileWithOneActionOverride } from './permissions-overrides';
 import * as csamReportApi from '../src/csam-report/csam-report';
@@ -335,6 +334,7 @@ describe('/contacts route', () => {
         expect(createdContact.rawJson).toMatchObject(expected.rawJson);
         expect(createdContact.timeOfContact).toParseAsDate();
         expect(createdContact.createdAt).toParseAsDate();
+        expect(createdContact.updatedAt).toParseAsDate();
         expect(createdContact.twilioWorkerId).toBe(expected.twilioWorkerId);
         expect(createdContact.helpline).toBe(expected.helpline);
         expect(createdContact.queueName).toBe(expected.queueName || '');
@@ -756,26 +756,27 @@ describe('/contacts route', () => {
     ).test(
       `if contact with channel type $channel is not created, neither is ${ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT} job`,
       async ({ contact }) => {
-        const insertContactSqlSpy = jest
-          .spyOn(contactInsertSql, 'insertContactSql')
-          .mockImplementationOnce(() => {
-            throw new Error('Ups');
+        const createContactSpy = jest
+          .spyOn(contactDb, 'create')
+          .mockImplementation(() => {
+            throw new Error('Oops');
           });
-
         const createContactJobSpy = jest.spyOn(contactJobDataAccess, 'createContactJob');
 
-        const res = await request.post(route).set(headers).send(contact);
+        try {
+          const res = await request.post(route).set(headers).send(contact);
 
-        expect(res.status).toBe(500);
+          expect(res.status).toBe(500);
 
-        expect(createContactJobSpy).not.toHaveBeenCalled();
+          expect(createContactJobSpy).not.toHaveBeenCalled();
 
-        const attemptedContact = await getContactByTaskId(contact.taskId, accountSid);
+          const attemptedContact = await getContactByTaskId(contact.taskId, accountSid);
 
-        expect(attemptedContact).toBeNull();
-
-        insertContactSqlSpy.mockRestore();
-        createContactJobSpy.mockRestore();
+          expect(attemptedContact).toBeNull();
+        } finally {
+          createContactSpy.mockRestore();
+          createContactJobSpy.mockRestore();
+        }
       },
     );
 
@@ -846,6 +847,7 @@ describe('/contacts route', () => {
       const createdContact = await contactApi.createContact(
         accountSid,
         workerSid,
+        true,
         withTaskIdAndTranscript,
         { user: twilioUser(workerSid, []), can: () => true },
       );
@@ -1368,6 +1370,7 @@ describe('/contacts route', () => {
         const createdContact = await contactApi.createContact(
           accountSid,
           workerSid,
+          true,
           withTaskIdAndTranscript,
           { user: twilioUser(workerSid, []), can: () => true },
         );
@@ -1463,6 +1466,7 @@ describe('/contacts route', () => {
         const createdContact = await contactApi.createContact(
           accountSid,
           workerSid,
+          true,
           contactToCreate,
           { user: twilioUser(workerSid, []), can: () => true },
         );
@@ -1506,6 +1510,7 @@ describe('/contacts route', () => {
         const createdContact = await contactApi.createContact(
           accountSid,
           workerSid,
+          true,
           {
             ...contact1,
             rawJson: <ContactRawJson>{},
@@ -1793,6 +1798,7 @@ describe('/contacts route', () => {
             const createdContact = await contactApi.createContact(
               accountSid,
               workerSid,
+              true,
               {
                 ...contact1,
                 rawJson: original || <ContactRawJson>{},
@@ -1831,6 +1837,7 @@ describe('/contacts route', () => {
                 ...createdContact,
                 timeOfContact: expect.toParseAsDate(createdContact.timeOfContact),
                 createdAt: expect.toParseAsDate(createdContact.createdAt),
+                finalizedAt: expect.toParseAsDate(createdContact.finalizedAt),
                 updatedAt: expect.toParseAsDate(),
                 updatedBy: workerSid,
                 rawJson: expected,
@@ -1897,6 +1904,7 @@ describe('/contacts route', () => {
             const createdContact = await contactApi.createContact(
               accountSid,
               workerSid,
+              true,
               original,
               { user: twilioUser(workerSid, []), can: () => true },
             );
@@ -1947,6 +1955,7 @@ describe('/contacts route', () => {
                 ...expected,
                 timeOfContact: expect.toParseAsDate(expected.timeOfContact),
                 createdAt: expect.toParseAsDate(expected.createdAt),
+                finalizedAt: expect.toParseAsDate(createdContact.finalizedAt),
                 updatedAt: expect.toParseAsDate(),
                 updatedBy: workerSid,
                 referrals: [],
@@ -1974,6 +1983,7 @@ describe('/contacts route', () => {
         const contactToBeDeleted = await contactApi.createContact(
           accountSid,
           workerSid,
+          true,
           <any>contact1,
           { user: twilioUser(workerSid, []), can: () => true },
         );
@@ -1993,17 +2003,14 @@ describe('/contacts route', () => {
       });
 
       test('malformed payload should return 400', async () => {
-        const contactToBeDeleted = await contactApi.createContact(
+        const contact = await contactApi.createContact(
           accountSid,
           workerSid,
+          true,
           <any>{ ...contact1, taskId: 'malformed-task-id' },
           { user: twilioUser(workerSid, []), can: () => true },
         );
-        const nonExistingContactId = contactToBeDeleted.id;
-        const response = await request
-          .patch(subRoute(nonExistingContactId))
-          .set(headers)
-          .send([]);
+        const response = await request.patch(subRoute(contact.id)).set(headers).send([]);
 
         expect(response.status).toBe(400);
       });
@@ -2012,6 +2019,7 @@ describe('/contacts route', () => {
         const createdContact = await contactApi.createContact(
           accountSid,
           workerSid,
+          true,
           <any>contact1,
           { user: twilioUser(workerSid, []), can: () => true },
         );
@@ -2025,6 +2033,7 @@ describe('/contacts route', () => {
           ...createdContact,
           timeOfContact: expect.toParseAsDate(createdContact.timeOfContact),
           createdAt: expect.toParseAsDate(createdContact.createdAt),
+          finalizedAt: expect.toParseAsDate(createdContact.finalizedAt),
           updatedAt: expect.toParseAsDate(),
           updatedBy: workerSid,
         });
@@ -2043,6 +2052,7 @@ describe('/contacts route', () => {
         const createdContact = await contactApi.createContact(
           accountSid,
           workerSid,
+          true,
           withTaskIdAndTranscript,
           { user: twilioUser(workerSid, []), can: () => true },
         );
@@ -2101,6 +2111,7 @@ describe('/contacts route', () => {
       createdContact = await contactApi.createContact(
         accountSid,
         workerSid,
+        true,
         <any>contact1,
         {
           user: twilioUser(workerSid, []),
@@ -2112,6 +2123,7 @@ describe('/contacts route', () => {
       const contactToBeDeleted = await contactApi.createContact(
         accountSid,
         workerSid,
+        true,
         <any>contact2,
         { user: twilioUser(workerSid, []), can: () => true },
       );

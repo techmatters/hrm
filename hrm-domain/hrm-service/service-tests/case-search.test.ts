@@ -142,6 +142,7 @@ const insertSampleCases = async ({
       const { contact: savedContact } = await contactDb.create()(
         accounts[i % accounts.length],
         contactToCreate,
+        true,
       );
       connectedContact = await contactDb.connectToCase(
         savedContact.accountSid,
@@ -225,7 +226,8 @@ describe('/cases route', () => {
         contactToCreate.taskId = `TASK_SID`;
         contactToCreate.channelSid = `CHANNEL_SID`;
         contactToCreate.serviceSid = 'SERVICE_SID';
-        createdContact = (await contactDb.create()(accountSid, contactToCreate)).contact;
+        createdContact = (await contactDb.create()(accountSid, contactToCreate, true))
+          .contact;
         createdContact = await contactDb.connectToCase(
           accountSid,
           createdContact.id.toString(),
@@ -376,6 +378,7 @@ describe('/cases route', () => {
       const createdContact = await createContact(
         accountSid,
         workerSid,
+        true,
         mocks.withTaskIdAndTranscript,
         { user: twilioUser(workerSid, []), can: () => true },
       );
@@ -526,7 +529,7 @@ describe('/cases route', () => {
           toCreate.channelSid = `CHANNEL_SID`;
           toCreate.serviceSid = 'SERVICE_SID';
           // Connects createdContact with createdCase2
-          createdContact = (await contactDb.create()(accountSid, toCreate)).contact;
+          createdContact = (await contactDb.create()(accountSid, toCreate, true)).contact;
           createdContact = await contactDb.connectToCase(
             accountSid,
             createdContact.id.toString(),
@@ -1267,6 +1270,7 @@ describe('/cases route', () => {
         const createdContact = await createContact(
           accountSid,
           workerSid,
+          true,
           mocks.withTaskIdAndTranscript,
           { user: twilioUser(workerSid, []), can: () => true },
         );
