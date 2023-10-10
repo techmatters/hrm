@@ -18,14 +18,7 @@ import * as pgPromise from 'pg-promise';
 import { mockConnection, mockTask, mockTransaction } from '../mock-db';
 import { search, create } from '../../src/contact/contact-data-access';
 import { ContactBuilder } from './contact-builder';
-import {
-  NewContactRecord,
-  insertContactSql,
-} from '../../src/contact/sql/contact-insert-sql';
-
-jest.mock('../../src/contact/sql/contact-insert-sql', () => ({
-  insertContactSql: jest.fn().mockReturnValue('MOCKED INSERT STATEMENT'),
-}));
+import { NewContactRecord } from '../../src/contact/sql/contact-insert-sql';
 
 let conn: pgPromise.ITask<unknown>;
 
@@ -64,16 +57,14 @@ describe('create', () => {
 
     jest.spyOn(conn, 'one').mockResolvedValue(returnValue);
 
-    const created = await create()('parameter account-sid', sampleNewContact);
-    expect(insertContactSql).toHaveBeenCalledWith({
+    const created = await create()('parameter account-sid', sampleNewContact, true);
+    expect(conn.one).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO'), {
       ...sampleNewContact,
       updatedAt: expect.anything(),
       createdAt: expect.anything(),
       accountSid: 'parameter account-sid',
+      finalize: true,
     });
-    expect(conn.one).toHaveBeenCalledWith(
-      expect.stringContaining('MOCKED INSERT STATEMENT'),
-    );
     const { isNewRecord, ...returnedContact } = returnValue;
     expect(created).toStrictEqual({
       contact: returnedContact,
@@ -87,16 +78,14 @@ describe('create', () => {
 
     jest.spyOn(conn, 'one').mockResolvedValue(returnValue);
 
-    const created = await create()('parameter account-sid', sampleNewContact);
-    expect(insertContactSql).toHaveBeenCalledWith({
+    const created = await create()('parameter account-sid', sampleNewContact, true);
+    expect(conn.one).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO'), {
       ...sampleNewContact,
       updatedAt: expect.anything(),
       createdAt: expect.anything(),
       accountSid: 'parameter account-sid',
+      finalize: true,
     });
-    expect(conn.one).toHaveBeenCalledWith(
-      expect.stringContaining('MOCKED INSERT STATEMENT'),
-    );
     const { isNewRecord, ...returnedContact } = returnValue;
     expect(created).toStrictEqual({
       contact: returnedContact,
