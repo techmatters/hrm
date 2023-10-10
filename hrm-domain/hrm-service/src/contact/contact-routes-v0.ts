@@ -33,16 +33,16 @@ const contactsRouter = SafeRouter();
 // example: curl -XPOST -H'Content-Type: application/json' localhost:3000/contacts -d'{"hi": 2}'
 
 /**
- * @param {string} req.accountSid - SID of the helpline
- * @param {User} req.query.user - User for requested
- * @param {import('./contact').CreateContactPayload} req.body - Contact to create
+ * @param {any} req. - Request
+ * @param {any} res - User for requested
+ * @param {CreateContactPayload} req.body - Contact to create
  *
- * @returns {import('./contact').Contact} - Created contact
+ * @returns {Contact} - Created contact
  */
 contactsRouter.post('/', publicEndpoint, async (req, res) => {
   const { accountSid, user } = req;
-
-  const contact = await createContact(accountSid, user.workerSid, req.body, {
+  const finalize = req.query.finalize !== 'false'; // Default to true for backwards compatibility
+  const contact = await createContact(accountSid, user.workerSid, finalize, req.body, {
     can: req.can,
     user,
   });
@@ -118,11 +118,19 @@ const canEditContact = asyncHandler(async (req, res, next) => {
 
     try {
       const contactObj = await getContactById(accountSid, contactId);
-
-      if (can(user, actionsMaps.contact.EDIT_CONTACT, contactObj)) {
-        req.authorize();
+      if (contactObj.finalizedAt) {
+        if (can(user, actionsMaps.contact.EDIT_CONTACT, contactObj)) {
+          req.authorize();
+        } else {
+          req.unauthorize();
+        }
       } else {
-        req.unauthorize();
+        // If there is no finalized date, then the contact is a draft and can only be edited by the worker who created it
+        if (contactObj.createdBy === user.workerSid) {
+          req.authorize();
+        } else {
+          req.unauthorize();
+        }
       }
     } catch (err) {
       if (
@@ -146,11 +154,12 @@ contactsRouter.patch(
   async (req, res) => {
     const { accountSid, user } = req;
     const { contactId } = req.params;
-
+    const finalize = req.query.finalize === 'false'; // Default to false for backwards compatibility
     try {
       const contact = await patchContact(
         accountSid,
         user.workerSid,
+        finalize,
         contactId,
         req.body,
         {
