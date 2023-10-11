@@ -239,15 +239,14 @@ type BaseSearchQueryParams = {
   accountSid: string;
   limit: number;
   offset: number;
-  counselor?: string;
-  helpline?: string;
 };
+export type OptionalSearchQueryParams = Partial<QueryParams>;
 type SearchQueryParamsBuilder<T> = (
   accountSid: string,
   searchParameters: T,
   limit: number,
   offset: number,
-) => BaseSearchQueryParams;
+) => BaseSearchQueryParams & OptionalSearchQueryParams;
 
 export type SearchQueryFunction<T> = (
   accountSid: string,
@@ -282,7 +281,7 @@ export const search: SearchQueryFunction<SearchParameters> =
   );
 
 export const searchByProfileId: SearchQueryFunction<
-  Pick<BaseSearchQueryParams, 'counselor' | 'helpline'> & { profileId: number }
+  Pick<OptionalSearchQueryParams, 'counselor' | 'helpline'> & { profileId: number }
 > = generalizedSearchQueryFunction(
   SELECT_CONTACT_SEARCH_BY_PROFILE_ID,
   (accountSid, searchParameters, limit, offset) => ({
