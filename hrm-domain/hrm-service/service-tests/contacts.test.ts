@@ -1865,6 +1865,31 @@ describe('/contacts route', () => {
       });
 
       describe('Changes outside rawJson', () => {
+        beforeEach(async () => {
+          // Clean what's been created so far
+          await cleanupCsamReports();
+          await cleanupReferrals();
+          await cleanupContactsJobs();
+          await cleanupContacts();
+          await cleanupCases();
+        });
+
+        test('Not permitted on finalized contact', async () => {
+          const createdContact = await contactApi.createContact(
+            accountSid,
+            workerSid,
+            true,
+            contact1,
+            { user: twilioUser(workerSid, []), can: () => true },
+          );
+          const response = await request
+            .patch(subRoute(createdContact.id))
+            .set(headers)
+            .send({ conversationDuration: 1337 });
+
+          expect(response.status).toBe(401);
+        });
+
         type FullPatchTestOptions = {
           patch: PatchPayload;
           description: string;
@@ -1887,7 +1912,7 @@ describe('/contacts route', () => {
           },
         ];
         each(testCases).test(
-          'should $description if that is specified in the payload',
+          'should $description if that is specified in the payload for a draft contact',
           async ({
             patch,
             expectedDifferences,
@@ -1904,7 +1929,7 @@ describe('/contacts route', () => {
             const createdContact = await contactApi.createContact(
               accountSid,
               workerSid,
-              true,
+              false,
               original,
               { user: twilioUser(workerSid, []), can: () => true },
             );
@@ -1955,7 +1980,6 @@ describe('/contacts route', () => {
                 ...expected,
                 timeOfContact: expect.toParseAsDate(expected.timeOfContact),
                 createdAt: expect.toParseAsDate(expected.createdAt),
-                finalizedAt: expect.toParseAsDate(createdContact.finalizedAt),
                 updatedAt: expect.toParseAsDate(),
                 updatedBy: workerSid,
                 referrals: [],

@@ -24,6 +24,7 @@ import {
   getContactById,
   addConversationMediaToContact,
   getContactByTaskId,
+  PatchPayload,
 } from './contact';
 import asyncHandler from '../async-handler';
 import type { Request, Response, NextFunction } from 'express';
@@ -121,7 +122,14 @@ const canEditContact = asyncHandler(async (req, res, next) => {
     try {
       const contactObj = await getContactById(accountSid, contactId);
       if (contactObj.finalizedAt) {
-        if (can(user, actionsMaps.contact.EDIT_CONTACT, contactObj)) {
+        const updatedProps = Object.keys(req.body ?? {}) as (keyof PatchPayload)[];
+        const isOnlyEditingForm = updatedProps.every(
+          prop => prop === 'rawJson' || prop === 'referrals',
+        );
+        if (
+          isOnlyEditingForm &&
+          can(user, actionsMaps.contact.EDIT_CONTACT, contactObj)
+        ) {
           req.authorize();
         } else {
           req.unauthorize();
