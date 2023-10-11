@@ -171,6 +171,7 @@ const canEditContact = asyncHandler(async (req, res, next) => {
       ) {
         throw createError(404);
       } else {
+        console.error('Failed to authorize contact editing', err);
         throw createError(500);
       }
     }
