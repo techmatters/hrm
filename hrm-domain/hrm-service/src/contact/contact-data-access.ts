@@ -22,7 +22,7 @@ import {
   selectSingleContactByIdSql,
   selectSingleContactByTaskId,
 } from './sql/contact-get-sql';
-import { insertContactSql, NewContactRecord } from './sql/contact-insert-sql';
+import { INSERT_CONTACT_SQL, NewContactRecord } from './sql/contact-insert-sql';
 import { ContactRawJson, ReferralWithoutContactId } from './contact-json';
 import type { ITask } from 'pg-promise';
 import { txIfNotInOne } from '../sql';
@@ -32,6 +32,7 @@ export type ExistingContactRecord = {
   id: number;
   accountSid: string;
   createdAt?: Date;
+  finalizedAt?: Date;
   updatedAt?: Date;
   updatedBy?: string;
 } & Partial<NewContactRecord>;
@@ -174,20 +175,23 @@ type CreateResult = { contact: Contact; isNewRecord: boolean };
 
 export const create =
   (task?) =>
-  async (accountSid: string, newContact: NewContactRecord): Promise<CreateResult> => {
+  async (
+    accountSid: string,
+    newContact: NewContactRecord,
+    finalize: boolean,
+  ): Promise<CreateResult> => {
     return txIfNotInOne(
       task,
       async (conn: ITask<{ contact: Contact; isNewRecord: boolean }>) => {
         const now = new Date();
         const { isNewRecord, ...created }: CreateResultRecord =
-          await conn.one<CreateResultRecord>(
-            insertContactSql({
-              ...newContact,
-              accountSid,
-              createdAt: now,
-              updatedAt: now,
-            }),
-          );
+          await conn.one<CreateResultRecord>(INSERT_CONTACT_SQL, {
+            ...newContact,
+            accountSid,
+            createdAt: now,
+            updatedAt: now,
+            finalize,
+          });
 
         return { contact: created, isNewRecord };
       },
@@ -199,6 +203,7 @@ export const patch =
   async (
     accountSid: string,
     contactId: string,
+    finalize: boolean,
     contactUpdates: ContactUpdates,
   ): Promise<Contact | undefined> => {
     return txIfNotInOne(task, async connection => {
@@ -209,6 +214,7 @@ export const patch =
           accountSid,
           contactId,
           ...contactUpdates,
+          finalize,
         },
       );
       return updatedContact;

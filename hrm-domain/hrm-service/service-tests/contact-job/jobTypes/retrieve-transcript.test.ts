@@ -115,6 +115,7 @@ const createChatContact = async (channel: string, startedTimestamp: number) => {
   const contact = await contactApi.createContact(
     accountSid,
     workerSid,
+    true,
     contactTobeCreated,
     {
       can: () => true,
@@ -204,7 +205,7 @@ describe('publish retrieve-transcript job type', () => {
     expect(publishRetrieveContactTranscriptSpy).toHaveBeenCalledTimes(1);
     expect(publishRetrieveContactTranscriptSpy).toHaveBeenCalledWith({
       ...retrieveContactTranscriptJob,
-      lastAttempt: expect.toParseAsDate(),
+      lastAttempt: expect.any(Date),
       numberOfAttempts: 1,
       resource: {
         ...contactWithoutLegacyCompatibility,
@@ -213,6 +214,7 @@ describe('publish retrieve-transcript job type', () => {
           createdAt: expect.toParseAsDate(cm.createdAt),
           updatedAt: expect.toParseAsDate(cm.updatedAt),
         })),
+        finalizedAt: expect.toParseAsDate(contact.finalizedAt),
         createdAt: expect.toParseAsDate(contact.createdAt),
         updatedAt: expect.toParseAsDate(contact.updatedAt),
         timeOfContact: expect.toParseAsDate(contact.timeOfContact),
@@ -271,7 +273,7 @@ describe('publish retrieve-transcript job type', () => {
       expect(publishRetrieveContactTranscriptSpy).toHaveBeenCalledTimes(1);
       expect(publishRetrieveContactTranscriptSpy).toHaveBeenCalledWith({
         ...retrieveContactTranscriptJob,
-        lastAttempt: expect.toParseAsDate(),
+        lastAttempt: expect.any(Date),
         numberOfAttempts: 1,
         resource: {
           ...contact,
@@ -281,6 +283,7 @@ describe('publish retrieve-transcript job type', () => {
             updatedAt: expect.toParseAsDate(cm.updatedAt),
           })),
           createdAt: expect.toParseAsDate(contact.createdAt),
+          finalizedAt: expect.toParseAsDate(contact.finalizedAt),
           updatedAt: expect.toParseAsDate(contact.updatedAt),
           timeOfContact: expect.toParseAsDate(contact.timeOfContact),
         },

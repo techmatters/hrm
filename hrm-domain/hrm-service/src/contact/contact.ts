@@ -284,6 +284,7 @@ const findS3StoredTranscriptPending = (
 export const createContact = async (
   accountSid: string,
   createdBy: string,
+  finalize: boolean,
   newContact: CreateContactPayload,
   { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
 ): Promise<WithLegacyCategories<Contact>> => {
@@ -318,6 +319,7 @@ export const createContact = async (
         const { contact, isNewRecord } = await create(conn)(
           accountSid,
           completeNewContact,
+          finalize,
         );
 
         let contactResult: Contact;
@@ -420,6 +422,7 @@ export const createContact = async (
 export const patchContact = async (
   accountSid: string,
   updatedBy: string,
+  finalize: boolean,
   contactId: string,
   contactPatch: PatchPayload,
   { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
@@ -439,7 +442,7 @@ export const patchContact = async (
         });
       }
     }
-    const updated = await patch(conn)(accountSid, contactId, {
+    const updated = await patch(conn)(accountSid, contactId, finalize, {
       updatedBy,
       ...restOfPatch,
       ...rawJson,

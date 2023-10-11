@@ -14,7 +14,6 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { pgp } from '../../connection-pool';
 import { ContactRawJson } from '../contact-json';
 import { selectSingleContactByTaskId } from './contact-get-sql';
 
@@ -34,17 +33,11 @@ export type NewContactRecord = {
   caseId?: string;
 };
 
-export const insertContactSql = (
-  contact: NewContactRecord & { accountSid: string; createdAt: Date; updatedAt: Date },
-) => `
+export const INSERT_CONTACT_SQL = `
   WITH existing AS (
-      ${pgp.as.format(selectSingleContactByTaskId('Contacts'), {
-        taskId: contact.taskId,
-        accountSid: contact.accountSid,
-      })}
+      ${selectSingleContactByTaskId('Contacts')}
   ), inserted AS (
-    ${pgp.as.format(
-      `INSERT INTO "Contacts" (
+    INSERT INTO "Contacts" (
       "accountSid",
       "rawJson",
       "queueName",
@@ -59,7 +52,8 @@ export const insertContactSql = (
       "timeOfContact",
       "taskId",
       "channelSid",
-      "serviceSid"
+      "serviceSid",
+      "finalizedAt"
     ) (SELECT 
         $<accountSid>, 
         $<rawJson>, 
@@ -75,21 +69,13 @@ export const insertContactSql = (
         $<timeOfContact>, 
         $<taskId>, 
         $<channelSid>, 
-        $<serviceSid>
+        $<serviceSid>,
+        CASE WHEN $<finalize> = true THEN CURRENT_TIMESTAMP ELSE NULL END
       WHERE NOT EXISTS (
-        ${pgp.as.format(selectSingleContactByTaskId('Contacts'), {
-          taskId: contact.taskId,
-          accountSid: contact.accountSid,
-        })}
+        ${selectSingleContactByTaskId('Contacts')}
       )
     )
-    RETURNING *`,
-      {
-        ...contact,
-        taskId: contact.taskId,
-        accountSid: contact.accountSid,
-      },
-    )}
+    RETURNING *
   )
   SELECT "existing".*, false AS "isNewRecord" FROM "existing"
   UNION

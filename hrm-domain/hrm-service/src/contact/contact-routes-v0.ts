@@ -24,25 +24,27 @@ import {
   getContactById,
   addConversationMediaToContact,
   getContactByTaskId,
+  PatchPayload,
 } from './contact';
 import asyncHandler from '../async-handler';
 import type { Request, Response, NextFunction } from 'express';
+import { getClient, isTwilioTaskTransferTarget } from '@tech-matters/twilio-client';
 
 const contactsRouter = SafeRouter();
 
 // example: curl -XPOST -H'Content-Type: application/json' localhost:3000/contacts -d'{"hi": 2}'
 
 /**
- * @param {string} req.accountSid - SID of the helpline
- * @param {User} req.query.user - User for requested
- * @param {import('./contact').CreateContactPayload} req.body - Contact to create
+ * @param {any} req. - Request
+ * @param {any} res - User for requested
+ * @param {CreateContactPayload} req.body - Contact to create
  *
- * @returns {import('./contact').Contact} - Created contact
+ * @returns {Contact} - Created contact
  */
 contactsRouter.post('/', publicEndpoint, async (req, res) => {
   const { accountSid, user } = req;
-
-  const contact = await createContact(accountSid, user.workerSid, req.body, {
+  const finalize = req.query.finalize !== 'false'; // Default to true for backwards compatibility
+  const contact = await createContact(accountSid, user.workerSid, finalize, req.body, {
     can: req.can,
     user,
   });
@@ -113,16 +115,54 @@ const validatePatchPayload = ({ body }: Request, res: Response, next: NextFuncti
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const canEditContact = asyncHandler(async (req, res, next) => {
   if (!req.isAuthorized()) {
-    const { accountSid, user, can } = req;
+    const { accountSid, user, can, body } = req;
     const { contactId } = req.params;
 
     try {
       const contactObj = await getContactById(accountSid, contactId);
-
-      if (can(user, actionsMaps.contact.EDIT_CONTACT, contactObj)) {
-        req.authorize();
+      if (contactObj.finalizedAt) {
+        const updatedProps = Object.keys(body ?? {}) as (keyof PatchPayload)[];
+        const isOnlyEditingForm = updatedProps.every(
+          prop => prop === 'rawJson' || prop === 'referrals',
+        );
+        if (
+          isOnlyEditingForm &&
+          can(user, actionsMaps.contact.EDIT_CONTACT, contactObj)
+        ) {
+          req.authorize();
+        } else {
+          req.unauthorize();
+        }
       } else {
-        req.unauthorize();
+        // If there is no finalized date, then the contact is a draft and can only be edited by the worker who created it or the one who owns it.
+        // Offline contacts potentially need to be edited by a creator that won't own them.
+        // Transferred tasks need to be edited by an owner that didn't create them.
+        if (
+          contactObj.createdBy === user.workerSid ||
+          contactObj.twilioWorkerId === user.workerSid
+        ) {
+          req.authorize();
+        } else {
+          // It the contact record doesn't show this user as the contact owner, but Twilio shows that they are having the associated task transferred to them, permit the edit
+          // Long term it's wrong for HRM to be verifying this itself - we should probably initiate updates for the contact record from the backend transfer logic rather than Flex in future.
+          // Then HRM just needs to validate the request is coming from a valid backend service with permission to make the edit.
+          const twilioClient = await getClient({
+            accountSid,
+            authToken: process.env[`TWILIO_AUTH_TOKEN_${accountSid}`],
+          });
+          if (
+            await isTwilioTaskTransferTarget(
+              twilioClient,
+              body?.taskId,
+              contactObj.taskId,
+              user.workerSid,
+            )
+          ) {
+            req.authorize();
+          } else {
+            req.unauthorize();
+          }
+        }
       }
     } catch (err) {
       if (
@@ -131,6 +171,7 @@ const canEditContact = asyncHandler(async (req, res, next) => {
       ) {
         throw createError(404);
       } else {
+        console.error('Failed to authorize contact editing', err);
         throw createError(500);
       }
     }
@@ -146,11 +187,12 @@ contactsRouter.patch(
   async (req, res) => {
     const { accountSid, user } = req;
     const { contactId } = req.params;
-
+    const finalize = req.query.finalize === 'true'; // Default to false for backwards compatibility
     try {
       const contact = await patchContact(
         accountSid,
         user.workerSid,
+        finalize,
         contactId,
         req.body,
         {

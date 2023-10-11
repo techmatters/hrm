@@ -155,7 +155,11 @@ describe('/permissions/:action route with contact objectType', () => {
           serviceSid: 'serviceSid',
         } as NewContactRecord;
 
-        const { contact: createdContact } = await contactDB.create()(accountSid, contact);
+        const { contact: createdContact } = await contactDB.create()(
+          accountSid,
+          contact,
+          true,
+        );
         createdContacts[accountSid] = createdContact;
 
         await Promise.all(

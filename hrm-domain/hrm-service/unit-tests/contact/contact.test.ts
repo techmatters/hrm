@@ -178,16 +178,21 @@ describe('createContact', () => {
     const returnValue = await createContact(
       'parameter account-sid',
       'contact-creator',
+      true,
       sampleLegacyCreateContactPayload,
       {
         can: () => true,
         user: twilioUser(workerSid, []),
       },
     );
-    expect(createContactMock).toHaveBeenCalledWith('parameter account-sid', {
-      ...sampleCreateContactPayload,
-      createdBy: 'contact-creator',
-    });
+    expect(createContactMock).toHaveBeenCalledWith(
+      'parameter account-sid',
+      {
+        ...sampleCreateContactPayload,
+        createdBy: 'contact-creator',
+      },
+      true,
+    );
 
     expect(connectCsamMock).not.toHaveBeenCalled();
     expect(createReferralMock).not.toHaveBeenCalled();
@@ -226,23 +231,28 @@ describe('createContact', () => {
     const returnValue = await createContact(
       'parameter account-sid',
       'contact-creator',
+      true,
       minimalLegacyPayload,
       {
         can: () => true,
         user: twilioUser(workerSid, []),
       },
     );
-    expect(createContactMock).toHaveBeenCalledWith('parameter account-sid', {
-      ...minimalPayload,
-      createdBy: 'contact-creator',
-      helpline: '',
-      number: '',
-      channel: '',
-      channelSid: '',
-      serviceSid: '',
-      taskId: 'a task',
-      twilioWorkerId: '',
-    });
+    expect(createContactMock).toHaveBeenCalledWith(
+      'parameter account-sid',
+      {
+        ...minimalPayload,
+        createdBy: 'contact-creator',
+        helpline: '',
+        number: '',
+        channel: '',
+        channelSid: '',
+        serviceSid: '',
+        taskId: 'a task',
+        twilioWorkerId: '',
+      },
+      true,
+    );
 
     expect(connectCsamMock).not.toHaveBeenCalled();
     expect(createReferralMock).not.toHaveBeenCalled();
@@ -264,17 +274,22 @@ describe('createContact', () => {
     const returnValue = await createContact(
       'parameter account-sid',
       'contact-creator',
+      true,
       legacyPayload,
       {
         can: () => true,
         user: twilioUser(workerSid, []),
       },
     );
-    expect(createContactMock).toHaveBeenCalledWith('parameter account-sid', {
-      ...payload,
-      timeOfContact: expect.any(Date),
-      createdBy: 'contact-creator',
-    });
+    expect(createContactMock).toHaveBeenCalledWith(
+      'parameter account-sid',
+      {
+        ...payload,
+        timeOfContact: expect.any(Date),
+        createdBy: 'contact-creator',
+      },
+      true,
+    );
 
     expect(connectCsamMock).not.toHaveBeenCalled();
     expect(createReferralMock).not.toHaveBeenCalled();
@@ -296,16 +311,21 @@ describe('createContact', () => {
     const returnValue = await createContact(
       'parameter account-sid',
       'contact-creator',
+      true,
       legacyPayload,
       {
         can: () => true,
         user: twilioUser(workerSid, []),
       },
     );
-    expect(createContactMock).toHaveBeenCalledWith('parameter account-sid', {
-      ...payload,
-      createdBy: 'contact-creator',
-    });
+    expect(createContactMock).toHaveBeenCalledWith(
+      'parameter account-sid',
+      {
+        ...payload,
+        createdBy: 'contact-creator',
+      },
+      true,
+    );
 
     expect(connectCsamMock).not.toHaveBeenCalled();
     expect(createReferralMock).not.toHaveBeenCalled();
@@ -341,14 +361,24 @@ describe('createContact', () => {
       ...sampleLegacyCreateContactPayload,
       csamReports,
     };
-    const returnValue = await createContact(accountSid, 'contact-creator', payload, {
-      can: () => true,
-      user: twilioUser(workerSid, []),
-    });
-    expect(createContactMock).toHaveBeenCalledWith(accountSid, {
-      ...sampleCreateContactPayload,
-      createdBy: 'contact-creator',
-    });
+    const returnValue = await createContact(
+      accountSid,
+      'contact-creator',
+      true,
+      payload,
+      {
+        can: () => true,
+        user: twilioUser(workerSid, []),
+      },
+    );
+    expect(createContactMock).toHaveBeenCalledWith(
+      accountSid,
+      {
+        ...sampleCreateContactPayload,
+        createdBy: 'contact-creator',
+      },
+      true,
+    );
 
     expect(connectCsamMock).toHaveBeenCalledTimes(1);
     expect(connectCsamMock).toHaveBeenCalledWith(
@@ -388,16 +418,21 @@ describe('createContact', () => {
     const returnValue = await createContact(
       'parameter account-sid',
       'contact-creator',
+      true,
       payload,
       {
         can: () => true,
         user: twilioUser(workerSid, []),
       },
     );
-    expect(createContactMock).toHaveBeenCalledWith('parameter account-sid', {
-      ...sampleCreateContactPayload,
-      createdBy: 'contact-creator',
-    });
+    expect(createContactMock).toHaveBeenCalledWith(
+      'parameter account-sid',
+      {
+        ...sampleCreateContactPayload,
+        createdBy: 'contact-creator',
+      },
+      true,
+    );
 
     expect(createReferralMock).toHaveBeenCalledTimes(2);
     referrals.forEach(referral =>
@@ -425,17 +460,22 @@ describe('createContact', () => {
     const returnValue = await createContact(
       'parameter account-sid',
       'contact-creator',
+      true,
       legacyPayload as any,
       {
         can: () => true,
         user: twilioUser(workerSid, []),
       },
     );
-    expect(createContactMock).toHaveBeenCalledWith('parameter account-sid', {
-      ...payload,
-      queueName: '',
-      createdBy: 'contact-creator',
-    });
+    expect(createContactMock).toHaveBeenCalledWith(
+      'parameter account-sid',
+      {
+        ...payload,
+        queueName: '',
+        createdBy: 'contact-creator',
+      },
+      true,
+    );
 
     expect(connectCsamMock).not.toHaveBeenCalled();
     expect(createReferralMock).not.toHaveBeenCalled();
@@ -478,6 +518,7 @@ describe('createContact', () => {
     const returnValue = await createContact(
       'parameter account-sid',
       'contact-creator',
+      true,
       payload,
       {
         can: () => true,
@@ -485,10 +526,14 @@ describe('createContact', () => {
       },
     );
 
-    expect(createContactMock).toHaveBeenCalledWith('parameter account-sid', {
-      ...sampleCreateContactPayload,
-      createdBy: 'contact-creator',
-    });
+    expect(createContactMock).toHaveBeenCalledWith(
+      'parameter account-sid',
+      {
+        ...sampleCreateContactPayload,
+        createdBy: 'contact-creator',
+      },
+      true,
+    );
 
     expect(createReferralMock).toHaveBeenCalledTimes(2);
     referrals.forEach(referral =>
@@ -562,6 +607,7 @@ describe('patchContact', () => {
     const result = await patchContact(
       'accountSid',
       'contact-patcher',
+      true,
       '1234',
       samplePatch,
       {
@@ -570,7 +616,7 @@ describe('patchContact', () => {
       },
     );
     expect(result).toStrictEqual(mockReturnContact);
-    expect(patchSpy).toHaveBeenCalledWith('accountSid', '1234', {
+    expect(patchSpy).toHaveBeenCalledWith('accountSid', '1234', true, {
       updatedBy: 'contact-patcher',
       childInformation: {
         firstName: 'Charlotte',
@@ -593,7 +639,7 @@ describe('patchContact', () => {
     jest.spyOn(contactDb, 'patch').mockReturnValue(patchSpy);
     patchSpy.mockResolvedValue(undefined);
     expect(
-      patchContact('accountSid', 'contact-patcher', '1234', samplePatch, {
+      patchContact('accountSid', 'contact-patcher', true, '1234', samplePatch, {
         can: () => true,
         user: twilioUser(workerSid, []),
       }),

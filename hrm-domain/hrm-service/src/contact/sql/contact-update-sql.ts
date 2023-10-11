@@ -40,7 +40,8 @@ SET "rawJson" = COALESCE("rawJson", '{}'::JSONB)
   "channelSid" =   COALESCE($<channelSid>, "channelSid"),
   "serviceSid" =   COALESCE($<serviceSid>, "serviceSid"),
   "updatedAt" = CURRENT_TIMESTAMP,
-  "caseId" =   COALESCE($<caseId>, "caseId")
+  "caseId" =   COALESCE($<caseId>, "caseId"),
+  "finalizedAt" = COALESCE("finalizedAt", (CASE WHEN $<finalize> = true THEN CURRENT_TIMESTAMP ELSE NULL END))
 ${ID_WHERE_CLAUSE}
 RETURNING *
 )

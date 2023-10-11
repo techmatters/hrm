@@ -158,6 +158,7 @@ export const validateCaseListResponse = (actual, expectedCaseAndContactModels, c
           referrals: [],
           timeOfContact: expect.toParseAsDate(expectedContactModel.timeOfContact),
           createdAt: expect.toParseAsDate(expectedContactModel.createdAt),
+          finalizedAt: expect.toParseAsDate(expectedContactModel.finalizedAt),
           updatedAt: expect.toParseAsDate(expectedContactModel.updatedAt),
         }),
       ]);
