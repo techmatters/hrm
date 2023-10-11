@@ -23,6 +23,7 @@ import {
   createContact,
   getContactById,
   addConversationMediaToContact,
+  getContactByTaskId,
 } from './contact';
 import asyncHandler from '../async-handler';
 import type { Request, Response, NextFunction } from 'express';
@@ -45,6 +46,23 @@ contactsRouter.post('/', publicEndpoint, async (req, res) => {
     can: req.can,
     user,
   });
+  res.json(contact);
+});
+
+contactsRouter.get('/byTaskSid/:taskSid', publicEndpoint, async (req, res) => {
+  const { accountSid, user, can } = req;
+  const contact = await getContactByTaskId(accountSid, req.params.taskSid, {
+    can: req.can,
+    user,
+  });
+  if (!contact) {
+    throw createError(404);
+  }
+  if (!req.isAuthorized()) {
+    if (!can(user, actionsMaps.contact.VIEW_CONTACT, contact)) {
+      createError(401);
+    }
+  }
   res.json(contact);
 });
 
@@ -83,6 +101,7 @@ contactsRouter.post('/search', publicEndpoint, async (req, res) => {
   res.json(searchResults);
 });
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const validatePatchPayload = ({ body }: Request, res: Response, next: NextFunction) => {
   if (typeof body !== 'object' || Array.isArray(body)) {
     throw createError(400);
@@ -91,6 +110,7 @@ const validatePatchPayload = ({ body }: Request, res: Response, next: NextFuncti
   next();
 };
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const canEditContact = asyncHandler(async (req, res, next) => {
   if (!req.isAuthorized()) {
     const { accountSid, user, can } = req;

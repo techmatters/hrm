@@ -18,7 +18,10 @@ import { db } from '../connection-pool';
 import { UPDATE_CASEID_BY_ID, UPDATE_CONTACT_BY_ID } from './sql/contact-update-sql';
 import { SELECT_CONTACT_SEARCH } from './sql/contact-search-sql';
 import { parseISO } from 'date-fns';
-import { selectSingleContactByIdSql } from './sql/contact-get-sql';
+import {
+  selectSingleContactByIdSql,
+  selectSingleContactByTaskId,
+} from './sql/contact-get-sql';
 import { insertContactSql, NewContactRecord } from './sql/contact-insert-sql';
 import { ContactRawJson, ReferralWithoutContactId } from './contact-json';
 import type { ITask } from 'pg-promise';
@@ -235,6 +238,17 @@ export const getById = async (accountSid: string, contactId: number): Promise<Co
     connection.oneOrNone<Contact>(selectSingleContactByIdSql('Contacts'), {
       accountSid,
       contactId,
+    }),
+  );
+
+export const getByTaskSid = async (
+  accountSid: string,
+  taskId: string,
+): Promise<Contact> =>
+  db.task(async connection =>
+    connection.oneOrNone<Contact>(selectSingleContactByTaskId('Contacts'), {
+      accountSid,
+      taskId,
     }),
   );
 

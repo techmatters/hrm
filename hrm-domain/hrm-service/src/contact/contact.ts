@@ -22,6 +22,7 @@ import {
   create,
   ExistingContactRecord,
   getById,
+  getByTaskSid,
   patch,
   search,
   SearchParameters,
@@ -69,7 +70,7 @@ export type WithLegacyCategories<T extends Contact | NewContactRecord | PatchPay
 
 export type PatchPayload = Omit<
   ExistingContactRecord,
-  'id' | 'accountSid' | 'updatedAt' | 'rawJson'
+  'id' | 'accountSid' | 'updatedAt' | 'rawJson' | 'createdAt'
 > & {
   rawJson?: Partial<ContactRawJson>;
   referrals?: ReferralWithoutContactId[];
@@ -222,6 +223,16 @@ export const getContactById = async (accountSid: string, contactId: number) => {
   }
 
   return contact;
+};
+
+export const getContactByTaskId = async (
+  accountSid: string,
+  taskId: string,
+  { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
+) => {
+  const contact = await getByTaskSid(accountSid, taskId);
+
+  return contact ? bindApplyTransformations(can, user)(contact) : undefined;
 };
 
 const getNewContactPayload = (
