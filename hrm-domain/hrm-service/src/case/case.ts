@@ -20,7 +20,6 @@
  * This includes compatibility code required to provide cases in a shape expected by older clients
  */
 import * as caseDb from './case-data-access';
-import { retrieveCategories } from '../contact/categories';
 import {
   CaseListConfiguration,
   CaseListFilters,
@@ -35,7 +34,7 @@ import { setupCanForRules } from '../permissions/setupCanForRules';
 import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import {
   bindApplyTransformations as bindApplyContactTransformations,
-  getPersonsName,
+  WithLegacyCategories,
 } from '../contact/contact';
 import type { SearchPermissions } from '../permissions/search-permissions';
 
@@ -79,7 +78,11 @@ export type Case = CaseRecordCommon & {
   id: number;
   childName?: string;
   categories: Record<string, string[]>;
-  connectedContacts?: Contact[];
+  connectedContacts?: WithLegacyCategories<Contact>[];
+};
+
+type CaseRecordWithLegacyCategoryContacts = Omit<CaseRecord, 'connectedContacts'> & {
+  connectedContacts: WithLegacyCategories<Contact>[];
 };
 type CaseRecord = caseDb.CaseRecord;
 
@@ -139,22 +142,10 @@ const caseSectionRecordsToInfo = (
   }, infoLists);
 };
 
-const addCategoriesAndChildName = (caseItem: CaseRecord) => {
+const addCategories = (caseItem: CaseRecordWithLegacyCategoryContacts) => {
   const fstContact = (caseItem.connectedContacts ?? [])[0];
 
-  if (!fstContact) {
-    return {
-      ...caseItem,
-      childName: '',
-      categories: retrieveCategories(undefined), // we call the function here so the return value always matches
-    };
-  }
-
-  const { childInformation, caseInformation } = fstContact.rawJson;
-  // Legacy support - shouldn't be required once all flex clients are v2.1+ & contacts are migrated
-  const childName = getPersonsName(childInformation);
-  const categories = retrieveCategories(caseInformation.categories);
-  return { ...caseItem, childName, categories };
+  return { ...caseItem, categories: fstContact?.rawJson?.categories ?? {} };
 };
 
 /**
@@ -166,6 +157,7 @@ const caseToCaseRecord = (
   inputCase: Partial<Case>,
   workerSid: string,
 ): Partial<NewCaseRecord> => {
+  const { connectedContacts, ...caseWithoutContacts } = inputCase;
   const info = inputCase.info ?? {};
   const caseSections: CaseSectionRecord[] = Object.entries(
     WELL_KNOWN_CASE_SECTION_NAMES,
@@ -186,12 +178,12 @@ const caseToCaseRecord = (
     }),
   );
   return {
-    ...inputCase,
+    ...caseWithoutContacts,
     caseSections,
   };
 };
 
-const caseRecordToCase = (record: CaseRecord): Case => {
+const caseRecordToCase = (record: CaseRecordWithLegacyCategoryContacts): Case => {
   // Remove legacy case sections
   const info = {
     ...record.info,
@@ -199,7 +191,7 @@ const caseRecordToCase = (record: CaseRecord): Case => {
   Object.keys(WELL_KNOWN_CASE_SECTION_NAMES).forEach(k => delete info[k]);
   delete info.notes;
 
-  const { caseSections, ...output } = addCategoriesAndChildName({
+  const { caseSections, ...output } = addCategories({
     ...record,
     info: {
       ...info,
@@ -245,7 +237,8 @@ export const createCase = async (
   const created = await caseDb.create(record, accountSid);
 
   // A new case is always initialized with empty connected contacts. No need to apply mapContactTransformations here
-  return caseRecordToCase(created);
+  // This also means the cast to the legacy category type is safe
+  return caseRecordToCase(created as CaseRecordWithLegacyCategoryContacts);
 };
 
 export const updateCase = async (

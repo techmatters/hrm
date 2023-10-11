@@ -41,9 +41,8 @@ describe('create', () => {
         lastName: 'Ballantyne',
       },
       callType: 'carrier pigeon',
-      caseInformation: {
-        categories: {},
-      },
+      caseInformation: {},
+      categories: {},
     },
     queueName: 'Q',
     conversationDuration: 100,

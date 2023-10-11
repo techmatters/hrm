@@ -83,8 +83,8 @@ contactsRouter.post('/search', publicEndpoint, async (req, res) => {
   res.json(searchResults);
 });
 
-const validatePatchPayload = (req: Request, res: Response, next: NextFunction) => {
-  if (!req.body || !req.body.rawJson) {
+const validatePatchPayload = ({ body }: Request, res: Response, next: NextFunction) => {
+  if (typeof body !== 'object' || Array.isArray(body)) {
     throw createError(400);
   }
 
@@ -147,7 +147,7 @@ contactsRouter.patch(
   },
 );
 
-contactsRouter.post('/:contactId/conversationMedia', async (req, res) => {
+contactsRouter.post('/:contactId/conversationMedia', publicEndpoint, async (req, res) => {
   const { accountSid, user } = req;
   const { contactId } = req.params;
 

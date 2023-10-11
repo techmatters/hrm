@@ -16,14 +16,14 @@
 
 import { Case } from '../src/case/case';
 import { channelTypes } from '../src/contact/channelTypes';
-import { CreateContactPayloadWithFormProperty } from '../src/contact/contact';
 import { S3ContactMediaType } from '../src/conversation-media/conversation-media';
 import { Contact } from '../src/contact/contact-data-access';
+import { CreateContactPayload } from '../src/contact/contact';
 
 export const accountSid = 'ACCOUNT_SID';
 // TODO: Turn these into proper API types (will probably break so many tests...)
-export const contact1: CreateContactPayloadWithFormProperty = {
-  form: {
+export const contact1: CreateContactPayload = {
+  rawJson: {
     callType: 'Child calling about self',
     childInformation: {
       firstName: 'Jhonny',
@@ -51,8 +51,8 @@ export const contact1: CreateContactPayloadWithFormProperty = {
       didYouDiscussRightsWithTheChild: false,
       didTheChildFeelWeSolvedTheirProblem: false,
       wouldTheChildRecommendUsToAFriend: false,
-      categories: {},
     },
+    categories: {},
     callerInformation: {
       firstName: '',
       lastName: '',
@@ -80,8 +80,8 @@ export const contact1: CreateContactPayloadWithFormProperty = {
   conversationDuration: 14,
 };
 
-export const contact2: CreateContactPayloadWithFormProperty = {
-  form: {
+export const contact2: CreateContactPayload = {
+  rawJson: {
     callType: 'Someone calling about a child',
     childInformation: {
       firstName: 'Name',
@@ -109,8 +109,8 @@ export const contact2: CreateContactPayloadWithFormProperty = {
       didYouDiscussRightsWithTheChild: false,
       didTheChildFeelWeSolvedTheirProblem: false,
       wouldTheChildRecommendUsToAFriend: false,
-      categories: {},
     },
+    categories: {},
     callerInformation: {
       firstName: 'Jhon qwerty',
       lastName: 'Thecaller',
@@ -138,62 +138,64 @@ export const contact2: CreateContactPayloadWithFormProperty = {
   conversationDuration: 10,
 };
 
-export const nonData1: CreateContactPayloadWithFormProperty = {
+export const nonData1: CreateContactPayload = {
   ...contact1,
   taskId: 'nonData1-task-sid',
-  form: {
+  rawJson: {
     callType: 'Joke',
     childInformation: {},
-    caseInformation: { categories: {}, callSummary: '' },
+    caseInformation: { callSummary: '' },
+    categories: {},
     callerInformation: {},
   },
 };
-export const nonData2: CreateContactPayloadWithFormProperty = {
+export const nonData2: CreateContactPayload = {
   ...contact2,
   taskId: 'nonData2-task-sid',
-  form: {
+  rawJson: {
     callType: 'Blank',
     childInformation: {},
-    caseInformation: { categories: {}, callSummary: '' },
+    caseInformation: { callSummary: '' },
     callerInformation: {},
+    categories: {},
   },
 };
 // Non data contacts with actual information
-export const broken1: CreateContactPayloadWithFormProperty = {
+export const broken1: CreateContactPayload = {
   ...contact1,
   taskId: 'broken1-task-sid',
-  form: { ...contact1.form, callType: 'Joke' },
+  rawJson: { ...contact1.rawJson, callType: 'Joke' },
 };
-export const broken2: CreateContactPayloadWithFormProperty = {
+export const broken2: CreateContactPayload = {
   ...contact2,
   taskId: 'broken2-task-sid',
-  form: { ...contact2.form, callType: 'Blank' },
+  rawJson: { ...contact2.rawJson, callType: 'Blank' },
 };
 
 export const anotherChild: Contact['rawJson']['childInformation'] = {
-  ...contact1.form.childInformation,
+  ...contact1.rawJson.childInformation,
   firstName: 'Marie',
   lastName: 'Curie',
 };
 
 export const anotherCaller: Contact['rawJson']['callerInformation'] = {
-  ...contact2.form.callerInformation,
+  ...contact2.rawJson.callerInformation,
   firstName: 'Marie',
   lastName: 'Curie',
 };
 
-export const another1: CreateContactPayloadWithFormProperty = {
+export const another1: CreateContactPayload = {
   ...contact1,
   taskId: 'another1-task-sid',
-  form: { ...contact1.form, childInformation: anotherChild },
+  rawJson: { ...contact1.rawJson, childInformation: anotherChild },
   helpline: 'Helpline 1',
 };
 
-export const another2: CreateContactPayloadWithFormProperty = {
+export const another2: CreateContactPayload = {
   ...contact2,
   taskId: 'another2-task-sid',
-  form: {
-    ...contact2.form,
+  rawJson: {
+    ...contact2.rawJson,
     callerInformation: {
       ...anotherCaller,
       phone1: '+1 (515) 555-1212',
@@ -209,14 +211,14 @@ export const another2: CreateContactPayloadWithFormProperty = {
   number: '+12125551212',
 };
 
-export const noHelpline: CreateContactPayloadWithFormProperty = {
+export const noHelpline: CreateContactPayload = {
   ...another1,
   taskId: 'noHelpline-task-sid',
   helpline: '',
 };
 
-export const withTaskId: CreateContactPayloadWithFormProperty = {
-  form: {
+export const withTaskId: CreateContactPayload = {
+  rawJson: {
     callType: 'Child calling about self',
     childInformation: {
       firstName: 'withTaskId',
@@ -234,8 +236,9 @@ export const withTaskId: CreateContactPayloadWithFormProperty = {
       phone2: '',
       refugee: false,
     },
-    callerInformation: contact1.form.callerInformation,
-    caseInformation: contact1.form.caseInformation,
+    categories: contact1.rawJson.categories,
+    callerInformation: contact1.rawJson.callerInformation,
+    caseInformation: contact1.rawJson.caseInformation,
   },
   twilioWorkerId: 'WK-worker-sid',
   createdBy: 'WK-worker-sid',
@@ -284,12 +287,12 @@ export const case2: Partial<Case> = {
 
 export const workerSid = 'WK-worker-sid';
 
-export const withTaskIdAndTranscript = {
+export const withTaskIdAndTranscript: CreateContactPayload = {
   ...withTaskId,
-  form: {
-    ...withTaskId.form,
+  rawJson: {
+    ...withTaskId.rawJson,
     childInformation: {
-      ...withTaskId.form.childInformation,
+      ...withTaskId.rawJson.childInformation,
       firstName: 'withTaskIdAndTranscript',
       lastName: 'withTaskIdAndTranscript',
     },

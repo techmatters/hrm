@@ -148,15 +148,12 @@ describe('/permissions/:action route with contact objectType', () => {
 
         const contact: NewContactRecord = {
           ...withTaskId,
-          rawJson: {
-            ...withTaskId.form,
-          },
           channel: 'web',
           taskId: `${withTaskId.taskId}-${accountSid}`,
           timeOfContact: new Date(),
           channelSid: 'channelSid',
           serviceSid: 'serviceSid',
-        };
+        } as NewContactRecord;
 
         const { contact: createdContact } = await contactDB.create()(accountSid, contact);
         createdContacts[accountSid] = createdContact;

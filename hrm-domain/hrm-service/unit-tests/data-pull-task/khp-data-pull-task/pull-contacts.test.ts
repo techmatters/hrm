@@ -23,6 +23,7 @@ import * as contactApi from '../../../src/contact/contact';
 import * as context from '../../../src/data-pull-task/khp-data-pull-task/context';
 import { defaultLimitAndOffset } from '../../../src/data-pull-task/khp-data-pull-task/auto-paginate';
 import { pullContacts } from '../../../src/data-pull-task/khp-data-pull-task/pull-contacts';
+import { addLegacyCategoriesToContact } from '../../../service-tests/case-validation';
 
 const { maxPermissions } = context;
 
@@ -115,7 +116,10 @@ describe('KHP Data Pull - Pull Contacts', () => {
 
     const searchContactsResponse = Promise.resolve({
       count: 2,
-      contacts: [contact1, contact2],
+      contacts: [
+        addLegacyCategoriesToContact(contact1),
+        addLegacyCategoriesToContact(contact2),
+      ],
     });
 
     jest.spyOn(contactApi, 'searchContacts').mockReturnValue(searchContactsResponse);

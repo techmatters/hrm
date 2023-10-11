@@ -84,7 +84,6 @@ describe('/cases route', () => {
       updatedBy: null,
       categories: {},
       connectedContacts: [],
-      childName: '',
     };
 
     test('should return 401', async () => {

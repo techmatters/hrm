@@ -46,8 +46,9 @@ import './case-validation';
 import * as caseApi from '../src/case/case';
 import * as caseDb from '../src/case/case-data-access';
 import {
-  CreateContactPayloadWithFormProperty,
+  CreateContactPayload,
   PatchPayload,
+  WithLegacyCategories,
 } from '../src/contact/contact';
 import * as contactApi from '../src/contact/contact';
 import * as contactDb from '../src/contact/contact-data-access';
@@ -65,12 +66,12 @@ import { twilioUser } from '@tech-matters/twilio-worker-auth';
 
 import { ContactJobType } from '@tech-matters/types';
 
+type ContactRawJsonWithLegacyCategories =
+  WithLegacyCategories<contactDb.Contact>['rawJson'];
+
 useOpenRules();
 const server = getServer();
 const request = getRequest(server);
-
-const { form, ...contact1WithRawJsonProp } =
-  contact1 as CreateContactPayloadWithFormProperty;
 
 /**
  *
@@ -287,7 +288,7 @@ describe('/contacts route', () => {
       },
       {
         contact: {
-          form: {},
+          rawJson: {},
           twilioWorkerId: null,
           helpline: null,
           queueName: null,
@@ -301,7 +302,7 @@ describe('/contacts route', () => {
           serviceSid: null,
         },
         expectedGetContact: {
-          form: {},
+          rawJson: {},
           twilioWorkerId: '',
           helpline: '',
           queueName: null,
@@ -326,19 +327,17 @@ describe('/contacts route', () => {
 
         expect(res.status).toBe(200);
         expect(res.body.referrals).toStrictEqual(contact.referrals || []);
-        expect(res.body.rawJson.callType).toBe(contact.form.callType);
+        expect(res.body.rawJson.callType).toBe(contact.rawJson.callType);
 
         const createdContact = await contactDb.getById(accountSid, res.body.id);
         expect(createdContact).toBeDefined();
 
-        expect(createdContact.rawJson).toMatchObject(expected.form);
+        expect(createdContact.rawJson).toMatchObject(expected.rawJson);
         expect(createdContact.timeOfContact).toParseAsDate();
         expect(createdContact.createdAt).toParseAsDate();
         expect(createdContact.twilioWorkerId).toBe(expected.twilioWorkerId);
         expect(createdContact.helpline).toBe(expected.helpline);
-        expect(createdContact.queueName).toBe(
-          expected.queueName || expected.form.queueName || null,
-        );
+        expect(createdContact.queueName).toBe(expected.queueName || '');
         expect(createdContact.number).toBe(expected.number);
         expect(createdContact.channel).toBe(expected.channel);
         expect(createdContact.conversationDuration).toBe(expected.conversationDuration);
@@ -472,8 +471,8 @@ describe('/contacts route', () => {
 
       const contact = {
         ...withTaskId,
-        form: {
-          ...withTaskId.form,
+        rawJson: {
+          ...withTaskId.rawJson,
         },
         csamReports: [newReport.id],
         channel: 'web',
@@ -516,8 +515,8 @@ describe('/contacts route', () => {
 
       const contact = {
         ...withTaskId,
-        form: {
-          ...withTaskId.form,
+        rawJson: {
+          ...withTaskId.rawJson,
         },
         referrals: [referral1, referral2],
         channel: 'web',
@@ -561,8 +560,8 @@ describe('/contacts route', () => {
 
       const contact = {
         ...withTaskId,
-        form: {
-          ...withTaskId.form,
+        rawJson: {
+          ...withTaskId.rawJson,
         },
         referrals: [referral],
         channel: 'web',
@@ -602,8 +601,8 @@ describe('/contacts route', () => {
 
       const contact = {
         ...withTaskId,
-        form: {
-          ...withTaskId.form,
+        rawJson: {
+          ...withTaskId.rawJson,
         },
         conversationMedia: [cm1, cm2],
         channel: 'web',
@@ -652,8 +651,8 @@ describe('/contacts route', () => {
 
       const contact = {
         ...withTaskId,
-        form: {
-          ...withTaskId.form,
+        rawJson: {
+          ...withTaskId.rawJson,
         },
         conversationMedia: [cm1],
         channel: 'web',
@@ -681,8 +680,8 @@ describe('/contacts route', () => {
         channel,
         contact: {
           ...withTaskId,
-          form: {
-            ...withTaskId.form,
+          rawJson: {
+            ...withTaskId.rawJson,
             conversationMedia: [
               {
                 store: 'S3',
@@ -741,8 +740,8 @@ describe('/contacts route', () => {
         channel,
         contact: {
           ...withTaskId,
-          form: {
-            ...withTaskId.form,
+          rawJson: {
+            ...withTaskId.rawJson,
             conversationMedia: [
               {
                 store: 'S3',
@@ -785,8 +784,8 @@ describe('/contacts route', () => {
         channel,
         contact: {
           ...withTaskId,
-          form: {
-            ...withTaskId.form,
+          rawJson: {
+            ...withTaskId.rawJson,
             conversationMedia: [
               {
                 store: 'S3',
@@ -997,6 +996,20 @@ describe('/contacts route', () => {
         );
       });
 
+      const expectLegacyRawJsonToEqualRawJson = (
+        actual: WithLegacyCategories<contactDb.Contact>['rawJson'],
+        expected: WithLegacyCategories<contactDb.Contact>['rawJson'],
+        legacyCategories: Record<string, Record<string, boolean>> = {},
+      ) => {
+        expect(actual).toStrictEqual({
+          ...expected,
+          caseInformation: {
+            ...expected.caseInformation,
+            categories: legacyCategories,
+          },
+        });
+      };
+
       each([
         {
           body: { firstName: 'jh', lastName: 'he' },
@@ -1007,8 +1020,8 @@ describe('/contacts route', () => {
             const { contacts, count } = response.body;
 
             const [c2, c1] = contacts; // result is sorted DESC
-            expect(c1.details).toStrictEqual(contact1.form);
-            expect(c2.details).toStrictEqual(contact2.form);
+            expectLegacyRawJsonToEqualRawJson(c1.details, contact1.rawJson);
+            expectLegacyRawJsonToEqualRawJson(c2.details, contact2.rawJson);
 
             // Test the association
             expect(c1.csamReports).toHaveLength(0);
@@ -1028,8 +1041,8 @@ describe('/contacts route', () => {
             const { contacts, count } = response.body;
 
             const [c2, c1] = contacts; // result is sorted DESC
-            expect(c1.details).toStrictEqual(contact1.form);
-            expect(c2.details).toStrictEqual(contact2.form);
+            expectLegacyRawJsonToEqualRawJson(c1.details, contact1.rawJson);
+            expectLegacyRawJsonToEqualRawJson(c2.details, contact2.rawJson);
 
             // Test the association
             expect(c1.csamReports).toHaveLength(0);
@@ -1058,7 +1071,7 @@ describe('/contacts route', () => {
             expect(response.status).toBe(200);
             expect(count).toBe(1);
             const [a] = contacts;
-            expect(a.details).toStrictEqual(another1.form);
+            expectLegacyRawJsonToEqualRawJson(a.details, another1.rawJson);
           },
         },
         {
@@ -1116,10 +1129,10 @@ describe('/contacts route', () => {
         },
         ...[
           another2.number,
-          another2.form.childInformation.phone1 as string,
-          another2.form.childInformation.phone2 as string,
-          another2.form.callerInformation.phone1 as string,
-          another2.form.callerInformation.phone2 as string,
+          another2.rawJson.childInformation.phone1 as string,
+          another2.rawJson.childInformation.phone2 as string,
+          another2.rawJson.callerInformation.phone1 as string,
+          another2.rawJson.callerInformation.phone2 as string,
         ].map(phone => {
           const phoneNumber = phone.substring(1, 6);
 
@@ -1130,16 +1143,16 @@ describe('/contacts route', () => {
               const { count, contacts } = response.body;
               expect(response.status).toBe(200);
               expect(count).toBe(1);
-              expect(contacts[0].details).toStrictEqual(another2.form);
+              expectLegacyRawJsonToEqualRawJson(contacts[0].details, another2.rawJson);
             },
           };
         }),
         ...[
           another2.number,
-          another2.form.childInformation.phone1,
-          another2.form.childInformation.phone2,
-          another2.form.callerInformation.phone1,
-          another2.form.callerInformation.phone2,
+          another2.rawJson.childInformation.phone1,
+          another2.rawJson.childInformation.phone2,
+          another2.rawJson.callerInformation.phone1,
+          another2.rawJson.callerInformation.phone2,
         ].map(phone => {
           const phoneNumber = phone.toString().substring(1, 6);
 
@@ -1150,14 +1163,14 @@ describe('/contacts route', () => {
               const { count, contacts } = response.body;
               expect(response.status).toBe(200);
               expect(count).toBe(1);
-              expect(contacts[0].details).toStrictEqual(another2.form);
+              expectLegacyRawJsonToEqualRawJson(contacts[0].details, another2.rawJson);
             },
           };
         }),
         {
           // https://github.com/tech-matters/hrm/pull/33#discussion_r409904466
           changeDescription: 'returns zero contacts (adding the country code)',
-          body: { phoneNumber: `+1 ${another2.form.childInformation.phone1}` },
+          body: { phoneNumber: `+1 ${another2.rawJson.childInformation.phone1}` },
           expectCallback: response => {
             const { count } = response.body;
 
@@ -1184,8 +1197,8 @@ describe('/contacts route', () => {
         // Should match withTaskId in all cases
         ...[
           { helpline: withTaskId.helpline },
-          { firstName: withTaskId.form.childInformation.firstName },
-          { lastName: withTaskId.form.childInformation.lastName },
+          { firstName: withTaskId.rawJson.childInformation.firstName },
+          { lastName: withTaskId.rawJson.childInformation.lastName },
           { contactNumber: withTaskId.number },
         ].map(body => ({
           changeDescription: JSON.stringify(body),
@@ -1195,7 +1208,7 @@ describe('/contacts route', () => {
             const { contacts } = response.body;
 
             expect(contacts).toHaveLength(1);
-            expect(contacts[0].details).toMatchObject(withTaskId.form);
+            expect(contacts[0].details).toMatchObject(withTaskId.rawJson);
           },
         })),
         {
@@ -1209,7 +1222,7 @@ describe('/contacts route', () => {
             const { contacts } = response.body;
 
             expect(contacts).toHaveLength(1);
-            expect(contacts[0].details).toMatchObject(noHelpline.form);
+            expect(contacts[0].details).toMatchObject(noHelpline.rawJson);
           },
         },
         {
@@ -1223,7 +1236,7 @@ describe('/contacts route', () => {
             const { contacts } = response.body;
 
             expect(contacts).toHaveLength(1);
-            expect(contacts[0].details).toMatchObject(noHelpline.form);
+            expect(contacts[0].details).toMatchObject(noHelpline.rawJson);
           },
         },
         {
@@ -1322,8 +1335,8 @@ describe('/contacts route', () => {
             expect(count).toBe(2);
 
             const [c2, c1] = contacts; // result is sorted DESC
-            expect(c1.details).toStrictEqual(contact1.form);
-            expect(c2.details).toStrictEqual(contact2.form);
+            expectLegacyRawJsonToEqualRawJson(c1.details, contact1.rawJson);
+            expectLegacyRawJsonToEqualRawJson(c2.details, contact2.rawJson);
 
             // Test the association
             expect(c1.csamReports).toHaveLength(0);
@@ -1446,7 +1459,7 @@ describe('/contacts route', () => {
           csamReports: [newReport1, newReport2, newReport3],
         };
         // Very specific first name
-        contactToCreate.form.childInformation.firstName = 'Test CSAM filter';
+        contactToCreate.rawJson.childInformation.firstName = 'Test CSAM filter';
         const createdContact = await contactApi.createContact(
           accountSid,
           workerSid,
@@ -1485,7 +1498,7 @@ describe('/contacts route', () => {
         patch: PatchPayload['rawJson'];
         description: string;
         original?: ContactRawJson;
-        expected: Partial<ContactRawJson>;
+        expected: ContactRawJsonWithLegacyCategories;
       };
       const subRoute = contactId => `${route}/${contactId}`;
 
@@ -1495,7 +1508,7 @@ describe('/contacts route', () => {
           workerSid,
           {
             ...contact1,
-            form: <ContactRawJson>{},
+            rawJson: <ContactRawJson>{},
             csamReports: [],
           },
           { user: twilioUser(workerSid, []), can: () => true },
@@ -1509,36 +1522,66 @@ describe('/contacts route', () => {
           await deleteContactById(createdContact.id, createdContact.accountSid);
         }
       });
-      describe('Blank rawJson', () => {
-        const sampleRawJson = {
-          ...contact1.form,
+      describe('rawJson changes', () => {
+        const sampleRawJson: ContactRawJson = {
+          ...(contact1.rawJson as ContactRawJson),
+          categories: {
+            a: ['a2'],
+            b: ['b1'],
+          },
+        };
+        const sampleRawJsonWithLegacyCategories = {
+          ...sampleRawJson,
           caseInformation: {
-            ...contact1.form.caseInformation,
+            ...sampleRawJson.caseInformation,
             categories: {
-              a: {
-                a1: false,
-                a2: true,
-              },
-              b: {
-                b1: true,
-                b2: false,
-              },
+              a: { a2: true },
+              b: { b1: true },
             },
           },
         };
-        each(<TestOptions[]>[
+        const tests: TestOptions[] = [
+          {
+            description: 'set callType to data call type',
+            patch: {
+              callType: 'Child calling about self',
+            },
+            expected: {
+              callType: 'Child calling about self',
+              caseInformation: {
+                categories: {},
+              },
+            },
+          },
+          {
+            description: 'set callType to non data call type',
+            patch: {
+              callType: 'Hang up',
+            },
+            expected: {
+              callType: 'Hang up',
+              caseInformation: {
+                categories: {},
+              },
+            },
+          },
           {
             description: 'add child information',
             patch: {
               childInformation: {
-                name: { firstName: 'Lorna', lastName: 'Ballantyne' },
+                firstName: 'Lorna',
+                lastName: 'Ballantyne',
                 some: 'property',
               },
             },
             expected: {
               childInformation: {
-                name: { firstName: 'Lorna', lastName: 'Ballantyne' },
+                firstName: 'Lorna',
+                lastName: 'Ballantyne',
                 some: 'property',
+              },
+              caseInformation: {
+                categories: {},
               },
             },
           },
@@ -1546,14 +1589,19 @@ describe('/contacts route', () => {
             description: 'add caller information',
             patch: {
               callerInformation: {
-                name: { firstName: 'Lorna', lastName: 'Ballantyne' },
+                firstName: 'Lorna',
+                lastName: 'Ballantyne',
                 some: 'other property',
               },
             },
             expected: {
               callerInformation: {
-                name: { firstName: 'Lorna', lastName: 'Ballantyne' },
+                firstName: 'Lorna',
+                lastName: 'Ballantyne',
                 some: 'other property',
+              },
+              caseInformation: {
+                categories: {},
               },
             },
           },
@@ -1562,22 +1610,19 @@ describe('/contacts route', () => {
             patch: {
               caseInformation: {
                 other: 'case property',
-                categories: {
-                  category1: {
-                    subcategory1: true,
-                    subcategory2: true,
-                  },
-                },
+              },
+              categories: {
+                category1: ['subcategory1', 'subcategory2'],
               },
             },
             expected: {
+              categories: {
+                category1: ['subcategory1', 'subcategory2'],
+              },
               caseInformation: {
                 other: 'case property',
                 categories: {
-                  category1: {
-                    subcategory1: true,
-                    subcategory2: true,
-                  },
+                  category1: { subcategory1: true, subcategory2: true },
                 },
               },
             },
@@ -1592,30 +1637,50 @@ describe('/contacts route', () => {
             expected: {
               caseInformation: {
                 other: 'case property',
+                categories: {},
               },
             },
           },
           {
             description: 'add categories',
             patch: {
-              caseInformation: {
-                categories: {
-                  category1: {
-                    subcategory1: true,
-                    subcategory2: true,
-                  },
-                },
+              categories: {
+                category1: ['subcategory1', 'subcategory2'],
               },
+              caseInformation: {},
             },
             expected: {
               caseInformation: {
                 categories: {
-                  category1: {
-                    subcategory1: true,
-                    subcategory2: true,
-                  },
+                  category1: { subcategory1: true, subcategory2: true },
                 },
               },
+              categories: {
+                category1: ['subcategory1', 'subcategory2'],
+              },
+            },
+          },
+
+          {
+            description: 'overwrite callType as data call type',
+            original: sampleRawJson,
+            patch: {
+              callType: 'Child calling about self',
+            },
+            expected: {
+              ...sampleRawJsonWithLegacyCategories,
+              callType: 'Child calling about self',
+            },
+          },
+          {
+            description: 'overwrite callType as non data call type',
+            original: sampleRawJson,
+            patch: {
+              callType: 'Hang up',
+            },
+            expected: {
+              ...sampleRawJsonWithLegacyCategories,
+              callType: 'Hang up',
             },
           },
           {
@@ -1623,14 +1688,16 @@ describe('/contacts route', () => {
             original: sampleRawJson,
             patch: {
               childInformation: {
-                name: { firstName: 'Lorna', lastName: 'Ballantyne' },
+                firstName: 'Lorna',
+                lastName: 'Ballantyne',
                 some: 'property',
               },
             },
             expected: {
-              ...sampleRawJson,
+              ...sampleRawJsonWithLegacyCategories,
               childInformation: {
-                name: { firstName: 'Lorna', lastName: 'Ballantyne' },
+                firstName: 'Lorna',
+                lastName: 'Ballantyne',
                 some: 'property',
               },
             },
@@ -1640,14 +1707,16 @@ describe('/contacts route', () => {
             description: 'overwrite caller information',
             patch: {
               callerInformation: {
-                name: { firstName: 'Lorna', lastName: 'Ballantyne' },
+                firstName: 'Lorna',
+                lastName: 'Ballantyne',
                 some: 'other property',
               },
             },
             expected: {
-              ...sampleRawJson,
+              ...sampleRawJsonWithLegacyCategories,
               callerInformation: {
-                name: { firstName: 'Lorna', lastName: 'Ballantyne' },
+                firstName: 'Lorna',
+                lastName: 'Ballantyne',
                 some: 'other property',
               },
             },
@@ -1658,24 +1727,21 @@ describe('/contacts route', () => {
             patch: {
               caseInformation: {
                 other: 'overwrite case property',
-                categories: {
-                  category1: {
-                    subcategory1: true,
-                    subcategory2: true,
-                  },
-                },
+              },
+              categories: {
+                category1: ['subcategory1', 'subcategory2'],
               },
             },
             expected: {
-              ...sampleRawJson,
+              ...sampleRawJsonWithLegacyCategories,
               caseInformation: {
                 other: 'overwrite case property',
                 categories: {
-                  category1: {
-                    subcategory1: true,
-                    subcategory2: true,
-                  },
+                  category1: { subcategory1: true, subcategory2: true },
                 },
+              },
+              categories: {
+                category1: ['subcategory1', 'subcategory2'],
               },
             },
           },
@@ -1688,10 +1754,10 @@ describe('/contacts route', () => {
               },
             },
             expected: {
-              ...sampleRawJson,
+              ...sampleRawJsonWithLegacyCategories,
               caseInformation: {
                 other: 'case property',
-                categories: sampleRawJson.caseInformation.categories,
+                categories: sampleRawJsonWithLegacyCategories.caseInformation.categories,
               },
             },
           },
@@ -1699,19 +1765,14 @@ describe('/contacts route', () => {
             original: sampleRawJson,
             description: 'overwrite categories',
             patch: {
-              caseInformation: {
-                categories: {
-                  category1: {
-                    subcategory1: true,
-                    subcategory2: true,
-                  },
-                },
+              categories: {
+                category1: ['subcategory1', 'subcategory2'],
               },
             },
             expected: {
-              ...sampleRawJson,
+              ...sampleRawJsonWithLegacyCategories,
               caseInformation: {
-                ...sampleRawJson.caseInformation,
+                ...sampleRawJsonWithLegacyCategories.caseInformation,
                 categories: {
                   category1: {
                     subcategory1: true,
@@ -1719,16 +1780,21 @@ describe('/contacts route', () => {
                   },
                 },
               },
+
+              categories: {
+                category1: ['subcategory1', 'subcategory2'],
+              },
             },
           },
-        ]).test(
+        ];
+        each(tests).test(
           'should $description if that is specified in the payload',
-          async ({ patch, original, expected }: TestOptions) => {
+          async ({ patch, expected, original }: TestOptions) => {
             const createdContact = await contactApi.createContact(
               accountSid,
               workerSid,
               {
-                ...contact1WithRawJsonProp,
+                ...contact1,
                 rawJson: original || <ContactRawJson>{},
                 csamReports: [],
               },
@@ -1742,6 +1808,25 @@ describe('/contacts route', () => {
                 .send({ rawJson: patch });
 
               expect(response.status).toBe(200);
+              const { categories, ...caseInformationWithoutLegacyCategories } =
+                expected?.caseInformation ?? {};
+              const expectedInDb: Partial<ContactRawJson> = expected?.caseInformation
+                ? {
+                    ...expected,
+                    caseInformation: caseInformationWithoutLegacyCategories as Record<
+                      string,
+                      string | boolean
+                    >,
+                  }
+                : (expected as Partial<ContactRawJson>);
+              // Bodge a corner case where an absent caseInformation is untouched by the patch operation
+              if (
+                !original?.caseInformation &&
+                !patch?.caseInformation &&
+                !patch?.categories
+              ) {
+                delete expectedInDb.caseInformation;
+              }
               expect(response.body).toStrictEqual({
                 ...createdContact,
                 timeOfContact: expect.toParseAsDate(createdContact.timeOfContact),
@@ -1761,7 +1846,120 @@ describe('/contacts route', () => {
                 createdAt: expect.toParseAsDate(createdContact.createdAt),
                 updatedAt: expect.toParseAsDate(),
                 updatedBy: workerSid,
-                rawJson: expected,
+                rawJson: expectedInDb,
+                csamReports: [],
+                referrals: [],
+              });
+            } finally {
+              await deleteContactById(createdContact.id, createdContact.accountSid);
+            }
+          },
+        );
+      });
+
+      describe('Changes outside rawJson', () => {
+        type FullPatchTestOptions = {
+          patch: PatchPayload;
+          description: string;
+          originalDifferences?: PatchPayload;
+          expectedDifferences?: PatchPayload;
+        };
+
+        const testCases: FullPatchTestOptions[] = [
+          {
+            description: 'patches conversationDuration',
+            patch: {
+              conversationDuration: 1337,
+            },
+            expectedDifferences: {
+              conversationDuration: 1337,
+            },
+            originalDifferences: {
+              conversationDuration: 42,
+            },
+          },
+        ];
+        each(testCases).test(
+          'should $description if that is specified in the payload',
+          async ({
+            patch,
+            expectedDifferences,
+            originalDifferences,
+          }: FullPatchTestOptions) => {
+            const original: CreateContactPayload = {
+              ...contact1,
+              ...originalDifferences,
+              rawJson: {
+                ...contact1.rawJson,
+                ...originalDifferences?.rawJson,
+              },
+            };
+            const createdContact = await contactApi.createContact(
+              accountSid,
+              workerSid,
+              original,
+              { user: twilioUser(workerSid, []), can: () => true },
+            );
+            const expected: WithLegacyCategories<contactDb.Contact> = {
+              ...createdContact,
+              ...expectedDifferences,
+              rawJson: {
+                ...createdContact.rawJson,
+                ...expectedDifferences?.rawJson,
+                caseInformation: {
+                  ...createdContact.rawJson!.caseInformation,
+                  ...expectedDifferences?.rawJson?.caseInformation,
+                  categories: {},
+                },
+              },
+            };
+            try {
+              const existingContactId = createdContact.id;
+              const response = await request
+                .patch(subRoute(existingContactId))
+                .set(headers)
+                .send(patch);
+
+              expect(response.status).toBe(200);
+              const { categories, ...caseInformationWithoutLegacyCategories } =
+                expected.rawJson?.caseInformation ?? {};
+              const expectedInDb: contactApi.Contact = expected.rawJson?.caseInformation
+                ? ({
+                    ...expected,
+                    rawJson: {
+                      ...expected.rawJson,
+                      caseInformation: caseInformationWithoutLegacyCategories as Record<
+                        string,
+                        string | boolean
+                      >,
+                    },
+                  } as contactApi.Contact)
+                : (expected as contactApi.Contact);
+              // Bodge a corner case where an absent caseInformation is untouched by the patch operation
+              if (
+                !original.rawJson?.caseInformation &&
+                !patch.rawJson?.caseInformation &&
+                !patch.rawJson?.categories
+              ) {
+                delete (expectedInDb.rawJson as any).caseInformation;
+              }
+              expect(response.body).toStrictEqual({
+                ...expected,
+                timeOfContact: expect.toParseAsDate(expected.timeOfContact),
+                createdAt: expect.toParseAsDate(expected.createdAt),
+                updatedAt: expect.toParseAsDate(),
+                updatedBy: workerSid,
+                referrals: [],
+              });
+              // Test the association
+              expect(response.body.csamReports).toHaveLength(0);
+              const savedContact = await contactDb.getById(accountSid, existingContactId);
+
+              expect(savedContact).toStrictEqual({
+                ...expectedInDb,
+                createdAt: expect.toParseAsDate(createdContact.createdAt),
+                updatedAt: expect.toParseAsDate(),
+                updatedBy: workerSid,
                 csamReports: [],
                 referrals: [],
               });
@@ -1806,28 +2004,31 @@ describe('/contacts route', () => {
         const response = await request
           .patch(subRoute(nonExistingContactId))
           .set(headers)
-          .send({
-            notRawJson: { some: 'crap' },
-          });
+          .send([]);
 
         expect(response.status).toBe(400);
       });
 
-      test('no body should return 400', async () => {
-        const contactToBeDeleted = await contactApi.createContact(
+      test('no body should be a noop', async () => {
+        const createdContact = await contactApi.createContact(
           accountSid,
           workerSid,
           <any>contact1,
           { user: twilioUser(workerSid, []), can: () => true },
         );
-        const nonExistingContactId = contactToBeDeleted.id;
-        await deleteContactById(contactToBeDeleted.id, contactToBeDeleted.accountSid);
         const response = await request
-          .patch(subRoute(nonExistingContactId))
+          .patch(subRoute(createdContact.id))
           .set(headers)
           .send();
 
-        expect(response.status).toBe(400);
+        expect(response.status).toBe(200);
+        expect(response.body).toStrictEqual({
+          ...createdContact,
+          timeOfContact: expect.toParseAsDate(createdContact.timeOfContact),
+          createdAt: expect.toParseAsDate(createdContact.createdAt),
+          updatedAt: expect.toParseAsDate(),
+          updatedBy: workerSid,
+        });
       });
 
       each([
@@ -1846,7 +2047,6 @@ describe('/contacts route', () => {
           withTaskIdAndTranscript,
           { user: twilioUser(workerSid, []), can: () => true },
         );
-
         if (!expectTranscripts) {
           setRules(ruleFileWithOneActionOverride('viewExternalTranscript', false));
         } else {
@@ -1857,6 +2057,7 @@ describe('/contacts route', () => {
           .patch(`${route}/${createdContact.id}`)
           .set(headers)
           .send({ rawJson: createdContact.rawJson });
+        expect(res.status).toBe(200);
 
         if (expectTranscripts) {
           expect(
