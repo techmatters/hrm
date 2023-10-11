@@ -183,7 +183,7 @@ contactsRouter.patch(
   async (req, res) => {
     const { accountSid, user } = req;
     const { contactId } = req.params;
-    const finalize = req.query.finalize === 'false'; // Default to false for backwards compatibility
+    const finalize = req.query.finalize === 'true'; // Default to false for backwards compatibility
     try {
       const contact = await patchContact(
         accountSid,

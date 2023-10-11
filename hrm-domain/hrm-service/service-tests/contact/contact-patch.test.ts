@@ -461,6 +461,7 @@ describe('/contacts/:contactId route', () => {
         description: string;
         originalDifferences?: PatchPayload;
         expectedDifferences?: PatchPayload;
+        finalize?: boolean;
       };
 
       const testCases: FullPatchTestOptions[] = [
@@ -476,6 +477,20 @@ describe('/contacts/:contactId route', () => {
             conversationDuration: 42,
           },
         },
+        {
+          description: 'finalize contact',
+          finalize: true,
+          patch: {
+            conversationDuration: 1337,
+          },
+          expectedDifferences: {
+            conversationDuration: 1337,
+            finalizedAt: expect.toParseAsDate(),
+          },
+          originalDifferences: {
+            conversationDuration: 42,
+          },
+        },
       ];
       each(testCases).test(
         'should $description if that is specified in the payload for a draft contact',
@@ -483,6 +498,7 @@ describe('/contacts/:contactId route', () => {
           patch,
           expectedDifferences,
           originalDifferences,
+          finalize = false,
         }: FullPatchTestOptions) => {
           const original: CreateContactPayload = {
             ...contact1,
@@ -515,7 +531,7 @@ describe('/contacts/:contactId route', () => {
           try {
             const existingContactId = createdContact.id;
             const response = await request
-              .patch(subRoute(existingContactId))
+              .patch(`${subRoute(existingContactId)}?finalize=${finalize}`)
               .set(headers)
               .send(patch);
 
