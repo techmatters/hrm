@@ -34,12 +34,13 @@ const getSearchParams = (startDate: Date, endDate: Date) => ({
 export const pullCases = async (startDate: Date, endDate: Date) => {
   const { accountSid, bucket } = await getContext();
 
-  const searchParams = getSearchParams(startDate, endDate);
+  const { filters } = getSearchParams(startDate, endDate);
 
   const cases = await autoPaginate(caseApi.searchCases, [
     accountSid,
     defaultLimitAndOffset,
-    searchParams,
+    {},
+    { filters },
     maxPermissions,
   ]);
 

@@ -19,15 +19,21 @@
  * For the moment it just does some light mapping between the types used for the REST layer, and the types used for the database layer.
  * This includes compatibility code required to provide cases in a shape expected by older clients
  */
-import * as caseDb from './case-data-access';
 import { retrieveCategories } from '../contact/categories';
 import {
   CaseListConfiguration,
   CaseListFilters,
+  CaseRecord,
   CaseRecordCommon,
   CaseSearchCriteria,
   CaseSectionRecord,
   NewCaseRecord,
+  SearchQueryFunction,
+  create,
+  getById,
+  search,
+  searchByProfileId,
+  update,
 } from './case-data-access';
 import { randomUUID } from 'crypto';
 import { Contact } from '../contact/contact-data-access';
@@ -81,7 +87,6 @@ export type Case = CaseRecordCommon & {
   categories: Record<string, string[]>;
   connectedContacts?: Contact[];
 };
-type CaseRecord = caseDb.CaseRecord;
 
 /**
  * Converts a single list of all sections for a case to a set of arrays grouped by type
@@ -242,7 +247,7 @@ export const createCase = async (
     },
     workerSid,
   );
-  const created = await caseDb.create(record, accountSid);
+  const created = await create(record, accountSid);
 
   // A new case is always initialized with empty connected contacts. No need to apply mapContactTransformations here
   return caseRecordToCase(created);
@@ -255,7 +260,7 @@ export const updateCase = async (
   workerSid: Case['twilioWorkerId'],
   { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
 ): Promise<Case> => {
-  const caseFromDB: CaseRecord = await caseDb.getById(id, accountSid);
+  const caseFromDB: CaseRecord = await getById(id, accountSid);
   if (!caseFromDB) {
     return;
   }
@@ -268,7 +273,7 @@ export const updateCase = async (
     // caseRecordToCase(caseFromDB),
   );
 
-  const updated = await caseDb.update(id, record, accountSid);
+  const updated = await update(id, record, accountSid);
 
   const withTransformedContacts = mapContactTransformations({ can, user })(updated);
 
@@ -280,7 +285,7 @@ export const getCase = async (
   accountSid: string,
   { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
 ): Promise<Case | undefined> => {
-  const caseFromDb = await caseDb.getById(id, accountSid);
+  const caseFromDb = await getById(id, accountSid);
 
   if (caseFromDb) {
     return caseRecordToCase(mapContactTransformations({ can, user })(caseFromDb));
@@ -325,66 +330,83 @@ const overrideCounsellors = (
   counsellors?: string[],
 ) => (searchPermissions.canOnlyViewOwnCases ? [user.workerSid] : counsellors);
 
-export const searchCases = async (
-  accountSid: string,
-  listConfiguration: CaseListConfiguration,
-  search: SearchParameters,
-  {
-    can,
-    user,
-    searchPermissions,
-  }: {
-    can: ReturnType<typeof setupCanForRules>;
-    user: TwilioUser;
-    searchPermissions: SearchPermissions;
-  },
-): Promise<CaseSearchReturn> => {
-  const { filters, helpline, counselor, closedCases, ...searchCriteria } = search;
-  const caseFilters = filters ?? {};
-  caseFilters.helplines =
-    caseFilters.helplines ?? (helpline ? helpline.split(';') : undefined);
-  caseFilters.counsellors =
-    caseFilters.counsellors ?? (counselor ? counselor.split(';') : undefined);
-  caseFilters.excludedStatuses = caseFilters.excludedStatuses ?? [];
-  if (closedCases === false) {
-    caseFilters.excludedStatuses.push('closed');
-  }
-  caseFilters.includeOrphans = caseFilters.includeOrphans ?? closedCases ?? true;
+const generalizedSearchCases =
+  <
+    T,
+    U extends {
+      filters?: CaseListFilters;
+      helpline?: string;
+      counselor?: string;
+      closedCases?: boolean;
+    },
+  >(
+    searchQuery: SearchQueryFunction<T>,
+  ) =>
+  async (
+    accountSid: string,
+    listConfiguration: CaseListConfiguration,
+    searchParameters: T,
+    extraParameters: U,
+    {
+      can,
+      user,
+      searchPermissions,
+    }: {
+      can: ReturnType<typeof setupCanForRules>;
+      user: TwilioUser;
+      searchPermissions: SearchPermissions;
+    },
+  ): Promise<CaseSearchReturn> => {
+    const { filters, helpline, counselor, closedCases } = extraParameters;
+    const caseFilters = filters ?? {};
+    caseFilters.helplines =
+      caseFilters.helplines ?? (helpline ? helpline.split(';') : undefined);
+    caseFilters.counsellors =
+      caseFilters.counsellors ?? (counselor ? counselor.split(';') : undefined);
+    caseFilters.excludedStatuses = caseFilters.excludedStatuses ?? [];
+    if (closedCases === false) {
+      caseFilters.excludedStatuses.push('closed');
+    }
+    caseFilters.includeOrphans = caseFilters.includeOrphans ?? closedCases ?? true;
 
-  /**
-   * VIEW_CASE permission:
-   * Handle filtering cases according to: https://github.com/techmatters/hrm/pull/316#discussion_r1131118034
-   * The search query already filters the cases given an array of counsellors.
-   */
-  if (
-    cannotViewAnyCasesGivenTheseCounsellors(
-      user,
-      searchPermissions,
-      caseFilters.counsellors,
-    )
-  ) {
-    return {
-      count: 0,
-      cases: [],
-    };
-  } else {
-    caseFilters.counsellors = overrideCounsellors(
-      user,
-      searchPermissions,
-      caseFilters.counsellors,
+    /**
+     * VIEW_CASE permission:
+     * Handle filtering cases according to: https://github.com/techmatters/hrm/pull/316#discussion_r1131118034
+     * The search query already filters the cases given an array of counsellors.
+     */
+    if (
+      cannotViewAnyCasesGivenTheseCounsellors(
+        user,
+        searchPermissions,
+        caseFilters.counsellors,
+      )
+    ) {
+      return {
+        count: 0,
+        cases: [],
+      };
+    } else {
+      caseFilters.counsellors = overrideCounsellors(
+        user,
+        searchPermissions,
+        caseFilters.counsellors,
+      );
+    }
+
+    const dbResult = await searchQuery(
+      listConfiguration,
+      accountSid,
+      searchParameters,
+      caseFilters,
     );
-  }
-
-  const dbResult = await caseDb.search(
-    listConfiguration,
-    accountSid,
-    searchCriteria,
-    caseFilters,
-  );
-  return {
-    ...dbResult,
-    cases: dbResult.cases
-      .map(mapContactTransformations({ can, user }))
-      .map(caseRecordToCase),
+    return {
+      ...dbResult,
+      cases: dbResult.cases
+        .map(mapContactTransformations({ can, user }))
+        .map(caseRecordToCase),
+    };
   };
-};
+
+export const searchCases = generalizedSearchCases(search);
+
+export const searchCasesByProfileId = generalizedSearchCases(searchByProfileId);
