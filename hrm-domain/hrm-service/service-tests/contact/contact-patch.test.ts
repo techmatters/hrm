@@ -59,8 +59,7 @@ const cleanup = async () => {
 };
 
 beforeAll(() => {
-  process.env.TWILIO_AUTH_TOKEN = 'mockAuthToken';
-  process.env.TWILIO_CLIENT_USE_ENV_AUTH_TOKEN = 'true';
+  process.env[`TWILIO_AUTH_TOKEN_${accountSid}`] = 'mockAuthToken';
 });
 
 beforeEach(cleanup);
