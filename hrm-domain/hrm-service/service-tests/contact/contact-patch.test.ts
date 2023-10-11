@@ -58,7 +58,12 @@ const cleanup = async () => {
   await cleanupCases();
 };
 
-beforeAll(cleanup);
+beforeAll(() => {
+  process.env.TWILIO_AUTH_TOKEN = 'mockAuthToken';
+  process.env.TWILIO_CLIENT_USE_ENV_AUTH_TOKEN = 'true';
+});
+
+beforeEach(cleanup);
 
 afterAll(cleanup);
 
@@ -606,6 +611,60 @@ describe('/contacts/:contactId route', () => {
         });
 
       expect(response.status).toBe(404);
+    });
+
+    test("Draft contact edited by a user that didn't create or own the contact - returns 401", async () => {
+      const createdContact = await contactApi.createContact(
+        accountSid,
+        'another creator',
+        false,
+        <any>{
+          ...contact1,
+          twilioWorkerId: 'another owner',
+        },
+        { user: twilioUser('another creator', []), can: () => true },
+      );
+      const response = await request
+        .patch(subRoute(createdContact.id))
+        .set(headers)
+        .send();
+
+      expect(response.status).toBe(401);
+    });
+
+    test('Draft contact edited by a user that owns the contact - returns 200', async () => {
+      const createdContact = await contactApi.createContact(
+        accountSid,
+        'another creator',
+        false,
+        <any>contact1,
+        { user: twilioUser(workerSid, []), can: () => true },
+      );
+      const response = await request
+        .patch(subRoute(createdContact.id))
+        .set(headers)
+        .send();
+
+      expect(response.status).toBe(200);
+    });
+
+    test('Draft contact edited by a user that created the contact - returns 200', async () => {
+      const createdContact = await contactApi.createContact(
+        accountSid,
+        workerSid,
+        false,
+        <any>{
+          ...contact1,
+          twilioWorkerId: 'another owner',
+        },
+        { user: twilioUser(workerSid, []), can: () => true },
+      );
+      const response = await request
+        .patch(subRoute(createdContact.id))
+        .set(headers)
+        .send();
+
+      expect(response.status).toBe(200);
     });
 
     test('malformed payload should return 400', async () => {
