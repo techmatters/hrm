@@ -185,5 +185,10 @@ export const getMockClient = ({ accountSid }: { accountSid: string }) => {
         }),
       },
     },
+    taskrouter: {
+      workspaces: {
+        list: () => Promise.resolve([]),
+      },
+    },
   };
 };

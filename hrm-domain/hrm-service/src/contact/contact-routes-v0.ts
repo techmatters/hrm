@@ -27,6 +27,8 @@ import {
 } from './contact';
 import asyncHandler from '../async-handler';
 import type { Request, Response, NextFunction } from 'express';
+import isTwilioTaskTransferTarget from '@tech-matters/twilio-client/isTwilioTaskTransferTarget';
+import { getClient } from '@tech-matters/twilio-client/dist';
 
 const contactsRouter = SafeRouter();
 
@@ -129,7 +131,22 @@ const canEditContact = asyncHandler(async (req, res, next) => {
         if (contactObj.createdBy === user.workerSid) {
           req.authorize();
         } else {
-          req.unauthorize();
+          // It the contact record doesn't show this user as the contact owner, but Twilio shows that they are having the associated task transferred to them, permit the edit
+          // Long term it's wrong for HRM to be verifying this itself - we should probably initiate updates for the contact record from the backend transfer logic rather than Flex in future.
+          // Then HRM just needs to validate the request is coming from a valid backend service with permission to make the edit.
+          const twilioClient = await getClient({ accountSid });
+          if (
+            await isTwilioTaskTransferTarget(
+              twilioClient,
+              res.body?.taskSid,
+              contactObj.taskId,
+              user.workerSid,
+            )
+          ) {
+            req.authorize();
+          } else {
+            req.unauthorize();
+          }
         }
       }
     } catch (err) {
