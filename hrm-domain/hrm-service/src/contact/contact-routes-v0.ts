@@ -127,8 +127,13 @@ const canEditContact = asyncHandler(async (req, res, next) => {
           req.unauthorize();
         }
       } else {
-        // If there is no finalized date, then the contact is a draft and can only be edited by the worker who created it
-        if (contactObj.createdBy === user.workerSid) {
+        // If there is no finalized date, then the contact is a draft and can only be edited by the worker who created it or the one who owns it.
+        // Offline contacts potentially need to be edited by a creator that won't own them.
+        // Transferred tasks need to be edited by an owner that didn't create them.
+        if (
+          contactObj.createdBy === user.workerSid ||
+          contactObj.twilioWorkerId === user.workerSid
+        ) {
           req.authorize();
         } else {
           // It the contact record doesn't show this user as the contact owner, but Twilio shows that they are having the associated task transferred to them, permit the edit
