@@ -125,6 +125,7 @@ const insertSampleCases = async ({
       contactToCreate.taskId = undefined;
       contactToCreate.channelSid = `CHANNEL_${i}`;
       contactToCreate.serviceSid = 'SERVICE_SID';
+      // contactToCreate.taskId = undefined;
 
       const categories = categoriesGenerator(i);
       if (categories) {
