@@ -16,6 +16,7 @@
 
 import RestException from 'twilio/lib/base/RestException';
 import { chatMessageList } from './chatMessageList';
+import { taskRouterWorkspaces } from './taskRouterWorkspaces';
 
 export const getMockClient = ({ accountSid }: { accountSid: string }) => {
   return {
@@ -187,7 +188,7 @@ export const getMockClient = ({ accountSid }: { accountSid: string }) => {
     },
     taskrouter: {
       workspaces: {
-        list: () => Promise.resolve([]),
+        list: () => Promise.resolve(taskRouterWorkspaces),
       },
     },
   };

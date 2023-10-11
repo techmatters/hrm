@@ -28,8 +28,7 @@ import {
 } from './contact';
 import asyncHandler from '../async-handler';
 import type { Request, Response, NextFunction } from 'express';
-import isTwilioTaskTransferTarget from '@tech-matters/twilio-client/isTwilioTaskTransferTarget';
-import { getClient } from '@tech-matters/twilio-client/dist';
+import { getClient, isTwilioTaskTransferTarget } from '@tech-matters/twilio-client';
 
 const contactsRouter = SafeRouter();
 

@@ -17,7 +17,7 @@
 import { Twilio } from 'twilio';
 import { TaskInstance } from 'twilio/lib/rest/taskrouter/v1/workspace/task';
 
-const isTwilioTaskTransferTarget = async (
+export const isTwilioTaskTransferTarget = async (
   twilioClient: Twilio,
   taskSid: string,
   originalTaskSid: string,
@@ -47,5 +47,3 @@ const isTwilioTaskTransferTarget = async (
   const reservations = await task.reservations().list();
   return Boolean(reservations.find(r => r.workerSid === workerSid));
 };
-
-export default isTwilioTaskTransferTarget;

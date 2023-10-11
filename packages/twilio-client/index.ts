@@ -19,7 +19,8 @@ import { getSsmParameter } from '@tech-matters/ssm-cache';
 
 import { getMockClient } from './mockClient';
 
-export { default } from './isTwilioTaskTransferTarget';
+export { isTwilioTaskTransferTarget } from './isTwilioTaskTransferTarget';
+export { setMockTaskRouterWorkspaces } from './mockClient/taskRouterWorkspaces';
 
 type ClientCache = {
   [accountSid: string]: Twilio;
