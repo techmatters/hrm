@@ -19,9 +19,9 @@
 module.exports = {
   up: async queryInterface => {
     await queryInterface.sequelize.query(`
-      UPDATE "Contacts" SET "rawJson" = COALESCE(c."rawJson", '{}'::JSONB) 
+      UPDATE "Contacts" cupdate SET "rawJson" = COALESCE(c."rawJson", '{}'::JSONB) 
         || (jsonb_build_object('caseInformation', (c."rawJson"->'caseInformation')::JSONB - 'categories'))
-        || jsonb_build_object('categories', COALESCE("contactCategoryMaps"."categoryMap", '{}'::JSONB))
+        || jsonb_build_object('categories', COALESCE(c."rawJson"->'categories', "contactCategoryMaps"."categoryMap", '{}'::JSONB))
         FROM "Contacts" AS c
         LEFT JOIN
         (
@@ -61,6 +61,7 @@ module.exports = {
           AS recompact
           GROUP BY id
         ) AS "contactCategoryMaps" ON c.id = "contactCategoryMaps"."contactId"
+        WHERE c.id = cupdate.id AND c."accountSid" = cupdate."accountSid"
     `);
   },
 
