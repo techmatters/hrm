@@ -310,6 +310,8 @@ export const selectCaseSearch = selectSearchCaseBaseQuery(
   `,
 );
 
-export const selectCaseSearchById = selectSearchCaseBaseQuery(
-  'WHERE cases."accountSid" = $<accountSid> AND cases."id" IN $<caseIds>',
+export const selectCaseSearchByProfileId = selectSearchCaseBaseQuery(
+  `WHERE cases."accountSid" = $<accountSid> AND cases."id" IN (
+    SELECT "caseId" FROM "Contacts" "c" WHERE "c"."profileId" = $<profileId> AND "c"."accountSid" = $<accountSid>
+  )`,
 );

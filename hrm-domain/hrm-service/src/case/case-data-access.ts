@@ -22,7 +22,7 @@ import {
   OrderByDirectionType,
   SearchQueryBuilder,
   selectCaseSearch,
-  selectCaseSearchById,
+  selectCaseSearchByProfileId,
 } from './sql/case-search-sql';
 import {
   caseSectionUpsertSql,
@@ -220,7 +220,7 @@ export const searchByProfileId = generalizedSearchQueryFunction<
   Pick<OptionalSearchQueryParams, 'counsellors' | 'helplines'> & {
     profileId: number;
   }
->(selectCaseSearchById, (accountSid, searchParameters, limit, offset) => ({
+>(selectCaseSearchByProfileId, (accountSid, searchParameters, limit, offset) => ({
   accountSid,
   limit,
   offset,
