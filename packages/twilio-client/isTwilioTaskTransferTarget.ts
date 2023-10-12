@@ -27,7 +27,12 @@ export const isTwilioTaskTransferTarget = async (
   const workspaces = await twilioClient.taskrouter.workspaces.list();
   let task: TaskInstance | undefined = undefined;
   for (const workspace of workspaces) {
-    task = await workspace.tasks().get(taskSid).fetch();
+    try {
+      task = await workspace.tasks().get(taskSid).fetch();
+    } catch (e) {
+      // Task not found in this workspace
+      console.log(`Task ${taskSid} not found in workspace ${workspace.sid}`);
+    }
     if (task) {
       break;
     }

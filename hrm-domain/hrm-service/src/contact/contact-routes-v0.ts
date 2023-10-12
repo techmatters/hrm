@@ -115,13 +115,13 @@ const validatePatchPayload = ({ body }: Request, res: Response, next: NextFuncti
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const canEditContact = asyncHandler(async (req, res, next) => {
   if (!req.isAuthorized()) {
-    const { accountSid, user, can } = req;
+    const { accountSid, user, can, body } = req;
     const { contactId } = req.params;
 
     try {
       const contactObj = await getContactById(accountSid, contactId);
       if (contactObj.finalizedAt) {
-        const updatedProps = Object.keys(req.body ?? {}) as (keyof PatchPayload)[];
+        const updatedProps = Object.keys(body ?? {}) as (keyof PatchPayload)[];
         const isOnlyEditingForm = updatedProps.every(
           prop => prop === 'rawJson' || prop === 'referrals',
         );
@@ -153,7 +153,7 @@ const canEditContact = asyncHandler(async (req, res, next) => {
           if (
             await isTwilioTaskTransferTarget(
               twilioClient,
-              res.body?.taskSid,
+              body?.taskId,
               contactObj.taskId,
               user.workerSid,
             )
@@ -171,6 +171,7 @@ const canEditContact = asyncHandler(async (req, res, next) => {
       ) {
         throw createError(404);
       } else {
+        console.error('Failed to authorize contact editing', err);
         throw createError(500);
       }
     }
