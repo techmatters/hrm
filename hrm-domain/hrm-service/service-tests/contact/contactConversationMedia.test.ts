@@ -98,6 +98,26 @@ describe('/contacts/:contactId/conversationMedia route', () => {
       expect(response.status).toBe(401);
     });
 
+    test("should return 404 if contact doesn't exist", async () => {
+      const items: NewConversationMedia[] = [
+        {
+          storeType: 'S3',
+          storeTypeSpecificData: {
+            type: S3ContactMediaType.TRANSCRIPT,
+            location: {
+              bucket: 'bucket',
+              key: 'key',
+            },
+          },
+        },
+      ];
+      const response = await request
+        .post(subRoute(createdContact.id + 100))
+        .set(headers)
+        .send(items);
+      expect(response.status).toBe(404);
+    });
+
     type TestCase = {
       description: string;
       existingMedia?: NewConversationMedia[];
