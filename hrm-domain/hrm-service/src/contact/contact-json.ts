@@ -16,31 +16,26 @@
 import { LegacyConversationMedia } from '../conversation-media/conversation-media';
 import { Referral } from '../referral/referral-data-access';
 
-type NestedInformation = { name?: { firstName: string; lastName: string } };
-
-export type PersonInformation = NestedInformation & {
-  [key: string]: string | boolean | NestedInformation[keyof NestedInformation]; // having NestedInformation[keyof NestedInformation] makes type looser here because of this https://github.com/microsoft/TypeScript/issues/17867. Possible/future solution https://github.com/microsoft/TypeScript/pull/29317
-};
-
 /**
  * This and contained types are copied from Flex
  */
 export type ContactRawJson = {
   definitionVersion?: string;
   callType: string;
-  childInformation: PersonInformation;
-  callerInformation?: PersonInformation;
+  childInformation: {
+    [key: string]: string | boolean;
+  };
+  callerInformation?: {
+    [key: string]: string | boolean;
+  };
+  categories: Record<string, string[]>;
   caseInformation: {
-    categories: Record<string, Record<string, boolean>>;
-    [key: string]: string | boolean | Record<string, Record<string, boolean>>;
+    [key: string]: string | boolean;
   };
   contactlessTask?: { [key: string]: string | boolean };
   conversationMedia?: LegacyConversationMedia[];
   referrals?: Referral[];
 };
-
-export const getPersonsName = (person: PersonInformation) =>
-  person.name ? `${person.name.firstName} ${person.name.lastName}` : '';
 
 // Represents a referral when part of a contact structure, so no contact ID
 export type ReferralWithoutContactId = Omit<Referral, 'contactId'>;

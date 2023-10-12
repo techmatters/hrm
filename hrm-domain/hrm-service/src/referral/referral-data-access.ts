@@ -85,7 +85,6 @@ export const createReferralRecord =
     }
   };
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const deleteContactReferrals =
   (task?) =>
   (accountSid: string, contactId: string): Promise<Referral[]> => {

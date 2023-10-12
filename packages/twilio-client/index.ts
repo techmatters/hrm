@@ -19,6 +19,9 @@ import { getSsmParameter } from '@tech-matters/ssm-cache';
 
 import { getMockClient } from './mockClient';
 
+export { isTwilioTaskTransferTarget } from './isTwilioTaskTransferTarget';
+export { setMockTaskRouterWorkspaces } from './mockClient/taskRouterWorkspaces';
+
 type ClientCache = {
   [accountSid: string]: Twilio;
 };
@@ -35,8 +38,7 @@ const getClientOrMock = ({
   authToken: string;
 }): Twilio => {
   if (authToken === 'mockAuthToken') {
-    const mock = getMockClient({ accountSid }) as unknown as Twilio;
-    return mock;
+    return getMockClient({ accountSid }) as unknown as Twilio;
   }
 
   return new Twilio(accountSid, authToken);
