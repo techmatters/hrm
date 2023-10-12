@@ -2060,5 +2060,37 @@ describe('/contacts route', () => {
         });
       });
     });
+    describe('DELETE', () => {
+      const subRoute = contactId => `${route}/${contactId}/connectToCase`;
+      test('should return 401', async () => {
+        const response = await request
+          .delete(subRoute(existingContactId))
+          .send({ caseId: existingCaseId });
+
+        expect(response.status).toBe(401);
+        expect(response.body.error).toBe('Authorization failed');
+      });
+
+      test('should return 200', async () => {
+        const response = await request
+          .delete(subRoute(existingContactId))
+          .set(headers)
+          .send({ caseId: null });
+
+        expect(response.status).toBe(200);
+        expect(response.body.caseId).toBe(null);
+      });
+
+      describe('use non-existent contactId', () => {
+        test('should return 404', async () => {
+          const response = await request
+            .delete(subRoute(nonExistingContactId))
+            .set(headers)
+            .send({ caseId: null });
+
+          expect(response.status).toBe(404);
+        });
+      });
+    });
   });
 });

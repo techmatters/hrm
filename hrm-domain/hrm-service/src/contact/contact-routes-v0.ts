@@ -73,7 +73,7 @@ contactsRouter.put('/:contactId/connectToCase', publicEndpoint, async (req, res)
   }
 });
 
-contactsRouter.delete('/:contactId/removeFromCase', publicEndpoint, async (req, res) => {
+contactsRouter.delete('/:contactId/connectToCase', publicEndpoint, async (req, res) => {
   const { accountSid } = req;
   const { contactId } = req.params;
   const caseId = null;
