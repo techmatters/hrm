@@ -480,6 +480,9 @@ export const addConversationMediaToContact = async (
   { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
 ): Promise<WithLegacyCategories<Contact>> => {
   const contact = await getById(accountSid, parseInt(contactId));
+  if (!contact) {
+    throw new Error(`Target contact not found (id ${contactId})`);
+  }
   return db.tx(async conn => {
     const createdConversationMedia: ConversationMedia[] = [];
     if (conversationMediaPayload && conversationMediaPayload.length) {

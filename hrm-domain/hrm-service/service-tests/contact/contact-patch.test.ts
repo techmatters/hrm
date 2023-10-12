@@ -88,14 +88,10 @@ describe('/contacts/:contactId route', () => {
         },
         { user: twilioUser(workerSid, []), can: () => true },
       );
-      try {
-        const response = await request.patch(subRoute(createdContact.id)).send({});
+      const response = await request.patch(subRoute(createdContact.id)).send({});
 
-        expect(response.status).toBe(401);
-        expect(response.body.error).toBe('Authorization failed');
-      } finally {
-        await deleteContactById(createdContact.id, createdContact.accountSid);
-      }
+      expect(response.status).toBe(401);
+      expect(response.body.error).toBe('Authorization failed');
     });
     describe('rawJson changes', () => {
       const sampleRawJson: ContactRawJson = {

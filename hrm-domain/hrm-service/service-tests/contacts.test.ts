@@ -69,6 +69,7 @@ import {
   deleteContactById,
   deleteJobsByContactId,
 } from './contact/db-cleanup';
+import { selectJobsByContactId } from './contact/db-validations';
 
 useOpenRules();
 const server = getServer();
@@ -93,15 +94,6 @@ const deleteContactJobById = (id: number, accountSid: string) =>
       DELETE FROM "ContactJobs"
       WHERE "id" = ${id} AND "accountSid" = '${accountSid}';
   `),
-  );
-
-// eslint-disable-next-line @typescript-eslint/no-shadow
-const selectJobsByContactId = (contactId: number, accountSid: string) =>
-  db.task(t =>
-    t.manyOrNone(`
-      SELECT * FROM "ContactJobs"
-      WHERE "contactId" = ${contactId} AND "accountSid" = '${accountSid}';
-    `),
   );
 
 // eslint-disable-next-line @typescript-eslint/no-shadow
