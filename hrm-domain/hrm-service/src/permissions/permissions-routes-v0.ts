@@ -99,6 +99,8 @@ export default (permissions: Permissions) => {
         user,
       });
 
+      console.log('canPerformResult', canPerformResult);
+
       if (isErrorResult(canPerformResult)) {
         return next(createError(canPerformResult.statusCode, canPerformResult.message));
       }

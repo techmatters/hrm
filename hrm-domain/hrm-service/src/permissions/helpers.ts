@@ -21,5 +21,7 @@ export const isCounselorWhoCreated = (user: TwilioUser, caseObj: any) =>
 
 export const isCaseOpen = (caseObj: any) => caseObj.status !== 'closed';
 
-export const isContactOwner = (user: TwilioUser, contactObj: any) =>
-  user.workerSid === contactObj.twilioWorkerId;
+export const isContactOwner = (user: TwilioUser, contactObj: any) => {
+  console.log('isContactOwner', user.workerSid, contactObj.twilioWorkerId);
+  return user.workerSid === contactObj.twilioWorkerId;
+};
