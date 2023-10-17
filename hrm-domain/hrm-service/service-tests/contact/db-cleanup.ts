@@ -68,8 +68,8 @@ export const deleteJobsByContactId = (contactId: number, accountSid: string) =>
       DELETE FROM "ContactJobs"
       WHERE "contactId" = ${contactId} AND "accountSid" = '${accountSid}';
     `),
-  );
-  export const getContactById = (id: number, accountSid: string) =>
+  ); // eslint-disable-next-line @typescript-eslint/no-shadow
+export const getContactById = (id: number, accountSid: string) =>
   db.task(t =>
     t.one(`
       SELECT FROM "Contacts"

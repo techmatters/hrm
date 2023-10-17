@@ -1653,30 +1653,25 @@ describe('/contacts route', () => {
     describe('DELETE', () => {
       const subRoute = contactId => `${route}/${contactId}/connectToCase`;
       test('should return 401', async () => {
-        const response = await request
-          .delete(subRoute(existingContactId))
+        const response = await request.delete(subRoute(existingContactId));
 
         expect(response.status).toBe(401);
         expect(response.body.error).toBe('Authorization failed');
       });
 
       test('should return 200', async () => {
-        const response = await request
-          .delete(subRoute(existingContactId))
-          .set(headers)
+        const response = await request.delete(subRoute(existingContactId)).set(headers);
 
-        const contact = await getContactById(existingContactId, accountSid)
+        const contact = await getContactById(existingContactId, accountSid);
 
         expect(response.status).toBe(200);
         expect(response.body.caseId).toBe(null);
-        expect(contact.caseId).toBe(null)
+        expect(contact.caseId).toBe(null);
       });
 
       describe('use non-existent contactId', () => {
         test('should return 500', async () => {
-          const response = await request
-            .delete(subRoute(23454309582))
-            .set(headers)
+          const response = await request.delete(subRoute(23454309582)).set(headers);
 
           expect(response.status).toBe(500);
         });
