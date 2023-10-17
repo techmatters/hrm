@@ -40,14 +40,28 @@ jest.mock('../../src/referral/referral-data-access', () => ({
   createReferralRecord: () => async () => ({}),
 }));
 
-const getIdentifierWithProfileSpy = jest
-  .spyOn(profilesDB, 'getIdentifierWithProfile')
+const getIdentifierWithProfilesSpy = jest
+  .spyOn(profilesDB, 'getIdentifierWithProfiles')
   .mockImplementation(
     () => async () =>
       newOk({
         data: {
-          identifier: { id: 1 } as profilesDB.Identifier,
-          profile: { id: 1 } as profilesDB.Profile,
+          id: 1,
+          identifier: 'identifier',
+          accountSid: 'accountSid',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          profiles: [
+            {
+              id: 1,
+              accountSid: 'accountSid',
+              createdAt: new Date(),
+              updatedAt: new Date(),
+              name: 'name',
+              contactsCount: 0,
+              casesCount: 0,
+            },
+          ],
         },
       }),
   );
@@ -182,7 +196,7 @@ describe('createContact', () => {
       createContactMock,
     } = spyOnContactAndAssociations();
 
-    getIdentifierWithProfileSpy.mockImplementationOnce(
+    getIdentifierWithProfilesSpy.mockImplementationOnce(
       () => async () => newOk({ data: null }),
     );
 

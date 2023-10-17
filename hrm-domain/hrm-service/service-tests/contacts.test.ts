@@ -692,7 +692,7 @@ describe('/contacts route', () => {
       };
 
       jest
-        .spyOn(profilesDB, 'getIdentifierWithProfile')
+        .spyOn(profilesDB, 'getIdentifierWithProfiles')
         .mockImplementationOnce(() => async () => {
           throw new Error('Ups');
         });
@@ -714,7 +714,7 @@ describe('/contacts route', () => {
         },
         channel: 'web',
         taskId: `${withTaskId.taskId}-identifier`,
-        number: 'identifier',
+        number: 'identifier1234',
       };
 
       const profileResult = await profilesDB.createIdentifierAndProfile()(accountSid, {
@@ -726,7 +726,10 @@ describe('/contacts route', () => {
         return;
       }
 
-      const { identifier, profile } = profileResult.data;
+      console.log('profileResult', profileResult);
+
+      const identifierId = profileResult.data.id;
+      const profileId = profileResult.data.profiles[0].id;
 
       const createIdentifierAndProfileSpy = jest.spyOn(
         profilesDB,
@@ -738,14 +741,14 @@ describe('/contacts route', () => {
 
       expect(response.status).toBe(200);
       expect(createIdentifierAndProfileSpy).not.toHaveBeenCalled();
-      expect(response.body.profileId).toBe(profile.id);
-      expect(response.body.identifierId).toBe(identifier.id);
+      expect(response.body.profileId).toBe(profileId);
+      expect(response.body.identifierId).toBe(identifierId);
 
       // Remove records to not interfere with following tests
       await deleteJobsByContactId(response.body.id, response.body.accountSid);
       await deleteContactById(response.body.id, response.body.accountSid);
-      await deleteProfileById(profile.id, response.body.accountSid);
-      await deleteIdentifierById(identifier.id, response.body.accountSid);
+      await deleteProfileById(profileId, response.body.accountSid);
+      await deleteIdentifierById(identifierId, response.body.accountSid);
     });
 
     test(`If identifier and profile don't exist, they are created and the contact is created using them`, async () => {
@@ -790,9 +793,9 @@ describe('/contacts route', () => {
         number: undefined,
       };
 
-      const getIdentifierWithProfileSpy = jest.spyOn(
+      const getIdentifierWithProfilesSpy = jest.spyOn(
         profilesDB,
-        'getIdentifierWithProfile',
+        'getIdentifierWithProfiles',
       );
       const createIdentifierAndProfileSpy = jest.spyOn(
         profilesDB,
@@ -803,7 +806,7 @@ describe('/contacts route', () => {
       const response = await request.post(route).set(headers).send(contact);
 
       expect(response.status).toBe(200);
-      expect(getIdentifierWithProfileSpy).not.toHaveBeenCalled();
+      expect(getIdentifierWithProfilesSpy).not.toHaveBeenCalled();
       expect(createIdentifierAndProfileSpy).not.toHaveBeenCalled();
       expect(response.body.profileId).toBeNull();
       expect(response.body.identifierId).toBeNull();

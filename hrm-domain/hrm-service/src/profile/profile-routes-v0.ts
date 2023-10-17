@@ -24,20 +24,10 @@ const profilesRouter = SafeRouter();
 
 profilesRouter.get('/identifier/:identifier', publicEndpoint, async (req, res, next) => {
   try {
-    const { accountSid, user, can, searchPermissions } = req;
+    const { accountSid } = req;
     const { identifier } = req.params;
-    const { limit, offset } = req.query;
 
-    const result = await getProfilesByIdentifier(
-      accountSid,
-      identifier,
-      { limit, offset },
-      {
-        can,
-        user,
-        searchPermissions,
-      },
-    );
+    const result = await getProfilesByIdentifier(accountSid, identifier);
 
     if (isErr(result)) {
       return next(createError(result.statusCode, result.message));

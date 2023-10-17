@@ -13,9 +13,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-
-const WHERE_IDENTIFIER_CLAUSE =
-  'WHERE "accountSid" = $<accountSid> AND "identifier" = $<identifier>';
+const WHERE_IDENTIFIER_CLAUSE = `
+  WHERE "accountSid" = $<accountSid> AND
+  (
+    ("identifier" = $<identifier> AND $<identifier> IS NOT NULL)
+    OR
+    (ids.id = $<identifierId> AND $<identifierId> IS NOT NULL)
+  )
+`;
 
 // export const lookupIdentifierSql = `
 //   SELECT * FROM "Identifiers"
@@ -23,11 +28,42 @@ const WHERE_IDENTIFIER_CLAUSE =
 // `;
 
 export const joinProfilesIdentifiersSql = `
-SELECT ROW_TO_JSON(ids.*) as "identifier", ROW_TO_JSON(profiles.*) as "profile" FROM 
- (
-    SELECT * FROM "Identifiers"
+  WITH ProfileAggregation AS (
+    SELECT
+        p2i."identifierId",
+        JSON_AGG(
+            JSON_BUILD_OBJECT(
+                'id', profiles.id,
+                'name', profiles.name,
+                'contactCount', COALESCE(contactCounts.count, 0),
+                'caseCount', COALESCE(caseCounts.count, 0)
+            )
+        ) FILTER (WHERE profiles.id IS NOT NULL) as profiles_data
+    FROM "ProfilesToIdentifiers" p2i
+    LEFT JOIN "Profiles" profiles ON profiles.id = p2i."profileId" AND profiles."accountSid" = p2i."accountSid"
+    LEFT JOIN (
+        SELECT "Contacts"."profileId", COUNT(*) as count
+        FROM "Contacts"
+        GROUP BY "Contacts"."profileId"
+    ) AS contactCounts ON profiles.id = contactCounts."profileId"
+    LEFT JOIN (
+        SELECT "Contacts"."profileId", COUNT(DISTINCT "Contacts"."caseId") as count
+        FROM "Contacts"
+        WHERE "Contacts"."caseId" IS NOT NULL
+        GROUP BY "Contacts"."profileId"
+    ) AS caseCounts ON profiles.id = caseCounts."profileId"
+    GROUP BY p2i."identifierId"
+  )
+
+  SELECT
+    ROW_TO_JSON(t.*) AS data
+  FROM (
+    SELECT
+        ids.*,
+        COALESCE(pa.profiles_data, '[]'::json) as profiles
+    FROM "Identifiers" as "ids"
+    LEFT JOIN ProfileAggregation pa ON ids.id = pa."identifierId"
     ${WHERE_IDENTIFIER_CLAUSE}
-  ) AS ids
-  LEFT JOIN "ProfilesToIdentifiers" p2i ON ids.id = p2i."identifierId" AND ids."accountSid" = p2i."accountSid"
-  LEFT JOIN "Profiles" profiles ON profiles.id = p2i."profileId" AND profiles."accountSid" = p2i."accountSid";
+    LIMIT 1
+  ) t;
 `;

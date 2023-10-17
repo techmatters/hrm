@@ -34,6 +34,38 @@ type RecordCommons = {
 
 export type Identifier = NewIdentifierRecord & RecordCommons;
 
+export type ProfileWithCounts = Profile & { contactsCount: number; casesCount: number };
+
+export type IdentifierWithProfiles = Identifier & { profiles: ProfileWithCounts[] };
+
+type IdentifierParams =
+  | { accountSid: string; identifier: string; identifierId?: never }
+  | { accountSid: string; identifierId: number; identifier?: never };
+
+export const getIdentifierWithProfiles =
+  (task?) =>
+  async ({
+    accountSid,
+    identifier,
+    identifierId,
+  }: IdentifierParams): Promise<TResult<IdentifierWithProfiles | null>> => {
+    try {
+      const result = await txIfNotInOne<{ data: IdentifierWithProfiles }>(task, async t =>
+        t.oneOrNone(joinProfilesIdentifiersSql, {
+          accountSid,
+          identifier,
+          identifierId,
+        }),
+      );
+
+      return newOk({ data: result ? result.data : null });
+    } catch (err) {
+      return newErr({
+        message: err instanceof Error ? err.message : String(err),
+      });
+    }
+  };
+
 const createIdentifier =
   (task?) =>
   async (accountSid: string, identifier: NewIdentifierRecord): Promise<Identifier> => {
@@ -63,41 +95,32 @@ const createProfile =
       accountSid,
     });
 
-    return txIfNotInOne<Profile>(task, conn => conn.one(statement));
+    return txIfNotInOne<Profile>(task, t => t.one(statement));
   };
 
-export const createIdentifierAndProfile =
+export const associateProfileToIdentifier =
   (task?) =>
   async (
     accountSid: string,
-    payload: NewIdentifierRecord,
-  ): Promise<TResult<{ identifier: Identifier; profile: Profile }>> => {
+    profileId: number,
+    identifierId: number,
+  ): Promise<TResult<IdentifierWithProfiles>> => {
     try {
-      return await txIfNotInOne<
-        TResult<{
-          identifier: Identifier;
-          profile: Profile;
-        }>
-      >(task, async t => {
-        const [newIdentifier, newProfile] = await Promise.all([
-          createIdentifier(t)(accountSid, payload),
-          createProfile(t)(accountSid, { name: null }),
-        ]);
-
-        // Link the profile and identifier
+      return await txIfNotInOne<TResult<IdentifierWithProfiles>>(task, async t => {
         const now = new Date();
         await t.none(
           associateProfileToIdentifierSql({
             accountSid,
-            profileId: newIdentifier.id,
-            identifierId: newProfile.id,
+            profileId,
+            identifierId,
             createdAt: now,
             updatedAt: now,
           }),
         );
 
-        return newOk({
-          data: { identifier: newIdentifier, profile: newProfile },
+        return getIdentifierWithProfiles(t)({
+          accountSid,
+          identifierId,
         });
       });
     } catch (err) {
@@ -107,24 +130,25 @@ export const createIdentifierAndProfile =
     }
   };
 
-export const getIdentifierWithProfile =
+export const createIdentifierAndProfile =
   (task?) =>
   async (
     accountSid: string,
-    idx: string,
-  ): Promise<TResult<{ identifier: Identifier; profile: Profile } | null>> => {
+    payload: NewIdentifierRecord,
+  ): Promise<TResult<IdentifierWithProfiles>> => {
     try {
-      const data = await txIfNotInOne<{
-        identifier: Identifier;
-        profile: Profile;
-      }>(task, async connection =>
-        connection.oneOrNone(joinProfilesIdentifiersSql, {
-          accountSid,
-          identifier: idx,
-        }),
-      );
+      return await txIfNotInOne<TResult<IdentifierWithProfiles>>(task, async t => {
+        const [newIdentifier, newProfile] = await Promise.all([
+          createIdentifier(t)(accountSid, payload),
+          createProfile(t)(accountSid, { name: null }),
+        ]);
 
-      return newOk({ data: data });
+        return associateProfileToIdentifier(t)(
+          accountSid,
+          newProfile.id,
+          newIdentifier.id,
+        );
+      });
     } catch (err) {
       return newErr({
         message: err instanceof Error ? err.message : String(err),

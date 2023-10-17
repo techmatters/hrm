@@ -17,41 +17,41 @@
 import { TResult, isErr, newErr, newOk } from '@tech-matters/types';
 import {
   Identifier,
+  IdentifierWithProfiles,
   Profile,
   createIdentifierAndProfile,
-  getIdentifierWithProfile,
+  getIdentifierWithProfiles,
 } from './profile-data-access';
-import { searchCasesByProfileId } from '../case/case';
-import { searchContactsByProfileId } from '../contact/contact';
-import { PaginationQuery } from '../search';
-import { setupCanForRules } from '../permissions/setupCanForRules';
-import { SearchPermissions } from '../permissions/search-permissions';
-import { TwilioUser } from '@tech-matters/twilio-worker-auth';
-export { Identifier, Profile, getIdentifierWithProfile };
+// import { searchCasesByProfileId } from '../case/case';
+// import { searchContactsByProfileId } from '../contact/contact';
+// import { PaginationQuery } from '../search';
+// import { setupCanForRules } from '../permissions/setupCanForRules';
+// import { SearchPermissions } from '../permissions/search-permissions';
+// import { TwilioUser } from '@tech-matters/twilio-worker-auth';
+export { Identifier, Profile, getIdentifierWithProfiles };
 
 export const getOrCreateProfileWithIdentifier =
   (task?) =>
   async (
-    idx: string,
+    identifier: string,
     accountSid: string,
-  ): Promise<TResult<{ identifier: Identifier; profile: Profile }>> => {
+  ): Promise<TResult<IdentifierWithProfiles>> => {
     try {
-      if (!idx) {
+      if (!identifier) {
         return newOk({ data: null });
       }
 
-      const profileResult = await getIdentifierWithProfile(task)(accountSid, idx);
+      const profileResult = await getIdentifierWithProfiles(task)({
+        accountSid,
+        identifier,
+      });
 
-      if (isErr(profileResult)) {
-        return profileResult;
-      }
-
-      if (profileResult.data) {
+      if (isErr(profileResult) || profileResult.data) {
         return profileResult;
       }
 
       return await createIdentifierAndProfile(task)(accountSid, {
-        identifier: idx,
+        identifier,
       });
     } catch (err) {
       return newErr({
@@ -62,45 +62,33 @@ export const getOrCreateProfileWithIdentifier =
 
 export const getProfilesByIdentifier = async (
   accountSid: string,
-  idx: string,
-  query: Pick<PaginationQuery, 'limit' | 'offset'>,
-  ctx: {
-    can: ReturnType<typeof setupCanForRules>;
-    user: TwilioUser;
-    searchPermissions: SearchPermissions;
-  },
-): Promise<
-  TResult<
-    {
-      profile: Profile;
-      contacts: Awaited<ReturnType<typeof searchContactsByProfileId>>;
-      cases: Awaited<ReturnType<typeof searchCasesByProfileId>>;
-    }[]
-  >
-> => {
+  identifier: string,
+  // query: Pick<PaginationQuery, 'limit' | 'offset'>,
+  // ctx: {
+  //   can: ReturnType<typeof setupCanForRules>;
+  //   user: TwilioUser;
+  //   searchPermissions: SearchPermissions;
+  // },
+): Promise<TResult<IdentifierWithProfiles>> => {
   try {
-    const profilesResult = await getIdentifierWithProfile()(accountSid, idx);
+    const profilesResult = await getIdentifierWithProfiles()({ accountSid, identifier });
 
     if (isErr(profilesResult)) {
       return profilesResult;
     }
 
-    const { profile } = profilesResult.data;
+    // const result = await Promise.all(
+    //   profiles.map(async p => {
+    //     const [contacts, cases] = await Promise.all([
+    //       searchContactsByProfileId(accountSid, { profileId: p.id }, query, ctx),
+    //       searchCasesByProfileId(accountSid, query, { profileId: p.id }, {}, ctx),
+    //     ]);
 
-    const profiles = [profile];
+    //     return { profile: p, contacts, cases };
+    //   }),
+    // );
 
-    const result = await Promise.all(
-      profiles.map(async p => {
-        const [contacts, cases] = await Promise.all([
-          searchContactsByProfileId(accountSid, { profileId: p.id }, query, ctx),
-          searchCasesByProfileId(accountSid, query, { profileId: p.id }, {}, ctx),
-        ]);
-
-        return { profile: p, contacts, cases };
-      }),
-    );
-
-    return newOk({ data: result });
+    return newOk({ data: profilesResult.data });
   } catch (err) {
     return newErr({
       message: err instanceof Error ? err.message : String(err),
