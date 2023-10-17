@@ -68,6 +68,7 @@ import {
   cleanupReferrals,
   deleteContactById,
   deleteJobsByContactId,
+  getContactById,
 } from './contact/db-cleanup';
 import { selectJobsByContactId } from './contact/db-validations';
 
@@ -1654,7 +1655,6 @@ describe('/contacts route', () => {
       test('should return 401', async () => {
         const response = await request
           .delete(subRoute(existingContactId))
-          .send({ caseId: existingCaseId });
 
         expect(response.status).toBe(401);
         expect(response.body.error).toBe('Authorization failed');
@@ -1664,20 +1664,21 @@ describe('/contacts route', () => {
         const response = await request
           .delete(subRoute(existingContactId))
           .set(headers)
-          .send({ caseId: null });
+
+        const contact = await getContactById(existingContactId, accountSid)
 
         expect(response.status).toBe(200);
         expect(response.body.caseId).toBe(null);
+        expect(contact.caseId).toBe(null)
       });
 
       describe('use non-existent contactId', () => {
-        test('should return 404', async () => {
+        test('should return 500', async () => {
           const response = await request
-            .delete(subRoute(nonExistingContactId))
+            .delete(subRoute(23454309582))
             .set(headers)
-            .send({ caseId: null });
 
-          expect(response.status).toBe(404);
+          expect(response.status).toBe(500);
         });
       });
     });

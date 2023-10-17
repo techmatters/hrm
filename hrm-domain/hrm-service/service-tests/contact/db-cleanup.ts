@@ -69,3 +69,10 @@ export const deleteJobsByContactId = (contactId: number, accountSid: string) =>
       WHERE "contactId" = ${contactId} AND "accountSid" = '${accountSid}';
     `),
   );
+  export const getContactById = (id: number, accountSid: string) =>
+  db.task(t =>
+    t.one(`
+      SELECT FROM "Contacts"
+      WHERE "id" = ${id} AND "accountSid" = '${accountSid}';
+  `),
+  );
