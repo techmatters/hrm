@@ -1666,7 +1666,7 @@ describe('/contacts route', () => {
 
         expect(response.status).toBe(200);
         expect(response.body.caseId).toBe(null);
-        expect(contact.caseId).toBe(null);
+        expect(contact.caseId).toBe(undefined);
       });
 
       describe('use non-existent contactId', () => {
