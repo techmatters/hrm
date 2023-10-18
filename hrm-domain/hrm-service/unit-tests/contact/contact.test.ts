@@ -203,7 +203,7 @@ describe('createContact', () => {
     jest.spyOn(profilesDB, 'createIdentifierAndProfile').mockImplementationOnce(
       () => async () =>
         newOk({
-          data: { identifier: { id: 2 }, profile: { id: 2 } },
+          data: { id: 2, profiles: [{ id: 2 }] },
         }) as any,
     );
 
@@ -219,8 +219,8 @@ describe('createContact', () => {
     expect(createContactMock).toHaveBeenCalledWith('parameter account-sid', {
       ...sampleCreateContactPayload,
       createdBy: 'contact-creator',
-      profileId: 1,
-      identifierId: 1,
+      profileId: 2,
+      identifierId: 2,
     });
 
     expect(connectCsamMock).not.toHaveBeenCalled();
