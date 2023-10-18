@@ -346,7 +346,7 @@ const generalizedSearchCases =
     accountSid: string,
     listConfiguration: CaseListConfiguration,
     searchParameters: T,
-    extraParameters: U,
+    filterParameters: U,
     {
       can,
       user,
@@ -357,7 +357,7 @@ const generalizedSearchCases =
       searchPermissions: SearchPermissions;
     },
   ): Promise<CaseSearchReturn> => {
-    const { filters, helpline, counselor, closedCases } = extraParameters;
+    const { filters, helpline, counselor, closedCases } = filterParameters;
     const caseFilters = filters ?? {};
     caseFilters.helplines =
       caseFilters.helplines ?? (helpline ? helpline.split(';') : undefined);

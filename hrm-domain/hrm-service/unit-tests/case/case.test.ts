@@ -237,7 +237,7 @@ describe('searchCases', () => {
     {
       description:
         'list cases (with 1st contact, no limit/offset) - extracts child name and categories',
-      search: { helpline: 'helpline' },
+      filterParameters: { helpline: 'helpline' },
       expectedDbFilters: { helplines: ['helpline'] },
       casesFromDb: [caseRecordWithContact],
       expectedCases: [
@@ -251,7 +251,7 @@ describe('searchCases', () => {
     {
       description:
         'list cases (with 1st contact, with limit/offset) - extracts child name and categories',
-      search: { helpline: 'helpline' },
+      filterParameters: { helpline: 'helpline' },
       expectedDbFilters: { helplines: ['helpline'] },
       listConfig: { offset: 30, limit: 45 },
       casesFromDb: [caseRecordWithContact],
@@ -266,7 +266,7 @@ describe('searchCases', () => {
     {
       description:
         'list cases (without contacts) - extracts child name and categories & creates legacy notes',
-      search: { helpline: 'helpline' },
+      filterParameters: { helpline: 'helpline' },
       expectedDbFilters: { helplines: ['helpline'] },
       casesFromDb: [caseRecordWithoutContact],
       expectedCases: [{ ...caseWithoutContact, childName: '', categories: {} }],
@@ -285,6 +285,7 @@ describe('searchCases', () => {
       expectedCases,
       listConfig = {},
       search = {},
+      filterParameters = {},
       expectedDbSearchCriteria = {},
       expectedDbFilters = {},
     }) => {
@@ -294,14 +295,21 @@ describe('searchCases', () => {
         .spyOn(caseDb, 'search')
         .mockResolvedValue({ cases: casesFromDb, count: 1337 });
 
-      const result = await caseApi.searchCases(accountSid, listConfig, search, {
-        can: () => true,
-        user: twilioUser(workerSid, []),
-        searchPermissions: {
-          canOnlyViewOwnCases: false,
-          canOnlyViewOwnContacts: false,
+      const result = await caseApi.searchCases(
+        accountSid,
+        listConfig,
+        search,
+        filterParameters,
+        // {closedCases, counselor, filters: {}, helpline},
+        {
+          can: () => true,
+          user: twilioUser(workerSid, []),
+          searchPermissions: {
+            canOnlyViewOwnCases: false,
+            canOnlyViewOwnContacts: false,
+          },
         },
-      });
+      );
 
       expect(searchSpy).toHaveBeenCalledWith(
         listConfig ?? {},
@@ -375,7 +383,8 @@ describe('search cases permissions', () => {
       overriddenCounsellors,
       shouldCallSearch,
     }) => {
-      const searchParameters = {
+      const searchParameters = {};
+      const filterParameters = {
         helpline: 'helpline',
         closedCases: true,
         filters: {
@@ -398,13 +407,19 @@ describe('search cases permissions', () => {
       const searchSpy = jest
         .spyOn(caseDb, 'search')
         .mockResolvedValue({ cases: [], count: 0 });
-      await caseApi.searchCases(accountSid, limitOffset, searchParameters, reqData);
+      await caseApi.searchCases(
+        accountSid,
+        limitOffset,
+        searchParameters,
+        filterParameters,
+        reqData,
+      );
 
       if (shouldCallSearch) {
         const overridenSearchParams = {
           ...searchParameters,
           filters: {
-            ...searchParameters.filters,
+            ...filterParameters.filters,
             counsellors: overriddenCounsellors,
           },
         };
