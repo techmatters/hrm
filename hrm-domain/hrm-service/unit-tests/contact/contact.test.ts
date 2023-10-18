@@ -219,8 +219,8 @@ describe('createContact', () => {
     expect(createContactMock).toHaveBeenCalledWith('parameter account-sid', {
       ...sampleCreateContactPayload,
       createdBy: 'contact-creator',
-      profileId: 2,
-      identifierId: 2,
+      profileId: 1,
+      identifierId: 1,
     });
 
     expect(connectCsamMock).not.toHaveBeenCalled();

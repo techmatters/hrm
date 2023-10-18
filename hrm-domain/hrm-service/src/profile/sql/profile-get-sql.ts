@@ -35,8 +35,8 @@ export const joinProfilesIdentifiersSql = `
             JSON_BUILD_OBJECT(
                 'id', profiles.id,
                 'name', profiles.name,
-                'contactCount', COALESCE(contactCounts.count, 0),
-                'caseCount', COALESCE(caseCounts.count, 0)
+                'contactsCount', COALESCE(contactsCounts.count, 0),
+                'casesCount', COALESCE(casesCounts.count, 0)
             )
         ) FILTER (WHERE profiles.id IS NOT NULL) as profiles_data
     FROM "ProfilesToIdentifiers" p2i
@@ -45,13 +45,13 @@ export const joinProfilesIdentifiersSql = `
         SELECT "Contacts"."profileId", COUNT(*) as count
         FROM "Contacts"
         GROUP BY "Contacts"."profileId"
-    ) AS contactCounts ON profiles.id = contactCounts."profileId"
+    ) AS contactsCounts ON profiles.id = contactsCounts."profileId"
     LEFT JOIN (
         SELECT "Contacts"."profileId", COUNT(DISTINCT "Contacts"."caseId") as count
         FROM "Contacts"
         WHERE "Contacts"."caseId" IS NOT NULL
         GROUP BY "Contacts"."profileId"
-    ) AS caseCounts ON profiles.id = caseCounts."profileId"
+    ) AS casesCounts ON profiles.id = casesCounts."profileId"
     GROUP BY p2i."identifierId"
   )
 
