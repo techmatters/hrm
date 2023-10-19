@@ -68,4 +68,4 @@ export const deleteJobsByContactId = (contactId: number, accountSid: string) =>
       DELETE FROM "ContactJobs"
       WHERE "contactId" = ${contactId} AND "accountSid" = '${accountSid}';
     `),
-  ); 
+  );
