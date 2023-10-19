@@ -68,7 +68,6 @@ import {
   cleanupReferrals,
   deleteContactById,
   deleteJobsByContactId,
-  getContactById,
 } from './contact/db-cleanup';
 import { selectJobsByContactId } from './contact/db-validations';
 
@@ -1662,19 +1661,42 @@ describe('/contacts route', () => {
       test('should return 200', async () => {
         const response = await request.delete(subRoute(existingContactId)).set(headers);
 
-        const contact = await getContactById(existingContactId, accountSid);
+        const contact = await contactApi.getContactById(accountSid, response.body.id)
 
         expect(response.status).toBe(200);
         expect(response.body.caseId).toBe(null);
-        expect(contact.caseId).toBe(undefined);
+        expect(contact.caseId).toBe(null);
+
       });
 
       describe('use non-existent contactId', () => {
-        test('should return 500', async () => {
-          const response = await request.delete(subRoute(23454309582)).set(headers);
 
-          expect(response.status).toBe(500);
-        });
+        test('should return 404', async () => {
+          // Create the contact
+          const createdContact = await contactApi.createContact(
+            accountSid,
+            workerSid,
+            true,
+            <any>contact1,
+            { user: twilioUser(workerSid, []), can: () => true },
+          );
+        
+          nonExistingContactId = createdContact.id;
+        
+          // Delete the contact from the database
+          const deleteQuery = `
+            DELETE FROM "Contacts"
+            WHERE "id" = ${createdContact.id} AND "accountSid" = '${accountSid}';
+          `;
+          await db.task(async (t) => {
+            await t.none(deleteQuery);
+          });
+        
+          // Send the DELETE request
+          const response = await request.delete(subRoute(nonExistingContactId)).set(headers);
+     
+          expect(response.status).toBe(404);
+        });      
       });
     });
   });
