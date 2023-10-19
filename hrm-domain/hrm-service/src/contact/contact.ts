@@ -15,7 +15,7 @@
  */
 
 import omit from 'lodash/omit';
-import { ContactJobType, isErr } from '@tech-matters/types';
+import { ContactJobType, TResult, isErr, newErr, newOk } from '@tech-matters/types';
 import {
   connectToCase,
   Contact,
@@ -28,11 +28,11 @@ import {
 } from './contact-data-access';
 import { ContactRawJson, getPersonsName, ReferralWithoutContactId } from './contact-json';
 import { retrieveCategories } from './categories';
-import { getPaginationElements } from '../search';
-import { NewContactRecord } from './sql/contact-insert-sql';
+import { PaginationQuery, getPaginationElements } from '../search';
+import type { NewContactRecord } from './sql/contact-insert-sql';
 import { setupCanForRules } from '../permissions/setupCanForRules';
 import { actionsMaps } from '../permissions';
-import { TwilioUser } from '@tech-matters/twilio-worker-auth';
+import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { connectContactToCsamReports, CSAMReport } from '../csam-report/csam-report';
 import { createReferral } from '../referral/referral-model';
 import { createContactJob } from '../contact-job/contact-job';
@@ -48,7 +48,7 @@ import {
   LegacyConversationMedia,
   NewConversationMedia,
 } from '../conversation-media/conversation-media';
-import { getOrCreateProfileWithIdentifier } from '../profile/profile';
+import { Profile, getOrCreateProfileWithIdentifier } from '../profile/profile';
 
 // Re export as is:
 export { Contact } from './contact-data-access';
@@ -619,4 +619,30 @@ const generalizedSearchContacts =
 
 export const searchContacts = generalizedSearchContacts(search);
 
-export const searchContactsByProfileId = generalizedSearchContacts(searchByProfileId);
+const searchContactsByProfileId = generalizedSearchContacts(searchByProfileId);
+
+export const getContactsByProfileId = async (
+  accountSid: string,
+  profileId: Profile['id'],
+  query: Pick<PaginationQuery, 'limit' | 'offset'>,
+  ctx: {
+    can: ReturnType<typeof setupCanForRules>;
+    user: TwilioUser;
+    searchPermissions: SearchPermissions;
+  },
+): Promise<TResult<Awaited<ReturnType<typeof searchContactsByProfileId>>>> => {
+  try {
+    const contacts = await searchContactsByProfileId(
+      accountSid,
+      { profileId },
+      query,
+      ctx,
+    );
+
+    return newOk({ data: contacts });
+  } catch (err) {
+    return newErr({
+      message: err instanceof Error ? err.message : String(err),
+    });
+  }
+};

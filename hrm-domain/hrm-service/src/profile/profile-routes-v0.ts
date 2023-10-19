@@ -19,6 +19,8 @@ import createError from 'http-errors';
 
 import { SafeRouter, publicEndpoint } from '../permissions';
 import { getProfilesByIdentifier } from './profile';
+import { getContactsByProfileId } from '../contact/contact';
+import { getCasesByProfileId } from '../case/case';
 
 const profilesRouter = SafeRouter();
 
@@ -28,6 +30,48 @@ profilesRouter.get('/identifier/:identifier', publicEndpoint, async (req, res, n
     const { identifier } = req.params;
 
     const result = await getProfilesByIdentifier(accountSid, identifier);
+
+    if (isErr(result)) {
+      return next(createError(result.statusCode, result.message));
+    }
+
+    res.json(result.data);
+  } catch (err) {
+    return next(createError(500, err.message));
+  }
+});
+
+profilesRouter.get('/:profileId/contacts', publicEndpoint, async (req, res, next) => {
+  try {
+    const { accountSid } = req;
+    const { profileId } = req.params;
+
+    const result = await getContactsByProfileId(accountSid, profileId, req.query, {
+      can: req.can,
+      user: req.user,
+      searchPermissions: req.searchPermissions,
+    });
+
+    if (isErr(result)) {
+      return next(createError(result.statusCode, result.message));
+    }
+
+    res.json(result.data);
+  } catch (err) {
+    return next(createError(500, err.message));
+  }
+});
+
+profilesRouter.get('/:profileId/cases', publicEndpoint, async (req, res, next) => {
+  try {
+    const { accountSid } = req;
+    const { profileId } = req.params;
+
+    const result = await getCasesByProfileId(accountSid, profileId, req.query, {
+      can: req.can,
+      user: req.user,
+      searchPermissions: req.searchPermissions,
+    });
 
     if (isErr(result)) {
       return next(createError(result.statusCode, result.message));

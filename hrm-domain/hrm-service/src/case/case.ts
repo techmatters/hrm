@@ -36,7 +36,7 @@ import {
   update,
 } from './case-data-access';
 import { randomUUID } from 'crypto';
-import { Contact } from '../contact/contact-data-access';
+import type { Contact } from '../contact/contact-data-access';
 import { setupCanForRules } from '../permissions/setupCanForRules';
 import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import {
@@ -44,6 +44,9 @@ import {
   getPersonsName,
 } from '../contact/contact';
 import type { SearchPermissions } from '../permissions/search-permissions';
+import type { Profile } from '../profile/profile-data-access';
+import type { PaginationQuery } from '../search';
+import { TResult, newErr, newOk } from '@tech-matters/types';
 
 type CaseInfoSection = {
   id: string;
@@ -409,4 +412,25 @@ const generalizedSearchCases =
 
 export const searchCases = generalizedSearchCases(search);
 
-export const searchCasesByProfileId = generalizedSearchCases(searchByProfileId);
+const searchCasesByProfileId = generalizedSearchCases(searchByProfileId);
+
+export const getCasesByProfileId = async (
+  accountSid: string,
+  profileId: Profile['id'],
+  query: Pick<PaginationQuery, 'limit' | 'offset'>,
+  ctx: {
+    can: ReturnType<typeof setupCanForRules>;
+    user: TwilioUser;
+    searchPermissions: SearchPermissions;
+  },
+): Promise<TResult<Awaited<ReturnType<typeof searchCasesByProfileId>>>> => {
+  try {
+    const cases = await searchCasesByProfileId(accountSid, query, { profileId }, {}, ctx);
+
+    return newOk({ data: cases });
+  } catch (err) {
+    return newErr({
+      message: err instanceof Error ? err.message : String(err),
+    });
+  }
+};
