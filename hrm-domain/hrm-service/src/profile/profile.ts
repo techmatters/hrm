@@ -22,12 +22,7 @@ import {
   createIdentifierAndProfile,
   getIdentifierWithProfiles,
 } from './profile-data-access';
-// import { searchCasesByProfileId } from '../case/case';
-// import { searchContactsByProfileId } from '../contact/contact';
-// import { PaginationQuery } from '../search';
-// import { setupCanForRules } from '../permissions/setupCanForRules';
-// import { SearchPermissions } from '../permissions/search-permissions';
-// import { TwilioUser } from '@tech-matters/twilio-worker-auth';
+
 export { Identifier, Profile, getIdentifierWithProfiles };
 
 export const getOrCreateProfileWithIdentifier =
@@ -63,12 +58,6 @@ export const getOrCreateProfileWithIdentifier =
 export const getProfilesByIdentifier = async (
   accountSid: string,
   identifier: string,
-  // query: Pick<PaginationQuery, 'limit' | 'offset'>,
-  // ctx: {
-  //   can: ReturnType<typeof setupCanForRules>;
-  //   user: TwilioUser;
-  //   searchPermissions: SearchPermissions;
-  // },
 ): Promise<TResult<IdentifierWithProfiles>> => {
   try {
     const profilesResult = await getIdentifierWithProfiles()({ accountSid, identifier });
@@ -76,17 +65,6 @@ export const getProfilesByIdentifier = async (
     if (isErr(profilesResult)) {
       return profilesResult;
     }
-
-    // const result = await Promise.all(
-    //   profiles.map(async p => {
-    //     const [contacts, cases] = await Promise.all([
-    //       searchContactsByProfileId(accountSid, { profileId: p.id }, query, ctx),
-    //       searchCasesByProfileId(accountSid, query, { profileId: p.id }, {}, ctx),
-    //     ]);
-
-    //     return { profile: p, contacts, cases };
-    //   }),
-    // );
 
     return newOk({ data: profilesResult.data });
   } catch (err) {
