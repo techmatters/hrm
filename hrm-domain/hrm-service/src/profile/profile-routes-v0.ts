@@ -35,6 +35,10 @@ profilesRouter.get('/identifier/:identifier', publicEndpoint, async (req, res, n
       return next(createError(result.statusCode, result.message));
     }
 
+    if (!result.data) {
+      return next(createError(404));
+    }
+
     res.json(result.data);
   } catch (err) {
     return next(createError(500, err.message));
