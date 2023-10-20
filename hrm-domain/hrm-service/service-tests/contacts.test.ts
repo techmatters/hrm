@@ -1649,5 +1649,32 @@ describe('/contacts route', () => {
         });
       });
     });
+    describe('DELETE', () => {
+      const subRoute = contactId => `${route}/${contactId}/connectToCase`;
+      test('should return 401', async () => {
+        const response = await request.delete(subRoute(existingContactId));
+
+        expect(response.status).toBe(401);
+        expect(response.body.error).toBe('Authorization failed');
+      });
+
+      test('should return 200', async () => {
+        const response = await request.delete(subRoute(existingContactId)).set(headers);
+
+        const contact = await contactApi.getContactById(accountSid, response.body.id);
+
+        expect(response.status).toBe(200);
+        expect(response.body.caseId).toBe(null);
+        expect(contact.caseId).toBe(null);
+      });
+
+      test('should return 404', async () => {
+        const response = await request
+          .delete(subRoute(nonExistingContactId))
+          .set(headers);
+
+        expect(response.status).toBe(404);
+      });
+    });
   });
 });

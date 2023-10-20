@@ -92,6 +92,30 @@ contactsRouter.put('/:contactId/connectToCase', publicEndpoint, async (req, res)
   }
 });
 
+contactsRouter.delete('/:contactId/connectToCase', publicEndpoint, async (req, res) => {
+  const { accountSid, user } = req;
+  const { contactId } = req.params;
+  const caseId = null;
+
+  try {
+    const deleteContact = await connectContactToCase(
+      accountSid,
+      user.workerSid,
+      contactId,
+      caseId,
+      { can: req.can, user },
+    );
+    res.json(deleteContact);
+  } catch (err) {
+    if (
+      err.message.toLowerCase().includes('violates foreign key constraint') ||
+      err.message.toLowerCase().includes('contact not found')
+    ) {
+      throw createError(404);
+    } else throw err;
+  }
+});
+
 contactsRouter.post('/search', publicEndpoint, async (req, res) => {
   const { accountSid } = req;
 
