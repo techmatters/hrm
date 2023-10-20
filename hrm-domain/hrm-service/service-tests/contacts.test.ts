@@ -655,8 +655,8 @@ describe('/contacts route', () => {
     test(`If retrieving identifier and profile, the contact is not created either`, async () => {
       const contact = {
         ...withTaskId,
-        form: {
-          ...withTaskId.form,
+        rawJson: {
+          ...withTaskId.rawJson,
         },
         channel: 'web',
         taskId: `${withTaskId.taskId}-identifier`,
@@ -678,11 +678,11 @@ describe('/contacts route', () => {
       expect(attemptedContact).toBeNull();
     });
 
-    test.only(`If identifier and profile exist, the contact is created using them`, async () => {
+    test(`If identifier and profile exist, the contact is created using them`, async () => {
       const contact = {
         ...withTaskId,
-        form: {
-          ...withTaskId.form,
+        rawJson: {
+          ...withTaskId.rawJson,
         },
         channel: 'web',
         taskId: `${withTaskId.taskId}-identifier`,
@@ -726,8 +726,8 @@ describe('/contacts route', () => {
     test(`If identifier and profile don't exist, they are created and the contact is created using them`, async () => {
       const contact = {
         ...withTaskId,
-        form: {
-          ...withTaskId.form,
+        rawJson: {
+          ...withTaskId.rawJson,
         },
         channel: 'web',
         taskId: `${withTaskId.taskId}-identifier`,
@@ -757,8 +757,8 @@ describe('/contacts route', () => {
     test(`If number is not present in the contact payload, no identifier nor profile is created and they are null in the contact record`, async () => {
       const contact = {
         ...withTaskId,
-        form: {
-          ...withTaskId.form,
+        rawJson: {
+          ...withTaskId.rawJson,
         },
         channel: 'web',
         taskId: `${withTaskId.taskId}-identifier`,

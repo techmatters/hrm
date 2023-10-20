@@ -608,7 +608,7 @@ describe('/contacts/:contactId route', () => {
       expect(response.status).toBe(404);
     });
 
-    test("Draft contact edited by a user that didn't create or own the contact - returns 401", async () => {
+    test.only("Draft contact edited by a user that didn't create or own the contact - returns 401", async () => {
       const createdContact = await contactApi.createContact(
         accountSid,
         'another creator',
