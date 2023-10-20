@@ -84,7 +84,6 @@ describe('/cases route', () => {
       updatedBy: null,
       categories: {},
       connectedContacts: [],
-      childName: '',
     };
 
     test('should return 401', async () => {
@@ -292,6 +291,7 @@ describe('/cases route', () => {
         const createdContact = await createContact(
           accountSid,
           workerSid,
+          true,
           mocks.withTaskIdAndTranscript,
           { user: twilioUser(workerSid, []), can: () => true },
         );
@@ -681,6 +681,7 @@ describe('/cases route', () => {
         const createdContact = await createContact(
           accountSid,
           workerSid,
+          true,
           mocks.withTaskIdAndTranscript,
           { user: twilioUser(workerSid, []), can: () => true },
         );

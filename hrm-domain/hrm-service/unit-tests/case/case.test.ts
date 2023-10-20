@@ -98,7 +98,6 @@ test('create case', async () => {
   expect(createdCase).toStrictEqual({
     ...caseToBeCreated,
     id: 1,
-    childName: '',
     categories: {},
     createdBy: workerSid,
     accountSid,
@@ -142,15 +141,19 @@ describe('searchCases', () => {
         accountSid,
         csamReports: [],
         rawJson: {
-          childInformation: { name: { firstName: 'name', lastName: 'last' } },
+          childInformation: { firstName: 'name', lastName: 'last' },
           caseInformation: {
             categories: {
-              cat1: { sub1: false, sub2: true },
-              cat2: { sub2: false, sub4: false },
+              cat1: {
+                sub2: true,
+              },
             },
           },
-          callerInformation: { name: { firstName: undefined, lastName: undefined } },
+          callerInformation: {},
           callType: '',
+          categories: {
+            cat1: ['sub2'],
+          },
         },
       },
     ],
@@ -179,15 +182,13 @@ describe('searchCases', () => {
         accountSid,
         csamReports: [],
         rawJson: {
-          childInformation: { name: { firstName: 'name', lastName: 'last' } },
-          caseInformation: {
-            categories: {
-              cat1: { sub1: false, sub2: true },
-              cat2: { sub2: false, sub4: false },
-            },
-          },
-          callerInformation: { name: { firstName: undefined, lastName: undefined } },
+          childInformation: { firstName: 'name', lastName: 'last' },
+          caseInformation: {},
+          callerInformation: {},
           callType: '',
+          categories: {
+            cat1: ['sub2'],
+          },
         },
       },
     ],
@@ -243,14 +244,13 @@ describe('searchCases', () => {
       expectedCases: [
         {
           ...caseWithContact,
-          childName: 'name last',
           categories: { cat1: ['sub2'] },
         },
       ],
     },
     {
       description:
-        'list cases (with 1st contact, with limit/offset) - extracts child name and categories',
+        'list cases (with 1st contact, with limit/offset) - extracts categories',
       filterParameters: { helpline: 'helpline' },
       expectedDbFilters: { helplines: ['helpline'] },
       listConfig: { offset: 30, limit: 45 },
@@ -258,25 +258,23 @@ describe('searchCases', () => {
       expectedCases: [
         {
           ...caseWithContact,
-          childName: 'name last',
           categories: { cat1: ['sub2'] },
         },
       ],
     },
     {
-      description:
-        'list cases (without contacts) - extracts child name and categories & creates legacy notes',
+      description: 'list cases (without contacts) - creates empty categories',
       filterParameters: { helpline: 'helpline' },
       expectedDbFilters: { helplines: ['helpline'] },
       casesFromDb: [caseRecordWithoutContact],
-      expectedCases: [{ ...caseWithoutContact, childName: '', categories: {} }],
+      expectedCases: [{ ...caseWithoutContact, categories: {} }],
     },
     {
       description:
         'list cases without helpline - sends offset & limit to db layer but no helpline',
       listConfig: { offset: 30, limit: 45 },
       casesFromDb: [caseRecordWithoutContact],
-      expectedCases: [{ ...caseWithoutContact, childName: '', categories: {} }],
+      expectedCases: [{ ...caseWithoutContact, categories: {} }],
     },
   ]).test(
     '$description',
@@ -540,7 +538,7 @@ describe('update existing case', () => {
   );
 });
 
-test('update non existing case', async () => {
+test('updating a non existing case returns an error', async () => {
   const nonExistingCaseId = 1;
   jest.spyOn(caseDb, 'update').mockImplementation(() => null as any);
 

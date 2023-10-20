@@ -18,14 +18,7 @@ import * as pgPromise from 'pg-promise';
 import { mockConnection, mockTask, mockTransaction } from '../mock-db';
 import { search, create } from '../../src/contact/contact-data-access';
 import { ContactBuilder } from './contact-builder';
-import {
-  NewContactRecord,
-  insertContactSql,
-} from '../../src/contact/sql/contact-insert-sql';
-
-jest.mock('../../src/contact/sql/contact-insert-sql', () => ({
-  insertContactSql: jest.fn().mockReturnValue('MOCKED INSERT STATEMENT'),
-}));
+import { NewContactRecord } from '../../src/contact/sql/contact-insert-sql';
 
 let conn: pgPromise.ITask<unknown>;
 
@@ -34,16 +27,15 @@ beforeEach(() => {
 });
 
 describe('create', () => {
-  const sampleNewContact: NewContactRecord = {
+  const sampleNewContact: NewContactRecord & { isNewRecord: boolean } = {
     rawJson: {
       childInformation: {
         firstName: 'Lorna',
         lastName: 'Ballantyne',
       },
       callType: 'carrier pigeon',
-      caseInformation: {
-        categories: {},
-      },
+      caseInformation: {},
+      categories: {},
     },
     queueName: 'Q',
     conversationDuration: 100,
@@ -56,49 +48,47 @@ describe('create', () => {
     number: undefined,
     channelSid: undefined,
     serviceSid: undefined,
+    isNewRecord: true,
   };
 
-  test('No task ID specified in payload - runs SQL to insert new record and connect CSAM reports, using current date for created / updated and accountSid parameter', async () => {
-    const returnValue = new ContactBuilder().build();
+  test('Task ID specified in payload that is already associated with a contact - returns that contact', async () => {
+    const returnValue = { ...new ContactBuilder().build(), isNewRecord: false };
     mockTransaction(conn);
 
     jest.spyOn(conn, 'one').mockResolvedValue(returnValue);
 
-    const created = await create()('parameter account-sid', sampleNewContact);
-    expect(insertContactSql).toHaveBeenCalledWith({
+    const created = await create()('parameter account-sid', sampleNewContact, true);
+    expect(conn.one).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO'), {
       ...sampleNewContact,
       updatedAt: expect.anything(),
       createdAt: expect.anything(),
       accountSid: 'parameter account-sid',
+      finalize: true,
     });
-    expect(conn.one).toHaveBeenCalledWith(
-      expect.stringContaining('MOCKED INSERT STATEMENT'),
-    );
+    const { isNewRecord, ...returnedContact } = returnValue;
     expect(created).toStrictEqual({
-      contact: returnValue,
-      isNewRecord: true,
+      contact: returnedContact,
+      isNewRecord: false,
     });
   });
 
   test('Task ID specified in payload that is not already associated with a contact - creates contact as expected', async () => {
-    const returnValue = new ContactBuilder().build();
-    const sampleContactWithTaskId = { ...sampleNewContact, taskId: 'A TASK' };
+    const returnValue = { ...new ContactBuilder().build(), isNewRecord: true };
     mockTransaction(conn);
 
     jest.spyOn(conn, 'one').mockResolvedValue(returnValue);
 
-    const created = await create()('parameter account-sid', sampleContactWithTaskId);
-    expect(insertContactSql).toHaveBeenCalledWith({
-      ...sampleContactWithTaskId,
+    const created = await create()('parameter account-sid', sampleNewContact, true);
+    expect(conn.one).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO'), {
+      ...sampleNewContact,
       updatedAt: expect.anything(),
       createdAt: expect.anything(),
       accountSid: 'parameter account-sid',
+      finalize: true,
     });
-    expect(conn.one).toHaveBeenCalledWith(
-      expect.stringContaining('MOCKED INSERT STATEMENT'),
-    );
+    const { isNewRecord, ...returnedContact } = returnValue;
     expect(created).toStrictEqual({
-      contact: returnValue,
+      contact: returnedContact,
       isNewRecord: true,
     });
   });

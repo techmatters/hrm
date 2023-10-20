@@ -26,8 +26,8 @@ const defaultContact: Contact = {
     callerInformation: {},
     caseInformation: {
       callSummary: '',
-      categories: {},
     },
+    categories: {},
   },
   channel: '',
   conversationDuration: null,

@@ -14,8 +14,8 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { pgp } from '../../connection-pool';
 import { ContactRawJson } from '../contact-json';
+import { selectSingleContactByTaskId } from './contact-get-sql';
 
 export type NewContactRecord = {
   rawJson: ContactRawJson;
@@ -27,38 +27,61 @@ export type NewContactRecord = {
   channel?: string;
   conversationDuration: number;
   timeOfContact?: Date;
-  taskId?: string;
+  taskId: string;
   channelSid?: string;
   serviceSid?: string;
+  caseId?: string;
   profileId?: number;
   identifierId?: number;
 };
 
-export const insertContactSql = (
-  contact: NewContactRecord & { accountSid: string; createdAt: Date; updatedAt: Date },
-) => `
-  ${pgp.helpers.insert(
-    contact,
-    [
-      'accountSid',
-      'rawJson',
-      'queueName',
-      'twilioWorkerId',
-      'createdBy',
-      'createdAt',
-      'updatedAt',
-      'helpline',
-      'channel',
-      'number',
-      'conversationDuration',
-      'timeOfContact',
-      'taskId',
-      'channelSid',
-      'serviceSid',
-      'profileId',
-      'identifierId',
-    ],
-    'Contacts',
-  )}
-  RETURNING *
+export const INSERT_CONTACT_SQL = `
+  WITH existing AS (
+      ${selectSingleContactByTaskId('Contacts')}
+  ), inserted AS (
+    INSERT INTO "Contacts" (
+      "accountSid",
+      "rawJson",
+      "queueName",
+      "twilioWorkerId",
+      "createdBy",
+      "createdAt",
+      "updatedAt",
+      "helpline",
+      "channel",
+      "number",
+      "conversationDuration",
+      "timeOfContact",
+      "taskId",
+      "channelSid",
+      "serviceSid",
+      "finalizedAt",
+      "profileId",
+      "identifierId"
+    ) (SELECT 
+        $<accountSid>, 
+        $<rawJson>, 
+        $<queueName>, 
+        $<twilioWorkerId>, 
+        $<createdBy>, 
+        $<createdAt>, 
+        $<updatedAt>, 
+        $<helpline>, 
+        $<channel>, 
+        $<number>, 
+        $<conversationDuration>, 
+        $<timeOfContact>, 
+        $<taskId>, 
+        $<channelSid>, 
+        $<serviceSid>,
+        CASE WHEN $<finalize> = true THEN CURRENT_TIMESTAMP ELSE NULL END
+      WHERE NOT EXISTS (
+        ${selectSingleContactByTaskId('Contacts')}
+      )
+    )
+    RETURNING *
+  )
+  SELECT "existing".*, false AS "isNewRecord" FROM "existing"
+  UNION
+  SELECT "inserted".*, NULL AS "csamReports", NULL AS "referrals", NULL AS "conversationMedia", true AS "isNewRecord" FROM "inserted"
 `;

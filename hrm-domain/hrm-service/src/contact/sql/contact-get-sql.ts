@@ -40,6 +40,4 @@ export const selectSingleContactByIdSql = (table: string) => `
 
 export const selectSingleContactByTaskId = (table: string) => ` 
       ${selectContactsWithRelations(table)}
-      ${TASKID_WHERE_CLAUSE}
-      -- only take the latest, this ORDER / LIMIT clause would be redundant 
-      ORDER BY c."createdAt" DESC LIMIT 1`;
+      ${TASKID_WHERE_CLAUSE}`;

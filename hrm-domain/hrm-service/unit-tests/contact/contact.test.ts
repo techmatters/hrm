@@ -19,9 +19,11 @@ import * as contactDb from '../../src/contact/contact-data-access';
 import {
   connectContactToCase,
   createContact,
+  CreateContactPayload,
   patchContact,
   SearchContact,
   searchContacts,
+  WithLegacyCategories,
 } from '../../src/contact/contact';
 
 import * as csamReportsApi from '../../src/csam-report/csam-report';
@@ -35,6 +37,7 @@ import { subHours } from 'date-fns';
 import { newOk } from '@tech-matters/types';
 import * as profilesDB from '../../src/profile/profile-data-access';
 
+import { addLegacyCategoriesToContact } from '../../service-tests/case-validation';
 jest.mock('../../src/contact/contact-data-access');
 jest.mock('../../src/referral/referral-data-access', () => ({
   createReferralRecord: () => async () => ({}),
@@ -77,6 +80,15 @@ const mockContact: contactDb.Contact = {
   rawJson: {} as any,
 };
 
+const mockReturnContact: WithLegacyCategories<contactDb.Contact> = {
+  ...mockContact,
+  rawJson: {
+    caseInformation: {
+      categories: {},
+    },
+  },
+};
+
 describe('createContact', () => {
   beforeEach(() => {
     const conn = mockConnection();
@@ -87,7 +99,32 @@ describe('createContact', () => {
     jest.clearAllMocks();
   });
 
-  const sampleCreateContactPayload = {
+  const sampleCreateContactPayload: CreateContactPayload = {
+    rawJson: {
+      childInformation: {
+        firstName: 'Lorna',
+        lastName: 'Ballantyne',
+      },
+      callType: 'carrier pigeon',
+      caseInformation: {},
+      categories: {
+        a: ['category'],
+      },
+    },
+    queueName: 'Q',
+    conversationDuration: 100,
+    twilioWorkerId: 'owning-worker-id',
+    timeOfContact: new Date(2010, 5, 15),
+    createdBy: 'ignored-worker-id',
+    helpline: 'a helpline',
+    taskId: 'a task',
+    channel: 'morse code',
+    number: "that's numberwang",
+    channelSid: 'a channel',
+    serviceSid: 'a service',
+  };
+
+  const sampleLegacyCreateContactPayload = {
     rawJson: {
       childInformation: {
         firstName: 'Lorna',
@@ -170,22 +207,29 @@ describe('createContact', () => {
     const returnValue = await createContact(
       'parameter account-sid',
       'contact-creator',
-      sampleCreateContactPayload,
+      true,
+      sampleLegacyCreateContactPayload,
       {
         can: () => true,
         user: twilioUser(workerSid, []),
       },
     );
-    expect(createContactMock).toHaveBeenCalledWith('parameter account-sid', {
-      ...sampleCreateContactPayload,
-      createdBy: 'contact-creator',
-    });
+    expect(createContactMock).toHaveBeenCalledWith(
+      'parameter account-sid',
+      {
+        ...sampleCreateContactPayload,
+        createdBy: 'contact-creator',
+        profileId: 1,
+        identifierId: 1,
+      },
+      true,
+    );
 
     expect(connectCsamMock).not.toHaveBeenCalled();
     expect(createReferralMock).not.toHaveBeenCalled();
     expect(createContactJobMock).not.toHaveBeenCalled();
 
-    expect(returnValue).toStrictEqual(mockContact);
+    expect(returnValue).toStrictEqual(mockReturnContact);
   });
 
   test("If no identifier record exists for 'number', call createIdentifierAndProfile", async () => {
@@ -210,24 +254,29 @@ describe('createContact', () => {
     const returnValue = await createContact(
       'parameter account-sid',
       'contact-creator',
-      sampleCreateContactPayload,
+      true,
+      sampleLegacyCreateContactPayload,
       {
         can: () => true,
         user: twilioUser(workerSid, []),
       },
     );
-    expect(createContactMock).toHaveBeenCalledWith('parameter account-sid', {
-      ...sampleCreateContactPayload,
-      createdBy: 'contact-creator',
-      profileId: 2,
-      identifierId: 2,
-    });
+    expect(createContactMock).toHaveBeenCalledWith(
+      'parameter account-sid',
+      {
+        ...sampleCreateContactPayload,
+        createdBy: 'contact-creator',
+        profileId: 2,
+        identifierId: 2,
+      },
+      true,
+    );
 
     expect(connectCsamMock).not.toHaveBeenCalled();
     expect(createReferralMock).not.toHaveBeenCalled();
     expect(createContactJobMock).not.toHaveBeenCalled();
 
-    expect(returnValue).toStrictEqual(mockContact);
+    expect(returnValue).toStrictEqual(mockReturnContact);
   });
 
   test('Missing values are converted to empty strings for several fields', async () => {
@@ -238,6 +287,16 @@ describe('createContact', () => {
       createContactMock,
     } = spyOnContactAndAssociations();
 
+    const minimalLegacyPayload = omit(
+      sampleLegacyCreateContactPayload,
+      'helpline',
+      'number',
+      'channel',
+      'channelSid',
+      'serviceSid',
+      'twilioWorkerId',
+    );
+
     const minimalPayload = omit(
       sampleCreateContactPayload,
       'helpline',
@@ -245,37 +304,40 @@ describe('createContact', () => {
       'channel',
       'channelSid',
       'serviceSid',
-      'taskId',
       'twilioWorkerId',
     );
     const returnValue = await createContact(
       'parameter account-sid',
       'contact-creator',
-      minimalPayload,
+      true,
+      minimalLegacyPayload,
       {
         can: () => true,
         user: twilioUser(workerSid, []),
       },
     );
-    expect(createContactMock).toHaveBeenCalledWith('parameter account-sid', {
-      ...minimalPayload,
-      createdBy: 'contact-creator',
-      helpline: '',
-      number: '',
-      channel: '',
-      channelSid: '',
-      serviceSid: '',
-      taskId: '',
-      twilioWorkerId: '',
-      profileId: undefined,
-      identifierId: undefined,
-    });
+    expect(createContactMock).toHaveBeenCalledWith(
+      'parameter account-sid',
+      {
+        ...minimalPayload,
+        createdBy: 'contact-creator',
+        helpline: '',
+        number: '',
+        channel: '',
+        channelSid: '',
+        serviceSid: '',
+        twilioWorkerId: '',
+        profileId: undefined,
+        identifierId: undefined,
+      },
+      true,
+    );
 
     expect(connectCsamMock).not.toHaveBeenCalled();
     expect(createReferralMock).not.toHaveBeenCalled();
     expect(createContactJobMock).not.toHaveBeenCalled();
 
-    expect(returnValue).toStrictEqual(mockContact);
+    expect(returnValue).toStrictEqual(mockReturnContact);
   });
 
   test('Missing timeOfContact value is substituted with current date', async () => {
@@ -287,26 +349,34 @@ describe('createContact', () => {
     } = spyOnContactAndAssociations();
 
     const payload = omit(sampleCreateContactPayload, 'timeOfContact');
+    const legacyPayload = omit(sampleLegacyCreateContactPayload, 'timeOfContact');
     const returnValue = await createContact(
       'parameter account-sid',
       'contact-creator',
-      payload,
+      true,
+      legacyPayload,
       {
         can: () => true,
         user: twilioUser(workerSid, []),
       },
     );
-    expect(createContactMock).toHaveBeenCalledWith('parameter account-sid', {
-      ...payload,
-      timeOfContact: expect.any(Date),
-      createdBy: 'contact-creator',
-    });
+    expect(createContactMock).toHaveBeenCalledWith(
+      'parameter account-sid',
+      {
+        ...payload,
+        timeOfContact: expect.any(Date),
+        createdBy: 'contact-creator',
+        profileId: 1,
+        identifierId: 1,
+      },
+      true,
+    );
 
     expect(connectCsamMock).not.toHaveBeenCalled();
     expect(createReferralMock).not.toHaveBeenCalled();
     expect(createContactJobMock).not.toHaveBeenCalled();
 
-    expect(returnValue).toStrictEqual(mockContact);
+    expect(returnValue).toStrictEqual(mockReturnContact);
   });
 
   test('empty array will be passed for csamReportIds if csamReport property is missing', async () => {
@@ -318,25 +388,33 @@ describe('createContact', () => {
     } = spyOnContactAndAssociations();
 
     const payload = omit(sampleCreateContactPayload, 'csamReport');
+    const legacyPayload = omit(sampleLegacyCreateContactPayload, 'csamReport');
     const returnValue = await createContact(
       'parameter account-sid',
       'contact-creator',
-      payload,
+      true,
+      legacyPayload,
       {
         can: () => true,
         user: twilioUser(workerSid, []),
       },
     );
-    expect(createContactMock).toHaveBeenCalledWith('parameter account-sid', {
-      ...payload,
-      createdBy: 'contact-creator',
-    });
+    expect(createContactMock).toHaveBeenCalledWith(
+      'parameter account-sid',
+      {
+        ...payload,
+        createdBy: 'contact-creator',
+        profileId: 1,
+        identifierId: 1,
+      },
+      true,
+    );
 
     expect(connectCsamMock).not.toHaveBeenCalled();
     expect(createReferralMock).not.toHaveBeenCalled();
     expect(createContactJobMock).not.toHaveBeenCalled();
 
-    expect(returnValue).toStrictEqual(mockContact);
+    expect(returnValue).toStrictEqual(mockReturnContact);
   });
 
   test('ids will be passed in csamReportIds if csamReport property is populated', async () => {
@@ -363,17 +441,29 @@ describe('createContact', () => {
     });
 
     const payload = {
-      ...sampleCreateContactPayload,
+      ...sampleLegacyCreateContactPayload,
       csamReports,
     };
-    const returnValue = await createContact(accountSid, 'contact-creator', payload, {
-      can: () => true,
-      user: twilioUser(workerSid, []),
-    });
-    expect(createContactMock).toHaveBeenCalledWith(accountSid, {
-      ...sampleCreateContactPayload,
-      createdBy: 'contact-creator',
-    });
+    const returnValue = await createContact(
+      accountSid,
+      'contact-creator',
+      true,
+      payload,
+      {
+        can: () => true,
+        user: twilioUser(workerSid, []),
+      },
+    );
+    expect(createContactMock).toHaveBeenCalledWith(
+      accountSid,
+      {
+        ...sampleCreateContactPayload,
+        createdBy: 'contact-creator',
+        profileId: 1,
+        identifierId: 1,
+      },
+      true,
+    );
 
     expect(connectCsamMock).toHaveBeenCalledTimes(1);
     expect(connectCsamMock).toHaveBeenCalledWith(
@@ -385,7 +475,7 @@ describe('createContact', () => {
     expect(createContactJobMock).not.toHaveBeenCalled();
 
     expect(returnValue).toStrictEqual({
-      ...mockContact,
+      ...mockReturnContact,
       csamReports: csamReports.map(r => ({ ...r, contactId: mockContact.id })),
     });
   });
@@ -407,22 +497,29 @@ describe('createContact', () => {
     });
 
     const payload = {
-      ...sampleCreateContactPayload,
+      ...sampleLegacyCreateContactPayload,
       referrals,
     };
     const returnValue = await createContact(
       'parameter account-sid',
       'contact-creator',
+      true,
       payload,
       {
         can: () => true,
         user: twilioUser(workerSid, []),
       },
     );
-    expect(createContactMock).toHaveBeenCalledWith('parameter account-sid', {
-      ...sampleCreateContactPayload,
-      createdBy: 'contact-creator',
-    });
+    expect(createContactMock).toHaveBeenCalledWith(
+      'parameter account-sid',
+      {
+        ...sampleCreateContactPayload,
+        createdBy: 'contact-creator',
+        profileId: 1,
+        identifierId: 1,
+      },
+      true,
+    );
 
     expect(createReferralMock).toHaveBeenCalledTimes(2);
     referrals.forEach(referral =>
@@ -434,47 +531,10 @@ describe('createContact', () => {
     expect(connectCsamMock).not.toHaveBeenCalled();
     expect(createContactJobMock).not.toHaveBeenCalled();
 
-    expect(returnValue).toStrictEqual({ ...mockContact, referrals });
+    expect(returnValue).toStrictEqual({ ...mockReturnContact, referrals });
   });
 
-  test('queue will be looked for as a rawJson property if omitted from the top level', async () => {
-    const {
-      connectCsamMock,
-      createReferralMock,
-      createContactJobMock,
-      createContactMock,
-    } = spyOnContactAndAssociations();
-
-    const payload = {
-      ...omit(sampleCreateContactPayload, 'queueName'),
-      rawJson: {
-        ...sampleCreateContactPayload.rawJson,
-        queueName: 'Q2',
-      },
-    };
-    const returnValue = await createContact(
-      'parameter account-sid',
-      'contact-creator',
-      payload as any,
-      {
-        can: () => true,
-        user: twilioUser(workerSid, []),
-      },
-    );
-    expect(createContactMock).toHaveBeenCalledWith('parameter account-sid', {
-      ...payload,
-      queueName: 'Q2',
-      createdBy: 'contact-creator',
-    });
-
-    expect(connectCsamMock).not.toHaveBeenCalled();
-    expect(createReferralMock).not.toHaveBeenCalled();
-    expect(createContactJobMock).not.toHaveBeenCalled();
-
-    expect(returnValue).toStrictEqual(mockContact);
-  });
-
-  test('queue will be undefined if not present on rawJson, form or top level', async () => {
+  test('queue will be empty if not present', async () => {
     const {
       connectCsamMock,
       createReferralMock,
@@ -483,26 +543,34 @@ describe('createContact', () => {
     } = spyOnContactAndAssociations();
 
     const payload = omit(sampleCreateContactPayload, 'queueName');
+    const legacyPayload = omit(sampleLegacyCreateContactPayload, 'queueName');
     const returnValue = await createContact(
       'parameter account-sid',
       'contact-creator',
-      payload as any,
+      true,
+      legacyPayload as any,
       {
         can: () => true,
         user: twilioUser(workerSid, []),
       },
     );
-    expect(createContactMock).toHaveBeenCalledWith('parameter account-sid', {
-      ...payload,
-      queueName: undefined,
-      createdBy: 'contact-creator',
-    });
+    expect(createContactMock).toHaveBeenCalledWith(
+      'parameter account-sid',
+      {
+        ...payload,
+        queueName: '',
+        createdBy: 'contact-creator',
+        profileId: 1,
+        identifierId: 1,
+      },
+      true,
+    );
 
     expect(connectCsamMock).not.toHaveBeenCalled();
     expect(createReferralMock).not.toHaveBeenCalled();
     expect(createContactJobMock).not.toHaveBeenCalled();
 
-    expect(returnValue).toStrictEqual(mockContact);
+    expect(returnValue).toStrictEqual(mockReturnContact);
   });
 
   test('referrals specified - these will be added to the database using the created contact ID', async () => {
@@ -532,13 +600,14 @@ describe('createContact', () => {
     });
 
     const payload = {
-      ...sampleCreateContactPayload,
+      ...sampleLegacyCreateContactPayload,
       referrals,
     };
 
     const returnValue = await createContact(
       'parameter account-sid',
       'contact-creator',
+      true,
       payload,
       {
         can: () => true,
@@ -546,10 +615,16 @@ describe('createContact', () => {
       },
     );
 
-    expect(createContactMock).toHaveBeenCalledWith('parameter account-sid', {
-      ...sampleCreateContactPayload,
-      createdBy: 'contact-creator',
-    });
+    expect(createContactMock).toHaveBeenCalledWith(
+      'parameter account-sid',
+      {
+        ...sampleCreateContactPayload,
+        createdBy: 'contact-creator',
+        profileId: 1,
+        identifierId: 1,
+      },
+      true,
+    );
 
     expect(createReferralMock).toHaveBeenCalledTimes(2);
     referrals.forEach(referral =>
@@ -562,7 +637,7 @@ describe('createContact', () => {
     expect(createContactJobMock).not.toHaveBeenCalled();
 
     expect(returnValue).toStrictEqual({
-      ...mockContact,
+      ...mockReturnContact,
       referrals,
     });
   });
@@ -584,7 +659,7 @@ describe('connectContactToCase', () => {
       },
     );
     expect(connectSpy).toHaveBeenCalledWith('accountSid', '1234', '4321');
-    expect(result).toStrictEqual(mockContact);
+    expect(result).toStrictEqual(mockReturnContact);
   });
   test('Throws if data access layer returns undefined', () => {
     jest.spyOn(contactDb, 'connectToCase').mockResolvedValue(undefined);
@@ -610,17 +685,20 @@ describe('patchContact', () => {
       },
       caseInformation: {
         some: 'property',
-        categories: {
-          category: { subCategory: true },
-        },
+      },
+      categories: {
+        category: ['subCategory'],
       },
     },
   };
   test('Passes callerInformation, childInformation, caseInformation & categories to data layer as separate properties', async () => {
-    const patchSpy = jest.spyOn(contactDb, 'patch').mockResolvedValue(mockContact);
+    const patchSpy = jest.fn();
+    jest.spyOn(contactDb, 'patch').mockReturnValue(patchSpy);
+    patchSpy.mockResolvedValue(mockContact);
     const result = await patchContact(
       'accountSid',
       'contact-patcher',
+      true,
       '1234',
       samplePatch,
       {
@@ -628,8 +706,8 @@ describe('patchContact', () => {
         user: twilioUser(workerSid, []),
       },
     );
-    expect(result).toStrictEqual(mockContact);
-    expect(patchSpy).toHaveBeenCalledWith('accountSid', '1234', {
+    expect(result).toStrictEqual(mockReturnContact);
+    expect(patchSpy).toHaveBeenCalledWith('accountSid', '1234', true, {
       updatedBy: 'contact-patcher',
       childInformation: {
         firstName: 'Charlotte',
@@ -643,14 +721,16 @@ describe('patchContact', () => {
         some: 'property',
       },
       categories: {
-        category: { subCategory: true },
+        category: ['subCategory'],
       },
     });
   });
   test('Throws if data layer returns undefined', () => {
-    jest.spyOn(contactDb, 'patch').mockResolvedValue(undefined);
+    const patchSpy = jest.fn();
+    jest.spyOn(contactDb, 'patch').mockReturnValue(patchSpy);
+    patchSpy.mockResolvedValue(undefined);
     expect(
-      patchContact('accountSid', 'contact-patcher', '1234', samplePatch, {
+      patchContact('accountSid', 'contact-patcher', true, '1234', samplePatch, {
         can: () => true,
         user: twilioUser(workerSid, []),
       }),
@@ -680,6 +760,7 @@ describe('searchContacts', () => {
       .build();
     const sarahPark = new ContactBuilder()
       .withId(1234)
+      .withTaskId('sarah-park-task')
       .withChildFirstName('Sarah')
       .withChildLastName('Park')
       .withCallSummary('Young pregnant woman')
@@ -698,7 +779,6 @@ describe('searchContacts', () => {
           overview: {
             helpline: 'a helpline',
             dateTime: '2020-03-10T00:00:00.000Z',
-            name: '', // Legacy property, not used in Flex v2.1+
             customerNumber: '+12025550142',
             createdBy: 'contact-searcher',
             callType: 'Child calling about self',
@@ -709,7 +789,7 @@ describe('searchContacts', () => {
             conversationDuration: 10,
             taskId: 'jill-smith-task',
           },
-          details: jillSmith.rawJson,
+          details: addLegacyCategoriesToContact(jillSmith).rawJson,
           csamReports: [],
           referrals: [],
           conversationMedia: [],
@@ -718,9 +798,8 @@ describe('searchContacts', () => {
           contactId: '1234',
           overview: {
             helpline: undefined,
-            taskId: undefined,
+            taskId: 'sarah-park-task',
             dateTime: '2020-03-15T00:00:00.000Z',
-            name: '', // Legacy property, not used in Flex v2.1+
             customerNumber: 'Anonymous',
             createdBy: 'contact-searcher',
             callType: 'Child calling about self',
@@ -730,7 +809,7 @@ describe('searchContacts', () => {
             channel: '',
             conversationDuration: null,
           },
-          details: sarahPark.rawJson,
+          details: addLegacyCategoriesToContact(sarahPark).rawJson,
           csamReports: [],
           referrals: [],
           conversationMedia: [],
@@ -761,51 +840,6 @@ describe('searchContacts', () => {
 
     expect(searchSpy).toHaveBeenCalledWith(accountSid, parameters, expect.any(Number), 0);
     expect(result).toStrictEqual(expectedSearchResult);
-  });
-  // Test for legacy behaviour, will be removed
-  test('Populates name overview property for legacy contacts', async () => {
-    const jillSmith = new ContactBuilder()
-      .withId(4321)
-      .withHelpline('a helpline')
-      .withTaskId('jill-smith-task')
-      .withCallSummary('Lost young boy')
-      .withNumber('+12025550142')
-      .withCallType('Child calling about self')
-      .withTwilioWorkerId('twilio-worker-id')
-      .withCreatedBy(contactSearcher)
-      .withCreatedAt(new Date('2020-03-10T00:00:00Z'))
-      .withTimeOfContact(new Date('2020-03-10T00:00:00Z'))
-      .withChannel('voice')
-      .withConversationDuration(10)
-      .build();
-    jillSmith.rawJson.childInformation.name = {
-      firstName: 'Jill',
-      lastName: 'Smith',
-    };
-
-    const mockedResult = {
-      count: 1,
-      rows: [jillSmith],
-    };
-    jest.spyOn(contactDb, 'search').mockResolvedValue(mockedResult);
-    const parameters = { helpline: 'helpline', onlyDataContacts: false };
-
-    const result = await searchContacts(
-      accountSid,
-      parameters,
-      {},
-      {
-        can: () => true,
-        user: twilioUser(workerSid, []),
-        searchPermissions: {
-          canOnlyViewOwnCases: false,
-          canOnlyViewOwnContacts: false,
-        },
-      },
-    );
-    expect((result.contacts[0] as SearchContact).overview.name).toStrictEqual(
-      'Jill Smith',
-    );
   });
 
   test('Call search without limit / offset, a default limit and offset 0', async () => {

@@ -39,7 +39,7 @@ require('../mocks');
 // eslint-disable-next-line @typescript-eslint/no-shadow
 const selectJobsByContactId = (contactId: number, accountSid: string) =>
   db.task(t =>
-    t.manyOrNone<contactJobApi.ContactJobRecord>(`
+    t.manyOrNone(`
       SELECT * FROM "ContactJobs"
       WHERE "contactId" = ${contactId} AND "accountSid" = '${accountSid}';
     `),
@@ -48,7 +48,7 @@ const selectJobsByContactId = (contactId: number, accountSid: string) =>
 // eslint-disable-next-line @typescript-eslint/no-shadow
 const selectJobById = (id: number, accountSid: string) =>
   db.task(t =>
-    t.oneOrNone<contactJobApi.ContactJobRecord>(`
+    t.oneOrNone(`
       SELECT * FROM "ContactJobs"
       WHERE id = ${id} AND "accountSid" = '${accountSid}';
     `),
@@ -89,9 +89,7 @@ afterEach(async () => {
 afterAll(async () => {
   await db.tx(async trx => {
     const contactIds = (
-      await trx.manyOrNone<contactJobApi.ContactJob>(
-        'DELETE FROM "ContactJobs" RETURNING *',
-      )
+      await trx.manyOrNone('DELETE FROM "ContactJobs" RETURNING *')
     ).map(j => j.contactId);
     if (contactIds.length)
       await trx.none(`DELETE FROM "Contacts" WHERE id IN (${contactIds.join(',')})`);
@@ -101,8 +99,8 @@ afterAll(async () => {
 const createChatContact = async (channel: string, startedTimestamp: number) => {
   const contactTobeCreated = {
     ...withTaskId,
-    form: {
-      ...withTaskId.form,
+    rawJson: {
+      ...withTaskId.rawJson,
       conversationMedia: [
         {
           store: 'S3' as const,
@@ -117,12 +115,19 @@ const createChatContact = async (channel: string, startedTimestamp: number) => {
   const contact = await contactApi.createContact(
     accountSid,
     workerSid,
+    true,
     contactTobeCreated,
     {
       can: () => true,
       user: twilioUser(workerSid, []),
     },
   );
+
+  const contactWithoutLegacyCompatibility = {
+    ...contact,
+  };
+  delete contactWithoutLegacyCompatibility.rawJson.caseInformation.categories;
+  delete contactWithoutLegacyCompatibility.rawJson.conversationMedia;
 
   const jobs = await selectJobsByContactId(contact.id, contact.accountSid);
 
@@ -151,7 +156,12 @@ const createChatContact = async (channel: string, startedTimestamp: number) => {
   createdContact = contact;
   createdJobs = jobs;
 
-  return [contact, retrieveContactTranscriptJob, jobs] as const;
+  return [
+    contact,
+    retrieveContactTranscriptJob,
+    jobs,
+    contactWithoutLegacyCompatibility,
+  ] as const;
 };
 
 describe('publish retrieve-transcript job type', () => {
@@ -161,10 +171,8 @@ describe('publish retrieve-transcript job type', () => {
     })),
   ).test('$channel pending job is published when considered due', async ({ channel }) => {
     const startedTimestamp = Date.now();
-    const [contact, retrieveContactTranscriptJob] = await createChatContact(
-      channel,
-      startedTimestamp,
-    );
+    const [contact, retrieveContactTranscriptJob, , contactWithoutLegacyCompatibility] =
+      await createChatContact(channel, startedTimestamp);
 
     const publishDueContactJobsSpy = jest.spyOn(
       contactJobPublish,
@@ -197,15 +205,16 @@ describe('publish retrieve-transcript job type', () => {
     expect(publishRetrieveContactTranscriptSpy).toHaveBeenCalledTimes(1);
     expect(publishRetrieveContactTranscriptSpy).toHaveBeenCalledWith({
       ...retrieveContactTranscriptJob,
-      lastAttempt: expect.toParseAsDate(),
+      lastAttempt: expect.any(Date),
       numberOfAttempts: 1,
       resource: {
-        ...contact,
+        ...contactWithoutLegacyCompatibility,
         conversationMedia: contact.conversationMedia?.map(cm => ({
           ...cm,
           createdAt: expect.toParseAsDate(cm.createdAt),
           updatedAt: expect.toParseAsDate(cm.updatedAt),
         })),
+        finalizedAt: expect.toParseAsDate(contact.finalizedAt),
         createdAt: expect.toParseAsDate(contact.createdAt),
         updatedAt: expect.toParseAsDate(contact.updatedAt),
         timeOfContact: expect.toParseAsDate(contact.timeOfContact),
@@ -264,7 +273,7 @@ describe('publish retrieve-transcript job type', () => {
       expect(publishRetrieveContactTranscriptSpy).toHaveBeenCalledTimes(1);
       expect(publishRetrieveContactTranscriptSpy).toHaveBeenCalledWith({
         ...retrieveContactTranscriptJob,
-        lastAttempt: expect.toParseAsDate(),
+        lastAttempt: expect.any(Date),
         numberOfAttempts: 1,
         resource: {
           ...contact,
@@ -274,6 +283,7 @@ describe('publish retrieve-transcript job type', () => {
             updatedAt: expect.toParseAsDate(cm.updatedAt),
           })),
           createdAt: expect.toParseAsDate(contact.createdAt),
+          finalizedAt: expect.toParseAsDate(contact.finalizedAt),
           updatedAt: expect.toParseAsDate(contact.updatedAt),
           timeOfContact: expect.toParseAsDate(contact.timeOfContact),
         },
@@ -410,7 +420,7 @@ describe('complete retrieve-transcript job type', () => {
 
       // Check the updated contact in the DB
       const updatedConversationMedias = await db.task(async t =>
-        t.manyOrNone<conversationMediaApi.ConversationMedia>(
+        t.manyOrNone(
           `SELECT * FROM "ConversationMedias" WHERE "contactId" = ${contact.id}`,
         ),
       );
@@ -444,7 +454,7 @@ describe('complete retrieve-transcript job type', () => {
       );
 
       const err = new Error('something went wrong');
-      const errMessage = err instanceof Error ? err.message : String(err);
+      const errMessage = err.message;
 
       const completedPayload: CompletedContactJobBody = {
         accountSid: retrieveContactTranscriptJob.accountSid,
@@ -550,7 +560,7 @@ describe('complete retrieve-transcript job type', () => {
 
       // Check the updated contact in the DB
       const conversationMedias = await db.task(async t =>
-        t.manyOrNone<conversationMediaApi.ConversationMedia>(
+        t.manyOrNone(
           `SELECT * FROM "ConversationMedias" WHERE "contactId" = ${contact.id}`,
         ),
       );
