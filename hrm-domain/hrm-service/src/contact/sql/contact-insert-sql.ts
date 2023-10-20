@@ -55,9 +55,9 @@ export const INSERT_CONTACT_SQL = `
       "taskId",
       "channelSid",
       "serviceSid",
-      "finalizedAt",
       "profileId",
-      "identifierId"
+      "identifierId",
+      "finalizedAt"
     ) (SELECT 
         $<accountSid>, 
         $<rawJson>, 
@@ -74,6 +74,8 @@ export const INSERT_CONTACT_SQL = `
         $<taskId>, 
         $<channelSid>, 
         $<serviceSid>,
+        $<profileId>,
+        $<identifierId>,
         CASE WHEN $<finalize> = true THEN CURRENT_TIMESTAMP ELSE NULL END
       WHERE NOT EXISTS (
         ${selectSingleContactByTaskId('Contacts')}
