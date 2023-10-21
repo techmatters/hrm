@@ -708,6 +708,7 @@ export const getContactsByProfileId = async (
       { profileId },
       query,
       ctx,
+      true,
     );
 
     return newOk({ data: contacts });
