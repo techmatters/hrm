@@ -27,6 +27,43 @@ const WHERE_IDENTIFIER_CLAUSE = `
 //   ${WHERE_IDENTIFIER_CLAUSE}
 // `;
 
+export const getProfileByIdSql = `
+  WITH RelatedIdentifiers AS (
+    SELECT
+        p2i."profileId",
+        JSON_AGG(
+            JSON_BUILD_OBJECT(
+                'id', identifiers.id,
+                'identifier', identifiers."identifier"
+            )
+        ) FILTER (WHERE identifiers.id IS NOT NULL) as identifiers
+    FROM "ProfilesToIdentifiers" p2i
+    JOIN "Identifiers" identifiers ON identifiers.id = p2i."identifierId"
+    WHERE p2i."profileId" = $<profileId>
+    GROUP BY p2i."profileId"
+  ),
+
+  ContactCaseCounts AS (
+    SELECT
+        "Contacts"."profileId",
+        COUNT(*) as contactCount,
+        COUNT(DISTINCT "Contacts"."caseId") as caseCount
+    FROM "Contacts"
+    WHERE "Contacts"."profileId" = $<profileId>
+    GROUP BY "Contacts"."profileId"
+  )
+
+  SELECT
+    profiles.*,
+    COALESCE(ri.identifiers, '[]'::json) as identifiers,
+    COALESCE(ccc.contactCount, 0) as contactCount,
+    COALESCE(ccc.caseCount, 0) as caseCount
+  FROM "Profiles" profiles
+  LEFT JOIN RelatedIdentifiers ri ON profiles.id = ri."profileId"
+  LEFT JOIN ContactCaseCounts ccc ON profiles.id = ccc."profileId"
+  WHERE profiles."accountSid" = $<accountSid> AND profiles."id" = $<profileId>
+`;
+
 export const joinProfilesIdentifiersSql = `
   WITH ProfileAggregation AS (
     SELECT

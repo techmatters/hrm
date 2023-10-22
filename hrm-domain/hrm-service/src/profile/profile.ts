@@ -19,11 +19,32 @@ import {
   Identifier,
   IdentifierWithProfiles,
   Profile,
+  ProfileWithRelationships,
   createIdentifierAndProfile,
   getIdentifierWithProfiles,
+  getProfileById,
 } from './profile-data-access';
 
 export { Identifier, Profile, getIdentifierWithProfiles };
+
+export const getProfile = async (
+  accountSid: string,
+  profileId: Profile['id'],
+): Promise<TResult<ProfileWithRelationships>> => {
+  try {
+    const result = await getProfileById(accountSid, profileId);
+
+    if (!result) {
+      return newErr({ statusCode: 404, message: 'Profile not found' });
+    }
+
+    return newOk({ data: result });
+  } catch (err) {
+    return newErr({
+      message: err instanceof Error ? err.message : String(err),
+    });
+  }
+};
 
 export const getOrCreateProfileWithIdentifier =
   (task?) =>

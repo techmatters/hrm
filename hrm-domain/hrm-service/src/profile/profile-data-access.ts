@@ -23,7 +23,7 @@ import {
   associateProfileToIdentifierSql,
 } from './sql/profile-insert-sql';
 import { txIfNotInOne } from '../sql';
-import { joinProfilesIdentifiersSql } from './sql/profile-get-sql';
+import { getProfileByIdSql, joinProfilesIdentifiersSql } from './sql/profile-get-sql';
 
 type RecordCommons = {
   id: number;
@@ -34,9 +34,19 @@ type RecordCommons = {
 
 export type Identifier = NewIdentifierRecord & RecordCommons;
 
-export type ProfileWithCounts = Profile & { contactsCount: number; casesCount: number };
+export type ProfileCounts = {
+  contactsCount: number;
+  casesCount: number;
+};
+
+export type ProfileWithCounts = Profile & ProfileCounts;
 
 export type IdentifierWithProfiles = Identifier & { profiles: ProfileWithCounts[] };
+
+export type ProfileWithRelationships = Profile &
+  ProfileCounts & {
+    identifiers: Identifier[];
+  };
 
 type IdentifierParams =
   | { accountSid: string; identifier: string; identifierId?: never }
@@ -155,3 +165,12 @@ export const createIdentifierAndProfile =
       });
     }
   };
+
+export const getProfileById = async (
+  accountSid: string,
+  profileId: number,
+): Promise<ProfileWithRelationships> => {
+  return txIfNotInOne<ProfileWithRelationships>(undefined, async t => {
+    return t.oneOrNone(getProfileByIdSql, { accountSid, profileId });
+  });
+};

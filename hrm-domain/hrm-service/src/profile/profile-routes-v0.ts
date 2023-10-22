@@ -18,7 +18,7 @@ import { isErr } from '@tech-matters/types';
 import createError from 'http-errors';
 
 import { SafeRouter, publicEndpoint } from '../permissions';
-import { getProfilesByIdentifier } from './profile';
+import { getProfilesByIdentifier, getProfile } from './profile';
 import { getContactsByProfileId } from '../contact/contact';
 import { getCasesByProfileId } from '../case/case';
 
@@ -79,6 +79,27 @@ profilesRouter.get('/:profileId/cases', publicEndpoint, async (req, res, next) =
 
     if (isErr(result)) {
       return next(createError(result.statusCode, result.message));
+    }
+
+    res.json(result.data);
+  } catch (err) {
+    return next(createError(500, err.message));
+  }
+});
+
+profilesRouter.get('/:profileId', publicEndpoint, async (req, res, next) => {
+  try {
+    const { accountSid } = req;
+    const { profileId } = req.params;
+
+    const result = await getProfile(accountSid, profileId);
+
+    if (isErr(result)) {
+      return next(createError(result.statusCode, result.message));
+    }
+
+    if (!result.data) {
+      return next(createError(404));
     }
 
     res.json(result.data);
