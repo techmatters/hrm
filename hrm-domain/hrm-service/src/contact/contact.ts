@@ -282,6 +282,27 @@ const findS3StoredTranscriptPending = (
   return null;
 };
 
+const initProfile = async (conn, accountSid, contact) => {
+  if (!contact.number) return {};
+
+  const profileResult = await getOrCreateProfileWithIdentifier(conn)(
+    contact.number,
+    accountSid,
+  );
+
+  if (isErr(profileResult)) {
+    // Throw to make the transaction to rollback
+    throw new Error(
+      `Failed creating contact: profile result returned error variant ${profileResult.message}`,
+    );
+  }
+
+  return {
+    profileId: profileResult.data?.profiles?.[0].id,
+    identifierId: profileResult.data?.id,
+  };
+};
+
 // Creates a contact with all its related records within a single transaction
 export const createContact = async (
   accountSid: string,
@@ -300,17 +321,11 @@ export const createContact = async (
           conversationMediaPayload,
         } = getNewContactPayload(newContact);
 
-        const profileResult = await getOrCreateProfileWithIdentifier(conn)(
-          newContactPayload.number,
+        const { profileId, identifierId } = await initProfile(
+          conn,
           accountSid,
+          newContactPayload,
         );
-
-        if (isErr(profileResult)) {
-          // Throw to make the transaction to rollback
-          throw new Error(
-            `Failed creating contact: profile result returned error variant ${profileResult.message}`,
-          );
-        }
 
         const completeNewContact: NewContactRecord = {
           ...newContactPayload,
@@ -328,8 +343,8 @@ export const createContact = async (
           queueName: newContactPayload.queueName ?? '',
           createdBy,
           // Hardcoded to first profile for now, but will be updated to support multiple profiles
-          profileId: profileResult.data?.profiles?.[0].id,
-          identifierId: profileResult.data?.id,
+          profileId,
+          identifierId,
         };
 
         // create contact record (may return an exiting one cause idempotence)
@@ -459,10 +474,15 @@ export const patchContact = async (
         });
       }
     }
+
+    const { profileId, identifierId } = await initProfile(conn, accountSid, restOfPatch);
+
     const updated = await patch(conn)(accountSid, contactId, finalize, {
       updatedBy,
       ...restOfPatch,
       ...rawJson,
+      profileId,
+      identifierId,
     });
     if (!updated) {
       throw new Error(`Contact not found with id ${contactId}`);
