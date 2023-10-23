@@ -38,6 +38,7 @@ describe('convertIndexDocument', () => {
         { key: 'description', value: 'This is the description', language: '' },
         { key: 'keywords', value: 'keyword1', language: '' },
         { key: 'keywords', value: 'keyword2', language: '' },
+        { key: 'taxonomies/taxonomy1', value: 'taxonomy1', language: '' },
       ],
       numberAttributes: [
         { key: 'eligibilityMinAge', value: 10 },
@@ -57,7 +58,7 @@ describe('convertIndexDocument', () => {
     expect(document).toEqual({
       id: '1234',
       name: ['Resource'],
-      high_boost_global: 'This is the description',
+      high_boost_global: 'This is the description taxonomy1',
       low_boost_global:
         'This is the english title This is the french title keyword1 keyword2',
       eligibilityMinAge: 10,

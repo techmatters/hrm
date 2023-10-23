@@ -107,6 +107,7 @@ export const resourceIndexDocumentMappings: ResourceIndexDocumentMappings = {
     'targetPopulation',
     'languages',
     'feeStructure',
+    'taxonomyLevelName',
   ],
 
   mappingFields: {
