@@ -46,8 +46,8 @@ export const getProfileByIdSql = `
   ContactCaseCounts AS (
     SELECT
         "Contacts"."profileId",
-        COUNT(*) as contactCount,
-        COUNT(DISTINCT "Contacts"."caseId") as caseCount
+        COUNT(*) as "contactsCount",
+        COUNT(DISTINCT "Contacts"."caseId") as "casesCount"
     FROM "Contacts"
     WHERE "Contacts"."profileId" = $<profileId>
     GROUP BY "Contacts"."profileId"
@@ -56,8 +56,8 @@ export const getProfileByIdSql = `
   SELECT
     profiles.*,
     COALESCE(ri.identifiers, '[]'::json) as identifiers,
-    COALESCE(ccc.contactCount, 0) as contactCount,
-    COALESCE(ccc.caseCount, 0) as caseCount
+    COALESCE(ccc."contactsCount", 0) as "contactsCount",
+    COALESCE(ccc."casesCount", 0) as "casesCount"
   FROM "Profiles" profiles
   LEFT JOIN RelatedIdentifiers ri ON profiles.id = ri."profileId"
   LEFT JOIN ContactCaseCounts ccc ON profiles.id = ccc."profileId"
