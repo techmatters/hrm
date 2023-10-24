@@ -39,10 +39,14 @@ const casesRouter = SafeRouter();
 casesRouter.get('/', publicEndpoint, async (req, res) => {
   const { accountSid } = req;
   const { sortDirection, sortBy, limit, offset, ...search } = req.query;
+
+  const { closedCases, counselor, helpline, ...searchCriteria } = search;
+
   const cases = await caseApi.searchCases(
     accountSid,
     { sortDirection, sortBy, limit, offset },
-    { filters: { includeOrphans: false }, ...search },
+    searchCriteria,
+    { filters: { includeOrphans: false }, closedCases, counselor, helpline },
     { can: req.can, user: req.user, searchPermissions: req.searchPermissions },
   );
   res.json(cases);
@@ -147,10 +151,13 @@ casesRouter.delete('/:id', publicEndpoint, async (req, res) => {
 
 casesRouter.post('/search', publicEndpoint, async (req, res) => {
   const { accountSid } = req;
+  const { closedCases, counselor, helpline, filters, ...searchCriteria } = req.body || {};
+
   const searchResults = await caseApi.searchCases(
     accountSid,
     req.query || {},
-    req.body || {},
+    searchCriteria,
+    { closedCases, counselor, helpline, filters },
     {
       can: req.can,
       user: req.user,

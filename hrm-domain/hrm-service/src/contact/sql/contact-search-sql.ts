@@ -18,20 +18,29 @@ import { selectCoalesceConversationMediasByContactId } from '../../conversation-
 import { selectCoalesceCsamReportsByContactId } from '../../csam-report/sql/csam-report-get-sql';
 import { selectCoalesceReferralsByContactId } from '../../referral/sql/referral-get-sql';
 
-export const SELECT_CONTACT_SEARCH = `
-        SELECT 
-        (count(*) OVER())::INTEGER AS "totalCount",
-        contacts.*, reports."csamReports", joinedReferrals."referrals", media."conversationMedia"
-        FROM "Contacts" contacts
-        LEFT JOIN LATERAL (
-          ${selectCoalesceCsamReportsByContactId('contacts')}
-        ) reports ON true
-        LEFT JOIN LATERAL (
-          ${selectCoalesceReferralsByContactId('contacts')}
-        ) joinedReferrals ON true
-        LEFT JOIN LATERAL (
-          ${selectCoalesceConversationMediasByContactId('contacts')}
-        ) media ON true
+const selectSearchContactBaseQuery = (whereClause: string) => `
+  SELECT 
+  (count(*) OVER())::INTEGER AS "totalCount",
+  contacts.*, reports."csamReports", joinedReferrals."referrals", media."conversationMedia"
+  FROM "Contacts" contacts
+  LEFT JOIN LATERAL (
+    ${selectCoalesceCsamReportsByContactId('contacts')}
+  ) reports ON true
+  LEFT JOIN LATERAL (
+    ${selectCoalesceReferralsByContactId('contacts')}
+  ) joinedReferrals ON true
+  LEFT JOIN LATERAL (
+    ${selectCoalesceConversationMediasByContactId('contacts')}
+  ) media ON true
+
+  ${whereClause}
+
+  ORDER BY contacts."timeOfContact" DESC
+    OFFSET $<offset>
+    LIMIT $<limit>
+`;
+
+export const SELECT_CONTACT_SEARCH = selectSearchContactBaseQuery(`
         WHERE contacts."accountSid" = $<accountSid>
         AND ($<helpline> IS NULL OR contacts."helpline" = $<helpline>)
         AND (
@@ -96,7 +105,11 @@ export const SELECT_CONTACT_SEARCH = `
             "rawJson"->>'callType' IN ($<dataCallTypes:csv>)
           )
         )
-        ORDER BY contacts."timeOfContact" DESC
-        OFFSET $<offset>
-        LIMIT $<limit>
-`;
+`);
+
+export const SELECT_CONTACT_SEARCH_BY_PROFILE_ID = selectSearchContactBaseQuery(`
+  WHERE contacts."accountSid" = $<accountSid>
+    AND contacts."profileId" = $<profileId>
+    AND ($<helpline> IS NULL OR contacts."helpline" = $<helpline>)
+    AND ($<counselor> IS NULL OR contacts."twilioWorkerId" = $<counselor>)
+`);

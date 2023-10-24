@@ -34,13 +34,40 @@ import { omit } from 'lodash';
 import type { CSAMReport } from '../../src/csam-report/csam-report';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
 import { subHours } from 'date-fns';
+import { newOk } from '@tech-matters/types';
+import * as profilesDB from '../../src/profile/profile-data-access';
+
 import { addLegacyCategoriesToContact } from '../../service-tests/case-validation';
 jest.mock('../../src/contact/contact-data-access');
 jest.mock('../../src/referral/referral-data-access', () => ({
   createReferralRecord: () => async () => ({}),
 }));
-// jest.mock('../../src/csam-report/csam-report-data-access');
-// jest.mock('../../src/contact-job/contact-job-data-access');
+
+const getIdentifierWithProfilesSpy = jest
+  .spyOn(profilesDB, 'getIdentifierWithProfiles')
+  .mockImplementation(
+    () => async () =>
+      newOk({
+        data: {
+          id: 1,
+          identifier: 'identifier',
+          accountSid: 'accountSid',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          profiles: [
+            {
+              id: 1,
+              accountSid: 'accountSid',
+              createdAt: new Date(),
+              updatedAt: new Date(),
+              name: 'name',
+              contactsCount: 0,
+              casesCount: 0,
+            },
+          ],
+        },
+      }),
+  );
 
 const workerSid = 'WORKER_SID';
 
@@ -123,6 +150,8 @@ describe('createContact', () => {
     number: "that's numberwang",
     channelSid: 'a channel',
     serviceSid: 'a service',
+    profileId: 1,
+    identifierId: 1,
   };
 
   const spyOnContactAndAssociations = ({
@@ -190,6 +219,55 @@ describe('createContact', () => {
       {
         ...sampleCreateContactPayload,
         createdBy: 'contact-creator',
+        profileId: 1,
+        identifierId: 1,
+      },
+      true,
+    );
+
+    expect(connectCsamMock).not.toHaveBeenCalled();
+    expect(createReferralMock).not.toHaveBeenCalled();
+    expect(createContactJobMock).not.toHaveBeenCalled();
+
+    expect(returnValue).toStrictEqual(mockReturnContact);
+  });
+
+  test("If no identifier record exists for 'number', call createIdentifierAndProfile", async () => {
+    const {
+      connectCsamMock,
+      createReferralMock,
+      createContactJobMock,
+      createContactMock,
+    } = spyOnContactAndAssociations();
+
+    getIdentifierWithProfilesSpy.mockImplementationOnce(
+      () => async () => newOk({ data: null }),
+    );
+
+    jest.spyOn(profilesDB, 'createIdentifierAndProfile').mockImplementationOnce(
+      () => async () =>
+        newOk({
+          data: { id: 2, profiles: [{ id: 2 }] },
+        }) as any,
+    );
+
+    const returnValue = await createContact(
+      'parameter account-sid',
+      'contact-creator',
+      true,
+      sampleLegacyCreateContactPayload,
+      {
+        can: () => true,
+        user: twilioUser(workerSid, []),
+      },
+    );
+    expect(createContactMock).toHaveBeenCalledWith(
+      'parameter account-sid',
+      {
+        ...sampleCreateContactPayload,
+        createdBy: 'contact-creator',
+        profileId: 2,
+        identifierId: 2,
       },
       true,
     );
@@ -248,8 +326,9 @@ describe('createContact', () => {
         channel: '',
         channelSid: '',
         serviceSid: '',
-        taskId: 'a task',
         twilioWorkerId: '',
+        profileId: undefined,
+        identifierId: undefined,
       },
       true,
     );
@@ -287,6 +366,8 @@ describe('createContact', () => {
         ...payload,
         timeOfContact: expect.any(Date),
         createdBy: 'contact-creator',
+        profileId: 1,
+        identifierId: 1,
       },
       true,
     );
@@ -323,6 +404,8 @@ describe('createContact', () => {
       {
         ...payload,
         createdBy: 'contact-creator',
+        profileId: 1,
+        identifierId: 1,
       },
       true,
     );
@@ -376,6 +459,8 @@ describe('createContact', () => {
       {
         ...sampleCreateContactPayload,
         createdBy: 'contact-creator',
+        profileId: 1,
+        identifierId: 1,
       },
       true,
     );
@@ -430,6 +515,8 @@ describe('createContact', () => {
       {
         ...sampleCreateContactPayload,
         createdBy: 'contact-creator',
+        profileId: 1,
+        identifierId: 1,
       },
       true,
     );
@@ -473,6 +560,8 @@ describe('createContact', () => {
         ...payload,
         queueName: '',
         createdBy: 'contact-creator',
+        profileId: 1,
+        identifierId: 1,
       },
       true,
     );
@@ -531,6 +620,8 @@ describe('createContact', () => {
       {
         ...sampleCreateContactPayload,
         createdBy: 'contact-creator',
+        profileId: 1,
+        identifierId: 1,
       },
       true,
     );

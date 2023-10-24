@@ -15,8 +15,11 @@
  */
 
 import { db } from '../connection-pool';
+import {
+  SELECT_CONTACT_SEARCH,
+  SELECT_CONTACT_SEARCH_BY_PROFILE_ID,
+} from './sql/contact-search-sql';
 import { UPDATE_CASEID_BY_ID, UPDATE_CONTACT_BY_ID } from './sql/contact-update-sql';
-import { SELECT_CONTACT_SEARCH } from './sql/contact-search-sql';
 import { parseISO } from 'date-fns';
 import {
   selectSingleContactByIdSql,
@@ -52,7 +55,7 @@ export type SearchParameters = {
   dateFrom?: string;
   dateTo?: string;
   contactNumber?: string;
-  onlyDataContacts: boolean;
+  onlyDataContacts?: boolean;
   shouldIncludeUpdatedAt?: boolean;
 };
 
@@ -258,21 +261,61 @@ export const getByTaskSid = async (
     }),
   );
 
-export const search = async (
+type BaseSearchQueryParams = {
+  accountSid: string;
+  limit: number;
+  offset: number;
+};
+export type OptionalSearchQueryParams = Partial<QueryParams>;
+type SearchQueryParamsBuilder<T> = (
   accountSid: string,
-  searchParameters: SearchParameters,
+  searchParameters: T,
   limit: number,
   offset: number,
-): Promise<{ rows: Contact[]; count: number }> => {
-  return db.task(async connection => {
-    const searchResults: (Contact & { totalCount: number })[] =
-      await connection.manyOrNone<Contact & { totalCount: number }>(
-        SELECT_CONTACT_SEARCH,
-        searchParametersToQueryParameters(accountSid, searchParameters, limit, offset),
-      );
-    return {
-      rows: searchResults,
-      count: searchResults.length ? searchResults[0].totalCount : 0,
-    };
-  });
+) => BaseSearchQueryParams & OptionalSearchQueryParams;
+
+export type SearchQueryFunction<T> = (
+  accountSid: string,
+  searchParameters: T,
+  limit: number,
+  offset: number,
+) => Promise<{ rows: Contact[]; count: number }>;
+
+const generalizedSearchQueryFunction = <T>(
+  sqlQuery: string,
+  sqlQueryParamsBuilder: SearchQueryParamsBuilder<T>,
+): SearchQueryFunction<T> => {
+  return async (accountSid, searchParameters, limit, offset) => {
+    return db.task(async connection => {
+      const searchResults: (Contact & { totalCount: number })[] =
+        await connection.manyOrNone<Contact & { totalCount: number }>(
+          sqlQuery,
+          sqlQueryParamsBuilder(accountSid, searchParameters, limit, offset),
+        );
+      return {
+        rows: searchResults,
+        count: searchResults.length ? searchResults[0].totalCount : 0,
+      };
+    });
+  };
 };
+
+export const search: SearchQueryFunction<SearchParameters> =
+  generalizedSearchQueryFunction(
+    SELECT_CONTACT_SEARCH,
+    searchParametersToQueryParameters,
+  );
+
+export const searchByProfileId: SearchQueryFunction<
+  Pick<OptionalSearchQueryParams, 'counselor' | 'helpline'> & { profileId: number }
+> = generalizedSearchQueryFunction(
+  SELECT_CONTACT_SEARCH_BY_PROFILE_ID,
+  (accountSid, searchParameters, limit, offset) => ({
+    accountSid,
+    limit,
+    offset,
+    counselor: searchParameters.counselor,
+    helpline: searchParameters.helpline,
+    profileId: searchParameters.profileId,
+  }),
+);

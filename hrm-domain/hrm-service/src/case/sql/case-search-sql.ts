@@ -287,19 +287,31 @@ SELECT * FROM (${selectCasesUnorderedSql(
 LIMIT $<limit>
 OFFSET $<offset>`;
 
-export const selectCaseSearch = (
+export type SearchQueryBuilder = (
   filters: CaseListFilters,
-  orderByClauses: OrderByClauseItem[] = [],
-) => {
-  const whereSql = [
-    `WHERE
+  orderByClauses?: OrderByClauseItem[],
+) => string;
+
+const selectSearchCaseBaseQuery = (whereClause: string): SearchQueryBuilder => {
+  return (filters, orderByClauses) => {
+    const whereSql = [whereClause, filterSql(filters)].filter(sql => sql).join(`
+    AND `);
+    const orderBySql = generateOrderByClause(orderByClauses.concat(DEFAULT_SORT));
+    return selectCasesPaginatedSql(whereSql, orderBySql);
+  };
+};
+
+export const selectCaseSearch = selectSearchCaseBaseQuery(
+  `WHERE
     (info IS NULL OR jsonb_typeof(info) = 'object')
     AND
-      $<accountSid> IS NOT NULL AND cases."accountSid" = $<accountSid>`,
-    SEARCH_WHERE_CLAUSE,
-    filterSql(filters),
-  ].filter(sql => sql).join(`
-  AND `);
-  const orderBySql = generateOrderByClause(orderByClauses.concat(DEFAULT_SORT));
-  return selectCasesPaginatedSql(whereSql, orderBySql);
-};
+      $<accountSid> IS NOT NULL AND cases."accountSid" = $<accountSid>
+    AND ${SEARCH_WHERE_CLAUSE}
+  `,
+);
+
+export const selectCaseSearchByProfileId = selectSearchCaseBaseQuery(
+  `WHERE cases."accountSid" = $<accountSid> AND cases."id" IN (
+    SELECT "caseId" FROM "Contacts" "c" WHERE "c"."profileId" = $<profileId> AND "c"."accountSid" = $<accountSid>
+  )`,
+);

@@ -22,6 +22,7 @@ import csamReports from './csam-report/csam-report-routes-v0';
 import postSurveys from './post-survey/post-survey-routes-v0';
 import referrals from './referral/referral-routes-v0';
 import permissions from './permissions/permissions-routes-v0';
+import profiles from './profile/profile-routes-v0';
 import { Permissions } from './permissions';
 
 export const HRM_ROUTES: {
@@ -32,6 +33,7 @@ export const HRM_ROUTES: {
   { path: '/cases', routerFactory: () => cases },
   { path: '/postSurveys', routerFactory: () => postSurveys },
   { path: '/csamReports', routerFactory: () => csamReports },
+  { path: '/profiles', routerFactory: () => profiles },
   { path: '/referrals', routerFactory: () => referrals() },
   { path: '/permissions', routerFactory: (rules: Permissions) => permissions(rules) },
 ];

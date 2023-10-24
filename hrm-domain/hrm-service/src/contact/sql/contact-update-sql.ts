@@ -19,8 +19,8 @@ import { selectSingleContactByIdSql } from './contact-get-sql';
 const ID_WHERE_CLAUSE = `WHERE "accountSid" = $<accountSid> AND "id"=$<contactId>`;
 
 export const UPDATE_CONTACT_BY_ID = `WITH updated AS (
-UPDATE "Contacts" 
-SET "rawJson" = COALESCE("rawJson", '{}'::JSONB) 
+UPDATE "Contacts"
+SET "rawJson" = COALESCE("rawJson", '{}'::JSONB)
   || (CASE WHEN $<caseInformation> IS NOT NULL THEN jsonb_build_object('caseInformation', $<caseInformation>::JSONB) ELSE '{}'::JSONB END)
   || (CASE WHEN $<categories> IS NOT NULL THEN jsonb_build_object('categories', $<categories>::JSONB) ELSE '{}'::JSONB END)
   || (CASE WHEN $<callerInformation> IS NOT NULL THEN jsonb_build_object('callerInformation', $<callerInformation>::JSONB) ELSE '{}'::JSONB END)
@@ -39,6 +39,8 @@ SET "rawJson" = COALESCE("rawJson", '{}'::JSONB)
   "taskId" =   COALESCE($<taskId>, "taskId"),
   "channelSid" =   COALESCE($<channelSid>, "channelSid"),
   "serviceSid" =   COALESCE($<serviceSid>, "serviceSid"),
+  "profileId" =   COALESCE($<profileId>, "profileId"),
+  "identifierId" =   COALESCE($<identifierId>, "identifierId"),
   "updatedAt" = CURRENT_TIMESTAMP,
   "caseId" =   COALESCE($<caseId>, "caseId"),
   "finalizedAt" = COALESCE("finalizedAt", (CASE WHEN $<finalize> = true THEN CURRENT_TIMESTAMP ELSE NULL END))
@@ -49,8 +51,8 @@ ${selectSingleContactByIdSql('updated')}
 `;
 
 export const UPDATE_CASEID_BY_ID = `WITH updated AS (
-UPDATE "Contacts" 
-SET 
+UPDATE "Contacts"
+SET
   "caseId" = $<caseId>
 ${ID_WHERE_CLAUSE}
 RETURNING *
