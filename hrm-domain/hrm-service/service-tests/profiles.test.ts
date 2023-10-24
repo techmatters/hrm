@@ -14,9 +14,6 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-/* eslint-disable jest/no-standalone-expect,no-await-in-loop */
-
-import each from 'jest-each';
 import './case-validation';
 import { db } from '../src/connection-pool';
 import * as caseApi from '../src/case/case';
@@ -28,10 +25,6 @@ import { getOrCreateProfileWithIdentifier } from '../src/profile/profile';
 import { isErr } from '@tech-matters/types';
 import { IdentifierWithProfiles } from '../src/profile/profile-data-access';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
-import {
-  convertCaseInfoToExpectedInfo,
-  validateCaseListResponse,
-} from './case-validation';
 
 useOpenRules();
 const server = getServer();
