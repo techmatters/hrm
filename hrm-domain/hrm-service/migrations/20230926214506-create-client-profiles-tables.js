@@ -80,7 +80,7 @@ module.exports = {
     `);
     console.log("Table 'Identifiers' ownership altered.");
     await queryInterface.sequelize.query(`
-    CREATE INDEX IF NOT EXISTS "Identifiers_identifier_accountSid" ON public."Identifiers" USING btree
+    CREATE UNIQUE INDEX IF NOT EXISTS "Identifiers_identifier_accountSid" ON public."Identifiers" USING btree
       ("identifier" ASC NULLS LAST, "accountSid" COLLATE pg_catalog."default" ASC NULLS LAST)
     `);
     console.log("Index 'Identifiers_identifier_accountSid' created.");
@@ -241,7 +241,7 @@ module.exports = {
       ALTER TABLE IF EXISTS public."Contacts" ADD COLUMN IF NOT EXISTS "profileId" integer;
 
       ALTER TABLE IF EXISTS public."Contacts" ADD CONSTRAINT "Contacts_profileId_Profiles_id_fk"
-      FOREIGN KEY ("profileId", "accountSid") REFERENCES public."Profiles" (id, "accountSid") MATCH SIMPLE ON UPDATE CASCADE ON DELETE SET NULL;
+      FOREIGN KEY ("profileId", "accountSid") REFERENCES public."Profiles" (id, "accountSid") MATCH SIMPLE ON UPDATE CASCADE ON DELETE NO ACTION;
       
       CREATE INDEX IF NOT EXISTS "Contacts_profileId_accountSid" ON public."Contacts" USING btree
       ("profileId" ASC NULLS LAST, "accountSid" COLLATE pg_catalog."default" ASC NULLS LAST);
@@ -249,7 +249,7 @@ module.exports = {
       ALTER TABLE IF EXISTS public."Contacts" ADD COLUMN IF NOT EXISTS "identifierId" integer;
       
       ALTER TABLE IF EXISTS public."Contacts" ADD CONSTRAINT "Contacts_identifierId_Identifiers_id_fk" 
-      FOREIGN KEY ("identifierId", "accountSid") REFERENCES public."Identifiers" (id, "accountSid") MATCH SIMPLE ON UPDATE CASCADE ON DELETE SET NULL;
+      FOREIGN KEY ("identifierId", "accountSid") REFERENCES public."Identifiers" (id, "accountSid") MATCH SIMPLE ON UPDATE CASCADE ON DELETE NO ACTION;
 
       CREATE INDEX IF NOT EXISTS "Contacts_identifierId_accountSid" ON public."Contacts" USING btree
       ("identifierId" ASC NULLS LAST, "accountSid" COLLATE pg_catalog."default" ASC NULLS LAST)
