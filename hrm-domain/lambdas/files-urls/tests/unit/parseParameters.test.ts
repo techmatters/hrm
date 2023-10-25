@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 import type { ALBEvent } from 'aws-lambda';
-import { newOk, newErr, isErr } from '@tech-matters/types';
+import { isErr } from '@tech-matters/types';
 import { parseParameters, ERROR_MESSAGES } from '../../parseParameters';
 import { mockPathParameters, mockQueryStringParameters, newAlbEvent } from '../__mocks__';
 
