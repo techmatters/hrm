@@ -22,6 +22,10 @@ import {
   insertProfileSql,
   associateProfileToIdentifierSql,
 } from './sql/profile-insert-sql';
+import {
+  associateProfileToProfileFlagSql,
+  disassociateProfileFromProfileFlagSql,
+} from './sql/profile-flags-sql';
 import { txIfNotInOne } from '../sql';
 import { getProfileByIdSql, joinProfilesIdentifiersSql } from './sql/profile-get-sql';
 
@@ -166,11 +170,60 @@ export const createIdentifierAndProfile =
     }
   };
 
-export const getProfileById = async (
-  accountSid: string,
-  profileId: number,
-): Promise<ProfileWithRelationships> => {
-  return txIfNotInOne<ProfileWithRelationships>(undefined, async t => {
-    return t.oneOrNone(getProfileByIdSql, { accountSid, profileId });
-  });
-};
+export const getProfileById =
+  (task?) =>
+  async (accountSid: string, profileId: number): Promise<ProfileWithRelationships> => {
+    return txIfNotInOne<ProfileWithRelationships>(task, async t => {
+      return t.oneOrNone(getProfileByIdSql, { accountSid, profileId });
+    });
+  };
+
+export const associateProfileToProfileFlag =
+  (task?) =>
+  async (
+    accountSid: string,
+    profileId: number,
+    profileFlagId: number,
+  ): Promise<TResult<null>> => {
+    try {
+      return await txIfNotInOne<TResult<null>>(task, async t => {
+        await t.none(
+          associateProfileToProfileFlagSql({
+            accountSid,
+            profileId,
+            profileFlagId,
+          }),
+        );
+
+        return null;
+      });
+    } catch (err) {
+      return newErr({
+        message: err instanceof Error ? err.message : String(err),
+      });
+    }
+  };
+
+export const disassociateProfileFromProfileFlag =
+  (task?) =>
+  async (
+    accountSid: string,
+    profileId: number,
+    profileFlagId: number,
+  ): Promise<TResult<null>> => {
+    try {
+      return await txIfNotInOne<TResult<null>>(task, async t => {
+        await t.none(disassociateProfileFromProfileFlagSql, {
+          accountSid,
+          profileId,
+          profileFlagId,
+        });
+
+        return null;
+      });
+    } catch (err) {
+      return newErr({
+        message: err instanceof Error ? err.message : String(err),
+      });
+    }
+  };

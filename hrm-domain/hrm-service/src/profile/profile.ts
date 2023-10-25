@@ -15,36 +15,42 @@
  */
 
 import { TResult, isErr, newErr, newOk } from '@tech-matters/types';
+
 import {
   Identifier,
   IdentifierWithProfiles,
   Profile,
   ProfileWithRelationships,
+  associateProfileToProfileFlag as associateProfileToProfileFlagDAL,
   createIdentifierAndProfile,
+  disassociateProfileFromProfileFlag as disassociateProfileFromProfileFlagDAL,
   getIdentifierWithProfiles,
   getProfileById,
 } from './profile-data-access';
+import { txIfNotInOne } from '../sql';
 
 export { Identifier, Profile, getIdentifierWithProfiles };
 
-export const getProfile = async (
-  accountSid: string,
-  profileId: Profile['id'],
-): Promise<TResult<ProfileWithRelationships>> => {
-  try {
-    const result = await getProfileById(accountSid, profileId);
+export const getProfile =
+  (task?) =>
+  async (
+    accountSid: string,
+    profileId: Profile['id'],
+  ): Promise<TResult<ProfileWithRelationships>> => {
+    try {
+      const result = await getProfileById(task)(accountSid, profileId);
 
-    if (!result) {
-      return newErr({ statusCode: 404, message: 'Profile not found' });
+      if (!result) {
+        return newErr({ statusCode: 404, message: 'Profile not found' });
+      }
+
+      return newOk({ data: result });
+    } catch (err) {
+      return newErr({
+        message: err instanceof Error ? err.message : String(err),
+      });
     }
-
-    return newOk({ data: result });
-  } catch (err) {
-    return newErr({
-      message: err instanceof Error ? err.message : String(err),
-    });
-  }
-};
+  };
 
 export const getOrCreateProfileWithIdentifier =
   (task?) =>
@@ -76,7 +82,7 @@ export const getOrCreateProfileWithIdentifier =
     }
   };
 
-export const getProfilesByIdentifier = async (
+export const getIdentifierByIdentifier = async (
   accountSid: string,
   identifier: string,
 ): Promise<TResult<IdentifierWithProfiles>> => {
@@ -94,3 +100,49 @@ export const getProfilesByIdentifier = async (
     });
   }
 };
+
+export const associateProfileToProfileFlag =
+  (task?) =>
+  async (
+    accountSid: string,
+    profileId: Profile['id'],
+    profileFlagId: number,
+  ): Promise<TResult<ProfileWithRelationships>> => {
+    try {
+      return await txIfNotInOne<TResult<ProfileWithRelationships>>(task, async t => {
+        await associateProfileToProfileFlagDAL(t)(accountSid, profileId, profileFlagId);
+        const profile = await getProfileById(task)(accountSid, profileId);
+
+        return newOk({ data: profile });
+      });
+    } catch (err) {
+      return newErr({
+        message: err instanceof Error ? err.message : String(err),
+      });
+    }
+  };
+
+export const disassociateProfileFromProfileFlag =
+  (task?) =>
+  async (
+    accountSid: string,
+    profileId: Profile['id'],
+    profileFlagId: number,
+  ): Promise<TResult<ProfileWithRelationships>> => {
+    try {
+      return await txIfNotInOne<TResult<ProfileWithRelationships>>(task, async t => {
+        await disassociateProfileFromProfileFlagDAL(t)(
+          accountSid,
+          profileId,
+          profileFlagId,
+        );
+        const profile = await getProfileById(task)(accountSid, profileId);
+
+        return newOk({ data: profile });
+      });
+    } catch (err) {
+      return newErr({
+        message: err instanceof Error ? err.message : String(err),
+      });
+    }
+  };
