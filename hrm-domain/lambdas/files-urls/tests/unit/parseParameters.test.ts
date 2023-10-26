@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 import type { ALBEvent } from 'aws-lambda';
-import { newOk, newErr } from '@tech-matters/types';
+import { isErr } from '@tech-matters/types';
 import { parseParameters, ERROR_MESSAGES } from '../../parseParameters';
 import { mockPathParameters, mockQueryStringParameters, newAlbEvent } from '../__mocks__';
 
@@ -24,10 +24,9 @@ describe('parseParameters', () => {
       queryStringParameters: {},
     } as ALBEvent;
     const result = await parseParameters(event);
-    expect(result).toEqual(
-      newErr({
-        message: ERROR_MESSAGES.MISSING_REQUIRED_QUERY_STRING_PARAMETERS,
-      }),
+    expect(isErr(result)).toBeTruthy();
+    expect((result as any).message).toEqual(
+      ERROR_MESSAGES.MISSING_REQUIRED_QUERY_STRING_PARAMETERS,
     );
   });
 
@@ -39,11 +38,8 @@ describe('parseParameters', () => {
       },
     });
     const result = await parseParameters(event);
-    expect(result).toEqual(
-      newErr({
-        message: ERROR_MESSAGES.INVALID_METHOD,
-      }),
-    );
+    expect(isErr(result)).toBeTruthy();
+    expect((result as any).message).toEqual(ERROR_MESSAGES.INVALID_METHOD);
   });
 
   it('should return a 500 error for invalid fileType', async () => {
@@ -54,11 +50,8 @@ describe('parseParameters', () => {
       },
     });
     const result = await parseParameters(event);
-    expect(result).toEqual(
-      newErr({
-        message: ERROR_MESSAGES.INVALID_FILE_TYPE,
-      }),
-    );
+    expect(isErr(result)).toBeTruthy();
+    expect((result as any).message).toEqual(ERROR_MESSAGES.INVALID_FILE_TYPE);
   });
 
   it('should return a 500 error for missing required parameters for fileType', async () => {
@@ -71,10 +64,9 @@ describe('parseParameters', () => {
       },
     });
     const result = await parseParameters(event);
-    expect(result).toEqual(
-      newErr({
-        message: ERROR_MESSAGES.MISSING_REQUIRED_PARAMETERS_FOR_FILE_TYPE,
-      }),
+    expect(isErr(result)).toBeTruthy();
+    expect((result as any).message).toEqual(
+      ERROR_MESSAGES.MISSING_REQUIRED_PARAMETERS_FOR_FILE_TYPE,
     );
   });
 
@@ -83,13 +75,10 @@ describe('parseParameters', () => {
       queryStringParameters: mockQueryStringParameters,
     });
     const result = await parseParameters(event);
-    expect(result).toEqual(
-      newOk({
-        data: {
-          ...mockQueryStringParameters,
-          ...mockPathParameters,
-        },
-      }),
-    );
+    expect(isErr(result)).toBeFalsy();
+    expect(result.unwrap()).toEqual({
+      ...mockQueryStringParameters,
+      ...mockPathParameters,
+    });
   });
 });

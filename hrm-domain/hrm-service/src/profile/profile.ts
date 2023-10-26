@@ -23,6 +23,7 @@ import {
   createIdentifierAndProfile,
   getIdentifierWithProfiles,
   getProfileById,
+  getProfileFlagsForAccount,
 } from './profile-data-access';
 
 export { Identifier, Profile, getIdentifierWithProfiles };
@@ -94,3 +95,5 @@ export const getProfilesByIdentifier = async (
     });
   }
 };
+
+export const getProfileFlags = getProfileFlagsForAccount;

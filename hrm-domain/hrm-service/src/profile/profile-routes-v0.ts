@@ -18,7 +18,7 @@ import { isErr } from '@tech-matters/types';
 import createError from 'http-errors';
 
 import { SafeRouter, publicEndpoint } from '../permissions';
-import { getProfilesByIdentifier, getProfile } from './profile';
+import { getProfilesByIdentifier, getProfile, getProfileFlags } from './profile';
 import { getContactsByProfileId } from '../contact/contact';
 import { getCasesByProfileId } from '../case/case';
 
@@ -87,6 +87,26 @@ profilesRouter.get('/:profileId/cases', publicEndpoint, async (req, res, next) =
   }
 });
 
+profilesRouter.get('/profileFlags', publicEndpoint, async (req, res, next) => {
+  try {
+    const { accountSid } = req;
+
+    console.log('accountSid', accountSid);
+
+    const result = await getProfileFlags(accountSid);
+
+    if (isErr(result)) {
+      return next(createError(result.statusCode, result.message));
+    }
+
+    res.json(result.data);
+  } catch (err) {
+    console.error(err);
+    return next(createError(500, err.message));
+  }
+});
+
+// WARNING: this endpoint must be the last one in this router, because it will be used if none of the above regex matches the path
 profilesRouter.get('/:profileId', publicEndpoint, async (req, res, next) => {
   try {
     const { accountSid } = req;
