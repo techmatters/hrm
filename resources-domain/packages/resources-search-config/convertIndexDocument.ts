@@ -18,6 +18,7 @@ import { FlatResource, ReferrableResourceAttribute } from '@tech-matters/types';
 import { CreateIndexConvertedDocument } from '@tech-matters/elasticsearch-client';
 import {
   isHighBoostGlobalField,
+  isLowBoostGlobalField,
   getMappingFields,
   resourceIndexDocumentMappings,
   FieldAndMapping,
@@ -31,11 +32,40 @@ export const convertIndexDocument = (
   const highBoostGlobal: string[] = [];
   const lowBoostGlobal: string[] = [];
 
-  const pushToCorrectGlobalBoostField = (key: string, value: string) => {
+  const isStringOrStringArray = (value: any): value is string | string[] =>
+    typeof value === 'string' ||
+    (Array.isArray(value) && value.every(item => typeof item === 'string'));
+
+  /**
+   * There are 3 possible scenarios for a given key/attribute pair:
+   * 1. Push the value to the high boost global fields
+   *  - If the key is marked as a high boost global field;
+   *
+   * 2. Push the value to the low boost global fields
+   *  - If the key is not marked as a high boost global field and is not a mapped field;
+   *
+   * 3. Do not push the value to any global fields
+   *  - If the key is not a high boost global field but is a mapped field;
+   *  - Or if the value is not a string or string array. It doesn't make sense to boost a number or boolean;
+   */
+  const pushToCorrectGlobalBoostField = (key: string, attributeValue: any) => {
+    // Scenario 3: value is not a string or string array
+    if (!isStringOrStringArray(attributeValue)) return;
+
+    const value = Array.isArray(attributeValue)
+      ? attributeValue.join(' ')
+      : attributeValue;
+
+    // Scenario 1: key is marked as a high boost global field
     if (isHighBoostGlobalField(resourceIndexDocumentMappings, key)) {
       highBoostGlobal.push(value);
-    } else {
+      return;
+    }
+
+    // Scenario 2: key is not marked as a high boost global field and is not a mapped field
+    if (isLowBoostGlobalField(resourceIndexDocumentMappings, key)) {
       lowBoostGlobal.push(value);
+      return;
     }
   };
 
@@ -65,17 +95,14 @@ export const convertIndexDocument = (
     attribute: ReferrableResourceAttribute<boolean | string | number>,
   ) => {
     const fieldAndMappings = getMappingFields(resourceIndexDocumentMappings, key);
-    if (fieldAndMappings.length > 0) {
+    if (fieldAndMappings && fieldAndMappings.length > 0) {
       for (const fieldAndMapping of fieldAndMappings) {
-        pushValueToMappedField(
-          fieldAndMapping,
-          fieldAndMapping.mapping.indexValueGenerator?.(attribute) ?? attribute.value,
-        );
+        const value =
+          fieldAndMapping.mapping.indexValueGenerator?.(attribute) ?? attribute.value;
+        pushValueToMappedField(fieldAndMapping, value);
+        pushToCorrectGlobalBoostField(fieldAndMapping.field, value);
       }
-      return;
-    }
-    // We don't really want booleans & numbers in the general purpose buckets
-    if (typeof attribute.value === 'string') {
+    } else {
       pushToCorrectGlobalBoostField(key, attribute.value);
     }
   };
