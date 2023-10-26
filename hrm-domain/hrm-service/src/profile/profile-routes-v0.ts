@@ -106,7 +106,8 @@ profilesRouter.get('/profileFlags', publicEndpoint, async (req, res, next) => {
   }
 });
 
-profilesRouter.get('/profile/:profileId', publicEndpoint, async (req, res, next) => {
+// WARNING: this endpoint must be the last one in this router, because it will be used if none of the above regex matches the path
+profilesRouter.get('/:profileId', publicEndpoint, async (req, res, next) => {
   try {
     const { accountSid } = req;
     const { profileId } = req.params;
