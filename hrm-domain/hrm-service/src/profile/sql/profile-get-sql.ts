@@ -22,11 +22,6 @@ const WHERE_IDENTIFIER_CLAUSE = `
   )
 `;
 
-// export const lookupIdentifierSql = `
-//   SELECT * FROM "Identifiers"
-//   ${WHERE_IDENTIFIER_CLAUSE}
-// `;
-
 export const getProfileByIdSql = `
   WITH RelatedIdentifiers AS (
     SELECT

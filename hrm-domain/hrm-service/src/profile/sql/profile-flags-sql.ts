@@ -16,6 +16,30 @@
 
 import { pgp } from '../../connection-pool';
 
+export type NewProfileFlagRecord = {
+  name: string;
+};
+
+export const insertProfileFlagSql = (
+  profileFlag: NewProfileFlagRecord & {
+    accountSid: string;
+    createdAt: Date;
+    updatedAt: Date;
+  },
+) => `
+  ${pgp.helpers.insert(
+    profileFlag,
+    ['accountSid', 'name', 'createdAt', 'updatedAt'],
+    'ProfileFlags',
+  )}
+  RETURNING *
+`;
+
+export const getProfileFlagsByAccountSql = `
+  SELECT * FROM "ProfileFlags"
+  WHERE "accountSid" = $<accountSid> OR "accountSid" IS NULL
+`;
+
 type AssociateProfileToProfileFlagParams = {
   accountSid: string;
   profileId: number;

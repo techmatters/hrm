@@ -26,8 +26,8 @@ import {
   createIdentifierAndProfile,
   getIdentifierWithProfiles,
   getProfileById,
+  getProfileFlagsForAccount,
 } from './profile-data-access';
-import { txIfNotInOne } from '../sql';
 import { db } from '../connection-pool';
 
 export { Identifier, Profile, getIdentifierWithProfiles };
@@ -143,3 +143,5 @@ export const disassociateProfileFromProfileFlag = async (
     });
   }
 };
+
+export const getProfileFlags = getProfileFlagsForAccount;

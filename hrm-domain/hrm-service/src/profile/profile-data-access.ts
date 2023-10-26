@@ -23,11 +23,15 @@ import {
   associateProfileToIdentifierSql,
 } from './sql/profile-insert-sql';
 import {
+  NewProfileFlagRecord,
   associateProfileToProfileFlagSql,
   disassociateProfileFromProfileFlagSql,
+  getProfileFlagsByAccountSql,
+  insertProfileFlagSql,
 } from './sql/profile-flags-sql';
 import { txIfNotInOne } from '../sql';
 import { getProfileByIdSql, joinProfilesIdentifiersSql } from './sql/profile-get-sql';
+import { db } from '../connection-pool';
 
 type RecordCommons = {
   id: number;
@@ -227,3 +231,46 @@ export const disassociateProfileFromProfileFlag =
       });
     }
   };
+
+export type ProfileFlag = NewProfileFlagRecord & RecordCommons;
+
+export const getProfileFlagsForAccount = async (
+  accountSid: string,
+): Promise<TResult<ProfileFlag[]>> => {
+  try {
+    return await db
+      .task<ProfileFlag[]>(async t =>
+        t.manyOrNone(getProfileFlagsByAccountSql, { accountSid }),
+      )
+      .then(data => newOk({ data }));
+  } catch (err) {
+    console.error(err);
+    return newErr({
+      message: err instanceof Error ? err.message : String(err),
+    });
+  }
+};
+
+export const createProfileFlag = async (
+  accountSid: string,
+  payload: NewProfileFlagRecord,
+): Promise<TResult<ProfileFlag>> => {
+  try {
+    const now = new Date();
+    const statement = insertProfileFlagSql({
+      name: payload.name,
+      createdAt: now,
+      updatedAt: now,
+      accountSid,
+    });
+
+    return await db
+      .task<ProfileFlag>(async t => t.one(statement))
+      .then(data => newOk({ data }));
+  } catch (err) {
+    console.error(err);
+    return newErr({
+      message: err instanceof Error ? err.message : String(err),
+    });
+  }
+};

@@ -18,6 +18,7 @@ import './case-validation';
 import { db } from '../src/connection-pool';
 import * as caseApi from '../src/case/case';
 import * as contactApi from '../src/contact/contact';
+import * as profilesDB from '../src/profile/profile-data-access';
 import { getRequest, getServer, headers, useOpenRules } from './server';
 import * as mocks from './mocks';
 import { mockSuccessfulTwilioAuthentication, mockingProxy } from '@tech-matters/testing';
@@ -320,6 +321,57 @@ describe('/profiles route', () => {
               connectedContacts: rest.connectedContacts?.sort(sortById),
             }))
             .sort(sortById),
+        );
+      });
+    });
+  });
+
+  describe('/profileFlags', () => {
+    const defaultFlags = ['abusive', 'blocked'];
+
+    describe('GET', () => {
+      const route = `${baseRoute}/profileFlags`;
+
+      test('when no custom flags are added, return default flags', async () => {
+        const response = await request.get(route).set(headers);
+        expect(response.statusCode).toBe(200);
+        // We know that there are two "default" flags that every account has: "abusive" and "blocked"
+        expect(response.body).toHaveLength(defaultFlags.length);
+        defaultFlags.forEach(flag => {
+          expect(response.body.find(f => f.name === flag)).toBeDefined();
+        });
+      });
+
+      test('when custom flags are added, return default and custom flags', async () => {
+        const customFlag = (
+          await profilesDB.createProfileFlag(accountSid, {
+            name: 'custom',
+          })
+        ).unwrap();
+
+        const customFlagForAnother = (
+          await profilesDB.createProfileFlag('ANOTHER_ACCOUNT', {
+            name: 'custom 2',
+          })
+        ).unwrap();
+
+        const response = await request.get(route).set(headers);
+        expect(response.statusCode).toBe(200);
+        // We know that there are two "default" flags that every account has: "abusive" and "blocked"
+        expect(response.body).toHaveLength(defaultFlags.length + 1);
+        defaultFlags.forEach(flag => {
+          expect(response.body.find(f => f.name === flag)).toBeDefined();
+        });
+
+        expect(response.body.find(f => f.name === customFlag.name)).toBeDefined();
+        expect(
+          response.body.find(f => f.name === customFlagForAnother.name),
+        ).not.toBeDefined();
+
+        deleteFromTableById('ProfileFlags')(customFlag.id, customFlag.accountSid);
+        deleteFromTableById('ProfileFlags')(
+          customFlagForAnother.id,
+          customFlagForAnother.accountSid,
         );
       });
     });
