@@ -22,12 +22,13 @@ import {
   Profile,
   ProfileWithRelationships,
   associateProfileToProfileFlag as associateProfileToProfileFlagDAL,
-  createIdentifierAndProfile,
   disassociateProfileFromProfileFlag as disassociateProfileFromProfileFlagDAL,
+  createIdentifierAndProfile,
   getIdentifierWithProfiles,
   getProfileById,
 } from './profile-data-access';
 import { txIfNotInOne } from '../sql';
+import { db } from '../connection-pool';
 
 export { Identifier, Profile, getIdentifierWithProfiles };
 
@@ -101,48 +102,44 @@ export const getIdentifierByIdentifier = async (
   }
 };
 
-export const associateProfileToProfileFlag =
-  (task?) =>
-  async (
-    accountSid: string,
-    profileId: Profile['id'],
-    profileFlagId: number,
-  ): Promise<TResult<ProfileWithRelationships>> => {
-    try {
-      return await txIfNotInOne<TResult<ProfileWithRelationships>>(task, async t => {
-        await associateProfileToProfileFlagDAL(t)(accountSid, profileId, profileFlagId);
-        const profile = await getProfileById(task)(accountSid, profileId);
+export const associateProfileToProfileFlag = async (
+  accountSid: string,
+  profileId: Profile['id'],
+  profileFlagId: number,
+): Promise<TResult<ProfileWithRelationships>> => {
+  try {
+    return await db.task<TResult<ProfileWithRelationships>>(async t => {
+      await associateProfileToProfileFlagDAL(t)(accountSid, profileId, profileFlagId);
+      const profile = await getProfileById(t)(accountSid, profileId);
 
-        return newOk({ data: profile });
-      });
-    } catch (err) {
-      return newErr({
-        message: err instanceof Error ? err.message : String(err),
-      });
-    }
-  };
+      return newOk({ data: profile });
+    });
+  } catch (err) {
+    return newErr({
+      message: err instanceof Error ? err.message : String(err),
+    });
+  }
+};
 
-export const disassociateProfileFromProfileFlag =
-  (task?) =>
-  async (
-    accountSid: string,
-    profileId: Profile['id'],
-    profileFlagId: number,
-  ): Promise<TResult<ProfileWithRelationships>> => {
-    try {
-      return await txIfNotInOne<TResult<ProfileWithRelationships>>(task, async t => {
-        await disassociateProfileFromProfileFlagDAL(t)(
-          accountSid,
-          profileId,
-          profileFlagId,
-        );
-        const profile = await getProfileById(task)(accountSid, profileId);
+export const disassociateProfileFromProfileFlag = async (
+  accountSid: string,
+  profileId: Profile['id'],
+  profileFlagId: number,
+): Promise<TResult<ProfileWithRelationships>> => {
+  try {
+    return await db.task<TResult<ProfileWithRelationships>>(async t => {
+      await disassociateProfileFromProfileFlagDAL(t)(
+        accountSid,
+        profileId,
+        profileFlagId,
+      );
+      const profile = await getProfileById(t)(accountSid, profileId);
 
-        return newOk({ data: profile });
-      });
-    } catch (err) {
-      return newErr({
-        message: err instanceof Error ? err.message : String(err),
-      });
-    }
-  };
+      return newOk({ data: profile });
+    });
+  } catch (err) {
+    return newErr({
+      message: err instanceof Error ? err.message : String(err),
+    });
+  }
+};

@@ -119,7 +119,7 @@ profilesRouter.post(
       const { accountSid } = req;
       const { profileId, profileFlagId } = req.params;
 
-      const result = await profileController.associateProfileToProfileFlag()(
+      const result = await profileController.associateProfileToProfileFlag(
         accountSid,
         profileId,
         profileFlagId,
@@ -148,7 +148,7 @@ profilesRouter.delete(
       const { accountSid } = req;
       const { profileId, profileFlagId } = req.params;
 
-      const result = await profileController.disassociateProfileFromProfileFlag()(
+      const result = await profileController.disassociateProfileFromProfileFlag(
         accountSid,
         profileId,
         profileFlagId,

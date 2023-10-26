@@ -195,7 +195,7 @@ export const associateProfileToProfileFlag =
           }),
         );
 
-        return null;
+        return newOk({ data: null });
       });
     } catch (err) {
       return newErr({
@@ -219,7 +219,7 @@ export const disassociateProfileFromProfileFlag =
           profileFlagId,
         });
 
-        return null;
+        return newOk({ data: null });
       });
     } catch (err) {
       return newErr({
