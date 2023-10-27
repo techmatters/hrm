@@ -80,9 +80,10 @@ export const getOrCreateProfileWithIdentifier =
 export const getProfileContacts = async (
   accountSid: string,
   profileId: number,
+  query: any,
 ): Promise<TResult<ProfileWithRelationships>> => {
   try {
-    const contactsResult = await getProfileContactsDAL()(accountSid, profileId);
+    const contactsResult = await getProfileContactsDAL()(accountSid, profileId, query);
 
     if (isErr(contactsResult)) {
       return contactsResult;

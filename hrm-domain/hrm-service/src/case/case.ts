@@ -44,7 +44,7 @@ import {
 } from '../contact/contact';
 import type { SearchPermissions } from '../permissions/search-permissions';
 import type { Profile } from '../profile/profile-data-access';
-import type { PaginationQuery } from '../search';
+import type { PaginationQuery } from '../sql';
 import { TResult, newErr, newOk } from '@tech-matters/types';
 
 type CaseInfoSection = {

@@ -19,7 +19,6 @@ import createError from 'http-errors';
 
 import { SafeRouter, publicEndpoint } from '../permissions';
 import { getProfileContacts, getProfilesByIdentifier, getProfile } from './profile';
-import { getContactsByProfileId } from '../contact/contact';
 import { getCasesByProfileId } from '../case/case';
 
 const profilesRouter = SafeRouter();
@@ -56,7 +55,7 @@ profilesRouter.get('/:profileId/contacts', publicEndpoint, async (req, res, next
     //   searchPermissions: req.searchPermissions,
     // });
 
-    const result = await getProfileContacts(accountSid, profileId);
+    const result = await getProfileContacts(accountSid, profileId, req.query);
 
     if (isErr(result)) {
       return next(createError(result.statusCode, result.message));

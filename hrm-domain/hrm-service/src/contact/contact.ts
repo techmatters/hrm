@@ -29,7 +29,7 @@ import {
   searchByProfileId,
 } from './contact-data-access';
 import { retrieveCategories } from './categories';
-import { PaginationQuery, getPaginationElements } from '../search';
+import { PaginationQuery, getPaginationElements } from '../sql';
 import type { NewContactRecord } from './sql/contact-insert-sql';
 import { ContactRawJson, ReferralWithoutContactId } from './contact-json';
 import { setupCanForRules } from '../permissions/setupCanForRules';

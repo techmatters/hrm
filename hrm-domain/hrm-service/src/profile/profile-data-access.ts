@@ -172,20 +172,32 @@ export const createIdentifierAndProfile =
 
 export const getProfileContacts =
   (task?) =>
-  async (accountSid: string, profileId: number): Promise<TResult<any>> => {
+  async (accountSid: string, profileId: number, query: any): Promise<TResult<any>> => {
     try {
       return await txIfNotInOne<TResult<any>>(task, async t => {
-        console.log('getProfileContactsSql', getProfileContactsSql);
-        const contacts = await t.any(getProfileContactsSql, { accountSid, profileId });
-
-        console.log('contacts', contacts);
-
-        return newOk({
-          data: {
-            contacts,
-            count: contacts.length,
-          },
+        console.log('getProfileContactsSql', getProfileContactsSql(query));
+        const results = await t.any(getProfileContactsSql(query), {
+          accountSid,
+          profileId,
         });
+
+        console.log('results', results);
+
+        if (results.length === 0) {
+          return newOk({ data: { contacts: [], totalCount: 0 } });
+        }
+
+        const totalCount = results[0].totalCount;
+        const contacts = results.map(result => {
+          const { totalCount, ...contact } = result;
+          return contact;
+        });
+
+        const data = { contacts, totalCount };
+
+        console.log('data', data);
+
+        return newOk({ data });
       });
     } catch (err) {
       console.dir(err);

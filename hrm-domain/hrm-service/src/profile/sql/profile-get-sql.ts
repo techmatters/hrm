@@ -19,6 +19,7 @@ import {
 } from '../../contact/sql/contact-get-sql';
 import * as constants from './constants';
 import * as contactConstants from '../../contact/sql/constants';
+import { getPaginationSql, PaginationQuery } from '../../sql';
 
 const WHERE_IDENTIFIER_CLAUSE = `
   WHERE "accountSid" = $<accountSid> AND
@@ -112,12 +113,16 @@ export const joinProfilesIdentifiersSql = `
   ) t;
 `;
 
-export const getProfileContactsSql = `
+export const getProfileContactsSql = (paginationQuery: PaginationQuery) => `
   SELECT
-      ${contactListPropertiesSql},
-      ${contactListRawJsonBuildObjectSql} as "rawJson"
-    FROM "${contactConstants.table}"
-    JOIN "${constants.table}"
-    ON "${contactConstants.table}"."${constants.foreignIdField}" = "${constants.table}"."id"
-    WHERE "${constants.table}"."accountSid" = $<accountSid> AND "${constants.table}"."id" = $<profileId>
+    ${contactListPropertiesSql},
+    ${contactListRawJsonBuildObjectSql} as "rawJson",
+    COUNT(*) OVER() as "totalCount"
+  FROM "${contactConstants.table}"
+  JOIN "${constants.table}"
+  ON "${contactConstants.table}"."${constants.foreignIdField}" = "${constants.table}"."id"
+  WHERE "${constants.table}"."accountSid" = $<accountSid> AND "${
+    constants.table
+  }"."id" = $<profileId>
+  ${getPaginationSql(paginationQuery)}
 `;

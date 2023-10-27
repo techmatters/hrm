@@ -13,8 +13,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-
-import { OrderByDirection } from './sql';
+export const ORDER_BY_DIRECTION = {
+  ascendingNullsLast: 'ASC NULLS LAST',
+  descendingNullsLast: 'DESC NULLS LAST',
+  ascending: 'ASC',
+  descending: 'DESC',
+} as const;
 
 export type PaginationQuery = {
   limit?: string;
@@ -33,8 +37,13 @@ export const getPaginationElements = (query: PaginationQuery) => {
   const sortBy = query.sortBy || 'id';
   const sortDirection =
     (query.sortDirection ?? 'desc').toLowerCase() === 'asc'
-      ? OrderByDirection.ascendingNullsLast
-      : OrderByDirection.descendingNullsLast;
+      ? ORDER_BY_DIRECTION.ascendingNullsLast
+      : ORDER_BY_DIRECTION.descendingNullsLast;
 
   return { limit, offset, sortBy, sortDirection };
+};
+
+export const getPaginationSql = (query: PaginationQuery) => {
+  const { limit, offset, sortBy, sortDirection } = getPaginationElements(query);
+  return `ORDER BY ${sortBy} ${sortDirection} LIMIT ${limit} OFFSET ${offset}`;
 };

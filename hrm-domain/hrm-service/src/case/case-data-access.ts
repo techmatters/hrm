@@ -15,7 +15,7 @@
  */
 
 import { db, pgp } from '../connection-pool';
-import { getPaginationElements } from '../search';
+import { getPaginationElements } from '../sql';
 import { updateByIdSql } from './sql/case-update-sql';
 import {
   OrderByColumnType,
