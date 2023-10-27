@@ -17,13 +17,27 @@
 import { selectCoalesceConversationMediasByContactId } from '../../conversation-media/sql/conversation-media-get-sql';
 import { selectCoalesceCsamReportsByContactId } from '../../csam-report/sql/csam-report-get-sql';
 import { selectCoalesceReferralsByContactId } from '../../referral/sql/referral-get-sql';
+import * as sql from '../../sql';
+import * as constants from './constants';
 
 const ID_WHERE_CLAUSE = `WHERE c."accountSid" = $<accountSid> AND c."id" = $<contactId>`;
 const TASKID_WHERE_CLAUSE = `WHERE c."accountSid" = $<accountSid> AND c."taskId" = $<taskId>`;
 
+console.log(sql);
+
+export const contactListPropertiesSql = sql.fieldListToSql(
+  constants.table,
+  constants.listProperties,
+);
+export const contactListRawJsonBuildObjectSql = sql.objectNotationToBuildObjectSql(
+  constants.table,
+  'rawJson',
+  constants.listRawJsonProperties,
+);
+
 export const selectContactsWithRelations = (table: string) => `
         SELECT c.*, reports."csamReports", joinedReferrals."referrals", media."conversationMedia"
-        FROM "${table}" c 
+        FROM "${table}" c
         LEFT JOIN LATERAL (
           ${selectCoalesceCsamReportsByContactId('c')}
         ) reports ON true
@@ -38,6 +52,6 @@ export const selectSingleContactByIdSql = (table: string) => `
       ${selectContactsWithRelations(table)}
       ${ID_WHERE_CLAUSE}`;
 
-export const selectSingleContactByTaskId = (table: string) => ` 
+export const selectSingleContactByTaskId = (table: string) => `
       ${selectContactsWithRelations(table)}
       ${TASKID_WHERE_CLAUSE}`;

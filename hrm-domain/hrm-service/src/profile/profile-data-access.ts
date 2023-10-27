@@ -23,7 +23,11 @@ import {
   associateProfileToIdentifierSql,
 } from './sql/profile-insert-sql';
 import { txIfNotInOne } from '../sql';
-import { getProfileByIdSql, joinProfilesIdentifiersSql } from './sql/profile-get-sql';
+import {
+  getProfileByIdSql,
+  getProfileContactsSql,
+  joinProfilesIdentifiersSql,
+} from './sql/profile-get-sql';
 
 type RecordCommons = {
   id: number;
@@ -160,6 +164,31 @@ export const createIdentifierAndProfile =
         );
       });
     } catch (err) {
+      return newErr({
+        message: err instanceof Error ? err.message : String(err),
+      });
+    }
+  };
+
+export const getProfileContacts =
+  (task?) =>
+  async (accountSid: string, profileId: number): Promise<TResult<any>> => {
+    try {
+      return await txIfNotInOne<TResult<any>>(task, async t => {
+        console.log('getProfileContactsSql', getProfileContactsSql);
+        const contacts = await t.any(getProfileContactsSql, { accountSid, profileId });
+
+        console.log('contacts', contacts);
+
+        return newOk({
+          data: {
+            contacts,
+            count: contacts.length,
+          },
+        });
+      });
+    } catch (err) {
+      console.dir(err);
       return newErr({
         message: err instanceof Error ? err.message : String(err),
       });

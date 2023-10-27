@@ -23,6 +23,7 @@ import {
   createIdentifierAndProfile,
   getIdentifierWithProfiles,
   getProfileById,
+  getProfileContacts as getProfileContactsDAL,
 } from './profile-data-access';
 
 export { Identifier, Profile, getIdentifierWithProfiles };
@@ -75,6 +76,25 @@ export const getOrCreateProfileWithIdentifier =
       });
     }
   };
+
+export const getProfileContacts = async (
+  accountSid: string,
+  profileId: number,
+): Promise<TResult<ProfileWithRelationships>> => {
+  try {
+    const contactsResult = await getProfileContactsDAL()(accountSid, profileId);
+
+    if (isErr(contactsResult)) {
+      return contactsResult;
+    }
+
+    return newOk({ data: contactsResult.data });
+  } catch (err) {
+    return newErr({
+      message: err instanceof Error ? err.message : String(err),
+    });
+  }
+};
 
 export const getProfilesByIdentifier = async (
   accountSid: string,

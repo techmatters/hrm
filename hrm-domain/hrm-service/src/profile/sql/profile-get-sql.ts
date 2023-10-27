@@ -13,6 +13,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
+import {
+  contactListPropertiesSql,
+  contactListRawJsonBuildObjectSql,
+} from '../../contact/sql/contact-get-sql';
+import * as constants from './constants';
+import * as contactConstants from '../../contact/sql/constants';
+
 const WHERE_IDENTIFIER_CLAUSE = `
   WHERE "accountSid" = $<accountSid> AND
   (
@@ -30,7 +37,7 @@ const WHERE_IDENTIFIER_CLAUSE = `
 export const getProfileByIdSql = `
   WITH RelatedIdentifiers AS (
     SELECT
-        p2i."profileId",
+        p2i."${constants.foreignIdField}",
         JSON_AGG(
             JSON_BUILD_OBJECT(
                 'id', identifiers.id,
@@ -39,18 +46,18 @@ export const getProfileByIdSql = `
         ) FILTER (WHERE identifiers.id IS NOT NULL) as identifiers
     FROM "ProfilesToIdentifiers" p2i
     JOIN "Identifiers" identifiers ON identifiers.id = p2i."identifierId"
-    WHERE p2i."profileId" = $<profileId>
-    GROUP BY p2i."profileId"
+    WHERE p2i."${constants.foreignIdField}" = $<profileId>
+    GROUP BY p2i."${constants.foreignIdField}"
   ),
 
   ContactCaseCounts AS (
     SELECT
-        "Contacts"."profileId",
+        "${contactConstants.table}"."${constants.foreignIdField}",
         COUNT(*) as "contactsCount",
-        COUNT(DISTINCT "Contacts"."caseId") as "casesCount"
-    FROM "Contacts"
-    WHERE "Contacts"."profileId" = $<profileId>
-    GROUP BY "Contacts"."profileId"
+        COUNT(DISTINCT "${contactConstants.table}"."caseId") as "casesCount"
+    FROM "${contactConstants.table}"
+    WHERE "${contactConstants.table}"."${constants.foreignIdField}" = $<profileId>
+    GROUP BY "${contactConstants.table}"."${constants.foreignIdField}"
   )
 
   SELECT
@@ -58,9 +65,9 @@ export const getProfileByIdSql = `
     COALESCE(ri.identifiers, '[]'::json) as identifiers,
     COALESCE(ccc."contactsCount", 0) as "contactsCount",
     COALESCE(ccc."casesCount", 0) as "casesCount"
-  FROM "Profiles" profiles
-  LEFT JOIN RelatedIdentifiers ri ON profiles.id = ri."profileId"
-  LEFT JOIN ContactCaseCounts ccc ON profiles.id = ccc."profileId"
+  FROM "${constants.table}" profiles
+  LEFT JOIN RelatedIdentifiers ri ON profiles.id = ri."${constants.foreignIdField}"
+  LEFT JOIN ContactCaseCounts ccc ON profiles.id = ccc."${constants.foreignIdField}"
   WHERE profiles."accountSid" = $<accountSid> AND profiles."id" = $<profileId>
 `;
 
@@ -77,18 +84,18 @@ export const joinProfilesIdentifiersSql = `
             )
         ) FILTER (WHERE profiles.id IS NOT NULL) as profiles_data
     FROM "ProfilesToIdentifiers" p2i
-    LEFT JOIN "Profiles" profiles ON profiles.id = p2i."profileId" AND profiles."accountSid" = p2i."accountSid"
+    LEFT JOIN "${constants.table}" profiles ON profiles.id = p2i."${constants.foreignIdField}" AND profiles."accountSid" = p2i."accountSid"
     LEFT JOIN (
-        SELECT "Contacts"."profileId", COUNT(*) as count
-        FROM "Contacts"
-        GROUP BY "Contacts"."profileId"
-    ) AS contactsCounts ON profiles.id = contactsCounts."profileId"
+        SELECT "${contactConstants.table}"."${constants.foreignIdField}", COUNT(*) as count
+        FROM "${contactConstants.table}"
+        GROUP BY "${contactConstants.table}"."${constants.foreignIdField}"
+    ) AS contactsCounts ON profiles.id = contactsCounts."${constants.foreignIdField}"
     LEFT JOIN (
-        SELECT "Contacts"."profileId", COUNT(DISTINCT "Contacts"."caseId") as count
-        FROM "Contacts"
-        WHERE "Contacts"."caseId" IS NOT NULL
-        GROUP BY "Contacts"."profileId"
-    ) AS casesCounts ON profiles.id = casesCounts."profileId"
+        SELECT "${contactConstants.table}"."${constants.foreignIdField}", COUNT(DISTINCT "${contactConstants.table}"."caseId") as count
+        FROM "${contactConstants.table}"
+        WHERE "${contactConstants.table}"."caseId" IS NOT NULL
+        GROUP BY "${contactConstants.table}"."${constants.foreignIdField}"
+    ) AS casesCounts ON profiles.id = casesCounts."${constants.foreignIdField}"
     GROUP BY p2i."identifierId"
   )
 
@@ -103,4 +110,14 @@ export const joinProfilesIdentifiersSql = `
     ${WHERE_IDENTIFIER_CLAUSE}
     LIMIT 1
   ) t;
+`;
+
+export const getProfileContactsSql = `
+  SELECT
+      ${contactListPropertiesSql},
+      ${contactListRawJsonBuildObjectSql} as "rawJson"
+    FROM "${contactConstants.table}"
+    JOIN "${constants.table}"
+    ON "${contactConstants.table}"."${constants.foreignIdField}" = "${constants.table}"."id"
+    WHERE "${constants.table}"."accountSid" = $<accountSid> AND "${constants.table}"."id" = $<profileId>
 `;

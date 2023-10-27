@@ -13,15 +13,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { ITask } from 'pg-promise';
-import { db } from './connection-pool';
-
-export const OrderByDirection = {
-  ascendingNullsLast: 'ASC NULLS LAST',
-  descendingNullsLast: 'DESC NULLS LAST',
-  ascending: 'ASC',
-  descending: 'DESC',
-} as const;
 
 export class DatabaseError extends Error {
   cause: Error;
@@ -82,14 +73,4 @@ export const inferPostgresError = (rawError: Error): DatabaseError => {
     default:
       return new DatabaseError(rawError);
   }
-};
-
-export const txIfNotInOne = async <T>(
-  task: ITask<T> | undefined,
-  work: (y: ITask<T>) => Promise<T>,
-): Promise<T> => {
-  if (task) {
-    return task.txIf(work);
-  }
-  return db.tx(work);
 };
