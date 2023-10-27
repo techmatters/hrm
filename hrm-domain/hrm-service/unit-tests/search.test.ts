@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { getPaginationElements } from '../src/search';
+import { getPaginationElements } from '../src/sql';
 
 describe('getPaginationElements()', () => {
   test('limit and offset', () => {
