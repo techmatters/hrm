@@ -175,27 +175,22 @@ export const getProfileContacts =
   async (accountSid: string, profileId: number, query: any): Promise<TResult<any>> => {
     try {
       return await txIfNotInOne<TResult<any>>(task, async t => {
-        console.log('getProfileContactsSql', getProfileContactsSql(query));
         const results = await t.any(getProfileContactsSql(query), {
           accountSid,
           profileId,
         });
 
-        console.log('results', results);
-
         if (results.length === 0) {
           return newOk({ data: { contacts: [], totalCount: 0 } });
         }
 
-        const totalCount = results[0].totalCount;
+        const count = results[0].totalCount;
         const contacts = results.map(result => {
           const { totalCount, ...contact } = result;
           return contact;
         });
 
-        const data = { contacts, totalCount };
-
-        console.log('data', data);
+        const data = { contacts, count };
 
         return newOk({ data });
       });
