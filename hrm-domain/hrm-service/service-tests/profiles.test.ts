@@ -356,6 +356,15 @@ describe('/profiles route', () => {
       });
 
       describe('POST', () => {
+        afterAll(async () => {
+          // Dissasociate
+          db.task(t =>
+            t.none(
+              `DELETE FROM "ProfilesToProfileFlags" WHERE "profileId" = ${createdProfile.profiles[0].id}`,
+            ),
+          );
+        });
+
         each([
           {
             description: 'auth is missing',
@@ -380,6 +389,10 @@ describe('/profiles route', () => {
               expect(response.body.profileFlags).toContain(profileFlagId);
             },
           },
+          {
+            description: 'association already exists',
+            expectStatus: 500,
+          },
         ]).test(
           'when $description, returns $expectStatus',
           async ({
@@ -397,13 +410,6 @@ describe('/profiles route', () => {
             if (expectFunction) {
               expectFunction(response, profileId, profileFlagId);
             }
-
-            // Dissasociate
-            db.task(t =>
-              t.none(
-                `DELETE FROM "ProfilesToProfileFlags" WHERE "profileId" = ${profileId}`,
-              ),
-            );
           },
         );
       });
