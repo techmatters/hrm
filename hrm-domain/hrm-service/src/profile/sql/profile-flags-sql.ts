@@ -16,16 +16,18 @@
 
 import { pgp } from '../../connection-pool';
 
+type NewRecordCommons = {
+  accountSid: string;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
 export type NewProfileFlagRecord = {
   name: string;
 };
 
 export const insertProfileFlagSql = (
-  profileFlag: NewProfileFlagRecord & {
-    accountSid: string;
-    createdAt: Date;
-    updatedAt: Date;
-  },
+  profileFlag: NewProfileFlagRecord & NewRecordCommons,
 ) => `
   ${pgp.helpers.insert(
     profileFlag,
@@ -41,18 +43,15 @@ export const getProfileFlagsByAccountSql = `
 `;
 
 type AssociateProfileToProfileFlagParams = {
-  accountSid: string;
   profileId: number;
   profileFlagId: number;
 };
-export const associateProfileToProfileFlagSql = ({
-  accountSid,
-  profileId,
-  profileFlagId,
-}: AssociateProfileToProfileFlagParams) => `
+export const associateProfileToProfileFlagSql = (
+  association: AssociateProfileToProfileFlagParams & NewRecordCommons,
+) => `
   ${pgp.helpers.insert(
-    { accountSid, profileId, profileFlagId },
-    ['accountSid', 'profileId', 'profileFlagId'],
+    association,
+    ['accountSid', 'profileId', 'profileFlagId', 'createdAt', 'updatedAt'],
     'ProfilesToProfileFlags',
   )}
 `;
