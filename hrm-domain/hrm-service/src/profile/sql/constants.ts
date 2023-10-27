@@ -13,6 +13,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
+import { Constants, initConstants } from '../../sql';
 
-export const table = 'Profiles' as const;
-export const foreignIdField = 'profileId' as const;
+const constantConfig = {
+  table: 'Profiles',
+  foreignIdField: 'profileId',
+  listProperties: ['id', 'name', 'description'],
+};
+
+export const constants: Constants = initConstants(constantConfig);

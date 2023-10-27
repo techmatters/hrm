@@ -17,4 +17,5 @@
 export * from './errors';
 export * from './listToSql';
 export * from './orderAndPaginate';
+export * from './initConstants';
 export * from './transactions';

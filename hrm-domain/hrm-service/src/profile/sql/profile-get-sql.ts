@@ -17,8 +17,8 @@ import {
   contactListPropertiesSql,
   contactListRawJsonBuildObjectSql,
 } from '../../contact/sql/contact-get-sql';
-import * as constants from './constants';
-import * as contactConstants from '../../contact/sql/constants';
+import { constants } from './constants';
+import { constants as contactConstants } from '../../contact/sql/constants';
 import { getPaginationSql, PaginationQuery } from '../../sql';
 
 const WHERE_IDENTIFIER_CLAUSE = `
@@ -38,7 +38,7 @@ const WHERE_IDENTIFIER_CLAUSE = `
 export const getProfileByIdSql = `
   WITH RelatedIdentifiers AS (
     SELECT
-        p2i."${constants.foreignIdField}",
+        p2i.${constants.foreignIdFieldSql},
         JSON_AGG(
             JSON_BUILD_OBJECT(
                 'id', identifiers.id,
@@ -47,18 +47,18 @@ export const getProfileByIdSql = `
         ) FILTER (WHERE identifiers.id IS NOT NULL) as identifiers
     FROM "ProfilesToIdentifiers" p2i
     JOIN "Identifiers" identifiers ON identifiers.id = p2i."identifierId"
-    WHERE p2i."${constants.foreignIdField}" = $<profileId>
-    GROUP BY p2i."${constants.foreignIdField}"
+    WHERE p2i.${constants.foreignIdFieldSql} = $<profileId>
+    GROUP BY p2i.${constants.foreignIdFieldSql}
   ),
 
   ContactCaseCounts AS (
     SELECT
-        "${contactConstants.table}"."${constants.foreignIdField}",
+        ${contactConstants.tableSql}.${constants.foreignIdFieldSql},
         COUNT(*) as "contactsCount",
-        COUNT(DISTINCT "${contactConstants.table}"."caseId") as "casesCount"
-    FROM "${contactConstants.table}"
-    WHERE "${contactConstants.table}"."${constants.foreignIdField}" = $<profileId>
-    GROUP BY "${contactConstants.table}"."${constants.foreignIdField}"
+        COUNT(DISTINCT ${contactConstants.tableSql}."caseId") as "casesCount"
+    FROM ${contactConstants.tableSql}
+    WHERE ${contactConstants.tableSql}.${constants.foreignIdFieldSql} = $<profileId>
+    GROUP BY ${contactConstants.tableSql}.${constants.foreignIdFieldSql}
   )
 
   SELECT
@@ -66,9 +66,9 @@ export const getProfileByIdSql = `
     COALESCE(ri.identifiers, '[]'::json) as identifiers,
     COALESCE(ccc."contactsCount", 0) as "contactsCount",
     COALESCE(ccc."casesCount", 0) as "casesCount"
-  FROM "${constants.table}" profiles
-  LEFT JOIN RelatedIdentifiers ri ON profiles.id = ri."${constants.foreignIdField}"
-  LEFT JOIN ContactCaseCounts ccc ON profiles.id = ccc."${constants.foreignIdField}"
+  FROM ${constants.tableSql} profiles
+  LEFT JOIN RelatedIdentifiers ri ON profiles.id = ri.${constants.foreignIdFieldSql}
+  LEFT JOIN ContactCaseCounts ccc ON profiles.id = ccc.${constants.foreignIdFieldSql}
   WHERE profiles."accountSid" = $<accountSid> AND profiles."id" = $<profileId>
 `;
 
@@ -85,18 +85,18 @@ export const joinProfilesIdentifiersSql = `
             )
         ) FILTER (WHERE profiles.id IS NOT NULL) as profiles_data
     FROM "ProfilesToIdentifiers" p2i
-    LEFT JOIN "${constants.table}" profiles ON profiles.id = p2i."${constants.foreignIdField}" AND profiles."accountSid" = p2i."accountSid"
+    LEFT JOIN ${constants.tableSql} profiles ON profiles.id = p2i.${constants.foreignIdFieldSql} AND profiles."accountSid" = p2i."accountSid"
     LEFT JOIN (
-        SELECT "${contactConstants.table}"."${constants.foreignIdField}", COUNT(*) as count
-        FROM "${contactConstants.table}"
-        GROUP BY "${contactConstants.table}"."${constants.foreignIdField}"
-    ) AS contactsCounts ON profiles.id = contactsCounts."${constants.foreignIdField}"
+        SELECT ${contactConstants.tableSql}.${constants.foreignIdFieldSql}, COUNT(*) as count
+        FROM ${contactConstants.tableSql}
+        GROUP BY ${contactConstants.tableSql}.${constants.foreignIdFieldSql}
+    ) AS contactsCounts ON profiles.id = contactsCounts.${constants.foreignIdFieldSql}
     LEFT JOIN (
-        SELECT "${contactConstants.table}"."${constants.foreignIdField}", COUNT(DISTINCT "${contactConstants.table}"."caseId") as count
-        FROM "${contactConstants.table}"
-        WHERE "${contactConstants.table}"."caseId" IS NOT NULL
-        GROUP BY "${contactConstants.table}"."${constants.foreignIdField}"
-    ) AS casesCounts ON profiles.id = casesCounts."${constants.foreignIdField}"
+        SELECT ${contactConstants.tableSql}.${constants.foreignIdFieldSql}, COUNT(DISTINCT ${contactConstants.tableSql}."caseId") as count
+        FROM ${contactConstants.tableSql}
+        WHERE ${contactConstants.tableSql}."caseId" IS NOT NULL
+        GROUP BY ${contactConstants.tableSql}.${constants.foreignIdFieldSql}
+    ) AS casesCounts ON profiles.id = casesCounts.${constants.foreignIdFieldSql}
     GROUP BY p2i."identifierId"
   )
 
@@ -118,10 +118,12 @@ export const getProfileContactsSql = (paginationQuery: PaginationQuery) => `
     ${contactListPropertiesSql},
     ${contactListRawJsonBuildObjectSql} as "rawJson",
     COUNT(*) OVER() as "totalCount"
-  FROM "${contactConstants.table}"
-  JOIN "${constants.table}"
-  ON "${contactConstants.table}"."${constants.foreignIdField}" = "${constants.table}"."id"
-  WHERE "${constants.table}"."accountSid" = $<accountSid> AND "${
+  FROM ${contactConstants.tableSql}
+  JOIN ${constants.tableSql}
+  ON ${contactConstants.tableSql}.${constants.foreignIdFieldSql} = "${
+    constants.table
+  }"."id"
+  WHERE ${constants.tableSql}."accountSid" = $<accountSid> AND "${
     constants.table
   }"."id" = $<profileId>
   ${getPaginationSql(paginationQuery)}

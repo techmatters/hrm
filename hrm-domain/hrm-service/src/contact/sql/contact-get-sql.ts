@@ -18,12 +18,10 @@ import { selectCoalesceConversationMediasByContactId } from '../../conversation-
 import { selectCoalesceCsamReportsByContactId } from '../../csam-report/sql/csam-report-get-sql';
 import { selectCoalesceReferralsByContactId } from '../../referral/sql/referral-get-sql';
 import * as sql from '../../sql';
-import * as constants from './constants';
+import { constants } from './constants';
 
 const ID_WHERE_CLAUSE = `WHERE c."accountSid" = $<accountSid> AND c."id" = $<contactId>`;
 const TASKID_WHERE_CLAUSE = `WHERE c."accountSid" = $<accountSid> AND c."taskId" = $<taskId>`;
-
-console.log(sql);
 
 export const contactListPropertiesSql = sql.fieldListToSql(
   constants.table,

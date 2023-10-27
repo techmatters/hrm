@@ -13,21 +13,23 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { Constants, initConstants } from '../../sql';
 
-const constantConfig = {
-  table: 'Contacts',
-  foreignIdField: 'contactId',
-  listProperties: ['id', 'channel', 'number', 'timeOfContact', 'twilioWorkerId'],
-  listRawJsonProperties: [
-    'callType',
-    'callerInformation.firstName',
-    'callerInformation.lastName',
-    'callerInformation.name',
-    'callerInformation.nickname',
-    'definitionVersion',
-    'caseInformation.callSummary',
-  ],
+export type ConstantConfig = {
+  foreignIdField: string;
+  listProperties: string[];
+  listRawJsonProperties?: string[];
+  table: string;
 };
 
-export const constants: Constants = initConstants(constantConfig);
+export type Constants = ConstantConfig & {
+  foreignIdFieldSql: string;
+  tableSql: string;
+};
+
+export const initConstants = (constantConfig: ConstantConfig) => {
+  return {
+    ...constantConfig,
+    tableSql: `"${constantConfig.table}"`,
+    foreignIdFieldSql: `"${constantConfig.foreignIdField}"`,
+  };
+};
