@@ -13,10 +13,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import {
-  contactListPropertiesSql,
-  contactListRawJsonBuildObjectSql,
-} from '../../contact/sql/contact-get-sql';
+
 import { constants } from './constants';
 import { constants as contactConstants } from '../../contact/sql/constants';
 import { getPaginationSql, PaginationQuery } from '../../sql';
@@ -115,8 +112,8 @@ export const joinProfilesIdentifiersSql = `
 
 export const getProfileContactsSql = (paginationQuery: PaginationQuery) => `
   SELECT
-    ${contactListPropertiesSql},
-    ${contactListRawJsonBuildObjectSql} as "rawJson",
+    ${contactConstants.listFieldsSql},
+    ${contactConstants.listJsonFieldPropertiesSql},
     COUNT(*) OVER() as "totalCount"
   FROM ${contactConstants.tableSql}
   JOIN ${constants.tableSql}

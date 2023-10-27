@@ -18,7 +18,7 @@ import { Constants, initConstants } from '../../sql';
 const constantConfig = {
   table: 'Profiles',
   foreignIdField: 'profileId',
-  listProperties: ['id', 'name', 'description'],
+  listFields: ['id', 'name', 'description'],
 };
 
 export const constants: Constants = initConstants(constantConfig);

@@ -13,23 +13,44 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
+import { fieldListToSql, objectNotationToBuildObjectSql } from './listToSql';
+
+export type JsonProperty = {
+  field: string;
+  properties: string[];
+};
 
 export type ConstantConfig = {
   foreignIdField: string;
-  listProperties: string[];
-  listRawJsonProperties?: string[];
+  listFields: string[];
+  listJsonFieldProperties?: JsonProperty[];
   table: string;
 };
 
 export type Constants = ConstantConfig & {
   foreignIdFieldSql: string;
   tableSql: string;
+  listFieldsSql: string;
+  listJsonFieldPropertiesSql?: string;
 };
 
-export const initConstants = (constantConfig: ConstantConfig) => {
+export const listJsonPropertiesToSql = constantConfig => {
+  const selectSqls = constantConfig.listJsonFieldProperties?.map(prop => {
+    return `${objectNotationToBuildObjectSql(
+      constantConfig.table,
+      prop.field,
+      prop.properties,
+    )} AS "${prop.field}"`;
+  });
+  return selectSqls?.join(', ');
+};
+
+export const initConstants = (constantConfig: ConstantConfig): Constants => {
   return {
     ...constantConfig,
     tableSql: `"${constantConfig.table}"`,
     foreignIdFieldSql: `"${constantConfig.foreignIdField}"`,
+    listFieldsSql: fieldListToSql(constantConfig.table, constantConfig.listFields),
+    listJsonFieldPropertiesSql: listJsonPropertiesToSql(constantConfig),
   };
 };

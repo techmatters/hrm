@@ -17,21 +17,9 @@
 import { selectCoalesceConversationMediasByContactId } from '../../conversation-media/sql/conversation-media-get-sql';
 import { selectCoalesceCsamReportsByContactId } from '../../csam-report/sql/csam-report-get-sql';
 import { selectCoalesceReferralsByContactId } from '../../referral/sql/referral-get-sql';
-import * as sql from '../../sql';
-import { constants } from './constants';
 
 const ID_WHERE_CLAUSE = `WHERE c."accountSid" = $<accountSid> AND c."id" = $<contactId>`;
 const TASKID_WHERE_CLAUSE = `WHERE c."accountSid" = $<accountSid> AND c."taskId" = $<taskId>`;
-
-export const contactListPropertiesSql = sql.fieldListToSql(
-  constants.table,
-  constants.listProperties,
-);
-export const contactListRawJsonBuildObjectSql = sql.objectNotationToBuildObjectSql(
-  constants.table,
-  'rawJson',
-  constants.listRawJsonProperties,
-);
 
 export const selectContactsWithRelations = (table: string) => `
         SELECT c.*, reports."csamReports", joinedReferrals."referrals", media."conversationMedia"

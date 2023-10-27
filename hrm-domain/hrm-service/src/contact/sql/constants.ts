@@ -18,15 +18,20 @@ import { Constants, initConstants } from '../../sql';
 const constantConfig = {
   table: 'Contacts',
   foreignIdField: 'contactId',
-  listProperties: ['id', 'channel', 'number', 'timeOfContact', 'twilioWorkerId'],
-  listRawJsonProperties: [
-    'callType',
-    'callerInformation.firstName',
-    'callerInformation.lastName',
-    'callerInformation.name',
-    'callerInformation.nickname',
-    'definitionVersion',
-    'caseInformation.callSummary',
+  listFields: ['id', 'channel', 'number', 'timeOfContact', 'twilioWorkerId'],
+  listJsonFieldProperties: [
+    {
+      field: 'rawJson',
+      properties: [
+        'callType',
+        'callerInformation.firstName',
+        'callerInformation.lastName',
+        'callerInformation.name',
+        'callerInformation.nickname',
+        'definitionVersion',
+        'caseInformation.callSummary',
+      ],
+    },
   ],
 };
 
