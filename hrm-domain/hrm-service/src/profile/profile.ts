@@ -109,7 +109,9 @@ export const associateProfileToProfileFlag = async (
 ): Promise<TResult<ProfileWithRelationships>> => {
   try {
     return await db.task<TResult<ProfileWithRelationships>>(async t => {
-      await associateProfileToProfileFlagDAL(t)(accountSid, profileId, profileFlagId);
+      (
+        await associateProfileToProfileFlagDAL(t)(accountSid, profileId, profileFlagId)
+      ).unwrap(); // unwrap the result to bubble error up (if any)
       const profile = await getProfileById(t)(accountSid, profileId);
 
       return newOk({ data: profile });
@@ -128,11 +130,13 @@ export const disassociateProfileFromProfileFlag = async (
 ): Promise<TResult<ProfileWithRelationships>> => {
   try {
     return await db.task<TResult<ProfileWithRelationships>>(async t => {
-      await disassociateProfileFromProfileFlagDAL(t)(
-        accountSid,
-        profileId,
-        profileFlagId,
-      );
+      (
+        await disassociateProfileFromProfileFlagDAL(t)(
+          accountSid,
+          profileId,
+          profileFlagId,
+        )
+      ).unwrap(); // unwrap the result to bubble error up (if any);
       const profile = await getProfileById(t)(accountSid, profileId);
 
       return newOk({ data: profile });

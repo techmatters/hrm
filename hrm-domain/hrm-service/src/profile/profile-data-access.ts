@@ -54,6 +54,7 @@ export type IdentifierWithProfiles = Identifier & { profiles: ProfileWithCounts[
 export type ProfileWithRelationships = Profile &
   ProfileCounts & {
     identifiers: Identifier[];
+    profileFlags: ProfileFlag['id'][];
   };
 
 type IdentifierParams =
@@ -190,12 +191,15 @@ export const associateProfileToProfileFlag =
     profileFlagId: number,
   ): Promise<TResult<null>> => {
     try {
+      const now = new Date();
       return await txIfNotInOne<TResult<null>>(task, async t => {
         await t.none(
           associateProfileToProfileFlagSql({
             accountSid,
             profileId,
             profileFlagId,
+            createdAt: now,
+            updatedAt: now,
           }),
         );
 

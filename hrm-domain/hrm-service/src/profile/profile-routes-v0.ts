@@ -90,7 +90,7 @@ profilesRouter.get('/:profileId/cases', publicEndpoint, async (req, res, next) =
   }
 });
 
-profilesRouter.get('/profileFlags', publicEndpoint, async (req, res, next) => {
+profilesRouter.get('/flags', publicEndpoint, async (req, res, next) => {
   try {
     const { accountSid } = req;
 
@@ -105,28 +105,6 @@ profilesRouter.get('/profileFlags', publicEndpoint, async (req, res, next) => {
     res.json(result.data);
   } catch (err) {
     console.error(err);
-    return next(createError(500, err.message));
-  }
-});
-
-// WARNING: this endpoint must be the last one in this router, because it will be used if none of the above regex matches the path
-profilesRouter.get('/:profileId', publicEndpoint, async (req, res, next) => {
-  try {
-    const { accountSid } = req;
-    const { profileId } = req.params;
-
-    const result = await profileController.getProfile()(accountSid, profileId);
-
-    if (isErr(result)) {
-      return next(createError(result.statusCode, result.message));
-    }
-
-    if (!result.data) {
-      return next(createError(404));
-    }
-
-    res.json(result.data);
-  } catch (err) {
     return next(createError(500, err.message));
   }
 });
@@ -188,5 +166,27 @@ profilesRouter.delete(
     }
   },
 );
+
+// WARNING: this endpoint MUST be the last one in this router, because it will be used if none of the above regex matches the path
+profilesRouter.get('/:profileId', publicEndpoint, async (req, res, next) => {
+  try {
+    const { accountSid } = req;
+    const { profileId } = req.params;
+
+    const result = await profileController.getProfile()(accountSid, profileId);
+
+    if (isErr(result)) {
+      return next(createError(result.statusCode, result.message));
+    }
+
+    if (!result.data) {
+      return next(createError(404));
+    }
+
+    res.json(result.data);
+  } catch (err) {
+    return next(createError(500, err.message));
+  }
+});
 
 export default profilesRouter.expressRouter;
