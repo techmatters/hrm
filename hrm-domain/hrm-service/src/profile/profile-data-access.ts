@@ -22,14 +22,16 @@ import {
   insertProfileSql,
   associateProfileToIdentifierSql,
 } from './sql/profile-insert-sql';
-import { txIfNotInOne } from '../sql';
-import { getProfileByIdSql, joinProfilesIdentifiersSql } from './sql/profile-get-sql';
 import {
   NewProfileFlagRecord,
+  associateProfileToProfileFlagSql,
+  disassociateProfileFromProfileFlagSql,
+  getProfileFlagsByAccountSql,
   insertProfileFlagSql,
-} from './sql/profile-flags-insert-sql';
+} from './sql/profile-flags-sql';
+import { txIfNotInOne } from '../sql';
+import { getProfileByIdSql, joinProfilesIdentifiersSql } from './sql/profile-get-sql';
 import { db } from '../connection-pool';
-import { getProfileFlagsByAccountSql } from './sql/profile-flags-get-sql';
 
 type RecordCommons = {
   id: number;
@@ -52,6 +54,7 @@ export type IdentifierWithProfiles = Identifier & { profiles: ProfileWithCounts[
 export type ProfileWithRelationships = Profile &
   ProfileCounts & {
     identifiers: Identifier[];
+    profileFlags: ProfileFlag['id'][];
   };
 
 type IdentifierParams =
@@ -172,14 +175,66 @@ export const createIdentifierAndProfile =
     }
   };
 
-export const getProfileById = async (
-  accountSid: string,
-  profileId: number,
-): Promise<ProfileWithRelationships> => {
-  return txIfNotInOne<ProfileWithRelationships>(undefined, async t => {
-    return t.oneOrNone(getProfileByIdSql, { accountSid, profileId });
-  });
-};
+export const getProfileById =
+  (task?) =>
+  async (accountSid: string, profileId: number): Promise<ProfileWithRelationships> => {
+    return txIfNotInOne<ProfileWithRelationships>(task, async t => {
+      return t.oneOrNone(getProfileByIdSql, { accountSid, profileId });
+    });
+  };
+
+export const associateProfileToProfileFlag =
+  (task?) =>
+  async (
+    accountSid: string,
+    profileId: number,
+    profileFlagId: number,
+  ): Promise<TResult<null>> => {
+    try {
+      const now = new Date();
+      return await txIfNotInOne<TResult<null>>(task, async t => {
+        await t.none(
+          associateProfileToProfileFlagSql({
+            accountSid,
+            profileId,
+            profileFlagId,
+            createdAt: now,
+            updatedAt: now,
+          }),
+        );
+
+        return newOk({ data: null });
+      });
+    } catch (err) {
+      return newErr({
+        message: err instanceof Error ? err.message : String(err),
+      });
+    }
+  };
+
+export const disassociateProfileFromProfileFlag =
+  (task?) =>
+  async (
+    accountSid: string,
+    profileId: number,
+    profileFlagId: number,
+  ): Promise<TResult<null>> => {
+    try {
+      return await txIfNotInOne<TResult<null>>(task, async t => {
+        await t.none(disassociateProfileFromProfileFlagSql, {
+          accountSid,
+          profileId,
+          profileFlagId,
+        });
+
+        return newOk({ data: null });
+      });
+    } catch (err) {
+      return newErr({
+        message: err instanceof Error ? err.message : String(err),
+      });
+    }
+  };
 
 export type ProfileFlag = NewProfileFlagRecord & RecordCommons;
 

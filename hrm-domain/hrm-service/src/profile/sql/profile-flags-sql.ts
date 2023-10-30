@@ -16,16 +16,18 @@
 
 import { pgp } from '../../connection-pool';
 
+type NewRecordCommons = {
+  accountSid: string;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
 export type NewProfileFlagRecord = {
   name: string;
 };
 
 export const insertProfileFlagSql = (
-  profileFlag: NewProfileFlagRecord & {
-    accountSid: string;
-    createdAt: Date;
-    updatedAt: Date;
-  },
+  profileFlag: NewProfileFlagRecord & NewRecordCommons,
 ) => `
   ${pgp.helpers.insert(
     profileFlag,
@@ -33,4 +35,28 @@ export const insertProfileFlagSql = (
     'ProfileFlags',
   )}
   RETURNING *
+`;
+
+export const getProfileFlagsByAccountSql = `
+  SELECT * FROM "ProfileFlags"
+  WHERE "accountSid" = $<accountSid> OR "accountSid" IS NULL
+`;
+
+type AssociateProfileToProfileFlagParams = {
+  profileId: number;
+  profileFlagId: number;
+};
+export const associateProfileToProfileFlagSql = (
+  association: AssociateProfileToProfileFlagParams & NewRecordCommons,
+) => `
+  ${pgp.helpers.insert(
+    association,
+    ['accountSid', 'profileId', 'profileFlagId', 'createdAt', 'updatedAt'],
+    'ProfilesToProfileFlags',
+  )}
+`;
+
+export const disassociateProfileFromProfileFlagSql = `
+  DELETE FROM "ProfilesToProfileFlags"
+  WHERE "profileId" = $<profileId> AND "profileFlagId" = $<profileFlagId> AND "accountSid" = $<accountSid>
 `;

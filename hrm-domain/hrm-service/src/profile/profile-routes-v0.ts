@@ -18,7 +18,7 @@ import { isErr } from '@tech-matters/types';
 import createError from 'http-errors';
 
 import { SafeRouter, publicEndpoint } from '../permissions';
-import { getProfilesByIdentifier, getProfile, getProfileFlags } from './profile';
+import * as profileController from './profile';
 import { getContactsByProfileId } from '../contact/contact';
 import { getCasesByProfileId } from '../case/case';
 
@@ -29,7 +29,10 @@ profilesRouter.get('/identifier/:identifier', publicEndpoint, async (req, res, n
     const { accountSid } = req;
     const { identifier } = req.params;
 
-    const result = await getProfilesByIdentifier(accountSid, identifier);
+    const result = await profileController.getIdentifierByIdentifier(
+      accountSid,
+      identifier,
+    );
 
     if (isErr(result)) {
       return next(createError(result.statusCode, result.message));
@@ -87,13 +90,13 @@ profilesRouter.get('/:profileId/cases', publicEndpoint, async (req, res, next) =
   }
 });
 
-profilesRouter.get('/profileFlags', publicEndpoint, async (req, res, next) => {
+profilesRouter.get('/flags', publicEndpoint, async (req, res, next) => {
   try {
     const { accountSid } = req;
 
     console.log('accountSid', accountSid);
 
-    const result = await getProfileFlags(accountSid);
+    const result = await profileController.getProfileFlags(accountSid);
 
     if (isErr(result)) {
       return next(createError(result.statusCode, result.message));
@@ -106,13 +109,71 @@ profilesRouter.get('/profileFlags', publicEndpoint, async (req, res, next) => {
   }
 });
 
-// WARNING: this endpoint must be the last one in this router, because it will be used if none of the above regex matches the path
+profilesRouter.post(
+  '/:profileId/flags/:profileFlagId',
+  publicEndpoint,
+  async (req, res, next) => {
+    try {
+      const { accountSid } = req;
+      const { profileId, profileFlagId } = req.params;
+
+      const result = await profileController.associateProfileToProfileFlag(
+        accountSid,
+        profileId,
+        profileFlagId,
+      );
+
+      if (isErr(result)) {
+        return next(createError(result.statusCode, result.message));
+      }
+
+      if (!result.data) {
+        return next(createError(404));
+      }
+
+      res.json(result.data);
+    } catch (err) {
+      return next(createError(500, err.message));
+    }
+  },
+);
+
+profilesRouter.delete(
+  '/:profileId/flags/:profileFlagId',
+  publicEndpoint,
+  async (req, res, next) => {
+    try {
+      const { accountSid } = req;
+      const { profileId, profileFlagId } = req.params;
+
+      const result = await profileController.disassociateProfileFromProfileFlag(
+        accountSid,
+        profileId,
+        profileFlagId,
+      );
+
+      if (isErr(result)) {
+        return next(createError(result.statusCode, result.message));
+      }
+
+      if (!result.data) {
+        return next(createError(404));
+      }
+
+      res.json(result.data);
+    } catch (err) {
+      return next(createError(500, err.message));
+    }
+  },
+);
+
+// WARNING: this endpoint MUST be the last one in this router, because it will be used if none of the above regex matches the path
 profilesRouter.get('/:profileId', publicEndpoint, async (req, res, next) => {
   try {
     const { accountSid } = req;
     const { profileId } = req.params;
 
-    const result = await getProfile(accountSid, profileId);
+    const result = await profileController.getProfile()(accountSid, profileId);
 
     if (isErr(result)) {
       return next(createError(result.statusCode, result.message));
