@@ -283,6 +283,7 @@ module.exports = {
       ALTER TABLE IF EXISTS public."Contacts" DROP COLUMN "profileId"; 
       ALTER TABLE IF EXISTS public."Contacts" DROP COLUMN "identifierId"; 
     `);
+
     await queryInterface.sequelize.query(`
       DROP INDEX IF EXISTS "fki_ProfilesToIdentifiers_identifierId_accountSid_Identifiers_id_accountSid_fk"
     `);
@@ -291,6 +292,20 @@ module.exports = {
     `);
     await queryInterface.sequelize.query(`
       DROP TABLE IF EXISTS public."ProfilesToIdentifiers"
+    `);
+
+    await queryInterface.sequelize.query(`
+      DROP INDEX IF EXISTS "fki_ProfilesToProfileFlags_profileFlagId_accountSid_ProfileFlags_id_accountSid_fk"
+    `);
+    await queryInterface.sequelize.query(`
+      DROP INDEX IF EXISTS "fki_ProfilesToProfileFlags_profileId_accountSid_Profiles_id_accountSid_fk"
+    `);
+    await queryInterface.sequelize.query(`
+      DROP TABLE IF EXISTS public."ProfilesToProfileFlags"
+    `);
+
+    await queryInterface.sequelize.query(`
+      DROP INDEX IF EXISTS "ProfileFlags_accountSid"
     `);
     await queryInterface.sequelize.query(`
       DROP TABLE IF EXISTS public."ProfileFlags"
