@@ -57,16 +57,25 @@ export const getProfileByIdSql = `
     GROUP BY ppf."profileId"
   )
 
+  RelatedProfileSections AS (
+    SELECT pps."profileId", JSON_AGG(pps.*) AS "profileSections"
+    FROM "ProfileSections" pps
+    WHERE pps."profileId" = $<profileId> AND pps."accountSid" = $<accountSid>
+    GROUP BY pps."profileId"
+  )
+
   SELECT
     profiles.*,
     COALESCE(ri.identifiers, '[]'::json) as identifiers,
     COALESCE(ccc."contactsCount"::int, 0) as "contactsCount",
     COALESCE(ccc."casesCount"::int, 0) as "casesCount",
-    COALESCE(rpf."profileFlags", '[]'::json) as "profileFlags"
+    COALESCE(rpf."profileFlags", '[]'::json) as "profileFlags",
+    COALESCE(rps."profileSections", '[]'::json) as "profileSections"
   FROM "Profiles" profiles
   LEFT JOIN RelatedIdentifiers ri ON profiles.id = ri."profileId"
   LEFT JOIN ContactCaseCounts ccc ON profiles.id = ccc."profileId"
   LEFT JOIN RelatedProfileFlags rpf ON profiles.id = rpf."profileId"
+  LEFT JOIN RelatedProfileSections rps ON profiles.id = rps."profileId"
   WHERE profiles."accountSid" = $<accountSid> AND profiles."id" = $<profileId>
 `;
 
