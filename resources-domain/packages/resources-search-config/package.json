@@ -12,5 +12,8 @@
   },
   "devDependencies": {
     "@tsconfig/node16": "^1.0.3"
+  },
+  "scripts": {
+    "test:unit": "jest tests/unit"
   }
 }
