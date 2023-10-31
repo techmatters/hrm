@@ -20,7 +20,7 @@ module.exports = {
     await queryInterface.sequelize.query(`
       CREATE TABLE IF NOT EXISTS public."ProfileSections"
       (
-        "id" text COLLATE pg_catalog."default" NOT NULL DEFAULT nextval('"ProfileSections_id_seq"'::regclass),
+        "id" integer COLLATE pg_catalog."default" NOT NULL DEFAULT nextval('"ProfileSections_id_seq"'::regclass),
         "sectionType" text COLLATE pg_catalog."default" NOT NULL,
         "accountSid" text COLLATE pg_catalog."default" NOT NULL,
         "profileId" integer NOT NULL,
