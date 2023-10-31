@@ -16,30 +16,21 @@
 
 import { TResult, isErr, newErr, newOk } from '@tech-matters/types';
 
-import {
-  Identifier,
-  IdentifierWithProfiles,
-  Profile,
-  ProfileWithRelationships,
-  associateProfileToProfileFlag as associateProfileToProfileFlagDAL,
-  disassociateProfileFromProfileFlag as disassociateProfileFromProfileFlagDAL,
-  createIdentifierAndProfile,
-  getIdentifierWithProfiles,
-  getProfileById,
-  getProfileFlagsForAccount,
-} from './profile-data-access';
+import * as profileDB from './profile-data-access';
 import { db } from '../connection-pool';
+import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
+import type { NewProfileSectionRecord } from './sql/profile-sections-sql';
 
-export { Identifier, Profile, getIdentifierWithProfiles };
+export { Identifier, Profile, getIdentifierWithProfiles } from './profile-data-access';
 
 export const getProfile =
   (task?) =>
   async (
     accountSid: string,
-    profileId: Profile['id'],
-  ): Promise<TResult<ProfileWithRelationships>> => {
+    profileId: profileDB.Profile['id'],
+  ): Promise<TResult<profileDB.ProfileWithRelationships>> => {
     try {
-      const result = await getProfileById(task)(accountSid, profileId);
+      const result = await profileDB.getProfileById(task)(accountSid, profileId);
 
       if (!result) {
         return newErr({ statusCode: 404, message: 'Profile not found' });
@@ -58,13 +49,13 @@ export const getOrCreateProfileWithIdentifier =
   async (
     identifier: string,
     accountSid: string,
-  ): Promise<TResult<IdentifierWithProfiles>> => {
+  ): Promise<TResult<profileDB.IdentifierWithProfiles>> => {
     try {
       if (!identifier) {
         return newOk({ data: null });
       }
 
-      const profileResult = await getIdentifierWithProfiles(task)({
+      const profileResult = await profileDB.getIdentifierWithProfiles(task)({
         accountSid,
         identifier,
       });
@@ -73,7 +64,7 @@ export const getOrCreateProfileWithIdentifier =
         return profileResult;
       }
 
-      return await createIdentifierAndProfile(task)(accountSid, {
+      return await profileDB.createIdentifierAndProfile(task)(accountSid, {
         identifier,
       });
     } catch (err) {
@@ -86,9 +77,12 @@ export const getOrCreateProfileWithIdentifier =
 export const getIdentifierByIdentifier = async (
   accountSid: string,
   identifier: string,
-): Promise<TResult<IdentifierWithProfiles>> => {
+): Promise<TResult<profileDB.IdentifierWithProfiles>> => {
   try {
-    const profilesResult = await getIdentifierWithProfiles()({ accountSid, identifier });
+    const profilesResult = await profileDB.getIdentifierWithProfiles()({
+      accountSid,
+      identifier,
+    });
 
     if (isErr(profilesResult)) {
       return profilesResult;
@@ -104,15 +98,19 @@ export const getIdentifierByIdentifier = async (
 
 export const associateProfileToProfileFlag = async (
   accountSid: string,
-  profileId: Profile['id'],
+  profileId: profileDB.Profile['id'],
   profileFlagId: number,
-): Promise<TResult<ProfileWithRelationships>> => {
+): Promise<TResult<profileDB.ProfileWithRelationships>> => {
   try {
-    return await db.task<TResult<ProfileWithRelationships>>(async t => {
+    return await db.task<TResult<profileDB.ProfileWithRelationships>>(async t => {
       (
-        await associateProfileToProfileFlagDAL(t)(accountSid, profileId, profileFlagId)
+        await profileDB.associateProfileToProfileFlag(t)(
+          accountSid,
+          profileId,
+          profileFlagId,
+        )
       ).unwrap(); // unwrap the result to bubble error up (if any)
-      const profile = await getProfileById(t)(accountSid, profileId);
+      const profile = await profileDB.getProfileById(t)(accountSid, profileId);
 
       return newOk({ data: profile });
     });
@@ -125,19 +123,19 @@ export const associateProfileToProfileFlag = async (
 
 export const disassociateProfileFromProfileFlag = async (
   accountSid: string,
-  profileId: Profile['id'],
+  profileId: profileDB.Profile['id'],
   profileFlagId: number,
-): Promise<TResult<ProfileWithRelationships>> => {
+): Promise<TResult<profileDB.ProfileWithRelationships>> => {
   try {
-    return await db.task<TResult<ProfileWithRelationships>>(async t => {
+    return await db.task<TResult<profileDB.ProfileWithRelationships>>(async t => {
       (
-        await disassociateProfileFromProfileFlagDAL(t)(
+        await profileDB.disassociateProfileFromProfileFlag(t)(
           accountSid,
           profileId,
           profileFlagId,
         )
       ).unwrap(); // unwrap the result to bubble error up (if any);
-      const profile = await getProfileById(t)(accountSid, profileId);
+      const profile = await profileDB.getProfileById(t)(accountSid, profileId);
 
       return newOk({ data: profile });
     });
@@ -148,4 +146,51 @@ export const disassociateProfileFromProfileFlag = async (
   }
 };
 
-export const getProfileFlags = getProfileFlagsForAccount;
+export const getProfileFlags = profileDB.getProfileFlagsForAccount;
+
+// While this is just a wrapper around profileDB.createProfileSection, we'll need more code to handle permissions soon
+export const createProfileSection = async (
+  accountSid: string,
+  payload: NewProfileSectionRecord,
+  { user }: { user: TwilioUser },
+): Promise<TResult<profileDB.ProfileSection>> => {
+  try {
+    const { content, profileId, sectionType } = payload;
+    const ps = await profileDB.createProfileSection(accountSid, {
+      content,
+      profileId,
+      sectionType,
+      createdBy: user.workerSid,
+    });
+
+    return ps;
+  } catch (err) {
+    return newErr({
+      message: err instanceof Error ? err.message : String(err),
+    });
+  }
+};
+
+// While this is just a wrapper around profileDB.updateProfileSectionById, we'll need more code to handle permissions soon
+export const updateProfileSectionById = async (
+  accountSid: string,
+  payload: {
+    profileId: profileDB.Profile['id'];
+    sectionId: profileDB.ProfileSection['id'];
+    content: profileDB.ProfileSection['content'];
+  },
+  { user }: { user: TwilioUser },
+): Promise<TResult<profileDB.ProfileSection>> => {
+  try {
+    const ps = await profileDB.updateProfileSectionById(accountSid, {
+      ...payload,
+      updatedBy: user.workerSid,
+    });
+
+    return ps;
+  } catch (err) {
+    return newErr({
+      message: err instanceof Error ? err.message : String(err),
+    });
+  }
+};

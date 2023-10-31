@@ -32,12 +32,17 @@ import {
 import { txIfNotInOne } from '../sql';
 import { getProfileByIdSql, joinProfilesIdentifiersSql } from './sql/profile-get-sql';
 import { db } from '../connection-pool';
+import {
+  NewProfileSectionRecord,
+  insertProfileSectionSql,
+  updateProfileSectionByIdSql,
+} from './sql/profile-sections-sql';
 
 type RecordCommons = {
   id: number;
   accountSid: string;
-  createdAt?: Date;
-  updatedAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
 };
 
 export type Identifier = NewIdentifierRecord & RecordCommons;
@@ -248,7 +253,6 @@ export const getProfileFlagsForAccount = async (
       )
       .then(data => newOk({ data }));
   } catch (err) {
-    console.error(err);
     return newErr({
       message: err instanceof Error ? err.message : String(err),
     });
@@ -272,7 +276,67 @@ export const createProfileFlag = async (
       .task<ProfileFlag>(async t => t.one(statement))
       .then(data => newOk({ data }));
   } catch (err) {
-    console.error(err);
+    return newErr({
+      message: err instanceof Error ? err.message : String(err),
+    });
+  }
+};
+
+export type ProfileSection = NewProfileSectionRecord &
+  RecordCommons & {
+    createdBy: string;
+    updatedBy?: string;
+  };
+
+export const createProfileSection = async (
+  accountSid: string,
+  payload: NewProfileSectionRecord & { createdBy: string },
+): Promise<TResult<ProfileSection>> => {
+  try {
+    const now = new Date();
+    const statement = insertProfileSectionSql({
+      ...payload,
+      createdAt: now,
+      updatedAt: now,
+      accountSid,
+      createdBy: payload.createdBy,
+      updatedBy: null,
+    });
+
+    return await db
+      .task<ProfileSection>(async t => t.oneOrNone(statement))
+      .then(data => newOk({ data }));
+  } catch (err) {
+    return newErr({
+      message: err instanceof Error ? err.message : String(err),
+    });
+  }
+};
+
+export const updateProfileSectionById = async (
+  accountSid: string,
+  payload: {
+    profileId: Profile['id'];
+    sectionId: ProfileSection['id'];
+    content: ProfileSection['content'];
+    updatedBy: ProfileSection['updatedBy'];
+  },
+): Promise<TResult<ProfileSection>> => {
+  try {
+    const now = new Date();
+    return await db
+      .task<ProfileSection>(async t =>
+        t.oneOrNone(updateProfileSectionByIdSql, {
+          accountSid,
+          profileId: payload.profileId,
+          sectionId: payload.sectionId,
+          content: payload.content,
+          updatedBy: payload.updatedBy,
+          updatedAt: now,
+        }),
+      )
+      .then(data => newOk({ data }));
+  } catch (err) {
     return newErr({
       message: err instanceof Error ? err.message : String(err),
     });
