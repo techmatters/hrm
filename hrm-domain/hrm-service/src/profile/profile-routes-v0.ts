@@ -230,6 +230,34 @@ profilesRouter.patch(
   },
 );
 
+profilesRouter.get(
+  '/:profileId/sections/:sectionId',
+  publicEndpoint,
+  async (req, res, next) => {
+    try {
+      const { accountSid } = req;
+      const { profileId, sectionId } = req.params;
+
+      const result = await profileController.getProfileSectionById(accountSid, {
+        profileId,
+        sectionId,
+      });
+
+      if (isErr(result)) {
+        return next(createError(result.statusCode, result.message));
+      }
+
+      if (!result.data) {
+        return next(createError(404));
+      }
+
+      res.json(result.data);
+    } catch (err) {
+      return next(createError(500, err.message));
+    }
+  },
+);
+
 // WARNING: this endpoint MUST be the last one in this router, because it will be used if none of the above regex matches the path
 profilesRouter.get('/:profileId', publicEndpoint, async (req, res, next) => {
   try {

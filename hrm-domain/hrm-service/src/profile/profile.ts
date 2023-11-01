@@ -194,3 +194,22 @@ export const updateProfileSectionById = async (
     });
   }
 };
+
+// While this is just a wrapper around profileDB.getProfileSectionById, we'll need more code to handle permissions soon
+export const getProfileSectionById = async (
+  accountSid: string,
+  payload: {
+    profileId: profileDB.Profile['id'];
+    sectionId: profileDB.ProfileSection['id'];
+  },
+): Promise<TResult<profileDB.ProfileSection>> => {
+  try {
+    const ps = await profileDB.getProfileSectionById(accountSid, payload);
+
+    return ps;
+  } catch (err) {
+    return newErr({
+      message: err instanceof Error ? err.message : String(err),
+    });
+  }
+};

@@ -50,11 +50,19 @@ export const insertProfileSectionSql = (
   RETURNING *
 `;
 
+const WHERE_ID_AND_PROFILE_CLAUSE =
+  'WHERE id = $<sectionId> AND "profileId" = $<profileId> AND "accountSid" = $<accountSid>';
+
 export const updateProfileSectionByIdSql = `
   UPDATE "ProfileSections" SET
     "content" = $<content>,
     "updatedBy" = $<updatedBy>,
     "updatedAt" = $<updatedAt>
-  WHERE id = $<sectionId> AND "profileId" = $<profileId> AND "accountSid" = $<accountSid>
+  ${WHERE_ID_AND_PROFILE_CLAUSE}
   RETURNING *;
+`;
+
+export const getProfileSectionByIdSql = `
+  SELECT * FROM "ProfileSections"
+  ${WHERE_ID_AND_PROFILE_CLAUSE}
 `;

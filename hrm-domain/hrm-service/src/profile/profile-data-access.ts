@@ -34,6 +34,7 @@ import { getProfileByIdSql, joinProfilesIdentifiersSql } from './sql/profile-get
 import { db } from '../connection-pool';
 import {
   NewProfileSectionRecord,
+  getProfileSectionByIdSql,
   insertProfileSectionSql,
   updateProfileSectionByIdSql,
 } from './sql/profile-sections-sql';
@@ -336,6 +337,23 @@ export const updateProfileSectionById = async (
         }),
       )
       .then(data => newOk({ data }));
+  } catch (err) {
+    return newErr({
+      message: err instanceof Error ? err.message : String(err),
+    });
+  }
+};
+
+export const getProfileSectionById = async (
+  accountSid: string,
+  { profileId, sectionId }: { profileId: Profile['id']; sectionId: ProfileSection['id'] },
+): Promise<TResult<ProfileSection>> => {
+  try {
+    const data = await db.task<ProfileSection>(async t =>
+      t.oneOrNone(getProfileSectionByIdSql, { accountSid, profileId, sectionId }),
+    );
+
+    return newOk({ data });
   } catch (err) {
     return newErr({
       message: err instanceof Error ? err.message : String(err),
