@@ -55,10 +55,10 @@ export const getProfileByIdSql = `
     FROM "ProfilesToProfileFlags" ppf
     WHERE ppf."profileId" = $<profileId>
     GROUP BY ppf."profileId"
-  )
+  ),
 
   RelatedProfileSections AS (
-    SELECT pps."profileId", JSON_AGG(pps.*) AS "profileSections"
+    SELECT pps."profileId", JSON_AGG(JSON_BUILD_OBJECT(pps.id, pps."sectionType")) AS "profileSections"
     FROM "ProfileSections" pps
     WHERE pps."profileId" = $<profileId> AND pps."accountSid" = $<accountSid>
     GROUP BY pps."profileId"
