@@ -167,6 +167,97 @@ profilesRouter.delete(
   },
 );
 
+// curl -X POST 'http://localhost:8080/v0/accounts/ACd8a2e89748318adf6ddff7df6948deaf/profiles/5/sections' -H 'Content-Type: application/json' -H "Authorization: Bearer " -d '{
+//     "content": "A note bla bla bla",
+//     "sectionType": "note"
+//   }'
+profilesRouter.post('/:profileId/sections', publicEndpoint, async (req, res, next) => {
+  try {
+    const { accountSid, user } = req;
+    const { profileId } = req.params;
+    const { content, sectionType } = req.body;
+
+    const result = await profileController.createProfileSection(
+      accountSid,
+      { content, profileId, sectionType },
+      { user },
+    );
+
+    if (isErr(result)) {
+      return next(createError(result.statusCode, result.message));
+    }
+
+    if (!result.data) {
+      return next(createError(404));
+    }
+
+    res.json(result.data);
+  } catch (err) {
+    return next(createError(500, err.message));
+  }
+});
+
+// curl -X POST 'http://localhost:8080/v0/accounts/ACd8a2e89748318adf6ddff7df6948deaf/profiles/5/sections/5' -H 'Content-Type: application/json' -H "Authorization: Bearer " -d '{
+//     "content": "A note bla bla bla",
+//   }'
+profilesRouter.patch(
+  '/:profileId/sections/:sectionId',
+  publicEndpoint,
+  async (req, res, next) => {
+    try {
+      const { accountSid, user } = req;
+      const { profileId, sectionId } = req.params;
+      const { content } = req.body;
+
+      const result = await profileController.updateProfileSectionById(
+        accountSid,
+        { profileId, sectionId, content },
+        { user },
+      );
+
+      if (isErr(result)) {
+        return next(createError(result.statusCode, result.message));
+      }
+
+      if (!result.data) {
+        return next(createError(404));
+      }
+
+      res.json(result.data);
+    } catch (err) {
+      return next(createError(500, err.message));
+    }
+  },
+);
+
+profilesRouter.get(
+  '/:profileId/sections/:sectionId',
+  publicEndpoint,
+  async (req, res, next) => {
+    try {
+      const { accountSid } = req;
+      const { profileId, sectionId } = req.params;
+
+      const result = await profileController.getProfileSectionById(accountSid, {
+        profileId,
+        sectionId,
+      });
+
+      if (isErr(result)) {
+        return next(createError(result.statusCode, result.message));
+      }
+
+      if (!result.data) {
+        return next(createError(404));
+      }
+
+      res.json(result.data);
+    } catch (err) {
+      return next(createError(500, err.message));
+    }
+  },
+);
+
 // WARNING: this endpoint MUST be the last one in this router, because it will be used if none of the above regex matches the path
 profilesRouter.get('/:profileId', publicEndpoint, async (req, res, next) => {
   try {
