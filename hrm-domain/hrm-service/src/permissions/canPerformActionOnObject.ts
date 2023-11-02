@@ -51,7 +51,7 @@ export const canPerformActionsOnObject = async <T extends TargetKind>({
 
     switch (targetKind) {
       case 'contact': {
-        const object = await getContactById(accountSid, objectId);
+        const object = await getContactById(accountSid, objectId, { can, user });
 
         const canPerform = actions.every(action => can(user, action, object));
 

@@ -46,7 +46,6 @@ import './case-validation';
 import * as caseApi from '../src/case/case';
 import * as caseDb from '../src/case/case-data-access';
 import * as contactApi from '../src/contact/contact';
-import { CreateContactPayload, WithLegacyCategories } from '../src/contact/contact';
 import * as contactDb from '../src/contact/contact-data-access';
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import * as contactJobDataAccess from '../src/contact-job/contact-job-data-access';
@@ -189,7 +188,7 @@ describe('/contacts route', () => {
     });
 
     type CreateContactTestCase = {
-      contact: CreateContactPayload;
+      contact: contactApi.CreateContactPayload;
       changeDescription?: string;
       expectedGetContact?: Partial<contactDb.Contact>;
       finalize?: boolean;
@@ -1112,8 +1111,8 @@ describe('/contacts route', () => {
       });
 
       const expectLegacyRawJsonToEqualRawJson = (
-        actual: WithLegacyCategories<contactDb.Contact>['rawJson'],
-        expected: WithLegacyCategories<contactDb.Contact>['rawJson'],
+        actual: contactApi.WithLegacyCategories<contactDb.Contact>['rawJson'],
+        expected: contactApi.WithLegacyCategories<contactDb.Contact>['rawJson'],
         legacyCategories: Record<string, Record<string, boolean>> = {},
       ) => {
         expect(actual).toStrictEqual({
@@ -1820,7 +1819,7 @@ describe('/contacts route', () => {
       test('should return 200', async () => {
         const response = await request.delete(subRoute(existingContactId)).set(headers);
 
-        const contact = await contactApi.getContactById(accountSid, response.body.id);
+        const contact = await contactDb.getById(accountSid, response.body.id);
 
         expect(response.status).toBe(200);
         expect(response.body.caseId).toBe(null);
