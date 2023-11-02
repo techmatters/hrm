@@ -151,7 +151,13 @@ const canEditContact = asyncHandler(async (req, res, next) => {
     const { contactId } = req.params;
 
     try {
-      const contactObj = await getContactById(accountSid, contactId);
+      const contactObj = await getContactById(accountSid, contactId, {
+        can: req.can,
+        user,
+      });
+      if (!contactObj) {
+        throw new Error('contact not found');
+      }
       if (contactObj.finalizedAt) {
         const updatedProps = Object.keys(body ?? {}) as (keyof PatchPayload)[];
         const isOnlyEditingForm = updatedProps.every(
@@ -256,6 +262,24 @@ contactsRouter.post('/:contactId/conversationMedia', publicEndpoint, async (req,
       throw createError(404);
     } else throw err;
   }
+});
+
+// WARNING: this endpoint MUST be the last one in this router, because it will be used if none of the above regex matches the path
+contactsRouter.get('/:contactId', publicEndpoint, async (req, res) => {
+  const { accountSid, can, user } = req;
+  const contact = await getContactById(accountSid, req.params.contactId, {
+    can: req.can,
+    user,
+  });
+  if (!contact) {
+    throw createError(404);
+  }
+  if (!req.isAuthorized()) {
+    if (!can(user, actionsMaps.contact.VIEW_CONTACT, contact)) {
+      createError(401);
+    }
+  }
+  res.json(contact);
 });
 
 export default contactsRouter.expressRouter;

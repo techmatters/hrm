@@ -217,14 +217,14 @@ export const bindApplyTransformations =
     return includeLegacyCategories(transformed);
   };
 
-export const getContactById = async (accountSid: string, contactId: number) => {
+export const getContactById = async (
+  accountSid: string,
+  contactId: number,
+  { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
+) => {
   const contact = await getById(accountSid, contactId);
 
-  if (!contact) {
-    throw new Error(`Contact not found with id ${contactId}`);
-  }
-
-  return contact;
+  return contact ? bindApplyTransformations(can, user)(contact) : undefined;
 };
 
 export const getContactByTaskId = async (
