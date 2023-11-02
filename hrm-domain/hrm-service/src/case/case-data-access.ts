@@ -159,9 +159,9 @@ export type OptionalSearchQueryParams = Partial<CaseSearchCriteria & CaseListFil
 type SearchQueryParamsBuilder<T> = (
   accountSid: string,
   searchCriteria: T,
+  filters: CaseListFilters,
   limit: number,
   offset: number,
-  filters: CaseListFilters,
 ) => BaseSearchQueryParams & OptionalSearchQueryParams;
 
 export type SearchQueryFunction<T> = (
@@ -179,15 +179,17 @@ const generalizedSearchQueryFunction = <T>(
     const { limit, offset, sortBy, sortDirection } =
       getPaginationElements(listConfiguration);
     const orderClause = [{ sortBy, sortDirection }];
+
     const { count, rows } = await db.task(async connection => {
       const statement = sqlQueryBuilder(filters, orderClause);
       const queryValues = sqlQueryParamsBuilder(
         accountSid,
         searchCriteria,
+        filters,
         limit,
         offset,
-        filters,
       );
+
       const result: CaseWithCount[] = await connection.any<CaseWithCount>(
         statement,
         queryValues,
@@ -202,7 +204,7 @@ const generalizedSearchQueryFunction = <T>(
 
 export const search = generalizedSearchQueryFunction<CaseSearchCriteria>(
   selectCaseSearch,
-  (accountSid, searchCriteria, limit, offset, filters) => ({
+  (accountSid, searchCriteria, filters, limit, offset) => ({
     ...filters,
     accountSid,
     firstName: searchCriteria.firstName ? `%${searchCriteria.firstName}%` : null,
@@ -216,18 +218,19 @@ export const search = generalizedSearchQueryFunction<CaseSearchCriteria>(
   }),
 );
 
-export const searchByProfileId = generalizedSearchQueryFunction<
-  Pick<OptionalSearchQueryParams, 'counsellors' | 'helplines'> & {
-    profileId: number;
-  }
->(selectCaseSearchByProfileId, (accountSid, searchParameters, limit, offset) => ({
-  accountSid,
-  limit,
-  offset,
-  counselor: searchParameters.counsellors,
-  helpline: searchParameters.helplines,
-  profileId: searchParameters.profileId,
-}));
+export const searchByProfileId = generalizedSearchQueryFunction<{
+  profileId: number;
+}>(
+  selectCaseSearchByProfileId,
+  (accountSid, searchParameters, filters, limit, offset) => ({
+    accountSid,
+    limit,
+    offset,
+    counsellors: filters.counsellors,
+    helpline: filters.helplines,
+    profileId: searchParameters.profileId,
+  }),
+);
 
 export const deleteById = async (id, accountSid) => {
   return db.oneOrNone(DELETE_BY_ID, [accountSid, id]);
