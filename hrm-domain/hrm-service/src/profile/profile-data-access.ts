@@ -61,6 +61,10 @@ export type ProfileWithRelationships = Profile &
   ProfileCounts & {
     identifiers: Identifier[];
     profileFlags: ProfileFlag['id'][];
+    profileSections: {
+      sectionType: ProfileSection['sectionType'];
+      id: ProfileSection['id'];
+    }[];
   };
 
 type IdentifierParams =
