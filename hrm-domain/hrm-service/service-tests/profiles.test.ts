@@ -55,11 +55,11 @@ beforeEach(async () => {
   await mockSuccessfulTwilioAuthentication(workerSid);
 });
 
-describe('/profiles route', () => {
+describe('/profiles', () => {
   const baseRoute = `/v0/accounts/${accountSid}/profiles`;
   const identifier = 'identifier';
 
-  describe('/identifier/:identifier', () => {
+  describe('/profiles/identifier/:identifier', () => {
     const buildRoute = (id: string) => `${baseRoute}/identifier/${id}`;
     const accounts = [accountSid, 'ANOTHER_ACCOUNT'];
 
@@ -161,7 +161,7 @@ describe('/profiles route', () => {
     });
   });
 
-  describe('/:profileId', () => {
+  describe('/profiles/:profileId', () => {
     let createdProfile: IdentifierWithProfiles;
     beforeAll(async () => {
       // Create an identifier
@@ -195,7 +195,6 @@ describe('/profiles route', () => {
           .set(headers);
 
         expect(response.statusCode).toBe(200);
-        console.log(response.body);
         expect(response.body).toMatchObject(createdProfile.profiles[0]);
       });
     });
@@ -287,7 +286,7 @@ describe('/profiles route', () => {
         id: expect.anything(),
       });
 
-      describe('/contacts', () => {
+      describe('/profiles/:profileId/contacts', () => {
         describe('GET', () => {
           // test('when identifier not exists, return 404', async () => {
           //   const response = await request.get(buildRoute('not-exists')).set(headers);
@@ -310,7 +309,7 @@ describe('/profiles route', () => {
         });
       });
 
-      describe('/cases', () => {
+      describe('/profiles/:profileId/cases', () => {
         describe('GET', () => {
           // test('when identifier not exists, return 404', async () => {
           //   const response = await request.get(buildRoute('not-exists')).set(headers);
@@ -344,103 +343,153 @@ describe('/profiles route', () => {
       });
     });
 
-    describe('/:profileFlagId', () => {
-      const buildRoute = (profileId: number, profileFlagId: number) =>
-        `${baseRoute}/${profileId}/flags/${profileFlagId}`;
+    describe('/profiles/:profileId/flags', () => {
+      describe('/profiles/:profileId/flags/:profileFlagId', () => {
+        const buildRoute = (profileId: number, profileFlagId: number) =>
+          `${baseRoute}/${profileId}/flags/${profileFlagId}`;
 
-      let defaultFlags: profilesDB.ProfileFlag[];
-      beforeAll(async () => {
-        defaultFlags = await profilesDB
-          .getProfileFlagsForAccount(accountSid)
-          .then(result => result.unwrap());
-      });
-
-      describe('POST', () => {
-        afterAll(async () => {
-          // Dissasociate
-          db.task(t =>
-            t.none(
-              `DELETE FROM "ProfilesToProfileFlags" WHERE "profileId" = ${createdProfile.profiles[0].id}`,
-            ),
-          );
-        });
-
-        each([
-          {
-            description: 'auth is missing',
-            expectStatus: 401,
-            customHeaders: {},
-          },
-          {
-            description: 'profile does not exists',
-            profileId: 0,
-            expectStatus: 500,
-          },
-          {
-            description: 'flag does not exists',
-            profileFlagId: 0,
-            expectStatus: 500,
-          },
-          {
-            description: 'profile and flag exist',
-            expectStatus: 200,
-            expectFunction: (response, profileId, profileFlagId) => {
-              expect(response.body.id).toBe(profileId);
-              expect(response.body.profileFlags).toContain(profileFlagId);
-            },
-          },
-          {
-            description: 'association already exists',
-            expectStatus: 500,
-          },
-        ]).test(
-          'when $description, returns $expectStatus',
-          async ({
-            profileId = createdProfile.profiles[0].id,
-            profileFlagId = defaultFlags[0].id,
-            expectStatus,
-            customHeaders,
-            expectFunction,
-          }) => {
-            const response = await request
-              .post(buildRoute(profileId, profileFlagId))
-              .set(customHeaders || headers);
-            expect(response.statusCode).toBe(expectStatus);
-            console.log(response.body);
-            if (expectFunction) {
-              expectFunction(response, profileId, profileFlagId);
-            }
-          },
-        );
-      });
-
-      describe('DELETE', () => {
+        let defaultFlags: profilesDB.ProfileFlag[];
         beforeAll(async () => {
-          (
-            await profilesDB.associateProfileToProfileFlag()(
-              accountSid,
-              createdProfile.profiles[0].id,
-              defaultFlags[0].id,
-            )
-          ).unwrap();
-
-          const pfs = (
-            await profilesDB.getProfileById()(accountSid, createdProfile.profiles[0].id)
-          ).profileFlags;
-          if (!pfs.includes(defaultFlags[0].id)) {
-            throw new Error('Missing expected association');
-          }
+          defaultFlags = await profilesDB
+            .getProfileFlagsForAccount(accountSid)
+            .then(result => result.unwrap());
         });
 
-        afterAll(async () => {
-          // Dissasociate
-          await db.task(t =>
-            t.none(
-              `DELETE FROM "ProfilesToProfileFlags" WHERE "profileId" = ${createdProfile.profiles[0].id}`,
-            ),
+        describe('POST', () => {
+          afterAll(async () => {
+            // Dissasociate
+            db.task(t =>
+              t.none(
+                `DELETE FROM "ProfilesToProfileFlags" WHERE "profileId" = ${createdProfile.profiles[0].id}`,
+              ),
+            );
+          });
+
+          each([
+            {
+              description: 'auth is missing',
+              expectStatus: 401,
+              customHeaders: {},
+            },
+            {
+              description: 'profile does not exists',
+              profileId: 0,
+              expectStatus: 500,
+            },
+            {
+              description: 'flag does not exists',
+              profileFlagId: 0,
+              expectStatus: 500,
+            },
+            {
+              description: 'profile and flag exist',
+              expectStatus: 200,
+              expectFunction: (response, profileId, profileFlagId) => {
+                expect(response.body.id).toBe(profileId);
+                expect(response.body.profileFlags).toContain(profileFlagId);
+              },
+            },
+            {
+              description: 'association already exists',
+              expectStatus: 500,
+            },
+          ]).test(
+            'when $description, returns $expectStatus',
+            async ({
+              profileId = createdProfile.profiles[0].id,
+              profileFlagId = defaultFlags[0].id,
+              expectStatus,
+              customHeaders,
+              expectFunction,
+            }) => {
+              const response = await request
+                .post(buildRoute(profileId, profileFlagId))
+                .set(customHeaders || headers);
+              expect(response.statusCode).toBe(expectStatus);
+              if (expectFunction) {
+                expectFunction(response, profileId, profileFlagId);
+              }
+            },
           );
         });
 
+        describe('DELETE', () => {
+          beforeAll(async () => {
+            (
+              await profilesDB.associateProfileToProfileFlag()(
+                accountSid,
+                createdProfile.profiles[0].id,
+                defaultFlags[0].id,
+              )
+            ).unwrap();
+
+            const pfs = (
+              await profilesDB.getProfileById()(accountSid, createdProfile.profiles[0].id)
+            ).profileFlags;
+            if (!pfs.includes(defaultFlags[0].id)) {
+              throw new Error('Missing expected association');
+            }
+          });
+
+          afterAll(async () => {
+            // Dissasociate
+            await db.task(t =>
+              t.none(
+                `DELETE FROM "ProfilesToProfileFlags" WHERE "profileId" = ${createdProfile.profiles[0].id}`,
+              ),
+            );
+          });
+
+          each([
+            {
+              description: 'auth is missing',
+              expectStatus: 401,
+              customHeaders: {},
+            },
+            {
+              description: 'profile does not exists',
+              profileId: 0,
+              expectStatus: 404,
+            },
+            {
+              description: 'flag does not exists (no-op)',
+              profileFlagId: 0,
+              expectStatus: 200,
+            },
+            {
+              description: 'profile and flag exist',
+              expectStatus: 200,
+              expectFunction: (response, profileId, profileFlagId) => {
+                expect(response.body.id).toBe(profileId);
+                expect(response.body.profileFlags).not.toContain(profileFlagId);
+              },
+            },
+          ]).test(
+            'when $description, returns $expectStatus',
+            async ({
+              profileId = createdProfile.profiles[0].id,
+              profileFlagId = defaultFlags[0].id,
+              expectStatus,
+              customHeaders,
+              expectFunction,
+            }) => {
+              const response = await request
+                .delete(buildRoute(profileId, profileFlagId))
+                .set(customHeaders || headers);
+              expect(response.statusCode).toBe(expectStatus);
+              if (expectFunction) {
+                expectFunction(response, profileId, profileFlagId);
+              }
+            },
+          );
+        });
+      });
+    });
+
+    describe('/profiles/:profileId/sections', () => {
+      let createdProfileSection: profilesDB.ProfileSection;
+      describe('POST', () => {
+        const buildRoute = (profileId: number) => `${baseRoute}/${profileId}/sections`;
         each([
           {
             description: 'auth is missing',
@@ -450,45 +499,157 @@ describe('/profiles route', () => {
           {
             description: 'profile does not exists',
             profileId: 0,
-            expectStatus: 404,
+            expectStatus: 500,
           },
           {
-            description: 'flag does not exists (no-op)',
-            profileFlagId: 0,
+            description: 'profile exist and content is valid',
             expectStatus: 200,
-          },
-          {
-            description: 'profile and flag exist',
-            expectStatus: 200,
-            expectFunction: (response, profileId, profileFlagId) => {
-              expect(response.body.id).toBe(profileId);
-              expect(response.body.profileFlags).not.toContain(profileFlagId);
+            payload: { sectionType: 'note', content: 'a note' },
+            expectFunction: async (response, profileId, payload) => {
+              expect(response.body.profileId).toBe(profileId);
+              expect(response.body.content).toBe(payload.content);
+              expect(response.body.sectionType).toBe(payload.sectionType);
+
+              const updatedProfile = await profilesDB.getProfileById()(
+                accountSid,
+                profileId,
+              );
+
+              expect(updatedProfile.profileSections).toHaveLength(1);
+              expect(updatedProfile.profileSections[0]).toMatchObject({
+                id: response.body.id,
+                sectionType: response.body.sectionType,
+              });
+
+              createdProfileSection = response.body;
             },
           },
         ]).test(
           'when $description, returns $expectStatus',
           async ({
             profileId = createdProfile.profiles[0].id,
-            profileFlagId = defaultFlags[0].id,
             expectStatus,
+            payload,
             customHeaders,
             expectFunction,
           }) => {
             const response = await request
-              .delete(buildRoute(profileId, profileFlagId))
-              .set(customHeaders || headers);
+              .post(buildRoute(profileId))
+              .set(customHeaders || headers)
+              .send(payload);
             expect(response.statusCode).toBe(expectStatus);
-            console.log(response.body);
             if (expectFunction) {
-              expectFunction(response, profileId, profileFlagId);
+              await expectFunction(response, profileId, payload);
             }
           },
         );
+      });
+
+      describe('/profiles/:profileId/sections/:sectionId', () => {
+        const buildRoute = (profileId: number, sectionId: number) =>
+          `${baseRoute}/${profileId}/sections/${sectionId}`;
+        describe('PATCH', () => {
+          each([
+            {
+              description: 'auth is missing',
+              expectStatus: 401,
+              customHeaders: {},
+            },
+            {
+              description: 'profile does not exists',
+              profileId: 0,
+              expectStatus: 404,
+            },
+            {
+              description: 'section does not exists',
+              sectionId: 0,
+              expectStatus: 404,
+            },
+            {
+              description: 'profile and section exist',
+              expectStatus: 200,
+              payload: { content: 'a note' },
+              expectFunction: (response, profileId, payload) => {
+                expect(response.body.profileId).toBe(profileId);
+                expect(response.body.content).toBe(payload.content);
+                expect(response.body.updatedAt).not.toBe(response.body.createdAt);
+                expect(response.body.updatedBy).not.toBeNull();
+
+                createdProfileSection = response.body;
+              },
+            },
+          ]).test(
+            'when $description, returns $expectStatus',
+            async ({
+              profileId = createdProfile.profiles[0].id,
+              sectionId = createdProfileSection.id,
+              expectStatus,
+              payload,
+              customHeaders,
+              expectFunction,
+            }) => {
+              const response = await request
+                .patch(buildRoute(profileId, sectionId))
+                .set(customHeaders || headers)
+                .send(payload);
+              expect(response.statusCode).toBe(expectStatus);
+              if (expectFunction) {
+                expectFunction(response, profileId, payload);
+              }
+            },
+          );
+        });
+
+        describe('GET', () => {
+          each([
+            {
+              description: 'auth is missing',
+              expectStatus: 401,
+              customHeaders: {},
+            },
+            {
+              description: 'profile does not exists',
+              profileId: 0,
+              expectStatus: 404,
+            },
+            {
+              description: 'section does not exists',
+              sectionId: 0,
+              expectStatus: 404,
+            },
+            {
+              description: 'profile and section exist',
+              expectStatus: 200,
+              expectFunction: (response, profileId) => {
+                expect(response.body.profileId).toBe(profileId);
+                expect(response.body).toMatchObject(createdProfileSection);
+              },
+            },
+          ]).test(
+            'when $description, returns $expectStatus',
+            async ({
+              profileId = createdProfile.profiles[0].id,
+              sectionId = createdProfileSection.id,
+              expectStatus,
+              payload,
+              customHeaders,
+              expectFunction,
+            }) => {
+              const response = await request
+                .get(buildRoute(profileId, sectionId))
+                .set(customHeaders || headers);
+              expect(response.statusCode).toBe(expectStatus);
+              if (expectFunction) {
+                expectFunction(response, profileId, payload);
+              }
+            },
+          );
+        });
       });
     });
   });
 
-  describe('/flags', () => {
+  describe('/profiles/flags', () => {
     describe('GET', () => {
       const defaultFlags = ['abusive', 'blocked'];
 
