@@ -224,7 +224,7 @@ export const searchByProfileId = generalizedSearchQueryFunction<
   accountSid,
   limit,
   offset,
-  counselor: searchParameters.counsellors,
+  counsellors: searchParameters.counsellors,
   helpline: searchParameters.helplines,
   profileId: searchParameters.profileId,
 }));

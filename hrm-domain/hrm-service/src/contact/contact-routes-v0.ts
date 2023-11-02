@@ -156,6 +156,7 @@ const canEditContact = asyncHandler(async (req, res, next) => {
         user,
       });
       if (!contactObj) {
+        // This is a dirty hack that relies on the catch block in the try/catch below to return a 404
         throw new Error('contact not found');
       }
       if (contactObj.finalizedAt) {
