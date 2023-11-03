@@ -68,7 +68,7 @@ describe('KHP Data Pull - Pull Cases', () => {
   const startDate = parseISO('2023-05-01T00:00:00.000Z');
   const endDate = parseISO('2023-05-30T00:00:00.000Z');
 
-  const searchParams = {
+  const filterParams = {
     filters: {
       updatedAt: {
         from: formatISO(startDate),
@@ -92,7 +92,8 @@ describe('KHP Data Pull - Pull Cases', () => {
     expect(searchCasesSpy).toHaveBeenCalledWith(
       accountSid,
       defaultLimitAndOffset,
-      searchParams,
+      {},
+      filterParams,
       maxPermissions,
     );
   });

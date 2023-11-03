@@ -40,6 +40,6 @@ describe('getSignedS3Url', () => {
     });
 
     const result = await getSignedS3Url(event);
-    expect(result).toEqual(newOk({ data: { media_url: mockSignedUrl } }));
+    expect(result.unwrap()).toEqual({ media_url: mockSignedUrl });
   });
 });

@@ -78,6 +78,8 @@ export const contact1: CreateContactPayload = {
   number: '12025550184',
   channel: 'chat',
   conversationDuration: 14,
+  profileId: undefined,
+  identifierId: undefined,
 };
 
 export const contact2: CreateContactPayload = {
@@ -136,6 +138,8 @@ export const contact2: CreateContactPayload = {
   number: '12025550184',
   channel: 'chat',
   conversationDuration: 10,
+  profileId: undefined,
+  identifierId: undefined,
 };
 
 export const nonData1: CreateContactPayload = {
@@ -248,6 +252,8 @@ export const withTaskId: CreateContactPayload = {
   channel: 'chat',
   conversationDuration: 1,
   taskId: 'taskId',
+  profileId: undefined,
+  identifierId: undefined,
 };
 
 export const case1: Partial<Case> = {

@@ -31,6 +31,8 @@ export type NewContactRecord = {
   channelSid?: string;
   serviceSid?: string;
   caseId?: string;
+  profileId?: number;
+  identifierId?: number;
 };
 
 export const INSERT_CONTACT_SQL = `
@@ -53,6 +55,8 @@ export const INSERT_CONTACT_SQL = `
       "taskId",
       "channelSid",
       "serviceSid",
+      "profileId",
+      "identifierId",
       "finalizedAt"
     ) (SELECT 
         $<accountSid>, 
@@ -70,6 +74,8 @@ export const INSERT_CONTACT_SQL = `
         $<taskId>, 
         $<channelSid>, 
         $<serviceSid>,
+        $<profileId>,
+        $<identifierId>,
         CASE WHEN $<finalize> = true THEN CURRENT_TIMESTAMP ELSE NULL END
       WHERE NOT EXISTS (
         ${selectSingleContactByTaskId('Contacts')}

@@ -15,24 +15,26 @@
  */
 
 import omit from 'lodash/omit';
-import { ContactJobType } from '@tech-matters/types';
+import { ContactJobType, TResult, isErr, newErr, newOk } from '@tech-matters/types';
 import {
   connectToCase,
   Contact,
   create,
+  SearchQueryFunction,
   ExistingContactRecord,
   getById,
   getByTaskSid,
   patch,
   search,
-  SearchParameters,
+  searchByProfileId,
 } from './contact-data-access';
+import { retrieveCategories } from './categories';
+import { PaginationQuery, getPaginationElements } from '../search';
+import type { NewContactRecord } from './sql/contact-insert-sql';
 import { ContactRawJson, ReferralWithoutContactId } from './contact-json';
-import { getPaginationElements } from '../search';
-import { NewContactRecord } from './sql/contact-insert-sql';
 import { setupCanForRules } from '../permissions/setupCanForRules';
 import { actionsMaps } from '../permissions';
-import { TwilioUser } from '@tech-matters/twilio-worker-auth';
+import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { connectContactToCsamReports, CSAMReport } from '../csam-report/csam-report';
 import { createReferral } from '../referral/referral-model';
 import { createContactJob } from '../contact-job/contact-job';
@@ -48,8 +50,8 @@ import {
   LegacyConversationMedia,
   NewConversationMedia,
 } from '../conversation-media/conversation-media';
+import { Profile, getOrCreateProfileWithIdentifier } from '../profile/profile';
 import { deleteContactReferrals } from '../referral/referral-data-access';
-import { retrieveCategories } from './categories';
 import { DatabaseUniqueConstraintViolationError, inferPostgresError } from '../sql';
 
 // Re export as is:
@@ -215,14 +217,14 @@ export const bindApplyTransformations =
     return includeLegacyCategories(transformed);
   };
 
-export const getContactById = async (accountSid: string, contactId: number) => {
+export const getContactById = async (
+  accountSid: string,
+  contactId: number,
+  { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
+) => {
   const contact = await getById(accountSid, contactId);
 
-  if (!contact) {
-    throw new Error(`Contact not found with id ${contactId}`);
-  }
-
-  return contact;
+  return contact ? bindApplyTransformations(can, user)(contact) : undefined;
 };
 
 export const getContactByTaskId = async (
@@ -280,6 +282,27 @@ const findS3StoredTranscriptPending = (
   return null;
 };
 
+const initProfile = async (conn, accountSid, contact) => {
+  if (!contact.number) return {};
+
+  const profileResult = await getOrCreateProfileWithIdentifier(conn)(
+    contact.number,
+    accountSid,
+  );
+
+  if (isErr(profileResult)) {
+    // Throw to make the transaction to rollback
+    throw new Error(
+      `Failed creating contact: profile result returned error variant ${profileResult.message}`,
+    );
+  }
+
+  return {
+    profileId: profileResult.data?.profiles?.[0].id,
+    identifierId: profileResult.data?.id,
+  };
+};
+
 // Creates a contact with all its related records within a single transaction
 export const createContact = async (
   accountSid: string,
@@ -298,6 +321,12 @@ export const createContact = async (
           conversationMediaPayload,
         } = getNewContactPayload(newContact);
 
+        const { profileId, identifierId } = await initProfile(
+          conn,
+          accountSid,
+          newContactPayload,
+        );
+
         const completeNewContact: NewContactRecord = {
           ...newContactPayload,
           helpline: newContactPayload.helpline ?? '',
@@ -313,6 +342,9 @@ export const createContact = async (
           rawJson: newContactPayload.rawJson,
           queueName: newContactPayload.queueName ?? '',
           createdBy,
+          // Hardcoded to first profile for now, but will be updated to support multiple profiles
+          profileId,
+          identifierId,
         };
 
         // create contact record (may return an exiting one cause idempotence)
@@ -442,10 +474,15 @@ export const patchContact = async (
         });
       }
     }
+
+    const { profileId, identifierId } = await initProfile(conn, accountSid, restOfPatch);
+
     const updated = await patch(conn)(accountSid, contactId, finalize, {
       updatedBy,
       ...restOfPatch,
       ...rawJson,
+      profileId,
+      identifierId,
     });
     if (!updated) {
       throw new Error(`Contact not found with id ${contactId}`);
@@ -606,60 +643,98 @@ const overrideCounsellor = (
   counsellor?: string,
 ) => (searchPermissions.canOnlyViewOwnContacts ? user.workerSid : counsellor);
 
-export const searchContacts = async (
+const generalizedSearchContacts =
+  <T extends { counselor?: string }>(searchQuery: SearchQueryFunction<T>) =>
+  async (
+    accountSid: string,
+    searchParameters: T,
+    query,
+    {
+      can,
+      user,
+      searchPermissions,
+    }: {
+      can: ReturnType<typeof setupCanForRules>;
+      user: TwilioUser;
+      searchPermissions: SearchPermissions;
+    },
+    originalFormat?: boolean,
+  ): Promise<{
+    count: number;
+    contacts: SearchContact[] | WithLegacyCategories<Contact>[];
+  }> => {
+    const applyTransformations = bindApplyTransformations(can, user);
+    const { limit, offset } = getPaginationElements(query);
+    const { canOnlyViewOwnContacts } = searchPermissions;
+
+    /**
+     * VIEW_CONTACT permission:
+     * Handle filtering contacts according to: https://github.com/techmatters/hrm/pull/316#discussion_r1131118034
+     * The search query already filters the contacts based on the given counsellor (workerSid).
+     */
+    if (
+      cannotViewAnyContactsGivenThisCounsellor(
+        user,
+        searchPermissions,
+        searchParameters.counselor,
+      )
+    ) {
+      return {
+        count: 0,
+        contacts: [],
+      };
+    } else {
+      searchParameters.counselor = overrideCounsellor(
+        user,
+        searchPermissions,
+        searchParameters.counselor,
+      );
+    }
+    if (canOnlyViewOwnContacts) {
+      searchParameters.counselor = user.workerSid;
+    }
+
+    const unprocessedResults = await searchQuery(
+      accountSid,
+      searchParameters,
+      limit,
+      offset,
+    );
+    const contacts = unprocessedResults.rows.map(applyTransformations);
+
+    return {
+      count: unprocessedResults.count,
+      contacts: originalFormat ? contacts : convertContactsToSearchResults(contacts),
+    };
+  };
+
+export const searchContacts = generalizedSearchContacts(search);
+
+const searchContactsByProfileId = generalizedSearchContacts(searchByProfileId);
+
+export const getContactsByProfileId = async (
   accountSid: string,
-  searchParameters: SearchParameters,
-  query,
-  {
-    can,
-    user,
-    searchPermissions,
-  }: {
+  profileId: Profile['id'],
+  query: Pick<PaginationQuery, 'limit' | 'offset'>,
+  ctx: {
     can: ReturnType<typeof setupCanForRules>;
     user: TwilioUser;
     searchPermissions: SearchPermissions;
   },
-  originalFormat?: boolean,
-): Promise<{
-  count: number;
-  contacts: SearchContact[] | WithLegacyCategories<Contact>[];
-}> => {
-  const applyTransformations = bindApplyTransformations(can, user);
-  const { limit, offset } = getPaginationElements(query);
-  const { canOnlyViewOwnContacts } = searchPermissions;
-
-  /**
-   * VIEW_CONTACT permission:
-   * Handle filtering contacts according to: https://github.com/techmatters/hrm/pull/316#discussion_r1131118034
-   * The search query already filters the contacts based on the given counsellor (workerSid).
-   */
-  if (
-    cannotViewAnyContactsGivenThisCounsellor(
-      user,
-      searchPermissions,
-      searchParameters.counselor,
-    )
-  ) {
-    return {
-      count: 0,
-      contacts: [],
-    };
-  } else {
-    searchParameters.counselor = overrideCounsellor(
-      user,
-      searchPermissions,
-      searchParameters.counselor,
+): Promise<TResult<Awaited<ReturnType<typeof searchContactsByProfileId>>>> => {
+  try {
+    const contacts = await searchContactsByProfileId(
+      accountSid,
+      { profileId },
+      query,
+      ctx,
+      true,
     );
-  }
-  if (canOnlyViewOwnContacts) {
-    searchParameters.counselor = user.workerSid;
-  }
 
-  const unprocessedResults = await search(accountSid, searchParameters, limit, offset);
-  const contacts = unprocessedResults.rows.map(applyTransformations);
-
-  return {
-    count: unprocessedResults.count,
-    contacts: originalFormat ? contacts : convertContactsToSearchResults(contacts),
-  };
+    return newOk({ data: contacts });
+  } catch (err) {
+    return newErr({
+      message: err instanceof Error ? err.message : String(err),
+    });
+  }
 };

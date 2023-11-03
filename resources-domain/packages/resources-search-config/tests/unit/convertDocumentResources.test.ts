@@ -15,7 +15,7 @@
  */
 
 import { FlatResource } from '@tech-matters/types';
-import { resourceIndexConfiguration } from '../index';
+import { resourceIndexConfiguration } from '../../index';
 
 const BASELINE_DATE = new Date('2021-01-01T00:00:00.000Z');
 
@@ -38,6 +38,7 @@ describe('convertIndexDocument', () => {
         { key: 'description', value: 'This is the description', language: '' },
         { key: 'keywords', value: 'keyword1', language: '' },
         { key: 'keywords', value: 'keyword2', language: '' },
+        { key: 'taxonomies/taxonomy1', value: 'taxonomy1', language: '' },
       ],
       numberAttributes: [
         { key: 'eligibilityMinAge', value: 10 },
@@ -57,14 +58,16 @@ describe('convertIndexDocument', () => {
     expect(document).toEqual({
       id: '1234',
       name: ['Resource'],
-      high_boost_global: 'This is the description',
+      high_boost_global: 'This is the description taxonomy1 free ON Toronto',
       low_boost_global:
         'This is the english title This is the french title keyword1 keyword2',
       eligibilityMinAge: 10,
       eligibilityMaxAge: 20,
-      city: [' Toronto'],
+      city: ['Toronto'],
       feeStructure: 'free',
-      province: [' ON'],
+      province: ['ON'],
+      taxonomyLevelName: ['taxonomy1'],
+      taxonomyLevelNameCompletion: ['taxonomy1'],
     });
   });
 });

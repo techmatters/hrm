@@ -20,7 +20,9 @@ import { updateByIdSql } from './sql/case-update-sql';
 import {
   OrderByColumnType,
   OrderByDirectionType,
+  SearchQueryBuilder,
   selectCaseSearch,
+  selectCaseSearchByProfileId,
 } from './sql/case-search-sql';
 import {
   caseSectionUpsertSql,
@@ -148,39 +150,87 @@ export const getById = async (
   });
 };
 
-export const search = async (
+type BaseSearchQueryParams = {
+  accountSid: string;
+  limit: number;
+  offset: number;
+};
+export type OptionalSearchQueryParams = Partial<CaseSearchCriteria & CaseListFilters>;
+type SearchQueryParamsBuilder<T> = (
+  accountSid: string,
+  searchCriteria: T,
+  filters: CaseListFilters,
+  limit: number,
+  offset: number,
+) => BaseSearchQueryParams & OptionalSearchQueryParams;
+
+export type SearchQueryFunction<T> = (
   listConfiguration: CaseListConfiguration,
   accountSid: string,
-  searchCriteria: CaseSearchCriteria = {},
-  filters: CaseListFilters = {},
-): Promise<{ cases: readonly CaseRecord[]; count: number }> => {
-  const { limit, offset, sortBy, sortDirection } =
-    getPaginationElements(listConfiguration);
-  const orderClause = [{ sortBy, sortDirection }];
-  const { count, rows } = await db.task(async connection => {
-    const statement = selectCaseSearch(filters, orderClause);
-    const queryValues = {
-      ...filters,
-      accountSid,
-      firstName: searchCriteria.firstName ? `%${searchCriteria.firstName}%` : null,
-      lastName: searchCriteria.lastName ? `%${searchCriteria.lastName}%` : null,
-      phoneNumber: searchCriteria.phoneNumber
-        ? `%${searchCriteria.phoneNumber.replace(/[\D]/gi, '')}%`
-        : null,
-      contactNumber: searchCriteria.contactNumber || null,
-      limit: limit,
-      offset: offset,
-    };
-    const result: CaseWithCount[] = await connection.any<CaseWithCount>(
-      statement,
-      queryValues,
-    );
-    const totalCount: number = result.length ? result[0].totalCount : 0;
-    return { rows: result, count: totalCount };
-  });
+  searchCriteria: T,
+  filters?: CaseListFilters,
+) => Promise<{ cases: CaseRecord[]; count: number }>;
 
-  return { cases: rows, count };
+const generalizedSearchQueryFunction = <T>(
+  sqlQueryBuilder: SearchQueryBuilder,
+  sqlQueryParamsBuilder: SearchQueryParamsBuilder<T>,
+): SearchQueryFunction<T> => {
+  return async (listConfiguration, accountSid, searchCriteria, filters) => {
+    const { limit, offset, sortBy, sortDirection } =
+      getPaginationElements(listConfiguration);
+    const orderClause = [{ sortBy, sortDirection }];
+
+    const { count, rows } = await db.task(async connection => {
+      const statement = sqlQueryBuilder(filters, orderClause);
+      const queryValues = sqlQueryParamsBuilder(
+        accountSid,
+        searchCriteria,
+        filters,
+        limit,
+        offset,
+      );
+
+      const result: CaseWithCount[] = await connection.any<CaseWithCount>(
+        statement,
+        queryValues,
+      );
+      const totalCount: number = result.length ? result[0].totalCount : 0;
+      return { rows: result, count: totalCount };
+    });
+
+    return { cases: rows, count };
+  };
 };
+
+export const search = generalizedSearchQueryFunction<CaseSearchCriteria>(
+  selectCaseSearch,
+  (accountSid, searchCriteria, filters, limit, offset) => ({
+    ...filters,
+    accountSid,
+    firstName: searchCriteria.firstName ? `%${searchCriteria.firstName}%` : null,
+    lastName: searchCriteria.lastName ? `%${searchCriteria.lastName}%` : null,
+    phoneNumber: searchCriteria.phoneNumber
+      ? `%${searchCriteria.phoneNumber.replace(/[\D]/gi, '')}%`
+      : null,
+    contactNumber: searchCriteria.contactNumber || null,
+    limit: limit,
+    offset: offset,
+  }),
+);
+
+export const searchByProfileId = generalizedSearchQueryFunction<{
+  profileId: number;
+}>(
+  selectCaseSearchByProfileId,
+  (accountSid, searchParameters, filters, limit, offset) => ({
+    accountSid,
+    limit,
+    offset,
+    counsellors: filters.counsellors,
+    helpline: filters.helplines,
+    profileId: searchParameters.profileId,
+  }),
+);
 
 export const deleteById = async (id, accountSid) => {
   return db.oneOrNone(DELETE_BY_ID, [accountSid, id]);
