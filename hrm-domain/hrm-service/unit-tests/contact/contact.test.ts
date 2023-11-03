@@ -24,7 +24,7 @@ import {
   SearchContact,
   searchContacts,
   WithLegacyCategories,
-} from '../../src/contact/contact';
+} from '../../src/contact/contactService';
 
 import * as csamReportsApi from '../../src/csam-report/csam-report';
 import * as referralApi from '../../src/referral/referral-model';

@@ -30,7 +30,7 @@ import {
   useOpenRules,
 } from './server';
 import { SearchParameters as ContactSearchParameters } from '../src/contact/contact-data-access';
-import { SearchParameters as CaseSearchParameters } from '../src/case/case';
+import { SearchParameters as CaseSearchParameters } from '../src/case/caseService';
 
 useOpenRules();
 const server = getServer();

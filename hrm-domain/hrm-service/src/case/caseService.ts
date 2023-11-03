@@ -41,7 +41,7 @@ import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import {
   bindApplyTransformations as bindApplyContactTransformations,
   WithLegacyCategories,
-} from '../contact/contact';
+} from '../contact/contactService';
 import type { SearchPermissions } from '../permissions/search-permissions';
 import type { Profile } from '../profile/profile-data-access';
 import type { PaginationQuery } from '../search';
@@ -83,7 +83,7 @@ export const WELL_KNOWN_CASE_SECTION_NAMES: Record<
   documents: { getSectionSpecificData: s => s.document, sectionTypeName: 'document' },
 };
 
-export type Case = CaseRecordCommon & {
+export type CaseService = CaseRecordCommon & {
   id: number;
   childName?: string;
   categories: Record<string, string[]>;
@@ -162,7 +162,7 @@ const addCategories = (caseItem: CaseRecordWithLegacyCategoryContacts) => {
  * @param workerSid
  */
 const caseToCaseRecord = (
-  inputCase: Partial<Case>,
+  inputCase: Partial<CaseService>,
   workerSid: string,
 ): Partial<NewCaseRecord> => {
   const { connectedContacts, ...caseWithoutContacts } = inputCase;
@@ -191,7 +191,7 @@ const caseToCaseRecord = (
   };
 };
 
-const caseRecordToCase = (record: CaseRecordWithLegacyCategoryContacts): Case => {
+const caseRecordToCase = (record: CaseRecordWithLegacyCategoryContacts): CaseService => {
   // Remove legacy case sections
   const info = {
     ...record.info,
@@ -225,10 +225,10 @@ const mapContactTransformations =
   };
 
 export const createCase = async (
-  body: Partial<Case>,
-  accountSid: Case['accountSid'],
-  workerSid: Case['twilioWorkerId'],
-): Promise<Case> => {
+  body: Partial<CaseService>,
+  accountSid: CaseService['accountSid'],
+  workerSid: CaseService['twilioWorkerId'],
+): Promise<CaseService> => {
   const nowISO = new Date().toISOString();
   delete body.id;
   const record = caseToCaseRecord(
@@ -250,12 +250,12 @@ export const createCase = async (
 };
 
 export const updateCase = async (
-  id: Case['id'],
-  body: Partial<Case>,
-  accountSid: Case['accountSid'],
-  workerSid: Case['twilioWorkerId'],
+  id: CaseService['id'],
+  body: Partial<CaseService>,
+  accountSid: CaseService['accountSid'],
+  workerSid: CaseService['twilioWorkerId'],
   { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
-): Promise<Case> => {
+): Promise<CaseService> => {
   const caseFromDB: CaseRecord = await getById(id, accountSid);
   if (!caseFromDB) {
     return;
@@ -280,7 +280,7 @@ export const getCase = async (
   id: number,
   accountSid: string,
   { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
-): Promise<Case | undefined> => {
+): Promise<CaseService | undefined> => {
   const caseFromDb = await getById(id, accountSid);
 
   if (caseFromDb) {
@@ -298,7 +298,7 @@ export type SearchParameters = CaseSearchCriteria & {
 };
 
 export type CaseSearchReturn = {
-  cases: Case[];
+  cases: CaseService[];
   count: number;
 };
 

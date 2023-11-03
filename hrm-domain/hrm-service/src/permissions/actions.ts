@@ -37,12 +37,15 @@ export const actionsMaps = {
     EDIT_CASE_SUMMARY: 'editCaseSummary',
     EDIT_CHILD_IS_AT_RISK: 'editChildIsAtRisk',
     EDIT_FOLLOW_UP_DATE: 'editFollowUpDate',
+    UPDATE_CASE_CONTACTS: 'updateCaseContacts',
   },
   contact: {
     VIEW_CONTACT: 'viewContact',
     EDIT_CONTACT: 'editContact',
     VIEW_EXTERNAL_TRANSCRIPT: 'viewExternalTranscript',
     VIEW_RECORDING: 'viewRecording',
+    ADD_CONTACT_TO_CASE: 'addContactToCase',
+    REMOVE_CONTACT_FROM_CASE: 'removeContactFromCase',
   },
   postSurvey: {
     VIEW_POST_SURVEY: 'viewPostSurvey',

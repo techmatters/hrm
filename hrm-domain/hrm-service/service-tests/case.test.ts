@@ -19,9 +19,9 @@
 import each from 'jest-each';
 
 import { db } from '../src/connection-pool';
-import * as caseApi from '../src/case/case';
-import { createContact, connectContactToCase } from '../src/contact/contact';
-import { Case } from '../src/case/case';
+import * as caseApi from '../src/case/caseService';
+import { createContact, connectContactToCase } from '../src/contact/contactService';
+import { CaseService } from '../src/case/caseService';
 import * as caseDb from '../src/case/case-data-access';
 import { convertCaseInfoToExpectedInfo, without } from './case-validation';
 import { isBefore } from 'date-fns';
@@ -210,7 +210,7 @@ describe('/cases route', () => {
       },
     ];
 
-    const cases: Record<string, Case> = {};
+    const cases: Record<string, CaseService> = {};
     let nonExistingCaseId;
     let subRoute;
 
@@ -318,23 +318,23 @@ describe('/cases route', () => {
 
         if (expectTranscripts) {
           expect(
-            (<caseApi.Case>response.body).connectedContacts?.every(
+            (<caseApi.CaseService>response.body).connectedContacts?.every(
               c => c.conversationMedia?.some(isS3StoredTranscript),
             ),
           ).toBeTruthy();
           expect(
-            (<caseApi.Case>response.body).connectedContacts?.every(
+            (<caseApi.CaseService>response.body).connectedContacts?.every(
               c => c.rawJson?.conversationMedia?.some(cm => cm.store === 'S3'),
             ),
           ).toBeTruthy();
         } else {
           expect(
-            (<caseApi.Case>response.body).connectedContacts?.every(
+            (<caseApi.CaseService>response.body).connectedContacts?.every(
               c => c.conversationMedia?.some(isS3StoredTranscript),
             ),
           ).toBeFalsy();
           expect(
-            (<caseApi.Case>response.body).connectedContacts?.every(
+            (<caseApi.CaseService>response.body).connectedContacts?.every(
               c => c.rawJson?.conversationMedia?.some(cm => cm.store === 'S3'),
             ),
           ).toBeFalsy();
@@ -712,18 +712,18 @@ describe('/cases route', () => {
 
         if (expectTranscripts) {
           expect(
-            (<caseApi.Case>response.body).connectedContacts?.every(
+            (<caseApi.CaseService>response.body).connectedContacts?.every(
               c => c.conversationMedia?.some(isS3StoredTranscript),
             ),
           ).toBeTruthy();
           expect(
-            (<caseApi.Case>response.body).connectedContacts?.every(
+            (<caseApi.CaseService>response.body).connectedContacts?.every(
               c => c.rawJson?.conversationMedia?.some(cm => cm.store === 'S3'),
             ),
           ).toBeTruthy();
         } else {
           expect(
-            (<caseApi.Case>response.body).connectedContacts?.every(
+            (<caseApi.CaseService>response.body).connectedContacts?.every(
               c => c.conversationMedia?.some(isS3StoredTranscript),
             ),
           ).toBeFalsy();

@@ -19,7 +19,7 @@ import formatISO from 'date-fns/formatISO';
 import format from 'date-fns/format';
 import addDays from 'date-fns/addDays';
 
-import * as caseApi from '../../../src/case/case';
+import * as caseApi from '../../../src/case/caseService';
 import * as context from '../../../src/data-pull-task/khp-data-pull-task/context';
 import { defaultLimitAndOffset } from '../../../src/data-pull-task/khp-data-pull-task/auto-paginate';
 import { pullCases } from '../../../src/data-pull-task/khp-data-pull-task/pull-cases';
@@ -42,7 +42,7 @@ jest.mock('@tech-matters/s3-client', () => {
   };
 });
 
-const getExpectedS3Params = (cas: caseApi.Case) => {
+const getExpectedS3Params = (cas: caseApi.CaseService) => {
   const date = format(cas.updatedAt as unknown as Date, 'yyyy/MM/dd');
   return {
     bucket,

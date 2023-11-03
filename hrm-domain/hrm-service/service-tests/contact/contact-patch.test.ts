@@ -19,9 +19,9 @@ import {
   CreateContactPayload,
   PatchPayload,
   WithLegacyCategories,
-} from '../../src/contact/contact';
+} from '../../src/contact/contactService';
 import '../case-validation';
-import * as contactApi from '../../src/contact/contact';
+import * as contactApi from '../../src/contact/contactService';
 import { accountSid, contact1, withTaskIdAndTranscript, workerSid } from '../mocks';
 import { twilioUser } from '@tech-matters/twilio-worker-auth/dist';
 import each from 'jest-each';

@@ -65,7 +65,7 @@ const cleanupContactsJobs = () => {
   return db.task(t => t.none(`DELETE FROM "ContactJobs" ${idsWhereClause}`));
 };
 
-let contactApi: typeof import('../../../src/contact/contact');
+let contactApi: typeof import('../../../src/contact/contactService');
 let SQSClient: typeof import('../../../src/contact-job/client-sqs');
 let contactJobComplete: typeof import('../../../src/contact-job/contact-job-complete');
 let contactJobPublish: typeof import('../../../src/contact-job/contact-job-publish');
@@ -73,7 +73,7 @@ let contactJobProcessor: typeof import('../../../src/contact-job/contact-job-pro
 
 beforeEach(() => {
   jest.isolateModules(() => {
-    contactApi = require('../../../src/contact/contact');
+    contactApi = require('../../../src/contact/contactService');
     SQSClient = require('../../../src/contact-job/client-sqs');
     contactJobComplete = require('../../../src/contact-job/contact-job-complete');
     contactJobPublish = require('../../../src/contact-job/contact-job-publish');
