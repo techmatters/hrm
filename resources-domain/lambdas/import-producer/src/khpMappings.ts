@@ -207,7 +207,8 @@ const KHP_MAPPING_NODE_TAXONOMIES: { children: MappingNode } = {
         '{taxonomyIndex}': {
           children: {
             nameEN: translatableAttributeMapping(
-              'taxonomies/{arrayIndex}/{taxonomyIndex}',
+              ({ captures, parentValue }) =>
+                `taxonomies/${captures.arrayIndex}/${parentValue.code}`,
               {
                 value: ctx => ctx.currentValue,
                 language: 'en',
@@ -215,13 +216,40 @@ const KHP_MAPPING_NODE_TAXONOMIES: { children: MappingNode } = {
               },
             ),
             nameFR: translatableAttributeMapping(
-              'taxonomies/{arrayIndex}/{taxonomyIndex}',
+              ({ captures, parentValue }) =>
+                `taxonomies/${captures.arrayIndex}/${parentValue.code}`,
               {
                 value: ctx => ctx.currentValue,
                 language: 'fr',
                 info: ctx => ctx.parentValue,
               },
             ),
+            ancestors: {
+              children: {
+                '{ancestorIndex}': {
+                  children: {
+                    nameEN: translatableAttributeMapping(
+                      ({ captures, parentValue }) =>
+                        `taxonomies/${captures.arrayIndex}/${parentValue.code}`,
+                      {
+                        value: ctx => ctx.currentValue,
+                        language: 'en',
+                        info: ctx => ctx.parentValue,
+                      },
+                    ),
+                    nameFR: translatableAttributeMapping(
+                      ({ captures, parentValue }) =>
+                        `taxonomies/${captures.arrayIndex}/${parentValue.code}`,
+                      {
+                        value: ctx => ctx.currentValue,
+                        language: 'fr',
+                        info: ctx => ctx.parentValue,
+                      },
+                    ),
+                  },
+                },
+              },
+            },
           },
         },
       },
