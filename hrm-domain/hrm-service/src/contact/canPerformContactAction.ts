@@ -27,7 +27,7 @@ import { isTwilioTaskTransferTarget } from '@tech-matters/twilio-client/dist/isT
 import createError from 'http-errors';
 import { getCase } from '../case/caseService';
 
-export const canPerformActionOnContact = (
+const canPerformActionOnContact = (
   action: (typeof actionsMaps.contact)[keyof typeof actionsMaps.contact],
   additionalValidationForFinalized: (
     contact: WithLegacyCategories<Contact>,
@@ -117,22 +117,29 @@ export const canPerformContactAction = canPerformActionOnContact(
   checkFinalizedContactEditsOnlyChangeForm,
 );
 
+const canRemoveFromCase = async (
+  originalCaseId: string,
+  { can, user, accountSid },
+): Promise<boolean> => {
+  if (originalCaseId) {
+    const originalCaseObj = await getCase(parseInt(originalCaseId), accountSid, {
+      can,
+      user,
+    });
+    if (!originalCaseObj) return true; // Allow to disconnect from non existent case I guess
+    return can(user, actionsMaps.case.UPDATE_CASE_CONTACTS, originalCaseObj);
+  }
+  return true;
+};
+
 const canConnectContact = canPerformActionOnContact(
   actionsMaps.contact.ADD_CONTACT_TO_CASE,
   async (
     { caseId: originalCaseId }: WithLegacyCategories<Contact>,
     { can, user, accountSid, body: { caseId: targetCaseId } },
   ) => {
-    if (originalCaseId) {
-      const originalCaseObj = await getCase(parseInt(targetCaseId), accountSid, {
-        can,
-        user,
-      });
-      if (
-        originalCaseObj &&
-        can(user, actionsMaps.case.UPDATE_CASE_CONTACTS, originalCaseObj)
-      )
-        return false;
+    if (!(await canRemoveFromCase(originalCaseId, { can, user, accountSid }))) {
+      return false;
     }
     const targetCaseObj = await getCase(parseInt(targetCaseId), accountSid, {
       can,
@@ -145,15 +152,8 @@ const canConnectContact = canPerformActionOnContact(
 
 export const canDisconnectContact = canPerformActionOnContact(
   actionsMaps.contact.REMOVE_CONTACT_FROM_CASE,
-  async ({ caseId }: WithLegacyCategories<Contact>, { can, user, accountSid }) => {
-    if (caseId) {
-      const caseObj = await getCase(parseInt(caseId), accountSid, { can, user });
-      if (!caseObj) throw createError(404);
-      return can(user, actionsMaps.case.UPDATE_CASE_CONTACTS, caseObj);
-    }
-    // Already disconnected - NOOP
-    return true;
-  },
+  async ({ caseId }: WithLegacyCategories<Contact>, { can, user, accountSid }) =>
+    canRemoveFromCase(caseId, { can, user, accountSid }),
 );
 
 // TODO: Remove when we start disallowing disconnecting contacts via the connect endpoint

@@ -29,7 +29,7 @@ const { maxPermissions } = context;
 const accountSid = 'ACxxx';
 const bucket = 'docs-bucket';
 
-jest.mock('../../../src/contact/contact');
+jest.mock('../../../src/contact/contactService');
 jest.mock('../../../src/data-pull-task/khp-data-pull-task/context');
 
 let putS3ObjectSpy = jest.fn();
