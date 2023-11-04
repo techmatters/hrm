@@ -16,6 +16,7 @@
 
 import format from 'date-fns/format';
 import formatISO from 'date-fns/formatISO';
+// eslint-disable-next-line import/no-extraneous-dependencies
 import { putS3Object } from '@tech-matters/s3-client';
 
 import { getContext, maxPermissions } from './context';
