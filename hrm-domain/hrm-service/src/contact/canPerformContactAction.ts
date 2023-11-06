@@ -112,7 +112,7 @@ const checkFinalizedContactEditsOnlyChangeForm = async (
   return updatedProps.every(prop => prop === 'rawJson' || prop === 'referrals');
 };
 
-export const canPerformContactAction = canPerformActionOnContact(
+export const canPerformEditContactAction = canPerformActionOnContact(
   actionsMaps.contact.EDIT_CONTACT,
   checkFinalizedContactEditsOnlyChangeForm,
 );

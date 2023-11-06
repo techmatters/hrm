@@ -29,7 +29,7 @@ import type { NextFunction, Request, Response } from 'express';
 import {
   canChangeContactConnection,
   canDisconnectContact,
-  canPerformContactAction,
+  canPerformEditContactAction,
 } from './canPerformContactAction';
 
 const contactsRouter = SafeRouter();
@@ -157,7 +157,7 @@ const validatePatchPayload = ({ body }: Request, res: Response, next: NextFuncti
 contactsRouter.patch(
   '/:contactId',
   validatePatchPayload,
-  canPerformContactAction,
+  canPerformEditContactAction,
   async (req, res) => {
     const { accountSid, user } = req;
     const { contactId } = req.params;
