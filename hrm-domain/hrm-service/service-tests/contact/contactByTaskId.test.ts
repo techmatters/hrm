@@ -14,9 +14,9 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import * as contactApi from '../../src/contact/contact';
+import * as contactApi from '../../src/contact/contactService';
 import '../case-validation';
-import { ContactRawJson, WithLegacyCategories } from '../../src/contact/contact';
+import { ContactRawJson, WithLegacyCategories } from '../../src/contact/contactService';
 import { accountSid, contact1, workerSid } from '../mocks';
 import { twilioUser } from '@tech-matters/twilio-worker-auth/dist';
 import { getRequest, getServer, headers, useOpenRules } from '../server';

@@ -18,11 +18,14 @@
   "editCaseSummary": [],
   "editChildIsAtRisk": [],
   "editFollowUpDate": [],
+  "updateCaseContacts": [],
 
   "viewContact": [],
   "editContact": [],
   "viewExternalTranscript": [],
   "viewRecording": [],
+  "addContactToCase": [],
+  "removeContactFromCase": [],
 
   "viewPostSurvey": []
 }

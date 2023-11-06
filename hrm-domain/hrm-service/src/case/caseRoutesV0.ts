@@ -16,11 +16,9 @@
 
 import createError from 'http-errors';
 import * as casesDb from './case-data-access';
-import * as caseApi from './case';
-import { SafeRouter, publicEndpoint } from '../permissions';
-import { getActions, actionsMaps } from '../permissions';
-import asyncHandler from '../async-handler';
-import { getCase } from './case';
+import * as caseApi from './caseService';
+import { publicEndpoint, SafeRouter } from '../permissions';
+import { canEditCase, canViewCase } from './canPerformCaseAction';
 
 const casesRouter = SafeRouter();
 
@@ -32,9 +30,9 @@ const casesRouter = SafeRouter();
  * @param {CaseListConfiguration.sortBy} req.query.sortBy - Sort by
  * @param {CaseListConfiguration.limit} req.query.limit - Limit
  * @param {CaseListConfiguration.offset} req.query.offset - Offset
- * @param {import('./case').SearchParameters} req.query.search
+ * @param {import('./caseService').SearchParameters} req.query.search
  *
- * @returns {import('./case').CaseSearchReturn} - List of cases
+ * @returns {import('./caseService').CaseSearchReturn} - List of cases
  */
 casesRouter.get('/', publicEndpoint, async (req, res) => {
   const { accountSid } = req;
@@ -57,57 +55,6 @@ casesRouter.post('/', publicEndpoint, async (req, res) => {
   const createdCase = await caseApi.createCase(req.body, accountSid, user.workerSid);
 
   res.json(createdCase);
-});
-
-/**
- * It checks if the user can edit the case based on the fields it's trying to edit
- * according to the defined permission rules.
- */
-const canEditCase = asyncHandler(async (req, res, next) => {
-  if (!req.isAuthorized()) {
-    const { accountSid, body, user, can } = req;
-    const { id } = req.params;
-    const caseObj = await getCase(id, accountSid, { can, user });
-
-    if (!caseObj) throw createError(404);
-
-    const actions = getActions(caseObj, body);
-    console.debug(`Actions attempted in case edit (case #${id})`, actions);
-    const canEdit = actions.every(action => can(user, action, caseObj));
-
-    if (canEdit) {
-      req.authorize();
-    } else {
-      req.unauthorize();
-    }
-  }
-
-  next();
-});
-
-/**
- * It checks if the user can view the case according to the defined permission rules.
- */
-const canViewCase = asyncHandler(async (req, res, next) => {
-  if (!req.isAuthorized()) {
-    const { accountSid, body, user, can } = req;
-    const { id } = req.params;
-    const caseObj = await getCase(id, accountSid, { can, user });
-
-    if (!caseObj) throw createError(404);
-
-    const actions = getActions(caseObj, body);
-    console.debug(`Actions attempted in case edit (case #${id})`, actions);
-    const canView = can(user, actionsMaps.case.VIEW_CASE, caseObj);
-
-    if (canView) {
-      req.authorize();
-    } else {
-      req.unauthorize();
-    }
-  }
-
-  next();
 });
 
 casesRouter.get('/:id', canViewCase, async (req, res) => {

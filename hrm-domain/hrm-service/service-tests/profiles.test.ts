@@ -17,8 +17,8 @@
 import each from 'jest-each';
 import './case-validation';
 import { db } from '../src/connection-pool';
-import * as caseApi from '../src/case/case';
-import * as contactApi from '../src/contact/contact';
+import * as caseApi from '../src/case/caseService';
+import * as contactApi from '../src/contact/contactService';
 import * as profilesDB from '../src/profile/profile-data-access';
 import { getRequest, getServer, headers, useOpenRules } from './server';
 import * as mocks from './mocks';
@@ -64,7 +64,7 @@ describe('/profiles', () => {
     const accounts = [accountSid, 'ANOTHER_ACCOUNT'];
 
     let createdProfiles: { [acc: string]: IdentifierWithProfiles };
-    let createdCases: { [acc: string]: caseApi.Case };
+    let createdCases: { [acc: string]: caseApi.CaseService };
     let createdContacts: { [acc: string]: contactApi.Contact };
     beforeAll(async () => {
       // Create same identifier for two diferent accounts
@@ -205,7 +205,7 @@ describe('/profiles', () => {
 
       const sortById = (a: { id: number }, b: { id: number }) => a.id - b.id;
 
-      let createdCases: caseApi.Case[];
+      let createdCases: caseApi.CaseService[];
       let createdContacts: Awaited<ReturnType<typeof contactApi.createContact>>[];
       beforeAll(async () => {
         // Create two cases

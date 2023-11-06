@@ -18,11 +18,14 @@
   "editCaseSummary": [["isSupervisor"], ["isCreator"]],
   "editChildIsAtRisk": [["isSupervisor"], ["isCreator"]],
   "editFollowUpDate": [["isSupervisor"], ["isCreator"]],
+  "updateCaseContacts": [["isSupervisor"], ["isCaseOpen"]],
 
   "viewContact": [["isSupervisor"], ["isOwner"]],
   "editContact": [["isOwner"],["isSupervisor"]],
   "viewExternalTranscript": [["isSupervisor"], ["isOwner"]],
   "viewRecording": [["isSupervisor"], ["isOwner"]],
+  "addContactToCase": [["isSupervisor"], ["isOwner"]],
+  "removeContactFromCase": [["isSupervisor"], ["isOwner"]],
   
   "viewPostSurvey": [["isSupervisor"]]
 }
