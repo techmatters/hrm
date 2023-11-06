@@ -23,7 +23,7 @@ import {
 } from './contactService';
 import { actionsMaps } from '../permissions';
 import { getClient } from '@tech-matters/twilio-client';
-import { isTwilioTaskTransferTarget } from '@tech-matters/twilio-client/dist/isTwilioTaskTransferTarget';
+import { isTwilioTaskTransferTarget } from '@tech-matters/twilio-client/isTwilioTaskTransferTarget';
 import createError from 'http-errors';
 import { getCase } from '../case/caseService';
 
@@ -40,10 +40,7 @@ const canPerformActionOnContact = (
       const { contactId } = req.params;
 
       try {
-        const contactObj = await getContactById(accountSid, contactId, {
-          can: req.can,
-          user,
-        });
+        const contactObj = await getContactById(accountSid, contactId, req);
         if (!contactObj) {
           // This is a dirty hack that relies on the catch block in the try/catch below to return a 404
           throw new Error('contact not found');
