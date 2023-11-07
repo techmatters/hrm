@@ -20,7 +20,12 @@ import { getClient } from '@tech-matters/twilio-client';
 import { isTwilioTaskTransferTarget } from '@tech-matters/twilio-client/isTwilioTaskTransferTarget';
 import { getContactById, PatchPayload } from '../../src/contact/contactService';
 import createError from 'http-errors';
-import { canPerformEditContactAction } from '../../src/contact/canPerformContactAction';
+import {
+  canDisconnectContact,
+  canPerformEditContactAction,
+} from '../../src/contact/canPerformContactAction';
+import { CaseService, getCase } from '../../src/case/caseService';
+import { actionsMaps } from '../../src/permissions';
 
 jest.mock('@tech-matters/twilio-client', () => ({
   getClient: jest.fn().mockResolvedValue({}),
@@ -37,32 +42,34 @@ jest.mock('../../src/case/caseService', () => ({
 }));
 
 const mockGetContactById = getContactById as jest.MockedFunction<typeof getContactById>;
+const mockGetCase = getCase as jest.MockedFunction<typeof getCase>;
 const mockCreateError = createError as jest.MockedFunction<typeof createError>;
 const mockIsTwilioTaskTransferTarget = isTwilioTaskTransferTarget as jest.MockedFunction<
   typeof isTwilioTaskTransferTarget
 >;
 const BASELINE_DATE = parseISO('2022-05-05 12:00:00');
 
+let req: any;
+const next = jest.fn();
+
+beforeEach(() => {
+  req = {
+    isAuthorized: jest.fn().mockReturnValue(false),
+    params: { contactId: 'contact1' },
+    authorize: jest.fn(),
+    unauthorize: jest.fn(),
+    can: jest.fn(),
+    user: { workerSid: 'worker1' },
+    accountSid: 'account1',
+    body: {},
+  };
+  next.mockClear();
+  mockGetContactById.mockClear();
+  mockCreateError.mockClear();
+  mockGetCase.mockClear();
+});
+
 describe('canPerformEditContactAction', () => {
-  let req: any;
-  const next = jest.fn();
-
-  beforeEach(() => {
-    req = {
-      isAuthorized: jest.fn().mockReturnValue(false),
-      params: { contactId: 'contact1' },
-      authorize: jest.fn(),
-      unauthorize: jest.fn(),
-      can: jest.fn(),
-      user: { workerSid: 'worker1' },
-      accountSid: 'account1',
-      body: {},
-    };
-    next.mockClear();
-    mockGetContactById.mockClear();
-    mockCreateError.mockClear();
-  });
-
   test("Request is already authorized - doesn't authorize or unauthorize", async () => {
     req.isAuthorized.mockReturnValue(true);
     await canPerformEditContactAction(req, {}, next);
@@ -229,5 +236,113 @@ describe('canPerformEditContactAction', () => {
     expect(req.authorize).not.toHaveBeenCalled();
     expect(req.unauthorize).toHaveBeenCalled();
     expect(next).toHaveBeenCalled();
+  });
+});
+
+describe('canDisconnectContact', () => {
+  describe('finalized contact', function () {
+    let contact = new ContactBuilder().withFinalizedAt(BASELINE_DATE).build();
+    beforeEach(() => {
+      mockGetContactById.mockResolvedValue(contact);
+      contact.caseId = '123';
+    });
+    test('Request is already authorized - skips authorization', async () => {
+      req.isAuthorized.mockReturnValue(true);
+      await canDisconnectContact(req, {}, next);
+      expect(req.authorize).not.toHaveBeenCalled();
+      expect(req.unauthorize).not.toHaveBeenCalled();
+      expect(next).toHaveBeenCalled();
+    });
+
+    test('can returns true to authorize & case id not set on contact - authorizes', async () => {
+      delete contact.caseId;
+      req.can.mockImplementation(
+        (user, action) => action === actionsMaps.contact.REMOVE_CONTACT_FROM_CASE,
+      );
+      await canDisconnectContact(req, {}, next);
+      expect(req.can).toHaveBeenCalledWith(
+        req.user,
+        actionsMaps.contact.REMOVE_CONTACT_FROM_CASE,
+        contact,
+      );
+      expect(createError).not.toHaveBeenCalled();
+      expect(req.authorize).toHaveBeenCalled();
+      expect(req.unauthorize).not.toHaveBeenCalled();
+      expect(next).toHaveBeenCalled();
+    });
+
+    test('can returns true to authorize & case not found to disconnect from - authorizes', async () => {
+      mockGetCase.mockResolvedValue(undefined);
+      req.can.mockImplementation(
+        (user, action) => action === actionsMaps.contact.REMOVE_CONTACT_FROM_CASE,
+      );
+      await canDisconnectContact(req, {}, next);
+      expect(req.can).toHaveBeenCalledWith(
+        req.user,
+        actionsMaps.contact.REMOVE_CONTACT_FROM_CASE,
+        contact,
+      );
+      expect(createError).not.toHaveBeenCalled();
+      expect(req.authorize).toHaveBeenCalled();
+      expect(req.unauthorize).not.toHaveBeenCalled();
+      expect(next).toHaveBeenCalled();
+    });
+    test('Can returns true for contact and case checks - authorizes', async () => {
+      const mockCase = {} as CaseService;
+      mockGetCase.mockResolvedValue(mockCase);
+      req.can.mockReturnValue(true);
+      await canDisconnectContact(req, {}, next);
+      expect(req.can).toHaveBeenCalledWith(
+        req.user,
+        actionsMaps.contact.REMOVE_CONTACT_FROM_CASE,
+        contact,
+      );
+      expect(req.can).toHaveBeenCalledWith(
+        req.user,
+        actionsMaps.case.UPDATE_CASE_CONTACTS,
+        mockCase,
+      );
+      expect(createError).not.toHaveBeenCalled();
+      expect(req.authorize).toHaveBeenCalled();
+      expect(req.unauthorize).not.toHaveBeenCalled();
+      expect(next).toHaveBeenCalled();
+    });
+    test('Can returns false - unauthorizes', async () => {
+      const mockCase = {} as CaseService;
+      mockGetCase.mockResolvedValue(mockCase);
+      req.can.mockReturnValue(false);
+      await canDisconnectContact(req, {}, next);
+      expect(req.can).toHaveBeenCalledWith(
+        req.user,
+        actionsMaps.contact.REMOVE_CONTACT_FROM_CASE,
+        contact,
+      );
+      expect(createError).not.toHaveBeenCalled();
+      expect(req.authorize).not.toHaveBeenCalled();
+      expect(req.unauthorize).toHaveBeenCalled();
+      expect(next).toHaveBeenCalled();
+    });
+    test('Can returns true for contact but false for case - unauthorizes', async () => {
+      const mockCase = {} as CaseService;
+      mockGetCase.mockResolvedValue(mockCase);
+      req.can.mockImplementation(
+        (user, action) => action === actionsMaps.contact.REMOVE_CONTACT_FROM_CASE,
+      );
+      await canDisconnectContact(req, {}, next);
+      expect(req.can).toHaveBeenCalledWith(
+        req.user,
+        actionsMaps.contact.REMOVE_CONTACT_FROM_CASE,
+        contact,
+      );
+      expect(req.can).toHaveBeenCalledWith(
+        req.user,
+        actionsMaps.case.UPDATE_CASE_CONTACTS,
+        mockCase,
+      );
+      expect(createError).not.toHaveBeenCalled();
+      expect(req.authorize).not.toHaveBeenCalled();
+      expect(req.unauthorize).toHaveBeenCalled();
+      expect(next).toHaveBeenCalled();
+    });
   });
 });
