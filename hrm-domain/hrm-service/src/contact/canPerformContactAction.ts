@@ -23,13 +23,28 @@ import {
 } from './contactService';
 import { actionsMaps } from '../permissions';
 import { getClient } from '@tech-matters/twilio-client';
-import { isTwilioTaskTransferTarget } from '@tech-matters/twilio-client/dist/isTwilioTaskTransferTarget';
+import { isTwilioTaskTransferTarget } from '@tech-matters/twilio-client/isTwilioTaskTransferTarget';
 import createError from 'http-errors';
 import { getCase } from '../case/caseService';
 
+const authorizeIfAdditionalValidationPasses = async (
+  req: any,
+  contact: WithLegacyCategories<Contact>,
+  additionalValidation: (
+    contact: WithLegacyCategories<Contact>,
+    req: any,
+  ) => Promise<boolean>,
+) => {
+  if (await additionalValidation(contact, req)) {
+    req.authorize();
+  } else {
+    req.unauthorize();
+  }
+};
+
 const canPerformActionOnContact = (
   action: (typeof actionsMaps.contact)[keyof typeof actionsMaps.contact],
-  additionalValidationForFinalized: (
+  additionalValidation: (
     contact: WithLegacyCategories<Contact>,
     req: any,
   ) => Promise<boolean> = () => Promise.resolve(true),
@@ -40,20 +55,18 @@ const canPerformActionOnContact = (
       const { contactId } = req.params;
 
       try {
-        const contactObj = await getContactById(accountSid, contactId, {
-          can: req.can,
-          user,
-        });
+        const contactObj = await getContactById(accountSid, contactId, req);
         if (!contactObj) {
           // This is a dirty hack that relies on the catch block in the try/catch below to return a 404
           throw new Error('contact not found');
         }
         if (contactObj.finalizedAt) {
-          if (
-            (await additionalValidationForFinalized(contactObj, req)) &&
-            can(user, action, contactObj)
-          ) {
-            req.authorize();
+          if (can(user, action, contactObj)) {
+            await authorizeIfAdditionalValidationPasses(
+              req,
+              contactObj,
+              additionalValidation,
+            );
           } else {
             req.unauthorize();
           }
@@ -65,7 +78,11 @@ const canPerformActionOnContact = (
             contactObj.createdBy === user.workerSid ||
             contactObj.twilioWorkerId === user.workerSid
           ) {
-            req.authorize();
+            await authorizeIfAdditionalValidationPasses(
+              req,
+              contactObj,
+              additionalValidation,
+            );
           } else {
             // It the contact record doesn't show this user as the contact owner, but Twilio shows that they are having the associated task transferred to them, permit the edit
             // Long term it's wrong for HRM to be verifying this itself - we should probably initiate updates for the contact record from the backend transfer logic rather than Flex in future.
@@ -74,15 +91,18 @@ const canPerformActionOnContact = (
               accountSid,
               authToken: process.env[`TWILIO_AUTH_TOKEN_${accountSid}`],
             });
-            if (
-              await isTwilioTaskTransferTarget(
-                twilioClient,
-                body?.taskId,
-                contactObj.taskId,
-                user.workerSid,
-              )
-            ) {
-              req.authorize();
+            const isTransferTarget = await isTwilioTaskTransferTarget(
+              twilioClient,
+              body?.taskId,
+              contactObj.taskId,
+              user.workerSid,
+            );
+            if (isTransferTarget) {
+              await authorizeIfAdditionalValidationPasses(
+                req,
+                contactObj,
+                additionalValidation,
+              );
             } else {
               req.unauthorize();
             }
@@ -108,6 +128,7 @@ const checkFinalizedContactEditsOnlyChangeForm = async (
   contact: Contact,
   { body }: any,
 ): Promise<boolean> => {
+  if (!contact.finalizedAt) return true;
   const updatedProps = Object.keys(body ?? {}) as (keyof PatchPayload)[];
   return updatedProps.every(prop => prop === 'rawJson' || prop === 'referrals');
 };

@@ -807,7 +807,7 @@ describe('searchContacts', () => {
             counselor: 'twilio-worker-id',
             notes: 'Young pregnant woman',
             channel: '',
-            conversationDuration: null,
+            conversationDuration: undefined,
           },
           details: addLegacyCategoriesToContact(sarahPark).rawJson,
           csamReports: [],
