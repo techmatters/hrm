@@ -69,13 +69,123 @@ beforeEach(() => {
   mockGetCase.mockClear();
 });
 
+const expectNoop = () => {
+  expect(createError).not.toHaveBeenCalled();
+  expect(req.authorize).not.toHaveBeenCalled();
+  expect(req.unauthorize).not.toHaveBeenCalled();
+  expect(next).toHaveBeenCalled();
+};
+
+const expectToBeAuthorized = () => {
+  expect(createError).not.toHaveBeenCalled();
+  expect(req.authorize).toHaveBeenCalled();
+  expect(req.unauthorize).not.toHaveBeenCalled();
+  expect(next).toHaveBeenCalled();
+};
+
+const expectToBeUnuthorized = () => {
+  expect(createError).not.toHaveBeenCalled();
+  expect(req.authorize).not.toHaveBeenCalled();
+  expect(req.unauthorize).toHaveBeenCalled();
+  expect(next).toHaveBeenCalled();
+};
+
+const expectToBeError = (status: number) => {
+  expect(createError).toHaveBeenCalledWith(status);
+  expect(req.authorize).not.toHaveBeenCalled();
+  expect(req.unauthorize).not.toHaveBeenCalled();
+  expect(next).toHaveBeenCalled();
+};
+
+const draftContactTests =
+  (expectToAuthorize: boolean, setup: () => Promise<void> = () => Promise.resolve()) =>
+  () => {
+    const expectedDescription = expectToAuthorize ? 'authorizes' : 'unauthorizes';
+    const expectation = expectToAuthorize ? expectToBeAuthorized : expectToBeUnuthorized;
+    beforeEach(async () => {
+      // Draft contact authorization doesn't care about the can response, so always return false
+      req.can.mockReturnValue(false);
+      req.body = { conversationDuration: 123 };
+      req.user = { workerSid: 'thisWorker' };
+      process.env.TWILIO_AUTH_TOKEN_account1 = 'account1 token';
+      await setup();
+    });
+
+    test(`Request user matches contact creator - ${expectedDescription}`, async () => {
+      mockGetContactById.mockResolvedValue(
+        new ContactBuilder()
+          .withCreatedBy('thisWorker')
+          .withTwilioWorkerId('otherWorker')
+          .build(),
+      );
+      await canPerformEditContactAction(req, {}, next);
+      expectation();
+    });
+
+    test(`Request user matches contact owner - ${expectedDescription}`, async () => {
+      mockGetContactById.mockResolvedValue(
+        new ContactBuilder()
+          .withCreatedBy('otherWorker')
+          .withTwilioWorkerId('thisWorker')
+          .build(),
+      );
+      await canPerformEditContactAction(req, {}, next);
+      expectation();
+    });
+
+    test(`Request user is not the owner or the creator, but is the target of a transfer - ${expectedDescription}`, async () => {
+      mockGetContactById.mockResolvedValue(
+        new ContactBuilder()
+          .withCreatedBy('otherWorker')
+          .withTwilioWorkerId('otherWorker')
+          .withTaskId('original task')
+          .build(),
+      );
+      req.body.taskId = 'transfer task';
+      mockIsTwilioTaskTransferTarget.mockResolvedValue(true);
+      await canPerformEditContactAction(req, {}, next);
+      expect(getClient).toHaveBeenCalledWith({
+        accountSid: 'account1',
+        authToken: 'account1 token',
+      });
+      expect(isTwilioTaskTransferTarget).toHaveBeenCalledWith(
+        await getClient({ accountSid: 'account1' }),
+        'transfer task',
+        'original task',
+        'thisWorker',
+      );
+      expectation();
+    });
+
+    test('Request user is not the owner or the creator, nor target of a transfer - unauthorizes', async () => {
+      mockGetContactById.mockResolvedValue(
+        new ContactBuilder()
+          .withCreatedBy('otherWorker')
+          .withTwilioWorkerId('otherWorker')
+          .withTaskId('original task')
+          .build(),
+      );
+      req.body.taskId = 'transfer task';
+      mockIsTwilioTaskTransferTarget.mockResolvedValue(false);
+      await canPerformEditContactAction(req, {}, next);
+      expect(getClient).toHaveBeenCalledWith({
+        accountSid: 'account1',
+        authToken: 'account1 token',
+      });
+      expect(isTwilioTaskTransferTarget).toHaveBeenCalledWith(
+        await getClient({ accountSid: 'account1' }),
+        'transfer task',
+        'original task',
+        'thisWorker',
+      );
+      expectToBeUnuthorized();
+    });
+  };
 describe('canPerformEditContactAction', () => {
   test("Request is already authorized - doesn't authorize or unauthorize", async () => {
     req.isAuthorized.mockReturnValue(true);
     await canPerformEditContactAction(req, {}, next);
-    expect(req.authorize).not.toHaveBeenCalled();
-    expect(req.unauthorize).not.toHaveBeenCalled();
-    expect(next).toHaveBeenCalled();
+    expectNoop();
   });
 
   test('Request is not already authorized - looks up contact using contactID parameter', async () => {
@@ -85,9 +195,6 @@ describe('canPerformEditContactAction', () => {
     );
     await canPerformEditContactAction(req, {}, next);
     expect(mockGetContactById).toHaveBeenCalledWith(req.accountSid, 'contact1', req);
-    expect(req.authorize).not.toHaveBeenCalled();
-    expect(req.unauthorize).toHaveBeenCalled();
-    expect(next).toHaveBeenCalled();
   });
 
   describe('finalized contact', function () {
@@ -121,139 +228,39 @@ describe('canPerformEditContactAction', () => {
       req.body = validFinalizedContactPatchPayload;
       req.can.mockReturnValue(true);
       await canPerformEditContactAction(req, {}, next);
-      expect(createError).not.toHaveBeenCalled();
-      expect(req.authorize).toHaveBeenCalled();
-      expect(req.unauthorize).not.toHaveBeenCalled();
-      expect(next).toHaveBeenCalled();
+      expectToBeAuthorized();
     });
 
     test('Modifying values other than rawJson / resource referrals and can returns true - unauthorizes', async () => {
       req.body = { ...validFinalizedContactPatchPayload, conversationDuration: 100 };
       req.can.mockReturnValue(true);
       await canPerformEditContactAction(req, {}, next);
-      expect(createError).not.toHaveBeenCalled();
-      expect(req.authorize).not.toHaveBeenCalled();
-      expect(req.unauthorize).toHaveBeenCalled();
-      expect(next).toHaveBeenCalled();
+      expectToBeUnuthorized();
     });
 
     test('Modifying rawJson / resource referrals and can returns false - unauthorizes', async () => {
       req.body = validFinalizedContactPatchPayload;
       req.can.mockReturnValue(false);
       await canPerformEditContactAction(req, {}, next);
-      expect(createError).not.toHaveBeenCalled();
-      expect(req.authorize).not.toHaveBeenCalled();
-      expect(req.unauthorize).toHaveBeenCalled();
-      expect(next).toHaveBeenCalled();
+      expectToBeUnuthorized();
     });
   });
-  describe('draft contact', function () {
-    beforeEach(() => {
-      // Draft contact authorization doesn't care about the can response, so always return false
-      req.can.mockReturnValue(false);
-      req.body = { conversationDuration: 123 };
-      req.user = { workerSid: 'thisWorker' };
-      process.env.TWILIO_AUTH_TOKEN_account1 = 'account1 token';
-    });
-
-    test('Request user matches contact creator - authorizes', async () => {
-      mockGetContactById.mockResolvedValue(
-        new ContactBuilder()
-          .withCreatedBy('thisWorker')
-          .withTwilioWorkerId('otherWorker')
-          .build(),
-      );
-      await canPerformEditContactAction(req, {}, next);
-      expect(createError).not.toHaveBeenCalled();
-      expect(req.authorize).toHaveBeenCalled();
-      expect(req.unauthorize).not.toHaveBeenCalled();
-      expect(next).toHaveBeenCalled();
-    });
-
-    test('Request user matches contact owner - authorizes', async () => {
-      mockGetContactById.mockResolvedValue(
-        new ContactBuilder()
-          .withCreatedBy('otherWorker')
-          .withTwilioWorkerId('thisWorker')
-          .build(),
-      );
-      await canPerformEditContactAction(req, {}, next);
-      expect(createError).not.toHaveBeenCalled();
-      expect(req.authorize).toHaveBeenCalled();
-      expect(req.unauthorize).not.toHaveBeenCalled();
-      expect(next).toHaveBeenCalled();
-    });
-
-    test('Request user is not the owner or the creator, but is the target of a transfer - authorizes', async () => {
-      mockGetContactById.mockResolvedValue(
-        new ContactBuilder()
-          .withCreatedBy('otherWorker')
-          .withTwilioWorkerId('otherWorker')
-          .withTaskId('original task')
-          .build(),
-      );
-      req.body.taskId = 'transfer task';
-      mockIsTwilioTaskTransferTarget.mockResolvedValue(true);
-      await canPerformEditContactAction(req, {}, next);
-      expect(getClient).toHaveBeenCalledWith({
-        accountSid: 'account1',
-        authToken: 'account1 token',
-      });
-      expect(isTwilioTaskTransferTarget).toHaveBeenCalledWith(
-        await getClient({ accountSid: 'account1' }),
-        'transfer task',
-        'original task',
-        'thisWorker',
-      );
-      expect(createError).not.toHaveBeenCalled();
-      expect(req.authorize).toHaveBeenCalled();
-      expect(req.unauthorize).not.toHaveBeenCalled();
-      expect(next).toHaveBeenCalled();
-    });
-  });
-  test('Request user is not the owner or the creator, nor target of a transfer - unauthorizes', async () => {
-    mockGetContactById.mockResolvedValue(
-      new ContactBuilder()
-        .withCreatedBy('otherWorker')
-        .withTwilioWorkerId('otherWorker')
-        .withTaskId('original task')
-        .build(),
-    );
-    req.body.taskId = 'transfer task';
-    mockIsTwilioTaskTransferTarget.mockResolvedValue(false);
-    await canPerformEditContactAction(req, {}, next);
-    expect(getClient).toHaveBeenCalledWith({
-      accountSid: 'account1',
-      authToken: 'account1 token',
-    });
-    expect(isTwilioTaskTransferTarget).toHaveBeenCalledWith(
-      await getClient({ accountSid: 'account1' }),
-      'transfer task',
-      'original task',
-      'thisWorker',
-    );
-    expect(createError).not.toHaveBeenCalled();
-    expect(req.authorize).not.toHaveBeenCalled();
-    expect(req.unauthorize).toHaveBeenCalled();
-    expect(next).toHaveBeenCalled();
-  });
+  describe('draft contact', draftContactTests(true));
 });
 
 describe('canDisconnectContact', () => {
+  test('Request is already authorized - skips authorization', async () => {
+    req.isAuthorized.mockReturnValue(true);
+    await canDisconnectContact(req, {}, next);
+    expectNoop();
+  });
+
   describe('finalized contact', function () {
     let contact = new ContactBuilder().withFinalizedAt(BASELINE_DATE).build();
     beforeEach(() => {
       mockGetContactById.mockResolvedValue(contact);
       contact.caseId = '123';
     });
-    test('Request is already authorized - skips authorization', async () => {
-      req.isAuthorized.mockReturnValue(true);
-      await canDisconnectContact(req, {}, next);
-      expect(req.authorize).not.toHaveBeenCalled();
-      expect(req.unauthorize).not.toHaveBeenCalled();
-      expect(next).toHaveBeenCalled();
-    });
-
     test('can returns true to authorize & case id not set on contact - authorizes', async () => {
       delete contact.caseId;
       req.can.mockImplementation(
@@ -265,10 +272,7 @@ describe('canDisconnectContact', () => {
         actionsMaps.contact.REMOVE_CONTACT_FROM_CASE,
         contact,
       );
-      expect(createError).not.toHaveBeenCalled();
-      expect(req.authorize).toHaveBeenCalled();
-      expect(req.unauthorize).not.toHaveBeenCalled();
-      expect(next).toHaveBeenCalled();
+      expectToBeAuthorized();
     });
 
     test('can returns true to authorize & case not found to disconnect from - authorizes', async () => {
@@ -282,10 +286,7 @@ describe('canDisconnectContact', () => {
         actionsMaps.contact.REMOVE_CONTACT_FROM_CASE,
         contact,
       );
-      expect(createError).not.toHaveBeenCalled();
-      expect(req.authorize).toHaveBeenCalled();
-      expect(req.unauthorize).not.toHaveBeenCalled();
-      expect(next).toHaveBeenCalled();
+      expectToBeAuthorized();
     });
     test('Can returns true for contact and case checks - authorizes', async () => {
       const mockCase = {} as CaseService;
@@ -302,10 +303,7 @@ describe('canDisconnectContact', () => {
         actionsMaps.case.UPDATE_CASE_CONTACTS,
         mockCase,
       );
-      expect(createError).not.toHaveBeenCalled();
-      expect(req.authorize).toHaveBeenCalled();
-      expect(req.unauthorize).not.toHaveBeenCalled();
-      expect(next).toHaveBeenCalled();
+      expectToBeAuthorized();
     });
     test('Can returns false - unauthorizes', async () => {
       const mockCase = {} as CaseService;
@@ -317,10 +315,7 @@ describe('canDisconnectContact', () => {
         actionsMaps.contact.REMOVE_CONTACT_FROM_CASE,
         contact,
       );
-      expect(createError).not.toHaveBeenCalled();
-      expect(req.authorize).not.toHaveBeenCalled();
-      expect(req.unauthorize).toHaveBeenCalled();
-      expect(next).toHaveBeenCalled();
+      expectToBeUnuthorized();
     });
     test('Can returns true for contact but false for case - unauthorizes', async () => {
       const mockCase = {} as CaseService;
@@ -339,10 +334,25 @@ describe('canDisconnectContact', () => {
         actionsMaps.case.UPDATE_CASE_CONTACTS,
         mockCase,
       );
-      expect(createError).not.toHaveBeenCalled();
-      expect(req.authorize).not.toHaveBeenCalled();
-      expect(req.unauthorize).toHaveBeenCalled();
-      expect(next).toHaveBeenCalled();
+      expectToBeUnuthorized();
     });
+  });
+  describe('draft contact', () => {
+    describe(
+      'can update case contacts',
+      draftContactTests(true, async () => {
+        req.can.mockImplementation(
+          (user, action) => action === actionsMaps.case.UPDATE_CASE_CONTACTS,
+        );
+      }),
+    );
+    describe(
+      'cannot update case contacts',
+      draftContactTests(true, async () => {
+        req.can.mockImplementation(
+          (user, action) => action !== actionsMaps.case.UPDATE_CASE_CONTACTS,
+        );
+      }),
+    );
   });
 });
