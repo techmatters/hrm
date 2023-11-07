@@ -90,13 +90,6 @@ const expectToBeUnuthorized = () => {
   expect(next).toHaveBeenCalled();
 };
 
-const expectToBeError = (status: number) => {
-  expect(createError).toHaveBeenCalledWith(status);
-  expect(req.authorize).not.toHaveBeenCalled();
-  expect(req.unauthorize).not.toHaveBeenCalled();
-  expect(next).toHaveBeenCalled();
-};
-
 const draftContactTests =
   (expectToAuthorize: boolean, setup: () => Promise<void> = () => Promise.resolve()) =>
   () => {
