@@ -98,7 +98,7 @@ export const SELECT_CONTACT_SEARCH = `
         )
         AND NOT (
           -- This will filter empty draft offline contacts that hang around after an offline contact is cancelled because we never delete contacts
-          "taskId" LIKE 'offline-contact-task-%' AND COALESCE("rawJson"->>'callType', '')!='' AND "finalizedAt" IS NULL
+          "taskId" LIKE 'offline-contact-task-%' AND COALESCE("rawJson"->>'callType', '')='' AND "finalizedAt" IS NULL
         )
         ORDER BY contacts."timeOfContact" DESC
         OFFSET $<offset>
