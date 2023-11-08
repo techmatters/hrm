@@ -96,6 +96,9 @@ export const SELECT_CONTACT_SEARCH = `
             "rawJson"->>'callType' IN ($<dataCallTypes:csv>)
           )
         )
+        AND NOT (
+            "taskId" LIKE 'offline-contact-task-%' AND COALESCE("rawJson"->'contactlessTask'->>'createdOnBehalfOf', '')!='' AND "finalizedAt" IS NULL
+        )
         ORDER BY contacts."timeOfContact" DESC
         OFFSET $<offset>
         LIMIT $<limit>
