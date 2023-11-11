@@ -44,7 +44,7 @@ module.exports = {
 
   down: async queryInterface => {
     await queryInterface.sequelize.query(
-      `DROP INDEX IF EXISTS public."Contacts_taskId_idx"`,
+      `DROP INDEX IF EXISTS public."Contacts_taskId_accountSid_idx"`,
     );
     console.log('TaskId unique index dropped');
   },
