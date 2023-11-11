@@ -67,3 +67,8 @@ WHERE "contactCategoryMaps"."contactId" = cupdate.id AND "contactCategoryMaps"."
 
 DELETE
 	FROM public."SequelizeMeta" WHERE "name" LIKE '20230926%';
+
+UPDATE "Contacts" SET "rawJson" = COALESCE("rawJson", '{}'::JSONB)
+      -- Case Information and placeholder case summary
+      || jsonb_build_object('caseInformation',  "rawJson"->'caseInformation' || jsonb_build_object('callSummary', COALESCE("rawJson"->'caseInformation'->>'callSummary', ''))
+    )
