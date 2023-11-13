@@ -26,8 +26,8 @@ export const getProfileByIdSql = `
   WITH RelatedIdentifiers AS (
     SELECT
         p2i."profileId",
-        JSON_AGG(
-            JSON_BUILD_OBJECT(
+        JSONB_AGG(
+            JSONB_BUILD_OBJECT(
                 'id', identifiers.id,
                 'identifier', identifiers."identifier"
             )
@@ -51,14 +51,14 @@ export const getProfileByIdSql = `
   RelatedProfileFlags AS (
     SELECT
         ppf."profileId",
-        JSON_AGG(ppf."profileFlagId") AS "profileFlags"
+        JSONB_AGG(ppf."profileFlagId") AS "profileFlags"
     FROM "ProfilesToProfileFlags" ppf
     WHERE ppf."profileId" = $<profileId>
     GROUP BY ppf."profileId"
   ),
 
   RelatedProfileSections AS (
-    SELECT pps."profileId", JSON_AGG(JSON_BUILD_OBJECT(
+    SELECT pps."profileId", JSONB_AGG(JSONB_BUILD_OBJECT(
       'id', pps.id,
       'sectionType', pps."sectionType"
     )) AS "profileSections"
@@ -86,8 +86,8 @@ export const joinProfilesIdentifiersSql = `
   WITH ProfileAggregation AS (
     SELECT
         p2i."identifierId",
-        JSON_AGG(
-            JSON_BUILD_OBJECT(
+        JSONB_AGG(
+            JSONB_BUILD_OBJECT(
                 'id', profiles.id,
                 'name', profiles.name,
                 'contactsCount', COALESCE(contactsCounts.count, 0),
