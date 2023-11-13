@@ -69,11 +69,11 @@ export const getProfileByIdSql = `
 
   SELECT
     profiles.*,
-    COALESCE(ri.identifiers, '[]'::json) as identifiers,
+    COALESCE(ri.identifiers, '[]'::jsonb) as identifiers,
     COALESCE(ccc."contactsCount"::int, 0) as "contactsCount",
     COALESCE(ccc."casesCount"::int, 0) as "casesCount",
-    COALESCE(rpf."profileFlags", '[]'::json) as "profileFlags",
-    COALESCE(rps."profileSections", '[]'::json) as "profileSections"
+    COALESCE(rpf."profileFlags", '[]'::jsonb) as "profileFlags",
+    COALESCE(rps."profileSections", '[]'::jsonb) as "profileSections"
   FROM "Profiles" profiles
   LEFT JOIN RelatedIdentifiers ri ON profiles.id = ri."profileId"
   LEFT JOIN ContactCaseCounts ccc ON profiles.id = ccc."profileId"
@@ -115,7 +115,7 @@ export const joinProfilesIdentifiersSql = `
   FROM (
     SELECT
         ids.*,
-        COALESCE(pa.profiles_data, '[]'::json) as profiles
+        COALESCE(pa.profiles_data, '[]'::jsonb) as profiles
     FROM "Identifiers" as "ids"
     LEFT JOIN ProfileAggregation pa ON ids.id = pa."identifierId"
     ${WHERE_IDENTIFIER_CLAUSE}
