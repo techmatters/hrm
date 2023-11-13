@@ -66,7 +66,7 @@ UPDATE "Contacts" cupdate SET "rawJson" = ((COALESCE("rawJson", '{}'::JSONB)
 WHERE "contactCategoryMaps"."contactId" = cupdate.id AND "contactCategoryMaps"."accountSid" = cupdate."accountSid";
 
 DELETE
-	FROM public."SequelizeMeta" WHERE "name" LIKE '20230926%';
+	FROM public."SequelizeMeta" WHERE "name" LIKE '20230926114100%';
 
 UPDATE "Contacts" SET "rawJson" = COALESCE("rawJson", '{}'::JSONB)
       -- Case Information and placeholder case summary
