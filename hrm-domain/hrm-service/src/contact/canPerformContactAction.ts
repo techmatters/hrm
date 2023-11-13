@@ -23,7 +23,7 @@ import {
 } from './contactService';
 import { actionsMaps } from '../permissions';
 import { getClient } from '@tech-matters/twilio-client';
-import { isTwilioTaskTransferTarget } from '@tech-matters/twilio-client/isTwilioTaskTransferTarget';
+import { isTwilioTaskTransferTarget } from '@tech-matters/twilio-client';
 import createError from 'http-errors';
 import { getCase } from '../case/caseService';
 
