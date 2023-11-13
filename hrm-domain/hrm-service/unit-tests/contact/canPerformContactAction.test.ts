@@ -17,7 +17,7 @@
 import { parseISO, subHours } from 'date-fns';
 import { ContactBuilder } from './contact-builder';
 import { getClient } from '@tech-matters/twilio-client';
-import { isTwilioTaskTransferTarget } from '@tech-matters/twilio-client/isTwilioTaskTransferTarget';
+import { isTwilioTaskTransferTarget } from '@tech-matters/twilio-client';
 import { getContactById, PatchPayload } from '../../src/contact/contactService';
 import createError from 'http-errors';
 import {
@@ -29,11 +29,9 @@ import { actionsMaps } from '../../src/permissions';
 
 jest.mock('@tech-matters/twilio-client', () => ({
   getClient: jest.fn().mockResolvedValue({}),
-}));
-jest.mock('http-errors', () => jest.fn());
-jest.mock('@tech-matters/twilio-client/isTwilioTaskTransferTarget', () => ({
   isTwilioTaskTransferTarget: jest.fn(),
 }));
+jest.mock('http-errors', () => jest.fn());
 jest.mock('../../src/contact/contactService', () => ({
   getContactById: jest.fn(),
 }));
