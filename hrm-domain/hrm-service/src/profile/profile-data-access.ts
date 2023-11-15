@@ -30,7 +30,7 @@ import {
   insertProfileFlagSql,
 } from './sql/profile-flags-sql';
 import { txIfNotInOne } from '../sql';
-import { getProfileByIdSql, joinProfilesIdentifiersSql } from './sql/profile-get-sql';
+import * as profileGetSql from './sql/profile-get-sql';
 import { db } from '../connection-pool';
 import {
   NewProfileSectionRecord,
@@ -78,16 +78,36 @@ export const getIdentifierWithProfiles =
     identifier,
     identifierId,
   }: IdentifierParams): Promise<TResult<IdentifierWithProfiles | null>> => {
+    const params = { accountSid, identifier, identifierId };
     try {
-      const result = await txIfNotInOne<{ data: IdentifierWithProfiles }>(task, async t =>
-        t.oneOrNone(joinProfilesIdentifiersSql, {
-          accountSid,
-          identifier,
-          identifierId,
-        }),
-      );
+      const data = await txIfNotInOne<IdentifierWithProfiles>(task, async t => {
+        /* We run two queries here, one to get the identifier and one to get the profiles
+           because writing a single PERFORMANT query against tables that could eventually
+           have millions of rows is hard. There is probably a better way to do this...
+           but dev time is limited and this works for now.
 
-      return newOk({ data: result ? result.data : null });
+           If you are thinking of changing this, please profile against a db with millions
+           of rows in the tables and make sure it is performant.
+        */
+        const identifierData: Identifier = await t.oneOrNone(
+          profileGetSql.getIdentifierSql,
+          params,
+        );
+
+        if (!identifierData) {
+          return null;
+        }
+
+        const profiles =
+          (await t.manyOrNone(profileGetSql.getProfilesByIdentifierSql, params)) || [];
+
+        return {
+          ...identifierData,
+          profiles,
+        };
+      });
+
+      return newOk({ data });
     } catch (err) {
       return newErr({
         message: err instanceof Error ? err.message : String(err),
@@ -189,7 +209,7 @@ export const getProfileById =
   (task?) =>
   async (accountSid: string, profileId: number): Promise<ProfileWithRelationships> => {
     return txIfNotInOne<ProfileWithRelationships>(task, async t => {
-      return t.oneOrNone(getProfileByIdSql, { accountSid, profileId });
+      return t.oneOrNone(profileGetSql.getProfileByIdSql, { accountSid, profileId });
     });
   };
 
