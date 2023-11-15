@@ -92,7 +92,7 @@ export const getProfilesByIdentifierSql = `
     profiles.id AS id,
     profiles.name AS name,
     CAST(COUNT(DISTINCT CASE WHEN "Contacts"."caseId" IS NOT NULL THEN "Contacts"."profileId" END) AS INTEGER) AS "casesCount",
-    CAST(COUNT(*) AS INTEGER) AS "contactsCount"
+    CAST(COUNT(CASE WHEN "Contacts"."profileId" IS NOT NULL THEN 1 END) AS INTEGER) AS "contactsCount"
   FROM "Identifiers" ids
   LEFT JOIN "ProfilesToIdentifiers" p2i ON ids.id = p2i."identifierId"
   LEFT JOIN "Profiles" profiles ON profiles.id = p2i."profileId"
