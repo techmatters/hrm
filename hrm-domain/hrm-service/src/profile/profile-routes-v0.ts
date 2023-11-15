@@ -19,8 +19,8 @@ import createError from 'http-errors';
 
 import { SafeRouter, publicEndpoint } from '../permissions';
 import * as profileController from './profile';
-import { getContactsByProfileId } from '../contact/contact';
-import { getCasesByProfileId } from '../case/case';
+import { getContactsByProfileId } from '../contact/contactService';
+import { getCasesByProfileId } from '../case/caseService';
 
 const profilesRouter = SafeRouter();
 

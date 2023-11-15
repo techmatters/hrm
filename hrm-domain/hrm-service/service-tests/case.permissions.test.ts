@@ -18,8 +18,8 @@
 
 import each from 'jest-each';
 
-import * as caseApi from '../src/case/case';
-import { Case } from '../src/case/case';
+import * as caseApi from '../src/case/caseService';
+import { CaseService } from '../src/case/caseService';
 import * as caseDb from '../src/case/case-data-access';
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 
@@ -150,7 +150,7 @@ describe('/cases/:id route - PUT', () => {
     },
   ];
 
-  const cases: Record<string, Case> = {};
+  const cases: Record<string, CaseService> = {};
   let subRoute;
 
   beforeEach(async () => {

@@ -19,7 +19,7 @@ import formatISO from 'date-fns/formatISO';
 import format from 'date-fns/format';
 import addDays from 'date-fns/addDays';
 
-import * as contactApi from '../../../src/contact/contact';
+import * as contactApi from '../../../src/contact/contactService';
 import * as context from '../../../src/data-pull-task/khp-data-pull-task/context';
 import { defaultLimitAndOffset } from '../../../src/data-pull-task/khp-data-pull-task/auto-paginate';
 import { pullContacts } from '../../../src/data-pull-task/khp-data-pull-task/pull-contacts';
@@ -30,7 +30,7 @@ const { maxPermissions } = context;
 const accountSid = 'ACxxx';
 const bucket = 'docs-bucket';
 
-jest.mock('../../../src/contact/contact');
+jest.mock('../../../src/contact/contactService');
 jest.mock('../../../src/data-pull-task/khp-data-pull-task/context');
 
 let putS3ObjectSpy = jest.fn();

@@ -15,7 +15,7 @@
  */
 
 import * as caseDb from '../../src/case/case-data-access';
-import * as caseApi from '../../src/case/case';
+import * as caseApi from '../../src/case/caseService';
 import { createMockCase, createMockCaseRecord } from './mock-cases';
 import each from 'jest-each';
 import { CaseRecord, NewCaseRecord } from '../../src/case/case-data-access';

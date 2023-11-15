@@ -17,8 +17,8 @@
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { Actions, TargetKind, isValidSetOfActionsForTarget } from './actions';
 import { setupCanForRules } from './setupCanForRules';
-import { getContactById } from '../contact/contact';
-import { getCase as getCaseById } from '../case/case';
+import { getContactById } from '../contact/contactService';
+import { getCase as getCaseById } from '../case/caseService';
 import { assertExhaustive } from '../contact-job/assertExhaustive';
 import {
   getConversationMediaByContactId,

@@ -43,9 +43,9 @@ import {
   workerSid,
 } from './mocks';
 import './case-validation';
-import * as caseApi from '../src/case/case';
+import * as caseApi from '../src/case/caseService';
 import * as caseDb from '../src/case/case-data-access';
-import * as contactApi from '../src/contact/contact';
+import * as contactApi from '../src/contact/contactService';
 import * as contactDb from '../src/contact/contact-data-access';
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import * as contactJobDataAccess from '../src/contact-job/contact-job-data-access';

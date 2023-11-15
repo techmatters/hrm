@@ -14,11 +14,11 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { Case } from '../src/case/case';
+import { CaseService } from '../src/case/caseService';
 import { channelTypes } from '../src/contact/channelTypes';
 import { S3ContactMediaType } from '../src/conversation-media/conversation-media';
 import { Contact } from '../src/contact/contact-data-access';
-import { CreateContactPayload } from '../src/contact/contact';
+import { CreateContactPayload } from '../src/contact/contactService';
 
 export const accountSid = 'ACCOUNT_SID';
 // TODO: Turn these into proper API types (will probably break so many tests...)
@@ -256,7 +256,7 @@ export const withTaskId: CreateContactPayload = {
   identifierId: undefined,
 };
 
-export const case1: Partial<Case> = {
+export const case1: Partial<CaseService> = {
   status: 'open',
   helpline: 'helpline',
   info: {
@@ -274,7 +274,7 @@ export const case1: Partial<Case> = {
   accountSid,
 };
 
-export const case2: Partial<Case> = {
+export const case2: Partial<CaseService> = {
   status: 'open',
   helpline: 'helpline',
   info: {

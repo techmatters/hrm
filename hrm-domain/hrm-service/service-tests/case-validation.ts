@@ -14,13 +14,13 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { WELL_KNOWN_CASE_SECTION_NAMES } from '../src/case/case';
+import { WELL_KNOWN_CASE_SECTION_NAMES } from '../src/case/caseService';
 import { NewContactRecord } from '../src/contact/sql/contact-insert-sql';
 import {
   ContactRawJson,
   CreateContactPayload,
   WithLegacyCategories,
-} from '../src/contact/contact';
+} from '../src/contact/contactService';
 import { Contact } from '../src/contact/contact-data-access';
 
 declare global {

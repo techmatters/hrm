@@ -19,7 +19,7 @@ import formatISO from 'date-fns/formatISO';
 import { putS3Object } from '@tech-matters/s3-client';
 
 import { getContext, maxPermissions } from './context';
-import * as contactApi from '../../contact/contact';
+import * as contactApi from '../../contact/contactService';
 import { autoPaginate, defaultLimitAndOffset } from './auto-paginate';
 
 const getSearchParams = (startDate: Date, endDate: Date) => ({

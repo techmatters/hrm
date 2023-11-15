@@ -30,7 +30,7 @@ const defaultContact: Contact = {
     categories: {},
   },
   channel: '',
-  conversationDuration: null,
+  conversationDuration: undefined,
   csamReports: [],
 };
 
@@ -52,6 +52,8 @@ export class ContactBuilder {
   private createdBy: string;
 
   private createdAt: Date;
+
+  private finalizedAt: Date;
 
   private timeOfContact: Date;
 
@@ -113,6 +115,11 @@ export class ContactBuilder {
     return this;
   }
 
+  withFinalizedAt(finalizedAt: Date): ContactBuilder {
+    this.finalizedAt = finalizedAt;
+    return this;
+  }
+
   withCreatedAt(createdAt: Date): ContactBuilder {
     this.createdAt = createdAt;
     return this;
@@ -143,18 +150,19 @@ export class ContactBuilder {
       ...(this.twilioWorkerId && { twilioWorkerId: this.twilioWorkerId }),
       ...(this.createdAt && { createdAt: this.createdAt }),
       ...(this.createdBy && { createdBy: this.createdBy }),
+      ...(this.finalizedAt && { finalizedAt: this.finalizedAt }),
       ...(this.timeOfContact && { timeOfContact: this.timeOfContact }),
       rawJson: {
         ...defaultContact.rawJson,
         ...(this.number && { number: this.number }),
         ...(this.callType && { callType: this.callType }),
         childInformation: {
-          ...defaultContact.rawJson.childInformation,
+          ...defaultContact.rawJson!.childInformation,
           ...(this.childFirstName && { firstName: this.childFirstName }),
           ...(this.childLastName && { lastName: this.childLastName }),
         },
         caseInformation: {
-          ...defaultContact.rawJson.caseInformation,
+          ...defaultContact.rawJson!.caseInformation,
           ...(this.callSummary && { callSummary: this.callSummary }),
         },
       },

@@ -15,7 +15,7 @@
  */
 
 import { CaseRecord, NewCaseRecord } from '../../src/case/case-data-access';
-import { Case } from '../../src/case/case';
+import { CaseService } from '../../src/case/caseService';
 import { workerSid } from '../../service-tests/mocks';
 
 const baselineDate = new Date(2000, 5, 1);
@@ -73,7 +73,7 @@ export const createMockCaseInsert = (partial: Partial<NewCaseRecord>): NewCaseRe
   );
 };
 
-export const createMockCase = (partial: Partial<Case>): Case => {
+export const createMockCase = (partial: Partial<CaseService>): CaseService => {
   const record = createMockCaseRecord({});
   delete record.caseSections;
   return Object.assign(

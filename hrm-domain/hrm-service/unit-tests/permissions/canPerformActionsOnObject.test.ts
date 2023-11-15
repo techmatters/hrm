@@ -19,8 +19,8 @@ import { isErr, isOk } from '@tech-matters/types';
 
 import { canPerformActionsOnObject } from '../../src/permissions/canPerformActionOnObject';
 import { actionsMaps } from '../../src/permissions/actions';
-import * as contactApi from '../../src/contact/contact';
-import * as caseApi from '../../src/case/case';
+import * as contactApi from '../../src/contact/contactService';
+import * as caseApi from '../../src/case/caseService';
 
 const accountSid = 'ACxxxxxx';
 
