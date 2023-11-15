@@ -91,11 +91,11 @@ export const getProfilesByIdentifierSql = `
   SELECT
     profiles.id AS id,
     profiles.name AS name,
-    COUNT(DISTINCT CASE WHEN "Contacts"."caseId" IS NOT NULL THEN "Contacts"."profileId" END) AS casesCount,
-    COUNT(CASE WHEN "Contacts"."caseId" IS NOT NULL THEN 1 END) AS contactsCount
+    CAST(COUNT(DISTINCT CASE WHEN "Contacts"."caseId" IS NOT NULL THEN "Contacts"."profileId" END) AS INTEGER) AS "casesCount",
+    CAST(COUNT(*) AS INTEGER) AS "contactsCount"
   FROM "Identifiers" ids
   LEFT JOIN "ProfilesToIdentifiers" p2i ON ids.id = p2i."identifierId"
-  LEFT JOIN "Profiles" profiles ON profiles.id = p2i."profileId" AND profiles."accountSid" = p2i."accountSid"
+  LEFT JOIN "Profiles" profiles ON profiles.id = p2i."profileId"
   LEFT JOIN "Contacts" ON "Contacts"."profileId" = profiles.id
   ${WHERE_IDENTIFIER_CLAUSE}
   GROUP BY profiles.id, profiles.name;
