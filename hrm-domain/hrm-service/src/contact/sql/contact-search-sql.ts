@@ -105,6 +105,10 @@ export const SELECT_CONTACT_SEARCH = selectSearchContactBaseQuery(`
             "rawJson"->>'callType' IN ($<dataCallTypes:csv>)
           )
         )
+        AND NOT (
+          -- This will filter empty draft offline contacts that hang around after an offline contact is cancelled because we never delete contacts
+          "taskId" LIKE 'offline-contact-task-%' AND COALESCE("rawJson"->>'callType', '')='' AND "finalizedAt" IS NULL
+        )
 `);
 
 export const SELECT_CONTACT_SEARCH_BY_PROFILE_ID = selectSearchContactBaseQuery(`
