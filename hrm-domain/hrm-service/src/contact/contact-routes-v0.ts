@@ -147,7 +147,7 @@ const validatePatchPayload = ({ body }: Request, res: Response, next: NextFuncti
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const canEditContact = asyncHandler(async (req, res, next) => {
   if (!req.isAuthorized()) {
-    const { accountSid, user, can, body } = req;
+    const { accountSid, user, can, body, query } = req;
     const { contactId } = req.params;
 
     try {
@@ -166,6 +166,14 @@ const canEditContact = asyncHandler(async (req, res, next) => {
           req.unauthorize();
         }
       } else {
+        // Cannot finalize an offline task with a placeholder taskId.
+        // A real task needs to have been created and it's sid assigned to the contact before it can be finalized
+        if (
+          body?.taskId?.startsWith('offline-contact-task-') &&
+          query?.finalize === 'true'
+        ) {
+          req.unauthorize();
+        }
         // If there is no finalized date, then the contact is a draft and can only be edited by the worker who created it or the one who owns it.
         // Offline contacts potentially need to be edited by a creator that won't own them.
         // Transferred tasks need to be edited by an owner that didn't create them.

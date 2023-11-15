@@ -48,7 +48,7 @@ export const pullCases = async (startDate: Date, endDate: Date) => {
 
   const casesWithContactIdOnly = cases.map(cas => ({
     ...cas,
-    connectedContacts: mapContactsToId(cas.connectedContacts),
+    connectedContacts: mapContactsToId(cas?.connectedContacts ?? []),
   }));
 
   const uploadPromises = casesWithContactIdOnly.map(cas => {
