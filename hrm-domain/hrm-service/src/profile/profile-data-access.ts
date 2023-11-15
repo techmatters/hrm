@@ -81,12 +81,20 @@ export const getIdentifierWithProfiles =
     const params = { accountSid, identifier, identifierId };
     try {
       const data = await txIfNotInOne<IdentifierWithProfiles>(task, async t => {
+        /* We run two queries here, one to get the identifier and one to get the profiles
+           because writing a single PERFORMANT query against tables that could eventually
+           have millions of rows is hard. There is probably a better way to do this...
+           but dev time is limited and this works for now.
+
+           If you are thinking of changing this, please profile against a db with millions
+           of rows in the tables and make sure it is performant.
+        */
         const identifierData: Identifier = await t.oneOrNone(
           profileGetSql.getIdentifierSql,
           params,
         );
 
-        if (!identifier) {
+        if (!identifierData) {
           return null;
         }
 
