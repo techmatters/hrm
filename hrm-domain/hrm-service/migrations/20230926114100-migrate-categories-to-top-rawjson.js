@@ -53,7 +53,7 @@ module.exports = {
                   FROM "Contacts"
                 ) AS expansion1
               ) AS expansion2 
-              WHERE (subcategoryRecord).value::boolean = true
+              WHERE (subcategoryRecord).value::text = 'true'
             )
             AS expansion3
             GROUP BY id, category
