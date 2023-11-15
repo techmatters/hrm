@@ -202,52 +202,44 @@ const KHP_MAPPING_NODE_SITES: { children: MappingNode } = {
 // TODO: this is an array of arrays, is this shape correct?
 const KHP_MAPPING_NODE_TAXONOMIES: { children: MappingNode } = {
   children: {
-    '{arrayIndex}': {
+    '{taxonomyIndex}': {
       children: {
-        '{taxonomyIndex}': {
+        nameEN: translatableAttributeMapping(
+          ({ parentValue }) => `taxonomies/${parentValue.code}`,
+          {
+            value: ctx => ctx.currentValue,
+            language: 'en',
+            info: ctx => ctx.parentValue,
+          },
+        ),
+        nameFR: translatableAttributeMapping(
+          ({ parentValue }) => `taxonomies/${parentValue.code}`,
+          {
+            value: ctx => ctx.currentValue,
+            language: 'fr',
+            info: ctx => ctx.parentValue,
+          },
+        ),
+        ancestorTaxonomies: {
           children: {
-            nameEN: translatableAttributeMapping(
-              ({ captures, parentValue }) =>
-                `taxonomies/${captures.arrayIndex}/${parentValue.code}`,
-              {
-                value: ctx => ctx.currentValue,
-                language: 'en',
-                info: ctx => ctx.parentValue,
-              },
-            ),
-            nameFR: translatableAttributeMapping(
-              ({ captures, parentValue }) =>
-                `taxonomies/${captures.arrayIndex}/${parentValue.code}`,
-              {
-                value: ctx => ctx.currentValue,
-                language: 'fr',
-                info: ctx => ctx.parentValue,
-              },
-            ),
-            ancestors: {
+            '{ancestorIndex}': {
               children: {
-                '{ancestorIndex}': {
-                  children: {
-                    nameEN: translatableAttributeMapping(
-                      ({ captures, parentValue }) =>
-                        `taxonomies/${captures.arrayIndex}/${parentValue.code}`,
-                      {
-                        value: ctx => ctx.currentValue,
-                        language: 'en',
-                        info: ctx => ctx.parentValue,
-                      },
-                    ),
-                    nameFR: translatableAttributeMapping(
-                      ({ captures, parentValue }) =>
-                        `taxonomies/${captures.arrayIndex}/${parentValue.code}`,
-                      {
-                        value: ctx => ctx.currentValue,
-                        language: 'fr',
-                        info: ctx => ctx.parentValue,
-                      },
-                    ),
+                nameEN: translatableAttributeMapping(
+                  ({ parentValue }) => `taxonomies/${parentValue.code}`,
+                  {
+                    value: ctx => ctx.currentValue,
+                    language: 'en',
+                    info: ctx => ctx.parentValue,
                   },
-                },
+                ),
+                nameFR: translatableAttributeMapping(
+                  ({ parentValue }) => `taxonomies/${parentValue.code}`,
+                  {
+                    value: ctx => ctx.currentValue,
+                    language: 'fr',
+                    info: ctx => ctx.parentValue,
+                  },
+                ),
               },
             },
           },

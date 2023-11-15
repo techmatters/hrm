@@ -320,30 +320,28 @@ export const khpResourceWithoutSites = {
   updatedAt: '2023-05-24T17:57:27.765Z',
   objectId: '646e5007e997982f03739084',
   taxonomies: [
-    [
-      {
-        code: 'code',
-        nameEN: 'taxonomy sample',
-        nameFR: 'taxonomy sample FR',
-        level: 5,
-        retiredAt: null,
-        createdAt: '2023-05-24T17:57:27.741Z',
-        updatedAt: '2023-05-24T17:57:27.741Z',
-        objectId: '646e5007e997982f03739082',
-        ancestors: [
-          {
-            code: 'parent-code',
-            nameEN: 'taxonomy parent sample',
-            nameFR: 'taxonomy parent sample FR',
-          },
-          {
-            code: 'grandparent-code',
-            nameEN: 'taxonomy grandparent sample',
-            nameFR: 'taxonomy grandparent sample FR',
-          },
-        ],
-      },
-    ],
+    {
+      code: 'code',
+      nameEN: 'taxonomy sample',
+      nameFR: 'taxonomy sample FR',
+      level: 5,
+      retiredAt: null,
+      createdAt: '2023-05-24T17:57:27.741Z',
+      updatedAt: '2023-05-24T17:57:27.741Z',
+      objectId: '646e5007e997982f03739082',
+      ancestorTaxonomies: [
+        {
+          code: 'parent-code',
+          nameEN: 'taxonomy parent sample',
+          nameFR: 'taxonomy parent sample FR',
+        },
+        {
+          code: 'grandparent-code',
+          nameEN: 'taxonomy grandparent sample',
+          nameFR: 'taxonomy grandparent sample FR',
+        },
+      ],
+    },
   ],
   notes: [
     {
