@@ -14,9 +14,9 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 const WHERE_IDENTIFIER_CLAUSE = `
-  WHERE "accountSid" = $<accountSid> AND
+  WHERE ids."accountSid" = $<accountSid> AND
   (
-    ("identifier" = $<identifier> AND $<identifier> IS NOT NULL)
+    (ids."identifier" = $<identifier> AND $<identifier> IS NOT NULL)
     OR
     (ids.id = $<identifierId> AND $<identifierId> IS NOT NULL)
   )
@@ -82,43 +82,21 @@ export const getProfileByIdSql = `
   WHERE profiles."accountSid" = $<accountSid> AND profiles."id" = $<profileId>
 `;
 
-export const joinProfilesIdentifiersSql = `
-  WITH ProfileAggregation AS (
-    SELECT
-        p2i."identifierId",
-        JSON_AGG(
-            JSON_BUILD_OBJECT(
-                'id', profiles.id,
-                'name', profiles.name,
-                'contactsCount', COALESCE(contactsCounts.count, 0),
-                'casesCount', COALESCE(casesCounts.count, 0)
-            )
-        ) FILTER (WHERE profiles.id IS NOT NULL) as profiles_data
-    FROM "ProfilesToIdentifiers" p2i
-    LEFT JOIN "Profiles" profiles ON profiles.id = p2i."profileId" AND profiles."accountSid" = p2i."accountSid"
-    LEFT JOIN (
-        SELECT "Contacts"."profileId", COUNT(*) as count
-        FROM "Contacts"
-        GROUP BY "Contacts"."profileId"
-    ) AS contactsCounts ON profiles.id = contactsCounts."profileId"
-    LEFT JOIN (
-        SELECT "Contacts"."profileId", COUNT(DISTINCT "Contacts"."caseId") as count
-        FROM "Contacts"
-        WHERE "Contacts"."caseId" IS NOT NULL
-        GROUP BY "Contacts"."profileId"
-    ) AS casesCounts ON profiles.id = casesCounts."profileId"
-    GROUP BY p2i."identifierId"
-  )
+export const getIdentifierSql = `
+  SELECT * FROM "Identifiers" ids
+  ${WHERE_IDENTIFIER_CLAUSE}
+`;
 
+export const getProfilesByIdentifierSql = `
   SELECT
-    ROW_TO_JSON(t.*) AS data
-  FROM (
-    SELECT
-        ids.*,
-        COALESCE(pa.profiles_data, '[]'::json) as profiles
-    FROM "Identifiers" as "ids"
-    LEFT JOIN ProfileAggregation pa ON ids.id = pa."identifierId"
-    ${WHERE_IDENTIFIER_CLAUSE}
-    LIMIT 1
-  ) t;
+    profiles.id AS id,
+    profiles.name AS name,
+    COUNT(DISTINCT CASE WHEN "Contacts"."caseId" IS NOT NULL THEN "Contacts"."profileId" END) AS casesCount,
+    COUNT(CASE WHEN "Contacts"."caseId" IS NOT NULL THEN 1 END) AS contactsCount
+  FROM "Identifiers" ids
+  LEFT JOIN "ProfilesToIdentifiers" p2i ON ids.id = p2i."identifierId"
+  LEFT JOIN "Profiles" profiles ON profiles.id = p2i."profileId" AND profiles."accountSid" = p2i."accountSid"
+  LEFT JOIN "Contacts" ON "Contacts"."profileId" = profiles.id
+  ${WHERE_IDENTIFIER_CLAUSE}
+  GROUP BY profiles.id, profiles.name;
 `;

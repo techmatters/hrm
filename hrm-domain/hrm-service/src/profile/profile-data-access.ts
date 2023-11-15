@@ -30,7 +30,7 @@ import {
   insertProfileFlagSql,
 } from './sql/profile-flags-sql';
 import { txIfNotInOne } from '../sql';
-import { getProfileByIdSql, joinProfilesIdentifiersSql } from './sql/profile-get-sql';
+import * as profileGetSql from './sql/profile-get-sql';
 import { db } from '../connection-pool';
 import {
   NewProfileSectionRecord,
@@ -78,16 +78,28 @@ export const getIdentifierWithProfiles =
     identifier,
     identifierId,
   }: IdentifierParams): Promise<TResult<IdentifierWithProfiles | null>> => {
+    const params = { accountSid, identifier, identifierId };
     try {
-      const result = await txIfNotInOne<{ data: IdentifierWithProfiles }>(task, async t =>
-        t.oneOrNone(joinProfilesIdentifiersSql, {
-          accountSid,
-          identifier,
-          identifierId,
-        }),
-      );
+      const data = await txIfNotInOne<IdentifierWithProfiles>(task, async t => {
+        const identifierData: Identifier = await t.oneOrNone(
+          profileGetSql.getIdentifierSql,
+          params,
+        );
 
-      return newOk({ data: result ? result.data : null });
+        if (!identifier) {
+          return null;
+        }
+
+        const profiles =
+          (await t.manyOrNone(profileGetSql.getProfilesByIdentifierSql, params)) || [];
+
+        return {
+          ...identifierData,
+          profiles,
+        };
+      });
+
+      return newOk({ data });
     } catch (err) {
       return newErr({
         message: err instanceof Error ? err.message : String(err),
@@ -189,7 +201,7 @@ export const getProfileById =
   (task?) =>
   async (accountSid: string, profileId: number): Promise<ProfileWithRelationships> => {
     return txIfNotInOne<ProfileWithRelationships>(task, async t => {
-      return t.oneOrNone(getProfileByIdSql, { accountSid, profileId });
+      return t.oneOrNone(profileGetSql.getProfileByIdSql, { accountSid, profileId });
     });
   };
 
