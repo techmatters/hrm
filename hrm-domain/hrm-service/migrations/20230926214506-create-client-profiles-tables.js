@@ -317,13 +317,13 @@ module.exports = {
       DROP INDEX IF EXISTS "Identifiers_identifier_accountSid"
     `);
     await queryInterface.sequelize.query(`
-      DROP CREATE TABLE IF EXISTS public."Identifiers"
+      DROP TABLE IF EXISTS public."Identifiers"
     `);
     await queryInterface.sequelize.query(`
       DROP SEQUENCE IF EXISTS public."Identifiers_id_seq"
     `);
     await queryInterface.sequelize.query(`
-      DROP CREATE TABLE IF EXISTS public."Profiles"
+      DROP TABLE IF EXISTS public."Profiles"
     `);
     await queryInterface.sequelize.query(`
       DROP SEQUENCE IF EXISTS public."Profiles_id_seq"
