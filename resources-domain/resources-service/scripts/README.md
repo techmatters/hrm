@@ -23,8 +23,8 @@ It performs the following steps:
 
 Prerequisites:
 
-* You need to be on the VPN for the correct region / environment to run this script.
-* Your VPN connection needs to be associated with the private subnet (either AZ).
+* You need to be on the management VPN (or the correct eu-west-1 environment VPN) to run this script.
+* [eu-west-1 only] Your VPN connection needs to be associated with the private subnet (either AZ).
 * You need to have your AWS credentials set up correctly in your environment, including the correct region.
 
 Arguments:

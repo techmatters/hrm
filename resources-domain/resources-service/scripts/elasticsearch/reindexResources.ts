@@ -15,7 +15,7 @@
  */
 
 // TODO: needs to be converted to aws-sdk-v3
-import { ECS, EC2, S3 } from 'aws-sdk';
+import { ECS, EC2, S3, STS } from 'aws-sdk';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import yargs from 'yargs';
 import { SearchReindexParams } from '../../src/admin/adminSearchService';
@@ -152,6 +152,13 @@ const main = async () => {
     })
     .parseSync();
   const region = process.env.AWS_REGION;
+  const sts = new STS();
+  const timestamp = new Date().getTime();
+  const params = {
+    RoleArn: 'arn:aws:iam::712893914485:role/admin-no-pii',
+    RoleSessionName: `es-reindex-${timestamp}`,
+  };
+  await sts.assumeRole(params).promise();
   const privateIpAddress = await findTaskPrivateIp({
     cluster: `${environment}-ecs-cluster`,
     serviceName: `${environment}-ecs-service`,
@@ -159,6 +166,7 @@ const main = async () => {
   const internalResourcesUrl = new URL('http://localhost');
   internalResourcesUrl!.hostname = privateIpAddress;
   internalResourcesUrl!.port = '8081';
+
   const { Body } = await s3
     .getObject({
       Bucket: `tl-hrm-vars-${environment}${region === 'us-east-1' ? '' : `-${region}`}`,
