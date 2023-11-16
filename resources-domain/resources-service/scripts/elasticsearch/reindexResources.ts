@@ -160,9 +160,9 @@ const main = async () => {
   };
   const { Credentials } = await sts.assumeRole(params).promise();
   const credentials = {
-    accessKeyId: Credentials?.AccessKeyId,
-    secretAccessKey: Credentials?.SecretAccessKey,
-    sessionToken: Credentials?.SessionToken,
+    accessKeyId: Credentials!.AccessKeyId,
+    secretAccessKey: Credentials!.SecretAccessKey,
+    sessionToken: Credentials!.SessionToken,
   };
 
   const ecs = new ECS({
