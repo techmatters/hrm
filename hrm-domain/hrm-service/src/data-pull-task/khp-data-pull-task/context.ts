@@ -19,7 +19,7 @@ import { getSsmParameter } from '@tech-matters/ssm-cache';
 const sanitizeEnv = (env: string) => (env === 'local' ? 'development' : env);
 
 const hrmEnv = sanitizeEnv(process.env.NODE_ENV ?? 'development');
-const shortCode = hrmEnv === 'development' ? 'AS' : 'CA';
+const shortCode = hrmEnv === 'development' ? 'AS' : 'NZ';
 
 type Context = {
   accountSid: string;
