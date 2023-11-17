@@ -202,26 +202,46 @@ const KHP_MAPPING_NODE_SITES: { children: MappingNode } = {
 // TODO: this is an array of arrays, is this shape correct?
 const KHP_MAPPING_NODE_TAXONOMIES: { children: MappingNode } = {
   children: {
-    '{arrayIndex}': {
+    '{taxonomyIndex}': {
       children: {
-        '{taxonomyIndex}': {
+        nameEN: translatableAttributeMapping(
+          ({ parentValue }) => `taxonomies/${parentValue.code}`,
+          {
+            value: ctx => ctx.currentValue,
+            language: 'en',
+            info: ctx => ctx.parentValue,
+          },
+        ),
+        nameFR: translatableAttributeMapping(
+          ({ parentValue }) => `taxonomies/${parentValue.code}`,
+          {
+            value: ctx => ctx.currentValue,
+            language: 'fr',
+            info: ctx => ctx.parentValue,
+          },
+        ),
+        ancestorTaxonomies: {
           children: {
-            nameEN: translatableAttributeMapping(
-              'taxonomies/{arrayIndex}/{taxonomyIndex}',
-              {
-                value: ctx => ctx.currentValue,
-                language: 'en',
-                info: ctx => ctx.parentValue,
+            '{ancestorIndex}': {
+              children: {
+                nameEN: translatableAttributeMapping(
+                  ({ parentValue }) => `taxonomies/${parentValue.code}`,
+                  {
+                    value: ctx => ctx.currentValue,
+                    language: 'en',
+                    info: ctx => ctx.parentValue,
+                  },
+                ),
+                nameFR: translatableAttributeMapping(
+                  ({ parentValue }) => `taxonomies/${parentValue.code}`,
+                  {
+                    value: ctx => ctx.currentValue,
+                    language: 'fr',
+                    info: ctx => ctx.parentValue,
+                  },
+                ),
               },
-            ),
-            nameFR: translatableAttributeMapping(
-              'taxonomies/{arrayIndex}/{taxonomyIndex}',
-              {
-                value: ctx => ctx.currentValue,
-                language: 'fr',
-                info: ctx => ctx.parentValue,
-              },
-            ),
+            },
           },
         },
       },

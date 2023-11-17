@@ -28,6 +28,7 @@ import {
 import { AccountSID, FlatResource } from '@tech-matters/types';
 import each from 'jest-each';
 import {
+  khpResourceWithAncestorTaxonmies,
   khpResourceWithoutSites,
   khpResourceWithSites,
 } from '../fixtures/sampleResources';
@@ -913,6 +914,10 @@ describe('Mapping valid sample resources should produce no warnings', () => {
   };
 
   const testCases: TestCase[] = [
+    {
+      description: 'KHP resource with ancestor taxonomies',
+      resource: khpResourceWithAncestorTaxonmies,
+    },
     {
       description: 'KHP resource with no sites',
       resource: khpResourceWithoutSites,

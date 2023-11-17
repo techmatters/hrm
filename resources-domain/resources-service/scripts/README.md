@@ -23,9 +23,22 @@ It performs the following steps:
 
 Prerequisites:
 
-* You need to be on the VPN for the correct region / environment to run this script.
-* Your VPN connection needs to be associated with the private subnet (either AZ).
-* You need to have your AWS credentials set up correctly in your environment, including the correct region.
+#### Running Locally
+
+* You need to have MFA authenticated credentials available on your CLI so your account can assume roles (this is a difficult process so using the devops box as instructed below might be preferable)
+* You need to be on the management VPN (or the correct eu-west-1 environment VPN) to run this script.
+* [eu-west-1 only] Your VPN connection needs to be associated with the private subnet (either AZ).
+
+#### Running on the DevOps box
+
+* SSH into the devops box
+* Ensure you have the HRM source tree checked out.
+* In the root of the source tree run:
+````bash
+docker run -it --rm --name reindex-resources --env AWS_REGION=us-east-1 -v "$PWD":/usr/src/app -w /usr/src/app node:18-slim npm install
+docker run -it --rm --name reindex-resources --env AWS_REGION=us-east-1 -v "$PWD":/usr/src/app -w /usr/src/app node:18-slim npm run build
+docker run -it --rm --name reindex-resources --env AWS_REGION=us-east-1 -v "$PWD":/usr/src/app -w /usr/src/app node:18-slim node ./node_modules/@tech-matters/resources-service/scripts-dist/scripts/elasticsearch/reindexResources.js [...args]
+````
 
 Arguments:
 --environment / -e: The environment to run the reindex on. Defaults to 'development'.
@@ -34,3 +47,4 @@ Arguments:
 --from / -f: Specify this to limit the scope of the reindex to resources created after this date. Must be in ISO format (YYYY-MM-DDTHH:mm:ss.sssZ). Can be used in conjunction with --accountSid to reindex a single account, or to reindex resources created after a certain date across all accounts.
 --to / -t: Specify this to limit the scope of the reindex to resources created before this date. Must be in ISO format (YYYY-MM-DDTHH:mm:ss.sssZ). Can be used in conjunction with --accountSid to reindex a single account, or to reindex resources created before a certain date across all accounts.
 --verbose / -v: Specify this to get the ID of every resource indexed, and the ID and error details of every resource that failed to index.
+

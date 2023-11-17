@@ -15,7 +15,7 @@
  */
 
 // TODO: needs to be converted to aws-sdk-v3
-import { ECS, EC2, S3 } from 'aws-sdk';
+import { ECS, EC2, S3, STS } from 'aws-sdk';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import yargs from 'yargs';
 import { SearchReindexParams } from '../../src/admin/adminSearchService';
@@ -23,13 +23,13 @@ import { AccountSID } from '@tech-matters/types';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { fetch, Response } from 'undici';
 
-const ecs = new ECS();
-const ec2 = new EC2();
-const s3 = new S3();
-
 const staticKeyPattern = /^STATIC_KEY_SEARCH_REINDEXER=(?<key>.*)$/im;
 
-const findTaskPrivateIp = async (params: { cluster: string; serviceName: string }) => {
+const findTaskPrivateIp = async (
+  ecs: ECS,
+  ec2: EC2,
+  params: { cluster: string; serviceName: string },
+) => {
   const tasks = await ecs.listTasks(params).promise();
   const taskArns = tasks.taskArns ?? [];
   const describeParams = {
@@ -152,13 +152,40 @@ const main = async () => {
     })
     .parseSync();
   const region = process.env.AWS_REGION;
-  const privateIpAddress = await findTaskPrivateIp({
+  const sts = new STS();
+  const timestamp = new Date().getTime();
+  const params = {
+    RoleArn: 'arn:aws:iam::712893914485:role/admin-no-pii',
+    RoleSessionName: `es-reindex-${timestamp}`,
+  };
+  const { Credentials } = await sts.assumeRole(params).promise();
+  const credentials = {
+    accessKeyId: Credentials!.AccessKeyId,
+    secretAccessKey: Credentials!.SecretAccessKey,
+    sessionToken: Credentials!.SessionToken,
+  };
+
+  const ecs = new ECS({
+    credentials,
+    region,
+  });
+  const ec2 = new EC2({
+    credentials,
+    region,
+  });
+  const s3 = new S3({
+    credentials,
+    region,
+  });
+
+  const privateIpAddress = await findTaskPrivateIp(ecs, ec2, {
     cluster: `${environment}-ecs-cluster`,
     serviceName: `${environment}-ecs-service`,
   });
   const internalResourcesUrl = new URL('http://localhost');
   internalResourcesUrl!.hostname = privateIpAddress;
   internalResourcesUrl!.port = '8081';
+
   const { Body } = await s3
     .getObject({
       Bucket: `tl-hrm-vars-${environment}${region === 'us-east-1' ? '' : `-${region}`}`,
