@@ -147,6 +147,7 @@ export const disassociateProfileFromProfileFlag = async (
 };
 
 export const getProfileFlags = profileDB.getProfileFlagsForAccount;
+export const getProfileFlagsByIdentifier = profileDB.getProfileFlagsByIdentifier;
 
 // While this is just a wrapper around profileDB.createProfileSection, we'll need more code to handle permissions soon
 export const createProfileSection = async (
