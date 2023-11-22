@@ -126,7 +126,7 @@ module.exports = {
       INSERT INTO "ProfileFlags" ("name", "accountSid", "createdAt", "updatedAt")
       VALUES ('blocked', NULL, current_timestamp, current_timestamp);
       INSERT INTO "ProfileFlags" ("name", "accountSid", "createdAt", "updatedAt")
-      VALUES ('abusive', NULL, current_timestamp, current_timestamp);    
+      VALUES ('abusive', NULL, current_timestamp, current_timestamp);
     `);
 
     // ProfilesToProfileFlags
@@ -211,28 +211,28 @@ module.exports = {
 
     // Add existing identifiers to Identifiers table
     await queryInterface.sequelize.query(`
-      DO $$    
+      DO $$
         DECLARE identifier public."Identifiers";
         DECLARE profile public."Profiles";
       BEGIN
         -- Insert one identifier per distinct numnber-accountSid pair
         INSERT INTO "Identifiers" ("identifier", "accountSid", "createdAt", "updatedAt")
-        SELECT DISTINCT "number" as "identifier", "accountSid", current_timestamp as "createdAt", current_timestamp as "updatedAt" 
-        FROM "Contacts" WHERE "number" IS NOT NULL;
-        
+        SELECT DISTINCT "number" as "identifier", "accountSid", current_timestamp as "createdAt", current_timestamp as "updatedAt"
+        FROM "Contacts" WHERE "number" IS NOT NULL AND "number" != '';
+
         -- For each new Identifier
         FOR identifier IN (SELECT * FROM "Identifiers") LOOP
           -- Create a "blank" Profile
           INSERT INTO "Profiles"("name", "accountSid", "createdAt", "updatedAt")
           VALUES (NULL, identifier."accountSid", current_timestamp, current_timestamp)
           RETURNING * INTO profile;
-        
+
           -- Link the profile to the identifier
           INSERT INTO "ProfilesToIdentifiers"("profileId", "identifierId", "accountSid", "createdAt", "updatedAt")
           VALUES (profile.id, identifier.id, identifier."accountSid", current_timestamp, current_timestamp);
-        
+
         END LOOP;
-      END$$  
+      END$$
     `);
     console.log('Profiles, Identifiers and relations populated');
 
@@ -242,13 +242,13 @@ module.exports = {
 
       ALTER TABLE IF EXISTS public."Contacts" ADD CONSTRAINT "Contacts_profileId_Profiles_id_fk"
       FOREIGN KEY ("profileId", "accountSid") REFERENCES public."Profiles" (id, "accountSid") MATCH SIMPLE ON UPDATE CASCADE ON DELETE NO ACTION;
-      
+
       CREATE INDEX IF NOT EXISTS "Contacts_profileId_accountSid" ON public."Contacts" USING btree
       ("profileId" ASC NULLS LAST, "accountSid" COLLATE pg_catalog."default" ASC NULLS LAST);
 
       ALTER TABLE IF EXISTS public."Contacts" ADD COLUMN IF NOT EXISTS "identifierId" integer;
-      
-      ALTER TABLE IF EXISTS public."Contacts" ADD CONSTRAINT "Contacts_identifierId_Identifiers_id_fk" 
+
+      ALTER TABLE IF EXISTS public."Contacts" ADD CONSTRAINT "Contacts_identifierId_Identifiers_id_fk"
       FOREIGN KEY ("identifierId", "accountSid") REFERENCES public."Identifiers" (id, "accountSid") MATCH SIMPLE ON UPDATE CASCADE ON DELETE NO ACTION;
 
       CREATE INDEX IF NOT EXISTS "Contacts_identifierId_accountSid" ON public."Contacts" USING btree
@@ -264,10 +264,10 @@ module.exports = {
           SELECT "profileId", "identifierId", "identifier", ids."accountSid" FROM "ProfilesToIdentifiers" p2i
           LEFT JOIN "Identifiers" ids ON p2i."identifierId" = ids.id
         ) LOOP
-      
+
           UPDATE "Contacts" SET "profileId" = tmp."profileId", "identifierId" = tmp."identifierId"
           WHERE "number" = tmp."identifier" AND "accountSid" = tmp."accountSid";
-      
+
         END LOOP;
       END$$
     `);
@@ -280,8 +280,8 @@ module.exports = {
     await queryInterface.sequelize.query(`
       DROP INDEX IF EXISTS "Contacts_profileId_accountSid";
       DROP INDEX IF EXISTS "Contacts_identifierId_accountSid";
-      ALTER TABLE IF EXISTS public."Contacts" DROP COLUMN "profileId"; 
-      ALTER TABLE IF EXISTS public."Contacts" DROP COLUMN "identifierId"; 
+      ALTER TABLE IF EXISTS public."Contacts" DROP COLUMN "profileId";
+      ALTER TABLE IF EXISTS public."Contacts" DROP COLUMN "identifierId";
     `);
 
     await queryInterface.sequelize.query(`
