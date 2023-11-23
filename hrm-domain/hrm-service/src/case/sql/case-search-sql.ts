@@ -20,16 +20,7 @@ import { CaseListFilters, DateExistsCondition, DateFilter } from '../case-data-a
 import { selectCoalesceCsamReportsByContactId } from '../../csam-report/sql/csam-report-get-sql';
 import { selectCoalesceReferralsByContactId } from '../../referral/sql/referral-get-sql';
 import { selectCoalesceConversationMediasByContactId } from '../../conversation-media/sql/conversation-media-get-sql';
-
-export const OrderByDirection = {
-  ascendingNullsLast: 'ASC NULLS LAST',
-  descendingNullsLast: 'DESC NULLS LAST',
-  ascending: 'ASC',
-  descending: 'DESC',
-} as const;
-
-export type OrderByDirectionType =
-  (typeof OrderByDirection)[keyof typeof OrderByDirection];
+import { OrderByClauseItem, OrderByDirection } from '../../sql';
 
 export const OrderByColumn = {
   ID: 'id',
@@ -48,8 +39,6 @@ const ORDER_BY_FIELDS: Record<OrderByColumnType, string> = {
   'info.followUpDate': `"info"->>'followUpDate'`,
   childName: pgp.as.name('childName'),
 } as const;
-
-type OrderByClauseItem = { sortBy: string; sortDirection: OrderByDirectionType };
 
 const DEFAULT_SORT: OrderByClauseItem[] = [
   { sortBy: 'id', sortDirection: OrderByDirection.descending },
