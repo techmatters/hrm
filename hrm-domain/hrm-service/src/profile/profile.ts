@@ -22,6 +22,7 @@ import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import type { NewProfileSectionRecord } from './sql/profile-sections-sql';
 
 export { Identifier, Profile, getIdentifierWithProfiles } from './profile-data-access';
+export { ProfileListConfiguration, SearchParameters } from './profile-data-access';
 
 export const getProfile =
   (task?) =>
@@ -95,6 +96,8 @@ export const getIdentifierByIdentifier = async (
     });
   }
 };
+
+export const listProfiles = profileDB.listProfiles;
 
 export const associateProfileToProfileFlag = async (
   accountSid: string,

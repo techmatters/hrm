@@ -29,7 +29,7 @@ import {
   getProfileFlagsByAccountSql,
   insertProfileFlagSql,
 } from './sql/profile-flags-sql';
-import { txIfNotInOne } from '../sql';
+import { OrderByDirectionType, txIfNotInOne } from '../sql';
 import * as profileGetSql from './sql/profile-get-sql';
 import { db } from '../connection-pool';
 import {
@@ -38,6 +38,14 @@ import {
   insertProfileSectionSql,
   updateProfileSectionByIdSql,
 } from './sql/profile-sections-sql';
+import {
+  OrderByColumnType,
+  ProfilesListFilters,
+  listProfilesSql,
+} from './sql/profile-list-sql';
+import { getPaginationElements } from '../search';
+
+export { ProfilesListFilters } from './sql/profile-list-sql';
 
 type RecordCommons = {
   id: number;
@@ -212,6 +220,49 @@ export const getProfileById =
       return t.oneOrNone(profileGetSql.getProfileByIdSql, { accountSid, profileId });
     });
   };
+
+export type ProfileListConfiguration = {
+  sortBy?: OrderByColumnType;
+  sortDirection?: OrderByDirectionType;
+  offset?: string;
+  limit?: string;
+};
+
+export type SearchParameters = {
+  filters?: ProfilesListFilters;
+};
+export const listProfiles = async (
+  accountSid: string,
+  listConfiguration: ProfileListConfiguration,
+  { filters }: SearchParameters,
+): Promise<TResult<{ profiles: Profile[]; count: number }>> => {
+  try {
+    const { limit, offset, sortBy, sortDirection } =
+      getPaginationElements(listConfiguration);
+    const orderClause = [{ sortBy, sortDirection }];
+
+    const { count, rows } = await db.task(async connection => {
+      const result = await connection.any<Profile & { totalCount: number }>(
+        listProfilesSql(filters, orderClause),
+        {
+          accountSid,
+          limit,
+          offset,
+          profileFlagIds: filters.profileFlagIds,
+        },
+      );
+
+      const totalCount: number = result.length ? result[0].totalCount : 0;
+      return { rows: result, count: totalCount };
+    });
+
+    return newOk({ data: { profiles: rows, count } });
+  } catch (err) {
+    return newErr({
+      message: err instanceof Error ? err.message : String(err),
+    });
+  }
+};
 
 export const associateProfileToProfileFlag =
   (task?) =>
