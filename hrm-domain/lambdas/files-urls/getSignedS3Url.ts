@@ -51,8 +51,29 @@ const getSignedS3Url = async (event: AlbHandlerEvent): Promise<GetSignedS3UrlRes
     return parseParametersResult;
   }
 
-  const { accountSid, bucket, key, method, objectType, objectId, fileType } =
-    parseParametersResult.data;
+  const {
+    accountSid,
+    bucket,
+    key: encodedKey,
+    method,
+    objectType,
+    objectId,
+    fileType,
+  } = parseParametersResult.data;
+
+  const key = decodeURIComponent(encodedKey);
+
+  console.log('>>>>> parseParametersResult.data', parseParametersResult.data);
+  console.log('>>>>> params', {
+    accountSid,
+    bucket,
+    key,
+    method,
+    objectType,
+    objectId,
+    fileType,
+  });
+  console.log('>>>>> key', key);
 
   const authorization = event.headers?.Authorization || event.headers?.authorization;
 
