@@ -87,10 +87,10 @@ jobs:
         run: git clone https://github.com/techmatters/flex-plugins --branch ${{ inputs.flex-branch }} --single-branch
         shell: bash
 
-      # Checkout repo to given branch (defaults to master)
-      - name: Checkout e2e-tests to a different branch
-        run: git checkout ${{ inputs.flex-branch }}
-        working-directory: ./flex-plugins/e2e-tests
+      - name: Install Flex Plugin
+        uses: ./flex-plugins/.github/actions/install-flex-plugin
+        with:
+          path: ./flex-plugins
 
       # Build Playwright
       - name: Install e2e-tests dependencies
