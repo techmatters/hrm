@@ -19,10 +19,17 @@ import { GetSignedUrlMethods, GET_SIGNED_URL_METHODS } from '@tech-matters/s3-cl
 import { newErr, newOk, TResult } from '@tech-matters/types';
 
 import {
-  FileTypes,
   HRMAuthenticationObjectTypes,
   isAuthenticationObjectType,
 } from '@tech-matters/hrm-authentication';
+
+export const fileTypes = {
+  recording: 'Recording',
+  transcript: 'ExternalTranscript',
+  document: 'Case',
+} as const;
+
+export type FileTypes = keyof typeof fileTypes;
 
 const objectTypes: Record<HRMAuthenticationObjectTypes, Record<string, string[]>> = {
   contact: {

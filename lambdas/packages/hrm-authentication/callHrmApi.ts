@@ -23,7 +23,11 @@ export type CallHrmApiParameters = {
   requestData?: any;
 };
 
-const callHrmApi = async ({ urlPath, requestData, authHeader }: CallHrmApiParameters) => {
+export const callHrmApi = async ({
+  urlPath,
+  requestData,
+  authHeader,
+}: CallHrmApiParameters) => {
   const params = new URLSearchParams(requestData).toString();
   const fullUrl = params
     ? `${process.env.HRM_BASE_URL}/${urlPath}?${params}`
@@ -49,5 +53,3 @@ const callHrmApi = async ({ urlPath, requestData, authHeader }: CallHrmApiParame
   const data = await response.json();
   return newOk({ data });
 };
-
-export default callHrmApi;

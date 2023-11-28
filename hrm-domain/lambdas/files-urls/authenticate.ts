@@ -16,23 +16,20 @@
 
 import { newOk, isErr } from '@tech-matters/types';
 import {
-  HrmAuthenticateParameters,
-  HrmAuthenticateResult,
+  callHrmApi,
   HRMAuthenticationObjectTypes,
-} from './index';
-import callHrmApi from './callHrmApi';
+  HrmAuthenticateResult,
+} from '@tech-matters/hrm-authentication';
+
+import { fileTypes, FileTypes, Parameters } from './parseParameters';
 
 export const mockBuckets = ['mock-bucket'];
 
-export const fileTypes = {
-  recording: 'Recording',
-  transcript: 'ExternalTranscript',
-  document: 'Case',
-} as const;
-
-export type FileTypes = keyof typeof fileTypes;
-
 export type FileMethods = 'getObject' | 'putObject' | 'deleteObject';
+
+export type AuthenticateParams = Parameters & {
+  authHeader: string;
+};
 
 export const fileMethods: Record<
   HRMAuthenticationObjectTypes,
@@ -80,22 +77,18 @@ export type HrmAuthenticateFilesUrlsRequestData = {
 export const authUrlPathGenerator = ({
   accountSid,
   objectType,
-  requestData: { fileType, method },
-}: HrmAuthenticateParameters) => {
+  fileType,
+  method,
+}: AuthenticateParams) => {
   const permission = getPermission({ objectType, fileType, method });
 
   return `v0/accounts/${accountSid}/permissions/${permission}`;
 };
 
-const filesUrlsAuthenticator = async (
-  params: HrmAuthenticateParameters,
+const authenticate = async (
+  params: AuthenticateParams,
 ): Promise<HrmAuthenticateResult> => {
-  const {
-    objectId,
-    objectType,
-    authHeader,
-    requestData: { bucket, key },
-  } = params;
+  const { objectId, objectType, authHeader, bucket, key } = params;
 
   // This is a quick and dirty way to lock this down so we can test
   // with fake data without exposing real data in the test environment.
@@ -120,4 +113,4 @@ const filesUrlsAuthenticator = async (
   return newOk({ data: true });
 };
 
-export default filesUrlsAuthenticator;
+export default authenticate;
