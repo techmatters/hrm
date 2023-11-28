@@ -84,16 +84,11 @@ jobs:
 
       # Clone flex-plugins repo
       - name: Clone flex-plugins repo
-        run: git clone https://github.com/techmatters/flex-plugins
+        run: git clone https://github.com/techmatters/flex-plugins --branch ${{ inputs.flex-branch }} --single-branch
         shell: bash
 
-      - name: Install Flex Plugin
-        uses: ./flex-plugins/.github/actions/install-flex-plugin
-        with:
-          path: ./flex-plugins
-
       # Checkout repo to given branch (defaults to master)
-      - uses: actions/upload-artifact@v2
+      - name: Checkout e2e-tests to a different branch
         run: git checkout ${{ inputs.flex-branch }}
         working-directory: ./flex-plugins/e2e-tests
 
