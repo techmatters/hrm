@@ -88,6 +88,30 @@ profilesRouter.get('/identifier/:identifier', publicEndpoint, async (req, res, n
   }
 });
 
+profilesRouter.get(
+  '/identifier/:identifier/flags',
+  publicEndpoint,
+  async (req, res, next) => {
+    try {
+      const { accountSid } = req;
+      const { identifier } = req.params;
+
+      const result = await profileController.getProfileFlagsByIdentifier(
+        accountSid,
+        identifier,
+      );
+
+      if (isErr(result)) {
+        return next(createError(result.statusCode, result.message));
+      }
+
+      res.json(result.data);
+    } catch (err) {
+      return next(createError(500, err.message));
+    }
+  },
+);
+
 profilesRouter.get('/:profileId/contacts', publicEndpoint, async (req, res, next) => {
   try {
     const { accountSid } = req;

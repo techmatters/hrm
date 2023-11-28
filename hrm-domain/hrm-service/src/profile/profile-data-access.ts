@@ -27,6 +27,7 @@ import {
   associateProfileToProfileFlagSql,
   disassociateProfileFromProfileFlagSql,
   getProfileFlagsByAccountSql,
+  getProfileFlagsByIdentifierSql,
   insertProfileFlagSql,
 } from './sql/profile-flags-sql';
 import { OrderByDirectionType, txIfNotInOne } from '../sql';
@@ -326,6 +327,23 @@ export const getProfileFlagsForAccount = async (
     return await db
       .task<ProfileFlag[]>(async t =>
         t.manyOrNone(getProfileFlagsByAccountSql, { accountSid }),
+      )
+      .then(data => newOk({ data }));
+  } catch (err) {
+    return newErr({
+      message: err instanceof Error ? err.message : String(err),
+    });
+  }
+};
+
+export const getProfileFlagsByIdentifier = async (
+  accountSid: string,
+  identifier: string,
+): Promise<TResult<ProfileFlag[]>> => {
+  try {
+    return await db
+      .task<ProfileFlag[]>(async t =>
+        t.manyOrNone(getProfileFlagsByIdentifierSql, { accountSid, identifier }),
       )
       .then(data => newOk({ data }));
   } catch (err) {
