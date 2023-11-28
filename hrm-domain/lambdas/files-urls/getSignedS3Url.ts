@@ -88,6 +88,7 @@ const getSignedS3Url = async (event: AlbHandlerEvent): Promise<GetSignedS3UrlRes
   } catch (error) {
     return newErr({
       message: error as string,
+      error: error as Error,
     });
   }
 };

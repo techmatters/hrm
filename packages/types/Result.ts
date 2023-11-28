@@ -22,6 +22,7 @@ type NewErrorResultParams = {
   message: string;
   statusCode?: number;
   name?: string;
+  error?: Error;
 };
 
 type ErrorResult = ResultBase & {
@@ -29,6 +30,7 @@ type ErrorResult = ResultBase & {
   message: string;
   statusCode: number;
   name: string;
+  error: Error;
   readonly unwrap: () => never;
 };
 
@@ -36,12 +38,14 @@ export const newErr = ({
   message,
   statusCode = 500,
   name = 'Error',
+  error,
 }: NewErrorResultParams): ErrorResult => ({
   _tag: 'Result',
   status: 'error',
   message,
   statusCode,
   name,
+  error: error || new Error(message),
   unwrap: () => {
     throw new Error(
       `TResult Error: Attempted to unwrap Err variant with message: ${message}`,

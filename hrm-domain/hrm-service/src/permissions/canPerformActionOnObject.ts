@@ -75,7 +75,7 @@ export const canPerformActionsOnObject = async <T extends TargetKind>({
       }
     }
   } catch (error) {
-    return newErr({ message: (error as Error).message });
+    return newErr({ message: (error as Error).message, error });
   }
 };
 
@@ -137,6 +137,6 @@ export const isValidFileLocation = async ({
       }
     }
   } catch (error) {
-    return newErr({ message: (error as Error).message });
+    return newErr({ message: (error as Error).message, error });
   }
 };

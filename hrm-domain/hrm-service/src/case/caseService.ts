@@ -421,9 +421,10 @@ export const getCasesByProfileId = async (
     const cases = await searchCasesByProfileId(accountSid, query, { profileId }, {}, ctx);
 
     return newOk({ data: cases });
-  } catch (err) {
+  } catch (error) {
     return newErr({
-      message: err instanceof Error ? err.message : String(err),
+      message: error instanceof Error ? error.message : String(error),
+      error,
     });
   }
 };
