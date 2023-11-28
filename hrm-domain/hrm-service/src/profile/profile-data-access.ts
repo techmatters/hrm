@@ -141,7 +141,7 @@ const createIdentifier =
 
 export type Profile = NewProfileRecord & RecordCommons;
 
-const createProfile =
+export const createProfile =
   (task?) =>
   async (accountSid: string, profile: NewProfileRecord): Promise<Profile> => {
     const now = new Date();
@@ -244,12 +244,12 @@ export const listProfiles = async (
 
     const { count, rows } = await db.task(async connection => {
       const result = await connection.any<Profile & { totalCount: number }>(
-        listProfilesSql(filters, orderClause),
+        listProfilesSql(filters || {}, orderClause),
         {
           accountSid,
           limit,
           offset,
-          profileFlagIds: filters.profileFlagIds,
+          profileFlagIds: filters?.profileFlagIds,
         },
       );
 

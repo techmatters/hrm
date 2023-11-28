@@ -39,10 +39,12 @@ profilesRouter.get('/', publicEndpoint, async (req, res, next) => {
     const { accountSid } = req;
     const { sortDirection, sortBy, limit, offset, ...rest } = req.query;
 
-    const profileFlagIds = decodeURIComponent(rest.profileFlagIds)
-      .split(',')
-      .map(s => parseInt(s, 10))
-      .filter(v => v && !isNaN(v));
+    const profileFlagIds = rest.profileFlagIds
+      ? decodeURIComponent(rest.profileFlagIds)
+          .split(',')
+          .map(s => parseInt(s, 10))
+          .filter(v => v && !isNaN(v))
+      : undefined;
 
     const filters = {
       profileFlagIds,
