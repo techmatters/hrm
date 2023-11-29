@@ -13,7 +13,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { TResult } from '@tech-matters/types';
+import { TResult, newOk, isErr } from '@tech-matters/types';
+
+import { callHrmApi, CallHrmApiParameters } from './callHrmApi';
 
 /**
  * The object types that can be authenticated.
@@ -31,4 +33,13 @@ export const isAuthenticationObjectType = (
 
 export type HrmAuthenticateResult = TResult<true>;
 
-export * from './callHrmApi';
+export const authenticate = async <TData>(
+  params: CallHrmApiParameters<TData>,
+): Promise<HrmAuthenticateResult> => {
+  const result = await callHrmApi<TData>(params);
+  if (isErr(result)) {
+    return result;
+  }
+
+  return newOk({ data: true });
+};

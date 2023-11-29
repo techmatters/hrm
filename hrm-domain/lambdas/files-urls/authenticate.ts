@@ -14,9 +14,9 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { newOk, isErr } from '@tech-matters/types';
+import { newOk } from '@tech-matters/types';
 import {
-  callHrmApi,
+  authenticate,
   HRMAuthenticationObjectTypes,
   HrmAuthenticateResult,
 } from '@tech-matters/hrm-authentication';
@@ -74,30 +74,29 @@ export type HrmAuthenticateFilesUrlsRequestData = {
   fileType: FileTypes;
 };
 
-export const authUrlPathGenerator = ({
+const authenticateFilesUrls = async ({
   accountSid,
-  objectType,
-  fileType,
   method,
-}: AuthenticateParams) => {
-  const permission = getPermission({ objectType, fileType, method });
-
-  return `v0/accounts/${accountSid}/permissions/${permission}`;
-};
-
-const authenticate = async (
-  params: AuthenticateParams,
-): Promise<HrmAuthenticateResult> => {
-  const { objectId, objectType, authHeader, bucket, key } = params;
-
+  fileType,
+  objectId,
+  objectType,
+  authHeader,
+  bucket,
+  key,
+}: AuthenticateParams): Promise<HrmAuthenticateResult> => {
   // This is a quick and dirty way to lock this down so we can test
   // with fake data without exposing real data in the test environment.
   if (mockBuckets.includes(bucket)) {
     return newOk({ data: true });
   }
 
-  const result = await callHrmApi({
-    urlPath: authUrlPathGenerator(params),
+  return authenticate({
+    accountSid,
+    permission: getPermission({
+      objectType,
+      fileType,
+      method,
+    }),
     authHeader,
     requestData: {
       objectType,
@@ -106,11 +105,6 @@ const authenticate = async (
       key,
     },
   });
-  if (isErr(result)) {
-    return result;
-  }
-
-  return newOk({ data: true });
 };
 
-export default authenticate;
+export default authenticateFilesUrls;
