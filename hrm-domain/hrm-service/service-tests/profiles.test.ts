@@ -59,7 +59,7 @@ describe('/profiles', () => {
   const baseRoute = `/v0/accounts/${accountSid}/profiles`;
   const identifier = 'identifier';
 
-  describe.only('GET', () => {
+  describe('GET', () => {
     let createdProfiles: Profile[];
     let existingProfiles: any; //Profile[];
     const profilesNames = ['Murray', 'Antonella', null];
