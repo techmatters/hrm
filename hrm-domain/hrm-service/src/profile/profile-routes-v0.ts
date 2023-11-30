@@ -24,6 +24,48 @@ import { getCasesByProfileId } from '../case/caseService';
 
 const profilesRouter = SafeRouter();
 
+/**
+ * Returns a filterable list of cases for a helpline
+ *
+ * @param {string} req.accountSid - SID of the helpline
+ * @param {profileController.ProfileListConfiguration['sortDirection']} req.query.sortDirection - Sort direction
+ * @param {profileController.ProfileListConfiguration['sortBy']} req.query.sortBy - Sort by
+ * @param {profileController.ProfileListConfiguration['limit']} req.query.limit - Limit
+ * @param {profileController.ProfileListConfiguration['offset']} req.query.offset - Offset
+ * @param {profileController.SearchParameters['filters']['profileFlagIds']} req.query.profileFlagIds
+ */
+profilesRouter.get('/', publicEndpoint, async (req, res, next) => {
+  try {
+    const { accountSid } = req;
+    const { sortDirection, sortBy, limit, offset, ...rest } = req.query;
+
+    const profileFlagIds = rest.profileFlagIds
+      ? decodeURIComponent(rest.profileFlagIds)
+          .split(',')
+          .map(s => parseInt(s, 10))
+          .filter(v => v && !isNaN(v))
+      : undefined;
+
+    const filters = {
+      profileFlagIds,
+    };
+
+    const result = await profileController.listProfiles(
+      accountSid,
+      { sortDirection, sortBy, limit, offset },
+      { filters },
+    );
+
+    if (isErr(result)) {
+      return next(createError(result.statusCode, result.message));
+    }
+
+    res.json(result.data);
+  } catch (err) {
+    return next(createError(500, err.message));
+  }
+});
+
 profilesRouter.get('/identifier/:identifier', publicEndpoint, async (req, res, next) => {
   try {
     const { accountSid } = req;

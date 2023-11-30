@@ -23,7 +23,7 @@ import * as profilesDB from '../src/profile/profile-data-access';
 import { getRequest, getServer, headers, useOpenRules } from './server';
 import * as mocks from './mocks';
 import { mockSuccessfulTwilioAuthentication, mockingProxy } from '@tech-matters/testing';
-import { getOrCreateProfileWithIdentifier } from '../src/profile/profile';
+import { getOrCreateProfileWithIdentifier, Profile } from '../src/profile/profile';
 import { IdentifierWithProfiles } from '../src/profile/profile-data-access';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
 
@@ -58,6 +58,148 @@ beforeEach(async () => {
 describe('/profiles', () => {
   const baseRoute = `/v0/accounts/${accountSid}/profiles`;
   const identifier = 'identifier';
+
+  describe('GET', () => {
+    let createdProfiles: Profile[];
+    let existingProfiles: any; //Profile[];
+    const profilesNames = ['Murray', 'Antonella', null];
+    let defaultFlags: profilesDB.ProfileFlag[];
+    beforeAll(async () => {
+      existingProfiles = (await profilesDB.listProfiles(accountSid, {}, {})).unwrap()
+        .profiles;
+      createdProfiles = await Promise.all(
+        profilesNames.map(name => profilesDB.createProfile()(accountSid, { name })),
+      );
+      defaultFlags = await profilesDB
+        .getProfileFlagsForAccount(accountSid)
+        .then(result => result.unwrap());
+      await Promise.all([
+        profilesDB.associateProfileToProfileFlag()(
+          accountSid,
+          createdProfiles.find(p => p.name === 'Murray')!.id,
+          defaultFlags[0].id,
+        ),
+        profilesDB.associateProfileToProfileFlag()(
+          accountSid,
+          createdProfiles.find(p => p.name === 'Antonella')!.id,
+          defaultFlags[1].id,
+        ),
+      ]);
+    });
+
+    afterAll(async () => {
+      await Promise.all(
+        createdProfiles.map(p => deleteFromTableById('Profiles')(p.id, p.accountSid)),
+      );
+    });
+
+    each([
+      {
+        description: 'auth is missing',
+        expectDescription: 'request is rejected',
+        expectStatus: 401,
+        customHeaders: {},
+      },
+      {
+        description: 'no query passed',
+        expectDescription: 'return all profiles',
+        query: '',
+        expectStatus: 200,
+        expectFunction: response => {
+          console.log(response.body);
+          expect(response.body.count).toBe(
+            existingProfiles.length + createdProfiles.length,
+          );
+        },
+      },
+      {
+        description: 'sort by name desc',
+        expectDescription: 'return all profiles, sorted',
+        query: 'sortBy=name',
+        expectStatus: 200,
+        expectFunction: response => {
+          console.log(response.body);
+          expect(response.body.count).toBe(
+            existingProfiles.length + createdProfiles.length,
+          );
+          expect(response.body.profiles[0].name).toBe('Murray');
+          expect(response.body.profiles[1].name).toBe('Antonella');
+          response.body.profiles.slice(2).forEach(p => expect(p.name).toBeNull());
+        },
+      },
+      {
+        description: 'sort by name asc',
+        expectDescription: 'return all profiles, sorted',
+        query: 'sortBy=name&sortDirection=asc',
+        expectStatus: 200,
+        expectFunction: response => {
+          console.log(response.body);
+          expect(response.body.count).toBe(
+            existingProfiles.length + createdProfiles.length,
+          );
+          expect(response.body.profiles[0].name).toBe('Antonella');
+          expect(response.body.profiles[1].name).toBe('Murray');
+          response.body.profiles.slice(2).forEach(p => expect(p.name).toBeNull());
+        },
+      },
+      {
+        description: 'filter by single flag',
+        expectDescription: 'return profiles linked to that one flag only',
+        query: 'profileFlagIds=1',
+        expectStatus: 200,
+        expectFunction: response => {
+          console.log(response.body);
+          expect(response.body.count).toBe(1);
+          expect(response.body.profiles[0].name).toBe('Murray');
+        },
+      },
+      {
+        description: 'filter by multiple flags',
+        expectDescription: 'return profiles linked to those flag only',
+        query: 'profileFlagIds=1,2',
+        expectStatus: 200,
+        expectFunction: response => {
+          console.log(response.body);
+          expect(response.body.count).toBe(2);
+          expect(response.body.profiles[0].name).toBe('Antonella');
+          expect(response.body.profiles[1].name).toBe('Murray');
+        },
+      },
+      {
+        description: 'filter by flags with no associated profile´',
+        expectDescription: 'return zero profiles',
+        query: 'profileFlagIds=9999999',
+        expectStatus: 200,
+        expectFunction: response => {
+          console.log(response.body);
+          expect(response.body.count).toBe(0);
+        },
+      },
+      {
+        description: 'invalid profileFlagIds is provided',
+        expectDescription: 'ignore filter',
+        query: 'profileFlagIds=not-a-number',
+        expectStatus: 200,
+        expectFunction: response => {
+          console.log(response.body);
+          expect(response.body.count).toBe(
+            existingProfiles.length + createdProfiles.length,
+          );
+        },
+      },
+    ]).test(
+      'when $description, $expectDescription',
+      async ({ expectStatus, customHeaders, query, expectFunction }) => {
+        const response = await request
+          .get(`${baseRoute}?${query}`)
+          .set(customHeaders || headers);
+        expect(response.statusCode).toBe(expectStatus);
+        if (expectFunction) {
+          expectFunction(response);
+        }
+      },
+    );
+  });
 
   describe('/profiles/identifier/:identifier', () => {
     const buildRoute = (id: string) => `${baseRoute}/identifier/${id}`;

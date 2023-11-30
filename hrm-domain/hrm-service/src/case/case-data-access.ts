@@ -19,7 +19,6 @@ import { getPaginationElements } from '../search';
 import { updateByIdSql } from './sql/case-update-sql';
 import {
   OrderByColumnType,
-  OrderByDirectionType,
   SearchQueryBuilder,
   selectCaseSearch,
   selectCaseSearchByProfileId,
@@ -31,6 +30,7 @@ import {
 import { DELETE_BY_ID } from './sql/case-delete-sql';
 import { selectSingleCaseByIdSql } from './sql/case-get-sql';
 import { Contact } from '../contact/contact-data-access';
+import { OrderByDirectionType } from '../sql';
 
 export type CaseRecordCommon = {
   info: any;

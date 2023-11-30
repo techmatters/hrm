@@ -23,6 +23,11 @@ export const OrderByDirection = {
   descending: 'DESC',
 } as const;
 
+export type OrderByDirectionType =
+  (typeof OrderByDirection)[keyof typeof OrderByDirection];
+
+export type OrderByClauseItem = { sortBy: string; sortDirection: OrderByDirectionType };
+
 export class DatabaseError extends Error {
   cause: Error;
 
