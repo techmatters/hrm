@@ -78,7 +78,19 @@ export const parseParameters = (event: AlbHandlerEvent): ParseParametersResult =
     return newErr({ message: ERROR_MESSAGES.MISSING_QUERY_STRING_PARAMETERS });
   }
 
-  const { method, bucket, key, objectType, objectId, fileType } = queryStringParameters;
+  const method =
+    queryStringParameters.method && decodeURIComponent(queryStringParameters.method);
+  const bucket =
+    queryStringParameters.bucket && decodeURIComponent(queryStringParameters.bucket);
+  const key = queryStringParameters.key && decodeURIComponent(queryStringParameters.key);
+  const objectType =
+    queryStringParameters.objectType &&
+    decodeURIComponent(queryStringParameters.objectType);
+  const objectId =
+    queryStringParameters.objectId && decodeURIComponent(queryStringParameters.objectId);
+  const fileType =
+    queryStringParameters.fileType && decodeURIComponent(queryStringParameters.fileType);
+
   const { accountSid } = parsePathParameters(path);
   if (!method || !bucket || !key || !accountSid || !objectType || !fileType) {
     return newErr({
@@ -115,10 +127,10 @@ export const parseParameters = (event: AlbHandlerEvent): ParseParametersResult =
       method,
       bucket,
       key,
-      accountSid,
-      fileType: fileType as FileTypes,
       objectType,
       objectId,
+      fileType: fileType as FileTypes,
+      accountSid,
     },
   });
 };

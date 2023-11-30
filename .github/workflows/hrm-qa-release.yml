@@ -24,6 +24,10 @@ on:
       title:
         description: Release title - The title that will be given to this pre-release.
         required: true
+      flex-branch:
+        description: The branch name or tag to run flex-plugins/e2e-tests - Defaults to master.
+        required: false
+        default: master
 
 jobs:
   build-and-deploy-service:
@@ -80,7 +84,7 @@ jobs:
 
       # Clone flex-plugins repo
       - name: Clone flex-plugins repo
-        run: git clone https://github.com/techmatters/flex-plugins
+        run: git clone https://github.com/techmatters/flex-plugins --branch ${{ inputs.flex-branch }} --single-branch
         shell: bash
 
       - name: Install Flex Plugin
