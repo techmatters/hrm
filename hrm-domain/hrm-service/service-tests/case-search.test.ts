@@ -144,10 +144,11 @@ const insertSampleCases = async ({
         contactToCreate,
         true,
       );
-      connectedContact = await contactDb.connectToCase(
+      connectedContact = await contactDb.connectToCase()(
         savedContact.accountSid,
         savedContact.id.toString(),
         createdCase.id.toString(),
+        workerSid,
       );
       createdCase = await getCase(createdCase.id, accounts[i % accounts.length], {
         user: twilioUser(workerSid, []),
@@ -230,10 +231,11 @@ describe('/cases route', () => {
         contactToCreate.serviceSid = 'SERVICE_SID';
         createdContact = (await contactDb.create()(accountSid, contactToCreate, true))
           .contact;
-        createdContact = await contactDb.connectToCase(
+        createdContact = await contactDb.connectToCase()(
           accountSid,
           createdContact.id.toString(),
           createdCase.id,
+          workerSid,
         );
         createdCase = await getCase(createdCase.id, accountSid, {
           user: twilioUser(workerSid, []),
@@ -532,10 +534,11 @@ describe('/cases route', () => {
           toCreate.serviceSid = 'SERVICE_SID';
           // Connects createdContact with createdCase2
           createdContact = (await contactDb.create()(accountSid, toCreate, true)).contact;
-          createdContact = await contactDb.connectToCase(
+          createdContact = await contactDb.connectToCase()(
             accountSid,
             createdContact.id.toString(),
             createdCase2.id,
+            workerSid,
           );
           // Get case 2 again, now a contact is connected
           createdCase2 = await caseApi.getCase(createdCase2.id, accountSid, {
