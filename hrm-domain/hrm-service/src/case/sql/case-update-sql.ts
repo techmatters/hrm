@@ -40,3 +40,11 @@ export const updateByIdSql = (
           },
         )} 
 `;
+
+export const TOUCH_CASE_SQL = `
+UPDATE "Cases" 
+SET 
+  "updatedAt" = CURRENT_TIMESTAMP,
+  "updatedBy" = $<updatedBy>
+WHERE "accountSid" = $<accountSid> AND "id" = $<caseId>
+`;
