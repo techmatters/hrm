@@ -76,7 +76,7 @@ const setupAllow = (targetKind: string, conditionsSets: ConditionsSets) => {
   };
 };
 
-export const setupCanForRules = (rules: RulesFile) => {
+export const initializeCanForRules = (rules: RulesFile) => {
   const actionCheckers = {} as { [action in Actions]: ReturnType<typeof setupAllow> };
 
   const targetKinds = Object.keys(actionsMaps);
@@ -93,3 +93,5 @@ export const setupCanForRules = (rules: RulesFile) => {
   return (performer: TwilioUser, action: Actions, target: any) =>
     actionCheckers[action](performer, target);
 };
+
+export type InitializedCan = ReturnType<typeof initializeCanForRules>;
