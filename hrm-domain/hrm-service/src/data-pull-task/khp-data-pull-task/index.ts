@@ -20,6 +20,7 @@ import isValid from 'date-fns/isValid';
 
 import { pullCases } from './pull-cases';
 import { pullContacts } from './pull-contacts';
+import { applyContextConfigOverrides } from './context';
 
 const isNullUndefinedOrEmptyString = (value: string) =>
   value === null || value === undefined || value === '';
@@ -53,6 +54,7 @@ const getDateRangeFromArgs = (startDateISO?: string, endDateISO?: string) => {
 export const pullData = async (
   startDateISO?: string | null,
   endDateISO?: string | null,
+  hlShortCode?: string | null,
 ) => {
   const hasNoDateArgs =
     isNullUndefinedOrEmptyString(startDateISO) &&
@@ -61,6 +63,6 @@ export const pullData = async (
   const { startDate, endDate } = hasNoDateArgs
     ? getDateRangeForPast12Hours()
     : getDateRangeFromArgs(startDateISO, endDateISO);
-
+  applyContextConfigOverrides({ shortCodeOverride: hlShortCode });
   await Promise.all([pullCases(startDate, endDate), pullContacts(startDate, endDate)]);
 };
