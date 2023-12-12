@@ -40,49 +40,89 @@ const zaRules = require('../../permission-rules/za.json');
 const zmRules = require('../../permission-rules/zm.json');
 const zwRules = require('../../permission-rules/zw.json');
 
-import { actionsMaps, Actions, TargetKind } from './actions';
+import { actionsMaps, Actions, TargetKind, isTargetKind } from './actions';
 
-const conditionTypes = [
-  'isSupervisor',
-  'isCreator',
-  'isCaseOpen',
-  'isOwner',
-  'everyone',
-] as const;
-export type Condition = (typeof conditionTypes)[number];
-export type ConditionsSet = Condition[];
-export type ConditionsSets = ConditionsSet[];
+const timeBasedConditions = {
+  CREATED_HOURS_AGO: 'createdHoursAgo',
+  CREATED_DAYS_AGO: 'createdDaysAgo',
+} as const;
+const userBasedConditions = {
+  IS_SUPERVISOR: 'isSupervisor',
+  EVERYONE: 'everyone',
+} as const;
+const contactSpecificConditions = {
+  IS_OWNER: 'isOwner',
+} as const;
+const caseSpecificConditions = {
+  IS_CREATOR: 'isCreator',
+  IS_CASE_OPEN: 'isCaseOpen',
+} as const;
 
-const isCondition = (c: any): c is Condition => c && conditionTypes.includes(c);
-const isConditionsSet = (cs: any): cs is ConditionsSet =>
-  cs && Array.isArray(cs) && cs.every(isCondition);
-const isConditionsSets = (css: any): css is ConditionsSets =>
-  css && Array.isArray(css) && css.every(isConditionsSet);
+export const supportedContactConditionsMap = {
+  ...timeBasedConditions,
+  ...userBasedConditions,
+  ...contactSpecificConditions,
+} as const;
+const supportedContactConditions = Object.values(supportedContactConditionsMap);
 
-export type RulesFile = { [k in Actions]: ConditionsSets };
+export const supportedCaseConditionsMap = {
+  ...timeBasedConditions,
+  ...userBasedConditions,
+  ...caseSpecificConditions,
+};
+const supportedCaseConditions = Object.values(supportedCaseConditionsMap);
+
+const supportedPostSurveyConditions = [...Object.values(userBasedConditions)] as const;
+
+// Defines which actions are supported on each TargetKind
+const supportedTKConditions = {
+  contact: supportedContactConditions,
+  case: supportedCaseConditions,
+  postSurvey: supportedPostSurveyConditions,
+} as const;
+
+export type TKCondition<T extends TargetKind> = (typeof supportedTKConditions)[T][number];
+export type TKConditionsSet<T extends TargetKind> = TKCondition<T>[];
+export type TKConditionsSets<T extends TargetKind> = TKConditionsSet<T>[];
+
+const isTKCondition =
+  <T extends TargetKind>(kind: T) =>
+  (c: any): c is TKCondition<T> =>
+    c && supportedTKConditions[kind].includes(c);
+
+const isTKConditionsSet =
+  <T extends TargetKind>(kind: TargetKind) =>
+  (cs: any): cs is TKConditionsSet<T> =>
+    cs && Array.isArray(cs) && cs.every(isTKCondition(kind));
+
+const isTKConditionsSets =
+  <T extends TargetKind>(kind: TargetKind) =>
+  (css: any): css is TKConditionsSets<T> =>
+    css && Array.isArray(css) && css.every(isTKConditionsSet(kind));
+
+export type RulesFile = { [k in Actions]: TKConditionsSets<TargetKind> };
+
+export const isValidTKConditionsSets =
+  <T extends TargetKind>(kind: T) =>
+  (css: TKConditionsSets<TargetKind>): css is TKConditionsSets<typeof kind> =>
+    css.every(cs => cs.every(isTKCondition(kind)));
 
 export const isRulesFile = (rules: any): rules is RulesFile =>
   Object.values(actionsMaps).every(map =>
-    Object.values(map).every(action => isConditionsSets(rules[action])),
+    Object.values(map).every(action => isTKConditionsSets(rules[action])),
   );
 
-// Defines which actions are supported on each TargetKind
-const supportedTargetKindActions: { [k in TargetKind]: ConditionsSet } = {
-  case: ['isSupervisor', 'isCreator', 'isCaseOpen', 'everyone'],
-  contact: ['isSupervisor', 'isOwner', 'everyone'],
-  postSurvey: ['isSupervisor', 'everyone'],
-};
-
-const isValidTargetKind = (kind: string, css: ConditionsSets) =>
-  css.every(cs => cs.every(c => supportedTargetKindActions[kind].includes(c)));
-
-const validateTargetKindActions = (rules: RulesFile) =>
+/**
+ * Validates that for every TK, the ConditionsSets provided are valid
+ * (i.e. present in supportedTKConditions)
+ */
+const validateTKActions = (rules: RulesFile) =>
   Object.entries(actionsMaps)
     .map(([kind, map]) =>
       Object.values(map).reduce((accum, action) => {
         return {
           ...accum,
-          [action]: isValidTargetKind(kind, rules[action]),
+          [action]: isTargetKind(kind) && isValidTKConditionsSets(kind)(rules[action]),
         };
       }, {}),
     )
@@ -122,6 +162,10 @@ const rulesMapDef = {
   e2e: e2eRules,
 } as const;
 
+/**
+ * For every entry of rulesMapDef, validates that every are valid RulesFile definitions,
+ * and that the actions on each TK are provided with valid TKConditionsSets
+ */
 export const validRulesMap = () =>
   // This type assertion is legit as long as we check that every entry in rulesMapDef is indeed a RulesFile
   Object.entries(rulesMapDef).reduce<{ [k in keyof typeof rulesMapDef]: RulesFile }>(
@@ -130,7 +174,7 @@ export const validRulesMap = () =>
         throw new Error(`Error: rules file for ${k} is not a valid RulesFile`);
       }
 
-      const validated = validateTargetKindActions(rules);
+      const validated = validateTKActions(rules);
       if (!isValidTargetKindActions(validated)) {
         const invalidActions = Object.entries(validated)
           .filter(([, val]) => !val)

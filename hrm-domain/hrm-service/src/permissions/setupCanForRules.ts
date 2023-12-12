@@ -15,64 +15,94 @@
  */
 
 import { isCounselorWhoCreated, isCaseOpen, isContactOwner } from './helpers';
-import { actionsMaps, Actions, isTargetKind } from './actions';
-import type { Condition, ConditionsSet, ConditionsSets, RulesFile } from './rulesMap';
+import { actionsMaps, Actions, isTargetKind, TargetKind } from './actions';
+import {
+  isValidTKConditionsSets,
+  type TKCondition,
+  type TKConditionsSet,
+  type TKConditionsSets,
+  type RulesFile,
+} from './rulesMap';
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
+
+type ConditionsState<T extends TargetKind> = {
+  [condition in TKCondition<T>]: boolean;
+};
 
 /**
  * Given a conditionsState and a condition, returns true if the condition is true in the conditionsState
  */
 const checkCondition =
-  (conditionsState: { [condition in Condition]: boolean }) =>
-  (condition: Condition): boolean =>
+  <T extends TargetKind>(conditionsState: ConditionsState<T>) =>
+  (condition: TKCondition<T>): boolean =>
     conditionsState[condition];
 
 /**
  * Given a conditionsState and a set of conditions, returns true if all the conditions are true in the conditionsState
  */
 const checkConditionsSet =
-  (conditionsState: { [condition in Condition]: boolean }) =>
-  (conditionsSet: ConditionsSet): boolean =>
+  <T extends TargetKind>(conditionsState: ConditionsState<T>) =>
+  (conditionsSet: TKConditionsSet<T>): boolean =>
     conditionsSet.length > 0 && conditionsSet.every(checkCondition(conditionsState));
 
 /**
  * Given a conditionsState and a set of conditions sets, returns true if one of the conditions sets contains conditions that are all true in the conditionsState
  */
-const checkConditionsSets = (
-  conditionsState: { [condition in Condition]: boolean },
-  conditionsSets: ConditionsSets,
+const checkConditionsSets = <T extends TargetKind>(
+  conditionsState: ConditionsState<T>,
+  conditionsSets: TKConditionsSets<T>,
 ): boolean => conditionsSets.some(checkConditionsSet(conditionsState));
 
-const setupAllow = (targetKind: string, conditionsSets: ConditionsSets) => {
-  if (!isTargetKind(targetKind))
-    throw new Error(`Invalid target kind ${targetKind} provided to setupAllow`);
-
+// const setupAllow = <T extends TargetKind>(kind: T, conditionsSets: ConditionsSets<T>) => {
+const setupAllow = <T extends TargetKind>(
+  kind: T,
+  conditionsSets: TKConditionsSets<T>,
+) => {
   // We could do type validation on target depending on targetKind if we ever want to make sure the "allow" is called on a proper target (same as cancan used to do)
 
   return (performer: TwilioUser, target: any) => {
     // Build the proper conditionsState depending on the targetKind
-    let conditionsState = null;
-    if (targetKind === 'case') {
-      conditionsState = {
+    if (kind === 'case') {
+      if (!isValidTKConditionsSets<'case'>(kind)(conditionsSets)) {
+        throw new Error(`setupAllow: Invalid conditionsSets provided for kind ${kind}`);
+      }
+
+      const conditionsState: ConditionsState<'case'> = {
         isSupervisor: performer.isSupervisor,
         isCreator: isCounselorWhoCreated(performer, target),
         isCaseOpen: isCaseOpen(target),
         everyone: true,
+        createdDaysAgo: false,
+        createdHoursAgo: false,
       };
-    } else if (targetKind === 'contact') {
-      conditionsState = {
+
+      return checkConditionsSets(conditionsState, conditionsSets);
+    } else if (kind === 'contact') {
+      if (!isValidTKConditionsSets<'contact'>(kind)(conditionsSets)) {
+        throw new Error(`setupAllow: Invalid conditionsSets provided for kind ${kind}`);
+      }
+
+      const conditionsState: ConditionsState<'contact'> = {
         isSupervisor: performer.isSupervisor,
         isOwner: isContactOwner(performer, target),
         everyone: true,
+        createdDaysAgo: false,
+        createdHoursAgo: false,
       };
-    } else if (targetKind === 'postSurvey') {
-      conditionsState = {
+
+      return checkConditionsSets(conditionsState, conditionsSets);
+    } else if (kind === 'postSurvey') {
+      if (!isValidTKConditionsSets<'postSurvey'>(kind)(conditionsSets)) {
+        throw new Error(`setupAllow: Invalid conditionsSets provided for kind ${kind}`);
+      }
+
+      const conditionsState: ConditionsState<'postSurvey'> = {
         isSupervisor: performer.isSupervisor,
         everyone: true,
       };
-    }
 
-    return checkConditionsSets(conditionsState, conditionsSets);
+      return checkConditionsSets(conditionsState, conditionsSets);
+    }
   };
 };
 
