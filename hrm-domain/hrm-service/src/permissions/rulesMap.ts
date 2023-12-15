@@ -70,11 +70,9 @@ const supportedCaseConditionsMap = {
   ...userBasedConditions,
   ...caseSpecificConditions,
 };
-export const supportedCaseConditions = Object.values(supportedCaseConditionsMap);
+const supportedCaseConditions = Object.values(supportedCaseConditionsMap);
 
-export const supportedPostSurveyConditions = [
-  ...Object.values(userBasedConditions),
-] as const;
+const supportedPostSurveyConditions = [...Object.values(userBasedConditions)] as const;
 
 // Defines which actions are supported on each TargetKind
 const supportedTKConditions = {

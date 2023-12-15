@@ -16,7 +16,7 @@
 
 /* eslint-disable jest/no-standalone-expect */
 import each from 'jest-each';
-import { initializeCanForRules } from '../../src/permissions/setupCanForRules';
+import { initializeCanForRules } from '../../src/permissions/initializeCanForRules';
 import { actionsMaps } from '../../src/permissions';
 import { RulesFile } from '../../src/permissions/rulesMap';
 import { workerSid, accountSid } from '../../service-tests/mocks';

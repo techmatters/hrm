@@ -20,7 +20,7 @@ export { SafeRouter, publicEndpoint } from './safe-router';
 export { rulesMap } from './rulesMap';
 export { Actions, actionsMaps, getActions } from './actions';
 
-import { InitializedCan, initializeCanForRules } from './setupCanForRules';
+import { InitializedCan, initializeCanForRules } from './initializeCanForRules';
 import { RulesFile } from './rulesMap';
 import type { Request, Response, NextFunction } from 'express';
 import { getSearchPermissions, SearchPermissions } from './search-permissions';

@@ -43,7 +43,7 @@ export const initializeCanForRules = (rules: RulesFile) => {
   const targetKinds = Object.keys(actionsMaps);
   targetKinds.forEach((targetKind: string) => {
     if (!isTargetKind(targetKind))
-      throw new Error(`Invalid target kind ${targetKind} found in setupCanForRules`);
+      throw new Error(`Invalid target kind ${targetKind} found in initializeCanForRules`);
 
     const actionsForTK = Object.values(actionsMaps[targetKind]);
     actionsForTK.forEach(action => {

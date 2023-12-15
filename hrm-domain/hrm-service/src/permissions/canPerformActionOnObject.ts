@@ -16,7 +16,6 @@
 
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { Actions, TargetKind, isValidSetOfActionsForTarget } from './actions';
-import { InitializedCan } from './setupCanForRules';
 import { getContactById } from '../contact/contactService';
 import { getCase as getCaseById } from '../case/caseService';
 import { assertExhaustive } from '../contact-job/assertExhaustive';
@@ -25,6 +24,7 @@ import {
   isS3StoredConversationMedia,
 } from '../conversation-media/conversation-media';
 import { TResult, newErr, newOk } from '@tech-matters/types';
+import type { InitializedCan } from '../permissions/initializeCanForRules';
 
 export const canPerformActionsOnObject = async <T extends TargetKind>({
   accountSid,
