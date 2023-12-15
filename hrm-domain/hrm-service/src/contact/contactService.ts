@@ -32,7 +32,7 @@ import { retrieveCategories } from './categories';
 import { PaginationQuery, getPaginationElements } from '../search';
 import type { NewContactRecord } from './sql/contact-insert-sql';
 import { ContactRawJson, ReferralWithoutContactId } from './contact-json';
-import { setupCanForRules } from '../permissions/setupCanForRules';
+import type { InitializedCan } from '../permissions/initializeCanForRules';
 import { actionsMaps } from '../permissions';
 import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { connectContactToCsamReports, CSAMReport } from '../csam-report/csam-report';
@@ -203,7 +203,7 @@ const permissionsBasedTransformations: PermissionsBasedTransformation[] = [
 ];
 
 export const bindApplyTransformations =
-  (can: ReturnType<typeof setupCanForRules>, user: TwilioUser) =>
+  (can: InitializedCan, user: TwilioUser) =>
   (contact: Contact): WithLegacyCategories<Contact> => {
     const permissionsBasedTransformed = permissionsBasedTransformations.reduce(
       (transformed, { action, transformation }) =>
@@ -220,7 +220,7 @@ export const bindApplyTransformations =
 export const getContactById = async (
   accountSid: string,
   contactId: number,
-  { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
+  { can, user }: { can: InitializedCan; user: TwilioUser },
 ) => {
   const contact = await getById(accountSid, contactId);
 
@@ -230,7 +230,7 @@ export const getContactById = async (
 export const getContactByTaskId = async (
   accountSid: string,
   taskId: string,
-  { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
+  { can, user }: { can: InitializedCan; user: TwilioUser },
 ) => {
   const contact = await getByTaskSid(accountSid, taskId);
 
@@ -309,7 +309,7 @@ export const createContact = async (
   createdBy: string,
   finalize: boolean,
   newContact: CreateContactPayload,
-  { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
+  { can, user }: { can: InitializedCan; user: TwilioUser },
 ): Promise<WithLegacyCategories<Contact>> => {
   for (let retries = 1; retries < 4; retries++) {
     try {
@@ -457,7 +457,7 @@ export const patchContact = async (
   finalize: boolean,
   contactId: string,
   contactPatch: PatchPayload,
-  { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
+  { can, user }: { can: InitializedCan; user: TwilioUser },
 ): Promise<WithLegacyCategories<Contact>> => {
   const { referrals, rawJson, ...restOfPatch } =
     adaptLegacyCategories<PatchPayload>(contactPatch);
@@ -499,7 +499,7 @@ export const connectContactToCase = async (
   updatedBy: string,
   contactId: string,
   caseId: string,
-  { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
+  { can, user }: { can: InitializedCan; user: TwilioUser },
 ): Promise<WithLegacyCategories<Contact>> => {
   const updated: Contact | undefined = await connectToCase(accountSid, contactId, caseId);
   if (!updated) {
@@ -514,7 +514,7 @@ export const addConversationMediaToContact = async (
   accountSid: string,
   contactId: string,
   conversationMediaPayload: ConversationMedia[],
-  { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
+  { can, user }: { can: InitializedCan; user: TwilioUser },
 ): Promise<WithLegacyCategories<Contact>> => {
   const contact = await getById(accountSid, parseInt(contactId));
   if (!contact) {
@@ -654,7 +654,7 @@ const generalizedSearchContacts =
       user,
       searchPermissions,
     }: {
-      can: ReturnType<typeof setupCanForRules>;
+      can: InitializedCan;
       user: TwilioUser;
       searchPermissions: SearchPermissions;
     },
@@ -717,7 +717,7 @@ export const getContactsByProfileId = async (
   profileId: Profile['id'],
   query: Pick<PaginationQuery, 'limit' | 'offset'>,
   ctx: {
-    can: ReturnType<typeof setupCanForRules>;
+    can: InitializedCan;
     user: TwilioUser;
     searchPermissions: SearchPermissions;
   },
