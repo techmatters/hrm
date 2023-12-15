@@ -16,24 +16,32 @@
 
 /* eslint-disable jest/no-standalone-expect */
 import each from 'jest-each';
-import { setupCanForRules } from '../../src/permissions/setupCanForRules';
+import { initializeCanForRules } from '../../src/permissions/setupCanForRules';
 import { actionsMaps } from '../../src/permissions';
 import { RulesFile } from '../../src/permissions/rulesMap';
 import { workerSid, accountSid } from '../../service-tests/mocks';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
+import { TargetKind } from '../../src/permissions/actions';
 
 const helpline = 'helpline';
 
-const buildRules = (conditionsSets): RulesFile => {
-  const entries = Object.values(actionsMaps)
-    .flatMap(e => Object.values(e))
-    .map(action => [action, conditionsSets]);
+const buildRules = (
+  partialRules: {
+    [K in TargetKind]?: string[][];
+  } & { default?: string[][] },
+): RulesFile => {
+  const entries = Object.entries(actionsMaps)
+    .flatMap(([tk, obj]) => Object.values(obj).map(action => [tk, action]))
+    .map(([tk, action]) => {
+      return [action, partialRules[tk] || partialRules.default || []];
+    });
+
   return Object.fromEntries(entries);
 };
 
 describe('Test that all actions work fine (everyone)', () => {
-  const rules = buildRules([['everyone']]);
-  const can = setupCanForRules(rules);
+  const rules = buildRules({ default: [['everyone']] });
+  const can = initializeCanForRules(rules);
 
   const notCreator = twilioUser('not creator', []);
 
@@ -87,8 +95,8 @@ describe('Test that all actions work fine (everyone)', () => {
 });
 
 describe('Test that all actions work fine (no one)', () => {
-  const rules = buildRules([]);
-  const can = setupCanForRules(rules);
+  const rules = buildRules({ default: [] });
+  const can = initializeCanForRules(rules);
 
   const supervisor = twilioUser('creator', ['supervisor']);
 
@@ -150,8 +158,8 @@ describe('Test that all actions work fine (no one)', () => {
  * The reason is how checkConditionsSet is implemented: [].every(predicate) evaluates true for all predicates
  */
 describe('Test that an empty set of conditions does not grants permissions', () => {
-  const rules = buildRules([[]]);
-  const can = setupCanForRules(rules);
+  const rules = buildRules({ default: [[]] });
+  const can = initializeCanForRules(rules);
 
   const supervisor = twilioUser('creator', ['supervisor']);
 
@@ -347,8 +355,8 @@ describe('Test different scenarios (Case)', () => {
   ).describe(
     'Expect $expectedResult when $expectedDescription with $prettyConditionsSets',
     ({ conditionsSets, caseObj, user, expectedResult }) => {
-      const rules = buildRules(conditionsSets);
-      const can = setupCanForRules(rules);
+      const rules = buildRules({ case: conditionsSets });
+      const can = initializeCanForRules(rules);
 
       Object.values(actionsMaps.case).forEach(action =>
         test(`${action}`, async () => {
@@ -427,8 +435,8 @@ describe('Test different scenarios (Contact)', () => {
   ).describe(
     'Expect $expectedResult when $expectedDescription with $prettyConditionsSets',
     ({ conditionsSets, contactObj, user, expectedResult }) => {
-      const rules = buildRules(conditionsSets);
-      const can = setupCanForRules(rules);
+      const rules = buildRules({ contact: conditionsSets });
+      const can = initializeCanForRules(rules);
 
       Object.values(actionsMaps.contact).forEach(action =>
         test(`${action}`, async () => {
@@ -495,8 +503,8 @@ describe('Test different scenarios (PostSurvey)', () => {
   ).describe(
     'Expect $expectedResult when $expectedDescription with $prettyConditionsSets',
     ({ conditionsSets, postSurveyObj, user, expectedResult }) => {
-      const rules = buildRules(conditionsSets);
-      const can = setupCanForRules(rules);
+      const rules = buildRules({ postSurvey: conditionsSets });
+      const can = initializeCanForRules(rules);
 
       Object.values(actionsMaps.postSurvey).forEach(action =>
         test(`${action}`, async () => {
