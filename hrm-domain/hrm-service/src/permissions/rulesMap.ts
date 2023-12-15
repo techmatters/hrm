@@ -42,37 +42,39 @@ const zwRules = require('../../permission-rules/zw.json');
 
 import { actionsMaps, Actions, TargetKind, isTargetKind } from './actions';
 
-const timeBasedConditions = {
-  CREATED_HOURS_AGO: 'createdHoursAgo',
-  CREATED_DAYS_AGO: 'createdDaysAgo',
-} as const;
 const userBasedConditions = {
-  IS_SUPERVISOR: 'isSupervisor',
-  EVERYONE: 'everyone',
+  IsSupervisor: 'isSupervisor',
+  Everyone: 'everyone',
+} as const;
+const timeBasedConditions = {
+  CreatedHoursAgo: 'createdHoursAgo',
+  CreatedDaysAgo: 'createdDaysAgo',
 } as const;
 const contactSpecificConditions = {
-  IS_OWNER: 'isOwner',
+  IsOwner: 'isOwner',
 } as const;
 const caseSpecificConditions = {
-  IS_CREATOR: 'isCreator',
-  IS_CASE_OPEN: 'isCaseOpen',
+  IsCreator: 'isCreator',
+  IsCaseOpen: 'isCaseOpen',
 } as const;
 
-export const supportedContactConditionsMap = {
+const supportedContactConditionsMap = {
   ...timeBasedConditions,
   ...userBasedConditions,
   ...contactSpecificConditions,
 } as const;
 const supportedContactConditions = Object.values(supportedContactConditionsMap);
 
-export const supportedCaseConditionsMap = {
+const supportedCaseConditionsMap = {
   ...timeBasedConditions,
   ...userBasedConditions,
   ...caseSpecificConditions,
 };
-const supportedCaseConditions = Object.values(supportedCaseConditionsMap);
+export const supportedCaseConditions = Object.values(supportedCaseConditionsMap);
 
-const supportedPostSurveyConditions = [...Object.values(userBasedConditions)] as const;
+export const supportedPostSurveyConditions = [
+  ...Object.values(userBasedConditions),
+] as const;
 
 // Defines which actions are supported on each TargetKind
 const supportedTKConditions = {

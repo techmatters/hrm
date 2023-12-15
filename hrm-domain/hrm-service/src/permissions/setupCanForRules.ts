@@ -14,44 +14,10 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { isCounselorWhoCreated, isCaseOpen, isContactOwner } from './helpers';
-import { actionsMaps, Actions, isTargetKind, TargetKind } from './actions';
-import {
-  isValidTKConditionsSets,
-  type TKCondition,
-  type TKConditionsSet,
-  type TKConditionsSets,
-  type RulesFile,
-} from './rulesMap';
-import { TwilioUser } from '@tech-matters/twilio-worker-auth';
-
-type ConditionsState<T extends TargetKind> = {
-  [condition in TKCondition<T>]: boolean;
-};
-
-/**
- * Given a conditionsState and a condition, returns true if the condition is true in the conditionsState
- */
-const checkCondition =
-  <T extends TargetKind>(conditionsState: ConditionsState<T>) =>
-  (condition: TKCondition<T>): boolean =>
-    conditionsState[condition];
-
-/**
- * Given a conditionsState and a set of conditions, returns true if all the conditions are true in the conditionsState
- */
-const checkConditionsSet =
-  <T extends TargetKind>(conditionsState: ConditionsState<T>) =>
-  (conditionsSet: TKConditionsSet<T>): boolean =>
-    conditionsSet.length > 0 && conditionsSet.every(checkCondition(conditionsState));
-
-/**
- * Given a conditionsState and a set of conditions sets, returns true if one of the conditions sets contains conditions that are all true in the conditionsState
- */
-const checkConditionsSets = <T extends TargetKind>(
-  conditionsState: ConditionsState<T>,
-  conditionsSets: TKConditionsSets<T>,
-): boolean => conditionsSets.some(checkConditionsSet(conditionsState));
+import { actionsMaps, Actions, isTargetKind, type TargetKind } from './actions';
+import { parseConditionsSets } from './parser/parser';
+import type { TKConditionsSets, RulesFile } from './rulesMap';
+import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
 
 // const setupAllow = <T extends TargetKind>(kind: T, conditionsSets: ConditionsSets<T>) => {
 const setupAllow = <T extends TargetKind>(
@@ -59,50 +25,15 @@ const setupAllow = <T extends TargetKind>(
   conditionsSets: TKConditionsSets<T>,
 ) => {
   // We could do type validation on target depending on targetKind if we ever want to make sure the "allow" is called on a proper target (same as cancan used to do)
+  const parsedConditionsSets = parseConditionsSets(kind)(conditionsSets);
 
   return (performer: TwilioUser, target: any) => {
-    // Build the proper conditionsState depending on the targetKind
-    if (kind === 'case') {
-      if (!isValidTKConditionsSets<'case'>(kind)(conditionsSets)) {
-        throw new Error(`setupAllow: Invalid conditionsSets provided for kind ${kind}`);
-      }
+    const ctx = { curentTimestamp: new Date() };
 
-      const conditionsState: ConditionsState<'case'> = {
-        isSupervisor: performer.isSupervisor,
-        isCreator: isCounselorWhoCreated(performer, target),
-        isCaseOpen: isCaseOpen(target),
-        everyone: true,
-        createdDaysAgo: false,
-        createdHoursAgo: false,
-      };
-
-      return checkConditionsSets(conditionsState, conditionsSets);
-    } else if (kind === 'contact') {
-      if (!isValidTKConditionsSets<'contact'>(kind)(conditionsSets)) {
-        throw new Error(`setupAllow: Invalid conditionsSets provided for kind ${kind}`);
-      }
-
-      const conditionsState: ConditionsState<'contact'> = {
-        isSupervisor: performer.isSupervisor,
-        isOwner: isContactOwner(performer, target),
-        everyone: true,
-        createdDaysAgo: false,
-        createdHoursAgo: false,
-      };
-
-      return checkConditionsSets(conditionsState, conditionsSets);
-    } else if (kind === 'postSurvey') {
-      if (!isValidTKConditionsSets<'postSurvey'>(kind)(conditionsSets)) {
-        throw new Error(`setupAllow: Invalid conditionsSets provided for kind ${kind}`);
-      }
-
-      const conditionsState: ConditionsState<'postSurvey'> = {
-        isSupervisor: performer.isSupervisor,
-        everyone: true,
-      };
-
-      return checkConditionsSets(conditionsState, conditionsSets);
-    }
+    // If every condition is true for at least one set, the action is allowed
+    return parsedConditionsSets.some(
+      cs => cs.length && cs.every(c => c(performer, target, ctx)),
+    );
   };
 };
 
@@ -115,9 +46,10 @@ export const initializeCanForRules = (rules: RulesFile) => {
       throw new Error(`Invalid target kind ${targetKind} found in setupCanForRules`);
 
     const actionsForTK = Object.values(actionsMaps[targetKind]);
-    actionsForTK.forEach(
-      action => (actionCheckers[action] = setupAllow(targetKind, rules[action])),
-    );
+    actionsForTK.forEach(action => {
+      // console.log('action', action, 'targetKind', targetKind, 'rules[action]', rules[action])
+      actionCheckers[action] = setupAllow(targetKind, rules[action]);
+    });
   });
 
   return (performer: TwilioUser, action: Actions, target: any) =>
