@@ -40,7 +40,8 @@ const zaRules = require('../../permission-rules/za.json');
 const zmRules = require('../../permission-rules/zm.json');
 const zwRules = require('../../permission-rules/zw.json');
 
-import { actionsMaps, Actions, TargetKind, isTargetKind } from './actions';
+import { actionsMaps, Actions, TargetKind } from './actions';
+import { parseConditionsSets } from './parser/parser';
 
 const userBasedConditions = {
   IsSupervisor: 'isSupervisor',
@@ -85,44 +86,27 @@ export type TKCondition<T extends TargetKind> = (typeof supportedTKConditions)[T
 export type TKConditionsSet<T extends TargetKind> = TKCondition<T>[];
 export type TKConditionsSets<T extends TargetKind> = TKConditionsSet<T>[];
 
-const isTKCondition =
-  <T extends TargetKind>(kind: T) =>
-  (c: any): c is TKCondition<T> =>
-    c && supportedTKConditions[kind].includes(c);
-
-const isTKConditionsSet =
-  <T extends TargetKind>(kind: TargetKind) =>
-  (cs: any): cs is TKConditionsSet<T> =>
-    cs && Array.isArray(cs) && cs.every(isTKCondition(kind));
-
-const isTKConditionsSets =
-  <T extends TargetKind>(kind: TargetKind) =>
-  (css: any): css is TKConditionsSets<T> =>
-    css && Array.isArray(css) && css.every(isTKConditionsSet(kind));
-
 export type RulesFile = { [k in Actions]: TKConditionsSets<TargetKind> };
-
-export const isValidTKConditionsSets =
-  <T extends TargetKind>(kind: T) =>
-  (css: TKConditionsSets<TargetKind>): css is TKConditionsSets<typeof kind> =>
-    css.every(cs => cs.every(isTKCondition(kind)));
-
-export const isRulesFile = (rules: any): rules is RulesFile =>
-  Object.values(actionsMaps).every(map =>
-    Object.values(map).every(action => isTKConditionsSets(rules[action])),
-  );
 
 /**
  * Validates that for every TK, the ConditionsSets provided are valid
- * (i.e. present in supportedTKConditions)
+ * (i.e. that the all the predicates are properly parsed)
  */
 const validateTKActions = (rules: RulesFile) =>
   Object.entries(actionsMaps)
     .map(([kind, map]) =>
       Object.values(map).reduce((accum, action) => {
+        let result: boolean;
+        try {
+          parseConditionsSets(kind as TargetKind)(rules[action]);
+          result = true;
+        } catch (err) {
+          result = false;
+        }
+
         return {
           ...accum,
-          [action]: isTargetKind(kind) && isValidTKConditionsSets(kind)(rules[action]),
+          [action]: result,
         };
       }, {}),
     )
@@ -130,9 +114,6 @@ const validateTKActions = (rules: RulesFile) =>
       (accum, obj) => ({ ...accum, ...obj }),
       {} as any,
     );
-
-const isValidTargetKindActions = (validated: { [k in Actions]: boolean }) =>
-  Object.values(validated).every(Boolean);
 
 const rulesMapDef = {
   br: brRules,
@@ -170,12 +151,9 @@ export const validRulesMap = () =>
   // This type assertion is legit as long as we check that every entry in rulesMapDef is indeed a RulesFile
   Object.entries(rulesMapDef).reduce<{ [k in keyof typeof rulesMapDef]: RulesFile }>(
     (accum, [k, rules]) => {
-      if (!isRulesFile(rules)) {
-        throw new Error(`Error: rules file for ${k} is not a valid RulesFile`);
-      }
-
       const validated = validateTKActions(rules);
-      if (!isValidTargetKindActions(validated)) {
+
+      if (!Object.values(validated).every(Boolean)) {
         const invalidActions = Object.entries(validated)
           .filter(([, val]) => !val)
           .map(([key]) => key);

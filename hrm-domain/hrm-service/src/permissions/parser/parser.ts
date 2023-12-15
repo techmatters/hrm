@@ -138,7 +138,7 @@ CASE_PREDICATE.setPattern(
 
 const POSTSURVEY_PREDICATE = COMMON_PREDICATE;
 
-export const parseTKPredicate = (kind: TargetKind) => (input: string) => {
+const parseTKPredicate = (kind: TargetKind) => (input: string) => {
   try {
     const tokenized = lexer.parse(input);
     switch (kind) {
