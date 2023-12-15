@@ -22,6 +22,7 @@ import { RulesFile } from '../../src/permissions/rulesMap';
 import { workerSid, accountSid } from '../../service-tests/mocks';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
 import { TargetKind } from '../../src/permissions/actions';
+import { subDays, subHours } from 'date-fns';
 
 const helpline = 'helpline';
 
@@ -350,6 +351,66 @@ describe('Test different scenarios (Case)', () => {
         },
         user: twilioUser('not creator', []),
       },
+      {
+        conditionsSets: [['createdHoursAgo(2)']],
+        expectedResult: true,
+        expectedDescription: 'createdHoursAgo within the provided range',
+        caseObj: {
+          status: 'open',
+          info: {},
+          twilioWorkerId: 'creator',
+          helpline,
+          createdBy: workerSid,
+          accountSid,
+          createdAt: subHours(Date.now(), 1).toISOString(),
+        },
+        user: twilioUser('not creator', []),
+      },
+      {
+        conditionsSets: [['createdHoursAgo(1)']],
+        expectedResult: false,
+        expectedDescription: 'createdHoursAgo outside the provided range',
+        caseObj: {
+          status: 'open',
+          info: {},
+          twilioWorkerId: 'creator',
+          helpline,
+          createdBy: workerSid,
+          accountSid,
+          createdAt: subHours(Date.now(), 1).toISOString(),
+        },
+        user: twilioUser('not creator', []),
+      },
+      {
+        conditionsSets: [['createdDaysAgo(2)']],
+        expectedResult: true,
+        expectedDescription: 'createdDaysAgo within the provided range',
+        caseObj: {
+          status: 'open',
+          info: {},
+          twilioWorkerId: 'creator',
+          helpline,
+          createdBy: workerSid,
+          accountSid,
+          createdAt: subDays(Date.now(), 1).toISOString(),
+        },
+        user: twilioUser('not creator', []),
+      },
+      {
+        conditionsSets: [['createdDaysAgo(1)']],
+        expectedResult: false,
+        expectedDescription: 'createdDaysAgo outside the provided range',
+        caseObj: {
+          status: 'open',
+          info: {},
+          twilioWorkerId: 'creator',
+          helpline,
+          createdBy: workerSid,
+          accountSid,
+          createdAt: subDays(Date.now(), 1).toISOString(),
+        },
+        user: twilioUser('not creator', []),
+      },
     ].map(addPrettyConditionsSets),
     // .flatMap(mapTestToActions(actionsMaps.case)),
   ).describe(
@@ -428,6 +489,50 @@ describe('Test different scenarios (Contact)', () => {
         contactObj: {
           accountSid,
           twilioWorkerId: 'creator',
+        },
+        user: twilioUser('not creator', []),
+      },
+      {
+        conditionsSets: [['createdHoursAgo(2)']],
+        expectedResult: true,
+        expectedDescription: 'createdHoursAgo within the provided range',
+        contactObj: {
+          accountSid,
+          twilioWorkerId: 'creator',
+          createdAt: subHours(Date.now(), 1).toISOString(),
+        },
+        user: twilioUser('not creator', []),
+      },
+      {
+        conditionsSets: [['createdHoursAgo(1)']],
+        expectedResult: false,
+        expectedDescription: 'createdHoursAgo outside the provided range',
+        contactObj: {
+          accountSid,
+          twilioWorkerId: 'creator',
+          createdAt: subHours(Date.now(), 1).toISOString(),
+        },
+        user: twilioUser('not creator', []),
+      },
+      {
+        conditionsSets: [['createdDaysAgo(2)']],
+        expectedResult: true,
+        expectedDescription: 'createdDaysAgo within the provided range',
+        contactObj: {
+          accountSid,
+          twilioWorkerId: 'creator',
+          createdAt: subDays(Date.now(), 1).toISOString(),
+        },
+        user: twilioUser('not creator', []),
+      },
+      {
+        conditionsSets: [['createdDaysAgo(1)']],
+        expectedResult: false,
+        expectedDescription: 'createdDaysAgo outside the provided range',
+        contactObj: {
+          accountSid,
+          twilioWorkerId: 'creator',
+          createdAt: subDays(Date.now(), 1).toISOString(),
         },
         user: twilioUser('not creator', []),
       },
