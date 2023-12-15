@@ -23,6 +23,7 @@ module.exports = {
     '@typescript-eslint/indent': 'off',
     '@typescript-eslint/quotes': 'off',
     'import/prefer-default-export': 'off',
+    '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
   },
   settings: {
     'import/resolver': {
