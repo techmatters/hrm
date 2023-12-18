@@ -32,7 +32,7 @@ import { retrieveCategories } from './categories';
 import { PaginationQuery, getPaginationElements } from '../search';
 import type { NewContactRecord } from './sql/contact-insert-sql';
 import { ContactRawJson, ReferralWithoutContactId } from './contact-json';
-import { InitializedCan } from '../permissions/setupCanForRules';
+import { InitializedCan } from '../permissions/initializeCanForRules';
 import { actionsMaps } from '../permissions';
 import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { connectContactToCsamReports, CSAMReport } from '../csam-report/csam-report';

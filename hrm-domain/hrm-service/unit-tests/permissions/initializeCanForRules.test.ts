@@ -16,7 +16,7 @@
 
 /* eslint-disable jest/no-standalone-expect */
 import each from 'jest-each';
-import { setupCanForRules } from '../../src/permissions/setupCanForRules';
+import { initializeCanForRules } from '../../src/permissions/initializeCanForRules';
 import { actionsMaps } from '../../src/permissions';
 import { RulesFile } from '../../src/permissions/rulesMap';
 import { workerSid, accountSid } from '../../service-tests/mocks';
@@ -33,7 +33,7 @@ const buildRules = (conditionsSets): RulesFile => {
 
 describe('Test that all actions work fine (everyone)', () => {
   const rules = buildRules([['everyone']]);
-  const can = setupCanForRules(rules);
+  const can = initializeCanForRules(rules);
 
   const notCreator = twilioUser('not creator', []);
 
@@ -88,7 +88,7 @@ describe('Test that all actions work fine (everyone)', () => {
 
 describe('Test that all actions work fine (no one)', () => {
   const rules = buildRules([]);
-  const can = setupCanForRules(rules);
+  const can = initializeCanForRules(rules);
 
   const supervisor = twilioUser('creator', ['supervisor']);
 
@@ -151,7 +151,7 @@ describe('Test that all actions work fine (no one)', () => {
  */
 describe('Test that an empty set of conditions does not grants permissions', () => {
   const rules = buildRules([[]]);
-  const can = setupCanForRules(rules);
+  const can = initializeCanForRules(rules);
 
   const supervisor = twilioUser('creator', ['supervisor']);
 
@@ -348,7 +348,7 @@ describe('Test different scenarios (Case)', () => {
     'Expect $expectedResult when $expectedDescription with $prettyConditionsSets',
     ({ conditionsSets, caseObj, user, expectedResult }) => {
       const rules = buildRules(conditionsSets);
-      const can = setupCanForRules(rules);
+      const can = initializeCanForRules(rules);
 
       Object.values(actionsMaps.case).forEach(action =>
         test(`${action}`, async () => {
@@ -428,7 +428,7 @@ describe('Test different scenarios (Contact)', () => {
     'Expect $expectedResult when $expectedDescription with $prettyConditionsSets',
     ({ conditionsSets, contactObj, user, expectedResult }) => {
       const rules = buildRules(conditionsSets);
-      const can = setupCanForRules(rules);
+      const can = initializeCanForRules(rules);
 
       Object.values(actionsMaps.contact).forEach(action =>
         test(`${action}`, async () => {
@@ -496,7 +496,7 @@ describe('Test different scenarios (PostSurvey)', () => {
     'Expect $expectedResult when $expectedDescription with $prettyConditionsSets',
     ({ conditionsSets, postSurveyObj, user, expectedResult }) => {
       const rules = buildRules(conditionsSets);
-      const can = setupCanForRules(rules);
+      const can = initializeCanForRules(rules);
 
       Object.values(actionsMaps.postSurvey).forEach(action =>
         test(`${action}`, async () => {
