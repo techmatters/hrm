@@ -113,10 +113,10 @@ const isTKCondition =
         return isSupportedContactCondition(c);
       }
       case 'case': {
-        isSupportedCaseCondition(c);
+        return isSupportedCaseCondition(c);
       }
       case 'postSurvey': {
-        isSupportedPostSurveyCondition(c);
+        return isSupportedPostSurveyCondition(c);
       }
       default: {
         return false;
@@ -213,6 +213,7 @@ export const validRulesMap = () =>
         const invalidActions = Object.entries(validated)
           .filter(([, val]) => !val)
           .map(([key]) => key);
+
         throw new Error(
           `Error: rules file for ${k} contains invalid actions mappings: ${JSON.stringify(
             invalidActions,

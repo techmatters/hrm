@@ -21,18 +21,27 @@ import { actionsMaps } from '../../src/permissions';
 import { RulesFile } from '../../src/permissions/rulesMap';
 import { workerSid, accountSid } from '../../service-tests/mocks';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
+import { TargetKind } from '../../src/permissions/actions';
+import { subDays, subHours } from 'date-fns';
 
 const helpline = 'helpline';
 
-const buildRules = (conditionsSets): RulesFile => {
-  const entries = Object.values(actionsMaps)
-    .flatMap(e => Object.values(e))
-    .map(action => [action, conditionsSets]);
+const buildRules = (
+  partialRules: {
+    [K in TargetKind]?: string[][];
+  } & { default?: string[][] },
+): RulesFile => {
+  const entries = Object.entries(actionsMaps)
+    .flatMap(([tk, obj]) => Object.values(obj).map(action => [tk, action]))
+    .map(([tk, action]) => {
+      return [action, partialRules[tk] || partialRules.default || []];
+    });
+
   return Object.fromEntries(entries);
 };
 
 describe('Test that all actions work fine (everyone)', () => {
-  const rules = buildRules([['everyone']]);
+  const rules = buildRules({ default: [['everyone']] });
   const can = initializeCanForRules(rules);
 
   const notCreator = twilioUser('not creator', []);
@@ -87,7 +96,7 @@ describe('Test that all actions work fine (everyone)', () => {
 });
 
 describe('Test that all actions work fine (no one)', () => {
-  const rules = buildRules([]);
+  const rules = buildRules({ default: [] });
   const can = initializeCanForRules(rules);
 
   const supervisor = twilioUser('creator', ['supervisor']);
@@ -150,7 +159,7 @@ describe('Test that all actions work fine (no one)', () => {
  * The reason is how checkConditionsSet is implemented: [].every(predicate) evaluates true for all predicates
  */
 describe('Test that an empty set of conditions does not grants permissions', () => {
-  const rules = buildRules([[]]);
+  const rules = buildRules({ default: [[]] });
   const can = initializeCanForRules(rules);
 
   const supervisor = twilioUser('creator', ['supervisor']);
@@ -342,12 +351,72 @@ describe('Test different scenarios (Case)', () => {
         },
         user: twilioUser('not creator', []),
       },
+      {
+        conditionsSets: [[{ createdHoursAgo: 2 }]],
+        expectedResult: true,
+        expectedDescription: 'createdHoursAgo within the provided range',
+        caseObj: {
+          status: 'open',
+          info: {},
+          twilioWorkerId: 'creator',
+          helpline,
+          createdBy: workerSid,
+          accountSid,
+          createdAt: subHours(Date.now(), 1).toISOString(),
+        },
+        user: twilioUser('not creator', []),
+      },
+      {
+        conditionsSets: [[{ createdHoursAgo: 1 }]],
+        expectedResult: false,
+        expectedDescription: 'createdHoursAgo outside the provided range',
+        caseObj: {
+          status: 'open',
+          info: {},
+          twilioWorkerId: 'creator',
+          helpline,
+          createdBy: workerSid,
+          accountSid,
+          createdAt: subHours(Date.now(), 1).toISOString(),
+        },
+        user: twilioUser('not creator', []),
+      },
+      {
+        conditionsSets: [[{ createdDaysAgo: 2 }]],
+        expectedResult: true,
+        expectedDescription: 'createdDaysAgo within the provided range',
+        caseObj: {
+          status: 'open',
+          info: {},
+          twilioWorkerId: 'creator',
+          helpline,
+          createdBy: workerSid,
+          accountSid,
+          createdAt: subDays(Date.now(), 1).toISOString(),
+        },
+        user: twilioUser('not creator', []),
+      },
+      {
+        conditionsSets: [[{ createdDaysAgo: 1 }]],
+        expectedResult: false,
+        expectedDescription: 'createdDaysAgo outside the provided range',
+        caseObj: {
+          status: 'open',
+          info: {},
+          twilioWorkerId: 'creator',
+          helpline,
+          createdBy: workerSid,
+          accountSid,
+          createdAt: subDays(Date.now(), 1).toISOString(),
+        },
+        user: twilioUser('not creator', []),
+      },
     ].map(addPrettyConditionsSets),
     // .flatMap(mapTestToActions(actionsMaps.case)),
   ).describe(
     'Expect $expectedResult when $expectedDescription with $prettyConditionsSets',
     ({ conditionsSets, caseObj, user, expectedResult }) => {
-      const rules = buildRules(conditionsSets);
+      const rules = buildRules({ case: conditionsSets });
       const can = initializeCanForRules(rules);
 
       Object.values(actionsMaps.case).forEach(action =>
@@ -423,11 +492,55 @@ describe('Test different scenarios (Contact)', () => {
         },
         user: twilioUser('not creator', []),
       },
+      {
+        conditionsSets: [[{ createdHoursAgo: 2 }]],
+        expectedResult: true,
+        expectedDescription: 'createdHoursAgo within the provided range',
+        contactObj: {
+          accountSid,
+          twilioWorkerId: 'creator',
+          createdAt: subHours(Date.now(), 1).toISOString(),
+        },
+        user: twilioUser('not creator', []),
+      },
+      {
+        conditionsSets: [[{ createdHoursAgo: 1 }]],
+        expectedResult: false,
+        expectedDescription: 'createdHoursAgo outside the provided range',
+        contactObj: {
+          accountSid,
+          twilioWorkerId: 'creator',
+          createdAt: subHours(Date.now(), 1).toISOString(),
+        },
+        user: twilioUser('not creator', []),
+      },
+      {
+        conditionsSets: [[{ createdDaysAgo: 2 }]],
+        expectedResult: true,
+        expectedDescription: 'createdDaysAgo within the provided range',
+        contactObj: {
+          accountSid,
+          twilioWorkerId: 'creator',
+          createdAt: subDays(Date.now(), 1).toISOString(),
+        },
+        user: twilioUser('not creator', []),
+      },
+      {
+        conditionsSets: [[{ createdDaysAgo: 1 }]],
+        expectedResult: false,
+        expectedDescription: 'createdDaysAgo outside the provided range',
+        contactObj: {
+          accountSid,
+          twilioWorkerId: 'creator',
+          createdAt: subDays(Date.now(), 1).toISOString(),
+        },
+        user: twilioUser('not creator', []),
+      },
     ].map(addPrettyConditionsSets),
   ).describe(
     'Expect $expectedResult when $expectedDescription with $prettyConditionsSets',
     ({ conditionsSets, contactObj, user, expectedResult }) => {
-      const rules = buildRules(conditionsSets);
+      const rules = buildRules({ contact: conditionsSets });
       const can = initializeCanForRules(rules);
 
       Object.values(actionsMaps.contact).forEach(action =>
@@ -495,7 +608,7 @@ describe('Test different scenarios (PostSurvey)', () => {
   ).describe(
     'Expect $expectedResult when $expectedDescription with $prettyConditionsSets',
     ({ conditionsSets, postSurveyObj, user, expectedResult }) => {
-      const rules = buildRules(conditionsSets);
+      const rules = buildRules({ postSurvey: conditionsSets });
       const can = initializeCanForRules(rules);
 
       Object.values(actionsMaps.postSurvey).forEach(action =>
