@@ -42,53 +42,87 @@ const zwRules = require('../../permission-rules/zw.json');
 
 import { actionsMaps, Actions, TargetKind, isTargetKind } from './actions';
 
-const timeBasedConditions = {
-  CREATED_HOURS_AGO: 'createdHoursAgo',
-  CREATED_DAYS_AGO: 'createdDaysAgo',
-} as const;
-const userBasedConditions = {
-  IS_SUPERVISOR: 'isSupervisor',
-  EVERYONE: 'everyone',
-} as const;
-const contactSpecificConditions = {
-  IS_OWNER: 'isOwner',
-} as const;
-const caseSpecificConditions = {
-  IS_CREATOR: 'isCreator',
-  IS_CASE_OPEN: 'isCaseOpen',
-} as const;
+const timeBasedConditions = ['createdHoursAgo', 'createdDaysAgo'] as const;
+type TimeBasedCondition = { [K in (typeof timeBasedConditions)[number]]: number };
 
-export const supportedContactConditionsMap = {
-  ...timeBasedConditions,
-  ...userBasedConditions,
-  ...contactSpecificConditions,
-} as const;
-const supportedContactConditions = Object.values(supportedContactConditionsMap);
+export const isTimeBasedCondition = (c: any): c is TimeBasedCondition => {
+  if (typeof c === 'object') {
+    const [[cond, param]] = Object.entries(c);
+    return timeBasedConditions.includes(cond as any) && typeof param === 'number';
+  }
 
-export const supportedCaseConditionsMap = {
-  ...timeBasedConditions,
-  ...userBasedConditions,
-  ...caseSpecificConditions,
+  return false;
 };
-const supportedCaseConditions = Object.values(supportedCaseConditionsMap);
 
-const supportedPostSurveyConditions = [...Object.values(userBasedConditions)] as const;
+const userBasedConditions = ['isSupervisor', 'everyone'] as const;
+type UserBasedCondition = (typeof userBasedConditions)[number];
+
+const isUserBasedCondition = (c: any): c is UserBasedCondition =>
+  typeof c === 'string' && userBasedConditions.includes(c as any);
+
+const contactSpecificConditions = ['isOwner'] as const;
+type ContactSpecificCondition = (typeof contactSpecificConditions)[number];
+
+const isContactSpecificCondition = (c: any): c is ContactSpecificCondition =>
+  typeof c === 'string' && contactSpecificConditions.includes(c as any);
+
+const caseSpecificConditions = ['isCreator', 'isCaseOpen'] as const;
+type CaseSpecificCondition = (typeof caseSpecificConditions)[number];
+
+const isCaseSpecificCondition = (c: any): c is CaseSpecificCondition =>
+  typeof c === 'string' && caseSpecificConditions.includes(c as any);
+
+type SupportedContactCondition =
+  | TimeBasedCondition
+  | UserBasedCondition
+  | ContactSpecificCondition;
+const isSupportedContactCondition = (c: any): c is SupportedContactCondition =>
+  isTimeBasedCondition(c) || isUserBasedCondition(c) || isContactSpecificCondition(c);
+
+type SupportedCaseCondition =
+  | TimeBasedCondition
+  | UserBasedCondition
+  | CaseSpecificCondition;
+const isSupportedCaseCondition = (c: any): c is SupportedCaseCondition =>
+  isTimeBasedCondition(c) || isUserBasedCondition(c) || isCaseSpecificCondition(c);
+
+type SupportedPostSurveyCondition = TimeBasedCondition | UserBasedCondition;
+const isSupportedPostSurveyCondition = (c: any): c is SupportedPostSurveyCondition =>
+  isTimeBasedCondition(c) || isUserBasedCondition(c);
 
 // Defines which actions are supported on each TargetKind
-const supportedTKConditions = {
-  contact: supportedContactConditions,
-  case: supportedCaseConditions,
-  postSurvey: supportedPostSurveyConditions,
-} as const;
+type SupportedTKCondition = {
+  contact: SupportedContactCondition;
+  case: SupportedCaseCondition;
+  postSurvey: SupportedPostSurveyCondition;
+};
 
-export type TKCondition<T extends TargetKind> = (typeof supportedTKConditions)[T][number];
+export type TKCondition<T extends TargetKind> = SupportedTKCondition[T];
 export type TKConditionsSet<T extends TargetKind> = TKCondition<T>[];
 export type TKConditionsSets<T extends TargetKind> = TKConditionsSet<T>[];
 
 const isTKCondition =
   <T extends TargetKind>(kind: T) =>
-  (c: any): c is TKCondition<T> =>
-    c && supportedTKConditions[kind].includes(c);
+  (c: any): c is TKCondition<T> => {
+    if (!c) {
+      return false;
+    }
+
+    switch (kind) {
+      case 'contact': {
+        return isSupportedContactCondition(c);
+      }
+      case 'case': {
+        isSupportedCaseCondition(c);
+      }
+      case 'postSurvey': {
+        isSupportedPostSurveyCondition(c);
+      }
+      default: {
+        return false;
+      }
+    }
+  };
 
 const isTKConditionsSet =
   <T extends TargetKind>(kind: TargetKind) =>

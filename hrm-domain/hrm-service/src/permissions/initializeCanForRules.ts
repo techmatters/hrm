@@ -22,26 +22,33 @@ import {
   type TKConditionsSet,
   type TKConditionsSets,
   type RulesFile,
+  isTimeBasedCondition,
 } from './rulesMap';
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
+import { differenceInDays, differenceInHours, parseISO } from 'date-fns';
 
-type ConditionsState<T extends TargetKind> = {
-  [condition in TKCondition<T>]: boolean;
+type ConditionsState = {
+  [k: string]: boolean;
 };
 
 /**
  * Given a conditionsState and a condition, returns true if the condition is true in the conditionsState
  */
 const checkCondition =
-  <T extends TargetKind>(conditionsState: ConditionsState<T>) =>
-  (condition: TKCondition<T>): boolean =>
-    conditionsState[condition];
+  <T extends TargetKind>(conditionsState: ConditionsState) =>
+  (condition: TKCondition<T>): boolean => {
+    if (isTimeBasedCondition(condition)) {
+      return conditionsState[JSON.stringify(condition)];
+    }
+
+    return conditionsState[condition as string];
+  };
 
 /**
  * Given a conditionsState and a set of conditions, returns true if all the conditions are true in the conditionsState
  */
 const checkConditionsSet =
-  <T extends TargetKind>(conditionsState: ConditionsState<T>) =>
+  <T extends TargetKind>(conditionsState: ConditionsState) =>
   (conditionsSet: TKConditionsSet<T>): boolean =>
     conditionsSet.length > 0 && conditionsSet.every(checkCondition(conditionsState));
 
@@ -49,7 +56,7 @@ const checkConditionsSet =
  * Given a conditionsState and a set of conditions sets, returns true if one of the conditions sets contains conditions that are all true in the conditionsState
  */
 const checkConditionsSets = <T extends TargetKind>(
-  conditionsState: ConditionsState<T>,
+  conditionsState: ConditionsState,
   conditionsSets: TKConditionsSets<T>,
 ): boolean => conditionsSets.some(checkConditionsSet(conditionsState));
 
@@ -60,20 +67,36 @@ const setupAllow = <T extends TargetKind>(
 ) => {
   // We could do type validation on target depending on targetKind if we ever want to make sure the "allow" is called on a proper target (same as cancan used to do)
 
+  const timeBasedConditions = conditionsSets
+    .flatMap(cs => cs.filter(isTimeBasedCondition))
+    .map(c => Object.entries(c)[0]);
+
   return (performer: TwilioUser, target: any) => {
+    const ctx = { curentTimestamp: new Date() };
+
+    const appliedTimeBasedConditions = timeBasedConditions.reduce<
+      Record<string, boolean>
+    >((accum, [cond, param]) => {
+      const f = cond === 'createdHoursAgo' ? differenceInHours : differenceInDays;
+
+      const key = JSON.stringify({ [cond]: param });
+      const result = f(ctx.curentTimestamp, parseISO(target.createdAt)) < param;
+
+      return { ...accum, [key]: result };
+    }, {});
+
     // Build the proper conditionsState depending on the targetKind
     if (kind === 'case') {
       if (!isValidTKConditionsSets<'case'>(kind)(conditionsSets)) {
         throw new Error(`setupAllow: Invalid conditionsSets provided for kind ${kind}`);
       }
 
-      const conditionsState: ConditionsState<'case'> = {
+      const conditionsState: ConditionsState = {
         isSupervisor: performer.isSupervisor,
         isCreator: isCounselorWhoCreated(performer, target),
         isCaseOpen: isCaseOpen(target),
         everyone: true,
-        createdDaysAgo: false,
-        createdHoursAgo: false,
+        ...appliedTimeBasedConditions,
       };
 
       return checkConditionsSets(conditionsState, conditionsSets);
@@ -82,12 +105,13 @@ const setupAllow = <T extends TargetKind>(
         throw new Error(`setupAllow: Invalid conditionsSets provided for kind ${kind}`);
       }
 
-      const conditionsState: ConditionsState<'contact'> = {
+      const conditionsState: ConditionsState = {
         isSupervisor: performer.isSupervisor,
         isOwner: isContactOwner(performer, target),
         everyone: true,
         createdDaysAgo: false,
         createdHoursAgo: false,
+        ...appliedTimeBasedConditions,
       };
 
       return checkConditionsSets(conditionsState, conditionsSets);
@@ -96,9 +120,10 @@ const setupAllow = <T extends TargetKind>(
         throw new Error(`setupAllow: Invalid conditionsSets provided for kind ${kind}`);
       }
 
-      const conditionsState: ConditionsState<'postSurvey'> = {
+      const conditionsState: ConditionsState = {
         isSupervisor: performer.isSupervisor,
         everyone: true,
+        ...appliedTimeBasedConditions,
       };
 
       return checkConditionsSets(conditionsState, conditionsSets);
