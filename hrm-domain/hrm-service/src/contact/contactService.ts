@@ -501,7 +501,12 @@ export const connectContactToCase = async (
   caseId: string,
   { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
 ): Promise<WithLegacyCategories<Contact>> => {
-  const updated: Contact | undefined = await connectToCase(accountSid, contactId, caseId);
+  const updated: Contact | undefined = await connectToCase()(
+    accountSid,
+    contactId,
+    caseId,
+    updatedBy,
+  );
   if (!updated) {
     throw new Error(`Contact not found with id ${contactId}`);
   }
