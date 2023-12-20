@@ -1722,8 +1722,8 @@ describe('/contacts route', () => {
         const casesAudits = await selectCasesAudits();
         const contactsAudits = await selectContactsAudits();
 
-        // Connecting contacts to cases does not update Cases, but Contacts
-        expect(casesAudits).toHaveLength(casesAuditPreviousCount);
+        // Connecting contacts to cases updates contacts, but also touches the updatedat / updatedby fields on the case
+        expect(casesAudits).toHaveLength(casesAuditPreviousCount + 1);
         expect(contactsAudits).toHaveLength(contactsAuditPreviousCount + 1);
 
         const lastContactAudit = contactsAudits.sort(byGreaterId)[0];
@@ -1756,7 +1756,7 @@ describe('/contacts route', () => {
         const casesAuditAfterCount = await countCasesAudits();
         const contactsAuditAfterCount = await countContactsAudits();
 
-        expect(casesAuditAfterCount).toBe(casesAuditPreviousCount);
+        expect(casesAuditAfterCount).toBe(casesAuditPreviousCount + 1);
         expect(contactsAuditAfterCount).toBe(contactsAuditPreviousCount + 1);
       });
 
@@ -1782,7 +1782,7 @@ describe('/contacts route', () => {
         const casesAuditAfterCount = await countCasesAudits();
         const contactsAuditAfterCount = await countContactsAudits();
 
-        expect(casesAuditAfterCount).toBe(casesAuditPreviousCount);
+        expect(casesAuditAfterCount).toBe(casesAuditPreviousCount + 1);
         expect(contactsAuditAfterCount).toBe(contactsAuditPreviousCount + 1);
       });
 

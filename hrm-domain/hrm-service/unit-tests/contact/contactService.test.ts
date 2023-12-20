@@ -645,9 +645,9 @@ describe('createContact', () => {
 
 describe('connectContactToCase', () => {
   test('Returns contact produced by data access layer', async () => {
-    const connectSpy = jest
-      .spyOn(contactDb, 'connectToCase')
-      .mockResolvedValue(mockContact);
+    const connectSpy = jest.fn();
+    connectSpy.mockResolvedValue(mockContact);
+    jest.spyOn(contactDb, 'connectToCase').mockImplementation(() => connectSpy);
     const result = await connectContactToCase(
       'accountSid',
       'case-connector',
@@ -658,11 +658,18 @@ describe('connectContactToCase', () => {
         user: twilioUser(workerSid, []),
       },
     );
-    expect(connectSpy).toHaveBeenCalledWith('accountSid', '1234', '4321');
+    expect(connectSpy).toHaveBeenCalledWith(
+      'accountSid',
+      '1234',
+      '4321',
+      'case-connector',
+    );
     expect(result).toStrictEqual(mockReturnContact);
   });
   test('Throws if data access layer returns undefined', () => {
-    jest.spyOn(contactDb, 'connectToCase').mockResolvedValue(undefined);
+    jest
+      .spyOn(contactDb, 'connectToCase')
+      .mockImplementation(() => () => Promise.resolve(undefined));
     expect(
       connectContactToCase('accountSid', 'case-connector', '1234', '4321', {
         can: () => true,

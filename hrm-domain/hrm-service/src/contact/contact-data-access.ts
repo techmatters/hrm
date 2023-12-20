@@ -30,6 +30,7 @@ import { ContactRawJson, ReferralWithoutContactId } from './contact-json';
 import type { ITask } from 'pg-promise';
 import { txIfNotInOne } from '../sql';
 import { ConversationMedia } from '../conversation-media/conversation-media';
+import { TOUCH_CASE_SQL } from '../case/sql/case-update-sql';
 
 export type ExistingContactRecord = {
   id: number;
@@ -224,23 +225,27 @@ export const patch =
     });
   };
 
-export const connectToCase = async (
-  accountSid: string,
-  contactId: string,
-  caseId: string,
-): Promise<Contact | undefined> => {
-  return db.task(async connection => {
-    const updatedContact: Contact = await connection.oneOrNone<Contact>(
-      UPDATE_CASEID_BY_ID,
-      {
-        accountSid,
-        contactId,
-        caseId,
-      },
-    );
-    return updatedContact;
-  });
-};
+export const connectToCase =
+  (task?) =>
+  async (
+    accountSid: string,
+    contactId: string,
+    caseId: string,
+    updatedBy: string,
+  ): Promise<Contact | undefined> => {
+    return txIfNotInOne(task, async connection => {
+      const [[updatedContact]]: Contact[][] = await connection.multi<Contact>(
+        [UPDATE_CASEID_BY_ID, TOUCH_CASE_SQL].join(';\n'),
+        {
+          accountSid,
+          contactId,
+          caseId,
+          updatedBy,
+        },
+      );
+      return updatedContact;
+    });
+  };
 
 export const getById = async (accountSid: string, contactId: number): Promise<Contact> =>
   db.task(async connection =>
