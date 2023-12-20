@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/techmatters/hrm#readme",
   "dependencies": {
+    "@types/http-errors": "^2.0.4",
     "http-errors": "^2.0.0"
   }
 }
