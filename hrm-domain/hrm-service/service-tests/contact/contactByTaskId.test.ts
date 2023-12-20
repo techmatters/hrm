@@ -16,7 +16,7 @@
 
 import * as contactApi from '../../src/contact/contactService';
 import '../case-validation';
-import { ContactRawJson, WithLegacyCategories } from '../../src/contact/contactService';
+import { ContactRawJson } from '../../src/contact/contact-json';
 import { accountSid, contact1, workerSid } from '../mocks';
 import { twilioUser } from '@tech-matters/twilio-worker-auth/dist';
 import { getRequest, getServer, headers, useOpenRules } from '../server';
@@ -45,7 +45,7 @@ const cleanup = async () => {
   await cleanupCases();
 };
 
-let createdContact: WithLegacyCategories<contactDb.Contact>;
+let createdContact: contactDb.Contact;
 
 beforeEach(async () => {
   await cleanup();

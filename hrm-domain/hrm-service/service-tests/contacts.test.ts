@@ -248,7 +248,7 @@ describe('/contacts route', () => {
       },
       {
         contact: {
-          rawJson: {},
+          rawJson: {} as ContactRawJson,
           twilioWorkerId: null,
           helpline: null,
           queueName: null,
@@ -1110,20 +1110,6 @@ describe('/contacts route', () => {
         );
       });
 
-      const expectLegacyRawJsonToEqualRawJson = (
-        actual: contactApi.WithLegacyCategories<contactDb.Contact>['rawJson'],
-        expected: contactApi.WithLegacyCategories<contactDb.Contact>['rawJson'],
-        legacyCategories: Record<string, Record<string, boolean>> = {},
-      ) => {
-        expect(actual).toStrictEqual({
-          ...expected,
-          caseInformation: {
-            ...expected.caseInformation,
-            categories: legacyCategories,
-          },
-        });
-      };
-
       each([
         {
           body: { firstName: 'jh', lastName: 'he' },
@@ -1134,8 +1120,8 @@ describe('/contacts route', () => {
             const { contacts, count } = response.body;
 
             const [c2, c1] = contacts; // result is sorted DESC
-            expectLegacyRawJsonToEqualRawJson(c1.details, contact1.rawJson);
-            expectLegacyRawJsonToEqualRawJson(c2.details, contact2.rawJson);
+            expect(c1.details).toStrictEqual(contact1.rawJson);
+            expect(c2.details).toStrictEqual(contact2.rawJson);
 
             // Test the association
             expect(c1.csamReports).toHaveLength(0);
@@ -1155,8 +1141,8 @@ describe('/contacts route', () => {
             const { contacts, count } = response.body;
 
             const [c2, c1] = contacts; // result is sorted DESC
-            expectLegacyRawJsonToEqualRawJson(c1.details, contact1.rawJson);
-            expectLegacyRawJsonToEqualRawJson(c2.details, contact2.rawJson);
+            expect(c1.details).toStrictEqual(contact1.rawJson);
+            expect(c2.details).toStrictEqual(contact2.rawJson);
 
             // Test the association
             expect(c1.csamReports).toHaveLength(0);
@@ -1185,7 +1171,7 @@ describe('/contacts route', () => {
             expect(response.status).toBe(200);
             expect(count).toBe(1);
             const [a] = contacts;
-            expectLegacyRawJsonToEqualRawJson(a.details, another1.rawJson);
+            expect(a.details).toStrictEqual(another1.rawJson);
           },
         },
         {
@@ -1257,7 +1243,7 @@ describe('/contacts route', () => {
               const { count, contacts } = response.body;
               expect(response.status).toBe(200);
               expect(count).toBe(1);
-              expectLegacyRawJsonToEqualRawJson(contacts[0].details, another2.rawJson);
+              expect(contacts[0].details).toStrictEqual(another2.rawJson);
             },
           };
         }),
@@ -1277,7 +1263,7 @@ describe('/contacts route', () => {
               const { count, contacts } = response.body;
               expect(response.status).toBe(200);
               expect(count).toBe(1);
-              expectLegacyRawJsonToEqualRawJson(contacts[0].details, another2.rawJson);
+              expect(contacts[0].details).toStrictEqual(another2.rawJson);
             },
           };
         }),
@@ -1449,9 +1435,8 @@ describe('/contacts route', () => {
             expect(count).toBe(2);
 
             const [c2, c1] = contacts; // result is sorted DESC
-            expectLegacyRawJsonToEqualRawJson(c1.details, contact1.rawJson);
-            expectLegacyRawJsonToEqualRawJson(c2.details, contact2.rawJson);
-
+            expect(c1.details).toStrictEqual(contact1.rawJson);
+            expect(c2.details).toStrictEqual(contact2.rawJson);
             // Test the association
             expect(c1.csamReports).toHaveLength(0);
             expect(c2.csamReports).toHaveLength(0);

@@ -28,7 +28,7 @@ import {
   search,
   searchByProfileId,
 } from './contact-data-access';
-import { retrieveCategories } from './categories';
+
 import { PaginationQuery, getPaginationElements } from '../search';
 import type { NewContactRecord } from './sql/contact-insert-sql';
 import { ContactRawJson, ReferralWithoutContactId } from './contact-json';
@@ -93,56 +93,16 @@ export type SearchContact = {
     createdBy: string;
     taskId: string;
   };
-  details: WithLegacyCategories<Contact>['rawJson'];
+  details: Contact['rawJson'];
   csamReports: CSAMReport[];
   referrals?: ReferralWithoutContactId[];
   conversationMedia: ConversationMedia[];
 };
 
-export type CreateContactPayload = WithLegacyCategories<NewContactRecord> & {
+export type CreateContactPayload = NewContactRecord & {
   csamReports?: CSAMReport[];
   referrals?: ReferralWithoutContactId[];
   conversationMedia?: NewConversationMedia[];
-};
-
-const adaptLegacyCategories = <T extends NewContactRecord | PatchPayload>(
-  contact: WithLegacyCategories<T>,
-): T => {
-  if (!contact.rawJson?.caseInformation?.categories) return contact as T;
-  const { categories: legacyCategories, ...caseInformationWithoutCategories } =
-    contact.rawJson.caseInformation ?? {};
-  return {
-    ...contact,
-    rawJson: {
-      ...contact.rawJson,
-      categories: contact.rawJson.categories ?? retrieveCategories(legacyCategories),
-      caseInformation:
-        caseInformationWithoutCategories as ContactRawJson['caseInformation'],
-    },
-  } as T;
-};
-
-const includeLegacyCategories = (contact: Contact): WithLegacyCategories<Contact> => {
-  const legacyCategoryEntries = Object.entries(contact.rawJson.categories ?? {}).map(
-    ([category, subcategories]) => {
-      const subcategoryMap = Object.fromEntries(
-        subcategories.map(subcategory => [subcategory, true]),
-      );
-      return [category, subcategoryMap];
-    },
-  );
-  const legacyCategories = Object.fromEntries(legacyCategoryEntries);
-
-  return {
-    ...contact,
-    rawJson: {
-      ...contact.rawJson,
-      caseInformation: {
-        ...contact.rawJson.caseInformation,
-        categories: legacyCategories,
-      },
-    },
-  };
 };
 
 // TODO: Remove once all Flex clients are using new ConversationMedia model
@@ -204,7 +164,7 @@ const permissionsBasedTransformations: PermissionsBasedTransformation[] = [
 
 export const bindApplyTransformations =
   (can: ReturnType<typeof setupCanForRules>, user: TwilioUser) =>
-  (contact: Contact): WithLegacyCategories<Contact> => {
+  (contact: Contact): Contact => {
     const permissionsBasedTransformed = permissionsBasedTransformations.reduce(
       (transformed, { action, transformation }) =>
         !can(user, action, contact) ? transformation(transformed) : transformed,
@@ -212,9 +172,7 @@ export const bindApplyTransformations =
     );
 
     // TODO: Remove once all Flex clients are using new ConversationMedia model
-    const transformed = addLegacyConversationMedia(permissionsBasedTransformed); // This must be the last step in the transformations, except for the legacy categories
-
-    return includeLegacyCategories(transformed);
+    return addLegacyConversationMedia(permissionsBasedTransformed); // This must be the last step in the transformations, except for the legacy categories
   };
 
 export const getContactById = async (
@@ -261,10 +219,7 @@ const getNewContactPayload = (
     : []; // prioritize new format, but allow legacy Flex clients to send conversationMedia
 
   return {
-    newContactPayload: omit(
-      adaptLegacyCategories<NewContactRecord>(newContactPayload),
-      'rawJson.conversationMedia',
-    ),
+    newContactPayload: omit(newContactPayload, 'rawJson.conversationMedia'),
     csamReportsPayload,
     referralsPayload,
     conversationMediaPayload,
@@ -310,7 +265,7 @@ export const createContact = async (
   finalize: boolean,
   newContact: CreateContactPayload,
   { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
-): Promise<WithLegacyCategories<Contact>> => {
+): Promise<Contact> => {
   for (let retries = 1; retries < 4; retries++) {
     try {
       return await db.tx(async conn => {
@@ -456,11 +411,9 @@ export const patchContact = async (
   updatedBy: string,
   finalize: boolean,
   contactId: string,
-  contactPatch: PatchPayload,
+  { referrals, rawJson, ...restOfPatch }: PatchPayload,
   { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
-): Promise<WithLegacyCategories<Contact>> => {
-  const { referrals, rawJson, ...restOfPatch } =
-    adaptLegacyCategories<PatchPayload>(contactPatch);
+): Promise<Contact> => {
   return db.tx(async conn => {
     // if referrals are present, delete all existing and create new ones, otherwise leave them untouched
     // Explicitly specifying an empty array will delete all existing referrals
@@ -500,7 +453,7 @@ export const connectContactToCase = async (
   contactId: string,
   caseId: string,
   { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
-): Promise<WithLegacyCategories<Contact>> => {
+): Promise<Contact> => {
   const updated: Contact | undefined = await connectToCase(accountSid, contactId, caseId);
   if (!updated) {
     throw new Error(`Contact not found with id ${contactId}`);
@@ -515,7 +468,7 @@ export const addConversationMediaToContact = async (
   contactId: string,
   conversationMediaPayload: ConversationMedia[],
   { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
-): Promise<WithLegacyCategories<Contact>> => {
+): Promise<Contact> => {
   const contact = await getById(accountSid, parseInt(contactId));
   if (!contact) {
     throw new Error(`Target contact not found (id ${contactId})`);
@@ -570,9 +523,7 @@ function isValidContact(contact) {
 }
 
 // Legacy support - shouldn't be required once all deployed flex clients are v2.12+
-function convertContactsToSearchResults(
-  contacts: WithLegacyCategories<Contact>[],
-): SearchContact[] {
+function convertContactsToSearchResults(contacts: Contact[]): SearchContact[] {
   return contacts
     .map(contact => {
       if (!isValidContact(contact)) {
@@ -661,7 +612,7 @@ const generalizedSearchContacts =
     originalFormat?: boolean,
   ): Promise<{
     count: number;
-    contacts: SearchContact[] | WithLegacyCategories<Contact>[];
+    contacts: SearchContact[] | Contact[];
   }> => {
     const applyTransformations = bindApplyTransformations(can, user);
     const { limit, offset } = getPaginationElements(query);

@@ -24,7 +24,6 @@ import * as caseDb from '../src/case/case-data-access';
 import { CaseListFilters, DateExistsCondition } from '../src/case/case-data-access';
 import { db } from '../src/connection-pool';
 import {
-  addLegacyCategoriesToContact,
   fillNameAndPhone,
   validateCaseListResponse,
   validateSingleCaseResponse,
@@ -359,7 +358,7 @@ describe('/cases route', () => {
           const response = await request.get(listRoute).set(headers);
           validateCaseListResponse(
             response,
-            addLegacyCategoriesToContact(expectedCasesAndContacts()),
+            expectedCasesAndContacts(),
             expectedTotalCount,
           );
         },
@@ -1241,7 +1240,7 @@ describe('/cases route', () => {
                 expectedCasesAndContacts(
                   createdCasesAndContacts.map(cc => ({
                     case: cc.case,
-                    contact: addLegacyCategoriesToContact(cc?.contact),
+                    contact: cc?.contact,
                   })),
                 ),
                 expectedTotalCount,
