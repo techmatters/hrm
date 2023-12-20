@@ -22,6 +22,7 @@ import {
   type TKConditionsSets,
   type RulesFile,
   isTimeBasedCondition,
+  TimeBasedCondition,
 } from './rulesMap';
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { differenceInDays, differenceInHours, parseISO } from 'date-fns';
@@ -60,10 +61,12 @@ const checkConditionsSets = <T extends TargetKind>(
 ): boolean => conditionsSets.some(checkConditionsSet(conditionsState));
 
 const applyTimeBasedConditions =
-  (timeBasedConditions: [string, number][]) =>
+  (conditions: TimeBasedCondition[]) =>
   (performer: TwilioUser, target: any, ctx: { curentTimestamp: Date }) =>
-    timeBasedConditions.reduce<Record<string, boolean>>(
-      (accum: Record<string, boolean>, [cond, param]: [string, number]) => {
+    conditions
+      .map(c => Object.entries(c)[0])
+      .reduce<Record<string, boolean>>((accum, [cond, param]) => {
+        // use the stringified cond-param as key, e.g. '{ "createdHoursAgo": "4" }'
         const key = JSON.stringify({ [cond]: param });
         if (cond === 'createdHoursAgo') {
           return {
@@ -80,9 +83,7 @@ const applyTimeBasedConditions =
               differenceInDays(ctx.curentTimestamp, parseISO(target.createdAt)) < param,
           };
         }
-      },
-      {},
-    );
+      }, {});
 
 const setupAllow = <T extends TargetKind>(
   kind: T,
@@ -90,9 +91,9 @@ const setupAllow = <T extends TargetKind>(
 ) => {
   // We could do type validation on target depending on targetKind if we ever want to make sure the "allow" is called on a proper target (same as cancan used to do)
 
-  const timeBasedConditions = conditionsSets
-    .flatMap(cs => cs.filter(isTimeBasedCondition))
-    .map(c => Object.entries(c)[0]);
+  const timeBasedConditions = conditionsSets.flatMap(cs =>
+    cs.filter(isTimeBasedCondition),
+  );
 
   return (performer: TwilioUser, target: any) => {
     const ctx = { curentTimestamp: new Date() };

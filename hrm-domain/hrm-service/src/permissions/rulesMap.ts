@@ -43,7 +43,7 @@ const zwRules = require('../../permission-rules/zw.json');
 import { actionsMaps, Actions, TargetKind, isTargetKind } from './actions';
 
 const timeBasedConditions = ['createdHoursAgo', 'createdDaysAgo'] as const;
-type TimeBasedCondition = { [K in (typeof timeBasedConditions)[number]]: number };
+export type TimeBasedCondition = { [K in (typeof timeBasedConditions)[number]]: number };
 
 export const isTimeBasedCondition = (c: any): c is TimeBasedCondition => {
   if (typeof c === 'object') {
@@ -55,19 +55,19 @@ export const isTimeBasedCondition = (c: any): c is TimeBasedCondition => {
 };
 
 const userBasedConditions = ['isSupervisor', 'everyone'] as const;
-type UserBasedCondition = (typeof userBasedConditions)[number];
+export type UserBasedCondition = (typeof userBasedConditions)[number];
 
 const isUserBasedCondition = (c: any): c is UserBasedCondition =>
   typeof c === 'string' && userBasedConditions.includes(c as any);
 
 const contactSpecificConditions = ['isOwner'] as const;
-type ContactSpecificCondition = (typeof contactSpecificConditions)[number];
+export type ContactSpecificCondition = (typeof contactSpecificConditions)[number];
 
 const isContactSpecificCondition = (c: any): c is ContactSpecificCondition =>
   typeof c === 'string' && contactSpecificConditions.includes(c as any);
 
 const caseSpecificConditions = ['isCreator', 'isCaseOpen'] as const;
-type CaseSpecificCondition = (typeof caseSpecificConditions)[number];
+export type CaseSpecificCondition = (typeof caseSpecificConditions)[number];
 
 const isCaseSpecificCondition = (c: any): c is CaseSpecificCondition =>
   typeof c === 'string' && caseSpecificConditions.includes(c as any);
