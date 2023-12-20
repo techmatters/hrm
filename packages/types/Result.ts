@@ -13,40 +13,77 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
+import createError from 'http-errors';
+import { assertExhaustive } from './assertExhaustive';
 
 type ResultBase = {
   readonly _tag: 'Result';
 };
 
+export enum ErrorResultKind {
+  BadRequestError,
+  UnauthorizedError,
+  ForbiddenError,
+  NotFoundError,
+  MethodNotAllowedError,
+  InternalServerError,
+  NotImplementedError,
+}
+
+const errorKindntoHTTPStatusCode = (kind: ErrorResultKind): number => {
+  switch (kind) {
+    case ErrorResultKind.BadRequestError: {
+      return 400;
+    }
+    case ErrorResultKind.UnauthorizedError: {
+      return 401;
+    }
+    case ErrorResultKind.ForbiddenError: {
+      return 403;
+    }
+    case ErrorResultKind.NotFoundError: {
+      return 404;
+    }
+    case ErrorResultKind.MethodNotAllowedError: {
+      return 405;
+    }
+    case ErrorResultKind.InternalServerError: {
+      return 500;
+    }
+    case ErrorResultKind.NotImplementedError: {
+      return 501;
+    }
+    default: {
+      assertExhaustive(kind);
+      return 500; // return 500 to make TS happy, but above line should never allow this
+    }
+  }
+};
+
 type NewErrorResultParams = {
   message: string;
-  statusCode?: number;
-  name?: string;
+  kind: ErrorResultKind;
 };
 
 type ErrorResult = ResultBase & {
   status: 'error';
   message: string;
-  statusCode: number;
-  name: string;
+  kind: ErrorResultKind;
   readonly unwrap: () => never;
+  readonly intoHTTPError: () => ReturnType<typeof createError>;
 };
 
-export const newErr = ({
-  message,
-  statusCode = 500,
-  name = 'Error',
-}: NewErrorResultParams): ErrorResult => ({
+export const newErr = ({ message, kind }: NewErrorResultParams): ErrorResult => ({
   _tag: 'Result',
   status: 'error',
   message,
-  statusCode,
-  name,
+  kind,
   unwrap: () => {
     throw new Error(
       `TResult Error: Attempted to unwrap Err variant with message: ${message}`,
     );
   },
+  intoHTTPError: () => createError(errorKindntoHTTPStatusCode(kind), message),
 });
 
 type SuccessResult<TData> = ResultBase & {

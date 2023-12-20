@@ -13,11 +13,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-export * from './ContactJob';
-export * from './ResourcesImport';
-export * from './Resources';
-export * from './Result';
-export * from './twilio';
-export * from './assertExhaustive';
 
-export type ObjectValues<T> = T[keyof T];
+// Function to test that there are no unhandled cases in a switch statement
+export const assertExhaustive = (param: never) => {
+  const exhaustiveCheck: never = param;
+  throw new Error(`Unhandled case: ${exhaustiveCheck}`);
+};

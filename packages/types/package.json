@@ -4,7 +4,6 @@
   "description": "Shared library for HRM",
   "author": "",
   "license": "AGPL",
-  "devDependencies": {},
   "main": "dist/index.js",
   "types": "index.ts",
   "scripts": {
@@ -18,5 +17,8 @@
   "bugs": {
     "url": "https://github.com/techmatters/hrm/issues"
   },
-  "homepage": "https://github.com/techmatters/hrm#readme"
+  "homepage": "https://github.com/techmatters/hrm#readme",
+  "dependencies": {
+    "http-errors": "^2.0.0"
+  }
 }
