@@ -19,12 +19,12 @@ import { Actions, TargetKind, isValidSetOfActionsForTarget } from './actions';
 import { setupCanForRules } from './setupCanForRules';
 import { getContactById } from '../contact/contactService';
 import { getCase as getCaseById } from '../case/caseService';
-import { assertExhaustive } from '../contact-job/assertExhaustive';
+import { assertExhaustive } from '@tech-matters/types';
 import {
   getConversationMediaByContactId,
   isS3StoredConversationMedia,
 } from '../conversation-media/conversation-media';
-import { TResult, newErr, newOk } from '@tech-matters/types';
+import { ErrorResultKind, TResult, newErr, newOk } from '@tech-matters/types';
 
 export const canPerformActionsOnObject = async <T extends TargetKind>({
   accountSid,
@@ -45,7 +45,7 @@ export const canPerformActionsOnObject = async <T extends TargetKind>({
     if (!isValidSetOfActionsForTarget(targetKind, actions)) {
       return newErr({
         message: 'invalid actions for objectType',
-        statusCode: 400,
+        kind: ErrorResultKind.BadRequestError,
       });
     }
 
@@ -75,7 +75,10 @@ export const canPerformActionsOnObject = async <T extends TargetKind>({
       }
     }
   } catch (error) {
-    return newErr({ message: (error as Error).message });
+    return newErr({
+      message: (error as Error).message,
+      kind: ErrorResultKind.InternalServerError,
+    });
   }
 };
 
@@ -137,6 +140,9 @@ export const isValidFileLocation = async ({
       }
     }
   } catch (error) {
-    return newErr({ message: (error as Error).message });
+    return newErr({
+      message: (error as Error).message,
+      kind: ErrorResultKind.InternalServerError,
+    });
   }
 };

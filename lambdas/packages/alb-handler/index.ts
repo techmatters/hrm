@@ -88,7 +88,7 @@ export const handleAlbEvent = async ({
   if (isErr(result)) {
     console.error(result.message);
     return {
-      statusCode: result.statusCode,
+      statusCode: result.intoHTTPError().statusCode,
       headers: getHeaders({ allowedMethods: Object.keys(methodHandlers) }),
       body: result.message,
     };

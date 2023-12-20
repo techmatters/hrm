@@ -15,7 +15,7 @@
  */
 
 import { AlbHandlerEvent } from '@tech-matters/alb-handler';
-import { TResult, newErr, isErr, newOk } from '@tech-matters/types';
+import { TResult, newErr, isErr, newOk, ErrorResultKind } from '@tech-matters/types';
 import { authenticate } from '@tech-matters/hrm-authentication';
 import { getSignedUrl } from '@tech-matters/s3-client';
 import { parseParameters } from './parseParameters';
@@ -88,6 +88,7 @@ const getSignedS3Url = async (event: AlbHandlerEvent): Promise<GetSignedS3UrlRes
   } catch (error) {
     return newErr({
       message: error as string,
+      kind: ErrorResultKind.InternalServerError,
     });
   }
 };

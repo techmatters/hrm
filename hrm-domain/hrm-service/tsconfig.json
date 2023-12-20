@@ -10,5 +10,5 @@
     "lib": ["es2020"]
   },
 
-  "include": ["src/**/*.js", "src/**/*.json", "src/**/*.ts"]
+  "include": ["src/**/*.js", "src/**/*.json", "src/**/*.ts", "../../packages/types/assertExhaustive.ts"]
 }

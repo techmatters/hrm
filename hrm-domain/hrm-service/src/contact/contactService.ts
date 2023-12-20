@@ -15,7 +15,14 @@
  */
 
 import omit from 'lodash/omit';
-import { ContactJobType, TResult, isErr, newErr, newOk } from '@tech-matters/types';
+import {
+  ContactJobType,
+  ErrorResultKind,
+  TResult,
+  isErr,
+  newErr,
+  newOk,
+} from '@tech-matters/types';
 import {
   connectToCase,
   Contact,
@@ -735,6 +742,7 @@ export const getContactsByProfileId = async (
   } catch (err) {
     return newErr({
       message: err instanceof Error ? err.message : String(err),
+      kind: ErrorResultKind.InternalServerError,
     });
   }
 };

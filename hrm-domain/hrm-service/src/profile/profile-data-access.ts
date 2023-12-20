@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { TResult, newOk, newErr } from '@tech-matters/types';
+import { TResult, newOk, newErr, ErrorResultKind } from '@tech-matters/types';
 
 import {
   NewIdentifierRecord,
@@ -120,6 +120,7 @@ export const getIdentifierWithProfiles =
     } catch (err) {
       return newErr({
         message: err instanceof Error ? err.message : String(err),
+        kind: ErrorResultKind.InternalServerError,
       });
     }
   };
@@ -184,6 +185,7 @@ export const associateProfileToIdentifier =
     } catch (err) {
       return newErr({
         message: err instanceof Error ? err.message : String(err),
+        kind: ErrorResultKind.InternalServerError,
       });
     }
   };
@@ -210,6 +212,7 @@ export const createIdentifierAndProfile =
     } catch (err) {
       return newErr({
         message: err instanceof Error ? err.message : String(err),
+        kind: ErrorResultKind.InternalServerError,
       });
     }
   };
@@ -261,6 +264,7 @@ export const listProfiles = async (
   } catch (err) {
     return newErr({
       message: err instanceof Error ? err.message : String(err),
+      kind: ErrorResultKind.InternalServerError,
     });
   }
 };
@@ -290,6 +294,7 @@ export const associateProfileToProfileFlag =
     } catch (err) {
       return newErr({
         message: err instanceof Error ? err.message : String(err),
+        kind: ErrorResultKind.InternalServerError,
       });
     }
   };
@@ -314,6 +319,7 @@ export const disassociateProfileFromProfileFlag =
     } catch (err) {
       return newErr({
         message: err instanceof Error ? err.message : String(err),
+        kind: ErrorResultKind.InternalServerError,
       });
     }
   };
@@ -332,6 +338,7 @@ export const getProfileFlagsForAccount = async (
   } catch (err) {
     return newErr({
       message: err instanceof Error ? err.message : String(err),
+      kind: ErrorResultKind.InternalServerError,
     });
   }
 };
@@ -349,6 +356,7 @@ export const getProfileFlagsByIdentifier = async (
   } catch (err) {
     return newErr({
       message: err instanceof Error ? err.message : String(err),
+      kind: ErrorResultKind.InternalServerError,
     });
   }
 };
@@ -372,6 +380,7 @@ export const createProfileFlag = async (
   } catch (err) {
     return newErr({
       message: err instanceof Error ? err.message : String(err),
+      kind: ErrorResultKind.InternalServerError,
     });
   }
 };
@@ -403,6 +412,7 @@ export const createProfileSection = async (
   } catch (err) {
     return newErr({
       message: err instanceof Error ? err.message : String(err),
+      kind: ErrorResultKind.InternalServerError,
     });
   }
 };
@@ -433,6 +443,7 @@ export const updateProfileSectionById = async (
   } catch (err) {
     return newErr({
       message: err instanceof Error ? err.message : String(err),
+      kind: ErrorResultKind.InternalServerError,
     });
   }
 };
@@ -450,6 +461,7 @@ export const getProfileSectionById = async (
   } catch (err) {
     return newErr({
       message: err instanceof Error ? err.message : String(err),
+      kind: ErrorResultKind.InternalServerError,
     });
   }
 };

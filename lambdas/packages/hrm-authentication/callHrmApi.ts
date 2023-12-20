@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { newErr, newOk } from '@tech-matters/types';
+import { ErrorResultKind, newErr, newOk } from '@tech-matters/types';
 import { URLSearchParams } from 'url';
 
 export type CallHrmApiParameters = {
@@ -42,7 +42,7 @@ const callHrmApi = async ({ urlPath, requestData, authHeader }: CallHrmApiParame
     const error = await response.json();
     return newErr({
       message: error.message,
-      statusCode: response.status,
+      kind: ErrorResultKind.UnauthorizedError,
     });
   }
 

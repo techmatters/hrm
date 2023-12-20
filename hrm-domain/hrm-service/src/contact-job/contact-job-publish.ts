@@ -19,7 +19,7 @@ import { ContactJob, RetrieveContactTranscriptJob } from './contact-job-data-acc
 import { ContactJobPollerError } from './contact-job-error';
 import { publishToContactJobs } from './client-sqs';
 import { ContactJobType } from '@tech-matters/types';
-import { assertExhaustive } from './assertExhaustive';
+import { assertExhaustive } from '@tech-matters/types';
 
 export const publishRetrieveContactTranscript = (
   contactJob: RetrieveContactTranscriptJob,

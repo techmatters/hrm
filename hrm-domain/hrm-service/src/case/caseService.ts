@@ -45,7 +45,7 @@ import {
 import type { SearchPermissions } from '../permissions/search-permissions';
 import type { Profile } from '../profile/profile-data-access';
 import type { PaginationQuery } from '../search';
-import { TResult, newErr, newOk } from '@tech-matters/types';
+import { TResult, ErrorResultKind, newErr, newOk } from '@tech-matters/types';
 
 type CaseInfoSection = {
   id: string;
@@ -424,6 +424,7 @@ export const getCasesByProfileId = async (
   } catch (err) {
     return newErr({
       message: err instanceof Error ? err.message : String(err),
+      kind: ErrorResultKind.InternalServerError,
     });
   }
 };

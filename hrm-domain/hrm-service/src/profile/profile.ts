@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { TResult, isErr, newErr, newOk } from '@tech-matters/types';
+import { ErrorResultKind, TResult, isErr, newErr, newOk } from '@tech-matters/types';
 
 import * as profileDB from './profile-data-access';
 import { db } from '../connection-pool';
@@ -34,13 +34,17 @@ export const getProfile =
       const result = await profileDB.getProfileById(task)(accountSid, profileId);
 
       if (!result) {
-        return newErr({ statusCode: 404, message: 'Profile not found' });
+        return newErr({
+          message: 'Profile not found',
+          kind: ErrorResultKind.NotFoundError,
+        });
       }
 
       return newOk({ data: result });
     } catch (err) {
       return newErr({
         message: err instanceof Error ? err.message : String(err),
+        kind: ErrorResultKind.InternalServerError,
       });
     }
   };
@@ -71,6 +75,7 @@ export const getOrCreateProfileWithIdentifier =
     } catch (err) {
       return newErr({
         message: err instanceof Error ? err.message : String(err),
+        kind: ErrorResultKind.InternalServerError,
       });
     }
   };
@@ -93,6 +98,7 @@ export const getIdentifierByIdentifier = async (
   } catch (err) {
     return newErr({
       message: err instanceof Error ? err.message : String(err),
+      kind: ErrorResultKind.InternalServerError,
     });
   }
 };
@@ -120,6 +126,7 @@ export const associateProfileToProfileFlag = async (
   } catch (err) {
     return newErr({
       message: err instanceof Error ? err.message : String(err),
+      kind: ErrorResultKind.InternalServerError,
     });
   }
 };
@@ -145,6 +152,7 @@ export const disassociateProfileFromProfileFlag = async (
   } catch (err) {
     return newErr({
       message: err instanceof Error ? err.message : String(err),
+      kind: ErrorResultKind.InternalServerError,
     });
   }
 };
@@ -171,6 +179,7 @@ export const createProfileSection = async (
   } catch (err) {
     return newErr({
       message: err instanceof Error ? err.message : String(err),
+      kind: ErrorResultKind.InternalServerError,
     });
   }
 };
@@ -195,6 +204,7 @@ export const updateProfileSectionById = async (
   } catch (err) {
     return newErr({
       message: err instanceof Error ? err.message : String(err),
+      kind: ErrorResultKind.InternalServerError,
     });
   }
 };
@@ -214,6 +224,7 @@ export const getProfileSectionById = async (
   } catch (err) {
     return newErr({
       message: err instanceof Error ? err.message : String(err),
+      kind: ErrorResultKind.InternalServerError,
     });
   }
 };
