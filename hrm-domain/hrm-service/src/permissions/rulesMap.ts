@@ -136,7 +136,7 @@ const isTKConditionsSets =
 
 export type RulesFile = { [k in Actions]: TKConditionsSets<TargetKind> };
 
-export const isValidTKConditionsSets =
+const isValidTKConditionsSets =
   <T extends TargetKind>(kind: T) =>
   (css: TKConditionsSets<TargetKind>): css is TKConditionsSets<typeof kind> =>
     css.every(cs => cs.every(isTKCondition(kind)));

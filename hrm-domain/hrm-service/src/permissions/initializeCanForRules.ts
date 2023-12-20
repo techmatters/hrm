@@ -17,7 +17,6 @@
 import { isCounselorWhoCreated, isCaseOpen, isContactOwner } from './helpers';
 import { actionsMaps, Actions, isTargetKind, TargetKind } from './actions';
 import {
-  isValidTKConditionsSets,
   type TKCondition,
   type TKConditionsSet,
   type TKConditionsSets,
@@ -60,7 +59,31 @@ const checkConditionsSets = <T extends TargetKind>(
   conditionsSets: TKConditionsSets<T>,
 ): boolean => conditionsSets.some(checkConditionsSet(conditionsState));
 
-// const setupAllow = <T extends TargetKind>(kind: T, conditionsSets: ConditionsSets<T>) => {
+const applyTimeBasedConditions =
+  (timeBasedConditions: [string, number][]) =>
+  (performer: TwilioUser, target: any, ctx: { curentTimestamp: Date }) =>
+    timeBasedConditions.reduce<Record<string, boolean>>(
+      (accum: Record<string, boolean>, [cond, param]: [string, number]) => {
+        const key = JSON.stringify({ [cond]: param });
+        if (cond === 'createdHoursAgo') {
+          return {
+            ...accum,
+            [key]:
+              differenceInHours(ctx.curentTimestamp, parseISO(target.createdAt)) < param,
+          };
+        }
+
+        if (cond === 'createdDaysAgo') {
+          return {
+            ...accum,
+            [key]:
+              differenceInDays(ctx.curentTimestamp, parseISO(target.createdAt)) < param,
+          };
+        }
+      },
+      {},
+    );
+
 const setupAllow = <T extends TargetKind>(
   kind: T,
   conditionsSets: TKConditionsSets<T>,
@@ -74,23 +97,14 @@ const setupAllow = <T extends TargetKind>(
   return (performer: TwilioUser, target: any) => {
     const ctx = { curentTimestamp: new Date() };
 
-    const appliedTimeBasedConditions = timeBasedConditions.reduce<
-      Record<string, boolean>
-    >((accum, [cond, param]) => {
-      const f = cond === 'createdHoursAgo' ? differenceInHours : differenceInDays;
-
-      const key = JSON.stringify({ [cond]: param });
-      const result = f(ctx.curentTimestamp, parseISO(target.createdAt)) < param;
-
-      return { ...accum, [key]: result };
-    }, {});
+    const appliedTimeBasedConditions = applyTimeBasedConditions(timeBasedConditions)(
+      performer,
+      target,
+      ctx,
+    );
 
     // Build the proper conditionsState depending on the targetKind
     if (kind === 'case') {
-      if (!isValidTKConditionsSets<'case'>(kind)(conditionsSets)) {
-        throw new Error(`setupAllow: Invalid conditionsSets provided for kind ${kind}`);
-      }
-
       const conditionsState: ConditionsState = {
         isSupervisor: performer.isSupervisor,
         isCreator: isCounselorWhoCreated(performer, target),
@@ -101,10 +115,6 @@ const setupAllow = <T extends TargetKind>(
 
       return checkConditionsSets(conditionsState, conditionsSets);
     } else if (kind === 'contact') {
-      if (!isValidTKConditionsSets<'contact'>(kind)(conditionsSets)) {
-        throw new Error(`setupAllow: Invalid conditionsSets provided for kind ${kind}`);
-      }
-
       const conditionsState: ConditionsState = {
         isSupervisor: performer.isSupervisor,
         isOwner: isContactOwner(performer, target),
@@ -116,10 +126,6 @@ const setupAllow = <T extends TargetKind>(
 
       return checkConditionsSets(conditionsState, conditionsSets);
     } else if (kind === 'postSurvey') {
-      if (!isValidTKConditionsSets<'postSurvey'>(kind)(conditionsSets)) {
-        throw new Error(`setupAllow: Invalid conditionsSets provided for kind ${kind}`);
-      }
-
       const conditionsState: ConditionsState = {
         isSupervisor: performer.isSupervisor,
         everyone: true,
