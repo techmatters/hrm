@@ -612,6 +612,10 @@ describe('/cases route', () => {
           originalCase: originalCaseGetter = () => cases.blank,
           customWorkerSid = undefined,
         }) => {
+          if (customWorkerSid) {
+            await mockSuccessfulTwilioAuthentication(customWorkerSid);
+            await new Promise(resolve => setTimeout(resolve, 300));
+          }
           const caseUpdate =
             typeof caseUpdateParam === 'function' ? caseUpdateParam() : caseUpdateParam;
           const originalCase = originalCaseGetter();
@@ -626,7 +630,6 @@ describe('/cases route', () => {
             can: () => true,
           });
 
-          await mockSuccessfulTwilioAuthentication(customWorkerSid ?? workerSid);
           const response = await request
             .put(subRoute(originalCase.id))
             .set(headers)
