@@ -58,18 +58,6 @@ import { DatabaseUniqueConstraintViolationError, inferPostgresError } from '../s
 export { Contact } from './contact-data-access';
 export * from './contact-json';
 
-export type WithLegacyCategories<T extends Contact | NewContactRecord | PatchPayload> =
-  Omit<T, 'rawJson'> & {
-    rawJson?: Partial<
-      Omit<ContactRawJson, 'caseInformation'> & {
-        caseInformation: Record<
-          string,
-          string | boolean | Record<string, Record<string, boolean>>
-        > & { categories?: Record<string, Record<string, boolean>> };
-      }
-    >;
-  };
-
 export type PatchPayload = Omit<
   ExistingContactRecord,
   'id' | 'accountSid' | 'updatedAt' | 'rawJson' | 'createdAt'
