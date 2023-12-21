@@ -28,8 +28,8 @@ import {
   validateCaseListResponse,
   validateSingleCaseResponse,
 } from './case-validation';
-import * as contactDb from '../src/contact/contact-data-access';
-import { Contact } from '../src/contact/contact-data-access';
+import * as contactDb from '../src/contact/contactDataAccess';
+import { Contact } from '../src/contact/contactDataAccess';
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import * as mocks from './mocks';
 import { ruleFileWithOneActionOverride } from './permissions-overrides';
@@ -423,28 +423,12 @@ describe('/cases route', () => {
               ),
           ),
         ).toBeTruthy();
-        expect(
-          (<caseApi.CaseService[]>response.body.cases).every(
-            caseObj =>
-              caseObj.connectedContacts?.every(
-                c => c.rawJson?.conversationMedia?.some(cm => cm.store === 'S3'),
-              ),
-          ),
-        ).toBeTruthy();
       } else {
         expect(
           (<caseApi.CaseService[]>response.body.cases).every(
             caseObj =>
               caseObj.connectedContacts?.every(
                 c => c.conversationMedia?.some(isS3StoredTranscript),
-              ),
-          ),
-        ).toBeFalsy();
-        expect(
-          (<caseApi.CaseService[]>response.body.cases).every(
-            caseObj =>
-              caseObj.connectedContacts?.every(
-                c => c.rawJson?.conversationMedia?.some(cm => cm.store === 'S3'),
               ),
           ),
         ).toBeFalsy();
@@ -1316,28 +1300,12 @@ describe('/cases route', () => {
                 ),
             ),
           ).toBeTruthy();
-          expect(
-            (<caseApi.CaseService[]>response.body.cases).every(
-              caseObj =>
-                caseObj.connectedContacts?.every(
-                  c => c.rawJson?.conversationMedia?.some(cm => cm.store === 'S3'),
-                ),
-            ),
-          ).toBeTruthy();
         } else {
           expect(
             (<caseApi.CaseService[]>response.body.cases).every(
               caseObj =>
                 caseObj.connectedContacts?.every(
                   c => c.conversationMedia?.some(isS3StoredTranscript),
-                ),
-            ),
-          ).toBeFalsy();
-          expect(
-            (<caseApi.CaseService[]>response.body.cases).every(
-              caseObj =>
-                caseObj.connectedContacts?.every(
-                  c => c.rawJson?.conversationMedia?.some(cm => cm.store === 'S3'),
                 ),
             ),
           ).toBeFalsy();

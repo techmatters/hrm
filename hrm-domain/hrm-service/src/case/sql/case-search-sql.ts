@@ -188,16 +188,8 @@ const SEARCH_WHERE_CLAUSE = `(
           AND (
             (
             ${nameAndPhoneNumberSearchSql(
-              [
-                "c.\"rawJson\"->'childInformation'->>'firstName'",
-                // Legacy format support, remove when old contacts are migrated
-                "c.\"rawJson\"->'childInformation'->'name'->>'firstName'",
-              ],
-              [
-                "c.\"rawJson\"->'childInformation'->>'lastName'",
-                // Legacy format support, remove when old contacts are migrated
-                "c.\"rawJson\"->'childInformation'->'name'->>'lastName'",
-              ],
+              ["c.\"rawJson\"->'childInformation'->>'firstName'"],
+              ["c.\"rawJson\"->'childInformation'->>'lastName'"],
               [
                 "c.\"rawJson\"->'childInformation'->'location'->>'phone1'",
                 "c.\"rawJson\"->'childInformation'->'location'->>'phone2'",
@@ -207,16 +199,8 @@ const SEARCH_WHERE_CLAUSE = `(
             -- search on callerInformation of connectedContacts
             OR ( 
               ${nameAndPhoneNumberSearchSql(
-                [
-                  "c.\"rawJson\"->'callerInformation'->>'firstName'",
-                  // Legacy format support, remove when old contacts are migrated
-                  "c.\"rawJson\"->'callerInformation'->'name'->>'firstName'",
-                ],
-                [
-                  "c.\"rawJson\"->'callerInformation'->>'lastName'",
-                  // Legacy format support, remove when old contacts are migrated
-                  "c.\"rawJson\"->'callerInformation'->'name'->>'lastName'",
-                ],
+                ["c.\"rawJson\"->'callerInformation'->>'firstName'"],
+                ["c.\"rawJson\"->'callerInformation'->>'lastName'"],
                 [
                   "c.\"rawJson\"->'callerInformation'->'location'->>'phone1'",
                   "c.\"rawJson\"->'callerInformation'->'location'->>'phone2'",

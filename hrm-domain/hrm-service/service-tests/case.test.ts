@@ -322,20 +322,10 @@ describe('/cases route', () => {
               c => c.conversationMedia?.some(isS3StoredTranscript),
             ),
           ).toBeTruthy();
-          expect(
-            (<caseApi.CaseService>response.body).connectedContacts?.every(
-              c => c.rawJson?.conversationMedia?.some(cm => cm.store === 'S3'),
-            ),
-          ).toBeTruthy();
         } else {
           expect(
             (<caseApi.CaseService>response.body).connectedContacts?.every(
               c => c.conversationMedia?.some(isS3StoredTranscript),
-            ),
-          ).toBeFalsy();
-          expect(
-            (<caseApi.CaseService>response.body).connectedContacts?.every(
-              c => c.rawJson?.conversationMedia?.some(cm => cm.store === 'S3'),
             ),
           ).toBeFalsy();
         }
@@ -717,11 +707,6 @@ describe('/cases route', () => {
           expect(
             (<caseApi.CaseService>response.body).connectedContacts?.every(
               c => c.conversationMedia?.some(isS3StoredTranscript),
-            ),
-          ).toBeTruthy();
-          expect(
-            (<caseApi.CaseService>response.body).connectedContacts?.every(
-              c => c.rawJson?.conversationMedia?.some(cm => cm.store === 'S3'),
             ),
           ).toBeTruthy();
         } else {

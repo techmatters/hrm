@@ -16,11 +16,11 @@
 
 import * as contactApi from '../../src/contact/contactService';
 import '../case-validation';
-import { ContactRawJson } from '../../src/contact/contact-json';
+import { ContactRawJson } from '../../src/contact/contactJson';
 import { accountSid, contact1, workerSid } from '../mocks';
 import { twilioUser } from '@tech-matters/twilio-worker-auth/dist';
 import { getRequest, getServer, headers, useOpenRules } from '../server';
-import * as contactDb from '../../src/contact/contact-data-access';
+import * as contactDb from '../../src/contact/contactDataAccess';
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import {
   cleanupCases,
