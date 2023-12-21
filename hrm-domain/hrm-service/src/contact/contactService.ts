@@ -14,7 +14,6 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import omit from 'lodash/omit';
 import { ContactJobType, TResult, isErr, newErr, newOk } from '@tech-matters/types';
 import {
   connectToCase,
@@ -27,11 +26,11 @@ import {
   patch,
   search,
   searchByProfileId,
-} from './contact-data-access';
+} from './contactDataAccess';
 
 import { PaginationQuery, getPaginationElements } from '../search';
 import type { NewContactRecord } from './sql/contact-insert-sql';
-import { ContactRawJson, ReferralWithoutContactId } from './contact-json';
+import { ContactRawJson, ReferralWithoutContactId } from './contactJson';
 import { setupCanForRules } from '../permissions/setupCanForRules';
 import { actionsMaps } from '../permissions';
 import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
@@ -47,7 +46,6 @@ import {
   createConversationMedia,
   isS3StoredTranscript,
   isS3StoredTranscriptPending,
-  LegacyConversationMedia,
   NewConversationMedia,
 } from '../conversation-media/conversation-media';
 import { Profile, getOrCreateProfileWithIdentifier } from '../profile/profile';
@@ -55,8 +53,8 @@ import { deleteContactReferrals } from '../referral/referral-data-access';
 import { DatabaseUniqueConstraintViolationError, inferPostgresError } from '../sql';
 
 // Re export as is:
-export { Contact } from './contact-data-access';
-export * from './contact-json';
+export { Contact } from './contactDataAccess';
+export * from './contactJson';
 
 export type PatchPayload = Omit<
   ExistingContactRecord,
@@ -93,39 +91,6 @@ export type CreateContactPayload = NewContactRecord & {
   conversationMedia?: NewConversationMedia[];
 };
 
-// TODO: Remove once all Flex clients are using new ConversationMedia model
-const intoNewConversationMedia = (cm: LegacyConversationMedia): NewConversationMedia => {
-  const { store: storeType, ...rest } = cm;
-  return {
-    storeType,
-    storeTypeSpecificData: {
-      ...rest,
-    },
-  } as NewConversationMedia;
-};
-// TODO: Remove once all Flex clients are using new ConversationMedia model
-const intoLegacyConversationMedia = (cm: ConversationMedia): LegacyConversationMedia => {
-  const { storeType, storeTypeSpecificData } = cm;
-  return {
-    store: storeType,
-    ...storeTypeSpecificData,
-  } as LegacyConversationMedia;
-};
-// TODO: Remove once all Flex clients are using new ConversationMedia model
-const addLegacyConversationMedia = (contact: Contact): Contact =>
-  contact.conversationMedia?.length
-    ? {
-        ...contact,
-        rawJson: {
-          ...contact.rawJson,
-          conversationMedia: contact.conversationMedia.map(intoLegacyConversationMedia),
-        },
-      }
-    : {
-        ...contact,
-        rawJson: omit(contact.rawJson, 'conversationMedia'),
-      };
-
 const filterExternalTranscripts = (contact: Contact): Contact => {
   const { conversationMedia, ...rest } = contact;
   const filteredConversationMedia = conversationMedia.filter(
@@ -152,16 +117,12 @@ const permissionsBasedTransformations: PermissionsBasedTransformation[] = [
 
 export const bindApplyTransformations =
   (can: ReturnType<typeof setupCanForRules>, user: TwilioUser) =>
-  (contact: Contact): Contact => {
-    const permissionsBasedTransformed = permissionsBasedTransformations.reduce(
+  (contact: Contact): Contact =>
+    permissionsBasedTransformations.reduce(
       (transformed, { action, transformation }) =>
         !can(user, action, contact) ? transformation(transformed) : transformed,
       contact,
     );
-
-    // TODO: Remove once all Flex clients are using new ConversationMedia model
-    return addLegacyConversationMedia(permissionsBasedTransformed); // This must be the last step in the transformations, except for the legacy categories
-  };
 
 export const getContactById = async (
   accountSid: string,
@@ -196,18 +157,12 @@ const getNewContactPayload = (
     referrals: referralsPayload,
     conversationMedia,
     ...newContactPayload
-  } = newContact as CreateContactPayload; // typecast just to get rid of legacy form, if for some reason is here
+  } = newContact;
 
-  const { conversationMedia: legacyConversationMedia } = newContactPayload.rawJson ?? {};
-
-  const conversationMediaPayload = conversationMedia
-    ? conversationMedia
-    : legacyConversationMedia
-    ? legacyConversationMedia.map(intoNewConversationMedia)
-    : []; // prioritize new format, but allow legacy Flex clients to send conversationMedia
+  const conversationMediaPayload = conversationMedia ?? [];
 
   return {
-    newContactPayload: omit(newContactPayload, 'rawJson.conversationMedia'),
+    newContactPayload,
     csamReportsPayload,
     referralsPayload,
     conversationMediaPayload,

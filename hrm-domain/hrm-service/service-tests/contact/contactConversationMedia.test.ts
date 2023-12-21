@@ -16,11 +16,11 @@
 
 import * as contactApi from '../../src/contact/contactService';
 import '../case-validation';
-import { ContactRawJson } from '../../src/contact/contact-json';
+import { ContactRawJson } from '../../src/contact/contactJson';
 import { accountSid, contact1, workerSid } from '../mocks';
 import { twilioUser } from '@tech-matters/twilio-worker-auth/dist';
 import { getRequest, getServer, headers, setRules, useOpenRules } from '../server';
-import * as contactDb from '../../src/contact/contact-data-access';
+import * as contactDb from '../../src/contact/contactDataAccess';
 import {
   isS3StoredTranscript,
   NewConversationMedia,
@@ -274,12 +274,6 @@ describe('/contacts/:contactId/conversationMedia route', () => {
             accountSid,
           }),
         );
-        const legacyExpectedContactMedia = (expectedContactMedia ?? postedMedia).map(
-          media => ({
-            store: media.storeType,
-            ...media.storeTypeSpecificData,
-          }),
-        );
 
         const expectedResponse = {
           ...createdContact,
@@ -288,10 +282,6 @@ describe('/contacts/:contactId/conversationMedia route', () => {
           updatedAt: expect.toParseAsDate(),
           timeOfContact: expect.toParseAsDate(),
           conversationMedia: fullExpectedContactMedia,
-          rawJson: {
-            ...createdContact.rawJson,
-            conversationMedia: legacyExpectedContactMedia,
-          },
         };
 
         const response = await request
@@ -386,20 +376,10 @@ describe('/contacts/:contactId/conversationMedia route', () => {
               isS3StoredTranscript,
             ),
           ).toBeTruthy();
-          expect(
-            (<contactApi.Contact>contactWithMedia).rawJson?.conversationMedia?.some(
-              cm => cm.store === 'S3',
-            ),
-          ).toBeTruthy();
         } else {
           expect(
             (<contactApi.Contact>contactWithMedia).conversationMedia?.some(
               isS3StoredTranscript,
-            ),
-          ).toBeFalsy();
-          expect(
-            (<contactApi.Contact>contactWithMedia).rawJson?.conversationMedia?.some(
-              cm => cm.store === 'S3',
             ),
           ).toBeFalsy();
         }

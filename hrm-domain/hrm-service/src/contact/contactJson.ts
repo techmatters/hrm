@@ -13,7 +13,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { LegacyConversationMedia } from '../conversation-media/conversation-media';
 import { Referral } from '../referral/referral-data-access';
 
 /**
@@ -33,7 +32,6 @@ export type ContactRawJson = {
     [key: string]: string | boolean;
   };
   contactlessTask?: { [key: string]: string | boolean };
-  conversationMedia?: LegacyConversationMedia[];
   referrals?: Referral[];
 };
 

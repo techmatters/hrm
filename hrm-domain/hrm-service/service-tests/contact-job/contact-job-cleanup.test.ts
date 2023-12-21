@@ -25,7 +25,7 @@ import {
   updateConversationMediaData,
 } from '../../src/conversation-media/conversation-media';
 import { S3ContactMediaType } from '../../src/conversation-media/conversation-media';
-import { getById as getContactById } from '../../src/contact/contact-data-access';
+import { getById as getContactById } from '../../src/contact/contactDataAccess';
 import * as cleanupContactJobsApi from '../../src/contact-job/contact-job-cleanup';
 import {
   completeContactJob,
@@ -40,7 +40,7 @@ useOpenRules();
 const server = getServer();
 const request = getRequest(server);
 
-import type { Contact } from '../../src/contact/contact-data-access';
+import type { Contact } from '../../src/contact/contactDataAccess';
 
 let twilioSpy: jest.SpyInstance;
 

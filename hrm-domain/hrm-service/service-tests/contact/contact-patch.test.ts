@@ -25,7 +25,7 @@ import { accountSid, contact1, withTaskIdAndTranscript, workerSid } from '../moc
 import { twilioUser } from '@tech-matters/twilio-worker-auth/dist';
 import each from 'jest-each';
 import { getRequest, getServer, headers, setRules, useOpenRules } from '../server';
-import * as contactDb from '../../src/contact/contact-data-access';
+import * as contactDb from '../../src/contact/contactDataAccess';
 import { ruleFileWithOneActionOverride } from '../permissions-overrides';
 import { isS3StoredTranscript } from '../../src/conversation-media/conversation-media-data-access';
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
@@ -642,19 +642,9 @@ describe('/contacts/:contactId route', () => {
         expect(
           (<contactApi.Contact>res.body).conversationMedia?.some(isS3StoredTranscript),
         ).toBeTruthy();
-        expect(
-          (<contactApi.Contact>res.body).rawJson?.conversationMedia?.some(
-            cm => cm.store === 'S3',
-          ),
-        ).toBeTruthy();
       } else {
         expect(
           (<contactApi.Contact>res.body).conversationMedia?.some(isS3StoredTranscript),
-        ).toBeFalsy();
-        expect(
-          (<contactApi.Contact>res.body).rawJson?.conversationMedia?.some(
-            cm => cm.store === 'S3',
-          ),
         ).toBeFalsy();
       }
 

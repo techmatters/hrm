@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { Contact } from '../../src/contact/contact-data-access';
+import { Contact } from '../../src/contact/contactDataAccess';
 
 const defaultContact: Contact = {
   id: 0,

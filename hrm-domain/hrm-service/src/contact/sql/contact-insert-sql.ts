@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { ContactRawJson } from '../contact-json';
+import { ContactRawJson } from '../contactJson';
 import { selectSingleContactByTaskId } from './contact-get-sql';
 
 export type NewContactRecord = {

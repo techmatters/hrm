@@ -15,7 +15,7 @@
  */
 import each from 'jest-each';
 import { mockTransaction, mockConnection } from '../mock-db';
-import * as contactDb from '../../src/contact/contact-data-access';
+import * as contactDb from '../../src/contact/contactDataAccess';
 import {
   connectContactToCase,
   createContact,
@@ -36,7 +36,7 @@ import { subHours } from 'date-fns';
 import { newOk } from '@tech-matters/types';
 import * as profilesDB from '../../src/profile/profile-data-access';
 
-jest.mock('../../src/contact/contact-data-access');
+jest.mock('../../src/contact/contactDataAccess');
 jest.mock('../../src/referral/referral-data-access', () => ({
   createReferralRecord: () => async () => ({}),
 }));

@@ -32,6 +32,7 @@ import {
   ContactJobType,
 } from '@tech-matters/types';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
+import { CreateContactPayload } from '../../../src/contact/contactService';
 
 const { S3ContactMediaType, isS3StoredTranscriptPending } = conversationMediaApi;
 
@@ -97,20 +98,19 @@ afterAll(async () => {
 });
 
 const createChatContact = async (channel: string, startedTimestamp: number) => {
-  const contactTobeCreated = {
+  const contactTobeCreated: CreateContactPayload = {
     ...withTaskId,
-    rawJson: {
-      ...withTaskId.rawJson,
-      conversationMedia: [
-        {
-          store: 'S3' as const,
+    channel,
+    taskId: `${withTaskId.taskId}-${channel}`,
+    conversationMedia: [
+      {
+        storeType: 'S3' as const,
+        storeTypeSpecificData: {
           type: S3ContactMediaType.TRANSCRIPT,
           location: undefined,
         },
-      ],
-    },
-    channel,
-    taskId: `${withTaskId.taskId}-${channel}`,
+      },
+    ],
   };
   const contact = await contactApi.createContact(
     accountSid,
@@ -122,12 +122,6 @@ const createChatContact = async (channel: string, startedTimestamp: number) => {
       user: twilioUser(workerSid, []),
     },
   );
-
-  const contactWithoutLegacyCompatibility = {
-    ...contact,
-  };
-  delete contactWithoutLegacyCompatibility.rawJson.caseInformation.categories;
-  delete contactWithoutLegacyCompatibility.rawJson.conversationMedia;
 
   const jobs = await selectJobsByContactId(contact.id, contact.accountSid);
 
@@ -156,12 +150,7 @@ const createChatContact = async (channel: string, startedTimestamp: number) => {
   createdContact = contact;
   createdJobs = jobs;
 
-  return [
-    contact,
-    retrieveContactTranscriptJob,
-    jobs,
-    contactWithoutLegacyCompatibility,
-  ] as const;
+  return [contact, retrieveContactTranscriptJob, jobs] as const;
 };
 
 describe('publish retrieve-transcript job type', () => {
@@ -171,8 +160,10 @@ describe('publish retrieve-transcript job type', () => {
     })),
   ).test('$channel pending job is published when considered due', async ({ channel }) => {
     const startedTimestamp = Date.now();
-    const [contact, retrieveContactTranscriptJob, , contactWithoutLegacyCompatibility] =
-      await createChatContact(channel, startedTimestamp);
+    const [contact, retrieveContactTranscriptJob] = await createChatContact(
+      channel,
+      startedTimestamp,
+    );
 
     const publishDueContactJobsSpy = jest.spyOn(
       contactJobPublish,
@@ -208,7 +199,7 @@ describe('publish retrieve-transcript job type', () => {
       lastAttempt: expect.any(Date),
       numberOfAttempts: 1,
       resource: {
-        ...contactWithoutLegacyCompatibility,
+        ...contact,
         conversationMedia: contact.conversationMedia?.map(cm => ({
           ...cm,
           createdAt: expect.toParseAsDate(cm.createdAt),

@@ -17,7 +17,7 @@
 import { CaseService } from '../src/case/caseService';
 import { channelTypes } from '../src/contact/channelTypes';
 import { S3ContactMediaType } from '../src/conversation-media/conversation-media';
-import { Contact } from '../src/contact/contact-data-access';
+import { Contact } from '../src/contact/contactDataAccess';
 import { CreateContactPayload } from '../src/contact/contactService';
 
 export const accountSid = 'ACCOUNT_SID';
@@ -302,17 +302,19 @@ export const withTaskIdAndTranscript: CreateContactPayload = {
       firstName: 'withTaskIdAndTranscript',
       lastName: 'withTaskIdAndTranscript',
     },
-    conversationMedia: [
-      {
-        store: 'S3' as const,
+  },
+  conversationMedia: [
+    {
+      storeType: 'S3',
+      storeTypeSpecificData: {
         type: S3ContactMediaType.TRANSCRIPT,
         location: {
           bucket: 'mock-bucket',
           key: 'mockKey',
         },
       },
-    ],
-  },
+    },
+  ],
   channel: channelTypes.web,
   taskId: `${withTaskId.taskId}-transcript-permissions-test`,
 };
