@@ -91,6 +91,7 @@ describe('/contacts/byTaskSid/:contactId route', () => {
         rawJson: {
           ...createdContact.rawJson,
         },
+        conversationMedia: [],
       });
     });
   });
