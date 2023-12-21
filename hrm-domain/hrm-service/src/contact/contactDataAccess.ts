@@ -26,7 +26,7 @@ import {
   selectSingleContactByTaskId,
 } from './sql/contact-get-sql';
 import { INSERT_CONTACT_SQL, NewContactRecord } from './sql/contact-insert-sql';
-import { ContactRawJson, ReferralWithoutContactId } from './contact-json';
+import { ContactRawJson, ReferralWithoutContactId } from './contactJson';
 import type { ITask } from 'pg-promise';
 import { txIfNotInOne } from '../sql';
 import { ConversationMedia } from '../conversation-media/conversation-media';
@@ -82,7 +82,6 @@ const BLANK_CONTACT_UPDATES: ContactUpdates = {
   helpline: undefined,
   channel: undefined,
   number: undefined,
-  conversationMedia: undefined,
   timeOfContact: undefined,
   taskId: undefined,
   channelSid: undefined,

@@ -18,7 +18,6 @@ import {
   ContactRawJson,
   CreateContactPayload,
   PatchPayload,
-  WithLegacyCategories,
 } from '../../src/contact/contactService';
 import '../case-validation';
 import * as contactApi from '../../src/contact/contactService';
@@ -26,7 +25,7 @@ import { accountSid, contact1, withTaskIdAndTranscript, workerSid } from '../moc
 import { twilioUser } from '@tech-matters/twilio-worker-auth/dist';
 import each from 'jest-each';
 import { getRequest, getServer, headers, setRules, useOpenRules } from '../server';
-import * as contactDb from '../../src/contact/contact-data-access';
+import * as contactDb from '../../src/contact/contactDataAccess';
 import { ruleFileWithOneActionOverride } from '../permissions-overrides';
 import { isS3StoredTranscript } from '../../src/conversation-media/conversation-media-data-access';
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
@@ -39,9 +38,6 @@ import {
   deleteContactById,
   deleteJobsByContactId,
 } from './db-cleanup';
-
-type ContactRawJsonWithLegacyCategories =
-  WithLegacyCategories<contactDb.Contact>['rawJson'];
 
 useOpenRules();
 const server = getServer();
@@ -72,7 +68,7 @@ describe('/contacts/:contactId route', () => {
       patch: PatchPayload['rawJson'];
       description: string;
       original?: ContactRawJson;
-      expected: ContactRawJsonWithLegacyCategories;
+      expected: Partial<ContactRawJson>;
     };
     const subRoute = contactId => `${route}/${contactId}`;
 
@@ -93,24 +89,16 @@ describe('/contacts/:contactId route', () => {
       expect(response.status).toBe(401);
       expect(response.body.error).toBe('Authorization failed');
     });
-    describe('rawJson changes', () => {
+
+    describe('rawJson is updated to be compatible', () => {
       const sampleRawJson: ContactRawJson = {
-        ...(contact1.rawJson as ContactRawJson),
+        ...contact1.rawJson,
         categories: {
           a: ['a2'],
           b: ['b1'],
         },
       };
-      const sampleRawJsonWithLegacyCategories = {
-        ...sampleRawJson,
-        caseInformation: {
-          ...sampleRawJson.caseInformation,
-          categories: {
-            a: { a2: true },
-            b: { b1: true },
-          },
-        },
-      };
+
       const tests: TestOptions[] = [
         {
           description: 'set callType to data call type',
@@ -119,9 +107,6 @@ describe('/contacts/:contactId route', () => {
           },
           expected: {
             callType: 'Child calling about self',
-            caseInformation: {
-              categories: {},
-            },
           },
         },
         {
@@ -131,9 +116,6 @@ describe('/contacts/:contactId route', () => {
           },
           expected: {
             callType: 'Hang up',
-            caseInformation: {
-              categories: {},
-            },
           },
         },
         {
@@ -151,9 +133,6 @@ describe('/contacts/:contactId route', () => {
               lastName: 'Ballantyne',
               some: 'property',
             },
-            caseInformation: {
-              categories: {},
-            },
           },
         },
         {
@@ -170,9 +149,6 @@ describe('/contacts/:contactId route', () => {
               firstName: 'Lorna',
               lastName: 'Ballantyne',
               some: 'other property',
-            },
-            caseInformation: {
-              categories: {},
             },
           },
         },
@@ -192,9 +168,6 @@ describe('/contacts/:contactId route', () => {
             },
             caseInformation: {
               other: 'case property',
-              categories: {
-                category1: { subcategory1: true, subcategory2: true },
-              },
             },
           },
         },
@@ -208,7 +181,6 @@ describe('/contacts/:contactId route', () => {
           expected: {
             caseInformation: {
               other: 'case property',
-              categories: {},
             },
           },
         },
@@ -218,20 +190,13 @@ describe('/contacts/:contactId route', () => {
             categories: {
               category1: ['subcategory1', 'subcategory2'],
             },
-            caseInformation: {},
           },
           expected: {
-            caseInformation: {
-              categories: {
-                category1: { subcategory1: true, subcategory2: true },
-              },
-            },
             categories: {
               category1: ['subcategory1', 'subcategory2'],
             },
           },
         },
-
         {
           description: 'overwrite callType as data call type',
           original: sampleRawJson,
@@ -239,7 +204,7 @@ describe('/contacts/:contactId route', () => {
             callType: 'Child calling about self',
           },
           expected: {
-            ...sampleRawJsonWithLegacyCategories,
+            ...sampleRawJson,
             callType: 'Child calling about self',
           },
         },
@@ -250,7 +215,7 @@ describe('/contacts/:contactId route', () => {
             callType: 'Hang up',
           },
           expected: {
-            ...sampleRawJsonWithLegacyCategories,
+            ...sampleRawJson,
             callType: 'Hang up',
           },
         },
@@ -265,7 +230,7 @@ describe('/contacts/:contactId route', () => {
             },
           },
           expected: {
-            ...sampleRawJsonWithLegacyCategories,
+            ...sampleRawJson,
             childInformation: {
               firstName: 'Lorna',
               lastName: 'Ballantyne',
@@ -284,7 +249,7 @@ describe('/contacts/:contactId route', () => {
             },
           },
           expected: {
-            ...sampleRawJsonWithLegacyCategories,
+            ...sampleRawJson,
             callerInformation: {
               firstName: 'Lorna',
               lastName: 'Ballantyne',
@@ -304,12 +269,9 @@ describe('/contacts/:contactId route', () => {
             },
           },
           expected: {
-            ...sampleRawJsonWithLegacyCategories,
+            ...sampleRawJson,
             caseInformation: {
               other: 'overwrite case property',
-              categories: {
-                category1: { subcategory1: true, subcategory2: true },
-              },
             },
             categories: {
               category1: ['subcategory1', 'subcategory2'],
@@ -325,10 +287,9 @@ describe('/contacts/:contactId route', () => {
             },
           },
           expected: {
-            ...sampleRawJsonWithLegacyCategories,
+            ...sampleRawJson,
             caseInformation: {
               other: 'case property',
-              categories: sampleRawJsonWithLegacyCategories.caseInformation.categories,
             },
           },
         },
@@ -341,17 +302,7 @@ describe('/contacts/:contactId route', () => {
             },
           },
           expected: {
-            ...sampleRawJsonWithLegacyCategories,
-            caseInformation: {
-              ...sampleRawJsonWithLegacyCategories.caseInformation,
-              categories: {
-                category1: {
-                  subcategory1: true,
-                  subcategory2: true,
-                },
-              },
-            },
-
+            ...sampleRawJson,
             categories: {
               category1: ['subcategory1', 'subcategory2'],
             },
@@ -380,25 +331,7 @@ describe('/contacts/:contactId route', () => {
               .send({ rawJson: patch });
 
             expect(response.status).toBe(200);
-            const { categories, ...caseInformationWithoutLegacyCategories } =
-              expected?.caseInformation ?? {};
-            const expectedInDb: Partial<ContactRawJson> = expected?.caseInformation
-              ? {
-                  ...expected,
-                  caseInformation: caseInformationWithoutLegacyCategories as Record<
-                    string,
-                    string | boolean
-                  >,
-                }
-              : (expected as Partial<ContactRawJson>);
-            // Bodge a corner case where an absent caseInformation is untouched by the patch operation
-            if (
-              !original?.caseInformation &&
-              !patch?.caseInformation &&
-              !patch?.categories
-            ) {
-              delete expectedInDb.caseInformation;
-            }
+
             expect(response.body).toStrictEqual({
               ...createdContact,
               timeOfContact: expect.toParseAsDate(createdContact.timeOfContact),
@@ -419,7 +352,7 @@ describe('/contacts/:contactId route', () => {
               createdAt: expect.toParseAsDate(createdContact.createdAt),
               updatedAt: expect.toParseAsDate(),
               updatedBy: workerSid,
-              rawJson: expectedInDb,
+              rawJson: expected,
               csamReports: [],
               referrals: [],
             });
@@ -515,7 +448,7 @@ describe('/contacts/:contactId route', () => {
             original,
             { user: twilioUser(workerSid, []), can: () => true },
           );
-          const expected: WithLegacyCategories<contactDb.Contact> = {
+          const expected: contactDb.Contact = {
             ...createdContact,
             ...expectedDifferences,
             rawJson: {
@@ -524,7 +457,6 @@ describe('/contacts/:contactId route', () => {
               caseInformation: {
                 ...createdContact.rawJson!.caseInformation,
                 ...expectedDifferences?.rawJson?.caseInformation,
-                categories: {},
               },
             },
           };
@@ -536,28 +468,6 @@ describe('/contacts/:contactId route', () => {
               .send(patch);
 
             expect(response.status).toBe(200);
-            const { categories, ...caseInformationWithoutLegacyCategories } =
-              expected.rawJson?.caseInformation ?? {};
-            const expectedInDb: contactApi.Contact = expected.rawJson?.caseInformation
-              ? ({
-                  ...expected,
-                  rawJson: {
-                    ...expected.rawJson,
-                    caseInformation: caseInformationWithoutLegacyCategories as Record<
-                      string,
-                      string | boolean
-                    >,
-                  },
-                } as contactApi.Contact)
-              : (expected as contactApi.Contact);
-            // Bodge a corner case where an absent caseInformation is untouched by the patch operation
-            if (
-              !original.rawJson?.caseInformation &&
-              !patch.rawJson?.caseInformation &&
-              !patch.rawJson?.categories
-            ) {
-              delete (expectedInDb.rawJson as any).caseInformation;
-            }
             expect(response.body).toStrictEqual({
               ...expected,
               timeOfContact: expect.toParseAsDate(expected.timeOfContact),
@@ -571,7 +481,7 @@ describe('/contacts/:contactId route', () => {
             const savedContact = await contactDb.getById(accountSid, existingContactId);
 
             expect(savedContact).toStrictEqual({
-              ...expectedInDb,
+              ...expected,
               createdAt: expect.toParseAsDate(createdContact.createdAt),
               updatedAt: expect.toParseAsDate(),
               updatedBy: workerSid,
@@ -732,19 +642,9 @@ describe('/contacts/:contactId route', () => {
         expect(
           (<contactApi.Contact>res.body).conversationMedia?.some(isS3StoredTranscript),
         ).toBeTruthy();
-        expect(
-          (<contactApi.Contact>res.body).rawJson?.conversationMedia?.some(
-            cm => cm.store === 'S3',
-          ),
-        ).toBeTruthy();
       } else {
         expect(
           (<contactApi.Contact>res.body).conversationMedia?.some(isS3StoredTranscript),
-        ).toBeFalsy();
-        expect(
-          (<contactApi.Contact>res.body).rawJson?.conversationMedia?.some(
-            cm => cm.store === 'S3',
-          ),
         ).toBeFalsy();
       }
 

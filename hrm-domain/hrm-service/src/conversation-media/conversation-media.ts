@@ -14,8 +14,6 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { S3ContactMediaType } from './conversation-media-data-access';
-
 export {
   S3ContactMediaType,
   NewConversationMedia,
@@ -30,32 +28,3 @@ export {
   getByContactId as getConversationMediaByContactId,
   updateSpecificData as updateConversationMediaData,
 } from './conversation-media-data-access';
-
-/** Legacy types, used until everything is migrated */
-export type LegacyTwilioStoredMedia = {
-  store: 'twilio';
-  reservationSid: string;
-};
-
-export type LegacyS3StoredTranscript = {
-  store: 'S3';
-  type: S3ContactMediaType.TRANSCRIPT;
-  location?: {
-    bucket: string;
-    key: string;
-  };
-};
-
-export type LegacyS3StoredRecording = {
-  store: 'S3';
-  type: S3ContactMediaType.RECORDING;
-  location?: {
-    bucket: string;
-    key: string;
-  };
-};
-
-type LegacyS3StoredMedia = LegacyS3StoredTranscript | LegacyS3StoredRecording;
-
-export type LegacyConversationMedia = LegacyTwilioStoredMedia | LegacyS3StoredMedia;
-/** */

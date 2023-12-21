@@ -19,7 +19,7 @@ import { addSeconds, parseISO, subDays, subHours, subSeconds } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
 
 import { db } from '../src/connection-pool';
-import { ContactRawJson } from '../src/contact/contact-json';
+import { ContactRawJson } from '../src/contact/contactJson';
 import {
   isS3StoredTranscript,
   NewConversationMedia,
@@ -46,7 +46,7 @@ import './case-validation';
 import * as caseApi from '../src/case/caseService';
 import * as caseDb from '../src/case/case-data-access';
 import * as contactApi from '../src/contact/contactService';
-import * as contactDb from '../src/contact/contact-data-access';
+import * as contactDb from '../src/contact/contactDataAccess';
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import * as contactJobDataAccess from '../src/contact-job/contact-job-data-access';
 import { chatChannels } from '../src/contact/channelTypes';
@@ -248,7 +248,7 @@ describe('/contacts route', () => {
       },
       {
         contact: {
-          rawJson: {},
+          rawJson: {} as ContactRawJson,
           twilioWorkerId: null,
           helpline: null,
           queueName: null,
@@ -792,15 +792,14 @@ describe('/contacts route', () => {
         channel,
         contact: {
           ...withTaskId,
-          rawJson: {
-            ...withTaskId.rawJson,
-            conversationMedia: [
-              {
-                store: 'S3',
+          conversationMedia: [
+            {
+              storeType: 'S3',
+              storeTypeSpecificData: {
                 type: S3ContactMediaType.TRANSCRIPT,
               },
-            ],
-          },
+            },
+          ],
           channel,
           taskId: `${withTaskId.taskId}-${channel}`,
         },
@@ -852,15 +851,14 @@ describe('/contacts route', () => {
         channel,
         contact: {
           ...withTaskId,
-          rawJson: {
-            ...withTaskId.rawJson,
-            conversationMedia: [
-              {
-                store: 'S3',
+          conversationMedia: [
+            {
+              storeType: 'S3',
+              storeSpecificData: {
                 type: S3ContactMediaType.TRANSCRIPT,
               },
-            ],
-          },
+            },
+          ],
           channel,
           taskId: `${withTaskId.taskId}-${channel}`,
         },
@@ -897,15 +895,14 @@ describe('/contacts route', () => {
         channel,
         contact: {
           ...withTaskId,
-          rawJson: {
-            ...withTaskId.rawJson,
-            conversationMedia: [
-              {
-                store: 'S3',
+          conversationMedia: [
+            {
+              storeType: 'S3',
+              storeTypeSpecificData: {
                 type: S3ContactMediaType.TRANSCRIPT,
               },
-            ],
-          },
+            },
+          ],
           channel,
           taskId: `${withTaskId.taskId}-${channel}`,
         },
@@ -977,8 +974,8 @@ describe('/contacts route', () => {
           (<contactApi.Contact>res.body).conversationMedia?.some(isS3StoredTranscript),
         ).toBeTruthy();
         expect(
-          (<contactApi.Contact>res.body).rawJson?.conversationMedia?.some(
-            cm => cm.store === 'S3',
+          (<contactApi.Contact>res.body).conversationMedia?.some(
+            cm => cm.storeType === 'S3',
           ),
         ).toBeTruthy();
       } else {
@@ -986,8 +983,8 @@ describe('/contacts route', () => {
           (<contactApi.Contact>res.body).conversationMedia?.some(isS3StoredTranscript),
         ).toBeFalsy();
         expect(
-          (<contactApi.Contact>res.body).rawJson?.conversationMedia?.some(
-            cm => cm.store === 'S3',
+          (<contactApi.Contact>res.body).conversationMedia?.some(
+            cm => cm.storeType === 'S3',
           ),
         ).toBeFalsy();
       }
@@ -1110,20 +1107,6 @@ describe('/contacts route', () => {
         );
       });
 
-      const expectLegacyRawJsonToEqualRawJson = (
-        actual: contactApi.WithLegacyCategories<contactDb.Contact>['rawJson'],
-        expected: contactApi.WithLegacyCategories<contactDb.Contact>['rawJson'],
-        legacyCategories: Record<string, Record<string, boolean>> = {},
-      ) => {
-        expect(actual).toStrictEqual({
-          ...expected,
-          caseInformation: {
-            ...expected.caseInformation,
-            categories: legacyCategories,
-          },
-        });
-      };
-
       each([
         {
           body: { firstName: 'jh', lastName: 'he' },
@@ -1134,8 +1117,8 @@ describe('/contacts route', () => {
             const { contacts, count } = response.body;
 
             const [c2, c1] = contacts; // result is sorted DESC
-            expectLegacyRawJsonToEqualRawJson(c1.details, contact1.rawJson);
-            expectLegacyRawJsonToEqualRawJson(c2.details, contact2.rawJson);
+            expect(c1.details).toStrictEqual(contact1.rawJson);
+            expect(c2.details).toStrictEqual(contact2.rawJson);
 
             // Test the association
             expect(c1.csamReports).toHaveLength(0);
@@ -1155,8 +1138,8 @@ describe('/contacts route', () => {
             const { contacts, count } = response.body;
 
             const [c2, c1] = contacts; // result is sorted DESC
-            expectLegacyRawJsonToEqualRawJson(c1.details, contact1.rawJson);
-            expectLegacyRawJsonToEqualRawJson(c2.details, contact2.rawJson);
+            expect(c1.details).toStrictEqual(contact1.rawJson);
+            expect(c2.details).toStrictEqual(contact2.rawJson);
 
             // Test the association
             expect(c1.csamReports).toHaveLength(0);
@@ -1185,7 +1168,7 @@ describe('/contacts route', () => {
             expect(response.status).toBe(200);
             expect(count).toBe(1);
             const [a] = contacts;
-            expectLegacyRawJsonToEqualRawJson(a.details, another1.rawJson);
+            expect(a.details).toStrictEqual(another1.rawJson);
           },
         },
         {
@@ -1257,7 +1240,7 @@ describe('/contacts route', () => {
               const { count, contacts } = response.body;
               expect(response.status).toBe(200);
               expect(count).toBe(1);
-              expectLegacyRawJsonToEqualRawJson(contacts[0].details, another2.rawJson);
+              expect(contacts[0].details).toStrictEqual(another2.rawJson);
             },
           };
         }),
@@ -1277,7 +1260,7 @@ describe('/contacts route', () => {
               const { count, contacts } = response.body;
               expect(response.status).toBe(200);
               expect(count).toBe(1);
-              expectLegacyRawJsonToEqualRawJson(contacts[0].details, another2.rawJson);
+              expect(contacts[0].details).toStrictEqual(another2.rawJson);
             },
           };
         }),
@@ -1449,9 +1432,8 @@ describe('/contacts route', () => {
             expect(count).toBe(2);
 
             const [c2, c1] = contacts; // result is sorted DESC
-            expectLegacyRawJsonToEqualRawJson(c1.details, contact1.rawJson);
-            expectLegacyRawJsonToEqualRawJson(c2.details, contact2.rawJson);
-
+            expect(c1.details).toStrictEqual(contact1.rawJson);
+            expect(c2.details).toStrictEqual(contact2.rawJson);
             // Test the association
             expect(c1.csamReports).toHaveLength(0);
             expect(c2.csamReports).toHaveLength(0);
@@ -1512,9 +1494,9 @@ describe('/contacts route', () => {
             ),
           ).toBeTruthy();
           expect(
-            (<contactApi.SearchContact>(
-              res.body.contacts[0]
-            )).details.conversationMedia?.some(cm => cm.store === 'S3'),
+            (<contactApi.SearchContact>res.body.contacts[0]).conversationMedia?.some(
+              cm => cm.storeType === 'S3',
+            ),
           ).toBeTruthy();
         } else {
           expect(
@@ -1523,9 +1505,9 @@ describe('/contacts route', () => {
             ),
           ).toBeFalsy();
           expect(
-            (<contactApi.SearchContact>(
-              res.body.contacts[0]
-            )).details.conversationMedia?.some(cm => cm.store === 'S3'),
+            (<contactApi.SearchContact>res.body.contacts[0]).conversationMedia?.some(
+              cm => cm.storeType === 'S3',
+            ),
           ).toBeFalsy();
         }
 

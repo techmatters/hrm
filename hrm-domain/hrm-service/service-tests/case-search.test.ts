@@ -24,13 +24,12 @@ import * as caseDb from '../src/case/case-data-access';
 import { CaseListFilters, DateExistsCondition } from '../src/case/case-data-access';
 import { db } from '../src/connection-pool';
 import {
-  addLegacyCategoriesToContact,
   fillNameAndPhone,
   validateCaseListResponse,
   validateSingleCaseResponse,
 } from './case-validation';
-import * as contactDb from '../src/contact/contact-data-access';
-import { Contact } from '../src/contact/contact-data-access';
+import * as contactDb from '../src/contact/contactDataAccess';
+import { Contact } from '../src/contact/contactDataAccess';
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import * as mocks from './mocks';
 import { ruleFileWithOneActionOverride } from './permissions-overrides';
@@ -361,7 +360,7 @@ describe('/cases route', () => {
           const response = await request.get(listRoute).set(headers);
           validateCaseListResponse(
             response,
-            addLegacyCategoriesToContact(expectedCasesAndContacts()),
+            expectedCasesAndContacts(),
             expectedTotalCount,
           );
         },
@@ -426,28 +425,12 @@ describe('/cases route', () => {
               ),
           ),
         ).toBeTruthy();
-        expect(
-          (<caseApi.CaseService[]>response.body.cases).every(
-            caseObj =>
-              caseObj.connectedContacts?.every(
-                c => c.rawJson?.conversationMedia?.some(cm => cm.store === 'S3'),
-              ),
-          ),
-        ).toBeTruthy();
       } else {
         expect(
           (<caseApi.CaseService[]>response.body.cases).every(
             caseObj =>
               caseObj.connectedContacts?.every(
                 c => c.conversationMedia?.some(isS3StoredTranscript),
-              ),
-          ),
-        ).toBeFalsy();
-        expect(
-          (<caseApi.CaseService[]>response.body.cases).every(
-            caseObj =>
-              caseObj.connectedContacts?.every(
-                c => c.rawJson?.conversationMedia?.some(cm => cm.store === 'S3'),
               ),
           ),
         ).toBeFalsy();
@@ -1244,7 +1227,7 @@ describe('/cases route', () => {
                 expectedCasesAndContacts(
                   createdCasesAndContacts.map(cc => ({
                     case: cc.case,
-                    contact: addLegacyCategoriesToContact(cc?.contact),
+                    contact: cc?.contact,
                   })),
                 ),
                 expectedTotalCount,
@@ -1320,28 +1303,12 @@ describe('/cases route', () => {
                 ),
             ),
           ).toBeTruthy();
-          expect(
-            (<caseApi.CaseService[]>response.body.cases).every(
-              caseObj =>
-                caseObj.connectedContacts?.every(
-                  c => c.rawJson?.conversationMedia?.some(cm => cm.store === 'S3'),
-                ),
-            ),
-          ).toBeTruthy();
         } else {
           expect(
             (<caseApi.CaseService[]>response.body.cases).every(
               caseObj =>
                 caseObj.connectedContacts?.every(
                   c => c.conversationMedia?.some(isS3StoredTranscript),
-                ),
-            ),
-          ).toBeFalsy();
-          expect(
-            (<caseApi.CaseService[]>response.body.cases).every(
-              caseObj =>
-                caseObj.connectedContacts?.every(
-                  c => c.rawJson?.conversationMedia?.some(cm => cm.store === 'S3'),
                 ),
             ),
           ).toBeFalsy();

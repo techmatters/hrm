@@ -142,13 +142,7 @@ describe('searchCases', () => {
         csamReports: [],
         rawJson: {
           childInformation: { firstName: 'name', lastName: 'last' },
-          caseInformation: {
-            categories: {
-              cat1: {
-                sub2: true,
-              },
-            },
-          },
+          caseInformation: {},
           callerInformation: {},
           callType: '',
           categories: {
