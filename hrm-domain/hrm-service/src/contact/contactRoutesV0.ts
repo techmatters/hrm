@@ -39,14 +39,13 @@ const contactsRouter = SafeRouter();
 /**
  * @param {any} req. - Request
  * @param {any} res - User for requested
- * @param {CreateContactPayload} req.body - Contact to create
+ * @param {NewContactRecord} req.body - Contact to create
  *
  * @returns {Contact} - Created contact
  */
 contactsRouter.post('/', publicEndpoint, async (req, res) => {
   const { accountSid, user } = req;
-  const finalize = req.query.finalize !== 'false'; // Default to true for backwards compatibility
-  const contact = await createContact(accountSid, user.workerSid, finalize, req.body, {
+  const contact = await createContact(accountSid, user.workerSid, req.body, {
     can: req.can,
     user,
   });

@@ -27,7 +27,7 @@ import {
 } from '../src/contact/contactService';
 import { CaseService } from '../src/case/caseService';
 import * as caseDb from '../src/case/case-data-access';
-import { convertCaseInfoToExpectedInfo, without } from './case-validation';
+import { convertCaseInfoToExpectedInfo, without } from './caseValidation';
 import { isBefore } from 'date-fns';
 
 // const each = require('jest-each').default;
@@ -37,6 +37,7 @@ import { ruleFileWithOneActionOverride } from './permissions-overrides';
 import { headers, getRequest, getServer, setRules, useOpenRules } from './server';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
 import { isS3StoredTranscript } from '../src/conversation-media/conversation-media';
+import { ALWAYS_CAN } from './mocks';
 
 useOpenRules();
 const server = getServer();
@@ -295,9 +296,8 @@ describe('/cases route', () => {
         let createdContact = await createContact(
           accountSid,
           workerSid,
-          true,
           mocks.withTaskId,
-          { user: twilioUser(workerSid, []), can: () => true },
+          ALWAYS_CAN,
         );
         createdContact = await addConversationMediaToContact(
           accountSid,
@@ -614,6 +614,7 @@ describe('/cases route', () => {
           customWorkerSid = undefined,
         }) => {
           if (customWorkerSid) {
+            await new Promise(resolve => setTimeout(resolve, 300));
             await mockSuccessfulTwilioAuthentication(customWorkerSid);
             await new Promise(resolve => setTimeout(resolve, 300));
           }
@@ -685,9 +686,8 @@ describe('/cases route', () => {
         let createdContact = await createContact(
           accountSid,
           workerSid,
-          true,
           mocks.withTaskId,
-          { user: twilioUser(workerSid, []), can: () => true },
+          ALWAYS_CAN,
         );
         createdContact = await addConversationMediaToContact(
           accountSid,

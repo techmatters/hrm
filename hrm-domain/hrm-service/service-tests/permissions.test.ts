@@ -26,7 +26,7 @@ import {
 import { db } from '../src/connection-pool';
 import * as contactDB from '../src/contact/contactDataAccess';
 import * as conversationMediaDB from '../src/conversation-media/conversation-media-data-access';
-import { NewContactRecord } from '../src/contact/sql/contact-insert-sql';
+import { NewContactRecord } from '../src/contact/sql/contactInsertSql';
 
 const server = getServer({
   permissions: undefined,
@@ -155,11 +155,7 @@ describe('/permissions/:action route with contact objectType', () => {
           serviceSid: 'serviceSid',
         } as NewContactRecord;
 
-        const { contact: createdContact } = await contactDB.create()(
-          accountSid,
-          contact,
-          true,
-        );
+        const { contact: createdContact } = await contactDB.create()(accountSid, contact);
         createdContacts[accountSid] = createdContact;
 
         await Promise.all(

@@ -25,7 +25,7 @@ import {
   selectSingleContactByIdSql,
   selectSingleContactByTaskId,
 } from './sql/contact-get-sql';
-import { INSERT_CONTACT_SQL, NewContactRecord } from './sql/contact-insert-sql';
+import { INSERT_CONTACT_SQL, NewContactRecord } from './sql/contactInsertSql';
 import { ContactRawJson, ReferralWithoutContactId } from './contactJson';
 import type { ITask } from 'pg-promise';
 import { txIfNotInOne } from '../sql';
@@ -178,11 +178,7 @@ type CreateResult = { contact: Contact; isNewRecord: boolean };
 
 export const create =
   (task?) =>
-  async (
-    accountSid: string,
-    newContact: NewContactRecord,
-    finalize: boolean,
-  ): Promise<CreateResult> => {
+  async (accountSid: string, newContact: NewContactRecord): Promise<CreateResult> => {
     return txIfNotInOne(
       task,
       async (conn: ITask<{ contact: Contact; isNewRecord: boolean }>) => {
@@ -193,7 +189,6 @@ export const create =
             accountSid,
             createdAt: now,
             updatedAt: now,
-            finalize,
           });
 
         return { contact: created, isNewRecord };

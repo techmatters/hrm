@@ -29,12 +29,12 @@ import {
 } from './contactDataAccess';
 
 import { PaginationQuery, getPaginationElements } from '../search';
-import type { NewContactRecord } from './sql/contact-insert-sql';
+import type { NewContactRecord } from './sql/contactInsertSql';
 import { ContactRawJson, ReferralWithoutContactId } from './contactJson';
 import { setupCanForRules } from '../permissions/setupCanForRules';
 import { actionsMaps } from '../permissions';
 import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
-import { connectContactToCsamReports, CSAMReport } from '../csam-report/csam-report';
+import { CSAMReport } from '../csam-report/csam-report';
 import { createReferral } from '../referral/referral-model';
 import { createContactJob } from '../contact-job/contact-job';
 import { isChatChannel } from './channelTypes';
@@ -83,11 +83,6 @@ export type SearchContact = {
   csamReports: CSAMReport[];
   referrals?: ReferralWithoutContactId[];
   conversationMedia: ConversationMedia[];
-};
-
-export type CreateContactPayload = NewContactRecord & {
-  csamReports?: CSAMReport[];
-  referrals?: ReferralWithoutContactId[];
 };
 
 const filterExternalTranscripts = (contact: Contact): Contact => {
@@ -143,26 +138,6 @@ export const getContactByTaskId = async (
   return contact ? bindApplyTransformations(can, user)(contact) : undefined;
 };
 
-const getNewContactPayload = (
-  newContact: CreateContactPayload,
-): {
-  newContactPayload: NewContactRecord;
-  csamReportsPayload?: CSAMReport[];
-  referralsPayload?: ReferralWithoutContactId[];
-} => {
-  const {
-    csamReports: csamReportsPayload,
-    referrals: referralsPayload,
-    ...newContactPayload
-  } = newContact;
-
-  return {
-    newContactPayload,
-    csamReportsPayload,
-    referralsPayload,
-  };
-};
-
 const findS3StoredTranscriptPending = (
   contact: Contact,
   conversationMedia: ConversationMedia[],
@@ -199,95 +174,47 @@ const initProfile = async (conn, accountSid, contact) => {
 export const createContact = async (
   accountSid: string,
   createdBy: string,
-  finalize: boolean,
-  newContact: CreateContactPayload,
+  newContact: NewContactRecord,
   { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
 ): Promise<Contact> => {
   for (let retries = 1; retries < 4; retries++) {
     try {
       return await db.tx(async conn => {
-        const { newContactPayload, csamReportsPayload, referralsPayload } =
-          getNewContactPayload(newContact);
-
         const { profileId, identifierId } = await initProfile(
           conn,
           accountSid,
-          newContactPayload,
+          newContact,
         );
 
         const completeNewContact: NewContactRecord = {
-          ...newContactPayload,
-          helpline: newContactPayload.helpline ?? '',
-          number: newContactPayload.number ?? '',
-          channel: newContactPayload.channel ?? '',
-          timeOfContact: newContactPayload.timeOfContact
-            ? new Date(newContactPayload.timeOfContact)
+          ...newContact,
+          helpline: newContact.helpline ?? '',
+          number: newContact.number ?? '',
+          channel: newContact.channel ?? '',
+          timeOfContact: newContact.timeOfContact
+            ? new Date(newContact.timeOfContact)
             : new Date(),
-          channelSid: newContactPayload.channelSid ?? '',
-          serviceSid: newContactPayload.serviceSid ?? '',
-          taskId: newContactPayload.taskId ?? '',
-          twilioWorkerId: newContactPayload.twilioWorkerId ?? '',
-          rawJson: newContactPayload.rawJson,
-          queueName: newContactPayload.queueName ?? '',
+          channelSid: newContact.channelSid ?? '',
+          serviceSid: newContact.serviceSid ?? '',
+          taskId: newContact.taskId ?? '',
+          twilioWorkerId: newContact.twilioWorkerId ?? '',
+          rawJson: newContact.rawJson,
+          queueName: newContact.queueName ?? '',
           createdBy,
           // Hardcoded to first profile for now, but will be updated to support multiple profiles
           profileId,
           identifierId,
         };
 
-        // create contact record (may return an exiting one cause idempotence)
-        const { contact, isNewRecord } = await create(conn)(
-          accountSid,
-          completeNewContact,
-          finalize,
-        );
-
-        let contactResult: Contact;
-
-        if (!isNewRecord) {
-          // if the contact already existed, skip the associations
-          contactResult = contact;
-        } else {
-          // associate csam reports
-          const csamReportIds = (csamReportsPayload ?? []).map(csr => csr.id);
-          const csamReports =
-            csamReportIds && csamReportIds.length
-              ? await connectContactToCsamReports(conn)(
-                  contact.id,
-                  csamReportIds,
-                  accountSid,
-                )
-              : [];
-
-          // create resources referrals
-          const referrals = referralsPayload ?? [];
-          const createdReferrals = [];
-
-          if (referrals.length) {
-            // Do this sequentially, it's on a single connection in a transaction anyway.
-            for (const referral of referrals) {
-              const { contactId, ...withoutContactId } = await createReferral(conn)(
-                accountSid,
-                {
-                  ...referral,
-                  contactId: contact.id.toString(),
-                },
-              );
-              createdReferrals.push(withoutContactId);
-            }
-          }
-
-          // Compose the final shape of a contact to return
-          contactResult = {
-            ...contact,
-            csamReports,
-            referrals: createdReferrals,
-          };
-        }
+        // create contact record (may return an existing one cause idempotence)
+        const { contact } = await create(conn)(accountSid, completeNewContact);
+        contact.referrals = [];
+        contact.csamReports = [];
+        contact.conversationMedia = [];
 
         const applyTransformations = bindApplyTransformations(can, user);
 
-        return applyTransformations(contactResult);
+        return applyTransformations(contact);
       });
     } catch (error) {
       // This operation can fail with a unique constraint violation if a contact with the same ID is being created concurrently

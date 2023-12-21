@@ -38,7 +38,7 @@ import {
   withTaskId,
   workerSid,
 } from './mocks';
-import './case-validation';
+import './caseValidation';
 import * as caseApi from '../src/case/caseService';
 import * as caseDb from '../src/case/case-data-access';
 import * as contactApi from '../src/contact/contactService';
@@ -47,7 +47,6 @@ import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/
 import { selectSingleContactByTaskId } from '../src/contact/sql/contact-get-sql';
 import { ruleFileWithOneActionOverride } from './permissions-overrides';
 import * as csamReportApi from '../src/csam-report/csam-report';
-import * as referralDB from '../src/referral/referral-data-access';
 import { getRequest, getServer, headers, setRules, useOpenRules } from './server';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
 import * as profilesDB from '../src/profile/profile-data-access';
@@ -63,6 +62,7 @@ import {
   deleteJobsByContactId,
 } from './contact/db-cleanup';
 import { addConversationMediaToContact } from '../src/contact/contactService';
+import { NewContactRecord } from '../src/contact/sql/contactInsertSql';
 
 useOpenRules();
 const server = getServer();
@@ -94,15 +94,6 @@ const deleteCsamReportsByContactId = (contactId: number, accountSid: string) =>
   db.task(t =>
     t.manyOrNone(`
       DELETE FROM "CSAMReports"
-      WHERE "contactId" = ${contactId} AND "accountSid" = '${accountSid}';
-    `),
-  );
-
-// eslint-disable-next-line @typescript-eslint/no-shadow
-const deleteReferralsByContactId = (contactId: number, accountSid: string) =>
-  db.task(t =>
-    t.manyOrNone(`
-      DELETE FROM "Referrals"
       WHERE "contactId" = ${contactId} AND "accountSid" = '${accountSid}';
     `),
   );
@@ -151,7 +142,6 @@ beforeEach(() => {
 
 describe('/contacts route', () => {
   const route = `/v0/accounts/${accountSid}/contacts`;
-  const hourAgo = subHours(new Date(), 1);
 
   // First test post so database wont be empty
   describe('POST', () => {
@@ -163,10 +153,9 @@ describe('/contacts route', () => {
     });
 
     type CreateContactTestCase = {
-      contact: contactApi.CreateContactPayload;
+      contact: NewContactRecord;
       changeDescription?: string;
       expectedGetContact?: Partial<contactDb.Contact>;
-      finalize?: boolean;
     };
 
     const createContactTestCases: CreateContactTestCase[] = [
@@ -178,18 +167,6 @@ describe('/contacts route', () => {
         contact: {
           ...contact1,
           taskId: 'contact-1-task-sid-2',
-          referrals: [
-            {
-              resourceId: 'TEST_RESOURCE',
-              referredAt: hourAgo.toISOString(),
-              resourceName: 'A test referred resource',
-            },
-            {
-              resourceId: 'TEST_RESOURCE_1',
-              referredAt: hourAgo.toISOString(),
-              resourceName: 'Another test referred resource',
-            },
-          ],
         },
         changeDescription: 'callType is Child calling about self',
       },
@@ -252,7 +229,6 @@ describe('/contacts route', () => {
       {
         contact: contact1,
         changeDescription: 'callType is Child calling about self',
-        finalize: false,
         expectedGetContact: {
           ...contact1,
           finalizedAt: undefined,
@@ -289,6 +265,7 @@ describe('/contacts route', () => {
         expect(createdContact.number).toBe(expected.number);
         expect(createdContact.channel).toBe(expected.channel);
         expect(createdContact.conversationDuration).toBe(expected.conversationDuration);
+        expect(createdContact.finalizedAt).toBeFalsy();
       },
     );
 
@@ -322,217 +299,7 @@ describe('/contacts route', () => {
       responses.forEach(response => expect(response.body.id).toBe(expectedId));
     });
 
-    test('Connects to CSAM reports (not existing csam report id, do nothing)', async () => {
-      const notExistingCsamReport = { id: 99999999 };
-
-      // Create contact with above report
-      const response = await request
-        .post(route)
-        .set(headers)
-        .send({ ...contact1, csamReports: [notExistingCsamReport] });
-
-      // Test the association
-      expect(response.status).toBe(200);
-
-      // Test the association
-      expect(response.body.csamReports).toHaveLength(0);
-
-      // No new report is created
-      const maybeReport = await csamReportApi.getCSAMReport(
-        notExistingCsamReport.id,
-        accountSid,
-      );
-      expect(maybeReport).toBeNull();
-
-      await deleteContactById(response.body.id, response.body.accountSid);
-    });
-
-    test('Connects to CSAM reports (valid csam reports ids)', async () => {
-      // Create CSAM Report
-      const csamReportId1 = 'csam-report-id-1';
-      const csamReportId2 = 'csam-report-id-2';
-
-      const newReport1 = await csamReportApi.createCSAMReport(
-        {
-          csamReportId: csamReportId1,
-          twilioWorkerId: workerSid,
-          reportType: 'self-generated',
-        },
-        accountSid,
-      );
-
-      const newReport2 = await csamReportApi.createCSAMReport(
-        {
-          csamReportId: csamReportId2,
-          twilioWorkerId: workerSid,
-          reportType: 'counsellor-generated',
-        },
-        accountSid,
-      );
-
-      // Create contact with above report
-      const response = await request
-        .post(route)
-        .set(headers)
-        .send({ ...contact1, csamReports: [newReport1, newReport2] });
-
-      expect(response.status).toBe(200);
-
-      const updatedReport1 = await csamReportApi.getCSAMReport(newReport1.id, accountSid);
-
-      if (!updatedReport1) {
-        throw new Error('updatedReport1 does not exists');
-      }
-
-      expect(updatedReport1.contactId).toBeDefined();
-      expect(updatedReport1.contactId).toEqual(response.body.id);
-      expect(updatedReport1.csamReportId).toBeDefined();
-
-      const updatedReport2 = await csamReportApi.getCSAMReport(newReport2.id, accountSid);
-
-      if (!updatedReport2) {
-        throw new Error('updatedReport2 does not exists');
-      }
-
-      expect(updatedReport2.contactId).toBeDefined();
-      expect(updatedReport2.contactId).toEqual(response.body.id);
-      expect(updatedReport2.csamReportId).toEqual(csamReportId2);
-
-      // Test the association
-      expect(response.body.csamReports).toHaveLength(2);
-
-      // Remove records to not interfere with following tests
-      await deleteCsamReportsByContactId(response.body.id, response.body.accountSid);
-      await deleteContactById(response.body.id, response.body.accountSid);
-    });
-
-    test(`If connecting csam report fails, the contact is not created either`, async () => {
-      const csamReportId = 'csam-report-id';
-      const newReport = await csamReportApi.createCSAMReport(
-        {
-          csamReportId: csamReportId,
-          twilioWorkerId: workerSid,
-          reportType: 'counsellor-generated',
-        },
-        accountSid,
-      );
-
-      const contact = {
-        ...withTaskId,
-        rawJson: {
-          ...withTaskId.rawJson,
-        },
-        csamReports: [newReport.id],
-        channel: 'web',
-        taskId: `${withTaskId.taskId}-web-csam-failure`,
-      };
-
-      const connectContactToCsamReportsSpy = jest
-        .spyOn(csamReportApi, 'connectContactToCsamReports')
-        .mockImplementationOnce(() => {
-          throw new Error('Ups');
-        });
-
-      const res = await request.post(route).set(headers).send(contact);
-
-      expect(res.status).toBe(500);
-
-      const updatedReport = await csamReportApi.getCSAMReport(newReport.id, accountSid);
-      expect(updatedReport?.contactId).toBeNull();
-
-      const attemptedContact = await getContactByTaskId(contact.taskId, accountSid);
-
-      expect(attemptedContact).toBeNull();
-
-      await deleteCsamReportById(newReport.id, newReport.accountSid);
-      connectContactToCsamReportsSpy.mockRestore();
-    });
-
-    test('Connects to referrals', async () => {
-      const referral1 = {
-        resourceId: 'TEST_RESOURCE',
-        referredAt: new Date().toISOString(),
-        resourceName: 'A test referred resource',
-      };
-
-      const referral2 = {
-        resourceId: 'TEST_RESOURCE_2',
-        referredAt: new Date().toISOString(),
-        resourceName: 'Another test referred resource',
-      };
-
-      const contact = {
-        ...withTaskId,
-        rawJson: {
-          ...withTaskId.rawJson,
-        },
-        referrals: [referral1, referral2],
-        channel: 'web',
-        taskId: `${withTaskId.taskId}-web-referral`,
-      };
-
-      // Create contact with referrals
-      const response = await request.post(route).set(headers).send(contact);
-
-      expect(response.status).toBe(200);
-
-      const createdReferrals = await db.task(t =>
-        t.many(`
-          SELECT * FROM "Referrals" WHERE "contactId" = ${response.body.id}
-      `),
-      );
-
-      if (!createdReferrals || !createdReferrals.length) {
-        throw new Error('createdReferrals is empty');
-      }
-
-      createdReferrals.forEach(r => {
-        expect(r.contactId).toBeDefined();
-        expect(r.contactId).toEqual(response.body.id);
-      });
-
-      // Test the association
-      expect(response.body.referrals).toHaveLength(2);
-
-      // Remove records to not interfere with following tests
-      await deleteReferralsByContactId(response.body.id, response.body.accountSid);
-      await deleteContactById(response.body.id, response.body.accountSid);
-    });
-
-    test(`If creating referral fails, the contact is not created either`, async () => {
-      const referral = {
-        resourceId: 'TEST_RESOURCE',
-        referredAt: new Date().toISOString(),
-        resourceName: 'A test referred resource',
-      };
-
-      const contact = {
-        ...withTaskId,
-        rawJson: {
-          ...withTaskId.rawJson,
-        },
-        referrals: [referral],
-        channel: 'web',
-        taskId: `${withTaskId.taskId}-web-referral-failure`,
-      };
-
-      const createReferralSpy = jest
-        .spyOn(referralDB, 'createReferralRecord')
-        .mockImplementationOnce(() => {
-          throw new Error('Ups');
-        });
-
-      const res = await request.post(route).set(headers).send(contact);
-
-      expect(createReferralSpy).toHaveBeenCalled();
-      expect(res.status).toBe(500);
-
-      const attemptedContact = await getContactByTaskId(contact.taskId, accountSid);
-
-      expect(attemptedContact).toBeNull();
-    });
-
-    test(`If retrieving identifier and profile, the contact is not created either`, async () => {
+    test(`If retrieving identifier and profile fails, the contact is not created either`, async () => {
       const contact = {
         ...withTaskId,
         rawJson: {
@@ -738,7 +505,6 @@ describe('/contacts route', () => {
           taskId: 'withCSAMReports-tasksid-2',
           queueName: 'withCSAMReports',
           number: '123412341234',
-          csamReports: [newReport1, newReport2],
         };
         const responses = await resolveSequentially(
           [
@@ -762,6 +528,14 @@ describe('/contacts route', () => {
         const withCSAMReportsId = createdContacts.find(
           c => c.queueName === 'withCSAMReports',
         )!.id;
+        await Promise.all(
+          [newReport1, newReport2].map(report =>
+            csamReportApi.createCSAMReport(
+              { ...report, contactId: withCSAMReportsId },
+              accountSid,
+            ),
+          ),
+        );
         // Retrieve the csam reports that should be connected to withCSAMReports
         const updatedCsamReports = await csamReportApi.getCsamReportsByContactId(
           withCSAMReportsId,
@@ -1137,7 +911,6 @@ describe('/contacts route', () => {
         let createdContact = await contactApi.createContact(
           accountSid,
           workerSid,
-          true,
           withTaskId,
           { user: twilioUser(workerSid, []), can: () => true },
         );
@@ -1201,8 +974,22 @@ describe('/contacts route', () => {
         const csamReportId2 = 'csam-report-id-2';
         const csamReportId3 = 'csam-report-id-2';
 
+        const contactToCreate = {
+          ...withTaskId,
+          taskId: 'Test CSAM filter',
+        };
+        // Very specific first name
+        contactToCreate.rawJson.childInformation.firstName = 'Test CSAM filter';
+        const createdContact = await contactApi.createContact(
+          accountSid,
+          workerSid,
+          contactToCreate,
+          { user: twilioUser(workerSid, []), can: () => true },
+        );
+
         const newReport1 = await csamReportApi.createCSAMReport(
           {
+            contactId: createdContact.id,
             csamReportId: csamReportId1,
             twilioWorkerId: workerSid,
             reportType: 'self-generated',
@@ -1210,8 +997,9 @@ describe('/contacts route', () => {
           accountSid,
         );
 
-        const newReport2 = await csamReportApi.createCSAMReport(
+        await csamReportApi.createCSAMReport(
           {
+            contactId: createdContact.id,
             csamReportId: csamReportId2,
             twilioWorkerId: workerSid,
             reportType: 'counsellor-generated',
@@ -1222,26 +1010,12 @@ describe('/contacts route', () => {
         // This one should not be retrieved
         const newReport3 = await csamReportApi.createCSAMReport(
           {
+            contactId: createdContact.id,
             csamReportId: csamReportId3,
             twilioWorkerId: workerSid,
             reportType: 'self-generated',
           },
           accountSid,
-        );
-
-        const contactToCreate = {
-          ...withTaskId,
-          taskId: 'Test CSAM filter',
-          csamReports: [newReport1, newReport2, newReport3],
-        };
-        // Very specific first name
-        contactToCreate.rawJson.childInformation.firstName = 'Test CSAM filter';
-        const createdContact = await contactApi.createContact(
-          accountSid,
-          workerSid,
-          true,
-          contactToCreate,
-          { user: twilioUser(workerSid, []), can: () => true },
         );
 
         await csamReportApi.acknowledgeCsamReport(newReport1.id, accountSid);
@@ -1285,7 +1059,6 @@ describe('/contacts route', () => {
       createdContact = await contactApi.createContact(
         accountSid,
         workerSid,
-        true,
         <any>contact1,
         {
           user: twilioUser(workerSid, []),
@@ -1297,7 +1070,6 @@ describe('/contacts route', () => {
       const contactToBeDeleted = await contactApi.createContact(
         accountSid,
         workerSid,
-        true,
         <any>contact2,
         { user: twilioUser(workerSid, []), can: () => true },
       );
