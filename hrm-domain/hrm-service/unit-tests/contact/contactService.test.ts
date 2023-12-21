@@ -24,9 +24,6 @@ import {
   searchContacts,
 } from '../../src/contact/contactService';
 
-import * as csamReportsApi from '../../src/csam-report/csam-report';
-import * as referralApi from '../../src/referral/referral-model';
-import * as contactJobsApi from '../../src/contact-job/contact-job';
 import { ContactBuilder } from './contact-builder';
 import { omit } from 'lodash';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
@@ -36,9 +33,6 @@ import { NewContactRecord } from '../../src/contact/sql/contactInsertSql';
 import { ALWAYS_CAN } from '../../service-tests/mocks';
 
 jest.mock('../../src/contact/contactDataAccess');
-jest.mock('../../src/referral/referral-data-access', () => ({
-  createReferralRecord: () => async () => ({}),
-}));
 
 const getIdentifierWithProfilesSpy = jest
   .spyOn(profilesDB, 'getIdentifierWithProfiles')
@@ -112,56 +106,22 @@ describe('createContact', () => {
     serviceSid: 'a service',
   };
 
-  const spyOnContactAndAssociations = ({
-    csamMockReturn,
-    referralMockReturn,
-    cotactJobMockReturn,
+  const spyOnContact = ({
     contactMockReturn,
   }: {
-    csamMockReturn?: ReturnType<typeof csamReportsApi.connectContactToCsamReports>;
-    referralMockReturn?: ReturnType<typeof referralApi.createReferral>;
-    cotactJobMockReturn?: ReturnType<typeof contactJobsApi.createContactJob>;
     contactMockReturn?: ReturnType<typeof contactDb.create>;
   } = {}) => {
-    const connectCsamMock = jest.fn(csamMockReturn || (() => Promise.resolve([])));
-    jest
-      .spyOn(csamReportsApi, 'connectContactToCsamReports')
-      .mockReturnValue(connectCsamMock);
-    const createReferralMock = jest.fn(
-      referralMockReturn ||
-        (() =>
-          Promise.resolve({
-            contactId: '1234',
-            referredAt: new Date().toISOString(),
-            resourceId: 'TEST_RESOURCE_ID',
-          })),
-    );
-    jest.spyOn(referralApi, 'createReferral').mockReturnValue(createReferralMock);
-    const createContactJobMock = jest.fn(
-      cotactJobMockReturn || (() => Promise.resolve()),
-    );
-    jest.spyOn(contactJobsApi, 'createContactJob').mockReturnValue(createContactJobMock);
     const createContactMock = jest.fn(
       contactMockReturn ||
         (() => Promise.resolve({ contact: mockContact, isNewRecord: true })),
     );
     jest.spyOn(contactDb, 'create').mockReturnValue(createContactMock);
 
-    return {
-      connectCsamMock,
-      createReferralMock,
-      createContactJobMock,
-      createContactMock,
-    };
+    return createContactMock;
   };
 
   test("Passes payload down to data layer with user workerSid used for 'createdBy'", async () => {
-    const {
-      connectCsamMock,
-      createReferralMock,
-      createContactJobMock,
-      createContactMock,
-    } = spyOnContactAndAssociations();
+    const createContactMock = spyOnContact();
     const returnValue = await createContact(
       'parameter account-sid',
       'contact-creator',
@@ -175,20 +135,11 @@ describe('createContact', () => {
       identifierId: 1,
     });
 
-    expect(connectCsamMock).not.toHaveBeenCalled();
-    expect(createReferralMock).not.toHaveBeenCalled();
-    expect(createContactJobMock).not.toHaveBeenCalled();
-
     expect(returnValue).toStrictEqual(mockContact);
   });
 
   test("If no identifier record exists for 'number', call createIdentifierAndProfile", async () => {
-    const {
-      connectCsamMock,
-      createReferralMock,
-      createContactJobMock,
-      createContactMock,
-    } = spyOnContactAndAssociations();
+    const createContactMock = spyOnContact();
 
     getIdentifierWithProfilesSpy.mockImplementationOnce(
       () => async () => newOk({ data: null }),
@@ -214,20 +165,11 @@ describe('createContact', () => {
       identifierId: 2,
     });
 
-    expect(connectCsamMock).not.toHaveBeenCalled();
-    expect(createReferralMock).not.toHaveBeenCalled();
-    expect(createContactJobMock).not.toHaveBeenCalled();
-
     expect(returnValue).toStrictEqual(mockContact);
   });
 
   test('Missing values are converted to empty strings for several fields', async () => {
-    const {
-      connectCsamMock,
-      createReferralMock,
-      createContactJobMock,
-      createContactMock,
-    } = spyOnContactAndAssociations();
+    const createContactMock = spyOnContact();
 
     const minimalPayload = omit(
       sampleCreateContactPayload,
@@ -257,20 +199,11 @@ describe('createContact', () => {
       identifierId: undefined,
     });
 
-    expect(connectCsamMock).not.toHaveBeenCalled();
-    expect(createReferralMock).not.toHaveBeenCalled();
-    expect(createContactJobMock).not.toHaveBeenCalled();
-
     expect(returnValue).toStrictEqual(mockContact);
   });
 
   test('Missing timeOfContact value is substituted with current date', async () => {
-    const {
-      connectCsamMock,
-      createReferralMock,
-      createContactJobMock,
-      createContactMock,
-    } = spyOnContactAndAssociations();
+    const createContactMock = spyOnContact();
 
     const payload = omit(sampleCreateContactPayload, 'timeOfContact');
     const returnValue = await createContact(
@@ -287,20 +220,11 @@ describe('createContact', () => {
       identifierId: 1,
     });
 
-    expect(connectCsamMock).not.toHaveBeenCalled();
-    expect(createReferralMock).not.toHaveBeenCalled();
-    expect(createContactJobMock).not.toHaveBeenCalled();
-
     expect(returnValue).toStrictEqual(mockContact);
   });
 
   test('queue will be empty if not present', async () => {
-    const {
-      connectCsamMock,
-      createReferralMock,
-      createContactJobMock,
-      createContactMock,
-    } = spyOnContactAndAssociations();
+    const createContactMock = spyOnContact();
 
     const payload = omit(sampleCreateContactPayload, 'queueName');
     const legacyPayload = omit(sampleCreateContactPayload, 'queueName');
@@ -317,10 +241,6 @@ describe('createContact', () => {
       profileId: 1,
       identifierId: 1,
     });
-
-    expect(connectCsamMock).not.toHaveBeenCalled();
-    expect(createReferralMock).not.toHaveBeenCalled();
-    expect(createContactJobMock).not.toHaveBeenCalled();
 
     expect(returnValue).toStrictEqual(mockContact);
   });
@@ -346,6 +266,7 @@ describe('connectContactToCase', () => {
     );
     expect(result).toStrictEqual(mockContact);
   });
+
   test('Throws if data access layer returns undefined', () => {
     jest
       .spyOn(contactDb, 'connectToCase')
