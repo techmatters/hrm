@@ -15,13 +15,14 @@
  */
 
 import {
+  addConversationMediaToContact,
   ContactRawJson,
   CreateContactPayload,
   PatchPayload,
 } from '../../src/contact/contactService';
 import '../case-validation';
 import * as contactApi from '../../src/contact/contactService';
-import { accountSid, contact1, withTaskIdAndTranscript, workerSid } from '../mocks';
+import { accountSid, contact1, withTaskId, workerSid } from '../mocks';
 import { twilioUser } from '@tech-matters/twilio-worker-auth/dist';
 import each from 'jest-each';
 import { getRequest, getServer, headers, setRules, useOpenRules } from '../server';
@@ -38,6 +39,7 @@ import {
   deleteContactById,
   deleteJobsByContactId,
 } from './db-cleanup';
+import * as mocks from '../mocks';
 
 useOpenRules();
 const server = getServer();
@@ -340,6 +342,7 @@ describe('/contacts/:contactId route', () => {
               updatedAt: expect.toParseAsDate(),
               updatedBy: workerSid,
               rawJson: expected,
+              conversationMedia: [],
               csamReports: [],
               referrals: [],
             });
@@ -353,6 +356,7 @@ describe('/contacts/:contactId route', () => {
               updatedAt: expect.toParseAsDate(),
               updatedBy: workerSid,
               rawJson: expected,
+              conversationMedia: [],
               csamReports: [],
               referrals: [],
             });
@@ -475,6 +479,7 @@ describe('/contacts/:contactId route', () => {
               updatedAt: expect.toParseAsDate(),
               updatedBy: workerSid,
               referrals: [],
+              conversationMedia: [],
             });
             // Test the association
             expect(response.body.csamReports).toHaveLength(0);
@@ -487,6 +492,7 @@ describe('/contacts/:contactId route', () => {
               updatedBy: workerSid,
               csamReports: [],
               referrals: [],
+              conversationMedia: [],
             });
           } finally {
             await deleteContactById(createdContact.id, createdContact.accountSid);
@@ -606,6 +612,7 @@ describe('/contacts/:contactId route', () => {
         finalizedAt: expect.toParseAsDate(createdContact.finalizedAt),
         updatedAt: expect.toParseAsDate(),
         updatedBy: workerSid,
+        conversationMedia: [],
       });
     });
 
@@ -619,13 +626,20 @@ describe('/contacts/:contactId route', () => {
         description: `without viewExternalTranscript excludes transcripts`,
       },
     ]).test(`$description`, async ({ expectTranscripts }) => {
-      const createdContact = await contactApi.createContact(
+      let createdContact = await contactApi.createContact(
         accountSid,
         workerSid,
         true,
-        withTaskIdAndTranscript,
+        withTaskId,
         { user: twilioUser(workerSid, []), can: () => true },
       );
+      createdContact = await addConversationMediaToContact(
+        accountSid,
+        createdContact.id.toString(),
+        mocks.conversationMedia,
+        { user: twilioUser(workerSid, []), can: () => true },
+      );
+
       if (!expectTranscripts) {
         setRules(ruleFileWithOneActionOverride('viewExternalTranscript', false));
       } else {

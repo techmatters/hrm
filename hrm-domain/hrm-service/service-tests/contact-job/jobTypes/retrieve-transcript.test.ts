@@ -33,6 +33,7 @@ import {
 } from '@tech-matters/types';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
 import { CreateContactPayload } from '../../../src/contact/contactService';
+import { NewConversationMedia } from '../../../src/conversation-media/conversation-media';
 
 const { S3ContactMediaType, isS3StoredTranscriptPending } = conversationMediaApi;
 
@@ -97,26 +98,35 @@ afterAll(async () => {
   });
 });
 
+const SAMPLE_CONVERSATION_MEDIA: NewConversationMedia = {
+  storeType: 'S3' as const,
+  storeTypeSpecificData: {
+    type: S3ContactMediaType.TRANSCRIPT,
+    location: undefined,
+  },
+};
+
 const createChatContact = async (channel: string, startedTimestamp: number) => {
   const contactTobeCreated: CreateContactPayload = {
     ...withTaskId,
     channel,
     taskId: `${withTaskId.taskId}-${channel}`,
-    conversationMedia: [
-      {
-        storeType: 'S3' as const,
-        storeTypeSpecificData: {
-          type: S3ContactMediaType.TRANSCRIPT,
-          location: undefined,
-        },
-      },
-    ],
   };
-  const contact = await contactApi.createContact(
+  let contact = await contactApi.createContact(
     accountSid,
     workerSid,
     true,
     contactTobeCreated,
+    {
+      can: () => true,
+      user: twilioUser(workerSid, []),
+    },
+  );
+
+  contact = await contactApi.addConversationMediaToContact(
+    accountSid,
+    contact.id.toString(),
+    [SAMPLE_CONVERSATION_MEDIA],
     {
       can: () => true,
       user: twilioUser(workerSid, []),

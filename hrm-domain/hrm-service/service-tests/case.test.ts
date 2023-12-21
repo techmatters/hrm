@@ -20,7 +20,11 @@ import each from 'jest-each';
 
 import { db } from '../src/connection-pool';
 import * as caseApi from '../src/case/caseService';
-import { createContact, connectContactToCase } from '../src/contact/contactService';
+import {
+  createContact,
+  connectContactToCase,
+  addConversationMediaToContact,
+} from '../src/contact/contactService';
 import { CaseService } from '../src/case/caseService';
 import * as caseDb from '../src/case/case-data-access';
 import { convertCaseInfoToExpectedInfo, without } from './case-validation';
@@ -288,13 +292,20 @@ describe('/cases route', () => {
         },
       ]).test(`with connectedContacts $description`, async ({ expectTranscripts }) => {
         const createdCase = await caseApi.createCase(case1, accountSid, workerSid);
-        const createdContact = await createContact(
+        let createdContact = await createContact(
           accountSid,
           workerSid,
           true,
-          mocks.withTaskIdAndTranscript,
+          mocks.withTaskId,
           { user: twilioUser(workerSid, []), can: () => true },
         );
+        createdContact = await addConversationMediaToContact(
+          accountSid,
+          createdContact.id.toString(),
+          mocks.conversationMedia,
+          { user: twilioUser(workerSid, []), can: () => true },
+        );
+
         await connectContactToCase(
           accountSid,
           workerSid,
@@ -671,13 +682,20 @@ describe('/cases route', () => {
         },
       ]).test(`with connectedContacts $description`, async ({ expectTranscripts }) => {
         const createdCase = await caseApi.createCase(case1, accountSid, workerSid);
-        const createdContact = await createContact(
+        let createdContact = await createContact(
           accountSid,
           workerSid,
           true,
-          mocks.withTaskIdAndTranscript,
+          mocks.withTaskId,
           { user: twilioUser(workerSid, []), can: () => true },
         );
+        createdContact = await addConversationMediaToContact(
+          accountSid,
+          createdContact.id.toString(),
+          mocks.conversationMedia,
+          { user: twilioUser(workerSid, []), can: () => true },
+        );
+
         await connectContactToCase(
           accountSid,
           workerSid,

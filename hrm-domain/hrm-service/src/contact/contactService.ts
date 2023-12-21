@@ -88,7 +88,6 @@ export type SearchContact = {
 export type CreateContactPayload = NewContactRecord & {
   csamReports?: CSAMReport[];
   referrals?: ReferralWithoutContactId[];
-  conversationMedia?: NewConversationMedia[];
 };
 
 const filterExternalTranscripts = (contact: Contact): Contact => {
@@ -150,22 +149,17 @@ const getNewContactPayload = (
   newContactPayload: NewContactRecord;
   csamReportsPayload?: CSAMReport[];
   referralsPayload?: ReferralWithoutContactId[];
-  conversationMediaPayload?: NewConversationMedia[];
 } => {
   const {
     csamReports: csamReportsPayload,
     referrals: referralsPayload,
-    conversationMedia,
     ...newContactPayload
   } = newContact;
-
-  const conversationMediaPayload = conversationMedia ?? [];
 
   return {
     newContactPayload,
     csamReportsPayload,
     referralsPayload,
-    conversationMediaPayload,
   };
 };
 
@@ -212,12 +206,8 @@ export const createContact = async (
   for (let retries = 1; retries < 4; retries++) {
     try {
       return await db.tx(async conn => {
-        const {
-          newContactPayload,
-          csamReportsPayload,
-          referralsPayload,
-          conversationMediaPayload,
-        } = getNewContactPayload(newContact);
+        const { newContactPayload, csamReportsPayload, referralsPayload } =
+          getNewContactPayload(newContact);
 
         const { profileId, identifierId } = await initProfile(
           conn,
@@ -287,37 +277,11 @@ export const createContact = async (
             }
           }
 
-          const createdConversationMedia: ConversationMedia[] = [];
-          if (conversationMediaPayload && conversationMediaPayload.length) {
-            for (const cm of conversationMediaPayload) {
-              const conversationMedia = await createConversationMedia(conn)(accountSid, {
-                contactId: contact.id,
-                ...cm,
-              });
-
-              createdConversationMedia.push(conversationMedia);
-            }
-          }
-
-          // if pertinent, create retrieve-transcript job
-          const pendingTranscript = findS3StoredTranscriptPending(
-            contact,
-            createdConversationMedia,
-          );
-          if (pendingTranscript) {
-            await createContactJob(conn)({
-              jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
-              resource: contact,
-              additionalPayload: { conversationMediaId: pendingTranscript.id },
-            });
-          }
-
           // Compose the final shape of a contact to return
           contactResult = {
             ...contact,
             csamReports,
             referrals: createdReferrals,
-            conversationMedia: createdConversationMedia,
           };
         }
 
@@ -413,11 +377,12 @@ export const connectContactToCase = async (
 
 export const addConversationMediaToContact = async (
   accountSid: string,
-  contactId: string,
-  conversationMediaPayload: ConversationMedia[],
+  contactIdString: string,
+  conversationMediaPayload: NewConversationMedia[],
   { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
 ): Promise<Contact> => {
-  const contact = await getById(accountSid, parseInt(contactId));
+  const contactId = parseInt(contactIdString);
+  const contact = await getById(accountSid, contactId);
   if (!contact) {
     throw new Error(`Target contact not found (id ${contactId})`);
   }

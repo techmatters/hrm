@@ -33,7 +33,11 @@ import { Contact } from '../src/contact/contactDataAccess';
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import * as mocks from './mocks';
 import { ruleFileWithOneActionOverride } from './permissions-overrides';
-import { connectContactToCase, createContact } from '../src/contact/contactService';
+import {
+  addConversationMediaToContact,
+  connectContactToCase,
+  createContact,
+} from '../src/contact/contactService';
 import { getRequest, getServer, headers, setRules, useOpenRules } from './server';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
 import { isS3StoredTranscript } from '../src/conversation-media/conversation-media';
@@ -378,11 +382,17 @@ describe('/cases route', () => {
       },
     ]).test(`with connectedContacts $description`, async ({ expectTranscripts }) => {
       const createdCase = await caseApi.createCase(case1, accountSid, workerSid);
-      const createdContact = await createContact(
+      let createdContact = await createContact(
         accountSid,
         workerSid,
         true,
-        mocks.withTaskIdAndTranscript,
+        mocks.withTaskId,
+        { user: twilioUser(workerSid, []), can: () => true },
+      );
+      createdContact = await addConversationMediaToContact(
+        accountSid,
+        createdContact.id.toString(),
+        mocks.conversationMedia,
         { user: twilioUser(workerSid, []), can: () => true },
       );
       await connectContactToCase(
@@ -408,7 +418,7 @@ describe('/cases route', () => {
         .query({
           dateFrom: createdCase.createdAt,
           dateTo: createdCase.createdAt,
-          firstName: 'withTaskIdAndTranscript',
+          firstName: 'withTaskId',
         })
         .set(headers);
 
@@ -1255,11 +1265,17 @@ describe('/cases route', () => {
         },
       ]).test(`with connectedContacts $description`, async ({ expectTranscripts }) => {
         const createdCase = await caseApi.createCase(case1, accountSid, workerSid);
-        const createdContact = await createContact(
+        let createdContact = await createContact(
           accountSid,
           workerSid,
           true,
-          mocks.withTaskIdAndTranscript,
+          mocks.withTaskId,
+          { user: twilioUser(workerSid, []), can: () => true },
+        );
+        createdContact = await addConversationMediaToContact(
+          accountSid,
+          createdContact.id.toString(),
+          mocks.conversationMedia,
           { user: twilioUser(workerSid, []), can: () => true },
         );
         await connectContactToCase(
@@ -1287,7 +1303,7 @@ describe('/cases route', () => {
           .send({
             dateFrom: createdCase.createdAt,
             dateTo: createdCase.createdAt,
-            firstName: 'withTaskIdAndTranscript',
+            firstName: 'withTaskId',
           });
 
         expect(response.status).toBe(200);
