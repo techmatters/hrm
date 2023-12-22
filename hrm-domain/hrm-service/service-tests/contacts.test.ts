@@ -63,6 +63,7 @@ import {
 } from './contact/db-cleanup';
 import { addConversationMediaToContact } from '../src/contact/contactService';
 import { NewContactRecord } from '../src/contact/sql/contactInsertSql';
+import supertest from 'supertest';
 
 useOpenRules();
 const server = getServer();
@@ -554,7 +555,17 @@ describe('/contacts route', () => {
         );
       });
 
-      each([
+      type SearchTestCase = {
+        body: any;
+        changeDescription: string;
+        expectCallback: (
+          response: Omit<supertest.Response, 'body'> & {
+            body: { contacts: contactDb.Contact[]; count: number };
+          },
+        ) => void;
+      };
+
+      const testCases: SearchTestCase[] = [
         {
           body: { firstName: 'jh', lastName: 'he' },
           changeDescription: 'multiple input search',
@@ -564,15 +575,15 @@ describe('/contacts route', () => {
             const { contacts, count } = response.body;
 
             const [c2, c1] = contacts; // result is sorted DESC
-            expect(c1.details).toStrictEqual(contact1.rawJson);
-            expect(c2.details).toStrictEqual(contact2.rawJson);
+            expect(c1.rawJson).toStrictEqual(contact1.rawJson);
+            expect(c2.rawJson).toStrictEqual(contact2.rawJson);
 
             // Test the association
             expect(c1.csamReports).toHaveLength(0);
             expect(c2.csamReports).toHaveLength(0);
             // Test the association
-            expect(c1.overview.taskId).toBe('contact1-tasksid-2');
-            expect(c2.overview.taskId).toBe('contact2-tasksid-2');
+            expect(c1.taskId).toBe('contact1-tasksid-2');
+            expect(c2.taskId).toBe('contact2-tasksid-2');
             expect(count).toBe(2);
             expect(contacts.length).toBe(2);
           },
@@ -585,15 +596,15 @@ describe('/contacts route', () => {
             const { contacts, count } = response.body;
 
             const [c2, c1] = contacts; // result is sorted DESC
-            expect(c1.details).toStrictEqual(contact1.rawJson);
-            expect(c2.details).toStrictEqual(contact2.rawJson);
+            expect(c1.rawJson).toStrictEqual(contact1.rawJson);
+            expect(c2.rawJson).toStrictEqual(contact2.rawJson);
 
             // Test the association
             expect(c1.csamReports).toHaveLength(0);
             expect(c2.csamReports).toHaveLength(0);
             // Test the association
-            expect(c1.overview.taskId).toBe('contact1-tasksid-2');
-            expect(c2.overview.taskId).toBe('contact2-tasksid-2');
+            expect(c1.taskId).toBe('contact1-tasksid-2');
+            expect(c2.taskId).toBe('contact2-tasksid-2');
             expect(count).toBe(2);
           },
         },
@@ -615,14 +626,14 @@ describe('/contacts route', () => {
             expect(response.status).toBe(200);
             expect(count).toBe(1);
             const [a] = contacts;
-            expect(a.details).toStrictEqual(another1.rawJson);
+            expect(a.rawJson).toStrictEqual(another1.rawJson);
           },
         },
         {
           changeDescription: 'multiple input search without name search',
           body: { counselor: workerSid }, // should match contact1 & broken1 & another1 & noHelpline
           expectCallback: response => {
-            const { contacts } = response.body;
+            const { contacts } = response.body as { contacts: contactDb.Contact[] };
 
             expect(response.status).toBe(200);
             // invalidContact will return null from the search endpoint, exclude it here
@@ -631,10 +642,10 @@ describe('/contacts route', () => {
               compareTimeOfContactDesc,
             );
             createdContactsByTimeOfContact.forEach(c => {
-              const searchContact = contacts.find(results => results.contactId === c.id);
+              const searchContact = contacts.find(results => results.id === c.id);
               if (searchContact) {
                 // Check that all contacts contains the appropriate info
-                expect(c.rawJson).toMatchObject(searchContact.details);
+                expect(c.rawJson).toMatchObject(searchContact.rawJson);
               }
             });
           },
@@ -661,12 +672,10 @@ describe('/contacts route', () => {
                   ),
               )
               .forEach(c => {
-                const searchContact = contacts.find(
-                  results => results.contactId === c.id,
-                );
+                const searchContact = contacts.find(result => result.id === c.id);
                 if (searchContact) {
                   // Check that all contacts contains the appropriate info
-                  expect(c.rawJson).toMatchObject(searchContact.details);
+                  expect(c.rawJson).toMatchObject(searchContact.rawJson);
                 }
               });
           },
@@ -684,10 +693,13 @@ describe('/contacts route', () => {
             changeDescription: 'phone regexp',
             body: { phoneNumber },
             expectCallback: response => {
-              const { count, contacts } = response.body;
+              const { count, contacts } = response.body as {
+                count: number;
+                contacts: contactDb.Contact[];
+              };
               expect(response.status).toBe(200);
               expect(count).toBe(1);
-              expect(contacts[0].details).toStrictEqual(another2.rawJson);
+              expect(contacts[0].rawJson).toStrictEqual(another2.rawJson);
             },
           };
         }),
@@ -704,10 +716,13 @@ describe('/contacts route', () => {
             changeDescription: 'phone regexp & lastName (multi input)',
             body: { phoneNumber, lastName: 'curi' },
             expectCallback: response => {
-              const { count, contacts } = response.body;
+              const { count, contacts } = response.body as {
+                count: number;
+                contacts: contactDb.Contact[];
+              };
               expect(response.status).toBe(200);
               expect(count).toBe(1);
-              expect(contacts[0].details).toStrictEqual(another2.rawJson);
+              expect(contacts[0].rawJson).toStrictEqual(another2.rawJson);
             },
           };
         }),
@@ -749,10 +764,10 @@ describe('/contacts route', () => {
           body,
           expectCallback: response => {
             expect(response.status).toBe(200);
-            const { contacts } = response.body;
+            const { contacts } = response.body as { contacts: contactDb.Contact[] };
 
             expect(contacts).toHaveLength(1);
-            expect(contacts[0].details).toMatchObject(withTaskId.rawJson);
+            expect(contacts[0].rawJson).toMatchObject(withTaskId.rawJson);
           },
         })),
         {
@@ -766,7 +781,7 @@ describe('/contacts route', () => {
             const { contacts } = response.body;
 
             expect(contacts).toHaveLength(1);
-            expect(contacts[0].details).toMatchObject(noHelpline.rawJson);
+            expect(contacts[0].rawJson).toMatchObject(noHelpline.rawJson);
           },
         },
         {
@@ -780,7 +795,7 @@ describe('/contacts route', () => {
             const { contacts } = response.body;
 
             expect(contacts).toHaveLength(1);
-            expect(contacts[0].details).toMatchObject(noHelpline.rawJson);
+            expect(contacts[0].rawJson).toMatchObject(noHelpline.rawJson);
           },
         },
         {
@@ -798,10 +813,10 @@ describe('/contacts route', () => {
               compareTimeOfContactDesc,
             );
             createdContactsByTimeOfContact.forEach(c => {
-              const searchContact = contacts.find(results => results.contactId === c.id);
+              const searchContact = contacts.find(result => result.id === c.id);
               if (searchContact) {
                 // Check that all contacts contains the appropriate info
-                expect(c.rawJson).toMatchObject(searchContact.details);
+                expect(c.rawJson).toMatchObject(searchContact.rawJson);
               }
             });
           },
@@ -826,10 +841,10 @@ describe('/contacts route', () => {
               compareTimeOfContactDesc,
             );
             createdContactsByTimeOfContact.forEach(c => {
-              const searchContact = contacts.find(results => results.contactId === c.id);
+              const searchContact = contacts.find(result => result.id === c.id);
               if (searchContact) {
                 // Check that all contacts contains the appropriate info
-                expect(c.rawJson).toMatchObject(searchContact.details);
+                expect(c.rawJson).toMatchObject(searchContact.rawJson);
               }
             });
           },
@@ -851,10 +866,8 @@ describe('/contacts route', () => {
               throw new Error('withCSAMReports is undefined');
             }
 
-            expect(
-              contacts.find(c => withCSAMReports.id.toString() === c.contactId),
-            ).toBeDefined();
-            expect(contacts[0].details).toMatchObject(withCSAMReports.rawJson);
+            expect(contacts.find(c => withCSAMReports.id === c.id)).toBeDefined();
+            expect(contacts[0].rawJson).toMatchObject(withCSAMReports.rawJson);
             contacts[0].csamReports.forEach(r => {
               expect(csamReports.find(r2 => r2.id === r.id)).toMatchObject({
                 ...r,
@@ -879,14 +892,16 @@ describe('/contacts route', () => {
             expect(count).toBe(2);
 
             const [c2, c1] = contacts; // result is sorted DESC
-            expect(c1.details).toStrictEqual(contact1.rawJson);
-            expect(c2.details).toStrictEqual(contact2.rawJson);
+            expect(c1.rawJson).toStrictEqual(contact1.rawJson);
+            expect(c2.rawJson).toStrictEqual(contact2.rawJson);
             // Test the association
             expect(c1.csamReports).toHaveLength(0);
             expect(c2.csamReports).toHaveLength(0);
           },
         },
-      ]).test(
+      ];
+
+      each(testCases).test(
         'should return 200 with $changeDescription',
         async ({ expectCallback, queryParams = '', body = {} }) => {
           const response = await request
@@ -941,25 +956,17 @@ describe('/contacts route', () => {
 
         if (expectTranscripts) {
           expect(
-            (<contactApi.SearchContact>res.body.contacts[0]).conversationMedia?.some(
-              isS3StoredTranscript,
-            ),
+            res.body.contacts[0].conversationMedia?.some(isS3StoredTranscript),
           ).toBeTruthy();
           expect(
-            (<contactApi.SearchContact>res.body.contacts[0]).conversationMedia?.some(
-              cm => cm.storeType === 'S3',
-            ),
+            res.body.contacts[0].conversationMedia?.some(cm => cm.storeType === 'S3'),
           ).toBeTruthy();
         } else {
           expect(
-            (<contactApi.SearchContact>res.body.contacts[0]).conversationMedia?.some(
-              isS3StoredTranscript,
-            ),
+            res.body.contacts[0].conversationMedia?.some(isS3StoredTranscript),
           ).toBeFalsy();
           expect(
-            (<contactApi.SearchContact>res.body.contacts[0]).conversationMedia?.some(
-              cm => cm.storeType === 'S3',
-            ),
+            res.body.contacts[0].conversationMedia?.some(cm => cm.storeType === 'S3'),
           ).toBeFalsy();
         }
 
@@ -974,7 +981,7 @@ describe('/contacts route', () => {
         const csamReportId2 = 'csam-report-id-2';
         const csamReportId3 = 'csam-report-id-2';
 
-        const contactToCreate = {
+        const contactToCreate: NewContactRecord = {
           ...withTaskId,
           taskId: 'Test CSAM filter',
         };
@@ -1027,13 +1034,9 @@ describe('/contacts route', () => {
         expect(res.status).toBe(200);
         expect(res.body.count).toBe(1);
 
-        expect((<contactApi.SearchContact>res.body.contacts[0]).csamReports).toHaveLength(
-          2,
-        );
+        expect(res.body.contacts[0].csamReports).toHaveLength(2);
         expect(
-          (<contactApi.SearchContact>res.body.contacts[0]).csamReports.find(
-            r => r.id === newReport3.id,
-          ),
+          res.body.contacts[0].csamReports.find(r => r.id === newReport3.id),
         ).toBeFalsy();
 
         // // Remove records to not interfere with following tests

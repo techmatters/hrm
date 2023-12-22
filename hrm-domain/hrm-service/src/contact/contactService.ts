@@ -34,7 +34,6 @@ import { ContactRawJson, ReferralWithoutContactId } from './contactJson';
 import { setupCanForRules } from '../permissions/setupCanForRules';
 import { actionsMaps } from '../permissions';
 import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
-import { CSAMReport } from '../csam-report/csam-report';
 import { createReferral } from '../referral/referral-model';
 import { createContactJob } from '../contact-job/contact-job';
 import { isChatChannel } from './channelTypes';
@@ -62,27 +61,6 @@ export type PatchPayload = Omit<
 > & {
   rawJson?: Partial<ContactRawJson>;
   referrals?: ReferralWithoutContactId[];
-};
-
-export type SearchContact = {
-  contactId: string;
-  overview: {
-    helpline: string;
-    dateTime: string;
-    customerNumber: string;
-    callType: string;
-    categories: {};
-    counselor: string;
-    notes: string;
-    channel: string;
-    conversationDuration: number;
-    createdBy: string;
-    taskId: string;
-  };
-  details: Contact['rawJson'];
-  csamReports: CSAMReport[];
-  referrals?: ReferralWithoutContactId[];
-  conversationMedia: ConversationMedia[];
 };
 
 const filterExternalTranscripts = (contact: Contact): Contact => {
@@ -347,72 +325,6 @@ export const addConversationMediaToContact = async (
   });
 };
 
-function isNullOrEmptyObject(obj) {
-  return obj == null || Object.keys(obj).length === 0;
-}
-
-function isValidContact(contact) {
-  return (
-    contact &&
-    contact.rawJson &&
-    !isNullOrEmptyObject(contact.rawJson.callType) &&
-    typeof contact.rawJson.childInformation === 'object' &&
-    typeof contact.rawJson.callerInformation === 'object' &&
-    !isNullOrEmptyObject(contact.rawJson.caseInformation)
-  );
-}
-
-// Legacy support - shouldn't be required once all deployed flex clients are v2.12+
-function convertContactsToSearchResults(contacts: Contact[]): SearchContact[] {
-  return contacts
-    .map(contact => {
-      if (!isValidContact(contact)) {
-        const contactJson = JSON.stringify(contact);
-        console.log(`Invalid Contact: ${contactJson}`);
-        return null;
-      }
-
-      const contactId = contact.id;
-      const dateTime = contact.timeOfContact?.toISOString() ?? '--';
-      const customerNumber = contact.number;
-      const { callType, categories } = contact.rawJson;
-      const counselor = contact.twilioWorkerId;
-      const notes = contact.rawJson.caseInformation.callSummary ?? '--';
-      const {
-        channel,
-        conversationDuration,
-        createdBy,
-        csamReports,
-        helpline,
-        taskId,
-        referrals,
-        conversationMedia,
-      } = contact;
-
-      return {
-        contactId: contactId.toString(),
-        overview: {
-          helpline,
-          dateTime,
-          customerNumber,
-          callType,
-          categories,
-          counselor,
-          createdBy,
-          notes: notes.toString(),
-          channel,
-          conversationDuration,
-          taskId,
-        },
-        csamReports,
-        referrals,
-        conversationMedia,
-        details: contact.rawJson as ContactRawJson,
-      };
-    })
-    .filter(contact => contact);
-}
-
 /**
  * Check if the user can view any contact given:
  * - search permissions
@@ -449,10 +361,9 @@ const generalizedSearchContacts =
       user: TwilioUser;
       searchPermissions: SearchPermissions;
     },
-    originalFormat?: boolean,
   ): Promise<{
     count: number;
-    contacts: SearchContact[] | Contact[];
+    contacts: Contact[];
   }> => {
     const applyTransformations = bindApplyTransformations(can, user);
     const { limit, offset } = getPaginationElements(query);
@@ -495,7 +406,7 @@ const generalizedSearchContacts =
 
     return {
       count: unprocessedResults.count,
-      contacts: originalFormat ? contacts : convertContactsToSearchResults(contacts),
+      contacts,
     };
   };
 
@@ -519,7 +430,6 @@ export const getContactsByProfileId = async (
       { profileId },
       query,
       ctx,
-      true,
     );
 
     return newOk({ data: contacts });

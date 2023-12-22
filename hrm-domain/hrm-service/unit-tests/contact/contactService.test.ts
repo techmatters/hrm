@@ -20,7 +20,6 @@ import {
   connectContactToCase,
   createContact,
   patchContact,
-  SearchContact,
   searchContacts,
 } from '../../src/contact/contactService';
 
@@ -347,7 +346,7 @@ describe('patchContact', () => {
 describe('searchContacts', () => {
   const accountSid = 'account-sid',
     contactSearcher = 'contact-searcher';
-  test('Converts contacts returned by data layer to search results', async () => {
+  test('Returns contacts returned by data layer unmodified', async () => {
     const jillSmith = new ContactBuilder()
       .withId(4321)
       .withHelpline('a helpline')
@@ -377,50 +376,9 @@ describe('searchContacts', () => {
       .withCreatedAt(new Date('2020-03-15T00:00:00Z'))
       .withTimeOfContact(new Date('2020-03-15T00:00:00Z'))
       .build();
-    const expectedSearchResult: { count: number; contacts: SearchContact[] } = {
+    const expectedSearchResult: { count: number; contacts: contactDb.Contact[] } = {
       count: 2,
-      contacts: [
-        {
-          contactId: '4321',
-          overview: {
-            helpline: 'a helpline',
-            dateTime: '2020-03-10T00:00:00.000Z',
-            customerNumber: '+12025550142',
-            createdBy: 'contact-searcher',
-            callType: 'Child calling about self',
-            categories: {},
-            counselor: 'twilio-worker-id',
-            notes: 'Lost young boy',
-            channel: 'voice',
-            conversationDuration: 10,
-            taskId: 'jill-smith-task',
-          },
-          details: jillSmith.rawJson,
-          csamReports: [],
-          referrals: [],
-          conversationMedia: [],
-        },
-        {
-          contactId: '1234',
-          overview: {
-            helpline: undefined,
-            taskId: 'sarah-park-task',
-            dateTime: '2020-03-15T00:00:00.000Z',
-            customerNumber: 'Anonymous',
-            createdBy: 'contact-searcher',
-            callType: 'Child calling about self',
-            categories: {},
-            counselor: 'twilio-worker-id',
-            notes: 'Young pregnant woman',
-            channel: '',
-            conversationDuration: undefined,
-          },
-          details: sarahPark.rawJson,
-          csamReports: [],
-          referrals: [],
-          conversationMedia: [],
-        },
-      ],
+      contacts: [jillSmith, sarahPark],
     };
 
     const mockedResult = {

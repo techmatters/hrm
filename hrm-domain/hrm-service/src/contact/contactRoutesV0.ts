@@ -128,19 +128,11 @@ contactsRouter.delete(
 contactsRouter.post('/search', publicEndpoint, async (req, res) => {
   const { accountSid } = req;
 
-  const searchResults = await searchContacts(
-    accountSid,
-    req.body,
-    req.query,
-    {
-      can: req.can,
-      user: req.user,
-      searchPermissions: req.searchPermissions,
-    },
-    // This logic seems odd until you realise that we are moving to the 'original' format by default, the other format is 'legacy
-    // After Flex 2.12 is deployed everywhere, support for the legacy format can be removed
-    req.query.legacyFormat === 'false',
-  );
+  const searchResults = await searchContacts(accountSid, req.body, req.query, {
+    can: req.can,
+    user: req.user,
+    searchPermissions: req.searchPermissions,
+  });
   res.json(searchResults);
 });
 

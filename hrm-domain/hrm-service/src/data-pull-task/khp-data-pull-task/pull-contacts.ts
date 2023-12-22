@@ -33,14 +33,12 @@ export const pullContacts = async (startDate: Date, endDate: Date) => {
   const { accountSid, bucket } = await getContext();
 
   const searchParams = getSearchParams(startDate, endDate);
-  const originalFormat = true;
 
   const contacts = await autoPaginate(contactApi.searchContacts, [
     accountSid,
     searchParams,
     defaultLimitAndOffset,
     maxPermissions,
-    originalFormat,
   ]);
 
   const uploadPromises = contacts.map(contact => {
