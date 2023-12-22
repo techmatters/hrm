@@ -29,13 +29,18 @@ export type AlbHandlerResult = ALBResult;
 
 export type Methods = (typeof METHODS)[keyof typeof METHODS];
 
-export type MethodHandler = (event: AlbHandlerEvent) => Promise<any>;
+export type MethodHandler<TError extends string> = (
+  event: AlbHandlerEvent,
+) => Promise<TResult<TError, any>>;
 
-export type MethodHandlers = Partial<Record<Methods, MethodHandler>>;
+export type MethodHandlers<TError extends string> = Partial<
+  Record<Methods, MethodHandler<TError>>
+>;
 
-export type HandleAlbEventParams = {
+export type HandleAlbEventParams<TError extends string> = {
   event: AlbHandlerEvent;
-  methodHandlers: MethodHandlers;
+  methodHandlers: MethodHandlers<TError>;
+  mapError?: { [K in TError]: number };
 };
 
 export type GetHeadersParams = {
@@ -55,10 +60,11 @@ export const getHeaders = ({ allowedMethods }: GetHeadersParams) => ({
     'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
 });
 
-export const handleAlbEvent = async ({
+export const handleAlbEvent = async <TError extends string>({
   event,
   methodHandlers,
-}: HandleAlbEventParams): Promise<AlbHandlerResult> => {
+  mapError,
+}: HandleAlbEventParams<TError>): Promise<AlbHandlerResult> => {
   if (event.httpMethod === 'OPTIONS') {
     return {
       statusCode: 200,
@@ -75,7 +81,7 @@ export const handleAlbEvent = async ({
     };
   }
 
-  const result: TResult<any> = await methodHandler(event);
+  const result = await methodHandler(event);
 
   if (isOk<any>(result)) {
     return {
@@ -88,7 +94,7 @@ export const handleAlbEvent = async ({
   if (isErr(result)) {
     console.error(result.message);
     return {
-      statusCode: result.intoHTTPError().statusCode,
+      statusCode: (mapError && mapError[result.error]) || 500,
       headers: getHeaders({ allowedMethods: Object.keys(methodHandlers) }),
       body: result.message,
     };

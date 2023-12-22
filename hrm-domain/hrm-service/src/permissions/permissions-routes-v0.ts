@@ -23,7 +23,7 @@ import {
   isValidFileLocation,
 } from './canPerformActionOnObject';
 import { TargetKind, isTargetKind } from './actions';
-import { TResult, newErr, isErr, newOk, ErrorResultKind } from '@tech-matters/types';
+import { TResult, newErr, isErr, newOk, mapHTTPError } from '@tech-matters/types';
 
 export default (permissions: Permissions) => {
   const permissionsRouter = SafeRouter();
@@ -52,14 +52,17 @@ export default (permissions: Permissions) => {
   }: {
     objectType?: string;
     objectId?: string;
-  }): TResult<{
-    objectType: TargetKind;
-    objectId: number;
-  }> => {
+  }): TResult<
+    'InvalidObjectType' | 'InternalServerError',
+    {
+      objectType: TargetKind;
+      objectId: number;
+    }
+  > => {
     if (!objectType || !isTargetKind(objectType)) {
       return newErr({
         message: 'invalid objectType',
-        kind: ErrorResultKind.BadRequestError,
+        error: 'InvalidObjectType',
       });
     }
 
@@ -67,7 +70,7 @@ export default (permissions: Permissions) => {
     if (!objectId || !Number.isInteger(parsedId)) {
       return newErr({
         message: 'invalid objectId',
-        kind: ErrorResultKind.BadRequestError,
+        error: 'InternalServerError',
       });
     }
 
@@ -86,7 +89,9 @@ export default (permissions: Permissions) => {
       });
 
       if (isErr(parseResult)) {
-        return next(parseResult.intoHTTPError());
+        return next(
+          mapHTTPError(parseResult, { InvalidObjectType: 400, InternalServerError: 500 }),
+        );
       }
 
       const { objectType, objectId } = parseResult.data;
@@ -101,7 +106,12 @@ export default (permissions: Permissions) => {
       });
 
       if (isErr(canPerformResult)) {
-        return next(canPerformResult.intoHTTPError());
+        return next(
+          mapHTTPError(canPerformResult, {
+            InvalidObjectType: 400,
+            InternalServerError: 500,
+          }),
+        );
       }
 
       if (!canPerformResult.data) {
@@ -118,7 +128,7 @@ export default (permissions: Permissions) => {
         });
 
         if (isErr(isValidLocationResult)) {
-          return next(isValidLocationResult.intoHTTPError());
+          return next(mapHTTPError(isValidLocationResult, { InternalServerError: 500 }));
         }
 
         if (!isValidLocationResult.data) {

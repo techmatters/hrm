@@ -16,7 +16,7 @@
 
 import { AlbHandlerEvent } from '@tech-matters/alb-handler';
 import { GetSignedUrlMethods, GET_SIGNED_URL_METHODS } from '@tech-matters/s3-client';
-import { ErrorResultKind, newErr, newOk, TResult } from '@tech-matters/types';
+import { newErr, newOk, TResult } from '@tech-matters/types';
 
 import {
   FileTypes,
@@ -55,7 +55,16 @@ export type Parameters = {
   objectId?: string;
 };
 
-export type ParseParametersResult = TResult<Parameters>;
+export type ParseParametersError =
+  | 'MissingQueryParamsError'
+  | 'MissingRequiredQueryParamsError'
+  | 'MethodNotAllowedError'
+  | 'InvalidObjectTypeError'
+  | 'InvalidFileTypeError'
+  | 'MissingRequiredFileParamsError'
+  | 'InternalServerError';
+
+export type ParseParametersResult = TResult<ParseParametersError, Parameters>;
 
 export type ParsePathParametersResult = {
   accountSid?: string;
@@ -77,7 +86,7 @@ export const parseParameters = (event: AlbHandlerEvent): ParseParametersResult =
   if (!queryStringParameters) {
     return newErr({
       message: ERROR_MESSAGES.MISSING_QUERY_STRING_PARAMETERS,
-      kind: ErrorResultKind.BadRequestError,
+      error: 'MissingQueryParamsError',
     });
   }
 
@@ -98,14 +107,14 @@ export const parseParameters = (event: AlbHandlerEvent): ParseParametersResult =
   if (!method || !bucket || !key || !accountSid || !objectType || !fileType) {
     return newErr({
       message: ERROR_MESSAGES.MISSING_REQUIRED_QUERY_STRING_PARAMETERS,
-      kind: ErrorResultKind.BadRequestError,
+      error: 'MissingRequiredQueryParamsError',
     });
   }
 
   if (!isSignedUrlMethod(method)) {
     return newErr({
       message: ERROR_MESSAGES.INVALID_METHOD,
-      kind: ErrorResultKind.MethodNotAllowedError,
+      error: 'MethodNotAllowedError',
     });
   }
 
@@ -114,14 +123,14 @@ export const parseParameters = (event: AlbHandlerEvent): ParseParametersResult =
   if (!objectTypeConfig || !isAuthenticationObjectType(objectType)) {
     return newErr({
       message: ERROR_MESSAGES.INVALID_OBJECT_TYPE,
-      kind: ErrorResultKind.BadRequestError,
+      error: 'InvalidObjectTypeError',
     });
   }
 
   if (!objectTypeConfig.fileTypes.includes(fileType as FileTypes)) {
     return newErr({
       message: ERROR_MESSAGES.INVALID_FILE_TYPE,
-      kind: ErrorResultKind.BadRequestError,
+      error: 'InvalidFileTypeError',
     });
   }
 
@@ -132,7 +141,7 @@ export const parseParameters = (event: AlbHandlerEvent): ParseParametersResult =
   if (missingRequiredParameters.length > 0) {
     return newErr({
       message: ERROR_MESSAGES.MISSING_REQUIRED_PARAMETERS_FOR_FILE_TYPE,
-      kind: ErrorResultKind.BadRequestError,
+      error: 'MissingRequiredFileParamsError',
     });
   }
 

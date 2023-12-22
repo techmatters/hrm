@@ -14,76 +14,43 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 import createError from 'http-errors';
-import { assertExhaustive } from './assertExhaustive';
 
 type ResultBase = {
   readonly _tag: 'Result';
 };
 
-export enum ErrorResultKind {
-  BadRequestError,
-  UnauthorizedError,
-  ForbiddenError,
-  NotFoundError,
-  MethodNotAllowedError,
-  InternalServerError,
-  NotImplementedError,
-}
-
-const errorKindntoHTTPStatusCode = (kind: ErrorResultKind): number => {
-  switch (kind) {
-    case ErrorResultKind.BadRequestError: {
-      return 400;
-    }
-    case ErrorResultKind.UnauthorizedError: {
-      return 401;
-    }
-    case ErrorResultKind.ForbiddenError: {
-      return 403;
-    }
-    case ErrorResultKind.NotFoundError: {
-      return 404;
-    }
-    case ErrorResultKind.MethodNotAllowedError: {
-      return 405;
-    }
-    case ErrorResultKind.InternalServerError: {
-      return 500;
-    }
-    case ErrorResultKind.NotImplementedError: {
-      return 501;
-    }
-    default: {
-      assertExhaustive(kind);
-      return 500; // return 500 to make TS happy, but above line should never allow this
-    }
-  }
-};
-
-type NewErrorResultParams = {
+type NewErrorResultParams<TError extends string> = {
   message: string;
-  kind: ErrorResultKind;
+  error: TError;
 };
 
-type ErrorResult = ResultBase & {
+type ErrorResult<TError> = ResultBase & {
   status: 'error';
   message: string;
-  kind: ErrorResultKind;
+  error: TError;
   readonly unwrap: () => never;
-  readonly intoHTTPError: () => ReturnType<typeof createError>;
 };
 
-export const newErr = ({ message, kind }: NewErrorResultParams): ErrorResult => ({
+export const mapHTTPError = <TError extends string>(
+  err: ErrorResult<TError>,
+  mapper: { [E in TError]: number },
+): ReturnType<typeof createError> => {
+  return createError(mapper[err.error], err.message);
+};
+
+export const newErr = <TError extends string>({
+  message,
+  error,
+}: NewErrorResultParams<TError>): ErrorResult<TError> => ({
   _tag: 'Result',
   status: 'error',
   message,
-  kind,
+  error,
   unwrap: () => {
     throw new Error(
       `TResult Error: Attempted to unwrap Err variant with message: ${message}`,
     );
   },
-  intoHTTPError: () => createError(errorKindntoHTTPStatusCode(kind), message),
 });
 
 type SuccessResult<TData> = ResultBase & {
@@ -109,12 +76,16 @@ export const newOk = <TData>({
   unwrap: () => data,
 });
 
-export type TResult<TData> = SuccessResult<TData> | ErrorResult;
+export type TResult<TError extends string, TData> =
+  | ErrorResult<TError>
+  | SuccessResult<TData>;
 
-const isResult = (r: unknown): r is TResult<any> => (r as any)?._tag === 'Result';
+const isResult = (r: unknown): r is TResult<any, any> => (r as any)?._tag === 'Result';
 
-export const isErr = (result: TResult<any>): result is ErrorResult =>
-  isResult(result) && result.status === 'error';
+export const isErr = <TError extends string>(
+  result: TResult<TError, any>,
+): result is ErrorResult<TError> => isResult(result) && result.status === 'error';
 
-export const isOk = <TData>(result: TResult<TData>): result is SuccessResult<TData> =>
-  isResult(result) && result.status === 'success';
+export const isOk = <TData>(
+  result: TResult<any, TData>,
+): result is SuccessResult<TData> => isResult(result) && result.status === 'success';

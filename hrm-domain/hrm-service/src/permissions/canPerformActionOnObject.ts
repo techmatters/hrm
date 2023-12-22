@@ -24,7 +24,7 @@ import {
   getConversationMediaByContactId,
   isS3StoredConversationMedia,
 } from '../conversation-media/conversation-media';
-import { ErrorResultKind, TResult, newErr, newOk } from '@tech-matters/types';
+import { TResult, newErr, newOk } from '@tech-matters/types';
 
 export const canPerformActionsOnObject = async <T extends TargetKind>({
   accountSid,
@@ -40,12 +40,12 @@ export const canPerformActionsOnObject = async <T extends TargetKind>({
   actions: string[];
   can: ReturnType<typeof setupCanForRules>;
   user: TwilioUser;
-}): Promise<TResult<boolean>> => {
+}): Promise<TResult<'InvalidObjectType' | 'InternalServerError', boolean>> => {
   try {
     if (!isValidSetOfActionsForTarget(targetKind, actions)) {
       return newErr({
         message: 'invalid actions for objectType',
-        kind: ErrorResultKind.BadRequestError,
+        error: 'InvalidObjectType',
       });
     }
 
@@ -77,7 +77,7 @@ export const canPerformActionsOnObject = async <T extends TargetKind>({
   } catch (error) {
     return newErr({
       message: (error as Error).message,
-      kind: ErrorResultKind.InternalServerError,
+      error: 'InternalServerError',
     });
   }
 };
@@ -111,7 +111,7 @@ export const isValidFileLocation = async ({
   objectId: number;
   bucket: string;
   key: string;
-}): Promise<TResult<boolean>> => {
+}): Promise<TResult<'InternalServerError', boolean>> => {
   try {
     switch (targetKind) {
       case 'contact': {
@@ -142,7 +142,7 @@ export const isValidFileLocation = async ({
   } catch (error) {
     return newErr({
       message: (error as Error).message,
-      kind: ErrorResultKind.InternalServerError,
+      error: 'InternalServerError',
     });
   }
 };

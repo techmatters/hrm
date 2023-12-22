@@ -17,6 +17,7 @@ import { TResult } from '@tech-matters/types';
 import filesUrlsAuthenticator, {
   HrmAuthenticateFilesUrlsRequestData,
 } from './filesUrlsAuthenticator';
+import type { CallHrmApiError } from './callHrmApi';
 
 const types = {
   filesUrls: (params: HrmAuthenticateParameters) => filesUrlsAuthenticator(params),
@@ -35,7 +36,7 @@ export const isAuthenticationObjectType = (
 
 export type HrmAuthenticateTypes = keyof typeof types;
 
-export type HrmAuthenticateResult = TResult<true>;
+export type HrmAuthenticateResult = TResult<CallHrmApiError, true>;
 
 export type HrmAuthenticateParameters = {
   accountSid: string;

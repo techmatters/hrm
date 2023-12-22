@@ -14,17 +14,26 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { AlbHandlerEvent } from '@tech-matters/alb-handler';
-import { TResult, newErr, isErr, newOk, ErrorResultKind } from '@tech-matters/types';
+import { type AlbHandlerEvent } from '@tech-matters/alb-handler';
+import { type TResult, newErr, isErr, newOk } from '@tech-matters/types';
 import { authenticate } from '@tech-matters/hrm-authentication';
 import { getSignedUrl } from '@tech-matters/s3-client';
-import { parseParameters } from './parseParameters';
+import { type ParseParametersError, parseParameters } from './parseParameters';
+import { type CallHrmApiError } from '@tech-matters/hrm-authentication/callHrmApi';
 
 export type GetSignedS3UrlSuccessResultData = {
   media_url: string;
 };
 
-export type GetSignedS3UrlResult = TResult<GetSignedS3UrlSuccessResultData>;
+export type GetSignedS3UrlError =
+  | 'InternalServerError'
+  | CallHrmApiError
+  | ParseParametersError;
+
+export type GetSignedS3UrlResult = TResult<
+  GetSignedS3UrlError,
+  GetSignedS3UrlSuccessResultData
+>;
 
 /**
  * Twilio insights sends a basic auth header with the username as the string token and the password as the flexJWE.
@@ -88,7 +97,7 @@ const getSignedS3Url = async (event: AlbHandlerEvent): Promise<GetSignedS3UrlRes
   } catch (error) {
     return newErr({
       message: error as string,
-      kind: ErrorResultKind.InternalServerError,
+      error: 'InternalServerError',
     });
   }
 };
