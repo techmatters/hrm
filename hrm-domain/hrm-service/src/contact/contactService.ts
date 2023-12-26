@@ -14,7 +14,6 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import omit from 'lodash/omit';
 import { ContactJobType, TResult, isErr, newErr, newOk } from '@tech-matters/types';
 import {
   connectToCase,
@@ -27,11 +26,11 @@ import {
   patch,
   search,
   searchByProfileId,
-} from './contact-data-access';
-import { retrieveCategories } from './categories';
+} from './contactDataAccess';
+
 import { PaginationQuery, getPaginationElements } from '../search';
 import type { NewContactRecord } from './sql/contact-insert-sql';
-import { ContactRawJson, ReferralWithoutContactId } from './contact-json';
+import { ContactRawJson, ReferralWithoutContactId } from './contactJson';
 import { InitializedCan } from '../permissions/initializeCanForRules';
 import { actionsMaps } from '../permissions';
 import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
@@ -47,7 +46,6 @@ import {
   createConversationMedia,
   isS3StoredTranscript,
   isS3StoredTranscriptPending,
-  LegacyConversationMedia,
   NewConversationMedia,
 } from '../conversation-media/conversation-media';
 import { Profile, getOrCreateProfileWithIdentifier } from '../profile/profile';
@@ -55,20 +53,8 @@ import { deleteContactReferrals } from '../referral/referral-data-access';
 import { DatabaseUniqueConstraintViolationError, inferPostgresError } from '../sql';
 
 // Re export as is:
-export { Contact } from './contact-data-access';
-export * from './contact-json';
-
-export type WithLegacyCategories<T extends Contact | NewContactRecord | PatchPayload> =
-  Omit<T, 'rawJson'> & {
-    rawJson?: Partial<
-      Omit<ContactRawJson, 'caseInformation'> & {
-        caseInformation: Record<
-          string,
-          string | boolean | Record<string, Record<string, boolean>>
-        > & { categories?: Record<string, Record<string, boolean>> };
-      }
-    >;
-  };
+export { Contact } from './contactDataAccess';
+export * from './contactJson';
 
 export type PatchPayload = Omit<
   ExistingContactRecord,
@@ -93,90 +79,16 @@ export type SearchContact = {
     createdBy: string;
     taskId: string;
   };
-  details: WithLegacyCategories<Contact>['rawJson'];
+  details: Contact['rawJson'];
   csamReports: CSAMReport[];
   referrals?: ReferralWithoutContactId[];
   conversationMedia: ConversationMedia[];
 };
 
-export type CreateContactPayload = WithLegacyCategories<NewContactRecord> & {
+export type CreateContactPayload = NewContactRecord & {
   csamReports?: CSAMReport[];
   referrals?: ReferralWithoutContactId[];
-  conversationMedia?: NewConversationMedia[];
 };
-
-const adaptLegacyCategories = <T extends NewContactRecord | PatchPayload>(
-  contact: WithLegacyCategories<T>,
-): T => {
-  if (!contact.rawJson?.caseInformation?.categories) return contact as T;
-  const { categories: legacyCategories, ...caseInformationWithoutCategories } =
-    contact.rawJson.caseInformation ?? {};
-  return {
-    ...contact,
-    rawJson: {
-      ...contact.rawJson,
-      categories: contact.rawJson.categories ?? retrieveCategories(legacyCategories),
-      caseInformation:
-        caseInformationWithoutCategories as ContactRawJson['caseInformation'],
-    },
-  } as T;
-};
-
-const includeLegacyCategories = (contact: Contact): WithLegacyCategories<Contact> => {
-  const legacyCategoryEntries = Object.entries(contact.rawJson.categories ?? {}).map(
-    ([category, subcategories]) => {
-      const subcategoryMap = Object.fromEntries(
-        subcategories.map(subcategory => [subcategory, true]),
-      );
-      return [category, subcategoryMap];
-    },
-  );
-  const legacyCategories = Object.fromEntries(legacyCategoryEntries);
-
-  return {
-    ...contact,
-    rawJson: {
-      ...contact.rawJson,
-      caseInformation: {
-        ...contact.rawJson.caseInformation,
-        categories: legacyCategories,
-      },
-    },
-  };
-};
-
-// TODO: Remove once all Flex clients are using new ConversationMedia model
-const intoNewConversationMedia = (cm: LegacyConversationMedia): NewConversationMedia => {
-  const { store: storeType, ...rest } = cm;
-  return {
-    storeType,
-    storeTypeSpecificData: {
-      ...rest,
-    },
-  } as NewConversationMedia;
-};
-// TODO: Remove once all Flex clients are using new ConversationMedia model
-const intoLegacyConversationMedia = (cm: ConversationMedia): LegacyConversationMedia => {
-  const { storeType, storeTypeSpecificData } = cm;
-  return {
-    store: storeType,
-    ...storeTypeSpecificData,
-  } as LegacyConversationMedia;
-};
-// TODO: Remove once all Flex clients are using new ConversationMedia model
-const addLegacyConversationMedia = (contact: Contact): Contact =>
-  contact.conversationMedia?.length
-    ? {
-        ...contact,
-        rawJson: {
-          ...contact.rawJson,
-          conversationMedia: contact.conversationMedia.map(intoLegacyConversationMedia),
-        },
-      }
-    : {
-        ...contact,
-        rawJson: omit(contact.rawJson, 'conversationMedia'),
-      };
 
 const filterExternalTranscripts = (contact: Contact): Contact => {
   const { conversationMedia, ...rest } = contact;
@@ -204,18 +116,12 @@ const permissionsBasedTransformations: PermissionsBasedTransformation[] = [
 
 export const bindApplyTransformations =
   (can: InitializedCan, user: TwilioUser) =>
-  (contact: Contact): WithLegacyCategories<Contact> => {
-    const permissionsBasedTransformed = permissionsBasedTransformations.reduce(
+  (contact: Contact): Contact =>
+    permissionsBasedTransformations.reduce(
       (transformed, { action, transformation }) =>
         !can(user, action, contact) ? transformation(transformed) : transformed,
       contact,
     );
-
-    // TODO: Remove once all Flex clients are using new ConversationMedia model
-    const transformed = addLegacyConversationMedia(permissionsBasedTransformed); // This must be the last step in the transformations, except for the legacy categories
-
-    return includeLegacyCategories(transformed);
-  };
 
 export const getContactById = async (
   accountSid: string,
@@ -243,31 +149,17 @@ const getNewContactPayload = (
   newContactPayload: NewContactRecord;
   csamReportsPayload?: CSAMReport[];
   referralsPayload?: ReferralWithoutContactId[];
-  conversationMediaPayload?: NewConversationMedia[];
 } => {
   const {
     csamReports: csamReportsPayload,
     referrals: referralsPayload,
-    conversationMedia,
     ...newContactPayload
-  } = newContact as CreateContactPayload; // typecast just to get rid of legacy form, if for some reason is here
-
-  const { conversationMedia: legacyConversationMedia } = newContactPayload.rawJson ?? {};
-
-  const conversationMediaPayload = conversationMedia
-    ? conversationMedia
-    : legacyConversationMedia
-    ? legacyConversationMedia.map(intoNewConversationMedia)
-    : []; // prioritize new format, but allow legacy Flex clients to send conversationMedia
+  } = newContact;
 
   return {
-    newContactPayload: omit(
-      adaptLegacyCategories<NewContactRecord>(newContactPayload),
-      'rawJson.conversationMedia',
-    ),
+    newContactPayload,
     csamReportsPayload,
     referralsPayload,
-    conversationMediaPayload,
   };
 };
 
@@ -310,16 +202,12 @@ export const createContact = async (
   finalize: boolean,
   newContact: CreateContactPayload,
   { can, user }: { can: InitializedCan; user: TwilioUser },
-): Promise<WithLegacyCategories<Contact>> => {
+): Promise<Contact> => {
   for (let retries = 1; retries < 4; retries++) {
     try {
       return await db.tx(async conn => {
-        const {
-          newContactPayload,
-          csamReportsPayload,
-          referralsPayload,
-          conversationMediaPayload,
-        } = getNewContactPayload(newContact);
+        const { newContactPayload, csamReportsPayload, referralsPayload } =
+          getNewContactPayload(newContact);
 
         const { profileId, identifierId } = await initProfile(
           conn,
@@ -389,37 +277,11 @@ export const createContact = async (
             }
           }
 
-          const createdConversationMedia: ConversationMedia[] = [];
-          if (conversationMediaPayload && conversationMediaPayload.length) {
-            for (const cm of conversationMediaPayload) {
-              const conversationMedia = await createConversationMedia(conn)(accountSid, {
-                contactId: contact.id,
-                ...cm,
-              });
-
-              createdConversationMedia.push(conversationMedia);
-            }
-          }
-
-          // if pertinent, create retrieve-transcript job
-          const pendingTranscript = findS3StoredTranscriptPending(
-            contact,
-            createdConversationMedia,
-          );
-          if (pendingTranscript) {
-            await createContactJob(conn)({
-              jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
-              resource: contact,
-              additionalPayload: { conversationMediaId: pendingTranscript.id },
-            });
-          }
-
           // Compose the final shape of a contact to return
           contactResult = {
             ...contact,
             csamReports,
             referrals: createdReferrals,
-            conversationMedia: createdConversationMedia,
           };
         }
 
@@ -456,11 +318,9 @@ export const patchContact = async (
   updatedBy: string,
   finalize: boolean,
   contactId: string,
-  contactPatch: PatchPayload,
+  { referrals, rawJson, ...restOfPatch }: PatchPayload,
   { can, user }: { can: InitializedCan; user: TwilioUser },
-): Promise<WithLegacyCategories<Contact>> => {
-  const { referrals, rawJson, ...restOfPatch } =
-    adaptLegacyCategories<PatchPayload>(contactPatch);
+): Promise<Contact> => {
   return db.tx(async conn => {
     // if referrals are present, delete all existing and create new ones, otherwise leave them untouched
     // Explicitly specifying an empty array will delete all existing referrals
@@ -500,8 +360,13 @@ export const connectContactToCase = async (
   contactId: string,
   caseId: string,
   { can, user }: { can: InitializedCan; user: TwilioUser },
-): Promise<WithLegacyCategories<Contact>> => {
-  const updated: Contact | undefined = await connectToCase(accountSid, contactId, caseId);
+): Promise<Contact> => {
+  const updated: Contact | undefined = await connectToCase()(
+    accountSid,
+    contactId,
+    caseId,
+    updatedBy,
+  );
   if (!updated) {
     throw new Error(`Contact not found with id ${contactId}`);
   }
@@ -512,11 +377,12 @@ export const connectContactToCase = async (
 
 export const addConversationMediaToContact = async (
   accountSid: string,
-  contactId: string,
-  conversationMediaPayload: ConversationMedia[],
+  contactIdString: string,
+  conversationMediaPayload: NewConversationMedia[],
   { can, user }: { can: InitializedCan; user: TwilioUser },
-): Promise<WithLegacyCategories<Contact>> => {
-  const contact = await getById(accountSid, parseInt(contactId));
+): Promise<Contact> => {
+  const contactId = parseInt(contactIdString);
+  const contact = await getById(accountSid, contactId);
   if (!contact) {
     throw new Error(`Target contact not found (id ${contactId})`);
   }
@@ -570,9 +436,7 @@ function isValidContact(contact) {
 }
 
 // Legacy support - shouldn't be required once all deployed flex clients are v2.12+
-function convertContactsToSearchResults(
-  contacts: WithLegacyCategories<Contact>[],
-): SearchContact[] {
+function convertContactsToSearchResults(contacts: Contact[]): SearchContact[] {
   return contacts
     .map(contact => {
       if (!isValidContact(contact)) {
@@ -661,7 +525,7 @@ const generalizedSearchContacts =
     originalFormat?: boolean,
   ): Promise<{
     count: number;
-    contacts: SearchContact[] | WithLegacyCategories<Contact>[];
+    contacts: SearchContact[] | Contact[];
   }> => {
     const applyTransformations = bindApplyTransformations(can, user);
     const { limit, offset } = getPaginationElements(query);

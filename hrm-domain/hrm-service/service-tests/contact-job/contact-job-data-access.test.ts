@@ -32,7 +32,7 @@ useOpenRules();
 const server = getServer();
 const request = getRequest(server);
 
-import type { Contact } from '../../src/contact/contact-data-access';
+import type { Contact } from '../../src/contact/contactDataAccess';
 
 beforeAll(async () => {
   await mockingProxy.start();

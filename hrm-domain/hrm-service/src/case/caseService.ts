@@ -38,10 +38,7 @@ import { randomUUID } from 'crypto';
 import type { Contact } from '../contact/contact-data-access';
 import { InitializedCan } from '../permissions/initializeCanForRules';
 import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
-import {
-  bindApplyTransformations as bindApplyContactTransformations,
-  WithLegacyCategories,
-} from '../contact/contactService';
+import { bindApplyTransformations as bindApplyContactTransformations } from '../contact/contactService';
 import type { SearchPermissions } from '../permissions/search-permissions';
 import type { Profile } from '../profile/profile-data-access';
 import type { PaginationQuery } from '../search';
@@ -87,11 +84,7 @@ export type CaseService = CaseRecordCommon & {
   id: number;
   childName?: string;
   categories: Record<string, string[]>;
-  connectedContacts?: WithLegacyCategories<Contact>[];
-};
-
-type CaseRecordWithLegacyCategoryContacts = Omit<CaseRecord, 'connectedContacts'> & {
-  connectedContacts: WithLegacyCategories<Contact>[];
+  connectedContacts?: Contact[];
 };
 
 /**
@@ -150,7 +143,7 @@ const caseSectionRecordsToInfo = (
   }, infoLists);
 };
 
-const addCategories = (caseItem: CaseRecordWithLegacyCategoryContacts) => {
+const addCategories = (caseItem: CaseRecord) => {
   const fstContact = (caseItem.connectedContacts ?? [])[0];
 
   return { ...caseItem, categories: fstContact?.rawJson?.categories ?? {} };
@@ -191,7 +184,7 @@ const caseToCaseRecord = (
   };
 };
 
-const caseRecordToCase = (record: CaseRecordWithLegacyCategoryContacts): CaseService => {
+const caseRecordToCase = (record: CaseRecord): CaseService => {
   // Remove legacy case sections
   const info = {
     ...record.info,
@@ -245,8 +238,7 @@ export const createCase = async (
   const created = await create(record, accountSid);
 
   // A new case is always initialized with empty connected contacts. No need to apply mapContactTransformations here
-  // This also means the cast to the legacy category type is safe
-  return caseRecordToCase(created as CaseRecordWithLegacyCategoryContacts);
+  return caseRecordToCase(created);
 };
 
 export const updateCase = async (

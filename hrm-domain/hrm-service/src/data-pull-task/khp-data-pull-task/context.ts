@@ -18,8 +18,13 @@ import { getSsmParameter } from '@tech-matters/ssm-cache';
 
 const sanitizeEnv = (env: string) => (env === 'local' ? 'development' : env);
 
-const hrmEnv = sanitizeEnv(process.env.NODE_ENV ?? 'development');
-const shortCode = hrmEnv === 'development' ? 'AS' : 'CA';
+let hrmEnv = sanitizeEnv(process.env.NODE_ENV ?? 'development');
+let shortCode = process.env.HL ?? (hrmEnv === 'development' ? 'AS' : 'CA');
+
+type ContextConfigOverrides = {
+  shortCodeOverride?: string;
+  hrmEnvOverride?: string;
+};
 
 type Context = {
   accountSid: string;
@@ -27,6 +32,14 @@ type Context = {
 };
 
 let context;
+
+export const applyContextConfigOverrides = ({
+  shortCodeOverride,
+  hrmEnvOverride,
+}: ContextConfigOverrides) => {
+  hrmEnv = hrmEnvOverride ?? hrmEnv;
+  shortCode = shortCodeOverride ?? shortCode;
+};
 
 export const getContext = async (): Promise<Context> => {
   if (!context) {

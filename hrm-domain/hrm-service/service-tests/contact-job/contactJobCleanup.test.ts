@@ -25,7 +25,7 @@ import {
   updateConversationMediaData,
 } from '../../src/conversation-media/conversation-media';
 import { S3ContactMediaType } from '../../src/conversation-media/conversation-media';
-import { getById as getContactById } from '../../src/contact/contact-data-access';
+import { getById as getContactById } from '../../src/contact/contactDataAccess';
 import * as cleanupContactJobsApi from '../../src/contact-job/contact-job-cleanup';
 import {
   completeContactJob,
@@ -40,7 +40,7 @@ useOpenRules();
 const server = getServer();
 const request = getRequest(server);
 
-import type { Contact } from '../../src/contact/contact-data-access';
+import type { Contact } from '../../src/contact/contactDataAccess';
 
 let twilioSpy: jest.SpyInstance;
 
@@ -122,19 +122,20 @@ describe('cleanupContactJobs', () => {
     const res = await request
       .post(`/v0/accounts/${accountSid}/contacts`)
       .set(headers)
-      .send({
-        ...contact1,
-        conversationMedia: [
-          {
-            storeType: 'S3',
-            storeTypeSpecificData: {
-              type: S3ContactMediaType.TRANSCRIPT,
-            },
-          },
-        ],
-      });
+      .send(contact1);
 
-    const contact = res.body as Contact;
+    const mediaAddRes = await request
+      .post(`/v0/accounts/${accountSid}/contacts/${res.body.id}/conversationMedia`)
+      .set(headers)
+      .send([
+        {
+          storeType: 'S3',
+          storeTypeSpecificData: {
+            type: S3ContactMediaType.TRANSCRIPT,
+          },
+        },
+      ]);
+    const contact = mediaAddRes.body as Contact;
 
     await db.tx(connection => {
       createContactJob(connection)({
@@ -165,19 +166,21 @@ describe('cleanupContactJobs', () => {
     const res = await request
       .post(`/v0/accounts/${accountSid}/contacts`)
       .set(headers)
-      .send({
-        ...contact1,
-        conversationMedia: [
-          {
-            storeType: 'S3',
-            storeTypeSpecificData: {
-              type: S3ContactMediaType.TRANSCRIPT,
-            },
-          },
-        ],
-      });
+      .send(contact1);
 
-    const contact = res.body as Contact;
+    const mediaAddRes = await request
+      .post(`/v0/accounts/${accountSid}/contacts/${res.body.id}/conversationMedia`)
+      .set(headers)
+      .send([
+        {
+          storeType: 'S3',
+          storeTypeSpecificData: {
+            type: S3ContactMediaType.TRANSCRIPT,
+          },
+        },
+      ]);
+
+    const contact = mediaAddRes.body as Contact;
 
     await db.tx(connection => {
       createContactJob(connection)({

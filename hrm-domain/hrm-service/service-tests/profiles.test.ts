@@ -416,9 +416,7 @@ describe('/profiles', () => {
         );
       });
 
-      const convertContactToExpect = (
-        contact: contactApi.WithLegacyCategories<contactApi.Contact>,
-      ) => ({
+      const convertContactToExpect = (contact: contactApi.Contact) => ({
         ...contact,
         createdAt: expect.toParseAsDate(),
         updatedAt: expect.toParseAsDate(),

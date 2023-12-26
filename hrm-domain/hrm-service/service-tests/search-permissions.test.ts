@@ -29,7 +29,7 @@ import {
   defaultConfig,
   useOpenRules,
 } from './server';
-import { SearchParameters as ContactSearchParameters } from '../src/contact/contact-data-access';
+import { SearchParameters as ContactSearchParameters } from '../src/contact/contactDataAccess';
 import { SearchParameters as CaseSearchParameters } from '../src/case/caseService';
 import { TargetKind } from '../src/permissions/actions';
 
