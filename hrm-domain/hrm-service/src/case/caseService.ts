@@ -35,7 +35,7 @@ import {
   update,
 } from './case-data-access';
 import { randomUUID } from 'crypto';
-import type { Contact } from '../contact/contact-data-access';
+import type { Contact } from '../contact/contactDataAccess';
 import { InitializedCan } from '../permissions/initializeCanForRules';
 import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { bindApplyTransformations as bindApplyContactTransformations } from '../contact/contactService';
