@@ -36,7 +36,7 @@ import {
 } from './case-data-access';
 import { randomUUID } from 'crypto';
 import type { Contact } from '../contact/contactDataAccess';
-import { setupCanForRules } from '../permissions/setupCanForRules';
+import { InitializedCan } from '../permissions/initializeCanForRules';
 import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { bindApplyTransformations as bindApplyContactTransformations } from '../contact/contactService';
 import type { SearchPermissions } from '../permissions/search-permissions';
@@ -204,7 +204,7 @@ const caseRecordToCase = (record: CaseRecord): CaseService => {
 };
 
 const mapContactTransformations =
-  ({ can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser }) =>
+  ({ can, user }: { can: InitializedCan; user: TwilioUser }) =>
   (caseRecord: CaseRecord) => {
     const applyTransformations = bindApplyContactTransformations(can, user);
     const withTransformedContacts = {
@@ -246,7 +246,7 @@ export const updateCase = async (
   body: Partial<CaseService>,
   accountSid: CaseService['accountSid'],
   workerSid: CaseService['twilioWorkerId'],
-  { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
+  { can, user }: { can: InitializedCan; user: TwilioUser },
 ): Promise<CaseService> => {
   const caseFromDB: CaseRecord = await getById(id, accountSid);
   if (!caseFromDB) {
@@ -271,7 +271,7 @@ export const updateCase = async (
 export const getCase = async (
   id: number,
   accountSid: string,
-  { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
+  { can, user }: { can: InitializedCan; user: TwilioUser },
 ): Promise<CaseService | undefined> => {
   const caseFromDb = await getById(id, accountSid);
 
@@ -340,7 +340,7 @@ const generalizedSearchCases =
       user,
       searchPermissions,
     }: {
-      can: ReturnType<typeof setupCanForRules>;
+      can: InitializedCan;
       user: TwilioUser;
       searchPermissions: SearchPermissions;
     },
@@ -404,7 +404,7 @@ export const getCasesByProfileId = async (
   profileId: Profile['id'],
   query: Pick<PaginationQuery, 'limit' | 'offset'>,
   ctx: {
-    can: ReturnType<typeof setupCanForRules>;
+    can: InitializedCan;
     user: TwilioUser;
     searchPermissions: SearchPermissions;
   },

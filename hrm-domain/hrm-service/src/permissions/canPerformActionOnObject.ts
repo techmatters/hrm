@@ -16,7 +16,7 @@
 
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { Actions, TargetKind, isValidSetOfActionsForTarget } from './actions';
-import { setupCanForRules } from './setupCanForRules';
+import { InitializedCan } from './initializeCanForRules';
 import { getContactById } from '../contact/contactService';
 import { getCase as getCaseById } from '../case/caseService';
 import { assertExhaustive } from '../contact-job/assertExhaustive';
@@ -38,7 +38,7 @@ export const canPerformActionsOnObject = async <T extends TargetKind>({
   objectId: number;
   targetKind: T;
   actions: string[];
-  can: ReturnType<typeof setupCanForRules>;
+  can: InitializedCan;
   user: TwilioUser;
 }): Promise<TResult<boolean>> => {
   try {

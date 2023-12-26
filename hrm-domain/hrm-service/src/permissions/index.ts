@@ -20,12 +20,12 @@ export { SafeRouter, publicEndpoint } from './safe-router';
 export { rulesMap } from './rulesMap';
 export { Actions, actionsMaps, getActions } from './actions';
 
-import { setupCanForRules } from './setupCanForRules';
+import { InitializedCan, initializeCanForRules } from './initializeCanForRules';
 import { RulesFile } from './rulesMap';
 import type { Request, Response, NextFunction } from 'express';
 import { getSearchPermissions, SearchPermissions } from './search-permissions';
 
-const canCache: Record<string, ReturnType<typeof setupCanForRules>> = {};
+const canCache: Record<string, InitializedCan> = {};
 
 export type Permissions = {
   rules: (accountSid: string) => RulesFile;
@@ -36,10 +36,7 @@ export type Permissions = {
  * Applies the permissions if valid.
  * @throws Will throw if initializedCan is not a function
  */
-export const applyPermissions = (
-  req: Request,
-  initializedCan: ReturnType<typeof setupCanForRules>,
-) => {
+export const applyPermissions = (req: Request, initializedCan: InitializedCan) => {
   if (typeof initializedCan !== 'function')
     throw new Error(`Error in looked up permission rules: can is not a function.`);
 
@@ -52,11 +49,11 @@ export const setupPermissions =
     const { accountSid } = <any>req;
     if (lookup.cachePermissions) {
       canCache[accountSid] =
-        canCache[accountSid] ?? setupCanForRules(lookup.rules(accountSid));
+        canCache[accountSid] ?? initializeCanForRules(lookup.rules(accountSid));
       const initializedCan = canCache[accountSid];
       applyPermissions(req, initializedCan);
     } else {
-      applyPermissions(req, setupCanForRules(lookup.rules(accountSid)));
+      applyPermissions(req, initializeCanForRules(lookup.rules(accountSid)));
     }
     //@ts-ignore TODO: Improve our custom Request type to override Express.Request
     req.searchPermissions = getSearchPermissions(req, lookup.rules(accountSid));
@@ -65,5 +62,5 @@ export const setupPermissions =
 
 export type RequestWithPermissions = SafeRouterRequest &
   SearchPermissions & {
-    can: ReturnType<typeof setupCanForRules>;
+    can: InitializedCan;
   };
