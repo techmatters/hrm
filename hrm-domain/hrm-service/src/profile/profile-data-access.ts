@@ -117,9 +117,10 @@ export const getIdentifierWithProfiles =
       });
 
       return newOk({ data });
-    } catch (err) {
+    } catch (error) {
       return newErr({
-        message: err instanceof Error ? err.message : String(err),
+        message: error instanceof Error ? error.message : String(error),
+        error,
       });
     }
   };
@@ -181,9 +182,10 @@ export const associateProfileToIdentifier =
           identifierId,
         });
       });
-    } catch (err) {
+    } catch (error) {
       return newErr({
-        message: err instanceof Error ? err.message : String(err),
+        message: error instanceof Error ? error.message : String(error),
+        error,
       });
     }
   };
@@ -207,9 +209,10 @@ export const createIdentifierAndProfile =
           newIdentifier.id,
         );
       });
-    } catch (err) {
+    } catch (error) {
       return newErr({
-        message: err instanceof Error ? err.message : String(err),
+        message: error instanceof Error ? error.message : String(error),
+        error,
       });
     }
   };
@@ -287,9 +290,10 @@ export const associateProfileToProfileFlag =
 
         return newOk({ data: null });
       });
-    } catch (err) {
+    } catch (error) {
       return newErr({
-        message: err instanceof Error ? err.message : String(err),
+        message: error instanceof Error ? error.message : String(error),
+        error,
       });
     }
   };
@@ -311,9 +315,10 @@ export const disassociateProfileFromProfileFlag =
 
         return newOk({ data: null });
       });
-    } catch (err) {
+    } catch (error) {
       return newErr({
-        message: err instanceof Error ? err.message : String(err),
+        message: error instanceof Error ? error.message : String(error),
+        error,
       });
     }
   };
@@ -329,9 +334,10 @@ export const getProfileFlagsForAccount = async (
         t.manyOrNone(getProfileFlagsByAccountSql, { accountSid }),
       )
       .then(data => newOk({ data }));
-  } catch (err) {
+  } catch (error) {
     return newErr({
-      message: err instanceof Error ? err.message : String(err),
+      message: error instanceof Error ? error.message : String(error),
+      error,
     });
   }
 };
@@ -346,9 +352,10 @@ export const getProfileFlagsByIdentifier = async (
         t.manyOrNone(getProfileFlagsByIdentifierSql, { accountSid, identifier }),
       )
       .then(data => newOk({ data }));
-  } catch (err) {
+  } catch (error) {
     return newErr({
-      message: err instanceof Error ? err.message : String(err),
+      message: error instanceof Error ? error.message : String(error),
+      error,
     });
   }
 };
@@ -369,9 +376,10 @@ export const createProfileFlag = async (
     return await db
       .task<ProfileFlag>(async t => t.one(statement))
       .then(data => newOk({ data }));
-  } catch (err) {
+  } catch (error) {
     return newErr({
-      message: err instanceof Error ? err.message : String(err),
+      message: error instanceof Error ? error.message : String(error),
+      error,
     });
   }
 };
@@ -400,9 +408,10 @@ export const createProfileSection = async (
     return await db
       .task<ProfileSection>(async t => t.oneOrNone(statement))
       .then(data => newOk({ data }));
-  } catch (err) {
+  } catch (error) {
     return newErr({
-      message: err instanceof Error ? err.message : String(err),
+      message: error instanceof Error ? error.message : String(error),
+      error,
     });
   }
 };
@@ -430,9 +439,10 @@ export const updateProfileSectionById = async (
         }),
       )
       .then(data => newOk({ data }));
-  } catch (err) {
+  } catch (error) {
     return newErr({
-      message: err instanceof Error ? err.message : String(err),
+      message: error instanceof Error ? error.message : String(error),
+      error,
     });
   }
 };
@@ -447,9 +457,10 @@ export const getProfileSectionById = async (
     );
 
     return newOk({ data });
-  } catch (err) {
+  } catch (error) {
     return newErr({
-      message: err instanceof Error ? err.message : String(err),
+      message: error instanceof Error ? error.message : String(error),
+      error,
     });
   }
 };

@@ -184,9 +184,7 @@ const initProfile = async (conn, accountSid, contact) => {
 
   if (isErr(profileResult)) {
     // Throw to make the transaction to rollback
-    throw new Error(
-      `Failed creating contact: profile result returned error variant ${profileResult.message}`,
-    );
+    throw profileResult.error;
   }
 
   return {
@@ -596,9 +594,10 @@ export const getContactsByProfileId = async (
     );
 
     return newOk({ data: contacts });
-  } catch (err) {
+  } catch (error) {
     return newErr({
-      message: err instanceof Error ? err.message : String(err),
+      message: error instanceof Error ? error.message : String(error),
+      error,
     });
   }
 };

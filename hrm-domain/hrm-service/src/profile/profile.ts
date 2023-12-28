@@ -38,9 +38,10 @@ export const getProfile =
       }
 
       return newOk({ data: result });
-    } catch (err) {
+    } catch (error) {
       return newErr({
-        message: err instanceof Error ? err.message : String(err),
+        message: error instanceof Error ? error.message : String(error),
+        error,
       });
     }
   };
@@ -68,9 +69,10 @@ export const getOrCreateProfileWithIdentifier =
       return await profileDB.createIdentifierAndProfile(task)(accountSid, {
         identifier,
       });
-    } catch (err) {
+    } catch (error) {
       return newErr({
-        message: err instanceof Error ? err.message : String(err),
+        message: error instanceof Error ? error.message : String(error),
+        error,
       });
     }
   };
@@ -90,9 +92,10 @@ export const getIdentifierByIdentifier = async (
     }
 
     return newOk({ data: profilesResult.data });
-  } catch (err) {
+  } catch (error) {
     return newErr({
-      message: err instanceof Error ? err.message : String(err),
+      message: error instanceof Error ? error.message : String(error),
+      error,
     });
   }
 };
@@ -117,9 +120,10 @@ export const associateProfileToProfileFlag = async (
 
       return newOk({ data: profile });
     });
-  } catch (err) {
+  } catch (error) {
     return newErr({
-      message: err instanceof Error ? err.message : String(err),
+      message: error instanceof Error ? error.message : String(error),
+      error,
     });
   }
 };
@@ -142,9 +146,10 @@ export const disassociateProfileFromProfileFlag = async (
 
       return newOk({ data: profile });
     });
-  } catch (err) {
+  } catch (error) {
     return newErr({
-      message: err instanceof Error ? err.message : String(err),
+      message: error instanceof Error ? error.message : String(error),
+      error,
     });
   }
 };
@@ -168,9 +173,10 @@ export const createProfileSection = async (
     });
 
     return ps;
-  } catch (err) {
+  } catch (error) {
     return newErr({
-      message: err instanceof Error ? err.message : String(err),
+      message: error instanceof Error ? error.message : String(error),
+      error,
     });
   }
 };
@@ -192,9 +198,10 @@ export const updateProfileSectionById = async (
     });
 
     return ps;
-  } catch (err) {
+  } catch (error) {
     return newErr({
-      message: err instanceof Error ? err.message : String(err),
+      message: error instanceof Error ? error.message : String(error),
+      error,
     });
   }
 };
@@ -211,9 +218,10 @@ export const getProfileSectionById = async (
     const ps = await profileDB.getProfileSectionById(accountSid, payload);
 
     return ps;
-  } catch (err) {
+  } catch (error) {
     return newErr({
-      message: err instanceof Error ? err.message : String(err),
+      message: error instanceof Error ? error.message : String(error),
+      error,
     });
   }
 };
