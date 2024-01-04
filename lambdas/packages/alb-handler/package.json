@@ -12,7 +12,6 @@
     "@types/aws-lambda": "^8.10.108"
   },
   "scripts": {
-    "test:integration": "cross-env S3_FORCE_PATH_STYLE=true S3_ENDPOINT=http://localhost:4566 SQS_ENDPOINT=http://localhost:4566 jest tests/integration",
     "test:unit": "jest tests/unit"
   }
 }

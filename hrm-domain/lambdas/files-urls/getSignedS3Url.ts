@@ -16,8 +16,8 @@
 
 import { AlbHandlerEvent } from '@tech-matters/alb-handler';
 import { TResult, newErr, isErr, newOk } from '@tech-matters/types';
-import { authenticate } from '@tech-matters/hrm-authentication';
 import { getSignedUrl } from '@tech-matters/s3-client';
+import authenticate from './authenticate';
 import { parseParameters } from './parseParameters';
 
 export type GetSignedS3UrlSuccessResultData = {
@@ -51,28 +51,16 @@ const getSignedS3Url = async (event: AlbHandlerEvent): Promise<GetSignedS3UrlRes
     return parseParametersResult;
   }
 
-  const { accountSid, bucket, key, method, objectType, objectId, fileType } =
-    parseParametersResult.data;
-
-  const authorization = event.headers?.Authorization || event.headers?.authorization;
-
+  const { data: parameters } = parseParametersResult;
   const authenticateResult = await authenticate({
-    accountSid,
-    objectType,
-    objectId,
-    authHeader: convertBasicAuthHeader(authorization!),
-    type: 'filesUrls',
-    requestData: {
-      fileType,
-      method,
-      bucket,
-      key,
-    },
+    ...parameters,
+    authHeader: event.headers?.Authorization ?? event.headers?.authorization ?? '',
   });
   if (isErr(authenticateResult)) {
     return authenticateResult;
   }
 
+  const { bucket, key, method } = parameters;
   try {
     const getSignedUrlResult = await getSignedUrl({
       method,

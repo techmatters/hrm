@@ -17,14 +17,21 @@
 import { newErr, newOk } from '@tech-matters/types';
 import { URLSearchParams } from 'url';
 
-export type CallHrmApiParameters = {
-  urlPath: string;
+export type CallHrmApiParameters<TData> = {
+  accountSid: string;
+  permission: string;
   authHeader: string;
-  requestData?: any;
+  requestData?: TData;
 };
 
-const callHrmApi = async ({ urlPath, requestData, authHeader }: CallHrmApiParameters) => {
-  const params = new URLSearchParams(requestData).toString();
+export const callHrmApi = async <TData>({
+  accountSid,
+  permission,
+  requestData,
+  authHeader,
+}: CallHrmApiParameters<TData>) => {
+  const urlPath = `v0/accounts/${accountSid}/permissions/${permission}`;
+  const params = requestData ? new URLSearchParams(requestData).toString() : '';
   const fullUrl = params
     ? `${process.env.HRM_BASE_URL}/${urlPath}?${params}`
     : `${process.env.HRM_BASE_URL}/${urlPath}`;
@@ -49,5 +56,3 @@ const callHrmApi = async ({ urlPath, requestData, authHeader }: CallHrmApiParame
   const data = await response.json();
   return newOk({ data });
 };
-
-export default callHrmApi;

@@ -14,25 +14,22 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { newOk, isErr } from '@tech-matters/types';
+import { newOk } from '@tech-matters/types';
 import {
-  HrmAuthenticateParameters,
-  HrmAuthenticateResult,
+  authenticate,
   HRMAuthenticationObjectTypes,
-} from './index';
-import callHrmApi from './callHrmApi';
+  HrmAuthenticateResult,
+} from '@tech-matters/hrm-authentication';
+
+import { fileTypes, FileTypes, Parameters } from './parseParameters';
 
 export const mockBuckets = ['mock-bucket'];
 
-export const fileTypes = {
-  recording: 'Recording',
-  transcript: 'ExternalTranscript',
-  document: 'Case',
-} as const;
-
-export type FileTypes = keyof typeof fileTypes;
-
 export type FileMethods = 'getObject' | 'putObject' | 'deleteObject';
+
+export type AuthenticateParams = Parameters & {
+  authHeader: string;
+};
 
 export const fileMethods: Record<
   HRMAuthenticationObjectTypes,
@@ -77,34 +74,29 @@ export type HrmAuthenticateFilesUrlsRequestData = {
   fileType: FileTypes;
 };
 
-export const authUrlPathGenerator = ({
+const authenticateFilesUrls = async ({
   accountSid,
+  method,
+  fileType,
+  objectId,
   objectType,
-  requestData: { fileType, method },
-}: HrmAuthenticateParameters) => {
-  const permission = getPermission({ objectType, fileType, method });
-
-  return `v0/accounts/${accountSid}/permissions/${permission}`;
-};
-
-const filesUrlsAuthenticator = async (
-  params: HrmAuthenticateParameters,
-): Promise<HrmAuthenticateResult> => {
-  const {
-    objectId,
-    objectType,
-    authHeader,
-    requestData: { bucket, key },
-  } = params;
-
+  authHeader,
+  bucket,
+  key,
+}: AuthenticateParams): Promise<HrmAuthenticateResult> => {
   // This is a quick and dirty way to lock this down so we can test
   // with fake data without exposing real data in the test environment.
   if (mockBuckets.includes(bucket)) {
     return newOk({ data: true });
   }
 
-  const result = await callHrmApi({
-    urlPath: authUrlPathGenerator(params),
+  return authenticate({
+    accountSid,
+    permission: getPermission({
+      objectType,
+      fileType,
+      method,
+    }),
     authHeader,
     requestData: {
       objectType,
@@ -113,11 +105,6 @@ const filesUrlsAuthenticator = async (
       key,
     },
   });
-  if (isErr(result)) {
-    return result;
-  }
-
-  return newOk({ data: true });
 };
 
-export default filesUrlsAuthenticator;
+export default authenticateFilesUrls;
