@@ -609,7 +609,7 @@ describe('/profiles', () => {
             const pfs = (
               await profilesDB.getProfileById()(accountSid, createdProfile.profiles[0].id)
             ).profileFlags;
-            if (!pfs.includes(defaultFlags[0].id)) {
+            if (!pfs.some(a => a.id === defaultFlags[0].id)) {
               throw new Error('Missing expected association');
             }
           });

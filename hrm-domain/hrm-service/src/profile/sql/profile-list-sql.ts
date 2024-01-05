@@ -58,7 +58,7 @@ const listProfilesPaginatedSql = (whereClause: string, orderByClause: string) =>
   RelatedProfileFlags AS (
     SELECT
       ppf."profileId",
-      JSONB_AGG(ppf."profileFlagId") AS "profileFlags"
+      JSONB_AGG(JSONB_BUILD_OBJECT('id', ppf."profileFlagId", 'validUntil', ppf."validUntil")) AS "profileFlags"
     FROM "ProfilesToProfileFlags" ppf
     WHERE ppf."profileId" IN (SELECT id FROM TargetProfiles)
     GROUP BY ppf."profileId"
