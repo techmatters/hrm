@@ -82,11 +82,13 @@ describe('/profiles', () => {
           accountSid,
           murray!.id,
           defaultFlags[0].id,
+          null,
         ),
         profilesDB.associateProfileToProfileFlag()(
           accountSid,
           antonella!.id,
           defaultFlags[1].id,
+          null,
         ),
         profilesDB.createProfileSection(antonella!.accountSid, {
           content: 'some example content',
@@ -489,8 +491,10 @@ describe('/profiles', () => {
 
     describe('/profiles/:profileId/flags', () => {
       describe('/profiles/:profileId/flags/:profileFlagId', () => {
-        const buildRoute = (profileId: number, profileFlagId: number) =>
-          `${baseRoute}/${profileId}/flags/${profileFlagId}`;
+        const buildRoute = (profileId: number, profileFlagId: number, validUntil?: any) =>
+          `${baseRoute}/${profileId}/flags/${profileFlagId}?${
+            validUntil ? `validUntil=${validUntil}` : ''
+          }`;
 
         let defaultFlags: profilesDB.ProfileFlag[];
         beforeAll(async () => {
@@ -500,7 +504,7 @@ describe('/profiles', () => {
         });
 
         describe('POST', () => {
-          afterAll(async () => {
+          afterEach(async () => {
             // Dissasociate
             db.task(t =>
               t.none(
@@ -534,20 +538,54 @@ describe('/profiles', () => {
               },
             },
             {
+              beforeFunction: (profileId, profileFlagId) =>
+                request.post(buildRoute(profileId, profileFlagId)).set(headers),
               description: 'association already exists',
+              // expectStatus: 200,
               expectStatus: 500,
+              // expectFunction: async (response, profileId, profileFlagId) => {
+              //   request
+              //     .post(buildRoute(profileId, profileFlagId))
+              //     .set(headers)
+              //     .then(r => expect(r.statusCode).toBe(500))
+              //     .catch(r => expect(r.statusCode).toBe(500));
+              // },
             },
-          ]).test(
+            {
+              description: 'a valid "validUntil" date is sent',
+              expectStatus: 200,
+              expectFunction: (response, profileId, profileFlagId) => {
+                expect(response.body.id).toBe(profileId);
+                expect(response.body.profileFlags).toContain(profileFlagId);
+              },
+            },
+            {
+              description: 'an invalid "validUntil" date is sent',
+              expectStatus: 400,
+              validUntil: 'not a date',
+            },
+            {
+              description: 'a future "validUntil" date is sent',
+              expectStatus: 400,
+              validUntil: '2020-01-05',
+            },
+          ]).test.only(
             'when $description, returns $expectStatus',
             async ({
+              beforeFunction,
               profileId = createdProfile.profiles[0].id,
               profileFlagId = defaultFlags[0].id,
+              validUntil,
               expectStatus,
               customHeaders,
               expectFunction,
             }) => {
+              if (beforeFunction) {
+                await beforeFunction(profileId, profileFlagId);
+              }
+
               const response = await request
-                .post(buildRoute(profileId, profileFlagId))
+                .post(buildRoute(profileId, profileFlagId, validUntil))
                 .set(customHeaders || headers);
               expect(response.statusCode).toBe(expectStatus);
               if (expectFunction) {
@@ -564,6 +602,7 @@ describe('/profiles', () => {
                 accountSid,
                 createdProfile.profiles[0].id,
                 defaultFlags[0].id,
+                null,
               )
             ).unwrap();
 
