@@ -16,6 +16,7 @@
 
 import { isErr } from '@tech-matters/types';
 import createError from 'http-errors';
+import { isValid, toDate } from 'date-fns';
 
 import { SafeRouter, publicEndpoint } from '../permissions';
 import * as profileController from './profile';
@@ -182,11 +183,17 @@ profilesRouter.post(
     try {
       const { accountSid } = req;
       const { profileId, profileFlagId } = req.params;
+      const { validUntil } = req.query;
+
+      if (validUntil && !isValid(validUntil)) {
+        return next(createError(400));
+      }
 
       const result = await profileController.associateProfileToProfileFlag(
         accountSid,
         profileId,
         profileFlagId,
+        validUntil ? toDate(validUntil) : null,
       );
 
       if (isErr(result)) {

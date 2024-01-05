@@ -54,13 +54,14 @@ export const getProfileFlagsByIdentifierSql = `
 type AssociateProfileToProfileFlagParams = {
   profileId: number;
   profileFlagId: number;
+  validUntil: Date | null;
 };
 export const associateProfileToProfileFlagSql = (
   association: AssociateProfileToProfileFlagParams & NewRecordCommons,
 ) => `
   ${pgp.helpers.insert(
     association,
-    ['accountSid', 'profileId', 'profileFlagId', 'createdAt', 'updatedAt'],
+    ['accountSid', 'profileId', 'profileFlagId', 'createdAt', 'updatedAt', 'validUntil'],
     'ProfilesToProfileFlags',
   )}
 `;

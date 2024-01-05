@@ -274,6 +274,7 @@ export const associateProfileToProfileFlag =
     accountSid: string,
     profileId: number,
     profileFlagId: number,
+    validUntil: Date | null,
   ): Promise<TResult<null>> => {
     try {
       const now = new Date();
@@ -285,6 +286,7 @@ export const associateProfileToProfileFlag =
             profileFlagId,
             createdAt: now,
             updatedAt: now,
+            validUntil,
           }),
         );
 
