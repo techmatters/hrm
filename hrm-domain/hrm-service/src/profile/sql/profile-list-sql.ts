@@ -43,17 +43,34 @@ const generateOrderByClause = (clauses: OrderByClauseItem[]): string => {
 };
 
 const selectProfilesUnorderedSql = (whereClause: string) => `
-  SELECT (count(*) OVER())::INTEGER AS "totalCount", id, name
+  SELECT (count(*) OVER())::INTEGER AS "totalCount", *
   FROM "Profiles" profiles
   ${whereClause}
 `;
 
 const listProfilesPaginatedSql = (whereClause: string, orderByClause: string) => `
-  SELECT *
-  FROM (${selectProfilesUnorderedSql(whereClause)}) AS profiles
-  ${orderByClause}
-  OFFSET $<offset>
-  LIMIT $<limit>;
+  WITH TargetProfiles AS (
+    ${selectProfilesUnorderedSql(whereClause)}
+    ${orderByClause}
+    OFFSET $<offset>
+    LIMIT $<limit>
+  ),
+  RelatedProfileFlags AS (
+    SELECT
+      ppf."profileId",
+      JSONB_AGG(ppf."profileFlagId") AS "profileFlags"
+    FROM "ProfilesToProfileFlags" ppf
+    WHERE ppf."profileId" IN (SELECT id FROM TargetProfiles)
+    GROUP BY ppf."profileId"
+  )
+  SELECT "totalCount", profiles.id, profiles.name, identifiers.identifier, rpf."profileFlags", ps.content AS summary
+  FROM TargetProfiles tp
+  LEFT JOIN "Profiles" profiles ON profiles.id = tp.id AND profiles."accountSid" = tp."accountSid"
+  LEFT JOIN "ProfilesToIdentifiers" p2i ON p2i."profileId" = profiles.id AND p2i."accountSid" = profiles."accountSid"
+  LEFT JOIN "Identifiers" identifiers ON identifiers.id = p2i."identifierId"
+  LEFT JOIN RelatedProfileFlags rpf ON rpf."profileId" = profiles.id
+  LEFT JOIN "ProfileSections" ps ON ps."profileId" = profiles.id AND ps."accountSid" = profiles."accountSid" AND ps."sectionType" = 'summary'
+  ${orderByClause};
 `;
 
 export type ProfilesListFilters = {

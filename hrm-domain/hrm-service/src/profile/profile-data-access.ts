@@ -232,26 +232,29 @@ export type ProfileListConfiguration = {
 export type SearchParameters = {
   filters?: ProfilesListFilters;
 };
+
+type ListProfile = Pick<Profile, 'id' | 'name'> &
+  Pick<Identifier, 'identifier'> & { profileFlags: ProfileFlag['id'][] } & {
+    summary: ProfileSection['content'];
+  };
+
 export const listProfiles = async (
   accountSid: string,
   listConfiguration: ProfileListConfiguration,
   { filters }: SearchParameters,
-): Promise<TResult<{ profiles: Profile[]; count: number }>> => {
+): Promise<TResult<{ profiles: ListProfile[]; count: number }>> => {
   try {
     const { limit, offset, sortBy, sortDirection } =
       getPaginationElements(listConfiguration);
     const orderClause = [{ sortBy, sortDirection }];
 
     const { count, rows } = await db.task(async connection => {
-      const result = await connection.any<Profile & { totalCount: number }>(
-        listProfilesSql(filters || {}, orderClause),
-        {
-          accountSid,
-          limit,
-          offset,
-          profileFlagIds: filters?.profileFlagIds,
-        },
-      );
+      const result = await connection.any(listProfilesSql(filters || {}, orderClause), {
+        accountSid,
+        limit,
+        offset,
+        profileFlagIds: filters?.profileFlagIds,
+      });
 
       const totalCount: number = result.length ? result[0].totalCount : 0;
       return { rows: result, count: totalCount };
