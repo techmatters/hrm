@@ -270,9 +270,10 @@ describe('/profiles', () => {
 
     afterAll(async () => {
       await Promise.all(
-        Object.entries(createdContacts).map(([, c]) =>
+        Object.entries(createdContacts).flatMap(([, c]) => [
+          db.task(t => t.none(`DELETE FROM "ContactJobs"  WHERE "contactId" = ${c.id}`)),
           deleteFromTableById('Contacts')(c.id, c.accountSid),
-        ),
+        ]),
       );
       await Promise.all(
         Object.entries(createdCases).map(([, c]) =>
@@ -411,9 +412,12 @@ describe('/profiles', () => {
 
       afterAll(async () => {
         await Promise.all(
-          Object.entries(createdContacts).map(([, c]) =>
+          Object.entries(createdContacts).flatMap(([, c]) => [
+            db.task(t =>
+              t.none(`DELETE FROM "ContactJobs"  WHERE "contactId" = ${c.id}`),
+            ),
             deleteFromTableById('Contacts')(c.id, c.accountSid),
-          ),
+          ]),
         );
         await Promise.all(
           Object.entries(createdCases).map(([, c]) =>
@@ -534,29 +538,25 @@ describe('/profiles', () => {
               expectStatus: 200,
               expectFunction: (response, profileId, profileFlagId) => {
                 expect(response.body.id).toBe(profileId);
-                expect(response.body.profileFlags).toContain(profileFlagId);
+                expect(
+                  response.body.profileFlags.some(pf => pf.id === profileFlagId),
+                ).toBeTruthy();
               },
             },
             {
               beforeFunction: (profileId, profileFlagId) =>
                 request.post(buildRoute(profileId, profileFlagId)).set(headers),
               description: 'association already exists',
-              // expectStatus: 200,
               expectStatus: 500,
-              // expectFunction: async (response, profileId, profileFlagId) => {
-              //   request
-              //     .post(buildRoute(profileId, profileFlagId))
-              //     .set(headers)
-              //     .then(r => expect(r.statusCode).toBe(500))
-              //     .catch(r => expect(r.statusCode).toBe(500));
-              // },
             },
             {
               description: 'a valid "validUntil" date is sent',
               expectStatus: 200,
               expectFunction: (response, profileId, profileFlagId) => {
                 expect(response.body.id).toBe(profileId);
-                expect(response.body.profileFlags).toContain(profileFlagId);
+                expect(
+                  response.body.profileFlags.some(pf => pf.id === profileFlagId),
+                ).toBeTruthy();
               },
             },
             {
@@ -569,7 +569,7 @@ describe('/profiles', () => {
               expectStatus: 400,
               validUntil: '2020-01-05',
             },
-          ]).test.only(
+          ]).test(
             'when $description, returns $expectStatus',
             async ({
               beforeFunction,
