@@ -161,8 +161,6 @@ profilesRouter.get('/flags', publicEndpoint, async (req, res, next) => {
   try {
     const { accountSid } = req;
 
-    console.log('accountSid', accountSid);
-
     const result = await profileController.getProfileFlags(accountSid);
 
     if (isErr(result)) {
