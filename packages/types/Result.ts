@@ -13,35 +13,39 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
+import createError from 'http-errors';
 
 type ResultBase = {
   readonly _tag: 'Result';
 };
 
-type NewErrorResultParams = {
+type NewErrorResultParams<TError extends string> = {
   message: string;
-  statusCode?: number;
-  name?: string;
+  error: TError;
 };
 
-type ErrorResult = ResultBase & {
+type ErrorResult<TError> = ResultBase & {
   status: 'error';
   message: string;
-  statusCode: number;
-  name: string;
+  error: TError;
   readonly unwrap: () => never;
 };
 
-export const newErr = ({
+export const mapHTTPError = <TError extends string>(
+  err: ErrorResult<TError>,
+  mapper: { [E in TError]: number },
+): ReturnType<typeof createError> => {
+  return createError(mapper[err.error], err.message);
+};
+
+export const newErr = <TError extends string>({
   message,
-  statusCode = 500,
-  name = 'Error',
-}: NewErrorResultParams): ErrorResult => ({
+  error,
+}: NewErrorResultParams<TError>): ErrorResult<TError> => ({
   _tag: 'Result',
   status: 'error',
   message,
-  statusCode,
-  name,
+  error,
   unwrap: () => {
     throw new Error(
       `TResult Error: Attempted to unwrap Err variant with message: ${message}`,
@@ -72,12 +76,16 @@ export const newOk = <TData>({
   unwrap: () => data,
 });
 
-export type TResult<TData> = SuccessResult<TData> | ErrorResult;
+export type TResult<TError extends string, TData> =
+  | ErrorResult<TError>
+  | SuccessResult<TData>;
 
-const isResult = (r: unknown): r is TResult<any> => (r as any)?._tag === 'Result';
+const isResult = (r: unknown): r is TResult<any, any> => (r as any)?._tag === 'Result';
 
-export const isErr = (result: TResult<any>): result is ErrorResult =>
-  isResult(result) && result.status === 'error';
+export const isErr = <TError extends string>(
+  result: TResult<TError, any>,
+): result is ErrorResult<TError> => isResult(result) && result.status === 'error';
 
-export const isOk = <TData>(result: TResult<TData>): result is SuccessResult<TData> =>
-  isResult(result) && result.status === 'success';
+export const isOk = <TData>(
+  result: TResult<any, TData>,
+): result is SuccessResult<TData> => isResult(result) && result.status === 'success';

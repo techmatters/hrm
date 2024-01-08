@@ -585,7 +585,9 @@ export const getContactsByProfileId = async (
     user: TwilioUser;
     searchPermissions: SearchPermissions;
   },
-): Promise<TResult<Awaited<ReturnType<typeof searchContactsByProfileId>>>> => {
+): Promise<
+  TResult<'InternalServerError', Awaited<ReturnType<typeof searchContactsByProfileId>>>
+> => {
   try {
     const contacts = await searchContactsByProfileId(
       accountSid,
@@ -599,6 +601,7 @@ export const getContactsByProfileId = async (
   } catch (err) {
     return newErr({
       message: err instanceof Error ? err.message : String(err),
+      error: 'InternalServerError',
     });
   }
 };

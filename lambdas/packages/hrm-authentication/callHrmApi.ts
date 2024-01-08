@@ -23,6 +23,8 @@ export type CallHrmApiParameters = {
   requestData?: any;
 };
 
+export type CallHrmApiError = 'UnauthorizedError';
+
 const callHrmApi = async ({ urlPath, requestData, authHeader }: CallHrmApiParameters) => {
   const params = new URLSearchParams(requestData).toString();
   const fullUrl = params
@@ -42,7 +44,7 @@ const callHrmApi = async ({ urlPath, requestData, authHeader }: CallHrmApiParame
     const error = await response.json();
     return newErr({
       message: error.message,
-      statusCode: response.status,
+      error: 'UnauthorizedError',
     });
   }
 

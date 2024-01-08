@@ -29,18 +29,27 @@ export const getProfile =
   async (
     accountSid: string,
     profileId: profileDB.Profile['id'],
-  ): Promise<TResult<profileDB.ProfileWithRelationships>> => {
+  ): Promise<
+    TResult<
+      'ProfileNotFoundError' | 'InternalServerError',
+      profileDB.ProfileWithRelationships
+    >
+  > => {
     try {
       const result = await profileDB.getProfileById(task)(accountSid, profileId);
 
       if (!result) {
-        return newErr({ statusCode: 404, message: 'Profile not found' });
+        return newErr({
+          message: 'Profile not found',
+          error: 'ProfileNotFoundError',
+        });
       }
 
       return newOk({ data: result });
     } catch (err) {
       return newErr({
         message: err instanceof Error ? err.message : String(err),
+        error: 'InternalServerError',
       });
     }
   };
@@ -50,7 +59,7 @@ export const getOrCreateProfileWithIdentifier =
   async (
     identifier: string,
     accountSid: string,
-  ): Promise<TResult<profileDB.IdentifierWithProfiles>> => {
+  ): Promise<TResult<'InternalServerError', profileDB.IdentifierWithProfiles>> => {
     try {
       if (!identifier) {
         return newOk({ data: null });
@@ -71,6 +80,7 @@ export const getOrCreateProfileWithIdentifier =
     } catch (err) {
       return newErr({
         message: err instanceof Error ? err.message : String(err),
+        error: 'InternalServerError',
       });
     }
   };
@@ -78,7 +88,7 @@ export const getOrCreateProfileWithIdentifier =
 export const getIdentifierByIdentifier = async (
   accountSid: string,
   identifier: string,
-): Promise<TResult<profileDB.IdentifierWithProfiles>> => {
+): Promise<TResult<'InternalServerError', profileDB.IdentifierWithProfiles>> => {
   try {
     const profilesResult = await profileDB.getIdentifierWithProfiles()({
       accountSid,
@@ -93,6 +103,7 @@ export const getIdentifierByIdentifier = async (
   } catch (err) {
     return newErr({
       message: err instanceof Error ? err.message : String(err),
+      error: 'InternalServerError',
     });
   }
 };
@@ -103,9 +114,11 @@ export const associateProfileToProfileFlag = async (
   accountSid: string,
   profileId: profileDB.Profile['id'],
   profileFlagId: number,
-): Promise<TResult<profileDB.ProfileWithRelationships>> => {
+): Promise<TResult<'InternalServerError', profileDB.ProfileWithRelationships>> => {
   try {
-    return await db.task<TResult<profileDB.ProfileWithRelationships>>(async t => {
+    return await db.task<
+      TResult<'InternalServerError', profileDB.ProfileWithRelationships>
+    >(async t => {
       (
         await profileDB.associateProfileToProfileFlag(t)(
           accountSid,
@@ -120,6 +133,7 @@ export const associateProfileToProfileFlag = async (
   } catch (err) {
     return newErr({
       message: err instanceof Error ? err.message : String(err),
+      error: 'InternalServerError',
     });
   }
 };
@@ -128,9 +142,9 @@ export const disassociateProfileFromProfileFlag = async (
   accountSid: string,
   profileId: profileDB.Profile['id'],
   profileFlagId: number,
-): Promise<TResult<profileDB.ProfileWithRelationships>> => {
+): Promise<TResult<'InternalServerError', profileDB.ProfileWithRelationships>> => {
   try {
-    return await db.task<TResult<profileDB.ProfileWithRelationships>>(async t => {
+    return await db.task(async t => {
       (
         await profileDB.disassociateProfileFromProfileFlag(t)(
           accountSid,
@@ -145,6 +159,7 @@ export const disassociateProfileFromProfileFlag = async (
   } catch (err) {
     return newErr({
       message: err instanceof Error ? err.message : String(err),
+      error: 'InternalServerError',
     });
   }
 };
@@ -157,7 +172,7 @@ export const createProfileSection = async (
   accountSid: string,
   payload: NewProfileSectionRecord,
   { user }: { user: TwilioUser },
-): Promise<TResult<profileDB.ProfileSection>> => {
+): Promise<TResult<'InternalServerError', profileDB.ProfileSection>> => {
   try {
     const { content, profileId, sectionType } = payload;
     const ps = await profileDB.createProfileSection(accountSid, {
@@ -171,6 +186,7 @@ export const createProfileSection = async (
   } catch (err) {
     return newErr({
       message: err instanceof Error ? err.message : String(err),
+      error: 'InternalServerError',
     });
   }
 };
@@ -184,7 +200,7 @@ export const updateProfileSectionById = async (
     content: profileDB.ProfileSection['content'];
   },
   { user }: { user: TwilioUser },
-): Promise<TResult<profileDB.ProfileSection>> => {
+): Promise<TResult<'InternalServerError', profileDB.ProfileSection>> => {
   try {
     const ps = await profileDB.updateProfileSectionById(accountSid, {
       ...payload,
@@ -195,6 +211,7 @@ export const updateProfileSectionById = async (
   } catch (err) {
     return newErr({
       message: err instanceof Error ? err.message : String(err),
+      error: 'InternalServerError',
     });
   }
 };
@@ -206,7 +223,7 @@ export const getProfileSectionById = async (
     profileId: profileDB.Profile['id'];
     sectionId: profileDB.ProfileSection['id'];
   },
-): Promise<TResult<profileDB.ProfileSection>> => {
+): Promise<TResult<'InternalServerError', profileDB.ProfileSection>> => {
   try {
     const ps = await profileDB.getProfileSectionById(accountSid, payload);
 
@@ -214,6 +231,7 @@ export const getProfileSectionById = async (
   } catch (err) {
     return newErr({
       message: err instanceof Error ? err.message : String(err),
+      error: 'InternalServerError',
     });
   }
 };

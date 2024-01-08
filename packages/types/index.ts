@@ -18,5 +18,6 @@ export * from './ResourcesImport';
 export * from './Resources';
 export * from './Result';
 export * from './twilio';
+export * from './assertExhaustive';
 
 export type ObjectValues<T> = T[keyof T];

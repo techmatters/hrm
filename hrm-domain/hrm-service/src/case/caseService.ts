@@ -408,7 +408,9 @@ export const getCasesByProfileId = async (
     user: TwilioUser;
     searchPermissions: SearchPermissions;
   },
-): Promise<TResult<Awaited<ReturnType<typeof searchCasesByProfileId>>>> => {
+): Promise<
+  TResult<'InternalServerError', Awaited<ReturnType<typeof searchCasesByProfileId>>>
+> => {
   try {
     const cases = await searchCasesByProfileId(accountSid, query, { profileId }, {}, ctx);
 
@@ -416,6 +418,7 @@ export const getCasesByProfileId = async (
   } catch (err) {
     return newErr({
       message: err instanceof Error ? err.message : String(err),
+      error: 'InternalServerError',
     });
   }
 };

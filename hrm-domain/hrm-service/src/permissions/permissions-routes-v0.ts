@@ -23,7 +23,7 @@ import {
   isValidFileLocation,
 } from './canPerformActionOnObject';
 import { TargetKind, isTargetKind } from './actions';
-import { TResult, newErr, isErr, newOk } from '@tech-matters/types';
+import { TResult, newErr, isErr, newOk, mapHTTPError } from '@tech-matters/types';
 
 export default (permissions: Permissions) => {
   const permissionsRouter = SafeRouter();
@@ -52,17 +52,26 @@ export default (permissions: Permissions) => {
   }: {
     objectType?: string;
     objectId?: string;
-  }): TResult<{
-    objectType: TargetKind;
-    objectId: number;
-  }> => {
+  }): TResult<
+    'InvalidObjectType' | 'InternalServerError',
+    {
+      objectType: TargetKind;
+      objectId: number;
+    }
+  > => {
     if (!objectType || !isTargetKind(objectType)) {
-      return newErr({ message: 'invalid objectType', statusCode: 400 });
+      return newErr({
+        message: 'invalid objectType',
+        error: 'InvalidObjectType',
+      });
     }
 
     const parsedId = parseInt(objectId, 10);
     if (!objectId || !Number.isInteger(parsedId)) {
-      return newErr({ message: 'invalid objectId', statusCode: 400 });
+      return newErr({
+        message: 'invalid objectId',
+        error: 'InternalServerError',
+      });
     }
 
     return newOk({ data: { objectType, objectId: parsedId } });
@@ -80,7 +89,9 @@ export default (permissions: Permissions) => {
       });
 
       if (isErr(parseResult)) {
-        return next(createError(parseResult.statusCode, parseResult.message));
+        return next(
+          mapHTTPError(parseResult, { InvalidObjectType: 400, InternalServerError: 500 }),
+        );
       }
 
       const { objectType, objectId } = parseResult.data;
@@ -95,7 +106,12 @@ export default (permissions: Permissions) => {
       });
 
       if (isErr(canPerformResult)) {
-        return next(createError(canPerformResult.statusCode, canPerformResult.message));
+        return next(
+          mapHTTPError(canPerformResult, {
+            InvalidObjectType: 400,
+            InternalServerError: 500,
+          }),
+        );
       }
 
       if (!canPerformResult.data) {
@@ -112,9 +128,7 @@ export default (permissions: Permissions) => {
         });
 
         if (isErr(isValidLocationResult)) {
-          return next(
-            createError(isValidLocationResult.statusCode, isValidLocationResult.message),
-          );
+          return next(mapHTTPError(isValidLocationResult, { InternalServerError: 500 }));
         }
 
         if (!isValidLocationResult.data) {
@@ -126,7 +140,7 @@ export default (permissions: Permissions) => {
       res.json({ message: 'all good :)' });
     } catch (error) {
       return next(
-        createError(500, error instanceof Error ? error.message : JSON.stringify(newErr)),
+        createError(500, error instanceof Error ? error.message : JSON.stringify(error)),
       );
     }
   });
