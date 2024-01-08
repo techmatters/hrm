@@ -15,9 +15,11 @@
  */
 
 import { CaseService } from '../src/case/caseService';
-import { channelTypes } from '../src/contact/channelTypes';
-import { S3ContactMediaType } from '../src/conversation-media/conversation-media';
-import { Contact } from '../src/contact/contact-data-access';
+import {
+  NewConversationMedia,
+  S3ContactMediaType,
+} from '../src/conversation-media/conversation-media';
+import { Contact } from '../src/contact/contactDataAccess';
 import { CreateContactPayload } from '../src/contact/contactService';
 
 export const accountSid = 'ACCOUNT_SID';
@@ -293,26 +295,15 @@ export const case2: Partial<CaseService> = {
 
 export const workerSid = 'WK-worker-sid';
 
-export const withTaskIdAndTranscript: CreateContactPayload = {
-  ...withTaskId,
-  rawJson: {
-    ...withTaskId.rawJson,
-    childInformation: {
-      ...withTaskId.rawJson.childInformation,
-      firstName: 'withTaskIdAndTranscript',
-      lastName: 'withTaskIdAndTranscript',
-    },
-    conversationMedia: [
-      {
-        store: 'S3' as const,
-        type: S3ContactMediaType.TRANSCRIPT,
-        location: {
-          bucket: 'mock-bucket',
-          key: 'mockKey',
-        },
+export const conversationMedia: NewConversationMedia[] = [
+  {
+    storeType: 'S3',
+    storeTypeSpecificData: {
+      type: S3ContactMediaType.TRANSCRIPT,
+      location: {
+        bucket: 'mock-bucket',
+        key: 'mockKey',
       },
-    ],
+    },
   },
-  channel: channelTypes.web,
-  taskId: `${withTaskId.taskId}-transcript-permissions-test`,
-};
+];

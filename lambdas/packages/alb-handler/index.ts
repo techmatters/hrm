@@ -23,6 +23,13 @@ const METHODS = {
   DELETE: 'DELETE',
 } as const;
 
+/**
+ * Event to be handled by the ALB handler
+ *
+ * We have to support both ALB and API Gateway events because
+ * localstack does not support ALB events yet, so our local tests
+ * will use API Gateway events.
+ */
 export type AlbHandlerEvent = ALBEvent | APIGatewayEvent;
 
 export type AlbHandlerResult = ALBResult;
@@ -60,6 +67,13 @@ export const getHeaders = ({ allowedMethods }: GetHeadersParams) => ({
     'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
 });
 
+/**
+ * Handle an ALB event
+ *
+ * @param {AlbHandlerEvent} params.event - The ALB or API Gateway event to be handled
+ * @param {MethodHandlers} params.methodHandlers - An object with the handlers for each available http method
+ * @returns {Promise<AlbHandlerResult>} - The result of the handler function converted to an ALB result
+ */
 export const handleAlbEvent = async <TError extends string>({
   event,
   methodHandlers,

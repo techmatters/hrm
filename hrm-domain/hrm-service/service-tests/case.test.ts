@@ -20,7 +20,11 @@ import each from 'jest-each';
 
 import { db } from '../src/connection-pool';
 import * as caseApi from '../src/case/caseService';
-import { createContact, connectContactToCase } from '../src/contact/contactService';
+import {
+  createContact,
+  connectContactToCase,
+  addConversationMediaToContact,
+} from '../src/contact/contactService';
 import { CaseService } from '../src/case/caseService';
 import * as caseDb from '../src/case/case-data-access';
 import { convertCaseInfoToExpectedInfo, without } from './case-validation';
@@ -288,13 +292,20 @@ describe('/cases route', () => {
         },
       ]).test(`with connectedContacts $description`, async ({ expectTranscripts }) => {
         const createdCase = await caseApi.createCase(case1, accountSid, workerSid);
-        const createdContact = await createContact(
+        let createdContact = await createContact(
           accountSid,
           workerSid,
           true,
-          mocks.withTaskIdAndTranscript,
+          mocks.withTaskId,
           { user: twilioUser(workerSid, []), can: () => true },
         );
+        createdContact = await addConversationMediaToContact(
+          accountSid,
+          createdContact.id.toString(),
+          mocks.conversationMedia,
+          { user: twilioUser(workerSid, []), can: () => true },
+        );
+
         await connectContactToCase(
           accountSid,
           workerSid,
@@ -322,20 +333,10 @@ describe('/cases route', () => {
               c => c.conversationMedia?.some(isS3StoredTranscript),
             ),
           ).toBeTruthy();
-          expect(
-            (<caseApi.CaseService>response.body).connectedContacts?.every(
-              c => c.rawJson?.conversationMedia?.some(cm => cm.store === 'S3'),
-            ),
-          ).toBeTruthy();
         } else {
           expect(
             (<caseApi.CaseService>response.body).connectedContacts?.every(
               c => c.conversationMedia?.some(isS3StoredTranscript),
-            ),
-          ).toBeFalsy();
-          expect(
-            (<caseApi.CaseService>response.body).connectedContacts?.every(
-              c => c.rawJson?.conversationMedia?.some(cm => cm.store === 'S3'),
             ),
           ).toBeFalsy();
         }
@@ -612,6 +613,10 @@ describe('/cases route', () => {
           originalCase: originalCaseGetter = () => cases.blank,
           customWorkerSid = undefined,
         }) => {
+          if (customWorkerSid) {
+            await mockSuccessfulTwilioAuthentication(customWorkerSid);
+            await new Promise(resolve => setTimeout(resolve, 300));
+          }
           const caseUpdate =
             typeof caseUpdateParam === 'function' ? caseUpdateParam() : caseUpdateParam;
           const originalCase = originalCaseGetter();
@@ -626,7 +631,6 @@ describe('/cases route', () => {
             can: () => true,
           });
 
-          await mockSuccessfulTwilioAuthentication(customWorkerSid ?? workerSid);
           const response = await request
             .put(subRoute(originalCase.id))
             .set(headers)
@@ -678,13 +682,20 @@ describe('/cases route', () => {
         },
       ]).test(`with connectedContacts $description`, async ({ expectTranscripts }) => {
         const createdCase = await caseApi.createCase(case1, accountSid, workerSid);
-        const createdContact = await createContact(
+        let createdContact = await createContact(
           accountSid,
           workerSid,
           true,
-          mocks.withTaskIdAndTranscript,
+          mocks.withTaskId,
           { user: twilioUser(workerSid, []), can: () => true },
         );
+        createdContact = await addConversationMediaToContact(
+          accountSid,
+          createdContact.id.toString(),
+          mocks.conversationMedia,
+          { user: twilioUser(workerSid, []), can: () => true },
+        );
+
         await connectContactToCase(
           accountSid,
           workerSid,
@@ -714,11 +725,6 @@ describe('/cases route', () => {
           expect(
             (<caseApi.CaseService>response.body).connectedContacts?.every(
               c => c.conversationMedia?.some(isS3StoredTranscript),
-            ),
-          ).toBeTruthy();
-          expect(
-            (<caseApi.CaseService>response.body).connectedContacts?.every(
-              c => c.rawJson?.conversationMedia?.some(cm => cm.store === 'S3'),
             ),
           ).toBeTruthy();
         } else {

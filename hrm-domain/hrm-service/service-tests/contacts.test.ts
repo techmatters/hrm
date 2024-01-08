@@ -19,12 +19,8 @@ import { addSeconds, parseISO, subDays, subHours, subSeconds } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
 
 import { db } from '../src/connection-pool';
-import { ContactRawJson } from '../src/contact/contact-json';
-import {
-  isS3StoredTranscript,
-  NewConversationMedia,
-  S3ContactMediaType,
-} from '../src/conversation-media/conversation-media';
+import { ContactRawJson } from '../src/contact/contactJson';
+import { isS3StoredTranscript } from '../src/conversation-media/conversation-media';
 import {
   accountSid,
   another1,
@@ -35,31 +31,28 @@ import {
   case2,
   contact1,
   contact2,
+  conversationMedia,
   noHelpline,
   nonData1,
   nonData2,
   withTaskId,
-  withTaskIdAndTranscript,
   workerSid,
 } from './mocks';
 import './case-validation';
 import * as caseApi from '../src/case/caseService';
 import * as caseDb from '../src/case/case-data-access';
 import * as contactApi from '../src/contact/contactService';
-import * as contactDb from '../src/contact/contact-data-access';
+import * as contactDb from '../src/contact/contactDataAccess';
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
-import * as contactJobDataAccess from '../src/contact-job/contact-job-data-access';
-import { chatChannels } from '../src/contact/channelTypes';
 import { selectSingleContactByTaskId } from '../src/contact/sql/contact-get-sql';
 import { ruleFileWithOneActionOverride } from './permissions-overrides';
 import * as csamReportApi from '../src/csam-report/csam-report';
 import * as referralDB from '../src/referral/referral-data-access';
-import * as conversationMediaDB from '../src/conversation-media/conversation-media-data-access';
 import { getRequest, getServer, headers, setRules, useOpenRules } from './server';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
 import * as profilesDB from '../src/profile/profile-data-access';
 
-import { ContactJobType, isErr } from '@tech-matters/types';
+import { isErr } from '@tech-matters/types';
 import {
   cleanupCases,
   cleanupContacts,
@@ -69,7 +62,7 @@ import {
   deleteContactById,
   deleteJobsByContactId,
 } from './contact/db-cleanup';
-import { selectJobsByContactId } from './contact/db-validations';
+import { addConversationMediaToContact } from '../src/contact/contactService';
 
 useOpenRules();
 const server = getServer();
@@ -86,15 +79,6 @@ const resolveSequentially = ps =>
 // eslint-disable-next-line @typescript-eslint/no-shadow
 const getContactByTaskId = (taskId: string, accountSid: string) =>
   db.oneOrNone(selectSingleContactByTaskId('Contacts'), { accountSid, taskId });
-
-// eslint-disable-next-line @typescript-eslint/no-shadow
-const deleteContactJobById = (id: number, accountSid: string) =>
-  db.task(t =>
-    t.none(`
-      DELETE FROM "ContactJobs"
-      WHERE "id" = ${id} AND "accountSid" = '${accountSid}';
-  `),
-  );
 
 // eslint-disable-next-line @typescript-eslint/no-shadow
 const deleteCsamReportById = (id: number, accountSid: string) =>
@@ -119,15 +103,6 @@ const deleteReferralsByContactId = (contactId: number, accountSid: string) =>
   db.task(t =>
     t.manyOrNone(`
       DELETE FROM "Referrals"
-      WHERE "contactId" = ${contactId} AND "accountSid" = '${accountSid}';
-    `),
-  );
-
-// eslint-disable-next-line @typescript-eslint/no-shadow
-const deleteConversationMediaByContactId = (contactId: number, accountSid: string) =>
-  db.task(t =>
-    t.manyOrNone(`
-      DELETE FROM "ConversationMedias"
       WHERE "contactId" = ${contactId} AND "accountSid" = '${accountSid}';
     `),
   );
@@ -248,7 +223,7 @@ describe('/contacts route', () => {
       },
       {
         contact: {
-          rawJson: {},
+          rawJson: {} as ContactRawJson,
           twilioWorkerId: null,
           helpline: null,
           queueName: null,
@@ -280,9 +255,6 @@ describe('/contacts route', () => {
         finalize: false,
         expectedGetContact: {
           ...contact1,
-          rawJson: {
-            ...contact1.rawJson,
-          } as ContactRawJson,
           finalizedAt: undefined,
         } as Partial<contactDb.Contact>,
       },
@@ -560,97 +532,6 @@ describe('/contacts route', () => {
       expect(attemptedContact).toBeNull();
     });
 
-    test('Connects to conversation media', async () => {
-      const cm1: NewConversationMedia = {
-        storeType: 'S3',
-        storeTypeSpecificData: {
-          type: S3ContactMediaType.TRANSCRIPT,
-        },
-      };
-
-      const cm2: NewConversationMedia = {
-        storeType: 'twilio',
-        storeTypeSpecificData: {
-          reservationSid: 'reservationSid',
-        },
-      };
-
-      const contact = {
-        ...withTaskId,
-        rawJson: {
-          ...withTaskId.rawJson,
-        },
-        conversationMedia: [cm1, cm2],
-        channel: 'web',
-        taskId: `${withTaskId.taskId}-web-conversation-media`,
-      };
-
-      // Create contact with conversation media
-      const response = await request.post(route).set(headers).send(contact);
-
-      expect(response.status).toBe(200);
-
-      const createdConversationMedia = await db.task(t =>
-        t.many(`
-          SELECT * FROM "ConversationMedias" WHERE "contactId" = ${response.body.id}
-      `),
-      );
-
-      if (!createdConversationMedia || !createdConversationMedia.length) {
-        throw new Error('createdConversationMedia is empty');
-      }
-
-      createdConversationMedia.forEach(r => {
-        expect(r.contactId).toBeDefined();
-        expect(r.contactId).toEqual(response.body.id);
-      });
-
-      // Test the association
-      expect((response.body as contactDb.Contact).conversationMedia).toHaveLength(2);
-
-      // Remove records to not interfere with following tests
-      await deleteJobsByContactId(response.body.id, response.body.accountSid);
-      await deleteConversationMediaByContactId(
-        response.body.id,
-        response.body.accountSid,
-      );
-      await deleteContactById(response.body.id, response.body.accountSid);
-    });
-
-    test(`If creating convfersation media fails, the contact is not created either`, async () => {
-      const cm1: NewConversationMedia = {
-        storeType: 'S3',
-        storeTypeSpecificData: {
-          type: S3ContactMediaType.TRANSCRIPT,
-        },
-      };
-
-      const contact = {
-        ...withTaskId,
-        rawJson: {
-          ...withTaskId.rawJson,
-        },
-        conversationMedia: [cm1],
-        channel: 'web',
-        taskId: `${withTaskId.taskId}-web-conversation-media`,
-      };
-
-      const createConversationMediaSpy = jest
-        .spyOn(conversationMediaDB, 'create')
-        .mockImplementationOnce(() => {
-          throw new Error('Ups');
-        });
-
-      const res = await request.post(route).set(headers).send(contact);
-
-      expect(createConversationMediaSpy).toHaveBeenCalled();
-      expect(res.status).toBe(500);
-
-      const attemptedContact = await getContactByTaskId(contact.taskId, accountSid);
-
-      expect(attemptedContact).toBeNull();
-    });
-
     test(`If retrieving identifier and profile, the contact is not created either`, async () => {
       const contact = {
         ...withTaskId,
@@ -773,7 +654,6 @@ describe('/contacts route', () => {
         'createIdentifierAndProfile',
       );
 
-      // Create contact with conversation media
       const response = await request.post(route).set(headers).send(contact);
 
       expect(response.status).toBe(200);
@@ -785,216 +665,6 @@ describe('/contacts route', () => {
       // Remove records to not interfere with following tests
       await deleteJobsByContactId(response.body.id, response.body.accountSid);
       await deleteContactById(response.body.id, response.body.accountSid);
-    });
-
-    each(
-      chatChannels.map(channel => ({
-        channel,
-        contact: {
-          ...withTaskId,
-          rawJson: {
-            ...withTaskId.rawJson,
-            conversationMedia: [
-              {
-                store: 'S3',
-                type: S3ContactMediaType.TRANSCRIPT,
-              },
-            ],
-          },
-          channel,
-          taskId: `${withTaskId.taskId}-${channel}`,
-        },
-      })),
-    ).test(
-      `contacts with channel type $channel should create ${ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT} job`,
-      async ({ contact }) => {
-        const res = await request.post(route).set(headers).send(contact);
-
-        expect(res.status).toBe(200);
-
-        const createdContact = await contactDb.getById(accountSid, res.body.id);
-        const jobs = await selectJobsByContactId(
-          createdContact.id,
-          createdContact.accountSid,
-        );
-
-        const retrieveContactTranscriptJobs = jobs.filter(
-          j => j.jobType === ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
-        );
-        expect(retrieveContactTranscriptJobs).toHaveLength(1);
-
-        // Test that idempotence applies to jobs too
-        const res2 = await request.post(route).set(headers).send(contact);
-
-        expect(res2.status).toBe(200);
-        const jobs2 = await selectJobsByContactId(res.body.id, res.body.accountSid);
-
-        const retrieveContactTranscriptJobs2 = jobs2.filter(
-          j => j.jobType === ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
-        );
-        expect(retrieveContactTranscriptJobs2).toHaveLength(1);
-
-        const attemptedContact = await getContactByTaskId(contact.taskId, accountSid);
-
-        expect(attemptedContact).not.toBeNull();
-
-        await Promise.all(
-          retrieveContactTranscriptJobs.map(j =>
-            deleteContactJobById(j.id, j.accountSid),
-          ),
-        );
-        await deleteContactById(res.body.id, res.body.accountSid);
-      },
-    );
-
-    each(
-      chatChannels.map(channel => ({
-        channel,
-        contact: {
-          ...withTaskId,
-          rawJson: {
-            ...withTaskId.rawJson,
-            conversationMedia: [
-              {
-                store: 'S3',
-                type: S3ContactMediaType.TRANSCRIPT,
-              },
-            ],
-          },
-          channel,
-          taskId: `${withTaskId.taskId}-${channel}`,
-        },
-      })),
-    ).test(
-      `if contact with channel type $channel is not created, neither is ${ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT} job`,
-      async ({ contact }) => {
-        const createContactSpy = jest
-          .spyOn(contactDb, 'create')
-          .mockImplementation(() => {
-            throw new Error('Oops');
-          });
-        const createContactJobSpy = jest.spyOn(contactJobDataAccess, 'createContactJob');
-
-        try {
-          const res = await request.post(route).set(headers).send(contact);
-
-          expect(res.status).toBe(500);
-
-          expect(createContactJobSpy).not.toHaveBeenCalled();
-
-          const attemptedContact = await getContactByTaskId(contact.taskId, accountSid);
-
-          expect(attemptedContact).toBeNull();
-        } finally {
-          createContactSpy.mockRestore();
-          createContactJobSpy.mockRestore();
-        }
-      },
-    );
-
-    each(
-      chatChannels.map(channel => ({
-        channel,
-        contact: {
-          ...withTaskId,
-          rawJson: {
-            ...withTaskId.rawJson,
-            conversationMedia: [
-              {
-                store: 'S3',
-                type: S3ContactMediaType.TRANSCRIPT,
-              },
-            ],
-          },
-          channel,
-          taskId: `${withTaskId.taskId}-${channel}`,
-        },
-      })),
-    ).test(
-      `if ${ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT} job creation fails with channel type $channel, the contact is not created either, and csams are not linked`,
-      async ({ contact }) => {
-        const csamReportId = 'csam-report-id';
-        const newReport = await csamReportApi.createCSAMReport(
-          {
-            csamReportId: csamReportId,
-            twilioWorkerId: workerSid,
-            reportType: 'counsellor-generated',
-          },
-          accountSid,
-        );
-
-        const createContactJobSpy = jest
-          .spyOn(contactJobDataAccess, 'createContactJob')
-          .mockImplementationOnce(() => {
-            throw new Error('Ups');
-          });
-
-        const contactWithCsam = { ...contact, csamReports: [newReport] };
-        const res = await request.post(route).set(headers).send(contactWithCsam);
-
-        expect(res.status).toBe(500);
-
-        const updatedReport = await csamReportApi.getCSAMReport(newReport.id, accountSid);
-        expect(updatedReport?.contactId).toBeNull();
-
-        const attemptedContact = await getContactByTaskId(contact.taskId, accountSid);
-
-        expect(attemptedContact).toBeNull();
-
-        await deleteCsamReportById(updatedReport!.id, updatedReport!.accountSid);
-        createContactJobSpy.mockRestore();
-      },
-    );
-
-    each([
-      {
-        expectTranscripts: true,
-        description: `with viewExternalTranscript includes transcripts`,
-      },
-      {
-        expectTranscripts: false,
-        description: `without viewExternalTranscript excludes transcripts`,
-      },
-    ]).test(`$description`, async ({ expectTranscripts }) => {
-      const createdContact = await contactApi.createContact(
-        accountSid,
-        workerSid,
-        true,
-        withTaskIdAndTranscript,
-        { user: twilioUser(workerSid, []), can: () => true },
-      );
-
-      if (!expectTranscripts) {
-        setRules(ruleFileWithOneActionOverride('viewExternalTranscript', false));
-      } else {
-        useOpenRules();
-      }
-
-      const res = await request.post(route).set(headers).send(withTaskIdAndTranscript);
-
-      if (expectTranscripts) {
-        expect(
-          (<contactApi.Contact>res.body).conversationMedia?.some(isS3StoredTranscript),
-        ).toBeTruthy();
-        expect(
-          (<contactApi.Contact>res.body).rawJson?.conversationMedia?.some(
-            cm => cm.store === 'S3',
-          ),
-        ).toBeTruthy();
-      } else {
-        expect(
-          (<contactApi.Contact>res.body).conversationMedia?.some(isS3StoredTranscript),
-        ).toBeFalsy();
-        expect(
-          (<contactApi.Contact>res.body).rawJson?.conversationMedia?.some(
-            cm => cm.store === 'S3',
-          ),
-        ).toBeFalsy();
-      }
-
-      await deleteJobsByContactId(createdContact.id, createdContact.accountSid);
-      await deleteContactById(createdContact.id, createdContact.accountSid);
-      useOpenRules();
     });
   });
 
@@ -1110,20 +780,6 @@ describe('/contacts route', () => {
         );
       });
 
-      const expectLegacyRawJsonToEqualRawJson = (
-        actual: contactApi.WithLegacyCategories<contactDb.Contact>['rawJson'],
-        expected: contactApi.WithLegacyCategories<contactDb.Contact>['rawJson'],
-        legacyCategories: Record<string, Record<string, boolean>> = {},
-      ) => {
-        expect(actual).toStrictEqual({
-          ...expected,
-          caseInformation: {
-            ...expected.caseInformation,
-            categories: legacyCategories,
-          },
-        });
-      };
-
       each([
         {
           body: { firstName: 'jh', lastName: 'he' },
@@ -1134,8 +790,8 @@ describe('/contacts route', () => {
             const { contacts, count } = response.body;
 
             const [c2, c1] = contacts; // result is sorted DESC
-            expectLegacyRawJsonToEqualRawJson(c1.details, contact1.rawJson);
-            expectLegacyRawJsonToEqualRawJson(c2.details, contact2.rawJson);
+            expect(c1.details).toStrictEqual(contact1.rawJson);
+            expect(c2.details).toStrictEqual(contact2.rawJson);
 
             // Test the association
             expect(c1.csamReports).toHaveLength(0);
@@ -1155,8 +811,8 @@ describe('/contacts route', () => {
             const { contacts, count } = response.body;
 
             const [c2, c1] = contacts; // result is sorted DESC
-            expectLegacyRawJsonToEqualRawJson(c1.details, contact1.rawJson);
-            expectLegacyRawJsonToEqualRawJson(c2.details, contact2.rawJson);
+            expect(c1.details).toStrictEqual(contact1.rawJson);
+            expect(c2.details).toStrictEqual(contact2.rawJson);
 
             // Test the association
             expect(c1.csamReports).toHaveLength(0);
@@ -1185,7 +841,7 @@ describe('/contacts route', () => {
             expect(response.status).toBe(200);
             expect(count).toBe(1);
             const [a] = contacts;
-            expectLegacyRawJsonToEqualRawJson(a.details, another1.rawJson);
+            expect(a.details).toStrictEqual(another1.rawJson);
           },
         },
         {
@@ -1257,7 +913,7 @@ describe('/contacts route', () => {
               const { count, contacts } = response.body;
               expect(response.status).toBe(200);
               expect(count).toBe(1);
-              expectLegacyRawJsonToEqualRawJson(contacts[0].details, another2.rawJson);
+              expect(contacts[0].details).toStrictEqual(another2.rawJson);
             },
           };
         }),
@@ -1277,7 +933,7 @@ describe('/contacts route', () => {
               const { count, contacts } = response.body;
               expect(response.status).toBe(200);
               expect(count).toBe(1);
-              expectLegacyRawJsonToEqualRawJson(contacts[0].details, another2.rawJson);
+              expect(contacts[0].details).toStrictEqual(another2.rawJson);
             },
           };
         }),
@@ -1449,9 +1105,8 @@ describe('/contacts route', () => {
             expect(count).toBe(2);
 
             const [c2, c1] = contacts; // result is sorted DESC
-            expectLegacyRawJsonToEqualRawJson(c1.details, contact1.rawJson);
-            expectLegacyRawJsonToEqualRawJson(c2.details, contact2.rawJson);
-
+            expect(c1.details).toStrictEqual(contact1.rawJson);
+            expect(c2.details).toStrictEqual(contact2.rawJson);
             // Test the association
             expect(c1.csamReports).toHaveLength(0);
             expect(c2.csamReports).toHaveLength(0);
@@ -1479,11 +1134,17 @@ describe('/contacts route', () => {
           description: `without viewExternalTranscript excludes transcripts`,
         },
       ]).test(`$description`, async ({ expectTranscripts }) => {
-        const createdContact = await contactApi.createContact(
+        let createdContact = await contactApi.createContact(
           accountSid,
           workerSid,
           true,
-          withTaskIdAndTranscript,
+          withTaskId,
+          { user: twilioUser(workerSid, []), can: () => true },
+        );
+        createdContact = await addConversationMediaToContact(
+          accountSid,
+          createdContact.id.toString(),
+          conversationMedia,
           { user: twilioUser(workerSid, []), can: () => true },
         );
 
@@ -1499,7 +1160,7 @@ describe('/contacts route', () => {
           .send({
             dateFrom: subSeconds(createdContact.createdAt, 1).toISOString(),
             dateTo: addSeconds(createdContact.createdAt, 1).toISOString(),
-            firstName: 'withTaskIdAndTranscript',
+            firstName: 'withTaskId',
           });
 
         expect(res.status).toBe(200);
@@ -1512,9 +1173,9 @@ describe('/contacts route', () => {
             ),
           ).toBeTruthy();
           expect(
-            (<contactApi.SearchContact>(
-              res.body.contacts[0]
-            )).details.conversationMedia?.some(cm => cm.store === 'S3'),
+            (<contactApi.SearchContact>res.body.contacts[0]).conversationMedia?.some(
+              cm => cm.storeType === 'S3',
+            ),
           ).toBeTruthy();
         } else {
           expect(
@@ -1523,9 +1184,9 @@ describe('/contacts route', () => {
             ),
           ).toBeFalsy();
           expect(
-            (<contactApi.SearchContact>(
-              res.body.contacts[0]
-            )).details.conversationMedia?.some(cm => cm.store === 'S3'),
+            (<contactApi.SearchContact>res.body.contacts[0]).conversationMedia?.some(
+              cm => cm.storeType === 'S3',
+            ),
           ).toBeFalsy();
         }
 
@@ -1722,8 +1383,8 @@ describe('/contacts route', () => {
         const casesAudits = await selectCasesAudits();
         const contactsAudits = await selectContactsAudits();
 
-        // Connecting contacts to cases does not update Cases, but Contacts
-        expect(casesAudits).toHaveLength(casesAuditPreviousCount);
+        // Connecting contacts to cases updates contacts, but also touches the updatedat / updatedby fields on the case
+        expect(casesAudits).toHaveLength(casesAuditPreviousCount + 1);
         expect(contactsAudits).toHaveLength(contactsAuditPreviousCount + 1);
 
         const lastContactAudit = contactsAudits.sort(byGreaterId)[0];
@@ -1756,7 +1417,7 @@ describe('/contacts route', () => {
         const casesAuditAfterCount = await countCasesAudits();
         const contactsAuditAfterCount = await countContactsAudits();
 
-        expect(casesAuditAfterCount).toBe(casesAuditPreviousCount);
+        expect(casesAuditAfterCount).toBe(casesAuditPreviousCount + 1);
         expect(contactsAuditAfterCount).toBe(contactsAuditPreviousCount + 1);
       });
 
@@ -1782,7 +1443,7 @@ describe('/contacts route', () => {
         const casesAuditAfterCount = await countCasesAudits();
         const contactsAuditAfterCount = await countContactsAudits();
 
-        expect(casesAuditAfterCount).toBe(casesAuditPreviousCount);
+        expect(casesAuditAfterCount).toBe(casesAuditPreviousCount + 1);
         expect(contactsAuditAfterCount).toBe(contactsAuditPreviousCount + 1);
       });
 

@@ -24,7 +24,7 @@ import {
   S3ContactMediaType,
 } from '../src/conversation-media/conversation-media';
 import { db } from '../src/connection-pool';
-import * as contactDB from '../src/contact/contact-data-access';
+import * as contactDB from '../src/contact/contactDataAccess';
 import * as conversationMediaDB from '../src/conversation-media/conversation-media-data-access';
 import { NewContactRecord } from '../src/contact/sql/contact-insert-sql';
 

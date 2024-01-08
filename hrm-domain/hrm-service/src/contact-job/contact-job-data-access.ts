@@ -15,7 +15,7 @@
  */
 
 import { db, pgp } from '../connection-pool';
-import type { Contact } from '../contact/contact-data-access';
+import type { Contact } from '../contact/contactDataAccess';
 import {
   ADD_FAILED_ATTEMPT_PAYLOAD,
   ContactJobCleanupStatus,

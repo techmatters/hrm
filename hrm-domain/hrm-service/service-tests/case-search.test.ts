@@ -24,17 +24,20 @@ import * as caseDb from '../src/case/case-data-access';
 import { CaseListFilters, DateExistsCondition } from '../src/case/case-data-access';
 import { db } from '../src/connection-pool';
 import {
-  addLegacyCategoriesToContact,
   fillNameAndPhone,
   validateCaseListResponse,
   validateSingleCaseResponse,
 } from './case-validation';
-import * as contactDb from '../src/contact/contact-data-access';
-import { Contact } from '../src/contact/contact-data-access';
+import * as contactDb from '../src/contact/contactDataAccess';
+import { Contact } from '../src/contact/contactDataAccess';
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import * as mocks from './mocks';
 import { ruleFileWithOneActionOverride } from './permissions-overrides';
-import { connectContactToCase, createContact } from '../src/contact/contactService';
+import {
+  addConversationMediaToContact,
+  connectContactToCase,
+  createContact,
+} from '../src/contact/contactService';
 import { getRequest, getServer, headers, setRules, useOpenRules } from './server';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
 import { isS3StoredTranscript } from '../src/conversation-media/conversation-media';
@@ -144,10 +147,11 @@ const insertSampleCases = async ({
         contactToCreate,
         true,
       );
-      connectedContact = await contactDb.connectToCase(
+      connectedContact = await contactDb.connectToCase()(
         savedContact.accountSid,
         savedContact.id.toString(),
         createdCase.id.toString(),
+        workerSid,
       );
       createdCase = await getCase(createdCase.id, accounts[i % accounts.length], {
         user: twilioUser(workerSid, []),
@@ -230,10 +234,11 @@ describe('/cases route', () => {
         contactToCreate.serviceSid = 'SERVICE_SID';
         createdContact = (await contactDb.create()(accountSid, contactToCreate, true))
           .contact;
-        createdContact = await contactDb.connectToCase(
+        createdContact = await contactDb.connectToCase()(
           accountSid,
           createdContact.id.toString(),
           createdCase.id,
+          workerSid,
         );
         createdCase = await getCase(createdCase.id, accountSid, {
           user: twilioUser(workerSid, []),
@@ -359,7 +364,7 @@ describe('/cases route', () => {
           const response = await request.get(listRoute).set(headers);
           validateCaseListResponse(
             response,
-            addLegacyCategoriesToContact(expectedCasesAndContacts()),
+            expectedCasesAndContacts(),
             expectedTotalCount,
           );
         },
@@ -377,11 +382,17 @@ describe('/cases route', () => {
       },
     ]).test(`with connectedContacts $description`, async ({ expectTranscripts }) => {
       const createdCase = await caseApi.createCase(case1, accountSid, workerSid);
-      const createdContact = await createContact(
+      let createdContact = await createContact(
         accountSid,
         workerSid,
         true,
-        mocks.withTaskIdAndTranscript,
+        mocks.withTaskId,
+        { user: twilioUser(workerSid, []), can: () => true },
+      );
+      createdContact = await addConversationMediaToContact(
+        accountSid,
+        createdContact.id.toString(),
+        mocks.conversationMedia,
         { user: twilioUser(workerSid, []), can: () => true },
       );
       await connectContactToCase(
@@ -407,7 +418,7 @@ describe('/cases route', () => {
         .query({
           dateFrom: createdCase.createdAt,
           dateTo: createdCase.createdAt,
-          firstName: 'withTaskIdAndTranscript',
+          firstName: 'withTaskId',
         })
         .set(headers);
 
@@ -424,28 +435,12 @@ describe('/cases route', () => {
               ),
           ),
         ).toBeTruthy();
-        expect(
-          (<caseApi.CaseService[]>response.body.cases).every(
-            caseObj =>
-              caseObj.connectedContacts?.every(
-                c => c.rawJson?.conversationMedia?.some(cm => cm.store === 'S3'),
-              ),
-          ),
-        ).toBeTruthy();
       } else {
         expect(
           (<caseApi.CaseService[]>response.body.cases).every(
             caseObj =>
               caseObj.connectedContacts?.every(
                 c => c.conversationMedia?.some(isS3StoredTranscript),
-              ),
-          ),
-        ).toBeFalsy();
-        expect(
-          (<caseApi.CaseService[]>response.body.cases).every(
-            caseObj =>
-              caseObj.connectedContacts?.every(
-                c => c.rawJson?.conversationMedia?.some(cm => cm.store === 'S3'),
               ),
           ),
         ).toBeFalsy();
@@ -532,10 +527,11 @@ describe('/cases route', () => {
           toCreate.serviceSid = 'SERVICE_SID';
           // Connects createdContact with createdCase2
           createdContact = (await contactDb.create()(accountSid, toCreate, true)).contact;
-          createdContact = await contactDb.connectToCase(
+          createdContact = await contactDb.connectToCase()(
             accountSid,
             createdContact.id.toString(),
             createdCase2.id,
+            workerSid,
           );
           // Get case 2 again, now a contact is connected
           createdCase2 = await caseApi.getCase(createdCase2.id, accountSid, {
@@ -1241,7 +1237,7 @@ describe('/cases route', () => {
                 expectedCasesAndContacts(
                   createdCasesAndContacts.map(cc => ({
                     case: cc.case,
-                    contact: addLegacyCategoriesToContact(cc?.contact),
+                    contact: cc?.contact,
                   })),
                 ),
                 expectedTotalCount,
@@ -1269,11 +1265,17 @@ describe('/cases route', () => {
         },
       ]).test(`with connectedContacts $description`, async ({ expectTranscripts }) => {
         const createdCase = await caseApi.createCase(case1, accountSid, workerSid);
-        const createdContact = await createContact(
+        let createdContact = await createContact(
           accountSid,
           workerSid,
           true,
-          mocks.withTaskIdAndTranscript,
+          mocks.withTaskId,
+          { user: twilioUser(workerSid, []), can: () => true },
+        );
+        createdContact = await addConversationMediaToContact(
+          accountSid,
+          createdContact.id.toString(),
+          mocks.conversationMedia,
           { user: twilioUser(workerSid, []), can: () => true },
         );
         await connectContactToCase(
@@ -1301,7 +1303,7 @@ describe('/cases route', () => {
           .send({
             dateFrom: createdCase.createdAt,
             dateTo: createdCase.createdAt,
-            firstName: 'withTaskIdAndTranscript',
+            firstName: 'withTaskId',
           });
 
         expect(response.status).toBe(200);
@@ -1317,28 +1319,12 @@ describe('/cases route', () => {
                 ),
             ),
           ).toBeTruthy();
-          expect(
-            (<caseApi.CaseService[]>response.body.cases).every(
-              caseObj =>
-                caseObj.connectedContacts?.every(
-                  c => c.rawJson?.conversationMedia?.some(cm => cm.store === 'S3'),
-                ),
-            ),
-          ).toBeTruthy();
         } else {
           expect(
             (<caseApi.CaseService[]>response.body.cases).every(
               caseObj =>
                 caseObj.connectedContacts?.every(
                   c => c.conversationMedia?.some(isS3StoredTranscript),
-                ),
-            ),
-          ).toBeFalsy();
-          expect(
-            (<caseApi.CaseService[]>response.body.cases).every(
-              caseObj =>
-                caseObj.connectedContacts?.every(
-                  c => c.rawJson?.conversationMedia?.some(cm => cm.store === 'S3'),
                 ),
             ),
           ).toBeFalsy();

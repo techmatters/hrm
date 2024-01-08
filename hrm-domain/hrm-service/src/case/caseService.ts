@@ -35,13 +35,10 @@ import {
   update,
 } from './case-data-access';
 import { randomUUID } from 'crypto';
-import type { Contact } from '../contact/contact-data-access';
-import { setupCanForRules } from '../permissions/setupCanForRules';
+import type { Contact } from '../contact/contactDataAccess';
+import { InitializedCan } from '../permissions/initializeCanForRules';
 import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
-import {
-  bindApplyTransformations as bindApplyContactTransformations,
-  WithLegacyCategories,
-} from '../contact/contactService';
+import { bindApplyTransformations as bindApplyContactTransformations } from '../contact/contactService';
 import type { SearchPermissions } from '../permissions/search-permissions';
 import type { Profile } from '../profile/profile-data-access';
 import type { PaginationQuery } from '../search';
@@ -87,11 +84,7 @@ export type CaseService = CaseRecordCommon & {
   id: number;
   childName?: string;
   categories: Record<string, string[]>;
-  connectedContacts?: WithLegacyCategories<Contact>[];
-};
-
-type CaseRecordWithLegacyCategoryContacts = Omit<CaseRecord, 'connectedContacts'> & {
-  connectedContacts: WithLegacyCategories<Contact>[];
+  connectedContacts?: Contact[];
 };
 
 /**
@@ -150,7 +143,7 @@ const caseSectionRecordsToInfo = (
   }, infoLists);
 };
 
-const addCategories = (caseItem: CaseRecordWithLegacyCategoryContacts) => {
+const addCategories = (caseItem: CaseRecord) => {
   const fstContact = (caseItem.connectedContacts ?? [])[0];
 
   return { ...caseItem, categories: fstContact?.rawJson?.categories ?? {} };
@@ -191,7 +184,7 @@ const caseToCaseRecord = (
   };
 };
 
-const caseRecordToCase = (record: CaseRecordWithLegacyCategoryContacts): CaseService => {
+const caseRecordToCase = (record: CaseRecord): CaseService => {
   // Remove legacy case sections
   const info = {
     ...record.info,
@@ -211,7 +204,7 @@ const caseRecordToCase = (record: CaseRecordWithLegacyCategoryContacts): CaseSer
 };
 
 const mapContactTransformations =
-  ({ can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser }) =>
+  ({ can, user }: { can: InitializedCan; user: TwilioUser }) =>
   (caseRecord: CaseRecord) => {
     const applyTransformations = bindApplyContactTransformations(can, user);
     const withTransformedContacts = {
@@ -245,8 +238,7 @@ export const createCase = async (
   const created = await create(record, accountSid);
 
   // A new case is always initialized with empty connected contacts. No need to apply mapContactTransformations here
-  // This also means the cast to the legacy category type is safe
-  return caseRecordToCase(created as CaseRecordWithLegacyCategoryContacts);
+  return caseRecordToCase(created);
 };
 
 export const updateCase = async (
@@ -254,7 +246,7 @@ export const updateCase = async (
   body: Partial<CaseService>,
   accountSid: CaseService['accountSid'],
   workerSid: CaseService['twilioWorkerId'],
-  { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
+  { can, user }: { can: InitializedCan; user: TwilioUser },
 ): Promise<CaseService> => {
   const caseFromDB: CaseRecord = await getById(id, accountSid);
   if (!caseFromDB) {
@@ -279,7 +271,7 @@ export const updateCase = async (
 export const getCase = async (
   id: number,
   accountSid: string,
-  { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
+  { can, user }: { can: InitializedCan; user: TwilioUser },
 ): Promise<CaseService | undefined> => {
   const caseFromDb = await getById(id, accountSid);
 
@@ -348,7 +340,7 @@ const generalizedSearchCases =
       user,
       searchPermissions,
     }: {
-      can: ReturnType<typeof setupCanForRules>;
+      can: InitializedCan;
       user: TwilioUser;
       searchPermissions: SearchPermissions;
     },
@@ -412,7 +404,7 @@ export const getCasesByProfileId = async (
   profileId: Profile['id'],
   query: Pick<PaginationQuery, 'limit' | 'offset'>,
   ctx: {
-    can: ReturnType<typeof setupCanForRules>;
+    can: InitializedCan;
     user: TwilioUser;
     searchPermissions: SearchPermissions;
   },

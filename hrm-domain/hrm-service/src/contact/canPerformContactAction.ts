@@ -15,12 +15,7 @@
  */
 
 import asyncHandler from '../async-handler';
-import {
-  Contact,
-  getContactById,
-  PatchPayload,
-  WithLegacyCategories,
-} from './contactService';
+import { Contact, getContactById, PatchPayload } from './contactService';
 import { actionsMaps } from '../permissions';
 import { getClient } from '@tech-matters/twilio-client';
 import { isTwilioTaskTransferTarget } from '@tech-matters/twilio-client';
@@ -29,11 +24,8 @@ import { getCase } from '../case/caseService';
 
 const authorizeIfAdditionalValidationPasses = async (
   req: any,
-  contact: WithLegacyCategories<Contact>,
-  additionalValidation: (
-    contact: WithLegacyCategories<Contact>,
-    req: any,
-  ) => Promise<boolean>,
+  contact: Contact,
+  additionalValidation: (contact: Contact, req: any) => Promise<boolean>,
 ) => {
   if (await additionalValidation(contact, req)) {
     req.authorize();
@@ -44,10 +36,8 @@ const authorizeIfAdditionalValidationPasses = async (
 
 const canPerformActionOnContact = (
   action: (typeof actionsMaps.contact)[keyof typeof actionsMaps.contact],
-  additionalValidation: (
-    contact: WithLegacyCategories<Contact>,
-    req: any,
-  ) => Promise<boolean> = () => Promise.resolve(true),
+  additionalValidation: (contact: Contact, req: any) => Promise<boolean> = () =>
+    Promise.resolve(true),
 ) =>
   asyncHandler(async (req, res, next) => {
     if (!req.isAuthorized()) {
@@ -164,7 +154,7 @@ const canRemoveFromCase = async (
 const canConnectContact = canPerformActionOnContact(
   actionsMaps.contact.ADD_CONTACT_TO_CASE,
   async (
-    { caseId: originalCaseId }: WithLegacyCategories<Contact>,
+    { caseId: originalCaseId }: Contact,
     { can, user, accountSid, body: { caseId: targetCaseId } },
   ) => {
     if (!(await canRemoveFromCase(originalCaseId, { can, user, accountSid }))) {
@@ -181,7 +171,7 @@ const canConnectContact = canPerformActionOnContact(
 
 export const canDisconnectContact = canPerformActionOnContact(
   actionsMaps.contact.REMOVE_CONTACT_FROM_CASE,
-  async ({ caseId }: WithLegacyCategories<Contact>, { can, user, accountSid }) =>
+  async ({ caseId }: Contact, { can, user, accountSid }) =>
     canRemoveFromCase(caseId, { can, user, accountSid }),
 );
 

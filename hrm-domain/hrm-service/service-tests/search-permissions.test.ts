@@ -20,7 +20,7 @@ import { randomBytes } from 'crypto';
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 
 import { db } from '../src/connection-pool';
-import { ConditionsSets, RulesFile } from '../src/permissions/rulesMap';
+import { TKConditionsSets, RulesFile } from '../src/permissions/rulesMap';
 import {
   headers,
   getRequest,
@@ -29,8 +29,9 @@ import {
   defaultConfig,
   useOpenRules,
 } from './server';
-import { SearchParameters as ContactSearchParameters } from '../src/contact/contact-data-access';
+import { SearchParameters as ContactSearchParameters } from '../src/contact/contactDataAccess';
 import { SearchParameters as CaseSearchParameters } from '../src/case/caseService';
+import { TargetKind } from '../src/permissions/actions';
 
 useOpenRules();
 const server = getServer();
@@ -98,7 +99,10 @@ afterEach(async () => {
   await cleanUpDB();
 });
 
-const overridePermissions = (key: string, permissions: ConditionsSets) => {
+const overridePermissions = <T extends TargetKind>(
+  key: string,
+  permissions: TKConditionsSets<T>,
+) => {
   useOpenRules();
   const rules: RulesFile = {
     ...(defaultConfig.permissions?.rules() as RulesFile),
@@ -107,10 +111,10 @@ const overridePermissions = (key: string, permissions: ConditionsSets) => {
   setRules(rules);
 };
 
-const overrideViewContactPermissions = (permissions: ConditionsSets) =>
+const overrideViewContactPermissions = (permissions: TKConditionsSets<'contact'>) =>
   overridePermissions('viewContact', permissions);
 
-const overrideViewCasePermissions = (permissions: ConditionsSets) =>
+const overrideViewCasePermissions = (permissions: TKConditionsSets<'case'>) =>
   overridePermissions('viewCase', permissions);
 
 describe('search contacts permissions', () => {

@@ -41,6 +41,9 @@ export const fileMethods: Record<
   contact: {
     getObject: 'view',
   },
+  // There are no read/write permissions for case files yet.
+  // We are using view case permissions to emulate the current
+  // permissions for case files.
   case: {
     getObject: 'view',
     putObject: 'view',
@@ -59,6 +62,11 @@ export const getPermission = ({
 }) => {
   if (!fileTypes[fileType]) throw new Error('Invalid fileType');
   if (!fileMethods[objectType]?.[method]) throw new Error('Invalid method');
+
+  // We needed a way to bridge the gap between the files urls requests
+  // and the hrm permission system until we can refactor the hrm side.
+  // This is a temporary solution that should be removed in the future
+  // when we refactor the hrm side of permissions to be more fine grained.
   return `${fileMethods[objectType][method]}${fileTypes[fileType]}`;
 };
 
@@ -89,7 +97,8 @@ const filesUrlsAuthenticator = async (
     requestData: { bucket, key },
   } = params;
 
-  // This is a quick and dirty way to lock this down so we can test with fake data without exposing real data in the test environment
+  // This is a quick and dirty way to lock this down so we can test
+  // with fake data without exposing real data in the test environment.
   if (mockBuckets.includes(bucket)) {
     return newOk({ data: true });
   }
