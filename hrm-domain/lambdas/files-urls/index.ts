@@ -41,13 +41,4 @@ export const handler = async (event: AlbHandlerEvent): Promise<AlbHandlerResult>
       InternalServerError: 500,
     },
   });
-/**
- * The alb handler will call the method handler based on the HTTP method.
- */
-// const methodHandlers: MethodHandlers = {
-//   GET: getSignedS3Url,
-// };
-
-// export const handler = async (event: AlbHandlerEvent) => {
-//   return handleAlbEvent({ event, methodHandlers });
-// };
+};
