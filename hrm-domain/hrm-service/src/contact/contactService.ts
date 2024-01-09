@@ -92,7 +92,7 @@ export type CreateContactPayload = NewContactRecord & {
 
 const filterExternalTranscripts = (contact: Contact): Contact => {
   const { conversationMedia, ...rest } = contact;
-  const filteredConversationMedia = conversationMedia.filter(
+  const filteredConversationMedia = (conversationMedia ?? []).filter(
     m => !isS3StoredTranscript(m),
   );
 
