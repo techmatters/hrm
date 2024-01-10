@@ -15,7 +15,7 @@
  */
 
 import each from 'jest-each';
-import './case-validation';
+import './case/caseValidation';
 import { db } from '../src/connection-pool';
 import * as caseApi from '../src/case/caseService';
 import * as contactApi from '../src/contact/contactService';

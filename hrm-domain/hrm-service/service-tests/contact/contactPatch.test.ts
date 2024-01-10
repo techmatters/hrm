@@ -20,7 +20,7 @@ import {
   CreateContactPayload,
   PatchPayload,
 } from '../../src/contact/contactService';
-import '../case-validation';
+import '../case/caseValidation';
 import * as contactApi from '../../src/contact/contactService';
 import { accountSid, contact1, withTaskId, workerSid } from '../mocks';
 import { twilioUser } from '@tech-matters/twilio-worker-auth/dist';

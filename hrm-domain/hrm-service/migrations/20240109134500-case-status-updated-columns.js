@@ -14,23 +14,26 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import pgPromise from 'pg-promise';
-import config from './config/db';
+'use strict';
 
-export const pgp = pgPromise({});
+module.exports = {
+  up: async queryInterface => {
+    await queryInterface.sequelize.query(`
+      ALTER TABLE IF EXISTS public."Cases"
+      ADD COLUMN "statusUpdatedAt" timestamp with time zone,
+      ADD COLUMN "statusUpdatedBy" text COLLATE pg_catalog."default";
+    `);
+    console.log('"statusUpdatedAt" & "statusUpdatedBy" columns added to table "Cases"');
+  },
 
-export const db = pgp(
-  `postgres://${encodeURIComponent(config.username)}:${encodeURIComponent(
-    config.password,
-  )}@${config.host}:${config.port}/${encodeURIComponent(
-    config.database,
-  )}?&application_name=hrm-service`,
-);
-
-const { builtins } = pgp.pg.types;
-
-[builtins.DATE, builtins.TIMESTAMP, builtins.TIMESTAMPTZ].forEach(typeId => {
-  pgp.pg.types.setTypeParser(typeId, value => {
-    return value === null ? null : new Date(value);
-  });
-});
+  down: async queryInterface => {
+    await queryInterface.sequelize.query(`
+      ALTER TABLE public."Cases" 
+      DROP COLUMN IF EXISTS "statusUpdatedAt",
+      DROP COLUMN IF EXISTS "statusUpdatedBy";
+    `);
+    console.log(
+      '"statusUpdatedAt" & "statusUpdatedBy" columns dropped from table "Cases"',
+    );
+  },
+};

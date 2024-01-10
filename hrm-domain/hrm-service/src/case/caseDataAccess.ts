@@ -42,11 +42,15 @@ export type CaseRecordCommon = {
   accountSid: string;
   createdAt: string;
   updatedAt: string;
+  statusUpdatedAt: string;
+  statusUpdatedBy: string;
 };
 
 export type NewCaseRecord = CaseRecordCommon & {
   caseSections?: CaseSectionRecord[];
 };
+
+export type CaseRecordUpdate = Partial<NewCaseRecord> & Pick<NewCaseRecord, 'updatedBy'>;
 
 export type CaseRecord = CaseRecordCommon & {
   id: number;
@@ -267,11 +271,24 @@ export const update = async (
       Object.assign(statementValues, values);
       await transaction.none(sql, statementValues);
     }
-    await transaction.none(
-      updateByIdSql(caseRecordUpdates, accountSid, id),
-      statementValues,
-    );
+    await transaction.none(updateByIdSql(caseRecordUpdates, accountSid, id));
 
+    return transaction.oneOrNone(selectSingleCaseByIdSql('Cases'), statementValues);
+  });
+};
+
+export const updateStatus = async (
+  id,
+  status: string,
+  updatedBy: string,
+  accountSid: string,
+) => {
+  const statementValues = {
+    accountSid,
+    caseId: id,
+  };
+  return db.tx(async transaction => {
+    await transaction.none(updateByIdSql({ status, updatedBy }, accountSid, id));
     return transaction.oneOrNone(selectSingleCaseByIdSql('Cases'), statementValues);
   });
 };

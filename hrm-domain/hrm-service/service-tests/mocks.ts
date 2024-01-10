@@ -293,6 +293,122 @@ export const case2: Partial<CaseService> = {
   accountSid,
 };
 
+const counsellorNotes = [
+  {
+    id: '1',
+    note: 'Child with covid-19',
+    twilioWorkerId: 'note-adder',
+    createdAt: '2022-01-01T00:00:00+00:00',
+  },
+  {
+    id: '2',
+    note: 'Child recovered from covid-19',
+    twilioWorkerId: 'other-note-adder',
+    createdAt: '2022-01-05T00:00:00+00:00',
+  },
+];
+const perpetrators = [
+  {
+    perpetrator: {
+      firstName: 'Jane',
+      lastName: 'Doe',
+    },
+    createdAt: '2021-03-15T20:56:22.640Z',
+    twilioWorkerId: 'perpetrator-adder',
+  },
+  {
+    perpetrator: {
+      firstName: 'J.',
+      lastName: 'Doe',
+      phone2: '+12345678',
+    },
+    createdAt: '2021-03-16T20:56:22.640Z',
+    twilioWorkerId: 'perpetrator-adder',
+  },
+];
+
+const households = [
+  {
+    household: {
+      firstName: 'Jane',
+      lastName: 'Doe',
+    },
+    createdAt: '2021-03-15T20:56:22.640Z',
+    twilioWorkerId: 'household-adder',
+  },
+  {
+    household: {
+      firstName: 'J.',
+      lastName: 'Doe',
+      phone2: '+12345678',
+    },
+    createdAt: '2021-03-16T20:56:22.640Z',
+    twilioWorkerId: 'household-adder',
+  },
+];
+
+const incidents = [
+  {
+    incident: {
+      date: '2021-03-03',
+      duration: '',
+      location: 'Other',
+      isCaregiverAware: null,
+      incidentWitnessed: null,
+      reactionOfCaregiver: '',
+      whereElseBeenReported: '',
+      abuseReportedElsewhere: null,
+    },
+    createdAt: '2021-03-16T20:56:22.640Z',
+    twilioWorkerId: 'incident-adder',
+  },
+];
+
+const referrals = [
+  {
+    id: '2503',
+    date: '2021-02-18',
+    comments: 'Referred to state agency',
+    createdAt: '2021-02-19T21:38:30.911+00:00',
+    referredTo: 'DREAMS',
+    twilioWorkerId: 'referral-adder',
+  },
+];
+
+const documents = [
+  {
+    id: '5e127299-17ba-4adf-a040-69dac9ca45bf',
+    document: {
+      comments: 'test file!',
+      fileName: 'sample1.pdf',
+    },
+    createdAt: '2021-09-21T17:57:52.346Z',
+    twilioWorkerId: 'document-adder',
+  },
+  {
+    id: '10d21f35-142c-4538-92db-d558f80898ae',
+    document: {
+      comments: '',
+      fileName: 'sample2.pdf',
+    },
+    createdAt: '2021-09-21T19:47:03.167Z',
+    twilioWorkerId: 'document-adder',
+  },
+];
+
+export const casePopulated = {
+  ...case1,
+  info: {
+    summary: 'something summery',
+    perpetrators,
+    households,
+    incidents,
+    documents,
+    referrals,
+    counsellorNotes,
+  },
+};
+
 export const workerSid = 'WK-worker-sid';
 
 export const conversationMedia: NewConversationMedia[] = [

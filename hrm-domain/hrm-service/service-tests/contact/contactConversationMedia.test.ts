@@ -15,7 +15,7 @@
  */
 
 import * as contactApi from '../../src/contact/contactService';
-import '../case-validation';
+import '../case/caseValidation';
 import { ContactRawJson } from '../../src/contact/contactJson';
 import { accountSid, contact1, workerSid } from '../mocks';
 import { twilioUser } from '@tech-matters/twilio-worker-auth/dist';
