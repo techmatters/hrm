@@ -17,7 +17,6 @@
 import { randomUUID } from 'crypto';
 import {
   NewCSAMReport,
-  updateContactIdByCsamReportIds,
   create,
   getById,
   getByContactId,
@@ -35,8 +34,8 @@ export const createCSAMReport = async (
 ) => {
   const { reportType, contactId, twilioWorkerId } = body;
 
-  const csamReportId = reportType === 'self-generated' ? randomUUID() : body.csamReportId;
-  const acknowledged = reportType === 'self-generated' ? false : true;
+  const acknowledged = reportType !== 'self-generated';
+  const csamReportId = acknowledged ? body.csamReportId : randomUUID();
 
   // TODO: Should we check if the randomUUID exists in DB here?
 
@@ -54,7 +53,5 @@ export const createCSAMReport = async (
 
 // While this is being used in test only, chances are we'll use it when we move out to making separate calls to fetch different entities
 export const getCsamReportsByContactId = getByContactId;
-
-export const connectContactToCsamReports = updateContactIdByCsamReportIds;
 
 export const acknowledgeCsamReport = updateAcknowledgedByCsamReportId(true);

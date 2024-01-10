@@ -39,14 +39,13 @@ const contactsRouter = SafeRouter();
 /**
  * @param {any} req. - Request
  * @param {any} res - User for requested
- * @param {CreateContactPayload} req.body - Contact to create
+ * @param {NewContactRecord} req.body - Contact to create
  *
  * @returns {Contact} - Created contact
  */
 contactsRouter.post('/', publicEndpoint, async (req, res) => {
   const { accountSid, user } = req;
-  const finalize = req.query.finalize !== 'false'; // Default to true for backwards compatibility
-  const contact = await createContact(accountSid, user.workerSid, finalize, req.body, {
+  const contact = await createContact(accountSid, user.workerSid, req.body, {
     can: req.can,
     user,
   });
@@ -129,19 +128,11 @@ contactsRouter.delete(
 contactsRouter.post('/search', publicEndpoint, async (req, res) => {
   const { accountSid } = req;
 
-  const searchResults = await searchContacts(
-    accountSid,
-    req.body,
-    req.query,
-    {
-      can: req.can,
-      user: req.user,
-      searchPermissions: req.searchPermissions,
-    },
-    // This logic seems odd until you realise that we are moving to the 'original' format by default, the other format is 'legacy
-    // After Flex 2.12 is deployed everywhere, support for the legacy format can be removed
-    req.query.legacyFormat === 'false',
-  );
+  const searchResults = await searchContacts(accountSid, req.body, req.query, {
+    can: req.can,
+    user: req.user,
+    searchPermissions: req.searchPermissions,
+  });
   res.json(searchResults);
 });
 

@@ -15,8 +15,8 @@
  */
 
 import { WELL_KNOWN_CASE_SECTION_NAMES } from '../src/case/caseService';
-import { NewContactRecord } from '../src/contact/sql/contact-insert-sql';
-import { ContactRawJson, CreateContactPayload } from '../src/contact/contactService';
+import { NewContactRecord } from '../src/contact/sql/contactInsertSql';
+import { ContactRawJson } from '../src/contact/contactJson';
 
 declare global {
   namespace jest {
@@ -150,14 +150,14 @@ export const validateSingleCaseResponse = (
 };
 
 export const fillNameAndPhone = (
-  contact: CreateContactPayload,
+  contact: NewContactRecord,
   name = {
     firstName: 'Maria',
     lastName: 'Silva',
   },
   number = '+1-202-555-0184',
 ): NewContactRecord => {
-  const modifiedContact: NewContactRecord = {
+  return {
     ...contact,
     rawJson: {
       ...(contact.rawJson as ContactRawJson),
@@ -168,8 +168,4 @@ export const fillNameAndPhone = (
     },
     number,
   };
-
-  delete (<any>modifiedContact).form;
-
-  return modifiedContact;
 };

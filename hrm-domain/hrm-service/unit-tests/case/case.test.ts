@@ -19,7 +19,7 @@ import * as caseApi from '../../src/case/caseService';
 import { createMockCase, createMockCaseRecord } from './mock-cases';
 import each from 'jest-each';
 import { CaseRecord, NewCaseRecord } from '../../src/case/case-data-access';
-import '../../service-tests/case-validation';
+import '../../service-tests/caseValidation';
 import { workerSid, accountSid } from '../../service-tests/mocks';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
 
