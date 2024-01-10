@@ -31,7 +31,7 @@ import {
 import { PaginationQuery, getPaginationElements } from '../search';
 import type { NewContactRecord } from './sql/contactInsertSql';
 import { ContactRawJson, ReferralWithoutContactId } from './contactJson';
-import { setupCanForRules } from '../permissions/setupCanForRules';
+import { InitializedCan } from '../permissions/initializeCanForRules';
 import { actionsMaps } from '../permissions';
 import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { createReferral } from '../referral/referral-model';
@@ -65,7 +65,7 @@ export type PatchPayload = Omit<
 
 const filterExternalTranscripts = (contact: Contact): Contact => {
   const { conversationMedia, ...rest } = contact;
-  const filteredConversationMedia = conversationMedia.filter(
+  const filteredConversationMedia = (conversationMedia ?? []).filter(
     m => !isS3StoredTranscript(m),
   );
 
@@ -88,7 +88,7 @@ const permissionsBasedTransformations: PermissionsBasedTransformation[] = [
 ];
 
 export const bindApplyTransformations =
-  (can: ReturnType<typeof setupCanForRules>, user: TwilioUser) =>
+  (can: InitializedCan, user: TwilioUser) =>
   (contact: Contact): Contact =>
     permissionsBasedTransformations.reduce(
       (transformed, { action, transformation }) =>
@@ -99,7 +99,7 @@ export const bindApplyTransformations =
 export const getContactById = async (
   accountSid: string,
   contactId: number,
-  { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
+  { can, user }: { can: InitializedCan; user: TwilioUser },
 ) => {
   const contact = await getById(accountSid, contactId);
 
@@ -109,7 +109,7 @@ export const getContactById = async (
 export const getContactByTaskId = async (
   accountSid: string,
   taskId: string,
-  { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
+  { can, user }: { can: InitializedCan; user: TwilioUser },
 ) => {
   const contact = await getByTaskSid(accountSid, taskId);
 
@@ -153,7 +153,7 @@ export const createContact = async (
   accountSid: string,
   createdBy: string,
   newContact: NewContactRecord,
-  { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
+  { can, user }: { can: InitializedCan; user: TwilioUser },
 ): Promise<Contact> => {
   for (let retries = 1; retries < 4; retries++) {
     try {
@@ -224,7 +224,7 @@ export const patchContact = async (
   finalize: boolean,
   contactId: string,
   { referrals, rawJson, ...restOfPatch }: PatchPayload,
-  { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
+  { can, user }: { can: InitializedCan; user: TwilioUser },
 ): Promise<Contact> => {
   return db.tx(async conn => {
     // if referrals are present, delete all existing and create new ones, otherwise leave them untouched
@@ -264,7 +264,7 @@ export const connectContactToCase = async (
   updatedBy: string,
   contactId: string,
   caseId: string,
-  { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
+  { can, user }: { can: InitializedCan; user: TwilioUser },
 ): Promise<Contact> => {
   const updated: Contact | undefined = await connectToCase()(
     accountSid,
@@ -284,7 +284,7 @@ export const addConversationMediaToContact = async (
   accountSid: string,
   contactIdString: string,
   conversationMediaPayload: NewConversationMedia[],
-  { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
+  { can, user }: { can: InitializedCan; user: TwilioUser },
 ): Promise<Contact> => {
   const contactId = parseInt(contactIdString);
   const contact = await getById(accountSid, contactId);
@@ -357,7 +357,7 @@ const generalizedSearchContacts =
       user,
       searchPermissions,
     }: {
-      can: ReturnType<typeof setupCanForRules>;
+      can: InitializedCan;
       user: TwilioUser;
       searchPermissions: SearchPermissions;
     },
@@ -419,11 +419,13 @@ export const getContactsByProfileId = async (
   profileId: Profile['id'],
   query: Pick<PaginationQuery, 'limit' | 'offset'>,
   ctx: {
-    can: ReturnType<typeof setupCanForRules>;
+    can: InitializedCan;
     user: TwilioUser;
     searchPermissions: SearchPermissions;
   },
-): Promise<TResult<Awaited<ReturnType<typeof searchContactsByProfileId>>>> => {
+): Promise<
+  TResult<'InternalServerError', Awaited<ReturnType<typeof searchContactsByProfileId>>>
+> => {
   try {
     const contacts = await searchContactsByProfileId(
       accountSid,
@@ -436,6 +438,7 @@ export const getContactsByProfileId = async (
   } catch (err) {
     return newErr({
       message: err instanceof Error ? err.message : String(err),
+      error: 'InternalServerError',
     });
   }
 };

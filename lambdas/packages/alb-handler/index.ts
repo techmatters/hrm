@@ -23,19 +23,31 @@ const METHODS = {
   DELETE: 'DELETE',
 } as const;
 
+/**
+ * Event to be handled by the ALB handler
+ *
+ * We have to support both ALB and API Gateway events because
+ * localstack does not support ALB events yet, so our local tests
+ * will use API Gateway events.
+ */
 export type AlbHandlerEvent = ALBEvent | APIGatewayEvent;
 
 export type AlbHandlerResult = ALBResult;
 
 export type Methods = (typeof METHODS)[keyof typeof METHODS];
 
-export type MethodHandler = (event: AlbHandlerEvent) => Promise<any>;
+export type MethodHandler<TError extends string> = (
+  event: AlbHandlerEvent,
+) => Promise<TResult<TError, any>>;
 
-export type MethodHandlers = Partial<Record<Methods, MethodHandler>>;
+export type MethodHandlers<TError extends string> = Partial<
+  Record<Methods, MethodHandler<TError>>
+>;
 
-export type HandleAlbEventParams = {
+export type HandleAlbEventParams<TError extends string> = {
   event: AlbHandlerEvent;
-  methodHandlers: MethodHandlers;
+  methodHandlers: MethodHandlers<TError>;
+  mapError?: { [K in TError]: number };
 };
 
 export type GetHeadersParams = {
@@ -55,10 +67,18 @@ export const getHeaders = ({ allowedMethods }: GetHeadersParams) => ({
     'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
 });
 
-export const handleAlbEvent = async ({
+/**
+ * Handle an ALB event
+ *
+ * @param {AlbHandlerEvent} params.event - The ALB or API Gateway event to be handled
+ * @param {MethodHandlers} params.methodHandlers - An object with the handlers for each available http method
+ * @returns {Promise<AlbHandlerResult>} - The result of the handler function converted to an ALB result
+ */
+export const handleAlbEvent = async <TError extends string>({
   event,
   methodHandlers,
-}: HandleAlbEventParams): Promise<AlbHandlerResult> => {
+  mapError,
+}: HandleAlbEventParams<TError>): Promise<AlbHandlerResult> => {
   if (event.httpMethod === 'OPTIONS') {
     return {
       statusCode: 200,
@@ -75,7 +95,7 @@ export const handleAlbEvent = async ({
     };
   }
 
-  const result: TResult<any> = await methodHandler(event);
+  const result = await methodHandler(event);
 
   if (isOk<any>(result)) {
     return {
@@ -88,7 +108,7 @@ export const handleAlbEvent = async ({
   if (isErr(result)) {
     console.error(result.message);
     return {
-      statusCode: result.statusCode,
+      statusCode: (mapError && mapError[result.error]) || 500,
       headers: getHeaders({ allowedMethods: Object.keys(methodHandlers) }),
       body: result.message,
     };

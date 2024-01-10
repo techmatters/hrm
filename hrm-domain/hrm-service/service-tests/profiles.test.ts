@@ -62,7 +62,7 @@ describe('/profiles', () => {
 
   describe('GET', () => {
     let createdProfiles: Profile[];
-    let existingProfiles: any; //Profile[];
+    let existingProfiles: any;
     const profilesNames = ['Murray', 'Antonella', null];
     let defaultFlags: profilesDB.ProfileFlag[];
     beforeAll(async () => {
@@ -74,17 +74,27 @@ describe('/profiles', () => {
       defaultFlags = await profilesDB
         .getProfileFlagsForAccount(accountSid)
         .then(result => result.unwrap());
+
+      const murray = createdProfiles.find(p => p.name === 'Murray');
+      const antonella = createdProfiles.find(p => p.name === 'Antonella');
+
       await Promise.all([
         profilesDB.associateProfileToProfileFlag()(
           accountSid,
-          createdProfiles.find(p => p.name === 'Murray')!.id,
+          murray!.id,
           defaultFlags[0].id,
         ),
         profilesDB.associateProfileToProfileFlag()(
           accountSid,
-          createdProfiles.find(p => p.name === 'Antonella')!.id,
+          antonella!.id,
           defaultFlags[1].id,
         ),
+        profilesDB.createProfileSection(antonella!.accountSid, {
+          content: 'some example content',
+          sectionType: 'summary',
+          createdBy: 'worker',
+          profileId: antonella!.id,
+        }),
       ]);
     });
 
@@ -107,7 +117,6 @@ describe('/profiles', () => {
         query: '',
         expectStatus: 200,
         expectFunction: response => {
-          console.log(response.body);
           expect(response.body.count).toBe(
             existingProfiles.length + createdProfiles.length,
           );
@@ -119,12 +128,12 @@ describe('/profiles', () => {
         query: 'sortBy=name',
         expectStatus: 200,
         expectFunction: response => {
-          console.log(response.body);
           expect(response.body.count).toBe(
             existingProfiles.length + createdProfiles.length,
           );
           expect(response.body.profiles[0].name).toBe('Murray');
           expect(response.body.profiles[1].name).toBe('Antonella');
+          expect(response.body.profiles[1].summary).toBe('some example content');
           response.body.profiles.slice(2).forEach(p => expect(p.name).toBeNull());
         },
       },
@@ -134,7 +143,6 @@ describe('/profiles', () => {
         query: 'sortBy=name&sortDirection=asc',
         expectStatus: 200,
         expectFunction: response => {
-          console.log(response.body);
           expect(response.body.count).toBe(
             existingProfiles.length + createdProfiles.length,
           );
@@ -149,7 +157,6 @@ describe('/profiles', () => {
         query: 'profileFlagIds=1',
         expectStatus: 200,
         expectFunction: response => {
-          console.log(response.body);
           expect(response.body.count).toBe(1);
           expect(response.body.profiles[0].name).toBe('Murray');
         },
@@ -160,7 +167,6 @@ describe('/profiles', () => {
         query: 'profileFlagIds=1,2',
         expectStatus: 200,
         expectFunction: response => {
-          console.log(response.body);
           expect(response.body.count).toBe(2);
           expect(response.body.profiles[0].name).toBe('Antonella');
           expect(response.body.profiles[1].name).toBe('Murray');
@@ -172,7 +178,6 @@ describe('/profiles', () => {
         query: 'profileFlagIds=9999999',
         expectStatus: 200,
         expectFunction: response => {
-          console.log(response.body);
           expect(response.body.count).toBe(0);
         },
       },
@@ -182,7 +187,6 @@ describe('/profiles', () => {
         query: 'profileFlagIds=not-a-number',
         expectStatus: 200,
         expectFunction: response => {
-          console.log(response.body);
           expect(response.body.count).toBe(
             existingProfiles.length + createdProfiles.length,
           );
