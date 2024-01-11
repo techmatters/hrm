@@ -379,6 +379,7 @@ describe('PUT /cases/:id route', () => {
       extraExpectations = {},
     }: TestCase) => {
       if (customWorkerSid) {
+        await mockingProxy.start();
         await mockSuccessfulTwilioAuthentication(customWorkerSid);
         await new Promise(resolve => setTimeout(resolve, 3000));
       } else {
@@ -573,6 +574,7 @@ describe('PUT /cases/:id/status route', () => {
       previousStatus,
     }: TestCase) => {
       if (customWorkerSid) {
+        await mockingProxy.start();
         await mockSuccessfulTwilioAuthentication(customWorkerSid);
         await new Promise(resolve => setTimeout(resolve, 3000));
       } else {
