@@ -86,6 +86,7 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
+  await mockingProxy.start();
   await caseDb.deleteById(cases.blank.id, accountSid);
   await caseDb.deleteById(cases.populated.id, accountSid);
 });
@@ -379,7 +380,7 @@ describe('PUT /cases/:id route', () => {
     }: TestCase) => {
       if (customWorkerSid) {
         await mockSuccessfulTwilioAuthentication(customWorkerSid);
-        // await new Promise(resolve => setTimeout(resolve, 3000));
+        await new Promise(resolve => setTimeout(resolve, 3000));
       } else {
         await mockSuccessfulTwilioAuthentication(workerSid);
       }
@@ -573,7 +574,7 @@ describe('PUT /cases/:id/status route', () => {
     }: TestCase) => {
       if (customWorkerSid) {
         await mockSuccessfulTwilioAuthentication(customWorkerSid);
-        // await new Promise(resolve => setTimeout(resolve, 3000));
+        await new Promise(resolve => setTimeout(resolve, 3000));
       } else {
         await mockSuccessfulTwilioAuthentication(workerSid);
       }
