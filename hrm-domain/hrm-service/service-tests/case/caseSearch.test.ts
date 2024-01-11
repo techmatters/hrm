@@ -41,6 +41,7 @@ import {
 import { getRequest, getServer, headers, setRules, useOpenRules } from '../server';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
 import { isS3StoredTranscript } from '../../src/conversation-media/conversation-media';
+import { ALWAYS_CAN } from '../mocks';
 
 useOpenRules();
 const server = getServer();
@@ -145,7 +146,6 @@ const insertSampleCases = async ({
       const { contact: savedContact } = await contactDb.create()(
         accounts[i % accounts.length],
         contactToCreate,
-        true,
       );
       connectedContact = await contactDb.connectToCase()(
         savedContact.accountSid,
@@ -153,10 +153,11 @@ const insertSampleCases = async ({
         createdCase.id.toString(),
         workerSid,
       );
-      createdCase = await getCase(createdCase.id, accounts[i % accounts.length], {
-        user: twilioUser(workerSid, []),
-        can: () => true,
-      }); // reread case from DB now it has a contact connected
+      createdCase = await getCase(
+        createdCase.id,
+        accounts[i % accounts.length],
+        ALWAYS_CAN,
+      ); // reread case from DB now it has a contact connected
     }
     createdCasesAndContacts.push({
       contact: connectedContact,
@@ -232,18 +233,14 @@ describe('/cases route', () => {
         contactToCreate.taskId = `TASK_SID`;
         contactToCreate.channelSid = `CHANNEL_SID`;
         contactToCreate.serviceSid = 'SERVICE_SID';
-        createdContact = (await contactDb.create()(accountSid, contactToCreate, true))
-          .contact;
+        createdContact = (await contactDb.create()(accountSid, contactToCreate)).contact;
         createdContact = await contactDb.connectToCase()(
           accountSid,
           createdContact.id.toString(),
           createdCase.id,
           workerSid,
         );
-        createdCase = await getCase(createdCase.id, accountSid, {
-          user: twilioUser(workerSid, []),
-          can: () => true,
-        }); // refresh case from DB now it has a contact connected
+        createdCase = await getCase(createdCase.id, accountSid, ALWAYS_CAN); // refresh case from DB now it has a contact connected
       });
 
       afterEach(async () => {
@@ -385,15 +382,14 @@ describe('/cases route', () => {
       let createdContact = await createContact(
         accountSid,
         workerSid,
-        true,
         mocks.withTaskId,
-        { user: twilioUser(workerSid, []), can: () => true },
+        ALWAYS_CAN,
       );
       createdContact = await addConversationMediaToContact(
         accountSid,
         createdContact.id.toString(),
         mocks.conversationMedia,
-        { user: twilioUser(workerSid, []), can: () => true },
+        ALWAYS_CAN,
       );
       await connectContactToCase(
         accountSid,
@@ -526,7 +522,7 @@ describe('/cases route', () => {
           toCreate.channelSid = `CHANNEL_SID`;
           toCreate.serviceSid = 'SERVICE_SID';
           // Connects createdContact with createdCase2
-          createdContact = (await contactDb.create()(accountSid, toCreate, true)).contact;
+          createdContact = (await contactDb.create()(accountSid, toCreate)).contact;
           createdContact = await contactDb.connectToCase()(
             accountSid,
             createdContact.id.toString(),
@@ -534,10 +530,7 @@ describe('/cases route', () => {
             workerSid,
           );
           // Get case 2 again, now a contact is connected
-          createdCase2 = await caseApi.getCase(createdCase2.id, accountSid, {
-            user: twilioUser(workerSid, []),
-            can: () => true,
-          });
+          createdCase2 = await caseApi.getCase(createdCase2.id, accountSid, ALWAYS_CAN);
         });
 
         afterEach(async () => {
@@ -1268,9 +1261,8 @@ describe('/cases route', () => {
         let createdContact = await createContact(
           accountSid,
           workerSid,
-          true,
           mocks.withTaskId,
-          { user: twilioUser(workerSid, []), can: () => true },
+          ALWAYS_CAN,
         );
         createdContact = await addConversationMediaToContact(
           accountSid,

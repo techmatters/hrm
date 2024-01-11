@@ -26,6 +26,7 @@ import { mockSuccessfulTwilioAuthentication, mockingProxy } from '@tech-matters/
 import { getOrCreateProfileWithIdentifier, Profile } from '../src/profile/profile';
 import { IdentifierWithProfiles } from '../src/profile/profile-data-access';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
+import { ALWAYS_CAN } from './mocks';
 
 useOpenRules();
 const server = getServer();
@@ -233,17 +234,13 @@ describe('/profiles', () => {
             contactApi.createContact(
               acc,
               workerSid,
-              true,
               {
                 ...contact1,
                 number: identifier,
                 profileId: createdProfiles[acc].profiles[0].id,
                 identifierId: createdProfiles[acc].id,
               },
-              {
-                user: twilioUser(workerSid, []),
-                can: () => true,
-              },
+              ALWAYS_CAN,
             ),
           ),
         )
@@ -367,7 +364,6 @@ describe('/profiles', () => {
                 .createContact(
                   createdCase.accountSid,
                   workerSid,
-                  true,
                   {
                     ...contact1,
                     number: identifier,
@@ -375,10 +371,7 @@ describe('/profiles', () => {
                     profileId: createdProfile.profiles[0].id,
                     identifierId: createdProfile.id,
                   },
-                  {
-                    user: twilioUser(workerSid, []),
-                    can: () => true,
-                  },
+                  ALWAYS_CAN,
                 )
                 .then(contact =>
                   // Associate contact to case

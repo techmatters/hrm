@@ -35,6 +35,7 @@ import { ruleFileWithOneActionOverride } from './permissions-overrides';
 import { headers, getRequest, getServer, setRules, useOpenRules } from './server';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
 import { isS3StoredTranscript } from '../src/conversation-media/conversation-media';
+import { ALWAYS_CAN } from './mocks';
 import { casePopulated } from './mocks';
 
 useOpenRules();
@@ -179,9 +180,8 @@ describe('/cases route', () => {
         let createdContact = await createContact(
           accountSid,
           workerSid,
-          true,
           mocks.withTaskId,
-          { user: twilioUser(workerSid, []), can: () => true },
+          ALWAYS_CAN,
         );
         createdContact = await addConversationMediaToContact(
           accountSid,

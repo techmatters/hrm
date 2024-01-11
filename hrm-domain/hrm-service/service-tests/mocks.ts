@@ -20,11 +20,13 @@ import {
   S3ContactMediaType,
 } from '../src/conversation-media/conversation-media';
 import { Contact } from '../src/contact/contactDataAccess';
-import { CreateContactPayload } from '../src/contact/contactService';
+import { ContactRawJson } from '../src/contact/contactJson';
+import { NewContactRecord } from '../src/contact/sql/contactInsertSql';
+import { twilioUser } from '@tech-matters/twilio-worker-auth/dist';
 
 export const accountSid = 'ACCOUNT_SID';
 // TODO: Turn these into proper API types (will probably break so many tests...)
-export const contact1: CreateContactPayload = {
+export const contact1: NewContactRecord = {
   rawJson: {
     callType: 'Child calling about self',
     childInformation: {
@@ -84,7 +86,7 @@ export const contact1: CreateContactPayload = {
   identifierId: undefined,
 };
 
-export const contact2: CreateContactPayload = {
+export const contact2: NewContactRecord = {
   rawJson: {
     callType: 'Someone calling about a child',
     childInformation: {
@@ -144,7 +146,7 @@ export const contact2: CreateContactPayload = {
   identifierId: undefined,
 };
 
-export const nonData1: CreateContactPayload = {
+export const nonData1: NewContactRecord = {
   ...contact1,
   taskId: 'nonData1-task-sid',
   rawJson: {
@@ -155,7 +157,7 @@ export const nonData1: CreateContactPayload = {
     callerInformation: {},
   },
 };
-export const nonData2: CreateContactPayload = {
+export const nonData2: NewContactRecord = {
   ...contact2,
   taskId: 'nonData2-task-sid',
   rawJson: {
@@ -167,12 +169,12 @@ export const nonData2: CreateContactPayload = {
   },
 };
 // Non data contacts with actual information
-export const broken1: CreateContactPayload = {
+export const broken1: NewContactRecord = {
   ...contact1,
   taskId: 'broken1-task-sid',
   rawJson: { ...contact1.rawJson, callType: 'Joke' },
 };
-export const broken2: CreateContactPayload = {
+export const broken2: NewContactRecord = {
   ...contact2,
   taskId: 'broken2-task-sid',
   rawJson: { ...contact2.rawJson, callType: 'Blank' },
@@ -184,20 +186,20 @@ export const anotherChild: Contact['rawJson']['childInformation'] = {
   lastName: 'Curie',
 };
 
-export const anotherCaller: Contact['rawJson']['callerInformation'] = {
+export const anotherCaller: ContactRawJson['callerInformation'] = {
   ...contact2.rawJson.callerInformation,
   firstName: 'Marie',
   lastName: 'Curie',
 };
 
-export const another1: CreateContactPayload = {
+export const another1: NewContactRecord = {
   ...contact1,
   taskId: 'another1-task-sid',
   rawJson: { ...contact1.rawJson, childInformation: anotherChild },
   helpline: 'Helpline 1',
 };
 
-export const another2: CreateContactPayload = {
+export const another2: NewContactRecord = {
   ...contact2,
   taskId: 'another2-task-sid',
   rawJson: {
@@ -217,13 +219,13 @@ export const another2: CreateContactPayload = {
   number: '+12125551212',
 };
 
-export const noHelpline: CreateContactPayload = {
+export const noHelpline: NewContactRecord = {
   ...another1,
   taskId: 'noHelpline-task-sid',
   helpline: '',
 };
 
-export const withTaskId: CreateContactPayload = {
+export const withTaskId: NewContactRecord = {
   rawJson: {
     callType: 'Child calling about self',
     childInformation: {
@@ -423,3 +425,5 @@ export const conversationMedia: NewConversationMedia[] = [
     },
   },
 ];
+
+export const ALWAYS_CAN = { user: twilioUser(workerSid, []), can: () => true };

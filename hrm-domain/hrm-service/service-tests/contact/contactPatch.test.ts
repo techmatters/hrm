@@ -14,15 +14,15 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
+import * as contactApi from '../../src/contact/contactService';
 import {
   addConversationMediaToContact,
   ContactRawJson,
-  CreateContactPayload,
   PatchPayload,
 } from '../../src/contact/contactService';
 import '../case/caseValidation';
-import * as contactApi from '../../src/contact/contactService';
-import { accountSid, contact1, withTaskId, workerSid } from '../mocks';
+import * as mocks from '../mocks';
+import { accountSid, ALWAYS_CAN, contact1, withTaskId, workerSid } from '../mocks';
 import { twilioUser } from '@tech-matters/twilio-worker-auth/dist';
 import each from 'jest-each';
 import { getRequest, getServer, headers, setRules, useOpenRules } from '../server';
@@ -39,7 +39,8 @@ import {
   deleteContactById,
   deleteJobsByContactId,
 } from './db-cleanup';
-import * as mocks from '../mocks';
+import { NewContactRecord } from '../../src/contact/sql/contactInsertSql';
+import { finalizeContact } from './finalizeContact';
 
 useOpenRules();
 const server = getServer();
@@ -75,17 +76,17 @@ describe('/contacts/:contactId route', () => {
     const subRoute = contactId => `${route}/${contactId}`;
 
     test('should return 401', async () => {
-      const createdContact = await contactApi.createContact(
+      let createdContact = await contactApi.createContact(
         accountSid,
         workerSid,
-        true,
         {
           ...contact1,
           rawJson: <ContactRawJson>{},
-          csamReports: [],
         },
-        { user: twilioUser(workerSid, []), can: () => true },
+        ALWAYS_CAN,
       );
+      createdContact = await finalizeContact(createdContact);
+
       const response = await request.patch(subRoute(createdContact.id)).send({});
 
       expect(response.status).toBe(401);
@@ -314,17 +315,17 @@ describe('/contacts/:contactId route', () => {
       each(tests).test(
         'should $description if that is specified in the payload',
         async ({ patch, expected, original }: TestOptions) => {
-          const createdContact = await contactApi.createContact(
+          let createdContact = await contactApi.createContact(
             accountSid,
             workerSid,
-            true,
             {
               ...contact1,
               rawJson: original || <ContactRawJson>{},
-              csamReports: [],
             },
-            { user: twilioUser(workerSid, []), can: () => true },
+            ALWAYS_CAN,
           );
+          createdContact = await finalizeContact(createdContact);
+
           try {
             const existingContactId = createdContact.id;
             const response = await request
@@ -378,13 +379,14 @@ describe('/contacts/:contactId route', () => {
       });
 
       test('Not permitted on finalized contact', async () => {
-        const createdContact = await contactApi.createContact(
+        let createdContact = await contactApi.createContact(
           accountSid,
           workerSid,
-          true,
           contact1,
-          { user: twilioUser(workerSid, []), can: () => true },
+          ALWAYS_CAN,
         );
+        createdContact = await finalizeContact(createdContact);
+
         const response = await request
           .patch(subRoute(createdContact.id))
           .set(headers)
@@ -437,7 +439,7 @@ describe('/contacts/:contactId route', () => {
           originalDifferences,
           finalize = false,
         }: FullPatchTestOptions) => {
-          const original: CreateContactPayload = {
+          const original: NewContactRecord = {
             ...contact1,
             ...originalDifferences,
             rawJson: {
@@ -448,9 +450,8 @@ describe('/contacts/:contactId route', () => {
           const createdContact = await contactApi.createContact(
             accountSid,
             workerSid,
-            false,
             original,
-            { user: twilioUser(workerSid, []), can: () => true },
+            ALWAYS_CAN,
           );
           const expected: contactDb.Contact = {
             ...createdContact,
@@ -505,9 +506,8 @@ describe('/contacts/:contactId route', () => {
       const contactToBeDeleted = await contactApi.createContact(
         accountSid,
         workerSid,
-        true,
         <any>contact1,
-        { user: twilioUser(workerSid, []), can: () => true },
+        ALWAYS_CAN,
       );
       const nonExistingContactId = contactToBeDeleted.id;
       await deleteContactById(contactToBeDeleted.id, contactToBeDeleted.accountSid);
@@ -528,7 +528,6 @@ describe('/contacts/:contactId route', () => {
       const createdContact = await contactApi.createContact(
         accountSid,
         'another creator',
-        false,
         <any>{
           ...contact1,
           twilioWorkerId: 'another owner',
@@ -547,9 +546,8 @@ describe('/contacts/:contactId route', () => {
       const createdContact = await contactApi.createContact(
         accountSid,
         'another creator',
-        false,
         <any>contact1,
-        { user: twilioUser(workerSid, []), can: () => true },
+        ALWAYS_CAN,
       );
       const response = await request
         .patch(subRoute(createdContact.id))
@@ -563,12 +561,11 @@ describe('/contacts/:contactId route', () => {
       const createdContact = await contactApi.createContact(
         accountSid,
         workerSid,
-        false,
         <any>{
           ...contact1,
           twilioWorkerId: 'another owner',
         },
-        { user: twilioUser(workerSid, []), can: () => true },
+        ALWAYS_CAN,
       );
       const response = await request
         .patch(subRoute(createdContact.id))
@@ -579,26 +576,30 @@ describe('/contacts/:contactId route', () => {
     });
 
     test('malformed payload should return 400', async () => {
-      const contact = await contactApi.createContact(
+      let contact = await contactApi.createContact(
         accountSid,
         workerSid,
-        true,
         <any>{ ...contact1, taskId: 'malformed-task-id' },
-        { user: twilioUser(workerSid, []), can: () => true },
+        ALWAYS_CAN,
       );
+
+      contact = await finalizeContact(contact);
+
       const response = await request.patch(subRoute(contact.id)).set(headers).send([]);
 
       expect(response.status).toBe(400);
     });
 
     test('no body should be a noop', async () => {
-      const createdContact = await contactApi.createContact(
+      let createdContact = await contactApi.createContact(
         accountSid,
         workerSid,
-        true,
         <any>contact1,
-        { user: twilioUser(workerSid, []), can: () => true },
+        ALWAYS_CAN,
       );
+
+      createdContact = await finalizeContact(createdContact);
+
       const response = await request
         .patch(subRoute(createdContact.id))
         .set(headers)
@@ -626,19 +627,20 @@ describe('/contacts/:contactId route', () => {
         description: `without viewExternalTranscript excludes transcripts`,
       },
     ]).test(`$description`, async ({ expectTranscripts }) => {
+      const permission = ALWAYS_CAN;
       let createdContact = await contactApi.createContact(
         accountSid,
         workerSid,
-        true,
         withTaskId,
-        { user: twilioUser(workerSid, []), can: () => true },
+        permission,
       );
       createdContact = await addConversationMediaToContact(
         accountSid,
         createdContact.id.toString(),
         mocks.conversationMedia,
-        { user: twilioUser(workerSid, []), can: () => true },
+        permission,
       );
+      createdContact = await finalizeContact(createdContact);
 
       if (!expectTranscripts) {
         setRules(ruleFileWithOneActionOverride('viewExternalTranscript', false));

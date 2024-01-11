@@ -55,10 +55,6 @@ beforeAll(async () => {
   await mockingProxy.start();
 });
 
-beforeEach(async () => {
-  await mockSuccessfulTwilioAuthentication(workerSid);
-});
-
 // eslint-disable-next-line @typescript-eslint/no-shadow
 const deleteContactById = (id: number, accountSid: string) =>
   db.task(t =>
@@ -101,6 +97,7 @@ describe('PUT /cases/:id route', () => {
     casePopulated.info;
 
   test('should return 401', async () => {
+    await mockSuccessfulTwilioAuthentication(workerSid);
     const response = await request.put(subRoute(cases.blank.id)).send(case1);
 
     expect(response.status).toBe(401);
@@ -383,7 +380,9 @@ describe('PUT /cases/:id route', () => {
     }: TestCase) => {
       if (customWorkerSid) {
         await mockSuccessfulTwilioAuthentication(customWorkerSid);
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        // await new Promise(resolve => setTimeout(resolve, 3000));
+      } else {
+        await mockSuccessfulTwilioAuthentication(workerSid);
       }
       const caseUpdate =
         typeof caseUpdateParam === 'function' ? caseUpdateParam() : caseUpdateParam;
@@ -448,14 +447,12 @@ describe('PUT /cases/:id route', () => {
       description: `without viewExternalTranscript excludes transcripts`,
     },
   ]).test(`with connectedContacts $description`, async ({ expectTranscripts }) => {
+    await mockSuccessfulTwilioAuthentication(workerSid);
     const createdCase = await caseApi.createCase(case1, accountSid, workerSid);
-    let createdContact = await createContact(
-      accountSid,
-      workerSid,
-      true,
-      mocks.withTaskId,
-      { user: twilioUser(workerSid, []), can: () => true },
-    );
+    let createdContact = await createContact(accountSid, workerSid, mocks.withTaskId, {
+      user: twilioUser(workerSid, []),
+      can: () => true,
+    });
     createdContact = await addConversationMediaToContact(
       accountSid,
       createdContact.id.toString(),
@@ -577,7 +574,9 @@ describe('PUT /cases/:id/status route', () => {
     }: TestCase) => {
       if (customWorkerSid) {
         await mockSuccessfulTwilioAuthentication(customWorkerSid);
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        // await new Promise(resolve => setTimeout(resolve, 3000));
+      } else {
+        await mockSuccessfulTwilioAuthentication(workerSid);
       }
       const originalCase = originalCaseGetter();
       const caseBeforeUpdate = await caseApi.getCase(originalCase.id, accountSid, {
@@ -626,6 +625,7 @@ describe('PUT /cases/:id/status route', () => {
   );
 
   test('should return 404', async () => {
+    await mockSuccessfulTwilioAuthentication(workerSid);
     const status = 'closed';
     const response = await request
       .put(subRoute(nonExistingCaseId))

@@ -32,8 +32,8 @@ import {
   ContactJobType,
 } from '@tech-matters/types';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
-import { CreateContactPayload } from '../../../src/contact/contactService';
 import { NewConversationMedia } from '../../../src/conversation-media/conversation-media';
+import { NewContactRecord } from '../../../src/contact/sql/contactInsertSql';
 
 const { S3ContactMediaType, isS3StoredTranscriptPending } = conversationMediaApi;
 
@@ -107,7 +107,7 @@ const SAMPLE_CONVERSATION_MEDIA: NewConversationMedia = {
 };
 
 const createChatContact = async (channel: string, startedTimestamp: number) => {
-  const contactTobeCreated: CreateContactPayload = {
+  const contactTobeCreated: NewContactRecord = {
     ...withTaskId,
     channel,
     taskId: `${withTaskId.taskId}-${channel}`,
@@ -115,7 +115,6 @@ const createChatContact = async (channel: string, startedTimestamp: number) => {
   let contact = await contactApi.createContact(
     accountSid,
     workerSid,
-    true,
     contactTobeCreated,
     {
       can: () => true,
