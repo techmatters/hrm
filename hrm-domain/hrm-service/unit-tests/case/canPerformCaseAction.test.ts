@@ -17,7 +17,8 @@
 import createError from 'http-errors';
 import { CaseService, getCase } from '../../src/case/caseService';
 import { actionsMaps } from '../../src/permissions';
-import { canViewCase } from '../../src/case/canPerformCaseAction';
+import { canUpdateCaseStatus, canViewCase } from '../../src/case/canPerformCaseAction';
+import each from 'jest-each';
 
 jest.mock('http-errors', () => jest.fn());
 jest.mock('../../src/case/caseService', () => ({
@@ -79,4 +80,89 @@ describe('canViewCase', () => {
     expect(req.unauthorize).toHaveBeenCalled();
     expect(next).toHaveBeenCalled();
   });
+});
+
+describe('canUpdateCaseStatus', () => {
+  test('Case not found - throws 404', async () => {
+    mockGetCase.mockResolvedValueOnce(undefined);
+    await canUpdateCaseStatus(req, {}, next);
+    expect(createError).toHaveBeenCalled();
+    expect(req.authorize).not.toHaveBeenCalled();
+    expect(req.unauthorize).not.toHaveBeenCalled();
+    expect(next).toHaveBeenCalled();
+  });
+
+  type TestCase = {
+    existingStatus: CaseService['status'];
+    newStatus: CaseService['status'];
+    can: boolean;
+    authorize: boolean;
+    expectedActionsToCheck: (typeof actionsMaps.case)[keyof typeof actionsMaps.case][];
+  };
+
+  const testCases = [true, false].flatMap(successful => [
+    {
+      existingStatus: 'not closed',
+      newStatus: 'closed',
+      can: successful,
+      authorize: successful,
+      expectedActionsToCheck: [actionsMaps.case.CLOSE_CASE],
+    },
+    {
+      existingStatus: 'closed',
+      newStatus: 'not closed',
+      can: successful,
+      authorize: successful,
+      expectedActionsToCheck: [actionsMaps.case.REOPEN_CASE],
+    },
+    {
+      existingStatus: 'not closed',
+      newStatus: 'also not closed',
+      can: successful,
+      authorize: successful,
+      expectedActionsToCheck: [actionsMaps.case.CASE_STATUS_TRANSITION],
+    },
+    {
+      existingStatus: 'not closed',
+      newStatus: 'not closed',
+      can: successful,
+      authorize: true,
+      expectedActionsToCheck: [],
+    },
+    {
+      existingStatus: 'closed',
+      newStatus: 'closed',
+      can: successful,
+      authorize: true,
+      expectedActionsToCheck: [],
+    },
+  ]);
+  each(testCases).test(
+    'If the existing status $existingStatus is updated to $newStatus, it should check for permissions for actions $expectedActionsToCheck, and when it returns $can, authorize if true,m reject otherwise',
+    async ({
+      newStatus,
+      existingStatus,
+      expectedActionsToCheck,
+      can,
+      authorize,
+    }: TestCase) => {
+      req.body = { status: newStatus };
+      const caseObj = { status: existingStatus } as CaseService;
+      mockGetCase.mockResolvedValueOnce(caseObj);
+      req.can.mockReturnValueOnce(can);
+      await canUpdateCaseStatus(req, {}, next);
+      expectedActionsToCheck.forEach(action => {
+        expect(req.can).toHaveBeenCalledWith(req.user, action, caseObj);
+      });
+      if (authorize) {
+        expect(req.authorize).toHaveBeenCalled();
+        expect(req.unauthorize).not.toHaveBeenCalled();
+      } else {
+        expect(req.authorize).not.toHaveBeenCalled();
+        expect(req.unauthorize).toHaveBeenCalled();
+      }
+      expect(next).toHaveBeenCalled();
+      expect(createError).not.toHaveBeenCalled();
+    },
+  );
 });

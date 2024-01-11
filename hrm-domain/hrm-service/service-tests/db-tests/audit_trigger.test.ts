@@ -21,7 +21,7 @@
 
 import { db } from '../../src/connection-pool';
 
-import '../caseValidation';
+import '../case/caseValidation';
 
 const workerSid = 'WK-worker-sid';
 const anotherWorkerSid = 'WK-another-worker-sid';

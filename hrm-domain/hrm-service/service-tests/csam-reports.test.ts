@@ -16,7 +16,7 @@
 
 import each from 'jest-each';
 import * as mocks from './mocks';
-import './caseValidation';
+import './case/caseValidation';
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import { db } from '../src/connection-pool';
 import * as csamReportsApi from '../src/csam-report/csam-report';

@@ -38,9 +38,9 @@ import {
   withTaskId,
   workerSid,
 } from './mocks';
-import './caseValidation';
+import './case/caseValidation';
 import * as caseApi from '../src/case/caseService';
-import * as caseDb from '../src/case/case-data-access';
+import * as caseDb from '../src/case/caseDataAccess';
 import * as contactApi from '../src/contact/contactService';
 import * as contactDb from '../src/contact/contactDataAccess';
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';

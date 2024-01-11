@@ -55,3 +55,13 @@ export const canEditCase = canPerformCaseAction(getActions);
  * It checks if the user can view the case according to the defined permission rules.
  */
 export const canViewCase = canPerformCaseAction(() => [actionsMaps.case.VIEW_CASE]);
+
+export const canUpdateCaseStatus = canPerformCaseAction(
+  ({ status: savedStatus }, { status: updatedStatus }) => {
+    if (updatedStatus === savedStatus) return [];
+    if (updatedStatus === 'closed') return [actionsMaps.case.CLOSE_CASE];
+    return savedStatus === 'closed'
+      ? [actionsMaps.case.REOPEN_CASE]
+      : [actionsMaps.case.CASE_STATUS_TRANSITION];
+  },
+);

@@ -14,9 +14,9 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { WELL_KNOWN_CASE_SECTION_NAMES } from '../src/case/caseService';
-import { NewContactRecord } from '../src/contact/sql/contactInsertSql';
-import { ContactRawJson } from '../src/contact/contactJson';
+import { CaseService, WELL_KNOWN_CASE_SECTION_NAMES } from '../../src/case/caseService';
+import { NewContactRecord } from '../../src/contact/sql/contactInsertSql';
+import { ContactRawJson } from '../../src/contact/contactJson';
 
 declare global {
   namespace jest {
@@ -67,10 +67,10 @@ export const without = (original, ...property) => {
 };
 
 export const convertCaseInfoToExpectedInfo = (
-  input: any,
+  input: Partial<CaseService>,
   accountSid: string | null = null,
-) => {
-  if (!input || !input.info) return { ...input };
+): CaseService => {
+  if (!input || !input.info) return { ...input } as CaseService;
   const expectedCase = {
     ...input,
     info: { ...input.info },
@@ -93,7 +93,7 @@ export const convertCaseInfoToExpectedInfo = (
       }
     });
   }
-  return expectedCase;
+  return expectedCase as CaseService;
 };
 
 export const validateCaseListResponse = (actual, expectedCaseAndContactModels, count) => {
@@ -157,7 +157,7 @@ export const fillNameAndPhone = (
   },
   number = '+1-202-555-0184',
 ): NewContactRecord => {
-  return {
+  const modifiedContact: NewContactRecord = {
     ...contact,
     rawJson: {
       ...(contact.rawJson as ContactRawJson),
@@ -168,4 +168,8 @@ export const fillNameAndPhone = (
     },
     number,
   };
+
+  delete (<any>modifiedContact).form;
+
+  return modifiedContact;
 };

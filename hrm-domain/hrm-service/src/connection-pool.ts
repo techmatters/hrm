@@ -26,3 +26,11 @@ export const db = pgp(
     config.database,
   )}?&application_name=hrm-service`,
 );
+
+const { builtins } = pgp.pg.types;
+
+[builtins.DATE, builtins.TIMESTAMP, builtins.TIMESTAMPTZ].forEach(typeId => {
+  pgp.pg.types.setTypeParser(typeId, value => {
+    return value === null ? null : new Date(value);
+  });
+});

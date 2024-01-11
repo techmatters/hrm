@@ -20,7 +20,7 @@ import {
   ContactRawJson,
   PatchPayload,
 } from '../../src/contact/contactService';
-import '../caseValidation';
+import '../case/caseValidation';
 import * as mocks from '../mocks';
 import { accountSid, ALWAYS_CAN, contact1, withTaskId, workerSid } from '../mocks';
 import { twilioUser } from '@tech-matters/twilio-worker-auth/dist';

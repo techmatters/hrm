@@ -18,30 +18,30 @@
 import { add, addDays } from 'date-fns';
 import each from 'jest-each';
 
-import * as caseApi from '../src/case/caseService';
-import { CaseService, getCase } from '../src/case/caseService';
-import * as caseDb from '../src/case/case-data-access';
-import { CaseListFilters, DateExistsCondition } from '../src/case/case-data-access';
-import { db } from '../src/connection-pool';
+import * as caseApi from '../../src/case/caseService';
+import { CaseService, getCase } from '../../src/case/caseService';
+import * as caseDb from '../../src/case/caseDataAccess';
+import { CaseListFilters, DateExistsCondition } from '../../src/case/caseDataAccess';
+import { db } from '../../src/connection-pool';
 import {
   fillNameAndPhone,
   validateCaseListResponse,
   validateSingleCaseResponse,
 } from './caseValidation';
-import * as contactDb from '../src/contact/contactDataAccess';
-import { Contact } from '../src/contact/contactDataAccess';
+import * as contactDb from '../../src/contact/contactDataAccess';
+import { Contact } from '../../src/contact/contactDataAccess';
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
-import * as mocks from './mocks';
-import { ruleFileWithOneActionOverride } from './permissions-overrides';
+import * as mocks from '../mocks';
+import { ruleFileWithOneActionOverride } from '../permissions-overrides';
 import {
   addConversationMediaToContact,
   connectContactToCase,
   createContact,
-} from '../src/contact/contactService';
-import { getRequest, getServer, headers, setRules, useOpenRules } from './server';
+} from '../../src/contact/contactService';
+import { getRequest, getServer, headers, setRules, useOpenRules } from '../server';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
-import { isS3StoredTranscript } from '../src/conversation-media/conversation-media';
-import { ALWAYS_CAN } from './mocks';
+import { isS3StoredTranscript } from '../../src/conversation-media/conversation-media';
+import { ALWAYS_CAN } from '../mocks';
 
 useOpenRules();
 const server = getServer();

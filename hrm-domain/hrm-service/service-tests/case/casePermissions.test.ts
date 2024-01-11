@@ -18,14 +18,14 @@
 
 import each from 'jest-each';
 
-import * as caseApi from '../src/case/caseService';
-import { CaseService } from '../src/case/caseService';
-import * as caseDb from '../src/case/case-data-access';
+import * as caseApi from '../../src/case/caseService';
+import { CaseService } from '../../src/case/caseService';
+import * as caseDb from '../../src/case/caseDataAccess';
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 
-import * as mocks from './mocks';
-import { ruleFileWithOnePermittedOrDeniedAction } from './permissions-overrides';
-import { headers, getRequest, getServer, setRules, useOpenRules } from './server';
+import * as mocks from '../mocks';
+import { ruleFileWithOnePermittedOrDeniedAction } from '../permissions-overrides';
+import { headers, getRequest, getServer, setRules, useOpenRules } from '../server';
 
 useOpenRules();
 const server = getServer();

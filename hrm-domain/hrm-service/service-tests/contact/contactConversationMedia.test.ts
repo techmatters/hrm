@@ -15,7 +15,7 @@
  */
 
 import * as contactApi from '../../src/contact/contactService';
-import '../caseValidation';
+import '../case/caseValidation';
 import { ContactRawJson } from '../../src/contact/contactJson';
 import { accountSid, ALWAYS_CAN, contact1, workerSid } from '../mocks';
 import { getRequest, getServer, headers, setRules, useOpenRules } from '../server';

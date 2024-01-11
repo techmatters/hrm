@@ -21,7 +21,7 @@ import timers from 'timers';
 import { withTaskId, accountSid, workerSid } from '../../mocks';
 import * as contactJobApi from '../../../src/contact-job/contact-job-data-access';
 import { db } from '../../../src/connection-pool';
-import '../../caseValidation';
+import '../../case/caseValidation';
 import * as conversationMediaApi from '../../../src/conversation-media/conversation-media';
 import { chatChannels } from '../../../src/contact/channelTypes';
 import { JOB_MAX_ATTEMPTS } from '../../../src/contact-job/contact-job-processor';
