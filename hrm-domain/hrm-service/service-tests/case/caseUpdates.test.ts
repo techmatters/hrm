@@ -51,9 +51,7 @@ afterAll(done => {
   });
 });
 
-beforeAll(async () => {
-  await mockingProxy.start();
-});
+beforeAll(async () => {});
 
 // eslint-disable-next-line @typescript-eslint/no-shadow
 const deleteContactById = (id: number, accountSid: string) =>
@@ -78,6 +76,7 @@ let nonExistingCaseId;
 const route = `/v0/accounts/${accountSid}/cases`;
 
 beforeEach(async () => {
+  await mockingProxy.start();
   cases.blank = await caseApi.createCase(case1, accountSid, workerSid);
   cases.populated = await caseApi.createCase(casePopulated, accountSid, workerSid);
 
@@ -558,7 +557,6 @@ describe('PUT /cases/:id/status route', () => {
       statusUpdatedAt: null,
       statusUpdatedBy: null,
       previousStatus: null,
-      customWorkerSid: 'WK-another-worker-sid',
     },
   ];
 
