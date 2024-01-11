@@ -79,13 +79,11 @@ const deleteJobsByContactId = (contactId: number, accountSid: string) =>
 
 const cases: Record<string, CaseService> = {};
 let nonExistingCaseId;
-let subRoute;
+const route = `/v0/accounts/${accountSid}/cases`;
 
 beforeEach(async () => {
-  const route = `/v0/accounts/${accountSid}/cases`;
   cases.blank = await caseApi.createCase(case1, accountSid, workerSid);
   cases.populated = await caseApi.createCase(casePopulated, accountSid, workerSid);
-  subRoute = id => `${route}/${id}`;
 
   const caseToBeDeleted = await caseApi.createCase(case2, accountSid, workerSid);
   nonExistingCaseId = caseToBeDeleted.id;
@@ -98,6 +96,7 @@ afterEach(async () => {
 });
 
 describe('PUT /cases/:id route', () => {
+  const subRoute = id => `${route}/${id}`;
   const { counsellorNotes, perpetrators, households, incidents, referrals, documents } =
     casePopulated.info;
 
@@ -505,6 +504,126 @@ describe('PUT /cases/:id route', () => {
     await caseDb.deleteById(createdCase.id, accountSid);
     useOpenRules();
   });
+
+  test('should return 404', async () => {
+    const status = 'closed';
+    const response = await request
+      .put(subRoute(nonExistingCaseId))
+      .set(headers)
+      .send({ status });
+
+    expect(response.status).toBe(404);
+  });
+});
+
+describe('PUT /cases/:id/status route', () => {
+  const subRoute = id => `${route}/${id}/status`;
+
+  test('should return 401', async () => {
+    const response = await request
+      .put(subRoute(cases.blank.id))
+      .send({ status: 'anxious' });
+
+    expect(response.status).toBe(401);
+    expect(response.body.error).toBe('Authorization failed');
+  });
+
+  type TestCase = {
+    originalCase?: () => CaseService;
+    newStatus: caseApi.CaseService['status'];
+    changeDescription: string;
+    customWorkerSid?: string;
+    statusUpdatedAt: string | null;
+    statusUpdatedBy: string | null;
+    previousStatus: caseApi.CaseService['status'] | null;
+  };
+
+  const testCases: TestCase[] = [
+    {
+      changeDescription: 'status changed',
+      newStatus: 'dappled',
+      statusUpdatedAt: expect.toParseAsDate(),
+      statusUpdatedBy: workerSid,
+      previousStatus: case1.status,
+    },
+    {
+      changeDescription: 'status changed by another counselor',
+      newStatus: 'puddled',
+      statusUpdatedAt: expect.toParseAsDate(),
+      statusUpdatedBy: 'WK-another-worker-sid',
+      previousStatus: case1.status,
+      customWorkerSid: 'WK-another-worker-sid',
+    },
+    {
+      changeDescription:
+        'status changed to the same status - status tracking not updated',
+      newStatus: 'open',
+      statusUpdatedAt: null,
+      statusUpdatedBy: null,
+      previousStatus: null,
+      customWorkerSid: 'WK-another-worker-sid',
+    },
+  ];
+
+  each(testCases).test(
+    'should return 200 and save new status when $changeDescription',
+    async ({
+      newStatus,
+      originalCase: originalCaseGetter = () => cases.blank,
+      customWorkerSid = undefined,
+      statusUpdatedAt,
+      statusUpdatedBy,
+      previousStatus,
+    }: TestCase) => {
+      if (customWorkerSid) {
+        await mockSuccessfulTwilioAuthentication(customWorkerSid);
+        await new Promise(resolve => setTimeout(resolve, 3000));
+      }
+      const originalCase = originalCaseGetter();
+      const caseBeforeUpdate = await caseApi.getCase(originalCase.id, accountSid, {
+        user: twilioUser(workerSid, []),
+        can: () => true,
+      });
+
+      const response = await request.put(subRoute(originalCase.id)).set(headers).send({
+        status: newStatus,
+      });
+
+      expect(response.status).toBe(200);
+      const expected = {
+        ...convertCaseInfoToExpectedInfo(originalCase),
+        createdAt: expect.toParseAsDate(originalCase.createdAt),
+        updatedAt: expect.toParseAsDate(),
+        status: newStatus,
+        updatedBy: customWorkerSid || workerSid,
+        statusUpdatedAt,
+        statusUpdatedBy,
+        previousStatus,
+      };
+
+      expect(response.body).toMatchObject(expected);
+
+      // Check the DB is actually updated
+      const fromDb = await caseApi.getCase(originalCase.id, accountSid, {
+        user: twilioUser(workerSid, []),
+        can: () => true,
+      });
+      expect(fromDb).toMatchObject(expected);
+
+      if (!fromDb || !caseBeforeUpdate) {
+        throw new Error('fromDB is falsy');
+      }
+
+      // Check that in each case, createdAt is not changed
+      expect(fromDb.createdAt).toStrictEqual(caseBeforeUpdate.createdAt);
+      // Check that in each case, updatedAt is greater than createdAt
+      expect(isBefore(new Date(fromDb.createdAt), new Date(fromDb.updatedAt))).toBe(true);
+      // Check that in each case, updatedAt is greater it was before
+      expect(
+        isBefore(new Date(caseBeforeUpdate.updatedAt), new Date(fromDb.updatedAt)),
+      ).toBe(true);
+    },
+  );
 
   test('should return 404', async () => {
     const status = 'closed';

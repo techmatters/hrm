@@ -289,7 +289,13 @@ export const updateStatus = async (
     caseId: id,
   };
   return db.tx(async transaction => {
-    await transaction.none(updateByIdSql({ status, updatedBy }, accountSid, id));
+    await transaction.none(
+      updateByIdSql(
+        { status, updatedBy, updatedAt: new Date().toISOString() },
+        accountSid,
+        id,
+      ),
+    );
     return transaction.oneOrNone(selectSingleCaseByIdSql('Cases'), statementValues);
   });
 };
