@@ -210,14 +210,12 @@ const mapContactTransformations =
   ({ can, user }: { can: InitializedCan; user: TwilioUser }) =>
   (caseRecord: CaseRecord) => {
     const applyTransformations = bindApplyContactTransformations(can, user);
-    const withTransformedContacts = {
+    return {
       ...caseRecord,
       ...(caseRecord.connectedContacts && {
         connectedContacts: caseRecord.connectedContacts.map(applyTransformations),
       }),
     };
-
-    return withTransformedContacts;
   };
 
 export const createCase = async (

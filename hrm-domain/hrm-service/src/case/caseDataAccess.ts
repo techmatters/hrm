@@ -42,8 +42,9 @@ export type CaseRecordCommon = {
   accountSid: string;
   createdAt: string;
   updatedAt: string;
-  statusUpdatedAt: string;
-  statusUpdatedBy: string;
+  statusUpdatedAt?: string;
+  statusUpdatedBy?: string;
+  previousStatus?: string;
 };
 
 export type NewCaseRecord = CaseRecordCommon & {

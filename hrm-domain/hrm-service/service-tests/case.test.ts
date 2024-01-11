@@ -87,6 +87,7 @@ describe('/cases route', () => {
       updatedBy: null,
       statusUpdatedAt: null,
       statusUpdatedBy: null,
+      previousStatus: null,
       categories: {},
       connectedContacts: [],
     };

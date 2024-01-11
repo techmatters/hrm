@@ -30,8 +30,10 @@ const statusUpdatedSetSql = (parameters: { status?: string; updatedBy?: string }
   parameters.status
     ? pgp.as.format(
         `
-        , "statusUpdatedAt" = CASE WHEN "status" = $<status> THEN "statusUpdatedAt" ELSE CURRENT_TIMESTAMP END,
-        "statusUpdatedBy" = CASE WHEN "status" = $<status> THEN "statusUpdatedBy" ELSE $<updatedBy> END`,
+        , 
+        "statusUpdatedAt" = CASE WHEN "status" = $<status> THEN "statusUpdatedAt" ELSE CURRENT_TIMESTAMP END,
+        "statusUpdatedBy" = CASE WHEN "status" = $<status> THEN "statusUpdatedBy" ELSE $<updatedBy> END,
+        "previousStatus" = CASE WHEN "status" = $<status> THEN "previousStatus" ELSE "status" END`,
         parameters,
       )
     : '';

@@ -124,6 +124,7 @@ describe('PUT /cases/:id route', () => {
       extraExpectations: {
         statusUpdatedAt: expect.toParseAsDate(),
         statusUpdatedBy: workerSid,
+        previousStatus: case1.status,
       },
     },
     {
@@ -383,7 +384,7 @@ describe('PUT /cases/:id route', () => {
     }: TestCase) => {
       if (customWorkerSid) {
         await mockSuccessfulTwilioAuthentication(customWorkerSid);
-        await new Promise(resolve => setTimeout(resolve, 300));
+        await new Promise(resolve => setTimeout(resolve, 3000));
       }
       const caseUpdate =
         typeof caseUpdateParam === 'function' ? caseUpdateParam() : caseUpdateParam;

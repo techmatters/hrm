@@ -21,19 +21,23 @@ module.exports = {
     await queryInterface.sequelize.query(`
       ALTER TABLE IF EXISTS public."Cases"
       ADD COLUMN "statusUpdatedAt" timestamp with time zone,
-      ADD COLUMN "statusUpdatedBy" text COLLATE pg_catalog."default";
+      ADD COLUMN "statusUpdatedBy" text COLLATE pg_catalog."default",
+      ADD COLUMN "previousStatus" text COLLATE pg_catalog."default";
     `);
-    console.log('"statusUpdatedAt" & "statusUpdatedBy" columns added to table "Cases"');
+    console.log(
+      '"statusUpdatedAt", "statusUpdatedBy" & "previousStatus" columns added to table "Cases"',
+    );
   },
 
   down: async queryInterface => {
     await queryInterface.sequelize.query(`
       ALTER TABLE public."Cases" 
       DROP COLUMN IF EXISTS "statusUpdatedAt",
-      DROP COLUMN IF EXISTS "statusUpdatedBy";
+      DROP COLUMN IF EXISTS "statusUpdatedBy",
+      DROP COLUMN IF EXISTS "previousStatus";
     `);
     console.log(
-      '"statusUpdatedAt" & "statusUpdatedBy" columns dropped from table "Cases"',
+      '"statusUpdatedAt", "statusUpdatedBy" & "previousStatus" columns dropped from table "Cases"',
     );
   },
 };
