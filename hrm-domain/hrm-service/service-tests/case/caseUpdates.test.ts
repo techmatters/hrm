@@ -502,6 +502,7 @@ describe('PUT /cases/:id route', () => {
   });
 
   test('should return 404', async () => {
+    await mockSuccessfulTwilioAuthentication(workerSid);
     const status = 'closed';
     const response = await request
       .put(subRoute(nonExistingCaseId))
