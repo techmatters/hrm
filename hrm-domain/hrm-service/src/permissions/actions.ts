@@ -239,6 +239,8 @@ export const getActions = (original: any, updated: any) => {
   const actions = [];
   if (changes) {
     changes.forEach(change => {
+      // TODO: Deprecate this code when we stop allowing case status to be updated in the general update case endpoint
+      // Thw last version of Flex that does this should be v2.12.x - but check first!
       if (isPathTargetsStatus(change.path)) {
         if (isCloseCase(change)) actions.push(actionsMaps.case.CLOSE_CASE);
         if (isReopenCase(change)) actions.push(actionsMaps.case.REOPEN_CASE);

@@ -14,11 +14,17 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-const ID_WHERE_CLAUSE = `WHERE "accountSid" = $<accountSid> AND "id" = $<reportId>`;
+import * as contactApi from '../../src/contact/contactService';
+import { accountSid, ALWAYS_CAN, workerSid } from '../mocks';
 
-export const updateAcknowledgedByCsamReportIdSql = `
-  UPDATE "CSAMReports"
-  SET "acknowledged" = $<acknowledged>
-  ${ID_WHERE_CLAUSE}
-  RETURNING *
-`;
+export const finalizeContact = async (
+  contact: contactApi.Contact,
+): Promise<contactApi.Contact> =>
+  contactApi.patchContact(
+    accountSid,
+    workerSid,
+    true,
+    contact.id.toString(),
+    {},
+    ALWAYS_CAN,
+  );

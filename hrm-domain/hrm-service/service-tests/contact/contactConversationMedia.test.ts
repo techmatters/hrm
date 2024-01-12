@@ -15,12 +15,11 @@
  */
 
 import * as contactApi from '../../src/contact/contactService';
-import '../case-validation';
-import { ContactRawJson, WithLegacyCategories } from '../../src/contact/contactService';
-import { accountSid, contact1, workerSid } from '../mocks';
-import { twilioUser } from '@tech-matters/twilio-worker-auth/dist';
+import '../case/caseValidation';
+import { ContactRawJson } from '../../src/contact/contactJson';
+import { accountSid, ALWAYS_CAN, contact1, workerSid } from '../mocks';
 import { getRequest, getServer, headers, setRules, useOpenRules } from '../server';
-import * as contactDb from '../../src/contact/contact-data-access';
+import * as contactDb from '../../src/contact/contactDataAccess';
 import {
   isS3StoredTranscript,
   NewConversationMedia,
@@ -55,7 +54,7 @@ const cleanup = async () => {
   await cleanupCases();
 };
 
-let createdContact: WithLegacyCategories<contactDb.Contact>;
+let createdContact: contactDb.Contact;
 
 beforeEach(async () => {
   await cleanup();
@@ -63,13 +62,11 @@ beforeEach(async () => {
   createdContact = await contactApi.createContact(
     accountSid,
     workerSid,
-    true,
     {
       ...contact1,
       rawJson: <ContactRawJson>{},
-      csamReports: [],
     },
-    { user: twilioUser(workerSid, []), can: () => true },
+    ALWAYS_CAN,
   );
 });
 afterEach(() => {
@@ -274,12 +271,6 @@ describe('/contacts/:contactId/conversationMedia route', () => {
             accountSid,
           }),
         );
-        const legacyExpectedContactMedia = (expectedContactMedia ?? postedMedia).map(
-          media => ({
-            store: media.storeType,
-            ...media.storeTypeSpecificData,
-          }),
-        );
 
         const expectedResponse = {
           ...createdContact,
@@ -288,10 +279,6 @@ describe('/contacts/:contactId/conversationMedia route', () => {
           updatedAt: expect.toParseAsDate(),
           timeOfContact: expect.toParseAsDate(),
           conversationMedia: fullExpectedContactMedia,
-          rawJson: {
-            ...createdContact.rawJson,
-            conversationMedia: legacyExpectedContactMedia,
-          },
         };
 
         const response = await request
@@ -386,20 +373,10 @@ describe('/contacts/:contactId/conversationMedia route', () => {
               isS3StoredTranscript,
             ),
           ).toBeTruthy();
-          expect(
-            (<contactApi.Contact>contactWithMedia).rawJson?.conversationMedia?.some(
-              cm => cm.store === 'S3',
-            ),
-          ).toBeTruthy();
         } else {
           expect(
             (<contactApi.Contact>contactWithMedia).conversationMedia?.some(
               isS3StoredTranscript,
-            ),
-          ).toBeFalsy();
-          expect(
-            (<contactApi.Contact>contactWithMedia).rawJson?.conversationMedia?.some(
-              cm => cm.store === 'S3',
             ),
           ).toBeFalsy();
         }

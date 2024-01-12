@@ -14,8 +14,9 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { isErr } from '@tech-matters/types';
+import { isErr, mapHTTPError } from '@tech-matters/types';
 import createError from 'http-errors';
+import { isValid, toDate } from 'date-fns';
 
 import { SafeRouter, publicEndpoint } from '../permissions';
 import * as profileController from './profile';
@@ -57,7 +58,7 @@ profilesRouter.get('/', publicEndpoint, async (req, res, next) => {
     );
 
     if (isErr(result)) {
-      return next(createError(result.statusCode, result.message));
+      return next(mapHTTPError(result, { InternalServerError: 500 }));
     }
 
     res.json(result.data);
@@ -77,7 +78,7 @@ profilesRouter.get('/identifier/:identifier', publicEndpoint, async (req, res, n
     );
 
     if (isErr(result)) {
-      return next(createError(result.statusCode, result.message));
+      return next(mapHTTPError(result, { InternalServerError: 500 }));
     }
 
     if (!result.data) {
@@ -104,7 +105,7 @@ profilesRouter.get(
       );
 
       if (isErr(result)) {
-        return next(createError(result.statusCode, result.message));
+        return next(mapHTTPError(result, { InternalServerError: 500 }));
       }
 
       res.json(result.data);
@@ -126,7 +127,7 @@ profilesRouter.get('/:profileId/contacts', publicEndpoint, async (req, res, next
     });
 
     if (isErr(result)) {
-      return next(createError(result.statusCode, result.message));
+      return next(mapHTTPError(result, { InternalServerError: 500 }));
     }
 
     res.json(result.data);
@@ -147,7 +148,7 @@ profilesRouter.get('/:profileId/cases', publicEndpoint, async (req, res, next) =
     });
 
     if (isErr(result)) {
-      return next(createError(result.statusCode, result.message));
+      return next(mapHTTPError(result, { InternalServerError: 500 }));
     }
 
     res.json(result.data);
@@ -160,12 +161,10 @@ profilesRouter.get('/flags', publicEndpoint, async (req, res, next) => {
   try {
     const { accountSid } = req;
 
-    console.log('accountSid', accountSid);
-
     const result = await profileController.getProfileFlags(accountSid);
 
     if (isErr(result)) {
-      return next(createError(result.statusCode, result.message));
+      return next(mapHTTPError(result, { InternalServerError: 500 }));
     }
 
     res.json(result.data);
@@ -182,15 +181,23 @@ profilesRouter.post(
     try {
       const { accountSid } = req;
       const { profileId, profileFlagId } = req.params;
+      const { validUntil } = req.query;
+
+      if (validUntil && !isValid(validUntil)) {
+        return next(createError(400));
+      }
 
       const result = await profileController.associateProfileToProfileFlag(
         accountSid,
         profileId,
         profileFlagId,
+        validUntil ? toDate(validUntil) : null,
       );
 
       if (isErr(result)) {
-        return next(createError(result.statusCode, result.message));
+        return next(
+          mapHTTPError(result, { InvalidParameterError: 400, InternalServerError: 500 }),
+        );
       }
 
       if (!result.data) {
@@ -219,7 +226,7 @@ profilesRouter.delete(
       );
 
       if (isErr(result)) {
-        return next(createError(result.statusCode, result.message));
+        return next(mapHTTPError(result, { InternalServerError: 500 }));
       }
 
       if (!result.data) {
@@ -250,7 +257,7 @@ profilesRouter.post('/:profileId/sections', publicEndpoint, async (req, res, nex
     );
 
     if (isErr(result)) {
-      return next(createError(result.statusCode, result.message));
+      return next(mapHTTPError(result, { InternalServerError: 500 }));
     }
 
     if (!result.data) {
@@ -282,7 +289,7 @@ profilesRouter.patch(
       );
 
       if (isErr(result)) {
-        return next(createError(result.statusCode, result.message));
+        return next(mapHTTPError(result, { InternalServerError: 500 }));
       }
 
       if (!result.data) {
@@ -310,7 +317,7 @@ profilesRouter.get(
       });
 
       if (isErr(result)) {
-        return next(createError(result.statusCode, result.message));
+        return next(mapHTTPError(result, { InternalServerError: 500 }));
       }
 
       if (!result.data) {
@@ -333,7 +340,9 @@ profilesRouter.get('/:profileId', publicEndpoint, async (req, res, next) => {
     const result = await profileController.getProfile()(accountSid, profileId);
 
     if (isErr(result)) {
-      return next(createError(result.statusCode, result.message));
+      return next(
+        mapHTTPError(result, { ProfileNotFoundError: 404, InternalServerError: 500 }),
+      );
     }
 
     if (!result.data) {

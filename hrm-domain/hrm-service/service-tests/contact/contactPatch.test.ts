@@ -14,19 +14,19 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import {
-  ContactRawJson,
-  CreateContactPayload,
-  PatchPayload,
-  WithLegacyCategories,
-} from '../../src/contact/contactService';
-import '../case-validation';
 import * as contactApi from '../../src/contact/contactService';
-import { accountSid, contact1, withTaskIdAndTranscript, workerSid } from '../mocks';
+import {
+  addConversationMediaToContact,
+  ContactRawJson,
+  PatchPayload,
+} from '../../src/contact/contactService';
+import '../case/caseValidation';
+import * as mocks from '../mocks';
+import { accountSid, ALWAYS_CAN, contact1, withTaskId, workerSid } from '../mocks';
 import { twilioUser } from '@tech-matters/twilio-worker-auth/dist';
 import each from 'jest-each';
 import { getRequest, getServer, headers, setRules, useOpenRules } from '../server';
-import * as contactDb from '../../src/contact/contact-data-access';
+import * as contactDb from '../../src/contact/contactDataAccess';
 import { ruleFileWithOneActionOverride } from '../permissions-overrides';
 import { isS3StoredTranscript } from '../../src/conversation-media/conversation-media-data-access';
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
@@ -39,9 +39,8 @@ import {
   deleteContactById,
   deleteJobsByContactId,
 } from './db-cleanup';
-
-type ContactRawJsonWithLegacyCategories =
-  WithLegacyCategories<contactDb.Contact>['rawJson'];
+import { NewContactRecord } from '../../src/contact/sql/contactInsertSql';
+import { finalizeContact } from './finalizeContact';
 
 useOpenRules();
 const server = getServer();
@@ -72,45 +71,37 @@ describe('/contacts/:contactId route', () => {
       patch: PatchPayload['rawJson'];
       description: string;
       original?: ContactRawJson;
-      expected: ContactRawJsonWithLegacyCategories;
+      expected: Partial<ContactRawJson>;
     };
     const subRoute = contactId => `${route}/${contactId}`;
 
     test('should return 401', async () => {
-      const createdContact = await contactApi.createContact(
+      let createdContact = await contactApi.createContact(
         accountSid,
         workerSid,
-        true,
         {
           ...contact1,
           rawJson: <ContactRawJson>{},
-          csamReports: [],
         },
-        { user: twilioUser(workerSid, []), can: () => true },
+        ALWAYS_CAN,
       );
+      createdContact = await finalizeContact(createdContact);
+
       const response = await request.patch(subRoute(createdContact.id)).send({});
 
       expect(response.status).toBe(401);
       expect(response.body.error).toBe('Authorization failed');
     });
-    describe('rawJson changes', () => {
+
+    describe('rawJson is updated to be compatible', () => {
       const sampleRawJson: ContactRawJson = {
-        ...(contact1.rawJson as ContactRawJson),
+        ...contact1.rawJson,
         categories: {
           a: ['a2'],
           b: ['b1'],
         },
       };
-      const sampleRawJsonWithLegacyCategories = {
-        ...sampleRawJson,
-        caseInformation: {
-          ...sampleRawJson.caseInformation,
-          categories: {
-            a: { a2: true },
-            b: { b1: true },
-          },
-        },
-      };
+
       const tests: TestOptions[] = [
         {
           description: 'set callType to data call type',
@@ -119,9 +110,6 @@ describe('/contacts/:contactId route', () => {
           },
           expected: {
             callType: 'Child calling about self',
-            caseInformation: {
-              categories: {},
-            },
           },
         },
         {
@@ -131,9 +119,6 @@ describe('/contacts/:contactId route', () => {
           },
           expected: {
             callType: 'Hang up',
-            caseInformation: {
-              categories: {},
-            },
           },
         },
         {
@@ -151,9 +136,6 @@ describe('/contacts/:contactId route', () => {
               lastName: 'Ballantyne',
               some: 'property',
             },
-            caseInformation: {
-              categories: {},
-            },
           },
         },
         {
@@ -170,9 +152,6 @@ describe('/contacts/:contactId route', () => {
               firstName: 'Lorna',
               lastName: 'Ballantyne',
               some: 'other property',
-            },
-            caseInformation: {
-              categories: {},
             },
           },
         },
@@ -192,9 +171,6 @@ describe('/contacts/:contactId route', () => {
             },
             caseInformation: {
               other: 'case property',
-              categories: {
-                category1: { subcategory1: true, subcategory2: true },
-              },
             },
           },
         },
@@ -208,7 +184,6 @@ describe('/contacts/:contactId route', () => {
           expected: {
             caseInformation: {
               other: 'case property',
-              categories: {},
             },
           },
         },
@@ -218,20 +193,13 @@ describe('/contacts/:contactId route', () => {
             categories: {
               category1: ['subcategory1', 'subcategory2'],
             },
-            caseInformation: {},
           },
           expected: {
-            caseInformation: {
-              categories: {
-                category1: { subcategory1: true, subcategory2: true },
-              },
-            },
             categories: {
               category1: ['subcategory1', 'subcategory2'],
             },
           },
         },
-
         {
           description: 'overwrite callType as data call type',
           original: sampleRawJson,
@@ -239,7 +207,7 @@ describe('/contacts/:contactId route', () => {
             callType: 'Child calling about self',
           },
           expected: {
-            ...sampleRawJsonWithLegacyCategories,
+            ...sampleRawJson,
             callType: 'Child calling about self',
           },
         },
@@ -250,7 +218,7 @@ describe('/contacts/:contactId route', () => {
             callType: 'Hang up',
           },
           expected: {
-            ...sampleRawJsonWithLegacyCategories,
+            ...sampleRawJson,
             callType: 'Hang up',
           },
         },
@@ -265,7 +233,7 @@ describe('/contacts/:contactId route', () => {
             },
           },
           expected: {
-            ...sampleRawJsonWithLegacyCategories,
+            ...sampleRawJson,
             childInformation: {
               firstName: 'Lorna',
               lastName: 'Ballantyne',
@@ -284,7 +252,7 @@ describe('/contacts/:contactId route', () => {
             },
           },
           expected: {
-            ...sampleRawJsonWithLegacyCategories,
+            ...sampleRawJson,
             callerInformation: {
               firstName: 'Lorna',
               lastName: 'Ballantyne',
@@ -304,12 +272,9 @@ describe('/contacts/:contactId route', () => {
             },
           },
           expected: {
-            ...sampleRawJsonWithLegacyCategories,
+            ...sampleRawJson,
             caseInformation: {
               other: 'overwrite case property',
-              categories: {
-                category1: { subcategory1: true, subcategory2: true },
-              },
             },
             categories: {
               category1: ['subcategory1', 'subcategory2'],
@@ -325,10 +290,9 @@ describe('/contacts/:contactId route', () => {
             },
           },
           expected: {
-            ...sampleRawJsonWithLegacyCategories,
+            ...sampleRawJson,
             caseInformation: {
               other: 'case property',
-              categories: sampleRawJsonWithLegacyCategories.caseInformation.categories,
             },
           },
         },
@@ -341,17 +305,7 @@ describe('/contacts/:contactId route', () => {
             },
           },
           expected: {
-            ...sampleRawJsonWithLegacyCategories,
-            caseInformation: {
-              ...sampleRawJsonWithLegacyCategories.caseInformation,
-              categories: {
-                category1: {
-                  subcategory1: true,
-                  subcategory2: true,
-                },
-              },
-            },
-
+            ...sampleRawJson,
             categories: {
               category1: ['subcategory1', 'subcategory2'],
             },
@@ -361,17 +315,17 @@ describe('/contacts/:contactId route', () => {
       each(tests).test(
         'should $description if that is specified in the payload',
         async ({ patch, expected, original }: TestOptions) => {
-          const createdContact = await contactApi.createContact(
+          let createdContact = await contactApi.createContact(
             accountSid,
             workerSid,
-            true,
             {
               ...contact1,
               rawJson: original || <ContactRawJson>{},
-              csamReports: [],
             },
-            { user: twilioUser(workerSid, []), can: () => true },
+            ALWAYS_CAN,
           );
+          createdContact = await finalizeContact(createdContact);
+
           try {
             const existingContactId = createdContact.id;
             const response = await request
@@ -380,25 +334,7 @@ describe('/contacts/:contactId route', () => {
               .send({ rawJson: patch });
 
             expect(response.status).toBe(200);
-            const { categories, ...caseInformationWithoutLegacyCategories } =
-              expected?.caseInformation ?? {};
-            const expectedInDb: Partial<ContactRawJson> = expected?.caseInformation
-              ? {
-                  ...expected,
-                  caseInformation: caseInformationWithoutLegacyCategories as Record<
-                    string,
-                    string | boolean
-                  >,
-                }
-              : (expected as Partial<ContactRawJson>);
-            // Bodge a corner case where an absent caseInformation is untouched by the patch operation
-            if (
-              !original?.caseInformation &&
-              !patch?.caseInformation &&
-              !patch?.categories
-            ) {
-              delete expectedInDb.caseInformation;
-            }
+
             expect(response.body).toStrictEqual({
               ...createdContact,
               timeOfContact: expect.toParseAsDate(createdContact.timeOfContact),
@@ -407,6 +343,7 @@ describe('/contacts/:contactId route', () => {
               updatedAt: expect.toParseAsDate(),
               updatedBy: workerSid,
               rawJson: expected,
+              conversationMedia: [],
               csamReports: [],
               referrals: [],
             });
@@ -419,7 +356,8 @@ describe('/contacts/:contactId route', () => {
               createdAt: expect.toParseAsDate(createdContact.createdAt),
               updatedAt: expect.toParseAsDate(),
               updatedBy: workerSid,
-              rawJson: expectedInDb,
+              rawJson: expected,
+              conversationMedia: [],
               csamReports: [],
               referrals: [],
             });
@@ -441,13 +379,14 @@ describe('/contacts/:contactId route', () => {
       });
 
       test('Not permitted on finalized contact', async () => {
-        const createdContact = await contactApi.createContact(
+        let createdContact = await contactApi.createContact(
           accountSid,
           workerSid,
-          true,
           contact1,
-          { user: twilioUser(workerSid, []), can: () => true },
+          ALWAYS_CAN,
         );
+        createdContact = await finalizeContact(createdContact);
+
         const response = await request
           .patch(subRoute(createdContact.id))
           .set(headers)
@@ -500,7 +439,7 @@ describe('/contacts/:contactId route', () => {
           originalDifferences,
           finalize = false,
         }: FullPatchTestOptions) => {
-          const original: CreateContactPayload = {
+          const original: NewContactRecord = {
             ...contact1,
             ...originalDifferences,
             rawJson: {
@@ -511,11 +450,10 @@ describe('/contacts/:contactId route', () => {
           const createdContact = await contactApi.createContact(
             accountSid,
             workerSid,
-            false,
             original,
-            { user: twilioUser(workerSid, []), can: () => true },
+            ALWAYS_CAN,
           );
-          const expected: WithLegacyCategories<contactDb.Contact> = {
+          const expected: contactDb.Contact = {
             ...createdContact,
             ...expectedDifferences,
             rawJson: {
@@ -524,7 +462,6 @@ describe('/contacts/:contactId route', () => {
               caseInformation: {
                 ...createdContact.rawJson!.caseInformation,
                 ...expectedDifferences?.rawJson?.caseInformation,
-                categories: {},
               },
             },
           };
@@ -536,28 +473,6 @@ describe('/contacts/:contactId route', () => {
               .send(patch);
 
             expect(response.status).toBe(200);
-            const { categories, ...caseInformationWithoutLegacyCategories } =
-              expected.rawJson?.caseInformation ?? {};
-            const expectedInDb: contactApi.Contact = expected.rawJson?.caseInformation
-              ? ({
-                  ...expected,
-                  rawJson: {
-                    ...expected.rawJson,
-                    caseInformation: caseInformationWithoutLegacyCategories as Record<
-                      string,
-                      string | boolean
-                    >,
-                  },
-                } as contactApi.Contact)
-              : (expected as contactApi.Contact);
-            // Bodge a corner case where an absent caseInformation is untouched by the patch operation
-            if (
-              !original.rawJson?.caseInformation &&
-              !patch.rawJson?.caseInformation &&
-              !patch.rawJson?.categories
-            ) {
-              delete (expectedInDb.rawJson as any).caseInformation;
-            }
             expect(response.body).toStrictEqual({
               ...expected,
               timeOfContact: expect.toParseAsDate(expected.timeOfContact),
@@ -565,18 +480,20 @@ describe('/contacts/:contactId route', () => {
               updatedAt: expect.toParseAsDate(),
               updatedBy: workerSid,
               referrals: [],
+              conversationMedia: [],
             });
             // Test the association
             expect(response.body.csamReports).toHaveLength(0);
             const savedContact = await contactDb.getById(accountSid, existingContactId);
 
             expect(savedContact).toStrictEqual({
-              ...expectedInDb,
+              ...expected,
               createdAt: expect.toParseAsDate(createdContact.createdAt),
               updatedAt: expect.toParseAsDate(),
               updatedBy: workerSid,
               csamReports: [],
               referrals: [],
+              conversationMedia: [],
             });
           } finally {
             await deleteContactById(createdContact.id, createdContact.accountSid);
@@ -589,9 +506,8 @@ describe('/contacts/:contactId route', () => {
       const contactToBeDeleted = await contactApi.createContact(
         accountSid,
         workerSid,
-        true,
         <any>contact1,
-        { user: twilioUser(workerSid, []), can: () => true },
+        ALWAYS_CAN,
       );
       const nonExistingContactId = contactToBeDeleted.id;
       await deleteContactById(contactToBeDeleted.id, contactToBeDeleted.accountSid);
@@ -612,7 +528,6 @@ describe('/contacts/:contactId route', () => {
       const createdContact = await contactApi.createContact(
         accountSid,
         'another creator',
-        false,
         <any>{
           ...contact1,
           twilioWorkerId: 'another owner',
@@ -631,9 +546,8 @@ describe('/contacts/:contactId route', () => {
       const createdContact = await contactApi.createContact(
         accountSid,
         'another creator',
-        false,
         <any>contact1,
-        { user: twilioUser(workerSid, []), can: () => true },
+        ALWAYS_CAN,
       );
       const response = await request
         .patch(subRoute(createdContact.id))
@@ -647,12 +561,11 @@ describe('/contacts/:contactId route', () => {
       const createdContact = await contactApi.createContact(
         accountSid,
         workerSid,
-        false,
         <any>{
           ...contact1,
           twilioWorkerId: 'another owner',
         },
-        { user: twilioUser(workerSid, []), can: () => true },
+        ALWAYS_CAN,
       );
       const response = await request
         .patch(subRoute(createdContact.id))
@@ -663,26 +576,30 @@ describe('/contacts/:contactId route', () => {
     });
 
     test('malformed payload should return 400', async () => {
-      const contact = await contactApi.createContact(
+      let contact = await contactApi.createContact(
         accountSid,
         workerSid,
-        true,
         <any>{ ...contact1, taskId: 'malformed-task-id' },
-        { user: twilioUser(workerSid, []), can: () => true },
+        ALWAYS_CAN,
       );
+
+      contact = await finalizeContact(contact);
+
       const response = await request.patch(subRoute(contact.id)).set(headers).send([]);
 
       expect(response.status).toBe(400);
     });
 
     test('no body should be a noop', async () => {
-      const createdContact = await contactApi.createContact(
+      let createdContact = await contactApi.createContact(
         accountSid,
         workerSid,
-        true,
         <any>contact1,
-        { user: twilioUser(workerSid, []), can: () => true },
+        ALWAYS_CAN,
       );
+
+      createdContact = await finalizeContact(createdContact);
+
       const response = await request
         .patch(subRoute(createdContact.id))
         .set(headers)
@@ -696,6 +613,7 @@ describe('/contacts/:contactId route', () => {
         finalizedAt: expect.toParseAsDate(createdContact.finalizedAt),
         updatedAt: expect.toParseAsDate(),
         updatedBy: workerSid,
+        conversationMedia: [],
       });
     });
 
@@ -709,13 +627,21 @@ describe('/contacts/:contactId route', () => {
         description: `without viewExternalTranscript excludes transcripts`,
       },
     ]).test(`$description`, async ({ expectTranscripts }) => {
-      const createdContact = await contactApi.createContact(
+      const permission = ALWAYS_CAN;
+      let createdContact = await contactApi.createContact(
         accountSid,
         workerSid,
-        true,
-        withTaskIdAndTranscript,
-        { user: twilioUser(workerSid, []), can: () => true },
+        withTaskId,
+        permission,
       );
+      createdContact = await addConversationMediaToContact(
+        accountSid,
+        createdContact.id.toString(),
+        mocks.conversationMedia,
+        permission,
+      );
+      createdContact = await finalizeContact(createdContact);
+
       if (!expectTranscripts) {
         setRules(ruleFileWithOneActionOverride('viewExternalTranscript', false));
       } else {
@@ -732,19 +658,9 @@ describe('/contacts/:contactId route', () => {
         expect(
           (<contactApi.Contact>res.body).conversationMedia?.some(isS3StoredTranscript),
         ).toBeTruthy();
-        expect(
-          (<contactApi.Contact>res.body).rawJson?.conversationMedia?.some(
-            cm => cm.store === 'S3',
-          ),
-        ).toBeTruthy();
       } else {
         expect(
           (<contactApi.Contact>res.body).conversationMedia?.some(isS3StoredTranscript),
-        ).toBeFalsy();
-        expect(
-          (<contactApi.Contact>res.body).rawJson?.conversationMedia?.some(
-            cm => cm.store === 'S3',
-          ),
         ).toBeFalsy();
       }
 

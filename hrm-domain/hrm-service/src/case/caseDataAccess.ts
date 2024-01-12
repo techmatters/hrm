@@ -29,7 +29,7 @@ import {
 } from './sql/case-sections-sql';
 import { DELETE_BY_ID } from './sql/case-delete-sql';
 import { selectSingleCaseByIdSql } from './sql/case-get-sql';
-import { Contact } from '../contact/contact-data-access';
+import { Contact } from '../contact/contactDataAccess';
 import { OrderByDirectionType } from '../sql';
 
 export type CaseRecordCommon = {
@@ -42,11 +42,16 @@ export type CaseRecordCommon = {
   accountSid: string;
   createdAt: string;
   updatedAt: string;
+  statusUpdatedAt?: string;
+  statusUpdatedBy?: string;
+  previousStatus?: string;
 };
 
 export type NewCaseRecord = CaseRecordCommon & {
   caseSections?: CaseSectionRecord[];
 };
+
+export type CaseRecordUpdate = Partial<NewCaseRecord> & Pick<NewCaseRecord, 'updatedBy'>;
 
 export type CaseRecord = CaseRecordCommon & {
   id: number;
@@ -267,11 +272,30 @@ export const update = async (
       Object.assign(statementValues, values);
       await transaction.none(sql, statementValues);
     }
-    await transaction.none(
-      updateByIdSql(caseRecordUpdates, accountSid, id),
-      statementValues,
-    );
+    await transaction.none(updateByIdSql(caseRecordUpdates, accountSid, id));
 
+    return transaction.oneOrNone(selectSingleCaseByIdSql('Cases'), statementValues);
+  });
+};
+
+export const updateStatus = async (
+  id,
+  status: string,
+  updatedBy: string,
+  accountSid: string,
+) => {
+  const statementValues = {
+    accountSid,
+    caseId: id,
+  };
+  return db.tx(async transaction => {
+    await transaction.none(
+      updateByIdSql(
+        { status, updatedBy, updatedAt: new Date().toISOString() },
+        accountSid,
+        id,
+      ),
+    );
     return transaction.oneOrNone(selectSingleCaseByIdSql('Cases'), statementValues);
   });
 };

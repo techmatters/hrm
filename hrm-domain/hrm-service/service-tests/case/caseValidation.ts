@@ -14,14 +14,9 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { WELL_KNOWN_CASE_SECTION_NAMES } from '../src/case/caseService';
-import { NewContactRecord } from '../src/contact/sql/contact-insert-sql';
-import {
-  ContactRawJson,
-  CreateContactPayload,
-  WithLegacyCategories,
-} from '../src/contact/contactService';
-import { Contact } from '../src/contact/contact-data-access';
+import { CaseService, WELL_KNOWN_CASE_SECTION_NAMES } from '../../src/case/caseService';
+import { NewContactRecord } from '../../src/contact/sql/contactInsertSql';
+import { ContactRawJson } from '../../src/contact/contactJson';
 
 declare global {
   namespace jest {
@@ -72,10 +67,10 @@ export const without = (original, ...property) => {
 };
 
 export const convertCaseInfoToExpectedInfo = (
-  input: any,
+  input: Partial<CaseService>,
   accountSid: string | null = null,
-) => {
-  if (!input || !input.info) return { ...input };
+): CaseService => {
+  if (!input || !input.info) return { ...input } as CaseService;
   const expectedCase = {
     ...input,
     info: { ...input.info },
@@ -98,31 +93,7 @@ export const convertCaseInfoToExpectedInfo = (
       }
     });
   }
-  return expectedCase;
-};
-
-export const addLegacyCategoriesToContact = (
-  contact: Contact,
-): WithLegacyCategories<Contact> => {
-  if (contact?.rawJson) {
-    const legacyCategoryEntries = Object.entries(contact.rawJson.categories ?? {}).map(
-      ([category, subcategoryList]) => [
-        category,
-        Object.fromEntries(subcategoryList.map(sc => [sc, true])),
-      ],
-    );
-    return {
-      ...contact,
-      rawJson: {
-        ...contact.rawJson,
-        caseInformation: {
-          ...contact.rawJson.caseInformation,
-          categories: Object.fromEntries(legacyCategoryEntries),
-        },
-      },
-    };
-  }
-  return contact as WithLegacyCategories<Contact>;
+  return expectedCase as CaseService;
 };
 
 export const validateCaseListResponse = (actual, expectedCaseAndContactModels, count) => {
@@ -153,7 +124,7 @@ export const validateCaseListResponse = (actual, expectedCaseAndContactModels, c
 
       expect(actual.body.cases[index].connectedContacts).toStrictEqual([
         expect.objectContaining({
-          ...addLegacyCategoriesToContact(expectedContactModel),
+          ...expectedContactModel,
           csamReports: [],
           referrals: [],
           timeOfContact: expect.toParseAsDate(expectedContactModel.timeOfContact),
@@ -179,7 +150,7 @@ export const validateSingleCaseResponse = (
 };
 
 export const fillNameAndPhone = (
-  contact: CreateContactPayload,
+  contact: NewContactRecord,
   name = {
     firstName: 'Maria',
     lastName: 'Silva',

@@ -26,12 +26,25 @@ const updateCaseColumnSet = new pgp.helpers.ColumnSet(
   { table: 'Cases' },
 );
 
+const statusUpdatedSetSql = (parameters: { status?: string; updatedBy?: string }) =>
+  parameters.status
+    ? pgp.as.format(
+        `
+        , 
+        "statusUpdatedAt" = CASE WHEN "status" = $<status> THEN "statusUpdatedAt" ELSE CURRENT_TIMESTAMP END,
+        "statusUpdatedBy" = CASE WHEN "status" = $<status> THEN "statusUpdatedBy" ELSE $<updatedBy> END,
+        "previousStatus" = CASE WHEN "status" = $<status> THEN "previousStatus" ELSE "status" END`,
+        parameters,
+      )
+    : '';
+
 export const updateByIdSql = (
   updatedValues: Record<string, unknown>,
   accountSid: string,
   caseId: string,
 ) => `
         ${pgp.helpers.update(updatedValues, updateCaseColumnSet)} 
+        ${statusUpdatedSetSql(updatedValues)}
         ${pgp.as.format(
           `WHERE "Cases"."accountSid" = $<accountSid> AND "Cases"."id" = $<caseId>`,
           {
@@ -39,4 +52,12 @@ export const updateByIdSql = (
             caseId,
           },
         )} 
+`;
+
+export const TOUCH_CASE_SQL = `
+UPDATE "Cases" 
+SET 
+  "updatedAt" = CURRENT_TIMESTAMP,
+  "updatedBy" = $<updatedBy>
+WHERE "accountSid" = $<accountSid> AND "id" = $<caseId>
 `;

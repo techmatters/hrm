@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { ContactRawJson } from '../contact-json';
+import { ContactRawJson } from '../contactJson';
 import { selectSingleContactByTaskId } from './contact-get-sql';
 
 export type NewContactRecord = {
@@ -56,8 +56,7 @@ export const INSERT_CONTACT_SQL = `
       "channelSid",
       "serviceSid",
       "profileId",
-      "identifierId",
-      "finalizedAt"
+      "identifierId"
     ) (SELECT 
         $<accountSid>, 
         $<rawJson>, 
@@ -75,8 +74,7 @@ export const INSERT_CONTACT_SQL = `
         $<channelSid>, 
         $<serviceSid>,
         $<profileId>,
-        $<identifierId>,
-        CASE WHEN $<finalize> = true THEN CURRENT_TIMESTAMP ELSE NULL END
+        $<identifierId>
       WHERE NOT EXISTS (
         ${selectSingleContactByTaskId('Contacts')}
       )

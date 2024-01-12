@@ -14,11 +14,22 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-const ID_WHERE_CLAUSE = `WHERE "accountSid" = $<accountSid> AND "id" = $<reportId>`;
+'use strict';
 
-export const updateAcknowledgedByCsamReportIdSql = `
-  UPDATE "CSAMReports"
-  SET "acknowledged" = $<acknowledged>
-  ${ID_WHERE_CLAUSE}
-  RETURNING *
-`;
+/** @type {import('sequelize-cli').Migration} */
+module.exports = {
+  async up(queryInterface) {
+    /// ProfileSections
+    await queryInterface.sequelize.query(`
+      ALTER TABLE public."ProfilesToProfileFlags" ADD COLUMN IF NOT EXISTS "validUntil" timestamp with time zone; 
+   `);
+    console.log('Column "validUntil" added to table public."ProfilesToProfileFlags"');
+  },
+
+  async down(queryInterface) {
+    await queryInterface.sequelize.query(`
+      ALTER TABLE public."ProfilesToProfileFlags" DROP COLUMN IF EXISTS "validUntil"; 
+   `);
+    console.log('Column "validUntil" droped from table public."ProfilesToProfileFlags"');
+  },
+};

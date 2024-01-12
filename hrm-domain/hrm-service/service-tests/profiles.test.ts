@@ -15,7 +15,7 @@
  */
 
 import each from 'jest-each';
-import './case-validation';
+import './case/caseValidation';
 import { db } from '../src/connection-pool';
 import * as caseApi from '../src/case/caseService';
 import * as contactApi from '../src/contact/contactService';
@@ -26,6 +26,7 @@ import { mockSuccessfulTwilioAuthentication, mockingProxy } from '@tech-matters/
 import { getOrCreateProfileWithIdentifier, Profile } from '../src/profile/profile';
 import { IdentifierWithProfiles } from '../src/profile/profile-data-access';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
+import { ALWAYS_CAN } from './mocks';
 
 useOpenRules();
 const server = getServer();
@@ -61,7 +62,7 @@ describe('/profiles', () => {
 
   describe('GET', () => {
     let createdProfiles: Profile[];
-    let existingProfiles: any; //Profile[];
+    let existingProfiles: any;
     const profilesNames = ['Murray', 'Antonella', null];
     let defaultFlags: profilesDB.ProfileFlag[];
     beforeAll(async () => {
@@ -73,17 +74,29 @@ describe('/profiles', () => {
       defaultFlags = await profilesDB
         .getProfileFlagsForAccount(accountSid)
         .then(result => result.unwrap());
+
+      const murray = createdProfiles.find(p => p.name === 'Murray');
+      const antonella = createdProfiles.find(p => p.name === 'Antonella');
+
       await Promise.all([
         profilesDB.associateProfileToProfileFlag()(
           accountSid,
-          createdProfiles.find(p => p.name === 'Murray')!.id,
+          murray!.id,
           defaultFlags[0].id,
+          null,
         ),
         profilesDB.associateProfileToProfileFlag()(
           accountSid,
-          createdProfiles.find(p => p.name === 'Antonella')!.id,
+          antonella!.id,
           defaultFlags[1].id,
+          null,
         ),
+        profilesDB.createProfileSection(antonella!.accountSid, {
+          content: 'some example content',
+          sectionType: 'summary',
+          createdBy: 'worker',
+          profileId: antonella!.id,
+        }),
       ]);
     });
 
@@ -106,7 +119,6 @@ describe('/profiles', () => {
         query: '',
         expectStatus: 200,
         expectFunction: response => {
-          console.log(response.body);
           expect(response.body.count).toBe(
             existingProfiles.length + createdProfiles.length,
           );
@@ -118,12 +130,12 @@ describe('/profiles', () => {
         query: 'sortBy=name',
         expectStatus: 200,
         expectFunction: response => {
-          console.log(response.body);
           expect(response.body.count).toBe(
             existingProfiles.length + createdProfiles.length,
           );
           expect(response.body.profiles[0].name).toBe('Murray');
           expect(response.body.profiles[1].name).toBe('Antonella');
+          expect(response.body.profiles[1].summary).toBe('some example content');
           response.body.profiles.slice(2).forEach(p => expect(p.name).toBeNull());
         },
       },
@@ -133,7 +145,6 @@ describe('/profiles', () => {
         query: 'sortBy=name&sortDirection=asc',
         expectStatus: 200,
         expectFunction: response => {
-          console.log(response.body);
           expect(response.body.count).toBe(
             existingProfiles.length + createdProfiles.length,
           );
@@ -148,7 +159,6 @@ describe('/profiles', () => {
         query: 'profileFlagIds=1',
         expectStatus: 200,
         expectFunction: response => {
-          console.log(response.body);
           expect(response.body.count).toBe(1);
           expect(response.body.profiles[0].name).toBe('Murray');
         },
@@ -159,7 +169,6 @@ describe('/profiles', () => {
         query: 'profileFlagIds=1,2',
         expectStatus: 200,
         expectFunction: response => {
-          console.log(response.body);
           expect(response.body.count).toBe(2);
           expect(response.body.profiles[0].name).toBe('Antonella');
           expect(response.body.profiles[1].name).toBe('Murray');
@@ -171,7 +180,6 @@ describe('/profiles', () => {
         query: 'profileFlagIds=9999999',
         expectStatus: 200,
         expectFunction: response => {
-          console.log(response.body);
           expect(response.body.count).toBe(0);
         },
       },
@@ -181,7 +189,6 @@ describe('/profiles', () => {
         query: 'profileFlagIds=not-a-number',
         expectStatus: 200,
         expectFunction: response => {
-          console.log(response.body);
           expect(response.body.count).toBe(
             existingProfiles.length + createdProfiles.length,
           );
@@ -229,17 +236,13 @@ describe('/profiles', () => {
             contactApi.createContact(
               acc,
               workerSid,
-              true,
               {
                 ...contact1,
                 number: identifier,
                 profileId: createdProfiles[acc].profiles[0].id,
                 identifierId: createdProfiles[acc].id,
               },
-              {
-                user: twilioUser(workerSid, []),
-                can: () => true,
-              },
+              ALWAYS_CAN,
             ),
           ),
         )
@@ -264,9 +267,10 @@ describe('/profiles', () => {
 
     afterAll(async () => {
       await Promise.all(
-        Object.entries(createdContacts).map(([, c]) =>
+        Object.entries(createdContacts).flatMap(([, c]) => [
+          db.task(t => t.none(`DELETE FROM "ContactJobs"  WHERE "contactId" = ${c.id}`)),
           deleteFromTableById('Contacts')(c.id, c.accountSid),
-        ),
+        ]),
       );
       await Promise.all(
         Object.entries(createdCases).map(([, c]) =>
@@ -363,7 +367,6 @@ describe('/profiles', () => {
                 .createContact(
                   createdCase.accountSid,
                   workerSid,
-                  true,
                   {
                     ...contact1,
                     number: identifier,
@@ -371,10 +374,7 @@ describe('/profiles', () => {
                     profileId: createdProfile.profiles[0].id,
                     identifierId: createdProfile.id,
                   },
-                  {
-                    user: twilioUser(workerSid, []),
-                    can: () => true,
-                  },
+                  ALWAYS_CAN,
                 )
                 .then(contact =>
                   // Associate contact to case
@@ -405,9 +405,12 @@ describe('/profiles', () => {
 
       afterAll(async () => {
         await Promise.all(
-          Object.entries(createdContacts).map(([, c]) =>
+          Object.entries(createdContacts).flatMap(([, c]) => [
+            db.task(t =>
+              t.none(`DELETE FROM "ContactJobs"  WHERE "contactId" = ${c.id}`),
+            ),
             deleteFromTableById('Contacts')(c.id, c.accountSid),
-          ),
+          ]),
         );
         await Promise.all(
           Object.entries(createdCases).map(([, c]) =>
@@ -416,9 +419,7 @@ describe('/profiles', () => {
         );
       });
 
-      const convertContactToExpect = (
-        contact: contactApi.WithLegacyCategories<contactApi.Contact>,
-      ) => ({
+      const convertContactToExpect = (contact: contactApi.Contact) => ({
         ...contact,
         createdAt: expect.toParseAsDate(),
         updatedAt: expect.toParseAsDate(),
@@ -487,8 +488,10 @@ describe('/profiles', () => {
 
     describe('/profiles/:profileId/flags', () => {
       describe('/profiles/:profileId/flags/:profileFlagId', () => {
-        const buildRoute = (profileId: number, profileFlagId: number) =>
-          `${baseRoute}/${profileId}/flags/${profileFlagId}`;
+        const buildRoute = (profileId: number, profileFlagId: number, validUntil?: any) =>
+          `${baseRoute}/${profileId}/flags/${profileFlagId}?${
+            validUntil ? `validUntil=${validUntil}` : ''
+          }`;
 
         let defaultFlags: profilesDB.ProfileFlag[];
         beforeAll(async () => {
@@ -498,7 +501,7 @@ describe('/profiles', () => {
         });
 
         describe('POST', () => {
-          afterAll(async () => {
+          afterEach(async () => {
             // Dissasociate
             db.task(t =>
               t.none(
@@ -528,24 +531,54 @@ describe('/profiles', () => {
               expectStatus: 200,
               expectFunction: (response, profileId, profileFlagId) => {
                 expect(response.body.id).toBe(profileId);
-                expect(response.body.profileFlags).toContain(profileFlagId);
+                expect(
+                  response.body.profileFlags.some(pf => pf.id === profileFlagId),
+                ).toBeTruthy();
               },
             },
             {
+              beforeFunction: (profileId, profileFlagId) =>
+                request.post(buildRoute(profileId, profileFlagId)).set(headers),
               description: 'association already exists',
               expectStatus: 500,
+            },
+            {
+              description: 'a valid "validUntil" date is sent',
+              expectStatus: 200,
+              expectFunction: (response, profileId, profileFlagId) => {
+                expect(response.body.id).toBe(profileId);
+                expect(
+                  response.body.profileFlags.some(pf => pf.id === profileFlagId),
+                ).toBeTruthy();
+              },
+            },
+            {
+              description: 'an invalid "validUntil" date is sent',
+              expectStatus: 400,
+              validUntil: 'not a date',
+            },
+            {
+              description: 'a future "validUntil" date is sent',
+              expectStatus: 400,
+              validUntil: '2020-01-05',
             },
           ]).test(
             'when $description, returns $expectStatus',
             async ({
+              beforeFunction,
               profileId = createdProfile.profiles[0].id,
               profileFlagId = defaultFlags[0].id,
+              validUntil,
               expectStatus,
               customHeaders,
               expectFunction,
             }) => {
+              if (beforeFunction) {
+                await beforeFunction(profileId, profileFlagId);
+              }
+
               const response = await request
-                .post(buildRoute(profileId, profileFlagId))
+                .post(buildRoute(profileId, profileFlagId, validUntil))
                 .set(customHeaders || headers);
               expect(response.statusCode).toBe(expectStatus);
               if (expectFunction) {
@@ -562,13 +595,14 @@ describe('/profiles', () => {
                 accountSid,
                 createdProfile.profiles[0].id,
                 defaultFlags[0].id,
+                null,
               )
             ).unwrap();
 
             const pfs = (
               await profilesDB.getProfileById()(accountSid, createdProfile.profiles[0].id)
             ).profileFlags;
-            if (!pfs.includes(defaultFlags[0].id)) {
+            if (!pfs.some(a => a.id === defaultFlags[0].id)) {
               throw new Error('Missing expected association');
             }
           });

@@ -16,10 +16,10 @@
 
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { Actions, TargetKind, isValidSetOfActionsForTarget } from './actions';
-import { setupCanForRules } from './setupCanForRules';
+import { InitializedCan } from './initializeCanForRules';
 import { getContactById } from '../contact/contactService';
 import { getCase as getCaseById } from '../case/caseService';
-import { assertExhaustive } from '../contact-job/assertExhaustive';
+import { assertExhaustive } from '@tech-matters/types';
 import {
   getConversationMediaByContactId,
   isS3StoredConversationMedia,
@@ -38,14 +38,14 @@ export const canPerformActionsOnObject = async <T extends TargetKind>({
   objectId: number;
   targetKind: T;
   actions: string[];
-  can: ReturnType<typeof setupCanForRules>;
+  can: InitializedCan;
   user: TwilioUser;
-}): Promise<TResult<boolean>> => {
+}): Promise<TResult<'InvalidObjectType' | 'InternalServerError', boolean>> => {
   try {
     if (!isValidSetOfActionsForTarget(targetKind, actions)) {
       return newErr({
         message: 'invalid actions for objectType',
-        statusCode: 400,
+        error: 'InvalidObjectType',
       });
     }
 
@@ -75,7 +75,10 @@ export const canPerformActionsOnObject = async <T extends TargetKind>({
       }
     }
   } catch (error) {
-    return newErr({ message: (error as Error).message });
+    return newErr({
+      message: (error as Error).message,
+      error: 'InternalServerError',
+    });
   }
 };
 
@@ -108,7 +111,7 @@ export const isValidFileLocation = async ({
   objectId: number;
   bucket: string;
   key: string;
-}): Promise<TResult<boolean>> => {
+}): Promise<TResult<'InternalServerError', boolean>> => {
   try {
     switch (targetKind) {
       case 'contact': {
@@ -137,6 +140,9 @@ export const isValidFileLocation = async ({
       }
     }
   } catch (error) {
-    return newErr({ message: (error as Error).message });
+    return newErr({
+      message: (error as Error).message,
+      error: 'InternalServerError',
+    });
   }
 };

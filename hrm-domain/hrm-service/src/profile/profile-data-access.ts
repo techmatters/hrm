@@ -66,10 +66,15 @@ export type ProfileWithCounts = Profile & ProfileCounts;
 
 export type IdentifierWithProfiles = Identifier & { profiles: ProfileWithCounts[] };
 
+type ProfileFlagAssociation = {
+  id: ProfileFlag['id'];
+  validUntil: Date | null;
+};
+
 export type ProfileWithRelationships = Profile &
   ProfileCounts & {
     identifiers: Identifier[];
-    profileFlags: ProfileFlag['id'][];
+    profileFlags: ProfileFlagAssociation[];
     profileSections: {
       sectionType: ProfileSection['sectionType'];
       id: ProfileSection['id'];
@@ -86,7 +91,9 @@ export const getIdentifierWithProfiles =
     accountSid,
     identifier,
     identifierId,
-  }: IdentifierParams): Promise<TResult<IdentifierWithProfiles | null>> => {
+  }: IdentifierParams): Promise<
+    TResult<'InternalServerError', IdentifierWithProfiles | null>
+  > => {
     const params = { accountSid, identifier, identifierId };
     try {
       const data = await txIfNotInOne<IdentifierWithProfiles>(task, async t => {
@@ -120,6 +127,7 @@ export const getIdentifierWithProfiles =
     } catch (err) {
       return newErr({
         message: err instanceof Error ? err.message : String(err),
+        error: 'InternalServerError',
       });
     }
   };
@@ -162,9 +170,9 @@ export const associateProfileToIdentifier =
     accountSid: string,
     profileId: number,
     identifierId: number,
-  ): Promise<TResult<IdentifierWithProfiles>> => {
+  ): Promise<TResult<'InternalServerError', IdentifierWithProfiles>> => {
     try {
-      return await txIfNotInOne<TResult<IdentifierWithProfiles>>(task, async t => {
+      return await txIfNotInOne(task, async t => {
         const now = new Date();
         await t.none(
           associateProfileToIdentifierSql({
@@ -184,6 +192,7 @@ export const associateProfileToIdentifier =
     } catch (err) {
       return newErr({
         message: err instanceof Error ? err.message : String(err),
+        error: 'InternalServerError',
       });
     }
   };
@@ -193,9 +202,9 @@ export const createIdentifierAndProfile =
   async (
     accountSid: string,
     payload: NewIdentifierRecord,
-  ): Promise<TResult<IdentifierWithProfiles>> => {
+  ): Promise<TResult<'InternalServerError', IdentifierWithProfiles>> => {
     try {
-      return await txIfNotInOne<TResult<IdentifierWithProfiles>>(task, async t => {
+      return await txIfNotInOne(task, async t => {
         const [newIdentifier, newProfile] = await Promise.all([
           createIdentifier(t)(accountSid, payload),
           createProfile(t)(accountSid, { name: null }),
@@ -210,6 +219,7 @@ export const createIdentifierAndProfile =
     } catch (err) {
       return newErr({
         message: err instanceof Error ? err.message : String(err),
+        error: 'InternalServerError',
       });
     }
   };
@@ -232,26 +242,31 @@ export type ProfileListConfiguration = {
 export type SearchParameters = {
   filters?: ProfilesListFilters;
 };
+
+type ListProfile = Pick<Profile, 'id' | 'name'> &
+  Pick<Identifier, 'identifier'> & { profileFlags: ProfileFlagAssociation[] } & {
+    summary: ProfileSection['content'];
+  };
+
 export const listProfiles = async (
   accountSid: string,
   listConfiguration: ProfileListConfiguration,
   { filters }: SearchParameters,
-): Promise<TResult<{ profiles: Profile[]; count: number }>> => {
+): Promise<
+  TResult<'InternalServerError', { profiles: ListProfile[]; count: number }>
+> => {
   try {
     const { limit, offset, sortBy, sortDirection } =
       getPaginationElements(listConfiguration);
     const orderClause = [{ sortBy, sortDirection }];
 
     const { count, rows } = await db.task(async connection => {
-      const result = await connection.any<Profile & { totalCount: number }>(
-        listProfilesSql(filters || {}, orderClause),
-        {
-          accountSid,
-          limit,
-          offset,
-          profileFlagIds: filters?.profileFlagIds,
-        },
-      );
+      const result = await connection.any(listProfilesSql(filters || {}, orderClause), {
+        accountSid,
+        limit,
+        offset,
+        profileFlagIds: filters?.profileFlagIds,
+      });
 
       const totalCount: number = result.length ? result[0].totalCount : 0;
       return { rows: result, count: totalCount };
@@ -261,6 +276,7 @@ export const listProfiles = async (
   } catch (err) {
     return newErr({
       message: err instanceof Error ? err.message : String(err),
+      error: 'InternalServerError',
     });
   }
 };
@@ -271,10 +287,11 @@ export const associateProfileToProfileFlag =
     accountSid: string,
     profileId: number,
     profileFlagId: number,
-  ): Promise<TResult<null>> => {
+    validUntil: Date | null,
+  ): Promise<TResult<'InternalServerError', null>> => {
     try {
       const now = new Date();
-      return await txIfNotInOne<TResult<null>>(task, async t => {
+      return await txIfNotInOne(task, async t => {
         await t.none(
           associateProfileToProfileFlagSql({
             accountSid,
@@ -282,6 +299,7 @@ export const associateProfileToProfileFlag =
             profileFlagId,
             createdAt: now,
             updatedAt: now,
+            validUntil,
           }),
         );
 
@@ -290,6 +308,7 @@ export const associateProfileToProfileFlag =
     } catch (err) {
       return newErr({
         message: err instanceof Error ? err.message : String(err),
+        error: 'InternalServerError',
       });
     }
   };
@@ -300,9 +319,9 @@ export const disassociateProfileFromProfileFlag =
     accountSid: string,
     profileId: number,
     profileFlagId: number,
-  ): Promise<TResult<null>> => {
+  ): Promise<TResult<'InternalServerError', null>> => {
     try {
-      return await txIfNotInOne<TResult<null>>(task, async t => {
+      return await txIfNotInOne(task, async t => {
         await t.none(disassociateProfileFromProfileFlagSql, {
           accountSid,
           profileId,
@@ -314,6 +333,7 @@ export const disassociateProfileFromProfileFlag =
     } catch (err) {
       return newErr({
         message: err instanceof Error ? err.message : String(err),
+        error: 'InternalServerError',
       });
     }
   };
@@ -322,7 +342,7 @@ export type ProfileFlag = NewProfileFlagRecord & RecordCommons;
 
 export const getProfileFlagsForAccount = async (
   accountSid: string,
-): Promise<TResult<ProfileFlag[]>> => {
+): Promise<TResult<'InternalServerError', ProfileFlag[]>> => {
   try {
     return await db
       .task<ProfileFlag[]>(async t =>
@@ -332,6 +352,7 @@ export const getProfileFlagsForAccount = async (
   } catch (err) {
     return newErr({
       message: err instanceof Error ? err.message : String(err),
+      error: 'InternalServerError',
     });
   }
 };
@@ -339,7 +360,7 @@ export const getProfileFlagsForAccount = async (
 export const getProfileFlagsByIdentifier = async (
   accountSid: string,
   identifier: string,
-): Promise<TResult<ProfileFlag[]>> => {
+): Promise<TResult<'InternalServerError', ProfileFlag[]>> => {
   try {
     return await db
       .task<ProfileFlag[]>(async t =>
@@ -349,6 +370,7 @@ export const getProfileFlagsByIdentifier = async (
   } catch (err) {
     return newErr({
       message: err instanceof Error ? err.message : String(err),
+      error: 'InternalServerError',
     });
   }
 };
@@ -356,7 +378,7 @@ export const getProfileFlagsByIdentifier = async (
 export const createProfileFlag = async (
   accountSid: string,
   payload: NewProfileFlagRecord,
-): Promise<TResult<ProfileFlag>> => {
+): Promise<TResult<'InternalServerError', ProfileFlag>> => {
   try {
     const now = new Date();
     const statement = insertProfileFlagSql({
@@ -372,6 +394,7 @@ export const createProfileFlag = async (
   } catch (err) {
     return newErr({
       message: err instanceof Error ? err.message : String(err),
+      error: 'InternalServerError',
     });
   }
 };
@@ -385,7 +408,7 @@ export type ProfileSection = NewProfileSectionRecord &
 export const createProfileSection = async (
   accountSid: string,
   payload: NewProfileSectionRecord & { createdBy: string },
-): Promise<TResult<ProfileSection>> => {
+): Promise<TResult<'InternalServerError', ProfileSection>> => {
   try {
     const now = new Date();
     const statement = insertProfileSectionSql({
@@ -403,6 +426,7 @@ export const createProfileSection = async (
   } catch (err) {
     return newErr({
       message: err instanceof Error ? err.message : String(err),
+      error: 'InternalServerError',
     });
   }
 };
@@ -415,7 +439,7 @@ export const updateProfileSectionById = async (
     content: ProfileSection['content'];
     updatedBy: ProfileSection['updatedBy'];
   },
-): Promise<TResult<ProfileSection>> => {
+): Promise<TResult<'InternalServerError', ProfileSection>> => {
   try {
     const now = new Date();
     return await db
@@ -433,6 +457,7 @@ export const updateProfileSectionById = async (
   } catch (err) {
     return newErr({
       message: err instanceof Error ? err.message : String(err),
+      error: 'InternalServerError',
     });
   }
 };
@@ -440,7 +465,7 @@ export const updateProfileSectionById = async (
 export const getProfileSectionById = async (
   accountSid: string,
   { profileId, sectionId }: { profileId: Profile['id']; sectionId: ProfileSection['id'] },
-): Promise<TResult<ProfileSection>> => {
+): Promise<TResult<'InternalServerError', ProfileSection>> => {
   try {
     const data = await db.task<ProfileSection>(async t =>
       t.oneOrNone(getProfileSectionByIdSql, { accountSid, profileId, sectionId }),
@@ -450,6 +475,7 @@ export const getProfileSectionById = async (
   } catch (err) {
     return newErr({
       message: err instanceof Error ? err.message : String(err),
+      error: 'InternalServerError',
     });
   }
 };

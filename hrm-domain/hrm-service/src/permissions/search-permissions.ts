@@ -32,7 +32,8 @@ import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import isEqual from 'lodash/isEqual';
 import sortBy from 'lodash/sortBy';
 
-import { RulesFile, ConditionsSet } from './rulesMap';
+import type { RulesFile, TKConditionsSet } from './rulesMap';
+import type { TargetKind } from './actions';
 
 type Request = {
   can?: any;
@@ -44,12 +45,14 @@ export type SearchPermissions = {
   canOnlyViewOwnContacts?: boolean;
 };
 
-type TargetRule = Partial<Record<keyof RulesFile, ConditionsSet>>;
+type TargetRule<T extends TargetKind> = Partial<
+  Record<keyof RulesFile, TKConditionsSet<T>>
+>;
 
 const applySearchCasesPermissions = (
   req: Request,
   searchPermissions: SearchPermissions,
-  checkRule: ReturnType<typeof buildCheckRule>,
+  checkRule: ReturnType<typeof buildCheckRule<'case'>>,
 ) => {
   const { isSupervisor } = req.user;
   const canViewAsSupervisor = isSupervisor && checkRule({ viewCase: ['isSupervisor'] });
@@ -65,7 +68,7 @@ const applySearchCasesPermissions = (
 const applySearchContactsPermissions = (
   req: Request,
   searchPermissions: SearchPermissions,
-  checkRule: ReturnType<typeof buildCheckRule>,
+  checkRule: ReturnType<typeof buildCheckRule<'contact'>>,
 ) => {
   const { isSupervisor } = req.user;
   const canViewAsSupervisor =
@@ -87,12 +90,14 @@ const applySearchContactsPermissions = (
  * checkRule({ viewContact: ['isOwner'] }); // returns true or false
  * checkRule({ viewCase: ['isCreator'] });  // returns true or false
  */
-const buildCheckRule = (rulesFile: RulesFile) => (targetRule: TargetRule) => {
-  const rule = Object.keys(targetRule)[0];
-  const conditionSetIsEqual = conditionSet =>
-    isEqual(sortBy(conditionSet), sortBy(targetRule[rule]));
-  return rulesFile[rule].some(conditionSetIsEqual);
-};
+const buildCheckRule =
+  <T extends TargetKind>(rulesFile: RulesFile) =>
+  (targetRule: TargetRule<T>) => {
+    const rule = Object.keys(targetRule)[0];
+    const conditionSetIsEqual = conditionSet =>
+      isEqual(sortBy(conditionSet), sortBy(targetRule[rule]));
+    return rulesFile[rule].some(conditionSetIsEqual);
+  };
 
 export const getSearchPermissions = (req: Request, rulesFile: RulesFile) => {
   const checkRule = buildCheckRule(rulesFile);

@@ -26,22 +26,20 @@ import {
   CaseRecordCommon,
   CaseSearchCriteria,
   CaseSectionRecord,
-  NewCaseRecord,
   SearchQueryFunction,
   create,
   getById,
   search,
   searchByProfileId,
   update,
-} from './case-data-access';
+  updateStatus,
+  CaseRecordUpdate,
+} from './caseDataAccess';
 import { randomUUID } from 'crypto';
-import type { Contact } from '../contact/contact-data-access';
-import { setupCanForRules } from '../permissions/setupCanForRules';
+import type { Contact } from '../contact/contactDataAccess';
+import { InitializedCan } from '../permissions/initializeCanForRules';
 import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
-import {
-  bindApplyTransformations as bindApplyContactTransformations,
-  WithLegacyCategories,
-} from '../contact/contactService';
+import { bindApplyTransformations as bindApplyContactTransformations } from '../contact/contactService';
 import type { SearchPermissions } from '../permissions/search-permissions';
 import type { Profile } from '../profile/profile-data-access';
 import type { PaginationQuery } from '../search';
@@ -87,12 +85,10 @@ export type CaseService = CaseRecordCommon & {
   id: number;
   childName?: string;
   categories: Record<string, string[]>;
-  connectedContacts?: WithLegacyCategories<Contact>[];
+  connectedContacts?: Contact[];
 };
 
-type CaseRecordWithLegacyCategoryContacts = Omit<CaseRecord, 'connectedContacts'> & {
-  connectedContacts: WithLegacyCategories<Contact>[];
-};
+type CaseServiceUpdate = Partial<CaseService> & Pick<CaseService, 'updatedBy'>;
 
 /**
  * Converts a single list of all sections for a case to a set of arrays grouped by type
@@ -150,7 +146,7 @@ const caseSectionRecordsToInfo = (
   }, infoLists);
 };
 
-const addCategories = (caseItem: CaseRecordWithLegacyCategoryContacts) => {
+const addCategories = (caseItem: CaseRecord) => {
   const fstContact = (caseItem.connectedContacts ?? [])[0];
 
   return { ...caseItem, categories: fstContact?.rawJson?.categories ?? {} };
@@ -162,9 +158,9 @@ const addCategories = (caseItem: CaseRecordWithLegacyCategoryContacts) => {
  * @param workerSid
  */
 const caseToCaseRecord = (
-  inputCase: Partial<CaseService>,
+  inputCase: CaseServiceUpdate,
   workerSid: string,
-): Partial<NewCaseRecord> => {
+): CaseRecordUpdate => {
   const { connectedContacts, ...caseWithoutContacts } = inputCase;
   const info = inputCase.info ?? {};
   const caseSections: CaseSectionRecord[] = Object.entries(
@@ -191,7 +187,7 @@ const caseToCaseRecord = (
   };
 };
 
-const caseRecordToCase = (record: CaseRecordWithLegacyCategoryContacts): CaseService => {
+const caseRecordToCase = (record: CaseRecord): CaseService => {
   // Remove legacy case sections
   const info = {
     ...record.info,
@@ -211,17 +207,15 @@ const caseRecordToCase = (record: CaseRecordWithLegacyCategoryContacts): CaseSer
 };
 
 const mapContactTransformations =
-  ({ can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser }) =>
+  ({ can, user }: { can: InitializedCan; user: TwilioUser }) =>
   (caseRecord: CaseRecord) => {
     const applyTransformations = bindApplyContactTransformations(can, user);
-    const withTransformedContacts = {
+    return {
       ...caseRecord,
       ...(caseRecord.connectedContacts && {
         connectedContacts: caseRecord.connectedContacts.map(applyTransformations),
       }),
     };
-
-    return withTransformedContacts;
   };
 
 export const createCase = async (
@@ -245,8 +239,7 @@ export const createCase = async (
   const created = await create(record, accountSid);
 
   // A new case is always initialized with empty connected contacts. No need to apply mapContactTransformations here
-  // This also means the cast to the legacy category type is safe
-  return caseRecordToCase(created as CaseRecordWithLegacyCategoryContacts);
+  return caseRecordToCase(created);
 };
 
 export const updateCase = async (
@@ -254,7 +247,7 @@ export const updateCase = async (
   body: Partial<CaseService>,
   accountSid: CaseService['accountSid'],
   workerSid: CaseService['twilioWorkerId'],
-  { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
+  { can, user }: { can: InitializedCan; user: TwilioUser },
 ): Promise<CaseService> => {
   const caseFromDB: CaseRecord = await getById(id, accountSid);
   if (!caseFromDB) {
@@ -276,10 +269,29 @@ export const updateCase = async (
   return caseRecordToCase(withTransformedContacts);
 };
 
+export const updateCaseStatus = async (
+  id: CaseService['id'],
+  status: string,
+  accountSid: CaseService['accountSid'],
+  workerSid: CaseService['twilioWorkerId'],
+  { can, user }: { can: InitializedCan; user: TwilioUser },
+): Promise<CaseService> => {
+  const caseFromDB: CaseRecord = await getById(id, accountSid);
+  if (!caseFromDB) {
+    return;
+  }
+
+  const updated = await updateStatus(id, status, workerSid, accountSid);
+
+  const withTransformedContacts = mapContactTransformations({ can, user })(updated);
+
+  return caseRecordToCase(withTransformedContacts);
+};
+
 export const getCase = async (
   id: number,
   accountSid: string,
-  { can, user }: { can: ReturnType<typeof setupCanForRules>; user: TwilioUser },
+  { can, user }: { can: InitializedCan; user: TwilioUser },
 ): Promise<CaseService | undefined> => {
   const caseFromDb = await getById(id, accountSid);
 
@@ -348,7 +360,7 @@ const generalizedSearchCases =
       user,
       searchPermissions,
     }: {
-      can: ReturnType<typeof setupCanForRules>;
+      can: InitializedCan;
       user: TwilioUser;
       searchPermissions: SearchPermissions;
     },
@@ -412,11 +424,13 @@ export const getCasesByProfileId = async (
   profileId: Profile['id'],
   query: Pick<PaginationQuery, 'limit' | 'offset'>,
   ctx: {
-    can: ReturnType<typeof setupCanForRules>;
+    can: InitializedCan;
     user: TwilioUser;
     searchPermissions: SearchPermissions;
   },
-): Promise<TResult<Awaited<ReturnType<typeof searchCasesByProfileId>>>> => {
+): Promise<
+  TResult<'InternalServerError', Awaited<ReturnType<typeof searchCasesByProfileId>>>
+> => {
   try {
     const cases = await searchCasesByProfileId(accountSid, query, { profileId }, {}, ctx);
 
@@ -424,6 +438,7 @@ export const getCasesByProfileId = async (
   } catch (err) {
     return newErr({
       message: err instanceof Error ? err.message : String(err),
+      error: 'InternalServerError',
     });
   }
 };

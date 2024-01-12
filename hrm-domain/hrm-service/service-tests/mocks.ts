@@ -15,14 +15,18 @@
  */
 
 import { CaseService } from '../src/case/caseService';
-import { channelTypes } from '../src/contact/channelTypes';
-import { S3ContactMediaType } from '../src/conversation-media/conversation-media';
-import { Contact } from '../src/contact/contact-data-access';
-import { CreateContactPayload } from '../src/contact/contactService';
+import {
+  NewConversationMedia,
+  S3ContactMediaType,
+} from '../src/conversation-media/conversation-media';
+import { Contact } from '../src/contact/contactDataAccess';
+import { ContactRawJson } from '../src/contact/contactJson';
+import { NewContactRecord } from '../src/contact/sql/contactInsertSql';
+import { twilioUser } from '@tech-matters/twilio-worker-auth/dist';
 
 export const accountSid = 'ACCOUNT_SID';
 // TODO: Turn these into proper API types (will probably break so many tests...)
-export const contact1: CreateContactPayload = {
+export const contact1: NewContactRecord = {
   rawJson: {
     callType: 'Child calling about self',
     childInformation: {
@@ -82,7 +86,7 @@ export const contact1: CreateContactPayload = {
   identifierId: undefined,
 };
 
-export const contact2: CreateContactPayload = {
+export const contact2: NewContactRecord = {
   rawJson: {
     callType: 'Someone calling about a child',
     childInformation: {
@@ -142,7 +146,7 @@ export const contact2: CreateContactPayload = {
   identifierId: undefined,
 };
 
-export const nonData1: CreateContactPayload = {
+export const nonData1: NewContactRecord = {
   ...contact1,
   taskId: 'nonData1-task-sid',
   rawJson: {
@@ -153,7 +157,7 @@ export const nonData1: CreateContactPayload = {
     callerInformation: {},
   },
 };
-export const nonData2: CreateContactPayload = {
+export const nonData2: NewContactRecord = {
   ...contact2,
   taskId: 'nonData2-task-sid',
   rawJson: {
@@ -165,12 +169,12 @@ export const nonData2: CreateContactPayload = {
   },
 };
 // Non data contacts with actual information
-export const broken1: CreateContactPayload = {
+export const broken1: NewContactRecord = {
   ...contact1,
   taskId: 'broken1-task-sid',
   rawJson: { ...contact1.rawJson, callType: 'Joke' },
 };
-export const broken2: CreateContactPayload = {
+export const broken2: NewContactRecord = {
   ...contact2,
   taskId: 'broken2-task-sid',
   rawJson: { ...contact2.rawJson, callType: 'Blank' },
@@ -182,20 +186,20 @@ export const anotherChild: Contact['rawJson']['childInformation'] = {
   lastName: 'Curie',
 };
 
-export const anotherCaller: Contact['rawJson']['callerInformation'] = {
+export const anotherCaller: ContactRawJson['callerInformation'] = {
   ...contact2.rawJson.callerInformation,
   firstName: 'Marie',
   lastName: 'Curie',
 };
 
-export const another1: CreateContactPayload = {
+export const another1: NewContactRecord = {
   ...contact1,
   taskId: 'another1-task-sid',
   rawJson: { ...contact1.rawJson, childInformation: anotherChild },
   helpline: 'Helpline 1',
 };
 
-export const another2: CreateContactPayload = {
+export const another2: NewContactRecord = {
   ...contact2,
   taskId: 'another2-task-sid',
   rawJson: {
@@ -215,13 +219,13 @@ export const another2: CreateContactPayload = {
   number: '+12125551212',
 };
 
-export const noHelpline: CreateContactPayload = {
+export const noHelpline: NewContactRecord = {
   ...another1,
   taskId: 'noHelpline-task-sid',
   helpline: '',
 };
 
-export const withTaskId: CreateContactPayload = {
+export const withTaskId: NewContactRecord = {
   rawJson: {
     callType: 'Child calling about self',
     childInformation: {
@@ -291,28 +295,135 @@ export const case2: Partial<CaseService> = {
   accountSid,
 };
 
+const counsellorNotes = [
+  {
+    id: '1',
+    note: 'Child with covid-19',
+    twilioWorkerId: 'note-adder',
+    createdAt: '2022-01-01T00:00:00+00:00',
+  },
+  {
+    id: '2',
+    note: 'Child recovered from covid-19',
+    twilioWorkerId: 'other-note-adder',
+    createdAt: '2022-01-05T00:00:00+00:00',
+  },
+];
+const perpetrators = [
+  {
+    perpetrator: {
+      firstName: 'Jane',
+      lastName: 'Doe',
+    },
+    createdAt: '2021-03-15T20:56:22.640Z',
+    twilioWorkerId: 'perpetrator-adder',
+  },
+  {
+    perpetrator: {
+      firstName: 'J.',
+      lastName: 'Doe',
+      phone2: '+12345678',
+    },
+    createdAt: '2021-03-16T20:56:22.640Z',
+    twilioWorkerId: 'perpetrator-adder',
+  },
+];
+
+const households = [
+  {
+    household: {
+      firstName: 'Jane',
+      lastName: 'Doe',
+    },
+    createdAt: '2021-03-15T20:56:22.640Z',
+    twilioWorkerId: 'household-adder',
+  },
+  {
+    household: {
+      firstName: 'J.',
+      lastName: 'Doe',
+      phone2: '+12345678',
+    },
+    createdAt: '2021-03-16T20:56:22.640Z',
+    twilioWorkerId: 'household-adder',
+  },
+];
+
+const incidents = [
+  {
+    incident: {
+      date: '2021-03-03',
+      duration: '',
+      location: 'Other',
+      isCaregiverAware: null,
+      incidentWitnessed: null,
+      reactionOfCaregiver: '',
+      whereElseBeenReported: '',
+      abuseReportedElsewhere: null,
+    },
+    createdAt: '2021-03-16T20:56:22.640Z',
+    twilioWorkerId: 'incident-adder',
+  },
+];
+
+const referrals = [
+  {
+    id: '2503',
+    date: '2021-02-18',
+    comments: 'Referred to state agency',
+    createdAt: '2021-02-19T21:38:30.911+00:00',
+    referredTo: 'DREAMS',
+    twilioWorkerId: 'referral-adder',
+  },
+];
+
+const documents = [
+  {
+    id: '5e127299-17ba-4adf-a040-69dac9ca45bf',
+    document: {
+      comments: 'test file!',
+      fileName: 'sample1.pdf',
+    },
+    createdAt: '2021-09-21T17:57:52.346Z',
+    twilioWorkerId: 'document-adder',
+  },
+  {
+    id: '10d21f35-142c-4538-92db-d558f80898ae',
+    document: {
+      comments: '',
+      fileName: 'sample2.pdf',
+    },
+    createdAt: '2021-09-21T19:47:03.167Z',
+    twilioWorkerId: 'document-adder',
+  },
+];
+
+export const casePopulated = {
+  ...case1,
+  info: {
+    summary: 'something summery',
+    perpetrators,
+    households,
+    incidents,
+    documents,
+    referrals,
+    counsellorNotes,
+  },
+};
+
 export const workerSid = 'WK-worker-sid';
 
-export const withTaskIdAndTranscript: CreateContactPayload = {
-  ...withTaskId,
-  rawJson: {
-    ...withTaskId.rawJson,
-    childInformation: {
-      ...withTaskId.rawJson.childInformation,
-      firstName: 'withTaskIdAndTranscript',
-      lastName: 'withTaskIdAndTranscript',
-    },
-    conversationMedia: [
-      {
-        store: 'S3' as const,
-        type: S3ContactMediaType.TRANSCRIPT,
-        location: {
-          bucket: 'mock-bucket',
-          key: 'mockKey',
-        },
+export const conversationMedia: NewConversationMedia[] = [
+  {
+    storeType: 'S3',
+    storeTypeSpecificData: {
+      type: S3ContactMediaType.TRANSCRIPT,
+      location: {
+        bucket: 'mock-bucket',
+        key: 'mockKey',
       },
-    ],
+    },
   },
-  channel: channelTypes.web,
-  taskId: `${withTaskId.taskId}-transcript-permissions-test`,
-};
+];
+
+export const ALWAYS_CAN = { user: twilioUser(workerSid, []), can: () => true };
