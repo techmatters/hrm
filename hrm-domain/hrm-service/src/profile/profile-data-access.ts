@@ -66,10 +66,15 @@ export type ProfileWithCounts = Profile & ProfileCounts;
 
 export type IdentifierWithProfiles = Identifier & { profiles: ProfileWithCounts[] };
 
+type ProfileFlagAssociation = {
+  id: ProfileFlag['id'];
+  validUntil: Date | null;
+};
+
 export type ProfileWithRelationships = Profile &
   ProfileCounts & {
     identifiers: Identifier[];
-    profileFlags: ProfileFlag['id'][];
+    profileFlags: ProfileFlagAssociation[];
     profileSections: {
       sectionType: ProfileSection['sectionType'];
       id: ProfileSection['id'];
@@ -239,7 +244,7 @@ export type SearchParameters = {
 };
 
 type ListProfile = Pick<Profile, 'id' | 'name'> &
-  Pick<Identifier, 'identifier'> & { profileFlags: ProfileFlag['id'][] } & {
+  Pick<Identifier, 'identifier'> & { profileFlags: ProfileFlagAssociation[] } & {
     summary: ProfileSection['content'];
   };
 
@@ -282,6 +287,7 @@ export const associateProfileToProfileFlag =
     accountSid: string,
     profileId: number,
     profileFlagId: number,
+    validUntil: Date | null,
   ): Promise<TResult<'InternalServerError', null>> => {
     try {
       const now = new Date();
@@ -293,6 +299,7 @@ export const associateProfileToProfileFlag =
             profileFlagId,
             createdAt: now,
             updatedAt: now,
+            validUntil,
           }),
         );
 

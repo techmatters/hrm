@@ -15,6 +15,7 @@
  */
 
 import { TResult, isErr, newErr, newOk } from '@tech-matters/types';
+import { isFuture } from 'date-fns';
 
 import * as profileDB from './profile-data-access';
 import { db } from '../connection-pool';
@@ -114,16 +115,28 @@ export const associateProfileToProfileFlag = async (
   accountSid: string,
   profileId: profileDB.Profile['id'],
   profileFlagId: number,
-): Promise<TResult<'InternalServerError', profileDB.ProfileWithRelationships>> => {
+  validUntil: Date | null,
+): Promise<
+  TResult<
+    'InvalidParameterError' | 'InternalServerError',
+    profileDB.ProfileWithRelationships
+  >
+> => {
   try {
-    return await db.task<
-      TResult<'InternalServerError', profileDB.ProfileWithRelationships>
-    >(async t => {
+    if (validUntil && !isFuture(validUntil)) {
+      return newErr({
+        error: 'InvalidParameterError',
+        message: 'Invalid parameter "validUntil", must be a future date',
+      });
+    }
+
+    return await db.task(async t => {
       (
         await profileDB.associateProfileToProfileFlag(t)(
           accountSid,
           profileId,
           profileFlagId,
+          validUntil,
         )
       ).unwrap(); // unwrap the result to bubble error up (if any)
       const profile = await profileDB.getProfileById(t)(accountSid, profileId);
