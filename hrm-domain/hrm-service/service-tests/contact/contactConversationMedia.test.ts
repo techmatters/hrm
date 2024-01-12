@@ -15,10 +15,9 @@
  */
 
 import * as contactApi from '../../src/contact/contactService';
-import '../case-validation';
+import '../case/caseValidation';
 import { ContactRawJson } from '../../src/contact/contactJson';
-import { accountSid, contact1, workerSid } from '../mocks';
-import { twilioUser } from '@tech-matters/twilio-worker-auth/dist';
+import { accountSid, ALWAYS_CAN, contact1, workerSid } from '../mocks';
 import { getRequest, getServer, headers, setRules, useOpenRules } from '../server';
 import * as contactDb from '../../src/contact/contactDataAccess';
 import {
@@ -63,13 +62,11 @@ beforeEach(async () => {
   createdContact = await contactApi.createContact(
     accountSid,
     workerSid,
-    true,
     {
       ...contact1,
       rawJson: <ContactRawJson>{},
-      csamReports: [],
     },
-    { user: twilioUser(workerSid, []), can: () => true },
+    ALWAYS_CAN,
   );
 });
 afterEach(() => {

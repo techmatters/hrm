@@ -17,7 +17,7 @@
 import { createMockCaseInsert, createMockCaseRecord } from './mock-cases';
 import * as pgPromise from 'pg-promise';
 import { mockConnection, mockTask, mockTransaction } from '../mock-db';
-import * as caseDb from '../../src/case/case-data-access';
+import * as caseDb from '../../src/case/caseDataAccess';
 import each from 'jest-each';
 import { db } from '../../src/connection-pool';
 import { OrderByColumn } from '../../src/case/sql/case-search-sql';
@@ -333,6 +333,7 @@ describe('update', () => {
       counsellorNotes: [{ note: 'Child with covid-19', twilioWorkerId: 'contact-adder' }],
     },
     twilioWorkerId: 'ignored-twilio-worker-id',
+    updatedBy: 'used-twilio-worker-id',
   };
 
   beforeEach(() => {

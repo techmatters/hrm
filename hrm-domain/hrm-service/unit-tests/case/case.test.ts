@@ -14,16 +14,16 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import * as caseDb from '../../src/case/case-data-access';
+import * as caseDb from '../../src/case/caseDataAccess';
 import * as caseApi from '../../src/case/caseService';
 import { createMockCase, createMockCaseRecord } from './mock-cases';
 import each from 'jest-each';
-import { CaseRecord, NewCaseRecord } from '../../src/case/case-data-access';
-import '../../service-tests/case-validation';
+import { CaseRecord, NewCaseRecord } from '../../src/case/caseDataAccess';
+import '../../service-tests/case/caseValidation';
 import { workerSid, accountSid } from '../../service-tests/mocks';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
 
-jest.mock('../../src/case/case-data-access');
+jest.mock('../../src/case/caseDataAccess');
 const baselineCreatedDate = new Date(2013, 6, 13).toISOString();
 
 test('create case', async () => {

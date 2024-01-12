@@ -16,18 +16,29 @@
 
 import {
   AlbHandlerEvent,
+  AlbHandlerResult,
   handleAlbEvent,
   MethodHandlers,
 } from '@tech-matters/alb-handler';
-import getSignedS3Url from './getSignedS3Url';
+import getSignedS3Url, { type GetSignedS3UrlError } from './getSignedS3Url';
 
-/**
- * The alb handler will call the method handler based on the HTTP method.
- */
-const methodHandlers: MethodHandlers = {
+const methodHandlers: MethodHandlers<GetSignedS3UrlError> = {
   GET: getSignedS3Url,
 };
 
-export const handler = async (event: AlbHandlerEvent) => {
-  return handleAlbEvent({ event, methodHandlers });
+export const handler = async (event: AlbHandlerEvent): Promise<AlbHandlerResult> => {
+  return handleAlbEvent({
+    event,
+    methodHandlers,
+    mapError: {
+      InvalidObjectTypeError: 400,
+      MissingQueryParamsError: 400,
+      MissingRequiredQueryParamsError: 400,
+      InvalidFileTypeError: 400,
+      MissingRequiredFileParamsError: 400,
+      UnauthorizedError: 403,
+      MethodNotAllowedError: 405,
+      InternalServerError: 500,
+    },
+  });
 };

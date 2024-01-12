@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { CaseRecord, NewCaseRecord } from '../../src/case/case-data-access';
+import { CaseRecord, NewCaseRecord } from '../../src/case/caseDataAccess';
 import { CaseService } from '../../src/case/caseService';
 import { workerSid } from '../../service-tests/mocks';
 
@@ -37,6 +37,8 @@ export const createMockCaseRecord = (partial: Partial<CaseRecord>): CaseRecord =
       createdAt: baselineDate.toISOString(),
       updatedAt: baselineDate.toISOString(),
       updatedBy: null,
+      statusUpdatedAt: null,
+      statusUpdatedBy: null,
       caseSections: [
         {
           accountSid: 'ACCOUNT_SID',

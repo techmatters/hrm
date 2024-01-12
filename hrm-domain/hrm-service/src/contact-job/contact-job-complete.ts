@@ -30,7 +30,7 @@ import {
   pollCompletedContactJobsFromQueue,
 } from './client-sqs';
 
-import { assertExhaustive } from './assertExhaustive';
+import { assertExhaustive } from '@tech-matters/types';
 
 import type {
   CompletedContactJobBody,

@@ -15,7 +15,7 @@
  */
 
 import createError from 'http-errors';
-import * as casesDb from './case-data-access';
+import * as casesDb from './caseDataAccess';
 import * as caseApi from './caseService';
 import { publicEndpoint, SafeRouter } from '../permissions';
 import { canEditCase, canViewCase } from './canPerformCaseAction';
@@ -80,6 +80,29 @@ casesRouter.put('/:id', canEditCase, async (req, res) => {
     can: req.can,
     user,
   });
+  if (!updatedCase) {
+    throw createError(404);
+  }
+  res.json(updatedCase);
+});
+
+casesRouter.put('/:id/status', canEditCase, async (req, res) => {
+  const {
+    accountSid,
+    user,
+    body: { status },
+  } = req;
+  const { id } = req.params;
+  const updatedCase = await caseApi.updateCaseStatus(
+    id,
+    status,
+    accountSid,
+    user.workerSid,
+    {
+      can: req.can,
+      user,
+    },
+  );
   if (!updatedCase) {
     throw createError(404);
   }

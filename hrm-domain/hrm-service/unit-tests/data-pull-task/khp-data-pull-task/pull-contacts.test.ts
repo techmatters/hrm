@@ -92,7 +92,6 @@ describe('KHP Data Pull - Pull Contacts', () => {
       searchParams,
       defaultLimitAndOffset,
       maxPermissions,
-      true,
     );
   });
 

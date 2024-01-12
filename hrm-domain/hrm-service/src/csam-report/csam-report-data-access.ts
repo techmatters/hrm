@@ -20,11 +20,7 @@ import {
   selectSingleCsamReportByIdSql,
   selectCsamReportsByContactIdSql,
 } from './sql/csam-report-get-sql';
-import {
-  updateContactIdByCsamReportIdsSql,
-  updateAcknowledgedByCsamReportIdSql,
-} from './sql/csam-report-update-sql';
-import { txIfNotInOne } from '../sql';
+import { updateAcknowledgedByCsamReportIdSql } from './sql/csam-report-update-sql';
 
 export type NewCSAMReport = {
   reportType: 'counsellor-generated' | 'self-generated';
@@ -70,22 +66,6 @@ export const getByContactId = async (contactId: number, accountSid: string) =>
       accountSid,
     }),
   );
-
-export const updateContactIdByCsamReportIds =
-  (task?) =>
-  async (
-    contactId: number,
-    reportIds: CSAMReport['id'][],
-    accountSid: string,
-  ): Promise<CSAMReport[]> => {
-    return txIfNotInOne(task, conn =>
-      conn.manyOrNone<CSAMReport>(updateContactIdByCsamReportIdsSql, {
-        contactId,
-        reportIds,
-        accountSid,
-      }),
-    );
-  };
 
 export const updateAcknowledgedByCsamReportId =
   (acknowledged: boolean) => async (reportId: number, accountSid: string) =>

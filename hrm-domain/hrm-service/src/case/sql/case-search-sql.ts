@@ -16,7 +16,7 @@
 
 import { pgp } from '../../connection-pool';
 import { SELECT_CASE_SECTIONS } from './case-sections-sql';
-import { CaseListFilters, DateExistsCondition, DateFilter } from '../case-data-access';
+import { CaseListFilters, DateExistsCondition, DateFilter } from '../caseDataAccess';
 import { selectCoalesceCsamReportsByContactId } from '../../csam-report/sql/csam-report-get-sql';
 import { selectCoalesceReferralsByContactId } from '../../referral/sql/referral-get-sql';
 import { selectCoalesceConversationMediasByContactId } from '../../conversation-media/sql/conversation-media-get-sql';

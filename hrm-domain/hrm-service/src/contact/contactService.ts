@@ -29,12 +29,11 @@ import {
 } from './contactDataAccess';
 
 import { PaginationQuery, getPaginationElements } from '../search';
-import type { NewContactRecord } from './sql/contact-insert-sql';
+import type { NewContactRecord } from './sql/contactInsertSql';
 import { ContactRawJson, ReferralWithoutContactId } from './contactJson';
 import { InitializedCan } from '../permissions/initializeCanForRules';
 import { actionsMaps } from '../permissions';
 import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
-import { connectContactToCsamReports, CSAMReport } from '../csam-report/csam-report';
 import { createReferral } from '../referral/referral-model';
 import { createContactJob } from '../contact-job/contact-job';
 import { isChatChannel } from './channelTypes';
@@ -64,35 +63,9 @@ export type PatchPayload = Omit<
   referrals?: ReferralWithoutContactId[];
 };
 
-export type SearchContact = {
-  contactId: string;
-  overview: {
-    helpline: string;
-    dateTime: string;
-    customerNumber: string;
-    callType: string;
-    categories: {};
-    counselor: string;
-    notes: string;
-    channel: string;
-    conversationDuration: number;
-    createdBy: string;
-    taskId: string;
-  };
-  details: Contact['rawJson'];
-  csamReports: CSAMReport[];
-  referrals?: ReferralWithoutContactId[];
-  conversationMedia: ConversationMedia[];
-};
-
-export type CreateContactPayload = NewContactRecord & {
-  csamReports?: CSAMReport[];
-  referrals?: ReferralWithoutContactId[];
-};
-
 const filterExternalTranscripts = (contact: Contact): Contact => {
   const { conversationMedia, ...rest } = contact;
-  const filteredConversationMedia = conversationMedia.filter(
+  const filteredConversationMedia = (conversationMedia ?? []).filter(
     m => !isS3StoredTranscript(m),
   );
 
@@ -143,26 +116,6 @@ export const getContactByTaskId = async (
   return contact ? bindApplyTransformations(can, user)(contact) : undefined;
 };
 
-const getNewContactPayload = (
-  newContact: CreateContactPayload,
-): {
-  newContactPayload: NewContactRecord;
-  csamReportsPayload?: CSAMReport[];
-  referralsPayload?: ReferralWithoutContactId[];
-} => {
-  const {
-    csamReports: csamReportsPayload,
-    referrals: referralsPayload,
-    ...newContactPayload
-  } = newContact;
-
-  return {
-    newContactPayload,
-    csamReportsPayload,
-    referralsPayload,
-  };
-};
-
 const findS3StoredTranscriptPending = (
   contact: Contact,
   conversationMedia: ConversationMedia[],
@@ -199,95 +152,47 @@ const initProfile = async (conn, accountSid, contact) => {
 export const createContact = async (
   accountSid: string,
   createdBy: string,
-  finalize: boolean,
-  newContact: CreateContactPayload,
+  newContact: NewContactRecord,
   { can, user }: { can: InitializedCan; user: TwilioUser },
 ): Promise<Contact> => {
   for (let retries = 1; retries < 4; retries++) {
     try {
       return await db.tx(async conn => {
-        const { newContactPayload, csamReportsPayload, referralsPayload } =
-          getNewContactPayload(newContact);
-
         const { profileId, identifierId } = await initProfile(
           conn,
           accountSid,
-          newContactPayload,
+          newContact,
         );
 
         const completeNewContact: NewContactRecord = {
-          ...newContactPayload,
-          helpline: newContactPayload.helpline ?? '',
-          number: newContactPayload.number ?? '',
-          channel: newContactPayload.channel ?? '',
-          timeOfContact: newContactPayload.timeOfContact
-            ? new Date(newContactPayload.timeOfContact)
+          ...newContact,
+          helpline: newContact.helpline ?? '',
+          number: newContact.number ?? '',
+          channel: newContact.channel ?? '',
+          timeOfContact: newContact.timeOfContact
+            ? new Date(newContact.timeOfContact)
             : new Date(),
-          channelSid: newContactPayload.channelSid ?? '',
-          serviceSid: newContactPayload.serviceSid ?? '',
-          taskId: newContactPayload.taskId ?? '',
-          twilioWorkerId: newContactPayload.twilioWorkerId ?? '',
-          rawJson: newContactPayload.rawJson,
-          queueName: newContactPayload.queueName ?? '',
+          channelSid: newContact.channelSid ?? '',
+          serviceSid: newContact.serviceSid ?? '',
+          taskId: newContact.taskId ?? '',
+          twilioWorkerId: newContact.twilioWorkerId ?? '',
+          rawJson: newContact.rawJson,
+          queueName: newContact.queueName ?? '',
           createdBy,
           // Hardcoded to first profile for now, but will be updated to support multiple profiles
           profileId,
           identifierId,
         };
 
-        // create contact record (may return an exiting one cause idempotence)
-        const { contact, isNewRecord } = await create(conn)(
-          accountSid,
-          completeNewContact,
-          finalize,
-        );
-
-        let contactResult: Contact;
-
-        if (!isNewRecord) {
-          // if the contact already existed, skip the associations
-          contactResult = contact;
-        } else {
-          // associate csam reports
-          const csamReportIds = (csamReportsPayload ?? []).map(csr => csr.id);
-          const csamReports =
-            csamReportIds && csamReportIds.length
-              ? await connectContactToCsamReports(conn)(
-                  contact.id,
-                  csamReportIds,
-                  accountSid,
-                )
-              : [];
-
-          // create resources referrals
-          const referrals = referralsPayload ?? [];
-          const createdReferrals = [];
-
-          if (referrals.length) {
-            // Do this sequentially, it's on a single connection in a transaction anyway.
-            for (const referral of referrals) {
-              const { contactId, ...withoutContactId } = await createReferral(conn)(
-                accountSid,
-                {
-                  ...referral,
-                  contactId: contact.id.toString(),
-                },
-              );
-              createdReferrals.push(withoutContactId);
-            }
-          }
-
-          // Compose the final shape of a contact to return
-          contactResult = {
-            ...contact,
-            csamReports,
-            referrals: createdReferrals,
-          };
-        }
+        // create contact record (may return an existing one cause idempotence)
+        const { contact } = await create(conn)(accountSid, completeNewContact);
+        contact.referrals = [];
+        contact.csamReports = [];
+        contact.conversationMedia = [];
 
         const applyTransformations = bindApplyTransformations(can, user);
 
-        return applyTransformations(contactResult);
+        return applyTransformations(contact);
       });
     } catch (error) {
       // This operation can fail with a unique constraint violation if a contact with the same ID is being created concurrently
@@ -420,72 +325,6 @@ export const addConversationMediaToContact = async (
   });
 };
 
-function isNullOrEmptyObject(obj) {
-  return obj == null || Object.keys(obj).length === 0;
-}
-
-function isValidContact(contact) {
-  return (
-    contact &&
-    contact.rawJson &&
-    !isNullOrEmptyObject(contact.rawJson.callType) &&
-    typeof contact.rawJson.childInformation === 'object' &&
-    typeof contact.rawJson.callerInformation === 'object' &&
-    !isNullOrEmptyObject(contact.rawJson.caseInformation)
-  );
-}
-
-// Legacy support - shouldn't be required once all deployed flex clients are v2.12+
-function convertContactsToSearchResults(contacts: Contact[]): SearchContact[] {
-  return contacts
-    .map(contact => {
-      if (!isValidContact(contact)) {
-        const contactJson = JSON.stringify(contact);
-        console.log(`Invalid Contact: ${contactJson}`);
-        return null;
-      }
-
-      const contactId = contact.id;
-      const dateTime = contact.timeOfContact?.toISOString() ?? '--';
-      const customerNumber = contact.number;
-      const { callType, categories } = contact.rawJson;
-      const counselor = contact.twilioWorkerId;
-      const notes = contact.rawJson.caseInformation.callSummary ?? '--';
-      const {
-        channel,
-        conversationDuration,
-        createdBy,
-        csamReports,
-        helpline,
-        taskId,
-        referrals,
-        conversationMedia,
-      } = contact;
-
-      return {
-        contactId: contactId.toString(),
-        overview: {
-          helpline,
-          dateTime,
-          customerNumber,
-          callType,
-          categories,
-          counselor,
-          createdBy,
-          notes: notes.toString(),
-          channel,
-          conversationDuration,
-          taskId,
-        },
-        csamReports,
-        referrals,
-        conversationMedia,
-        details: contact.rawJson as ContactRawJson,
-      };
-    })
-    .filter(contact => contact);
-}
-
 /**
  * Check if the user can view any contact given:
  * - search permissions
@@ -522,10 +361,9 @@ const generalizedSearchContacts =
       user: TwilioUser;
       searchPermissions: SearchPermissions;
     },
-    originalFormat?: boolean,
   ): Promise<{
     count: number;
-    contacts: SearchContact[] | Contact[];
+    contacts: Contact[];
   }> => {
     const applyTransformations = bindApplyTransformations(can, user);
     const { limit, offset } = getPaginationElements(query);
@@ -568,7 +406,7 @@ const generalizedSearchContacts =
 
     return {
       count: unprocessedResults.count,
-      contacts: originalFormat ? contacts : convertContactsToSearchResults(contacts),
+      contacts,
     };
   };
 
@@ -585,20 +423,22 @@ export const getContactsByProfileId = async (
     user: TwilioUser;
     searchPermissions: SearchPermissions;
   },
-): Promise<TResult<Awaited<ReturnType<typeof searchContactsByProfileId>>>> => {
+): Promise<
+  TResult<'InternalServerError', Awaited<ReturnType<typeof searchContactsByProfileId>>>
+> => {
   try {
     const contacts = await searchContactsByProfileId(
       accountSid,
       { profileId },
       query,
       ctx,
-      true,
     );
 
     return newOk({ data: contacts });
   } catch (err) {
     return newErr({
       message: err instanceof Error ? err.message : String(err),
+      error: 'InternalServerError',
     });
   }
 };
