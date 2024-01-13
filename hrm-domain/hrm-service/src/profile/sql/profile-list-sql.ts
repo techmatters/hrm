@@ -16,6 +16,7 @@
 
 import { pgp } from '../../connection-pool';
 import { OrderByClauseItem, OrderByDirection } from '../../sql';
+import { getProfilesSqlBase } from './profile-get-sql';
 
 export const OrderByColumn = {
   ID: 'id',
@@ -49,27 +50,11 @@ const selectProfilesUnorderedSql = (whereClause: string) => `
 `;
 
 const listProfilesPaginatedSql = (whereClause: string, orderByClause: string) => `
-  WITH TargetProfiles AS (
+  ${getProfilesSqlBase(`
     ${selectProfilesUnorderedSql(whereClause)}
     ${orderByClause}
     OFFSET $<offset>
-    LIMIT $<limit>
-  ),
-  RelatedProfileFlags AS (
-    SELECT
-      ppf."profileId",
-      JSONB_AGG(JSONB_BUILD_OBJECT('id', ppf."profileFlagId", 'validUntil', ppf."validUntil")) AS "profileFlags"
-    FROM "ProfilesToProfileFlags" ppf
-    WHERE ppf."profileId" IN (SELECT id FROM TargetProfiles)
-    GROUP BY ppf."profileId"
-  )
-  SELECT "totalCount", profiles.id, profiles.name, identifiers.identifier, rpf."profileFlags", ps.content AS summary
-  FROM TargetProfiles tp
-  LEFT JOIN "Profiles" profiles ON profiles.id = tp.id AND profiles."accountSid" = tp."accountSid"
-  LEFT JOIN "ProfilesToIdentifiers" p2i ON p2i."profileId" = profiles.id AND p2i."accountSid" = profiles."accountSid"
-  LEFT JOIN "Identifiers" identifiers ON identifiers.id = p2i."identifierId"
-  LEFT JOIN RelatedProfileFlags rpf ON rpf."profileId" = profiles.id
-  LEFT JOIN "ProfileSections" ps ON ps."profileId" = profiles.id AND ps."accountSid" = profiles."accountSid" AND ps."sectionType" = 'summary'
+    LIMIT $<limit>`)}
   ${orderByClause};
 `;
 
