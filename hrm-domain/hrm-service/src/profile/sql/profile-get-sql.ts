@@ -22,13 +22,6 @@ const WHERE_IDENTIFIER_CLAUSE = `
   )
 `;
 
-// WITH TargetProfiles AS (
-//   ${selectProfilesUnorderedSql(whereClause)}
-//   ${orderByClause}
-//   OFFSET $<offset>
-//   LIMIT $<limit>
-// ),
-// export const getProfileByIdSql = `
 export const getProfilesSqlBase = (selectTargetProfilesQuery: string) => `
   WITH TargetProfiles AS (
     ${selectTargetProfilesQuery}
