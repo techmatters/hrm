@@ -79,14 +79,14 @@ export const getProfilesSqlBase = (selectTargetProfilesQuery: string) => `
   )
 
   SELECT
-    profiles.*,
+    tp.*,
     COALESCE(ri.identifiers, '[]'::jsonb) as identifiers,
     COALESCE(ccc."contactsCount"::int, 0) as "contactsCount",
     COALESCE(ccc."casesCount"::int, 0) as "casesCount",
     COALESCE(rpf."profileFlags", '[]'::jsonb) as "profileFlags",
     COALESCE(rps."profileSections", '[]'::jsonb) as "profileSections"
   FROM TargetProfiles tp
-  LEFT JOIN "Profiles" profiles ON profiles.id = tp.id AND profiles."accountSid" = tp."accountSid"
+  LEFT JOIN "Profiles" profiles ON profiles.id = tp.id AND profiles."accountSid" = tp."accountSid" -- join on profiles so Postgres will use the indexes
   LEFT JOIN RelatedIdentifiers ri ON profiles.id = ri."profileId"
   LEFT JOIN ContactCaseCounts ccc ON profiles.id = ccc."profileId"
   LEFT JOIN RelatedProfileFlags rpf ON profiles.id = rpf."profileId"
