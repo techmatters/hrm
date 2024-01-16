@@ -23,8 +23,9 @@ COPY resources-domain/packages /tmp/build/resources-domain/packages
 COPY resources-domain/resources-service /tmp/build/resources-domain/resources-service
 COPY resources-domain/tsconfig.json /tmp/build/resources-domain/tsconfig.json
 COPY hrm-domain/packages /tmp/build/hrm-domain/packages
-COPY hrm-domain/hrm-service /tmp/build/hrm-domain/hrm-core
+COPY hrm-domain/hrm-core /tmp/build/hrm-domain/hrm-core
 COPY hrm-domain/hrm-service /tmp/build/hrm-domain/hrm-service
+COPY hrm-domain/scheduled-tasks /tmp/build/hrm-domain/scheduled-tasks
 COPY hrm-domain/tsconfig.json /tmp/build/hrm-domain/tsconfig.json
 COPY package.json package-lock.json tsconfig.base.json hrm-domain/hrm-service/tsconfig.build.json /tmp/build/
 
