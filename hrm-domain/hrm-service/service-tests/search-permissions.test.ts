@@ -20,7 +20,10 @@ import { randomBytes } from 'crypto';
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 
 import { db } from '@tech-matters/hrm-core/src/connection-pool';
-import { TKConditionsSets, RulesFile } from '@tech-matters/hrm-core/src/permissions/rulesMap';
+import {
+  TKConditionsSets,
+  RulesFile,
+} from '@tech-matters/hrm-core/src/permissions/rulesMap';
 import {
   headers,
   getRequest,
