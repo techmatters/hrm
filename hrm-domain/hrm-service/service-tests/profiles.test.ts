@@ -135,7 +135,11 @@ describe('/profiles', () => {
           );
           expect(response.body.profiles[0].name).toBe('Murray');
           expect(response.body.profiles[1].name).toBe('Antonella');
-          expect(response.body.profiles[1].summary).toBe('some example content');
+          expect(
+            response.body.profiles[1].profileSections.some(
+              ps => ps.sectionType === 'summary',
+            ),
+          ).toBeTruthy();
           response.body.profiles.slice(2).forEach(p => expect(p.name).toBeNull());
         },
       },

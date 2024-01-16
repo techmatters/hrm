@@ -243,17 +243,12 @@ export type SearchParameters = {
   filters?: ProfilesListFilters;
 };
 
-type ListProfile = Pick<Profile, 'id' | 'name'> &
-  Pick<Identifier, 'identifier'> & { profileFlags: ProfileFlagAssociation[] } & {
-    summary: ProfileSection['content'];
-  };
-
 export const listProfiles = async (
   accountSid: string,
   listConfiguration: ProfileListConfiguration,
   { filters }: SearchParameters,
 ): Promise<
-  TResult<'InternalServerError', { profiles: ListProfile[]; count: number }>
+  TResult<'InternalServerError', { profiles: ProfileWithRelationships[]; count: number }>
 > => {
   try {
     const { limit, offset, sortBy, sortDirection } =
