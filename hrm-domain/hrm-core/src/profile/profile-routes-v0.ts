@@ -16,6 +16,7 @@
 
 import { isErr, mapHTTPError } from '@tech-matters/types';
 import createError from 'http-errors';
+import { isValid, toDate } from 'date-fns';
 
 import { SafeRouter, publicEndpoint } from '../permissions';
 import * as profileController from './profile';
@@ -160,8 +161,6 @@ profilesRouter.get('/flags', publicEndpoint, async (req, res, next) => {
   try {
     const { accountSid } = req;
 
-    console.log('accountSid', accountSid);
-
     const result = await profileController.getProfileFlags(accountSid);
 
     if (isErr(result)) {
@@ -182,15 +181,23 @@ profilesRouter.post(
     try {
       const { accountSid } = req;
       const { profileId, profileFlagId } = req.params;
+      const { validUntil } = req.query;
+
+      if (validUntil && !isValid(validUntil)) {
+        return next(createError(400));
+      }
 
       const result = await profileController.associateProfileToProfileFlag(
         accountSid,
         profileId,
         profileFlagId,
+        validUntil ? toDate(validUntil) : null,
       );
 
       if (isErr(result)) {
-        return next(mapHTTPError(result, { InternalServerError: 500 }));
+        return next(
+          mapHTTPError(result, { InvalidParameterError: 400, InternalServerError: 500 }),
+        );
       }
 
       if (!result.data) {

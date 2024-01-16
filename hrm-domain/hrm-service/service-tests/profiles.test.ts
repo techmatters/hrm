@@ -86,11 +86,13 @@ describe('/profiles', () => {
           accountSid,
           murray!.id,
           defaultFlags[0].id,
+          null,
         ),
         profilesDB.associateProfileToProfileFlag()(
           accountSid,
           antonella!.id,
           defaultFlags[1].id,
+          null,
         ),
         profilesDB.createProfileSection(antonella!.accountSid, {
           content: 'some example content',
@@ -136,7 +138,11 @@ describe('/profiles', () => {
           );
           expect(response.body.profiles[0].name).toBe('Murray');
           expect(response.body.profiles[1].name).toBe('Antonella');
-          expect(response.body.profiles[1].summary).toBe('some example content');
+          expect(
+            response.body.profiles[1].profileSections.some(
+              ps => ps.sectionType === 'summary',
+            ),
+          ).toBeTruthy();
           response.body.profiles.slice(2).forEach(p => expect(p.name).toBeNull());
         },
       },
@@ -268,9 +274,10 @@ describe('/profiles', () => {
 
     afterAll(async () => {
       await Promise.all(
-        Object.entries(createdContacts).map(([, c]) =>
+        Object.entries(createdContacts).flatMap(([, c]) => [
+          db.task(t => t.none(`DELETE FROM "ContactJobs"  WHERE "contactId" = ${c.id}`)),
           deleteFromTableById('Contacts')(c.id, c.accountSid),
-        ),
+        ]),
       );
       await Promise.all(
         Object.entries(createdCases).map(([, c]) =>
@@ -405,9 +412,12 @@ describe('/profiles', () => {
 
       afterAll(async () => {
         await Promise.all(
-          Object.entries(createdContacts).map(([, c]) =>
+          Object.entries(createdContacts).flatMap(([, c]) => [
+            db.task(t =>
+              t.none(`DELETE FROM "ContactJobs"  WHERE "contactId" = ${c.id}`),
+            ),
             deleteFromTableById('Contacts')(c.id, c.accountSid),
-          ),
+          ]),
         );
         await Promise.all(
           Object.entries(createdCases).map(([, c]) =>
@@ -485,8 +495,10 @@ describe('/profiles', () => {
 
     describe('/profiles/:profileId/flags', () => {
       describe('/profiles/:profileId/flags/:profileFlagId', () => {
-        const buildRoute = (profileId: number, profileFlagId: number) =>
-          `${baseRoute}/${profileId}/flags/${profileFlagId}`;
+        const buildRoute = (profileId: number, profileFlagId: number, validUntil?: any) =>
+          `${baseRoute}/${profileId}/flags/${profileFlagId}?${
+            validUntil ? `validUntil=${validUntil}` : ''
+          }`;
 
         let defaultFlags: profilesDB.ProfileFlag[];
         beforeAll(async () => {
@@ -496,7 +508,7 @@ describe('/profiles', () => {
         });
 
         describe('POST', () => {
-          afterAll(async () => {
+          afterEach(async () => {
             // Dissasociate
             db.task(t =>
               t.none(
@@ -526,24 +538,54 @@ describe('/profiles', () => {
               expectStatus: 200,
               expectFunction: (response, profileId, profileFlagId) => {
                 expect(response.body.id).toBe(profileId);
-                expect(response.body.profileFlags).toContain(profileFlagId);
+                expect(
+                  response.body.profileFlags.some(pf => pf.id === profileFlagId),
+                ).toBeTruthy();
               },
             },
             {
+              beforeFunction: (profileId, profileFlagId) =>
+                request.post(buildRoute(profileId, profileFlagId)).set(headers),
               description: 'association already exists',
               expectStatus: 500,
+            },
+            {
+              description: 'a valid "validUntil" date is sent',
+              expectStatus: 200,
+              expectFunction: (response, profileId, profileFlagId) => {
+                expect(response.body.id).toBe(profileId);
+                expect(
+                  response.body.profileFlags.some(pf => pf.id === profileFlagId),
+                ).toBeTruthy();
+              },
+            },
+            {
+              description: 'an invalid "validUntil" date is sent',
+              expectStatus: 400,
+              validUntil: 'not a date',
+            },
+            {
+              description: 'a future "validUntil" date is sent',
+              expectStatus: 400,
+              validUntil: '2020-01-05',
             },
           ]).test(
             'when $description, returns $expectStatus',
             async ({
+              beforeFunction,
               profileId = createdProfile.profiles[0].id,
               profileFlagId = defaultFlags[0].id,
+              validUntil,
               expectStatus,
               customHeaders,
               expectFunction,
             }) => {
+              if (beforeFunction) {
+                await beforeFunction(profileId, profileFlagId);
+              }
+
               const response = await request
-                .post(buildRoute(profileId, profileFlagId))
+                .post(buildRoute(profileId, profileFlagId, validUntil))
                 .set(customHeaders || headers);
               expect(response.statusCode).toBe(expectStatus);
               if (expectFunction) {
@@ -560,13 +602,14 @@ describe('/profiles', () => {
                 accountSid,
                 createdProfile.profiles[0].id,
                 defaultFlags[0].id,
+                null,
               )
             ).unwrap();
 
             const pfs = (
               await profilesDB.getProfileById()(accountSid, createdProfile.profiles[0].id)
             ).profileFlags;
-            if (!pfs.includes(defaultFlags[0].id)) {
+            if (!pfs.some(a => a.id === defaultFlags[0].id)) {
               throw new Error('Missing expected association');
             }
           });
