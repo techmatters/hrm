@@ -43,7 +43,7 @@ jest.mock('@tech-matters/s3-client', () => {
 });
 
 const getExpectedS3Params = (contact: contactApi.Contact) => {
-  const date = format(contact.updatedAt!, 'yyyy/MM/dd');
+  const date = format(parseISO(contact.updatedAt), 'yyyy/MM/dd');
   return {
     bucket,
     key: `hrm-data/${date}/contacts/${contact.id}.json`,
@@ -98,16 +98,16 @@ describe('KHP Data Pull - Pull Contacts', () => {
   test('should call upload to S3 with the correct params', async () => {
     const contact1 = {
       id: 1234,
-      createdAt: addDays(startDate, 1),
-      updatedAt: addDays(startDate, 1),
+      createdAt: addDays(startDate, 1).toISOString(),
+      updatedAt: addDays(startDate, 1).toISOString(),
       accountSid,
       csamReports: [],
     };
 
     const contact2 = {
       id: 2345,
-      createdAt: addDays(startDate, 2),
-      updatedAt: addDays(startDate, 2),
+      createdAt: addDays(startDate, 2).toISOString(),
+      updatedAt: addDays(startDate, 2).toISOString(),
       accountSid,
       csamReports: [],
     };

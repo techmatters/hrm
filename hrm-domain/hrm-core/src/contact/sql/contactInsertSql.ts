@@ -26,7 +26,7 @@ export type NewContactRecord = {
   number?: string;
   channel?: string;
   conversationDuration: number;
-  timeOfContact?: Date;
+  timeOfContact?: string;
   taskId: string;
   channelSid?: string;
   serviceSid?: string;

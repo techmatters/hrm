@@ -145,7 +145,7 @@ describe('publishDueContactJobs', () => {
         contactId: 123,
         lastAttempt: null,
         numberOfAttempts: 1,
-        requested: new Date(),
+        requested: new Date().toISOString(),
         resource: {
           accountSid: 'accountSid',
           id: 123,
@@ -153,7 +153,7 @@ describe('publishDueContactJobs', () => {
           twilioWorkerId: 'twilioWorkerId',
           serviceSid: 'serviceSid',
           channelSid: 'channelSid',
-          createdAt: new Date('01-01-2022'),
+          createdAt: new Date('01-01-2022').toISOString(),
           csamReports: [],
         },
       },

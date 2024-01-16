@@ -18,6 +18,7 @@ import { Contact } from '../../src/contact/contactDataAccess';
 
 const defaultContact: Contact = {
   id: 0,
+  createdAt: new Date(2000, 0, 1).toISOString(),
   accountSid: 'account-sid',
   number: 'Anonymous',
   rawJson: {
@@ -51,11 +52,11 @@ export class ContactBuilder {
 
   private createdBy: string;
 
-  private createdAt: Date;
+  private createdAt: string;
 
-  private finalizedAt: Date;
+  private finalizedAt: string;
 
-  private timeOfContact: Date;
+  private timeOfContact: string;
 
   private channel: string;
 
@@ -116,17 +117,17 @@ export class ContactBuilder {
   }
 
   withFinalizedAt(finalizedAt: Date): ContactBuilder {
-    this.finalizedAt = finalizedAt;
+    this.finalizedAt = finalizedAt.toISOString();
     return this;
   }
 
   withCreatedAt(createdAt: Date): ContactBuilder {
-    this.createdAt = createdAt;
+    this.createdAt = createdAt.toISOString();
     return this;
   }
 
   withTimeOfContact(timeOfContact: Date): ContactBuilder {
-    this.timeOfContact = timeOfContact;
+    this.timeOfContact = timeOfContact.toISOString();
     return this;
   }
 

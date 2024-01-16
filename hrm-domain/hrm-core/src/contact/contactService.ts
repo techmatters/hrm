@@ -169,9 +169,10 @@ export const createContact = async (
           helpline: newContact.helpline ?? '',
           number: newContact.number ?? '',
           channel: newContact.channel ?? '',
-          timeOfContact: newContact.timeOfContact
+          timeOfContact: (newContact.timeOfContact
             ? new Date(newContact.timeOfContact)
-            : new Date(),
+            : new Date()
+          ).toISOString(),
           channelSid: newContact.channelSid ?? '',
           serviceSid: newContact.serviceSid ?? '',
           taskId: newContact.taskId ?? '',

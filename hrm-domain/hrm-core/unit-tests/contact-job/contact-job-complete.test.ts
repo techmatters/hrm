@@ -24,6 +24,7 @@ import { ContactJobType, ContactJobAttemptResult } from '@tech-matters/types';
 import { JOB_MAX_ATTEMPTS } from '../../src/contact-job/contact-job-processor';
 
 import type { CompletedContactJobBody } from '@tech-matters/types';
+import { ContactJobRecord } from '../../src/contact-job/contact-job-data-access';
 
 jest.mock('../../src/contact-job/client-sqs');
 
@@ -396,21 +397,21 @@ describe('pollAndProcessCompletedContactJobs', () => {
         },
         attemptResult: ContactJobAttemptResult.FAILURE,
       };
-      const contactJob = {
+      const contactJob: ContactJobRecord = {
         id: 1,
         contactId: 123,
         // conversationMediaId: 999,
         accountSid: 'accountSid',
         jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
-        requested: new Date(),
+        requested: new Date().toISOString(),
         completed: null,
-        lastAttempt: new Date(),
+        lastAttempt: new Date().toISOString(),
         numberOfAttempts: 1,
         additionalPayload: null,
         completionPayload: null,
       };
 
-      const result = await contactJobComplete.getAttemptNumber(completedJob, contactJob);
+      const result = contactJobComplete.getAttemptNumber(completedJob, contactJob);
 
       expect(result).toBe(completedJob.attemptNumber);
     });
@@ -435,14 +436,14 @@ describe('pollAndProcessCompletedContactJobs', () => {
         attemptResult: ContactJobAttemptResult.FAILURE,
       };
 
-      const contactJob = {
+      const contactJob: ContactJobRecord = {
         id: 1,
         contactId: 123,
         accountSid: 'accountSid',
         jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
-        requested: new Date(),
+        requested: new Date().toISOString(),
         completed: null,
-        lastAttempt: new Date(),
+        lastAttempt: new Date().toISOString(),
         numberOfAttempts: 5,
         additionalPayload: null,
         completionPayload: null,

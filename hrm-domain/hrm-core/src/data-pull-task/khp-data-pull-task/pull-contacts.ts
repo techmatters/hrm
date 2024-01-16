@@ -21,6 +21,7 @@ import { putS3Object } from '@tech-matters/s3-client';
 import { getContext, maxPermissions } from './context';
 import * as contactApi from '../../contact/contactService';
 import { autoPaginate, defaultLimitAndOffset } from './auto-paginate';
+import { parseISO } from 'date-fns';
 
 const getSearchParams = (startDate: Date, endDate: Date) => ({
   dateFrom: formatISO(startDate),
@@ -47,7 +48,7 @@ export const pullContacts = async (startDate: Date, endDate: Date) => {
       1) 'totalCount' property, which I think is wrong, so I'm deleting it
     */
     delete (contact as any).totalCount;
-    const date = format(contact.updatedAt, 'yyyy/MM/dd');
+    const date = format(parseISO(contact.updatedAt), 'yyyy/MM/dd');
     const key = `hrm-data/${date}/contacts/${contact.id}.json`;
     const body = JSON.stringify(contact);
     const params = { bucket, key, body };

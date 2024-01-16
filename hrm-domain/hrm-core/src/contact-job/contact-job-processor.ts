@@ -37,7 +37,7 @@ export function processContactJobs() {
     return setInterval(async () => {
       try {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const completedJobs = await pollAndProcessCompletedContactJobs(JOB_MAX_ATTEMPTS);
+        await pollAndProcessCompletedContactJobs(JOB_MAX_ATTEMPTS);
 
         const dueContactJobs = await pullDueContactJobs(
           subMilliseconds(new Date(), JOB_RETRY_INTERVAL_MILLISECONDS),
@@ -45,7 +45,7 @@ export function processContactJobs() {
         );
 
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const publishedContactJobResult = await publishDueContactJobs(dueContactJobs);
+        await publishDueContactJobs(dueContactJobs);
       } catch (err) {
         console.error(
           new ContactJobPollerError(
