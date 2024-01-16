@@ -29,7 +29,8 @@ import { twilioUser } from '@tech-matters/twilio-worker-auth';
 import { newOk } from '@tech-matters/types';
 import * as profilesDB from '../../src/profile/profile-data-access';
 import { NewContactRecord } from '../../src/contact/sql/contactInsertSql';
-import { ALWAYS_CAN } from '../../service-tests/mocks';
+import { ALWAYS_CAN } from '../mocks';
+import '@tech-matters/testing/expectToParseAsDate';
 
 jest.mock('../../src/contact/contactDataAccess');
 
@@ -60,6 +61,7 @@ const getIdentifierWithProfilesSpy = jest
   );
 
 const workerSid = 'WORKER_SID';
+const baselineDate = new Date(2020, 1, 1);
 
 const mockContact: contactDb.Contact = {
   id: 1234,
@@ -68,6 +70,7 @@ const mockContact: contactDb.Contact = {
   referrals: [],
   conversationMedia: [],
   rawJson: {} as any,
+  createdAt: baselineDate.toISOString(),
 };
 
 describe('createContact', () => {
@@ -95,7 +98,7 @@ describe('createContact', () => {
     queueName: 'Q',
     conversationDuration: 100,
     twilioWorkerId: 'owning-worker-id',
-    timeOfContact: new Date(2010, 5, 15),
+    timeOfContact: new Date(2010, 5, 15).toISOString(),
     createdBy: 'ignored-worker-id',
     helpline: 'a helpline',
     taskId: 'a task',
@@ -213,7 +216,7 @@ describe('createContact', () => {
     );
     expect(createContactMock).toHaveBeenCalledWith('parameter account-sid', {
       ...payload,
-      timeOfContact: expect.any(Date),
+      timeOfContact: expect.toParseAsDate(),
       createdBy: 'contact-creator',
       profileId: 1,
       identifierId: 1,

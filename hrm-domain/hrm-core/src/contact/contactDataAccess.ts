@@ -35,9 +35,9 @@ import { TOUCH_CASE_SQL } from '../case/sql/case-update-sql';
 export type ExistingContactRecord = {
   id: number;
   accountSid: string;
-  createdAt?: Date;
-  finalizedAt?: Date;
-  updatedAt?: Date;
+  createdAt: string;
+  finalizedAt?: string;
+  updatedAt?: string;
   updatedBy?: string;
 } & Partial<NewContactRecord>;
 
@@ -66,7 +66,7 @@ export type SearchParameters = {
  */
 export type ContactUpdates = Omit<
   ExistingContactRecord,
-  'id' | 'accountSid' | 'rawJson'
+  'id' | 'accountSid' | 'rawJson' | 'createdAt' | 'finalizedAt'
 > &
   Partial<ContactRawJson>;
 

@@ -14,23 +14,19 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import pgPromise from 'pg-promise';
-import config from './config/db';
-
-export const pgp = pgPromise({});
-
-export const db = pgp(
-  `postgres://${encodeURIComponent(config.username)}:${encodeURIComponent(
-    config.password,
-  )}@${config.host}:${config.port}/${encodeURIComponent(
-    config.database,
-  )}?&application_name=hrm-service`,
-);
-
-const { builtins } = pgp.pg.types;
-
-[builtins.DATE, builtins.TIMESTAMP, builtins.TIMESTAMPTZ].forEach(typeId => {
-  pgp.pg.types.setTypeParser(typeId, value => {
-    return value === null ? null : new Date(value);
-  });
-});
+module.exports = config => {
+  return (
+    config || {
+      preset: 'ts-jest',
+      rootDir: '.',
+      maxWorkers: 1,
+      setupFiles: ['<rootDir>/setTestEnvVars.js'],
+      globals: {
+        'ts-jest': {
+          // to give support to const enum. Not working, conflicting with module resolution
+          useExperimentalLanguageServer: true,
+        },
+      },
+    }
+  );
+};

@@ -14,17 +14,17 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import * as contactApi from '../../src/contact/contactService';
+import * as contactApi from '@tech-matters/hrm-core/src/contact/contactService';
 import '../case/caseValidation';
-import { ContactRawJson } from '../../src/contact/contactJson';
+import { ContactRawJson } from '@tech-matters/hrm-core/src/contact/contactJson';
 import { accountSid, ALWAYS_CAN, contact1, workerSid } from '../mocks';
 import { getRequest, getServer, headers, setRules, useOpenRules } from '../server';
-import * as contactDb from '../../src/contact/contactDataAccess';
+import * as contactDb from '@tech-matters/hrm-core/src/contact/contactDataAccess';
 import {
   isS3StoredTranscript,
   NewConversationMedia,
   S3ContactMediaType,
-} from '../../src/conversation-media/conversation-media-data-access';
+} from '@tech-matters/hrm-core/src/conversation-media/conversation-media-data-access';
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import {
   cleanupCases,
@@ -34,7 +34,7 @@ import {
   cleanupReferrals,
 } from './db-cleanup';
 import each from 'jest-each';
-import { chatChannels } from '../../src/contact/channelTypes';
+import { chatChannels } from '@tech-matters/hrm-core/src/contact/channelTypes';
 import { ContactJobType } from '@tech-matters/types/dist/ContactJob';
 import { ruleFileWithOneActionOverride } from '../permissions-overrides';
 import { selectJobsByContactId } from './db-validations';

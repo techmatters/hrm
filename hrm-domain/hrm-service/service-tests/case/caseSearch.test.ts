@@ -18,18 +18,21 @@
 import { add, addDays } from 'date-fns';
 import each from 'jest-each';
 
-import * as caseApi from '../../src/case/caseService';
-import { CaseService, getCase } from '../../src/case/caseService';
-import * as caseDb from '../../src/case/caseDataAccess';
-import { CaseListFilters, DateExistsCondition } from '../../src/case/caseDataAccess';
-import { db } from '../../src/connection-pool';
+import * as caseApi from '@tech-matters/hrm-core/src/case/caseService';
+import { CaseService, getCase } from '@tech-matters/hrm-core/src/case/caseService';
+import * as caseDb from '@tech-matters/hrm-core/src/case/caseDataAccess';
+import {
+  CaseListFilters,
+  DateExistsCondition,
+} from '@tech-matters/hrm-core/src/case/caseDataAccess';
+import { db } from '@tech-matters/hrm-core/src/connection-pool';
 import {
   fillNameAndPhone,
   validateCaseListResponse,
   validateSingleCaseResponse,
 } from './caseValidation';
-import * as contactDb from '../../src/contact/contactDataAccess';
-import { Contact } from '../../src/contact/contactDataAccess';
+import * as contactDb from '@tech-matters/hrm-core/src/contact/contactDataAccess';
+import { Contact } from '@tech-matters/hrm-core/src/contact/contactDataAccess';
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import * as mocks from '../mocks';
 import { ruleFileWithOneActionOverride } from '../permissions-overrides';
@@ -37,10 +40,10 @@ import {
   addConversationMediaToContact,
   connectContactToCase,
   createContact,
-} from '../../src/contact/contactService';
+} from '@tech-matters/hrm-core/src/contact/contactService';
 import { getRequest, getServer, headers, setRules, useOpenRules } from '../server';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
-import { isS3StoredTranscript } from '../../src/conversation-media/conversation-media';
+import { isS3StoredTranscript } from '@tech-matters/hrm-core/src/conversation-media/conversation-media';
 import { ALWAYS_CAN } from '../mocks';
 
 useOpenRules();
@@ -125,7 +128,7 @@ const insertSampleCases = async ({
         contactNames[i % contactNames.length],
         contactNumbers[i % contactNumbers.length],
       );
-      contactToCreate.timeOfContact = new Date();
+      contactToCreate.timeOfContact = new Date().toISOString();
       contactToCreate.taskId = undefined;
       contactToCreate.channelSid = `CHANNEL_${i}`;
       contactToCreate.serviceSid = 'SERVICE_SID';
@@ -221,7 +224,7 @@ describe('/cases route', () => {
         const contactToCreate = fillNameAndPhone({
           ...contact1,
           twilioWorkerId: workerSid,
-          timeOfContact: new Date(),
+          timeOfContact: new Date().toISOString(),
           taskId: `TASK_SID`,
           channelSid: `CHANNEL_SID`,
           serviceSid: 'SERVICE_SID',
@@ -229,7 +232,7 @@ describe('/cases route', () => {
           identifierId: undefined,
         });
 
-        contactToCreate.timeOfContact = new Date();
+        contactToCreate.timeOfContact = new Date().toISOString();
         contactToCreate.taskId = `TASK_SID`;
         contactToCreate.channelSid = `CHANNEL_SID`;
         contactToCreate.serviceSid = 'SERVICE_SID';
@@ -517,7 +520,7 @@ describe('/cases route', () => {
           );
           const toCreate = fillNameAndPhone({ ...contact1, twilioWorkerId: workerSid });
 
-          toCreate.timeOfContact = new Date();
+          toCreate.timeOfContact = new Date().toISOString();
           toCreate.taskId = `TASK_SID`;
           toCreate.channelSid = `CHANNEL_SID`;
           toCreate.serviceSid = 'SERVICE_SID';

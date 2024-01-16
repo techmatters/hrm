@@ -18,15 +18,15 @@
 
 import each from 'jest-each';
 
-import { db } from '../../src/connection-pool';
-import * as caseApi from '../../src/case/caseService';
+import { db } from '@tech-matters/hrm-core/src/connection-pool';
+import * as caseApi from '@tech-matters/hrm-core/src/case/caseService';
 import {
   createContact,
   connectContactToCase,
   addConversationMediaToContact,
-} from '../../src/contact/contactService';
-import { CaseService } from '../../src/case/caseService';
-import * as caseDb from '../../src/case/caseDataAccess';
+} from '@tech-matters/hrm-core/src/contact/contactService';
+import { CaseService } from '@tech-matters/hrm-core/src/case/caseService';
+import * as caseDb from '@tech-matters/hrm-core/src/case/caseDataAccess';
 import { convertCaseInfoToExpectedInfo, without } from './caseValidation';
 import { isBefore } from 'date-fns';
 
@@ -36,7 +36,7 @@ import * as mocks from '../mocks';
 import { ruleFileWithOneActionOverride } from '../permissions-overrides';
 import { headers, getRequest, getServer, setRules, useOpenRules } from '../server';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
-import { isS3StoredTranscript } from '../../src/conversation-media/conversation-media';
+import { isS3StoredTranscript } from '@tech-matters/hrm-core/src/conversation-media/conversation-media';
 import { casePopulated } from '../mocks';
 
 useOpenRules();

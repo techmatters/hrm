@@ -19,8 +19,8 @@ import * as caseApi from '../../src/case/caseService';
 import { createMockCase, createMockCaseRecord } from './mock-cases';
 import each from 'jest-each';
 import { CaseRecord, NewCaseRecord } from '../../src/case/caseDataAccess';
-import '../../service-tests/case/caseValidation';
-import { workerSid, accountSid } from '../../service-tests/mocks';
+import '@tech-matters/testing/expectToParseAsDate';
+import { workerSid, accountSid } from '../mocks';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
 
 jest.mock('../../src/case/caseDataAccess');
@@ -140,6 +140,7 @@ describe('searchCases', () => {
         id: 1,
         accountSid,
         csamReports: [],
+        createdAt: baselineCreatedDate,
         rawJson: {
           childInformation: { firstName: 'name', lastName: 'last' },
           caseInformation: {},
@@ -173,6 +174,7 @@ describe('searchCases', () => {
     connectedContacts: [
       {
         id: 1,
+        createdAt: baselineCreatedDate,
         accountSid,
         csamReports: [],
         rawJson: {

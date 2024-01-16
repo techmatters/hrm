@@ -19,7 +19,7 @@ import each from 'jest-each';
 import { initializeCanForRules } from '../../src/permissions/initializeCanForRules';
 import { actionsMaps } from '../../src/permissions';
 import { RulesFile } from '../../src/permissions/rulesMap';
-import { workerSid, accountSid } from '../../service-tests/mocks';
+import { workerSid, accountSid } from '../mocks';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
 import { TargetKind } from '../../src/permissions/actions';
 import { subDays, subHours } from 'date-fns';

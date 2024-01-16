@@ -15,16 +15,16 @@
  */
 
 import each from 'jest-each';
-import { isAfter } from 'date-fns';
+import { isAfter, parseISO } from 'date-fns';
 import timers from 'timers';
 
 import { withTaskId, accountSid, workerSid } from '../../mocks';
-import * as contactJobApi from '../../../src/contact-job/contact-job-data-access';
-import { db } from '../../../src/connection-pool';
+import * as contactJobApi from '@tech-matters/hrm-core/src/contact-job/contact-job-data-access';
+import { db } from '@tech-matters/hrm-core/src/connection-pool';
 import '../../case/caseValidation';
-import * as conversationMediaApi from '../../../src/conversation-media/conversation-media';
-import { chatChannels } from '../../../src/contact/channelTypes';
-import { JOB_MAX_ATTEMPTS } from '../../../src/contact-job/contact-job-processor';
+import * as conversationMediaApi from '@tech-matters/hrm-core/src/conversation-media/conversation-media';
+import { chatChannels } from '@tech-matters/hrm-core/src/contact/channelTypes';
+import { JOB_MAX_ATTEMPTS } from '@tech-matters/hrm-core/src/contact-job/contact-job-processor';
 
 import {
   CompletedContactJobBody,
@@ -32,8 +32,8 @@ import {
   ContactJobType,
 } from '@tech-matters/types';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
-import { NewConversationMedia } from '../../../src/conversation-media/conversation-media';
-import { NewContactRecord } from '../../../src/contact/sql/contactInsertSql';
+import { NewConversationMedia } from '@tech-matters/hrm-core/src/conversation-media/conversation-media';
+import { NewContactRecord } from '@tech-matters/hrm-core/src/contact/sql/contactInsertSql';
 
 const { S3ContactMediaType, isS3StoredTranscriptPending } = conversationMediaApi;
 
@@ -67,19 +67,19 @@ const cleanupContactsJobs = () => {
   return db.task(t => t.none(`DELETE FROM "ContactJobs" ${idsWhereClause}`));
 };
 
-let contactApi: typeof import('../../../src/contact/contactService');
-let SQSClient: typeof import('../../../src/contact-job/client-sqs');
-let contactJobComplete: typeof import('../../../src/contact-job/contact-job-complete');
-let contactJobPublish: typeof import('../../../src/contact-job/contact-job-publish');
-let contactJobProcessor: typeof import('../../../src/contact-job/contact-job-processor');
+let contactApi: typeof import('@tech-matters/hrm-core/src/contact/contactService');
+let SQSClient: typeof import('@tech-matters/hrm-core/src/contact-job/client-sqs');
+let contactJobComplete: typeof import('@tech-matters/hrm-core/src/contact-job/contact-job-complete');
+let contactJobPublish: typeof import('@tech-matters/hrm-core/src/contact-job/contact-job-publish');
+let contactJobProcessor: typeof import('@tech-matters/hrm-core/src/contact-job/contact-job-processor');
 
 beforeEach(() => {
   jest.isolateModules(() => {
-    contactApi = require('../../../src/contact/contactService');
-    SQSClient = require('../../../src/contact-job/client-sqs');
-    contactJobComplete = require('../../../src/contact-job/contact-job-complete');
-    contactJobPublish = require('../../../src/contact-job/contact-job-publish');
-    contactJobProcessor = require('../../../src/contact-job/contact-job-processor');
+    contactApi = require('@tech-matters/hrm-core/src/contact/contactService');
+    SQSClient = require('@tech-matters/hrm-core/src/contact-job/client-sqs');
+    contactJobComplete = require('@tech-matters/hrm-core/src/contact-job/contact-job-complete');
+    contactJobPublish = require('@tech-matters/hrm-core/src/contact-job/contact-job-publish');
+    contactJobProcessor = require('@tech-matters/hrm-core/src/contact-job/contact-job-processor');
   });
 });
 
@@ -143,7 +143,9 @@ const createChatContact = async (channel: string, startedTimestamp: number) => {
 
   const retrieveContactTranscriptJob = retrieveContactTranscriptJobs[0];
 
-  expect(isAfter(retrieveContactTranscriptJob.requested, startedTimestamp)).toBeTruthy();
+  expect(
+    isAfter(parseISO(retrieveContactTranscriptJob.requested), startedTimestamp),
+  ).toBeTruthy();
   expect(retrieveContactTranscriptJob.completed).toBeNull();
   expect(retrieveContactTranscriptJob.lastAttempt).toBeNull();
   expect(retrieveContactTranscriptJob.numberOfAttempts).toBe(0);
@@ -205,7 +207,7 @@ describe('publish retrieve-transcript job type', () => {
     expect(publishRetrieveContactTranscriptSpy).toHaveBeenCalledTimes(1);
     expect(publishRetrieveContactTranscriptSpy).toHaveBeenCalledWith({
       ...retrieveContactTranscriptJob,
-      lastAttempt: expect.any(Date),
+      lastAttempt: expect.toParseAsDate(),
       numberOfAttempts: 1,
       resource: {
         ...contact,
@@ -228,7 +230,10 @@ describe('publish retrieve-transcript job type', () => {
     expect(updatedRetrieveContactTranscriptJob.completed).toBeNull();
 
     expect(
-      isAfter(updatedRetrieveContactTranscriptJob.lastAttempt!, startedTimestamp),
+      isAfter(
+        parseISO(updatedRetrieveContactTranscriptJob.lastAttempt),
+        startedTimestamp,
+      ),
     ).toBeTruthy();
     expect(updatedRetrieveContactTranscriptJob.numberOfAttempts).toBe(1);
   });
@@ -273,7 +278,7 @@ describe('publish retrieve-transcript job type', () => {
       expect(publishRetrieveContactTranscriptSpy).toHaveBeenCalledTimes(1);
       expect(publishRetrieveContactTranscriptSpy).toHaveBeenCalledWith({
         ...retrieveContactTranscriptJob,
-        lastAttempt: expect.any(Date),
+        lastAttempt: expect.toParseAsDate(),
         numberOfAttempts: 1,
         resource: {
           ...contact,
@@ -300,7 +305,10 @@ describe('publish retrieve-transcript job type', () => {
 
       expect(updatedRetrieveContactTranscriptJob.completed).toBeNull();
       expect(
-        isAfter(updatedRetrieveContactTranscriptJob.lastAttempt!, startedTimestamp),
+        isAfter(
+          parseISO(updatedRetrieveContactTranscriptJob.lastAttempt),
+          startedTimestamp,
+        ),
       ).toBeTruthy();
       expect(updatedRetrieveContactTranscriptJob.numberOfAttempts).toBe(1);
     },
@@ -411,7 +419,10 @@ describe('complete retrieve-transcript job type', () => {
         throw new Error('updatedRetrieveContactTranscriptJob is null!');
 
       expect(
-        isAfter(updatedRetrieveContactTranscriptJob.completed!, startedTimestamp),
+        isAfter(
+          parseISO(updatedRetrieveContactTranscriptJob.completed),
+          startedTimestamp,
+        ),
       ).toBeTruthy();
       expect(updatedRetrieveContactTranscriptJob.completionPayload).toMatchObject({
         message: 'Job processed successfully',
@@ -546,7 +557,10 @@ describe('complete retrieve-transcript job type', () => {
         // expect(publishRetrieveContactTranscriptSpy).toHaveBeenCalledTimes(1);
 
         expect(
-          isAfter(updatedRetrieveContactTranscriptJob.completed!, startedTimestamp),
+          isAfter(
+            parseISO(updatedRetrieveContactTranscriptJob.completed),
+            startedTimestamp,
+          ),
         ).toBeTruthy();
         expect(updatedRetrieveContactTranscriptJob.completionPayload).toMatchObject({
           message: 'Attempts limit reached',

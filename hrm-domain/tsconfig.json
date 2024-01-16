@@ -2,11 +2,12 @@
   // This has to be node16 until we upgrade typescript because
   "extends": "@tsconfig/node16/tsconfig.json",
   "compilerOptions": {
+    "allowJs": true,
     "esModuleInterop": true,
-    "strict": true,
     "allowSyntheticDefaultImports": true,
     "checkJs": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "strict": false
   },
   "ts-node": {
     "transpileOnly": true,

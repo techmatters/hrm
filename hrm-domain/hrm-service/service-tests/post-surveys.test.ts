@@ -16,8 +16,8 @@
 
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import * as mocks from './mocks';
-import { db } from '../src/connection-pool';
-import { create } from '../src/post-survey/post-survey-data-access';
+import { db } from '@tech-matters/hrm-core/src/connection-pool';
+import { create } from '@tech-matters/hrm-core/src/post-survey/post-survey-data-access';
 import { headers, getRequest, getServer, useOpenRules, basicHeaders } from './server';
 
 useOpenRules();

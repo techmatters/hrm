@@ -14,10 +14,4 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { pullData } from '../data-pull-task/khp-data-pull-task';
-
-const startDateISO = process.argv[2];
-const endDateISO = process.argv[3];
-const hl = process.argv[4];
-
-pullData(startDateISO, endDateISO, hl);
+import '@tech-matters/data-pull-task';

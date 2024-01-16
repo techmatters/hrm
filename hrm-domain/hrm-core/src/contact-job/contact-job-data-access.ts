@@ -39,9 +39,9 @@ export type ContactJobRecord = {
   contactId: number;
   accountSid: string;
   jobType: string;
-  requested: Date;
-  completed: Date | null;
-  lastAttempt: Date | null;
+  requested: string;
+  completed: string | null;
+  lastAttempt: string | null;
   numberOfAttempts: number;
   additionalPayload: any;
   completionPayload: any;

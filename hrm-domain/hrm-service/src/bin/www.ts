@@ -21,7 +21,7 @@ import express from 'express';
  * Module dependencies.
  */
 console.log(new Date(Date.now()).toLocaleString() + ': trying to initialize www');
-import { configureService } from '../app';
+import { configureService } from '@tech-matters/hrm-core/src/app';
 import {
   configureInternalResourcesService,
   configureResourcesService,

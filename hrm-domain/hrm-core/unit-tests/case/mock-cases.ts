@@ -16,7 +16,7 @@
 
 import { CaseRecord, NewCaseRecord } from '../../src/case/caseDataAccess';
 import { CaseService } from '../../src/case/caseService';
-import { workerSid } from '../../service-tests/mocks';
+import { workerSid } from '../mocks';
 
 const baselineDate = new Date(2000, 5, 1);
 

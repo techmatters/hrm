@@ -15,8 +15,8 @@
  */
 
 import { handleSignals } from './handleSignals';
-import { cleanupContactJobs } from '../contact-job/contact-job-cleanup';
-import { enableCleanupJobs } from '../featureFlags';
+import { cleanupContactJobs } from '@tech-matters/hrm-core/src/contact-job/contact-job-cleanup';
+import { enableCleanupJobs } from '@tech-matters/hrm-core/src/featureFlags';
 
 const gracefulExit = async () => {
   //TODO: this should probably handle closing any running processes and open db connections

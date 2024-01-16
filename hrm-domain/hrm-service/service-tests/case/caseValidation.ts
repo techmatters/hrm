@@ -14,50 +14,15 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { CaseService, WELL_KNOWN_CASE_SECTION_NAMES } from '../../src/case/caseService';
-import { NewContactRecord } from '../../src/contact/sql/contactInsertSql';
-import { ContactRawJson } from '../../src/contact/contactJson';
-
-declare global {
-  namespace jest {
-    interface Matchers<R> {
-      toParseAsDate(date: Date): R;
-    }
-    // @ts-ignore
-    interface Expect<R> {
-      toParseAsDate(date: Date): R;
-    }
-  }
-}
-
-expect.extend({
-  toParseAsDate(received, date) {
-    let receivedDate;
-    try {
-      receivedDate = received instanceof Date ? received : Date.parse(received);
-    } catch (e) {
-      return {
-        pass: false,
-        message: () => `Expected '${received}' to be a parseable date. Error: ${e}`,
-      };
-    }
-
-    if (date) {
-      const expectedDate = typeof date === 'string' ? Date.parse(date) : date;
-      const pass = receivedDate.valueOf() === expectedDate.valueOf();
-      return {
-        pass,
-        message: () =>
-          `Expected '${received}' to be the same as '${expectedDate.toISOString()}'`,
-      };
-    }
-
-    return {
-      pass: true,
-      message: () => `Expected '${received}' to be a parseable date.`,
-    };
-  },
-});
+import {
+  CaseService,
+  WELL_KNOWN_CASE_SECTION_NAMES,
+} from '@tech-matters/hrm-core/src/case/caseService';
+import { NewContactRecord } from '@tech-matters/hrm-core/src/contact/sql/contactInsertSql';
+import { ContactRawJson } from '@tech-matters/hrm-core/src/contact/contactJson';
+import { Contact } from '@tech-matters/hrm-core/src/contact/contactDataAccess';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import '@tech-matters/testing/expectToParseAsDate';
 
 export const without = (original, ...property) => {
   if (!original) return original;
@@ -96,7 +61,11 @@ export const convertCaseInfoToExpectedInfo = (
   return expectedCase as CaseService;
 };
 
-export const validateCaseListResponse = (actual, expectedCaseAndContactModels, count) => {
+export const validateCaseListResponse = (
+  actual,
+  expectedCaseAndContactModels: { case: CaseService; contact: Contact }[],
+  count,
+) => {
   expect(actual.status).toBe(200);
   if (count === 0) {
     expect(actual.body).toStrictEqual(
@@ -118,8 +87,8 @@ export const validateCaseListResponse = (actual, expectedCaseAndContactModels, c
       const { connectedContacts, ...caseDataValues } = expectedCaseModel;
       expect(actual.body.cases[index]).toMatchObject({
         ...caseDataValues,
-        createdAt: expectedCaseModel.createdAt.toISOString(),
-        updatedAt: expectedCaseModel.updatedAt.toISOString(),
+        createdAt: expectedCaseModel.createdAt,
+        updatedAt: expectedCaseModel.updatedAt,
       });
 
       expect(actual.body.cases[index].connectedContacts).toStrictEqual([
