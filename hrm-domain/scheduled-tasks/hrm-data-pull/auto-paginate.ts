@@ -34,8 +34,7 @@ type LimitAndOffset = {
  * until there's no more data to be fetched. It works by dynamically
  * adjusting the 'offset' on each subsequent call.
  *
- * @param searchFunction searchCases or searchContacts
- * @param params params for searchCases or searchContacts
+ * @param searchFunction function to perform search of cases or contacts with the provided limit & offset
  * @returns cases[] or contacts[]
  */
 export const autoPaginate = async <T>(
