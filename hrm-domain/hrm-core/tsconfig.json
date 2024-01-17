@@ -13,5 +13,5 @@
   },
 
   "include": ["**/*.js", "**/*.json", "**/*.ts"],
-  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.test.js"],
+  "exclude": ["node_modules", "unit-tests", "dist", "**/*.test.ts", "**/*.test.js"],
 }
