@@ -16,7 +16,7 @@
 
 import { isErr, mapHTTPError } from '@tech-matters/types';
 import createError from 'http-errors';
-import { isValid, toDate } from 'date-fns';
+import { isValid, toDate, parseISO } from 'date-fns';
 
 import { SafeRouter, publicEndpoint } from '../permissions';
 import * as profileController from './profile';
@@ -183,7 +183,7 @@ profilesRouter.post(
       const { profileId, profileFlagId } = req.params;
       const { validUntil } = req.query;
 
-      if (validUntil && !isValid(validUntil)) {
+      if (validUntil && !isValid(parseISO(validUntil))) {
         return next(createError(400));
       }
 
@@ -191,7 +191,7 @@ profilesRouter.post(
         accountSid,
         profileId,
         profileFlagId,
-        validUntil ? toDate(validUntil) : null,
+        validUntil ? parseISO(validUntil) : null,
       );
 
       if (isErr(result)) {
