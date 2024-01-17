@@ -5,7 +5,7 @@
     "module": "commonjs",
     "esModuleInterop": true,
     "target": "ES6",
-    "moduleResolution": "node",
+    "moduleResolution": "node16",
     "sourceMap": true,
     "lib": ["ES2020"]
   },
