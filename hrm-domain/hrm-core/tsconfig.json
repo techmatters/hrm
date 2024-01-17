@@ -10,6 +10,7 @@
     "lib": ["es2020"],
     "strict": false,
     "declaration": true,
+    "resolveJsonModule": true
   },
 
   "include": ["**/*.js", "**/*.json", "**/*.ts"],
