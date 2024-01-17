@@ -65,9 +65,3 @@ export const pullData = async (
   applyContextConfigOverrides({ shortCodeOverride: hlShortCode });
   await Promise.all([pullCases(startDate, endDate), pullContacts(startDate, endDate)]);
 };
-
-const startDateISO = process.argv[2];
-const endDateISO = process.argv[3];
-const hl = process.argv[4];
-
-pullData(startDateISO, endDateISO, hl);

@@ -14,10 +14,18 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { pullData } from '@tech-matters/data-pull-task';
-
-const startDateISO = process.argv[2];
-const endDateISO = process.argv[3];
-const hl = process.argv[4];
-
-pullData(startDateISO, endDateISO, hl);
+module.exports = config => {
+  return (
+    config || {
+      preset: 'ts-jest',
+      rootDir: './',
+      maxWorkers: 1,
+      globals: {
+        'ts-jest': {
+          // to give support to const enum. Not working, conflicting with module resolution
+          useExperimentalLanguageServer: true,
+        },
+      },
+    }
+  );
+};

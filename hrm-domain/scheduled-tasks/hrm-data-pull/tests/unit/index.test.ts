@@ -18,12 +18,12 @@ import subHours from 'date-fns/subHours';
 import differenceInSeconds from 'date-fns/differenceInSeconds';
 import parseISO from 'date-fns/parseISO';
 
-import { pullData } from '../../../src/data-pull-task/khp-data-pull-task';
-import * as pullContactsModule from '../../../src/data-pull-task/khp-data-pull-task/pull-contacts';
-import * as pullCasesModule from '../../../src/data-pull-task/khp-data-pull-task/pull-cases';
+import { pullData } from '../../src';
+import * as pullContactsModule from '../../src/pull-contacts';
+import * as pullCasesModule from '../../src/pull-cases';
 
-jest.mock('../../../src/data-pull-task/khp-data-pull-task/pull-contacts');
-jest.mock('../../../src/data-pull-task/khp-data-pull-task/pull-cases');
+jest.mock('../../src/pull-contacts');
+jest.mock('../../src/pull-cases');
 
 const getParamsFromSpy = (spy: jest.SpyInstance) => ({
   startDate: spy.mock.calls[0][0],
@@ -57,7 +57,11 @@ describe('KHP Data Pull - Params', () => {
     const expectedEndDate = new Date();
     const expectedStartDate = subHours(expectedEndDate, 12);
 
-    await Promise.all([pullData(), pullData(null, null), pullData('', '')]);
+    await Promise.all([
+      pullData(undefined, undefined, undefined),
+      pullData(null, null, null),
+      pullData('', '', ''),
+    ]);
 
     assertSpyHasBeenCalledWithRouhly(pullContactsSpy, expectedStartDate, expectedEndDate);
     assertSpyHasBeenCalledWithRouhly(pullCasesSpy, expectedStartDate, expectedEndDate);
@@ -70,7 +74,7 @@ describe('KHP Data Pull - Params', () => {
     const startDateISO = '2023-05-01T10:00:00+0000';
     const endDateISO = '2023-05-30T18:00:00+0000';
 
-    await pullData(startDateISO, endDateISO);
+    await pullData(startDateISO, endDateISO, undefined);
 
     expect(pullContactsSpy).toHaveBeenCalledWith(
       parseISO(startDateISO),
@@ -89,7 +93,7 @@ describe('KHP Data Pull - Params', () => {
     const startDateISO = '2023-05-01T10:00:00+0000';
     const now = new Date();
 
-    await pullData(startDateISO);
+    await pullData(startDateISO, undefined, undefined);
 
     assertSpyHasBeenCalledWithRouhly(pullContactsSpy, parseISO(startDateISO), now);
     assertSpyHasBeenCalledWithRouhly(pullCasesSpy, parseISO(startDateISO), now);
@@ -101,7 +105,7 @@ describe('KHP Data Pull - Params', () => {
 
     const startDateISO = '9999INVALID';
 
-    await expect(pullData(startDateISO)).rejects.toThrow();
+    await expect(pullData(startDateISO, undefined, undefined)).rejects.toThrow();
 
     expect(pullContactsSpy).not.toHaveBeenCalled();
     expect(pullCasesSpy).not.toHaveBeenCalled();
