@@ -15,7 +15,7 @@
  */
 
 import each from 'jest-each';
-import { actionsMaps, rulesMap } from '@tech-matters/hrm-core/permissions';
+import { actionsMaps, rulesMap } from '@tech-matters/hrm-core/permissions/index';
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import { withTaskId, workerSid } from './mocks';
 import { headers, getRequest, getServer } from './server';
