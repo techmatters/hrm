@@ -1,13 +1,16 @@
 {
   "name": "@tech-matters/hrm-core",
   "version": "1.0.0",
-  "description": "The easiest way to run the tests locally is to run the test DB in docker.",
+  "description": "The core business logic of the HRM service.",
   "scripts": {
     "test": "run-s test:unit",
     "test:run:watch": "cross-env AWS_REGION=us-east-1 CI=true TWILIO_ACCOUNT_SID=ACxxx TWILIO_AUTH_TOKEN=xxxxxx RDS_PASSWORD=postgres jest --maxWorkers=1 --forceExit --watch",
     "test:unit": "jest unit-tests",
     "lint": "eslint --ext js,ts .",
     "lint:fix": "npm run lint -- --fix"
+  },
+  "exports": {
+    "./*": "./dist/*.js"
   },
   "repository": {
     "type": "git",

@@ -18,21 +18,21 @@
 import { add, addDays } from 'date-fns';
 import each from 'jest-each';
 
-import * as caseApi from '@tech-matters/hrm-core/src/case/caseService';
-import { CaseService, getCase } from '@tech-matters/hrm-core/src/case/caseService';
-import * as caseDb from '@tech-matters/hrm-core/src/case/caseDataAccess';
+import * as caseApi from '@tech-matters/hrm-core/case/caseService';
+import { CaseService, getCase } from '@tech-matters/hrm-core/case/caseService';
+import * as caseDb from '@tech-matters/hrm-core/case/caseDataAccess';
 import {
   CaseListFilters,
   DateExistsCondition,
-} from '@tech-matters/hrm-core/src/case/caseDataAccess';
-import { db } from '@tech-matters/hrm-core/src/connection-pool';
+} from '@tech-matters/hrm-core/case/caseDataAccess';
+import { db } from '@tech-matters/hrm-core/connection-pool';
 import {
   fillNameAndPhone,
   validateCaseListResponse,
   validateSingleCaseResponse,
 } from './caseValidation';
-import * as contactDb from '@tech-matters/hrm-core/src/contact/contactDataAccess';
-import { Contact } from '@tech-matters/hrm-core/src/contact/contactDataAccess';
+import * as contactDb from '@tech-matters/hrm-core/contact/contactDataAccess';
+import { Contact } from '@tech-matters/hrm-core/contact/contactDataAccess';
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import * as mocks from '../mocks';
 import { ruleFileWithOneActionOverride } from '../permissions-overrides';
@@ -40,10 +40,10 @@ import {
   addConversationMediaToContact,
   connectContactToCase,
   createContact,
-} from '@tech-matters/hrm-core/src/contact/contactService';
+} from '@tech-matters/hrm-core/contact/contactService';
 import { getRequest, getServer, headers, setRules, useOpenRules } from '../server';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
-import { isS3StoredTranscript } from '@tech-matters/hrm-core/src/conversation-media/conversation-media';
+import { isS3StoredTranscript } from '@tech-matters/hrm-core/conversation-media/conversation-media';
 import { ALWAYS_CAN } from '../mocks';
 
 useOpenRules();

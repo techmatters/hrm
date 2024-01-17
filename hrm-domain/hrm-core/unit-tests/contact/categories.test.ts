@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { retrieveCategories } from '../../src/contact/categories';
+import { retrieveCategories } from '../../contact/categories';
 
 describe('test retrieveCategories', () => {
   test('undefined/null categories', async () => {

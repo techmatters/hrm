@@ -17,15 +17,15 @@
 import supertest from 'supertest';
 import timers from 'timers';
 
-import { ContactJobPollerError } from '@tech-matters/hrm-core/src/contact-job/contact-job-error';
+import { ContactJobPollerError } from '@tech-matters/hrm-core/contact-job/contact-job-error';
 
 require('./mocks');
 
 let server;
-let configureService: typeof import('@tech-matters/hrm-core/src/app').configureService;
-let contactJobComplete: typeof import('@tech-matters/hrm-core/src/contact-job/contact-job-complete');
-let contactJobPublish: typeof import('@tech-matters/hrm-core/src/contact-job/contact-job-publish');
-let contactJobProcessor: typeof import('@tech-matters/hrm-core/src/contact-job/contact-job-processor');
+let configureService: typeof import('@tech-matters/hrm-core/app').configureService;
+let contactJobComplete: typeof import('@tech-matters/hrm-core/contact-job/contact-job-complete');
+let contactJobPublish: typeof import('@tech-matters/hrm-core/contact-job/contact-job-publish');
+let contactJobProcessor: typeof import('@tech-matters/hrm-core/contact-job/contact-job-processor');
 
 const startServer = () => {
   const service = configureService({
@@ -44,10 +44,10 @@ const stopServer = async () => {
 
 beforeEach(async () => {
   jest.isolateModules(() => {
-    configureService = require('@tech-matters/hrm-core/src/app').configureService;
-    contactJobComplete = require('@tech-matters/hrm-core/src/contact-job/contact-job-complete');
-    contactJobPublish = require('@tech-matters/hrm-core/src/contact-job/contact-job-publish');
-    contactJobProcessor = require('@tech-matters/hrm-core/src/contact-job/contact-job-processor');
+    configureService = require('@tech-matters/hrm-core/app').configureService;
+    contactJobComplete = require('@tech-matters/hrm-core/contact-job/contact-job-complete');
+    contactJobPublish = require('@tech-matters/hrm-core/contact-job/contact-job-publish');
+    contactJobProcessor = require('@tech-matters/hrm-core/contact-job/contact-job-processor');
   });
 });
 

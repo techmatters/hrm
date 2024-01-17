@@ -14,16 +14,16 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import * as caseDb from '../../src/case/caseDataAccess';
-import * as caseApi from '../../src/case/caseService';
+import * as caseDb from '../../case/caseDataAccess';
+import * as caseApi from '../../case/caseService';
 import { createMockCase, createMockCaseRecord } from './mock-cases';
 import each from 'jest-each';
-import { CaseRecord, NewCaseRecord } from '../../src/case/caseDataAccess';
+import { CaseRecord, NewCaseRecord } from '../../case/caseDataAccess';
 import '@tech-matters/testing/expectToParseAsDate';
 import { workerSid, accountSid } from '../mocks';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
 
-jest.mock('../../src/case/caseDataAccess');
+jest.mock('../../case/caseDataAccess');
 const baselineCreatedDate = new Date(2013, 6, 13).toISOString();
 
 test('create case', async () => {

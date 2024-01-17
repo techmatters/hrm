@@ -17,10 +17,10 @@
 import {
   CaseService,
   WELL_KNOWN_CASE_SECTION_NAMES,
-} from '@tech-matters/hrm-core/src/case/caseService';
-import { NewContactRecord } from '@tech-matters/hrm-core/src/contact/sql/contactInsertSql';
-import { ContactRawJson } from '@tech-matters/hrm-core/src/contact/contactJson';
-import { Contact } from '@tech-matters/hrm-core/src/contact/contactDataAccess';
+} from '@tech-matters/hrm-core/case/caseService';
+import { NewContactRecord } from '@tech-matters/hrm-core/contact/sql/contactInsertSql';
+import { ContactRawJson } from '@tech-matters/hrm-core/contact/contactJson';
+import { Contact } from '@tech-matters/hrm-core/contact/contactDataAccess';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import '@tech-matters/testing/expectToParseAsDate';
 

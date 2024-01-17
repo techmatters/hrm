@@ -15,8 +15,8 @@
  */
 
 import { handleSignals } from './handleSignals';
-import { processContactJobs } from '@tech-matters/hrm-core/src/contact-job/contact-job-processor';
-import { enableProcessContactJobsFlag } from '@tech-matters/hrm-core/src/featureFlags';
+import { processContactJobs } from '@tech-matters/hrm-core/contact-job/contact-job-processor';
+import { enableProcessContactJobsFlag } from '@tech-matters/hrm-core/featureFlags';
 
 if (enableProcessContactJobsFlag) {
   const processorIntervalId = processContactJobs();

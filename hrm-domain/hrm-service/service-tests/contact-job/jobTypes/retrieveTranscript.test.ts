@@ -19,12 +19,12 @@ import { isAfter, parseISO } from 'date-fns';
 import timers from 'timers';
 
 import { withTaskId, accountSid, workerSid } from '../../mocks';
-import * as contactJobApi from '@tech-matters/hrm-core/src/contact-job/contact-job-data-access';
-import { db } from '@tech-matters/hrm-core/src/connection-pool';
+import * as contactJobApi from '@tech-matters/hrm-core/contact-job/contact-job-data-access';
+import { db } from '@tech-matters/hrm-core/connection-pool';
 import '../../case/caseValidation';
-import * as conversationMediaApi from '@tech-matters/hrm-core/src/conversation-media/conversation-media';
-import { chatChannels } from '@tech-matters/hrm-core/src/contact/channelTypes';
-import { JOB_MAX_ATTEMPTS } from '@tech-matters/hrm-core/src/contact-job/contact-job-processor';
+import * as conversationMediaApi from '@tech-matters/hrm-core/conversation-media/conversation-media';
+import { chatChannels } from '@tech-matters/hrm-core/contact/channelTypes';
+import { JOB_MAX_ATTEMPTS } from '@tech-matters/hrm-core/contact-job/contact-job-processor';
 
 import {
   CompletedContactJobBody,
@@ -32,8 +32,8 @@ import {
   ContactJobType,
 } from '@tech-matters/types';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
-import { NewConversationMedia } from '@tech-matters/hrm-core/src/conversation-media/conversation-media';
-import { NewContactRecord } from '@tech-matters/hrm-core/src/contact/sql/contactInsertSql';
+import { NewConversationMedia } from '@tech-matters/hrm-core/conversation-media/conversation-media';
+import { NewContactRecord } from '@tech-matters/hrm-core/contact/sql/contactInsertSql';
 
 const { S3ContactMediaType, isS3StoredTranscriptPending } = conversationMediaApi;
 
@@ -67,19 +67,19 @@ const cleanupContactsJobs = () => {
   return db.task(t => t.none(`DELETE FROM "ContactJobs" ${idsWhereClause}`));
 };
 
-let contactApi: typeof import('@tech-matters/hrm-core/src/contact/contactService');
-let SQSClient: typeof import('@tech-matters/hrm-core/src/contact-job/client-sqs');
-let contactJobComplete: typeof import('@tech-matters/hrm-core/src/contact-job/contact-job-complete');
-let contactJobPublish: typeof import('@tech-matters/hrm-core/src/contact-job/contact-job-publish');
-let contactJobProcessor: typeof import('@tech-matters/hrm-core/src/contact-job/contact-job-processor');
+let contactApi: typeof import('@tech-matters/hrm-core/contact/contactService');
+let SQSClient: typeof import('@tech-matters/hrm-core/contact-job/client-sqs');
+let contactJobComplete: typeof import('@tech-matters/hrm-core/contact-job/contact-job-complete');
+let contactJobPublish: typeof import('@tech-matters/hrm-core/contact-job/contact-job-publish');
+let contactJobProcessor: typeof import('@tech-matters/hrm-core/contact-job/contact-job-processor');
 
 beforeEach(() => {
   jest.isolateModules(() => {
-    contactApi = require('@tech-matters/hrm-core/src/contact/contactService');
-    SQSClient = require('@tech-matters/hrm-core/src/contact-job/client-sqs');
-    contactJobComplete = require('@tech-matters/hrm-core/src/contact-job/contact-job-complete');
-    contactJobPublish = require('@tech-matters/hrm-core/src/contact-job/contact-job-publish');
-    contactJobProcessor = require('@tech-matters/hrm-core/src/contact-job/contact-job-processor');
+    contactApi = require('@tech-matters/hrm-core/contact/contactService');
+    SQSClient = require('@tech-matters/hrm-core/contact-job/client-sqs');
+    contactJobComplete = require('@tech-matters/hrm-core/contact-job/contact-job-complete');
+    contactJobPublish = require('@tech-matters/hrm-core/contact-job/contact-job-publish');
+    contactJobProcessor = require('@tech-matters/hrm-core/contact-job/contact-job-processor');
   });
 });
 

@@ -14,21 +14,21 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import * as contactApi from '@tech-matters/hrm-core/src/contact/contactService';
+import * as contactApi from '@tech-matters/hrm-core/contact/contactService';
 import {
   addConversationMediaToContact,
   ContactRawJson,
   PatchPayload,
-} from '@tech-matters/hrm-core/src/contact/contactService';
+} from '@tech-matters/hrm-core/contact/contactService';
 import '../case/caseValidation';
 import * as mocks from '../mocks';
 import { accountSid, ALWAYS_CAN, contact1, withTaskId, workerSid } from '../mocks';
 import { twilioUser } from '@tech-matters/twilio-worker-auth/dist';
 import each from 'jest-each';
 import { getRequest, getServer, headers, setRules, useOpenRules } from '../server';
-import * as contactDb from '@tech-matters/hrm-core/src/contact/contactDataAccess';
+import * as contactDb from '@tech-matters/hrm-core/contact/contactDataAccess';
 import { ruleFileWithOneActionOverride } from '../permissions-overrides';
-import { isS3StoredTranscript } from '@tech-matters/hrm-core/src/conversation-media/conversation-media-data-access';
+import { isS3StoredTranscript } from '@tech-matters/hrm-core/conversation-media/conversation-media-data-access';
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import {
   cleanupCases,
@@ -39,7 +39,7 @@ import {
   deleteContactById,
   deleteJobsByContactId,
 } from './db-cleanup';
-import { NewContactRecord } from '@tech-matters/hrm-core/src/contact/sql/contactInsertSql';
+import { NewContactRecord } from '@tech-matters/hrm-core/contact/sql/contactInsertSql';
 import { finalizeContact } from './finalizeContact';
 
 useOpenRules();

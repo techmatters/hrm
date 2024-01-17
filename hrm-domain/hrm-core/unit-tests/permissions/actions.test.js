@@ -17,7 +17,7 @@
 /* eslint-disable jest/no-standalone-expect */
 const each = require('jest-each').default;
 
-const { actionsMaps, getActions } = require('../../src/permissions/actions');
+const { actionsMaps, getActions } = require('../../permissions/actions');
 
 const emptyCase = {
   id: 123,

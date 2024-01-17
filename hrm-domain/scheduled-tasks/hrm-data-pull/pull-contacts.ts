@@ -19,7 +19,7 @@ import formatISO from 'date-fns/formatISO';
 import { putS3Object } from '@tech-matters/s3-client';
 
 import { getContext, maxPermissions } from './context';
-import * as contactApi from '@tech-matters/hrm-core/src/contact/contactService';
+import * as contactApi from '@tech-matters/hrm-core/contact/contactService';
 import { autoPaginate } from './auto-paginate';
 import { parseISO } from 'date-fns';
 

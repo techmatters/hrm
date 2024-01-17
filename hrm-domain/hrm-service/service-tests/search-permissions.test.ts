@@ -19,11 +19,8 @@ import subMinutes from 'date-fns/subMinutes';
 import { randomBytes } from 'crypto';
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 
-import { db } from '@tech-matters/hrm-core/src/connection-pool';
-import {
-  TKConditionsSets,
-  RulesFile,
-} from '@tech-matters/hrm-core/src/permissions/rulesMap';
+import { db } from '@tech-matters/hrm-core/connection-pool';
+import { TKConditionsSets, RulesFile } from '@tech-matters/hrm-core/permissions/rulesMap';
 import {
   headers,
   getRequest,
@@ -32,9 +29,9 @@ import {
   defaultConfig,
   useOpenRules,
 } from './server';
-import { SearchParameters as ContactSearchParameters } from '@tech-matters/hrm-core/src/contact/contactDataAccess';
-import { SearchParameters as CaseSearchParameters } from '@tech-matters/hrm-core/src/case/caseService';
-import { TargetKind } from '@tech-matters/hrm-core/src/permissions/actions';
+import { SearchParameters as ContactSearchParameters } from '@tech-matters/hrm-core/contact/contactDataAccess';
+import { SearchParameters as CaseSearchParameters } from '@tech-matters/hrm-core/case/caseService';
+import { TargetKind } from '@tech-matters/hrm-core/permissions/actions';
 
 useOpenRules();
 const server = getServer();

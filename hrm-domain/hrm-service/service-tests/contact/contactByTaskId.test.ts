@@ -14,12 +14,12 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import * as contactApi from '@tech-matters/hrm-core/src/contact/contactService';
+import * as contactApi from '@tech-matters/hrm-core/contact/contactService';
 import '../case/caseValidation';
-import { ContactRawJson } from '@tech-matters/hrm-core/src/contact/contactJson';
+import { ContactRawJson } from '@tech-matters/hrm-core/contact/contactJson';
 import { accountSid, ALWAYS_CAN, contact1, workerSid } from '../mocks';
 import { getRequest, getServer, headers, useOpenRules } from '../server';
-import * as contactDb from '@tech-matters/hrm-core/src/contact/contactDataAccess';
+import * as contactDb from '@tech-matters/hrm-core/contact/contactDataAccess';
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import {
   cleanupCases,

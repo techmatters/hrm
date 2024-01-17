@@ -15,7 +15,7 @@
  */
 
 const openRules = require('../../hrm-core/permission-rules/open.json');
-import { RulesFile } from '@tech-matters/hrm-core/src/permissions/rulesMap';
+import { RulesFile } from '@tech-matters/hrm-core/permissions/rulesMap';
 
 export function ruleFileWithOnePermittedOrDeniedAction(
   permittedAction: keyof RulesFile,

@@ -17,11 +17,11 @@
 import * as pgPromise from 'pg-promise';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import * as pgMocking from '@tech-matters/testing';
-import { db } from '../src/connection-pool';
+import { db } from '../connection-pool';
 
-jest.mock('../src/connection-pool', () => ({
+jest.mock('../connection-pool', () => ({
   db: pgMocking.createMockConnection(),
-  pgp: jest.requireActual('../src/connection-pool').pgp,
+  pgp: jest.requireActual('../connection-pool').pgp,
 }));
 
 export const mockConnection = pgMocking.createMockConnection;

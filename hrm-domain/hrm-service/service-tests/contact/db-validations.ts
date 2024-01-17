@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { db } from '@tech-matters/hrm-core/src/connection-pool';
+import { db } from '@tech-matters/hrm-core/connection-pool';
 
 export const selectJobsByContactId = (contactId: number, accountSid: string) =>
   db.task(t =>
