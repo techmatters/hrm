@@ -15,22 +15,22 @@
  */
 
 import { Request, Response } from 'express';
-import referralRoutes from '../../src/referral/referral-routes-v0';
-import { createReferral } from '../../src/referral/referral-model';
+import referralRoutes from '../../referral/referral-routes-v0';
+import { createReferral } from '../../referral/referral-model';
 import {
   DuplicateReferralError,
   OrphanedReferralError,
   Referral,
-} from '../../src/referral/referral-data-access';
+} from '../../referral/referral-data-access';
 import { subHours } from 'date-fns';
-import { SafeRouter } from '../../src/permissions';
+import { SafeRouter } from '../../permissions';
 import { AssertionError } from 'assert';
 
-jest.mock('../../src/permissions', () => ({
+jest.mock('../../permissions', () => ({
   SafeRouter: jest.fn(),
 }));
 
-jest.mock('../../src/referral/referral-model', () => ({
+jest.mock('../../referral/referral-model', () => ({
   createReferral: jest.fn(),
 }));
 

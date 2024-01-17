@@ -15,13 +15,13 @@
  */
 
 import { performance } from 'perf_hooks';
-import { db } from '@tech-matters/hrm-core/src/connection-pool';
+import { db } from '@tech-matters/hrm-core/connection-pool';
 
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import {
   appendFailedAttemptPayload,
   createContactJob,
-} from '@tech-matters/hrm-core/src/contact-job/contact-job-data-access';
+} from '@tech-matters/hrm-core/contact-job/contact-job-data-access';
 
 import { ContactJobType } from '@tech-matters/types';
 
@@ -32,7 +32,7 @@ useOpenRules();
 const server = getServer();
 const request = getRequest(server);
 
-import type { Contact } from '@tech-matters/hrm-core/src/contact/contactDataAccess';
+import type { Contact } from '@tech-matters/hrm-core/contact/contactDataAccess';
 
 beforeAll(async () => {
   await mockingProxy.start();

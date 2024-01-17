@@ -16,19 +16,19 @@
 
 import each from 'jest-each';
 
-import * as SQSClient from '../../src/contact-job/client-sqs';
-import * as contactJobDataAccess from '../../src/contact-job/contact-job-data-access';
-import * as contactJobComplete from '../../src/contact-job/contact-job-complete';
-import { ContactJobPollerError } from '../../src/contact-job/contact-job-error';
+import * as SQSClient from '../../contact-job/client-sqs';
+import * as contactJobDataAccess from '../../contact-job/contact-job-data-access';
+import * as contactJobComplete from '../../contact-job/contact-job-complete';
+import { ContactJobPollerError } from '../../contact-job/contact-job-error';
 import { ContactJobType, ContactJobAttemptResult } from '@tech-matters/types';
-import { JOB_MAX_ATTEMPTS } from '../../src/contact-job/contact-job-processor';
+import { JOB_MAX_ATTEMPTS } from '../../contact-job/contact-job-processor';
 
 import type { CompletedContactJobBody } from '@tech-matters/types';
-import { ContactJobRecord } from '../../src/contact-job/contact-job-data-access';
+import { ContactJobRecord } from '../../contact-job/contact-job-data-access';
 
-jest.mock('../../src/contact-job/client-sqs');
+jest.mock('../../contact-job/client-sqs');
 
-jest.mock('../../src/contact-job/contact-job-data-access', () => {
+jest.mock('../../contact-job/contact-job-data-access', () => {
   const mockJob = {
     id: 1,
     contactId: 123,

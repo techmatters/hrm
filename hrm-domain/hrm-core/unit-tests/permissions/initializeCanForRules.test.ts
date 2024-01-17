@@ -16,12 +16,12 @@
 
 /* eslint-disable jest/no-standalone-expect */
 import each from 'jest-each';
-import { initializeCanForRules } from '../../src/permissions/initializeCanForRules';
-import { actionsMaps } from '../../src/permissions';
-import { RulesFile } from '../../src/permissions/rulesMap';
+import { initializeCanForRules } from '../../permissions/initializeCanForRules';
+import { actionsMaps } from '../../permissions';
+import { RulesFile } from '../../permissions/rulesMap';
 import { workerSid, accountSid } from '../mocks';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
-import { TargetKind } from '../../src/permissions/actions';
+import { TargetKind } from '../../permissions/actions';
 import { subDays, subHours } from 'date-fns';
 
 const helpline = 'helpline';

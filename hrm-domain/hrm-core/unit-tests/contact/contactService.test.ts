@@ -15,24 +15,24 @@
  */
 import each from 'jest-each';
 import { mockTransaction, mockConnection } from '../mock-db';
-import * as contactDb from '../../src/contact/contactDataAccess';
+import * as contactDb from '../../contact/contactDataAccess';
 import {
   connectContactToCase,
   createContact,
   patchContact,
   searchContacts,
-} from '../../src/contact/contactService';
+} from '../../contact/contactService';
 
 import { ContactBuilder } from './contact-builder';
 import { omit } from 'lodash';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
 import { newOk } from '@tech-matters/types';
-import * as profilesDB from '../../src/profile/profile-data-access';
-import { NewContactRecord } from '../../src/contact/sql/contactInsertSql';
+import * as profilesDB from '../../profile/profile-data-access';
+import { NewContactRecord } from '../../contact/sql/contactInsertSql';
 import { ALWAYS_CAN } from '../mocks';
 import '@tech-matters/testing/expectToParseAsDate';
 
-jest.mock('../../src/contact/contactDataAccess');
+jest.mock('../../contact/contactDataAccess');
 
 const getIdentifierWithProfilesSpy = jest
   .spyOn(profilesDB, 'getIdentifierWithProfiles')

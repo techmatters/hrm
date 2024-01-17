@@ -19,7 +19,7 @@ import {
   DatabaseUniqueConstraintViolationError,
   DatabaseError,
   inferPostgresError,
-} from '../src/sql';
+} from '../sql';
 
 describe('inferPostgresError', () => {
   test('Error with code property set to 23503 - creates DatabaseKeyViolationError, wrapping original and copying table and constraint properties', () => {

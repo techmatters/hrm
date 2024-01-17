@@ -25,12 +25,12 @@ import {
   getPendingCleanupJobAccountSids,
   setContactJobCleanupActive,
   setContactJobCleanupPending,
-} from '@tech-matters/hrm-core/src/contact-job/contact-job-data-access';
-import { ContactJobCleanupError } from '@tech-matters/hrm-core/src/contact-job/contact-job-error';
+} from '@tech-matters/hrm-core/contact-job/contact-job-data-access';
+import { ContactJobCleanupError } from '@tech-matters/hrm-core/contact-job/contact-job-error';
 import {
   getConversationMediaById,
   isS3StoredTranscript,
-} from '@tech-matters/hrm-core/src/conversation-media/conversation-media';
+} from '@tech-matters/hrm-core/conversation-media/conversation-media';
 
 const MAX_CLEANUP_JOB_RETENTION_DAYS = 365;
 

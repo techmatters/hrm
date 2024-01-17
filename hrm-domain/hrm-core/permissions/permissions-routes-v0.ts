@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { SafeRouter, publicEndpoint, Permissions } from '../permissions';
+import { SafeRouter, publicEndpoint, Permissions } from './index';
 import type { Request, Response } from 'express';
 import createError from 'http-errors';
 import {

@@ -15,18 +15,18 @@
  */
 
 import each from 'jest-each';
-import { actionsMaps, rulesMap } from '@tech-matters/hrm-core/src/permissions';
+import { actionsMaps, rulesMap } from '@tech-matters/hrm-core/permissions';
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import { withTaskId, workerSid } from './mocks';
 import { headers, getRequest, getServer } from './server';
 import {
   NewConversationMedia,
   S3ContactMediaType,
-} from '@tech-matters/hrm-core/src/conversation-media/conversation-media';
-import { db } from '@tech-matters/hrm-core/src/connection-pool';
-import * as contactDB from '@tech-matters/hrm-core/src/contact/contactDataAccess';
-import * as conversationMediaDB from '@tech-matters/hrm-core/src/conversation-media/conversation-media-data-access';
-import { NewContactRecord } from '@tech-matters/hrm-core/src/contact/sql/contactInsertSql';
+} from '@tech-matters/hrm-core/conversation-media/conversation-media';
+import { db } from '@tech-matters/hrm-core/connection-pool';
+import * as contactDB from '@tech-matters/hrm-core/contact/contactDataAccess';
+import * as conversationMediaDB from '@tech-matters/hrm-core/conversation-media/conversation-media-data-access';
+import { NewContactRecord } from '@tech-matters/hrm-core/contact/sql/contactInsertSql';
 
 const server = getServer({
   permissions: undefined,

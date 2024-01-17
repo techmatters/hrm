@@ -14,31 +14,31 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-const openRules = require('../../permission-rules/open.json');
-const closedRules = require('../../permission-rules/closed.json');
-const demoRules = require('../../permission-rules/demo.json');
-const devRules = require('../../permission-rules/dev.json');
-const e2eRules = require('../../permission-rules/e2e.json');
-const brRules = require('../../permission-rules/br.json');
-const caRules = require('../../permission-rules/ca.json');
-const clRules = require('../../permission-rules/cl.json');
-const coRules = require('../../permission-rules/co.json');
-const etRules = require('../../permission-rules/et.json');
-const huRules = require('../../permission-rules/hu.json');
-const inRules = require('../../permission-rules/in.json');
-const jmRules = require('../../permission-rules/jm.json');
-const mtRules = require('../../permission-rules/mt.json');
-const mwRules = require('../../permission-rules/mw.json');
-const nzRules = require('../../permission-rules/nz.json');
-const phRules = require('../../permission-rules/ph.json');
-const plRules = require('../../permission-rules/pl.json');
-const roRules = require('../../permission-rules/ro.json');
-const sgRules = require('../../permission-rules/sg.json');
-const thRules = require('../../permission-rules/th.json');
-const ukRules = require('../../permission-rules/uk.json');
-const zaRules = require('../../permission-rules/za.json');
-const zmRules = require('../../permission-rules/zm.json');
-const zwRules = require('../../permission-rules/zw.json');
+const openRules = require('../permission-rules/open.json');
+const closedRules = require('../permission-rules/closed.json');
+const demoRules = require('../permission-rules/demo.json');
+const devRules = require('../permission-rules/dev.json');
+const e2eRules = require('../permission-rules/e2e.json');
+const brRules = require('../permission-rules/br.json');
+const caRules = require('../permission-rules/ca.json');
+const clRules = require('../permission-rules/cl.json');
+const coRules = require('../permission-rules/co.json');
+const etRules = require('../permission-rules/et.json');
+const huRules = require('../permission-rules/hu.json');
+const inRules = require('../permission-rules/in.json');
+const jmRules = require('../permission-rules/jm.json');
+const mtRules = require('../permission-rules/mt.json');
+const mwRules = require('../permission-rules/mw.json');
+const nzRules = require('../permission-rules/nz.json');
+const phRules = require('../permission-rules/ph.json');
+const plRules = require('../permission-rules/pl.json');
+const roRules = require('../permission-rules/ro.json');
+const sgRules = require('../permission-rules/sg.json');
+const thRules = require('../permission-rules/th.json');
+const ukRules = require('../permission-rules/uk.json');
+const zaRules = require('../permission-rules/za.json');
+const zmRules = require('../permission-rules/zm.json');
+const zwRules = require('../permission-rules/zw.json');
 
 import { actionsMaps, Actions, TargetKind, isTargetKind } from './actions';
 

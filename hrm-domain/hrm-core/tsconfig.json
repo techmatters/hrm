@@ -4,12 +4,14 @@
     "module": "commonjs",
     "esModuleInterop": true,
     "target": "ES2020",
-    "moduleResolution": "node",
+    "moduleResolution": "node16",
     "sourceMap": true,
     "outDir": "./dist",
     "lib": ["es2020"],
     "strict": false,
+    "declaration": true,
   },
 
-  "include": ["src/**/*.js", "src/**/*.json", "src/**/*.ts"]
+  "include": ["**/*.js", "**/*.json", "**/*.ts"],
+  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.test.js"],
 }

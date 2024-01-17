@@ -19,7 +19,7 @@
  * The shape of the json columns of each table have been simplified to avoid noise in this tests.
  */
 
-import { db } from '@tech-matters/hrm-core/src/connection-pool';
+import { db } from '@tech-matters/hrm-core/connection-pool';
 
 import '../case/caseValidation';
 

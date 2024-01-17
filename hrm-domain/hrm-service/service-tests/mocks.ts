@@ -14,14 +14,14 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { CaseService } from '@tech-matters/hrm-core/src/case/caseService';
+import { CaseService } from '@tech-matters/hrm-core/case/caseService';
 import {
   NewConversationMedia,
   S3ContactMediaType,
-} from '@tech-matters/hrm-core/src/conversation-media/conversation-media';
-import { Contact } from '@tech-matters/hrm-core/src/contact/contactDataAccess';
-import { ContactRawJson } from '@tech-matters/hrm-core/src/contact/contactJson';
-import { NewContactRecord } from '@tech-matters/hrm-core/src/contact/sql/contactInsertSql';
+} from '@tech-matters/hrm-core/conversation-media/conversation-media';
+import { Contact } from '@tech-matters/hrm-core/contact/contactDataAccess';
+import { ContactRawJson } from '@tech-matters/hrm-core/contact/contactJson';
+import { NewContactRecord } from '@tech-matters/hrm-core/contact/sql/contactInsertSql';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
 
 export const accountSid = 'ACCOUNT_SID';

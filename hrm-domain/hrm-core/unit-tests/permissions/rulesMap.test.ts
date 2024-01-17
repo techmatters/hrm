@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { validRulesMap } from '../../src/permissions/rulesMap';
+import { validRulesMap } from '../../permissions/rulesMap';
 
 test('Rules maps are all valid', () => {
   expect(() => validRulesMap()).not.toThrow();

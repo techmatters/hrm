@@ -18,9 +18,9 @@ import each from 'jest-each';
 import { addSeconds, parseISO, subDays, subHours, subSeconds } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
 
-import { db } from '@tech-matters/hrm-core/src/connection-pool';
-import { ContactRawJson } from '@tech-matters/hrm-core/src/contact/contactJson';
-import { isS3StoredTranscript } from '@tech-matters/hrm-core/src/conversation-media/conversation-media';
+import { db } from '@tech-matters/hrm-core/connection-pool';
+import { ContactRawJson } from '@tech-matters/hrm-core/contact/contactJson';
+import { isS3StoredTranscript } from '@tech-matters/hrm-core/conversation-media/conversation-media';
 import {
   accountSid,
   another1,
@@ -39,17 +39,17 @@ import {
   workerSid,
 } from './mocks';
 import './case/caseValidation';
-import * as caseApi from '@tech-matters/hrm-core/src/case/caseService';
-import * as caseDb from '@tech-matters/hrm-core/src/case/caseDataAccess';
-import * as contactApi from '@tech-matters/hrm-core/src/contact/contactService';
-import * as contactDb from '@tech-matters/hrm-core/src/contact/contactDataAccess';
+import * as caseApi from '@tech-matters/hrm-core/case/caseService';
+import * as caseDb from '@tech-matters/hrm-core/case/caseDataAccess';
+import * as contactApi from '@tech-matters/hrm-core/contact/contactService';
+import * as contactDb from '@tech-matters/hrm-core/contact/contactDataAccess';
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
-import { selectSingleContactByTaskId } from '@tech-matters/hrm-core/src/contact/sql/contact-get-sql';
+import { selectSingleContactByTaskId } from '@tech-matters/hrm-core/contact/sql/contact-get-sql';
 import { ruleFileWithOneActionOverride } from './permissions-overrides';
-import * as csamReportApi from '@tech-matters/hrm-core/src/csam-report/csam-report';
+import * as csamReportApi from '@tech-matters/hrm-core/csam-report/csam-report';
 import { getRequest, getServer, headers, setRules, useOpenRules } from './server';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
-import * as profilesDB from '@tech-matters/hrm-core/src/profile/profile-data-access';
+import * as profilesDB from '@tech-matters/hrm-core/profile/profile-data-access';
 
 import { isErr } from '@tech-matters/types';
 import {
@@ -61,8 +61,8 @@ import {
   deleteContactById,
   deleteJobsByContactId,
 } from './contact/db-cleanup';
-import { addConversationMediaToContact } from '@tech-matters/hrm-core/src/contact/contactService';
-import { NewContactRecord } from '@tech-matters/hrm-core/src/contact/sql/contactInsertSql';
+import { addConversationMediaToContact } from '@tech-matters/hrm-core/contact/contactService';
+import { NewContactRecord } from '@tech-matters/hrm-core/contact/sql/contactInsertSql';
 import supertest from 'supertest';
 
 useOpenRules();

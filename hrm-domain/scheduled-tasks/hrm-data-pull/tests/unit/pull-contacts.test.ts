@@ -19,18 +19,18 @@ import formatISO from 'date-fns/formatISO';
 import format from 'date-fns/format';
 import addDays from 'date-fns/addDays';
 
-import * as contactApi from '@tech-matters/hrm-core/src/contact/contactService';
-import * as context from '@tech-matters/hrm-core/src/data-pull-task/khp-data-pull-task/context';
-import { defaultLimitAndOffset } from '@tech-matters/hrm-core/src/data-pull-task/khp-data-pull-task/auto-paginate';
-import { pullContacts } from '@tech-matters/hrm-core/src/data-pull-task/khp-data-pull-task/pull-contacts';
+import * as contactApi from '@tech-matters/hrm-core/contact/contactService';
+import * as context from '@tech-matters/hrm-core/data-pull-task/khp-data-pull-task/context';
+import { defaultLimitAndOffset } from '@tech-matters/hrm-core/data-pull-task/khp-data-pull-task/auto-paginate';
+import { pullContacts } from '@tech-matters/hrm-core/data-pull-task/khp-data-pull-task/pull-contacts';
 
 const { maxPermissions } = context;
 
 const accountSid = 'ACxxx';
 const bucket = 'docs-bucket';
 
-jest.mock('@tech-matters/hrm-core/src/contact/contactService');
-jest.mock('@tech-matters/hrm-core/src/data-pull-task/khp-data-pull-task/context');
+jest.mock('@tech-matters/hrm-core/contact/contactService');
+jest.mock('@tech-matters/hrm-core/data-pull-task/khp-data-pull-task/context');
 
 let putS3ObjectSpy = jest.fn();
 jest.mock('@tech-matters/s3-client', () => {

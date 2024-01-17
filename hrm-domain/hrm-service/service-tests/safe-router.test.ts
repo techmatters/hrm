@@ -17,12 +17,12 @@
 import {
   SafeRouter as MockSafeRouter,
   publicEndpoint as mockPublicEndpoint,
-} from '@tech-matters/hrm-core/src/permissions';
+} from '@tech-matters/hrm-core/permissions';
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import { accountSid, workerSid } from './mocks';
 import { headers, getRequest, getServer, useOpenRules } from './server';
 
-jest.mock('@tech-matters/hrm-core/src/routes', () => {
+jest.mock('@tech-matters/hrm-core/routes', () => {
   const mockRouter = MockSafeRouter();
   const middlewareThatDontAuthorize = (req, res, next) => {
     req.unauthorize();

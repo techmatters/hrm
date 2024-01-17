@@ -18,9 +18,9 @@
 import supertest from 'supertest';
 
 import { accountSid } from './mocks';
-import { configureService } from '@tech-matters/hrm-core/src/app';
-import { openPermissions } from '@tech-matters/hrm-core/src/permissions/json-permissions';
-import { RulesFile } from '@tech-matters/hrm-core/src/permissions/rulesMap';
+import { configureService } from '@tech-matters/hrm-core/app';
+import { openPermissions } from '@tech-matters/hrm-core/permissions/json-permissions';
+import { RulesFile } from '@tech-matters/hrm-core/permissions/rulesMap';
 import {
   configureDefaultPostMiddlewares,
   configureDefaultPreMiddlewares,

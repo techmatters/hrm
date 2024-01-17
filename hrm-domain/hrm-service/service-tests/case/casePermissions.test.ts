@@ -18,9 +18,9 @@
 
 import each from 'jest-each';
 
-import * as caseApi from '@tech-matters/hrm-core/src/case/caseService';
-import { CaseService } from '@tech-matters/hrm-core/src/case/caseService';
-import * as caseDb from '@tech-matters/hrm-core/src/case/caseDataAccess';
+import * as caseApi from '@tech-matters/hrm-core/case/caseService';
+import { CaseService } from '@tech-matters/hrm-core/case/caseService';
+import * as caseDb from '@tech-matters/hrm-core/case/caseDataAccess';
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 
 import * as mocks from '../mocks';

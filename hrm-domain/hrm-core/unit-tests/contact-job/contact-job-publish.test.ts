@@ -14,15 +14,15 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import * as SQSClient from '../../src/contact-job/client-sqs';
-import * as contactJobPublish from '../../src/contact-job/contact-job-publish';
-import { ContactJob } from '../../src/contact-job/contact-job-data-access';
+import * as SQSClient from '../../contact-job/client-sqs';
+import * as contactJobPublish from '../../contact-job/contact-job-publish';
+import { ContactJob } from '../../contact-job/contact-job-data-access';
 import { ContactJobType } from '@tech-matters/types';
-import { ContactJobPollerError } from '../../src/contact-job/contact-job-error';
+import { ContactJobPollerError } from '../../contact-job/contact-job-error';
 import each from 'jest-each';
 import { PublishToContactJobsTopicParams } from '@tech-matters/types';
 
-jest.mock('../../src/contact-job/client-sqs');
+jest.mock('../../contact-job/client-sqs');
 
 beforeEach(() => {
   jest.resetAllMocks();
