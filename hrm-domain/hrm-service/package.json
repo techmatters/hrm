@@ -48,7 +48,8 @@
     "@tech-matters/twilio-worker-auth": "^1.0.0",
     "@tech-matters/hrm-core": "^1.0.0",
     "@tech-matters/resources-service": "^1.0.0",
-    "@tech-matters/hrm-data-pull": "^1.0.0"
+    "@tech-matters/hrm-data-pull": "^1.0.0",
+    "@tech-matters/contact-job-cleanup": "^1.0.0"
   },
   "devDependencies": {
     "@tech-matters/testing": "^1.0.0",

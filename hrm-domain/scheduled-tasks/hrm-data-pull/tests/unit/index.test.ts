@@ -18,12 +18,12 @@ import subHours from 'date-fns/subHours';
 import differenceInSeconds from 'date-fns/differenceInSeconds';
 import parseISO from 'date-fns/parseISO';
 
-import { pullData } from '../../src';
-import * as pullContactsModule from '../../src/pull-contacts';
-import * as pullCasesModule from '../../src/pull-cases';
+import { pullData } from '../../index';
+import * as pullContactsModule from '../../pull-contacts';
+import * as pullCasesModule from '../../pull-cases';
 
-jest.mock('../../src/pull-contacts');
-jest.mock('../../src/pull-cases');
+jest.mock('../../pull-contacts');
+jest.mock('../../pull-cases');
 
 const getParamsFromSpy = (spy: jest.SpyInstance) => ({
   startDate: spy.mock.calls[0][0],

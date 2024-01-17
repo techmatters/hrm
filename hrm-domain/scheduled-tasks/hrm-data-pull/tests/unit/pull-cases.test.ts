@@ -20,9 +20,9 @@ import format from 'date-fns/format';
 import addDays from 'date-fns/addDays';
 
 import * as caseApi from '@tech-matters/hrm-core/src/case/caseService';
-import * as context from '../../src/context';
-import { defaultLimitAndOffset } from '../../src/auto-paginate';
-import { pullCases } from '../../src/pull-cases';
+import * as context from '../../context';
+import { defaultLimitAndOffset } from '../../auto-paginate';
+import { pullCases } from '../../pull-cases';
 
 const { maxPermissions } = context;
 
@@ -30,7 +30,7 @@ const accountSid = 'ACxxx';
 const bucket = 'docs-bucket';
 
 jest.mock('@tech-matters/hrm-core/src/contact/contactService');
-jest.mock('../../src/context');
+jest.mock('../../context');
 
 let putS3ObjectSpy = jest.fn();
 jest.mock('@tech-matters/s3-client', () => {

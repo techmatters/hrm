@@ -16,8 +16,7 @@
 
 import { ContactJobType } from '@tech-matters/types';
 import { getClient } from '@tech-matters/twilio-client';
-import RestException from 'twilio/lib/base/RestException';
-import { getSsmParameter } from '../config/ssmCache';
+import { getSsmParameter } from '@tech-matters/ssm-cache';
 import {
   ContactJob,
   deleteContactJob,
@@ -26,12 +25,12 @@ import {
   getPendingCleanupJobAccountSids,
   setContactJobCleanupActive,
   setContactJobCleanupPending,
-} from './contact-job-data-access';
-import { ContactJobCleanupError } from './contact-job-error';
+} from '@tech-matters/hrm-core/src/contact-job/contact-job-data-access';
+import { ContactJobCleanupError } from '@tech-matters/hrm-core/src/contact-job/contact-job-error';
 import {
   getConversationMediaById,
   isS3StoredTranscript,
-} from '../conversation-media/conversation-media';
+} from '@tech-matters/hrm-core/src/conversation-media/conversation-media';
 
 const MAX_CLEANUP_JOB_RETENTION_DAYS = 365;
 
@@ -74,7 +73,7 @@ export const deleteTranscript = async (
       .channels.get(job.resource.channelSid)
       .remove();
   } catch (err) {
-    if (err instanceof RestException && err.status === 404) {
+    if (err.status === 404) {
       console.log(
         `Channel ${channelSid} not found, assuming it has already been deleted`,
       );

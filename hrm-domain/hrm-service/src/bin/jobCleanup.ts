@@ -15,7 +15,7 @@
  */
 
 import { handleSignals } from './handleSignals';
-import { cleanupContactJobs } from '@tech-matters/hrm-core/src/contact-job/contact-job-cleanup';
+import { cleanupContactJobs } from '@tech-matters/contact-job-cleanup';
 import { enableCleanupJobs } from '@tech-matters/hrm-core/src/featureFlags';
 
 const gracefulExit = async () => {
