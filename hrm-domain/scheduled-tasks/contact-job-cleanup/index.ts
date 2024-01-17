@@ -40,9 +40,7 @@ const MAX_CLEANUP_JOB_RETENTION_DAYS = 365;
  * @param job
  * @returns true if the channel was deleted, false if it was not
  */
-export const deleteTranscript = async (
-  job: RetrieveContactTranscriptJob,
-): Promise<boolean> => {
+const deleteTranscript = async (job: RetrieveContactTranscriptJob): Promise<boolean> => {
   const { accountSid, id } = job;
   const { channelSid } = job.resource;
 
@@ -97,7 +95,7 @@ export const deleteTranscript = async (
  * @returns void
  * @throws ContactJobCleanupError
  */
-export const cleanupContactJob = async (job: ContactJob): Promise<void> => {
+const cleanupContactJob = async (job: ContactJob): Promise<void> => {
   if (job.jobType === ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT) {
     if (!(await deleteTranscript(job))) return;
   }

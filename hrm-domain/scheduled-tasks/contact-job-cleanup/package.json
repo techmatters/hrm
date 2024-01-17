@@ -3,9 +3,7 @@
   "version": "1.0.0",
   "description": "The easiest way to run the tests locally is to run the test DB in docker.",
   "scripts": {
-    "start": "cd dist && node ./index",
-    "test:unit": "jest tests/unit",
-    "test": "npm run test:unit"
+    "start": "cd dist && node ./index"
   },
   "dependencies" : {
     "@tech-matters/hrm-core": "^1.0.0",
