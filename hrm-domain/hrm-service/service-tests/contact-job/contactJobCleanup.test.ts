@@ -26,7 +26,7 @@ import {
 } from '@tech-matters/hrm-core/src/conversation-media/conversation-media';
 import { S3ContactMediaType } from '@tech-matters/hrm-core/src/conversation-media/conversation-media';
 import { getById as getContactById } from '@tech-matters/hrm-core/src/contact/contactDataAccess';
-import * as cleanupContactJobsApi from '@tech-matters/hrm-core/src/contact-job/contact-job-cleanup';
+import * as cleanupContactJobsApi from '@tech-matters/contact-job-cleanup';
 import {
   completeContactJob,
   getContactJobById,
