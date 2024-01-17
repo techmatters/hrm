@@ -17,7 +17,7 @@
 import {
   SafeRouter as MockSafeRouter,
   publicEndpoint as mockPublicEndpoint,
-} from '@tech-matters/hrm-core/permissions';
+} from '@tech-matters/hrm-core/permissions/index';
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import { accountSid, workerSid } from './mocks';
 import { headers, getRequest, getServer, useOpenRules } from './server';
