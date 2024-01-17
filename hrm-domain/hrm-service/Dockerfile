@@ -31,7 +31,7 @@ COPY package.json package-lock.json tsconfig.base.json hrm-domain/hrm-service/ts
 
 RUN apk add --no-cache rsync \
     && cd /tmp/build \
-    && npm ci -w=hrm-domain/hrm-core -w=hrm-domain/hrm-service -w hrm-domain/scheduled-tasks/* -w packages/* -w resources-domain/resources-service -w resources-domain/packages/* \
+    && npm ci -w=hrm-domain/hrm-service -w hrm-domain/hrm-core -w hrm-domain/scheduled-tasks/* -w packages/* -w resources-domain/resources-service -w resources-domain/packages/* \
     && npx tsc -b tsconfig.build.json \
     && cp -r hrm-domain/hrm-service/* /home/node/ \
     && mkdir -p /home/node/hrm-domain/ \
