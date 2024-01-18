@@ -28,11 +28,18 @@ export const applyTransitionRuleToCases = async (
   accountSid: AccountSID,
   rule: CaseStatusTransitionRule,
 ): Promise<string[]> => {
-  console.log(rule);
   const records = await db.task(async conn => {
     return conn.manyOrNone<{ id: string }>(
-      `UPDATE "Cases" SET "status" = $<targetStatus> WHERE "status" = $<targetStatus> AND "statusUpdatedAt" < (current_timestamp - $<timeInStatusInterval>::interval) RETURNING "id"`,
-      rule,
+      `UPDATE "Cases" 
+                SET 
+                "status" = $<targetStatus>, "statusUpdatedAt" = CURRENT_TIMESTAMP, 
+                "statusUpdatedBy" = $<description> 
+              WHERE 
+                "accountSid"=$<accountSid> AND 
+                "status" = $<startingStatus> AND 
+                "statusUpdatedAt" < (CURRENT_TIMESTAMP - $<timeInStatusInterval>::interval) 
+              RETURNING "id"`,
+      { ...rule, accountSid },
     );
   });
   return records.map(record => record.id.toString());

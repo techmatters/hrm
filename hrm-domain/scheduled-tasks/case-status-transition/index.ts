@@ -20,7 +20,7 @@ import { applyTransitionRuleToCases } from './dataAccess';
 import { AccountSID } from '@tech-matters/types';
 
 const accountSidPattern =
-  /\/[A-Za-z]+\/hrm\/(?<accountSid>AC\w+)\/case_status_transition_rules/;
+  /\/[A-Za-z]+\/[A-Za-z0-9\-]+\/hrm\/scheduled-task\/case_status_transition_rules\/(?<accountSid>AC\w+)/;
 /**
  * Cleanup all pending cleanup jobs
  * @returns void
@@ -28,7 +28,9 @@ const accountSidPattern =
  */
 export const transitionCaseStatuses = async (): Promise<void> => {
   const parameters = await findSsmParametersByPath(
-    `/${process.env.NODE_ENV}/hrm/*/case_status_transition_rules`,
+    `/${process.env.NODE_ENV}/${
+      process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
+    }/hrm/scheduled-task/case_status_transition_rules/*`,
   );
   const configs = parameters.map(({ Name, Value }) => {
     const accountSid = Name.match(accountSidPattern).groups.accountSid as AccountSID;
@@ -48,7 +50,7 @@ export const transitionCaseStatuses = async (): Promise<void> => {
       accountSid,
     );
     for (const rule of rules) {
-      console.debug(`Applying rule to ${accountSid}:`, rule);
+      console.debug(`Applying rule '${rule.description}' to ${accountSid}:`, rule);
       const ids = await applyTransitionRuleToCases(accountSid, rule);
       console.info(
         `Updated the following cases in ${accountSid} to '${rule.targetStatus}' status because they had been in '${rule.startingStatus}' for ${rule.timeInStatusInterval}:`,

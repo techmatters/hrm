@@ -18,4 +18,5 @@ export type CaseStatusTransitionRule = {
   startingStatus: string;
   targetStatus: string;
   timeInStatusInterval: string;
+  description: string;
 };
