@@ -3,9 +3,7 @@
   "version": "1.0.0",
   "description": "Applies any rules for automatically transitioning case statuses based on current status & time spent in that status",
   "scripts": {
-    "start": "cd dist && node ./index",
-    "test:unit": "jest tests/unit",
-    "test": "npm run test:unit"
+    "start": "cd dist && node ./index"
   },
   "dependencies" : {
     "@aws-sdk/client-ssm": "^3.391.0",
