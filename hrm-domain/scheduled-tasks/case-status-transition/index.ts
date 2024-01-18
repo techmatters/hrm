@@ -14,53 +14,46 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { getSsmParameter } from '@tech-matters/ssm-cache';
+import { findSsmParametersByPath } from './ssmByPath';
+import { CaseStatusTransitionRule } from './caseStatusTransitionRule';
+import { applyTransitionRuleToCases } from './dataAccess';
+import { AccountSID } from '@tech-matters/types';
 
-/**
- * Apply the transition rule to any qualifying cases in the DB
- * @param rule
- * @returns void
- * @throws ContactJobCleanupError
- */
-export const applyTransitionRuleToCases = async (rule): Promise<void> => {
-  console.log(rule);
-};
-
-/**
- * Get the number of days to retain cleanup jobs for a given account
- * @param accountSid
- * @returns number of days to retain cleanup jobs
- */
-const getCaseStatusTransitionRules = async (accountSid): Promise<any[]> => {
-  const rulesParameterText = await getSsmParameter(
-    `/${process.env.NODE_ENV}/hrm/${accountSid}/case_status_transition_rules`,
-  );
-  return rulesParameterText.split(';').map(singleRuleText => {
-    const [startingStatus, targetStatus, timeInStatusUnit, timeInStatusValue] =
-      singleRuleText.split(',');
-    return {
-      startingStatus,
-      targetStatus,
-      timeInStatusUnit,
-      timeInStatusValue: parseInt(timeInStatusValue),
-    };
-  });
-};
-
+const accountSidPattern =
+  /\/[A-Za-z]+\/hrm\/(?<accountSid>AC\w+)\/case_status_transition_rules/;
 /**
  * Cleanup all pending cleanup jobs
  * @returns void
  * @throws ContactJobCleanupError
  */
 export const transitionCaseStatuses = async (): Promise<void> => {
-  const accountSids = ['placeholder'];
+  const parameters = await findSsmParametersByPath(
+    `/${process.env.NODE_ENV}/hrm/*/case_status_transition_rules`,
+  );
+  const configs = parameters.map(({ Name, Value }) => {
+    const accountSid = Name.match(accountSidPattern).groups.accountSid as AccountSID;
+    return {
+      accountSid,
+      rules: JSON.parse(Value) as CaseStatusTransitionRule[],
+    };
+  });
+  console.log(
+    `Found automatic case status transition rules:`,
+    configs.map(({ accountSid }) => accountSid),
+  );
 
-  console.log(`Cleaning up contact jobs for accounts:`, accountSids);
-
-  for (const accountSid of accountSids) {
-    const rules = await getCaseStatusTransitionRules(accountSid);
+  for (const { accountSid, rules } of configs) {
+    console.log(
+      `Applying automatic case status transition rules for account:`,
+      accountSid,
+    );
     for (const rule of rules) {
-      await applyTransitionRuleToCases(rule);
+      console.debug(`Applying rule to ${accountSid}:`, rule);
+      const ids = await applyTransitionRuleToCases(accountSid, rule);
+      console.info(
+        `Updated the following cases in ${accountSid} to '${rule.targetStatus}' status because they had been in '${rule.startingStatus}' for ${rule.timeInStatusInterval}:`,
+        ids,
+      );
     }
   }
 };
