@@ -49,3 +49,5 @@ process.env.ENABLE_CREATE_CONTACT_JOBS = true;
 process.env.ENABLE_PROCESS_CONTACT_JOBS = true;
 process.env.ENABLE_CLEANUP_JOBS = true;
 process.env.AWS_REGION = 'xx-fake-1';
+process.env.AWS_ACCESS_KEY_ID = 'mock-access-key';
+process.env.AWS_SECRET_ACCESS_KEY = 'mock-secret-key';
