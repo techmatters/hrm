@@ -115,4 +115,5 @@ export const mockSsmParameters = async (
     }
     return { status: 404 };
   });
+  console.log('Mocked SSM on mock-ssm: ', parameters);
 };
