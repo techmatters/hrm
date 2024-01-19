@@ -21,7 +21,6 @@ import { putS3Object } from '@tech-matters/s3-client';
 import { getContext, maxPermissions } from './context';
 import * as caseApi from '../../case/caseService';
 import { autoPaginate, defaultLimitAndOffset } from './auto-paginate';
-import { parseISO } from 'date-fns';
 
 const getSearchParams = (startDate: Date, endDate: Date) => ({
   filters: {
@@ -57,9 +56,10 @@ export const pullCases = async (startDate: Date, endDate: Date) => {
     /*
       Case type is slightly wrong. The instance object actually has:
       1) 'totalCount' property, which I think is wrong, so I'm deleting it
+      2) 'updatedAt' property is actually a Date instead of a string, so I'm explicitly converting it to Date
     */
     delete (cas as any).totalCount;
-    const date = format(parseISO(cas.updatedAt), 'yyyy/MM/dd');
+    const date = format(cas.updatedAt as unknown as Date, 'yyyy/MM/dd');
     const key = `hrm-data/${date}/cases/${cas.id}.json`;
     const body = JSON.stringify(cas);
     const params = { bucket, key, body };
