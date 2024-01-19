@@ -55,10 +55,9 @@ describe('Single Rule', () => {
 
   beforeAll(async () => {
     jest.setTimeout(20000);
-    await mockingProxy.start();
+    await mockingProxy.start(false);
     await mockSuccessfulTwilioAuthentication(workerSid);
     const mockttp = await mockingProxy.mockttpServer();
-    mockttp.reset();
     const mockRuleSet: [AccountSID, CaseStatusTransitionRule[]][] = [
       [
         'AC1',

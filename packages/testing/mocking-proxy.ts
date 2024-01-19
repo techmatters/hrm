@@ -19,6 +19,7 @@ import { Mockttp, getLocal, generateCACertificate } from 'mockttp';
 import { createGlobalProxyAgent } from 'global-agent';
 
 let mockServer: Mockttp;
+let globalProxyAgent: any;
 
 export async function mockttpServer() {
   if (!mockServer) {
@@ -31,18 +32,32 @@ export async function mockttpServer() {
   return mockServer;
 }
 
-export async function start(): Promise<void> {
+export async function start(allowPassThrough = true): Promise<void> {
   const server = await mockttpServer();
   await server.start();
   console.log('STARTED ENDPOINT SERVER');
-  await server.forAnyRequest().thenPassThrough();
+  if (allowPassThrough) {
+    await server.forAnyRequest().thenPassThrough();
+    console.debug('ALLOWING PASS THROUGH');
+  } else {
+    await server.forAnyRequest().thenCallback(req => {
+      console.log('UNHANDLED MOCKTTP REQUEST', req);
+      return {
+        status: 500,
+        body: 'Not implemented',
+      };
+    });
+    console.debug('BLOCKING PASS THROUGH');
+  }
   const global = createGlobalProxyAgent();
   // Filter local requests out from proxy to prevent loops.
   global.NO_PROXY = 'localhost*,127.0.*,local.home*,search-development-resources*';
   global.HTTP_PROXY = `http://localhost:${server.port}`;
+  globalProxyAgent = global;
 }
 
 export async function stop(): Promise<void> {
   const server = await mockttpServer();
   await server.stop();
+  globalProxyAgent.stop();
 }
