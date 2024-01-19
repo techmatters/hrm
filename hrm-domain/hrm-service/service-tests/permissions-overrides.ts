@@ -14,8 +14,8 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-const openRules = require('../permission-rules/open.json');
-import { RulesFile } from '../src/permissions/rulesMap';
+const openRules = require('../../hrm-core/permission-rules/open.json');
+import { RulesFile } from '@tech-matters/hrm-core/permissions/rulesMap';
 
 export function ruleFileWithOnePermittedOrDeniedAction(
   permittedAction: keyof RulesFile,

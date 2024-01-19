@@ -14,18 +14,18 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { CaseService } from '../src/case/caseService';
+import { CaseService } from '@tech-matters/hrm-core/case/caseService';
 import {
   NewConversationMedia,
   S3ContactMediaType,
-} from '../src/conversation-media/conversation-media';
-import { Contact } from '../src/contact/contactDataAccess';
-import { ContactRawJson } from '../src/contact/contactJson';
-import { NewContactRecord } from '../src/contact/sql/contactInsertSql';
-import { twilioUser } from '@tech-matters/twilio-worker-auth/dist';
+} from '@tech-matters/hrm-core/conversation-media/conversation-media';
+import { Contact } from '@tech-matters/hrm-core/contact/contactDataAccess';
+import { ContactRawJson } from '@tech-matters/hrm-core/contact/contactJson';
+import { NewContactRecord } from '@tech-matters/hrm-core/contact/sql/contactInsertSql';
+import { twilioUser } from '@tech-matters/twilio-worker-auth';
 
 export const accountSid = 'ACCOUNT_SID';
-// TODO: Turn these into proper API types (will probably break so many tests...)
+
 export const contact1: NewContactRecord = {
   rawJson: {
     callType: 'Child calling about self',

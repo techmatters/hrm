@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import * as contactApi from '../../src/contact/contactService';
+import * as contactApi from '@tech-matters/hrm-core/contact/contactService';
 import { accountSid, ALWAYS_CAN, workerSid } from '../mocks';
 
 export const finalizeContact = async (
