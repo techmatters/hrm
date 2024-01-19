@@ -56,6 +56,7 @@ afterAll(async () => {
       await clients[accountSid].indexClient(resourceIndexConfiguration).deleteIndex();
     }),
   );
+  await mockingProxy.stop();
 });
 
 beforeAll(async () => {

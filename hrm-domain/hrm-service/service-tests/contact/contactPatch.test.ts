@@ -48,7 +48,6 @@ const request = getRequest(server);
 const route = `/v0/accounts/${accountSid}/contacts`;
 
 const cleanup = async () => {
-  await mockingProxy.start();
   await mockSuccessfulTwilioAuthentication(workerSid);
   await cleanupCsamReports();
   await cleanupReferrals();
@@ -61,9 +60,15 @@ beforeAll(() => {
   process.env[`TWILIO_AUTH_TOKEN_${accountSid}`] = 'mockAuthToken';
 });
 
-beforeEach(cleanup);
+beforeEach(async () => {
+  await mockingProxy.start();
+  await cleanup();
+});
 
-afterAll(cleanup);
+afterEach(async () => {
+  await cleanup();
+  await mockingProxy.stop();
+});
 
 describe('/contacts/:contactId route', () => {
   describe('PATCH', () => {

@@ -18,7 +18,11 @@ import { ContactJobType } from '@tech-matters/types';
 import { getClient } from '@tech-matters/twilio-client';
 
 import { db } from '@tech-matters/hrm-core/connection-pool';
-import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
+import {
+  mockingProxy,
+  mockSsmParameters,
+  mockSuccessfulTwilioAuthentication,
+} from '@tech-matters/testing';
 import { createContactJob } from '@tech-matters/hrm-core/contact-job/contact-job-data-access';
 import {
   isS3StoredTranscriptPending,
@@ -66,6 +70,8 @@ beforeAll(async () => {
   twilioSpy = jest.spyOn(client.chat.v2, 'services');
 
   await mockingProxy.start();
+  const mockttp = await mockingProxy.mockttpServer();
+  await mockSsmParameters(mockttp, [{ pathPattern: /.*/, valueGenerator: () => 'mock' }]);
   await mockSuccessfulTwilioAuthentication(workerSid);
 });
 

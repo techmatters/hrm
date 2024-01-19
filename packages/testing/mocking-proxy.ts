@@ -31,7 +31,7 @@ export async function mockttpServer() {
   return mockServer;
 }
 
-export async function start(allowPassThrough = true): Promise<void> {
+export async function start(allowPassThrough = false): Promise<void> {
   const server = await mockttpServer();
   await server.start();
   console.log('STARTED ENDPOINT SERVER');
