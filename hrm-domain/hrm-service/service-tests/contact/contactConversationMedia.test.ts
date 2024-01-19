@@ -55,8 +55,16 @@ const cleanup = async () => {
 
 let createdContact: contactDb.Contact;
 
-beforeEach(async () => {
+beforeAll(async () => {
   await mockingProxy.start();
+});
+
+afterAll(async () => {
+  await cleanup();
+  await mockingProxy.stop();
+});
+
+beforeEach(async () => {
   await cleanup();
 
   createdContact = await contactApi.createContact(
@@ -71,11 +79,6 @@ beforeEach(async () => {
 });
 afterEach(() => {
   useOpenRules();
-});
-
-afterAll(async () => {
-  await cleanup();
-  await mockingProxy.stop();
 });
 
 describe('/contacts/:contactId/conversationMedia route', () => {

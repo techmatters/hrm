@@ -36,10 +36,10 @@ export async function start(allowPassThrough = false): Promise<void> {
   await server.start();
   console.log('STARTED ENDPOINT SERVER');
   if (allowPassThrough) {
-    await server.forAnyRequest().thenPassThrough();
+    await server.forUnmatchedRequest().thenPassThrough();
     console.debug('ALLOWING PASS THROUGH');
   } else {
-    await server.forAnyRequest().thenCallback(req => {
+    await server.forUnmatchedRequest().thenCallback(req => {
       console.log('UNHANDLED MOCKTTP REQUEST', req);
       return {
         status: 500,
@@ -56,5 +56,7 @@ export async function start(allowPassThrough = false): Promise<void> {
 
 export async function stop(): Promise<void> {
   const server = await mockttpServer();
+  console.debug('STOPPING ENDPOINT SERVER');
   await server.stop();
+  console.log('STOPPED ENDPOINT SERVER');
 }

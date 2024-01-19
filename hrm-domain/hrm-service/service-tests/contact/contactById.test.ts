@@ -46,7 +46,6 @@ const cleanup = async () => {
 let createdContact: contactDb.Contact;
 
 beforeEach(async () => {
-  await mockingProxy.start();
   await cleanup();
 
   createdContact = await contactApi.createContact(
@@ -58,6 +57,10 @@ beforeEach(async () => {
     },
     ALWAYS_CAN,
   );
+});
+
+beforeAll(async () => {
+  await mockingProxy.start();
 });
 
 afterAll(async () => {
