@@ -33,6 +33,14 @@ export async function mockttpServer() {
 
 export async function start(allowPassThrough = false): Promise<void> {
   const server = await mockttpServer();
+  try {
+    await server.stop();
+    console.warn(
+      "Proxy server was already running & needed to be stopped. You probably aren't matching each start with a stop in your tests.",
+    );
+  } catch (e) {
+    // Ignore error
+  }
   await server.start();
   console.log('STARTED ENDPOINT SERVER');
   if (allowPassThrough) {
