@@ -43,7 +43,7 @@ jest.mock('@tech-matters/s3-client', () => {
 });
 
 const getExpectedS3Params = (cas: caseApi.CaseService) => {
-  const date = format(parseISO(cas.updatedAt), 'yyyy/MM/dd');
+  const date = format(cas.updatedAt as unknown as Date, 'yyyy/MM/dd');
   return {
     bucket,
     key: `hrm-data/${date}/cases/${cas.id}.json`,
@@ -110,13 +110,11 @@ describe('KHP Data Pull - Pull Cases', () => {
       createdBy: 'Wkxxx',
       updatedBy: 'Wkxxx',
       accountSid,
-      createdAt: addDays(startDate, 1).toISOString(),
-      updatedAt: addDays(startDate, 1).toISOString(),
-      statusUpdatedAt: null,
-      statusUpdatedBy: null,
+      createdAt: addDays(startDate, 1) as unknown as string, // The type defines this as string, but it's actually as Date
+      updatedAt: addDays(startDate, 1) as unknown as string,
     };
 
-    const case2: caseApi.CaseService = {
+    const case2 = {
       id: 2345,
       categories: {},
       connectedContacts: [],
@@ -127,10 +125,8 @@ describe('KHP Data Pull - Pull Cases', () => {
       createdBy: 'Wkxxx',
       updatedBy: 'Wkxxx',
       accountSid,
-      createdAt: addDays(startDate, 2).toISOString(),
-      updatedAt: addDays(startDate, 2).toISOString(),
-      statusUpdatedAt: null,
-      statusUpdatedBy: null,
+      createdAt: addDays(startDate, 2) as unknown as string,
+      updatedAt: addDays(startDate, 2) as unknown as string,
     };
 
     const searchCasesResponse = Promise.resolve({
