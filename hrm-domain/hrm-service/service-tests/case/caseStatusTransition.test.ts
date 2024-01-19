@@ -73,11 +73,11 @@ describe('Single Rule', () => {
     ];
     await mockSsmParameters(mockttp, [
       ...mockRuleSet.map(([accountSid, rules]) => ({
-        name: `/test/xx-fake-1/hrm/scheduled-task/case_status_transition_rules/${accountSid}`,
+        name: `/test/xx-fake-1/hrm/scheduled-task/case-status-transition-rules/${accountSid}`,
         valueGenerator: () => JSON.stringify(rules),
       })),
       {
-        name: `/test/xx-other-1/hrm/scheduled-task/case_status_transition_rules`,
+        name: `/test/xx-other-1/hrm/scheduled-task/case-status-transition-rules/AC1`,
         valueGenerator: () =>
           JSON.stringify([
             {

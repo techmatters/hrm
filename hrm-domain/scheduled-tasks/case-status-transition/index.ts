@@ -20,7 +20,7 @@ import { applyTransitionRuleToCases } from './dataAccess';
 import { AccountSID } from '@tech-matters/types';
 
 const accountSidPattern =
-  /\/[A-Za-z]+\/[A-Za-z0-9\-]+\/hrm\/scheduled-task\/case_status_transition_rules\/(?<accountSid>AC\w+)/;
+  /\/[A-Za-z]+\/[A-Za-z0-9\-]+\/hrm\/scheduled-task\/case-status-transition-rules\/(?<accountSid>AC\w+)/;
 /**
  * Cleanup all pending cleanup jobs
  * @returns void
@@ -30,7 +30,7 @@ export const transitionCaseStatuses = async (): Promise<void> => {
   const parameters = await findSsmParametersByPath(
     `/${process.env.NODE_ENV}/${
       process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
-    }/hrm/scheduled-task/case_status_transition_rules/*`,
+    }/hrm/scheduled-task/case-status-transition-rules/*`,
   );
   const configs = parameters.map(({ Name, Value }) => {
     const accountSid = Name.match(accountSidPattern).groups.accountSid as AccountSID;
