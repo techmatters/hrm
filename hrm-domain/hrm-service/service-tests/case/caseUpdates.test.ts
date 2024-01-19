@@ -45,14 +45,6 @@ const request = getRequest(server);
 
 const { case1, case2, accountSid, workerSid } = mocks;
 
-afterAll(done => {
-  mockingProxy.stop().finally(() => {
-    server.close(done);
-  });
-});
-
-beforeAll(async () => {});
-
 // eslint-disable-next-line @typescript-eslint/no-shadow
 const deleteContactById = (id: number, accountSid: string) =>
   db.task(t =>
