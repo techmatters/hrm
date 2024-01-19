@@ -14,6 +14,9 @@
     { "path": "packages/types" },
     { "path": "resources-domain/packages/resources-search-config" },
     { "path": "resources-domain/resources-service" },
+    { "path": "hrm-domain/hrm-core" },
+    { "path": "hrm-domain/scheduled-tasks/hrm-data-pull" },
+    { "path": "hrm-domain/scheduled-tasks/contact-job-cleanup" },
     { "path": "hrm-domain/hrm-service" }
   ]
 }

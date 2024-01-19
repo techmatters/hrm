@@ -11,6 +11,7 @@
     "hrm-domain/lambdas/*",
     "hrm-domain/packages/*",
     "hrm-domain/*",
+    "hrm-domain/scheduled-tasks/*",
     "resources-domain/lambdas/*",
     "resources-domain/packages/*",
     "resources-domain/*"
