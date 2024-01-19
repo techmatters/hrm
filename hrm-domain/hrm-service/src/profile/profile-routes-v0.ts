@@ -183,7 +183,11 @@ profilesRouter.post(
       const { profileId, profileFlagId } = req.params;
       const { validUntil } = req.body;
 
-      const parsedValidUntil = parseISO(validUntil);
+      if (validUntil && !Date.parse(validUntil)) {
+        return next(createError(400));
+      }
+
+      const parsedValidUntil = validUntil ? parseISO(validUntil) : null;
 
       if (validUntil && !isValid(parsedValidUntil)) {
         return next(createError(400));
@@ -193,7 +197,7 @@ profilesRouter.post(
         accountSid,
         profileId,
         profileFlagId,
-        validUntil ? parsedValidUntil : null,
+        parsedValidUntil,
       );
 
       if (isErr(result)) {
