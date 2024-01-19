@@ -45,7 +45,7 @@ export const mockSsmParameters = async (
   mockttp: Mockttp,
   parameters: MockParameter[],
 ) => {
-  await mockttp.forPost(/(.*)mock-ssm(.*)/).thenCallback(async req => {
+  await mockttp.forPost(/http:\/\/mock-ssm(.*)/).thenCallback(async req => {
     const requestBody = await req.body.getText();
     const {
       Name: name,
