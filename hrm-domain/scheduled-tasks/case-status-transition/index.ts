@@ -19,6 +19,8 @@ import { CaseStatusTransitionRule } from './caseStatusTransitionRule';
 import { applyTransitionRuleToCases } from './dataAccess';
 import { AccountSID } from '@tech-matters/types';
 
+export * from './caseStatusTransitionRule';
+
 const accountSidPattern =
   /\/[A-Za-z]+\/[A-Za-z0-9\-]+\/hrm\/scheduled-task\/case-status-transition-rules\/(?<accountSid>AC\w+)/;
 /**
