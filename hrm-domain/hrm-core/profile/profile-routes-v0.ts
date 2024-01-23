@@ -174,6 +174,35 @@ profilesRouter.get('/flags', publicEndpoint, async (req, res, next) => {
   }
 });
 
+profilesRouter.post('/flags', publicEndpoint, async (req, res, next) => {
+  try {
+    const { accountSid } = req;
+    const { name } = req.body;
+
+    const existingFlags = await profileController.getProfileFlags(accountSid);
+
+    if (isErr(existingFlags)) {
+      return next(mapHTTPError(existingFlags, { InternalServerError: 500 }));
+    }
+
+    const existingFlag = existingFlags.data.find(f => f.name === name);
+    if (existingFlag) {
+      return next(createError(409, 'Flag already exists associated with this account'));
+    }
+
+    const result = await profileController.createProfileFlag(accountSid, { name });
+
+    if (isErr(result)) {
+      return next(mapHTTPError(result, { InternalServerError: 500 }));
+    }
+
+    res.json(result.data);
+  } catch (err) {
+    console.error(err);
+    return next(createError(500, err.message));
+  }
+});
+
 profilesRouter.post(
   '/:profileId/flags/:profileFlagId',
   publicEndpoint,
