@@ -45,6 +45,6 @@ export const selectSingleCaseByIdSql = (tableName: string) => `SELECT
         WHERE cs."caseId" = cases.id AND cs."accountSid" = cases."accountSid"
       ) caseSections ON true
       LEFT JOIN LATERAL (
-        SELECT COUNT(*) AS "contactsOwnedByUser" FROM "Contacts" WHERE "caseId" = cases.id AND "accountSid" = cases."accountSid" AND "twilioWorkerId" = $<workerSid>
+        SELECT COUNT(*) AS "contactsOwnedByUserCount" FROM "Contacts" WHERE "caseId" = cases.id AND "accountSid" = cases."accountSid" AND "twilioWorkerId" = $<workerSid>
       ) contactsOwnedByUser ON true
       ${ID_WHERE_CLAUSE}`;

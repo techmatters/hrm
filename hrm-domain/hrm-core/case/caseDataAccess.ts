@@ -60,6 +60,7 @@ export type CaseRecordUpdate = Partial<NewCaseRecord> & Pick<NewCaseRecord, 'upd
 export type CaseRecord = CaseRecordCommon & {
   id: number;
   connectedContacts?: Contact[];
+  contactsOwnedByUserCount?: number;
   caseSections?: CaseSectionRecord[];
 };
 

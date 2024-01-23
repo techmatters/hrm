@@ -27,6 +27,9 @@ const accountSidPattern =
  * @throws ContactJobCleanupError
  */
 export const transitionCaseStatuses = async (): Promise<void> => {
+  console.info(
+    `[scheduled-task:case-status-transition]: Starting automatic case status transition...`,
+  );
   const parameters = await findSsmParametersByPath(
     `/${process.env.NODE_ENV}/${
       process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
@@ -39,21 +42,24 @@ export const transitionCaseStatuses = async (): Promise<void> => {
       rules: JSON.parse(Value) as CaseStatusTransitionRule[],
     };
   });
-  console.log(
-    `Found automatic case status transition rules:`,
+  console.debug(
+    `[scheduled-task:case-status-transition]: Found automatic case status transition rules:`,
     configs.map(({ accountSid }) => accountSid),
   );
 
   for (const { accountSid, rules } of configs) {
-    console.log(
-      `Applying automatic case status transition rules for account:`,
+    console.debug(
+      `[scheduled-task:case-status-transition]: Applying automatic case status transition rules for account:`,
       accountSid,
     );
     for (const rule of rules) {
-      console.debug(`Applying rule '${rule.description}' to ${accountSid}:`, rule);
+      console.debug(
+        `[scheduled-task:case-status-transition]: Applying rule '${rule.description}' to ${accountSid}:`,
+        rule,
+      );
       const ids = await applyTransitionRuleToCases(accountSid, rule);
       console.info(
-        `Updated the following cases in ${accountSid} to '${rule.targetStatus}' status because they had been in '${rule.startingStatus}' for ${rule.timeInStatusInterval}:`,
+        `[scheduled-task:case-status-transition]: Updated the following cases in ${accountSid} to '${rule.targetStatus}' status because they had been in '${rule.startingStatus}' for ${rule.timeInStatusInterval}:`,
         ids,
       );
     }

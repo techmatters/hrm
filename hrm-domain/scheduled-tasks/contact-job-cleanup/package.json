@@ -5,6 +5,9 @@
   "scripts": {
     "start": "cd dist && node ./index"
   },
+  "exports": {
+    ".": "./dist/index.js"
+  },
   "dependencies" : {
     "@tech-matters/hrm-core": "^1.0.0",
     "@tech-matters/ssm-cache": "^1.0.0",
