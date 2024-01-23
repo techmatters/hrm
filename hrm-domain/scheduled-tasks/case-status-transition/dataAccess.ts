@@ -33,6 +33,7 @@ export const applyTransitionRuleToCases = async (
       `UPDATE "Cases" 
                 SET 
                 "status" = $<targetStatus>, "statusUpdatedAt" = CURRENT_TIMESTAMP, 
+                -- We set statusUpdatedAt to the rule that initiated the change rather than a user
                 "statusUpdatedBy" = $<description> 
               WHERE 
                 "accountSid"=$<accountSid> AND 
