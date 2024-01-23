@@ -32,11 +32,13 @@ export const transitionCaseStatuses = async (): Promise<void> => {
   console.info(
     `[scheduled-task:case-status-transition]: Starting automatic case status transition...`,
   );
-  const parameters = await findSsmParametersByPath(
-    `/${process.env.NODE_ENV}/${
-      process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
-    }/hrm/scheduled-task/case-status-transition-rules`,
+  const ssmParametersPath = `/${process.env.NODE_ENV}/${
+    process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
+  }/hrm/scheduled-task/case-status-transition-rules`;
+  console.debug(
+    `[scheduled-task:case-status-transition]: Path searched: ${ssmParametersPath}`,
   );
+  const parameters = await findSsmParametersByPath(ssmParametersPath);
   const configs = parameters.map(({ Name, Value }) => {
     const accountSid = Name.match(accountSidPattern).groups.accountSid as AccountSID;
     return {
