@@ -21,6 +21,7 @@ import { selectCoalesceCsamReportsByContactId } from '../../csam-report/sql/csam
 import { selectCoalesceReferralsByContactId } from '../../referral/sql/referral-get-sql';
 import { selectCoalesceConversationMediasByContactId } from '../../conversation-media/sql/conversation-media-get-sql';
 import { OrderByClauseItem, OrderByDirection } from '../../sql';
+import { selectContactsOwnedCount } from './case-get-sql';
 
 export const OrderByColumn = {
   ID: 'id',
@@ -124,6 +125,7 @@ const filterSql = ({
   helplines,
   excludedStatuses,
   includeOrphans,
+  withContactOwnedBy,
 }: CaseListFilters) => {
   const filterSqlClauses: string[] = [];
   if (helplines && helplines.length) {
@@ -154,6 +156,9 @@ const filterSql = ({
   }
   if (!includeOrphans) {
     filterSqlClauses.push(`jsonb_array_length(contacts."connectedContacts") > 0`);
+  }
+  if (withContactOwnedBy) {
+    filterSqlClauses.push(`(${selectContactsOwnedCount('withContactOwnedBy')} > 0)`);
   }
   return filterSqlClauses.join(`
   AND `);
@@ -246,6 +251,9 @@ const selectCasesUnorderedSql = (whereClause: string, havingClause: string = '')
     FROM "Cases" cases 
     LEFT JOIN LATERAL (${SELECT_CONTACTS}) contacts ON true 
     LEFT JOIN LATERAL (${SELECT_CASE_SECTIONS}) caseSections ON true
+    LEFT JOIN LATERAL (
+        ${selectContactsOwnedCount('workerSid')}
+    ) contactsOwnedCount ON true
     ${whereClause} GROUP BY "cases"."accountSid", "cases"."id", caseSections."caseSections", contacts."connectedContacts" ${havingClause}`;
 
 const selectCasesPaginatedSql = (

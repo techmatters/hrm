@@ -118,6 +118,7 @@ export type CaseListFilters = {
   categories?: CategoryFilter[];
   helplines?: string[];
   includeOrphans?: boolean;
+  withContactOwnedBy?: string;
 };
 
 export const create = async (

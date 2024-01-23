@@ -40,8 +40,14 @@ type Request = {
   user?: TwilioUser;
 } & ExpressRequest;
 
+export const caseSearchPermissionLevels = {
+  ownCases: 'ownCases',
+  allCases: 'allCases',
+  casesWithConnectedOwnedContact: 'casesWithConnectedOwnedContact',
+};
+
 export type SearchPermissions = {
-  canOnlyViewOwnCases?: boolean;
+  caseSearchPermissions: TKConditionsSet<'case'>[][];
   canOnlyViewOwnContacts?: boolean;
 };
 

@@ -20,10 +20,16 @@ import { selectCoalesceReferralsByContactId } from '../../referral/sql/referral-
 
 const ID_WHERE_CLAUSE = `WHERE "cases"."accountSid" = $<accountSid> AND "cases"."id" = $<caseId>`;
 
+export const selectContactsOwnedCount = (ownerVariableName: string) =>
+  `SELECT COUNT(*) AS "contactsOwnedByUserCount" 
+   FROM "Contacts" 
+   WHERE "caseId" = cases.id AND "accountSid" = cases."accountSid" AND "twilioWorkerId" = $<${ownerVariableName}>`;
+
 export const selectSingleCaseByIdSql = (tableName: string) => `SELECT
       cases.*,
       caseSections."caseSections",
-      contacts."connectedContacts"
+      contacts."connectedContacts",
+      "contactsOwnedCount"."contactsOwnedByUserCount"
       FROM "${tableName}" AS cases
       LEFT JOIN LATERAL (
         SELECT COALESCE(jsonb_agg(to_jsonb(c) || to_jsonb(joinedReports) || to_jsonb(joinedReferrals) || to_jsonb(joinedConversationMedia)), '[]') AS  "connectedContacts"
@@ -45,6 +51,6 @@ export const selectSingleCaseByIdSql = (tableName: string) => `SELECT
         WHERE cs."caseId" = cases.id AND cs."accountSid" = cases."accountSid"
       ) caseSections ON true
       LEFT JOIN LATERAL (
-        SELECT COUNT(*) AS "contactsOwnedByUserCount" FROM "Contacts" WHERE "caseId" = cases.id AND "accountSid" = cases."accountSid" AND "twilioWorkerId" = $<workerSid>
-      ) contactsOwnedByUser ON true
+        ${selectContactsOwnedCount('workerSid')}
+      ) contactsOwnedCount ON true
       ${ID_WHERE_CLAUSE}`;
