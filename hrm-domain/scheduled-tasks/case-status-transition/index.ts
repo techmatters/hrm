@@ -35,7 +35,7 @@ export const transitionCaseStatuses = async (): Promise<void> => {
   const parameters = await findSsmParametersByPath(
     `/${process.env.NODE_ENV}/${
       process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
-    }/hrm/scheduled-task/case-status-transition-rules/*`,
+    }/hrm/scheduled-task/case-status-transition-rules`,
   );
   const configs = parameters.map(({ Name, Value }) => {
     const accountSid = Name.match(accountSidPattern).groups.accountSid as AccountSID;
