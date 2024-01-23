@@ -66,7 +66,7 @@ export type ContactSpecificCondition = (typeof contactSpecificConditions)[number
 const isContactSpecificCondition = (c: any): c is ContactSpecificCondition =>
   typeof c === 'string' && contactSpecificConditions.includes(c as any);
 
-const caseSpecificConditions = ['isCreator', 'isCaseOpen'] as const;
+const caseSpecificConditions = ['isCreator', 'isCaseOpen', 'isCaseContactOwner'] as const;
 export type CaseSpecificCondition = (typeof caseSpecificConditions)[number];
 
 const isCaseSpecificCondition = (c: any): c is CaseSpecificCondition =>

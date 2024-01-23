@@ -32,6 +32,10 @@ import { selectSingleCaseByIdSql } from './sql/case-get-sql';
 import { Contact } from '../contact/contactDataAccess';
 import { OrderByDirectionType } from '../sql';
 
+export type PrecalculatedCasePermissionConditions = {
+  isCaseContactOwner: boolean; // Does the requesting user own any of the contacts currently connected to the case?
+};
+
 export type CaseRecordCommon = {
   info: any;
   helpline: string;
