@@ -14,9 +14,13 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-export * from './mock-pgpromise';
-export * from './mock-twilio-auth-endpoint';
-export * from './mockSsm';
-import { start, stop, mockttpServer } from './mocking-proxy';
-export const mockingProxy = { start, stop, mockttpServer };
-import './expectToParseAsDate';
+import { handleSignals } from './handleSignals';
+import { transitionCaseStatuses } from '@tech-matters/case-status-transition';
+
+const gracefulExit = async () => {
+  //TODO: this should probably handle closing any running processes and open db connections
+};
+
+transitionCaseStatuses();
+
+handleSignals(gracefulExit);

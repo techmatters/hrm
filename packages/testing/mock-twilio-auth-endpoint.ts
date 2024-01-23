@@ -30,8 +30,6 @@ export async function mockSuccessfulTwilioAuthentication(
   accountSid: string | undefined = undefined,
 ): Promise<void> {
   const server = await mockttpServer();
-  server.reset();
-  await server.forAnyRequest().thenPassThrough();
   await server
     .forPost(
       accountSid

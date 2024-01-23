@@ -35,7 +35,6 @@ const request = getRequest(server);
 const route = `/v0/accounts/${accountSid}/contacts`;
 
 const cleanup = async () => {
-  await mockingProxy.start();
   await mockSuccessfulTwilioAuthentication(workerSid);
   await cleanupCsamReports();
   await cleanupReferrals();
@@ -60,7 +59,14 @@ beforeEach(async () => {
   );
 });
 
-afterAll(cleanup);
+beforeAll(async () => {
+  await mockingProxy.start();
+});
+
+afterAll(async () => {
+  await cleanup();
+  await mockingProxy.stop();
+});
 
 describe('/contacts/:contactId route', () => {
   const subRoute = id => `${route}/${id}`;
