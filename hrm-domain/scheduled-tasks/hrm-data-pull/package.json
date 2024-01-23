@@ -7,6 +7,9 @@
     "test:unit": "jest tests/unit",
     "test": "npm run test:unit"
   },
+  "exports": {
+    ".": "./dist/index.js"
+  },
   "dependencies" : {
     "@tech-matters/s3-client": "^1.0.0",
     "@tech-matters/hrm-core": "^1.0.0",
