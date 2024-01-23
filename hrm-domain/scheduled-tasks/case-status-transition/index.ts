@@ -46,10 +46,6 @@ export const transitionCaseStatuses = async (): Promise<void> => {
       rules: JSON.parse(Value) as CaseStatusTransitionRule[],
     };
   });
-  console.debug(
-    `[scheduled-task:case-status-transition]: Found automatic case status transition rules:`,
-    configs.map(({ accountSid }) => accountSid),
-  );
 
   for (const { accountSid, rules } of configs) {
     console.debug(
@@ -62,10 +58,16 @@ export const transitionCaseStatuses = async (): Promise<void> => {
         rule,
       );
       const ids = await applyTransitionRuleToCases(accountSid, rule);
-      console.info(
-        `[scheduled-task:case-status-transition]: Updated the following cases in ${accountSid} to '${rule.targetStatus}' status because they had been in '${rule.startingStatus}' for ${rule.timeInStatusInterval}:`,
-        ids,
-      );
+      if (ids.length > 0) {
+        console.info(
+          `[scheduled-task:case-status-transition]: Updated the following cases in ${accountSid} to '${rule.targetStatus}' status because they had been in '${rule.startingStatus}' for ${rule.timeInStatusInterval}, as dictated by rule '${rule.description}':`,
+          ids,
+        );
+      } else {
+        console.info(
+          `[scheduled-task:case-status-transition]: No cases in ${accountSid} updated by rule ${rule.description}. They had to be in '${rule.startingStatus}' for ${rule.timeInStatusInterval} to be updated to '${rule.targetStatus}'.`,
+        );
+      }
     }
   }
 };
