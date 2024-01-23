@@ -45,7 +45,6 @@ const request = getRequest(server);
 const route = `/v0/accounts/${accountSid}/contacts`;
 
 const cleanup = async () => {
-  await mockingProxy.start();
   await mockSuccessfulTwilioAuthentication(workerSid);
   await cleanupCsamReports();
   await cleanupReferrals();
@@ -55,6 +54,15 @@ const cleanup = async () => {
 };
 
 let createdContact: contactDb.Contact;
+
+beforeAll(async () => {
+  await mockingProxy.start();
+});
+
+afterAll(async () => {
+  await cleanup();
+  await mockingProxy.stop();
+});
 
 beforeEach(async () => {
   await cleanup();
@@ -72,8 +80,6 @@ beforeEach(async () => {
 afterEach(() => {
   useOpenRules();
 });
-
-afterAll(cleanup);
 
 describe('/contacts/:contactId/conversationMedia route', () => {
   const subRoute = contactId => `${route}/${contactId}/conversationMedia`;

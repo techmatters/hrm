@@ -45,14 +45,6 @@ const request = getRequest(server);
 
 const { case1, case2, accountSid, workerSid } = mocks;
 
-afterAll(done => {
-  mockingProxy.stop().finally(() => {
-    server.close(done);
-  });
-});
-
-beforeAll(async () => {});
-
 // eslint-disable-next-line @typescript-eslint/no-shadow
 const deleteContactById = (id: number, accountSid: string) =>
   db.task(t =>
@@ -87,7 +79,7 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
-  await mockingProxy.start();
+  await mockingProxy.stop();
   await caseDb.deleteById(cases.blank.id, accountSid);
   await caseDb.deleteById(cases.populated.id, accountSid);
 });
@@ -381,6 +373,7 @@ describe('PUT /cases/:id route', () => {
       extraExpectations = {},
     }: TestCase) => {
       if (customWorkerSid) {
+        await mockingProxy.stop();
         await mockingProxy.start();
         await mockSuccessfulTwilioAuthentication(customWorkerSid);
         await new Promise(resolve => setTimeout(resolve, 3000));
@@ -573,6 +566,7 @@ describe('PUT /cases/:id/status route', () => {
       previousStatus,
     }: TestCase) => {
       if (customWorkerSid) {
+        await mockingProxy.stop();
         await mockingProxy.start();
         await mockSuccessfulTwilioAuthentication(customWorkerSid);
         await new Promise(resolve => setTimeout(resolve, 3000));

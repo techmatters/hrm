@@ -495,10 +495,8 @@ describe('/profiles', () => {
 
     describe('/profiles/:profileId/flags', () => {
       describe('/profiles/:profileId/flags/:profileFlagId', () => {
-        const buildRoute = (profileId: number, profileFlagId: number, validUntil?: any) =>
-          `${baseRoute}/${profileId}/flags/${profileFlagId}?${
-            validUntil ? `validUntil=${validUntil}` : ''
-          }`;
+        const buildRoute = (profileId: number, profileFlagId: number) =>
+          `${baseRoute}/${profileId}/flags/${profileFlagId}`;
 
         let defaultFlags: profilesDB.ProfileFlag[];
         beforeAll(async () => {
@@ -585,7 +583,8 @@ describe('/profiles', () => {
               }
 
               const response = await request
-                .post(buildRoute(profileId, profileFlagId, validUntil))
+                .post(buildRoute(profileId, profileFlagId))
+                .send({ validUntil })
                 .set(customHeaders || headers);
               expect(response.statusCode).toBe(expectStatus);
               if (expectFunction) {
