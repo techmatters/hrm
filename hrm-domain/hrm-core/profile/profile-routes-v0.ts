@@ -174,6 +174,34 @@ profilesRouter.get('/flags', publicEndpoint, async (req, res, next) => {
   }
 });
 
+profilesRouter.patch('/flags/:flagId', publicEndpoint, async (req, res, next) => {
+  try {
+    const { accountSid } = req;
+    const { flagId } = req.params;
+    const { name } = req.body;
+
+    console.log('>>> route Updating profile flag:', flagId);
+
+    const result = await profileController.updateProfileFlagById(
+      accountSid,
+      flagId,
+      name,
+    );
+
+    if (isErr(result)) {
+      return next(mapHTTPError(result, { InternalServerError: 500 }));
+    }
+
+    if (!result.data) {
+      return next(createError(404));
+    }
+
+    res.json(result.data);
+  } catch (err) {
+    return next(createError(500, err.message));
+  }
+});
+
 profilesRouter.post(
   '/:profileId/flags/:profileFlagId',
   publicEndpoint,

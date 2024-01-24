@@ -180,6 +180,30 @@ export const disassociateProfileFromProfileFlag = async (
 export const getProfileFlags = profileDB.getProfileFlagsForAccount;
 export const getProfileFlagsByIdentifier = profileDB.getProfileFlagsByIdentifier;
 
+export const updateProfileFlagById = async (
+  accountSid: string,
+  flagId: profileDB.ProfileFlag['id'],
+  payload: {
+    name: string;
+  },
+): Promise<TResult<'InternalServerError', profileDB.ProfileFlag>> => {
+  try {
+    const { name } = payload;
+    console.log('>>> updateProfileFlagById Updating profile flag:', flagId, name);
+    const profileFlag = await profileDB.updateProfileFlagById(accountSid, {
+      id: flagId,
+      name,
+    });
+
+    return profileFlag;
+  } catch (err) {
+    return newErr({
+      message: err instanceof Error ? err.message : String(err),
+      error: 'InternalServerError',
+    });
+  }
+};
+
 // While this is just a wrapper around profileDB.createProfileSection, we'll need more code to handle permissions soon
 export const createProfileSection = async (
   accountSid: string,

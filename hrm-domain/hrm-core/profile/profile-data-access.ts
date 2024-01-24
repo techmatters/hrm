@@ -29,6 +29,7 @@ import {
   getProfileFlagsByAccountSql,
   getProfileFlagsByIdentifierSql,
   insertProfileFlagSql,
+  updateProfileFlagByIdSql,
 } from './sql/profile-flags-sql';
 import { OrderByDirectionType, txIfNotInOne } from '../sql';
 import * as profileGetSql from './sql/profile-get-sql';
@@ -342,6 +343,26 @@ export const getProfileFlagsForAccount = async (
     return await db
       .task<ProfileFlag[]>(async t =>
         t.manyOrNone(getProfileFlagsByAccountSql, { accountSid }),
+      )
+      .then(data => newOk({ data }));
+  } catch (err) {
+    return newErr({
+      message: err instanceof Error ? err.message : String(err),
+      error: 'InternalServerError',
+    });
+  }
+};
+
+export const updateProfileFlagById = async (
+  accountSid: string,
+  payload: NewProfileFlagRecord & { id: number },
+): Promise<TResult<'InternalServerError', ProfileFlag>> => {
+  try {
+    const now = new Date();
+    console.log('>>> Updating profile flag by ID:', payload);
+    return await db
+      .task<ProfileFlag>(async t =>
+        t.oneOrNone(updateProfileFlagByIdSql({ ...payload, updatedAt: now, accountSid })),
       )
       .then(data => newOk({ data }));
   } catch (err) {

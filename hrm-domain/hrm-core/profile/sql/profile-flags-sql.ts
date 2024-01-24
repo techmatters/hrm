@@ -18,7 +18,7 @@ import { pgp } from '../../connection-pool';
 
 type NewRecordCommons = {
   accountSid: string;
-  createdAt: Date;
+  createdAt?: Date;
   updatedAt: Date;
 };
 
@@ -36,6 +36,23 @@ export const insertProfileFlagSql = (
   )}
   RETURNING *
 `;
+
+export const updateProfileFlagByIdSql = (
+  profileFlag: NewProfileFlagRecord & NewRecordCommons & { id: number },
+) => {
+  console.log('>>> updateProfileFlagByIdSql function', profileFlag);
+  return `
+    ${pgp.helpers.update(
+      profileFlag,
+      ['accountSid', 'name', 'updatedAt'],
+      'ProfileFlags',
+    )}
+    WHERE id = $<id>
+    RETURNING *
+  `;
+};
+
+console.log(updateProfileFlagByIdSql);
 
 export const getProfileFlagsByAccountSql = `
   SELECT * FROM "ProfileFlags"
