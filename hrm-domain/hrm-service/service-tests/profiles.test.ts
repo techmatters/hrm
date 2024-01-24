@@ -882,5 +882,53 @@ describe('/profiles', () => {
         );
       });
     });
+    describe('POST', () => {
+      const route = `${baseRoute}/flags`;
+
+      each([
+        {
+          description: 'auth is missing',
+          expectStatus: 401,
+          customHeaders: {},
+        },
+        {
+          description: 'name is missing',
+          payload: {},
+          expectStatus: 404,
+        },
+        {
+          description: 'name is empty',
+          payload: { name: '' },
+          expectStatus: 404,
+        },
+        {
+          description: 'name is already associated with account',
+          payload: { name: 'custom' },
+          expectStatus: 409,
+        },
+        {
+          description: 'name is unique for the account',
+          expectStatus: 200,
+          payload: { name: 'custom2' },
+          expectFunction: (response, payload) => {
+            expect(response.body.name).toBe(payload.name);
+          },
+        },
+      ]).test(
+        'when $description, returns $expectStatus',
+        async ({ expectStatus, payload, customHeaders, expectFunction }) => {
+          const response = await request
+            .post(route)
+            .set(customHeaders || headers)
+            .send(payload);
+          console.log('>>> response', response.body, response.statusCode);
+          console.log('>>> expectStatus', expectStatus);
+          expect(response.statusCode).toBe(expectStatus);
+          if (expectFunction) {
+            expectFunction(response, payload);
+          }
+        },
+      );
+    });
   });
 });
