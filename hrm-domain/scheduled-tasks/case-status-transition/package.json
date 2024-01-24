@@ -1,7 +1,7 @@
 {
-  "name": "@tech-matters/contact-job-cleanup",
+  "name": "@tech-matters/case-status-transition",
   "version": "1.0.0",
-  "description": "The easiest way to run the tests locally is to run the test DB in docker.",
+  "description": "Applies any rules for automatically transitioning case statuses based on current status & time spent in that status",
   "scripts": {
     "start": "cd dist && node ./index"
   },
@@ -9,6 +9,7 @@
     ".": "./dist/index.js"
   },
   "dependencies" : {
+    "@aws-sdk/client-ssm": "^3.391.0",
     "@tech-matters/hrm-core": "^1.0.0",
     "@tech-matters/ssm-cache": "^1.0.0",
     "@tech-matters/twilio-client": "^1.0.0",

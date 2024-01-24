@@ -14,9 +14,18 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-export * from './mock-pgpromise';
-export * from './mock-twilio-auth-endpoint';
-export * from './mockSsm';
-import { start, stop, mockttpServer } from './mocking-proxy';
-export const mockingProxy = { start, stop, mockttpServer };
-import './expectToParseAsDate';
+module.exports = config => {
+  return (
+    config || {
+      preset: 'ts-jest',
+      rootDir: './',
+      maxWorkers: 1,
+      globals: {
+        'ts-jest': {
+          // to give support to const enum. Not working, conflicting with module resolution
+          useExperimentalLanguageServer: true,
+        },
+      },
+    }
+  );
+};

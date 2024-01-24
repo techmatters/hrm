@@ -14,9 +14,9 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-export * from './mock-pgpromise';
-export * from './mock-twilio-auth-endpoint';
-export * from './mockSsm';
-import { start, stop, mockttpServer } from './mocking-proxy';
-export const mockingProxy = { start, stop, mockttpServer };
-import './expectToParseAsDate';
+export type CaseStatusTransitionRule = {
+  startingStatus: string;
+  targetStatus: string;
+  timeInStatusInterval: string;
+  description: string;
+};
