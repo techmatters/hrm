@@ -40,19 +40,21 @@ export const insertProfileFlagSql = (
 export const updateProfileFlagByIdSql = (
   profileFlag: NewProfileFlagRecord & NewRecordCommons & { id: number },
 ) => {
-  console.log('>>> updateProfileFlagByIdSql function', profileFlag);
-  return `
-    ${pgp.helpers.update(
-      profileFlag,
+  const { updatedAt, ...rest } = profileFlag;
+  const profileFlagWithTimestamp = {
+    ...rest,
+    updatedAt: updatedAt.toISOString(),
+  };
+  return (
+    pgp.helpers.update(
+      profileFlagWithTimestamp,
       ['accountSid', 'name', 'updatedAt'],
       'ProfileFlags',
-    )}
-    WHERE id = $<id>
-    RETURNING *
-  `;
+    ) +
+    ` WHERE id = ${profileFlag.id}
+      RETURNING *`
+  );
 };
-
-console.log(updateProfileFlagByIdSql);
 
 export const getProfileFlagsByAccountSql = `
   SELECT * FROM "ProfileFlags"

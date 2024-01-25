@@ -189,7 +189,6 @@ export const updateProfileFlagById = async (
 ): Promise<TResult<'InternalServerError', profileDB.ProfileFlag>> => {
   try {
     const { name } = payload;
-    console.log('>>> updateProfileFlagById Updating profile flag:', flagId, name);
     const profileFlag = await profileDB.updateProfileFlagById(accountSid, {
       id: flagId,
       name,

@@ -180,13 +180,20 @@ profilesRouter.patch('/flags/:flagId', publicEndpoint, async (req, res, next) =>
     const { flagId } = req.params;
     const { name } = req.body;
 
-    console.log('>>> route Updating profile flag:', flagId);
+    const existingFlags = await profileController.getProfileFlags(accountSid);
 
-    const result = await profileController.updateProfileFlagById(
-      accountSid,
-      flagId,
+    if (isErr(existingFlags)) {
+      return next(mapHTTPError(existingFlags, { InternalServerError: 500 }));
+    }
+
+    const existingFlag = existingFlags.data.find(f => f.name === name);
+    if (existingFlag) {
+      return next(createError(409, 'Flag already exists associated with this account'));
+    }
+
+    const result = await profileController.updateProfileFlagById(accountSid, flagId, {
       name,
-    );
+    });
 
     if (isErr(result)) {
       return next(mapHTTPError(result, { InternalServerError: 500 }));
