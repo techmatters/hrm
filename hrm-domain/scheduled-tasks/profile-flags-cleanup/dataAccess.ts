@@ -14,13 +14,26 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-export const enableCreateContactJobsFlag = /^true$/i.test(
-  process.env.ENABLE_CREATE_CONTACT_JOBS,
-);
-export const enableProcessContactJobsFlag = /^true$/i.test(
-  process.env.ENABLE_PROCESS_CONTACT_JOBS,
-);
-export const enableCleanupJobs = /^true$/i.test(process.env.ENABLE_CLEANUP_JOBS);
-export const enableProfileFlagsCleanup = /^true$/i.test(
-  process.env.ENABLE_PROFILE_FLAGS_CLEANUP,
-);
+import { db } from '@tech-matters/hrm-core/connection-pool';
+import { TResult, newErr, newOk } from '@tech-matters/types';
+
+export const cleanupProfileFlags = async (): Promise<
+  TResult<'InternalServerError', number>
+> => {
+  try {
+    const currentTimestamp = new Date().toISOString();
+    const count = await db.task(async t =>
+      t.one(`
+        WITH deleted AS (DELETE FROM "ProfilesToProfileFlags" WHERE "validUntil" < ${currentTimestamp})
+          SELECT COUNT(*) FROM deleted;
+  `),
+    );
+
+    return newOk({ data: count });
+  } catch (err) {
+    return newErr({
+      message: err instanceof Error ? err.message : String(err),
+      error: 'InternalServerError',
+    });
+  }
+};
