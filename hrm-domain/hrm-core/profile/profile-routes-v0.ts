@@ -209,6 +209,23 @@ profilesRouter.patch('/flags/:flagId', publicEndpoint, async (req, res, next) =>
   }
 });
 
+profilesRouter.delete('/flags/:flagId', publicEndpoint, async (req, res, next) => {
+  try {
+    const { accountSid } = req;
+    const { flagId } = req.params;
+
+    const result = await profileController.deleteProfileFlagById(flagId, accountSid);
+
+    if (isErr(result)) {
+      return next(mapHTTPError(result, { InternalServerError: 500 }));
+    }
+
+    res.json(result.data);
+  } catch (err) {
+    return next(createError(500, err.message));
+  }
+});
+
 profilesRouter.post(
   '/:profileId/flags/:profileFlagId',
   publicEndpoint,

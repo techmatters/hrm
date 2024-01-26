@@ -30,6 +30,7 @@ import {
   getProfileFlagsByIdentifierSql,
   insertProfileFlagSql,
   updateProfileFlagByIdSql,
+  deleteProfileFlagByIdSql,
 } from './sql/profile-flags-sql';
 import { OrderByDirectionType, txIfNotInOne } from '../sql';
 import * as profileGetSql from './sql/profile-get-sql';
@@ -359,12 +360,34 @@ export const updateProfileFlagById = async (
 ): Promise<TResult<'InternalServerError', ProfileFlag>> => {
   try {
     const now = new Date();
-    console.log('>>> Updating profile flag by ID:', payload);
     return await db
       .task<ProfileFlag>(async t =>
         t.oneOrNone(updateProfileFlagByIdSql({ ...payload, updatedAt: now, accountSid })),
       )
       .then(data => newOk({ data }));
+  } catch (err) {
+    return newErr({
+      message: err instanceof Error ? err.message : String(err),
+      error: 'InternalServerError',
+    });
+  }
+};
+
+export const deleteProfileFlagById = async (
+  profileFlagId: number,
+  accountSid: string,
+): Promise<TResult<'InternalServerError', ProfileFlag>> => {
+  try {
+    return await db
+      .task<ProfileFlag>(async t =>
+        t.oneOrNone(deleteProfileFlagByIdSql, {
+          accountSid,
+          profileFlagId,
+        }),
+      )
+      .then(data => {
+        return newOk({ data });
+      });
   } catch (err) {
     return newErr({
       message: err instanceof Error ? err.message : String(err),

@@ -203,6 +203,21 @@ export const updateProfileFlagById = async (
   }
 };
 
+export const deleteProfileFlagById = async (
+  flagId: profileDB.ProfileFlag['id'],
+  accountSid: string,
+): Promise<TResult<'InternalServerError', void>> => {
+  try {
+    await profileDB.deleteProfileFlagById(flagId, accountSid);
+    return newOk({ data: undefined });
+  } catch (err) {
+    return newErr({
+      message: err instanceof Error ? err.message : String(err),
+      error: 'InternalServerError',
+    });
+  }
+};
+
 // While this is just a wrapper around profileDB.createProfileSection, we'll need more code to handle permissions soon
 export const createProfileSection = async (
   accountSid: string,

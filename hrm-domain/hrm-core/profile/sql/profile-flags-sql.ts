@@ -56,6 +56,16 @@ export const updateProfileFlagByIdSql = (
   );
 };
 
+export const deleteProfileFlagByIdSql = ({
+  profileFlagId,
+  accountSid,
+}: {
+  profileFlagId: number;
+  accountSid: string;
+}) => {
+  return `DELETE FROM "ProfileFlags" WHERE id = ${profileFlagId} AND "accountSid" = '${accountSid}' RETURNING *`;
+};
+
 export const getProfileFlagsByAccountSql = `
   SELECT * FROM "ProfileFlags"
   WHERE "accountSid" = $<accountSid> OR "accountSid" IS NULL
