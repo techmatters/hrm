@@ -15,25 +15,15 @@
  */
 
 import { cleanupProfileFlags } from '@tech-matters/profile-flags-cleanup';
-import { addDays, subDays, subHours, subMinutes } from 'date-fns';
+import { addDays, subDays } from 'date-fns';
 import { db } from '@tech-matters/hrm-core/connection-pool';
 import { accountSid } from '../mocks';
-// import * as profileApi from '@tech-matters/hrm-core/profile/profile';
 import * as profileDB from '@tech-matters/hrm-core/profile/profile-data-access';
 
-let createdProfile: profileDB.Profile = null;
-let createdProfileFlag: profileDB.ProfileFlag = null;
-let profileFlags: profileDB.ProfileFlag[] = null;
+let createdProfile: profileDB.Profile;
+let createdProfileFlag: profileDB.ProfileFlag;
+let profileFlags: profileDB.ProfileFlag[];
 beforeAll(async () => {
-  // db.task(async t => {
-  // const profile = await t.one(
-  //   `INSERT INTO "Profiles"("name", "accountSid", "createdAt", "updatedAt")
-  //   VALUES (NULL, $<accountSid>, '2023-08-30 12:23:24.99+00', '2023-08-30 12:23:24.99+00')
-  //   RETURNING *`,
-  //   { accountSid },
-  // );
-  // });
-
   [createdProfile, createdProfileFlag] = await Promise.all([
     profileDB.createProfile()(accountSid, {
       name: 'TEST_PROFILE',
