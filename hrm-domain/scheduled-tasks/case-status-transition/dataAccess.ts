@@ -32,7 +32,7 @@ export const applyTransitionRuleToCases = async (
     return conn.manyOrNone<{ id: string }>(
       `UPDATE "Cases" 
                 SET 
-                "status" = $<targetStatus>, "statusUpdatedAt" = CURRENT_TIMESTAMP, 
+                "status" = $<targetStatus>, "statusUpdatedAt" = CURRENT_TIMESTAMP, "previousStatus" = "status",
                 -- We set statusUpdatedAt to the rule that initiated the change rather than a user
                 "statusUpdatedBy" = $<description> 
               WHERE 
