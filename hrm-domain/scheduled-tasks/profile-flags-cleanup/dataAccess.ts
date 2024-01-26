@@ -18,15 +18,18 @@ import { db } from '@tech-matters/hrm-core/connection-pool';
 import { TResult, newErr, newOk } from '@tech-matters/types';
 
 export const cleanupProfileFlags = async (): Promise<
-  TResult<'InternalServerError', number>
+  TResult<'InternalServerError', { count: number }>
 > => {
   try {
     const currentTimestamp = new Date().toISOString();
     const count = await db.task(async t =>
-      t.one(`
-        WITH deleted AS (DELETE FROM "ProfilesToProfileFlags" WHERE "validUntil" < ${currentTimestamp})
+      t.one(
+        `
+        WITH deleted AS (DELETE FROM "ProfilesToProfileFlags" WHERE "validUntil" < $<currentTimestamp>::timestamp RETURNING *)
           SELECT COUNT(*) FROM deleted;
-  `),
+  `,
+        { currentTimestamp },
+      ),
     );
 
     return newOk({ data: count });

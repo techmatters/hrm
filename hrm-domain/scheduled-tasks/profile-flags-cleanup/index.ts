@@ -30,7 +30,7 @@ export const cleanupProfileFlags = async (): Promise<void> => {
     }
 
     console.info(
-      `[scheduled-task:profile-flags-cleanup]: Removed ${result.data} profile to profile flags associations`,
+      `[scheduled-task:profile-flags-cleanup]: Removed ${result.data.count} profiles-to-profile-flags associations`,
     );
   } catch (err) {
     console.error(`[scheduled-task:profile-flags-cleanup]: Error during cleanup: ${err}`);
