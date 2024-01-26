@@ -21,9 +21,15 @@ import * as profileDB from './profile-data-access';
 import { db } from '../connection-pool';
 import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import type { NewProfileSectionRecord } from './sql/profile-sections-sql';
+import { NewProfileFlagRecord } from './sql/profile-flags-sql';
 
-export { Identifier, Profile, getIdentifierWithProfiles } from './profile-data-access';
-export { ProfileListConfiguration, SearchParameters } from './profile-data-access';
+export {
+  Identifier,
+  Profile,
+  getIdentifierWithProfiles,
+  ProfileListConfiguration,
+  SearchParameters,
+} from './profile-data-access';
 
 export const getProfile =
   (task?) =>
@@ -179,6 +185,23 @@ export const disassociateProfileFromProfileFlag = async (
 
 export const getProfileFlags = profileDB.getProfileFlagsForAccount;
 export const getProfileFlagsByIdentifier = profileDB.getProfileFlagsByIdentifier;
+
+export const createProfileFlag = async (
+  accountSid: string,
+  payload: NewProfileFlagRecord,
+): Promise<TResult<'InternalServerError', profileDB.ProfileFlag>> => {
+  try {
+    const { name } = payload;
+    const pf = await profileDB.createProfileFlag(accountSid, { name });
+
+    return pf;
+  } catch (err) {
+    return newErr({
+      message: err instanceof Error ? err.message : String(err),
+      error: 'InternalServerError',
+    });
+  }
+};
 
 export const updateProfileFlagById = async (
   accountSid: string,
