@@ -189,9 +189,28 @@ export const getProfileFlagsByIdentifier = profileDB.getProfileFlagsByIdentifier
 export const createProfileFlag = async (
   accountSid: string,
   payload: NewProfileFlagRecord,
-): Promise<TResult<'InternalServerError', profileDB.ProfileFlag>> => {
+): Promise<
+  TResult<'InternalServerError' | 'InvalidParameterError', profileDB.ProfileFlag>
+> => {
   try {
     const { name } = payload;
+
+    const existingFlags = await getProfileFlags(accountSid);
+
+    if (isErr(existingFlags)) {
+      // Handle the error case here. For example, you can return the error.
+      return existingFlags;
+    }
+
+    const existingFlag = existingFlags.data.find(flag => flag.name === name);
+
+    if (existingFlag) {
+      return newErr({
+        message: `Flag with name "${name}" already exists`,
+        error: 'InvalidParameterError',
+      });
+    }
+
     const pf = await profileDB.createProfileFlag(accountSid, { name });
 
     return pf;
@@ -209,9 +228,27 @@ export const updateProfileFlagById = async (
   payload: {
     name: string;
   },
-): Promise<TResult<'InternalServerError', profileDB.ProfileFlag>> => {
+): Promise<
+  TResult<'InternalServerError' | 'InvalidParameterError', profileDB.ProfileFlag>
+> => {
   try {
     const { name } = payload;
+
+    const existingFlags = await getProfileFlags(accountSid);
+
+    if (isErr(existingFlags)) {
+      // Handle the error case here. For example, you can return the error.
+      return existingFlags;
+    }
+
+    const existingFlag = existingFlags.data.find(flag => flag.name === name);
+
+    if (existingFlag) {
+      return newErr({
+        message: `Flag with name "${name}" already exists`,
+        error: 'InvalidParameterError',
+      });
+    }
     const profileFlag = await profileDB.updateProfileFlagById(accountSid, {
       id: flagId,
       name,
