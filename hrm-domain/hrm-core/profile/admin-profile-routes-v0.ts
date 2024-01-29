@@ -43,21 +43,12 @@ adminProfilesRouter.post('/flags', publicEndpoint, async (req, res, next) => {
     const { accountSid } = req;
     const { name } = req.body;
 
-    const existingFlags = await profileController.getProfileFlags(accountSid);
-
-    if (isErr(existingFlags)) {
-      return next(mapHTTPError(existingFlags, { InternalServerError: 500 }));
-    }
-
-    const existingFlag = existingFlags.data.find(f => f.name === name);
-    if (existingFlag) {
-      return next(createError(409, 'Flag already exists associated with this account'));
-    }
-
     const result = await profileController.createProfileFlag(accountSid, { name });
 
     if (isErr(result)) {
-      return next(mapHTTPError(result, { InternalServerError: 500 }));
+      return next(
+        mapHTTPError(result, { InvalidParameterError: 400, InternalServerError: 500 }),
+      );
     }
 
     res.json(result.data);
@@ -73,23 +64,14 @@ adminProfilesRouter.patch('/flags/:flagId', publicEndpoint, async (req, res, nex
     const { flagId } = req.params;
     const { name } = req.body;
 
-    const existingFlags = await profileController.getProfileFlags(accountSid);
-
-    if (isErr(existingFlags)) {
-      return next(mapHTTPError(existingFlags, { InternalServerError: 500 }));
-    }
-
-    const existingFlag = existingFlags.data.find(f => f.name === name);
-    if (existingFlag) {
-      return next(createError(409, 'Flag already exists associated with this account'));
-    }
-
     const result = await profileController.updateProfileFlagById(accountSid, flagId, {
       name,
     });
 
     if (isErr(result)) {
-      return next(mapHTTPError(result, { InternalServerError: 500 }));
+      return next(
+        mapHTTPError(result, { InternalServerError: 500, InvalidParameterError: 400 }),
+      );
     }
 
     if (!result.data) {
