@@ -38,31 +38,22 @@ export const insertProfileFlagSql = (
 `;
 
 export const updateProfileFlagByIdSql = (
-  profileFlag: NewProfileFlagRecord &
-    NewRecordCommons & { id: number; accountSid: string },
+  profileFlag: Pick<NewProfileFlagRecord, 'name'> & Pick<NewRecordCommons, 'updatedAt'>,
 ) => {
-  const { id, accountSid, updatedAt, ...rest } = profileFlag;
+  const { updatedAt, name } = profileFlag;
   const profileFlagWithTimestamp = {
-    ...rest,
+    name,
     updatedAt: updatedAt.toISOString(),
   };
 
-  return (
-    pgp.helpers.update(profileFlagWithTimestamp, ['name', 'updatedAt'], 'ProfileFlags') +
-    `WHERE id = ${id} AND "accountSid" = '${accountSid}'
-      RETURNING *`
-  );
+  return `
+    ${pgp.helpers.update(profileFlagWithTimestamp, ['name', 'updatedAt'], 'ProfileFlags')}
+    WHERE id = $<profileId> AND "accountSid" = $<accountSid>
+    RETURNING *
+  `;
 };
 
-export const deleteProfileFlagByIdSql = ({
-  profileFlagId,
-  accountSid,
-}: {
-  profileFlagId: number;
-  accountSid: string;
-}) => {
-  return `DELETE FROM "ProfileFlags" WHERE id = ${profileFlagId} AND "accountSid" = '${accountSid}' RETURNING *`;
-};
+export const deleteProfileFlagByIdSql = `DELETE FROM "ProfileFlags" WHERE id = $<profileId> AND "accountSid" = $<accountSid> RETURNING *`;
 
 export const getProfileFlagsByAccountSql = `
   SELECT * FROM "ProfileFlags"
