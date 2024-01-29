@@ -18,6 +18,7 @@
     { "path": "hrm-domain/scheduled-tasks/hrm-data-pull" },
     { "path": "hrm-domain/scheduled-tasks/contact-job-cleanup" },
     { "path": "hrm-domain/scheduled-tasks/case-status-transition" },
+    { "path": "hrm-domain/scheduled-tasks/profile-flags-cleanup" },
     { "path": "hrm-domain/hrm-service" }
   ]
 }

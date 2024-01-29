@@ -360,11 +360,12 @@ export const updateProfileFlagById = async (
 ): Promise<TResult<'InternalServerError', ProfileFlag>> => {
   try {
     const now = new Date();
-    return await db
-      .task<ProfileFlag>(async t =>
-        t.oneOrNone(updateProfileFlagByIdSql({ ...payload, updatedAt: now, accountSid })),
-      )
-      .then(data => newOk({ data }));
+    const data = await db.task<ProfileFlag>(async t => {
+      return t.oneOrNone(
+        updateProfileFlagByIdSql({ ...payload, updatedAt: now, accountSid }),
+      );
+    });
+    return newOk({ data });
   } catch (err) {
     return newErr({
       message: err instanceof Error ? err.message : String(err),

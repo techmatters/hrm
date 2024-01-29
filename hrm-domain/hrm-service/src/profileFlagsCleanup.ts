@@ -14,13 +14,16 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-export const enableCreateContactJobsFlag = /^true$/i.test(
-  process.env.ENABLE_CREATE_CONTACT_JOBS,
-);
-export const enableProcessContactJobsFlag = /^true$/i.test(
-  process.env.ENABLE_PROCESS_CONTACT_JOBS,
-);
-export const enableCleanupJobs = /^true$/i.test(process.env.ENABLE_CLEANUP_JOBS);
-export const enableProfileFlagsCleanup = /^true$/i.test(
-  process.env.ENABLE_PROFILE_FLAGS_CLEANUP,
-);
+import { handleSignals } from './handleSignals';
+import { enableProfileFlagsCleanup } from '@tech-matters/hrm-core/featureFlags';
+import { cleanupProfileFlags } from '@tech-matters/profile-flags-cleanup';
+
+const gracefulExit = async () => {
+  //TODO: this should probably handle closing any running processes and open db connections
+};
+
+if (enableProfileFlagsCleanup) {
+  cleanupProfileFlags();
+
+  handleSignals(gracefulExit);
+}
