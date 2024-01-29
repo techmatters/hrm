@@ -21,9 +21,15 @@ import * as profileDB from './profile-data-access';
 import { db } from '../connection-pool';
 import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import type { NewProfileSectionRecord } from './sql/profile-sections-sql';
+import { NewProfileFlagRecord } from './sql/profile-flags-sql';
 
-export { Identifier, Profile, getIdentifierWithProfiles } from './profile-data-access';
-export { ProfileListConfiguration, SearchParameters } from './profile-data-access';
+export {
+  Identifier,
+  Profile,
+  getIdentifierWithProfiles,
+  ProfileListConfiguration,
+  SearchParameters,
+} from './profile-data-access';
 
 export const getProfile =
   (task?) =>
@@ -179,6 +185,98 @@ export const disassociateProfileFromProfileFlag = async (
 
 export const getProfileFlags = profileDB.getProfileFlagsForAccount;
 export const getProfileFlagsByIdentifier = profileDB.getProfileFlagsByIdentifier;
+
+export const createProfileFlag = async (
+  accountSid: string,
+  payload: NewProfileFlagRecord,
+): Promise<
+  TResult<'InternalServerError' | 'InvalidParameterError', profileDB.ProfileFlag>
+> => {
+  try {
+    const { name } = payload;
+
+    const existingFlags = await getProfileFlags(accountSid);
+
+    if (isErr(existingFlags)) {
+      // Handle the error case here. For example, you can return the error.
+      return existingFlags;
+    }
+
+    const existingFlag = existingFlags.data.find(flag => flag.name === name);
+
+    if (existingFlag) {
+      return newErr({
+        message: `Flag with name "${name}" already exists`,
+        error: 'InvalidParameterError',
+      });
+    }
+
+    const pf = await profileDB.createProfileFlag(accountSid, { name });
+
+    return pf;
+  } catch (err) {
+    return newErr({
+      message: err instanceof Error ? err.message : String(err),
+      error: 'InternalServerError',
+    });
+  }
+};
+
+export const updateProfileFlagById = async (
+  accountSid: string,
+  flagId: profileDB.ProfileFlag['id'],
+  payload: {
+    name: string;
+  },
+): Promise<
+  TResult<'InternalServerError' | 'InvalidParameterError', profileDB.ProfileFlag>
+> => {
+  try {
+    const { name } = payload;
+
+    const existingFlags = await getProfileFlags(accountSid);
+
+    if (isErr(existingFlags)) {
+      // Handle the error case here. For example, you can return the error.
+      return existingFlags;
+    }
+
+    const existingFlag = existingFlags.data.find(flag => flag.name === name);
+
+    if (existingFlag) {
+      return newErr({
+        message: `Flag with name "${name}" already exists`,
+        error: 'InvalidParameterError',
+      });
+    }
+    const profileFlag = await profileDB.updateProfileFlagById(accountSid, {
+      id: flagId,
+      name,
+    });
+
+    return profileFlag;
+  } catch (err) {
+    return newErr({
+      message: err instanceof Error ? err.message : String(err),
+      error: 'InternalServerError',
+    });
+  }
+};
+
+export const deleteProfileFlagById = async (
+  flagId: profileDB.ProfileFlag['id'],
+  accountSid: string,
+): Promise<TResult<'InternalServerError', void>> => {
+  try {
+    await profileDB.deleteProfileFlagById(flagId, accountSid);
+    return newOk({ data: undefined });
+  } catch (err) {
+    return newErr({
+      message: err instanceof Error ? err.message : String(err),
+      error: 'InternalServerError',
+    });
+  }
+};
 
 // While this is just a wrapper around profileDB.createProfileSection, we'll need more code to handle permissions soon
 export const createProfileSection = async (

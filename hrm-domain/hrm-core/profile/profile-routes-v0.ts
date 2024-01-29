@@ -174,6 +174,69 @@ profilesRouter.get('/flags', publicEndpoint, async (req, res, next) => {
   }
 });
 
+profilesRouter.post('/flags', publicEndpoint, async (req, res, next) => {
+  try {
+    const { accountSid } = req;
+    const { name } = req.body;
+
+    const result = await profileController.createProfileFlag(accountSid, { name });
+
+    if (isErr(result)) {
+      return next(
+        mapHTTPError(result, { InvalidParameterError: 400, InternalServerError: 500 }),
+      );
+    }
+
+    res.json(result.data);
+  } catch (err) {
+    console.error(err);
+    return next(createError(500, err.message));
+  }
+});
+
+profilesRouter.patch('/flags/:flagId', publicEndpoint, async (req, res, next) => {
+  try {
+    const { accountSid } = req;
+    const { flagId } = req.params;
+    const { name } = req.body;
+
+    const result = await profileController.updateProfileFlagById(accountSid, flagId, {
+      name,
+    });
+
+    if (isErr(result)) {
+      return next(
+        mapHTTPError(result, { InternalServerError: 500, InvalidParameterError: 400 }),
+      );
+    }
+
+    if (!result.data) {
+      return next(createError(404));
+    }
+
+    res.json(result.data);
+  } catch (err) {
+    return next(createError(500, err.message));
+  }
+});
+
+profilesRouter.delete('/flags/:flagId', publicEndpoint, async (req, res, next) => {
+  try {
+    const { accountSid } = req;
+    const { flagId } = req.params;
+
+    const result = await profileController.deleteProfileFlagById(flagId, accountSid);
+
+    if (isErr(result)) {
+      return next(mapHTTPError(result, { InternalServerError: 500 }));
+    }
+
+    res.json(result.data);
+  } catch (err) {
+    return next(createError(500, err.message));
+  }
+});
+
 profilesRouter.post(
   '/:profileId/flags/:profileFlagId',
   publicEndpoint,

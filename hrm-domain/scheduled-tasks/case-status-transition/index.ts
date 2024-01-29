@@ -19,6 +19,8 @@ import { CaseStatusTransitionRule } from './caseStatusTransitionRule';
 import { applyTransitionRuleToCases } from './dataAccess';
 import { AccountSID } from '@tech-matters/types';
 
+export * from './caseStatusTransitionRule';
+
 const accountSidPattern =
   /\/[A-Za-z]+\/[A-Za-z0-9\-]+\/hrm\/scheduled-task\/case-status-transition-rules\/(?<accountSid>AC\w+)/;
 /**
@@ -30,11 +32,13 @@ export const transitionCaseStatuses = async (): Promise<void> => {
   console.info(
     `[scheduled-task:case-status-transition]: Starting automatic case status transition...`,
   );
-  const parameters = await findSsmParametersByPath(
-    `/${process.env.NODE_ENV}/${
-      process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
-    }/hrm/scheduled-task/case-status-transition-rules/*`,
+  const ssmParametersPath = `/${process.env.NODE_ENV}/${
+    process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
+  }/hrm/scheduled-task/case-status-transition-rules`;
+  console.debug(
+    `[scheduled-task:case-status-transition]: Path searched: ${ssmParametersPath}`,
   );
+  const parameters = await findSsmParametersByPath(ssmParametersPath);
   const configs = parameters.map(({ Name, Value }) => {
     const accountSid = Name.match(accountSidPattern).groups.accountSid as AccountSID;
     return {
@@ -58,10 +62,16 @@ export const transitionCaseStatuses = async (): Promise<void> => {
         rule,
       );
       const ids = await applyTransitionRuleToCases(accountSid, rule);
-      console.info(
-        `[scheduled-task:case-status-transition]: Updated the following cases in ${accountSid} to '${rule.targetStatus}' status because they had been in '${rule.startingStatus}' for ${rule.timeInStatusInterval}:`,
-        ids,
-      );
+      if (ids.length > 0) {
+        console.info(
+          `[scheduled-task:case-status-transition]: Updated the following cases in ${accountSid} to '${rule.targetStatus}' status because they had been in '${rule.startingStatus}' for ${rule.timeInStatusInterval}, as dictated by rule '${rule.description}':`,
+          ids,
+        );
+      } else {
+        console.info(
+          `[scheduled-task:case-status-transition]: No cases in ${accountSid} updated by rule ${rule.description}. They had to be in '${rule.startingStatus}' for ${rule.timeInStatusInterval} to be updated to '${rule.targetStatus}'.`,
+        );
+      }
     }
   }
 };

@@ -18,7 +18,7 @@ import { pgp } from '../../connection-pool';
 
 type NewRecordCommons = {
   accountSid: string;
-  createdAt: Date;
+  createdAt?: Date;
   updatedAt: Date;
 };
 
@@ -36,6 +36,33 @@ export const insertProfileFlagSql = (
   )}
   RETURNING *
 `;
+
+export const updateProfileFlagByIdSql = (
+  profileFlag: NewProfileFlagRecord &
+    NewRecordCommons & { id: number; accountSid: string },
+) => {
+  const { id, accountSid, updatedAt, ...rest } = profileFlag;
+  const profileFlagWithTimestamp = {
+    ...rest,
+    updatedAt: updatedAt.toISOString(),
+  };
+
+  return (
+    pgp.helpers.update(profileFlagWithTimestamp, ['name', 'updatedAt'], 'ProfileFlags') +
+    `WHERE id = ${id} AND "accountSid" = '${accountSid}'
+      RETURNING *`
+  );
+};
+
+export const deleteProfileFlagByIdSql = ({
+  profileFlagId,
+  accountSid,
+}: {
+  profileFlagId: number;
+  accountSid: string;
+}) => {
+  return `DELETE FROM "ProfileFlags" WHERE id = ${profileFlagId} AND "accountSid" = '${accountSid}' RETURNING *`;
+};
 
 export const getProfileFlagsByAccountSql = `
   SELECT * FROM "ProfileFlags"

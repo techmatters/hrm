@@ -14,13 +14,18 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-export const enableCreateContactJobsFlag = /^true$/i.test(
-  process.env.ENABLE_CREATE_CONTACT_JOBS,
-);
-export const enableProcessContactJobsFlag = /^true$/i.test(
-  process.env.ENABLE_PROCESS_CONTACT_JOBS,
-);
-export const enableCleanupJobs = /^true$/i.test(process.env.ENABLE_CLEANUP_JOBS);
-export const enableProfileFlagsCleanup = /^true$/i.test(
-  process.env.ENABLE_PROFILE_FLAGS_CLEANUP,
-);
+module.exports = config => {
+  return (
+    config || {
+      preset: 'ts-jest',
+      rootDir: './',
+      maxWorkers: 1,
+      globals: {
+        'ts-jest': {
+          // to give support to const enum. Not working, conflicting with module resolution
+          useExperimentalLanguageServer: true,
+        },
+      },
+    }
+  );
+};

@@ -79,7 +79,8 @@ export const mockSsmParameters = async (
       // This is a find request for multiple parameters that we need to filter.
       // Where we also need to handle pagination with NextToken or requests & responses.
       // pathPattern on parameters is ignored in this case, since it doesn't really make sense.
-      const pathRegex = new RegExp(path.replace(/\*/g, '.*'));
+      // Note: doesn't currently support filters, only a path.
+      const pathRegex = new RegExp(`${path}/.*`);
       const matchingParameters = parameters.filter(parameter =>
         pathRegex.test(parameter.name ?? ''),
       );
