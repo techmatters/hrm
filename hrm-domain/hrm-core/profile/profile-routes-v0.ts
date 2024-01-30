@@ -141,11 +141,7 @@ profilesRouter.get('/:profileId/cases', publicEndpoint, async (req, res, next) =
     const { accountSid } = req;
     const { profileId } = req.params;
 
-    const result = await getCasesByProfileId(accountSid, profileId, req.query, {
-      can: req.can,
-      user: req.user,
-      searchPermissions: req.searchPermissions,
-    });
+    const result = await getCasesByProfileId(accountSid, profileId, req.query, req);
 
     if (isErr(result)) {
       return next(mapHTTPError(result, { InternalServerError: 500 }));
