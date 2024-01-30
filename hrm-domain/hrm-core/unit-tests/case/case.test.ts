@@ -22,6 +22,8 @@ import { CaseRecord, NewCaseRecord } from '../../case/caseDataAccess';
 import '@tech-matters/testing/expectToParseAsDate';
 import { workerSid, accountSid } from '../mocks';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
+import { rulesMap } from '../../permissions';
+import { RulesFile } from '../../permissions/rulesMap';
 
 jest.mock('../../case/caseDataAccess');
 const baselineCreatedDate = new Date(2013, 6, 13).toISOString();
@@ -41,7 +43,7 @@ test('create case', async () => {
     },
     twilioWorkerId: 'client-assigned-twilio-worker-id',
     createdBy: 'Fake news', // Overwritten by workerSid for User
-    accountSid: 'wrong-account-sid', // Overwritten by accountSid for User
+    accountSid: 'AC-wrong-account-sid', // Overwritten by accountSid for User
   });
   const expectedCaseDbParameter: NewCaseRecord = {
     ...caseToBeCreated,
@@ -94,7 +96,7 @@ test('create case', async () => {
 
   const createdCase = await caseApi.createCase(caseToBeCreated, accountSid, workerSid);
   // any worker & account specified on the object should be overwritten with the ones from the user
-  expect(createSpy).toHaveBeenCalledWith(expectedCaseDbParameter, accountSid);
+  expect(createSpy).toHaveBeenCalledWith(expectedCaseDbParameter, accountSid, workerSid);
   expect(createdCase).toStrictEqual({
     ...caseToBeCreated,
     id: 1,
@@ -112,6 +114,9 @@ test('create case', async () => {
           id: 'WOULD BE SAME AS INPUT',
         },
       ],
+    },
+    precalculatedPermissions: {
+      userOwnsContact: false,
     },
   });
 });
@@ -241,6 +246,9 @@ describe('searchCases', () => {
         {
           ...caseWithContact,
           categories: { cat1: ['sub2'] },
+          precalculatedPermissions: {
+            userOwnsContact: false,
+          },
         },
       ],
     },
@@ -255,6 +263,9 @@ describe('searchCases', () => {
         {
           ...caseWithContact,
           categories: { cat1: ['sub2'] },
+          precalculatedPermissions: {
+            userOwnsContact: false,
+          },
         },
       ],
     },
@@ -263,14 +274,30 @@ describe('searchCases', () => {
       filterParameters: { helpline: 'helpline' },
       expectedDbFilters: { helplines: ['helpline'] },
       casesFromDb: [caseRecordWithoutContact],
-      expectedCases: [{ ...caseWithoutContact, categories: {} }],
+      expectedCases: [
+        {
+          ...caseWithoutContact,
+          categories: {},
+          precalculatedPermissions: {
+            userOwnsContact: false,
+          },
+        },
+      ],
     },
     {
       description:
         'list cases without helpline - sends offset & limit to db layer but no helpline',
       listConfig: { offset: 30, limit: 45 },
       casesFromDb: [caseRecordWithoutContact],
-      expectedCases: [{ ...caseWithoutContact, categories: {} }],
+      expectedCases: [
+        {
+          ...caseWithoutContact,
+          categories: {},
+          precalculatedPermissions: {
+            userOwnsContact: false,
+          },
+        },
+      ],
     },
   ]).test(
     '$description',
@@ -298,14 +325,14 @@ describe('searchCases', () => {
         {
           can: () => true,
           user: twilioUser(workerSid, []),
-          searchPermissions: {
-            canOnlyViewOwnCases: false,
-            canOnlyViewOwnContacts: false,
-          },
+          permissions: rulesMap.open,
         },
       );
 
+      const user = { ...twilioUser(workerSid, []), isSupervisor: false };
       expect(searchSpy).toHaveBeenCalledWith(
+        user,
+        [['everyone']],
         listConfig ?? {},
         accountSid,
         expectedDbSearchCriteria,
@@ -334,23 +361,18 @@ describe('search cases permissions', () => {
       isSupervisor: true,
       canOnlyViewOwnCases: false,
       counsellors: ['any-worker-sid'],
-      overriddenCounsellors: ['any-worker-sid'],
-      shouldCallSearch: true,
     },
     {
       description: 'Agent can view others cases',
       isSupervisor: false,
       canOnlyViewOwnCases: false,
       counsellors: ['any-worker-sid'],
-      overriddenCounsellors: ['any-worker-sid'],
-      shouldCallSearch: true,
     },
     {
       description: 'Agent cannot view others cases',
       isSupervisor: false,
       canOnlyViewOwnCases: true,
       counsellors: ['any-worker-sid'],
-      shouldCallSearch: false,
     },
     {
       description: 'Agent can view own cases',
@@ -358,76 +380,56 @@ describe('search cases permissions', () => {
       canOnlyViewOwnCases: true,
       counsellors: workerSid,
       overriddenCounsellors: [workerSid],
-      shouldCallSearch: true,
     },
     {
       description: 'Agent defaults to own cases when no counselor specified',
       isSupervisor: false,
       canOnlyViewOwnCases: true,
       counsellors: undefined,
-      overriddenCounsellors: [workerSid],
-      shouldCallSearch: true,
     },
-  ]).test(
-    '$description',
-    async ({
-      isSupervisor,
-      canOnlyViewOwnCases,
-      counsellors,
-      overriddenCounsellors,
-      shouldCallSearch,
-    }) => {
-      const searchParameters = {};
-      const filterParameters = {
-        helpline: 'helpline',
-        closedCases: true,
-        filters: {
-          counsellors,
-        },
-      };
-      const limitOffset = { limit: '10', offset: '0' };
-      const can = () => true;
-      const roles = [];
-      const user = { ...twilioUser(workerSid, roles), isSupervisor: isSupervisor };
-      const searchPermissions = {
-        canOnlyViewOwnCases,
-      };
-      const reqData = {
-        can,
-        user,
-        searchPermissions,
-      };
+  ]).test('$description', async ({ isSupervisor, canOnlyViewOwnCases, counsellors }) => {
+    const searchParameters = {};
+    const filterParameters = {
+      helpline: 'helpline',
+      closedCases: true,
+      filters: {
+        counsellors,
+      },
+    };
+    const viewOwnCasesRulesFile: RulesFile = {
+      ...rulesMap.open,
+      ['viewCase']: [['isCreator']],
+    };
+    const limitOffset = { limit: '10', offset: '0' };
+    const can = () => true;
+    const roles = [];
+    const user = { ...twilioUser(workerSid, roles), isSupervisor: isSupervisor };
+    const reqData = {
+      can,
+      user,
+      permissions: canOnlyViewOwnCases ? viewOwnCasesRulesFile : rulesMap.open,
+    };
 
-      const searchSpy = jest
-        .spyOn(caseDb, 'search')
-        .mockResolvedValue({ cases: [], count: 0 });
-      await caseApi.searchCases(
-        accountSid,
-        limitOffset,
-        searchParameters,
-        filterParameters,
-        reqData,
-      );
+    const searchSpy = jest
+      .spyOn(caseDb, 'search')
+      .mockResolvedValue({ cases: [], count: 0 });
+    await caseApi.searchCases(
+      accountSid,
+      limitOffset,
+      searchParameters,
+      filterParameters,
+      reqData,
+    );
 
-      if (shouldCallSearch) {
-        const overridenSearchParams = {
-          ...searchParameters,
-          filters: {
-            ...filterParameters.filters,
-            counsellors: overriddenCounsellors,
-          },
-        };
-        expect(searchSpy).toHaveBeenCalledWith(
-          limitOffset,
-          accountSid,
-          {},
-          overridenSearchParams.filters,
-        );
-      } else {
-        expect(searchSpy).not.toHaveBeenCalled();
-      }
-    },
-  );
+    expect(searchSpy).toHaveBeenCalledWith(
+      user,
+      canOnlyViewOwnCases ? [['isCreator']] : [['everyone']],
+      limitOffset,
+      accountSid,
+      {},
+      filterParameters.filters,
+    );
+  });
 });
 
 describe('update existing case', () => {
@@ -475,6 +477,9 @@ describe('update existing case', () => {
           ],
         },
         twilioWorkerId: workerSid,
+        precalculatedPermissions: {
+          userOwnsContact: false,
+        },
       }),
       expectedDbCaseParameter: {
         caseSections: [
@@ -528,7 +533,12 @@ describe('update existing case', () => {
           user: twilioUser(workerSid, []),
         },
       );
-      expect(updateSpy).toHaveBeenCalledWith(caseId, expectedDbCaseParameter, accountSid);
+      expect(updateSpy).toHaveBeenCalledWith(
+        caseId,
+        expectedDbCaseParameter,
+        accountSid,
+        workerSid,
+      );
       expect(returned).toStrictEqual(expectedResponse);
     },
   );

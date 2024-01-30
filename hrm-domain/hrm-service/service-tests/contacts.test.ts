@@ -45,7 +45,7 @@ import * as contactApi from '@tech-matters/hrm-core/contact/contactService';
 import * as contactDb from '@tech-matters/hrm-core/contact/contactDataAccess';
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import { selectSingleContactByTaskId } from '@tech-matters/hrm-core/contact/sql/contact-get-sql';
-import { ruleFileWithOneActionOverride } from './permissions-overrides';
+import { ruleFileActionOverride } from './permissions-overrides';
 import * as csamReportApi from '@tech-matters/hrm-core/csam-report/csam-report';
 import { getRequest, getServer, headers, setRules, useOpenRules } from './server';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
@@ -937,10 +937,9 @@ describe('/contacts route', () => {
           { user: twilioUser(workerSid, []), can: () => true },
         );
 
+        useOpenRules();
         if (!expectTranscripts) {
-          setRules(ruleFileWithOneActionOverride('viewExternalTranscript', false));
-        } else {
-          useOpenRules();
+          setRules(ruleFileActionOverride('viewExternalTranscript', false));
         }
 
         const res = await request

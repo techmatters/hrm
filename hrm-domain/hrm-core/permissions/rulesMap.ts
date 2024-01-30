@@ -101,6 +101,39 @@ export type TKCondition<T extends TargetKind> = SupportedTKCondition[T];
 export type TKConditionsSet<T extends TargetKind> = TKCondition<T>[];
 export type TKConditionsSets<T extends TargetKind> = TKConditionsSet<T>[];
 
+type TKAction<T extends TargetKind> = keyof (typeof actionsMaps)[T];
+
+type UnsupportedActionConditions = {
+  [TK in TargetKind]?: {
+    [K in TKAction<TK>]?: (
+      | Exclude<SupportedTKCondition[TK], TimeBasedCondition>
+      | keyof TimeBasedCondition
+    )[];
+  };
+};
+const unsupportedActionConditions: UnsupportedActionConditions = {
+  case: {
+    VIEW_CASE: ['createdDaysAgo', 'createdHoursAgo'],
+  },
+};
+
+const isConditionSupported = <T extends TargetKind>(
+  kind: T,
+  actionName: string,
+  condition: SupportedTKCondition[T],
+) => {
+  const unsupportedConditions = unsupportedActionConditions[kind]?.[actionName];
+  if (!unsupportedConditions) {
+    return true;
+  }
+
+  if (isTimeBasedCondition(condition)) {
+    return !Object.keys(condition).some(key => unsupportedConditions.includes(key));
+  }
+
+  return !unsupportedConditions.includes(condition);
+};
+
 const isTKCondition =
   <T extends TargetKind>(kind: T) =>
   (c: any): c is TKCondition<T> => {
@@ -153,10 +186,15 @@ export const isRulesFile = (rules: any): rules is RulesFile =>
 const validateTKActions = (rules: RulesFile) =>
   Object.entries(actionsMaps)
     .map(([kind, map]) =>
-      Object.values(map).reduce((accum, action) => {
+      Object.entries(map).reduce((accum, [actionName, action]) => {
         return {
           ...accum,
-          [action]: isTargetKind(kind) && isValidTKConditionsSets(kind)(rules[action]),
+          [action]:
+            isTargetKind(kind) &&
+            isValidTKConditionsSets(kind)(rules[action]) &&
+            rules[action]
+              .flat()
+              .every(condition => isConditionSupported(kind, actionName, condition)),
         };
       }, {}),
     )

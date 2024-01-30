@@ -22,6 +22,9 @@ import { selectCoalesceReferralsByContactId } from '../../referral/sql/referral-
 import { selectCoalesceConversationMediasByContactId } from '../../conversation-media/sql/conversation-media-get-sql';
 import { OrderByClauseItem, OrderByDirection } from '../../sql';
 import { selectContactsOwnedCount } from './case-get-sql';
+import { CaseListCondition, listCasesPermissionWhereClause } from './case-permission-sql';
+import { TwilioUser } from '@tech-matters/twilio-worker-auth';
+import { TKConditionsSets } from '../../permissions/rulesMap';
 
 export const OrderByColumn = {
   ID: 'id',
@@ -125,7 +128,6 @@ const filterSql = ({
   helplines,
   excludedStatuses,
   includeOrphans,
-  withContactOwnedBy,
 }: CaseListFilters) => {
   const filterSqlClauses: string[] = [];
   if (helplines && helplines.length) {
@@ -156,9 +158,6 @@ const filterSql = ({
   }
   if (!includeOrphans) {
     filterSqlClauses.push(`jsonb_array_length(contacts."connectedContacts") > 0`);
-  }
-  if (withContactOwnedBy) {
-    filterSqlClauses.push(`(${selectContactsOwnedCount('withContactOwnedBy')} > 0)`);
   }
   return filterSqlClauses.join(`
   AND `);
@@ -240,6 +239,7 @@ const selectCasesUnorderedSql = (whereClause: string, havingClause: string = '')
     (count(*) OVER())::INTEGER AS "totalCount",
     cases.*,
     contacts."connectedContacts",
+     "contactsOwnedCount"."contactsOwnedByUserCount",
     NULLIF(
       CONCAT(
         contacts."connectedContacts"::JSONB#>>'{0, "rawJson", "childInformation", "name", "firstName"}', 
@@ -252,9 +252,9 @@ const selectCasesUnorderedSql = (whereClause: string, havingClause: string = '')
     LEFT JOIN LATERAL (${SELECT_CONTACTS}) contacts ON true 
     LEFT JOIN LATERAL (${SELECT_CASE_SECTIONS}) caseSections ON true
     LEFT JOIN LATERAL (
-        ${selectContactsOwnedCount('workerSid')}
-    ) contactsOwnedCount ON true
-    ${whereClause} GROUP BY "cases"."accountSid", "cases"."id", caseSections."caseSections", contacts."connectedContacts" ${havingClause}`;
+        ${selectContactsOwnedCount('twilioWorkerSid')}
+    ) "contactsOwnedCount" ON true
+    ${whereClause} GROUP BY "cases"."accountSid", "cases"."id", caseSections."caseSections", contacts."connectedContacts", "contactsOwnedCount"."contactsOwnedByUserCount" ${havingClause}`;
 
 const selectCasesPaginatedSql = (
   whereClause: string,
@@ -269,13 +269,27 @@ LIMIT $<limit>
 OFFSET $<offset>`;
 
 export type SearchQueryBuilder = (
+  user: TwilioUser,
+  viewCasePermissions: TKConditionsSets<'case'>,
   filters: CaseListFilters,
   orderByClauses?: OrderByClauseItem[],
 ) => string;
 
 const selectSearchCaseBaseQuery = (whereClause: string): SearchQueryBuilder => {
-  return (filters, orderByClauses) => {
-    const whereSql = [whereClause, filterSql(filters)].filter(sql => sql).join(`
+  return (
+    user: TwilioUser,
+    viewCasePermissions: TKConditionsSets<'case'>,
+    filters,
+    orderByClauses,
+  ) => {
+    const whereSql = [
+      whereClause,
+      ...listCasesPermissionWhereClause(
+        viewCasePermissions as CaseListCondition[][],
+        user.isSupervisor,
+      ),
+      filterSql(filters),
+    ].filter(sql => sql).join(`
     AND `);
     const orderBySql = generateOrderByClause(orderByClauses.concat(DEFAULT_SORT));
     return selectCasesPaginatedSql(whereSql, orderBySql);

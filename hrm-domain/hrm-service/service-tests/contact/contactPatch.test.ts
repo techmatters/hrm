@@ -27,7 +27,7 @@ import { twilioUser } from '@tech-matters/twilio-worker-auth/dist';
 import each from 'jest-each';
 import { getRequest, getServer, headers, setRules, useOpenRules } from '../server';
 import * as contactDb from '@tech-matters/hrm-core/contact/contactDataAccess';
-import { ruleFileWithOneActionOverride } from '../permissions-overrides';
+import { ruleFileActionOverride } from '../permissions-overrides';
 import { isS3StoredTranscript } from '@tech-matters/hrm-core/conversation-media/conversation-media-data-access';
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import {
@@ -646,11 +646,10 @@ describe('/contacts/:contactId route', () => {
         permission,
       );
       createdContact = await finalizeContact(createdContact);
+      useOpenRules();
 
       if (!expectTranscripts) {
-        setRules(ruleFileWithOneActionOverride('viewExternalTranscript', false));
-      } else {
-        useOpenRules();
+        setRules(ruleFileActionOverride('viewExternalTranscript', false));
       }
 
       const res = await request

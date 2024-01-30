@@ -21,14 +21,7 @@ import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/
 
 import { db } from '@tech-matters/hrm-core/connection-pool';
 import { TKConditionsSets, RulesFile } from '@tech-matters/hrm-core/permissions/rulesMap';
-import {
-  headers,
-  getRequest,
-  getServer,
-  setRules,
-  defaultConfig,
-  useOpenRules,
-} from './server';
+import { headers, getRequest, getServer, setRules, useOpenRules } from './server';
 import { SearchParameters as ContactSearchParameters } from '@tech-matters/hrm-core/contact/contactDataAccess';
 import { SearchParameters as CaseSearchParameters } from '@tech-matters/hrm-core/case/caseService';
 import { TargetKind } from '@tech-matters/hrm-core/permissions/actions';
@@ -100,12 +93,11 @@ afterEach(async () => {
 });
 
 const overridePermissions = <T extends TargetKind>(
-  key: string,
+  key: keyof RulesFile,
   permissions: TKConditionsSets<T>,
 ) => {
   useOpenRules();
-  const rules: RulesFile = {
-    ...(defaultConfig.permissions?.rules() as RulesFile),
+  const rules: Partial<RulesFile> = {
     [key]: permissions,
   };
   setRules(rules);
@@ -178,10 +170,12 @@ describe('search contacts permissions', () => {
 describe('search cases permissions', () => {
   const route = `/v0/accounts/${accountSid}/cases/search`;
 
-  test('return zero cases when no permissions', async () => {
+  beforeEach(async () => {
     await createCase(userTwilioWorkerId);
     await createCase(anotherUserTwilioWorkerId);
+  });
 
+  test('return zero cases when no permissions', async () => {
     overrideViewCasePermissions([['isSupervisor'], ['isCreator']]);
 
     const searchParams: CaseSearchParameters = {
@@ -198,9 +192,6 @@ describe('search cases permissions', () => {
   });
 
   test('return cases from other counselors', async () => {
-    await createCase(userTwilioWorkerId);
-    await createCase(anotherUserTwilioWorkerId);
-
     overrideViewCasePermissions([['everyone']]);
 
     const searchParams: CaseSearchParameters = {
@@ -217,9 +208,6 @@ describe('search cases permissions', () => {
   });
 
   test('return all cases', async () => {
-    await createCase(userTwilioWorkerId);
-    await createCase(anotherUserTwilioWorkerId);
-
     overrideViewCasePermissions([['everyone']]);
 
     const searchParams: CaseSearchParameters = {

@@ -25,6 +25,16 @@ import { RulesFile } from './rulesMap';
 import type { Request, Response, NextFunction } from 'express';
 import { getSearchPermissions, SearchPermissions } from './search-permissions';
 
+declare global {
+  namespace Express {
+    export interface Request {
+      permissions: RulesFile;
+      searchPermissions: SearchPermissions;
+      can: InitializedCan;
+    }
+  }
+}
+
 const canCache: Record<string, InitializedCan> = {};
 
 export type Permissions = {
@@ -40,23 +50,22 @@ export const applyPermissions = (req: Request, initializedCan: InitializedCan) =
   if (typeof initializedCan !== 'function')
     throw new Error(`Error in looked up permission rules: can is not a function.`);
 
-  //@ts-ignore TODO: Improve our custom Request type to override Express.Request
   req.can = initializedCan;
 };
 
 export const setupPermissions =
   (lookup: Permissions) => (req: Request, res: Response, next: NextFunction) => {
     const { accountSid } = <any>req;
+    const accountRules = lookup.rules(accountSid);
     if (lookup.cachePermissions) {
-      canCache[accountSid] =
-        canCache[accountSid] ?? initializeCanForRules(lookup.rules(accountSid));
+      canCache[accountSid] = canCache[accountSid] ?? initializeCanForRules(accountRules);
       const initializedCan = canCache[accountSid];
       applyPermissions(req, initializedCan);
     } else {
-      applyPermissions(req, initializeCanForRules(lookup.rules(accountSid)));
+      applyPermissions(req, initializeCanForRules(accountRules));
     }
-    //@ts-ignore TODO: Improve our custom Request type to override Express.Request
-    req.searchPermissions = getSearchPermissions(req, lookup.rules(accountSid));
+    req.searchPermissions = getSearchPermissions(req, accountRules);
+    req.permissions = accountRules;
     return next();
   };
 

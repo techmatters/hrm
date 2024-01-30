@@ -27,30 +27,30 @@ export const selectContactsOwnedCount = (ownerVariableName: string) =>
 
 export const selectSingleCaseByIdSql = (tableName: string) => `SELECT
       cases.*,
-      caseSections."caseSections",
-      contacts."connectedContacts",
+      "caseSections"."caseSections",
+      "contacts"."connectedContacts",
       "contactsOwnedCount"."contactsOwnedByUserCount"
       FROM "${tableName}" AS cases
       LEFT JOIN LATERAL (
-        SELECT COALESCE(jsonb_agg(to_jsonb(c) || to_jsonb(joinedReports) || to_jsonb(joinedReferrals) || to_jsonb(joinedConversationMedia)), '[]') AS  "connectedContacts"
+        SELECT COALESCE(jsonb_agg(to_jsonb(c) || to_jsonb("joinedReports") || to_jsonb("joinedReferrals") || to_jsonb("joinedConversationMedia")), '[]') AS  "connectedContacts"
         FROM "Contacts" c 
         LEFT JOIN LATERAL (
           ${selectCoalesceCsamReportsByContactId('c')}
-        ) joinedReports ON true
+        ) "joinedReports" ON true
         LEFT JOIN LATERAL (
           ${selectCoalesceReferralsByContactId('c')}
-        ) joinedReferrals ON true
+        ) "joinedReferrals" ON true
         LEFT JOIN LATERAL (
           ${selectCoalesceConversationMediasByContactId('c')}
-        ) joinedConversationMedia ON true
+        ) "joinedConversationMedia" ON true
         WHERE c."caseId" = cases.id AND c."accountSid" = cases."accountSid"
-      ) contacts ON true
+      ) "contacts" ON true
       LEFT JOIN LATERAL (
         SELECT COALESCE(jsonb_agg(to_jsonb(cs) ORDER BY cs."createdAt"), '[]') AS  "caseSections"
         FROM "CaseSections" cs
         WHERE cs."caseId" = cases.id AND cs."accountSid" = cases."accountSid"
-      ) caseSections ON true
+      ) "caseSections" ON true
       LEFT JOIN LATERAL (
         ${selectContactsOwnedCount('workerSid')}
-      ) contactsOwnedCount ON true
+      ) "contactsOwnedCount" ON true
       ${ID_WHERE_CLAUSE}`;

@@ -175,8 +175,15 @@ describe('/cases/:id route - PUT', () => {
   });
 
   afterEach(async () => {
-    await caseDb.deleteById(cases.blank.id, accountSid);
-    await caseDb.deleteById(cases.populated.id, accountSid);
+    await Promise.all(
+      [cases.blank, cases.populated].map(c => {
+        if (c) {
+          return caseDb.deleteById(c.id, accountSid);
+        }
+        console.warn(`No case to delete when cleaning up`);
+        return Promise.resolve();
+      }),
+    );
   });
 
   describe('Case record updates', () => {

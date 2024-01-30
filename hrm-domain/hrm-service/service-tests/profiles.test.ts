@@ -30,6 +30,7 @@ import {
 import { IdentifierWithProfiles } from '@tech-matters/hrm-core/profile/profile-data-access';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
 import { ALWAYS_CAN } from './mocks';
+import { AccountSID } from '@tech-matters/types';
 
 useOpenRules();
 const server = getServer();
@@ -217,7 +218,7 @@ describe('/profiles', () => {
 
   describe('/profiles/identifier/:identifier', () => {
     const buildRoute = (id: string) => `${baseRoute}/identifier/${id}`;
-    const accounts = [accountSid, 'ANOTHER_ACCOUNT'];
+    const accounts: AccountSID[] = [accountSid, 'AC_ANOTHER_ACCOUNT'];
 
     let createdProfiles: { [acc: string]: IdentifierWithProfiles };
     let createdCases: { [acc: string]: caseApi.CaseService };

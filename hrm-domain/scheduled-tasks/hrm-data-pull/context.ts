@@ -15,6 +15,7 @@
  */
 
 import { getSsmParameter } from '@tech-matters/ssm-cache';
+import { rulesMap } from '@tech-matters/hrm-core/permissions/rulesMap';
 
 const sanitizeEnv = (env: string) => (env === 'local' ? 'development' : env);
 
@@ -64,6 +65,7 @@ export const maxPermissions = {
     roles: ['supervisor'],
     isSupervisor: true,
   },
+  permissions: rulesMap.open,
   searchPermissions: {
     canOnlyViewOwnCases: false,
     canOnlyViewOwnContacts: false,

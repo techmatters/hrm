@@ -33,7 +33,7 @@ import { isBefore } from 'date-fns';
 // const each = require('jest-each').default;
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import * as mocks from '../mocks';
-import { ruleFileWithOneActionOverride } from '../permissions-overrides';
+import { ruleFileActionOverride } from '../permissions-overrides';
 import { headers, getRequest, getServer, setRules, useOpenRules } from '../server';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
 import { isS3StoredTranscript } from '@tech-matters/hrm-core/conversation-media/conversation-media';
@@ -80,8 +80,15 @@ beforeEach(async () => {
 
 afterEach(async () => {
   await mockingProxy.stop();
-  await caseDb.deleteById(cases.blank.id, accountSid);
-  await caseDb.deleteById(cases.populated.id, accountSid);
+  await Promise.all(
+    [cases.blank, cases.populated].map(c => {
+      if (c) {
+        return caseDb.deleteById(c.id, accountSid);
+      }
+      console.warn(`No case to delete when cleaning up`);
+      return Promise.resolve();
+    }),
+  );
 });
 
 describe('PUT /cases/:id route', () => {
@@ -465,10 +472,9 @@ describe('PUT /cases/:id route', () => {
       },
     );
 
+    useOpenRules();
     if (!expectTranscripts) {
-      setRules(ruleFileWithOneActionOverride('viewExternalTranscript', false));
-    } else {
-      useOpenRules();
+      setRules(ruleFileActionOverride('viewExternalTranscript', false));
     }
 
     const response = await request.put(subRoute(createdCase.id)).set(headers).send({});
