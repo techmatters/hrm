@@ -99,7 +99,7 @@ describe('KHP Data Pull - Pull Cases', () => {
   });
 
   test('should call upload to S3 with the correct params', async () => {
-    const case1 = {
+    const case1: caseApi.CaseService = {
       id: 1234,
       categories: {},
       connectedContacts: [],
@@ -133,12 +133,12 @@ describe('KHP Data Pull - Pull Cases', () => {
       statusUpdatedBy: null,
     };
 
-    const searchCasesResponse = Promise.resolve({
+    const searchCasesResponse = {
       count: 2,
       cases: [case1, case2],
-    });
+    };
 
-    jest.spyOn(caseApi, 'searchCases').mockReturnValue(searchCasesResponse);
+    jest.spyOn(caseApi, 'searchCases').mockResolvedValue(searchCasesResponse);
 
     await pullCases(startDate, endDate);
 
