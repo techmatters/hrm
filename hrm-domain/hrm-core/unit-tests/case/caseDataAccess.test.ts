@@ -20,7 +20,7 @@ import { mockConnection, mockTask, mockTransaction } from '../mock-db';
 import * as caseDb from '../../case/caseDataAccess';
 import each from 'jest-each';
 import { db } from '../../connection-pool';
-import { OrderByColumn, OrderByColumnType } from '../../case/sql/case-search-sql';
+import { OrderByColumn, OrderByColumnType } from '../../case/sql/caseSearchSql';
 import { expectValuesInSql, getSqlStatement } from '@tech-matters/testing';
 import { twilioUser } from '@tech-matters/twilio-worker-auth/dist';
 import { AccountSID } from '@tech-matters/types';

@@ -22,7 +22,7 @@ import {
   SearchQueryBuilder,
   selectCaseSearch,
   selectCaseSearchByProfileId,
-} from './sql/case-search-sql';
+} from './sql/caseSearchSql';
 import {
   caseSectionUpsertSql,
   deleteMissingCaseSectionsSql,

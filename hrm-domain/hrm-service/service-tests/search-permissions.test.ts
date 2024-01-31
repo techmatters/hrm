@@ -22,57 +22,104 @@ import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/
 import { db } from '@tech-matters/hrm-core/connection-pool';
 import { TKConditionsSets, RulesFile } from '@tech-matters/hrm-core/permissions/rulesMap';
 import { headers, getRequest, getServer, setRules, useOpenRules } from './server';
-import { SearchParameters as ContactSearchParameters } from '@tech-matters/hrm-core/contact/contactDataAccess';
-import { SearchParameters as CaseSearchParameters } from '@tech-matters/hrm-core/case/caseService';
+import * as contactDb from '@tech-matters/hrm-core/contact/contactDataAccess';
+import * as contactService from '@tech-matters/hrm-core/contact/contactService';
+import * as caseDb from '@tech-matters/hrm-core/case/caseDataAccess';
+import * as caseService from '@tech-matters/hrm-core/case/caseService';
 import { TargetKind } from '@tech-matters/hrm-core/permissions/actions';
+import { ContactRawJson } from '@tech-matters/hrm-core/contact/contactJson';
+import { AccountSID } from '@tech-matters/types';
+import { ALWAYS_CAN } from './mocks';
 
 useOpenRules();
 const server = getServer();
 const request = getRequest(server);
 
-const accountSid = `AC${randomBytes(16).toString('hex')}`;
+const accountSid: AccountSID = `AC${randomBytes(16).toString('hex')}`;
 const userTwilioWorkerId = `WK${randomBytes(16).toString('hex')}`;
 const anotherUserTwilioWorkerId = `WK${randomBytes(16).toString('hex')}`;
-const rawJson =
-  '{"callType": "Silent", "caseInformation": {"categories": {"Violência": {"Bullying": false, "Sextorsão": false, "Cyberstalking": false, "Discurso de ódio": false, "Unspecified/Other": false, "Encontros Virtuais": false, "Ciberbullying/Ofensa": false, "Orientações gerais": false, "Conteúdo ilegal/danoso": false, "Fraudes/Golpes/Phishing": false, "Abuso sexual infantil online": false, "Problemas com compras online": false, "Problemas com dados pessoais": false, "Aliciamento sexual infantil online": false, "Outras formas de violência online": false, "Exploração sexual infantil online": false, "Mediação Parental/literacia digital": false, "Compartilhamento não consensual de imagens íntimas": false}, "Saúde mental": {"Suicídio": false, "Automutilação": false, "Inespecífico/Outros": false, "Transtornos Alimentares": false, "Uso excessivo/exagerado": false}, "Outras informação e contatos não relacionados com orientação": {"Feedback": false, "Imprensa": false, "Interrupção/Queda": false, "Solicitação De Material/Palestras": false, "Outras informação e contatos não relacionados com orientação": false}}, "actionTaken": "", "callSummary": "", "okForCaseWorkerToCall": null, "hasConversationEvolved": "Não", "didYouDiscussRightsWithTheChild": null, "didTheChildFeelWeSolvedTheirProblem": null}, "contactlessTask": {"date": "", "time": "", "channel": "", "helpline": "SaferNet", "createdOnBehalfOf": "WKd3d289370720216aab7e3db023e80f3e"}, "childInformation": {"age": "", "city": "", "name": {"lastName": "", "firstName": ""}, "email": "", "state": "", "gender": "", "phone1": "", "phone2": "", "ethnicity": ""}, "callerInformation": {"age": "", "city": "", "name": {"lastName": "", "firstName": ""}, "email": "", "state": "", "gender": "", "phone1": "", "phone2": "", "relationshipToChild": ""}, "definitionVersion": "br-v1"}';
+const rawJson: ContactRawJson = {
+  callType: 'Silent',
+  categories: {},
+  caseInformation: {
+    actionTaken: '',
+    callSummary: '',
+    okForCaseWorkerToCall: null,
+    hasConversationEvolved: 'Não',
+    didYouDiscussRightsWithTheChild: null,
+    didTheChildFeelWeSolvedTheirProblem: null,
+  },
+  contactlessTask: {
+    date: '',
+    time: '',
+    channel: '',
+    helpline: 'SaferNet',
+    createdOnBehalfOf: userTwilioWorkerId,
+  },
+  childInformation: {
+    age: '',
+    city: '',
+    lastName: '',
+    firstName: '',
+    email: '',
+    state: '',
+    gender: '',
+    phone1: '',
+    phone2: '',
+    ethnicity: '',
+  },
+  callerInformation: {
+    age: '',
+    city: '',
+    lastName: '',
+    firstName: '',
+    email: '',
+    state: '',
+    gender: '',
+    phone1: '',
+    phone2: '',
+    relationshipToChild: '',
+  },
+  definitionVersion: 'br-v1',
+};
 
-const createContact = async (twilioWorkerId: string) => {
-  const date = formatISO(new Date());
+const createContact = async (twilioWorkerId: string): Promise<contactDb.Contact> => {
   const timeOfContact = formatISO(subMinutes(new Date(), 5));
   const taskSid = `WT${randomBytes(16).toString('hex')}`;
   const channelSid = `CH${randomBytes(16).toString('hex')}`;
-
-  await db.task(t =>
-    t.none(
-      `INSERT INTO "Contacts" ("createdAt","updatedAt","rawJson","queueName","twilioWorkerId",helpline,"number",channel,"conversationDuration","caseId","accountSid","timeOfContact","taskId","createdBy","channelSid","serviceSid") VALUES ('${date}','${date}','${rawJson}','Admin','${twilioWorkerId}','helpline','37.228.237.15','web',300,NULL,'${accountSid}','${timeOfContact}','${taskSid}','${twilioWorkerId}','${channelSid}','ISxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx');`,
-    ),
+  return contactService.createContact(
+    accountSid,
+    twilioWorkerId,
+    {
+      rawJson,
+      twilioWorkerId,
+      timeOfContact,
+      taskId: taskSid,
+      channelSid,
+      queueName: 'Admin',
+      helpline: 'helpline',
+      conversationDuration: 5,
+      serviceSid: 'ISxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+    },
+    ALWAYS_CAN,
   );
 };
 
 const createCase = async (twilioWorkerId: string) => {
-  const date = formatISO(new Date());
-  const info =
-    '{"summary":"something summary","perpetrators":[],"households":[],"incidents":[],"documents":[],"referrals":[],"counsellorNotes":[]}';
-
-  await db.task(t =>
-    t.none(
-      `INSERT INTO "Cases" ("createdAt", "updatedAt", status, helpline, info, "twilioWorkerId", "accountSid", "createdBy", "updatedBy") VALUES ('${date}','${date}','open','helpline','${info}','${twilioWorkerId}','${accountSid}','${twilioWorkerId}','${twilioWorkerId}');`,
-    ),
+  return caseService.createCase(
+    { status: 'open', helpline: 'helpline', info: { summary: 'something summery' } },
+    accountSid,
+    twilioWorkerId,
   );
 };
 
 const cleanUpDB = async () => {
-  await db.task(t =>
-    t.none(
-      `DELETE FROM "Contacts" WHERE "twilioWorkerId" IN ('${userTwilioWorkerId}', '${anotherUserTwilioWorkerId}');`,
-    ),
-  );
-
-  await db.task(t =>
-    t.none(
-      `DELETE FROM "Cases" WHERE "twilioWorkerId" IN ('${userTwilioWorkerId}', '${anotherUserTwilioWorkerId}');`,
-    ),
-  );
+  await db.task(async t => {
+    await Promise.all([
+      t.none(`DELETE FROM "Contacts";`),
+      t.none(`DELETE FROM "Cases";`),
+    ]);
+  });
 };
 
 beforeAll(async () => {
@@ -118,7 +165,7 @@ describe('search contacts permissions', () => {
 
     overrideViewContactPermissions([['isSupervisor'], ['isOwner']]);
 
-    const searchParams: ContactSearchParameters = {
+    const searchParams: contactDb.SearchParameters = {
       counselor: anotherUserTwilioWorkerId,
       onlyDataContacts: false,
     };
@@ -136,7 +183,7 @@ describe('search contacts permissions', () => {
 
     overrideViewContactPermissions([['everyone']]);
 
-    const searchParams: ContactSearchParameters = {
+    const searchParams: contactDb.SearchParameters = {
       counselor: anotherUserTwilioWorkerId,
       onlyDataContacts: false,
     };
@@ -154,7 +201,7 @@ describe('search contacts permissions', () => {
 
     overrideViewContactPermissions([['everyone']]);
 
-    const searchParams: ContactSearchParameters = {
+    const searchParams: contactDb.SearchParameters = {
       counselor: undefined,
       onlyDataContacts: false,
     };
@@ -169,16 +216,17 @@ describe('search contacts permissions', () => {
 
 describe('search cases permissions', () => {
   const route = `/v0/accounts/${accountSid}/cases/search`;
+  let userCase: caseDb.CaseRecord, otherUserCase: caseDb.CaseRecord;
 
   beforeEach(async () => {
-    await createCase(userTwilioWorkerId);
-    await createCase(anotherUserTwilioWorkerId);
+    userCase = await createCase(userTwilioWorkerId);
+    otherUserCase = await createCase(anotherUserTwilioWorkerId);
   });
 
   test('return zero cases when no permissions', async () => {
     overrideViewCasePermissions([['isSupervisor'], ['isCreator']]);
 
-    const searchParams: CaseSearchParameters = {
+    const searchParams: caseService.SearchParameters = {
       filters: {
         counsellors: [anotherUserTwilioWorkerId],
       },
@@ -194,7 +242,7 @@ describe('search cases permissions', () => {
   test('return cases from other counselors', async () => {
     overrideViewCasePermissions([['everyone']]);
 
-    const searchParams: CaseSearchParameters = {
+    const searchParams: caseService.SearchParameters = {
       filters: {
         counsellors: [anotherUserTwilioWorkerId],
       },
@@ -205,21 +253,141 @@ describe('search cases permissions', () => {
     expect(response.status).toBe(200);
     expect(response.body.count).toBe(1);
     expect(response.body.cases.length).toBe(1);
+    expect(response.body.cases[0].id).toBe(otherUserCase.id);
+  });
+
+  test('return own cases when view is restricted', async () => {
+    overrideViewCasePermissions([['isCreator']]);
+    const response = await request.post(route).set(headers).send({});
+
+    expect(response.status).toBe(200);
+    expect(response.body.count).toBe(1);
+    expect(response.body.cases.length).toStrictEqual(1);
+    expect(response.body.cases[0].id).toBe(userCase.id);
   });
 
   test('return all cases', async () => {
     overrideViewCasePermissions([['everyone']]);
-
-    const searchParams: CaseSearchParameters = {
-      filters: {
-        counsellors: [],
-      },
-    };
-
-    const response = await request.post(route).set(headers).send(searchParams);
+    const response = await request.post(route).set(headers).send({});
 
     expect(response.status).toBe(200);
     expect(response.body.count).toBe(2);
     expect(response.body.cases.length).toBe(2);
+  });
+
+  describe('A contact in the case is owned by the user', () => {
+    let userContact: contactDb.Contact,
+      userContact2: contactDb.Contact,
+      otherUserContact: contactDb.Contact;
+    let caseWithUserContact: caseDb.CaseRecord,
+      caseWithNoUserContact: caseDb.CaseRecord,
+      userCaseWithUserContact: caseDb.CaseRecord;
+    const ctc = contactDb.connectToCase();
+    const connect = (contactId: number, caseId: number) =>
+      ctc(accountSid, contactId.toString(), caseId.toString(), userTwilioWorkerId);
+
+    beforeEach(async () => {
+      [
+        userContact,
+        userContact2,
+        otherUserContact,
+        caseWithNoUserContact,
+        caseWithUserContact,
+        userCaseWithUserContact,
+      ] = await Promise.all([
+        createContact(userTwilioWorkerId),
+        createContact(userTwilioWorkerId),
+        createContact(anotherUserTwilioWorkerId),
+        createCase(anotherUserTwilioWorkerId),
+        createCase(anotherUserTwilioWorkerId),
+        createCase(userTwilioWorkerId),
+      ]);
+      await Promise.all([
+        connect(userContact.id, caseWithUserContact.id),
+        connect(otherUserContact.id, caseWithUserContact.id),
+        connect(otherUserContact.id, caseWithNoUserContact.id),
+        connect(userContact2.id, userCaseWithUserContact.id),
+      ]);
+    });
+    test('Ignores owned contact when isCaseContactOwner permission is not in use', async () => {
+      overrideViewCasePermissions([['everyone']]);
+
+      const response = await request.post(route).set(headers).send({});
+
+      expect(response.status).toBe(200);
+      expect(response.body.count).toBe(5);
+      expect(response.body.cases.length).toBe(5);
+      expect(response.body.cases.map((c: caseDb.CaseRecord) => c.id).sort()).toEqual(
+        [
+          userCase,
+          otherUserCase,
+          caseWithNoUserContact,
+          caseWithUserContact,
+          userCaseWithUserContact,
+        ]
+          .map((c: caseDb.CaseRecord) => c.id)
+          .sort(),
+      );
+    });
+    test('Returns only cases with a connected contact owned by the user when isCaseContactOwner permission is in use', async () => {
+      overrideViewCasePermissions([['isCaseContactOwner']]);
+
+      const response = await request.post(route).set(headers).send({});
+
+      expect(response.status).toBe(200);
+      console.log(JSON.stringify(response.body.cases, null, 2));
+      expect(response.body.count).toBe(2);
+      expect(response.body.cases.length).toBe(2);
+      expect(response.body.cases.map((c: caseDb.CaseRecord) => c.id).sort()).toEqual(
+        [caseWithUserContact, userCaseWithUserContact]
+          .map((c: caseDb.CaseRecord) => c.id)
+          .sort(),
+      );
+    });
+    test('Combines with counselor filters to only return cases created by counselors listed in the filter with contacts owned by the user', async () => {
+      overrideViewCasePermissions([['isCaseContactOwner']]);
+
+      const response = await request
+        .post(route)
+        .set(headers)
+        .send({
+          filters: {
+            counsellors: [anotherUserTwilioWorkerId],
+          },
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body.count).toBe(1);
+      expect(response.body.cases.length).toBe(1);
+      expect(response.body.cases.map((c: caseDb.CaseRecord) => c.id).sort()).toEqual(
+        [caseWithUserContact].map((c: caseDb.CaseRecord) => c.id).sort(),
+      );
+    });
+    test('Combines with isCreator condition to only return cases created by the user AND with contacts owned by the user', async () => {
+      overrideViewCasePermissions([['isCaseContactOwner', 'isCreator']]);
+
+      const response = await request.post(route).set(headers).send({});
+
+      expect(response.status).toBe(200);
+      expect(response.body.count).toBe(1);
+      expect(response.body.cases.length).toBe(1);
+      expect(response.body.cases.map((c: caseDb.CaseRecord) => c.id).sort()).toEqual(
+        [userCaseWithUserContact].map((c: caseDb.CaseRecord) => c.id).sort(),
+      );
+    });
+    test('Combines with a separate isCreator condition set to return cases created by the user OR with contacts owned by the user', async () => {
+      overrideViewCasePermissions([['isCaseContactOwner'], ['isCreator']]);
+
+      const response = await request.post(route).set(headers).send({});
+
+      expect(response.status).toBe(200);
+      expect(response.body.count).toBe(3);
+      expect(response.body.cases.length).toBe(3);
+      expect(response.body.cases.map((c: caseDb.CaseRecord) => c.id).sort()).toEqual(
+        [userCase, caseWithUserContact, userCaseWithUserContact]
+          .map((c: caseDb.CaseRecord) => c.id)
+          .sort(),
+      );
+    });
   });
 });
