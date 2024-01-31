@@ -291,7 +291,6 @@ const selectSearchCaseBaseQuery = (whereClause: string): SearchQueryBuilder => {
       filterSql(filters),
     ].filter(sql => sql).join(`
     AND `);
-    console.log('whereSql', whereSql);
     const orderBySql = generateOrderByClause(orderByClauses.concat(DEFAULT_SORT));
     return selectCasesPaginatedSql(whereSql, orderBySql);
   };
