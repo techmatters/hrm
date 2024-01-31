@@ -22,7 +22,7 @@ import { selectCoalesceReferralsByContactId } from '../../referral/sql/referral-
 import { selectCoalesceConversationMediasByContactId } from '../../conversation-media/sql/conversation-media-get-sql';
 import { OrderByClauseItem, OrderByDirection } from '../../sql';
 import { selectContactsOwnedCount } from './case-get-sql';
-import { CaseListCondition, listCasesPermissionWhereClause } from './case-permission-sql';
+import { CaseListCondition, listCasesPermissionWhereClause } from './casePermissionSql';
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { TKConditionsSets } from '../../permissions/rulesMap';
 
