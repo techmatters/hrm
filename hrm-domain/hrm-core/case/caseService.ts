@@ -232,6 +232,7 @@ export const createCase = async (
   delete body.id;
   const record = caseToCaseRecord(
     {
+      twilioWorkerId: workerSid,
       ...body,
       createdBy: workerSid,
       createdAt: nowISO,

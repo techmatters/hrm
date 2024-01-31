@@ -335,7 +335,6 @@ describe('search cases permissions', () => {
       const response = await request.post(route).set(headers).send({});
 
       expect(response.status).toBe(200);
-      console.log(JSON.stringify(response.body.cases, null, 2));
       expect(response.body.count).toBe(2);
       expect(response.body.cases.length).toBe(2);
       expect(response.body.cases.map((c: caseDb.CaseRecord) => c.id).sort()).toEqual(
@@ -379,6 +378,7 @@ describe('search cases permissions', () => {
       overrideViewCasePermissions([['isCaseContactOwner'], ['isCreator']]);
 
       const response = await request.post(route).set(headers).send({});
+      console.log(JSON.stringify(response.body.cases, null, 2));
 
       expect(response.status).toBe(200);
       expect(response.body.count).toBe(3);
