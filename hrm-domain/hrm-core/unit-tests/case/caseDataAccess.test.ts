@@ -93,7 +93,7 @@ describe('createCase', () => {
         {
           accountSid: '',
           sectionType: 'note',
-          sectionId: 'NOTE_1',
+          id: 'NOTE_1',
           createdBy: 'contact-adder',
           createdAt: new Date(2000, 4, 21).toISOString(),
           updatedAt: undefined,

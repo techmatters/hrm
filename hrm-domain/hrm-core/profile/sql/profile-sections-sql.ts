@@ -51,7 +51,7 @@ export const insertProfileSectionSql = (
 `;
 
 const WHERE_ID_AND_PROFILE_CLAUSE =
-  'WHERE id = $<sectionId> AND "profileId" = $<profileId> AND "accountSid" = $<accountSid>';
+  'WHERE id = $<id> AND "profileId" = $<profileId> AND "accountSid" = $<accountSid>';
 
 export const updateProfileSectionByIdSql = `
   UPDATE "ProfileSections" SET

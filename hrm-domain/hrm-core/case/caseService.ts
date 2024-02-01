@@ -25,7 +25,6 @@ import {
   CaseRecord,
   CaseRecordCommon,
   CaseSearchCriteria,
-  CaseSectionRecord,
   SearchQueryFunction,
   create,
   getById,
@@ -44,6 +43,7 @@ import type { Profile } from '../profile/profile-data-access';
 import type { PaginationQuery } from '../search';
 import { TResult, newErr, newOk } from '@tech-matters/types';
 import { RulesFile, TKConditionsSets } from '../permissions/rulesMap';
+import { CaseSectionRecord } from '../dist/case/caseDataAccess';
 
 type CaseInfoSection = {
   id: string;
@@ -104,7 +104,7 @@ const caseSectionRecordsToInfo = (
     const {
       caseId,
       sectionType,
-      sectionId,
+      sectionId: id,
       sectionTypeSpecificData,
       createdBy,
       ...restOfRecord
@@ -122,7 +122,7 @@ const caseSectionRecordsToInfo = (
         categorized.counsellorNotes.push({
           ...sectionTypeSpecificData,
           ...restOfRecord,
-          id: sectionId,
+          id: id,
           twilioWorkerId: createdBy,
         });
         break;
@@ -131,7 +131,7 @@ const caseSectionRecordsToInfo = (
         categorized.referrals.push({
           ...sectionTypeSpecificData,
           ...restOfRecord,
-          id: sectionId,
+          id: id,
           twilioWorkerId: createdBy,
         });
         break;
@@ -140,7 +140,7 @@ const caseSectionRecordsToInfo = (
         categorized[listName] = categorized[listName] ?? [];
         categorized[listName].push({
           ...restOfRecord,
-          id: sectionId,
+          id: id,
           twilioWorkerId: createdBy,
           [record.sectionType]: sectionTypeSpecificData,
         });

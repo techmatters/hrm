@@ -19,6 +19,7 @@ import * as casesDb from './caseDataAccess';
 import * as caseApi from './caseService';
 import { publicEndpoint, SafeRouter } from '../permissions';
 import { canEditCase, canViewCase } from './canPerformCaseAction';
+import caseSectionRoutesV0 from './caseSection/caseSectionRoutesV0';
 
 const casesRouter = SafeRouter();
 /**
@@ -125,5 +126,7 @@ casesRouter.post('/search', publicEndpoint, async (req, res) => {
   );
   res.json(searchResults);
 });
+
+casesRouter.expressRouter.use('/:caseId/sections', caseSectionRoutesV0);
 
 export default casesRouter.expressRouter;

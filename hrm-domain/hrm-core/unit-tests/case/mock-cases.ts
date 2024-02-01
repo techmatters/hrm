@@ -44,7 +44,7 @@ export const createMockCaseRecord = (partial: Partial<CaseRecord>): CaseRecord =
           accountSid: 'ACCOUNT_SID',
           caseId: 1,
           sectionType: 'note',
-          sectionId: 'NOTE_1',
+          id: 'NOTE_1',
           createdBy: 'contact-adder',
           createdAt: baselineDate.toISOString(),
           sectionTypeSpecificData: { note: 'Child with covid-19' },
@@ -62,7 +62,7 @@ export const createMockCaseInsert = (partial: Partial<NewCaseRecord>): NewCaseRe
       caseSections: [
         {
           sectionType: 'note',
-          sectionId: 'NOTE_1',
+          id: 'NOTE_1',
           createdBy: 'contact-adder',
           createdAt: baselineDate.toISOString(),
           updatedAt: undefined,

@@ -728,7 +728,7 @@ describe('/profiles', () => {
         );
       });
 
-      describe('/profiles/:profileId/sections/:sectionId', () => {
+      describe('/profiles/:profileId/sections/:id', () => {
         const buildRoute = (profileId: number, sectionId: number) =>
           `${baseRoute}/${profileId}/sections/${sectionId}`;
         describe('PATCH', () => {

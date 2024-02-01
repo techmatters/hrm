@@ -34,6 +34,7 @@ import { OrderByDirectionType } from '../sql';
 import { TKConditionsSets } from '../permissions/rulesMap';
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { AccountSID } from '@tech-matters/types';
+import { CaseSectionRecord } from './caseSection/types';
 
 export type PrecalculatedCasePermissionConditions = {
   isCaseContactOwner: boolean; // Does the requesting user own any of the contacts currently connected to the case?
@@ -68,18 +69,6 @@ export type CaseRecord = CaseRecordCommon & {
 };
 
 type CaseWithCount = CaseRecord & { totalCount: number };
-
-export type CaseSectionRecord = {
-  caseId?: number;
-  sectionType: string;
-  sectionId: string;
-  sectionTypeSpecificData: Record<string, any>;
-  accountSid: string;
-  createdAt: string;
-  createdBy: string;
-  updatedAt?: string;
-  updatedBy?: string;
-};
 
 export type CaseListConfiguration = {
   sortBy?: OrderByColumnType;
