@@ -59,7 +59,7 @@ export const handler = async ({ region, environment, accountSid }) => {
   const url = getAdminV0URL(internalResourcesUrl, accountSid, '/profiles/flags');
 
   const response = await fetch(url, {
-    method: 'POST',
+    method: 'GET',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Basic ${authKey}`,
