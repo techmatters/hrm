@@ -19,8 +19,8 @@ import { getHRMInternalEndpointAccess } from '@tech-matters/service-discovery';
 import { fetch } from 'undici';
 import { getAdminV0URL, staticKeyPattern } from '../../../hrmInternalConfig';
 
-export const command = 'list';
-export const describe = 'List the profile flags for the given account';
+export const command = 'delete';
+export const describe = 'Delete an existing profile flag for the given account';
 export const builder = {
   e: {
     alias: 'environment',
@@ -40,9 +40,15 @@ export const builder = {
     demandOption: true,
     type: 'string',
   },
+  i: {
+    alias: 'flagId',
+    describe: 'the id of the flag to delete',
+    demandOption: true,
+    type: 'number',
+  },
 };
 
-export const handler = async ({ region, environment, accountSid }) => {
+export const handler = async ({ region, environment, accountSid, flagId }) => {
   try {
     const timestamp = new Date().getTime();
     const assumeRoleParams = {
@@ -57,10 +63,14 @@ export const handler = async ({ region, environment, accountSid }) => {
       assumeRoleParams,
     });
 
-    const url = getAdminV0URL(internalResourcesUrl, accountSid, '/profiles/flags');
+    const url = getAdminV0URL(
+      internalResourcesUrl,
+      accountSid,
+      `/profiles/flags/${flagId}`,
+    );
 
     const response = await fetch(url, {
-      method: 'GET',
+      method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Basic ${authKey}`,
@@ -75,7 +85,7 @@ export const handler = async ({ region, environment, accountSid }) => {
     console.log(JSON.stringify(jsonResp, null, 2));
   } catch (err) {
     console.error(
-      `Failed to list profile flags for account ${accountSid} (${region} ${environment})`,
+      `Failed to delete profile flag ${flagId} for account ${accountSid} (${region} ${environment})`,
       err instanceof Error ? err.message : String(err),
     );
   }
