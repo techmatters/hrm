@@ -65,9 +65,12 @@ export const handler = async ({ region, environment, accountSid }) => {
       Authorization: `Basic ${authKey}`,
     },
   });
+
   if (!response.ok) {
     throw new Error(`Failed to submit request: ${response.statusText}`);
   }
 
-  console.log(response.body);
+  for await (const chunk of response.body) {
+    process.stdout.write(chunk);
+  }
 };
