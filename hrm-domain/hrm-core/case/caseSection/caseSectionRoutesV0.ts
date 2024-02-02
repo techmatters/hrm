@@ -24,8 +24,11 @@ import {
 } from './caseSectionService';
 import '@tech-matters/twilio-worker-auth';
 import { Request } from 'express';
-import { canAddCaseSection, canEditCaseSection } from './canPerformCaseSectionAction';
-import { canViewCase } from '../canPerformCaseAction';
+import {
+  canAddCaseSection,
+  canEditCaseSection,
+  canViewCaseSection,
+} from './canPerformCaseSectionAction';
 
 const caseSectionsRouter = SafeRouter({ mergeParams: true });
 
@@ -41,18 +44,22 @@ const caseSectionsRouter = SafeRouter({ mergeParams: true });
  *
  * @returns {CaseSearchReturn} - List of cases
  */
-caseSectionsRouter.get('/:sectionType/:id', canViewCase, async (req: Request, res) => {
-  const {
-    accountSid,
-    params: { caseId, sectionType, sectionId },
-  } = req;
+caseSectionsRouter.get(
+  '/:sectionType/:sectionId',
+  canViewCaseSection,
+  async (req: Request, res) => {
+    const {
+      accountSid,
+      params: { caseId, sectionType, sectionId },
+    } = req;
 
-  const section = await getCaseSection(caseId, sectionType, sectionId, accountSid);
-  if (!section) {
-    throw createError(404);
-  }
-  res.json(section);
-});
+    const section = await getCaseSection(accountSid, caseId, sectionType, sectionId);
+    if (!section) {
+      throw createError(404);
+    }
+    res.json(section);
+  },
+);
 
 caseSectionsRouter.post('/:sectionType', canAddCaseSection, async (req, res) => {
   const {
@@ -71,36 +78,44 @@ caseSectionsRouter.post('/:sectionType', canAddCaseSection, async (req, res) => 
   res.json(createdCase);
 });
 
-caseSectionsRouter.put('/:sectionType/:id', canEditCaseSection, async (req, res) => {
-  const {
-    accountSid,
-    user,
-    params: { caseId, sectionType, id },
-  } = req;
-  const updatedSection = await replaceCaseSection(
-    accountSid,
-    caseId,
-    sectionType,
-    id,
-    req.body,
-    user.workerSid,
-  );
-  if (!updatedSection) {
-    throw createError(404);
-  }
-  res.json(updatedSection);
-});
+caseSectionsRouter.put(
+  '/:sectionType/:sectionId',
+  canEditCaseSection,
+  async (req, res) => {
+    const {
+      accountSid,
+      user,
+      params: { caseId, sectionType, sectionId },
+    } = req;
+    const updatedSection = await replaceCaseSection(
+      accountSid,
+      caseId,
+      sectionType,
+      sectionId,
+      req.body,
+      user.workerSid,
+    );
+    if (!updatedSection) {
+      throw createError(404);
+    }
+    res.json(updatedSection);
+  },
+);
 
-caseSectionsRouter.delete('/:sectionType/:id', canEditCaseSection, async (req, res) => {
-  const {
-    accountSid,
-    params: { caseId, sectionType, id },
-  } = req;
-  const deleted = await deleteCaseSection(accountSid, caseId, sectionType, id);
-  if (!deleted) {
-    throw createError(404);
-  }
-  res.sendStatus(200);
-});
+caseSectionsRouter.delete(
+  '/:sectionType/:sectionId',
+  canEditCaseSection,
+  async (req, res) => {
+    const {
+      accountSid,
+      params: { caseId, sectionType, sectionId },
+    } = req;
+    const deleted = await deleteCaseSection(accountSid, caseId, sectionType, sectionId);
+    if (!deleted) {
+      throw createError(404);
+    }
+    res.sendStatus(200);
+  },
+);
 
 export default caseSectionsRouter.expressRouter;

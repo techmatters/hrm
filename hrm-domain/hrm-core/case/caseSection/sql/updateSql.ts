@@ -15,7 +15,8 @@
  */
 
 export const UPDATE_CASE_SECTION_BY_ID = `
-  UPDATE "caseSections"
+  UPDATE "CaseSections"
+  SET
     "sectionTypeSpecificData" = $<sectionTypeSpecificData>,
     "updatedAt" = $<updatedAt>,
     "updatedBy" = $<updatedBy>

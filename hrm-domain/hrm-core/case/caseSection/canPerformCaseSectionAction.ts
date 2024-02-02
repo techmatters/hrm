@@ -42,19 +42,30 @@ const SECTION_TYPE_ACTION_MAP: Record<
 };
 
 /**
- * It checks if the user can edit the case based on the fields it's trying to edit
- * according to the defined permission rules.
+ * It checks if the user can edit the case section based on the section type
+ * The current permissions are defined for 'well known' sections, once we have dynamic case section permissions, this lookup will change
  */
-export const canEditCaseSection = canPerformCaseAction((caseObj, req) => {
-  const { sectionType } = req.params;
-  return [
-    SECTION_TYPE_ACTION_MAP[sectionType].edit ?? actionsMaps.case.EDIT_CASE_OVERVIEW,
-  ]; // Once we have dynamic case section permissions, we can remove this fallback
-});
+export const canEditCaseSection = canPerformCaseAction(
+  (caseObj, req) => {
+    const { sectionType } = req.params;
+    return [
+      SECTION_TYPE_ACTION_MAP[sectionType].edit ?? actionsMaps.case.EDIT_CASE_OVERVIEW,
+    ]; // Once we have dynamic case section permissions, we can remove this fallback
+  },
+  req => req.params.caseId,
+);
 
-export const canAddCaseSection = canPerformCaseAction((caseObj, req) => {
-  const { sectionType } = req.params;
-  return [
-    SECTION_TYPE_ACTION_MAP[sectionType].add ?? actionsMaps.case.EDIT_CASE_OVERVIEW,
-  ]; // Once we have dynamic case section permissions, we can remove this fallback
-});
+export const canAddCaseSection = canPerformCaseAction(
+  (caseObj, { params }) => {
+    const { sectionType } = params;
+    return [
+      SECTION_TYPE_ACTION_MAP[sectionType].add ?? actionsMaps.case.EDIT_CASE_OVERVIEW,
+    ]; // Once we have dynamic case section permissions, we can remove this fallback
+  },
+  ({ params }) => params.caseId,
+);
+
+export const canViewCaseSection = canPerformCaseAction(
+  () => [actionsMaps.case.VIEW_CASE],
+  req => req.params.caseId,
+);

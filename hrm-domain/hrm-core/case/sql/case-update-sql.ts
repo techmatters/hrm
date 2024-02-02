@@ -59,7 +59,8 @@ UPDATE "Cases" SET
   "info" = "info" || $<infoPatch>::jsonb 
   "updatedAt" = CURRENT_TIMESTAMP,
   "updatedBy" = $<updatedBy>
-WHERE "accountSid" = $<accountSid> AND "id" = $<caseId>`;
+WHERE "accountSid" = $<accountSid> AND "id" = $<caseId>
+RETURNING *`;
 
 export const TOUCH_CASE_SQL = `
 UPDATE "Cases" 

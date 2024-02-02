@@ -21,7 +21,7 @@ export const SELECT_CASE_SECTION_BY_ID = `
     "createdBy",
     "updatedAt",
     "updatedBy"
-  FROM "caseSections"
+  FROM "CaseSections"
   WHERE "accountSid" = $<accountSid>
     AND "caseId" = $<caseId>
     AND "sectionType" = $<sectionType>

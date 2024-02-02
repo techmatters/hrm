@@ -18,20 +18,21 @@ import asyncHandler from '../async-handler';
 import { CaseService, getCase } from './caseService';
 import createError from 'http-errors';
 import { actionsMaps, getActions } from '../permissions';
+import { Request } from 'express';
 
 export const canPerformCaseAction = (
-  generateActions: (caseObj: CaseService, req: any) => any[],
+  generateActions: (caseObj: CaseService, req: Request) => any[],
   getCaseIdFromRequest: (req: any) => number = req => req.params.id,
 ) =>
   asyncHandler(async (req, res, next) => {
     if (!req.isAuthorized()) {
-      const { accountSid, body, user, can } = req;
+      const { accountSid, user, can } = req;
       const id = getCaseIdFromRequest(req);
       const caseObj = await getCase(id, accountSid, { can, user });
 
       if (!caseObj) throw createError(404);
 
-      const actions = generateActions(caseObj, body);
+      const actions = generateActions(caseObj, req);
       console.debug(`Actions attempted in case edit (case #${id})`, actions);
       const canEdit = actions.every(action => can(user, action, caseObj));
 
@@ -57,7 +58,7 @@ export const canEditCase = canPerformCaseAction(getActions);
 export const canViewCase = canPerformCaseAction(() => [actionsMaps.case.VIEW_CASE]);
 
 export const canUpdateCaseStatus = canPerformCaseAction(
-  ({ status: savedStatus }, { status: updatedStatus }) => {
+  ({ status: savedStatus }, { body: { status: updatedStatus } }) => {
     if (updatedStatus === savedStatus) return [];
     if (updatedStatus === 'closed') return [actionsMaps.case.CLOSE_CASE];
     return savedStatus === 'closed'

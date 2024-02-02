@@ -44,7 +44,7 @@ import type { Profile } from '../profile/profile-data-access';
 import type { PaginationQuery } from '../search';
 import { TResult, newErr, newOk } from '@tech-matters/types';
 import { RulesFile, TKConditionsSets } from '../permissions/rulesMap';
-import { CaseSectionRecord } from '../dist/case/caseDataAccess';
+import { CaseSectionRecord } from './caseSection/types';
 import { pick } from 'lodash';
 
 const CASE_OVERVIEW_PROPERTIES = ['summary', 'followUpDate', 'childIsAtRisk'] as const;

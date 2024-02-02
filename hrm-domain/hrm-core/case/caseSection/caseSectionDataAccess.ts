@@ -33,8 +33,6 @@ export const create = async (
           'sectionId',
           'createdBy',
           'createdAt',
-          'updatedBy',
-          'updatedAt',
           'sectionTypeSpecificData',
           'accountSid',
         ],

@@ -318,19 +318,13 @@ export const updateCaseInfo = async (
   updatedBy: string,
   accountSid: string,
 ) => {
-  const statementValues = {
-    accountSid,
-    caseId,
-    info,
-  };
   return db.tx(async transaction => {
-    await transaction.none(PATCH_CASE_INFO_BY_ID, {
+    return transaction.oneOrNone(PATCH_CASE_INFO_BY_ID, {
       info,
       updatedBy,
       updatedAt: new Date().toISOString(),
       accountSid,
       caseId,
     });
-    return transaction.oneOrNone(selectSingleCaseByIdSql('Cases'), statementValues);
   });
 };

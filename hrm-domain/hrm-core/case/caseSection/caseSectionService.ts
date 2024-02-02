@@ -15,9 +15,7 @@
  */
 
 /**
- * This is the 'business logic' module for Case CRUD operations.
- * For the moment it just does some light mapping between the types used for the REST layer, and the types used for the database layer.
- * This includes compatibility code required to provide cases in a shape expected by older clients
+ * This is the 'business logic' module for Case Section CRUD operations.
  */
 import { CaseSectionRecord } from './types';
 import { randomUUID } from 'crypto';

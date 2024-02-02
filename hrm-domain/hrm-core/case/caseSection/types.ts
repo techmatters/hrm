@@ -35,4 +35,6 @@ export type CaseSectionUpdate = Omit<
   CaseSection,
   'sectionId' | 'createdBy' | 'createdAt'
 >;
-export type NewCaseSection = Omit<CaseSectionUpdate, 'updatedAt' | 'updatedBy'>;
+export type NewCaseSection = Omit<CaseSectionUpdate, 'updatedAt' | 'updatedBy'> & {
+  sectionId?: string;
+};

@@ -15,7 +15,7 @@
  */
 
 export const DELETE_CASE_SECTION_BY_ID = `
-  DELETE FROM "caseSections"
+  DELETE FROM "CaseSections"
   WHERE "accountSid" = $<accountSid>
     AND "caseId" = $<caseId>
     AND "sectionType" = $<sectionType>

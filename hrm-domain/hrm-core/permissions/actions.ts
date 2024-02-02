@@ -15,6 +15,7 @@
  */
 
 import { diff, Diff, DiffNew, DiffEdit, DiffArray } from 'deep-diff';
+import { Request } from 'express';
 
 export const actionsMaps = {
   case: {
@@ -222,7 +223,7 @@ function sortedSections(original: any): any {
  * @param {*} updated the object with the updated values
  * @returns
  */
-export const getActions = (original: any, updated: any) => {
+export const getActions = (original: any, { body: updated }: Request) => {
   // Filter out the topmost properties not included in the payload to avoid false DELETED_PROPERTY (as we send Partial<Case> from the frontend)
   let partialOriginal: any = Object.keys(updated).reduce(
     (accum, currentKey) =>
