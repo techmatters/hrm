@@ -1,0 +1,24 @@
+{
+  "name": "@tech-matters/service-discovery",
+  "version": "1.0.0",
+  "description": "Shared library for HRM",
+  "author": "",
+  "license": "AGPL",
+  "main": "dist/index.js",
+  "types": "index.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/techmatters/hrm.git"
+  },
+  "keywords": [],
+  "bugs": {
+    "url": "https://github.com/techmatters/hrm/issues"
+  },
+  "homepage": "https://github.com/techmatters/hrm#readme",
+  "dependencies": {
+    "aws-sdk": "^2.1547.0"
+  }
+}

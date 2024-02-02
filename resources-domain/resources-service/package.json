@@ -65,6 +65,7 @@
     "@tech-matters/ssm-cache": "^1.0.0",
     "@tech-matters/twilio-worker-auth": "^1.0.0",
     "@tech-matters/types": "^1.0.0",
+    "@tech-matters/service-discovery": "^1.0.0",
     "aws-sdk": "^2.1353.0",
     "date-fns": "^2.29.3",
     "dotenv": "^8.6.0",
