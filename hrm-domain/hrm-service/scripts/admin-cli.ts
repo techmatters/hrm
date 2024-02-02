@@ -17,56 +17,6 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import yargs from 'yargs';
 
-// eslint-disable-next-line import/no-extraneous-dependencies
-// import { fetch, Response } from 'undici';
-// import { AccountSID } from '@tech-matters/types';
-// import { getHRMInternalEndpointAccess } from '@tech-matters/service-discovery';
-
-// const staticKeyPattern = /^STATIC_KEY_ADMIN_HRM=(?<key>.*)$/im;
-
-// const main = async () => {
-//   const argv = yargs
-//     .usage('Usage: $0 <command> [options]')
-//     .help('h')
-//     .alias('h', 'help').argv;
-
-//   const {
-//     e: environment,
-//     r: regionParam,
-//     a: accountSid,
-//     v: verbose,
-//   } = yargs(process.argv.slice(2)).options({
-//     e: {
-//       alias: 'environment',
-//       describe: 'The target environment, defaults to development',
-//       type: 'string',
-//       default: 'development',
-//     },
-//     r: {
-//       alias: 'region',
-//       describe:
-//         'The region you are targeting. If none provided, will use process.env.AWS_REGION',
-//       type: 'string',
-//     },
-//     a: {
-//       alias: 'accountSid',
-//       describe: 'The target account sid under which the admin endpoints will be executed',
-//       type: 'string',
-//     },
-//     v: {
-//       alias: 'verbose',
-//       describe: '',
-//       type: 'boolean',
-//       default: false,
-//     },
-//   });
-
-//   const region = regionParam || process.env.AWS_REGION;
-//   if (!region) {
-//     throw new Error(`region parameter not provided nor set in .env`);
-//   }
-// };
-
 const main = () => {
   // eslint-disable-next-line @typescript-eslint/no-unused-expressions
   yargs
@@ -77,6 +27,7 @@ const main = () => {
     .scriptName('admin-cli')
     .demandCommand(1, 'Please provide a valid command')
     .version(false)
+    .wrap(120)
     .help().argv;
 };
 

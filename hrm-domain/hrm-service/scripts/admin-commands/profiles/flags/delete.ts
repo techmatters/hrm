@@ -20,7 +20,7 @@ import { fetch } from 'undici';
 import { getAdminV0URL, staticKeyPattern } from '../../../hrmInternalConfig';
 
 export const command = 'delete';
-export const describe = 'Delete an existing profile flag for the given account';
+export const describe = 'Delete an existing profile flag';
 export const builder = {
   e: {
     alias: 'environment',
