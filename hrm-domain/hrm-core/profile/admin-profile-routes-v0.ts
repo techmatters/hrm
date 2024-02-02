@@ -78,7 +78,9 @@ adminProfilesRouter.patch('/flags/:flagId', publicEndpoint, async (req, res, nex
       return next(createError(404));
     }
 
-    res.json(result.data);
+    res.json({
+      result: `Succesfully deleted flag ${result.data.name} (ID ${result.data.id})`,
+    });
   } catch (err) {
     return next(createError(500, err.message));
   }
