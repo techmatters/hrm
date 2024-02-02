@@ -70,7 +70,5 @@ export const handler = async ({ region, environment, accountSid }) => {
     throw new Error(`Failed to submit request: ${response.statusText}`);
   }
 
-  for await (const chunk of response.body) {
-    process.stdout.write(chunk);
-  }
+  console.log(JSON.stringify(response.json(), null, 2));
 };
