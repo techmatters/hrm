@@ -70,5 +70,6 @@ export const handler = async ({ region, environment, accountSid }) => {
     throw new Error(`Failed to submit request: ${response.statusText}`);
   }
 
-  console.log(JSON.stringify(response.json(), null, 2));
+  const jsonResp = await response.json();
+  console.log(JSON.stringify(jsonResp, null, 2));
 };
