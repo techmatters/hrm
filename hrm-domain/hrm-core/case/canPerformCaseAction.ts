@@ -65,3 +65,7 @@ export const canUpdateCaseStatus = canPerformCaseAction(
       : [actionsMaps.case.CASE_STATUS_TRANSITION];
   },
 );
+
+export const canEditCaseOverview = canPerformCaseAction(() => [
+  actionsMaps.case.EDIT_CASE_OVERVIEW,
+]);

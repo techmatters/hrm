@@ -33,6 +33,7 @@ import {
   update,
   updateStatus,
   CaseRecordUpdate,
+  updateCaseInfo,
 } from './caseDataAccess';
 import { randomUUID } from 'crypto';
 import type { Contact } from '../contact/contactDataAccess';
@@ -44,6 +45,10 @@ import type { PaginationQuery } from '../search';
 import { TResult, newErr, newOk } from '@tech-matters/types';
 import { RulesFile, TKConditionsSets } from '../permissions/rulesMap';
 import { CaseSectionRecord } from '../dist/case/caseDataAccess';
+import { pick } from 'lodash';
+
+const CASE_OVERVIEW_PROPERTIES = ['summary', 'followUpDate', 'childIsAtRisk'] as const;
+type CaseOverviewProperties = (typeof CASE_OVERVIEW_PROPERTIES)[number];
 
 type CaseInfoSection = {
   id: string;
@@ -166,10 +171,15 @@ const caseToCaseRecord = (
 ): CaseRecordUpdate => {
   const { connectedContacts, ...caseWithoutContacts } = inputCase;
   const info = inputCase.info ?? {};
+  let anySectionsSpecified = false;
   const caseSections: CaseSectionRecord[] = Object.entries(
     WELL_KNOWN_CASE_SECTION_NAMES,
-  ).flatMap(([sectionName, { getSectionSpecificData, sectionTypeName }]) =>
-    (info[sectionName] ?? []).map(section => {
+  ).flatMap(([sectionName, { getSectionSpecificData, sectionTypeName }]) => {
+    if (!info[sectionName]) {
+      return [];
+    }
+    anySectionsSpecified = true;
+    return (info[sectionName] ?? []).map(section => {
       const caseSectionRecordToUpsert: CaseSectionRecord = {
         caseId: inputCase.id,
         sectionType: sectionTypeName,
@@ -182,12 +192,15 @@ const caseToCaseRecord = (
         accountSid: section.accountSid,
       };
       return caseSectionRecordToUpsert;
-    }),
-  );
-  return {
-    ...caseWithoutContacts,
-    caseSections,
-  };
+    });
+  });
+  if (anySectionsSpecified) {
+    return {
+      ...caseWithoutContacts,
+      caseSections,
+    };
+  }
+  return caseWithoutContacts;
 };
 
 const caseRecordToCase = (record: CaseRecord): CaseService => {
@@ -242,7 +255,7 @@ export const createCase = async (
     },
     workerSid,
   );
-  const created = await create(record, accountSid, workerSid);
+  const created = await create(record, accountSid);
 
   // A new case is always initialized with empty connected contacts. No need to apply mapContactTransformations here
   return caseRecordToCase(created);
@@ -255,17 +268,11 @@ export const updateCase = async (
   workerSid: CaseService['twilioWorkerId'],
   { can, user }: { can: InitializedCan; user: TwilioUser },
 ): Promise<CaseService> => {
-  const caseFromDB: CaseRecord = await getById(id, accountSid, user.workerSid);
-  if (!caseFromDB) {
-    return;
-  }
-
   const nowISO = new Date().toISOString();
 
   const record = caseToCaseRecord(
     { ...body, updatedBy: workerSid, updatedAt: nowISO, id, accountSid },
     workerSid,
-    // caseRecordToCase(caseFromDB),
   );
 
   const updated = await update(id, record, accountSid, workerSid);
@@ -282,12 +289,22 @@ export const updateCaseStatus = async (
   { can, user }: { can: InitializedCan; user: TwilioUser },
 ): Promise<CaseService> => {
   const { workerSid } = user;
-  const caseFromDB: CaseRecord = await getById(id, accountSid, workerSid);
-  if (!caseFromDB) {
-    return;
-  }
-
   const updated = await updateStatus(id, status, workerSid, accountSid);
+
+  const withTransformedContacts = mapContactTransformations({ can, user })(updated);
+
+  return caseRecordToCase(withTransformedContacts);
+};
+
+export const updateCaseOverview = async (
+  id: CaseService['id'],
+  overview: Pick<CaseService['info'], CaseOverviewProperties>,
+  accountSid: CaseService['accountSid'],
+  { can, user }: { can: InitializedCan; user: TwilioUser },
+): Promise<CaseService> => {
+  const { workerSid } = user;
+  const validOverview = pick(overview, CASE_OVERVIEW_PROPERTIES);
+  const updated = await updateCaseInfo(id, validOverview, workerSid, accountSid);
 
   const withTransformedContacts = mapContactTransformations({ can, user })(updated);
 

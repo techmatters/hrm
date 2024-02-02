@@ -198,7 +198,7 @@ describe('/cases/:id route - PUT', () => {
         {
           infoUpdate: { summary: 'To summarize....' },
           changeDescription: 'summary changed',
-          actionToTest: 'editCaseSummary',
+          actionToTest: 'editCaseOverview',
           casesToTest: ['blank', 'populated'],
         },
         {

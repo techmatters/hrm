@@ -25,7 +25,7 @@ type CaseSectionActionValues = Exclude<
   | 'viewCase'
   | 'updateCaseContacts'
   | 'caseStatusTransition'
-  | 'editCaseSummary'
+  | 'editCaseOverview'
   | 'reopenCase'
 >;
 
@@ -48,11 +48,13 @@ const SECTION_TYPE_ACTION_MAP: Record<
 export const canEditCaseSection = canPerformCaseAction((caseObj, req) => {
   const { sectionType } = req.params;
   return [
-    SECTION_TYPE_ACTION_MAP[sectionType].edit ?? actionsMaps.case.EDIT_CASE_SUMMARY,
+    SECTION_TYPE_ACTION_MAP[sectionType].edit ?? actionsMaps.case.EDIT_CASE_OVERVIEW,
   ]; // Once we have dynamic case section permissions, we can remove this fallback
 });
 
 export const canAddCaseSection = canPerformCaseAction((caseObj, req) => {
   const { sectionType } = req.params;
-  return [SECTION_TYPE_ACTION_MAP[sectionType].add ?? actionsMaps.case.EDIT_CASE_SUMMARY]; // Once we have dynamic case section permissions, we can remove this fallback
+  return [
+    SECTION_TYPE_ACTION_MAP[sectionType].add ?? actionsMaps.case.EDIT_CASE_OVERVIEW,
+  ]; // Once we have dynamic case section permissions, we can remove this fallback
 });

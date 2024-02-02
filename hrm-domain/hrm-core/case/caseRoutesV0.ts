@@ -18,7 +18,12 @@ import createError from 'http-errors';
 import * as casesDb from './caseDataAccess';
 import * as caseApi from './caseService';
 import { publicEndpoint, SafeRouter } from '../permissions';
-import { canEditCase, canViewCase } from './canPerformCaseAction';
+import {
+  canEditCase,
+  canEditCaseOverview,
+  canUpdateCaseStatus,
+  canViewCase,
+} from './canPerformCaseAction';
 import caseSectionRoutesV0 from './caseSection/caseSectionRoutesV0';
 
 const casesRouter = SafeRouter();
@@ -74,6 +79,9 @@ casesRouter.get('/:id', canViewCase, async (req, res) => {
 });
 
 casesRouter.put('/:id', canEditCase, async (req, res) => {
+  console.info(
+    '[DEPRECATION WARNING] - PUT /cases/:id is deprecated and slated for removal from the API in v1.16. Use the case section CRUD endpoints and the case overview / status PUT endpoints to make updates to cases.',
+  );
   const { accountSid, user } = req;
   const { id } = req.params;
   const updatedCase = await caseApi.updateCase(id, req.body, accountSid, user.workerSid, {
@@ -86,7 +94,7 @@ casesRouter.put('/:id', canEditCase, async (req, res) => {
   res.json(updatedCase);
 });
 
-casesRouter.put('/:id/status', canEditCase, async (req, res) => {
+casesRouter.put('/:id/status', canUpdateCaseStatus, async (req, res) => {
   const {
     accountSid,
     user,
@@ -94,6 +102,36 @@ casesRouter.put('/:id/status', canEditCase, async (req, res) => {
   } = req;
   const { id } = req.params;
   const updatedCase = await caseApi.updateCaseStatus(id, status, accountSid, {
+    can: req.can,
+    user,
+  });
+  if (!updatedCase) {
+    throw createError(404);
+  }
+  res.json(updatedCase);
+});
+
+casesRouter.put('/:id/status', canUpdateCaseStatus, async (req, res) => {
+  const {
+    accountSid,
+    user,
+    body: { status },
+  } = req;
+  const { id } = req.params;
+  const updatedCase = await caseApi.updateCaseStatus(id, status, accountSid, {
+    can: req.can,
+    user,
+  });
+  if (!updatedCase) {
+    throw createError(404);
+  }
+  res.json(updatedCase);
+});
+
+casesRouter.put('/:id/overview', canEditCaseOverview, async (req, res) => {
+  const { accountSid, user, body } = req;
+  const { id } = req.params;
+  const updatedCase = await caseApi.updateCaseOverview(accountSid, id, body, {
     can: req.can,
     user,
   });

@@ -44,7 +44,7 @@ each([
   {
     caseFromDB: emptyCase,
     update: { info: { summary: 'case summary' } },
-    expectedCondition: [actionsMaps.case.EDIT_CASE_SUMMARY],
+    expectedCondition: [actionsMaps.case.EDIT_CASE_OVERVIEW],
     conditionDescription: 'adding a case summary',
   },
   {

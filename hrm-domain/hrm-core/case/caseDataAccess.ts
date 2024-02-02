@@ -16,7 +16,7 @@
 
 import { db, pgp } from '../connection-pool';
 import { getPaginationElements } from '../search';
-import { updateByIdSql } from './sql/case-update-sql';
+import { PATCH_CASE_INFO_BY_ID, updateByIdSql } from './sql/case-update-sql';
 import {
   OrderByColumnType,
   SearchQueryBuilder,
@@ -55,11 +55,12 @@ export type CaseRecordCommon = {
   previousStatus?: string;
 };
 
-export type NewCaseRecord = CaseRecordCommon & {
-  caseSections?: CaseSectionRecord[];
-};
+export type NewCaseRecord = CaseRecordCommon;
 
-export type CaseRecordUpdate = Partial<NewCaseRecord> & Pick<NewCaseRecord, 'updatedBy'>;
+export type CaseRecordUpdate = Partial<NewCaseRecord> &
+  Pick<NewCaseRecord, 'updatedBy'> & {
+    caseSections?: CaseSectionRecord[];
+  };
 
 export type CaseRecord = CaseRecordCommon & {
   id: number;
@@ -113,28 +114,21 @@ export type CaseListFilters = {
 };
 
 export const create = async (
-  body: Partial<NewCaseRecord>,
+  caseRecord: Partial<NewCaseRecord>,
   accountSid: AccountSID,
-  workerSid: string,
 ): Promise<CaseRecord> => {
-  const { caseSections, ...caseRecord } = body;
   caseRecord.accountSid = accountSid;
 
   return db.task(async connection => {
     return connection.tx(async transaction => {
       const statement = `${pgp.helpers.insert(caseRecord, null, 'Cases')} RETURNING *`;
       let inserted: CaseRecord = await transaction.one(statement);
-      if ((caseSections ?? []).length) {
-        const allSections = caseSections.map(s => ({
-          ...s,
-          caseId: inserted.id,
-          accountSid,
-        }));
-        const sectionStatement = `${caseSectionUpsertSql(
-          allSections,
-        )};${selectSingleCaseByIdSql('Cases')}`;
-        const queryValues = { accountSid, workerSid, caseId: inserted.id };
-        inserted = await transaction.one(sectionStatement, queryValues);
+      // eslint-disable-next-line @typescript-eslint/dot-notation
+      if ((caseRecord['caseSections'] ?? []).length) {
+        // No compatibility needed here as flex doesn't create cases with sections
+        console.warn(
+          `[DEPRECATION WARNING] Support for creating case sections with a case has been removed as of HRM v1.15.0. Add case sections using the dedicated case section CRUD endpoints going forward.`,
+        );
       }
 
       return inserted;
@@ -255,7 +249,7 @@ export const deleteById = async (id, accountSid) => {
 
 export const update = async (
   id,
-  caseRecordUpdates: Partial<NewCaseRecord>,
+  caseRecordUpdates: Partial<NewCaseRecord> & { caseSections?: CaseSectionRecord[] },
   accountSid: string,
   workerSid: string,
 ): Promise<CaseRecord> => {
@@ -265,7 +259,10 @@ export const update = async (
       workerSid,
       caseId: id,
     };
-    if (caseRecordUpdates.info) {
+    if (caseRecordUpdates.caseSections) {
+      console.info(
+        `[DEPRECATION WARNING] Support for updating case sections as part of a case update will be removed as of HRM v1.16.0. Update case sections using the dedicated case section CRUD endpoints going forward.`,
+      );
       const allSections: CaseSectionRecord[] = caseRecordUpdates.caseSections ?? [];
       if (allSections.length) {
         await transaction.none(
@@ -311,6 +308,29 @@ export const updateStatus = async (
         id,
       ),
     );
+    return transaction.oneOrNone(selectSingleCaseByIdSql('Cases'), statementValues);
+  });
+};
+
+export const updateCaseInfo = async (
+  caseId: CaseRecord['id'],
+  info: CaseRecord['info'],
+  updatedBy: string,
+  accountSid: string,
+) => {
+  const statementValues = {
+    accountSid,
+    caseId,
+    info,
+  };
+  return db.tx(async transaction => {
+    await transaction.none(PATCH_CASE_INFO_BY_ID, {
+      info,
+      updatedBy,
+      updatedAt: new Date().toISOString(),
+      accountSid,
+      caseId,
+    });
     return transaction.oneOrNone(selectSingleCaseByIdSql('Cases'), statementValues);
   });
 };

@@ -84,40 +84,17 @@ describe('createCase', () => {
     const caseFromDB = createMockCaseInsert({
       helpline: 'helpline',
       status: 'open',
-      info: {
-        counsellorNotes: [
-          { note: 'Child with covid-19', twilioWorkerId: 'contact-adder' },
-        ],
-      },
-      caseSections: [
-        {
-          accountSid: '',
-          sectionType: 'note',
-          id: 'NOTE_1',
-          createdBy: 'contact-adder',
-          createdAt: new Date(2000, 4, 21).toISOString(),
-          updatedAt: undefined,
-          updatedBy: undefined,
-          sectionTypeSpecificData: { note: 'Child with covid-19' },
-        },
-      ],
       twilioWorkerId: 'twilio-worker-id',
     });
     const oneSpy = jest.spyOn(tx, 'one').mockResolvedValue({ ...caseFromDB, id: 1337 });
 
-    const result = await caseDb.create(caseFromDB, accountSid, workerSid);
-    const insertSql = getSqlStatement(oneSpy, -2);
-    const { caseSections, ...caseWithoutSections } = caseFromDB;
+    const result = await caseDb.create(caseFromDB, accountSid);
+    const insertSql = getSqlStatement(oneSpy, -1);
     expectValuesInSql(insertSql, {
-      ...caseWithoutSections,
+      ...caseFromDB,
       accountSid,
       createdAt: expect.anything(),
       updatedAt: expect.anything(),
-    });
-    const insertSectionSql = getSqlStatement(oneSpy, -1);
-    expectValuesInSql(insertSectionSql, {
-      ...caseSections[0],
-      caseId: 1337,
     });
     expect(result).toStrictEqual({ ...caseFromDB, id: 1337 });
   });
@@ -383,11 +360,7 @@ describe('update', () => {
       .mockResolvedValue({ ...caseUpdateResult, id: caseId });
     const noneSpy = jest.spyOn(tx, 'none');
     const result = await caseDb.update(caseId, caseUpdate, accountSid, workerSid);
-    const updateSql = getSqlStatement(noneSpy, 1);
-    const selectSql = getSqlStatement(oneOrNoneSpy);
-    expect(selectSql).toContain('Cases');
-    expect(selectSql).toContain('Contacts');
-    expect(selectSql).toContain('CSAMReports');
+    const updateSql = getSqlStatement(noneSpy);
     expectValuesInSql(updateSql, { info: caseUpdate.info, status: caseUpdate.status });
     expect(oneOrNoneSpy).toHaveBeenCalledWith(
       expect.any(String),
