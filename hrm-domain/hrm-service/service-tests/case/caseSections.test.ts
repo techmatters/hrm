@@ -307,6 +307,9 @@ describe('/cases/:caseId/sections/:sectionId', () => {
       const apiSection: CaseSection = response.body;
       expect(apiSection).toEqual({
         ...newSection, // Will overwrite sectionId expectation if specified
+        sectionId: targetSection.sectionId,
+        createdAt: expect.toParseAsDate(targetSection.createdAt),
+        createdBy: workerSid,
         updatedBy: workerSid,
         updatedAt: expect.toParseAsDate(),
       });
@@ -322,7 +325,6 @@ describe('/cases/:caseId/sections/:sectionId', () => {
               accountSid,
               twilioWorkerId: workerSid,
               createdAt: expect.toParseAsDate(targetSection.createdAt),
-              createdBy: workerSid,
               updatedAt: expect.toParseAsDate(),
               updatedBy: workerSid,
             },
