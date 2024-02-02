@@ -28,7 +28,10 @@ import {
   NewCaseSection,
 } from '@tech-matters/hrm-core/case/caseSection/types';
 import each from 'jest-each';
-import { createCaseSection } from '@tech-matters/hrm-core/case/caseSection/caseSectionService';
+import {
+  createCaseSection,
+  getCaseSection,
+} from '@tech-matters/hrm-core/case/caseSection/caseSectionService';
 
 useOpenRules();
 const server = getServer();
@@ -331,6 +334,57 @@ describe('/cases/:caseId/sections/:sectionId', () => {
           ],
         },
       });
+    });
+  });
+
+  describe('DELETE', () => {
+    const verifySectionWasntDeleted = async () => {
+      const { sectionId, ...expectedSection } = targetSection;
+      const section = await getCaseSection(
+        accountSid,
+        targetCase.id.toString(),
+        'note',
+        targetSection.sectionId,
+      );
+      expect(section).toEqual(expectedSection);
+    };
+
+    test('should return 401 if valid auth headers are not set', async () => {
+      const response = await request.delete(
+        getRoutePath(targetCase.id, 'note', targetSection.sectionId),
+      );
+      expect(response.status).toBe(401);
+      await verifySectionWasntDeleted();
+    });
+
+    test("should return 404 if case doesn't exist", async () => {
+      const response = await request
+        .delete(getRoutePath(targetCase.id + 1, 'note', targetSection.sectionId))
+        .set(headers);
+      expect(response.status).toBe(404);
+      await verifySectionWasntDeleted();
+    });
+
+    test("should return 404 if case section doesn't exist", async () => {
+      const response = await request
+        .delete(getRoutePath(targetCase.id, 'note', 'nothing-here'))
+        .set(headers);
+      expect(response.status).toBe(404);
+      await verifySectionWasntDeleted();
+    });
+
+    test('should return a 200, delete the case & return the deleted section when it exists', async () => {
+      const response = await request
+        .delete(getRoutePath(targetCase.id, 'note', targetSection.sectionId))
+        .set(headers);
+      expect(response.status).toBe(200);
+      const section = await getCaseSection(
+        accountSid,
+        targetCase.id.toString(),
+        'note',
+        targetSection.sectionId,
+      );
+      expect(section).not.toBeDefined();
     });
   });
 });
