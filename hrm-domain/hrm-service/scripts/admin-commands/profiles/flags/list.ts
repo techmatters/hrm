@@ -24,15 +24,15 @@ export const describe = 'List the profile flags for the given account';
 export const builder = {
   e: {
     alias: 'environment',
-    describe: 'environment, defaults to development',
+    describe: 'environment (e.g. development, staging, production)',
+    demandOption: true,
     type: 'string',
-    default: 'development',
   },
   r: {
     alias: 'region',
-    describe: 'region, defaults to us-east-1',
+    describe: 'region (e.g. us-east-1)',
+    demandOption: true,
     type: 'string',
-    default: 'us-east-1',
   },
   a: {
     alias: 'accountSid',
