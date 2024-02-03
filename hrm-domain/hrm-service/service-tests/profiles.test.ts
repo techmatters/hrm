@@ -16,15 +16,18 @@
 
 import each from 'jest-each';
 import './case/caseValidation';
-import { db } from '../src/connection-pool';
-import * as caseApi from '../src/case/caseService';
-import * as contactApi from '../src/contact/contactService';
-import * as profilesDB from '../src/profile/profile-data-access';
+import { db } from '@tech-matters/hrm-core/connection-pool';
+import * as caseApi from '@tech-matters/hrm-core/case/caseService';
+import * as contactApi from '@tech-matters/hrm-core/contact/contactService';
+import * as profilesDB from '@tech-matters/hrm-core/profile/profile-data-access';
 import { getRequest, getServer, headers, useOpenRules } from './server';
 import * as mocks from './mocks';
 import { mockSuccessfulTwilioAuthentication, mockingProxy } from '@tech-matters/testing';
-import { getOrCreateProfileWithIdentifier, Profile } from '../src/profile/profile';
-import { IdentifierWithProfiles } from '../src/profile/profile-data-access';
+import {
+  getOrCreateProfileWithIdentifier,
+  Profile,
+} from '@tech-matters/hrm-core/profile/profile';
+import { IdentifierWithProfiles } from '@tech-matters/hrm-core/profile/profile-data-access';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
 import { ALWAYS_CAN } from './mocks';
 
@@ -492,10 +495,8 @@ describe('/profiles', () => {
 
     describe('/profiles/:profileId/flags', () => {
       describe('/profiles/:profileId/flags/:profileFlagId', () => {
-        const buildRoute = (profileId: number, profileFlagId: number, validUntil?: any) =>
-          `${baseRoute}/${profileId}/flags/${profileFlagId}?${
-            validUntil ? `validUntil=${validUntil}` : ''
-          }`;
+        const buildRoute = (profileId: number, profileFlagId: number) =>
+          `${baseRoute}/${profileId}/flags/${profileFlagId}`;
 
         let defaultFlags: profilesDB.ProfileFlag[];
         beforeAll(async () => {
@@ -582,7 +583,8 @@ describe('/profiles', () => {
               }
 
               const response = await request
-                .post(buildRoute(profileId, profileFlagId, validUntil))
+                .post(buildRoute(profileId, profileFlagId))
+                .send({ validUntil })
                 .set(customHeaders || headers);
               expect(response.statusCode).toBe(expectStatus);
               if (expectFunction) {

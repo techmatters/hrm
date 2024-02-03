@@ -16,5 +16,7 @@
 
 export * from './mock-pgpromise';
 export * from './mock-twilio-auth-endpoint';
+export * from './mockSsm';
 import { start, stop, mockttpServer } from './mocking-proxy';
 export const mockingProxy = { start, stop, mockttpServer };
+import './expectToParseAsDate';

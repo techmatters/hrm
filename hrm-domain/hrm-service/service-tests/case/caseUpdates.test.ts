@@ -18,15 +18,15 @@
 
 import each from 'jest-each';
 
-import { db } from '../../src/connection-pool';
-import * as caseApi from '../../src/case/caseService';
+import { db } from '@tech-matters/hrm-core/connection-pool';
+import * as caseApi from '@tech-matters/hrm-core/case/caseService';
 import {
   createContact,
   connectContactToCase,
   addConversationMediaToContact,
-} from '../../src/contact/contactService';
-import { CaseService } from '../../src/case/caseService';
-import * as caseDb from '../../src/case/caseDataAccess';
+} from '@tech-matters/hrm-core/contact/contactService';
+import { CaseService } from '@tech-matters/hrm-core/case/caseService';
+import * as caseDb from '@tech-matters/hrm-core/case/caseDataAccess';
 import { convertCaseInfoToExpectedInfo, without } from './caseValidation';
 import { isBefore } from 'date-fns';
 
@@ -36,7 +36,7 @@ import * as mocks from '../mocks';
 import { ruleFileWithOneActionOverride } from '../permissions-overrides';
 import { headers, getRequest, getServer, setRules, useOpenRules } from '../server';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
-import { isS3StoredTranscript } from '../../src/conversation-media/conversation-media';
+import { isS3StoredTranscript } from '@tech-matters/hrm-core/conversation-media/conversation-media';
 import { casePopulated } from '../mocks';
 
 useOpenRules();
@@ -44,14 +44,6 @@ const server = getServer();
 const request = getRequest(server);
 
 const { case1, case2, accountSid, workerSid } = mocks;
-
-afterAll(done => {
-  mockingProxy.stop().finally(() => {
-    server.close(done);
-  });
-});
-
-beforeAll(async () => {});
 
 // eslint-disable-next-line @typescript-eslint/no-shadow
 const deleteContactById = (id: number, accountSid: string) =>
@@ -87,7 +79,7 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
-  await mockingProxy.start();
+  await mockingProxy.stop();
   await caseDb.deleteById(cases.blank.id, accountSid);
   await caseDb.deleteById(cases.populated.id, accountSid);
 });
@@ -381,6 +373,7 @@ describe('PUT /cases/:id route', () => {
       extraExpectations = {},
     }: TestCase) => {
       if (customWorkerSid) {
+        await mockingProxy.stop();
         await mockingProxy.start();
         await mockSuccessfulTwilioAuthentication(customWorkerSid);
         await new Promise(resolve => setTimeout(resolve, 3000));
@@ -573,6 +566,7 @@ describe('PUT /cases/:id/status route', () => {
       previousStatus,
     }: TestCase) => {
       if (customWorkerSid) {
+        await mockingProxy.stop();
         await mockingProxy.start();
         await mockSuccessfulTwilioAuthentication(customWorkerSid);
         await new Promise(resolve => setTimeout(resolve, 3000));

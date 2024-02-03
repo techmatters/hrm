@@ -31,11 +31,31 @@ export async function mockttpServer() {
   return mockServer;
 }
 
-export async function start(): Promise<void> {
+export async function start(allowPassThrough = false): Promise<void> {
   const server = await mockttpServer();
+  try {
+    await server.stop();
+    console.warn(
+      "Proxy server was already running & needed to be stopped. You probably aren't matching each start with a stop in your tests.",
+    );
+  } catch (e) {
+    // Ignore error
+  }
   await server.start();
   console.log('STARTED ENDPOINT SERVER');
-  await server.forAnyRequest().thenPassThrough();
+  if (allowPassThrough) {
+    await server.forUnmatchedRequest().thenPassThrough();
+    console.debug('ALLOWING PASS THROUGH');
+  } else {
+    await server.forUnmatchedRequest().thenCallback(req => {
+      console.log('UNHANDLED MOCKTTP REQUEST', req);
+      return {
+        status: 500,
+        body: 'Not implemented',
+      };
+    });
+    console.debug('BLOCKING PASS THROUGH');
+  }
   const global = createGlobalProxyAgent();
   // Filter local requests out from proxy to prevent loops.
   global.NO_PROXY = 'localhost*,127.0.*,local.home*,search-development-resources*';
@@ -44,5 +64,7 @@ export async function start(): Promise<void> {
 
 export async function stop(): Promise<void> {
   const server = await mockttpServer();
+  console.debug('STOPPING ENDPOINT SERVER');
   await server.stop();
+  console.log('STOPPED ENDPOINT SERVER');
 }

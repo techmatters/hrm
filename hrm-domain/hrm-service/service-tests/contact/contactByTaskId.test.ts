@@ -14,12 +14,12 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import * as contactApi from '../../src/contact/contactService';
+import * as contactApi from '@tech-matters/hrm-core/contact/contactService';
 import '../case/caseValidation';
-import { ContactRawJson } from '../../src/contact/contactJson';
+import { ContactRawJson } from '@tech-matters/hrm-core/contact/contactJson';
 import { accountSid, ALWAYS_CAN, contact1, workerSid } from '../mocks';
 import { getRequest, getServer, headers, useOpenRules } from '../server';
-import * as contactDb from '../../src/contact/contactDataAccess';
+import * as contactDb from '@tech-matters/hrm-core/contact/contactDataAccess';
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import {
   cleanupCases,
@@ -35,7 +35,6 @@ const request = getRequest(server);
 const route = `/v0/accounts/${accountSid}/contacts`;
 
 const cleanup = async () => {
-  await mockingProxy.start();
   await mockSuccessfulTwilioAuthentication(workerSid);
   await cleanupCsamReports();
   await cleanupReferrals();
@@ -60,7 +59,14 @@ beforeEach(async () => {
   );
 });
 
-afterAll(cleanup);
+beforeAll(async () => {
+  await mockingProxy.start();
+});
+
+afterAll(async () => {
+  await cleanup();
+  await mockingProxy.stop();
+});
 
 describe('/contacts/byTaskSid/:contactId route', () => {
   const subRoute = taskSid => `${route}/byTaskSid/${taskSid}`;

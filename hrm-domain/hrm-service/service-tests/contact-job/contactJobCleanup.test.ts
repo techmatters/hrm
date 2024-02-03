@@ -17,20 +17,24 @@
 import { ContactJobType } from '@tech-matters/types';
 import { getClient } from '@tech-matters/twilio-client';
 
-import { db } from '../../src/connection-pool';
-import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
-import { createContactJob } from '../../src/contact-job/contact-job-data-access';
+import { db } from '@tech-matters/hrm-core/connection-pool';
+import {
+  mockingProxy,
+  mockSsmParameters,
+  mockSuccessfulTwilioAuthentication,
+} from '@tech-matters/testing';
+import { createContactJob } from '@tech-matters/hrm-core/contact-job/contact-job-data-access';
 import {
   isS3StoredTranscriptPending,
   updateConversationMediaData,
-} from '../../src/conversation-media/conversation-media';
-import { S3ContactMediaType } from '../../src/conversation-media/conversation-media';
-import { getById as getContactById } from '../../src/contact/contactDataAccess';
-import * as cleanupContactJobsApi from '../../src/contact-job/contact-job-cleanup';
+} from '@tech-matters/hrm-core/conversation-media/conversation-media';
+import { S3ContactMediaType } from '@tech-matters/hrm-core/conversation-media/conversation-media';
+import { getById as getContactById } from '@tech-matters/hrm-core/contact/contactDataAccess';
+import * as cleanupContactJobsApi from '@tech-matters/contact-job-cleanup';
 import {
   completeContactJob,
   getContactJobById,
-} from '../../src/contact-job/contact-job-data-access';
+} from '@tech-matters/hrm-core/contact-job/contact-job-data-access';
 import { accountSid, contact1, workerSid } from '../mocks';
 import { headers, getRequest, getServer, useOpenRules } from '../server';
 
@@ -40,7 +44,7 @@ useOpenRules();
 const server = getServer();
 const request = getRequest(server);
 
-import type { Contact } from '../../src/contact/contactDataAccess';
+import type { Contact } from '@tech-matters/hrm-core/contact/contactDataAccess';
 
 let twilioSpy: jest.SpyInstance;
 
@@ -66,6 +70,8 @@ beforeAll(async () => {
   twilioSpy = jest.spyOn(client.chat.v2, 'services');
 
   await mockingProxy.start();
+  const mockttp = await mockingProxy.mockttpServer();
+  await mockSsmParameters(mockttp, [{ pathPattern: /.*/, valueGenerator: () => 'mock' }]);
   await mockSuccessfulTwilioAuthentication(workerSid);
 });
 

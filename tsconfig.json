@@ -19,12 +19,17 @@
     { "path": "hrm-domain/lambdas/contact-complete" },
     { "path": "hrm-domain/lambdas/contact-retrieve-transcript" },
     { "path": "hrm-domain/lambdas/files-urls" },
+    { "path": "hrm-domain/hrm-core" },
+    { "path": "hrm-domain/scheduled-tasks/hrm-data-pull" },
+    { "path": "hrm-domain/scheduled-tasks/contact-job-cleanup" },
+    { "path": "hrm-domain/scheduled-tasks/case-status-transition" },
+    { "path": "hrm-domain/scheduled-tasks/profile-flags-cleanup" },
     { "path": "resources-domain/packages/resources-search-config" },
     { "path": "resources-domain/resources-service/tsconfig.scripts.json" },
     { "path": "resources-domain/lambdas/import-consumer" },
     { "path": "resources-domain/lambdas/import-producer" },
     { "path": "resources-domain/lambdas/search-index" },
     { "path": "resources-domain/resources-service" },
-    { "path": "hrm-domain/hrm-service" }
+    { "path": "hrm-domain/hrm-service" },
   ]
 }
