@@ -19,6 +19,6 @@
   },
   "homepage": "https://github.com/techmatters/hrm#readme",
   "dependencies": {
-    "aws-sdk": "^2.1547.0"
+    "aws-sdk": "^2.1353.0"
   }
 }
