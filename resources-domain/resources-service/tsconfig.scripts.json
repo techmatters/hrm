@@ -11,7 +11,4 @@
     "outDir": "./scripts-dist"
   },
   "include": ["src/**/*.ts","scripts/**/*.ts"],
-  "references": [
-    { "path": "packages/service-discovery" }
-  ]
 }
