@@ -26,11 +26,11 @@ export const selectContactsOwnedCount = (ownerVariableName: string) =>
    WHERE "caseId" = cases.id AND "accountSid" = cases."accountSid" AND "twilioWorkerId" = $<${ownerVariableName}>`;
 
 export const selectSingleCaseByIdSql = (tableName: string) => `SELECT
-      cases.*,
+      "cases".*,
       "caseSections"."caseSections",
       "contacts"."connectedContacts",
       "contactsOwnedCount"."contactsOwnedByUserCount"
-      FROM "${tableName}" AS cases
+      FROM "${tableName}" AS "cases"
       LEFT JOIN LATERAL (
         SELECT COALESCE(jsonb_agg(to_jsonb(c) || to_jsonb("joinedReports") || to_jsonb("joinedReferrals") || to_jsonb("joinedConversationMedia")), '[]') AS  "connectedContacts"
         FROM "Contacts" c 

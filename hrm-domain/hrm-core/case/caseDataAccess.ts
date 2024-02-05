@@ -16,7 +16,7 @@
 
 import { db, pgp } from '../connection-pool';
 import { getPaginationElements } from '../search';
-import { PATCH_CASE_INFO_BY_ID, updateByIdSql } from './sql/case-update-sql';
+import { PATCH_CASE_INFO_BY_ID, updateByIdSql } from './sql/caseUpdateSql';
 import {
   OrderByColumnType,
   SearchQueryBuilder,
@@ -35,6 +35,7 @@ import { TKConditionsSets } from '../permissions/rulesMap';
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { AccountSID } from '@tech-matters/types';
 import { CaseSectionRecord } from './caseSection/types';
+import { pick } from 'lodash';
 
 export type PrecalculatedCasePermissionConditions = {
   isCaseContactOwner: boolean; // Does the requesting user own any of the contacts currently connected to the case?
@@ -54,6 +55,17 @@ export type CaseRecordCommon = {
   statusUpdatedBy?: string;
   previousStatus?: string;
 };
+
+// Exported for testing
+export const VALID_CASE_CREATE_FIELDS: (keyof CaseRecordCommon)[] = [
+  'accountSid',
+  'info',
+  'helpline',
+  'status',
+  'twilioWorkerId',
+  'createdBy',
+  'createdAt',
+];
 
 export type NewCaseRecord = CaseRecordCommon;
 
@@ -113,15 +125,17 @@ export type CaseListFilters = {
   includeOrphans?: boolean;
 };
 
-export const create = async (
-  caseRecord: Partial<NewCaseRecord>,
-  accountSid: AccountSID,
-): Promise<CaseRecord> => {
-  caseRecord.accountSid = accountSid;
-
+export const create = async (caseRecord: Partial<NewCaseRecord>): Promise<CaseRecord> => {
   return db.task(async connection => {
     return connection.tx(async transaction => {
-      const statement = `${pgp.helpers.insert(caseRecord, null, 'Cases')} RETURNING *`;
+      const statement = `${pgp.helpers.insert(
+        {
+          ...pick(caseRecord, VALID_CASE_CREATE_FIELDS),
+          updatedAt: caseRecord.createdAt,
+        },
+        null,
+        'Cases',
+      )} RETURNING *`;
       let inserted: CaseRecord = await transaction.one(statement);
       // eslint-disable-next-line @typescript-eslint/dot-notation
       if ((caseRecord['caseSections'] ?? []).length) {
@@ -313,14 +327,14 @@ export const updateStatus = async (
 };
 
 export const updateCaseInfo = async (
-  caseId: CaseRecord['id'],
-  info: CaseRecord['info'],
-  updatedBy: string,
   accountSid: string,
+  caseId: CaseRecord['id'],
+  infoPatch: CaseRecord['info'],
+  updatedBy: string,
 ) => {
   return db.tx(async transaction => {
     return transaction.oneOrNone(PATCH_CASE_INFO_BY_ID, {
-      info,
+      infoPatch,
       updatedBy,
       updatedAt: new Date().toISOString(),
       accountSid,

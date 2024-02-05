@@ -38,6 +38,7 @@ import { headers, getRequest, getServer, setRules, useOpenRules } from '../serve
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
 import { isS3StoredTranscript } from '@tech-matters/hrm-core/conversation-media/conversation-media';
 import { casePopulated } from '../mocks';
+import { pick } from 'lodash';
 
 useOpenRules();
 const server = getServer();
@@ -631,5 +632,123 @@ describe('PUT /cases/:id/status route', () => {
       .send({ status });
 
     expect(response.status).toBe(404);
+  });
+});
+
+describe('PUT /cases/:id/overview route', () => {
+  const subRoute = id => `${route}/${id}/overview`;
+  const baselineDate = new Date('2020-01-01T00:00:00.000Z');
+
+  test('should return 401', async () => {
+    const response = await request.put(subRoute(cases.blank.id)).send({
+      summary: 'wintery',
+      childIsAtRisk: false,
+      followUpDate: baselineDate.toISOString(),
+    });
+
+    expect(response.status).toBe(401);
+    expect(response.body.error).toBe('Authorization failed');
+  });
+
+  type TestCase = {
+    originalCase?: () => CaseService;
+    newOverview: caseApi.CaseService['info'];
+    changeDescription: string;
+  };
+
+  const testCases: TestCase[] = [
+    {
+      changeDescription: 'all overview properties changed',
+      newOverview: {
+        summary: 'dappled',
+        childIsAtRisk: false,
+        followUpDate: baselineDate.toISOString(),
+      },
+    },
+    {
+      changeDescription:
+        'overview partially changed (omitted properties are not changed)',
+      newOverview: {
+        summary: 'autumnal',
+      },
+    },
+    {
+      changeDescription:
+        'properties other than the known overview properties are specified (unrecognised properties are ignored)',
+      newOverview: {
+        summary: 'autumnal',
+        somethingFrom: 'behind the veil',
+      },
+    },
+  ];
+
+  each(testCases).test(
+    'should return 200 and save overview updates when $changeDescription',
+    async ({
+      newOverview,
+      originalCase: originalCaseGetter = () => cases.populated,
+    }: TestCase) => {
+      const originalCase = originalCaseGetter();
+      const caseBeforeUpdate = await caseApi.getCase(originalCase.id, accountSid, {
+        user: twilioUser(workerSid, []),
+        can: () => true,
+      });
+
+      const response = await request
+        .put(subRoute(originalCase.id))
+        .set(headers)
+        .send(newOverview);
+
+      expect(response.status).toBe(200);
+      const expected: CaseService = {
+        ...originalCase,
+        info: {
+          ...originalCase.info,
+          ...pick(newOverview, ['summary', 'childIsAtRisk', 'followUpDate']),
+        },
+        updatedAt: expect.toParseAsDate(),
+        updatedBy: workerSid,
+      };
+
+      expect(response.body).toStrictEqual(expected);
+
+      // Check the DB is actually updated
+      const fromDb = await caseApi.getCase(originalCase.id, accountSid, {
+        user: twilioUser(workerSid, []),
+        can: () => true,
+      });
+      expect(fromDb).toStrictEqual({ ...expected, connectedContacts: [] });
+
+      if (!fromDb || !caseBeforeUpdate) {
+        throw new Error('fromDB is falsy');
+      }
+
+      // Check that in each case, createdAt is not changed
+      expect(fromDb.createdAt).toStrictEqual(caseBeforeUpdate.createdAt);
+      // Check that in each case, updatedAt is greater than createdAt
+      expect(isBefore(new Date(fromDb.createdAt), new Date(fromDb.updatedAt))).toBe(true);
+      // Check that in each case, updatedAt is greater it was before
+      expect(
+        isBefore(new Date(caseBeforeUpdate.updatedAt), new Date(fromDb.updatedAt)),
+      ).toBe(true);
+    },
+  );
+
+  test("should return 404 if case doesn't exist", async () => {
+    const response = await request.put(subRoute(nonExistingCaseId)).set(headers).send({
+      summary: 'wintery',
+      childIsAtRisk: false,
+      followUpDate: baselineDate.toISOString(),
+    });
+
+    expect(response.status).toBe(404);
+  });
+
+  test('should return 400 if followUpDate is not a valid date', async () => {
+    const response = await request.put(subRoute(cases.populated.id)).set(headers).send({
+      followUpDate: 'in a bit',
+    });
+
+    expect(response.status).toBe(400);
   });
 });

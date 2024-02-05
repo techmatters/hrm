@@ -101,7 +101,7 @@ each([
 ]).test(
   "Should return '$expectedCondition' actions list when '$conditionDescription'",
   async ({ expectedCondition, caseFromDB, update }) => {
-    const result = getActions(caseFromDB, update);
+    const result = getActions(caseFromDB, { body: update });
 
     expect(result).toMatchObject(expectedCondition);
   },
@@ -218,7 +218,7 @@ each([
 ]).test(
   "Should return '$expectedCondition' actions list when '$conditionDescription'",
   async ({ expectedCondition, caseFromDB, update }) => {
-    const result = getActions(caseFromDB, update);
+    const result = getActions(caseFromDB, { body: update });
 
     expect(result).toMatchObject(expectedCondition);
   },
@@ -311,7 +311,7 @@ each([
 ]).test(
   "Should return '$expectedCondition' actions list when '$conditionDescription'",
   async ({ expectedCondition, caseFromDB, update }) => {
-    const result = getActions(caseFromDB, update);
+    const result = getActions(caseFromDB, { body: update });
 
     expect(result).toMatchObject(expectedCondition);
   },

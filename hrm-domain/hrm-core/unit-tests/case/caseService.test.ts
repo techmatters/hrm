@@ -56,7 +56,7 @@ test('create case', async () => {
 
   const createdCase = await caseApi.createCase(caseToBeCreated, accountSid, workerSid);
   // any worker & account specified on the object should be overwritten with the ones from the user
-  expect(createSpy).toHaveBeenCalledWith(expectedCaseDbParameter, accountSid);
+  expect(createSpy).toHaveBeenCalledWith(expectedCaseDbParameter);
   expect(createdCase).toStrictEqual({
     ...caseToBeCreated,
     id: 1,

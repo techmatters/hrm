@@ -26,6 +26,8 @@ import { twilioUser } from '@tech-matters/twilio-worker-auth/dist';
 import { AccountSID } from '@tech-matters/types';
 import { rulesMap } from '../../permissions';
 import { TKConditionsSets } from '../../permissions/rulesMap';
+import { VALID_CASE_CREATE_FIELDS } from '../../case/caseDataAccess';
+import { pick } from 'lodash';
 
 const accountSid: AccountSID = 'ACCOUNT_SID';
 const workerSid = 'twilio-worker-id';
@@ -88,11 +90,11 @@ describe('createCase', () => {
     });
     const oneSpy = jest.spyOn(tx, 'one').mockResolvedValue({ ...caseFromDB, id: 1337 });
 
-    const result = await caseDb.create(caseFromDB, accountSid);
+    const result = await caseDb.create(caseFromDB);
     const insertSql = getSqlStatement(oneSpy, -1);
+    const validInsertions = pick(caseFromDB, VALID_CASE_CREATE_FIELDS);
     expectValuesInSql(insertSql, {
-      ...caseFromDB,
-      accountSid,
+      ...validInsertions,
       createdAt: expect.anything(),
       updatedAt: expect.anything(),
     });

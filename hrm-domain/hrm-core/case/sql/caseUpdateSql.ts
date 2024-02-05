@@ -56,7 +56,7 @@ export const updateByIdSql = (
 
 export const PATCH_CASE_INFO_BY_ID = `
 UPDATE "Cases" SET 
-  "info" = "info" || $<infoPatch>::jsonb 
+  "info" = "info" || $<infoPatch>::jsonb,
   "updatedAt" = CURRENT_TIMESTAMP,
   "updatedBy" = $<updatedBy>
 WHERE "accountSid" = $<accountSid> AND "id" = $<caseId>

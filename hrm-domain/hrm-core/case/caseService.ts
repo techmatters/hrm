@@ -255,7 +255,7 @@ export const createCase = async (
     },
     workerSid,
   );
-  const created = await create(record, accountSid);
+  const created = await create(record);
 
   // A new case is always initialized with empty connected contacts. No need to apply mapContactTransformations here
   return caseRecordToCase(created);
@@ -297,18 +297,15 @@ export const updateCaseStatus = async (
 };
 
 export const updateCaseOverview = async (
+  accountSid: CaseService['accountSid'],
   id: CaseService['id'],
   overview: Pick<CaseService['info'], CaseOverviewProperties>,
-  accountSid: CaseService['accountSid'],
-  { can, user }: { can: InitializedCan; user: TwilioUser },
+  workerSid: CaseService['twilioWorkerId'],
 ): Promise<CaseService> => {
-  const { workerSid } = user;
   const validOverview = pick(overview, CASE_OVERVIEW_PROPERTIES);
-  const updated = await updateCaseInfo(id, validOverview, workerSid, accountSid);
+  const updated = await updateCaseInfo(accountSid, id, validOverview, workerSid);
 
-  const withTransformedContacts = mapContactTransformations({ can, user })(updated);
-
-  return caseRecordToCase(withTransformedContacts);
+  return caseRecordToCase(updated);
 };
 
 export const getCase = async (

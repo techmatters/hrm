@@ -25,6 +25,7 @@ import {
   canViewCase,
 } from './canPerformCaseAction';
 import caseSectionRoutesV0 from './caseSection/caseSectionRoutesV0';
+import { parseISO } from 'date-fns';
 
 const casesRouter = SafeRouter();
 /**
@@ -129,12 +130,20 @@ casesRouter.put('/:id/status', canUpdateCaseStatus, async (req, res) => {
 });
 
 casesRouter.put('/:id/overview', canEditCaseOverview, async (req, res) => {
-  const { accountSid, user, body } = req;
+  const {
+    accountSid,
+    user: { workerSid },
+    body,
+  } = req;
   const { id } = req.params;
-  const updatedCase = await caseApi.updateCaseOverview(accountSid, id, body, {
-    can: req.can,
-    user,
-  });
+  const { followUpDate } = body ?? {};
+  if (followUpDate !== undefined && isNaN(parseISO(followUpDate).valueOf())) {
+    throw createError(
+      400,
+      `Invalid followUpDate provided: ${followUpDate} - must be a valid ISO 8601 date string`,
+    );
+  }
+  const updatedCase = await caseApi.updateCaseOverview(accountSid, id, body, workerSid);
   if (!updatedCase) {
     throw createError(404);
   }
