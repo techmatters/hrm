@@ -26,6 +26,7 @@ import {
 } from './rulesMap';
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { differenceInDays, differenceInHours, parseISO } from 'date-fns';
+import { assertExhaustive } from '@tech-matters/types';
 
 type ConditionsState = {
   [k: string]: boolean;
@@ -105,35 +106,64 @@ const setupAllow = <T extends TargetKind>(
     );
 
     // Build the proper conditionsState depending on the targetKind
-    if (kind === 'case') {
-      const conditionsState: ConditionsState = {
-        isSupervisor: performer.isSupervisor,
-        isCreator: isCounselorWhoCreated(performer, target),
-        isCaseOpen: isCaseOpen(target),
-        everyone: true,
-        ...appliedTimeBasedConditions,
-      };
+    switch (kind) {
+      case 'case': {
+        const conditionsState: ConditionsState = {
+          isSupervisor: performer.isSupervisor,
+          isCreator: isCounselorWhoCreated(performer, target),
+          isCaseOpen: isCaseOpen(target),
+          everyone: true,
+          ...appliedTimeBasedConditions,
+        };
 
-      return checkConditionsSets(conditionsState, conditionsSets);
-    } else if (kind === 'contact') {
-      const conditionsState: ConditionsState = {
-        isSupervisor: performer.isSupervisor,
-        isOwner: isContactOwner(performer, target),
-        everyone: true,
-        createdDaysAgo: false,
-        createdHoursAgo: false,
-        ...appliedTimeBasedConditions,
-      };
+        return checkConditionsSets(conditionsState, conditionsSets);
+      }
+      case 'contact': {
+        const conditionsState: ConditionsState = {
+          isSupervisor: performer.isSupervisor,
+          isOwner: isContactOwner(performer, target),
+          everyone: true,
+          createdDaysAgo: false,
+          createdHoursAgo: false,
+          ...appliedTimeBasedConditions,
+        };
 
-      return checkConditionsSets(conditionsState, conditionsSets);
-    } else if (kind === 'postSurvey') {
-      const conditionsState: ConditionsState = {
-        isSupervisor: performer.isSupervisor,
-        everyone: true,
-        ...appliedTimeBasedConditions,
-      };
+        return checkConditionsSets(conditionsState, conditionsSets);
+      }
+      case 'profile': {
+        const conditionsState: ConditionsState = {
+          isSupervisor: performer.isSupervisor,
+          everyone: true,
+          createdDaysAgo: false,
+          createdHoursAgo: false,
+          ...appliedTimeBasedConditions,
+        };
 
-      return checkConditionsSets(conditionsState, conditionsSets);
+        return checkConditionsSets(conditionsState, conditionsSets);
+      }
+      case 'profileSection': {
+        const conditionsState: ConditionsState = {
+          isSupervisor: performer.isSupervisor,
+          everyone: true,
+          createdDaysAgo: false,
+          createdHoursAgo: false,
+          ...appliedTimeBasedConditions,
+        };
+
+        return checkConditionsSets(conditionsState, conditionsSets);
+      }
+      case 'postSurvey': {
+        const conditionsState: ConditionsState = {
+          isSupervisor: performer.isSupervisor,
+          everyone: true,
+          ...appliedTimeBasedConditions,
+        };
+
+        return checkConditionsSets(conditionsState, conditionsSets);
+      }
+      default: {
+        assertExhaustive(kind);
+      }
     }
   };
 };

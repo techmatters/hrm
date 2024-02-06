@@ -15,6 +15,13 @@
  */
 
 import { diff, Diff, DiffNew, DiffEdit, DiffArray } from 'deep-diff';
+import type { Contact } from '../contact/contactDataAccess';
+import type { CaseService } from '../case/caseService';
+import type {
+  ProfileSection,
+  ProfileWithRelationships,
+} from '../profile/profile-data-access';
+import type { PostSurvey } from '../post-survey/post-survey-data-access';
 
 export const actionsMaps = {
   case: {
@@ -47,6 +54,15 @@ export const actionsMaps = {
     ADD_CONTACT_TO_CASE: 'addContactToCase',
     REMOVE_CONTACT_FROM_CASE: 'removeContactFromCase',
   },
+  profile: {
+    VIEW_PROFILE: 'viewProfile',
+    EDIT_PROFILE: 'editProfile',
+    ASSOCIATE_PROFILE_TO_PROFILE_FLAG: 'associateProfileToProfileFlag',
+  },
+  profileSection: {
+    VIEW_PROFILE_SECTION: 'viewProfileSection',
+    EDIT_PROFILE_SECTION: 'editProfileSection',
+  },
   postSurvey: {
     VIEW_POST_SURVEY: 'viewPostSurvey',
   },
@@ -54,6 +70,14 @@ export const actionsMaps = {
 
 export type TargetKind = keyof typeof actionsMaps;
 export const isTargetKind = (s: string): s is TargetKind => Boolean(actionsMaps[s]);
+
+export type Target<T extends TargetKind> = {
+  contact: Contact;
+  case: CaseService;
+  profile: ProfileWithRelationships;
+  profileSection: ProfileSection;
+  postSurvey: PostSurvey;
+}[T];
 
 /**
  * Utility type that given an object with any nesting depth, will return the union of all the leaves that are of type "string"

@@ -40,6 +40,7 @@ const zaRules = require('../permission-rules/za.json');
 const zmRules = require('../permission-rules/zm.json');
 const zwRules = require('../permission-rules/zw.json');
 
+import { assertExhaustive } from '@tech-matters/types';
 import { actionsMaps, Actions, TargetKind, isTargetKind } from './actions';
 
 const timeBasedConditions = ['createdHoursAgo', 'createdDaysAgo'] as const;
@@ -86,6 +87,16 @@ type SupportedCaseCondition =
 const isSupportedCaseCondition = (c: any): c is SupportedCaseCondition =>
   isTimeBasedCondition(c) || isUserBasedCondition(c) || isCaseSpecificCondition(c);
 
+type SupportedProfileCondition = TimeBasedCondition | UserBasedCondition;
+const isSupportedProfileCondition = (c: any): c is SupportedProfileCondition =>
+  isTimeBasedCondition(c) || isUserBasedCondition(c);
+
+type SupportedProfileSectionCondition = TimeBasedCondition | UserBasedCondition;
+const isSupportedProfileSectionCondition = (
+  c: any,
+): c is SupportedProfileSectionCondition =>
+  isTimeBasedCondition(c) || isUserBasedCondition(c);
+
 type SupportedPostSurveyCondition = TimeBasedCondition | UserBasedCondition;
 const isSupportedPostSurveyCondition = (c: any): c is SupportedPostSurveyCondition =>
   isTimeBasedCondition(c) || isUserBasedCondition(c);
@@ -94,6 +105,8 @@ const isSupportedPostSurveyCondition = (c: any): c is SupportedPostSurveyConditi
 type SupportedTKCondition = {
   contact: SupportedContactCondition;
   case: SupportedCaseCondition;
+  profile: SupportedProfileCondition;
+  profileSection: SupportedProfileSectionCondition;
   postSurvey: SupportedPostSurveyCondition;
 };
 
@@ -148,11 +161,17 @@ const isTKCondition =
       case 'case': {
         return isSupportedCaseCondition(c);
       }
+      case 'profile': {
+        return isSupportedProfileCondition(c);
+      }
+      case 'profileSection': {
+        return isSupportedProfileSectionCondition(c);
+      }
       case 'postSurvey': {
         return isSupportedPostSurveyCondition(c);
       }
       default: {
-        return false;
+        assertExhaustive(kind);
       }
     }
   };
