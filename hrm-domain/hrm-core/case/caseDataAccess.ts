@@ -22,7 +22,7 @@ import {
   SearchQueryBuilder,
   selectCaseSearch,
   selectCaseSearchByProfileId,
-} from './sql/case-search-sql';
+} from './sql/caseSearchSql';
 import {
   caseSectionUpsertSql,
   deleteMissingCaseSectionsSql,
@@ -31,6 +31,13 @@ import { DELETE_BY_ID } from './sql/case-delete-sql';
 import { selectSingleCaseByIdSql } from './sql/case-get-sql';
 import { Contact } from '../contact/contactDataAccess';
 import { OrderByDirectionType } from '../sql';
+import { TKConditionsSets } from '../permissions/rulesMap';
+import { TwilioUser } from '@tech-matters/twilio-worker-auth';
+import { AccountSID } from '@tech-matters/types';
+
+export type PrecalculatedCasePermissionConditions = {
+  isCaseContactOwner: boolean; // Does the requesting user own any of the contacts currently connected to the case?
+};
 
 export type CaseRecordCommon = {
   info: any;
@@ -39,7 +46,7 @@ export type CaseRecordCommon = {
   twilioWorkerId: string;
   createdBy: string;
   updatedBy: string;
-  accountSid: string;
+  accountSid: AccountSID;
   createdAt: string;
   updatedAt: string;
   statusUpdatedAt?: string;
@@ -56,6 +63,7 @@ export type CaseRecordUpdate = Partial<NewCaseRecord> & Pick<NewCaseRecord, 'upd
 export type CaseRecord = CaseRecordCommon & {
   id: number;
   connectedContacts?: Contact[];
+  contactsOwnedByUserCount?: number;
   caseSections?: CaseSectionRecord[];
 };
 
@@ -117,7 +125,8 @@ export type CaseListFilters = {
 
 export const create = async (
   body: Partial<NewCaseRecord>,
-  accountSid: string,
+  accountSid: AccountSID,
+  workerSid: string,
 ): Promise<CaseRecord> => {
   const { caseSections, ...caseRecord } = body;
   caseRecord.accountSid = accountSid;
@@ -135,7 +144,7 @@ export const create = async (
         const sectionStatement = `${caseSectionUpsertSql(
           allSections,
         )};${selectSingleCaseByIdSql('Cases')}`;
-        const queryValues = { accountSid, caseId: inserted.id };
+        const queryValues = { accountSid, workerSid, caseId: inserted.id };
         inserted = await transaction.one(sectionStatement, queryValues);
       }
 
@@ -147,15 +156,16 @@ export const create = async (
 export const getById = async (
   caseId: number,
   accountSid: string,
+  workerSid: string,
 ): Promise<CaseRecord | undefined> => {
   return db.task(async connection => {
     const statement = selectSingleCaseByIdSql('Cases');
-    const queryValues = { accountSid, caseId };
+    const queryValues = { accountSid, caseId, workerSid };
     return connection.oneOrNone<CaseRecord>(statement, queryValues);
   });
 };
 
-type BaseSearchQueryParams = {
+export type BaseSearchQueryParams = {
   accountSid: string;
   limit: number;
   offset: number;
@@ -163,6 +173,7 @@ type BaseSearchQueryParams = {
 export type OptionalSearchQueryParams = Partial<CaseSearchCriteria & CaseListFilters>;
 type SearchQueryParamsBuilder<T> = (
   accountSid: string,
+  user: TwilioUser,
   searchCriteria: T,
   filters: CaseListFilters,
   limit: number,
@@ -170,6 +181,8 @@ type SearchQueryParamsBuilder<T> = (
 ) => BaseSearchQueryParams & OptionalSearchQueryParams;
 
 export type SearchQueryFunction<T> = (
+  user: TwilioUser,
+  viewCasePermissions: TKConditionsSets<'case'>,
   listConfiguration: CaseListConfiguration,
   accountSid: string,
   searchCriteria: T,
@@ -180,15 +193,23 @@ const generalizedSearchQueryFunction = <T>(
   sqlQueryBuilder: SearchQueryBuilder,
   sqlQueryParamsBuilder: SearchQueryParamsBuilder<T>,
 ): SearchQueryFunction<T> => {
-  return async (listConfiguration, accountSid, searchCriteria, filters) => {
+  return async (
+    user,
+    permissions,
+    listConfiguration,
+    accountSid,
+    searchCriteria,
+    filters,
+  ) => {
     const { limit, offset, sortBy, sortDirection } =
       getPaginationElements(listConfiguration);
     const orderClause = [{ sortBy, sortDirection }];
 
     const { count, rows } = await db.task(async connection => {
-      const statement = sqlQueryBuilder(filters, orderClause);
+      const statement = sqlQueryBuilder(user, permissions, filters, orderClause);
       const queryValues = sqlQueryParamsBuilder(
         accountSid,
+        user,
         searchCriteria,
         filters,
         limit,
@@ -209,7 +230,7 @@ const generalizedSearchQueryFunction = <T>(
 
 export const search = generalizedSearchQueryFunction<CaseSearchCriteria>(
   selectCaseSearch,
-  (accountSid, searchCriteria, filters, limit, offset) => ({
+  (accountSid, user, searchCriteria, filters, limit, offset) => ({
     ...filters,
     accountSid,
     firstName: searchCriteria.firstName ? `%${searchCriteria.firstName}%` : null,
@@ -220,6 +241,7 @@ export const search = generalizedSearchQueryFunction<CaseSearchCriteria>(
     contactNumber: searchCriteria.contactNumber || null,
     limit: limit,
     offset: offset,
+    twilioWorkerSid: user.workerSid,
   }),
 );
 
@@ -227,13 +249,14 @@ export const searchByProfileId = generalizedSearchQueryFunction<{
   profileId: number;
 }>(
   selectCaseSearchByProfileId,
-  (accountSid, searchParameters, filters, limit, offset) => ({
+  (accountSid, user, searchParameters, filters, limit, offset) => ({
     accountSid,
     limit,
     offset,
     counsellors: filters.counsellors,
     helpline: filters.helplines,
     profileId: searchParameters.profileId,
+    twilioWorkerSid: user.workerSid,
   }),
 );
 
@@ -245,10 +268,12 @@ export const update = async (
   id,
   caseRecordUpdates: Partial<NewCaseRecord>,
   accountSid: string,
+  workerSid: string,
 ): Promise<CaseRecord> => {
   return db.tx(async transaction => {
     const statementValues = {
       accountSid,
+      workerSid,
       caseId: id,
     };
     if (caseRecordUpdates.info) {
@@ -286,6 +311,7 @@ export const updateStatus = async (
 ) => {
   const statementValues = {
     accountSid,
+    workerSid: updatedBy,
     caseId: id,
   };
   return db.tx(async transaction => {

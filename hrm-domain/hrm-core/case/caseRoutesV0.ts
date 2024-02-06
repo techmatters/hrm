@@ -21,7 +21,6 @@ import { publicEndpoint, SafeRouter } from '../permissions';
 import { canEditCase, canViewCase } from './canPerformCaseAction';
 
 const casesRouter = SafeRouter();
-
 /**
  * Returns a filterable list of cases for a helpline
  *
@@ -30,9 +29,9 @@ const casesRouter = SafeRouter();
  * @param {CaseListConfiguration.sortBy} req.query.sortBy - Sort by
  * @param {CaseListConfiguration.limit} req.query.limit - Limit
  * @param {CaseListConfiguration.offset} req.query.offset - Offset
- * @param {import('./caseService').SearchParameters} req.query.search
+ * @param {SearchParameters} req.query.search
  *
- * @returns {import('./caseService').CaseSearchReturn} - List of cases
+ * @returns {CaseSearchReturn} - List of cases
  */
 casesRouter.get('/', publicEndpoint, async (req, res) => {
   const { accountSid } = req;
@@ -45,7 +44,7 @@ casesRouter.get('/', publicEndpoint, async (req, res) => {
     { sortDirection, sortBy, limit, offset },
     searchCriteria,
     { filters: { includeOrphans: false }, closedCases, counselor, helpline },
-    { can: req.can, user: req.user, searchPermissions: req.searchPermissions },
+    req,
   );
   res.json(cases);
 });
@@ -93,16 +92,10 @@ casesRouter.put('/:id/status', canEditCase, async (req, res) => {
     body: { status },
   } = req;
   const { id } = req.params;
-  const updatedCase = await caseApi.updateCaseStatus(
-    id,
-    status,
-    accountSid,
-    user.workerSid,
-    {
-      can: req.can,
-      user,
-    },
-  );
+  const updatedCase = await caseApi.updateCaseStatus(id, status, accountSid, {
+    can: req.can,
+    user,
+  });
   if (!updatedCase) {
     throw createError(404);
   }
@@ -128,11 +121,7 @@ casesRouter.post('/search', publicEndpoint, async (req, res) => {
     req.query || {},
     searchCriteria,
     { closedCases, counselor, helpline, filters },
-    {
-      can: req.can,
-      user: req.user,
-      searchPermissions: req.searchPermissions,
-    },
+    req,
   );
   res.json(searchResults);
 });

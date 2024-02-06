@@ -46,6 +46,10 @@ export const transitionCaseStatuses = async (): Promise<void> => {
       rules: JSON.parse(Value) as CaseStatusTransitionRule[],
     };
   });
+  console.debug(
+    `[scheduled-task:case-status-transition]: Found automatic case status transition rules:`,
+    configs.map(({ accountSid }) => accountSid),
+  );
 
   for (const { accountSid, rules } of configs) {
     console.debug(

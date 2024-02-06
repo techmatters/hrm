@@ -40,10 +40,10 @@ import type { Contact } from '../contact/contactDataAccess';
 import { InitializedCan } from '../permissions/initializeCanForRules';
 import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { bindApplyTransformations as bindApplyContactTransformations } from '../contact/contactService';
-import type { SearchPermissions } from '../permissions/search-permissions';
 import type { Profile } from '../profile/profile-data-access';
 import type { PaginationQuery } from '../search';
 import { TResult, newErr, newOk } from '@tech-matters/types';
+import { RulesFile, TKConditionsSets } from '../permissions/rulesMap';
 
 type CaseInfoSection = {
   id: string;
@@ -81,10 +81,13 @@ export const WELL_KNOWN_CASE_SECTION_NAMES: Record<
   documents: { getSectionSpecificData: s => s.document, sectionTypeName: 'document' },
 };
 
+type PrecalculatedPermissions = Record<'userOwnsContact', boolean>;
+
 export type CaseService = CaseRecordCommon & {
   id: number;
   childName?: string;
   categories: Record<string, string[]>;
+  precalculatedPermissions?: PrecalculatedPermissions;
   connectedContacts?: Contact[];
 };
 
@@ -193,9 +196,8 @@ const caseRecordToCase = (record: CaseRecord): CaseService => {
     ...record.info,
   };
   Object.keys(WELL_KNOWN_CASE_SECTION_NAMES).forEach(k => delete info[k]);
-  delete info.notes;
 
-  const { caseSections, ...output } = addCategories({
+  const { caseSections, contactsOwnedByUserCount, ...output } = addCategories({
     ...record,
     info: {
       ...info,
@@ -203,7 +205,10 @@ const caseRecordToCase = (record: CaseRecord): CaseService => {
     },
   });
 
-  return output;
+  return {
+    ...output,
+    precalculatedPermissions: { userOwnsContact: contactsOwnedByUserCount > 0 },
+  };
 };
 
 const mapContactTransformations =
@@ -227,6 +232,7 @@ export const createCase = async (
   delete body.id;
   const record = caseToCaseRecord(
     {
+      twilioWorkerId: workerSid,
       ...body,
       createdBy: workerSid,
       createdAt: nowISO,
@@ -236,7 +242,7 @@ export const createCase = async (
     },
     workerSid,
   );
-  const created = await create(record, accountSid);
+  const created = await create(record, accountSid, workerSid);
 
   // A new case is always initialized with empty connected contacts. No need to apply mapContactTransformations here
   return caseRecordToCase(created);
@@ -249,7 +255,7 @@ export const updateCase = async (
   workerSid: CaseService['twilioWorkerId'],
   { can, user }: { can: InitializedCan; user: TwilioUser },
 ): Promise<CaseService> => {
-  const caseFromDB: CaseRecord = await getById(id, accountSid);
+  const caseFromDB: CaseRecord = await getById(id, accountSid, user.workerSid);
   if (!caseFromDB) {
     return;
   }
@@ -262,7 +268,7 @@ export const updateCase = async (
     // caseRecordToCase(caseFromDB),
   );
 
-  const updated = await update(id, record, accountSid);
+  const updated = await update(id, record, accountSid, workerSid);
 
   const withTransformedContacts = mapContactTransformations({ can, user })(updated);
 
@@ -273,10 +279,10 @@ export const updateCaseStatus = async (
   id: CaseService['id'],
   status: string,
   accountSid: CaseService['accountSid'],
-  workerSid: CaseService['twilioWorkerId'],
   { can, user }: { can: InitializedCan; user: TwilioUser },
 ): Promise<CaseService> => {
-  const caseFromDB: CaseRecord = await getById(id, accountSid);
+  const { workerSid } = user;
+  const caseFromDB: CaseRecord = await getById(id, accountSid, workerSid);
   if (!caseFromDB) {
     return;
   }
@@ -293,7 +299,7 @@ export const getCase = async (
   accountSid: string,
   { can, user }: { can: InitializedCan; user: TwilioUser },
 ): Promise<CaseService | undefined> => {
-  const caseFromDb = await getById(id, accountSid);
+  const caseFromDb = await getById(id, accountSid, user.workerSid);
 
   if (caseFromDb) {
     return caseRecordToCase(mapContactTransformations({ can, user })(caseFromDb));
@@ -313,30 +319,6 @@ export type CaseSearchReturn = {
   cases: CaseService[];
   count: number;
 };
-
-/**
- * Check if the user can view any case given:
- * - search permissions
- * - counsellors' filter
- */
-const cannotViewAnyCasesGivenTheseCounsellors = (
-  user: TwilioUser,
-  searchPermissions: SearchPermissions,
-  counsellors?: string[],
-) =>
-  searchPermissions.canOnlyViewOwnCases &&
-  counsellors &&
-  counsellors.length > 0 &&
-  !counsellors.includes(user.workerSid);
-
-/**
- * If the counselors can only view cases he/she owns, then we override caseFilters.counsellors to [workerSid]
- */
-const overrideCounsellors = (
-  user: TwilioUser,
-  searchPermissions: SearchPermissions,
-  counsellors?: string[],
-) => (searchPermissions.canOnlyViewOwnCases ? [user.workerSid] : counsellors);
 
 const generalizedSearchCases =
   <
@@ -358,11 +340,11 @@ const generalizedSearchCases =
     {
       can,
       user,
-      searchPermissions,
+      permissions,
     }: {
       can: InitializedCan;
       user: TwilioUser;
-      searchPermissions: SearchPermissions;
+      permissions: RulesFile;
     },
   ): Promise<CaseSearchReturn> => {
     const { filters, helpline, counselor, closedCases } = filterParameters;
@@ -376,32 +358,11 @@ const generalizedSearchCases =
       caseFilters.excludedStatuses.push('closed');
     }
     caseFilters.includeOrphans = caseFilters.includeOrphans ?? closedCases ?? true;
-
-    /**
-     * VIEW_CASE permission:
-     * Handle filtering cases according to: https://github.com/techmatters/hrm/pull/316#discussion_r1131118034
-     * The search query already filters the cases given an array of counsellors.
-     */
-    if (
-      cannotViewAnyCasesGivenTheseCounsellors(
-        user,
-        searchPermissions,
-        caseFilters.counsellors,
-      )
-    ) {
-      return {
-        count: 0,
-        cases: [],
-      };
-    } else {
-      caseFilters.counsellors = overrideCounsellors(
-        user,
-        searchPermissions,
-        caseFilters.counsellors,
-      );
-    }
+    const viewCasePermissions = permissions.viewCase as TKConditionsSets<'case'>;
 
     const dbResult = await searchQuery(
+      user,
+      viewCasePermissions,
       listConfiguration,
       accountSid,
       searchParameters,
@@ -426,7 +387,7 @@ export const getCasesByProfileId = async (
   ctx: {
     can: InitializedCan;
     user: TwilioUser;
-    searchPermissions: SearchPermissions;
+    permissions: RulesFile;
   },
 ): Promise<
   TResult<'InternalServerError', Awaited<ReturnType<typeof searchCasesByProfileId>>>

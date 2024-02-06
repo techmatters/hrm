@@ -21,6 +21,10 @@ import { selectCoalesceCsamReportsByContactId } from '../../csam-report/sql/csam
 import { selectCoalesceReferralsByContactId } from '../../referral/sql/referral-get-sql';
 import { selectCoalesceConversationMediasByContactId } from '../../conversation-media/sql/conversation-media-get-sql';
 import { OrderByClauseItem, OrderByDirection } from '../../sql';
+import { selectContactsOwnedCount } from './case-get-sql';
+import { CaseListCondition, listCasesPermissionWhereClause } from './casePermissionSql';
+import { TwilioUser } from '@tech-matters/twilio-worker-auth';
+import { TKConditionsSets } from '../../permissions/rulesMap';
 
 export const OrderByColumn = {
   ID: 'id',
@@ -235,6 +239,7 @@ const selectCasesUnorderedSql = (whereClause: string, havingClause: string = '')
     (count(*) OVER())::INTEGER AS "totalCount",
     cases.*,
     contacts."connectedContacts",
+     "contactsOwnedCount"."contactsOwnedByUserCount",
     NULLIF(
       CONCAT(
         contacts."connectedContacts"::JSONB#>>'{0, "rawJson", "childInformation", "name", "firstName"}', 
@@ -246,7 +251,10 @@ const selectCasesUnorderedSql = (whereClause: string, havingClause: string = '')
     FROM "Cases" cases 
     LEFT JOIN LATERAL (${SELECT_CONTACTS}) contacts ON true 
     LEFT JOIN LATERAL (${SELECT_CASE_SECTIONS}) caseSections ON true
-    ${whereClause} GROUP BY "cases"."accountSid", "cases"."id", caseSections."caseSections", contacts."connectedContacts" ${havingClause}`;
+    LEFT JOIN LATERAL (
+        ${selectContactsOwnedCount('twilioWorkerSid')}
+    ) "contactsOwnedCount" ON true
+    ${whereClause} GROUP BY "cases"."accountSid", "cases"."id", caseSections."caseSections", contacts."connectedContacts", "contactsOwnedCount"."contactsOwnedByUserCount" ${havingClause}`;
 
 const selectCasesPaginatedSql = (
   whereClause: string,
@@ -261,13 +269,27 @@ LIMIT $<limit>
 OFFSET $<offset>`;
 
 export type SearchQueryBuilder = (
+  user: TwilioUser,
+  viewCasePermissions: TKConditionsSets<'case'>,
   filters: CaseListFilters,
   orderByClauses?: OrderByClauseItem[],
 ) => string;
 
 const selectSearchCaseBaseQuery = (whereClause: string): SearchQueryBuilder => {
-  return (filters, orderByClauses) => {
-    const whereSql = [whereClause, filterSql(filters)].filter(sql => sql).join(`
+  return (
+    user: TwilioUser,
+    viewCasePermissions: TKConditionsSets<'case'>,
+    filters,
+    orderByClauses,
+  ) => {
+    const whereSql = [
+      whereClause,
+      ...listCasesPermissionWhereClause(
+        viewCasePermissions as CaseListCondition[][],
+        user.isSupervisor,
+      ),
+      filterSql(filters),
+    ].filter(sql => sql).join(`
     AND `);
     const orderBySql = generateOrderByClause(orderByClauses.concat(DEFAULT_SORT));
     return selectCasesPaginatedSql(whereSql, orderBySql);

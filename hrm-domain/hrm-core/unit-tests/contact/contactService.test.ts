@@ -399,7 +399,6 @@ describe('searchContacts', () => {
         can: () => true,
         user: twilioUser(workerSid, []),
         searchPermissions: {
-          canOnlyViewOwnCases: false,
           canOnlyViewOwnContacts: false,
         },
       },
@@ -432,7 +431,6 @@ describe('searchContacts', () => {
         can: () => true,
         user: twilioUser(workerSid, []),
         searchPermissions: {
-          canOnlyViewOwnCases: false,
           canOnlyViewOwnContacts: false,
         },
       },
@@ -457,7 +455,6 @@ describe('searchContacts', () => {
         can: () => true,
         user: twilioUser(workerSid, []),
         searchPermissions: {
-          canOnlyViewOwnCases: false,
           canOnlyViewOwnContacts: false,
         },
       },

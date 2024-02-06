@@ -31,7 +31,7 @@ import { convertCaseInfoToExpectedInfo } from './case/caseValidation';
 
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import * as mocks from './mocks';
-import { ruleFileWithOneActionOverride } from './permissions-overrides';
+import { ruleFileActionOverride } from './permissions-overrides';
 import { headers, getRequest, getServer, setRules, useOpenRules } from './server';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
 import { isS3StoredTranscript } from '@tech-matters/hrm-core/conversation-media/conversation-media';
@@ -85,6 +85,9 @@ describe('/cases route', () => {
       id: expect.anything(),
       updatedAt: expect.toParseAsDate(),
       createdAt: expect.toParseAsDate(),
+      precalculatedPermissions: {
+        userOwnsContact: false,
+      },
       updatedBy: null,
       statusUpdatedAt: null,
       statusUpdatedBy: null,
@@ -201,10 +204,9 @@ describe('/cases route', () => {
           },
         );
 
+        useOpenRules();
         if (!expectTranscripts) {
-          setRules(ruleFileWithOneActionOverride('viewExternalTranscript', false));
-        } else {
-          useOpenRules();
+          setRules(ruleFileActionOverride('viewExternalTranscript', false));
         }
 
         const response = await request.get(subRoute(createdCase.id)).set(headers);
@@ -248,7 +250,7 @@ describe('/cases route', () => {
         expect(response.status).toBe(200);
 
         // Check the DB is actually updated
-        const fromDb = await caseDb.getById(cases.blank.id, accountSid);
+        const fromDb = await caseDb.getById(cases.blank.id, accountSid, workerSid);
         expect(fromDb).toBeFalsy();
       });
       test('should return 404', async () => {

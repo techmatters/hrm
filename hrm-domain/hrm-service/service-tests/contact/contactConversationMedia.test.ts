@@ -36,7 +36,7 @@ import {
 import each from 'jest-each';
 import { chatChannels } from '@tech-matters/hrm-core/contact/channelTypes';
 import { ContactJobType } from '@tech-matters/types/dist/ContactJob';
-import { ruleFileWithOneActionOverride } from '../permissions-overrides';
+import { ruleFileActionOverride } from '../permissions-overrides';
 import { selectJobsByContactId } from './db-validations';
 
 useOpenRules();
@@ -351,10 +351,9 @@ describe('/contacts/:contactId/conversationMedia route', () => {
           description: `without viewExternalTranscript excludes transcripts`,
         },
       ]).test(`$description`, async ({ expectTranscripts }) => {
+        useOpenRules();
         if (!expectTranscripts) {
-          setRules(ruleFileWithOneActionOverride('viewExternalTranscript', false));
-        } else {
-          useOpenRules();
+          setRules(ruleFileActionOverride('viewExternalTranscript', false));
         }
 
         const { body: contactWithMedia } = await request

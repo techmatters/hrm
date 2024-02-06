@@ -41,29 +41,12 @@ type Request = {
 } & ExpressRequest;
 
 export type SearchPermissions = {
-  canOnlyViewOwnCases?: boolean;
   canOnlyViewOwnContacts?: boolean;
 };
 
 type TargetRule<T extends TargetKind> = Partial<
   Record<keyof RulesFile, TKConditionsSet<T>>
 >;
-
-const applySearchCasesPermissions = (
-  req: Request,
-  searchPermissions: SearchPermissions,
-  checkRule: ReturnType<typeof buildCheckRule<'case'>>,
-) => {
-  const { isSupervisor } = req.user;
-  const canViewAsSupervisor = isSupervisor && checkRule({ viewCase: ['isSupervisor'] });
-  const canViewAsOwner = checkRule({ viewCase: ['isCreator'] });
-  const canOnlyViewOwnCases = !canViewAsSupervisor && canViewAsOwner;
-
-  return {
-    ...searchPermissions,
-    canOnlyViewOwnCases,
-  };
-};
 
 const applySearchContactsPermissions = (
   req: Request,
@@ -102,8 +85,6 @@ const buildCheckRule =
 export const getSearchPermissions = (req: Request, rulesFile: RulesFile) => {
   const checkRule = buildCheckRule(rulesFile);
   let searchPermissions: SearchPermissions = {};
-
-  searchPermissions = applySearchCasesPermissions(req, searchPermissions, checkRule);
   searchPermissions = applySearchContactsPermissions(req, searchPermissions, checkRule);
 
   return searchPermissions;
