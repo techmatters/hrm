@@ -37,7 +37,7 @@ import { ruleFileActionOverride } from '../permissions-overrides';
 import { headers, getRequest, getServer, setRules, useOpenRules } from '../server';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
 import { isS3StoredTranscript } from '@tech-matters/hrm-core/conversation-media/conversation-media';
-import { casePopulated } from '../mocks';
+import { casePopulated, populateCaseSections, populatedCaseSections } from '../mocks';
 import { pick } from 'lodash';
 
 useOpenRules();
@@ -94,8 +94,13 @@ afterEach(async () => {
 
 describe('PUT /cases/:id route', () => {
   const subRoute = id => `${route}/${id}`;
-  const { counsellorNotes, perpetrators, households, incidents, referrals, documents } =
-    casePopulated.info;
+
+  beforeEach(async () => {
+    cases.populated = await populateCaseSections(
+      cases.populated.id.toString(),
+      populatedCaseSections,
+    );
+  });
 
   test('should return 401', async () => {
     const response = await request.put(subRoute(cases.blank.id)).send(case1);
@@ -107,11 +112,15 @@ describe('PUT /cases/:id route', () => {
   type TestCase = {
     originalCase?: () => CaseService;
     caseUpdate?: Partial<CaseService> | (() => Partial<CaseService>);
-    infoUpdate?: Partial<CaseService['info']>;
+    infoUpdate?: Partial<CaseService['info']> | (() => Partial<CaseService['info']>);
     changeDescription: string;
     customWorkerSid?: string;
     extraExpectations?: Partial<CaseService>;
   };
+
+  const pickFromPopulated = (field: string) => () => ({
+    [field]: pick(cases.populated.info, field),
+  });
 
   const testCases: TestCase[] = [
     {
@@ -127,51 +136,27 @@ describe('PUT /cases/:id route', () => {
       infoUpdate: { summary: 'To summarize....' },
       changeDescription: 'summary changed',
     },
+    ...[
+      'counsellorNotes',
+      'perpetrators',
+      'households',
+      'incidents',
+      'documents',
+      'referrals',
+    ].map(field => ({
+      infoUpdate: pickFromPopulated(field),
+      changeDescription: `${field} added`,
+    })),
     {
-      infoUpdate: {
-        counsellorNotes,
-      },
-      changeDescription: 'counsellorNotes added',
-    },
-    {
-      infoUpdate: {
-        perpetrators,
-      },
-      changeDescription: 'perpetrators added',
-    },
-    {
-      infoUpdate: {
-        households,
-      },
-      changeDescription: 'households added',
-    },
-    {
-      infoUpdate: {
-        incidents,
-      },
-      changeDescription: 'incidents added',
-    },
-    {
-      infoUpdate: {
-        referrals,
-      },
-      changeDescription: 'referrals added',
-    },
-    {
-      infoUpdate: {
-        documents,
-      },
-      changeDescription: 'documents added',
-    },
-    {
-      infoUpdate: {
-        referrals,
-        documents,
-        counsellorNotes,
-        perpetrators,
-        households,
-        incidents,
-      },
+      infoUpdate: () =>
+        pick(cases.populated.info, [
+          'counsellorNotes',
+          'perpetrators',
+          'households',
+          'incidents',
+          'documents',
+          'referrals',
+        ]),
       changeDescription: 'multiple different case info items are added',
     },
     {

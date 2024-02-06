@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { CaseService } from '@tech-matters/hrm-core/case/caseService';
+import { CaseService, getCase } from '@tech-matters/hrm-core/case/caseService';
 import {
   NewConversationMedia,
   S3ContactMediaType,
@@ -23,6 +23,9 @@ import { Contact } from '@tech-matters/hrm-core/contact/contactDataAccess';
 import { ContactRawJson } from '@tech-matters/hrm-core/contact/contactJson';
 import { NewContactRecord } from '@tech-matters/hrm-core/contact/sql/contactInsertSql';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
+import { NewCaseSection } from '@tech-matters/hrm-core/case/caseSection/types';
+import { createCaseSection } from '@tech-matters/hrm-core/case/caseSection/caseSectionService';
+import type { AccountSID } from '@tech-matters/types';
 
 export const accountSid = 'ACCOUNT_SID';
 
@@ -259,161 +262,205 @@ export const withTaskId: NewContactRecord = {
   profileId: undefined,
   identifierId: undefined,
 };
+export type CaseSectionInsert = {
+  section: NewCaseSection;
+  workerSid: CaseService['twilioWorkerId'];
+};
+
+export const workerSid = 'WK-worker-sid';
+
+export const ALWAYS_CAN = { user: twilioUser(workerSid, []), can: () => true };
+
+export const populateCaseSections = async (
+  caseId: string,
+  sectionsMap: Record<string, CaseSectionInsert[]>,
+  caseAccountSid: AccountSID = accountSid,
+): Promise<CaseService> => {
+  const sectionsEntries = Object.entries(sectionsMap);
+  for (const [sectionType, sections] of sectionsEntries) {
+    for (const { section, workerSid: sectionWorkerSid } of sections) {
+      await createCaseSection(
+        caseAccountSid,
+        caseId,
+        sectionType,
+        section,
+        sectionWorkerSid,
+      );
+    }
+  }
+  return getCase(parseInt(caseId), caseAccountSid, ALWAYS_CAN);
+};
 
 export const case1: Partial<CaseService> = {
   status: 'open',
   helpline: 'helpline',
-  info: {
-    counsellorNotes: [
-      {
-        note: 'Child with covid-19',
-        twilioWorkerId: 'WK-note-adder',
-        createdAt: '2022-01-01T00:00:00+00:00',
-        customProperty: 'something else',
-      },
-    ],
-  },
+  info: {},
   twilioWorkerId: 'WK-worker-sid',
   createdBy: 'WK-worker-sid',
   accountSid,
+};
+
+export const case1Sections: Record<string, CaseSectionInsert[]> = {
+  note: [
+    {
+      section: {
+        sectionTypeSpecificData: {
+          note: 'Child with covid-19',
+          customProperty: 'something else',
+        },
+      },
+      workerSid: 'WK-note-adder',
+    },
+  ],
 };
 
 export const case2: Partial<CaseService> = {
   status: 'open',
   helpline: 'helpline',
-  info: {
-    counsellorNotes: [
-      {
-        note: 'Refugee child',
-        twilioWorkerId: 'WK-other-note-adder',
-        createdAt: '2021-01-01T00:00:00+00:00',
-      },
-    ],
-  },
+  info: {},
   twilioWorkerId: 'WK-worker-sid',
   createdBy: 'WK-worker-sid',
   accountSid,
 };
 
-const counsellorNotes = [
-  {
-    id: '1',
-    note: 'Child with covid-19',
-    twilioWorkerId: 'note-adder',
-    createdAt: '2022-01-01T00:00:00+00:00',
-  },
-  {
-    id: '2',
-    note: 'Child recovered from covid-19',
-    twilioWorkerId: 'other-note-adder',
-    createdAt: '2022-01-05T00:00:00+00:00',
-  },
-];
-const perpetrators = [
-  {
-    perpetrator: {
-      firstName: 'Jane',
-      lastName: 'Doe',
+export const case2Sections: Record<string, CaseSectionInsert[]> = {
+  note: [
+    {
+      section: {
+        sectionTypeSpecificData: {
+          note: 'Refugee child',
+          customProperty: 'something else',
+        },
+      },
+      workerSid: 'WK-other-note-adder',
     },
-    createdAt: '2021-03-15T20:56:22.640Z',
-    twilioWorkerId: 'perpetrator-adder',
-  },
-  {
-    perpetrator: {
-      firstName: 'J.',
-      lastName: 'Doe',
-      phone2: '+12345678',
-    },
-    createdAt: '2021-03-16T20:56:22.640Z',
-    twilioWorkerId: 'perpetrator-adder',
-  },
-];
+  ],
+};
 
-const households = [
-  {
-    household: {
-      firstName: 'Jane',
-      lastName: 'Doe',
+export const populatedCaseSections: Record<string, CaseSectionInsert[]> = {
+  note: [
+    {
+      workerSid: 'note-adder',
+      section: {
+        sectionId: '1',
+        sectionTypeSpecificData: {
+          note: 'Child with covid-19',
+        },
+      },
     },
-    createdAt: '2021-03-15T20:56:22.640Z',
-    twilioWorkerId: 'household-adder',
-  },
-  {
-    household: {
-      firstName: 'J.',
-      lastName: 'Doe',
-      phone2: '+12345678',
+    {
+      workerSid: 'other-note-adder',
+      section: {
+        sectionId: '2',
+        sectionTypeSpecificData: {
+          note: 'Child recovered from covid-19',
+        },
+      },
     },
-    createdAt: '2021-03-16T20:56:22.640Z',
-    twilioWorkerId: 'household-adder',
-  },
-];
-
-const incidents = [
-  {
-    incident: {
-      date: '2021-03-03',
-      duration: '',
-      location: 'Other',
-      isCaregiverAware: null,
-      incidentWitnessed: null,
-      reactionOfCaregiver: '',
-      whereElseBeenReported: '',
-      abuseReportedElsewhere: null,
+  ],
+  perpetrator: [
+    {
+      workerSid: 'perpetrator-adder',
+      section: {
+        sectionTypeSpecificData: {
+          firstName: 'Jane',
+          lastName: 'Doe',
+        },
+      },
     },
-    createdAt: '2021-03-16T20:56:22.640Z',
-    twilioWorkerId: 'incident-adder',
-  },
-];
-
-const referrals = [
-  {
-    id: '2503',
-    date: '2021-02-18',
-    comments: 'Referred to state agency',
-    createdAt: '2021-02-19T21:38:30.911+00:00',
-    referredTo: 'DREAMS',
-    twilioWorkerId: 'referral-adder',
-  },
-];
-
-const documents = [
-  {
-    id: '5e127299-17ba-4adf-a040-69dac9ca45bf',
-    document: {
-      comments: 'test file!',
-      fileName: 'sample1.pdf',
+    {
+      workerSid: 'perpetrator-adder',
+      section: {
+        sectionTypeSpecificData: {
+          firstName: 'J.',
+          lastName: 'Doe',
+          phone2: '+12345678',
+        },
+      },
     },
-    createdAt: '2021-09-21T17:57:52.346Z',
-    twilioWorkerId: 'document-adder',
-  },
-  {
-    id: '10d21f35-142c-4538-92db-d558f80898ae',
-    document: {
-      comments: '',
-      fileName: 'sample2.pdf',
+  ],
+  household: [
+    {
+      workerSid: 'household-adder',
+      section: {
+        sectionTypeSpecificData: {
+          firstName: 'Jane',
+          lastName: 'Doe',
+        },
+      },
     },
-    createdAt: '2021-09-21T19:47:03.167Z',
-    twilioWorkerId: 'document-adder',
-  },
-];
+    {
+      workerSid: 'household-adder',
+      section: {
+        sectionTypeSpecificData: {
+          firstName: 'J.',
+          lastName: 'Doe',
+          phone2: '+12345678',
+        },
+      },
+    },
+  ],
+  incident: [
+    {
+      workerSid: 'incident-adder',
+      section: {
+        sectionTypeSpecificData: {
+          date: '2021-03-03',
+          duration: '',
+          location: 'Other',
+          isCaregiverAware: null,
+          incidentWitnessed: null,
+          reactionOfCaregiver: '',
+          whereElseBeenReported: '',
+          abuseReportedElsewhere: null,
+        },
+      },
+    },
+  ],
+  referral: [
+    {
+      workerSid: 'referral-adder',
+      section: {
+        sectionId: '2503',
+        sectionTypeSpecificData: {
+          date: '2021-02-18',
+          comments: 'Referred to state agency',
+          referredTo: 'DREAMS',
+        },
+      },
+    },
+  ],
+  document: [
+    {
+      workerSid: 'document-adder',
+      section: {
+        sectionId: '5e127299-17ba-4adf-a040-69dac9ca45bf',
+        sectionTypeSpecificData: {
+          comments: 'test file!',
+          fileName: 'sample1.pdf',
+        },
+      },
+    },
+    {
+      workerSid: 'document-adder',
+      section: {
+        sectionId: '10d21f35-142c-4538-92db-d558f80898ae',
+        sectionTypeSpecificData: {
+          comments: '',
+          fileName: 'sample2.pdf',
+        },
+      },
+    },
+  ],
+};
 
 export const casePopulated = {
   ...case1,
   info: {
     summary: 'something summery',
     followUpDate: '2005-03-15T00:00:00.000Z',
-    perpetrators,
-    households,
-    incidents,
-    documents,
-    referrals,
-    counsellorNotes,
   },
 };
-
-export const workerSid = 'WK-worker-sid';
-
 export const conversationMedia: NewConversationMedia[] = [
   {
     storeType: 'S3',
@@ -426,5 +473,3 @@ export const conversationMedia: NewConversationMedia[] = [
     },
   },
 ];
-
-export const ALWAYS_CAN = { user: twilioUser(workerSid, []), can: () => true };

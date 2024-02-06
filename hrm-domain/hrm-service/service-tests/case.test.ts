@@ -81,7 +81,7 @@ describe('/cases route', () => {
 
   describe('POST', () => {
     const expected: CaseService = {
-      ...convertCaseInfoToExpectedInfo(case1),
+      ...convertCaseInfoToExpectedInfo({ ...case1, info: {} }),
       id: expect.anything(),
       updatedAt: expect.toParseAsDate(),
       createdAt: expect.toParseAsDate(),
@@ -93,7 +93,7 @@ describe('/cases route', () => {
       statusUpdatedBy: null,
       previousStatus: null,
       categories: {},
-      connectedContacts: [],
+      info: {},
     };
 
     test('should return 401', async () => {
@@ -112,7 +112,7 @@ describe('/cases route', () => {
         user: twilioUser(workerSid, []),
         can: () => true,
       });
-      expect(fromDb).toStrictEqual(expected);
+      expect(fromDb).toStrictEqual({ ...expected, connectedContacts: [] });
     });
   });
 
