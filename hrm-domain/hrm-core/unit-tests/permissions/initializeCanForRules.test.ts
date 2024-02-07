@@ -17,12 +17,13 @@
 /* eslint-disable jest/no-standalone-expect */
 import each from 'jest-each';
 import { initializeCanForRules } from '../../permissions/initializeCanForRules';
-import { actionsMaps } from '../../permissions';
+import { Actions, actionsMaps } from '../../permissions';
 import { RulesFile } from '../../permissions/rulesMap';
 import { workerSid, accountSid } from '../mocks';
-import { twilioUser } from '@tech-matters/twilio-worker-auth';
+import { TwilioUser, twilioUser } from '@tech-matters/twilio-worker-auth';
 import { TargetKind } from '../../permissions/actions';
 import { subDays, subHours } from 'date-fns';
+import { CaseService } from '../../case/caseService';
 
 const helpline = 'helpline';
 
@@ -45,24 +46,39 @@ describe('Test that all actions work fine (everyone)', () => {
   const can = initializeCanForRules(rules);
 
   const notCreator = twilioUser('not creator', []);
+  type TestCase = {
+    action: Actions;
+    caseObj: CaseService;
+    user: TwilioUser;
+  };
 
-  // Test Case permissions
-  each(
-    Object.values(actionsMaps.case).map(action => ({
-      action,
-      caseObj: {
-        status: 'open',
-        info: {},
-        twilioWorkerId: 'creator',
-        helpline,
-        createdBy: workerSid,
-        accountSid,
+  const testCases: TestCase[] = Object.values(actionsMaps.case).map(action => ({
+    action,
+    caseObj: {
+      id: 123,
+      status: 'open',
+      info: {},
+      categories: {},
+      twilioWorkerId: 'creator',
+      helpline,
+      createdBy: workerSid,
+      accountSid,
+      updatedBy: null,
+      createdAt: subDays(new Date(), 1).toISOString(),
+      updatedAt: null,
+      precalculatedPermissions: {
+        userOwnsContact: false,
       },
-      user: notCreator,
-    })),
-  ).test('Action $action should return true', async ({ action, caseObj, user }) => {
-    expect(can(user, action, caseObj)).toBeTruthy();
-  });
+    },
+    user: notCreator,
+  }));
+  // Test Case permissions
+  each(testCases).test(
+    'Action $action should return true',
+    async ({ action, caseObj, user }) => {
+      expect(can(user, action, caseObj)).toBeTruthy();
+    },
+  );
 
   // Test Contact permissions
   each(
