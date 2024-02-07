@@ -52,7 +52,7 @@ export const configureInternalService = ({
   webServer,
   reindexDbBatchSize = 1000,
 }: InternalResourceServiceCreationOptions) => {
-  webServer.get('/', (req, res) => {
+  webServer.get('/resources', (req, res) => {
     res.json({
       Message: 'Resources internal service is up and running!',
     });

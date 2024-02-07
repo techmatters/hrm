@@ -21,7 +21,7 @@ import express from 'express';
  * Module dependencies.
  */
 console.log(new Date(Date.now()).toLocaleString() + ': trying to initialize www');
-import { configureService } from '@tech-matters/hrm-core/app';
+import { configureService, configureInternalService } from '@tech-matters/hrm-core/app';
 import {
   configureInternalResourcesService,
   configureResourcesService,
@@ -66,8 +66,11 @@ const app = configureDefaultPostMiddlewares(
 );
 
 const internalAppWithoutServices = configureDefaultPreMiddlewares(express());
-const internalAppWithResourcesService = configureInternalResourcesService({
+const inernalAppWithHrmService = configureInternalService({
   webServer: internalAppWithoutServices,
+});
+const internalAppWithResourcesService = configureInternalResourcesService({
+  webServer: inernalAppWithHrmService,
 });
 const internalApp = configureDefaultPostMiddlewares(
   internalAppWithResourcesService,
