@@ -23,6 +23,7 @@ import postSurveys from './post-survey/post-survey-routes-v0';
 import referrals from './referral/referral-routes-v0';
 import permissions from './permissions/permissions-routes-v0';
 import profiles from './profile/profileRoutesV0';
+import adminProfiles from './profile/admin-profile-routes-v0';
 import { Permissions } from './permissions';
 
 export const HRM_ROUTES: {
@@ -41,6 +42,18 @@ export const HRM_ROUTES: {
 export const apiV0 = (rules: Permissions) => {
   const router: IRouter = Router();
   HRM_ROUTES.forEach(({ path, routerFactory }) => router.use(path, routerFactory(rules)));
+
+  return router;
+};
+
+export const ADMIN_ROUTES: {
+  path: string;
+  routerFactory: () => Router;
+}[] = [{ path: '/profiles', routerFactory: () => adminProfiles }];
+
+export const adminApiV0 = () => {
+  const router: IRouter = Router();
+  ADMIN_ROUTES.forEach(({ path, routerFactory }) => router.use(path, routerFactory()));
 
   return router;
 };

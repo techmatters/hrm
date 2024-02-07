@@ -359,11 +359,13 @@ export const updateProfileFlagById = async (
   payload: NewProfileFlagRecord & { id: number },
 ): Promise<TResult<'InternalServerError', ProfileFlag>> => {
   try {
+    const { id, name } = payload;
     const now = new Date();
     const data = await db.task<ProfileFlag>(async t => {
-      return t.oneOrNone(
-        updateProfileFlagByIdSql({ ...payload, updatedAt: now, accountSid }),
-      );
+      return t.oneOrNone(updateProfileFlagByIdSql({ name: name, updatedAt: now }), {
+        profileId: id,
+        accountSid,
+      });
     });
     return newOk({ data });
   } catch (err) {
@@ -375,20 +377,18 @@ export const updateProfileFlagById = async (
 };
 
 export const deleteProfileFlagById = async (
-  profileFlagId: number,
+  profileId: number,
   accountSid: string,
 ): Promise<TResult<'InternalServerError', ProfileFlag>> => {
   try {
-    return await db
-      .task<ProfileFlag>(async t =>
-        t.oneOrNone(deleteProfileFlagByIdSql, {
-          accountSid,
-          profileFlagId,
-        }),
-      )
-      .then(data => {
-        return newOk({ data });
-      });
+    const data = await db.task<ProfileFlag>(async t =>
+      t.oneOrNone(deleteProfileFlagByIdSql, {
+        profileId,
+        accountSid,
+      }),
+    );
+
+    return newOk({ data });
   } catch (err) {
     return newErr({
       message: err instanceof Error ? err.message : String(err),

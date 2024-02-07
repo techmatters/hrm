@@ -57,6 +57,7 @@
     "wait-on": "^7.2.0"
   },
   "scripts": {
+    "admin-cli": "npx tsx hrm-domain/hrm-service/scripts/admin-cli.ts",
     "build": "tsc -b --verbose",
     "build-and-start": "run-s build start",
     "build-and-start:service": "run-s build start:service",

@@ -266,10 +266,10 @@ export const updateProfileFlagById = async (
 export const deleteProfileFlagById = async (
   flagId: profileDB.ProfileFlag['id'],
   accountSid: string,
-): Promise<TResult<'InternalServerError', void>> => {
+): Promise<TResult<'InternalServerError', profileDB.ProfileFlag>> => {
   try {
-    await profileDB.deleteProfileFlagById(flagId, accountSid);
-    return newOk({ data: undefined });
+    const result = await profileDB.deleteProfileFlagById(flagId, accountSid);
+    return result;
   } catch (err) {
     return newErr({
       message: err instanceof Error ? err.message : String(err),
