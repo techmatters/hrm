@@ -38,7 +38,7 @@ import {
   cleanupReferrals,
   deleteContactById,
   deleteJobsByContactId,
-} from './db-cleanup';
+} from './dbCleanup';
 import { NewContactRecord } from '@tech-matters/hrm-core/contact/sql/contactInsertSql';
 import { finalizeContact } from './finalizeContact';
 
