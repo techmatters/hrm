@@ -27,7 +27,7 @@ import {
   cleanupContactsJobs,
   cleanupCsamReports,
   cleanupReferrals,
-} from './db-cleanup';
+} from './dbCleanup';
 
 useOpenRules();
 const server = getServer();

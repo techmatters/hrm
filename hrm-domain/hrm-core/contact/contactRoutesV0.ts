@@ -71,7 +71,6 @@ contactsRouter.get('/byTaskSid/:taskSid', publicEndpoint, async (req, res) => {
 
 contactsRouter.put(
   '/:contactId/connectToCase',
-  publicEndpoint,
   canChangeContactConnection,
   async (req, res) => {
     const { accountSid, user } = req;
@@ -99,7 +98,6 @@ contactsRouter.put(
 
 contactsRouter.delete(
   '/:contactId/connectToCase',
-  publicEndpoint,
   canDisconnectContact,
   async (req, res) => {
     const { accountSid, user } = req;

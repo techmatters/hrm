@@ -13,23 +13,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import {
-  RulesFile,
-  rulesMap,
-  TKConditionsSets,
-} from '@tech-matters/hrm-core/permissions/rulesMap';
-import { TargetKind } from '@tech-matters/hrm-core/permissions/actions';
-
-export function ruleFileWithOneActionWithConditions<T extends TargetKind>(
-  permittedAction: keyof RulesFile,
-  conditions: TKConditionsSets<T>,
-): RulesFile {
-  const ruleEntries = Object.keys(rulesMap.open).map(key => [
-    key,
-    key === permittedAction ? [['everyone']] : conditions,
-  ]);
-  return Object.fromEntries(ruleEntries);
-}
+import { RulesFile, rulesMap } from '@tech-matters/hrm-core/permissions/rulesMap';
 
 export function ruleFileWithOnePermittedOrDeniedAction(
   permittedAction: keyof RulesFile,
