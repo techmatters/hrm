@@ -20,7 +20,7 @@ import type { CaseService } from '../case/caseService';
 import type {
   ProfileSection,
   ProfileWithRelationships,
-} from '../profile/profile-data-access';
+} from '../profile/profileDataAccess';
 import type { PostSurvey } from '../post-survey/post-survey-data-access';
 
 export const actionsMaps = {

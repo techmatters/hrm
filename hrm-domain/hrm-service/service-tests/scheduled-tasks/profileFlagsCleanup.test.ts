@@ -18,7 +18,7 @@ import { cleanupProfileFlags } from '@tech-matters/profile-flags-cleanup';
 import { addDays, subDays } from 'date-fns';
 import { db } from '@tech-matters/hrm-core/connection-pool';
 import { accountSid } from '../mocks';
-import * as profileDB from '@tech-matters/hrm-core/profile/profile-data-access';
+import * as profileDB from '@tech-matters/hrm-core/profile/profileDataAccess';
 
 let createdProfile: profileDB.Profile;
 let createdProfileFlag: profileDB.ProfileFlag;

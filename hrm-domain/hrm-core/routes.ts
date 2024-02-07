@@ -22,7 +22,7 @@ import csamReports from './csam-report/csam-report-routes-v0';
 import postSurveys from './post-survey/post-survey-routes-v0';
 import referrals from './referral/referral-routes-v0';
 import permissions from './permissions/permissions-routes-v0';
-import profiles from './profile/profile-routes-v0';
+import profiles from './profile/profileRoutesV0';
 import { Permissions } from './permissions';
 
 export const HRM_ROUTES: {

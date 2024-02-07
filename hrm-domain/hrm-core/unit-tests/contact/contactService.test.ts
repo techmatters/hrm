@@ -27,7 +27,7 @@ import { ContactBuilder } from './contact-builder';
 import { omit } from 'lodash';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
 import { newOk } from '@tech-matters/types';
-import * as profilesDB from '../../profile/profile-data-access';
+import * as profilesDB from '../../profile/profileDataAccess';
 import { NewContactRecord } from '../../contact/sql/contactInsertSql';
 import { ALWAYS_CAN } from '../mocks';
 import '@tech-matters/testing/expectToParseAsDate';

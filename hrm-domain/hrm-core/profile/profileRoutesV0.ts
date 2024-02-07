@@ -19,7 +19,7 @@ import createError from 'http-errors';
 import { isValid, parseISO } from 'date-fns';
 
 import { SafeRouter, publicEndpoint } from '../permissions';
-import * as profileController from './profile';
+import * as profileController from './profileService';
 import { getContactsByProfileId } from '../contact/contactService';
 import { getCasesByProfileId } from '../case/caseService';
 

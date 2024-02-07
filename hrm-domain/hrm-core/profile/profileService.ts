@@ -17,7 +17,7 @@
 import { TResult, isErr, newErr, newOk } from '@tech-matters/types';
 import { isFuture } from 'date-fns';
 
-import * as profileDB from './profile-data-access';
+import * as profileDB from './profileDataAccess';
 import { db } from '../connection-pool';
 import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import type { NewProfileSectionRecord } from './sql/profile-sections-sql';
@@ -29,7 +29,7 @@ export {
   getIdentifierWithProfiles,
   ProfileListConfiguration,
   SearchParameters,
-} from './profile-data-access';
+} from './profileDataAccess';
 
 export const getProfile =
   (task?) =>

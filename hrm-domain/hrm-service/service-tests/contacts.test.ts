@@ -49,7 +49,7 @@ import { ruleFileActionOverride } from './permissions-overrides';
 import * as csamReportApi from '@tech-matters/hrm-core/csam-report/csam-report';
 import { getRequest, getServer, headers, setRules, useOpenRules } from './server';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
-import * as profilesDB from '@tech-matters/hrm-core/profile/profile-data-access';
+import * as profilesDB from '@tech-matters/hrm-core/profile/profileDataAccess';
 
 import { isErr } from '@tech-matters/types';
 import {

@@ -19,15 +19,15 @@ import './case/caseValidation';
 import { db } from '@tech-matters/hrm-core/connection-pool';
 import * as caseApi from '@tech-matters/hrm-core/case/caseService';
 import * as contactApi from '@tech-matters/hrm-core/contact/contactService';
-import * as profilesDB from '@tech-matters/hrm-core/profile/profile-data-access';
+import * as profilesDB from '@tech-matters/hrm-core/profile/profileDataAccess';
 import { getRequest, getServer, headers, useOpenRules } from './server';
 import * as mocks from './mocks';
 import { mockSuccessfulTwilioAuthentication, mockingProxy } from '@tech-matters/testing';
 import {
   getOrCreateProfileWithIdentifier,
   Profile,
-} from '@tech-matters/hrm-core/profile/profile';
-import { IdentifierWithProfiles } from '@tech-matters/hrm-core/profile/profile-data-access';
+} from '@tech-matters/hrm-core/profile/profileService';
+import { IdentifierWithProfiles } from '@tech-matters/hrm-core/profile/profileDataAccess';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
 import { ALWAYS_CAN } from './mocks';
 import { AccountSID } from '@tech-matters/types';
