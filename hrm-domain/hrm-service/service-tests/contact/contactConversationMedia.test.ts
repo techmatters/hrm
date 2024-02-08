@@ -32,7 +32,7 @@ import {
   cleanupContactsJobs,
   cleanupCsamReports,
   cleanupReferrals,
-} from './db-cleanup';
+} from './dbCleanup';
 import each from 'jest-each';
 import { chatChannels } from '@tech-matters/hrm-core/contact/channelTypes';
 import { ContactJobType } from '@tech-matters/types/dist/ContactJob';
