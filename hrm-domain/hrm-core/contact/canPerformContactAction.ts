@@ -21,6 +21,7 @@ import { getClient } from '@tech-matters/twilio-client';
 import { isTwilioTaskTransferTarget } from '@tech-matters/twilio-client';
 import createError from 'http-errors';
 import { getCase } from '../case/caseService';
+import type { ActionsForTK } from '../permissions/actions';
 
 const authorizeIfAdditionalValidationPasses = async (
   req: any,
@@ -35,7 +36,7 @@ const authorizeIfAdditionalValidationPasses = async (
 };
 
 const canPerformActionOnContact = (
-  action: (typeof actionsMaps.contact)[keyof typeof actionsMaps.contact],
+  action: ActionsForTK<'contact'>,
   additionalValidation: (contact: Contact, req: any) => Promise<boolean> = () =>
     Promise.resolve(true),
 ) =>
