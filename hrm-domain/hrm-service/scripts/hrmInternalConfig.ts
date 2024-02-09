@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { AccountSID } from '../../../packages/types';
+import type { AccountSID } from '@tech-matters/types';
 
 export const staticKeyPattern = /^STATIC_KEY_ADMIN_HRM=(?<key>.*)$/im;
 
