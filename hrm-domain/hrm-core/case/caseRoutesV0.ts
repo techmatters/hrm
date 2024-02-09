@@ -112,23 +112,6 @@ casesRouter.put('/:id/status', canUpdateCaseStatus, async (req, res) => {
   res.json(updatedCase);
 });
 
-casesRouter.put('/:id/status', canUpdateCaseStatus, async (req, res) => {
-  const {
-    accountSid,
-    user,
-    body: { status },
-  } = req;
-  const { id } = req.params;
-  const updatedCase = await caseApi.updateCaseStatus(id, status, accountSid, {
-    can: req.can,
-    user,
-  });
-  if (!updatedCase) {
-    throw createError(404);
-  }
-  res.json(updatedCase);
-});
-
 casesRouter.put('/:id/overview', canEditCaseOverview, async (req, res) => {
   const {
     accountSid,
