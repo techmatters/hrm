@@ -23,6 +23,8 @@ import {
   type RulesFile,
   isTimeBasedCondition,
   TimeBasedCondition,
+  ProfileSectionSpecificCondition,
+  isProfileSectionSpecificCondition,
 } from './rulesMap';
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { differenceInDays, differenceInHours, parseISO } from 'date-fns';
@@ -86,6 +88,22 @@ const applyTimeBasedConditions =
         }
       }, {});
 
+const applyProfileSectionSpecificConditions =
+  (conditions: ProfileSectionSpecificCondition[]) =>
+  (performer: TwilioUser, target: any) =>
+    conditions
+      .map(c => Object.entries(c)[0])
+      .reduce<Record<string, boolean>>((accum, [cond, param]) => {
+        // use the stringified cond-param as key, e.g. '{ "sectionType": "summary" }'
+        const key = JSON.stringify({ [cond]: param });
+        if (cond === 'sectionType') {
+          return {
+            ...accum,
+            [key]: target.sectionType === param,
+          };
+        }
+      }, {});
+
 const setupAllow = <T extends TargetKind>(
   kind: T,
   conditionsSets: TKConditionsSets<T>,
@@ -123,8 +141,6 @@ const setupAllow = <T extends TargetKind>(
           isSupervisor: performer.isSupervisor,
           isOwner: isContactOwner(performer, target),
           everyone: true,
-          createdDaysAgo: false,
-          createdHoursAgo: false,
           ...appliedTimeBasedConditions,
         };
 
@@ -134,20 +150,27 @@ const setupAllow = <T extends TargetKind>(
         const conditionsState: ConditionsState = {
           isSupervisor: performer.isSupervisor,
           everyone: true,
-          createdDaysAgo: false,
-          createdHoursAgo: false,
           ...appliedTimeBasedConditions,
         };
 
         return checkConditionsSets(conditionsState, conditionsSets);
       }
       case 'profileSection': {
+        const specificConditions = conditionsSets.flatMap(cs =>
+          cs
+            .map(c => (isProfileSectionSpecificCondition(c) ? c : null))
+            .filter(c => c !== null),
+        );
+
+        const appliedSpecificConditions = applyProfileSectionSpecificConditions(
+          specificConditions,
+        )(performer, target);
+
         const conditionsState: ConditionsState = {
           isSupervisor: performer.isSupervisor,
           everyone: true,
-          createdDaysAgo: false,
-          createdHoursAgo: false,
           ...appliedTimeBasedConditions,
+          ...appliedSpecificConditions,
         };
 
         return checkConditionsSets(conditionsState, conditionsSets);
