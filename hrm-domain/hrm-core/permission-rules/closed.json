@@ -27,5 +27,12 @@
   "addContactToCase": [],
   "removeContactFromCase": [],
 
+  "viewProfile": [],
+  "associateProfileToProfileFlag": [],
+  "disassociateProfileToProfileFlag": [],
+  "createProfileSection": [],
+  "viewProfileSection": [],
+  "editProfileSection": [],
+  
   "viewPostSurvey": []
 }
