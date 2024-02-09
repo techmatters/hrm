@@ -11,5 +11,5 @@
     "strict": false,
   },
 
-  "include": ["src/**/*.js", "src/**/*.json", "src/**/*.ts", "scripts/**/*.ts"]
+  "include": ["src/**/*.js", "src/**/*.json", "src/**/*.ts"]
 }
