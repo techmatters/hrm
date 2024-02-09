@@ -15,7 +15,7 @@
   "editIncident":  [["everyone"]],
   "addDocument":  [["everyone"]],
   "editDocument":  [["everyone"]],
-  "editCaseSummary":  [["everyone"]],
+  "editCaseOverview":  [["everyone"]],
   "editChildIsAtRisk":  [["everyone"]],
   "editFollowUpDate":  [["everyone"]],
   "updateCaseContacts": [["everyone"]],

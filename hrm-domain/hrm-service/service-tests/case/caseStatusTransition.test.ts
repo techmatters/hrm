@@ -101,8 +101,6 @@ describe('Single Rule', () => {
   const tooRecentDateForTransition = subHours(new Date(), 20);
 
   beforeEach(async () => {
-    console.debug('creating test cases');
-    jest.setTimeout(20000);
     cases.validForUpdate = await caseApi.createCase(
       { ...case1, status: 'status1' },
       'AC1',
@@ -123,7 +121,6 @@ describe('Single Rule', () => {
       'ACnot1',
       workerSid,
     );
-    console.debug('fixing StatusUpdatedAt');
     await Promise.all([
       fixStatusUpdatedAt(cases.validStatusButTooRecent, tooRecentDateForTransition),
       fixStatusUpdatedAt(
@@ -133,13 +130,9 @@ describe('Single Rule', () => {
       fixStatusUpdatedAt(cases.validForUpdate, validDateForTransition),
       fixStatusUpdatedAt(cases.validForUpdateButWrongAccount, validDateForTransition),
     ]);
-    console.debug('before each done');
   });
   test('Should update status for qualifying cases only', async () => {
-    console.debug('starting test');
-    jest.setTimeout(20000);
     await transitionCaseStatuses();
-    console.debug('starting test');
     const {
       validForUpdate,
       validStatusButTooRecent,

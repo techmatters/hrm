@@ -14,12 +14,27 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import type { AccountSID } from '@tech-matters/types';
+export type CaseSectionRecord = {
+  caseId?: number;
+  sectionType: string;
+  sectionId: string;
+  sectionTypeSpecificData: Record<string, any>;
+  accountSid: string;
+  createdAt: string;
+  createdBy: string;
+  updatedAt?: string;
+  updatedBy?: string;
+};
 
-export const staticKeyPattern = /^STATIC_KEY_ADMIN_HRM=(?<key>.*)$/im;
+export type CaseSection = Omit<
+  CaseSectionRecord,
+  'accountSid' | 'caseId' | 'sectionType'
+>;
 
-export const getAdminV0URL = (
-  internalResourcesUrl: URL,
-  accountSid: AccountSID,
-  path: string,
-) => new URL(`/admin/v0/accounts/${accountSid}${path}`, internalResourcesUrl);
+export type CaseSectionUpdate = Omit<
+  CaseSection,
+  'sectionId' | 'createdBy' | 'createdAt'
+>;
+export type NewCaseSection = Omit<CaseSectionUpdate, 'updatedAt' | 'updatedBy'> & {
+  sectionId?: string;
+};

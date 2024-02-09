@@ -15,7 +15,7 @@
  */
 
 import { pgp } from '../../connection-pool';
-import { CaseSectionRecord } from '../caseDataAccess';
+import { CaseSectionRecord } from '../caseSection/types';
 
 /**
  * Is this FILTER (WHERE cs."caseId" IS NOT NULL) needed? Won't cs."caseId" always be not null as "caseId" is part of the PK?

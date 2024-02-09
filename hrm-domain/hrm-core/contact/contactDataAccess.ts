@@ -30,7 +30,7 @@ import { ContactRawJson, ReferralWithoutContactId } from './contactJson';
 import type { ITask } from 'pg-promise';
 import { txIfNotInOne } from '../sql';
 import { ConversationMedia } from '../conversation-media/conversation-media';
-import { TOUCH_CASE_SQL } from '../case/sql/case-update-sql';
+import { TOUCH_CASE_SQL } from '../case/sql/caseUpdateSql';
 
 export type ExistingContactRecord = {
   id: number;

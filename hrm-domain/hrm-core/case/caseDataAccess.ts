@@ -16,7 +16,7 @@
 
 import { db, pgp } from '../connection-pool';
 import { getPaginationElements } from '../search';
-import { updateByIdSql } from './sql/case-update-sql';
+import { PATCH_CASE_INFO_BY_ID, updateByIdSql } from './sql/caseUpdateSql';
 import {
   OrderByColumnType,
   SearchQueryBuilder,
@@ -34,6 +34,8 @@ import { OrderByDirectionType } from '../sql';
 import { TKConditionsSets } from '../permissions/rulesMap';
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { AccountSID } from '@tech-matters/types';
+import { CaseSectionRecord } from './caseSection/types';
+import { pick } from 'lodash';
 
 export type PrecalculatedCasePermissionConditions = {
   isCaseContactOwner: boolean; // Does the requesting user own any of the contacts currently connected to the case?
@@ -54,11 +56,23 @@ export type CaseRecordCommon = {
   previousStatus?: string;
 };
 
-export type NewCaseRecord = CaseRecordCommon & {
-  caseSections?: CaseSectionRecord[];
-};
+// Exported for testing
+export const VALID_CASE_CREATE_FIELDS: (keyof CaseRecordCommon)[] = [
+  'accountSid',
+  'info',
+  'helpline',
+  'status',
+  'twilioWorkerId',
+  'createdBy',
+  'createdAt',
+];
 
-export type CaseRecordUpdate = Partial<NewCaseRecord> & Pick<NewCaseRecord, 'updatedBy'>;
+export type NewCaseRecord = CaseRecordCommon;
+
+export type CaseRecordUpdate = Partial<NewCaseRecord> &
+  Pick<NewCaseRecord, 'updatedBy'> & {
+    caseSections?: CaseSectionRecord[];
+  };
 
 export type CaseRecord = CaseRecordCommon & {
   id: number;
@@ -68,18 +82,6 @@ export type CaseRecord = CaseRecordCommon & {
 };
 
 type CaseWithCount = CaseRecord & { totalCount: number };
-
-export type CaseSectionRecord = {
-  caseId?: number;
-  sectionType: string;
-  sectionId: string;
-  sectionTypeSpecificData: Record<string, any>;
-  accountSid: string;
-  createdAt: string;
-  createdBy: string;
-  updatedAt?: string;
-  updatedBy?: string;
-};
 
 export type CaseListConfiguration = {
   sortBy?: OrderByColumnType;
@@ -123,29 +125,24 @@ export type CaseListFilters = {
   includeOrphans?: boolean;
 };
 
-export const create = async (
-  body: Partial<NewCaseRecord>,
-  accountSid: AccountSID,
-  workerSid: string,
-): Promise<CaseRecord> => {
-  const { caseSections, ...caseRecord } = body;
-  caseRecord.accountSid = accountSid;
-
+export const create = async (caseRecord: Partial<NewCaseRecord>): Promise<CaseRecord> => {
   return db.task(async connection => {
     return connection.tx(async transaction => {
-      const statement = `${pgp.helpers.insert(caseRecord, null, 'Cases')} RETURNING *`;
+      const statement = `${pgp.helpers.insert(
+        {
+          ...pick(caseRecord, VALID_CASE_CREATE_FIELDS),
+          updatedAt: caseRecord.createdAt,
+        },
+        null,
+        'Cases',
+      )} RETURNING *`;
       let inserted: CaseRecord = await transaction.one(statement);
-      if ((caseSections ?? []).length) {
-        const allSections = caseSections.map(s => ({
-          ...s,
-          caseId: inserted.id,
-          accountSid,
-        }));
-        const sectionStatement = `${caseSectionUpsertSql(
-          allSections,
-        )};${selectSingleCaseByIdSql('Cases')}`;
-        const queryValues = { accountSid, workerSid, caseId: inserted.id };
-        inserted = await transaction.one(sectionStatement, queryValues);
+      // eslint-disable-next-line @typescript-eslint/dot-notation
+      if ((caseRecord['caseSections'] ?? []).length) {
+        // No compatibility needed here as flex doesn't create cases with sections
+        console.warn(
+          `[DEPRECATION WARNING] Support for creating case sections with a case has been removed as of HRM v1.15.0. Add case sections using the dedicated case section CRUD endpoints going forward.`,
+        );
       }
 
       return inserted;
@@ -266,7 +263,7 @@ export const deleteById = async (id, accountSid) => {
 
 export const update = async (
   id,
-  caseRecordUpdates: Partial<NewCaseRecord>,
+  caseRecordUpdates: Partial<NewCaseRecord> & { caseSections?: CaseSectionRecord[] },
   accountSid: string,
   workerSid: string,
 ): Promise<CaseRecord> => {
@@ -276,7 +273,10 @@ export const update = async (
       workerSid,
       caseId: id,
     };
-    if (caseRecordUpdates.info) {
+    if (caseRecordUpdates.caseSections) {
+      console.info(
+        `[DEPRECATION WARNING] Support for updating case sections as part of a case update will be removed as of HRM v1.16.0. Update case sections using the dedicated case section CRUD endpoints going forward.`,
+      );
       const allSections: CaseSectionRecord[] = caseRecordUpdates.caseSections ?? [];
       if (allSections.length) {
         await transaction.none(
@@ -323,5 +323,22 @@ export const updateStatus = async (
       ),
     );
     return transaction.oneOrNone(selectSingleCaseByIdSql('Cases'), statementValues);
+  });
+};
+
+export const updateCaseInfo = async (
+  accountSid: string,
+  caseId: CaseRecord['id'],
+  infoPatch: CaseRecord['info'],
+  updatedBy: string,
+) => {
+  return db.tx(async transaction => {
+    return transaction.oneOrNone(PATCH_CASE_INFO_BY_ID, {
+      infoPatch,
+      updatedBy,
+      updatedAt: new Date().toISOString(),
+      accountSid,
+      caseId,
+    });
   });
 };

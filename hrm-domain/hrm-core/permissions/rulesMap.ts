@@ -136,7 +136,7 @@ export type TKCondition<T extends TargetKind> = SupportedTKCondition[T];
 export type TKConditionsSet<T extends TargetKind> = TKCondition<T>[];
 export type TKConditionsSets<T extends TargetKind> = TKConditionsSet<T>[];
 
-type TKAction<T extends TargetKind> = keyof (typeof actionsMaps)[T];
+export type TKAction<T extends TargetKind> = keyof (typeof actionsMaps)[T];
 type ParameterizedCondition = TimeBasedCondition | ProfileSectionSpecificCondition;
 type ExtractSupportedConditionKeys<T extends string | ParameterizedCondition> =
   T extends string ? T : keyof T;

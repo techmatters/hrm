@@ -14,12 +14,10 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import type { AccountSID } from '@tech-matters/types';
-
-export const staticKeyPattern = /^STATIC_KEY_ADMIN_HRM=(?<key>.*)$/im;
-
-export const getAdminV0URL = (
-  internalResourcesUrl: URL,
-  accountSid: AccountSID,
-  path: string,
-) => new URL(`/admin/v0/accounts/${accountSid}${path}`, internalResourcesUrl);
+export const DELETE_CASE_SECTION_BY_ID = `
+  DELETE FROM "CaseSections"
+  WHERE "accountSid" = $<accountSid>
+    AND "caseId" = $<caseId>
+    AND "sectionType" = $<sectionType>
+    AND "sectionId" = $<sectionId>
+  RETURNING *`;

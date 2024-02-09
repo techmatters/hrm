@@ -15,7 +15,7 @@
   "editIncident": [["isSupervisor"], ["isCreator", "isCaseOpen"]],
   "addDocument": [["isSupervisor"], ["isCreator", "isCaseOpen"]],
   "editDocument": [["isSupervisor"], ["isCreator", "isCaseOpen"]],
-  "editCaseSummary": [["isSupervisor"], ["isCreator", "isCaseOpen"]],
+  "editCaseOverview": [["isSupervisor"], ["isCreator", "isCaseOpen"]],
   "editChildIsAtRisk": [["isSupervisor"], ["isCreator", "isCaseOpen"]],
   "editFollowUpDate": [["isSupervisor"], ["isCreator", "isCaseOpen"]],
   "updateCaseContacts": [["isSupervisor"], ["isCaseOpen"]],
