@@ -15,6 +15,7 @@
  */
 
 import { diff, Diff, DiffNew, DiffEdit, DiffArray } from 'deep-diff';
+import { Request } from 'express';
 
 export const actionsMaps = {
   case: {
@@ -34,7 +35,7 @@ export const actionsMaps = {
     EDIT_INCIDENT: 'editIncident',
     ADD_DOCUMENT: 'addDocument',
     EDIT_DOCUMENT: 'editDocument',
-    EDIT_CASE_SUMMARY: 'editCaseSummary',
+    EDIT_CASE_OVERVIEW: 'editCaseOverview',
     EDIT_CHILD_IS_AT_RISK: 'editChildIsAtRisk',
     EDIT_FOLLOW_UP_DATE: 'editFollowUpDate',
     UPDATE_CASE_CONTACTS: 'updateCaseContacts',
@@ -162,8 +163,11 @@ const isEditPerpetrator = isSectionEdit('perpetrators');
 const isEditIncident = isSectionEdit('incidents');
 const isEditDocument = isSectionEdit('documents');
 
-const isEditCaseSummary = (change: Diff<any>) =>
-  isAddOrEditKind(change) && isPathTarget(['info', 'summary'])(change.path);
+const isEditCaseOverview = (change: Diff<any>) =>
+  isAddOrEditKind(change) &&
+  (isPathTarget(['info', 'summary'])(change.path) ||
+    isPathTarget(['info', 'childIsAtRisk'])(change.path) ||
+    isPathTarget(['info', 'followUpDate'])(change.path));
 
 function sectionCompare(a: { createdAt: string }, b: { createdAt: string }) {
   if (a.createdAt < b.createdAt) {
@@ -219,7 +223,7 @@ function sortedSections(original: any): any {
  * @param {*} updated the object with the updated values
  * @returns
  */
-export const getActions = (original: any, updated: any) => {
+export const getActions = (original: any, { body: updated }: Request) => {
   // Filter out the topmost properties not included in the payload to avoid false DELETED_PROPERTY (as we send Partial<Case> from the frontend)
   let partialOriginal: any = Object.keys(updated).reduce(
     (accum, currentKey) =>
@@ -242,6 +246,9 @@ export const getActions = (original: any, updated: any) => {
       // TODO: Deprecate this code when we stop allowing case status to be updated in the general update case endpoint
       // Thw last version of Flex that does this should be v2.12.x - but check first!
       if (isPathTargetsStatus(change.path)) {
+        console.log(
+          '[DEPRECATION WARNING] Case status should not be updated in the general update case endpoint. Please use the dedicated endpoint for updating the case status. Support for updating case status in the general update case endpoint will be removed in HRM v1.16',
+        );
         if (isCloseCase(change)) actions.push(actionsMaps.case.CLOSE_CASE);
         if (isReopenCase(change)) actions.push(actionsMaps.case.REOPEN_CASE);
         if (isCaseStatusTransition(change))
@@ -255,7 +262,7 @@ export const getActions = (original: any, updated: any) => {
         if (isAddPerpetrator(change)) actions.push(actionsMaps.case.ADD_PERPETRATOR);
         if (isAddIncident(change)) actions.push(actionsMaps.case.ADD_INCIDENT);
         if (isAddDocument(change)) actions.push(actionsMaps.case.ADD_DOCUMENT);
-        if (isEditCaseSummary(change)) actions.push(actionsMaps.case.EDIT_CASE_SUMMARY);
+        if (isEditCaseOverview(change)) actions.push(actionsMaps.case.EDIT_CASE_OVERVIEW);
         if (isEditNote(change)) actions.push(actionsMaps.case.EDIT_NOTE);
         if (isEditReferral(change)) actions.push(actionsMaps.case.EDIT_REFERRAL);
         if (isEditHousehold(change)) actions.push(actionsMaps.case.EDIT_HOUSEHOLD);

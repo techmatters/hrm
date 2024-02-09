@@ -32,18 +32,10 @@ test('create case', async () => {
   const caseToBeCreated = createMockCase({
     helpline: 'helpline',
     status: 'open',
-    info: {
-      counsellorNotes: [
-        {
-          note: 'Child with covid-19',
-          twilioWorkerId: workerSid,
-          createdAt: baselineCreatedDate,
-        },
-      ],
-    },
     twilioWorkerId: 'client-assigned-twilio-worker-id',
     createdBy: 'Fake news', // Overwritten by workerSid for User
     accountSid: 'AC-wrong-account-sid', // Overwritten by accountSid for User
+    info: {},
   });
   const expectedCaseDbParameter: NewCaseRecord = {
     ...caseToBeCreated,
@@ -51,28 +43,7 @@ test('create case', async () => {
     createdBy: workerSid,
     createdAt: expect.any(String), // current timestamp
     updatedAt: expect.any(String), // current timestamp
-    info: {
-      counsellorNotes: [
-        {
-          note: 'Child with covid-19',
-          twilioWorkerId: workerSid,
-          createdAt: baselineCreatedDate,
-        },
-      ],
-    },
-    caseSections: [
-      {
-        accountSid: undefined,
-        sectionType: 'note',
-        caseId: undefined,
-        createdBy: workerSid,
-        updatedAt: undefined,
-        updatedBy: undefined,
-        createdAt: expect.any(String),
-        sectionId: expect.any(String),
-        sectionTypeSpecificData: { note: 'Child with covid-19' },
-      },
-    ],
+    info: {},
   };
   // @ts-ignore
   delete expectedCaseDbParameter.id;
@@ -80,41 +51,18 @@ test('create case', async () => {
     ...expectedCaseDbParameter,
     id: 1,
     accountSid,
-    caseSections: [
-      {
-        accountSid,
-        sectionType: 'note',
-        caseId: 1,
-        createdBy: workerSid,
-        createdAt: baselineCreatedDate,
-        sectionId: 'WOULD BE SAME AS INPUT',
-        sectionTypeSpecificData: { note: 'Child with covid-19' },
-      },
-    ],
   };
   const createSpy = jest.spyOn(caseDb, 'create').mockResolvedValue(createdCaseRecord);
 
   const createdCase = await caseApi.createCase(caseToBeCreated, accountSid, workerSid);
   // any worker & account specified on the object should be overwritten with the ones from the user
-  expect(createSpy).toHaveBeenCalledWith(expectedCaseDbParameter, accountSid, workerSid);
+  expect(createSpy).toHaveBeenCalledWith(expectedCaseDbParameter);
   expect(createdCase).toStrictEqual({
     ...caseToBeCreated,
     id: 1,
     categories: {},
     createdBy: workerSid,
     accountSid,
-    info: {
-      ...caseToBeCreated.info,
-      counsellorNotes: [
-        {
-          accountSid,
-          note: 'Child with covid-19',
-          twilioWorkerId: workerSid,
-          createdAt: baselineCreatedDate,
-          id: 'WOULD BE SAME AS INPUT',
-        },
-      ],
-    },
     precalculatedPermissions: {
       userOwnsContact: false,
     },

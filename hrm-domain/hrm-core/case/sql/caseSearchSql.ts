@@ -237,8 +237,8 @@ const SEARCH_WHERE_CLAUSE = `(
 const selectCasesUnorderedSql = (whereClause: string, havingClause: string = '') =>
   `SELECT DISTINCT ON (cases."accountSid", cases.id)
     (count(*) OVER())::INTEGER AS "totalCount",
-    cases.*,
-    contacts."connectedContacts",
+    "cases".*,
+    "contacts"."connectedContacts",
      "contactsOwnedCount"."contactsOwnedByUserCount",
     NULLIF(
       CONCAT(
@@ -247,14 +247,14 @@ const selectCasesUnorderedSql = (whereClause: string, havingClause: string = '')
         contacts."connectedContacts"::JSONB#>>'{0, "rawJson", "childInformation", "name", "lastName"}'
       )
     , ' ') AS "childName",  
-    caseSections."caseSections"
-    FROM "Cases" cases 
+    "caseSections"."caseSections"
+    FROM "Cases" "cases"
     LEFT JOIN LATERAL (${SELECT_CONTACTS}) contacts ON true 
-    LEFT JOIN LATERAL (${SELECT_CASE_SECTIONS}) caseSections ON true
+    LEFT JOIN LATERAL (${SELECT_CASE_SECTIONS}) "caseSections" ON true
     LEFT JOIN LATERAL (
         ${selectContactsOwnedCount('twilioWorkerSid')}
     ) "contactsOwnedCount" ON true
-    ${whereClause} GROUP BY "cases"."accountSid", "cases"."id", caseSections."caseSections", contacts."connectedContacts", "contactsOwnedCount"."contactsOwnedByUserCount" ${havingClause}`;
+    ${whereClause} GROUP BY "cases"."accountSid", "cases"."id", "caseSections"."caseSections", contacts."connectedContacts", "contactsOwnedCount"."contactsOwnedByUserCount" ${havingClause}`;
 
 const selectCasesPaginatedSql = (
   whereClause: string,
