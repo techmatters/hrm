@@ -176,12 +176,15 @@ profilesRouter.get('/flags', publicEndpoint, async (req, res, next) => {
   }
 });
 
-const canAssociate = canPerformActionOnProfileMiddleware('associateProfileToProfileFlag', req => ({
-  accountSid: req.accountSid,
-  can: req.can,
-  profileId: parseInt(req.params.profileId, 10),
-  user: req.user,
-}));
+const canAssociate = canPerformActionOnProfileMiddleware(
+  'associateProfileToProfileFlag',
+  req => ({
+    accountSid: req.accountSid,
+    can: req.can,
+    profileId: parseInt(req.params.profileId, 10),
+    user: req.user,
+  }),
+);
 profilesRouter.post(
   '/:profileId/flags/:profileFlagId',
   canAssociate,
