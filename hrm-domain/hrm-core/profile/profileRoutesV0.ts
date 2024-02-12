@@ -119,7 +119,6 @@ profilesRouter.get(
   },
 );
 
-// TODO: add permissions here
 profilesRouter.get('/:profileId/contacts', publicEndpoint, async (req, res, next) => {
   try {
     const { accountSid } = req;
@@ -141,7 +140,6 @@ profilesRouter.get('/:profileId/contacts', publicEndpoint, async (req, res, next
   }
 });
 
-// TODO: add permissions here
 profilesRouter.get('/:profileId/cases', publicEndpoint, async (req, res, next) => {
   try {
     const { accountSid } = req;
