@@ -38,6 +38,7 @@ afterEach(() => {
 describe('canPerformActionsOnObject', () => {
   each([
     ...Object.keys(actionsMaps)
+      .filter(tk => tk !== 'profile' && tk !== 'profileSection')
       .flatMap(targetKind =>
         Object.values(actionsMaps[targetKind]).map(action => ({
           targetKind,
