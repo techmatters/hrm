@@ -19,7 +19,7 @@ import { Actions, TargetKind, isValidSetOfActionsForTarget } from './actions';
 import { InitializedCan } from './initializeCanForRules';
 import { getContactById } from '../contact/contactService';
 import { getCase as getCaseById } from '../case/caseService';
-// import { assertExhaustive } from '@tech-matters/types';
+import { assertExhaustive } from '@tech-matters/types';
 import {
   getConversationMediaByContactId,
   isS3StoredConversationMedia,
@@ -64,15 +64,21 @@ export const canPerformActionsOnObject = async <T extends TargetKind>({
 
         return newOk({ data: canPerform });
       }
+      case 'profile': {
+        throw new Error('Not implemented');
+      }
+      case 'profileSection': {
+        throw new Error('Not implemented');
+      }
       case 'postSurvey': {
         // Nothing from the target param is being used for postSurvey target kind, we can pass null for now
         const canPerform = actions.every(action => can(user, action, null));
 
         return newOk({ data: canPerform });
       }
-      // default: {
-      //   assertExhaustive(targetKind);
-      // }
+      default: {
+        assertExhaustive(targetKind);
+      }
     }
   } catch (error) {
     return newErr({
@@ -87,15 +93,15 @@ export const isFilesRelatedAction = (targetKind: TargetKind, action: Actions) =>
     case 'contact': {
       return action === 'viewExternalTranscript' || action === 'viewRecording';
     }
-    case 'case': {
-      return false;
-    }
+    case 'case':
+    case 'profile':
+    case 'profileSection':
     case 'postSurvey': {
       return false;
     }
-    // default: {
-    //   assertExhaustive(targetKind);
-    // }
+    default: {
+      assertExhaustive(targetKind);
+    }
   }
 };
 
@@ -129,15 +135,15 @@ export const isValidFileLocation = async ({
 
         return newOk({ data: isValid });
       }
-      case 'case': {
-        return newOk({ data: false });
-      }
+      case 'case':
+      case 'profile':
+      case 'profileSection':
       case 'postSurvey': {
         return newOk({ data: false });
       }
-      // default: {
-      //   assertExhaustive(targetKind);
-      // }
+      default: {
+        assertExhaustive(targetKind);
+      }
     }
   } catch (error) {
     return newErr({

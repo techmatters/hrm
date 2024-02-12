@@ -14,8 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import createError from 'http-errors';
-import { isErr, mapHTTPError } from '@tech-matters/types';
+import { isErr, mapHTTPError, newErr, newOk } from '@tech-matters/types';
 import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import asyncHandler from '../async-handler';
 import { getProfile as getProfileById, getProfileSectionById } from './profileService';
@@ -24,7 +23,31 @@ import type { RequestWithPermissions } from '../permissions';
 import type { InitializedCan } from '../permissions/initializeCanForRules';
 import type { ActionsForTK } from '../permissions/actions';
 
-export const canPerformActionOnProfile = (
+export const canPerformActionOnProfile = async ({
+  accountSid,
+  action,
+  can,
+  profileId,
+  user,
+}: {
+  action: ActionsForTK<'profile'>;
+  accountSid: string;
+  can: InitializedCan;
+  profileId: Profile['id'];
+  user: TwilioUser;
+}) => {
+  const result = await getProfileById()(accountSid, profileId);
+
+  if (isErr(result)) {
+    return result;
+  }
+
+  const isAllowed = can(user, action, result.data);
+
+  return newOk({ data: { isAllowed } });
+};
+
+export const canPerformActionOnProfileMiddleware = (
   action: ActionsForTK<'profile'>,
   parseRequest: (req: RequestWithPermissions) => {
     accountSid: string;
@@ -35,7 +58,14 @@ export const canPerformActionOnProfile = (
 ) =>
   asyncHandler(async (req, _res, next) => {
     const { accountSid, can, profileId, user } = parseRequest(req);
-    const result = await getProfileById()(accountSid, profileId);
+
+    const result = await canPerformActionOnProfile({
+      action,
+      accountSid,
+      can,
+      profileId,
+      user,
+    });
 
     if (isErr(result)) {
       return next(
@@ -43,9 +73,7 @@ export const canPerformActionOnProfile = (
       );
     }
 
-    const isAllowed = can(user, action, result.data);
-
-    if (isAllowed) {
+    if (result.data.isAllowed) {
       req.authorize();
     } else {
       req.unauthorize();
@@ -54,7 +82,45 @@ export const canPerformActionOnProfile = (
     next();
   });
 
-export const canPerformActionOnProfileSection = (
+export const canPerformActionOnProfileSection = async ({
+  accountSid,
+  action,
+  can,
+  profileId,
+  sectionId,
+  user,
+}: {
+  action: ActionsForTK<'profileSection'>;
+  accountSid: string;
+  can: InitializedCan;
+  profileId: Profile['id'];
+  sectionId: ProfileSection['id'] | null;
+  user: TwilioUser;
+}) => {
+  if (sectionId === null && action === 'createProfileSection') {
+    const isAllowed = can(user, action, null);
+    return newOk({ data: { isAllowed } });
+  }
+
+  const result = await getProfileSectionById(accountSid, { profileId, sectionId });
+
+  if (isErr(result)) {
+    return result;
+  }
+
+  if (!result.data) {
+    return newErr({
+      message: `Tried to retrieve profie section with profileId: ${profileId} and sectionId: ${sectionId}, does not exists`,
+      error: 'ProfileSectionNotExists',
+    });
+  }
+
+  const isAllowed = can(user, action, result.data);
+
+  return newOk({ data: { isAllowed } });
+};
+
+export const canPerformActionOnProfileSectionMiddleware = (
   action: ActionsForTK<'profileSection'>,
   parseRequest: (req: RequestWithPermissions) => {
     accountSid: string;
@@ -67,32 +133,25 @@ export const canPerformActionOnProfileSection = (
   asyncHandler(async (req, _res, next) => {
     const { accountSid, can, profileId, sectionId, user } = parseRequest(req);
 
-    if (sectionId === null && action === 'createProfileSection') {
-      const isAllowed = can(user, action, null);
+    const result = await canPerformActionOnProfileSection({
+      accountSid,
+      action,
+      can,
+      profileId,
+      sectionId,
+      user,
+    });
 
-      if (isAllowed) {
-        req.authorize();
-      } else {
-        req.unauthorize();
-      }
+    if (isErr(result)) {
+      return next(
+        mapHTTPError(result, { InternalServerError: 500, ProfileSectionNotExists: 403 }),
+      );
+    }
+
+    if (result.data.isAllowed) {
+      req.authorize();
     } else {
-      const result = await getProfileSectionById(accountSid, { profileId, sectionId });
-
-      if (isErr(result)) {
-        return next(mapHTTPError(result, { InternalServerError: 500 }));
-      }
-
-      if (!result.data) {
-        return next(createError(404));
-      }
-
-      const isAllowed = can(user, action, result.data);
-
-      if (isAllowed) {
-        req.authorize();
-      } else {
-        req.unauthorize();
-      }
+      req.unauthorize();
     }
 
     next();

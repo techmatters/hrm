@@ -23,8 +23,8 @@ import * as profileController from './profileService';
 import { getContactsByProfileId } from '../contact/contactService';
 import { getCasesByProfileId } from '../case/caseService';
 import {
-  canPerformActionOnProfile,
-  canPerformActionOnProfileSection,
+  canPerformActionOnProfileMiddleware,
+  canPerformActionOnProfileSectionMiddleware,
 } from './canPerformProfileAction';
 
 const profilesRouter = SafeRouter();
@@ -176,7 +176,7 @@ profilesRouter.get('/flags', publicEndpoint, async (req, res, next) => {
   }
 });
 
-const canAssociate = canPerformActionOnProfile('associateProfileToProfileFlag', req => ({
+const canAssociate = canPerformActionOnProfileMiddleware('associateProfileToProfileFlag', req => ({
   accountSid: req.accountSid,
   can: req.can,
   profileId: parseInt(req.params.profileId, 10),
@@ -225,7 +225,7 @@ profilesRouter.post(
   },
 );
 
-const canDisassociate = canPerformActionOnProfile(
+const canDisassociate = canPerformActionOnProfileMiddleware(
   'disassociateProfileToProfileFlag',
   req => ({
     accountSid: req.accountSid,
@@ -268,7 +268,7 @@ profilesRouter.delete(
 //     "sectionType": "note"
 //   }'
 
-const canCreateProfileSection = canPerformActionOnProfileSection(
+const canCreateProfileSection = canPerformActionOnProfileSectionMiddleware(
   'createProfileSection',
   req => ({
     accountSid: req.accountSid,
@@ -311,7 +311,7 @@ profilesRouter.post(
 // curl -X POST 'http://localhost:8080/v0/accounts/ACd8a2e89748318adf6ddff7df6948deaf/profiles/5/sections/5' -H 'Content-Type: application/json' -H "Authorization: Bearer " -d '{
 //     "content": "A note bla bla bla",
 //   }'
-const canEditProfileSection = canPerformActionOnProfileSection(
+const canEditProfileSection = canPerformActionOnProfileSectionMiddleware(
   'editProfileSection',
   req => ({
     accountSid: req.accountSid,
@@ -351,7 +351,7 @@ profilesRouter.patch(
   },
 );
 
-const canViewProfileSection = canPerformActionOnProfileSection(
+const canViewProfileSection = canPerformActionOnProfileSectionMiddleware(
   'viewProfileSection',
   req => ({
     accountSid: req.accountSid,
@@ -389,7 +389,7 @@ profilesRouter.get(
   },
 );
 
-const canViewProfile = canPerformActionOnProfile('viewProfile', req => ({
+const canViewProfile = canPerformActionOnProfileMiddleware('viewProfile', req => ({
   accountSid: req.accountSid,
   can: req.can,
   profileId: parseInt(req.params.profileId, 10),
