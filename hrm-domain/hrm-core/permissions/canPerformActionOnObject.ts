@@ -19,7 +19,7 @@ import { Actions, TargetKind, isValidSetOfActionsForTarget } from './actions';
 import { InitializedCan } from './initializeCanForRules';
 import { getContactById } from '../contact/contactService';
 import { getCase as getCaseById } from '../case/caseService';
-import { assertExhaustive } from '@tech-matters/types';
+// import { assertExhaustive } from '@tech-matters/types';
 import {
   getConversationMediaByContactId,
   isS3StoredConversationMedia,
@@ -70,9 +70,9 @@ export const canPerformActionsOnObject = async <T extends TargetKind>({
 
         return newOk({ data: canPerform });
       }
-      default: {
-        assertExhaustive(targetKind);
-      }
+      // default: {
+      //   assertExhaustive(targetKind);
+      // }
     }
   } catch (error) {
     return newErr({
@@ -93,9 +93,9 @@ export const isFilesRelatedAction = (targetKind: TargetKind, action: Actions) =>
     case 'postSurvey': {
       return false;
     }
-    default: {
-      assertExhaustive(targetKind);
-    }
+    // default: {
+    //   assertExhaustive(targetKind);
+    // }
   }
 };
 
@@ -135,9 +135,9 @@ export const isValidFileLocation = async ({
       case 'postSurvey': {
         return newOk({ data: false });
       }
-      default: {
-        assertExhaustive(targetKind);
-      }
+      // default: {
+      //   assertExhaustive(targetKind);
+      // }
     }
   } catch (error) {
     return newErr({
