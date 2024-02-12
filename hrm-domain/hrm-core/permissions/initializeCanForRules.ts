@@ -40,7 +40,7 @@ type ConditionsState = {
 const checkCondition =
   <T extends TargetKind>(conditionsState: ConditionsState) =>
   (condition: TKCondition<T>): boolean => {
-    if (isTimeBasedCondition(condition)) {
+    if (typeof condition === 'object') {
       return conditionsState[JSON.stringify(condition)];
     }
 
