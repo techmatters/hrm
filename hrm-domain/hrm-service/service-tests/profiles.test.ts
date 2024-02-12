@@ -525,7 +525,7 @@ describe('/profiles', () => {
             {
               description: 'profile does not exists',
               profileId: 0,
-              expectStatus: 500,
+              expectStatus: 404,
             },
             {
               description: 'flag does not exists',

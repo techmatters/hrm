@@ -110,8 +110,8 @@ export const canPerformActionOnProfileSection = async ({
 
   if (!result.data) {
     return newErr({
-      message: `Tried to retrieve profie section with profileId: ${profileId} and sectionId: ${sectionId}, does not exists`,
-      error: 'ProfileSectionNotExists',
+      message: `Tried to retrieve profie section with profileId: ${profileId} and sectionId: ${sectionId}, not found`,
+      error: 'ProfileSectionNotFoundError',
     });
   }
 
@@ -144,7 +144,10 @@ export const canPerformActionOnProfileSectionMiddleware = (
 
     if (isErr(result)) {
       return next(
-        mapHTTPError(result, { InternalServerError: 500, ProfileSectionNotExists: 403 }),
+        mapHTTPError(result, {
+          InternalServerError: 500,
+          ProfileSectionNotFoundError: 404,
+        }),
       );
     }
 
