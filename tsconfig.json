@@ -14,6 +14,7 @@
     { "path": "packages/sqs-client" },
     { "path": "packages/twilio-client" },
     { "path": "packages/twilio-worker-auth" },
+    { "path": "packages/service-discovery" },
     { "path": "lambdas/packages/hrm-authentication" },
     { "path": "lambdas/job-complete" },
     { "path": "hrm-domain/lambdas/contact-complete" },
