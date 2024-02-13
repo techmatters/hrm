@@ -19,20 +19,28 @@
 import each from 'jest-each';
 
 import * as caseApi from '@tech-matters/hrm-core/case/caseService';
-import { CaseService } from '@tech-matters/hrm-core/case/caseService';
+import { CaseService, createCase } from '@tech-matters/hrm-core/case/caseService';
 import * as caseDb from '@tech-matters/hrm-core/case/caseDataAccess';
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 
 import * as mocks from '../mocks';
 import { ruleFileWithOnePermittedOrDeniedAction } from '../permissions-overrides';
 import { headers, getRequest, getServer, setRules, useOpenRules } from '../server';
-import { CaseSectionInsert, populateCaseSections } from '../mocks';
+import { ALWAYS_CAN, CaseSectionInsert, populateCaseSections } from '../mocks';
+import { TKConditionsSets } from '@tech-matters/hrm-core/permissions/rulesMap';
+import {
+  connectContactToCase,
+  createContact,
+} from '@tech-matters/hrm-core/contact/contactService';
+import { db } from '@tech-matters/hrm-core/connection-pool';
+import { randomUUID } from 'crypto';
 
 useOpenRules();
 const server = getServer();
 const request = getRequest(server);
 
 const { case1, accountSid, workerSid } = mocks;
+const otherWorkerSid = 'WK-wa-wa-west';
 
 afterAll(done => {
   mockingProxy.stop().finally(() => {
@@ -45,9 +53,8 @@ beforeAll(async () => {
   await mockSuccessfulTwilioAuthentication(workerSid);
 });
 
+const route = `/v0/accounts/${accountSid}/cases`;
 describe('/cases/:id route - PUT', () => {
-  const route = `/v0/accounts/${accountSid}/cases`;
-
   const sectionsMap: Record<string, CaseSectionInsert[]> = {
     note: [
       {
@@ -382,6 +389,185 @@ describe('/cases/:id route - PUT', () => {
 
         expect(permittedResponse.status).toBe(testingDeniedCase ? 401 : 200);
         useOpenRules();
+      },
+    );
+  });
+});
+
+describe('isCaseContactOwner condition', () => {
+  const newCaseDescriptionSet = (user: typeof workerSid | typeof otherWorkerSid) => {
+    const ownerDescription = `case created by ${
+      user === workerSid ? 'this user' : 'other user'
+    }` as const;
+    return [
+      `${ownerDescription}, with no contact`,
+      `${ownerDescription}, with other contact`,
+      `${ownerDescription}, with owned contact`,
+    ] as const;
+  };
+
+  const caseDescriptions = {
+    [workerSid]: newCaseDescriptionSet(workerSid),
+    [otherWorkerSid]: newCaseDescriptionSet(otherWorkerSid),
+  };
+  let sampleCases: CaseService[];
+  beforeEach(async () => {
+    useOpenRules();
+    sampleCases = [];
+    for (const user of [workerSid, otherWorkerSid]) {
+      const newCases = await Promise.all(
+        caseDescriptions[user].map(desc =>
+          createCase({ info: { summary: desc } }, accountSid, user),
+        ),
+      );
+      const [, caseWithOtherContact, caseWithOwnedContact] = newCases;
+      const [ownedContact, otherContact] = await Promise.all(
+        [workerSid, otherWorkerSid].map(contactUser =>
+          createContact(
+            accountSid,
+            'WK-creator-not-relevant',
+            {
+              twilioWorkerId: contactUser,
+              taskId: `TK${randomUUID()}`,
+              rawJson: {
+                categories: {},
+                callerInformation: {},
+                childInformation: {},
+                caseInformation: {},
+                callType: 'x',
+              },
+              queueName: 'buh',
+              conversationDuration: 0,
+            },
+            ALWAYS_CAN,
+          ),
+        ),
+      );
+      await Promise.all([
+        connectContactToCase(
+          accountSid,
+          user,
+          ownedContact.id.toString(),
+          caseWithOwnedContact.id.toString(),
+          ALWAYS_CAN,
+        ),
+        connectContactToCase(
+          accountSid,
+          user,
+          otherContact.id.toString(),
+          caseWithOtherContact.id.toString(),
+          ALWAYS_CAN,
+        ),
+      ]);
+      sampleCases.push(...newCases);
+    }
+  });
+
+  afterEach(async () => {
+    await db.task(async t => {
+      await t.none('DELETE FROM "Contacts"');
+      await t.none('DELETE FROM "Cases"');
+    });
+  });
+
+  test('stub', () => {});
+
+  type TestCase = {
+    permissions: TKConditionsSets<'case'>;
+    expectedPermittedCases: string[];
+  };
+
+  const testCases: TestCase[] = [
+    {
+      permissions: [['everyone']],
+      expectedPermittedCases: Object.values(caseDescriptions).flat(),
+    },
+    {
+      permissions: [['isCaseContactOwner']],
+      expectedPermittedCases: [
+        'case created by other user, with owned contact',
+        'case created by this user, with owned contact',
+      ],
+    },
+    {
+      permissions: [['isCaseContactOwner', 'isCreator']],
+      expectedPermittedCases: ['case created by this user, with owned contact'],
+    },
+    {
+      permissions: [['isCaseContactOwner'], ['isCreator']],
+      expectedPermittedCases: [
+        'case created by other user, with owned contact',
+        'case created by this user, with owned contact',
+        'case created by this user, with no contact',
+        'case created by this user, with other contact',
+      ],
+    },
+    {
+      permissions: [['isCaseContactOwner', 'isSupervisor']],
+      expectedPermittedCases: [],
+    },
+    {
+      permissions: [['isCaseContactOwner'], ['isSupervisor']],
+      expectedPermittedCases: [
+        'case created by other user, with owned contact',
+        'case created by this user, with owned contact',
+      ],
+    },
+  ];
+
+  describe('/cases/:id route - GET', () => {
+    const testCasesWithDescriptions = testCases.map(tc => ({
+      ...tc,
+      description: `cases ${tc.expectedPermittedCases
+        .map(desc => `[${desc}]`)
+        .join(', ')} should be permitted when VIEW_CASE permissions are ${JSON.stringify(
+        tc.permissions,
+      )}`,
+    }));
+    each(testCasesWithDescriptions).test(
+      '$description',
+      async ({ permissions, expectedPermittedCases }: TestCase) => {
+        const subRoute = id => `${route}/${id}`;
+        setRules({ viewCase: permissions });
+        const responses = await Promise.all(
+          sampleCases.map(async c => request.get(subRoute(c.id)).set(headers)),
+        );
+        const permitted = responses
+          .filter(({ status }) => {
+            if (status === 200) return true;
+            expect(status).toBe(404);
+            return false;
+          })
+          .map(r => r.body);
+        expect(permitted.map(p => p.info.summary).sort()).toEqual(
+          expectedPermittedCases.sort(),
+        );
+      },
+    );
+  });
+  describe('cases/search route - POST', () => {
+    const testCasesWithDescriptions = testCases.map(tc => ({
+      ...tc,
+      description: `cases ${tc.expectedPermittedCases
+        .map(desc => `[${desc}]`)
+        .join(
+          ', ',
+        )} should be returned in searches when VIEW_CASE permissions are ${JSON.stringify(
+        tc.permissions,
+      )}`,
+    }));
+    each(testCasesWithDescriptions).test(
+      '$description',
+      async ({ permissions, expectedPermittedCases }: TestCase) => {
+        setRules({ viewCase: permissions });
+        const expectedIds = expectedPermittedCases.sort();
+        const {
+          body: { cases, count },
+          status,
+        } = await request.post(`${route}/search`).set(headers);
+        expect(status).toBe(200);
+        expect(cases.map(c => c.info.summary).sort()).toEqual(expectedIds);
+        expect(count).toBe(expectedPermittedCases.length);
       },
     );
   });

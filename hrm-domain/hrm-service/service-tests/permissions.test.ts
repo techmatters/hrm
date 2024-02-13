@@ -207,7 +207,7 @@ describe('/permissions/:action route with contact objectType', () => {
           testCase.shouldHavePermission && testCase.shouldBeValid ? 200 : 403,
       })),
   ).test(
-    'when action is $action, parmissions validity is $shouldHavePermission, location validity is $shouldBeValid - then expect $expectedStatusCode',
+    'when action is $action, permissions validity is $shouldHavePermission, location validity is $shouldBeValid - then expect $expectedStatusCode',
     // eslint-disable-next-line @typescript-eslint/no-shadow
     async ({ action, accountSid, bucket, key, expectedStatusCode }) => {
       const contact = createdContacts[accountSid];
