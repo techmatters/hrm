@@ -26,6 +26,7 @@ import {
 } from './rulesMap';
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { differenceInDays, differenceInHours, parseISO } from 'date-fns';
+import { CaseService } from '../case/caseService';
 
 type ConditionsState = {
   [k: string]: boolean;
@@ -106,10 +107,12 @@ const setupAllow = <T extends TargetKind>(
 
     // Build the proper conditionsState depending on the targetKind
     if (kind === 'case') {
+      const targetCase = target as CaseService;
       const conditionsState: ConditionsState = {
         isSupervisor: performer.isSupervisor,
         isCreator: isCounselorWhoCreated(performer, target),
-        isCaseOpen: isCaseOpen(target),
+        isCaseOpen: isCaseOpen(targetCase),
+        isCaseContactOwner: Boolean(targetCase.precalculatedPermissions?.userOwnsContact),
         everyone: true,
         ...appliedTimeBasedConditions,
       };

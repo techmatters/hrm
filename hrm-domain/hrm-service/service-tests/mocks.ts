@@ -288,7 +288,7 @@ export const populateCaseSections = async (
       );
       // Ensure timestamps are in creation order & there are no collisions
       // eslint-disable-next-line @typescript-eslint/no-loop-func
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise(resolve => setTimeout(resolve, 10));
     }
   }
   return getCase(parseInt(caseId), caseAccountSid, ALWAYS_CAN);
