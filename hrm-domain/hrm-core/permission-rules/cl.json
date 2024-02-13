@@ -28,8 +28,8 @@
   "removeContactFromCase": [["everyone"]],
 
   "viewProfile": [],
-  "associateProfileToProfileFlag": [],
-  "disassociateProfileToProfileFlag": [],
+  "flagProfile": [],
+  "unflagProfile": [],
   "createProfileSection": [],
   "viewProfileSection": [],
   "editProfileSection": [],

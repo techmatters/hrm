@@ -18,7 +18,7 @@ import { isErr, mapHTTPError } from '@tech-matters/types';
 import createError from 'http-errors';
 import { isValid, parseISO } from 'date-fns';
 
-import { SafeRouter, publicEndpoint } from '../permissions';
+import { SafeRouter, actionsMaps, publicEndpoint } from '../permissions';
 import * as profileController from './profileService';
 import { getContactsByProfileId } from '../contact/contactService';
 import { getCasesByProfileId } from '../case/caseService';
@@ -175,7 +175,7 @@ profilesRouter.get('/flags', publicEndpoint, async (req, res, next) => {
 });
 
 const canAssociate = canPerformActionOnProfileMiddleware(
-  'associateProfileToProfileFlag',
+  actionsMaps.profile.FLAG_PROFILE,
   req => ({
     accountSid: req.accountSid,
     can: req.can,
@@ -227,7 +227,7 @@ profilesRouter.post(
 );
 
 const canDisassociate = canPerformActionOnProfileMiddleware(
-  'disassociateProfileToProfileFlag',
+  actionsMaps.profile.UNFLAG_PROFILE,
   req => ({
     accountSid: req.accountSid,
     can: req.can,
@@ -270,7 +270,7 @@ profilesRouter.delete(
 //   }'
 
 const canCreateProfileSection = canPerformActionOnProfileSectionMiddleware(
-  'createProfileSection',
+  actionsMaps.profileSection.CREATE_PROFILE_SECTION,
   req => ({
     accountSid: req.accountSid,
     can: req.can,
@@ -313,7 +313,7 @@ profilesRouter.post(
 //     "content": "A note bla bla bla",
 //   }'
 const canEditProfileSection = canPerformActionOnProfileSectionMiddleware(
-  'editProfileSection',
+  actionsMaps.profileSection.EDIT_PROFILE_SECTION,
   req => ({
     accountSid: req.accountSid,
     can: req.can,
@@ -353,7 +353,7 @@ profilesRouter.patch(
 );
 
 const canViewProfileSection = canPerformActionOnProfileSectionMiddleware(
-  'viewProfileSection',
+  actionsMaps.profileSection.VIEW_PROFILE_SECTION,
   req => ({
     accountSid: req.accountSid,
     can: req.can,
@@ -390,12 +390,15 @@ profilesRouter.get(
   },
 );
 
-const canViewProfile = canPerformActionOnProfileMiddleware('viewProfile', req => ({
-  accountSid: req.accountSid,
-  can: req.can,
-  profileId: parseInt(req.params.profileId, 10),
-  user: req.user,
-}));
+const canViewProfile = canPerformActionOnProfileMiddleware(
+  actionsMaps.profile.VIEW_PROFILE,
+  req => ({
+    accountSid: req.accountSid,
+    can: req.can,
+    profileId: parseInt(req.params.profileId, 10),
+    user: req.user,
+  }),
+);
 // WARNING: this endpoint MUST be the last one in this router, because it will be used if none of the above regex matches the path
 profilesRouter.get('/:profileId', canViewProfile, async (req, res, next) => {
   try {

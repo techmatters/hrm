@@ -28,8 +28,8 @@
   "removeContactFromCase": [["isSupervisor"], ["isOwner"]],
   
   "viewProfile": [["everyone"]],
-  "associateProfileToProfileFlag": [["everyone"]],
-  "disassociateProfileToProfileFlag": [["everyone"]],
+  "flagProfile": [["everyone"]],
+  "unflagProfile": [["everyone"]],
   "createProfileSection": [["everyone"]],
   "viewProfileSection": [["everyone", { "sectionType": "summary" }], ["isSupervisor"]],
   "editProfileSection": [["everyone", { "sectionType": "summary" }], ["isSupervisor"]],

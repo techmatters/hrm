@@ -58,8 +58,8 @@ export const actionsMaps = {
   profile: {
     VIEW_PROFILE: 'viewProfile',
     // EDIT_PROFILE: 'editProfile', // we don't need edit for now, will be needed when users can attach more identifiers or edit the name
-    ASSOCIATE_PROFILE_TO_PROFILE_FLAG: 'associateProfileToProfileFlag',
-    DISASSOCIATE_PROFILE_TO_PROFILE_FLAG: 'disassociateProfileToProfileFlag',
+    FLAG_PROFILE: 'flagProfile',
+    UNFLAG_PROFILE: 'unflagProfile',
   },
   profileSection: {
     CREATE_PROFILE_SECTION: 'createProfileSection',
