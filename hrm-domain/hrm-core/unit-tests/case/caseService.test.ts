@@ -87,6 +87,18 @@ describe('searchCases', () => {
         },
       ],
     },
+    sections: {
+      note: [
+        {
+          createdBy: 'contact-adder',
+          sectionId: 'NOTE_1',
+          createdAt: baselineCreatedDate,
+          sectionTypeSpecificData: {
+            note: 'Child with covid-19',
+          },
+        },
+      ],
+    },
     twilioWorkerId: 'twilio-worker-id',
     connectedContacts: [
       {
@@ -143,25 +155,10 @@ describe('searchCases', () => {
     ],
   });
 
-  const caseWithoutContact = createMockCase({
-    accountSid,
-    id: caseId,
-    helpline: 'helpline',
-    status: 'open',
-    info: {
-      counsellorNotes: [
-        {
-          accountSid,
-          note: 'Child with covid-19',
-          twilioWorkerId: 'contact-adder',
-          id: 'NOTE_1',
-          createdAt: baselineCreatedDate,
-        },
-      ],
-    },
-    twilioWorkerId: 'twilio-worker-id',
+  const caseWithoutContact = {
+    ...caseWithContact,
     connectedContacts: [],
-  });
+  };
 
   const caseRecordWithoutContact = createMockCaseRecord({
     id: caseId,
@@ -420,6 +417,19 @@ describe('update existing case', () => {
               custom: 'data',
               twilioWorkerId: 'contact-updater',
               id: expect.anything(),
+              createdAt: expect.toParseAsDate(),
+            },
+          ],
+        },
+        sections: {
+          note: [
+            {
+              sectionTypeSpecificData: {
+                note: 'Refugee Child',
+                custom: 'data',
+              },
+              createdBy: 'contact-updater',
+              sectionId: expect.anything(),
               createdAt: expect.toParseAsDate(),
             },
           ],

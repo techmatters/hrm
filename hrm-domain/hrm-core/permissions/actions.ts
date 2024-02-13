@@ -36,8 +36,6 @@ export const actionsMaps = {
     ADD_DOCUMENT: 'addDocument',
     EDIT_DOCUMENT: 'editDocument',
     EDIT_CASE_OVERVIEW: 'editCaseOverview',
-    EDIT_CHILD_IS_AT_RISK: 'editChildIsAtRisk',
-    EDIT_FOLLOW_UP_DATE: 'editFollowUpDate',
     UPDATE_CASE_CONTACTS: 'updateCaseContacts',
   },
   contact: {

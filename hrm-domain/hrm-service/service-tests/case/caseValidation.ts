@@ -36,7 +36,8 @@ export const convertCaseInfoToExpectedInfo = (
   accountSid: string | null = null,
 ): CaseService => {
   if (!input || !input.info) return { ...input } as CaseService;
-  const expectedCase = {
+  const expectedCase: Partial<CaseService> = {
+    sections: {},
     ...input,
     info: { ...input.info },
   };

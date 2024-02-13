@@ -73,6 +73,7 @@ export const createMockCase = (partial: Partial<CaseService>): CaseService => {
     {
       ...record,
       categories: {},
+      sections: {},
     },
     partial,
   );

@@ -50,6 +50,8 @@ import { pick } from 'lodash';
 const CASE_OVERVIEW_PROPERTIES = ['summary', 'followUpDate', 'childIsAtRisk'] as const;
 type CaseOverviewProperties = (typeof CASE_OVERVIEW_PROPERTIES)[number];
 
+type CaseSection = Omit<CaseSectionRecord, 'accountSid' | 'sectionType' | 'caseId'>;
+
 type CaseInfoSection = {
   id: string;
   twilioWorkerId: string;
@@ -65,10 +67,7 @@ const getSectionSpecificDataFromNotesOrReferrals = (
   return sectionSpecificData;
 };
 
-export const WELL_KNOWN_CASE_SECTION_NAMES: Record<
-  string,
-  { sectionTypeName: string; getSectionSpecificData: (section: any) => any }
-> = {
+export const WELL_KNOWN_CASE_SECTION_NAMES = {
   households: { getSectionSpecificData: s => s.household, sectionTypeName: 'household' },
   perpetrators: {
     getSectionSpecificData: s => s.perpetrator,
@@ -84,7 +83,7 @@ export const WELL_KNOWN_CASE_SECTION_NAMES: Record<
     sectionTypeName: 'referral',
   },
   documents: { getSectionSpecificData: s => s.document, sectionTypeName: 'document' },
-};
+} as const;
 
 type PrecalculatedPermissions = Record<'userOwnsContact', boolean>;
 
@@ -94,6 +93,9 @@ export type CaseService = CaseRecordCommon & {
   categories: Record<string, string[]>;
   precalculatedPermissions?: PrecalculatedPermissions;
   connectedContacts?: Contact[];
+  sections: {
+    [k in (typeof WELL_KNOWN_CASE_SECTION_NAMES)[keyof typeof WELL_KNOWN_CASE_SECTION_NAMES]['sectionTypeName']]?: CaseSection[];
+  };
 };
 
 type CaseServiceUpdate = Partial<CaseService> & Pick<CaseService, 'updatedBy'>;
@@ -162,6 +164,7 @@ const addCategories = (caseItem: CaseRecord) => {
 
 /**
  * Converts a case passed in from the API to a case record ready to write to the DB
+ * Code to convert sections to section records is deprecated and should be removed in v1.16
  * @param inputCase
  * @param workerSid
  */
@@ -212,6 +215,7 @@ const caseRecordToCase = (record: CaseRecord): CaseService => {
 
   const { caseSections, contactsOwnedByUserCount, ...output } = addCategories({
     ...record,
+    // Deprecated, remove in v1.16
     info: {
       ...info,
       ...caseSectionRecordsToInfo(record.caseSections),
@@ -220,6 +224,16 @@ const caseRecordToCase = (record: CaseRecord): CaseService => {
 
   return {
     ...output,
+    // Separate case sections by type
+    sections: (record.caseSections ?? []).reduce(
+      (sections, sectionRecord) => {
+        const { sectionType, caseId, accountSid, ...restOfSection } = sectionRecord;
+        sections[sectionType] = sections[sectionType] ?? [];
+        sections[sectionType].push(restOfSection);
+        return sections;
+      },
+      {} as CaseService['sections'],
+    ),
     precalculatedPermissions: { userOwnsContact: contactsOwnedByUserCount > 0 },
   };
 };
