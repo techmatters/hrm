@@ -284,7 +284,7 @@ describe('/contacts/:contactId/conversationMedia route', () => {
           finalizedAt: expect.toParseAsDate(),
           updatedAt: expect.toParseAsDate(),
           timeOfContact: expect.toParseAsDate(),
-          conversationMedia: fullExpectedContactMedia,
+          conversationMedia: expect.arrayContaining(fullExpectedContactMedia),
         };
 
         const response = await request
@@ -300,6 +300,9 @@ describe('/contacts/:contactId/conversationMedia route', () => {
           .send(postedMedia);
         expect(checkResponse.status).toBe(200);
         expect(checkResponse.body).toEqual(expectedResponse);
+        expect(checkResponse.body.conversationMedia.length).toEqual(
+          fullExpectedContactMedia.length,
+        );
       },
     );
 
