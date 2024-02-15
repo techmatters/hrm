@@ -20,9 +20,16 @@ import createError from 'http-errors';
 import { actionsMaps, getActions } from '../permissions';
 import { Request } from 'express';
 
+/**
+ * Generic function to check if the user can perform an action on a case.
+ * @param generateActions - Function to generate the actions to be checked based on the case as it currently exists in the DB and the request.
+ * @param getCaseIdFromRequest - Function to get the case ID from the request if it is not tokenised as :id in the route.
+ * @param notFoundIfNotPermitted - If true, it will throw a 404 error if the user is not permitted to perform the action, use for read requests to prevent information leakage.
+ */
 export const canPerformCaseAction = (
   generateActions: (caseObj: CaseService, req: Request) => any[],
   getCaseIdFromRequest: (req: any) => number = req => req.params.id,
+  notFoundIfNotPermitted = false,
 ) =>
   asyncHandler(async (req, res, next) => {
     if (!req.isAuthorized()) {
@@ -39,6 +46,7 @@ export const canPerformCaseAction = (
       if (canEdit) {
         req.authorize();
       } else {
+        if (notFoundIfNotPermitted) throw createError(404);
         req.unauthorize();
       }
     }
@@ -55,7 +63,11 @@ export const canEditCase = canPerformCaseAction(getActions);
 /**
  * It checks if the user can view the case according to the defined permission rules.
  */
-export const canViewCase = canPerformCaseAction(() => [actionsMaps.case.VIEW_CASE]);
+export const canViewCase = canPerformCaseAction(
+  () => [actionsMaps.case.VIEW_CASE],
+  req => req.params.id,
+  true,
+);
 
 export const canUpdateCaseStatus = canPerformCaseAction(
   ({ status: savedStatus }, { body: { status: updatedStatus } }) => {

@@ -51,7 +51,7 @@ const canPerformActionOnContact = (
           // This is a dirty hack that relies on the catch block in the try/catch below to return a 404
           throw new Error('contact not found');
         }
-        if (contactObj.finalizedAt) {
+        if (contactObj.finalizedAt || action !== 'editContact') {
           if (can(user, action, contactObj)) {
             await authorizeIfAdditionalValidationPasses(
               req,
@@ -108,10 +108,7 @@ const canPerformActionOnContact = (
           }
         }
       } catch (err) {
-        if (
-          err instanceof Error &&
-          err.message.toLowerCase().includes('contact not found')
-        ) {
+        if (err instanceof Error && err.message.toLowerCase().includes('not found')) {
           throw createError(404);
         } else {
           console.error('Failed to authorize contact editing', err);

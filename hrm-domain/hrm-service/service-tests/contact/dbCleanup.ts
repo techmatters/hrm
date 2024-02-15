@@ -69,3 +69,25 @@ export const deleteJobsByContactId = (contactId: number, accountSid: string) =>
       WHERE "contactId" = ${contactId} AND "accountSid" = '${accountSid}';
     `),
   );
+
+export const fullClearDown = async () =>
+  db.task(async t => {
+    await t.none(`
+      DELETE FROM "ContactJobs"
+    `);
+    await t.none(`
+      DELETE FROM "CSAMReports"
+    `);
+    await t.none(`
+      DELETE FROM "Referrals"
+    `);
+    await t.none(`
+      DELETE FROM "Contacts"
+    `);
+    await t.none(`
+      DELETE FROM "CaseSections"
+    `);
+    await t.none(`
+      DELETE FROM "Cases"
+    `);
+  });

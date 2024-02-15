@@ -69,15 +69,15 @@ describe('canViewCase', () => {
     expect(next).toHaveBeenCalled();
   });
 
-  test('Case found & can returns false - unauthorizes', async () => {
+  test('Case found & can returns false - not found', async () => {
     const caseObj = {} as CaseService;
     mockGetCase.mockResolvedValueOnce(caseObj);
     req.can.mockReturnValueOnce(false);
     await canViewCase(req, {}, next);
     expect(req.can).toHaveBeenCalledWith(req.user, actionsMaps.case.VIEW_CASE, caseObj);
-    expect(createError).not.toHaveBeenCalled();
+    expect(createError).toHaveBeenCalledWith(404);
     expect(req.authorize).not.toHaveBeenCalled();
-    expect(req.unauthorize).toHaveBeenCalled();
+    expect(req.unauthorize).not.toHaveBeenCalled();
     expect(next).toHaveBeenCalled();
   });
 });
