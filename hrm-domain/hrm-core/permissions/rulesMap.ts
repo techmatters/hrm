@@ -40,7 +40,9 @@ const zaRules = require('../permission-rules/za.json');
 const zmRules = require('../permission-rules/zm.json');
 const zwRules = require('../permission-rules/zw.json');
 
+import { assertExhaustive } from '@tech-matters/types';
 import { actionsMaps, Actions, TargetKind, isTargetKind } from './actions';
+import type { ProfileSection } from '../profile/profileDataAccess';
 
 const timeBasedConditions = ['createdHoursAgo', 'createdDaysAgo'] as const;
 export type TimeBasedCondition = { [K in (typeof timeBasedConditions)[number]]: number };
@@ -72,6 +74,22 @@ export type CaseSpecificCondition = (typeof caseSpecificConditions)[number];
 const isCaseSpecificCondition = (c: any): c is CaseSpecificCondition =>
   typeof c === 'string' && caseSpecificConditions.includes(c as any);
 
+// const profileSectionSpecificConditions = ['sectionType'] as const;
+export type ProfileSectionSpecificCondition = {
+  sectionType: ProfileSection['sectionType'];
+};
+
+export const isProfileSectionSpecificCondition = (
+  c: any,
+): c is ProfileSectionSpecificCondition => {
+  if (typeof c === 'object') {
+    const [[cond, param]] = Object.entries(c);
+    return cond === 'sectionType' && typeof param === 'string';
+  }
+
+  return false;
+};
+
 type SupportedContactCondition =
   | TimeBasedCondition
   | UserBasedCondition
@@ -86,6 +104,21 @@ type SupportedCaseCondition =
 const isSupportedCaseCondition = (c: any): c is SupportedCaseCondition =>
   isTimeBasedCondition(c) || isUserBasedCondition(c) || isCaseSpecificCondition(c);
 
+type SupportedProfileCondition = TimeBasedCondition | UserBasedCondition;
+const isSupportedProfileCondition = (c: any): c is SupportedProfileCondition =>
+  isTimeBasedCondition(c) || isUserBasedCondition(c);
+
+type SupportedProfileSectionCondition =
+  | TimeBasedCondition
+  | UserBasedCondition
+  | ProfileSectionSpecificCondition;
+const isSupportedProfileSectionCondition = (
+  c: any,
+): c is SupportedProfileSectionCondition =>
+  isTimeBasedCondition(c) ||
+  isUserBasedCondition(c) ||
+  isProfileSectionSpecificCondition(c);
+
 type SupportedPostSurveyCondition = TimeBasedCondition | UserBasedCondition;
 const isSupportedPostSurveyCondition = (c: any): c is SupportedPostSurveyCondition =>
   isTimeBasedCondition(c) || isUserBasedCondition(c);
@@ -94,6 +127,8 @@ const isSupportedPostSurveyCondition = (c: any): c is SupportedPostSurveyConditi
 type SupportedTKCondition = {
   contact: SupportedContactCondition;
   case: SupportedCaseCondition;
+  profile: SupportedProfileCondition;
+  profileSection: SupportedProfileSectionCondition;
   postSurvey: SupportedPostSurveyCondition;
 };
 
@@ -102,18 +137,22 @@ export type TKConditionsSet<T extends TargetKind> = TKCondition<T>[];
 export type TKConditionsSets<T extends TargetKind> = TKConditionsSet<T>[];
 
 export type TKAction<T extends TargetKind> = keyof (typeof actionsMaps)[T];
+type ParameterizedCondition = TimeBasedCondition | ProfileSectionSpecificCondition;
+type ExtractSupportedConditionKeys<T extends string | ParameterizedCondition> =
+  T extends string ? T : keyof T;
 
 type UnsupportedActionConditions = {
   [TK in TargetKind]?: {
-    [K in TKAction<TK>]?: (
-      | Exclude<SupportedTKCondition[TK], TimeBasedCondition>
-      | keyof TimeBasedCondition
-    )[];
+    [K in TKAction<TK>]?: ExtractSupportedConditionKeys<SupportedTKCondition[TK]>[];
   };
 };
+
 const unsupportedActionConditions: UnsupportedActionConditions = {
   case: {
     VIEW_CASE: ['createdDaysAgo', 'createdHoursAgo'],
+  },
+  profileSection: {
+    CREATE_PROFILE_SECTION: ['sectionType'],
   },
 };
 
@@ -127,7 +166,7 @@ const isConditionSupported = <T extends TargetKind>(
     return true;
   }
 
-  if (isTimeBasedCondition(condition)) {
+  if (typeof condition === 'object') {
     return !Object.keys(condition).some(key => unsupportedConditions.includes(key));
   }
 
@@ -148,11 +187,17 @@ const isTKCondition =
       case 'case': {
         return isSupportedCaseCondition(c);
       }
+      case 'profile': {
+        return isSupportedProfileCondition(c);
+      }
+      case 'profileSection': {
+        return isSupportedProfileSectionCondition(c);
+      }
       case 'postSurvey': {
         return isSupportedPostSurveyCondition(c);
       }
       default: {
-        return false;
+        assertExhaustive(kind);
       }
     }
   };

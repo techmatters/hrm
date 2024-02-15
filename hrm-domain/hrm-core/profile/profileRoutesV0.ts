@@ -18,10 +18,14 @@ import { isErr, mapHTTPError } from '@tech-matters/types';
 import createError from 'http-errors';
 import { isValid, parseISO } from 'date-fns';
 
-import { SafeRouter, publicEndpoint } from '../permissions';
-import * as profileController from './profile';
+import { SafeRouter, actionsMaps, publicEndpoint } from '../permissions';
+import * as profileController from './profileService';
 import { getContactsByProfileId } from '../contact/contactService';
 import { getCasesByProfileId } from '../case/caseService';
+import {
+  canPerformActionOnProfileMiddleware,
+  canPerformActionOnProfileSectionMiddleware,
+} from './canPerformProfileAction';
 
 const profilesRouter = SafeRouter();
 
@@ -170,9 +174,18 @@ profilesRouter.get('/flags', publicEndpoint, async (req, res, next) => {
   }
 });
 
+const canAssociate = canPerformActionOnProfileMiddleware(
+  actionsMaps.profile.FLAG_PROFILE,
+  req => ({
+    accountSid: req.accountSid,
+    can: req.can,
+    profileId: parseInt(req.params.profileId, 10),
+    user: req.user,
+  }),
+);
 profilesRouter.post(
   '/:profileId/flags/:profileFlagId',
-  publicEndpoint,
+  canAssociate,
   async (req, res, next) => {
     try {
       const { accountSid } = req;
@@ -213,9 +226,18 @@ profilesRouter.post(
   },
 );
 
+const canDisassociate = canPerformActionOnProfileMiddleware(
+  actionsMaps.profile.UNFLAG_PROFILE,
+  req => ({
+    accountSid: req.accountSid,
+    can: req.can,
+    profileId: parseInt(req.params.profileId, 10),
+    user: req.user,
+  }),
+);
 profilesRouter.delete(
   '/:profileId/flags/:profileFlagId',
-  publicEndpoint,
+  canDisassociate,
   async (req, res, next) => {
     try {
       const { accountSid } = req;
@@ -246,38 +268,63 @@ profilesRouter.delete(
 //     "content": "A note bla bla bla",
 //     "sectionType": "note"
 //   }'
-profilesRouter.post('/:profileId/sections', publicEndpoint, async (req, res, next) => {
-  try {
-    const { accountSid, user } = req;
-    const { profileId } = req.params;
-    const { content, sectionType } = req.body;
 
-    const result = await profileController.createProfileSection(
-      accountSid,
-      { content, profileId, sectionType },
-      { user },
-    );
+const canCreateProfileSection = canPerformActionOnProfileSectionMiddleware(
+  actionsMaps.profileSection.CREATE_PROFILE_SECTION,
+  req => ({
+    accountSid: req.accountSid,
+    can: req.can,
+    profileId: parseInt(req.params.profileId, 10),
+    sectionId: null,
+    user: req.user,
+  }),
+);
+profilesRouter.post(
+  '/:profileId/sections',
+  canCreateProfileSection,
+  async (req, res, next) => {
+    try {
+      const { accountSid, user } = req;
+      const { profileId } = req.params;
+      const { content, sectionType } = req.body;
 
-    if (isErr(result)) {
-      return next(mapHTTPError(result, { InternalServerError: 500 }));
+      const result = await profileController.createProfileSection(
+        accountSid,
+        { content, profileId, sectionType },
+        { user },
+      );
+
+      if (isErr(result)) {
+        return next(mapHTTPError(result, { InternalServerError: 500 }));
+      }
+
+      if (!result.data) {
+        return next(createError(404));
+      }
+
+      res.json(result.data);
+    } catch (err) {
+      return next(createError(500, err.message));
     }
-
-    if (!result.data) {
-      return next(createError(404));
-    }
-
-    res.json(result.data);
-  } catch (err) {
-    return next(createError(500, err.message));
-  }
-});
+  },
+);
 
 // curl -X POST 'http://localhost:8080/v0/accounts/ACd8a2e89748318adf6ddff7df6948deaf/profiles/5/sections/5' -H 'Content-Type: application/json' -H "Authorization: Bearer " -d '{
 //     "content": "A note bla bla bla",
 //   }'
+const canEditProfileSection = canPerformActionOnProfileSectionMiddleware(
+  actionsMaps.profileSection.EDIT_PROFILE_SECTION,
+  req => ({
+    accountSid: req.accountSid,
+    can: req.can,
+    profileId: parseInt(req.params.profileId, 10),
+    sectionId: parseInt(req.params.sectionId, 10),
+    user: req.user,
+  }),
+);
 profilesRouter.patch(
   '/:profileId/sections/:sectionId',
-  publicEndpoint,
+  canEditProfileSection,
   async (req, res, next) => {
     try {
       const { accountSid, user } = req;
@@ -305,9 +352,19 @@ profilesRouter.patch(
   },
 );
 
+const canViewProfileSection = canPerformActionOnProfileSectionMiddleware(
+  actionsMaps.profileSection.VIEW_PROFILE_SECTION,
+  req => ({
+    accountSid: req.accountSid,
+    can: req.can,
+    profileId: parseInt(req.params.profileId, 10),
+    sectionId: parseInt(req.params.sectionId, 10),
+    user: req.user,
+  }),
+);
 profilesRouter.get(
   '/:profileId/sections/:sectionId',
-  publicEndpoint,
+  canViewProfileSection,
   async (req, res, next) => {
     try {
       const { accountSid } = req;
@@ -333,8 +390,17 @@ profilesRouter.get(
   },
 );
 
+const canViewProfile = canPerformActionOnProfileMiddleware(
+  actionsMaps.profile.VIEW_PROFILE,
+  req => ({
+    accountSid: req.accountSid,
+    can: req.can,
+    profileId: parseInt(req.params.profileId, 10),
+    user: req.user,
+  }),
+);
 // WARNING: this endpoint MUST be the last one in this router, because it will be used if none of the above regex matches the path
-profilesRouter.get('/:profileId', publicEndpoint, async (req, res, next) => {
+profilesRouter.get('/:profileId', canViewProfile, async (req, res, next) => {
   try {
     const { accountSid } = req;
     const { profileId } = req.params;

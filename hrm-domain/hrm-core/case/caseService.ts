@@ -40,7 +40,7 @@ import type { Contact } from '../contact/contactDataAccess';
 import { InitializedCan } from '../permissions/initializeCanForRules';
 import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { bindApplyTransformations as bindApplyContactTransformations } from '../contact/contactService';
-import type { Profile } from '../profile/profile-data-access';
+import type { Profile } from '../profile/profileDataAccess';
 import type { PaginationQuery } from '../search';
 import { TResult, newErr, newOk } from '@tech-matters/types';
 import { RulesFile, TKConditionsSets } from '../permissions/rulesMap';

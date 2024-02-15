@@ -64,6 +64,12 @@ export const canPerformActionsOnObject = async <T extends TargetKind>({
 
         return newOk({ data: canPerform });
       }
+      case 'profile': {
+        throw new Error('Not implemented');
+      }
+      case 'profileSection': {
+        throw new Error('Not implemented');
+      }
       case 'postSurvey': {
         // Nothing from the target param is being used for postSurvey target kind, we can pass null for now
         const canPerform = actions.every(action => can(user, action, null));
@@ -87,9 +93,9 @@ export const isFilesRelatedAction = (targetKind: TargetKind, action: Actions) =>
     case 'contact': {
       return action === 'viewExternalTranscript' || action === 'viewRecording';
     }
-    case 'case': {
-      return false;
-    }
+    case 'case':
+    case 'profile':
+    case 'profileSection':
     case 'postSurvey': {
       return false;
     }
@@ -129,9 +135,9 @@ export const isValidFileLocation = async ({
 
         return newOk({ data: isValid });
       }
-      case 'case': {
-        return newOk({ data: false });
-      }
+      case 'case':
+      case 'profile':
+      case 'profileSection':
       case 'postSurvey': {
         return newOk({ data: false });
       }
