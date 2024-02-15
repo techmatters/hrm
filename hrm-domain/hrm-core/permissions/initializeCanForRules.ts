@@ -102,6 +102,8 @@ const applyProfileSectionSpecificConditions =
             [key]: target.sectionType === param,
           };
         }
+
+        return accum;
       }, {});
 
 const setupAllow = <T extends TargetKind>(
