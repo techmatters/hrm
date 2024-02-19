@@ -58,6 +58,7 @@ describe('Test that all actions work fine (everyone)', () => {
       id: 123,
       status: 'open',
       info: {},
+      sections: {},
       categories: {},
       twilioWorkerId: 'creator',
       helpline,
