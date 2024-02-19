@@ -165,9 +165,6 @@ export const getHRMInternalEndpointAccess = async ({
     credentials,
   });
 
-  const callerID = await sts.getCallerIdentity().promise();
-  console.log(callerID)
-
   return {
     internalResourcesUrl,
     authKey,
