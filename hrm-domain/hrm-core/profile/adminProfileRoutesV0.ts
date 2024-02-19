@@ -21,6 +21,34 @@ import createError from 'http-errors';
 
 const adminProfilesRouter = SafeRouter();
 
+adminProfilesRouter.post('/identifiers', publicEndpoint, async (req, res, next) => {
+  try {
+    const { accountSid } = req;
+    const { identifier, name } = req.body;
+
+    const result = await profileController.createProfileWithIdentifier()(
+      identifier,
+      accountSid,
+      name,
+    );
+
+    if (isErr(result)) {
+      return next(
+        mapHTTPError(result, {
+          InvalidParameterError: 400,
+          IdentifierExistsError: 409,
+          InternalServerError: 500,
+        }),
+      );
+    }
+
+    res.json(result.data);
+  } catch (err) {
+    console.error(err);
+    return next(createError(500, err.message));
+  }
+});
+
 adminProfilesRouter.get('/flags', publicEndpoint, async (req, res, next) => {
   try {
     const { accountSid } = req;
