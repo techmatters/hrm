@@ -112,7 +112,7 @@ describe('/cases route', () => {
         user: twilioUser(workerSid, []),
         can: () => true,
       });
-      expect(fromDb).toStrictEqual({ ...expected, connectedContacts: [] });
+      expect(fromDb).toStrictEqual({ ...expected, sections: {}, connectedContacts: [] });
     });
   });
 
@@ -162,6 +162,7 @@ describe('/cases route', () => {
 
         const expected = {
           ...convertCaseInfoToExpectedInfo(cases.populated),
+          sections: {},
           createdAt: expect.toParseAsDate(cases.populated.createdAt),
           updatedAt: expect.toParseAsDate(cases.populated.createdAt),
         };
