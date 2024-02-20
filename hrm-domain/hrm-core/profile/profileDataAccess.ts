@@ -47,6 +47,7 @@ import {
   listProfilesSql,
 } from './sql/profile-list-sql';
 import { getPaginationElements } from '../search';
+import { updateProfileByIdSql } from './sql/profile-update.sql';
 
 export { ProfilesListFilters } from './sql/profile-list-sql';
 
@@ -136,7 +137,7 @@ export const getIdentifierWithProfiles =
     }
   };
 
-const createIdentifier =
+export const createIdentifier =
   (task?) =>
   async (
     accountSid: string,
@@ -176,6 +177,33 @@ export const createProfile =
     return txIfNotInOne<Profile>(task, t => t.one(statement));
   };
 
+export const updateProfileById =
+  (task?) =>
+  async (
+    accountSid: string,
+    payload: Partial<NewProfileRecord> & { id: number; updatedBy: Profile['updatedBy'] },
+  ): Promise<TResult<'InternalServerError', Profile>> => {
+    try {
+      const { id, name, updatedBy } = payload;
+      const now = new Date();
+      const data = await txIfNotInOne<Profile>(task, async t => {
+        return t.oneOrNone(
+          updateProfileByIdSql({ name: name, updatedAt: now, updatedBy }),
+          {
+            profileId: id,
+            accountSid,
+          },
+        );
+      });
+      return newOk({ data });
+    } catch (err) {
+      return newErr({
+        message: err instanceof Error ? err.message : String(err),
+        error: 'InternalServerError',
+      });
+    }
+  };
+
 export const associateProfileToIdentifier =
   (task?) =>
   async (
@@ -200,33 +228,6 @@ export const associateProfileToIdentifier =
           accountSid,
           identifierId,
         });
-      });
-    } catch (err) {
-      return newErr({
-        message: err instanceof Error ? err.message : String(err),
-        error: 'InternalServerError',
-      });
-    }
-  };
-
-export const createIdentifierAndProfile =
-  (task?) =>
-  async (
-    accountSid: string,
-    payload: NewIdentifierRecord & Pick<RecordCommons, 'createdBy'>,
-  ): Promise<TResult<'InternalServerError', IdentifierWithProfiles>> => {
-    try {
-      return await txIfNotInOne(task, async t => {
-        const [newIdentifier, newProfile] = await Promise.all([
-          createIdentifier(t)(accountSid, payload),
-          createProfile(t)(accountSid, { name: null, createdBy: payload.createdBy }),
-        ]);
-
-        return associateProfileToIdentifier(t)(
-          accountSid,
-          newProfile.id,
-          newIdentifier.id,
-        );
       });
     } catch (err) {
       return newErr({

@@ -22,6 +22,7 @@ import { db } from '../connection-pool';
 import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import type { NewProfileSectionRecord } from './sql/profile-sections-sql';
 import { NewProfileFlagRecord } from './sql/profile-flags-sql';
+import { txIfNotInOne } from '../sql';
 
 export {
   Identifier,
@@ -61,11 +62,52 @@ export const getProfile =
     }
   };
 
+const createIdentifierAndProfile =
+  (task?) =>
+  async (
+    accountSid: string,
+    { identifier }: { identifier: string },
+    { user }: { user: TwilioUser },
+  ): Promise<TResult<'InternalServerError', profileDB.IdentifierWithProfiles>> => {
+    try {
+      return await txIfNotInOne(task, async t => {
+        const [newIdentifier, newProfile] = await Promise.all([
+          profileDB.createIdentifier(t)(accountSid, {
+            identifier,
+            createdBy: user.workerSid,
+          }),
+          profileDB.createProfile(t)(accountSid, {
+            name: null,
+            createdBy: user.workerSid,
+          }),
+        ]);
+
+        return Promise.all([
+          profileDB.associateProfileToIdentifier(t)(
+            accountSid,
+            newProfile.id,
+            newIdentifier.id,
+          ),
+          // trigger an update on profiles to keep track of who associated
+          profileDB.updateProfileById(t)(accountSid, {
+            id: newProfile.id,
+            updatedBy: user.workerSid,
+          }),
+        ]).then(([idWithProfiles]) => idWithProfiles);
+      });
+    } catch (err) {
+      return newErr({
+        message: err instanceof Error ? err.message : String(err),
+        error: 'InternalServerError',
+      });
+    }
+  };
+
 export const getOrCreateProfileWithIdentifier =
   (task?) =>
   async (
-    identifier: string,
     accountSid: string,
+    { identifier }: { identifier: string },
     { user }: { user: TwilioUser },
   ): Promise<TResult<'InternalServerError', profileDB.IdentifierWithProfiles>> => {
     try {
@@ -82,10 +124,7 @@ export const getOrCreateProfileWithIdentifier =
         return profileResult;
       }
 
-      return await profileDB.createIdentifierAndProfile(task)(accountSid, {
-        identifier,
-        createdBy: user.workerSid,
-      });
+      return await createIdentifierAndProfile(task)(accountSid, { identifier }, { user });
     } catch (err) {
       return newErr({
         message: err instanceof Error ? err.message : String(err),
@@ -121,9 +160,16 @@ export const listProfiles = profileDB.listProfiles;
 
 export const associateProfileToProfileFlag = async (
   accountSid: string,
-  profileId: profileDB.Profile['id'],
-  profileFlagId: number,
-  validUntil: Date | null,
+  {
+    profileId,
+    profileFlagId,
+    validUntil,
+  }: {
+    profileId: profileDB.Profile['id'];
+    profileFlagId: number;
+    validUntil: Date | null;
+  },
+  { user }: { user: TwilioUser },
 ): Promise<
   TResult<
     'InvalidParameterError' | 'InternalServerError',
@@ -139,14 +185,21 @@ export const associateProfileToProfileFlag = async (
     }
 
     return await db.task(async t => {
-      (
-        await profileDB.associateProfileToProfileFlag(t)(
-          accountSid,
-          profileId,
-          profileFlagId,
-          validUntil,
-        )
-      ).unwrap(); // unwrap the result to bubble error up (if any)
+      await Promise.all([
+        profileDB
+          .associateProfileToProfileFlag(t)(
+            accountSid,
+            profileId,
+            profileFlagId,
+            validUntil,
+          )
+          .then(r => r.unwrap()), // unwrap the result to bubble error up (if any)
+        // trigger an update on profiles to keep track of who associated
+        profileDB.updateProfileById(t)(accountSid, {
+          id: profileId,
+          updatedBy: user.workerSid,
+        }),
+      ]);
       const profile = await profileDB.getProfileById(t)(accountSid, profileId);
 
       return newOk({ data: profile });
@@ -161,18 +214,27 @@ export const associateProfileToProfileFlag = async (
 
 export const disassociateProfileFromProfileFlag = async (
   accountSid: string,
-  profileId: profileDB.Profile['id'],
-  profileFlagId: number,
+  {
+    profileId,
+    profileFlagId,
+  }: {
+    profileId: profileDB.Profile['id'];
+    profileFlagId: number;
+  },
+  { user }: { user: TwilioUser },
 ): Promise<TResult<'InternalServerError', profileDB.ProfileWithRelationships>> => {
   try {
     return await db.task(async t => {
-      (
-        await profileDB.disassociateProfileFromProfileFlag(t)(
-          accountSid,
-          profileId,
-          profileFlagId,
-        )
-      ).unwrap(); // unwrap the result to bubble error up (if any);
+      Promise.all([
+        profileDB
+          .disassociateProfileFromProfileFlag(t)(accountSid, profileId, profileFlagId)
+          .then(r => r.unwrap()), // unwrap the result to bubble error up (if any);
+        // trigger an update on profiles to keep track of who disassociated
+        profileDB.updateProfileById(t)(accountSid, {
+          id: profileId,
+          updatedBy: user.workerSid,
+        }),
+      ]);
       const profile = await profileDB.getProfileById(t)(accountSid, profileId);
 
       return newOk({ data: profile });

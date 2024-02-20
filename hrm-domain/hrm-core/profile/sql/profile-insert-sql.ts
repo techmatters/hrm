@@ -16,7 +16,7 @@
 
 import { pgp } from '../../connection-pool';
 
-type NewRecordCommons = {
+export type NewRecordCommons = {
   accountSid: string;
   createdAt: Date;
   updatedAt: Date;
