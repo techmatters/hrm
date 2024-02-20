@@ -62,8 +62,15 @@ type CaseInfoSection = {
 const getSectionSpecificDataFromNotesOrReferrals = (
   caseSection: CaseInfoSection,
 ): Record<string, any> => {
-  const { id, twilioWorkerId, createdAt, updatedBy, updatedAt, ...sectionSpecificData } =
-    caseSection;
+  const {
+    id,
+    twilioWorkerId,
+    createdAt,
+    updatedBy,
+    updatedAt,
+    accountSid,
+    ...sectionSpecificData
+  } = caseSection;
   return sectionSpecificData;
 };
 
@@ -223,21 +230,30 @@ const caseRecordToCase = (record: CaseRecord): CaseService => {
       ...caseSectionRecordsToInfo(record.caseSections),
     },
   });
+  const precalculatedPermissions = { userOwnsContact: contactsOwnedByUserCount > 0 };
+
+  if (record.caseSections) {
+    return {
+      ...output,
+      // Separate case sections by type
+      sections: record.caseSections.reduce(
+        (sections, sectionRecord) => {
+          const { sectionType, caseId, accountSid, ...restOfSection } = sectionRecord;
+          sections[sectionType] = sections[sectionType] ?? [];
+          sections[sectionType].push(restOfSection);
+          return sections;
+        },
+        {} as CaseService['sections'],
+      ),
+      precalculatedPermissions,
+    };
+  }
 
   return {
     ...output,
     // Separate case sections by type
-    sections: (record.caseSections ?? []).reduce(
-      (sections, sectionRecord) => {
-        const { sectionType, caseId, accountSid, ...restOfSection } = sectionRecord;
-        sections[sectionType] = sections[sectionType] ?? [];
-        sections[sectionType].push(restOfSection);
-        return sections;
-      },
-      {} as CaseService['sections'],
-    ),
     precalculatedPermissions: { userOwnsContact: contactsOwnedByUserCount > 0 },
-  };
+  } as CaseService;
 };
 
 const mapContactTransformations =

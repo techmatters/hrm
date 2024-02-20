@@ -39,6 +39,7 @@ import { twilioUser } from '@tech-matters/twilio-worker-auth';
 import { isS3StoredTranscript } from '@tech-matters/hrm-core/conversation-media/conversation-media';
 import { casePopulated, populateCaseSections, populatedCaseSections } from '../mocks';
 import { pick } from 'lodash';
+import { clearAllTables } from '../dbCleanup';
 
 useOpenRules();
 const server = getServer();
@@ -68,6 +69,8 @@ const cases: Record<string, CaseService> = {};
 let nonExistingCaseId;
 const route = `/v0/accounts/${accountSid}/cases`;
 
+beforeAll(clearAllTables);
+
 beforeEach(async () => {
   await mockingProxy.start();
   await mockSuccessfulTwilioAuthentication(workerSid);
@@ -81,15 +84,7 @@ beforeEach(async () => {
 
 afterEach(async () => {
   await mockingProxy.stop();
-  await Promise.all(
-    [cases.blank, cases.populated].map(c => {
-      if (c) {
-        return caseDb.deleteById(c.id, accountSid);
-      }
-      console.warn(`No case to delete when cleaning up`);
-      return Promise.resolve();
-    }),
-  );
+  await clearAllTables();
 });
 
 describe('PUT /cases/:id route', () => {
@@ -702,7 +697,7 @@ describe('PUT /cases/:id/overview route', () => {
         user: twilioUser(workerSid, []),
         can: () => true,
       });
-      expect(fromDb).toStrictEqual({ ...expected, connectedContacts: [] });
+      expect(fromDb).toStrictEqual({ ...expected, sections: {}, connectedContacts: [] });
 
       if (!fromDb || !caseBeforeUpdate) {
         throw new Error('fromDB is falsy');
