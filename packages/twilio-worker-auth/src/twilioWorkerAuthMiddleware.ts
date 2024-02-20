@@ -148,9 +148,9 @@ export const staticKeyAuthorizationMiddleware = async (
 };
 
 // TODO: do we want to diferentiate what is actually system vs admin?
-export const adminUser = 'system';
+export const systemUser = 'system';
 export const adminAuthorizationMiddleware =
   (keySuffix: string) => async (req: Request, res: Response, next: NextFunction) => {
-    if (authenticateWithStaticKey(req, keySuffix, adminUser)) return next();
+    if (authenticateWithStaticKey(req, keySuffix, systemUser)) return next();
     return unauthorized(res);
   };

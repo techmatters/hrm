@@ -55,6 +55,8 @@ type RecordCommons = {
   accountSid: string;
   createdAt: Date;
   updatedAt: Date;
+  createdBy: string;
+  updatedBy?: string;
 };
 
 export type Identifier = NewIdentifierRecord & RecordCommons;
@@ -136,7 +138,10 @@ export const getIdentifierWithProfiles =
 
 const createIdentifier =
   (task?) =>
-  async (accountSid: string, identifier: NewIdentifierRecord): Promise<Identifier> => {
+  async (
+    accountSid: string,
+    identifier: NewIdentifierRecord & Pick<RecordCommons, 'createdBy'>,
+  ): Promise<Identifier> => {
     const now = new Date();
 
     const statement = insertIdentifierSql({
@@ -144,6 +149,7 @@ const createIdentifier =
       createdAt: now,
       updatedAt: now,
       accountSid,
+      updatedBy: null,
     });
 
     return txIfNotInOne<Identifier>(task, conn => conn.one(statement));
@@ -153,7 +159,10 @@ export type Profile = NewProfileRecord & RecordCommons;
 
 export const createProfile =
   (task?) =>
-  async (accountSid: string, profile: NewProfileRecord): Promise<Profile> => {
+  async (
+    accountSid: string,
+    profile: NewProfileRecord & Pick<RecordCommons, 'createdBy'>,
+  ): Promise<Profile> => {
     const now = new Date();
 
     const statement = insertProfileSql({
@@ -161,6 +170,7 @@ export const createProfile =
       createdAt: now,
       updatedAt: now,
       accountSid,
+      updatedBy: null,
     });
 
     return txIfNotInOne<Profile>(task, t => t.one(statement));
@@ -203,13 +213,13 @@ export const createIdentifierAndProfile =
   (task?) =>
   async (
     accountSid: string,
-    payload: NewIdentifierRecord,
+    payload: NewIdentifierRecord & Pick<RecordCommons, 'createdBy'>,
   ): Promise<TResult<'InternalServerError', IdentifierWithProfiles>> => {
     try {
       return await txIfNotInOne(task, async t => {
         const [newIdentifier, newProfile] = await Promise.all([
           createIdentifier(t)(accountSid, payload),
-          createProfile(t)(accountSid, { name: null }),
+          createProfile(t)(accountSid, { name: null, createdBy: payload.createdBy }),
         ]);
 
         return associateProfileToIdentifier(t)(
@@ -335,11 +345,7 @@ export const disassociateProfileFromProfileFlag =
     }
   };
 
-export type ProfileFlag = NewProfileFlagRecord &
-  RecordCommons & {
-    createdBy: string;
-    updatedBy?: string;
-  };
+export type ProfileFlag = NewProfileFlagRecord & RecordCommons;
 
 export const getProfileFlagsForAccount = async (
   accountSid: string,

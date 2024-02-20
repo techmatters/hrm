@@ -66,6 +66,7 @@ export const getOrCreateProfileWithIdentifier =
   async (
     identifier: string,
     accountSid: string,
+    { user }: { user: TwilioUser },
   ): Promise<TResult<'InternalServerError', profileDB.IdentifierWithProfiles>> => {
     try {
       if (!identifier) {
@@ -83,6 +84,7 @@ export const getOrCreateProfileWithIdentifier =
 
       return await profileDB.createIdentifierAndProfile(task)(accountSid, {
         identifier,
+        createdBy: user.workerSid,
       });
     } catch (err) {
       return newErr({

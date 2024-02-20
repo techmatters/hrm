@@ -50,6 +50,7 @@ import {
 import { Profile, getOrCreateProfileWithIdentifier } from '../profile/profileService';
 import { deleteContactReferrals } from '../referral/referral-data-access';
 import { DatabaseUniqueConstraintViolationError, inferPostgresError } from '../sql';
+import { systemUser } from '@tech-matters/twilio-worker-auth/src/twilioWorkerAuthMiddleware';
 
 // Re export as is:
 export { Contact } from './contactDataAccess';
@@ -133,6 +134,7 @@ const initProfile = async (conn, accountSid, contact) => {
   const profileResult = await getOrCreateProfileWithIdentifier(conn)(
     contact.number,
     accountSid,
+    { user: { isSupervisor: false, roles: [], workerSid: systemUser } }, // fake the worker since makes more sense to keep the new "profile created by system"
   );
 
   if (isErr(profileResult)) {
