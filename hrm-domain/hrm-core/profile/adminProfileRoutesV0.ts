@@ -14,6 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
+import type { Request, Response, NextFunction } from 'express';
 import { isErr, mapHTTPError } from '@tech-matters/types';
 import { SafeRouter, publicEndpoint } from '../permissions';
 import * as profileController from './profileService';
@@ -21,86 +22,114 @@ import createError from 'http-errors';
 
 const adminProfilesRouter = SafeRouter();
 
-adminProfilesRouter.get('/flags', publicEndpoint, async (req, res, next) => {
-  try {
-    const { accountSid } = req;
+adminProfilesRouter.get(
+  '/flags',
+  publicEndpoint,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { accountSid } = req;
 
-    const result = await profileController.getProfileFlags(accountSid);
+      const result = await profileController.getProfileFlags(accountSid);
 
-    if (isErr(result)) {
-      return next(mapHTTPError(result, { InternalServerError: 500 }));
+      if (isErr(result)) {
+        return next(mapHTTPError(result, { InternalServerError: 500 }));
+      }
+
+      res.json(result.data);
+    } catch (err) {
+      console.error(err);
+      return next(createError(500, err.message));
     }
+  },
+);
 
-    res.json(result.data);
-  } catch (err) {
-    console.error(err);
-    return next(createError(500, err.message));
-  }
-});
+adminProfilesRouter.post(
+  '/flags',
+  publicEndpoint,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { accountSid, user } = req;
+      const { name } = req.body;
 
-adminProfilesRouter.post('/flags', publicEndpoint, async (req, res, next) => {
-  try {
-    const { accountSid } = req;
-    const { name } = req.body;
-
-    const result = await profileController.createProfileFlag(accountSid, { name });
-
-    if (isErr(result)) {
-      return next(
-        mapHTTPError(result, { InvalidParameterError: 400, InternalServerError: 500 }),
+      const result = await profileController.createProfileFlag(
+        accountSid,
+        { name },
+        { user },
       );
+
+      if (isErr(result)) {
+        return next(
+          mapHTTPError(result, { InvalidParameterError: 400, InternalServerError: 500 }),
+        );
+      }
+
+      res.json(result.data);
+    } catch (err) {
+      console.error(err);
+      return next(createError(500, err.message));
     }
+  },
+);
 
-    res.json(result.data);
-  } catch (err) {
-    console.error(err);
-    return next(createError(500, err.message));
-  }
-});
+adminProfilesRouter.patch(
+  '/flags/:flagId',
+  publicEndpoint,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { accountSid, user } = req;
+      const { flagId } = req.params;
+      const { name } = req.body;
 
-adminProfilesRouter.patch('/flags/:flagId', publicEndpoint, async (req, res, next) => {
-  try {
-    const { accountSid } = req;
-    const { flagId } = req.params;
-    const { name } = req.body;
-
-    const result = await profileController.updateProfileFlagById(accountSid, flagId, {
-      name,
-    });
-
-    if (isErr(result)) {
-      return next(
-        mapHTTPError(result, { InternalServerError: 500, InvalidParameterError: 400 }),
+      const result = await profileController.updateProfileFlagById(
+        accountSid,
+        parseInt(flagId, 10),
+        {
+          name,
+        },
+        { user },
       );
+
+      if (isErr(result)) {
+        return next(
+          mapHTTPError(result, { InternalServerError: 500, InvalidParameterError: 400 }),
+        );
+      }
+
+      if (!result.data) {
+        return next(createError(404));
+      }
+
+      res.json({
+        result: `Succesfully deleted flag ${result.data.name} (ID ${result.data.id})`,
+      });
+    } catch (err) {
+      return next(createError(500, err.message));
     }
+  },
+);
 
-    if (!result.data) {
-      return next(createError(404));
+adminProfilesRouter.delete(
+  '/flags/:flagId',
+  publicEndpoint,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { accountSid } = req;
+      const { flagId } = req.params;
+
+      const result = await profileController.deleteProfileFlagById(
+        parseInt(flagId, 10),
+        accountSid,
+      );
+
+      if (isErr(result)) {
+        return next(mapHTTPError(result, { InternalServerError: 500 }));
+      }
+
+      res.json(result.data);
+    } catch (err) {
+      return next(createError(500, err.message));
     }
-
-    res.json({
-      result: `Succesfully deleted flag ${result.data.name} (ID ${result.data.id})`,
-    });
-  } catch (err) {
-    return next(createError(500, err.message));
-  }
-});
-
-adminProfilesRouter.delete('/flags/:flagId', publicEndpoint, async (req, res, next) => {
-  try {
-    const { accountSid } = req;
-    const { flagId } = req.params;
-
-    const result = await profileController.deleteProfileFlagById(flagId, accountSid);
-
-    if (isErr(result)) {
-      return next(mapHTTPError(result, { InternalServerError: 500 }));
-    }
-
-    res.json(result.data);
-  } catch (err) {
-    return next(createError(500, err.message));
-  }
-});
+  },
+);
 
 export default adminProfilesRouter.expressRouter;

@@ -335,7 +335,11 @@ export const disassociateProfileFromProfileFlag =
     }
   };
 
-export type ProfileFlag = NewProfileFlagRecord & RecordCommons;
+export type ProfileFlag = NewProfileFlagRecord &
+  RecordCommons & {
+    createdBy: string;
+    updatedBy?: string;
+  };
 
 export const getProfileFlagsForAccount = async (
   accountSid: string,
@@ -356,16 +360,19 @@ export const getProfileFlagsForAccount = async (
 
 export const updateProfileFlagById = async (
   accountSid: string,
-  payload: NewProfileFlagRecord & { id: number },
+  payload: NewProfileFlagRecord & { id: number; updatedBy: ProfileFlag['updatedBy'] },
 ): Promise<TResult<'InternalServerError', ProfileFlag>> => {
   try {
-    const { id, name } = payload;
+    const { id, name, updatedBy } = payload;
     const now = new Date();
     const data = await db.task<ProfileFlag>(async t => {
-      return t.oneOrNone(updateProfileFlagByIdSql({ name: name, updatedAt: now }), {
-        profileId: id,
-        accountSid,
-      });
+      return t.oneOrNone(
+        updateProfileFlagByIdSql({ name: name, updatedAt: now, updatedBy }),
+        {
+          profileId: id,
+          accountSid,
+        },
+      );
     });
     return newOk({ data });
   } catch (err) {
@@ -417,7 +424,7 @@ export const getProfileFlagsByIdentifier = async (
 
 export const createProfileFlag = async (
   accountSid: string,
-  payload: NewProfileFlagRecord,
+  payload: NewProfileFlagRecord & { createdBy: ProfileFlag['createdBy'] },
 ): Promise<TResult<'InternalServerError', ProfileFlag>> => {
   try {
     const now = new Date();
@@ -426,6 +433,8 @@ export const createProfileFlag = async (
       createdAt: now,
       updatedAt: now,
       accountSid,
+      createdBy: payload.createdBy,
+      updatedBy: null,
     });
 
     return await db
@@ -447,7 +456,7 @@ export type ProfileSection = NewProfileSectionRecord &
 
 export const createProfileSection = async (
   accountSid: string,
-  payload: NewProfileSectionRecord & { createdBy: string },
+  payload: NewProfileSectionRecord & { createdBy: ProfileSection['createdBy'] },
 ): Promise<TResult<'InternalServerError', ProfileSection>> => {
   try {
     const now = new Date();

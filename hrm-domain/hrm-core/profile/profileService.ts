@@ -189,6 +189,7 @@ export const getProfileFlagsByIdentifier = profileDB.getProfileFlagsByIdentifier
 export const createProfileFlag = async (
   accountSid: string,
   payload: NewProfileFlagRecord,
+  { user }: { user: TwilioUser },
 ): Promise<
   TResult<'InternalServerError' | 'InvalidParameterError', profileDB.ProfileFlag>
 > => {
@@ -211,7 +212,10 @@ export const createProfileFlag = async (
       });
     }
 
-    const pf = await profileDB.createProfileFlag(accountSid, { name });
+    const pf = await profileDB.createProfileFlag(accountSid, {
+      name,
+      createdBy: user.workerSid,
+    });
 
     return pf;
   } catch (err) {
@@ -228,6 +232,7 @@ export const updateProfileFlagById = async (
   payload: {
     name: string;
   },
+  { user }: { user: TwilioUser },
 ): Promise<
   TResult<'InternalServerError' | 'InvalidParameterError', profileDB.ProfileFlag>
 > => {
@@ -252,6 +257,7 @@ export const updateProfileFlagById = async (
     const profileFlag = await profileDB.updateProfileFlagById(accountSid, {
       id: flagId,
       name,
+      updatedBy: user.workerSid,
     });
 
     return profileFlag;
