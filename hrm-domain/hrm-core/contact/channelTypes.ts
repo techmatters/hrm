@@ -25,6 +25,7 @@ export const channelTypes = {
   twitter: 'twitter',
   instagram: 'instagram',
   line: 'line',
+  modica: 'modica',
   default: 'default',
 } as const;
 
@@ -36,6 +37,7 @@ export const chatChannels = [
   channelTypes.twitter,
   channelTypes.instagram,
   channelTypes.line,
+  channelTypes.modica,
 ];
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars

@@ -47,7 +47,7 @@ import {
   isS3StoredTranscriptPending,
   NewConversationMedia,
 } from '../conversation-media/conversation-media';
-import { Profile, getOrCreateProfileWithIdentifier } from '../profile/profile';
+import { Profile, getOrCreateProfileWithIdentifier } from '../profile/profileService';
 import { deleteContactReferrals } from '../referral/referral-data-access';
 import { DatabaseUniqueConstraintViolationError, inferPostgresError } from '../sql';
 

@@ -58,6 +58,7 @@ describe('Test that all actions work fine (everyone)', () => {
       id: 123,
       status: 'open',
       info: {},
+      sections: {},
       categories: {},
       twilioWorkerId: 'creator',
       helpline,
@@ -234,7 +235,9 @@ describe('Test that an empty set of conditions does not grants permissions', () 
 
 const addPrettyConditionsSets = t => ({
   ...t,
-  prettyConditionsSets: t.conditionsSets.map(arr => `[${arr.join(',')}]`),
+  prettyConditionsSets: t.conditionsSets.map(
+    cs => `[${cs.map(c => (typeof c === 'object' ? JSON.stringify(c) : c)).join(',')}]`,
+  ),
 });
 
 // Test Case permissions
@@ -562,6 +565,200 @@ describe('Test different scenarios (Contact)', () => {
       Object.values(actionsMaps.contact).forEach(action =>
         test(`${action}`, async () => {
           expect(can(user, action, contactObj)).toBe(expectedResult);
+        }),
+      );
+    },
+  );
+});
+
+// Test Profile permissions
+describe('Test different scenarios (Profile)', () => {
+  each(
+    [
+      {
+        conditionsSets: [['everyone']],
+        expectedDescription: 'not supervisor',
+        profileObj: {
+          accountSid,
+        },
+        user: twilioUser('not supervisor', []),
+        expectedResult: true,
+      },
+      {
+        conditionsSets: [['isSupervisor']],
+        expectedDescription: 'not supervisor',
+        profileObj: {
+          accountSid,
+        },
+        user: twilioUser('not supervisor', []),
+        expectedResult: false,
+      },
+      {
+        conditionsSets: [['isSupervisor']],
+        expectedDescription: 'is supervisor',
+        profileObj: {
+          accountSid,
+        },
+        user: twilioUser('supervisor', ['supervisor']),
+        expectedResult: true,
+      },
+      {
+        conditionsSets: [[{ createdHoursAgo: 2 }]],
+        expectedResult: true,
+        expectedDescription: 'createdHoursAgo within the provided range',
+        profileObj: {
+          accountSid,
+          createdAt: subHours(Date.now(), 1).toISOString(),
+        },
+        user: twilioUser('not supervisor', []),
+      },
+      {
+        conditionsSets: [[{ createdHoursAgo: 1 }]],
+        expectedResult: false,
+        expectedDescription: 'createdHoursAgo outside the provided range',
+        profileObj: {
+          accountSid,
+          createdAt: subHours(Date.now(), 1).toISOString(),
+        },
+        user: twilioUser('not supervisor', []),
+      },
+      {
+        conditionsSets: [[{ createdDaysAgo: 2 }]],
+        expectedResult: true,
+        expectedDescription: 'createdDaysAgo within the provided range',
+        profileObj: {
+          accountSid,
+          createdAt: subDays(Date.now(), 1).toISOString(),
+        },
+        user: twilioUser('not supervisor', []),
+      },
+      {
+        conditionsSets: [[{ createdDaysAgo: 1 }]],
+        expectedResult: false,
+        expectedDescription: 'createdDaysAgo outside the provided range',
+        profileObj: {
+          accountSid,
+          createdAt: subDays(Date.now(), 1).toISOString(),
+        },
+        user: twilioUser('not supervisor', []),
+      },
+    ].map(addPrettyConditionsSets),
+  ).describe(
+    'Expect $expectedResult when $expectedDescription with $prettyConditionsSets',
+    ({ conditionsSets, profileObj, user, expectedResult }) => {
+      const rules = buildRules({ profile: conditionsSets });
+      const can = initializeCanForRules(rules);
+
+      Object.values(actionsMaps.profile).forEach(action =>
+        test(`${action}`, async () => {
+          expect(can(user, action, profileObj)).toBe(expectedResult);
+        }),
+      );
+    },
+  );
+});
+
+// Test ProfileSection permissions
+describe('Test different scenarios (ProfileSection)', () => {
+  each(
+    [
+      {
+        conditionsSets: [['everyone']],
+        expectedDescription: 'not supervisor',
+        profileSectionObj: {
+          accountSid,
+        },
+        user: twilioUser('not supervisor', []),
+        expectedResult: true,
+      },
+      {
+        conditionsSets: [['isSupervisor']],
+        expectedDescription: 'not supervisor',
+        profileSectionObj: {
+          accountSid,
+        },
+        user: twilioUser('not supervisor', []),
+        expectedResult: false,
+      },
+      {
+        conditionsSets: [['isSupervisor']],
+        expectedDescription: 'is supervisor',
+        profileSectionObj: {
+          accountSid,
+        },
+        user: twilioUser('supervisor', ['supervisor']),
+        expectedResult: true,
+      },
+      {
+        conditionsSets: [[{ createdHoursAgo: 2 }]],
+        expectedResult: true,
+        expectedDescription: 'createdHoursAgo within the provided range',
+        profileSectionObj: {
+          accountSid,
+          createdAt: subHours(Date.now(), 1).toISOString(),
+        },
+        user: twilioUser('not supervisor', []),
+      },
+      {
+        conditionsSets: [[{ createdHoursAgo: 1 }]],
+        expectedResult: false,
+        expectedDescription: 'createdHoursAgo outside the provided range',
+        profileSectionObj: {
+          accountSid,
+          createdAt: subHours(Date.now(), 1).toISOString(),
+        },
+        user: twilioUser('not supervisor', []),
+      },
+      {
+        conditionsSets: [[{ createdDaysAgo: 2 }]],
+        expectedResult: true,
+        expectedDescription: 'createdDaysAgo within the provided range',
+        profileSectionObj: {
+          accountSid,
+          createdAt: subDays(Date.now(), 1).toISOString(),
+        },
+        user: twilioUser('not supervisor', []),
+      },
+      {
+        conditionsSets: [[{ createdDaysAgo: 1 }]],
+        expectedResult: false,
+        expectedDescription: 'createdDaysAgo outside the provided range',
+        profileSectionObj: {
+          accountSid,
+          createdAt: subDays(Date.now(), 1).toISOString(),
+        },
+        user: twilioUser('not supervisor', []),
+      },
+      {
+        conditionsSets: [[{ sectionType: 'summary' }]],
+        expectedResult: true,
+        expectedDescription: 'sectionType is summary',
+        profileSectionObj: {
+          accountSid,
+          sectionType: 'summary',
+        },
+        user: twilioUser('not supervisor', []),
+      },
+      {
+        conditionsSets: [[{ sectionType: 'other' }]],
+        expectedResult: false,
+        expectedDescription: 'sectionType is summary',
+        profileSectionObj: {
+          accountSid,
+          sectionType: 'summary',
+        },
+        user: twilioUser('not supervisor', []),
+      },
+    ].map(addPrettyConditionsSets),
+  ).describe(
+    'Expect $expectedResult when $expectedDescription with $prettyConditionsSets',
+    ({ conditionsSets, profileSectionObj, user, expectedResult }) => {
+      const rules = buildRules({ profileSection: conditionsSets });
+      const can = initializeCanForRules(rules);
+
+      Object.values(actionsMaps.profileSection).forEach(action =>
+        test(`${action}`, async () => {
+          expect(can(user, action, profileSectionObj)).toBe(expectedResult);
         }),
       );
     },

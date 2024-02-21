@@ -36,7 +36,7 @@ export const convertCaseInfoToExpectedInfo = (
   accountSid: string | null = null,
 ): CaseService => {
   if (!input || !input.info) return { ...input } as CaseService;
-  const expectedCase = {
+  const expectedCase: Partial<CaseService> = {
     ...input,
     info: { ...input.info },
   };
@@ -57,6 +57,21 @@ export const convertCaseInfoToExpectedInfo = (
         }
       }
     });
+    Object.entries(WELL_KNOWN_CASE_SECTION_NAMES).forEach(
+      ([wksn, { sectionTypeName, getSectionSpecificData }]) => {
+        if (expectedInfo[wksn]) {
+          expectedCase.sections = expectedCase.sections || {};
+          expectedCase.sections[sectionTypeName] = expectedInfo[wksn].map(item => ({
+            sectionId: expect.anything(),
+            sectionTypeSpecificData: getSectionSpecificData(item),
+            createdBy: item.twilioWorkerId,
+            createdAt: expect.toParseAsDate(),
+          }));
+        } else {
+          delete expectedCase.sections?.[sectionTypeName];
+        }
+      },
+    );
   }
   return expectedCase as CaseService;
 };

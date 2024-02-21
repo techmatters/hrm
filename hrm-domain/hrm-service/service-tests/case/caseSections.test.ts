@@ -155,6 +155,9 @@ describe('POST /cases/:caseId/sections', () => {
           },
         ],
       },
+      sections: {
+        note: [{ ...apiSection, createdAt: expect.toParseAsDate(apiSection.createdAt) }],
+      },
     });
   });
 
@@ -188,8 +191,17 @@ describe('POST /cases/:caseId/sections', () => {
           })),
         ),
       },
+      sections: {
+        note: expect.arrayContaining(
+          apiSections.map(apiSection => ({
+            ...apiSection,
+            createdAt: expect.toParseAsDate(apiSection.createdAt),
+          })),
+        ),
+      },
     });
     expect(updatedCase.info.counsellorNotes).toHaveLength(3);
+    expect(updatedCase.sections.note).toHaveLength(3);
   });
 });
 
@@ -330,6 +342,15 @@ describe('/cases/:caseId/sections/:sectionId', () => {
               createdAt: expect.toParseAsDate(targetSection.createdAt),
               updatedAt: expect.toParseAsDate(),
               updatedBy: workerSid,
+            },
+          ],
+        },
+        sections: {
+          note: [
+            {
+              ...apiSection,
+              createdAt: expect.toParseAsDate(apiSection.createdAt),
+              updatedAt: expect.toParseAsDate(apiSection.updatedAt),
             },
           ],
         },

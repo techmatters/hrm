@@ -16,7 +16,7 @@
 
 import { isErr, mapHTTPError } from '@tech-matters/types';
 import { SafeRouter, publicEndpoint } from '../permissions';
-import * as profileController from './profile';
+import * as profileController from './profileService';
 import createError from 'http-errors';
 
 const adminProfilesRouter = SafeRouter();

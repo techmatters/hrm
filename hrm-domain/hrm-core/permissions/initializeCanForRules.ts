@@ -23,9 +23,12 @@ import {
   type RulesFile,
   isTimeBasedCondition,
   TimeBasedCondition,
+  ProfileSectionSpecificCondition,
+  isProfileSectionSpecificCondition,
 } from './rulesMap';
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { differenceInDays, differenceInHours, parseISO } from 'date-fns';
+import { assertExhaustive } from '@tech-matters/types';
 import { CaseService } from '../case/caseService';
 
 type ConditionsState = {
@@ -38,7 +41,7 @@ type ConditionsState = {
 const checkCondition =
   <T extends TargetKind>(conditionsState: ConditionsState) =>
   (condition: TKCondition<T>): boolean => {
-    if (isTimeBasedCondition(condition)) {
+    if (typeof condition === 'object') {
       return conditionsState[JSON.stringify(condition)];
     }
 
@@ -86,6 +89,24 @@ const applyTimeBasedConditions =
         }
       }, {});
 
+const applyProfileSectionSpecificConditions =
+  (conditions: ProfileSectionSpecificCondition[]) =>
+  (performer: TwilioUser, target: any) =>
+    conditions
+      .map(c => Object.entries(c)[0])
+      .reduce<Record<string, boolean>>((accum, [cond, param]) => {
+        // use the stringified cond-param as key, e.g. '{ "sectionType": "summary" }'
+        const key = JSON.stringify({ [cond]: param });
+        if (cond === 'sectionType') {
+          return {
+            ...accum,
+            [key]: target.sectionType === param,
+          };
+        }
+
+        return accum;
+      }, {});
+
 const setupAllow = <T extends TargetKind>(
   kind: T,
   conditionsSets: TKConditionsSets<T>,
@@ -106,37 +127,73 @@ const setupAllow = <T extends TargetKind>(
     );
 
     // Build the proper conditionsState depending on the targetKind
-    if (kind === 'case') {
-      const targetCase = target as CaseService;
-      const conditionsState: ConditionsState = {
-        isSupervisor: performer.isSupervisor,
-        isCreator: isCounselorWhoCreated(performer, target),
-        isCaseOpen: isCaseOpen(targetCase),
-        isCaseContactOwner: Boolean(targetCase.precalculatedPermissions?.userOwnsContact),
-        everyone: true,
-        ...appliedTimeBasedConditions,
-      };
+    switch (kind) {
+      case 'case': {
+        const targetCase = target as CaseService;
+        const conditionsState: ConditionsState = {
+          isSupervisor: performer.isSupervisor,
+          isCreator: isCounselorWhoCreated(performer, target),
+          isCaseOpen: isCaseOpen(targetCase),
+          isCaseContactOwner: Boolean(
+            targetCase.precalculatedPermissions?.userOwnsContact,
+          ),
+          everyone: true,
+          ...appliedTimeBasedConditions,
+        };
 
-      return checkConditionsSets(conditionsState, conditionsSets);
-    } else if (kind === 'contact') {
-      const conditionsState: ConditionsState = {
-        isSupervisor: performer.isSupervisor,
-        isOwner: isContactOwner(performer, target),
-        everyone: true,
-        createdDaysAgo: false,
-        createdHoursAgo: false,
-        ...appliedTimeBasedConditions,
-      };
+        return checkConditionsSets(conditionsState, conditionsSets);
+      }
+      case 'contact': {
+        const conditionsState: ConditionsState = {
+          isSupervisor: performer.isSupervisor,
+          isOwner: isContactOwner(performer, target),
+          everyone: true,
+          ...appliedTimeBasedConditions,
+        };
 
-      return checkConditionsSets(conditionsState, conditionsSets);
-    } else if (kind === 'postSurvey') {
-      const conditionsState: ConditionsState = {
-        isSupervisor: performer.isSupervisor,
-        everyone: true,
-        ...appliedTimeBasedConditions,
-      };
+        return checkConditionsSets(conditionsState, conditionsSets);
+      }
+      case 'profile': {
+        const conditionsState: ConditionsState = {
+          isSupervisor: performer.isSupervisor,
+          everyone: true,
+          ...appliedTimeBasedConditions,
+        };
 
-      return checkConditionsSets(conditionsState, conditionsSets);
+        return checkConditionsSets(conditionsState, conditionsSets);
+      }
+      case 'profileSection': {
+        const specificConditions = conditionsSets.flatMap(cs =>
+          cs
+            .map(c => (isProfileSectionSpecificCondition(c) ? c : null))
+            .filter(c => c !== null),
+        );
+
+        const appliedSpecificConditions = applyProfileSectionSpecificConditions(
+          specificConditions,
+        )(performer, target);
+
+        const conditionsState: ConditionsState = {
+          isSupervisor: performer.isSupervisor,
+          everyone: true,
+          ...appliedTimeBasedConditions,
+          ...appliedSpecificConditions,
+        };
+
+        return checkConditionsSets(conditionsState, conditionsSets);
+      }
+      case 'postSurvey': {
+        const conditionsState: ConditionsState = {
+          isSupervisor: performer.isSupervisor,
+          everyone: true,
+          ...appliedTimeBasedConditions,
+        };
+
+        return checkConditionsSets(conditionsState, conditionsSets);
+      }
+      default: {
+        assertExhaustive(kind);
+      }
     }
   };
 };

@@ -15,6 +15,13 @@
  */
 
 import { diff, Diff, DiffNew, DiffEdit, DiffArray } from 'deep-diff';
+import type { Contact } from '../contact/contactDataAccess';
+import type { CaseService } from '../case/caseService';
+import type {
+  ProfileSection,
+  ProfileWithRelationships,
+} from '../profile/profileDataAccess';
+import type { PostSurvey } from '../post-survey/post-survey-data-access';
 import { Request } from 'express';
 
 export const actionsMaps = {
@@ -36,8 +43,6 @@ export const actionsMaps = {
     ADD_DOCUMENT: 'addDocument',
     EDIT_DOCUMENT: 'editDocument',
     EDIT_CASE_OVERVIEW: 'editCaseOverview',
-    EDIT_CHILD_IS_AT_RISK: 'editChildIsAtRisk',
-    EDIT_FOLLOW_UP_DATE: 'editFollowUpDate',
     UPDATE_CASE_CONTACTS: 'updateCaseContacts',
   },
   contact: {
@@ -48,6 +53,17 @@ export const actionsMaps = {
     ADD_CONTACT_TO_CASE: 'addContactToCase',
     REMOVE_CONTACT_FROM_CASE: 'removeContactFromCase',
   },
+  profile: {
+    VIEW_PROFILE: 'viewProfile',
+    // EDIT_PROFILE: 'editProfile', // we don't need edit for now, will be needed when users can attach more identifiers or edit the name
+    FLAG_PROFILE: 'flagProfile',
+    UNFLAG_PROFILE: 'unflagProfile',
+  },
+  profileSection: {
+    CREATE_PROFILE_SECTION: 'createProfileSection',
+    VIEW_PROFILE_SECTION: 'viewProfileSection',
+    EDIT_PROFILE_SECTION: 'editProfileSection',
+  },
   postSurvey: {
     VIEW_POST_SURVEY: 'viewPostSurvey',
   },
@@ -55,6 +71,17 @@ export const actionsMaps = {
 
 export type TargetKind = keyof typeof actionsMaps;
 export const isTargetKind = (s: string): s is TargetKind => Boolean(actionsMaps[s]);
+
+export type ActionsForTK<T extends TargetKind> =
+  (typeof actionsMaps)[T][keyof (typeof actionsMaps)[T]];
+
+export type Target<T extends TargetKind> = {
+  contact: Contact;
+  case: CaseService;
+  profile: ProfileWithRelationships;
+  profileSection: ProfileSection;
+  postSurvey: PostSurvey;
+}[T];
 
 /**
  * Utility type that given an object with any nesting depth, will return the union of all the leaves that are of type "string"
