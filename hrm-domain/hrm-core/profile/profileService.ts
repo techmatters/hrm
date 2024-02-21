@@ -62,7 +62,7 @@ export const getProfile =
     }
   };
 
-const createIdentifierAndProfile =
+export const createIdentifierAndProfile =
   (task?) =>
   async (
     accountSid: string,
@@ -82,7 +82,7 @@ const createIdentifierAndProfile =
           }),
         ]);
 
-        return Promise.all([
+        const [idWithProfiles] = await Promise.all([
           profileDB.associateProfileToIdentifier(t)(
             accountSid,
             newProfile.id,
@@ -93,7 +93,9 @@ const createIdentifierAndProfile =
             id: newProfile.id,
             updatedBy: user.workerSid,
           }),
-        ]).then(([idWithProfiles]) => idWithProfiles);
+        ]);
+
+        return idWithProfiles;
       });
     } catch (err) {
       return newErr({
@@ -114,12 +116,10 @@ export const getOrCreateProfileWithIdentifier =
       if (!identifier) {
         return newOk({ data: null });
       }
-
       const profileResult = await profileDB.getIdentifierWithProfiles(task)({
         accountSid,
         identifier,
       });
-
       if (isErr(profileResult) || profileResult.data) {
         return profileResult;
       }
