@@ -19,6 +19,9 @@ import { addDays, subDays } from 'date-fns';
 import { db } from '@tech-matters/hrm-core/connection-pool';
 import { accountSid, workerSid } from '../mocks';
 import * as profileDB from '@tech-matters/hrm-core/profile/profileDataAccess';
+import { systemUser } from '@tech-matters/twilio-worker-auth';
+import isBefore from 'date-fns/isBefore';
+import parseISO from 'date-fns/fp/parseISO';
 
 let createdProfile: profileDB.Profile;
 let createdProfileFlag: profileDB.ProfileFlag;
@@ -53,6 +56,11 @@ afterAll(async () => {
 
 describe('cleanupProfileFlags', () => {
   afterEach(async () => {
+    db.task(t =>
+      t.none(`UPDATE "Profiles" SET "updatedBy" = null WHERE "id" = $<profileId>;`, {
+        profileId: createdProfile.id,
+      }),
+    );
     const p = await profileDB.getProfileById()(accountSid, createdProfile.id);
     await Promise.all(
       p.profileFlags.map(pf =>
@@ -119,10 +127,15 @@ describe('cleanupProfileFlags', () => {
 
     let p = await profileDB.getProfileById()(accountSid, createdProfile.id);
     expect(p.profileFlags).toHaveLength(3);
+    expect(p.updatedBy).toBeNull();
+    const lastUpdated = p.updatedAt;
 
     await cleanupProfileFlags();
 
     p = await profileDB.getProfileById()(accountSid, createdProfile.id);
+
+    expect(p.updatedBy).toBe(systemUser);
+    expect(new Date(lastUpdated).getTime()).toBeLessThan(new Date(p.updatedAt).getTime());
     expect(p.profileFlags).toHaveLength(0);
   });
 });
