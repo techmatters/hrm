@@ -580,6 +580,8 @@ COPY public."SequelizeMeta" (name) FROM stdin;
 20220324154600-create-CaseSections.js
 20220415151254-add-updatedBy.js
 20220415170355-create-Audits.js
+-- why are others migrations not in the SequelizeMeta table?
+20240220185404-profiles-audits.js
 \.
 
 

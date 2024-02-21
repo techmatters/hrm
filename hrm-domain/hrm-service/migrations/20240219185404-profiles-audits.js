@@ -65,6 +65,15 @@ module.exports = {
       EXECUTE FUNCTION public.audit_trigger();
     `);
     console.log('Trigger ProfileSections_audit_trigger created');
+
+    await queryInterface.sequelize.query(`
+      CREATE TRIGGER "Identifiers_audit_trigger"
+      AFTER INSERT OR DELETE OR UPDATE
+      ON public."Identifiers"
+      FOR EACH ROW
+      EXECUTE FUNCTION public.audit_trigger();
+    `);
+    console.log('Trigger Identifiers_audit_trigger created');
   },
 
   down: async queryInterface => {
@@ -77,7 +86,6 @@ module.exports = {
       DROP TRIGGER IF EXISTS "ProfilesToIdentifiers_audit_trigger" ON public."ProfilesToIdentifiers";
     `);
     console.log('Trigger ProfilesToIdentifiers_audit_trigger dropped');
-
 
     await queryInterface.sequelize.query(`
       DROP TRIGGER IF EXISTS "ProfilesToProfileFlags_audit_trigger" ON public."ProfilesToProfileFlags";
@@ -93,5 +101,10 @@ module.exports = {
       DROP TRIGGER IF EXISTS "ProfileSections_audit_trigger" ON public."ProfileSections";
     `);
     console.log('Trigger ProfileSections_audit_trigger dropped');
+
+    await queryInterface.sequelize.query(`
+      DROP TRIGGER IF EXISTS "Identifiers_audit_trigger" ON public."Identifiers";
+    `);
+    console.log('Trigger Identifiers_audit_trigger dropped');
   },
 };
