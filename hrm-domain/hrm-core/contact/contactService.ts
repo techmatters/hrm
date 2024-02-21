@@ -50,7 +50,7 @@ import {
 import { Profile, getOrCreateProfileWithIdentifier } from '../profile/profileService';
 import { deleteContactReferrals } from '../referral/referral-data-access';
 import { DatabaseUniqueConstraintViolationError, inferPostgresError } from '../sql';
-import { systemUser } from '@tech-matters/twilio-worker-auth/src/twilioWorkerAuthMiddleware';
+import { systemUser } from '@tech-matters/twilio-worker-auth';
 
 // Re export as is:
 export { Contact } from './contactDataAccess';
