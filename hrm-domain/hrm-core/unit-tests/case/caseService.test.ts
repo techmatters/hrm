@@ -27,6 +27,7 @@ import { RulesFile } from '../../permissions/rulesMap';
 
 jest.mock('../../case/caseDataAccess');
 const baselineCreatedDate = new Date(2013, 6, 13).toISOString();
+const onlyEssentialData = undefined;
 
 test('create case', async () => {
   const caseToBeCreated = createMockCase({
@@ -272,6 +273,7 @@ describe('searchCases', () => {
           user: twilioUser(workerSid, []),
           permissions: rulesMap.open,
         },
+        onlyEssentialData,
       );
 
       const user = { ...twilioUser(workerSid, []), isSupervisor: false };
@@ -287,6 +289,7 @@ describe('searchCases', () => {
           counsellors: undefined,
           ...expectedDbFilters,
         },
+        onlyEssentialData,
       );
       expect(result).toStrictEqual(expected);
 
@@ -364,6 +367,7 @@ describe('search cases permissions', () => {
       searchParameters,
       filterParameters,
       reqData,
+      onlyEssentialData,
     );
 
     expect(searchSpy).toHaveBeenCalledWith(
@@ -373,6 +377,7 @@ describe('search cases permissions', () => {
       accountSid,
       {},
       filterParameters.filters,
+      onlyEssentialData,
     );
   });
 });
