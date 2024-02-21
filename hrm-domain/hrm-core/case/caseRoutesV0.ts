@@ -42,10 +42,17 @@ const casesRouter = SafeRouter();
  */
 casesRouter.get('/', publicEndpoint, async (req, res) => {
   const { accountSid } = req;
-  const { sortDirection, sortBy, limit, offset, onlyEssentialData, ...search } =
-    req.query;
+  const {
+    sortDirection,
+    sortBy,
+    limit,
+    offset,
+    onlyEssentialData: onlyEssentialDataParam,
+    ...search
+  } = req.query;
 
   const { closedCases, counselor, helpline, ...searchCriteria } = search;
+  const onlyEssentialData = Boolean(onlyEssentialDataParam);
 
   const cases = await caseApi.searchCases(
     accountSid,
