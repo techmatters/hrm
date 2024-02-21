@@ -128,12 +128,16 @@ const findS3StoredTranscriptPending = (
   return null;
 };
 
-const initProfile = async (conn, accountSid, contact) => {
+const initProfile = async (
+  conn,
+  accountSid: string,
+  contact: Pick<Contact, 'number'>,
+) => {
   if (!contact.number) return {};
 
   const profileResult = await getOrCreateProfileWithIdentifier(conn)(
-    contact.number,
     accountSid,
+    { identifier: contact.number },
     { user: { isSupervisor: false, roles: [], workerSid: systemUser } }, // fake the worker since makes more sense to keep the new "profile created by system"
   );
 
