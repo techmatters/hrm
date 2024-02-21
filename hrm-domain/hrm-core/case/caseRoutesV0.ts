@@ -42,7 +42,8 @@ const casesRouter = SafeRouter();
  */
 casesRouter.get('/', publicEndpoint, async (req, res) => {
   const { accountSid } = req;
-  const { sortDirection, sortBy, limit, offset, ...search } = req.query;
+  const { sortDirection, sortBy, limit, offset, onlyEssentialData, ...search } =
+    req.query;
 
   const { closedCases, counselor, helpline, ...searchCriteria } = search;
 
@@ -52,6 +53,7 @@ casesRouter.get('/', publicEndpoint, async (req, res) => {
     searchCriteria,
     { filters: { includeOrphans: false }, closedCases, counselor, helpline },
     req,
+    onlyEssentialData,
   );
   res.json(cases);
 });
@@ -66,11 +68,17 @@ casesRouter.post('/', publicEndpoint, async (req, res) => {
 casesRouter.get('/:id', canViewCase, async (req, res) => {
   const { accountSid } = req;
   const { id } = req.params;
+  const onlyEssentialData = Boolean(req.query.onlyEssentialData);
 
-  const caseFromDB = await caseApi.getCase(id, accountSid, {
-    can: req.can,
-    user: req.user,
-  });
+  const caseFromDB = await caseApi.getCase(
+    id,
+    accountSid,
+    {
+      can: req.can,
+      user: req.user,
+    },
+    onlyEssentialData,
+  );
 
   if (!caseFromDB) {
     throw createError(404);
@@ -145,7 +153,14 @@ casesRouter.delete('/:id', publicEndpoint, async (req, res) => {
 
 casesRouter.post('/search', publicEndpoint, async (req, res) => {
   const { accountSid } = req;
-  const { closedCases, counselor, helpline, filters, ...searchCriteria } = req.body || {};
+  const {
+    closedCases,
+    counselor,
+    helpline,
+    filters,
+    onlyEssentialData,
+    ...searchCriteria
+  } = req.body || {};
 
   const searchResults = await caseApi.searchCases(
     accountSid,
@@ -153,6 +168,7 @@ casesRouter.post('/search', publicEndpoint, async (req, res) => {
     searchCriteria,
     { closedCases, counselor, helpline, filters },
     req,
+    onlyEssentialData,
   );
   res.json(searchResults);
 });
