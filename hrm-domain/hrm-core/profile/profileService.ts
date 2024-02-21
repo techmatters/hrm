@@ -66,6 +66,7 @@ export const getOrCreateProfileWithIdentifier =
   async (
     identifier: string,
     accountSid: string,
+    name?: string,
   ): Promise<TResult<'InternalServerError', profileDB.IdentifierWithProfiles>> => {
     try {
       if (!identifier) {
@@ -82,7 +83,56 @@ export const getOrCreateProfileWithIdentifier =
       }
 
       return await profileDB.createIdentifierAndProfile(task)(accountSid, {
+        identifier: { identifier },
+        profile: { name: name || null },
+      });
+    } catch (err) {
+      return newErr({
+        message: err instanceof Error ? err.message : String(err),
+        error: 'InternalServerError',
+      });
+    }
+  };
+
+export const createProfileWithIdentifier =
+  (task?) =>
+  async (
+    identifier: string,
+    accountSid: string,
+    name?: string,
+  ): Promise<
+    TResult<
+      'InternalServerError' | 'InvalidParameterError' | 'IdentifierExistsError',
+      profileDB.IdentifierWithProfiles
+    >
+  > => {
+    try {
+      if (!identifier) {
+        return newErr({
+          message: 'Missing identifier parameter',
+          error: 'InvalidParameterError',
+        });
+      }
+
+      const profileResult = await profileDB.getIdentifierWithProfiles(task)({
+        accountSid,
         identifier,
+      });
+
+      if (isErr(profileResult)) {
+        return profileResult;
+      }
+
+      if (profileResult.data) {
+        return newErr({
+          message: `Identifier ${identifier} already exists`,
+          error: 'IdentifierExistsError',
+        });
+      }
+
+      return await profileDB.createIdentifierAndProfile(task)(accountSid, {
+        identifier: { identifier },
+        profile: { name: name || null },
       });
     } catch (err) {
       return newErr({

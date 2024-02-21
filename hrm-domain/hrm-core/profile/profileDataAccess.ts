@@ -203,13 +203,13 @@ export const createIdentifierAndProfile =
   (task?) =>
   async (
     accountSid: string,
-    payload: NewIdentifierRecord,
+    payload: { identifier: NewIdentifierRecord; profile: NewProfileRecord },
   ): Promise<TResult<'InternalServerError', IdentifierWithProfiles>> => {
     try {
       return await txIfNotInOne(task, async t => {
         const [newIdentifier, newProfile] = await Promise.all([
-          createIdentifier(t)(accountSid, payload),
-          createProfile(t)(accountSid, { name: null }),
+          createIdentifier(t)(accountSid, payload.identifier),
+          createProfile(t)(accountSid, { name: payload.profile?.name || null }),
         ]);
 
         return associateProfileToIdentifier(t)(

@@ -334,7 +334,8 @@ describe('/contacts route', () => {
       };
 
       const profileResult = await profilesDB.createIdentifierAndProfile()(accountSid, {
-        identifier: contact.number,
+        identifier: { identifier: contact.number },
+        profile: { name: null },
       });
 
       if (isErr(profileResult)) {
