@@ -20,8 +20,6 @@ import { db } from '@tech-matters/hrm-core/connection-pool';
 import { accountSid, workerSid } from '../mocks';
 import * as profileDB from '@tech-matters/hrm-core/profile/profileDataAccess';
 import { systemUser } from '@tech-matters/twilio-worker-auth';
-import isBefore from 'date-fns/isBefore';
-import parseISO from 'date-fns/fp/parseISO';
 
 let createdProfile: profileDB.Profile;
 let createdProfileFlag: profileDB.ProfileFlag;
