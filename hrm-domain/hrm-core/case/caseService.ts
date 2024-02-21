@@ -423,7 +423,7 @@ export type SearchParameters = CaseSearchCriteria & {
 };
 
 export type CaseSearchReturn = {
-  cases: RecursivePartial<CaseService>[];
+  cases: CaseService[] | RecursivePartial<CaseService>[];
   count: number;
 };
 
