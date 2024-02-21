@@ -46,6 +46,7 @@ import * as csamReportApi from '@tech-matters/hrm-core/csam-report/csam-report';
 import { getRequest, getServer, headers, setRules, useOpenRules } from './server';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
 import * as profilesDB from '@tech-matters/hrm-core/profile/profileDataAccess';
+import * as profilesService from '@tech-matters/hrm-core/profile/profileService';
 
 import { isErr } from '@tech-matters/types';
 import {
@@ -333,9 +334,13 @@ describe('/contacts route', () => {
         number: 'identifier1234',
       };
 
-      const profileResult = await profilesDB.createIdentifierAndProfile()(accountSid, {
-        identifier: contact.number,
-      });
+      const profileResult = await profilesService.createIdentifierAndProfile()(
+        accountSid,
+        {
+          identifier: contact.number,
+        },
+        { user: { isSupervisor: false, roles: [], workerSid } },
+      );
 
       if (isErr(profileResult)) {
         expect(false).toBeTruthy();
@@ -348,7 +353,7 @@ describe('/contacts route', () => {
       const profileId = profileResult.data.profiles[0].id;
 
       const createIdentifierAndProfileSpy = jest.spyOn(
-        profilesDB,
+        profilesService,
         'createIdentifierAndProfile',
       );
 
@@ -379,7 +384,7 @@ describe('/contacts route', () => {
       };
 
       const createIdentifierAndProfileSpy = jest.spyOn(
-        profilesDB,
+        profilesService,
         'createIdentifierAndProfile',
       );
 
@@ -414,7 +419,7 @@ describe('/contacts route', () => {
         'getIdentifierWithProfiles',
       );
       const createIdentifierAndProfileSpy = jest.spyOn(
-        profilesDB,
+        profilesService,
         'createIdentifierAndProfile',
       );
 

@@ -17,7 +17,7 @@
 import { cleanupProfileFlags } from '@tech-matters/profile-flags-cleanup';
 import { addDays, subDays } from 'date-fns';
 import { db } from '@tech-matters/hrm-core/connection-pool';
-import { accountSid } from '../mocks';
+import { accountSid, workerSid } from '../mocks';
 import * as profileDB from '@tech-matters/hrm-core/profile/profileDataAccess';
 
 let createdProfile: profileDB.Profile;
@@ -27,10 +27,12 @@ beforeAll(async () => {
   [createdProfile, createdProfileFlag] = await Promise.all([
     profileDB.createProfile()(accountSid, {
       name: 'TEST_PROFILE',
+      createdBy: workerSid,
     }),
     (
       await profileDB.createProfileFlag(accountSid, {
         name: 'TEST_PROFILE_FLAG',
+        createdBy: workerSid,
       })
     ).unwrap(),
   ]);

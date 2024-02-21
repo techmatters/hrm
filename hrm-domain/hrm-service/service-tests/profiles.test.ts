@@ -73,7 +73,9 @@ describe('/profiles', () => {
       existingProfiles = (await profilesDB.listProfiles(accountSid, {}, {})).unwrap()
         .profiles;
       createdProfiles = await Promise.all(
-        profilesNames.map(name => profilesDB.createProfile()(accountSid, { name })),
+        profilesNames.map(name =>
+          profilesDB.createProfile()(accountSid, { name, createdBy: workerSid }),
+        ),
       );
       defaultFlags = await profilesDB
         .getProfileFlagsForAccount(accountSid)
@@ -227,7 +229,13 @@ describe('/profiles', () => {
       // Create same identifier for two diferent accounts
       createdProfiles = (
         await Promise.all(
-          accounts.map(acc => getOrCreateProfileWithIdentifier()(identifier, acc)),
+          accounts.map(acc =>
+            getOrCreateProfileWithIdentifier()(
+              acc,
+              { identifier },
+              { user: { isSupervisor: false, roles: [], workerSid } },
+            ),
+          ),
         )
       )
         .map(result => result.unwrap())
@@ -320,8 +328,9 @@ describe('/profiles', () => {
     beforeAll(async () => {
       // Create an identifier
       createdProfile = await getOrCreateProfileWithIdentifier()(
-        identifier,
         accountSid,
+        { identifier },
+        { user: { isSupervisor: false, roles: [], workerSid } },
       ).then(result => result.unwrap());
     });
 
@@ -853,12 +862,14 @@ describe('/profiles', () => {
         const customFlag = (
           await profilesDB.createProfileFlag(accountSid, {
             name: 'custom',
+            createdBy: workerSid,
           })
         ).unwrap();
 
         const customFlagForAnother = (
           await profilesDB.createProfileFlag('ANOTHER_ACCOUNT', {
             name: 'custom 2',
+            createdBy: workerSid,
           })
         ).unwrap();
 
