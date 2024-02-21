@@ -549,10 +549,10 @@ describe('Profiles_audit_trigger', () => {
 //   let createdProfile = null;
 
 //   const selectCreatedProfileAudits = () => `
-//     SELECT * FROM "Audits" 
+//     SELECT * FROM "Audits"
 //     WHERE "tableName" = 'Profiles' AND (
 //       ("oldRecord"->>'id' = '${createdProfile.id}' AND "oldRecord"->>'accountSid' = '${testAccountSid}')
-//       OR 
+//       OR
 //       ("newRecord"->>'id' = '${createdProfile.id}' AND "newRecord"->>'accountSid' = '${testAccountSid}')
 //     )
 //     ORDER BY "timestamp_clock" ASC
@@ -571,10 +571,10 @@ describe('Profiles_audit_trigger', () => {
 //   afterAll(async () => {
 //     await db.task(t =>
 //       t.none(`
-//         DELETE FROM "Audits" 
+//         DELETE FROM "Audits"
 //         WHERE "tableName" = 'Profiles' AND (
 //           ("oldRecord"->>'id' = '${createdProfile.id}' AND "oldRecord"->>'accountSid' = '${testAccountSid}')
-//           OR 
+//           OR
 //           ("newRecord"->>'id' = '${createdProfile.id}' AND "newRecord"->>'accountSid' = '${testAccountSid}')
 //         )
 //       `),
