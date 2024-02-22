@@ -238,8 +238,8 @@ describe('/profiles', () => {
           ),
         )
       )
-        .map(result => result.unwrap())
-        .reduce((accum, curr) => ({ ...accum, [curr.identifier.accountSid]: curr }), {});
+        .map(result => result.unwrap().identifier)
+        .reduce((accum, curr) => ({ ...accum, [curr.accountSid]: curr }), {});
       // Create one case for each
       createdCases = (
         await Promise.all(accounts.map(acc => caseApi.createCase(case1, acc, workerSid)))
