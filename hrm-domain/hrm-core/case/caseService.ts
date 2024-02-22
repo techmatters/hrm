@@ -319,12 +319,13 @@ const mapEssentialData =
     return {
       id,
       status,
-      connectedContacts: [firstChildEssentialData],
+      connectedContacts: connectedContacts.length > 0 ? [firstChildEssentialData] : [],
       twilioWorkerId,
       categories,
       createdAt,
       updatedAt,
       info: infoEssentialData,
+      precalculatedPermissions: caseRecord.precalculatedPermissions,
     };
   };
 
