@@ -45,7 +45,10 @@ export const pullCases = async (startDate: Date, endDate: Date) => {
       { filters },
       maxPermissions,
     );
-    return { records: caseResult.cases, count: caseResult.count };
+    return {
+      records: caseResult.cases as caseApi.CaseService[],
+      count: caseResult.count,
+    };
   });
 
   const mapContactsToId = (contacts: Required<{ id: number }>[]) =>

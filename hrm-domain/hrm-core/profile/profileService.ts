@@ -19,10 +19,11 @@ import { isFuture } from 'date-fns';
 
 import * as profileDB from './profileDataAccess';
 import { db } from '../connection-pool';
+import { txIfNotInOne } from '../sql';
 import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import type { NewProfileSectionRecord } from './sql/profile-sections-sql';
-import { NewProfileFlagRecord } from './sql/profile-flags-sql';
-import { txIfNotInOne } from '../sql';
+import type { NewProfileFlagRecord } from './sql/profile-flags-sql';
+import type { NewIdentifierRecord, NewProfileRecord } from './sql/profile-insert-sql';
 
 export {
   Identifier,
@@ -66,18 +67,20 @@ export const createIdentifierAndProfile =
   (task?) =>
   async (
     accountSid: string,
-    { identifier }: { identifier: string },
+    payload: { identifier: NewIdentifierRecord; profile: NewProfileRecord },
     { user }: { user: TwilioUser },
   ): Promise<TResult<'InternalServerError', profileDB.IdentifierWithProfiles>> => {
     try {
+      const { identifier, profile } = payload;
+
       return await txIfNotInOne(task, async t => {
         const [newIdentifier, newProfile] = await Promise.all([
           profileDB.createIdentifier(t)(accountSid, {
-            identifier,
+            identifier: identifier.identifier,
             createdBy: user.workerSid,
           }),
           profileDB.createProfile(t)(accountSid, {
-            name: null,
+            name: profile.name || null,
             createdBy: user.workerSid,
           }),
         ]);
@@ -109,22 +112,95 @@ export const getOrCreateProfileWithIdentifier =
   (task?) =>
   async (
     accountSid: string,
-    { identifier }: { identifier: string },
+    payload: { identifier: NewIdentifierRecord; profile: NewProfileRecord },
     { user }: { user: TwilioUser },
-  ): Promise<TResult<'InternalServerError', profileDB.IdentifierWithProfiles>> => {
+  ): Promise<
+    TResult<
+      'InternalServerError',
+      { identifier: profileDB.IdentifierWithProfiles; created: boolean }
+    >
+  > => {
     try {
-      if (!identifier) {
+      const { identifier, profile } = payload;
+
+      if (!identifier?.identifier) {
         return newOk({ data: null });
       }
+
       const profileResult = await profileDB.getIdentifierWithProfiles(task)({
         accountSid,
-        identifier,
+        identifier: identifier.identifier,
       });
-      if (isErr(profileResult) || profileResult.data) {
+
+      if (isErr(profileResult)) {
         return profileResult;
       }
 
-      return await createIdentifierAndProfile(task)(accountSid, { identifier }, { user });
+      if (profileResult.data) {
+        return newOk({ data: { identifier: profileResult.data, created: false } });
+      }
+
+      const createdResult = await createIdentifierAndProfile(task)(
+        accountSid,
+        { identifier, profile },
+        { user },
+      );
+
+      if (isErr(createdResult)) {
+        return createdResult;
+      }
+
+      return newOk({ data: { identifier: createdResult.data, created: true } });
+    } catch (err) {
+      return newErr({
+        message: err instanceof Error ? err.message : String(err),
+        error: 'InternalServerError',
+      });
+    }
+  };
+
+export const createProfileWithIdentifierOrError =
+  (task?) =>
+  async (
+    accountSid: string,
+    payload: { identifier: NewIdentifierRecord; profile: NewProfileRecord },
+    { user }: { user: TwilioUser },
+  ): Promise<
+    TResult<
+      'InternalServerError' | 'InvalidParameterError' | 'IdentifierExistsError',
+      profileDB.IdentifierWithProfiles
+    >
+  > => {
+    try {
+      const { identifier, profile } = payload;
+      if (!identifier?.identifier) {
+        return newErr({
+          message: 'Missing identifier parameter',
+          error: 'InvalidParameterError',
+        });
+      }
+
+      const result = await getOrCreateProfileWithIdentifier(task)(
+        accountSid,
+        {
+          identifier,
+          profile,
+        },
+        { user },
+      );
+
+      if (isErr(result)) {
+        return result;
+      }
+
+      if (result.data.created === false) {
+        return newErr({
+          message: `Identifier ${identifier} already exists`,
+          error: 'IdentifierExistsError',
+        });
+      }
+
+      return newOk({ data: result.data.identifier });
     } catch (err) {
       return newErr({
         message: err instanceof Error ? err.message : String(err),

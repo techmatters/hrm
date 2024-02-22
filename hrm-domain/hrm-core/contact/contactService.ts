@@ -137,7 +137,7 @@ const initProfile = async (
 
   const profileResult = await getOrCreateProfileWithIdentifier(conn)(
     accountSid,
-    { identifier: contact.number },
+    { identifier: { identifier: contact.number }, profile: { name: null } },
     { user: { isSupervisor: false, roles: [], workerSid: systemUser } }, // fake the worker since makes more sense to keep the new "profile created by system"
   );
 
@@ -149,8 +149,8 @@ const initProfile = async (
   }
 
   return {
-    profileId: profileResult.data?.profiles?.[0].id,
-    identifierId: profileResult.data?.id,
+    profileId: profileResult.data?.identifier?.profiles?.[0].id,
+    identifierId: profileResult.data?.identifier?.id,
   };
 };
 

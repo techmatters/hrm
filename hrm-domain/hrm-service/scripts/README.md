@@ -15,6 +15,8 @@ This is composition of different scripts that will allow to perform actions agai
 ```bash
 admin-cli
 ├── profiles
+| ├── identifiers
+|   ├── create:       # Create a new identifier and associate a profile to it
 | ├── flags
 |   ├── list:         # List the profile flags for the given account
 |   ├── create:       # Create a new profile flag

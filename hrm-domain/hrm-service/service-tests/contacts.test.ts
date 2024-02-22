@@ -337,7 +337,8 @@ describe('/contacts route', () => {
       const profileResult = await profilesService.createIdentifierAndProfile()(
         accountSid,
         {
-          identifier: contact.number,
+          identifier: { identifier: contact.number },
+          profile: { name: null },
         },
         { user: { isSupervisor: false, roles: [], workerSid } },
       );
