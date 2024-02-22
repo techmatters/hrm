@@ -22,8 +22,6 @@
 import { db } from '@tech-matters/hrm-core/connection-pool';
 
 import '../case/caseValidation';
-import { te } from 'date-fns/locale';
-// import { after } from 'lodash';
 
 const workerSid = 'WK-worker-sid';
 const anotherWorkerSid = 'WK-another-worker-sid';
@@ -529,6 +527,12 @@ describe('Profiles_audit_trigger', () => {
       timestamp_stm: expect.toParseAsDate(),
       timestamp_clock: expect.toParseAsDate(),
     };
+
+    const profileAudits = await db.task(t => t.manyOrNone(selectCreatedProfileAudits()));
+
+    expect(profileAudits).toHaveLength(1);
+
+    expect(profileAudits[0]).toMatchObject(expectedAudit);
   });
 
   test('UPDATE audit', async () => {
@@ -660,6 +664,14 @@ describe('ProfileFlags_audit_trigger', () => {
       timestamp_stm: expect.toParseAsDate(),
       timestamp_clock: expect.toParseAsDate(),
     };
+
+    const profileFlagAudits = await db.task(t =>
+      t.manyOrNone(selectCreatedProfileFlagAudits()),
+    );
+
+    expect(profileFlagAudits).toHaveLength(1);
+
+    expect(profileFlagAudits[0]).toMatchObject(expectedAudit);
   });
 
   test('UPDATE audit', async () => {
@@ -806,6 +818,14 @@ describe('ProfileSections_audit_trigger', () => {
       timestamp_stm: expect.toParseAsDate(),
       timestamp_clock: expect.toParseAsDate(),
     };
+
+    const profileSectionAudits = await db.task(t =>
+      t.manyOrNone(selectCreatedProfileSectionAudits()),
+    );
+
+    expect(profileSectionAudits).toHaveLength(1);
+
+    expect(profileSectionAudits[0]).toMatchObject(expectedAudit);
   });
 
   test('UPDATE audit', async () => {
