@@ -549,6 +549,10 @@ describe('/profiles', () => {
                 expect(
                   response.body.profileFlags.some(pf => pf.id === profileFlagId),
                 ).toBeTruthy();
+                expect(response.body.updateBy).toBe(
+                  response.body.profileFlags.find(pf => pf.id === profileFlagId)
+                    ?.updatedBy,
+                );
               },
             },
             {
@@ -651,9 +655,13 @@ describe('/profiles', () => {
             {
               description: 'profile and flag exist',
               expectStatus: 200,
-              expectFunction: (response, profileId, profileFlagId) => {
+              expectFunction: (response, profileId, profileFlagId, startDate) => {
                 expect(response.body.id).toBe(profileId);
                 expect(response.body.profileFlags).not.toContain(profileFlagId);
+                expect(response.body.updatedBy).toBe(workerSid);
+                expect(new Date(startDate).getTime()).toBeLessThan(
+                  new Date(response.body.updatedAt).getTime(),
+                );
               },
             },
           ]).test(
@@ -665,12 +673,13 @@ describe('/profiles', () => {
               customHeaders,
               expectFunction,
             }) => {
+              const startDate = new Date();
               const response = await request
                 .delete(buildRoute(profileId, profileFlagId))
                 .set(customHeaders || headers);
               expect(response.statusCode).toBe(expectStatus);
               if (expectFunction) {
-                expectFunction(response, profileId, profileFlagId);
+                expectFunction(response, profileId, profileFlagId, startDate);
               }
             },
           );
@@ -701,6 +710,8 @@ describe('/profiles', () => {
               expect(response.body.profileId).toBe(profileId);
               expect(response.body.content).toBe(payload.content);
               expect(response.body.sectionType).toBe(payload.sectionType);
+              expect(response.body.createdBy).toBe(workerSid);
+              expect(response.body.updatedBy).toBe(null);
 
               const updatedProfile = await profilesDB.getProfileById()(
                 accountSid,
