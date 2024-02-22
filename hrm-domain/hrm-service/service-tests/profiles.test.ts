@@ -232,14 +232,14 @@ describe('/profiles', () => {
           accounts.map(acc =>
             getOrCreateProfileWithIdentifier()(
               acc,
-              { identifier },
+              { identifier: { identifier }, profile: { name: null } },
               { user: { isSupervisor: false, roles: [], workerSid } },
             ),
           ),
         )
       )
         .map(result => result.unwrap())
-        .reduce((accum, curr) => ({ ...accum, [curr.accountSid]: curr }), {});
+        .reduce((accum, curr) => ({ ...accum, [curr.identifier.accountSid]: curr }), {});
       // Create one case for each
       createdCases = (
         await Promise.all(accounts.map(acc => caseApi.createCase(case1, acc, workerSid)))
@@ -329,9 +329,9 @@ describe('/profiles', () => {
       // Create an identifier
       createdProfile = await getOrCreateProfileWithIdentifier()(
         accountSid,
-        { identifier },
+        { identifier: { identifier }, profile: { name: null } },
         { user: { isSupervisor: false, roles: [], workerSid } },
-      ).then(result => result.unwrap());
+      ).then(result => result.unwrap().identifier);
     });
 
     afterAll(async () => {
