@@ -22,6 +22,7 @@
 import { db } from '@tech-matters/hrm-core/connection-pool';
 
 import '../case/caseValidation';
+// import { after } from 'lodash';
 
 const workerSid = 'WK-worker-sid';
 const anotherWorkerSid = 'WK-another-worker-sid';
@@ -466,5 +467,66 @@ describe('Contacts_audit_trigger', () => {
     expect(contactAudits).toHaveLength(3);
 
     expect(contactAudits[2]).toMatchObject(expectedAudit);
+  });
+});
+
+describe('Profiles_audit_trigger', () => {
+  let createdProfile = null;
+
+  const selectCreatedProfileAudits = () => `
+    SELECT * FROM "Audits" 
+    WHERE "tableName" = 'Profiles' AND (
+      ("oldRecord"->>'id' = '${createdProfile.id}' AND "oldRecord"->>'accountSid' = '${testAccountSid}')
+      OR 
+      ("newRecord"->>'id' = '${createdProfile.id}' AND "newRecord"->>'accountSid' = '${testAccountSid}')
+    )
+    ORDER BY "timestamp_clock" ASC
+  `;
+
+  afterAll(async () => {
+    await db.task(t =>
+      t.none(`
+        DELETE FROM "Audits" 
+        WHERE "tableName" = 'Profiles' AND (
+          ("oldRecord"->>'id' = '${createdProfile.id}' AND "oldRecord"->>'accountSid' = '${testAccountSid}')
+          OR 
+          ("newRecord"->>'id' = '${createdProfile.id}' AND "newRecord"->>'accountSid' = '${testAccountSid}')
+        )
+      `),
+    );
+
+    await db.task(t =>
+      t.none(`
+        DELETE FROM "Profiles" WHERE id = ${createdProfile.id} AND "accountSid" = '${testAccountSid}'
+      `),
+    );
+  });
+
+  test('INSERT audit', async () => {
+    createdProfile = await db.task(t =>
+      t.one(`
+        INSERT INTO "Profiles" ("name", "accountSid", "createdAt", "updatedAt")
+        VALUES ('test', '${testAccountSid}', current_timestamp, current_timestamp)
+        RETURNING *;
+      `),
+    );
+
+    expect(createdProfile).toBeDefined();
+
+    const expectedAudit = {
+      id: expect.any(Number),
+      user: 'hrm',
+      tableName: 'Profiles',
+      operation: 'INSERT',
+      oldRecord: null,
+      newRecord: {
+        ...createdProfile,
+        createdAt: expect.toParseAsDate(createdProfile.createdAt),
+        updatedAt: expect.toParseAsDate(createdProfile.updatedAt),
+      },
+      timestamp_trx: expect.toParseAsDate(),
+      timestamp_stm: expect.toParseAsDate(),
+      timestamp_clock: expect.toParseAsDate(),
+    };
   });
 });
