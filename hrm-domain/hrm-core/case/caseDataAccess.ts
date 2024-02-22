@@ -154,9 +154,10 @@ export const getById = async (
   caseId: number,
   accountSid: string,
   workerSid: string,
+  onlyEssentialData?: boolean,
 ): Promise<CaseRecord | undefined> => {
   return db.task(async connection => {
-    const statement = selectSingleCaseByIdSql('Cases');
+    const statement = selectSingleCaseByIdSql('Cases', onlyEssentialData);
     const queryValues = { accountSid, caseId, workerSid };
     return connection.oneOrNone<CaseRecord>(statement, queryValues);
   });
@@ -184,6 +185,7 @@ export type SearchQueryFunction<T> = (
   accountSid: string,
   searchCriteria: T,
   filters?: CaseListFilters,
+  onlyEssentialData?: boolean,
 ) => Promise<{ cases: CaseRecord[]; count: number }>;
 
 const generalizedSearchQueryFunction = <T>(
@@ -197,13 +199,20 @@ const generalizedSearchQueryFunction = <T>(
     accountSid,
     searchCriteria,
     filters,
+    onlyEssentialData,
   ) => {
     const { limit, offset, sortBy, sortDirection } =
       getPaginationElements(listConfiguration);
     const orderClause = [{ sortBy, sortDirection }];
 
     const { count, rows } = await db.task(async connection => {
-      const statement = sqlQueryBuilder(user, permissions, filters, orderClause);
+      const statement = sqlQueryBuilder(
+        user,
+        permissions,
+        filters,
+        orderClause,
+        onlyEssentialData,
+      );
       const queryValues = sqlQueryParamsBuilder(
         accountSid,
         user,

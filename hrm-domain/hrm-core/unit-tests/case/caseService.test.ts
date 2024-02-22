@@ -118,6 +118,33 @@ describe('searchCases', () => {
       },
     ],
   });
+
+  const firstChild = caseWithContact.connectedContacts![0];
+  const caseWithContactEssentialData = {
+    id: caseWithContact.id,
+    status: caseWithContact.status,
+    connectedContacts: [
+      {
+        rawJson: {
+          childInformation: {
+            firstName: firstChild.rawJson?.childInformation.firstName,
+            lastName: firstChild.rawJson?.childInformation.firstName,
+          },
+        },
+      },
+    ],
+    twilioWorkerId: caseWithContact.twilioWorkerId,
+    categories: caseWithContact.categories,
+    createdAt: caseWithContact.createdAt,
+    updatedAt: caseWithContact.updatedAt,
+    info: {
+      summary: caseWithContact.info.summary,
+      followUpDate: caseWithContact.info.followUpDate,
+      definitionVersion: caseWithContact.info.definitionVersion,
+    },
+    precalculatedPermissions: caseWithContact.precalculatedPermissions,
+  };
+
   const caseRecordWithContact = createMockCaseRecord({
     accountSid,
     id: caseId,
@@ -157,6 +184,11 @@ describe('searchCases', () => {
 
   const caseWithoutContact = {
     ...caseWithContact,
+    connectedContacts: [],
+  };
+
+  const caseWithoutContactEssentialData = {
+    ...caseWithContactEssentialData,
     connectedContacts: [],
   };
 
@@ -244,6 +276,36 @@ describe('searchCases', () => {
         },
       ],
     },
+    {
+      description: 'list cases asking for onlyEssentialData',
+      listConfig: { offset: 30, limit: 45 },
+      casesFromDb: [caseRecordWithoutContact],
+      expectedCases: [
+        {
+          ...caseWithoutContactEssentialData,
+          categories: {},
+          precalculatedPermissions: {
+            userOwnsContact: false,
+          },
+        },
+      ],
+      onlyEssentialData: true,
+    },
+    {
+      description: 'list cases asking explicitly asking for NOT onlyEssentialData',
+      listConfig: { offset: 30, limit: 45 },
+      casesFromDb: [caseRecordWithoutContact],
+      expectedCases: [
+        {
+          ...caseWithoutContact,
+          categories: {},
+          precalculatedPermissions: {
+            userOwnsContact: false,
+          },
+        },
+      ],
+      onlyEssentialData: false,
+    },
   ]).test(
     '$description',
     async ({
@@ -254,6 +316,7 @@ describe('searchCases', () => {
       filterParameters = {},
       expectedDbSearchCriteria = {},
       expectedDbFilters = {},
+      onlyEssentialData = undefined,
     }) => {
       const expected = { cases: expectedCases, count: 1337 };
 
@@ -272,6 +335,7 @@ describe('searchCases', () => {
           user: twilioUser(workerSid, []),
           permissions: rulesMap.open,
         },
+        onlyEssentialData,
       );
 
       const user = { ...twilioUser(workerSid, []), isSupervisor: false };
@@ -287,6 +351,7 @@ describe('searchCases', () => {
           counsellors: undefined,
           ...expectedDbFilters,
         },
+        onlyEssentialData,
       );
       expect(result).toStrictEqual(expected);
 
@@ -332,49 +397,59 @@ describe('search cases permissions', () => {
       canOnlyViewOwnCases: true,
       counsellors: undefined,
     },
-  ]).test('$description', async ({ isSupervisor, canOnlyViewOwnCases, counsellors }) => {
-    const searchParameters = {};
-    const filterParameters = {
-      helpline: 'helpline',
-      closedCases: true,
-      filters: {
-        counsellors,
-      },
-    };
-    const viewOwnCasesRulesFile: RulesFile = {
-      ...rulesMap.open,
-      ['viewCase']: [['isCreator']],
-    };
-    const limitOffset = { limit: '10', offset: '0' };
-    const can = () => true;
-    const roles = [];
-    const user = { ...twilioUser(workerSid, roles), isSupervisor: isSupervisor };
-    const reqData = {
-      can,
-      user,
-      permissions: canOnlyViewOwnCases ? viewOwnCasesRulesFile : rulesMap.open,
-    };
+  ]).test(
+    '$description',
+    async ({
+      isSupervisor,
+      canOnlyViewOwnCases,
+      counsellors,
+      onlyEssentialData = undefined,
+    }) => {
+      const searchParameters = {};
+      const filterParameters = {
+        helpline: 'helpline',
+        closedCases: true,
+        filters: {
+          counsellors,
+        },
+      };
+      const viewOwnCasesRulesFile: RulesFile = {
+        ...rulesMap.open,
+        ['viewCase']: [['isCreator']],
+      };
+      const limitOffset = { limit: '10', offset: '0' };
+      const can = () => true;
+      const roles = [];
+      const user = { ...twilioUser(workerSid, roles), isSupervisor: isSupervisor };
+      const reqData = {
+        can,
+        user,
+        permissions: canOnlyViewOwnCases ? viewOwnCasesRulesFile : rulesMap.open,
+      };
 
-    const searchSpy = jest
-      .spyOn(caseDb, 'search')
-      .mockResolvedValue({ cases: [], count: 0 });
-    await caseApi.searchCases(
-      accountSid,
-      limitOffset,
-      searchParameters,
-      filterParameters,
-      reqData,
-    );
+      const searchSpy = jest
+        .spyOn(caseDb, 'search')
+        .mockResolvedValue({ cases: [], count: 0 });
+      await caseApi.searchCases(
+        accountSid,
+        limitOffset,
+        searchParameters,
+        filterParameters,
+        reqData,
+        onlyEssentialData,
+      );
 
-    expect(searchSpy).toHaveBeenCalledWith(
-      user,
-      canOnlyViewOwnCases ? [['isCreator']] : [['everyone']],
-      limitOffset,
-      accountSid,
-      {},
-      filterParameters.filters,
-    );
-  });
+      expect(searchSpy).toHaveBeenCalledWith(
+        user,
+        canOnlyViewOwnCases ? [['isCreator']] : [['everyone']],
+        limitOffset,
+        accountSid,
+        {},
+        filterParameters.filters,
+        onlyEssentialData,
+      );
+    },
+  );
 });
 
 describe('update existing case', () => {

@@ -25,26 +25,47 @@ export const selectContactsOwnedCount = (ownerVariableName: string) =>
    FROM "Contacts" 
    WHERE "caseId" = cases.id AND "accountSid" = cases."accountSid" AND "twilioWorkerId" = $<${ownerVariableName}>`;
 
-export const selectSingleCaseByIdSql = (tableName: string) => `SELECT
+const leftJoinLateralContacts = (onlyEssentialData?: boolean) => {
+  if (onlyEssentialData) {
+    return `
+      LEFT JOIN LATERAL (
+        SELECT COALESCE(jsonb_agg(to_jsonb(c)), '[]') AS  "connectedContacts"
+        FROM "Contacts" c 
+        WHERE c."caseId" = cases.id AND c."accountSid" = cases."accountSid"
+      ) "contacts" ON true`;
+  }
+
+  return `
+    LEFT JOIN LATERAL (
+      SELECT COALESCE(jsonb_agg(to_jsonb(c) || to_jsonb("joinedReports") || to_jsonb("joinedReferrals") || to_jsonb("joinedConversationMedia")), '[]') AS  "connectedContacts"
+      FROM "Contacts" c 
+      LEFT JOIN LATERAL (
+        ${selectCoalesceCsamReportsByContactId('c')}
+      ) "joinedReports" ON true
+      LEFT JOIN LATERAL (
+        ${selectCoalesceReferralsByContactId('c')}
+      ) "joinedReferrals" ON true
+      LEFT JOIN LATERAL (
+        ${selectCoalesceConversationMediasByContactId('c')}
+      ) "joinedConversationMedia" ON true
+      WHERE c."caseId" = cases.id AND c."accountSid" = cases."accountSid"
+    ) "contacts" ON true`;
+};
+
+/**
+ * Should remove "contactsOwnedCount" when onlyEssentialData?
+ * Or is it used for permissions?
+ */
+export const selectSingleCaseByIdSql = (
+  tableName: string,
+  onlyEssentialData?: boolean,
+) => `SELECT
       "cases".*,
       "caseSections"."caseSections",
       "contacts"."connectedContacts",
       "contactsOwnedCount"."contactsOwnedByUserCount"
       FROM "${tableName}" AS "cases"
-      LEFT JOIN LATERAL (
-        SELECT COALESCE(jsonb_agg(to_jsonb(c) || to_jsonb("joinedReports") || to_jsonb("joinedReferrals") || to_jsonb("joinedConversationMedia")), '[]') AS  "connectedContacts"
-        FROM "Contacts" c 
-        LEFT JOIN LATERAL (
-          ${selectCoalesceCsamReportsByContactId('c')}
-        ) "joinedReports" ON true
-        LEFT JOIN LATERAL (
-          ${selectCoalesceReferralsByContactId('c')}
-        ) "joinedReferrals" ON true
-        LEFT JOIN LATERAL (
-          ${selectCoalesceConversationMediasByContactId('c')}
-        ) "joinedConversationMedia" ON true
-        WHERE c."caseId" = cases.id AND c."accountSid" = cases."accountSid"
-      ) "contacts" ON true
+      ${leftJoinLateralContacts(onlyEssentialData)}
       LEFT JOIN LATERAL (
         SELECT COALESCE(jsonb_agg(to_jsonb(cs) ORDER BY cs."createdAt"), '[]') AS  "caseSections"
         FROM "CaseSections" cs
