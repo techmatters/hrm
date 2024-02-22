@@ -22,6 +22,7 @@
 import { db } from '@tech-matters/hrm-core/connection-pool';
 
 import '../case/caseValidation';
+import { te } from 'date-fns/locale';
 // import { after } from 'lodash';
 
 const workerSid = 'WK-worker-sid';
@@ -528,5 +529,356 @@ describe('Profiles_audit_trigger', () => {
       timestamp_stm: expect.toParseAsDate(),
       timestamp_clock: expect.toParseAsDate(),
     };
+  });
+
+  test('UPDATE audit', async () => {
+    const updatedProfile = await db.task(t =>
+      t.one(
+        `UPDATE "Profiles" SET "name" = 'another-test' WHERE id = ${createdProfile.id} AND "accountSid" = '${testAccountSid}' RETURNING *;`,
+      ),
+    );
+
+    expect(updatedProfile).toBeDefined();
+
+    const expectedAudit = {
+      id: expect.any(Number),
+      user: 'hrm',
+      tableName: 'Profiles',
+      operation: 'UPDATE',
+      oldRecord: {
+        ...createdProfile,
+        createdAt: expect.toParseAsDate(createdProfile.createdAt),
+        updatedAt: expect.toParseAsDate(createdProfile.updatedAt),
+      },
+      newRecord: {
+        ...updatedProfile,
+        createdAt: expect.toParseAsDate(updatedProfile.createdAt),
+        updatedAt: expect.toParseAsDate(updatedProfile.updatedAt),
+      },
+      timestamp_trx: expect.toParseAsDate(),
+      timestamp_stm: expect.toParseAsDate(),
+      timestamp_clock: expect.toParseAsDate(),
+    };
+
+    const profileAudits = await db.task(t => t.manyOrNone(selectCreatedProfileAudits()));
+
+    expect(profileAudits).toHaveLength(2);
+
+    expect(profileAudits[1]).toMatchObject(expectedAudit);
+
+    createdProfile = updatedProfile;
+  });
+
+  test('DELETE audit', async () => {
+    const deletedProfile = await db.task(t =>
+      t.none(
+        `DELETE FROM "Profiles" WHERE id = ${createdProfile.id} AND "accountSid" = '${testAccountSid}';`,
+      ),
+    );
+
+    expect(deletedProfile).toBeNull();
+
+    const expectedAudit = {
+      id: expect.any(Number),
+      user: 'hrm',
+      tableName: 'Profiles',
+      operation: 'DELETE',
+      oldRecord: {
+        ...createdProfile,
+        createdAt: expect.toParseAsDate(createdProfile.createdAt),
+        updatedAt: expect.toParseAsDate(createdProfile.updatedAt),
+      },
+      newRecord: null,
+      timestamp_trx: expect.toParseAsDate(),
+      timestamp_stm: expect.toParseAsDate(),
+      timestamp_clock: expect.toParseAsDate(),
+    };
+
+    const profileAudits = await db.task(t => t.manyOrNone(selectCreatedProfileAudits()));
+
+    expect(profileAudits).toHaveLength(3);
+
+    expect(profileAudits[2]).toMatchObject(expectedAudit);
+  });
+});
+
+describe('ProfileFlags_audit_trigger', () => {
+  let createdProfileFlag = null;
+
+  const selectCreatedProfileFlagAudits = () => `
+    SELECT * FROM "Audits" 
+    WHERE "tableName" = 'ProfileFlags' AND (
+      ("oldRecord"->>'id' = '${createdProfileFlag.id}' AND "oldRecord"->>'accountSid' = '${testAccountSid}')
+      OR 
+      ("newRecord"->>'id' = '${createdProfileFlag.id}' AND "newRecord"->>'accountSid' = '${testAccountSid}')
+    )
+    ORDER BY "timestamp_clock" ASC
+  `;
+
+  afterAll(async () => {
+    await db.task(t =>
+      t.none(`
+        DELETE FROM "Audits" 
+        WHERE "tableName" = 'ProfileFlags' AND (
+          ("oldRecord"->>'id' = '${createdProfileFlag.id}' AND "oldRecord"->>'accountSid' = '${testAccountSid}')
+          OR 
+          ("newRecord"->>'id' = '${createdProfileFlag.id}' AND "newRecord"->>'accountSid' = '${testAccountSid}')
+        )
+      `),
+    );
+
+    await db.task(t =>
+      t.none(`
+        DELETE FROM "ProfileFlags" WHERE id = ${createdProfileFlag.id} AND "accountSid" = '${testAccountSid}'
+      `),
+    );
+  });
+
+  test('INSERT audit', async () => {
+    createdProfileFlag = await db.task(t =>
+      t.one(`
+        INSERT INTO "ProfileFlags" ("name", "accountSid", "createdAt", "updatedAt")
+        VALUES ('test', '${testAccountSid}', current_timestamp, current_timestamp)
+        RETURNING *;
+      `),
+    );
+
+    expect(createdProfileFlag).toBeDefined();
+
+    const expectedAudit = {
+      id: expect.any(Number),
+      user: 'hrm',
+      tableName: 'ProfileFlags',
+      operation: 'INSERT',
+      oldRecord: null,
+      newRecord: {
+        ...createdProfileFlag,
+        createdAt: expect.toParseAsDate(createdProfileFlag.createdAt),
+        updatedAt: expect.toParseAsDate(createdProfileFlag.updatedAt),
+      },
+      timestamp_trx: expect.toParseAsDate(),
+      timestamp_stm: expect.toParseAsDate(),
+      timestamp_clock: expect.toParseAsDate(),
+    };
+  });
+
+  test('UPDATE audit', async () => {
+    const updatedProfileFlag = await db.task(t =>
+      t.one(
+        `UPDATE "ProfileFlags" SET "name" = 'another-test' WHERE id = ${createdProfileFlag.id} AND "accountSid" = '${testAccountSid}' RETURNING *;`,
+      ),
+    );
+
+    expect(updatedProfileFlag).toBeDefined();
+
+    const expectedAudit = {
+      id: expect.any(Number),
+      user: 'hrm',
+      tableName: 'ProfileFlags',
+      operation: 'UPDATE',
+      oldRecord: {
+        ...createdProfileFlag,
+        createdAt: expect.toParseAsDate(createdProfileFlag.createdAt),
+        updatedAt: expect.toParseAsDate(createdProfileFlag.updatedAt),
+      },
+      newRecord: {
+        ...updatedProfileFlag,
+        createdAt: expect.toParseAsDate(updatedProfileFlag.createdAt),
+        updatedAt: expect.toParseAsDate(updatedProfileFlag.updatedAt),
+      },
+      timestamp_trx: expect.toParseAsDate(),
+      timestamp_stm: expect.toParseAsDate(),
+      timestamp_clock: expect.toParseAsDate(),
+    };
+
+    const profileFlagAudits = await db.task(t =>
+      t.manyOrNone(selectCreatedProfileFlagAudits()),
+    );
+
+    expect(profileFlagAudits).toHaveLength(2);
+
+    expect(profileFlagAudits[1]).toMatchObject(expectedAudit);
+
+    createdProfileFlag = updatedProfileFlag;
+  });
+
+  test('DELETE audit', async () => {
+    const deletedProfileFlag = await db.task(t =>
+      t.none(
+        `DELETE FROM "ProfileFlags" WHERE id = ${createdProfileFlag.id} AND "accountSid" = '${testAccountSid}';`,
+      ),
+    );
+
+    expect(deletedProfileFlag).toBeNull();
+
+    const expectedAudit = {
+      id: expect.any(Number),
+      user: 'hrm',
+      tableName: 'ProfileFlags',
+      operation: 'DELETE',
+      oldRecord: {
+        ...createdProfileFlag,
+        createdAt: expect.toParseAsDate(createdProfileFlag.createdAt),
+        updatedAt: expect.toParseAsDate(createdProfileFlag.updatedAt),
+      },
+      newRecord: null,
+      timestamp_trx: expect.toParseAsDate(),
+      timestamp_stm: expect.toParseAsDate(),
+      timestamp_clock: expect.toParseAsDate(),
+    };
+
+    const profileFlagAudits = await db.task(t =>
+      t.manyOrNone(selectCreatedProfileFlagAudits()),
+    );
+
+    expect(profileFlagAudits).toHaveLength(3);
+
+    expect(profileFlagAudits[2]).toMatchObject(expectedAudit);
+  });
+});
+
+describe('ProfileSections_audit_trigger', () => {
+  let createdProfileSection = null;
+
+  const selectCreatedProfileSectionAudits = () => `
+    SELECT * FROM "Audits" 
+    WHERE "tableName" = 'ProfileSections' AND (
+      ("oldRecord"->>'id' = '${createdProfileSection.id}' AND "oldRecord"->>'accountSid' = '${testAccountSid}')
+      OR 
+      ("newRecord"->>'id' = '${createdProfileSection.id}' AND "newRecord"->>'accountSid' = '${testAccountSid}')
+    )
+    ORDER BY "timestamp_clock" ASC
+  `;
+
+  afterAll(async () => {
+    await db.task(t =>
+      t.none(`
+        DELETE FROM "Audits" 
+        WHERE "tableName" = 'ProfileSections' AND (
+          ("oldRecord"->>'id' = '${createdProfileSection.id}' AND "oldRecord"->>'accountSid' = '${testAccountSid}')
+          OR 
+          ("newRecord"->>'id' = '${createdProfileSection.id}' AND "newRecord"->>'accountSid' = '${testAccountSid}')
+        )
+      `),
+    );
+
+    await db.task(t =>
+      t.none(`
+        DELETE FROM "ProfileSections" WHERE id = ${createdProfileSection.id} AND "accountSid" = '${testAccountSid}'
+      `),
+    );
+  });
+
+  test('INSERT audit', async () => {
+    const profile = await db.task(t =>
+      t.one(`
+      INSERT INTO "Profiles" ("name", "accountSid", "createdAt", "updatedAt")
+      VALUES ('test', '${testAccountSid}', current_timestamp, current_timestamp)
+      RETURNING *;
+      `),
+    );
+    if (!profile) {
+      throw new Error('Profile creation failed');
+    }
+
+    createdProfileSection = await db.task(t =>
+      t.one(`
+        INSERT INTO "ProfileSections" ("sectionType", "profileId", "content", "accountSid", "createdBy", "createdAt", "updatedAt", "updatedBy")
+        VALUES ('test', 1, '{}', '${testAccountSid}', '${workerSid}', current_timestamp, current_timestamp, NULL)
+        RETURNING *;
+      `),
+    );
+
+    expect(createdProfileSection).toBeDefined();
+
+    const expectedAudit = {
+      id: expect.any(Number),
+      user: 'hrm',
+      tableName: 'ProfileSections',
+      operation: 'INSERT',
+      oldRecord: null,
+      newRecord: {
+        ...createdProfileSection,
+        createdAt: expect.toParseAsDate(createdProfileSection.createdAt),
+        updatedAt: expect.toParseAsDate(createdProfileSection.updatedAt),
+      },
+      timestamp_trx: expect.toParseAsDate(),
+      timestamp_stm: expect.toParseAsDate(),
+      timestamp_clock: expect.toParseAsDate(),
+    };
+  });
+
+  test('UPDATE audit', async () => {
+    const updatedProfileSection = await db.task(t =>
+      t.one(
+        `UPDATE "ProfileSections" SET "content" = 'test content', "updatedBy" = '${anotherWorkerSid}' WHERE id = ${createdProfileSection.id} AND "accountSid" = '${testAccountSid}' RETURNING *;`,
+      ),
+    );
+
+    expect(updatedProfileSection).toBeDefined();
+
+    const expectedAudit = {
+      id: expect.any(Number),
+      user: 'hrm',
+      tableName: 'ProfileSections',
+      operation: 'UPDATE',
+      oldRecord: {
+        ...createdProfileSection,
+        createdAt: expect.toParseAsDate(createdProfileSection.createdAt),
+        updatedAt: expect.toParseAsDate(createdProfileSection.updatedAt),
+      },
+      newRecord: {
+        ...updatedProfileSection,
+        createdAt: expect.toParseAsDate(updatedProfileSection.createdAt),
+        updatedAt: expect.toParseAsDate(updatedProfileSection.updatedAt),
+      },
+      timestamp_trx: expect.toParseAsDate(),
+      timestamp_stm: expect.toParseAsDate(),
+      timestamp_clock: expect.toParseAsDate(),
+    };
+
+    const profileSectionAudits = await db.task(t =>
+      t.manyOrNone(selectCreatedProfileSectionAudits()),
+    );
+
+    expect(profileSectionAudits).toHaveLength(2);
+
+    expect(profileSectionAudits[1]).toMatchObject(expectedAudit);
+
+    createdProfileSection = updatedProfileSection;
+  });
+
+  test('DELETE audit', async () => {
+    const deletedProfileSection = await db.task(t =>
+      t.none(
+        `DELETE FROM "ProfileSections" WHERE id = ${createdProfileSection.id} AND "accountSid" = '${testAccountSid}';`,
+      ),
+    );
+
+    expect(deletedProfileSection).toBeNull();
+
+    const expectedAudit = {
+      id: expect.any(Number),
+      user: 'hrm',
+      tableName: 'ProfileSections',
+      operation: 'DELETE',
+      oldRecord: {
+        ...createdProfileSection,
+        createdAt: expect.toParseAsDate(createdProfileSection.createdAt),
+        updatedAt: expect.toParseAsDate(createdProfileSection.updatedAt),
+      },
+      newRecord: null,
+      timestamp_trx: expect.toParseAsDate(),
+      timestamp_stm: expect.toParseAsDate(),
+      timestamp_clock: expect.toParseAsDate(),
+    };
+
+    const profileSectionAudits = await db.task(t =>
+      t.manyOrNone(selectCreatedProfileSectionAudits()),
+    );
+
+    expect(profileSectionAudits).toHaveLength(3);
+
+    expect(profileSectionAudits[2]).toMatchObject(expectedAudit);
   });
 });
