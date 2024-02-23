@@ -28,6 +28,7 @@ import { omit } from 'lodash';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
 import { newOk } from '@tech-matters/types';
 import * as profilesDB from '../../profile/profileDataAccess';
+import * as profilesService from '../../profile/profileService';
 import { NewContactRecord } from '../../contact/sql/contactInsertSql';
 import { ALWAYS_CAN } from '../mocks';
 import '@tech-matters/testing/expectToParseAsDate';
@@ -45,6 +46,7 @@ const getIdentifierWithProfilesSpy = jest
           accountSid: 'accountSid',
           createdAt: new Date(),
           updatedAt: new Date(),
+          createdBy: 'createdBy',
           profiles: [
             {
               id: 1,
@@ -54,6 +56,7 @@ const getIdentifierWithProfilesSpy = jest
               name: 'name',
               contactsCount: 0,
               casesCount: 0,
+              createdBy: 'createdBy',
             },
           ],
         },
@@ -147,7 +150,7 @@ describe('createContact', () => {
       () => async () => newOk({ data: null }),
     );
 
-    jest.spyOn(profilesDB, 'createIdentifierAndProfile').mockImplementationOnce(
+    jest.spyOn(profilesService, 'createIdentifierAndProfile').mockImplementationOnce(
       () => async () =>
         newOk({
           data: { id: 2, profiles: [{ id: 2 }] },

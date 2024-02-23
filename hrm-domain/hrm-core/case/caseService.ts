@@ -107,6 +107,10 @@ export type CaseService = CaseRecordCommon & {
   sections: CaseSectionsMap;
 };
 
+type RecursivePartial<T> = {
+  [P in keyof T]?: RecursivePartial<T[P]>;
+};
+
 type CaseServiceUpdate = Partial<CaseService> & Pick<CaseService, 'updatedBy'>;
 
 /**
@@ -268,6 +272,63 @@ const mapContactTransformations =
     };
   };
 
+/**
+ * This function omits the non-essential data from a case record.
+ * Only the properties that are essential for the client to display the case are kept.
+ *
+ * This is used on both:
+ * - GET /cases/ (case list)
+ * - POST /cases/search (search cases)
+ */
+const mapEssentialData =
+  (essentialDataOnly: boolean) =>
+  (caseRecord: CaseService): RecursivePartial<CaseService> => {
+    if (!essentialDataOnly) return caseRecord;
+
+    const {
+      id,
+      createdAt,
+      updatedAt,
+      status,
+      info,
+      twilioWorkerId,
+      connectedContacts,
+      categories,
+    } = caseRecord;
+
+    const { summary, followUpDate, definitionVersion } = info;
+
+    const firstChildRawJson = connectedContacts[0]?.rawJson;
+    const { firstName, lastName } = firstChildRawJson?.childInformation ?? {};
+
+    const firstChildEssentialData = {
+      rawJson: {
+        childInformation: {
+          firstName,
+          lastName,
+        },
+      },
+    };
+
+    const infoEssentialData = {
+      summary,
+      followUpDate,
+      definitionVersion,
+    };
+
+    return {
+      id,
+      status,
+      connectedContacts: connectedContacts.length > 0 ? [firstChildEssentialData] : [],
+      twilioWorkerId,
+      categories,
+      createdAt,
+      updatedAt,
+      info: infoEssentialData,
+      precalculatedPermissions: caseRecord.precalculatedPermissions,
+    };
+  };
+
 export const createCase = async (
   body: Partial<CaseService>,
   accountSid: CaseService['accountSid'],
@@ -344,8 +405,9 @@ export const getCase = async (
   id: number,
   accountSid: string,
   { can, user }: { can: InitializedCan; user: TwilioUser },
+  onlyEssentialData?: boolean,
 ): Promise<CaseService | undefined> => {
-  const caseFromDb = await getById(id, accountSid, user.workerSid);
+  const caseFromDb = await getById(id, accountSid, user.workerSid, onlyEssentialData);
 
   if (caseFromDb) {
     return caseRecordToCase(mapContactTransformations({ can, user })(caseFromDb));
@@ -362,7 +424,7 @@ export type SearchParameters = CaseSearchCriteria & {
 };
 
 export type CaseSearchReturn = {
-  cases: CaseService[];
+  cases: CaseService[] | RecursivePartial<CaseService>[];
   count: number;
 };
 
@@ -392,6 +454,7 @@ const generalizedSearchCases =
       user: TwilioUser;
       permissions: RulesFile;
     },
+    onlyEssentialData?: boolean,
   ): Promise<CaseSearchReturn> => {
     const { filters, helpline, counselor, closedCases } = filterParameters;
     const caseFilters = filters ?? {};
@@ -413,12 +476,14 @@ const generalizedSearchCases =
       accountSid,
       searchParameters,
       caseFilters,
+      onlyEssentialData,
     );
     return {
       ...dbResult,
       cases: dbResult.cases
         .map(mapContactTransformations({ can, user }))
-        .map(caseRecordToCase),
+        .map(caseRecordToCase)
+        .map(mapEssentialData(onlyEssentialData)),
     };
   };
 

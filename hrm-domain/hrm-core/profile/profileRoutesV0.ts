@@ -26,6 +26,7 @@ import {
   canPerformActionOnProfileMiddleware,
   canPerformActionOnProfileSectionMiddleware,
 } from './canPerformProfileAction';
+import { NextFunction, Request, Response } from 'express';
 
 const profilesRouter = SafeRouter();
 
@@ -39,66 +40,80 @@ const profilesRouter = SafeRouter();
  * @param {profileController.ProfileListConfiguration['offset']} req.query.offset - Offset
  * @param {profileController.SearchParameters['filters']['profileFlagIds']} req.query.profileFlagIds
  */
-profilesRouter.get('/', publicEndpoint, async (req, res, next) => {
-  try {
-    const { accountSid } = req;
-    const { sortDirection, sortBy, limit, offset, ...rest } = req.query;
+profilesRouter.get(
+  '/',
+  publicEndpoint,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { accountSid } = req;
+      const {
+        sortDirection,
+        sortBy,
+        limit,
+        offset,
+        profileFlagIds: encodedProfileFlagIds,
+      } = req.query as Record<string, any>; // TODO: maybe improve this validation
 
-    const profileFlagIds = rest.profileFlagIds
-      ? decodeURIComponent(rest.profileFlagIds)
-          .split(',')
-          .map(s => parseInt(s, 10))
-          .filter(v => v && !isNaN(v))
-      : undefined;
+      const profileFlagIds = encodedProfileFlagIds
+        ? decodeURIComponent(encodedProfileFlagIds)
+            .split(',')
+            .map(s => parseInt(s, 10))
+            .filter(v => v && !isNaN(v))
+        : undefined;
 
-    const filters = {
-      profileFlagIds,
-    };
+      const filters = {
+        profileFlagIds,
+      };
 
-    const result = await profileController.listProfiles(
-      accountSid,
-      { sortDirection, sortBy, limit, offset },
-      { filters },
-    );
+      const result = await profileController.listProfiles(
+        accountSid,
+        { sortDirection, sortBy, limit, offset },
+        { filters },
+      );
 
-    if (isErr(result)) {
-      return next(mapHTTPError(result, { InternalServerError: 500 }));
+      if (isErr(result)) {
+        return next(mapHTTPError(result, { InternalServerError: 500 }));
+      }
+
+      res.json(result.data);
+    } catch (err) {
+      return next(createError(500, err.message));
     }
+  },
+);
 
-    res.json(result.data);
-  } catch (err) {
-    return next(createError(500, err.message));
-  }
-});
+profilesRouter.get(
+  '/identifier/:identifier',
+  publicEndpoint,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { accountSid } = req;
+      const { identifier } = req.params;
 
-profilesRouter.get('/identifier/:identifier', publicEndpoint, async (req, res, next) => {
-  try {
-    const { accountSid } = req;
-    const { identifier } = req.params;
+      const result = await profileController.getIdentifierByIdentifier(
+        accountSid,
+        identifier,
+      );
 
-    const result = await profileController.getIdentifierByIdentifier(
-      accountSid,
-      identifier,
-    );
+      if (isErr(result)) {
+        return next(mapHTTPError(result, { InternalServerError: 500 }));
+      }
 
-    if (isErr(result)) {
-      return next(mapHTTPError(result, { InternalServerError: 500 }));
+      if (!result.data) {
+        return next(createError(404));
+      }
+
+      res.json(result.data);
+    } catch (err) {
+      return next(createError(500, err.message));
     }
-
-    if (!result.data) {
-      return next(createError(404));
-    }
-
-    res.json(result.data);
-  } catch (err) {
-    return next(createError(500, err.message));
-  }
-});
+  },
+);
 
 profilesRouter.get(
   '/identifier/:identifier/flags',
   publicEndpoint,
-  async (req, res, next) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { accountSid } = req;
       const { identifier } = req.params;
@@ -119,60 +134,82 @@ profilesRouter.get(
   },
 );
 
-profilesRouter.get('/:profileId/contacts', publicEndpoint, async (req, res, next) => {
-  try {
-    const { accountSid } = req;
-    const { profileId } = req.params;
+profilesRouter.get(
+  '/:profileId/contacts',
+  publicEndpoint,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { accountSid } = req;
+      const { profileId } = req.params;
 
-    const result = await getContactsByProfileId(accountSid, profileId, req.query, {
-      can: req.can,
-      user: req.user,
-      searchPermissions: req.searchPermissions,
-    });
+      const result = await getContactsByProfileId(
+        accountSid,
+        parseInt(profileId, 10),
+        req.query,
+        {
+          can: req.can,
+          user: req.user,
+          searchPermissions: req.searchPermissions,
+        },
+      );
 
-    if (isErr(result)) {
-      return next(mapHTTPError(result, { InternalServerError: 500 }));
+      if (isErr(result)) {
+        return next(mapHTTPError(result, { InternalServerError: 500 }));
+      }
+
+      res.json(result.data);
+    } catch (err) {
+      return next(createError(500, err.message));
     }
+  },
+);
 
-    res.json(result.data);
-  } catch (err) {
-    return next(createError(500, err.message));
-  }
-});
+profilesRouter.get(
+  '/:profileId/cases',
+  publicEndpoint,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { accountSid, can, user, permissions } = req;
+      const { profileId } = req.params;
 
-profilesRouter.get('/:profileId/cases', publicEndpoint, async (req, res, next) => {
-  try {
-    const { accountSid } = req;
-    const { profileId } = req.params;
+      const result = await getCasesByProfileId(
+        accountSid,
+        parseInt(profileId, 10),
+        req.query,
+        { can, user, permissions },
+      );
 
-    const result = await getCasesByProfileId(accountSid, profileId, req.query, req);
+      if (isErr(result)) {
+        return next(mapHTTPError(result, { InternalServerError: 500 }));
+      }
 
-    if (isErr(result)) {
-      return next(mapHTTPError(result, { InternalServerError: 500 }));
+      res.json(result.data);
+    } catch (err) {
+      return next(createError(500, err.message));
     }
+  },
+);
 
-    res.json(result.data);
-  } catch (err) {
-    return next(createError(500, err.message));
-  }
-});
+profilesRouter.get(
+  '/flags',
+  publicEndpoint,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { accountSid } = req;
 
-profilesRouter.get('/flags', publicEndpoint, async (req, res, next) => {
-  try {
-    const { accountSid } = req;
+      const result = await profileController.getProfileFlags(accountSid);
 
-    const result = await profileController.getProfileFlags(accountSid);
+      if (isErr(result)) {
+        return next(mapHTTPError(result, { InternalServerError: 500 }));
+      }
 
-    if (isErr(result)) {
-      return next(mapHTTPError(result, { InternalServerError: 500 }));
+      res.json(result.data);
+    } catch (err) {
+      console.error(err);
+      return next(createError(500, err.message));
     }
-
-    res.json(result.data);
-  } catch (err) {
-    console.error(err);
-    return next(createError(500, err.message));
-  }
-});
+  },
+);
 
 const canAssociate = canPerformActionOnProfileMiddleware(
   actionsMaps.profile.FLAG_PROFILE,
@@ -186,9 +223,9 @@ const canAssociate = canPerformActionOnProfileMiddleware(
 profilesRouter.post(
   '/:profileId/flags/:profileFlagId',
   canAssociate,
-  async (req, res, next) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { accountSid } = req;
+      const { accountSid, user } = req;
       const { profileId, profileFlagId } = req.params;
       const { validUntil } = req.body;
 
@@ -204,9 +241,12 @@ profilesRouter.post(
 
       const result = await profileController.associateProfileToProfileFlag(
         accountSid,
-        profileId,
-        profileFlagId,
-        parsedValidUntil,
+        {
+          profileId: parseInt(profileId, 10),
+          profileFlagId: parseInt(profileFlagId, 10),
+          validUntil: parsedValidUntil,
+        },
+        { user },
       );
 
       if (isErr(result)) {
@@ -238,15 +278,18 @@ const canDisassociate = canPerformActionOnProfileMiddleware(
 profilesRouter.delete(
   '/:profileId/flags/:profileFlagId',
   canDisassociate,
-  async (req, res, next) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { accountSid } = req;
+      const { accountSid, user } = req;
       const { profileId, profileFlagId } = req.params;
 
       const result = await profileController.disassociateProfileFromProfileFlag(
         accountSid,
-        profileId,
-        profileFlagId,
+        {
+          profileId: parseInt(profileId, 10),
+          profileFlagId: parseInt(profileFlagId, 10),
+        },
+        { user },
       );
 
       if (isErr(result)) {
@@ -282,7 +325,7 @@ const canCreateProfileSection = canPerformActionOnProfileSectionMiddleware(
 profilesRouter.post(
   '/:profileId/sections',
   canCreateProfileSection,
-  async (req, res, next) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { accountSid, user } = req;
       const { profileId } = req.params;
@@ -290,7 +333,7 @@ profilesRouter.post(
 
       const result = await profileController.createProfileSection(
         accountSid,
-        { content, profileId, sectionType },
+        { content, profileId: parseInt(profileId, 10), sectionType },
         { user },
       );
 
@@ -325,7 +368,7 @@ const canEditProfileSection = canPerformActionOnProfileSectionMiddleware(
 profilesRouter.patch(
   '/:profileId/sections/:sectionId',
   canEditProfileSection,
-  async (req, res, next) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { accountSid, user } = req;
       const { profileId, sectionId } = req.params;
@@ -333,7 +376,11 @@ profilesRouter.patch(
 
       const result = await profileController.updateProfileSectionById(
         accountSid,
-        { profileId, sectionId, content },
+        {
+          profileId: parseInt(profileId, 10),
+          sectionId: parseInt(sectionId, 10),
+          content,
+        },
         { user },
       );
 
@@ -365,14 +412,14 @@ const canViewProfileSection = canPerformActionOnProfileSectionMiddleware(
 profilesRouter.get(
   '/:profileId/sections/:sectionId',
   canViewProfileSection,
-  async (req, res, next) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { accountSid } = req;
       const { profileId, sectionId } = req.params;
 
       const result = await profileController.getProfileSectionById(accountSid, {
-        profileId,
-        sectionId,
+        profileId: parseInt(profileId, 10),
+        sectionId: parseInt(sectionId, 10),
       });
 
       if (isErr(result)) {
@@ -400,27 +447,34 @@ const canViewProfile = canPerformActionOnProfileMiddleware(
   }),
 );
 // WARNING: this endpoint MUST be the last one in this router, because it will be used if none of the above regex matches the path
-profilesRouter.get('/:profileId', canViewProfile, async (req, res, next) => {
-  try {
-    const { accountSid } = req;
-    const { profileId } = req.params;
+profilesRouter.get(
+  '/:profileId',
+  canViewProfile,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { accountSid } = req;
+      const { profileId } = req.params;
 
-    const result = await profileController.getProfile()(accountSid, profileId);
-
-    if (isErr(result)) {
-      return next(
-        mapHTTPError(result, { ProfileNotFoundError: 404, InternalServerError: 500 }),
+      const result = await profileController.getProfile()(
+        accountSid,
+        parseInt(profileId, 10),
       );
-    }
 
-    if (!result.data) {
-      return next(createError(404));
-    }
+      if (isErr(result)) {
+        return next(
+          mapHTTPError(result, { ProfileNotFoundError: 404, InternalServerError: 500 }),
+        );
+      }
 
-    res.json(result.data);
-  } catch (err) {
-    return next(createError(500, err.message));
-  }
-});
+      if (!result.data) {
+        return next(createError(404));
+      }
+
+      res.json(result.data);
+    } catch (err) {
+      return next(createError(500, err.message));
+    }
+  },
+);
 
 export default profilesRouter.expressRouter;

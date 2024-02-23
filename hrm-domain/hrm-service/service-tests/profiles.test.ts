@@ -73,7 +73,9 @@ describe('/profiles', () => {
       existingProfiles = (await profilesDB.listProfiles(accountSid, {}, {})).unwrap()
         .profiles;
       createdProfiles = await Promise.all(
-        profilesNames.map(name => profilesDB.createProfile()(accountSid, { name })),
+        profilesNames.map(name =>
+          profilesDB.createProfile()(accountSid, { name, createdBy: workerSid }),
+        ),
       );
       defaultFlags = await profilesDB
         .getProfileFlagsForAccount(accountSid)
@@ -227,10 +229,16 @@ describe('/profiles', () => {
       // Create same identifier for two diferent accounts
       createdProfiles = (
         await Promise.all(
-          accounts.map(acc => getOrCreateProfileWithIdentifier()(identifier, acc)),
+          accounts.map(acc =>
+            getOrCreateProfileWithIdentifier()(
+              acc,
+              { identifier: { identifier }, profile: { name: null } },
+              { user: { isSupervisor: false, roles: [], workerSid } },
+            ),
+          ),
         )
       )
-        .map(result => result.unwrap())
+        .map(result => result.unwrap().identifier)
         .reduce((accum, curr) => ({ ...accum, [curr.accountSid]: curr }), {});
       // Create one case for each
       createdCases = (
@@ -320,9 +328,10 @@ describe('/profiles', () => {
     beforeAll(async () => {
       // Create an identifier
       createdProfile = await getOrCreateProfileWithIdentifier()(
-        identifier,
         accountSid,
-      ).then(result => result.unwrap());
+        { identifier: { identifier }, profile: { name: null } },
+        { user: { isSupervisor: false, roles: [], workerSid } },
+      ).then(result => result.unwrap().identifier);
     });
 
     afterAll(async () => {
@@ -540,6 +549,10 @@ describe('/profiles', () => {
                 expect(
                   response.body.profileFlags.some(pf => pf.id === profileFlagId),
                 ).toBeTruthy();
+                expect(response.body.updateBy).toBe(
+                  response.body.profileFlags.find(pf => pf.id === profileFlagId)
+                    ?.updatedBy,
+                );
               },
             },
             {
@@ -642,9 +655,13 @@ describe('/profiles', () => {
             {
               description: 'profile and flag exist',
               expectStatus: 200,
-              expectFunction: (response, profileId, profileFlagId) => {
+              expectFunction: (response, profileId, profileFlagId, startDate) => {
                 expect(response.body.id).toBe(profileId);
                 expect(response.body.profileFlags).not.toContain(profileFlagId);
+                expect(response.body.updatedBy).toBe(workerSid);
+                expect(new Date(startDate).getTime()).toBeLessThan(
+                  new Date(response.body.updatedAt).getTime(),
+                );
               },
             },
           ]).test(
@@ -656,12 +673,13 @@ describe('/profiles', () => {
               customHeaders,
               expectFunction,
             }) => {
+              const startDate = new Date();
               const response = await request
                 .delete(buildRoute(profileId, profileFlagId))
                 .set(customHeaders || headers);
               expect(response.statusCode).toBe(expectStatus);
               if (expectFunction) {
-                expectFunction(response, profileId, profileFlagId);
+                expectFunction(response, profileId, profileFlagId, startDate);
               }
             },
           );
@@ -692,6 +710,8 @@ describe('/profiles', () => {
               expect(response.body.profileId).toBe(profileId);
               expect(response.body.content).toBe(payload.content);
               expect(response.body.sectionType).toBe(payload.sectionType);
+              expect(response.body.createdBy).toBe(workerSid);
+              expect(response.body.updatedBy).toBe(null);
 
               const updatedProfile = await profilesDB.getProfileById()(
                 accountSid,
@@ -853,12 +873,14 @@ describe('/profiles', () => {
         const customFlag = (
           await profilesDB.createProfileFlag(accountSid, {
             name: 'custom',
+            createdBy: workerSid,
           })
         ).unwrap();
 
         const customFlagForAnother = (
           await profilesDB.createProfileFlag('ANOTHER_ACCOUNT', {
             name: 'custom 2',
+            createdBy: workerSid,
           })
         ).unwrap();
 
