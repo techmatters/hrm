@@ -16,19 +16,30 @@
 
 import { db } from '@tech-matters/hrm-core/connection-pool';
 import { TResult, newErr, newOk } from '@tech-matters/types';
+import { systemUser } from '@tech-matters/twilio-worker-auth';
 
 export const cleanupProfileFlags = async (): Promise<
   TResult<'InternalServerError', { count: number }>
 > => {
   try {
     const currentTimestamp = new Date().toISOString();
+    const updatedBy = systemUser;
     const count = await db.task(async t =>
       t.one(
         `
-        WITH deleted AS (DELETE FROM "ProfilesToProfileFlags" WHERE "validUntil" < $<currentTimestamp>::timestamp RETURNING *)
+          WITH "deleted" AS (DELETE FROM "ProfilesToProfileFlags" WHERE "validUntil" < $<currentTimestamp>::timestamp RETURNING *),
+
+          -- trigger an update on profiles to keep track of who associated
+          "updatedProfiles" AS (
+            UPDATE "Profiles" "profiles"
+            SET "updatedBy" = $<updatedBy>, "updatedAt" = $<currentTimestamp>::timestamp
+            FROM deleted
+            WHERE "profiles"."accountSid" = "deleted"."accountSid" AND "profiles"."id" = "deleted"."profileId"
+          )
+
           SELECT COUNT(*) FROM deleted;
-  `,
-        { currentTimestamp },
+        `,
+        { currentTimestamp, updatedBy },
       ),
     );
 
