@@ -74,29 +74,26 @@ export const createIdentifierAndProfile =
       const { identifier, profile } = payload;
 
       return await txIfNotInOne(task, async t => {
-        const [newIdentifier, newProfile] = await Promise.all([
-          profileDB.createIdentifier(t)(accountSid, {
-            identifier: identifier.identifier,
-            createdBy: user.workerSid,
-          }),
-          profileDB.createProfile(t)(accountSid, {
-            name: profile.name || null,
-            createdBy: user.workerSid,
-          }),
-        ]);
+        const newIdentifier = await profileDB.createIdentifier(t)(accountSid, {
+          identifier: identifier.identifier,
+          createdBy: user.workerSid,
+        });
+        const newProfile = await profileDB.createProfile(t)(accountSid, {
+          name: profile.name || null,
+          createdBy: user.workerSid,
+        });
 
-        const [idWithProfiles] = await Promise.all([
-          profileDB.associateProfileToIdentifier(t)(
-            accountSid,
-            newProfile.id,
-            newIdentifier.id,
-          ),
-          // trigger an update on profiles to keep track of who associated
-          profileDB.updateProfileById(t)(accountSid, {
-            id: newProfile.id,
-            updatedBy: user.workerSid,
-          }),
-        ]);
+        const idWithProfiles = await profileDB.associateProfileToIdentifier(t)(
+          accountSid,
+          newProfile.id,
+          newIdentifier.id,
+        );
+
+        // trigger an update on profiles to keep track of who associated
+        await profileDB.updateProfileById(t)(accountSid, {
+          id: newProfile.id,
+          updatedBy: user.workerSid,
+        });
 
         return idWithProfiles;
       });
@@ -261,21 +258,21 @@ export const associateProfileToProfileFlag = async (
     }
 
     return await db.task(async t => {
-      await Promise.all([
-        profileDB
-          .associateProfileToProfileFlag(t)(
-            accountSid,
-            profileId,
-            profileFlagId,
-            validUntil,
-          )
-          .then(r => r.unwrap()), // unwrap the result to bubble error up (if any)
-        // trigger an update on profiles to keep track of who associated
-        profileDB.updateProfileById(t)(accountSid, {
-          id: profileId,
-          updatedBy: user.workerSid,
-        }),
-      ]);
+      await profileDB
+        .associateProfileToProfileFlag(t)(
+          accountSid,
+          profileId,
+          profileFlagId,
+          validUntil,
+        )
+        .then(r => r.unwrap()); // unwrap the result to bubble error up (if any)
+
+      // trigger an update on profiles to keep track of who associated
+      await profileDB.updateProfileById(t)(accountSid, {
+        id: profileId,
+        updatedBy: user.workerSid,
+      });
+
       const profile = await profileDB.getProfileById(t)(accountSid, profileId);
 
       return newOk({ data: profile });
@@ -301,16 +298,15 @@ export const disassociateProfileFromProfileFlag = async (
 ): Promise<TResult<'InternalServerError', profileDB.ProfileWithRelationships>> => {
   try {
     return await db.task(async t => {
-      Promise.all([
-        profileDB
-          .disassociateProfileFromProfileFlag(t)(accountSid, profileId, profileFlagId)
-          .then(r => r.unwrap()), // unwrap the result to bubble error up (if any);
-        // trigger an update on profiles to keep track of who disassociated
-        profileDB.updateProfileById(t)(accountSid, {
-          id: profileId,
-          updatedBy: user.workerSid,
-        }),
-      ]);
+      await profileDB
+        .disassociateProfileFromProfileFlag(t)(accountSid, profileId, profileFlagId)
+        .then(r => r.unwrap()); // unwrap the result to bubble error up (if any);
+
+      // trigger an update on profiles to keep track of who disassociated
+      await profileDB.updateProfileById(t)(accountSid, {
+        id: profileId,
+        updatedBy: user.workerSid,
+      });
       const profile = await profileDB.getProfileById(t)(accountSid, profileId);
 
       return newOk({ data: profile });
