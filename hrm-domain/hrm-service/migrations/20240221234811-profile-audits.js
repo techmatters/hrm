@@ -14,11 +14,6 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-/**
- * This test suit intends to test that the audit_trigger function is set for the target tables and row operations and working as expected.
- * The shape of the json columns of each table have been simplified to avoid noise in this tests.
- */
-
 'use strict';
 
 /** @type {import('sequelize-cli').Migration} */
