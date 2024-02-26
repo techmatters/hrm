@@ -127,26 +127,24 @@ export type CaseListFilters = {
 
 export const create = async (caseRecord: Partial<NewCaseRecord>): Promise<CaseRecord> => {
   return db.task(async connection => {
-    return connection.tx(async transaction => {
-      const statement = `${pgp.helpers.insert(
-        {
-          ...pick(caseRecord, VALID_CASE_CREATE_FIELDS),
-          updatedAt: caseRecord.createdAt,
-        },
-        null,
-        'Cases',
-      )} RETURNING *`;
-      let inserted: CaseRecord = await transaction.one(statement);
-      // eslint-disable-next-line @typescript-eslint/dot-notation
-      if ((caseRecord['caseSections'] ?? []).length) {
-        // No compatibility needed here as flex doesn't create cases with sections
-        console.warn(
-          `[DEPRECATION WARNING] Support for creating case sections with a case has been removed as of HRM v1.15.0. Add case sections using the dedicated case section CRUD endpoints going forward.`,
-        );
-      }
+    const statement = `${pgp.helpers.insert(
+      {
+        ...pick(caseRecord, VALID_CASE_CREATE_FIELDS),
+        updatedAt: caseRecord.createdAt,
+      },
+      null,
+      'Cases',
+    )} RETURNING *`;
+    let inserted: CaseRecord = await connection.one(statement);
+    // eslint-disable-next-line @typescript-eslint/dot-notation
+    if ((caseRecord['caseSections'] ?? []).length) {
+      // No compatibility needed here as flex doesn't create cases with sections
+      console.warn(
+        `[DEPRECATION WARNING] Support for creating case sections with a case has been removed as of HRM v1.15.0. Add case sections using the dedicated case section CRUD endpoints going forward.`,
+      );
+    }
 
-      return inserted;
-    });
+    return inserted;
   });
 };
 

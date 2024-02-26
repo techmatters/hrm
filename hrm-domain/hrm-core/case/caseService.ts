@@ -333,8 +333,9 @@ export const createCase = async (
   body: Partial<CaseService>,
   accountSid: CaseService['accountSid'],
   workerSid: CaseService['twilioWorkerId'],
+  testNowISO?: Date,
 ): Promise<CaseService> => {
-  const nowISO = new Date().toISOString();
+  const nowISO = (testNowISO ?? new Date()).toISOString();
   delete body.id;
   const record = caseToCaseRecord(
     {

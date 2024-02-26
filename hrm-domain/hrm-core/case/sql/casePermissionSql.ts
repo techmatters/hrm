@@ -16,70 +16,42 @@
 
 import { TKCondition } from '../../permissions/rulesMap';
 import { selectContactsOwnedCount } from './case-get-sql';
-
-const ALL_OR_NOTHING_CONDITIONS: CaseListCondition[] = ['everyone', 'isSupervisor'];
-
-const FILTER_ALL_CASES_CLAUSE: [string] = ['1=0'];
+import {
+  ConditionWhereClauses,
+  listPermissionWhereClause,
+} from '../../permissions/sqlGenerators';
 
 export type CaseListCondition = Extract<
   TKCondition<'case'>,
   'isCreator' | 'isCaseContactOwner' | 'everyone' | 'isSupervisor' | 'isCaseOpen'
 >;
 
-type WhereClauseGeneratingCondition = Exclude<
-  CaseListCondition,
-  'everyone' | 'isSupervisor'
->;
-
-const conditionWhereClauses: Record<WhereClauseGeneratingCondition, string> = {
+const conditionWhereClauses: ConditionWhereClauses<'case'> = {
   isCreator: `"cases"."twilioWorkerId" = $<twilioWorkerSid>`,
   isCaseContactOwner: `(${selectContactsOwnedCount('twilioWorkerSid')}) > 0`,
   isCaseOpen: `"cases"."status" != 'closed'`,
+  timeBasedCondition: ({ createdDaysAgo, createdHoursAgo }) => {
+    const timeClauses = [];
+    if (typeof createdHoursAgo === 'number') {
+      timeClauses.push(
+        `"cases"."createdAt" > CURRENT_TIMESTAMP - interval '${createdHoursAgo} hours'`,
+      );
+    }
+    if (typeof createdDaysAgo === 'number') {
+      timeClauses.push(
+        `"cases"."createdAt" > CURRENT_TIMESTAMP - interval '${createdDaysAgo} days'`,
+      );
+    }
+    return timeClauses.length ? `(${timeClauses.join(' AND ')})` : '1=1';
+  },
 };
 
 export const listCasesPermissionWhereClause = (
   caseListConditionSets: CaseListCondition[][],
   userIsSupervisor: boolean,
-): [clause: string] | [] => {
-  const conditionSetClauses: string[] = [];
-  const conditionsThatAllowAll: CaseListCondition[] = userIsSupervisor
-    ? ALL_OR_NOTHING_CONDITIONS
-    : ['everyone'];
-  const conditionsThatBlockAll: CaseListCondition[] = userIsSupervisor
-    ? []
-    : ['isSupervisor'];
-  for (const caseListConditionSet of caseListConditionSets) {
-    // Any condition set that has only 'all' conditions, i.e. 'everyone' (or 'isSupervisor' for supervisors)
-    // means permissions are open regardless of what other conditions there are, so short circuit
-    if (
-      caseListConditionSet.length &&
-      caseListConditionSet.every(condition => conditionsThatAllowAll.includes(condition))
-    ) {
-      return [];
-    }
-
-    // Any set that includes a 'nothing' condition, i.e. isSupervisor for non-supervisors, means all cases would be blocked by this condition set
-    // But others might allow some cases, so we can't short circuit
-    if (
-      caseListConditionSet.length &&
-      caseListConditionSet.some(condition => conditionsThatBlockAll.includes(condition))
-    ) {
-      continue;
-    }
-
-    // Apply filtering conditions
-    const relevantConditions: WhereClauseGeneratingCondition[] =
-      caseListConditionSet.filter(
-        condition => !ALL_OR_NOTHING_CONDITIONS.includes(condition),
-      ) as WhereClauseGeneratingCondition[];
-    if (relevantConditions.length) {
-      const conditionClauses = relevantConditions.map(
-        condition => conditionWhereClauses[condition],
-      );
-      conditionSetClauses.push(`(${conditionClauses.join(' AND ')})`);
-    }
-  }
-  return conditionSetClauses.length
-    ? [`(${conditionSetClauses.join(' OR ')})`]
-    : FILTER_ALL_CASES_CLAUSE;
-};
+): [clause: string] | [] =>
+  listPermissionWhereClause<'case'>(
+    caseListConditionSets,
+    userIsSupervisor,
+    conditionWhereClauses,
+  );
