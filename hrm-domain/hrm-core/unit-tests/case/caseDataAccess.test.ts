@@ -77,18 +77,14 @@ describe('getById', () => {
 });
 
 describe('createCase', () => {
-  let tx: pgPromise.ITask<unknown>;
-  beforeEach(() => {
-    tx = mockConnection();
-    mockTransaction(conn, tx);
-  });
   test('creates new record and returns created record in DB, with assigned ID.', async () => {
+    mockTask(conn);
     const caseFromDB = createMockCaseInsert({
       helpline: 'helpline',
       status: 'open',
       twilioWorkerId: 'twilio-worker-id',
     });
-    const oneSpy = jest.spyOn(tx, 'one').mockResolvedValue({ ...caseFromDB, id: 1337 });
+    const oneSpy = jest.spyOn(conn, 'one').mockResolvedValue({ ...caseFromDB, id: 1337 });
 
     const result = await caseDb.create(caseFromDB);
     const insertSql = getSqlStatement(oneSpy, -1);
