@@ -58,9 +58,9 @@ const canPerformActionOnContact = (
               contactObj,
               additionalValidation,
             );
-          } else {
-            req.unauthorize();
-          }
+          } else if (action === 'viewContact') {
+            throw createError(404);
+          } else req.unauthorize();
         } else {
           // Cannot finalize an offline task with a placeholder taskId.
           // A real task needs to have been created and it's sid assigned to the contact before it can be finalized (or whilst it is finalized)
@@ -132,6 +132,10 @@ const checkFinalizedContactEditsOnlyChangeForm = async (
 export const canPerformEditContactAction = canPerformActionOnContact(
   actionsMaps.contact.EDIT_CONTACT,
   checkFinalizedContactEditsOnlyChangeForm,
+);
+
+export const canPerformViewContactAction = canPerformActionOnContact(
+  actionsMaps.contact.VIEW_CONTACT,
 );
 
 const canRemoveFromCase = async (

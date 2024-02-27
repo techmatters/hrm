@@ -30,6 +30,7 @@ import {
   canChangeContactConnection,
   canDisconnectContact,
   canPerformEditContactAction,
+  canPerformViewContactAction,
 } from './canPerformContactAction';
 
 const contactsRouter = SafeRouter();
@@ -190,7 +191,7 @@ contactsRouter.post('/:contactId/conversationMedia', publicEndpoint, async (req,
 });
 
 // WARNING: this endpoint MUST be the last one in this router, because it will be used if none of the above regex matches the path
-contactsRouter.get('/:contactId', publicEndpoint, async (req, res) => {
+contactsRouter.get('/:contactId', canPerformViewContactAction, async (req, res) => {
   const { accountSid, can, user } = req;
   const contact = await getContactById(accountSid, req.params.contactId, {
     can: req.can,

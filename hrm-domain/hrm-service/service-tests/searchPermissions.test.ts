@@ -149,69 +149,8 @@ const overridePermissions = <T extends TargetKind>(
   setRules(rules);
 };
 
-const overrideViewContactPermissions = (permissions: TKConditionsSets<'contact'>) =>
-  overridePermissions('viewContact', permissions);
-
 const overrideViewCasePermissions = (permissions: TKConditionsSets<'case'>) =>
   overridePermissions('viewCase', permissions);
-
-describe('search contacts permissions', () => {
-  const route = `/v0/accounts/${accountSid}/contacts/search`;
-
-  test('return zero contacts when no permissions', async () => {
-    await createContact(userTwilioWorkerId);
-    await createContact(anotherUserTwilioWorkerId);
-
-    overrideViewContactPermissions([['isSupervisor'], ['isOwner']]);
-
-    const searchParams: contactDb.SearchParameters = {
-      counselor: anotherUserTwilioWorkerId,
-      onlyDataContacts: false,
-    };
-
-    const response = await request.post(route).set(headers).send(searchParams);
-
-    expect(response.status).toBe(200);
-    expect(response.body.count).toBe(0);
-    expect(response.body.contacts.length).toBe(0);
-  });
-
-  test('override counselor and return contacts', async () => {
-    await createContact(userTwilioWorkerId);
-    await createContact(anotherUserTwilioWorkerId);
-
-    overrideViewContactPermissions([['everyone']]);
-
-    const searchParams: contactDb.SearchParameters = {
-      counselor: anotherUserTwilioWorkerId,
-      onlyDataContacts: false,
-    };
-
-    const response = await request.post(route).set(headers).send(searchParams);
-
-    expect(response.status).toBe(200);
-    expect(response.body.count).toBe(1);
-    expect(response.body.contacts.length).toBe(1);
-  });
-
-  test('return all contacts', async () => {
-    await createContact(userTwilioWorkerId);
-    await createContact(anotherUserTwilioWorkerId);
-
-    overrideViewContactPermissions([['everyone']]);
-
-    const searchParams: contactDb.SearchParameters = {
-      counselor: undefined,
-      onlyDataContacts: false,
-    };
-
-    const response = await request.post(route).set(headers).send(searchParams);
-
-    expect(response.status).toBe(200);
-    expect(response.body.count).toBe(2);
-    expect(response.body.contacts.length).toBe(2);
-  });
-});
 
 describe('search cases permissions', () => {
   const route = `/v0/accounts/${accountSid}/cases/search`;

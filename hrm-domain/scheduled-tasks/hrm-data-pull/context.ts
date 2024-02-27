@@ -66,8 +66,4 @@ export const maxPermissions = {
     isSupervisor: true,
   },
   permissions: rulesMap.open,
-  searchPermissions: {
-    canOnlyViewOwnCases: false,
-    canOnlyViewOwnContacts: false,
-  },
 };
