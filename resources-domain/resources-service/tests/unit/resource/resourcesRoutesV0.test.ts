@@ -15,11 +15,11 @@
  */
 
 import { AccountSID, ReferrableResource } from '@tech-matters/types';
+import { SearchParameters } from '@tech-matters/elasticsearch-client';
 
 import { Request, Response, Router } from 'express';
 import resourceRoutes from '../../../src/resource/resourceRoutesV0';
 import { resourceService } from '../../../src/resource/resourceService';
-import { SearchParameters } from '@tech-matters/elasticsearch-client/search';
 
 jest.mock('express', () => ({
   Router: jest.fn(),
