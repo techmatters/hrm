@@ -23,7 +23,7 @@ import {
 import '../case/caseValidation';
 import * as mocks from '../mocks';
 import { accountSid, ALWAYS_CAN, contact1, withTaskId, workerSid } from '../mocks';
-import { twilioUser } from '@tech-matters/twilio-worker-auth/dist';
+import { twilioUser } from '@tech-matters/twilio-worker-auth';
 import each from 'jest-each';
 import { getRequest, getServer, headers, setRules, useOpenRules } from '../server';
 import * as contactDb from '@tech-matters/hrm-core/contact/contactDataAccess';

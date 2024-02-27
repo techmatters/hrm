@@ -333,8 +333,9 @@ export const createCase = async (
   body: Partial<CaseService>,
   accountSid: CaseService['accountSid'],
   workerSid: CaseService['twilioWorkerId'],
+  testNowISO?: Date,
 ): Promise<CaseService> => {
-  const nowISO = new Date().toISOString();
+  const nowISO = (testNowISO ?? new Date()).toISOString();
   delete body.id;
   const record = caseToCaseRecord(
     {
@@ -358,17 +359,26 @@ export const updateCase = async (
   id: CaseService['id'],
   body: Partial<CaseService>,
   accountSid: CaseService['accountSid'],
-  workerSid: CaseService['twilioWorkerId'],
-  { can, user }: { can: InitializedCan; user: TwilioUser },
+  {
+    can,
+    user,
+    permissions,
+  }: { can: InitializedCan; user: TwilioUser; permissions: RulesFile },
 ): Promise<CaseService> => {
   const nowISO = new Date().toISOString();
 
   const record = caseToCaseRecord(
-    { ...body, updatedBy: workerSid, updatedAt: nowISO, id, accountSid },
-    workerSid,
+    { ...body, updatedBy: user.workerSid, updatedAt: nowISO, id, accountSid },
+    user.workerSid,
   );
 
-  const updated = await update(id, record, accountSid, workerSid);
+  const updated = await update(
+    id,
+    record,
+    accountSid,
+    user,
+    permissions.viewContact as TKConditionsSets<'contact'>,
+  );
 
   const withTransformedContacts = mapContactTransformations({ can, user })(updated);
 
@@ -379,10 +389,21 @@ export const updateCaseStatus = async (
   id: CaseService['id'],
   status: string,
   accountSid: CaseService['accountSid'],
-  { can, user }: { can: InitializedCan; user: TwilioUser },
+  {
+    can,
+    user,
+    permissions,
+  }: { can: InitializedCan; user: TwilioUser; permissions: RulesFile },
 ): Promise<CaseService> => {
   const { workerSid } = user;
-  const updated = await updateStatus(id, status, workerSid, accountSid);
+  const updated = await updateStatus(
+    id,
+    status,
+    workerSid,
+    accountSid,
+    user,
+    permissions.viewContact as TKConditionsSets<'contact'>,
+  );
 
   const withTransformedContacts = mapContactTransformations({ can, user })(updated);
 
@@ -404,10 +425,24 @@ export const updateCaseOverview = async (
 export const getCase = async (
   id: number,
   accountSid: string,
-  { can, user }: { can: InitializedCan; user: TwilioUser },
+  {
+    can,
+    user,
+    permissions,
+  }: {
+    can: InitializedCan;
+    user: TwilioUser;
+    permissions: Pick<RulesFile, 'viewContact'>;
+  },
   onlyEssentialData?: boolean,
 ): Promise<CaseService | undefined> => {
-  const caseFromDb = await getById(id, accountSid, user.workerSid, onlyEssentialData);
+  const caseFromDb = await getById(
+    id,
+    accountSid,
+    user,
+    permissions.viewContact as TKConditionsSets<'contact'>,
+    onlyEssentialData,
+  );
 
   if (caseFromDb) {
     return caseRecordToCase(mapContactTransformations({ can, user })(caseFromDb));
@@ -468,10 +503,12 @@ const generalizedSearchCases =
     }
     caseFilters.includeOrphans = caseFilters.includeOrphans ?? closedCases ?? true;
     const viewCasePermissions = permissions.viewCase as TKConditionsSets<'case'>;
+    const viewContactPermissions = permissions.viewContact as TKConditionsSets<'contact'>;
 
     const dbResult = await searchQuery(
       user,
       viewCasePermissions,
+      viewContactPermissions,
       listConfiguration,
       accountSid,
       searchParameters,

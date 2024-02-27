@@ -14,44 +14,48 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { TKCondition } from '../../permissions/rulesMap';
-import { selectContactsOwnedCount } from './caseGetSql';
+import {
+  ContactSpecificCondition,
+  TKCondition,
+  UserBasedCondition,
+} from '../../permissions/rulesMap';
 import {
   ConditionWhereClauses,
   listPermissionWhereClause,
 } from '../../permissions/sqlGenerators';
 
-export type CaseListCondition = Extract<
-  TKCondition<'case'>,
-  'isCreator' | 'isCaseContactOwner' | 'everyone' | 'isSupervisor' | 'isCaseOpen'
+export type ContactListCondition = Extract<
+  TKCondition<'contact'>,
+  ContactSpecificCondition | UserBasedCondition
 >;
 
-const conditionWhereClauses: ConditionWhereClauses<'case'> = {
-  isCreator: `"cases"."twilioWorkerId" = $<twilioWorkerSid>`,
-  isCaseContactOwner: `(${selectContactsOwnedCount('twilioWorkerSid')}) > 0`,
-  isCaseOpen: `"cases"."status" != 'closed'`,
+const conditionWhereClauses: ConditionWhereClauses<'contact'> = {
+  isOwner: `"contacts"."twilioWorkerId" = $<twilioWorkerSid>`,
+
   timeBasedCondition: ({ createdDaysAgo, createdHoursAgo }) => {
     const timeClauses = [];
     if (typeof createdHoursAgo === 'number') {
       timeClauses.push(
-        `"cases"."createdAt" > CURRENT_TIMESTAMP - interval '${createdHoursAgo} hours'`,
+        `"contacts"."timeOfContact" > CURRENT_TIMESTAMP - interval '${createdHoursAgo} hours'`,
       );
     }
     if (typeof createdDaysAgo === 'number') {
       timeClauses.push(
-        `"cases"."createdAt" > CURRENT_TIMESTAMP - interval '${createdDaysAgo} days'`,
+        `"contacts"."timeOfContact" > CURRENT_TIMESTAMP - interval '${createdDaysAgo} days'`,
       );
     }
     return timeClauses.length ? `(${timeClauses.join(' AND ')})` : '1=1';
   },
 };
 
-export const listCasesPermissionWhereClause = (
-  caseListConditionSets: CaseListCondition[][],
+export const listContactsPermissionWhereClause = (
+  contactListConditionSets: ContactListCondition[][],
   userIsSupervisor: boolean,
-): [clause: string] | [] =>
-  listPermissionWhereClause<'case'>(
-    caseListConditionSets,
+): string => {
+  const [clause] = listPermissionWhereClause<'contact'>(
+    contactListConditionSets,
     userIsSupervisor,
     conditionWhereClauses,
   );
+  return clause ?? '1=1';
+};

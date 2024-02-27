@@ -17,31 +17,44 @@
 import { selectCoalesceConversationMediasByContactId } from '../../conversation-media/sql/conversation-media-get-sql';
 import { selectCoalesceCsamReportsByContactId } from '../../csam-report/sql/csam-report-get-sql';
 import { selectCoalesceReferralsByContactId } from '../../referral/sql/referral-get-sql';
+import { TKConditionsSets } from '../../permissions/rulesMap';
+import {
+  ContactListCondition,
+  listContactsPermissionWhereClause,
+} from './contactPermissionSql';
 
 const selectSearchContactBaseQuery = (whereClause: string) => `
   SELECT 
   (count(*) OVER())::INTEGER AS "totalCount",
-  contacts.*, reports."csamReports", joinedReferrals."referrals", media."conversationMedia"
-  FROM "Contacts" contacts
+  contacts.*, reports."csamReports", "joinedReferrals"."referrals", media."conversationMedia"
+  FROM "Contacts" "contacts"
   LEFT JOIN LATERAL (
     ${selectCoalesceCsamReportsByContactId('contacts')}
-  ) reports ON true
+  ) "reports" ON true
   LEFT JOIN LATERAL (
     ${selectCoalesceReferralsByContactId('contacts')}
-  ) joinedReferrals ON true
+  ) "joinedReferrals" ON true
   LEFT JOIN LATERAL (
     ${selectCoalesceConversationMediasByContactId('contacts')}
-  ) media ON true
+  ) "media" ON true
 
   ${whereClause}
 
-  ORDER BY contacts."timeOfContact" DESC
+  ORDER BY "contacts"."timeOfContact" DESC
     OFFSET $<offset>
     LIMIT $<limit>
 `;
 
-export const SELECT_CONTACT_SEARCH = selectSearchContactBaseQuery(`
+export const selectContactSearch = (
+  viewPermissions: TKConditionsSets<'contact'>,
+  userIsSupervisor: boolean,
+) =>
+  selectSearchContactBaseQuery(`
         WHERE contacts."accountSid" = $<accountSid>
+        AND ${listContactsPermissionWhereClause(
+          viewPermissions as ContactListCondition[][],
+          userIsSupervisor,
+        )}
         AND ($<helpline> IS NULL OR contacts."helpline" = $<helpline>)
         AND (
           ($<lastNamePattern> IS NULL AND $<firstNamePattern> IS NULL)
@@ -111,8 +124,16 @@ export const SELECT_CONTACT_SEARCH = selectSearchContactBaseQuery(`
         )
 `);
 
-export const SELECT_CONTACT_SEARCH_BY_PROFILE_ID = selectSearchContactBaseQuery(`
-  WHERE contacts."accountSid" = $<accountSid>
+export const selectContactsByProfileId = (
+  viewPermissions: TKConditionsSets<'contact'>,
+  userIsSupervisor: boolean,
+) =>
+  selectSearchContactBaseQuery(`
+    WHERE contacts."accountSid" = $<accountSid>
+    AND ${listContactsPermissionWhereClause(
+      viewPermissions as ContactListCondition[][],
+      userIsSupervisor,
+    )}
     AND contacts."profileId" = $<profileId>
     AND ($<helpline> IS NULL OR contacts."helpline" = $<helpline>)
     AND ($<counselor> IS NULL OR contacts."twilioWorkerId" = $<counselor>)

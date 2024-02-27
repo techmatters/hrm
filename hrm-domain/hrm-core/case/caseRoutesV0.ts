@@ -73,7 +73,7 @@ casesRouter.post('/', publicEndpoint, async (req, res) => {
 });
 
 casesRouter.get('/:id', canViewCase, async (req, res) => {
-  const { accountSid } = req;
+  const { accountSid, permissions, can, user } = req;
   const { id } = req.params;
   const onlyEssentialData = Boolean(req.query.onlyEssentialData);
 
@@ -81,8 +81,9 @@ casesRouter.get('/:id', canViewCase, async (req, res) => {
     id,
     accountSid,
     {
-      can: req.can,
-      user: req.user,
+      can,
+      user,
+      permissions,
     },
     onlyEssentialData,
   );
@@ -98,11 +99,12 @@ casesRouter.put('/:id', canEditCase, async (req, res) => {
   console.info(
     '[DEPRECATION WARNING] - PUT /cases/:id is deprecated and slated for removal from the API in v1.16. Use the case section CRUD endpoints and the case overview / status PUT endpoints to make updates to cases.',
   );
-  const { accountSid, user } = req;
+  const { accountSid, user, permissions } = req;
   const { id } = req.params;
-  const updatedCase = await caseApi.updateCase(id, req.body, accountSid, user.workerSid, {
+  const updatedCase = await caseApi.updateCase(id, req.body, accountSid, {
     can: req.can,
     user,
+    permissions,
   });
   if (!updatedCase) {
     throw createError(404);
@@ -115,11 +117,14 @@ casesRouter.put('/:id/status', canUpdateCaseStatus, async (req, res) => {
     accountSid,
     user,
     body: { status },
+    can,
+    permissions,
   } = req;
   const { id } = req.params;
   const updatedCase = await caseApi.updateCaseStatus(id, status, accountSid, {
-    can: req.can,
+    can,
     user,
+    permissions,
   });
   if (!updatedCase) {
     throw createError(404);

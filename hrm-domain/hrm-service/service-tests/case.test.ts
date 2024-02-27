@@ -108,10 +108,7 @@ describe('/cases route', () => {
       expect(response.status).toBe(200);
       expect(response.body).toStrictEqual(expected);
       // Check the DB is actually updated
-      const fromDb = await caseApi.getCase(response.body.id, accountSid, {
-        user: twilioUser(workerSid, []),
-        can: () => true,
-      });
+      const fromDb = await caseApi.getCase(response.body.id, accountSid, ALWAYS_CAN);
       expect(fromDb).toStrictEqual({ ...expected, sections: {}, connectedContacts: [] });
     });
   });
@@ -251,7 +248,12 @@ describe('/cases route', () => {
         expect(response.status).toBe(200);
 
         // Check the DB is actually updated
-        const fromDb = await caseDb.getById(cases.blank.id, accountSid, workerSid);
+        const fromDb = await caseDb.getById(
+          cases.blank.id,
+          accountSid,
+          { workerSid, isSupervisor: true, roles: [] },
+          [['everyone']],
+        );
         expect(fromDb).toBeFalsy();
       });
       test('should return 404', async () => {

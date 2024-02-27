@@ -45,7 +45,7 @@ import { actionsMaps, Actions, TargetKind, isTargetKind } from './actions';
 import type { ProfileSection } from '../profile/profileDataAccess';
 
 const timeBasedConditions = ['createdHoursAgo', 'createdDaysAgo'] as const;
-export type TimeBasedCondition = { [K in (typeof timeBasedConditions)[number]]: number };
+export type TimeBasedCondition = { [K in (typeof timeBasedConditions)[number]]?: number };
 
 export const isTimeBasedCondition = (c: any): c is TimeBasedCondition => {
   if (typeof c === 'object') {
@@ -148,9 +148,6 @@ type UnsupportedActionConditions = {
 };
 
 const unsupportedActionConditions: UnsupportedActionConditions = {
-  case: {
-    VIEW_CASE: ['createdDaysAgo', 'createdHoursAgo'],
-  },
   profileSection: {
     CREATE_PROFILE_SECTION: ['sectionType'],
   },
