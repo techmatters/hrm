@@ -19,9 +19,11 @@ import { isFuture } from 'date-fns';
 
 import * as profileDB from './profileDataAccess';
 import { db } from '../connection-pool';
+import { txIfNotInOne } from '../sql';
 import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import type { NewProfileSectionRecord } from './sql/profile-sections-sql';
-import { NewProfileFlagRecord } from './sql/profile-flags-sql';
+import type { NewProfileFlagRecord } from './sql/profile-flags-sql';
+import type { NewIdentifierRecord, NewProfileRecord } from './sql/profile-insert-sql';
 
 export {
   Identifier,
@@ -61,30 +63,39 @@ export const getProfile =
     }
   };
 
-export const getOrCreateProfileWithIdentifier =
+export const createIdentifierAndProfile =
   (task?) =>
   async (
-    identifier: string,
     accountSid: string,
-    name?: string,
+    payload: { identifier: NewIdentifierRecord; profile: NewProfileRecord },
+    { user }: { user: TwilioUser },
   ): Promise<TResult<'InternalServerError', profileDB.IdentifierWithProfiles>> => {
     try {
-      if (!identifier) {
-        return newOk({ data: null });
-      }
+      const { identifier, profile } = payload;
 
-      const profileResult = await profileDB.getIdentifierWithProfiles(task)({
-        accountSid,
-        identifier,
-      });
+      return await txIfNotInOne(task, async t => {
+        const newIdentifier = await profileDB.createIdentifier(t)(accountSid, {
+          identifier: identifier.identifier,
+          createdBy: user.workerSid,
+        });
+        const newProfile = await profileDB.createProfile(t)(accountSid, {
+          name: profile.name || null,
+          createdBy: user.workerSid,
+        });
 
-      if (isErr(profileResult) || profileResult.data) {
-        return profileResult;
-      }
+        const idWithProfiles = await profileDB.associateProfileToIdentifier(t)(
+          accountSid,
+          newProfile.id,
+          newIdentifier.id,
+        );
 
-      return await profileDB.createIdentifierAndProfile(task)(accountSid, {
-        identifier: { identifier },
-        profile: { name: name || null },
+        // trigger an update on profiles to keep track of who associated
+        await profileDB.updateProfileById(t)(accountSid, {
+          id: newProfile.id,
+          updatedBy: user.workerSid,
+        });
+
+        return idWithProfiles;
       });
     } catch (err) {
       return newErr({
@@ -94,29 +105,28 @@ export const getOrCreateProfileWithIdentifier =
     }
   };
 
-export const createProfileWithIdentifier =
+export const getOrCreateProfileWithIdentifier =
   (task?) =>
   async (
-    identifier: string,
     accountSid: string,
-    name?: string,
+    payload: { identifier: NewIdentifierRecord; profile: NewProfileRecord },
+    { user }: { user: TwilioUser },
   ): Promise<
     TResult<
-      'InternalServerError' | 'InvalidParameterError' | 'IdentifierExistsError',
-      profileDB.IdentifierWithProfiles
+      'InternalServerError',
+      { identifier: profileDB.IdentifierWithProfiles; created: boolean }
     >
   > => {
     try {
-      if (!identifier) {
-        return newErr({
-          message: 'Missing identifier parameter',
-          error: 'InvalidParameterError',
-        });
+      const { identifier, profile } = payload;
+
+      if (!identifier?.identifier) {
+        return newOk({ data: null });
       }
 
       const profileResult = await profileDB.getIdentifierWithProfiles(task)({
         accountSid,
-        identifier,
+        identifier: identifier.identifier,
       });
 
       if (isErr(profileResult)) {
@@ -124,16 +134,70 @@ export const createProfileWithIdentifier =
       }
 
       if (profileResult.data) {
+        return newOk({ data: { identifier: profileResult.data, created: false } });
+      }
+
+      const createdResult = await createIdentifierAndProfile(task)(
+        accountSid,
+        { identifier, profile },
+        { user },
+      );
+
+      if (isErr(createdResult)) {
+        return createdResult;
+      }
+
+      return newOk({ data: { identifier: createdResult.data, created: true } });
+    } catch (err) {
+      return newErr({
+        message: err instanceof Error ? err.message : String(err),
+        error: 'InternalServerError',
+      });
+    }
+  };
+
+export const createProfileWithIdentifierOrError =
+  (task?) =>
+  async (
+    accountSid: string,
+    payload: { identifier: NewIdentifierRecord; profile: NewProfileRecord },
+    { user }: { user: TwilioUser },
+  ): Promise<
+    TResult<
+      'InternalServerError' | 'InvalidParameterError' | 'IdentifierExistsError',
+      profileDB.IdentifierWithProfiles
+    >
+  > => {
+    try {
+      const { identifier, profile } = payload;
+      if (!identifier?.identifier) {
+        return newErr({
+          message: 'Missing identifier parameter',
+          error: 'InvalidParameterError',
+        });
+      }
+
+      const result = await getOrCreateProfileWithIdentifier(task)(
+        accountSid,
+        {
+          identifier,
+          profile,
+        },
+        { user },
+      );
+
+      if (isErr(result)) {
+        return result;
+      }
+
+      if (result.data.created === false) {
         return newErr({
           message: `Identifier ${identifier} already exists`,
           error: 'IdentifierExistsError',
         });
       }
 
-      return await profileDB.createIdentifierAndProfile(task)(accountSid, {
-        identifier: { identifier },
-        profile: { name: name || null },
-      });
+      return newOk({ data: result.data.identifier });
     } catch (err) {
       return newErr({
         message: err instanceof Error ? err.message : String(err),
@@ -169,9 +233,16 @@ export const listProfiles = profileDB.listProfiles;
 
 export const associateProfileToProfileFlag = async (
   accountSid: string,
-  profileId: profileDB.Profile['id'],
-  profileFlagId: number,
-  validUntil: Date | null,
+  {
+    profileId,
+    profileFlagId,
+    validUntil,
+  }: {
+    profileId: profileDB.Profile['id'];
+    profileFlagId: number;
+    validUntil: Date | null;
+  },
+  { user }: { user: TwilioUser },
 ): Promise<
   TResult<
     'InvalidParameterError' | 'InternalServerError',
@@ -187,14 +258,21 @@ export const associateProfileToProfileFlag = async (
     }
 
     return await db.task(async t => {
-      (
-        await profileDB.associateProfileToProfileFlag(t)(
+      await profileDB
+        .associateProfileToProfileFlag(t)(
           accountSid,
           profileId,
           profileFlagId,
           validUntil,
         )
-      ).unwrap(); // unwrap the result to bubble error up (if any)
+        .then(r => r.unwrap()); // unwrap the result to bubble error up (if any)
+
+      // trigger an update on profiles to keep track of who associated
+      await profileDB.updateProfileById(t)(accountSid, {
+        id: profileId,
+        updatedBy: user.workerSid,
+      });
+
       const profile = await profileDB.getProfileById(t)(accountSid, profileId);
 
       return newOk({ data: profile });
@@ -209,18 +287,26 @@ export const associateProfileToProfileFlag = async (
 
 export const disassociateProfileFromProfileFlag = async (
   accountSid: string,
-  profileId: profileDB.Profile['id'],
-  profileFlagId: number,
+  {
+    profileId,
+    profileFlagId,
+  }: {
+    profileId: profileDB.Profile['id'];
+    profileFlagId: number;
+  },
+  { user }: { user: TwilioUser },
 ): Promise<TResult<'InternalServerError', profileDB.ProfileWithRelationships>> => {
   try {
     return await db.task(async t => {
-      (
-        await profileDB.disassociateProfileFromProfileFlag(t)(
-          accountSid,
-          profileId,
-          profileFlagId,
-        )
-      ).unwrap(); // unwrap the result to bubble error up (if any);
+      await profileDB
+        .disassociateProfileFromProfileFlag(t)(accountSid, profileId, profileFlagId)
+        .then(r => r.unwrap()); // unwrap the result to bubble error up (if any);
+
+      // trigger an update on profiles to keep track of who disassociated
+      await profileDB.updateProfileById(t)(accountSid, {
+        id: profileId,
+        updatedBy: user.workerSid,
+      });
       const profile = await profileDB.getProfileById(t)(accountSid, profileId);
 
       return newOk({ data: profile });
@@ -239,6 +325,7 @@ export const getProfileFlagsByIdentifier = profileDB.getProfileFlagsByIdentifier
 export const createProfileFlag = async (
   accountSid: string,
   payload: NewProfileFlagRecord,
+  { user }: { user: TwilioUser },
 ): Promise<
   TResult<'InternalServerError' | 'InvalidParameterError', profileDB.ProfileFlag>
 > => {
@@ -261,7 +348,10 @@ export const createProfileFlag = async (
       });
     }
 
-    const pf = await profileDB.createProfileFlag(accountSid, { name });
+    const pf = await profileDB.createProfileFlag(accountSid, {
+      name,
+      createdBy: user.workerSid,
+    });
 
     return pf;
   } catch (err) {
@@ -278,6 +368,7 @@ export const updateProfileFlagById = async (
   payload: {
     name: string;
   },
+  { user }: { user: TwilioUser },
 ): Promise<
   TResult<'InternalServerError' | 'InvalidParameterError', profileDB.ProfileFlag>
 > => {
@@ -302,6 +393,7 @@ export const updateProfileFlagById = async (
     const profileFlag = await profileDB.updateProfileFlagById(accountSid, {
       id: flagId,
       name,
+      updatedBy: user.workerSid,
     });
 
     return profileFlag;

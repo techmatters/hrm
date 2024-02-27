@@ -56,7 +56,6 @@ export const newErr = <TError extends string>({
 type SuccessResult<TData> = ResultBase & {
   status: 'success';
   data: TData;
-  statusCode: number;
   readonly unwrap: () => TData;
 };
 
@@ -67,12 +66,10 @@ type NewSuccessResultParms<TData> = {
 
 export const newOk = <TData>({
   data,
-  statusCode = 200,
 }: NewSuccessResultParms<TData>): SuccessResult<TData> => ({
   _tag: 'Result',
   status: 'success',
   data,
-  statusCode,
   unwrap: () => data,
 });
 

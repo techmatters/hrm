@@ -49,6 +49,7 @@ import {
 import { Profile, getOrCreateProfileWithIdentifier } from '../profile/profileService';
 import { deleteContactReferrals } from '../referral/referral-data-access';
 import { DatabaseUniqueConstraintViolationError, inferPostgresError } from '../sql';
+import { systemUser } from '@tech-matters/twilio-worker-auth';
 import { RulesFile, TKConditionsSets } from '../permissions/rulesMap';
 
 // Re export as is:
@@ -127,12 +128,17 @@ const findS3StoredTranscriptPending = (
   return null;
 };
 
-const initProfile = async (conn, accountSid, contact) => {
+const initProfile = async (
+  conn,
+  accountSid: string,
+  contact: Pick<Contact, 'number'>,
+) => {
   if (!contact.number) return {};
 
   const profileResult = await getOrCreateProfileWithIdentifier(conn)(
-    contact.number,
     accountSid,
+    { identifier: { identifier: contact.number }, profile: { name: null } },
+    { user: { isSupervisor: false, roles: [], workerSid: systemUser } }, // fake the worker since makes more sense to keep the new "profile created by system"
   );
 
   if (isErr(profileResult)) {
@@ -143,8 +149,8 @@ const initProfile = async (conn, accountSid, contact) => {
   }
 
   return {
-    profileId: profileResult.data?.profiles?.[0].id,
-    identifierId: profileResult.data?.id,
+    profileId: profileResult.data?.identifier?.profiles?.[0].id,
+    identifierId: profileResult.data?.identifier?.id,
   };
 };
 

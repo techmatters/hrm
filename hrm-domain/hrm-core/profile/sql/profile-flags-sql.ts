@@ -18,8 +18,10 @@ import { pgp } from '../../connection-pool';
 
 type NewRecordCommons = {
   accountSid: string;
-  createdAt?: Date;
+  createdAt: Date;
   updatedAt: Date;
+  createdBy: string;
+  updatedBy: string;
 };
 
 export type NewProfileFlagRecord = {
@@ -31,23 +33,29 @@ export const insertProfileFlagSql = (
 ) => `
   ${pgp.helpers.insert(
     profileFlag,
-    ['accountSid', 'name', 'createdAt', 'updatedAt'],
+    ['accountSid', 'name', 'createdAt', 'updatedAt', 'createdBy', 'updatedBy'],
     'ProfileFlags',
   )}
   RETURNING *
 `;
 
 export const updateProfileFlagByIdSql = (
-  profileFlag: Pick<NewProfileFlagRecord, 'name'> & Pick<NewRecordCommons, 'updatedAt'>,
+  profileFlag: Pick<NewProfileFlagRecord, 'name'> &
+    Pick<NewRecordCommons, 'updatedAt' | 'updatedBy'>,
 ) => {
-  const { updatedAt, name } = profileFlag;
+  const { updatedAt, updatedBy, name } = profileFlag;
   const profileFlagWithTimestamp = {
     name,
     updatedAt: updatedAt.toISOString(),
+    updatedBy,
   };
 
   return `
-    ${pgp.helpers.update(profileFlagWithTimestamp, ['name', 'updatedAt'], 'ProfileFlags')}
+    ${pgp.helpers.update(
+      profileFlagWithTimestamp,
+      ['name', 'updatedAt', 'updatedBy'],
+      'ProfileFlags',
+    )}
     WHERE id = $<profileId> AND "accountSid" = $<accountSid>
     RETURNING *
   `;
@@ -67,7 +75,6 @@ export const getProfileFlagsByIdentifierSql = `
   LEFT JOIN "ProfileFlags" pf ON pf.id = p2f."profileFlagId" AND (pf."accountSid" = p2f."accountSid" OR pf."accountSid" IS NULL)
   WHERE ids."identifier" = $<identifier> AND ids."accountSid" = $<accountSid>
 `;
-// WHERE ids."identifier" = '190.2.98.203' -- AND ids."accountSid" = ''
 
 type AssociateProfileToProfileFlagParams = {
   profileId: number;
@@ -75,7 +82,8 @@ type AssociateProfileToProfileFlagParams = {
   validUntil: Date | null;
 };
 export const associateProfileToProfileFlagSql = (
-  association: AssociateProfileToProfileFlagParams & NewRecordCommons,
+  association: AssociateProfileToProfileFlagParams &
+    Omit<NewRecordCommons, 'createdBy' | 'updatedBy'>,
 ) => `
   ${pgp.helpers.insert(
     association,

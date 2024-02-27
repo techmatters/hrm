@@ -16,16 +16,22 @@
 
 import { pgp } from '../../connection-pool';
 
+export type NewRecordCommons = {
+  accountSid: string;
+  createdAt: Date;
+  updatedAt: Date;
+  createdBy: string;
+  updatedBy: string;
+};
+
 export type NewProfileRecord = {
   name: string | null;
 };
 
-export const insertProfileSql = (
-  profile: NewProfileRecord & { accountSid: string; createdAt: Date; updatedAt: Date },
-) => `
+export const insertProfileSql = (profile: NewProfileRecord & NewRecordCommons) => `
   ${pgp.helpers.insert(
     profile,
-    ['accountSid', 'name', 'createdAt', 'updatedAt'],
+    ['accountSid', 'name', 'createdAt', 'updatedAt', 'createdBy', 'updatedBy'],
     'Profiles',
   )}
   RETURNING *
@@ -36,15 +42,11 @@ export type NewIdentifierRecord = {
 };
 
 export const insertIdentifierSql = (
-  identifier: NewIdentifierRecord & {
-    accountSid: string;
-    createdAt: Date;
-    updatedAt: Date;
-  },
+  identifier: NewIdentifierRecord & NewRecordCommons,
 ) => `
 ${pgp.helpers.insert(
   identifier,
-  ['accountSid', 'identifier', 'createdAt', 'updatedAt'],
+  ['accountSid', 'identifier', 'createdAt', 'updatedAt', 'createdBy', 'updatedBy'],
   'Identifiers',
 )}
 RETURNING *
