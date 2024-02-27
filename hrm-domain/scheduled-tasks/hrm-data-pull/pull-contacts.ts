@@ -31,7 +31,7 @@ const getSearchParams = (startDate: Date, endDate: Date) => ({
 });
 
 export const pullContacts = async (startDate: Date, endDate: Date) => {
-  const { accountSid, bucket } = await getContext();
+  const { accountSid, bucket, hrmEnv, shortCode } = await getContext();
 
   const searchParams = getSearchParams(startDate, endDate);
 
@@ -61,9 +61,9 @@ export const pullContacts = async (startDate: Date, endDate: Date) => {
 
   try {
     await Promise.all(uploadPromises);
-    console.log('>> KHP Contacts were pulled successfully!');
+    console.log(`>> ${shortCode} ${hrmEnv} Contacts were pulled successfully!`);
   } catch (err) {
-    console.error('>> Error in KHP Data Pull: Contacts');
+    console.error(`>> Error in ${shortCode} ${hrmEnv} Data Pull: Contacts`);
     console.error(err);
     // TODO: Should throw an error?
   }
