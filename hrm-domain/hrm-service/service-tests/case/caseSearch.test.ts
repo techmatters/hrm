@@ -612,7 +612,6 @@ describe('/cases route', () => {
             createdCase2.id,
             { status: 'closed' },
             accountSid,
-            workerSid,
             ALWAYS_CAN,
           );
           const response = await request
