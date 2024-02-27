@@ -402,12 +402,7 @@ describe('/profiles', () => {
         );
 
         createdCases = await Promise.all(
-          createdCases.map(c =>
-            caseApi.getCase(c.id, c.accountSid, {
-              user: twilioUser(workerSid, []),
-              can: () => true,
-            }),
-          ) as any,
+          createdCases.map(c => caseApi.getCase(c.id, c.accountSid, ALWAYS_CAN)) as any,
         );
       });
 

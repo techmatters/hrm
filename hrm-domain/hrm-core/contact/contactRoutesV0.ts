@@ -129,7 +129,7 @@ contactsRouter.post('/search', publicEndpoint, async (req, res) => {
   const searchResults = await searchContacts(accountSid, req.body, req.query, {
     can: req.can,
     user: req.user,
-    searchPermissions: req.searchPermissions,
+    permissions: req.permissions,
   });
   res.json(searchResults);
 });

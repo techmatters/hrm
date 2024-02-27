@@ -28,7 +28,7 @@ import {
   deleteMissingCaseSectionsSql,
 } from './sql/case-sections-sql';
 import { DELETE_BY_ID } from './sql/case-delete-sql';
-import { selectSingleCaseByIdSql } from './sql/case-get-sql';
+import { selectSingleCaseByIdSql } from './sql/caseGetSql';
 import { Contact } from '../contact/contactDataAccess';
 import { OrderByDirectionType } from '../sql';
 import { TKConditionsSets } from '../permissions/rulesMap';
@@ -151,11 +151,17 @@ export const create = async (caseRecord: Partial<NewCaseRecord>): Promise<CaseRe
 export const getById = async (
   caseId: number,
   accountSid: string,
-  workerSid: string,
+  { workerSid, isSupervisor }: TwilioUser,
+  contactViewPermissions: TKConditionsSets<'contact'>,
   onlyEssentialData?: boolean,
 ): Promise<CaseRecord | undefined> => {
   return db.task(async connection => {
-    const statement = selectSingleCaseByIdSql('Cases', onlyEssentialData);
+    const statement = selectSingleCaseByIdSql(
+      'Cases',
+      contactViewPermissions,
+      isSupervisor,
+      onlyEssentialData,
+    );
     const queryValues = { accountSid, caseId, workerSid };
     return connection.oneOrNone<CaseRecord>(statement, queryValues);
   });
@@ -179,6 +185,7 @@ type SearchQueryParamsBuilder<T> = (
 export type SearchQueryFunction<T> = (
   user: TwilioUser,
   viewCasePermissions: TKConditionsSets<'case'>,
+  viewContactPermissions: TKConditionsSets<'contact'>,
   listConfiguration: CaseListConfiguration,
   accountSid: string,
   searchCriteria: T,
@@ -192,7 +199,8 @@ const generalizedSearchQueryFunction = <T>(
 ): SearchQueryFunction<T> => {
   return async (
     user,
-    permissions,
+    casePermissions,
+    contactPermissions,
     listConfiguration,
     accountSid,
     searchCriteria,
@@ -206,7 +214,8 @@ const generalizedSearchQueryFunction = <T>(
     const { count, rows } = await db.task(async connection => {
       const statement = sqlQueryBuilder(
         user,
-        permissions,
+        casePermissions,
+        contactPermissions,
         filters,
         orderClause,
         onlyEssentialData,
@@ -272,7 +281,8 @@ export const update = async (
   id,
   caseRecordUpdates: Partial<NewCaseRecord> & { caseSections?: CaseSectionRecord[] },
   accountSid: string,
-  workerSid: string,
+  { workerSid, isSupervisor }: TwilioUser,
+  contactViewPermissions: TKConditionsSets<'contact'>,
 ): Promise<CaseRecord> => {
   return db.tx(async transaction => {
     const statementValues = {
@@ -306,7 +316,10 @@ export const update = async (
     }
     await transaction.none(updateByIdSql(caseRecordUpdates, accountSid, id));
 
-    return transaction.oneOrNone(selectSingleCaseByIdSql('Cases'), statementValues);
+    return transaction.oneOrNone(
+      selectSingleCaseByIdSql('Cases', contactViewPermissions, isSupervisor),
+      statementValues,
+    );
   });
 };
 
@@ -315,6 +328,8 @@ export const updateStatus = async (
   status: string,
   updatedBy: string,
   accountSid: string,
+  { isSupervisor }: TwilioUser,
+  contactViewPermissions: TKConditionsSets<'contact'>,
 ) => {
   const statementValues = {
     accountSid,
@@ -329,7 +344,10 @@ export const updateStatus = async (
         id,
       ),
     );
-    return transaction.oneOrNone(selectSingleCaseByIdSql('Cases'), statementValues);
+    return transaction.oneOrNone(
+      selectSingleCaseByIdSql('Cases', contactViewPermissions, isSupervisor),
+      statementValues,
+    );
   });
 };
 

@@ -613,10 +613,7 @@ describe('/cases route', () => {
             { status: 'closed' },
             accountSid,
             workerSid,
-            {
-              user: twilioUser(workerSid, []),
-              can: () => true,
-            },
+            ALWAYS_CAN,
           );
           const response = await request
             .post(subRoute)

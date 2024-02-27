@@ -15,10 +15,7 @@
  */
 
 import { db } from '../connection-pool';
-import {
-  SELECT_CONTACT_SEARCH,
-  SELECT_CONTACT_SEARCH_BY_PROFILE_ID,
-} from './sql/contact-search-sql';
+import { selectContactSearch, selectContactsByProfileId } from './sql/contactSearchSql';
 import { UPDATE_CASEID_BY_ID, UPDATE_CONTACT_BY_ID } from './sql/contact-update-sql';
 import { parseISO } from 'date-fns';
 import {
@@ -31,6 +28,8 @@ import type { ITask } from 'pg-promise';
 import { txIfNotInOne } from '../sql';
 import { ConversationMedia } from '../conversation-media/conversation-media';
 import { TOUCH_CASE_SQL } from '../case/sql/caseUpdateSql';
+import { TKConditionsSets } from '../permissions/rulesMap';
+import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 
 export type ExistingContactRecord = {
   id: number;
@@ -99,6 +98,7 @@ const callTypes = {
 
 type QueryParams = {
   accountSid: string;
+  twilioWorkerSid: string;
   firstNamePattern?: string;
   lastNamePattern?: string;
   phoneNumberPattern?: string;
@@ -115,6 +115,7 @@ type QueryParams = {
 
 const searchParametersToQueryParameters = (
   accountSid: string,
+  { workerSid }: TwilioUser,
   {
     firstName,
     lastName,
@@ -156,6 +157,7 @@ const searchParametersToQueryParameters = (
     dateFrom: dateFrom ? parseISO(dateFrom).toISOString() : undefined,
     dateTo: dateTo ? parseISO(dateTo).toISOString() : undefined,
     accountSid,
+    twilioWorkerSid: workerSid,
 
     dataCallTypes: Object.values(callTypes),
     limit,
@@ -268,6 +270,7 @@ type BaseSearchQueryParams = {
 export type OptionalSearchQueryParams = Partial<QueryParams>;
 type SearchQueryParamsBuilder<T> = (
   accountSid: string,
+  user: TwilioUser,
   searchParameters: T,
   limit: number,
   offset: number,
@@ -278,18 +281,23 @@ export type SearchQueryFunction<T> = (
   searchParameters: T,
   limit: number,
   offset: number,
+  user: TwilioUser,
+  viewPermissions: TKConditionsSets<'contact'>,
 ) => Promise<{ rows: Contact[]; count: number }>;
 
 const generalizedSearchQueryFunction = <T>(
-  sqlQuery: string,
+  sqlQueryGenerator: (
+    viewPermissions: TKConditionsSets<'contact'>,
+    userIsSupervisor: boolean,
+  ) => string,
   sqlQueryParamsBuilder: SearchQueryParamsBuilder<T>,
 ): SearchQueryFunction<T> => {
-  return async (accountSid, searchParameters, limit, offset) => {
+  return async (accountSid, searchParameters, limit, offset, user, viewPermissions) => {
     return db.task(async connection => {
       const searchResults: (Contact & { totalCount: number })[] =
         await connection.manyOrNone<Contact & { totalCount: number }>(
-          sqlQuery,
-          sqlQueryParamsBuilder(accountSid, searchParameters, limit, offset),
+          sqlQueryGenerator(viewPermissions, user.isSupervisor),
+          sqlQueryParamsBuilder(accountSid, user, searchParameters, limit, offset),
         );
       return {
         rows: searchResults,
@@ -300,17 +308,15 @@ const generalizedSearchQueryFunction = <T>(
 };
 
 export const search: SearchQueryFunction<SearchParameters> =
-  generalizedSearchQueryFunction(
-    SELECT_CONTACT_SEARCH,
-    searchParametersToQueryParameters,
-  );
+  generalizedSearchQueryFunction(selectContactSearch, searchParametersToQueryParameters);
 
 export const searchByProfileId: SearchQueryFunction<
   Pick<OptionalSearchQueryParams, 'counselor' | 'helpline'> & { profileId: number }
 > = generalizedSearchQueryFunction(
-  SELECT_CONTACT_SEARCH_BY_PROFILE_ID,
-  (accountSid, searchParameters, limit, offset) => ({
+  selectContactsByProfileId,
+  (accountSid, { workerSid }, searchParameters, limit, offset) => ({
     accountSid,
+    twilioWorkerSid: workerSid,
     limit,
     offset,
     counselor: searchParameters.counselor,

@@ -127,7 +127,7 @@ profilesRouter.get('/:profileId/contacts', publicEndpoint, async (req, res, next
     const result = await getContactsByProfileId(accountSid, profileId, req.query, {
       can: req.can,
       user: req.user,
-      searchPermissions: req.searchPermissions,
+      permissions: req.permissions,
     });
 
     if (isErr(result)) {

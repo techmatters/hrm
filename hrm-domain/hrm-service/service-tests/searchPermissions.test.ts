@@ -31,7 +31,6 @@ import { ContactRawJson } from '@tech-matters/hrm-core/contact/contactJson';
 import { AccountSID } from '@tech-matters/types';
 import { ALWAYS_CAN } from './mocks';
 
-useOpenRules();
 const server = getServer();
 const request = getRequest(server);
 

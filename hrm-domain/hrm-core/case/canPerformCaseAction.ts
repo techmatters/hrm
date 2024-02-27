@@ -19,6 +19,7 @@ import { CaseService, getCase } from './caseService';
 import createError from 'http-errors';
 import { actionsMaps, getActions } from '../permissions';
 import { Request } from 'express';
+import { OPEN_VIEW_CONTACT_PERMISSIONS } from '../permissions/canPerformActionOnObject';
 
 /**
  * Generic function to check if the user can perform an action on a case.
@@ -35,7 +36,11 @@ export const canPerformCaseAction = (
     if (!req.isAuthorized()) {
       const { accountSid, user, can } = req;
       const id = getCaseIdFromRequest(req);
-      const caseObj = await getCase(id, accountSid, { can, user });
+      const caseObj = await getCase(id, accountSid, {
+        can,
+        user,
+        permissions: OPEN_VIEW_CONTACT_PERMISSIONS,
+      });
 
       if (!caseObj) throw createError(404);
 

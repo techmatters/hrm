@@ -20,7 +20,12 @@ import { createMockCase, createMockCaseRecord } from './mock-cases';
 import each from 'jest-each';
 import { CaseRecord, NewCaseRecord } from '../../case/caseDataAccess';
 import '@tech-matters/testing/expectToParseAsDate';
-import { workerSid, accountSid } from '../mocks';
+import {
+  workerSid,
+  accountSid,
+  ALWAYS_CAN,
+  OPEN_CONTACT_ACTION_CONDITIONS,
+} from '../mocks';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
 import { rulesMap } from '../../permissions';
 import { RulesFile } from '../../permissions/rulesMap';
@@ -342,6 +347,7 @@ describe('searchCases', () => {
       expect(searchSpy).toHaveBeenCalledWith(
         user,
         [['everyone']],
+        [['everyone']],
         listConfig ?? {},
         accountSid,
         expectedDbSearchCriteria,
@@ -442,6 +448,7 @@ describe('search cases permissions', () => {
       expect(searchSpy).toHaveBeenCalledWith(
         user,
         canOnlyViewOwnCases ? [['isCreator']] : [['everyone']],
+        [['everyone']],
         limitOffset,
         accountSid,
         {},
@@ -560,17 +567,14 @@ describe('update existing case', () => {
         caseId,
         updateCaseObject,
         accountSid,
-        workerSid,
-        {
-          can: () => true,
-          user: twilioUser(workerSid, []),
-        },
+        ALWAYS_CAN,
       );
       expect(updateSpy).toHaveBeenCalledWith(
         caseId,
         expectedDbCaseParameter,
         accountSid,
-        workerSid,
+        ALWAYS_CAN.user,
+        OPEN_CONTACT_ACTION_CONDITIONS,
       );
       expect(returned).toStrictEqual(expectedResponse);
     },
@@ -594,9 +598,6 @@ test('updating a non existing case returns an error', async () => {
   };
 
   await expect(
-    caseApi.updateCase(nonExistingCaseId, updateCaseObject, accountSid, workerSid, {
-      can: () => true,
-      user: twilioUser(workerSid, []),
-    }),
+    caseApi.updateCase(nonExistingCaseId, updateCaseObject, accountSid, ALWAYS_CAN),
   ).rejects.toThrow();
 });
