@@ -214,7 +214,7 @@ export type RulesFile = { [k in Actions]: TKConditionsSets<TargetKind> };
 const isValidTKConditionsSets =
   <T extends TargetKind>(kind: T) =>
   (css: TKConditionsSets<TargetKind>): css is TKConditionsSets<typeof kind> =>
-    css.every(cs => cs.every(isTKCondition(kind)));
+    css ? css.every(cs => cs.every(isTKCondition(kind))) : false;
 
 export const isRulesFile = (rules: any): rules is RulesFile =>
   Object.values(actionsMaps).every(map =>
