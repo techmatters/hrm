@@ -447,14 +447,12 @@ describe('isCaseContactOwner condition', () => {
       await Promise.all([
         connectContactToCase(
           accountSid,
-          user,
           ownedContact.id.toString(),
           caseWithOwnedContact.id.toString(),
           ALWAYS_CAN,
         ),
         connectContactToCase(
           accountSid,
-          user,
           otherContact.id.toString(),
           caseWithOtherContact.id.toString(),
           ALWAYS_CAN,

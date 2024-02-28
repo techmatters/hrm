@@ -162,7 +162,7 @@ export const getById = async (
       isSupervisor,
       onlyEssentialData,
     );
-    const queryValues = { accountSid, caseId, workerSid };
+    const queryValues = { accountSid, caseId, twilioWorkerSid: workerSid };
     return connection.oneOrNone<CaseRecord>(statement, queryValues);
   });
 };
@@ -287,7 +287,7 @@ export const update = async (
   return db.tx(async transaction => {
     const statementValues = {
       accountSid,
-      workerSid,
+      twilioWorkerSid: workerSid,
       caseId: id,
     };
     if (caseRecordUpdates.caseSections) {
@@ -333,7 +333,7 @@ export const updateStatus = async (
 ) => {
   const statementValues = {
     accountSid,
-    workerSid: updatedBy,
+    twilioWorkerSid: updatedBy,
     caseId: id,
   };
   return db.tx(async transaction => {

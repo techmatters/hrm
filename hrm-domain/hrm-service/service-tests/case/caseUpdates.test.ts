@@ -447,7 +447,6 @@ describe('PUT /cases/:id route', () => {
 
     await connectContactToCase(
       accountSid,
-      workerSid,
       String(createdContact.id),
       String(createdCase.id),
       {

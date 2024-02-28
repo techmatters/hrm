@@ -44,6 +44,7 @@ const leftJoinLateralContacts = (
         AND ${listContactsPermissionWhereClause(
           viewPermissions as ContactListCondition[][],
           userIsSupervisor,
+          'c',
         )}
           
       ) "contacts" ON true`;
@@ -66,6 +67,7 @@ const leftJoinLateralContacts = (
         AND ${listContactsPermissionWhereClause(
           viewPermissions as ContactListCondition[][],
           userIsSupervisor,
+          'c',
         )}
     ) "contacts" ON true`;
 };
@@ -96,6 +98,6 @@ export const selectSingleCaseByIdSql = (
         WHERE cs."caseId" = cases.id AND cs."accountSid" = cases."accountSid"
       ) "caseSections" ON true
       LEFT JOIN LATERAL (
-        ${selectContactsOwnedCount('workerSid')}
+        ${selectContactsOwnedCount('twilioWorkerSid')}
       ) "contactsOwnedCount" ON true
       ${ID_WHERE_CLAUSE}`;

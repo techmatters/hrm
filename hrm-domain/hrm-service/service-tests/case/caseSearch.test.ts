@@ -380,7 +380,6 @@ describe('/cases route', () => {
       );
       await connectContactToCase(
         accountSid,
-        workerSid,
         String(createdContact.id),
         String(createdCase.id),
         {
@@ -1269,7 +1268,6 @@ describe('/cases route', () => {
       );
       await connectContactToCase(
         accountSid,
-        workerSid,
         String(createdContact.id),
         String(createdCase.id),
         {
