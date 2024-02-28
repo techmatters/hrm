@@ -89,16 +89,18 @@ const selectContacts = (
       SELECT
         c."accountSid",
         c."caseId",
+        c."twilioWorkerId",
+        c."timeOfContact",
         (SELECT to_jsonb(_row) FROM ${innerSelect} AS _row) AS "jsonBlob"
       FROM "Contacts" c
       ${leftJoins}
-      ) AS contacts 
-      WHERE contacts."caseId" = "cases".id AND contacts."accountSid" = "cases"."accountSid"
+      ) AS "contacts" 
+      WHERE "contacts"."caseId" = "cases".id AND "contacts"."accountSid" = "cases"."accountSid"
       AND ${listContactsPermissionWhereClause(
         contactViewPermissions as ContactListCondition[][],
         userIsSupervisor,
       )}
-      GROUP BY contacts."caseId", contacts."accountSid"
+      GROUP BY "contacts"."caseId", "contacts"."accountSid"
       `;
 };
 

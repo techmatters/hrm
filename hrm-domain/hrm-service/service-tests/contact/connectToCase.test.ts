@@ -335,7 +335,6 @@ describe('/contacts/:contactId/connectToCase route', () => {
     beforeEach(async () => {
       await contactApi.connectContactToCase(
         accountSid,
-        workerSid,
         existingContactId,
         existingCaseId,
         ALWAYS_CAN,

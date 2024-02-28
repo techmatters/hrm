@@ -269,7 +269,6 @@ describe('/profiles', () => {
         accounts.map(acc =>
           contactApi.connectContactToCase(
             createdContacts[acc].accountSid,
-            workerSid,
             String(createdContacts[acc].id),
             String(createdCases[acc].id),
             {
@@ -397,7 +396,6 @@ describe('/profiles', () => {
                   // Associate contact to case
                   contactApi.connectContactToCase(
                     contact.accountSid,
-                    workerSid,
                     String(contact.id),
                     String(createdCase.id),
                     {

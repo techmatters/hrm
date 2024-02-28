@@ -29,6 +29,10 @@ import { AccountSID } from '@tech-matters/types';
 import { ALWAYS_CAN } from '../mocks';
 import { clearAllTables } from '../dbCleanup';
 import each from 'jest-each';
+import { addMinutes, isAfter, parseISO, subDays, subHours } from 'date-fns';
+import { Contact } from '@tech-matters/hrm-core/contact/contactDataAccess';
+import { CaseService, createCase } from '@tech-matters/hrm-core/case/caseService';
+import { connectContactToCase } from '@tech-matters/hrm-core/contact/contactService';
 
 const server = getServer();
 const request = getRequest(server);
@@ -81,8 +85,11 @@ const rawJson: ContactRawJson = {
   definitionVersion: 'br-v1',
 };
 
-const createContact = async (twilioWorkerId: string): Promise<contactDb.Contact> => {
-  const timeOfContact = formatISO(subMinutes(new Date(), 5));
+const createContact = async (
+  twilioWorkerId: string,
+  created?: Date,
+): Promise<contactDb.Contact> => {
+  const timeOfContact = formatISO(created ?? subMinutes(new Date(), 5));
   const taskSid = `WT${randomBytes(16).toString('hex')}`;
   const channelSid = `CH${randomBytes(16).toString('hex')}`;
   return contactService.createContact(
@@ -220,5 +227,228 @@ describe('isOwner', () => {
         ).toStrictEqual(expectedContactsByOwner.sort());
       },
     );
+  });
+});
+
+describe('Time based condition', () => {
+  let sampleContacts: Record<string, Contact>;
+  // Not great to be using the current time from a determinism standpoint.
+  // Unfortunately, faking out the date & time with Jest borks the DB client when interacting with a DB container still using the correct time
+  // The alternative is to add lots of 'for testing' injection points for dates, but this seems like it could be abused or broken easily
+  // This way we only need to add one injection point for the current time, and that's on an internal function that's not exposed to the outside world.
+  const BASELINE_DATE = new Date();
+  const contactCreatedTimes = [
+    subDays(BASELINE_DATE, 3),
+    subDays(BASELINE_DATE, 2),
+    subDays(BASELINE_DATE, 1),
+    subHours(BASELINE_DATE, 12),
+    subHours(BASELINE_DATE, 9),
+    subHours(BASELINE_DATE, 6),
+  ];
+
+  const BASELINE_DATE_FOR_VALIDATION = addMinutes(BASELINE_DATE, 10);
+
+  beforeEach(async () => {
+    useOpenRules();
+    sampleContacts = {};
+    for (const [idx, createdAt] of Object.entries(contactCreatedTimes)) {
+      sampleContacts[createdAt.toISOString()] = await createContact(
+        parseInt(idx) % 2 === 0 ? userTwilioWorkerId : anotherUserTwilioWorkerId,
+        createdAt,
+      );
+    }
+  });
+
+  afterEach(async () => {
+    await clearAllTables();
+  });
+
+  type TestCase = {
+    description: string;
+    permissions: TKConditionsSets<'contact'>;
+    expectedPermittedContactCreationTimes: Date[];
+  };
+
+  const testCases: TestCase[] = [
+    {
+      description:
+        'Any time based condition should be ignored if there is also an everyone condition set.',
+      permissions: [['everyone'], [{ createdHoursAgo: 1 }]],
+      expectedPermittedContactCreationTimes: contactCreatedTimes,
+    },
+    {
+      description:
+        'Any time based condition should be ignored if there is also an all excluding condition in the set.',
+      permissions: [[{ createdDaysAgo: 10 }, 'isSupervisor']],
+      expectedPermittedContactCreationTimes: [],
+    },
+    {
+      description:
+        'Should exclude all cases with a createdAt date older than the number of hours prior to the current time if only a createdHoursAgo condition is set',
+      permissions: [[{ createdHoursAgo: 8 }]],
+      expectedPermittedContactCreationTimes: contactCreatedTimes.filter(cct =>
+        isAfter(cct, subHours(BASELINE_DATE_FOR_VALIDATION, 8)),
+      ),
+    },
+    {
+      description:
+        'Should exclude all cases with a createdAt date older than the number of days prior to the current time if only a createdHoursAgo condition is set',
+      permissions: [['everyone', { createdDaysAgo: 1 }]],
+      expectedPermittedContactCreationTimes: contactCreatedTimes.filter(cct =>
+        isAfter(cct, subDays(BASELINE_DATE_FOR_VALIDATION, 1)),
+      ),
+    },
+    {
+      description:
+        'should use createdDaysAgo if both time based conditions are set but createdDaysAgo is the shorter duration',
+      permissions: [[{ createdDaysAgo: 1, createdHoursAgo: 60 }]],
+      expectedPermittedContactCreationTimes: contactCreatedTimes.filter(cct =>
+        isAfter(cct, subDays(BASELINE_DATE_FOR_VALIDATION, 1)),
+      ),
+    },
+    {
+      description:
+        'should use createdHoursAgo if both time based conditions are set but createdHoursAgo is the shorter duration',
+      permissions: [['everyone', { createdDaysAgo: 2, createdHoursAgo: 7 }]],
+      expectedPermittedContactCreationTimes: contactCreatedTimes.filter(cct =>
+        isAfter(cct, subHours(BASELINE_DATE_FOR_VALIDATION, 7)),
+      ),
+    },
+    {
+      description: 'Should combine with other conditions in the same set',
+      permissions: [['isOwner', { createdDaysAgo: 2, createdHoursAgo: 7 }]],
+      expectedPermittedContactCreationTimes: contactCreatedTimes.filter(
+        (cct, idx) =>
+          isAfter(cct, subHours(BASELINE_DATE_FOR_VALIDATION, 7)) && idx % 2 === 0,
+      ),
+    },
+    {
+      description: 'Should combine with other conditions in other sets',
+      permissions: [['isOwner'], [{ createdDaysAgo: 2, createdHoursAgo: 7 }]],
+      expectedPermittedContactCreationTimes: contactCreatedTimes.filter(
+        (cct, idx) =>
+          isAfter(cct, subHours(BASELINE_DATE_FOR_VALIDATION, 7)) || idx % 2 === 0,
+      ),
+    },
+  ];
+
+  const route = `/v0/accounts/${accountSid}/contacts`;
+  describe('/contact/:id route - GET', () => {
+    each(testCases).test(
+      '$description',
+      async ({ permissions, expectedPermittedContactCreationTimes }: TestCase) => {
+        const subRoute = id => `${route}/${id}`;
+        setRules({ viewContact: permissions });
+        const responses = await Promise.all(
+          Object.values(sampleContacts).map(async c =>
+            request.get(subRoute(c.id)).set(headers),
+          ),
+        );
+        const permitted = responses
+          .filter(({ status }) => {
+            if (status === 200) return true;
+            expect(status).toBe(404);
+            return false;
+          })
+          .map(r => r.body as Contact);
+        expect(
+          permitted
+            .map(p => parseISO(p.timeOfContact))
+            .sort((a, b) => a.valueOf() - b.valueOf()),
+        ).toEqual(
+          expectedPermittedContactCreationTimes.map(cct =>
+            parseISO(sampleContacts[cct.toISOString()].timeOfContact),
+          ),
+        );
+      },
+    );
+  });
+  describe('contacts/search route - POST', () => {
+    each(testCases).test(
+      '$description',
+      async ({ permissions, expectedPermittedContactCreationTimes }: TestCase) => {
+        setRules({ viewContact: permissions });
+        const expectedIds = expectedPermittedContactCreationTimes.map(cct =>
+          parseISO(sampleContacts[cct.toISOString()].timeOfContact),
+        );
+        const {
+          body: { contacts, count },
+          status,
+        } = await request.post(`${route}/search`).set(headers);
+        expect(status).toBe(200);
+        expect(
+          contacts
+            .map(c => parseISO(c.timeOfContact))
+            .sort((a, b) => a.valueOf() - b.valueOf()),
+        ).toEqual(expectedIds);
+        expect(count).toBe(expectedPermittedContactCreationTimes.length);
+      },
+    );
+  });
+  describe('When returned as part of cases', () => {
+    let sampleCase: CaseService;
+    const caseBaseRoute = `/v0/accounts/${accountSid}/cases`;
+    beforeEach(async () => {
+      sampleCase = await createCase({}, accountSid, userTwilioWorkerId);
+      await Promise.all(
+        Object.values(sampleContacts).map(({ id }) =>
+          connectContactToCase(
+            accountSid,
+            id.toString(),
+            sampleCase.id.toString(),
+            ALWAYS_CAN,
+          ),
+        ),
+      );
+    });
+    describe('/cases/:id route - GET', () => {
+      each(testCases).test(
+        '$description',
+        async ({ permissions, expectedPermittedContactCreationTimes }: TestCase) => {
+          const subRoute = id => `${caseBaseRoute}/${id}`;
+          setRules({ viewContact: permissions });
+          const expectedIds = expectedPermittedContactCreationTimes.map(cct =>
+            parseISO(sampleContacts[cct.toISOString()].timeOfContact),
+          );
+          const { status, body } = await request
+            .get(subRoute(sampleCase.id))
+            .set(headers);
+
+          expect(status).toBe(200);
+          const { connectedContacts: contacts, id } = body as CaseService;
+          expect(id).toBe(sampleCase.id);
+          expect(
+            contacts
+              .map(c => parseISO(c.timeOfContact))
+              .sort((a, b) => a.valueOf() - b.valueOf()),
+          ).toEqual(expectedIds);
+        },
+      );
+    });
+    describe('cases/search route - POST', () => {
+      each(testCases).test(
+        '$description',
+        async ({ permissions, expectedPermittedContactCreationTimes }: TestCase) => {
+          setRules({ viewContact: permissions });
+          const expectedIds = expectedPermittedContactCreationTimes.map(cct =>
+            parseISO(sampleContacts[cct.toISOString()].timeOfContact),
+          );
+          const {
+            body: { cases, count },
+            status,
+          } = await request.post(`${caseBaseRoute}/search`).set(headers);
+          expect(status).toBe(200);
+          expect(count).toBe(1);
+          expect(cases.length).toBe(1);
+          const { connectedContacts: contacts, id } = cases[0];
+          expect(id).toBe(sampleCase.id);
+          expect(
+            (contacts ?? [])
+              .map(c => parseISO(c.timeOfContact))
+              .sort((a, b) => a.valueOf() - b.valueOf()),
+          ).toEqual(expectedIds);
+        },
+      );
+    });
   });
 });

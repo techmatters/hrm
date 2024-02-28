@@ -257,18 +257,12 @@ describe('connectContactToCase', () => {
     const connectSpy = jest.fn();
     connectSpy.mockResolvedValue(mockContact);
     jest.spyOn(contactDb, 'connectToCase').mockImplementation(() => connectSpy);
-    const result = await connectContactToCase(
-      'accountSid',
-      'case-connector',
-      '1234',
-      '4321',
-      ALWAYS_CAN,
-    );
+    const result = await connectContactToCase('accountSid', '1234', '4321', ALWAYS_CAN);
     expect(connectSpy).toHaveBeenCalledWith(
       'accountSid',
       '1234',
       '4321',
-      'case-connector',
+      ALWAYS_CAN.user.workerSid,
     );
     expect(result).toStrictEqual(mockContact);
   });
@@ -278,7 +272,7 @@ describe('connectContactToCase', () => {
       .spyOn(contactDb, 'connectToCase')
       .mockImplementation(() => () => Promise.resolve(undefined));
     expect(
-      connectContactToCase('accountSid', 'case-connector', '1234', '4321', ALWAYS_CAN),
+      connectContactToCase('accountSid', '1234', '4321', ALWAYS_CAN),
     ).rejects.toThrow();
   });
 });

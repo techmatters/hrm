@@ -78,13 +78,10 @@ contactsRouter.put(
     const { contactId } = req.params;
     const { caseId } = req.body;
     try {
-      const updatedContact = await connectContactToCase(
-        accountSid,
-        user.workerSid,
-        contactId,
-        caseId,
-        { can: req.can, user },
-      );
+      const updatedContact = await connectContactToCase(accountSid, contactId, caseId, {
+        can: req.can,
+        user,
+      });
       res.json(updatedContact);
     } catch (err) {
       if (
@@ -105,13 +102,10 @@ contactsRouter.delete(
     const { contactId } = req.params;
 
     try {
-      const deleteContact = await connectContactToCase(
-        accountSid,
-        user.workerSid,
-        contactId,
-        null,
-        { can: req.can, user },
-      );
+      const deleteContact = await connectContactToCase(accountSid, contactId, null, {
+        can: req.can,
+        user,
+      });
       res.json(deleteContact);
     } catch (err) {
       if (

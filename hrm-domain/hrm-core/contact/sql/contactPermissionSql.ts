@@ -29,33 +29,36 @@ export type ContactListCondition = Extract<
   ContactSpecificCondition | UserBasedCondition
 >;
 
-const conditionWhereClauses: ConditionWhereClauses<'contact'> = {
-  isOwner: `"contacts"."twilioWorkerId" = $<twilioWorkerSid>`,
+const conditionWhereClauses = (
+  contactsTableAlias: string,
+): ConditionWhereClauses<'contact'> => ({
+  isOwner: `"${contactsTableAlias}"."twilioWorkerId" = $<twilioWorkerSid>`,
 
   timeBasedCondition: ({ createdDaysAgo, createdHoursAgo }) => {
     const timeClauses = [];
     if (typeof createdHoursAgo === 'number') {
       timeClauses.push(
-        `"contacts"."timeOfContact" > CURRENT_TIMESTAMP - interval '${createdHoursAgo} hours'`,
+        `"${contactsTableAlias}"."timeOfContact" > CURRENT_TIMESTAMP - interval '${createdHoursAgo} hours'`,
       );
     }
     if (typeof createdDaysAgo === 'number') {
       timeClauses.push(
-        `"contacts"."timeOfContact" > CURRENT_TIMESTAMP - interval '${createdDaysAgo} days'`,
+        `"${contactsTableAlias}"."timeOfContact" > CURRENT_TIMESTAMP - interval '${createdDaysAgo} days'`,
       );
     }
     return timeClauses.length ? `(${timeClauses.join(' AND ')})` : '1=1';
   },
-};
+});
 
 export const listContactsPermissionWhereClause = (
   contactListConditionSets: ContactListCondition[][],
   userIsSupervisor: boolean,
+  contactsTableAlias: string = 'contacts',
 ): string => {
   const [clause] = listPermissionWhereClause<'contact'>(
     contactListConditionSets,
     userIsSupervisor,
-    conditionWhereClauses,
+    conditionWhereClauses(contactsTableAlias),
   );
   return clause ?? '1=1';
 };

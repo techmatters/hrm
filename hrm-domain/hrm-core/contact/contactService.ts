@@ -268,7 +268,6 @@ export const patchContact = async (
 
 export const connectContactToCase = async (
   accountSid: string,
-  updatedBy: string,
   contactId: string,
   caseId: string,
   { can, user }: { can: InitializedCan; user: TwilioUser },
@@ -277,7 +276,7 @@ export const connectContactToCase = async (
     accountSid,
     contactId,
     caseId,
-    updatedBy,
+    user.workerSid,
   );
   if (!updated) {
     throw new Error(`Contact not found with id ${contactId}`);

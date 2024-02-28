@@ -73,11 +73,14 @@ const applyTimeBasedConditions =
         for (const [cond, param] of Object.entries(c)) {
           if (cond === 'createdHoursAgo') {
             const conditionMet =
-              differenceInHours(ctx.curentTimestamp, parseISO(target.createdAt)) < param;
+              differenceInHours(
+                ctx.curentTimestamp,
+                parseISO(target.timeOfContact ?? target.createdAt),
+              ) < param;
             console.debug(
               'createdHoursAgo condition:',
               `${
-                target.createdAt
+                target.timeOfContact ?? target.createdAt
               } < ${param} hours before ${ctx.curentTimestamp.toISOString()}`,
               conditionMet,
             );
@@ -89,11 +92,14 @@ const applyTimeBasedConditions =
           }
           if (cond === 'createdDaysAgo') {
             const conditionMet =
-              differenceInDays(ctx.curentTimestamp, parseISO(target.createdAt)) < param;
+              differenceInDays(
+                ctx.curentTimestamp,
+                parseISO(target.timeOfContact ?? target.createdAt),
+              ) < param;
             console.debug(
               'createdDaysAgo condition:',
               `${
-                target.createdAt
+                target.timeOfContact ?? target.createdAt
               } < ${param} days before ${ctx.curentTimestamp.toISOString()}`,
               conditionMet,
             );
@@ -150,8 +156,6 @@ const setupAllow = <T extends TargetKind>(
       target,
       ctx,
     );
-
-    console.debug('appliedTimeBasedConditions', appliedTimeBasedConditions);
 
     // Build the proper conditionsState depending on the targetKind
     switch (kind) {
