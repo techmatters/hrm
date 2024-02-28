@@ -20,7 +20,7 @@ import type {
   MappingProperty,
   MappingTextProperty,
 } from '@elastic/elasticsearch/lib/api/types';
-import { ReferrableResourceAttribute } from '@tech-matters/types/dist/Resources';
+import { ReferrableResourceAttribute } from '@tech-matters/types/Resources';
 
 export type MappingFieldType =
   | 'integer'

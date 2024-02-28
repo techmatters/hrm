@@ -19,8 +19,12 @@ import { mockConnection, mockTask, mockTransaction } from '../mock-db';
 import { search, create } from '../../contact/contactDataAccess';
 import { ContactBuilder } from './contact-builder';
 import { NewContactRecord } from '../../contact/sql/contactInsertSql';
+import { TwilioUser } from '@tech-matters/twilio-worker-auth';
+import { OPEN_CONTACT_ACTION_CONDITIONS } from '../mocks';
 
 let conn: pgPromise.ITask<unknown>;
+
+const twilioUser: TwilioUser = { workerSid: 'WKxx', isSupervisor: true, roles: [] };
 
 beforeEach(() => {
   conn = mockConnection();
@@ -111,12 +115,20 @@ describe('search', () => {
       'Someone calling about a child',
       'Child calling about self',
     ]),
+    twilioWorkerSid: twilioUser.workerSid,
   };
 
   test('No parameters - searches with accountSid offset and limit only', async () => {
     jest.spyOn(conn, 'manyOrNone').mockResolvedValue([]);
     mockTask(conn);
-    await search(ACCOUNT_SID, { onlyDataContacts: false }, 42, 1337);
+    await search(
+      ACCOUNT_SID,
+      { onlyDataContacts: false },
+      42,
+      1337,
+      twilioUser,
+      OPEN_CONTACT_ACTION_CONDITIONS,
+    );
     expect(conn.manyOrNone).toHaveBeenCalledWith(expect.any(String), {
       ...emptySearch,
       limit: 42,
@@ -136,6 +148,8 @@ describe('search', () => {
       },
       42,
       1337,
+      twilioUser,
+      OPEN_CONTACT_ACTION_CONDITIONS,
     );
     expect(conn.manyOrNone).toHaveBeenCalledWith(expect.any(String), {
       ...emptySearch,
@@ -158,6 +172,8 @@ describe('search', () => {
       },
       1000,
       0,
+      twilioUser,
+      OPEN_CONTACT_ACTION_CONDITIONS,
     );
     expect(conn.manyOrNone).toHaveBeenCalledWith(expect.any(String), {
       ...emptySearch,
@@ -179,6 +195,8 @@ describe('search', () => {
       },
       1000,
       0,
+      twilioUser,
+      OPEN_CONTACT_ACTION_CONDITIONS,
     );
     expect(conn.manyOrNone).toHaveBeenCalledWith(expect.any(String), {
       ...emptySearch,
@@ -201,6 +219,8 @@ describe('search', () => {
       },
       1000,
       0,
+      twilioUser,
+      OPEN_CONTACT_ACTION_CONDITIONS,
     );
     expect(conn.manyOrNone).toHaveBeenCalledWith(expect.any(String), {
       ...emptySearch,
@@ -225,6 +245,8 @@ describe('search', () => {
       },
       1000,
       0,
+      twilioUser,
+      OPEN_CONTACT_ACTION_CONDITIONS,
     );
     expect(conn.manyOrNone).toHaveBeenCalledWith(expect.any(String), {
       ...emptySearch,
@@ -240,7 +262,14 @@ describe('search', () => {
   test('Empty results - returns empty row array and count of 0', async () => {
     jest.spyOn(conn, 'manyOrNone').mockResolvedValue([]);
     mockTask(conn);
-    const result = await search(ACCOUNT_SID, { onlyDataContacts: false }, 42, 1337);
+    const result = await search(
+      ACCOUNT_SID,
+      { onlyDataContacts: false },
+      42,
+      1337,
+      twilioUser,
+      OPEN_CONTACT_ACTION_CONDITIONS,
+    );
     expect(result.count).toBe(0);
     expect(result.rows).toStrictEqual([]);
   });
@@ -251,7 +280,14 @@ describe('search', () => {
       { id: 4321, totalCount: 1337 },
     ]);
     mockTask(conn);
-    const result = await search(ACCOUNT_SID, { onlyDataContacts: false }, 10, 0);
+    const result = await search(
+      ACCOUNT_SID,
+      { onlyDataContacts: false },
+      10,
+      0,
+      twilioUser,
+      OPEN_CONTACT_ACTION_CONDITIONS,
+    );
     expect(result.count).toBe(1337);
     expect(result.rows).toStrictEqual([
       { id: 1234, totalCount: 1337 },

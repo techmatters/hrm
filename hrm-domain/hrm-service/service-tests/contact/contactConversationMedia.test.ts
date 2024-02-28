@@ -35,7 +35,7 @@ import {
 } from './dbCleanup';
 import each from 'jest-each';
 import { chatChannels } from '@tech-matters/hrm-core/contact/channelTypes';
-import { ContactJobType } from '@tech-matters/types/dist/ContactJob';
+import { ContactJobType } from '@tech-matters/types/ContactJob';
 import { ruleFileActionOverride } from '../permissions-overrides';
 import { selectJobsByContactId } from './db-validations';
 

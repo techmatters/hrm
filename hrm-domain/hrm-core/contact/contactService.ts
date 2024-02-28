@@ -39,7 +39,6 @@ import { createContactJob } from '../contact-job/contact-job';
 import { isChatChannel } from './channelTypes';
 import { enableCreateContactJobsFlag } from '../featureFlags';
 import { db } from '../connection-pool';
-import type { SearchPermissions } from '../permissions/search-permissions';
 import {
   ConversationMedia,
   createConversationMedia,
@@ -51,6 +50,7 @@ import { Profile, getOrCreateProfileWithIdentifier } from '../profile/profileSer
 import { deleteContactReferrals } from '../referral/referral-data-access';
 import { DatabaseUniqueConstraintViolationError, inferPostgresError } from '../sql';
 import { systemUser } from '@tech-matters/twilio-worker-auth';
+import { RulesFile, TKConditionsSets } from '../permissions/rulesMap';
 
 // Re export as is:
 export { Contact } from './contactDataAccess';
@@ -332,27 +332,6 @@ export const addConversationMediaToContact = async (
   });
 };
 
-/**
- * Check if the user can view any contact given:
- * - search permissions
- * - counsellor' search parameter
- */
-const cannotViewAnyContactsGivenThisCounsellor = (
-  user: TwilioUser,
-  searchPermissions: SearchPermissions,
-  counsellor?: string,
-) =>
-  searchPermissions.canOnlyViewOwnContacts && counsellor && counsellor !== user.workerSid;
-
-/**
- * If the counselors can only view contacts he/she owns, then we override searchParameters.counselor to workerSid
- */
-const overrideCounsellor = (
-  user: TwilioUser,
-  searchPermissions: SearchPermissions,
-  counsellor?: string,
-) => (searchPermissions.canOnlyViewOwnContacts ? user.workerSid : counsellor);
-
 const generalizedSearchContacts =
   <T extends { counselor?: string }>(searchQuery: SearchQueryFunction<T>) =>
   async (
@@ -362,11 +341,11 @@ const generalizedSearchContacts =
     {
       can,
       user,
-      searchPermissions,
+      permissions,
     }: {
       can: InitializedCan;
       user: TwilioUser;
-      searchPermissions: SearchPermissions;
+      permissions: RulesFile;
     },
   ): Promise<{
     count: number;
@@ -374,40 +353,14 @@ const generalizedSearchContacts =
   }> => {
     const applyTransformations = bindApplyTransformations(can, user);
     const { limit, offset } = getPaginationElements(query);
-    const { canOnlyViewOwnContacts } = searchPermissions;
-
-    /**
-     * VIEW_CONTACT permission:
-     * Handle filtering contacts according to: https://github.com/techmatters/hrm/pull/316#discussion_r1131118034
-     * The search query already filters the contacts based on the given counsellor (workerSid).
-     */
-    if (
-      cannotViewAnyContactsGivenThisCounsellor(
-        user,
-        searchPermissions,
-        searchParameters.counselor,
-      )
-    ) {
-      return {
-        count: 0,
-        contacts: [],
-      };
-    } else {
-      searchParameters.counselor = overrideCounsellor(
-        user,
-        searchPermissions,
-        searchParameters.counselor,
-      );
-    }
-    if (canOnlyViewOwnContacts) {
-      searchParameters.counselor = user.workerSid;
-    }
 
     const unprocessedResults = await searchQuery(
       accountSid,
       searchParameters,
       limit,
       offset,
+      user,
+      permissions.viewContact as TKConditionsSets<'contact'>,
     );
     const contacts = unprocessedResults.rows.map(applyTransformations);
 
@@ -428,7 +381,7 @@ export const getContactsByProfileId = async (
   ctx: {
     can: InitializedCan;
     user: TwilioUser;
-    searchPermissions: SearchPermissions;
+    permissions: RulesFile;
   },
 ): Promise<
   TResult<'InternalServerError', Awaited<ReturnType<typeof searchContactsByProfileId>>>

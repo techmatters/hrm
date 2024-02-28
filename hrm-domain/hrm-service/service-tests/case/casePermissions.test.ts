@@ -32,8 +32,9 @@ import {
   connectContactToCase,
   createContact,
 } from '@tech-matters/hrm-core/contact/contactService';
-import { db } from '@tech-matters/hrm-core/connection-pool';
 import { randomUUID } from 'crypto';
+import { clearAllTables } from '../dbCleanup';
+import { addMinutes, isAfter, subDays, subHours } from 'date-fns';
 
 useOpenRules();
 const server = getServer();
@@ -463,12 +464,7 @@ describe('isCaseContactOwner condition', () => {
     }
   });
 
-  afterEach(async () => {
-    await db.task(async t => {
-      await t.none('DELETE FROM "Contacts"');
-      await t.none('DELETE FROM "Cases"');
-    });
-  });
+  afterEach(clearAllTables);
 
   test('stub', () => {});
 
@@ -568,6 +564,157 @@ describe('isCaseContactOwner condition', () => {
         expect(status).toBe(200);
         expect(cases.map(c => c.info.summary).sort()).toEqual(expectedIds);
         expect(count).toBe(expectedPermittedCases.length);
+      },
+    );
+  });
+});
+
+describe('Time based condition', () => {
+  let sampleCases: CaseService[];
+  // Not great to be using the current time from a determinism standpoint.
+  // Unfortunately, faking out the date & time with Jest borks the DB client when interacting with a DB container still using the correct time
+  // The alternative is to add lots of 'for testing' injection points for dates, but this seems like it could be abused or broken easily
+  // This way we only need to add one injection point for the current time, and that's on an internal function that's not exposed to the outside world.
+  const BASELINE_DATE = new Date();
+  const caseCreatedTimes = [
+    subDays(BASELINE_DATE, 3),
+    subDays(BASELINE_DATE, 2),
+    subDays(BASELINE_DATE, 1),
+    subHours(BASELINE_DATE, 12),
+    subHours(BASELINE_DATE, 9),
+    subHours(BASELINE_DATE, 6),
+  ].sort();
+
+  const BASELINE_DATE_FOR_VALIDATION = addMinutes(BASELINE_DATE, 10);
+
+  beforeEach(async () => {
+    useOpenRules();
+    sampleCases = [];
+    for (const [idx, createdAt] of Object.entries(caseCreatedTimes)) {
+      const newCase = await createCase(
+        {
+          info: { summary: 'case' },
+          status: parseInt(idx) % 2 === 1 ? 'open' : 'closed',
+        },
+        accountSid,
+        workerSid,
+        createdAt,
+      );
+      sampleCases.push(newCase);
+    }
+  });
+
+  afterEach(async () => {
+    jest.useRealTimers();
+    await clearAllTables();
+  });
+
+  type TestCase = {
+    description: string;
+    permissions: TKConditionsSets<'case'>;
+    expectedPermittedCaseCreationTimes: Date[];
+  };
+
+  const testCases: TestCase[] = [
+    {
+      description:
+        'Any time based condition should be ignored if there is also an everyone condition set.',
+      permissions: [['everyone'], [{ createdHoursAgo: 1 }]],
+      expectedPermittedCaseCreationTimes: caseCreatedTimes,
+    },
+    {
+      description:
+        'Any time based condition should be ignored if there is also an all excluding condition in the set.',
+      permissions: [[{ createdDaysAgo: 10 }, 'isSupervisor']],
+      expectedPermittedCaseCreationTimes: [],
+    },
+    {
+      description:
+        'Should exclude all cases with a createdAt date older than the number of hours prior to the current time if only a createdHoursAgo condition is set',
+      permissions: [[{ createdHoursAgo: 8 }]],
+      expectedPermittedCaseCreationTimes: caseCreatedTimes.filter(cct =>
+        isAfter(cct, subHours(BASELINE_DATE_FOR_VALIDATION, 8)),
+      ),
+    },
+    {
+      description:
+        'Should exclude all cases with a createdAt date older than the number of days prior to the current time if only a createdHoursAgo condition is set',
+      permissions: [['everyone', { createdDaysAgo: 1 }]],
+      expectedPermittedCaseCreationTimes: caseCreatedTimes.filter(cct =>
+        isAfter(cct, subDays(BASELINE_DATE_FOR_VALIDATION, 1)),
+      ),
+    },
+    {
+      description:
+        'should use createdDaysAgo if both time based conditions are set but createdDaysAgo is the shorter duration',
+      permissions: [[{ createdDaysAgo: 1, createdHoursAgo: 60 }]],
+      expectedPermittedCaseCreationTimes: caseCreatedTimes.filter(cct =>
+        isAfter(cct, subDays(BASELINE_DATE_FOR_VALIDATION, 1)),
+      ),
+    },
+    {
+      description:
+        'should use createdHoursAgo if both time based conditions are set but createdHoursAgo is the shorter duration',
+      permissions: [['everyone', { createdDaysAgo: 2, createdHoursAgo: 7 }]],
+      expectedPermittedCaseCreationTimes: caseCreatedTimes.filter(cct =>
+        isAfter(cct, subHours(BASELINE_DATE_FOR_VALIDATION, 7)),
+      ),
+    },
+    {
+      description: 'Should combine with other conditions in the same set',
+      permissions: [['isCaseOpen', { createdDaysAgo: 2, createdHoursAgo: 7 }]],
+      expectedPermittedCaseCreationTimes: caseCreatedTimes.filter(
+        (cct, idx) =>
+          isAfter(cct, subHours(BASELINE_DATE_FOR_VALIDATION, 7)) && idx % 2 === 1,
+      ),
+    },
+    {
+      description: 'Should combine with other conditions in other sets',
+      permissions: [['isCaseOpen'], [{ createdDaysAgo: 2, createdHoursAgo: 7 }]],
+      expectedPermittedCaseCreationTimes: caseCreatedTimes.filter(
+        (cct, idx) =>
+          isAfter(cct, subHours(BASELINE_DATE_FOR_VALIDATION, 7)) || idx % 2 === 1,
+      ),
+    },
+  ];
+
+  describe('/cases/:id route - GET', () => {
+    each(testCases).test(
+      '$description',
+      async ({ permissions, expectedPermittedCaseCreationTimes }: TestCase) => {
+        const subRoute = id => `${route}/${id}`;
+        setRules({ viewCase: permissions });
+        const responses = await Promise.all(
+          sampleCases.map(async c => request.get(subRoute(c.id)).set(headers)),
+        );
+        const permitted = responses
+          .filter(({ status }) => {
+            if (status === 200) return true;
+            expect(status).toBe(404);
+            return false;
+          })
+          .map(r => r.body);
+        expect(permitted.map(p => p.createdAt).sort()).toEqual(
+          expectedPermittedCaseCreationTimes.map(cct => cct.toISOString()).sort(),
+        );
+      },
+    );
+  });
+  describe('cases/search route - POST', () => {
+    each(testCases).test(
+      '$description',
+      async ({ permissions, expectedPermittedCaseCreationTimes }: TestCase) => {
+        setRules({ viewCase: permissions });
+        const expectedIds = expectedPermittedCaseCreationTimes
+          .map(cct => cct.toISOString())
+          .sort();
+        const {
+          body: { cases, count },
+          status,
+        } = await request.post(`${route}/search`).set(headers);
+        expect(status).toBe(200);
+        expect(cases.map(c => c.createdAt).sort()).toEqual(expectedIds);
+        expect(count).toBe(expectedPermittedCaseCreationTimes.length);
       },
     );
   });

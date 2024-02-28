@@ -23,13 +23,11 @@ export { Actions, actionsMaps, getActions } from './actions';
 import { InitializedCan, initializeCanForRules } from './initializeCanForRules';
 import { RulesFile } from './rulesMap';
 import type { Request, Response, NextFunction } from 'express';
-import { getSearchPermissions, SearchPermissions } from './search-permissions';
 
 declare global {
   namespace Express {
     export interface Request {
       permissions: RulesFile;
-      searchPermissions: SearchPermissions;
       can: InitializedCan;
     }
   }
@@ -64,12 +62,10 @@ export const setupPermissions =
     } else {
       applyPermissions(req, initializeCanForRules(accountRules));
     }
-    req.searchPermissions = getSearchPermissions(req, accountRules);
     req.permissions = accountRules;
     return next();
   };
 
-export type RequestWithPermissions = SafeRouterRequest &
-  SearchPermissions & {
-    can: InitializedCan;
-  };
+export type RequestWithPermissions = SafeRouterRequest & {
+  can: InitializedCan;
+};

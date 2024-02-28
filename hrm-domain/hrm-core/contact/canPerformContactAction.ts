@@ -58,9 +58,9 @@ const canPerformActionOnContact = (
               contactObj,
               additionalValidation,
             );
-          } else {
-            req.unauthorize();
-          }
+          } else if (action === 'viewContact') {
+            throw createError(404);
+          } else req.unauthorize();
         } else {
           // Cannot finalize an offline task with a placeholder taskId.
           // A real task needs to have been created and it's sid assigned to the contact before it can be finalized (or whilst it is finalized)
@@ -134,14 +134,19 @@ export const canPerformEditContactAction = canPerformActionOnContact(
   checkFinalizedContactEditsOnlyChangeForm,
 );
 
+export const canPerformViewContactAction = canPerformActionOnContact(
+  actionsMaps.contact.VIEW_CONTACT,
+);
+
 const canRemoveFromCase = async (
   originalCaseId: string,
-  { can, user, accountSid },
+  { can, user, accountSid, permissions },
 ): Promise<boolean> => {
   if (originalCaseId) {
     const originalCaseObj = await getCase(parseInt(originalCaseId), accountSid, {
       can,
       user,
+      permissions,
     });
     if (!originalCaseObj) return true; // Allow to disconnect from non existent case I guess
     return can(user, actionsMaps.case.UPDATE_CASE_CONTACTS, originalCaseObj);
@@ -153,14 +158,17 @@ const canConnectContact = canPerformActionOnContact(
   actionsMaps.contact.ADD_CONTACT_TO_CASE,
   async (
     { caseId: originalCaseId }: Contact,
-    { can, user, accountSid, body: { caseId: targetCaseId } },
+    { can, user, accountSid, body: { caseId: targetCaseId }, permissions },
   ) => {
-    if (!(await canRemoveFromCase(originalCaseId, { can, user, accountSid }))) {
+    if (
+      !(await canRemoveFromCase(originalCaseId, { can, user, accountSid, permissions }))
+    ) {
       return false;
     }
     const targetCaseObj = await getCase(parseInt(targetCaseId), accountSid, {
       can,
       user,
+      permissions,
     });
     if (!targetCaseObj) throw createError(404);
     return can(user, actionsMaps.case.UPDATE_CASE_CONTACTS, targetCaseObj);
@@ -169,8 +177,7 @@ const canConnectContact = canPerformActionOnContact(
 
 export const canDisconnectContact = canPerformActionOnContact(
   actionsMaps.contact.REMOVE_CONTACT_FROM_CASE,
-  async ({ caseId }: Contact, { can, user, accountSid }) =>
-    canRemoveFromCase(caseId, { can, user, accountSid }),
+  async ({ caseId }: Contact, req) => canRemoveFromCase(caseId, req),
 );
 
 // TODO: Remove when we start disallowing disconnecting contacts via the connect endpoint

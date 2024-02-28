@@ -26,6 +26,7 @@ import { twilioUser } from '@tech-matters/twilio-worker-auth';
 import { NewCaseSection } from '@tech-matters/hrm-core/case/caseSection/types';
 import { createCaseSection } from '@tech-matters/hrm-core/case/caseSection/caseSectionService';
 import type { AccountSID } from '@tech-matters/types';
+import { openPermissions } from '@tech-matters/hrm-core/permissions/json-permissions';
 
 export const accountSid = 'ACCOUNT_SID';
 
@@ -269,7 +270,11 @@ export type CaseSectionInsert = {
 
 export const workerSid = 'WK-worker-sid';
 
-export const ALWAYS_CAN = { user: twilioUser(workerSid, []), can: () => true };
+export const ALWAYS_CAN = {
+  user: twilioUser(workerSid, []),
+  can: () => true,
+  permissions: openPermissions.rules('ACx'),
+};
 
 export const populateCaseSections = async (
   caseId: string,
@@ -303,20 +308,6 @@ export const case1: Partial<CaseService> = {
   accountSid,
 };
 
-export const case1Sections: Record<string, CaseSectionInsert[]> = {
-  note: [
-    {
-      section: {
-        sectionTypeSpecificData: {
-          note: 'Child with covid-19',
-          customProperty: 'something else',
-        },
-      },
-      workerSid: 'WK-note-adder',
-    },
-  ],
-};
-
 export const case2: Partial<CaseService> = {
   status: 'open',
   helpline: 'helpline',
@@ -324,20 +315,6 @@ export const case2: Partial<CaseService> = {
   twilioWorkerId: 'WK-worker-sid',
   createdBy: 'WK-worker-sid',
   accountSid,
-};
-
-export const case2Sections: Record<string, CaseSectionInsert[]> = {
-  note: [
-    {
-      section: {
-        sectionTypeSpecificData: {
-          note: 'Refugee child',
-          customProperty: 'something else',
-        },
-      },
-      workerSid: 'WK-other-note-adder',
-    },
-  ],
 };
 
 export const populatedCaseSections: Record<string, CaseSectionInsert[]> = {
