@@ -22,7 +22,7 @@ import each from 'jest-each';
 import { db } from '../../connection-pool';
 import { OrderByColumn, OrderByColumnType } from '../../case/sql/caseSearchSql';
 import { expectValuesInSql, getSqlStatement } from '@tech-matters/testing';
-import { twilioUser } from '@tech-matters/twilio-worker-auth/dist';
+import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { AccountSID } from '@tech-matters/types';
 import { rulesMap } from '../../permissions';
 import { TKConditionsSets } from '../../permissions/rulesMap';
@@ -31,6 +31,7 @@ import { pick } from 'lodash';
 
 const accountSid: AccountSID = 'ACCOUNT_SID';
 const workerSid = 'twilio-worker-id';
+const user: TwilioUser = { workerSid, isSupervisor: true, roles: [] };
 let conn: pgPromise.ITask<unknown>;
 const caseId = 42;
 
@@ -53,7 +54,7 @@ describe('getById', () => {
     mockTask(conn);
     const oneOrNoneSpy = jest.spyOn(conn, 'oneOrNone').mockResolvedValue(caseFromDB);
 
-    const result = await caseDb.getById(caseId, accountSid, workerSid);
+    const result = await caseDb.getById(caseId, accountSid, user, [['everyone']]);
 
     expect(oneOrNoneSpy).toHaveBeenCalledWith(
       expect.stringContaining('Cases'),
@@ -66,7 +67,7 @@ describe('getById', () => {
     mockTask(conn);
     const oneOrNoneSpy = jest.spyOn(conn, 'oneOrNone').mockResolvedValue(undefined);
 
-    const result = await caseDb.getById(caseId, accountSid, workerSid);
+    const result = await caseDb.getById(caseId, accountSid, user, [['everyone']]);
 
     expect(oneOrNoneSpy).toHaveBeenCalledWith(
       expect.stringContaining('CSAMReports'),
@@ -77,18 +78,14 @@ describe('getById', () => {
 });
 
 describe('createCase', () => {
-  let tx: pgPromise.ITask<unknown>;
-  beforeEach(() => {
-    tx = mockConnection();
-    mockTransaction(conn, tx);
-  });
   test('creates new record and returns created record in DB, with assigned ID.', async () => {
+    mockTask(conn);
     const caseFromDB = createMockCaseInsert({
       helpline: 'helpline',
       status: 'open',
       twilioWorkerId: 'twilio-worker-id',
     });
-    const oneSpy = jest.spyOn(tx, 'one').mockResolvedValue({ ...caseFromDB, id: 1337 });
+    const oneSpy = jest.spyOn(conn, 'one').mockResolvedValue({ ...caseFromDB, id: 1337 });
 
     const result = await caseDb.create(caseFromDB);
     const insertSql = getSqlStatement(oneSpy, -1);
@@ -103,7 +100,6 @@ describe('createCase', () => {
 });
 
 describe('search', () => {
-  const user = twilioUser(workerSid, []);
   const openViewPermissions = rulesMap.open.viewCase as TKConditionsSets<'case'>;
 
   beforeEach(() => {
@@ -228,6 +224,7 @@ describe('search', () => {
         const result = await caseDb.search(
           user,
           rulesMap.open.viewCase as TKConditionsSets<'case'>,
+          rulesMap.open.viewCase as TKConditionsSets<'contact'>,
           listConfig,
           accountSid,
           {},
@@ -314,6 +311,7 @@ describe('search', () => {
       const result = await caseDb.search(
         user,
         openViewPermissions,
+        [['everyone']],
         listConfig,
         accountSid,
         {},
@@ -361,7 +359,9 @@ describe('update', () => {
       .spyOn(tx, 'oneOrNone')
       .mockResolvedValue({ ...caseUpdateResult, id: caseId });
     const noneSpy = jest.spyOn(tx, 'none');
-    const result = await caseDb.update(caseId, caseUpdate, accountSid, workerSid);
+    const result = await caseDb.update(caseId, caseUpdate, accountSid, user, [
+      ['everyone'],
+    ]);
     const updateSql = getSqlStatement(noneSpy);
     expectValuesInSql(updateSql, { info: caseUpdate.info, status: caseUpdate.status });
     expect(oneOrNoneSpy).toHaveBeenCalledWith(

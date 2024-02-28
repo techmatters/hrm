@@ -21,10 +21,14 @@ import { selectCoalesceCsamReportsByContactId } from '../../csam-report/sql/csam
 import { selectCoalesceReferralsByContactId } from '../../referral/sql/referral-get-sql';
 import { selectCoalesceConversationMediasByContactId } from '../../conversation-media/sql/conversation-media-get-sql';
 import { OrderByClauseItem, OrderByDirection } from '../../sql';
-import { selectContactsOwnedCount } from './case-get-sql';
+import { selectContactsOwnedCount } from './caseGetSql';
 import { CaseListCondition, listCasesPermissionWhereClause } from './casePermissionSql';
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { TKConditionsSets } from '../../permissions/rulesMap';
+import {
+  ContactListCondition,
+  listContactsPermissionWhereClause,
+} from '../../contact/sql/contactPermissionSql';
 
 export const OrderByColumn = {
   ID: 'id',
@@ -57,7 +61,11 @@ const generateOrderByClause = (clauses: OrderByClauseItem[]): string => {
   } else return '';
 };
 
-const selectContacts = (onlyEssentialData?: boolean) => {
+const selectContacts = (
+  contactViewPermissions: TKConditionsSets<'contact'>,
+  userIsSupervisor: boolean,
+  onlyEssentialData?: boolean,
+) => {
   const innerSelect = onlyEssentialData
     ? '(SELECT c.*)'
     : '(SELECT c.*, reports."csamReports", joinedReferrals."referrals", media."conversationMedia")';
@@ -81,12 +89,18 @@ const selectContacts = (onlyEssentialData?: boolean) => {
       SELECT
         c."accountSid",
         c."caseId",
+        c."twilioWorkerId",
+        c."timeOfContact",
         (SELECT to_jsonb(_row) FROM ${innerSelect} AS _row) AS "jsonBlob"
       FROM "Contacts" c
       ${leftJoins}
-      ) AS contacts 
-      WHERE contacts."caseId" = "cases".id AND contacts."accountSid" = "cases"."accountSid"
-      GROUP BY contacts."caseId", contacts."accountSid"
+      ) AS "contacts" 
+      WHERE "contacts"."caseId" = "cases".id AND "contacts"."accountSid" = "cases"."accountSid"
+      AND ${listContactsPermissionWhereClause(
+        contactViewPermissions as ContactListCondition[][],
+        userIsSupervisor,
+      )}
+      GROUP BY "contacts"."caseId", "contacts"."accountSid"
       `;
 };
 
@@ -247,6 +261,8 @@ const SEARCH_WHERE_CLAUSE = `(
 
 const selectCasesUnorderedSql = (
   { whereClause, havingClause = '' }: Omit<SelectCasesParams, 'orderByClause'>,
+  contactViewPermissions: TKConditionsSets<'contact'>,
+  userIsSupervisor: boolean,
   onlyEssentialData?: boolean,
 ) => {
   const ifCaseSections = (query: string) => (onlyEssentialData ? '' : query);
@@ -266,7 +282,11 @@ const selectCasesUnorderedSql = (
     , ' ') AS "childName"
     ${ifCaseSections(`, "caseSections"."caseSections"`)}
   FROM "Cases" "cases"
-  LEFT JOIN LATERAL (${selectContacts(onlyEssentialData)}) contacts ON true
+  LEFT JOIN LATERAL (${selectContacts(
+    contactViewPermissions,
+    userIsSupervisor,
+    onlyEssentialData,
+  )}) contacts ON true
   ${ifCaseSections(`LEFT JOIN LATERAL (${SELECT_CASE_SECTIONS}) "caseSections" ON true`)}
   LEFT JOIN LATERAL (
       ${selectContactsOwnedCount('twilioWorkerSid')}
@@ -275,7 +295,7 @@ const selectCasesUnorderedSql = (
     "cases"."accountSid",
     "cases"."id",
     ${ifCaseSections(`"caseSections"."caseSections",`)}
-    contacts."connectedContacts",
+    "contacts"."connectedContacts",
     "contactsOwnedCount"."contactsOwnedByUserCount"
   ${havingClause}`;
 };
@@ -288,10 +308,14 @@ type SelectCasesParams = {
 
 const selectCasesPaginatedSql = (
   { whereClause, orderByClause, havingClause = '' }: SelectCasesParams,
+  contactViewPermissions: TKConditionsSets<'contact'>,
+  userIsSupervisor: boolean,
   onlyEssentialData?: boolean,
 ) => `
 SELECT * FROM (${selectCasesUnorderedSql(
   { whereClause, havingClause },
+  contactViewPermissions,
+  userIsSupervisor,
   onlyEssentialData,
 )}) "unordered" ${orderByClause}
 LIMIT $<limit>
@@ -300,6 +324,7 @@ OFFSET $<offset>`;
 export type SearchQueryBuilder = (
   user: TwilioUser,
   viewCasePermissions: TKConditionsSets<'case'>,
+  viewContactPermissions: TKConditionsSets<'contact'>,
   filters: CaseListFilters,
   orderByClauses?: OrderByClauseItem[],
   onlyEssentialData?: boolean,
@@ -309,6 +334,7 @@ const selectSearchCaseBaseQuery = (whereClause: string): SearchQueryBuilder => {
   return (
     user: TwilioUser,
     viewCasePermissions: TKConditionsSets<'case'>,
+    contactViewPermissions: TKConditionsSets<'contact'>,
     filters,
     orderByClauses,
     onlyEssentialData,
@@ -325,6 +351,8 @@ const selectSearchCaseBaseQuery = (whereClause: string): SearchQueryBuilder => {
     const orderBySql = generateOrderByClause(orderByClauses.concat(DEFAULT_SORT));
     return selectCasesPaginatedSql(
       { whereClause: whereSql, orderByClause: orderBySql },
+      contactViewPermissions,
+      user.isSupervisor,
       onlyEssentialData,
     );
   };

@@ -269,7 +269,6 @@ describe('/profiles', () => {
         accounts.map(acc =>
           contactApi.connectContactToCase(
             createdContacts[acc].accountSid,
-            workerSid,
             String(createdContacts[acc].id),
             String(createdCases[acc].id),
             {
@@ -397,7 +396,6 @@ describe('/profiles', () => {
                   // Associate contact to case
                   contactApi.connectContactToCase(
                     contact.accountSid,
-                    workerSid,
                     String(contact.id),
                     String(createdCase.id),
                     {
@@ -411,12 +409,7 @@ describe('/profiles', () => {
         );
 
         createdCases = await Promise.all(
-          createdCases.map(c =>
-            caseApi.getCase(c.id, c.accountSid, {
-              user: twilioUser(workerSid, []),
-              can: () => true,
-            }),
-          ) as any,
+          createdCases.map(c => caseApi.getCase(c.id, c.accountSid, ALWAYS_CAN)) as any,
         );
       });
 

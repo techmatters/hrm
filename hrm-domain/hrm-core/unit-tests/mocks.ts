@@ -1,4 +1,6 @@
-import { twilioUser } from '@tech-matters/twilio-worker-auth/dist';
+import { twilioUser } from '@tech-matters/twilio-worker-auth';
+import { openPermissions } from '../permissions/json-permissions';
+import { TKConditionsSets } from '../permissions/rulesMap';
 
 /**
  * Copyright (C) 2021-2023 Technology Matters
@@ -19,4 +21,13 @@ import { twilioUser } from '@tech-matters/twilio-worker-auth/dist';
 export const workerSid = 'WK-worker-sid';
 export const accountSid = 'ACCOUNT_SID';
 
-export const ALWAYS_CAN = { user: twilioUser(workerSid, []), can: () => true };
+export const ALWAYS_CAN = {
+  user: twilioUser(workerSid, []),
+  can: () => true,
+  permissions: openPermissions.rules('ACx'),
+};
+
+export const OPEN_CONTACT_ACTION_CONDITIONS: TKConditionsSets<'contact'> = [['everyone']];
+
+export const OPEN_CASE_ACTION_CONDITIONS: TKConditionsSets<'case'> =
+  OPEN_CONTACT_ACTION_CONDITIONS as TKConditionsSets<'case'>;

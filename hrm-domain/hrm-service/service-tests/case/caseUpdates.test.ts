@@ -37,7 +37,12 @@ import { ruleFileActionOverride } from '../permissions-overrides';
 import { headers, getRequest, getServer, setRules, useOpenRules } from '../server';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
 import { isS3StoredTranscript } from '@tech-matters/hrm-core/conversation-media/conversation-media';
-import { casePopulated, populateCaseSections, populatedCaseSections } from '../mocks';
+import {
+  ALWAYS_CAN,
+  casePopulated,
+  populateCaseSections,
+  populatedCaseSections,
+} from '../mocks';
 import { pick } from 'lodash';
 import { clearAllTables } from '../dbCleanup';
 
@@ -376,10 +381,11 @@ describe('PUT /cases/:id route', () => {
       if (infoUpdate) {
         update.info = { ...originalCase.info, ...caseUpdate.info, ...infoUpdate };
       }
-      const caseBeforeUpdate = await caseApi.getCase(originalCase.id, accountSid, {
-        user: twilioUser(workerSid, []),
-        can: () => true,
-      });
+      const caseBeforeUpdate = await caseApi.getCase(
+        originalCase.id,
+        accountSid,
+        ALWAYS_CAN,
+      );
 
       const response = await request
         .put(subRoute(originalCase.id))
@@ -399,10 +405,7 @@ describe('PUT /cases/:id route', () => {
       expect(response.body).toMatchObject(expected);
 
       // Check the DB is actually updated
-      const fromDb = await caseApi.getCase(originalCase.id, accountSid, {
-        user: twilioUser(workerSid, []),
-        can: () => true,
-      });
+      const fromDb = await caseApi.getCase(originalCase.id, accountSid, ALWAYS_CAN);
       expect(fromDb).toMatchObject(expected);
 
       if (!fromDb || !caseBeforeUpdate) {
@@ -444,7 +447,6 @@ describe('PUT /cases/:id route', () => {
 
     await connectContactToCase(
       accountSid,
-      workerSid,
       String(createdContact.id),
       String(createdCase.id),
       {
@@ -559,10 +561,11 @@ describe('PUT /cases/:id/status route', () => {
         await new Promise(resolve => setTimeout(resolve, 3000));
       }
       const originalCase = originalCaseGetter();
-      const caseBeforeUpdate = await caseApi.getCase(originalCase.id, accountSid, {
-        user: twilioUser(workerSid, []),
-        can: () => true,
-      });
+      const caseBeforeUpdate = await caseApi.getCase(
+        originalCase.id,
+        accountSid,
+        ALWAYS_CAN,
+      );
 
       const response = await request.put(subRoute(originalCase.id)).set(headers).send({
         status: newStatus,
@@ -583,10 +586,7 @@ describe('PUT /cases/:id/status route', () => {
       expect(response.body).toMatchObject(expected);
 
       // Check the DB is actually updated
-      const fromDb = await caseApi.getCase(originalCase.id, accountSid, {
-        user: twilioUser(workerSid, []),
-        can: () => true,
-      });
+      const fromDb = await caseApi.getCase(originalCase.id, accountSid, ALWAYS_CAN);
       expect(fromDb).toMatchObject(expected);
 
       if (!fromDb || !caseBeforeUpdate) {
@@ -669,10 +669,11 @@ describe('PUT /cases/:id/overview route', () => {
       originalCase: originalCaseGetter = () => cases.populated,
     }: TestCase) => {
       const originalCase = originalCaseGetter();
-      const caseBeforeUpdate = await caseApi.getCase(originalCase.id, accountSid, {
-        user: twilioUser(workerSid, []),
-        can: () => true,
-      });
+      const caseBeforeUpdate = await caseApi.getCase(
+        originalCase.id,
+        accountSid,
+        ALWAYS_CAN,
+      );
 
       const response = await request
         .put(subRoute(originalCase.id))
@@ -693,10 +694,7 @@ describe('PUT /cases/:id/overview route', () => {
       expect(response.body).toStrictEqual(expected);
 
       // Check the DB is actually updated
-      const fromDb = await caseApi.getCase(originalCase.id, accountSid, {
-        user: twilioUser(workerSid, []),
-        can: () => true,
-      });
+      const fromDb = await caseApi.getCase(originalCase.id, accountSid, ALWAYS_CAN);
       expect(fromDb).toStrictEqual({ ...expected, sections: {}, connectedContacts: [] });
 
       if (!fromDb || !caseBeforeUpdate) {

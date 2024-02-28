@@ -149,7 +149,7 @@ profilesRouter.get(
         {
           can: req.can,
           user: req.user,
-          searchPermissions: req.searchPermissions,
+          permissions: req.permissions,
         },
       );
 

@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { isCounselorWhoCreated, isCaseOpen, isContactOwner } from './helpers';
+import { isCounselorWhoCreated, isCaseOpen, isContactOwner } from './conditionChecks';
 import { actionsMaps, Actions, isTargetKind, TargetKind } from './actions';
 import {
   type TKCondition,
@@ -68,26 +68,58 @@ const applyTimeBasedConditions =
   (conditions: TimeBasedCondition[]) =>
   (performer: TwilioUser, target: any, ctx: { curentTimestamp: Date }) =>
     conditions
-      .map(c => Object.entries(c)[0])
-      .reduce<Record<string, boolean>>((accum, [cond, param]) => {
-        // use the stringified cond-param as key, e.g. '{ "createdHoursAgo": "4" }'
-        const key = JSON.stringify({ [cond]: param });
-        if (cond === 'createdHoursAgo') {
-          return {
-            ...accum,
-            [key]:
-              differenceInHours(ctx.curentTimestamp, parseISO(target.createdAt)) < param,
-          };
+      .map(c => {
+        const key = JSON.stringify(c);
+        for (const [cond, param] of Object.entries(c)) {
+          if (cond === 'createdHoursAgo') {
+            const conditionMet =
+              differenceInHours(
+                ctx.curentTimestamp,
+                parseISO(target.timeOfContact ?? target.createdAt),
+              ) < param;
+            console.debug(
+              'createdHoursAgo condition:',
+              `${
+                target.timeOfContact ?? target.createdAt
+              } < ${param} hours before ${ctx.curentTimestamp.toISOString()}`,
+              conditionMet,
+            );
+            if (!conditionMet) {
+              return {
+                [key]: false,
+              };
+            }
+          }
+          if (cond === 'createdDaysAgo') {
+            const conditionMet =
+              differenceInDays(
+                ctx.curentTimestamp,
+                parseISO(target.timeOfContact ?? target.createdAt),
+              ) < param;
+            console.debug(
+              'createdDaysAgo condition:',
+              `${
+                target.timeOfContact ?? target.createdAt
+              } < ${param} days before ${ctx.curentTimestamp.toISOString()}`,
+              conditionMet,
+            );
+            if (!conditionMet)
+              return {
+                [key]: false,
+              };
+          }
         }
-
-        if (cond === 'createdDaysAgo') {
-          return {
-            ...accum,
-            [key]:
-              differenceInDays(ctx.curentTimestamp, parseISO(target.createdAt)) < param,
-          };
-        }
-      }, {});
+        return {
+          [key]: true,
+        };
+      })
+      .reduce<Record<string, boolean>>(
+        (accum, resolvedCondition) => ({
+          ...accum,
+          ...resolvedCondition,
+        }),
+        {},
+      );
 
 const applyProfileSectionSpecificConditions =
   (conditions: ProfileSectionSpecificCondition[]) =>
@@ -112,7 +144,6 @@ const setupAllow = <T extends TargetKind>(
   conditionsSets: TKConditionsSets<T>,
 ) => {
   // We could do type validation on target depending on targetKind if we ever want to make sure the "allow" is called on a proper target (same as cancan used to do)
-
   const timeBasedConditions = conditionsSets.flatMap(cs =>
     cs.filter(isTimeBasedCondition),
   );

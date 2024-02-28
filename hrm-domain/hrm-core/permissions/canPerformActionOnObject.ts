@@ -25,6 +25,11 @@ import {
   isS3StoredConversationMedia,
 } from '../conversation-media/conversation-media';
 import { TResult, newErr, newOk } from '@tech-matters/types';
+import { RulesFile } from './rulesMap';
+
+export const OPEN_VIEW_CONTACT_PERMISSIONS: Pick<RulesFile, 'viewContact'> = {
+  viewContact: [['everyone']],
+};
 
 export const canPerformActionsOnObject = async <T extends TargetKind>({
   accountSid,
@@ -58,7 +63,11 @@ export const canPerformActionsOnObject = async <T extends TargetKind>({
         return newOk({ data: canPerform });
       }
       case 'case': {
-        const object = await getCaseById(objectId, accountSid, { can, user });
+        const object = await getCaseById(objectId, accountSid, {
+          can,
+          user,
+          permissions: OPEN_VIEW_CONTACT_PERMISSIONS,
+        });
 
         const canPerform = actions.every(action => can(user, action, object));
 

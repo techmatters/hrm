@@ -22,7 +22,7 @@ import {
   IndexClient,
   SearchResponse,
 } from '@tech-matters/elasticsearch-client';
-import { FlatResource } from '@tech-matters/types/dist/Resources';
+import { FlatResource } from '@tech-matters/types/Resources';
 
 import {
   RESOURCE_INDEX_TYPE,

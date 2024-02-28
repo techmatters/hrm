@@ -30,8 +30,10 @@ import { newOk } from '@tech-matters/types';
 import * as profilesDB from '../../profile/profileDataAccess';
 import * as profilesService from '../../profile/profileService';
 import { NewContactRecord } from '../../contact/sql/contactInsertSql';
-import { ALWAYS_CAN } from '../mocks';
+import { ALWAYS_CAN, OPEN_CONTACT_ACTION_CONDITIONS } from '../mocks';
 import '@tech-matters/testing/expectToParseAsDate';
+import { openPermissions } from '../../permissions/json-permissions';
+import { RulesFile, TKConditionsSets } from '../../permissions/rulesMap';
 
 jest.mock('../../contact/contactDataAccess');
 
@@ -76,16 +78,15 @@ const mockContact: contactDb.Contact = {
   createdAt: baselineDate.toISOString(),
 };
 
+afterEach(() => {
+  jest.clearAllMocks();
+});
+
 describe('createContact', () => {
   beforeEach(() => {
     const conn = mockConnection();
     mockTransaction(conn);
   });
-
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
-
   const sampleCreateContactPayload: NewContactRecord = {
     rawJson: {
       childInformation: {
@@ -256,18 +257,12 @@ describe('connectContactToCase', () => {
     const connectSpy = jest.fn();
     connectSpy.mockResolvedValue(mockContact);
     jest.spyOn(contactDb, 'connectToCase').mockImplementation(() => connectSpy);
-    const result = await connectContactToCase(
-      'accountSid',
-      'case-connector',
-      '1234',
-      '4321',
-      ALWAYS_CAN,
-    );
+    const result = await connectContactToCase('accountSid', '1234', '4321', ALWAYS_CAN);
     expect(connectSpy).toHaveBeenCalledWith(
       'accountSid',
       '1234',
       '4321',
-      'case-connector',
+      ALWAYS_CAN.user.workerSid,
     );
     expect(result).toStrictEqual(mockContact);
   });
@@ -277,7 +272,7 @@ describe('connectContactToCase', () => {
       .spyOn(contactDb, 'connectToCase')
       .mockImplementation(() => () => Promise.resolve(undefined));
     expect(
-      connectContactToCase('accountSid', 'case-connector', '1234', '4321', ALWAYS_CAN),
+      connectContactToCase('accountSid', '1234', '4321', ALWAYS_CAN),
     ).rejects.toThrow();
   });
 });
@@ -394,20 +389,16 @@ describe('searchContacts', () => {
     const searchSpy = jest.spyOn(contactDb, 'search').mockResolvedValue(mockedResult);
     const parameters = { helpline: 'helpline', onlyDataContacts: false };
 
-    const result = await searchContacts(
+    const result = await searchContacts(accountSid, parameters, {}, ALWAYS_CAN);
+
+    expect(searchSpy).toHaveBeenCalledWith(
       accountSid,
       parameters,
-      {},
-      {
-        can: () => true,
-        user: twilioUser(workerSid, []),
-        searchPermissions: {
-          canOnlyViewOwnContacts: false,
-        },
-      },
+      expect.any(Number),
+      0,
+      ALWAYS_CAN.user,
+      OPEN_CONTACT_ACTION_CONDITIONS,
     );
-
-    expect(searchSpy).toHaveBeenCalledWith(accountSid, parameters, expect.any(Number), 0);
     expect(result).toStrictEqual(expectedSearchResult);
   });
 
@@ -426,20 +417,16 @@ describe('searchContacts', () => {
     const searchSpy = jest
       .spyOn(contactDb, 'search')
       .mockResolvedValue({ count: 0, rows: [] });
-    await searchContacts(
+    await searchContacts(accountSid, body, {}, ALWAYS_CAN);
+
+    expect(searchSpy).toHaveBeenCalledWith(
       accountSid,
       body,
-      {},
-      {
-        can: () => true,
-        user: twilioUser(workerSid, []),
-        searchPermissions: {
-          canOnlyViewOwnContacts: false,
-        },
-      },
+      expect.any(Number),
+      0,
+      ALWAYS_CAN.user,
+      OPEN_CONTACT_ACTION_CONDITIONS,
     );
-
-    expect(searchSpy).toHaveBeenCalledWith(accountSid, body, expect.any(Number), 0);
   });
 
   test('Call search without limit / offset, a default limit and offset 0', async () => {
@@ -450,77 +437,63 @@ describe('searchContacts', () => {
     const searchSpy = jest
       .spyOn(contactDb, 'search')
       .mockResolvedValue({ count: 0, rows: [] });
-    await searchContacts(
+    await searchContacts(accountSid, body, { limit: 10, offset: 1000 }, ALWAYS_CAN);
+
+    expect(searchSpy).toHaveBeenCalledWith(
       accountSid,
       body,
-      { limit: 10, offset: 1000 },
-      {
-        can: () => true,
-        user: twilioUser(workerSid, []),
-        searchPermissions: {
-          canOnlyViewOwnContacts: false,
-        },
-      },
+      10,
+      1000,
+      ALWAYS_CAN.user,
+      OPEN_CONTACT_ACTION_CONDITIONS,
     );
-
-    expect(searchSpy).toHaveBeenCalledWith(accountSid, body, 10, 1000);
   });
 });
 
 describe('search contacts permissions', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
+  type TestCase = {
+    description: string;
+    isSupervisor: boolean;
+    viewContactsPermissions: TKConditionsSets<'contact'>;
+    counselorSearchParam: string;
+  };
 
-  each([
+  const testCases: TestCase[] = [
     {
       description: 'Supervisor can view others contacts',
       isSupervisor: true,
-      canOnlyViewOwnContacts: false,
+      viewContactsPermissions: [['isSupervisor']],
       counselorSearchParam: 'any-worker-sid',
-      overriddenCounselorSearchParam: 'any-worker-sid',
-      shouldCallSearch: true,
     },
     {
       description: 'Agent can view others contacts',
       isSupervisor: false,
-      canOnlyViewOwnContacts: false,
+      viewContactsPermissions: OPEN_CONTACT_ACTION_CONDITIONS,
       counselorSearchParam: 'any-worker-sid',
-      overriddenCounselorSearchParam: 'any-worker-sid',
-      shouldCallSearch: true,
     },
     {
       description: 'Agent cannot view others contacts',
       isSupervisor: false,
-      canOnlyViewOwnContacts: true,
+      viewContactsPermissions: [['isOwner']],
       counselorSearchParam: 'any-worker-sid',
-      shouldCallSearch: false,
     },
     {
       description: 'Agent can view own contacts',
       isSupervisor: false,
-      canOnlyViewOwnContacts: true,
+      viewContactsPermissions: [['isOwner']],
       counselorSearchParam: workerSid,
-      overriddenCounselorSearchParam: workerSid,
-      shouldCallSearch: true,
     },
     {
       description: 'Agent defaults to own contacts when no counselor specified',
       isSupervisor: false,
-      canOnlyViewOwnContacts: true,
+      viewContactsPermissions: [['isOwner']],
       counselorSearchParam: undefined,
-      overriddenCounselorSearchParam: workerSid,
-      shouldCallSearch: true,
     },
-  ]).test(
+  ];
+
+  each(testCases).test(
     '$description',
-    async ({
-      isSupervisor,
-      canOnlyViewOwnContacts,
-      counselorSearchParam,
-      overriddenCounselorSearchParam,
-      shouldCallSearch,
-    }) => {
+    async ({ isSupervisor, viewContactsPermissions, counselorSearchParam }: TestCase) => {
       const accountSid = 'account-sid';
       const body = {
         helpline: 'helpline',
@@ -531,26 +504,28 @@ describe('search contacts permissions', () => {
       const can = () => true;
       const roles = [];
       const user = { ...twilioUser(workerSid, roles), isSupervisor: isSupervisor };
-      const searchPermissions = {
-        canOnlyViewOwnContacts,
+      const permissions: RulesFile = {
+        ...openPermissions.rules('ACx'),
+        viewContact: viewContactsPermissions,
       };
       const reqData = {
         can,
         user,
-        searchPermissions,
+        permissions,
       };
 
       const searchSpy = jest
         .spyOn(contactDb, 'search')
         .mockResolvedValue({ count: 0, rows: [] });
       await searchContacts(accountSid, body, limitOffset, reqData);
-
-      if (shouldCallSearch) {
-        const overridenBody = { ...body, counselor: overriddenCounselorSearchParam };
-        expect(searchSpy).toHaveBeenCalledWith(accountSid, overridenBody, 10, 0);
-      } else {
-        expect(searchSpy).not.toHaveBeenCalled();
-      }
+      expect(searchSpy).toHaveBeenCalledWith(
+        accountSid,
+        body,
+        10,
+        0,
+        user,
+        viewContactsPermissions,
+      );
     },
   );
 });

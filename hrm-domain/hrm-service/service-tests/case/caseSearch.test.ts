@@ -380,7 +380,6 @@ describe('/cases route', () => {
       );
       await connectContactToCase(
         accountSid,
-        workerSid,
         String(createdContact.id),
         String(createdCase.id),
         {
@@ -612,11 +611,7 @@ describe('/cases route', () => {
             createdCase2.id,
             { status: 'closed' },
             accountSid,
-            workerSid,
-            {
-              user: twilioUser(workerSid, []),
-              can: () => true,
-            },
+            ALWAYS_CAN,
           );
           const response = await request
             .post(subRoute)
@@ -1273,7 +1268,6 @@ describe('/cases route', () => {
       );
       await connectContactToCase(
         accountSid,
-        workerSid,
         String(createdContact.id),
         String(createdCase.id),
         {
