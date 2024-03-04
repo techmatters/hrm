@@ -20,7 +20,7 @@ import { rulesMap } from '@tech-matters/hrm-core/permissions/rulesMap';
 // const sanitizeEnv = (env: string) => (env === 'local' ? 'development' : env);
 
 let hrmEnv = process.env.NODE_ENV ?? 'development';
-let shortCode = process.env.HL ?? (hrmEnv === 'development' ? 'AS' : 'CA');
+let shortCode = process.env.HL;
 
 type ContextConfigOverrides = {
   shortCodeOverride?: string;

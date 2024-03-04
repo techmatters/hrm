@@ -5,7 +5,8 @@
   "scripts": {
     "start": "cd dist && node ./www",
     "start:job-processor": "cd dist && node ./jobProcessor",
-    "start:khp-data-pull": "cd dist && node ./dataPull",
+    "start:as-data-pull": "cd dist && HL=AS node ./dataPull",
+    "start:khp-data-pull": "cd dist && HL=CA node ./dataPull",
     "start:nz-data-pull": "cd dist && HL=NZ node ./dataPull",
     "start:job-cleanup": "cd dist && node ./jobCleanup",
     "start:job-case-status-transition": "cd dist && node ./jobCaseStatusTransition",
