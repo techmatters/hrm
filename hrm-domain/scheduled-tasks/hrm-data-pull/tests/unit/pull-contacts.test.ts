@@ -28,6 +28,8 @@ const { maxPermissions } = context;
 
 const accountSid = 'ACxxx';
 const bucket = 'docs-bucket';
+const hrmEnv = 'test';
+const shortCode = 'XX';
 
 jest.mock('@tech-matters/hrm-core/contact/contactService');
 jest.mock('../../context');
@@ -55,6 +57,8 @@ beforeEach(() => {
   const getContextResponse = Promise.resolve({
     accountSid,
     bucket,
+    hrmEnv,
+    shortCode,
   });
 
   jest.spyOn(context, 'getContext').mockReturnValue(getContextResponse);

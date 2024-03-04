@@ -33,7 +33,7 @@ const getSearchParams = (startDate: Date, endDate: Date) => ({
 });
 
 export const pullCases = async (startDate: Date, endDate: Date) => {
-  const { accountSid, bucket } = await getContext();
+  const { accountSid, bucket, hrmEnv, shortCode } = await getContext();
 
   const { filters } = getSearchParams(startDate, endDate);
 
@@ -75,9 +75,9 @@ export const pullCases = async (startDate: Date, endDate: Date) => {
 
   try {
     await Promise.all(uploadPromises);
-    console.log('>> KHP Cases were pulled successfully!');
+    console.log(`>> ${shortCode} ${hrmEnv} Cases were pulled successfully!`);
   } catch (err) {
-    console.error('>> Error in KHP Data Pull: Cases');
+    console.error(`>> Error in ${shortCode} ${hrmEnv} Data Pull: Cases`);
     console.error(err);
     // TODO: Should throw an error?
   }

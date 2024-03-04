@@ -17,10 +17,10 @@
 import { getSsmParameter } from '@tech-matters/ssm-cache';
 import { rulesMap } from '@tech-matters/hrm-core/permissions/rulesMap';
 
-const sanitizeEnv = (env: string) => (env === 'local' ? 'development' : env);
+// const sanitizeEnv = (env: string) => (env === 'local' ? 'development' : env);
 
-let hrmEnv = sanitizeEnv(process.env.NODE_ENV ?? 'development');
-let shortCode = process.env.HL ?? (hrmEnv === 'development' ? 'AS' : 'CA');
+let hrmEnv = process.env.NODE_ENV ?? 'development';
+let shortCode = process.env.HL;
 
 type ContextConfigOverrides = {
   shortCodeOverride?: string;
@@ -30,6 +30,8 @@ type ContextConfigOverrides = {
 type Context = {
   accountSid: string;
   bucket: string;
+  hrmEnv: string;
+  shortCode: string;
 };
 
 let context: Context;
@@ -52,6 +54,8 @@ export const getContext = async (): Promise<Context> => {
     return {
       accountSid,
       bucket,
+      hrmEnv,
+      shortCode,
     };
   }
 
