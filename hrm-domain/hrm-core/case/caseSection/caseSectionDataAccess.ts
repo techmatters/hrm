@@ -24,20 +24,22 @@ import { TKConditionsSets } from '../../permissions/rulesMap';
 import { isOk } from '@tech-matters/types';
 import { Contact } from '../../contact/contactDataAccess';
 
-export type TimelineEvent<T> = {
-  eventTimestamp: string;
+export type TimelineActivity<T> = {
+  timestamp: string;
   event: T;
   eventType: string;
 };
 
-export type ContactTimelineEvent = TimelineEvent<Contact> & { eventType: 'contact' };
-export type CaseSectionTimelineEvent = TimelineEvent<CaseSectionRecord> & {
+export type ContactTimelineActivity = TimelineActivity<Contact> & {
+  eventType: 'contact';
+};
+export type CaseSectionTimelineActivity = TimelineActivity<CaseSectionRecord> & {
   eventType: 'case-section';
 };
 
-export const isCaseSectionTimelineEvent = (
-  event: TimelineEvent<any>,
-): event is CaseSectionTimelineEvent => event.eventType === 'case-section';
+export const isCaseSectionTimelineActivity = (
+  event: TimelineActivity<any>,
+): event is CaseSectionTimelineActivity => event.eventType === 'case-section';
 
 export const create = async (
   sectionRecord: CaseSectionRecord,
@@ -107,7 +109,7 @@ export const updateById = async (
   });
 };
 
-export type TimelineResult = { count: number; events: TimelineEvent<any>[] };
+export type TimelineResult = { count: number; events: TimelineActivity<any>[] };
 
 export const getTimeline = async (
   accountSid: string,

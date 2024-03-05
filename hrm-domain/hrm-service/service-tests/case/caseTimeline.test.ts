@@ -38,8 +38,8 @@ import {
   searchContacts,
 } from '@tech-matters/hrm-core/contact/contactService';
 import {
-  isCaseSectionTimelineEvent,
-  TimelineEvent,
+  isCaseSectionTimelineActivity,
+  TimelineActivity,
 } from '@tech-matters/hrm-core/case/caseSection/caseSectionDataAccess';
 
 useOpenRules();
@@ -286,16 +286,16 @@ describe('GET /cases/:caseId/timeline', () => {
         .get(getRoutePath(sampleCase.id, sectionTypes, includeContacts, offset, limit))
         .set(headers);
       expect(response.status).toBe(200);
-      const { count, events }: { count: number; events: TimelineEvent<any>[] } =
+      const { count, events }: { count: number; events: TimelineActivity<any>[] } =
         response.body;
       const eventDescriptions = events.map(ev =>
-        isCaseSectionTimelineEvent(ev)
+        isCaseSectionTimelineActivity(ev)
           ? ev.event.sectionTypeSpecificData.text
           : ev.event.helpline,
       );
       expect(eventDescriptions).toStrictEqual(expectedEventDescriptions);
       const eventContacts: Contact[] = events
-        .filter(ev => !isCaseSectionTimelineEvent(ev))
+        .filter(ev => !isCaseSectionTimelineActivity(ev))
         .map(ev => ev.event);
       expect(count).toBe(expectedTotalCount);
       eventContacts.forEach(ec =>
