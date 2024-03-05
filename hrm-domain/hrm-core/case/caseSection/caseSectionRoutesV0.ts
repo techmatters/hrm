@@ -13,13 +13,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-
+import '../../permissions';
 import createError from 'http-errors';
 import { SafeRouter } from '../../permissions';
 import {
   createCaseSection,
   deleteCaseSection,
   getCaseSection,
+  getCaseSectionTypeList,
   replaceCaseSection,
 } from './caseSectionService';
 import '@tech-matters/twilio-worker-auth';
@@ -31,6 +32,28 @@ import {
 } from './canPerformCaseSectionAction';
 
 const caseSectionsRouter = SafeRouter({ mergeParams: true });
+
+/**
+ * Returns a specific section of a case, i.e. a specific perpetrator or note, via it's unique ID
+ *
+ * @param {string} req.accountSid - SID of the helpline
+ * @param {CaseListConfiguration.sortDirection} req.query.sortDirection - Sort direction
+ * @param {CaseListConfiguration.sortBy} req.query.sortBy - Sort by
+ * @param {CaseListConfiguration.limit} req.query.limit - Limit
+ * @param {CaseListConfiguration.offset} req.query.offset - Offset
+ * @param {SearchParameters} req.query.search
+ *
+ * @returns {CaseSearchReturn} - List of cases
+ */
+caseSectionsRouter.get('/:sectionType', canViewCaseSection, async (req, res) => {
+  const {
+    accountSid,
+    params: { caseId, sectionType },
+  } = req;
+
+  const section = await getCaseSectionTypeList(accountSid, req, caseId, sectionType);
+  res.json(section);
+});
 
 /**
  * Returns a specific section of a case, i.e. a specific perpetrator or note, via it's unique ID

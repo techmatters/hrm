@@ -127,6 +127,7 @@ const caseSectionRecordsToInfo = (
       sectionId: id,
       sectionTypeSpecificData,
       createdBy,
+      eventTimestamp,
       ...restOfRecord
     } = record;
 
@@ -202,6 +203,8 @@ const caseToCaseRecord = (
         sectionId: section.id ?? randomUUID(),
         createdBy: section.twilioWorkerId ?? workerSid,
         createdAt: section.createdAt ?? new Date().toISOString(),
+        eventTimestamp:
+          section.eventTimestamp ?? section.createdAt ?? new Date().toISOString(),
         updatedBy: section.updatedBy,
         updatedAt: section.updatedAt,
         sectionTypeSpecificData: getSectionSpecificData(section),

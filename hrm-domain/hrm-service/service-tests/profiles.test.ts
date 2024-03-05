@@ -20,16 +20,16 @@ import { db } from '@tech-matters/hrm-core/connection-pool';
 import * as caseApi from '@tech-matters/hrm-core/case/caseService';
 import * as contactApi from '@tech-matters/hrm-core/contact/contactService';
 import * as profilesDB from '@tech-matters/hrm-core/profile/profileDataAccess';
+import { IdentifierWithProfiles } from '@tech-matters/hrm-core/profile/profileDataAccess';
 import { getRequest, getServer, headers, useOpenRules } from './server';
 import * as mocks from './mocks';
-import { mockSuccessfulTwilioAuthentication, mockingProxy } from '@tech-matters/testing';
+import { ALWAYS_CAN } from './mocks';
+import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import {
   getOrCreateProfileWithIdentifier,
   Profile,
 } from '@tech-matters/hrm-core/profile/profileService';
-import { IdentifierWithProfiles } from '@tech-matters/hrm-core/profile/profileDataAccess';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
-import { ALWAYS_CAN } from './mocks';
 import { AccountSID } from '@tech-matters/types';
 
 useOpenRules();
@@ -70,16 +70,13 @@ describe('/profiles', () => {
     const profilesNames = ['Murray', 'Antonella', null];
     let defaultFlags: profilesDB.ProfileFlag[];
     beforeAll(async () => {
-      existingProfiles = (await profilesDB.listProfiles(accountSid, {}, {})).unwrap()
-        .profiles;
+      existingProfiles = (await profilesDB.listProfiles(accountSid, {}, {})).profiles;
       createdProfiles = await Promise.all(
         profilesNames.map(name =>
           profilesDB.createProfile()(accountSid, { name, createdBy: workerSid }),
         ),
       );
-      defaultFlags = await profilesDB
-        .getProfileFlagsForAccount(accountSid)
-        .then(result => result.unwrap());
+      defaultFlags = await profilesDB.getProfileFlagsForAccount(accountSid);
 
       const murray = createdProfiles.find(p => p.name === 'Murray');
       const antonella = createdProfiles.find(p => p.name === 'Antonella');
@@ -230,10 +227,12 @@ describe('/profiles', () => {
       createdProfiles = (
         await Promise.all(
           accounts.map(acc =>
-            getOrCreateProfileWithIdentifier()(
-              acc,
-              { identifier: { identifier }, profile: { name: null } },
-              { user: { isSupervisor: false, roles: [], workerSid } },
+            db.task(async t =>
+              getOrCreateProfileWithIdentifier(t)(
+                acc,
+                { identifier: { identifier }, profile: { name: null } },
+                { user: { isSupervisor: false, roles: [], workerSid } },
+              ),
             ),
           ),
         )
@@ -326,11 +325,14 @@ describe('/profiles', () => {
     let createdProfile: IdentifierWithProfiles;
     beforeAll(async () => {
       // Create an identifier
-      createdProfile = await getOrCreateProfileWithIdentifier()(
-        accountSid,
-        { identifier: { identifier }, profile: { name: null } },
-        { user: { isSupervisor: false, roles: [], workerSid } },
-      ).then(result => result.unwrap().identifier);
+      createdProfile = await db.task(async t => {
+        const result = await getOrCreateProfileWithIdentifier(t)(
+          accountSid,
+          { identifier: { identifier }, profile: { name: null } },
+          { user: { isSupervisor: false, roles: [], workerSid } },
+        );
+        return result.unwrap().identifier;
+      });
     });
 
     afterAll(async () => {
@@ -503,9 +505,7 @@ describe('/profiles', () => {
 
         let defaultFlags: profilesDB.ProfileFlag[];
         beforeAll(async () => {
-          defaultFlags = await profilesDB
-            .getProfileFlagsForAccount(accountSid)
-            .then(result => result.unwrap());
+          defaultFlags = await profilesDB.getProfileFlagsForAccount(accountSid);
         });
 
         describe('POST', () => {
@@ -532,7 +532,7 @@ describe('/profiles', () => {
             {
               description: 'flag does not exists',
               profileFlagId: 0,
-              expectStatus: 500,
+              expectStatus: 400,
             },
             {
               description: 'profile and flag exist',
@@ -552,7 +552,7 @@ describe('/profiles', () => {
               beforeFunction: (profileId, profileFlagId) =>
                 request.post(buildRoute(profileId, profileFlagId)).set(headers),
               description: 'association already exists',
-              expectStatus: 500,
+              expectStatus: 409,
             },
             {
               description: 'a valid "validUntil" date is sent',
@@ -603,14 +603,12 @@ describe('/profiles', () => {
 
         describe('DELETE', () => {
           beforeAll(async () => {
-            (
-              await profilesDB.associateProfileToProfileFlag()(
-                accountSid,
-                createdProfile.profiles[0].id,
-                defaultFlags[0].id,
-                null,
-              )
-            ).unwrap();
+            await profilesDB.associateProfileToProfileFlag()(
+              accountSid,
+              createdProfile.profiles[0].id,
+              defaultFlags[0].id,
+              null,
+            );
 
             const pfs = (
               await profilesDB.getProfileById()(accountSid, createdProfile.profiles[0].id)
@@ -863,19 +861,18 @@ describe('/profiles', () => {
       });
 
       test('when custom flags are added, return default and custom flags', async () => {
-        const customFlag = (
-          await profilesDB.createProfileFlag(accountSid, {
-            name: 'custom',
-            createdBy: workerSid,
-          })
-        ).unwrap();
+        const customFlag = await profilesDB.createProfileFlag(accountSid, {
+          name: 'custom',
+          createdBy: workerSid,
+        });
 
-        const customFlagForAnother = (
-          await profilesDB.createProfileFlag('ANOTHER_ACCOUNT', {
+        const customFlagForAnother = await profilesDB.createProfileFlag(
+          'ANOTHER_ACCOUNT',
+          {
             name: 'custom 2',
             createdBy: workerSid,
-          })
-        ).unwrap();
+          },
+        );
 
         const response = await request.get(route).set(headers);
 
@@ -891,8 +888,8 @@ describe('/profiles', () => {
           response.body.find(f => f.name === customFlagForAnother.name),
         ).not.toBeDefined();
 
-        deleteFromTableById('ProfileFlags')(customFlag.id, customFlag.accountSid);
-        deleteFromTableById('ProfileFlags')(
+        await deleteFromTableById('ProfileFlags')(customFlag.id, customFlag.accountSid);
+        await deleteFromTableById('ProfileFlags')(
           customFlagForAnother.id,
           customFlagForAnother.accountSid,
         );
