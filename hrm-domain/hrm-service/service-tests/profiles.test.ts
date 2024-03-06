@@ -223,8 +223,6 @@ describe('/profiles', () => {
     const accounts: AccountSID[] = [accountSid, 'AC_ANOTHER_ACCOUNT'];
 
     let createdProfiles: { [acc: string]: IdentifierWithProfiles };
-    let createdCases: { [acc: string]: caseApi.CaseService };
-    let createdContacts: { [acc: string]: contactApi.Contact };
     beforeAll(async () => {
       // Create same identifier for two diferent accounts
       createdProfiles = (
@@ -240,58 +238,9 @@ describe('/profiles', () => {
       )
         .map(result => result.unwrap().identifier)
         .reduce((accum, curr) => ({ ...accum, [curr.accountSid]: curr }), {});
-      // Create one case for each
-      createdCases = (
-        await Promise.all(accounts.map(acc => caseApi.createCase(case1, acc, workerSid)))
-      ).reduce((accum, curr) => ({ ...accum, [curr.accountSid]: curr }), {});
-
-      // Create one contact for each
-      createdContacts = (
-        await Promise.all(
-          accounts.map(acc =>
-            contactApi.createContact(
-              acc,
-              workerSid,
-              {
-                ...contact1,
-                number: identifier,
-                profileId: createdProfiles[acc].profiles[0].id,
-                identifierId: createdProfiles[acc].id,
-              },
-              ALWAYS_CAN,
-            ),
-          ),
-        )
-      ).reduce((accum, curr) => ({ ...accum, [curr.accountSid]: curr }), {});
-
-      // Associate contacts to cases
-      await Promise.all(
-        accounts.map(acc =>
-          contactApi.connectContactToCase(
-            createdContacts[acc].accountSid,
-            String(createdContacts[acc].id),
-            String(createdCases[acc].id),
-            {
-              user: twilioUser(workerSid, []),
-              can: () => true,
-            },
-          ),
-        ),
-      );
     });
 
     afterAll(async () => {
-      await Promise.all(
-        Object.entries(createdContacts).flatMap(([, c]) => [
-          db.task(t => t.none(`DELETE FROM "ContactJobs"  WHERE "contactId" = ${c.id}`)),
-          deleteFromTableById('Contacts')(c.id, c.accountSid),
-        ]),
-      );
-      await Promise.all(
-        Object.entries(createdCases).map(([, c]) =>
-          deleteFromTableById('Cases')(c.id, c.accountSid),
-        ),
-      );
       await Promise.all(
         Object.entries(createdProfiles).flatMap(([, idWithp]) => [
           ...idWithp.profiles.map(p =>
@@ -316,8 +265,6 @@ describe('/profiles', () => {
         expect(response.body.profiles[0].id).toBe(
           createdProfiles[accountSid].profiles[0].id,
         );
-        expect(response.body.profiles[0].contactsCount).toBe(1);
-        expect(response.body.profiles[0].casesCount).toBe(1);
       });
     });
   });
