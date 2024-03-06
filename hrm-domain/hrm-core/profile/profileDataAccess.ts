@@ -62,14 +62,7 @@ type RecordCommons = {
 
 export type Identifier = NewIdentifierRecord & RecordCommons;
 
-export type ProfileCounts = {
-  contactsCount: number;
-  casesCount: number;
-};
-
-export type ProfileWithCounts = Profile & ProfileCounts;
-
-export type IdentifierWithProfiles = Identifier & { profiles: ProfileWithCounts[] };
+export type IdentifierWithProfiles = Identifier & { profiles: Profile[] };
 
 type ProfileFlagAssociation = {
   id: ProfileFlag['id'];
@@ -77,7 +70,7 @@ type ProfileFlagAssociation = {
 };
 
 export type ProfileWithRelationships = Profile &
-  ProfileCounts & {
+  Profile & {
     identifiers: Identifier[];
     profileFlags: ProfileFlagAssociation[];
     profileSections: {
