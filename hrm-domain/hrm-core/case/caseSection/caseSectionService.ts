@@ -136,7 +136,7 @@ export const getCaseSectionTypeList = async (
       limit: '1000',
       offset: '0',
     })
-  ).events.map(event => sectionRecordToSection(event.event));
+  ).activities.map(event => sectionRecordToSection(event.activity));
 
 export const deleteCaseSection = async (
   accountSid: AccountSID,

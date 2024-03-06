@@ -26,20 +26,20 @@ import { Contact } from '../../contact/contactDataAccess';
 
 export type TimelineActivity<T> = {
   timestamp: string;
-  event: T;
-  eventType: string;
+  activity: T;
+  activityType: string;
 };
 
 export type ContactTimelineActivity = TimelineActivity<Contact> & {
-  eventType: 'contact';
+  activityType: 'contact';
 };
 export type CaseSectionTimelineActivity = TimelineActivity<CaseSectionRecord> & {
-  eventType: 'case-section';
+  activityType: 'case-section';
 };
 
 export const isCaseSectionTimelineActivity = (
-  event: TimelineActivity<any>,
-): event is CaseSectionTimelineActivity => event.eventType === 'case-section';
+  activity: TimelineActivity<any>,
+): activity is CaseSectionTimelineActivity => activity.activityType === 'case-section';
 
 export const create = async (
   sectionRecord: CaseSectionRecord,
@@ -109,7 +109,7 @@ export const updateById = async (
   });
 };
 
-export type TimelineResult = { count: number; events: TimelineActivity<any>[] };
+export type TimelineResult = { count: number; activities: TimelineActivity<any>[] };
 
 export const getTimeline = async (
   accountSid: string,
@@ -128,7 +128,7 @@ export const getTimeline = async (
     includeContacts,
   );
   if (isOk(sqlRes)) {
-    const eventsWithCounts = await db.manyOrNone(sqlRes.data, {
+    const activitiesWithCounts = await db.manyOrNone(sqlRes.data, {
       limit,
       offset,
       caseId,
@@ -136,19 +136,19 @@ export const getTimeline = async (
       twilioWorkerSid: twilioUser.workerSid,
       sectionTypes,
     });
-    const count = eventsWithCounts.length ? eventsWithCounts[0].totalCount : 0;
-    const events = eventsWithCounts.map(ewc => {
-      const { totalCount, ...eventWithoutCount } = ewc;
-      return eventWithoutCount;
+    const count = activitiesWithCounts.length ? activitiesWithCounts[0].totalCount : 0;
+    const activities = activitiesWithCounts.map(ewc => {
+      const { totalCount, ...activityWithoutCount } = ewc;
+      return activityWithoutCount;
     });
     return {
       count,
-      events,
+      activities,
     };
   } else {
     console.warn(
       `Received request for timeline of case ${caseId} but neither contacts or any case sections were requested, returning empty set`,
     );
-    return { count: 0, events: [] };
+    return { count: 0, activities: [] };
   }
 };

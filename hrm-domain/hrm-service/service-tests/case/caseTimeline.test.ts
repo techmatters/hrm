@@ -205,7 +205,7 @@ describe('GET /cases/:caseId/timeline', () => {
     sectionTypes: string[];
     limit?: number;
     offset?: number;
-    expectedEventDescriptions: string[];
+    expectedActivityDescriptions: string[];
     expectedTotalCount: number;
   };
 
@@ -214,7 +214,7 @@ describe('GET /cases/:caseId/timeline', () => {
       description: 'All sections and include contacts - returns everything',
       includeContacts: true,
       sectionTypes: ['sectionType1', 'sectionType2'],
-      expectedEventDescriptions: [
+      expectedActivityDescriptions: [
         'Type 2, Item 3',
         'Contact 3 Helpline',
         'Type 1, Item 3',
@@ -231,7 +231,7 @@ describe('GET /cases/:caseId/timeline', () => {
       description: 'All sections and exclude contacts - returns all sections',
       includeContacts: false,
       sectionTypes: ['sectionType1', 'sectionType2'],
-      expectedEventDescriptions: [
+      expectedActivityDescriptions: [
         'Type 2, Item 3',
         'Type 1, Item 3',
         'Type 2, Item 2',
@@ -246,7 +246,7 @@ describe('GET /cases/:caseId/timeline', () => {
         'Partial sections and include contacts - returns specified sections & contacts',
       includeContacts: true,
       sectionTypes: ['sectionType2'],
-      expectedEventDescriptions: [
+      expectedActivityDescriptions: [
         'Type 2, Item 3',
         'Contact 3 Helpline',
         'Type 2, Item 2',
@@ -263,7 +263,7 @@ describe('GET /cases/:caseId/timeline', () => {
       sectionTypes: ['sectionType2'],
       offset: 2,
       limit: 3,
-      expectedEventDescriptions: [
+      expectedActivityDescriptions: [
         'Type 2, Item 2',
         'Contact 2 Helpline',
         'Type 2, Item 1',
@@ -277,7 +277,7 @@ describe('GET /cases/:caseId/timeline', () => {
     async ({
       sectionTypes,
       includeContacts,
-      expectedEventDescriptions,
+      expectedActivityDescriptions,
       expectedTotalCount,
       offset,
       limit,
@@ -286,19 +286,21 @@ describe('GET /cases/:caseId/timeline', () => {
         .get(getRoutePath(sampleCase.id, sectionTypes, includeContacts, offset, limit))
         .set(headers);
       expect(response.status).toBe(200);
-      const { count, events }: { count: number; events: TimelineActivity<any>[] } =
-        response.body;
-      const eventDescriptions = events.map(ev =>
+      const {
+        count,
+        activities,
+      }: { count: number; activities: TimelineActivity<any>[] } = response.body;
+      const activityDescriptions = activities.map(ev =>
         isCaseSectionTimelineActivity(ev)
-          ? ev.event.sectionTypeSpecificData.text
-          : ev.event.helpline,
+          ? ev.activity.sectionTypeSpecificData.text
+          : ev.activity.helpline,
       );
-      expect(eventDescriptions).toStrictEqual(expectedEventDescriptions);
-      const eventContacts: Contact[] = events
+      expect(activityDescriptions).toStrictEqual(expectedActivityDescriptions);
+      const activityContacts: Contact[] = activities
         .filter(ev => !isCaseSectionTimelineActivity(ev))
-        .map(ev => ev.event);
+        .map(ev => ev.activity);
       expect(count).toBe(expectedTotalCount);
-      eventContacts.forEach(ec =>
+      activityContacts.forEach(ec =>
         expect(ec).toStrictEqual(
           expectedContacts.find(expected => expected.id === ec.id),
         ),

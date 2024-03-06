@@ -39,9 +39,9 @@ export const SELECT_CASE_SECTION_BY_ID = `
 
 export const SELECT_CASE_SECTIONS_FOR_TIMELINE = `
   SELECT
-        "eventTimestamp",
-        'case-section' as "eventType",
-        to_jsonb("caseSections") AS  "event"
+        "eventTimestamp" AS "timestamp",
+        'case-section' as "activityType",
+        to_jsonb("caseSections") AS  "activity"
   FROM "CaseSections" AS "caseSections"
   WHERE "accountSid" = $<accountSid>
     AND "caseId" = $<caseId>
@@ -53,9 +53,9 @@ export const selectCaseContactsForTimeline = (
   userIsSupervisor: boolean,
 ) => `
         SELECT 
-        "timeOfContact" AS "eventTimestamp",
-        'contact' as "eventType",
-        to_jsonb("contacts") AS  "event"
+        "timeOfContact" AS "timestamp",
+        'contact' as "activityType",
+        to_jsonb("contacts") AS  "activity"
         FROM "Contacts" "contacts"
         WHERE "contacts"."caseId" = $<caseId> AND "contacts"."accountSid" = $<accountSid>
         AND ${listContactsPermissionWhereClause(
@@ -77,7 +77,7 @@ export const selectCaseTimelineSql = (
     });
   }
 
-  const PAGINATION_SQL = `ORDER BY "eventTimestamp" DESC LIMIT $<limit> OFFSET $<offset>`;
+  const PAGINATION_SQL = `ORDER BY "timestamp" DESC LIMIT $<limit> OFFSET $<offset>`;
 
   if (!includeContacts) {
     return newOk({

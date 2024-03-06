@@ -26,8 +26,8 @@ module.exports = {
     await queryInterface.sequelize.query(`
       UPDATE public."CaseSections" 
       SET "eventTimestamp" = CASE 
-        WHEN "sectionType" = 'referral' 
-        THEN COALESCE(("sectionTypeSpecificData"->>'date')::TIMESTAMP WITH TIME ZONE, "createdAt") 
+        WHEN "sectionType" = 'referral' AND "sectionTypeSpecificData"->>'date' != ''
+        THEN ("sectionTypeSpecificData"->>'date')::TIMESTAMP WITH TIME ZONE
         ELSE "createdAt" 
       END;
     `);
