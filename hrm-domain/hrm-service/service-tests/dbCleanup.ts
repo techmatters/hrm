@@ -22,9 +22,9 @@ export const clearAllTables = async () => {
     db.none('DELETE FROM "public"."ProfilesToIdentifiers"'),
     db.none('DELETE FROM "public"."ProfileSections"'),
   ]);
-  await db.none('DELETE FROM "public"."Identifiers"');
   await db.none('DELETE FROM "public"."Contacts"');
   await Promise.all([
+    db.none('DELETE FROM "public"."Identifiers"'),
     db.none('DELETE FROM "public"."Cases"'),
     db.none('DELETE FROM "public"."Profiles"'),
   ]);
