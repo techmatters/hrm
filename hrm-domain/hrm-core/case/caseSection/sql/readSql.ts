@@ -19,8 +19,8 @@ import {
 } from '../../../contact/sql/contactPermissionSql';
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { TKConditionsSets } from '../../../permissions/rulesMap';
-import type { TResult } from '@tech-matters/types/Result';
-import { newErr, newOk } from '@tech-matters/types/Result';
+import type { TResult } from '@tech-matters/types';
+import { newErr, newOk } from '@tech-matters/types';
 
 export const SELECT_CASE_SECTION_BY_ID = `
   SELECT
