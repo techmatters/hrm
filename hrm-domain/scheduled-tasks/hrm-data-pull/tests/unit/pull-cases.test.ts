@@ -142,8 +142,8 @@ describe('KHP Data Pull - Pull Cases', () => {
 
     jest.spyOn(caseApi, 'searchCases').mockResolvedValue(searchCasesResponse);
 
-    await pullCases(startDate, endDate);
-
+    const result = await pullCases(startDate, endDate);
+    console.log('>> KHP Cases were pulled successfully!', result);
     expect(putS3ObjectSpy).toHaveBeenCalledWith(getExpectedS3Params(case1));
     expect(putS3ObjectSpy).toHaveBeenCalledWith(getExpectedS3Params(case2));
     expect(putS3ObjectSpy).toBeCalledTimes(2);

@@ -488,3 +488,23 @@ export const getProfileSectionById = async (
     });
   }
 };
+
+export const searchProfiles = async ({
+  accountSid,
+  limit,
+  offset,
+  startDate,
+  endDate,
+}: {
+  accountSid: string;
+  limit: number;
+  offset: number;
+  startDate: Date;
+  endDate: Date;
+}) => {
+  const result = await profileDB.searchProfiles()({ limit, offset }, accountSid, {
+    startDate,
+    endDate,
+  });
+  return result;
+};

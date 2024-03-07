@@ -123,6 +123,7 @@ describe('KHP Data Pull - Pull Contacts', () => {
     jest.spyOn(contactApi, 'searchContacts').mockReturnValue(searchContactsResponse);
 
     await pullContacts(startDate, endDate);
+    console.log('>> contacts were pulled successfully!', putS3ObjectSpy.mock.calls);
 
     expect(putS3ObjectSpy).toHaveBeenCalledWith(getExpectedS3Params(contact1));
     expect(putS3ObjectSpy).toHaveBeenCalledWith(getExpectedS3Params(contact2));
