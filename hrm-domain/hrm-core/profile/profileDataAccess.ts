@@ -48,6 +48,7 @@ import {
 } from './sql/profile-list-sql';
 import { getPaginationElements } from '../search';
 import { updateProfileByIdSql } from './sql/profile-update.sql';
+import { profilesSearchSql } from './sql/profile-search-sql';
 
 export { ProfilesListFilters } from './sql/profile-list-sql';
 
@@ -85,6 +86,10 @@ export type ProfileWithRelationships = Profile &
       id: ProfileSection['id'];
     }[];
   };
+
+export type ProfileWithRelationshipsAndCount = ProfileWithRelationships & {
+  count: number;
+};
 
 type IdentifierParams =
   | { accountSid: string; identifier: string; identifierId?: never }
@@ -245,15 +250,53 @@ export const getProfileById =
     });
   };
 
+export type SearchParameters = {
+  filters?: ProfilesListFilters;
+};
+export type ProfilesSearchCriteria = {
+  startDate: Date;
+  endDate: Date;
+};
+
 export type ProfileListConfiguration = {
   sortBy?: OrderByColumnType;
   sortDirection?: OrderByDirectionType;
-  offset?: string;
-  limit?: string;
+  offset?: number;
+  limit?: number;
 };
 
-export type SearchParameters = {
-  filters?: ProfilesListFilters;
+export type SearchQueryFunction = (
+  listConfiguration: ProfileListConfiguration,
+  accountSid: string,
+  searchCriteria: ProfilesSearchCriteria,
+  onlyEssentialData?: boolean,
+) => Promise<{ profiles: ProfileWithRelationships[]; count: number }>;
+
+export const searchProfiles = (): SearchQueryFunction => {
+  return async (listConfiguration, accountSid, searchCriteria) => {
+    const { limit, offset } = getPaginationElements({
+      ...listConfiguration,
+      limit: listConfiguration.limit.toString(),
+      offset: listConfiguration.offset?.toString(),
+    });
+
+    const { count, profiles } = await db.task(async connection => {
+      const statement = profilesSearchSql({
+        accountSid,
+        startDate: searchCriteria.startDate,
+        endDate: searchCriteria.endDate,
+        offset,
+        limit,
+      });
+
+      const result: ProfileWithRelationshipsAndCount[] =
+        await connection.any<ProfileWithRelationshipsAndCount>(statement);
+      const totalCount: number = result.length ? result[0].count : 0;
+      return { profiles: result, count: totalCount };
+    });
+
+    return { profiles, count };
+  };
 };
 
 export const listProfiles = async (
@@ -264,8 +307,11 @@ export const listProfiles = async (
   TResult<'InternalServerError', { profiles: ProfileWithRelationships[]; count: number }>
 > => {
   try {
-    const { limit, offset, sortBy, sortDirection } =
-      getPaginationElements(listConfiguration);
+    const { limit, offset, sortBy, sortDirection } = getPaginationElements({
+      ...listConfiguration,
+      limit: listConfiguration.limit.toString(),
+      offset: listConfiguration.offset?.toString(),
+    });
     const orderClause = [{ sortBy, sortDirection }];
 
     const { count, rows } = await db.task(async connection => {

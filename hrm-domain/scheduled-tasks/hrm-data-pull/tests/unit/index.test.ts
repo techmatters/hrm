@@ -24,6 +24,7 @@ import * as pullCasesModule from '../../pull-cases';
 
 jest.mock('../../pull-contacts');
 jest.mock('../../pull-cases');
+jest.mock('../../pull-profiles');
 
 const getParamsFromSpy = (spy: jest.SpyInstance) => ({
   startDate: spy.mock.calls[0][0],
