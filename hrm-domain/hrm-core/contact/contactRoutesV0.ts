@@ -59,13 +59,8 @@ contactsRouter.get('/byTaskSid/:taskSid', publicEndpoint, async (req, res) => {
     can: req.can,
     user,
   });
-  if (!contact) {
+  if (!contact || !can(user, actionsMaps.contact.VIEW_CONTACT, contact)) {
     throw createError(404);
-  }
-  if (!req.isAuthorized()) {
-    if (!can(user, actionsMaps.contact.VIEW_CONTACT, contact)) {
-      createError(401);
-    }
   }
   res.json(contact);
 });

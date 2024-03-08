@@ -14,7 +14,17 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { ContactJobType, TResult, isErr, newErr, newOk } from '@tech-matters/types';
+import {
+  ContactJobType,
+  TResult,
+  isErr,
+  newErr,
+  newOk,
+  Result,
+  newOkFromData,
+  ensureRejection,
+  isOk,
+} from '@tech-matters/types';
 import {
   connectToCase,
   Contact,
@@ -48,7 +58,11 @@ import {
 } from '../conversation-media/conversation-media';
 import { Profile, getOrCreateProfileWithIdentifier } from '../profile/profileService';
 import { deleteContactReferrals } from '../referral/referral-data-access';
-import { DatabaseUniqueConstraintViolationError, inferPostgresError } from '../sql';
+import {
+  DatabaseErrorResult,
+  inferPostgresErrorResult,
+  isDatabaseUniqueConstraintViolationErrorResult,
+} from '../sql';
 import { systemUser } from '@tech-matters/twilio-worker-auth';
 import { RulesFile, TKConditionsSets } from '../permissions/rulesMap';
 
@@ -132,8 +146,10 @@ const initProfile = async (
   conn,
   accountSid: string,
   contact: Pick<Contact, 'number'>,
-) => {
-  if (!contact.number) return {};
+): Promise<
+  Result<DatabaseErrorResult, { profileId?: number; identifierId?: number }>
+> => {
+  if (!contact.number) return newOk({ data: {} });
 
   const profileResult = await getOrCreateProfileWithIdentifier(conn)(
     accountSid,
@@ -142,16 +158,13 @@ const initProfile = async (
   );
 
   if (isErr(profileResult)) {
-    // Throw to make the transaction to rollback
-    throw new Error(
-      `Failed creating contact: profile result returned error variant ${profileResult.message}`,
-    );
+    return profileResult;
   }
 
-  return {
+  return newOkFromData({
     profileId: profileResult.data?.identifier?.profiles?.[0].id,
     identifierId: profileResult.data?.identifier?.id,
-  };
+  });
 };
 
 // Creates a contact with all its related records within a single transaction
@@ -161,68 +174,71 @@ export const createContact = async (
   newContact: NewContactRecord,
   { can, user }: { can: InitializedCan; user: TwilioUser },
 ): Promise<Contact> => {
+  let result: Result<DatabaseErrorResult, Contact>;
   for (let retries = 1; retries < 4; retries++) {
-    try {
-      return await db.tx(async conn => {
-        const { profileId, identifierId } = await initProfile(
-          conn,
-          accountSid,
-          newContact,
-        );
-
-        const completeNewContact: NewContactRecord = {
-          ...newContact,
-          helpline: newContact.helpline ?? '',
-          number: newContact.number ?? '',
-          channel: newContact.channel ?? '',
-          timeOfContact: (newContact.timeOfContact
-            ? new Date(newContact.timeOfContact)
-            : new Date()
-          ).toISOString(),
-          channelSid: newContact.channelSid ?? '',
-          serviceSid: newContact.serviceSid ?? '',
-          taskId: newContact.taskId ?? '',
-          twilioWorkerId: newContact.twilioWorkerId ?? '',
-          rawJson: newContact.rawJson,
-          queueName: newContact.queueName ?? '',
-          createdBy,
-          // Hardcoded to first profile for now, but will be updated to support multiple profiles
-          profileId,
-          identifierId,
-        };
-
-        // create contact record (may return an existing one cause idempotence)
-        const { contact } = await create(conn)(accountSid, completeNewContact);
-        contact.referrals = [];
-        contact.csamReports = [];
-        contact.conversationMedia = [];
-
-        const applyTransformations = bindApplyTransformations(can, user);
-
-        return applyTransformations(contact);
-      });
-    } catch (error) {
-      // This operation can fail with a unique constraint violation if a contact with the same ID is being created concurrently
-      // It shoulds only every need to retry once, but we'll do it 3 times just in case
-      const postgresError = inferPostgresError(error);
-      if (
-        postgresError instanceof DatabaseUniqueConstraintViolationError &&
-        postgresError.constraint === 'Contacts_taskId_accountSid_idx'
-      ) {
-        if (retries === 1) {
-          console.log(
-            `Retrying createContact due to taskId conflict - it should return the existing contact with this taskId next attempt (retry #${retries})`,
-          );
-        } else {
-          console.warn(
-            `Retrying createContact due to taskId conflict - it shouldn't have taken more than 1 retry to return the existing contact with this taskId but we are on retry #${retries} :-/`,
-          );
-        }
-      } else {
-        throw postgresError;
+    result = await ensureRejection<DatabaseErrorResult, Contact>(db.tx)(async conn => {
+      const res = await initProfile(conn, accountSid, newContact);
+      if (isErr(res)) {
+        return res;
       }
+      const { profileId, identifierId } = res.data;
+
+      const completeNewContact: NewContactRecord = {
+        ...newContact,
+        helpline: newContact.helpline ?? '',
+        number: newContact.number ?? '',
+        channel: newContact.channel ?? '',
+        timeOfContact: (newContact.timeOfContact
+          ? new Date(newContact.timeOfContact)
+          : new Date()
+        ).toISOString(),
+        channelSid: newContact.channelSid ?? '',
+        serviceSid: newContact.serviceSid ?? '',
+        taskId: newContact.taskId ?? '',
+        twilioWorkerId: newContact.twilioWorkerId ?? '',
+        rawJson: newContact.rawJson,
+        queueName: newContact.queueName ?? '',
+        createdBy,
+        // Hardcoded to first profile for now, but will be updated to support multiple profiles
+        profileId,
+        identifierId,
+      };
+
+      // create contact record (may return an existing one cause idempotence)
+      const { contact } = await create(conn)(accountSid, completeNewContact);
+      contact.referrals = [];
+      contact.csamReports = [];
+      contact.conversationMedia = [];
+
+      const applyTransformations = bindApplyTransformations(can, user);
+
+      return newOk({ data: applyTransformations(contact) });
+    });
+    if (isOk(result)) {
+      return result.data;
+    }
+    // This operation can fail with a unique constraint violation if a contact with the same ID is being created concurrently
+    // It should only every need to retry once, but we'll do it 3 times just in case
+    const postgresErrorResult = inferPostgresErrorResult(result.rawError);
+    if (
+      isDatabaseUniqueConstraintViolationErrorResult(postgresErrorResult) &&
+      (postgresErrorResult.constraint === 'Contacts_taskId_accountSid_idx' ||
+        postgresErrorResult.constraint === 'Identifiers_identifier_accountSid')
+    ) {
+      if (retries === 1) {
+        console.log(
+          `Retrying createContact due to '${postgresErrorResult.constraint}' data constraint conflict - it should use the existing resource next attempt (retry #${retries})`,
+        );
+      } else {
+        console.warn(
+          `Retrying createContact due to '${postgresErrorResult.constraint}' data constraint conflict  - it shouldn't have taken more than 1 retry to return the existing contact with this taskId but we are on retry #${retries} :-/`,
+        );
+      }
+    } else {
+      return result.unwrap();
     }
   }
+  return result.unwrap();
 };
 
 export const patchContact = async (
@@ -232,8 +248,8 @@ export const patchContact = async (
   contactId: string,
   { referrals, rawJson, ...restOfPatch }: PatchPayload,
   { can, user }: { can: InitializedCan; user: TwilioUser },
-): Promise<Contact> => {
-  return db.tx(async conn => {
+): Promise<Contact> =>
+  db.tx(async conn => {
     // if referrals are present, delete all existing and create new ones, otherwise leave them untouched
     // Explicitly specifying an empty array will delete all existing referrals
     if (referrals) {
@@ -246,8 +262,12 @@ export const patchContact = async (
         });
       }
     }
+    const res = await initProfile(conn, accountSid, restOfPatch);
+    if (isErr(res)) {
+      throw res.rawError;
+    }
 
-    const { profileId, identifierId } = await initProfile(conn, accountSid, restOfPatch);
+    const { profileId, identifierId } = res.data;
 
     const updated = await patch(conn)(accountSid, contactId, finalize, {
       updatedBy,
@@ -264,7 +284,6 @@ export const patchContact = async (
 
     return applyTransformations(updated);
   });
-};
 
 export const connectContactToCase = async (
   accountSid: string,

@@ -26,6 +26,7 @@ import {
 } from './canPerformCaseAction';
 import caseSectionRoutesV0 from './caseSection/caseSectionRoutesV0';
 import { parseISO } from 'date-fns';
+import { getCaseTimeline } from './caseSection/caseSectionService';
 
 const casesRouter = SafeRouter();
 /**
@@ -187,6 +188,21 @@ casesRouter.post('/search', publicEndpoint, async (req, res) => {
     onlyEssentialData,
   );
   res.json(searchResults);
+});
+
+casesRouter.get('/:id/timeline', canViewCase, async (req, res) => {
+  const { accountSid, params, query } = req;
+  const { id: caseId } = params;
+  const { sectionTypes, includeContacts, limit, offset } = query;
+  const timeline = await getCaseTimeline(
+    accountSid,
+    req,
+    parseInt(caseId),
+    (sectionTypes ?? 'note,referral').split(','),
+    includeContacts?.toLowerCase() !== 'false',
+    { limit: limit ?? 20, offset: offset ?? 0 },
+  );
+  res.json(timeline);
 });
 
 casesRouter.expressRouter.use('/:caseId/sections', caseSectionRoutesV0);

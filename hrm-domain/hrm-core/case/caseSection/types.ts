@@ -15,7 +15,7 @@
  */
 
 export type CaseSectionRecord = {
-  caseId?: number;
+  caseId: number;
   sectionType: string;
   sectionId: string;
   sectionTypeSpecificData: Record<string, any>;
@@ -24,6 +24,7 @@ export type CaseSectionRecord = {
   createdBy: string;
   updatedAt?: string;
   updatedBy?: string;
+  eventTimestamp: string;
 };
 
 export type CaseSection = Omit<
@@ -33,8 +34,10 @@ export type CaseSection = Omit<
 
 export type CaseSectionUpdate = Omit<
   CaseSection,
-  'sectionId' | 'createdBy' | 'createdAt'
->;
+  'sectionId' | 'createdBy' | 'createdAt' | 'eventTimestamp'
+> & {
+  eventTimestamp?: string;
+};
 export type NewCaseSection = Omit<CaseSectionUpdate, 'updatedAt' | 'updatedBy'> & {
   sectionId?: string;
 };

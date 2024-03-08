@@ -15,6 +15,7 @@
  */
 import { ITask } from 'pg-promise';
 import { db } from './connection-pool';
+import { ErrorResult, newErr } from '@tech-matters/types';
 
 export const OrderByDirection = {
   ascendingNullsLast: 'ASC NULLS LAST',
@@ -28,13 +29,78 @@ export type OrderByDirectionType =
 
 export type OrderByClauseItem = { sortBy: string; sortDirection: OrderByDirectionType };
 
+type DatabaseErrorName = `Database${string}Error`;
+
+export type DatabaseGenericErrorResult<T extends DatabaseErrorName = DatabaseErrorName> =
+  ErrorResult<T> & {
+    rawError: Error;
+  };
+
+export type DatabaseConstraintViolationErrorResult<T extends `Database${string}Error`> =
+  DatabaseGenericErrorResult<T> & {
+    rawError: Error;
+    table: string;
+    constraint: string;
+  };
+
+export type DatabaseForeignKeyViolationErrorResult =
+  DatabaseConstraintViolationErrorResult<'DatabaseForeignKeyViolationError'>;
+
+export type DatabaseUniqueConstraintViolationErrorResult =
+  DatabaseConstraintViolationErrorResult<'DatabaseUniqueConstraintViolationError'>;
+
+export type DatabaseErrorResult =
+  | DatabaseGenericErrorResult
+  | DatabaseConstraintViolationErrorResult<DatabaseErrorName>;
+
+export const isDatabaseForeignKeyViolationErrorResult = (
+  errorResult: ErrorResult<string>,
+): errorResult is DatabaseForeignKeyViolationErrorResult =>
+  errorResult.error === 'DatabaseForeignKeyViolationError';
+export const isDatabaseUniqueConstraintViolationErrorResult = (
+  errorResult: ErrorResult<string>,
+): errorResult is DatabaseUniqueConstraintViolationErrorResult =>
+  errorResult.error === 'DatabaseUniqueConstraintViolationError';
+
+export const inferPostgresErrorResult = (rawError: Error): DatabaseErrorResult => {
+  const errorBlob = rawError as any;
+  switch (errorBlob.code) {
+    case '23503':
+      return {
+        ...newErr({
+          message: rawError.message,
+          error: 'DatabaseForeignKeyViolationError',
+        }),
+        rawError,
+        table: errorBlob.table,
+        constraint: errorBlob.constraint,
+      };
+    case '23505':
+      return {
+        ...newErr({
+          message: rawError.message,
+          error: 'DatabaseUniqueConstraintViolationError',
+        }),
+        rawError,
+        table: errorBlob.table,
+        constraint: errorBlob.constraint,
+      };
+    default:
+      return {
+        ...newErr({ message: rawError.message, error: 'DatabaseError' }),
+        rawError,
+        message: rawError.message,
+      };
+  }
+};
+
 export class DatabaseError extends Error {
   cause: Error;
 
   constructor(error: Error) {
     super(error.message);
     this.cause = error;
-    this.name = 'DatabaseError';
+    this.name = `DatabaseError`;
     Object.setPrototypeOf(this, DatabaseError.prototype);
   }
 }
