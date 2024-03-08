@@ -16,7 +16,7 @@
 
 import format from 'date-fns/format';
 import formatISO from 'date-fns/formatISO';
-// import { putS3Object } from '@tech-matters/s3-client';
+import { putS3Object } from '@tech-matters/s3-client';
 import * as profileApi from '@tech-matters/hrm-core/profile/profileService';
 import { getCasesByProfileId } from '@tech-matters/hrm-core/case/caseService';
 import {
@@ -59,7 +59,7 @@ const getProfileSectionsForProfile = (p: ProfileWithRelationships) =>
     Promise.resolve([]),
   );
 
-export const pullCases = async (startDate: Date, endDate: Date) => {
+export const pullProfiles = async (startDate: Date, endDate: Date) => {
   const { accountSid, bucket, hrmEnv, shortCode } = await getContext();
 
   try {
@@ -172,30 +172,21 @@ export const pullCases = async (startDate: Date, endDate: Date) => {
       };
     });
 
-    console.log(
-      '>>>>>>>>>>>>>>',
-      JSON.stringify(
-        populatedProfiles.filter(p => p.caseIds.length || p.contactIds.length),
-        null,
-        2,
-      ),
-    );
+    const uploadPromises = populatedProfiles.map(profile => {
+      /*
+      Inner type is slightly wrong. The instance object actually has:
+      1) 'totalCount' property, which I think is wrong, so I'm deleting it
+    */
+      delete (profile as any).totalCount;
+      const date = format(parseISO(profile.updatedAt.toISOString()), 'yyyy/MM/dd');
+      const key = `hrm-data/${date}/profiles/${profile.id}.json`;
+      const body = JSON.stringify(profile);
+      const params = { bucket, key, body };
 
-    // const uploadPromises = populatedProfiles.map(profile => {
-    //   /*
-    //   Inner type is slightly wrong. The instance object actually has:
-    //   1) 'totalCount' property, which I think is wrong, so I'm deleting it
-    // */
-    //   delete (profile as any).totalCount;
-    //   const date = format(parseISO(profile.updatedAt.toISOString()), 'yyyy/MM/dd');
-    //   const key = `hrm-data/${date}/profiles/${profile.id}.json`;
-    //   const body = JSON.stringify(profile);
-    //   const params = { bucket, key, body };
+      return putS3Object(params);
+    });
 
-    //   return putS3Object(params);
-    // });
-
-    // await Promise.all(uploadPromises);
+    await Promise.all(uploadPromises);
     console.log(`>> ${shortCode} ${hrmEnv} Cases were pulled successfully!`);
   } catch (err) {
     console.error(`>> Error in ${shortCode} ${hrmEnv} Data Pull: Cases`);
@@ -203,5 +194,3 @@ export const pullCases = async (startDate: Date, endDate: Date) => {
     // TODO: Should throw an error?
   }
 };
-
-pullCases(new Date('2024-03-07T20:13:56.854Z'), new Date());
