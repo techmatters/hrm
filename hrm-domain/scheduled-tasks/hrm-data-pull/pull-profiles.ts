@@ -187,9 +187,9 @@ export const pullProfiles = async (startDate: Date, endDate: Date) => {
     });
 
     await Promise.all(uploadPromises);
-    console.log(`>> ${shortCode} ${hrmEnv} Cases were pulled successfully!`);
+    console.log(`>> ${shortCode} ${hrmEnv} Profiles were pulled successfully!`);
   } catch (err) {
-    console.error(`>> Error in ${shortCode} ${hrmEnv} Data Pull: Cases`);
+    console.error(`>> Error in ${shortCode} ${hrmEnv} Data Pull: Profiles`);
     console.error(err);
     // TODO: Should throw an error?
   }
