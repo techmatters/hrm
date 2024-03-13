@@ -39,7 +39,7 @@ const sectionRecordToSection = (
   if (!sectionRecord) {
     return undefined;
   }
-  const { accountSid, caseId, sectionType, ...section } = sectionRecord;
+  const { accountSid, caseId, ...section } = sectionRecord;
   return section;
 };
 

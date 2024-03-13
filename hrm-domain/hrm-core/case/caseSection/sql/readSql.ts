@@ -24,6 +24,7 @@ import { newErr, newOk } from '@tech-matters/types';
 
 export const SELECT_CASE_SECTION_BY_ID = `
   SELECT
+    "sectionType",
     "sectionTypeSpecificData",
     "eventTimestamp",
     "createdAt",

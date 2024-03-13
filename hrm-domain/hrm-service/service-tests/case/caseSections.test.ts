@@ -134,6 +134,7 @@ describe('POST /cases/:caseId/sections', () => {
     const apiSection: CaseSection = response.body;
     expect(apiSection).toEqual({
       sectionId: expect.any(String),
+      sectionType: 'note',
       ...newSection, // Will overwrite sectionId expectation if specified
       createdBy: workerSid,
       createdAt: expect.toParseAsDate(),
@@ -142,6 +143,7 @@ describe('POST /cases/:caseId/sections', () => {
       updatedBy: null,
     });
     const updatedCase = await getCase(targetCase.id, accountSid, ALWAYS_CAN);
+    const { sectionType, ...expectedSection } = apiSection;
     expect(updatedCase).toEqual({
       ...targetCase,
       connectedContacts: [],
@@ -159,7 +161,7 @@ describe('POST /cases/:caseId/sections', () => {
       sections: {
         note: [
           {
-            ...apiSection,
+            ...expectedSection,
             createdAt: expect.toParseAsDate(apiSection.createdAt),
             eventTimestamp: expect.toParseAsDate(apiSection.eventTimestamp),
           },
@@ -200,11 +202,14 @@ describe('POST /cases/:caseId/sections', () => {
       },
       sections: {
         note: expect.arrayContaining(
-          apiSections.map(apiSection => ({
-            ...apiSection,
-            createdAt: expect.toParseAsDate(apiSection.createdAt),
-            eventTimestamp: expect.toParseAsDate(apiSection.eventTimestamp),
-          })),
+          apiSections.map(apiSection => {
+            const { sectionType, ...expectedSection } = apiSection;
+            return {
+              ...expectedSection,
+              createdAt: expect.toParseAsDate(apiSection.createdAt),
+              eventTimestamp: expect.toParseAsDate(apiSection.eventTimestamp),
+            };
+          }),
         ),
       },
     });
@@ -332,6 +337,7 @@ describe('/cases/:caseId/sections/:sectionId', () => {
       expect(apiSection).toEqual({
         ...newSection, // Will overwrite sectionId expectation if specified
         sectionId: targetSection.sectionId,
+        sectionType: 'note',
         createdAt: expect.toParseAsDate(targetSection.createdAt),
         eventTimestamp: expect.toParseAsDate(targetSection.eventTimestamp),
         createdBy: workerSid,
@@ -339,6 +345,7 @@ describe('/cases/:caseId/sections/:sectionId', () => {
         updatedAt: expect.toParseAsDate(),
       });
       const updatedCase = await getCase(targetCase.id, accountSid, ALWAYS_CAN);
+      const { sectionType, ...expectedSection } = apiSection;
       expect(updatedCase).toEqual({
         ...targetCase,
         connectedContacts: [],
@@ -358,7 +365,7 @@ describe('/cases/:caseId/sections/:sectionId', () => {
         sections: {
           note: [
             {
-              ...apiSection,
+              ...expectedSection,
               createdAt: expect.toParseAsDate(apiSection.createdAt),
               updatedAt: expect.toParseAsDate(apiSection.updatedAt),
               eventTimestamp: expect.toParseAsDate(apiSection.eventTimestamp),
