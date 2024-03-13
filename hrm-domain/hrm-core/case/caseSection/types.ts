@@ -27,14 +27,11 @@ export type CaseSectionRecord = {
   eventTimestamp: string;
 };
 
-export type CaseSection = Omit<
-  CaseSectionRecord,
-  'accountSid' | 'caseId' | 'sectionType'
->;
+export type CaseSection = Omit<CaseSectionRecord, 'accountSid' | 'caseId'>;
 
 export type CaseSectionUpdate = Omit<
   CaseSection,
-  'sectionId' | 'createdBy' | 'createdAt' | 'eventTimestamp'
+  'sectionId' | 'createdBy' | 'createdAt' | 'eventTimestamp' | 'sectionType'
 > & {
   eventTimestamp?: string;
 };
