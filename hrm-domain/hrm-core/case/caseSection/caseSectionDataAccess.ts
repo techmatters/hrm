@@ -103,6 +103,7 @@ export const updateById = async (
       caseId,
       sectionType,
       sectionId,
+      eventTimestamp: null,
       ...updates,
     };
     return connection.oneOrNone(UPDATE_CASE_SECTION_BY_ID, statementValues);
