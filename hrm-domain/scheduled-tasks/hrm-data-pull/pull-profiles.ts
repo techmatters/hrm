@@ -178,7 +178,10 @@ export const pullProfiles = async (startDate: Date, endDate: Date) => {
       1) 'totalCount' property, which I think is wrong, so I'm deleting it
     */
       delete (profile as any).totalCount;
-      const date = format(parseISO(profile.updatedAt.toISOString()), 'yyyy/MM/dd');
+      const date = format(
+        parseISO(profile.updatedAt.toString() ?? profile.createdAt.toString()),
+        'yyyy/MM/dd',
+      );
       const key = `hrm-data/${date}/profiles/${profile.id}.json`;
       const body = JSON.stringify(profile);
       const params = { bucket, key, body };
@@ -187,7 +190,9 @@ export const pullProfiles = async (startDate: Date, endDate: Date) => {
     });
 
     await Promise.all(uploadPromises);
-    console.log(`>> ${shortCode} ${hrmEnv} Profiles were pulled successfully!`);
+    console.log(
+      `>> ${shortCode} ${hrmEnv} ${populatedProfiles.length} Profiles were pulled successfully!`,
+    );
   } catch (err) {
     console.error(`>> Error in ${shortCode} ${hrmEnv} Data Pull: Profiles`);
     console.error(err);
