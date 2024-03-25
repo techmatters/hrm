@@ -21,7 +21,17 @@ import { CaseSectionRecord } from './types';
 import { randomUUID } from 'crypto';
 import { CaseSection, CaseSectionUpdate, NewCaseSection } from './types';
 import { AccountSID } from '@tech-matters/types';
-import { create, deleteById, getById, updateById } from './caseSectionDataAccess';
+import {
+  create,
+  deleteById,
+  getById,
+  getTimeline,
+  TimelineResult,
+  updateById,
+} from './caseSectionDataAccess';
+import { TwilioUser } from '@tech-matters/twilio-worker-auth/dist';
+import { RulesFile, TKConditionsSets } from '../../permissions/rulesMap';
+import { ListConfiguration } from '../caseDataAccess';
 
 const sectionRecordToSection = (
   sectionRecord: CaseSectionRecord | undefined,
@@ -29,7 +39,7 @@ const sectionRecordToSection = (
   if (!sectionRecord) {
     return undefined;
   }
-  const { accountSid, caseId, sectionType, ...section } = sectionRecord;
+  const { accountSid, caseId, ...section } = sectionRecord;
   return section;
 };
 
@@ -43,6 +53,7 @@ export const createCaseSection = async (
   const nowISO = new Date().toISOString();
   const record: CaseSectionRecord = {
     sectionId: randomUUID(),
+    eventTimestamp: nowISO,
     ...newSection,
     caseId: Number.parseInt(caseId),
     sectionType,
@@ -83,6 +94,49 @@ export const getCaseSection = async (
     await getById(accountSid, Number.parseInt(caseId), sectionType, sectionId),
   );
 };
+
+export const getCaseTimeline = async (
+  accountSid: string,
+  {
+    user,
+    permissions,
+  }: {
+    user: TwilioUser;
+    permissions: RulesFile;
+  },
+  caseId: number,
+  sectionTypes: string[],
+  includeContacts: boolean,
+  { limit, offset }: ListConfiguration,
+): Promise<TimelineResult> => {
+  return getTimeline(
+    accountSid,
+    user,
+    permissions.viewContact as TKConditionsSets<'contact'>,
+    caseId,
+    sectionTypes,
+    includeContacts,
+    parseInt(limit),
+    parseInt(offset),
+  );
+};
+
+export const getCaseSectionTypeList = async (
+  accountSid: string,
+
+  req: {
+    user: TwilioUser;
+    permissions: RulesFile;
+  },
+  caseId: number,
+  sectionType: string,
+): Promise<CaseSection[]> =>
+  (
+    await getCaseTimeline(accountSid, req, caseId, [sectionType], false, {
+      limit: '1000',
+      offset: '0',
+    })
+  ).activities.map(event => sectionRecordToSection(event.activity));
 
 export const deleteCaseSection = async (
   accountSid: AccountSID,

@@ -16,9 +16,30 @@
 
 import { db, pgp } from '../../connection-pool';
 import { CaseSectionRecord, CaseSectionUpdate } from './types';
-import { SELECT_CASE_SECTION_BY_ID } from './sql/readSql';
+import { SELECT_CASE_SECTION_BY_ID, selectCaseTimelineSql } from './sql/readSql';
 import { DELETE_CASE_SECTION_BY_ID } from './sql/deleteSql';
 import { UPDATE_CASE_SECTION_BY_ID } from './sql/updateSql';
+import { TwilioUser } from '@tech-matters/twilio-worker-auth';
+import { TKConditionsSets } from '../../permissions/rulesMap';
+import { isOk } from '@tech-matters/types';
+import { Contact } from '../../contact/contactDataAccess';
+
+export type TimelineActivity<T> = {
+  timestamp: string;
+  activity: T;
+  activityType: string;
+};
+
+export type ContactTimelineActivity = TimelineActivity<Contact> & {
+  activityType: 'contact';
+};
+export type CaseSectionTimelineActivity = TimelineActivity<CaseSectionRecord> & {
+  activityType: 'case-section';
+};
+
+export const isCaseSectionTimelineActivity = (
+  activity: TimelineActivity<any>,
+): activity is CaseSectionTimelineActivity => activity.activityType === 'case-section';
 
 export const create = async (
   sectionRecord: CaseSectionRecord,
@@ -35,6 +56,7 @@ export const create = async (
           'createdAt',
           'sectionTypeSpecificData',
           'accountSid',
+          'eventTimestamp',
         ],
         'CaseSections',
       )} RETURNING *`,
@@ -81,8 +103,53 @@ export const updateById = async (
       caseId,
       sectionType,
       sectionId,
+      eventTimestamp: null,
       ...updates,
     };
     return connection.oneOrNone(UPDATE_CASE_SECTION_BY_ID, statementValues);
   });
+};
+
+export type TimelineResult = { count: number; activities: TimelineActivity<any>[] };
+
+export const getTimeline = async (
+  accountSid: string,
+  twilioUser: TwilioUser,
+  viewContactsPermissions: TKConditionsSets<'contact'>,
+  caseId: number,
+  sectionTypes: string[],
+  includeContacts: boolean,
+  limit: number,
+  offset: number,
+): Promise<TimelineResult> => {
+  const sqlRes = selectCaseTimelineSql(
+    twilioUser,
+    viewContactsPermissions,
+    Boolean(sectionTypes.length),
+    includeContacts,
+  );
+  if (isOk(sqlRes)) {
+    const activitiesWithCounts = await db.manyOrNone(sqlRes.data, {
+      limit,
+      offset,
+      caseId,
+      accountSid,
+      twilioWorkerSid: twilioUser.workerSid,
+      sectionTypes,
+    });
+    const count = activitiesWithCounts.length ? activitiesWithCounts[0].totalCount : 0;
+    const activities = activitiesWithCounts.map(ewc => {
+      const { totalCount, ...activityWithoutCount } = ewc;
+      return activityWithoutCount;
+    });
+    return {
+      count,
+      activities,
+    };
+  } else {
+    console.warn(
+      `Received request for timeline of case ${caseId} but neither contacts or any case sections were requested, returning empty set`,
+    );
+    return { count: 0, activities: [] };
+  }
 };

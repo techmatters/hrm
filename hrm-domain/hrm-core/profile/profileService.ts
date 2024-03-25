@@ -14,16 +14,27 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { TResult, isErr, newErr, newOk } from '@tech-matters/types';
+import {
+  TResult,
+  newErr,
+  newOk,
+  Result,
+  isOk,
+  ErrorResult,
+  ensureRejection,
+  isErr,
+  newOkFromData,
+} from '@tech-matters/types';
 import { isFuture } from 'date-fns';
 
 import * as profileDB from './profileDataAccess';
 import { db } from '../connection-pool';
-import { txIfNotInOne } from '../sql';
+import { DatabaseErrorResult, inferPostgresErrorResult, txIfNotInOne } from '../sql';
 import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import type { NewProfileSectionRecord } from './sql/profile-sections-sql';
 import type { NewProfileFlagRecord } from './sql/profile-flags-sql';
 import type { NewIdentifierRecord, NewProfileRecord } from './sql/profile-insert-sql';
+import { ITask } from 'pg-promise';
 
 export {
   Identifier,
@@ -38,29 +49,8 @@ export const getProfile =
   async (
     accountSid: string,
     profileId: profileDB.Profile['id'],
-  ): Promise<
-    TResult<
-      'ProfileNotFoundError' | 'InternalServerError',
-      profileDB.ProfileWithRelationships
-    >
-  > => {
-    try {
-      const result = await profileDB.getProfileById(task)(accountSid, profileId);
-
-      if (!result) {
-        return newErr({
-          message: 'Profile not found',
-          error: 'ProfileNotFoundError',
-        });
-      }
-
-      return newOk({ data: result });
-    } catch (err) {
-      return newErr({
-        message: err instanceof Error ? err.message : String(err),
-        error: 'InternalServerError',
-      });
-    }
+  ): Promise<profileDB.ProfileWithRelationships | undefined> => {
+    return profileDB.getProfileById(task)(accountSid, profileId);
   };
 
 export const createIdentifierAndProfile =
@@ -69,11 +59,11 @@ export const createIdentifierAndProfile =
     accountSid: string,
     payload: { identifier: NewIdentifierRecord; profile: NewProfileRecord },
     { user }: { user: TwilioUser },
-  ): Promise<TResult<'InternalServerError', profileDB.IdentifierWithProfiles>> => {
-    try {
-      const { identifier, profile } = payload;
+  ): Promise<Result<DatabaseErrorResult, profileDB.IdentifierWithProfiles>> => {
+    const { identifier, profile } = payload;
 
-      return await txIfNotInOne(task, async t => {
+    return txIfNotInOne(task, async t => {
+      try {
         const newIdentifier = await profileDB.createIdentifier(t)(accountSid, {
           identifier: identifier.identifier,
           createdBy: user.workerSid,
@@ -95,139 +85,104 @@ export const createIdentifierAndProfile =
           updatedBy: user.workerSid,
         });
 
-        return idWithProfiles;
-      });
-    } catch (err) {
-      return newErr({
-        message: err instanceof Error ? err.message : String(err),
-        error: 'InternalServerError',
-      });
-    }
+        return newOk({ data: idWithProfiles });
+      } catch (err) {
+        return inferPostgresErrorResult(err);
+      }
+    });
   };
 
 export const getOrCreateProfileWithIdentifier =
-  (task?) =>
+  (task: ITask<any>) =>
   async (
     accountSid: string,
     payload: { identifier: NewIdentifierRecord; profile: NewProfileRecord },
     { user }: { user: TwilioUser },
   ): Promise<
-    TResult<
-      'InternalServerError',
+    Result<
+      DatabaseErrorResult,
       { identifier: profileDB.IdentifierWithProfiles; created: boolean }
     >
   > => {
-    try {
-      const { identifier, profile } = payload;
+    const { identifier, profile } = payload;
 
-      if (!identifier?.identifier) {
-        return newOk({ data: null });
-      }
+    if (!identifier?.identifier) {
+      return null;
+    }
 
-      const profileResult = await profileDB.getIdentifierWithProfiles(task)({
-        accountSid,
-        identifier: identifier.identifier,
-      });
+    const profileResult = await profileDB.getIdentifierWithProfiles(task)({
+      accountSid,
+      identifier: identifier.identifier,
+    });
 
-      if (isErr(profileResult)) {
-        return profileResult;
-      }
+    if (profileResult) {
+      return newOk({ data: { identifier: profileResult, created: false } });
+    }
 
-      if (profileResult.data) {
-        return newOk({ data: { identifier: profileResult.data, created: false } });
-      }
-
-      const createdResult = await createIdentifierAndProfile(task)(
-        accountSid,
-        { identifier, profile },
-        { user },
-      );
-
-      if (isErr(createdResult)) {
-        return createdResult;
-      }
-
+    const createdResult = await createIdentifierAndProfile(task)(
+      accountSid,
+      { identifier, profile },
+      { user },
+    );
+    if (isOk(createdResult)) {
       return newOk({ data: { identifier: createdResult.data, created: true } });
-    } catch (err) {
-      return newErr({
-        message: err instanceof Error ? err.message : String(err),
-        error: 'InternalServerError',
-      });
+    } else {
+      return createdResult;
     }
   };
 
-export const createProfileWithIdentifierOrError =
-  (task?) =>
-  async (
-    accountSid: string,
-    payload: { identifier: NewIdentifierRecord; profile: NewProfileRecord },
-    { user }: { user: TwilioUser },
-  ): Promise<
-    TResult<
-      'InternalServerError' | 'InvalidParameterError' | 'IdentifierExistsError',
-      profileDB.IdentifierWithProfiles
-    >
-  > => {
-    try {
-      const { identifier, profile } = payload;
-      if (!identifier?.identifier) {
-        return newErr({
-          message: 'Missing identifier parameter',
-          error: 'InvalidParameterError',
-        });
-      }
+export const createProfileWithIdentifierOrError = async (
+  accountSid: string,
+  payload: { identifier: NewIdentifierRecord; profile: NewProfileRecord },
+  { user }: { user: TwilioUser },
+): Promise<
+  Result<
+    DatabaseErrorResult | ErrorResult<'InvalidParameterError' | 'IdentifierExistsError'>,
+    profileDB.IdentifierWithProfiles
+  >
+> => {
+  const { identifier, profile } = payload;
+  if (!identifier?.identifier) {
+    return newErr({
+      message: 'Missing identifier parameter',
+      error: 'InvalidParameterError',
+    });
+  }
+  const result = await ensureRejection<
+    DatabaseErrorResult,
+    { identifier: profileDB.IdentifierWithProfiles; created: boolean }
+  >(db.task)(async conn =>
+    getOrCreateProfileWithIdentifier(conn)(
+      accountSid,
+      {
+        identifier,
+        profile,
+      },
+      { user },
+    ),
+  );
 
-      const result = await getOrCreateProfileWithIdentifier(task)(
-        accountSid,
-        {
-          identifier,
-          profile,
-        },
-        { user },
-      );
-
-      if (isErr(result)) {
-        return result;
-      }
-
-      if (result.data.created === false) {
-        return newErr({
-          message: `Identifier ${identifier} already exists`,
-          error: 'IdentifierExistsError',
-        });
-      }
-
-      return newOk({ data: result.data.identifier });
-    } catch (err) {
+  if (isOk(result)) {
+    if (result.data.created === false) {
       return newErr({
-        message: err instanceof Error ? err.message : String(err),
-        error: 'InternalServerError',
+        message: `Identifier ${identifier} already exists`,
+        error: 'IdentifierExistsError',
       });
     }
-  };
+
+    return newOk({ data: result.data.identifier });
+  }
+  return result;
+};
 
 export const getIdentifierByIdentifier = async (
   accountSid: string,
   identifier: string,
-): Promise<TResult<'InternalServerError', profileDB.IdentifierWithProfiles>> => {
-  try {
-    const profilesResult = await profileDB.getIdentifierWithProfiles()({
-      accountSid,
-      identifier,
-    });
-
-    if (isErr(profilesResult)) {
-      return profilesResult;
-    }
-
-    return newOk({ data: profilesResult.data });
-  } catch (err) {
-    return newErr({
-      message: err instanceof Error ? err.message : String(err),
-      error: 'InternalServerError',
-    });
-  }
-};
+): Promise<profileDB.IdentifierWithProfiles> =>
+  profileDB.getIdentifierWithProfiles()({
+    accountSid,
+    identifier,
+  });
 
 export const listProfiles = profileDB.listProfiles;
 
@@ -245,44 +200,48 @@ export const associateProfileToProfileFlag = async (
   { user }: { user: TwilioUser },
 ): Promise<
   TResult<
-    'InvalidParameterError' | 'InternalServerError',
+    'InvalidParameterError' | 'ProfileAlreadyFlaggedError',
     profileDB.ProfileWithRelationships
   >
 > => {
-  try {
-    if (validUntil && !isFuture(validUntil)) {
-      return newErr({
-        error: 'InvalidParameterError',
-        message: 'Invalid parameter "validUntil", must be a future date',
-      });
-    }
-
-    return await db.task(async t => {
-      await profileDB
-        .associateProfileToProfileFlag(t)(
-          accountSid,
-          profileId,
-          profileFlagId,
-          validUntil,
-        )
-        .then(r => r.unwrap()); // unwrap the result to bubble error up (if any)
-
-      // trigger an update on profiles to keep track of who associated
-      await profileDB.updateProfileById(t)(accountSid, {
-        id: profileId,
-        updatedBy: user.workerSid,
-      });
-
-      const profile = await profileDB.getProfileById(t)(accountSid, profileId);
-
-      return newOk({ data: profile });
-    });
-  } catch (err) {
+  if (validUntil && !isFuture(validUntil)) {
     return newErr({
-      message: err instanceof Error ? err.message : String(err),
-      error: 'InternalServerError',
+      error: 'InvalidParameterError',
+      message: 'Invalid parameter "validUntil", must be a future date',
     });
   }
+  return db.task(async t => {
+    const result = await profileDB.associateProfileToProfileFlag(t)(
+      accountSid,
+      profileId,
+      profileFlagId,
+      validUntil,
+    );
+
+    if (isErr(result)) {
+      if (result.error === 'ProfileNotFoundError') {
+        return newOkFromData(undefined);
+      } else if (result.error === 'ProfileFlagNotFoundError') {
+        return newErr({
+          error: 'InvalidParameterError',
+          message: result.message,
+        });
+      } else if (result.error === 'ProfileAlreadyFlaggedError') {
+        return result as ErrorResult<'ProfileAlreadyFlaggedError'>;
+      }
+      result.unwrap();
+    }
+
+    // trigger an update on profiles to keep track of who associated
+    await profileDB.updateProfileById(t)(accountSid, {
+      id: profileId,
+      updatedBy: user.workerSid,
+    });
+
+    const profile = await profileDB.getProfileById(t)(accountSid, profileId);
+
+    return newOk({ data: profile });
+  });
 };
 
 export const disassociateProfileFromProfileFlag = async (
@@ -295,28 +254,21 @@ export const disassociateProfileFromProfileFlag = async (
     profileFlagId: number;
   },
   { user }: { user: TwilioUser },
-): Promise<TResult<'InternalServerError', profileDB.ProfileWithRelationships>> => {
-  try {
-    return await db.task(async t => {
-      await profileDB
-        .disassociateProfileFromProfileFlag(t)(accountSid, profileId, profileFlagId)
-        .then(r => r.unwrap()); // unwrap the result to bubble error up (if any);
+): Promise<profileDB.ProfileWithRelationships> => {
+  return db.task(async t => {
+    await profileDB.disassociateProfileFromProfileFlag(t)(
+      accountSid,
+      profileId,
+      profileFlagId,
+    );
 
-      // trigger an update on profiles to keep track of who disassociated
-      await profileDB.updateProfileById(t)(accountSid, {
-        id: profileId,
-        updatedBy: user.workerSid,
-      });
-      const profile = await profileDB.getProfileById(t)(accountSid, profileId);
-
-      return newOk({ data: profile });
+    // trigger an update on profiles to keep track of who disassociated
+    await profileDB.updateProfileById(t)(accountSid, {
+      id: profileId,
+      updatedBy: user.workerSid,
     });
-  } catch (err) {
-    return newErr({
-      message: err instanceof Error ? err.message : String(err),
-      error: 'InternalServerError',
-    });
-  }
+    return profileDB.getProfileById(t)(accountSid, profileId);
+  });
 };
 
 export const getProfileFlags = profileDB.getProfileFlagsForAccount;
@@ -326,40 +278,25 @@ export const createProfileFlag = async (
   accountSid: string,
   payload: NewProfileFlagRecord,
   { user }: { user: TwilioUser },
-): Promise<
-  TResult<'InternalServerError' | 'InvalidParameterError', profileDB.ProfileFlag>
-> => {
-  try {
-    const { name } = payload;
+): Promise<TResult<'InvalidParameterError', profileDB.ProfileFlag>> => {
+  const { name } = payload;
 
-    const existingFlags = await getProfileFlags(accountSid);
+  const existingFlags = await getProfileFlags(accountSid);
+  const existingFlag = existingFlags.find(flag => flag.name === name);
 
-    if (isErr(existingFlags)) {
-      // Handle the error case here. For example, you can return the error.
-      return existingFlags;
-    }
-
-    const existingFlag = existingFlags.data.find(flag => flag.name === name);
-
-    if (existingFlag) {
-      return newErr({
-        message: `Flag with name "${name}" already exists`,
-        error: 'InvalidParameterError',
-      });
-    }
-
-    const pf = await profileDB.createProfileFlag(accountSid, {
-      name,
-      createdBy: user.workerSid,
-    });
-
-    return pf;
-  } catch (err) {
+  if (existingFlag) {
     return newErr({
-      message: err instanceof Error ? err.message : String(err),
-      error: 'InternalServerError',
+      message: `Flag with name "${name}" already exists`,
+      error: 'InvalidParameterError',
     });
   }
+
+  const pf = await profileDB.createProfileFlag(accountSid, {
+    name,
+    createdBy: user.workerSid,
+  });
+
+  return newOk({ data: pf });
 };
 
 export const updateProfileFlagById = async (
@@ -369,79 +306,46 @@ export const updateProfileFlagById = async (
     name: string;
   },
   { user }: { user: TwilioUser },
-): Promise<
-  TResult<'InternalServerError' | 'InvalidParameterError', profileDB.ProfileFlag>
-> => {
-  try {
-    const { name } = payload;
+): Promise<TResult<'InvalidParameterError', profileDB.ProfileFlag>> => {
+  const { name } = payload;
 
-    const existingFlags = await getProfileFlags(accountSid);
+  const existingFlags = await getProfileFlags(accountSid);
 
-    if (isErr(existingFlags)) {
-      // Handle the error case here. For example, you can return the error.
-      return existingFlags;
-    }
+  const existingFlag = existingFlags.find(flag => flag.name === name);
 
-    const existingFlag = existingFlags.data.find(flag => flag.name === name);
-
-    if (existingFlag) {
-      return newErr({
-        message: `Flag with name "${name}" already exists`,
-        error: 'InvalidParameterError',
-      });
-    }
-    const profileFlag = await profileDB.updateProfileFlagById(accountSid, {
-      id: flagId,
-      name,
-      updatedBy: user.workerSid,
-    });
-
-    return profileFlag;
-  } catch (err) {
+  if (existingFlag) {
     return newErr({
-      message: err instanceof Error ? err.message : String(err),
-      error: 'InternalServerError',
+      message: `Flag with name "${name}" already exists`,
+      error: 'InvalidParameterError',
     });
   }
+  const profileFlag = await profileDB.updateProfileFlagById(accountSid, {
+    id: flagId,
+    name,
+    updatedBy: user.workerSid,
+  });
+
+  return newOk({ data: profileFlag });
 };
 
 export const deleteProfileFlagById = async (
   flagId: profileDB.ProfileFlag['id'],
   accountSid: string,
-): Promise<TResult<'InternalServerError', profileDB.ProfileFlag>> => {
-  try {
-    const result = await profileDB.deleteProfileFlagById(flagId, accountSid);
-    return result;
-  } catch (err) {
-    return newErr({
-      message: err instanceof Error ? err.message : String(err),
-      error: 'InternalServerError',
-    });
-  }
-};
+): Promise<profileDB.ProfileFlag> => profileDB.deleteProfileFlagById(flagId, accountSid);
 
 // While this is just a wrapper around profileDB.createProfileSection, we'll need more code to handle permissions soon
 export const createProfileSection = async (
   accountSid: string,
   payload: NewProfileSectionRecord,
   { user }: { user: TwilioUser },
-): Promise<TResult<'InternalServerError', profileDB.ProfileSection>> => {
-  try {
-    const { content, profileId, sectionType } = payload;
-    const ps = await profileDB.createProfileSection(accountSid, {
-      content,
-      profileId,
-      sectionType,
-      createdBy: user.workerSid,
-    });
-
-    return ps;
-  } catch (err) {
-    return newErr({
-      message: err instanceof Error ? err.message : String(err),
-      error: 'InternalServerError',
-    });
-  }
+): Promise<profileDB.ProfileSection> => {
+  const { content, profileId, sectionType } = payload;
+  return profileDB.createProfileSection(accountSid, {
+    content,
+    profileId,
+    sectionType,
+    createdBy: user.workerSid,
+  });
 };
 
 // While this is just a wrapper around profileDB.updateProfileSectionById, we'll need more code to handle permissions soon
@@ -453,20 +357,11 @@ export const updateProfileSectionById = async (
     content: profileDB.ProfileSection['content'];
   },
   { user }: { user: TwilioUser },
-): Promise<TResult<'InternalServerError', profileDB.ProfileSection>> => {
-  try {
-    const ps = await profileDB.updateProfileSectionById(accountSid, {
-      ...payload,
-      updatedBy: user.workerSid,
-    });
-
-    return ps;
-  } catch (err) {
-    return newErr({
-      message: err instanceof Error ? err.message : String(err),
-      error: 'InternalServerError',
-    });
-  }
+): Promise<profileDB.ProfileSection> => {
+  return profileDB.updateProfileSectionById(accountSid, {
+    ...payload,
+    updatedBy: user.workerSid,
+  });
 };
 
 // While this is just a wrapper around profileDB.getProfileSectionById, we'll need more code to handle permissions soon
@@ -476,15 +371,6 @@ export const getProfileSectionById = async (
     profileId: profileDB.Profile['id'];
     sectionId: profileDB.ProfileSection['id'];
   },
-): Promise<TResult<'InternalServerError', profileDB.ProfileSection>> => {
-  try {
-    const ps = await profileDB.getProfileSectionById(accountSid, payload);
-
-    return ps;
-  } catch (err) {
-    return newErr({
-      message: err instanceof Error ? err.message : String(err),
-      error: 'InternalServerError',
-    });
-  }
+): Promise<profileDB.ProfileSection> => {
+  return profileDB.getProfileSectionById(accountSid, payload);
 };

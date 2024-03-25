@@ -39,31 +39,26 @@ jest.mock('../../contact/contactDataAccess');
 
 const getIdentifierWithProfilesSpy = jest
   .spyOn(profilesDB, 'getIdentifierWithProfiles')
-  .mockImplementation(
-    () => async () =>
-      newOk({
-        data: {
-          id: 1,
-          identifier: 'identifier',
-          accountSid: 'accountSid',
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          createdBy: 'createdBy',
-          profiles: [
-            {
-              id: 1,
-              accountSid: 'accountSid',
-              createdAt: new Date(),
-              updatedAt: new Date(),
-              name: 'name',
-              contactsCount: 0,
-              casesCount: 0,
-              createdBy: 'createdBy',
-            },
-          ],
-        },
-      }),
-  );
+  .mockImplementation(() => async () => ({
+    id: 1,
+    identifier: 'identifier',
+    accountSid: 'accountSid',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    createdBy: 'createdBy',
+    profiles: [
+      {
+        id: 1,
+        accountSid: 'accountSid',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        name: 'name',
+        contactsCount: 0,
+        casesCount: 0,
+        createdBy: 'createdBy',
+      },
+    ],
+  }));
 
 const workerSid = 'WORKER_SID';
 const baselineDate = new Date(2020, 1, 1);
@@ -147,9 +142,7 @@ describe('createContact', () => {
   test("If no identifier record exists for 'number', call createIdentifierAndProfile", async () => {
     const createContactMock = spyOnContact();
 
-    getIdentifierWithProfilesSpy.mockImplementationOnce(
-      () => async () => newOk({ data: null }),
-    );
+    getIdentifierWithProfilesSpy.mockImplementationOnce(() => async () => null);
 
     jest.spyOn(profilesService, 'createIdentifierAndProfile').mockImplementationOnce(
       () => async () =>
