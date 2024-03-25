@@ -40,99 +40,71 @@ const profilesRouter = SafeRouter();
  * @param {profileController.ProfileListConfiguration['offset']} req.query.offset - Offset
  * @param {profileController.SearchParameters['filters']['profileFlagIds']} req.query.profileFlagIds
  */
-profilesRouter.get(
-  '/',
-  publicEndpoint,
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const { accountSid } = req;
-      const {
-        sortDirection,
-        sortBy,
-        limit,
-        offset,
-        profileFlagIds: encodedProfileFlagIds,
-      } = req.query as Record<string, any>; // TODO: maybe improve this validation
+profilesRouter.get('/', publicEndpoint, async (req: Request, res: Response) => {
+  const { accountSid } = req;
+  const {
+    sortDirection,
+    sortBy,
+    limit,
+    offset,
+    profileFlagIds: encodedProfileFlagIds,
+  } = req.query as Record<string, any>; // TODO: maybe improve this validation
 
-      const profileFlagIds = encodedProfileFlagIds
-        ? decodeURIComponent(encodedProfileFlagIds)
-            .split(',')
-            .map(s => parseInt(s, 10))
-            .filter(v => v && !isNaN(v))
-        : undefined;
+  const profileFlagIds = encodedProfileFlagIds
+    ? decodeURIComponent(encodedProfileFlagIds)
+        .split(',')
+        .map(s => parseInt(s, 10))
+        .filter(v => v && !isNaN(v))
+    : undefined;
 
-      const filters = {
-        profileFlagIds,
-      };
+  const filters = {
+    profileFlagIds,
+  };
 
-      const result = await profileController.listProfiles(
-        accountSid,
-        { sortDirection, sortBy, limit, offset },
-        { filters },
-      );
+  const result = await profileController.listProfiles(
+    accountSid,
+    { sortDirection, sortBy, limit, offset },
+    { filters },
+  );
 
-      if (isErr(result)) {
-        return next(mapHTTPError(result, { InternalServerError: 500 }));
-      }
-
-      res.json(result.data);
-    } catch (err) {
-      return next(createError(500, err.message));
-    }
-  },
-);
+  res.json(result);
+});
 
 profilesRouter.get(
   '/identifier/:identifier',
   publicEndpoint,
   async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const { accountSid } = req;
-      const { identifier } = req.params;
+    const { accountSid } = req;
+    const { identifier } = req.params;
 
-      const result = await profileController.getIdentifierByIdentifier(
-        accountSid,
-        identifier,
-      );
+    const result = await profileController.getIdentifierByIdentifier(
+      accountSid,
+      identifier,
+    );
 
-      if (isErr(result)) {
-        return next(mapHTTPError(result, { InternalServerError: 500 }));
-      }
-
-      if (!result.data) {
-        return next(createError(404));
-      }
-
-      res.json(result.data);
-    } catch (err) {
-      return next(createError(500, err.message));
+    if (!result) {
+      return next(createError(404));
     }
+
+    res.json(result);
   },
 );
 
-profilesRouter.get(
-  '/identifier/:identifier/flags',
-  publicEndpoint,
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const { accountSid } = req;
-      const { identifier } = req.params;
+profilesRouter.get('/identifier/:identifier/flags', publicEndpoint, async (req, res) => {
+  const { accountSid } = req;
+  const { identifier } = req.params;
 
-      const result = await profileController.getProfileFlagsByIdentifier(
-        accountSid,
-        identifier,
-      );
+  const result = await profileController.getProfileFlagsByIdentifier(
+    accountSid,
+    identifier,
+  );
 
-      if (isErr(result)) {
-        return next(mapHTTPError(result, { InternalServerError: 500 }));
-      }
+  if (!result) {
+    throw createError(404);
+  }
 
-      res.json(result.data);
-    } catch (err) {
-      return next(createError(500, err.message));
-    }
-  },
-);
+  res.json(result);
+});
 
 profilesRouter.get(
   '/:profileId/contacts',
@@ -190,26 +162,12 @@ profilesRouter.get(
   },
 );
 
-profilesRouter.get(
-  '/flags',
-  publicEndpoint,
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const { accountSid } = req;
+profilesRouter.get('/flags', publicEndpoint, async (req, res) => {
+  const { accountSid } = req;
+  const result = await profileController.getProfileFlags(accountSid);
 
-      const result = await profileController.getProfileFlags(accountSid);
-
-      if (isErr(result)) {
-        return next(mapHTTPError(result, { InternalServerError: 500 }));
-      }
-
-      res.json(result.data);
-    } catch (err) {
-      console.error(err);
-      return next(createError(500, err.message));
-    }
-  },
-);
+  res.json(result);
+});
 
 const canAssociate = canPerformActionOnProfileMiddleware(
   actionsMaps.profile.FLAG_PROFILE,
@@ -224,45 +182,44 @@ profilesRouter.post(
   '/:profileId/flags/:profileFlagId',
   canAssociate,
   async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const { accountSid, user } = req;
-      const { profileId, profileFlagId } = req.params;
-      const { validUntil } = req.body;
+    const { accountSid, user } = req;
+    const { profileId, profileFlagId } = req.params;
+    const { validUntil } = req.body;
 
-      if (validUntil && !Date.parse(validUntil)) {
-        return next(createError(400));
-      }
-
-      const parsedValidUntil = validUntil ? parseISO(validUntil) : null;
-
-      if (validUntil && !isValid(parsedValidUntil)) {
-        return next(createError(400));
-      }
-
-      const result = await profileController.associateProfileToProfileFlag(
-        accountSid,
-        {
-          profileId: parseInt(profileId, 10),
-          profileFlagId: parseInt(profileFlagId, 10),
-          validUntil: parsedValidUntil,
-        },
-        { user },
-      );
-
-      if (isErr(result)) {
-        return next(
-          mapHTTPError(result, { InvalidParameterError: 400, InternalServerError: 500 }),
-        );
-      }
-
-      if (!result.data) {
-        return next(createError(404));
-      }
-
-      res.json(result.data);
-    } catch (err) {
-      return next(createError(500, err.message));
+    if (validUntil && !Date.parse(validUntil)) {
+      return next(createError(400));
     }
+
+    const parsedValidUntil = validUntil ? parseISO(validUntil) : null;
+
+    if (validUntil && !isValid(parsedValidUntil)) {
+      return next(createError(400));
+    }
+
+    const result = await profileController.associateProfileToProfileFlag(
+      accountSid,
+      {
+        profileId: parseInt(profileId),
+        profileFlagId: parseInt(profileFlagId),
+        validUntil: parsedValidUntil,
+      },
+      { user },
+    );
+
+    if (isErr(result)) {
+      return next(
+        mapHTTPError(result, {
+          InvalidParameterError: 400,
+          ProfileAlreadyFlaggedError: 409,
+        }),
+      );
+    }
+
+    if (!result.data) {
+      return next(createError(404));
+    }
+
+    res.json(result.data);
   },
 );
 
@@ -279,31 +236,23 @@ profilesRouter.delete(
   '/:profileId/flags/:profileFlagId',
   canDisassociate,
   async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const { accountSid, user } = req;
-      const { profileId, profileFlagId } = req.params;
+    const { accountSid, user, params } = req;
+    const { profileId, profileFlagId } = params;
 
-      const result = await profileController.disassociateProfileFromProfileFlag(
-        accountSid,
-        {
-          profileId: parseInt(profileId, 10),
-          profileFlagId: parseInt(profileFlagId, 10),
-        },
-        { user },
-      );
+    const result = await profileController.disassociateProfileFromProfileFlag(
+      accountSid,
+      {
+        profileId: parseInt(profileId, 10),
+        profileFlagId: parseInt(profileFlagId, 10),
+      },
+      { user },
+    );
 
-      if (isErr(result)) {
-        return next(mapHTTPError(result, { InternalServerError: 500 }));
-      }
-
-      if (!result.data) {
-        return next(createError(404));
-      }
-
-      res.json(result.data);
-    } catch (err) {
-      return next(createError(500, err.message));
+    if (!result) {
+      return next(createError(404));
     }
+
+    res.json(result);
   },
 );
 
@@ -326,29 +275,21 @@ profilesRouter.post(
   '/:profileId/sections',
   canCreateProfileSection,
   async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const { accountSid, user } = req;
-      const { profileId } = req.params;
-      const { content, sectionType } = req.body;
+    const { accountSid, user } = req;
+    const { profileId } = req.params;
+    const { content, sectionType } = req.body;
 
-      const result = await profileController.createProfileSection(
-        accountSid,
-        { content, profileId: parseInt(profileId, 10), sectionType },
-        { user },
-      );
+    const result = await profileController.createProfileSection(
+      accountSid,
+      { content, profileId: parseInt(profileId, 10), sectionType },
+      { user },
+    );
 
-      if (isErr(result)) {
-        return next(mapHTTPError(result, { InternalServerError: 500 }));
-      }
-
-      if (!result.data) {
-        return next(createError(404));
-      }
-
-      res.json(result.data);
-    } catch (err) {
-      return next(createError(500, err.message));
+    if (!result) {
+      return next(createError(404));
     }
+
+    res.json(result);
   },
 );
 
@@ -369,33 +310,25 @@ profilesRouter.patch(
   '/:profileId/sections/:sectionId',
   canEditProfileSection,
   async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const { accountSid, user } = req;
-      const { profileId, sectionId } = req.params;
-      const { content } = req.body;
+    const { accountSid, user } = req;
+    const { profileId, sectionId } = req.params;
+    const { content } = req.body;
 
-      const result = await profileController.updateProfileSectionById(
-        accountSid,
-        {
-          profileId: parseInt(profileId, 10),
-          sectionId: parseInt(sectionId, 10),
-          content,
-        },
-        { user },
-      );
+    const result = await profileController.updateProfileSectionById(
+      accountSid,
+      {
+        profileId: parseInt(profileId, 10),
+        sectionId: parseInt(sectionId, 10),
+        content,
+      },
+      { user },
+    );
 
-      if (isErr(result)) {
-        return next(mapHTTPError(result, { InternalServerError: 500 }));
-      }
-
-      if (!result.data) {
-        return next(createError(404));
-      }
-
-      res.json(result.data);
-    } catch (err) {
-      return next(createError(500, err.message));
+    if (!result) {
+      return next(createError(404));
     }
+
+    res.json(result);
   },
 );
 
@@ -412,28 +345,20 @@ const canViewProfileSection = canPerformActionOnProfileSectionMiddleware(
 profilesRouter.get(
   '/:profileId/sections/:sectionId',
   canViewProfileSection,
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const { accountSid } = req;
-      const { profileId, sectionId } = req.params;
+  async (req: Request, res: Response) => {
+    const { accountSid } = req;
+    const { profileId, sectionId } = req.params;
 
-      const result = await profileController.getProfileSectionById(accountSid, {
-        profileId: parseInt(profileId, 10),
-        sectionId: parseInt(sectionId, 10),
-      });
+    const result = await profileController.getProfileSectionById(accountSid, {
+      profileId: parseInt(profileId, 10),
+      sectionId: parseInt(sectionId, 10),
+    });
 
-      if (isErr(result)) {
-        return next(mapHTTPError(result, { InternalServerError: 500 }));
-      }
-
-      if (!result.data) {
-        return next(createError(404));
-      }
-
-      res.json(result.data);
-    } catch (err) {
-      return next(createError(500, err.message));
+    if (!result) {
+      throw createError(404);
     }
+
+    res.json(result);
   },
 );
 
@@ -451,29 +376,19 @@ profilesRouter.get(
   '/:profileId',
   canViewProfile,
   async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const { accountSid } = req;
-      const { profileId } = req.params;
+    const { accountSid } = req;
+    const { profileId } = req.params;
 
-      const result = await profileController.getProfile()(
-        accountSid,
-        parseInt(profileId, 10),
-      );
+    const result = await profileController.getProfile()(
+      accountSid,
+      parseInt(profileId, 10),
+    );
 
-      if (isErr(result)) {
-        return next(
-          mapHTTPError(result, { ProfileNotFoundError: 404, InternalServerError: 500 }),
-        );
-      }
-
-      if (!result.data) {
-        return next(createError(404));
-      }
-
-      res.json(result.data);
-    } catch (err) {
-      return next(createError(500, err.message));
+    if (!result) {
+      return next(createError(404));
     }
+
+    res.json(result);
   },
 );
 

@@ -32,7 +32,7 @@ export const configureDefaultPostMiddlewares = (
   includeErrorInResponse: boolean,
 ) => {
   webServer.use((req, res, next) => {
-    next(createError(404));
+    next(createError(404, `No handler configured for url: ${req.url}`));
   });
   const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
     console.log(err);

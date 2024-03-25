@@ -26,8 +26,80 @@ import {
 } from './canPerformCaseAction';
 import caseSectionRoutesV0 from './caseSection/caseSectionRoutesV0';
 import { parseISO } from 'date-fns';
+import { getCaseTimeline } from './caseSection/caseSectionService';
 
 const casesRouter = SafeRouter();
+casesRouter.put('/:id/status', canUpdateCaseStatus, async (req, res) => {
+  const {
+    accountSid,
+    user,
+    body: { status },
+    can,
+    permissions,
+  } = req;
+  const { id } = req.params;
+  const updatedCase = await caseApi.updateCaseStatus(id, status, accountSid, {
+    can,
+    user,
+    permissions,
+  });
+  if (!updatedCase) {
+    throw createError(404);
+  }
+  res.json(updatedCase);
+});
+
+casesRouter.put('/:id/overview', canEditCaseOverview, async (req, res) => {
+  const {
+    accountSid,
+    user: { workerSid },
+    body,
+  } = req;
+  const { id } = req.params;
+  const { followUpDate } = body ?? {};
+  if (
+    followUpDate !== undefined &&
+    followUpDate !== null &&
+    isNaN(parseISO(followUpDate).valueOf())
+  ) {
+    throw createError(
+      400,
+      `Invalid followUpDate provided: ${followUpDate} - must be a valid ISO 8601 date string`,
+    );
+  }
+  const updatedCase = await caseApi.updateCaseOverview(accountSid, id, body, workerSid);
+  if (!updatedCase) {
+    throw createError(404);
+  }
+  res.json(updatedCase);
+});
+
+casesRouter.get('/:id/timeline', canViewCase, async (req, res) => {
+  const { accountSid, params, query } = req;
+  const { id: caseId } = params;
+  const { sectionTypes, includeContacts, limit, offset } = query;
+  const timeline = await getCaseTimeline(
+    accountSid,
+    req,
+    parseInt(caseId),
+    (sectionTypes ?? 'note,referral').split(','),
+    includeContacts?.toLowerCase() !== 'false',
+    { limit: limit ?? 20, offset: offset ?? 0 },
+  );
+  res.json(timeline);
+});
+
+casesRouter.expressRouter.use('/:caseId/sections', caseSectionRoutesV0);
+
+casesRouter.delete('/:id', publicEndpoint, async (req, res) => {
+  const { accountSid } = req;
+  const { id } = req.params;
+  const deleted = await casesDb.deleteById(id, accountSid);
+  if (!deleted) {
+    throw createError(404);
+  }
+  res.sendStatus(200);
+});
 /**
  * Returns a filterable list of cases for a helpline
  *
@@ -112,61 +184,6 @@ casesRouter.put('/:id', canEditCase, async (req, res) => {
   res.json(updatedCase);
 });
 
-casesRouter.put('/:id/status', canUpdateCaseStatus, async (req, res) => {
-  const {
-    accountSid,
-    user,
-    body: { status },
-    can,
-    permissions,
-  } = req;
-  const { id } = req.params;
-  const updatedCase = await caseApi.updateCaseStatus(id, status, accountSid, {
-    can,
-    user,
-    permissions,
-  });
-  if (!updatedCase) {
-    throw createError(404);
-  }
-  res.json(updatedCase);
-});
-
-casesRouter.put('/:id/overview', canEditCaseOverview, async (req, res) => {
-  const {
-    accountSid,
-    user: { workerSid },
-    body,
-  } = req;
-  const { id } = req.params;
-  const { followUpDate } = body ?? {};
-  if (
-    followUpDate !== undefined &&
-    followUpDate !== null &&
-    isNaN(parseISO(followUpDate).valueOf())
-  ) {
-    throw createError(
-      400,
-      `Invalid followUpDate provided: ${followUpDate} - must be a valid ISO 8601 date string`,
-    );
-  }
-  const updatedCase = await caseApi.updateCaseOverview(accountSid, id, body, workerSid);
-  if (!updatedCase) {
-    throw createError(404);
-  }
-  res.json(updatedCase);
-});
-
-casesRouter.delete('/:id', publicEndpoint, async (req, res) => {
-  const { accountSid } = req;
-  const { id } = req.params;
-  const deleted = await casesDb.deleteById(id, accountSid);
-  if (!deleted) {
-    throw createError(404);
-  }
-  res.sendStatus(200);
-});
-
 casesRouter.post('/search', publicEndpoint, async (req, res) => {
   const { accountSid } = req;
   const {
@@ -188,7 +205,5 @@ casesRouter.post('/search', publicEndpoint, async (req, res) => {
   );
   res.json(searchResults);
 });
-
-casesRouter.expressRouter.use('/:caseId/sections', caseSectionRoutesV0);
 
 export default casesRouter.expressRouter;

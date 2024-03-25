@@ -60,10 +60,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -74,10 +74,10 @@ jobs:
 
       - name: Login to Amazon ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
+        uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build and Push Docker Image
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v5
         with:
           context: ./
           file: ./hrm-domain/hrm-service/Dockerfile
@@ -91,7 +91,7 @@ jobs:
           echo "docker_image=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ inputs.environment }}-hrm-${{ github.sha }}" >> $GITHUB_OUTPUT
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: workflow-scripts-artifacts
           path: .github/workflows/scripts
@@ -111,13 +111,13 @@ jobs:
 
     steps:
       - name: Download artifacts
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4
         with:
           name: workflow-scripts-artifacts
           path: .github/workflows/scripts
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -188,10 +188,10 @@ jobs:
           ./.github/workflows/scripts/update-event-bridge-target.sh "${{ inputs.environment }}-hrm-scheduled-task" "${{ steps.scheduled-task-definition.outputs.task-definition-arn }}"
 
       # reconfigure AWS credentials to use the default region for SSM Parameter Store.
-      # aws-actions/configure-aws-credentials@v2 overrides env.AWS_DEFAULT_REGION, so
+      # aws-actions/configure-aws-credentials@v4 overrides env.AWS_DEFAULT_REGION, so
       # we name our env var PRIMARY_AWS_REGION to avoid that.
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -213,7 +213,7 @@ jobs:
       # Send Slack notifying success
       - name: Slack Aselo channel
         id: slack
-        uses: slackapi/slack-github-action@v1.14.0
+        uses: slackapi/slack-github-action@v1.25.0
         with:
           channel-id: ${{ env.ASELO_DEPLOYS_CHANNEL_ID }}
           slack-message: '`[HRM]` Deployment of ${{ github.ref_type }} `${{ github.ref_name }}` requested by `${{ github.triggering_actor }}` completed with SHA ${{ github.sha }} to region `${{ matrix.region }}`, environment `${{ inputs.environment }}` :rocket:.'

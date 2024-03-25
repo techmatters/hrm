@@ -14,27 +14,11 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-export type CaseSectionRecord = {
-  caseId: number;
-  sectionType: string;
-  sectionId: string;
-  sectionTypeSpecificData: Record<string, any>;
-  accountSid: string;
-  createdAt: string;
-  createdBy: string;
-  updatedAt?: string;
-  updatedBy?: string;
-  eventTimestamp: string;
-};
-
-export type CaseSection = Omit<CaseSectionRecord, 'accountSid' | 'caseId'>;
-
-export type CaseSectionUpdate = Omit<
-  CaseSection,
-  'sectionId' | 'createdBy' | 'createdAt' | 'eventTimestamp' | 'sectionType'
-> & {
-  eventTimestamp?: string;
-};
-export type NewCaseSection = Omit<CaseSectionUpdate, 'updatedAt' | 'updatedBy'> & {
-  sectionId?: string;
-};
+switch (process.env.NODE_ENV) {
+  case 'development': {
+    if (!process.env.INCLUDE_ERROR_IN_RESPONSE) {
+      console.log('INCLUDE_ERROR_IN_RESPONSE not set, setting to true');
+      process.env.INCLUDE_ERROR_IN_RESPONSE = 'true';
+    }
+  }
+}
