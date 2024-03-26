@@ -47,12 +47,10 @@ const getProfileSectionsForProfile = (p: ProfileWithRelationships) =>
   p.profileSections.reduce<Promise<ProfileSection[]>>(
     async (prevPromise, { id: sectionId }) => {
       const accum = await prevPromise;
-      const section = (
-        await profileApi.getProfileSectionById(p.accountSid, {
-          profileId: p.id,
-          sectionId,
-        })
-      ).unwrap();
+      const section = await profileApi.getProfileSectionById(p.accountSid, {
+        profileId: p.id,
+        sectionId,
+      });
 
       return [...accum, section];
     },
@@ -67,24 +65,20 @@ export const pullProfiles = async (startDate: Date, endDate: Date) => {
 
     const populatedProfiles = await autoPaginate(async ({ limit, offset }) => {
       const profileFlagsR = await profileApi.getProfileFlags(accountSid);
-      const profileFlags = profileFlagsR
-        .unwrap()
-        .reduce<{ [id: ProfileFlag['id']]: ProfileFlag }>(
-          (acc, curr) => ({
-            ...acc,
-            [curr.id]: curr,
-          }),
-          {},
-        );
+      const profileFlags = profileFlagsR.reduce<{ [id: ProfileFlag['id']]: ProfileFlag }>(
+        (acc, curr) => ({
+          ...acc,
+          [curr.id]: curr,
+        }),
+        {},
+      );
 
-      const { count, profiles } = (
-        await profileApi.listProfiles(
-          accountSid,
-          { limit: limit.toString(), offset: offset.toString() },
-          { filters },
-          // {filters: {profileFlagIds}},
-        )
-      ).unwrap();
+      const { count, profiles } = await profileApi.listProfiles(
+        accountSid,
+        { limit: limit.toString(), offset: offset.toString() },
+        { filters },
+        // {filters: {profileFlagIds}},
+      );
 
       const profilesWithFlags = profiles.map(p => {
         return {
