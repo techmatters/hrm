@@ -23,10 +23,6 @@ import {
   selectCaseSearch,
   selectCaseSearchByProfileId,
 } from './sql/caseSearchSql';
-import {
-  caseSectionUpsertSql,
-  deleteMissingCaseSectionsSql,
-} from './sql/case-sections-sql';
 import { DELETE_BY_ID } from './sql/case-delete-sql';
 import { selectSingleCaseByIdSql } from './sql/caseGetSql';
 import { Contact } from '../contact/contactDataAccess';
@@ -267,52 +263,6 @@ export const searchByProfileId = generalizedSearchQueryFunction<{
 
 export const deleteById = async (id, accountSid) => {
   return db.oneOrNone(DELETE_BY_ID, [accountSid, id]);
-};
-
-export const update = async (
-  id,
-  caseRecordUpdates: Partial<NewCaseRecord> & { caseSections?: CaseSectionRecord[] },
-  accountSid: string,
-  { workerSid, isSupervisor }: TwilioUser,
-  contactViewPermissions: TKConditionsSets<'contact'>,
-): Promise<CaseRecord> => {
-  return db.tx(async transaction => {
-    const statementValues = {
-      accountSid,
-      twilioWorkerSid: workerSid,
-      caseId: id,
-    };
-    if (caseRecordUpdates.caseSections) {
-      console.info(
-        `[DEPRECATION WARNING] Support for updating case sections as part of a case update will be removed as of HRM v1.16.0. Update case sections using the dedicated case section CRUD endpoints going forward.`,
-      );
-      const allSections: CaseSectionRecord[] = caseRecordUpdates.caseSections ?? [];
-      if (allSections.length) {
-        await transaction.none(
-          caseSectionUpsertSql(allSections.map(s => ({ ...s, accountSid }))),
-        );
-      }
-      // Map case sections into a list of ids grouped by category, which allows a more concise DELETE SQL statement to be generated
-      const caseSectionIdsByType = allSections.reduce(
-        (idsBySectionType, caseSection) => {
-          idsBySectionType[caseSection.sectionType] =
-            idsBySectionType[caseSection.sectionType] ?? [];
-          idsBySectionType[caseSection.sectionType].push(caseSection.sectionId);
-          return idsBySectionType;
-        },
-        <Record<string, string[]>>{},
-      );
-      const { sql, values } = deleteMissingCaseSectionsSql(caseSectionIdsByType);
-      Object.assign(statementValues, values);
-      await transaction.none(sql, statementValues);
-    }
-    await transaction.none(updateByIdSql(caseRecordUpdates, accountSid, id));
-
-    return transaction.oneOrNone(
-      selectSingleCaseByIdSql('Cases', contactViewPermissions, isSupervisor),
-      statementValues,
-    );
-  });
 };
 
 export const updateStatus = async (

@@ -30,7 +30,6 @@ import {
   getById,
   search,
   searchByProfileId,
-  update,
   updateStatus,
   CaseRecordUpdate,
   updateCaseInfo,
@@ -344,36 +343,6 @@ export const createCase = async (
 
   // A new case is always initialized with empty connected contacts. No need to apply mapContactTransformations here
   return caseRecordToCase(created);
-};
-
-export const updateCase = async (
-  id: CaseService['id'],
-  body: Partial<CaseService>,
-  accountSid: CaseService['accountSid'],
-  {
-    can,
-    user,
-    permissions,
-  }: { can: InitializedCan; user: TwilioUser; permissions: RulesFile },
-): Promise<CaseService> => {
-  const nowISO = new Date().toISOString();
-
-  const record = caseToCaseRecord(
-    { ...body, updatedBy: user.workerSid, updatedAt: nowISO, id, accountSid },
-    user.workerSid,
-  );
-
-  const updated = await update(
-    id,
-    record,
-    accountSid,
-    user,
-    permissions.viewContact as TKConditionsSets<'contact'>,
-  );
-
-  const withTransformedContacts = mapContactTransformations({ can, user })(updated);
-
-  return caseRecordToCase(withTransformedContacts);
 };
 
 export const updateCaseStatus = async (
