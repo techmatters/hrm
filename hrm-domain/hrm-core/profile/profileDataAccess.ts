@@ -249,7 +249,7 @@ export const listProfiles = async (
       accountSid,
       limit,
       offset,
-      profileFlagIds: filters?.profileFlagIds,
+      ...filters,
     });
 
     const totalCount: number = result.length ? result[0].totalCount : 0;
