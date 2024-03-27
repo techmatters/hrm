@@ -46,13 +46,23 @@ const leftJoinLateralContacts = (
           userIsSupervisor,
           'c',
         )}
+        AND c."timeOfContact" = (
+          SELECT MIN("timeOfContact")
+          FROM "Contacts" c2
+          WHERE c2."caseId" = cases.id AND c2."accountSid" = cases."accountSid"
+          AND ${listContactsPermissionWhereClause(
+            viewPermissions as ContactListCondition[][],
+            userIsSupervisor,
+            'c2',
+          )}
+        )
           
       ) "contacts" ON true`;
   }
 
   return `
     LEFT JOIN LATERAL (
-      SELECT COALESCE(jsonb_agg(to_jsonb(c) || to_jsonb("joinedReports") || to_jsonb("joinedReferrals") || to_jsonb("joinedConversationMedia")), '[]') AS  "connectedContacts"
+      SELECT COALESCE(jsonb_agg(to_jsonb(c) || to_jsonb("joinedReports") || to_jsonb("joinedReferrals") || to_jsonb("joinedConversationMedia") ORDER BY c."timeOfContact"), '[]') AS  "connectedContacts"
       FROM "Contacts" c 
       LEFT JOIN LATERAL (
         ${selectCoalesceCsamReportsByContactId('c')}
@@ -69,6 +79,7 @@ const leftJoinLateralContacts = (
           userIsSupervisor,
           'c',
         )}
+      
     ) "contacts" ON true`;
 };
 
