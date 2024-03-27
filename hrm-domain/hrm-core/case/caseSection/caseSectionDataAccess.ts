@@ -23,6 +23,8 @@ import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { TKConditionsSets } from '../../permissions/rulesMap';
 import { isOk } from '@tech-matters/types';
 import { Contact } from '../../contact/contactDataAccess';
+import { txIfNotInOne } from '../../sql';
+import { TOUCH_CASE_SQL } from '../sql/caseUpdateSql';
 
 export type TimelineActivity<T> = {
   timestamp: string;
@@ -41,28 +43,38 @@ export const isCaseSectionTimelineActivity = (
   activity: TimelineActivity<any>,
 ): activity is CaseSectionTimelineActivity => activity.activityType === 'case-section';
 
-export const create = async (
-  sectionRecord: CaseSectionRecord,
-): Promise<CaseSectionRecord> => {
-  return db.task(async connection =>
-    connection.oneOrNone(
-      `${pgp.helpers.insert(
-        sectionRecord,
-        [
-          'caseId',
-          'sectionType',
-          'sectionId',
-          'createdBy',
-          'createdAt',
-          'sectionTypeSpecificData',
-          'accountSid',
-          'eventTimestamp',
-        ],
-        'CaseSections',
-      )} RETURNING *`,
-    ),
-  );
-};
+export const create =
+  (task?) =>
+  async (sectionRecord: CaseSectionRecord): Promise<CaseSectionRecord> => {
+    const insertSectionStatement = `${pgp.helpers.insert(
+      sectionRecord,
+      [
+        'caseId',
+        'sectionType',
+        'sectionId',
+        'createdBy',
+        'createdAt',
+        'sectionTypeSpecificData',
+        'accountSid',
+        'eventTimestamp',
+      ],
+      'CaseSections',
+    )} RETURNING *`;
+
+    return txIfNotInOne(task, async connection => {
+      const [[createdSection]]: CaseSectionRecord[][] =
+        await connection.multi<CaseSectionRecord>(
+          [insertSectionStatement, TOUCH_CASE_SQL].join(';\n'),
+          {
+            accountSid: sectionRecord.accountSid,
+            caseId: sectionRecord.caseId,
+            updatedBy: sectionRecord.createdBy,
+          },
+        );
+
+      return createdSection;
+    });
+  };
 
 export const getById = async (
   accountSid: string,
@@ -76,28 +88,41 @@ export const getById = async (
   });
 };
 
-export const deleteById = async (
-  accountSid: string,
-  caseId: number,
-  sectionType,
-  sectionId,
-): Promise<CaseSectionRecord | undefined> => {
-  return db.oneOrNone(DELETE_CASE_SECTION_BY_ID, {
-    accountSid,
-    caseId,
-    sectionType,
-    sectionId,
-  });
-};
+export const deleteById =
+  (task?) =>
+  async (
+    accountSid: string,
+    caseId: number,
+    sectionType: CaseSectionRecord['sectionType'],
+    sectionId: CaseSectionRecord['sectionId'],
+    updatedBy: TwilioUser['workerSid'],
+  ): Promise<CaseSectionRecord | undefined> => {
+    return txIfNotInOne(task, async connection => {
+      const [[deletedSection]]: CaseSectionRecord[][] =
+        await connection.multi<CaseSectionRecord>(
+          [DELETE_CASE_SECTION_BY_ID, TOUCH_CASE_SQL].join(';\n'),
+          {
+            accountSid,
+            caseId,
+            sectionType,
+            sectionId,
+            updatedBy,
+          },
+        );
 
-export const updateById = async (
-  accountSid: string,
-  caseId: number,
-  sectionType: string,
-  sectionId: string,
-  updates: CaseSectionUpdate,
-): Promise<CaseSectionRecord> => {
-  return db.task(async connection => {
+      return deletedSection;
+    });
+  };
+
+export const updateById =
+  (task?) =>
+  async (
+    accountSid: string,
+    caseId: number,
+    sectionType: string,
+    sectionId: string,
+    updates: CaseSectionUpdate,
+  ): Promise<CaseSectionRecord> => {
     const statementValues = {
       accountSid,
       caseId,
@@ -106,9 +131,17 @@ export const updateById = async (
       eventTimestamp: null,
       ...updates,
     };
-    return connection.oneOrNone(UPDATE_CASE_SECTION_BY_ID, statementValues);
-  });
-};
+
+    return txIfNotInOne(task, async connection => {
+      const [[updatedSection]]: CaseSectionRecord[][] =
+        await connection.multi<CaseSectionRecord>(
+          [UPDATE_CASE_SECTION_BY_ID, TOUCH_CASE_SQL].join(';\n'),
+          statementValues,
+        );
+
+      return updatedSection;
+    });
+  };
 
 export type TimelineResult = { count: number; activities: TimelineActivity<any>[] };
 

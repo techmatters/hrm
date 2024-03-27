@@ -61,7 +61,7 @@ export const createCaseSection = async (
     createdAt: nowISO,
     accountSid,
   };
-  return sectionRecordToSection(await create(record));
+  return sectionRecordToSection(await create()(record));
 };
 
 export const replaceCaseSection = async (
@@ -80,7 +80,13 @@ export const replaceCaseSection = async (
     updatedAt: nowISO,
   };
   return sectionRecordToSection(
-    await updateById(accountSid, Number.parseInt(caseId), sectionType, sectionId, record),
+    await updateById()(
+      accountSid,
+      Number.parseInt(caseId),
+      sectionType,
+      sectionId,
+      record,
+    ),
   );
 };
 
@@ -143,8 +149,15 @@ export const deleteCaseSection = async (
   caseId: string,
   sectionType: string,
   sectionId: string,
+  { user }: { user: TwilioUser },
 ): Promise<CaseSection | undefined> => {
   return sectionRecordToSection(
-    await deleteById(accountSid, Number.parseInt(caseId), sectionType, sectionId),
+    await deleteById()(
+      accountSid,
+      Number.parseInt(caseId),
+      sectionType,
+      sectionId,
+      user.workerSid,
+    ),
   );
 };
