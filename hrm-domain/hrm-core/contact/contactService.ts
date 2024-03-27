@@ -42,7 +42,6 @@ import { PaginationQuery, getPaginationElements } from '../search';
 import type { NewContactRecord } from './sql/contactInsertSql';
 import { ContactRawJson, ReferralWithoutContactId } from './contactJson';
 import { InitializedCan } from '../permissions/initializeCanForRules';
-import { actionsMaps } from '../permissions';
 import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { createReferral } from '../referral/referral-model';
 import { createContactJob } from '../contact-job/contact-job';
@@ -52,7 +51,6 @@ import { db } from '../connection-pool';
 import {
   ConversationMedia,
   createConversationMedia,
-  isS3StoredTranscript,
   isS3StoredTranscriptPending,
   NewConversationMedia,
 } from '../conversation-media/conversation-media';
@@ -67,7 +65,8 @@ import {
 import { systemUser } from '@tech-matters/twilio-worker-auth';
 import { RulesFile, TKConditionsSets } from '../permissions/rulesMap';
 import { ITask } from 'pg-promise';
-import { touchCase } from '../case/caseService';
+import { touchCase } from '../case/caseDataAccess';
+import { bindApplyTransformations } from './bindApplyTransformations';
 
 // Re export as is:
 export { Contact } from './contactDataAccess';
@@ -80,39 +79,6 @@ export type PatchPayload = Omit<
   rawJson?: Partial<ContactRawJson>;
   referrals?: ReferralWithoutContactId[];
 };
-
-const filterExternalTranscripts = (contact: Contact): Contact => {
-  const { conversationMedia, ...rest } = contact;
-  const filteredConversationMedia = (conversationMedia ?? []).filter(
-    m => !isS3StoredTranscript(m),
-  );
-
-  return {
-    ...rest,
-    conversationMedia: filteredConversationMedia,
-  };
-};
-
-type PermissionsBasedTransformation = {
-  action: (typeof actionsMaps)['contact'][keyof (typeof actionsMaps)['contact']];
-  transformation: (contact: Contact) => Contact;
-};
-
-const permissionsBasedTransformations: PermissionsBasedTransformation[] = [
-  {
-    action: actionsMaps.contact.VIEW_EXTERNAL_TRANSCRIPT,
-    transformation: filterExternalTranscripts,
-  },
-];
-
-export const bindApplyTransformations =
-  (can: InitializedCan, user: TwilioUser) =>
-  (contact: Contact): Contact =>
-    permissionsBasedTransformations.reduce(
-      (transformed, { action, transformation }) =>
-        !can(user, action, contact) ? transformation(transformed) : transformed,
-      contact,
-    );
 
 export const getContactById = async (
   accountSid: string,
