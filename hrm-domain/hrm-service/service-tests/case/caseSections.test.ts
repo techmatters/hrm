@@ -126,6 +126,8 @@ describe('POST /cases/:caseId/sections', () => {
   ];
 
   each(testCases).test('$description', async ({ newSection }: TestCase) => {
+    const startTime = Date.now();
+
     const response = await request
       .post(getRoutePath(targetCase.id, 'note'))
       .set(headers)
@@ -144,8 +146,13 @@ describe('POST /cases/:caseId/sections', () => {
     });
     const updatedCase = await getCase(targetCase.id, accountSid, ALWAYS_CAN);
     const { sectionType, ...expectedSection } = apiSection;
+
+    // Test that parent case updatedAt is bumped
+    expect(new Date(updatedCase!.updatedAt).getTime()).toBeGreaterThan(startTime);
     expect(updatedCase).toEqual({
       ...targetCase,
+      updatedAt: updatedCase?.updatedAt,
+      updatedBy: workerSid,
       connectedContacts: [],
       info: {
         counsellorNotes: [
@@ -171,6 +178,8 @@ describe('POST /cases/:caseId/sections', () => {
   });
 
   test('Multiple calls add 1 section each', async () => {
+    const startTime = Date.now();
+
     const apiSections: CaseSection[] = await Promise.all(
       [1, 2, 3].map(async idx => {
         const newSection: NewCaseSection = {
@@ -186,8 +195,13 @@ describe('POST /cases/:caseId/sections', () => {
     );
 
     const updatedCase = await getCase(targetCase.id, accountSid, ALWAYS_CAN);
+
+    // Test that parent case updatedAt is bumped
+    expect(new Date(updatedCase!.updatedAt).getTime()).toBeGreaterThan(startTime);
     expect(updatedCase).toEqual({
       ...targetCase,
+      updatedAt: updatedCase?.updatedAt,
+      updatedBy: workerSid,
       connectedContacts: [],
       info: {
         counsellorNotes: expect.arrayContaining(
@@ -328,6 +342,8 @@ describe('/cases/:caseId/sections/:sectionId', () => {
     ];
 
     each(testCases).test('$description', async ({ newSection }: TestCase) => {
+      const startTime = Date.now();
+
       const response = await request
         .put(getRoutePath(targetCase.id, 'note', targetSection.sectionId))
         .set(headers)
@@ -346,8 +362,13 @@ describe('/cases/:caseId/sections/:sectionId', () => {
       });
       const updatedCase = await getCase(targetCase.id, accountSid, ALWAYS_CAN);
       const { sectionType, ...expectedSection } = apiSection;
+
+      // Test that parent case updatedAt is bumped
+      expect(new Date(updatedCase!.updatedAt).getTime()).toBeGreaterThan(startTime);
       expect(updatedCase).toEqual({
         ...targetCase,
+        updatedAt: updatedCase?.updatedAt,
+        updatedBy: workerSid,
         connectedContacts: [],
         info: {
           counsellorNotes: [
@@ -413,6 +434,8 @@ describe('/cases/:caseId/sections/:sectionId', () => {
     });
 
     test('should return a 200, delete the case & return the deleted section when it exists', async () => {
+      const startTime = Date.now();
+
       const response = await request
         .delete(getRoutePath(targetCase.id, 'note', targetSection.sectionId))
         .set(headers);
@@ -424,6 +447,11 @@ describe('/cases/:caseId/sections/:sectionId', () => {
         targetSection.sectionId,
       );
       expect(section).not.toBeDefined();
+
+      const updatedCase = await getCase(targetCase.id, targetCase.accountSid, ALWAYS_CAN);
+
+      // Test that parent case updatedAt is bumped
+      expect(new Date(updatedCase!.updatedAt).getTime()).toBeGreaterThan(startTime);
     });
   });
 });
