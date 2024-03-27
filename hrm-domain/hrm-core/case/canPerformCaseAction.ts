@@ -17,7 +17,7 @@
 import asyncHandler from '../async-handler';
 import { CaseService, getCase } from './caseService';
 import createError from 'http-errors';
-import { actionsMaps, getActions } from '../permissions';
+import { actionsMaps } from '../permissions';
 import { Request } from 'express';
 import { OPEN_VIEW_CONTACT_PERMISSIONS } from '../permissions/canPerformActionOnObject';
 
@@ -58,12 +58,6 @@ export const canPerformCaseAction = (
 
     next();
   });
-
-/**
- * It checks if the user can edit the case based on the fields it's trying to edit
- * according to the defined permission rules.
- */
-export const canEditCase = canPerformCaseAction(getActions);
 
 /**
  * It checks if the user can view the case according to the defined permission rules.

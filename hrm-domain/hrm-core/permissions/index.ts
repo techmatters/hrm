@@ -18,7 +18,7 @@ import { SafeRouterRequest } from './safe-router';
 
 export { SafeRouter, publicEndpoint } from './safe-router';
 export { rulesMap } from './rulesMap';
-export { Actions, actionsMaps, getActions } from './actions';
+export { Actions, actionsMaps } from './actions';
 
 import { InitializedCan, initializeCanForRules } from './initializeCanForRules';
 import { RulesFile } from './rulesMap';
