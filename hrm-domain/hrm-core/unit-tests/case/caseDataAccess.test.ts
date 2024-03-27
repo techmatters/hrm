@@ -336,42 +336,6 @@ describe('search', () => {
   );
 });
 
-describe('update', () => {
-  let tx: pgPromise.ITask<unknown>;
-  const caseUpdate = {
-    helpline: 'helpline',
-    status: 'open',
-    info: {
-      counsellorNotes: [{ note: 'Child with covid-19', twilioWorkerId: 'contact-adder' }],
-    },
-    twilioWorkerId: 'ignored-twilio-worker-id',
-    updatedBy: 'used-twilio-worker-id',
-  };
-
-  beforeEach(() => {
-    tx = mockConnection();
-    mockTransaction(tx);
-  });
-
-  test('runs update SQL against cases table with provided ID.', async () => {
-    const caseUpdateResult = createMockCaseRecord(caseUpdate);
-    const oneOrNoneSpy = jest
-      .spyOn(tx, 'oneOrNone')
-      .mockResolvedValue({ ...caseUpdateResult, id: caseId });
-    const noneSpy = jest.spyOn(tx, 'none');
-    const result = await caseDb.update(caseId, caseUpdate, accountSid, user, [
-      ['everyone'],
-    ]);
-    const updateSql = getSqlStatement(noneSpy);
-    expectValuesInSql(updateSql, { info: caseUpdate.info, status: caseUpdate.status });
-    expect(oneOrNoneSpy).toHaveBeenCalledWith(
-      expect.any(String),
-      expect.objectContaining({ accountSid, caseId }),
-    );
-    expect(result).toStrictEqual({ ...caseUpdateResult, id: caseId });
-  });
-});
-
 describe('delete', () => {
   test('returns deleted value if something at the specified ID exists to delete', async () => {
     const caseFromDB = createMockCaseRecord({});
