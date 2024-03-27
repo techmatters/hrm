@@ -51,7 +51,15 @@ export const pullCases = async (startDate: Date, endDate: Date) => {
     };
   });
 
-  const uploadPromises = cases.map(cas => {
+  const mapContactsToId = (contacts: Required<{ id: number }>[]) =>
+    contacts.map(contact => contact.id);
+
+  const casesWithContactIdOnly = cases.map(cas => ({
+    ...cas,
+    connectedContacts: mapContactsToId(cas?.connectedContacts ?? []),
+  }));
+
+  const uploadPromises = casesWithContactIdOnly.map(cas => {
     /*
       Case type is slightly wrong. The instance object actually has:
       1) 'totalCount' property, which I think is wrong, so I'm deleting it
@@ -67,9 +75,7 @@ export const pullCases = async (startDate: Date, endDate: Date) => {
 
   try {
     await Promise.all(uploadPromises);
-    console.log(
-      `>> ${shortCode} ${hrmEnv} ${cases.length} Cases were pulled successfully!`,
-    );
+    console.log(`>> ${shortCode} ${hrmEnv} Cases were pulled successfully!`);
   } catch (err) {
     console.error(`>> Error in ${shortCode} ${hrmEnv} Data Pull: Cases`);
     console.error(err);
