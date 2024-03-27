@@ -16,7 +16,7 @@
 
 import { createMockCaseInsert, createMockCaseRecord } from './mock-cases';
 import * as pgPromise from 'pg-promise';
-import { mockConnection, mockTask, mockTransaction } from '../mock-db';
+import { mockConnection, mockTask } from '../mock-db';
 import * as caseDb from '../../case/caseDataAccess';
 import each from 'jest-each';
 import { db } from '../../connection-pool';
