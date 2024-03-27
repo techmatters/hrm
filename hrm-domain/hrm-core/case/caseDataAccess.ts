@@ -16,7 +16,11 @@
 
 import { db, pgp } from '../connection-pool';
 import { getPaginationElements } from '../search';
-import { PATCH_CASE_INFO_BY_ID, updateByIdSql } from './sql/caseUpdateSql';
+import {
+  PATCH_CASE_INFO_BY_ID,
+  TOUCH_CASE_SQL,
+  updateByIdSql,
+} from './sql/caseUpdateSql';
 import {
   OrderByColumnType,
   SearchQueryBuilder,
@@ -26,12 +30,13 @@ import {
 import { DELETE_BY_ID } from './sql/case-delete-sql';
 import { selectSingleCaseByIdSql } from './sql/caseGetSql';
 import { Contact } from '../contact/contactDataAccess';
-import { DateFilter, OrderByDirectionType } from '../sql';
+import { DateFilter, OrderByDirectionType, txIfNotInOne } from '../sql';
 import { TKConditionsSets } from '../permissions/rulesMap';
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { AccountSID } from '@tech-matters/types';
 import { CaseSectionRecord } from './caseSection/types';
 import { pick } from 'lodash';
+import { ITask } from 'pg-promise';
 
 export type PrecalculatedCasePermissionConditions = {
   isCaseContactOwner: boolean; // Does the requesting user own any of the contacts currently connected to the case?
@@ -309,3 +314,26 @@ export const updateCaseInfo = async (
     });
   });
 };
+
+export const touchCase =
+  (task?: ITask<{}>) =>
+  async ({
+    accountSid,
+    caseId,
+    contactId,
+    updatedBy,
+  }: {
+    accountSid: string;
+    contactId: string;
+    caseId: string;
+    updatedBy: string;
+  }) => {
+    return txIfNotInOne(task, async transaction => {
+      return transaction.none(TOUCH_CASE_SQL, {
+        accountSid,
+        contactId,
+        caseId,
+        updatedBy,
+      });
+    });
+  };

@@ -62,9 +62,12 @@ import {
   DatabaseErrorResult,
   inferPostgresErrorResult,
   isDatabaseUniqueConstraintViolationErrorResult,
+  txIfNotInOne,
 } from '../sql';
 import { systemUser } from '@tech-matters/twilio-worker-auth';
 import { RulesFile, TKConditionsSets } from '../permissions/rulesMap';
+import { ITask } from 'pg-promise';
+import { touchCase } from '../case/caseService';
 
 // Re export as is:
 export { Contact } from './contactDataAccess';
@@ -285,25 +288,35 @@ export const patchContact = async (
     return applyTransformations(updated);
   });
 
-export const connectContactToCase = async (
-  accountSid: string,
-  contactId: string,
-  caseId: string,
-  { can, user }: { can: InitializedCan; user: TwilioUser },
-): Promise<Contact> => {
-  const updated: Contact | undefined = await connectToCase()(
-    accountSid,
-    contactId,
-    caseId,
-    user.workerSid,
-  );
-  if (!updated) {
-    throw new Error(`Contact not found with id ${contactId}`);
-  }
+export const connectContactToCase =
+  (task?) =>
+  async (
+    accountSid: string,
+    contactId: string,
+    caseId: string,
+    { can, user }: { can: InitializedCan; user: TwilioUser },
+  ): Promise<Contact> =>
+    txIfNotInOne(task, async (transaction: ITask<Contact>) => {
+      const updated: Contact | undefined = await connectToCase(transaction)(
+        accountSid,
+        contactId,
+        caseId,
+        user.workerSid,
+      );
+      if (!updated) {
+        throw new Error(`Contact not found with id ${contactId}`);
+      }
 
-  const applyTransformations = bindApplyTransformations(can, user);
-  return applyTransformations(updated);
-};
+      await touchCase(transaction)({
+        accountSid,
+        caseId,
+        contactId,
+        updatedBy: user.workerSid,
+      });
+
+      const applyTransformations = bindApplyTransformations(can, user);
+      return applyTransformations(updated);
+    });
 
 export const addConversationMediaToContact = async (
   accountSid: string,

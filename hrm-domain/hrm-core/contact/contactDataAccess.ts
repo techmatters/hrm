@@ -27,7 +27,6 @@ import { ContactRawJson, ReferralWithoutContactId } from './contactJson';
 import type { ITask } from 'pg-promise';
 import { txIfNotInOne } from '../sql';
 import { ConversationMedia } from '../conversation-media/conversation-media';
-import { TOUCH_CASE_SQL } from '../case/sql/caseUpdateSql';
 import { TKConditionsSets } from '../permissions/rulesMap';
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 
@@ -230,15 +229,12 @@ export const connectToCase =
     updatedBy: string,
   ): Promise<Contact | undefined> => {
     return txIfNotInOne(task, async connection => {
-      const [[updatedContact]]: Contact[][] = await connection.multi<Contact>(
-        [UPDATE_CASEID_BY_ID, TOUCH_CASE_SQL].join(';\n'),
-        {
-          accountSid,
-          contactId,
-          caseId,
-          updatedBy,
-        },
-      );
+      const updatedContact: Contact = await connection.one<Contact>(UPDATE_CASEID_BY_ID, {
+        accountSid,
+        contactId,
+        caseId,
+        updatedBy,
+      });
       return updatedContact;
     });
   };

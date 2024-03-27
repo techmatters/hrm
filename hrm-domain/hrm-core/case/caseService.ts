@@ -46,6 +46,8 @@ import { RulesFile, TKConditionsSets } from '../permissions/rulesMap';
 import { CaseSectionRecord } from './caseSection/types';
 import { pick } from 'lodash';
 
+export { touchCase } from './caseDataAccess';
+
 const CASE_OVERVIEW_PROPERTIES = ['summary', 'followUpDate', 'childIsAtRisk'] as const;
 type CaseOverviewProperties = (typeof CASE_OVERVIEW_PROPERTIES)[number];
 
