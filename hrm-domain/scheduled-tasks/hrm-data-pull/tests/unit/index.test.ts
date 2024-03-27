@@ -21,9 +21,11 @@ import parseISO from 'date-fns/parseISO';
 import { pullData } from '../../index';
 import * as pullContactsModule from '../../pull-contacts';
 import * as pullCasesModule from '../../pull-cases';
+import * as pullProfilesModule from '../../pull-profiles';
 
 jest.mock('../../pull-contacts');
 jest.mock('../../pull-cases');
+jest.mock('../../pull-profiles');
 
 const getParamsFromSpy = (spy: jest.SpyInstance) => ({
   startDate: spy.mock.calls[0][0],
@@ -53,6 +55,7 @@ describe('KHP Data Pull - Params', () => {
   test('When no params, it should default to the last 12h', async () => {
     const pullContactsSpy = jest.spyOn(pullContactsModule, 'pullContacts');
     const pullCasesSpy = jest.spyOn(pullCasesModule, 'pullCases');
+    const pullProfilesSpy = jest.spyOn(pullProfilesModule, 'pullProfiles');
 
     const expectedEndDate = new Date();
     const expectedStartDate = subHours(expectedEndDate, 12);
@@ -65,6 +68,7 @@ describe('KHP Data Pull - Params', () => {
 
     assertSpyHasBeenCalledWithRouhly(pullContactsSpy, expectedStartDate, expectedEndDate);
     assertSpyHasBeenCalledWithRouhly(pullCasesSpy, expectedStartDate, expectedEndDate);
+    assertSpyHasBeenCalledWithRouhly(pullProfilesSpy, expectedStartDate, expectedEndDate);
   });
 
   test('Valid start-date and end-date', async () => {
@@ -73,6 +77,7 @@ describe('KHP Data Pull - Params', () => {
 
     const startDateISO = '2023-05-01T10:00:00+0000';
     const endDateISO = '2023-05-30T18:00:00+0000';
+    const pullProfilesSpy = jest.spyOn(pullProfilesModule, 'pullProfiles');
 
     await pullData(startDateISO, endDateISO, undefined);
 
@@ -84,11 +89,16 @@ describe('KHP Data Pull - Params', () => {
       parseISO(startDateISO),
       parseISO(endDateISO),
     );
+    expect(pullProfilesSpy).toHaveBeenCalledWith(
+      parseISO(startDateISO),
+      parseISO(endDateISO),
+    );
   });
 
   test('No end-date should default to now', async () => {
     const pullContactsSpy = jest.spyOn(pullContactsModule, 'pullContacts');
     const pullCasesSpy = jest.spyOn(pullCasesModule, 'pullCases');
+    const pullProfilesSpy = jest.spyOn(pullProfilesModule, 'pullProfiles');
 
     const startDateISO = '2023-05-01T10:00:00+0000';
     const now = new Date();
@@ -97,11 +107,13 @@ describe('KHP Data Pull - Params', () => {
 
     assertSpyHasBeenCalledWithRouhly(pullContactsSpy, parseISO(startDateISO), now);
     assertSpyHasBeenCalledWithRouhly(pullCasesSpy, parseISO(startDateISO), now);
+    assertSpyHasBeenCalledWithRouhly(pullProfilesSpy, parseISO(startDateISO), now);
   });
 
   test('Ivalid date should throw', async () => {
     const pullContactsSpy = jest.spyOn(pullContactsModule, 'pullContacts');
     const pullCasesSpy = jest.spyOn(pullCasesModule, 'pullCases');
+    const pullProfilesSpy = jest.spyOn(pullProfilesModule, 'pullProfiles');
 
     const startDateISO = '9999INVALID';
 
@@ -109,5 +121,6 @@ describe('KHP Data Pull - Params', () => {
 
     expect(pullContactsSpy).not.toHaveBeenCalled();
     expect(pullCasesSpy).not.toHaveBeenCalled();
+    expect(pullProfilesSpy).not.toHaveBeenCalled();
   });
 });

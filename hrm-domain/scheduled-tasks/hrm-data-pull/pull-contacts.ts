@@ -61,7 +61,9 @@ export const pullContacts = async (startDate: Date, endDate: Date) => {
 
   try {
     await Promise.all(uploadPromises);
-    console.log(`>> ${shortCode} ${hrmEnv} Contacts were pulled successfully!`);
+    console.log(
+      `>> ${shortCode} ${hrmEnv} ${contacts.length} Contacts were pulled successfully!`,
+    );
   } catch (err) {
     console.error(`>> Error in ${shortCode} ${hrmEnv} Data Pull: Contacts`);
     console.error(err);

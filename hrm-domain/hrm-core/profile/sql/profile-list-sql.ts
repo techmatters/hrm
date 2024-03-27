@@ -15,7 +15,12 @@
  */
 
 import { pgp } from '../../connection-pool';
-import { OrderByClauseItem, OrderByDirection } from '../../sql';
+import {
+  DateExistsCondition,
+  DateFilter,
+  OrderByClauseItem,
+  OrderByDirection,
+} from '../../sql';
 import { getProfilesSqlBase } from './profile-get-sql';
 
 export const OrderByColumn = {
@@ -58,17 +63,60 @@ const listProfilesPaginatedSql = (whereClause: string, orderByClause: string) =>
   ${orderByClause};
 `;
 
-export type ProfilesListFilters = {
-  profileFlagIds?: number[];
+const enum FilterableDateField {
+  CREATED_AT = 'profiles."createdAt"::TIMESTAMP WITH TIME ZONE',
+  UPDATED_AT = 'profiles."updatedAt"::TIMESTAMP WITH TIME ZONE',
+}
+
+const dateFilterCondition = (
+  field: FilterableDateField,
+  filterName: string,
+  filter: DateFilter,
+): string | undefined => {
+  let existsCondition: string | undefined;
+  if (filter.exists === DateExistsCondition.MUST_EXIST) {
+    existsCondition = `(${field} IS NOT NULL)`;
+  } else if (filter.exists === DateExistsCondition.MUST_NOT_EXIST) {
+    existsCondition = `(${field} IS NULL)`;
+  }
+
+  if (filter.to || filter.from) {
+    filter.to = filter.to ?? null;
+    filter.from = filter.from ?? null;
+    return `(($<${filterName}.from> IS NULL OR ${field} >= $<${filterName}.from>::TIMESTAMP WITH TIME ZONE) 
+            AND ($<${filterName}.to> IS NULL OR ${field} <= $<${filterName}.to>::TIMESTAMP WITH TIME ZONE)
+            ${existsCondition ? ` AND ${existsCondition}` : ''})`;
+  }
+  return existsCondition;
 };
 
-const filterSql = ({ profileFlagIds }: ProfilesListFilters) => {
+export type ProfilesListFilters = {
+  profileFlagIds?: number[];
+  createdAt?: DateFilter;
+  updatedAt?: DateFilter;
+};
+
+const filterSql = ({ profileFlagIds, createdAt, updatedAt }: ProfilesListFilters) => {
   const filterSqlClauses: string[] = [];
+
   if (profileFlagIds && profileFlagIds.length) {
     filterSqlClauses.push(
       `profiles.id IN (SELECT "profileId" FROM "ProfilesToProfileFlags" WHERE "profileFlagId" IN ($<profileFlagIds:csv>))`,
     );
   }
+
+  if (createdAt) {
+    filterSqlClauses.push(
+      dateFilterCondition(FilterableDateField.CREATED_AT, 'createdAt', createdAt),
+    );
+  }
+
+  if (updatedAt) {
+    filterSqlClauses.push(
+      dateFilterCondition(FilterableDateField.UPDATED_AT, 'updatedAt', updatedAt),
+    );
+  }
+
   return filterSqlClauses.join(`
   AND `);
 };

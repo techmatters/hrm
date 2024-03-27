@@ -21,10 +21,9 @@ import each from 'jest-each';
 import * as caseApi from '@tech-matters/hrm-core/case/caseService';
 import { CaseService, getCase } from '@tech-matters/hrm-core/case/caseService';
 import * as caseDb from '@tech-matters/hrm-core/case/caseDataAccess';
-import {
-  CaseListFilters,
-  DateExistsCondition,
-} from '@tech-matters/hrm-core/case/caseDataAccess';
+import { CaseListFilters } from '@tech-matters/hrm-core/case/caseDataAccess';
+import { DateExistsCondition } from '@tech-matters/hrm-core/sql';
+
 import { db } from '@tech-matters/hrm-core/connection-pool';
 import {
   fillNameAndPhone,
