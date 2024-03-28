@@ -484,7 +484,7 @@ describe('/profiles', () => {
             {
               description: 'profile and flag exist',
               expectStatus: 200,
-              expectFunction: (response, profileId, profileFlagId) => {
+              expectFunction: (response, profileId, profileFlagId, startTime) => {
                 expect(response.body.id).toBe(profileId);
                 expect(
                   response.body.profileFlags.some(pf => pf.id === profileFlagId),
@@ -492,6 +492,9 @@ describe('/profiles', () => {
                 expect(response.body.updateBy).toBe(
                   response.body.profileFlags.find(pf => pf.id === profileFlagId)
                     ?.updatedBy,
+                );
+                expect(new Date(response.body.updatedAt).getTime()).toBeGreaterThan(
+                  startTime,
                 );
               },
             },
@@ -504,11 +507,14 @@ describe('/profiles', () => {
             {
               description: 'a valid "validUntil" date is sent',
               expectStatus: 200,
-              expectFunction: (response, profileId, profileFlagId) => {
+              expectFunction: (response, profileId, profileFlagId, startTime) => {
                 expect(response.body.id).toBe(profileId);
                 expect(
                   response.body.profileFlags.some(pf => pf.id === profileFlagId),
                 ).toBeTruthy();
+                expect(new Date(response.body.updatedAt).getTime()).toBeGreaterThan(
+                  startTime,
+                );
               },
             },
             {
@@ -532,6 +538,8 @@ describe('/profiles', () => {
               customHeaders,
               expectFunction,
             }) => {
+              const startTime = Date.now();
+
               if (beforeFunction) {
                 await beforeFunction(profileId, profileFlagId);
               }
@@ -542,7 +550,7 @@ describe('/profiles', () => {
                 .set(customHeaders || headers);
               expect(response.statusCode).toBe(expectStatus);
               if (expectFunction) {
-                expectFunction(response, profileId, profileFlagId);
+                expectFunction(response, profileId, profileFlagId, startTime);
               }
             },
           );
@@ -589,15 +597,20 @@ describe('/profiles', () => {
               description: 'flag does not exists (no-op)',
               profileFlagId: 0,
               expectStatus: 200,
+              expectFunction: (response, profileId, profileFlagId, startTime) => {
+                expect(new Date(response.body.updatedAt).getTime()).toBeLessThan(
+                  startTime,
+                );
+              },
             },
             {
               description: 'profile and flag exist',
               expectStatus: 200,
-              expectFunction: (response, profileId, profileFlagId, startDate) => {
+              expectFunction: (response, profileId, profileFlagId, startTime) => {
                 expect(response.body.id).toBe(profileId);
                 expect(response.body.profileFlags).not.toContain(profileFlagId);
                 expect(response.body.updatedBy).toBe(workerSid);
-                expect(new Date(startDate).getTime()).toBeLessThan(
+                expect(new Date(startTime).getTime()).toBeLessThan(
                   new Date(response.body.updatedAt).getTime(),
                 );
               },
@@ -611,13 +624,13 @@ describe('/profiles', () => {
               customHeaders,
               expectFunction,
             }) => {
-              const startDate = new Date();
+              const startTime = Date.now();
               const response = await request
                 .delete(buildRoute(profileId, profileFlagId))
                 .set(customHeaders || headers);
               expect(response.statusCode).toBe(expectStatus);
               if (expectFunction) {
-                expectFunction(response, profileId, profileFlagId, startDate);
+                expectFunction(response, profileId, profileFlagId, startTime);
               }
             },
           );
