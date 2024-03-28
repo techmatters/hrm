@@ -94,7 +94,7 @@ describe('/profiles', () => {
           defaultFlags[1].id,
           null,
         ),
-        profilesDB.createProfileSection(antonella!.accountSid, {
+        profilesDB.createProfileSection()(antonella!.accountSid, {
           content: 'some example content',
           sectionType: 'summary',
           createdBy: 'worker',
@@ -639,7 +639,6 @@ describe('/profiles', () => {
     });
 
     describe('/profiles/:profileId/sections', () => {
-      let createdProfileSection: profilesDB.ProfileSection;
       describe('POST', () => {
         const buildRoute = (profileId: number) => `${baseRoute}/${profileId}/sections`;
         each([
@@ -657,7 +656,7 @@ describe('/profiles', () => {
             description: 'profile exist and content is valid',
             expectStatus: 200,
             payload: { sectionType: 'note', content: 'a note' },
-            expectFunction: async (response, profileId, payload) => {
+            expectFunction: async (response, profileId, payload, startTime) => {
               expect(response.body.profileId).toBe(profileId);
               expect(response.body.content).toBe(payload.content);
               expect(response.body.sectionType).toBe(payload.sectionType);
@@ -674,8 +673,10 @@ describe('/profiles', () => {
                 id: response.body.id,
                 sectionType: response.body.sectionType,
               });
-
-              createdProfileSection = response.body;
+              expect(new Date(updatedProfile.updatedAt).getTime()).toBeGreaterThan(
+                startTime,
+              );
+              expect(updatedProfile.updatedBy).toBe(response.body.createdBy);
             },
           },
         ]).test(
@@ -687,19 +688,31 @@ describe('/profiles', () => {
             customHeaders,
             expectFunction,
           }) => {
+            const startTime = Date.now();
             const response = await request
               .post(buildRoute(profileId))
               .set(customHeaders || headers)
               .send(payload);
             expect(response.statusCode).toBe(expectStatus);
             if (expectFunction) {
-              await expectFunction(response, profileId, payload);
+              await expectFunction(response, profileId, payload, startTime);
             }
           },
         );
       });
 
       describe('/profiles/:profileId/sections/:id', () => {
+        let createdProfileSection: profilesDB.ProfileSection;
+
+        beforeAll(async () => {
+          createdProfileSection = await profilesDB.createProfileSection()(accountSid, {
+            sectionType: 'note',
+            content: 'a note',
+            createdBy: workerSid,
+            profileId: createdProfile.profiles[0].id,
+          });
+        });
+
         const buildRoute = (profileId: number, sectionId: number) =>
           `${baseRoute}/${profileId}/sections/${sectionId}`;
         describe('PATCH', () => {
@@ -723,13 +736,26 @@ describe('/profiles', () => {
               description: 'profile and section exist',
               expectStatus: 200,
               payload: { content: 'a note' },
-              expectFunction: (response, profileId, payload) => {
+              expectFunction: async (response, profileId, payload, startTime) => {
                 expect(response.body.profileId).toBe(profileId);
                 expect(response.body.content).toBe(payload.content);
                 expect(response.body.updatedAt).not.toBe(response.body.createdAt);
+                expect(new Date(response.body.updatedAt).getTime()).toBeGreaterThan(
+                  startTime,
+                );
                 expect(response.body.updatedBy).not.toBeNull();
 
                 createdProfileSection = response.body;
+
+                const updatedProfile = await profilesDB.getProfileById()(
+                  accountSid,
+                  profileId,
+                );
+
+                expect(new Date(updatedProfile.updatedAt).getTime()).toBeGreaterThan(
+                  startTime,
+                );
+                expect(updatedProfile.updatedBy).toBe(response.body.updatedBy);
               },
             },
           ]).test(
@@ -742,13 +768,15 @@ describe('/profiles', () => {
               customHeaders,
               expectFunction,
             }) => {
+              const startTime = Date.now();
+
               const response = await request
                 .patch(buildRoute(profileId, sectionId))
                 .set(customHeaders || headers)
                 .send(payload);
               expect(response.statusCode).toBe(expectStatus);
               if (expectFunction) {
-                expectFunction(response, profileId, payload);
+                expectFunction(response, profileId, payload, startTime);
               }
             },
           );
