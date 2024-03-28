@@ -342,7 +342,7 @@ export const createProfileSection = async (
   { user }: { user: TwilioUser },
 ): Promise<profileDB.ProfileSection> => {
   const { content, profileId, sectionType } = payload;
-  return profileDB.createProfileSection(accountSid, {
+  return profileDB.createProfileSection()(accountSid, {
     content,
     profileId,
     sectionType,
@@ -360,7 +360,7 @@ export const updateProfileSectionById = async (
   },
   { user }: { user: TwilioUser },
 ): Promise<profileDB.ProfileSection> => {
-  return profileDB.updateProfileSectionById(accountSid, {
+  return profileDB.updateProfileSectionById()(accountSid, {
     ...payload,
     updatedBy: user.workerSid,
   });

@@ -41,3 +41,11 @@ export const updateProfileByIdSql = (
     RETURNING *
   `;
 };
+
+export const TOUCH_PROFILE_SQL = `
+  UPDATE "Profiles" 
+  SET 
+    "updatedAt" = CURRENT_TIMESTAMP,
+    "updatedBy" = $<updatedBy>
+  WHERE "accountSid" = $<accountSid> AND "id" = $<profileId>
+`;

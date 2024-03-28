@@ -52,7 +52,7 @@ import {
   listProfilesSql,
 } from './sql/profile-list-sql';
 import { getPaginationElements } from '../search';
-import { updateProfileByIdSql } from './sql/profile-update.sql';
+import { TOUCH_PROFILE_SQL, updateProfileByIdSql } from './sql/profile-update.sql';
 import {
   ensureRejection,
   ErrorResult,
@@ -420,44 +420,72 @@ export type ProfileSection = NewProfileSectionRecord &
     updatedBy?: string;
   };
 
-export const createProfileSection = async (
-  accountSid: string,
-  payload: NewProfileSectionRecord & { createdBy: ProfileSection['createdBy'] },
-): Promise<ProfileSection> => {
-  const now = new Date();
-  const statement = insertProfileSectionSql({
-    ...payload,
-    createdAt: now,
-    updatedAt: now,
-    accountSid,
-    createdBy: payload.createdBy,
-    updatedBy: null,
-  });
-
-  return db.task<ProfileSection>(async t => t.oneOrNone(statement));
-};
-
-export const updateProfileSectionById = async (
-  accountSid: string,
-  payload: {
-    profileId: Profile['id'];
-    sectionId: ProfileSection['id'];
-    content: ProfileSection['content'];
-    updatedBy: ProfileSection['updatedBy'];
-  },
-): Promise<ProfileSection> => {
-  const now = new Date();
-  return db.task<ProfileSection>(async t =>
-    t.oneOrNone(updateProfileSectionByIdSql, {
-      accountSid,
-      profileId: payload.profileId,
-      sectionId: payload.sectionId,
-      content: payload.content,
-      updatedBy: payload.updatedBy,
+export const createProfileSection =
+  (task?) =>
+  async (
+    accountSid: string,
+    payload: NewProfileSectionRecord & { createdBy: ProfileSection['createdBy'] },
+  ): Promise<ProfileSection> => {
+    const now = new Date();
+    const statement = insertProfileSectionSql({
+      ...payload,
+      createdAt: now,
       updatedAt: now,
-    }),
-  );
-};
+      accountSid,
+      createdBy: payload.createdBy,
+      updatedBy: null,
+    });
+
+    return txIfNotInOne(task, async t => {
+      const section = await t.oneOrNone<ProfileSection>(statement);
+
+      if (section) {
+        // trigger an update on profiles
+        await t.none(TOUCH_PROFILE_SQL, {
+          updatedBy: payload.createdBy,
+          profileId: payload.profileId,
+          accountSid,
+        });
+      }
+
+      return section;
+    });
+  };
+
+export const updateProfileSectionById =
+  (task?) =>
+  async (
+    accountSid: string,
+    payload: {
+      profileId: Profile['id'];
+      sectionId: ProfileSection['id'];
+      content: ProfileSection['content'];
+      updatedBy: ProfileSection['updatedBy'];
+    },
+  ): Promise<ProfileSection> => {
+    const now = new Date();
+    return txIfNotInOne(task, async t => {
+      const section = await t.oneOrNone<ProfileSection>(updateProfileSectionByIdSql, {
+        accountSid,
+        profileId: payload.profileId,
+        sectionId: payload.sectionId,
+        content: payload.content,
+        updatedBy: payload.updatedBy,
+        updatedAt: now,
+      });
+
+      if (section) {
+        // trigger an update on profiles
+        await t.none(TOUCH_PROFILE_SQL, {
+          updatedBy: payload.updatedBy,
+          profileId: payload.profileId,
+          accountSid,
+        });
+      }
+
+      return section;
+    });
+  };
 
 export const getProfileSectionById = async (
   accountSid: string,
