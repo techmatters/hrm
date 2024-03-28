@@ -333,15 +333,24 @@ export const associateProfileToProfileFlag =
   };
 
 export const disassociateProfileFromProfileFlag =
-  (task?) => async (accountSid: string, profileId: number, profileFlagId: number) => {
-    await txIfNotInOne(task, async t => {
-      await t.none(disassociateProfileFromProfileFlagSql, {
-        accountSid,
-        profileId,
-        profileFlagId,
-      });
+  (task?) =>
+  async (
+    accountSid: string,
+    profileId: number,
+    profileFlagId: number,
+  ): Promise<boolean> =>
+    txIfNotInOne(task, async t => {
+      const { count } = await t.oneOrNone<{ count: string }>(
+        disassociateProfileFromProfileFlagSql,
+        {
+          accountSid,
+          profileId,
+          profileFlagId,
+        },
+      );
+
+      return Boolean(parseInt(count, 10));
     });
-  };
 
 export type ProfileFlag = NewProfileFlagRecord & RecordCommons;
 

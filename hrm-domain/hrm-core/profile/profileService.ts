@@ -256,17 +256,19 @@ export const disassociateProfileFromProfileFlag = async (
   { user }: { user: TwilioUser },
 ): Promise<profileDB.ProfileWithRelationships> => {
   return db.task(async t => {
-    await profileDB.disassociateProfileFromProfileFlag(t)(
+    const deleted = await profileDB.disassociateProfileFromProfileFlag(t)(
       accountSid,
       profileId,
       profileFlagId,
     );
 
-    // trigger an update on profiles to keep track of who disassociated
-    await profileDB.updateProfileById(t)(accountSid, {
-      id: profileId,
-      updatedBy: user.workerSid,
-    });
+    if (deleted) {
+      // trigger an update on profiles to keep track of who disassociated
+      await profileDB.updateProfileById(t)(accountSid, {
+        id: profileId,
+        updatedBy: user.workerSid,
+      });
+    }
     return profileDB.getProfileById(t)(accountSid, profileId);
   });
 };
