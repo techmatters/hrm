@@ -128,7 +128,7 @@ describe('cleanupProfileFlags', () => {
 
     let p = await profileDB.getProfileById()(accountSid, createdProfile.id);
     expect(p.profileFlags).toHaveLength(3);
-    expect(p.updatedBy).toBeNull();
+    expect(p.updatedBy).toBe(workerSid);
     const lastUpdated = p.updatedAt;
 
     await cleanupProfileFlags();
