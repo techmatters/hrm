@@ -87,12 +87,14 @@ describe('/profiles', () => {
           murray!.id,
           defaultFlags[0].id,
           null,
+          { user: { workerSid, isSupervisor: false, roles: [] } },
         ),
         profilesDB.associateProfileToProfileFlag()(
           accountSid,
           antonella!.id,
           defaultFlags[1].id,
           null,
+          { user: { workerSid, isSupervisor: false, roles: [] } },
         ),
         profilesDB.createProfileSection()(antonella!.accountSid, {
           content: 'some example content',
@@ -563,6 +565,7 @@ describe('/profiles', () => {
               createdProfile.profiles[0].id,
               defaultFlags[0].id,
               null,
+              { user: { workerSid, isSupervisor: false, roles: [] } },
             );
 
             const pfs = (
