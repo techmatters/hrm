@@ -60,6 +60,7 @@ import {
   newOkFromData,
   Result,
 } from '@tech-matters/types';
+import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 
 export { ProfilesListFilters } from './sql/profile-list-sql';
 
@@ -266,6 +267,7 @@ export const associateProfileToProfileFlag =
     profileId: number,
     profileFlagId: number,
     validUntil: Date | null,
+    { user }: { user: TwilioUser },
   ): Promise<
     Result<
       | DatabaseErrorResult
@@ -274,7 +276,7 @@ export const associateProfileToProfileFlag =
           | 'ProfileFlagNotFoundError'
           | 'ProfileAlreadyFlaggedError'
         >,
-      undefined
+      ProfileWithRelationships
     >
   > => {
     const now = new Date();
@@ -285,7 +287,7 @@ export const associateProfileToProfileFlag =
           | 'ProfileFlagNotFoundError'
           | 'ProfileAlreadyFlaggedError'
         >,
-      undefined
+      ProfileWithRelationships
     >(work => txIfNotInOne(task, work))(async t => {
       try {
         await t.none(
@@ -298,7 +300,15 @@ export const associateProfileToProfileFlag =
             validUntil,
           }),
         );
-        return newOkFromData(undefined);
+
+        await t.none(TOUCH_PROFILE_SQL, {
+          updatedBy: user.workerSid,
+          accountSid,
+          profileId,
+        });
+
+        const profile = await getProfileById(t)(accountSid, profileId);
+        return newOkFromData(profile);
       } catch (e) {
         console.error(e);
         const errorResult = inferPostgresErrorResult(e);
@@ -338,7 +348,8 @@ export const disassociateProfileFromProfileFlag =
     accountSid: string,
     profileId: number,
     profileFlagId: number,
-  ): Promise<boolean> =>
+    { user }: { user: TwilioUser },
+  ): Promise<ProfileWithRelationships> =>
     txIfNotInOne(task, async t => {
       const { count } = await t.oneOrNone<{ count: string }>(
         disassociateProfileFromProfileFlagSql,
@@ -349,7 +360,16 @@ export const disassociateProfileFromProfileFlag =
         },
       );
 
-      return Boolean(parseInt(count, 10));
+      if (Boolean(parseInt(count, 10))) {
+        await t.none(TOUCH_PROFILE_SQL, {
+          updatedBy: user.workerSid,
+          accountSid,
+          profileId,
+        });
+      }
+
+      const profile = await getProfileById(t)(accountSid, profileId);
+      return profile;
     });
 
 export type ProfileFlag = NewProfileFlagRecord & RecordCommons;

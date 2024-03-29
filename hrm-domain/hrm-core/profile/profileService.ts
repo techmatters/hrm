@@ -210,12 +210,14 @@ export const associateProfileToProfileFlag = async (
       message: 'Invalid parameter "validUntil", must be a future date',
     });
   }
+
   return db.task(async t => {
     const result = await profileDB.associateProfileToProfileFlag(t)(
       accountSid,
       profileId,
       profileFlagId,
       validUntil,
+      { user },
     );
 
     if (isErr(result)) {
@@ -229,16 +231,11 @@ export const associateProfileToProfileFlag = async (
       } else if (result.error === 'ProfileAlreadyFlaggedError') {
         return result as ErrorResult<'ProfileAlreadyFlaggedError'>;
       }
-      result.unwrap();
+      result.unwrap(); // Q for SJH: This bubbles the error. Is this intentional?
+      return;
     }
 
-    // trigger an update on profiles to keep track of who associated
-    await profileDB.updateProfileById(t)(accountSid, {
-      id: profileId,
-      updatedBy: user.workerSid,
-    });
-
-    const profile = await profileDB.getProfileById(t)(accountSid, profileId);
+    const profile = result.data;
 
     return newOk({ data: profile });
   });
@@ -256,20 +253,14 @@ export const disassociateProfileFromProfileFlag = async (
   { user }: { user: TwilioUser },
 ): Promise<profileDB.ProfileWithRelationships> => {
   return db.task(async t => {
-    const deleted = await profileDB.disassociateProfileFromProfileFlag(t)(
+    const profile = await profileDB.disassociateProfileFromProfileFlag(t)(
       accountSid,
       profileId,
       profileFlagId,
+      { user },
     );
 
-    if (deleted) {
-      // trigger an update on profiles to keep track of who disassociated
-      await profileDB.updateProfileById(t)(accountSid, {
-        id: profileId,
-        updatedBy: user.workerSid,
-      });
-    }
-    return profileDB.getProfileById(t)(accountSid, profileId);
+    return profile;
   });
 };
 
