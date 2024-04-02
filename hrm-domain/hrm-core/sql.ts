@@ -24,6 +24,17 @@ export const OrderByDirection = {
   descending: 'DESC',
 } as const;
 
+export const enum DateExistsCondition {
+  MUST_EXIST = 'MUST_EXIST',
+  MUST_NOT_EXIST = 'MUST_NOT_EXIST',
+}
+
+export type DateFilter = {
+  from?: string;
+  to?: string;
+  exists?: DateExistsCondition;
+};
+
 export type OrderByDirectionType =
   (typeof OrderByDirection)[keyof typeof OrderByDirection];
 

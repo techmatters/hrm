@@ -30,7 +30,7 @@ import {
 import { DELETE_BY_ID } from './sql/case-delete-sql';
 import { selectSingleCaseByIdSql } from './sql/caseGetSql';
 import { Contact } from '../contact/contactDataAccess';
-import { OrderByDirectionType } from '../sql';
+import { DateFilter, OrderByDirectionType } from '../sql';
 import { TKConditionsSets } from '../permissions/rulesMap';
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { AccountSID } from '@tech-matters/types';
@@ -98,17 +98,6 @@ export type CaseSearchCriteria = {
   contactNumber?: string;
   firstName?: string;
   lastName?: string;
-};
-
-export const enum DateExistsCondition {
-  MUST_EXIST = 'MUST_EXIST',
-  MUST_NOT_EXIST = 'MUST_NOT_EXIST',
-}
-
-export type DateFilter = {
-  from?: string;
-  to?: string;
-  exists?: DateExistsCondition;
 };
 
 export type CategoryFilter = {
