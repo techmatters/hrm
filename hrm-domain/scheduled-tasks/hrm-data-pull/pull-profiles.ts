@@ -18,21 +18,15 @@ import format from 'date-fns/format';
 import formatISO from 'date-fns/formatISO';
 import { putS3Object } from '@tech-matters/s3-client';
 import * as profileApi from '@tech-matters/hrm-core/profile/profileService';
-import { getCasesByProfileId } from '@tech-matters/hrm-core/case/caseService';
-import {
-  Contact,
-  getContactsByProfileId,
-} from '@tech-matters/hrm-core/contact/contactService';
 import type {
   ProfileFlag,
   ProfileSection,
   ProfileWithRelationships,
 } from '@tech-matters/hrm-core/profile/profileDataAccess';
 
-import { getContext, maxPermissions } from './context';
+import { getContext } from './context';
 import { autoPaginate } from './auto-paginate';
 import { parseISO } from 'date-fns';
-import { CaseRecord } from '@tech-matters/hrm-core/case/caseDataAccess';
 
 const getSearchParams = (startDate: Date, endDate: Date) => ({
   filters: {
@@ -77,7 +71,6 @@ export const pullProfiles = async (startDate: Date, endDate: Date) => {
         accountSid,
         { limit: limit.toString(), offset: offset.toString() },
         { filters },
-        // {filters: {profileFlagIds}},
       );
 
       const profilesWithFlags = profiles.map(p => {
@@ -101,67 +94,8 @@ export const pullProfiles = async (startDate: Date, endDate: Date) => {
         return [...acc, { ...profile, profileSections }];
       }, Promise.resolve([]));
 
-      const profilesWithContacts = await profilesWithSections.reduce<
-        Promise<
-          (Omit<ProfileWithRelationships, 'profileFlags' | 'profileSections'> & {
-            profileFlags: ProfileFlag[];
-            profileSections: ProfileSection[];
-            contactIds: Contact['id'][];
-          })[]
-        >
-      >(async (prevPromise, profile) => {
-        const acc = await prevPromise;
-        const contactIds = await autoPaginate(async ({ limit: l, offset: o }) => {
-          const result = await getContactsByProfileId(
-            accountSid,
-            profile.id,
-            { limit: l.toString(), offset: o.toString() },
-            maxPermissions,
-          );
-
-          const { contacts, count: contactsCount } = result.unwrap();
-
-          return {
-            count: contactsCount,
-            records: contacts.map(c => c.id),
-          };
-        });
-
-        return [...acc, { ...profile, contactIds }];
-      }, Promise.resolve([]));
-
-      const profilesWithCases = await profilesWithContacts.reduce<
-        Promise<
-          (Omit<ProfileWithRelationships, 'profileFlags' | 'profileSections'> & {
-            profileFlags: ProfileFlag[];
-            profileSections: ProfileSection[];
-            contactIds: Contact['id'][];
-            caseIds: CaseRecord['id'][];
-          })[]
-        >
-      >(async (prevPromise, profile) => {
-        const acc = await prevPromise;
-        const caseIds = await autoPaginate(async ({ limit: l, offset: o }) => {
-          const result = await getCasesByProfileId(
-            accountSid,
-            profile.id,
-            { limit: l.toString(), offset: o.toString() },
-            maxPermissions,
-          );
-
-          const { cases, count: casesCount } = result.unwrap();
-
-          return {
-            count: casesCount,
-            records: cases.map(c => c.id),
-          };
-        });
-
-        return [...acc, { ...profile, caseIds }];
-      }, Promise.resolve([]));
-
       return {
-        records: profilesWithCases,
+        records: profilesWithSections,
         count: count,
       };
     });
