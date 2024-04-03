@@ -16,7 +16,7 @@
 
 import { createMockCaseInsert, createMockCaseRecord } from './mock-cases';
 import * as pgPromise from 'pg-promise';
-import { mockConnection, mockTask, mockTransaction } from '../mock-db';
+import { mockConnection, mockTask } from '../mock-db';
 import * as caseDb from '../../case/caseDataAccess';
 import each from 'jest-each';
 import { db } from '../../connection-pool';
@@ -334,42 +334,6 @@ describe('search', () => {
       expect(result.cases).toStrictEqual(expectedResult);
     },
   );
-});
-
-describe('update', () => {
-  let tx: pgPromise.ITask<unknown>;
-  const caseUpdate = {
-    helpline: 'helpline',
-    status: 'open',
-    info: {
-      counsellorNotes: [{ note: 'Child with covid-19', twilioWorkerId: 'contact-adder' }],
-    },
-    twilioWorkerId: 'ignored-twilio-worker-id',
-    updatedBy: 'used-twilio-worker-id',
-  };
-
-  beforeEach(() => {
-    tx = mockConnection();
-    mockTransaction(tx);
-  });
-
-  test('runs update SQL against cases table with provided ID.', async () => {
-    const caseUpdateResult = createMockCaseRecord(caseUpdate);
-    const oneOrNoneSpy = jest
-      .spyOn(tx, 'oneOrNone')
-      .mockResolvedValue({ ...caseUpdateResult, id: caseId });
-    const noneSpy = jest.spyOn(tx, 'none');
-    const result = await caseDb.update(caseId, caseUpdate, accountSid, user, [
-      ['everyone'],
-    ]);
-    const updateSql = getSqlStatement(noneSpy);
-    expectValuesInSql(updateSql, { info: caseUpdate.info, status: caseUpdate.status });
-    expect(oneOrNoneSpy).toHaveBeenCalledWith(
-      expect.any(String),
-      expect.objectContaining({ accountSid, caseId }),
-    );
-    expect(result).toStrictEqual({ ...caseUpdateResult, id: caseId });
-  });
 });
 
 describe('delete', () => {

@@ -606,9 +606,9 @@ describe('/cases route', () => {
           const body = {
             closedCases: false,
           };
-          await caseApi.updateCase(
+          await caseApi.updateCaseStatus(
             createdCase2.id,
-            { status: 'closed' },
+            'closed',
             accountSid,
             ALWAYS_CAN,
           );
