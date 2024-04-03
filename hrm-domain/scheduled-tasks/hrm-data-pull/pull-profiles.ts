@@ -71,7 +71,6 @@ export const pullProfiles = async (startDate: Date, endDate: Date) => {
         accountSid,
         { limit: limit.toString(), offset: offset.toString() },
         { filters },
-        // {filters: {profileFlagIds}},
       );
 
       const profilesWithFlags = profiles.map(p => {
