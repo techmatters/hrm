@@ -639,7 +639,7 @@ describe('POST /import', () => {
     expect(response.body).toStrictEqual({
       reason: 'missing field',
       fields: ['id'],
-      resource: missingIdResource,
+      resource: JSON.stringify(missingIdResource),
     });
     expect(response.status).toBe(400);
     for (let resourceIdx = 0; resourceIdx < 5; resourceIdx++) {
