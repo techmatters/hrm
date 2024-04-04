@@ -87,14 +87,16 @@ describe('/profiles', () => {
           murray!.id,
           defaultFlags[0].id,
           null,
+          { user: { workerSid, isSupervisor: false, roles: [] } },
         ),
         profilesDB.associateProfileToProfileFlag()(
           accountSid,
           antonella!.id,
           defaultFlags[1].id,
           null,
+          { user: { workerSid, isSupervisor: false, roles: [] } },
         ),
-        profilesDB.createProfileSection(antonella!.accountSid, {
+        profilesDB.createProfileSection()(antonella!.accountSid, {
           content: 'some example content',
           sectionType: 'summary',
           createdBy: 'worker',
@@ -484,7 +486,7 @@ describe('/profiles', () => {
             {
               description: 'profile and flag exist',
               expectStatus: 200,
-              expectFunction: (response, profileId, profileFlagId) => {
+              expectFunction: (response, profileId, profileFlagId, startTime) => {
                 expect(response.body.id).toBe(profileId);
                 expect(
                   response.body.profileFlags.some(pf => pf.id === profileFlagId),
@@ -492,6 +494,9 @@ describe('/profiles', () => {
                 expect(response.body.updateBy).toBe(
                   response.body.profileFlags.find(pf => pf.id === profileFlagId)
                     ?.updatedBy,
+                );
+                expect(new Date(response.body.updatedAt).getTime()).toBeGreaterThan(
+                  startTime,
                 );
               },
             },
@@ -504,11 +509,14 @@ describe('/profiles', () => {
             {
               description: 'a valid "validUntil" date is sent',
               expectStatus: 200,
-              expectFunction: (response, profileId, profileFlagId) => {
+              expectFunction: (response, profileId, profileFlagId, startTime) => {
                 expect(response.body.id).toBe(profileId);
                 expect(
                   response.body.profileFlags.some(pf => pf.id === profileFlagId),
                 ).toBeTruthy();
+                expect(new Date(response.body.updatedAt).getTime()).toBeGreaterThan(
+                  startTime,
+                );
               },
             },
             {
@@ -532,6 +540,8 @@ describe('/profiles', () => {
               customHeaders,
               expectFunction,
             }) => {
+              const startTime = Date.now();
+
               if (beforeFunction) {
                 await beforeFunction(profileId, profileFlagId);
               }
@@ -542,7 +552,7 @@ describe('/profiles', () => {
                 .set(customHeaders || headers);
               expect(response.statusCode).toBe(expectStatus);
               if (expectFunction) {
-                expectFunction(response, profileId, profileFlagId);
+                expectFunction(response, profileId, profileFlagId, startTime);
               }
             },
           );
@@ -555,6 +565,7 @@ describe('/profiles', () => {
               createdProfile.profiles[0].id,
               defaultFlags[0].id,
               null,
+              { user: { workerSid, isSupervisor: false, roles: [] } },
             );
 
             const pfs = (
@@ -589,15 +600,20 @@ describe('/profiles', () => {
               description: 'flag does not exists (no-op)',
               profileFlagId: 0,
               expectStatus: 200,
+              expectFunction: (response, profileId, profileFlagId, startTime) => {
+                expect(new Date(response.body.updatedAt).getTime()).toBeLessThan(
+                  startTime,
+                );
+              },
             },
             {
               description: 'profile and flag exist',
               expectStatus: 200,
-              expectFunction: (response, profileId, profileFlagId, startDate) => {
+              expectFunction: (response, profileId, profileFlagId, startTime) => {
                 expect(response.body.id).toBe(profileId);
                 expect(response.body.profileFlags).not.toContain(profileFlagId);
                 expect(response.body.updatedBy).toBe(workerSid);
-                expect(new Date(startDate).getTime()).toBeLessThan(
+                expect(new Date(startTime).getTime()).toBeLessThan(
                   new Date(response.body.updatedAt).getTime(),
                 );
               },
@@ -611,13 +627,13 @@ describe('/profiles', () => {
               customHeaders,
               expectFunction,
             }) => {
-              const startDate = new Date();
+              const startTime = Date.now();
               const response = await request
                 .delete(buildRoute(profileId, profileFlagId))
                 .set(customHeaders || headers);
               expect(response.statusCode).toBe(expectStatus);
               if (expectFunction) {
-                expectFunction(response, profileId, profileFlagId, startDate);
+                expectFunction(response, profileId, profileFlagId, startTime);
               }
             },
           );
@@ -626,7 +642,6 @@ describe('/profiles', () => {
     });
 
     describe('/profiles/:profileId/sections', () => {
-      let createdProfileSection: profilesDB.ProfileSection;
       describe('POST', () => {
         const buildRoute = (profileId: number) => `${baseRoute}/${profileId}/sections`;
         each([
@@ -644,7 +659,7 @@ describe('/profiles', () => {
             description: 'profile exist and content is valid',
             expectStatus: 200,
             payload: { sectionType: 'note', content: 'a note' },
-            expectFunction: async (response, profileId, payload) => {
+            expectFunction: async (response, profileId, payload, startTime) => {
               expect(response.body.profileId).toBe(profileId);
               expect(response.body.content).toBe(payload.content);
               expect(response.body.sectionType).toBe(payload.sectionType);
@@ -661,8 +676,10 @@ describe('/profiles', () => {
                 id: response.body.id,
                 sectionType: response.body.sectionType,
               });
-
-              createdProfileSection = response.body;
+              expect(new Date(updatedProfile.updatedAt).getTime()).toBeGreaterThan(
+                startTime,
+              );
+              expect(updatedProfile.updatedBy).toBe(response.body.createdBy);
             },
           },
         ]).test(
@@ -674,19 +691,31 @@ describe('/profiles', () => {
             customHeaders,
             expectFunction,
           }) => {
+            const startTime = Date.now();
             const response = await request
               .post(buildRoute(profileId))
               .set(customHeaders || headers)
               .send(payload);
             expect(response.statusCode).toBe(expectStatus);
             if (expectFunction) {
-              await expectFunction(response, profileId, payload);
+              await expectFunction(response, profileId, payload, startTime);
             }
           },
         );
       });
 
       describe('/profiles/:profileId/sections/:id', () => {
+        let createdProfileSection: profilesDB.ProfileSection;
+
+        beforeAll(async () => {
+          createdProfileSection = await profilesDB.createProfileSection()(accountSid, {
+            sectionType: 'note',
+            content: 'a note',
+            createdBy: workerSid,
+            profileId: createdProfile.profiles[0].id,
+          });
+        });
+
         const buildRoute = (profileId: number, sectionId: number) =>
           `${baseRoute}/${profileId}/sections/${sectionId}`;
         describe('PATCH', () => {
@@ -710,13 +739,26 @@ describe('/profiles', () => {
               description: 'profile and section exist',
               expectStatus: 200,
               payload: { content: 'a note' },
-              expectFunction: (response, profileId, payload) => {
+              expectFunction: async (response, profileId, payload, startTime) => {
                 expect(response.body.profileId).toBe(profileId);
                 expect(response.body.content).toBe(payload.content);
                 expect(response.body.updatedAt).not.toBe(response.body.createdAt);
+                expect(new Date(response.body.updatedAt).getTime()).toBeGreaterThan(
+                  startTime,
+                );
                 expect(response.body.updatedBy).not.toBeNull();
 
                 createdProfileSection = response.body;
+
+                const updatedProfile = await profilesDB.getProfileById()(
+                  accountSid,
+                  profileId,
+                );
+
+                expect(new Date(updatedProfile.updatedAt).getTime()).toBeGreaterThan(
+                  startTime,
+                );
+                expect(updatedProfile.updatedBy).toBe(response.body.updatedBy);
               },
             },
           ]).test(
@@ -729,13 +771,15 @@ describe('/profiles', () => {
               customHeaders,
               expectFunction,
             }) => {
+              const startTime = Date.now();
+
               const response = await request
                 .patch(buildRoute(profileId, sectionId))
                 .set(customHeaders || headers)
                 .send(payload);
               expect(response.statusCode).toBe(expectStatus);
               if (expectFunction) {
-                expectFunction(response, profileId, payload);
+                expectFunction(response, profileId, payload, startTime);
               }
             },
           );

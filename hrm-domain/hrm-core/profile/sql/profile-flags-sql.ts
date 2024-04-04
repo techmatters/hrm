@@ -93,6 +93,10 @@ export const associateProfileToProfileFlagSql = (
 `;
 
 export const disassociateProfileFromProfileFlagSql = `
-  DELETE FROM "ProfilesToProfileFlags"
-  WHERE "profileId" = $<profileId> AND "profileFlagId" = $<profileFlagId> AND "accountSid" = $<accountSid>
+  WITH "deleted" AS (
+    DELETE FROM "ProfilesToProfileFlags"
+    WHERE "profileId" = $<profileId> AND "profileFlagId" = $<profileFlagId> AND "accountSid" = $<accountSid>
+    RETURNING *
+  )
+  SELECT COUNT(*) FROM "deleted";
 `;

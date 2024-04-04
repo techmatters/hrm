@@ -52,7 +52,7 @@ import {
   listProfilesSql,
 } from './sql/profile-list-sql';
 import { getPaginationElements } from '../search';
-import { updateProfileByIdSql } from './sql/profile-update.sql';
+import { TOUCH_PROFILE_SQL, updateProfileByIdSql } from './sql/profile-update.sql';
 import {
   ensureRejection,
   ErrorResult,
@@ -60,6 +60,7 @@ import {
   newOkFromData,
   Result,
 } from '@tech-matters/types';
+import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 
 export { ProfilesListFilters } from './sql/profile-list-sql';
 
@@ -266,6 +267,7 @@ export const associateProfileToProfileFlag =
     profileId: number,
     profileFlagId: number,
     validUntil: Date | null,
+    { user }: { user: TwilioUser },
   ): Promise<
     Result<
       | DatabaseErrorResult
@@ -274,7 +276,7 @@ export const associateProfileToProfileFlag =
           | 'ProfileFlagNotFoundError'
           | 'ProfileAlreadyFlaggedError'
         >,
-      undefined
+      ProfileWithRelationships
     >
   > => {
     const now = new Date();
@@ -285,7 +287,7 @@ export const associateProfileToProfileFlag =
           | 'ProfileFlagNotFoundError'
           | 'ProfileAlreadyFlaggedError'
         >,
-      undefined
+      ProfileWithRelationships
     >(work => txIfNotInOne(task, work))(async t => {
       try {
         await t.none(
@@ -298,7 +300,15 @@ export const associateProfileToProfileFlag =
             validUntil,
           }),
         );
-        return newOkFromData(undefined);
+
+        await t.none(TOUCH_PROFILE_SQL, {
+          updatedBy: user.workerSid,
+          accountSid,
+          profileId,
+        });
+
+        const profile = await getProfileById(t)(accountSid, profileId);
+        return newOkFromData(profile);
       } catch (e) {
         console.error(e);
         const errorResult = inferPostgresErrorResult(e);
@@ -333,15 +343,34 @@ export const associateProfileToProfileFlag =
   };
 
 export const disassociateProfileFromProfileFlag =
-  (task?) => async (accountSid: string, profileId: number, profileFlagId: number) => {
-    await txIfNotInOne(task, async t => {
-      await t.none(disassociateProfileFromProfileFlagSql, {
-        accountSid,
-        profileId,
-        profileFlagId,
-      });
+  (task?) =>
+  async (
+    accountSid: string,
+    profileId: number,
+    profileFlagId: number,
+    { user }: { user: TwilioUser },
+  ): Promise<ProfileWithRelationships> =>
+    txIfNotInOne(task, async t => {
+      const { count } = await t.oneOrNone<{ count: string }>(
+        disassociateProfileFromProfileFlagSql,
+        {
+          accountSid,
+          profileId,
+          profileFlagId,
+        },
+      );
+
+      if (Boolean(parseInt(count, 10))) {
+        await t.none(TOUCH_PROFILE_SQL, {
+          updatedBy: user.workerSid,
+          accountSid,
+          profileId,
+        });
+      }
+
+      const profile = await getProfileById(t)(accountSid, profileId);
+      return profile;
     });
-  };
 
 export type ProfileFlag = NewProfileFlagRecord & RecordCommons;
 
@@ -411,44 +440,72 @@ export type ProfileSection = NewProfileSectionRecord &
     updatedBy?: string;
   };
 
-export const createProfileSection = async (
-  accountSid: string,
-  payload: NewProfileSectionRecord & { createdBy: ProfileSection['createdBy'] },
-): Promise<ProfileSection> => {
-  const now = new Date();
-  const statement = insertProfileSectionSql({
-    ...payload,
-    createdAt: now,
-    updatedAt: now,
-    accountSid,
-    createdBy: payload.createdBy,
-    updatedBy: null,
-  });
-
-  return db.task<ProfileSection>(async t => t.oneOrNone(statement));
-};
-
-export const updateProfileSectionById = async (
-  accountSid: string,
-  payload: {
-    profileId: Profile['id'];
-    sectionId: ProfileSection['id'];
-    content: ProfileSection['content'];
-    updatedBy: ProfileSection['updatedBy'];
-  },
-): Promise<ProfileSection> => {
-  const now = new Date();
-  return db.task<ProfileSection>(async t =>
-    t.oneOrNone(updateProfileSectionByIdSql, {
-      accountSid,
-      profileId: payload.profileId,
-      sectionId: payload.sectionId,
-      content: payload.content,
-      updatedBy: payload.updatedBy,
+export const createProfileSection =
+  (task?) =>
+  async (
+    accountSid: string,
+    payload: NewProfileSectionRecord & { createdBy: ProfileSection['createdBy'] },
+  ): Promise<ProfileSection> => {
+    const now = new Date();
+    const statement = insertProfileSectionSql({
+      ...payload,
+      createdAt: now,
       updatedAt: now,
-    }),
-  );
-};
+      accountSid,
+      createdBy: payload.createdBy,
+      updatedBy: null,
+    });
+
+    return txIfNotInOne(task, async t => {
+      const section = await t.oneOrNone<ProfileSection>(statement);
+
+      if (section) {
+        // trigger an update on profiles
+        await t.none(TOUCH_PROFILE_SQL, {
+          updatedBy: payload.createdBy,
+          profileId: payload.profileId,
+          accountSid,
+        });
+      }
+
+      return section;
+    });
+  };
+
+export const updateProfileSectionById =
+  (task?) =>
+  async (
+    accountSid: string,
+    payload: {
+      profileId: Profile['id'];
+      sectionId: ProfileSection['id'];
+      content: ProfileSection['content'];
+      updatedBy: ProfileSection['updatedBy'];
+    },
+  ): Promise<ProfileSection> => {
+    const now = new Date();
+    return txIfNotInOne(task, async t => {
+      const section = await t.oneOrNone<ProfileSection>(updateProfileSectionByIdSql, {
+        accountSid,
+        profileId: payload.profileId,
+        sectionId: payload.sectionId,
+        content: payload.content,
+        updatedBy: payload.updatedBy,
+        updatedAt: now,
+      });
+
+      if (section) {
+        // trigger an update on profiles
+        await t.none(TOUCH_PROFILE_SQL, {
+          updatedBy: payload.updatedBy,
+          profileId: payload.profileId,
+          accountSid,
+        });
+      }
+
+      return section;
+    });
+  };
 
 export const getProfileSectionById = async (
   accountSid: string,

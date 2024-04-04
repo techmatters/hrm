@@ -210,12 +210,14 @@ export const associateProfileToProfileFlag = async (
       message: 'Invalid parameter "validUntil", must be a future date',
     });
   }
+
   return db.task(async t => {
     const result = await profileDB.associateProfileToProfileFlag(t)(
       accountSid,
       profileId,
       profileFlagId,
       validUntil,
+      { user },
     );
 
     if (isErr(result)) {
@@ -229,16 +231,11 @@ export const associateProfileToProfileFlag = async (
       } else if (result.error === 'ProfileAlreadyFlaggedError') {
         return result as ErrorResult<'ProfileAlreadyFlaggedError'>;
       }
-      result.unwrap();
+      result.unwrap(); // Q for SJH: This bubbles the error. Is this intentional?
+      return;
     }
 
-    // trigger an update on profiles to keep track of who associated
-    await profileDB.updateProfileById(t)(accountSid, {
-      id: profileId,
-      updatedBy: user.workerSid,
-    });
-
-    const profile = await profileDB.getProfileById(t)(accountSid, profileId);
+    const profile = result.data;
 
     return newOk({ data: profile });
   });
@@ -256,18 +253,14 @@ export const disassociateProfileFromProfileFlag = async (
   { user }: { user: TwilioUser },
 ): Promise<profileDB.ProfileWithRelationships> => {
   return db.task(async t => {
-    await profileDB.disassociateProfileFromProfileFlag(t)(
+    const profile = await profileDB.disassociateProfileFromProfileFlag(t)(
       accountSid,
       profileId,
       profileFlagId,
+      { user },
     );
 
-    // trigger an update on profiles to keep track of who disassociated
-    await profileDB.updateProfileById(t)(accountSid, {
-      id: profileId,
-      updatedBy: user.workerSid,
-    });
-    return profileDB.getProfileById(t)(accountSid, profileId);
+    return profile;
   });
 };
 
@@ -340,7 +333,7 @@ export const createProfileSection = async (
   { user }: { user: TwilioUser },
 ): Promise<profileDB.ProfileSection> => {
   const { content, profileId, sectionType } = payload;
-  return profileDB.createProfileSection(accountSid, {
+  return profileDB.createProfileSection()(accountSid, {
     content,
     profileId,
     sectionType,
@@ -358,7 +351,7 @@ export const updateProfileSectionById = async (
   },
   { user }: { user: TwilioUser },
 ): Promise<profileDB.ProfileSection> => {
-  return profileDB.updateProfileSectionById(accountSid, {
+  return profileDB.updateProfileSectionById()(accountSid, {
     ...payload,
     updatedBy: user.workerSid,
   });
