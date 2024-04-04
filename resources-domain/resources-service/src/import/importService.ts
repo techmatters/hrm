@@ -132,7 +132,7 @@ const importService = () => {
           resources,
         );
         if (error.validationFailure) {
-          return { ...error.validationFailure, resource: error.resource };
+          return { ...error.validationFailure, resource: JSON.stringify(error.resource) };
         }
         throw error;
       }
