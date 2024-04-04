@@ -131,9 +131,12 @@ caseSectionsRouter.delete(
   async (req, res) => {
     const {
       accountSid,
+      user,
       params: { caseId, sectionType, sectionId },
     } = req;
-    const deleted = await deleteCaseSection(accountSid, caseId, sectionType, sectionId);
+    const deleted = await deleteCaseSection(accountSid, caseId, sectionType, sectionId, {
+      user,
+    });
     if (!deleted) {
       throw createError(404);
     }
