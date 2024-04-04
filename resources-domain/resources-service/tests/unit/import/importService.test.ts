@@ -229,7 +229,7 @@ describe('upsertResources', () => {
 
     expect(mockUpdateProgress).not.toHaveBeenCalled();
     expect(result).toEqual({
-      resource: brokenResources[1],
+      resource: JSON.stringify(brokenResources[1]),
       reason: 'missing field',
       fields: ['name', 'lastUpdated'],
     });
