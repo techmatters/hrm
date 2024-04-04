@@ -39,10 +39,11 @@ import { ITask } from 'pg-promise';
 export {
   Identifier,
   Profile,
-  getIdentifierWithProfiles,
   ProfileListConfiguration,
   SearchParameters,
 } from './profileDataAccess';
+
+const sanitizeIdentifier = (i: string) => i.replace(' ', '');
 
 export const getProfile =
   (task?) =>
@@ -57,7 +58,10 @@ export const createIdentifierAndProfile =
   (task?) =>
   async (
     accountSid: string,
-    payload: { identifier: NewIdentifierRecord; profile: NewProfileRecord },
+    payload: {
+      identifier: NewIdentifierRecord;
+      profile: NewProfileRecord;
+    },
     { user }: { user: TwilioUser },
   ): Promise<Result<DatabaseErrorResult, profileDB.IdentifierWithProfiles>> => {
     const { identifier, profile } = payload;
@@ -65,7 +69,7 @@ export const createIdentifierAndProfile =
     return txIfNotInOne(task, async t => {
       try {
         const newIdentifier = await profileDB.createIdentifier(t)(accountSid, {
-          identifier: identifier.identifier,
+          identifier: sanitizeIdentifier(identifier.identifier),
           createdBy: user.workerSid,
         });
         const newProfile = await profileDB.createProfile(t)(accountSid, {
@@ -112,7 +116,7 @@ export const getOrCreateProfileWithIdentifier =
 
     const profileResult = await profileDB.getIdentifierWithProfiles(task)({
       accountSid,
-      identifier: identifier.identifier,
+      identifier: sanitizeIdentifier(identifier.identifier),
     });
 
     if (profileResult) {
@@ -181,7 +185,7 @@ export const getIdentifierByIdentifier = async (
 ): Promise<profileDB.IdentifierWithProfiles> =>
   profileDB.getIdentifierWithProfiles()({
     accountSid,
-    identifier,
+    identifier: sanitizeIdentifier(identifier),
   });
 
 export const listProfiles = profileDB.listProfiles;
