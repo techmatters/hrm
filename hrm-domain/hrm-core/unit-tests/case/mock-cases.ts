@@ -47,7 +47,6 @@ export const createMockCaseRecord = (partial: Partial<CaseRecord>): CaseRecord =
           sectionId: 'NOTE_1',
           createdBy: 'contact-adder',
           createdAt: baselineDate.toISOString(),
-          eventTimestamp: baselineDate.toISOString(),
           sectionTypeSpecificData: { note: 'Child with covid-19' },
         },
       ],

@@ -16,7 +16,7 @@
  */
 
 import express from 'express';
-import './defaultConfiguration';
+
 /**
  * Module dependencies.
  */
@@ -40,7 +40,7 @@ const debug = debugFactory('hrm:server');
  */
 
 function normalizePort(val) {
-  const port = parseInt(val, 10);
+  var port = parseInt(val, 10);
 
   if (isNaN(port)) {
     // named pipe
@@ -62,7 +62,7 @@ const appWithResourcesService = configureResourcesService({
 });
 const app = configureDefaultPostMiddlewares(
   appWithResourcesService,
-  process.env.INCLUDE_ERROR_IN_RESPONSE?.toString()?.toLowerCase() === 'true',
+  Boolean(process.env.INCLUDE_ERROR_IN_RESPONSE),
 );
 
 const internalAppWithoutServices = configureDefaultPreMiddlewares(express());
@@ -74,7 +74,7 @@ const internalAppWithResourcesService = configureInternalResourcesService({
 });
 const internalApp = configureDefaultPostMiddlewares(
   internalAppWithResourcesService,
-  process.env.INCLUDE_ERROR_IN_RESPONSE?.toString()?.toLowerCase() === 'true',
+  Boolean(process.env.INCLUDE_ERROR_IN_RESPONSE),
 );
 /**
  * Create HTTP server.
@@ -104,7 +104,7 @@ function onError(error) {
     throw error;
   }
 
-  const bind = typeof port === 'string' ? 'Pipe ' + port : 'Port ' + port;
+  var bind = typeof port === 'string' ? 'Pipe ' + port : 'Port ' + port;
 
   // handle specific listen errors with friendly messages
   switch (error.code) {
@@ -126,8 +126,8 @@ function onError(error) {
  */
 
 const onListening = listenServer => () => {
-  const addr = listenServer.address();
-  const bind = typeof addr === 'string' ? 'pipe ' + addr : 'port ' + addr.port;
+  var addr = listenServer.address();
+  var bind = typeof addr === 'string' ? 'pipe ' + addr : 'port ' + addr.port;
   debug('Listening on ' + bind);
   console.log('Log listening on ' + bind);
 };

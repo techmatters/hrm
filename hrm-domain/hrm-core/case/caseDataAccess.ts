@@ -83,15 +83,12 @@ export type CaseRecord = CaseRecordCommon & {
 
 type CaseWithCount = CaseRecord & { totalCount: number };
 
-export type ListConfiguration = {
-  offset?: string;
-  limit?: string;
-};
-
 export type CaseListConfiguration = {
   sortBy?: OrderByColumnType;
   sortDirection?: OrderByDirectionType;
-} & ListConfiguration;
+  offset?: string;
+  limit?: string;
+};
 
 export type CaseSearchCriteria = {
   phoneNumber?: string;

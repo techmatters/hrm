@@ -17,6 +17,7 @@
 import { getRequest, getServer, headers, useOpenRules } from '../server';
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import { accountSid, ALWAYS_CAN, workerSid } from '../mocks';
+import { db } from '@tech-matters/hrm-core/connection-pool';
 import {
   CaseService,
   createCase,
@@ -31,14 +32,21 @@ import {
   createCaseSection,
   getCaseSection,
 } from '@tech-matters/hrm-core/case/caseSection/caseSectionService';
-import { clearAllTables } from '../dbCleanup';
 
 useOpenRules();
 const server = getServer();
 const request = getRequest(server);
 
+const cleanUpDB = async () => {
+  await db.multi(`
+    DELETE FROM "CaseSections";
+    DELETE FROM "Cases";
+    DELETE FROM "Contacts";
+  `);
+};
+
 beforeAll(async () => {
-  await clearAllTables();
+  await cleanUpDB();
   await mockingProxy.start(false);
   await mockSuccessfulTwilioAuthentication(workerSid);
 });
@@ -48,7 +56,7 @@ afterAll(async () => {
 });
 
 afterEach(async () => {
-  await clearAllTables();
+  await cleanUpDB();
 });
 
 let targetCase: CaseService;
@@ -99,14 +107,6 @@ describe('POST /cases/:caseId/sections', () => {
     },
     {
       description:
-        'eventTimestamp specified: should use this in preference to created time',
-      newSection: {
-        sectionTypeSpecificData: { note: 'hello' },
-        eventTimestamp: new Date(2000, 0, 1).toISOString(),
-      },
-    },
-    {
-      description:
         'any created info should be ignored and the user credentials & current time should be used instead',
       newSection: {
         sectionTypeSpecificData: { note: 'hello' },
@@ -134,16 +134,13 @@ describe('POST /cases/:caseId/sections', () => {
     const apiSection: CaseSection = response.body;
     expect(apiSection).toEqual({
       sectionId: expect.any(String),
-      sectionType: 'note',
       ...newSection, // Will overwrite sectionId expectation if specified
       createdBy: workerSid,
       createdAt: expect.toParseAsDate(),
-      eventTimestamp: expect.toParseAsDate(newSection.eventTimestamp),
       updatedAt: null,
       updatedBy: null,
     });
     const updatedCase = await getCase(targetCase.id, accountSid, ALWAYS_CAN);
-    const { sectionType, ...expectedSection } = apiSection;
     expect(updatedCase).toEqual({
       ...targetCase,
       connectedContacts: [],
@@ -159,13 +156,7 @@ describe('POST /cases/:caseId/sections', () => {
         ],
       },
       sections: {
-        note: [
-          {
-            ...expectedSection,
-            createdAt: expect.toParseAsDate(apiSection.createdAt),
-            eventTimestamp: expect.toParseAsDate(apiSection.eventTimestamp),
-          },
-        ],
+        note: [{ ...apiSection, createdAt: expect.toParseAsDate(apiSection.createdAt) }],
       },
     });
   });
@@ -202,14 +193,10 @@ describe('POST /cases/:caseId/sections', () => {
       },
       sections: {
         note: expect.arrayContaining(
-          apiSections.map(apiSection => {
-            const { sectionType, ...expectedSection } = apiSection;
-            return {
-              ...expectedSection,
-              createdAt: expect.toParseAsDate(apiSection.createdAt),
-              eventTimestamp: expect.toParseAsDate(apiSection.eventTimestamp),
-            };
-          }),
+          apiSections.map(apiSection => ({
+            ...apiSection,
+            createdAt: expect.toParseAsDate(apiSection.createdAt),
+          })),
         ),
       },
     });
@@ -264,7 +251,6 @@ describe('/cases/:caseId/sections/:sectionId', () => {
         ...expectedSection,
         createdBy: workerSid,
         createdAt: expect.toParseAsDate(),
-        eventTimestamp: expect.toParseAsDate(),
         updatedAt: null,
         updatedBy: null,
       });
@@ -337,15 +323,12 @@ describe('/cases/:caseId/sections/:sectionId', () => {
       expect(apiSection).toEqual({
         ...newSection, // Will overwrite sectionId expectation if specified
         sectionId: targetSection.sectionId,
-        sectionType: 'note',
         createdAt: expect.toParseAsDate(targetSection.createdAt),
-        eventTimestamp: expect.toParseAsDate(targetSection.eventTimestamp),
         createdBy: workerSid,
         updatedBy: workerSid,
         updatedAt: expect.toParseAsDate(),
       });
       const updatedCase = await getCase(targetCase.id, accountSid, ALWAYS_CAN);
-      const { sectionType, ...expectedSection } = apiSection;
       expect(updatedCase).toEqual({
         ...targetCase,
         connectedContacts: [],
@@ -365,10 +348,9 @@ describe('/cases/:caseId/sections/:sectionId', () => {
         sections: {
           note: [
             {
-              ...expectedSection,
+              ...apiSection,
               createdAt: expect.toParseAsDate(apiSection.createdAt),
               updatedAt: expect.toParseAsDate(apiSection.updatedAt),
-              eventTimestamp: expect.toParseAsDate(apiSection.eventTimestamp),
             },
           ],
         },

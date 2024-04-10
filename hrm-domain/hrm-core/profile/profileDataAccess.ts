@@ -13,6 +13,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
+import { TResult, newOk, newErr } from '@tech-matters/types';
+
 import {
   NewIdentifierRecord,
   NewProfileRecord,
@@ -30,14 +32,7 @@ import {
   updateProfileFlagByIdSql,
   deleteProfileFlagByIdSql,
 } from './sql/profile-flags-sql';
-import {
-  DatabaseErrorResult,
-  inferPostgresErrorResult,
-  isDatabaseForeignKeyViolationErrorResult,
-  isDatabaseUniqueConstraintViolationErrorResult,
-  OrderByDirectionType,
-  txIfNotInOne,
-} from '../sql';
+import { OrderByDirectionType, txIfNotInOne } from '../sql';
 import * as profileGetSql from './sql/profile-get-sql';
 import { db } from '../connection-pool';
 import {
@@ -53,13 +48,6 @@ import {
 } from './sql/profile-list-sql';
 import { getPaginationElements } from '../search';
 import { updateProfileByIdSql } from './sql/profile-update.sql';
-import {
-  ensureRejection,
-  ErrorResult,
-  newErr,
-  newOkFromData,
-  Result,
-} from '@tech-matters/types';
 
 export { ProfilesListFilters } from './sql/profile-list-sql';
 
@@ -74,7 +62,14 @@ type RecordCommons = {
 
 export type Identifier = NewIdentifierRecord & RecordCommons;
 
-export type IdentifierWithProfiles = Identifier & { profiles: Profile[] };
+export type ProfileCounts = {
+  contactsCount: number;
+  casesCount: number;
+};
+
+export type ProfileWithCounts = Profile & ProfileCounts;
+
+export type IdentifierWithProfiles = Identifier & { profiles: ProfileWithCounts[] };
 
 type ProfileFlagAssociation = {
   id: ProfileFlag['id'];
@@ -82,7 +77,7 @@ type ProfileFlagAssociation = {
 };
 
 export type ProfileWithRelationships = Profile &
-  Profile & {
+  ProfileCounts & {
     identifiers: Identifier[];
     profileFlags: ProfileFlagAssociation[];
     profileSections: {
@@ -101,10 +96,13 @@ export const getIdentifierWithProfiles =
     accountSid,
     identifier,
     identifierId,
-  }: IdentifierParams): Promise<IdentifierWithProfiles> => {
+  }: IdentifierParams): Promise<
+    TResult<'InternalServerError', IdentifierWithProfiles | null>
+  > => {
     const params = { accountSid, identifier, identifierId };
-    return txIfNotInOne<IdentifierWithProfiles>(task, async t => {
-      /* We run two queries here, one to get the identifier and one to get the profiles
+    try {
+      const data = await txIfNotInOne<IdentifierWithProfiles>(task, async t => {
+        /* We run two queries here, one to get the identifier and one to get the profiles
            because writing a single PERFORMANT query against tables that could eventually
            have millions of rows is hard. There is probably a better way to do this...
            but dev time is limited and this works for now.
@@ -112,23 +110,31 @@ export const getIdentifierWithProfiles =
            If you are thinking of changing this, please profile against a db with millions
            of rows in the tables and make sure it is performant.
         */
-      const identifierData: Identifier = await t.oneOrNone(
-        profileGetSql.getIdentifierSql,
-        params,
-      );
+        const identifierData: Identifier = await t.oneOrNone(
+          profileGetSql.getIdentifierSql,
+          params,
+        );
 
-      if (!identifierData) {
-        return null;
-      }
+        if (!identifierData) {
+          return null;
+        }
 
-      const profiles =
-        (await t.manyOrNone(profileGetSql.getProfilesByIdentifierSql, params)) || [];
+        const profiles =
+          (await t.manyOrNone(profileGetSql.getProfilesByIdentifierSql, params)) || [];
 
-      return {
-        ...identifierData,
-        profiles,
-      };
-    });
+        return {
+          ...identifierData,
+          profiles,
+        };
+      });
+
+      return newOk({ data });
+    } catch (err) {
+      return newErr({
+        message: err instanceof Error ? err.message : String(err),
+        error: 'InternalServerError',
+      });
+    }
   };
 
 export const createIdentifier =
@@ -176,44 +182,59 @@ export const updateProfileById =
   async (
     accountSid: string,
     payload: Partial<NewProfileRecord> & { id: number; updatedBy: Profile['updatedBy'] },
-  ): Promise<Profile> => {
-    const { id, name, updatedBy } = payload;
-    const now = new Date();
-    return txIfNotInOne<Profile>(task, async t => {
-      return t.oneOrNone(
-        updateProfileByIdSql({ name: name, updatedAt: now, updatedBy }),
-        {
-          profileId: id,
-          accountSid,
-        },
-      );
-    });
+  ): Promise<TResult<'InternalServerError', Profile>> => {
+    try {
+      const { id, name, updatedBy } = payload;
+      const now = new Date();
+      const data = await txIfNotInOne<Profile>(task, async t => {
+        return t.oneOrNone(
+          updateProfileByIdSql({ name: name, updatedAt: now, updatedBy }),
+          {
+            profileId: id,
+            accountSid,
+          },
+        );
+      });
+      return newOk({ data });
+    } catch (err) {
+      return newErr({
+        message: err instanceof Error ? err.message : String(err),
+        error: 'InternalServerError',
+      });
+    }
   };
 
 export const associateProfileToIdentifier =
-  task =>
+  (task?) =>
   async (
     accountSid: string,
     profileId: number,
     identifierId: number,
-  ): Promise<IdentifierWithProfiles> => {
-    return txIfNotInOne(task, async t => {
-      const now = new Date();
-      await t.none(
-        associateProfileToIdentifierSql({
-          accountSid,
-          profileId,
-          identifierId,
-          createdAt: now,
-          updatedAt: now,
-        }),
-      );
+  ): Promise<TResult<'InternalServerError', IdentifierWithProfiles>> => {
+    try {
+      return await txIfNotInOne(task, async t => {
+        const now = new Date();
+        await t.none(
+          associateProfileToIdentifierSql({
+            accountSid,
+            profileId,
+            identifierId,
+            createdAt: now,
+            updatedAt: now,
+          }),
+        );
 
-      return getIdentifierWithProfiles(t)({
-        accountSid,
-        identifierId,
+        return getIdentifierWithProfiles(t)({
+          accountSid,
+          identifierId,
+        });
       });
-    });
+    } catch (err) {
+      return newErr({
+        message: err instanceof Error ? err.message : String(err),
+        error: 'InternalServerError',
+      });
+    }
   };
 
 export const getProfileById =
@@ -255,19 +276,17 @@ export const listProfiles = async (
         ...filters,
       });
 
-  const { count, rows } = await db.task(async connection => {
-    const result = await connection.any(listProfilesSql(filters || {}, orderClause), {
-      accountSid,
-      limit,
-      offset,
-      profileFlagIds: filters?.profileFlagIds,
+      const totalCount: number = result.length ? result[0].totalCount : 0;
+      return { rows: result, count: totalCount };
     });
 
-    const totalCount: number = result.length ? result[0].totalCount : 0;
-    return { rows: result, count: totalCount };
-  });
-
-  return { profiles: rows, count };
+    return newOk({ data: { profiles: rows, count } });
+  } catch (err) {
+    return newErr({
+      message: err instanceof Error ? err.message : String(err),
+      error: 'InternalServerError',
+    });
+  }
 };
 
 export const associateProfileToProfileFlag =
@@ -277,28 +296,10 @@ export const associateProfileToProfileFlag =
     profileId: number,
     profileFlagId: number,
     validUntil: Date | null,
-  ): Promise<
-    Result<
-      | DatabaseErrorResult
-      | ErrorResult<
-          | 'ProfileNotFoundError'
-          | 'ProfileFlagNotFoundError'
-          | 'ProfileAlreadyFlaggedError'
-        >,
-      undefined
-    >
-  > => {
-    const now = new Date();
-    return ensureRejection<
-      | DatabaseErrorResult
-      | ErrorResult<
-          | 'ProfileNotFoundError'
-          | 'ProfileFlagNotFoundError'
-          | 'ProfileAlreadyFlaggedError'
-        >,
-      undefined
-    >(work => txIfNotInOne(task, work))(async t => {
-      try {
+  ): Promise<TResult<'InternalServerError', null>> => {
+    try {
+      const now = new Date();
+      return await txIfNotInOne(task, async t => {
         await t.none(
           associateProfileToProfileFlagSql({
             accountSid,
@@ -309,111 +310,149 @@ export const associateProfileToProfileFlag =
             validUntil,
           }),
         );
-        return newOkFromData(undefined);
-      } catch (e) {
-        console.error(e);
-        const errorResult = inferPostgresErrorResult(e);
-        if (isDatabaseForeignKeyViolationErrorResult(errorResult)) {
-          if (
-            errorResult.constraint ===
-            'ProfilesToProfileFlags_profileFlagId_ProfileFlags_id_fk'
-          ) {
-            return newErr({
-              error: 'ProfileFlagNotFoundError',
-              message: `[${accountSid}] Profile flag with id ${profileFlagId} not found - trying to set for profile ${profileId}.`,
-            });
-          }
-          if (
-            errorResult.constraint === 'ProfilesToProfileFlags_profileId_Profiles_id_fk'
-          ) {
-            return newErr({
-              error: 'ProfileNotFoundError',
-              message: `[${accountSid}] Profile with id ${profileId} not found - when trying to set flag ${profileFlagId} on it.`,
-            });
-          }
-        }
-        if (isDatabaseUniqueConstraintViolationErrorResult(errorResult)) {
-          return newErr({
-            error: 'ProfileAlreadyFlaggedError',
-            message: `[${accountSid}] Profile with id ${profileId} already has flag ${profileFlagId} set on it.`,
-          });
-        }
-        return errorResult;
-      }
-    });
+
+        return newOk({ data: null });
+      });
+    } catch (err) {
+      return newErr({
+        message: err instanceof Error ? err.message : String(err),
+        error: 'InternalServerError',
+      });
+    }
   };
 
 export const disassociateProfileFromProfileFlag =
-  (task?) => async (accountSid: string, profileId: number, profileFlagId: number) => {
-    await txIfNotInOne(task, async t => {
-      await t.none(disassociateProfileFromProfileFlagSql, {
-        accountSid,
-        profileId,
-        profileFlagId,
+  (task?) =>
+  async (
+    accountSid: string,
+    profileId: number,
+    profileFlagId: number,
+  ): Promise<TResult<'InternalServerError', null>> => {
+    try {
+      return await txIfNotInOne(task, async t => {
+        await t.none(disassociateProfileFromProfileFlagSql, {
+          accountSid,
+          profileId,
+          profileFlagId,
+        });
+
+        return newOk({ data: null });
       });
-    });
+    } catch (err) {
+      return newErr({
+        message: err instanceof Error ? err.message : String(err),
+        error: 'InternalServerError',
+      });
+    }
   };
 
 export type ProfileFlag = NewProfileFlagRecord & RecordCommons;
 
 export const getProfileFlagsForAccount = async (
   accountSid: string,
-): Promise<ProfileFlag[]> => {
-  return db.task<ProfileFlag[]>(async t =>
-    t.manyOrNone(getProfileFlagsByAccountSql, { accountSid }),
-  );
+): Promise<TResult<'InternalServerError', ProfileFlag[]>> => {
+  try {
+    return await db
+      .task<ProfileFlag[]>(async t =>
+        t.manyOrNone(getProfileFlagsByAccountSql, { accountSid }),
+      )
+      .then(data => newOk({ data }));
+  } catch (err) {
+    return newErr({
+      message: err instanceof Error ? err.message : String(err),
+      error: 'InternalServerError',
+    });
+  }
 };
 
 export const updateProfileFlagById = async (
   accountSid: string,
   payload: NewProfileFlagRecord & { id: number; updatedBy: ProfileFlag['updatedBy'] },
-): Promise<ProfileFlag> => {
-  const { id, name, updatedBy } = payload;
-  const now = new Date();
-  return db.task<ProfileFlag>(async t => {
-    return t.oneOrNone(updateProfileFlagByIdSql({ name, updatedAt: now, updatedBy }), {
-      profileId: id,
-      accountSid,
+): Promise<TResult<'InternalServerError', ProfileFlag>> => {
+  try {
+    const { id, name, updatedBy } = payload;
+    const now = new Date();
+    const data = await db.task<ProfileFlag>(async t => {
+      return t.oneOrNone(
+        updateProfileFlagByIdSql({ name: name, updatedAt: now, updatedBy }),
+        {
+          profileId: id,
+          accountSid,
+        },
+      );
     });
-  });
+    return newOk({ data });
+  } catch (err) {
+    return newErr({
+      message: err instanceof Error ? err.message : String(err),
+      error: 'InternalServerError',
+    });
+  }
 };
 
 export const deleteProfileFlagById = async (
-  profileFlagId: number,
+  profileId: number,
   accountSid: string,
-): Promise<ProfileFlag> => {
-  return db.task<ProfileFlag>(async t =>
-    t.oneOrNone(deleteProfileFlagByIdSql, {
-      accountSid,
-      profileFlagId,
-    }),
-  );
+): Promise<TResult<'InternalServerError', ProfileFlag>> => {
+  try {
+    const data = await db.task<ProfileFlag>(async t =>
+      t.oneOrNone(deleteProfileFlagByIdSql, {
+        profileId,
+        accountSid,
+      }),
+    );
+
+    return newOk({ data });
+  } catch (err) {
+    return newErr({
+      message: err instanceof Error ? err.message : String(err),
+      error: 'InternalServerError',
+    });
+  }
 };
 
 export const getProfileFlagsByIdentifier = async (
   accountSid: string,
   identifier: string,
-): Promise<ProfileFlag[]> => {
-  return db.task<ProfileFlag[]>(async t =>
-    t.manyOrNone(getProfileFlagsByIdentifierSql, { accountSid, identifier }),
-  );
+): Promise<TResult<'InternalServerError', ProfileFlag[]>> => {
+  try {
+    return await db
+      .task<ProfileFlag[]>(async t =>
+        t.manyOrNone(getProfileFlagsByIdentifierSql, { accountSid, identifier }),
+      )
+      .then(data => newOk({ data }));
+  } catch (err) {
+    return newErr({
+      message: err instanceof Error ? err.message : String(err),
+      error: 'InternalServerError',
+    });
+  }
 };
 
 export const createProfileFlag = async (
   accountSid: string,
   payload: NewProfileFlagRecord & { createdBy: ProfileFlag['createdBy'] },
-): Promise<ProfileFlag> => {
-  const now = new Date();
-  const statement = insertProfileFlagSql({
-    name: payload.name,
-    createdAt: now,
-    createdBy: payload.createdBy,
-    updatedAt: now,
-    updatedBy: payload.createdBy,
-    accountSid,
-  });
+): Promise<TResult<'InternalServerError', ProfileFlag>> => {
+  try {
+    const now = new Date();
+    const statement = insertProfileFlagSql({
+      name: payload.name,
+      createdAt: now,
+      updatedAt: now,
+      accountSid,
+      createdBy: payload.createdBy,
+      updatedBy: null,
+    });
 
-  return db.task<ProfileFlag>(async t => t.one(statement));
+    return await db
+      .task<ProfileFlag>(async t => t.one(statement))
+      .then(data => newOk({ data }));
+  } catch (err) {
+    return newErr({
+      message: err instanceof Error ? err.message : String(err),
+      error: 'InternalServerError',
+    });
+  }
 };
 
 export type ProfileSection = NewProfileSectionRecord &
@@ -425,18 +464,27 @@ export type ProfileSection = NewProfileSectionRecord &
 export const createProfileSection = async (
   accountSid: string,
   payload: NewProfileSectionRecord & { createdBy: ProfileSection['createdBy'] },
-): Promise<ProfileSection> => {
-  const now = new Date();
-  const statement = insertProfileSectionSql({
-    ...payload,
-    createdAt: now,
-    updatedAt: now,
-    accountSid,
-    createdBy: payload.createdBy,
-    updatedBy: null,
-  });
+): Promise<TResult<'InternalServerError', ProfileSection>> => {
+  try {
+    const now = new Date();
+    const statement = insertProfileSectionSql({
+      ...payload,
+      createdAt: now,
+      updatedAt: now,
+      accountSid,
+      createdBy: payload.createdBy,
+      updatedBy: null,
+    });
 
-  return db.task<ProfileSection>(async t => t.oneOrNone(statement));
+    return await db
+      .task<ProfileSection>(async t => t.oneOrNone(statement))
+      .then(data => newOk({ data }));
+  } catch (err) {
+    return newErr({
+      message: err instanceof Error ? err.message : String(err),
+      error: 'InternalServerError',
+    });
+  }
 };
 
 export const updateProfileSectionById = async (
@@ -447,24 +495,43 @@ export const updateProfileSectionById = async (
     content: ProfileSection['content'];
     updatedBy: ProfileSection['updatedBy'];
   },
-): Promise<ProfileSection> => {
-  const now = new Date();
-  return db.task<ProfileSection>(async t =>
-    t.oneOrNone(updateProfileSectionByIdSql, {
-      accountSid,
-      profileId: payload.profileId,
-      sectionId: payload.sectionId,
-      content: payload.content,
-      updatedBy: payload.updatedBy,
-      updatedAt: now,
-    }),
-  );
+): Promise<TResult<'InternalServerError', ProfileSection>> => {
+  try {
+    const now = new Date();
+    return await db
+      .task<ProfileSection>(async t =>
+        t.oneOrNone(updateProfileSectionByIdSql, {
+          accountSid,
+          profileId: payload.profileId,
+          sectionId: payload.sectionId,
+          content: payload.content,
+          updatedBy: payload.updatedBy,
+          updatedAt: now,
+        }),
+      )
+      .then(data => newOk({ data }));
+  } catch (err) {
+    return newErr({
+      message: err instanceof Error ? err.message : String(err),
+      error: 'InternalServerError',
+    });
+  }
 };
 
 export const getProfileSectionById = async (
   accountSid: string,
   { profileId, sectionId }: { profileId: Profile['id']; sectionId: ProfileSection['id'] },
-): Promise<ProfileSection> =>
-  db.task<ProfileSection>(async t =>
-    t.oneOrNone(getProfileSectionByIdSql, { accountSid, profileId, sectionId }),
-  );
+): Promise<TResult<'InternalServerError', ProfileSection>> => {
+  try {
+    const data = await db.task<ProfileSection>(async t =>
+      t.oneOrNone(getProfileSectionByIdSql, { accountSid, profileId, sectionId }),
+    );
+
+    return newOk({ data });
+  } catch (err) {
+    return newErr({
+      message: err instanceof Error ? err.message : String(err),
+      error: 'InternalServerError',
+    });
+  }
+};

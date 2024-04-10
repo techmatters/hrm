@@ -127,7 +127,6 @@ const caseSectionRecordsToInfo = (
       sectionId: id,
       sectionTypeSpecificData,
       createdBy,
-      eventTimestamp,
       ...restOfRecord
     } = record;
 
@@ -203,8 +202,6 @@ const caseToCaseRecord = (
         sectionId: section.id ?? randomUUID(),
         createdBy: section.twilioWorkerId ?? workerSid,
         createdAt: section.createdAt ?? new Date().toISOString(),
-        eventTimestamp:
-          section.eventTimestamp ?? section.createdAt ?? new Date().toISOString(),
         updatedBy: section.updatedBy,
         updatedAt: section.updatedAt,
         sectionTypeSpecificData: getSectionSpecificData(section),
@@ -301,6 +298,18 @@ const mapEssentialData =
 
     const { summary, followUpDate, definitionVersion } = info;
 
+    const firstChildRawJson = connectedContacts[0]?.rawJson;
+    const { firstName, lastName } = firstChildRawJson?.childInformation ?? {};
+
+    const firstChildEssentialData = {
+      rawJson: {
+        childInformation: {
+          firstName,
+          lastName,
+        },
+      },
+    };
+
     const infoEssentialData = {
       summary,
       followUpDate,
@@ -310,7 +319,7 @@ const mapEssentialData =
     return {
       id,
       status,
-      connectedContacts: connectedContacts.slice(0, 1),
+      connectedContacts: connectedContacts.length > 0 ? [firstChildEssentialData] : [],
       twilioWorkerId,
       categories,
       createdAt,

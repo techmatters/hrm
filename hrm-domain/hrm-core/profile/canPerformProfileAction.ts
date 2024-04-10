@@ -38,7 +38,11 @@ export const canPerformActionOnProfile = async ({
 }) => {
   const result = await getProfileById()(accountSid, profileId);
 
-  const isAllowed = can(user, action, result);
+  if (isErr(result)) {
+    return result;
+  }
+
+  const isAllowed = can(user, action, result.data);
 
   return newOk({ data: { isAllowed } });
 };
@@ -100,14 +104,18 @@ export const canPerformActionOnProfileSection = async ({
 
   const result = await getProfileSectionById(accountSid, { profileId, sectionId });
 
-  if (!result) {
+  if (isErr(result)) {
+    return result;
+  }
+
+  if (!result.data) {
     return newErr({
       message: `Tried to retrieve profie section with profileId: ${profileId} and sectionId: ${sectionId}, not found`,
       error: 'ProfileSectionNotFoundError',
     });
   }
 
-  const isAllowed = can(user, action, result);
+  const isAllowed = can(user, action, result.data);
 
   return newOk({ data: { isAllowed } });
 };
@@ -137,6 +145,7 @@ export const canPerformActionOnProfileSectionMiddleware = (
     if (isErr(result)) {
       return next(
         mapHTTPError(result, {
+          InternalServerError: 500,
           ProfileSectionNotFoundError: 404,
         }),
       );
