@@ -32,11 +32,10 @@ import * as contactDb from '@tech-matters/hrm-core/contact/contactDataAccess';
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import { getRequest, getServer, headers, setRules, useOpenRules } from '../server';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
-import { deleteContactById } from './dbCleanup';
+import { deleteContactById, fullClearDown } from './dbCleanup';
 import { actionsMaps } from '@tech-matters/hrm-core/permissions/index';
 import { TKConditionsSets } from '@tech-matters/hrm-core/permissions/rulesMap';
 import each from 'jest-each';
-import { clearAllTables } from '../dbCleanup';
 
 const server = getServer();
 const request = getRequest(server);
@@ -44,7 +43,7 @@ const request = getRequest(server);
 beforeAll(async () => {
   await mockingProxy.start();
   await mockSuccessfulTwilioAuthentication(workerSid);
-  await clearAllTables();
+  await fullClearDown();
 });
 
 afterAll(async () => {
@@ -58,7 +57,7 @@ beforeEach(() => {
 });
 
 afterEach(async () => {
-  await clearAllTables();
+  await fullClearDown();
 });
 
 const route = `/v0/accounts/${accountSid}/contacts`;

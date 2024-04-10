@@ -30,13 +30,15 @@ beforeAll(async () => {
       name: 'TEST_PROFILE',
       createdBy: workerSid,
     }),
-    await profileDB.createProfileFlag(accountSid, {
-      name: 'TEST_PROFILE_FLAG',
-      createdBy: workerSid,
-    }),
+    (
+      await profileDB.createProfileFlag(accountSid, {
+        name: 'TEST_PROFILE_FLAG',
+        createdBy: workerSid,
+      })
+    ).unwrap(),
   ]);
 
-  profileFlags = await profileDB.getProfileFlagsForAccount(accountSid);
+  profileFlags = (await profileDB.getProfileFlagsForAccount(accountSid)).unwrap();
 });
 
 afterAll(async () => {

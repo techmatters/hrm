@@ -98,7 +98,6 @@ describe('searchCases', () => {
           createdBy: 'contact-adder',
           sectionId: 'NOTE_1',
           createdAt: baselineCreatedDate,
-          eventTimestamp: baselineCreatedDate,
           sectionTypeSpecificData: {
             note: 'Child with covid-19',
           },
@@ -163,7 +162,6 @@ describe('searchCases', () => {
         sectionTypeSpecificData: { note: 'Child with covid-19' },
         createdBy: 'contact-adder',
         createdAt: baselineCreatedDate,
-        eventTimestamp: baselineCreatedDate,
         caseId,
         sectionType: 'note',
         sectionId: 'NOTE_1',
@@ -210,7 +208,6 @@ describe('searchCases', () => {
         sectionTypeSpecificData: { note: 'Child with covid-19' },
         createdBy: 'contact-adder',
         createdAt: baselineCreatedDate,
-        eventTimestamp: baselineCreatedDate,
         caseId,
         sectionType: 'note',
         sectionId: 'NOTE_1',
@@ -478,11 +475,9 @@ describe('update existing case', () => {
       dbResponse: {
         caseSections: [
           {
-            accountSid,
             caseId: 1,
             createdBy: 'contact-updater',
             createdAt: expect.toParseAsDate(),
-            eventTimestamp: expect.toParseAsDate(),
             sectionId: expect.anything(),
             sectionType: 'note',
             sectionTypeSpecificData: {
@@ -500,7 +495,6 @@ describe('update existing case', () => {
         info: {
           counsellorNotes: [
             {
-              accountSid,
               note: 'Refugee Child',
               custom: 'data',
               twilioWorkerId: 'contact-updater',
@@ -519,7 +513,6 @@ describe('update existing case', () => {
               createdBy: 'contact-updater',
               sectionId: expect.anything(),
               createdAt: expect.toParseAsDate(),
-              eventTimestamp: expect.toParseAsDate(),
             },
           ],
         },
@@ -531,11 +524,9 @@ describe('update existing case', () => {
       expectedDbCaseParameter: {
         caseSections: [
           {
-            accountSid: undefined,
             caseId: 1,
             createdBy: 'contact-updater',
             createdAt: expect.toParseAsDate(),
-            eventTimestamp: expect.toParseAsDate(),
             updatedAt: undefined,
             updatedBy: undefined,
             sectionId: expect.anything(),

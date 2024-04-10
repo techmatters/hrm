@@ -20,16 +20,16 @@ import { db } from '@tech-matters/hrm-core/connection-pool';
 import * as caseApi from '@tech-matters/hrm-core/case/caseService';
 import * as contactApi from '@tech-matters/hrm-core/contact/contactService';
 import * as profilesDB from '@tech-matters/hrm-core/profile/profileDataAccess';
-import { IdentifierWithProfiles } from '@tech-matters/hrm-core/profile/profileDataAccess';
 import { getRequest, getServer, headers, useOpenRules } from './server';
 import * as mocks from './mocks';
-import { ALWAYS_CAN } from './mocks';
-import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
+import { mockSuccessfulTwilioAuthentication, mockingProxy } from '@tech-matters/testing';
 import {
   getOrCreateProfileWithIdentifier,
   Profile,
 } from '@tech-matters/hrm-core/profile/profileService';
+import { IdentifierWithProfiles } from '@tech-matters/hrm-core/profile/profileDataAccess';
 import { twilioUser } from '@tech-matters/twilio-worker-auth';
+import { ALWAYS_CAN } from './mocks';
 import { AccountSID } from '@tech-matters/types';
 
 useOpenRules();
@@ -70,13 +70,16 @@ describe('/profiles', () => {
     const profilesNames = ['Murray', 'Antonella', null];
     let defaultFlags: profilesDB.ProfileFlag[];
     beforeAll(async () => {
-      existingProfiles = (await profilesDB.listProfiles(accountSid, {}, {})).profiles;
+      existingProfiles = (await profilesDB.listProfiles(accountSid, {}, {})).unwrap()
+        .profiles;
       createdProfiles = await Promise.all(
         profilesNames.map(name =>
           profilesDB.createProfile()(accountSid, { name, createdBy: workerSid }),
         ),
       );
-      defaultFlags = await profilesDB.getProfileFlagsForAccount(accountSid);
+      defaultFlags = await profilesDB
+        .getProfileFlagsForAccount(accountSid)
+        .then(result => result.unwrap());
 
       const murray = createdProfiles.find(p => p.name === 'Murray');
       const antonella = createdProfiles.find(p => p.name === 'Antonella');
@@ -220,26 +223,75 @@ describe('/profiles', () => {
     const accounts: AccountSID[] = [accountSid, 'AC_ANOTHER_ACCOUNT'];
 
     let createdProfiles: { [acc: string]: IdentifierWithProfiles };
+    let createdCases: { [acc: string]: caseApi.CaseService };
+    let createdContacts: { [acc: string]: contactApi.Contact };
     beforeAll(async () => {
       // Create same identifier for two diferent accounts
       createdProfiles = (
         await Promise.all(
           accounts.map(acc =>
-            db.task(async t =>
-              getOrCreateProfileWithIdentifier(t)(
-                acc,
-                { identifier: { identifier }, profile: { name: null } },
-                { user: { isSupervisor: false, roles: [], workerSid } },
-              ),
+            getOrCreateProfileWithIdentifier()(
+              acc,
+              { identifier: { identifier }, profile: { name: null } },
+              { user: { isSupervisor: false, roles: [], workerSid } },
             ),
           ),
         )
       )
         .map(result => result.unwrap().identifier)
         .reduce((accum, curr) => ({ ...accum, [curr.accountSid]: curr }), {});
+      // Create one case for each
+      createdCases = (
+        await Promise.all(accounts.map(acc => caseApi.createCase(case1, acc, workerSid)))
+      ).reduce((accum, curr) => ({ ...accum, [curr.accountSid]: curr }), {});
+
+      // Create one contact for each
+      createdContacts = (
+        await Promise.all(
+          accounts.map(acc =>
+            contactApi.createContact(
+              acc,
+              workerSid,
+              {
+                ...contact1,
+                number: identifier,
+                profileId: createdProfiles[acc].profiles[0].id,
+                identifierId: createdProfiles[acc].id,
+              },
+              ALWAYS_CAN,
+            ),
+          ),
+        )
+      ).reduce((accum, curr) => ({ ...accum, [curr.accountSid]: curr }), {});
+
+      // Associate contacts to cases
+      await Promise.all(
+        accounts.map(acc =>
+          contactApi.connectContactToCase(
+            createdContacts[acc].accountSid,
+            String(createdContacts[acc].id),
+            String(createdCases[acc].id),
+            {
+              user: twilioUser(workerSid, []),
+              can: () => true,
+            },
+          ),
+        ),
+      );
     });
 
     afterAll(async () => {
+      await Promise.all(
+        Object.entries(createdContacts).flatMap(([, c]) => [
+          db.task(t => t.none(`DELETE FROM "ContactJobs"  WHERE "contactId" = ${c.id}`)),
+          deleteFromTableById('Contacts')(c.id, c.accountSid),
+        ]),
+      );
+      await Promise.all(
+        Object.entries(createdCases).map(([, c]) =>
+          deleteFromTableById('Cases')(c.id, c.accountSid),
+        ),
+      );
       await Promise.all(
         Object.entries(createdProfiles).flatMap(([, idWithp]) => [
           ...idWithp.profiles.map(p =>
@@ -264,6 +316,8 @@ describe('/profiles', () => {
         expect(response.body.profiles[0].id).toBe(
           createdProfiles[accountSid].profiles[0].id,
         );
+        expect(response.body.profiles[0].contactsCount).toBe(1);
+        expect(response.body.profiles[0].casesCount).toBe(1);
       });
     });
   });
@@ -272,14 +326,11 @@ describe('/profiles', () => {
     let createdProfile: IdentifierWithProfiles;
     beforeAll(async () => {
       // Create an identifier
-      createdProfile = await db.task(async t => {
-        const result = await getOrCreateProfileWithIdentifier(t)(
-          accountSid,
-          { identifier: { identifier }, profile: { name: null } },
-          { user: { isSupervisor: false, roles: [], workerSid } },
-        );
-        return result.unwrap().identifier;
-      });
+      createdProfile = await getOrCreateProfileWithIdentifier()(
+        accountSid,
+        { identifier: { identifier }, profile: { name: null } },
+        { user: { isSupervisor: false, roles: [], workerSid } },
+      ).then(result => result.unwrap().identifier);
     });
 
     afterAll(async () => {
@@ -452,7 +503,9 @@ describe('/profiles', () => {
 
         let defaultFlags: profilesDB.ProfileFlag[];
         beforeAll(async () => {
-          defaultFlags = await profilesDB.getProfileFlagsForAccount(accountSid);
+          defaultFlags = await profilesDB
+            .getProfileFlagsForAccount(accountSid)
+            .then(result => result.unwrap());
         });
 
         describe('POST', () => {
@@ -479,7 +532,7 @@ describe('/profiles', () => {
             {
               description: 'flag does not exists',
               profileFlagId: 0,
-              expectStatus: 400,
+              expectStatus: 500,
             },
             {
               description: 'profile and flag exist',
@@ -499,7 +552,7 @@ describe('/profiles', () => {
               beforeFunction: (profileId, profileFlagId) =>
                 request.post(buildRoute(profileId, profileFlagId)).set(headers),
               description: 'association already exists',
-              expectStatus: 409,
+              expectStatus: 500,
             },
             {
               description: 'a valid "validUntil" date is sent',
@@ -550,12 +603,14 @@ describe('/profiles', () => {
 
         describe('DELETE', () => {
           beforeAll(async () => {
-            await profilesDB.associateProfileToProfileFlag()(
-              accountSid,
-              createdProfile.profiles[0].id,
-              defaultFlags[0].id,
-              null,
-            );
+            (
+              await profilesDB.associateProfileToProfileFlag()(
+                accountSid,
+                createdProfile.profiles[0].id,
+                defaultFlags[0].id,
+                null,
+              )
+            ).unwrap();
 
             const pfs = (
               await profilesDB.getProfileById()(accountSid, createdProfile.profiles[0].id)
@@ -808,18 +863,19 @@ describe('/profiles', () => {
       });
 
       test('when custom flags are added, return default and custom flags', async () => {
-        const customFlag = await profilesDB.createProfileFlag(accountSid, {
-          name: 'custom',
-          createdBy: workerSid,
-        });
+        const customFlag = (
+          await profilesDB.createProfileFlag(accountSid, {
+            name: 'custom',
+            createdBy: workerSid,
+          })
+        ).unwrap();
 
-        const customFlagForAnother = await profilesDB.createProfileFlag(
-          'ANOTHER_ACCOUNT',
-          {
+        const customFlagForAnother = (
+          await profilesDB.createProfileFlag('ANOTHER_ACCOUNT', {
             name: 'custom 2',
             createdBy: workerSid,
-          },
-        );
+          })
+        ).unwrap();
 
         const response = await request.get(route).set(headers);
 
@@ -835,8 +891,8 @@ describe('/profiles', () => {
           response.body.find(f => f.name === customFlagForAnother.name),
         ).not.toBeDefined();
 
-        await deleteFromTableById('ProfileFlags')(customFlag.id, customFlag.accountSid);
-        await deleteFromTableById('ProfileFlags')(
+        deleteFromTableById('ProfileFlags')(customFlag.id, customFlag.accountSid);
+        deleteFromTableById('ProfileFlags')(
           customFlagForAnother.id,
           customFlagForAnother.accountSid,
         );

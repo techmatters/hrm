@@ -41,6 +41,16 @@ export const getProfilesSqlBase = (selectTargetProfilesQuery: string) => `
     LEFT JOIN "Identifiers" identifiers ON identifiers.id = p2i."identifierId" AND identifiers."accountSid" = p2i."accountSid"
     GROUP BY p2i."profileId"
   ),
+  
+  ContactCaseCounts AS (
+    SELECT
+        "Contacts"."profileId",
+        COUNT(*) as "contactsCount",
+        COUNT(DISTINCT "Contacts"."caseId") as "casesCount"
+    FROM TargetProfiles profile
+	  LEFT JOIN "Contacts" ON "Contacts"."profileId" = profile.id AND "Contacts"."accountSid" = profile."accountSid"
+    GROUP BY "Contacts"."profileId"
+  ),
 
   RelatedProfileFlags AS (
     SELECT
@@ -64,11 +74,14 @@ export const getProfilesSqlBase = (selectTargetProfilesQuery: string) => `
   SELECT
     tp.*,
     COALESCE(ri.identifiers, '[]'::jsonb) as identifiers,
+    COALESCE(ccc."contactsCount"::int, 0) as "contactsCount",
+    COALESCE(ccc."casesCount"::int, 0) as "casesCount",
     COALESCE(rpf."profileFlags", '[]'::jsonb) as "profileFlags",
     COALESCE(rps."profileSections", '[]'::jsonb) as "profileSections"
   FROM TargetProfiles tp
   LEFT JOIN "Profiles" profiles ON profiles.id = tp.id AND profiles."accountSid" = tp."accountSid" -- join on profiles so Postgres will use the indexes
   LEFT JOIN RelatedIdentifiers ri ON profiles.id = ri."profileId"
+  LEFT JOIN ContactCaseCounts ccc ON profiles.id = ccc."profileId"
   LEFT JOIN RelatedProfileFlags rpf ON profiles.id = rpf."profileId"
   LEFT JOIN RelatedProfileSections rps ON profiles.id = rps."profileId"
 `;
@@ -86,10 +99,13 @@ export const getIdentifierSql = `
 export const getProfilesByIdentifierSql = `
   SELECT
     profiles.id AS id,
-    profiles.name AS name
+    profiles.name AS name,
+    CAST(COUNT(CASE WHEN "Contacts"."caseId" IS NOT NULL THEN "Contacts"."profileId" END) AS INTEGER) AS "casesCount",
+    CAST(COUNT(CASE WHEN "Contacts"."profileId" IS NOT NULL THEN 1 END) AS INTEGER) AS "contactsCount"
   FROM "Identifiers" ids
   LEFT JOIN "ProfilesToIdentifiers" p2i ON ids.id = p2i."identifierId"
   LEFT JOIN "Profiles" profiles ON profiles.id = p2i."profileId"
+  LEFT JOIN "Contacts" ON "Contacts"."profileId" = profiles.id
   ${WHERE_IDENTIFIER_CLAUSE}
   GROUP BY profiles.id, profiles.name;
 `;

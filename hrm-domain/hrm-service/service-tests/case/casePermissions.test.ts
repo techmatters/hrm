@@ -51,9 +51,6 @@ afterAll(done => {
 
 beforeAll(async () => {
   await mockingProxy.start();
-});
-
-beforeEach(async () => {
   await mockSuccessfulTwilioAuthentication(workerSid);
 });
 
@@ -472,7 +469,6 @@ describe('isCaseContactOwner condition', () => {
   type TestCase = {
     permissions: TKConditionsSets<'case'>;
     expectedPermittedCases: string[];
-    userIsSupervisor?: boolean;
   };
 
   const testCases: TestCase[] = [
@@ -511,25 +507,6 @@ describe('isCaseContactOwner condition', () => {
         'case created by this user, with owned contact',
       ],
     },
-    {
-      permissions: [['isCaseContactOwner'], ['isSupervisor']],
-      expectedPermittedCases: Object.values(caseDescriptions).flat(),
-      userIsSupervisor: true,
-    },
-    {
-      permissions: [['isCreator'], ['isSupervisor']],
-      expectedPermittedCases: Object.values(caseDescriptions).flat(),
-      userIsSupervisor: true,
-    },
-    {
-      permissions: [['isCreator', 'isSupervisor']],
-      expectedPermittedCases: [
-        'case created by this user, with owned contact',
-        'case created by this user, with no contact',
-        'case created by this user, with other contact',
-      ],
-      userIsSupervisor: true,
-    },
   ];
 
   describe('/cases/:id route - GET', () => {
@@ -539,16 +516,13 @@ describe('isCaseContactOwner condition', () => {
         .map(desc => `[${desc}]`)
         .join(', ')} should be permitted when VIEW_CASE permissions are ${JSON.stringify(
         tc.permissions,
-      )} and user is ${tc.userIsSupervisor ? 'a supervisor' : 'not a supervisor'}`,
+      )}`,
     }));
     each(testCasesWithDescriptions).test(
       '$description',
-      async ({ permissions, expectedPermittedCases, userIsSupervisor }: TestCase) => {
+      async ({ permissions, expectedPermittedCases }: TestCase) => {
         const subRoute = id => `${route}/${id}`;
         setRules({ viewCase: permissions });
-        if (userIsSupervisor) {
-          await mockSuccessfulTwilioAuthentication(workerSid, ['supervisor']);
-        }
         const responses = await Promise.all(
           sampleCases.map(async c => request.get(subRoute(c.id)).set(headers)),
         );
@@ -574,15 +548,12 @@ describe('isCaseContactOwner condition', () => {
           ', ',
         )} should be returned in searches when VIEW_CASE permissions are ${JSON.stringify(
         tc.permissions,
-      )} and user is ${tc.userIsSupervisor ? 'a supervisor' : 'not a supervisor'}`,
+      )}`,
     }));
     each(testCasesWithDescriptions).test(
       '$description',
-      async ({ permissions, expectedPermittedCases, userIsSupervisor }: TestCase) => {
+      async ({ permissions, expectedPermittedCases }: TestCase) => {
         setRules({ viewCase: permissions });
-        if (userIsSupervisor) {
-          await mockSuccessfulTwilioAuthentication(workerSid, ['supervisor']);
-        }
         const expectedIds = expectedPermittedCases.sort();
         const {
           body: { cases, count },

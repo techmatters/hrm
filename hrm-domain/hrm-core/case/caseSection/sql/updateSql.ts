@@ -18,7 +18,6 @@ export const UPDATE_CASE_SECTION_BY_ID = `
   UPDATE "CaseSections"
   SET
     "sectionTypeSpecificData" = $<sectionTypeSpecificData>,
-    "eventTimestamp" = COALESCE($<eventTimestamp>, "eventTimestamp"),
     "updatedAt" = $<updatedAt>,
     "updatedBy" = $<updatedBy>
   WHERE "accountSid" = $<accountSid>
