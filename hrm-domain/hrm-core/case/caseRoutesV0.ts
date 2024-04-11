@@ -30,14 +30,14 @@ import { getCaseTimeline } from './caseSection/caseSectionService';
 const casesRouter = SafeRouter();
 casesRouter.put('/:id/status', canUpdateCaseStatus, async (req, res) => {
   const {
-    accountSid,
+    hrmAccountId,
     user,
     body: { status },
     can,
     permissions,
   } = req;
   const { id } = req.params;
-  const updatedCase = await caseApi.updateCaseStatus(id, status, accountSid, {
+  const updatedCase = await caseApi.updateCaseStatus(id, status, hrmAccountId, {
     can,
     user,
     permissions,
@@ -50,7 +50,7 @@ casesRouter.put('/:id/status', canUpdateCaseStatus, async (req, res) => {
 
 casesRouter.put('/:id/overview', canEditCaseOverview, async (req, res) => {
   const {
-    accountSid,
+    hrmAccountId,
     user: { workerSid },
     body,
   } = req;
@@ -66,7 +66,7 @@ casesRouter.put('/:id/overview', canEditCaseOverview, async (req, res) => {
       `Invalid followUpDate provided: ${followUpDate} - must be a valid ISO 8601 date string`,
     );
   }
-  const updatedCase = await caseApi.updateCaseOverview(accountSid, id, body, workerSid);
+  const updatedCase = await caseApi.updateCaseOverview(hrmAccountId, id, body, workerSid);
   if (!updatedCase) {
     throw createError(404);
   }

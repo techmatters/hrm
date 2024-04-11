@@ -163,8 +163,8 @@ profilesRouter.get(
 );
 
 profilesRouter.get('/flags', publicEndpoint, async (req, res) => {
-  const { accountSid } = req;
-  const result = await profileController.getProfileFlags(accountSid);
+  const { hrmAccountId } = req;
+  const result = await profileController.getProfileFlags(hrmAccountId);
 
   res.json(result);
 });
