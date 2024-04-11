@@ -72,11 +72,11 @@ caseSectionsRouter.get(
   canViewCaseSection,
   async (req: Request, res) => {
     const {
-      accountSid,
+      hrmAccountId,
       params: { caseId, sectionType, sectionId },
     } = req;
 
-    const section = await getCaseSection(accountSid, caseId, sectionType, sectionId);
+    const section = await getCaseSection(hrmAccountId, caseId, sectionType, sectionId);
     if (!section) {
       throw createError(404);
     }
@@ -86,12 +86,12 @@ caseSectionsRouter.get(
 
 caseSectionsRouter.post('/:sectionType', canAddCaseSection, async (req, res) => {
   const {
-    accountSid,
+    hrmAccountId,
     user,
     params: { caseId, sectionType },
   } = req;
   const createdCase = await createCaseSection(
-    accountSid,
+    hrmAccountId,
     caseId,
     sectionType,
     req.body,
@@ -106,12 +106,12 @@ caseSectionsRouter.put(
   canEditCaseSection,
   async (req, res) => {
     const {
-      accountSid,
+      hrmAccountId,
       user,
       params: { caseId, sectionType, sectionId },
     } = req;
     const updatedSection = await replaceCaseSection(
-      accountSid,
+      hrmAccountId,
       caseId,
       sectionType,
       sectionId,
@@ -130,13 +130,19 @@ caseSectionsRouter.delete(
   canEditCaseSection,
   async (req, res) => {
     const {
-      accountSid,
+      hrmAccountId,
       user,
       params: { caseId, sectionType, sectionId },
     } = req;
-    const deleted = await deleteCaseSection(accountSid, caseId, sectionType, sectionId, {
-      user,
-    });
+    const deleted = await deleteCaseSection(
+      hrmAccountId,
+      caseId,
+      sectionType,
+      sectionId,
+      {
+        user,
+      },
+    );
     if (!deleted) {
       throw createError(404);
     }

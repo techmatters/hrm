@@ -34,9 +34,9 @@ export const canPerformCaseAction = (
 ) =>
   asyncHandler(async (req, res, next) => {
     if (!req.isAuthorized()) {
-      const { accountSid, user, can } = req;
+      const { hrmAccountId, user, can } = req;
       const id = getCaseIdFromRequest(req);
-      const caseObj = await getCase(id, accountSid, {
+      const caseObj = await getCase(id, hrmAccountId, {
         can,
         user,
         permissions: OPEN_VIEW_CONTACT_PERMISSIONS,

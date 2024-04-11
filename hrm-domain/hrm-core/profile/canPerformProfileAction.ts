@@ -24,19 +24,19 @@ import type { InitializedCan } from '../permissions/initializeCanForRules';
 import type { ActionsForTK } from '../permissions/actions';
 
 export const canPerformActionOnProfile = async ({
-  accountSid,
+  hrmAccountId,
   action,
   can,
   profileId,
   user,
 }: {
   action: ActionsForTK<'profile'>;
-  accountSid: string;
+  hrmAccountId: string;
   can: InitializedCan;
   profileId: Profile['id'];
   user: TwilioUser;
 }) => {
-  const result = await getProfileById()(accountSid, profileId);
+  const result = await getProfileById()(hrmAccountId, profileId);
 
   const isAllowed = can(user, action, result);
 
@@ -46,18 +46,18 @@ export const canPerformActionOnProfile = async ({
 export const canPerformActionOnProfileMiddleware = (
   action: ActionsForTK<'profile'>,
   parseRequest: (req: RequestWithPermissions) => {
-    accountSid: string;
+    hrmAccountId: string;
     can: InitializedCan;
     profileId: Profile['id'];
     user: TwilioUser;
   },
 ) =>
   asyncHandler(async (req, _res, next) => {
-    const { accountSid, can, profileId, user } = parseRequest(req);
+    const { hrmAccountId, can, profileId, user } = parseRequest(req);
 
     const result = await canPerformActionOnProfile({
       action,
-      accountSid,
+      hrmAccountId,
       can,
       profileId,
       user,
@@ -79,7 +79,7 @@ export const canPerformActionOnProfileMiddleware = (
   });
 
 export const canPerformActionOnProfileSection = async ({
-  accountSid,
+  hrmAccountId,
   action,
   can,
   profileId,
@@ -87,7 +87,7 @@ export const canPerformActionOnProfileSection = async ({
   user,
 }: {
   action: ActionsForTK<'profileSection'>;
-  accountSid: string;
+  hrmAccountId: string;
   can: InitializedCan;
   profileId: Profile['id'];
   sectionId: ProfileSection['id'] | null;
@@ -98,7 +98,7 @@ export const canPerformActionOnProfileSection = async ({
     return newOk({ data: { isAllowed } });
   }
 
-  const result = await getProfileSectionById(accountSid, { profileId, sectionId });
+  const result = await getProfileSectionById(hrmAccountId, { profileId, sectionId });
 
   if (!result) {
     return newErr({
@@ -115,7 +115,7 @@ export const canPerformActionOnProfileSection = async ({
 export const canPerformActionOnProfileSectionMiddleware = (
   action: ActionsForTK<'profileSection'>,
   parseRequest: (req: RequestWithPermissions) => {
-    accountSid: string;
+    hrmAccountId: string;
     can: InitializedCan;
     profileId: Profile['id'];
     sectionId: ProfileSection['id'] | null;
@@ -123,10 +123,10 @@ export const canPerformActionOnProfileSectionMiddleware = (
   },
 ) =>
   asyncHandler(async (req, _res, next) => {
-    const { accountSid, can, profileId, sectionId, user } = parseRequest(req);
+    const { hrmAccountId, can, profileId, sectionId, user } = parseRequest(req);
 
     const result = await canPerformActionOnProfileSection({
-      accountSid,
+      hrmAccountId,
       action,
       can,
       profileId,

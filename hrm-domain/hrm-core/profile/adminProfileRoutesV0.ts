@@ -26,11 +26,11 @@ adminProfilesRouter.post(
   '/identifiers',
   publicEndpoint,
   async (req: Request, res: Response, next: NextFunction) => {
-    const { accountSid, user } = req;
+    const { hrmAccountId, user } = req;
     const { identifier, name } = req.body;
 
     const result = await profileController.createProfileWithIdentifierOrError(
-      accountSid,
+      hrmAccountId,
       { identifier: { identifier }, profile: { name } },
       { user },
     );
@@ -49,9 +49,9 @@ adminProfilesRouter.post(
 );
 
 adminProfilesRouter.get('/flags', publicEndpoint, async (req: Request, res: Response) => {
-  const { accountSid } = req;
+  const { hrmAccountId } = req;
 
-  const result = await profileController.getProfileFlags(accountSid);
+  const result = await profileController.getProfileFlags(hrmAccountId);
 
   res.json(result);
 });
@@ -61,11 +61,11 @@ adminProfilesRouter.post(
   publicEndpoint,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { accountSid, user } = req;
+      const { hrmAccountId, user } = req;
       const { name } = req.body;
 
       const result = await profileController.createProfileFlag(
-        accountSid,
+        hrmAccountId,
         { name },
         { user },
       );
@@ -86,12 +86,12 @@ adminProfilesRouter.patch(
   '/flags/:flagId',
   publicEndpoint,
   async (req: Request, res: Response, next: NextFunction) => {
-    const { accountSid, user } = req;
+    const { hrmAccountId, user } = req;
     const { flagId } = req.params;
     const { name } = req.body;
 
     const result = await profileController.updateProfileFlagById(
-      accountSid,
+      hrmAccountId,
       parseInt(flagId, 10),
       {
         name,
@@ -117,12 +117,12 @@ adminProfilesRouter.delete(
   '/flags/:flagId',
   publicEndpoint,
   async (req: Request, res: Response) => {
-    const { accountSid } = req;
+    const { hrmAccountId } = req;
     const { flagId } = req.params;
 
     const result = await profileController.deleteProfileFlagById(
       parseInt(flagId, 10),
-      accountSid,
+      hrmAccountId,
     );
 
     res.json(result);
