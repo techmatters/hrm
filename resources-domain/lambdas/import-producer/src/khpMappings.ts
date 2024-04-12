@@ -30,11 +30,8 @@ const siteKey = (subsection: string) => (context: FieldMappingContext) => {
     rootResource,
     captures: { siteIndex },
   } = context;
-  const { _id, objectId } = rootResource.sites[siteIndex];
-  return `site/${_id ?? objectId}/${substituteCaptureTokens(
-    subsection,
-    context,
-  )}`;
+  const { _id: id, objectId } = rootResource.sites[siteIndex];
+  return `site/${id ?? objectId}/${substituteCaptureTokens(subsection, context)}`;
 };
 
 /*
@@ -481,7 +478,7 @@ export const KHP_MAPPING_NODE: MappingNode = {
               language: ctx => ctx.captures.language,
             },
           ),
-          _id: { },
+          _id: {},
           objectId: {},
         },
       },
@@ -529,7 +526,9 @@ export const KHP_MAPPING_NODE: MappingNode = {
           '{language}': translatableAttributeMapping(
             ctx =>
               `documentsRequired/${
-                ctx.parentValue._id ?? ctx.parentValue.objectId ?? ctx.captures.documentIndex
+                ctx.parentValue._id ??
+                ctx.parentValue.objectId ??
+                ctx.captures.documentIndex
               }`,
             {
               value: ctx => ctx.parentValue[ctx.captures.language],
