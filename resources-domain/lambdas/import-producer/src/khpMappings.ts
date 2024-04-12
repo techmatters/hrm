@@ -422,12 +422,23 @@ export const KHP_MAPPING_NODE: MappingNode = {
   }),
   primaryLocationCity: referenceAttributeMapping('primaryLocationCity', 'cities', {
     value: ctx => {
+      const { primaryLocationProvince, primaryLocationCounty } = ctx.rootResource;
+      // TODO: No top level country, assumes always CA?
+      return [
+        'CA',
+        primaryLocationProvince,
+        primaryLocationCounty,
+        ctx.currentValue,
+      ].join('/');
+    },
+  }),
+  primaryLocationCounty: referenceAttributeMapping('primaryLocationCounty', 'counties', {
+    value: ctx => {
       const { primaryLocationProvince } = ctx.rootResource;
       // TODO: No top level country, assumes always CA?
       return ['CA', primaryLocationProvince, ctx.currentValue].join('/');
     },
   }),
-  primaryLocationCounty: attributeMapping('stringAttributes', 'primaryLocationCounty'),
   primaryLocationProvince: referenceAttributeMapping(
     'primaryLocationProvince',
     'provinces',

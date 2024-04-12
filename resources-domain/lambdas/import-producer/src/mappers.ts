@@ -115,17 +115,25 @@ export const isTranslatableAttributeMapping = (
   );
 };
 
+export type ResourceMapping =
+  | ResourceFieldMapping
+  | AttributeMapping<AttributeProperty>
+  | ReferenceAttributeMapping;
+
+type ResourceMappingList = {
+  mappings: ResourceMapping[];
+};
+
+export const isResourceMappingList = (mapping: any): mapping is ResourceMappingList => {
+  return mapping && Array.isArray(mapping.mappings);
+};
+
 /**
  * A node is a single item to be mapped into one of the above possible types.
  * If the node contains "children", it means we want to recurse on them.
  */
 export type MappingNode = {
-  [key: string]: (
-    | ResourceFieldMapping
-    | AttributeMapping<AttributeProperty>
-    | ReferenceAttributeMapping
-    | {}
-  ) & {
+  [key: string]: (ResourceMapping | { mappings: ResourceMapping[] } | {}) & {
     children?: MappingNode;
   };
 };

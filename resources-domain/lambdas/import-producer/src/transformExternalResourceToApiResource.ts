@@ -30,6 +30,8 @@ import {
   isReferenceAttributeMapping,
   isResourceFieldMapping,
   isTranslatableAttributeMapping,
+  isResourceMappingList,
+  ResourceMapping,
 } from './mappers';
 import * as khp from './khpMappings';
 import { isValid, parseISO } from 'date-fns';
@@ -184,7 +186,7 @@ const mapNode = (
   parentContext: FieldMappingContext,
   aseloResource: FlatResource,
 ): FlatResource => {
-  Object.entries(mappingNode).forEach(([property, { children, ...mapping }]) => {
+  Object.entries(mappingNode).forEach(([property, { children, ...rest }]) => {
     const captureProperty = property.match(/{(?<captureProperty>.*)}/)?.groups
       ?.captureProperty;
 
@@ -216,15 +218,19 @@ const mapNode = (
       if (captureProperty) {
         parentContext.captures[captureProperty] = dataProperty;
       }
-
-      // Add the node to the corresponding resource table based on the specified mapping
-      if (isResourceFieldMapping(mapping)) {
-        pushResourceFieldMapping({ aseloResource, mapping, context });
-      } else if (isReferenceAttributeMapping(mapping)) {
-        pushReferenceAttributeMapping({ aseloResource, mapping, context });
-      } else if (isInlineAttributeMapping(mapping)) {
-        pushInlineAttributeMapping({ aseloResource, mapping, context });
-      }
+      const mappings: (ResourceMapping | {})[] = isResourceMappingList(rest)
+        ? rest.mappings
+        : [rest];
+      mappings.forEach(mapping => {
+        // Add the node to the corresponding resource table based on the specified mapping
+        if (isResourceFieldMapping(mapping)) {
+          pushResourceFieldMapping({ aseloResource, mapping, context });
+        } else if (isReferenceAttributeMapping(mapping)) {
+          pushReferenceAttributeMapping({ aseloResource, mapping, context });
+        } else if (isInlineAttributeMapping(mapping)) {
+          pushInlineAttributeMapping({ aseloResource, mapping, context });
+        }
+      });
 
       // Recurse on the children node(s) if any
       if (children) {
