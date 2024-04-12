@@ -30,7 +30,8 @@ const siteKey = (subsection: string) => (context: FieldMappingContext) => {
     rootResource,
     captures: { siteIndex },
   } = context;
-  return `site/${rootResource.sites[siteIndex].objectId}/${substituteCaptureTokens(
+  const { _id, objectId } = rootResource.sites[siteIndex];
+  return `site/${_id ?? objectId}/${substituteCaptureTokens(
     subsection,
     context,
   )}`;
@@ -194,6 +195,7 @@ const KHP_MAPPING_NODE_SITES: { children: MappingNode } = {
         createdAt: attributeMapping('dateTimeAttributes', siteKey('createdAt')),
         updatedAt: attributeMapping('dateTimeAttributes', siteKey('updatedAt')),
         objectId: attributeMapping('stringAttributes', siteKey('siteId')),
+        _id: attributeMapping('stringAttributes', siteKey('siteId')),
       },
     },
   },
@@ -250,6 +252,8 @@ const KHP_MAPPING_NODE_TAXONOMIES: { children: MappingNode } = {
 };
 
 export const KHP_MAPPING_NODE: MappingNode = {
+  _id: resourceFieldMapping('id'),
+  // TODO: Remove this and all other 'objectId' mappings once the updated Arctic API is deployed to production
   objectId: resourceFieldMapping('id'),
   timeSequence: resourceFieldMapping('importSequenceId'),
   sites: KHP_MAPPING_NODE_SITES,
@@ -365,6 +369,7 @@ export const KHP_MAPPING_NODE: MappingNode = {
     children: {
       '{howToAccessSupportIndex}': {
         children: {
+          _id: { children: {} },
           objectId: { children: {} },
           '{language}': translatableAttributeMapping(
             'howToAccessSupport/{howToAccessSupportIndex}',
@@ -476,6 +481,7 @@ export const KHP_MAPPING_NODE: MappingNode = {
               language: ctx => ctx.captures.language,
             },
           ),
+          _id: { },
           objectId: {},
         },
       },
@@ -519,10 +525,11 @@ export const KHP_MAPPING_NODE: MappingNode = {
       '{documentIndex}': {
         children: {
           objectId: { children: {} },
+          _id: { children: {} },
           '{language}': translatableAttributeMapping(
             ctx =>
               `documentsRequired/${
-                ctx.parentValue.objectId ?? ctx.captures.documentIndex
+                ctx.parentValue._id ?? ctx.parentValue.objectId ?? ctx.captures.documentIndex
               }`,
             {
               value: ctx => ctx.parentValue[ctx.captures.language],
@@ -579,6 +586,7 @@ export const KHP_MAPPING_NODE: MappingNode = {
       '{feeStructureSourceIndex}': {
         children: {
           objectId: { children: {} },
+          _id: { children: {} },
           '{language}': referenceAttributeMapping(
             'feeStructure/{feeStructureSourceIndex}',
             'khp-fee-structure-source',
@@ -613,6 +621,7 @@ export const KHP_MAPPING_NODE: MappingNode = {
   accessibility: {
     children: {
       objectId: { children: {} },
+      _id: { children: {} },
       '{language}': translatableAttributeMapping('accessibility', {
         language: ctx => ctx.captures.language,
       }),
