@@ -18,9 +18,7 @@
 import { parse } from 'csv-parse';
 import fs from 'fs';
 import { pgp } from '../../src/connection-pool';
-const COUNTRY_NAME_CODE_MAP = {
-  Canada: 'CA',
-};
+
 const CANADIAN_PROVINCE_NAME_CODE_MAP = {
   Alberta: ['AB', 48],
   'British Columbia': ['BC', 59],
@@ -64,12 +62,14 @@ const main = async () => {
     process.exit(1);
   }
   const accountSid = process.argv[2];
-  const targetFilePath = `./reference-data/khp_cities_with_codes_20230822_${accountSid}.sql`;
-  const targetJsonCitiesFilePath = `./reference-data/khp_cities_with_codes_20230822_${accountSid}.json`;
-  const targetJsonProvincesFilePath = `./reference-data/khp_provinces_20230822_${accountSid}.json`;
+  const targetFilePath = `./reference-data/khp_cities_20240415_${accountSid}.sql`;
+  const targetJsonCitiesFilePath = `./reference-data/khp_cities_20240415_${accountSid}.json`;
+  const targetJsonRegionsFilePath = `./reference-data/khp_region_20240415_${accountSid}.json`;
+  const targetJsonProvincesFilePath = `./reference-data/khp_provinces_20240415_${accountSid}.json`;
   const sqlFile = fs.createWriteStream(targetFilePath);
 
   const provincesJson: FilterOption[] = [];
+  const regionsJson: FilterOption[] = [];
   const citiesJson: FilterOption[] = [];
   const csvLines = fs
     .createReadStream('./reference-data/khp_cities_20230822.csv')
@@ -85,9 +85,6 @@ INSERT INTO resources."ResourceReferenceStringAttributeValues" ("accountSid", "l
 ON CONFLICT DO NOTHING;
 INSERT INTO resources."ResourceReferenceStringAttributeValues" ("accountSid", "list", "id", "value", "language", "info") VALUES ($<accountSid>, 'provinces', $<idFr>, $<value>, 'fr', $<infoFr>)
 ON CONFLICT DO NOTHING;
-UPDATE resources."ResourceReferenceStringAttributes" SET "referenceId" = $<id> WHERE "accountSid" = $<accountSid> AND "list" = 'provinces' AND "referenceId" = $<oldId>;
-UPDATE resources."ResourceReferenceStringAttributes" SET "referenceId" = $<idFr> WHERE "accountSid" = $<accountSid> AND "list" = 'provinces' AND "referenceId" = $<oldIdFr>;
-DELETE FROM resources."ResourceReferenceStringAttributeValues" WHERE "accountSid" = $<accountSid> AND "list" = 'provinces' AND "id" IN ($<oldId>, $<oldIdFr>);
 `,
           {
             accountSid,
@@ -107,7 +104,7 @@ DELETE FROM resources."ResourceReferenceStringAttributeValues" WHERE "accountSid
       });
     },
   );
-  sqlFile.write('\n\n--- CITIES ---\n\n');
+  sqlFile.write('\n\n--- REGIONS AND CITIES ---\n\n');
   for await (const line of csvLines) {
     const [, province, region, cityEn] = line as string[];
     const [provinceCode] =
@@ -117,38 +114,49 @@ DELETE FROM resources."ResourceReferenceStringAttributeValues" WHERE "accountSid
 
     const sqlStatement = pgp.as.format(
       `
-INSERT INTO resources."ResourceReferenceStringAttributeValues" ("accountSid", "list", "id", "value", "language", "info") VALUES ($<accountSid>, 'fq-cities', $<id>, $<value>, 'en', $<info>)
+
+
+
+INSERT INTO resources."ResourceReferenceStringAttributeValues" ("accountSid", "list", "id", "value", "language", "info") VALUES ($<accountSid>, 'country/province/region', $<id>, $<regionValue>, 'en', $<regionInfo>)
 ON CONFLICT DO NOTHING;
-INSERT INTO resources."ResourceReferenceStringAttributeValues" ("accountSid", "list", "id", "value", "language", "info") VALUES ($<accountSid>, 'fq-cities', $<idFr>, $<value>, 'fr', $<infoFr>)
+INSERT INTO resources."ResourceReferenceStringAttributeValues" ("accountSid", "list", "id", "value", "language", "info") VALUES ($<accountSid>, 'country/province/region', $<id>, $<regionValue>, 'fr', $<regionInfo>)
 ON CONFLICT DO NOTHING;
-INSERT INTO resources."ResourceReferenceStringAttributes" ("accountSid", "list", "id", "value", "language", "info") VALUES ($<accountSid>, 'fq-cities', $<idFr>, $<value>, 'fr', $<infoFr>);
-UPDATE resources."ResourceReferenceStringAttributes" SET "referenceId" = $<idFr> WHERE "accountSid" = $<accountSid> AND "list" = 'cities' AND "referenceId" = $<oldIdFr>;
-DELETE FROM resources."ResourceReferenceStringAttributeValues" WHERE "accountSid" = $<accountSid> AND "list" = 'provinces' AND "id" IN ($<oldId>, $<oldIdFr>);
-`,
+
+INSERT INTO resources."ResourceReferenceStringAttributeValues" ("accountSid", "list", "id", "value", "language", "info") VALUES ($<accountSid>, 'country/province/region/city', $<id>, $<value>, 'en', $<info>)
+ON CONFLICT DO NOTHING;
+INSERT INTO resources."ResourceReferenceStringAttributeValues" ("accountSid", "list", "id", "value", "language", "info") VALUES ($<accountSid>, 'country/province/region/city', $<id>, $<value>, 'fr', $<info>)
+ON CONFLICT DO NOTHING;`,
       {
         accountSid: process.argv[2],
-        id: `CA-${provinceCode}-${cityEn}-en`,
-        idFr: `CA-${provinceCode}-${cityEn}-fr`,
+        id: `CA-${provinceCode}-${region}-${cityEn}-en`,
+        idFr: `CA-${provinceCode}-${region}-${cityEn}-fr`,
         value: `CA/${provinceCode}/${region}/${cityEn}`,
-        info: { name: cityEn },
-        infoFr: { name: cityEn },
+        regionValue: `CA/${provinceCode}/${region}`,
+        info: { name: cityEn, region, province },
+        regionInfo: { name: region, province },
       },
     );
     sqlFile.write(sqlStatement);
+
+    // Input is in order, so we can just check the last element
     if (
-      csdType === 'Town' ||
-      csdType === 'City' ||
-      csdType === 'Ville' ||
-      csdType === 'Municipalité'
+      !regionsJson.length ||
+      regionsJson[regionsJson.length - 1]?.value !== `CA/${provinceCode}/${region}`
     ) {
-      citiesJson.push({
-        label: cityEn,
-        value: `CA/${provinceCode}/${cityEn}`,
+      regionsJson.push({
+        label: region,
+        value: `CA/${provinceCode}/${region}`,
       });
     }
+
+    citiesJson.push({
+      label: cityEn,
+      value: `CA/${provinceCode}/${region}/${cityEn}`,
+    });
   }
   sqlFile.end();
   fs.writeFileSync(targetJsonCitiesFilePath, JSON.stringify(citiesJson, null, 2));
+  fs.writeFileSync(targetJsonRegionsFilePath, JSON.stringify(regionsJson, null, 2));
   fs.writeFileSync(targetJsonProvincesFilePath, JSON.stringify(provincesJson, null, 2));
 };
 
