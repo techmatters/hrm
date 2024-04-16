@@ -30,9 +30,9 @@ postSurveysRouter.post(
   '/',
   publicEndpoint,
   async (req: Request<NewPostSurvey>, res: Response<PostSurvey>) => {
-    const { accountSid } = req;
+    const { hrmAccountId } = req;
 
-    const createdPostSurvey = await createPostSurvey(accountSid, req.body);
+    const createdPostSurvey = await createPostSurvey(hrmAccountId, req.body);
     res.json(createdPostSurvey);
   },
 );
@@ -56,10 +56,10 @@ postSurveysRouter.get(
   '/contactTaskId/:id',
   canViewPostSurvey,
   async (req: Request, res: Response) => {
-    const { accountSid } = req;
+    const { hrmAccountId } = req;
     const { id } = req.params;
 
-    const postSurveys = await getPostSurveysByContactTaskId(accountSid, id);
+    const postSurveys = await getPostSurveysByContactTaskId(hrmAccountId, id);
     res.json(postSurveys);
   },
 );

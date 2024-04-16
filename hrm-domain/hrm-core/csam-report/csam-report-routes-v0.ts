@@ -25,8 +25,8 @@ const csamReportRouter = SafeRouter();
 csamReportRouter.post(
   '/',
   publicEndpoint,
-  async (req: Request & { accountSid: string }, res: Response) => {
-    const { accountSid } = req;
+  async (req: Request & { hrmAccountId: string }, res: Response) => {
+    const { hrmAccountId } = req;
 
     const { contactId, csamReportId, twilioWorkerId, reportType } = req.body;
 
@@ -47,7 +47,7 @@ csamReportRouter.post(
 
     const createdCSAMReport = await createCSAMReport(
       { contactId, csamReportId, twilioWorkerId, reportType },
-      accountSid,
+      hrmAccountId,
     );
     res.json(createdCSAMReport);
   },
@@ -56,11 +56,11 @@ csamReportRouter.post(
 csamReportRouter.post(
   '/:reportId(\\d+)/acknowledge',
   publicEndpoint,
-  async (req: Request & { accountSid: string }, res: Response) => {
-    const { accountSid } = req;
+  async (req: Request & { hrmAccountId: string }, res: Response) => {
+    const { hrmAccountId } = req;
     const reportId = parseInt(req.params.reportId, 10);
 
-    const acknowledgedReport = await acknowledgeCsamReport(reportId, accountSid);
+    const acknowledgedReport = await acknowledgeCsamReport(reportId, hrmAccountId);
 
     if (!acknowledgedReport) {
       throw createError(404, `Report with id ${reportId} not found`);

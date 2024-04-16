@@ -45,8 +45,8 @@ const contactsRouter = SafeRouter();
  * @returns {Contact} - Created contact
  */
 contactsRouter.post('/', publicEndpoint, async (req, res) => {
-  const { accountSid, user } = req;
-  const contact = await createContact(accountSid, user.workerSid, req.body, {
+  const { hrmAccountId, user } = req;
+  const contact = await createContact(hrmAccountId, user.workerSid, req.body, {
     can: req.can,
     user,
   });
@@ -54,8 +54,8 @@ contactsRouter.post('/', publicEndpoint, async (req, res) => {
 });
 
 contactsRouter.get('/byTaskSid/:taskSid', publicEndpoint, async (req, res) => {
-  const { accountSid, user, can } = req;
-  const contact = await getContactByTaskId(accountSid, req.params.taskSid, {
+  const { hrmAccountId, user, can } = req;
+  const contact = await getContactByTaskId(hrmAccountId, req.params.taskSid, {
     can: req.can,
     user,
   });
@@ -69,11 +69,11 @@ contactsRouter.put(
   '/:contactId/connectToCase',
   canChangeContactConnection,
   async (req, res) => {
-    const { accountSid, user } = req;
+    const { hrmAccountId, user } = req;
     const { contactId } = req.params;
     const { caseId } = req.body;
     try {
-      const updatedContact = await connectContactToCase(accountSid, contactId, caseId, {
+      const updatedContact = await connectContactToCase(hrmAccountId, contactId, caseId, {
         can: req.can,
         user,
       });
@@ -93,11 +93,11 @@ contactsRouter.delete(
   '/:contactId/connectToCase',
   canDisconnectContact,
   async (req, res) => {
-    const { accountSid, user } = req;
+    const { hrmAccountId, user } = req;
     const { contactId } = req.params;
 
     try {
-      const deleteContact = await connectContactToCase(accountSid, contactId, null, {
+      const deleteContact = await connectContactToCase(hrmAccountId, contactId, null, {
         can: req.can,
         user,
       });
@@ -114,9 +114,9 @@ contactsRouter.delete(
 );
 
 contactsRouter.post('/search', publicEndpoint, async (req, res) => {
-  const { accountSid } = req;
+  const { hrmAccountId } = req;
 
-  const searchResults = await searchContacts(accountSid, req.body, req.query, {
+  const searchResults = await searchContacts(hrmAccountId, req.body, req.query, {
     can: req.can,
     user: req.user,
     permissions: req.permissions,
@@ -138,12 +138,12 @@ contactsRouter.patch(
   validatePatchPayload,
   canPerformEditContactAction,
   async (req, res) => {
-    const { accountSid, user } = req;
+    const { hrmAccountId, user } = req;
     const { contactId } = req.params;
     const finalize = req.query.finalize === 'true'; // Default to false for backwards compatibility
     try {
       const contact = await patchContact(
-        accountSid,
+        hrmAccountId,
         user.workerSid,
         finalize,
         contactId,
@@ -163,14 +163,19 @@ contactsRouter.patch(
 );
 
 contactsRouter.post('/:contactId/conversationMedia', publicEndpoint, async (req, res) => {
-  const { accountSid, user } = req;
+  const { hrmAccountId, user } = req;
   const { contactId } = req.params;
 
   try {
-    const contact = await addConversationMediaToContact(accountSid, contactId, req.body, {
-      can: req.can,
-      user,
-    });
+    const contact = await addConversationMediaToContact(
+      hrmAccountId,
+      contactId,
+      req.body,
+      {
+        can: req.can,
+        user,
+      },
+    );
     res.json(contact);
   } catch (err) {
     if (err.message.toLowerCase().includes('contact not found')) {
@@ -181,8 +186,8 @@ contactsRouter.post('/:contactId/conversationMedia', publicEndpoint, async (req,
 
 // WARNING: this endpoint MUST be the last one in this router, because it will be used if none of the above regex matches the path
 contactsRouter.get('/:contactId', canPerformViewContactAction, async (req, res) => {
-  const { accountSid, can, user } = req;
-  const contact = await getContactById(accountSid, req.params.contactId, {
+  const { hrmAccountId, can, user } = req;
+  const contact = await getContactById(hrmAccountId, req.params.contactId, {
     can: req.can,
     user,
   });

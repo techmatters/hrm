@@ -42,11 +42,11 @@ const canPerformActionOnContact = (
 ) =>
   asyncHandler(async (req, res, next) => {
     if (!req.isAuthorized()) {
-      const { accountSid, user, can, body, query } = req;
+      const { accountSid, hrmAccountId, user, can, body, query } = req;
       const { contactId } = req.params;
 
       try {
-        const contactObj = await getContactById(accountSid, contactId, req);
+        const contactObj = await getContactById(hrmAccountId, contactId, req);
         if (!contactObj) {
           // This is a dirty hack that relies on the catch block in the try/catch below to return a 404
           throw new Error('contact not found');
@@ -140,10 +140,10 @@ export const canPerformViewContactAction = canPerformActionOnContact(
 
 const canRemoveFromCase = async (
   originalCaseId: string,
-  { can, user, accountSid, permissions },
+  { can, user, hrmAccountId, permissions },
 ): Promise<boolean> => {
   if (originalCaseId) {
-    const originalCaseObj = await getCase(parseInt(originalCaseId), accountSid, {
+    const originalCaseObj = await getCase(parseInt(originalCaseId), hrmAccountId, {
       can,
       user,
       permissions,
@@ -158,14 +158,14 @@ const canConnectContact = canPerformActionOnContact(
   actionsMaps.contact.ADD_CONTACT_TO_CASE,
   async (
     { caseId: originalCaseId }: Contact,
-    { can, user, accountSid, body: { caseId: targetCaseId }, permissions },
+    { can, user, hrmAccountId, body: { caseId: targetCaseId }, permissions },
   ) => {
     if (
-      !(await canRemoveFromCase(originalCaseId, { can, user, accountSid, permissions }))
+      !(await canRemoveFromCase(originalCaseId, { can, user, hrmAccountId, permissions }))
     ) {
       return false;
     }
-    const targetCaseObj = await getCase(parseInt(targetCaseId), accountSid, {
+    const targetCaseObj = await getCase(parseInt(targetCaseId), hrmAccountId, {
       can,
       user,
       permissions,
