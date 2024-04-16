@@ -43,8 +43,6 @@ export {
   SearchParameters,
 } from './profileDataAccess';
 
-const sanitizeIdentifier = (i: string) => i.replace(' ', '');
-
 export const getProfile =
   (task?) =>
   async (
@@ -69,7 +67,7 @@ export const createIdentifierAndProfile =
     return txIfNotInOne(task, async t => {
       try {
         const newIdentifier = await profileDB.createIdentifier(t)(accountSid, {
-          identifier: sanitizeIdentifier(identifier.identifier),
+          identifier: identifier.identifier,
           createdBy: user.workerSid,
         });
         const newProfile = await profileDB.createProfile(t)(accountSid, {
@@ -116,7 +114,7 @@ export const getOrCreateProfileWithIdentifier =
 
     const profileResult = await profileDB.getIdentifierWithProfiles(task)({
       accountSid,
-      identifier: sanitizeIdentifier(identifier.identifier),
+      identifier: identifier.identifier,
     });
 
     if (profileResult) {
@@ -185,7 +183,7 @@ export const getIdentifierByIdentifier = async (
 ): Promise<profileDB.IdentifierWithProfiles> =>
   profileDB.getIdentifierWithProfiles()({
     accountSid,
-    identifier: sanitizeIdentifier(identifier),
+    identifier: identifier,
   });
 
 export const listProfiles = profileDB.listProfiles;
