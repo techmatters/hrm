@@ -30,14 +30,14 @@ import { getCaseTimeline } from './caseSection/caseSectionService';
 const casesRouter = SafeRouter();
 casesRouter.put('/:id/status', canUpdateCaseStatus, async (req, res) => {
   const {
-    accountSid,
+    hrmAccountId,
     user,
     body: { status },
     can,
     permissions,
   } = req;
   const { id } = req.params;
-  const updatedCase = await caseApi.updateCaseStatus(id, status, accountSid, {
+  const updatedCase = await caseApi.updateCaseStatus(id, status, hrmAccountId, {
     can,
     user,
     permissions,
@@ -50,7 +50,7 @@ casesRouter.put('/:id/status', canUpdateCaseStatus, async (req, res) => {
 
 casesRouter.put('/:id/overview', canEditCaseOverview, async (req, res) => {
   const {
-    accountSid,
+    hrmAccountId,
     user: { workerSid },
     body,
   } = req;
@@ -66,7 +66,7 @@ casesRouter.put('/:id/overview', canEditCaseOverview, async (req, res) => {
       `Invalid followUpDate provided: ${followUpDate} - must be a valid ISO 8601 date string`,
     );
   }
-  const updatedCase = await caseApi.updateCaseOverview(accountSid, id, body, workerSid);
+  const updatedCase = await caseApi.updateCaseOverview(hrmAccountId, id, body, workerSid);
   if (!updatedCase) {
     throw createError(404);
   }
@@ -74,11 +74,11 @@ casesRouter.put('/:id/overview', canEditCaseOverview, async (req, res) => {
 });
 
 casesRouter.get('/:id/timeline', canViewCase, async (req, res) => {
-  const { accountSid, params, query } = req;
+  const { hrmAccountId, params, query } = req;
   const { id: caseId } = params;
   const { sectionTypes, includeContacts, limit, offset } = query;
   const timeline = await getCaseTimeline(
-    accountSid,
+    hrmAccountId,
     req,
     parseInt(caseId),
     (sectionTypes ?? 'note,referral').split(','),
@@ -91,9 +91,9 @@ casesRouter.get('/:id/timeline', canViewCase, async (req, res) => {
 casesRouter.expressRouter.use('/:caseId/sections', caseSectionRoutesV0);
 
 casesRouter.delete('/:id', publicEndpoint, async (req, res) => {
-  const { accountSid } = req;
+  const { hrmAccountId } = req;
   const { id } = req.params;
-  const deleted = await casesDb.deleteById(id, accountSid);
+  const deleted = await casesDb.deleteById(id, hrmAccountId);
   if (!deleted) {
     throw createError(404);
   }
@@ -112,7 +112,7 @@ casesRouter.delete('/:id', publicEndpoint, async (req, res) => {
  * @returns {CaseSearchReturn} - List of cases
  */
 casesRouter.get('/', publicEndpoint, async (req, res) => {
-  const { accountSid } = req;
+  const { hrmAccountId } = req;
   const {
     sortDirection,
     sortBy,
@@ -126,7 +126,7 @@ casesRouter.get('/', publicEndpoint, async (req, res) => {
   const onlyEssentialData = Boolean(onlyEssentialDataParam);
 
   const cases = await caseApi.searchCases(
-    accountSid,
+    hrmAccountId,
     { sortDirection, sortBy, limit, offset },
     searchCriteria,
     { filters: { includeOrphans: false }, closedCases, counselor, helpline },
@@ -137,20 +137,20 @@ casesRouter.get('/', publicEndpoint, async (req, res) => {
 });
 
 casesRouter.post('/', publicEndpoint, async (req, res) => {
-  const { accountSid, user } = req;
-  const createdCase = await caseApi.createCase(req.body, accountSid, user.workerSid);
+  const { hrmAccountId, user } = req;
+  const createdCase = await caseApi.createCase(req.body, hrmAccountId, user.workerSid);
 
   res.json(createdCase);
 });
 
 casesRouter.get('/:id', canViewCase, async (req, res) => {
-  const { accountSid, permissions, can, user } = req;
+  const { hrmAccountId, permissions, can, user } = req;
   const { id } = req.params;
   const onlyEssentialData = Boolean(req.query.onlyEssentialData);
 
   const caseFromDB = await caseApi.getCase(
     id,
-    accountSid,
+    hrmAccountId,
     {
       can,
       user,
@@ -167,7 +167,7 @@ casesRouter.get('/:id', canViewCase, async (req, res) => {
 });
 
 casesRouter.post('/search', publicEndpoint, async (req, res) => {
-  const { accountSid } = req;
+  const { hrmAccountId } = req;
   const {
     closedCases,
     counselor,
@@ -178,7 +178,7 @@ casesRouter.post('/search', publicEndpoint, async (req, res) => {
   } = req.body || {};
 
   const searchResults = await caseApi.searchCases(
-    accountSid,
+    hrmAccountId,
     req.query || {},
     searchCriteria,
     { closedCases, counselor, helpline, filters },

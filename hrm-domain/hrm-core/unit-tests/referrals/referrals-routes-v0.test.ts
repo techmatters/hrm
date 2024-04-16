@@ -78,7 +78,8 @@ describe('POST /search', () => {
       {
         body: validReferral,
         accountSid: 'AC1',
-      } as Request<Referral>,
+        hrmAccountId: 'AC1',
+      } as any,
       response,
     );
     expect(innerCreateReferral).toHaveBeenCalledWith('AC1', validReferral);
@@ -91,7 +92,8 @@ describe('POST /search', () => {
         {
           body: { ...validReferral, referredAt: hourAgo.toString() },
           accountSid: 'AC1',
-        } as Request<Referral>,
+          hrmAccountId: 'AC1',
+        } as any,
         response,
       );
     } catch (err) {
@@ -107,7 +109,8 @@ describe('POST /search', () => {
         {
           body: { ...validReferral, referredAt: undefined },
           accountSid: 'AC1',
-        } as Request<Referral>,
+          hrmAccountId: 'AC1',
+        } as any,
         response,
       );
     } catch (err) {
@@ -123,7 +126,8 @@ describe('POST /search', () => {
         {
           body: { ...validReferral, contactId: undefined },
           accountSid: 'AC1',
-        } as Request<Referral>,
+          hrmAccountId: 'AC1',
+        } as any,
         response,
       );
     } catch (err) {
@@ -139,7 +143,8 @@ describe('POST /search', () => {
         {
           body: { ...validReferral, resourceId: undefined },
           accountSid: 'AC1',
-        } as Request<Referral>,
+          hrmAccountId: 'AC1',
+        } as any,
         response,
       );
     } catch (err) {
@@ -158,7 +163,8 @@ describe('POST /search', () => {
       {
         body: rest,
         accountSid: 'AC1',
-      } as Request<Referral>,
+        hrmAccountId: 'AC1',
+      } as any,
       response,
     );
     expect(innerCreateReferral).toHaveBeenCalledWith('AC1', rest);
@@ -176,7 +182,8 @@ describe('POST /search', () => {
         {
           body: { ...validReferral, resource: undefined },
           accountSid: 'AC1',
-        } as Request<Referral>,
+          hrmAccountId: 'AC1',
+        } as any,
         response,
       );
     } catch (err) {
@@ -198,7 +205,8 @@ describe('POST /search', () => {
         {
           body: { ...validReferral, resource: undefined },
           accountSid: 'AC1',
-        } as Request<Referral>,
+          hrmAccountId: 'AC1',
+        } as any,
         response,
       );
     } catch (err) {

@@ -41,7 +41,7 @@ const profilesRouter = SafeRouter();
  * @param {profileController.SearchParameters['filters']['profileFlagIds']} req.query.profileFlagIds
  */
 profilesRouter.get('/', publicEndpoint, async (req: Request, res: Response) => {
-  const { accountSid } = req;
+  const { hrmAccountId } = req;
   const {
     sortDirection,
     sortBy,
@@ -62,7 +62,7 @@ profilesRouter.get('/', publicEndpoint, async (req: Request, res: Response) => {
   };
 
   const result = await profileController.listProfiles(
-    accountSid,
+    hrmAccountId,
     { sortDirection, sortBy, limit, offset },
     { filters },
   );
@@ -74,11 +74,11 @@ profilesRouter.get(
   '/identifier/:identifier',
   publicEndpoint,
   async (req: Request, res: Response, next: NextFunction) => {
-    const { accountSid } = req;
+    const { hrmAccountId } = req;
     const { identifier } = req.params;
 
     const result = await profileController.getIdentifierByIdentifier(
-      accountSid,
+      hrmAccountId,
       identifier,
     );
 
@@ -91,11 +91,11 @@ profilesRouter.get(
 );
 
 profilesRouter.get('/identifier/:identifier/flags', publicEndpoint, async (req, res) => {
-  const { accountSid } = req;
+  const { hrmAccountId } = req;
   const { identifier } = req.params;
 
   const result = await profileController.getProfileFlagsByIdentifier(
-    accountSid,
+    hrmAccountId,
     identifier,
   );
 
@@ -111,11 +111,11 @@ profilesRouter.get(
   publicEndpoint,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { accountSid } = req;
+      const { hrmAccountId } = req;
       const { profileId } = req.params;
 
       const result = await getContactsByProfileId(
-        accountSid,
+        hrmAccountId,
         parseInt(profileId, 10),
         req.query,
         {
@@ -141,11 +141,11 @@ profilesRouter.get(
   publicEndpoint,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { accountSid, can, user, permissions } = req;
+      const { hrmAccountId, can, user, permissions } = req;
       const { profileId } = req.params;
 
       const result = await getCasesByProfileId(
-        accountSid,
+        hrmAccountId,
         parseInt(profileId, 10),
         req.query,
         { can, user, permissions },
@@ -163,8 +163,8 @@ profilesRouter.get(
 );
 
 profilesRouter.get('/flags', publicEndpoint, async (req, res) => {
-  const { accountSid } = req;
-  const result = await profileController.getProfileFlags(accountSid);
+  const { hrmAccountId } = req;
+  const result = await profileController.getProfileFlags(hrmAccountId);
 
   res.json(result);
 });
@@ -172,7 +172,7 @@ profilesRouter.get('/flags', publicEndpoint, async (req, res) => {
 const canAssociate = canPerformActionOnProfileMiddleware(
   actionsMaps.profile.FLAG_PROFILE,
   req => ({
-    accountSid: req.accountSid,
+    hrmAccountId: req.hrmAccountId,
     can: req.can,
     profileId: parseInt(req.params.profileId, 10),
     user: req.user,
@@ -182,7 +182,7 @@ profilesRouter.post(
   '/:profileId/flags/:profileFlagId',
   canAssociate,
   async (req: Request, res: Response, next: NextFunction) => {
-    const { accountSid, user } = req;
+    const { hrmAccountId, user } = req;
     const { profileId, profileFlagId } = req.params;
     const { validUntil } = req.body;
 
@@ -197,7 +197,7 @@ profilesRouter.post(
     }
 
     const result = await profileController.associateProfileToProfileFlag(
-      accountSid,
+      hrmAccountId,
       {
         profileId: parseInt(profileId),
         profileFlagId: parseInt(profileFlagId),
@@ -226,7 +226,7 @@ profilesRouter.post(
 const canDisassociate = canPerformActionOnProfileMiddleware(
   actionsMaps.profile.UNFLAG_PROFILE,
   req => ({
-    accountSid: req.accountSid,
+    hrmAccountId: req.hrmAccountId,
     can: req.can,
     profileId: parseInt(req.params.profileId, 10),
     user: req.user,
@@ -236,11 +236,11 @@ profilesRouter.delete(
   '/:profileId/flags/:profileFlagId',
   canDisassociate,
   async (req: Request, res: Response, next: NextFunction) => {
-    const { accountSid, user, params } = req;
+    const { hrmAccountId, user, params } = req;
     const { profileId, profileFlagId } = params;
 
     const result = await profileController.disassociateProfileFromProfileFlag(
-      accountSid,
+      hrmAccountId,
       {
         profileId: parseInt(profileId, 10),
         profileFlagId: parseInt(profileFlagId, 10),
@@ -264,7 +264,7 @@ profilesRouter.delete(
 const canCreateProfileSection = canPerformActionOnProfileSectionMiddleware(
   actionsMaps.profileSection.CREATE_PROFILE_SECTION,
   req => ({
-    accountSid: req.accountSid,
+    hrmAccountId: req.hrmAccountId,
     can: req.can,
     profileId: parseInt(req.params.profileId, 10),
     sectionId: null,
@@ -275,12 +275,12 @@ profilesRouter.post(
   '/:profileId/sections',
   canCreateProfileSection,
   async (req: Request, res: Response, next: NextFunction) => {
-    const { accountSid, user } = req;
+    const { hrmAccountId, user } = req;
     const { profileId } = req.params;
     const { content, sectionType } = req.body;
 
     const result = await profileController.createProfileSection(
-      accountSid,
+      hrmAccountId,
       { content, profileId: parseInt(profileId, 10), sectionType },
       { user },
     );
@@ -299,7 +299,7 @@ profilesRouter.post(
 const canEditProfileSection = canPerformActionOnProfileSectionMiddleware(
   actionsMaps.profileSection.EDIT_PROFILE_SECTION,
   req => ({
-    accountSid: req.accountSid,
+    hrmAccountId: req.hrmAccountId,
     can: req.can,
     profileId: parseInt(req.params.profileId, 10),
     sectionId: parseInt(req.params.sectionId, 10),
@@ -310,12 +310,12 @@ profilesRouter.patch(
   '/:profileId/sections/:sectionId',
   canEditProfileSection,
   async (req: Request, res: Response, next: NextFunction) => {
-    const { accountSid, user } = req;
+    const { hrmAccountId, user } = req;
     const { profileId, sectionId } = req.params;
     const { content } = req.body;
 
     const result = await profileController.updateProfileSectionById(
-      accountSid,
+      hrmAccountId,
       {
         profileId: parseInt(profileId, 10),
         sectionId: parseInt(sectionId, 10),
@@ -335,7 +335,7 @@ profilesRouter.patch(
 const canViewProfileSection = canPerformActionOnProfileSectionMiddleware(
   actionsMaps.profileSection.VIEW_PROFILE_SECTION,
   req => ({
-    accountSid: req.accountSid,
+    hrmAccountId: req.hrmAccountId,
     can: req.can,
     profileId: parseInt(req.params.profileId, 10),
     sectionId: parseInt(req.params.sectionId, 10),
@@ -346,10 +346,10 @@ profilesRouter.get(
   '/:profileId/sections/:sectionId',
   canViewProfileSection,
   async (req: Request, res: Response) => {
-    const { accountSid } = req;
+    const { hrmAccountId } = req;
     const { profileId, sectionId } = req.params;
 
-    const result = await profileController.getProfileSectionById(accountSid, {
+    const result = await profileController.getProfileSectionById(hrmAccountId, {
       profileId: parseInt(profileId, 10),
       sectionId: parseInt(sectionId, 10),
     });
@@ -365,7 +365,7 @@ profilesRouter.get(
 const canViewProfile = canPerformActionOnProfileMiddleware(
   actionsMaps.profile.VIEW_PROFILE,
   req => ({
-    accountSid: req.accountSid,
+    hrmAccountId: req.hrmAccountId,
     can: req.can,
     profileId: parseInt(req.params.profileId, 10),
     user: req.user,
@@ -376,11 +376,11 @@ profilesRouter.get(
   '/:profileId',
   canViewProfile,
   async (req: Request, res: Response, next: NextFunction) => {
-    const { accountSid } = req;
+    const { hrmAccountId } = req;
     const { profileId } = req.params;
 
     const result = await profileController.getProfile()(
-      accountSid,
+      hrmAccountId,
       parseInt(profileId, 10),
     );
 

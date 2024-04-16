@@ -1203,6 +1203,14 @@ describe('/cases route', () => {
                   ),
               expectedTotalCount: 7,
             },
+            {
+              description:
+                'should return empty set if different HRM sub account specified',
+              searchRoute: `/v0/accounts/${accounts[0]}-other/cases/search`,
+              sampleConfig: SIMPLE_SAMPLE_CONFIG,
+              expectedCasesAndContacts: () => [],
+              expectedTotalCount: 0,
+            },
           ];
 
           let createdCasesAndContacts: CaseWithContact[];
@@ -1215,7 +1223,7 @@ describe('/cases route', () => {
             });
           });
 
-          each(testCases.filter((tc, idx) => idx === 8)).test(
+          each(testCases).test(
             '$description',
             async ({
               sampleConfig,

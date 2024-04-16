@@ -59,6 +59,7 @@ beforeEach(() => {
     can: jest.fn(),
     user: { workerSid: 'worker1' },
     accountSid: 'account1',
+    hrmAccountId: 'account1',
     body: {},
   };
   next.mockClear();
@@ -185,7 +186,7 @@ describe('canPerformEditContactAction', () => {
       new ContactBuilder().withFinalizedAt(BASELINE_DATE).build(),
     );
     await canPerformEditContactAction(req, {}, next);
-    expect(mockGetContactById).toHaveBeenCalledWith(req.accountSid, 'contact1', req);
+    expect(mockGetContactById).toHaveBeenCalledWith(req.hrmAccountId, 'contact1', req);
   });
 
   describe('finalized contact', function () {

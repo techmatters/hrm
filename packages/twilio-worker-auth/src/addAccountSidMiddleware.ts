@@ -16,11 +16,13 @@
 
 import './index';
 import type { Request, Response, NextFunction } from 'express';
+import { AccountSID } from '@tech-matters/types';
 
 declare global {
   namespace Express {
     export interface Request {
-      accountSid?: string;
+      accountSid?: AccountSID;
+      hrmAccountId?: string;
     }
   }
 }
@@ -33,6 +35,8 @@ export const addAccountSidMiddleware = (
   res: Response,
   next: NextFunction,
 ) => {
-  req.accountSid = req.params.accountSid;
+  const [twilioAccountSid] = req.params.accountSid.split('-');
+  req.accountSid = twilioAccountSid as AccountSID;
+  req.hrmAccountId = req.params.accountSid;
   return next();
 };

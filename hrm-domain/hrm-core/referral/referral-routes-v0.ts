@@ -32,12 +32,12 @@ export default () => {
     '/',
     publicEndpoint,
     async (req: Request<unknown, Referral, Referral>, res: Response) => {
-      const { accountSid, body } = req;
+      const { hrmAccountId, body } = req;
       if (!body.resourceId || !body.contactId || !isValid(parseISO(body.referredAt))) {
         throw createError(400, 'Required referral property not present');
       }
       try {
-        res.json(await createReferral()(accountSid, body));
+        res.json(await createReferral()(hrmAccountId, body));
       } catch (err) {
         if (err instanceof DuplicateReferralError) {
           throw createError(400, err.message);
