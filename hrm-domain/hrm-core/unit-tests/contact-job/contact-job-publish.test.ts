@@ -144,7 +144,7 @@ describe('publishDueContactJobs', () => {
         additionalPayload: {
           conversationMediaId: 999,
         },
-        accountSid: 'accountSid',
+        accountSid,
         contactId: 123,
         lastAttempt: null,
         numberOfAttempts: 1,

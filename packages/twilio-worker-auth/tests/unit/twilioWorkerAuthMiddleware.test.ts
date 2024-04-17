@@ -31,7 +31,7 @@ beforeEach(() => {
 
 const mockUnauthorized = unauthorized as jest.Mock<ReturnType<typeof unauthorized>>;
 
-const mockAccountSid = 'AC-MOCKED_ACCOUNT';
+const mockAccountSid = 'ACxxx-MOCKED_ACCOUNT';
 
 describe('Test Bearer token', () => {
   each([
@@ -55,7 +55,7 @@ describe('Test Bearer token', () => {
       description: 'token is valid but worker sid is not prefixed with WK',
       shouldAuthorize: false,
       validatorImplementation: async () => ({
-        worker_sid: 'WKxxxxxxxxxxx',
+        worker_sid: 'xxxxxxxxxxx',
         roles: ['agent'],
       }),
     },
@@ -112,7 +112,7 @@ describe('Test Bearer token', () => {
         expect(result).toBe(undefined);
         const tokenResult = await validatorImplementation();
         expect(mockedReq.user).toMatchObject(
-          newTwilioUser(mockAccountSid, tokenResult.worker_sid, tokenResult.roles),
+          newTwilioUser('ACxxx', tokenResult.worker_sid, tokenResult.roles),
         );
       } else {
         expect(nextFn).not.toHaveBeenCalled();

@@ -23,10 +23,11 @@ import * as caseApi from '@tech-matters/hrm-core/case/caseService';
 import * as context from '../../context';
 import { defaultLimitAndOffset } from '../../auto-paginate';
 import { pullCases } from '../../pull-cases';
+import { HrmAccountId } from '@tech-matters/types';
 
 const { maxPermissions } = context;
 
-const accountSid = 'ACxxx';
+const accountSid: HrmAccountId = 'ACxxx';
 const bucket = 'docs-bucket';
 const hrmEnv = 'test';
 const shortCode = 'XX';
@@ -111,9 +112,9 @@ describe('KHP Data Pull - Pull Cases', () => {
       sections: {},
       helpline: 'helpline',
       status: 'open',
-      twilioWorkerId: 'Wkxxx',
-      createdBy: 'Wkxxx',
-      updatedBy: 'Wkxxx',
+      twilioWorkerId: 'WKxxx',
+      createdBy: 'WKxxx',
+      updatedBy: 'WKxxx',
       accountSid,
       createdAt: addDays(startDate, 1).toISOString(),
       updatedAt: addDays(startDate, 1).toISOString(),
@@ -129,9 +130,9 @@ describe('KHP Data Pull - Pull Cases', () => {
       sections: {},
       helpline: 'helpline',
       status: 'open',
-      twilioWorkerId: 'Wkxxx',
-      createdBy: 'Wkxxx',
-      updatedBy: 'Wkxxx',
+      twilioWorkerId: 'WKxxx',
+      createdBy: 'WKxxx',
+      updatedBy: 'WKxxx',
       accountSid,
       createdAt: addDays(startDate, 2).toISOString(),
       updatedAt: addDays(startDate, 2).toISOString(),
