@@ -22,7 +22,7 @@ import {
 import { Contact } from '@tech-matters/hrm-core/contact/contactDataAccess';
 import { ContactRawJson } from '@tech-matters/hrm-core/contact/contactJson';
 import { NewContactRecord } from '@tech-matters/hrm-core/contact/sql/contactInsertSql';
-import { twilioUser } from '@tech-matters/twilio-worker-auth';
+import { newTwilioUser } from '@tech-matters/twilio-worker-auth';
 import { NewCaseSection } from '@tech-matters/hrm-core/case/caseSection/types';
 import { createCaseSection } from '@tech-matters/hrm-core/case/caseSection/caseSectionService';
 import type { AccountSID } from '@tech-matters/types';
@@ -271,7 +271,7 @@ export type CaseSectionInsert = {
 export const workerSid = 'WK-worker-sid';
 
 export const ALWAYS_CAN = {
-  user: twilioUser(workerSid, []),
+  user: newTwilioUser(accountSid, workerSid, []),
   can: () => true,
   permissions: openPermissions.rules('ACx'),
 };

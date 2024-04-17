@@ -25,7 +25,7 @@ import {
 
 import { ContactBuilder } from './contact-builder';
 import { omit } from 'lodash';
-import { twilioUser } from '@tech-matters/twilio-worker-auth';
+import { newTwilioUser } from '@tech-matters/twilio-worker-auth';
 import { newOk } from '@tech-matters/types';
 import * as profilesDB from '../../profile/profileDataAccess';
 import * as profilesService from '../../profile/profileService';
@@ -35,6 +35,13 @@ import '@tech-matters/testing/expectToParseAsDate';
 import { openPermissions } from '../../permissions/json-permissions';
 import { RulesFile, TKConditionsSets } from '../../permissions/rulesMap';
 
+const accountSid = 'AC-accountSid';
+const workerSid = 'WK-WORKER_SID';
+const parameterAccountSid = 'AC-parameter account-sid';
+const contactCreatorSid = 'WK-contact-creator';
+const contactPatcherSid = 'WK-contact-patcher';
+const baselineDate = new Date(2020, 1, 1);
+
 jest.mock('../../contact/contactDataAccess');
 
 const getIdentifierWithProfilesSpy = jest
@@ -42,30 +49,27 @@ const getIdentifierWithProfilesSpy = jest
   .mockImplementation(() => async () => ({
     id: 1,
     identifier: 'identifier',
-    accountSid: 'accountSid',
+    accountSid: 'AC-accountSid',
     createdAt: new Date(),
     updatedAt: new Date(),
-    createdBy: 'createdBy',
+    createdBy: 'WK-createdBy',
     profiles: [
       {
         id: 1,
-        accountSid: 'accountSid',
+        accountSid: 'AC-accountSid',
         createdAt: new Date(),
         updatedAt: new Date(),
         name: 'name',
         contactsCount: 0,
         casesCount: 0,
-        createdBy: 'createdBy',
+        createdBy: 'WK-createdBy',
       },
     ],
   }));
 
-const workerSid = 'WORKER_SID';
-const baselineDate = new Date(2020, 1, 1);
-
 const mockContact: contactDb.Contact = {
   id: 1234,
-  accountSid: 'accountSid',
+  accountSid: 'AC-accountSid',
   csamReports: [],
   referrals: [],
   conversationMedia: [],
@@ -96,9 +100,9 @@ describe('createContact', () => {
     },
     queueName: 'Q',
     conversationDuration: 100,
-    twilioWorkerId: 'owning-worker-id',
+    twilioWorkerId: 'WK-owning-worker-id',
     timeOfContact: new Date(2010, 5, 15).toISOString(),
-    createdBy: 'ignored-worker-id',
+    createdBy: 'WK-ignored-worker-id',
     helpline: 'a helpline',
     taskId: 'a task',
     channel: 'morse code',
@@ -124,14 +128,14 @@ describe('createContact', () => {
   test("Passes payload down to data layer with user workerSid used for 'createdBy'", async () => {
     const createContactMock = spyOnContact();
     const returnValue = await createContact(
-      'parameter account-sid',
-      'contact-creator',
+      parameterAccountSid,
+      'WK-contact-creator',
       sampleCreateContactPayload,
       ALWAYS_CAN,
     );
-    expect(createContactMock).toHaveBeenCalledWith('parameter account-sid', {
+    expect(createContactMock).toHaveBeenCalledWith(parameterAccountSid, {
       ...sampleCreateContactPayload,
-      createdBy: 'contact-creator',
+      createdBy: contactCreatorSid,
       profileId: 1,
       identifierId: 1,
     });
@@ -152,14 +156,14 @@ describe('createContact', () => {
     );
 
     const returnValue = await createContact(
-      'parameter account-sid',
-      'contact-creator',
+      parameterAccountSid,
+      'WK-contact-creator',
       sampleCreateContactPayload,
       ALWAYS_CAN,
     );
-    expect(createContactMock).toHaveBeenCalledWith('parameter account-sid', {
+    expect(createContactMock).toHaveBeenCalledWith(parameterAccountSid, {
       ...sampleCreateContactPayload,
-      createdBy: 'contact-creator',
+      createdBy: contactCreatorSid,
       profileId: 2,
       identifierId: 2,
     });
@@ -180,20 +184,20 @@ describe('createContact', () => {
       'twilioWorkerId',
     );
     const returnValue = await createContact(
-      'parameter account-sid',
-      'contact-creator',
+      parameterAccountSid,
+      contactCreatorSid,
       minimalPayload,
       ALWAYS_CAN,
     );
-    expect(createContactMock).toHaveBeenCalledWith('parameter account-sid', {
+    expect(createContactMock).toHaveBeenCalledWith(parameterAccountSid, {
       ...minimalPayload,
-      createdBy: 'contact-creator',
+      createdBy: contactCreatorSid,
       helpline: '',
       number: '',
       channel: '',
       channelSid: '',
       serviceSid: '',
-      twilioWorkerId: '',
+      twilioWorkerId: undefined,
       profileId: undefined,
       identifierId: undefined,
     });
@@ -206,15 +210,15 @@ describe('createContact', () => {
 
     const payload = omit(sampleCreateContactPayload, 'timeOfContact');
     const returnValue = await createContact(
-      'parameter account-sid',
-      'contact-creator',
+      parameterAccountSid,
+      contactCreatorSid,
       payload,
       ALWAYS_CAN,
     );
-    expect(createContactMock).toHaveBeenCalledWith('parameter account-sid', {
+    expect(createContactMock).toHaveBeenCalledWith(parameterAccountSid, {
       ...payload,
       timeOfContact: expect.toParseAsDate(),
-      createdBy: 'contact-creator',
+      createdBy: contactCreatorSid,
       profileId: 1,
       identifierId: 1,
     });
@@ -228,15 +232,15 @@ describe('createContact', () => {
     const payload = omit(sampleCreateContactPayload, 'queueName');
     const legacyPayload = omit(sampleCreateContactPayload, 'queueName');
     const returnValue = await createContact(
-      'parameter account-sid',
-      'contact-creator',
+      parameterAccountSid,
+      contactCreatorSid,
       legacyPayload as any,
       ALWAYS_CAN,
     );
-    expect(createContactMock).toHaveBeenCalledWith('parameter account-sid', {
+    expect(createContactMock).toHaveBeenCalledWith(parameterAccountSid, {
       ...payload,
       queueName: '',
-      createdBy: 'contact-creator',
+      createdBy: contactCreatorSid,
       profileId: 1,
       identifierId: 1,
     });
@@ -250,9 +254,9 @@ describe('connectContactToCase', () => {
     const connectSpy = jest.fn();
     connectSpy.mockResolvedValue(mockContact);
     jest.spyOn(contactDb, 'connectToCase').mockImplementation(() => connectSpy);
-    const result = await connectContactToCase('accountSid', '1234', '4321', ALWAYS_CAN);
+    const result = await connectContactToCase(accountSid, '1234', '4321', ALWAYS_CAN);
     expect(connectSpy).toHaveBeenCalledWith(
-      'accountSid',
+      accountSid,
       '1234',
       '4321',
       ALWAYS_CAN.user.workerSid,
@@ -265,7 +269,7 @@ describe('connectContactToCase', () => {
       .spyOn(contactDb, 'connectToCase')
       .mockImplementation(() => () => Promise.resolve(undefined));
     expect(
-      connectContactToCase('accountSid', '1234', '4321', ALWAYS_CAN),
+      connectContactToCase(accountSid, '1234', '4321', ALWAYS_CAN),
     ).rejects.toThrow();
   });
 });
@@ -294,16 +298,16 @@ describe('patchContact', () => {
     jest.spyOn(contactDb, 'patch').mockReturnValue(patchSpy);
     patchSpy.mockResolvedValue(mockContact);
     const result = await patchContact(
-      'accountSid',
-      'contact-patcher',
+      accountSid,
+      contactPatcherSid,
       true,
       '1234',
       samplePatch,
       ALWAYS_CAN,
     );
     expect(result).toStrictEqual(mockContact);
-    expect(patchSpy).toHaveBeenCalledWith('accountSid', '1234', true, {
-      updatedBy: 'contact-patcher',
+    expect(patchSpy).toHaveBeenCalledWith(accountSid, '1234', true, {
+      updatedBy: contactPatcherSid,
       childInformation: {
         firstName: 'Charlotte',
         lastName: 'Ballantyne',
@@ -325,21 +329,13 @@ describe('patchContact', () => {
     jest.spyOn(contactDb, 'patch').mockReturnValue(patchSpy);
     patchSpy.mockResolvedValue(undefined);
     expect(
-      patchContact(
-        'accountSid',
-        'contact-patcher',
-        true,
-        '1234',
-        samplePatch,
-        ALWAYS_CAN,
-      ),
+      patchContact(accountSid, contactPatcherSid, true, '1234', samplePatch, ALWAYS_CAN),
     ).rejects.toThrow();
   });
 });
 
 describe('searchContacts', () => {
-  const accountSid = 'account-sid',
-    contactSearcher = 'contact-searcher';
+  const contactSearcher = 'WK-contact-searcher';
   test('Returns contacts returned by data layer unmodified', async () => {
     const jillSmith = new ContactBuilder()
       .withId(4321)
@@ -350,7 +346,7 @@ describe('searchContacts', () => {
       .withCallSummary('Lost young boy')
       .withNumber('+12025550142')
       .withCallType('Child calling about self')
-      .withTwilioWorkerId('twilio-worker-id')
+      .withTwilioWorkerId(workerSid)
       .withCreatedBy(contactSearcher)
       .withCreatedAt(new Date('2020-03-10T00:00:00Z'))
       .withTimeOfContact(new Date('2020-03-10T00:00:00Z'))
@@ -365,7 +361,7 @@ describe('searchContacts', () => {
       .withCallSummary('Young pregnant woman')
       .withNumber('Anonymous')
       .withCallType('Child calling about self')
-      .withTwilioWorkerId('twilio-worker-id')
+      .withTwilioWorkerId(workerSid)
       .withCreatedBy(contactSearcher)
       .withCreatedAt(new Date('2020-03-15T00:00:00Z'))
       .withTimeOfContact(new Date('2020-03-15T00:00:00Z'))
@@ -487,7 +483,6 @@ describe('search contacts permissions', () => {
   each(testCases).test(
     '$description',
     async ({ isSupervisor, viewContactsPermissions, counselorSearchParam }: TestCase) => {
-      const accountSid = 'account-sid';
       const body = {
         helpline: 'helpline',
         onlyDataContacts: true,
@@ -496,7 +491,10 @@ describe('search contacts permissions', () => {
       const limitOffset = { limit: 10, offset: 0 };
       const can = () => true;
       const roles = [];
-      const user = { ...twilioUser(workerSid, roles), isSupervisor: isSupervisor };
+      const user = {
+        ...newTwilioUser(accountSid, workerSid, roles),
+        isSupervisor: isSupervisor,
+      };
       const permissions: RulesFile = {
         ...openPermissions.rules('ACx'),
         viewContact: viewContactsPermissions,

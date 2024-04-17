@@ -14,12 +14,14 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
+import { HrmAccountId } from '@tech-matters/types';
+
 export type CaseSectionRecord = {
   caseId: number;
   sectionType: string;
   sectionId: string;
   sectionTypeSpecificData: Record<string, any>;
-  accountSid: string;
+  accountSid: HrmAccountId;
   createdAt: string;
   createdBy: string;
   updatedAt?: string;

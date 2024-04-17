@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { AccountSID, ReferrableResource } from '@tech-matters/types';
+import { ReferrableResource, HrmAccountId } from '@tech-matters/types';
 import { SearchParameters } from '@tech-matters/elasticsearch-client';
 
 import { Request, Response, Router } from 'express';
@@ -48,7 +48,7 @@ beforeEach(() => {
 
 describe('POST /search', () => {
   type SearchRequestHandler = (
-    req: Partial<Request<Partial<SearchParameters>>> & { accountSid: AccountSID },
+    req: Partial<Request<Partial<SearchParameters>>> & { accountSid: HrmAccountId },
     res: Response,
   ) => Promise<void>;
 

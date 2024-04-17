@@ -41,10 +41,10 @@ import {
   createContact,
 } from '@tech-matters/hrm-core/contact/contactService';
 import { getRequest, getServer, headers, setRules, useOpenRules } from '../server';
-import { twilioUser } from '@tech-matters/twilio-worker-auth';
+import { newTwilioUser } from '@tech-matters/twilio-worker-auth';
 import { isS3StoredTranscript } from '@tech-matters/hrm-core/conversation-media/conversation-media';
 import { ALWAYS_CAN, CaseSectionInsert, populateCaseSections } from '../mocks';
-import { AccountSID } from '@tech-matters/types';
+import { HrmAccountId, WorkerSID } from '@tech-matters/types';
 
 useOpenRules();
 const server = getServer();
@@ -54,9 +54,9 @@ const { case1, contact1, accountSid, workerSid } = mocks;
 
 type InsertSampleCaseSettings = {
   sampleSize: number;
-  accounts: readonly AccountSID[];
+  accounts: readonly HrmAccountId[];
   helplines: string[];
-  workers?: string[];
+  workers?: WorkerSID[];
   statuses?: string[];
   cases?: { case: Partial<CaseService>; sections: Record<string, CaseSectionInsert[]> }[];
   contactNames?: { firstName: string; lastName: string }[];
@@ -382,7 +382,7 @@ describe('/cases route', () => {
         String(createdContact.id),
         String(createdCase.id),
         {
-          user: twilioUser(workerSid, []),
+          user: newTwilioUser(accountSid, workerSid, []),
           can: () => true,
         },
       );
@@ -426,7 +426,7 @@ describe('/cases route', () => {
     });
   });
 
-  const households = {
+  const households: Record<string, CaseSectionInsert[]> = {
     household: [
       {
         workerSid,
@@ -883,16 +883,18 @@ describe('/cases route', () => {
               searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
               body: {
                 filters: {
-                  counsellors: ['worker-1', 'worker-3'],
+                  counsellors: ['WK-worker-1', 'WK-worker-3'],
                 },
               },
               sampleConfig: {
                 ...SEARCHABLE_CONTACT_PHONE_NUMBER_SAMPLE_CONFIG,
-                workers: ['worker-1', 'worker-2', 'worker-3', 'worker-4'],
+                workers: ['WK-worker-1', 'WK-worker-2', 'WK-worker-3', 'WK-worker-4'],
               },
               expectedCasesAndContacts: sampleCasesAndContacts =>
                 sampleCasesAndContacts
-                  .filter(ccc => ['worker-1', 'worker-3'].indexOf(ccc.case.status) !== -1)
+                  .filter(
+                    ccc => ['WK-worker-1', 'WK-worker-3'].indexOf(ccc.case.status) !== -1,
+                  )
                   .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
               expectedTotalCount: 5,
             },
@@ -1271,14 +1273,14 @@ describe('/cases route', () => {
         accountSid,
         createdContact.id.toString(),
         mocks.conversationMedia,
-        { user: twilioUser(workerSid, []), can: () => true },
+        { user: newTwilioUser(accountSid, workerSid, []), can: () => true },
       );
       await connectContactToCase(
         accountSid,
         String(createdContact.id),
         String(createdCase.id),
         {
-          user: twilioUser(workerSid, []),
+          user: newTwilioUser(accountSid, workerSid, []),
           can: () => true,
         },
       );

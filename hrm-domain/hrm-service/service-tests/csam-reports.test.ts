@@ -216,7 +216,7 @@ describe('/csamReports', () => {
           if (csamReport.twilioWorkerId) {
             expect(reportFromDB.twilioWorkerId).toBe(csamReport.twilioWorkerId);
           } else {
-            expect(reportFromDB.twilioWorkerId).toBe('');
+            expect(reportFromDB.twilioWorkerId).toBe(null);
           }
         });
       });

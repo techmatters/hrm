@@ -16,12 +16,13 @@
 
 import { ContactRawJson } from '../contactJson';
 import { selectSingleContactByTaskId } from './contact-get-sql';
+import { TwilioUserIdentifier, WorkerSID } from '@tech-matters/types';
 
 export type NewContactRecord = {
   rawJson: ContactRawJson;
   queueName: string;
-  twilioWorkerId?: string;
-  createdBy?: string;
+  twilioWorkerId?: WorkerSID;
+  createdBy?: TwilioUserIdentifier;
   helpline?: string;
   number?: string;
   channel?: string;

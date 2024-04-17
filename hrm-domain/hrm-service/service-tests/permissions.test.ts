@@ -27,6 +27,7 @@ import { db } from '@tech-matters/hrm-core/connection-pool';
 import * as contactDB from '@tech-matters/hrm-core/contact/contactDataAccess';
 import * as conversationMediaDB from '@tech-matters/hrm-core/conversation-media/conversation-media-data-access';
 import { NewContactRecord } from '@tech-matters/hrm-core/contact/sql/contactInsertSql';
+import { AccountSID } from '@tech-matters/types';
 
 const server = getServer({
   permissions: undefined,
@@ -67,7 +68,7 @@ describe('/permissions route', () => {
         expectedStatus: 500,
       },
       ...Object.entries(rulesMap).map(([key, rules]) => ({
-        accountSid: key,
+        accountSid: `AC${key}`,
         description: `Should return status 200 with ${key} permissions`,
         expectedStatus: 200,
         expectedPayload: rules,
@@ -119,10 +120,10 @@ const deleteConversationMediaByContactId = (contactId: number, accountSid: strin
   );
 
 describe('/permissions/:action route with contact objectType', () => {
-  const accountSids = ['open', 'closed'];
+  const accountSids: AccountSID[] = ['ACopen', 'ACclosed'];
   let createdContacts = {
-    open: null,
-    closed: null,
+    ACopen: null,
+    ACclosed: null,
   };
   const bucket = 'bucket';
   const key = 'key';
@@ -188,12 +189,12 @@ describe('/permissions/:action route with contact objectType', () => {
         {
           action: actionsMaps.contact.VIEW_EXTERNAL_TRANSCRIPT,
           accountSid,
-          shouldHavePermission: accountSid === 'open',
+          shouldHavePermission: accountSid === 'ACopen',
         },
         {
           action: actionsMaps.contact.VIEW_RECORDING,
           accountSid,
-          shouldHavePermission: accountSid === 'open',
+          shouldHavePermission: accountSid === 'ACopen',
         },
       ])
       .flatMap(testCase => [

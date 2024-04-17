@@ -14,9 +14,6 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-export type AccountSID = `AC${string}`; // Would love to narrow this type more so there was a meaningful difference between this and HrmAccountId - they are basically aliases now, but TS template literals aren't up to that (yet?)
+import { AccountSID } from './twilio';
 
-export type WorkerSID = `WK${string}`;
-
-// Individual Twilio worker, a global account user for the Twilio Account, or the system user
-export type TwilioUserIdentifier = WorkerSID | `account-${AccountSID}` | 'system';
+export type HrmAccountId = AccountSID | `${AccountSID}-${string}`;

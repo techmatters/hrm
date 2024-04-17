@@ -25,10 +25,11 @@ import {
   adminAuthorizationMiddleware,
 } from '@tech-matters/twilio-worker-auth';
 import { adminApiV0 } from './routes';
+import { AccountSID } from '@tech-matters/types';
 
 type ServiceCreationOptions = Partial<{
   permissions: Permissions;
-  authTokenLookup: (accountSid: string) => string;
+  authTokenLookup: (accountSid: AccountSID) => string;
   enableProcessContactJobs: boolean;
   webServer: Express;
 }>;

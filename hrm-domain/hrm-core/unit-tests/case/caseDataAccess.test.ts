@@ -30,8 +30,8 @@ import { VALID_CASE_CREATE_FIELDS } from '../../case/caseDataAccess';
 import { pick } from 'lodash';
 
 const accountSid: AccountSID = 'ACCOUNT_SID';
-const workerSid = 'twilio-worker-id';
-const user: TwilioUser = { workerSid, isSupervisor: true, roles: [] };
+const workerSid = 'WK-twilio-worker-id';
+const user: TwilioUser = { accountSid, workerSid, isSupervisor: true, roles: [] };
 let conn: pgPromise.ITask<unknown>;
 const caseId = 42;
 
@@ -83,7 +83,7 @@ describe('createCase', () => {
     const caseFromDB = createMockCaseInsert({
       helpline: 'helpline',
       status: 'open',
-      twilioWorkerId: 'twilio-worker-id',
+      twilioWorkerId: workerSid,
     });
     const oneSpy = jest.spyOn(conn, 'one').mockResolvedValue({ ...caseFromDB, id: 1337 });
 
@@ -261,7 +261,7 @@ describe('search', () => {
               { note: 'Child with covid-19', twilioWorkerId: 'contact-adder' },
             ],
           },
-          twilioWorkerId: 'twilio-worker-id',
+          twilioWorkerId: 'WK-twilio-worker-id',
           totalCount: 1337,
         },
       ],
@@ -280,7 +280,7 @@ describe('search', () => {
               { note: 'Child with covid-19', twilioWorkerId: 'contact-adder' },
             ],
           },
-          twilioWorkerId: 'twilio-worker-id',
+          twilioWorkerId: 'WK-twilio-worker-id',
           connectedContacts: [
             {
               rawJson: {

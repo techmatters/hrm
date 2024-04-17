@@ -59,6 +59,8 @@ import {
   newErr,
   newOkFromData,
   Result,
+  TwilioUserIdentifier,
+  HrmAccountId,
 } from '@tech-matters/types';
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 
@@ -66,11 +68,11 @@ export { ProfilesListFilters } from './sql/profile-list-sql';
 
 type RecordCommons = {
   id: number;
-  accountSid: string;
+  accountSid: HrmAccountId;
   createdAt: Date;
   updatedAt: Date;
-  createdBy: string;
-  updatedBy?: string;
+  createdBy: TwilioUserIdentifier;
+  updatedBy?: TwilioUserIdentifier;
 };
 
 export type Identifier = NewIdentifierRecord & RecordCommons;
@@ -82,19 +84,18 @@ type ProfileFlagAssociation = {
   validUntil: Date | null;
 };
 
-export type ProfileWithRelationships = Profile &
-  Profile & {
-    identifiers: Identifier[];
-    profileFlags: ProfileFlagAssociation[];
-    profileSections: {
-      sectionType: ProfileSection['sectionType'];
-      id: ProfileSection['id'];
-    }[];
-  };
+export type ProfileWithRelationships = Profile & {
+  identifiers: Identifier[];
+  profileFlags: ProfileFlagAssociation[];
+  profileSections: {
+    sectionType: ProfileSection['sectionType'];
+    id: ProfileSection['id'];
+  }[];
+};
 
 type IdentifierParams =
-  | { accountSid: string; identifier: string; identifierId?: never }
-  | { accountSid: string; identifierId: number; identifier?: never };
+  | { accountSid: HrmAccountId; identifier: string; identifierId?: never }
+  | { accountSid: HrmAccountId; identifierId: number; identifier?: never };
 
 export const getIdentifierWithProfiles =
   (task?) =>
@@ -135,7 +136,7 @@ export const getIdentifierWithProfiles =
 export const createIdentifier =
   (task?) =>
   async (
-    accountSid: string,
+    accountSid: HrmAccountId,
     identifier: NewIdentifierRecord & Pick<RecordCommons, 'createdBy'>,
   ): Promise<Identifier> => {
     const now = new Date();
@@ -156,7 +157,7 @@ export type Profile = NewProfileRecord & RecordCommons;
 export const createProfile =
   (task?) =>
   async (
-    accountSid: string,
+    accountSid: HrmAccountId,
     profile: NewProfileRecord & Pick<RecordCommons, 'createdBy'>,
   ): Promise<Profile> => {
     const now = new Date();
@@ -175,7 +176,7 @@ export const createProfile =
 export const updateProfileById =
   (task?) =>
   async (
-    accountSid: string,
+    accountSid: HrmAccountId,
     payload: Partial<NewProfileRecord> & { id: number; updatedBy: Profile['updatedBy'] },
   ): Promise<Profile> => {
     const { id, name, updatedBy } = payload;
@@ -194,7 +195,7 @@ export const updateProfileById =
 export const associateProfileToIdentifier =
   task =>
   async (
-    accountSid: string,
+    accountSid: HrmAccountId,
     profileId: number,
     identifierId: number,
   ): Promise<IdentifierWithProfiles> => {
@@ -237,7 +238,7 @@ export type SearchParameters = {
 };
 
 export const listProfiles = async (
-  accountSid: string,
+  accountSid: HrmAccountId,
   listConfiguration: ProfileListConfiguration,
   { filters }: SearchParameters,
 ): Promise<{ profiles: ProfileWithRelationships[]; count: number }> => {
@@ -263,7 +264,7 @@ export const listProfiles = async (
 export const associateProfileToProfileFlag =
   (task?) =>
   async (
-    accountSid: string,
+    accountSid: HrmAccountId,
     profileId: number,
     profileFlagId: number,
     validUntil: Date | null,
@@ -345,7 +346,7 @@ export const associateProfileToProfileFlag =
 export const disassociateProfileFromProfileFlag =
   (task?) =>
   async (
-    accountSid: string,
+    accountSid: HrmAccountId,
     profileId: number,
     profileFlagId: number,
     { user }: { user: TwilioUser },
@@ -375,7 +376,7 @@ export const disassociateProfileFromProfileFlag =
 export type ProfileFlag = NewProfileFlagRecord & RecordCommons;
 
 export const getProfileFlagsForAccount = async (
-  accountSid: string,
+  accountSid: HrmAccountId,
 ): Promise<ProfileFlag[]> => {
   return db.task<ProfileFlag[]>(async t =>
     t.manyOrNone(getProfileFlagsByAccountSql, { accountSid }),
@@ -383,7 +384,7 @@ export const getProfileFlagsForAccount = async (
 };
 
 export const updateProfileFlagById = async (
-  accountSid: string,
+  accountSid: HrmAccountId,
   payload: NewProfileFlagRecord & { id: number; updatedBy: ProfileFlag['updatedBy'] },
 ): Promise<ProfileFlag> => {
   const { id, name, updatedBy } = payload;
@@ -398,7 +399,7 @@ export const updateProfileFlagById = async (
 
 export const deleteProfileFlagById = async (
   profileFlagId: number,
-  accountSid: string,
+  accountSid: HrmAccountId,
 ): Promise<ProfileFlag> => {
   return db.task<ProfileFlag>(async t =>
     t.oneOrNone(deleteProfileFlagByIdSql, {
@@ -409,7 +410,7 @@ export const deleteProfileFlagById = async (
 };
 
 export const getProfileFlagsByIdentifier = async (
-  accountSid: string,
+  accountSid: HrmAccountId,
   identifier: string,
 ): Promise<ProfileFlag[]> => {
   return db.task<ProfileFlag[]>(async t =>
@@ -418,7 +419,7 @@ export const getProfileFlagsByIdentifier = async (
 };
 
 export const createProfileFlag = async (
-  accountSid: string,
+  accountSid: HrmAccountId,
   payload: NewProfileFlagRecord & { createdBy: ProfileFlag['createdBy'] },
 ): Promise<ProfileFlag> => {
   const now = new Date();

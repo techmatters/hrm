@@ -24,6 +24,10 @@ import {
   newOkFromData,
   ensureRejection,
   isOk,
+  WorkerSID,
+  AccountSID,
+  HrmAccountId,
+  TwilioUserIdentifier,
 } from '@tech-matters/types';
 import {
   connectToCase,
@@ -112,7 +116,7 @@ export const bindApplyTransformations =
     );
 
 export const getContactById = async (
-  accountSid: string,
+  accountSid: HrmAccountId,
   contactId: number,
   { can, user }: { can: InitializedCan; user: TwilioUser },
 ) => {
@@ -122,7 +126,7 @@ export const getContactById = async (
 };
 
 export const getContactByTaskId = async (
-  accountSid: string,
+  accountSid: HrmAccountId,
   taskId: string,
   { can, user }: { can: InitializedCan; user: TwilioUser },
 ) => {
@@ -144,17 +148,18 @@ const findS3StoredTranscriptPending = (
 
 const initProfile = async (
   conn,
-  accountSid: string,
+  hrmAccountId: HrmAccountId,
   contact: Pick<Contact, 'number'>,
 ): Promise<
   Result<DatabaseErrorResult, { profileId?: number; identifierId?: number }>
 > => {
   if (!contact.number) return newOk({ data: {} });
+  const [accountSid] = hrmAccountId.split('-') as [AccountSID];
 
   const profileResult = await getOrCreateProfileWithIdentifier(conn)(
-    accountSid,
+    hrmAccountId,
     { identifier: { identifier: contact.number }, profile: { name: null } },
-    { user: { isSupervisor: false, roles: [], workerSid: systemUser } }, // fake the worker since makes more sense to keep the new "profile created by system"
+    { user: { accountSid, isSupervisor: false, roles: [], workerSid: systemUser } }, // fake the worker since makes more sense to keep the new "profile created by system"
   );
 
   if (isErr(profileResult)) {
@@ -169,8 +174,8 @@ const initProfile = async (
 
 // Creates a contact with all its related records within a single transaction
 export const createContact = async (
-  accountSid: string,
-  createdBy: string,
+  accountSid: HrmAccountId,
+  createdBy: WorkerSID,
   newContact: NewContactRecord,
   { can, user }: { can: InitializedCan; user: TwilioUser },
 ): Promise<Contact> => {
@@ -195,7 +200,7 @@ export const createContact = async (
         channelSid: newContact.channelSid ?? '',
         serviceSid: newContact.serviceSid ?? '',
         taskId: newContact.taskId ?? '',
-        twilioWorkerId: newContact.twilioWorkerId ?? '',
+        twilioWorkerId: newContact.twilioWorkerId,
         rawJson: newContact.rawJson,
         queueName: newContact.queueName ?? '',
         createdBy,
@@ -242,8 +247,8 @@ export const createContact = async (
 };
 
 export const patchContact = async (
-  accountSid: string,
-  updatedBy: string,
+  accountSid: HrmAccountId,
+  updatedBy: TwilioUserIdentifier,
   finalize: boolean,
   contactId: string,
   { referrals, rawJson, ...restOfPatch }: PatchPayload,
@@ -286,7 +291,7 @@ export const patchContact = async (
   });
 
 export const connectContactToCase = async (
-  accountSid: string,
+  accountSid: HrmAccountId,
   contactId: string,
   caseId: string,
   { can, user }: { can: InitializedCan; user: TwilioUser },
@@ -306,7 +311,7 @@ export const connectContactToCase = async (
 };
 
 export const addConversationMediaToContact = async (
-  accountSid: string,
+  accountSid: HrmAccountId,
   contactIdString: string,
   conversationMediaPayload: NewConversationMedia[],
   { can, user }: { can: InitializedCan; user: TwilioUser },
@@ -353,7 +358,7 @@ export const addConversationMediaToContact = async (
 const generalizedSearchContacts =
   <T extends { counselor?: string }>(searchQuery: SearchQueryFunction<T>) =>
   async (
-    accountSid: string,
+    accountSid: HrmAccountId,
     searchParameters: T,
     query,
     {
@@ -393,7 +398,7 @@ export const searchContacts = generalizedSearchContacts(search);
 const searchContactsByProfileId = generalizedSearchContacts(searchByProfileId);
 
 export const getContactsByProfileId = async (
-  accountSid: string,
+  accountSid: HrmAccountId,
   profileId: Profile['id'],
   query: Pick<PaginationQuery, 'limit' | 'offset'>,
   ctx: {

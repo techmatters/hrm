@@ -14,16 +14,19 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
+import type { WorkerSID } from '.';
+import { HrmAccountId } from './HrmAccountId';
+
 export enum ContactJobType {
   RETRIEVE_CONTACT_TRANSCRIPT = 'retrieve-transcript',
 }
 
 type ContactJobMessageCommons = {
   jobId: number;
-  accountSid: string;
+  accountSid: HrmAccountId;
   contactId: number;
   taskId: string;
-  twilioWorkerId: string;
+  twilioWorkerId: WorkerSID;
   attemptNumber: number;
 };
 

@@ -21,19 +21,20 @@ import each from 'jest-each';
 import { CaseRecord, NewCaseRecord } from '../../case/caseDataAccess';
 import '@tech-matters/testing/expectToParseAsDate';
 import { workerSid, accountSid } from '../mocks';
-import { twilioUser } from '@tech-matters/twilio-worker-auth';
+import { newTwilioUser } from '@tech-matters/twilio-worker-auth';
 import { rulesMap } from '../../permissions';
 import { RulesFile } from '../../permissions/rulesMap';
 
 jest.mock('../../case/caseDataAccess');
 const baselineCreatedDate = new Date(2013, 6, 13).toISOString();
+const twilioWorkerId = 'WK-twilio-worker-id';
 
 test('create case', async () => {
   const caseToBeCreated = createMockCase({
     helpline: 'helpline',
     status: 'open',
-    twilioWorkerId: 'client-assigned-twilio-worker-id',
-    createdBy: 'Fake news', // Overwritten by workerSid for User
+    twilioWorkerId: 'WK-client-assigned-twilio-worker-id',
+    createdBy: 'WK Fake news', // Overwritten by workerSid for User
     accountSid: 'AC-wrong-account-sid', // Overwritten by accountSid for User
     info: {},
   });
@@ -100,7 +101,7 @@ describe('searchCases', () => {
         },
       ],
     },
-    twilioWorkerId: 'twilio-worker-id',
+    twilioWorkerId,
     connectedContacts: [
       {
         id: 1,
@@ -164,7 +165,7 @@ describe('searchCases', () => {
         sectionId: 'NOTE_1',
       },
     ],
-    twilioWorkerId: 'twilio-worker-id',
+    twilioWorkerId,
     connectedContacts: [
       {
         id: 1,
@@ -211,7 +212,7 @@ describe('searchCases', () => {
         sectionId: 'NOTE_1',
       },
     ],
-    twilioWorkerId: 'twilio-worker-id',
+    twilioWorkerId,
     connectedContacts: [],
   });
 
@@ -335,13 +336,13 @@ describe('searchCases', () => {
         // {closedCases, counselor, filters: {}, helpline},
         {
           can: () => true,
-          user: twilioUser(workerSid, []),
+          user: newTwilioUser(accountSid, workerSid, []),
           permissions: rulesMap.open,
         },
         onlyEssentialData,
       );
 
-      const user = { ...twilioUser(workerSid, []), isSupervisor: false };
+      const user = { ...newTwilioUser(accountSid, workerSid, []), isSupervisor: false };
       expect(searchSpy).toHaveBeenCalledWith(
         user,
         [['everyone']],
@@ -424,7 +425,10 @@ describe('search cases permissions', () => {
       const limitOffset = { limit: '10', offset: '0' };
       const can = () => true;
       const roles = [];
-      const user = { ...twilioUser(workerSid, roles), isSupervisor: isSupervisor };
+      const user = {
+        ...newTwilioUser(accountSid, workerSid, roles),
+        isSupervisor: isSupervisor,
+      };
       const reqData = {
         can,
         user,

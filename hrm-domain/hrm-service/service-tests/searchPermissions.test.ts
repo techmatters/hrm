@@ -28,15 +28,15 @@ import * as caseDb from '@tech-matters/hrm-core/case/caseDataAccess';
 import * as caseService from '@tech-matters/hrm-core/case/caseService';
 import { TargetKind } from '@tech-matters/hrm-core/permissions/actions';
 import { ContactRawJson } from '@tech-matters/hrm-core/contact/contactJson';
-import { AccountSID } from '@tech-matters/types';
+import { AccountSID, WorkerSID } from '@tech-matters/types';
 import { ALWAYS_CAN } from './mocks';
 
 const server = getServer();
 const request = getRequest(server);
 
 const accountSid: AccountSID = `AC${randomBytes(16).toString('hex')}`;
-const userTwilioWorkerId = `WK${randomBytes(16).toString('hex')}`;
-const anotherUserTwilioWorkerId = `WK${randomBytes(16).toString('hex')}`;
+const userTwilioWorkerId: WorkerSID = `WK${randomBytes(16).toString('hex')}`;
+const anotherUserTwilioWorkerId: WorkerSID = `WK${randomBytes(16).toString('hex')}`;
 const rawJson: ContactRawJson = {
   callType: 'Silent',
   categories: {},
@@ -82,7 +82,7 @@ const rawJson: ContactRawJson = {
   definitionVersion: 'br-v1',
 };
 
-const createContact = async (twilioWorkerId: string): Promise<contactDb.Contact> => {
+const createContact = async (twilioWorkerId: WorkerSID): Promise<contactDb.Contact> => {
   const timeOfContact = formatISO(subMinutes(new Date(), 5));
   const taskSid = `WT${randomBytes(16).toString('hex')}`;
   const channelSid = `CH${randomBytes(16).toString('hex')}`;
@@ -104,7 +104,7 @@ const createContact = async (twilioWorkerId: string): Promise<contactDb.Contact>
   );
 };
 
-const createCase = async (twilioWorkerId: string) => {
+const createCase = async (twilioWorkerId: WorkerSID) => {
   return caseService.createCase(
     { status: 'open', helpline: 'helpline', info: { summary: 'something summery' } },
     accountSid,

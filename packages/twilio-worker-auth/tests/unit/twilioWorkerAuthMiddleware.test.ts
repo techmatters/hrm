@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { twilioUser } from '../../src';
+import { newTwilioUser } from '../../src';
 
 const tftv = require('twilio-flex-token-validator');
 import each from 'jest-each';
@@ -30,6 +30,8 @@ beforeEach(() => {
 });
 
 const mockUnauthorized = unauthorized as jest.Mock<ReturnType<typeof unauthorized>>;
+
+const mockAccountSid = 'AC-MOCKED_ACCOUNT';
 
 describe('Test Bearer token', () => {
   each([
@@ -53,7 +55,7 @@ describe('Test Bearer token', () => {
       description: 'token is valid but worker sid is not prefixed with WK',
       shouldAuthorize: false,
       validatorImplementation: async () => ({
-        worker_sid: 'xxxxxxxxxxx',
+        worker_sid: 'WKxxxxxxxxxxx',
         roles: ['agent'],
       }),
     },
@@ -85,7 +87,9 @@ describe('Test Bearer token', () => {
 
       const mockedReq: any = {
         headers,
-        accountSid: `MOCKED_ACCOUNT`,
+        params: {
+          accountSid: mockAccountSid,
+        },
       };
 
       const mockedRes: any = {
@@ -108,7 +112,7 @@ describe('Test Bearer token', () => {
         expect(result).toBe(undefined);
         const tokenResult = await validatorImplementation();
         expect(mockedReq.user).toMatchObject(
-          twilioUser(tokenResult.worker_sid, tokenResult.roles),
+          newTwilioUser(mockAccountSid, tokenResult.worker_sid, tokenResult.roles),
         );
       } else {
         expect(nextFn).not.toHaveBeenCalled();
@@ -125,7 +129,7 @@ describe('Test Bearer token', () => {
 
     const mockedReq: any = {
       headers: {},
-      accountSid: `MOCKED_ACCOUNT`,
+      accountSid: mockAccountSid,
     };
 
     const mockedRes: any = {

@@ -23,6 +23,8 @@ export { Actions, actionsMaps } from './actions';
 import { InitializedCan, initializeCanForRules } from './initializeCanForRules';
 import { RulesFile } from './rulesMap';
 import type { Request, Response, NextFunction } from 'express';
+import { TwilioUser } from '@tech-matters/twilio-worker-auth';
+import { AccountSID } from '@tech-matters/types';
 
 declare global {
   namespace Express {
@@ -36,7 +38,7 @@ declare global {
 const canCache: Record<string, InitializedCan> = {};
 
 export type Permissions = {
-  rules: (accountSid: string) => RulesFile;
+  rules: (accountSid: AccountSID) => RulesFile;
   cachePermissions: boolean;
 };
 
@@ -53,7 +55,8 @@ export const applyPermissions = (req: Request, initializedCan: InitializedCan) =
 
 export const setupPermissions =
   (lookup: Permissions) => (req: Request, res: Response, next: NextFunction) => {
-    const { accountSid } = <any>req;
+    const { accountSid } = <TwilioUser>(<any>req).user;
+
     const accountRules = lookup.rules(accountSid);
     if (lookup.cachePermissions) {
       canCache[accountSid] = canCache[accountSid] ?? initializeCanForRules(accountRules);

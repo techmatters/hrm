@@ -17,9 +17,10 @@
 import { validator as TokenValidator } from 'twilio-flex-token-validator';
 import crypto from 'crypto';
 
-import { twilioUser, TwilioUser } from './twilioUser';
+import { newTwilioUser, TwilioUser } from './twilioUser';
 import { unauthorized } from '@tech-matters/http';
 import type { Request, Response, NextFunction } from 'express';
+import { AccountSID, TwilioUserIdentifier, WorkerSID } from '@tech-matters/types';
 
 declare global {
   namespace Express {
@@ -57,10 +58,15 @@ const isGuest = (tokenResult: TokenValidatorResponse) =>
 const defaultTokenLookup = (accountSid: string) =>
   process.env[`TWILIO_AUTH_TOKEN_${accountSid}`] ?? '';
 
+const extractAccountSid = (request: Request): AccountSID => {
+  const [twilioAccountSid] = request.params.accountSid.split('-') ?? [];
+  return twilioAccountSid as AccountSID;
+};
+
 const authenticateWithStaticKey = (
   req: Request,
   keySuffix: string,
-  userId: string | undefined,
+  userId?: TwilioUserIdentifier,
 ): boolean => {
   if (!req.headers) return false;
   const {
@@ -79,7 +85,7 @@ const authenticateWithStaticKey = (
         crypto.timingSafeEqual(Buffer.from(requestSecret), Buffer.from(staticSecret));
 
       if (isStaticSecretValid) {
-        req.user = twilioUser(`${userId}`, []);
+        req.user = newTwilioUser(extractAccountSid(req), userId, []);
         return true;
       }
     } catch (err) {
@@ -90,14 +96,14 @@ const authenticateWithStaticKey = (
 };
 
 export const getAuthorizationMiddleware =
-  (authTokenLookup: (accountSid: string) => string = defaultTokenLookup) =>
+  (authTokenLookup: (accountSid: AccountSID) => string = defaultTokenLookup) =>
   async (req: Request, res: Response, next: NextFunction) => {
     if (!req || !req.headers || !req.headers.authorization) {
       return unauthorized(res);
     }
 
     const { authorization } = req.headers;
-    const { accountSid } = req;
+    const accountSid = extractAccountSid(req);
     if (!accountSid) return unauthorized(res);
 
     if (authorization.startsWith('Bearer')) {
@@ -115,7 +121,11 @@ export const getAuthorizationMiddleware =
         if (!isWorker(tokenResult) || isGuest(tokenResult)) {
           return unauthorized(res);
         }
-        req.user = twilioUser(tokenResult.worker_sid, tokenResult.roles);
+        req.user = newTwilioUser(
+          accountSid,
+          tokenResult.worker_sid as WorkerSID,
+          tokenResult.roles,
+        );
         return next();
       } catch (err) {
         console.error('Token authentication failed: ', err);
@@ -136,18 +146,18 @@ export const staticKeyAuthorizationMiddleware = async (
   res: Response,
   next: NextFunction,
 ) => {
-  if (!req.accountSid) {
+  const accountSid = extractAccountSid(req);
+  if (!accountSid) {
     throw new Error(
       'staticKeyAuthorizationMiddleware invoked with invalid request, req.accountSid missing',
     );
   }
 
-  if (authenticateWithStaticKey(req, req.accountSid, `account-${req.accountSid}`))
-    return next();
+  if (authenticateWithStaticKey(req, accountSid, `account-${accountSid}`)) return next();
   return unauthorized(res);
 };
 
-// TODO: do we want to diferentiate what is actually system vs admin?
+// TODO: do we want to differentiate what is actually system vs admin?
 export const systemUser = 'system';
 export const adminAuthorizationMiddleware =
   (keySuffix: string) => async (req: Request, res: Response, next: NextFunction) => {

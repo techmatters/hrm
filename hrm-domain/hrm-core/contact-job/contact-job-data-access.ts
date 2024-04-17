@@ -30,7 +30,7 @@ import {
 } from './sql/contact-job-sql';
 import { txIfNotInOne } from '../sql';
 
-import { ContactJobType } from '@tech-matters/types';
+import { ContactJobType, HrmAccountId } from '@tech-matters/types';
 import { ConversationMedia } from '../conversation-media/conversation-media';
 
 // Reflects the actual shape of a record in the ContactJobs table
@@ -179,7 +179,7 @@ export const getPendingCleanupJobAccountSids = async (
 };
 
 export const deleteContactJob = async (
-  accountSid: string,
+  accountSid: HrmAccountId,
   jobId: number,
 ): Promise<void> => {
   return db.task(tx => tx.none(DELETE_JOB_SQL, { accountSid, jobId }));

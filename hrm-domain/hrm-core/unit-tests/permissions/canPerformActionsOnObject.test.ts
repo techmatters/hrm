@@ -15,14 +15,14 @@
  */
 
 import each from 'jest-each';
-import { isErr, isOk } from '@tech-matters/types';
+import { HrmAccountId, isErr, isOk } from '@tech-matters/types';
 
 import { canPerformActionsOnObject } from '../../permissions/canPerformActionOnObject';
-import { actionsMaps } from '../../permissions/actions';
+import { actionsMaps } from '../../permissions';
 import * as contactApi from '../../contact/contactService';
 import * as caseApi from '../../case/caseService';
 
-const accountSid = 'ACxxxxxx';
+const accountSid: HrmAccountId = 'ACxxxxxx';
 
 const getContactByIdSpy = jest
   .spyOn(contactApi, 'getContactById')
@@ -78,12 +78,17 @@ describe('canPerformActionsOnObject', () => {
     'when targetKind is $targetKind, action $action and should be allowed evaluates to $shouldCan, should result in $expected',
     async ({ targetKind, action, shouldCan, success, mockedCan, shouldAccessDB }) => {
       const result = await canPerformActionsOnObject({
-        accountSid,
+        hrmAccountId: accountSid,
         targetKind,
         actions: [action],
         objectId: 123,
         can: mockedCan ? mockedCan : () => shouldCan,
-        user: { workerSid: 'workerSid', isSupervisor: false, roles: ['supervisor'] },
+        user: {
+          accountSid,
+          workerSid: 'WK-workerSid',
+          isSupervisor: false,
+          roles: ['supervisor'],
+        },
       });
 
       if (shouldAccessDB) {

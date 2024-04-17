@@ -19,7 +19,11 @@ import { SQS } from 'aws-sdk';
 import { getSsmParameter } from '@tech-matters/ssm-cache';
 import { publishSns } from '@tech-matters/sns-client';
 
-import type { FlatResource, ResourcesSearchIndexPayload } from '@tech-matters/types';
+import type {
+  FlatResource,
+  ResourcesSearchIndexPayload,
+  HrmAccountId,
+} from '@tech-matters/types';
 import { ResourcesJobType } from '@tech-matters/types';
 
 const RETRY_COUNT = 4;
@@ -93,7 +97,10 @@ export const publishToResourcesJob = async ({
   }
 };
 
-export const publishSearchIndexJob = (accountSid: string, resource: FlatResource) => {
+export const publishSearchIndexJob = (
+  accountSid: HrmAccountId,
+  resource: FlatResource,
+) => {
   return publishToResourcesJob({
     params: {
       accountSid,

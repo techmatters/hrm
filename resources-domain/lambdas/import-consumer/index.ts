@@ -17,7 +17,7 @@
 import { ResourceImportProcessorError } from '@tech-matters/job-errors';
 import { getSsmParameter } from '@tech-matters/ssm-cache';
 import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
-import type { ImportRequestBody } from '@tech-matters/types';
+import type { ImportRequestBody, HrmAccountId } from '@tech-matters/types';
 
 const internalResourcesBaseUrl = process.env.internal_resources_base_url as string;
 const hrmEnv = process.env.NODE_ENV;
@@ -44,7 +44,7 @@ const postResourcesBody = async (
 };
 
 const upsertRecord = async (
-  accountSid: string,
+  accountSid: HrmAccountId,
   body: ImportRequestBody,
 ): Promise<void> => {
   const apiKey = await getSsmParameter(`/${hrmEnv}/twilio/${accountSid}/static_key`);

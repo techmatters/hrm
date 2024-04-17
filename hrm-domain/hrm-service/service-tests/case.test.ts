@@ -33,7 +33,7 @@ import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/
 import * as mocks from './mocks';
 import { ruleFileActionOverride } from './permissions-overrides';
 import { headers, getRequest, getServer, setRules, useOpenRules } from './server';
-import { twilioUser } from '@tech-matters/twilio-worker-auth';
+import { newTwilioUser } from '@tech-matters/twilio-worker-auth';
 import { isS3StoredTranscript } from '@tech-matters/hrm-core/conversation-media/conversation-media';
 import { ALWAYS_CAN } from './mocks';
 import { casePopulated } from './mocks';
@@ -188,7 +188,7 @@ describe('/cases route', () => {
           accountSid,
           createdContact.id.toString(),
           mocks.conversationMedia,
-          { user: twilioUser(workerSid, []), can: () => true },
+          { user: newTwilioUser(accountSid, workerSid, []), can: () => true },
         );
 
         await connectContactToCase(
@@ -196,7 +196,7 @@ describe('/cases route', () => {
           String(createdContact.id),
           String(createdCase.id),
           {
-            user: twilioUser(workerSid, []),
+            user: newTwilioUser(accountSid, workerSid, []),
             can: () => true,
           },
         );
@@ -250,7 +250,7 @@ describe('/cases route', () => {
         const fromDb = await caseDb.getById(
           cases.blank.id,
           accountSid,
-          { workerSid, isSupervisor: true, roles: [] },
+          { accountSid, workerSid, isSupervisor: true, roles: [] },
           [['everyone']],
         );
         expect(fromDb).toBeFalsy();
