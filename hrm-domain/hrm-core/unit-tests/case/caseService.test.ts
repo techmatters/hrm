@@ -82,7 +82,7 @@ describe('searchCases', () => {
         {
           accountSid,
           note: 'Child with covid-19',
-          twilioWorkerId: 'contact-adder',
+          twilioWorkerId: 'WK-contact-adder',
           id: 'NOTE_1',
           createdAt: baselineCreatedDate,
         },
@@ -91,7 +91,7 @@ describe('searchCases', () => {
     sections: {
       note: [
         {
-          createdBy: 'contact-adder',
+          createdBy: 'WK-contact-adder',
           sectionId: 'NOTE_1',
           createdAt: baselineCreatedDate,
           eventTimestamp: baselineCreatedDate,
@@ -157,7 +157,7 @@ describe('searchCases', () => {
       {
         accountSid,
         sectionTypeSpecificData: { note: 'Child with covid-19' },
-        createdBy: 'contact-adder',
+        createdBy: 'WK-contact-adder',
         createdAt: baselineCreatedDate,
         eventTimestamp: baselineCreatedDate,
         caseId,
@@ -204,7 +204,7 @@ describe('searchCases', () => {
       {
         accountSid,
         sectionTypeSpecificData: { note: 'Child with covid-19' },
-        createdBy: 'contact-adder',
+        createdBy: 'WK-contact-adder',
         createdAt: baselineCreatedDate,
         eventTimestamp: baselineCreatedDate,
         caseId,

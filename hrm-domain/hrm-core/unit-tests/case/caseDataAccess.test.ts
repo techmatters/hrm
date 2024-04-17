@@ -46,7 +46,7 @@ describe('getById', () => {
       status: 'open',
       info: {
         counsellorNotes: [
-          { note: 'Child with covid-19', twilioWorkerId: 'contact-adder' },
+          { note: 'Child with covid-19', twilioWorkerId: 'WK-contact-adder' },
         ],
       },
       twilioWorkerId: workerSid,
@@ -258,7 +258,7 @@ describe('search', () => {
           status: 'open',
           info: {
             counsellorNotes: [
-              { note: 'Child with covid-19', twilioWorkerId: 'contact-adder' },
+              { note: 'Child with covid-19', twilioWorkerId: 'WK-contact-adder' },
             ],
           },
           twilioWorkerId: 'WK-twilio-worker-id',
@@ -277,7 +277,7 @@ describe('search', () => {
           status: 'open',
           info: {
             counsellorNotes: [
-              { note: 'Child with covid-19', twilioWorkerId: 'contact-adder' },
+              { note: 'Child with covid-19', twilioWorkerId: 'WK-contact-adder' },
             ],
           },
           twilioWorkerId: 'WK-twilio-worker-id',

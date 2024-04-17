@@ -320,7 +320,7 @@ export const case2: Partial<CaseService> = {
 export const populatedCaseSections: Record<string, CaseSectionInsert[]> = {
   note: [
     {
-      workerSid: 'note-adder',
+      workerSid: 'WK-note-adder',
       section: {
         sectionId: '1',
         sectionTypeSpecificData: {
@@ -329,7 +329,7 @@ export const populatedCaseSections: Record<string, CaseSectionInsert[]> = {
       },
     },
     {
-      workerSid: 'other-note-adder',
+      workerSid: 'WK-other-note-adder',
       section: {
         sectionId: '2',
         sectionTypeSpecificData: {
@@ -340,7 +340,7 @@ export const populatedCaseSections: Record<string, CaseSectionInsert[]> = {
   ],
   perpetrator: [
     {
-      workerSid: 'perpetrator-adder',
+      workerSid: 'WK-perpetrator-adder',
       section: {
         sectionTypeSpecificData: {
           firstName: 'Jane',
@@ -349,7 +349,7 @@ export const populatedCaseSections: Record<string, CaseSectionInsert[]> = {
       },
     },
     {
-      workerSid: 'perpetrator-adder',
+      workerSid: 'WK-perpetrator-adder',
       section: {
         sectionTypeSpecificData: {
           firstName: 'J.',
@@ -361,7 +361,7 @@ export const populatedCaseSections: Record<string, CaseSectionInsert[]> = {
   ],
   household: [
     {
-      workerSid: 'household-adder',
+      workerSid: 'WK-household-adder',
       section: {
         sectionTypeSpecificData: {
           firstName: 'Jane',
@@ -370,7 +370,7 @@ export const populatedCaseSections: Record<string, CaseSectionInsert[]> = {
       },
     },
     {
-      workerSid: 'household-adder',
+      workerSid: 'WK-household-adder',
       section: {
         sectionTypeSpecificData: {
           firstName: 'J.',
@@ -382,7 +382,7 @@ export const populatedCaseSections: Record<string, CaseSectionInsert[]> = {
   ],
   incident: [
     {
-      workerSid: 'incident-adder',
+      workerSid: 'WK-incident-adder',
       section: {
         sectionTypeSpecificData: {
           date: '2021-03-03',
@@ -399,7 +399,7 @@ export const populatedCaseSections: Record<string, CaseSectionInsert[]> = {
   ],
   referral: [
     {
-      workerSid: 'referral-adder',
+      workerSid: 'WK-referral-adder',
       section: {
         sectionId: '2503',
         sectionTypeSpecificData: {
@@ -412,7 +412,7 @@ export const populatedCaseSections: Record<string, CaseSectionInsert[]> = {
   ],
   document: [
     {
-      workerSid: 'document-adder',
+      workerSid: 'WK-document-adder',
       section: {
         sectionId: '5e127299-17ba-4adf-a040-69dac9ca45bf',
         sectionTypeSpecificData: {
@@ -422,7 +422,7 @@ export const populatedCaseSections: Record<string, CaseSectionInsert[]> = {
       },
     },
     {
-      workerSid: 'document-adder',
+      workerSid: 'WK-document-adder',
       section: {
         sectionId: '10d21f35-142c-4538-92db-d558f80898ae',
         sectionTypeSpecificData: {
