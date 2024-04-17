@@ -37,7 +37,7 @@ import { ConversationMedia } from '../conversation-media/conversation-media';
 export type ContactJobRecord = {
   id: number;
   contactId: number;
-  accountSid: string;
+  accountSid: HrmAccountId;
   jobType: string;
   requested: string;
   completed: string | null;
