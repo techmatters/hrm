@@ -22,10 +22,6 @@ import {
 import { STS } from 'aws-sdk';
 
 const shortCode = process.argv[2] || 'as';
-const accountSid =
-  shortCode.length === 34 && shortCode.toUpperCase().startsWith('AC')
-    ? shortCode
-    : undefined;
 
 const timestamp = new Date().getTime();
 const assumeRoleParams = {
@@ -42,7 +38,7 @@ sts
     process.env.AWS_SECRET_ACCESS_KEY = Credentials!.SecretAccessKey;
     process.env.AWS_SESSION_TOKEN = Credentials!.SessionToken;
 
-    getClient({ accountSid, shortCode, indexType: RESOURCE_INDEX_TYPE }).then(client => {
+    getClient({ shortCode, indexType: RESOURCE_INDEX_TYPE }).then(client => {
       client.indexClient(resourceIndexConfiguration).createIndex({});
     });
   });
