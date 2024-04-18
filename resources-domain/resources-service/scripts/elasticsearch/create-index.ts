@@ -19,9 +19,26 @@ import {
   RESOURCE_INDEX_TYPE,
   resourceIndexConfiguration,
 } from '@tech-matters/resources-search-config';
+import { STS } from 'aws-sdk';
 
 const shortCode = process.argv[2] || 'as';
 
-getClient({ shortCode, indexType: RESOURCE_INDEX_TYPE }).then(client => {
-  client.indexClient(resourceIndexConfiguration).createIndex({});
-});
+const timestamp = new Date().getTime();
+const assumeRoleParams = {
+  RoleArn: 'arn:aws:iam::712893914485:role/admin-no-pii',
+  RoleSessionName: `resource-admin-cli-${timestamp}`,
+};
+
+const sts = new STS();
+sts
+  .assumeRole(assumeRoleParams)
+  .promise()
+  .then(({ Credentials }) => {
+    process.env.AWS_ACCESS_KEY_ID = Credentials!.AccessKeyId;
+    process.env.AWS_SECRET_ACCESS_KEY = Credentials!.SecretAccessKey;
+    process.env.AWS_SESSION_TOKEN = Credentials!.SessionToken;
+
+    getClient({ shortCode, indexType: RESOURCE_INDEX_TYPE }).then(client => {
+      client.indexClient(resourceIndexConfiguration).createIndex({});
+    });
+  });

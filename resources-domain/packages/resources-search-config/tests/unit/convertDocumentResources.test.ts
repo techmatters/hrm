@@ -58,7 +58,7 @@ describe('convertIndexDocument', () => {
     expect(document).toEqual({
       id: '1234',
       name: ['Resource'],
-      high_boost_global: 'This is the description taxonomy1 free ON Toronto',
+      high_boost_global: 'This is the description taxonomy1 free',
       low_boost_global:
         'This is the english title This is the french title keyword1 keyword2',
       eligibilityMinAge: 10,

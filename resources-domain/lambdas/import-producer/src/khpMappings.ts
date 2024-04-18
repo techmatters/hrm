@@ -30,7 +30,7 @@ const siteKey = (subsection: string) => (context: FieldMappingContext) => {
     rootResource,
     captures: { siteIndex },
   } = context;
-  const { _id: id, objectId } = rootResource.sites[siteIndex];
+  const { _id: id, objectId } = rootResource.sites[siteIndex] ?? {};
   return `site/${id ?? objectId}/${substituteCaptureTokens(subsection, context)}`;
 };
 
@@ -100,12 +100,35 @@ const KHP_MAPPING_NODE_SITES: { children: MappingNode } = {
           children: {
             address1: translatableAttributeMapping(siteKey('location/address1')),
             address2: translatableAttributeMapping(siteKey('location/address2')),
-            city: referenceAttributeMapping(siteKey('location/city'), 'cities', {
-              value: ctx => `CA/${ctx.parentValue.province}/${ctx.currentValue}`,
-            }),
-            county: translatableAttributeMapping(siteKey('location/county'), {
-              value: ctx => ctx.currentValue,
-            }),
+            city: {
+              mappings: [
+                referenceAttributeMapping(siteKey('location/city'), 'cities', {
+                  value: ctx => `CA/${ctx.parentValue.province}/${ctx.currentValue}`,
+                }),
+                referenceAttributeMapping(
+                  siteKey('location/region-city'),
+                  'country/province/region/city',
+                  {
+                    value: ctx =>
+                      `CA/${ctx.parentValue.province}/${ctx.parentValue.county}/${ctx.currentValue}`,
+                  },
+                ),
+              ],
+            },
+            county: {
+              mappings: [
+                translatableAttributeMapping(siteKey('location/county'), {
+                  value: ctx => ctx.currentValue,
+                }),
+                referenceAttributeMapping(
+                  siteKey('location/region'),
+                  'country/province/region',
+                  {
+                    value: ctx => `CA/${ctx.parentValue.province}/${ctx.currentValue}`,
+                  },
+                ),
+              ],
+            },
             province: referenceAttributeMapping(
               siteKey('location/province'),
               'provinces',
@@ -411,7 +434,6 @@ export const KHP_MAPPING_NODE: MappingNode = {
   description: {
     children: {
       '{language}': translatableAttributeMapping('description', {
-        // TODO: this was previously mapped as 'description' (string). Was that intended?
         info: context => ({ text: context.currentValue }),
         language: ctx => ctx.captures.language,
       }),
@@ -420,14 +442,40 @@ export const KHP_MAPPING_NODE: MappingNode = {
   isActive: attributeMapping('booleanAttributes', 'isActive', {
     value: ctx => ctx.currentValue,
   }),
-  primaryLocationCity: referenceAttributeMapping('primaryLocationCity', 'cities', {
-    value: ctx => {
-      const { primaryLocationProvince } = ctx.rootResource;
-      // TODO: No top level country, assumes always CA?
-      return ['CA', primaryLocationProvince, ctx.currentValue].join('/');
-    },
-  }),
-  primaryLocationCounty: attributeMapping('stringAttributes', 'primaryLocationCounty'),
+  primaryLocationCity: {
+    mappings: [
+      referenceAttributeMapping('primaryLocationCity', 'cities', {
+        value: ctx => {
+          const { primaryLocationProvince } = ctx.rootResource;
+          return ['CA', primaryLocationProvince, ctx.currentValue].join('/');
+        },
+      }),
+      referenceAttributeMapping('primaryLocationRegionCity', 'cities', {
+        value: ctx => {
+          const { primaryLocationProvince, primaryLocationCounty } = ctx.rootResource;
+          return [
+            'CA',
+            primaryLocationProvince,
+            primaryLocationCounty,
+            ctx.currentValue,
+          ].join('/');
+        },
+      }),
+    ],
+  },
+  primaryLocationCounty: {
+    mappings: [
+      translatableAttributeMapping(siteKey('primaryLocationCounty'), {
+        value: ctx => ctx.currentValue,
+      }),
+      referenceAttributeMapping('primaryLocationRegion', 'counties', {
+        value: ctx => {
+          const { primaryLocationProvince } = ctx.rootResource;
+          return ['CA', primaryLocationProvince, ctx.currentValue].join('/');
+        },
+      }),
+    ],
+  },
   primaryLocationProvince: referenceAttributeMapping(
     'primaryLocationProvince',
     'provinces',

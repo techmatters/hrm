@@ -112,8 +112,9 @@ export const resourceIndexDocumentMappings: ResourceIndexDocumentMappings = {
   // This is a list of attribute names that should be given higher priority in search results.
   highBoostGlobalFields: [
     'description',
-    'province',
-    'city',
+    'primaryLocationProvince',
+    'primaryLocationRegion',
+    'primaryLocationRegionCity',
     'targetPopulation',
     'languages',
     'feeStructure',
@@ -178,6 +179,13 @@ export const resourceIndexDocumentMappings: ResourceIndexDocumentMappings = {
       type: 'keyword',
       isArrayField: true,
       attributeKeyPattern: /(.*)[cC]ity$/,
+      indexValueGenerator: ({ value, info }: ReferrableResourceAttribute<string>) =>
+        [info?.name, value].filter(i => i).join(' '),
+    },
+    region: {
+      type: 'keyword',
+      isArrayField: true,
+      attributeKeyPattern: /(.*)[rR]egion$/,
       indexValueGenerator: ({ value, info }: ReferrableResourceAttribute<string>) =>
         [info?.name, value].filter(i => i).join(' '),
     },
