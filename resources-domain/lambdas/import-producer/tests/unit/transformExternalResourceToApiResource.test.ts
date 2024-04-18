@@ -31,6 +31,8 @@ import {
   khpResourceWithAncestorTaxonmies,
   khpResourceWithoutSites,
   khpResourceWithSites,
+  khpSampleResource_20240418,
+  khpSampleResource_20240418_2,
 } from '../fixtures/sampleResources';
 
 const startedDate = new Date().toISOString();
@@ -925,6 +927,14 @@ describe('Mapping valid sample resources should produce no warnings', () => {
     {
       description: 'KHP resource with sites',
       resource: khpResourceWithSites,
+    },
+    {
+      description: 'KHP resource after API update',
+      resource: khpSampleResource_20240418,
+    },
+    {
+      description: 'KHP resource after API update 2',
+      resource: khpSampleResource_20240418_2,
     },
   ];
 

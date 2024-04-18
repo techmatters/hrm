@@ -195,7 +195,7 @@ const mapNode = (
       captureProperty ? mappingNode : {};
     const staticKeys = Object.keys(staticMappings);
     const rawDataProperties = captureProperty
-      ? Object.keys(dataNode).filter(k => !staticKeys.includes(k))
+      ? Object.keys(dataNode).filter(k => k && !staticKeys.includes(k))
       : [property];
 
     const dataProperties: string[] = rawDataProperties
@@ -233,7 +233,7 @@ const mapNode = (
       });
 
       // Recurse on the children node(s) if any
-      if (children) {
+      if (children && typeof dataPropertyValue === 'object') {
         mapNode(children, dataPropertyValue, context, aseloResource);
       }
     });
