@@ -124,8 +124,7 @@ const KHP_MAPPING_NODE_SITES: { children: MappingNode } = {
                   siteKey('location/region'),
                   'country/province/region',
                   {
-                    value: ctx =>
-                      `CA/${ctx.parentValue.province}/${ctx.parentValue.county}/${ctx.currentValue}`,
+                    value: ctx => `CA/${ctx.parentValue.province}/${ctx.currentValue}`,
                   },
                 ),
               ],
