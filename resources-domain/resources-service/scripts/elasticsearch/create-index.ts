@@ -21,7 +21,11 @@ import {
 } from '@tech-matters/resources-search-config';
 
 const shortCode = process.argv[2] || 'as';
+const accountSid =
+  shortCode.length === 34 && shortCode.toUpperCase().startsWith('AC')
+    ? shortCode
+    : undefined;
 
-getClient({ shortCode, indexType: RESOURCE_INDEX_TYPE }).then(client => {
+getClient({ accountSid, shortCode, indexType: RESOURCE_INDEX_TYPE }).then(client => {
   client.indexClient(resourceIndexConfiguration).createIndex({});
 });
