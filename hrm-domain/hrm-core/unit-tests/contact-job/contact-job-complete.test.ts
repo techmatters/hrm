@@ -32,7 +32,7 @@ jest.mock('../../contact-job/contact-job-data-access', () => {
   const mockJob = {
     id: 1,
     contactId: 123,
-    accountSid: 'accountSid',
+    accountSid: 'ACaccountSid',
     jobType: 'retrieve-transcript',
     requested: new Date(),
     completed: null,
@@ -52,6 +52,9 @@ jest.mock('../../contact-job/contact-job-data-access', () => {
 afterEach(() => {
   jest.clearAllMocks();
 });
+
+const accountSid = 'ACaccountSid';
+const twilioWorkerId = 'WKtwilioWorkerId';
 
 describe('pollAndProcessCompletedContactJobs', () => {
   test('Completed jobs are polled from SQS client as expected', async () => {
@@ -81,12 +84,12 @@ describe('pollAndProcessCompletedContactJobs', () => {
     const valid1: CompletedContactJobBody = {
       jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
       jobId: 1,
-      accountSid: 'accountSid',
+      accountSid,
       attemptNumber: 1,
       contactId: 123,
       conversationMediaId: 999,
       taskId: 'taskId',
-      twilioWorkerId: 'twilioWorkerId',
+      twilioWorkerId: 'WKtwilioWorkerId',
       serviceSid: 'serviceSid',
       channelSid: 'channelSid',
       filePath: 'filePath',
@@ -135,12 +138,12 @@ describe('pollAndProcessCompletedContactJobs', () => {
     const valid1: CompletedContactJobBody = {
       jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
       jobId: 1,
-      accountSid: 'accountSid',
+      accountSid,
       attemptNumber: 1,
       contactId: 123,
       conversationMediaId: 999,
       taskId: 'taskId',
-      twilioWorkerId: 'twilioWorkerId',
+      twilioWorkerId,
       serviceSid: 'serviceSid',
       channelSid: 'channelSid',
       filePath: 'filePath',
@@ -205,11 +208,11 @@ describe('pollAndProcessCompletedContactJobs', () => {
         jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
         attemptResult: ContactJobAttemptResult.SUCCESS,
         jobId: 1,
-        accountSid: 'accountSid',
+        accountSid,
         contactId: 123,
         conversationMediaId: 999,
         taskId: 'taskId',
-        twilioWorkerId: 'twilioWorkerId',
+        twilioWorkerId,
         serviceSid: 'serviceSid',
         channelSid: 'channelSid',
         filePath: 'filePath',
@@ -285,11 +288,11 @@ describe('pollAndProcessCompletedContactJobs', () => {
         jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
         attemptResult: ContactJobAttemptResult.FAILURE,
         jobId: 1,
-        accountSid: 'accountSid',
+        accountSid,
         contactId: 123,
         conversationMediaId: 999,
         taskId: 'taskId',
-        twilioWorkerId: 'twilioWorkerId',
+        twilioWorkerId,
         serviceSid: 'serviceSid',
         channelSid: 'channelSid',
         filePath: 'filePath',
@@ -379,15 +382,15 @@ describe('pollAndProcessCompletedContactJobs', () => {
 
   describe('getAttemptNumber', () => {
     it('returns completedJob.attemptNumber when not null', async () => {
-      const completedJob = {
+      const completedJob: CompletedContactJobBody = {
         jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
         jobId: 1,
-        accountSid: 'accountSid',
+        accountSid,
         attemptNumber: 1,
         contactId: 123,
         conversationMediaId: 999,
         taskId: 'taskId',
-        twilioWorkerId: 'twilioWorkerId',
+        twilioWorkerId,
         serviceSid: 'serviceSid',
         channelSid: 'channelSid',
         filePath: 'filePath',
@@ -401,7 +404,7 @@ describe('pollAndProcessCompletedContactJobs', () => {
         id: 1,
         contactId: 123,
         // conversationMediaId: 999,
-        accountSid: 'accountSid',
+        accountSid,
         jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
         requested: new Date().toISOString(),
         completed: null,
@@ -417,15 +420,15 @@ describe('pollAndProcessCompletedContactJobs', () => {
     });
 
     it('returns contactJob.numberOfAttempts when completedJob.attemptNumber is null', async () => {
-      const completedJob = {
+      const completedJob: CompletedContactJobBody = {
         jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
         jobId: 1,
-        accountSid: 'accountSid',
+        accountSid,
         attemptNumber: undefined,
         contactId: 123,
         conversationMediaId: 999,
         taskId: 'taskId',
-        twilioWorkerId: 'twilioWorkerId',
+        twilioWorkerId,
         serviceSid: 'serviceSid',
         channelSid: 'channelSid',
         filePath: 'filePath',
@@ -439,7 +442,7 @@ describe('pollAndProcessCompletedContactJobs', () => {
       const contactJob: ContactJobRecord = {
         id: 1,
         contactId: 123,
-        accountSid: 'accountSid',
+        accountSid,
         jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
         requested: new Date().toISOString(),
         completed: null,

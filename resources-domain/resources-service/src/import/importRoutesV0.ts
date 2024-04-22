@@ -15,7 +15,7 @@
  */
 
 import { IRouter, Router } from 'express';
-import { AccountSID, ImportRequestBody } from '@tech-matters/types';
+import { ImportRequestBody, HrmAccountId } from '@tech-matters/types';
 import importService, { isValidationFailure } from './importService';
 import createError from 'http-errors';
 
@@ -24,10 +24,10 @@ const importRoutes = () => {
 
   const { upsertResources, readImportProgress } = importService();
 
-  router.post('/import', async ({ body, accountSid }, res) => {
+  router.post('/import', async ({ body, hrmAccountId }, res) => {
     const { importedResources, batch }: ImportRequestBody = body;
     const result = await upsertResources(
-      accountSid as AccountSID,
+      hrmAccountId as HrmAccountId,
       importedResources,
       batch,
     );
@@ -38,8 +38,8 @@ const importRoutes = () => {
     }
   });
 
-  router.get('/import/progress', async ({ accountSid }, res) => {
-    const progress = await readImportProgress(accountSid as AccountSID);
+  router.get('/import/progress', async ({ hrmAccountId }, res) => {
+    const progress = await readImportProgress(hrmAccountId as HrmAccountId);
     if (progress) {
       res.json(progress);
     } else {

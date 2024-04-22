@@ -15,6 +15,7 @@
  */
 
 import { pgp } from '../../connection-pool';
+import { HrmAccountId } from '@tech-matters/types';
 
 const VALID_CASE_UPDATE_FIELDS = ['info', 'status', 'updatedAt', 'updatedBy'];
 
@@ -40,7 +41,7 @@ const statusUpdatedSetSql = (parameters: { status?: string; updatedBy?: string }
 
 export const updateByIdSql = (
   updatedValues: Record<string, unknown>,
-  accountSid: string,
+  accountSid: HrmAccountId,
   caseId: string,
 ) => `
         ${pgp.helpers.update(updatedValues, updateCaseColumnSet)} 

@@ -24,9 +24,10 @@ import {
 import express from 'express';
 
 import { configureInternalService, configureService } from '../../src/service';
+import { HrmAccountId } from '@tech-matters/types';
 
 export const defaultConfig: {
-  authTokenLookup: (accountSid: string) => string;
+  authTokenLookup: (accountSid: HrmAccountId) => string;
 } = {
   authTokenLookup: () => 'picernic basket',
 };

@@ -31,6 +31,7 @@ import {
 } from './sql/conversation-media-get-sql';
 import { insertConversationMediaSql } from './sql/conversation-media-insert-sql';
 import { updateSpecificDataByIdSql } from './sql/conversation-media-update-sql';
+import { HrmAccountId } from '@tech-matters/types';
 
 /**
  *
@@ -38,7 +39,7 @@ import { updateSpecificDataByIdSql } from './sql/conversation-media-update-sql';
 type ConversationMediaCommons = {
   id: number;
   contactId: number;
-  accountSid: string;
+  accountSid: HrmAccountId;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -102,7 +103,7 @@ export const isS3StoredConversationMedia = (
 export const create =
   (task?) =>
   async (
-    accountSid: string,
+    accountSid: HrmAccountId,
     conversationMedia: NewConversationMedia & { contactId: number },
   ): Promise<ConversationMedia> => {
     try {
@@ -134,7 +135,7 @@ export const create =
   };
 
 export const getById = async (
-  accountSid: string,
+  accountSid: HrmAccountId,
   id: number,
 ): Promise<ConversationMedia> =>
   db.task(async connection =>
@@ -145,7 +146,7 @@ export const getById = async (
   );
 
 export const getByContactId = async (
-  accountSid: string,
+  accountSid: HrmAccountId,
   contactId: number,
 ): Promise<ConversationMedia[]> =>
   db.task(async connection =>
@@ -156,7 +157,7 @@ export const getByContactId = async (
   );
 
 export const updateSpecificData = async (
-  accountSid: string,
+  accountSid: HrmAccountId,
   id: ConversationMedia['id'],
   storeTypeSpecificData: ConversationMedia['storeTypeSpecificData'],
 ): Promise<void> =>

@@ -20,10 +20,11 @@ import { initializeCanForRules } from '../../permissions/initializeCanForRules';
 import { Actions, actionsMaps } from '../../permissions';
 import { RulesFile } from '../../permissions/rulesMap';
 import { workerSid, accountSid } from '../mocks';
-import { TwilioUser, twilioUser } from '@tech-matters/twilio-worker-auth';
+import { TwilioUser, newTwilioUser } from '@tech-matters/twilio-worker-auth';
 import { TargetKind } from '../../permissions/actions';
 import { subDays, subHours } from 'date-fns';
 import { CaseService } from '../../case/caseService';
+import { WorkerSID } from '@tech-matters/types';
 
 const helpline = 'helpline';
 
@@ -41,11 +42,16 @@ const buildRules = (
   return Object.fromEntries(entries);
 };
 
+const creatorSid: WorkerSID = 'WK creator';
+const notCreatorSid: WorkerSID = 'WK not creator';
+const supervisorSid: WorkerSID = 'WK supervisor';
+const notSupervisorSid: WorkerSID = 'WK not supervisor';
+
 describe('Test that all actions work fine (everyone)', () => {
   const rules = buildRules({ default: [['everyone']] });
   const can = initializeCanForRules(rules);
 
-  const notCreator = twilioUser('not creator', []);
+  const notCreator = newTwilioUser(accountSid, notCreatorSid, []);
   type TestCase = {
     action: Actions;
     caseObj: CaseService;
@@ -60,7 +66,7 @@ describe('Test that all actions work fine (everyone)', () => {
       info: {},
       sections: {},
       categories: {},
-      twilioWorkerId: 'creator',
+      twilioWorkerId: creatorSid,
       helpline,
       createdBy: workerSid,
       accountSid,
@@ -87,7 +93,7 @@ describe('Test that all actions work fine (everyone)', () => {
       action,
       contactObj: {
         accountSid,
-        twilioWorkerId: 'creator',
+        twilioWorkerId: creatorSid,
       },
       user: notCreator,
     })),
@@ -116,7 +122,7 @@ describe('Test that all actions work fine (no one)', () => {
   const rules = buildRules({ default: [] });
   const can = initializeCanForRules(rules);
 
-  const supervisor = twilioUser('creator', ['supervisor']);
+  const supervisor = newTwilioUser(accountSid, creatorSid, ['supervisor']);
 
   // Test Case permissions
   each(
@@ -125,7 +131,7 @@ describe('Test that all actions work fine (no one)', () => {
       caseObj: {
         status: 'open',
         info: {},
-        twilioWorkerId: 'creator',
+        twilioWorkerId: creatorSid,
         helpline,
         createdBy: workerSid,
         accountSid,
@@ -142,7 +148,7 @@ describe('Test that all actions work fine (no one)', () => {
       action,
       contactObj: {
         accountSid,
-        twilioWorkerId: 'creator',
+        twilioWorkerId: creatorSid,
       },
       user: supervisor,
     })),
@@ -179,7 +185,7 @@ describe('Test that an empty set of conditions does not grants permissions', () 
   const rules = buildRules({ default: [[]] });
   const can = initializeCanForRules(rules);
 
-  const supervisor = twilioUser('creator', ['supervisor']);
+  const supervisor = newTwilioUser(accountSid, creatorSid, ['supervisor']);
 
   // Test Case permissions
   each(
@@ -188,7 +194,7 @@ describe('Test that an empty set of conditions does not grants permissions', () 
       caseObj: {
         status: 'open',
         info: {},
-        twilioWorkerId: 'creator',
+        twilioWorkerId: creatorSid,
         helpline,
         createdBy: workerSid,
         accountSid,
@@ -205,7 +211,7 @@ describe('Test that an empty set of conditions does not grants permissions', () 
       action,
       contactObj: {
         accountSid,
-        twilioWorkerId: 'creator',
+        twilioWorkerId: creatorSid,
       },
       user: supervisor,
     })),
@@ -251,12 +257,12 @@ describe('Test different scenarios (Case)', () => {
         caseObj: {
           status: 'open',
           info: {},
-          twilioWorkerId: 'creator',
+          twilioWorkerId: creatorSid,
           helpline,
           createdBy: workerSid,
           accountSid,
         },
-        user: twilioUser('not creator', []),
+        user: newTwilioUser(accountSid, notCreatorSid, []),
       },
       {
         conditionsSets: [['everyone']],
@@ -265,12 +271,12 @@ describe('Test different scenarios (Case)', () => {
         caseObj: {
           status: 'closed',
           info: {},
-          twilioWorkerId: 'creator',
+          twilioWorkerId: creatorSid,
           helpline,
           createdBy: workerSid,
           accountSid,
         },
-        user: twilioUser('not creator', []),
+        user: newTwilioUser(accountSid, notCreatorSid, []),
       },
       {
         conditionsSets: [], // no one
@@ -279,12 +285,12 @@ describe('Test different scenarios (Case)', () => {
         caseObj: {
           status: 'open',
           info: {},
-          twilioWorkerId: 'creator',
+          twilioWorkerId: creatorSid,
           helpline,
           createdBy: workerSid,
           accountSid,
         },
-        user: twilioUser('creator', ['supervisor']),
+        user: newTwilioUser(accountSid, creatorSid, ['supervisor']),
       },
       {
         conditionsSets: [['isSupervisor'], ['isCreator', 'isCaseOpen']],
@@ -293,12 +299,12 @@ describe('Test different scenarios (Case)', () => {
         caseObj: {
           status: 'open',
           info: {},
-          twilioWorkerId: 'creator',
+          twilioWorkerId: creatorSid,
           helpline,
           createdBy: workerSid,
           accountSid,
         },
-        user: twilioUser('not creator', ['supervisor']),
+        user: newTwilioUser(accountSid, notCreatorSid, ['supervisor']),
       },
       {
         conditionsSets: [['isSupervisor'], ['isCreator', 'isCaseOpen']],
@@ -307,12 +313,12 @@ describe('Test different scenarios (Case)', () => {
         caseObj: {
           status: 'closed',
           info: {},
-          twilioWorkerId: 'creator',
+          twilioWorkerId: creatorSid,
           helpline,
           createdBy: workerSid,
           accountSid,
         },
-        user: twilioUser('not creator', ['supervisor']),
+        user: newTwilioUser(accountSid, notCreatorSid, ['supervisor']),
       },
       {
         conditionsSets: [['isSupervisor'], ['isCreator', 'isCaseOpen']],
@@ -321,12 +327,12 @@ describe('Test different scenarios (Case)', () => {
         caseObj: {
           status: 'open',
           info: {},
-          twilioWorkerId: 'creator',
+          twilioWorkerId: creatorSid,
           helpline,
           createdBy: workerSid,
           accountSid,
         },
-        user: twilioUser('not creator', []),
+        user: newTwilioUser(accountSid, notCreatorSid, []),
       },
       {
         conditionsSets: [['isSupervisor'], ['isCreator', 'isCaseOpen']],
@@ -335,12 +341,12 @@ describe('Test different scenarios (Case)', () => {
         caseObj: {
           status: 'open',
           info: {},
-          twilioWorkerId: 'creator',
+          twilioWorkerId: creatorSid,
           helpline,
           createdBy: workerSid,
           accountSid,
         },
-        user: twilioUser('creator', []),
+        user: newTwilioUser(accountSid, creatorSid, []),
       },
       {
         conditionsSets: [['isSupervisor'], ['isCreator', 'isCaseOpen']],
@@ -349,12 +355,12 @@ describe('Test different scenarios (Case)', () => {
         caseObj: {
           status: 'closed',
           info: {},
-          twilioWorkerId: 'creator',
+          twilioWorkerId: creatorSid,
           helpline,
           createdBy: workerSid,
           accountSid,
         },
-        user: twilioUser('creator', []),
+        user: newTwilioUser(accountSid, creatorSid, []),
       },
       {
         conditionsSets: [['isSupervisor'], ['isCreator', 'isCaseOpen']],
@@ -363,12 +369,12 @@ describe('Test different scenarios (Case)', () => {
         caseObj: {
           status: 'open',
           info: {},
-          twilioWorkerId: 'creator',
+          twilioWorkerId: creatorSid,
           helpline,
           createdBy: workerSid,
           accountSid,
         },
-        user: twilioUser('not creator', []),
+        user: newTwilioUser(accountSid, notCreatorSid, []),
       },
       {
         conditionsSets: [[{ createdHoursAgo: 2 }]],
@@ -377,13 +383,13 @@ describe('Test different scenarios (Case)', () => {
         caseObj: {
           status: 'open',
           info: {},
-          twilioWorkerId: 'creator',
+          twilioWorkerId: creatorSid,
           helpline,
           createdBy: workerSid,
           accountSid,
           createdAt: subHours(Date.now(), 1).toISOString(),
         },
-        user: twilioUser('not creator', []),
+        user: newTwilioUser(accountSid, notCreatorSid, []),
       },
       {
         conditionsSets: [[{ createdHoursAgo: 1 }]],
@@ -392,13 +398,13 @@ describe('Test different scenarios (Case)', () => {
         caseObj: {
           status: 'open',
           info: {},
-          twilioWorkerId: 'creator',
+          twilioWorkerId: creatorSid,
           helpline,
           createdBy: workerSid,
           accountSid,
           createdAt: subHours(Date.now(), 1).toISOString(),
         },
-        user: twilioUser('not creator', []),
+        user: newTwilioUser(accountSid, notCreatorSid, []),
       },
       {
         conditionsSets: [[{ createdDaysAgo: 2 }]],
@@ -407,13 +413,13 @@ describe('Test different scenarios (Case)', () => {
         caseObj: {
           status: 'open',
           info: {},
-          twilioWorkerId: 'creator',
+          twilioWorkerId: creatorSid,
           helpline,
           createdBy: workerSid,
           accountSid,
           createdAt: subDays(Date.now(), 1).toISOString(),
         },
-        user: twilioUser('not creator', []),
+        user: newTwilioUser(accountSid, notCreatorSid, []),
       },
       {
         conditionsSets: [[{ createdDaysAgo: 1 }]],
@@ -422,13 +428,13 @@ describe('Test different scenarios (Case)', () => {
         caseObj: {
           status: 'open',
           info: {},
-          twilioWorkerId: 'creator',
+          twilioWorkerId: creatorSid,
           helpline,
           createdBy: workerSid,
           accountSid,
           createdAt: subDays(Date.now(), 1).toISOString(),
         },
-        user: twilioUser('not creator', []),
+        user: newTwilioUser(accountSid, notCreatorSid, []),
       },
     ].map(addPrettyConditionsSets),
     // .flatMap(mapTestToActions(actionsMaps.case)),
@@ -457,9 +463,9 @@ describe('Test different scenarios (Contact)', () => {
         expectedDescription: 'not supervisor',
         contactObj: {
           accountSid,
-          twilioWorkerId: 'creator',
+          twilioWorkerId: creatorSid,
         },
-        user: twilioUser('not creator', []),
+        user: newTwilioUser(accountSid, notCreatorSid, []),
       },
       {
         conditionsSets: [],
@@ -467,9 +473,9 @@ describe('Test different scenarios (Contact)', () => {
         expectedDescription: 'is owner',
         contactObj: {
           accountSid,
-          twilioWorkerId: 'creator',
+          twilioWorkerId: creatorSid,
         },
-        user: twilioUser('creator', []),
+        user: newTwilioUser(accountSid, creatorSid, []),
       },
       {
         conditionsSets: [],
@@ -477,9 +483,9 @@ describe('Test different scenarios (Contact)', () => {
         expectedDescription: 'is supervisor',
         contactObj: {
           accountSid,
-          twilioWorkerId: 'creator',
+          twilioWorkerId: creatorSid,
         },
-        user: twilioUser('not creator', ['supervisor']),
+        user: newTwilioUser(accountSid, notCreatorSid, ['supervisor']),
       },
       {
         conditionsSets: [['isSupervisor']],
@@ -487,9 +493,9 @@ describe('Test different scenarios (Contact)', () => {
         expectedDescription: 'is supervisor',
         contactObj: {
           accountSid,
-          twilioWorkerId: 'creator',
+          twilioWorkerId: creatorSid,
         },
-        user: twilioUser('not creator', ['supervisor']),
+        user: newTwilioUser(accountSid, notCreatorSid, ['supervisor']),
       },
       {
         conditionsSets: [['isOwner']],
@@ -497,9 +503,9 @@ describe('Test different scenarios (Contact)', () => {
         expectedDescription: 'is owner',
         contactObj: {
           accountSid,
-          twilioWorkerId: 'creator',
+          twilioWorkerId: creatorSid,
         },
-        user: twilioUser('creator', []),
+        user: newTwilioUser(accountSid, creatorSid, []),
       },
       {
         conditionsSets: [['isOwner']],
@@ -507,9 +513,9 @@ describe('Test different scenarios (Contact)', () => {
         expectedDescription: 'is not owner',
         contactObj: {
           accountSid,
-          twilioWorkerId: 'creator',
+          twilioWorkerId: creatorSid,
         },
-        user: twilioUser('not creator', []),
+        user: newTwilioUser(accountSid, notCreatorSid, []),
       },
       {
         conditionsSets: [[{ createdHoursAgo: 2 }]],
@@ -517,10 +523,10 @@ describe('Test different scenarios (Contact)', () => {
         expectedDescription: 'createdHoursAgo within the provided range',
         contactObj: {
           accountSid,
-          twilioWorkerId: 'creator',
+          twilioWorkerId: creatorSid,
           createdAt: subHours(Date.now(), 1).toISOString(),
         },
-        user: twilioUser('not creator', []),
+        user: newTwilioUser(accountSid, notCreatorSid, []),
       },
       {
         conditionsSets: [[{ createdHoursAgo: 1 }]],
@@ -528,10 +534,10 @@ describe('Test different scenarios (Contact)', () => {
         expectedDescription: 'createdHoursAgo outside the provided range',
         contactObj: {
           accountSid,
-          twilioWorkerId: 'creator',
+          twilioWorkerId: creatorSid,
           createdAt: subHours(Date.now(), 1).toISOString(),
         },
-        user: twilioUser('not creator', []),
+        user: newTwilioUser(accountSid, notCreatorSid, []),
       },
       {
         conditionsSets: [[{ createdDaysAgo: 2 }]],
@@ -539,10 +545,10 @@ describe('Test different scenarios (Contact)', () => {
         expectedDescription: 'createdDaysAgo within the provided range',
         contactObj: {
           accountSid,
-          twilioWorkerId: 'creator',
+          twilioWorkerId: creatorSid,
           createdAt: subDays(Date.now(), 1).toISOString(),
         },
-        user: twilioUser('not creator', []),
+        user: newTwilioUser(accountSid, notCreatorSid, []),
       },
       {
         conditionsSets: [[{ createdDaysAgo: 1 }]],
@@ -550,10 +556,10 @@ describe('Test different scenarios (Contact)', () => {
         expectedDescription: 'createdDaysAgo outside the provided range',
         contactObj: {
           accountSid,
-          twilioWorkerId: 'creator',
+          twilioWorkerId: creatorSid,
           createdAt: subDays(Date.now(), 1).toISOString(),
         },
-        user: twilioUser('not creator', []),
+        user: newTwilioUser(accountSid, notCreatorSid, []),
       },
     ].map(addPrettyConditionsSets),
   ).describe(
@@ -581,7 +587,7 @@ describe('Test different scenarios (Profile)', () => {
         profileObj: {
           accountSid,
         },
-        user: twilioUser('not supervisor', []),
+        user: newTwilioUser(accountSid, notSupervisorSid, []),
         expectedResult: true,
       },
       {
@@ -590,7 +596,7 @@ describe('Test different scenarios (Profile)', () => {
         profileObj: {
           accountSid,
         },
-        user: twilioUser('not supervisor', []),
+        user: newTwilioUser(accountSid, notSupervisorSid, []),
         expectedResult: false,
       },
       {
@@ -599,7 +605,7 @@ describe('Test different scenarios (Profile)', () => {
         profileObj: {
           accountSid,
         },
-        user: twilioUser('supervisor', ['supervisor']),
+        user: newTwilioUser(accountSid, supervisorSid, ['supervisor']),
         expectedResult: true,
       },
       {
@@ -610,7 +616,7 @@ describe('Test different scenarios (Profile)', () => {
           accountSid,
           createdAt: subHours(Date.now(), 1).toISOString(),
         },
-        user: twilioUser('not supervisor', []),
+        user: newTwilioUser(accountSid, notSupervisorSid, []),
       },
       {
         conditionsSets: [[{ createdHoursAgo: 1 }]],
@@ -620,7 +626,7 @@ describe('Test different scenarios (Profile)', () => {
           accountSid,
           createdAt: subHours(Date.now(), 1).toISOString(),
         },
-        user: twilioUser('not supervisor', []),
+        user: newTwilioUser(accountSid, notSupervisorSid, []),
       },
       {
         conditionsSets: [[{ createdDaysAgo: 2 }]],
@@ -630,7 +636,7 @@ describe('Test different scenarios (Profile)', () => {
           accountSid,
           createdAt: subDays(Date.now(), 1).toISOString(),
         },
-        user: twilioUser('not supervisor', []),
+        user: newTwilioUser(accountSid, notSupervisorSid, []),
       },
       {
         conditionsSets: [[{ createdDaysAgo: 1 }]],
@@ -640,7 +646,7 @@ describe('Test different scenarios (Profile)', () => {
           accountSid,
           createdAt: subDays(Date.now(), 1).toISOString(),
         },
-        user: twilioUser('not supervisor', []),
+        user: newTwilioUser(accountSid, notSupervisorSid, []),
       },
     ].map(addPrettyConditionsSets),
   ).describe(
@@ -668,7 +674,7 @@ describe('Test different scenarios (ProfileSection)', () => {
         profileSectionObj: {
           accountSid,
         },
-        user: twilioUser('not supervisor', []),
+        user: newTwilioUser(accountSid, notSupervisorSid, []),
         expectedResult: true,
       },
       {
@@ -677,7 +683,7 @@ describe('Test different scenarios (ProfileSection)', () => {
         profileSectionObj: {
           accountSid,
         },
-        user: twilioUser('not supervisor', []),
+        user: newTwilioUser(accountSid, notSupervisorSid, []),
         expectedResult: false,
       },
       {
@@ -686,7 +692,7 @@ describe('Test different scenarios (ProfileSection)', () => {
         profileSectionObj: {
           accountSid,
         },
-        user: twilioUser('supervisor', ['supervisor']),
+        user: newTwilioUser(accountSid, supervisorSid, ['supervisor']),
         expectedResult: true,
       },
       {
@@ -697,7 +703,7 @@ describe('Test different scenarios (ProfileSection)', () => {
           accountSid,
           createdAt: subHours(Date.now(), 1).toISOString(),
         },
-        user: twilioUser('not supervisor', []),
+        user: newTwilioUser(accountSid, notSupervisorSid, []),
       },
       {
         conditionsSets: [[{ createdHoursAgo: 1 }]],
@@ -707,7 +713,7 @@ describe('Test different scenarios (ProfileSection)', () => {
           accountSid,
           createdAt: subHours(Date.now(), 1).toISOString(),
         },
-        user: twilioUser('not supervisor', []),
+        user: newTwilioUser(accountSid, notSupervisorSid, []),
       },
       {
         conditionsSets: [[{ createdDaysAgo: 2 }]],
@@ -717,7 +723,7 @@ describe('Test different scenarios (ProfileSection)', () => {
           accountSid,
           createdAt: subDays(Date.now(), 1).toISOString(),
         },
-        user: twilioUser('not supervisor', []),
+        user: newTwilioUser(accountSid, notSupervisorSid, []),
       },
       {
         conditionsSets: [[{ createdDaysAgo: 1 }]],
@@ -727,7 +733,7 @@ describe('Test different scenarios (ProfileSection)', () => {
           accountSid,
           createdAt: subDays(Date.now(), 1).toISOString(),
         },
-        user: twilioUser('not supervisor', []),
+        user: newTwilioUser(accountSid, notSupervisorSid, []),
       },
       {
         conditionsSets: [[{ sectionType: 'summary' }]],
@@ -737,7 +743,7 @@ describe('Test different scenarios (ProfileSection)', () => {
           accountSid,
           sectionType: 'summary',
         },
-        user: twilioUser('not supervisor', []),
+        user: newTwilioUser(accountSid, notSupervisorSid, []),
       },
       {
         conditionsSets: [[{ sectionType: 'other' }]],
@@ -747,7 +753,7 @@ describe('Test different scenarios (ProfileSection)', () => {
           accountSid,
           sectionType: 'summary',
         },
-        user: twilioUser('not supervisor', []),
+        user: newTwilioUser(accountSid, notSupervisorSid, []),
       },
     ].map(addPrettyConditionsSets),
   ).describe(
@@ -779,7 +785,7 @@ describe('Test different scenarios (PostSurvey)', () => {
           contactTaskId: 'contact-task-id',
           data: {},
         },
-        user: twilioUser('not creator', []),
+        user: newTwilioUser(accountSid, notCreatorSid, []),
       },
       {
         conditionsSets: [],
@@ -791,7 +797,7 @@ describe('Test different scenarios (PostSurvey)', () => {
           contactTaskId: 'contact-task-id',
           data: {},
         },
-        user: twilioUser('not creator', []),
+        user: newTwilioUser(accountSid, notCreatorSid, []),
       },
       {
         conditionsSets: [],
@@ -803,7 +809,7 @@ describe('Test different scenarios (PostSurvey)', () => {
           contactTaskId: 'contact-task-id',
           data: {},
         },
-        user: twilioUser('not creator', ['supervisor']),
+        user: newTwilioUser(accountSid, notCreatorSid, ['supervisor']),
       },
       {
         conditionsSets: [['isSupervisor']],
@@ -815,7 +821,7 @@ describe('Test different scenarios (PostSurvey)', () => {
           contactTaskId: 'contact-task-id',
           data: {},
         },
-        user: twilioUser('not creator', ['supervisor']),
+        user: newTwilioUser(accountSid, notCreatorSid, ['supervisor']),
       },
     ].map(addPrettyConditionsSets),
   ).describe(

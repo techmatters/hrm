@@ -29,7 +29,7 @@ export default (permissions: Permissions) => {
   const permissionsRouter = SafeRouter();
   permissionsRouter.get('/', publicEndpoint, (req: Request, res: Response, next) => {
     try {
-      const { accountSid } = req;
+      const { accountSid } = req.user;
       if (!permissions.rules) {
         return next(
           createError(
@@ -78,7 +78,7 @@ export default (permissions: Permissions) => {
   };
 
   permissionsRouter.get('/:action', publicEndpoint, async (req, res, next) => {
-    const { accountSid, user, can } = req;
+    const { user, can, hrmAccountId } = req;
     const { bucket, key } = req.query;
     const { action } = req.params;
 
@@ -97,7 +97,7 @@ export default (permissions: Permissions) => {
       const { objectType, objectId } = parseResult.data;
 
       const canPerformResult = await canPerformActionsOnObject({
-        accountSid,
+        hrmAccountId,
         targetKind: objectType,
         actions: [action],
         objectId,
@@ -120,7 +120,7 @@ export default (permissions: Permissions) => {
 
       if (isFilesRelatedAction(objectType, action)) {
         const isValidLocationResult = await isValidFileLocation({
-          accountSid,
+          hrmAccountId,
           targetKind: objectType,
           objectId,
           bucket,

@@ -28,10 +28,10 @@ export const createMockCaseRecord = (partial: Partial<CaseRecord>): CaseRecord =
       status: 'open',
       info: {
         counsellorNotes: [
-          { note: 'Child with covid-19', twilioWorkerId: 'contact-adder' },
+          { note: 'Child with covid-19', twilioWorkerId: 'WK-contact-adder' },
         ],
       },
-      twilioWorkerId: 'twilio-worker-id',
+      twilioWorkerId: 'WK-twilio-worker-id',
       createdBy: workerSid,
       accountSid: 'ACCOUNT_SID',
       createdAt: baselineDate.toISOString(),
@@ -45,7 +45,7 @@ export const createMockCaseRecord = (partial: Partial<CaseRecord>): CaseRecord =
           caseId: 1,
           sectionType: 'note',
           sectionId: 'NOTE_1',
-          createdBy: 'contact-adder',
+          createdBy: 'WK-contact-adder',
           createdAt: baselineDate.toISOString(),
           eventTimestamp: baselineDate.toISOString(),
           sectionTypeSpecificData: { note: 'Child with covid-19' },

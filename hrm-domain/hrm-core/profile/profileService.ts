@@ -35,6 +35,7 @@ import type { NewProfileSectionRecord } from './sql/profile-sections-sql';
 import type { NewProfileFlagRecord } from './sql/profile-flags-sql';
 import type { NewIdentifierRecord, NewProfileRecord } from './sql/profile-insert-sql';
 import { ITask } from 'pg-promise';
+import { HrmAccountId } from '@tech-matters/types/dist';
 
 export {
   Identifier,
@@ -55,7 +56,7 @@ export const getProfile =
 export const createIdentifierAndProfile =
   (task?) =>
   async (
-    accountSid: string,
+    accountSid: HrmAccountId,
     payload: {
       identifier: NewIdentifierRecord;
       profile: NewProfileRecord;
@@ -97,7 +98,7 @@ export const createIdentifierAndProfile =
 export const getOrCreateProfileWithIdentifier =
   (task: ITask<any>) =>
   async (
-    accountSid: string,
+    accountSid: HrmAccountId,
     payload: { identifier: NewIdentifierRecord; profile: NewProfileRecord },
     { user }: { user: TwilioUser },
   ): Promise<
@@ -134,7 +135,7 @@ export const getOrCreateProfileWithIdentifier =
   };
 
 export const createProfileWithIdentifierOrError = async (
-  accountSid: string,
+  accountSid: HrmAccountId,
   payload: { identifier: NewIdentifierRecord; profile: NewProfileRecord },
   { user }: { user: TwilioUser },
 ): Promise<
@@ -178,7 +179,7 @@ export const createProfileWithIdentifierOrError = async (
 };
 
 export const getIdentifierByIdentifier = async (
-  accountSid: string,
+  accountSid: HrmAccountId,
   identifier: string,
 ): Promise<profileDB.IdentifierWithProfiles> =>
   profileDB.getIdentifierWithProfiles()({
@@ -189,7 +190,7 @@ export const getIdentifierByIdentifier = async (
 export const listProfiles = profileDB.listProfiles;
 
 export const associateProfileToProfileFlag = async (
-  accountSid: string,
+  accountSid: HrmAccountId,
   {
     profileId,
     profileFlagId,
@@ -244,7 +245,7 @@ export const associateProfileToProfileFlag = async (
 };
 
 export const disassociateProfileFromProfileFlag = async (
-  accountSid: string,
+  accountSid: HrmAccountId,
   {
     profileId,
     profileFlagId,
@@ -270,7 +271,7 @@ export const getProfileFlags = profileDB.getProfileFlagsForAccount;
 export const getProfileFlagsByIdentifier = profileDB.getProfileFlagsByIdentifier;
 
 export const createProfileFlag = async (
-  accountSid: string,
+  accountSid: HrmAccountId,
   payload: NewProfileFlagRecord,
   { user }: { user: TwilioUser },
 ): Promise<TResult<'InvalidParameterError', profileDB.ProfileFlag>> => {
@@ -295,7 +296,7 @@ export const createProfileFlag = async (
 };
 
 export const updateProfileFlagById = async (
-  accountSid: string,
+  accountSid: HrmAccountId,
   flagId: profileDB.ProfileFlag['id'],
   payload: {
     name: string;
@@ -325,12 +326,12 @@ export const updateProfileFlagById = async (
 
 export const deleteProfileFlagById = async (
   flagId: profileDB.ProfileFlag['id'],
-  accountSid: string,
+  accountSid: HrmAccountId,
 ): Promise<profileDB.ProfileFlag> => profileDB.deleteProfileFlagById(flagId, accountSid);
 
 // While this is just a wrapper around profileDB.createProfileSection, we'll need more code to handle permissions soon
 export const createProfileSection = async (
-  accountSid: string,
+  accountSid: HrmAccountId,
   payload: NewProfileSectionRecord,
   { user }: { user: TwilioUser },
 ): Promise<profileDB.ProfileSection> => {

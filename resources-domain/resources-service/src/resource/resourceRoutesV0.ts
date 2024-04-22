@@ -26,7 +26,7 @@ const resourceRoutes = () => {
 
   router.get('/resource/:resourceId', async (req, res) => {
     const referrableResource = await getResource(
-      <AccountSID>req.accountSid,
+      <AccountSID>req.hrmAccountId,
       req.params.resourceId,
     );
     if (!referrableResource) {
@@ -38,7 +38,7 @@ const resourceRoutes = () => {
   router.post('/search', async (req, res) => {
     const { limit, start } = req.query;
 
-    const referrableResources = await searchResources(<AccountSID>req.accountSid, {
+    const referrableResources = await searchResources(<AccountSID>req.hrmAccountId, {
       filters: {},
       generalSearchTerm: '',
       ...req.body,
@@ -54,7 +54,7 @@ const resourceRoutes = () => {
   router.get('/suggest', async (req, res) => {
     const { size, prefix } = req.query;
 
-    const suggestions = await getResourceTermSuggestions(<AccountSID>req.accountSid, {
+    const suggestions = await getResourceTermSuggestions(<AccountSID>req.hrmAccountId, {
       size: parseInt((size as string) || '10'),
       prefix: prefix as string,
     });

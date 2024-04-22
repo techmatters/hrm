@@ -41,7 +41,7 @@ import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { bindApplyTransformations as bindApplyContactTransformations } from '../contact/contactService';
 import type { Profile } from '../profile/profileDataAccess';
 import type { PaginationQuery } from '../search';
-import { TResult, newErr, newOk } from '@tech-matters/types';
+import { HrmAccountId, TResult, newErr, newOk } from '@tech-matters/types';
 import { RulesFile, TKConditionsSets } from '../permissions/rulesMap';
 import { CaseSectionRecord } from './caseSection/types';
 import { pick } from 'lodash';
@@ -384,7 +384,7 @@ export const updateCaseOverview = async (
 
 export const getCase = async (
   id: number,
-  accountSid: string,
+  accountSid: HrmAccountId,
   {
     can,
     user,
@@ -436,7 +436,7 @@ const generalizedSearchCases =
     searchQuery: SearchQueryFunction<T>,
   ) =>
   async (
-    accountSid: string,
+    accountSid: HrmAccountId,
     listConfiguration: CaseListConfiguration,
     searchParameters: T,
     filterParameters: U,
@@ -489,7 +489,7 @@ export const searchCases = generalizedSearchCases(search);
 const searchCasesByProfileId = generalizedSearchCases(searchByProfileId);
 
 export const getCasesByProfileId = async (
-  accountSid: string,
+  accountSid: HrmAccountId,
   profileId: Profile['id'],
   query: Pick<PaginationQuery, 'limit' | 'offset'>,
   ctx: {

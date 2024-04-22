@@ -30,14 +30,15 @@ import { ConversationMedia } from '../conversation-media/conversation-media';
 import { TOUCH_CASE_SQL } from '../case/sql/caseUpdateSql';
 import { TKConditionsSets } from '../permissions/rulesMap';
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
+import { TwilioUserIdentifier, HrmAccountId } from '@tech-matters/types';
 
 export type ExistingContactRecord = {
   id: number;
-  accountSid: string;
+  accountSid: HrmAccountId;
   createdAt: string;
   finalizedAt?: string;
   updatedAt?: string;
-  updatedBy?: string;
+  updatedBy?: TwilioUserIdentifier;
 } & Partial<NewContactRecord>;
 
 export type Contact = ExistingContactRecord & {
@@ -97,8 +98,8 @@ const callTypes = {
 };
 
 type QueryParams = {
-  accountSid: string;
-  twilioWorkerSid: string;
+  accountSid: HrmAccountId;
+  twilioWorkerSid: TwilioUserIdentifier;
   firstNamePattern?: string;
   lastNamePattern?: string;
   phoneNumberPattern?: string;
@@ -114,7 +115,7 @@ type QueryParams = {
 };
 
 const searchParametersToQueryParameters = (
-  accountSid: string,
+  accountSid: HrmAccountId,
   { workerSid }: TwilioUser,
   {
     firstName,
@@ -180,7 +181,10 @@ type CreateResult = { contact: Contact; isNewRecord: boolean };
 
 export const create =
   (task?) =>
-  async (accountSid: string, newContact: NewContactRecord): Promise<CreateResult> => {
+  async (
+    accountSid: HrmAccountId,
+    newContact: NewContactRecord,
+  ): Promise<CreateResult> => {
     return txIfNotInOne(
       task,
       async (conn: ITask<{ contact: Contact; isNewRecord: boolean }>) => {
@@ -201,7 +205,7 @@ export const create =
 export const patch =
   (task?) =>
   async (
-    accountSid: string,
+    accountSid: HrmAccountId,
     contactId: string,
     finalize: boolean,
     contactUpdates: ContactUpdates,
@@ -224,7 +228,7 @@ export const patch =
 export const connectToCase =
   (task?) =>
   async (
-    accountSid: string,
+    accountSid: HrmAccountId,
     contactId: string,
     caseId: string,
     updatedBy: string,
@@ -243,7 +247,10 @@ export const connectToCase =
     });
   };
 
-export const getById = async (accountSid: string, contactId: number): Promise<Contact> =>
+export const getById = async (
+  accountSid: HrmAccountId,
+  contactId: number,
+): Promise<Contact> =>
   db.task(async connection =>
     connection.oneOrNone<Contact>(selectSingleContactByIdSql('Contacts'), {
       accountSid,
@@ -252,7 +259,7 @@ export const getById = async (accountSid: string, contactId: number): Promise<Co
   );
 
 export const getByTaskSid = async (
-  accountSid: string,
+  accountSid: HrmAccountId,
   taskId: string,
 ): Promise<Contact> =>
   db.task(async connection =>
@@ -263,13 +270,13 @@ export const getByTaskSid = async (
   );
 
 type BaseSearchQueryParams = {
-  accountSid: string;
+  accountSid: HrmAccountId;
   limit: number;
   offset: number;
 };
 export type OptionalSearchQueryParams = Partial<QueryParams>;
 type SearchQueryParamsBuilder<T> = (
-  accountSid: string,
+  accountSid: HrmAccountId,
   user: TwilioUser,
   searchParameters: T,
   limit: number,
@@ -277,7 +284,7 @@ type SearchQueryParamsBuilder<T> = (
 ) => BaseSearchQueryParams & OptionalSearchQueryParams;
 
 export type SearchQueryFunction<T> = (
-  accountSid: string,
+  accountSid: HrmAccountId,
   searchParameters: T,
   limit: number,
   offset: number,

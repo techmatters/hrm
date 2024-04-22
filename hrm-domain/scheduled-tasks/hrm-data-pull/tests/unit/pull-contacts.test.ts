@@ -23,10 +23,11 @@ import * as contactApi from '@tech-matters/hrm-core/contact/contactService';
 import * as context from '../../context';
 import { defaultLimitAndOffset } from '../../auto-paginate';
 import { pullContacts } from '../../pull-contacts';
+import { HrmAccountId } from '@tech-matters/types';
 
 const { maxPermissions } = context;
 
-const accountSid = 'ACxxx';
+const accountSid: HrmAccountId = 'ACxxx';
 const bucket = 'docs-bucket';
 const hrmEnv = 'test';
 const shortCode = 'XX';

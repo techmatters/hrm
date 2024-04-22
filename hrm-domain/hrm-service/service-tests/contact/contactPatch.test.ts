@@ -23,7 +23,7 @@ import {
 import '../case/caseValidation';
 import * as mocks from '../mocks';
 import { accountSid, ALWAYS_CAN, contact1, withTaskId, workerSid } from '../mocks';
-import { twilioUser } from '@tech-matters/twilio-worker-auth';
+import { newTwilioUser } from '@tech-matters/twilio-worker-auth';
 import each from 'jest-each';
 import { getRequest, getServer, headers, setRules, useOpenRules } from '../server';
 import * as contactDb from '@tech-matters/hrm-core/contact/contactDataAccess';
@@ -532,12 +532,12 @@ describe('/contacts/:contactId route', () => {
     test("Draft contact edited by a user that didn't create or own the contact - returns 401", async () => {
       const createdContact = await contactApi.createContact(
         accountSid,
-        'another creator',
+        'WK another creator',
         <any>{
           ...contact1,
           twilioWorkerId: 'another owner',
         },
-        { user: twilioUser('another creator', []), can: () => true },
+        { user: newTwilioUser(accountSid, 'WK another creator', []), can: () => true },
       );
       const response = await request
         .patch(subRoute(createdContact.id))
@@ -550,7 +550,7 @@ describe('/contacts/:contactId route', () => {
     test('Draft contact edited by a user that owns the contact - returns 200', async () => {
       const createdContact = await contactApi.createContact(
         accountSid,
-        'another creator',
+        'WK another creator',
         <any>contact1,
         ALWAYS_CAN,
       );

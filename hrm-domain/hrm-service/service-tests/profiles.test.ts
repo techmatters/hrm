@@ -29,7 +29,7 @@ import {
   getOrCreateProfileWithIdentifier,
   Profile,
 } from '@tech-matters/hrm-core/profile/profileService';
-import { twilioUser } from '@tech-matters/twilio-worker-auth';
+import { newTwilioUser } from '@tech-matters/twilio-worker-auth';
 import { AccountSID } from '@tech-matters/types';
 
 useOpenRules();
@@ -87,19 +87,19 @@ describe('/profiles', () => {
           murray!.id,
           defaultFlags[0].id,
           null,
-          { user: { workerSid, isSupervisor: false, roles: [] } },
+          { user: { accountSid, workerSid, isSupervisor: false, roles: [] } },
         ),
         profilesDB.associateProfileToProfileFlag()(
           accountSid,
           antonella!.id,
           defaultFlags[1].id,
           null,
-          { user: { workerSid, isSupervisor: false, roles: [] } },
+          { user: { accountSid, workerSid, isSupervisor: false, roles: [] } },
         ),
         profilesDB.createProfileSection()(antonella!.accountSid, {
           content: 'some example content',
           sectionType: 'summary',
-          createdBy: 'worker',
+          createdBy: 'WK-worker',
           profileId: antonella!.id,
         }),
       ]);
@@ -231,7 +231,7 @@ describe('/profiles', () => {
               getOrCreateProfileWithIdentifier(t)(
                 acc,
                 { identifier: { identifier }, profile: { name: null } },
-                { user: { isSupervisor: false, roles: [], workerSid } },
+                { user: { accountSid: acc, isSupervisor: false, roles: [], workerSid } },
               ),
             ),
           ),
@@ -278,7 +278,7 @@ describe('/profiles', () => {
         const result = await getOrCreateProfileWithIdentifier(t)(
           accountSid,
           { identifier: { identifier }, profile: { name: null } },
-          { user: { isSupervisor: false, roles: [], workerSid } },
+          { user: { accountSid, isSupervisor: false, roles: [], workerSid } },
         );
         return result.unwrap().identifier;
       });
@@ -350,7 +350,7 @@ describe('/profiles', () => {
                     String(contact.id),
                     String(createdCase.id),
                     {
-                      user: twilioUser(workerSid, []),
+                      user: newTwilioUser(contact.accountSid, workerSid, []),
                       can: () => true,
                     },
                   ),
@@ -565,7 +565,7 @@ describe('/profiles', () => {
               createdProfile.profiles[0].id,
               defaultFlags[0].id,
               null,
-              { user: { workerSid, isSupervisor: false, roles: [] } },
+              { user: { accountSid, workerSid, isSupervisor: false, roles: [] } },
             );
 
             const pfs = (
@@ -858,7 +858,7 @@ describe('/profiles', () => {
         });
 
         const customFlagForAnother = await profilesDB.createProfileFlag(
-          'ANOTHER_ACCOUNT',
+          'AC-ANOTHER_ACCOUNT',
           {
             name: 'custom 2',
             createdBy: workerSid,

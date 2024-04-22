@@ -16,8 +16,9 @@
 
 import { rulesMap } from './rulesMap';
 import { Permissions } from './index';
+import { AccountSID } from '@tech-matters/types';
 
-export const getPermissionsConfigName = (accountSid: string) => {
+export const getPermissionsConfigName = (accountSid: AccountSID) => {
   const permissionsKey = `PERMISSIONS_${accountSid}`;
 
   const permissionsConfigName = process.env[permissionsKey];
@@ -37,7 +38,7 @@ export const getPermissionsConfigName = (accountSid: string) => {
  * @throws Will throw if there is no env var set for PERMISSIONS_${accountSid} or if it's an invalid key in rulesMap
  */
 export const jsonPermissions: Permissions = {
-  rules: (accountSid: string) => {
+  rules: (accountSid: AccountSID) => {
     const permissionsConfigName = getPermissionsConfigName(accountSid);
 
     const rules = rulesMap[permissionsConfigName];

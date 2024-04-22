@@ -32,6 +32,7 @@ import {
 import { randomUUID } from 'crypto';
 import { clearAllTables } from '../dbCleanup';
 import { addMinutes, isAfter, subDays, subHours } from 'date-fns';
+import { WorkerSID } from '@tech-matters/types';
 
 useOpenRules();
 const server = getServer();
@@ -76,7 +77,7 @@ describe('isCaseContactOwner condition', () => {
   beforeEach(async () => {
     useOpenRules();
     sampleCases = [];
-    for (const user of [workerSid, otherWorkerSid]) {
+    for (const user of [workerSid, otherWorkerSid] as WorkerSID[]) {
       const newCases = await Promise.all(
         caseDescriptions[user].map(desc =>
           createCase({ info: { summary: desc } }, accountSid, user),
@@ -84,7 +85,7 @@ describe('isCaseContactOwner condition', () => {
       );
       const [, caseWithOtherContact, caseWithOwnedContact] = newCases;
       const [ownedContact, otherContact] = await Promise.all(
-        [workerSid, otherWorkerSid].map(contactUser =>
+        [workerSid, otherWorkerSid].map((contactUser: WorkerSID) =>
           createContact(
             accountSid,
             'WK-creator-not-relevant',

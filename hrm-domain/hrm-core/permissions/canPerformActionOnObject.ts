@@ -24,7 +24,7 @@ import {
   getConversationMediaByContactId,
   isS3StoredConversationMedia,
 } from '../conversation-media/conversation-media';
-import { TResult, newErr, newOk } from '@tech-matters/types';
+import { TResult, newErr, newOk, HrmAccountId } from '@tech-matters/types';
 import { RulesFile } from './rulesMap';
 
 export const OPEN_VIEW_CONTACT_PERMISSIONS: Pick<RulesFile, 'viewContact'> = {
@@ -32,14 +32,14 @@ export const OPEN_VIEW_CONTACT_PERMISSIONS: Pick<RulesFile, 'viewContact'> = {
 };
 
 export const canPerformActionsOnObject = async <T extends TargetKind>({
-  accountSid,
+  hrmAccountId,
   targetKind,
   actions,
   objectId,
   can,
   user,
 }: {
-  accountSid: string;
+  hrmAccountId: HrmAccountId;
   objectId: number;
   targetKind: T;
   actions: string[];
@@ -56,14 +56,14 @@ export const canPerformActionsOnObject = async <T extends TargetKind>({
 
     switch (targetKind) {
       case 'contact': {
-        const object = await getContactById(accountSid, objectId, { can, user });
+        const object = await getContactById(hrmAccountId, objectId, { can, user });
 
         const canPerform = actions.every(action => can(user, action, object));
 
         return newOk({ data: canPerform });
       }
       case 'case': {
-        const object = await getCaseById(objectId, accountSid, {
+        const object = await getCaseById(objectId, hrmAccountId, {
           can,
           user,
           permissions: OPEN_VIEW_CONTACT_PERMISSIONS,
@@ -115,13 +115,13 @@ export const isFilesRelatedAction = (targetKind: TargetKind, action: Actions) =>
 };
 
 export const isValidFileLocation = async ({
-  accountSid,
+  hrmAccountId,
   targetKind,
   objectId,
   bucket,
   key,
 }: {
-  accountSid: string;
+  hrmAccountId: HrmAccountId;
   targetKind: TargetKind;
   objectId: number;
   bucket: string;
@@ -131,7 +131,7 @@ export const isValidFileLocation = async ({
     switch (targetKind) {
       case 'contact': {
         const conversationMedia = await getConversationMediaByContactId(
-          accountSid,
+          hrmAccountId,
           objectId,
         );
 

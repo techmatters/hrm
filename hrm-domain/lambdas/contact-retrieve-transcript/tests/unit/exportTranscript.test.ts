@@ -168,14 +168,14 @@ jest.mock('@tech-matters/twilio-client', () => {
 describe('exportTranscript', () => {
   it('transcript should successfully be exported from twilio (counselor still member of channel)', async () => {
     const transcript = await exportTranscript({
-      accountSid: 'accountSid',
+      accountSid: 'AC-accountSid',
       authToken: 'authToken',
       serviceSid: 'serviceSid',
       channelSid: 'channelSid',
     });
 
     expect(transcript).toEqual({
-      accountSid: 'accountSid',
+      accountSid: 'AC-accountSid',
       serviceSid: 'serviceSid',
       channelSid: 'channelSid',
       messages: messageList,
@@ -198,14 +198,14 @@ describe('exportTranscript', () => {
 
   it('transcript should successfully be exported from twilio (counselor is not member of channel)', async () => {
     const transcript = await exportTranscript({
-      accountSid: 'accountSid',
+      accountSid: 'AC-accountSid',
       authToken: 'authToken',
       serviceSid: 'serviceSid',
       channelSid: 'channel-without-counselor',
     });
 
     expect(transcript).toEqual({
-      accountSid: 'accountSid',
+      accountSid: 'AC-accountSid',
       serviceSid: 'serviceSid',
       channelSid: 'channel-without-counselor',
       messages: messageList,

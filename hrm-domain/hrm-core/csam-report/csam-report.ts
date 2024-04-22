@@ -22,6 +22,7 @@ import {
   getByContactId,
   updateAcknowledgedByCsamReportId,
 } from './csam-report-data-access';
+import { HrmAccountId } from '@tech-matters/types';
 
 export { CSAMReport } from './csam-report-data-access';
 
@@ -30,7 +31,7 @@ export const getCSAMReport = getById;
 
 export const createCSAMReport = async (
   body: Omit<NewCSAMReport, 'acknowledged'>,
-  accountSid: string,
+  accountSid: HrmAccountId,
 ) => {
   const { reportType, contactId, twilioWorkerId } = body;
 
@@ -44,7 +45,7 @@ export const createCSAMReport = async (
       contactId: contactId || null,
       reportType,
       csamReportId,
-      twilioWorkerId: twilioWorkerId || '',
+      twilioWorkerId: twilioWorkerId || null,
       acknowledged,
     },
     accountSid,

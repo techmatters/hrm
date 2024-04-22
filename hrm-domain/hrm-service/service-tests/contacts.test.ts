@@ -44,11 +44,11 @@ import { selectSingleContactByTaskId } from '@tech-matters/hrm-core/contact/sql/
 import { ruleFileActionOverride } from './permissions-overrides';
 import * as csamReportApi from '@tech-matters/hrm-core/csam-report/csam-report';
 import { getRequest, getServer, headers, setRules, useOpenRules } from './server';
-import { twilioUser } from '@tech-matters/twilio-worker-auth';
+import { newTwilioUser } from '@tech-matters/twilio-worker-auth';
 import * as profilesDB from '@tech-matters/hrm-core/profile/profileDataAccess';
 import * as profilesService from '@tech-matters/hrm-core/profile/profileService';
 
-import { isErr } from '@tech-matters/types';
+import { isErr, HrmAccountId } from '@tech-matters/types';
 import {
   cleanupCases,
   cleanupContacts,
@@ -75,7 +75,7 @@ const resolveSequentially = ps =>
   ps.reduce((p, v) => p.then(a => v().then(r => a.concat([r]))), Promise.resolve([]));
 
 // eslint-disable-next-line @typescript-eslint/no-shadow
-const getContactByTaskId = (taskId: string, accountSid: string) =>
+const getContactByTaskId = (taskId: string, accountSid: HrmAccountId) =>
   db.oneOrNone(selectSingleContactByTaskId('Contacts'), { accountSid, taskId });
 
 // eslint-disable-next-line @typescript-eslint/no-shadow
@@ -212,7 +212,7 @@ describe('/contacts route', () => {
         },
         expectedGetContact: {
           rawJson: {} as ContactRawJson,
-          twilioWorkerId: '',
+          twilioWorkerId: null,
           helpline: '',
           queueName: null,
           number: '',
@@ -340,7 +340,7 @@ describe('/contacts route', () => {
           identifier: { identifier: contact.number },
           profile: { name: null },
         },
-        { user: { isSupervisor: false, roles: [], workerSid } },
+        { user: { accountSid, isSupervisor: false, roles: [], workerSid } },
       );
 
       if (isErr(profileResult)) {
@@ -929,14 +929,14 @@ describe('/contacts route', () => {
           accountSid,
           workerSid,
           withTaskId,
-          { user: twilioUser(workerSid, []), can: () => true },
+          { user: newTwilioUser(accountSid, workerSid, []), can: () => true },
         );
         const createdAtDate = parseISO(createdContact.createdAt);
         createdContact = await addConversationMediaToContact(
           accountSid,
           createdContact.id.toString(),
           conversationMedia,
-          { user: twilioUser(workerSid, []), can: () => true },
+          { user: newTwilioUser(accountSid, workerSid, []), can: () => true },
         );
 
         useOpenRules();
@@ -993,7 +993,7 @@ describe('/contacts route', () => {
           accountSid,
           workerSid,
           contactToCreate,
-          { user: twilioUser(workerSid, []), can: () => true },
+          { user: newTwilioUser(accountSid, workerSid, []), can: () => true },
         );
 
         const newReport1 = await csamReportApi.createCSAMReport(

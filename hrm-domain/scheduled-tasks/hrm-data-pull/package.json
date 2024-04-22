@@ -11,6 +11,8 @@
     ".": "./dist/index.js"
   },
   "dependencies" : {
+    "@tech-matters/types": "^1.0.0",
+    "@tech-matters/twilio-worker-auth": "^1.0.0",
     "@tech-matters/s3-client": "^1.0.0",
     "@tech-matters/hrm-core": "^1.0.0",
     "@tech-matters/ssm-cache": "^1.0.0",

@@ -21,23 +21,24 @@ import {
   selectCsamReportsByContactIdSql,
 } from './sql/csam-report-get-sql';
 import { updateAcknowledgedByCsamReportIdSql } from './sql/csam-report-update-sql';
+import { WorkerSID, HrmAccountId } from '@tech-matters/types';
 
 export type NewCSAMReport = {
   reportType: 'counsellor-generated' | 'self-generated';
   acknowledged: boolean;
-  twilioWorkerId?: string;
+  twilioWorkerId?: WorkerSID;
   csamReportId?: string;
   contactId?: number;
 };
 
 export type CSAMReport = NewCSAMReport & {
   id: number;
-  accountSid: string;
+  accountSid: HrmAccountId;
   createdAt: Date;
   updatedAt: Date;
 };
 
-export const create = async (newCsamReport: NewCSAMReport, accountSid: string) => {
+export const create = async (newCsamReport: NewCSAMReport, accountSid: HrmAccountId) => {
   const now = new Date();
   return db.task(async connection => {
     const statement = insertCSAMReportSql({
@@ -51,7 +52,7 @@ export const create = async (newCsamReport: NewCSAMReport, accountSid: string) =
   });
 };
 
-export const getById = async (reportId: number, accountSid: string) =>
+export const getById = async (reportId: number, accountSid: HrmAccountId) =>
   db.task(async connection =>
     connection.oneOrNone<CSAMReport>(selectSingleCsamReportByIdSql, {
       accountSid,
@@ -59,7 +60,7 @@ export const getById = async (reportId: number, accountSid: string) =>
     }),
   );
 
-export const getByContactId = async (contactId: number, accountSid: string) =>
+export const getByContactId = async (contactId: number, accountSid: HrmAccountId) =>
   db.task(async connection =>
     connection.manyOrNone<CSAMReport>(selectCsamReportsByContactIdSql, {
       contactId,
@@ -68,7 +69,7 @@ export const getByContactId = async (contactId: number, accountSid: string) =>
   );
 
 export const updateAcknowledgedByCsamReportId =
-  (acknowledged: boolean) => async (reportId: number, accountSid: string) =>
+  (acknowledged: boolean) => async (reportId: number, accountSid: HrmAccountId) =>
     db.task(async connection =>
       connection.oneOrNone<CSAMReport>(updateAcknowledgedByCsamReportIdSql, {
         reportId,

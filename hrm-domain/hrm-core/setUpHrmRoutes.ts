@@ -21,10 +21,11 @@ import {
   addAccountSidMiddleware,
   getAuthorizationMiddleware,
 } from '@tech-matters/twilio-worker-auth';
+import { HrmAccountId } from '@tech-matters/types';
 
 export const setUpHrmRoutes = (
   webServer: Express,
-  authTokenLookup: (accountSid: string) => string,
+  authTokenLookup: (accountSid: HrmAccountId) => string,
   rules: Permissions,
 ) => {
   const authorizationMiddleware = getAuthorizationMiddleware(authTokenLookup);

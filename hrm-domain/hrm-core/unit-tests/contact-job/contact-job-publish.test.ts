@@ -24,6 +24,9 @@ import { PublishToContactJobsTopicParams } from '@tech-matters/types';
 
 jest.mock('../../contact-job/client-sqs');
 
+const accountSid = 'AC-accountSid';
+const twilioWorkerId = 'WK-twilioWorkerId';
+
 beforeEach(() => {
   jest.resetAllMocks();
 });
@@ -34,12 +37,12 @@ describe('publishDueContactJobs', () => {
     const validPayload: PublishToContactJobsTopicParams = {
       jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
       jobId: 1,
-      accountSid: 'accountSid',
+      accountSid,
       attemptNumber: 1,
       contactId: 123,
       conversationMediaId: 999,
       taskId: 'taskId',
-      twilioWorkerId: 'twilioWorkerId',
+      twilioWorkerId,
       serviceSid: 'serviceSid',
       channelSid: 'channelSid',
       filePath: 'filePath',
@@ -74,11 +77,11 @@ describe('publishDueContactJobs', () => {
     const validPayload1 = {
       jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
       jobId: 1,
-      accountSid: 'accountSid',
+      accountSid,
       attemptNumber: 1,
       contactId: 123,
       taskId: 'taskId',
-      twilioWorkerId: 'twilioWorkerId',
+      twilioWorkerId,
       serviceSid: 'serviceSid',
       channelSid: 'channelSid',
       filePath: 'filePath',
@@ -87,11 +90,11 @@ describe('publishDueContactJobs', () => {
     const validPayload2 = {
       jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
       jobId: 2,
-      accountSid: 'accountSid',
+      accountSid,
       attemptNumber: 1,
       contactId: 321,
       taskId: 'taskId',
-      twilioWorkerId: 'twilioWorkerId',
+      twilioWorkerId,
       serviceSid: 'serviceSid',
       channelSid: 'channelSid',
       filePath: 'filePath',
@@ -141,16 +144,16 @@ describe('publishDueContactJobs', () => {
         additionalPayload: {
           conversationMediaId: 999,
         },
-        accountSid: 'accountSid',
+        accountSid,
         contactId: 123,
         lastAttempt: null,
         numberOfAttempts: 1,
         requested: new Date().toISOString(),
         resource: {
-          accountSid: 'accountSid',
+          accountSid,
           id: 123,
           taskId: 'taskId',
-          twilioWorkerId: 'twilioWorkerId',
+          twilioWorkerId,
           serviceSid: 'serviceSid',
           channelSid: 'channelSid',
           createdAt: new Date('01-01-2022').toISOString(),
@@ -163,11 +166,11 @@ describe('publishDueContactJobs', () => {
         jobId: 1,
         contactId: 123,
         conversationMediaId: 999,
-        accountSid: 'accountSid',
+        accountSid,
         channelSid: 'channelSid',
         serviceSid: 'serviceSid',
         taskId: 'taskId',
-        twilioWorkerId: 'twilioWorkerId',
+        twilioWorkerId,
         filePath: 'transcripts/2022/01/01/20220101000000-taskId.json',
         attemptNumber: 1,
       },
