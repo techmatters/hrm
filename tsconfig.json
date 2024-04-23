@@ -20,6 +20,7 @@
     { "path": "hrm-domain/lambdas/contact-complete" },
     { "path": "hrm-domain/lambdas/contact-retrieve-transcript" },
     { "path": "hrm-domain/lambdas/files-urls" },
+    { "path": "hrm-domain/packages/hrm-search-config" },
     { "path": "hrm-domain/hrm-core" },
     { "path": "hrm-domain/scheduled-tasks/hrm-data-pull" },
     { "path": "hrm-domain/scheduled-tasks/contact-job-cleanup" },
