@@ -23,7 +23,6 @@
   },
   "homepage": "https://github.com/tech-matters/hrm#readme",
   "dependencies": {
-    "@tech-matters/hrm-search-config": "^1.0.0",
     "@tech-matters/http": "^1.0.0",
     "@tech-matters/resources-service": "^1.0.0",
     "@tech-matters/s3-client": "^1.0.0",
