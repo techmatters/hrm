@@ -26,7 +26,9 @@ import {
 
 export const convertIndexDocument = (
   resource: FlatResource,
-): CreateIndexConvertedDocument => {
+): CreateIndexConvertedDocument<{
+  [key: string]: string | string[] | number | boolean;
+}> => {
   const { mappingFields } = resourceIndexDocumentMappings;
   const mappedFields: { [key: string]: string | string[] | number | boolean } = {};
   const highBoostGlobal: string[] = [];
