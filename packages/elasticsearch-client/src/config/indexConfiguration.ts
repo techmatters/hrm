@@ -17,7 +17,7 @@
 import type { IndicesCreateRequest } from '@elastic/elasticsearch/lib/api/types';
 import { CreateIndexConvertedDocument } from './index';
 
-export type IndexConfiguration<T = any> = {
+export type IndexConfiguration<T = any, TDoc = unknown> = {
   getCreateIndexParams: (indexName: string) => IndicesCreateRequest;
-  convertToIndexDocument: (sourceEntity: T) => CreateIndexConvertedDocument;
+  convertToIndexDocument: (sourceEntity: T) => CreateIndexConvertedDocument<TDoc>;
 };
