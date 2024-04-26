@@ -24,8 +24,10 @@
  */
 
 import { assertExhaustive } from '@tech-matters/types';
-import type { Contact } from '@tech-matters/hrm-core/contact/contactService';
-import type { CaseService } from '@tech-matters/hrm-core/case/caseService';
+import type { Contact } from '../../hrm-core/contact/contactService';
+import type { CaseService } from '../../hrm-core/case/caseService';
+// import type { Contact } from '@tech-matters/hrm-core/contact/contactService';
+// import type { CaseService } from '@tech-matters/hrm-core/case/caseService';
 import type {
   ContactDocument,
   CaseDocument,
