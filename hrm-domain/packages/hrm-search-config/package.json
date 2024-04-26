@@ -14,6 +14,5 @@
     "@tech-matters/hrm-core": "^1.0.0",
     "@tsconfig/node16": "^1.0.3"
   },
-  "scripts": {
-  }
+  "scripts": {}
 }
