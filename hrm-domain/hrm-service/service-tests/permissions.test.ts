@@ -15,18 +15,19 @@
  */
 
 import each from 'jest-each';
-import { actionsMaps, rulesMap } from '../src/permissions';
+import { actionsMaps, rulesMap } from '@tech-matters/hrm-core/permissions/index';
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import { withTaskId, workerSid } from './mocks';
 import { headers, getRequest, getServer } from './server';
 import {
   NewConversationMedia,
   S3ContactMediaType,
-} from '../src/conversation-media/conversation-media';
-import { db } from '../src/connection-pool';
-import * as contactDB from '../src/contact/contact-data-access';
-import * as conversationMediaDB from '../src/conversation-media/conversation-media-data-access';
-import { NewContactRecord } from '../src/contact/sql/contact-insert-sql';
+} from '@tech-matters/hrm-core/conversation-media/conversation-media';
+import { db } from '@tech-matters/hrm-core/connection-pool';
+import * as contactDB from '@tech-matters/hrm-core/contact/contactDataAccess';
+import * as conversationMediaDB from '@tech-matters/hrm-core/conversation-media/conversation-media-data-access';
+import { NewContactRecord } from '@tech-matters/hrm-core/contact/sql/contactInsertSql';
+import { AccountSID } from '@tech-matters/types';
 
 const server = getServer({
   permissions: undefined,
@@ -67,7 +68,7 @@ describe('/permissions route', () => {
         expectedStatus: 500,
       },
       ...Object.entries(rulesMap).map(([key, rules]) => ({
-        accountSid: key,
+        accountSid: `AC${key}`,
         description: `Should return status 200 with ${key} permissions`,
         expectedStatus: 200,
         expectedPayload: rules,
@@ -119,10 +120,10 @@ const deleteConversationMediaByContactId = (contactId: number, accountSid: strin
   );
 
 describe('/permissions/:action route with contact objectType', () => {
-  const accountSids = ['open', 'closed'];
+  const accountSids: AccountSID[] = ['ACopen', 'ACclosed'];
   let createdContacts = {
-    open: null,
-    closed: null,
+    ACopen: null,
+    ACclosed: null,
   };
   const bucket = 'bucket';
   const key = 'key';
@@ -148,15 +149,12 @@ describe('/permissions/:action route with contact objectType', () => {
 
         const contact: NewContactRecord = {
           ...withTaskId,
-          rawJson: {
-            ...withTaskId.form,
-          },
           channel: 'web',
           taskId: `${withTaskId.taskId}-${accountSid}`,
-          timeOfContact: new Date(),
+          timeOfContact: new Date().toISOString(),
           channelSid: 'channelSid',
           serviceSid: 'serviceSid',
-        };
+        } as NewContactRecord;
 
         const { contact: createdContact } = await contactDB.create()(accountSid, contact);
         createdContacts[accountSid] = createdContact;
@@ -191,12 +189,12 @@ describe('/permissions/:action route with contact objectType', () => {
         {
           action: actionsMaps.contact.VIEW_EXTERNAL_TRANSCRIPT,
           accountSid,
-          shouldHavePermission: accountSid === 'open',
+          shouldHavePermission: accountSid === 'ACopen',
         },
         {
           action: actionsMaps.contact.VIEW_RECORDING,
           accountSid,
-          shouldHavePermission: accountSid === 'open',
+          shouldHavePermission: accountSid === 'ACopen',
         },
       ])
       .flatMap(testCase => [
@@ -210,7 +208,7 @@ describe('/permissions/:action route with contact objectType', () => {
           testCase.shouldHavePermission && testCase.shouldBeValid ? 200 : 403,
       })),
   ).test(
-    'when action is $action, parmissions validity is $shouldHavePermission, location validity is $shouldBeValid - then expect $expectedStatusCode',
+    'when action is $action, permissions validity is $shouldHavePermission, location validity is $shouldBeValid - then expect $expectedStatusCode',
     // eslint-disable-next-line @typescript-eslint/no-shadow
     async ({ action, accountSid, bucket, key, expectedStatusCode }) => {
       const contact = createdContacts[accountSid];

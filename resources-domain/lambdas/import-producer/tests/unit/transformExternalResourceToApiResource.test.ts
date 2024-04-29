@@ -28,8 +28,11 @@ import {
 import { AccountSID, FlatResource } from '@tech-matters/types';
 import each from 'jest-each';
 import {
+  khpResourceWithAncestorTaxonmies,
   khpResourceWithoutSites,
   khpResourceWithSites,
+  khpSampleResource_20240418,
+  khpSampleResource_20240418_2,
 } from '../fixtures/sampleResources';
 
 const startedDate = new Date().toISOString();
@@ -914,12 +917,24 @@ describe('Mapping valid sample resources should produce no warnings', () => {
 
   const testCases: TestCase[] = [
     {
+      description: 'KHP resource with ancestor taxonomies',
+      resource: khpResourceWithAncestorTaxonmies,
+    },
+    {
       description: 'KHP resource with no sites',
       resource: khpResourceWithoutSites,
     },
     {
       description: 'KHP resource with sites',
       resource: khpResourceWithSites,
+    },
+    {
+      description: 'KHP resource after API update',
+      resource: khpSampleResource_20240418,
+    },
+    {
+      description: 'KHP resource after API update 2',
+      resource: khpSampleResource_20240418_2,
     },
   ];
 

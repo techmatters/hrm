@@ -20,6 +20,7 @@ import {
   ImportBatch,
   ImportProgress,
   TimeSequence,
+  HrmAccountId,
 } from '@tech-matters/types';
 import { db } from '../connection-pool';
 import {
@@ -58,7 +59,7 @@ const compareTimeSequences = (a: TimeSequence, b: TimeSequence) => {
 const importService = () => {
   return {
     upsertResources: async (
-      accountSid: AccountSID,
+      accountSid: HrmAccountId,
       resources: FlatResource[],
       batch: ImportBatch,
     ): Promise<UpsertImportedResourceResult[] | ValidationFailure> => {
@@ -77,14 +78,16 @@ const importService = () => {
                 reason: 'missing field',
                 fields: missingFields,
               };
-              err.resource = resource;
+              err.resourceJson = JSON.stringify(resource);
+              err.resourceId = resource.id;
               throw err;
             }
             console.debug(`Upserting ${accountSid}/${resource.id}`);
             const result = await upsert(accountSid, resource);
             if (!result.success) {
               const dbErr = new Error('Error inserting resource into database.') as any;
-              dbErr.resource = resource;
+              dbErr.resourceJson = JSON.stringify(resource);
+              dbErr.resourceId = resource.id;
               dbErr.cause = result.error;
               throw dbErr;
             }
@@ -120,19 +123,19 @@ const importService = () => {
         const error = e as any;
         console.error(
           `Failed to upsert ${accountSid}/${
-            error.resource?.id ?? 'unknown'
+            error.resourceId ?? 'unknown'
           } - rolling back upserts in this message.`,
           error,
         );
         await insertImportError()(
           accountSid,
-          error.resource?.id,
+          error.resourceId,
           batch,
           serializeError(error),
           resources,
         );
         if (error.validationFailure) {
-          return { ...error.validationFailure, resource: error.resource };
+          return { ...error.validationFailure, resource: error.resourceJson };
         }
         throw error;
       }

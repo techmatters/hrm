@@ -19,3 +19,4 @@ export { getClient } from './client';
 // These types are enums so they need to be exported here in
 // addition to index.d.ts
 export * from './config';
+export { SearchParameters } from './search';

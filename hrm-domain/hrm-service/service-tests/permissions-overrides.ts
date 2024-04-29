@@ -13,15 +13,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-
-const openRules = require('../permission-rules/open.json');
-import { RulesFile } from '../src/permissions/rulesMap';
+import { RulesFile, rulesMap } from '@tech-matters/hrm-core/permissions/rulesMap';
 
 export function ruleFileWithOnePermittedOrDeniedAction(
   permittedAction: keyof RulesFile,
   isPermitted: boolean,
 ): RulesFile {
-  const ruleEntries = Object.keys(openRules).map(key => [
+  const ruleEntries = Object.keys(rulesMap.open).map(key => [
     key,
     (key === permittedAction && isPermitted) || (key !== permittedAction && !isPermitted)
       ? [['everyone']]
@@ -30,12 +28,11 @@ export function ruleFileWithOnePermittedOrDeniedAction(
   return Object.fromEntries(ruleEntries);
 }
 
-export function ruleFileWithOneActionOverride(
+export function ruleFileActionOverride(
   targetAction: keyof RulesFile,
   isPermitted: boolean,
-): RulesFile {
+): Partial<RulesFile> {
   return {
-    ...openRules,
     [targetAction]: isPermitted ? [['everyone']] : [],
   };
 }

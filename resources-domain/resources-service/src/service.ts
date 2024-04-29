@@ -23,10 +23,11 @@ import {
   adminAuthorizationMiddleware,
 } from '@tech-matters/twilio-worker-auth';
 import { adminApiV0, apiV0, internalApiV0 } from './routes';
+import { HrmAccountId } from '@tech-matters/types';
 
 type ResourceServiceCreationOptions = {
   webServer: ReturnType<typeof express>;
-  authTokenLookup?: (accountSid: string) => string;
+  authTokenLookup?: (accountSid: HrmAccountId) => string;
 };
 
 export const configureService = ({
@@ -52,7 +53,7 @@ export const configureInternalService = ({
   webServer,
   reindexDbBatchSize = 1000,
 }: InternalResourceServiceCreationOptions) => {
-  webServer.get('/', (req, res) => {
+  webServer.get('/resources', (req, res) => {
     res.json({
       Message: 'Resources internal service is up and running!',
     });

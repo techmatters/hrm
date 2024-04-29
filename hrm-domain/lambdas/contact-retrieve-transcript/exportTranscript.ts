@@ -18,9 +18,10 @@ import { getClient, TwilioClient } from '@tech-matters/twilio-client';
 
 import RestException from 'twilio/lib/base/RestException';
 import type { MemberInstance } from 'twilio/lib/rest/chat/v2/service/channel/member';
+import { HrmAccountId } from '@tech-matters/types';
 
 export type ExportTranscriptParams = {
-  accountSid: string;
+  accountSid: HrmAccountId;
   authToken: string;
   serviceSid: string;
   channelSid: string;

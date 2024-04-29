@@ -24,6 +24,10 @@ on:
       title:
         description: Release title - The title that will be given to this pre-release.
         required: true
+      flex-branch:
+        description: The branch name or tag to run flex-plugins/e2e-tests - Defaults to master.
+        required: false
+        default: master
 
 jobs:
   build-and-deploy-service:
@@ -64,15 +68,15 @@ jobs:
 
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - name: Use Node.js
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
           node-version: '16.x'
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -80,7 +84,7 @@ jobs:
 
       # Clone flex-plugins repo
       - name: Clone flex-plugins repo
-        run: git clone https://github.com/techmatters/flex-plugins
+        run: git clone https://github.com/techmatters/flex-plugins --branch ${{ inputs.flex-branch }} --single-branch
         shell: bash
 
       - name: Install Flex Plugin
@@ -107,7 +111,7 @@ jobs:
 
       # Upload artifacts
       # TODO: this is not working and cant tell why :(
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v4
         if: ${{ always() }}
         with:
           name: test-artifacts
@@ -121,7 +125,7 @@ jobs:
 
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - name: Create pre release
         # TODO: remove branch tag

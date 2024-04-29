@@ -18,6 +18,10 @@ import { Twilio } from 'twilio';
 import { getSsmParameter } from '@tech-matters/ssm-cache';
 
 import { getMockClient } from './mockClient';
+import { AccountSID, HrmAccountId } from '@tech-matters/types';
+
+export { isTwilioTaskTransferTarget } from './isTwilioTaskTransferTarget';
+export { setMockTaskRouterWorkspaces } from './mockClient/taskRouterWorkspaces';
 
 type ClientCache = {
   [accountSid: string]: Twilio;
@@ -31,12 +35,11 @@ const getClientOrMock = ({
   accountSid,
   authToken,
 }: {
-  accountSid: string;
+  accountSid: AccountSID;
   authToken: string;
 }): Twilio => {
   if (authToken === 'mockAuthToken') {
-    const mock = getMockClient({ accountSid }) as unknown as Twilio;
-    return mock;
+    return getMockClient({ accountSid }) as unknown as Twilio;
   }
 
   return new Twilio(accountSid, authToken);
@@ -59,7 +62,7 @@ export const getClient = async ({
   accountSid,
   authToken: authTokenParam,
 }: {
-  accountSid: string;
+  accountSid: HrmAccountId;
   authToken?: string;
 }): Promise<Twilio> => {
   const authToken = await getAuthToken(accountSid, authTokenParam);

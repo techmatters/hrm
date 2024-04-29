@@ -30,10 +30,8 @@ const siteKey = (subsection: string) => (context: FieldMappingContext) => {
     rootResource,
     captures: { siteIndex },
   } = context;
-  return `site/${rootResource.sites[siteIndex].objectId}/${substituteCaptureTokens(
-    subsection,
-    context,
-  )}`;
+  const { _id: id, objectId } = rootResource.sites[siteIndex] ?? {};
+  return `site/${id ?? objectId}/${substituteCaptureTokens(subsection, context)}`;
 };
 
 /*
@@ -102,12 +100,35 @@ const KHP_MAPPING_NODE_SITES: { children: MappingNode } = {
           children: {
             address1: translatableAttributeMapping(siteKey('location/address1')),
             address2: translatableAttributeMapping(siteKey('location/address2')),
-            city: referenceAttributeMapping(siteKey('location/city'), 'cities', {
-              value: ctx => `CA/${ctx.parentValue.province}/${ctx.currentValue}`,
-            }),
-            county: translatableAttributeMapping(siteKey('location/county'), {
-              value: ctx => ctx.currentValue,
-            }),
+            city: {
+              mappings: [
+                referenceAttributeMapping(siteKey('location/city'), 'cities', {
+                  value: ctx => `CA/${ctx.parentValue.province}/${ctx.currentValue}`,
+                }),
+                referenceAttributeMapping(
+                  siteKey('location/region-city'),
+                  'country/province/region/city',
+                  {
+                    value: ctx =>
+                      `CA/${ctx.parentValue.province}/${ctx.parentValue.county}/${ctx.currentValue}`,
+                  },
+                ),
+              ],
+            },
+            county: {
+              mappings: [
+                translatableAttributeMapping(siteKey('location/county'), {
+                  value: ctx => ctx.currentValue,
+                }),
+                referenceAttributeMapping(
+                  siteKey('location/region'),
+                  'country/province/region',
+                  {
+                    value: ctx => `CA/${ctx.parentValue.province}/${ctx.currentValue}`,
+                  },
+                ),
+              ],
+            },
             province: referenceAttributeMapping(
               siteKey('location/province'),
               'provinces',
@@ -194,6 +215,7 @@ const KHP_MAPPING_NODE_SITES: { children: MappingNode } = {
         createdAt: attributeMapping('dateTimeAttributes', siteKey('createdAt')),
         updatedAt: attributeMapping('dateTimeAttributes', siteKey('updatedAt')),
         objectId: attributeMapping('stringAttributes', siteKey('siteId')),
+        _id: attributeMapping('stringAttributes', siteKey('siteId')),
       },
     },
   },
@@ -202,26 +224,46 @@ const KHP_MAPPING_NODE_SITES: { children: MappingNode } = {
 // TODO: this is an array of arrays, is this shape correct?
 const KHP_MAPPING_NODE_TAXONOMIES: { children: MappingNode } = {
   children: {
-    '{arrayIndex}': {
+    '{taxonomyIndex}': {
       children: {
-        '{taxonomyIndex}': {
+        nameEN: translatableAttributeMapping(
+          ({ parentValue }) => `taxonomies/${parentValue.code}`,
+          {
+            value: ctx => ctx.currentValue,
+            language: 'en',
+            info: ctx => ctx.parentValue,
+          },
+        ),
+        nameFR: translatableAttributeMapping(
+          ({ parentValue }) => `taxonomies/${parentValue.code}`,
+          {
+            value: ctx => ctx.currentValue,
+            language: 'fr',
+            info: ctx => ctx.parentValue,
+          },
+        ),
+        ancestorTaxonomies: {
           children: {
-            nameEN: translatableAttributeMapping(
-              'taxonomies/{arrayIndex}/{taxonomyIndex}',
-              {
-                value: ctx => ctx.currentValue,
-                language: 'en',
-                info: ctx => ctx.parentValue,
+            '{ancestorIndex}': {
+              children: {
+                nameEN: translatableAttributeMapping(
+                  ({ parentValue }) => `taxonomies/${parentValue.code}`,
+                  {
+                    value: ctx => ctx.currentValue,
+                    language: 'en',
+                    info: ctx => ctx.parentValue,
+                  },
+                ),
+                nameFR: translatableAttributeMapping(
+                  ({ parentValue }) => `taxonomies/${parentValue.code}`,
+                  {
+                    value: ctx => ctx.currentValue,
+                    language: 'fr',
+                    info: ctx => ctx.parentValue,
+                  },
+                ),
               },
-            ),
-            nameFR: translatableAttributeMapping(
-              'taxonomies/{arrayIndex}/{taxonomyIndex}',
-              {
-                value: ctx => ctx.currentValue,
-                language: 'fr',
-                info: ctx => ctx.parentValue,
-              },
-            ),
+            },
           },
         },
       },
@@ -230,6 +272,8 @@ const KHP_MAPPING_NODE_TAXONOMIES: { children: MappingNode } = {
 };
 
 export const KHP_MAPPING_NODE: MappingNode = {
+  _id: resourceFieldMapping('id'),
+  // TODO: Remove this and all other 'objectId' mappings once the updated Arctic API is deployed to production
   objectId: resourceFieldMapping('id'),
   timeSequence: resourceFieldMapping('importSequenceId'),
   sites: KHP_MAPPING_NODE_SITES,
@@ -345,6 +389,7 @@ export const KHP_MAPPING_NODE: MappingNode = {
     children: {
       '{howToAccessSupportIndex}': {
         children: {
+          _id: { children: {} },
           objectId: { children: {} },
           '{language}': translatableAttributeMapping(
             'howToAccessSupport/{howToAccessSupportIndex}',
@@ -389,7 +434,6 @@ export const KHP_MAPPING_NODE: MappingNode = {
   description: {
     children: {
       '{language}': translatableAttributeMapping('description', {
-        // TODO: this was previously mapped as 'description' (string). Was that intended?
         info: context => ({ text: context.currentValue }),
         language: ctx => ctx.captures.language,
       }),
@@ -398,14 +442,40 @@ export const KHP_MAPPING_NODE: MappingNode = {
   isActive: attributeMapping('booleanAttributes', 'isActive', {
     value: ctx => ctx.currentValue,
   }),
-  primaryLocationCity: referenceAttributeMapping('primaryLocationCity', 'cities', {
-    value: ctx => {
-      const { primaryLocationProvince } = ctx.rootResource;
-      // TODO: No top level country, assumes always CA?
-      return ['CA', primaryLocationProvince, ctx.currentValue].join('/');
-    },
-  }),
-  primaryLocationCounty: attributeMapping('stringAttributes', 'primaryLocationCounty'),
+  primaryLocationCity: {
+    mappings: [
+      referenceAttributeMapping('primaryLocationCity', 'cities', {
+        value: ctx => {
+          const { primaryLocationProvince } = ctx.rootResource;
+          return ['CA', primaryLocationProvince, ctx.currentValue].join('/');
+        },
+      }),
+      referenceAttributeMapping('primaryLocationRegionCity', 'cities', {
+        value: ctx => {
+          const { primaryLocationProvince, primaryLocationCounty } = ctx.rootResource;
+          return [
+            'CA',
+            primaryLocationProvince,
+            primaryLocationCounty,
+            ctx.currentValue,
+          ].join('/');
+        },
+      }),
+    ],
+  },
+  primaryLocationCounty: {
+    mappings: [
+      translatableAttributeMapping(siteKey('primaryLocationCounty'), {
+        value: ctx => ctx.currentValue,
+      }),
+      referenceAttributeMapping('primaryLocationRegion', 'counties', {
+        value: ctx => {
+          const { primaryLocationProvince } = ctx.rootResource;
+          return ['CA', primaryLocationProvince, ctx.currentValue].join('/');
+        },
+      }),
+    ],
+  },
   primaryLocationProvince: referenceAttributeMapping(
     'primaryLocationProvince',
     'provinces',
@@ -456,6 +526,7 @@ export const KHP_MAPPING_NODE: MappingNode = {
               language: ctx => ctx.captures.language,
             },
           ),
+          _id: {},
           objectId: {},
         },
       },
@@ -499,10 +570,13 @@ export const KHP_MAPPING_NODE: MappingNode = {
       '{documentIndex}': {
         children: {
           objectId: { children: {} },
+          _id: { children: {} },
           '{language}': translatableAttributeMapping(
             ctx =>
               `documentsRequired/${
-                ctx.parentValue.objectId ?? ctx.captures.documentIndex
+                ctx.parentValue._id ??
+                ctx.parentValue.objectId ??
+                ctx.captures.documentIndex
               }`,
             {
               value: ctx => ctx.parentValue[ctx.captures.language],
@@ -559,6 +633,7 @@ export const KHP_MAPPING_NODE: MappingNode = {
       '{feeStructureSourceIndex}': {
         children: {
           objectId: { children: {} },
+          _id: { children: {} },
           '{language}': referenceAttributeMapping(
             'feeStructure/{feeStructureSourceIndex}',
             'khp-fee-structure-source',
@@ -593,6 +668,7 @@ export const KHP_MAPPING_NODE: MappingNode = {
   accessibility: {
     children: {
       objectId: { children: {} },
+      _id: { children: {} },
       '{language}': translatableAttributeMapping('accessibility', {
         language: ctx => ctx.captures.language,
       }),

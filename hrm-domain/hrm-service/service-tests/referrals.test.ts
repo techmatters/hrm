@@ -16,11 +16,11 @@
 
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import * as mocks from './mocks';
-import { db } from '../src/connection-pool';
+import { db } from '@tech-matters/hrm-core/connection-pool';
 import { headers, getRequest, getServer, useOpenRules } from './server';
 import { addSeconds, subHours } from 'date-fns';
 import { contact1, contact2 } from './mocks';
-import { Referral } from '../src/referral/referral-data-access';
+import { Referral } from '@tech-matters/hrm-core/referral/referral-data-access';
 import each from 'jest-each';
 
 useOpenRules();
@@ -72,7 +72,11 @@ beforeEach(async () => {
   console.log('Contact IDs for test:', existingContactId, otherExistingContactId);
 });
 
-afterAll(async () => Promise.all([mockingProxy.stop(), clearDownDb(), server.close()]));
+afterEach(async () => {
+  await clearDownDb();
+});
+
+afterAll(async () => Promise.all([mockingProxy.stop(), server.close()]));
 
 const route = `/v0/accounts/${accountSid}/referrals`;
 

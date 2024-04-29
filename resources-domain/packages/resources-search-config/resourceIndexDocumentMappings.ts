@@ -20,7 +20,7 @@ import type {
   MappingProperty,
   MappingTextProperty,
 } from '@elastic/elasticsearch/lib/api/types';
-import { ReferrableResourceAttribute } from '@tech-matters/types/dist/Resources';
+import { ReferrableResourceAttribute } from '@tech-matters/types/Resources';
 
 export type MappingFieldType =
   | 'integer'
@@ -95,6 +95,16 @@ export const isHighBoostGlobalField = (
   fieldName: string,
 ) => highBoostGlobalFields.includes(fieldName);
 
+export const isLowBoostGlobalField = (
+  resourceIndexDocumentMappings: ResourceIndexDocumentMappings,
+  fieldName: string,
+) => {
+  if (isHighBoostGlobalField(resourceIndexDocumentMappings, fieldName)) return false;
+
+  const fieldAndMappings = getMappingFields(resourceIndexDocumentMappings, fieldName);
+  return fieldAndMappings === undefined || fieldAndMappings.length === 0;
+};
+
 export const isStringField = (fieldType: string): fieldType is 'keyword' | 'text' =>
   stringFieldTypes.includes(fieldType);
 
@@ -102,11 +112,13 @@ export const resourceIndexDocumentMappings: ResourceIndexDocumentMappings = {
   // This is a list of attribute names that should be given higher priority in search results.
   highBoostGlobalFields: [
     'description',
-    'province',
-    'city',
+    'primaryLocationProvince',
+    'primaryLocationRegion',
+    'primaryLocationRegionCity',
     'targetPopulation',
     'languages',
     'feeStructure',
+    'taxonomyLevelName',
   ],
 
   mappingFields: {
@@ -154,21 +166,28 @@ export const resourceIndexDocumentMappings: ResourceIndexDocumentMappings = {
       isArrayField: true,
       attributeKeyPattern: /^languages\/.*$/,
       indexValueGenerator: ({ value, info }: ReferrableResourceAttribute<string>) =>
-        `${info?.language ?? ''} ${value}`,
+        [info?.language, value].filter(i => i).join(' '),
     },
     province: {
       type: 'keyword',
       isArrayField: true,
       attributeKeyPattern: /(.*)([pP])rovince$/,
       indexValueGenerator: ({ value, info }: ReferrableResourceAttribute<string>) =>
-        `${info?.name ?? ''} ${value}`,
+        [info?.name, value].filter(i => i).join(' '),
     },
     city: {
       type: 'keyword',
       isArrayField: true,
       attributeKeyPattern: /(.*)[cC]ity$/,
       indexValueGenerator: ({ value, info }: ReferrableResourceAttribute<string>) =>
-        `${info?.name ?? ''} ${value}`,
+        [info?.name, value].filter(i => i).join(' '),
+    },
+    region: {
+      type: 'keyword',
+      isArrayField: true,
+      attributeKeyPattern: /(.*)[rR]egion$/,
+      indexValueGenerator: ({ value, info }: ReferrableResourceAttribute<string>) =>
+        [info?.name, value].filter(i => i).join(' '),
     },
   },
   languageFields: {

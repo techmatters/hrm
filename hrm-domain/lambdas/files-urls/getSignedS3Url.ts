@@ -14,25 +14,26 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { AlbHandlerEvent } from '@tech-matters/alb-handler';
-import {
-  isErrorResult,
-  ErrorResult,
-  SuccessResult,
-  newErrorResult,
-  newSuccessResult,
-} from '@tech-matters/types';
+import { type AlbHandlerEvent } from '@tech-matters/alb-handler';
+import { type TResult, newErr, isErr, newOk } from '@tech-matters/types';
 import { authenticate } from '@tech-matters/hrm-authentication';
 import { getSignedUrl } from '@tech-matters/s3-client';
-import { parseParameters } from './parseParameters';
+import { type ParseParametersError, parseParameters } from './parseParameters';
+import { type CallHrmApiError } from '@tech-matters/hrm-authentication/callHrmApi';
 
 export type GetSignedS3UrlSuccessResultData = {
   media_url: string;
 };
 
-export type GetSignedS3UrlResult =
-  | SuccessResult<GetSignedS3UrlSuccessResultData>
-  | ErrorResult;
+export type GetSignedS3UrlError =
+  | 'InternalServerError'
+  | CallHrmApiError
+  | ParseParametersError;
+
+export type GetSignedS3UrlResult = TResult<
+  GetSignedS3UrlError,
+  GetSignedS3UrlSuccessResultData
+>;
 
 /**
  * Twilio insights sends a basic auth header with the username as the string token and the password as the flexJWE.
@@ -55,7 +56,7 @@ export const convertBasicAuthHeader = (authHeader: string): string => {
 
 const getSignedS3Url = async (event: AlbHandlerEvent): Promise<GetSignedS3UrlResult> => {
   const parseParametersResult = parseParameters(event);
-  if (isErrorResult(parseParametersResult)) {
+  if (isErr(parseParametersResult)) {
     return parseParametersResult;
   }
 
@@ -77,7 +78,7 @@ const getSignedS3Url = async (event: AlbHandlerEvent): Promise<GetSignedS3UrlRes
       key,
     },
   });
-  if (isErrorResult(authenticateResult)) {
+  if (isErr(authenticateResult)) {
     return authenticateResult;
   }
 
@@ -88,14 +89,15 @@ const getSignedS3Url = async (event: AlbHandlerEvent): Promise<GetSignedS3UrlRes
       key,
     });
 
-    return newSuccessResult({
+    return newOk({
       data: {
         media_url: getSignedUrlResult,
       },
     });
   } catch (error) {
-    return newErrorResult({
+    return newErr({
       message: error as string,
+      error: 'InternalServerError',
     });
   }
 };

@@ -16,11 +16,12 @@
 
 import './index';
 import type { Request, Response, NextFunction } from 'express';
+import { HrmAccountId } from '@tech-matters/types';
 
 declare global {
   namespace Express {
     export interface Request {
-      accountSid?: string;
+      hrmAccountId?: HrmAccountId;
     }
   }
 }
@@ -33,6 +34,6 @@ export const addAccountSidMiddleware = (
   res: Response,
   next: NextFunction,
 ) => {
-  req.accountSid = req.params.accountSid;
+  req.hrmAccountId = req.params.accountSid as HrmAccountId;
   return next();
 };

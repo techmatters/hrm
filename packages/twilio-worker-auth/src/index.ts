@@ -18,6 +18,7 @@ export {
   getAuthorizationMiddleware,
   adminAuthorizationMiddleware,
   staticKeyAuthorizationMiddleware,
+  systemUser,
 } from './twilioWorkerAuthMiddleware';
 export { addAccountSidMiddleware } from './addAccountSidMiddleware';
-export { twilioUser, TwilioUser } from './twilioUser';
+export { newTwilioUser, TwilioUser } from './twilioUser';

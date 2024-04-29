@@ -14,16 +14,24 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { Case } from '../src/case/case';
-import { channelTypes } from '../src/contact/channelTypes';
-import { CreateContactPayloadWithFormProperty } from '../src/contact/contact';
-import { S3ContactMediaType } from '../src/conversation-media/conversation-media';
-import { Contact } from '../src/contact/contact-data-access';
+import { CaseService, getCase } from '@tech-matters/hrm-core/case/caseService';
+import {
+  NewConversationMedia,
+  S3ContactMediaType,
+} from '@tech-matters/hrm-core/conversation-media/conversation-media';
+import { Contact } from '@tech-matters/hrm-core/contact/contactDataAccess';
+import { ContactRawJson } from '@tech-matters/hrm-core/contact/contactJson';
+import { NewContactRecord } from '@tech-matters/hrm-core/contact/sql/contactInsertSql';
+import { newTwilioUser } from '@tech-matters/twilio-worker-auth';
+import { NewCaseSection } from '@tech-matters/hrm-core/case/caseSection/types';
+import { createCaseSection } from '@tech-matters/hrm-core/case/caseSection/caseSectionService';
+import type { AccountSID } from '@tech-matters/types';
+import { openPermissions } from '@tech-matters/hrm-core/permissions/json-permissions';
 
 export const accountSid = 'ACCOUNT_SID';
-// TODO: Turn these into proper API types (will probably break so many tests...)
-export const contact1: CreateContactPayloadWithFormProperty = {
-  form: {
+
+export const contact1: NewContactRecord = {
+  rawJson: {
     callType: 'Child calling about self',
     childInformation: {
       firstName: 'Jhonny',
@@ -51,8 +59,8 @@ export const contact1: CreateContactPayloadWithFormProperty = {
       didYouDiscussRightsWithTheChild: false,
       didTheChildFeelWeSolvedTheirProblem: false,
       wouldTheChildRecommendUsToAFriend: false,
-      categories: {},
     },
+    categories: {},
     callerInformation: {
       firstName: '',
       lastName: '',
@@ -70,6 +78,7 @@ export const contact1: CreateContactPayloadWithFormProperty = {
       streetAddress: '',
     },
   },
+  taskId: 'contact1-task-sid',
   twilioWorkerId: 'WK-worker-sid',
   createdBy: 'WK-worker-sid',
   helpline: '',
@@ -77,10 +86,12 @@ export const contact1: CreateContactPayloadWithFormProperty = {
   number: '12025550184',
   channel: 'chat',
   conversationDuration: 14,
+  profileId: undefined,
+  identifierId: undefined,
 };
 
-export const contact2: CreateContactPayloadWithFormProperty = {
-  form: {
+export const contact2: NewContactRecord = {
+  rawJson: {
     callType: 'Someone calling about a child',
     childInformation: {
       firstName: 'Name',
@@ -108,8 +119,8 @@ export const contact2: CreateContactPayloadWithFormProperty = {
       didYouDiscussRightsWithTheChild: false,
       didTheChildFeelWeSolvedTheirProblem: false,
       wouldTheChildRecommendUsToAFriend: false,
-      categories: {},
     },
+    categories: {},
     callerInformation: {
       firstName: 'Jhon qwerty',
       lastName: 'Thecaller',
@@ -128,64 +139,75 @@ export const contact2: CreateContactPayloadWithFormProperty = {
     },
   },
   twilioWorkerId: 'WK-worker-sid',
+  taskId: 'contact2-task-sid',
   createdBy: 'WK-worker-sid',
   helpline: '',
   queueName: '',
   number: '12025550184',
   channel: 'chat',
   conversationDuration: 10,
+  profileId: undefined,
+  identifierId: undefined,
 };
 
-export const nonData1: CreateContactPayloadWithFormProperty = {
+export const nonData1: NewContactRecord = {
   ...contact1,
-  form: {
+  taskId: 'nonData1-task-sid',
+  rawJson: {
     callType: 'Joke',
     childInformation: {},
-    caseInformation: { categories: {}, callSummary: '' },
+    caseInformation: { callSummary: '' },
+    categories: {},
     callerInformation: {},
   },
 };
-export const nonData2: CreateContactPayloadWithFormProperty = {
+export const nonData2: NewContactRecord = {
   ...contact2,
-  form: {
+  taskId: 'nonData2-task-sid',
+  rawJson: {
     callType: 'Blank',
     childInformation: {},
-    caseInformation: { categories: {}, callSummary: '' },
+    caseInformation: { callSummary: '' },
     callerInformation: {},
+    categories: {},
   },
 };
 // Non data contacts with actual information
-export const broken1: CreateContactPayloadWithFormProperty = {
+export const broken1: NewContactRecord = {
   ...contact1,
-  form: { ...contact1.form, callType: 'Joke' },
+  taskId: 'broken1-task-sid',
+  rawJson: { ...contact1.rawJson, callType: 'Joke' },
 };
-export const broken2: CreateContactPayloadWithFormProperty = {
+export const broken2: NewContactRecord = {
   ...contact2,
-  form: { ...contact2.form, callType: 'Blank' },
+  taskId: 'broken2-task-sid',
+  rawJson: { ...contact2.rawJson, callType: 'Blank' },
 };
 
 export const anotherChild: Contact['rawJson']['childInformation'] = {
-  ...contact1.form.childInformation,
+  ...contact1.rawJson.childInformation,
   firstName: 'Marie',
   lastName: 'Curie',
 };
 
-export const anotherCaller: Contact['rawJson']['callerInformation'] = {
-  ...contact2.form.callerInformation,
+export const anotherCaller: ContactRawJson['callerInformation'] = {
+  ...contact2.rawJson.callerInformation,
   firstName: 'Marie',
   lastName: 'Curie',
 };
 
-export const another1: CreateContactPayloadWithFormProperty = {
+export const another1: NewContactRecord = {
   ...contact1,
-  form: { ...contact1.form, childInformation: anotherChild },
+  taskId: 'another1-task-sid',
+  rawJson: { ...contact1.rawJson, childInformation: anotherChild },
   helpline: 'Helpline 1',
 };
 
-export const another2: CreateContactPayloadWithFormProperty = {
+export const another2: NewContactRecord = {
   ...contact2,
-  form: {
-    ...contact2.form,
+  taskId: 'another2-task-sid',
+  rawJson: {
+    ...contact2.rawJson,
     callerInformation: {
       ...anotherCaller,
       phone1: '+1 (515) 555-1212',
@@ -201,13 +223,14 @@ export const another2: CreateContactPayloadWithFormProperty = {
   number: '+12125551212',
 };
 
-export const noHelpline: CreateContactPayloadWithFormProperty = {
+export const noHelpline: NewContactRecord = {
   ...another1,
+  taskId: 'noHelpline-task-sid',
   helpline: '',
 };
 
-export const withTaskId: CreateContactPayloadWithFormProperty = {
-  form: {
+export const withTaskId: NewContactRecord = {
+  rawJson: {
     callType: 'Child calling about self',
     childInformation: {
       firstName: 'withTaskId',
@@ -225,8 +248,9 @@ export const withTaskId: CreateContactPayloadWithFormProperty = {
       phone2: '',
       refugee: false,
     },
-    callerInformation: contact1.form.callerInformation,
-    caseInformation: contact1.form.caseInformation,
+    categories: contact1.rawJson.categories,
+    callerInformation: contact1.rawJson.callerInformation,
+    caseInformation: contact1.rawJson.caseInformation,
   },
   twilioWorkerId: 'WK-worker-sid',
   createdBy: 'WK-worker-sid',
@@ -236,65 +260,196 @@ export const withTaskId: CreateContactPayloadWithFormProperty = {
   channel: 'chat',
   conversationDuration: 1,
   taskId: 'taskId',
+  profileId: undefined,
+  identifierId: undefined,
 };
-
-export const case1: Partial<Case> = {
-  status: 'open',
-  helpline: 'helpline',
-  info: {
-    counsellorNotes: [
-      {
-        note: 'Child with covid-19',
-        twilioWorkerId: 'WK-note-adder',
-        createdAt: '2022-01-01T00:00:00+00:00',
-        customProperty: 'something else',
-      },
-    ],
-  },
-  twilioWorkerId: 'WK-worker-sid',
-  createdBy: 'WK-worker-sid',
-  accountSid,
-};
-
-export const case2: Partial<Case> = {
-  status: 'open',
-  helpline: 'helpline',
-  info: {
-    counsellorNotes: [
-      {
-        note: 'Refugee child',
-        twilioWorkerId: 'WK-other-note-adder',
-        createdAt: '2021-01-01T00:00:00+00:00',
-      },
-    ],
-  },
-  twilioWorkerId: 'WK-worker-sid',
-  createdBy: 'WK-worker-sid',
-  accountSid,
+export type CaseSectionInsert = {
+  section: NewCaseSection;
+  workerSid: CaseService['twilioWorkerId'];
 };
 
 export const workerSid = 'WK-worker-sid';
 
-export const withTaskIdAndTranscript = {
-  ...withTaskId,
-  form: {
-    ...withTaskId.form,
-    childInformation: {
-      ...withTaskId.form.childInformation,
-      firstName: 'withTaskIdAndTranscript',
-      lastName: 'withTaskIdAndTranscript',
-    },
-    conversationMedia: [
-      {
-        store: 'S3' as const,
-        type: S3ContactMediaType.TRANSCRIPT,
-        location: {
-          bucket: 'mock-bucket',
-          key: 'mockKey',
+export const ALWAYS_CAN = {
+  user: newTwilioUser(accountSid, workerSid, []),
+  can: () => true,
+  permissions: openPermissions.rules('ACx'),
+};
+
+export const populateCaseSections = async (
+  caseId: string,
+  sectionsMap: Record<string, CaseSectionInsert[]>,
+  caseAccountSid: AccountSID = accountSid,
+): Promise<CaseService> => {
+  const sectionsEntries = Object.entries(sectionsMap);
+  for (const [sectionType, sections] of sectionsEntries) {
+    for (const { section, workerSid: sectionWorkerSid } of sections) {
+      await createCaseSection(
+        caseAccountSid,
+        caseId,
+        sectionType,
+        section,
+        sectionWorkerSid,
+      );
+      // Ensure timestamps are in creation order & there are no collisions
+      // eslint-disable-next-line @typescript-eslint/no-loop-func
+      await new Promise(resolve => setTimeout(resolve, 10));
+    }
+  }
+  return getCase(parseInt(caseId), caseAccountSid, ALWAYS_CAN);
+};
+
+export const case1: Partial<CaseService> = {
+  status: 'open',
+  helpline: 'helpline',
+  info: {},
+  twilioWorkerId: 'WK-worker-sid',
+  createdBy: 'WK-worker-sid',
+  accountSid,
+};
+
+export const case2: Partial<CaseService> = {
+  status: 'open',
+  helpline: 'helpline',
+  info: {},
+  twilioWorkerId: 'WK-worker-sid',
+  createdBy: 'WK-worker-sid',
+  accountSid,
+};
+
+export const populatedCaseSections: Record<string, CaseSectionInsert[]> = {
+  note: [
+    {
+      workerSid: 'WK-note-adder',
+      section: {
+        sectionId: '1',
+        sectionTypeSpecificData: {
+          note: 'Child with covid-19',
         },
       },
-    ],
-  },
-  channel: channelTypes.web,
-  taskId: `${withTaskId.taskId}-transcript-permissions-test`,
+    },
+    {
+      workerSid: 'WK-other-note-adder',
+      section: {
+        sectionId: '2',
+        sectionTypeSpecificData: {
+          note: 'Child recovered from covid-19',
+        },
+      },
+    },
+  ],
+  perpetrator: [
+    {
+      workerSid: 'WK-perpetrator-adder',
+      section: {
+        sectionTypeSpecificData: {
+          firstName: 'Jane',
+          lastName: 'Doe',
+        },
+      },
+    },
+    {
+      workerSid: 'WK-perpetrator-adder',
+      section: {
+        sectionTypeSpecificData: {
+          firstName: 'J.',
+          lastName: 'Doe',
+          phone2: '+12345678',
+        },
+      },
+    },
+  ],
+  household: [
+    {
+      workerSid: 'WK-household-adder',
+      section: {
+        sectionTypeSpecificData: {
+          firstName: 'Jane',
+          lastName: 'Doe',
+        },
+      },
+    },
+    {
+      workerSid: 'WK-household-adder',
+      section: {
+        sectionTypeSpecificData: {
+          firstName: 'J.',
+          lastName: 'Doe',
+          phone2: '+12345678',
+        },
+      },
+    },
+  ],
+  incident: [
+    {
+      workerSid: 'WK-incident-adder',
+      section: {
+        sectionTypeSpecificData: {
+          date: '2021-03-03',
+          duration: '',
+          location: 'Other',
+          isCaregiverAware: null,
+          incidentWitnessed: null,
+          reactionOfCaregiver: '',
+          whereElseBeenReported: '',
+          abuseReportedElsewhere: null,
+        },
+      },
+    },
+  ],
+  referral: [
+    {
+      workerSid: 'WK-referral-adder',
+      section: {
+        sectionId: '2503',
+        sectionTypeSpecificData: {
+          date: '2021-02-18',
+          comments: 'Referred to state agency',
+          referredTo: 'DREAMS',
+        },
+      },
+    },
+  ],
+  document: [
+    {
+      workerSid: 'WK-document-adder',
+      section: {
+        sectionId: '5e127299-17ba-4adf-a040-69dac9ca45bf',
+        sectionTypeSpecificData: {
+          comments: 'test file!',
+          fileName: 'sample1.pdf',
+        },
+      },
+    },
+    {
+      workerSid: 'WK-document-adder',
+      section: {
+        sectionId: '10d21f35-142c-4538-92db-d558f80898ae',
+        sectionTypeSpecificData: {
+          comments: '',
+          fileName: 'sample2.pdf',
+        },
+      },
+    },
+  ],
 };
+
+export const casePopulated = {
+  ...case1,
+  info: {
+    summary: 'something summery',
+    followUpDate: '2005-03-15T00:00:00.000Z',
+  },
+};
+export const conversationMedia: NewConversationMedia[] = [
+  {
+    storeType: 'S3',
+    storeTypeSpecificData: {
+      type: S3ContactMediaType.TRANSCRIPT,
+      location: {
+        bucket: 'mock-bucket',
+        key: 'mockKey',
+      },
+    },
+  },
+];

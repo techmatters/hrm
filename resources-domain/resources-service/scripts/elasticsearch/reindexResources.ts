@@ -14,66 +14,15 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-// TODO: needs to be converted to aws-sdk-v3
-import { ECS, EC2, S3 } from 'aws-sdk';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import yargs from 'yargs';
 import { SearchReindexParams } from '../../src/admin/adminSearchService';
 import { AccountSID } from '@tech-matters/types';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { fetch, Response } from 'undici';
-
-const ecs = new ECS();
-const ec2 = new EC2();
-const s3 = new S3();
+import { getHRMInternalEndpointAccess } from '@tech-matters/service-discovery';
 
 const staticKeyPattern = /^STATIC_KEY_SEARCH_REINDEXER=(?<key>.*)$/im;
-
-const findTaskPrivateIp = async (params: { cluster: string; serviceName: string }) => {
-  const tasks = await ecs.listTasks(params).promise();
-  const taskArns = tasks.taskArns ?? [];
-  const describeParams = {
-    cluster: params.cluster,
-    tasks: taskArns,
-  };
-  const taskData = await ecs.describeTasks(describeParams).promise();
-  const task = taskData!.tasks![0];
-  if (!task) {
-    throw new Error(`No task found for service ${params.serviceName}`);
-  }
-
-  const networkInterfaceDetails = task.attachments![0].details!.find(
-    detail => detail.name === 'networkInterfaceId',
-  );
-
-  if (!networkInterfaceDetails) {
-    throw new Error(`Could not find network interface details for task ${task.taskArn}`);
-  }
-
-  const networkInterfaceId = networkInterfaceDetails.value ?? '';
-  const describeNetworkInterfacesParams = {
-    NetworkInterfaceIds: [networkInterfaceId],
-  };
-  const networkInterfaceDescription = await ec2
-    .describeNetworkInterfaces(describeNetworkInterfacesParams)
-    .promise();
-
-  if (!networkInterfaceDescription.NetworkInterfaces) {
-    throw new Error(`Could not find network interfaces with network interface IDid task`);
-  }
-
-  const networkInterface = networkInterfaceDescription.NetworkInterfaces[0];
-  const privateIpAddress = networkInterface.PrivateIpAddress;
-
-  if (!privateIpAddress) {
-    throw new Error(
-      `Could not find private IP address on network interface ${networkInterfaceId} for task`,
-    );
-  }
-  console.log('Found the resources service private IP:', privateIpAddress);
-
-  return privateIpAddress;
-};
 
 const reindexResources = async <T extends boolean>(
   internalResourcesUrl: URL,
@@ -152,29 +101,23 @@ const main = async () => {
     })
     .parseSync();
   const region = process.env.AWS_REGION;
-  const privateIpAddress = await findTaskPrivateIp({
-    cluster: `${environment}-ecs-cluster`,
-    serviceName: `${environment}-ecs-service`,
+  if (!region) {
+    throw new Error(`region parameter not provided nor set in .env`);
+  }
+
+  const timestamp = new Date().getTime();
+  const assumeRoleParams = {
+    RoleArn: 'arn:aws:iam::712893914485:role/admin-no-pii',
+    RoleSessionName: `es-reindex-${timestamp}`,
+  };
+
+  const { authKey, internalResourcesUrl } = await getHRMInternalEndpointAccess({
+    region,
+    environment,
+    staticKeyPattern,
+    assumeRoleParams,
   });
-  const internalResourcesUrl = new URL('http://localhost');
-  internalResourcesUrl!.hostname = privateIpAddress;
-  internalResourcesUrl!.port = '8081';
-  const { Body } = await s3
-    .getObject({
-      Bucket: `tl-hrm-vars-${environment}${region === 'us-east-1' ? '' : `-${region}`}`,
-      Key: `${environment}.env`,
-    })
-    .promise();
-  if (!Body) {
-    throw new Error('Failed to load environment variables file from S3');
-  }
-  const authKey = Body.toString().match(staticKeyPattern)?.groups?.key;
-  if (!authKey) {
-    throw new Error(
-      'Found the HRM .env file but failed to find the auth key under a STATIC_KEY_SEARCH_REINDEXER entry',
-    );
-  }
-  console.log(`Found auth key ${authKey}`);
+
   const reindexParameters: SearchReindexParams = {
     accountSid: accountSid as AccountSID,
     resourceIds: resourceIds?.map(rid => rid.toString()),

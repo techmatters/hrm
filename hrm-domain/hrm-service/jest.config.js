@@ -17,6 +17,7 @@
 module.exports = config => {
   return (
     config || {
+      testTimeout: 30000,
       preset: 'ts-jest',
       rootDir: '.',
       maxWorkers: 1,

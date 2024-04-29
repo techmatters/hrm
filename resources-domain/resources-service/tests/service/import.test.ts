@@ -38,7 +38,7 @@ import sqslite from 'sqslite';
 
 // TODO: needs to be converted to aws-sdk-v3
 import { SQS } from 'aws-sdk';
-import { mockSsmParameters } from '../mockSsm';
+import { mockSsmParameters } from '@tech-matters/testing';
 
 const internalServer = getInternalServer();
 const internalRequest = getRequest(internalServer);
@@ -639,7 +639,7 @@ describe('POST /import', () => {
     expect(response.body).toStrictEqual({
       reason: 'missing field',
       fields: ['id'],
-      resource: missingIdResource,
+      resource: JSON.stringify(missingIdResource),
     });
     expect(response.status).toBe(400);
     for (let resourceIdx = 0; resourceIdx < 5; resourceIdx++) {

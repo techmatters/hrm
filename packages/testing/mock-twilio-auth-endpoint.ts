@@ -24,20 +24,22 @@ type TokenValidatorResponse = {
 const twilioIamAnyAccountPattern: RegExp =
   /https:\/\/iam.twilio.com\/v1\/Accounts\/.+\/Tokens\/validate/;
 
+let priority = 0;
+
 export async function mockSuccessfulTwilioAuthentication(
   mockWorkerSid: string = 'WK-worker-sid',
   mockRoles: string[] = [],
   accountSid: string | undefined = undefined,
 ): Promise<void> {
   const server = await mockttpServer();
-  server.reset();
-  await server.forAnyRequest().thenPassThrough();
   await server
     .forPost(
       accountSid
         ? `https://iam.twilio.com/v1/Accounts/${accountSid}/Tokens/validate`
         : twilioIamAnyAccountPattern,
     )
+    .always()
+    .asPriority(++priority) // This is to ensure the latest mock is the one that is used
     .thenJson(200, <TokenValidatorResponse>{
       worker_sid: mockWorkerSid,
       roles: mockRoles,

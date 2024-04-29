@@ -17,9 +17,10 @@
 import { validator as TokenValidator } from 'twilio-flex-token-validator';
 import crypto from 'crypto';
 
-import { twilioUser, TwilioUser } from './twilioUser';
+import { newTwilioUser, TwilioUser } from './twilioUser';
 import { unauthorized } from '@tech-matters/http';
 import type { Request, Response, NextFunction } from 'express';
+import { AccountSID, TwilioUserIdentifier, WorkerSID } from '@tech-matters/types';
 
 declare global {
   namespace Express {
@@ -38,7 +39,13 @@ declare global {
  * IMPORTANT: This kind of static key acces should never be used to retrieve sensitive information.
  */
 const canAccessResourceWithStaticKey = (path: string, method: string): boolean => {
-  return path.endsWith('/postSurveys') && method === 'POST';
+  // If the requests is to create a new post survey record, grant access
+  if (path.endsWith('/postSurveys') && method === 'POST') return true;
+
+  // If the requests is retrieve the list of flags associated to a given identifier, grant access
+  if (/\/profiles\/identifier\/[^/]+\/flags$/.test(path) && method === 'GET') return true;
+
+  return false;
 };
 
 type TokenValidatorResponse = { worker_sid: string; roles: string[] };
@@ -51,18 +58,24 @@ const isGuest = (tokenResult: TokenValidatorResponse) =>
 const defaultTokenLookup = (accountSid: string) =>
   process.env[`TWILIO_AUTH_TOKEN_${accountSid}`] ?? '';
 
+const extractAccountSid = (request: Request): AccountSID => {
+  const [twilioAccountSid] = request.params.accountSid?.split('-') ?? [];
+  return twilioAccountSid as AccountSID;
+};
+
 const authenticateWithStaticKey = (
   req: Request,
-  loginId: string | undefined,
+  keySuffix: string,
+  userId?: TwilioUserIdentifier,
 ): boolean => {
   if (!req.headers) return false;
   const {
     headers: { authorization },
   } = req;
 
-  if (loginId && authorization && authorization.startsWith('Basic')) {
+  if (keySuffix && authorization && authorization.startsWith('Basic')) {
     try {
-      const staticSecretKey = `STATIC_KEY_${loginId}`;
+      const staticSecretKey = `STATIC_KEY_${keySuffix}`;
       const staticSecret = process.env[staticSecretKey];
       const requestSecret = authorization.replace('Basic ', '');
 
@@ -72,7 +85,7 @@ const authenticateWithStaticKey = (
         crypto.timingSafeEqual(Buffer.from(requestSecret), Buffer.from(staticSecret));
 
       if (isStaticSecretValid) {
-        req.user = twilioUser(`account-${loginId}`, []);
+        req.user = newTwilioUser(extractAccountSid(req), userId, []);
         return true;
       }
     } catch (err) {
@@ -83,14 +96,14 @@ const authenticateWithStaticKey = (
 };
 
 export const getAuthorizationMiddleware =
-  (authTokenLookup: (accountSid: string) => string = defaultTokenLookup) =>
+  (authTokenLookup: (accountSid: AccountSID) => string = defaultTokenLookup) =>
   async (req: Request, res: Response, next: NextFunction) => {
     if (!req || !req.headers || !req.headers.authorization) {
       return unauthorized(res);
     }
 
     const { authorization } = req.headers;
-    const { accountSid } = req;
+    const accountSid = extractAccountSid(req);
     if (!accountSid) return unauthorized(res);
 
     if (authorization.startsWith('Bearer')) {
@@ -108,7 +121,11 @@ export const getAuthorizationMiddleware =
         if (!isWorker(tokenResult) || isGuest(tokenResult)) {
           return unauthorized(res);
         }
-        req.user = twilioUser(tokenResult.worker_sid, tokenResult.roles);
+        req.user = newTwilioUser(
+          accountSid,
+          tokenResult.worker_sid as WorkerSID,
+          tokenResult.roles,
+        );
         return next();
       } catch (err) {
         console.error('Token authentication failed: ', err);
@@ -117,7 +134,7 @@ export const getAuthorizationMiddleware =
 
     if (
       canAccessResourceWithStaticKey(req.originalUrl, req.method) &&
-      authenticateWithStaticKey(req, accountSid)
+      authenticateWithStaticKey(req, accountSid, `account-${accountSid}`)
     )
       return next();
 
@@ -129,12 +146,21 @@ export const staticKeyAuthorizationMiddleware = async (
   res: Response,
   next: NextFunction,
 ) => {
-  if (authenticateWithStaticKey(req, req.accountSid)) return next();
+  const accountSid = extractAccountSid(req);
+  if (!accountSid) {
+    throw new Error(
+      'staticKeyAuthorizationMiddleware invoked with invalid request, req.accountSid missing',
+    );
+  }
+
+  if (authenticateWithStaticKey(req, accountSid, `account-${accountSid}`)) return next();
   return unauthorized(res);
 };
 
+// TODO: do we want to differentiate what is actually system vs admin?
+export const systemUser = 'system';
 export const adminAuthorizationMiddleware =
-  (adminLoginId: string) => async (req: Request, res: Response, next: NextFunction) => {
-    if (authenticateWithStaticKey(req, adminLoginId)) return next();
+  (keySuffix: string) => async (req: Request, res: Response, next: NextFunction) => {
+    if (authenticateWithStaticKey(req, keySuffix, systemUser)) return next();
     return unauthorized(res);
   };

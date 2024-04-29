@@ -24,8 +24,8 @@ import { generateSuggestQuery } from './generateSuggestQuery';
 
 export const resourceSearchConfiguration: SearchConfiguration = {
   searchFieldBoosts: {
-    'name.*': 4,
-    'id.*': 4,
+    'name.*': 5,
+    'id.*': 5,
     'high_boost_global.*': 3,
     'low_boost_global.*': 2,
     '*': 1,

@@ -17,24 +17,23 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import supertest from 'supertest';
 
-import { accountSid } from './mocks';
-import { configureService } from '../src/app';
-import { openPermissions } from '../src/permissions/json-permissions';
-import { RulesFile } from '../src/permissions/rulesMap';
+import { configureService } from '@tech-matters/hrm-core/app';
+import { RulesFile } from '@tech-matters/hrm-core/permissions/rulesMap';
 import {
   configureDefaultPostMiddlewares,
   configureDefaultPreMiddlewares,
 } from '@tech-matters/http';
 import express from 'express';
+import { rulesMap } from '../../hrm-core/permissions';
 
-let testRules: RulesFile;
+const testRules: RulesFile = { ...rulesMap.open };
 
 export const useOpenRules = () => {
-  testRules = openPermissions.rules(accountSid);
+  Object.assign(testRules, rulesMap.open);
 };
 
-export const setRules = (rules: RulesFile) => {
-  testRules = rules;
+export const setRules = (rules: Partial<RulesFile>) => {
+  Object.assign(testRules, rules);
 };
 
 export const defaultConfig: {

@@ -16,10 +16,10 @@
 
 import each from 'jest-each';
 import * as mocks from './mocks';
-import './case-validation';
+import './case/caseValidation';
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
-import { db } from '../src/connection-pool';
-import * as csamReportsApi from '../src/csam-report/csam-report';
+import { db } from '@tech-matters/hrm-core/connection-pool';
+import * as csamReportsApi from '@tech-matters/hrm-core/csam-report/csam-report';
 import { headers, getRequest, getServer, useOpenRules } from './server';
 
 useOpenRules();
@@ -216,7 +216,7 @@ describe('/csamReports', () => {
           if (csamReport.twilioWorkerId) {
             expect(reportFromDB.twilioWorkerId).toBe(csamReport.twilioWorkerId);
           } else {
-            expect(reportFromDB.twilioWorkerId).toBe('');
+            expect(reportFromDB.twilioWorkerId).toBe(null);
           }
         });
       });

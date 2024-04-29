@@ -13,10 +13,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
+
+export * from './HrmAccountId';
 export * from './ContactJob';
 export * from './ResourcesImport';
 export * from './Resources';
-export * from './Results';
+export * from './Result';
 export * from './twilio';
+export * from './assertExhaustive';
 
 export type ObjectValues<T> = T[keyof T];
