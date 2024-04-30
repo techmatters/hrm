@@ -91,6 +91,7 @@ export type ProfileWithRelationships = Profile & {
     sectionType: ProfileSection['sectionType'];
     id: ProfileSection['id'];
   }[];
+  hasContacts: boolean;
 };
 
 type IdentifierParams =
