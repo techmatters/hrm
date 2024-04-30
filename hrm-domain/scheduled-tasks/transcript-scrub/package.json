@@ -1,0 +1,7 @@
+{
+  "name": "transcript-scrub",
+  "version": "1.0.0",
+  "description": "A script to read transcript uris from an SQS queue and pass them to a local 3rd party scrubbing service",
+  "dependencies": {
+  }
+}
