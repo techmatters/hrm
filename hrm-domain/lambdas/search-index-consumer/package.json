@@ -1,5 +1,5 @@
 {
-  "name": "@tech-matters/hrm-search-index",
+  "name": "@tech-matters/hrm-search-index-consumer",
   "version": "1.0.0",
   "description": "",
   "main": "dist/index.js",
@@ -18,6 +18,6 @@
   },
   "scripts": {
     "test:integration": "cross-env SQS_ENDPOINT=http://localhost:4566 jest tests/integration",
-    "docker:build": "docker build -t hrm-search-index --build-arg lambda_name=search-index --build-arg lambda_dir=hrm-domain/lambdas -f ../../../lambdas/Dockerfile ../../../"
+    "docker:build": "docker build -t hrm-search-index-consumer --build-arg lambda_name=search-index-consumer --build-arg lambda_dir=hrm-domain/lambdas -f ../../../lambdas/Dockerfile ../../../"
   }
 }

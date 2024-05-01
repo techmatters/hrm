@@ -33,7 +33,7 @@ on:
         options:
           - hrm-domain/lambdas/files-urls
           - hrm-domain/lambdas/contact-retrieve-transcript
-          - hrm-domain/lambdas/search-index
+          - hrm-domain/lambdas/search-index-consumer
           - lambdas/job-complete
           - resources-domain/lambdas/import-consumer
           - resources-domain/lambdas/import-producer
