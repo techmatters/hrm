@@ -13,28 +13,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import {
-  getClient,
-  // BulkOperations,
-  ExecuteBulkResponse,
-} from '@tech-matters/elasticsearch-client';
-
 import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
-
-export const handleErrors = async (
-  indexResp: ExecuteBulkResponse,
-  addDocumentIdToFailures: any,
-) => {
-  await Promise.all(
-    indexResp?.items.map(item => {
-      // 201 for creating a new index document and 200 for updating an existing one
-      if (![200, 201].includes(item.index?.status ?? 0)) {
-        console.error(new Error('Error indexing document'), item.index);
-        addDocumentIdToFailures(item.index!._id!);
-      }
-    }),
-  );
-};
 
 export const handler = async (event: SQSEvent): Promise<SQSBatchResponse> => {
   const response: SQSBatchResponse = { batchItemFailures: [] };
