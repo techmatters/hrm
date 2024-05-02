@@ -82,7 +82,7 @@ const convertToContactDocument = ({
     updatedAt,
     createdBy,
     updatedBy,
-    finalizedAt: Boolean(finalizedAt),
+    finalized: Boolean(finalizedAt),
     helpline,
     channel,
     number,

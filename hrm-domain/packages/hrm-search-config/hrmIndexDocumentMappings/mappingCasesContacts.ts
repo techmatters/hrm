@@ -73,7 +73,7 @@ export const contactMapping = {
   channel: {
     type: 'keyword',
   },
-  finalizedAt: {
+  finalized: {
     type: 'boolean',
   },
   timeOfContact: {

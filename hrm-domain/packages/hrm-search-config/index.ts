@@ -25,10 +25,10 @@ export { HRM_CASES_CONTACTS_INDEX_TYPE } from './hrmIndexDocumentMappings';
 
 export const hrmSearchConfiguration: SearchConfiguration = {
   searchFieldBoosts: {
-    'name.*': 5,
-    'id.*': 5,
-    'high_boost_global.*': 3,
-    'low_boost_global.*': 2,
+    // 'name.*': 5,
+    // 'id.*': 5,
+    // 'high_boost_global.*': 3,
+    // 'low_boost_global.*': 2,
     '*': 1,
     '*.*': 1,
   },
