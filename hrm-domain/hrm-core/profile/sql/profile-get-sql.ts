@@ -59,18 +59,25 @@ export const getProfilesSqlBase = (selectTargetProfilesQuery: string) => `
     FROM TargetProfiles profile
 	  LEFT JOIN "ProfileSections" pps ON pps."profileId" = profile.id AND pps."accountSid" = profile."accountSid"
     GROUP BY pps."profileId"
+  ),
+  
+  HasRelatedContacts AS (
+    SELECT COUNT(*) > 0 as "hasContacts", "profileId" FROM "Contacts" GROUP BY "profileId"
   )
 
   SELECT
     tp.*,
     COALESCE(ri.identifiers, '[]'::jsonb) as identifiers,
     COALESCE(rpf."profileFlags", '[]'::jsonb) as "profileFlags",
-    COALESCE(rps."profileSections", '[]'::jsonb) as "profileSections"
+    COALESCE(rps."profileSections", '[]'::jsonb) as "profileSections",
+    COALESCE(hrc."hasContacts", false) as "hasContacts"
   FROM TargetProfiles tp
   LEFT JOIN "Profiles" profiles ON profiles.id = tp.id AND profiles."accountSid" = tp."accountSid" -- join on profiles so Postgres will use the indexes
   LEFT JOIN RelatedIdentifiers ri ON profiles.id = ri."profileId"
   LEFT JOIN RelatedProfileFlags rpf ON profiles.id = rpf."profileId"
   LEFT JOIN RelatedProfileSections rps ON profiles.id = rps."profileId"
+  -- Remove this hack once we have limited contact view permissions
+  LEFT JOIN HasRelatedContacts hrc ON profiles.id = hrc."profileId"
 `;
 
 export const getProfileByIdSql = getProfilesSqlBase(`

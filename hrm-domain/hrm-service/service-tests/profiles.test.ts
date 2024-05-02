@@ -31,6 +31,7 @@ import {
 } from '@tech-matters/hrm-core/profile/profileService';
 import { newTwilioUser } from '@tech-matters/twilio-worker-auth';
 import { AccountSID } from '@tech-matters/types';
+import { clearAllTables } from './dbCleanup';
 
 useOpenRules();
 const server = getServer();
@@ -69,7 +70,7 @@ describe('/profiles', () => {
     let existingProfiles: any;
     const profilesNames = ['Murray', 'Antonella', null];
     let defaultFlags: profilesDB.ProfileFlag[];
-    beforeAll(async () => {
+    beforeEach(async () => {
       existingProfiles = (await profilesDB.listProfiles(accountSid, {}, {})).profiles;
       createdProfiles = await Promise.all(
         profilesNames.map(name =>
@@ -105,11 +106,7 @@ describe('/profiles', () => {
       ]);
     });
 
-    afterAll(async () => {
-      await Promise.all(
-        createdProfiles.map(p => deleteFromTableById('Profiles')(p.id, p.accountSid)),
-      );
-    });
+    afterEach(async () => clearAllTables());
 
     each([
       {
@@ -131,7 +128,7 @@ describe('/profiles', () => {
       },
       {
         description: 'sort by name desc',
-        expectDescription: 'return all profiles, sorted',
+        expectDescription: 'return all profiles, sorted, hasContacts flag set false',
         query: 'sortBy=name',
         expectStatus: 200,
         expectFunction: response => {
@@ -139,7 +136,9 @@ describe('/profiles', () => {
             existingProfiles.length + createdProfiles.length,
           );
           expect(response.body.profiles[0].name).toBe('Murray');
+          expect(response.body.profiles[0].hasContacts).toBe(false);
           expect(response.body.profiles[1].name).toBe('Antonella');
+          expect(response.body.profiles[1].hasContacts).toBe(false);
           expect(
             response.body.profiles[1].profileSections.some(
               ps => ps.sectionType === 'summary',
@@ -222,7 +221,7 @@ describe('/profiles', () => {
     const accounts: AccountSID[] = [accountSid, 'AC_ANOTHER_ACCOUNT'];
 
     let createdProfiles: { [acc: string]: IdentifierWithProfiles };
-    beforeAll(async () => {
+    beforeEach(async () => {
       // Create same identifier for two diferent accounts
       createdProfiles = (
         await Promise.all(
@@ -241,16 +240,7 @@ describe('/profiles', () => {
         .reduce((accum, curr) => ({ ...accum, [curr.accountSid]: curr }), {});
     });
 
-    afterAll(async () => {
-      await Promise.all(
-        Object.entries(createdProfiles).flatMap(([, idWithp]) => [
-          ...idWithp.profiles.map(p =>
-            deleteFromTableById('Profiles')(p.id, p.accountSid),
-          ),
-          deleteFromTableById('Identifiers')(idWithp.id, idWithp.accountSid),
-        ]),
-      );
-    });
+    afterEach(async () => clearAllTables());
 
     describe('GET', () => {
       test('when identifier not exists, return 404', async () => {
@@ -272,7 +262,7 @@ describe('/profiles', () => {
 
   describe('/profiles/:profileId', () => {
     let createdProfile: IdentifierWithProfiles;
-    beforeAll(async () => {
+    beforeEach(async () => {
       // Create an identifier
       createdProfile = await db.task(async t => {
         const result = await getOrCreateProfileWithIdentifier(t)(
@@ -284,17 +274,24 @@ describe('/profiles', () => {
       });
     });
 
-    afterAll(async () => {
-      await Promise.all([
-        ...createdProfile.profiles.map(p =>
-          deleteFromTableById('Profiles')(p.id, p.accountSid),
-        ),
-        deleteFromTableById('Identifiers')(createdProfile.id, createdProfile.accountSid),
-      ]);
-    });
+    afterEach(async () => clearAllTables());
 
     describe('GET', () => {
       const buildRoute = (id: number) => `${baseRoute}/${id}`;
+      beforeEach(async () =>
+        contactApi.createContact(
+          createdProfile.accountSid,
+          workerSid,
+          {
+            ...contact1,
+            number: identifier,
+            taskId: contact1.taskId + createdProfile.profiles[0].id,
+            profileId: createdProfile.profiles[0].id,
+            identifierId: createdProfile.id,
+          },
+          ALWAYS_CAN,
+        ),
+      );
 
       test('when profile not exists, return 404', async () => {
         const response = await request.get(buildRoute(0)).set(headers);
@@ -308,7 +305,10 @@ describe('/profiles', () => {
           .set(headers);
 
         expect(response.statusCode).toBe(200);
-        expect(response.body).toMatchObject(createdProfile.profiles[0]);
+        expect(response.body).toMatchObject({
+          ...createdProfile.profiles[0],
+          hasContacts: true,
+        });
       });
     });
 
@@ -320,7 +320,7 @@ describe('/profiles', () => {
 
       let createdCases: caseApi.CaseService[];
       let createdContacts: Awaited<ReturnType<typeof contactApi.createContact>>[];
-      beforeAll(async () => {
+      beforeEach(async () => {
         // Create two cases
         createdCases = await Promise.all(
           [1, 2].map(() => caseApi.createCase(case1, accountSid, workerSid)),
@@ -361,22 +361,6 @@ describe('/profiles', () => {
 
         createdCases = await Promise.all(
           createdCases.map(c => caseApi.getCase(c.id, c.accountSid, ALWAYS_CAN)) as any,
-        );
-      });
-
-      afterAll(async () => {
-        await Promise.all(
-          Object.entries(createdContacts).flatMap(([, c]) => [
-            db.task(t =>
-              t.none(`DELETE FROM "ContactJobs"  WHERE "contactId" = ${c.id}`),
-            ),
-            deleteFromTableById('Contacts')(c.id, c.accountSid),
-          ]),
-        );
-        await Promise.all(
-          Object.entries(createdCases).map(([, c]) =>
-            deleteFromTableById('Cases')(c.id, c.accountSid),
-          ),
         );
       });
 
@@ -458,15 +442,6 @@ describe('/profiles', () => {
         });
 
         describe('POST', () => {
-          afterEach(async () => {
-            // Dissasociate
-            db.task(t =>
-              t.none(
-                `DELETE FROM "ProfilesToProfileFlags" WHERE "profileId" = ${createdProfile.profiles[0].id}`,
-              ),
-            );
-          });
-
           each([
             {
               description: 'auth is missing',
@@ -559,7 +534,7 @@ describe('/profiles', () => {
         });
 
         describe('DELETE', () => {
-          beforeAll(async () => {
+          beforeEach(async () => {
             await profilesDB.associateProfileToProfileFlag()(
               accountSid,
               createdProfile.profiles[0].id,
@@ -574,15 +549,6 @@ describe('/profiles', () => {
             if (!pfs.some(a => a.id === defaultFlags[0].id)) {
               throw new Error('Missing expected association');
             }
-          });
-
-          afterAll(async () => {
-            // Dissasociate
-            await db.task(t =>
-              t.none(
-                `DELETE FROM "ProfilesToProfileFlags" WHERE "profileId" = ${createdProfile.profiles[0].id}`,
-              ),
-            );
           });
 
           each([
@@ -707,7 +673,7 @@ describe('/profiles', () => {
       describe('/profiles/:profileId/sections/:id', () => {
         let createdProfileSection: profilesDB.ProfileSection;
 
-        beforeAll(async () => {
+        beforeEach(async () => {
           createdProfileSection = await profilesDB.createProfileSection()(accountSid, {
             sectionType: 'note',
             content: 'a note',
