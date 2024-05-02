@@ -14,10 +14,29 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import type { IndicesCreateRequest } from '@elastic/elasticsearch/lib/api/types';
-import { CreateIndexConvertedDocument } from './index';
+import { IndexPayload, convertToIndexDocument } from './convertToIndexDocument';
+import { getCreateIndexParams } from './getCreateIndexParams';
+import type {
+  IndexConfiguration,
+  SearchConfiguration,
+} from '@tech-matters/elasticsearch-client';
 
-export type IndexConfiguration<T = any, TDoc = unknown> = {
-  getCreateIndexParams: (indexName: string) => IndicesCreateRequest;
-  convertToIndexDocument: (sourceEntity: T) => CreateIndexConvertedDocument<TDoc>;
+export { HRM_CASES_CONTACTS_INDEX_TYPE } from './hrmIndexDocumentMappings';
+
+export const hrmSearchConfiguration: SearchConfiguration = {
+  searchFieldBoosts: {
+    // 'name.*': 5,
+    // 'id.*': 5,
+    // 'high_boost_global.*': 3,
+    // 'low_boost_global.*': 2,
+    '*': 1,
+    '*.*': 1,
+  },
+  filterMappings: {},
+  // generateSuggestQuery,
+};
+
+export const hrmIndexConfiguration: IndexConfiguration<IndexPayload> = {
+  convertToIndexDocument,
+  getCreateIndexParams,
 };

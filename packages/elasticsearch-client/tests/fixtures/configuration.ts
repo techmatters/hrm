@@ -129,7 +129,11 @@ export const resourceSearchConfiguration: SearchConfiguration = {
 };
 
 export const resourceIndexConfiguration: IndexConfiguration<FlatResource> = {
-  convertToIndexDocument: (resource: FlatResource): CreateIndexConvertedDocument => {
+  convertToIndexDocument: (
+    resource: FlatResource,
+  ): CreateIndexConvertedDocument<{
+    [key: string]: string | string[] | number | boolean;
+  }> => {
     const { mappingFields } = resourceIndexDocumentMappings;
     const mappedFields: { [key: string]: string | string[] | number | boolean } = {};
     const highBoostGlobal: string[] = [];
