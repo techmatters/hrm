@@ -3,12 +3,17 @@
   "version": "1.0.0",
   "description": "A script to read transcript uris from an SQS queue and pass them to a local 3rd party scrubbing service",
   "dependencies": {
+    "@tech-matters/process": "^1.0.0",
+    "@tech-matters/s3-client": "^1.0.0",
+    "@tech-matters/sqs-client": "^1.0.0",
+    "@tech-matters/types": "^1.0.0"
   },
   "devDependencies": {
     "@tsconfig/node16": "^1.0.3",
     "undici": "^5.28.3"
   },
   "scripts": {
-    "docker:build": "docker pull crprivateaiprod.azurecr.io/deid:cpu-text && docker build -t transcript-scrubber -f ./Dockerfile ../../../"
+    "docker:build": "docker pull crprivateaiprod.azurecr.io/deid:cpu-text && docker build -t transcript-scrubber -f ./Dockerfile ../../../",
+    "start": "node ./dist/index.js"
   }
 }

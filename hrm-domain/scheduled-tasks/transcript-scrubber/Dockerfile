@@ -26,7 +26,9 @@ COPY packages /tmp/build/packages
 COPY ${task_dir} /tmp/build/${task_dir}
 COPY ${task_dir}/../tsconfig.json /tmp/build/${task_dir}/../tsconfig.json
 COPY ${task_dir}/../../tsconfig.json /tmp/build/${task_dir}/../../tsconfig.json
+
 COPY package.json package-lock.json tsconfig.json tsconfig.base.json ${task_dir}/tsconfig.build.json /tmp/build/
+
 
 RUN  cd /tmp/build \
     && npm ci -w ${task_dir} -w packages/* --verbose \
@@ -36,6 +38,7 @@ RUN  cd /tmp/build \
     && cp -r packages /var/task/ \
     && cp -r node_modules /var/task/
 COPY ${task_dir}/entrypoint.sh /var/task/entrypoint.sh
+COPY ${task_dir}/licence /app/license
 
 # Ignore errors if node_modules is not present
 RUN rsync -a ${task_dir}/node_modules/ /var/task/node_modules; exit 0
@@ -54,8 +57,9 @@ ENV PATH="/root/.nvm/versions/node/v${NODE_VERSION}/bin/:${PATH}"
 RUN node --version
 RUN npm --version
 COPY --from=build /var/task /var/task
+COPY --from=build /app/license /app/license
 
 
 WORKDIR /var/task
 
-ENTRYPOINT ["/var/task/entrypoint.sh"]
+ENTRYPOINT ["/usr/bin/sh","/var/task/entrypoint.sh"]

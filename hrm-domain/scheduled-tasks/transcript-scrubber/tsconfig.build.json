@@ -3,6 +3,9 @@
   "extends": "./tsconfig.base.json",
   "files": [],
   "references": [
+    { "path": "packages/types" },
+    { "path": "packages/s3-client" },
+    { "path": "packages/sqs-client" },
     { "path": "packages/process" },
     { "path": "hrm-domain/scheduled-tasks/transcript-scrubber" }
   ]
