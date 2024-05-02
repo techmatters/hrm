@@ -24,10 +24,9 @@
  */
 
 import { assertExhaustive } from '@tech-matters/types';
+// Importing this types like this is a workaround to avoid having hrm-core as a dep, since it will introduce circular deps that can't be resolved.
 import type { Contact } from '../../hrm-core/contact/contactService';
 import type { CaseService } from '../../hrm-core/case/caseService';
-// import type { Contact } from '@tech-matters/hrm-core/contact/contactService';
-// import type { CaseService } from '@tech-matters/hrm-core/case/caseService';
 import type {
   ContactDocument,
   CaseDocument,
@@ -38,7 +37,7 @@ import { CreateIndexConvertedDocument } from '@tech-matters/elasticsearch-client
 type IndexPayloadContact = {
   type: 'contact';
   contact: Contact;
-  transcript?: string;
+  transcript: NonNullable<string>;
 };
 
 type IndexPayloadCase = {

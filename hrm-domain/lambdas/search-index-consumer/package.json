@@ -1,0 +1,24 @@
+{
+  "name": "@tech-matters/hrm-search-index-consumer",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "author": "",
+  "license": "AGPL",
+  "dependencies": {
+    "@tech-matters/elasticsearch-client": "^1.0.0",
+    "@tech-matters/hrm-search-config": "^1.0.0",
+    "@tech-matters/job-errors": "^1.0.0",
+    "@tech-matters/sqs-client": "^1.0.0",
+    "@tech-matters/ssm-cache": "^1.0.0",
+    "@tech-matters/types": "^1.0.0"
+  },
+  "devDependencies": {
+    "@tsconfig/node16": "^1.0.3",
+    "@types/aws-lambda": "^8.10.108"
+  },
+  "scripts": {
+    "test:integration": "cross-env SQS_ENDPOINT=http://localhost:4566 jest tests/integration",
+    "docker:build": "docker build -t hrm-search-index-consumer --build-arg lambda_name=search-index-consumer --build-arg lambda_dir=hrm-domain/lambdas -f ../../../lambdas/Dockerfile ../../../"
+  }
+}
