@@ -15,6 +15,7 @@
  */
 
 import { actionsMaps, publicEndpoint, SafeRouter } from '../permissions';
+import { isErr, mapHTTPError } from '@tech-matters/types';
 import createError from 'http-errors';
 import {
   addConversationMediaToContact,
@@ -24,6 +25,7 @@ import {
   getContactByTaskId,
   patchContact,
   searchContacts,
+  searchContactsByIdCtx,
 } from './contactService';
 import type { NextFunction, Request, Response } from 'express';
 import {
@@ -113,6 +115,7 @@ contactsRouter.delete(
   },
 );
 
+// Legacy Search endpoint
 contactsRouter.post('/search', publicEndpoint, async (req, res) => {
   const { hrmAccountId } = req;
 
@@ -123,6 +126,35 @@ contactsRouter.post('/search', publicEndpoint, async (req, res) => {
   });
   res.json(searchResults);
 });
+
+// Endpoint used for generalized search with ElasticSearch
+contactsRouter.post(
+  '/searchV2',
+  publicEndpoint,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { hrmAccountId, params, can, user, permissions, query } = req;
+
+      console.log('params', params);
+      // mocked ES client results with an array of Ids for testing - currently not implemented
+      const elasticSearchClient = async () => [26451, 26450, 1];
+      const esContactIdsResult = await elasticSearchClient();
+
+      const contactsResponse = await searchContactsByIdCtx(
+        hrmAccountId,
+        esContactIdsResult,
+        query,
+        { can, user, permissions },
+      );
+      res.json(contactsResponse);
+      if (isErr(contactsResponse)) {
+        return next(mapHTTPError(contactsResponse, { InternalServerError: 500 }));
+      }
+    } catch (err) {
+      return next(createError(500, err.message));
+    }
+  },
+);
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const validatePatchPayload = ({ body }: Request, res: Response, next: NextFunction) => {

@@ -137,4 +137,22 @@ export const selectContactsByProfileId = (
     AND contacts."profileId" = $<profileId>
     AND ($<helpline> IS NULL OR contacts."helpline" = $<helpline>)
     AND ($<counselor> IS NULL OR contacts."twilioWorkerId" = $<counselor>)
-`);
+  `);
+
+export const getContactsByIds = (
+  viewPermissions: TKConditionsSets<'contact'>,
+  userIsSupervisor: boolean,
+) => {
+  const result = selectSearchContactBaseQuery(`
+    WHERE contacts."accountSid" = $<accountSid>
+    AND ${listContactsPermissionWhereClause(
+      viewPermissions as ContactListCondition[][],
+      userIsSupervisor,
+    )}
+    AND contacts."id" = ANY($<contactIds>::INTEGER[])
+    `);
+
+  console.log(result);
+
+  return result;
+};

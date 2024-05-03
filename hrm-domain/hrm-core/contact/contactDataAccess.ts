@@ -15,7 +15,11 @@
  */
 
 import { db } from '../connection-pool';
-import { selectContactSearch, selectContactsByProfileId } from './sql/contactSearchSql';
+import {
+  selectContactSearch,
+  selectContactsByProfileId,
+  getContactsByIds,
+} from './sql/contactSearchSql';
 import { UPDATE_CASEID_BY_ID, UPDATE_CONTACT_BY_ID } from './sql/contact-update-sql';
 import { parseISO } from 'date-fns';
 import {
@@ -306,6 +310,10 @@ const generalizedSearchQueryFunction = <T>(
           sqlQueryGenerator(viewPermissions, user.isSupervisor),
           sqlQueryParamsBuilder(accountSid, user, searchParameters, limit, offset),
         );
+      console.log('>>> data access', '3. generalizedSearchQueryFunction', {
+        searchParameters,
+        viewPermissions,
+      });
       return {
         rows: searchResults,
         count: searchResults.length ? searchResults[0].totalCount : 0,
@@ -321,13 +329,38 @@ export const searchByProfileId: SearchQueryFunction<
   Pick<OptionalSearchQueryParams, 'counselor' | 'helpline'> & { profileId: number }
 > = generalizedSearchQueryFunction(
   selectContactsByProfileId,
-  (accountSid, { workerSid }, searchParameters, limit, offset) => ({
-    accountSid,
-    twilioWorkerSid: workerSid,
-    limit,
-    offset,
-    counselor: searchParameters.counselor,
-    helpline: searchParameters.helpline,
-    profileId: searchParameters.profileId,
-  }),
+  (accountSid, { workerSid }, searchParameters, limit, offset) => {
+    return {
+      accountSid,
+      twilioWorkerSid: workerSid,
+      limit,
+      offset,
+      counselor: searchParameters.counselor,
+      helpline: searchParameters.helpline,
+      profileId: searchParameters.profileId,
+    };
+  },
+);
+
+export const searchByIds: SearchQueryFunction<
+  Pick<OptionalSearchQueryParams, 'counselor' | 'dateTo' | 'dateFrom'> & {
+    contactIds: Contact['id'][];
+  }
+> = generalizedSearchQueryFunction(
+  getContactsByIds,
+  (accountSid, { workerSid }, searchParameters, limit, offset) => {
+    console.log('>>> data access: 2. searchContactsByIds', {
+      searchParameters,
+    });
+    return {
+      accountSid,
+      twilioWorkerSid: workerSid,
+      limit,
+      offset,
+      // counselor: searchParameters.counselor,
+      // dateTo: searchParameters.dateTo,
+      // dateFrom: searchParameters.dateFrom,
+      contactIds: searchParameters.contactIds,
+    };
+  },
 );
