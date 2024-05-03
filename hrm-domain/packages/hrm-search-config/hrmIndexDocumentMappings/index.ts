@@ -56,5 +56,3 @@ export type CaseDocument = MappingToDocument<typeof caseMapping> &
   }>;
 
 export type CasesContactsDocument = ContactDocument | CaseDocument;
-
-export const HRM_CASES_CONTACTS_INDEX_TYPE = 'hrm-cases-contacts';

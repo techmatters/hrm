@@ -14,14 +14,4 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-export * from './HrmAccountId';
-export * from './ContactJob';
-export * from './HrmJobs';
-export * from './HrmConstants';
-export * from './ResourcesImport';
-export * from './Resources';
-export * from './Result';
-export * from './twilio';
-export * from './assertExhaustive';
-
-export type ObjectValues<T> = T[keyof T];
+export const HRM_CASES_CONTACTS_INDEX_TYPE = 'hrm-cases-contacts';

@@ -36,6 +36,9 @@ import type {
 } from './hrmIndexDocumentMappings';
 import { CreateIndexConvertedDocument } from '@tech-matters/elasticsearch-client';
 
+// eslint-disable-next-line import/no-extraneous-dependencies
+// export type { IndexMessage } from '@tech-matters/hrm-core/jobs/clientSqs';
+
 type IndexContactPayload = IndexContactMessage & { transcript: NonNullable<string> };
 type IndexCasePayload = IndexCaseMessage;
 

@@ -14,6 +14,45 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
+// import { HrmIndexProcessorError } from '@tech-matters/job-errors';
+// import {
+//   getClient,
+//   BulkOperations,
+//   ExecuteBulkResponse,
+// } from '@tech-matters/elasticsearch-client';
+// import { HRM_CASES_CONTACTS_INDEX_TYPE } from '@tech-matters/types';
+// import { IndexPayload } from '@tech-matters/hrm-search-config';
+// // import { IndexPayload, IndexMessage } from '@tech-matters/hrm-search-config';
+
+// type DocumentsByAccountSid = Record<string, BulkOperations<IndexPayload>>;
+
+// export const convertDocumentsToBulkRequest = (messages: any[]) =>
+//   messages.reduce((acc, message) => {
+//     const { accountSid, document } = message;
+//     if (!acc[accountSid]) {
+//       acc[accountSid] = [];
+//     }
+//     if (document.deletedAt) {
+//       console.debug('Delete Document for resource ID:', document.id);
+//       acc[accountSid].push({
+//         action: 'delete',
+//         id: document.id,
+//       });
+//     } else {
+//       console.debug(
+//         'Index Document for resource ID:',
+//         document.id,
+//         'Converted document:',
+//         document,
+//       );
+//       acc[accountSid].push({
+//         action: 'index',
+//         id: document.id,
+//         document,
+//       });
+//     }
+//     return acc;
+//   }, {} as DocumentsByAccountSid);
 
 export const handler = async (event: SQSEvent): Promise<SQSBatchResponse> => {
   const response: SQSBatchResponse = { batchItemFailures: [] };

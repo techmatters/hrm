@@ -24,11 +24,9 @@
  */
 
 import type { IndicesCreateRequest } from '@elastic/elasticsearch/lib/api/types';
+import { HRM_CASES_CONTACTS_INDEX_TYPE } from '@tech-matters/types';
 
-import {
-  mappingCasesContacts,
-  HRM_CASES_CONTACTS_INDEX_TYPE,
-} from './hrmIndexDocumentMappings';
+import { mappingCasesContacts } from './hrmIndexDocumentMappings';
 
 const getCreateHrmCasesContactsIndexParams = (index: string): IndicesCreateRequest => {
   return {
