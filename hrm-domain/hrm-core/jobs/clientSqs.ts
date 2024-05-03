@@ -14,13 +14,22 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-export * from './HrmAccountId';
-export * from './ContactJob';
-export * from './HrmJobs';
-export * from './ResourcesImport';
-export * from './Resources';
-export * from './Result';
-export * from './twilio';
-export * from './assertExhaustive';
+// import { HrmJobType } from '@tech-matters/types';
+// import {  } from '@tech-matters/sqs-client'
 
-export type ObjectValues<T> = T[keyof T];
+import { CaseService } from '../case/caseService';
+import { Contact } from '../contact/contactService';
+
+export type IndexContactMessage = {
+  type: 'contact';
+  contact: Contact;
+};
+
+export type IndexCaseMessage = {
+  type: 'case';
+  case: Omit<CaseService, 'sections'> & {
+    sections: NonNullable<CaseService['sections']>;
+  };
+};
+
+export type IndexMessage = IndexContactMessage | IndexCaseMessage;

@@ -11,6 +11,7 @@
   },
   "devDependencies": {
     "@elastic/elasticsearch": "^8.13.1",
+    "@tech-matters/hrm-core": "^1.0.0",
     "@tsconfig/node16": "^1.0.3"
   },
   "scripts": {}

@@ -35,6 +35,13 @@ export class ResourceIndexProcessorError extends Error {
   }
 }
 
+export class HrmIndexProcessorError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'HrmIndexProcessorError';
+  }
+}
+
 export class CompletedJobProcessorError extends Error {
   constructor(message: string) {
     super(message);
