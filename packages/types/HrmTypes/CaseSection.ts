@@ -13,16 +13,20 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { CaseSectionRecord, CaseSection } from '@tech-matters/types/HrmTypes';
 
-export { CaseSectionRecord, CaseSection };
+import { HrmAccountId } from '..';
 
-export type CaseSectionUpdate = Omit<
-  CaseSection,
-  'sectionId' | 'createdBy' | 'createdAt' | 'eventTimestamp' | 'sectionType'
-> & {
-  eventTimestamp?: string;
+export type CaseSectionRecord = {
+  caseId: number;
+  sectionType: string;
+  sectionId: string;
+  sectionTypeSpecificData: Record<string, any>;
+  accountSid: HrmAccountId;
+  createdAt: string;
+  createdBy: string;
+  updatedAt?: string;
+  updatedBy?: string;
+  eventTimestamp: string;
 };
-export type NewCaseSection = Omit<CaseSectionUpdate, 'updatedAt' | 'updatedBy'> & {
-  sectionId?: string;
-};
+
+export type CaseSection = Omit<CaseSectionRecord, 'accountSid' | 'caseId'>;

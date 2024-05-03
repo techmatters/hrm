@@ -14,6 +14,8 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
+import { Referral } from '@tech-matters/types/HrmTypes';
+
 import { insertReferralSql } from './sql/referral-insert-sql';
 import {
   DatabaseForeignKeyViolationError,
@@ -49,12 +51,7 @@ export class OrphanedReferralError extends Error {
   }
 }
 
-export type Referral = {
-  contactId: string;
-  resourceId: string;
-  referredAt: string;
-  resourceName?: string;
-};
+export { Referral };
 
 export const createReferralRecord =
   (task?) =>

@@ -13,27 +13,5 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { Referral } from '../referral/referral-data-access';
 
-/**
- * This and contained types are copied from Flex
- */
-export type ContactRawJson = {
-  definitionVersion?: string;
-  callType: string;
-  childInformation: {
-    [key: string]: string | boolean;
-  };
-  callerInformation?: {
-    [key: string]: string | boolean;
-  };
-  categories: Record<string, string[]>;
-  caseInformation: {
-    [key: string]: string | boolean;
-  };
-  contactlessTask?: { [key: string]: string | boolean };
-  referrals?: Referral[];
-};
-
-// Represents a referral when part of a contact structure, so no contact ID
-export type ReferralWithoutContactId = Omit<Referral, 'contactId'>;
+export { ContactRawJson, ReferralWithoutContactId } from '@tech-matters/types/HrmTypes';
