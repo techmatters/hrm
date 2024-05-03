@@ -34,25 +34,27 @@ import type {
 } from './hrmIndexDocumentMappings';
 import { CreateIndexConvertedDocument } from '@tech-matters/elasticsearch-client';
 
-type IndexPayloadContact = {
+type IndexContactMessage = {
   type: 'contact';
   contact: Contact;
-  transcript: NonNullable<string>;
 };
 
-type IndexPayloadCase = {
+type IndexCaseMessage = {
   type: 'case';
   case: Omit<CaseService, 'sections'> & {
     sections: NonNullable<CaseService['sections']>;
   };
 };
 
-export type IndexPayload = IndexPayloadContact | IndexPayloadCase;
+type IndexContactPayload = IndexContactMessage & { transcript: NonNullable<string> };
+type IndexCasePayload = IndexCaseMessage;
+
+export type IndexPayload = IndexContactPayload | IndexCasePayload;
 
 const convertToContactDocument = ({
   contact,
   transcript,
-}: IndexPayloadContact): CreateIndexConvertedDocument<ContactDocument> => {
+}: IndexContactPayload): CreateIndexConvertedDocument<ContactDocument> => {
   const {
     accountSid,
     id,
@@ -97,7 +99,7 @@ const convertToContactDocument = ({
 
 const convertToCaseDocument = ({
   case: caseObj,
-}: IndexPayloadCase): CreateIndexConvertedDocument<CaseDocument> => {
+}: IndexCasePayload): CreateIndexConvertedDocument<CaseDocument> => {
   const {
     accountSid,
     id,
