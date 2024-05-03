@@ -1,0 +1,17 @@
+{
+  "name": "@tech-matters/hrm-search-config",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "author": "",
+  "license": "AGPL",
+  "dependencies": {
+    "@tech-matters/elasticsearch-client": "^1.0.0",
+    "@tech-matters/types": "^1.0.0"
+  },
+  "devDependencies": {
+    "@elastic/elasticsearch": "^8.13.1",
+    "@tsconfig/node16": "^1.0.3"
+  },
+  "scripts": {}
+}

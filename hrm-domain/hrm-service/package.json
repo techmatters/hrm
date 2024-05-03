@@ -53,8 +53,8 @@
     "@tech-matters/http": "^1.0.0",
     "@tech-matters/profile-flags-cleanup": "^1.0.0",
     "@tech-matters/resources-service": "^1.0.0",
-    "@tech-matters/twilio-worker-auth": "^1.0.0",
     "@tech-matters/service-discovery": "^1.0.0",
+    "@tech-matters/twilio-worker-auth": "^1.0.0",
     "@types/debug": "^4.1.8",
     "@types/express": "^4.17.13",
     "dotenv": "^16.3.1"
