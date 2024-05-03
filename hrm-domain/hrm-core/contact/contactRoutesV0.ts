@@ -135,7 +135,7 @@ contactsRouter.post(
     try {
       const { hrmAccountId, params, can, user, permissions, query } = req;
 
-      console.log('params', params);
+      console.log('params', params); //params will have filters - counsellor, dateFrom, dateTo which will be applied by the ES client
       // mocked ES client results with an array of Ids for testing - currently not implemented
       const elasticSearchClient = async () => [26451, 26450, 1];
       const esContactIdsResult = await elasticSearchClient();

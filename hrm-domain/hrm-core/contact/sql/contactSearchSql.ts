@@ -143,16 +143,12 @@ export const getContactsByIds = (
   viewPermissions: TKConditionsSets<'contact'>,
   userIsSupervisor: boolean,
 ) => {
-  const result = selectSearchContactBaseQuery(`
+  selectSearchContactBaseQuery(`
     WHERE contacts."accountSid" = $<accountSid>
     AND ${listContactsPermissionWhereClause(
       viewPermissions as ContactListCondition[][],
       userIsSupervisor,
     )}
     AND contacts."id" = ANY($<contactIds>::INTEGER[])
-    `);
-
-  console.log(result);
-
-  return result;
+  `);
 };

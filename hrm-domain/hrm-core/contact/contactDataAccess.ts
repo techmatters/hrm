@@ -343,24 +343,17 @@ export const searchByProfileId: SearchQueryFunction<
 );
 
 export const searchByIds: SearchQueryFunction<
-  Pick<OptionalSearchQueryParams, 'counselor' | 'dateTo' | 'dateFrom'> & {
+  Pick<OptionalSearchQueryParams, 'counselor'> & {
     contactIds: Contact['id'][];
   }
 > = generalizedSearchQueryFunction(
   getContactsByIds,
-  (accountSid, { workerSid }, searchParameters, limit, offset) => {
-    console.log('>>> data access: 2. searchContactsByIds', {
-      searchParameters,
-    });
-    return {
-      accountSid,
-      twilioWorkerSid: workerSid,
-      limit,
-      offset,
-      // counselor: searchParameters.counselor,
-      // dateTo: searchParameters.dateTo,
-      // dateFrom: searchParameters.dateFrom,
-      contactIds: searchParameters.contactIds,
-    };
-  },
+  (accountSid, { workerSid }, searchParameters, limit, offset) => ({
+    accountSid,
+    twilioWorkerSid: workerSid,
+    limit,
+    offset,
+    counselor: searchParameters.counselor,
+    contactIds: searchParameters.contactIds,
+  }),
 );

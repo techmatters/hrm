@@ -443,13 +443,6 @@ export const searchContactsByIdCtx = async (
 > => {
   try {
     const contacts = await searchContactsByIds(accountSid, { contactIds }, query, ctx);
-
-    console.log('>>> service layer', '6. searchContactsByIdCtx', {
-      accountSid,
-      contactIds,
-      query,
-      contacts,
-    });
     return newOk({ data: contacts });
   } catch (err) {
     return newErr({
