@@ -128,7 +128,7 @@ contactsRouter.post('/search', publicEndpoint, async (req, res) => {
 });
 
 // Endpoint used for generalized search with ElasticSearch
-contactsRouter.get(
+contactsRouter.post(
   '/searchV2',
   publicEndpoint,
   async (req: Request, res: Response, next: NextFunction) => {
