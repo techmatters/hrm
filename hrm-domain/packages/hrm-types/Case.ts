@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { HrmAccountId, TwilioUserIdentifier, WorkerSID } from '..';
+import { HrmAccountId, TwilioUserIdentifier, WorkerSID } from '@tech-matters/types';
 import { CaseSectionRecord } from './CaseSection';
 import { Contact } from './Contact';
 

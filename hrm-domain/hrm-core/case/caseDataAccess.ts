@@ -33,7 +33,7 @@ import { TwilioUserIdentifier } from '@tech-matters/types';
 import {
   PrecalculatedCasePermissionConditions,
   CaseRecordCommon,
-} from '@tech-matters/types/HrmTypes';
+} from '@tech-matters/hrm-types';
 import { CaseSectionRecord } from './caseSection/types';
 import { pick } from 'lodash';
 import { HrmAccountId } from '@tech-matters/types';

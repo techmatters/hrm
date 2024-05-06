@@ -44,7 +44,7 @@ import {
   WELL_KNOWN_CASE_SECTION_NAMES,
   CaseService,
   CaseInfoSection,
-} from '@tech-matters/types/HrmTypes';
+} from '@tech-matters/hrm-types';
 import { RulesFile, TKConditionsSets } from '../permissions/rulesMap';
 import { CaseSectionRecord } from './caseSection/types';
 import { pick } from 'lodash';

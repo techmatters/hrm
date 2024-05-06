@@ -14,4 +14,4 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-export { ContactRawJson, ReferralWithoutContactId } from '@tech-matters/types/HrmTypes';
+export { ContactRawJson, ReferralWithoutContactId } from '@tech-matters/hrm-types';

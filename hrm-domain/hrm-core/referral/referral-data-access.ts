@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { Referral } from '@tech-matters/types/HrmTypes';
+import { Referral } from '@tech-matters/hrm-types';
 
 import { insertReferralSql } from './sql/referral-insert-sql';
 import {

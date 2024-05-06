@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { HrmAccountId } from '../HrmAccountId';
+import { HrmAccountId } from '@tech-matters/types';
 
 type ConversationMediaCommons = {
   id: number;

@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { CaseSectionRecord, CaseSection } from '@tech-matters/types/HrmTypes';
+import { CaseSectionRecord, CaseSection } from '@tech-matters/hrm-types';
 
 export { CaseSectionRecord, CaseSection };
 

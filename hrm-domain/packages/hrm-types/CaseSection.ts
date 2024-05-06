@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { HrmAccountId } from '..';
+import { HrmAccountId } from '@tech-matters/types';
 
 export type CaseSectionRecord = {
   caseId: number;

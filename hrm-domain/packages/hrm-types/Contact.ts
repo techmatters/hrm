@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { HrmAccountId, TwilioUserIdentifier, WorkerSID } from '..';
+import { HrmAccountId, TwilioUserIdentifier, WorkerSID } from '@tech-matters/types';
 import { ConversationMedia } from './ConversationMedia';
 import { Referral } from './Referral';
 

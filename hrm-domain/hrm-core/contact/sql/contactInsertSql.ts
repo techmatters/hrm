@@ -15,7 +15,7 @@
  */
 
 import { selectSingleContactByTaskId } from './contact-get-sql';
-import { NewContactRecord } from '@tech-matters/types/HrmTypes';
+import { NewContactRecord } from '@tech-matters/hrm-types';
 
 export { NewContactRecord };
 

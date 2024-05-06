@@ -44,7 +44,7 @@ import {
   isS3StoredTranscriptPending,
   isS3StoredRecording,
   isS3StoredConversationMedia,
-} from '@tech-matters/types/HrmTypes';
+} from '@tech-matters/hrm-types';
 
 export {
   S3ContactMediaType,

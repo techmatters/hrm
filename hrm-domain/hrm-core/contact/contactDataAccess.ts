@@ -31,7 +31,7 @@ import { TKConditionsSets } from '../permissions/rulesMap';
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { TwilioUserIdentifier, HrmAccountId } from '@tech-matters/types';
 
-import { ExistingContactRecord, Contact } from '@tech-matters/types/HrmTypes';
+import { ExistingContactRecord, Contact } from '@tech-matters/hrm-types';
 
 export { ExistingContactRecord, Contact };
 
