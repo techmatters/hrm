@@ -23,7 +23,7 @@
  * see: https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-query-string-query.html
  */
 
-import { assertExhaustive } from '@tech-matters/types';
+import { assertExhaustive, AccountSID } from '@tech-matters/types';
 import type { CaseService, Contact } from '@tech-matters/hrm-types';
 import type {
   ContactDocument,
@@ -32,27 +32,54 @@ import type {
 } from './hrmIndexDocumentMappings';
 import { CreateIndexConvertedDocument } from '@tech-matters/elasticsearch-client';
 
-export type IndexContactMessage = {
+type IndexContactMessage = {
   type: 'contact';
   contact: Contact;
 };
 
-export type IndexCaseMessage = {
+type IndexCaseMessage = {
   type: 'case';
   case: Omit<CaseService, 'sections'> & {
     sections: NonNullable<CaseService['sections']>;
   };
 };
 
-export type IndexPayloadContact = IndexContactMessage & {
+export type IndexMessage = { accountSid: AccountSID } & (
+  | IndexContactMessage
+  | IndexCaseMessage
+);
+
+const getContactDocumentId = ({ contact, type }: IndexContactMessage) =>
+  `${type}_${contact.id}`;
+
+const getCaseDocumentId = ({ case: caseObj, type }: IndexCaseMessage) =>
+  `${type}_${caseObj.id}`;
+
+export const getDocumentId = (m: IndexMessage) => {
+  const { type } = m;
+  switch (type) {
+    case 'contact': {
+      return getContactDocumentId(m);
+    }
+    case 'case': {
+      return getCaseDocumentId(m);
+    }
+    default: {
+      return assertExhaustive(type);
+    }
+  }
+};
+
+type IndexPayloadContact = IndexContactMessage & {
   transcript: NonNullable<string>;
 };
 
-export type IndexPayloadCase = IndexCaseMessage;
+type IndexPayloadCase = IndexCaseMessage;
 
 export type IndexPayload = IndexPayloadContact | IndexPayloadCase;
 
 const convertToContactDocument = ({
+  type,
   contact,
   transcript,
 }: IndexPayloadContact): CreateIndexConvertedDocument<ContactDocument> => {
@@ -72,8 +99,7 @@ const convertToContactDocument = ({
     twilioWorkerId,
     rawJson,
   } = contact;
-  const type = 'contact' as const;
-  const compundId = `${type}_${id}`;
+  const compundId = getContactDocumentId({ type, contact });
 
   return {
     type,
@@ -99,6 +125,7 @@ const convertToContactDocument = ({
 };
 
 const convertToCaseDocument = ({
+  type,
   case: caseObj,
 }: IndexPayloadCase): CreateIndexConvertedDocument<CaseDocument> => {
   const {
@@ -117,8 +144,7 @@ const convertToCaseDocument = ({
     sections,
     info,
   } = caseObj;
-  const type = 'case' as const;
-  const compundId = `${type}_${id}`;
+  const compundId = getCaseDocumentId({ type, case: caseObj });
 
   const mappedSections: CaseDocument['sections'] = Object.entries(sections).flatMap(
     ([sectionType, sectionsArray]) =>
@@ -172,7 +198,7 @@ export const convertToIndexDocument = (
       return convertToCaseDocument(payload);
     }
     default: {
-      assertExhaustive(type);
+      return assertExhaustive(type);
     }
   }
 };

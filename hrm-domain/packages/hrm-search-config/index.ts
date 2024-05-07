@@ -21,7 +21,11 @@ import type {
   SearchConfiguration,
 } from '@tech-matters/elasticsearch-client';
 
-export { HRM_CASES_CONTACTS_INDEX_TYPE } from './hrmIndexDocumentMappings';
+export {
+  HRM_CASES_CONTACTS_INDEX_TYPE,
+  CasesContactsDocument,
+} from './hrmIndexDocumentMappings';
+export { IndexMessage, IndexPayload, getDocumentId } from './convertToIndexDocument';
 
 export const hrmSearchConfiguration: SearchConfiguration = {
   searchFieldBoosts: {
