@@ -62,12 +62,18 @@ const getSectionSpecificDataFromNotesOrReferrals = (
 };
 
 export const WELL_KNOWN_CASE_SECTION_NAMES = {
-  households: { getSectionSpecificData: s => s.household, sectionTypeName: 'household' },
+  households: {
+    getSectionSpecificData: (s: any) => s.household,
+    sectionTypeName: 'household',
+  },
   perpetrators: {
-    getSectionSpecificData: s => s.perpetrator,
+    getSectionSpecificData: (s: any) => s.perpetrator,
     sectionTypeName: 'perpetrator',
   },
-  incidents: { getSectionSpecificData: s => s.incident, sectionTypeName: 'incident' },
+  incidents: {
+    getSectionSpecificData: (s: any) => s.incident,
+    sectionTypeName: 'incident',
+  },
   counsellorNotes: {
     getSectionSpecificData: getSectionSpecificDataFromNotesOrReferrals,
     sectionTypeName: 'note',
@@ -76,7 +82,10 @@ export const WELL_KNOWN_CASE_SECTION_NAMES = {
     getSectionSpecificData: getSectionSpecificDataFromNotesOrReferrals,
     sectionTypeName: 'referral',
   },
-  documents: { getSectionSpecificData: s => s.document, sectionTypeName: 'document' },
+  documents: {
+    getSectionSpecificData: (s: any) => s.document,
+    sectionTypeName: 'document',
+  },
 } as const;
 
 type PrecalculatedPermissions = Record<'userOwnsContact', boolean>;
