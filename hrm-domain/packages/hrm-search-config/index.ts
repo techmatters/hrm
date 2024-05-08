@@ -13,16 +13,30 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { CaseSectionRecord, CaseSection } from '@tech-matters/hrm-types';
 
-export { CaseSectionRecord, CaseSection };
+import { IndexPayload, convertToIndexDocument } from './convertToIndexDocument';
+import { getCreateIndexParams } from './getCreateIndexParams';
+import type {
+  IndexConfiguration,
+  SearchConfiguration,
+} from '@tech-matters/elasticsearch-client';
 
-export type CaseSectionUpdate = Omit<
-  CaseSection,
-  'sectionId' | 'createdBy' | 'createdAt' | 'eventTimestamp' | 'sectionType'
-> & {
-  eventTimestamp?: string;
+export { HRM_CASES_CONTACTS_INDEX_TYPE } from './hrmIndexDocumentMappings';
+
+export const hrmSearchConfiguration: SearchConfiguration = {
+  searchFieldBoosts: {
+    // 'name.*': 5,
+    // 'id.*': 5,
+    // 'high_boost_global.*': 3,
+    // 'low_boost_global.*': 2,
+    '*': 1,
+    '*.*': 1,
+  },
+  filterMappings: {},
+  // generateSuggestQuery,
 };
-export type NewCaseSection = Omit<CaseSectionUpdate, 'updatedAt' | 'updatedBy'> & {
-  sectionId?: string;
+
+export const hrmIndexConfiguration: IndexConfiguration<IndexPayload> = {
+  convertToIndexDocument,
+  getCreateIndexParams,
 };

@@ -27,29 +27,17 @@ import {
   selectSingleContactByTaskId,
 } from './sql/contact-get-sql';
 import { INSERT_CONTACT_SQL, NewContactRecord } from './sql/contactInsertSql';
-import { ContactRawJson, ReferralWithoutContactId } from './contactJson';
+import { ContactRawJson } from './contactJson';
 import type { ITask } from 'pg-promise';
 import { txIfNotInOne } from '../sql';
-import { ConversationMedia } from '../conversation-media/conversation-media';
 import { TOUCH_CASE_SQL } from '../case/sql/caseUpdateSql';
 import { TKConditionsSets } from '../permissions/rulesMap';
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { TwilioUserIdentifier, HrmAccountId } from '@tech-matters/types';
 
-export type ExistingContactRecord = {
-  id: number;
-  accountSid: HrmAccountId;
-  createdAt: string;
-  finalizedAt?: string;
-  updatedAt?: string;
-  updatedBy?: TwilioUserIdentifier;
-} & Partial<NewContactRecord>;
+import { ExistingContactRecord, Contact } from '@tech-matters/hrm-types';
 
-export type Contact = ExistingContactRecord & {
-  csamReports: any[];
-  referrals?: ReferralWithoutContactId[];
-  conversationMedia?: ConversationMedia[];
-};
+export { ExistingContactRecord, Contact };
 
 export type SearchParameters = {
   helpline?: string;

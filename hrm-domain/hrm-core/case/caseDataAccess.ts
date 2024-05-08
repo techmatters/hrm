@@ -29,29 +29,16 @@ import { Contact } from '../contact/contactDataAccess';
 import { DateFilter, OrderByDirectionType } from '../sql';
 import { TKConditionsSets } from '../permissions/rulesMap';
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
-import { TwilioUserIdentifier, WorkerSID } from '@tech-matters/types';
+import { TwilioUserIdentifier } from '@tech-matters/types';
+import {
+  PrecalculatedCasePermissionConditions,
+  CaseRecordCommon,
+} from '@tech-matters/hrm-types';
 import { CaseSectionRecord } from './caseSection/types';
 import { pick } from 'lodash';
 import { HrmAccountId } from '@tech-matters/types';
 
-export type PrecalculatedCasePermissionConditions = {
-  isCaseContactOwner: boolean; // Does the requesting user own any of the contacts currently connected to the case?
-};
-
-export type CaseRecordCommon = {
-  info: any;
-  helpline: string;
-  status: string;
-  twilioWorkerId: WorkerSID;
-  createdBy: TwilioUserIdentifier;
-  updatedBy: TwilioUserIdentifier;
-  accountSid: HrmAccountId;
-  createdAt: string;
-  updatedAt: string;
-  statusUpdatedAt?: string;
-  statusUpdatedBy?: string;
-  previousStatus?: string;
-};
+export { PrecalculatedCasePermissionConditions, CaseRecordCommon };
 
 // Exported for testing
 export const VALID_CASE_CREATE_FIELDS: (keyof CaseRecordCommon)[] = [

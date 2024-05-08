@@ -14,27 +14,10 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { ContactRawJson } from '../contactJson';
 import { selectSingleContactByTaskId } from './contact-get-sql';
-import { TwilioUserIdentifier, WorkerSID } from '@tech-matters/types';
+import { NewContactRecord } from '@tech-matters/hrm-types';
 
-export type NewContactRecord = {
-  rawJson: ContactRawJson;
-  queueName: string;
-  twilioWorkerId?: WorkerSID;
-  createdBy?: TwilioUserIdentifier;
-  helpline?: string;
-  number?: string;
-  channel?: string;
-  conversationDuration: number;
-  timeOfContact?: string;
-  taskId: string;
-  channelSid?: string;
-  serviceSid?: string;
-  caseId?: string;
-  profileId?: number;
-  identifierId?: number;
-};
+export { NewContactRecord };
 
 export const INSERT_CONTACT_SQL = `
   WITH existing AS (
