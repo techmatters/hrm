@@ -25,10 +25,11 @@
 
 import { assertExhaustive, AccountSID } from '@tech-matters/types';
 import type { CaseService, Contact } from '@tech-matters/hrm-types';
-import type {
+import {
   ContactDocument,
   CaseDocument,
   CasesContactsDocument,
+  HRM_CASES_CONTACTS_INDEX_TYPE,
 } from './hrmIndexDocumentMappings';
 import { CreateIndexConvertedDocument } from '@tech-matters/elasticsearch-client';
 
@@ -54,6 +55,15 @@ const getContactDocumentId = ({ contact, type }: IndexContactMessage) =>
 
 const getCaseDocumentId = ({ case: caseObj, type }: IndexCaseMessage) =>
   `${type}_${caseObj.id}`;
+
+export const getContactParentId = (
+  indexType: typeof HRM_CASES_CONTACTS_INDEX_TYPE,
+  parentId?: string | number,
+) => {
+  if (indexType === HRM_CASES_CONTACTS_INDEX_TYPE) {
+    return parentId ? `case_${parentId}` : '';
+  }
+};
 
 export const getDocumentId = (m: IndexMessage) => {
   const { type } = m;
@@ -118,7 +128,10 @@ const convertToContactDocument = ({
     transcript,
     twilioWorkerId: twilioWorkerId ?? '',
     content: JSON.stringify(rawJson) ?? '',
-    join_field: { name: 'contact', ...(caseId && { parent: `case_${caseId}` }) },
+    join_field: {
+      name: 'contact',
+      parent: getContactParentId(HRM_CASES_CONTACTS_INDEX_TYPE, caseId),
+    },
     high_boost_global: '', // highBoostGlobal.join(' '),
     low_boost_global: '', // lowBoostGlobal.join(' '),
   };

@@ -31,6 +31,7 @@ import {
   newErr,
   newOkFromData,
 } from '@tech-matters/types';
+import { getContactParentId } from '@tech-matters/hrm-search-config/convertToIndexDocument';
 
 export type MessagesByAccountSid = Record<
   AccountSID,
@@ -40,6 +41,7 @@ type PayloadWithMeta = {
   payload: IndexPayload;
   documentId: string;
   messageId: string;
+  routing?: string;
 };
 type PayloadsByIndex = {
   [indexType: string]: PayloadWithMeta[];
@@ -103,7 +105,14 @@ const messagesToPayloadsByIndex = (
         ...accum,
         [HRM_CASES_CONTACTS_INDEX_TYPE]: [
           ...(accum[HRM_CASES_CONTACTS_INDEX_TYPE] ?? []),
-          { ...currM, payload: { ...message, transcript: '' } },
+          {
+            ...currM,
+            payload: { ...message, transcript: '' },
+            routing: getContactParentId(
+              HRM_CASES_CONTACTS_INDEX_TYPE,
+              message.contact.caseId,
+            ),
+          },
         ],
       };
     }
@@ -131,12 +140,13 @@ const indexDocumentsByIndex =
     );
 
     const indexed = await Promise.all(
-      payloads.map(({ documentId, messageId, payload }) =>
+      payloads.map(({ documentId, messageId, payload, routing }) =>
         client
           .indexDocument({
             id: documentId,
             document: payload,
             autocreate: true,
+            routing,
           })
           .then(result => ({
             accountSid,
