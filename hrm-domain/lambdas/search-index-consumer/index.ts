@@ -23,6 +23,7 @@ import {
   hrmIndexConfiguration,
   IndexPayload,
   getDocumentId,
+  getContactParentId,
 } from '@tech-matters/hrm-search-config';
 import {
   AccountSID,
@@ -31,7 +32,6 @@ import {
   newErr,
   newOkFromData,
 } from '@tech-matters/types';
-import { getContactParentId } from '@tech-matters/hrm-search-config/convertToIndexDocument';
 
 export type MessagesByAccountSid = Record<
   AccountSID,
