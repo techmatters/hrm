@@ -36,7 +36,7 @@ export type MappingToDocument<T extends NonNullable<Record<string, MappingProper
         ? T[k] extends {
             properties: Record<string, MappingProperty>;
           }
-          ? MappingToDocument<T[k]['properties']>[]
+          ? MappingToDocument<T[k]['properties']>[] | null
           : never
         : never // forbid non-used types to force proper implementation
       : never;

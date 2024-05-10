@@ -223,7 +223,7 @@ const convertContactToCaseScriptUpdate = (
       const contactDocument = convertContactToContactDocument(payload);
 
       const documentUpdate: CreateIndexConvertedDocument<CaseDocument> = {
-        id: parseInt(caseId, 10),
+        id: parseInt(caseId!, 10),
         accountSid,
         contacts: [contactDocument],
       };
@@ -247,7 +247,7 @@ const convertContactToCaseScriptUpdate = (
         },
       };
 
-      return { documentUpdate: undefined, scriptUpdate };
+      return { documentUpdate: {}, scriptUpdate };
     }
     default: {
       return assertExhaustive(operation);
