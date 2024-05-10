@@ -23,62 +23,38 @@
  * see: https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-query-string-query.html
  */
 
-import { assertExhaustive, AccountSID } from '@tech-matters/types';
+import type { Script } from '@elastic/elasticsearch/lib/api/types';
 import type { CaseService, Contact } from '@tech-matters/hrm-types';
+import { assertExhaustive, AccountSID } from '@tech-matters/types';
 import {
   ContactDocument,
   CaseDocument,
-  CasesContactsDocument,
-  HRM_CASES_CONTACTS_INDEX_TYPE,
+  HRM_CONTACTS_INDEX_TYPE,
+  HRM_CASES_INDEX_TYPE,
 } from './hrmIndexDocumentMappings';
 import { CreateIndexConvertedDocument } from '@tech-matters/elasticsearch-client';
 
+type IndexOperation = 'index' | 'remove';
+
 type IndexContactMessage = {
   type: 'contact';
-  contact: Contact;
+  operation: IndexOperation;
+  contact: Pick<Contact, 'id'> & Partial<Contact>;
 };
 
 type IndexCaseMessage = {
   type: 'case';
-  case: Omit<CaseService, 'sections'> & {
-    sections: NonNullable<CaseService['sections']>;
-  };
+  operation: IndexOperation;
+  case: Pick<CaseService, 'id'> &
+    Partial<Omit<CaseService, 'sections'>> & {
+      sections: NonNullable<CaseService['sections']>;
+    };
 };
 
 export type IndexMessage = { accountSid: AccountSID } & (
   | IndexContactMessage
   | IndexCaseMessage
 );
-
-const getContactDocumentId = ({ contact, type }: IndexContactMessage) =>
-  `${type}_${contact.id}`;
-
-const getCaseDocumentId = ({ case: caseObj, type }: IndexCaseMessage) =>
-  `${type}_${caseObj.id}`;
-
-export const getContactParentId = (
-  indexType: typeof HRM_CASES_CONTACTS_INDEX_TYPE,
-  parentId?: string | number,
-) => {
-  if (indexType === HRM_CASES_CONTACTS_INDEX_TYPE) {
-    return parentId ? `case_${parentId}` : '';
-  }
-};
-
-export const getDocumentId = (m: IndexMessage) => {
-  const { type } = m;
-  switch (type) {
-    case 'contact': {
-      return getContactDocumentId(m);
-    }
-    case 'case': {
-      return getCaseDocumentId(m);
-    }
-    default: {
-      return assertExhaustive(type);
-    }
-  }
-};
 
 type IndexPayloadContact = IndexContactMessage & {
   transcript: NonNullable<string>;
@@ -88,8 +64,16 @@ type IndexPayloadCase = IndexCaseMessage;
 
 export type IndexPayload = IndexPayloadContact | IndexPayloadCase;
 
-const convertToContactDocument = ({
-  type,
+const filterEmpty = <T extends CaseDocument | ContactDocument>(doc: T): T =>
+  Object.entries(doc).reduce((accum, [key, value]) => {
+    if (value) {
+      return { ...accum, [key]: value };
+    }
+
+    return accum;
+  }, {} as T);
+
+const convertContactToContactDocument = ({
   contact,
   transcript,
 }: IndexPayloadContact): CreateIndexConvertedDocument<ContactDocument> => {
@@ -102,43 +86,36 @@ const convertToContactDocument = ({
     updatedBy,
     finalizedAt,
     helpline,
-    caseId,
     number,
     channel,
     timeOfContact,
     twilioWorkerId,
     rawJson,
   } = contact;
-  const compundId = getContactDocumentId({ type, contact });
 
-  return {
-    type,
+  const contactDocument: ContactDocument = {
     accountSid,
     id,
-    compundId,
     createdAt,
-    updatedAt: updatedAt ?? '',
-    createdBy: createdBy ?? '',
-    updatedBy: updatedBy ?? '',
+    updatedAt: updatedAt,
+    createdBy: createdBy,
+    updatedBy: updatedBy,
     finalized: Boolean(finalizedAt),
-    helpline: helpline ?? '',
-    channel: channel ?? '',
-    number: number ?? '',
-    timeOfContact: timeOfContact ?? '',
+    helpline: helpline,
+    channel: channel,
+    number: number,
+    timeOfContact: timeOfContact,
     transcript,
-    twilioWorkerId: twilioWorkerId ?? '',
-    content: JSON.stringify(rawJson) ?? '',
-    join_field: {
-      name: 'contact',
-      parent: getContactParentId(HRM_CASES_CONTACTS_INDEX_TYPE, caseId),
-    },
-    high_boost_global: '', // highBoostGlobal.join(' '),
-    low_boost_global: '', // lowBoostGlobal.join(' '),
+    twilioWorkerId: twilioWorkerId,
+    content: JSON.stringify(rawJson),
+    // high_boost_global: '', // highBoostGlobal.join(' '),
+    // low_boost_global: '', // lowBoostGlobal.join(' '),
   };
+
+  return filterEmpty(contactDocument);
 };
 
-const convertToCaseDocument = ({
-  type,
+const convertCaseToCaseDocument = ({
   case: caseObj,
 }: IndexPayloadCase): CreateIndexConvertedDocument<CaseDocument> => {
   const {
@@ -157,16 +134,14 @@ const convertToCaseDocument = ({
     sections,
     info,
   } = caseObj;
-  const compundId = getCaseDocumentId({ type, case: caseObj });
-
   const mappedSections: CaseDocument['sections'] = Object.entries(sections).flatMap(
     ([sectionType, sectionsArray]) =>
       sectionsArray.map(section => ({
         accountSid: accountSid as string,
         createdAt: section.createdAt,
         createdBy: section.createdBy,
-        updatedAt: section.updatedAt ?? '',
-        updatedBy: section.updatedBy ?? '',
+        updatedAt: section.updatedAt,
+        updatedBy: section.updatedBy,
         sectionId: section.sectionId,
         sectionType,
         content:
@@ -176,11 +151,9 @@ const convertToCaseDocument = ({
       })),
   );
 
-  return {
-    type,
+  const caseDocument: CaseDocument = {
     accountSid,
     id,
-    compundId,
     createdAt,
     updatedAt,
     createdBy,
@@ -188,30 +161,125 @@ const convertToCaseDocument = ({
     helpline,
     twilioWorkerId,
     status,
-    previousStatus: previousStatus ?? '',
-    statusUpdatedAt: statusUpdatedAt ?? '',
-    statusUpdatedBy: statusUpdatedBy ?? '',
-    content: JSON.stringify(info) ?? '',
+    previousStatus: previousStatus,
+    statusUpdatedAt: statusUpdatedAt,
+    statusUpdatedBy: statusUpdatedBy,
+    content: JSON.stringify(info),
     sections: mappedSections,
-    join_field: { name: 'case' },
-    high_boost_global: '', // highBoostGlobal.join(' '),
-    low_boost_global: '', // lowBoostGlobal.join(' '),
+    contacts: null,
+    // high_boost_global: '', // highBoostGlobal.join(' '),
+    // low_boost_global: '', // lowBoostGlobal.join(' '),
   };
+
+  return filterEmpty(caseDocument);
+};
+
+const convertToContactIndexDocument = (payload: IndexPayload) => {
+  if (payload.type === 'contact') {
+    return convertContactToContactDocument(payload);
+  }
+
+  throw new Error(
+    `convertToContactIndexDocument not implemented for type ${payload.type} and operation ${payload.operation}`,
+  );
+};
+
+const convertToCaseIndexDocument = (payload: IndexPayload) => {
+  if (payload.type === 'case') {
+    return convertCaseToCaseDocument(payload);
+  }
+
+  throw new Error(
+    `convertToCaseIndexDocument not implemented for type ${payload.type} and operation ${payload.operation}`,
+  );
 };
 
 export const convertToIndexDocument = (
   payload: IndexPayload,
-): CreateIndexConvertedDocument<CasesContactsDocument> => {
-  const { type } = payload;
-  switch (type) {
-    case 'contact': {
-      return convertToContactDocument(payload);
+  indexName: string,
+): CreateIndexConvertedDocument<ContactDocument | CaseDocument> => {
+  if (indexName.endsWith(HRM_CONTACTS_INDEX_TYPE)) {
+    return convertToContactIndexDocument(payload);
+  }
+
+  if (indexName.endsWith(HRM_CASES_INDEX_TYPE)) {
+    return convertToCaseIndexDocument(payload);
+  }
+
+  throw new Error(`convertToIndexDocument not implemented for index ${indexName}`);
+};
+
+const convertContactToCaseScriptUpdate = (
+  payload: IndexPayloadContact,
+): {
+  documentUpdate: CreateIndexConvertedDocument<CaseDocument>;
+  scriptUpdate: Script;
+} => {
+  const { operation } = payload;
+  const { accountSid, caseId } = payload.contact;
+
+  switch (operation) {
+    case 'index': {
+      const contactDocument = convertContactToContactDocument(payload);
+
+      const documentUpdate: CreateIndexConvertedDocument<CaseDocument> = {
+        id: parseInt(caseId, 10),
+        accountSid,
+        contacts: [contactDocument],
+      };
+
+      const scriptUpdate: Script = {
+        source:
+          'def replaceContact(Map newContact, List contacts) { contacts.removeIf(contact -> contact.id == newContact.id); contacts.add(newContact); } replaceContact(params.newContact, ctx._source.contacts);',
+        params: {
+          newContact: contactDocument,
+        },
+      };
+
+      return { documentUpdate, scriptUpdate };
     }
-    case 'case': {
-      return convertToCaseDocument(payload);
+    case 'remove': {
+      const scriptUpdate: Script = {
+        source:
+          'def removeContact(int contactId, List contacts) { contacts.removeIf(contact -> contact.id == contactId); } removeContact(params.contactId, ctx._source.contacts);',
+        params: {
+          contactId: payload.contact.id,
+        },
+      };
+
+      return { documentUpdate: undefined, scriptUpdate };
     }
     default: {
-      return assertExhaustive(type);
+      return assertExhaustive(operation);
     }
   }
+};
+
+const convertToCaseScriptUpdate = (
+  payload: IndexPayload,
+): {
+  documentUpdate: CreateIndexConvertedDocument<CaseDocument>;
+  scriptUpdate: Script;
+} => {
+  if (payload.type === 'contact') {
+    return convertContactToCaseScriptUpdate(payload);
+  }
+
+  throw new Error(
+    `convertToCaseScriptDocument not implemented for type ${payload.type} and operation ${payload.operation}`,
+  );
+};
+
+export const convertToScriptUpdate = (
+  payload: IndexPayload,
+  indexName: string,
+): {
+  documentUpdate: CreateIndexConvertedDocument<ContactDocument | CaseDocument>;
+  scriptUpdate: Script;
+} => {
+  if (indexName.endsWith(HRM_CASES_INDEX_TYPE)) {
+    return convertToCaseScriptUpdate(payload);
+  }
+
+  throw new Error(`convertToScriptDocument not implemented for index ${indexName}`);
 };

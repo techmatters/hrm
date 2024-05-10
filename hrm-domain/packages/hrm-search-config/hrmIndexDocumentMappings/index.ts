@@ -15,46 +15,36 @@
  */
 
 import type { MappingProperty } from '@elastic/elasticsearch/lib/api/types';
-import { caseMapping, contactMapping } from './mappingCasesContacts';
+import { caseMapping, contactMapping } from './mappings';
 
-export { mapping as mappingCasesContacts } from './mappingCasesContacts';
+export { caseMapping, contactMapping } from './mappings';
 
-type MappingToDocument<T extends NonNullable<Record<string, MappingProperty>>> = {
-  [k in keyof T]: k extends string
-    ? T[k]['type'] extends 'keyword'
-      ? string
-      : T[k]['type'] extends 'text'
-      ? string
-      : T[k]['type'] extends 'integer'
-      ? number
-      : T[k]['type'] extends 'boolean'
-      ? boolean
-      : T[k]['type'] extends 'date'
-      ? string
-      : T[k]['type'] extends 'join'
-      ? { name: string; parent?: string }
-      : T[k]['type'] extends 'nested'
-      ? T[k] extends {
-          properties: Record<string, MappingProperty>;
-        }
-        ? MappingToDocument<T[k]['properties']>[]
-        : never
-      : never // forbid non-used types to force proper implementation
-    : never;
-};
-
-export type ContactDocument = MappingToDocument<typeof contactMapping> &
-  NonNullable<{
-    type: 'contact';
-    join_field: NonNullable<{ name: 'contact'; parent?: string }>;
+export type MappingToDocument<T extends NonNullable<Record<string, MappingProperty>>> =
+  Partial<{
+    [k in keyof T]: k extends string
+      ? T[k]['type'] extends 'keyword'
+        ? string | null
+        : T[k]['type'] extends 'text'
+        ? string | null
+        : T[k]['type'] extends 'integer'
+        ? number | null
+        : T[k]['type'] extends 'boolean'
+        ? boolean | null
+        : T[k]['type'] extends 'date'
+        ? string | null
+        : T[k]['type'] extends 'nested'
+        ? T[k] extends {
+            properties: Record<string, MappingProperty>;
+          }
+          ? MappingToDocument<T[k]['properties']>[]
+          : never
+        : never // forbid non-used types to force proper implementation
+      : never;
   }>;
 
-export type CaseDocument = MappingToDocument<typeof caseMapping> &
-  NonNullable<{
-    type: 'case';
-    join_field: NonNullable<{ name: 'case' }>;
-  }>;
+export type ContactDocument = MappingToDocument<typeof contactMapping>;
 
-export type CasesContactsDocument = ContactDocument | CaseDocument;
+export type CaseDocument = MappingToDocument<typeof caseMapping>;
 
-export const HRM_CASES_CONTACTS_INDEX_TYPE = 'hrm-cases-contacts';
+export const HRM_CONTACTS_INDEX_TYPE = 'hrm-contacts';
+export const HRM_CASES_INDEX_TYPE = 'hrm-cases';

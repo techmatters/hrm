@@ -14,7 +14,11 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { IndexPayload, convertToIndexDocument } from './convertToIndexDocument';
+import {
+  IndexPayload,
+  convertToIndexDocument,
+  convertToScriptUpdate,
+} from './convertToIndexDocument';
 import { getCreateIndexParams } from './getCreateIndexParams';
 import type {
   IndexConfiguration,
@@ -22,15 +26,10 @@ import type {
 } from '@tech-matters/elasticsearch-client';
 
 export {
-  HRM_CASES_CONTACTS_INDEX_TYPE,
-  CasesContactsDocument,
+  HRM_CASES_INDEX_TYPE,
+  HRM_CONTACTS_INDEX_TYPE,
 } from './hrmIndexDocumentMappings';
-export {
-  IndexMessage,
-  IndexPayload,
-  getDocumentId,
-  getContactParentId,
-} from './convertToIndexDocument';
+export { IndexMessage, IndexPayload } from './convertToIndexDocument';
 
 export const hrmSearchConfiguration: SearchConfiguration = {
   searchFieldBoosts: {
@@ -47,5 +46,6 @@ export const hrmSearchConfiguration: SearchConfiguration = {
 
 export const hrmIndexConfiguration: IndexConfiguration<IndexPayload> = {
   convertToIndexDocument,
+  convertToScriptUpdate,
   getCreateIndexParams,
 };

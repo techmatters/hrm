@@ -26,11 +26,13 @@
 import type { IndicesCreateRequest } from '@elastic/elasticsearch/lib/api/types';
 
 import {
-  mappingCasesContacts,
-  HRM_CASES_CONTACTS_INDEX_TYPE,
+  HRM_CASES_INDEX_TYPE,
+  HRM_CONTACTS_INDEX_TYPE,
+  caseMapping,
+  contactMapping,
 } from './hrmIndexDocumentMappings';
 
-const getCreateHrmCasesContactsIndexParams = (index: string): IndicesCreateRequest => {
+const getCreateHrmContactsIndexParams = (index: string): IndicesCreateRequest => {
   return {
     index,
     // settings: {
@@ -43,7 +45,26 @@ const getCreateHrmCasesContactsIndexParams = (index: string): IndicesCreateReque
         low_boost_global: {
           type: 'text',
         },
-        ...mappingCasesContacts,
+        ...contactMapping,
+      },
+    },
+  };
+};
+
+const getCreateHrmCaseIndexParams = (index: string): IndicesCreateRequest => {
+  return {
+    index,
+    // settings: {
+    // },
+    mappings: {
+      properties: {
+        high_boost_global: {
+          type: 'text',
+        },
+        low_boost_global: {
+          type: 'text',
+        },
+        ...caseMapping,
       },
     },
   };
@@ -54,8 +75,12 @@ const getCreateHrmCasesContactsIndexParams = (index: string): IndicesCreateReque
  * @param index
  */
 export const getCreateIndexParams = (index: string): IndicesCreateRequest => {
-  if (index.endsWith(HRM_CASES_CONTACTS_INDEX_TYPE)) {
-    return getCreateHrmCasesContactsIndexParams(index);
+  if (index.endsWith(HRM_CONTACTS_INDEX_TYPE)) {
+    return getCreateHrmContactsIndexParams(index);
+  }
+
+  if (index.endsWith(HRM_CASES_INDEX_TYPE)) {
+    return getCreateHrmCaseIndexParams(index);
   }
 
   throw new Error(`getCreateIndexParams not implemented for index ${index}`);
