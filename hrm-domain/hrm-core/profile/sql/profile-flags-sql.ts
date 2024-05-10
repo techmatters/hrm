@@ -73,7 +73,7 @@ export const getProfileFlagsByIdentifierSql = `
   SELECT DISTINCT pf.* FROM "Identifiers" ids
   LEFT JOIN "ProfilesToIdentifiers" p2i ON p2i."identifierId" = ids.id AND p2i."accountSid" = ids."accountSid"
   LEFT JOIN "ProfilesToProfileFlags" p2f ON p2f."profileId" = p2i."profileId" AND p2f."accountSid" = p2i."accountSid"
-  LEFT JOIN "ProfileFlags" pf ON pf.id = p2f."profileFlagId" AND (pf."accountSid" = p2f."accountSid" OR pf."accountSid" IS NULL)
+  INNER JOIN "ProfileFlags" pf ON pf.id = p2f."profileFlagId" AND (pf."accountSid" = p2f."accountSid" OR pf."accountSid" IS NULL)
   WHERE ids."identifier" = $<identifier> AND ids."accountSid" = $<accountSid>
 `;
 
