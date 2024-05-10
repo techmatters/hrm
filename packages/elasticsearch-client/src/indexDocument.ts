@@ -21,7 +21,6 @@ export type IndexDocumentExtraParams<T> = {
   id: string;
   document: T;
   autocreate?: boolean;
-  routing?: string;
 };
 
 export type IndexDocumentParams<T> = PassThroughConfig<T> & IndexDocumentExtraParams<T>;
@@ -34,7 +33,6 @@ export const indexDocument = async <T>({
   index,
   indexConfig,
   autocreate = false,
-  routing = undefined,
 }: IndexDocumentParams<T>): Promise<IndexDocumentResponse> => {
   if (autocreate) {
     // const exists = await client.indices.exists({ index });
@@ -42,13 +40,12 @@ export const indexDocument = async <T>({
     await createIndex({ client, index, indexConfig });
   }
 
-  const convertedDocument = indexConfig.convertToIndexDocument(document);
+  const convertedDocument = indexConfig.convertToIndexDocument(document, index);
 
   return client.index({
     index,
     id,
     document: convertedDocument,
-    ...(routing && { routing }),
   });
 };
 

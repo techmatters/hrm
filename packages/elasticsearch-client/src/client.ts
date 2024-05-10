@@ -23,6 +23,13 @@ import {
   IndexDocumentExtraParams,
   IndexDocumentResponse,
 } from './indexDocument';
+import {
+  updateDocument,
+  UpdateDocumentExtraParams,
+  UpdateDocumentResponse,
+  updateScript,
+  UpdateScriptExtraParams,
+} from './updateDocument';
 import getAccountSid from './getAccountSid';
 import { search, SearchExtraParams } from './search';
 import { suggest, SuggestExtraParams } from './suggest';
@@ -92,6 +99,8 @@ const getEsConfig = async ({
  */
 export type IndexClient<T> = {
   indexDocument: (args: IndexDocumentExtraParams<T>) => Promise<IndexDocumentResponse>;
+  updateDocument: (args: UpdateDocumentExtraParams<T>) => Promise<UpdateDocumentResponse>;
+  updateScript: (args: UpdateScriptExtraParams<T>) => Promise<UpdateDocumentResponse>;
   refreshIndex: () => Promise<IndicesRefreshResponse>;
   executeBulk: (args: ExecuteBulkExtraParams<T>) => Promise<ExecuteBulkResponse>;
   createIndex: (args: CreateIndexExtraParams) => Promise<CreateIndexResponse>;
@@ -133,6 +142,10 @@ const getClientOrMock = async ({ config, index, indexType }: GetClientOrMockArgs
         deleteIndex: () => deleteIndex(passThroughConfig),
         indexDocument: (args: IndexDocumentExtraParams<T>) =>
           indexDocument({ ...passThroughConfig, ...args }),
+        updateDocument: (args: UpdateDocumentExtraParams<T>) =>
+          updateDocument({ ...passThroughConfig, ...args }),
+        updateScript: (args: UpdateScriptExtraParams<T>) =>
+          updateScript({ ...passThroughConfig, ...args }),
         executeBulk: (args: ExecuteBulkExtraParams<T>) =>
           executeBulk({ ...passThroughConfig, ...args }),
       };
