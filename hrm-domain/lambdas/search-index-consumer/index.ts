@@ -217,6 +217,8 @@ const indexDocumentsByAccount = async ([accountSid, payloadsByIndex]: [
   string,
   PayloadsByIndex,
 ]) => {
+  console.log('>> indexDocumentsByAccount payloadsByIndex ', payloadsByIndex);
+  console.log('>> indexDocumentsByAccount: ', Object.entries(payloadsByIndex));
   const resultsByIndex = await Promise.all(
     Object.entries(payloadsByIndex).map(indexDocumentsByIndex(accountSid)),
   );
