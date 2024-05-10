@@ -14,16 +14,15 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
-import { getClient } from '@tech-matters/elasticsearch-client';
+import { getClient, IndexClient } from '@tech-matters/elasticsearch-client';
 // import { GetSignedUrlMethods, GET_SIGNED_URL_METHODS } from '@tech-matters/s3-client';
 import { HrmIndexProcessorError } from '@tech-matters/job-errors';
 import {
-  IndexMessage,
-  HRM_CASES_CONTACTS_INDEX_TYPE,
+  HRM_CASES_INDEX_TYPE,
+  HRM_CONTACTS_INDEX_TYPE,
   hrmIndexConfiguration,
+  IndexMessage,
   IndexPayload,
-  getDocumentId,
-  getContactParentId,
 } from '@tech-matters/hrm-search-config';
 import {
   AccountSID,
@@ -33,66 +32,38 @@ import {
   newOkFromData,
 } from '@tech-matters/types';
 
-export type MessagesByAccountSid = Record<
-  AccountSID,
-  { message: IndexMessage; documentId: string; messageId: string }[]
->;
+type MessageWithMeta = { message: IndexMessage; messageId: string };
+type MessagesByAccountSid = Record<AccountSID, MessageWithMeta[]>;
 type PayloadWithMeta = {
+  documentId: number;
   payload: IndexPayload;
-  documentId: string;
   messageId: string;
-  routing?: string;
+  indexHandler: 'indexDocument' | 'updateDocument' | 'updateScript';
 };
 type PayloadsByIndex = {
   [indexType: string]: PayloadWithMeta[];
 };
-export type PayloadsByAccountSid = Record<AccountSID, PayloadsByIndex>;
-
-type MessagesByDocumentId = {
-  [documentId: string]: {
-    documentId: string;
-    messageId: string;
-    message: IndexMessage;
-  };
-};
-
-const reduceByDocumentId = (
-  accum: MessagesByDocumentId,
-  curr: SQSRecord,
-): MessagesByDocumentId => {
-  const { messageId, body } = curr;
-  const message = JSON.parse(body) as IndexMessage;
-
-  const documentId = getDocumentId(message);
-
-  return { ...accum, [documentId]: { documentId, messageId, message } };
-};
+type PayloadsByAccountSid = Record<AccountSID, PayloadsByIndex>;
 
 const groupMessagesByAccountSid = (
   accum: MessagesByAccountSid,
-  curr: {
-    documentId: string;
-    messageId: string;
-    message: IndexMessage;
-  },
+  curr: SQSRecord,
 ): MessagesByAccountSid => {
-  const { message } = curr;
+  const { messageId, body } = curr;
+  const message = JSON.parse(body) as IndexMessage;
+
   const { accountSid } = message;
 
   if (!accum[accountSid]) {
-    return { ...accum, [accountSid]: [curr] };
+    return { ...accum, [accountSid]: [{ messageId, message }] };
   }
 
-  return { ...accum, [accountSid]: [...accum[accountSid], curr] };
+  return { ...accum, [accountSid]: [...accum[accountSid], { messageId, message }] };
 };
 
 const messagesToPayloadsByIndex = (
   accum: PayloadsByIndex,
-  currM: {
-    documentId: string;
-    messageId: string;
-    message: IndexMessage;
-  },
+  currM: MessageWithMeta,
 ): PayloadsByIndex => {
   const { message } = currM;
 
@@ -103,25 +74,42 @@ const messagesToPayloadsByIndex = (
       // TODO: Pull the transcripts from S3 (if any)
       return {
         ...accum,
-        [HRM_CASES_CONTACTS_INDEX_TYPE]: [
-          ...(accum[HRM_CASES_CONTACTS_INDEX_TYPE] ?? []),
+        // add an upsert job to HRM_CONTACTS_INDEX_TYPE index
+        [HRM_CONTACTS_INDEX_TYPE]: [
+          ...(accum[HRM_CONTACTS_INDEX_TYPE] ?? []),
           {
             ...currM,
+            documentId: message.contact.id,
             payload: { ...message, transcript: '' },
-            routing: getContactParentId(
-              HRM_CASES_CONTACTS_INDEX_TYPE,
-              message.contact.caseId,
-            ),
+            indexHandler: 'updateDocument',
           },
         ],
+        // if associated to a case, add an upsert with script job to HRM_CASES_INDEX_TYPE index
+        [HRM_CASES_INDEX_TYPE]: message.contact.caseId
+          ? [
+              ...(accum[HRM_CASES_INDEX_TYPE] ?? []),
+              {
+                ...currM,
+                documentId: parseInt(message.contact.caseId, 10),
+                payload: { ...message, transcript: '' },
+                indexHandler: 'updateScript',
+              },
+            ]
+          : accum[HRM_CASES_INDEX_TYPE],
       };
     }
     case 'case': {
       return {
         ...accum,
-        [HRM_CASES_CONTACTS_INDEX_TYPE]: [
-          ...(accum[HRM_CASES_CONTACTS_INDEX_TYPE] ?? []),
-          { ...currM, payload: { ...message } },
+        // add an upsert job to HRM_CASES_INDEX_TYPE index
+        [HRM_CASES_INDEX_TYPE]: [
+          ...(accum[HRM_CASES_INDEX_TYPE] ?? []),
+          {
+            ...currM,
+            documentId: message.case.id,
+            payload: { ...message },
+            indexHandler: 'updateDocument',
+          },
         ],
       };
     }
@@ -131,6 +119,85 @@ const messagesToPayloadsByIndex = (
   }
 };
 
+const handleIndexPayload =
+  ({
+    accountSid,
+    client,
+    indexType,
+  }: {
+    accountSid: string;
+    client: IndexClient<IndexPayload>;
+    indexType: string;
+  }) =>
+  async ({ documentId, indexHandler, messageId, payload }: PayloadWithMeta) => {
+    try {
+      switch (indexHandler) {
+        case 'indexDocument': {
+          const result = await client.indexDocument({
+            id: documentId.toString(),
+            document: payload,
+            autocreate: true,
+          });
+
+          return {
+            accountSid,
+            indexType,
+            messageId,
+            result: newOkFromData(result),
+          };
+        }
+        case 'updateDocument': {
+          const result = await client.updateDocument({
+            id: documentId.toString(),
+            document: payload,
+            autocreate: true,
+            docAsUpsert: true,
+          });
+
+          return {
+            accountSid,
+            indexType,
+            messageId,
+            result: newOkFromData(result),
+          };
+        }
+        case 'updateScript': {
+          const result = await client.updateScript({
+            document: payload,
+            id: documentId.toString(),
+            autocreate: true,
+            scriptedUpsert: true,
+          });
+
+          return {
+            accountSid,
+            indexType,
+            messageId,
+            result: newOkFromData(result),
+          };
+        }
+        default: {
+          return assertExhaustive(indexHandler);
+        }
+      }
+    } catch (err) {
+      console.error(
+        new HrmIndexProcessorError('handleIndexPayload: Failed to process index request'),
+        err,
+      );
+
+      return {
+        accountSid,
+        indexType,
+        messageId,
+        result: newErr({
+          error: 'ErrorFailedToInex',
+          message: err instanceof Error ? err.message : String(err),
+        }),
+      };
+    }
+  };
+
 const indexDocumentsByIndex =
   (accountSid: string) =>
   async ([indexType, payloads]: [string, PayloadWithMeta[]]) => {
@@ -139,41 +206,9 @@ const indexDocumentsByIndex =
       hrmIndexConfiguration,
     );
 
-    const indexed = await Promise.all(
-      payloads.map(({ documentId, messageId, payload, routing }) =>
-        client
-          .indexDocument({
-            id: documentId,
-            document: payload,
-            autocreate: true,
-            routing,
-          })
-          .then(result => ({
-            accountSid,
-            indexType,
-            documentId,
-            messageId,
-            result: newOkFromData(result),
-          }))
-          .catch(err => {
-            console.error(
-              new HrmIndexProcessorError('Failed to process search index request'),
-              err,
-            );
+    const mapper = handleIndexPayload({ client, accountSid, indexType });
 
-            return {
-              accountSid,
-              indexType,
-              documentId,
-              messageId,
-              result: newErr({
-                error: 'ErrorFailedToInex',
-                message: err instanceof Error ? err.message : String(err),
-              }),
-            };
-          }),
-      ),
-    );
+    const indexed = await Promise.all(payloads.map(mapper));
 
     return indexed;
   };
@@ -193,13 +228,11 @@ export const handler = async (event: SQSEvent): Promise<SQSBatchResponse> => {
   console.debug('Received event:', JSON.stringify(event, null, 2));
 
   try {
-    // link each composite "documentId" to it's corresponding "messageId"
-    const documentIdToMessage = event.Records.reduce(reduceByDocumentId, {});
-
-    // group the messages by accountSid
-    const messagesByAccoundSid = Object.values(
-      documentIdToMessage,
-    ).reduce<MessagesByAccountSid>(groupMessagesByAccountSid, {});
+    // group the messages by accountSid while adding message meta
+    const messagesByAccoundSid = event.Records.reduce<MessagesByAccountSid>(
+      groupMessagesByAccountSid,
+      {},
+    );
 
     // generate corresponding IndexPayload for each IndexMessage and group them by target indexType
     const documentsByAccountSid: PayloadsByAccountSid = Object.fromEntries(
