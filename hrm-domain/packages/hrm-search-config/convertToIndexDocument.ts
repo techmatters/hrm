@@ -236,6 +236,10 @@ const convertContactToCaseScriptUpdate = (
         },
       };
 
+      console.log('>>>> documentUpdate', payload)
+      console.log('>>>> documentUpdate', documentUpdate)
+      console.log('>>>> scriptUpdate', scriptUpdate)
+
       return { documentUpdate, scriptUpdate };
     }
     case 'remove': {
