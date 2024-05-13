@@ -184,6 +184,7 @@ const handleIndexPayload =
       console.error(
         new HrmIndexProcessorError('handleIndexPayload: Failed to process index request'),
         err,
+        { documentId, indexHandler, messageId, payload },
       );
 
       return {
