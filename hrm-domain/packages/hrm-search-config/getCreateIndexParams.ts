@@ -14,15 +14,6 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-/**
- * This is a very early example of a rudimentary configuration for a multi-language index in ES.
- *
- * There is a lot of room for improvement here to allow more robust use of the ES query string
- * syntax, but this is a start that gets us close to the functionality we scoped out for cloudsearch.
- *
- * see: https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-query-string-query.html
- */
-
 import type { IndicesCreateRequest } from '@elastic/elasticsearch/lib/api/types';
 
 import {
