@@ -23,9 +23,6 @@
  * see: https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-query-string-query.html
  */
 
-import type { Script } from '@elastic/elasticsearch/lib/api/types';
-import type { CaseService, Contact } from '@tech-matters/hrm-types';
-import { assertExhaustive, AccountSID } from '@tech-matters/types';
 import {
   ContactDocument,
   CaseDocument,
@@ -33,36 +30,7 @@ import {
   HRM_CASES_INDEX_TYPE,
 } from './hrmIndexDocumentMappings';
 import { CreateIndexConvertedDocument } from '@tech-matters/elasticsearch-client';
-
-type IndexOperation = 'index' | 'remove';
-
-type IndexContactMessage = {
-  type: 'contact';
-  operation: IndexOperation;
-  contact: Pick<Contact, 'id'> & Partial<Contact>;
-};
-
-type IndexCaseMessage = {
-  type: 'case';
-  operation: IndexOperation;
-  case: Pick<CaseService, 'id'> &
-    Partial<Omit<CaseService, 'sections'>> & {
-      sections: NonNullable<CaseService['sections']>;
-    };
-};
-
-export type IndexMessage = { accountSid: AccountSID } & (
-  | IndexContactMessage
-  | IndexCaseMessage
-);
-
-type IndexPayloadContact = IndexContactMessage & {
-  transcript: NonNullable<string>;
-};
-
-type IndexPayloadCase = IndexCaseMessage;
-
-export type IndexPayload = IndexPayloadContact | IndexPayloadCase;
+import { IndexPayload, IndexPayloadCase, IndexPayloadContact } from './payload';
 
 const filterEmpty = <T extends CaseDocument | ContactDocument>(doc: T): T =>
   Object.entries(doc).reduce((accum, [key, value]) => {
@@ -73,7 +41,7 @@ const filterEmpty = <T extends CaseDocument | ContactDocument>(doc: T): T =>
     return accum;
   }, {} as T);
 
-const convertContactToContactDocument = ({
+export const convertContactToContactDocument = ({
   contact,
   transcript,
 }: IndexPayloadContact): CreateIndexConvertedDocument<ContactDocument> => {
@@ -207,83 +175,4 @@ export const convertToIndexDocument = (
   }
 
   throw new Error(`convertToIndexDocument not implemented for index ${indexName}`);
-};
-
-const convertContactToCaseScriptUpdate = (
-  payload: IndexPayloadContact,
-): {
-  documentUpdate: CreateIndexConvertedDocument<CaseDocument>;
-  scriptUpdate: Script;
-} => {
-  const { operation } = payload;
-  const { accountSid, caseId } = payload.contact;
-
-  switch (operation) {
-    case 'index': {
-      const contactDocument = convertContactToContactDocument(payload);
-
-      const documentUpdate: CreateIndexConvertedDocument<CaseDocument> = {
-        id: parseInt(caseId!, 10),
-        accountSid,
-        contacts: [contactDocument],
-      };
-
-      const scriptUpdate: Script = {
-        source:
-          'def replaceContact(Map newContact, List contacts) { contacts.removeIf(contact -> contact.id == newContact.id); contacts.add(newContact); } replaceContact(params.newContact, ctx._source.contacts);',
-        params: {
-          newContact: contactDocument,
-        },
-      };
-
-      console.log('>>>> documentUpdate', payload)
-      console.log('>>>> documentUpdate', documentUpdate)
-      console.log('>>>> scriptUpdate', scriptUpdate)
-
-      return { documentUpdate, scriptUpdate };
-    }
-    case 'remove': {
-      const scriptUpdate: Script = {
-        source:
-          'def removeContact(int contactId, List contacts) { contacts.removeIf(contact -> contact.id == contactId); } removeContact(params.contactId, ctx._source.contacts);',
-        params: {
-          contactId: payload.contact.id,
-        },
-      };
-
-      return { documentUpdate: {}, scriptUpdate };
-    }
-    default: {
-      return assertExhaustive(operation);
-    }
-  }
-};
-
-const convertToCaseScriptUpdate = (
-  payload: IndexPayload,
-): {
-  documentUpdate: CreateIndexConvertedDocument<CaseDocument>;
-  scriptUpdate: Script;
-} => {
-  if (payload.type === 'contact') {
-    return convertContactToCaseScriptUpdate(payload);
-  }
-
-  throw new Error(
-    `convertToCaseScriptDocument not implemented for type ${payload.type} and operation ${payload.operation}`,
-  );
-};
-
-export const convertToScriptUpdate = (
-  payload: IndexPayload,
-  indexName: string,
-): {
-  documentUpdate: CreateIndexConvertedDocument<ContactDocument | CaseDocument>;
-  scriptUpdate: Script;
-} => {
-  if (indexName.endsWith(HRM_CASES_INDEX_TYPE)) {
-    return convertToCaseScriptUpdate(payload);
-  }
-
-  throw new Error(`convertToScriptDocument not implemented for index ${indexName}`);
 };

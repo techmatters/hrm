@@ -14,22 +14,20 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import {
-  IndexPayload,
-  convertToIndexDocument,
-  convertToScriptUpdate,
-} from './convertToIndexDocument';
+import { convertToIndexDocument } from './convertToIndexDocument';
+import { convertToScriptUpdate } from './convertToScriptUpdate';
 import { getCreateIndexParams } from './getCreateIndexParams';
 import type {
   IndexConfiguration,
   SearchConfiguration,
 } from '@tech-matters/elasticsearch-client';
+import { IndexPayload } from './payload';
 
 export {
   HRM_CASES_INDEX_TYPE,
   HRM_CONTACTS_INDEX_TYPE,
 } from './hrmIndexDocumentMappings';
-export { IndexMessage, IndexPayload } from './convertToIndexDocument';
+export { IndexMessage, IndexPayload } from './payload';
 
 export const hrmSearchConfiguration: SearchConfiguration = {
   searchFieldBoosts: {
