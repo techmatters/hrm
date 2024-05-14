@@ -43,33 +43,45 @@ const scrubS3Transcript = async (bucket: string, key: string) => {
     bucket,
     key,
   });
-  const sampleDoc = JSON.parse(transcriptS3ObjectText);
+  const transcript = JSON.parse(transcriptS3ObjectText);
 
   const response = await fetch(LOCAL_PRIVATEAI_URI_ENDPOINT, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ text: [sampleDoc.text] }),
+    body: JSON.stringify({ text: transcript.messages.map(m => m.body) }),
   });
   const responsePayload = await response.json();
   console.log(response.status, JSON.stringify(responsePayload, null, 2));
-  const [result] = responsePayload as { processed_text: string }[];
+  const results = responsePayload as { processed_text: string }[];
   const scrubbedKey = key.replace('transcripts', 'scrubbed-transcripts');
+  const scrubbedMessages = transcript.messages.map((m, idx) => ({
+    ...m,
+    body: results[idx].processed_text,
+  }));
+  const scrubbedTranscriptJson = JSON.stringify(
+    { ...transcript, messages: scrubbedMessages },
+    null,
+    2,
+  );
+  console.debug('Saving', scrubbedKey, scrubbedTranscriptJson);
   await putS3Object({
     bucket,
     key: scrubbedKey,
-    body: JSON.stringify({ ...sampleDoc, text: result.processed_text }, null, 2),
+    body: scrubbedTranscriptJson,
   });
   return scrubbedKey;
 };
 
 const pollQueue = async (): Promise<boolean> => {
-  const {
-    Messages: [message],
-  } = await receiveSqsMessage({
+  console.log('Polling queue', PENDING_TRANSCRIPT_SQS_QUEUE_URL);
+  const messagesPayload = await receiveSqsMessage({
     queueUrl: PENDING_TRANSCRIPT_SQS_QUEUE_URL,
   });
+  const [message] = Array.isArray(messagesPayload?.Messages)
+    ? messagesPayload?.Messages
+    : [];
   if (!message) {
     return false;
   }
