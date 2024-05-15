@@ -40,7 +40,7 @@ import {
   patch,
   search,
   searchByProfileId,
-  searchByIds,
+  searchByContactIds,
 } from './contactDataAccess';
 
 import { PaginationQuery, getPaginationElements } from '../search';
@@ -427,7 +427,7 @@ export const getContactsByProfileId = async (
   }
 };
 
-const searchContactsByIds = generalizedSearchContacts(searchByIds);
+const searchContactsByIds = generalizedSearchContacts(searchByContactIds);
 
 export const searchContactsByIdCtx = async (
   accountSid: HrmAccountId,

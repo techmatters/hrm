@@ -20,6 +20,7 @@ import { PATCH_CASE_INFO_BY_ID, updateByIdSql } from './sql/caseUpdateSql';
 import {
   OrderByColumnType,
   SearchQueryBuilder,
+  getCasesByIds,
   selectCaseSearch,
   selectCaseSearchByProfileId,
 } from './sql/caseSearchSql';
@@ -297,3 +298,14 @@ export const updateCaseInfo = async (
     });
   });
 };
+
+export const searchByCaseIds = generalizedSearchQueryFunction<{ caseIds: number[] }>(
+  getCasesByIds,
+  (accountSid, user, searchCriteria, filters, limit, offset) => ({
+    accountSid,
+    limit,
+    offset,
+    caseIds: searchCriteria.caseIds,
+    twilioWorkerSid: user.workerSid,
+  }),
+);

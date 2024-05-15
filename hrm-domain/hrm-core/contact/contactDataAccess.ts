@@ -298,7 +298,7 @@ const generalizedSearchQueryFunction = <T>(
           sqlQueryGenerator(viewPermissions, user.isSupervisor),
           sqlQueryParamsBuilder(accountSid, user, searchParameters, limit, offset),
         );
-      console.log('>>> data access', '3. generalizedSearchQueryFunction', {
+      console.log('>>> data access', 'generalizedSearchQueryFunction', {
         searchParameters,
         viewPermissions,
       });
@@ -330,7 +330,7 @@ export const searchByProfileId: SearchQueryFunction<
   },
 );
 
-export const searchByIds: SearchQueryFunction<
+export const searchByContactIds: SearchQueryFunction<
   Pick<OptionalSearchQueryParams, 'counselor'> & {
     contactIds: Contact['id'][];
   }

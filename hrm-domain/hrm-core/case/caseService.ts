@@ -32,6 +32,7 @@ import {
   updateStatus,
   CaseRecordUpdate,
   updateCaseInfo,
+  searchByCaseIds,
 } from './caseDataAccess';
 import { randomUUID } from 'crypto';
 import { InitializedCan } from '../permissions/initializeCanForRules';
@@ -450,6 +451,32 @@ export const getCasesByProfileId = async (
 > => {
   try {
     const cases = await searchCasesByProfileId(accountSid, query, { profileId }, {}, ctx);
+
+    return newOk({ data: cases });
+  } catch (err) {
+    return newErr({
+      message: err instanceof Error ? err.message : String(err),
+      error: 'InternalServerError',
+    });
+  }
+};
+
+export const searchCasesByIds = generalizedSearchCases(searchByCaseIds);
+
+export const searchCasesByIdCtx = async (
+  accountSid: HrmAccountId,
+  caseIds: CaseRecord['id'][],
+  query: Pick<PaginationQuery, 'limit' | 'offset'>,
+  ctx: {
+    can: InitializedCan;
+    user: TwilioUser;
+    permissions: RulesFile;
+  },
+): Promise<
+  TResult<'InternalServerError', Awaited<ReturnType<typeof searchCasesByIds>>>
+> => {
+  try {
+    const cases = await searchCasesByIds(accountSid, query, { caseIds }, {}, ctx);
 
     return newOk({ data: cases });
   } catch (err) {
