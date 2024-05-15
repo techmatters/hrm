@@ -107,7 +107,7 @@ const main = async () => {
 
   const timestamp = new Date().getTime();
   const assumeRoleParams = {
-    RoleArn: 'arn:aws:iam::712893914485:role/admin-no-pii',
+    RoleArn: 'arn:aws:iam::712893914485:role/tf-admin',
     RoleSessionName: `es-reindex-${timestamp}`,
   };
 
