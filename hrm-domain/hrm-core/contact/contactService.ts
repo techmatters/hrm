@@ -50,7 +50,7 @@ import { actionsMaps } from '../permissions';
 import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { createReferral } from '../referral/referral-model';
 import { createContactJob } from '../contact-job/contact-job';
-import { isChatChannel } from './channelTypes';
+import { isChatChannel } from '@tech-matters/hrm-types';
 import { enableCreateContactJobsFlag } from '../featureFlags';
 import { db } from '../connection-pool';
 import {
