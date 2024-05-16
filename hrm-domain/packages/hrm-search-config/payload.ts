@@ -19,13 +19,13 @@ import { AccountSID } from '@tech-matters/types';
 
 type IndexOperation = 'index' | 'remove';
 
-type IndexContactMessage = {
+export type IndexContactMessage = {
   type: 'contact';
   operation: IndexOperation;
   contact: Pick<Contact, 'id'> & Partial<Contact>;
 };
 
-type IndexCaseMessage = {
+export type IndexCaseMessage = {
   type: 'case';
   operation: IndexOperation;
   case: Pick<CaseService, 'id'> &
@@ -40,7 +40,7 @@ export type IndexMessage = { accountSid: AccountSID } & (
 );
 
 export type IndexPayloadContact = IndexContactMessage & {
-  transcript: NonNullable<string>;
+  transcript: string | null;
 };
 
 export type IndexPayloadCase = IndexCaseMessage;
