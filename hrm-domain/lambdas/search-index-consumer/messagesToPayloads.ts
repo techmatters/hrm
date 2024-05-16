@@ -59,11 +59,15 @@ const intermediateContactMessage = async (
   if (m.message.contact.channel && isChatChannel(m.message.contact.channel)) {
     const transcriptEntry =
       m.message.contact.conversationMedia?.find(isS3StoredTranscript);
+
+    console.log('>>>>>>>> transcriptEntry', transcriptEntry);
+
     if (transcriptEntry) {
       const { location } = transcriptEntry.storeTypeSpecificData;
       const { bucket, key } = location || {};
       if (bucket && key) {
         transcript = await getS3Object({ bucket, key });
+        console.log('>>>>>>>> transcript', transcript);
       }
     }
   }
