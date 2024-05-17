@@ -23,7 +23,6 @@ import {
   CaseListConfiguration,
   CaseListFilters,
   CaseRecord,
-  CaseRecordCommon,
   CaseSearchCriteria,
   SearchQueryFunction,
   create,
@@ -35,76 +34,25 @@ import {
   updateCaseInfo,
 } from './caseDataAccess';
 import { randomUUID } from 'crypto';
-import type { Contact } from '../contact/contactDataAccess';
 import { InitializedCan } from '../permissions/initializeCanForRules';
 import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { bindApplyTransformations as bindApplyContactTransformations } from '../contact/contactService';
 import type { Profile } from '../profile/profileDataAccess';
 import type { PaginationQuery } from '../search';
-import { TResult, newErr, newOk } from '@tech-matters/types';
+import { HrmAccountId, TResult, newErr, newOk } from '@tech-matters/types';
+import {
+  WELL_KNOWN_CASE_SECTION_NAMES,
+  CaseService,
+  CaseInfoSection,
+} from '@tech-matters/hrm-types';
 import { RulesFile, TKConditionsSets } from '../permissions/rulesMap';
 import { CaseSectionRecord } from './caseSection/types';
 import { pick } from 'lodash';
 
+export { WELL_KNOWN_CASE_SECTION_NAMES, CaseService, CaseInfoSection };
+
 const CASE_OVERVIEW_PROPERTIES = ['summary', 'followUpDate', 'childIsAtRisk'] as const;
 type CaseOverviewProperties = (typeof CASE_OVERVIEW_PROPERTIES)[number];
-
-type CaseSection = Omit<CaseSectionRecord, 'accountSid' | 'sectionType' | 'caseId'>;
-
-type CaseInfoSection = {
-  id: string;
-  twilioWorkerId: string;
-  updatedAt?: string;
-  updatedBy?: string;
-} & Record<string, any>;
-
-const getSectionSpecificDataFromNotesOrReferrals = (
-  caseSection: CaseInfoSection,
-): Record<string, any> => {
-  const {
-    id,
-    twilioWorkerId,
-    createdAt,
-    updatedBy,
-    updatedAt,
-    accountSid,
-    ...sectionSpecificData
-  } = caseSection;
-  return sectionSpecificData;
-};
-
-export const WELL_KNOWN_CASE_SECTION_NAMES = {
-  households: { getSectionSpecificData: s => s.household, sectionTypeName: 'household' },
-  perpetrators: {
-    getSectionSpecificData: s => s.perpetrator,
-    sectionTypeName: 'perpetrator',
-  },
-  incidents: { getSectionSpecificData: s => s.incident, sectionTypeName: 'incident' },
-  counsellorNotes: {
-    getSectionSpecificData: getSectionSpecificDataFromNotesOrReferrals,
-    sectionTypeName: 'note',
-  },
-  referrals: {
-    getSectionSpecificData: getSectionSpecificDataFromNotesOrReferrals,
-    sectionTypeName: 'referral',
-  },
-  documents: { getSectionSpecificData: s => s.document, sectionTypeName: 'document' },
-} as const;
-
-type PrecalculatedPermissions = Record<'userOwnsContact', boolean>;
-
-type CaseSectionsMap = {
-  [k in (typeof WELL_KNOWN_CASE_SECTION_NAMES)[keyof typeof WELL_KNOWN_CASE_SECTION_NAMES]['sectionTypeName']]?: CaseSection[];
-};
-
-export type CaseService = CaseRecordCommon & {
-  id: number;
-  childName?: string;
-  categories: Record<string, string[]>;
-  precalculatedPermissions?: PrecalculatedPermissions;
-  connectedContacts?: Contact[];
-  sections: CaseSectionsMap;
-};
 
 type RecursivePartial<T> = {
   [P in keyof T]?: RecursivePartial<T[P]>;
@@ -384,7 +332,7 @@ export const updateCaseOverview = async (
 
 export const getCase = async (
   id: number,
-  accountSid: string,
+  accountSid: HrmAccountId,
   {
     can,
     user,
@@ -436,7 +384,7 @@ const generalizedSearchCases =
     searchQuery: SearchQueryFunction<T>,
   ) =>
   async (
-    accountSid: string,
+    accountSid: HrmAccountId,
     listConfiguration: CaseListConfiguration,
     searchParameters: T,
     filterParameters: U,
@@ -489,7 +437,7 @@ export const searchCases = generalizedSearchCases(search);
 const searchCasesByProfileId = generalizedSearchCases(searchByProfileId);
 
 export const getCasesByProfileId = async (
-  accountSid: string,
+  accountSid: HrmAccountId,
   profileId: Profile['id'],
   query: Pick<PaginationQuery, 'limit' | 'offset'>,
   ctx: {

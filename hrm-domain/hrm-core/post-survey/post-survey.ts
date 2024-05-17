@@ -20,13 +20,14 @@ import {
   NewPostSurvey,
   PostSurvey,
 } from './post-survey-data-access';
+import { HrmAccountId } from '@tech-matters/types';
 
 export const createPostSurvey = async (
-  accountSid: string,
+  accountSid: HrmAccountId,
   postSurvey: NewPostSurvey,
 ): Promise<PostSurvey> => create(accountSid, postSurvey);
 
 export const getPostSurveysByContactTaskId = async (
-  accountSid: string,
+  accountSid: HrmAccountId,
   contactTaskId: string,
 ): Promise<PostSurvey[]> => filterByContactTaskId(accountSid, contactTaskId);

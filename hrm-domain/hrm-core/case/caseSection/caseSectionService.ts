@@ -17,10 +17,13 @@
 /**
  * This is the 'business logic' module for Case Section CRUD operations.
  */
-import { CaseSectionRecord } from './types';
 import { randomUUID } from 'crypto';
-import { CaseSection, CaseSectionUpdate, NewCaseSection } from './types';
-import { AccountSID } from '@tech-matters/types';
+import {
+  CaseSection,
+  CaseSectionUpdate,
+  NewCaseSection,
+  CaseSectionRecord,
+} from './types';
 import {
   create,
   deleteById,
@@ -29,9 +32,10 @@ import {
   TimelineResult,
   updateById,
 } from './caseSectionDataAccess';
-import { TwilioUser } from '@tech-matters/twilio-worker-auth/dist';
+import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { RulesFile, TKConditionsSets } from '../../permissions/rulesMap';
 import { ListConfiguration } from '../caseDataAccess';
+import { HrmAccountId } from '@tech-matters/types';
 
 const sectionRecordToSection = (
   sectionRecord: CaseSectionRecord | undefined,
@@ -44,7 +48,7 @@ const sectionRecordToSection = (
 };
 
 export const createCaseSection = async (
-  accountSid: AccountSID,
+  accountSid: HrmAccountId,
   caseId: string,
   sectionType: string,
   newSection: NewCaseSection,
@@ -65,7 +69,7 @@ export const createCaseSection = async (
 };
 
 export const replaceCaseSection = async (
-  accountSid: AccountSID,
+  accountSid: HrmAccountId,
   caseId: string,
   sectionType: string,
   sectionId: string,
@@ -91,7 +95,7 @@ export const replaceCaseSection = async (
 };
 
 export const getCaseSection = async (
-  accountSid: string,
+  accountSid: HrmAccountId,
   caseId: string,
   sectionType: string,
   sectionId: string,
@@ -102,7 +106,7 @@ export const getCaseSection = async (
 };
 
 export const getCaseTimeline = async (
-  accountSid: string,
+  accountSid: HrmAccountId,
   {
     user,
     permissions,
@@ -128,7 +132,7 @@ export const getCaseTimeline = async (
 };
 
 export const getCaseSectionTypeList = async (
-  accountSid: string,
+  accountSid: HrmAccountId,
 
   req: {
     user: TwilioUser;
@@ -145,7 +149,7 @@ export const getCaseSectionTypeList = async (
   ).activities.map(event => sectionRecordToSection(event.activity));
 
 export const deleteCaseSection = async (
-  accountSid: AccountSID,
+  accountSid: HrmAccountId,
   caseId: string,
   sectionType: string,
   sectionId: string,

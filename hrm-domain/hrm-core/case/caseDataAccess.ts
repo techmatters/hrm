@@ -29,28 +29,16 @@ import { Contact } from '../contact/contactDataAccess';
 import { DateFilter, OrderByDirectionType } from '../sql';
 import { TKConditionsSets } from '../permissions/rulesMap';
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
-import { AccountSID } from '@tech-matters/types';
+import { TwilioUserIdentifier } from '@tech-matters/types';
+import {
+  PrecalculatedCasePermissionConditions,
+  CaseRecordCommon,
+} from '@tech-matters/hrm-types';
 import { CaseSectionRecord } from './caseSection/types';
 import { pick } from 'lodash';
+import { HrmAccountId } from '@tech-matters/types';
 
-export type PrecalculatedCasePermissionConditions = {
-  isCaseContactOwner: boolean; // Does the requesting user own any of the contacts currently connected to the case?
-};
-
-export type CaseRecordCommon = {
-  info: any;
-  helpline: string;
-  status: string;
-  twilioWorkerId: string;
-  createdBy: string;
-  updatedBy: string;
-  accountSid: AccountSID;
-  createdAt: string;
-  updatedAt: string;
-  statusUpdatedAt?: string;
-  statusUpdatedBy?: string;
-  previousStatus?: string;
-};
+export { PrecalculatedCasePermissionConditions, CaseRecordCommon };
 
 // Exported for testing
 export const VALID_CASE_CREATE_FIELDS: (keyof CaseRecordCommon)[] = [
@@ -138,7 +126,7 @@ export const create = async (caseRecord: Partial<NewCaseRecord>): Promise<CaseRe
 
 export const getById = async (
   caseId: number,
-  accountSid: string,
+  accountSid: HrmAccountId,
   { workerSid, isSupervisor }: TwilioUser,
   contactViewPermissions: TKConditionsSets<'contact'>,
   onlyEssentialData?: boolean,
@@ -156,13 +144,13 @@ export const getById = async (
 };
 
 export type BaseSearchQueryParams = {
-  accountSid: string;
+  accountSid: HrmAccountId;
   limit: number;
   offset: number;
 };
 export type OptionalSearchQueryParams = Partial<CaseSearchCriteria & CaseListFilters>;
 type SearchQueryParamsBuilder<T> = (
-  accountSid: string,
+  accountSid: HrmAccountId,
   user: TwilioUser,
   searchCriteria: T,
   filters: CaseListFilters,
@@ -175,7 +163,7 @@ export type SearchQueryFunction<T> = (
   viewCasePermissions: TKConditionsSets<'case'>,
   viewContactPermissions: TKConditionsSets<'contact'>,
   listConfiguration: CaseListConfiguration,
-  accountSid: string,
+  accountSid: HrmAccountId,
   searchCriteria: T,
   filters?: CaseListFilters,
   onlyEssentialData?: boolean,
@@ -268,8 +256,8 @@ export const deleteById = async (id, accountSid) => {
 export const updateStatus = async (
   id,
   status: string,
-  updatedBy: string,
-  accountSid: string,
+  updatedBy: TwilioUserIdentifier,
+  accountSid: HrmAccountId,
   { isSupervisor }: TwilioUser,
   contactViewPermissions: TKConditionsSets<'contact'>,
 ) => {
@@ -294,7 +282,7 @@ export const updateStatus = async (
 };
 
 export const updateCaseInfo = async (
-  accountSid: string,
+  accountSid: HrmAccountId,
   caseId: CaseRecord['id'],
   infoPatch: CaseRecord['info'],
   updatedBy: string,

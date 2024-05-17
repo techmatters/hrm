@@ -21,7 +21,7 @@ import { DELETE_CASE_SECTION_BY_ID } from './sql/deleteSql';
 import { UPDATE_CASE_SECTION_BY_ID } from './sql/updateSql';
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { TKConditionsSets } from '../../permissions/rulesMap';
-import { isOk } from '@tech-matters/types';
+import { isOk, HrmAccountId } from '@tech-matters/types';
 import { Contact } from '../../contact/contactDataAccess';
 import { txIfNotInOne } from '../../sql';
 import { TOUCH_CASE_SQL } from '../sql/caseUpdateSql';
@@ -77,7 +77,7 @@ export const create =
   };
 
 export const getById = async (
-  accountSid: string,
+  accountSid: HrmAccountId,
   caseId: number,
   sectionType,
   sectionId,
@@ -91,7 +91,7 @@ export const getById = async (
 export const deleteById =
   (task?) =>
   async (
-    accountSid: string,
+    accountSid: HrmAccountId,
     caseId: number,
     sectionType: CaseSectionRecord['sectionType'],
     sectionId: CaseSectionRecord['sectionId'],
@@ -117,7 +117,7 @@ export const deleteById =
 export const updateById =
   (task?) =>
   async (
-    accountSid: string,
+    accountSid: HrmAccountId,
     caseId: number,
     sectionType: string,
     sectionId: string,
@@ -146,7 +146,7 @@ export const updateById =
 export type TimelineResult = { count: number; activities: TimelineActivity<any>[] };
 
 export const getTimeline = async (
-  accountSid: string,
+  accountSid: HrmAccountId,
   twilioUser: TwilioUser,
   viewContactsPermissions: TKConditionsSets<'contact'>,
   caseId: number,

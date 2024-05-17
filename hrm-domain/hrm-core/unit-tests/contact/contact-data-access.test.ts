@@ -24,7 +24,12 @@ import { OPEN_CONTACT_ACTION_CONDITIONS } from '../mocks';
 
 let conn: pgPromise.ITask<unknown>;
 
-const twilioUser: TwilioUser = { workerSid: 'WKxx', isSupervisor: true, roles: [] };
+const twilioUser: TwilioUser = {
+  accountSid: 'ACxx',
+  workerSid: 'WKxx',
+  isSupervisor: true,
+  roles: [],
+};
 
 beforeEach(() => {
   conn = mockConnection();
@@ -61,12 +66,12 @@ describe('create', () => {
 
     jest.spyOn(conn, 'one').mockResolvedValue(returnValue);
 
-    const created = await create()('parameter account-sid', sampleNewContact);
+    const created = await create()('AC parameter accountSid', sampleNewContact);
     expect(conn.one).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO'), {
       ...sampleNewContact,
       updatedAt: expect.anything(),
       createdAt: expect.anything(),
-      accountSid: 'parameter account-sid',
+      accountSid: 'AC parameter accountSid',
     });
     const { isNewRecord, ...returnedContact } = returnValue;
     expect(created).toStrictEqual({
@@ -81,12 +86,12 @@ describe('create', () => {
 
     jest.spyOn(conn, 'one').mockResolvedValue(returnValue);
 
-    const created = await create()('parameter account-sid', sampleNewContact);
+    const created = await create()('AC parameter account sid', sampleNewContact);
     expect(conn.one).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO'), {
       ...sampleNewContact,
       updatedAt: expect.anything(),
       createdAt: expect.anything(),
-      accountSid: 'parameter account-sid',
+      accountSid: 'AC parameter account sid',
     });
     const { isNewRecord, ...returnedContact } = returnValue;
     expect(created).toStrictEqual({
@@ -97,7 +102,7 @@ describe('create', () => {
 });
 
 describe('search', () => {
-  const ACCOUNT_SID = 'search-account-sid';
+  const ACCOUNT_SID = 'AC-search-account-sid';
 
   const emptySearch = {
     helpline: undefined,

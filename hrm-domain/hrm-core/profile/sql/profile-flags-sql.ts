@@ -15,13 +15,14 @@
  */
 
 import { pgp } from '../../connection-pool';
+import { TwilioUserIdentifier, HrmAccountId } from '@tech-matters/types';
 
 type NewRecordCommons = {
-  accountSid: string;
+  accountSid: HrmAccountId;
   createdAt: Date;
   updatedAt: Date;
-  createdBy: string;
-  updatedBy: string;
+  createdBy: TwilioUserIdentifier;
+  updatedBy: TwilioUserIdentifier;
 };
 
 export type NewProfileFlagRecord = {

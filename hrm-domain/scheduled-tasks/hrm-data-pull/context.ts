@@ -16,6 +16,8 @@
 
 import { getSsmParameter } from '@tech-matters/ssm-cache';
 import { rulesMap } from '@tech-matters/hrm-core/permissions/rulesMap';
+import { HrmAccountId } from '@tech-matters/types';
+import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 
 // const sanitizeEnv = (env: string) => (env === 'local' ? 'development' : env);
 
@@ -28,7 +30,7 @@ type ContextConfigOverrides = {
 };
 
 type Context = {
-  accountSid: string;
+  accountSid: HrmAccountId;
   bucket: string;
   hrmEnv: string;
   shortCode: string;
@@ -46,9 +48,9 @@ export const applyContextConfigOverrides = ({
 
 export const getContext = async (): Promise<Context> => {
   if (!context) {
-    const accountSid = await getSsmParameter(
+    const accountSid = (await getSsmParameter(
       `/${hrmEnv}/twilio/${shortCode}/account_sid`,
-    );
+    )) as HrmAccountId;
     const bucket = await getSsmParameter(`/${hrmEnv}/s3/${accountSid}/docs_bucket_name`);
 
     return {
@@ -62,9 +64,14 @@ export const getContext = async (): Promise<Context> => {
   return context;
 };
 
-export const maxPermissions = {
+export const maxPermissions: {
+  user: TwilioUser;
+  can: () => boolean;
+  permissions: (typeof rulesMap)[keyof typeof rulesMap];
+} = {
   can: () => true,
   user: {
+    accountSid: 'ACxxx',
     workerSid: 'WKxxx',
     roles: ['supervisor'],
     isSupervisor: true,

@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { AccountSID, ReferrableResource } from '@tech-matters/types';
+import { ReferrableResource, HrmAccountId } from '@tech-matters/types';
 import { SearchParameters } from '@tech-matters/elasticsearch-client';
 
 import { Request, Response, Router } from 'express';
@@ -48,7 +48,7 @@ beforeEach(() => {
 
 describe('POST /search', () => {
   type SearchRequestHandler = (
-    req: Partial<Request<Partial<SearchParameters>>> & { accountSid: AccountSID },
+    req: Partial<Request<Partial<SearchParameters>>> & { hrmAccountId: HrmAccountId },
     res: Response,
   ) => Promise<void>;
 
@@ -91,7 +91,7 @@ describe('POST /search', () => {
       {
         query: { limit: '1337', start: '42' } as any,
         body: { generalSearchTerm: 'Reso' },
-        accountSid: 'AC1',
+        hrmAccountId: 'AC1',
       },
       response,
     );
@@ -113,7 +113,7 @@ describe('POST /search', () => {
       {
         query: {} as any,
         body: { generalSearchTerm: 'Reso' },
-        accountSid: 'AC1',
+        hrmAccountId: 'AC1',
       },
       response,
     );
@@ -135,7 +135,7 @@ describe('POST /search', () => {
       {
         query: { limit: 'some', start: 'crap' } as any,
         body: { generalSearchTerm: 'Reso' },
-        accountSid: 'AC1',
+        hrmAccountId: 'AC1',
       },
       response,
     );
@@ -161,7 +161,7 @@ describe('POST /search', () => {
             some: 'filter',
           },
         },
-        accountSid: 'AC1',
+        hrmAccountId: 'AC1',
       },
       response,
     );
@@ -184,7 +184,7 @@ describe('POST /search', () => {
       {
         query: {} as any,
         body: {},
-        accountSid: 'AC1',
+        hrmAccountId: 'AC1',
       },
       response,
     );
@@ -204,7 +204,7 @@ describe('POST /search', () => {
     await searchRequestHandler(
       {
         query: {} as any,
-        accountSid: 'AC1',
+        hrmAccountId: 'AC1',
       },
       response,
     );

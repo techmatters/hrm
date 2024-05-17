@@ -31,7 +31,7 @@ import {
   ContactJobAttemptResult,
   ContactJobType,
 } from '@tech-matters/types';
-import { twilioUser } from '@tech-matters/twilio-worker-auth';
+import { newTwilioUser } from '@tech-matters/twilio-worker-auth';
 import { NewConversationMedia } from '@tech-matters/hrm-core/conversation-media/conversation-media';
 import { NewContactRecord } from '@tech-matters/hrm-core/contact/sql/contactInsertSql';
 
@@ -118,7 +118,7 @@ const createChatContact = async (channel: string, startedTimestamp: number) => {
     contactTobeCreated,
     {
       can: () => true,
-      user: twilioUser(workerSid, []),
+      user: newTwilioUser(accountSid, workerSid, []),
     },
   );
 
@@ -128,7 +128,7 @@ const createChatContact = async (channel: string, startedTimestamp: number) => {
     [SAMPLE_CONVERSATION_MEDIA],
     {
       can: () => true,
-      user: twilioUser(workerSid, []),
+      user: newTwilioUser(accountSid, workerSid, []),
     },
   );
 

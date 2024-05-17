@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { AccountSID, FlatResource } from '@tech-matters/types';
+import { FlatResource, HrmAccountId } from '@tech-matters/types';
 
 export const BLANK_ATTRIBUTES: Omit<
   FlatResource,
@@ -28,7 +28,7 @@ export const BLANK_ATTRIBUTES: Omit<
 };
 
 export const generateImportResource =
-  (baselineDate: Date, accountSid: AccountSID) =>
+  (baselineDate: Date, accountSid: HrmAccountId) =>
   (
     resourceIdSuffix: string,
     lastUpdated: Date,

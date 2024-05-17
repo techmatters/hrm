@@ -20,6 +20,7 @@ import {
   ImportProgress,
   FlatResource,
   ImportBatch,
+  HrmAccountId,
 } from '@tech-matters/types';
 
 const DELETE_RESOURCE_ATTRIBUTES_SQL = `DELETE FROM resources."ResourceStringAttributes" WHERE "resourceId" = $<resourceId> AND "accountSid" = $<accountSid>;
@@ -28,7 +29,7 @@ const DELETE_RESOURCE_ATTRIBUTES_SQL = `DELETE FROM resources."ResourceStringAtt
     DELETE FROM resources."ResourceDateTimeAttributes" WHERE "resourceId" = $<resourceId> AND "accountSid" = $<accountSid>`;
 
 export const generateUpsertSqlFromImportResource = (
-  accountSid: string,
+  accountSid: HrmAccountId,
   { stringAttributes, referenceStringAttributes, ...resourceRecord }: FlatResource,
 ): string => {
   const sqlBatch: string[] = [];

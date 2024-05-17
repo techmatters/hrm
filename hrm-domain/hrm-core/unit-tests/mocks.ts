@@ -1,4 +1,4 @@
-import { twilioUser } from '@tech-matters/twilio-worker-auth';
+import { newTwilioUser } from '@tech-matters/twilio-worker-auth';
 import { openPermissions } from '../permissions/json-permissions';
 import { TKConditionsSets } from '../permissions/rulesMap';
 
@@ -22,7 +22,7 @@ export const workerSid = 'WK-worker-sid';
 export const accountSid = 'ACCOUNT_SID';
 
 export const ALWAYS_CAN = {
-  user: twilioUser(workerSid, []),
+  user: newTwilioUser(accountSid, workerSid, []),
   can: () => true,
   permissions: openPermissions.rules('ACx'),
 };

@@ -46,6 +46,9 @@ const mockIsTwilioTaskTransferTarget = isTwilioTaskTransferTarget as jest.Mocked
   typeof isTwilioTaskTransferTarget
 >;
 const BASELINE_DATE = parseISO('2022-05-05 12:00:00');
+const accountSid1 = 'ACtwilio-hrm1';
+const thisWorkerSid = 'WK-thisWorker';
+const otherWorkerSid = 'WK-otherWorker';
 
 let req: any;
 const next = jest.fn();
@@ -57,9 +60,8 @@ beforeEach(() => {
     authorize: jest.fn(),
     unauthorize: jest.fn(),
     can: jest.fn(),
-    user: { workerSid: 'worker1' },
-    accountSid: 'account1',
-    hrmAccountId: 'account1',
+    user: { workerSid: 'WK-worker1', accountSid: 'ACtwilio' },
+    hrmAccountId: accountSid1,
     body: {},
   };
   next.mockClear();
@@ -98,16 +100,16 @@ const draftContactTests =
       // Draft contact authorization doesn't care about the can response, so always return false
       req.can.mockReturnValue(false);
       req.body = { conversationDuration: 123 };
-      req.user = { workerSid: 'thisWorker' };
-      process.env.TWILIO_AUTH_TOKEN_account1 = 'account1 token';
+      req.user = { accountSid: 'ACtwilio', workerSid: thisWorkerSid };
+      process.env.TWILIO_AUTH_TOKEN_ACtwilio = 'account1 token';
       await setup();
     });
 
     test(`Request user matches contact creator - ${expectedDescription}`, async () => {
       mockGetContactById.mockResolvedValue(
         new ContactBuilder()
-          .withCreatedBy('thisWorker')
-          .withTwilioWorkerId('otherWorker')
+          .withCreatedBy(thisWorkerSid)
+          .withTwilioWorkerId(otherWorkerSid)
           .build(),
       );
       await canPerformEditContactAction(req, {}, next);
@@ -117,8 +119,8 @@ const draftContactTests =
     test(`Request user matches contact owner - ${expectedDescription}`, async () => {
       mockGetContactById.mockResolvedValue(
         new ContactBuilder()
-          .withCreatedBy('otherWorker')
-          .withTwilioWorkerId('thisWorker')
+          .withCreatedBy(otherWorkerSid)
+          .withTwilioWorkerId(thisWorkerSid)
           .build(),
       );
       await canPerformEditContactAction(req, {}, next);
@@ -128,8 +130,8 @@ const draftContactTests =
     test(`Request user is not the owner or the creator, but is the target of a transfer - ${expectedDescription}`, async () => {
       mockGetContactById.mockResolvedValue(
         new ContactBuilder()
-          .withCreatedBy('otherWorker')
-          .withTwilioWorkerId('otherWorker')
+          .withCreatedBy(otherWorkerSid)
+          .withTwilioWorkerId(otherWorkerSid)
           .withTaskId('original task')
           .build(),
       );
@@ -137,14 +139,14 @@ const draftContactTests =
       mockIsTwilioTaskTransferTarget.mockResolvedValue(true);
       await canPerformEditContactAction(req, {}, next);
       expect(getClient).toHaveBeenCalledWith({
-        accountSid: 'account1',
+        accountSid: 'ACtwilio',
         authToken: 'account1 token',
       });
       expect(isTwilioTaskTransferTarget).toHaveBeenCalledWith(
-        await getClient({ accountSid: 'account1' }),
+        await getClient({ accountSid: accountSid1 }),
         'transfer task',
         'original task',
-        'thisWorker',
+        thisWorkerSid,
       );
       expectation();
     });
@@ -152,8 +154,8 @@ const draftContactTests =
     test('Request user is not the owner or the creator, nor target of a transfer - unauthorizes', async () => {
       mockGetContactById.mockResolvedValue(
         new ContactBuilder()
-          .withCreatedBy('otherWorker')
-          .withTwilioWorkerId('otherWorker')
+          .withCreatedBy(otherWorkerSid)
+          .withTwilioWorkerId(otherWorkerSid)
           .withTaskId('original task')
           .build(),
       );
@@ -161,14 +163,14 @@ const draftContactTests =
       mockIsTwilioTaskTransferTarget.mockResolvedValue(false);
       await canPerformEditContactAction(req, {}, next);
       expect(getClient).toHaveBeenCalledWith({
-        accountSid: 'account1',
+        accountSid: 'ACtwilio',
         authToken: 'account1 token',
       });
       expect(isTwilioTaskTransferTarget).toHaveBeenCalledWith(
-        await getClient({ accountSid: 'account1' }),
+        await getClient({ accountSid: accountSid1 }),
         'transfer task',
         'original task',
-        'thisWorker',
+        thisWorkerSid,
       );
       expectToBeUnuthorized();
     });

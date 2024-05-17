@@ -61,7 +61,7 @@ describe('cleanupProfileFlags', () => {
     await Promise.all(
       p.profileFlags.map(pf =>
         profileDB.disassociateProfileFromProfileFlag()(accountSid, p.id, pf.id, {
-          user: { isSupervisor: false, roles: [], workerSid },
+          user: { accountSid, isSupervisor: false, roles: [], workerSid },
         }),
       ),
     );
@@ -75,7 +75,7 @@ describe('cleanupProfileFlags', () => {
           createdProfile.id,
           pf.id,
           null,
-          { user: { isSupervisor: false, roles: [], workerSid } },
+          { user: { accountSid, isSupervisor: false, roles: [], workerSid } },
         ),
       ),
     );
@@ -98,7 +98,7 @@ describe('cleanupProfileFlags', () => {
           createdProfile.id,
           pf.id,
           futureDate,
-          { user: { isSupervisor: false, roles: [], workerSid } },
+          { user: { accountSid, isSupervisor: false, roles: [], workerSid } },
         ),
       ),
     );
@@ -121,7 +121,7 @@ describe('cleanupProfileFlags', () => {
           createdProfile.id,
           pf.id,
           pastDate,
-          { user: { isSupervisor: false, roles: [], workerSid } },
+          { user: { accountSid, isSupervisor: false, roles: [], workerSid } },
         ),
       ),
     );

@@ -15,11 +15,12 @@
  */
 
 import { Contact } from '../../contact/contactDataAccess';
+import { TwilioUserIdentifier, WorkerSID } from '@tech-matters/types';
 
 const defaultContact: Contact = {
   id: 0,
   createdAt: new Date(2000, 0, 1).toISOString(),
-  accountSid: 'account-sid',
+  accountSid: 'AC-account-sid',
   number: 'Anonymous',
   rawJson: {
     callType: 'Someone calling about a child',
@@ -48,9 +49,9 @@ export class ContactBuilder {
 
   private callType: string;
 
-  private twilioWorkerId: string;
+  private twilioWorkerId: WorkerSID;
 
-  private createdBy: string;
+  private createdBy: TwilioUserIdentifier;
 
   private createdAt: string;
 
@@ -106,12 +107,12 @@ export class ContactBuilder {
     return this;
   }
 
-  withTwilioWorkerId(twilioWorkerId: string): ContactBuilder {
+  withTwilioWorkerId(twilioWorkerId: WorkerSID): ContactBuilder {
     this.twilioWorkerId = twilioWorkerId;
     return this;
   }
 
-  withCreatedBy(workerSid: string): ContactBuilder {
+  withCreatedBy(workerSid: TwilioUserIdentifier): ContactBuilder {
     this.createdBy = workerSid;
     return this;
   }

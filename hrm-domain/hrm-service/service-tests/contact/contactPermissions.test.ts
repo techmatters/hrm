@@ -25,7 +25,7 @@ import * as contactDb from '@tech-matters/hrm-core/contact/contactDataAccess';
 import * as contactService from '@tech-matters/hrm-core/contact/contactService';
 import { TargetKind } from '@tech-matters/hrm-core/permissions/actions';
 import { ContactRawJson } from '@tech-matters/hrm-core/contact/contactJson';
-import { AccountSID } from '@tech-matters/types';
+import { AccountSID, WorkerSID } from '@tech-matters/types';
 import { ALWAYS_CAN } from '../mocks';
 import { clearAllTables } from '../dbCleanup';
 import each from 'jest-each';
@@ -38,8 +38,8 @@ const server = getServer();
 const request = getRequest(server);
 
 const accountSid: AccountSID = `AC${randomBytes(16).toString('hex')}`;
-const userTwilioWorkerId = `WK${randomBytes(16).toString('hex')}`;
-const anotherUserTwilioWorkerId = `WK${randomBytes(16).toString('hex')}`;
+const userTwilioWorkerId: WorkerSID = `WK${randomBytes(16).toString('hex')}`;
+const anotherUserTwilioWorkerId: WorkerSID = `WK${randomBytes(16).toString('hex')}`;
 const rawJson: ContactRawJson = {
   callType: 'Silent',
   categories: {},
@@ -86,7 +86,7 @@ const rawJson: ContactRawJson = {
 };
 
 const createContact = async (
-  twilioWorkerId: string,
+  twilioWorkerId: WorkerSID,
   created?: Date,
 ): Promise<contactDb.Contact> => {
   const timeOfContact = formatISO(created ?? subMinutes(new Date(), 5));

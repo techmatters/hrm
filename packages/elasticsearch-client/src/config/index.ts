@@ -16,8 +16,7 @@
 export * from './indexConfiguration';
 export * from './searchConfiguration';
 
-export type CreateIndexConvertedDocument = {
+export type CreateIndexConvertedDocument<TDoc> = {
   high_boost_global: string;
   low_boost_global: string;
-  [key: string]: number | string | string[];
-};
+} & TDoc;

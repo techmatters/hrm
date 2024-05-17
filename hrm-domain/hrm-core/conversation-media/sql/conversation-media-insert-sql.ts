@@ -16,11 +16,12 @@
 
 import { pgp } from '../../connection-pool';
 import type { NewConversationMedia } from '../conversation-media-data-access';
+import { HrmAccountId } from '@tech-matters/types';
 
 export const insertConversationMediaSql = (
   conversationMedia: NewConversationMedia & {
     contactId: number;
-    accountSid: string;
+    accountSid: HrmAccountId;
     createdAt: Date;
     updatedAt: Date;
   },

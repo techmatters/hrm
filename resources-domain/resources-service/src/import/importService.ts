@@ -20,6 +20,7 @@ import {
   ImportBatch,
   ImportProgress,
   TimeSequence,
+  HrmAccountId,
 } from '@tech-matters/types';
 import { db } from '../connection-pool';
 import {
@@ -58,7 +59,7 @@ const compareTimeSequences = (a: TimeSequence, b: TimeSequence) => {
 const importService = () => {
   return {
     upsertResources: async (
-      accountSid: AccountSID,
+      accountSid: HrmAccountId,
       resources: FlatResource[],
       batch: ImportBatch,
     ): Promise<UpsertImportedResourceResult[] | ValidationFailure> => {

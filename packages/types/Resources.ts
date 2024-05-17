@@ -14,6 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 import { AccountSID } from './twilio';
+import { HrmAccountId } from './HrmAccountId';
 
 export type TimeSequence = `${number}-${number}`;
 
@@ -61,7 +62,7 @@ export const enum ResourcesJobType {
 }
 
 type ResourcesJobMessageCommons = {
-  accountSid: string;
+  accountSid: HrmAccountId;
 };
 
 export type ResourcesSearchIndexPayload = ResourcesJobMessageCommons & {

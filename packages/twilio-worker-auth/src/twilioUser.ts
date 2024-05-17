@@ -13,16 +13,24 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
+import { AccountSID, TwilioUserIdentifier } from '@tech-matters/types';
+
+export const SYSTEM_USER = {};
 
 export type TwilioUser = {
-  workerSid: string;
-
+  accountSid: AccountSID;
+  workerSid: TwilioUserIdentifier | undefined;
   roles: string[];
   isSupervisor: boolean;
 };
 
-export const twilioUser = (workerSid: string, roles: string[]): Readonly<TwilioUser> =>
+export const newTwilioUser = (
+  accountSid: AccountSID,
+  workerSid: TwilioUserIdentifier | undefined,
+  roles: string[],
+): Readonly<TwilioUser> =>
   Object.freeze({
+    accountSid,
     workerSid,
     roles,
     isSupervisor: roles.includes('supervisor'),
