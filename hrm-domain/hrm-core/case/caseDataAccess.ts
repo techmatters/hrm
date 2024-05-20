@@ -302,7 +302,6 @@ export const updateCaseInfo = async (
 export const searchByCaseIds = generalizedSearchQueryFunction<{
   caseIds: CaseRecord['id'][];
 }>(selectCasesByIds, (accountSid, user, searchCriteria, filters, limit, offset) => {
-  console.log('caseDataAccess', searchCriteria.caseIds);
   return {
     accountSid,
     limit,

@@ -414,7 +414,6 @@ const generalizedSearchCases =
     const viewCasePermissions = permissions.viewCase as TKConditionsSets<'case'>;
     const viewContactPermissions = permissions.viewContact as TKConditionsSets<'contact'>;
 
-    console.log('generalizedSearchCases caseService', searchParameters);
     const dbResult = await searchQuery(
       user,
       viewCasePermissions,
@@ -477,10 +476,7 @@ export const searchCasesByIdCtx = async (
   TResult<'InternalServerError', Awaited<ReturnType<typeof searchCasesByIds>>>
 > => {
   try {
-    console.log('b caseService');
-
     const cases = await searchCasesByIds(accountSid, query, { caseIds }, {}, ctx);
-    console.log('caseService', cases, caseIds);
 
     return newOk({ data: cases });
   } catch (err) {

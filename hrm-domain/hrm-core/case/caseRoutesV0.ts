@@ -199,21 +199,18 @@ casesRouter.post(
       const { hrmAccountId, params, can, user, permissions, query } = req;
 
       console.log('params', params); //params will have filters - counsellor, dateFrom, dateTo which will be applied by the ES client
-      const elasticSearchClient = async () => [37621, 37622];
+      const elasticSearchClient = async () => [42938, 42939, 42940, 42941];
       const esCaseIdsResult = await elasticSearchClient();
-      console.log('casesRouter', esCaseIdsResult);
       const casesResponse = await caseApi.searchCasesByIdCtx(
         hrmAccountId,
         esCaseIdsResult,
         query,
         { can, user, permissions },
       );
-      console.log('casesRouter casesResponse1', casesResponse);
 
       if (isErr(casesResponse)) {
         return next(mapHTTPError(casesResponse, { InternalServerError: 500 }));
       }
-      console.log('casesRouter casesResponse2', casesResponse);
 
       res.json(casesResponse);
     } catch (error) {
