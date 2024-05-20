@@ -137,7 +137,7 @@ contactsRouter.post(
 
       console.log('params', params); //params will have filters - counsellor, dateFrom, dateTo which will be applied by the ES client
       // mocked ES client results with an array of Ids for testing - currently not implemented
-      const elasticSearchClient = async () => [31699, 31798, 1];
+      const elasticSearchClient = async () => [40556, 40557, 40558];
       const esContactIdsResult = await elasticSearchClient();
 
       const contactsResponse = await searchContactsByIdCtx(
