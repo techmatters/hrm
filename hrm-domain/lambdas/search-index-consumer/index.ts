@@ -14,7 +14,6 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 import type { SQSBatchResponse, SQSEvent } from 'aws-lambda';
-// import { GetSignedUrlMethods, GET_SIGNED_URL_METHODS } from '@tech-matters/s3-client';
 import { HrmIndexProcessorError } from '@tech-matters/job-errors';
 import { isErr } from '@tech-matters/types';
 import { groupMessagesByAccountSid } from './messages';

@@ -110,10 +110,18 @@ const handleIndexPayload =
 const indexDocumentsByIndexMapper =
   (accountSid: string) =>
   async ([indexType, payloads]: [string, PayloadWithMeta[]]) => {
+    if (!process.env.ELASTICSEARCH_CONFIG_PARAMETER) {
+      throw new Error('ELASTICSEARCH_CONFIG_PARAMETER missing in environment variables');
+    }
+
     // get the client for the accountSid-indexType pair
-    const client = (await getClient({ accountSid, indexType })).indexClient(
-      hrmIndexConfiguration,
-    );
+    const client = (
+      await getClient({
+        accountSid,
+        indexType,
+        ssmConfigParameter: process.env.ELASTICSEARCH_CONFIG_PARAMETER,
+      })
+    ).indexClient(hrmIndexConfiguration);
 
     const mapper = handleIndexPayload({ client, accountSid, indexType });
 
