@@ -28,7 +28,8 @@ export const handler = async (event: SQSEvent): Promise<SQSBatchResponse> => {
     const messagesByAccoundSid = groupMessagesByAccountSid(event.Records);
 
     // generate corresponding IndexPayload for each IndexMessage and group them by target accountSid-indexType pair
-    const payloadsByAccountSid = messagesToPayloadsByAccountSid(messagesByAccoundSid);
+    const payloadsByAccountSid =
+      await messagesToPayloadsByAccountSid(messagesByAccoundSid);
 
     console.debug('Mapped messages:', JSON.stringify(payloadsByAccountSid, null, 2));
 

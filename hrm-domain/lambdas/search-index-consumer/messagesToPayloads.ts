@@ -13,13 +13,16 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-
+import { getS3Object } from '@tech-matters/s3-client';
 import {
   HRM_CASES_INDEX_TYPE,
   HRM_CONTACTS_INDEX_TYPE,
   type IndexPayload,
+  type IndexContactMessage,
+  type IndexCaseMessage,
 } from '@tech-matters/hrm-search-config';
 import { assertExhaustive, type AccountSID } from '@tech-matters/types';
+import { isChatChannel, isS3StoredTranscript } from '@tech-matters/hrm-types';
 import type { MessageWithMeta, MessagesByAccountSid } from './messages';
 
 /**
@@ -40,39 +43,104 @@ export type PayloadsByIndex = {
 };
 export type PayloadsByAccountSid = Record<AccountSID, PayloadsByIndex>;
 
-// TODO: Pull the transcripts from S3 (if any)
+/**
+ * ContactIndexingInputData type represents an "index contact" message, plus contact specific data that might be collected from other places other than the HRM DB (e.g. transcripts fetched from S3)
+ */
+type ContactIndexingInputData = MessageWithMeta & {
+  message: IndexContactMessage;
+} & {
+  transcript: string | null;
+};
+
+const contactIndexingInputData = async (
+  m: MessageWithMeta & {
+    message: IndexContactMessage;
+  },
+): Promise<ContactIndexingInputData> => {
+  let transcript: string | null = null;
+
+  if (m.message.contact.channel && isChatChannel(m.message.contact.channel)) {
+    const transcriptEntry =
+      m.message.contact.conversationMedia?.find(isS3StoredTranscript);
+
+    if (transcriptEntry) {
+      const { location } = transcriptEntry.storeTypeSpecificData;
+      const { bucket, key } = location || {};
+      if (bucket && key) {
+        transcript = await getS3Object({ bucket, key });
+      }
+    }
+  }
+
+  return { ...m, transcript };
+};
+
+/**
+ * CaseIndexingInputData type represents an "index case" message, plus case specific data that might be collected from other places other than the HRM DB (no instances of such data right now, defining the type for completeness)
+ */
+type CaseIndexingInputData = MessageWithMeta & {
+  message: IndexCaseMessage;
+};
+
+const caseIndexingInputData = async (
+  m: MessageWithMeta & {
+    message: IndexCaseMessage;
+  },
+): Promise<CaseIndexingInputData> => m;
+
+type IndexingInputData = ContactIndexingInputData | CaseIndexingInputData;
+const indexingInputDataMapper = (m: MessageWithMeta): Promise<IndexingInputData> => {
+  const { message, messageId } = m;
+
+  const { type } = message;
+
+  switch (type) {
+    case 'contact': {
+      return contactIndexingInputData({ message, messageId });
+    }
+    case 'case': {
+      return caseIndexingInputData({ message, messageId });
+    }
+    default: {
+      return assertExhaustive(type);
+    }
+  }
+};
+
 const generatePayloadFromContact = (
   ps: PayloadsByIndex,
-  m: MessageWithMeta & { message: { type: 'contact' } },
-): PayloadsByIndex => ({
-  ...ps,
-  // add an upsert job to HRM_CONTACTS_INDEX_TYPE index
-  [HRM_CONTACTS_INDEX_TYPE]: [
-    ...(ps[HRM_CONTACTS_INDEX_TYPE] ?? []),
-    {
-      ...m,
-      documentId: m.message.contact.id,
-      payload: { ...m.message, transcript: '' },
-      indexHandler: 'updateDocument',
-    },
-  ],
-  // if associated to a case, add an upsert with script job to HRM_CASES_INDEX_TYPE index
-  [HRM_CASES_INDEX_TYPE]: m.message.contact.caseId
-    ? [
-        ...(ps[HRM_CASES_INDEX_TYPE] ?? []),
-        {
-          ...m,
-          documentId: parseInt(m.message.contact.caseId, 10),
-          payload: { ...m.message, transcript: '' },
-          indexHandler: 'updateScript',
-        },
-      ]
-    : ps[HRM_CASES_INDEX_TYPE] ?? [],
-});
+  m: ContactIndexingInputData,
+): PayloadsByIndex => {
+  return {
+    ...ps,
+    // add an upsert job to HRM_CONTACTS_INDEX_TYPE index
+    [HRM_CONTACTS_INDEX_TYPE]: [
+      ...(ps[HRM_CONTACTS_INDEX_TYPE] ?? []),
+      {
+        ...m,
+        documentId: m.message.contact.id,
+        payload: { ...m.message, transcript: m.transcript },
+        indexHandler: 'updateDocument',
+      },
+    ],
+    // if associated to a case, add an upsert with script job to HRM_CASES_INDEX_TYPE index
+    [HRM_CASES_INDEX_TYPE]: m.message.contact.caseId
+      ? [
+          ...(ps[HRM_CASES_INDEX_TYPE] ?? []),
+          {
+            ...m,
+            documentId: parseInt(m.message.contact.caseId, 10),
+            payload: { ...m.message, transcript: m.transcript },
+            indexHandler: 'updateScript',
+          },
+        ]
+      : ps[HRM_CASES_INDEX_TYPE] ?? [],
+  };
+};
 
 const generatePayloadFromCase = (
   ps: PayloadsByIndex,
-  m: MessageWithMeta & { message: { type: 'case' } },
+  m: CaseIndexingInputData,
 ): PayloadsByIndex => ({
   ...ps,
   // add an upsert job to HRM_CASES_INDEX_TYPE index
@@ -89,7 +157,7 @@ const generatePayloadFromCase = (
 
 const messagesToPayloadReducer = (
   accum: PayloadsByIndex,
-  currM: MessageWithMeta,
+  currM: IndexingInputData,
 ): PayloadsByIndex => {
   const { message, messageId } = currM;
 
@@ -97,7 +165,8 @@ const messagesToPayloadReducer = (
 
   switch (type) {
     case 'contact': {
-      return generatePayloadFromContact(accum, { message, messageId });
+      const { transcript } = currM as ContactIndexingInputData;
+      return generatePayloadFromContact(accum, { message, messageId, transcript });
     }
     case 'case': {
       return generatePayloadFromCase(accum, { message, messageId });
@@ -108,17 +177,24 @@ const messagesToPayloadReducer = (
   }
 };
 
-const messagesToPayloadsByIndex = (messages: MessageWithMeta[]): PayloadsByIndex =>
-  messages.reduce(messagesToPayloadReducer, {});
+const messagesToPayloadsByIndex = async (
+  messages: MessageWithMeta[],
+): Promise<PayloadsByIndex> => {
+  const indexingInputData = await Promise.all(messages.map(indexingInputDataMapper));
 
-export const messagesToPayloadsByAccountSid = (
+  return indexingInputData.reduce(messagesToPayloadReducer, {});
+};
+
+export const messagesToPayloadsByAccountSid = async (
   messages: MessagesByAccountSid,
-): PayloadsByAccountSid => {
-  const payloadsByAccountSidEntries = Object.entries(messages).map(([accountSid, ms]) => {
-    const payloads = messagesToPayloadsByIndex(ms);
+): Promise<PayloadsByAccountSid> => {
+  const payloadsByAccountSidEntries = await Promise.all(
+    Object.entries(messages).map(async ([accountSid, ms]) => {
+      const payloads = await messagesToPayloadsByIndex(ms);
 
-    return [accountSid, payloads] as const;
-  });
+      return [accountSid, payloads] as const;
+    }),
+  );
 
   const payloadsByAccountSid = Object.fromEntries(payloadsByAccountSidEntries);
 

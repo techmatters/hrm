@@ -27,7 +27,12 @@ export {
   HRM_CASES_INDEX_TYPE,
   HRM_CONTACTS_INDEX_TYPE,
 } from './hrmIndexDocumentMappings';
-export { IndexMessage, IndexPayload } from './payload';
+export {
+  IndexMessage,
+  IndexCaseMessage,
+  IndexContactMessage,
+  IndexPayload,
+} from './payload';
 
 export const hrmSearchConfiguration: SearchConfiguration = {
   searchFieldBoosts: {
