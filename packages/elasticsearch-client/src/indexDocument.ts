@@ -40,7 +40,7 @@ export const indexDocument = async <T>({
     await createIndex({ client, index, indexConfig });
   }
 
-  const convertedDocument = indexConfig.convertToIndexDocument(document);
+  const convertedDocument = indexConfig.convertToIndexDocument(document, index);
 
   return client.index({
     index,

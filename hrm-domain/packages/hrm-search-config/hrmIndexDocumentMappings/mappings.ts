@@ -14,8 +14,6 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import type { MappingProperty } from '@elastic/elasticsearch/lib/api/types';
-
 // Properties present in root and nested documents
 const commonProperties = {
   accountSid: {
@@ -40,14 +38,8 @@ const commonProperties = {
 
 // Properties shared by both types of documents, cases and contacts
 const rootProperties = {
-  type: {
-    type: 'keyword',
-  },
   id: {
     type: 'integer',
-  },
-  compundId: {
-    type: 'keyword',
   },
   twilioWorkerId: {
     type: 'keyword',
@@ -56,12 +48,6 @@ const rootProperties = {
     type: 'keyword',
   },
   ...commonProperties,
-  join_field: {
-    type: 'join',
-    relations: {
-      case: 'contact',
-    },
-  },
 } as const;
 
 // Properties specific to contacts
@@ -111,9 +97,10 @@ export const caseMapping = {
       ...commonProperties,
     },
   },
-} as const;
-
-export const mapping: Record<string, MappingProperty> = {
-  ...contactMapping,
-  ...caseMapping,
+  contacts: {
+    type: 'nested',
+    properties: {
+      ...contactMapping,
+    },
+  },
 } as const;

@@ -40,6 +40,5 @@ export const chatChannels = [
   channelTypes.modica,
 ];
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const isVoiceChannel = (channel: string) => channel === channelTypes.voice;
 export const isChatChannel = (channel: string) => chatChannels.includes(channel as any);

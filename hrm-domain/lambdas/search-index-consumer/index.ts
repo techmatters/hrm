@@ -13,48 +13,65 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
+import type { SQSBatchResponse, SQSEvent } from 'aws-lambda';
+import { HrmIndexProcessorError } from '@tech-matters/job-errors';
+import { isErr } from '@tech-matters/types';
+import { groupMessagesByAccountSid } from './messages';
+import { messagesToPayloadsByAccountSid } from './messagesToPayloads';
+import { indexDocumentsByAccount } from './payloadToIndex';
 
 export const handler = async (event: SQSEvent): Promise<SQSBatchResponse> => {
-  const response: SQSBatchResponse = { batchItemFailures: [] };
   console.debug('Received event:', JSON.stringify(event, null, 2));
-  // We need to keep track of the documentId to messageId mapping so we can
-  // return the correct messageId in the batchItemFailures array on error.
-  const documentIdToMessageId: Record<string, string> = {};
-
-  // Passthrough function to add the documentId to the messageId mapping.
-  const addDocumentIdToMessageId = (documentId: string, messageId: string) => {
-    documentIdToMessageId[documentId] = messageId;
-  };
-
-  // Passthrough function to add the documentId to the batchItemFailures array.
-  // const addDocumentIdToFailures = (documentId: string) =>
-  //   response.batchItemFailures.push({
-  //     itemIdentifier: documentIdToMessageId[documentId],
-  //   });
 
   try {
-    // Map the messages and add the documentId to messageId mapping.
-    // const messages = mapMessages(event.Records, addDocumentIdToMessageId);
-    const messages = event.Records.map((record: SQSRecord) => {
-      const { messageId, body } = record;
-      const message = JSON.parse(body);
-      addDocumentIdToMessageId(message.document.id, messageId);
+    // group the messages by accountSid while adding message meta
+    const messagesByAccoundSid = groupMessagesByAccountSid(event.Records);
 
-      return message;
-    });
-    console.debug('Mapped messages:', JSON.stringify(messages, null, 2));
+    // generate corresponding IndexPayload for each IndexMessage and group them by target accountSid-indexType pair
+    const payloadsByAccountSid =
+      await messagesToPayloadsByAccountSid(messagesByAccoundSid);
+
+    console.debug('Mapped messages:', JSON.stringify(payloadsByAccountSid, null, 2));
+
+    // index all the payloads
+    const resultsByAccount = await indexDocumentsByAccount(payloadsByAccountSid);
 
     console.debug(`Successfully indexed documents`);
+
+    // filter the payloads that failed indexing
+    const documentsWithErrors = resultsByAccount
+      .flat(2)
+      .filter(({ result }) => isErr(result));
+
+    if (documentsWithErrors.length) {
+      console.debug(
+        'Errors indexing documents',
+        JSON.stringify(documentsWithErrors, null, 2),
+      );
+    }
+
+    // send the failed payloads back to SQS so they are redrive to DLQ
+    const response: SQSBatchResponse = {
+      batchItemFailures: documentsWithErrors.map(({ messageId }) => ({
+        itemIdentifier: messageId,
+      })),
+    };
+
+    return response;
   } catch (err) {
-    console.error(new Error('Failed to process search index request'), err);
+    console.error(
+      new HrmIndexProcessorError('Failed to process search index request'),
+      err,
+    );
 
-    response.batchItemFailures = event.Records.map(record => {
-      return {
-        itemIdentifier: record.messageId,
-      };
-    });
+    const response: SQSBatchResponse = {
+      batchItemFailures: event.Records.map(record => {
+        return {
+          itemIdentifier: record.messageId,
+        };
+      }),
+    };
+
+    return response;
   }
-
-  return response;
 };
