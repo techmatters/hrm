@@ -43,17 +43,17 @@ export type PayloadsByIndex = {
 };
 export type PayloadsByAccountSid = Record<AccountSID, PayloadsByIndex>;
 
-type IntermidiateIndexContactMessage = MessageWithMeta & {
+type ContactIndexingInputData = MessageWithMeta & {
   message: IndexContactMessage;
 } & {
   transcript: string | null;
 };
 
-const intermediateContactMessage = async (
+const contactIndexingInputData = async (
   m: MessageWithMeta & {
     message: IndexContactMessage;
   },
-): Promise<IntermidiateIndexContactMessage> => {
+): Promise<ContactIndexingInputData> => {
   let transcript: string | null = null;
 
   if (m.message.contact.channel && isChatChannel(m.message.contact.channel)) {
@@ -72,31 +72,27 @@ const intermediateContactMessage = async (
   return { ...m, transcript };
 };
 
-type IntermidiateIndexCaseMessage = MessageWithMeta & {
+type CaseIndexingInputData = MessageWithMeta & {
   message: IndexCaseMessage;
 };
-const intermediateCaseMessage = async (
+const caseIndexingInputData = async (
   m: MessageWithMeta & {
     message: IndexCaseMessage;
   },
-): Promise<IntermidiateIndexCaseMessage> => m;
+): Promise<CaseIndexingInputData> => m;
 
-type IntermidiateIndexMessage =
-  | IntermidiateIndexContactMessage
-  | IntermidiateIndexCaseMessage;
-const intermediateMessagesMapper = (
-  m: MessageWithMeta,
-): Promise<IntermidiateIndexMessage> => {
+type IndexingInputData = ContactIndexingInputData | CaseIndexingInputData;
+const indexingInputDataMapper = (m: MessageWithMeta): Promise<IndexingInputData> => {
   const { message, messageId } = m;
 
   const { type } = message;
 
   switch (type) {
     case 'contact': {
-      return intermediateContactMessage({ message, messageId });
+      return contactIndexingInputData({ message, messageId });
     }
     case 'case': {
-      return intermediateCaseMessage({ message, messageId });
+      return caseIndexingInputData({ message, messageId });
     }
     default: {
       return assertExhaustive(type);
@@ -106,7 +102,7 @@ const intermediateMessagesMapper = (
 
 const generatePayloadFromContact = (
   ps: PayloadsByIndex,
-  m: IntermidiateIndexContactMessage,
+  m: ContactIndexingInputData,
 ): PayloadsByIndex => {
   return {
     ...ps,
@@ -137,7 +133,7 @@ const generatePayloadFromContact = (
 
 const generatePayloadFromCase = (
   ps: PayloadsByIndex,
-  m: IntermidiateIndexCaseMessage,
+  m: CaseIndexingInputData,
 ): PayloadsByIndex => ({
   ...ps,
   // add an upsert job to HRM_CASES_INDEX_TYPE index
@@ -154,7 +150,7 @@ const generatePayloadFromCase = (
 
 const messagesToPayloadReducer = (
   accum: PayloadsByIndex,
-  currM: IntermidiateIndexMessage,
+  currM: IndexingInputData,
 ): PayloadsByIndex => {
   const { message, messageId } = currM;
 
@@ -162,7 +158,7 @@ const messagesToPayloadReducer = (
 
   switch (type) {
     case 'contact': {
-      const { transcript } = currM as IntermidiateIndexContactMessage;
+      const { transcript } = currM as ContactIndexingInputData;
       return generatePayloadFromContact(accum, { message, messageId, transcript });
     }
     case 'case': {
@@ -177,11 +173,9 @@ const messagesToPayloadReducer = (
 const messagesToPayloadsByIndex = async (
   messages: MessageWithMeta[],
 ): Promise<PayloadsByIndex> => {
-  const intermidiateMessages = await Promise.all(
-    messages.map(intermediateMessagesMapper),
-  );
+  const indexingInputData = await Promise.all(messages.map(indexingInputDataMapper));
 
-  return intermidiateMessages.reduce(messagesToPayloadReducer, {});
+  return indexingInputData.reduce(messagesToPayloadReducer, {});
 };
 
 export const messagesToPayloadsByAccountSid = async (
