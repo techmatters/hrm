@@ -43,6 +43,9 @@ export type PayloadsByIndex = {
 };
 export type PayloadsByAccountSid = Record<AccountSID, PayloadsByIndex>;
 
+/**
+ * ContactIndexingInputData type represents an "index contact" message, plus contact specific data that might be collected from other places other than the HRM DB (e.g. transcripts fetched from S3)
+ */
 type ContactIndexingInputData = MessageWithMeta & {
   message: IndexContactMessage;
 } & {
@@ -72,9 +75,13 @@ const contactIndexingInputData = async (
   return { ...m, transcript };
 };
 
+/**
+ * CaseIndexingInputData type represents an "index case" message, plus case specific data that might be collected from other places other than the HRM DB (no instances of such data right now, defining the type for completeness)
+ */
 type CaseIndexingInputData = MessageWithMeta & {
   message: IndexCaseMessage;
 };
+
 const caseIndexingInputData = async (
   m: MessageWithMeta & {
     message: IndexCaseMessage;
