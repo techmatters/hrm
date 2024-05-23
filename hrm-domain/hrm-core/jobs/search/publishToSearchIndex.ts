@@ -26,6 +26,7 @@ const PENDING_INDEX_QUEUE_SSM_PATH = `/${process.env.NODE_ENV}/${
 
 const publishToSearchIndex = async (message: IndexMessage) => {
   try {
+    console.log('>>>> publishToSearchIndex invoked with message: ', message);
     const queueUrl = await getSsmParameter(PENDING_INDEX_QUEUE_SSM_PATH);
 
     return await sendSqsMessage({
