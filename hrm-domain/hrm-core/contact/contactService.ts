@@ -59,6 +59,7 @@ import {
   isS3StoredTranscript,
   isS3StoredTranscriptPending,
   NewConversationMedia,
+  updateConversationMediaSpecificData,
 } from '../conversation-media/conversation-media';
 import { Profile, getOrCreateProfileWithIdentifier } from '../profile/profileService';
 import { deleteContactReferrals } from '../referral/referral-data-access';
@@ -463,3 +464,25 @@ export const getContactsByProfileId = async (
     });
   }
 };
+
+/**
+ * wrapper around updateSpecificData that also triggers a re-index operation when the conversation media gets updated (e.g. when transcript is exported)
+ */
+export const updateConversationMediaData =
+  (contactId: Contact['id']) =>
+  async (
+    ...[accountSid, id, storeTypeSpecificData]: Parameters<
+      typeof updateConversationMediaSpecificData
+    >
+  ): ReturnType<typeof updateConversationMediaSpecificData> => {
+    const result = await updateConversationMediaSpecificData(
+      accountSid,
+      id,
+      storeTypeSpecificData,
+    );
+
+    // trigger index operation but don't await for it
+    indexContactInSearchIndex({ accountSid, contactId });
+
+    return result;
+  };
