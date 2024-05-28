@@ -21,6 +21,7 @@ import { ContactBuilder } from './contact-builder';
 import { NewContactRecord } from '../../contact/sql/contactInsertSql';
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { OPEN_CONTACT_ACTION_CONDITIONS } from '../mocks';
+import { newOkFromData } from '@tech-matters/types';
 
 let conn: pgPromise.ITask<unknown>;
 
@@ -75,8 +76,11 @@ describe('create', () => {
     });
     const { isNewRecord, ...returnedContact } = returnValue;
     expect(created).toStrictEqual({
-      contact: returnedContact,
-      isNewRecord: false,
+      ...newOkFromData({
+        contact: returnedContact,
+        isNewRecord: false,
+      }),
+      unwrap: expect.any(Function),
     });
   });
 
@@ -95,8 +99,11 @@ describe('create', () => {
     });
     const { isNewRecord, ...returnedContact } = returnValue;
     expect(created).toStrictEqual({
-      contact: returnedContact,
-      isNewRecord: true,
+      ...newOkFromData({
+        contact: returnedContact,
+        isNewRecord: true,
+      }),
+      unwrap: expect.any(Function),
     });
   });
 });

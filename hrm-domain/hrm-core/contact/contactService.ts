@@ -208,16 +208,19 @@ export const createContact = async (
         profileId,
         identifierId,
       };
-
+      const contactCreateResult = await create(conn)(accountSid, completeNewContact);
+      if (isErr(contactCreateResult)) {
+        return contactCreateResult;
+      }
       // create contact record (may return an existing one cause idempotence)
-      const { contact } = await create(conn)(accountSid, completeNewContact);
+      const { contact } = contactCreateResult.data;
       contact.referrals = [];
       contact.csamReports = [];
       contact.conversationMedia = [];
 
       const applyTransformations = bindApplyTransformations(can, user);
 
-      return newOk({ data: applyTransformations(contact) });
+      return newOkFromData(applyTransformations(contact));
     });
     if (isOk(result)) {
       return result.data;
