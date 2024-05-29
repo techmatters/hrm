@@ -26,7 +26,7 @@ import {
 import { ContactBuilder } from './contact-builder';
 import { omit } from 'lodash';
 import { newTwilioUser } from '@tech-matters/twilio-worker-auth';
-import { newOk } from '@tech-matters/types';
+import { newOk, newOkFromData } from '@tech-matters/types';
 import * as profilesDB from '../../profile/profileDataAccess';
 import * as profilesService from '../../profile/profileService';
 import { NewContactRecord } from '../../contact/sql/contactInsertSql';
@@ -118,7 +118,8 @@ describe('createContact', () => {
   } = {}) => {
     const createContactMock = jest.fn(
       contactMockReturn ||
-        (() => Promise.resolve({ contact: mockContact, isNewRecord: true })),
+        (() =>
+          Promise.resolve(newOkFromData({ contact: mockContact, isNewRecord: true }))),
     );
     jest.spyOn(contactDb, 'create').mockReturnValue(createContactMock);
 

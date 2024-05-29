@@ -25,12 +25,17 @@ import {
 import { INSERT_CONTACT_SQL, NewContactRecord } from './sql/contactInsertSql';
 import { ContactRawJson, ReferralWithoutContactId } from './contactJson';
 import type { ITask } from 'pg-promise';
-import { txIfNotInOne } from '../sql';
+import { DatabaseErrorResult, inferPostgresErrorResult, txIfNotInOne } from '../sql';
 import { ConversationMedia } from '../conversation-media/conversation-media';
 import { TOUCH_CASE_SQL } from '../case/sql/caseUpdateSql';
 import { TKConditionsSets } from '../permissions/rulesMap';
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
-import { TwilioUserIdentifier, HrmAccountId } from '@tech-matters/types';
+import {
+  TwilioUserIdentifier,
+  HrmAccountId,
+  Result,
+  newOkFromData,
+} from '@tech-matters/types';
 
 export type ExistingContactRecord = {
   id: number;
@@ -184,22 +189,28 @@ export const create =
   async (
     accountSid: HrmAccountId,
     newContact: NewContactRecord,
-  ): Promise<CreateResult> => {
-    return txIfNotInOne(
-      task,
-      async (conn: ITask<{ contact: Contact; isNewRecord: boolean }>) => {
-        const now = new Date();
-        const { isNewRecord, ...created }: CreateResultRecord =
-          await conn.one<CreateResultRecord>(INSERT_CONTACT_SQL, {
-            ...newContact,
-            accountSid,
-            createdAt: now,
-            updatedAt: now,
-          });
+  ): Promise<Result<DatabaseErrorResult, CreateResult>> => {
+    try {
+      return newOkFromData(
+        await txIfNotInOne(
+          task,
+          async (conn: ITask<{ contact: Contact; isNewRecord: boolean }>) => {
+            const now = new Date();
+            const { isNewRecord, ...created }: CreateResultRecord =
+              await conn.one<CreateResultRecord>(INSERT_CONTACT_SQL, {
+                ...newContact,
+                accountSid,
+                createdAt: now,
+                updatedAt: now,
+              });
 
-        return { contact: created, isNewRecord };
-      },
-    );
+            return { contact: created, isNewRecord };
+          },
+        ),
+      );
+    } catch (error) {
+      return inferPostgresErrorResult(error);
+    }
   };
 
 export const patch =
