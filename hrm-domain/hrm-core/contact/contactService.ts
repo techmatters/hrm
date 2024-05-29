@@ -64,7 +64,6 @@ import { Profile, getOrCreateProfileWithIdentifier } from '../profile/profileSer
 import { deleteContactReferrals } from '../referral/referral-data-access';
 import {
   DatabaseErrorResult,
-  inferPostgresErrorResult,
   isDatabaseUniqueConstraintViolationErrorResult,
 } from '../sql';
 import { systemUser } from '@tech-matters/twilio-worker-auth';
@@ -227,19 +226,18 @@ export const createContact = async (
     }
     // This operation can fail with a unique constraint violation if a contact with the same ID is being created concurrently
     // It should only every need to retry once, but we'll do it 3 times just in case
-    const postgresErrorResult = inferPostgresErrorResult(result.rawError);
     if (
-      isDatabaseUniqueConstraintViolationErrorResult(postgresErrorResult) &&
-      (postgresErrorResult.constraint === 'Contacts_taskId_accountSid_idx' ||
-        postgresErrorResult.constraint === 'Identifiers_identifier_accountSid')
+      isDatabaseUniqueConstraintViolationErrorResult(result) &&
+      (result.constraint === 'Contacts_taskId_accountSid_idx' ||
+        result.constraint === 'Identifiers_identifier_accountSid')
     ) {
       if (retries === 1) {
         console.log(
-          `Retrying createContact due to '${postgresErrorResult.constraint}' data constraint conflict - it should use the existing resource next attempt (retry #${retries})`,
+          `Retrying createContact due to '${result.constraint}' data constraint conflict - it should use the existing resource next attempt (retry #${retries})`,
         );
       } else {
         console.warn(
-          `Retrying createContact due to '${postgresErrorResult.constraint}' data constraint conflict  - it shouldn't have taken more than 1 retry to return the existing contact with this taskId but we are on retry #${retries} :-/`,
+          `Retrying createContact due to '${result.constraint}' data constraint conflict  - it shouldn't have taken more than 1 retry to return the existing contact with this taskId but we are on retry #${retries} :-/`,
         );
       }
     } else {
