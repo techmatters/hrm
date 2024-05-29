@@ -34,6 +34,11 @@ import { ALWAYS_CAN, OPEN_CONTACT_ACTION_CONDITIONS } from '../mocks';
 import '@tech-matters/testing/expectToParseAsDate';
 import { openPermissions } from '../../permissions/json-permissions';
 import { RulesFile, TKConditionsSets } from '../../permissions/rulesMap';
+import * as publishToSearchIndex from '../../jobs/search/publishToSearchIndex';
+
+const publishToSearchIndexSpy = jest
+  .spyOn(publishToSearchIndex, 'publishContactToSearchIndex')
+  .mockImplementation(async () => Promise.resolve('Ok') as any);
 
 const accountSid = 'AC-accountSid';
 const workerSid = 'WK-WORKER_SID';
