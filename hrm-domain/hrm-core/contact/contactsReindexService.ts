@@ -15,10 +15,10 @@
  */
 
 import { HrmAccountId, newErr, newOkFromData } from '@tech-matters/types';
-import { searchContacts } from './contactService';
+import { Contact, searchContacts } from './contactService';
 import { publishContactToSearchIndex } from '../jobs/search/publishToSearchIndex';
 import { maxPermissions } from '../permissions';
-import { autoPaginate } from '../autoPaginate';
+import { AsyncProcessor, SearchFunction, processInBatch } from '../autoPaginate';
 
 export const reindexContacts = async (
   accountSid: HrmAccountId,
@@ -30,7 +30,8 @@ export const reindexContacts = async (
       dateFrom,
       dateTo,
     };
-    const contactsResponse = await autoPaginate(async limitAndOffset => {
+
+    const searchFunction: SearchFunction<Contact> = async limitAndOffset => {
       const res = await searchContacts(
         accountSid,
         searchParameters,
@@ -38,19 +39,23 @@ export const reindexContacts = async (
         maxPermissions,
       );
       return { records: res.contacts, count: res.count };
-    });
+    };
 
-    const promises = contactsResponse.map(contact => {
-      return publishContactToSearchIndex({
-        accountSid,
-        contact,
-        operation: 'index',
+    const asyncProcessor: AsyncProcessor<Contact, void> = async contactsResult => {
+      const promises = contactsResult.records.map(contact => {
+        return publishContactToSearchIndex({
+          accountSid,
+          contact,
+          operation: 'index',
+        });
       });
-    });
 
-    await Promise.all(promises);
+      await Promise.all(promises);
+    };
 
-    return newOkFromData(promises);
+    await processInBatch(searchFunction, asyncProcessor);
+
+    return newOkFromData('Successfully indexed contacts');
   } catch (error) {
     console.error('Error reindexing contacts', error);
     return newErr({ error, message: 'Error reindexing contacts' });

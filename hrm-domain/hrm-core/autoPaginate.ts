@@ -29,21 +29,21 @@ type LimitAndOffset = {
   offset: number;
 };
 
-/**
- * This function takes care of keep calling the search function
- * until there's no more data to be fetched. It works by dynamically
- * adjusting the 'offset' on each subsequent call.
- *
- * @param searchFunction function to perform search of cases or contacts with the provided limit & offset
- * @returns cases[] or contacts[]
- */
-export const autoPaginate = async <T>(
-  searchFunction: (limitAndOffset: LimitAndOffset) => Promise<SearchResult<T>>,
-): Promise<T[]> => {
-  let items: T[] = [];
+export type SearchFunction<T> = (
+  limitAndOffset: LimitAndOffset,
+) => Promise<SearchResult<T>>;
+
+export type AsyncProcessor<T, U = T[]> = (result: SearchResult<T>) => Promise<U>
+
+export const processInBatch = async <T, U = T[]>(
+  searchFunction: SearchFunction<T>,
+  asyncProcessor: AsyncProcessor<T, U>,
+): Promise<void> => {
   let hasMoreItems = true;
   let offset = Number(defaultLimitAndOffset.offset);
   const limit = Number(defaultLimitAndOffset.limit);
+
+  let processed = 0;
 
   while (hasMoreItems) {
     /**
@@ -53,14 +53,36 @@ export const autoPaginate = async <T>(
     const searchResult = await searchFunction({ limit, offset });
 
     const { count, records } = searchResult;
-    items = [...items, ...records];
 
-    hasMoreItems = items.length < count;
+    await asyncProcessor(searchResult);
+
+    processed += records.length;
+    hasMoreItems = processed < count;
 
     if (hasMoreItems) {
       offset += limit;
     }
   }
+};
+
+/**
+ * This function takes care of keep calling the search function
+ * until there's no more data to be fetched. It works by dynamically
+ * adjusting the 'offset' on each subsequent call.
+ *
+ * @param searchFunction function to perform search of cases or contacts with the provided limit & offset
+ * @returns cases[] or contacts[]
+ */
+export const autoPaginate = async <T>(
+  searchFunction: SearchFunction<T>,
+): Promise<T[]> => {
+  let items: T[] = [];
+
+  const asyncProcessor = async (result: SearchResult<T>) => {
+    items.push(...result.records);
+  };
+
+  await processInBatch(searchFunction, asyncProcessor);
 
   return items;
 };
