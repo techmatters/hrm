@@ -40,6 +40,7 @@ import {
   patch,
   search,
   searchByProfileId,
+  searchByIds,
 } from './contactDataAccess';
 
 import { PaginationQuery, getPaginationElements } from '../search';
@@ -418,6 +419,31 @@ export const getContactsByProfileId = async (
       ctx,
     );
 
+    return newOk({ data: contacts });
+  } catch (err) {
+    return newErr({
+      message: err instanceof Error ? err.message : String(err),
+      error: 'InternalServerError',
+    });
+  }
+};
+
+const searchContactsByIds = generalizedSearchContacts(searchByIds);
+
+export const searchContactsByIdCtx = async (
+  accountSid: HrmAccountId,
+  contactIds: Contact['id'][],
+  query: Pick<PaginationQuery, 'limit' | 'offset'>,
+  ctx: {
+    can: InitializedCan;
+    user: TwilioUser;
+    permissions: RulesFile;
+  },
+): Promise<
+  TResult<'InternalServerError', Awaited<ReturnType<typeof searchContactsByIds>>>
+> => {
+  try {
+    const contacts = await searchContactsByIds(accountSid, { contactIds }, query, ctx);
     return newOk({ data: contacts });
   } catch (err) {
     return newErr({
