@@ -18,9 +18,9 @@ import format from 'date-fns/format';
 import formatISO from 'date-fns/formatISO';
 import { putS3Object } from '@tech-matters/s3-client';
 import * as caseApi from '@tech-matters/hrm-core/case/caseService';
+import { autoPaginate } from '@tech-matters/hrm-core/autoPaginate';
 
 import { getContext, maxPermissions } from './context';
-import { autoPaginate } from './auto-paginate';
 import { parseISO } from 'date-fns';
 
 const getSearchParams = (startDate: Date, endDate: Date) => ({

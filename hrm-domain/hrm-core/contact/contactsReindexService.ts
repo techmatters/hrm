@@ -15,33 +15,11 @@
  */
 
 import { HrmAccountId, newErr, newOkFromData } from '@tech-matters/types';
-import { TwilioUser } from '@tech-matters/twilio-worker-auth';
-import { rulesMap } from '@tech-matters/hrm-core/permissions/rulesMap';
-// import * as contactApi from '@tech-matters/hrm-core/contact/contactService';
 import { searchContacts } from './contactService';
 import { publishContactToSearchIndex } from '../jobs/search/publishToSearchIndex';
-import { autoPaginate } from '../../../hrm-domain/scheduled-tasks/hrm-data-pull/auto-paginate';
+import { maxPermissions } from '../permissions';
+import { autoPaginate } from '../autoPaginate';
 
-// TODO: refactor maxPermissions out of data-pull
-// TODO: refactor autoPaginate out of data-pull
-
-const maxPermissions: {
-  user: TwilioUser;
-  can: () => boolean;
-  permissions: (typeof rulesMap)[keyof typeof rulesMap];
-} = {
-  can: () => true,
-  user: {
-    accountSid: 'ACxxx',
-    workerSid: 'WKxxx',
-    roles: ['supervisor'],
-    isSupervisor: true,
-  },
-  permissions: rulesMap.open,
-};
-
-// fetch all the contacts updated between the date ranges(updatedAt)
-// reindex the contacts in the search index with publishContactToSearchIndex
 export const reindexContacts = async (
   accountSid: HrmAccountId,
   dateFrom: string,
