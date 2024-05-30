@@ -48,6 +48,8 @@ import {
 import { RulesFile, TKConditionsSets } from '../permissions/rulesMap';
 import { CaseSectionRecord } from './caseSection/types';
 import { pick } from 'lodash';
+import type { IndexMessage } from '@tech-matters/hrm-search-config';
+import { publishCaseToSearchIndex } from '../jobs/search/publishToSearchIndex';
 
 export { WELL_KNOWN_CASE_SECTION_NAMES, CaseService, CaseInfoSection };
 
@@ -267,6 +269,40 @@ const mapEssentialData =
     };
   };
 
+// TODO: use the factored out version once that's merged
+const maxPermissions: {
+  user: TwilioUser;
+  can: () => boolean;
+} = {
+  can: () => true,
+  user: {
+    accountSid: 'ACxxx',
+    workerSid: 'WKxxx',
+    roles: ['supervisor'],
+    isSupervisor: true,
+  },
+};
+
+const doOPCaseInSearchIndex =
+  (operation: IndexMessage['operation']) =>
+  async ({
+    accountSid,
+    caseId,
+  }: {
+    accountSid: CaseService['accountSid'];
+    caseId: CaseService['id'];
+  }) => {
+    const caseObj = await getById(caseId, accountSid, maxPermissions.user, []);
+
+    await publishCaseToSearchIndex({
+      accountSid,
+      case: caseRecordToCase(caseObj),
+      operation,
+    });
+  };
+
+export const indexCaseInSearchIndex = doOPCaseInSearchIndex('index');
+
 export const createCase = async (
   body: Partial<CaseService>,
   accountSid: CaseService['accountSid'],
@@ -288,6 +324,9 @@ export const createCase = async (
     workerSid,
   );
   const created = await create(record);
+
+  // trigger index operation but don't await for it
+  indexCaseInSearchIndex({ accountSid, caseId: created.id });
 
   // A new case is always initialized with empty connected contacts. No need to apply mapContactTransformations here
   return caseRecordToCase(created);
@@ -315,6 +354,9 @@ export const updateCaseStatus = async (
 
   const withTransformedContacts = mapContactTransformations({ can, user })(updated);
 
+  // trigger index operation but don't await for it
+  indexCaseInSearchIndex({ accountSid, caseId: updated.id });
+
   return caseRecordToCase(withTransformedContacts);
 };
 
@@ -326,6 +368,9 @@ export const updateCaseOverview = async (
 ): Promise<CaseService> => {
   const validOverview = pick(overview, CASE_OVERVIEW_PROPERTIES);
   const updated = await updateCaseInfo(accountSid, id, validOverview, workerSid);
+
+  // trigger index operation but don't await for it
+  indexCaseInSearchIndex({ accountSid, caseId: updated.id });
 
   return caseRecordToCase(updated);
 };

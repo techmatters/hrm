@@ -189,7 +189,7 @@ const doOPContactInSearchIndex =
     await publishContactToSearchIndex({ accountSid, contact, operation });
   };
 
-export const indexContactInSearchIndex = doOPContactInSearchIndex('index');
+const indexContactInSearchIndex = doOPContactInSearchIndex('index');
 const removeContactInSearchIndex = doOPContactInSearchIndex('remove');
 
 // Creates a contact with all its related records within a single transaction
