@@ -24,6 +24,7 @@ import referrals from './referral/referral-routes-v0';
 import permissions from './permissions/permissions-routes-v0';
 import profiles from './profile/profileRoutesV0';
 import adminProfiles from './profile/adminProfileRoutesV0';
+// import adminContacts from './contact/adminContactRoutesV0';
 import { Permissions } from './permissions';
 
 export const HRM_ROUTES: {
@@ -49,7 +50,10 @@ export const apiV0 = (rules: Permissions) => {
 export const ADMIN_ROUTES: {
   path: string;
   routerFactory: () => Router;
-}[] = [{ path: '/profiles', routerFactory: () => adminProfiles }];
+}[] = [
+  { path: '/profiles', routerFactory: () => adminProfiles },
+  // { path: '/contacts', routerFactory: () => adminContacts },
+];
 
 export const adminApiV0 = () => {
   const router: IRouter = Router();
