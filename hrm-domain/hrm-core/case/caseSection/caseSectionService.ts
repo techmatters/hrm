@@ -36,6 +36,7 @@ import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { RulesFile, TKConditionsSets } from '../../permissions/rulesMap';
 import { ListConfiguration } from '../caseDataAccess';
 import { HrmAccountId } from '@tech-matters/types';
+import { indexCaseInSearchIndex } from '../caseService';
 
 const sectionRecordToSection = (
   sectionRecord: CaseSectionRecord | undefined,
@@ -65,7 +66,13 @@ export const createCaseSection = async (
     createdAt: nowISO,
     accountSid,
   };
-  return sectionRecordToSection(await create()(record));
+
+  const created = await create()(record);
+
+  // trigger index operation but don't await for it
+  indexCaseInSearchIndex({ accountSid, caseId: created.caseId });
+
+  return sectionRecordToSection(created);
 };
 
 export const replaceCaseSection = async (
@@ -83,15 +90,19 @@ export const replaceCaseSection = async (
     updatedBy: workerSid,
     updatedAt: nowISO,
   };
-  return sectionRecordToSection(
-    await updateById()(
-      accountSid,
-      Number.parseInt(caseId),
-      sectionType,
-      sectionId,
-      record,
-    ),
+
+  const updated = await updateById()(
+    accountSid,
+    Number.parseInt(caseId),
+    sectionType,
+    sectionId,
+    record,
   );
+
+  // trigger index operation but don't await for it
+  indexCaseInSearchIndex({ accountSid, caseId: updated.caseId });
+
+  return sectionRecordToSection(updated);
 };
 
 export const getCaseSection = async (
@@ -155,13 +166,16 @@ export const deleteCaseSection = async (
   sectionId: string,
   { user }: { user: TwilioUser },
 ): Promise<CaseSection | undefined> => {
-  return sectionRecordToSection(
-    await deleteById()(
-      accountSid,
-      Number.parseInt(caseId),
-      sectionType,
-      sectionId,
-      user.workerSid,
-    ),
+  const deleted = await deleteById()(
+    accountSid,
+    Number.parseInt(caseId),
+    sectionType,
+    sectionId,
+    user.workerSid,
   );
+
+  // trigger index operation but don't await for it
+  indexCaseInSearchIndex({ accountSid, caseId: deleted.caseId });
+
+  return sectionRecordToSection(deleted);
 };
