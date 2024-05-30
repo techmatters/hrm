@@ -21,9 +21,9 @@ import addDays from 'date-fns/addDays';
 
 import * as contactApi from '@tech-matters/hrm-core/contact/contactService';
 import * as context from '../../context';
-import { defaultLimitAndOffset } from '../../auto-paginate';
 import { pullContacts } from '../../pull-contacts';
 import { HrmAccountId } from '@tech-matters/types';
+import { defaultLimitAndOffset } from '@tech-matters/hrm-core/autoPaginate';
 
 const { maxPermissions } = context;
 

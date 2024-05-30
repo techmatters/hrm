@@ -33,7 +33,7 @@ export type SearchFunction<T> = (
   limitAndOffset: LimitAndOffset,
 ) => Promise<SearchResult<T>>;
 
-export type AsyncProcessor<T, U = T[]> = (result: SearchResult<T>) => Promise<U>
+export type AsyncProcessor<T, U = T[]> = (result: SearchResult<T>) => Promise<U>;
 
 export const processInBatch = async <T, U = T[]>(
   searchFunction: SearchFunction<T>,
