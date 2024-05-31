@@ -374,17 +374,14 @@ export const selectCaseSearchByProfileId = selectSearchCaseBaseQuery(
   )`,
 );
 
-// export const selectCasesByIds = (
-//   viewPermissions: TKConditionsSets<'case'>,
-//   userIsSupervisor: boolean,
-// ): SearchQueryBuilder => {
-//   return selectSearchCaseBaseQuery(
-//     `WHERE cases."accountSid" = $<accountSid> AND ${listCasesPermissionWhereClause(
-//       viewPermissions as CaseListCondition[][],
-//       userIsSupervisor,
-//     )} AND cases."id" = ANY($<caseIds::INTEGER>)`,
-//   );
-// };
-export const selectCasesByIds = selectSearchCaseBaseQuery(
-  `WHERE cases."accountSid" = $<accountSid> AND cases."id" = ANY($<caseIds>::INTEGER[])`,
-);
+export const selectCasesByIds = (
+  viewPermissions: TKConditionsSets<'case'>,
+  userIsSupervisor: boolean,
+): SearchQueryBuilder => {
+  return selectSearchCaseBaseQuery(
+    `WHERE cases."accountSid" = $<accountSid> AND ${listCasesPermissionWhereClause(
+      viewPermissions as CaseListCondition[][],
+      userIsSupervisor,
+    )} AND cases."id" = ANY($<caseIds::INTEGER[]>)`,
+  );
+};
