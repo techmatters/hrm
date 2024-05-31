@@ -283,7 +283,7 @@ const maxPermissions: {
   },
 };
 
-const doOPCaseInSearchIndex =
+const doCaseInSearchIndexOP =
   (operation: IndexMessage['operation']) =>
   async ({
     accountSid,
@@ -301,7 +301,7 @@ const doOPCaseInSearchIndex =
     });
   };
 
-export const indexCaseInSearchIndex = doOPCaseInSearchIndex('index');
+export const indexCaseInSearchIndex = doCaseInSearchIndexOP('index');
 
 export const createCase = async (
   body: Partial<CaseService>,
