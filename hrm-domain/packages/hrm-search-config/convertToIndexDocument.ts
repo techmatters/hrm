@@ -14,43 +14,25 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-/**
- * This is a very early example of a rudimentary configuration for a multi-language index in ES.
- *
- * There is a lot of room for improvement here to allow more robust use of the ES query string
- * syntax, but this is a start that gets us close to the functionality we scoped out for cloudsearch.
- *
- * see: https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-query-string-query.html
- */
-
-import { assertExhaustive } from '@tech-matters/types';
-import type { Contact } from '../../hrm-core/contact/contactService';
-import type { CaseService } from '../../hrm-core/case/caseService';
-// import type { Contact } from '@tech-matters/hrm-core/contact/contactService';
-// import type { CaseService } from '@tech-matters/hrm-core/case/caseService';
-import type {
+import {
   ContactDocument,
   CaseDocument,
-  CasesContactsDocument,
+  HRM_CONTACTS_INDEX_TYPE,
+  HRM_CASES_INDEX_TYPE,
 } from './hrmIndexDocumentMappings';
 import { CreateIndexConvertedDocument } from '@tech-matters/elasticsearch-client';
+import { IndexPayload, IndexPayloadCase, IndexPayloadContact } from './payload';
 
-type IndexPayloadContact = {
-  type: 'contact';
-  contact: Contact;
-  transcript?: string;
-};
+const filterEmpty = <T extends CaseDocument | ContactDocument>(doc: T): T =>
+  Object.entries(doc).reduce((accum, [key, value]) => {
+    if (value) {
+      return { ...accum, [key]: value };
+    }
 
-type IndexPayloadCase = {
-  type: 'case';
-  case: Omit<CaseService, 'sections'> & {
-    sections: NonNullable<CaseService['sections']>;
-  };
-};
+    return accum;
+  }, {} as T);
 
-export type IndexPayload = IndexPayloadContact | IndexPayloadCase;
-
-const convertToContactDocument = ({
+export const convertContactToContactDocument = ({
   contact,
   transcript,
 }: IndexPayloadContact): CreateIndexConvertedDocument<ContactDocument> => {
@@ -63,21 +45,16 @@ const convertToContactDocument = ({
     updatedBy,
     finalizedAt,
     helpline,
-    caseId,
     number,
     channel,
     timeOfContact,
     twilioWorkerId,
     rawJson,
   } = contact;
-  const type = 'contact' as const;
-  const compundId = `${type}_${id}`;
 
-  return {
-    type,
+  const contactDocument: ContactDocument = {
     accountSid,
     id,
-    compundId,
     createdAt,
     updatedAt,
     createdBy,
@@ -89,14 +66,15 @@ const convertToContactDocument = ({
     timeOfContact,
     transcript,
     twilioWorkerId,
-    content: typeof rawJson === 'object' ? JSON.stringify(rawJson) : rawJson,
-    join_field: { name: 'contact', ...(caseId && { parent: `case_${caseId}` }) },
-    high_boost_global: '', // highBoostGlobal.join(' '),
-    low_boost_global: '', // lowBoostGlobal.join(' '),
+    content: JSON.stringify(rawJson),
+    // high_boost_global: '', // highBoostGlobal.join(' '),
+    // low_boost_global: '', // lowBoostGlobal.join(' '),
   };
+
+  return filterEmpty(contactDocument);
 };
 
-const convertToCaseDocument = ({
+const convertCaseToCaseDocument = ({
   case: caseObj,
 }: IndexPayloadCase): CreateIndexConvertedDocument<CaseDocument> => {
   const {
@@ -115,16 +93,13 @@ const convertToCaseDocument = ({
     sections,
     info,
   } = caseObj;
-  const type = 'case' as const;
-  const compundId = `${type}_${id}`;
-
   const mappedSections: CaseDocument['sections'] = Object.entries(sections).flatMap(
     ([sectionType, sectionsArray]) =>
       sectionsArray.map(section => ({
         accountSid: accountSid as string,
         createdAt: section.createdAt,
-        updatedAt: section.updatedAt,
         createdBy: section.createdBy,
+        updatedAt: section.updatedAt,
         updatedBy: section.updatedBy,
         sectionId: section.sectionId,
         sectionType,
@@ -135,42 +110,60 @@ const convertToCaseDocument = ({
       })),
   );
 
-  return {
-    type,
+  const caseDocument: CaseDocument = {
     accountSid,
     id,
-    compundId,
     createdAt,
     updatedAt,
     createdBy,
     updatedBy,
     helpline,
     twilioWorkerId,
-    previousStatus,
     status,
+    previousStatus,
     statusUpdatedAt,
     statusUpdatedBy,
-    content: typeof info === 'object' ? JSON.stringify(info) : info,
+    content: JSON.stringify(info),
     sections: mappedSections,
-    join_field: { name: 'case' },
-    high_boost_global: '', // highBoostGlobal.join(' '),
-    low_boost_global: '', // lowBoostGlobal.join(' '),
+    contacts: null,
+    // high_boost_global: '', // highBoostGlobal.join(' '),
+    // low_boost_global: '', // lowBoostGlobal.join(' '),
   };
+
+  return filterEmpty(caseDocument);
+};
+
+const convertToContactIndexDocument = (payload: IndexPayload) => {
+  if (payload.type === 'contact') {
+    return convertContactToContactDocument(payload);
+  }
+
+  throw new Error(
+    `convertToContactIndexDocument not implemented for type ${payload.type} and operation ${payload.operation}`,
+  );
+};
+
+const convertToCaseIndexDocument = (payload: IndexPayload) => {
+  if (payload.type === 'case') {
+    return convertCaseToCaseDocument(payload);
+  }
+
+  throw new Error(
+    `convertToCaseIndexDocument not implemented for type ${payload.type} and operation ${payload.operation}`,
+  );
 };
 
 export const convertToIndexDocument = (
   payload: IndexPayload,
-): CreateIndexConvertedDocument<CasesContactsDocument> => {
-  const { type } = payload;
-  switch (type) {
-    case 'contact': {
-      return convertToContactDocument(payload);
-    }
-    case 'case': {
-      return convertToCaseDocument(payload);
-    }
-    default: {
-      assertExhaustive(type);
-    }
+  indexName: string,
+): CreateIndexConvertedDocument<ContactDocument | CaseDocument> => {
+  if (indexName.endsWith(HRM_CONTACTS_INDEX_TYPE)) {
+    return convertToContactIndexDocument(payload);
   }
+
+  if (indexName.endsWith(HRM_CASES_INDEX_TYPE)) {
+    return convertToCaseIndexDocument(payload);
+  }
+
+  throw new Error(`convertToIndexDocument not implemented for index ${indexName}`);
 };

@@ -40,7 +40,7 @@ import {
   patch,
   search,
   searchByProfileId,
-  searchByContactIds,
+  searchByIds,
 } from './contactDataAccess';
 
 import { PaginationQuery, getPaginationElements } from '../search';
@@ -51,7 +51,7 @@ import { actionsMaps } from '../permissions';
 import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { createReferral } from '../referral/referral-model';
 import { createContactJob } from '../contact-job/contact-job';
-import { isChatChannel } from './channelTypes';
+import { isChatChannel } from '@tech-matters/hrm-types';
 import { enableCreateContactJobsFlag } from '../featureFlags';
 import { db } from '../connection-pool';
 import {
@@ -65,7 +65,6 @@ import { Profile, getOrCreateProfileWithIdentifier } from '../profile/profileSer
 import { deleteContactReferrals } from '../referral/referral-data-access';
 import {
   DatabaseErrorResult,
-  inferPostgresErrorResult,
   isDatabaseUniqueConstraintViolationErrorResult,
 } from '../sql';
 import { systemUser } from '@tech-matters/twilio-worker-auth';
@@ -209,35 +208,37 @@ export const createContact = async (
         profileId,
         identifierId,
       };
-
+      const contactCreateResult = await create(conn)(accountSid, completeNewContact);
+      if (isErr(contactCreateResult)) {
+        return contactCreateResult;
+      }
       // create contact record (may return an existing one cause idempotence)
-      const { contact } = await create(conn)(accountSid, completeNewContact);
+      const { contact } = contactCreateResult.data;
       contact.referrals = [];
       contact.csamReports = [];
       contact.conversationMedia = [];
 
       const applyTransformations = bindApplyTransformations(can, user);
 
-      return newOk({ data: applyTransformations(contact) });
+      return newOkFromData(applyTransformations(contact));
     });
     if (isOk(result)) {
       return result.data;
     }
     // This operation can fail with a unique constraint violation if a contact with the same ID is being created concurrently
     // It should only every need to retry once, but we'll do it 3 times just in case
-    const postgresErrorResult = inferPostgresErrorResult(result.rawError);
     if (
-      isDatabaseUniqueConstraintViolationErrorResult(postgresErrorResult) &&
-      (postgresErrorResult.constraint === 'Contacts_taskId_accountSid_idx' ||
-        postgresErrorResult.constraint === 'Identifiers_identifier_accountSid')
+      isDatabaseUniqueConstraintViolationErrorResult(result) &&
+      (result.constraint === 'Contacts_taskId_accountSid_idx' ||
+        result.constraint === 'Identifiers_identifier_accountSid')
     ) {
       if (retries === 1) {
         console.log(
-          `Retrying createContact due to '${postgresErrorResult.constraint}' data constraint conflict - it should use the existing resource next attempt (retry #${retries})`,
+          `Retrying createContact due to '${result.constraint}' data constraint conflict - it should use the existing resource next attempt (retry #${retries})`,
         );
       } else {
         console.warn(
-          `Retrying createContact due to '${postgresErrorResult.constraint}' data constraint conflict  - it shouldn't have taken more than 1 retry to return the existing contact with this taskId but we are on retry #${retries} :-/`,
+          `Retrying createContact due to '${result.constraint}' data constraint conflict  - it shouldn't have taken more than 1 retry to return the existing contact with this taskId but we are on retry #${retries} :-/`,
         );
       }
     } else {
@@ -427,7 +428,7 @@ export const getContactsByProfileId = async (
   }
 };
 
-const searchContactsByIds = generalizedSearchContacts(searchByContactIds);
+const searchContactsByIds = generalizedSearchContacts(searchByIds);
 
 export const searchContactsByIdCtx = async (
   accountSid: HrmAccountId,

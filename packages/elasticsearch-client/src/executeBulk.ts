@@ -51,7 +51,7 @@ export const executeBulk = async <T>({
       } else {
         return [
           { index: { _index: index, _id: documentItem.id } },
-          indexConfig.convertToIndexDocument(documentItem.document),
+          indexConfig.convertToIndexDocument(documentItem.document, index),
         ];
       }
     },

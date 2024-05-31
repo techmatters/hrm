@@ -5,9 +5,11 @@
   "references": [
     { "path": "packages/types" },
     { "path": "packages/job-errors" },
+    { "path": "packages/s3-client" },
     { "path": "packages/ssm-cache" },
     { "path": "packages/elasticsearch-client" },
-    // { "path": "hrm-domain/packages/hrm-search-config" },
+    { "path": "hrm-domain/packages/hrm-types" },
+    { "path": "hrm-domain/packages/hrm-search-config" },
     { "path": "hrm-domain/lambdas/search-index-consumer" }
   ]
 }

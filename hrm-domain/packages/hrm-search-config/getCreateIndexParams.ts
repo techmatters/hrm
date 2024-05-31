@@ -14,23 +14,16 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-/**
- * This is a very early example of a rudimentary configuration for a multi-language index in ES.
- *
- * There is a lot of room for improvement here to allow more robust use of the ES query string
- * syntax, but this is a start that gets us close to the functionality we scoped out for cloudsearch.
- *
- * see: https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-query-string-query.html
- */
-
 import type { IndicesCreateRequest } from '@elastic/elasticsearch/lib/api/types';
 
 import {
-  mappingCasesContacts,
-  HRM_CASES_CONTACTS_INDEX_TYPE,
+  HRM_CASES_INDEX_TYPE,
+  HRM_CONTACTS_INDEX_TYPE,
+  caseMapping,
+  contactMapping,
 } from './hrmIndexDocumentMappings';
 
-const getCreateHrmCasesContactsIndexParams = (index: string): IndicesCreateRequest => {
+const getCreateHrmContactsIndexParams = (index: string): IndicesCreateRequest => {
   return {
     index,
     // settings: {
@@ -43,7 +36,26 @@ const getCreateHrmCasesContactsIndexParams = (index: string): IndicesCreateReque
         low_boost_global: {
           type: 'text',
         },
-        ...mappingCasesContacts,
+        ...contactMapping,
+      },
+    },
+  };
+};
+
+const getCreateHrmCaseIndexParams = (index: string): IndicesCreateRequest => {
+  return {
+    index,
+    // settings: {
+    // },
+    mappings: {
+      properties: {
+        high_boost_global: {
+          type: 'text',
+        },
+        low_boost_global: {
+          type: 'text',
+        },
+        ...caseMapping,
       },
     },
   };
@@ -54,8 +66,12 @@ const getCreateHrmCasesContactsIndexParams = (index: string): IndicesCreateReque
  * @param index
  */
 export const getCreateIndexParams = (index: string): IndicesCreateRequest => {
-  if (index.endsWith(HRM_CASES_CONTACTS_INDEX_TYPE)) {
-    return getCreateHrmCasesContactsIndexParams(index);
+  if (index.endsWith(HRM_CONTACTS_INDEX_TYPE)) {
+    return getCreateHrmContactsIndexParams(index);
+  }
+
+  if (index.endsWith(HRM_CASES_INDEX_TYPE)) {
+    return getCreateHrmCaseIndexParams(index);
   }
 
   throw new Error(`getCreateIndexParams not implemented for index ${index}`);

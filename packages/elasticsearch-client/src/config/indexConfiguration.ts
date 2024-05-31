@@ -14,10 +14,20 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import type { IndicesCreateRequest } from '@elastic/elasticsearch/lib/api/types';
+import type { IndicesCreateRequest, Script } from '@elastic/elasticsearch/lib/api/types';
 import { CreateIndexConvertedDocument } from './index';
 
 export type IndexConfiguration<T = any, TDoc = unknown> = {
   getCreateIndexParams: (indexName: string) => IndicesCreateRequest;
-  convertToIndexDocument: (sourceEntity: T) => CreateIndexConvertedDocument<TDoc>;
+  convertToIndexDocument: (
+    sourceEntity: T,
+    indexName: string,
+  ) => CreateIndexConvertedDocument<TDoc>;
+  convertToScriptUpdate?: (
+    sourceEntity: T,
+    indexName: string,
+  ) => {
+    documentUpdate: CreateIndexConvertedDocument<TDoc>;
+    scriptUpdate: Script;
+  };
 };
