@@ -32,6 +32,7 @@ import {
   updateStatus,
   CaseRecordUpdate,
   updateCaseInfo,
+  deleteById,
 } from './caseDataAccess';
 import { randomUUID } from 'crypto';
 import { InitializedCan } from '../permissions/initializeCanForRules';
@@ -302,6 +303,7 @@ const doCaseInSearchIndexOP =
   };
 
 export const indexCaseInSearchIndex = doCaseInSearchIndexOP('index');
+const removeCaseInSearchIndex = doCaseInSearchIndexOP('remove');
 
 export const createCase = async (
   body: Partial<CaseService>,
@@ -503,4 +505,21 @@ export const getCasesByProfileId = async (
       error: 'InternalServerError',
     });
   }
+};
+
+export const deleteCaseById = async ({
+  accountSid,
+  caseId,
+}: {
+  accountSid: HrmAccountId;
+  caseId: number;
+}) => {
+  const deleted = await deleteById(caseId, accountSid);
+
+  if (deleted) {
+    // trigger remove operation but don't await for it
+    removeCaseInSearchIndex({ accountSid, caseId: deleted.id });
+  }
+
+  return deleted;
 };

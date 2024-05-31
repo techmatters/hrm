@@ -15,7 +15,6 @@
  */
 
 import createError from 'http-errors';
-import * as casesDb from './caseDataAccess';
 import * as caseApi from './caseService';
 import { publicEndpoint, SafeRouter } from '../permissions';
 import {
@@ -93,7 +92,7 @@ casesRouter.expressRouter.use('/:caseId/sections', caseSectionRoutesV0);
 casesRouter.delete('/:id', publicEndpoint, async (req, res) => {
   const { hrmAccountId } = req;
   const { id } = req.params;
-  const deleted = await casesDb.deleteById(id, hrmAccountId);
+  const deleted = await caseApi.deleteCaseById({ accountSid: hrmAccountId, caseId: id });
   if (!deleted) {
     throw createError(404);
   }
