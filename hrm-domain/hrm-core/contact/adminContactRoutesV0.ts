@@ -43,3 +43,5 @@ adminContactsRouter.post(
     res.json(result.data);
   },
 );
+
+export default adminContactsRouter.expressRouter;

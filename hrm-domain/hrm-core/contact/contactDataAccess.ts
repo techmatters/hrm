@@ -309,10 +309,6 @@ const generalizedSearchQueryFunction = <T>(
           sqlQueryGenerator(viewPermissions, user.isSupervisor),
           sqlQueryParamsBuilder(accountSid, user, searchParameters, limit, offset),
         );
-      console.log('>>> data access', '3. generalizedSearchQueryFunction', {
-        searchParameters,
-        viewPermissions,
-      });
       return {
         rows: searchResults,
         count: searchResults.length ? searchResults[0].totalCount : 0,
