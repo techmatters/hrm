@@ -84,6 +84,18 @@ const handleIndexPayload =
             result: newOkFromData(result),
           };
         }
+        case 'deleteDocument': {
+          const result = await client.deleteDocument({
+            id: documentId.toString(),
+          });
+
+          return {
+            accountSid,
+            indexType,
+            messageId,
+            result: newOkFromData(result),
+          };
+        }
         default: {
           return assertExhaustive(indexHandler);
         }
