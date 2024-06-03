@@ -70,7 +70,7 @@ export const createCaseSection = async (
   const created = await create()(record);
 
   // trigger index operation but don't await for it
-  indexCaseInSearchIndex({ accountSid, caseId: created.caseId });
+  indexCaseInSearchIndex({ accountSid, caseId: parseInt(caseId, 10) });
 
   return sectionRecordToSection(created);
 };
@@ -100,7 +100,7 @@ export const replaceCaseSection = async (
   );
 
   // trigger index operation but don't await for it
-  indexCaseInSearchIndex({ accountSid, caseId: updated.caseId });
+  indexCaseInSearchIndex({ accountSid, caseId: parseInt(caseId, 10) });
 
   return sectionRecordToSection(updated);
 };
@@ -175,7 +175,7 @@ export const deleteCaseSection = async (
   );
 
   // trigger index operation but don't await for it
-  indexCaseInSearchIndex({ accountSid, caseId: deleted.caseId });
+  indexCaseInSearchIndex({ accountSid, caseId: parseInt(caseId, 10) });
 
   return sectionRecordToSection(deleted);
 };

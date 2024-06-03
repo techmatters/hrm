@@ -184,9 +184,18 @@ const doOPContactInSearchIndex =
     accountSid: Contact['accountSid'];
     contactId: Contact['id'];
   }) => {
-    const contact = await getById(accountSid, contactId);
+    try {
+      const contact = await getById(accountSid, contactId);
 
-    await publishContactToSearchIndex({ accountSid, contact, operation });
+      if (contact) {
+        await publishContactToSearchIndex({ accountSid, contact, operation });
+      }
+    } catch (err) {
+      console.error(
+        `Error trying to index contact: accountSid ${accountSid} contactId ${contactId}`,
+        err,
+      );
+    }
   };
 
 const indexContactInSearchIndex = doOPContactInSearchIndex('index');
@@ -311,7 +320,7 @@ export const patchContact = async (
     const applyTransformations = bindApplyTransformations(can, user);
 
     // trigger index operation but don't await for it
-    indexContactInSearchIndex({ accountSid, contactId: updated.id });
+    indexContactInSearchIndex({ accountSid, contactId: parseInt(contactId, 10) });
 
     return applyTransformations(updated);
   });
@@ -340,7 +349,7 @@ export const connectContactToCase = async (
   const applyTransformations = bindApplyTransformations(can, user);
 
   // trigger index operation but don't await for it
-  indexContactInSearchIndex({ accountSid, contactId: updated.id });
+  indexContactInSearchIndex({ accountSid, contactId: parseInt(contactId, 10) });
 
   return applyTransformations(updated);
 };
@@ -388,7 +397,7 @@ export const addConversationMediaToContact = async (
     };
 
     // trigger index operation but don't await for it
-    indexContactInSearchIndex({ accountSid, contactId: updated.id });
+    indexContactInSearchIndex({ accountSid, contactId: parseInt(contactIdString, 10) });
 
     return applyTransformations(updated);
   });

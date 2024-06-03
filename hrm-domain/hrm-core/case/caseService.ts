@@ -289,17 +289,29 @@ const doCaseInSearchIndexOP =
   async ({
     accountSid,
     caseId,
+    caseRecord,
   }: {
     accountSid: CaseService['accountSid'];
     caseId: CaseService['id'];
+    caseRecord?: CaseRecord;
   }) => {
-    const caseObj = await getById(caseId, accountSid, maxPermissions.user, []);
+    try {
+      const caseObj =
+        caseRecord || (await getById(caseId, accountSid, maxPermissions.user, []));
 
-    await publishCaseToSearchIndex({
-      accountSid,
-      case: caseRecordToCase(caseObj),
-      operation,
-    });
+      if (caseObj) {
+        await publishCaseToSearchIndex({
+          accountSid,
+          case: caseRecordToCase(caseObj),
+          operation,
+        });
+      }
+    } catch (err) {
+      console.error(
+        `Error trying to index case: accountSid ${accountSid} caseId ${caseId}`,
+        err,
+      );
+    }
   };
 
 export const indexCaseInSearchIndex = doCaseInSearchIndexOP('index');
@@ -516,10 +528,8 @@ export const deleteCaseById = async ({
 }) => {
   const deleted = await deleteById(caseId, accountSid);
 
-  if (deleted) {
-    // trigger remove operation but don't await for it
-    removeCaseInSearchIndex({ accountSid, caseId: deleted.id });
-  }
+  // trigger remove operation but don't await for it
+  removeCaseInSearchIndex({ accountSid, caseId: deleted.id, caseRecord: deleted });
 
   return deleted;
 };
