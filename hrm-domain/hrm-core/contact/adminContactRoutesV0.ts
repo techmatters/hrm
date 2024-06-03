@@ -28,9 +28,10 @@ adminContactsRouter.post(
   '/reindexContacts',
   publicEndpoint,
   async (req: Request, res: Response, next: NextFunction) => {
-    const { accountSid, dateFrom, dateTo } = req.body;
+    const { hrmAccountId } = req;
+    const { dateFrom, dateTo } = req.body;
 
-    const result = await reindexContacts(accountSid, dateFrom, dateTo);
+    const result = await reindexContacts(hrmAccountId, dateFrom, dateTo);
 
     if (isErr(result)) {
       return next(
