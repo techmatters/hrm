@@ -529,7 +529,7 @@ export const deleteCaseById = async ({
   const deleted = await deleteById(caseId, accountSid);
 
   // trigger remove operation but don't await for it
-  removeCaseInSearchIndex({ accountSid, caseId: deleted.id, caseRecord: deleted });
+  removeCaseInSearchIndex({ accountSid, caseId: deleted?.id, caseRecord: deleted });
 
   return deleted;
 };
