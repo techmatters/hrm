@@ -51,6 +51,7 @@ import { CaseSectionRecord } from './caseSection/types';
 import { pick } from 'lodash';
 import type { IndexMessage } from '@tech-matters/hrm-search-config';
 import { publishCaseToSearchIndex } from '../jobs/search/publishToSearchIndex';
+import { enablePublishHrmSearchIndex } from '../featureFlags';
 
 export { WELL_KNOWN_CASE_SECTION_NAMES, CaseService, CaseInfoSection };
 
@@ -296,6 +297,10 @@ const doCaseInSearchIndexOP =
     caseRecord?: CaseRecord;
   }) => {
     try {
+      if (!enablePublishHrmSearchIndex) {
+        return;
+      }
+
       const caseObj =
         caseRecord || (await getById(caseId, accountSid, maxPermissions.user, []));
 

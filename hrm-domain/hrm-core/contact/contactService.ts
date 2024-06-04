@@ -51,7 +51,10 @@ import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { createReferral } from '../referral/referral-model';
 import { createContactJob } from '../contact-job/contact-job';
 import { isChatChannel } from '@tech-matters/hrm-types';
-import { enableCreateContactJobsFlag } from '../featureFlags';
+import {
+  enableCreateContactJobsFlag,
+  enablePublishHrmSearchIndex,
+} from '../featureFlags';
 import { db } from '../connection-pool';
 import {
   ConversationMedia,
@@ -185,6 +188,10 @@ const doOPContactInSearchIndex =
     contactId: Contact['id'];
   }) => {
     try {
+      if (!enablePublishHrmSearchIndex) {
+        return;
+      }
+
       const contact = await getById(accountSid, contactId);
 
       if (contact) {
