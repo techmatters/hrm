@@ -76,9 +76,7 @@ test('create case', async () => {
     },
   });
 
-  await Promise.resolve('Iddle');
-  await Promise.resolve('Iddle');
-
+  await new Promise(process.nextTick);
   expect(publishToSearchIndexSpy).toHaveBeenCalled();
 });
 
