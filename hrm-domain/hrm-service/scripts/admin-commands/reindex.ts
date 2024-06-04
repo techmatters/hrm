@@ -19,7 +19,7 @@ export const desc = 'admin endpoints for reindexing contacts and cases';
 
 export const builder = function (yargs) {
   return yargs.commandDir('reindex', {
-    exclude: /^(index|_)/, // Exclude files starting with 'index' or '_'
+    exclude: /^(index|_)/,
     extensions: ['ts'],
   });
 };

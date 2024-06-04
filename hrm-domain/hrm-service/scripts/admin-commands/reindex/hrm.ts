@@ -23,13 +23,13 @@ export const command = 'hrm';
 export const describe = 'Reindex contacts and cases based on date range';
 
 export const builder = {
-  contacts: {
+  co: {
     alias: 'contacts',
     describe: 'reindex contacts',
     type: 'boolean',
     default: false,
   },
-  cases: {
+  ca: {
     alias: 'cases',
     describe: 'reindex cases',
     type: 'boolean',
