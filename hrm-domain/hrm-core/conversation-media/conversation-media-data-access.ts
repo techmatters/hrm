@@ -116,6 +116,9 @@ export const getByContactId = async (
     }),
   );
 
+/**
+ * NOTE: This function should not be used, but via the wrapper exposed from contact service. This is because otherwise, no contact re-index will be triggered.
+ */
 export const updateSpecificData = async (
   accountSid: HrmAccountId,
   id: ConversationMedia['id'],

@@ -23,13 +23,13 @@ import {
 import { CreateIndexConvertedDocument } from '@tech-matters/elasticsearch-client';
 import { IndexPayload, IndexPayloadCase, IndexPayloadContact } from './payload';
 
-const filterEmpty = <T extends CaseDocument | ContactDocument>(doc: T): T =>
+const filterUndefined = <T extends CaseDocument | ContactDocument>(doc: T): T =>
   Object.entries(doc).reduce((accum, [key, value]) => {
-    if (value) {
-      return { ...accum, [key]: value };
+    if (value === undefined) {
+      return accum;
     }
 
-    return accum;
+    return { ...accum, [key]: value };
   }, {} as T);
 
 export const convertContactToContactDocument = ({
@@ -71,7 +71,7 @@ export const convertContactToContactDocument = ({
     // low_boost_global: '', // lowBoostGlobal.join(' '),
   };
 
-  return filterEmpty(contactDocument);
+  return filterUndefined(contactDocument);
 };
 
 const convertCaseToCaseDocument = ({
@@ -130,7 +130,7 @@ const convertCaseToCaseDocument = ({
     // low_boost_global: '', // lowBoostGlobal.join(' '),
   };
 
-  return filterEmpty(caseDocument);
+  return filterUndefined(caseDocument);
 };
 
 const convertToContactIndexDocument = (payload: IndexPayload) => {

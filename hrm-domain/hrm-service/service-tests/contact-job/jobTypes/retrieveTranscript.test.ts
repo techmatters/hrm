@@ -515,7 +515,7 @@ describe('complete retrieve-transcript job type', () => {
       // );
 
       const updateConversationMediaSpy = jest.spyOn(
-        conversationMediaApi,
+        contactApi,
         'updateConversationMediaData',
       );
 
