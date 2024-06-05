@@ -24,12 +24,10 @@ import {
   mockSuccessfulTwilioAuthentication,
 } from '@tech-matters/testing';
 import { createContactJob } from '@tech-matters/hrm-core/contact-job/contact-job-data-access';
-import {
-  isS3StoredTranscriptPending,
-  updateConversationMediaData,
-} from '@tech-matters/hrm-core/conversation-media/conversation-media';
+import { isS3StoredTranscriptPending } from '@tech-matters/hrm-core/conversation-media/conversation-media';
 import { S3ContactMediaType } from '@tech-matters/hrm-core/conversation-media/conversation-media';
 import { getById as getContactById } from '@tech-matters/hrm-core/contact/contactDataAccess';
+import { updateConversationMediaData } from '@tech-matters/hrm-core/contact/contactService';
 import * as cleanupContactJobsApi from '@tech-matters/contact-job-cleanup';
 import {
   completeContactJob,
@@ -206,7 +204,7 @@ describe('cleanupContactJobs', () => {
 
     job = await completeContactJob({ id: job.id, completionPayload });
     job = await backDateJob(job.id);
-    await updateConversationMediaData(
+    await updateConversationMediaData(contact.id)(
       accountSid,
       job.additionalPayload.conversationMediaId,
       completionPayload,

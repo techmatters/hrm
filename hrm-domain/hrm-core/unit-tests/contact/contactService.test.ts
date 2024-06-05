@@ -34,6 +34,11 @@ import { ALWAYS_CAN, OPEN_CONTACT_ACTION_CONDITIONS } from '../mocks';
 import '@tech-matters/testing/expectToParseAsDate';
 import { openPermissions } from '../../permissions/json-permissions';
 import { RulesFile, TKConditionsSets } from '../../permissions/rulesMap';
+import * as publishToSearchIndex from '../../jobs/search/publishToSearchIndex';
+
+const publishToSearchIndexSpy = jest
+  .spyOn(publishToSearchIndex, 'publishContactToSearchIndex')
+  .mockImplementation(async () => Promise.resolve('Ok') as any);
 
 const accountSid = 'AC-accountSid';
 const workerSid = 'WK-WORKER_SID';
@@ -141,6 +146,7 @@ describe('createContact', () => {
       identifierId: 1,
     });
 
+    expect(publishToSearchIndexSpy).toHaveBeenCalled();
     expect(returnValue).toStrictEqual(mockContact);
   });
 
@@ -169,6 +175,7 @@ describe('createContact', () => {
       identifierId: 2,
     });
 
+    expect(publishToSearchIndexSpy).toHaveBeenCalled();
     expect(returnValue).toStrictEqual(mockContact);
   });
 
@@ -203,6 +210,7 @@ describe('createContact', () => {
       identifierId: undefined,
     });
 
+    expect(publishToSearchIndexSpy).toHaveBeenCalled();
     expect(returnValue).toStrictEqual(mockContact);
   });
 
@@ -224,6 +232,7 @@ describe('createContact', () => {
       identifierId: 1,
     });
 
+    expect(publishToSearchIndexSpy).toHaveBeenCalled();
     expect(returnValue).toStrictEqual(mockContact);
   });
 
@@ -246,6 +255,7 @@ describe('createContact', () => {
       identifierId: 1,
     });
 
+    expect(publishToSearchIndexSpy).toHaveBeenCalled();
     expect(returnValue).toStrictEqual(mockContact);
   });
 });
@@ -262,6 +272,8 @@ describe('connectContactToCase', () => {
       '4321',
       ALWAYS_CAN.user.workerSid,
     );
+
+    expect(publishToSearchIndexSpy).toHaveBeenCalled();
     expect(result).toStrictEqual(mockContact);
   });
 
@@ -272,6 +284,7 @@ describe('connectContactToCase', () => {
     expect(
       connectContactToCase(accountSid, '1234', '4321', ALWAYS_CAN),
     ).rejects.toThrow();
+    expect(publishToSearchIndexSpy).not.toHaveBeenCalled();
   });
 });
 
@@ -306,6 +319,8 @@ describe('patchContact', () => {
       samplePatch,
       ALWAYS_CAN,
     );
+
+    expect(publishToSearchIndexSpy).toHaveBeenCalled();
     expect(result).toStrictEqual(mockContact);
     expect(patchSpy).toHaveBeenCalledWith(accountSid, '1234', true, {
       updatedBy: contactPatcherSid,
@@ -329,6 +344,8 @@ describe('patchContact', () => {
     const patchSpy = jest.fn();
     jest.spyOn(contactDb, 'patch').mockReturnValue(patchSpy);
     patchSpy.mockResolvedValue(undefined);
+
+    expect(publishToSearchIndexSpy).not.toHaveBeenCalled();
     expect(
       patchContact(accountSid, contactPatcherSid, true, '1234', samplePatch, ALWAYS_CAN),
     ).rejects.toThrow();

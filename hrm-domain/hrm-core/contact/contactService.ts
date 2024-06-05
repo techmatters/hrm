@@ -60,6 +60,7 @@ import {
   isS3StoredTranscript,
   isS3StoredTranscriptPending,
   NewConversationMedia,
+  updateConversationMediaSpecificData,
 } from '../conversation-media/conversation-media';
 import { Profile, getOrCreateProfileWithIdentifier } from '../profile/profileService';
 import { deleteContactReferrals } from '../referral/referral-data-access';
@@ -69,6 +70,8 @@ import {
 } from '../sql';
 import { systemUser } from '@tech-matters/twilio-worker-auth';
 import { RulesFile, TKConditionsSets } from '../permissions/rulesMap';
+import type { IndexMessage } from '@tech-matters/hrm-search-config';
+import { publishContactToSearchIndex } from '../jobs/search/publishToSearchIndex';
 
 // Re export as is:
 export { Contact } from './contactDataAccess';
@@ -172,6 +175,23 @@ const initProfile = async (
   });
 };
 
+const doContactInSearchIndexOP =
+  (operation: IndexMessage['operation']) =>
+  async ({
+    accountSid,
+    contactId,
+  }: {
+    accountSid: Contact['accountSid'];
+    contactId: Contact['id'];
+  }) => {
+    const contact = await getById(accountSid, contactId);
+
+    await publishContactToSearchIndex({ accountSid, contact, operation });
+  };
+
+export const indexContactInSearchIndex = doContactInSearchIndexOP('index');
+const removeContactInSearchIndex = doContactInSearchIndexOP('remove');
+
 // Creates a contact with all its related records within a single transaction
 export const createContact = async (
   accountSid: HrmAccountId,
@@ -223,6 +243,8 @@ export const createContact = async (
       return newOkFromData(applyTransformations(contact));
     });
     if (isOk(result)) {
+      // trigger index operation but don't await for it
+      indexContactInSearchIndex({ accountSid, contactId: result.data.id });
       return result.data;
     }
     // This operation can fail with a unique constraint violation if a contact with the same ID is being created concurrently
@@ -245,6 +267,7 @@ export const createContact = async (
       return result.unwrap();
     }
   }
+
   return result.unwrap();
 };
 
@@ -289,6 +312,9 @@ export const patchContact = async (
 
     const applyTransformations = bindApplyTransformations(can, user);
 
+    // trigger index operation but don't await for it
+    indexContactInSearchIndex({ accountSid, contactId: updated.id });
+
     return applyTransformations(updated);
   });
 
@@ -298,6 +324,11 @@ export const connectContactToCase = async (
   caseId: string,
   { can, user }: { can: InitializedCan; user: TwilioUser },
 ): Promise<Contact> => {
+  if (caseId === null) {
+    // trigger remove operation, awaiting for it, since we'll lost the information of which is the "old case" otherwise
+    await removeContactInSearchIndex({ accountSid, contactId: parseInt(contactId, 10) });
+  }
+
   const updated: Contact | undefined = await connectToCase()(
     accountSid,
     contactId,
@@ -309,6 +340,10 @@ export const connectContactToCase = async (
   }
 
   const applyTransformations = bindApplyTransformations(can, user);
+
+  // trigger index operation but don't await for it
+  indexContactInSearchIndex({ accountSid, contactId: updated.id });
+
   return applyTransformations(updated);
 };
 
@@ -353,6 +388,10 @@ export const addConversationMediaToContact = async (
       ...contact,
       conversationMedia: [...contact.conversationMedia, ...createdConversationMedia],
     };
+
+    // trigger index operation but don't await for it
+    indexContactInSearchIndex({ accountSid, contactId: updated.id });
+
     return applyTransformations(updated);
   });
 };
@@ -452,3 +491,25 @@ export const searchContactsByIdCtx = async (
     });
   }
 };
+
+/**
+ * wrapper around updateSpecificData that also triggers a re-index operation when the conversation media gets updated (e.g. when transcript is exported)
+ */
+export const updateConversationMediaData =
+  (contactId: Contact['id']) =>
+  async (
+    ...[accountSid, id, storeTypeSpecificData]: Parameters<
+      typeof updateConversationMediaSpecificData
+    >
+  ): ReturnType<typeof updateConversationMediaSpecificData> => {
+    const result = await updateConversationMediaSpecificData(
+      accountSid,
+      id,
+      storeTypeSpecificData,
+    );
+
+    // trigger index operation but don't await for it
+    indexContactInSearchIndex({ accountSid, contactId });
+
+    return result;
+  };
