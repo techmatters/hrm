@@ -35,6 +35,10 @@ import { search, SearchExtraParams } from './search';
 import { suggest, SuggestExtraParams } from './suggest';
 import { SearchConfiguration, IndexConfiguration } from './config';
 import { IndicesRefreshResponse } from '@elastic/elasticsearch/lib/api/types';
+import deleteDocument, {
+  DeleteDocumentExtraParams,
+  DeleteDocumentResponse,
+} from './deleteDocument';
 
 // import { getMockClient } from './mockClient';
 type AccountSidOrShortCodeRequired =
@@ -108,6 +112,7 @@ export type IndexClient<T> = {
   indexDocument: (args: IndexDocumentExtraParams<T>) => Promise<IndexDocumentResponse>;
   updateDocument: (args: UpdateDocumentExtraParams<T>) => Promise<UpdateDocumentResponse>;
   updateScript: (args: UpdateScriptExtraParams<T>) => Promise<UpdateDocumentResponse>;
+  deleteDocument: (args: DeleteDocumentExtraParams) => Promise<DeleteDocumentResponse>;
   refreshIndex: () => Promise<IndicesRefreshResponse>;
   executeBulk: (args: ExecuteBulkExtraParams<T>) => Promise<ExecuteBulkResponse>;
   createIndex: (args: CreateIndexExtraParams) => Promise<CreateIndexResponse>;
@@ -160,6 +165,8 @@ const getClientOrMock = async ({
           updateDocument({ ...passThroughConfig, ...args }),
         updateScript: (args: UpdateScriptExtraParams<T>) =>
           updateScript({ ...passThroughConfig, ...args }),
+        deleteDocument: (args: DeleteDocumentExtraParams) =>
+          deleteDocument({ ...passThroughConfig, ...args }),
         executeBulk: (args: ExecuteBulkExtraParams<T>) =>
           executeBulk({ ...passThroughConfig, ...args }),
       };
