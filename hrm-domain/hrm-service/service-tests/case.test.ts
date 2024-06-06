@@ -29,7 +29,11 @@ import { CaseService } from '@tech-matters/hrm-core/case/caseService';
 import * as caseDb from '@tech-matters/hrm-core/case/caseDataAccess';
 import { convertCaseInfoToExpectedInfo } from './case/caseValidation';
 
-import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
+import {
+  mockingProxy,
+  mockSuccessfulTwilioAuthentication,
+  newSQSmock,
+} from '@tech-matters/testing';
 import * as mocks from './mocks';
 import { ruleFileActionOverride } from './permissions-overrides';
 import { headers, getRequest, getServer, setRules, useOpenRules } from './server';
@@ -44,18 +48,35 @@ const request = getRequest(server);
 
 const { case1, case2, accountSid, workerSid } = mocks;
 
-afterAll(done => {
-  mockingProxy.stop().finally(() => {
-    server.close(done);
-  });
-});
+let hrmIndexSQSMock: ReturnType<typeof newSQSmock>;
 
 beforeAll(async () => {
   await mockingProxy.start();
+  const mockttp = await mockingProxy.mockttpServer();
+  hrmIndexSQSMock = newSQSmock({
+    mockttp,
+    pathPattern:
+      /\/(test|local|development)\/xx-fake-1\/sqs\/jobs\/hrm-search-index\/queue-url-consumer/,
+  });
+});
+
+afterAll(async () => {
+  await hrmIndexSQSMock.teardownSQSMock();
+  await mockingProxy.stop();
+  server.close();
 });
 
 beforeEach(async () => {
   await mockSuccessfulTwilioAuthentication(workerSid);
+  await hrmIndexSQSMock.createSQSMockQueue({
+    queueName: 'test-hrm-search-index-consumer-pending',
+  });
+});
+
+afterEach(async () => {
+  // await hrmIndexSQSMock.drestoySQSMockQueue({
+  //   queueUrl: hrmIndexSQSMock.getMockSQSQueueUrl(),
+  // });
 });
 
 // eslint-disable-next-line @typescript-eslint/no-shadow
@@ -102,7 +123,7 @@ describe('/cases route', () => {
       expect(response.status).toBe(401);
       expect(response.body.error).toBe('Authorization failed');
     });
-    test('should return 200', async () => {
+    test.only('should return 200', async () => {
       const response = await request.post(route).set(headers).send(case1);
 
       expect(response.status).toBe(200);
