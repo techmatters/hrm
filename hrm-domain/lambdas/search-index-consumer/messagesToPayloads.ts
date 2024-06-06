@@ -36,7 +36,7 @@ export type PayloadWithMeta = {
   documentId: number;
   payload: IndexPayload;
   messageId: string;
-  indexHandler: 'indexDocument' | 'updateDocument' | 'updateScript';
+  indexHandler: 'indexDocument' | 'updateDocument' | 'updateScript' | 'deleteDocument';
 };
 export type PayloadsByIndex = {
   [indexType: string]: PayloadWithMeta[];
@@ -111,49 +111,82 @@ const generatePayloadFromContact = (
   ps: PayloadsByIndex,
   m: ContactIndexingInputData,
 ): PayloadsByIndex => {
-  return {
-    ...ps,
-    // add an upsert job to HRM_CONTACTS_INDEX_TYPE index
-    [HRM_CONTACTS_INDEX_TYPE]: [
-      ...(ps[HRM_CONTACTS_INDEX_TYPE] ?? []),
-      {
-        ...m,
-        documentId: m.message.contact.id,
-        payload: { ...m.message, transcript: m.transcript },
-        indexHandler: 'updateDocument',
-      },
-    ],
-    // if associated to a case, add an upsert with script job to HRM_CASES_INDEX_TYPE index
-    [HRM_CASES_INDEX_TYPE]: m.message.contact.caseId
-      ? [
-          ...(ps[HRM_CASES_INDEX_TYPE] ?? []),
+  switch (m.message.operation) {
+    // both operations are handled internally by the hrm-search-config package, so just cascade the cases
+    case 'index':
+    case 'remove': {
+      return {
+        ...ps,
+        // add an upsert job to HRM_CONTACTS_INDEX_TYPE index
+        [HRM_CONTACTS_INDEX_TYPE]: [
+          ...(ps[HRM_CONTACTS_INDEX_TYPE] ?? []),
           {
             ...m,
-            documentId: parseInt(m.message.contact.caseId, 10),
+            documentId: m.message.contact.id,
             payload: { ...m.message, transcript: m.transcript },
-            indexHandler: 'updateScript',
+            indexHandler: 'updateDocument',
           },
-        ]
-      : ps[HRM_CASES_INDEX_TYPE] ?? [],
-  };
+        ],
+        // if associated to a case, add an upsert with script job to HRM_CASES_INDEX_TYPE index
+        [HRM_CASES_INDEX_TYPE]: m.message.contact.caseId
+          ? [
+              ...(ps[HRM_CASES_INDEX_TYPE] ?? []),
+              {
+                ...m,
+                documentId: parseInt(m.message.contact.caseId, 10),
+                payload: { ...m.message, transcript: m.transcript },
+                indexHandler: 'updateScript',
+              },
+            ]
+          : ps[HRM_CASES_INDEX_TYPE] ?? [],
+      };
+    }
+    default: {
+      return assertExhaustive(m.message.operation);
+    }
+  }
 };
 
 const generatePayloadFromCase = (
   ps: PayloadsByIndex,
   m: CaseIndexingInputData,
-): PayloadsByIndex => ({
-  ...ps,
-  // add an upsert job to HRM_CASES_INDEX_TYPE index
-  [HRM_CASES_INDEX_TYPE]: [
-    ...(ps[HRM_CASES_INDEX_TYPE] ?? []),
-    {
-      ...m,
-      documentId: m.message.case.id,
-      payload: { ...m.message },
-      indexHandler: 'updateDocument',
-    },
-  ],
-});
+): PayloadsByIndex => {
+  switch (m.message.operation) {
+    case 'index': {
+      return {
+        ...ps,
+        // add an upsert job to HRM_CASES_INDEX_TYPE index
+        [HRM_CASES_INDEX_TYPE]: [
+          ...(ps[HRM_CASES_INDEX_TYPE] ?? []),
+          {
+            ...m,
+            documentId: m.message.case.id,
+            payload: { ...m.message },
+            indexHandler: 'updateDocument',
+          },
+        ],
+      };
+    }
+    case 'remove': {
+      return {
+        ...ps,
+        // add a delete job to HRM_CASES_INDEX_TYPE index
+        [HRM_CASES_INDEX_TYPE]: [
+          ...(ps[HRM_CASES_INDEX_TYPE] ?? []),
+          {
+            ...m,
+            documentId: m.message.case.id,
+            payload: { ...m.message },
+            indexHandler: 'deleteDocument',
+          },
+        ],
+      };
+    }
+    default: {
+      return assertExhaustive(m.message.operation);
+    }
+  }
+};
 
 const messagesToPayloadReducer = (
   accum: PayloadsByIndex,

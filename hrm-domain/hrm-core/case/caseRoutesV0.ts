@@ -15,7 +15,6 @@
  */
 
 import createError from 'http-errors';
-import * as casesDb from './caseDataAccess';
 import * as caseApi from './caseService';
 import { publicEndpoint, SafeRouter } from '../permissions';
 import {
@@ -26,6 +25,8 @@ import {
 import caseSectionRoutesV0 from './caseSection/caseSectionRoutesV0';
 import { parseISO } from 'date-fns';
 import { getCaseTimeline } from './caseSection/caseSectionService';
+import type { NextFunction, Request, Response } from 'express';
+import { isErr, mapHTTPError } from '@tech-matters/types';
 
 const casesRouter = SafeRouter();
 casesRouter.put('/:id/status', canUpdateCaseStatus, async (req, res) => {
@@ -93,7 +94,7 @@ casesRouter.expressRouter.use('/:caseId/sections', caseSectionRoutesV0);
 casesRouter.delete('/:id', publicEndpoint, async (req, res) => {
   const { hrmAccountId } = req;
   const { id } = req.params;
-  const deleted = await casesDb.deleteById(id, hrmAccountId);
+  const deleted = await caseApi.deleteCaseById({ accountSid: hrmAccountId, caseId: id });
   if (!deleted) {
     throw createError(404);
   }
@@ -187,5 +188,34 @@ casesRouter.post('/search', publicEndpoint, async (req, res) => {
   );
   res.json(searchResults);
 });
+
+// Endpoint used for generalized search with ElasticSearch
+casesRouter.post(
+  '/searchV2',
+  publicEndpoint,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { hrmAccountId, params, can, user, permissions, query } = req;
+
+      console.log('params', params); //params will have filters - counsellor, dateFrom, dateTo which will be applied by the ES client
+      const elasticSearchClient = async () => [42938, 42939, 42940, 42941];
+      const esCaseIdsResult = await elasticSearchClient();
+      const casesResponse = await caseApi.searchCasesByIdCtx(
+        hrmAccountId,
+        esCaseIdsResult,
+        query,
+        { can, user, permissions },
+      );
+
+      if (isErr(casesResponse)) {
+        return next(mapHTTPError(casesResponse, { InternalServerError: 500 }));
+      }
+
+      res.json(casesResponse);
+    } catch (error) {
+      next(error);
+    }
+  },
+);
 
 export default casesRouter.expressRouter;

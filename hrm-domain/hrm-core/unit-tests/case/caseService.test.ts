@@ -24,6 +24,11 @@ import { workerSid, accountSid } from '../mocks';
 import { newTwilioUser } from '@tech-matters/twilio-worker-auth';
 import { rulesMap } from '../../permissions';
 import { RulesFile } from '../../permissions/rulesMap';
+import * as publishToSearchIndex from '../../jobs/search/publishToSearchIndex';
+
+const publishToSearchIndexSpy = jest
+  .spyOn(publishToSearchIndex, 'publishCaseToSearchIndex')
+  .mockImplementation(async () => Promise.resolve('Ok') as any);
 
 jest.mock('../../case/caseDataAccess');
 const baselineCreatedDate = new Date(2013, 6, 13).toISOString();
@@ -54,6 +59,8 @@ test('create case', async () => {
     accountSid,
   };
   const createSpy = jest.spyOn(caseDb, 'create').mockResolvedValue(createdCaseRecord);
+  // const getByIdSpy =
+  jest.spyOn(caseDb, 'getById').mockResolvedValueOnce(createdCaseRecord);
 
   const createdCase = await caseApi.createCase(caseToBeCreated, accountSid, workerSid);
   // any worker & account specified on the object should be overwritten with the ones from the user
@@ -68,6 +75,9 @@ test('create case', async () => {
       userOwnsContact: false,
     },
   });
+
+  await new Promise(process.nextTick);
+  expect(publishToSearchIndexSpy).toHaveBeenCalled();
 });
 
 describe('searchCases', () => {

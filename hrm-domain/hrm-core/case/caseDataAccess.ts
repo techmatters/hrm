@@ -20,6 +20,7 @@ import { PATCH_CASE_INFO_BY_ID, updateByIdSql } from './sql/caseUpdateSql';
 import {
   OrderByColumnType,
   SearchQueryBuilder,
+  selectCasesByIds,
   selectCaseSearch,
   selectCaseSearchByProfileId,
 } from './sql/caseSearchSql';
@@ -29,10 +30,11 @@ import { Contact } from '../contact/contactDataAccess';
 import { DateFilter, OrderByDirectionType } from '../sql';
 import { TKConditionsSets } from '../permissions/rulesMap';
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
-import { TwilioUserIdentifier } from '@tech-matters/types';
+import { AccountSID, TwilioUserIdentifier } from '@tech-matters/types';
 import {
   PrecalculatedCasePermissionConditions,
   CaseRecordCommon,
+  CaseService,
 } from '@tech-matters/hrm-types';
 import { CaseSectionRecord } from './caseSection/types';
 import { pick } from 'lodash';
@@ -249,8 +251,8 @@ export const searchByProfileId = generalizedSearchQueryFunction<{
   }),
 );
 
-export const deleteById = async (id, accountSid) => {
-  return db.oneOrNone(DELETE_BY_ID, [accountSid, id]);
+export const deleteById = async (id: CaseService['id'], accountSid: AccountSID) => {
+  return db.oneOrNone<CaseRecord>(DELETE_BY_ID, [accountSid, id]);
 };
 
 export const updateStatus = async (
@@ -297,3 +299,15 @@ export const updateCaseInfo = async (
     });
   });
 };
+
+export const searchByCaseIds = generalizedSearchQueryFunction<{
+  caseIds: CaseRecord['id'][];
+}>(selectCasesByIds, (accountSid, user, searchCriteria, filters, limit, offset) => {
+  return {
+    accountSid,
+    limit,
+    offset,
+    caseIds: searchCriteria.caseIds,
+    twilioWorkerSid: user.workerSid,
+  };
+});
