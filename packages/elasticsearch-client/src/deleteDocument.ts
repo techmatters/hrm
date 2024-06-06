@@ -13,17 +13,25 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
+import { DeleteResponse } from '@elastic/elasticsearch/lib/api/types';
+import { PassThroughConfig } from './client';
 
-export const enableCreateContactJobsFlag = /^true$/i.test(
-  process.env.ENABLE_CREATE_CONTACT_JOBS,
-);
-export const enableProcessContactJobsFlag = /^true$/i.test(
-  process.env.ENABLE_PROCESS_CONTACT_JOBS,
-);
-export const enableCleanupJobs = /^true$/i.test(process.env.ENABLE_CLEANUP_JOBS);
-export const enableProfileFlagsCleanup = /^true$/i.test(
-  process.env.ENABLE_PROFILE_FLAGS_CLEANUP,
-);
-export const enablePublishHrmSearchIndex = /^true$/i.test(
-  process.env.ENABLE_PUBLISH_HRM_SEARCH_INDEX,
-);
+export type DeleteDocumentExtraParams = {
+  id: string;
+};
+
+export type DeleteDocumentParams<T> = PassThroughConfig<T> & DeleteDocumentExtraParams;
+export type DeleteDocumentResponse = DeleteResponse;
+
+export const deleteDocument = async <T>({
+  client,
+  id,
+  index,
+}: DeleteDocumentParams<T>): Promise<DeleteDocumentResponse> => {
+  return client.delete({
+    index,
+    id,
+  });
+};
+
+export default deleteDocument;

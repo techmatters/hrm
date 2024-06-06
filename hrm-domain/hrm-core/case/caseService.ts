@@ -32,6 +32,7 @@ import {
   updateStatus,
   CaseRecordUpdate,
   updateCaseInfo,
+  deleteById,
   searchByCaseIds,
 } from './caseDataAccess';
 import { randomUUID } from 'crypto';
@@ -49,6 +50,9 @@ import {
 import { RulesFile, TKConditionsSets } from '../permissions/rulesMap';
 import { CaseSectionRecord } from './caseSection/types';
 import { pick } from 'lodash';
+import type { IndexMessage } from '@tech-matters/hrm-search-config';
+import { publishCaseToSearchIndex } from '../jobs/search/publishToSearchIndex';
+import { enablePublishHrmSearchIndex } from '../featureFlags';
 
 export { WELL_KNOWN_CASE_SECTION_NAMES, CaseService, CaseInfoSection };
 
@@ -268,6 +272,57 @@ const mapEssentialData =
     };
   };
 
+// TODO: use the factored out version once that's merged
+const maxPermissions: {
+  user: TwilioUser;
+  can: () => boolean;
+} = {
+  can: () => true,
+  user: {
+    accountSid: 'ACxxx',
+    workerSid: 'WKxxx',
+    roles: ['supervisor'],
+    isSupervisor: true,
+  },
+};
+
+const doCaseInSearchIndexOP =
+  (operation: IndexMessage['operation']) =>
+  async ({
+    accountSid,
+    caseId,
+    caseRecord,
+  }: {
+    accountSid: CaseService['accountSid'];
+    caseId: CaseService['id'];
+    caseRecord?: CaseRecord;
+  }) => {
+    try {
+      if (!enablePublishHrmSearchIndex) {
+        return;
+      }
+
+      const caseObj =
+        caseRecord || (await getById(caseId, accountSid, maxPermissions.user, []));
+
+      if (caseObj) {
+        await publishCaseToSearchIndex({
+          accountSid,
+          case: caseRecordToCase(caseObj),
+          operation,
+        });
+      }
+    } catch (err) {
+      console.error(
+        `Error trying to index case: accountSid ${accountSid} caseId ${caseId}`,
+        err,
+      );
+    }
+  };
+
+export const indexCaseInSearchIndex = doCaseInSearchIndexOP('index');
+const removeCaseInSearchIndex = doCaseInSearchIndexOP('remove');
+
 export const createCase = async (
   body: Partial<CaseService>,
   accountSid: CaseService['accountSid'],
@@ -289,6 +344,9 @@ export const createCase = async (
     workerSid,
   );
   const created = await create(record);
+
+  // trigger index operation but don't await for it
+  indexCaseInSearchIndex({ accountSid, caseId: created.id });
 
   // A new case is always initialized with empty connected contacts. No need to apply mapContactTransformations here
   return caseRecordToCase(created);
@@ -316,6 +374,9 @@ export const updateCaseStatus = async (
 
   const withTransformedContacts = mapContactTransformations({ can, user })(updated);
 
+  // trigger index operation but don't await for it
+  indexCaseInSearchIndex({ accountSid, caseId: updated.id });
+
   return caseRecordToCase(withTransformedContacts);
 };
 
@@ -327,6 +388,9 @@ export const updateCaseOverview = async (
 ): Promise<CaseService> => {
   const validOverview = pick(overview, CASE_OVERVIEW_PROPERTIES);
   const updated = await updateCaseInfo(accountSid, id, validOverview, workerSid);
+
+  // trigger index operation but don't await for it
+  indexCaseInSearchIndex({ accountSid, caseId: updated.id });
 
   return caseRecordToCase(updated);
 };
@@ -485,4 +549,19 @@ export const searchCasesByIdCtx = async (
       error: 'InternalServerError',
     });
   }
+};
+
+export const deleteCaseById = async ({
+  accountSid,
+  caseId,
+}: {
+  accountSid: HrmAccountId;
+  caseId: number;
+}) => {
+  const deleted = await deleteById(caseId, accountSid);
+
+  // trigger remove operation but don't await for it
+  removeCaseInSearchIndex({ accountSid, caseId: deleted?.id, caseRecord: deleted });
+
+  return deleted;
 };
