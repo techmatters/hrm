@@ -26,7 +26,7 @@ import {
 import { ContactBuilder } from './contact-builder';
 import { omit } from 'lodash';
 import { newTwilioUser } from '@tech-matters/twilio-worker-auth';
-import { newOk } from '@tech-matters/types';
+import { newOk, newOkFromData } from '@tech-matters/types';
 import * as profilesDB from '../../profile/profileDataAccess';
 import * as profilesService from '../../profile/profileService';
 import { NewContactRecord } from '../../contact/sql/contactInsertSql';
@@ -132,8 +132,12 @@ describe('createContact', () => {
   } = {}) => {
     const createContactMock = mocks
       ? jest.fn(mocks.contactMockReturn)
-      : jest.fn(() => Promise.resolve({ contact: mockContact, isNewRecord: true }));
-    const createSpy = jest.spyOn(contactDb, 'create').mockReturnValue(createContactMock);
+      : jest.fn(() =>
+          Promise.resolve(newOkFromData({ contact: mockContact, isNewRecord: true })),
+        );
+    const createSpy = jest
+      .spyOn(contactDb, 'create')
+      .mockReturnValueOnce(createContactMock);
     const getByIdSpy = mocks
       ? jest.spyOn(contactDb, 'getById').mockResolvedValueOnce(mocks.getContactMock)
       : jest.spyOn(contactDb, 'getById').mockResolvedValueOnce(mockContact);

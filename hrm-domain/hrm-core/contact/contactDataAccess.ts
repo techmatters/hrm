@@ -15,7 +15,11 @@
  */
 
 import { db } from '../connection-pool';
-import { selectContactSearch, selectContactsByProfileId } from './sql/contactSearchSql';
+import {
+  selectContactSearch,
+  selectContactsByProfileId,
+  getContactsByIds,
+} from './sql/contactSearchSql';
 import { UPDATE_CASEID_BY_ID, UPDATE_CONTACT_BY_ID } from './sql/contact-update-sql';
 import { parseISO } from 'date-fns';
 import {
@@ -25,11 +29,16 @@ import {
 import { INSERT_CONTACT_SQL, NewContactRecord } from './sql/contactInsertSql';
 import { ContactRawJson } from './contactJson';
 import type { ITask } from 'pg-promise';
-import { txIfNotInOne } from '../sql';
+import { DatabaseErrorResult, inferPostgresErrorResult, txIfNotInOne } from '../sql';
 import { TOUCH_CASE_SQL } from '../case/sql/caseUpdateSql';
 import { TKConditionsSets } from '../permissions/rulesMap';
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
-import { TwilioUserIdentifier, HrmAccountId } from '@tech-matters/types';
+import {
+  TwilioUserIdentifier,
+  HrmAccountId,
+  Result,
+  newOkFromData,
+} from '@tech-matters/types';
 
 import { ExistingContactRecord, Contact } from '@tech-matters/hrm-types';
 
@@ -172,22 +181,28 @@ export const create =
   async (
     accountSid: HrmAccountId,
     newContact: NewContactRecord,
-  ): Promise<CreateResult> => {
-    return txIfNotInOne(
-      task,
-      async (conn: ITask<{ contact: Contact; isNewRecord: boolean }>) => {
-        const now = new Date();
-        const { isNewRecord, ...created }: CreateResultRecord =
-          await conn.one<CreateResultRecord>(INSERT_CONTACT_SQL, {
-            ...newContact,
-            accountSid,
-            createdAt: now,
-            updatedAt: now,
-          });
+  ): Promise<Result<DatabaseErrorResult, CreateResult>> => {
+    try {
+      return newOkFromData(
+        await txIfNotInOne(
+          task,
+          async (conn: ITask<{ contact: Contact; isNewRecord: boolean }>) => {
+            const now = new Date();
+            const { isNewRecord, ...created }: CreateResultRecord =
+              await conn.one<CreateResultRecord>(INSERT_CONTACT_SQL, {
+                ...newContact,
+                accountSid,
+                createdAt: now,
+                updatedAt: now,
+              });
 
-        return { contact: created, isNewRecord };
-      },
-    );
+            return { contact: created, isNewRecord };
+          },
+        ),
+      );
+    } catch (error) {
+      return inferPostgresErrorResult(error);
+    }
   };
 
 export const patch =
@@ -294,6 +309,7 @@ const generalizedSearchQueryFunction = <T>(
           sqlQueryGenerator(viewPermissions, user.isSupervisor),
           sqlQueryParamsBuilder(accountSid, user, searchParameters, limit, offset),
         );
+
       return {
         rows: searchResults,
         count: searchResults.length ? searchResults[0].totalCount : 0,
@@ -309,13 +325,31 @@ export const searchByProfileId: SearchQueryFunction<
   Pick<OptionalSearchQueryParams, 'counselor' | 'helpline'> & { profileId: number }
 > = generalizedSearchQueryFunction(
   selectContactsByProfileId,
+  (accountSid, { workerSid }, searchParameters, limit, offset) => {
+    return {
+      accountSid,
+      twilioWorkerSid: workerSid,
+      limit,
+      offset,
+      counselor: searchParameters.counselor,
+      helpline: searchParameters.helpline,
+      profileId: searchParameters.profileId,
+    };
+  },
+);
+
+export const searchByIds: SearchQueryFunction<
+  Pick<OptionalSearchQueryParams, 'counselor'> & {
+    contactIds: Contact['id'][];
+  }
+> = generalizedSearchQueryFunction(
+  getContactsByIds,
   (accountSid, { workerSid }, searchParameters, limit, offset) => ({
     accountSid,
     twilioWorkerSid: workerSid,
     limit,
     offset,
     counselor: searchParameters.counselor,
-    helpline: searchParameters.helpline,
-    profileId: searchParameters.profileId,
+    contactIds: searchParameters.contactIds,
   }),
 );

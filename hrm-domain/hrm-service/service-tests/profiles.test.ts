@@ -72,11 +72,12 @@ describe('/profiles', () => {
     let defaultFlags: profilesDB.ProfileFlag[];
     beforeEach(async () => {
       existingProfiles = (await profilesDB.listProfiles(accountSid, {}, {})).profiles;
-      createdProfiles = await Promise.all(
-        profilesNames.map(name =>
-          profilesDB.createProfile()(accountSid, { name, createdBy: workerSid }),
-        ),
-      );
+      createdProfiles = [];
+      for (const name of profilesNames) {
+        createdProfiles.push(
+          await profilesDB.createProfile()(accountSid, { name, createdBy: workerSid }),
+        );
+      }
       defaultFlags = await profilesDB.getProfileFlagsForAccount(accountSid);
 
       const murray = createdProfiles.find(p => p.name === 'Murray');

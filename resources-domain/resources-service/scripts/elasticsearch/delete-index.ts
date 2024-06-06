@@ -24,7 +24,7 @@ import { STS } from 'aws-sdk';
 const shortCode = process.argv[2] || 'as';
 const timestamp = new Date().getTime();
 const assumeRoleParams = {
-  RoleArn: 'arn:aws:iam::712893914485:role/admin-no-pii',
+  RoleArn: 'arn:aws:iam::712893914485:role/tf-admin',
   RoleSessionName: `resource-admin-cli-${timestamp}`,
 };
 
