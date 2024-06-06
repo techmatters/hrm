@@ -133,23 +133,39 @@ contactsRouter.post(
   publicEndpoint,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { hrmAccountId, params, can, user, permissions, query } = req;
+      // const { hrmAccountId, params, can, user, permissions, query } = req;
 
-      console.log('params', params); //params will have filters - counsellor, dateFrom, dateTo which will be applied by the ES client
+      // console.log('params', params); //params will have filters - counsellor, dateFrom, dateTo which will be applied by the ES client
       // mocked ES client results with an array of Ids for testing - currently not implemented
       const elasticSearchClient = async () => [26451, 26450, 1];
       const esContactIdsResult = await elasticSearchClient();
 
-      const contactsResponse = await searchContactsByIdCtx(
-        hrmAccountId,
-        esContactIdsResult,
-        query,
-        { can, user, permissions },
-      );
-      res.json(contactsResponse);
+      res.json(esContactIdsResult);
+    } catch (err) {
+      return next(createError(500, err.message));
+    }
+  },
+);
+
+contactsRouter.post(
+  '/searchByIds',
+  publicEndpoint,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { hrmAccountId, can, user, permissions, query, body } = req;
+      const { ids } = body;
+
+      const contactsResponse = await searchContactsByIdCtx(hrmAccountId, ids, query, {
+        can,
+        user,
+        permissions,
+      });
+
       if (isErr(contactsResponse)) {
         return next(mapHTTPError(contactsResponse, { InternalServerError: 500 }));
       }
+
+      res.json(contactsResponse.data);
     } catch (err) {
       return next(createError(500, err.message));
     }
