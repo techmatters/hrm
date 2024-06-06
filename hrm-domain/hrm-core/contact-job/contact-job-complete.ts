@@ -20,6 +20,7 @@ import {
   completeContactJob,
   getContactJobById,
 } from './contact-job-data-access';
+import { updateConversationMediaData } from '../contact/contactService';
 import { ContactJobAttemptResult, ContactJobType } from '@tech-matters/types';
 import {
   ContactJobCompleteProcessorError,
@@ -41,7 +42,6 @@ import type {
 import {
   ConversationMedia,
   getConversationMediaById,
-  updateConversationMediaData,
 } from '../conversation-media/conversation-media';
 
 export const processCompletedRetrieveContactTranscript = async (
@@ -59,7 +59,7 @@ export const processCompletedRetrieveContactTranscript = async (
     location: completedJob.attemptPayload,
   };
 
-  return updateConversationMediaData(
+  return updateConversationMediaData(completedJob.contactId)(
     completedJob.accountSid,
     completedJob.conversationMediaId,
     storeTypeSpecificData,

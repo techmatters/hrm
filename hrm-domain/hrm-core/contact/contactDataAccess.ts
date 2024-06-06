@@ -309,6 +309,7 @@ const generalizedSearchQueryFunction = <T>(
           sqlQueryGenerator(viewPermissions, user.isSupervisor),
           sqlQueryParamsBuilder(accountSid, user, searchParameters, limit, offset),
         );
+
       return {
         rows: searchResults,
         count: searchResults.length ? searchResults[0].totalCount : 0,

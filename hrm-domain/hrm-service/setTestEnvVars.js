@@ -43,6 +43,7 @@ process.env.STATIC_KEY_ACCOUNT_SID = 'BBC';
 
 process.env.INCLUDE_ERROR_IN_RESPONSE = true;
 
+process.env.ENABLE_PUBLISH_HRM_SEARCH_INDEX = true;
 process.env.ENABLE_CREATE_CONTACT_JOBS = true;
 process.env.ENABLE_PROCESS_CONTACT_JOBS = true;
 process.env.ENABLE_CLEANUP_JOBS = true;

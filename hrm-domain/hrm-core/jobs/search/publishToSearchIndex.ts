@@ -24,12 +24,23 @@ const PENDING_INDEX_QUEUE_SSM_PATH = `/${process.env.NODE_ENV}/${
   process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
 }/sqs/jobs/hrm-search-index/queue-url-consumer`;
 
-const publishToSearchIndex = async (message: IndexMessage) => {
+const publishToSearchIndex = async ({
+  message,
+  messageGroupId,
+}: {
+  message: IndexMessage;
+  messageGroupId: string;
+}) => {
   try {
+    console.log(
+      '>>>> publishToSearchIndex invoked with message: ',
+      JSON.stringify(message),
+    );
     const queueUrl = await getSsmParameter(PENDING_INDEX_QUEUE_SSM_PATH);
     return await sendSqsMessage({
       queueUrl,
       message: JSON.stringify(message),
+      messageGroupId,
     });
   } catch (err) {
     console.error(
@@ -47,7 +58,11 @@ export const publishContactToSearchIndex = async ({
   accountSid: AccountSID;
   contact: Contact;
   operation: IndexMessage['operation'];
-}) => publishToSearchIndex({ accountSid, type: 'contact', contact, operation });
+}) =>
+  publishToSearchIndex({
+    message: { accountSid, type: 'contact', contact, operation },
+    messageGroupId: `${accountSid}-contact-${contact.id}`,
+  });
 
 export const publishCaseToSearchIndex = async ({
   accountSid,
@@ -57,4 +72,8 @@ export const publishCaseToSearchIndex = async ({
   accountSid: AccountSID;
   case: CaseService;
   operation: IndexMessage['operation'];
-}) => publishToSearchIndex({ accountSid, type: 'case', case: caseObj, operation });
+}) =>
+  publishToSearchIndex({
+    message: { accountSid, type: 'case', case: caseObj, operation },
+    messageGroupId: `${accountSid}-case-${caseObj.id}`,
+  });

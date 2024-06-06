@@ -35,6 +35,7 @@ RUN apk add --no-cache rsync \
     && npx tsc -b tsconfig.build.json \
     && cp -r hrm-domain/hrm-service/* /home/node/ \
     && mkdir -p /home/node/hrm-domain/ \
+    && cp -r hrm-domain/packages /home/node/hrm-domain/packages \
     && cp -r hrm-domain/hrm-core /home/node/hrm-domain/hrm-core \
     && cp -r hrm-domain/packages /home/node/hrm-domain/packages \
     && cp -r hrm-domain/scheduled-tasks /home/node/hrm-domain/scheduled-tasks \
