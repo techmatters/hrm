@@ -14,10 +14,8 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import type { Request, Response, NextFunction } from 'express';
 import { isErr, mapHTTPError } from '@tech-matters/types';
-// import createError from 'http-errors';
 import { SafeRouter, publicEndpoint } from '../permissions';
 import { reindexContacts } from './contactsReindexService';
 
@@ -25,7 +23,7 @@ const adminContactsRouter = SafeRouter();
 
 // admin POST endpoint to reindex contacts. req body has accountSid, dateFrom, dateTo
 adminContactsRouter.post(
-  '/reindexContacts',
+  '/reindex',
   publicEndpoint,
   async (req: Request, res: Response, next: NextFunction) => {
     const { hrmAccountId } = req;
