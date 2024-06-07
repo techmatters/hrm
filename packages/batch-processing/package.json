@@ -5,11 +5,10 @@
   "main": "dist/index.js",
   "types": "index.d.ts",
   "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
   "license": "AGPL",
-  "dependencies": {
-  },
   "devDependencies": {
     "@types/node": "^18.15.11"
   }
