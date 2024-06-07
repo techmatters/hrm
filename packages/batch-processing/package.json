@@ -1,0 +1,16 @@
+{
+  "name": "@tech-matters/batch-processing",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "types": "index.d.ts",
+  "scripts": {
+  },
+  "author": "",
+  "license": "AGPL",
+  "dependencies": {
+  },
+  "devDependencies": {
+    "@types/node": "^18.15.11"
+  }
+}
