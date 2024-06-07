@@ -23,6 +23,7 @@
   },
   "homepage": "https://github.com/tech-matters/hrm#readme",
   "dependencies": {
+    "@tech-matters/batch-processing": "^1.0.0",
     "@tech-matters/hrm-search-config": "^1.0.0",
     "@tech-matters/hrm-types": "^1.0.0",
     "@tech-matters/http": "^1.0.0",

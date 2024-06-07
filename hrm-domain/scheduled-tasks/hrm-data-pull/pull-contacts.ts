@@ -20,7 +20,7 @@ import { putS3Object } from '@tech-matters/s3-client';
 
 import { getContext, maxPermissions } from './context';
 import * as contactApi from '@tech-matters/hrm-core/contact/contactService';
-import { autoPaginate } from '@tech-matters/hrm-core/autoPaginate';
+import { autoPaginate } from '@tech-matters/batch-processing';
 import { parseISO } from 'date-fns';
 
 const getSearchParams = (startDate: Date, endDate: Date) => ({
