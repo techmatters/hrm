@@ -113,10 +113,10 @@ export const handler = async ({
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to submit request: ${response.statusText}`);
+        console.error(`Failed to submit request for reindexing contacts: ${response.statusText}`);
+      } else {
+        console.log(`Reindexing contacts from ${dateFrom} to ${dateTo}...`);
       }
-
-      console.log(`Reindexing contacts from ${dateFrom} to ${dateTo}...`);
     }
 
     if (cases) {
@@ -131,10 +131,10 @@ export const handler = async ({
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to submit request: ${response.statusText}`);
+        console.error(`Failed to submit request for reindexing cases: ${response.statusText}`);
+      } else {
+        console.log(`Reindexing cases from ${dateFrom} to ${dateTo}...`);
       }
-
-      console.log(`Reindexing cases from ${dateFrom} to ${dateTo}...`);
     }
   } catch (err) {
     console.error(err);
