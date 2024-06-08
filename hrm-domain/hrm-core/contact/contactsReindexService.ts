@@ -18,7 +18,11 @@ import { HrmAccountId, newErr, newOkFromData } from '@tech-matters/types';
 import { Contact, searchContacts } from './contactService';
 import { publishContactToSearchIndex } from '../jobs/search/publishToSearchIndex';
 import { maxPermissions } from '../permissions';
-import { AsyncProcessor, SearchFunction, processInBatch } from '../autoPaginate';
+import {
+  AsyncProcessor,
+  SearchFunction,
+  processInBatch,
+} from '@tech-matters/batch-processing';
 
 export const reindexContacts = async (
   accountSid: HrmAccountId,

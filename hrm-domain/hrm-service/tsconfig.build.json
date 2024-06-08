@@ -3,6 +3,8 @@
   "extends": "./tsconfig.base.json",
   "files": [],
   "references": [
+    { "path": "packages/types" },
+    { "path": "packages/batch-processing" },
     { "path": "packages/http" },
     { "path": "packages/twilio-worker-auth" },
     { "path": "packages/s3-client" },
@@ -11,7 +13,6 @@
     { "path": "packages/sqs-client" },
     { "path": "packages/elasticsearch-client" },
     { "path": "packages/twilio-client" },
-    { "path": "packages/types" },
     { "path": "packages/service-discovery" },
     { "path": "resources-domain/packages/resources-search-config" },
     { "path": "resources-domain/resources-service" },

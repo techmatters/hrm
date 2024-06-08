@@ -18,7 +18,11 @@ import { HrmAccountId, newErr, newOkFromData } from '@tech-matters/types';
 import { CaseService, searchCases } from './caseService';
 import { publishCaseToSearchIndex } from '../jobs/search/publishToSearchIndex';
 import { maxPermissions } from '../permissions';
-import { AsyncProcessor, SearchFunction, processInBatch } from '../autoPaginate';
+import {
+  AsyncProcessor,
+  SearchFunction,
+  processInBatch,
+} from '@tech-matters/batch-processing';
 import formatISO from 'date-fns/formatISO';
 
 export const reindexCases = async (

@@ -23,8 +23,7 @@ import type {
   ProfileSection,
   ProfileWithRelationships,
 } from '@tech-matters/hrm-core/profile/profileDataAccess';
-import { autoPaginate } from '@tech-matters/hrm-core/autoPaginate';
-
+import { autoPaginate } from '@tech-matters/batch-processing';
 import { getContext } from './context';
 import { parseISO } from 'date-fns';
 
