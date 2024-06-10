@@ -37,7 +37,6 @@ const publishToSearchIndex = async ({
       JSON.stringify(message),
     );
     const queueUrl = await getSsmParameter(PENDING_INDEX_QUEUE_SSM_PATH);
-
     return await sendSqsMessage({
       queueUrl,
       message: JSON.stringify(message),
