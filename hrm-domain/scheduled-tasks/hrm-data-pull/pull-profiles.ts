@@ -23,9 +23,9 @@ import type {
   ProfileSection,
   ProfileWithRelationships,
 } from '@tech-matters/hrm-core/profile/profileDataAccess';
+import { autoPaginate } from '@tech-matters/hrm-core/autoPaginate';
 
 import { getContext } from './context';
-import { autoPaginate } from './auto-paginate';
 import { parseISO } from 'date-fns';
 
 const getSearchParams = (startDate: Date, endDate: Date) => ({

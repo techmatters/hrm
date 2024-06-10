@@ -15,9 +15,8 @@
  */
 
 import { getSsmParameter } from '@tech-matters/ssm-cache';
-import { rulesMap } from '@tech-matters/hrm-core/permissions/rulesMap';
 import { HrmAccountId } from '@tech-matters/types';
-import { TwilioUser } from '@tech-matters/twilio-worker-auth';
+export { maxPermissions } from '@tech-matters/hrm-core/permissions/index';
 
 // const sanitizeEnv = (env: string) => (env === 'local' ? 'development' : env);
 
@@ -62,19 +61,4 @@ export const getContext = async (): Promise<Context> => {
   }
 
   return context;
-};
-
-export const maxPermissions: {
-  user: TwilioUser;
-  can: () => boolean;
-  permissions: (typeof rulesMap)[keyof typeof rulesMap];
-} = {
-  can: () => true,
-  user: {
-    accountSid: 'ACxxx',
-    workerSid: 'WKxxx',
-    roles: ['supervisor'],
-    isSupervisor: true,
-  },
-  permissions: rulesMap.open,
 };
