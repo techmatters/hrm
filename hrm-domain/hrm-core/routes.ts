@@ -25,6 +25,7 @@ import permissions from './permissions/permissions-routes-v0';
 import profiles from './profile/profileRoutesV0';
 import adminProfiles from './profile/adminProfileRoutesV0';
 import adminContacts from './contact/adminContactRoutesV0';
+import adminCases from './case/adminCaseRoutesV0';
 import { Permissions } from './permissions';
 
 export const HRM_ROUTES: {
@@ -53,6 +54,7 @@ export const ADMIN_ROUTES: {
 }[] = [
   { path: '/profiles', routerFactory: () => adminProfiles },
   { path: '/contacts', routerFactory: () => adminContacts },
+  { path: '/cases', routerFactory: () => adminCases },
 ];
 
 export const adminApiV0 = () => {

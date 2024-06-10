@@ -17,7 +17,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import { isErr, mapHTTPError } from '@tech-matters/types';
 import { SafeRouter, publicEndpoint } from '../permissions';
-import { reindexContacts } from './contactsReindexService';
+import { reindexCases } from './caseReindexService';
 
 const adminContactsRouter = SafeRouter();
 
@@ -29,7 +29,7 @@ adminContactsRouter.post(
     const { hrmAccountId } = req;
     const { dateFrom, dateTo } = req.body;
 
-    const result = await reindexContacts(hrmAccountId, dateFrom, dateTo);
+    const result = await reindexCases(hrmAccountId, dateFrom, dateTo);
 
     if (isErr(result)) {
       return next(
