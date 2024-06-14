@@ -14,21 +14,12 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
+import { NewPostSurvey, PostSurvey } from '@tech-matters/hrm-types';
 import { db } from '../connection-pool';
 import { SELECT_POST_SURVEYS_BY_CONTACT_TASK } from './sql/post-survey-get-sql';
 import { insertPostSurveySql } from './sql/post-survey-insert-sql';
 
-export type NewPostSurvey = {
-  contactTaskId: string;
-  taskId: string;
-  data: Record<string, any>;
-};
-
-export type PostSurvey = NewPostSurvey & {
-  id: string;
-  createdAt: Date;
-  updatedAt: Date;
-};
+export type { NewPostSurvey, PostSurvey };
 
 export const filterByContactTaskId = async (
   accountSid: string,

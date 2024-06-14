@@ -15,18 +15,18 @@
  */
 
 import { pgp } from '../../connection-pool';
-import { TwilioUserIdentifier, HrmAccountId } from '@tech-matters/types';
+import {
+  NewRecordCommons,
+  NewProfileRecord,
+  NewIdentifierRecord,
+  NewProfileToIdentifierRecord,
+} from '@tech-matters/hrm-types';
 
-export type NewRecordCommons = {
-  accountSid: HrmAccountId;
-  createdAt: Date;
-  updatedAt: Date;
-  createdBy: TwilioUserIdentifier;
-  updatedBy: TwilioUserIdentifier;
-};
-
-export type NewProfileRecord = {
-  name: string | null;
+export type {
+  NewRecordCommons,
+  NewProfileRecord,
+  NewIdentifierRecord,
+  NewProfileToIdentifierRecord,
 };
 
 export const insertProfileSql = (profile: NewProfileRecord & NewRecordCommons) => `
@@ -38,10 +38,6 @@ export const insertProfileSql = (profile: NewProfileRecord & NewRecordCommons) =
   RETURNING *
 `;
 
-export type NewIdentifierRecord = {
-  identifier: string;
-};
-
 export const insertIdentifierSql = (
   identifier: NewIdentifierRecord & NewRecordCommons,
 ) => `
@@ -52,11 +48,6 @@ ${pgp.helpers.insert(
 )}
 RETURNING *
 `;
-
-export type NewProfileToIdentifierRecord = {
-  profileId: number;
-  identifierId: number;
-};
 
 export const associateProfileToIdentifierSql = (
   profileToIdentifier: NewProfileToIdentifierRecord & {
