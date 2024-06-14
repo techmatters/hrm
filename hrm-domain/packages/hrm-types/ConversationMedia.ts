@@ -79,3 +79,44 @@ export const isS3StoredRecording = (m: ConversationMedia): m is S3StoredRecordin
 export const isS3StoredConversationMedia = (
   m: ConversationMedia,
 ): m is S3StoredConversationMedia => isS3StoredTranscript(m) || isS3StoredRecording(m);
+
+export type ExportedTranscriptUser = {
+  sid: string;
+  accountSid: string;
+  serviceSid: string;
+  attributes: string;
+  friendlyName: string;
+  roleSid: string;
+  identity: string;
+  dateCreated: Date;
+  joinedChannelsCount: number;
+  links: string;
+  url: string;
+};
+
+export type ExportTranscripParticipants = {
+  [key: string]: {
+    user: ExportedTranscriptUser | null;
+    role: {
+      isCounselor: boolean;
+    } | null;
+  };
+};
+
+export type ExportTranscriptMessage = {
+  sid: string;
+  dateCreated: Date;
+  from: string;
+  body: string;
+  index: number;
+  type: string;
+  media: any;
+};
+
+export type ExportTranscript = {
+  accountSid: HrmAccountId;
+  serviceSid: string;
+  channelSid: string;
+  messages: ExportTranscriptMessage[];
+  participants: ExportTranscripParticipants;
+};
