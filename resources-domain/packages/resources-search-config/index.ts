@@ -21,8 +21,13 @@ import { FlatResource } from '@tech-matters/types';
 import { convertIndexDocument } from './convertIndexDocument';
 import { getCreateIndexParams } from './getCreateIndexParams';
 import { generateSuggestQuery } from './generateSuggestQuery';
+import { ResourcesSearchConfiguration } from './searchConfiguration';
+import {
+  SearchParameters,
+  generateElasticsearchQuery,
+} from './generateElasticsearchQuery';
 
-export const resourceSearchConfiguration: SearchConfiguration = {
+const resourceSearchConfiguration: ResourcesSearchConfiguration = {
   searchFieldBoosts: {
     'name.*': 5,
     'id.*': 5,
@@ -47,6 +52,11 @@ export const resourceSearchConfiguration: SearchConfiguration = {
     },
   },
   generateSuggestQuery,
+};
+
+export const searchConfiguration: SearchConfiguration<SearchParameters> = {
+  generateElasticsearchQuery: generateElasticsearchQuery(resourceSearchConfiguration),
+  generateSuggestQuery: resourceSearchConfiguration.generateSuggestQuery,
 };
 
 export const resourceIndexConfiguration: IndexConfiguration<FlatResource> = {
