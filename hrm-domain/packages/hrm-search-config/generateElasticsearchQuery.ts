@@ -17,31 +17,63 @@ import { SearchQuery } from '@tech-matters/elasticsearch-client';
 // import { QueryDslQueryContainer } from '@elastic/elasticsearch/lib/api/types';
 import { isHrmCasesIndex, isHrmContactsIndex } from './hrmIndexDocumentMappings';
 
+type SearchPagination = {
+  pagination: {
+    limit: number;
+    start: number;
+  };
+};
+
 type SearchParametersContact = {
   type: 'contact';
   term: string;
-  contactFilters: {};
-  transcriptFilters: {};
-};
+  contactFilters: [];
+  transcriptFilters: [];
+} & SearchPagination;
 
 const generateContactsQuery = ({
   index,
+  searchParameters,
 }: {
   index: string;
   searchParameters: SearchParametersContact;
 }): SearchQuery => {
+  const { term, contactFilters, transcriptFilters } = searchParameters;
+
   return {
     index,
     highlight: {
       fields: { '*': {} },
     },
     min_score: 0.1,
+    from: searchParameters.pagination.start,
+    size: searchParameters.pagination.limit,
     query: {
       bool: {
-        filter: [],
-        must: [
+        filter: contactFilters,
+        should: [
           {
-            match_all: {},
+            bool: {
+              must: [
+                {
+                  match: {
+                    content: term,
+                  },
+                },
+              ],
+            },
+          },
+          {
+            bool: {
+              filter: transcriptFilters,
+              must: [
+                {
+                  match: {
+                    transcript: term,
+                  },
+                },
+              ],
+            },
           },
         ],
       },
@@ -51,7 +83,7 @@ const generateContactsQuery = ({
 
 type SearchParametersCases = {
   type: 'case';
-};
+} & SearchPagination;
 
 const generateCasesQuery = ({
   index,

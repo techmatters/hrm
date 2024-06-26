@@ -29,6 +29,12 @@ import {
   HrmAccountId,
   TwilioUserIdentifier,
 } from '@tech-matters/types';
+import { getClient } from '@tech-matters/elasticsearch-client';
+import {
+  HRM_CONTACTS_INDEX_TYPE,
+  hrmSearchConfiguration,
+} from '@tech-matters/hrm-search-config';
+
 import {
   connectToCase,
   Contact,
@@ -485,21 +491,54 @@ export const getContactsByProfileId = async (
 
 const searchContactsByIds = generalizedSearchContacts(searchByIds);
 
-export const searchContactsByIdCtx = async (
+export const searchContactsV2 = async (
   accountSid: HrmAccountId,
-  contactIds: Contact['id'][],
+  searchParameters: {
+    searchTerm: string;
+    counselor?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    pagination: {
+      limit: number;
+      start: number;
+    };
+  },
   query: Pick<PaginationQuery, 'limit' | 'offset'>,
   ctx: {
     can: InitializedCan;
     user: TwilioUser;
     permissions: RulesFile;
   },
-): Promise<
-  TResult<'InternalServerError', Awaited<ReturnType<typeof searchContactsByIds>>>
-> => {
+): Promise<TResult<'InternalServerError', { count: number; contacts: Contact[] }>> => {
   try {
-    const contacts = await searchContactsByIds(accountSid, { contactIds }, query, ctx);
-    return newOk({ data: contacts });
+    const { searchTerm, pagination } = searchParameters;
+    const client = (
+      await getClient({
+        accountSid,
+        indexType: HRM_CONTACTS_INDEX_TYPE,
+      })
+    ).searchClient(hrmSearchConfiguration);
+
+    const { total, items } = await client.search({
+      searchParameters: {
+        type: 'contact',
+        contactFilters: [],
+        transcriptFilters: [],
+        term: searchTerm,
+        pagination,
+      },
+    });
+
+    const contactIds = items.map(item => parseInt(item.id, 10));
+
+    const { contacts } = await searchContactsByIds(
+      accountSid,
+      { contactIds },
+      query,
+      ctx,
+    );
+
+    return newOk({ data: { count: total, contacts } });
   } catch (err) {
     return newErr({
       message: err instanceof Error ? err.message : String(err),

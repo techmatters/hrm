@@ -25,7 +25,7 @@ import {
   getContactByTaskId,
   patchContact,
   searchContacts,
-  searchContactsByIdCtx,
+  searchContactsV2,
 } from './contactService';
 import type { NextFunction, Request, Response } from 'express';
 import {
@@ -127,77 +127,26 @@ contactsRouter.post('/search', publicEndpoint, async (req, res) => {
   res.json(searchResults);
 });
 
-// Endpoint used for generalized search with ElasticSearch
+// Endpoint used for generalized search powered by ElasticSearch
 contactsRouter.post(
   '/searchV2',
   publicEndpoint,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      // const { hrmAccountId, params, can, user, permissions, query } = req;
-
-      // console.log('params', params); //params will have filters - counsellor, dateFrom, dateTo which will be applied by the ES client
-      // mocked ES client results with an array of Ids for testing - currently not implemented
-      const contacts = [
-        { id: 660 },
-        { id: 659 },
-        { id: 658 },
-        { id: 657 },
-        { id: 656 },
-        { id: 655 },
-        { id: 653 },
-        { id: 654 },
-        { id: 652 },
-        { id: 651 },
-        { id: 650 },
-        { id: 649 },
-        { id: 648 },
-        { id: 646 },
-        { id: 645 },
-        { id: 625 },
-        { id: 644 },
-        { id: 643 },
-        { id: 641 },
-        { id: 640 },
-        { id: 639 },
-        { id: 637 },
-        { id: 636 },
-        { id: 635 },
-        { id: 634 },
-        { id: 633 },
-        { id: 632 },
-        { id: 631 },
-        { id: 630 },
-        { id: 629 },
-        { id: 628 },
-        { id: 627 },
-        { id: 626 },
-        { id: 624 },
-        { id: 623 },
-      ];
-
-      const elasticSearchClient = async () => ({ contacts, count: contacts.length });
-      const esContactIdsResult = await elasticSearchClient();
-
-      res.json(esContactIdsResult);
-    } catch (err) {
-      return next(createError(500, err.message));
-    }
-  },
-);
-
-contactsRouter.post(
-  '/searchByIds',
-  publicEndpoint,
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
       const { hrmAccountId, can, user, permissions, query, body } = req;
-      const { ids } = body;
 
-      const contactsResponse = await searchContactsByIdCtx(hrmAccountId, ids, query, {
-        can,
-        user,
-        permissions,
-      });
+      const { searchParameters } = body;
+
+      const contactsResponse = await searchContactsV2(
+        hrmAccountId,
+        searchParameters,
+        query,
+        {
+          can,
+          user,
+          permissions,
+        },
+      );
 
       if (isErr(contactsResponse)) {
         return next(mapHTTPError(contactsResponse, { InternalServerError: 500 }));
@@ -210,7 +159,6 @@ contactsRouter.post(
   },
 );
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const validatePatchPayload = ({ body }: Request, res: Response, next: NextFunction) => {
   if (typeof body !== 'object' || Array.isArray(body)) {
     throw createError(400);
