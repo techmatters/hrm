@@ -54,6 +54,8 @@ const resourceSearchConfiguration: ResourcesSearchConfiguration = {
   generateSuggestQuery,
 };
 
+export { SearchParameters };
+
 export const searchConfiguration: SearchConfiguration<SearchParameters> = {
   generateElasticsearchQuery: generateElasticsearchQuery(resourceSearchConfiguration),
   generateSuggestQuery: resourceSearchConfiguration.generateSuggestQuery,
