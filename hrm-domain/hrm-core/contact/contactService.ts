@@ -498,10 +498,6 @@ export const searchContactsV2 = async (
     counselor?: string;
     dateFrom?: string;
     dateTo?: string;
-    pagination: {
-      limit: number;
-      start: number;
-    };
   },
   query: Pick<PaginationQuery, 'limit' | 'offset'>,
   ctx: {
@@ -511,7 +507,14 @@ export const searchContactsV2 = async (
   },
 ): Promise<TResult<'InternalServerError', { count: number; contacts: Contact[] }>> => {
   try {
-    const { searchTerm, pagination } = searchParameters;
+    const { searchTerm } = searchParameters;
+    const { limit, offset } = query;
+
+    const pagination = {
+      limit: parseInt((limit as string) || '20'),
+      start: parseInt((offset as string) || '0'),
+    };
+
     const client = (
       await getClient({
         accountSid,

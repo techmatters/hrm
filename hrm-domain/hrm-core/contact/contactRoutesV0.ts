@@ -135,12 +135,14 @@ contactsRouter.post(
     try {
       const { hrmAccountId, can, user, permissions, query, body } = req;
 
+      // TODO: use better validation
+      const { limit, offset } = query as { limit: string; offset: string };
       const { searchParameters } = body;
 
       const contactsResponse = await searchContactsV2(
         hrmAccountId,
         searchParameters,
-        query,
+        { limit, offset },
         {
           can,
           user,
