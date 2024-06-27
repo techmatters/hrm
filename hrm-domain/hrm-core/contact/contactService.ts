@@ -516,6 +516,7 @@ export const searchContactsV2 = async (
       await getClient({
         accountSid,
         indexType: HRM_CONTACTS_INDEX_TYPE,
+        ssmConfigParameter: process.env.SSM_PARAM_ELASTICSEARCH_CONFIG,
       })
     ).searchClient(hrmSearchConfiguration);
 
