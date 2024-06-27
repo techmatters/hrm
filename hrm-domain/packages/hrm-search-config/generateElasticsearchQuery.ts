@@ -112,15 +112,15 @@ const generateCasesQuery = ({
 
 export type SearchParameters = SearchParametersContact | SearchParametersCases;
 
+const isValidSearchParams = (p: any, type: string) =>
+  typeof p === 'object' && p && p.searchParameters && p.searchParameters.type === type;
+
 type GenerateQueryParams = { index: string; searchParameters: SearchParameters };
 const isSearchParametersContacts = (p: any): p is SearchParametersContact =>
-  typeof p === 'object' &&
-  p &&
-  isHrmContactsIndex(p.index) &&
-  p.searchParameters.type === 'contact';
+  isValidSearchParams(p, 'contact');
 
 const isSearchParametersCases = (p: any): p is SearchParametersCases =>
-  typeof p === 'object' && p && p.searchParameters.type === 'case';
+  isValidSearchParams(p, 'case');
 
 export const generateElasticsearchQuery = (p: GenerateQueryParams): SearchQuery => {
   const { index, searchParameters } = p;
