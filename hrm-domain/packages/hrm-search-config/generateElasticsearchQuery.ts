@@ -113,7 +113,7 @@ const generateCasesQuery = ({
 export type SearchParameters = SearchParametersContact | SearchParametersCases;
 
 const isValidSearchParams = (p: any, type: string) =>
-  typeof p === 'object' && p && p.searchParameters && p.searchParameters.type === type;
+  typeof p === 'object' && p && p.type === type;
 
 type GenerateQueryParams = { index: string; searchParameters: SearchParameters };
 const isSearchParametersContacts = (p: any): p is SearchParametersContact =>
