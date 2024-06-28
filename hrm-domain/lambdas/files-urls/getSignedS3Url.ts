@@ -78,6 +78,9 @@ const getSignedS3Url = async (event: AlbHandlerEvent): Promise<GetSignedS3UrlRes
       key,
     },
   });
+
+  console.log('>>>>>> authenticateResult', authenticateResult);
+
   if (isErr(authenticateResult)) {
     return authenticateResult;
   }
