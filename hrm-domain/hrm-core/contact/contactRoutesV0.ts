@@ -25,7 +25,7 @@ import {
   getContactByTaskId,
   patchContact,
   searchContacts,
-  searchContactsByIdCtx,
+  searchContactsV2,
 } from './contactService';
 import type { NextFunction, Request, Response } from 'express';
 import {
@@ -127,36 +127,40 @@ contactsRouter.post('/search', publicEndpoint, async (req, res) => {
   res.json(searchResults);
 });
 
-// Endpoint used for generalized search with ElasticSearch
+// Endpoint used for generalized search powered by ElasticSearch
 contactsRouter.post(
   '/searchV2',
   publicEndpoint,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { hrmAccountId, params, can, user, permissions, query } = req;
+      const { hrmAccountId, can, user, permissions, query, body } = req;
 
-      console.log('params', params); //params will have filters - counsellor, dateFrom, dateTo which will be applied by the ES client
-      // mocked ES client results with an array of Ids for testing - currently not implemented
-      const elasticSearchClient = async () => [26451, 26450, 1];
-      const esContactIdsResult = await elasticSearchClient();
+      // TODO: use better validation
+      const { limit, offset } = query as { limit: string; offset: string };
+      const { searchParameters } = body;
 
-      const contactsResponse = await searchContactsByIdCtx(
+      const contactsResponse = await searchContactsV2(
         hrmAccountId,
-        esContactIdsResult,
-        query,
-        { can, user, permissions },
+        searchParameters,
+        { limit, offset },
+        {
+          can,
+          user,
+          permissions,
+        },
       );
-      res.json(contactsResponse);
+
       if (isErr(contactsResponse)) {
         return next(mapHTTPError(contactsResponse, { InternalServerError: 500 }));
       }
+
+      res.json(contactsResponse.data);
     } catch (err) {
       return next(createError(500, err.message));
     }
   },
 );
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const validatePatchPayload = ({ body }: Request, res: Response, next: NextFunction) => {
   if (typeof body !== 'object' || Array.isArray(body)) {
     throw createError(400);

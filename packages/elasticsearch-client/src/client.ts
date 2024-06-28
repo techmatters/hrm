@@ -33,7 +33,7 @@ import {
 import getAccountSid from './getAccountSid';
 import { search, SearchExtraParams } from './search';
 import { suggest, SuggestExtraParams } from './suggest';
-import { SearchConfiguration, IndexConfiguration } from './config';
+import { IndexConfiguration, SearchConfiguration } from './config';
 import { IndicesRefreshResponse } from '@elastic/elasticsearch/lib/api/types';
 import deleteDocument, {
   DeleteDocumentExtraParams,
@@ -137,8 +137,8 @@ const getClientOrMock = async ({
   return {
     client,
     index,
-    searchClient: (searchConfig: SearchConfiguration) => ({
-      search: (args: SearchExtraParams) =>
+    searchClient: <T>(searchConfig: SearchConfiguration<T>) => ({
+      search: (args: SearchExtraParams<T>) =>
         search({ client, index, searchConfig, ...args }),
       suggest: (args: SuggestExtraParams) =>
         suggest({ client, index, searchConfig, ...args }),

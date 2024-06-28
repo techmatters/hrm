@@ -17,8 +17,8 @@
 import {
   ContactDocument,
   CaseDocument,
-  HRM_CONTACTS_INDEX_TYPE,
-  HRM_CASES_INDEX_TYPE,
+  isHrmContactsIndex,
+  isHrmCasesIndex,
 } from './hrmIndexDocumentMappings';
 import { CreateIndexConvertedDocument } from '@tech-matters/elasticsearch-client';
 import { IndexPayload, IndexPayloadCase, IndexPayloadContact } from './payload';
@@ -157,11 +157,11 @@ export const convertToIndexDocument = (
   payload: IndexPayload,
   indexName: string,
 ): CreateIndexConvertedDocument<ContactDocument | CaseDocument> => {
-  if (indexName.endsWith(HRM_CONTACTS_INDEX_TYPE)) {
+  if (isHrmContactsIndex(indexName)) {
     return convertToContactIndexDocument(payload);
   }
 
-  if (indexName.endsWith(HRM_CASES_INDEX_TYPE)) {
+  if (isHrmCasesIndex(indexName)) {
     return convertToCaseIndexDocument(payload);
   }
 

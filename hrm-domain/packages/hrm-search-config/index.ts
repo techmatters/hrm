@@ -17,6 +17,10 @@
 import { convertToIndexDocument } from './convertToIndexDocument';
 import { convertToScriptUpdate } from './convertToScriptUpdate';
 import { getCreateIndexParams } from './getCreateIndexParams';
+import {
+  SearchParameters,
+  generateElasticsearchQuery,
+} from './generateElasticsearchQuery';
 import type {
   IndexConfiguration,
   SearchConfiguration,
@@ -34,16 +38,8 @@ export {
   IndexPayload,
 } from './payload';
 
-export const hrmSearchConfiguration: SearchConfiguration = {
-  searchFieldBoosts: {
-    // 'name.*': 5,
-    // 'id.*': 5,
-    // 'high_boost_global.*': 3,
-    // 'low_boost_global.*': 2,
-    '*': 1,
-    '*.*': 1,
-  },
-  filterMappings: {},
+export const hrmSearchConfiguration: SearchConfiguration<SearchParameters> = {
+  generateElasticsearchQuery: generateElasticsearchQuery,
   // generateSuggestQuery,
 };
 

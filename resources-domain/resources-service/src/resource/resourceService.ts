@@ -27,7 +27,7 @@ import { getClient, SuggestParameters } from '@tech-matters/elasticsearch-client
 import { getById, getByIdList } from './resourceDataAccess';
 import {
   RESOURCE_INDEX_TYPE,
-  resourceSearchConfiguration,
+  searchConfiguration,
 } from '@tech-matters/resources-search-config';
 
 // Represents a resource whose ID was returned by a search, but which is not in the database
@@ -153,7 +153,7 @@ export const resourceService = () => {
           accountSid,
           indexType: RESOURCE_INDEX_TYPE,
         })
-      ).searchClient(resourceSearchConfiguration);
+      ).searchClient(searchConfiguration);
       const { generalSearchTerm, ...esSearchParameters } = {
         ...boundedSearchParameters,
         q: boundedSearchParameters.generalSearchTerm,
@@ -190,7 +190,7 @@ export const resourceService = () => {
           accountSid,
           indexType: RESOURCE_INDEX_TYPE,
         })
-      ).searchClient(resourceSearchConfiguration);
+      ).searchClient(searchConfiguration);
 
       return client.suggest({ suggestParameters });
     },
