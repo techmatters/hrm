@@ -78,6 +78,7 @@ export default (permissions: Permissions) => {
   };
 
   permissionsRouter.get('/:action', publicEndpoint, async (req, res, next) => {
+    console.log('>>>>>>> permissions/:action', req.query, req.params);
     const { user, can, hrmAccountId } = req;
     const { bucket, key } = req.query;
     const { action } = req.params;
@@ -87,6 +88,8 @@ export default (permissions: Permissions) => {
         objectType: req.query.objectType,
         objectId: req.query.objectId,
       });
+
+      console.log('>>>>>>> parseResult', parseResult);
 
       if (isErr(parseResult)) {
         return next(
@@ -104,6 +107,8 @@ export default (permissions: Permissions) => {
         can,
         user,
       });
+
+      console.log('>>>>>>> canPerformResult', canPerformResult);
 
       if (isErr(canPerformResult)) {
         return next(
@@ -126,6 +131,8 @@ export default (permissions: Permissions) => {
           bucket,
           key,
         });
+
+        console.log('>>>>>>> isValidLocationResult', isValidLocationResult);
 
         if (isErr(isValidLocationResult)) {
           return next(mapHTTPError(isValidLocationResult, { InternalServerError: 500 }));
