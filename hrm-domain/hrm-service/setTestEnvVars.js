@@ -26,8 +26,6 @@ process.env.PERMISSIONS_ACmt = 'mt';
 process.env.PERMISSIONS_ACmw = 'mw';
 process.env.PERMISSIONS_ACnz = 'nz';
 process.env.PERMISSIONS_ACph = 'ph';
-process.env.PERMISSIONS_ACpl = 'pl';
-process.env.PERMISSIONS_ACro = 'ro';
 process.env.PERMISSIONS_ACsg = 'sg';
 process.env.PERMISSIONS_ACth = 'th';
 process.env.PERMISSIONS_ACuk = 'uk';
@@ -45,6 +43,7 @@ process.env.STATIC_KEY_ACCOUNT_SID = 'BBC';
 
 process.env.INCLUDE_ERROR_IN_RESPONSE = true;
 
+process.env.ENABLE_PUBLISH_HRM_SEARCH_INDEX = true;
 process.env.ENABLE_CREATE_CONTACT_JOBS = true;
 process.env.ENABLE_PROCESS_CONTACT_JOBS = true;
 process.env.ENABLE_CLEANUP_JOBS = true;

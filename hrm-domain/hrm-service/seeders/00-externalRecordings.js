@@ -18,16 +18,16 @@ module.exports = {
   up: async queryInterface => {
     const [[{ id: identifierId }]] = await queryInterface.sequelize.query(
       `
-      INSERT INTO public."Identifiers" ("identifier", "accountSid", "createdAt", "updatedAt")
-      VALUES ('+1 555-555-5555', 'ACd8a2e89748318adf6ddff7df6948deaf', '2023-08-30 12:23:24.99+00', '2023-08-30 12:23:24.99+00')
+      INSERT INTO public."Identifiers" ("identifier", "accountSid", "createdAt", "updatedAt", "createdBy")
+      VALUES ('+1 555-555-5555', 'ACd8a2e89748318adf6ddff7df6948deaf', '2023-08-30 12:23:24.99+00', '2023-08-30 12:23:24.99+00', 'system')
       RETURNING id
     `,
       { returning: true },
     );
     const [[{ id: profileId }]] = await queryInterface.sequelize.query(
       `
-      INSERT INTO "Profiles"("name", "accountSid", "createdAt", "updatedAt")
-      VALUES (NULL, 'ACd8a2e89748318adf6ddff7df6948deaf', '2023-08-30 12:23:24.99+00', '2023-08-30 12:23:24.99+00')
+      INSERT INTO "Profiles"("name", "accountSid", "createdAt", "updatedAt", "createdBy")
+      VALUES (NULL, 'ACd8a2e89748318adf6ddff7df6948deaf', '2023-08-30 12:23:24.99+00', '2023-08-30 12:23:24.99+00', 'system')
       RETURNING id
     `,
       { returning: true },

@@ -21,6 +21,9 @@ import { selectCoalesceReferralsByContactId } from '../../referral/sql/referral-
 const ID_WHERE_CLAUSE = `WHERE c."accountSid" = $<accountSid> AND c."id" = $<contactId>`;
 const TASKID_WHERE_CLAUSE = `WHERE c."accountSid" = $<accountSid> AND c."taskId" = $<taskId>`;
 
+/**
+ * Note: this query is also used to index Contact records in ES. If the JOINs are ever removed from this query, make sure that the JOINs are preserved for the ES dedicated one
+ */
 export const selectContactsWithRelations = (table: string) => `
         SELECT c.*, reports."csamReports", joinedReferrals."referrals", media."conversationMedia"
         FROM "${table}" c 

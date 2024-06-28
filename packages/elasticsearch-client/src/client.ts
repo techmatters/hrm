@@ -23,11 +23,22 @@ import {
   IndexDocumentExtraParams,
   IndexDocumentResponse,
 } from './indexDocument';
+import {
+  updateDocument,
+  UpdateDocumentExtraParams,
+  UpdateDocumentResponse,
+  updateScript,
+  UpdateScriptExtraParams,
+} from './updateDocument';
 import getAccountSid from './getAccountSid';
 import { search, SearchExtraParams } from './search';
 import { suggest, SuggestExtraParams } from './suggest';
 import { SearchConfiguration, IndexConfiguration } from './config';
 import { IndicesRefreshResponse } from '@elastic/elasticsearch/lib/api/types';
+import deleteDocument, {
+  DeleteDocumentExtraParams,
+  DeleteDocumentResponse,
+} from './deleteDocument';
 
 // import { getMockClient } from './mockClient';
 type AccountSidOrShortCodeRequired =
@@ -43,6 +54,7 @@ type AccountSidOrShortCodeRequired =
 export type GetClientArgs = {
   config?: ClientOptions;
   indexType: string;
+  ssmConfigParameter?: string;
 } & AccountSidOrShortCodeRequired;
 
 export type GetClientOrMockArgs = GetClientArgs & {
@@ -62,9 +74,11 @@ const getConfigSsmParameterKey = (indexType: string) =>
 const getEsConfig = async ({
   config,
   indexType,
+  ssmConfigParameter,
 }: {
   config: ClientOptions | undefined;
   indexType: string;
+  ssmConfigParameter?: string;
 }) => {
   console.log('config', config);
   if (config) return config;
@@ -84,6 +98,10 @@ const getEsConfig = async ({
     };
   }
 
+  if (ssmConfigParameter) {
+    return JSON.parse(await getSsmParameter(ssmConfigParameter));
+  }
+
   return JSON.parse(await getSsmParameter(getConfigSsmParameterKey(indexType)));
 };
 
@@ -92,20 +110,30 @@ const getEsConfig = async ({
  */
 export type IndexClient<T> = {
   indexDocument: (args: IndexDocumentExtraParams<T>) => Promise<IndexDocumentResponse>;
+  updateDocument: (args: UpdateDocumentExtraParams<T>) => Promise<UpdateDocumentResponse>;
+  updateScript: (args: UpdateScriptExtraParams<T>) => Promise<UpdateDocumentResponse>;
+  deleteDocument: (args: DeleteDocumentExtraParams) => Promise<DeleteDocumentResponse>;
   refreshIndex: () => Promise<IndicesRefreshResponse>;
   executeBulk: (args: ExecuteBulkExtraParams<T>) => Promise<ExecuteBulkResponse>;
   createIndex: (args: CreateIndexExtraParams) => Promise<CreateIndexResponse>;
   deleteIndex: () => Promise<DeleteIndexResponse>;
 };
 
-const getClientOrMock = async ({ config, index, indexType }: GetClientOrMockArgs) => {
+const getClientOrMock = async ({
+  config,
+  index,
+  indexType,
+  ssmConfigParameter,
+}: GetClientOrMockArgs) => {
   // TODO: mock client for unit tests
   // if (authToken === 'mockAuthToken') {
   //   const mock = (getMockClient({ config }) as unknown) as Twilio;
   //   return mock;
   // }
 
-  const client = new EsClient(await getEsConfig({ config, indexType }));
+  const client = new EsClient(
+    await getEsConfig({ config, indexType, ssmConfigParameter }),
+  );
   return {
     client,
     index,
@@ -133,6 +161,12 @@ const getClientOrMock = async ({ config, index, indexType }: GetClientOrMockArgs
         deleteIndex: () => deleteIndex(passThroughConfig),
         indexDocument: (args: IndexDocumentExtraParams<T>) =>
           indexDocument({ ...passThroughConfig, ...args }),
+        updateDocument: (args: UpdateDocumentExtraParams<T>) =>
+          updateDocument({ ...passThroughConfig, ...args }),
+        updateScript: (args: UpdateScriptExtraParams<T>) =>
+          updateScript({ ...passThroughConfig, ...args }),
+        deleteDocument: (args: DeleteDocumentExtraParams) =>
+          deleteDocument({ ...passThroughConfig, ...args }),
         executeBulk: (args: ExecuteBulkExtraParams<T>) =>
           executeBulk({ ...passThroughConfig, ...args }),
       };

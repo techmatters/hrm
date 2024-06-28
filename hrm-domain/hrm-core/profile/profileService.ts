@@ -34,8 +34,8 @@ import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import type { NewProfileSectionRecord } from './sql/profile-sections-sql';
 import type { NewProfileFlagRecord } from './sql/profile-flags-sql';
 import type { NewIdentifierRecord, NewProfileRecord } from './sql/profile-insert-sql';
-import { ITask } from 'pg-promise';
-import { HrmAccountId } from '@tech-matters/types/dist';
+import type { ITask } from 'pg-promise';
+import type { HrmAccountId } from '@tech-matters/types';
 
 export {
   Identifier,
