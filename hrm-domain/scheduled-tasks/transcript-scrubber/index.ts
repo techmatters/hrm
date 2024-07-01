@@ -43,7 +43,7 @@ const scrubS3Transcript = async (bucket: string, key: string) => {
     bucket,
     key,
   });
-  const transcript = JSON.parse(transcriptS3ObjectText);
+  const { transcript } = JSON.parse(transcriptS3ObjectText);
 
   const response = await fetch(LOCAL_PRIVATEAI_URI_ENDPOINT, {
     method: 'POST',
