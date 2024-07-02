@@ -524,13 +524,11 @@ export const searchContactsV2 = async (
     };
 
     const searchFilters = generateContactSearchFilters({ counselor, dateFrom, dateTo });
-    console.log('>>>>>>>>>> searchFilters', searchFilters)
     const permissionFilters = generateContactPermissionsFilters({
       user: ctx.user,
       viewContact: ctx.permissions.viewContact as ContactListCondition[][],
       viewTranscript: ctx.permissions.viewExternalTranscript as ContactListCondition[][],
     });
-    console.log('>>>>>>>>>> permissionFilters', permissionFilters)
 
     const client = (
       await getClient({

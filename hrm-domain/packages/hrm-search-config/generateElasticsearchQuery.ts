@@ -77,13 +77,13 @@ type SearchParametersContact = {
   };
 } & SearchPagination;
 
-const generateTransccriptBooolQuery = ({
+const generateTranscriptQueriesFromFilters = ({
   searchTerm,
   transcriptFilters,
 }: {
   searchTerm: string;
   transcriptFilters: QueryDslQueryContainer[][];
-}) =>
+}): QueryDslQueryContainer[] =>
   transcriptFilters.map(filter => ({
     bool: {
       filter: filter,
@@ -108,7 +108,7 @@ const generateContactsQueriesFromFilters = ({
     permissionFilters: { contactFilters, transcriptFilters },
   } = searchParameters;
 
-  const transcriptQueries = generateTransccriptBooolQuery({
+  const transcriptQueries = generateTranscriptQueriesFromFilters({
     searchTerm,
     transcriptFilters,
   });
@@ -127,8 +127,8 @@ const generateContactsQueriesFromFilters = ({
               },
             ],
           },
-          ...transcriptQueries,
         },
+        ...transcriptQueries,
       ],
     },
   }));
@@ -206,11 +206,7 @@ export const generateElasticsearchQuery = (p: GenerateQueryParams): SearchQuery 
   const { index, searchParameters } = p;
 
   if (isHrmContactsIndex(index) && isSearchParametersContacts(searchParameters)) {
-    // return generateContactsQuery({ index, searchParameters });
-    console.log('>>>>>> generateContactsQuery params', searchParameters);
-    const query = generateContactsQuery({ index, searchParameters });
-    console.log('>>>>>> generateContactsQuery result', query);
-    return query;
+    return generateContactsQuery({ index, searchParameters });
   }
 
   if (isHrmCasesIndex(index) && isSearchParametersCases(searchParameters)) {
