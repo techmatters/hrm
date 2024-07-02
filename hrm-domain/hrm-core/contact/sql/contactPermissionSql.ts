@@ -20,9 +20,9 @@ import {
   UserBasedCondition,
 } from '../../permissions/rulesMap';
 import {
-  ConditionWhereClauses,
+  ConditionWhereClausesSQL,
   listPermissionWhereClause,
-} from '../../permissions/sqlGenerators';
+} from '../../permissions/queryGenerators/sqlGenerators';
 
 export type ContactListCondition = Extract<
   TKCondition<'contact'>,
@@ -31,7 +31,7 @@ export type ContactListCondition = Extract<
 
 const conditionWhereClauses = (
   contactsTableAlias: string,
-): ConditionWhereClauses<'contact'> => ({
+): ConditionWhereClausesSQL<'contact'> => ({
   isOwner: `"${contactsTableAlias}"."twilioWorkerId" = $<twilioWorkerSid>`,
 
   timeBasedCondition: ({ createdDaysAgo, createdHoursAgo }) => {

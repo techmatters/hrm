@@ -14,23 +14,22 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { isTimeBasedCondition, TimeBasedCondition, TKCondition } from './rulesMap';
-import { TargetKind } from './actions';
+import { isTimeBasedCondition, type TKCondition } from '../rulesMap';
+import type { TargetKind } from '../actions';
+import type { ConditionWhereClauses } from './types';
 
 const FILTER_ALL_CASES_CLAUSE: [string] = ['1=0'];
 
-export type ConditionWhereClauses<TKind extends Extract<TargetKind, 'case' | 'contact'>> =
-  Record<
-    Exclude<TKCondition<TKind>, 'everyone' | 'isSupervisor' | TimeBasedCondition>,
-    string | ((condition: TKCondition<TKind>) => string)
-  > & { timeBasedCondition?: (condition: TimeBasedCondition) => string };
+export type ConditionWhereClausesSQL<
+  TKind extends Extract<TargetKind, 'case' | 'contact'>,
+> = ConditionWhereClauses<TKind, string>;
 
 export const listPermissionWhereClause = <
   TKind extends Extract<TargetKind, 'case' | 'contact'>,
 >(
   listConditionSets: TKCondition<TKind>[][],
   userIsSupervisor: boolean,
-  conditionWhereClauses: ConditionWhereClauses<TKind>,
+  conditionWhereClauses: ConditionWhereClausesSQL<TKind>,
 ): [clause: string] | [] => {
   type ListCondition = TKCondition<TKind>;
   const ALL_OR_NOTHING_CONDITIONS: ListCondition[] = ['everyone', 'isSupervisor'];
