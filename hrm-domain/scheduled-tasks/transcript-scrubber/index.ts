@@ -59,7 +59,7 @@ const scrubS3Transcript = async (bucket: string, key: string) => {
     bucket,
     key,
   });
-  const { transcript } = JSON.parse(transcriptS3ObjectText);
+  const { transcript, ...restOfDoc } = JSON.parse(transcriptS3ObjectText);
 
   const response = await fetch(LOCAL_PRIVATEAI_URI_ENDPOINT, {
     method: 'POST',
@@ -77,7 +77,7 @@ const scrubS3Transcript = async (bucket: string, key: string) => {
     body: results[idx].processed_text,
   }));
   const scrubbedTranscriptJson = JSON.stringify(
-    { ...transcript, messages: scrubbedMessages },
+    { ...restOfDoc, transcript: { ...transcript, messages: scrubbedMessages } },
     null,
     2,
   );
