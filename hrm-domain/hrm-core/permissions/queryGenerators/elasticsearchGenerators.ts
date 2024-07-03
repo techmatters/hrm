@@ -19,16 +19,7 @@ import type { TargetKind } from '../actions';
 import type { ConditionWhereClauses } from './types';
 import type { QueryDslQueryContainer } from '@elastic/elasticsearch/lib/api/types';
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
-
-const FILTER_ALL_CLAUSE: QueryDslQueryContainer[][] = [
-  [
-    {
-      bool: {
-        must_not: { match_all: {} },
-      },
-    },
-  ],
-];
+import { FILTER_ALL_CLAUSE } from '@tech-matters/hrm-search-config';
 
 export type ConditionWhereClausesES<
   TKind extends Extract<TargetKind, 'case' | 'contact'>,

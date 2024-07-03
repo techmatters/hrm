@@ -53,4 +53,5 @@ export {
   generateESFilter,
   GenerateContactFilterParams,
   GenerateCaseFilterParams,
+  FILTER_ALL_CLAUSE,
 } from './generateElasticsearchQuery';

@@ -34,6 +34,16 @@ type GenerateFilterParams<T extends {}> = { field: keyof T } & (
   | GenerateRangeFilterParams
 );
 
+export const FILTER_ALL_CLAUSE: QueryDslQueryContainer[][] = [
+  [
+    {
+      bool: {
+        must_not: { match_all: {} },
+      },
+    },
+  ],
+];
+
 /** Utility function that creates a filter based on a more human-readable representation */
 export const generateESFilter = <T extends {}>(
   p: GenerateFilterParams<T>,
