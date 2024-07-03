@@ -33,6 +33,8 @@ type GenerateFilterParams<T extends {}> = { field: keyof T } & (
   | GenerateTermFilterParams
   | GenerateRangeFilterParams
 );
+
+/** Utility function that creates a filter based on a more human-readable representation */
 export const generateESFilter = <T extends {}>(
   p: GenerateFilterParams<T>,
 ): QueryDslQueryContainer => {

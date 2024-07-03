@@ -20,7 +20,7 @@ import type { ConditionWhereClauses } from './types';
 import type { QueryDslQueryContainer } from '@elastic/elasticsearch/lib/api/types';
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 
-const FILTER_ALL_CASES_CLAUSE: QueryDslQueryContainer[][] = [
+const FILTER_ALL_CLAUSE: QueryDslQueryContainer[][] = [
   [
     {
       bool: {
@@ -105,5 +105,5 @@ export const listPermissionWhereClause = <
     }
   }
 
-  return conditionSetClauses.length ? conditionSetClauses : FILTER_ALL_CASES_CLAUSE;
+  return conditionSetClauses.length ? conditionSetClauses : FILTER_ALL_CLAUSE;
 };
