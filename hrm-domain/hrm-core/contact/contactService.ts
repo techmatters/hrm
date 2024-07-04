@@ -499,7 +499,7 @@ export const getContactsByProfileId = async (
 
 const searchContactsByIds = generalizedSearchContacts(searchByIds);
 
-export const searchContactsV2 = async (
+export const generalisedContactSearch = async (
   accountSid: HrmAccountId,
   searchParameters: {
     searchTerm: string;
