@@ -38,6 +38,7 @@ const buildSearchFilters = ({
   counselor?: string;
   dateFrom?: string;
   dateTo?: string;
+  buildParams: { parentPath: string };
 }): GenerateContactFilterParams[] => {
   const searchFilters: GenerateContactFilterParams[] = [
     counselor &&
@@ -64,6 +65,7 @@ export const generateContactSearchFilters = (p: {
   counselor?: string;
   dateFrom?: string;
   dateTo?: string;
+  buildParams: { parentPath: string };
 }) => buildSearchFilters(p).map(generateESFilter);
 
 const buildPermissionFilter = (p: GenerateContactFilterParams) => generateESFilter(p);
@@ -73,9 +75,16 @@ export type ContactListCondition = Extract<
   ContactSpecificCondition | UserBasedCondition
 >;
 
-const conditionWhereClauses = (user: TwilioUser): ConditionWhereClausesES<'contact'> => ({
+const conditionWhereClauses = ({
+  buildParams: { parentPath },
+  user,
+}: {
+  user: TwilioUser;
+  buildParams: { parentPath: string };
+}): ConditionWhereClausesES<'contact'> => ({
   isOwner: buildPermissionFilter({
     field: 'twilioWorkerId',
+    parentPath,
     type: 'term',
     term: user.workerSid,
   }),
@@ -96,6 +105,7 @@ const conditionWhereClauses = (user: TwilioUser): ConditionWhereClausesES<'conta
 
     return buildPermissionFilter({
       field: 'timeOfContact',
+      parentPath,
       type: 'range',
       ranges: {
         gte: greater.toISOString(),
@@ -107,14 +117,16 @@ const conditionWhereClauses = (user: TwilioUser): ConditionWhereClausesES<'conta
 const listContactsPermissionClause = ({
   listConditionSets,
   user,
+  buildParams,
 }: {
   listConditionSets: ContactListCondition[][];
   user: TwilioUser;
+  buildParams: { parentPath: string };
 }) => {
   const clauses = listPermissionWhereClause<'contact'>({
     listConditionSets,
     user,
-    conditionWhereClauses: conditionWhereClauses(user),
+    conditionWhereClauses: conditionWhereClauses({ user, buildParams }),
   });
 
   return clauses;
@@ -124,14 +136,21 @@ export const generateContactPermissionsFilters = ({
   viewContact,
   viewTranscript,
   user,
+  buildParams,
 }: {
   viewContact: ContactListCondition[][];
   viewTranscript: ContactListCondition[][];
   user: TwilioUser;
+  buildParams: { parentPath: string };
 }) => ({
-  contactFilters: listContactsPermissionClause({ listConditionSets: viewContact, user }),
+  contactFilters: listContactsPermissionClause({
+    listConditionSets: viewContact,
+    user,
+    buildParams,
+  }),
   transcriptFilters: listContactsPermissionClause({
     listConditionSets: viewTranscript,
     user,
+    buildParams,
   }),
 });

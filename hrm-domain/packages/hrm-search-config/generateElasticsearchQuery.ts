@@ -28,11 +28,23 @@ type GenerateRangeFilterParams = {
   type: 'range';
   ranges: { lt?: string; lte?: string; gt?: string; gte?: string };
 };
+type GenerateMustNotFilterParams<T extends {}> = {
+  type: 'mustNot';
+  innerQuery: GenerateFilterParams<T>;
+};
+type GenerateNestedFilterParams<T extends {}> = {
+  type: 'nested';
+  path: keyof T;
+  innerQuery: GenerateFilterParams<T>;
+};
 
-type GenerateFilterParams<T extends {}> = { field: keyof T } & (
-  | GenerateTermFilterParams
-  | GenerateRangeFilterParams
-);
+type GenerateFilterParams<T extends {}> =
+  | ({ field: keyof T; parentPath?: string } & (
+      | GenerateTermFilterParams
+      | GenerateRangeFilterParams
+    ))
+  | GenerateMustNotFilterParams<T>
+  | GenerateNestedFilterParams<T>;
 
 export const FILTER_ALL_CLAUSE: QueryDslQueryContainer[][] = [
   [
@@ -44,6 +56,12 @@ export const FILTER_ALL_CLAUSE: QueryDslQueryContainer[][] = [
   ],
 ];
 
+const getFieldName = <T extends {}>(p: { field: keyof T; parentPath?: string }) => {
+  const prefix = p.parentPath ? `${p.parentPath}` : '';
+
+  return `${prefix}${String(p.field)}`;
+};
+
 /** Utility function that creates a filter based on a more human-readable representation */
 export const generateESFilter = <T extends {}>(
   p: GenerateFilterParams<T>,
@@ -52,14 +70,33 @@ export const generateESFilter = <T extends {}>(
     case 'term': {
       return {
         term: {
-          [p.field]: p.term,
+          [getFieldName(p)]: p.term,
         },
       };
     }
     case 'range': {
       return {
         range: {
-          [p.field]: p.ranges,
+          [getFieldName(p)]: p.ranges,
+        },
+      };
+    }
+    case 'mustNot': {
+      return {
+        bool: {
+          must_not: generateESFilter(p.innerQuery),
+        },
+      };
+    }
+    case 'nested': {
+      return {
+        nested: {
+          path: String(p.path),
+          query: {
+            bool: {
+              must: [generateESFilter(p.innerQuery)],
+            },
+          },
         },
       };
     }
@@ -145,11 +182,7 @@ const generateContactsQueriesFromFilters = ({
     },
   }));
 
-  return {
-    bool: {
-      should: contactQueries,
-    },
-  };
+  return contactQueries;
 };
 
 const generateContactsQuery = ({
@@ -169,34 +202,83 @@ const generateContactsQuery = ({
     min_score: 0.1,
     from: pagination.start,
     size: pagination.limit,
-    query: generateContactsQueriesFromFilters({ searchParameters }),
+    query: {
+      bool: {
+        should: generateContactsQueriesFromFilters({ searchParameters }),
+      },
+    },
   };
 };
 
 type SearchParametersCases = {
   type: 'case';
+  searchTerm: string;
+  searchFilters: QueryDslQueryContainer[];
+  permissionFilters: {
+    contactFilters: QueryDslQueryContainer[][];
+    transcriptFilters: QueryDslQueryContainer[][];
+    caseFilters: QueryDslQueryContainer[][];
+  };
 } & SearchPagination;
+
+const generateCasesQueriesFromFilters = ({
+  searchParameters,
+}: {
+  searchParameters: SearchParametersCases;
+}) => {
+  const {
+    searchTerm,
+    searchFilters,
+    permissionFilters: { caseFilters },
+  } = searchParameters;
+
+  const contactQueries = generateContactsQueriesFromFilters({
+    searchParameters: { ...searchParameters, type: 'contact' },
+  });
+
+  const caseQueries = caseFilters.map(caseFilter => ({
+    bool: {
+      filter: [...caseFilter, ...searchFilters],
+      should: [
+        {
+          bool: {
+            must: [
+              {
+                match: {
+                  content: searchTerm,
+                },
+              },
+            ],
+          },
+        },
+        ...contactQueries,
+      ],
+    },
+  }));
+
+  return caseQueries;
+};
 
 const generateCasesQuery = ({
   index,
+  searchParameters,
 }: {
   index: string;
   searchParameters: SearchParametersCases;
 }): SearchQuery => {
+  const { pagination } = searchParameters;
+
   return {
-    index: index,
+    index,
     highlight: {
       fields: { '*': {} },
     },
     min_score: 0.1,
+    from: pagination.start,
+    size: pagination.limit,
     query: {
       bool: {
-        filter: [],
-        must: [
-          {
-            match_all: {},
-          },
-        ],
+        should: generateCasesQueriesFromFilters({ searchParameters }),
       },
     },
   };
