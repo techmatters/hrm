@@ -125,9 +125,9 @@ const generateContactsQueriesFromFilters = ({
     transcriptFilters,
   });
 
-  const contactQueries = contactFilters.map(contatFilter => ({
+  const contactQueries = contactFilters.map(contactFilter => ({
     bool: {
-      filter: [...contatFilter, ...searchFilters],
+      filter: [...contactFilter, ...searchFilters],
       should: [
         {
           bool: {
