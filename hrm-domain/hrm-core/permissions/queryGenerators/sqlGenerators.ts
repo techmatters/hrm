@@ -15,18 +15,14 @@
  */
 
 import { isTimeBasedCondition, type TKCondition } from '../rulesMap';
-import type { TargetKind } from '../actions';
-import type { ConditionWhereClauses } from './types';
+import type { PermissionFilterGenerators, TKindPermissionTarget } from './types';
 
 const FILTER_ALL_CASES_CLAUSE: [string] = ['1=0'];
 
-export type ConditionWhereClausesSQL<
-  TKind extends Extract<TargetKind, 'case' | 'contact'>,
-> = ConditionWhereClauses<TKind, string>;
+export type ConditionWhereClausesSQL<TKind extends TKindPermissionTarget> =
+  PermissionFilterGenerators<TKind, string>;
 
-export const listPermissionWhereClause = <
-  TKind extends Extract<TargetKind, 'case' | 'contact'>,
->(
+export const listPermissionWhereClause = <TKind extends TKindPermissionTarget>(
   listConditionSets: TKCondition<TKind>[][],
   userIsSupervisor: boolean,
   conditionWhereClauses: ConditionWhereClausesSQL<TKind>,
