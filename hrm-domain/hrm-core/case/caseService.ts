@@ -50,9 +50,20 @@ import {
 import { RulesFile, TKConditionsSets } from '../permissions/rulesMap';
 import { CaseSectionRecord } from './caseSection/types';
 import { pick } from 'lodash';
-import type { IndexMessage } from '@tech-matters/hrm-search-config';
+import {
+  HRM_CASES_INDEX_TYPE,
+  hrmSearchConfiguration,
+  type IndexMessage,
+} from '@tech-matters/hrm-search-config';
 import { publishCaseToSearchIndex } from '../jobs/search/publishToSearchIndex';
 import { enablePublishHrmSearchIndex } from '../featureFlags';
+import { getClient } from '@tech-matters/elasticsearch-client';
+import {
+  CaseListCondition,
+  generateCasePermissionsFilters,
+  generateCaseSearchFilters,
+} from './caseSearchIndex';
+import { ContactListCondition } from '../contact/contactSearchIndex';
 
 export { WELL_KNOWN_CASE_SECTION_NAMES, CaseService, CaseInfoSection };
 
@@ -527,22 +538,65 @@ export const getCasesByProfileId = async (
 
 export const searchCasesByIds = generalizedSearchCases(searchByCaseIds);
 
-export const searchCasesByIdCtx = async (
+export const generalisedCasesSearch = async (
   accountSid: HrmAccountId,
-  caseIds: CaseRecord['id'][],
+  searchParameters: {
+    searchTerm: string;
+    counselor?: string;
+    dateFrom?: string;
+    dateTo?: string;
+  },
   query: Pick<PaginationQuery, 'limit' | 'offset'>,
   ctx: {
     can: InitializedCan;
     user: TwilioUser;
     permissions: RulesFile;
   },
-): Promise<
-  TResult<'InternalServerError', Awaited<ReturnType<typeof searchCasesByIds>>>
-> => {
+): Promise<TResult<'InternalServerError', CaseSearchReturn>> => {
   try {
-    const cases = await searchCasesByIds(accountSid, query, { caseIds }, {}, ctx);
+    const { searchTerm, counselor, dateFrom, dateTo } = searchParameters;
+    const { limit, offset } = query;
 
-    return newOk({ data: cases });
+    const pagination = {
+      limit: parseInt((limit as string) || '20', 10),
+      start: parseInt((offset as string) || '0', 10),
+    };
+
+    const searchFilters = generateCaseSearchFilters({ counselor, dateFrom, dateTo });
+    const permissionFilters = generateCasePermissionsFilters({
+      user: ctx.user,
+      viewContact: ctx.permissions.viewContact as ContactListCondition[][],
+      viewTranscript: ctx.permissions.viewExternalTranscript as ContactListCondition[][],
+      viewCase: ctx.permissions.viewCase as CaseListCondition[][],
+    });
+
+    const client = (
+      await getClient({
+        accountSid,
+        indexType: HRM_CASES_INDEX_TYPE,
+        ssmConfigParameter: process.env.SSM_PARAM_ELASTICSEARCH_CONFIG,
+      })
+    ).searchClient(hrmSearchConfiguration);
+
+    const { total, items } = await client.search({
+      searchParameters: {
+        type: 'case',
+        searchTerm,
+        searchFilters,
+        permissionFilters,
+        pagination,
+      },
+    });
+
+    const caseIds = items.map(item => parseInt(item.id, 10));
+
+    console.log('caseIds', caseIds)
+
+    const { cases } = await searchCasesByIds(accountSid, query, { caseIds }, {}, ctx);
+
+    console.log('cases', cases)
+
+    return newOk({ data: { count: total, cases } });
   } catch (err) {
     return newErr({
       message: err instanceof Error ? err.message : String(err),

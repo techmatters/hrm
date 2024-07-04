@@ -167,68 +167,36 @@ casesRouter.get('/:id', canViewCase, async (req, res) => {
   res.json(caseFromDB);
 });
 
-casesRouter.post('/search', publicEndpoint, async (req, res) => {
-  const { hrmAccountId } = req;
-  const {
-    closedCases,
-    counselor,
-    helpline,
-    filters,
-    onlyEssentialData,
-    ...searchCriteria
-  } = req.body || {};
-
-  const searchResults = await caseApi.searchCases(
-    hrmAccountId,
-    req.query || {},
-    searchCriteria,
-    { closedCases, counselor, helpline, filters },
-    req,
-    onlyEssentialData,
-  );
-  res.json(searchResults);
-});
-
-// Endpoint used for generalized search with ElasticSearch
+// Endpoint used for generalized search powered by ElasticSearch
 casesRouter.post(
-  '/searchV2',
-  publicEndpoint,
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      // const { hrmAccountId, params, can, user, permissions, query } = req;
-
-      // console.log('params', params); //params will have filters - counsellor, dateFrom, dateTo which will be applied by the ES client
-      const elasticSearchClient = async () => [42938, 42939, 42940, 42941];
-      const esCaseIdsResult = await elasticSearchClient();
-
-      res.json(esCaseIdsResult);
-    } catch (error) {
-      next(error);
-    }
-  },
-);
-
-casesRouter.post(
-  '/searchByIds',
+  '/generalisedSearch',
   publicEndpoint,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { hrmAccountId, can, user, permissions, query, body } = req;
-      const { ids } = body;
 
-      const casesResponse = await caseApi.searchCasesByIdCtx(hrmAccountId, ids, query, {
-        can,
-        user,
-        permissions,
-      });
+      // TODO: use better validation
+      const { limit, offset } = query as { limit: string; offset: string };
+      const { searchParameters } = body;
+
+      const casesResponse = await caseApi.generalisedCasesSearch(
+        hrmAccountId,
+        searchParameters,
+        { limit, offset },
+        {
+          can,
+          user,
+          permissions,
+        },
+      );
 
       if (isErr(casesResponse)) {
         return next(mapHTTPError(casesResponse, { InternalServerError: 500 }));
       }
 
-      res.json(casesResponse);
-    } catch (error) {
-      next(error);
+      res.json(casesResponse.data);
+    } catch (err) {
+      return next(createError(500, err.message));
     }
   },
 );
