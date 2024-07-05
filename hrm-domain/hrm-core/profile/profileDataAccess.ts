@@ -14,14 +14,14 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 import {
-  NewIdentifierRecord,
-  NewProfileRecord,
+  type NewIdentifierRecord,
+  type NewProfileRecord,
   insertIdentifierSql,
   insertProfileSql,
   associateProfileToIdentifierSql,
 } from './sql/profile-insert-sql';
 import {
-  NewProfileFlagRecord,
+  type NewProfileFlagRecord,
   associateProfileToProfileFlagSql,
   disassociateProfileFromProfileFlagSql,
   getProfileFlagsByAccountSql,
@@ -31,67 +31,56 @@ import {
   deleteProfileFlagByIdSql,
 } from './sql/profile-flags-sql';
 import {
-  DatabaseErrorResult,
+  type DatabaseErrorResult,
   inferPostgresErrorResult,
   isDatabaseForeignKeyViolationErrorResult,
   isDatabaseUniqueConstraintViolationErrorResult,
-  OrderByDirectionType,
+  type OrderByDirectionType,
   txIfNotInOne,
 } from '../sql';
 import * as profileGetSql from './sql/profile-get-sql';
 import { db } from '../connection-pool';
 import {
-  NewProfileSectionRecord,
+  type NewProfileSectionRecord,
   getProfileSectionByIdSql,
   insertProfileSectionSql,
   updateProfileSectionByIdSql,
 } from './sql/profile-sections-sql';
 import {
-  OrderByColumnType,
-  ProfilesListFilters,
+  type OrderByColumnType,
+  type ProfilesListFilters,
   listProfilesSql,
 } from './sql/profile-list-sql';
 import { getPaginationElements } from '../search';
 import { TOUCH_PROFILE_SQL, updateProfileByIdSql } from './sql/profile-update.sql';
 import {
   ensureRejection,
-  ErrorResult,
   newErr,
   newOkFromData,
-  Result,
-  TwilioUserIdentifier,
-  HrmAccountId,
+  type ErrorResult,
+  type Result,
+  type HrmAccountId,
 } from '@tech-matters/types';
-import { TwilioUser } from '@tech-matters/twilio-worker-auth';
+import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
+import type {
+  RecordCommons,
+  Identifier,
+  IdentifierWithProfiles,
+  ProfileWithRelationships,
+  Profile,
+  ProfileFlag,
+  ProfileSection,
+} from '@tech-matters/hrm-types';
 
 export { ProfilesListFilters } from './sql/profile-list-sql';
 
-type RecordCommons = {
-  id: number;
-  accountSid: HrmAccountId;
-  createdAt: Date;
-  updatedAt: Date;
-  createdBy: TwilioUserIdentifier;
-  updatedBy?: TwilioUserIdentifier;
-};
-
-export type Identifier = NewIdentifierRecord & RecordCommons;
-
-export type IdentifierWithProfiles = Identifier & { profiles: Profile[] };
-
-type ProfileFlagAssociation = {
-  id: ProfileFlag['id'];
-  validUntil: Date | null;
-};
-
-export type ProfileWithRelationships = Profile & {
-  identifiers: Identifier[];
-  profileFlags: ProfileFlagAssociation[];
-  profileSections: {
-    sectionType: ProfileSection['sectionType'];
-    id: ProfileSection['id'];
-  }[];
-  hasContacts: boolean;
+export type {
+  Identifier,
+  IdentifierWithProfiles,
+  ProfileWithRelationships,
+  Profile,
+  ProfileSection,
+  ProfileFlag,
 };
 
 type IdentifierParams =
@@ -152,8 +141,6 @@ export const createIdentifier =
 
     return txIfNotInOne<Identifier>(task, conn => conn.one(statement));
   };
-
-export type Profile = NewProfileRecord & RecordCommons;
 
 export const createProfile =
   (task?) =>
@@ -374,8 +361,6 @@ export const disassociateProfileFromProfileFlag =
       return profile;
     });
 
-export type ProfileFlag = NewProfileFlagRecord & RecordCommons;
-
 export const getProfileFlagsForAccount = async (
   accountSid: HrmAccountId,
 ): Promise<ProfileFlag[]> => {
@@ -435,12 +420,6 @@ export const createProfileFlag = async (
 
   return db.task<ProfileFlag>(async t => t.one(statement));
 };
-
-export type ProfileSection = NewProfileSectionRecord &
-  RecordCommons & {
-    createdBy: string;
-    updatedBy?: string;
-  };
 
 export const createProfileSection =
   (task?) =>

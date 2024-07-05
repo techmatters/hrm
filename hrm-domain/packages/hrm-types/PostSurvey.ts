@@ -14,11 +14,14 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-export * from './Contact';
-export * from './Referral';
-export * from './ConversationMedia';
-export * from './Case';
-export * from './CaseSection';
-export * from './Profile';
-export * from './PostSurvey';
-export * from './channelTypes';
+export type NewPostSurvey = {
+  contactTaskId: string;
+  taskId: string;
+  data: Record<string, any>;
+};
+
+export type PostSurvey = NewPostSurvey & {
+  id: string;
+  createdAt: Date;
+  updatedAt: Date;
+};
