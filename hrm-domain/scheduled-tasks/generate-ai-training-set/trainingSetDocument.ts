@@ -45,10 +45,10 @@ export const loadAndAttachTranscripts = (
       objectMode: true,
       transform: async function (contactChunk: TrainingSetContact, _, callback) {
         const trainingSetContact: TrainingSetContact = contactChunk;
-        const readBucket = sourceBucket || trainingSetContact.bucket;
+        const readBucket = sourceBucket || trainingSetContact.transcriptBucket;
         const readKey = sourceBucket
-          ? `${shortCode}/${trainingSetContact.key}`
-          : trainingSetContact.key;
+          ? `${shortCode}/${trainingSetContact.transcriptKey}`
+          : trainingSetContact.transcriptKey;
 
         const transcriptDocJson = await getS3Object({
           key: readKey,
