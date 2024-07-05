@@ -3,9 +3,7 @@
   "version": "1.0.0",
   "description": "Generator for AI training sets - might be temporary",
   "scripts": {
-    "start": "cd dist && node ./index",
-    "test:unit": "jest tests/unit",
-    "test": "npm run test:unit"
+    "start": "cd dist && node ./index"
   },
   "exports": {
     ".": "./dist/index.js"
