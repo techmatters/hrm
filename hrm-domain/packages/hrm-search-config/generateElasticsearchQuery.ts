@@ -129,27 +129,34 @@ type SearchParametersContact = {
 const generateTranscriptQueriesFromFilters = ({
   searchTerm,
   transcriptFilters,
+  parentPath,
 }: {
   searchTerm: string;
   transcriptFilters: QueryDslQueryContainer[][];
-}): QueryDslQueryContainer[] =>
-  transcriptFilters.map(filter => ({
+  parentPath?: string;
+}): QueryDslQueryContainer[] => {
+  const transcriptKey = getFieldName({ field: 'transcript', parentPath });
+
+  return transcriptFilters.map(filter => ({
     bool: {
       filter: filter,
       must: [
         {
           match: {
-            transcript: searchTerm,
+            [transcriptKey]: searchTerm,
           },
         },
       ],
     },
   }));
+};
 
 const generateContactsQueriesFromFilters = ({
   searchParameters,
+  parentPath,
 }: {
   searchParameters: SearchParametersContact;
+  parentPath?: string;
 }) => {
   const {
     searchTerm,
@@ -160,7 +167,10 @@ const generateContactsQueriesFromFilters = ({
   const transcriptQueries = generateTranscriptQueriesFromFilters({
     searchTerm,
     transcriptFilters,
+    parentPath,
   });
+
+  const contentKey = getFieldName({ field: 'content', parentPath });
 
   const contactQueries = contactFilters.map(contactFilter => ({
     bool: {
@@ -171,7 +181,7 @@ const generateContactsQueriesFromFilters = ({
             must: [
               {
                 match: {
-                  content: searchTerm,
+                  [contentKey]: searchTerm,
                 },
               },
             ],
@@ -188,9 +198,11 @@ const generateContactsQueriesFromFilters = ({
 const generateContactsQuery = ({
   index,
   searchParameters,
+  parentPath,
 }: {
   index: string;
   searchParameters: SearchParametersContact;
+  parentPath?: string;
 }): SearchQuery => {
   const { pagination } = searchParameters;
 
@@ -204,7 +216,7 @@ const generateContactsQuery = ({
     size: pagination.limit,
     query: {
       bool: {
-        should: generateContactsQueriesFromFilters({ searchParameters }),
+        should: generateContactsQueriesFromFilters({ searchParameters, parentPath }),
       },
     },
   };
@@ -221,6 +233,8 @@ type SearchParametersCases = {
   };
 } & SearchPagination;
 
+export const casePathToContacts = 'contacts.';
+
 const generateCasesQueriesFromFilters = ({
   searchParameters,
 }: {
@@ -234,6 +248,7 @@ const generateCasesQueriesFromFilters = ({
 
   const contactQueries = generateContactsQueriesFromFilters({
     searchParameters: { ...searchParameters, type: 'contact' },
+    parentPath: casePathToContacts,
   });
 
   const caseQueries = caseFilters.map(caseFilter => ({
@@ -258,6 +273,12 @@ const generateCasesQueriesFromFilters = ({
 
   return caseQueries;
 };
+
+//
+//
+// TODO: fix contacts.content and contacts.transcript not properly being prefixed here :)
+//
+//
 
 const generateCasesQuery = ({
   index,
