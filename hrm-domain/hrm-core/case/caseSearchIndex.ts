@@ -16,6 +16,7 @@
 
 import {
   GenerateCaseFilterParams,
+  casePathToContacts,
   generateESFilter,
 } from '@tech-matters/hrm-search-config';
 import {
@@ -77,8 +78,6 @@ export type CaseListCondition = Extract<
   CaseSpecificCondition | UserBasedCondition
 >;
 
-const contactsParentPath = 'contacts.';
-
 const conditionWhereClauses = ({
   user,
 }: {
@@ -96,7 +95,7 @@ const conditionWhereClauses = ({
       type: 'term',
       field: 'twilioWorkerId',
       term: user.workerSid,
-      parentPath: contactsParentPath,
+      parentPath: casePathToContacts,
     },
   }),
 
@@ -158,7 +157,7 @@ export const generateCasePermissionsFilters = ({
   user: TwilioUser;
 }) => {
   const { contactFilters, transcriptFilters } = generateContactPermissionsFilters({
-    buildParams: { parentPath: contactsParentPath },
+    buildParams: { parentPath: casePathToContacts },
     user,
     viewContact,
     viewTranscript,
