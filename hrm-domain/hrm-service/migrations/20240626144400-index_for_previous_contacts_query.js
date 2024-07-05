@@ -13,12 +13,21 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
+'use strict';
 
-export * from './Contact';
-export * from './Referral';
-export * from './ConversationMedia';
-export * from './Case';
-export * from './CaseSection';
-export * from './Profile';
-export * from './PostSurvey';
-export * from './channelTypes';
+/** @type {import('sequelize-cli').Migration} */
+module.exports = {
+  up: async queryInterface => {
+    await queryInterface.sequelize.query(`
+      CREATE INDEX IF NOT EXISTS "Contacts_number_accountSid_idx" ON public."Contacts" 
+      USING btree ("number", "accountSid");
+    `);
+    console.log('Index Contacts_number_accountSid_idx created');
+  },
+  down: async queryInterface => {
+    await queryInterface.sequelize.query(`
+      DROP INDEX IF EXISTS "Contacts_number_accountSid_idx";
+    `);
+    console.log('Index Contacts_number_accountSid_idx dropped');
+  },
+};

@@ -6,6 +6,7 @@
   "author": "",
   "license": "AGPL",
   "dependencies": {
+    "@tech-matters/hrm-types": "^1.0.0",
     "@tech-matters/job-errors": "^1.0.0",
     "@tech-matters/s3-client": "^1.0.0",
     "@tech-matters/sqs-client": "^1.0.0",
