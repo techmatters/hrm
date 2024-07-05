@@ -18,39 +18,35 @@ import { HrmAccountId } from '@tech-matters/types';
 import QueryStream from 'pg-query-stream';
 import ReadableStream = NodeJS.ReadableStream;
 import { db, pgp } from '@tech-matters/hrm-core/connection-pool';
-import { Transform, TransformCallback } from 'stream';
 
 const HIGH_WATER_MARK = 1000;
 
 const SELECT_CATEGORIES_AND_TRANSCRIPTS_SQL = `
   SELECT
     c."id",
-    c."rawJson",
-    cm."storeTypeSpecificData"
+    c."rawJson"->'categories' AS "categories",
+    cm."storeTypeSpecificData",
+    cm."storeTypeSpecificData"->'location'->>'bucket' AS "transcriptBucket",
+    cm."storeTypeSpecificData"->'location'->>'key' AS "transcriptKey"
   FROM
     "Contacts" AS c INNER JOIN "ConversationMedias" AS cm ON c."id" = cm."contactId" AND c."accountSid" = cm."accountSid"
-  WHERE c."accountSid" = $<accountSid>
-  AND (SELECT COUNT(*) FROM jsonb_object_keys(COALESCE(c."rawJson"->'categories', '{}'::jsonb))) > 0
-  AND cm."storeType" = 'S3'
-  AND cm."storeTypeSpecificData"->'location' IS NOT NULL
+  WHERE 
+  c."accountSid" = $<accountSid> AND 
+  (SELECT COUNT(*) FROM jsonb_object_keys(COALESCE(c."rawJson"->'categories', '{}'::jsonb))) > 0 AND 
+  cm."storeType" = 'S3' AND 
+  cm."storeTypeSpecificData"->>'type' = 'transcript' AND
+  cm."storeTypeSpecificData"->>'location' IS NOT NULL
 `;
-
-type TrainingSetContactRecord = {
-  id: string;
-  accountSid: HrmAccountId;
-  rawJson: any;
-  storeTypeSpecificData: any;
-};
 
 export type TrainingSetContact = {
   contactId: string;
   accountSid: HrmAccountId;
   categories: Record<string, string[]>;
-  bucket: string;
-  key: string;
+  transcriptKey: string;
+  transcriptBucket: string;
 };
 
-export const streamTrainingSetContactRecords = async (
+export const streamTrainingSetContacts = async (
   accountSid: HrmAccountId,
 ): Promise<ReadableStream> => {
   const qs = new QueryStream(
@@ -64,27 +60,4 @@ export const streamTrainingSetContactRecords = async (
       resolve(resultStream);
     });
   });
-};
-
-export const streamTrainingSetContacts = async (
-  accountSid: HrmAccountId,
-): Promise<ReadableStream> => {
-  const recordStream = await streamTrainingSetContactRecords(accountSid);
-  return recordStream.pipe(
-    new Transform({
-      objectMode: true,
-      highWaterMark: HIGH_WATER_MARK,
-      transform(record: any, _: BufferEncoding, callback: TransformCallback) {
-        const trainingSetContactRecord = record as TrainingSetContactRecord;
-        this.push({
-          contactId: trainingSetContactRecord.id,
-          accountSid: trainingSetContactRecord.accountSid,
-          categories: trainingSetContactRecord.rawJson.categories,
-          bucket: trainingSetContactRecord.storeTypeSpecificData.location.bucket,
-          key: trainingSetContactRecord.storeTypeSpecificData.location.key,
-        });
-        callback();
-      },
-    }),
-  );
 };
