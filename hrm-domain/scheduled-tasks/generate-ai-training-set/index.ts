@@ -27,7 +27,7 @@ const lookupAccountSid = async (
   hlShortCode: string,
 ): Promise<HrmAccountId> =>
   (await getSsmParameter(
-    `/${environment}/twilio/${hlShortCode}/account-sid`,
+    `/${environment}/twilio/${hlShortCode}/account_sid`,
   )) as HrmAccountId;
 
 const lookupAccountSids = async (
@@ -52,6 +52,10 @@ export const generate = async (
   sourceBucket?: string,
 ) => {
   const accountSidMappings = await lookupAccountSids(environment, hlShortCodes);
+  console.log('Account SIDs found:');
+  accountSidMappings.forEach(({ accountSid, shortCode }) => {
+    console.log(`Account SID for ${shortCode}: ${accountSid}`);
+  });
 
   for (const { accountSid, shortCode } of accountSidMappings) {
     // Query the DB for contacts and start streaming records with their ID, categories and transcript location
