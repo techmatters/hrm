@@ -17,8 +17,7 @@
 import ReadableStream = NodeJS.ReadableStream;
 import { Upload } from '@aws-sdk/lib-storage';
 import { getNativeS3Client, putS3Object } from '@tech-matters/s3-client';
-import { PassThrough, Transform } from 'stream';
-import { TrainingSetDocument } from './trainingSetDocument';
+import { PassThrough } from 'stream';
 
 const fileTimestamp = (date: Date) =>
   date
@@ -26,7 +25,7 @@ const fileTimestamp = (date: Date) =>
     .replace(/[:-]/g, '')
     .replace(/[T.].+/, '-');
 
-export const uploadSingleFile = async (
+export const uploadStreamAsSingleFile = async (
   trainingSetDocumentStream: ReadableStream,
   targetBucket: string,
   helplineCode: string,
@@ -43,26 +42,17 @@ export const uploadSingleFile = async (
   await upload.done();
 };
 
-export const serializeAndUploadSeparateFiles = (
-  trainingSetDocumentStream: ReadableStream,
+export const uploadTrainingSetDocument = async (
+  contactId: string,
+  docJson: string,
   targetBucket: string,
   helplineCode: string,
-): ReadableStream =>
-  trainingSetDocumentStream.pipe(
-    new Transform({
-      readableObjectMode: true,
-      writableObjectMode: false,
-      transform: async function (trainingDoc: TrainingSetDocument, encoding, callback) {
-        const docJson = JSON.stringify(trainingDoc);
-        await putS3Object({
-          bucket: targetBucket,
-          key: `${helplineCode}/categoryTrainingSet_${fileTimestamp(
-            new Date(),
-          )}/contact_${trainingDoc.contactId}.json`,
-          body: docJson,
-        });
-        this.push(`${docJson}\n`);
-        callback();
-      },
-    }),
-  );
+): Promise<void> => {
+  await putS3Object({
+    bucket: targetBucket,
+    key: `${helplineCode}/categoryTrainingSet_${fileTimestamp(
+      new Date(),
+    )}/contact_${contactId}.json`,
+    body: docJson,
+  });
+};

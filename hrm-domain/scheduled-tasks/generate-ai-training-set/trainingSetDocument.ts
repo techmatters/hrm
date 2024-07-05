@@ -14,10 +14,8 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import ReadableStream = NodeJS.ReadableStream;
 import { TrainingSetContact } from './hrmdbAccess';
 import { ExportTranscript } from '@tech-matters/hrm-types/ConversationMedia';
-import { Transform } from 'stream';
 import { getS3Object } from '@tech-matters/s3-client';
 
 export type TrainingSetDocument = {
@@ -35,29 +33,20 @@ const trainingSetDocument = (
   messages,
 });
 
-export const loadAndAttachTranscripts = (
-  contactStream: ReadableStream,
+export const attachTranscript = async (
+  trainingSetContact: TrainingSetContact,
   shortCode: string,
   sourceBucket?: string,
-): ReadableStream =>
-  contactStream.pipe(
-    new Transform({
-      readableObjectMode: true,
-      writableObjectMode: true,
-      transform: async function (contactChunk: TrainingSetContact, _, callback) {
-        const trainingSetContact: TrainingSetContact = contactChunk;
-        const readBucket = sourceBucket || trainingSetContact.transcriptBucket;
-        const readKey = sourceBucket
-          ? `${shortCode}/${trainingSetContact.transcriptKey}`
-          : trainingSetContact.transcriptKey;
+): Promise<TrainingSetDocument> => {
+  const readBucket = sourceBucket || trainingSetContact.transcriptBucket;
+  const readKey = sourceBucket
+    ? `${shortCode}/${trainingSetContact.transcriptKey}`
+    : trainingSetContact.transcriptKey;
 
-        const transcriptDocJson = await getS3Object({
-          key: readKey,
-          bucket: readBucket,
-        });
-        const transcript: ExportTranscript = JSON.parse(transcriptDocJson).transcript;
-        this.push(trainingSetDocument(trainingSetContact, transcript));
-        callback();
-      },
-    }),
-  );
+  const transcriptDocJson = await getS3Object({
+    key: readKey,
+    bucket: readBucket,
+  });
+  const transcript: ExportTranscript = JSON.parse(transcriptDocJson).transcript;
+  return trainingSetDocument(trainingSetContact, transcript);
+};

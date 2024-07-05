@@ -16,9 +16,10 @@
 
 import { HrmAccountId } from '@tech-matters/types';
 import { getSsmParameter } from '@tech-matters/ssm-cache';
-import { streamTrainingSetContacts } from './hrmdbAccess';
-import { loadAndAttachTranscripts } from './trainingSetDocument';
-import { serializeAndUploadSeparateFiles, uploadSingleFile } from './uploadTrainingSet';
+import { streamTrainingSetContacts, TrainingSetContact } from './hrmdbAccess';
+import { attachTranscript } from './trainingSetDocument';
+import { uploadTrainingSetDocument, uploadStreamAsSingleFile } from './uploadTrainingSet';
+import { Transform } from 'stream';
 
 type Environment = 'development' | 'staging' | 'production';
 
@@ -61,23 +62,36 @@ export const generate = async (
     const contactStream = await streamTrainingSetContacts(accountSid);
     console.log(`Streaming contacts for ${shortCode}...`);
 
-    // Load the transcript for each record in the stream and attach it to the object in the stream
-    const trainingSetDocumentStream = loadAndAttachTranscripts(
-      contactStream,
-      shortCode,
-      sourceBucket,
-    );
-
-    // Convert each object to a JSON string and upload it to S3 as a separate file
-    const trainingSetJsonStream = serializeAndUploadSeparateFiles(
-      trainingSetDocumentStream,
-      targetBucket,
-      shortCode,
+    const trainingSetJsonStream = contactStream.pipe(
+      new Transform({
+        objectMode: true,
+        transform: async function (
+          trainingSetContact: TrainingSetContact,
+          encoding,
+          callback,
+        ) {
+          const trainingSetDoc = await attachTranscript(
+            trainingSetContact,
+            shortCode,
+            sourceBucket,
+          );
+          const docJson = JSON.stringify(trainingSetDoc);
+          await uploadTrainingSetDocument(
+            trainingSetDoc.contactId,
+            docJson,
+            targetBucket,
+            shortCode,
+          );
+          this.push(`${docJson}\n`);
+          callback();
+        },
+      }),
     );
 
     // Stream all the JSON into a single file. This will ne a set of line separated JSONs, NOT a JSON array
     // This is done to avoid loading the entire dataset into memory
-    await uploadSingleFile(trainingSetJsonStream, targetBucket, shortCode);
-    console.log(`Streaming contacts for ${shortCode}...`);
+    console.log(`Uploading contacts for ${shortCode}...`);
+    await uploadStreamAsSingleFile(trainingSetJsonStream, targetBucket, shortCode);
+    console.log(`Streamed contacts for ${shortCode}...`);
   }
 };
