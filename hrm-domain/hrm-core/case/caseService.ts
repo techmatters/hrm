@@ -590,11 +590,7 @@ export const generalisedCasesSearch = async (
 
     const caseIds = items.map(item => parseInt(item.id, 10));
 
-    console.log('caseIds', caseIds)
-
     const { cases } = await searchCasesByIds(accountSid, query, { caseIds }, {}, ctx);
-
-    console.log('cases', cases)
 
     return newOk({ data: { count: total, cases } });
   } catch (err) {
