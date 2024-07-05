@@ -23,7 +23,7 @@ const HIGH_WATER_MARK = 1000;
 
 const SELECT_CATEGORIES_AND_TRANSCRIPTS_SQL = `
   SELECT
-    c."id",
+    c."id" AS "contactId",
     c."rawJson"->'categories' AS "categories",
     cm."storeTypeSpecificData",
     cm."storeTypeSpecificData"->'location'->>'bucket' AS "transcriptBucket",
