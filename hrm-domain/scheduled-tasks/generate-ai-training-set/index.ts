@@ -27,7 +27,7 @@ const lookupAccountSid = async (
   hlShortCode: string,
 ): Promise<HrmAccountId> =>
   (await getSsmParameter(
-    `/${environment}/twilio/${hlShortCode}/account_sid`,
+    `/${environment}/twilio/${hlShortCode.toUpperCase()}/account_sid`,
   )) as HrmAccountId;
 
 const lookupAccountSids = async (
@@ -46,7 +46,6 @@ const lookupAccountSids = async (
  */
 export const generate = async (
   environment: 'development' | 'staging' | 'production',
-  awsRegion: string,
   hlShortCodes: string[],
   targetBucket: string,
   sourceBucket?: string,

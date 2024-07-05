@@ -18,16 +18,13 @@ import { generate } from '@tech-matters/generate-ai-training-set';
 import { handleSignals } from './handleSignals';
 
 const environment = process.argv[2];
-const helplineCodes = process.argv[3].split(',');
+const helplineCodes = process.argv[3].split(';');
 const targetBucket = process.argv[4];
 const sourceBucket = process.argv[5];
-const awsRegion = process.env.AWS_REGION;
 
-generate(environment, awsRegion, helplineCodes, targetBucket, sourceBucket).catch(
-  error => {
-    console.error(error);
-  },
-);
+generate(environment, helplineCodes, targetBucket, sourceBucket).catch(error => {
+  console.error(error);
+});
 handleSignals(async () => undefined).catch(error => {
   console.error(error);
 });
