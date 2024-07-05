@@ -42,7 +42,8 @@ export const loadAndAttachTranscripts = (
 ): ReadableStream =>
   contactStream.pipe(
     new Transform({
-      objectMode: true,
+      readableObjectMode: true,
+      writableObjectMode: true,
       transform: async function (contactChunk: TrainingSetContact, _, callback) {
         const trainingSetContact: TrainingSetContact = contactChunk;
         const readBucket = sourceBucket || trainingSetContact.transcriptBucket;

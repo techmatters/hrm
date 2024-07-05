@@ -50,7 +50,8 @@ export const serializeAndUploadSeparateFiles = (
 ): ReadableStream =>
   trainingSetDocumentStream.pipe(
     new Transform({
-      objectMode: false,
+      readableObjectMode: true,
+      writableObjectMode: false,
       transform: async function (trainingDoc: TrainingSetDocument, encoding, callback) {
         const docJson = JSON.stringify(trainingDoc);
         await putS3Object({
