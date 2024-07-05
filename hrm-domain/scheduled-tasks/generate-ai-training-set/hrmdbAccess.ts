@@ -24,12 +24,13 @@ const HIGH_WATER_MARK = 1000;
 
 const SELECT_CATEGORIES_AND_TRANSCRIPTS_SQL = `
   SELECT
-    c."id"
-    c."rawJson"
+    c."id",
+    c."rawJson",
     cm."storeTypeSpecificData"
   FROM
-    "Contacts" AS c INNER JOIN "ConversationMedia" AS cm ON c."id" = cm."contactId" AND c."accountSid" = cm."accountSid"
+    "Contacts" AS c INNER JOIN "ConversationMedias" AS cm ON c."id" = cm."contactId" AND c."accountSid" = cm."accountSid"
   WHERE c."accountSid" = $<accountSid>
+  AND (SELECT COUNT(*) FROM jsonb_object_keys(COALESCE(c."rawJson"->'categories', '{}'::jsonb))) > 0
   AND cm."storeType" = 'S3'
   AND cm."storeTypeSpecificData"->'location' IS NOT NULL
 `;
