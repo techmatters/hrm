@@ -19,6 +19,7 @@ import { getClient, TwilioClient } from '@tech-matters/twilio-client';
 import RestException from 'twilio/lib/base/RestException';
 import type { MemberInstance } from 'twilio/lib/rest/chat/v2/service/channel/member';
 import { HrmAccountId } from '@tech-matters/types';
+import { ExportTranscripParticipants, ExportTranscript } from '@tech-matters/hrm-types';
 
 export type ExportTranscriptParams = {
   accountSid: HrmAccountId;
@@ -27,14 +28,7 @@ export type ExportTranscriptParams = {
   channelSid: string;
 };
 
-export type ExportTranscriptResult = Awaited<ReturnType<typeof exportTranscript>>;
-
-export type ExportTranscripParticipants = {
-  [key: string]: {
-    user: Awaited<ReturnType<typeof getUser>>;
-    role: Awaited<ReturnType<typeof getRole>>;
-  };
-};
+export type ExportTranscriptResult = ExportTranscript;
 
 const GUEST_ROLE_CHANNEL = 'guest';
 
@@ -165,7 +159,7 @@ export const exportTranscript = async ({
   authToken,
   channelSid,
   serviceSid,
-}: ExportTranscriptParams) => {
+}: ExportTranscriptParams): Promise<ExportTranscriptResult> => {
   // eslint-disable-next-line no-console
   console.log(
     `Trying to export transcript with accountSid ${accountSid}, serviceSid ${serviceSid}, channelSid ${channelSid}`,

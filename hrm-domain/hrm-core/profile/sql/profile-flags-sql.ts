@@ -14,23 +14,16 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
+import type {
+  NewProfileFlagRecord,
+  NewProfileFlagRecordCommons,
+} from '@tech-matters/hrm-types';
 import { pgp } from '../../connection-pool';
-import { TwilioUserIdentifier, HrmAccountId } from '@tech-matters/types';
 
-type NewRecordCommons = {
-  accountSid: HrmAccountId;
-  createdAt: Date;
-  updatedAt: Date;
-  createdBy: TwilioUserIdentifier;
-  updatedBy: TwilioUserIdentifier;
-};
-
-export type NewProfileFlagRecord = {
-  name: string;
-};
+export type { NewProfileFlagRecord };
 
 export const insertProfileFlagSql = (
-  profileFlag: NewProfileFlagRecord & NewRecordCommons,
+  profileFlag: NewProfileFlagRecord & NewProfileFlagRecordCommons,
 ) => `
   ${pgp.helpers.insert(
     profileFlag,
@@ -42,7 +35,7 @@ export const insertProfileFlagSql = (
 
 export const updateProfileFlagByIdSql = (
   profileFlag: Pick<NewProfileFlagRecord, 'name'> &
-    Pick<NewRecordCommons, 'updatedAt' | 'updatedBy'>,
+    Pick<NewProfileFlagRecordCommons, 'updatedAt' | 'updatedBy'>,
 ) => {
   const { updatedAt, updatedBy, name } = profileFlag;
   const profileFlagWithTimestamp = {
@@ -84,7 +77,7 @@ type AssociateProfileToProfileFlagParams = {
 };
 export const associateProfileToProfileFlagSql = (
   association: AssociateProfileToProfileFlagParams &
-    Omit<NewRecordCommons, 'createdBy' | 'updatedBy'>,
+    Omit<NewProfileFlagRecordCommons, 'createdBy' | 'updatedBy'>,
 ) => `
   ${pgp.helpers.insert(
     association,

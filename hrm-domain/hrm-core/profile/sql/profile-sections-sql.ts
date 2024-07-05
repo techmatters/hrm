@@ -14,24 +14,16 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
+import {
+  NewProfileSectionRecord,
+  NewProfileSectionRecordCommons,
+} from '@tech-matters/hrm-types';
 import { pgp } from '../../connection-pool';
 
-type NewRecordCommons = {
-  accountSid: string;
-  createdBy: string;
-  updatedBy?: string;
-  createdAt: Date;
-  updatedAt: Date;
-};
-
-export type NewProfileSectionRecord = {
-  sectionType: string;
-  profileId: number;
-  content: string;
-};
+export type { NewProfileSectionRecord };
 
 export const insertProfileSectionSql = (
-  profileSection: NewProfileSectionRecord & NewRecordCommons,
+  profileSection: NewProfileSectionRecord & NewProfileSectionRecordCommons,
 ) => `
   ${pgp.helpers.insert(
     profileSection,
