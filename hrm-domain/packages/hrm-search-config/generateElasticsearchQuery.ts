@@ -274,12 +274,6 @@ const generateCasesQueriesFromFilters = ({
   return caseQueries;
 };
 
-//
-//
-// TODO: fix contacts.content and contacts.transcript not properly being prefixed here :)
-//
-//
-
 const generateCasesQuery = ({
   index,
   searchParameters,
