@@ -13,9 +13,64 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
+import type { QueryDslQueryContainer } from '@elastic/elasticsearch/lib/api/types';
 import { SearchQuery } from '@tech-matters/elasticsearch-client';
-// import { QueryDslQueryContainer } from '@elastic/elasticsearch/lib/api/types';
-import { isHrmCasesIndex, isHrmContactsIndex } from './hrmIndexDocumentMappings';
+import {
+  CaseDocument,
+  ContactDocument,
+  isHrmCasesIndex,
+  isHrmContactsIndex,
+} from './hrmIndexDocumentMappings';
+import { assertExhaustive } from '@tech-matters/types';
+
+type GenerateTermFilterParams = { type: 'term'; term: string };
+type GenerateRangeFilterParams = {
+  type: 'range';
+  ranges: { lt?: string; lte?: string; gt?: string; gte?: string };
+};
+
+type GenerateFilterParams<T extends {}> = { field: keyof T } & (
+  | GenerateTermFilterParams
+  | GenerateRangeFilterParams
+);
+
+export const FILTER_ALL_CLAUSE: QueryDslQueryContainer[][] = [
+  [
+    {
+      bool: {
+        must_not: { match_all: {} },
+      },
+    },
+  ],
+];
+
+/** Utility function that creates a filter based on a more human-readable representation */
+export const generateESFilter = <T extends {}>(
+  p: GenerateFilterParams<T>,
+): QueryDslQueryContainer => {
+  switch (p.type) {
+    case 'term': {
+      return {
+        term: {
+          [p.field]: p.term,
+        },
+      };
+    }
+    case 'range': {
+      return {
+        range: {
+          [p.field]: p.ranges,
+        },
+      };
+    }
+    default: {
+      return assertExhaustive(p);
+    }
+  }
+};
+
+export type GenerateContactFilterParams = GenerateFilterParams<ContactDocument>;
+export type GenerateCaseFilterParams = GenerateFilterParams<CaseDocument>;
 
 type SearchPagination = {
   pagination: {
@@ -26,10 +81,76 @@ type SearchPagination = {
 
 type SearchParametersContact = {
   type: 'contact';
-  term: string;
-  contactFilters: [];
-  transcriptFilters: [];
+  searchTerm: string;
+  searchFilters: QueryDslQueryContainer[];
+  permissionFilters: {
+    contactFilters: QueryDslQueryContainer[][];
+    transcriptFilters: QueryDslQueryContainer[][];
+  };
 } & SearchPagination;
+
+const generateTranscriptQueriesFromFilters = ({
+  searchTerm,
+  transcriptFilters,
+}: {
+  searchTerm: string;
+  transcriptFilters: QueryDslQueryContainer[][];
+}): QueryDslQueryContainer[] =>
+  transcriptFilters.map(filter => ({
+    bool: {
+      filter: filter,
+      must: [
+        {
+          match: {
+            transcript: searchTerm,
+          },
+        },
+      ],
+    },
+  }));
+
+const generateContactsQueriesFromFilters = ({
+  searchParameters,
+}: {
+  searchParameters: SearchParametersContact;
+}) => {
+  const {
+    searchTerm,
+    searchFilters,
+    permissionFilters: { contactFilters, transcriptFilters },
+  } = searchParameters;
+
+  const transcriptQueries = generateTranscriptQueriesFromFilters({
+    searchTerm,
+    transcriptFilters,
+  });
+
+  const contactQueries = contactFilters.map(contactFilter => ({
+    bool: {
+      filter: [...contactFilter, ...searchFilters],
+      should: [
+        {
+          bool: {
+            must: [
+              {
+                match: {
+                  content: searchTerm,
+                },
+              },
+            ],
+          },
+        },
+        ...transcriptQueries,
+      ],
+    },
+  }));
+
+  return {
+    bool: {
+      should: contactQueries,
+    },
+  };
+};
 
 const generateContactsQuery = ({
   index,
@@ -38,7 +159,7 @@ const generateContactsQuery = ({
   index: string;
   searchParameters: SearchParametersContact;
 }): SearchQuery => {
-  const { term, contactFilters, transcriptFilters } = searchParameters;
+  const { pagination } = searchParameters;
 
   return {
     index,
@@ -46,38 +167,9 @@ const generateContactsQuery = ({
       fields: { '*': {} },
     },
     min_score: 0.1,
-    from: searchParameters.pagination.start,
-    size: searchParameters.pagination.limit,
-    query: {
-      bool: {
-        filter: contactFilters,
-        should: [
-          {
-            bool: {
-              must: [
-                {
-                  match: {
-                    content: term,
-                  },
-                },
-              ],
-            },
-          },
-          {
-            bool: {
-              filter: transcriptFilters,
-              must: [
-                {
-                  match: {
-                    transcript: term,
-                  },
-                },
-              ],
-            },
-          },
-        ],
-      },
-    },
+    from: pagination.start,
+    size: pagination.limit,
+    query: generateContactsQueriesFromFilters({ searchParameters }),
   };
 };
 

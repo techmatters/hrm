@@ -39,7 +39,7 @@ export {
 } from './payload';
 
 export const hrmSearchConfiguration: SearchConfiguration<SearchParameters> = {
-  generateElasticsearchQuery: generateElasticsearchQuery,
+  generateElasticsearchQuery,
   // generateSuggestQuery,
 };
 
@@ -48,3 +48,10 @@ export const hrmIndexConfiguration: IndexConfiguration<IndexPayload> = {
   convertToScriptUpdate,
   getCreateIndexParams,
 };
+
+export {
+  generateESFilter,
+  GenerateContactFilterParams,
+  GenerateCaseFilterParams,
+  FILTER_ALL_CLAUSE,
+} from './generateElasticsearchQuery';

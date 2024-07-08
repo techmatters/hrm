@@ -49,9 +49,9 @@ import {
   searchByIds,
 } from './contactDataAccess';
 
-import { PaginationQuery, getPaginationElements } from '../search';
+import { type PaginationQuery, getPaginationElements } from '../search';
 import type { NewContactRecord } from './sql/contactInsertSql';
-import { ContactRawJson, ReferralWithoutContactId } from './contactJson';
+import type { ContactRawJson, ReferralWithoutContactId } from './contactJson';
 import { InitializedCan } from '../permissions/initializeCanForRules';
 import { actionsMaps } from '../permissions';
 import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
@@ -64,23 +64,31 @@ import {
 } from '../featureFlags';
 import { db } from '../connection-pool';
 import {
-  ConversationMedia,
+  type ConversationMedia,
+  type NewConversationMedia,
   createConversationMedia,
   isS3StoredTranscript,
   isS3StoredTranscriptPending,
-  NewConversationMedia,
   updateConversationMediaSpecificData,
 } from '../conversation-media/conversation-media';
-import { Profile, getOrCreateProfileWithIdentifier } from '../profile/profileService';
+import {
+  type Profile,
+  getOrCreateProfileWithIdentifier,
+} from '../profile/profileService';
 import { deleteContactReferrals } from '../referral/referral-data-access';
 import {
   DatabaseErrorResult,
   isDatabaseUniqueConstraintViolationErrorResult,
 } from '../sql';
 import { systemUser } from '@tech-matters/twilio-worker-auth';
-import { RulesFile, TKConditionsSets } from '../permissions/rulesMap';
-import type { IndexMessage } from '@tech-matters/hrm-search-config';
 import { publishContactToSearchIndex } from '../jobs/search/publishToSearchIndex';
+import type { RulesFile, TKConditionsSets } from '../permissions/rulesMap';
+import type { IndexMessage } from '@tech-matters/hrm-search-config';
+import {
+  ContactListCondition,
+  generateContactSearchFilters,
+  generateContactPermissionsFilters,
+} from './contactSearchIndex';
 
 // Re export as is:
 export { Contact } from './contactDataAccess';
@@ -491,7 +499,7 @@ export const getContactsByProfileId = async (
 
 const searchContactsByIds = generalizedSearchContacts(searchByIds);
 
-export const searchContactsV2 = async (
+export const generalisedContactSearch = async (
   accountSid: HrmAccountId,
   searchParameters: {
     searchTerm: string;
@@ -507,13 +515,20 @@ export const searchContactsV2 = async (
   },
 ): Promise<TResult<'InternalServerError', { count: number; contacts: Contact[] }>> => {
   try {
-    const { searchTerm } = searchParameters;
+    const { searchTerm, counselor, dateFrom, dateTo } = searchParameters;
     const { limit, offset } = query;
 
     const pagination = {
-      limit: parseInt((limit as string) || '20'),
-      start: parseInt((offset as string) || '0'),
+      limit: parseInt((limit as string) || '20', 10),
+      start: parseInt((offset as string) || '0', 10),
     };
+
+    const searchFilters = generateContactSearchFilters({ counselor, dateFrom, dateTo });
+    const permissionFilters = generateContactPermissionsFilters({
+      user: ctx.user,
+      viewContact: ctx.permissions.viewContact as ContactListCondition[][],
+      viewTranscript: ctx.permissions.viewExternalTranscript as ContactListCondition[][],
+    });
 
     const client = (
       await getClient({
@@ -526,9 +541,9 @@ export const searchContactsV2 = async (
     const { total, items } = await client.search({
       searchParameters: {
         type: 'contact',
-        contactFilters: [],
-        transcriptFilters: [],
-        term: searchTerm,
+        searchTerm,
+        searchFilters,
+        permissionFilters,
         pagination,
       },
     });

@@ -17,16 +17,16 @@
 import { TKCondition } from '../../permissions/rulesMap';
 import { selectContactsOwnedCount } from './caseGetSql';
 import {
-  ConditionWhereClauses,
+  ConditionWhereClausesSQL,
   listPermissionWhereClause,
-} from '../../permissions/sqlGenerators';
+} from '../../permissions/queryGenerators/sqlGenerators';
 
 export type CaseListCondition = Extract<
   TKCondition<'case'>,
   'isCreator' | 'isCaseContactOwner' | 'everyone' | 'isSupervisor' | 'isCaseOpen'
 >;
 
-const conditionWhereClauses: ConditionWhereClauses<'case'> = {
+const conditionWhereClauses: ConditionWhereClausesSQL<'case'> = {
   isCreator: `"cases"."twilioWorkerId" = $<twilioWorkerSid>`,
   isCaseContactOwner: `(${selectContactsOwnedCount('twilioWorkerSid')}) > 0`,
   isCaseOpen: `"cases"."status" != 'closed'`,

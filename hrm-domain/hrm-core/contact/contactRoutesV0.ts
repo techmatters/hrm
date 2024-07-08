@@ -25,7 +25,7 @@ import {
   getContactByTaskId,
   patchContact,
   searchContacts,
-  searchContactsV2,
+  generalisedContactSearch,
 } from './contactService';
 import type { NextFunction, Request, Response } from 'express';
 import {
@@ -129,7 +129,7 @@ contactsRouter.post('/search', publicEndpoint, async (req, res) => {
 
 // Endpoint used for generalized search powered by ElasticSearch
 contactsRouter.post(
-  '/searchV2',
+  '/generalisedSearch',
   publicEndpoint,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -139,7 +139,7 @@ contactsRouter.post(
       const { limit, offset } = query as { limit: string; offset: string };
       const { searchParameters } = body;
 
-      const contactsResponse = await searchContactsV2(
+      const contactsResponse = await generalisedContactSearch(
         hrmAccountId,
         searchParameters,
         { limit, offset },
