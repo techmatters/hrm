@@ -50,9 +50,9 @@ export const hrmIndexConfiguration: IndexConfiguration<IndexPayload> = {
 };
 
 export {
-  generateESFilter,
-  GenerateContactFilterParams,
-  GenerateCaseFilterParams,
+  generateESQuery as generateESFilter,
+  GenerateCaseQueryParams,
+  GenerateContactQueryParams,
   FILTER_ALL_CLAUSE,
   casePathToContacts,
 } from './generateElasticsearchQuery';

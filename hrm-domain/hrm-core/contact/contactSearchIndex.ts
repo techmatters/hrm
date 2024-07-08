@@ -15,7 +15,7 @@
  */
 
 import {
-  GenerateContactFilterParams,
+  GenerateContactQueryParams,
   generateESFilter,
 } from '@tech-matters/hrm-search-config';
 import {
@@ -39,8 +39,8 @@ const buildSearchFilters = ({
   dateFrom?: string;
   dateTo?: string;
   buildParams: { parentPath: string };
-}): GenerateContactFilterParams[] => {
-  const searchFilters: GenerateContactFilterParams[] = [
+}): GenerateContactQueryParams[] => {
+  const searchFilters: GenerateContactQueryParams[] = [
     counselor &&
       ({
         field: 'twilioWorkerId',
@@ -68,7 +68,7 @@ export const generateContactSearchFilters = (p: {
   buildParams: { parentPath: string };
 }) => buildSearchFilters(p).map(generateESFilter);
 
-const buildPermissionFilter = (p: GenerateContactFilterParams) => generateESFilter(p);
+const buildPermissionFilter = (p: GenerateContactQueryParams) => generateESFilter(p);
 
 export type ContactListCondition = Extract<
   TKCondition<'contact'>,

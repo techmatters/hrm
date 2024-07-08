@@ -23,28 +23,31 @@ import {
 } from './hrmIndexDocumentMappings';
 import { assertExhaustive } from '@tech-matters/types';
 
-type GenerateTermFilterParams = { type: 'term'; term: string };
-type GenerateRangeFilterParams = {
+type GenerateTermQueryParams = { type: 'term'; term: string };
+type GenerateRangeQueryParams = {
   type: 'range';
   ranges: { lt?: string; lte?: string; gt?: string; gte?: string };
 };
-type GenerateMustNotFilterParams<T extends {}> = {
+type GenerateMustNotQueryParams<T extends {}> = {
   type: 'mustNot';
-  innerQuery: GenerateFilterParams<T>;
+  innerQuery: GenerateQueryParams<T, never>;
 };
-type GenerateNestedFilterParams<T extends {}> = {
+type GenerateNestedQueryParams<T extends {}, P extends keyof T> = {
   type: 'nested';
-  path: keyof T;
-  innerQuery: GenerateFilterParams<T>;
+  path: P;
+  innerQuery: GenerateQueryParams<
+    T[P] extends Array<infer U extends {}> ? U : never,
+    never
+  >;
 };
 
-type GenerateFilterParams<T extends {}> =
+type GenerateQueryParams<T extends {}, P extends keyof T> =
   | ({ field: keyof T; parentPath?: string } & (
-      | GenerateTermFilterParams
-      | GenerateRangeFilterParams
+      | GenerateTermQueryParams
+      | GenerateRangeQueryParams
     ))
-  | GenerateMustNotFilterParams<T>
-  | GenerateNestedFilterParams<T>;
+  | GenerateMustNotQueryParams<T>
+  | GenerateNestedQueryParams<T, P>;
 
 export const FILTER_ALL_CLAUSE: QueryDslQueryContainer[][] = [
   [
@@ -63,8 +66,8 @@ const getFieldName = <T extends {}>(p: { field: keyof T; parentPath?: string }) 
 };
 
 /** Utility function that creates a filter based on a more human-readable representation */
-export const generateESFilter = <T extends {}>(
-  p: GenerateFilterParams<T>,
+export const generateESQuery = <T extends {}, P extends keyof T>(
+  p: GenerateQueryParams<T, P>,
 ): QueryDslQueryContainer => {
   switch (p.type) {
     case 'term': {
@@ -84,7 +87,7 @@ export const generateESFilter = <T extends {}>(
     case 'mustNot': {
       return {
         bool: {
-          must_not: generateESFilter(p.innerQuery),
+          must_not: generateESQuery(p.innerQuery),
         },
       };
     }
@@ -94,7 +97,7 @@ export const generateESFilter = <T extends {}>(
           path: String(p.path),
           query: {
             bool: {
-              must: [generateESFilter(p.innerQuery)],
+              must: [generateESQuery(p.innerQuery)],
             },
           },
         },
@@ -106,8 +109,8 @@ export const generateESFilter = <T extends {}>(
   }
 };
 
-export type GenerateContactFilterParams = GenerateFilterParams<ContactDocument>;
-export type GenerateCaseFilterParams = GenerateFilterParams<CaseDocument>;
+export type GenerateContactQueryParams = GenerateQueryParams<ContactDocument, never>;
+export type GenerateCaseQueryParams = GenerateQueryParams<CaseDocument, 'contacts'>;
 
 type SearchPagination = {
   pagination: {
@@ -126,51 +129,39 @@ type SearchParametersContact = {
   };
 } & SearchPagination;
 
-const generateTranscriptQueriesFromFilters = ({
-  searchTerm,
+const generateTranscriptQueriesFromFilters = <T extends {}, P extends keyof T>({
   transcriptFilters,
-  parentPath,
+  generateQueryParams,
 }: {
-  searchTerm: string;
   transcriptFilters: QueryDslQueryContainer[][];
-  parentPath?: string;
+  generateQueryParams: GenerateQueryParams<T, P>;
 }): QueryDslQueryContainer[] => {
-  const transcriptKey = getFieldName({ field: 'transcript', parentPath });
-
   return transcriptFilters.map(filter => ({
     bool: {
       filter: filter,
-      must: [
-        {
-          match: {
-            [transcriptKey]: searchTerm,
-          },
-        },
-      ],
+      must: [generateESQuery(generateQueryParams)],
     },
   }));
 };
 
-const generateContactsQueriesFromFilters = ({
+const generateContactsQueriesFromFilters = <T extends {}, P extends keyof T>({
   searchParameters,
-  parentPath,
+  generateTranscriptQueryParams,
+  generateContactQueryParams,
 }: {
   searchParameters: SearchParametersContact;
-  parentPath?: string;
+  generateTranscriptQueryParams: GenerateQueryParams<T, P>;
+  generateContactQueryParams: GenerateQueryParams<T, P>;
 }) => {
   const {
-    searchTerm,
     searchFilters,
     permissionFilters: { contactFilters, transcriptFilters },
   } = searchParameters;
 
   const transcriptQueries = generateTranscriptQueriesFromFilters({
-    searchTerm,
     transcriptFilters,
-    parentPath,
+    generateQueryParams: generateTranscriptQueryParams,
   });
-
-  const contentKey = getFieldName({ field: 'content', parentPath });
 
   const contactQueries = contactFilters.map(contactFilter => ({
     bool: {
@@ -178,13 +169,7 @@ const generateContactsQueriesFromFilters = ({
       should: [
         {
           bool: {
-            must: [
-              {
-                match: {
-                  [contentKey]: searchTerm,
-                },
-              },
-            ],
+            must: [generateESQuery(generateContactQueryParams)],
           },
         },
         ...transcriptQueries,
@@ -198,7 +183,6 @@ const generateContactsQueriesFromFilters = ({
 const generateContactsQuery = ({
   index,
   searchParameters,
-  parentPath,
 }: {
   index: string;
   searchParameters: SearchParametersContact;
@@ -216,7 +200,19 @@ const generateContactsQuery = ({
     size: pagination.limit,
     query: {
       bool: {
-        should: generateContactsQueriesFromFilters({ searchParameters, parentPath }),
+        should: generateContactsQueriesFromFilters({
+          searchParameters,
+          generateContactQueryParams: {
+            field: 'content',
+            type: 'term',
+            term: searchParameters.searchTerm,
+          } as GenerateContactQueryParams,
+          generateTranscriptQueryParams: {
+            field: 'transcript',
+            type: 'term',
+            term: searchParameters.searchTerm,
+          } as GenerateContactQueryParams,
+        }),
       },
     },
   };
@@ -248,7 +244,26 @@ const generateCasesQueriesFromFilters = ({
 
   const contactQueries = generateContactsQueriesFromFilters({
     searchParameters: { ...searchParameters, type: 'contact' },
-    parentPath: casePathToContacts,
+    generateContactQueryParams: {
+      type: 'nested',
+      path: 'contacts',
+      innerQuery: {
+        type: 'term',
+        field: 'content',
+        term: searchParameters.searchTerm,
+        parentPath: casePathToContacts,
+      },
+    } as GenerateCaseQueryParams,
+    generateTranscriptQueryParams: {
+      type: 'nested',
+      path: 'contacts',
+      innerQuery: {
+        type: 'term',
+        field: 'transcript',
+        term: searchParameters.searchTerm,
+        parentPath: casePathToContacts,
+      },
+    } as GenerateCaseQueryParams,
   });
 
   const caseQueries = caseFilters.map(caseFilter => ({
@@ -304,14 +319,14 @@ export type SearchParameters = SearchParametersContact | SearchParametersCases;
 const isValidSearchParams = (p: any, type: string) =>
   typeof p === 'object' && p && p.type === type;
 
-type GenerateQueryParams = { index: string; searchParameters: SearchParameters };
+type GenerateIndexQueryParams = { index: string; searchParameters: SearchParameters };
 const isSearchParametersContacts = (p: any): p is SearchParametersContact =>
   isValidSearchParams(p, 'contact');
 
 const isSearchParametersCases = (p: any): p is SearchParametersCases =>
   isValidSearchParams(p, 'case');
 
-export const generateElasticsearchQuery = (p: GenerateQueryParams): SearchQuery => {
+export const generateElasticsearchQuery = (p: GenerateIndexQueryParams): SearchQuery => {
   const { index, searchParameters } = p;
 
   if (isHrmContactsIndex(index) && isSearchParametersContacts(searchParameters)) {

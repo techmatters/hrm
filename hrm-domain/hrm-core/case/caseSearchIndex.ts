@@ -15,7 +15,7 @@
  */
 
 import {
-  GenerateCaseFilterParams,
+  GenerateCaseQueryParams,
   casePathToContacts,
   generateESFilter,
 } from '@tech-matters/hrm-search-config';
@@ -43,8 +43,8 @@ const buildSearchFilters = ({
   counselor?: string;
   dateFrom?: string;
   dateTo?: string;
-}): GenerateCaseFilterParams[] => {
-  const searchFilters: GenerateCaseFilterParams[] = [
+}): GenerateCaseQueryParams[] => {
+  const searchFilters: GenerateCaseQueryParams[] = [
     counselor &&
       ({
         field: 'twilioWorkerId',
@@ -71,7 +71,7 @@ export const generateCaseSearchFilters = (p: {
   dateTo?: string;
 }) => buildSearchFilters(p).map(generateESFilter);
 
-const buildPermissionFilter = (p: GenerateCaseFilterParams) => generateESFilter(p);
+const buildPermissionFilter = (p: GenerateCaseQueryParams) => generateESFilter(p);
 
 export type CaseListCondition = Extract<
   TKCondition<'case'>,
