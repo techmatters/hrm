@@ -17,10 +17,10 @@
 import type { IndicesCreateRequest } from '@elastic/elasticsearch/lib/api/types';
 
 import {
-  HRM_CASES_INDEX_TYPE,
-  HRM_CONTACTS_INDEX_TYPE,
   caseMapping,
   contactMapping,
+  isHrmCasesIndex,
+  isHrmContactsIndex,
 } from './hrmIndexDocumentMappings';
 
 const getCreateHrmContactsIndexParams = (index: string): IndicesCreateRequest => {
@@ -66,11 +66,11 @@ const getCreateHrmCaseIndexParams = (index: string): IndicesCreateRequest => {
  * @param index
  */
 export const getCreateIndexParams = (index: string): IndicesCreateRequest => {
-  if (index.endsWith(HRM_CONTACTS_INDEX_TYPE)) {
+  if (isHrmContactsIndex(index)) {
     return getCreateHrmContactsIndexParams(index);
   }
 
-  if (index.endsWith(HRM_CASES_INDEX_TYPE)) {
+  if (isHrmCasesIndex(index)) {
     return getCreateHrmCaseIndexParams(index);
   }
 

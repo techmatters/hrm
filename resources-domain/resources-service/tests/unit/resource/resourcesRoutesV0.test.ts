@@ -15,7 +15,7 @@
  */
 
 import { ReferrableResource, HrmAccountId } from '@tech-matters/types';
-import { SearchParameters } from '@tech-matters/elasticsearch-client';
+import { SearchParameters } from '@tech-matters/resources-search-config';
 
 import { Request, Response, Router } from 'express';
 import resourceRoutes from '../../../src/resource/resourceRoutesV0';

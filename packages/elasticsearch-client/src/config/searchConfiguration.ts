@@ -16,40 +16,12 @@
 
 import { SearchSuggester } from '@elastic/elasticsearch/lib/api/types';
 import { SuggestParameters } from '../suggest';
+import { SearchQuery } from '../search';
 
-/**
- * Used if you need to alias a text filter in the API to a different field in the index.
- */
-type TermFilterMapping = {
-  type: 'term';
-  targetField?: string;
-};
-
-const rangeFilterOperators = ['gt', 'gte', 'lt', 'lte'] as const;
-export type RangeFilterOperator = (typeof rangeFilterOperators)[number];
-
-/**
- * Used to specify an incoming filter as a range filter.
- * If no mapping is specified for
- */
-type RangeFilterMapping = {
-  type: 'range';
-  targetField?: string;
-  operator: RangeFilterOperator;
-};
-
-type FilterMapping = TermFilterMapping | RangeFilterMapping;
-
-export type SearchConfiguration = {
-  searchFieldBoosts: Record<string, number>;
-  filterMappings: Record<string, FilterMapping>;
+export type SearchConfiguration<T> = {
+  generateElasticsearchQuery: (params: {
+    index: string;
+    searchParameters: T;
+  }) => SearchQuery;
   generateSuggestQuery?: (suggestParameters: SuggestParameters) => SearchSuggester;
 };
-
-export const getQuerySearchFields = (
-  searchConfiguration: SearchConfiguration,
-  boostAdjustment = 0,
-): string[] =>
-  Object.entries(searchConfiguration.searchFieldBoosts).map(
-    ([field, boost]) => `${field}^${boost + boostAdjustment}`,
-  );

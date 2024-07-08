@@ -46,5 +46,12 @@ export type ContactDocument = MappingToDocument<typeof contactMapping>;
 
 export type CaseDocument = MappingToDocument<typeof caseMapping>;
 
-export const HRM_CONTACTS_INDEX_TYPE = 'hrm-contacts';
-export const HRM_CASES_INDEX_TYPE = 'hrm-cases';
+export const HRM_CONTACTS_INDEX_TYPE = 'hrm-contacts' as const;
+export type HrmContactsIndexType = `${string}-${typeof HRM_CONTACTS_INDEX_TYPE}`;
+export const isHrmContactsIndex = (s: unknown): s is HrmContactsIndexType =>
+  typeof s === 'string' && s.endsWith(HRM_CONTACTS_INDEX_TYPE);
+
+export const HRM_CASES_INDEX_TYPE = 'hrm-cases' as const;
+export type HrmCasesIndexType = `${string}-${typeof HRM_CASES_INDEX_TYPE}`;
+export const isHrmCasesIndex = (s: unknown): s is HrmCasesIndexType =>
+  typeof s === 'string' && s.endsWith(HRM_CASES_INDEX_TYPE);
