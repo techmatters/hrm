@@ -125,7 +125,7 @@ const convertCaseToCaseDocument = ({
     statusUpdatedBy,
     content: JSON.stringify(info),
     sections: mappedSections,
-    contacts: null,
+    contacts: undefined,
     // high_boost_global: '', // highBoostGlobal.join(' '),
     // low_boost_global: '', // lowBoostGlobal.join(' '),
   };
