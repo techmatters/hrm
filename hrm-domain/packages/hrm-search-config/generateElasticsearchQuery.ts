@@ -23,30 +23,32 @@ import {
 } from './hrmIndexDocumentMappings';
 import { assertExhaustive } from '@tech-matters/types';
 
+type NestedDocumentsQueryParams = {
+  contacts: GenerateContactQueryParams;
+};
+
 type GenerateTermQueryParams = { type: 'term'; term: string };
 type GenerateRangeQueryParams = {
   type: 'range';
   ranges: { lt?: string; lte?: string; gt?: string; gte?: string };
 };
-type GenerateMustNotQueryParams<T extends {}> = {
+type GenerateMustNotQueryParams = {
   type: 'mustNot';
-  innerQuery: GenerateQueryParams<T, never>;
+  innerQuery: GenerateQueryParamsObject;
 };
 type GenerateNestedQueryParams<T extends {}, P extends keyof T> = {
   type: 'nested';
   path: P;
-  innerQuery: GenerateQueryParams<
-    T[P] extends Array<infer U extends {}> ? U : never,
-    never
-  >;
+  innerQuery: P extends keyof NestedDocumentsQueryParams
+    ? NestedDocumentsQueryParams[P]
+    : never;
 };
-
 type GenerateQueryParams<T extends {}, P extends keyof T> =
   | ({ field: keyof T; parentPath?: string } & (
       | GenerateTermQueryParams
       | GenerateRangeQueryParams
     ))
-  | GenerateMustNotQueryParams<T>
+  | GenerateMustNotQueryParams
   | GenerateNestedQueryParams<T, P>;
 
 export const FILTER_ALL_CLAUSE: QueryDslQueryContainer[][] = [
@@ -64,6 +66,16 @@ const getFieldName = <T extends {}>(p: { field: keyof T; parentPath?: string }) 
 
   return `${prefix}${String(p.field)}`;
 };
+
+export type GenerateContactQueryParams = GenerateQueryParams<ContactDocument, never> & {
+  documentType: 'contact';
+};
+export type GenerateCaseQueryParams = GenerateQueryParams<CaseDocument, 'contacts'> & {
+  documentType: 'case';
+};
+export type GenerateQueryParamsObject =
+  | GenerateContactQueryParams
+  | GenerateCaseQueryParams;
 
 /** Utility function that creates a filter based on a more human-readable representation */
 export const generateESQuery = (p: GenerateQueryParamsObject): QueryDslQueryContainer => {
@@ -106,12 +118,6 @@ export const generateESQuery = (p: GenerateQueryParamsObject): QueryDslQueryCont
     }
   }
 };
-
-export type GenerateContactQueryParams = GenerateQueryParams<ContactDocument, never>;
-export type GenerateCaseQueryParams = GenerateQueryParams<CaseDocument, 'contacts'>;
-export type GenerateQueryParamsObject =
-  | GenerateContactQueryParams
-  | GenerateCaseQueryParams;
 
 type SearchPagination = {
   pagination: {
@@ -204,15 +210,17 @@ const generateContactsQuery = ({
         should: generateContactsQueriesFromFilters({
           searchParameters,
           generateContactQueryParams: {
+            documentType: 'contact',
             field: 'content',
             type: 'term',
             term: searchParameters.searchTerm,
-          } as GenerateContactQueryParams,
+          },
           generateTranscriptQueryParams: {
+            documentType: 'contact',
             field: 'transcript',
             type: 'term',
             term: searchParameters.searchTerm,
-          } as GenerateContactQueryParams,
+          },
         }),
       },
     },
@@ -246,25 +254,29 @@ const generateCasesQueriesFromFilters = ({
   const contactQueries = generateContactsQueriesFromFilters({
     searchParameters: { ...searchParameters, type: 'contact' },
     generateContactQueryParams: {
+      documentType: 'case',
       type: 'nested',
       path: casePathToContacts,
       innerQuery: {
+        documentType: 'contact',
         type: 'term',
         field: 'content',
         term: searchParameters.searchTerm,
         parentPath: casePathToContacts,
       },
-    } as GenerateCaseQueryParams,
+    },
     generateTranscriptQueryParams: {
+      documentType: 'case',
       type: 'nested',
       path: casePathToContacts,
       innerQuery: {
+        documentType: 'contact',
         type: 'term',
         field: 'transcript',
         term: searchParameters.searchTerm,
         parentPath: casePathToContacts,
       },
-    } as GenerateCaseQueryParams,
+    },
   });
 
   const caseQueries = caseFilters.map(caseFilter => ({
