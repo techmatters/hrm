@@ -138,27 +138,41 @@ type SearchParametersContact = {
 
 const generateTranscriptQueriesFromFilters = ({
   transcriptFilters,
-  generateQueryParams,
+  searchParameters,
+  buildParams = { parentPath: '' },
+  queryWrapper = p => p,
 }: {
   transcriptFilters: QueryDslQueryContainer[][];
-  generateQueryParams: GenerateQueryParamsObject;
+  searchParameters: SearchParametersContact;
+  buildParams?: { parentPath: string };
+  queryWrapper?: (p: GenerateContactQueryParams) => GenerateQueryParamsObject;
 }): QueryDslQueryContainer[] => {
   return transcriptFilters.map(filter => ({
     bool: {
       filter: filter,
-      must: [generateESQuery(generateQueryParams)],
+      must: [
+        generateESQuery(
+          queryWrapper({
+            documentType: 'contact',
+            field: 'transcript',
+            type: 'term',
+            term: searchParameters.searchTerm,
+            parentPath: buildParams.parentPath,
+          }),
+        ),
+      ],
     },
   }));
 };
 
 const generateContactsQueriesFromFilters = ({
   searchParameters,
-  generateTranscriptQueryParams,
-  generateContactQueryParams,
+  buildParams = { parentPath: '' },
+  queryWrapper = p => p,
 }: {
   searchParameters: SearchParametersContact;
-  generateTranscriptQueryParams: GenerateQueryParamsObject;
-  generateContactQueryParams: GenerateQueryParamsObject;
+  buildParams?: { parentPath: string };
+  queryWrapper?: (p: GenerateContactQueryParams) => GenerateQueryParamsObject;
 }) => {
   const {
     searchFilters,
@@ -167,7 +181,8 @@ const generateContactsQueriesFromFilters = ({
 
   const transcriptQueries = generateTranscriptQueriesFromFilters({
     transcriptFilters,
-    generateQueryParams: generateTranscriptQueryParams,
+    searchParameters,
+    buildParams,
   });
 
   const contactQueries = contactFilters.map(contactFilter => ({
@@ -176,7 +191,17 @@ const generateContactsQueriesFromFilters = ({
       should: [
         {
           bool: {
-            must: [generateESQuery(generateContactQueryParams)],
+            must: [
+              generateESQuery(
+                queryWrapper({
+                  documentType: 'contact',
+                  field: 'content',
+                  type: 'term',
+                  term: searchParameters.searchTerm,
+                  parentPath: buildParams.parentPath,
+                }),
+              ),
+            ],
           },
         },
         ...transcriptQueries,
@@ -209,18 +234,6 @@ const generateContactsQuery = ({
       bool: {
         should: generateContactsQueriesFromFilters({
           searchParameters,
-          generateContactQueryParams: {
-            documentType: 'contact',
-            field: 'content',
-            type: 'term',
-            term: searchParameters.searchTerm,
-          },
-          generateTranscriptQueryParams: {
-            documentType: 'contact',
-            field: 'transcript',
-            type: 'term',
-            term: searchParameters.searchTerm,
-          },
         }),
       },
     },
@@ -253,30 +266,13 @@ const generateCasesQueriesFromFilters = ({
 
   const contactQueries = generateContactsQueriesFromFilters({
     searchParameters: { ...searchParameters, type: 'contact' },
-    generateContactQueryParams: {
+    queryWrapper: p => ({
       documentType: 'case',
       type: 'nested',
       path: casePathToContacts,
-      innerQuery: {
-        documentType: 'contact',
-        type: 'term',
-        field: 'content',
-        term: searchParameters.searchTerm,
-        parentPath: casePathToContacts,
-      },
-    },
-    generateTranscriptQueryParams: {
-      documentType: 'case',
-      type: 'nested',
-      path: casePathToContacts,
-      innerQuery: {
-        documentType: 'contact',
-        type: 'term',
-        field: 'transcript',
-        term: searchParameters.searchTerm,
-        parentPath: casePathToContacts,
-      },
-    },
+      innerQuery: p,
+    }),
+    buildParams: { parentPath: casePathToContacts },
   });
 
   const caseQueries = caseFilters.map(caseFilter => ({

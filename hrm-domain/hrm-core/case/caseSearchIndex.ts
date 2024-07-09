@@ -47,12 +47,14 @@ const buildSearchFilters = ({
   const searchFilters: GenerateCaseQueryParams[] = [
     counselor &&
       ({
+        documentType: 'case',
         field: 'twilioWorkerId',
         type: 'term',
         term: counselor,
       } as const),
     (dateFrom || dateTo) &&
       ({
+        documentType: 'case',
         field: 'createdAt',
         type: 'range',
         ranges: {
@@ -84,14 +86,17 @@ const conditionWhereClauses = ({
   user: TwilioUser;
 }): ConditionWhereClausesES<'case'> => ({
   isCaseOpen: buildPermissionFilter({
+    documentType: 'case',
     type: 'mustNot',
-    innerQuery: { field: 'status', type: 'term', term: 'closed' },
+    innerQuery: { field: 'status', type: 'term', term: 'closed', documentType: 'case' },
   }),
 
   isCaseContactOwner: buildPermissionFilter({
+    documentType: 'case',
     type: 'nested',
     path: casePathToContacts,
     innerQuery: {
+      documentType: 'contact',
       type: 'term',
       field: 'twilioWorkerId',
       term: user.workerSid,
@@ -100,6 +105,7 @@ const conditionWhereClauses = ({
   }),
 
   isCreator: buildPermissionFilter({
+    documentType: 'case',
     field: 'twilioWorkerId',
     type: 'term',
     term: user.workerSid,
@@ -120,6 +126,7 @@ const conditionWhereClauses = ({
     const greater = timeClauses.sort((a, b) => b.getTime() - a.getTime())[0];
 
     return buildPermissionFilter({
+      documentType: 'case',
       field: 'createdAt',
       type: 'range',
       ranges: {
@@ -161,12 +168,12 @@ export const generateCasePermissionsFilters = ({
     user,
     viewContact,
     viewTranscript,
-    queryWrapper: p =>
-      ({
-        type: 'nested' as const,
-        path: casePathToContacts,
-        innerQuery: p,
-      }) as GenerateCaseQueryParams,
+    queryWrapper: p => ({
+      documentType: 'case',
+      type: 'nested',
+      path: casePathToContacts,
+      innerQuery: p,
+    }),
   });
 
   const caseFilters = listCasePermissionClause({ listConditionSets: viewCase, user });

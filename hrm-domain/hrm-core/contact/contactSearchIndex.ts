@@ -43,12 +43,14 @@ const buildSearchFilters = ({
   const searchFilters: GenerateContactQueryParams[] = [
     counselor &&
       ({
+        documentType: 'contact',
         field: 'twilioWorkerId',
         type: 'term',
         term: counselor,
       } as const),
     (dateFrom || dateTo) &&
       ({
+        documentType: 'contact',
         field: 'timeOfContact',
         type: 'range',
         ranges: {
@@ -84,6 +86,7 @@ const conditionWhereClauses = ({
 }): ConditionWhereClausesES<'contact'> => ({
   isOwner: generateESFilter(
     queryWrapper({
+      documentType: 'contact',
       field: 'twilioWorkerId',
       parentPath,
       type: 'term',
@@ -107,6 +110,7 @@ const conditionWhereClauses = ({
 
     return generateESFilter(
       queryWrapper({
+        documentType: 'contact',
         field: 'timeOfContact',
         parentPath,
         type: 'range',
@@ -153,7 +157,7 @@ export const generateContactPermissionsFilters = ({
   viewTranscript: ContactListCondition[][];
   user: TwilioUser;
   buildParams: { parentPath: string };
-  queryWrapper?: (p: GenerateQueryParamsObject) => GenerateQueryParamsObject;
+  queryWrapper?: (p: GenerateContactQueryParams) => GenerateQueryParamsObject;
 }) => ({
   contactFilters: listContactsPermissionClause({
     listConditionSets: viewContact,
