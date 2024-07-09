@@ -527,7 +527,6 @@ export const generalisedContactSearch = async (
       counselor,
       dateFrom,
       dateTo,
-      buildParams: { parentPath: '' },
     });
     const permissionFilters = generateContactPermissionsFilters({
       user: ctx.user,

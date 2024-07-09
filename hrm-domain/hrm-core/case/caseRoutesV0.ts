@@ -191,7 +191,7 @@ casesRouter.post('/search', publicEndpoint, async (req, res) => {
 
 // Endpoint used for generalized search powered by ElasticSearch
 casesRouter.post(
-  '/generalisedSearch',
+  '/generalizedSearch',
   publicEndpoint,
   async (req: Request, res: Response, next: NextFunction) => {
     try {

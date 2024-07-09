@@ -60,15 +60,13 @@ export const FILTER_ALL_CLAUSE: QueryDslQueryContainer[][] = [
 ];
 
 const getFieldName = <T extends {}>(p: { field: keyof T; parentPath?: string }) => {
-  const prefix = p.parentPath ? `${p.parentPath}` : '';
+  const prefix = p.parentPath ? `${p.parentPath}.` : '';
 
   return `${prefix}${String(p.field)}`;
 };
 
 /** Utility function that creates a filter based on a more human-readable representation */
-export const generateESQuery = <T extends {}, P extends keyof T>(
-  p: GenerateQueryParams<T, P>,
-): QueryDslQueryContainer => {
+export const generateESQuery = (p: GenerateQueryParamsObject): QueryDslQueryContainer => {
   switch (p.type) {
     case 'term': {
       return {
@@ -111,6 +109,9 @@ export const generateESQuery = <T extends {}, P extends keyof T>(
 
 export type GenerateContactQueryParams = GenerateQueryParams<ContactDocument, never>;
 export type GenerateCaseQueryParams = GenerateQueryParams<CaseDocument, 'contacts'>;
+export type GenerateQueryParamsObject =
+  | GenerateContactQueryParams
+  | GenerateCaseQueryParams;
 
 type SearchPagination = {
   pagination: {
@@ -129,12 +130,12 @@ type SearchParametersContact = {
   };
 } & SearchPagination;
 
-const generateTranscriptQueriesFromFilters = <T extends {}, P extends keyof T>({
+const generateTranscriptQueriesFromFilters = ({
   transcriptFilters,
   generateQueryParams,
 }: {
   transcriptFilters: QueryDslQueryContainer[][];
-  generateQueryParams: GenerateQueryParams<T, P>;
+  generateQueryParams: GenerateQueryParamsObject;
 }): QueryDslQueryContainer[] => {
   return transcriptFilters.map(filter => ({
     bool: {
@@ -144,14 +145,14 @@ const generateTranscriptQueriesFromFilters = <T extends {}, P extends keyof T>({
   }));
 };
 
-const generateContactsQueriesFromFilters = <T extends {}, P extends keyof T>({
+const generateContactsQueriesFromFilters = ({
   searchParameters,
   generateTranscriptQueryParams,
   generateContactQueryParams,
 }: {
   searchParameters: SearchParametersContact;
-  generateTranscriptQueryParams: GenerateQueryParams<T, P>;
-  generateContactQueryParams: GenerateQueryParams<T, P>;
+  generateTranscriptQueryParams: GenerateQueryParamsObject;
+  generateContactQueryParams: GenerateQueryParamsObject;
 }) => {
   const {
     searchFilters,
@@ -229,7 +230,7 @@ type SearchParametersCases = {
   };
 } & SearchPagination;
 
-export const casePathToContacts = 'contacts.';
+export const casePathToContacts = 'contacts';
 
 const generateCasesQueriesFromFilters = ({
   searchParameters,
@@ -246,7 +247,7 @@ const generateCasesQueriesFromFilters = ({
     searchParameters: { ...searchParameters, type: 'contact' },
     generateContactQueryParams: {
       type: 'nested',
-      path: 'contacts',
+      path: casePathToContacts,
       innerQuery: {
         type: 'term',
         field: 'content',
@@ -256,7 +257,7 @@ const generateCasesQueriesFromFilters = ({
     } as GenerateCaseQueryParams,
     generateTranscriptQueryParams: {
       type: 'nested',
-      path: 'contacts',
+      path: casePathToContacts,
       innerQuery: {
         type: 'term',
         field: 'transcript',

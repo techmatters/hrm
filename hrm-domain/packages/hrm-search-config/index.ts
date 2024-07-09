@@ -51,6 +51,7 @@ export const hrmIndexConfiguration: IndexConfiguration<IndexPayload> = {
 
 export {
   generateESQuery as generateESFilter,
+  GenerateQueryParamsObject,
   GenerateCaseQueryParams,
   GenerateContactQueryParams,
   FILTER_ALL_CLAUSE,

@@ -17,6 +17,7 @@
 import {
   GenerateContactQueryParams,
   generateESFilter,
+  GenerateQueryParamsObject,
 } from '@tech-matters/hrm-search-config';
 import {
   ContactSpecificCondition,
@@ -38,7 +39,6 @@ const buildSearchFilters = ({
   counselor?: string;
   dateFrom?: string;
   dateTo?: string;
-  buildParams: { parentPath: string };
 }): GenerateContactQueryParams[] => {
   const searchFilters: GenerateContactQueryParams[] = [
     counselor &&
@@ -65,10 +65,7 @@ export const generateContactSearchFilters = (p: {
   counselor?: string;
   dateFrom?: string;
   dateTo?: string;
-  buildParams: { parentPath: string };
 }) => buildSearchFilters(p).map(generateESFilter);
-
-const buildPermissionFilter = (p: GenerateContactQueryParams) => generateESFilter(p);
 
 export type ContactListCondition = Extract<
   TKCondition<'contact'>,
@@ -78,16 +75,21 @@ export type ContactListCondition = Extract<
 const conditionWhereClauses = ({
   buildParams: { parentPath },
   user,
+  queryWrapper,
 }: {
   user: TwilioUser;
   buildParams: { parentPath: string };
+  // function that modifies the "term" queries in the filters, to wrap them in nested queries if needed
+  queryWrapper: (p: GenerateQueryParamsObject) => GenerateQueryParamsObject;
 }): ConditionWhereClausesES<'contact'> => ({
-  isOwner: buildPermissionFilter({
-    field: 'twilioWorkerId',
-    parentPath,
-    type: 'term',
-    term: user.workerSid,
-  }),
+  isOwner: generateESFilter(
+    queryWrapper({
+      field: 'twilioWorkerId',
+      parentPath,
+      type: 'term',
+      term: user.workerSid,
+    }),
+  ),
 
   timeBasedCondition: ({ createdDaysAgo, createdHoursAgo }) => {
     const now = new Date();
@@ -103,14 +105,16 @@ const conditionWhereClauses = ({
     // get the "max" date filter - i.e. the most aggressive one (if more than one)
     const greater = timeClauses.sort((a, b) => b.getTime() - a.getTime())[0];
 
-    return buildPermissionFilter({
-      field: 'timeOfContact',
-      parentPath,
-      type: 'range',
-      ranges: {
-        gte: greater.toISOString(),
-      },
-    });
+    return generateESFilter(
+      queryWrapper({
+        field: 'timeOfContact',
+        parentPath,
+        type: 'range',
+        ranges: {
+          gte: greater.toISOString(),
+        },
+      }),
+    );
   },
 });
 
@@ -118,15 +122,21 @@ const listContactsPermissionClause = ({
   listConditionSets,
   user,
   buildParams,
+  queryWrapper,
 }: {
   listConditionSets: ContactListCondition[][];
   user: TwilioUser;
   buildParams: { parentPath: string };
+  queryWrapper: (p: GenerateQueryParamsObject) => GenerateQueryParamsObject;
 }) => {
   const clauses = listPermissionWhereClause<'contact'>({
     listConditionSets,
     user,
-    conditionWhereClauses: conditionWhereClauses({ user, buildParams }),
+    conditionWhereClauses: conditionWhereClauses({
+      user,
+      buildParams,
+      queryWrapper,
+    }),
   });
 
   return clauses;
@@ -137,20 +147,24 @@ export const generateContactPermissionsFilters = ({
   viewTranscript,
   user,
   buildParams,
+  queryWrapper = p => p,
 }: {
   viewContact: ContactListCondition[][];
   viewTranscript: ContactListCondition[][];
   user: TwilioUser;
   buildParams: { parentPath: string };
+  queryWrapper?: (p: GenerateQueryParamsObject) => GenerateQueryParamsObject;
 }) => ({
   contactFilters: listContactsPermissionClause({
     listConditionSets: viewContact,
     user,
     buildParams,
+    queryWrapper,
   }),
   transcriptFilters: listContactsPermissionClause({
     listConditionSets: viewTranscript,
     user,
     buildParams,
+    queryWrapper,
   }),
 });

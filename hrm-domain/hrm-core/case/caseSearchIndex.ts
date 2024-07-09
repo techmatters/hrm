@@ -90,7 +90,7 @@ const conditionWhereClauses = ({
 
   isCaseContactOwner: buildPermissionFilter({
     type: 'nested',
-    path: 'contacts',
+    path: casePathToContacts,
     innerQuery: {
       type: 'term',
       field: 'twilioWorkerId',
@@ -161,6 +161,12 @@ export const generateCasePermissionsFilters = ({
     user,
     viewContact,
     viewTranscript,
+    queryWrapper: p =>
+      ({
+        type: 'nested' as const,
+        path: casePathToContacts,
+        innerQuery: p,
+      }) as GenerateCaseQueryParams,
   });
 
   const caseFilters = listCasePermissionClause({ listConditionSets: viewCase, user });
