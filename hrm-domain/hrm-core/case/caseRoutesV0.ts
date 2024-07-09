@@ -167,6 +167,28 @@ casesRouter.get('/:id', canViewCase, async (req, res) => {
   res.json(caseFromDB);
 });
 
+casesRouter.post('/search', publicEndpoint, async (req, res) => {
+  const { hrmAccountId } = req;
+  const {
+    closedCases,
+    counselor,
+    helpline,
+    filters,
+    onlyEssentialData,
+    ...searchCriteria
+  } = req.body || {};
+
+  const searchResults = await caseApi.searchCases(
+    hrmAccountId,
+    req.query || {},
+    searchCriteria,
+    { closedCases, counselor, helpline, filters },
+    req,
+    onlyEssentialData,
+  );
+  res.json(searchResults);
+});
+
 // Endpoint used for generalized search powered by ElasticSearch
 casesRouter.post(
   '/generalisedSearch',
