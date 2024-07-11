@@ -244,7 +244,7 @@ const generateContactsQueriesFromFilters = ({
 }: {
   searchParameters: SearchParametersContact;
   buildParams?: { parentPath: string };
-  queryWrapper?: (p: GenerateContactQueryParams) => GenerateQueryParamsObject;
+  queryWrapper?: (p: GenerateQueryParamsObject) => GenerateQueryParamsObject;
 }) => {
   const { searchFilters, permissionFilters } = searchParameters;
 
@@ -351,7 +351,7 @@ const generateCasesQueriesFromFilters = ({
       documentType: 'case',
       type: 'nested',
       path: casePathToContacts,
-      innerQuery: p,
+      innerQuery: p as GenerateContactQueryParams,
     }),
     buildParams: { parentPath: casePathToContacts },
   });
