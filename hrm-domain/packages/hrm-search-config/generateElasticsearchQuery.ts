@@ -216,7 +216,7 @@ const generateTranscriptQueriesFromFilters = ({
   transcriptFilters: QueryDslQueryContainer[][];
   searchParameters: SearchParametersContact;
   buildParams?: { parentPath: string };
-  queryWrapper?: (p: GenerateContactQueryParams) => GenerateQueryParamsObject;
+  queryWrapper?: (p: GenerateQueryParamsObject) => GenerateQueryParamsObject;
 }): QueryDslQueryContainer[] => {
   const queries = generateQueriesFromSearchTerms({
     documentType: 'contact',
