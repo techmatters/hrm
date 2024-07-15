@@ -431,7 +431,7 @@ const generalizedSearchContacts =
   async (
     accountSid: HrmAccountId,
     searchParameters: T,
-    query,
+    query: Pick<PaginationQuery, 'limit' | 'offset'>,
     {
       can,
       user,
@@ -558,7 +558,7 @@ export const generalisedContactSearch = async (
     const { contacts } = await searchContactsByIds(
       accountSid,
       { contactIds },
-      query,
+      {}, // limit and offset are computed in ES query
       ctx,
     );
 

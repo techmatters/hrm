@@ -590,7 +590,13 @@ export const generalisedCasesSearch = async (
 
     const caseIds = items.map(item => parseInt(item.id, 10));
 
-    const { cases } = await searchCasesByIds(accountSid, query, { caseIds }, {}, ctx);
+    const { cases } = await searchCasesByIds(
+      accountSid,
+      {}, // limit and offset are computed in ES query
+      { caseIds },
+      {},
+      ctx,
+    );
 
     return newOk({ data: { count: total, cases } });
   } catch (err) {
