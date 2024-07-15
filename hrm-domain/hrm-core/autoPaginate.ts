@@ -25,8 +25,8 @@ type SearchResult<T> = {
 };
 
 type LimitAndOffset = {
-  limit: number;
-  offset: number;
+  limit: string;
+  offset: string;
 };
 
 export type SearchFunction<T> = (
@@ -40,8 +40,8 @@ export const processInBatch = async <T, U = T[]>(
   asyncProcessor: AsyncProcessor<T, U>,
 ): Promise<void> => {
   let hasMoreItems = true;
-  let offset = Number(defaultLimitAndOffset.offset);
-  const limit = Number(defaultLimitAndOffset.limit);
+  let offset = defaultLimitAndOffset.offset;
+  const limit = defaultLimitAndOffset.limit;
 
   let processed = 0;
 
