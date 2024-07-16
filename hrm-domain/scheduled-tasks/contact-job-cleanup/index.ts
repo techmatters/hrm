@@ -65,7 +65,7 @@ const deleteTranscript = async (job: RetrieveContactTranscriptJob): Promise<bool
   // Double check that the related contact has a transcript stored in S3
   const conversationMedia = await getConversationMediaById(
     accountSid,
-    job.additionalPayload.conversationMediaId,
+    conversationMediaId,
   );
 
   if (
