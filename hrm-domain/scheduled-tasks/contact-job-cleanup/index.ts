@@ -28,8 +28,11 @@ import {
 } from '@tech-matters/hrm-core/contact-job/contact-job-data-access';
 import { ContactJobCleanupError } from '@tech-matters/hrm-core/contact-job/contact-job-error';
 import {
+  ConversationMedia,
+  getConversationMediaByContactId,
   getConversationMediaById,
   isS3StoredTranscript,
+  isS3StoredTranscriptPending,
 } from '@tech-matters/hrm-core/conversation-media/conversation-media';
 
 const MAX_CLEANUP_JOB_RETENTION_DAYS = 365;
@@ -41,12 +44,23 @@ const MAX_CLEANUP_JOB_RETENTION_DAYS = 365;
  * @returns true if the channel was deleted, false if it was not
  */
 const deleteTranscript = async (job: RetrieveContactTranscriptJob): Promise<boolean> => {
-  const { accountSid, id } = job;
+  const { accountSid, id, contactId } = job;
   const { channelSid } = job.resource;
 
-  if (!job.additionalPayload?.conversationMediaId) {
-    return false;
+  let conversationMediaId: ConversationMedia['id'];
+
+  if (job.additionalPayload?.conversationMediaId) {
+    conversationMediaId = job.additionalPayload.conversationMediaId;
+  } else {
+    const cms = await getConversationMediaByContactId(accountSid, contactId);
+    const cm = cms.find(isS3StoredTranscript);
+
+    if (cm) {
+      conversationMediaId = cm.id;
+    }
   }
+
+  if (!conversationMediaId) return false;
 
   // Double check that the related contact has a transcript stored in S3
   const conversationMedia = await getConversationMediaById(
@@ -56,7 +70,7 @@ const deleteTranscript = async (job: RetrieveContactTranscriptJob): Promise<bool
 
   if (
     !isS3StoredTranscript(conversationMedia) ||
-    !conversationMedia.storeTypeSpecificData.location
+    isS3StoredTranscriptPending(conversationMedia)
   ) {
     console.error(
       new ContactJobCleanupError(
@@ -125,7 +139,7 @@ const getCleanupRetentionDays = async (accountSid): Promise<number | undefined> 
       ) || MAX_CLEANUP_JOB_RETENTION_DAYS;
   } catch (err) {
     console.error(
-      `getCleanupRetentionDays: Error trying to fetch /${process.env.NODE_ENV}/hrm/${accountSid}/transcript_retention_days ${err}, using default`,
+      `Error trying to fetch /${process.env.NODE_ENV}/hrm/${accountSid}/transcript_retention_days ${err}, using default`,
     );
     ssmRetentionDays = MAX_CLEANUP_JOB_RETENTION_DAYS;
   }
@@ -158,7 +172,7 @@ export const cleanupContactJobs = async (): Promise<void> => {
         try {
           await cleanupContactJob(job);
         } catch (err) {
-          console.error(`cleanupContactJobs: Error processing job ${job.id}`);
+          console.error(`Error processing job ${job.id}: ${err}`);
         }
       }
     }
