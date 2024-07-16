@@ -172,7 +172,9 @@ export const cleanupContactJobs = async (): Promise<void> => {
         try {
           await cleanupContactJob(job);
         } catch (err) {
-          console.error(`Error processing job ${job.id}: ${err}`);
+          console.error(
+            new ContactJobCleanupError(`Error processing job ${job.id}: ${err}`),
+          );
         }
       }
     }
