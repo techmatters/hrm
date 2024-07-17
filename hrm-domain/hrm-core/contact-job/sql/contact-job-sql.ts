@@ -20,7 +20,7 @@ export enum ContactJobCleanupStatus {
   NOT_READY = 'not_ready',
   PENDING = 'pending',
   ACTIVE = 'active',
-  COMPLETED = 'completed',
+  // COMPLETE = 'complete', this is not needed since the jobs are removed once they are "cleaned up"
 }
 
 export const ADD_FAILED_ATTEMPT_PAYLOAD = `
