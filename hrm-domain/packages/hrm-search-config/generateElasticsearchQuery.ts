@@ -32,10 +32,7 @@ type GenerateRangeQueryParams = {
   type: 'range';
   ranges: { lt?: string; lte?: string; gt?: string; gte?: string };
 };
-<<<<<<< HEAD
 type GenerateQueryStringQuery = { type: 'queryString'; query: string; boost?: number };
-=======
->>>>>>> origin/master
 type GenerateMustNotQueryParams = {
   type: 'mustNot';
   innerQuery: GenerateQueryParamsObject;
@@ -51,10 +48,7 @@ type GenerateQueryParams<T extends {}, P extends keyof T> =
   | ({ field: keyof T; parentPath?: string } & (
       | GenerateTermQueryParams
       | GenerateRangeQueryParams
-<<<<<<< HEAD
       | GenerateQueryStringQuery
-=======
->>>>>>> origin/master
     ))
   | GenerateMustNotQueryParams
   | GenerateNestedQueryParams<T, P>;
@@ -69,15 +63,12 @@ export const FILTER_ALL_CLAUSE: QueryDslQueryContainer[][] = [
   ],
 ];
 
-<<<<<<< HEAD
 export const MATCH_ALL_CLAUSE: QueryDslQueryContainer[] = [
   {
     match_all: {},
   },
 ];
 
-=======
->>>>>>> origin/master
 const getFieldName = <T extends {}>(p: { field: keyof T; parentPath?: string }) => {
   const prefix = p.parentPath ? `${p.parentPath}.` : '';
 
@@ -111,7 +102,6 @@ export const generateESQuery = (p: GenerateQueryParamsObject): QueryDslQueryCont
         },
       };
     }
-<<<<<<< HEAD
     case 'queryString': {
       return {
         query_string: {
@@ -121,8 +111,6 @@ export const generateESQuery = (p: GenerateQueryParamsObject): QueryDslQueryCont
         },
       };
     }
-=======
->>>>>>> origin/master
     case 'mustNot': {
       return {
         bool: {
@@ -165,7 +153,6 @@ type SearchParametersContact = {
   };
 } & SearchPagination;
 
-<<<<<<< HEAD
 const generateQueriesFromSearchTerms = ({
   searchTerm,
   documentType,
@@ -246,33 +233,6 @@ const generateTranscriptQueriesFromFilters = ({
       should: queries.map(q => ({
         bool: { must: [q] },
       })),
-=======
-const generateTranscriptQueriesFromFilters = ({
-  transcriptFilters,
-  searchParameters,
-  buildParams = { parentPath: '' },
-  queryWrapper = p => p,
-}: {
-  transcriptFilters: QueryDslQueryContainer[][];
-  searchParameters: SearchParametersContact;
-  buildParams?: { parentPath: string };
-  queryWrapper?: (p: GenerateContactQueryParams) => GenerateQueryParamsObject;
-}): QueryDslQueryContainer[] => {
-  return transcriptFilters.map(filter => ({
-    bool: {
-      filter: filter,
-      must: [
-        generateESQuery(
-          queryWrapper({
-            documentType: 'contact',
-            field: 'transcript',
-            type: 'term',
-            term: searchParameters.searchTerm,
-            parentPath: buildParams.parentPath,
-          }),
-        ),
-      ],
->>>>>>> origin/master
     },
   }));
 };
@@ -284,7 +244,6 @@ const generateContactsQueriesFromFilters = ({
 }: {
   searchParameters: SearchParametersContact;
   buildParams?: { parentPath: string };
-<<<<<<< HEAD
   queryWrapper?: (p: GenerateQueryParamsObject) => GenerateQueryParamsObject;
 }) => {
   const { searchFilters, permissionFilters } = searchParameters;
@@ -303,19 +262,6 @@ const generateContactsQueriesFromFilters = ({
     searchParameters,
     buildParams,
     queryWrapper,
-=======
-  queryWrapper?: (p: GenerateContactQueryParams) => GenerateQueryParamsObject;
-}) => {
-  const {
-    searchFilters,
-    permissionFilters: { contactFilters, transcriptFilters },
-  } = searchParameters;
-
-  const transcriptQueries = generateTranscriptQueriesFromFilters({
-    transcriptFilters,
-    searchParameters,
-    buildParams,
->>>>>>> origin/master
   });
 
   const queries = generateQueriesFromSearchTerms({
@@ -331,27 +277,9 @@ const generateContactsQueriesFromFilters = ({
     bool: {
       filter: [...contactFilter, ...searchFilters],
       should: [
-<<<<<<< HEAD
         ...queries.map(q => ({
           bool: { must: [q] },
         })),
-        ...transcriptQueries,
-=======
-        {
-          bool: {
-            must: [
-              generateESQuery(
-                queryWrapper({
-                  documentType: 'contact',
-                  field: 'content',
-                  type: 'term',
-                  term: searchParameters.searchTerm,
-                  parentPath: buildParams.parentPath,
-                }),
-              ),
-            ],
-          },
-        },
         ...transcriptQueries,
       ],
     },
@@ -375,105 +303,9 @@ const generateContactsQuery = ({
     highlight: {
       fields: { '*': {} },
     },
-    min_score: 0.1,
-    from: pagination.start,
-    size: pagination.limit,
-    query: {
-      bool: {
-        should: generateContactsQueriesFromFilters({
-          searchParameters,
-        }),
-      },
-    },
-  };
-};
-
-type SearchParametersCases = {
-  type: 'case';
-  searchTerm: string;
-  searchFilters: QueryDslQueryContainer[];
-  permissionFilters: {
-    contactFilters: QueryDslQueryContainer[][];
-    transcriptFilters: QueryDslQueryContainer[][];
-    caseFilters: QueryDslQueryContainer[][];
-  };
-} & SearchPagination;
-
-export const casePathToContacts = 'contacts';
-
-const generateCasesQueriesFromFilters = ({
-  searchParameters,
-}: {
-  searchParameters: SearchParametersCases;
-}) => {
-  const {
-    searchTerm,
-    searchFilters,
-    permissionFilters: { caseFilters },
-  } = searchParameters;
-
-  const contactQueries = generateContactsQueriesFromFilters({
-    searchParameters: { ...searchParameters, type: 'contact' },
-    queryWrapper: p => ({
-      documentType: 'case',
-      type: 'nested',
-      path: casePathToContacts,
-      innerQuery: p,
-    }),
-    buildParams: { parentPath: casePathToContacts },
-  });
-
-  const caseQueries = caseFilters.map(caseFilter => ({
-    bool: {
-      filter: [...caseFilter, ...searchFilters],
-      should: [
-        {
-          bool: {
-            must: [
-              {
-                match: {
-                  content: searchTerm,
-                },
-              },
-            ],
-          },
-        },
-        ...contactQueries,
->>>>>>> origin/master
-      ],
-    },
-  }));
-
-<<<<<<< HEAD
-  return contactQueries;
-=======
-  return caseQueries;
->>>>>>> origin/master
-};
-
-const generateCasesQuery = ({
-  index,
-  searchParameters,
-}: {
-  index: string;
-<<<<<<< HEAD
-  searchParameters: SearchParametersContact;
-  parentPath?: string;
-=======
-  searchParameters: SearchParametersCases;
->>>>>>> origin/master
-}): SearchQuery => {
-  const { pagination } = searchParameters;
-
-  return {
-    index,
-    highlight: {
-      fields: { '*': {} },
-    },
     min_score: minScore,
     from: pagination.start,
     size: pagination.limit,
-<<<<<<< HEAD
     query: {
       bool: {
         should: generateContactsQueriesFromFilters({
@@ -563,8 +395,6 @@ const generateCasesQuery = ({
     min_score: minScore,
     from: pagination.start,
     size: pagination.limit,
-=======
->>>>>>> origin/master
     query: {
       bool: {
         should: generateCasesQueriesFromFilters({ searchParameters }),
