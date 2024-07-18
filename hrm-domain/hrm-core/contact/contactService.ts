@@ -57,11 +57,7 @@ import { actionsMaps } from '../permissions';
 import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { createReferral } from '../referral/referral-model';
 import { createContactJob } from '../contact-job/contact-job';
-import { isChatChannel } from '@tech-matters/hrm-types';
-import {
-  enableCreateContactJobsFlag,
-  enablePublishHrmSearchIndex,
-} from '../featureFlags';
+import { enablePublishHrmSearchIndex } from '../featureFlags';
 import { db } from '../connection-pool';
 import {
   type ConversationMedia,
@@ -153,17 +149,6 @@ export const getContactByTaskId = async (
   const contact = await getByTaskSid(accountSid, taskId);
 
   return contact ? bindApplyTransformations(can, user)(contact) : undefined;
-};
-
-const findS3StoredTranscriptPending = (
-  contact: Contact,
-  conversationMedia: ConversationMedia[],
-) => {
-  if (enableCreateContactJobsFlag && isChatChannel(contact.channel)) {
-    return conversationMedia.find(isS3StoredTranscriptPending);
-  }
-
-  return null;
 };
 
 const initProfile = async (
@@ -402,10 +387,7 @@ export const addConversationMediaToContact = async (
     }
 
     // if pertinent, create retrieve-transcript job
-    const pendingTranscript = findS3StoredTranscriptPending(
-      contact,
-      createdConversationMedia,
-    );
+    const pendingTranscript = createdConversationMedia.find(isS3StoredTranscriptPending);
     if (pendingTranscript) {
       await createContactJob(conn)({
         jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,

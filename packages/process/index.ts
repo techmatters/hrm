@@ -13,15 +13,4 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-
-import { handleSignals } from './handleSignals';
-import { processContactJobs } from '@tech-matters/hrm-core/contact-job/contact-job-processor';
-
-const processorIntervalId = processContactJobs();
-
-const gracefulExit = async () => {
-  //TODO: this should probably handle closing any running processes and open db connections
-  clearInterval(processorIntervalId);
-};
-
-handleSignals(gracefulExit);
+export { handleSignals } from './handleSignals';
