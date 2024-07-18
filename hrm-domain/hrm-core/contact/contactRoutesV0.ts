@@ -129,7 +129,7 @@ contactsRouter.post('/search', publicEndpoint, async (req, res) => {
 
 // Endpoint used for generalized search powered by ElasticSearch
 contactsRouter.post(
-  '/generalisedSearch',
+  '/generalizedSearch',
   publicEndpoint,
   async (req: Request, res: Response, next: NextFunction) => {
     try {

@@ -413,7 +413,7 @@ const generalizedSearchContacts =
   async (
     accountSid: HrmAccountId,
     searchParameters: T,
-    query,
+    query: Pick<PaginationQuery, 'limit' | 'offset'>,
     {
       can,
       user,
@@ -505,11 +505,16 @@ export const generalisedContactSearch = async (
       start: parseInt((offset as string) || '0', 10),
     };
 
-    const searchFilters = generateContactSearchFilters({ counselor, dateFrom, dateTo });
+    const searchFilters = generateContactSearchFilters({
+      counselor,
+      dateFrom,
+      dateTo,
+    });
     const permissionFilters = generateContactPermissionsFilters({
       user: ctx.user,
       viewContact: ctx.permissions.viewContact as ContactListCondition[][],
       viewTranscript: ctx.permissions.viewExternalTranscript as ContactListCondition[][],
+      buildParams: { parentPath: '' },
     });
 
     const client = (
@@ -535,7 +540,7 @@ export const generalisedContactSearch = async (
     const { contacts } = await searchContactsByIds(
       accountSid,
       { contactIds },
-      query,
+      {}, // limit and offset are computed in ES query
       ctx,
     );
 
