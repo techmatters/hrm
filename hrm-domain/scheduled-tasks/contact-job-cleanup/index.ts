@@ -129,6 +129,10 @@ const cleanupContactJob = async (job: ContactJob): Promise<void> => {
  * @returns number of days to retain cleanup jobs
  */
 const getCleanupRetentionDays = async (accountSid): Promise<number | undefined> => {
+  console.log(
+    '>>>>> getCleanupRetentionDays looking for',
+    `/${process.env.NODE_ENV}/hrm/${accountSid}/transcript_retention_days`,
+  );
   let ssmRetentionDays: number;
   try {
     ssmRetentionDays =
@@ -137,6 +141,7 @@ const getCleanupRetentionDays = async (accountSid): Promise<number | undefined> 
           `/${process.env.NODE_ENV}/hrm/${accountSid}/transcript_retention_days`,
         ),
       ) || MAX_CLEANUP_JOB_RETENTION_DAYS;
+    console.log('>>>>> ssmRetentionDays:', ssmRetentionDays);
   } catch (err) {
     console.error(
       `Error trying to fetch /${process.env.NODE_ENV}/hrm/${accountSid}/transcript_retention_days ${err}, using default`,
