@@ -177,7 +177,7 @@ const generateQueriesFromSearchTerms = ({
           { query: terms.join('AND'), boost: 3 * boostFactor },
           { query: terms.join(' '), boost: 2 * boostFactor },
         ]
-      : [{ query: terms.join(''), boost: 2 * boostFactor }]),
+      : [{ query: terms.join(' '), boost: 2 * boostFactor }]),
 
     // query for partial matches on the term(s)
     { query: terms.map(t => `*${t}*`).join(' '), boost: 1.5 * boostFactor },
