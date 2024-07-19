@@ -162,9 +162,7 @@ const getCleanupRetentionDays = async (accountSid): Promise<number | undefined> 
  */
 export const cleanupContactJobs = async (): Promise<void> => {
   try {
-    const accountSids = await getPendingCleanupJobAccountSids(
-      MAX_CLEANUP_JOB_RETENTION_DAYS,
-    );
+    const accountSids = await getPendingCleanupJobAccountSids();
 
     console.log(`Cleaning up contact jobs for accounts:`, accountSids);
 

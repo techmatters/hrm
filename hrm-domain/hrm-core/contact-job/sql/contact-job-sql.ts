@@ -61,7 +61,6 @@ export const PENDING_CLEANUP_JOB_ACCOUNT_SIDS_SQL = `
   WHERE
     "cleanupStatus" = '${ContactJobCleanupStatus.PENDING}'
     AND "completed" IS NOT NULL
-    AND "completed" < (current_timestamp - interval '$<maxCleanupRetentionDays> day')
 `;
 
 export const PULL_DUE_JOBS_SQL = `
