@@ -373,3 +373,7 @@ export const selectCaseSearchByProfileId = selectSearchCaseBaseQuery(
     SELECT "caseId" FROM "Contacts" "c" WHERE "c"."profileId" = $<profileId> AND "c"."accountSid" = $<accountSid>
   )`,
 );
+
+export const selectCasesByIds = selectSearchCaseBaseQuery(
+  `WHERE cases."accountSid" = $<accountSid> AND cases."id" = ANY($<caseIds>::INTEGER[])`,
+);

@@ -16,15 +16,12 @@
 
 import { handleSignals } from './handleSignals';
 import { processContactJobs } from '@tech-matters/hrm-core/contact-job/contact-job-processor';
-import { enableProcessContactJobsFlag } from '@tech-matters/hrm-core/featureFlags';
 
-if (enableProcessContactJobsFlag) {
-  const processorIntervalId = processContactJobs();
+const processorIntervalId = processContactJobs();
 
-  const gracefulExit = async () => {
-    //TODO: this should probably handle closing any running processes and open db connections
-    clearInterval(processorIntervalId);
-  };
+const gracefulExit = async () => {
+  //TODO: this should probably handle closing any running processes and open db connections
+  clearInterval(processorIntervalId);
+};
 
-  handleSignals(gracefulExit);
-}
+handleSignals(gracefulExit);

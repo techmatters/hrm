@@ -20,6 +20,7 @@ import { PATCH_CASE_INFO_BY_ID, updateByIdSql } from './sql/caseUpdateSql';
 import {
   OrderByColumnType,
   SearchQueryBuilder,
+  selectCasesByIds,
   selectCaseSearch,
   selectCaseSearchByProfileId,
 } from './sql/caseSearchSql';
@@ -29,29 +30,17 @@ import { Contact } from '../contact/contactDataAccess';
 import { DateFilter, OrderByDirectionType } from '../sql';
 import { TKConditionsSets } from '../permissions/rulesMap';
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
-import { TwilioUserIdentifier, WorkerSID } from '@tech-matters/types';
+import { AccountSID, TwilioUserIdentifier } from '@tech-matters/types';
+import {
+  PrecalculatedCasePermissionConditions,
+  CaseRecordCommon,
+  CaseService,
+} from '@tech-matters/hrm-types';
 import { CaseSectionRecord } from './caseSection/types';
 import { pick } from 'lodash';
 import { HrmAccountId } from '@tech-matters/types';
 
-export type PrecalculatedCasePermissionConditions = {
-  isCaseContactOwner: boolean; // Does the requesting user own any of the contacts currently connected to the case?
-};
-
-export type CaseRecordCommon = {
-  info: any;
-  helpline: string;
-  status: string;
-  twilioWorkerId: WorkerSID;
-  createdBy: TwilioUserIdentifier;
-  updatedBy: TwilioUserIdentifier;
-  accountSid: HrmAccountId;
-  createdAt: string;
-  updatedAt: string;
-  statusUpdatedAt?: string;
-  statusUpdatedBy?: string;
-  previousStatus?: string;
-};
+export { PrecalculatedCasePermissionConditions, CaseRecordCommon };
 
 // Exported for testing
 export const VALID_CASE_CREATE_FIELDS: (keyof CaseRecordCommon)[] = [
@@ -262,8 +251,8 @@ export const searchByProfileId = generalizedSearchQueryFunction<{
   }),
 );
 
-export const deleteById = async (id, accountSid) => {
-  return db.oneOrNone(DELETE_BY_ID, [accountSid, id]);
+export const deleteById = async (id: CaseService['id'], accountSid: AccountSID) => {
+  return db.oneOrNone<CaseRecord>(DELETE_BY_ID, [accountSid, id]);
 };
 
 export const updateStatus = async (
@@ -310,3 +299,15 @@ export const updateCaseInfo = async (
     });
   });
 };
+
+export const searchByCaseIds = generalizedSearchQueryFunction<{
+  caseIds: CaseRecord['id'][];
+}>(selectCasesByIds, (accountSid, user, searchCriteria, filters, limit, offset) => {
+  return {
+    accountSid,
+    limit,
+    offset,
+    caseIds: searchCriteria.caseIds,
+    twilioWorkerSid: user.workerSid,
+  };
+});

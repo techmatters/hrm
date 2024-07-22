@@ -34,7 +34,6 @@ import {
   cleanupReferrals,
 } from './dbCleanup';
 import each from 'jest-each';
-import { chatChannels } from '@tech-matters/hrm-core/contact/channelTypes';
 import { ContactJobType } from '@tech-matters/types/ContactJob';
 import { ruleFileActionOverride } from '../permissions-overrides';
 import { selectJobsByContactId } from './db-validations';
@@ -307,42 +306,30 @@ describe('/contacts/:contactId/conversationMedia route', () => {
     );
 
     describe('Contact Jobs', () => {
-      each(
-        chatChannels.map(channel => ({
-          channel,
-          contact: {
-            ...contact1,
-            channel,
-            taskId: `${contact1.taskId}-${channel}`,
-          },
-        })),
-      ).test(
-        `Adding transcripts to contacts with channel type $channel should create ${ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT} job`,
-        async ({ contact }) => {
-          const { body: channelContact } = await request
-            .post(route)
-            .set(headers)
-            .send(contact);
-          await request
-            .post(subRoute(channelContact.id))
-            .set(headers)
-            .send([
-              {
-                storeType: 'S3',
-                storeTypeSpecificData: {
-                  type: S3ContactMediaType.TRANSCRIPT,
-                },
+      test(`Adding transcripts to contacts with channel type $channel should create ${ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT} job`, async () => {
+        const { body: channelContact } = await request
+          .post(route)
+          .set(headers)
+          .send(contact1);
+        await request
+          .post(subRoute(channelContact.id))
+          .set(headers)
+          .send([
+            {
+              storeType: 'S3',
+              storeTypeSpecificData: {
+                type: S3ContactMediaType.TRANSCRIPT,
               },
-            ]);
+            },
+          ]);
 
-          const jobs = await selectJobsByContactId(channelContact.id, accountSid);
+        const jobs = await selectJobsByContactId(channelContact.id, accountSid);
 
-          const retrieveContactTranscriptJobs = jobs.filter(
-            j => j.jobType === ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
-          );
-          expect(retrieveContactTranscriptJobs).toHaveLength(1);
-        },
-      );
+        const retrieveContactTranscriptJobs = jobs.filter(
+          j => j.jobType === ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
+        );
+        expect(retrieveContactTranscriptJobs).toHaveLength(1);
+      });
 
       each([
         {

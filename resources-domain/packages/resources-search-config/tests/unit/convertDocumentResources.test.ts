@@ -15,7 +15,7 @@
  */
 
 import { FlatResource } from '@tech-matters/types';
-import { resourceIndexConfiguration } from '../../index';
+import { resourceIndexConfiguration, RESOURCE_INDEX_TYPE } from '../../index';
 
 const BASELINE_DATE = new Date('2021-01-01T00:00:00.000Z');
 
@@ -53,7 +53,10 @@ describe('convertIndexDocument', () => {
       ],
     };
 
-    const document = resourceIndexConfiguration.convertToIndexDocument(resource);
+    const document = resourceIndexConfiguration.convertToIndexDocument(
+      resource,
+      RESOURCE_INDEX_TYPE,
+    );
 
     expect(document).toEqual({
       id: '1234',

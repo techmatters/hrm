@@ -25,8 +25,44 @@ type SearchResult<T> = {
 };
 
 type LimitAndOffset = {
-  limit: number;
-  offset: number;
+  limit: string;
+  offset: string;
+};
+
+export type SearchFunction<T> = (
+  limitAndOffset: LimitAndOffset,
+) => Promise<SearchResult<T>>;
+
+export type AsyncProcessor<T, U = T[]> = (result: SearchResult<T>) => Promise<U>;
+
+export const processInBatch = async <T, U = T[]>(
+  searchFunction: SearchFunction<T>,
+  asyncProcessor: AsyncProcessor<T, U>,
+): Promise<void> => {
+  let hasMoreItems = true;
+  let offset = defaultLimitAndOffset.offset;
+  const limit = defaultLimitAndOffset.limit;
+
+  let processed = 0;
+
+  while (hasMoreItems) {
+    /**
+     * Updates 'limitAndOffset' param
+     * Keep the other params intact
+     */
+    const searchResult = await searchFunction({ limit, offset });
+
+    const { count, records } = searchResult;
+
+    await asyncProcessor(searchResult);
+
+    processed += records.length;
+    hasMoreItems = processed < count;
+
+    if (hasMoreItems) {
+      offset += limit;
+    }
+  }
 };
 
 /**
@@ -38,29 +74,15 @@ type LimitAndOffset = {
  * @returns cases[] or contacts[]
  */
 export const autoPaginate = async <T>(
-  searchFunction: (limitAndOffset: LimitAndOffset) => Promise<SearchResult<T>>,
+  searchFunction: SearchFunction<T>,
 ): Promise<T[]> => {
   let items: T[] = [];
-  let hasMoreItems = true;
-  let offset = Number(defaultLimitAndOffset.offset);
-  const limit = Number(defaultLimitAndOffset.limit);
 
-  while (hasMoreItems) {
-    /**
-     * Updates 'limitAndOffset' param
-     * Keep the other params intact
-     */
-    const searchResult = await searchFunction({ limit, offset });
+  const asyncProcessor = async (result: SearchResult<T>) => {
+    items.push(...result.records);
+  };
 
-    const { count, records } = searchResult;
-    items = [...items, ...records];
-
-    hasMoreItems = items.length < count;
-
-    if (hasMoreItems) {
-      offset += limit;
-    }
-  }
+  await processInBatch(searchFunction, asyncProcessor);
 
   return items;
 };

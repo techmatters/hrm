@@ -29,6 +29,12 @@ import {
   HrmAccountId,
   TwilioUserIdentifier,
 } from '@tech-matters/types';
+import { getClient } from '@tech-matters/elasticsearch-client';
+import {
+  HRM_CONTACTS_INDEX_TYPE,
+  hrmSearchConfiguration,
+} from '@tech-matters/hrm-search-config';
+
 import {
   connectToCase,
   Contact,
@@ -40,34 +46,45 @@ import {
   patch,
   search,
   searchByProfileId,
+  searchByIds,
 } from './contactDataAccess';
 
-import { PaginationQuery, getPaginationElements } from '../search';
+import { type PaginationQuery, getPaginationElements } from '../search';
 import type { NewContactRecord } from './sql/contactInsertSql';
-import { ContactRawJson, ReferralWithoutContactId } from './contactJson';
+import type { ContactRawJson, ReferralWithoutContactId } from './contactJson';
 import { InitializedCan } from '../permissions/initializeCanForRules';
 import { actionsMaps } from '../permissions';
 import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { createReferral } from '../referral/referral-model';
 import { createContactJob } from '../contact-job/contact-job';
-import { isChatChannel } from './channelTypes';
-import { enableCreateContactJobsFlag } from '../featureFlags';
+import { enablePublishHrmSearchIndex } from '../featureFlags';
 import { db } from '../connection-pool';
 import {
-  ConversationMedia,
+  type ConversationMedia,
+  type NewConversationMedia,
   createConversationMedia,
   isS3StoredTranscript,
   isS3StoredTranscriptPending,
-  NewConversationMedia,
+  updateConversationMediaSpecificData,
 } from '../conversation-media/conversation-media';
-import { Profile, getOrCreateProfileWithIdentifier } from '../profile/profileService';
+import {
+  type Profile,
+  getOrCreateProfileWithIdentifier,
+} from '../profile/profileService';
 import { deleteContactReferrals } from '../referral/referral-data-access';
 import {
   DatabaseErrorResult,
   isDatabaseUniqueConstraintViolationErrorResult,
 } from '../sql';
 import { systemUser } from '@tech-matters/twilio-worker-auth';
-import { RulesFile, TKConditionsSets } from '../permissions/rulesMap';
+import { publishContactToSearchIndex } from '../jobs/search/publishToSearchIndex';
+import type { RulesFile, TKConditionsSets } from '../permissions/rulesMap';
+import type { IndexMessage } from '@tech-matters/hrm-search-config';
+import {
+  ContactListCondition,
+  generateContactSearchFilters,
+  generateContactPermissionsFilters,
+} from './contactSearchIndex';
 
 // Re export as is:
 export { Contact } from './contactDataAccess';
@@ -134,17 +151,6 @@ export const getContactByTaskId = async (
   return contact ? bindApplyTransformations(can, user)(contact) : undefined;
 };
 
-const findS3StoredTranscriptPending = (
-  contact: Contact,
-  conversationMedia: ConversationMedia[],
-) => {
-  if (enableCreateContactJobsFlag && isChatChannel(contact.channel)) {
-    return conversationMedia.find(isS3StoredTranscriptPending);
-  }
-
-  return null;
-};
-
 const initProfile = async (
   conn,
   hrmAccountId: HrmAccountId,
@@ -170,6 +176,36 @@ const initProfile = async (
     identifierId: profileResult.data?.identifier?.id,
   });
 };
+
+const doContactInSearchIndexOP =
+  (operation: IndexMessage['operation']) =>
+  async ({
+    accountSid,
+    contactId,
+  }: {
+    accountSid: Contact['accountSid'];
+    contactId: Contact['id'];
+  }) => {
+    try {
+      if (!enablePublishHrmSearchIndex) {
+        return;
+      }
+
+      const contact = await getById(accountSid, contactId);
+
+      if (contact) {
+        await publishContactToSearchIndex({ accountSid, contact, operation });
+      }
+    } catch (err) {
+      console.error(
+        `Error trying to index contact: accountSid ${accountSid} contactId ${contactId}`,
+        err,
+      );
+    }
+  };
+
+const indexContactInSearchIndex = doContactInSearchIndexOP('index');
+const removeContactInSearchIndex = doContactInSearchIndexOP('remove');
 
 // Creates a contact with all its related records within a single transaction
 export const createContact = async (
@@ -222,6 +258,8 @@ export const createContact = async (
       return newOkFromData(applyTransformations(contact));
     });
     if (isOk(result)) {
+      // trigger index operation but don't await for it
+      indexContactInSearchIndex({ accountSid, contactId: result.data.id });
       return result.data;
     }
     // This operation can fail with a unique constraint violation if a contact with the same ID is being created concurrently
@@ -244,6 +282,7 @@ export const createContact = async (
       return result.unwrap();
     }
   }
+
   return result.unwrap();
 };
 
@@ -288,6 +327,9 @@ export const patchContact = async (
 
     const applyTransformations = bindApplyTransformations(can, user);
 
+    // trigger index operation but don't await for it
+    indexContactInSearchIndex({ accountSid, contactId: parseInt(contactId, 10) });
+
     return applyTransformations(updated);
   });
 
@@ -297,6 +339,11 @@ export const connectContactToCase = async (
   caseId: string,
   { can, user }: { can: InitializedCan; user: TwilioUser },
 ): Promise<Contact> => {
+  if (caseId === null) {
+    // trigger remove operation, awaiting for it, since we'll lost the information of which is the "old case" otherwise
+    await removeContactInSearchIndex({ accountSid, contactId: parseInt(contactId, 10) });
+  }
+
   const updated: Contact | undefined = await connectToCase()(
     accountSid,
     contactId,
@@ -308,6 +355,10 @@ export const connectContactToCase = async (
   }
 
   const applyTransformations = bindApplyTransformations(can, user);
+
+  // trigger index operation but don't await for it
+  indexContactInSearchIndex({ accountSid, contactId: parseInt(contactId, 10) });
+
   return applyTransformations(updated);
 };
 
@@ -336,10 +387,7 @@ export const addConversationMediaToContact = async (
     }
 
     // if pertinent, create retrieve-transcript job
-    const pendingTranscript = findS3StoredTranscriptPending(
-      contact,
-      createdConversationMedia,
-    );
+    const pendingTranscript = createdConversationMedia.find(isS3StoredTranscriptPending);
     if (pendingTranscript) {
       await createContactJob(conn)({
         jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
@@ -352,6 +400,10 @@ export const addConversationMediaToContact = async (
       ...contact,
       conversationMedia: [...contact.conversationMedia, ...createdConversationMedia],
     };
+
+    // trigger index operation but don't await for it
+    indexContactInSearchIndex({ accountSid, contactId: parseInt(contactIdString, 10) });
+
     return applyTransformations(updated);
   });
 };
@@ -361,7 +413,7 @@ const generalizedSearchContacts =
   async (
     accountSid: HrmAccountId,
     searchParameters: T,
-    query,
+    query: Pick<PaginationQuery, 'limit' | 'offset'>,
     {
       can,
       user,
@@ -426,3 +478,99 @@ export const getContactsByProfileId = async (
     });
   }
 };
+
+const searchContactsByIds = generalizedSearchContacts(searchByIds);
+
+export const generalisedContactSearch = async (
+  accountSid: HrmAccountId,
+  searchParameters: {
+    searchTerm: string;
+    counselor?: string;
+    dateFrom?: string;
+    dateTo?: string;
+  },
+  query: Pick<PaginationQuery, 'limit' | 'offset'>,
+  ctx: {
+    can: InitializedCan;
+    user: TwilioUser;
+    permissions: RulesFile;
+  },
+): Promise<TResult<'InternalServerError', { count: number; contacts: Contact[] }>> => {
+  try {
+    const { searchTerm, counselor, dateFrom, dateTo } = searchParameters;
+    const { limit, offset } = query;
+
+    const pagination = {
+      limit: parseInt((limit as string) || '20', 10),
+      start: parseInt((offset as string) || '0', 10),
+    };
+
+    const searchFilters = generateContactSearchFilters({
+      counselor,
+      dateFrom,
+      dateTo,
+    });
+    const permissionFilters = generateContactPermissionsFilters({
+      user: ctx.user,
+      viewContact: ctx.permissions.viewContact as ContactListCondition[][],
+      viewTranscript: ctx.permissions.viewExternalTranscript as ContactListCondition[][],
+      buildParams: { parentPath: '' },
+    });
+
+    const client = (
+      await getClient({
+        accountSid,
+        indexType: HRM_CONTACTS_INDEX_TYPE,
+        ssmConfigParameter: process.env.SSM_PARAM_ELASTICSEARCH_CONFIG,
+      })
+    ).searchClient(hrmSearchConfiguration);
+
+    const { total, items } = await client.search({
+      searchParameters: {
+        type: 'contact',
+        searchTerm,
+        searchFilters,
+        permissionFilters,
+        pagination,
+      },
+    });
+
+    const contactIds = items.map(item => parseInt(item.id, 10));
+
+    const { contacts } = await searchContactsByIds(
+      accountSid,
+      { contactIds },
+      {}, // limit and offset are computed in ES query
+      ctx,
+    );
+
+    return newOk({ data: { count: total, contacts } });
+  } catch (err) {
+    return newErr({
+      message: err instanceof Error ? err.message : String(err),
+      error: 'InternalServerError',
+    });
+  }
+};
+
+/**
+ * wrapper around updateSpecificData that also triggers a re-index operation when the conversation media gets updated (e.g. when transcript is exported)
+ */
+export const updateConversationMediaData =
+  (contactId: Contact['id']) =>
+  async (
+    ...[accountSid, id, storeTypeSpecificData]: Parameters<
+      typeof updateConversationMediaSpecificData
+    >
+  ): ReturnType<typeof updateConversationMediaSpecificData> => {
+    const result = await updateConversationMediaSpecificData(
+      accountSid,
+      id,
+      storeTypeSpecificData,
+    );
+
+    // trigger index operation but don't await for it
+    indexContactInSearchIndex({ accountSid, contactId });
+
+    return result;
+  };

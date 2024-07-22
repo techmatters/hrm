@@ -15,7 +15,6 @@
  */
 
 import createError from 'http-errors';
-import * as casesDb from './caseDataAccess';
 import * as caseApi from './caseService';
 import { publicEndpoint, SafeRouter } from '../permissions';
 import {
@@ -26,6 +25,8 @@ import {
 import caseSectionRoutesV0 from './caseSection/caseSectionRoutesV0';
 import { parseISO } from 'date-fns';
 import { getCaseTimeline } from './caseSection/caseSectionService';
+import type { NextFunction, Request, Response } from 'express';
+import { isErr, mapHTTPError } from '@tech-matters/types';
 
 const casesRouter = SafeRouter();
 casesRouter.put('/:id/status', canUpdateCaseStatus, async (req, res) => {
@@ -93,7 +94,7 @@ casesRouter.expressRouter.use('/:caseId/sections', caseSectionRoutesV0);
 casesRouter.delete('/:id', publicEndpoint, async (req, res) => {
   const { hrmAccountId } = req;
   const { id } = req.params;
-  const deleted = await casesDb.deleteById(id, hrmAccountId);
+  const deleted = await caseApi.deleteCaseById({ accountSid: hrmAccountId, caseId: id });
   if (!deleted) {
     throw createError(404);
   }
@@ -187,5 +188,39 @@ casesRouter.post('/search', publicEndpoint, async (req, res) => {
   );
   res.json(searchResults);
 });
+
+// Endpoint used for generalized search powered by ElasticSearch
+casesRouter.post(
+  '/generalizedSearch',
+  publicEndpoint,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { hrmAccountId, can, user, permissions, query, body } = req;
+
+      // TODO: use better validation
+      const { limit, offset } = query as { limit: string; offset: string };
+      const { searchParameters } = body;
+
+      const casesResponse = await caseApi.generalisedCasesSearch(
+        hrmAccountId,
+        searchParameters,
+        { limit, offset },
+        {
+          can,
+          user,
+          permissions,
+        },
+      );
+
+      if (isErr(casesResponse)) {
+        return next(mapHTTPError(casesResponse, { InternalServerError: 500 }));
+      }
+
+      res.json(casesResponse.data);
+    } catch (err) {
+      return next(createError(500, err.message));
+    }
+  },
+);
 
 export default casesRouter.expressRouter;

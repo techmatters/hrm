@@ -23,7 +23,6 @@ import {
   CaseListConfiguration,
   CaseListFilters,
   CaseRecord,
-  CaseRecordCommon,
   CaseSearchCriteria,
   SearchQueryFunction,
   create,
@@ -33,78 +32,43 @@ import {
   updateStatus,
   CaseRecordUpdate,
   updateCaseInfo,
+  deleteById,
+  searchByCaseIds,
 } from './caseDataAccess';
 import { randomUUID } from 'crypto';
-import type { Contact } from '../contact/contactDataAccess';
 import { InitializedCan } from '../permissions/initializeCanForRules';
 import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { bindApplyTransformations as bindApplyContactTransformations } from '../contact/contactService';
 import type { Profile } from '../profile/profileDataAccess';
 import type { PaginationQuery } from '../search';
 import { HrmAccountId, TResult, newErr, newOk } from '@tech-matters/types';
+import {
+  WELL_KNOWN_CASE_SECTION_NAMES,
+  CaseService,
+  CaseInfoSection,
+} from '@tech-matters/hrm-types';
 import { RulesFile, TKConditionsSets } from '../permissions/rulesMap';
 import { CaseSectionRecord } from './caseSection/types';
 import { pick } from 'lodash';
+import {
+  HRM_CASES_INDEX_TYPE,
+  hrmSearchConfiguration,
+  type IndexMessage,
+} from '@tech-matters/hrm-search-config';
+import { publishCaseToSearchIndex } from '../jobs/search/publishToSearchIndex';
+import { enablePublishHrmSearchIndex } from '../featureFlags';
+import { getClient } from '@tech-matters/elasticsearch-client';
+import {
+  CaseListCondition,
+  generateCasePermissionsFilters,
+  generateCaseSearchFilters,
+} from './caseSearchIndex';
+import { ContactListCondition } from '../contact/contactSearchIndex';
+
+export { WELL_KNOWN_CASE_SECTION_NAMES, CaseService, CaseInfoSection };
 
 const CASE_OVERVIEW_PROPERTIES = ['summary', 'followUpDate', 'childIsAtRisk'] as const;
 type CaseOverviewProperties = (typeof CASE_OVERVIEW_PROPERTIES)[number];
-
-type CaseSection = Omit<CaseSectionRecord, 'accountSid' | 'sectionType' | 'caseId'>;
-
-type CaseInfoSection = {
-  id: string;
-  twilioWorkerId: string;
-  updatedAt?: string;
-  updatedBy?: string;
-} & Record<string, any>;
-
-const getSectionSpecificDataFromNotesOrReferrals = (
-  caseSection: CaseInfoSection,
-): Record<string, any> => {
-  const {
-    id,
-    twilioWorkerId,
-    createdAt,
-    updatedBy,
-    updatedAt,
-    accountSid,
-    ...sectionSpecificData
-  } = caseSection;
-  return sectionSpecificData;
-};
-
-export const WELL_KNOWN_CASE_SECTION_NAMES = {
-  households: { getSectionSpecificData: s => s.household, sectionTypeName: 'household' },
-  perpetrators: {
-    getSectionSpecificData: s => s.perpetrator,
-    sectionTypeName: 'perpetrator',
-  },
-  incidents: { getSectionSpecificData: s => s.incident, sectionTypeName: 'incident' },
-  counsellorNotes: {
-    getSectionSpecificData: getSectionSpecificDataFromNotesOrReferrals,
-    sectionTypeName: 'note',
-  },
-  referrals: {
-    getSectionSpecificData: getSectionSpecificDataFromNotesOrReferrals,
-    sectionTypeName: 'referral',
-  },
-  documents: { getSectionSpecificData: s => s.document, sectionTypeName: 'document' },
-} as const;
-
-type PrecalculatedPermissions = Record<'userOwnsContact', boolean>;
-
-type CaseSectionsMap = {
-  [k in (typeof WELL_KNOWN_CASE_SECTION_NAMES)[keyof typeof WELL_KNOWN_CASE_SECTION_NAMES]['sectionTypeName']]?: CaseSection[];
-};
-
-export type CaseService = CaseRecordCommon & {
-  id: number;
-  childName?: string;
-  categories: Record<string, string[]>;
-  precalculatedPermissions?: PrecalculatedPermissions;
-  connectedContacts?: Contact[];
-  sections: CaseSectionsMap;
-};
 
 type RecursivePartial<T> = {
   [P in keyof T]?: RecursivePartial<T[P]>;
@@ -319,6 +283,57 @@ const mapEssentialData =
     };
   };
 
+// TODO: use the factored out version once that's merged
+const maxPermissions: {
+  user: TwilioUser;
+  can: () => boolean;
+} = {
+  can: () => true,
+  user: {
+    accountSid: 'ACxxx',
+    workerSid: 'WKxxx',
+    roles: ['supervisor'],
+    isSupervisor: true,
+  },
+};
+
+const doCaseInSearchIndexOP =
+  (operation: IndexMessage['operation']) =>
+  async ({
+    accountSid,
+    caseId,
+    caseRecord,
+  }: {
+    accountSid: CaseService['accountSid'];
+    caseId: CaseService['id'];
+    caseRecord?: CaseRecord;
+  }) => {
+    try {
+      if (!enablePublishHrmSearchIndex) {
+        return;
+      }
+
+      const caseObj =
+        caseRecord || (await getById(caseId, accountSid, maxPermissions.user, []));
+
+      if (caseObj) {
+        await publishCaseToSearchIndex({
+          accountSid,
+          case: caseRecordToCase(caseObj),
+          operation,
+        });
+      }
+    } catch (err) {
+      console.error(
+        `Error trying to index case: accountSid ${accountSid} caseId ${caseId}`,
+        err,
+      );
+    }
+  };
+
+export const indexCaseInSearchIndex = doCaseInSearchIndexOP('index');
+const removeCaseInSearchIndex = doCaseInSearchIndexOP('remove');
+
 export const createCase = async (
   body: Partial<CaseService>,
   accountSid: CaseService['accountSid'],
@@ -340,6 +355,9 @@ export const createCase = async (
     workerSid,
   );
   const created = await create(record);
+
+  // trigger index operation but don't await for it
+  indexCaseInSearchIndex({ accountSid, caseId: created.id });
 
   // A new case is always initialized with empty connected contacts. No need to apply mapContactTransformations here
   return caseRecordToCase(created);
@@ -367,6 +385,9 @@ export const updateCaseStatus = async (
 
   const withTransformedContacts = mapContactTransformations({ can, user })(updated);
 
+  // trigger index operation but don't await for it
+  indexCaseInSearchIndex({ accountSid, caseId: updated.id });
+
   return caseRecordToCase(withTransformedContacts);
 };
 
@@ -378,6 +399,9 @@ export const updateCaseOverview = async (
 ): Promise<CaseService> => {
   const validOverview = pick(overview, CASE_OVERVIEW_PROPERTIES);
   const updated = await updateCaseInfo(accountSid, id, validOverview, workerSid);
+
+  // trigger index operation but don't await for it
+  indexCaseInSearchIndex({ accountSid, caseId: updated.id });
 
   return caseRecordToCase(updated);
 };
@@ -510,4 +534,90 @@ export const getCasesByProfileId = async (
       error: 'InternalServerError',
     });
   }
+};
+
+export const searchCasesByIds = generalizedSearchCases(searchByCaseIds);
+
+export const generalisedCasesSearch = async (
+  accountSid: HrmAccountId,
+  searchParameters: {
+    searchTerm: string;
+    counselor?: string;
+    dateFrom?: string;
+    dateTo?: string;
+  },
+  query: Pick<PaginationQuery, 'limit' | 'offset'>,
+  ctx: {
+    can: InitializedCan;
+    user: TwilioUser;
+    permissions: RulesFile;
+  },
+): Promise<TResult<'InternalServerError', CaseSearchReturn>> => {
+  try {
+    const { searchTerm, counselor, dateFrom, dateTo } = searchParameters;
+    const { limit, offset } = query;
+
+    const pagination = {
+      limit: parseInt((limit as string) || '20', 10),
+      start: parseInt((offset as string) || '0', 10),
+    };
+
+    const searchFilters = generateCaseSearchFilters({ counselor, dateFrom, dateTo });
+    const permissionFilters = generateCasePermissionsFilters({
+      user: ctx.user,
+      viewContact: ctx.permissions.viewContact as ContactListCondition[][],
+      viewTranscript: ctx.permissions.viewExternalTranscript as ContactListCondition[][],
+      viewCase: ctx.permissions.viewCase as CaseListCondition[][],
+    });
+
+    const client = (
+      await getClient({
+        accountSid,
+        indexType: HRM_CASES_INDEX_TYPE,
+        ssmConfigParameter: process.env.SSM_PARAM_ELASTICSEARCH_CONFIG,
+      })
+    ).searchClient(hrmSearchConfiguration);
+
+    const { total, items } = await client.search({
+      searchParameters: {
+        type: 'case',
+        searchTerm,
+        searchFilters,
+        permissionFilters,
+        pagination,
+      },
+    });
+
+    const caseIds = items.map(item => parseInt(item.id, 10));
+
+    const { cases } = await searchCasesByIds(
+      accountSid,
+      {}, // limit and offset are computed in ES query
+      { caseIds },
+      {},
+      ctx,
+    );
+
+    return newOk({ data: { count: total, cases } });
+  } catch (err) {
+    return newErr({
+      message: err instanceof Error ? err.message : String(err),
+      error: 'InternalServerError',
+    });
+  }
+};
+
+export const deleteCaseById = async ({
+  accountSid,
+  caseId,
+}: {
+  accountSid: HrmAccountId;
+  caseId: number;
+}) => {
+  const deleted = await deleteById(caseId, accountSid);
+
+  // trigger remove operation but don't await for it
+  removeCaseInSearchIndex({ accountSid, caseId: deleted?.id, caseRecord: deleted });
+
+  return deleted;
 };

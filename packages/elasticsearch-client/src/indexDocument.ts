@@ -15,10 +15,12 @@
  */
 import { IndexResponse } from '@elastic/elasticsearch/lib/api/types';
 import { PassThroughConfig } from './client';
+import createIndex from './createIndex';
 
 export type IndexDocumentExtraParams<T> = {
   id: string;
   document: T;
+  autocreate?: boolean;
 };
 
 export type IndexDocumentParams<T> = PassThroughConfig<T> & IndexDocumentExtraParams<T>;
@@ -30,8 +32,15 @@ export const indexDocument = async <T>({
   id,
   index,
   indexConfig,
+  autocreate = false,
 }: IndexDocumentParams<T>): Promise<IndexDocumentResponse> => {
-  const convertedDocument = indexConfig.convertToIndexDocument(document);
+  if (autocreate) {
+    // const exists = await client.indices.exists({ index });
+    // NOTE: above check is already performed in createIndex
+    await createIndex({ client, index, indexConfig });
+  }
+
+  const convertedDocument = indexConfig.convertToIndexDocument(document, index);
 
   return client.index({
     index,
