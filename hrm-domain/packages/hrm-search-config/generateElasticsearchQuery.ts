@@ -177,7 +177,7 @@ const generateQueriesFromSearchTerms = ({
           { query: terms.join('AND'), boost: 3 * boostFactor },
           { query: terms.join(' '), boost: 2 * boostFactor },
         ]
-      : [{ query: terms.join(''), boost: 2 * boostFactor }]),
+      : [{ query: terms.join(' '), boost: 2 * boostFactor }]),
 
     // query for partial matches on the term(s)
     { query: terms.map(t => `*${t}*`).join(' '), boost: 1.5 * boostFactor },
@@ -200,7 +200,7 @@ const generateQueriesFromSearchTerms = ({
   return queries;
 };
 
-const boostaFactors = {
+const BOOST_FACTORS = {
   transcript: 1,
   contact: 2,
   case: 3,
@@ -223,7 +223,7 @@ const generateTranscriptQueriesFromFilters = ({
     field: 'transcript',
     searchTerm: searchParameters.searchTerm,
     parentPath: buildParams.parentPath,
-    boostFactor: boostaFactors.transcript,
+    boostFactor: BOOST_FACTORS.transcript,
     queryWrapper,
   });
 
@@ -269,7 +269,7 @@ const generateContactsQueriesFromFilters = ({
     field: 'content',
     searchTerm: searchParameters.searchTerm,
     parentPath: buildParams.parentPath,
-    boostFactor: boostaFactors.contact,
+    boostFactor: BOOST_FACTORS.contact,
     queryWrapper,
   });
 
@@ -360,7 +360,7 @@ const generateCasesQueriesFromFilters = ({
     documentType: 'case',
     field: 'content',
     searchTerm: searchParameters.searchTerm,
-    boostFactor: boostaFactors.case,
+    boostFactor: BOOST_FACTORS.case,
   });
 
   const caseQueries = permissionFilters.caseFilters.map(caseFilter => ({

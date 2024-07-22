@@ -14,31 +14,26 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-// This should be in sync with the fronted (src/states/DomainConstants.ts)
-
-export const channelTypes = {
-  voice: 'voice',
-  whatsapp: 'whatsapp',
-  facebook: 'facebook',
-  web: 'web',
-  sms: 'sms',
-  twitter: 'twitter',
-  instagram: 'instagram',
-  line: 'line',
-  modica: 'modica',
-  default: 'default',
-} as const;
-
-export const chatChannels = [
-  channelTypes.whatsapp,
-  channelTypes.facebook,
-  channelTypes.web,
-  channelTypes.sms,
-  channelTypes.twitter,
-  channelTypes.instagram,
-  channelTypes.line,
-  channelTypes.modica,
+const stopSignals = [
+  'SIGHUP',
+  'SIGINT',
+  'SIGQUIT',
+  'SIGILL',
+  'SIGTRAP',
+  'SIGABRT',
+  'SIGBUS',
+  'SIGFPE',
+  'SIGUSR1',
+  'SIGSEGV',
+  'SIGUSR2',
+  'SIGTERM',
 ];
 
-export const isVoiceChannel = (channel: string) => channel === channelTypes.voice;
-export const isChatChannel = (channel: string) => chatChannels.includes(channel as any);
+export const handleSignals = async (callback: () => Promise<void>) => {
+  stopSignals.forEach(signal => {
+    process.on(signal, async () => {
+      console.log(`Caught ${signal}, stopping...`);
+      await callback();
+    });
+  });
+};
