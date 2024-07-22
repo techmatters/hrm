@@ -169,12 +169,8 @@ export const getPendingCleanupJobs = async (
   );
 };
 
-export const getPendingCleanupJobAccountSids = async (
-  maxCleanupRetentionDays: number,
-): Promise<string[]> => {
-  const ret = await db.task(tx =>
-    tx.manyOrNone(PENDING_CLEANUP_JOB_ACCOUNT_SIDS_SQL, { maxCleanupRetentionDays }),
-  );
+export const getPendingCleanupJobAccountSids = async (): Promise<string[]> => {
+  const ret = await db.task(tx => tx.manyOrNone(PENDING_CLEANUP_JOB_ACCOUNT_SIDS_SQL));
   return ret?.map(r => r.accountSid);
 };
 

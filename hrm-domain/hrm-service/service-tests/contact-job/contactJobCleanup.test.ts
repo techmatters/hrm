@@ -59,7 +59,7 @@ const completionPayload = {
 
 const backDateJob = (jobId: string) =>
   db.oneOrNone(
-    `UPDATE "ContactJobs" SET "completed" = (current_timestamp - interval '366 day') WHERE "id" = $1 RETURNING *`,
+    `UPDATE "ContactJobs" SET "completed" = (current_timestamp - interval '3660 day') WHERE "id" = $1 RETURNING *`,
     [jobId],
   );
 
