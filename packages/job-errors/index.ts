@@ -21,6 +21,13 @@ export class ContactJobProcessorError extends Error {
   }
 }
 
+export class HrmIndexProcessorError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'HrmIndexProcessorError';
+  }
+}
+
 export class ResourceImportProcessorError extends Error {
   constructor(message: string) {
     super(message);

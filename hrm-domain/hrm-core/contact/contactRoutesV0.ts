@@ -15,6 +15,7 @@
  */
 
 import { actionsMaps, publicEndpoint, SafeRouter } from '../permissions';
+import { isErr, mapHTTPError } from '@tech-matters/types';
 import createError from 'http-errors';
 import {
   addConversationMediaToContact,
@@ -24,6 +25,7 @@ import {
   getContactByTaskId,
   patchContact,
   searchContacts,
+  generalisedContactSearch,
 } from './contactService';
 import type { NextFunction, Request, Response } from 'express';
 import {
@@ -113,6 +115,7 @@ contactsRouter.delete(
   },
 );
 
+// Legacy Search endpoint
 contactsRouter.post('/search', publicEndpoint, async (req, res) => {
   const { hrmAccountId } = req;
 
@@ -124,7 +127,40 @@ contactsRouter.post('/search', publicEndpoint, async (req, res) => {
   res.json(searchResults);
 });
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+// Endpoint used for generalized search powered by ElasticSearch
+contactsRouter.post(
+  '/generalisedSearch',
+  publicEndpoint,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { hrmAccountId, can, user, permissions, query, body } = req;
+
+      // TODO: use better validation
+      const { limit, offset } = query as { limit: string; offset: string };
+      const { searchParameters } = body;
+
+      const contactsResponse = await generalisedContactSearch(
+        hrmAccountId,
+        searchParameters,
+        { limit, offset },
+        {
+          can,
+          user,
+          permissions,
+        },
+      );
+
+      if (isErr(contactsResponse)) {
+        return next(mapHTTPError(contactsResponse, { InternalServerError: 500 }));
+      }
+
+      res.json(contactsResponse.data);
+    } catch (err) {
+      return next(createError(500, err.message));
+    }
+  },
+);
+
 const validatePatchPayload = ({ body }: Request, res: Response, next: NextFunction) => {
   if (typeof body !== 'object' || Array.isArray(body)) {
     throw createError(400);

@@ -23,7 +23,7 @@ import * as contactJobApi from '@tech-matters/hrm-core/contact-job/contact-job-d
 import { db } from '@tech-matters/hrm-core/connection-pool';
 import '../../case/caseValidation';
 import * as conversationMediaApi from '@tech-matters/hrm-core/conversation-media/conversation-media';
-import { chatChannels } from '@tech-matters/hrm-core/contact/channelTypes';
+import { chatChannels } from '@tech-matters/hrm-types';
 import { JOB_MAX_ATTEMPTS } from '@tech-matters/hrm-core/contact-job/contact-job-processor';
 
 import {
@@ -515,7 +515,7 @@ describe('complete retrieve-transcript job type', () => {
       // );
 
       const updateConversationMediaSpy = jest.spyOn(
-        conversationMediaApi,
+        contactApi,
         'updateConversationMediaData',
       );
 

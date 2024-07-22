@@ -15,16 +15,16 @@
  */
 
 import { SafeRouterRequest } from './safe-router';
+import { rulesMap } from './rulesMap';
+import { type InitializedCan, initializeCanForRules } from './initializeCanForRules';
+import { type RulesFile } from './rulesMap';
+import type { Request, Response, NextFunction } from 'express';
+import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
+import type { AccountSID } from '@tech-matters/types';
 
 export { SafeRouter, publicEndpoint } from './safe-router';
-export { rulesMap } from './rulesMap';
-export { Actions, actionsMaps } from './actions';
-
-import { InitializedCan, initializeCanForRules } from './initializeCanForRules';
-import { RulesFile } from './rulesMap';
-import type { Request, Response, NextFunction } from 'express';
-import { TwilioUser } from '@tech-matters/twilio-worker-auth';
-import { AccountSID } from '@tech-matters/types';
+export { type Actions, actionsMaps } from './actions';
+export { rulesMap };
 
 declare global {
   namespace Express {
@@ -71,4 +71,19 @@ export const setupPermissions =
 
 export type RequestWithPermissions = SafeRouterRequest & {
   can: InitializedCan;
+};
+
+export const maxPermissions: {
+  user: TwilioUser;
+  can: () => boolean;
+  permissions: (typeof rulesMap)[keyof typeof rulesMap];
+} = {
+  can: () => true,
+  user: {
+    accountSid: 'ACxxx',
+    workerSid: 'WKxxx',
+    roles: ['supervisor'],
+    isSupervisor: true,
+  },
+  permissions: rulesMap.open,
 };
