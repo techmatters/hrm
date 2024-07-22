@@ -32,7 +32,7 @@ import {
   isS3StoredTranscript,
 } from '@tech-matters/hrm-core/conversation-media/conversation-media';
 
-const MAX_CLEANUP_JOB_RETENTION_DAYS = 365;
+const MAX_CLEANUP_JOB_RETENTION_DAYS = 3650;
 
 /**
  * Delete the twilio channel associated with a completed transcript job
@@ -136,9 +136,7 @@ const getCleanupRetentionDays = async (accountSid): Promise<number | undefined> 
  */
 export const cleanupContactJobs = async (): Promise<void> => {
   try {
-    const accountSids = await getPendingCleanupJobAccountSids(
-      MAX_CLEANUP_JOB_RETENTION_DAYS,
-    );
+    const accountSids = await getPendingCleanupJobAccountSids();
 
     console.log(`Cleaning up contact jobs for accounts:`, accountSids);
 
