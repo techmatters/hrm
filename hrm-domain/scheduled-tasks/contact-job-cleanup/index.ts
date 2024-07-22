@@ -129,7 +129,6 @@ const cleanupContactJob = async (job: ContactJob): Promise<void> => {
  * @returns number of days to retain cleanup jobs
  */
 const getCleanupRetentionDays = async (accountSid): Promise<number | undefined> => {
-  console.log(`/${process.env.NODE_ENV}/hrm/${accountSid}/transcript_retention_days`);
   let ssmRetentionDays: number;
   try {
     ssmRetentionDays =
