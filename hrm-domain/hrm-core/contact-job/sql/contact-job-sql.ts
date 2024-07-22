@@ -20,7 +20,7 @@ export enum ContactJobCleanupStatus {
   NOT_READY = 'not_ready',
   PENDING = 'pending',
   ACTIVE = 'active',
-  COMPLETED = 'completed',
+  // COMPLETE = 'complete', this is not needed since the jobs are removed once they are "cleaned up"
 }
 
 export const ADD_FAILED_ATTEMPT_PAYLOAD = `
@@ -61,7 +61,6 @@ export const PENDING_CLEANUP_JOB_ACCOUNT_SIDS_SQL = `
   WHERE
     "cleanupStatus" = '${ContactJobCleanupStatus.PENDING}'
     AND "completed" IS NOT NULL
-    AND "completed" < (current_timestamp - interval '$<maxCleanupRetentionDays> day')
 `;
 
 export const PULL_DUE_JOBS_SQL = `
