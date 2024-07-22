@@ -191,6 +191,8 @@ describe('publish retrieve-transcript job type', () => {
       return callback as any;
     });
 
+    expect(publishRetrieveContactTranscriptSpy).toHaveBeenCalledTimes(0);
+
     const processorIntervalCallback =
       contactJobProcessor.processContactJobs() as unknown as () => Promise<void>;
 
