@@ -54,8 +54,8 @@ const buildSearchFilters = ({
         field: 'timeOfContact',
         type: 'range',
         ranges: {
-          ...(dateFrom && { lte: new Date(dateFrom).toISOString() }),
-          ...(dateTo && { gte: new Date(dateTo).toISOString() }),
+          ...(dateFrom && { gte: new Date(dateFrom).toISOString() }),
+          ...(dateTo && { lte: new Date(dateTo).toISOString() }),
         },
       } as const),
   ].filter(Boolean);
