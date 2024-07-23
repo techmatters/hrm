@@ -98,7 +98,7 @@ const importService = () => {
               );
             }
           }
-          const { id, lastUpdated } = [...resources].sort((a, b) =>
+          const { id, lastUpdated, importSequenceId } = [...resources].sort((a, b) =>
             compareTimeSequences(
               a.importSequenceId || `${parseISO(a.lastUpdated).valueOf()}-0`,
               b.importSequenceId || `${parseISO(b.lastUpdated).valueOf()}-0`,
@@ -108,6 +108,7 @@ const importService = () => {
             accountSid,
             {
               ...batch,
+              importSequenceId,
               lastProcessedDate: lastUpdated,
               lastProcessedId: id,
             },
