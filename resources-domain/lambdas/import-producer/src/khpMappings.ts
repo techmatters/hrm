@@ -391,6 +391,7 @@ export const KHP_MAPPING_NODE: MappingNode = {
         children: {
           _id: { children: {} },
           objectId: { children: {} },
+          __v: { children: {} },
           '{language}': translatableAttributeMapping(
             'howToAccessSupport/{howToAccessSupportIndex}',
             {
