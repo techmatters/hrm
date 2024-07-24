@@ -475,7 +475,11 @@ export const KHP_MAPPING_NODE: MappingNode = {
       referenceAttributeMapping('primaryLocationCity', 'cities', {
         value: ctx => {
           const { primaryLocationProvince } = ctx.rootResource;
-          return ['CA', primaryLocationProvince, ctx.currentValue].join('/');
+          return [
+            'CA',
+            lookupProvinceCode(primaryLocationProvince),
+            ctx.currentValue,
+          ].join('/');
         },
       }),
       referenceAttributeMapping('primaryLocationRegionCity', 'cities', {
@@ -499,7 +503,11 @@ export const KHP_MAPPING_NODE: MappingNode = {
       referenceAttributeMapping('primaryLocationRegion', 'counties', {
         value: ctx => {
           const { primaryLocationProvince } = ctx.rootResource;
-          return ['CA', primaryLocationProvince, ctx.currentValue].join('/');
+          return [
+            'CA',
+            lookupProvinceCode(primaryLocationProvince),
+            ctx.currentValue,
+          ].join('/');
         },
       }),
     ],
