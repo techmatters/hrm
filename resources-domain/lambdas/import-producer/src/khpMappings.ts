@@ -482,17 +482,21 @@ export const KHP_MAPPING_NODE: MappingNode = {
           ].join('/');
         },
       }),
-      referenceAttributeMapping('primaryLocationRegionCity', 'cities', {
-        value: ctx => {
-          const { primaryLocationProvince, primaryLocationCounty } = ctx.rootResource;
-          return [
-            'CA',
-            primaryLocationProvince,
-            primaryLocationCounty,
-            ctx.currentValue,
-          ].join('/');
+      referenceAttributeMapping(
+        'primaryLocationRegionCity',
+        'country/province/region/city',
+        {
+          value: ctx => {
+            const { primaryLocationProvince, primaryLocationCounty } = ctx.rootResource;
+            return [
+              'CA',
+              lookupProvinceCode(primaryLocationProvince),
+              primaryLocationCounty,
+              ctx.currentValue,
+            ].join('/');
+          },
         },
-      }),
+      ),
     ],
   },
   primaryLocationCounty: {
@@ -500,7 +504,7 @@ export const KHP_MAPPING_NODE: MappingNode = {
       translatableAttributeMapping(siteKey('primaryLocationCounty'), {
         value: ctx => ctx.currentValue,
       }),
-      referenceAttributeMapping('primaryLocationRegion', 'counties', {
+      referenceAttributeMapping('primaryLocationRegion', 'country/province/region', {
         value: ctx => {
           const { primaryLocationProvince } = ctx.rootResource;
           return [
