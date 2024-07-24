@@ -30,6 +30,9 @@ import { IndexPayload } from './payload';
 export {
   HRM_CASES_INDEX_TYPE,
   HRM_CONTACTS_INDEX_TYPE,
+  DocumentType,
+  casePathToContacts,
+  casePathToSections,
 } from './hrmIndexDocumentMappings';
 export {
   IndexMessage,
@@ -51,9 +54,6 @@ export const hrmIndexConfiguration: IndexConfiguration<IndexPayload> = {
 
 export {
   generateESQuery as generateESFilter,
-  GenerateQueryParamsObject,
-  GenerateCaseQueryParams,
-  GenerateContactQueryParams,
+  DocumentTypeQueryParams,
   FILTER_ALL_CLAUSE,
-  casePathToContacts,
 } from './generateElasticsearchQuery';

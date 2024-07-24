@@ -51,6 +51,7 @@ import { RulesFile, TKConditionsSets } from '../permissions/rulesMap';
 import { CaseSectionRecord } from './caseSection/types';
 import { pick } from 'lodash';
 import {
+  DocumentType,
   HRM_CASES_INDEX_TYPE,
   hrmSearchConfiguration,
   type IndexMessage,
@@ -580,7 +581,7 @@ export const generalisedCasesSearch = async (
 
     const { total, items } = await client.search({
       searchParameters: {
-        type: 'case',
+        type: DocumentType.Case,
         searchTerm,
         searchFilters,
         permissionFilters,
