@@ -231,7 +231,7 @@ const generateTranscriptQueriesFromFilters = ({
   searchParameters: SearchParametersContact;
   buildParams?: { parentPath: string };
   queryWrapper?: (
-    p: DocumentTypeQueryParams[DocumentType.Contact],
+    p: DocumentTypeQueryParams[DocumentType],
   ) => DocumentTypeQueryParams[DocumentType];
 }): QueryDslQueryContainer[] => {
   const queries = generateQueriesFromSearchTerms({
@@ -261,7 +261,7 @@ const generateContactsQueriesFromFilters = ({
   searchParameters: SearchParametersContact;
   buildParams?: { parentPath: string };
   queryWrapper?: (
-    p: DocumentTypeQueryParams[DocumentType.Contact],
+    p: DocumentTypeQueryParams[DocumentType],
   ) => DocumentTypeQueryParams[DocumentType];
 }) => {
   const { searchFilters, permissionFilters } = searchParameters;
@@ -367,7 +367,7 @@ const generateCasesQueriesFromFilters = ({
       documentType: DocumentType.Case,
       type: 'nested',
       path: casePathToContacts,
-      innerQuery: p, // typecast to conform TS, only valid parameters should be accept
+      innerQuery: p as DocumentTypeQueryParams[DocumentType.Contact], // typecast to conform TS, only valid parameters should be accept
     }),
     buildParams: { parentPath: casePathToContacts },
   });
@@ -384,11 +384,11 @@ const generateCasesQueriesFromFilters = ({
     field: 'content',
     searchTerm: searchParameters.searchTerm,
     boostFactor: BOOST_FACTORS.case,
-    queryWrapper: (p: DocumentTypeQueryParams[DocumentType.CaseSection]) => ({
+    queryWrapper: p => ({
       documentType: DocumentType.Case,
       type: 'nested',
       path: casePathToSections,
-      innerQuery: p, // typecast to conform TS, only valid parameters should be accept
+      innerQuery: p as DocumentTypeQueryParams[DocumentType.CaseSection], // typecast to conform TS, only valid parameters should be accept
     }),
     parentPath: casePathToSections,
   });
