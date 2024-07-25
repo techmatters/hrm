@@ -501,7 +501,7 @@ export const KHP_MAPPING_NODE: MappingNode = {
   },
   primaryLocationCounty: {
     mappings: [
-      translatableAttributeMapping(siteKey('primaryLocationCounty'), {
+      translatableAttributeMapping('primaryLocationCounty', {
         value: ctx => ctx.currentValue,
       }),
       referenceAttributeMapping('primaryLocationRegion', 'country/province/region', {
