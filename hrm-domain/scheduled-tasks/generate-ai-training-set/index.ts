@@ -76,16 +76,26 @@ export const generate = async (
     const trainingSetJsonStream = contactStream.pipe(
       new Transform({
         objectMode: true,
+        // eslint-disable-next-line @typescript-eslint/no-loop-func
         transform: async function (
           trainingSetContact: TrainingSetContact,
           encoding,
           callback,
         ) {
-          const trainingSetDoc = await attachTranscript(
-            trainingSetContact,
-            shortCode,
-            sourceBucket,
-          );
+          let trainingSetDoc;
+          try {
+            trainingSetDoc = await attachTranscript(
+              trainingSetContact,
+              shortCode,
+              sourceBucket,
+            );
+          } catch (error) {
+            console.info(
+              `No transcript found for contact ${trainingSetContact.contactId} in ${shortCode} bucket. Skipping...`,
+            );
+            callback();
+            return;
+          }
           const docJson = JSON.stringify(trainingSetDoc);
           await uploadTrainingSetDocument(
             trainingSetDoc.contactId,
