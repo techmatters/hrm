@@ -42,6 +42,25 @@ const siteKey = (subsection: string) => (context: FieldMappingContext) => {
  * If the names of the child nodes are dynamic, e.g. one per language, or one per social media channel, the node should be named with a placeholder token, e.g. '{language}' or '{channel}'. This will make the importer process all child data nodes and capture their property under `captures` property of the context object for use generating keys, values & info etc..
  */
 
+const CANADIAN_PROVINCE_NAME_CODE_MAP: Record<string, string> = {
+  Alberta: 'AB',
+  'British Columbia': 'BC',
+  Manitoba: 'MB',
+  'New Brunswick': 'NB',
+  'Newfoundland and Labrador': 'NL',
+  'Northwest Territories': 'NT',
+  'Nova Scotia': 'NS',
+  Nunavut: 'NU',
+  Ontario: 'ON',
+  'Prince Edward Island': 'PE',
+  Quebec: 'QC',
+  Saskatchewan: 'SK',
+  Yukon: 'YT',
+};
+
+const lookupProvinceCode = (provinceName: string): string =>
+  CANADIAN_PROVINCE_NAME_CODE_MAP[provinceName] ?? provinceName;
+
 const KHP_MAPPING_NODE_SITES: { children: MappingNode } = {
   children: {
     '{siteIndex}': {
@@ -103,14 +122,19 @@ const KHP_MAPPING_NODE_SITES: { children: MappingNode } = {
             city: {
               mappings: [
                 referenceAttributeMapping(siteKey('location/city'), 'cities', {
-                  value: ctx => `CA/${ctx.parentValue.province}/${ctx.currentValue}`,
+                  value: ctx =>
+                    `CA/${lookupProvinceCode(ctx.parentValue.province)}/${
+                      ctx.currentValue
+                    }`,
                 }),
                 referenceAttributeMapping(
                   siteKey('location/region-city'),
                   'country/province/region/city',
                   {
                     value: ctx =>
-                      `CA/${ctx.parentValue.province}/${ctx.parentValue.county}/${ctx.currentValue}`,
+                      `CA/${lookupProvinceCode(ctx.parentValue.province)}/${
+                        ctx.parentValue.county
+                      }/${ctx.currentValue}`,
                   },
                 ),
               ],
@@ -124,7 +148,10 @@ const KHP_MAPPING_NODE_SITES: { children: MappingNode } = {
                   siteKey('location/region'),
                   'country/province/region',
                   {
-                    value: ctx => `CA/${ctx.parentValue.province}/${ctx.currentValue}`,
+                    value: ctx =>
+                      `CA/${lookupProvinceCode(ctx.parentValue.province)}/${
+                        ctx.currentValue
+                      }`,
                   },
                 ),
               ],
@@ -133,7 +160,7 @@ const KHP_MAPPING_NODE_SITES: { children: MappingNode } = {
               siteKey('location/province'),
               'provinces',
               {
-                value: ctx => `CA/${ctx.currentValue}`,
+                value: ctx => `CA/${lookupProvinceCode(ctx.currentValue)}`,
               },
             ),
             country: translatableAttributeMapping(siteKey('location/country'), {
@@ -391,6 +418,7 @@ export const KHP_MAPPING_NODE: MappingNode = {
         children: {
           _id: { children: {} },
           objectId: { children: {} },
+          __v: { children: {} },
           '{language}': translatableAttributeMapping(
             'howToAccessSupport/{howToAccessSupportIndex}',
             {
@@ -447,31 +475,43 @@ export const KHP_MAPPING_NODE: MappingNode = {
       referenceAttributeMapping('primaryLocationCity', 'cities', {
         value: ctx => {
           const { primaryLocationProvince } = ctx.rootResource;
-          return ['CA', primaryLocationProvince, ctx.currentValue].join('/');
-        },
-      }),
-      referenceAttributeMapping('primaryLocationRegionCity', 'cities', {
-        value: ctx => {
-          const { primaryLocationProvince, primaryLocationCounty } = ctx.rootResource;
           return [
             'CA',
-            primaryLocationProvince,
-            primaryLocationCounty,
+            lookupProvinceCode(primaryLocationProvince),
             ctx.currentValue,
           ].join('/');
         },
       }),
+      referenceAttributeMapping(
+        'primaryLocationRegionCity',
+        'country/province/region/city',
+        {
+          value: ctx => {
+            const { primaryLocationProvince, primaryLocationCounty } = ctx.rootResource;
+            return [
+              'CA',
+              lookupProvinceCode(primaryLocationProvince),
+              primaryLocationCounty,
+              ctx.currentValue,
+            ].join('/');
+          },
+        },
+      ),
     ],
   },
   primaryLocationCounty: {
     mappings: [
-      translatableAttributeMapping(siteKey('primaryLocationCounty'), {
+      translatableAttributeMapping('primaryLocationCounty', {
         value: ctx => ctx.currentValue,
       }),
-      referenceAttributeMapping('primaryLocationRegion', 'counties', {
+      referenceAttributeMapping('primaryLocationRegion', 'country/province/region', {
         value: ctx => {
           const { primaryLocationProvince } = ctx.rootResource;
-          return ['CA', primaryLocationProvince, ctx.currentValue].join('/');
+          return [
+            'CA',
+            lookupProvinceCode(primaryLocationProvince),
+            ctx.currentValue,
+          ].join('/');
         },
       }),
     ],
@@ -482,7 +522,7 @@ export const KHP_MAPPING_NODE: MappingNode = {
     {
       value: ctx => {
         // TODO: No top level country, assumes always CA?
-        return ['CA', ctx.currentValue].join('/');
+        return ['CA', lookupProvinceCode(ctx.currentValue)].join('/');
       },
     },
   ),

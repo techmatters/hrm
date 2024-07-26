@@ -62,10 +62,10 @@ const main = async () => {
     process.exit(1);
   }
   const accountSid = process.argv[2];
-  const targetFilePath = `./reference-data/khp_cities_20240415_${accountSid}.sql`;
-  const targetJsonCitiesFilePath = `./reference-data/khp_cities_20240415_${accountSid}.json`;
-  const targetJsonRegionsFilePath = `./reference-data/khp_region_20240415_${accountSid}.json`;
-  const targetJsonProvincesFilePath = `./reference-data/khp_provinces_20240415_${accountSid}.json`;
+  const targetFilePath = `./reference-data/khp_cities_20240723_${accountSid}.sql`;
+  const targetJsonCitiesFilePath = `./reference-data/khp_cities_20240723_${accountSid}.json`;
+  const targetJsonRegionsFilePath = `./reference-data/khp_region_20240723_${accountSid}.json`;
+  const targetJsonProvincesFilePath = `./reference-data/khp_provinces_20240723_${accountSid}.json`;
   const sqlFile = fs.createWriteStream(targetFilePath);
 
   const provincesJson: FilterOption[] = [];
@@ -117,20 +117,27 @@ ON CONFLICT DO NOTHING;
 
 
 
-INSERT INTO resources."ResourceReferenceStringAttributeValues" ("accountSid", "list", "id", "value", "language", "info") VALUES ($<accountSid>, 'country/province/region', $<id>, $<regionValue>, 'en', $<regionInfo>)
+INSERT INTO resources."ResourceReferenceStringAttributeValues" ("accountSid", "list", "id", "value", "language", "info") VALUES ($<accountSid>, 'country/province/region', $<regionId>, $<regionValue>, 'en', $<regionInfo>)
 ON CONFLICT DO NOTHING;
-INSERT INTO resources."ResourceReferenceStringAttributeValues" ("accountSid", "list", "id", "value", "language", "info") VALUES ($<accountSid>, 'country/province/region', $<id>, $<regionValue>, 'fr', $<regionInfo>)
+INSERT INTO resources."ResourceReferenceStringAttributeValues" ("accountSid", "list", "id", "value", "language", "info") VALUES ($<accountSid>, 'country/province/region', $<regionId>, $<regionValue>, 'fr', $<regionInfo>)
 ON CONFLICT DO NOTHING;
 
 INSERT INTO resources."ResourceReferenceStringAttributeValues" ("accountSid", "list", "id", "value", "language", "info") VALUES ($<accountSid>, 'country/province/region/city', $<id>, $<value>, 'en', $<info>)
 ON CONFLICT DO NOTHING;
 INSERT INTO resources."ResourceReferenceStringAttributeValues" ("accountSid", "list", "id", "value", "language", "info") VALUES ($<accountSid>, 'country/province/region/city', $<id>, $<value>, 'fr', $<info>)
+ON CONFLICT DO NOTHING;
+INSERT INTO resources."ResourceReferenceStringAttributeValues" ("accountSid", "list", "id", "value", "language", "info") VALUES ($<accountSid>, 'cities', $<legacyId>, $<legacyValue>, 'en', $<info>)
+ON CONFLICT DO NOTHING;
+INSERT INTO resources."ResourceReferenceStringAttributeValues" ("accountSid", "list", "id", "value", "language", "info") VALUES ($<accountSid>, 'cities', $<legacyId>, $<legacyValue>, 'fr', $<info>)
 ON CONFLICT DO NOTHING;`,
       {
         accountSid: process.argv[2],
         id: `CA-${provinceCode}-${region}-${cityEn}-en`,
-        idFr: `CA-${provinceCode}-${region}-${cityEn}-fr`,
+        legacyId: `CA-${provinceCode}-${cityEn}-en`,
+        regionId: `CA-${provinceCode}-${region}-en`,
+        regionIdFr: `CA-${provinceCode}-${region}-fr`,
         value: `CA/${provinceCode}/${region}/${cityEn}`,
+        legacyValue: `CA/${provinceCode}/${cityEn}`,
         regionValue: `CA/${provinceCode}/${region}`,
         info: { name: cityEn, region, province },
         regionInfo: { name: region, province },
