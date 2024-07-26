@@ -17,7 +17,7 @@
     "start:generate-ai-training-set": "cd dist && node ./generateAiTrainingSet",
     "start:profile-flags-cleanup": "cd dist && node ./profileFlagsCleanup",
     "migrate": "run-s test:service:ci:migrate",
-    "seed": "RDS_PASSWORD=postgres node ./db-seed",
+    "seed": "cross-env RDS_PASSWORD=postgres node ./db-seed",
     "docker:build": "docker build -t hrm-service -f Dockerfile ../../",
     "docker:compose:test:up": "docker compose -f ../../test-support/docker-compose-service-test.yml up -d",
     "docker:compose:test:down": "docker compose -f ../../test-support/docker-compose-service-test.yml down",
