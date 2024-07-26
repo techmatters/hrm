@@ -467,7 +467,7 @@ describe('searchContacts', () => {
     const searchSpy = jest
       .spyOn(contactDb, 'search')
       .mockResolvedValue({ count: 0, rows: [] });
-    await searchContacts(accountSid, body, { limit: 10, offset: 1000 }, ALWAYS_CAN);
+    await searchContacts(accountSid, body, { limit: '10', offset: '1000' }, ALWAYS_CAN);
 
     expect(searchSpy).toHaveBeenCalledWith(
       accountSid,
@@ -529,7 +529,7 @@ describe('search contacts permissions', () => {
         onlyDataContacts: true,
         counselor: counselorSearchParam,
       };
-      const limitOffset = { limit: 10, offset: 0 };
+      const limitOffset = { limit: '10', offset: '0' };
       const can = () => true;
       const roles = [];
       const user = {

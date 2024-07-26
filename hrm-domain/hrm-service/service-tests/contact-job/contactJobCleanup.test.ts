@@ -24,7 +24,6 @@ import {
   mockSuccessfulTwilioAuthentication,
 } from '@tech-matters/testing';
 import { createContactJob } from '@tech-matters/hrm-core/contact-job/contact-job-data-access';
-import { isS3StoredTranscriptPending } from '@tech-matters/hrm-core/conversation-media/conversation-media';
 import { S3ContactMediaType } from '@tech-matters/hrm-core/conversation-media/conversation-media';
 import { getById as getContactById } from '@tech-matters/hrm-core/contact/contactDataAccess';
 import { updateConversationMediaData } from '@tech-matters/hrm-core/contact/contactService';
@@ -43,6 +42,7 @@ const server = getServer();
 const request = getRequest(server);
 
 import type { Contact } from '@tech-matters/hrm-core/contact/contactDataAccess';
+import { clearAllTables } from '../dbCleanup';
 
 let twilioSpy: jest.SpyInstance;
 
@@ -57,11 +57,12 @@ const completionPayload = {
 
 const backDateJob = (jobId: string) =>
   db.oneOrNone(
-    `UPDATE "ContactJobs" SET "completed" = (current_timestamp - interval '366 day') WHERE "id" = $1 RETURNING *`,
+    `UPDATE "ContactJobs" SET "completed" = (current_timestamp - interval '3660 day') WHERE "id" = $1 RETURNING *`,
     [jobId],
   );
 
 beforeAll(async () => {
+  await clearAllTables();
   process.env.TWILIO_AUTH_TOKEN = 'mockAuthToken';
   process.env.TWILIO_CLIENT_USE_ENV_AUTH_TOKEN = 'true';
   const client = await getClient({ accountSid });
@@ -74,8 +75,7 @@ beforeAll(async () => {
 });
 
 afterEach(async () => {
-  await db.none(`DELETE FROM "ContactJobs"`);
-  await db.none(`DELETE FROM "Contacts"`);
+  await clearAllTables();
 });
 
 afterAll(async () => {
@@ -105,9 +105,12 @@ describe('cleanupContactJobs', () => {
       });
     });
 
-    let job = await db.oneOrNone('SELECT * FROM "ContactJobs" WHERE "contactId" = $1', [
-      contact.id,
-    ]);
+    const jobs = await db.manyOrNone(
+      'SELECT * FROM "ContactJobs" WHERE "contactId" = $1',
+      [contact.id],
+    );
+    expect(jobs).toHaveLength(1);
+    let [job] = jobs;
     job = await completeContactJob({ id: job.id, completionPayload });
     job = await db.oneOrNone(
       'UPDATE "ContactJobs" SET "completed" = NULL WHERE "id" = $1 RETURNING *',
@@ -141,21 +144,12 @@ describe('cleanupContactJobs', () => {
       ]);
     const contact = mediaAddRes.body as Contact;
 
-    await db.tx(connection => {
-      createContactJob(connection)({
-        jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
-        resource: contact,
-        additionalPayload: {
-          conversationMediaId: contact.conversationMedia?.find(
-            isS3StoredTranscriptPending,
-          )?.id!,
-        },
-      });
-    });
-
-    let job = await db.oneOrNone('SELECT * FROM "ContactJobs" WHERE "contactId" = $1', [
-      contact.id,
-    ]);
+    const jobs = await db.manyOrNone(
+      'SELECT * FROM "ContactJobs" WHERE "contactId" = $1',
+      [contact.id],
+    );
+    expect(jobs).toHaveLength(1);
+    let [job] = jobs;
 
     job = await completeContactJob({ id: job.id, completionPayload });
     job = await backDateJob(job.id);
@@ -185,18 +179,6 @@ describe('cleanupContactJobs', () => {
       ]);
 
     const contact = mediaAddRes.body as Contact;
-
-    await db.tx(connection => {
-      createContactJob(connection)({
-        jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
-        resource: contact,
-        additionalPayload: {
-          conversationMediaId: contact.conversationMedia?.find(
-            isS3StoredTranscriptPending,
-          )?.id!,
-        },
-      });
-    });
 
     let job = await db.oneOrNone('SELECT * FROM "ContactJobs" WHERE "contactId" = $1', [
       contact.id,

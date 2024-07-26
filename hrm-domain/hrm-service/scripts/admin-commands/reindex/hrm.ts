@@ -118,7 +118,7 @@ export const handler = async ({
     }
 
     if (cases) {
-      const url = getAdminV0URL(internalResourcesUrl, accountSid, '/cases/reindexCases');
+      const url = getAdminV0URL(internalResourcesUrl, accountSid, '/cases/reindex');
       const response = await fetch(url, {
         method: 'POST',
         headers: {

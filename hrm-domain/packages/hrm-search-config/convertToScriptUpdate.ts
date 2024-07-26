@@ -44,8 +44,18 @@ const convertContactToCaseScriptUpdate = (
       };
 
       const scriptUpdate: Script = {
-        source:
-          'def replaceContact(Map newContact, List contacts) { contacts.removeIf(contact -> contact.id == newContact.id); contacts.add(newContact); } replaceContact(params.newContact, ctx._source.contacts);',
+        source: `
+          def replaceContact(Map newContact, Map _source) {
+            if (_source.containsKey('contacts') && _source.contacts != null) {
+              _source.contacts.removeIf(contact -> contact.id == newContact.id);
+              _source.contacts.add(newContact);
+            } else {
+              _source.contacts = [newContact];
+            }
+          }
+
+          replaceContact(params.newContact, ctx._source);
+        `,
         params: {
           newContact: contactDocument,
         },

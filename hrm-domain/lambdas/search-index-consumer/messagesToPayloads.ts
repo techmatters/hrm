@@ -22,11 +22,7 @@ import {
   type IndexCaseMessage,
 } from '@tech-matters/hrm-search-config';
 import { assertExhaustive, type AccountSID } from '@tech-matters/types';
-import {
-  ExportTranscript,
-  isChatChannel,
-  isS3StoredTranscript,
-} from '@tech-matters/hrm-types';
+import { ExportTranscript, isS3StoredTranscript } from '@tech-matters/hrm-types';
 import type { MessageWithMeta, MessagesByAccountSid } from './messages';
 
 /**
@@ -63,18 +59,15 @@ const contactIndexingInputData = async (
 ): Promise<ContactIndexingInputData> => {
   let transcript: string | null = null;
 
-  if (m.message.contact.channel && isChatChannel(m.message.contact.channel)) {
-    const transcriptEntry =
-      m.message.contact.conversationMedia?.find(isS3StoredTranscript);
+  const transcriptEntry = m.message.contact.conversationMedia?.find(isS3StoredTranscript);
 
-    if (transcriptEntry) {
-      const { location } = transcriptEntry.storeTypeSpecificData;
-      const { bucket, key } = location || {};
-      if (bucket && key) {
-        const transcriptString = await getS3Object({ bucket, key });
-        const parsedTranscript: ExportTranscript = JSON.parse(transcriptString);
-        transcript = parsedTranscript.messages.map(({ body }) => body).join('\n');
-      }
+  if (transcriptEntry) {
+    const { location } = transcriptEntry.storeTypeSpecificData;
+    const { bucket, key } = location || {};
+    if (bucket && key) {
+      const transcriptString = await getS3Object({ bucket, key });
+      const parsedTranscript: ExportTranscript = JSON.parse(transcriptString);
+      transcript = parsedTranscript.messages.map(({ body }) => body).join('\n');
     }
   }
 

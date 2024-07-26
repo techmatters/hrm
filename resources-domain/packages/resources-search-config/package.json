@@ -6,12 +6,13 @@
   "author": "",
   "license": "AGPL",
   "dependencies": {
+    "@elastic/elasticsearch": "^8.7.0",
     "@tech-matters/elasticsearch-client": "^1.0.0",
-    "@tech-matters/types": "^1.0.0",
-    "@elastic/elasticsearch": "^8.7.0"
+    "@tech-matters/types": "^1.0.0"
   },
   "devDependencies": {
-    "@tsconfig/node16": "^1.0.3"
+    "@tsconfig/node16": "^1.0.3",
+    "jest-each": "^29.7.0"
   },
   "scripts": {
     "test:unit": "jest tests/unit"

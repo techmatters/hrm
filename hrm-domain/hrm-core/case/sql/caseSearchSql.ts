@@ -375,5 +375,5 @@ export const selectCaseSearchByProfileId = selectSearchCaseBaseQuery(
 );
 
 export const selectCasesByIds = selectSearchCaseBaseQuery(
-  `WHERE cases."accountSid" = $<accountSid> AND cases."id" = ANY($<caseIds::INTEGER[]>)`,
+  `WHERE cases."accountSid" = $<accountSid> AND cases."id" = ANY($<caseIds>::INTEGER[])`,
 );

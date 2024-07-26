@@ -23,7 +23,6 @@ import * as contactJobApi from '@tech-matters/hrm-core/contact-job/contact-job-d
 import { db } from '@tech-matters/hrm-core/connection-pool';
 import '../../case/caseValidation';
 import * as conversationMediaApi from '@tech-matters/hrm-core/conversation-media/conversation-media';
-import { chatChannels } from '@tech-matters/hrm-types';
 import { JOB_MAX_ATTEMPTS } from '@tech-matters/hrm-core/contact-job/contact-job-processor';
 
 import {
@@ -165,14 +164,10 @@ const createChatContact = async (channel: string, startedTimestamp: number) => {
 };
 
 describe('publish retrieve-transcript job type', () => {
-  each(
-    chatChannels.map(channel => ({
-      channel,
-    })),
-  ).test('$channel pending job is published when considered due', async ({ channel }) => {
+  test('$channel pending job is published when considered due', async () => {
     const startedTimestamp = Date.now();
     const [contact, retrieveContactTranscriptJob] = await createChatContact(
-      channel,
+      'carrier pigeon',
       startedTimestamp,
     );
 
@@ -190,6 +185,8 @@ describe('publish retrieve-transcript job type', () => {
     jest.spyOn(timers, 'setInterval').mockImplementation(callback => {
       return callback as any;
     });
+
+    expect(publishRetrieveContactTranscriptSpy).toHaveBeenCalledTimes(0);
 
     const processorIntervalCallback =
       contactJobProcessor.processContactJobs() as unknown as () => Promise<void>;
@@ -238,229 +235,208 @@ describe('publish retrieve-transcript job type', () => {
     expect(updatedRetrieveContactTranscriptJob.numberOfAttempts).toBe(1);
   });
 
-  each(
-    chatChannels.map(channel => ({
-      channel,
-    })),
-  ).test(
-    '$channel pending job is not re-published if last attempted before retry interval',
-    async ({ channel }) => {
-      const startedTimestamp = Date.now();
-      const [contact, retrieveContactTranscriptJob] = await createChatContact(
-        channel,
+  test('$channel pending job is not re-published if last attempted before retry interval', async () => {
+    const startedTimestamp = Date.now();
+    const [contact, retrieveContactTranscriptJob] = await createChatContact(
+      'carrier pigeon',
+      startedTimestamp,
+    );
+
+    const publishDueContactJobsSpy = jest.spyOn(
+      contactJobPublish,
+      'publishDueContactJobs',
+    );
+    const publishRetrieveContactTranscriptSpy = jest.spyOn(
+      contactJobPublish,
+      'publishRetrieveContactTranscript',
+    );
+
+    // Mock setInterval to return the internal cb instead than it's interval id, so we can call it when we want
+    // const setIntervalSpy =
+    jest.spyOn(timers, 'setInterval').mockImplementation(callback => {
+      return callback as any;
+    });
+
+    const processorIntervalCallback =
+      contactJobProcessor.processContactJobs() as unknown as () => Promise<void>;
+
+    await processorIntervalCallback();
+    await processorIntervalCallback();
+
+    // Publish face is invoked
+    expect(publishDueContactJobsSpy).toHaveBeenCalledTimes(2);
+    // And previous job was considered due
+    expect(publishRetrieveContactTranscriptSpy).toHaveBeenCalledTimes(1);
+    expect(publishRetrieveContactTranscriptSpy).toHaveBeenCalledWith({
+      ...retrieveContactTranscriptJob,
+      lastAttempt: expect.toParseAsDate(),
+      numberOfAttempts: 1,
+      resource: {
+        ...contact,
+        conversationMedia: contact.conversationMedia?.map(cm => ({
+          ...cm,
+          createdAt: expect.toParseAsDate(cm.createdAt),
+          updatedAt: expect.toParseAsDate(cm.updatedAt),
+        })),
+        createdAt: expect.toParseAsDate(contact.createdAt),
+        finalizedAt: expect.toParseAsDate(contact.finalizedAt),
+        updatedAt: expect.toParseAsDate(contact.updatedAt),
+        timeOfContact: expect.toParseAsDate(contact.timeOfContact),
+      },
+    });
+
+    // Check the updated job in the DB
+    const updatedRetrieveContactTranscriptJob = await selectJobById(
+      retrieveContactTranscriptJob.id,
+      accountSid,
+    );
+
+    if (!updatedRetrieveContactTranscriptJob)
+      throw new Error('updatedRetrieveContactTranscriptJob is null!');
+
+    expect(updatedRetrieveContactTranscriptJob.completed).toBeNull();
+    expect(
+      isAfter(
+        parseISO(updatedRetrieveContactTranscriptJob.lastAttempt),
         startedTimestamp,
-      );
-
-      const publishDueContactJobsSpy = jest.spyOn(
-        contactJobPublish,
-        'publishDueContactJobs',
-      );
-      const publishRetrieveContactTranscriptSpy = jest.spyOn(
-        contactJobPublish,
-        'publishRetrieveContactTranscript',
-      );
-
-      // Mock setInterval to return the internal cb instead than it's interval id, so we can call it when we want
-      // const setIntervalSpy =
-      jest.spyOn(timers, 'setInterval').mockImplementation(callback => {
-        return callback as any;
-      });
-
-      const processorIntervalCallback =
-        contactJobProcessor.processContactJobs() as unknown as () => Promise<void>;
-
-      await processorIntervalCallback();
-      await processorIntervalCallback();
-
-      // Publish face is invoked
-      expect(publishDueContactJobsSpy).toHaveBeenCalledTimes(2);
-      // And previous job was considered due
-      expect(publishRetrieveContactTranscriptSpy).toHaveBeenCalledTimes(1);
-      expect(publishRetrieveContactTranscriptSpy).toHaveBeenCalledWith({
-        ...retrieveContactTranscriptJob,
-        lastAttempt: expect.toParseAsDate(),
-        numberOfAttempts: 1,
-        resource: {
-          ...contact,
-          conversationMedia: contact.conversationMedia?.map(cm => ({
-            ...cm,
-            createdAt: expect.toParseAsDate(cm.createdAt),
-            updatedAt: expect.toParseAsDate(cm.updatedAt),
-          })),
-          createdAt: expect.toParseAsDate(contact.createdAt),
-          finalizedAt: expect.toParseAsDate(contact.finalizedAt),
-          updatedAt: expect.toParseAsDate(contact.updatedAt),
-          timeOfContact: expect.toParseAsDate(contact.timeOfContact),
-        },
-      });
-
-      // Check the updated job in the DB
-      const updatedRetrieveContactTranscriptJob = await selectJobById(
-        retrieveContactTranscriptJob.id,
-        accountSid,
-      );
-
-      if (!updatedRetrieveContactTranscriptJob)
-        throw new Error('updatedRetrieveContactTranscriptJob is null!');
-
-      expect(updatedRetrieveContactTranscriptJob.completed).toBeNull();
-      expect(
-        isAfter(
-          parseISO(updatedRetrieveContactTranscriptJob.lastAttempt),
-          startedTimestamp,
-        ),
-      ).toBeTruthy();
-      expect(updatedRetrieveContactTranscriptJob.numberOfAttempts).toBe(1);
-    },
-  );
+      ),
+    ).toBeTruthy();
+    expect(updatedRetrieveContactTranscriptJob.numberOfAttempts).toBe(1);
+  });
 });
 
 describe('complete retrieve-transcript job type', () => {
-  each(
-    chatChannels.map(channel => ({
-      channel,
-    })),
-  ).test(
-    '$channel successful completed adds resulting transcript url and marked as complete',
-    async ({ channel }) => {
-      const startedTimestamp = Date.now();
-      const [contact, retrieveContactTranscriptJob] = await createChatContact(
-        channel,
-        startedTimestamp,
-      );
+  test('$channel successful completed adds resulting transcript url and marked as complete', async () => {
+    const startedTimestamp = Date.now();
+    const [contact, retrieveContactTranscriptJob] = await createChatContact(
+      'carrier pigeon',
+      startedTimestamp,
+    );
 
-      const completedPayload: CompletedContactJobBody = {
-        accountSid: retrieveContactTranscriptJob.accountSid,
-        channelSid: contact.channelSid,
-        contactId: contact.id,
-        conversationMediaId: contact.conversationMedia?.find(
-          conversationMediaApi.isS3StoredTranscript,
-        )?.id,
-        filePath: 'the-path-file-sent',
-        jobId: retrieveContactTranscriptJob.id,
-        jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
-        serviceSid: contact.serviceSid,
-        taskId: contact.taskId,
-        twilioWorkerId: contact.twilioWorkerId,
-        attemptPayload: {
-          bucket: 'some-url-here',
-          key: 'some-url-here',
-        },
-        attemptNumber: 1,
-        attemptResult: ContactJobAttemptResult.SUCCESS,
-      };
+    const completedPayload: CompletedContactJobBody = {
+      accountSid: retrieveContactTranscriptJob.accountSid,
+      channelSid: contact.channelSid,
+      contactId: contact.id,
+      conversationMediaId: contact.conversationMedia?.find(
+        conversationMediaApi.isS3StoredTranscript,
+      )?.id,
+      filePath: 'the-path-file-sent',
+      jobId: retrieveContactTranscriptJob.id,
+      jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
+      serviceSid: contact.serviceSid,
+      taskId: contact.taskId,
+      twilioWorkerId: contact.twilioWorkerId,
+      attemptPayload: {
+        bucket: 'some-url-here',
+        key: 'some-url-here',
+      },
+      attemptNumber: 1,
+      attemptResult: ContactJobAttemptResult.SUCCESS,
+    };
 
-      // const pollCompletedContactJobsSpy =
-      jest.spyOn(SQSClient, 'pollCompletedContactJobsFromQueue').mockImplementation(() =>
-        Promise.resolve({
-          $metadata: {},
-          Messages: [
-            {
-              ReceiptHandle: retrieveContactTranscriptJob.id.toString(),
-              Body: JSON.stringify(completedPayload),
-            },
-          ],
-        }),
-      );
+    // const pollCompletedContactJobsSpy =
+    jest.spyOn(SQSClient, 'pollCompletedContactJobsFromQueue').mockImplementation(() =>
+      Promise.resolve({
+        $metadata: {},
+        Messages: [
+          {
+            ReceiptHandle: retrieveContactTranscriptJob.id.toString(),
+            Body: JSON.stringify(completedPayload),
+          },
+        ],
+      }),
+    );
 
-      jest
-        .spyOn(SQSClient, 'deleteCompletedContactJobsFromQueue')
-        .mockImplementation(() => Promise.resolve() as any);
+    jest
+      .spyOn(SQSClient, 'deleteCompletedContactJobsFromQueue')
+      .mockImplementation(() => Promise.resolve() as any);
 
-      const processCompletedRetrieveContactTranscriptSpy = jest.spyOn(
-        contactJobComplete,
-        'processCompletedRetrieveContactTranscript',
-      );
-      const publishDueContactJobsSpy = jest.spyOn(
-        contactJobPublish,
-        'publishDueContactJobs',
-      );
-      const publishRetrieveContactTranscriptSpy = jest.spyOn(
-        contactJobPublish,
-        'publishRetrieveContactTranscript',
-      );
+    const processCompletedRetrieveContactTranscriptSpy = jest.spyOn(
+      contactJobComplete,
+      'processCompletedRetrieveContactTranscript',
+    );
+    const publishDueContactJobsSpy = jest.spyOn(
+      contactJobPublish,
+      'publishDueContactJobs',
+    );
+    const publishRetrieveContactTranscriptSpy = jest.spyOn(
+      contactJobPublish,
+      'publishRetrieveContactTranscript',
+    );
 
-      // Mock setInterval to return the internal cb instead than it's interval id, so we can call it when we want
-      // const setIntervalSpy =
-      jest.spyOn(timers, 'setInterval').mockImplementation(callback => {
-        return callback as any;
-      });
+    // Mock setInterval to return the internal cb instead than it's interval id, so we can call it when we want
+    // const setIntervalSpy =
+    jest.spyOn(timers, 'setInterval').mockImplementation(callback => {
+      return callback as any;
+    });
 
-      const processorIntervalCallback =
-        contactJobProcessor.processContactJobs() as unknown as () => Promise<void>;
+    const processorIntervalCallback =
+      contactJobProcessor.processContactJobs() as unknown as () => Promise<void>;
 
-      await processorIntervalCallback();
+    await processorIntervalCallback();
 
-      const expectedConversationMedia = {
-        type: 'transcript',
-        location: {
-          bucket: 'some-url-here',
-          key: 'some-url-here',
-        },
-      };
+    const expectedConversationMedia = {
+      type: 'transcript',
+      location: {
+        bucket: 'some-url-here',
+        key: 'some-url-here',
+      },
+    };
 
-      // Expect that proper code flow was executed
-      expect(processCompletedRetrieveContactTranscriptSpy).toHaveBeenCalledWith(
-        completedPayload,
-      );
+    // Expect that proper code flow was executed
+    expect(processCompletedRetrieveContactTranscriptSpy).toHaveBeenCalledWith(
+      completedPayload,
+    );
 
-      // Publish face is invoked
-      expect(publishDueContactJobsSpy).toHaveBeenCalledTimes(1);
-      // But previous job is completed hence not retrieved as due
-      expect(publishRetrieveContactTranscriptSpy).toHaveBeenCalledTimes(0);
+    // Publish face is invoked
+    expect(publishDueContactJobsSpy).toHaveBeenCalledTimes(1);
+    // But previous job is completed hence not retrieved as due
+    expect(publishRetrieveContactTranscriptSpy).toHaveBeenCalledTimes(0);
 
-      // Check the completed job in the DB
-      const updatedRetrieveContactTranscriptJob = await selectJobById(
-        retrieveContactTranscriptJob.id,
-        accountSid,
-      );
+    // Check the completed job in the DB
+    const updatedRetrieveContactTranscriptJob = await selectJobById(
+      retrieveContactTranscriptJob.id,
+      accountSid,
+    );
 
-      if (!updatedRetrieveContactTranscriptJob)
-        throw new Error('updatedRetrieveContactTranscriptJob is null!');
+    if (!updatedRetrieveContactTranscriptJob)
+      throw new Error('updatedRetrieveContactTranscriptJob is null!');
 
-      expect(
-        isAfter(
-          parseISO(updatedRetrieveContactTranscriptJob.completed),
-          startedTimestamp,
-        ),
-      ).toBeTruthy();
-      expect(updatedRetrieveContactTranscriptJob.completionPayload).toMatchObject({
-        message: 'Job processed successfully',
-        value: { bucket: 'some-url-here', key: 'some-url-here' },
-      });
+    expect(
+      isAfter(parseISO(updatedRetrieveContactTranscriptJob.completed), startedTimestamp),
+    ).toBeTruthy();
+    expect(updatedRetrieveContactTranscriptJob.completionPayload).toMatchObject({
+      message: 'Job processed successfully',
+      value: { bucket: 'some-url-here', key: 'some-url-here' },
+    });
 
-      // Check the updated contact in the DB
-      const updatedConversationMedias = await db.task(async t =>
-        t.manyOrNone(
-          `SELECT * FROM "ConversationMedias" WHERE "contactId" = ${contact.id}`,
-        ),
-      );
+    // Check the updated contact in the DB
+    const updatedConversationMedias = await db.task(async t =>
+      t.manyOrNone(
+        `SELECT * FROM "ConversationMedias" WHERE "contactId" = ${contact.id}`,
+      ),
+    );
 
-      expect(updatedConversationMedias).toHaveLength(1);
-      expect(
-        updatedConversationMedias?.find(conversationMediaApi.isS3StoredTranscript)
-          ?.storeTypeSpecificData,
-      ).toMatchObject(expectedConversationMedia);
+    expect(updatedConversationMedias).toHaveLength(1);
+    expect(
+      updatedConversationMedias?.find(conversationMediaApi.isS3StoredTranscript)
+        ?.storeTypeSpecificData,
+    ).toMatchObject(expectedConversationMedia);
+  });
+
+  each([
+    {
+      expectMarkedAsComplete: false,
     },
-  );
-
-  each(
-    chatChannels.flatMap(channel => [
-      {
-        channel,
-        expectMarkedAsComplete: false,
-      },
-      {
-        channel,
-        expectMarkedAsComplete: true,
-      },
-    ]),
-  ).test(
+    {
+      expectMarkedAsComplete: true,
+    },
+  ]).test(
     '$channel completed job with failure appends the failure payload with expectMarkedAsComplete "$job.expectMarkedAsComplete"',
-    async ({ channel, expectMarkedAsComplete }) => {
+    async ({ expectMarkedAsComplete }) => {
       const startedTimestamp = Date.now();
       const [contact, retrieveContactTranscriptJob] = await createChatContact(
-        channel,
+        'carrier pigeon',
         startedTimestamp,
       );
 
