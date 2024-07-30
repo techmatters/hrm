@@ -28,6 +28,7 @@ import {
 import { AccountSID, FlatResource } from '@tech-matters/types';
 import each from 'jest-each';
 import {
+  failingId,
   khpResourceWithAncestorTaxonmies,
   khpResourceWithoutSites,
   khpResourceWithSites,
@@ -935,6 +936,10 @@ describe('Mapping valid sample resources should produce no warnings', () => {
     {
       description: 'KHP resource after API update 2',
       resource: khpSampleResource_20240418_2,
+    },
+    {
+      description: 'KHP resource failing id after API update 2',
+      resource: failingId,
     },
   ];
 

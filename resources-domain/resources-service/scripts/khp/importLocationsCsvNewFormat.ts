@@ -125,13 +125,19 @@ ON CONFLICT DO NOTHING;
 INSERT INTO resources."ResourceReferenceStringAttributeValues" ("accountSid", "list", "id", "value", "language", "info") VALUES ($<accountSid>, 'country/province/region/city', $<id>, $<value>, 'en', $<info>)
 ON CONFLICT DO NOTHING;
 INSERT INTO resources."ResourceReferenceStringAttributeValues" ("accountSid", "list", "id", "value", "language", "info") VALUES ($<accountSid>, 'country/province/region/city', $<id>, $<value>, 'fr', $<info>)
+ON CONFLICT DO NOTHING;
+INSERT INTO resources."ResourceReferenceStringAttributeValues" ("accountSid", "list", "id", "value", "language", "info") VALUES ($<accountSid>, 'cities', $<legacyId>, $<legacyValue>, 'en', $<info>)
+ON CONFLICT DO NOTHING;
+INSERT INTO resources."ResourceReferenceStringAttributeValues" ("accountSid", "list", "id", "value", "language", "info") VALUES ($<accountSid>, 'cities', $<legacyId>, $<legacyValue>, 'fr', $<info>)
 ON CONFLICT DO NOTHING;`,
       {
         accountSid: process.argv[2],
         id: `CA-${provinceCode}-${region}-${cityEn}-en`,
+        legacyId: `CA-${provinceCode}-${cityEn}-en`,
         regionId: `CA-${provinceCode}-${region}-en`,
         regionIdFr: `CA-${provinceCode}-${region}-fr`,
         value: `CA/${provinceCode}/${region}/${cityEn}`,
+        legacyValue: `CA/${provinceCode}/${cityEn}`,
         regionValue: `CA/${provinceCode}/${region}`,
         info: { name: cityEn, region, province },
         regionInfo: { name: region, province },
