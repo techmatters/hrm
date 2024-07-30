@@ -208,7 +208,7 @@ const generateQueriesFromId = <TDoc extends DocumentType>({
         }),
       );
     })
-    .filter(Boolean);
+    .filter(q => q !== null);
 
   return queries;
 };
