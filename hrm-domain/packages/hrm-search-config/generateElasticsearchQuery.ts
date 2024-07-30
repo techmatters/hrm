@@ -26,6 +26,30 @@ import {
 } from './hrmIndexDocumentMappings';
 import { assertExhaustive } from '@tech-matters/types';
 
+const BOOST_FACTORS = {
+  id: 10,
+  transcript: 1,
+  contact: 2,
+  case: 3,
+};
+const MIN_SCORE = 0.1;
+
+export const FILTER_ALL_CLAUSE: QueryDslQueryContainer[][] = [
+  [
+    {
+      bool: {
+        must_not: { match_all: {} },
+      },
+    },
+  ],
+];
+
+export const MATCH_ALL_CLAUSE: QueryDslQueryContainer[] = [
+  {
+    match_all: {},
+  },
+];
+
 type GenerateTDocQueryParams<TDoc extends DocumentType> = GenerateQueryParams<TDoc> & {
   documentType: TDoc; // used as tag (tagged union)
 };
@@ -36,7 +60,7 @@ export type DocumentTypeQueryParams = {
   [DocumentType.Case]: GenerateTDocQueryParams<DocumentType.Case>;
 };
 
-type GenerateTermQueryParams = { type: 'term'; term: string };
+type GenerateTermQueryParams = { type: 'term'; term: string; boost?: number };
 type GenerateRangeQueryParams = {
   type: 'range';
   ranges: { lt?: string; lte?: string; gt?: string; gte?: string };
@@ -72,22 +96,6 @@ type GenerateQueryParams<TDoc extends DocumentType> =
   | GenerateMustNotQueryParams<TDoc>
   | GenerateNestedQueryParams<TDoc>;
 
-export const FILTER_ALL_CLAUSE: QueryDslQueryContainer[][] = [
-  [
-    {
-      bool: {
-        must_not: { match_all: {} },
-      },
-    },
-  ],
-];
-
-export const MATCH_ALL_CLAUSE: QueryDslQueryContainer[] = [
-  {
-    match_all: {},
-  },
-];
-
 const getFieldName = <T extends {}>(p: { field: keyof T; parentPath?: string }) => {
   const prefix = p.parentPath ? `${p.parentPath}.` : '';
 
@@ -102,7 +110,7 @@ export const generateESQuery = <TDoc extends DocumentType>(
     case 'term': {
       return {
         term: {
-          [getFieldName(p)]: p.term,
+          [getFieldName(p)]: { value: p.term, boost: p.boost },
         },
       };
     }
@@ -164,6 +172,47 @@ type SearchParametersContact = {
   };
 } & SearchPagination;
 
+const generateQueriesFromId = <TDoc extends DocumentType>({
+  searchTerm,
+  documentType,
+  parentPath,
+  boostFactor,
+  queryWrapper = p => p,
+}: {
+  searchTerm: string;
+  boostFactor: number;
+  queryWrapper?: (
+    p: DocumentTypeQueryParams[DocumentType],
+  ) => DocumentTypeQueryParams[DocumentType];
+} & {
+  documentType: TDoc;
+  parentPath?: string;
+}): QueryDslQueryContainer[] => {
+  const terms = searchTerm.split(' ');
+
+  const queries = terms
+    .map(term => {
+      // Ignore terms that are not entirely a number, as that breaks term queries against integer fields
+      if (Number.isNaN(Number(term))) {
+        return null;
+      }
+
+      return generateESQuery(
+        queryWrapper({
+          documentType,
+          type: 'term',
+          term,
+          boost: boostFactor * BOOST_FACTORS.id,
+          field: 'id' as any, // typecast to conform TS, only valid parameters should be accept
+          parentPath,
+        }),
+      );
+    })
+    .filter(Boolean);
+
+  return queries;
+};
+
 const generateQueriesFromSearchTerms = <TDoc extends DocumentType>({
   searchTerm,
   documentType,
@@ -213,13 +262,6 @@ const generateQueriesFromSearchTerms = <TDoc extends DocumentType>({
 
   return queries;
 };
-
-const BOOST_FACTORS = {
-  transcript: 1,
-  contact: 2,
-  case: 3,
-};
-const minScore = 0.1;
 
 const generateTranscriptQueriesFromFilters = ({
   transcriptFilters,
@@ -282,14 +324,23 @@ const generateContactsQueriesFromFilters = ({
     queryWrapper,
   });
 
-  const queries = generateQueriesFromSearchTerms({
-    documentType: DocumentType.Contact,
-    field: 'content',
-    searchTerm: searchParameters.searchTerm,
-    parentPath: buildParams.parentPath,
-    boostFactor: BOOST_FACTORS.contact,
-    queryWrapper,
-  });
+  const queries = [
+    ...generateQueriesFromSearchTerms({
+      documentType: DocumentType.Contact,
+      field: 'content',
+      searchTerm: searchParameters.searchTerm,
+      parentPath: buildParams.parentPath,
+      boostFactor: BOOST_FACTORS.contact,
+      queryWrapper,
+    }),
+    ...generateQueriesFromId({
+      documentType: DocumentType.Contact,
+      searchTerm: searchParameters.searchTerm,
+      parentPath: buildParams.parentPath,
+      boostFactor: BOOST_FACTORS.contact,
+      queryWrapper,
+    }),
+  ];
 
   const contactQueries = permissionFilters.contactFilters.map(contactFilter => ({
     bool: {
@@ -321,7 +372,7 @@ const generateContactsQuery = ({
     highlight: {
       fields: { '*': {} },
     },
-    min_score: minScore,
+    min_score: MIN_SCORE,
     from: pagination.start,
     size: pagination.limit,
     query: {
@@ -372,12 +423,19 @@ const generateCasesQueriesFromFilters = ({
     buildParams: { parentPath: casePathToContacts },
   });
 
-  const queries = generateQueriesFromSearchTerms({
-    documentType: DocumentType.Case,
-    field: 'content',
-    searchTerm: searchParameters.searchTerm,
-    boostFactor: BOOST_FACTORS.case,
-  });
+  const queries = [
+    ...generateQueriesFromSearchTerms({
+      documentType: DocumentType.Case,
+      field: 'content',
+      searchTerm: searchParameters.searchTerm,
+      boostFactor: BOOST_FACTORS.case,
+    }),
+    ...generateQueriesFromId({
+      documentType: DocumentType.Case,
+      searchTerm: searchParameters.searchTerm,
+      boostFactor: BOOST_FACTORS.case,
+    }),
+  ];
 
   const sectionsQueries = generateQueriesFromSearchTerms({
     documentType: DocumentType.CaseSection,
@@ -425,7 +483,7 @@ const generateCasesQuery = ({
     highlight: {
       fields: { '*': {} },
     },
-    min_score: minScore,
+    min_score: MIN_SCORE,
     from: pagination.start,
     size: pagination.limit,
     query: {
