@@ -218,15 +218,15 @@ jobs:
           SLACK_BOT_TOKEN: ${{ env.GITHUB_ACTIONS_SLACK_BOT_TOKEN }}
         if: ${{ inputs.send-slack-message != 'false' }}
       
-      # Update deployment matrix with region as identifier
+      # Update deployment matrix with region as identifier and lambda path as service repo
       - name: Update deployment matrix
         id: update-deployment-matrix
-        uses: techmatters/flex-plugins/.github/actions/deployment-matrix@CHI-2829-deploy-matrix
+        uses: techmatters/flex-plugins/.github/actions/deployment-matrix@master
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ matrix.region }}
+          aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
           identifier: ${{ matrix.region }}
           environment: ${{ inputs.environment }}
-          service_repo: 'hrm-lambdas'
+          service_repo: ${{ inputs.lambda_path }}
           version_tag: ${{ github.ref_name }}
