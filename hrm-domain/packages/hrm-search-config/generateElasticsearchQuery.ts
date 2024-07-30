@@ -194,7 +194,7 @@ const generateQueriesFromId = <TDoc extends DocumentType>({
     .map(term => {
       // Ignore terms that are not entirely a number, as that breaks term queries against integer fields
       if (Number.isNaN(Number(term))) {
-        return null as QueryDslQueryContainer;
+        return null;
       }
 
       return generateESQuery(
@@ -208,7 +208,7 @@ const generateQueriesFromId = <TDoc extends DocumentType>({
         }),
       );
     })
-    .filter(q => q !== null);
+    .filter(q => q !== null) as QueryDslQueryContainer[]; // this typecast is awful but Array.filter does not infers that nulls are being removed
 
   return queries;
 };
