@@ -545,7 +545,13 @@ export const generalisedContactSearch = async (
       ctx,
     );
 
-    return newOk({ data: { count: total, contacts } });
+    const order = contactIds.reduce(
+      (accum, idVal, idIndex) => ({ ...accum, [idVal]: idIndex }),
+      {},
+    );
+    const sorted = contacts.sort((a, b) => order[a.id] - order[b.id]);
+
+    return newOk({ data: { count: total, contacts: sorted } });
   } catch (err) {
     return newErr({
       message: err instanceof Error ? err.message : String(err),

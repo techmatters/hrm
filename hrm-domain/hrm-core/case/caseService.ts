@@ -599,7 +599,13 @@ export const generalisedCasesSearch = async (
       ctx,
     );
 
-    return newOk({ data: { count: total, cases } });
+    const order = caseIds.reduce(
+      (accum, idVal, idIndex) => ({ ...accum, [idVal]: idIndex }),
+      {},
+    );
+    const sorted = cases.sort((a, b) => order[a.id] - order[b.id]);
+
+    return newOk({ data: { count: total, cases: sorted } });
   } catch (err) {
     return newErr({
       message: err instanceof Error ? err.message : String(err),
