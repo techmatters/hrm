@@ -63,7 +63,7 @@ jobs:
           echo "build_lambda_dir=$build_lambda_dir" >> $GITHUB_ENV
 
       - name: Build Lambda Docker Images
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ./
           file: ./lambdas/Dockerfile
@@ -79,7 +79,7 @@ jobs:
       - name: Checkout Branch
         uses: actions/checkout@v4
       - name: Build Service Docker Image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ./
           file: ./hrm-domain/hrm-service/Dockerfile
