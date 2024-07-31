@@ -116,6 +116,8 @@ const insertSampleCases = async ({
       toCreate,
       accounts[i % accounts.length],
       workers[i % workers.length],
+      undefined,
+      true,
     );
     let connectedContact: contactDb.Contact;
     if (contactNames[i % contactNames.length]) {
@@ -209,7 +211,13 @@ describe('/cases route', () => {
       let createdContact: contactDb.Contact;
 
       beforeEach(async () => {
-        createdCase = await caseApi.createCase(case1, accountSid, workerSid);
+        createdCase = await caseApi.createCase(
+          case1,
+          accountSid,
+          workerSid,
+          undefined,
+          true,
+        );
         const contactToCreate = fillNameAndPhone({
           ...contact1,
           twilioWorkerId: workerSid,
@@ -364,7 +372,13 @@ describe('/cases route', () => {
         description: `without viewExternalTranscript excludes transcripts`,
       },
     ]).test(`with connectedContacts $description`, async ({ expectTranscripts }) => {
-      const createdCase = await caseApi.createCase(case1, accountSid, workerSid);
+      const createdCase = await caseApi.createCase(
+        case1,
+        accountSid,
+        workerSid,
+        undefined,
+        true,
+      );
       let createdContact = await createContact(
         accountSid,
         workerSid,
@@ -485,14 +499,32 @@ describe('/cases route', () => {
         const searchTestRunStart = new Date().toISOString();
 
         beforeEach(async () => {
-          createdCase1 = await caseApi.createCase(case1, accountSid, workerSid);
+          createdCase1 = await caseApi.createCase(
+            case1,
+            accountSid,
+            workerSid,
+            undefined,
+            true,
+          );
           createdCase1 = await populateCaseSections(
             createdCase1.id,
             households,
             accountSid,
           );
-          createdCase2 = await caseApi.createCase(case1, accountSid, workerSid);
-          createdCase3 = await caseApi.createCase(case1, accountSid, workerSid);
+          createdCase2 = await caseApi.createCase(
+            case1,
+            accountSid,
+            workerSid,
+            undefined,
+            true,
+          );
+          createdCase3 = await caseApi.createCase(
+            case1,
+            accountSid,
+            workerSid,
+            undefined,
+            true,
+          );
           createdCase3 = await populateCaseSections(
             createdCase3.id,
             perpetrators,
@@ -612,6 +644,7 @@ describe('/cases route', () => {
             'closed',
             accountSid,
             ALWAYS_CAN,
+            true,
           );
           const response = await request
             .post(subRoute)
@@ -1269,6 +1302,7 @@ describe('/cases route', () => {
         workerSid,
         mocks.withTaskId,
         ALWAYS_CAN,
+        true,
       );
       createdContact = await addConversationMediaToContact(
         accountSid,

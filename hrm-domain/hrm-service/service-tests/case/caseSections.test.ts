@@ -54,7 +54,7 @@ afterEach(async () => {
 let targetCase: CaseService;
 
 beforeEach(async () => {
-  targetCase = await createCase({}, accountSid, workerSid);
+  targetCase = await createCase({}, accountSid, workerSid, undefined, true);
 });
 
 const getRoutePath = (caseId: string | number, sectionType: string, sectionId?: string) =>

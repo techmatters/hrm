@@ -119,11 +119,29 @@ describe('/cases route', () => {
     let subRoute;
 
     beforeEach(async () => {
-      cases.blank = await caseApi.createCase(case1, accountSid, workerSid);
-      cases.populated = await caseApi.createCase(casePopulated, accountSid, workerSid);
+      cases.blank = await caseApi.createCase(
+        case1,
+        accountSid,
+        workerSid,
+        undefined,
+        true,
+      );
+      cases.populated = await caseApi.createCase(
+        casePopulated,
+        accountSid,
+        workerSid,
+        undefined,
+        true,
+      );
       subRoute = id => `${route}/${id}`;
 
-      const caseToBeDeleted = await caseApi.createCase(case2, accountSid, workerSid);
+      const caseToBeDeleted = await caseApi.createCase(
+        case2,
+        accountSid,
+        workerSid,
+        undefined,
+        true,
+      );
       nonExistingCaseId = caseToBeDeleted.id;
       await caseDb.deleteById(caseToBeDeleted.id, accountSid);
     });
@@ -177,7 +195,13 @@ describe('/cases route', () => {
           description: `without viewExternalTranscript excludes transcripts`,
         },
       ]).test(`with connectedContacts $description`, async ({ expectTranscripts }) => {
-        const createdCase = await caseApi.createCase(case1, accountSid, workerSid);
+        const createdCase = await caseApi.createCase(
+          case1,
+          accountSid,
+          workerSid,
+          undefined,
+          true,
+        );
         let createdContact = await createContact(
           accountSid,
           workerSid,

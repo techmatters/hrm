@@ -1,0 +1,11 @@
+{
+  "name": "@tech-matters/transcript-tests",
+  "version": "1.0.0",
+  "dependencies": {
+    "dockerode": "^4.0.2",
+    "@tech-matters/s3-client": "^1.0.0",
+    "@tech-matters/sqs-client": "^1.0.0"
+  },
+  "devDependencies": {
+  }
+}

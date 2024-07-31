@@ -80,7 +80,7 @@ describe('isCaseContactOwner condition', () => {
     for (const user of [workerSid, otherWorkerSid] as WorkerSID[]) {
       const newCases = await Promise.all(
         caseDescriptions[user].map(desc =>
-          createCase({ info: { summary: desc } }, accountSid, user),
+          createCase({ info: { summary: desc } }, accountSid, user, undefined, true),
         ),
       );
       const [, caseWithOtherContact, caseWithOwnedContact] = newCases;
@@ -112,12 +112,14 @@ describe('isCaseContactOwner condition', () => {
           ownedContact.id.toString(),
           caseWithOwnedContact.id.toString(),
           ALWAYS_CAN,
+          true,
         ),
         connectContactToCase(
           accountSid,
           otherContact.id.toString(),
           caseWithOtherContact.id.toString(),
           ALWAYS_CAN,
+          true,
         ),
       ]);
       sampleCases.push(...newCases);

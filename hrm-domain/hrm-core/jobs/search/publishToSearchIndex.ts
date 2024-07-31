@@ -44,7 +44,7 @@ const publishToSearchIndex = async ({
     });
   } catch (err) {
     console.error(
-      `Error trying to send message to SQS queue ${PENDING_INDEX_QUEUE_SSM_PATH}`,
+      `Error trying to send message to SQS queue store in SSM parameter ${PENDING_INDEX_QUEUE_SSM_PATH}`,
       err,
     );
   }

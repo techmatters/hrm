@@ -39,7 +39,11 @@ import {
 import './case/caseValidation';
 import * as contactApi from '@tech-matters/hrm-core/contact/contactService';
 import * as contactDb from '@tech-matters/hrm-core/contact/contactDataAccess';
-import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
+import {
+  mockingProxy,
+  mockSsmParameters,
+  mockSuccessfulTwilioAuthentication,
+} from '@tech-matters/testing';
 import { selectSingleContactByTaskId } from '@tech-matters/hrm-core/contact/sql/contact-get-sql';
 import { ruleFileActionOverride } from './permissions-overrides';
 import * as csamReportApi from '@tech-matters/hrm-core/csam-report/csam-report';
@@ -49,22 +53,23 @@ import * as profilesDB from '@tech-matters/hrm-core/profile/profileDataAccess';
 import * as profilesService from '@tech-matters/hrm-core/profile/profileService';
 
 import { isErr, HrmAccountId } from '@tech-matters/types';
-import {
-  cleanupCases,
-  cleanupContacts,
-  cleanupContactsJobs,
-  cleanupCsamReports,
-  cleanupReferrals,
-  deleteContactById,
-  deleteJobsByContactId,
-} from './contact/dbCleanup';
+import { deleteContactById, deleteJobsByContactId } from './contact/dbCleanup';
 import { addConversationMediaToContact } from '@tech-matters/hrm-core/contact/contactService';
 import { NewContactRecord } from '@tech-matters/hrm-core/contact/sql/contactInsertSql';
 import supertest from 'supertest';
+import sqslite from 'sqslite';
+import { clearAllTables } from './dbCleanup';
+import { SQS } from 'aws-sdk';
+
+const SEARCH_INDEX_SQS_QUEUE_NAME = 'mock-search-index-queue';
 
 useOpenRules();
 const server = getServer();
 const request = getRequest(server);
+const sqsService = sqslite({});
+const sqsClient = new SQS({
+  endpoint: `http://localhost:${process.env.LOCAL_SQS_PORT}`,
+});
 
 /**
  *
@@ -114,28 +119,42 @@ const deleteIdentifierById = (id: number, accountSid: string) =>
     `),
   );
 
+let testQueueUrl: URL;
+
 beforeAll(async () => {
+  await clearAllTables();
   await mockingProxy.start();
+  const mockttp = await mockingProxy.mockttpServer();
   await mockSuccessfulTwilioAuthentication(workerSid);
-  await cleanupCsamReports();
-  await cleanupReferrals();
-  await cleanupContactsJobs();
-  await cleanupContacts();
-  await cleanupCases();
+  await mockSsmParameters(mockttp, [
+    { pathPattern: /.*/, valueGenerator: () => SEARCH_INDEX_SQS_QUEUE_NAME },
+  ]);
+  await sqsService.listen({ port: parseInt(process.env.LOCAL_SQS_PORT!) });
 });
 
 afterAll(async () => {
-  await cleanupCsamReports();
-  await cleanupReferrals();
-  await cleanupContactsJobs();
-  await cleanupContacts();
-  await cleanupCases();
-  await mockingProxy.stop();
+  await clearAllTables();
+  await Promise.all([mockingProxy.stop(), sqsService.close()]);
   server.close();
 });
 
-beforeEach(() => {
+beforeEach(async () => {
   jest.clearAllMocks();
+  const { QueueUrl } = await sqsClient
+    .createQueue({
+      QueueName: SEARCH_INDEX_SQS_QUEUE_NAME,
+    })
+    .promise();
+
+  testQueueUrl = new URL(QueueUrl!);
+});
+
+afterEach(async () => {
+  await sqsClient
+    .deleteQueue({
+      QueueUrl: testQueueUrl.toString(),
+    })
+    .promise();
 });
 
 describe('/contacts route', () => {
@@ -460,11 +479,7 @@ describe('/contacts route', () => {
 
       beforeAll(async () => {
         // Clean what's been created so far
-        await cleanupCsamReports();
-        await cleanupReferrals();
-        await cleanupContactsJobs();
-        await cleanupContacts();
-        await cleanupCases();
+        await clearAllTables();
 
         // Create CSAM Reports
         const csamReportId1 = 'csam-report-id-1';
@@ -930,6 +945,7 @@ describe('/contacts route', () => {
           workerSid,
           withTaskId,
           { user: newTwilioUser(accountSid, workerSid, []), can: () => true },
+          true,
         );
         const createdAtDate = parseISO(createdContact.createdAt);
         createdContact = await addConversationMediaToContact(
@@ -994,6 +1010,7 @@ describe('/contacts route', () => {
           workerSid,
           contactToCreate,
           { user: newTwilioUser(accountSid, workerSid, []), can: () => true },
+          true,
         );
 
         const newReport1 = await csamReportApi.createCSAMReport(

@@ -47,10 +47,22 @@ beforeAll(clearAllTables);
 beforeEach(async () => {
   await mockingProxy.start();
   await mockSuccessfulTwilioAuthentication(workerSid);
-  cases.blank = await caseApi.createCase(case1, accountSid, workerSid);
-  cases.populated = await caseApi.createCase(casePopulated, accountSid, workerSid);
+  cases.blank = await caseApi.createCase(case1, accountSid, workerSid, undefined, true);
+  cases.populated = await caseApi.createCase(
+    casePopulated,
+    accountSid,
+    workerSid,
+    undefined,
+    true,
+  );
 
-  const caseToBeDeleted = await caseApi.createCase(case2, accountSid, workerSid);
+  const caseToBeDeleted = await caseApi.createCase(
+    case2,
+    accountSid,
+    workerSid,
+    undefined,
+    true,
+  );
   nonExistingCaseId = caseToBeDeleted.id;
   await caseDb.deleteById(caseToBeDeleted.id, accountSid);
 });

@@ -54,6 +54,7 @@ export const createCaseSection = async (
   sectionType: string,
   newSection: NewCaseSection,
   workerSid: string,
+  skipSearchIndex = false,
 ): Promise<CaseSection> => {
   const nowISO = new Date().toISOString();
   const record: CaseSectionRecord = {
@@ -69,8 +70,10 @@ export const createCaseSection = async (
 
   const created = await create()(record);
 
-  // trigger index operation but don't await for it
-  indexCaseInSearchIndex({ accountSid, caseId: parseInt(caseId, 10) });
+  if (skipSearchIndex) {
+    // trigger index operation but don't await for it
+    indexCaseInSearchIndex({ accountSid, caseId: parseInt(caseId, 10) });
+  }
 
   return sectionRecordToSection(created);
 };
@@ -82,6 +85,7 @@ export const replaceCaseSection = async (
   sectionId: string,
   newSection: NewCaseSection,
   workerSid: string,
+  skipSearchIndex = false,
 ): Promise<CaseSection> => {
   const nowISO = new Date().toISOString();
 
@@ -99,8 +103,10 @@ export const replaceCaseSection = async (
     record,
   );
 
-  // trigger index operation but don't await for it
-  indexCaseInSearchIndex({ accountSid, caseId: parseInt(caseId, 10) });
+  if (skipSearchIndex) {
+    // trigger index operation but don't await for it
+    indexCaseInSearchIndex({ accountSid, caseId: parseInt(caseId, 10) });
+  }
 
   return sectionRecordToSection(updated);
 };
@@ -165,6 +171,7 @@ export const deleteCaseSection = async (
   sectionType: string,
   sectionId: string,
   { user }: { user: TwilioUser },
+  skipSearchIndex = false,
 ): Promise<CaseSection | undefined> => {
   const deleted = await deleteById()(
     accountSid,
@@ -174,8 +181,10 @@ export const deleteCaseSection = async (
     user.workerSid,
   );
 
-  // trigger index operation but don't await for it
-  indexCaseInSearchIndex({ accountSid, caseId: parseInt(caseId, 10) });
+  if (skipSearchIndex) {
+    // trigger index operation but don't await for it
+    indexCaseInSearchIndex({ accountSid, caseId: parseInt(caseId, 10) });
+  }
 
   return sectionRecordToSection(deleted);
 };

@@ -107,6 +107,7 @@ const createContact = async (
       serviceSid: 'ISxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
     },
     ALWAYS_CAN,
+    true,
   );
 };
 
