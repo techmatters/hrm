@@ -19,6 +19,7 @@ import { HrmAccountId } from './HrmAccountId';
 
 export enum ContactJobType {
   RETRIEVE_CONTACT_TRANSCRIPT = 'retrieve-transcript',
+  SCRUB_CONTACT_TRANSCRIPT = 'scrub-transcript',
 }
 
 type ContactJobMessageCommons = {
