@@ -80,11 +80,13 @@ export const processCompletedContactJob = async (
 };
 
 export const getAttemptNumber = (
-  completedJob: CompletedContactJobBody,
+  completedJob: CompletedContactJobBody | CompletedContactJobBodyFailure,
   contactJob: ContactJobRecord,
 ) => completedJob.attemptNumber ?? contactJob.numberOfAttempts;
 
-export const getContactJobOrFail = async (completedJob: CompletedContactJobBody) => {
+export const getContactJobOrFail = async (
+  completedJob: CompletedContactJobBody | CompletedContactJobBodyFailure,
+) => {
   const contactJob = await getContactJobById(completedJob.jobId);
 
   if (!contactJob) {
