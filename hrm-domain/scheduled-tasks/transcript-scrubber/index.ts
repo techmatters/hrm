@@ -102,21 +102,14 @@ const pollQueue = async (): Promise<boolean> => {
     return false;
   }
   const parsedPendingMessage = JSON.parse(message.Body);
-  const {
-    originalLocation: { bucket, key },
-  } = JSON.parse(message.Body);
+  const { bucket, key } = JSON.parse(message.Body);
   console.log(`Scrubbing transcript: ${key}`);
   const scrubbedKey = await scrubS3Transcript(bucket, key);
   await sendSqsMessage({
     queueUrl: COMPLETED_TRANSCRIPT_SQS_QUEUE_URL,
-    message: JSON.stringify({
-      ...parsedPendingMessage,
-      scrubbedLocation: { key: scrubbedKey, bucket },
-    }),
+    message: JSON.stringify({ ...parsedPendingMessage, scrubbedKey }),
   });
-  console.log(
-    `Successfully scrubbed transcript: ${key}, scrubbed version at ${scrubbedKey}`,
-  );
+  console.log(`Scrubbed transcript: ${key}, scrubbed version at ${scrubbedKey}`);
   return true;
 };
 

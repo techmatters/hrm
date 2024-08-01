@@ -20,11 +20,7 @@ import { putS3Object } from '@tech-matters/s3-client';
 
 import { ContactJobProcessorError } from '@tech-matters/job-errors';
 import { getSsmParameter } from '@tech-matters/ssm-cache';
-import {
-  ContactJobAttemptResult,
-  ContactJobType,
-  PublishRetrieveContactTranscript,
-} from '@tech-matters/types';
+import { ContactJobAttemptResult } from '@tech-matters/types';
 import { exportTranscript } from './exportTranscript';
 
 import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
@@ -48,9 +44,7 @@ const hrmEnv = process.env.NODE_ENV;
 //   },
 // ];
 
-const processRetrieveTranscriptRecord = async (
-  message: PublishRetrieveContactTranscript,
-) => {
+const processRecord = async (message: PublishToContactJobsTopicParams) => {
   const authToken = await getSsmParameter(
     `/${hrmEnv}/twilio/${message.accountSid}/auth_token`,
   );
@@ -107,9 +101,7 @@ export const processRecordWithoutException = async (
 ): Promise<void> => {
   const message = JSON.parse(sqsRecord.body);
   try {
-    if (message.jobType === ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT) {
-      await processRetrieveTranscriptRecord(message);
-    }
+    await processRecord(message);
   } catch (err) {
     console.error(new ContactJobProcessorError('Failed to process record'), err);
 
