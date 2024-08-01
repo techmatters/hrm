@@ -21,7 +21,11 @@ import {
 } from '@tech-matters/sqs-client';
 import { getSsmParameter } from '../config/ssmCache';
 
-import type { PublishToContactJobsTopicParams } from '@tech-matters/types';
+import type {
+  CompletedContactJobBody,
+  PublishToContactJobsTopicParams,
+} from '@tech-matters/types';
+import { ContactJob } from './contact-job-data-access';
 
 const COMPLETED_QUEUE_SSM_PATH = `/${process.env.NODE_ENV}/${
   process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
@@ -29,6 +33,9 @@ const COMPLETED_QUEUE_SSM_PATH = `/${process.env.NODE_ENV}/${
 const JOB_QUEUE_SSM_PATH_BASE = `/${process.env.NODE_ENV}/${
   process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
 }/sqs/jobs/contact/queue-url-`;
+const SCRUB_TRANSCRIPT_SSM_PATH = `/${process.env.NODE_ENV}/${
+  process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
+}/sqs/jobs/contact/queue-scrub-transcript`;
 
 export const pollCompletedContactJobsFromQueue = async (): ReturnType<
   typeof receiveSqsMessage
@@ -67,6 +74,21 @@ export const publishToContactJobs = async (params: PublishToContactJobsTopicPara
     return await sendSqsMessage({
       queueUrl,
       message: JSON.stringify(params),
+    });
+  } catch (err) {
+    console.error('Error trying to send message to SQS queue', err);
+  }
+};
+
+export const scrubCompletedContactJobsFromQueue = async (
+  job: CompletedContactJobBody | ContactJob,
+) => {
+  try {
+    const queueUrl = await getSsmParameter(SCRUB_TRANSCRIPT_SSM_PATH);
+
+    return await sendSqsMessage({
+      queueUrl,
+      message: JSON.stringify(job),
     });
   } catch (err) {
     console.error('Error trying to send message to SQS queue', err);
