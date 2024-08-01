@@ -71,8 +71,13 @@ const request = getRequest(server);
  * @param {(() => Promise<any>)[]} ps
  * @returns
  */
-const resolveSequentially = ps =>
-  ps.reduce((p, v) => p.then(a => v.then(r => a.concat([r]))), Promise.resolve([]));
+const resolveSequentially = async (ps: Promise<unknown>[]) => {
+  const ret = [];
+  for (const p of ps) {
+    ret.push(await p);
+  }
+  return ret;
+};
 
 // eslint-disable-next-line @typescript-eslint/no-shadow
 const getContactByTaskId = (taskId: string, accountSid: HrmAccountId) =>
@@ -807,7 +812,8 @@ describe('/contacts route', () => {
             const { contacts, count } = response.body;
             expect(count).toBe(2);
 
-            const [c2, c1] = contacts; // result is sorted DESC
+            const c1 = contacts.find(c => c.id === createdContacts[0].id);
+            const c2 = contacts.find(c => c.id === createdContacts[1].id);
             expect(c1.rawJson).toStrictEqual(contact1.rawJson);
             expect(c2.rawJson).toStrictEqual(contact2.rawJson);
             // Test the association
