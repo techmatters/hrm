@@ -17,7 +17,7 @@
 import { format } from 'date-fns';
 import { ContactJob, RetrieveContactTranscriptJob } from './contact-job-data-access';
 import { ContactJobPollerError } from './contact-job-error';
-import { publishToContactJobs } from './client-sqs';
+import { publishToContactJobs, scrubCompletedContactJobsFromQueue } from './client-sqs';
 import { ContactJobType } from '@tech-matters/types';
 import { assertExhaustive } from '@tech-matters/types';
 
@@ -63,6 +63,9 @@ export const publishDueContactJobs = async (
         switch (dueJob.jobType) {
           case ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT: {
             return publishRetrieveContactTranscript(dueJob);
+          }
+          case ContactJobType.SCRUB_CONTACT_TRANSCRIPT: {
+            return scrubCompletedContactJobsFromQueue(dueJob);
           }
           // TODO: remove the as never typecast when we have 2 or more job types. TS complains if we remove it now.
           default:

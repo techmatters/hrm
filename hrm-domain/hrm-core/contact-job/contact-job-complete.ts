@@ -180,13 +180,13 @@ export const pollAndProcessCompletedContactJobs = async (jobMaxAttempts: number)
           // I am not sure if I did this rught, but I am supposed to call the createContactJob and
           // pass the additionalPayload
           const contact = await getById(completedJob.accountSid, completedJob.contactId);
-          await createContactJob(completedJob)({
+          await createContactJob()({
             jobType: ContactJobType.SCRUB_CONTACT_TRANSCRIPT,
             resource: contact,
             additionalPayload: {
               originalLocation: {
-                bucket: completedJob.filePath, // this is not right, how do I fetch the bucket url?,
-                key: completedJob.filePath, // this is not right, how do I fetch the key?
+                bucket: completedJob.attemptPayload.bucket,
+                key: completedJob.attemptPayload.key,
               },
             },
           });

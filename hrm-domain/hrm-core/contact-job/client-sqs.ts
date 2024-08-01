@@ -25,6 +25,7 @@ import type {
   CompletedContactJobBody,
   PublishToContactJobsTopicParams,
 } from '@tech-matters/types';
+import { ContactJob } from './contact-job-data-access';
 
 const COMPLETED_QUEUE_SSM_PATH = `/${process.env.NODE_ENV}/${
   process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
@@ -79,13 +80,8 @@ export const publishToContactJobs = async (params: PublishToContactJobsTopicPara
   }
 };
 
-// I have crrate the scrubCompletedContactJobsFromQueue function that gets the
-// SSM params and post to message to the SQS queue
-
-// I have also created the SCRUB_TRANSCRIPT_SSM_PATH but that would be added via Terraform, right?
-
 export const scrubCompletedContactJobsFromQueue = async (
-  job: CompletedContactJobBody,
+  job: CompletedContactJobBody | ContactJob,
 ) => {
   try {
     const queueUrl = await getSsmParameter(SCRUB_TRANSCRIPT_SSM_PATH);
