@@ -70,7 +70,7 @@ export const createCaseSection = async (
 
   const created = await create()(record);
 
-  if (skipSearchIndex) {
+  if (!skipSearchIndex) {
     // trigger index operation but don't await for it
     indexCaseInSearchIndex({ accountSid, caseId: parseInt(caseId, 10) });
   }
@@ -103,7 +103,7 @@ export const replaceCaseSection = async (
     record,
   );
 
-  if (skipSearchIndex) {
+  if (!skipSearchIndex) {
     // trigger index operation but don't await for it
     indexCaseInSearchIndex({ accountSid, caseId: parseInt(caseId, 10) });
   }
@@ -181,7 +181,7 @@ export const deleteCaseSection = async (
     user.workerSid,
   );
 
-  if (skipSearchIndex) {
+  if (!skipSearchIndex) {
     // trigger index operation but don't await for it
     indexCaseInSearchIndex({ accountSid, caseId: parseInt(caseId, 10) });
   }

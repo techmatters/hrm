@@ -384,12 +384,14 @@ describe('/cases route', () => {
         workerSid,
         mocks.withTaskId,
         ALWAYS_CAN,
+        true,
       );
       createdContact = await addConversationMediaToContact(
         accountSid,
         createdContact.id.toString(),
         mocks.conversationMedia,
         ALWAYS_CAN,
+        true,
       );
       await connectContactToCase(
         accountSid,
@@ -399,6 +401,7 @@ describe('/cases route', () => {
           user: newTwilioUser(accountSid, workerSid, []),
           can: () => true,
         },
+        true,
       );
 
       useOpenRules();
@@ -1296,7 +1299,13 @@ describe('/cases route', () => {
         description: `without viewExternalTranscript excludes transcripts`,
       },
     ]).test(`with connectedContacts $description`, async ({ expectTranscripts }) => {
-      const createdCase = await caseApi.createCase(case1, accountSid, workerSid);
+      const createdCase = await caseApi.createCase(
+        case1,
+        accountSid,
+        workerSid,
+        undefined,
+        true,
+      );
       let createdContact = await createContact(
         accountSid,
         workerSid,
@@ -1309,6 +1318,7 @@ describe('/cases route', () => {
         createdContact.id.toString(),
         mocks.conversationMedia,
         { user: newTwilioUser(accountSid, workerSid, []), can: () => true },
+        true,
       );
       await connectContactToCase(
         accountSid,
@@ -1318,6 +1328,7 @@ describe('/cases route', () => {
           user: newTwilioUser(accountSid, workerSid, []),
           can: () => true,
         },
+        true,
       );
       if (expectTranscripts) {
         console.log(createdContact);

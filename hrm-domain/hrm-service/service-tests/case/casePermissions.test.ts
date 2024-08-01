@@ -103,6 +103,7 @@ describe('isCaseContactOwner condition', () => {
               conversationDuration: 0,
             },
             ALWAYS_CAN,
+            true,
           ),
         ),
       );
@@ -287,6 +288,7 @@ describe('Time based condition', () => {
         accountSid,
         workerSid,
         createdAt,
+        true,
       );
       sampleCases.push(newCase);
     }

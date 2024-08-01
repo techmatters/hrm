@@ -29,7 +29,11 @@ import { CaseService } from '@tech-matters/hrm-core/case/caseService';
 import * as caseDb from '@tech-matters/hrm-core/case/caseDataAccess';
 import { convertCaseInfoToExpectedInfo } from './case/caseValidation';
 
-import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
+import {
+  mockingProxy,
+  mockSsmParameters,
+  mockSuccessfulTwilioAuthentication,
+} from '@tech-matters/testing';
 import * as mocks from './mocks';
 import { ruleFileActionOverride } from './permissions-overrides';
 import { headers, getRequest, getServer, setRules, useOpenRules } from './server';
@@ -37,6 +41,8 @@ import { newTwilioUser } from '@tech-matters/twilio-worker-auth';
 import { isS3StoredTranscript } from '@tech-matters/hrm-core/conversation-media/conversation-media';
 import { ALWAYS_CAN } from './mocks';
 import { casePopulated } from './mocks';
+import { setupTestQueues } from './sqs';
+const SEARCH_INDEX_SQS_QUEUE_NAME = 'mock-search-index-queue';
 
 useOpenRules();
 const server = getServer();
@@ -56,6 +62,10 @@ beforeAll(async () => {
 
 beforeEach(async () => {
   await mockSuccessfulTwilioAuthentication(workerSid);
+  const mockttp = await mockingProxy.mockttpServer();
+  await mockSsmParameters(mockttp, [
+    { pathPattern: /.*/, valueGenerator: () => SEARCH_INDEX_SQS_QUEUE_NAME },
+  ]);
 });
 
 // eslint-disable-next-line @typescript-eslint/no-shadow
@@ -75,6 +85,8 @@ const deleteJobsByContactId = (contactId: number, accountSid: string) =>
       WHERE "contactId" = ${contactId} AND "accountSid" = '${accountSid}';
     `),
   );
+
+setupTestQueues([SEARCH_INDEX_SQS_QUEUE_NAME]);
 
 describe('/cases route', () => {
   const route = `/v0/accounts/${accountSid}/cases`;

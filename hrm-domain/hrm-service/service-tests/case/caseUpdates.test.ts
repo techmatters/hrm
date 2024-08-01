@@ -25,12 +25,19 @@ import { convertCaseInfoToExpectedInfo } from './caseValidation';
 import { isBefore } from 'date-fns';
 
 // const each = require('jest-each').default;
-import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
+import {
+  mockingProxy,
+  mockSsmParameters,
+  mockSuccessfulTwilioAuthentication,
+} from '@tech-matters/testing';
 import * as mocks from '../mocks';
 import { headers, getRequest, getServer, useOpenRules } from '../server';
 import { ALWAYS_CAN, casePopulated } from '../mocks';
 import { pick } from 'lodash';
 import { clearAllTables } from '../dbCleanup';
+import { setupTestQueues } from '../sqs';
+
+const SEARCH_INDEX_SQS_QUEUE_NAME = 'mock-search-index-queue';
 
 useOpenRules();
 const server = getServer();
@@ -47,6 +54,10 @@ beforeAll(clearAllTables);
 beforeEach(async () => {
   await mockingProxy.start();
   await mockSuccessfulTwilioAuthentication(workerSid);
+  const mockttp = await mockingProxy.mockttpServer();
+  await mockSsmParameters(mockttp, [
+    { pathPattern: /.*/, valueGenerator: () => SEARCH_INDEX_SQS_QUEUE_NAME },
+  ]);
   cases.blank = await caseApi.createCase(case1, accountSid, workerSid, undefined, true);
   cases.populated = await caseApi.createCase(
     casePopulated,
@@ -71,6 +82,8 @@ afterEach(async () => {
   await mockingProxy.stop();
   await clearAllTables();
 });
+
+setupTestQueues([SEARCH_INDEX_SQS_QUEUE_NAME]);
 
 describe('PUT /cases/:id/status route', () => {
   const subRoute = id => `${route}/${id}/status`;

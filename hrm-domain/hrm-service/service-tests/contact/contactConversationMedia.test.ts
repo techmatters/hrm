@@ -25,18 +25,19 @@ import {
   NewConversationMedia,
   S3ContactMediaType,
 } from '@tech-matters/hrm-core/conversation-media/conversation-media-data-access';
-import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import {
-  cleanupCases,
-  cleanupContacts,
-  cleanupContactsJobs,
-  cleanupCsamReports,
-  cleanupReferrals,
-} from './dbCleanup';
+  mockingProxy,
+  mockSsmParameters,
+  mockSuccessfulTwilioAuthentication,
+} from '@tech-matters/testing';
 import each from 'jest-each';
 import { ContactJobType } from '@tech-matters/types/ContactJob';
 import { ruleFileActionOverride } from '../permissions-overrides';
 import { selectJobsByContactId } from './db-validations';
+import { clearAllTables } from '../dbCleanup';
+import { setupTestQueues } from '../sqs';
+
+const SEARCH_INDEX_SQS_QUEUE_NAME = 'mock-search-index-queue';
 
 useOpenRules();
 const server = getServer({ enableProcessContactJobs: true });
@@ -45,11 +46,7 @@ const route = `/v0/accounts/${accountSid}/contacts`;
 
 const cleanup = async () => {
   await mockSuccessfulTwilioAuthentication(workerSid);
-  await cleanupCsamReports();
-  await cleanupReferrals();
-  await cleanupContactsJobs();
-  await cleanupContacts();
-  await cleanupCases();
+  await clearAllTables();
 };
 
 let createdContact: contactDb.Contact;
@@ -59,12 +56,15 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await cleanup();
-  await mockingProxy.stop();
+  await Promise.all([clearAllTables(), mockingProxy.stop()]);
 });
 
 beforeEach(async () => {
   await cleanup();
+  const mockttp = await mockingProxy.mockttpServer();
+  await mockSsmParameters(mockttp, [
+    { pathPattern: /.*/, valueGenerator: () => SEARCH_INDEX_SQS_QUEUE_NAME },
+  ]);
 
   createdContact = await contactApi.createContact(
     accountSid,
@@ -77,9 +77,12 @@ beforeEach(async () => {
     true,
   );
 });
-afterEach(() => {
+
+afterEach(async () => {
   useOpenRules();
 });
+
+setupTestQueues([SEARCH_INDEX_SQS_QUEUE_NAME]);
 
 describe('/contacts/:contactId/conversationMedia route', () => {
   const subRoute = contactId => `${route}/${contactId}/conversationMedia`;
