@@ -30,7 +30,7 @@ import {
 import {
   deleteCompletedContactJobsFromQueue,
   pollCompletedContactJobsFromQueue,
-  scrubCompletedContactJobsFromQueue,
+  postScrubTranscriptJob,
 } from './client-sqs';
 
 import { assertExhaustive } from '@tech-matters/types';
@@ -177,8 +177,7 @@ export const pollAndProcessCompletedContactJobs = async (jobMaxAttempts: number)
         const completedJob: CompletedContactJobBody = JSON.parse(m.Body);
 
         if (completedJob.attemptResult === ContactJobAttemptResult.SUCCESS) {
-          // I am not sure if I did this rught, but I am supposed to call the createContactJob and
-          // pass the additionalPayload
+          //Call the createContactJob and pass the additionalPayload
           const contact = await getById(completedJob.accountSid, completedJob.contactId);
           await createContactJob()({
             jobType: ContactJobType.SCRUB_CONTACT_TRANSCRIPT,
@@ -191,7 +190,7 @@ export const pollAndProcessCompletedContactJobs = async (jobMaxAttempts: number)
             },
           });
 
-          await scrubCompletedContactJobsFromQueue(completedJob); // Is this called the right way?
+          await postScrubTranscriptJob(completedJob);
           return await handleSuccess(completedJob);
         } else {
           return await handleFailure(completedJob, jobMaxAttempts);
