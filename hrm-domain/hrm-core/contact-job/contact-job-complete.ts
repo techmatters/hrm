@@ -22,7 +22,11 @@ import {
   createContactJob,
 } from './contact-job-data-access';
 import { updateConversationMediaData } from '../contact/contactService';
-import { ContactJobAttemptResult, ContactJobType } from '@tech-matters/types';
+import {
+  ContactJobAttemptResult,
+  ContactJobType,
+  isCompletedScrubContactTranscript,
+} from '@tech-matters/types';
 import {
   ContactJobCompleteProcessorError,
   ContactJobPollerError,
@@ -83,11 +87,13 @@ export const processCompletedContactJob = async (
 };
 
 export const getAttemptNumber = (
-  completedJob: CompletedContactJobBody,
+  completedJob: CompletedContactJobBody | CompletedContactJobBodyFailure,
   contactJob: ContactJobRecord,
 ) => completedJob.attemptNumber ?? contactJob.numberOfAttempts;
 
-export const getContactJobOrFail = async (completedJob: CompletedContactJobBody) => {
+export const getContactJobOrFail = async (
+  completedJob: CompletedContactJobBody | CompletedContactJobBodyFailure,
+) => {
   const contactJob = await getContactJobById(completedJob.jobId);
 
   if (!contactJob) {
@@ -184,8 +190,8 @@ export const pollAndProcessCompletedContactJobs = async (jobMaxAttempts: number)
             resource: contact,
             additionalPayload: {
               originalLocation: {
-                bucket: completedJob.attemptPayload.bucket,
-                key: completedJob.attemptPayload.key,
+                bucket: isCompletedScrubContactTranscript(completedJob).bucket,
+                key: isCompletedScrubContactTranscript(completedJob).key,
               },
             },
           });
