@@ -9,7 +9,7 @@
   "author": "",
   "license": "AGPL",
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.388.0",
-    "@aws-sdk/s3-request-presigner": "^3.388.0"
+    "@aws-sdk/client-s3": "^3.609.0",
+    "@aws-sdk/s3-request-presigner": "^3.609.0"
   }
 }

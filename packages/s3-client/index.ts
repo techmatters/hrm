@@ -105,6 +105,8 @@ const getS3Conf = () => {
 
 const s3Client = new S3Client(getS3Conf());
 
+export const getNativeS3Client = () => s3Client;
+
 /**
  * This is a workaround for localstack.  The localstack s3 service
  * returns a url https://localhost/ when you call getSignedUrl.  This
@@ -186,6 +188,7 @@ export const putS3Object = async (params: PutS3ObjectParams) => {
 };
 
 export const getSignedUrl = async (params: GetSignedUrlParams) => {
+  let command: any;
   const {
     method,
     bucket: Bucket,
@@ -193,13 +196,28 @@ export const getSignedUrl = async (params: GetSignedUrlParams) => {
     body: Body,
     contentType: ContentType = 'application/json',
   } = params;
-
-  const command = new GET_SIGNED_URL_METHODS[method]({
-    Bucket,
-    Key,
-    Body,
-    ContentType,
-  });
+  switch (method) {
+    case 'deleteObject':
+      command = new DeleteObjectCommand({
+        Bucket,
+        Key,
+      });
+      break;
+    case 'getObject':
+      command = new GetObjectCommand({
+        Bucket,
+        Key,
+      });
+      break;
+    case 'putObject':
+      command = new PutObjectCommand({
+        Bucket,
+        Key,
+        Body,
+        ContentType,
+      });
+      break;
+  }
 
   const signedUrl = await awsGetSignedUrl(s3Client, command, { expiresIn: 3600 });
 
