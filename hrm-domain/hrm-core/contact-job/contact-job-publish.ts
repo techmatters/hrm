@@ -15,11 +15,13 @@
  */
 
 import { format } from 'date-fns';
-import { ContactJob, RetrieveContactTranscriptJob } from './contact-job-data-access';
-import { ContactJobPollerError } from './contact-job-error';
-import { publishToContactJobs, postScrubTranscriptJob } from './client-sqs';
-import { ContactJobType } from '@tech-matters/types';
-import { assertExhaustive } from '@tech-matters/types';
+import {
+  ContactJob,
+  RetrieveContactTranscriptJob,
+  ScrubContactTranscriptJob,
+} from './contact-job-data-access';
+import { publishToContactJobs } from './client-sqs';
+import { assertExhaustive, ContactJobType } from '@tech-matters/types';
 
 export const publishRetrieveContactTranscript = (
   contactJob: RetrieveContactTranscriptJob,
@@ -54,6 +56,22 @@ export const publishRetrieveContactTranscript = (
 
 type PublishedContactJobResult = Awaited<ReturnType<typeof publishToContactJobs>>;
 
+export const publishScrubTranscriptJob = async (
+  contactJob: ScrubContactTranscriptJob,
+) => {
+  const { accountSid, id: contactId, taskId, twilioWorkerId } = contactJob.resource;
+  return publishToContactJobs({
+    jobType: contactJob.jobType,
+    jobId: contactJob.id,
+    accountSid,
+    contactId,
+    taskId,
+    twilioWorkerId,
+    attemptNumber: contactJob.numberOfAttempts,
+    originalLocation: contactJob.additionalPayload.originalLocation,
+  });
+};
+
 export const publishDueContactJobs = async (
   dueContactJobs: ContactJob[],
 ): Promise<PromiseSettledResult<PublishedContactJobResult>[]> => {
@@ -65,18 +83,14 @@ export const publishDueContactJobs = async (
             return publishRetrieveContactTranscript(dueJob);
           }
           case ContactJobType.SCRUB_CONTACT_TRANSCRIPT: {
-            return postScrubTranscriptJob(dueJob);
+            return publishScrubTranscriptJob(dueJob);
           }
           // TODO: remove the as never typecast when we have 2 or more job types. TS complains if we remove it now.
           default:
             assertExhaustive(dueJob as never);
         }
       } catch (err) {
-        console.error(
-          new ContactJobPollerError('Failed to publish due job:'),
-          dueJob,
-          err,
-        );
+        console.error(err, dueJob);
         return Promise.reject(err);
       }
     }),
