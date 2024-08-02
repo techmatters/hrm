@@ -80,7 +80,7 @@ export const publishToContactJobs = async (params: PublishToContactJobsTopicPara
   }
 };
 
-export const scrubCompletedContactJobsFromQueue = async (
+export const postScrubTranscriptJob = async (
   job: CompletedContactJobBody | ContactJob,
 ) => {
   try {
