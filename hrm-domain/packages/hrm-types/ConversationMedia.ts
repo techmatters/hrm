@@ -51,7 +51,8 @@ export type S3StoredTranscript = ConversationMediaCommons &
   NewS3StoredMedia<S3ContactMediaType.TRANSCRIPT>;
 export type S3StoredRecording = ConversationMediaCommons &
   NewS3StoredMedia<S3ContactMediaType.RECORDING>;
-export type S3StoredConversationMedia = S3StoredTranscript | S3StoredRecording;
+export type S3StoredConversationMedia = ConversationMediaCommons &
+  NewS3StoredMedia<S3ContactMediaType>;
 
 export type ConversationMedia = TwilioStoredMedia | S3StoredConversationMedia;
 

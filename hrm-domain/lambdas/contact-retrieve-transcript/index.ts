@@ -21,6 +21,7 @@ import { putS3Object } from '@tech-matters/s3-client';
 import { ContactJobProcessorError } from '@tech-matters/job-errors';
 import { getSsmParameter } from '@tech-matters/ssm-cache';
 import {
+  CompletedRetrieveContactTranscript,
   ContactJobAttemptResult,
   ContactJobType,
   PublishRetrieveContactTranscript,
@@ -84,7 +85,7 @@ const processRetrieveTranscriptRecord = async (
     }),
   });
 
-  const completedJob: CompletedContactJobBody = {
+  const completedJob: CompletedRetrieveContactTranscript = {
     ...message,
     attemptResult: ContactJobAttemptResult.SUCCESS,
     attemptPayload: {

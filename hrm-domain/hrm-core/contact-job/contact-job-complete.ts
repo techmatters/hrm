@@ -96,7 +96,11 @@ export const processCompletedScrubContactTranscript = async (
     completedJob.contactId,
   );
 
-  const existingScrubbedMedia = conversationMedia.find(cm => cm.storeType == 'S3');
+  const existingScrubbedMedia = conversationMedia.find(
+    cm =>
+      cm.storeType == 'S3' &&
+      cm.storeTypeSpecificData.type === S3ContactMediaType.SCRUBBED_TRANSCRIPT,
+  );
   if (existingScrubbedMedia) {
     const storeTypeSpecificData: ConversationMedia['storeTypeSpecificData'] = {
       ...existingScrubbedMedia.storeTypeSpecificData,
