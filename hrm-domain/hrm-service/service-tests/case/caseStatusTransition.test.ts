@@ -105,21 +105,29 @@ describe('Single Rule', () => {
       { ...case1, status: 'status1' },
       'AC1',
       workerSid,
+      undefined,
+      true,
     );
     cases.validStatusButTooRecent = await caseApi.createCase(
       { ...case1, status: 'status1' },
       'AC1',
       workerSid,
+      undefined,
+      true,
     );
     cases.validUpdatedTimeButIncorrectStatus = await caseApi.createCase(
       { ...case1, status: 'not status1' },
       'AC1',
       workerSid,
+      undefined,
+      true,
     );
     cases.validForUpdateButWrongAccount = await caseApi.createCase(
       { ...case1, status: 'status1' },
       'ACnot1',
       workerSid,
+      undefined,
+      true,
     );
     await Promise.all([
       fixStatusUpdatedAt(cases.validStatusButTooRecent, tooRecentDateForTransition),

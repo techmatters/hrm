@@ -119,6 +119,7 @@ const createChatContact = async (channel: string, startedTimestamp: number) => {
       can: () => true,
       user: newTwilioUser(accountSid, workerSid, []),
     },
+    true,
   );
 
   contact = await contactApi.addConversationMediaToContact(
@@ -129,6 +130,7 @@ const createChatContact = async (channel: string, startedTimestamp: number) => {
       can: () => true,
       user: newTwilioUser(accountSid, workerSid, []),
     },
+    true,
   );
 
   const jobs = await selectJobsByContactId(contact.id, contact.accountSid);

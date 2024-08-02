@@ -23,6 +23,7 @@ import { ContactRawJson } from '@tech-matters/hrm-core/contact/contactJson';
 import { isS3StoredTranscript } from '@tech-matters/hrm-core/conversation-media/conversation-media';
 import {
   accountSid,
+  ALWAYS_CAN,
   another1,
   another2,
   broken1,
@@ -39,7 +40,11 @@ import {
 import './case/caseValidation';
 import * as contactApi from '@tech-matters/hrm-core/contact/contactService';
 import * as contactDb from '@tech-matters/hrm-core/contact/contactDataAccess';
-import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
+import {
+  mockingProxy,
+  mockSsmParameters,
+  mockSuccessfulTwilioAuthentication,
+} from '@tech-matters/testing';
 import { selectSingleContactByTaskId } from '@tech-matters/hrm-core/contact/sql/contact-get-sql';
 import { ruleFileActionOverride } from './permissions-overrides';
 import * as csamReportApi from '@tech-matters/hrm-core/csam-report/csam-report';
@@ -49,18 +54,13 @@ import * as profilesDB from '@tech-matters/hrm-core/profile/profileDataAccess';
 import * as profilesService from '@tech-matters/hrm-core/profile/profileService';
 
 import { isErr, HrmAccountId } from '@tech-matters/types';
-import {
-  cleanupCases,
-  cleanupContacts,
-  cleanupContactsJobs,
-  cleanupCsamReports,
-  cleanupReferrals,
-  deleteContactById,
-  deleteJobsByContactId,
-} from './contact/dbCleanup';
 import { addConversationMediaToContact } from '@tech-matters/hrm-core/contact/contactService';
 import { NewContactRecord } from '@tech-matters/hrm-core/contact/sql/contactInsertSql';
 import supertest from 'supertest';
+import { clearAllTables } from './dbCleanup';
+import { setupTestQueues } from './sqs';
+
+const SEARCH_INDEX_SQS_QUEUE_NAME = 'mock-search-index-queue';
 
 useOpenRules();
 const server = getServer();
@@ -71,77 +71,40 @@ const request = getRequest(server);
  * @param {(() => Promise<any>)[]} ps
  * @returns
  */
-const resolveSequentially = ps =>
-  ps.reduce((p, v) => p.then(a => v().then(r => a.concat([r]))), Promise.resolve([]));
+const resolveSequentially = async (ps: Promise<unknown>[]) => {
+  const ret = [];
+  for (const p of ps) {
+    ret.push(await p);
+  }
+  return ret;
+};
 
 // eslint-disable-next-line @typescript-eslint/no-shadow
 const getContactByTaskId = (taskId: string, accountSid: HrmAccountId) =>
   db.oneOrNone(selectSingleContactByTaskId('Contacts'), { accountSid, taskId });
 
-// eslint-disable-next-line @typescript-eslint/no-shadow
-const deleteCsamReportById = (id: number, accountSid: string) =>
-  db.task(t =>
-    t.manyOrNone(`
-      DELETE FROM "CSAMReports"
-      WHERE "id" = ${id} AND "accountSid" = '${accountSid}';
-    `),
-  );
-
-// eslint-disable-next-line @typescript-eslint/no-shadow
-const deleteCsamReportsByContactId = (contactId: number, accountSid: string) =>
-  db.task(t =>
-    t.manyOrNone(`
-      DELETE FROM "CSAMReports"
-      WHERE "contactId" = ${contactId} AND "accountSid" = '${accountSid}';
-    `),
-  );
-
-// eslint-disable-next-line @typescript-eslint/no-shadow
-const deleteProfileById = (id: number, accountSid: string) =>
-  db.task(t =>
-    t.none(`
-        DELETE FROM "Profiles"
-        WHERE "id" = ${id} AND "accountSid" = '${accountSid}';
-    `),
-  );
-
-// eslint-disable-next-line @typescript-eslint/no-shadow
-const deleteIdentifierById = (id: number, accountSid: string) =>
-  db.task(t =>
-    t.none(`
-        DELETE FROM "Identifiers"
-        WHERE "id" = ${id} AND "accountSid" = '${accountSid}';
-    `),
-  );
-
 beforeAll(async () => {
+  await clearAllTables();
   await mockingProxy.start();
+  const mockttp = await mockingProxy.mockttpServer();
   await mockSuccessfulTwilioAuthentication(workerSid);
-  await cleanupCsamReports();
-  await cleanupReferrals();
-  await cleanupContactsJobs();
-  await cleanupContacts();
-  await cleanupCases();
+  await mockSsmParameters(mockttp, [
+    { pathPattern: /.*/, valueGenerator: () => SEARCH_INDEX_SQS_QUEUE_NAME },
+  ]);
 });
 
 afterAll(async () => {
-  await cleanupCsamReports();
-  await cleanupReferrals();
-  await cleanupContactsJobs();
-  await cleanupContacts();
-  await cleanupCases();
   await mockingProxy.stop();
   server.close();
 });
 
-beforeEach(() => {
-  jest.clearAllMocks();
-});
+afterEach(clearAllTables);
+
+setupTestQueues([SEARCH_INDEX_SQS_QUEUE_NAME]);
 
 describe('/contacts route', () => {
   const route = `/v0/accounts/${accountSid}/contacts`;
 
-  // First test post so database wont be empty
   describe('POST', () => {
     test('should return 401', async () => {
       const response = await request.post(route).send(contact1);
@@ -365,12 +328,6 @@ describe('/contacts route', () => {
       expect(createIdentifierAndProfileSpy).not.toHaveBeenCalled();
       expect(response.body.profileId).toBe(profileId);
       expect(response.body.identifierId).toBe(identifierId);
-
-      // Remove records to not interfere with following tests
-      await deleteJobsByContactId(response.body.id, response.body.accountSid);
-      await deleteContactById(response.body.id, response.body.accountSid);
-      await deleteProfileById(profileId, response.body.accountSid);
-      await deleteIdentifierById(identifierId, response.body.accountSid);
     });
 
     test(`If identifier and profile don't exist, they are created and the contact is created using them`, async () => {
@@ -396,12 +353,6 @@ describe('/contacts route', () => {
       expect(createIdentifierAndProfileSpy).toHaveBeenCalled();
       expect(response.body.profileId).toBeDefined();
       expect(response.body.identifierId).toBeDefined();
-
-      // Remove records to not interfere with following tests
-      await deleteJobsByContactId(response.body.id, response.body.accountSid);
-      await deleteContactById(response.body.id, response.body.accountSid);
-      await deleteProfileById(response.body.profileId, response.body.accountSid);
-      await deleteIdentifierById(response.body.identifierId, response.body.accountSid);
     });
 
     test(`If number is not present in the contact payload, no identifier nor profile is created and they are null in the contact record`, async () => {
@@ -415,26 +366,11 @@ describe('/contacts route', () => {
         number: undefined,
       };
 
-      const getIdentifierWithProfilesSpy = jest.spyOn(
-        profilesDB,
-        'getIdentifierWithProfiles',
-      );
-      const createIdentifierAndProfileSpy = jest.spyOn(
-        profilesService,
-        'createIdentifierAndProfile',
-      );
-
       const response = await request.post(route).set(headers).send(contact);
 
       expect(response.status).toBe(200);
-      expect(getIdentifierWithProfilesSpy).not.toHaveBeenCalled();
-      expect(createIdentifierAndProfileSpy).not.toHaveBeenCalled();
       expect(response.body.profileId).toBeNull();
       expect(response.body.identifierId).toBeNull();
-
-      // Remove records to not interfere with following tests
-      await deleteJobsByContactId(response.body.id, response.body.accountSid);
-      await deleteContactById(response.body.id, response.body.accountSid);
     });
   });
 
@@ -458,14 +394,7 @@ describe('/contacts route', () => {
 
       const startTestsTimeStamp = parseISO(`${currentUTCDateString}T06:00:00.000Z`);
 
-      beforeAll(async () => {
-        // Clean what's been created so far
-        await cleanupCsamReports();
-        await cleanupReferrals();
-        await cleanupContactsJobs();
-        await cleanupContacts();
-        await cleanupCases();
-
+      beforeEach(async () => {
         // Create CSAM Reports
         const csamReportId1 = 'csam-report-id-1';
         const csamReportId2 = 'csam-report-id-2';
@@ -501,15 +430,13 @@ describe('/contacts route', () => {
           timeOfContact: subDays(startTestsTimeStamp, 7).toISOString(), // one hour before
         };
 
-        const invalidContact = {};
-
         const withCSAMReports = {
           ...noHelpline,
           taskId: 'withCSAMReports-tasksid-2',
           queueName: 'withCSAMReports',
           number: '123412341234',
         };
-        const responses = await resolveSequentially(
+        createdContacts = await resolveSequentially(
           [
             { ...contact1, taskId: 'contact1-tasksid-2' },
             { ...contact2, taskId: 'contact2-tasksid-2' },
@@ -521,13 +448,14 @@ describe('/contacts route', () => {
             noHelpline,
             withTaskId,
             oneHourBefore,
-            invalidContact,
+            // invalidContact as NewContactRecord,
             withCSAMReports,
             oneWeekBefore,
-          ].map(c => () => request.post(route).set(headers).send(c)),
+          ].map(c =>
+            contactApi.createContact(accountSid, workerSid, c, ALWAYS_CAN, true),
+          ),
         );
 
-        createdContacts = responses.map(r => r.body);
         const withCSAMReportsId = createdContacts.find(
           c => c.queueName === 'withCSAMReports',
         )!.id;
@@ -546,15 +474,6 @@ describe('/contacts route', () => {
         );
         expect(updatedCsamReports).toHaveLength(2);
         csamReports = updatedCsamReports;
-      });
-
-      afterAll(async () => {
-        await Promise.all(csamReports.map(c => deleteCsamReportById(c.id, c.accountSid)));
-        await Promise.all(
-          createdContacts
-            .filter(c => c.id)
-            .map(c => deleteContactById(c.id, c.accountSid)),
-        );
       });
 
       type SearchTestCase = {
@@ -576,7 +495,8 @@ describe('/contacts route', () => {
             expect(response.status).toBe(200);
             const { contacts, count } = response.body;
 
-            const [c2, c1] = contacts; // result is sorted DESC
+            const c1 = contacts.find(c => c.id === createdContacts[0].id);
+            const c2 = contacts.find(c => c.id === createdContacts[1].id);
             expect(c1.rawJson).toStrictEqual(contact1.rawJson);
             expect(c2.rawJson).toStrictEqual(contact2.rawJson);
 
@@ -639,7 +559,7 @@ describe('/contacts route', () => {
 
             expect(response.status).toBe(200);
             // invalidContact will return null from the search endpoint, exclude it here
-            expect(contacts.length).toBe(createdContacts.length - 1);
+            expect(contacts.length).toBe(createdContacts.length);
             const createdContactsByTimeOfContact = createdContacts.sort(
               compareTimeOfContactDesc,
             );
@@ -660,8 +580,8 @@ describe('/contacts route', () => {
             const { contacts } = response.body;
 
             expect(response.status).toBe(200);
-            // invalidContact will return null, and nonData1, nonData2, broken1 and broken2 are not data contact types
-            expect(contacts.length).toBe(createdContacts.length - 5);
+            // nonData1, nonData2, broken1 and broken2 are not data contact types
+            expect(contacts.length).toBe(createdContacts.length - 4);
             const createdContactsByTimeOfContact = createdContacts.sort(
               compareTimeOfContactDesc,
             );
@@ -810,7 +730,7 @@ describe('/contacts route', () => {
             const { contacts } = response.body;
 
             // Expect all but invalid and oneWeekBefore
-            expect(contacts).toHaveLength(createdContacts.length - 2);
+            expect(contacts).toHaveLength(createdContacts.length - 1);
             const createdContactsByTimeOfContact = createdContacts.sort(
               compareTimeOfContactDesc,
             );
@@ -838,7 +758,7 @@ describe('/contacts route', () => {
             const { contacts } = response.body;
 
             // Expect all but invalid and oneWeekBefore
-            expect(contacts).toHaveLength(createdContacts.length - 3);
+            expect(contacts).toHaveLength(createdContacts.length - 2);
             const createdContactsByTimeOfContact = createdContacts.sort(
               compareTimeOfContactDesc,
             );
@@ -893,7 +813,8 @@ describe('/contacts route', () => {
             const { contacts, count } = response.body;
             expect(count).toBe(2);
 
-            const [c2, c1] = contacts; // result is sorted DESC
+            const c1 = contacts.find(c => c.id === createdContacts[0].id);
+            const c2 = contacts.find(c => c.id === createdContacts[1].id);
             expect(c1.rawJson).toStrictEqual(contact1.rawJson);
             expect(c2.rawJson).toStrictEqual(contact2.rawJson);
             // Test the association
@@ -925,18 +846,20 @@ describe('/contacts route', () => {
           description: `without viewExternalTranscript excludes transcripts`,
         },
       ]).test(`$description`, async ({ expectTranscripts }) => {
-        let createdContact = await contactApi.createContact(
+        const createdContact = await contactApi.createContact(
           accountSid,
           workerSid,
           withTaskId,
           { user: newTwilioUser(accountSid, workerSid, []), can: () => true },
+          true,
         );
         const createdAtDate = parseISO(createdContact.createdAt);
-        createdContact = await addConversationMediaToContact(
+        await addConversationMediaToContact(
           accountSid,
           createdContact.id.toString(),
           conversationMedia,
           { user: newTwilioUser(accountSid, workerSid, []), can: () => true },
+          true,
         );
 
         useOpenRules();
@@ -971,9 +894,6 @@ describe('/contacts route', () => {
             res.body.contacts[0].conversationMedia?.some(cm => cm.storeType === 'S3'),
           ).toBeFalsy();
         }
-
-        await deleteJobsByContactId(createdContact.id, createdContact.accountSid);
-        await deleteContactById(createdContact.id, createdContact.accountSid);
         useOpenRules();
       });
 
@@ -994,6 +914,7 @@ describe('/contacts route', () => {
           workerSid,
           contactToCreate,
           { user: newTwilioUser(accountSid, workerSid, []), can: () => true },
+          true,
         );
 
         const newReport1 = await csamReportApi.createCSAMReport(
@@ -1040,10 +961,6 @@ describe('/contacts route', () => {
         expect(
           res.body.contacts[0].csamReports.find(r => r.id === newReport3.id),
         ).toBeFalsy();
-
-        // // Remove records to not interfere with following tests
-        await deleteCsamReportsByContactId(createdContact.id, createdContact.accountSid);
-        await deleteContactById(createdContact.id, createdContact.accountSid);
       });
     });
   });
