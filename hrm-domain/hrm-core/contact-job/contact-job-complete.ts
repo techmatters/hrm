@@ -16,13 +16,20 @@
 
 import {
   appendFailedAttemptPayload,
-  ContactJobRecord,
   completeContactJob,
-  getContactJobById,
+  ContactJobRecord,
   createContactJob,
+  getContactJobById,
 } from './contact-job-data-access';
-import { updateConversationMediaData } from '../contact/contactService';
+import type {
+  CompletedContactJobBody,
+  CompletedContactJobBodyFailure,
+  CompletedContactJobBodySuccess,
+  CompletedRetrieveContactTranscript,
+} from '@tech-matters/types';
 import {
+  assertExhaustive,
+  CompletedScrubContactTranscript,
   ContactJobAttemptResult,
   ContactJobType,
   isCompletedScrubContactTranscript,
@@ -36,20 +43,16 @@ import {
   pollCompletedContactJobsFromQueue,
   postScrubTranscriptJob,
 } from './client-sqs';
-
-import { assertExhaustive } from '@tech-matters/types';
-
-import type {
-  CompletedContactJobBody,
-  CompletedContactJobBodyFailure,
-  CompletedContactJobBodySuccess,
-  CompletedRetrieveContactTranscript,
-} from '@tech-matters/types';
 import {
   ConversationMedia,
+  createConversationMedia,
+  updateConversationMediaSpecificData,
   getConversationMediaById,
+  S3ContactMediaType,
 } from '../conversation-media/conversation-media';
 import { getById } from '../contact/contactDataAccess';
+import { getByContactId } from '../conversation-media/conversation-media-data-access';
+import { updateConversationMediaData } from '../contact/contactService';
 
 export const processCompletedRetrieveContactTranscript = async (
   completedJob: CompletedRetrieveContactTranscript & {
@@ -66,11 +69,62 @@ export const processCompletedRetrieveContactTranscript = async (
     location: completedJob.attemptPayload,
   };
 
-  return updateConversationMediaData(completedJob.contactId)(
+  await updateConversationMediaData(completedJob.contactId)(
     completedJob.accountSid,
     completedJob.conversationMediaId,
     storeTypeSpecificData,
   );
+
+  const contact = await getById(completedJob.accountSid, completedJob.contactId);
+  await createContactJob()({
+    jobType: ContactJobType.SCRUB_CONTACT_TRANSCRIPT,
+    resource: contact,
+    additionalPayload: {
+      originalLocation: {
+        bucket: completedJob.attemptPayload.bucket,
+        key: completedJob.attemptPayload.key,
+      },
+    },
+  });
+};
+
+export const processCompletedScrubContactTranscript = async (
+  completedJob: CompletedScrubContactTranscript & {
+    attemptResult: ContactJobAttemptResult.SUCCESS;
+  },
+) => {
+  const conversationMedia = await getByContactId(
+    completedJob.accountSid,
+    completedJob.contactId,
+  );
+
+  const existingScrubbedMedia = conversationMedia.find(
+    cm =>
+      cm.storeType == 'S3' &&
+      cm.storeTypeSpecificData.type === S3ContactMediaType.SCRUBBED_TRANSCRIPT,
+  );
+  if (existingScrubbedMedia) {
+    const storeTypeSpecificData: ConversationMedia['storeTypeSpecificData'] = {
+      ...existingScrubbedMedia.storeTypeSpecificData,
+      location: completedJob.attemptPayload.scrubbedLocation,
+    };
+
+    // We don't want to reindex on a scrubbed transcript being added (yet);
+    return updateConversationMediaSpecificData(
+      completedJob.accountSid,
+      existingScrubbedMedia.id,
+      storeTypeSpecificData,
+    );
+  } else {
+    return createConversationMedia()(completedJob.accountSid, {
+      contactId: completedJob.contactId,
+      storeType: 'S3',
+      storeTypeSpecificData: {
+        type: S3ContactMediaType.SCRUBBED_TRANSCRIPT,
+        location: completedJob.attemptPayload.scrubbedLocation,
+      },
+    });
+  }
 };
 
 export const processCompletedContactJob = async (
@@ -79,6 +133,9 @@ export const processCompletedContactJob = async (
   switch (completedJob.jobType) {
     case ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT: {
       return processCompletedRetrieveContactTranscript(completedJob);
+    }
+    case ContactJobType.SCRUB_CONTACT_TRANSCRIPT: {
+      return processCompletedScrubContactTranscript(completedJob);
     }
     // TODO: remove the as never typecast when we have 2 or more job types. TS complains if we remove it now.
     default:
@@ -112,12 +169,11 @@ export const handleSuccess = async (completedJob: CompletedContactJobBodySuccess
     message: 'Job processed successfully',
     value: completedJob.attemptPayload,
   };
-  const markedComplete = await completeContactJob({
+
+  return completeContactJob({
     id: completedJob.jobId,
     completionPayload,
   });
-
-  return markedComplete;
 };
 
 export const handleFailure = async (
@@ -148,13 +204,11 @@ export const handleFailure = async (
 
   if (attemptNumber >= jobMaxAttempts) {
     const completionPayload = { message: 'Attempts limit reached' };
-    const markedComplete = await completeContactJob({
+    return completeContactJob({
       id: completedJob.jobId,
       completionPayload,
       wasSuccessful: false,
     });
-
-    return markedComplete;
   }
 
   return updated;
@@ -183,7 +237,6 @@ export const pollAndProcessCompletedContactJobs = async (jobMaxAttempts: number)
         const completedJob: CompletedContactJobBody = JSON.parse(m.Body);
 
         if (completedJob.attemptResult === ContactJobAttemptResult.SUCCESS) {
-          //Call the createContactJob and pass the additionalPayload
           const contact = await getById(completedJob.accountSid, completedJob.contactId);
           await createContactJob()({
             jobType: ContactJobType.SCRUB_CONTACT_TRANSCRIPT,

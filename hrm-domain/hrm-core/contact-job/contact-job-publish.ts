@@ -15,11 +15,13 @@
  */
 
 import { format } from 'date-fns';
-import { ContactJob, RetrieveContactTranscriptJob } from './contact-job-data-access';
-import { ContactJobPollerError } from './contact-job-error';
-import { publishToContactJobs, postScrubTranscriptJob } from './client-sqs';
-import { ContactJobType } from '@tech-matters/types';
-import { assertExhaustive } from '@tech-matters/types';
+import {
+  ContactJob,
+  RetrieveContactTranscriptJob,
+  ScrubContactTranscriptJob,
+} from './contact-job-data-access';
+import { postScrubTranscriptJob, publishToContactJobs } from './client-sqs';
+import { assertExhaustive, ContactJobType } from '@tech-matters/types';
 
 export const publishRetrieveContactTranscript = (
   contactJob: RetrieveContactTranscriptJob,
@@ -54,6 +56,22 @@ export const publishRetrieveContactTranscript = (
 
 type PublishedContactJobResult = Awaited<ReturnType<typeof publishToContactJobs>>;
 
+export const publishScrubTranscriptJob = async (
+  contactJob: ScrubContactTranscriptJob,
+) => {
+  const { accountSid, id: contactId, taskId, twilioWorkerId } = contactJob.resource;
+  return publishToContactJobs({
+    jobType: contactJob.jobType,
+    jobId: contactJob.id,
+    accountSid,
+    contactId,
+    taskId,
+    twilioWorkerId,
+    attemptNumber: contactJob.numberOfAttempts,
+    originalLocation: contactJob.additionalPayload.originalLocation,
+  });
+};
+
 export const publishDueContactJobs = async (
   dueContactJobs: ContactJob[],
 ): Promise<PromiseSettledResult<PublishedContactJobResult>[]> => {
@@ -72,11 +90,7 @@ export const publishDueContactJobs = async (
             assertExhaustive(dueJob as never);
         }
       } catch (err) {
-        console.error(
-          new ContactJobPollerError('Failed to publish due job:'),
-          dueJob,
-          err,
-        );
+        console.error(err, dueJob);
         return Promise.reject(err);
       }
     }),

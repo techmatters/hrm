@@ -33,9 +33,6 @@ const COMPLETED_QUEUE_SSM_PATH = `/${process.env.NODE_ENV}/${
 const JOB_QUEUE_SSM_PATH_BASE = `/${process.env.NODE_ENV}/${
   process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
 }/sqs/jobs/contact/queue-url-`;
-const SCRUB_TRANSCRIPT_SSM_PATH = `/${process.env.NODE_ENV}/${
-  process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
-}/sqs/jobs/contact/queue-scrub-transcript`;
 
 export const pollCompletedContactJobsFromQueue = async (): ReturnType<
   typeof receiveSqsMessage
@@ -84,7 +81,7 @@ export const postScrubTranscriptJob = async (
   job: CompletedContactJobBody | ContactJob,
 ) => {
   try {
-    const queueUrl = await getSsmParameter(`${SCRUB_TRANSCRIPT_SSM_PATH}${job.jobType}`);
+    const queueUrl = await getSsmParameter(`${JOB_QUEUE_SSM_PATH_BASE}${job.jobType}`);
 
     return await sendSqsMessage({
       queueUrl,
