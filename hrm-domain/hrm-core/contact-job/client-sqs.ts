@@ -84,7 +84,7 @@ export const postScrubTranscriptJob = async (
   job: CompletedContactJobBody | ContactJob,
 ) => {
   try {
-    const queueUrl = await getSsmParameter(SCRUB_TRANSCRIPT_SSM_PATH);
+    const queueUrl = await getSsmParameter(`${SCRUB_TRANSCRIPT_SSM_PATH}${job.jobType}`);
 
     return await sendSqsMessage({
       queueUrl,
