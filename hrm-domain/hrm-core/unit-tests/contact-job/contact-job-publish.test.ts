@@ -18,7 +18,6 @@ import * as SQSClient from '../../contact-job/client-sqs';
 import * as contactJobPublish from '../../contact-job/contact-job-publish';
 import { ContactJob } from '../../contact-job/contact-job-data-access';
 import { ContactJobType } from '@tech-matters/types';
-import { ContactJobPollerError } from '../../contact-job/contact-job-error';
 import each from 'jest-each';
 import { PublishToContactJobsTopicParams } from '@tech-matters/types';
 
@@ -62,9 +61,8 @@ describe('publishDueContactJobs', () => {
     expect(publishRetrieveContactTranscriptSpy).toHaveBeenCalledWith(validPayload);
     expect(errorSpy).toHaveBeenCalledTimes(1);
     expect(errorSpy).toHaveBeenCalledWith(
-      new ContactJobPollerError('Failed to publish due job:'),
-      invalidPayload,
       new Error(`Unhandled case: ${invalidPayload}`),
+      invalidPayload,
     );
 
     expect(result[0].status).toBe('rejected');
@@ -118,11 +116,7 @@ describe('publishDueContactJobs', () => {
     expect(publishRetrieveContactTranscriptSpy).toHaveBeenCalledWith(validPayload1);
     expect(publishRetrieveContactTranscriptSpy).toHaveBeenCalledWith(validPayload2);
     expect(errorSpy).toHaveBeenCalledTimes(1);
-    expect(errorSpy).toHaveBeenCalledWith(
-      new ContactJobPollerError('Failed to publish due job:'),
-      validPayload1,
-      new Error(':sad_trombone:'),
-    );
+    expect(errorSpy).toHaveBeenCalledWith(new Error(':sad_trombone:'), validPayload1);
 
     expect(result[0].status).toBe('rejected');
     expect(result[1].status).toBe('fulfilled');
@@ -172,6 +166,49 @@ describe('publishDueContactJobs', () => {
         taskId: 'taskId',
         twilioWorkerId,
         filePath: 'transcripts/2022/01/01/20220101000000-taskId.json',
+        attemptNumber: 1,
+      },
+    },
+    {
+      dueJob: {
+        jobType: ContactJobType.SCRUB_CONTACT_TRANSCRIPT,
+        id: 1,
+        completed: null,
+        completionPayload: null,
+        additionalPayload: {
+          originalLocation: {
+            bucket: 'bucket',
+            key: 'key',
+          },
+        },
+        accountSid,
+        contactId: 123,
+        lastAttempt: null,
+        numberOfAttempts: 1,
+        requested: new Date().toISOString(),
+        resource: {
+          accountSid,
+          id: 123,
+          taskId: 'taskId',
+          twilioWorkerId,
+          serviceSid: 'serviceSid',
+          channelSid: 'channelSid',
+          createdAt: new Date('01-01-2022').toISOString(),
+          csamReports: [],
+        },
+      },
+      publishDueContactJobFunction: 'publishScrubTranscriptJob',
+      expectedMessageToPublish: {
+        jobType: ContactJobType.SCRUB_CONTACT_TRANSCRIPT,
+        jobId: 1,
+        contactId: 123,
+        originalLocation: {
+          bucket: 'bucket',
+          key: 'key',
+        },
+        accountSid,
+        taskId: 'taskId',
+        twilioWorkerId,
         attemptNumber: 1,
       },
     },

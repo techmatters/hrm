@@ -43,6 +43,7 @@ const request = getRequest(server);
 
 import type { Contact } from '@tech-matters/hrm-core/contact/contactDataAccess';
 import { clearAllTables } from '../dbCleanup';
+import { setupTestQueues } from '../sqs';
 
 let twilioSpy: jest.SpyInstance;
 
@@ -70,8 +71,10 @@ beforeAll(async () => {
 
   await mockingProxy.start();
   const mockttp = await mockingProxy.mockttpServer();
-  await mockSsmParameters(mockttp, [{ pathPattern: /.*/, valueGenerator: () => 'mock' }]);
   await mockSuccessfulTwilioAuthentication(workerSid);
+  await mockSsmParameters(mockttp, [
+    { pathPattern: /.*/, valueGenerator: () => 'mock-queue' },
+  ]);
 });
 
 afterEach(async () => {
@@ -83,6 +86,8 @@ afterAll(async () => {
   await mockingProxy.stop();
   server.close();
 });
+
+setupTestQueues(['mock-queue']);
 
 describe('cleanupContactJobs', () => {
   test('transcript job that is complete but not old enough will not be cleaned', async () => {
