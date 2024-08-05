@@ -32,7 +32,6 @@ import {
   CompletedScrubContactTranscript,
   ContactJobAttemptResult,
   ContactJobType,
-  isCompletedScrubContactTranscript,
 } from '@tech-matters/types';
 import {
   ContactJobCompleteProcessorError,
@@ -41,7 +40,7 @@ import {
 import {
   deleteCompletedContactJobsFromQueue,
   pollCompletedContactJobsFromQueue,
-  postScrubTranscriptJob,
+  publishToContactJobs,
 } from './client-sqs';
 import {
   ConversationMedia,
@@ -53,7 +52,6 @@ import {
 import { getById } from '../contact/contactDataAccess';
 import { getByContactId } from '../conversation-media/conversation-media-data-access';
 import { updateConversationMediaData } from '../contact/contactService';
-// import { db } from '../connection-pool';
 
 export const processCompletedRetrieveContactTranscript = async (
   completedJob: CompletedRetrieveContactTranscript & {
@@ -238,22 +236,29 @@ export const pollAndProcessCompletedContactJobs = async (jobMaxAttempts: number)
         const completedJob: CompletedContactJobBody = JSON.parse(m.Body);
 
         if (completedJob.attemptResult === ContactJobAttemptResult.SUCCESS) {
-          const contact = await getById(completedJob.accountSid, completedJob.contactId);
-          await createContactJob()({
-            jobType: ContactJobType.SCRUB_CONTACT_TRANSCRIPT,
-            resource: contact,
-            additionalPayload: {
-              originalLocation: {
-                bucket: isCompletedScrubContactTranscript(completedJob).bucket,
-                key: isCompletedScrubContactTranscript(completedJob).key,
-              },
-            },
-          });
-          // unit-tests/contact-job/contact-job-publish.test.ts
-          //hrm-domain/hrm-core/unit-tests/contact-job/contact-job-complete.test.ts
-          // unit-tests/contact-job/contact-job-complete.test.ts
+          if (completedJob.jobType === ContactJobType.SCRUB_CONTACT_TRANSCRIPT) {
+            const {
+              jobType,
+              jobId,
+              accountSid,
+              contactId,
+              taskId,
+              twilioWorkerId,
+              attemptNumber,
+              originalLocation,
+            } = completedJob;
 
-          await postScrubTranscriptJob(completedJob);
+            await publishToContactJobs({
+              jobType,
+              jobId,
+              accountSid,
+              contactId,
+              taskId,
+              twilioWorkerId,
+              attemptNumber,
+              originalLocation,
+            });
+          }
           return await handleSuccess(completedJob);
         } else {
           return await handleFailure(completedJob, jobMaxAttempts);
@@ -271,19 +276,3 @@ export const pollAndProcessCompletedContactJobs = async (jobMaxAttempts: number)
 
   return completedJobs;
 };
-
-// return await db.tx(async conn => {
-//   await createContactJob(conn)({
-//     jobType: ContactJobType.SCRUB_CONTACT_TRANSCRIPT,
-//     resource: contact,
-//     additionalPayload: {
-//       originalLocation: {
-//         bucket: isCompletedScrubContactTranscript(completedJob).bucket,
-//         key: isCompletedScrubContactTranscript(completedJob).key,
-//       },
-//     },
-//   });
-
-//   await postScrubTranscriptJob(completedJob);
-//   return handleSuccess(completedJob);
-// });

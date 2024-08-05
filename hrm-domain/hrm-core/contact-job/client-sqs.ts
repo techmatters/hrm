@@ -21,11 +21,7 @@ import {
 } from '@tech-matters/sqs-client';
 import { getSsmParameter } from '../config/ssmCache';
 
-import type {
-  CompletedContactJobBody,
-  PublishToContactJobsTopicParams,
-} from '@tech-matters/types';
-import { ContactJob } from './contact-job-data-access';
+import type { PublishToContactJobsTopicParams } from '@tech-matters/types';
 
 const COMPLETED_QUEUE_SSM_PATH = `/${process.env.NODE_ENV}/${
   process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
@@ -71,21 +67,6 @@ export const publishToContactJobs = async (params: PublishToContactJobsTopicPara
     return await sendSqsMessage({
       queueUrl,
       message: JSON.stringify(params),
-    });
-  } catch (err) {
-    console.error('Error trying to send message to SQS queue', err);
-  }
-};
-
-export const postScrubTranscriptJob = async (
-  job: CompletedContactJobBody | ContactJob,
-) => {
-  try {
-    const queueUrl = await getSsmParameter(`${JOB_QUEUE_SSM_PATH_BASE}${job.jobType}`);
-
-    return await sendSqsMessage({
-      queueUrl,
-      message: JSON.stringify(job),
     });
   } catch (err) {
     console.error('Error trying to send message to SQS queue', err);

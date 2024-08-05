@@ -20,7 +20,7 @@ import {
   RetrieveContactTranscriptJob,
   ScrubContactTranscriptJob,
 } from './contact-job-data-access';
-import { postScrubTranscriptJob, publishToContactJobs } from './client-sqs';
+import { publishToContactJobs } from './client-sqs';
 import { assertExhaustive, ContactJobType } from '@tech-matters/types';
 
 export const publishRetrieveContactTranscript = (
@@ -83,7 +83,7 @@ export const publishDueContactJobs = async (
             return publishRetrieveContactTranscript(dueJob);
           }
           case ContactJobType.SCRUB_CONTACT_TRANSCRIPT: {
-            return postScrubTranscriptJob(dueJob);
+            return publishScrubTranscriptJob(dueJob);
           }
           // TODO: remove the as never typecast when we have 2 or more job types. TS complains if we remove it now.
           default:
