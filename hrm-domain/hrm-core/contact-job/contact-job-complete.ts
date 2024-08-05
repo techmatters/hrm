@@ -53,6 +53,7 @@ import {
 import { getById } from '../contact/contactDataAccess';
 import { getByContactId } from '../conversation-media/conversation-media-data-access';
 import { updateConversationMediaData } from '../contact/contactService';
+// import { db } from '../connection-pool';
 
 export const processCompletedRetrieveContactTranscript = async (
   completedJob: CompletedRetrieveContactTranscript & {
@@ -248,6 +249,9 @@ export const pollAndProcessCompletedContactJobs = async (jobMaxAttempts: number)
               },
             },
           });
+          // unit-tests/contact-job/contact-job-publish.test.ts
+          //hrm-domain/hrm-core/unit-tests/contact-job/contact-job-complete.test.ts
+          // unit-tests/contact-job/contact-job-complete.test.ts
 
           await postScrubTranscriptJob(completedJob);
           return await handleSuccess(completedJob);
@@ -267,3 +271,19 @@ export const pollAndProcessCompletedContactJobs = async (jobMaxAttempts: number)
 
   return completedJobs;
 };
+
+// return await db.tx(async conn => {
+//   await createContactJob(conn)({
+//     jobType: ContactJobType.SCRUB_CONTACT_TRANSCRIPT,
+//     resource: contact,
+//     additionalPayload: {
+//       originalLocation: {
+//         bucket: isCompletedScrubContactTranscript(completedJob).bucket,
+//         key: isCompletedScrubContactTranscript(completedJob).key,
+//       },
+//     },
+//   });
+
+//   await postScrubTranscriptJob(completedJob);
+//   return handleSuccess(completedJob);
+// });
