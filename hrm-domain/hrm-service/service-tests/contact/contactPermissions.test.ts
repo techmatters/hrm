@@ -107,6 +107,7 @@ const createContact = async (
       serviceSid: 'ISxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
     },
     ALWAYS_CAN,
+    true,
   );
 };
 
@@ -389,7 +390,7 @@ describe('Time based condition', () => {
     let sampleCase: CaseService;
     const caseBaseRoute = `/v0/accounts/${accountSid}/cases`;
     beforeEach(async () => {
-      sampleCase = await createCase({}, accountSid, userTwilioWorkerId);
+      sampleCase = await createCase({}, accountSid, userTwilioWorkerId, undefined, true);
       await Promise.all(
         Object.values(sampleContacts).map(({ id }) =>
           connectContactToCase(
@@ -397,6 +398,7 @@ describe('Time based condition', () => {
             id.toString(),
             sampleCase.id.toString(),
             ALWAYS_CAN,
+            true,
           ),
         ),
       );

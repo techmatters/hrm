@@ -291,6 +291,7 @@ describe('/profiles', () => {
             identifierId: createdProfile.id,
           },
           ALWAYS_CAN,
+          true,
         ),
       );
 
@@ -324,7 +325,9 @@ describe('/profiles', () => {
       beforeEach(async () => {
         // Create two cases
         createdCases = await Promise.all(
-          [1, 2].map(() => caseApi.createCase(case1, accountSid, workerSid)),
+          [1, 2].map(() =>
+            caseApi.createCase(case1, accountSid, workerSid, undefined, true),
+          ),
         );
 
         // Create two contacts for each
@@ -343,6 +346,7 @@ describe('/profiles', () => {
                     identifierId: createdProfile.id,
                   },
                   ALWAYS_CAN,
+                  true,
                 )
                 .then(contact =>
                   // Associate contact to case
@@ -354,6 +358,7 @@ describe('/profiles', () => {
                       user: newTwilioUser(contact.accountSid, workerSid, []),
                       can: () => true,
                     },
+                    true,
                   ),
                 ),
             ),
