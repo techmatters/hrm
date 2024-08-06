@@ -14,11 +14,26 @@
 
 version: '3'
 services:
+  db:
+    image: library/postgres:12.10
+
+    environment:
+      POSTGRES_USER: rdsadmin
+      POSTGRES_HOST_AUTH_METHOD: trust
+      POSTGRES_DB: hrmdb
+
+    volumes:
+      - ./db-init/dump.sql:/docker-entrypoint-initdb.d/dump.sql
+
+    command: ['postgres', '-c', 'log_statement=all']
+
+    ports:
+      - '5433:5432'
   localstack:
     image: localstack/localstack:2.2.0
     ports:
-      - '4566:4566' # LocalStack Gateway
-      - '4510-4559:4510-4559' # external services port range
+      - '127.0.0.1:4566:4566' # LocalStack Gateway
+      - '127.0.0.1:4510-4559:4510-4559' # external services port range
       - '${PORT_WEB_UI-8088}:8080'
     environment:
       - HOSTNAME_EXTERNAL=localstack
@@ -34,3 +49,43 @@ services:
       - '/var/run/docker.sock:/var/run/docker.sock'
     extra_hosts:
       - 'host.docker.internal:host-gateway'
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.7.0
+    restart: on-failure
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - action.auto_create_index=false
+    ports:
+      - ${HRM_ES_PORT:-9200}:9200
+  job-processor:
+    image: hrm-service
+    environment:
+      POSTGRES_PORT: 5432
+      RDS_HOSTNAME: db
+      HRM_RUN_MIGRATIONS: 'true'
+
+    env_file:
+      - ../.env.localstack
+      - dist/.env
+    depends_on:
+      - db
+
+  service:
+    image: hrm-service
+    ports:
+      - '8081:8080'
+
+    environment:
+      API_KEY: testApiKey
+      PORT: 8080
+      POSTGRES_PORT: 5432
+      RDS_HOSTNAME: db
+
+    env_file:
+      - ../.env.localstack
+      - dist/.env
+
+    depends_on:
+      - job-processor

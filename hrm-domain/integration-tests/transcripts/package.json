@@ -1,0 +1,37 @@
+{
+  "name": "@tech-matters/transcript-integration-tests",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "author": "",
+  "license": "AGPL",
+  "dependencies": {
+    "@tech-matters/hrm-types": "^1.0.0",
+    "@tech-matters/job-errors": "^1.0.0",
+    "@tech-matters/s3-client": "^1.0.0",
+    "@tech-matters/sqs-client": "^1.0.0",
+    "@tech-matters/ssm-cache": "^1.0.0",
+    "@tech-matters/twilio-client": "^1.0.0",
+    "@tech-matters/types": "^1.0.0",
+    "@tech-matters/hrm-core": "^1.0.0",
+    "twilio": "^3.83.3",
+    "util": "^0.12.4",
+    "pg": "^8.7.3",
+    "pg-promise": "^10.11.1",
+    "dotenv": "^8.2.0"
+  },
+  "devDependencies": {
+    "@tsconfig/node16": "^1.0.3",
+    "@types/aws-lambda": "^8.10.108",
+    "ts-node": "^10.9.1"
+  },
+  "scripts": {
+    "start:localstack": "cd ../../ && npm run  && npm run start:localstack",
+    "docker:compose:up": "cd ../../ && npm run  && npm run docker:compose:up",
+    "run:private-ai": "docker run transcript-scrubber:latest --network hrm",
+
+    "test:integration:run": "cross-env S3_FORCE_PATH_STYLE=true S3_ENDPOINT=http://localhost:4566 SQS_ENDPOINT=http://localhost:4566 jest tests",
+    "test:integration": "run-s docker:compose:up start:localstack test:integration:run",
+    "test": "npm run test:integration"
+  }
+}

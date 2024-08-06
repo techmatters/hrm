@@ -22,8 +22,7 @@ services:
       HRM_RUN_MIGRATIONS: 'true'
 
     env_file:
-      - ../.env.localstack
-      - dist/.env
+      - ../../.env.localstack
 
   service:
     image: hrm-service
@@ -37,8 +36,7 @@ services:
       RDS_HOSTNAME: db
 
     env_file:
-      - ../.env.localstack
-      - dist/.env
+      - ../../.env.localstack
 
     depends_on:
       - job-processor

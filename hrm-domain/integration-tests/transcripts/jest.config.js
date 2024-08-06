@@ -14,8 +14,19 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-const getStackOutput = require('../cdk/cdkOutput');
-
-console.log(
-  getStackOutput('contact-complete').queueUrl.replace('localhost', 'localstack'),
-);
+module.exports = config => {
+  return (
+    config || {
+      preset: 'ts-jest',
+      rootDir: './',
+      maxWorkers: 1,
+      globals: {
+        'ts-jest': {
+          // to give support to const enum. Not working, conflicting with module resolution
+          useExperimentalLanguageServer: true,
+        },
+      },
+      setupFiles: ['<rootDir>/src/setTestEnvVars.js'],
+    }
+  );
+};
