@@ -213,6 +213,7 @@ export const handleFailure = async (
 };
 
 export const pollAndProcessCompletedContactJobs = async (jobMaxAttempts: number) => {
+  console.debug(`Checking for queued completed jobs to process`);
   const polledCompletedJobs = await pollCompletedContactJobsFromQueue();
 
   if (!polledCompletedJobs?.Messages) return;
@@ -224,6 +225,7 @@ export const pollAndProcessCompletedContactJobs = async (jobMaxAttempts: number)
       `polledCompletedJobs returned invalid messages format ${messages}`,
     );
   }
+  console.debug(`Processing ${messages.length} completed jobs`);
 
   const completedJobs = await Promise.allSettled(
     messages.map(async m => {
@@ -235,8 +237,10 @@ export const pollAndProcessCompletedContactJobs = async (jobMaxAttempts: number)
         const completedJob: CompletedContactJobBody = JSON.parse(m.Body);
 
         if (completedJob.attemptResult === ContactJobAttemptResult.SUCCESS) {
+          console.debug(`Processing successful job ${completedJob.jobId}, contact ${completedJob.contactId}`, completedJob);
           return await handleSuccess(completedJob);
         } else {
+          console.debug(`Processing failed job ${completedJob.jobId}, contact ${completedJob.contactId}`, completedJob);
           return await handleFailure(completedJob, jobMaxAttempts);
         }
       } catch (err) {
@@ -249,6 +253,7 @@ export const pollAndProcessCompletedContactJobs = async (jobMaxAttempts: number)
       }
     }),
   );
+  console.debug(`Processed ${messages.length} completed jobs`);
 
   return completedJobs;
 };

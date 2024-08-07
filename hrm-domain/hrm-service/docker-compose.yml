@@ -16,6 +16,7 @@ version: '3'
 services:
   job-processor:
     image: hrm-service
+    command: "npm run start:job-processor"
     environment:
       POSTGRES_PORT: 5432
       RDS_HOSTNAME: db

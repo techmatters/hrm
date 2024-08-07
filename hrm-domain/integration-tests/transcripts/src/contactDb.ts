@@ -5,18 +5,51 @@ import { db } from './connectionPool';
 import { ACCOUNT_SID } from './fixtures/sampleConfig';
 import {
   ConversationMedia,
-  NewConversationMedia,
+  NewConversationMedia, S3ContactMediaType, S3StoredConversationMedia,
 } from '@tech-matters/hrm-types/ConversationMedia';
 import { insertConversationMediaSql } from '@tech-matters/hrm-core/conversation-media/sql/conversation-media-insert-sql';
+import {
+  insertIdentifierSql,
+  insertProfileSql,
+} from '@tech-matters/hrm-core/profile/sql/profile-insert-sql';
+import { ContactJob } from '@tech-matters/hrm-core/contact-job/contact-job-data-access';
+import { pgp } from '@tech-matters/hrm-core/connection-pool';
+import { ContactJobType } from '@tech-matters/types/ContactJob';
+import { retryable } from './retryable';
 
 type CreateResultRecord = Contact & { isNewRecord: boolean };
 
 export const createContact = async (newContact: NewContactRecord): Promise<Contact> =>
   db.tx(async (conn: ITask<{ contact: Contact; isNewRecord: boolean }>) => {
     const now = new Date();
+
+    const identifier = await conn.one(() =>
+      insertIdentifierSql({
+        identifier: 'integration-test-identifier',
+        createdBy: 'WK-integration-test-counselor',
+        createdAt: now,
+        updatedAt: now,
+        accountSid: ACCOUNT_SID,
+        updatedBy: null,
+      }),
+    );
+
+    const profile = await conn.one(() =>
+      insertProfileSql({
+        name: 'integration-test-profile',
+        createdBy: 'WK-integration-test-counselor',
+        createdAt: now,
+        updatedAt: now,
+        accountSid: ACCOUNT_SID,
+        updatedBy: null,
+      }),
+    );
+
     const { isNewRecord, ...created }: CreateResultRecord =
       await conn.one<CreateResultRecord>(INSERT_CONTACT_SQL, {
         ...newContact,
+        identifierId: identifier.id,
+        profileId: profile.id,
         accountSid: ACCOUNT_SID,
         createdAt: now,
         updatedAt: now,
@@ -37,3 +70,58 @@ export const addConversationMediaToContact = async (
   });
   return db.task(conn => conn.one(statement));
 };
+
+export const createDueRetrieveTranscriptJob = async (
+  contact: Contact,
+  conversationMediaId: number,
+): Promise<ContactJob> => {
+  const job: Omit<ContactJob, 'id' | 'resource'> = {
+    requested: new Date().toISOString(),
+    jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
+    contactId: contact.id,
+    accountSid: ACCOUNT_SID,
+    additionalPayload: {
+      conversationMediaId,
+    },
+    lastAttempt: null,
+    numberOfAttempts: 0,
+    completed: null,
+    completionPayload: null,
+  };
+  return db.task(async conn =>
+    conn.one(() => `${pgp.helpers.insert(job, null, 'ContactJobs')} RETURNING *`),
+  );
+};
+
+export const waitForConversationMedia = retryable(
+  async ({ contactId, mediaType }:{ contactId: number, mediaType: S3ContactMediaType } ): Promise<S3StoredConversationMedia | undefined> =>
+    db.task(async conn => {
+      return conn.oneOrNone(
+        `SELECT * FROM "ConversationMedias" 
+               WHERE 
+                    "accountSid" = $<accountSid> AND
+                    "contactId" = $<contactId> AND 
+                    "storeType" = 'S3' AND 
+                    "storeTypeSpecificData"->>'type' = $<mediaType>`,
+        { contactId, accountSid: ACCOUNT_SID, mediaType },
+      );
+    }),
+);
+
+
+
+export const waitForCompletedContactJob = retryable(
+  async ({ contactId, jobType }:{ contactId: number, jobType: ContactJobType } ): Promise<ContactJob | undefined> =>
+    db.task(async conn =>
+
+    conn.oneOrNone(
+  `SELECT * FROM "ContactJobs" 
+               WHERE 
+                    "accountSid" = $<accountSid> AND
+                    "contactId" = $<contactId> AND 
+                    "jobType" = $<jobType> AND
+                    "completed" IS NOT NULL`,
+  { contactId, accountSid: ACCOUNT_SID, jobType },
+      )
+    )
+);

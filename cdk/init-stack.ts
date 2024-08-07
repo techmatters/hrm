@@ -93,6 +93,7 @@ async function main() {
     id: 'retrieve-transcript',
     params: {
       completeQueue: contactComplete.completeQueue,
+      completeQueueUrl: contactComplete.dockerCompleteQueueUrl,
       docsBucket: localCore.docsBucket,
     },
     props: {
@@ -105,6 +106,7 @@ async function main() {
     id: 'scrub-transcript',
     params: {
       completeQueue: contactComplete.completeQueue,
+      completeQueueUrl: contactComplete.dockerCompleteQueueUrl,
       docsBucket: localCore.docsBucket,
       skipLambda: true,
     },

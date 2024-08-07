@@ -35,7 +35,9 @@ export const pollCompletedContactJobsFromQueue = async (): ReturnType<
 > => {
   try {
     const queueUrl = await getSsmParameter(COMPLETED_QUEUE_SSM_PATH);
-
+    console.debug(
+      `Polling messages from SQS queue: ${queueUrl}, looked up from SSM parameter: ${COMPLETED_QUEUE_SSM_PATH}`,
+    );
     return await receiveSqsMessage({
       queueUrl,
       maxNumberOfMessages: 10,
