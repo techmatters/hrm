@@ -39,6 +39,7 @@ import { createContactJob } from '@tech-matters/hrm-core/contact-job/contact-job
 import { pullDueContactJobs } from '@tech-matters/hrm-core/contact-job/contact-job-data-access';
 
 const CONTACT_JOB_COMPLETE_SQS_QUEUE = 'mock-completed-contact-jobs';
+const PENDING_SCRUB_TRANSCRIPT_JOBS_QUEUE = 'mock-pending-scrub-transcript-jobs';
 
 useOpenRules();
 const server = getServer();
@@ -68,13 +69,17 @@ jest.mock('timers', () => {
 
 const mockSetInterval = setInterval as jest.MockedFunction<typeof setInterval>;
 
-const { sqsClient } = setupTestQueues([CONTACT_JOB_COMPLETE_SQS_QUEUE]);
+const { sqsClient } = setupTestQueues([
+  CONTACT_JOB_COMPLETE_SQS_QUEUE,
+  PENDING_SCRUB_TRANSCRIPT_JOBS_QUEUE,
+]);
 
 const verifyConversationMedia = (
   contact: contactApi.Contact,
   expectedType: S3ContactMediaType,
   expectedKey: string,
 ) => {
+  console.log('Verifying conversation media 1: ', contact.conversationMedia);
   const unscrubbedTranscriptMedia: S3StoredConversationMedia =
     contact.conversationMedia.find(cm => {
       const s3Media = cm as S3StoredConversationMedia;
@@ -82,6 +87,7 @@ const verifyConversationMedia = (
         s3Media.storeType === 'S3' && s3Media.storeTypeSpecificData.type === expectedType
       );
     }) as S3StoredConversationMedia;
+
   expect(unscrubbedTranscriptMedia.storeTypeSpecificData.location.bucket).toBe(
     'mock-bucket',
   );
@@ -91,6 +97,7 @@ const verifyConversationMedia = (
 describe('Scrub job complete', () => {
   let testContactId: number;
   let completedQueueUrl: string;
+  let pendingScrubJobsQueueUrl: string;
   let singleProcessContactJobsRun: () => Promise<void>;
 
   beforeEach(async () => {
@@ -132,6 +139,11 @@ describe('Scrub job complete', () => {
     );
     completedQueueUrl = (
       await sqsClient.getQueueUrl({ QueueName: CONTACT_JOB_COMPLETE_SQS_QUEUE }).promise()
+    ).QueueUrl;
+    pendingScrubJobsQueueUrl = (
+      await sqsClient
+        .getQueueUrl({ QueueName: PENDING_SCRUB_TRANSCRIPT_JOBS_QUEUE })
+        .promise()
     ).QueueUrl;
     mockSetInterval.mockImplementation(callback => {
       singleProcessContactJobsRun = callback as () => Promise<void>;
@@ -201,6 +213,7 @@ describe('Scrub job complete', () => {
     );
     expect(await pullDueContactJobs(new Date(), 5)).toHaveLength(0);
   });
+
   test('Receive a completed scrub transcript job for contact with an existing scrubbed transcripts - updates the scrubbed transcript media item', async () => {
     await contactApi.addConversationMediaToContact(
       accountSid,
@@ -277,5 +290,92 @@ describe('Scrub job complete', () => {
       'mock-new-scrubbed-transcript-path',
     );
     expect(await pullDueContactJobs(new Date(), 5)).toHaveLength(0);
+  });
+
+  test('Receive a completed retrieve transcript job and create a scrub job', async () => {
+    await contactApi.addConversationMediaToContact(
+      accountSid,
+      testContactId.toString(),
+      [
+        {
+          storeType: 'S3',
+          storeTypeSpecificData: {
+            type: S3ContactMediaType.SCRUBBED_TRANSCRIPT,
+            location: { bucket: 'mock-bucket', key: 'mock-new-scrubbed-transcript-path' },
+          },
+        },
+      ],
+      ALWAYS_CAN,
+      true,
+    );
+
+    await createContactJob()({
+      resource: await contactApi.getContactById(accountSid, testContactId, ALWAYS_CAN),
+      jobType: ContactJobType.SCRUB_CONTACT_TRANSCRIPT,
+      additionalPayload: {
+        originalLocation: {
+          bucket: 'mock-bucket',
+          key: 'mock-transcript-path',
+        },
+      },
+    });
+    const [pendingScrubJobs] = await pullDueContactJobs(new Date(), 5);
+    const message = {
+      jobId: pendingScrubJobs.id,
+      jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
+      originalLocation: { bucket: 'mock-bucket', key: 'mock-transcript-path' },
+      taskId: 'TKx',
+      twilioWorkerId: workerSid,
+      contactId: testContactId,
+      accountSid,
+      attemptNumber: 0,
+      attemptPayload: {
+        retrievedLocation: {
+          bucket: 'mock-bucket',
+          key: 'mock-retrieved-transcript-path',
+        },
+      },
+      attemptResult: ContactJobAttemptResult.SUCCESS,
+    };
+
+    await sqsClient
+      .sendMessage({
+        QueueUrl: completedQueueUrl,
+        MessageBody: JSON.stringify(message),
+      })
+      .promise();
+
+    await singleProcessContactJobsRun();
+
+    const updatedContact = await contactApi.getContactById(
+      accountSid,
+      testContactId,
+      ALWAYS_CAN,
+    );
+
+    expect(updatedContact.conversationMedia?.length).toBe(2);
+
+    verifyConversationMedia(
+      updatedContact,
+      S3ContactMediaType.TRANSCRIPT,
+      'mock-transcript-path',
+    );
+    verifyConversationMedia(
+      updatedContact,
+      S3ContactMediaType.SCRUBBED_TRANSCRIPT,
+      'mock-new-scrubbed-transcript-path',
+    );
+
+    expect(pendingScrubJobs).toBeDefined();
+    expect(pendingScrubJobs.jobType).toBe(ContactJobType.SCRUB_CONTACT_TRANSCRIPT);
+
+    const messages = await sqsClient
+      .receiveMessage({
+        QueueUrl: pendingScrubJobsQueueUrl,
+        MaxNumberOfMessages: 1,
+      })
+      .promise();
+
+    expect(messages).toBeDefined();
   });
 });
