@@ -158,6 +158,8 @@ test('Retrieve contact job in progress and completed notification retrieved', as
     await waitForS3Object({ bucket: BUCKET_NAME, key: SCRUBBED_TRANSCRIPT_KEY }),
   );
   expect(scrubbedTranscript).toBeTruthy();
+  // Verify at least some scrubbing has occurred
+  expect(scrubbedTranscript.transcript.messages[0].body).toEqual('Incoming webchat contact from [IP_ADDRESS_1]');
 
   // Both queues should be empty
   expect(

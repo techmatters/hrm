@@ -118,8 +118,8 @@ export const waitForConversationMedia = retryable(
   }: {
     contactId: number;
     mediaType: S3ContactMediaType;
-  }): Promise<S3StoredConversationMedia | undefined> =>
-    db.task(async conn => {
+  }): Promise<S3StoredConversationMedia | undefined> => {
+    const media = await db.task(async conn => {
       return conn.oneOrNone(
         `SELECT * FROM "ConversationMedias" 
                WHERE 
@@ -129,7 +129,12 @@ export const waitForConversationMedia = retryable(
                     "storeTypeSpecificData"->>'type' = $<mediaType>`,
         { contactId, accountSid: ACCOUNT_SID, mediaType },
       );
-    }),
+    });
+    if (!media) {
+      throw new Error('Media not found');
+    }
+    return media;
+  },
 );
 
 export const waitForCompletedContactJob = retryable(
@@ -139,8 +144,8 @@ export const waitForCompletedContactJob = retryable(
   }: {
     contactId: number;
     jobType: ContactJobType;
-  }): Promise<ContactJob | undefined> =>
-    db.task(async conn =>
+  }): Promise<ContactJob | undefined> => {
+    const job = await db.task(async conn =>
       conn.oneOrNone(
         `SELECT * FROM "ContactJobs" 
                WHERE 
@@ -150,5 +155,11 @@ export const waitForCompletedContactJob = retryable(
                     "completed" IS NOT NULL`,
         { contactId, accountSid: ACCOUNT_SID, jobType },
       ),
-    ),
+    );
+
+    if (!job) {
+      throw new Error('Job not found');
+    }
+    return job;
+  },
 );
