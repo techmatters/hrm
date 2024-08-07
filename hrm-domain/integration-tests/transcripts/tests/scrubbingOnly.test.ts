@@ -45,9 +45,11 @@ const BUCKET_NAME = 'docs-bucket';
 const UNSCRUBBED_TRANSCRIPT_KEY = 'transcripts/test-transcript.txt';
 const SCRUBBED_TRANSCRIPT_KEY = 'scrubbed-transcripts/test-transcript.txt';
 
-
-const verifyConversationMedia = async (contactId: number, mediaType: S3ContactMediaType.SCRUBBED_TRANSCRIPT | S3ContactMediaType.TRANSCRIPT, key: string) => {
-
+const verifyConversationMedia = async (
+  contactId: number,
+  mediaType: S3ContactMediaType.SCRUBBED_TRANSCRIPT | S3ContactMediaType.TRANSCRIPT,
+  key: string,
+) => {
   const scrubbedTranscriptMedia = await waitForConversationMedia({
     contactId,
     mediaType,
@@ -55,17 +57,13 @@ const verifyConversationMedia = async (contactId: number, mediaType: S3ContactMe
   expect(scrubbedTranscriptMedia).toBeTruthy();
 
   expect(scrubbedTranscriptMedia.storeTypeSpecificData.type).toBe(mediaType);
-  if (
-    scrubbedTranscriptMedia.storeTypeSpecificData.type === mediaType
-  ) {
+  if (scrubbedTranscriptMedia.storeTypeSpecificData.type === mediaType) {
     expect(scrubbedTranscriptMedia?.storeTypeSpecificData.location.bucket).toBe(
       BUCKET_NAME,
     );
-    expect(scrubbedTranscriptMedia?.storeTypeSpecificData.location.key).toBe(
-      key,
-    );
+    expect(scrubbedTranscriptMedia?.storeTypeSpecificData.location.key).toBe(key);
   }
-}
+};
 
 beforeEach(async () => {
   await Promise.all([
@@ -132,7 +130,11 @@ test('Retrieve contact job in progress and completed notification retrieved', as
       expectedNumberOfMessages: 1,
     }),
   ).toBe(true);
-  await verifyConversationMedia(contact.id, S3ContactMediaType.TRANSCRIPT, UNSCRUBBED_TRANSCRIPT_KEY);
+  await verifyConversationMedia(
+    contact.id,
+    S3ContactMediaType.TRANSCRIPT,
+    UNSCRUBBED_TRANSCRIPT_KEY,
+  );
   // Run the private AI container
   await runContainer('transcript-scrubber:latest', {
     PENDING_TRANSCRIPT_SQS_QUEUE_URL: pendingScrubTranscriptJobQueueUrl,
@@ -144,12 +146,17 @@ test('Retrieve contact job in progress and completed notification retrieved', as
   // Assert
   // Check that the original retrieve-transcript is marked as completed in the ContactJobs table
   // Check that the scrub-transcript job is marked as completed in the ContactJobs table
-  const retrieveTranscriptJob = await waitForCompletedContactJob({ contactId: contact.id, jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT });
+  const retrieveTranscriptJob = await waitForCompletedContactJob({
+    contactId: contact.id,
+    jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
+  });
   expect(retrieveTranscriptJob).toBeTruthy();
   expect(retrieveTranscriptJob.completed).toBeTruthy();
 
   // Check that a scrubbed transcript as written to the S3 bucket
-  const scrubbedTranscript = JSON.parse(await waitForS3Object({ bucket: BUCKET_NAME, key: SCRUBBED_TRANSCRIPT_KEY }));
+  const scrubbedTranscript = JSON.parse(
+    await waitForS3Object({ bucket: BUCKET_NAME, key: SCRUBBED_TRANSCRIPT_KEY }),
+  );
   expect(scrubbedTranscript).toBeTruthy();
 
   // Both queues should be empty
@@ -167,11 +174,17 @@ test('Retrieve contact job in progress and completed notification retrieved', as
   ).toBe(true);
 
   // Check that the scrubbed transcript has been linked as a conversation media item to the contact.
-  await verifyConversationMedia(contact.id, S3ContactMediaType.SCRUBBED_TRANSCRIPT, SCRUBBED_TRANSCRIPT_KEY);
+  await verifyConversationMedia(
+    contact.id,
+    S3ContactMediaType.SCRUBBED_TRANSCRIPT,
+    SCRUBBED_TRANSCRIPT_KEY,
+  );
 
   // Check that the scrub-transcript job is marked as completed in the ContactJobs table
-  const scrubTranscriptJob = await waitForCompletedContactJob({ contactId: contact.id, jobType: ContactJobType.SCRUB_CONTACT_TRANSCRIPT });
+  const scrubTranscriptJob = await waitForCompletedContactJob({
+    contactId: contact.id,
+    jobType: ContactJobType.SCRUB_CONTACT_TRANSCRIPT,
+  });
   expect(scrubTranscriptJob).toBeTruthy();
   expect(scrubTranscriptJob?.completed).toBeTruthy();
-
 });

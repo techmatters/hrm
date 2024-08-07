@@ -125,9 +125,7 @@ const pollQueue = async (): Promise<boolean> => {
       `Successfully scrubbed transcript: ${key}, scrubbed version at ${scrubbedKey}`,
     );
   } catch (error) {
-    console.error(
-      `Failed to scrub transcript`, error,
-    );
+    console.error(`Failed to scrub transcript`, error);
     const errorMessage = error instanceof Error ? error.message : String(error);
     await sendSqsMessage({
       queueUrl: COMPLETED_TRANSCRIPT_SQS_QUEUE_URL,

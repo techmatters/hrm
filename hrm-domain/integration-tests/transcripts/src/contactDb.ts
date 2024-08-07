@@ -1,3 +1,19 @@
+/**
+ * Copyright (C) 2021-2023 Technology Matters
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see https://www.gnu.org/licenses/.
+ */
+
 import { Contact, NewContactRecord } from '@tech-matters/hrm-types/Contact';
 import { ITask } from 'pg-promise';
 import { INSERT_CONTACT_SQL } from '@tech-matters/hrm-core/contact/sql/contactInsertSql';
@@ -5,7 +21,9 @@ import { db } from './connectionPool';
 import { ACCOUNT_SID } from './fixtures/sampleConfig';
 import {
   ConversationMedia,
-  NewConversationMedia, S3ContactMediaType, S3StoredConversationMedia,
+  NewConversationMedia,
+  S3ContactMediaType,
+  S3StoredConversationMedia,
 } from '@tech-matters/hrm-types/ConversationMedia';
 import { insertConversationMediaSql } from '@tech-matters/hrm-core/conversation-media/sql/conversation-media-insert-sql';
 import {
@@ -94,7 +112,13 @@ export const createDueRetrieveTranscriptJob = async (
 };
 
 export const waitForConversationMedia = retryable(
-  async ({ contactId, mediaType }:{ contactId: number, mediaType: S3ContactMediaType } ): Promise<S3StoredConversationMedia | undefined> =>
+  async ({
+    contactId,
+    mediaType,
+  }: {
+    contactId: number;
+    mediaType: S3ContactMediaType;
+  }): Promise<S3StoredConversationMedia | undefined> =>
     db.task(async conn => {
       return conn.oneOrNone(
         `SELECT * FROM "ConversationMedias" 
@@ -108,20 +132,23 @@ export const waitForConversationMedia = retryable(
     }),
 );
 
-
-
 export const waitForCompletedContactJob = retryable(
-  async ({ contactId, jobType }:{ contactId: number, jobType: ContactJobType } ): Promise<ContactJob | undefined> =>
+  async ({
+    contactId,
+    jobType,
+  }: {
+    contactId: number;
+    jobType: ContactJobType;
+  }): Promise<ContactJob | undefined> =>
     db.task(async conn =>
-
-    conn.oneOrNone(
-  `SELECT * FROM "ContactJobs" 
+      conn.oneOrNone(
+        `SELECT * FROM "ContactJobs" 
                WHERE 
                     "accountSid" = $<accountSid> AND
                     "contactId" = $<contactId> AND 
                     "jobType" = $<jobType> AND
                     "completed" IS NOT NULL`,
-  { contactId, accountSid: ACCOUNT_SID, jobType },
-      )
-    )
+        { contactId, accountSid: ACCOUNT_SID, jobType },
+      ),
+    ),
 );

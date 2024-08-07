@@ -21,6 +21,7 @@ import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 
 export default class ContactCompleteStack extends cdk.Stack {
   public readonly completeQueue: cdk.aws_sqs.Queue;
+
   public readonly dockerCompleteQueueUrl: string;
 
   constructor({
@@ -40,7 +41,6 @@ export default class ContactCompleteStack extends cdk.Stack {
   }) {
     super(scope, id, props);
     this.completeQueue = new cdk.aws_sqs.Queue(this, id);
-
 
     const splitCompleteQueueUrl = cdk.Fn.split('localhost', this.completeQueue.queueUrl);
     const completeQueueUrl = cdk.Fn.join('localstack', [
