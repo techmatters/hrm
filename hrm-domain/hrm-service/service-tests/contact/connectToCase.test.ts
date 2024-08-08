@@ -111,14 +111,22 @@ describe('/contacts/:contactId/connectToCase route', () => {
         user: newTwilioUser(accountSid, workerSid, []),
         can: () => true,
       },
+      true,
     );
-    createdCase = await caseApi.createCase(case1, accountSid, workerSid);
-    anotherCreatedCase = await caseApi.createCase(case2, accountSid, workerSid);
+    createdCase = await caseApi.createCase(case1, accountSid, workerSid, undefined, true);
+    anotherCreatedCase = await caseApi.createCase(
+      case2,
+      accountSid,
+      workerSid,
+      undefined,
+      true,
+    );
     const contactToBeDeleted = await contactApi.createContact(
       accountSid,
       workerSid,
       <any>contact2,
       { user: newTwilioUser(accountSid, workerSid, []), can: () => true },
+      true,
     );
     const caseToBeDeleted = await caseApi.createCase(case1, accountSid, workerSid);
 
@@ -339,6 +347,7 @@ describe('/contacts/:contactId/connectToCase route', () => {
         existingContactId,
         existingCaseId,
         ALWAYS_CAN,
+        true,
       );
     });
 

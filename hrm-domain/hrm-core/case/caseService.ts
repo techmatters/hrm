@@ -340,6 +340,7 @@ export const createCase = async (
   accountSid: CaseService['accountSid'],
   workerSid: CaseService['twilioWorkerId'],
   testNowISO?: Date,
+  skipSearchIndex = false,
 ): Promise<CaseService> => {
   const nowISO = (testNowISO ?? new Date()).toISOString();
   delete body.id;
@@ -357,8 +358,10 @@ export const createCase = async (
   );
   const created = await create(record);
 
-  // trigger index operation but don't await for it
-  indexCaseInSearchIndex({ accountSid, caseId: created.id });
+  if (!skipSearchIndex) {
+    // trigger index operation but don't await for it
+    indexCaseInSearchIndex({ accountSid, caseId: created.id });
+  }
 
   // A new case is always initialized with empty connected contacts. No need to apply mapContactTransformations here
   return caseRecordToCase(created);
@@ -373,6 +376,7 @@ export const updateCaseStatus = async (
     user,
     permissions,
   }: { can: InitializedCan; user: TwilioUser; permissions: RulesFile },
+  skipSearchIndex = false,
 ): Promise<CaseService> => {
   const { workerSid } = user;
   const updated = await updateStatus(
@@ -386,8 +390,10 @@ export const updateCaseStatus = async (
 
   const withTransformedContacts = mapContactTransformations({ can, user })(updated);
 
-  // trigger index operation but don't await for it
-  indexCaseInSearchIndex({ accountSid, caseId: updated.id });
+  if (!skipSearchIndex) {
+    // trigger index operation but don't await for it
+    indexCaseInSearchIndex({ accountSid, caseId: updated.id });
+  }
 
   return caseRecordToCase(withTransformedContacts);
 };
@@ -397,12 +403,15 @@ export const updateCaseOverview = async (
   id: CaseService['id'],
   overview: Pick<CaseService['info'], CaseOverviewProperties>,
   workerSid: CaseService['twilioWorkerId'],
+  skipSearchIndex = false,
 ): Promise<CaseService> => {
   const validOverview = pick(overview, CASE_OVERVIEW_PROPERTIES);
   const updated = await updateCaseInfo(accountSid, id, validOverview, workerSid);
 
-  // trigger index operation but don't await for it
-  indexCaseInSearchIndex({ accountSid, caseId: updated.id });
+  if (!skipSearchIndex) {
+    // trigger index operation but don't await for it
+    indexCaseInSearchIndex({ accountSid, caseId: updated.id });
+  }
 
   return caseRecordToCase(updated);
 };

@@ -18,7 +18,7 @@ import * as cdk from 'aws-cdk-lib';
 import * as lambdaNode from 'aws-cdk-lib/aws-lambda-nodejs';
 import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 
-export default class ContactRetrieveStack extends cdk.Stack {
+export default class ContactTranscriptJobStack extends cdk.Stack {
   constructor({
     scope,
     id,

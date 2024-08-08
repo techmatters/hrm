@@ -37,6 +37,7 @@ const publishToSearchIndex = async ({
       JSON.stringify(message),
     );
     const queueUrl = await getSsmParameter(PENDING_INDEX_QUEUE_SSM_PATH);
+    console.log('>>>> publishToSearchIndex sending to queue: ', queueUrl);
     return await sendSqsMessage({
       queueUrl,
       message: JSON.stringify(message),
@@ -44,7 +45,7 @@ const publishToSearchIndex = async ({
     });
   } catch (err) {
     console.error(
-      `Error trying to send message to SQS queue ${PENDING_INDEX_QUEUE_SSM_PATH}`,
+      `Error trying to send message to SQS queue store in SSM parameter ${PENDING_INDEX_QUEUE_SSM_PATH}`,
       err,
     );
   }

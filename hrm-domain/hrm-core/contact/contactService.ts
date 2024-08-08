@@ -214,6 +214,7 @@ export const createContact = async (
   createdBy: WorkerSID,
   newContact: NewContactRecord,
   { can, user }: { can: InitializedCan; user: TwilioUser },
+  skipSearchIndex = false,
 ): Promise<Contact> => {
   let result: Result<DatabaseErrorResult, Contact>;
   for (let retries = 1; retries < 4; retries++) {
@@ -260,7 +261,9 @@ export const createContact = async (
     });
     if (isOk(result)) {
       // trigger index operation but don't await for it
-      indexContactInSearchIndex({ accountSid, contactId: result.data.id });
+      if (!skipSearchIndex) {
+        indexContactInSearchIndex({ accountSid, contactId: result.data.id });
+      }
       return result.data;
     }
     // This operation can fail with a unique constraint violation if a contact with the same ID is being created concurrently
@@ -294,6 +297,7 @@ export const patchContact = async (
   contactId: string,
   { referrals, rawJson, ...restOfPatch }: PatchPayload,
   { can, user }: { can: InitializedCan; user: TwilioUser },
+  skipSearchIndex = false,
 ): Promise<Contact> =>
   db.tx(async conn => {
     // if referrals are present, delete all existing and create new ones, otherwise leave them untouched
@@ -329,7 +333,10 @@ export const patchContact = async (
     const applyTransformations = bindApplyTransformations(can, user);
 
     // trigger index operation but don't await for it
-    indexContactInSearchIndex({ accountSid, contactId: parseInt(contactId, 10) });
+
+    if (!skipSearchIndex) {
+      indexContactInSearchIndex({ accountSid, contactId: parseInt(contactId, 10) });
+    }
 
     return applyTransformations(updated);
   });
@@ -339,6 +346,7 @@ export const connectContactToCase = async (
   contactId: string,
   caseId: string,
   { can, user }: { can: InitializedCan; user: TwilioUser },
+  skipSearchIndex = false,
 ): Promise<Contact> => {
   if (caseId === null) {
     // trigger remove operation, awaiting for it, since we'll lost the information of which is the "old case" otherwise
@@ -358,7 +366,9 @@ export const connectContactToCase = async (
   const applyTransformations = bindApplyTransformations(can, user);
 
   // trigger index operation but don't await for it
-  indexContactInSearchIndex({ accountSid, contactId: parseInt(contactId, 10) });
+  if (!skipSearchIndex) {
+    indexContactInSearchIndex({ accountSid, contactId: parseInt(contactId, 10) });
+  }
 
   return applyTransformations(updated);
 };
@@ -368,6 +378,7 @@ export const addConversationMediaToContact = async (
   contactIdString: string,
   conversationMediaPayload: NewConversationMedia[],
   { can, user }: { can: InitializedCan; user: TwilioUser },
+  skipSearchIndex = false,
 ): Promise<Contact> => {
   const contactId = parseInt(contactIdString);
   const contact = await getById(accountSid, contactId);
@@ -403,7 +414,9 @@ export const addConversationMediaToContact = async (
     };
 
     // trigger index operation but don't await for it
-    indexContactInSearchIndex({ accountSid, contactId: parseInt(contactIdString, 10) });
+    if (!skipSearchIndex) {
+      indexContactInSearchIndex({ accountSid, contactId: parseInt(contactIdString, 10) });
+    }
 
     return applyTransformations(updated);
   });
@@ -564,7 +577,7 @@ export const generalisedContactSearch = async (
  * wrapper around updateSpecificData that also triggers a re-index operation when the conversation media gets updated (e.g. when transcript is exported)
  */
 export const updateConversationMediaData =
-  (contactId: Contact['id']) =>
+  (contactId: Contact['id'], skipSearchIndex = false) =>
   async (
     ...[accountSid, id, storeTypeSpecificData]: Parameters<
       typeof updateConversationMediaSpecificData
@@ -577,7 +590,9 @@ export const updateConversationMediaData =
     );
 
     // trigger index operation but don't await for it
-    indexContactInSearchIndex({ accountSid, contactId });
+    if (!skipSearchIndex) {
+      indexContactInSearchIndex({ accountSid, contactId });
+    }
 
     return result;
   };

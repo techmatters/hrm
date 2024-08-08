@@ -21,7 +21,7 @@ import * as dotenv from 'dotenv';
 
 import ContactCompleteStack from './contact-complete-stack';
 import ContactCoreStack from './contact-core-stack';
-import ContactRetrieveStack from './contact-retrieve-stack';
+import ContactTranscriptJobStack from './contact-transcript-job-stack';
 import HrmMicoservicesStack from './hrm-micoroservices-stack';
 import LocalCoreStack from './local-core-stack';
 import ResourcesCoreStack from './resources-core-stack';
@@ -88,12 +88,25 @@ async function main() {
     },
   });
 
-  new ContactRetrieveStack({
+  new ContactTranscriptJobStack({
     scope: app,
     id: 'retrieve-transcript',
     params: {
       completeQueue: contactComplete.completeQueue,
       docsBucket: localCore.docsBucket,
+    },
+    props: {
+      env: { region: app.node.tryGetContext('region') },
+    },
+  });
+
+  new ContactTranscriptJobStack({
+    scope: app,
+    id: 'scrub-transcript',
+    params: {
+      completeQueue: contactComplete.completeQueue,
+      docsBucket: localCore.docsBucket,
+      skipLambda: true,
     },
     props: {
       env: { region: app.node.tryGetContext('region') },

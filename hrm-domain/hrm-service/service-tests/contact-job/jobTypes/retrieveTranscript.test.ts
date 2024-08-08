@@ -19,7 +19,6 @@ import { isAfter, parseISO } from 'date-fns';
 import timers from 'timers';
 
 import { withTaskId, accountSid, workerSid } from '../../mocks';
-import * as contactJobApi from '@tech-matters/hrm-core/contact-job/contact-job-data-access';
 import { db } from '@tech-matters/hrm-core/connection-pool';
 import '../../case/caseValidation';
 import * as conversationMediaApi from '@tech-matters/hrm-core/conversation-media/conversation-media';
@@ -33,6 +32,7 @@ import {
 import { newTwilioUser } from '@tech-matters/twilio-worker-auth';
 import { NewConversationMedia } from '@tech-matters/hrm-core/conversation-media/conversation-media';
 import { NewContactRecord } from '@tech-matters/hrm-core/contact/sql/contactInsertSql';
+import { clearAllTables } from '../../dbCleanup';
 
 const { S3ContactMediaType, isS3StoredTranscriptPending } = conversationMediaApi;
 
@@ -55,17 +55,6 @@ const selectJobById = (id: number, accountSid: string) =>
     `),
   );
 
-let createdContact: Awaited<ReturnType<typeof contactApi.createContact>>;
-let createdJobs: contactJobApi.ContactJobRecord[] = [];
-
-const cleanupContact = () =>
-  db.task(t => t.none(`DELETE FROM "Contacts" WHERE id = ${createdContact.id};`));
-
-const cleanupContactsJobs = () => {
-  const idsWhereClause = `WHERE id IN (${createdJobs.map(j => j.id).join(',')})`;
-  return db.task(t => t.none(`DELETE FROM "ContactJobs" ${idsWhereClause}`));
-};
-
 let contactApi: typeof import('@tech-matters/hrm-core/contact/contactService');
 let SQSClient: typeof import('@tech-matters/hrm-core/contact-job/client-sqs');
 let contactJobComplete: typeof import('@tech-matters/hrm-core/contact-job/contact-job-complete');
@@ -82,20 +71,7 @@ beforeEach(() => {
   });
 });
 
-afterEach(async () => {
-  if (createdJobs.length) await cleanupContactsJobs();
-  if (createdContact) await cleanupContact();
-});
-
-afterAll(async () => {
-  await db.tx(async trx => {
-    const contactIds = (
-      await trx.manyOrNone('DELETE FROM "ContactJobs" RETURNING *')
-    ).map(j => j.contactId);
-    if (contactIds.length)
-      await trx.none(`DELETE FROM "Contacts" WHERE id IN (${contactIds.join(',')})`);
-  });
-});
+afterEach(clearAllTables);
 
 const SAMPLE_CONVERSATION_MEDIA: NewConversationMedia = {
   storeType: 'S3' as const,
@@ -119,6 +95,7 @@ const createChatContact = async (channel: string, startedTimestamp: number) => {
       can: () => true,
       user: newTwilioUser(accountSid, workerSid, []),
     },
+    true,
   );
 
   contact = await contactApi.addConversationMediaToContact(
@@ -129,6 +106,7 @@ const createChatContact = async (channel: string, startedTimestamp: number) => {
       can: () => true,
       user: newTwilioUser(accountSid, workerSid, []),
     },
+    true,
   );
 
   const jobs = await selectJobsByContactId(contact.id, contact.accountSid);
@@ -155,10 +133,6 @@ const createChatContact = async (channel: string, startedTimestamp: number) => {
     [retrieveContactTranscriptJob.id],
   );
   expect(failurePayload).toBeNull();
-
-  // Assign for cleanup
-  createdContact = contact;
-  createdJobs = jobs;
 
   return [contact, retrieveContactTranscriptJob, jobs] as const;
 };
