@@ -353,15 +353,6 @@ describe('Scrub job complete', () => {
 
     await singleProcessContactJobsRun();
 
-    const messages = await sqsClient
-      .receiveMessage({
-        QueueUrl: pendingScrubQueueUrl,
-        MaxNumberOfMessages: 1,
-      })
-      .promise();
-
-    console.log('messages is here', messages);
-
     const updatedContact = await contactApi.getContactById(
       accountSid,
       testContactId,
@@ -384,7 +375,15 @@ describe('Scrub job complete', () => {
     expect(pendingScrubJobs).toBeDefined();
     expect(pendingScrubJobs.jobType).toBe(ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT);
 
-    expect(messages.Messages?.length).toBe(1);
+    const messages = await sqsClient
+      .receiveMessage({
+        QueueUrl: pendingScrubQueueUrl,
+        MaxNumberOfMessages: 10,
+        WaitTimeSeconds: 0,
+      })
+      .promise();
+
+    expect(messages.Messages?.length).toBe(2);
     const pendingScrubMessage = JSON.parse(messages.Messages[0].Body);
     expect(pendingScrubMessage.contact.id).toBe(testContactId);
   });
