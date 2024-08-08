@@ -55,6 +55,8 @@ CREATE ROLE rdsrepladmin;
 ALTER ROLE rdsrepladmin WITH NOSUPERUSER NOINHERIT NOCREATEROLE NOCREATEDB NOLOGIN REPLICATION NOBYPASSRLS;
 CREATE ROLE read_only_user;
 ALTER ROLE read_only_user WITH NOSUPERUSER INHERIT NOCREATEROLE NOCREATEDB LOGIN NOREPLICATION NOBYPASSRLS;
+CREATE ROLE resources;
+ALTER ROLE resources WITH NOSUPERUSER INHERIT CREATEROLE CREATEDB LOGIN NOREPLICATION NOBYPASSRLS VALID UNTIL 'infinity';
 --
 -- User Configurations
 --
@@ -64,65 +66,17 @@ ALTER ROLE read_only_user WITH NOSUPERUSER INHERIT NOCREATEROLE NOCREATEDB LOGIN
 --
 
 ALTER ROLE rdsadmin SET "TimeZone" TO 'utc';
---
--- User Config "rdsadmin"
---
-
 ALTER ROLE rdsadmin SET log_statement TO 'all';
---
--- User Config "rdsadmin"
---
-
 ALTER ROLE rdsadmin SET log_min_error_statement TO 'debug5';
---
--- User Config "rdsadmin"
---
-
 ALTER ROLE rdsadmin SET log_min_messages TO 'panic';
---
--- User Config "rdsadmin"
---
-
 ALTER ROLE rdsadmin SET exit_on_error TO '0';
---
--- User Config "rdsadmin"
---
-
 ALTER ROLE rdsadmin SET statement_timeout TO '0';
---
--- User Config "rdsadmin"
---
-
 ALTER ROLE rdsadmin SET role TO 'rdsadmin';
---
--- User Config "rdsadmin"
---
-
 ALTER ROLE rdsadmin SET "auto_explain.log_min_duration" TO '-1';
---
--- User Config "rdsadmin"
---
-
 ALTER ROLE rdsadmin SET temp_file_limit TO '-1';
---
--- User Config "rdsadmin"
---
-
 ALTER ROLE rdsadmin SET search_path TO 'pg_catalog', 'public';
---
--- User Config "rdsadmin"
---
-
 ALTER ROLE rdsadmin SET "pg_hint_plan.enable_hint" TO 'off';
---
--- User Config "rdsadmin"
---
-
 ALTER ROLE rdsadmin SET default_transaction_read_only TO 'off';
---
--- User Config "rdsadmin"
---
-
 ALTER ROLE rdsadmin SET default_tablespace TO '';
 
 
@@ -156,6 +110,7 @@ GRANT TEMPORARY, CONNECT ON DATABASE hrmdb TO PUBLIC;
 GRANT ALL ON DATABASE hrmdb TO hrm;
 
 GRANT CONNECT ON DATABASE hrmdb TO read_only_user;
+GRANT CONNECT ON DATABASE hrmdb TO resources;
 
 -- SCHEMA: public
 
@@ -172,6 +127,23 @@ GRANT ALL ON SCHEMA public TO PUBLIC;
 GRANT ALL ON SCHEMA public TO hrm;
 
 GRANT USAGE ON SCHEMA public TO read_only_user;
+
+
+-- SCHEMA: resources
+
+CREATE SCHEMA IF NOT EXISTS resources
+    AUTHORIZATION resources;
+
+ALTER SCHEMA resources OWNER TO resources;
+
+COMMENT ON SCHEMA resources
+    IS 'resources schema';
+
+GRANT ALL ON SCHEMA resources TO PUBLIC;
+
+GRANT ALL ON SCHEMA resources TO resources;
+
+GRANT USAGE ON SCHEMA resources TO read_only_user;
 
 --
 -- Name: AgeBrackets; Type: TABLE; Schema: public; Owner: hrm
@@ -1067,8 +1039,12 @@ ALTER TABLE ONLY public."Contacts"
 
 REVOKE ALL ON SCHEMA public FROM rdsadmin;
 REVOKE ALL ON SCHEMA public FROM PUBLIC;
+REVOKE ALL ON SCHEMA resources FROM rdsadmin;
+REVOKE ALL ON SCHEMA resources FROM PUBLIC;
 GRANT ALL ON SCHEMA public TO hrm;
 GRANT ALL ON SCHEMA public TO PUBLIC;
+GRANT ALL ON SCHEMA resources TO resources;
+GRANT ALL ON SCHEMA resources TO PUBLIC;
 
 
 --
