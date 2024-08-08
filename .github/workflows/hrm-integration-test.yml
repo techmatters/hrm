@@ -34,22 +34,9 @@ env:
   # if anything is set as a secret, it can't be used in outputs. So we need to set it as an env var
   PRIMARY_AWS_REGION: us-east-1
 
-build-service-container:
-  runs-on: ubuntu-latest
-  steps:
-    - name: Checkout Branch
-      uses: actions/checkout@v4
-    - name: Build Service Docker Image
-      uses: docker/build-push-action@v5
-      with:
-        context: ./
-        file: ./hrm-domain/hrm-service/Dockerfile
-        push: false
-        tags: hrm-service-ci-test
-
-  integration-test:
+jobs:
+  integration-tests:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout Branch
         uses: actions/checkout@v4
@@ -63,15 +50,25 @@ build-service-container:
         run: npm ci
 
       - name: Add licence
-      - env:
+        env:
           INTEGRATION_TEST_PRIVATE_AI_LICENCE: ${{ secrets.INTEGRATION_TEST_PRIVATE_AI_LICENCE }}
         run: |
           touch ./hrm-domain/scheduled-tasks/transcript-scrubber/licence/license.json
           echo "$INTEGRATION_TEST_PRIVATE_AI_LICENCE" >> ./hrm-domain/scheduled-tasks/transcript-scrubber/licence/license.json
         shell: bash
 
+      - name: Build Code
+        run: npm run build
+
+      - name: Log in to Private AI Registry
+        run: docker login -u ${{ secrets.INTEGRATION_TEST_PRIVATE_AI_DOCKER_USER }} -p ${{ secrets.INTEGRATION_TEST_PRIVATE_AI_DOCKER_PASSWORD }} crprivateaiprod.azurecr.io
+
       - name: Build Containers
         run: npm run docker:build
 
-      - name: Run Unit Tests
+      - name: Run Tests
+        env:
+          AWS_ACCESS_KEY_ID: test
+          AWS_SECRET_ACCESS_KEY: test
+          AWS_REGION: us-east-1
         run: npm run test:integration -w hrm-domain/integration-tests/transcripts
