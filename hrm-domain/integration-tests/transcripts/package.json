@@ -28,11 +28,11 @@
     "ts-node": "^10.9.1"
   },
   "scripts": {
-    "start:localstack": "cd ../../ && npm run  && npm run start:localstack",
+    "localstack:setup": "cd ../../ && npm run  && npm run start:localstack",
     "docker:compose:up": "cd ../../ && npm run  && npm run docker:compose:up:integration-test",
     "run:private-ai": "docker run transcript-scrubber:latest --network hrm",
     "test:integration:run": "cross-env S3_FORCE_PATH_STYLE=true S3_ENDPOINT=http://localhost:4566 SQS_ENDPOINT=http://localhost:4566 jest tests",
-    "test:integration": "run-s start:localstack docker:compose:up test:integration:run",
+    "test:integration": "run-s docker:compose:up localstack:setup test:integration:run",
     "test": "npm run test:integration"
   }
 }
