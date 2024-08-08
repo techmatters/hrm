@@ -81,7 +81,7 @@
     "docker:compose:db-persistent:up": "docker compose -p hrm -f hrm-domain/hrm-service/docker-database/docker-compose-persistent.yml up -d",
     "docker:compose:es:up": "docker compose -p hrm -f docker-compose.es.yml up -d",
     "docker:compose:es:down": "docker compose -p hrm -f docker-compose.es.yml down",
-    "docker:compose:lambdas:up": "cross-env completed_sqs_queue_url=PLACEHOLDER_completed_sqs_queue_url docker compose -p hrm -f lambdas/docker-compose.yml up -d",
+    "docker:compose:lambdas:up": "cross-env completed_sqs_queue_url==$(npx ts-node test-support/getContactCompleteQueueUrl.ts) docker compose -p hrm -f lambdas/docker-compose.yml up -d",
     "docker:compose:localstack:up": "docker compose -p hrm up -d",
     "docker:compose:service:up": "docker compose -p hrm -f hrm-domain/hrm-service/docker-compose.yml up -d",
     "es:create-index": "npm run es:create-index:local --workspaces --if-present",
