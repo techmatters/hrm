@@ -180,7 +180,7 @@ jobs:
         run: npm run build
 
       - name: Log in to Private AI Registry
-        run: docker login -u ${{ secrets.INTEGRATION_TEST_PRIVATE_AI_USER }} -p ${{ secrets.INTEGRATION_TEST_PRIVATE_AI_PASSWORD }} crprivateaiprod.azurecr.io
+        run: docker login -u ${{ secrets.INTEGRATION_TEST_PRIVATE_AI_DOCKER_USER }} -p ${{ secrets.INTEGRATION_TEST_PRIVATE_AI_DOCKER_PASSWORD }} crprivateaiprod.azurecr.io
 
       - name: Build Containers
         run: npm run docker:build
