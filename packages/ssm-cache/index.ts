@@ -21,6 +21,7 @@ import {
   GetParametersByPathCommand,
   GetParametersByPathCommandInput,
   Parameter as SsmParameter,
+  ParameterNotFound,
 } from '@aws-sdk/client-ssm';
 
 const convertToEndpoint = (endpointUrl: string) => {
@@ -122,14 +123,18 @@ export const loadParameter = async (name: string) => {
   };
 
   const command = new GetParameterCommand(params);
-
-  const { Parameter } = await getSsmClient().send(command);
-
-  if (!Parameter?.Name) {
-    return;
+  try {
+    const { Parameter } = await getSsmClient().send(command);
+    if (!Parameter?.Name) {
+      return;
+    }
+    addToCache(undefined, Parameter);
+  } catch (e) {
+    if (e instanceof ParameterNotFound) {
+      return;
+    }
+    throw e;
   }
-
-  addToCache(undefined, Parameter);
 };
 
 export const getSsmParameter = async (

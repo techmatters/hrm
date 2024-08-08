@@ -27,6 +27,7 @@ type ConversationMediaCommons = {
 export enum S3ContactMediaType {
   RECORDING = 'recording',
   TRANSCRIPT = 'transcript',
+  SCRUBBED_TRANSCRIPT = 'scrubbed-transcript',
 }
 
 type NewTwilioStoredMedia = {
@@ -35,10 +36,10 @@ type NewTwilioStoredMedia = {
 };
 type TwilioStoredMedia = ConversationMediaCommons & NewTwilioStoredMedia;
 
-type NewS3StoredTranscript = {
+type NewS3StoredMedia<T extends S3ContactMediaType> = {
   storeType: 'S3';
   storeTypeSpecificData: {
-    type: S3ContactMediaType.TRANSCRIPT;
+    type: T;
     location?: {
       bucket: string;
       key: string;
@@ -46,26 +47,18 @@ type NewS3StoredTranscript = {
   };
 };
 
-type NewS3StoredRecording = {
-  storeType: 'S3';
-  storeTypeSpecificData: {
-    type: S3ContactMediaType.RECORDING;
-    location?: {
-      bucket: string;
-      key: string;
-    };
-  };
-};
-export type S3StoredTranscript = ConversationMediaCommons & NewS3StoredTranscript;
-export type S3StoredRecording = ConversationMediaCommons & NewS3StoredRecording;
-export type S3StoredConversationMedia = S3StoredTranscript | S3StoredRecording;
+export type S3StoredTranscript = ConversationMediaCommons &
+  NewS3StoredMedia<S3ContactMediaType.TRANSCRIPT>;
+export type S3StoredRecording = ConversationMediaCommons &
+  NewS3StoredMedia<S3ContactMediaType.RECORDING>;
+export type S3StoredConversationMedia = ConversationMediaCommons &
+  NewS3StoredMedia<S3ContactMediaType>;
 
 export type ConversationMedia = TwilioStoredMedia | S3StoredConversationMedia;
 
 export type NewConversationMedia =
   | NewTwilioStoredMedia
-  | NewS3StoredTranscript
-  | NewS3StoredRecording;
+  | NewS3StoredMedia<S3ContactMediaType>;
 
 export const isTwilioStoredMedia = (m: ConversationMedia): m is TwilioStoredMedia =>
   m.storeType === 'twilio';

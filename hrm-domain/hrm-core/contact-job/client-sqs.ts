@@ -22,6 +22,7 @@ import {
 import { getSsmParameter } from '../config/ssmCache';
 
 import type { PublishToContactJobsTopicParams } from '@tech-matters/types';
+import { SsmParameterNotFound } from '@tech-matters/ssm-cache';
 
 const COMPLETED_QUEUE_SSM_PATH = `/${process.env.NODE_ENV}/${
   process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
@@ -69,6 +70,11 @@ export const publishToContactJobs = async (params: PublishToContactJobsTopicPara
       message: JSON.stringify(params),
     });
   } catch (err) {
+    if (err instanceof SsmParameterNotFound) {
+      console.log(
+        `SSM parameter for ${params.jobType} not found, assuming this job type is not enabled for this environment`,
+      );
+    }
     console.error('Error trying to send message to SQS queue', err);
   }
 };
