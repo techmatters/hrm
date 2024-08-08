@@ -176,8 +176,11 @@ jobs:
           echo "$INTEGRATION_TEST_PRIVATE_AI_LICENCE" >> ./hrm-domain/scheduled-tasks/transcript-scrubber/licence/license.json
         shell: bash
 
+      - name: Build Code
+        run: npm run build
+
       - name: Build Containers
         run: npm run docker:build
 
-      - name: Run Unit Tests
+      - name: Run Tests
         run: npm run test:integration -w hrm-domain/integration-tests/transcripts
