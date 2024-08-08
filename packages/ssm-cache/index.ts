@@ -20,7 +20,8 @@ import {
   GetParameterCommand,
   GetParametersByPathCommand,
   GetParametersByPathCommandInput,
-  Parameter as SsmParameter, ParameterNotFound,
+  Parameter as SsmParameter,
+  ParameterNotFound,
 } from '@aws-sdk/client-ssm';
 
 const convertToEndpoint = (endpointUrl: string) => {

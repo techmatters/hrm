@@ -63,11 +63,13 @@ export const publishScrubTranscriptJob = async (
 ) => {
   const { accountSid, id: contactId, taskId, twilioWorkerId } = contactJob.resource;
   try {
-    const paramVal = await getSsmParameter(`/${process.env.NODE_ENV}/${
-      process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
-    }/${accountSid}/jobs/contact/scrub-transcript/enabled`);
+    const paramVal = await getSsmParameter(
+      `/${process.env.NODE_ENV}/${
+        process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
+      }/${accountSid}/jobs/contact/scrub-transcript/enabled`,
+    );
     if (paramVal?.toLowerCase() === 'true') {
-      return publishToContactJobs({
+      return await publishToContactJobs({
         jobType: contactJob.jobType,
         jobId: contactJob.id,
         accountSid,
