@@ -16,6 +16,8 @@
 
 import { putS3Object } from '@tech-matters/s3-client';
 import { purgeSqsQueue, sendSqsMessage } from '@tech-matters/sqs-client';
+import { getSsmClient } from '@tech-matters/ssm-cache';
+import { PutParameterCommand } from '@aws-sdk/client-ssm';
 import { getStackOutput } from '../../../../cdk/cdkOutput';
 import { INPUT_TRANSCRIPT } from '../src/fixtures/sampleTranscripts';
 import {
@@ -33,6 +35,7 @@ import { runContainer } from '../src/docker';
 import { newCompletedRetrieveTranscriptMessageBody } from '../src/fixtures/sampleMessages';
 import { ContactJobType } from '@tech-matters/types/dist/ContactJob';
 import { waitForS3Object } from '../src/s3';
+import { ACCOUNT_SID } from '../src/fixtures/sampleConfig';
 
 jest.setTimeout(60000);
 
@@ -89,6 +92,12 @@ test('Retrieve contact job in progress and completed notification retrieved', as
     key: UNSCRUBBED_TRANSCRIPT_KEY,
     body: JSON.stringify(INPUT_TRANSCRIPT),
   });
+  await getSsmClient().send(
+    new PutParameterCommand({
+      Name: `/test/us-east-1/contact/jobs/${ACCOUNT_SID}/scrub-transcript/enabled`,
+      Value: 'true',
+    }),
+  );
   // Add contact with unscrubbed transcript to Contact table
   const contact = await createContact(MINIMAL_CONTACT);
   const conversationMedia = await addConversationMediaToContact({

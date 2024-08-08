@@ -6,6 +6,7 @@
   "author": "",
   "license": "AGPL",
   "dependencies": {
+    "@aws-sdk/client-ssm": "^3.391.0",
     "@tech-matters/hrm-core": "^1.0.0",
     "@tech-matters/hrm-types": "^1.0.0",
     "@tech-matters/job-errors": "^1.0.0",
