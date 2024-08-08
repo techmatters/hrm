@@ -360,6 +360,8 @@ describe('Scrub job complete', () => {
       })
       .promise();
 
+    console.log('messages is here', messages);
+
     const updatedContact = await contactApi.getContactById(
       accountSid,
       testContactId,
