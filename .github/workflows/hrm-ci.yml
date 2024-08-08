@@ -169,7 +169,7 @@ jobs:
         run: npm ci
 
       - name: Add licence
-      - env:
+        env:
           INTEGRATION_TEST_PRIVATE_AI_LICENCE: ${{ secrets.INTEGRATION_TEST_PRIVATE_AI_LICENCE }}
         run: |
           touch ./hrm-domain/scheduled-tasks/transcript-scrubber/licence/license.json
