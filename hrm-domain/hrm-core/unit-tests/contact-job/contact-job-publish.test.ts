@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { getSsmParameter  } from '../../config/ssmCache';
+import { getSsmParameter } from '../../config/ssmCache';
 import * as SQSClient from '../../contact-job/client-sqs';
 import * as contactJobPublish from '../../contact-job/contact-job-publish';
 import { ContactJob } from '../../contact-job/contact-job-data-access';
@@ -38,7 +38,9 @@ jest.mock('../../config/ssmCache', () => {
 
 const accountSid = 'AC-accountSid';
 const twilioWorkerId = 'WK-twilioWorkerId';
-const mockGetSsmParameter = getSsmParameter as jest.MockedFunction<typeof getSsmParameter>;
+const mockGetSsmParameter = getSsmParameter as jest.MockedFunction<
+  typeof getSsmParameter
+>;
 
 beforeEach(() => {
   jest.resetAllMocks();
