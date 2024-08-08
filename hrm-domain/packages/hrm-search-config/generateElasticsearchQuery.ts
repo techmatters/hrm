@@ -14,17 +14,26 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 import type { QueryDslQueryContainer } from '@elastic/elasticsearch/lib/api/types';
-import { SearchQuery } from '@tech-matters/elasticsearch-client';
+import type { SearchQuery } from '@tech-matters/elasticsearch-client';
 import {
-  CaseDocument,
-  ContactDocument,
+  DocumentType,
+  type DocumentTypeToDocument,
+  type NestedDocumentTypesRelations,
+  casePathToContacts,
+  casePathToSections,
   isHrmCasesIndex,
   isHrmContactsIndex,
 } from './hrmIndexDocumentMappings';
 import { assertExhaustive } from '@tech-matters/types';
 
-type NestedDocumentsQueryParams = {
-  contacts: GenerateContactQueryParams;
+type GenerateTDocQueryParams<TDoc extends DocumentType> = GenerateQueryParams<TDoc> & {
+  documentType: TDoc; // used as tag (tagged union)
+};
+
+export type DocumentTypeQueryParams = {
+  [DocumentType.Contact]: GenerateTDocQueryParams<DocumentType.Contact>;
+  [DocumentType.CaseSection]: GenerateTDocQueryParams<DocumentType.CaseSection>;
+  [DocumentType.Case]: GenerateTDocQueryParams<DocumentType.Case>;
 };
 
 type GenerateTermQueryParams = { type: 'term'; term: string };
@@ -33,25 +42,35 @@ type GenerateRangeQueryParams = {
   ranges: { lt?: string; lte?: string; gt?: string; gte?: string };
 };
 type GenerateQueryStringQuery = { type: 'queryString'; query: string; boost?: number };
-type GenerateMustNotQueryParams = {
+type GenerateMustNotQueryParams<TDoc extends DocumentType> = {
   type: 'mustNot';
-  innerQuery: GenerateQueryParamsObject;
+  innerQuery: DocumentTypeQueryParams[TDoc];
 };
-type GenerateNestedQueryParams<T extends {}, P extends keyof T> = {
-  type: 'nested';
-  path: P;
-  innerQuery: P extends keyof NestedDocumentsQueryParams
-    ? NestedDocumentsQueryParams[P]
-    : never;
+// Maps each document type to it's valid "nested" queries
+type NestedDocumentsQueryParams = {
+  [TDoc in keyof NestedDocumentTypesRelations]: {
+    [Nested in keyof NestedDocumentTypesRelations[TDoc]]: NestedDocumentTypesRelations[TDoc][Nested] extends DocumentType
+      ? GenerateTDocQueryParams<NestedDocumentTypesRelations[TDoc][Nested]>
+      : never;
+  };
 };
-type GenerateQueryParams<T extends {}, P extends keyof T> =
-  | ({ field: keyof T; parentPath?: string } & (
+// mapped type to bound P (path) to form valid innerQuery for each DocumentType, then indexed on [keyof NestedDocumentsQueryParams[TDoc]] so we get a union type
+type GenerateNestedQueryParams<TDoc extends DocumentType> = {
+  [P in keyof NestedDocumentsQueryParams[TDoc]]: {
+    type: 'nested';
+    path: P;
+    innerQuery: NestedDocumentsQueryParams[TDoc][P];
+  };
+}[keyof NestedDocumentsQueryParams[TDoc]];
+
+type GenerateQueryParams<TDoc extends DocumentType> =
+  | ({ field: keyof DocumentTypeToDocument[TDoc]; parentPath?: string } & (
       | GenerateTermQueryParams
       | GenerateRangeQueryParams
       | GenerateQueryStringQuery
     ))
-  | GenerateMustNotQueryParams
-  | GenerateNestedQueryParams<T, P>;
+  | GenerateMustNotQueryParams<TDoc>
+  | GenerateNestedQueryParams<TDoc>;
 
 export const FILTER_ALL_CLAUSE: QueryDslQueryContainer[][] = [
   [
@@ -75,18 +94,10 @@ const getFieldName = <T extends {}>(p: { field: keyof T; parentPath?: string }) 
   return `${prefix}${String(p.field)}`;
 };
 
-export type GenerateContactQueryParams = GenerateQueryParams<ContactDocument, never> & {
-  documentType: 'contact';
-};
-export type GenerateCaseQueryParams = GenerateQueryParams<CaseDocument, 'contacts'> & {
-  documentType: 'case';
-};
-export type GenerateQueryParamsObject =
-  | GenerateContactQueryParams
-  | GenerateCaseQueryParams;
-
 /** Utility function that creates a filter based on a more human-readable representation */
-export const generateESQuery = (p: GenerateQueryParamsObject): QueryDslQueryContainer => {
+export const generateESQuery = <TDoc extends DocumentType>(
+  p: DocumentTypeQueryParams[TDoc],
+): QueryDslQueryContainer => {
   switch (p.type) {
     case 'term': {
       return {
@@ -144,7 +155,7 @@ type SearchPagination = {
 };
 
 type SearchParametersContact = {
-  type: 'contact';
+  type: DocumentType.Contact;
   searchTerm: string;
   searchFilters: QueryDslQueryContainer[];
   permissionFilters: {
@@ -153,7 +164,7 @@ type SearchParametersContact = {
   };
 } & SearchPagination;
 
-const generateQueriesFromSearchTerms = ({
+const generateQueriesFromSearchTerms = <TDoc extends DocumentType>({
   searchTerm,
   documentType,
   field,
@@ -163,11 +174,14 @@ const generateQueriesFromSearchTerms = ({
 }: {
   searchTerm: string;
   boostFactor: number;
-  queryWrapper?: (p: GenerateQueryParamsObject) => GenerateQueryParamsObject;
-} & Pick<
-  GenerateQueryParamsObject & { type: 'queryString' },
-  'documentType' | 'field' | 'parentPath'
->) => {
+  queryWrapper?: (
+    p: DocumentTypeQueryParams[DocumentType],
+  ) => DocumentTypeQueryParams[DocumentType];
+} & {
+  documentType: TDoc;
+  field: keyof DocumentTypeToDocument[TDoc];
+  parentPath?: string;
+}): QueryDslQueryContainer[] => {
   const terms = searchTerm.split(' ');
 
   const queries = [
@@ -191,7 +205,7 @@ const generateQueriesFromSearchTerms = ({
         type: 'queryString',
         query,
         boost,
-        field: field as any,
+        field: field as any, // typecast to conform TS, only valid parameters should be accept
         parentPath,
       }),
     ),
@@ -216,10 +230,12 @@ const generateTranscriptQueriesFromFilters = ({
   transcriptFilters: QueryDslQueryContainer[][];
   searchParameters: SearchParametersContact;
   buildParams?: { parentPath: string };
-  queryWrapper?: (p: GenerateQueryParamsObject) => GenerateQueryParamsObject;
+  queryWrapper?: (
+    p: DocumentTypeQueryParams[DocumentType],
+  ) => DocumentTypeQueryParams[DocumentType];
 }): QueryDslQueryContainer[] => {
   const queries = generateQueriesFromSearchTerms({
-    documentType: 'contact',
+    documentType: DocumentType.Contact,
     field: 'transcript',
     searchTerm: searchParameters.searchTerm,
     parentPath: buildParams.parentPath,
@@ -244,7 +260,9 @@ const generateContactsQueriesFromFilters = ({
 }: {
   searchParameters: SearchParametersContact;
   buildParams?: { parentPath: string };
-  queryWrapper?: (p: GenerateQueryParamsObject) => GenerateQueryParamsObject;
+  queryWrapper?: (
+    p: DocumentTypeQueryParams[DocumentType],
+  ) => DocumentTypeQueryParams[DocumentType];
 }) => {
   const { searchFilters, permissionFilters } = searchParameters;
 
@@ -265,7 +283,7 @@ const generateContactsQueriesFromFilters = ({
   });
 
   const queries = generateQueriesFromSearchTerms({
-    documentType: 'contact',
+    documentType: DocumentType.Contact,
     field: 'content',
     searchTerm: searchParameters.searchTerm,
     parentPath: buildParams.parentPath,
@@ -317,7 +335,7 @@ const generateContactsQuery = ({
 };
 
 type SearchParametersCases = {
-  type: 'case';
+  type: DocumentType.Case;
   searchTerm: string;
   searchFilters: QueryDslQueryContainer[];
   permissionFilters: {
@@ -326,8 +344,6 @@ type SearchParametersCases = {
     caseFilters: QueryDslQueryContainer[][];
   };
 } & SearchPagination;
-
-export const casePathToContacts = 'contacts';
 
 const generateCasesQueriesFromFilters = ({
   searchParameters,
@@ -346,21 +362,35 @@ const generateCasesQueriesFromFilters = ({
   }
 
   const contactQueries = generateContactsQueriesFromFilters({
-    searchParameters: { ...searchParameters, type: 'contact' },
+    searchParameters: { ...searchParameters, type: DocumentType.Contact },
     queryWrapper: p => ({
-      documentType: 'case',
+      documentType: DocumentType.Case,
       type: 'nested',
       path: casePathToContacts,
-      innerQuery: p as GenerateContactQueryParams,
+      innerQuery: p as DocumentTypeQueryParams[DocumentType.Contact], // typecast to conform TS, only valid parameters should be accept
     }),
     buildParams: { parentPath: casePathToContacts },
   });
 
   const queries = generateQueriesFromSearchTerms({
-    documentType: 'case',
+    documentType: DocumentType.Case,
     field: 'content',
     searchTerm: searchParameters.searchTerm,
     boostFactor: BOOST_FACTORS.case,
+  });
+
+  const sectionsQueries = generateQueriesFromSearchTerms({
+    documentType: DocumentType.CaseSection,
+    field: 'content',
+    searchTerm: searchParameters.searchTerm,
+    boostFactor: BOOST_FACTORS.case,
+    queryWrapper: p => ({
+      documentType: DocumentType.Case,
+      type: 'nested',
+      path: casePathToSections,
+      innerQuery: p as DocumentTypeQueryParams[DocumentType.CaseSection], // typecast to conform TS, only valid parameters should be accept
+    }),
+    parentPath: casePathToSections,
   });
 
   const caseQueries = permissionFilters.caseFilters.map(caseFilter => ({
@@ -368,6 +398,9 @@ const generateCasesQueriesFromFilters = ({
       filter: [...caseFilter, ...searchFilters],
       should: [
         ...queries.map(q => ({
+          bool: { must: [q] },
+        })),
+        ...sectionsQueries.map(q => ({
           bool: { must: [q] },
         })),
         ...contactQueries,
@@ -410,10 +443,10 @@ const isValidSearchParams = (p: any, type: string) =>
 
 type GenerateIndexQueryParams = { index: string; searchParameters: SearchParameters };
 const isSearchParametersContacts = (p: any): p is SearchParametersContact =>
-  isValidSearchParams(p, 'contact');
+  isValidSearchParams(p, DocumentType.Contact);
 
 const isSearchParametersCases = (p: any): p is SearchParametersCases =>
-  isValidSearchParams(p, 'case');
+  isValidSearchParams(p, DocumentType.Case);
 
 export const generateElasticsearchQuery = (p: GenerateIndexQueryParams): SearchQuery => {
   const { index, searchParameters } = p;

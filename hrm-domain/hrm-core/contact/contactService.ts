@@ -31,6 +31,7 @@ import {
 } from '@tech-matters/types';
 import { getClient } from '@tech-matters/elasticsearch-client';
 import {
+  DocumentType,
   HRM_CONTACTS_INDEX_TYPE,
   hrmSearchConfiguration,
 } from '@tech-matters/hrm-search-config';
@@ -540,7 +541,7 @@ export const generalisedContactSearch = async (
 
     const { total, items } = await client.search({
       searchParameters: {
-        type: 'contact',
+        type: DocumentType.Contact,
         searchTerm,
         searchFilters,
         permissionFilters,
