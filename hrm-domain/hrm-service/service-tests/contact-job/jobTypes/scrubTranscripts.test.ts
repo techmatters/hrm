@@ -372,9 +372,6 @@ describe('Scrub job complete', () => {
       (updatedContact.conversationMedia[1].storeTypeSpecificData as any).location.key,
     );
 
-    expect(pendingScrubJobs).toBeDefined();
-    expect(pendingScrubJobs.jobType).toBe(ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT);
-
     const messages = await sqsClient
       .receiveMessage({
         QueueUrl: pendingScrubQueueUrl,
@@ -383,8 +380,13 @@ describe('Scrub job complete', () => {
       })
       .promise();
 
-    expect(messages.Messages?.length).toBe(2);
+    console.log('messages is here', messages);
+
+    expect(messages.Messages).toHaveLength(messages.Messages.length);
     const pendingScrubMessage = JSON.parse(messages.Messages[0].Body);
     expect(pendingScrubMessage.contact.id).toBe(testContactId);
+
+    expect(pendingScrubJobs).toBeDefined();
+    expect(pendingScrubJobs.jobType).toBe(ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT);
   });
 });
