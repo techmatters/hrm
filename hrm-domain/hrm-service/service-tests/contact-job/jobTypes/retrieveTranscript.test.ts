@@ -61,6 +61,8 @@ let contactJobComplete: typeof import('@tech-matters/hrm-core/contact-job/contac
 let contactJobPublish: typeof import('@tech-matters/hrm-core/contact-job/contact-job-publish');
 let contactJobProcessor: typeof import('@tech-matters/hrm-core/contact-job/contact-job-processor');
 
+beforeAll(clearAllTables);
+
 beforeEach(() => {
   jest.isolateModules(() => {
     contactApi = require('@tech-matters/hrm-core/contact/contactService');
