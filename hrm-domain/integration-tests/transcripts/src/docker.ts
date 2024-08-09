@@ -21,7 +21,10 @@ const docker = new Docker();
 export const runContainer = async (
   imageName: string,
   env: Record<string, string>,
-  copyEnvironmentVariables = true,
+  {
+    copyEnvironmentVariables = true,
+    maxMemoryMb,
+  }: { copyEnvironmentVariables?: boolean; maxMemoryMb?: number } = {},
 ) => {
   console.log('Starting image:', imageName, 'Env:', env);
   const [output, container] = await docker.run(imageName, [], process.stdout, {
@@ -31,6 +34,9 @@ export const runContainer = async (
     }).map(([key, value]) => `${key}=${value}`),
     HostConfig: {
       NetworkMode: 'hrm_default',
+      ...(maxMemoryMb && {
+        Memory: 1024 * 1024 * maxMemoryMb,
+      }),
     },
   });
   await container.remove();

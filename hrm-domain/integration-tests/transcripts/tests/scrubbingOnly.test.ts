@@ -140,12 +140,19 @@ test('Retrieve contact job in progress and completed notification retrieved', as
     UNSCRUBBED_TRANSCRIPT_KEY,
   );
   // Run the private AI container
-  await runContainer('transcript-scrubber:latest', {
-    PENDING_TRANSCRIPT_SQS_QUEUE_URL: pendingScrubTranscriptJobQueueUrl,
-    COMPLETED_TRANSCRIPT_SQS_QUEUE_URL: completedJobQueueUrl,
-    S3_ENDPOINT: process.env.S3_ENDPOINT.replace('localhost', 'localstack'),
-    SQS_ENDPOINT: process.env.SQS_ENDPOINT.replace('localhost', 'localstack'),
-  });
+  await runContainer(
+    'transcript-scrubber:latest',
+    {
+      PAI_DISABLE_RAM_CHECK: 'true',
+      PENDING_TRANSCRIPT_SQS_QUEUE_URL: pendingScrubTranscriptJobQueueUrl,
+      COMPLETED_TRANSCRIPT_SQS_QUEUE_URL: completedJobQueueUrl,
+      S3_ENDPOINT: process.env.S3_ENDPOINT.replace('localhost', 'localstack'),
+      SQS_ENDPOINT: process.env.SQS_ENDPOINT.replace('localhost', 'localstack'),
+    },
+    {
+      maxMemoryMb: 4096,
+    },
+  );
 
   // Assert
   // Check that the original retrieve-transcript is marked as completed in the ContactJobs table
