@@ -91,26 +91,43 @@ export const publishScrubTranscriptJob = async (
 export const publishDueContactJobs = async (
   dueContactJobs: ContactJob[],
 ): Promise<PromiseSettledResult<PublishedContactJobResult>[]> => {
+  console.debug(`Processing ${dueContactJobs?.length} due contact jobs.`);
   const publishedContactJobResult = await Promise.allSettled(
-    dueContactJobs.map((dueJob: ContactJob) => {
+    dueContactJobs.map(async (dueJob: ContactJob) => {
       try {
+        console.debug(
+          `Publishing ${dueJob.jobType} job ${dueJob.id} for contact ${dueJob.contactId}.`,
+        );
+        let result: Awaited<
+          ReturnType<
+            typeof publishRetrieveContactTranscript | typeof publishScrubTranscriptJob
+          >
+        >;
         switch (dueJob.jobType) {
           case ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT: {
-            return publishRetrieveContactTranscript(dueJob);
+            result = await publishRetrieveContactTranscript(dueJob);
+            break;
           }
           case ContactJobType.SCRUB_CONTACT_TRANSCRIPT: {
-            return publishScrubTranscriptJob(dueJob);
+            result = await publishScrubTranscriptJob(dueJob);
+            break;
           }
           // TODO: remove the as never typecast when we have 2 or more job types. TS complains if we remove it now.
           default:
-            assertExhaustive(dueJob as never);
+            assertExhaustive(dueJob);
         }
+        console.debug(
+          `Published ${dueJob.jobType} job ${dueJob.id} for contact ${dueJob.contactId}.`,
+          `Published ${dueJob.jobType} job ${dueJob.id} for contact ${dueJob.contactId}.`,
+        );
+        return result;
       } catch (err) {
         console.error(err, dueJob);
         return Promise.reject(err);
       }
     }),
   );
+  console.debug(`Processed ${dueContactJobs?.length} due contact jobs.`);
 
   return publishedContactJobResult;
 };

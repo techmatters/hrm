@@ -86,7 +86,7 @@ jobs:
           push: false
           tags: hrm-service-ci-test
 
-  test:
+  unit-tests:
     runs-on: ubuntu-latest
 
     steps:
@@ -113,6 +113,30 @@ jobs:
       - name: Run Unit Tests
         run: npm run test:unit
 
+  service-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Run Elasticsearch
+        uses: elastic/elastic-github-actions/elasticsearch@master
+        with:
+          stack-version: 8.7.0
+          security-enabled: false
+
+      - name: Checkout Branch
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 16.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 16.x
+
+      - name: Install Packages
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
       - name: Setup database tables
         uses: m4nu56/postgresql-action@1.0
         with:
@@ -129,3 +153,44 @@ jobs:
 
       - name: Run Service Tests
         run: npm run test:service:ci
+
+  integration-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Branch
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 16.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 16.x
+
+      - name: Install Packages
+        run: npm ci
+
+      - name: Add licence
+        env:
+          INTEGRATION_TEST_PRIVATE_AI_LICENCE: ${{ secrets.INTEGRATION_TEST_PRIVATE_AI_LICENCE }}
+        run: |
+          touch ./hrm-domain/scheduled-tasks/transcript-scrubber/licence/license.json
+          echo "$INTEGRATION_TEST_PRIVATE_AI_LICENCE" >> ./hrm-domain/scheduled-tasks/transcript-scrubber/licence/license.json
+        shell: bash
+
+      - name: Build Code
+        run: npm run build
+
+      - name: Log in to Private AI Registry
+        run: docker login -u ${{ secrets.INTEGRATION_TEST_PRIVATE_AI_DOCKER_USER }} -p ${{ secrets.INTEGRATION_TEST_PRIVATE_AI_DOCKER_PASSWORD }} crprivateaiprod.azurecr.io
+
+      - name: Build Containers
+        run: npm run docker:build
+
+      - name: Run Tests
+        env:
+          AWS_ACCESS_KEY_ID: test
+          AWS_SECRET_ACCESS_KEY: test
+          AWS_REGION: us-east-1
+        run: npm run test:integration -w hrm-domain/integration-tests/transcripts
+      - name: Output container logs
+        if: always()
+        uses: jwalton/gh-docker-logs@v2

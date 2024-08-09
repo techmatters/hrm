@@ -29,15 +29,6 @@ services:
     env_file:
       - ../.env.localstack
 
-  jobs-contact-retrieve-recording-url:
-    image: hrm-jobs-contact-retrieve-recording-url
-    ports:
-      - '9001:8080'
-    environment:
-      - completed_sqs_queue_url
-    env_file:
-      - ../.env.localstack
-
   jobs-contact-retrieve-transcript:
     image: hrm-jobs-contact-retrieve-transcript
     ports:
@@ -48,7 +39,7 @@ services:
       - ../.env.localstack
 
   resources-import-consumer:
-    image: hrm-resources-import-consumer
+    image: resources-import-consumer
     ports:
       - '9003:8080'
     environment:
@@ -56,8 +47,8 @@ services:
     env_file:
       - ../.env.localstack
 
-  resources-import-producuer:
-    image: hrm-resources-import-producer
+  resources-import-producer:
+    image: resources-import-producer
     ports:
       - '9004:8080'
     environment:

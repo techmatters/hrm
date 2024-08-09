@@ -21,6 +21,7 @@ import {
   SendMessageCommand,
   SendMessageBatchCommand,
   SQSClient,
+  GetQueueAttributesCommand,
 } from '@aws-sdk/client-sqs';
 
 const convertToEndpoint = (endpointUrl: string) => {
@@ -117,6 +118,20 @@ export const receiveSqsMessage = async (params: ReceiveSqsMessageParams) => {
   });
 
   return sqs.send(command);
+};
+
+export const getQueueAttributes = async (params: {
+  queueUrl: string;
+  attributes: string[];
+}) => {
+  const { queueUrl: QueueUrl, attributes: AttributeNames } = params;
+  const command = new GetQueueAttributesCommand({
+    QueueUrl,
+    AttributeNames,
+  });
+
+  const output = await sqs.send(command);
+  return output.Attributes;
 };
 
 export const sendSqsMessage = async (params: SendSqsMessageParams) => {

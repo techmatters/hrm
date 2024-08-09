@@ -16,14 +16,14 @@ version: '3'
 services:
   job-processor:
     image: hrm-service
+    command: "npm run start:job-processor"
     environment:
       POSTGRES_PORT: 5432
       RDS_HOSTNAME: db
       HRM_RUN_MIGRATIONS: 'true'
 
     env_file:
-      - ../.env.localstack
-      - dist/.env
+      - ../../.env.localstack
 
   service:
     image: hrm-service
@@ -37,8 +37,7 @@ services:
       RDS_HOSTNAME: db
 
     env_file:
-      - ../.env.localstack
-      - dist/.env
+      - ../../.env.localstack
 
     depends_on:
       - job-processor

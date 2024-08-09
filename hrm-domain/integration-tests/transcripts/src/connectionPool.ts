@@ -14,8 +14,31 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-const getStackOutput = require('../cdk/cdkOutput');
+import pgPromise from 'pg-promise';
 
-console.log(
-  getStackOutput('contact-complete').queueUrl.replace('localhost', 'localstack'),
+const config = {
+  username: 'hrm',
+  password: null,
+  database: 'hrmdb',
+  host: 'localhost',
+  port: 5432,
+  dialect: 'postgres',
+};
+
+export const pgp = pgPromise({});
+
+export const db = pgp(
+  `postgres://${encodeURIComponent(config.username)}:${encodeURIComponent(
+    config.password,
+  )}@${config.host}:${config.port}/${encodeURIComponent(
+    config.database,
+  )}?&application_name=integration-test`,
 );
+
+const { builtins } = pgp.pg.types;
+
+[builtins.DATE, builtins.TIMESTAMP, builtins.TIMESTAMPTZ].forEach(typeId => {
+  pgp.pg.types.setTypeParser(typeId, value => {
+    return value === null ? null : new Date(value).toISOString();
+  });
+});

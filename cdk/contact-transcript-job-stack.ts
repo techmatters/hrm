@@ -31,6 +31,7 @@ export default class ContactTranscriptJobStack extends cdk.Stack {
     id: string;
     params: {
       completeQueue: sqs.Queue;
+      completeQueueUrl: string;
       docsBucket: s3.Bucket;
       skipLambda?: boolean;
     };
@@ -42,6 +43,17 @@ export default class ContactTranscriptJobStack extends cdk.Stack {
       deadLetterQueue: { maxReceiveCount: 1, queue: params.completeQueue },
     });
 
+    const splitJobQueueUrl = cdk.Fn.split('localhost', queue.queueUrl);
+    const jobQueueUrl = cdk.Fn.join('localstack', [
+      cdk.Fn.select(0, splitJobQueueUrl),
+      cdk.Fn.select(1, splitJobQueueUrl),
+    ]);
+
+    new cdk.CfnOutput(this, `dockerQueueUrl`, {
+      value: jobQueueUrl,
+      description: `The url of the ${id} queue visible to other docker containers`,
+    });
+
     new cdk.CfnOutput(this, `queueUrl`, {
       value: queue.queueUrl,
       description: `The url of the ${id} queue`,
@@ -49,13 +61,13 @@ export default class ContactTranscriptJobStack extends cdk.Stack {
 
     new cdk.aws_ssm.StringParameter(this, `${id}-queue-url`, {
       parameterName: `/local/us-east-1/sqs/jobs/contact/queue-url-${id}`,
-      stringValue: queue.queueUrl,
+      stringValue: jobQueueUrl,
     });
 
     // duplicated for test env
     new cdk.aws_ssm.StringParameter(this, `${id}-queue-url-test`, {
       parameterName: `/test/us-east-1/sqs/jobs/contact/queue-url-${id}`,
-      stringValue: queue.queueUrl,
+      stringValue: jobQueueUrl,
     });
 
     if (params.skipLambda) return;
@@ -94,14 +106,6 @@ export default class ContactTranscriptJobStack extends cdk.Stack {
       simple case.
       (rbd 08/10/22)
     */
-    const splitCompleteQueueUrl = cdk.Fn.split(
-      'localhost',
-      params.completeQueue.queueUrl,
-    );
-    const completedQueueUrl = cdk.Fn.join('localstack', [
-      cdk.Fn.select(0, splitCompleteQueueUrl),
-      cdk.Fn.select(1, splitCompleteQueueUrl),
-    ]);
 
     const fn = new lambdaNode.NodejsFunction(this, 'fetchParams', {
       // TODO: change this back to 18 once it isn't broken upstream
@@ -118,7 +122,7 @@ export default class ContactTranscriptJobStack extends cdk.Stack {
         SSM_ENDPOINT: 'http://localstack:4566',
         SQS_ENDPOINT: 'http://localstack:4566',
         NODE_ENV: 'local',
-        completed_sqs_queue_url: completedQueueUrl,
+        completed_sqs_queue_url: params.completeQueueUrl,
       },
       bundling: { sourceMap: true },
       deadLetterQueueEnabled: true,
