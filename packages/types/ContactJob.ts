@@ -91,13 +91,6 @@ export type CompletedContactJobBody =
   | CompletedRetrieveContactTranscript
   | CompletedScrubContactTranscript;
 
-export const isCompletedScrubContactTranscript = (
-  completedJob: CompletedContactJobBody,
-) =>
-  completedJob.attemptResult === ContactJobAttemptResult.SUCCESS &&
-  completedJob.jobType === ContactJobType.SCRUB_CONTACT_TRANSCRIPT &&
-  completedJob.originalLocation;
-
 export type CompletedContactJobBodySuccess = CompletedContactJobBody & {
   attemptResult: ContactJobAttemptResult.SUCCESS;
 };

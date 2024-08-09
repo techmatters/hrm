@@ -40,6 +40,7 @@ import {
 import {
   deleteCompletedContactJobsFromQueue,
   pollCompletedContactJobsFromQueue,
+  publishToContactJobs,
 } from './client-sqs';
 import {
   ConversationMedia,
@@ -235,6 +236,29 @@ export const pollAndProcessCompletedContactJobs = async (jobMaxAttempts: number)
         const completedJob: CompletedContactJobBody = JSON.parse(m.Body);
 
         if (completedJob.attemptResult === ContactJobAttemptResult.SUCCESS) {
+          if (completedJob.jobType === ContactJobType.SCRUB_CONTACT_TRANSCRIPT) {
+            const {
+              jobType,
+              jobId,
+              accountSid,
+              contactId,
+              taskId,
+              twilioWorkerId,
+              attemptNumber,
+              originalLocation,
+            } = completedJob;
+
+            await publishToContactJobs({
+              jobType,
+              jobId,
+              accountSid,
+              contactId,
+              taskId,
+              twilioWorkerId,
+              attemptNumber,
+              originalLocation,
+            });
+          }
           return await handleSuccess(completedJob);
         } else {
           return await handleFailure(completedJob, jobMaxAttempts);
