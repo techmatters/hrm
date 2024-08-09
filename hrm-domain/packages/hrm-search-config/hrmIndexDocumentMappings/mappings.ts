@@ -70,6 +70,20 @@ export const contactMapping = {
   },
 } as const;
 
+export const casePathToContacts = 'contacts' as const;
+export const casePathToSections = 'sections' as const;
+
+// Properties specific to case serctions
+export const caseSectionMapping = {
+  sectionType: {
+    type: 'keyword',
+  },
+  sectionId: {
+    type: 'keyword',
+  },
+  ...commonProperties,
+} as const;
+
 // Properties specific to cases
 export const caseMapping = {
   ...rootProperties,
@@ -85,22 +99,12 @@ export const caseMapping = {
   previousStatus: {
     type: 'keyword',
   },
-  sections: {
+  [casePathToSections]: {
     type: 'nested',
-    properties: {
-      sectionType: {
-        type: 'keyword',
-      },
-      sectionId: {
-        type: 'keyword',
-      },
-      ...commonProperties,
-    },
+    properties: caseSectionMapping,
   },
-  contacts: {
+  [casePathToContacts]: {
     type: 'nested',
-    properties: {
-      ...contactMapping,
-    },
+    properties: contactMapping,
   },
 } as const;

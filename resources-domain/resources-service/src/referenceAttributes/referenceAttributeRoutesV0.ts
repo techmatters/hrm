@@ -15,30 +15,25 @@
  */
 
 import { IRouter, Router } from 'express';
-import resourceRoutes from './resource/resourceRoutesV0';
-import importRoutes from './import/importRoutesV0';
-import adminSearchRoutes from './admin/adminSearchRoutesV0';
-import { AdminSearchServiceConfiguration } from './admin/adminSearchService';
-import referenceAttributeRoutes from './referenceAttributes/referenceAttributeRoutesV0';
+import { referenceAttributeService } from './referenceAttributeService';
+import { AccountSID } from '@tech-matters/types';
 
-export const apiV0 = () => {
+const referenceAttributeRoutes = () => {
   const router: IRouter = Router();
+  const { getResourceReferenceAttributeList } = referenceAttributeService();
 
-  router.use(resourceRoutes());
-  router.use('/reference-attributes', referenceAttributeRoutes());
+  router.get('/:list', async (req, res) => {
+    const { valueStartsWith, language } = req.query;
+    const { list } = req.params;
+    const result = await getResourceReferenceAttributeList(
+      req.hrmAccountId as AccountSID,
+      list,
+      language as string,
+      valueStartsWith as string,
+    );
+    res.json(result);
+  });
+
   return router;
 };
-
-export const internalApiV0 = () => {
-  const router: IRouter = Router();
-
-  router.use(importRoutes());
-  return router;
-};
-
-export const adminApiV0 = (config: AdminSearchServiceConfiguration) => {
-  const router: IRouter = Router();
-
-  router.use(adminSearchRoutes(config));
-  return router;
-};
+export default referenceAttributeRoutes;

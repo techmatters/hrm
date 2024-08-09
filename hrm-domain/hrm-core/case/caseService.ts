@@ -51,6 +51,7 @@ import { RulesFile, TKConditionsSets } from '../permissions/rulesMap';
 import { CaseSectionRecord } from './caseSection/types';
 import { pick } from 'lodash';
 import {
+  DocumentType,
   HRM_CASES_INDEX_TYPE,
   hrmSearchConfiguration,
   type IndexMessage,
@@ -589,7 +590,7 @@ export const generalisedCasesSearch = async (
 
     const { total, items } = await client.search({
       searchParameters: {
-        type: 'case',
+        type: DocumentType.Case,
         searchTerm,
         searchFilters,
         permissionFilters,
@@ -607,7 +608,13 @@ export const generalisedCasesSearch = async (
       ctx,
     );
 
-    return newOk({ data: { count: total, cases } });
+    const order = caseIds.reduce(
+      (accum, idVal, idIndex) => ({ ...accum, [idVal]: idIndex }),
+      {},
+    );
+    const sorted = cases.sort((a, b) => order[a.id] - order[b.id]);
+
+    return newOk({ data: { count: total, cases: sorted } });
   } catch (err) {
     return newErr({
       message: err instanceof Error ? err.message : String(err),

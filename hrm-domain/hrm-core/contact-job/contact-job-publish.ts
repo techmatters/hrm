@@ -22,6 +22,8 @@ import {
 } from './contact-job-data-access';
 import { publishToContactJobs } from './client-sqs';
 import { assertExhaustive, ContactJobType } from '@tech-matters/types';
+import { getSsmParameter } from '../config/ssmCache';
+import { SsmParameterNotFound } from '@tech-matters/ssm-cache';
 
 export const publishRetrieveContactTranscript = (
   contactJob: RetrieveContactTranscriptJob,
@@ -60,16 +62,30 @@ export const publishScrubTranscriptJob = async (
   contactJob: ScrubContactTranscriptJob,
 ) => {
   const { accountSid, id: contactId, taskId, twilioWorkerId } = contactJob.resource;
-  return publishToContactJobs({
-    jobType: contactJob.jobType,
-    jobId: contactJob.id,
-    accountSid,
-    contactId,
-    taskId,
-    twilioWorkerId,
-    attemptNumber: contactJob.numberOfAttempts,
-    originalLocation: contactJob.additionalPayload.originalLocation,
-  });
+  try {
+    const paramVal = await getSsmParameter(
+      `/${process.env.NODE_ENV}/${
+        process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
+      }/${accountSid}/jobs/contact/scrub-transcript/enabled`,
+    );
+    if (paramVal?.toLowerCase() === 'true') {
+      return await publishToContactJobs({
+        jobType: contactJob.jobType,
+        jobId: contactJob.id,
+        accountSid,
+        contactId,
+        taskId,
+        twilioWorkerId,
+        attemptNumber: contactJob.numberOfAttempts,
+        originalLocation: contactJob.additionalPayload.originalLocation,
+      });
+    }
+  } catch (err) {
+    if (!(err instanceof SsmParameterNotFound)) {
+      throw err;
+    }
+  }
+  return;
 };
 
 export const publishDueContactJobs = async (
