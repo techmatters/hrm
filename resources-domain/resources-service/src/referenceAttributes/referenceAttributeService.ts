@@ -13,21 +13,18 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { db } from '@tech-matters/hrm-core/connection-pool';
 
-export const clearAllTables = async () => {
-  await Promise.all([
-    db.none('DELETE FROM "public"."ConversationMedias"'),
-    db.none('DELETE FROM "public"."ContactJobs"'),
-    db.none('DELETE FROM "public"."ProfilesToProfileFlags"'),
-    db.none('DELETE FROM "public"."ProfilesToIdentifiers"'),
-    db.none('DELETE FROM "public"."ProfileSections"'),
-    db.none('DELETE FROM "public"."CSAMReports"'),
-  ]);
-  await db.none('DELETE FROM "public"."Contacts"');
-  await Promise.all([
-    db.none('DELETE FROM "public"."Identifiers"'),
-    db.none('DELETE FROM "public"."Cases"'),
-    db.none('DELETE FROM "public"."Profiles"'),
-  ]);
+import { AccountSID } from '@tech-matters/types';
+
+import { getByList } from './referenceAttributeDataAccess';
+
+export const referenceAttributeService = () => {
+  return {
+    getResourceReferenceAttributeList: async (
+      accountSid: AccountSID,
+      list: string,
+      language: string,
+      valuePrefix: string,
+    ) => getByList(accountSid, list, language, valuePrefix),
+  };
 };

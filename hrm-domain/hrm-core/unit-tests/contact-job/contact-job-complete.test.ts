@@ -224,6 +224,29 @@ describe('pollAndProcessCompletedContactJobs', () => {
       },
       processCompletedFunction: 'processCompletedRetrieveContactTranscript',
     },
+    {
+      job: {
+        jobType: ContactJobType.SCRUB_CONTACT_TRANSCRIPT,
+        attemptResult: ContactJobAttemptResult.SUCCESS,
+        jobId: 1,
+        accountSid,
+        contactId: 123,
+        originalLocation: {
+          bucket: 'bucket',
+          key: 'key',
+        },
+        taskId: 'taskId',
+        twilioWorkerId,
+        attemptNumber: 1,
+        attemptPayload: {
+          scrubbedLocation: {
+            bucket: 'scrubbed-bucket',
+            key: 'scrubbed-key',
+          },
+        },
+      },
+      processCompletedFunction: 'processCompletedScrubContactTranscript',
+    },
   ];
 
   test('Check that we are testing all the possible job types (useful for the next test)', () => {
@@ -252,6 +275,7 @@ describe('pollAndProcessCompletedContactJobs', () => {
         SQSClient,
         'deleteCompletedContactJobsFromQueue',
       );
+      const publishToContactJobsTopicSpy = jest.spyOn(SQSClient, 'publishToContactJobs');
       const processCompletedFunctionSpy = jest
         .spyOn(contactJobComplete, processCompletedFunction)
         .mockImplementation(async () => {});
@@ -273,6 +297,19 @@ describe('pollAndProcessCompletedContactJobs', () => {
       expect(deletedCompletedContactJobsSpy).toHaveBeenCalledWith(
         validPayload.ReceiptHandle,
       );
+      if (job.jobType === ContactJobType.SCRUB_CONTACT_TRANSCRIPT) {
+        const completedJob = {
+          jobType: job.jobType,
+          jobId: job.jobId,
+          accountSid: job.accountSid,
+          contactId: job.contactId,
+          taskId: job.taskId,
+          twilioWorkerId: job.twilioWorkerId,
+          attemptNumber: job.attemptNumber,
+          originalLocation: job.originalLocation,
+        };
+        expect(publishToContactJobsTopicSpy).toHaveBeenCalledWith(completedJob);
+      }
 
       expect(result?.[0].status).toBe('fulfilled');
     },
@@ -296,6 +333,25 @@ describe('pollAndProcessCompletedContactJobs', () => {
         serviceSid: 'serviceSid',
         channelSid: 'channelSid',
         filePath: 'filePath',
+        attemptNumber: 1,
+        attemptPayload: 'failed attemptPayload',
+      },
+      processCompletedFunction: 'processCompletedRetrieveContactTranscript',
+      expectMarkedAsComplete: false,
+    },
+    {
+      job: {
+        jobType: ContactJobType.SCRUB_CONTACT_TRANSCRIPT,
+        attemptResult: ContactJobAttemptResult.FAILURE,
+        jobId: 1,
+        accountSid,
+        contactId: 123,
+        originalLocation: {
+          bucket: 'bucket',
+          key: 'key',
+        },
+        taskId: 'taskId',
+        twilioWorkerId,
         attemptNumber: 1,
         attemptPayload: 'failed attemptPayload',
       },

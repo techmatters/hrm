@@ -15,7 +15,11 @@
  */
 
 import { getRequest, getServer, headers, useOpenRules } from '../server';
-import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
+import {
+  mockingProxy,
+  mockSsmParameters,
+  mockSuccessfulTwilioAuthentication,
+} from '@tech-matters/testing';
 import {
   accountSid,
   ALWAYS_CAN,
@@ -41,6 +45,9 @@ import {
   isCaseSectionTimelineActivity,
   TimelineActivity,
 } from '@tech-matters/hrm-core/case/caseSection/caseSectionDataAccess';
+import { setupTestQueues } from '../sqs';
+
+const SEARCH_INDEX_SQS_QUEUE_NAME = 'mock-search-index-queue';
 
 useOpenRules();
 const server = getServer();
@@ -50,6 +57,10 @@ beforeAll(async () => {
   await clearAllTables();
   await mockingProxy.start(false);
   await mockSuccessfulTwilioAuthentication(workerSid);
+  const mockttp = await mockingProxy.mockttpServer();
+  await mockSsmParameters(mockttp, [
+    { pathPattern: /.*/, valueGenerator: () => SEARCH_INDEX_SQS_QUEUE_NAME },
+  ]);
 });
 
 afterAll(async () => {
@@ -66,7 +77,7 @@ let sampleCase: CaseService;
 let expectedContacts: Contact[];
 
 beforeEach(async () => {
-  sampleCase = await createCase({}, accountSid, workerSid);
+  sampleCase = await createCase({}, accountSid, workerSid, undefined, true);
   const sampleSections: Record<string, NewCaseSection[]> = {
     sectionType1: [
       {
@@ -120,6 +131,7 @@ beforeEach(async () => {
           sectionType,
           ns,
           workerSid,
+          true,
         ),
       ),
     ),
@@ -146,12 +158,13 @@ beforeEach(async () => {
 
   await Promise.all(
     sampleContacts.map(async c => {
-      const created = await createContact(accountSid, workerSid, c, ALWAYS_CAN);
+      const created = await createContact(accountSid, workerSid, c, ALWAYS_CAN, true);
       return connectContactToCase(
         accountSid,
         created.id.toString(),
         sampleCase.id.toString(),
         ALWAYS_CAN,
+        true,
       );
     }),
   );
@@ -170,6 +183,8 @@ beforeEach(async () => {
       };
     });
 });
+
+setupTestQueues([SEARCH_INDEX_SQS_QUEUE_NAME]);
 
 const getRoutePath = (
   caseId: string | number,

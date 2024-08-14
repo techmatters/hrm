@@ -13,21 +13,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { db } from '@tech-matters/hrm-core/connection-pool';
 
-export const clearAllTables = async () => {
-  await Promise.all([
-    db.none('DELETE FROM "public"."ConversationMedias"'),
-    db.none('DELETE FROM "public"."ContactJobs"'),
-    db.none('DELETE FROM "public"."ProfilesToProfileFlags"'),
-    db.none('DELETE FROM "public"."ProfilesToIdentifiers"'),
-    db.none('DELETE FROM "public"."ProfileSections"'),
-    db.none('DELETE FROM "public"."CSAMReports"'),
-  ]);
-  await db.none('DELETE FROM "public"."Contacts"');
-  await Promise.all([
-    db.none('DELETE FROM "public"."Identifiers"'),
-    db.none('DELETE FROM "public"."Cases"'),
-    db.none('DELETE FROM "public"."Profiles"'),
-  ]);
-};
+export const SELECT_RESOURCE_REFERENCE_ATTRIBUTES_BY_LIST_SQL = `
+  SELECT "id", "value","language","info" FROM "ResourceReferenceStringAttributeValues" 
+  WHERE "accountSid" = $<accountSid> AND 
+  "list" = $<list> AND 
+  ($<language> IS NULL OR "language"=$<language>) AND 
+  ($<valueLikePattern> IS NULL OR "value" LIKE $<valueLikePattern>)`;

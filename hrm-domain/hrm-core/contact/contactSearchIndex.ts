@@ -15,9 +15,9 @@
  */
 
 import {
-  GenerateContactQueryParams,
+  DocumentType,
+  DocumentTypeQueryParams,
   generateESFilter,
-  GenerateQueryParamsObject,
 } from '@tech-matters/hrm-search-config';
 import {
   ContactSpecificCondition,
@@ -39,18 +39,18 @@ const buildSearchFilters = ({
   counselor?: string;
   dateFrom?: string;
   dateTo?: string;
-}): GenerateContactQueryParams[] => {
-  const searchFilters: GenerateContactQueryParams[] = [
+}): DocumentTypeQueryParams[DocumentType.Contact][] => {
+  const searchFilters: DocumentTypeQueryParams[DocumentType.Contact][] = [
     counselor &&
       ({
-        documentType: 'contact',
+        documentType: DocumentType.Contact,
         field: 'twilioWorkerId',
         type: 'term',
         term: counselor,
       } as const),
     (dateFrom || dateTo) &&
       ({
-        documentType: 'contact',
+        documentType: DocumentType.Contact,
         field: 'timeOfContact',
         type: 'range',
         ranges: {
@@ -82,11 +82,13 @@ const conditionWhereClauses = ({
   user: TwilioUser;
   buildParams: { parentPath: string };
   // function that modifies the "term" queries in the filters, to wrap them in nested queries if needed
-  queryWrapper: (p: GenerateQueryParamsObject) => GenerateQueryParamsObject;
+  queryWrapper: (
+    p: DocumentTypeQueryParams[DocumentType],
+  ) => DocumentTypeQueryParams[DocumentType];
 }): ConditionWhereClausesES<'contact'> => ({
   isOwner: generateESFilter(
     queryWrapper({
-      documentType: 'contact',
+      documentType: DocumentType.Contact,
       field: 'twilioWorkerId',
       parentPath,
       type: 'term',
@@ -110,7 +112,7 @@ const conditionWhereClauses = ({
 
     return generateESFilter(
       queryWrapper({
-        documentType: 'contact',
+        documentType: DocumentType.Contact,
         field: 'timeOfContact',
         parentPath,
         type: 'range',
@@ -131,7 +133,9 @@ const listContactsPermissionClause = ({
   listConditionSets: ContactListCondition[][];
   user: TwilioUser;
   buildParams: { parentPath: string };
-  queryWrapper: (p: GenerateQueryParamsObject) => GenerateQueryParamsObject;
+  queryWrapper: (
+    p: DocumentTypeQueryParams[DocumentType],
+  ) => DocumentTypeQueryParams[DocumentType];
 }) => {
   const clauses = listPermissionWhereClause<'contact'>({
     listConditionSets,
@@ -157,7 +161,9 @@ export const generateContactPermissionsFilters = ({
   viewTranscript: ContactListCondition[][];
   user: TwilioUser;
   buildParams: { parentPath: string };
-  queryWrapper?: (p: GenerateContactQueryParams) => GenerateQueryParamsObject;
+  queryWrapper?: (
+    p: DocumentTypeQueryParams[DocumentType.Contact],
+  ) => DocumentTypeQueryParams[DocumentType];
 }) => ({
   contactFilters: listContactsPermissionClause({
     listConditionSets: viewContact,

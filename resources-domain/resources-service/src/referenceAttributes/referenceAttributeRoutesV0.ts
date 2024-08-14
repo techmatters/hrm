@@ -13,21 +13,27 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { db } from '@tech-matters/hrm-core/connection-pool';
 
-export const clearAllTables = async () => {
-  await Promise.all([
-    db.none('DELETE FROM "public"."ConversationMedias"'),
-    db.none('DELETE FROM "public"."ContactJobs"'),
-    db.none('DELETE FROM "public"."ProfilesToProfileFlags"'),
-    db.none('DELETE FROM "public"."ProfilesToIdentifiers"'),
-    db.none('DELETE FROM "public"."ProfileSections"'),
-    db.none('DELETE FROM "public"."CSAMReports"'),
-  ]);
-  await db.none('DELETE FROM "public"."Contacts"');
-  await Promise.all([
-    db.none('DELETE FROM "public"."Identifiers"'),
-    db.none('DELETE FROM "public"."Cases"'),
-    db.none('DELETE FROM "public"."Profiles"'),
-  ]);
+import { IRouter, Router } from 'express';
+import { referenceAttributeService } from './referenceAttributeService';
+import { AccountSID } from '@tech-matters/types';
+
+const referenceAttributeRoutes = () => {
+  const router: IRouter = Router();
+  const { getResourceReferenceAttributeList } = referenceAttributeService();
+
+  router.get('/:list', async (req, res) => {
+    const { valueStartsWith, language } = req.query;
+    const { list } = req.params;
+    const result = await getResourceReferenceAttributeList(
+      req.hrmAccountId as AccountSID,
+      list,
+      language as string,
+      valueStartsWith as string,
+    );
+    res.json(result);
+  });
+
+  return router;
 };
+export default referenceAttributeRoutes;

@@ -59,16 +59,23 @@ const contactIndexingInputData = async (
 ): Promise<ContactIndexingInputData> => {
   let transcript: string | null = null;
 
-  const transcriptEntry = m.message.contact.conversationMedia?.find(isS3StoredTranscript);
+  try {
+    const transcriptEntry =
+      m.message.contact.conversationMedia?.find(isS3StoredTranscript);
 
-  if (transcriptEntry) {
-    const { location } = transcriptEntry.storeTypeSpecificData;
-    const { bucket, key } = location || {};
-    if (bucket && key) {
-      const transcriptString = await getS3Object({ bucket, key });
-      const parsedTranscript: ExportTranscript = JSON.parse(transcriptString);
-      transcript = parsedTranscript.messages.map(({ body }) => body).join('\n');
+    if (transcriptEntry) {
+      const { location } = transcriptEntry.storeTypeSpecificData;
+      const { bucket, key } = location || {};
+      if (bucket && key) {
+        const transcriptString = await getS3Object({ bucket, key });
+        const parsedTranscript: ExportTranscript = JSON.parse(transcriptString);
+        transcript = parsedTranscript.messages.map(({ body }) => body).join('\n');
+      }
     }
+  } catch (err) {
+    console.error(
+      `Error trying to fetch transcript for contact #${m.message.contact.id}`,
+    );
   }
 
   return { ...m, transcript };

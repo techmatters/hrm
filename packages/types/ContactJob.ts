@@ -19,6 +19,7 @@ import { HrmAccountId } from './HrmAccountId';
 
 export enum ContactJobType {
   RETRIEVE_CONTACT_TRANSCRIPT = 'retrieve-transcript',
+  SCRUB_CONTACT_TRANSCRIPT = 'scrub-transcript',
 }
 
 type ContactJobMessageCommons = {
@@ -40,7 +41,17 @@ export type PublishRetrieveContactTranscript = ContactJobMessageCommons & {
   conversationMediaId: number;
 };
 
-export type PublishToContactJobsTopicParams = PublishRetrieveContactTranscript;
+export type PublishScrubContactTranscript = ContactJobMessageCommons & {
+  jobType: ContactJobType.SCRUB_CONTACT_TRANSCRIPT;
+  originalLocation: {
+    bucket: string;
+    key: string;
+  };
+};
+
+export type PublishToContactJobsTopicParams =
+  | PublishRetrieveContactTranscript
+  | PublishScrubContactTranscript;
 
 //====== Message payloads expected for the completed contact jobs ======//
 
@@ -48,6 +59,14 @@ type CompleteRetrieveContactTranscriptTSuccess = {
   bucket: string;
   key: string;
 };
+
+type CompleteScrubContactTranscriptTSuccess = {
+  scrubbedLocation: {
+    bucket: string;
+    key: string;
+  };
+};
+
 export enum ContactJobAttemptResult {
   SUCCESS = 'success',
   FAILURE = 'failure',
@@ -65,8 +84,12 @@ type CompletedContactJobMessageCommons<TSuccess, TFailure> =
 
 export type CompletedRetrieveContactTranscript = PublishRetrieveContactTranscript &
   CompletedContactJobMessageCommons<CompleteRetrieveContactTranscriptTSuccess, any>;
+export type CompletedScrubContactTranscript = PublishScrubContactTranscript &
+  CompletedContactJobMessageCommons<CompleteScrubContactTranscriptTSuccess, any>;
 
-export type CompletedContactJobBody = CompletedRetrieveContactTranscript;
+export type CompletedContactJobBody =
+  | CompletedRetrieveContactTranscript
+  | CompletedScrubContactTranscript;
 
 export type CompletedContactJobBodySuccess = CompletedContactJobBody & {
   attemptResult: ContactJobAttemptResult.SUCCESS;
