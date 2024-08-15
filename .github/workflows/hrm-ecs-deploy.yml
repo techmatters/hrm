@@ -138,7 +138,7 @@ jobs:
           image: ${{ env.DOCKER_IMAGE }}
 
       - name: Deploy Amazon ECS task definition for the job processor
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         with:
           task-definition: ${{ steps.task-def-job-processor.outputs.task-definition }}
           service: ${{ inputs.environment }}-job-processor
@@ -157,7 +157,7 @@ jobs:
           image: ${{ env.DOCKER_IMAGE }}
 
       - name: Deploy Amazon ECS task definition for the api service
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
           service: ${{ inputs.environment }}-ecs-service
@@ -177,7 +177,7 @@ jobs:
 
       - name: Deploy Amazon ECS task definition scheduled tasks
         id: scheduled-task-definition
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         with:
           task-definition: ${{ steps.task-def-scheduled-task.outputs.task-definition }}
           cluster: ${{ inputs.environment }}-ecs-cluster
