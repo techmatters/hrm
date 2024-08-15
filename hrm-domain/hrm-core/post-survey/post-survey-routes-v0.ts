@@ -43,8 +43,14 @@ const canViewPostSurvey = (req: RequestWithPermissions, res, next) => {
 
     // Nothing from the target param is being used for postSurvey target kind, we can pass null for now
     if (can(user, actionsMaps.postSurvey.VIEW_POST_SURVEY, null)) {
+      console.debug(
+        `[Permission - PERMITTED] User ${user.workerSid} is permitted to perform ${actionsMaps.postSurvey.VIEW_POST_SURVEY} on account ${req.hrmAccountId}`,
+      );
       req.permit();
     } else {
+      console.debug(
+        `[Permission - BLOCKED] User ${user.workerSid} is not permitted to perform ${actionsMaps.postSurvey.VIEW_POST_SURVEY} on account ${req.hrmAccountId}`,
+      );
       req.block();
     }
   }

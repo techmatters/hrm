@@ -70,8 +70,14 @@ export const canPerformActionOnProfileMiddleware = (
     }
 
     if (result.data.isAllowed) {
+      console.debug(
+        `[Permission - PERMITTED] User ${user.workerSid} is permitted to perform ${action} on ${hrmAccountId}/${profileId}`,
+      );
       req.permit();
     } else {
+      console.debug(
+        `[Permission - BLOCKED] User ${user.workerSid} is not permitted to perform ${action} on ${hrmAccountId}/${profileId} - rules failure`,
+      );
       req.block();
     }
 

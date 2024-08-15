@@ -49,8 +49,14 @@ export const canPerformCaseAction = (
       const canEdit = actions.every(action => can(user, action, caseObj));
 
       if (canEdit) {
+        console.debug(
+          `[Permission - PERMITTED] User ${user.workerSid} is permitted to perform ${actions} on case ${hrmAccountId}/${id}`,
+        );
         req.permit();
       } else {
+        console.debug(
+          `[Permission - BLOCKED] User ${user.workerSid} is not permitted to perform ${actions} on case ${hrmAccountId}/${id} - rules failure`,
+        );
         if (notFoundIfNotPermitted) throw createError(404);
         req.block();
       }

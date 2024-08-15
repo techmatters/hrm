@@ -27,10 +27,17 @@ const permitIfAdditionalValidationPasses = async (
   req: any,
   contact: Contact,
   additionalValidation: (contact: Contact, req: any) => Promise<boolean>,
+  action: string,
 ) => {
   if (await additionalValidation(contact, req)) {
+    console.debug(
+      `[Permission - PERMITTED] User ${req.user.workerSid} is permitted to perform ${action} on contact ${contact.accountSid}/${contact.id}`,
+    );
     req.permit();
   } else {
+    console.debug(
+      `[Permission - BLOCKED] User ${req.user.workerSid} is not permitted to perform ${action} on contact ${contact.accountSid}/${contact.id} - additional validation failure`,
+    );
     req.block();
   }
 };
@@ -57,10 +64,18 @@ const canPerformActionOnContact = (
               req,
               contactObj,
               additionalValidation,
+              action,
             );
-          } else if (action === 'viewContact') {
-            throw createError(404);
-          } else req.block();
+          } else {
+            console.debug(
+              `[Permission - BLOCKED] User ${user.workerSid} is not permitted to perform ${action} on contact ${hrmAccountId}/${contactId} - rules failure`,
+            );
+            if (action === 'viewContact') {
+              throw createError(404);
+            } else {
+              req.block();
+            }
+          }
         } else {
           // Cannot finalize an offline task with a placeholder taskId.
           // A real task needs to have been created and it's sid assigned to the contact before it can be finalized (or whilst it is finalized)
@@ -68,6 +83,9 @@ const canPerformActionOnContact = (
             body?.taskId?.startsWith('offline-contact-task-') &&
             query?.finalize === 'true'
           ) {
+            console.debug(
+              `[Permission - BLOCKED] User ${user.workerSid} is not permitted to perform ${action} on contact ${hrmAccountId}/${contactId} - finalize offline task attempt`,
+            );
             req.block();
           }
           // If there is no finalized date, then the contact is a draft and can only be edited by the worker who created it or the one who owns it.
@@ -81,6 +99,7 @@ const canPerformActionOnContact = (
               req,
               contactObj,
               additionalValidation,
+              action,
             );
           } else {
             // It the contact record doesn't show this user as the contact owner, but Twilio shows that they are having the associated task transferred to them, permit the edit
@@ -102,8 +121,12 @@ const canPerformActionOnContact = (
                 req,
                 contactObj,
                 additionalValidation,
+                action,
               );
             } else {
+              console.debug(
+                `[Permission - BLOCKED] User ${user.workerSid} is not permitted to perform ${action} on contact ${hrmAccountId}/${contactId} - hardcoded draft contact edit rules failure`,
+              );
               req.block();
             }
           }
