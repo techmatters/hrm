@@ -30,6 +30,7 @@
     { "path": "hrm-domain/scheduled-tasks/case-status-transition" },
     { "path": "hrm-domain/scheduled-tasks/profile-flags-cleanup" },
     { "path": "hrm-domain/scheduled-tasks/transcript-scrubber" },
+    { "path": "hrm-domain/scheduled-tasks/generate-ai-training-set" },
     { "path": "resources-domain/packages/resources-search-config" },
     { "path": "resources-domain/resources-service/tsconfig.scripts.json" },
     { "path": "resources-domain/lambdas/import-consumer" },
