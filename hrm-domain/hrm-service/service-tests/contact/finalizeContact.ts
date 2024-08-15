@@ -27,4 +27,5 @@ export const finalizeContact = async (
     contact.id.toString(),
     {},
     ALWAYS_CAN,
+    true,
   );

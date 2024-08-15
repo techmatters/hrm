@@ -29,7 +29,11 @@ import { getRequest, getServer, headers, setRules, useOpenRules } from '../serve
 import * as contactDb from '@tech-matters/hrm-core/contact/contactDataAccess';
 import { ruleFileActionOverride } from '../permissions-overrides';
 import { isS3StoredTranscript } from '@tech-matters/hrm-core/conversation-media/conversation-media-data-access';
-import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
+import {
+  mockingProxy,
+  mockSsmParameters,
+  mockSuccessfulTwilioAuthentication,
+} from '@tech-matters/testing';
 import {
   cleanupCases,
   cleanupContacts,
@@ -41,32 +45,61 @@ import {
 } from './dbCleanup';
 import { NewContactRecord } from '@tech-matters/hrm-core/contact/sql/contactInsertSql';
 import { finalizeContact } from './finalizeContact';
+import { clearAllTables } from '../dbCleanup';
+import sqslite from 'sqslite';
+import { SQS } from 'aws-sdk';
+
+const SEARCH_INDEX_SQS_QUEUE_NAME = 'mock-search-index-queue';
 
 useOpenRules();
 const server = getServer();
 const request = getRequest(server);
 const route = `/v0/accounts/${accountSid}/contacts`;
+const sqsService = sqslite({});
+const sqsClient = new SQS({
+  endpoint: `http://localhost:${process.env.LOCAL_SQS_PORT}`,
+});
+
+let testQueueUrl: URL;
 
 const cleanup = async () => {
   await mockSuccessfulTwilioAuthentication(workerSid);
-  await cleanupCsamReports();
-  await cleanupReferrals();
-  await cleanupContactsJobs();
-  await cleanupContacts();
-  await cleanupCases();
+  await clearAllTables();
 };
 
-beforeAll(() => {
+beforeAll(async () => {
   process.env[`TWILIO_AUTH_TOKEN_${accountSid}`] = 'mockAuthToken';
+  await sqsService.listen({ port: parseInt(process.env.LOCAL_SQS_PORT!) });
+});
+
+afterAll(async () => {
+  await sqsService.close();
 });
 
 beforeEach(async () => {
   await mockingProxy.start();
   await cleanup();
+  const mockttp = await mockingProxy.mockttpServer();
+  await mockSsmParameters(mockttp, [
+    { pathPattern: /.*/, valueGenerator: () => SEARCH_INDEX_SQS_QUEUE_NAME },
+  ]);
+
+  const { QueueUrl } = await sqsClient
+    .createQueue({
+      QueueName: SEARCH_INDEX_SQS_QUEUE_NAME,
+    })
+    .promise();
+
+  testQueueUrl = new URL(QueueUrl!);
 });
 
 afterEach(async () => {
   await cleanup();
+  await sqsClient
+    .deleteQueue({
+      QueueUrl: testQueueUrl.toString(),
+    })
+    .promise();
   await mockingProxy.stop();
 });
 
@@ -89,6 +122,7 @@ describe('/contacts/:contactId route', () => {
           rawJson: <ContactRawJson>{},
         },
         ALWAYS_CAN,
+        true,
       );
       createdContact = await finalizeContact(createdContact);
 
@@ -328,6 +362,7 @@ describe('/contacts/:contactId route', () => {
               rawJson: original || <ContactRawJson>{},
             },
             ALWAYS_CAN,
+            true,
           );
           createdContact = await finalizeContact(createdContact);
 
@@ -389,6 +424,7 @@ describe('/contacts/:contactId route', () => {
           workerSid,
           contact1,
           ALWAYS_CAN,
+          true,
         );
         createdContact = await finalizeContact(createdContact);
 
@@ -457,6 +493,7 @@ describe('/contacts/:contactId route', () => {
             workerSid,
             original,
             ALWAYS_CAN,
+            true,
           );
           const expected: contactDb.Contact = {
             ...createdContact,
@@ -513,6 +550,7 @@ describe('/contacts/:contactId route', () => {
         workerSid,
         <any>contact1,
         ALWAYS_CAN,
+        true,
       );
       const nonExistingContactId = contactToBeDeleted.id;
       await deleteContactById(contactToBeDeleted.id, contactToBeDeleted.accountSid);
@@ -538,6 +576,7 @@ describe('/contacts/:contactId route', () => {
           twilioWorkerId: 'another owner',
         },
         { user: newTwilioUser(accountSid, 'WK another creator', []), can: () => true },
+        true,
       );
       const response = await request
         .patch(subRoute(createdContact.id))
@@ -553,6 +592,7 @@ describe('/contacts/:contactId route', () => {
         'WK another creator',
         <any>contact1,
         ALWAYS_CAN,
+        true,
       );
       const response = await request
         .patch(subRoute(createdContact.id))
@@ -571,6 +611,7 @@ describe('/contacts/:contactId route', () => {
           twilioWorkerId: 'another owner',
         },
         ALWAYS_CAN,
+        true,
       );
       const response = await request
         .patch(subRoute(createdContact.id))
@@ -586,6 +627,7 @@ describe('/contacts/:contactId route', () => {
         workerSid,
         <any>{ ...contact1, taskId: 'malformed-task-id' },
         ALWAYS_CAN,
+        true,
       );
 
       contact = await finalizeContact(contact);
@@ -601,6 +643,7 @@ describe('/contacts/:contactId route', () => {
         workerSid,
         <any>contact1,
         ALWAYS_CAN,
+        true,
       );
 
       createdContact = await finalizeContact(createdContact);
@@ -638,6 +681,7 @@ describe('/contacts/:contactId route', () => {
         workerSid,
         withTaskId,
         permission,
+        true,
       );
       createdContact = await addConversationMediaToContact(
         accountSid,

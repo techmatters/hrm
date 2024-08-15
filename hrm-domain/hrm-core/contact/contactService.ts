@@ -29,6 +29,13 @@ import {
   HrmAccountId,
   TwilioUserIdentifier,
 } from '@tech-matters/types';
+import { getClient } from '@tech-matters/elasticsearch-client';
+import {
+  DocumentType,
+  HRM_CONTACTS_INDEX_TYPE,
+  hrmSearchConfiguration,
+} from '@tech-matters/hrm-search-config';
+
 import {
   connectToCase,
   Contact,
@@ -43,38 +50,42 @@ import {
   searchByIds,
 } from './contactDataAccess';
 
-import { PaginationQuery, getPaginationElements } from '../search';
+import { type PaginationQuery, getPaginationElements } from '../search';
 import type { NewContactRecord } from './sql/contactInsertSql';
-import { ContactRawJson, ReferralWithoutContactId } from './contactJson';
+import type { ContactRawJson, ReferralWithoutContactId } from './contactJson';
 import { InitializedCan } from '../permissions/initializeCanForRules';
 import { actionsMaps } from '../permissions';
 import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { createReferral } from '../referral/referral-model';
 import { createContactJob } from '../contact-job/contact-job';
-import { isChatChannel } from '@tech-matters/hrm-types';
-import {
-  enableCreateContactJobsFlag,
-  enablePublishHrmSearchIndex,
-} from '../featureFlags';
+import { enablePublishHrmSearchIndex } from '../featureFlags';
 import { db } from '../connection-pool';
 import {
-  ConversationMedia,
+  type ConversationMedia,
+  type NewConversationMedia,
   createConversationMedia,
   isS3StoredTranscript,
   isS3StoredTranscriptPending,
-  NewConversationMedia,
   updateConversationMediaSpecificData,
 } from '../conversation-media/conversation-media';
-import { Profile, getOrCreateProfileWithIdentifier } from '../profile/profileService';
+import {
+  type Profile,
+  getOrCreateProfileWithIdentifier,
+} from '../profile/profileService';
 import { deleteContactReferrals } from '../referral/referral-data-access';
 import {
   DatabaseErrorResult,
   isDatabaseUniqueConstraintViolationErrorResult,
 } from '../sql';
 import { systemUser } from '@tech-matters/twilio-worker-auth';
-import { RulesFile, TKConditionsSets } from '../permissions/rulesMap';
-import type { IndexMessage } from '@tech-matters/hrm-search-config';
 import { publishContactToSearchIndex } from '../jobs/search/publishToSearchIndex';
+import type { RulesFile, TKConditionsSets } from '../permissions/rulesMap';
+import type { IndexMessage } from '@tech-matters/hrm-search-config';
+import {
+  ContactListCondition,
+  generateContactSearchFilters,
+  generateContactPermissionsFilters,
+} from './contactSearchIndex';
 
 // Re export as is:
 export { Contact } from './contactDataAccess';
@@ -141,17 +152,6 @@ export const getContactByTaskId = async (
   return contact ? bindApplyTransformations(can, user)(contact) : undefined;
 };
 
-const findS3StoredTranscriptPending = (
-  contact: Contact,
-  conversationMedia: ConversationMedia[],
-) => {
-  if (enableCreateContactJobsFlag && isChatChannel(contact.channel)) {
-    return conversationMedia.find(isS3StoredTranscriptPending);
-  }
-
-  return null;
-};
-
 const initProfile = async (
   conn,
   hrmAccountId: HrmAccountId,
@@ -214,6 +214,7 @@ export const createContact = async (
   createdBy: WorkerSID,
   newContact: NewContactRecord,
   { can, user }: { can: InitializedCan; user: TwilioUser },
+  skipSearchIndex = false,
 ): Promise<Contact> => {
   let result: Result<DatabaseErrorResult, Contact>;
   for (let retries = 1; retries < 4; retries++) {
@@ -260,7 +261,9 @@ export const createContact = async (
     });
     if (isOk(result)) {
       // trigger index operation but don't await for it
-      indexContactInSearchIndex({ accountSid, contactId: result.data.id });
+      if (!skipSearchIndex) {
+        indexContactInSearchIndex({ accountSid, contactId: result.data.id });
+      }
       return result.data;
     }
     // This operation can fail with a unique constraint violation if a contact with the same ID is being created concurrently
@@ -294,6 +297,7 @@ export const patchContact = async (
   contactId: string,
   { referrals, rawJson, ...restOfPatch }: PatchPayload,
   { can, user }: { can: InitializedCan; user: TwilioUser },
+  skipSearchIndex = false,
 ): Promise<Contact> =>
   db.tx(async conn => {
     // if referrals are present, delete all existing and create new ones, otherwise leave them untouched
@@ -329,7 +333,10 @@ export const patchContact = async (
     const applyTransformations = bindApplyTransformations(can, user);
 
     // trigger index operation but don't await for it
-    indexContactInSearchIndex({ accountSid, contactId: parseInt(contactId, 10) });
+
+    if (!skipSearchIndex) {
+      indexContactInSearchIndex({ accountSid, contactId: parseInt(contactId, 10) });
+    }
 
     return applyTransformations(updated);
   });
@@ -339,6 +346,7 @@ export const connectContactToCase = async (
   contactId: string,
   caseId: string,
   { can, user }: { can: InitializedCan; user: TwilioUser },
+  skipSearchIndex = false,
 ): Promise<Contact> => {
   if (caseId === null) {
     // trigger remove operation, awaiting for it, since we'll lost the information of which is the "old case" otherwise
@@ -358,7 +366,9 @@ export const connectContactToCase = async (
   const applyTransformations = bindApplyTransformations(can, user);
 
   // trigger index operation but don't await for it
-  indexContactInSearchIndex({ accountSid, contactId: parseInt(contactId, 10) });
+  if (!skipSearchIndex) {
+    indexContactInSearchIndex({ accountSid, contactId: parseInt(contactId, 10) });
+  }
 
   return applyTransformations(updated);
 };
@@ -368,6 +378,7 @@ export const addConversationMediaToContact = async (
   contactIdString: string,
   conversationMediaPayload: NewConversationMedia[],
   { can, user }: { can: InitializedCan; user: TwilioUser },
+  skipSearchIndex = false,
 ): Promise<Contact> => {
   const contactId = parseInt(contactIdString);
   const contact = await getById(accountSid, contactId);
@@ -388,10 +399,7 @@ export const addConversationMediaToContact = async (
     }
 
     // if pertinent, create retrieve-transcript job
-    const pendingTranscript = findS3StoredTranscriptPending(
-      contact,
-      createdConversationMedia,
-    );
+    const pendingTranscript = createdConversationMedia.find(isS3StoredTranscriptPending);
     if (pendingTranscript) {
       await createContactJob(conn)({
         jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
@@ -406,7 +414,9 @@ export const addConversationMediaToContact = async (
     };
 
     // trigger index operation but don't await for it
-    indexContactInSearchIndex({ accountSid, contactId: parseInt(contactIdString, 10) });
+    if (!skipSearchIndex) {
+      indexContactInSearchIndex({ accountSid, contactId: parseInt(contactIdString, 10) });
+    }
 
     return applyTransformations(updated);
   });
@@ -417,7 +427,7 @@ const generalizedSearchContacts =
   async (
     accountSid: HrmAccountId,
     searchParameters: T,
-    query,
+    query: Pick<PaginationQuery, 'limit' | 'offset'>,
     {
       can,
       user,
@@ -485,21 +495,76 @@ export const getContactsByProfileId = async (
 
 const searchContactsByIds = generalizedSearchContacts(searchByIds);
 
-export const searchContactsByIdCtx = async (
+export const generalisedContactSearch = async (
   accountSid: HrmAccountId,
-  contactIds: Contact['id'][],
+  searchParameters: {
+    searchTerm: string;
+    counselor?: string;
+    dateFrom?: string;
+    dateTo?: string;
+  },
   query: Pick<PaginationQuery, 'limit' | 'offset'>,
   ctx: {
     can: InitializedCan;
     user: TwilioUser;
     permissions: RulesFile;
   },
-): Promise<
-  TResult<'InternalServerError', Awaited<ReturnType<typeof searchContactsByIds>>>
-> => {
+): Promise<TResult<'InternalServerError', { count: number; contacts: Contact[] }>> => {
   try {
-    const contacts = await searchContactsByIds(accountSid, { contactIds }, query, ctx);
-    return newOk({ data: contacts });
+    const { searchTerm, counselor, dateFrom, dateTo } = searchParameters;
+    const { limit, offset } = query;
+
+    const pagination = {
+      limit: parseInt((limit as string) || '20', 10),
+      start: parseInt((offset as string) || '0', 10),
+    };
+
+    const searchFilters = generateContactSearchFilters({
+      counselor,
+      dateFrom,
+      dateTo,
+    });
+    const permissionFilters = generateContactPermissionsFilters({
+      user: ctx.user,
+      viewContact: ctx.permissions.viewContact as ContactListCondition[][],
+      viewTranscript: ctx.permissions.viewExternalTranscript as ContactListCondition[][],
+      buildParams: { parentPath: '' },
+    });
+
+    const client = (
+      await getClient({
+        accountSid,
+        indexType: HRM_CONTACTS_INDEX_TYPE,
+        ssmConfigParameter: process.env.SSM_PARAM_ELASTICSEARCH_CONFIG,
+      })
+    ).searchClient(hrmSearchConfiguration);
+
+    const { total, items } = await client.search({
+      searchParameters: {
+        type: DocumentType.Contact,
+        searchTerm,
+        searchFilters,
+        permissionFilters,
+        pagination,
+      },
+    });
+
+    const contactIds = items.map(item => parseInt(item.id, 10));
+
+    const { contacts } = await searchContactsByIds(
+      accountSid,
+      { contactIds },
+      {}, // limit and offset are computed in ES query
+      ctx,
+    );
+
+    const order = contactIds.reduce(
+      (accum, idVal, idIndex) => ({ ...accum, [idVal]: idIndex }),
+      {},
+    );
+    const sorted = contacts.sort((a, b) => order[a.id] - order[b.id]);
+
+    return newOk({ data: { count: total, contacts: sorted } });
   } catch (err) {
     return newErr({
       message: err instanceof Error ? err.message : String(err),
@@ -512,7 +577,7 @@ export const searchContactsByIdCtx = async (
  * wrapper around updateSpecificData that also triggers a re-index operation when the conversation media gets updated (e.g. when transcript is exported)
  */
 export const updateConversationMediaData =
-  (contactId: Contact['id']) =>
+  (contactId: Contact['id'], skipSearchIndex = false) =>
   async (
     ...[accountSid, id, storeTypeSpecificData]: Parameters<
       typeof updateConversationMediaSpecificData
@@ -525,7 +590,9 @@ export const updateConversationMediaData =
     );
 
     // trigger index operation but don't await for it
-    indexContactInSearchIndex({ accountSid, contactId });
+    if (!skipSearchIndex) {
+      indexContactInSearchIndex({ accountSid, contactId });
+    }
 
     return result;
   };

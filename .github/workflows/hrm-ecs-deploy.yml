@@ -220,3 +220,17 @@ jobs:
         env:
           SLACK_BOT_TOKEN: ${{ env.GITHUB_ACTIONS_SLACK_BOT_TOKEN }}
         if: ${{ inputs.send-slack-message != 'false' }}
+
+      # Update deployment matrix
+      - name: Update deployment matrix
+        id: update-deployment-matrix
+        uses: techmatters/flex-plugins/.github/actions/deployment-matrix@master
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
+          identifier: ${{ matrix.region }}
+          environment: ${{ inputs.environment }}
+          service_repo: 'hrm-service'
+          version_tag: ${{ github.ref_name }}
+          

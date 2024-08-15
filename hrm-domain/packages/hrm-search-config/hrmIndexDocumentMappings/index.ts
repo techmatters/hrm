@@ -15,9 +15,20 @@
  */
 
 import type { MappingProperty } from '@elastic/elasticsearch/lib/api/types';
-import { caseMapping, contactMapping } from './mappings';
+import {
+  caseMapping,
+  casePathToContacts,
+  casePathToSections,
+  caseSectionMapping,
+  contactMapping,
+} from './mappings';
 
-export { caseMapping, contactMapping } from './mappings';
+export {
+  caseMapping,
+  contactMapping,
+  casePathToContacts,
+  casePathToSections,
+} from './mappings';
 
 export type MappingToDocument<T extends NonNullable<Record<string, MappingProperty>>> =
   Partial<{
@@ -43,8 +54,36 @@ export type MappingToDocument<T extends NonNullable<Record<string, MappingProper
   }>;
 
 export type ContactDocument = MappingToDocument<typeof contactMapping>;
-
+export type CaseSectionDocument = MappingToDocument<typeof caseSectionMapping>;
 export type CaseDocument = MappingToDocument<typeof caseMapping>;
 
-export const HRM_CONTACTS_INDEX_TYPE = 'hrm-contacts';
-export const HRM_CASES_INDEX_TYPE = 'hrm-cases';
+export enum DocumentType {
+  Contact = 'contact',
+  CaseSection = 'caseSection',
+  Case = 'case',
+}
+
+export type DocumentTypeToDocument = {
+  [DocumentType.Contact]: ContactDocument;
+  [DocumentType.CaseSection]: CaseSectionDocument;
+  [DocumentType.Case]: CaseDocument;
+};
+
+export type NestedDocumentTypesRelations = {
+  [DocumentType.Contact]: {};
+  [DocumentType.CaseSection]: {};
+  [DocumentType.Case]: {
+    [casePathToContacts]: DocumentType.Contact;
+    [casePathToSections]: DocumentType.CaseSection;
+  };
+};
+
+export const HRM_CONTACTS_INDEX_TYPE = 'hrm-contacts' as const;
+export type HrmContactsIndexType = `${string}-${typeof HRM_CONTACTS_INDEX_TYPE}`;
+export const isHrmContactsIndex = (s: unknown): s is HrmContactsIndexType =>
+  typeof s === 'string' && s.endsWith(HRM_CONTACTS_INDEX_TYPE);
+
+export const HRM_CASES_INDEX_TYPE = 'hrm-cases' as const;
+export type HrmCasesIndexType = `${string}-${typeof HRM_CASES_INDEX_TYPE}`;
+export const isHrmCasesIndex = (s: unknown): s is HrmCasesIndexType =>
+  typeof s === 'string' && s.endsWith(HRM_CASES_INDEX_TYPE);

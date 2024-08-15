@@ -21,4 +21,3 @@ export * from './Case';
 export * from './CaseSection';
 export * from './Profile';
 export * from './PostSurvey';
-export * from './channelTypes';

@@ -96,8 +96,8 @@ describe('KHP Data Pull - Pull Contacts', () => {
       accountSid,
       searchParams,
       {
-        offset: parseInt(defaultLimitAndOffset.offset),
-        limit: parseInt(defaultLimitAndOffset.limit),
+        offset: defaultLimitAndOffset.offset,
+        limit: defaultLimitAndOffset.limit,
       },
       maxPermissions,
     );

@@ -290,6 +290,7 @@ export const populateCaseSections = async (
         sectionType,
         section,
         sectionWorkerSid,
+        true,
       );
       // Ensure timestamps are in creation order & there are no collisions
       // eslint-disable-next-line @typescript-eslint/no-loop-func

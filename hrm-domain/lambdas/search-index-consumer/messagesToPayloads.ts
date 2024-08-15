@@ -22,11 +22,7 @@ import {
   type IndexCaseMessage,
 } from '@tech-matters/hrm-search-config';
 import { assertExhaustive, type AccountSID } from '@tech-matters/types';
-import {
-  ExportTranscript,
-  isChatChannel,
-  isS3StoredTranscript,
-} from '@tech-matters/hrm-types';
+import { ExportTranscript, isS3StoredTranscript } from '@tech-matters/hrm-types';
 import type { MessageWithMeta, MessagesByAccountSid } from './messages';
 
 /**
@@ -63,7 +59,7 @@ const contactIndexingInputData = async (
 ): Promise<ContactIndexingInputData> => {
   let transcript: string | null = null;
 
-  if (m.message.contact.channel && isChatChannel(m.message.contact.channel)) {
+  try {
     const transcriptEntry =
       m.message.contact.conversationMedia?.find(isS3StoredTranscript);
 
@@ -76,6 +72,10 @@ const contactIndexingInputData = async (
         transcript = parsedTranscript.messages.map(({ body }) => body).join('\n');
       }
     }
+  } catch (err) {
+    console.error(
+      `Error trying to fetch transcript for contact #${m.message.contact.id}`,
+    );
   }
 
   return { ...m, transcript };

@@ -29,6 +29,8 @@ export const reindexContacts = async (
     const searchParameters = {
       dateFrom,
       dateTo,
+      onlyDataContacts: false,
+      shouldIncludeUpdatedAt: true,
     };
 
     const searchFunction: SearchFunction<Contact> = async limitAndOffset => {

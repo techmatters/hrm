@@ -55,7 +55,7 @@ export const updateProfileFlagByIdSql = (
   `;
 };
 
-export const deleteProfileFlagByIdSql = `DELETE FROM "ProfileFlags" WHERE id = $<profileId> AND "accountSid" = $<accountSid> RETURNING *`;
+export const deleteProfileFlagByIdSql = `DELETE FROM "ProfileFlags" WHERE id = $<profileFlagId> AND "accountSid" = $<accountSid> RETURNING *`;
 
 export const getProfileFlagsByAccountSql = `
   SELECT * FROM "ProfileFlags"

@@ -19,11 +19,13 @@ import resourceRoutes from './resource/resourceRoutesV0';
 import importRoutes from './import/importRoutesV0';
 import adminSearchRoutes from './admin/adminSearchRoutesV0';
 import { AdminSearchServiceConfiguration } from './admin/adminSearchService';
+import referenceAttributeRoutes from './referenceAttributes/referenceAttributeRoutesV0';
 
 export const apiV0 = () => {
   const router: IRouter = Router();
 
   router.use(resourceRoutes());
+  router.use('/reference-attributes', referenceAttributeRoutes());
   return router;
 };
 

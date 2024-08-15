@@ -64,7 +64,16 @@ export type RetrieveContactTranscriptJob = Job<
   jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT;
 };
 
-export type ContactJob = RetrieveContactTranscriptJob;
+export type ScrubContactTranscriptJob = Job<
+  string[] | null,
+  {
+    originalLocation: { bucket: string; key: string };
+  }
+> & {
+  jobType: ContactJobType.SCRUB_CONTACT_TRANSCRIPT;
+};
+
+export type ContactJob = RetrieveContactTranscriptJob | ScrubContactTranscriptJob;
 
 export const getContactJobById = async (jobId: number): Promise<ContactJobRecord> =>
   db.task(async connection =>
@@ -169,12 +178,8 @@ export const getPendingCleanupJobs = async (
   );
 };
 
-export const getPendingCleanupJobAccountSids = async (
-  maxCleanupRetentionDays: number,
-): Promise<string[]> => {
-  const ret = await db.task(tx =>
-    tx.manyOrNone(PENDING_CLEANUP_JOB_ACCOUNT_SIDS_SQL, { maxCleanupRetentionDays }),
-  );
+export const getPendingCleanupJobAccountSids = async (): Promise<string[]> => {
+  const ret = await db.task(tx => tx.manyOrNone(PENDING_CLEANUP_JOB_ACCOUNT_SIDS_SQL));
   return ret?.map(r => r.accountSid);
 };
 

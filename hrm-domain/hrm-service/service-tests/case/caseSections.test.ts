@@ -15,7 +15,11 @@
  */
 
 import { getRequest, getServer, headers, useOpenRules } from '../server';
-import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
+import {
+  mockingProxy,
+  mockSsmParameters,
+  mockSuccessfulTwilioAuthentication,
+} from '@tech-matters/testing';
 import { accountSid, ALWAYS_CAN, workerSid } from '../mocks';
 import {
   CaseService,
@@ -32,6 +36,9 @@ import {
   getCaseSection,
 } from '@tech-matters/hrm-core/case/caseSection/caseSectionService';
 import { clearAllTables } from '../dbCleanup';
+import { setupTestQueues } from '../sqs';
+
+const SEARCH_INDEX_SQS_QUEUE_NAME = 'mock-search-index-queue';
 
 useOpenRules();
 const server = getServer();
@@ -41,6 +48,10 @@ beforeAll(async () => {
   await clearAllTables();
   await mockingProxy.start(false);
   await mockSuccessfulTwilioAuthentication(workerSid);
+  const mockttp = await mockingProxy.mockttpServer();
+  await mockSsmParameters(mockttp, [
+    { pathPattern: /.*/, valueGenerator: () => SEARCH_INDEX_SQS_QUEUE_NAME },
+  ]);
 });
 
 afterAll(async () => {
@@ -54,8 +65,10 @@ afterEach(async () => {
 let targetCase: CaseService;
 
 beforeEach(async () => {
-  targetCase = await createCase({}, accountSid, workerSid);
+  targetCase = await createCase({}, accountSid, workerSid, undefined, true);
 });
+
+setupTestQueues([SEARCH_INDEX_SQS_QUEUE_NAME]);
 
 const getRoutePath = (caseId: string | number, sectionType: string, sectionId?: string) =>
   `/v0/accounts/${accountSid}/cases/${caseId}/sections/${sectionType}${

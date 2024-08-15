@@ -17,6 +17,10 @@
 import { convertToIndexDocument } from './convertToIndexDocument';
 import { convertToScriptUpdate } from './convertToScriptUpdate';
 import { getCreateIndexParams } from './getCreateIndexParams';
+import {
+  SearchParameters,
+  generateElasticsearchQuery,
+} from './generateElasticsearchQuery';
 import type {
   IndexConfiguration,
   SearchConfiguration,
@@ -26,6 +30,9 @@ import { IndexPayload } from './payload';
 export {
   HRM_CASES_INDEX_TYPE,
   HRM_CONTACTS_INDEX_TYPE,
+  DocumentType,
+  casePathToContacts,
+  casePathToSections,
 } from './hrmIndexDocumentMappings';
 export {
   IndexMessage,
@@ -34,16 +41,8 @@ export {
   IndexPayload,
 } from './payload';
 
-export const hrmSearchConfiguration: SearchConfiguration = {
-  searchFieldBoosts: {
-    // 'name.*': 5,
-    // 'id.*': 5,
-    // 'high_boost_global.*': 3,
-    // 'low_boost_global.*': 2,
-    '*': 1,
-    '*.*': 1,
-  },
-  filterMappings: {},
+export const hrmSearchConfiguration: SearchConfiguration<SearchParameters> = {
+  generateElasticsearchQuery,
   // generateSuggestQuery,
 };
 
@@ -52,3 +51,9 @@ export const hrmIndexConfiguration: IndexConfiguration<IndexPayload> = {
   convertToScriptUpdate,
   getCreateIndexParams,
 };
+
+export {
+  generateESQuery as generateESFilter,
+  DocumentTypeQueryParams,
+  FILTER_ALL_CLAUSE,
+} from './generateElasticsearchQuery';

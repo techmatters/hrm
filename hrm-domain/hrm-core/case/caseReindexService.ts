@@ -28,7 +28,7 @@ export const reindexCases = async (
 ) => {
   try {
     const filters = {
-      updatedAt: {
+      createdAt: {
         from: formatISO(new Date(dateFrom)),
         to: formatISO(new Date(dateTo)),
       },

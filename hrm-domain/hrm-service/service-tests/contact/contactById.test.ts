@@ -56,6 +56,7 @@ beforeEach(async () => {
       rawJson: <ContactRawJson>{},
     },
     ALWAYS_CAN,
+    true,
   );
 });
 
