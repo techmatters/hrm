@@ -1,0 +1,211 @@
+# Copyright (C) 2021-2023 Technology Matters
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published
+# by the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see https://www.gnu.org/licenses/.
+
+name: 'Deploy HRM to Amazon ECS'
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: HRM environment to deploy.
+        default: development
+        required: true
+        type: choice
+        options:
+          - development
+          - staging
+          - production
+
+      region:
+        description: AWS to deploy.
+        default: development
+        required: true
+        type: choice
+        options:
+          - us-east-1
+          - eu-west-1
+          - ca-central-1
+
+  workflow_call:
+    secrets:
+      AWS_ACCESS_KEY_ID:
+        required: true
+      AWS_SECRET_ACCESS_KEY:
+        required: true
+    inputs:
+      environment:
+        description: HRM environment to deploy. E.G = development, staging, production (must match with the AWS environment value). Default value = development
+        type: string
+        default: development
+        required: true
+      region:
+        description: AWS region to deploy. E.G = us-east-1, eu-west-1, ca-central-1. Default value = us-east-1
+        type: string
+        default: us-east-1
+        required: true
+      send-slack-message:
+        description: 'Specifies if should send a Slack message at the end of successful run. Defaults to true'
+        required: false
+        default: 'true'
+        type: string
+
+env:
+  ECR_REPOSITORY: ${{ inputs.environment }}/hrm-transcript-scrubber
+  # if anything is set as a secret, it can't be used in outputs. So we need to set it as an env var
+  AWS_REGION: ${{ inputs.region }}
+  PRIMARY_AWS_REGION: us-east-1
+
+jobs:
+  deploy_docker:
+    name: Build Docker Image and Set regions
+    runs-on: ubuntu-latest
+
+    outputs:
+      regions: ${{ steps.generate-output.outputs.regions }}
+      docker_image: ${{ steps.generate-output.outputs.docker_image}}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.PRIMARY_AWS_REGION }}
+          # this plugin sets the AWS account ID to a secret which is not allowed in outputs
+          # we have to disable that so repo output will work
+          mask-aws-account-id: 'no'
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./
+          file: ./hrm-domain/hrm-service/Dockerfile
+          push: true
+          tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:live,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ inputs.environment }}/hrm-transcript-scrubber-${{ github.sha }}
+
+      - id: generate-output
+        run: |
+          echo "docker_image=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ inputs.environment }}/hrm-transcript-scrubber-${{ github.sha }}" >> $GITHUB_OUTPUT
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: workflow-scripts-artifacts
+          path: .github/workflows/scripts
+
+  deploy_ecs:
+    needs: deploy_docker
+    name: Deploy to Amazon ECS
+    runs-on: ubuntu-latest
+
+    env:
+      DOCKER_IMAGE: ${{ needs.deploy_docker.outputs.docker_image }}
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: workflow-scripts-artifacts
+          path: .github/workflows/scripts
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ inputs.region }}
+          # this plugin sets the AWS account ID to a secret which is not allowed in outputs
+          # we have to disable that so env.DOCKER_IMAGE will work
+          mask-aws-account-id: 'no'
+
+      - name: Download current ECS task definition
+        run: aws ecs describe-task-definition --task-definition ${{ inputs.environment }}-hrm-transcript-scrubber --query taskDefinition > task-definition-transcript-scrubber.json
+
+      - name: Fill in the new image ID in the Amazon ECS task definition
+        id: task-def-transcript-scrubber
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition-transcript-scrubber.json
+          container-name: ${{ inputs.environment }}-hrm-transcript-scrubber
+          image: ${{ env.DOCKER_IMAGE }}
+
+      - name: Deploy Amazon ECS task definition
+        id: transcript-scrubber-task-defintion
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.task-def-transcript-scrubber.outputs.task-definition }}
+          service: ${{ inputs.environment }}-job-processor
+          cluster: ${{ inputs.environment }}-ecs-cluster
+          wait-for-service-stability: true
+
+
+
+      - name: Update EventBridge target
+        run: |
+          chmod +x ./.github/workflows/scripts/update-event-bridge-target.sh
+          ./.github/workflows/scripts/update-event-bridge-target.sh "${{ inputs.environment }}-hrm-transcript-scrubber" "${{ steps.transcript-scrubber-task-definition.outputs.task-definition-arn }}"
+
+      # reconfigure AWS credentials to use the default region for SSM Parameter Store.
+      # aws-actions/configure-aws-credentials@v4 overrides env.AWS_DEFAULT_REGION, so
+      # we name our env var PRIMARY_AWS_REGION to avoid that.
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.PRIMARY_AWS_REGION }}
+
+      # Set any env vars needed from Parameter Store here
+      - name: Set GITHUB_ACTIONS_SLACK_BOT_TOKEN
+        uses: 'marvinpinto/action-inject-ssm-secrets@latest'
+        with:
+          ssm_parameter: 'GITHUB_ACTIONS_SLACK_BOT_TOKEN'
+          env_variable_name: 'GITHUB_ACTIONS_SLACK_BOT_TOKEN'
+
+      - name: Set ASELO_DEPLOYS_CHANNEL_ID
+        uses: 'marvinpinto/action-inject-ssm-secrets@latest'
+        with:
+          ssm_parameter: 'ASELO_DEPLOYS_CHANNEL_ID'
+          env_variable_name: 'ASELO_DEPLOYS_CHANNEL_ID'
+
+      # Send Slack notifying success
+      - name: Slack Aselo channel
+        id: slack
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          channel-id: ${{ env.ASELO_DEPLOYS_CHANNEL_ID }}
+          slack-message: '`[HRM Transcript Scrubber]` Deployment of ${{ github.ref_type }} `${{ github.ref_name }}` requested by `${{ github.triggering_actor }}` completed with SHA ${{ github.sha }} to region `${{ matrix.region }}`, environment `${{ inputs.environment }}` :rocket:.'
+        env:
+          SLACK_BOT_TOKEN: ${{ env.GITHUB_ACTIONS_SLACK_BOT_TOKEN }}
+        if: ${{ inputs.send-slack-message != 'false' }}
+
+#      # Update deployment matrix
+#      - name: Update deployment matrix
+#        id: update-deployment-matrix
+#        uses: techmatters/flex-plugins/.github/actions/deployment-matrix@master
+#        with:
+#          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#          aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
+#          identifier: ${{ matrix.region }}
+#          environment: ${{ inputs.environment }}
+#          service_repo: 'hrm-transcript-scrubber'
+#          version_tag: ${{ github.ref_name }}
+          
