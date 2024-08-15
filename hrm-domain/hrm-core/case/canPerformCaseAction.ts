@@ -33,7 +33,7 @@ export const canPerformCaseAction = (
   notFoundIfNotPermitted = false,
 ) =>
   asyncHandler(async (req, res, next) => {
-    if (!req.isAuthorized()) {
+    if (!req.isPermitted()) {
       const { hrmAccountId, user, can } = req;
       const id = getCaseIdFromRequest(req);
       const caseObj = await getCase(id, hrmAccountId, {
@@ -49,10 +49,10 @@ export const canPerformCaseAction = (
       const canEdit = actions.every(action => can(user, action, caseObj));
 
       if (canEdit) {
-        req.authorize();
+        req.permit();
       } else {
         if (notFoundIfNotPermitted) throw createError(404);
-        req.unauthorize();
+        req.block();
       }
     }
 

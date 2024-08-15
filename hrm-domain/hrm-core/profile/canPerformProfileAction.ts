@@ -70,9 +70,9 @@ export const canPerformActionOnProfileMiddleware = (
     }
 
     if (result.data.isAllowed) {
-      req.authorize();
+      req.permit();
     } else {
-      req.unauthorize();
+      req.block();
     }
 
     next();
@@ -143,9 +143,9 @@ export const canPerformActionOnProfileSectionMiddleware = (
     }
 
     if (result.data.isAllowed) {
-      req.authorize();
+      req.permit();
     } else {
-      req.unauthorize();
+      req.block();
     }
 
     next();

@@ -38,14 +38,14 @@ postSurveysRouter.post(
 );
 
 const canViewPostSurvey = (req: RequestWithPermissions, res, next) => {
-  if (!req.isAuthorized()) {
+  if (!req.isPermitted()) {
     const { user, can } = req;
 
     // Nothing from the target param is being used for postSurvey target kind, we can pass null for now
     if (can(user, actionsMaps.postSurvey.VIEW_POST_SURVEY, null)) {
-      req.authorize();
+      req.permit();
     } else {
-      req.unauthorize();
+      req.block();
     }
   }
 

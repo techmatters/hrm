@@ -22,3 +22,10 @@ export const unauthorized = (res: Response) => {
   res.status(401).json(authorizationFailed);
   return authorizationFailed;
 };
+
+export const forbidden = (res: Response) => {
+  const notPermitted = { error: 'Action not permitted' };
+  console.log(`[authorizationMiddleware]: ${JSON.stringify(notPermitted)}`);
+  res.status(403).json(notPermitted);
+  return notPermitted;
+};

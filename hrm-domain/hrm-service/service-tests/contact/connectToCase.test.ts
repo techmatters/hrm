@@ -332,7 +332,7 @@ describe('/contacts/:contactId/connectToCase route', () => {
 
             expect(contact.caseId).toBe(existingCaseId);
           } else {
-            expect(response.status).toBe(401);
+            expect(response.status).toBe(403);
           }
         },
       );
@@ -408,7 +408,7 @@ describe('/contacts/:contactId/connectToCase route', () => {
 
             expect(contact.caseId).toBe(null);
           } else {
-            expect(response.status).toBe(401);
+            expect(response.status).toBe(403);
           }
         },
       );

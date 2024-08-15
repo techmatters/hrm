@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-export { unauthorized } from './unauthorized';
+export { unauthorized, forbidden } from './unauthorized';
 export {
   configureDefaultPostMiddlewares,
   configureDefaultPreMiddlewares,

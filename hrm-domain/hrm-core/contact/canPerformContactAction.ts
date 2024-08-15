@@ -23,15 +23,15 @@ import createError from 'http-errors';
 import { getCase } from '../case/caseService';
 import type { ActionsForTK } from '../permissions/actions';
 
-const authorizeIfAdditionalValidationPasses = async (
+const permitIfAdditionalValidationPasses = async (
   req: any,
   contact: Contact,
   additionalValidation: (contact: Contact, req: any) => Promise<boolean>,
 ) => {
   if (await additionalValidation(contact, req)) {
-    req.authorize();
+    req.permit();
   } else {
-    req.unauthorize();
+    req.block();
   }
 };
 
@@ -41,7 +41,7 @@ const canPerformActionOnContact = (
     Promise.resolve(true),
 ) =>
   asyncHandler(async (req, res, next) => {
-    if (!req.isAuthorized()) {
+    if (!req.isPermitted()) {
       const { hrmAccountId, user, can, body, query } = req;
       const { contactId } = req.params;
 
@@ -53,14 +53,14 @@ const canPerformActionOnContact = (
         }
         if (contactObj.finalizedAt || action !== 'editContact') {
           if (can(user, action, contactObj)) {
-            await authorizeIfAdditionalValidationPasses(
+            await permitIfAdditionalValidationPasses(
               req,
               contactObj,
               additionalValidation,
             );
           } else if (action === 'viewContact') {
             throw createError(404);
-          } else req.unauthorize();
+          } else req.block();
         } else {
           // Cannot finalize an offline task with a placeholder taskId.
           // A real task needs to have been created and it's sid assigned to the contact before it can be finalized (or whilst it is finalized)
@@ -68,7 +68,7 @@ const canPerformActionOnContact = (
             body?.taskId?.startsWith('offline-contact-task-') &&
             query?.finalize === 'true'
           ) {
-            req.unauthorize();
+            req.block();
           }
           // If there is no finalized date, then the contact is a draft and can only be edited by the worker who created it or the one who owns it.
           // Offline contacts potentially need to be edited by a creator that won't own them.
@@ -77,7 +77,7 @@ const canPerformActionOnContact = (
             contactObj.createdBy === user.workerSid ||
             contactObj.twilioWorkerId === user.workerSid
           ) {
-            await authorizeIfAdditionalValidationPasses(
+            await permitIfAdditionalValidationPasses(
               req,
               contactObj,
               additionalValidation,
@@ -98,13 +98,13 @@ const canPerformActionOnContact = (
               user.workerSid,
             );
             if (isTransferTarget) {
-              await authorizeIfAdditionalValidationPasses(
+              await permitIfAdditionalValidationPasses(
                 req,
                 contactObj,
                 additionalValidation,
               );
             } else {
-              req.unauthorize();
+              req.block();
             }
           }
         }
@@ -112,7 +112,7 @@ const canPerformActionOnContact = (
         if (err instanceof Error && err.message.toLowerCase().includes('not found')) {
           throw createError(404);
         } else {
-          console.error('Failed to authorize contact editing', err);
+          console.error('Failed to permit contact editing', err);
           throw createError(500);
         }
       }

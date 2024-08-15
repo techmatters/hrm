@@ -55,10 +55,10 @@ const next = jest.fn();
 
 beforeEach(() => {
   req = {
-    isAuthorized: jest.fn().mockReturnValue(false),
+    isPermitted: jest.fn().mockReturnValue(false),
     params: { contactId: 'contact1' },
-    authorize: jest.fn(),
-    unauthorize: jest.fn(),
+    permit: jest.fn(),
+    block: jest.fn(),
     can: jest.fn(),
     user: { workerSid: 'WK-worker1', accountSid: 'ACtwilio' },
     hrmAccountId: accountSid1,
@@ -72,30 +72,30 @@ beforeEach(() => {
 
 const expectNoop = () => {
   expect(createError).not.toHaveBeenCalled();
-  expect(req.authorize).not.toHaveBeenCalled();
-  expect(req.unauthorize).not.toHaveBeenCalled();
+  expect(req.permit).not.toHaveBeenCalled();
+  expect(req.block).not.toHaveBeenCalled();
   expect(next).toHaveBeenCalled();
 };
 
-const expectToBeAuthorized = () => {
+const expectToBePermitted = () => {
   expect(createError).not.toHaveBeenCalled();
-  expect(req.authorize).toHaveBeenCalled();
-  expect(req.unauthorize).not.toHaveBeenCalled();
+  expect(req.permit).toHaveBeenCalled();
+  expect(req.block).not.toHaveBeenCalled();
   expect(next).toHaveBeenCalled();
 };
 
-const expectToBeUnuthorized = () => {
+const expectToBeBlocked = () => {
   expect(createError).not.toHaveBeenCalled();
-  expect(req.authorize).not.toHaveBeenCalled();
-  expect(req.unauthorize).toHaveBeenCalled();
+  expect(req.permit).not.toHaveBeenCalled();
+  expect(req.block).toHaveBeenCalled();
   expect(next).toHaveBeenCalled();
 };
 
 const draftContactTests =
-  (expectToAuthorize: boolean, setup: () => Promise<void> = () => Promise.resolve()) =>
+  (expectToPermit: boolean, setup: () => Promise<void> = () => Promise.resolve()) =>
   () => {
-    const expectedDescription = expectToAuthorize ? 'authorizes' : 'unauthorizes';
-    const expectation = expectToAuthorize ? expectToBeAuthorized : expectToBeUnuthorized;
+    const expectedDescription = expectToBePermitted ? 'permits' : 'blocks';
+    const expectation = expectToPermit ? expectToBePermitted : expectToBeBlocked;
     beforeEach(async () => {
       // Draft contact authorization doesn't care about the can response, so always return false
       req.can.mockReturnValue(false);
@@ -151,7 +151,7 @@ const draftContactTests =
       expectation();
     });
 
-    test('Request user is not the owner or the creator, nor target of a transfer - unauthorizes', async () => {
+    test('Request user is not the owner or the creator, nor target of a transfer - blocks', async () => {
       mockGetContactById.mockResolvedValue(
         new ContactBuilder()
           .withCreatedBy(otherWorkerSid)
@@ -172,17 +172,17 @@ const draftContactTests =
         'original task',
         thisWorkerSid,
       );
-      expectToBeUnuthorized();
+      expectToBeBlocked();
     });
   };
 describe('canPerformEditContactAction', () => {
-  test("Request is already authorized - doesn't authorize or unauthorize", async () => {
-    req.isAuthorized.mockReturnValue(true);
+  test("Request is already permitted - doesn't permit or block", async () => {
+    req.isPermitted.mockReturnValue(true);
     await canPerformEditContactAction(req, {}, next);
     expectNoop();
   });
 
-  test('Request is not already authorized - looks up contact using contactID parameter', async () => {
+  test('Request is not already permitted - looks up contact using contactID parameter', async () => {
     req.can.mockReturnValue(false);
     mockGetContactById.mockResolvedValue(
       new ContactBuilder().withFinalizedAt(BASELINE_DATE).build(),
@@ -218,33 +218,33 @@ describe('canPerformEditContactAction', () => {
       );
     });
 
-    test('Modifying rawJson / resource referrals and can returns true - authorizes', async () => {
+    test('Modifying rawJson / resource referrals and can returns true - permits', async () => {
       req.body = validFinalizedContactPatchPayload;
       req.can.mockReturnValue(true);
       await canPerformEditContactAction(req, {}, next);
-      expectToBeAuthorized();
+      expectToBePermitted();
     });
 
-    test('Modifying values other than rawJson / resource referrals and can returns true - unauthorizes', async () => {
+    test('Modifying values other than rawJson / resource referrals and can returns true - blocks', async () => {
       req.body = { ...validFinalizedContactPatchPayload, conversationDuration: 100 };
       req.can.mockReturnValue(true);
       await canPerformEditContactAction(req, {}, next);
-      expectToBeUnuthorized();
+      expectToBeBlocked();
     });
 
-    test('Modifying rawJson / resource referrals and can returns false - unauthorizes', async () => {
+    test('Modifying rawJson / resource referrals and can returns false - blocks', async () => {
       req.body = validFinalizedContactPatchPayload;
       req.can.mockReturnValue(false);
       await canPerformEditContactAction(req, {}, next);
-      expectToBeUnuthorized();
+      expectToBeBlocked();
     });
   });
   describe('draft contact', draftContactTests(true));
 });
 
 describe('canDisconnectContact', () => {
-  test('Request is already authorized - skips authorization', async () => {
-    req.isAuthorized.mockReturnValue(true);
+  test('Request is already permitted - skips authorization', async () => {
+    req.isPermitted.mockReturnValue(true);
     await canDisconnectContact(req, {}, next);
     expectNoop();
   });
@@ -255,7 +255,7 @@ describe('canDisconnectContact', () => {
       mockGetContactById.mockResolvedValue(contact);
       contact.caseId = '123';
     });
-    test('can returns true to authorize & case id not set on contact - authorizes', async () => {
+    test('can returns true to permit & case id not set on contact - permits', async () => {
       delete contact.caseId;
       req.can.mockImplementation(
         (user, action) => action === actionsMaps.contact.REMOVE_CONTACT_FROM_CASE,
@@ -266,10 +266,10 @@ describe('canDisconnectContact', () => {
         actionsMaps.contact.REMOVE_CONTACT_FROM_CASE,
         contact,
       );
-      expectToBeAuthorized();
+      expectToBePermitted();
     });
 
-    test('can returns true to authorize & case not found to disconnect from - authorizes', async () => {
+    test('can returns true to permit & case not found to disconnect from - permits', async () => {
       mockGetCase.mockResolvedValue(undefined);
       req.can.mockImplementation(
         (user, action) => action === actionsMaps.contact.REMOVE_CONTACT_FROM_CASE,
@@ -280,9 +280,9 @@ describe('canDisconnectContact', () => {
         actionsMaps.contact.REMOVE_CONTACT_FROM_CASE,
         contact,
       );
-      expectToBeAuthorized();
+      expectToBePermitted();
     });
-    test('Can returns true for contact and case checks - authorizes', async () => {
+    test('Can returns true for contact and case checks - permits', async () => {
       const mockCase = {} as CaseService;
       mockGetCase.mockResolvedValue(mockCase);
       req.can.mockReturnValue(true);
@@ -297,9 +297,9 @@ describe('canDisconnectContact', () => {
         actionsMaps.case.UPDATE_CASE_CONTACTS,
         mockCase,
       );
-      expectToBeAuthorized();
+      expectToBePermitted();
     });
-    test('Can returns false - unauthorizes', async () => {
+    test('Can returns false - blocks', async () => {
       const mockCase = {} as CaseService;
       mockGetCase.mockResolvedValue(mockCase);
       req.can.mockReturnValue(false);
@@ -309,9 +309,9 @@ describe('canDisconnectContact', () => {
         actionsMaps.contact.REMOVE_CONTACT_FROM_CASE,
         contact,
       );
-      expectToBeUnuthorized();
+      expectToBeBlocked();
     });
-    test('Can returns true for contact but false for case - unauthorizes', async () => {
+    test('Can returns true for contact but false for case - blocks', async () => {
       const mockCase = {} as CaseService;
       mockGetCase.mockResolvedValue(mockCase);
       req.can.mockImplementation(
@@ -328,7 +328,7 @@ describe('canDisconnectContact', () => {
         actionsMaps.case.UPDATE_CASE_CONTACTS,
         mockCase,
       );
-      expectToBeUnuthorized();
+      expectToBeBlocked();
     });
   });
   describe('draft contact', () => {
