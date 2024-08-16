@@ -163,11 +163,7 @@ jobs:
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         with:
           task-definition: ${{ steps.task-def-transcript-scrubber.outputs.task-definition }}
-          service: ${{ inputs.environment }}-job-processor
           cluster: ${{ inputs.environment }}-ecs-cluster
-          wait-for-service-stability: true
-
-
 
       - name: Update EventBridge target
         run: |
