@@ -109,7 +109,7 @@ jobs:
           context: ./
           file: ./hrm-domain/scheduled-tasks/transcript-scrubber/Dockerfile
           push: true
-          tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:live,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ inputs.environment }}-hrm-transcript-scrubber-${{ github.sha }}
+          tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:live,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ inputs.environment }}-hrm-transcript-scrubber-${{ github.sha }}
 
       - id: generate-output
         run: |
@@ -154,7 +154,8 @@ jobs:
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: task-definition-transcript-scrubber.json
-          container-name: ${{ inputs.environment }}-hrm-transcript-scrubber
+          # container-name: ${{ inputs.environment }}-hrm-transcript-
+          container-name: transcript-scrubber
           image: ${{ env.DOCKER_IMAGE }}
 
       - name: Deploy Amazon ECS task definition
