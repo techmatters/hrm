@@ -28,7 +28,7 @@ on:
 
       region:
         description: AWS to deploy.
-        default: development
+        default: us-east-1
         required: true
         type: choice
         options:
