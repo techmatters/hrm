@@ -94,14 +94,14 @@ jobs:
 
       - name: Add licence
         env:
-          INTEGRATION_TEST_PRIVATE_AI_LICENCE: ${{ secrets.INTEGRATION_TEST_PRIVATE_AI_LICENCE }}
+          PRODUCTION_PRIVATE_AI_LICENCE: ${{ secrets.PRODUCTION_PRIVATE_AI_LICENCE }}
         run: |
           touch ./hrm-domain/scheduled-tasks/transcript-scrubber/licence/license.json
-          echo "$INTEGRATION_TEST_PRIVATE_AI_LICENCE" >> ./hrm-domain/scheduled-tasks/transcript-scrubber/licence/license.json
+          echo "$PRODUCTION_PRIVATE_AI_LICENCE" >> ./hrm-domain/scheduled-tasks/transcript-scrubber/licence/license.json
         shell: bash
 
       - name: Log in to Private AI Registry
-        run: docker login -u ${{ secrets.INTEGRATION_TEST_PRIVATE_AI_DOCKER_USER }} -p ${{ secrets.INTEGRATION_TEST_PRIVATE_AI_DOCKER_PASSWORD }} crprivateaiprod.azurecr.io
+        run: docker login -u ${{ secrets.PRODUCTION_PRIVATE_AI_DOCKER_USER }} -p ${{ secrets.PRODUCTION_PRIVATE_AI_DOCKER_PASSWORD }} crprivateaiprod.azurecr.io
 
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v6
