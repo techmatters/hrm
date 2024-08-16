@@ -168,7 +168,7 @@ jobs:
       - name: Update EventBridge target
         run: |
           chmod +x ./.github/workflows/scripts/update-event-bridge-target.sh
-          ./.github/workflows/scripts/update-event-bridge-target.sh "${{ inputs.environment }}-hrm-transcript-scrubber-scheduled-task" "${{ steps.transcript-scrubber-task-definition.outputs.task-definition-arn }}"
+          ./.github/workflows/scripts/update-event-bridge-target.sh "${{ inputs.environment }}-hrm-transcript-scrubber" "${{ steps.transcript-scrubber-task-definition.outputs.task-definition-arn }}"
 
       # reconfigure AWS credentials to use the default region for SSM Parameter Store.
       # aws-actions/configure-aws-credentials@v4 overrides env.AWS_DEFAULT_REGION, so
