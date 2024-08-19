@@ -159,7 +159,7 @@ jobs:
           image: ${{ env.DOCKER_IMAGE }}
 
       - name: Deploy Amazon ECS task definition
-        id: transcript-scrubber-task-defintion
+        id: transcript-scrubber-task-definition
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         with:
           task-definition: ${{ steps.task-def-transcript-scrubber.outputs.task-definition }}
