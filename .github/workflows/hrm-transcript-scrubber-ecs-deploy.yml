@@ -92,17 +92,28 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
+      - name: Add licence
+        env:
+          PRODUCTION_PRIVATE_AI_LICENCE: ${{ secrets.PRODUCTION_PRIVATE_AI_LICENCE }}
+        run: |
+          touch ./hrm-domain/scheduled-tasks/transcript-scrubber/licence/license.json
+          echo "$PRODUCTION_PRIVATE_AI_LICENCE" >> ./hrm-domain/scheduled-tasks/transcript-scrubber/licence/license.json
+        shell: bash
+
+      - name: Log in to Private AI Registry
+        run: docker login -u ${{ secrets.PRODUCTION_PRIVATE_AI_DOCKER_USER }} -p ${{ secrets.PRODUCTION_PRIVATE_AI_DOCKER_PASSWORD }} crprivateaiprod.azurecr.io
+
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v6
         with:
           context: ./
-          file: ./hrm-domain/hrm-service/Dockerfile
+          file: ./hrm-domain/scheduled-tasks/transcript-scrubber/Dockerfile
           push: true
-          tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:live,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ inputs.environment }}/hrm-transcript-scrubber-${{ github.sha }}
+          tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:live,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ inputs.environment }}-hrm-transcript-scrubber-${{ github.sha }}
 
       - id: generate-output
         run: |
-          echo "docker_image=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ inputs.environment }}/hrm-transcript-scrubber-${{ github.sha }}" >> $GITHUB_OUTPUT
+          echo "docker_image=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ inputs.environment }}-hrm-transcript-scrubber-${{ github.sha }}" >> $GITHUB_OUTPUT
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -147,20 +158,16 @@ jobs:
           image: ${{ env.DOCKER_IMAGE }}
 
       - name: Deploy Amazon ECS task definition
-        id: transcript-scrubber-task-defintion
+        id: transcript-scrubber-task-definition
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         with:
           task-definition: ${{ steps.task-def-transcript-scrubber.outputs.task-definition }}
-          service: ${{ inputs.environment }}-job-processor
           cluster: ${{ inputs.environment }}-ecs-cluster
-          wait-for-service-stability: true
-
-
 
       - name: Update EventBridge target
         run: |
           chmod +x ./.github/workflows/scripts/update-event-bridge-target.sh
-          ./.github/workflows/scripts/update-event-bridge-target.sh "${{ inputs.environment }}-hrm-transcript-scrubber-scheduled-task" "${{ steps.transcript-scrubber-task-definition.outputs.task-definition-arn }}"
+          ./.github/workflows/scripts/update-event-bridge-target.sh "${{ inputs.environment }}-hrm-transcript-scrubber" "${{ steps.transcript-scrubber-task-definition.outputs.task-definition-arn }}"
 
       # reconfigure AWS credentials to use the default region for SSM Parameter Store.
       # aws-actions/configure-aws-credentials@v4 overrides env.AWS_DEFAULT_REGION, so
@@ -191,7 +198,7 @@ jobs:
         uses: slackapi/slack-github-action@v1.26.0
         with:
           channel-id: ${{ env.ASELO_DEPLOYS_CHANNEL_ID }}
-          slack-message: '`[HRM Transcript Scrubber]` Deployment of ${{ github.ref_type }} `${{ github.ref_name }}` requested by `${{ github.triggering_actor }}` completed with SHA ${{ github.sha }} to region `${{ matrix.region }}`, environment `${{ inputs.environment }}` :rocket:.'
+          slack-message: '`[HRM Transcript Scrubber]` Deployment of ${{ github.ref_type }} `${{ github.ref_name }}` requested by `${{ github.triggering_actor }}` completed with SHA ${{ github.sha }} to region `${{ inputs.region }}`, environment `${{ inputs.environment }}` :rocket:.'
         env:
           SLACK_BOT_TOKEN: ${{ env.GITHUB_ACTIONS_SLACK_BOT_TOKEN }}
         if: ${{ inputs.send-slack-message != 'false' }}
