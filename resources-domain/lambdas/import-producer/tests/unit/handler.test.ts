@@ -69,6 +69,12 @@ const MOCK_CONFIG: Awaited<ReturnType<typeof getConfig>> = {
 // @ts-ignore
 global.fetch = mockFetch;
 
+// Works around the fact that the performance object is read-only in node 18 which breaks useFakeTimers
+// https://stackoverflow.com/questions/77694957/typeerror-cannot-assign-to-read-only-property-performance-of-object-object
+Object.defineProperty(global, 'performance', {
+  writable: true,
+});
+
 const mockPublisher = publishToImportConsumer as jest.MockedFunction<
   typeof publishToImportConsumer
 >;
