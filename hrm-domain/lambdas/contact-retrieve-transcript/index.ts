@@ -21,6 +21,7 @@ import { putS3Object } from '@tech-matters/s3-client';
 import { ContactJobProcessorError } from '@tech-matters/job-errors';
 import { getSsmParameter } from '@tech-matters/ssm-cache';
 import {
+  AccountSID,
   CompletedRetrieveContactTranscript,
   ContactJobAttemptResult,
   ContactJobType,
@@ -49,21 +50,27 @@ const hrmEnv = process.env.NODE_ENV;
 const processRetrieveTranscriptRecord = async (
   message: PublishRetrieveContactTranscript,
 ) => {
-  const authToken = await getSsmParameter(
-    `/${hrmEnv}/twilio/${message.accountSid}/auth_token`,
-  );
+  const {
+    accountSid: hrmAccountId,
+    channelSid,
+    serviceSid,
+    contactId,
+    taskId,
+    twilioWorkerId,
+  } = message;
+
+  // This hack to get accountSid from hrmAccountId works for now, but will break if we start using different naming
+  // We should either start recording the accountSid separately on the contact, or stop accessing Twilio APIs directly from the HRM domain
+  const accountSid = hrmAccountId.split('-')[0] as AccountSID;
+  const authToken = await getSsmParameter(`/${hrmEnv}/twilio/${accountSid}/auth_token`);
   const docsBucketName = await getSsmParameter(
-    `/${hrmEnv}/s3/${message.accountSid}/docs_bucket_name`,
+    `/${hrmEnv}/s3/${accountSid}/docs_bucket_name`,
   );
 
   if (!authToken || !docsBucketName) {
     console.log('Missing required SSM params');
     throw new Error('Missing required SSM params');
   }
-
-  const { accountSid, channelSid, serviceSid, contactId, taskId, twilioWorkerId } =
-    message;
-
   const transcript = await exportTranscript({
     authToken,
     accountSid,
@@ -77,6 +84,7 @@ const processRetrieveTranscriptRecord = async (
     body: JSON.stringify({
       transcript,
       accountSid,
+      hrmAccountId,
       contactId,
       taskId,
       twilioWorkerId,
