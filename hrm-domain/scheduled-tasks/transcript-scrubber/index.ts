@@ -81,7 +81,7 @@ const scrubS3Transcript = async (bucket: string, key: string) => {
     null,
     2,
   );
-  console.debug('Saving', scrubbedKey, scrubbedTranscriptJson);
+  console.debug('Saving', scrubbedKey);
   await putS3Object({
     bucket,
     key: scrubbedKey,
