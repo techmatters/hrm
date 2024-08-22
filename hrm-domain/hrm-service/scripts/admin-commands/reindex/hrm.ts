@@ -113,6 +113,7 @@ export const handler = async ({
       });
 
       if (!response.ok) {
+        console.log(response);
         console.error(
           `Failed to submit request for reindexing contacts: ${response.statusText}`,
         );
@@ -133,6 +134,7 @@ export const handler = async ({
       });
 
       if (!response.ok) {
+        console.log(response);
         console.error(
           `Failed to submit request for reindexing cases: ${response.statusText}`,
         );
