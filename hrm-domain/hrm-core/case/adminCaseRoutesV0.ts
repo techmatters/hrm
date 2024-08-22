@@ -23,7 +23,7 @@ const adminContactsRouter = SafeRouter();
 
 // admin POST endpoint to reindex contacts. req body has accountSid, dateFrom, dateTo
 adminContactsRouter.post(
-  '/reindex',
+  '/reindexCases',
   publicEndpoint,
   async (req: Request, res: Response, next: NextFunction) => {
     const { hrmAccountId } = req;

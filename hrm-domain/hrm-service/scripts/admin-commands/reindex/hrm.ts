@@ -98,7 +98,11 @@ export const handler = async ({
     }
 
     if (contacts) {
-      const url = getAdminV0URL(internalResourcesUrl, accountSid, '/contacts/reindex');
+      const url = getAdminV0URL(
+        internalResourcesUrl,
+        accountSid,
+        '/contacts/reindexContacts',
+      );
       const response = await fetch(url, {
         method: 'POST',
         headers: {
@@ -118,7 +122,7 @@ export const handler = async ({
     }
 
     if (cases) {
-      const url = getAdminV0URL(internalResourcesUrl, accountSid, '/cases/reindex');
+      const url = getAdminV0URL(internalResourcesUrl, accountSid, '/cases/reindexCases');
       const response = await fetch(url, {
         method: 'POST',
         headers: {
