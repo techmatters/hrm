@@ -68,7 +68,7 @@ export const PULL_DUE_JOBS_SQL = `
   FROM "ContactJobs" as cj LEFT JOIN LATERAL (
   ${selectContactsWithRelations(
     'Contacts',
-  )} WHERE c."accountSid" = due."accountSid" AND c."id" = due."contactId") AS contacts ON true
+  )} WHERE c."accountSid" = cj."accountSid" AND c."id" = cj."contactId") AS contacts ON true
   WHERE cj."completed" IS NULL AND cj."numberOfAttempts" < $<jobMaxAttempts> AND (cj."lastAttempt" IS NULL OR cj."lastAttempt" <= $<lastAttemptedBefore>::TIMESTAMP WITH TIME ZONE)
 `;
 

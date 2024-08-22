@@ -58,14 +58,15 @@ export function processContactJobs() {
           );
           dueContactJobs = candidateDueContactJobs.filter(job => {
             const millis = JOB_TYPE_SPECIFIC_RETRY_INTERVAL_MILLISECONDS[job.jobType];
-            return (
-              !millis || isAfter(subMilliseconds(now, millis), parseISO(job.lastAttempt))
-            );
+            if (!millis || !job.lastAttempt) return true;
+            return isAfter(subMilliseconds(now, millis), parseISO(job.lastAttempt));
           });
-          await markJobsAsAttempted(
-            t,
-            dueContactJobs.map(job => job.id),
-          );
+          if (dueContactJobs.length) {
+            await markJobsAsAttempted(
+              t,
+              dueContactJobs.map(job => job.id),
+            );
+          }
         });
         await publishDueContactJobs(dueContactJobs);
       } catch (err) {
