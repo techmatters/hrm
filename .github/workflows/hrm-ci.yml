@@ -23,10 +23,10 @@ jobs:
       - name: Checkout Branch
         uses: actions/checkout@v4
 
-      - name: Use Node.js 16.x
+      - name: Use Node.js 18.x
         uses: actions/setup-node@v4
         with:
-          node-version: 16.x
+          node-version: 18.x
 
       - name: Install Packages
         run: npm ci
@@ -63,7 +63,7 @@ jobs:
           echo "build_lambda_dir=$build_lambda_dir" >> $GITHUB_ENV
 
       - name: Build Lambda Docker Images
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ./
           file: ./lambdas/Dockerfile
@@ -79,7 +79,7 @@ jobs:
       - name: Checkout Branch
         uses: actions/checkout@v4
       - name: Build Service Docker Image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ./
           file: ./hrm-domain/hrm-service/Dockerfile
@@ -99,10 +99,10 @@ jobs:
       - name: Checkout Branch
         uses: actions/checkout@v4
 
-      - name: Use Node.js 16.x
+      - name: Use Node.js 18.x
         uses: actions/setup-node@v4
         with:
-          node-version: 16.x
+          node-version: 18.x
 
       - name: Install Packages
         run: npm ci

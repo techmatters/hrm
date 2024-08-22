@@ -108,7 +108,7 @@ jobs:
           echo "build_lambda_dir=$build_lambda_dir" >> $GITHUB_ENV
 
       - name: Build and Push Docker Image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ./
           file: ./lambdas/Dockerfile
@@ -225,7 +225,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
+          aws-region: ${{ env.PRIMARY_AWS_REGION }}
           identifier: ${{ matrix.region }}
           environment: ${{ inputs.environment }}
           service_repo: ${{ inputs.lambda_path }}

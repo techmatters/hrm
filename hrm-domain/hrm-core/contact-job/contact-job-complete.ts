@@ -40,6 +40,7 @@ import {
 import {
   deleteCompletedContactJobsFromQueue,
   pollCompletedContactJobsFromQueue,
+  publishToContactJobs,
 } from './client-sqs';
 import {
   ConversationMedia,
@@ -178,7 +179,7 @@ export const handleFailure = async (
   completedJob: CompletedContactJobBodyFailure,
   jobMaxAttempts: number,
 ) => {
-  const { jobId } = completedJob;
+  const { jobId, contactId, accountSid, jobType } = completedJob;
   let { attemptPayload } = completedJob;
 
   if (typeof attemptPayload !== 'string') {
@@ -202,6 +203,11 @@ export const handleFailure = async (
 
   if (attemptNumber >= jobMaxAttempts) {
     const completionPayload = { message: 'Attempts limit reached' };
+    // This log is used to drive monitoring and alarms. Do not remove or update without reviewing the alarms.
+    console.error(
+      `${jobType} job abandoned after ${jobMaxAttempts} attempts: ${jobId}, contact ${accountSid}/${contactId}`,
+      attemptPayload,
+    );
     return completeContactJob({
       id: completedJob.jobId,
       completionPayload,

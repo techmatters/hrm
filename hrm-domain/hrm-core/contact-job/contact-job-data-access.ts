@@ -85,7 +85,7 @@ export const getContactJobById = async (jobId: number): Promise<ContactJobRecord
 /**
  * Returns all the jobs that are considered 'due'
  * These are jobs that are not considered complete, and have also not been attempted since the time provided (to prevent jobs being retried too often)
- * The logic could be further enhanced with logic to consider a job 'abandoned', i.e. after a certain number of attempts or if requested too long ago.
+ * The logic will also consider a job 'abandoned', after a certain number of attempts.
  * This will pull the contact in its current state and add it to the job payload for sending
  * @param lastAttemptedBefore
  */

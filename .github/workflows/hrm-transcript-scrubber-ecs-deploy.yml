@@ -12,7 +12,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see https://www.gnu.org/licenses/.
 
-name: 'Deploy HRM to Amazon ECS'
+name: 'Deploy Transcript Scrubber to Amazon ECS'
 on:
   workflow_dispatch:
     inputs:
@@ -26,6 +26,16 @@ on:
           - staging
           - production
 
+      region:
+        description: AWS to deploy.
+        default: us-east-1
+        required: true
+        type: choice
+        options:
+          - us-east-1
+          - eu-west-1
+          - ca-central-1
+
   workflow_call:
     secrets:
       AWS_ACCESS_KEY_ID:
@@ -38,6 +48,11 @@ on:
         type: string
         default: development
         required: true
+      region:
+        description: AWS region to deploy. E.G = us-east-1, eu-west-1, ca-central-1. Default value = us-east-1
+        type: string
+        default: us-east-1
+        required: true
       send-slack-message:
         description: 'Specifies if should send a Slack message at the end of successful run. Defaults to true'
         required: false
@@ -45,8 +60,9 @@ on:
         type: string
 
 env:
-  ECR_REPOSITORY: ${{ inputs.environment }}-hrm
+  ECR_REPOSITORY: ${{ inputs.environment }}/hrm-transcript-scrubber
   # if anything is set as a secret, it can't be used in outputs. So we need to set it as an env var
+  AWS_REGION: ${{ inputs.region }}
   PRIMARY_AWS_REGION: us-east-1
 
 jobs:
@@ -76,19 +92,28 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
+      - name: Add licence
+        env:
+          PRODUCTION_PRIVATE_AI_LICENCE: ${{ secrets.PRODUCTION_PRIVATE_AI_LICENCE }}
+        run: |
+          touch ./hrm-domain/scheduled-tasks/transcript-scrubber/licence/license.json
+          echo "$PRODUCTION_PRIVATE_AI_LICENCE" >> ./hrm-domain/scheduled-tasks/transcript-scrubber/licence/license.json
+        shell: bash
+
+      - name: Log in to Private AI Registry
+        run: docker login -u ${{ secrets.PRODUCTION_PRIVATE_AI_DOCKER_USER }} -p ${{ secrets.PRODUCTION_PRIVATE_AI_DOCKER_PASSWORD }} crprivateaiprod.azurecr.io
+
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v6
         with:
           context: ./
-          file: ./hrm-domain/hrm-service/Dockerfile
+          file: ./hrm-domain/scheduled-tasks/transcript-scrubber/Dockerfile
           push: true
-          tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:live,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ inputs.environment }}-hrm-${{ github.sha }}
+          tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:live,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ inputs.environment }}-hrm-transcript-scrubber-${{ github.sha }}
 
       - id: generate-output
         run: |
-          regions=$(jq --arg env "${{ inputs.environment }}" '[.[$env] | values[]]' ./.github/workflows/config/environment-region-map.json)
-          echo "regions=$(echo $regions)" >> $GITHUB_OUTPUT
-          echo "docker_image=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ inputs.environment }}-hrm-${{ github.sha }}" >> $GITHUB_OUTPUT
+          echo "docker_image=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ inputs.environment }}-hrm-transcript-scrubber-${{ github.sha }}" >> $GITHUB_OUTPUT
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -100,11 +125,6 @@ jobs:
     needs: deploy_docker
     name: Deploy to Amazon ECS
     runs-on: ubuntu-latest
-
-    strategy:
-      fail-fast: false
-      matrix:
-        region: ${{ fromJson(needs.deploy_docker.outputs.regions) }}
 
     env:
       DOCKER_IMAGE: ${{ needs.deploy_docker.outputs.docker_image }}
@@ -121,71 +141,33 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ matrix.region }}
+          aws-region: ${{ inputs.region }}
           # this plugin sets the AWS account ID to a secret which is not allowed in outputs
           # we have to disable that so env.DOCKER_IMAGE will work
           mask-aws-account-id: 'no'
 
-      - name: Download current ECS task definition for the job processor
-        run: aws ecs describe-task-definition --task-definition ${{ inputs.environment }}-hrm-job-processor --query taskDefinition > task-definition-job-processor.json
+      - name: Download current ECS task definition
+        run: aws ecs describe-task-definition --task-definition ${{ inputs.environment }}-hrm-transcript-scrubber --query taskDefinition > task-definition-transcript-scrubber.json
 
       - name: Fill in the new image ID in the Amazon ECS task definition
-        id: task-def-job-processor
+        id: task-def-transcript-scrubber
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
-          task-definition: task-definition-job-processor.json
-          container-name: ${{ inputs.environment }}-hrm-job-processor
+          task-definition: task-definition-transcript-scrubber.json
+          container-name: ${{ inputs.environment }}-hrm-transcript-scrubber
           image: ${{ env.DOCKER_IMAGE }}
 
-      - name: Deploy Amazon ECS task definition for the job processor
+      - name: Deploy Amazon ECS task definition
+        id: transcript-scrubber-task-definition
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         with:
-          task-definition: ${{ steps.task-def-job-processor.outputs.task-definition }}
-          service: ${{ inputs.environment }}-job-processor
-          cluster: ${{ inputs.environment }}-ecs-cluster
-          wait-for-service-stability: true
-
-      - name: Download current ECS task definition for the api service
-        run: aws ecs describe-task-definition --task-definition ${{ inputs.environment }}-hrm-task --query taskDefinition > task-definition.json
-
-      - name: Fill in the new image ID in the Amazon ECS task definition
-        id: task-def
-        uses: aws-actions/amazon-ecs-render-task-definition@v1
-        with:
-          task-definition: task-definition.json
-          container-name: ${{ inputs.environment }}-hrm-container
-          image: ${{ env.DOCKER_IMAGE }}
-
-      - name: Deploy Amazon ECS task definition for the api service
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
-        with:
-          task-definition: ${{ steps.task-def.outputs.task-definition }}
-          service: ${{ inputs.environment }}-ecs-service
-          cluster: ${{ inputs.environment }}-ecs-cluster
-          wait-for-service-stability: true
-
-      - name: Download current ECS task definition for scheduled tasks
-        run: aws ecs describe-task-definition --task-definition ${{ inputs.environment }}-hrm-scheduled-task --query taskDefinition > task-definition-hrm-scheduled-task.json
-
-      - name: Fill in the new image ID in the Amazon ECS task definition
-        id: task-def-scheduled-task
-        uses: aws-actions/amazon-ecs-render-task-definition@v1
-        with:
-          task-definition: task-definition-hrm-scheduled-task.json
-          container-name: ${{ inputs.environment }}-hrm-scheduled-task
-          image: ${{ env.DOCKER_IMAGE }}
-
-      - name: Deploy Amazon ECS task definition scheduled tasks
-        id: scheduled-task-definition
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
-        with:
-          task-definition: ${{ steps.task-def-scheduled-task.outputs.task-definition }}
+          task-definition: ${{ steps.task-def-transcript-scrubber.outputs.task-definition }}
           cluster: ${{ inputs.environment }}-ecs-cluster
 
       - name: Update EventBridge target
         run: |
           chmod +x ./.github/workflows/scripts/update-event-bridge-target.sh
-          ./.github/workflows/scripts/update-event-bridge-target.sh "${{ inputs.environment }}-hrm-scheduled-task" "${{ steps.scheduled-task-definition.outputs.task-definition-arn }}"
+          ./.github/workflows/scripts/update-event-bridge-target.sh "${{ inputs.environment }}-hrm-transcript-scrubber" "${{ steps.transcript-scrubber-task-definition.outputs.task-definition-arn }}"
 
       # reconfigure AWS credentials to use the default region for SSM Parameter Store.
       # aws-actions/configure-aws-credentials@v4 overrides env.AWS_DEFAULT_REGION, so
@@ -216,21 +198,21 @@ jobs:
         uses: slackapi/slack-github-action@v1.26.0
         with:
           channel-id: ${{ env.ASELO_DEPLOYS_CHANNEL_ID }}
-          slack-message: '`[HRM]` Deployment of ${{ github.ref_type }} `${{ github.ref_name }}` requested by `${{ github.triggering_actor }}` completed with SHA ${{ github.sha }} to region `${{ matrix.region }}`, environment `${{ inputs.environment }}` :rocket:.'
+          slack-message: '`[HRM Transcript Scrubber]` Deployment of ${{ github.ref_type }} `${{ github.ref_name }}` requested by `${{ github.triggering_actor }}` completed with SHA ${{ github.sha }} to region `${{ inputs.region }}`, environment `${{ inputs.environment }}` :rocket:.'
         env:
           SLACK_BOT_TOKEN: ${{ env.GITHUB_ACTIONS_SLACK_BOT_TOKEN }}
         if: ${{ inputs.send-slack-message != 'false' }}
 
-      # Update deployment matrix
-      - name: Update deployment matrix
-        id: update-deployment-matrix
-        uses: techmatters/flex-plugins/.github/actions/deployment-matrix@master
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.PRIMARY_AWS_REGION }}
-          identifier: ${{ matrix.region }}
-          environment: ${{ inputs.environment }}
-          service_repo: 'hrm-service'
-          version_tag: ${{ github.ref_name }}
+#      # Update deployment matrix
+#      - name: Update deployment matrix
+#        id: update-deployment-matrix
+#        uses: techmatters/flex-plugins/.github/actions/deployment-matrix@master
+#        with:
+#          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#          aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
+#          identifier: ${{ matrix.region }}
+#          environment: ${{ inputs.environment }}
+#          service_repo: 'hrm-transcript-scrubber'
+#          version_tag: ${{ github.ref_name }}
           
