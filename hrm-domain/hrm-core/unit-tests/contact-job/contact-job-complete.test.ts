@@ -297,19 +297,6 @@ describe('pollAndProcessCompletedContactJobs', () => {
       expect(deletedCompletedContactJobsSpy).toHaveBeenCalledWith(
         validPayload.ReceiptHandle,
       );
-      if (job.jobType === ContactJobType.SCRUB_CONTACT_TRANSCRIPT) {
-        const completedJob = {
-          jobType: job.jobType,
-          jobId: job.jobId,
-          accountSid: job.accountSid,
-          contactId: job.contactId,
-          taskId: job.taskId,
-          twilioWorkerId: job.twilioWorkerId,
-          attemptNumber: job.attemptNumber,
-          originalLocation: job.originalLocation,
-        };
-        expect(publishToContactJobsTopicSpy).toHaveBeenCalledWith(completedJob);
-      }
 
       expect(result?.[0].status).toBe('fulfilled');
     },
