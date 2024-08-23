@@ -22,8 +22,18 @@ import { ContactJobPollerError } from './contact-job-error';
 import { publishDueContactJobs } from './contact-job-publish';
 
 let processingJobs = false;
-
-const JOB_PROCESSING_INTERVAL_MILLISECONDS = 5000; // 5 seconds
+let JOB_PROCESSING_INTERVAL_MILLISECONDS: number;
+try {
+  JOB_PROCESSING_INTERVAL_MILLISECONDS = process.env.JOB_PROCESSING_INTERVAL_MILLISECONDS
+    ? parseInt(process.env.JOB_PROCESSING_INTERVAL_MILLISECONDS)
+    : 5000;
+} catch (err) {
+  console.error(
+    'Failed to parse JOB_PROCESSING_INTERVAL_MILLISECONDS from environment variable. Using default value.',
+    err,
+  );
+  JOB_PROCESSING_INTERVAL_MILLISECONDS = 5000;
+}
 const JOB_RETRY_INTERVAL_MILLISECONDS = 120000; // 2 minutes
 export const JOB_MAX_ATTEMPTS = 20;
 
@@ -36,6 +46,7 @@ export function processContactJobs() {
 
     return setInterval(async () => {
       try {
+        console.debug(`processContactJobs sweep started.`);
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         await pollAndProcessCompletedContactJobs(JOB_MAX_ATTEMPTS);
 
@@ -46,6 +57,7 @@ export function processContactJobs() {
 
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         await publishDueContactJobs(dueContactJobs);
+        console.debug(`processContactJobs sweep complete.`);
       } catch (err) {
         console.error(
           new ContactJobPollerError(

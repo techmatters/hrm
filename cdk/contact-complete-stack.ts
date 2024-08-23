@@ -22,6 +22,8 @@ import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 export default class ContactCompleteStack extends cdk.Stack {
   public readonly completeQueue: cdk.aws_sqs.Queue;
 
+  public readonly dockerCompleteQueueUrl: string;
+
   constructor({
     scope,
     id,
@@ -40,21 +42,33 @@ export default class ContactCompleteStack extends cdk.Stack {
     super(scope, id, props);
     this.completeQueue = new cdk.aws_sqs.Queue(this, id);
 
+    const splitCompleteQueueUrl = cdk.Fn.split('localhost', this.completeQueue.queueUrl);
+    const completeQueueUrl = cdk.Fn.join('localstack', [
+      cdk.Fn.select(0, splitCompleteQueueUrl),
+      cdk.Fn.select(1, splitCompleteQueueUrl),
+    ]);
+
     new cdk.aws_ssm.StringParameter(this, `complete-queue-url`, {
       parameterName: `/local/us-east-1/sqs/jobs/contact/queue-url-complete`,
-      stringValue: this.completeQueue.queueUrl,
+      stringValue: completeQueueUrl,
     });
 
     // duplicated for test env
     new cdk.aws_ssm.StringParameter(this, `complete-queue-url-test`, {
       parameterName: `/test/us-east-1/sqs/jobs/contact/queue-url-complete`,
-      stringValue: this.completeQueue.queueUrl,
+      stringValue: completeQueueUrl,
     });
 
     new cdk.CfnOutput(this, 'queueUrl', {
       value: this.completeQueue.queueUrl,
       description: 'The url of the complete queue',
     });
+
+    new cdk.CfnOutput(this, 'dockerQueueUrl', {
+      value: completeQueueUrl,
+      description: 'The url of the complete queue',
+    });
+    this.dockerCompleteQueueUrl = completeQueueUrl;
 
     if (params.skipLambda) return;
 

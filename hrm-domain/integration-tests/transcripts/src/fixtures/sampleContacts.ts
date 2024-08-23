@@ -14,8 +14,25 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-const getStackOutput = require('../cdk/cdkOutput');
+import { NewContactRecord } from '@tech-matters/hrm-types/Contact';
 
-console.log(
-  getStackOutput('contact-complete').queueUrl.replace('localhost', 'localstack'),
-);
+export const MINIMAL_CONTACT: NewContactRecord = {
+  conversationDuration: 0,
+  queueName: 'x',
+  channel: 'web',
+  rawJson: {
+    categories: {},
+    childInformation: {},
+    caseInformation: {},
+    callType: 'Child calling about self',
+  },
+  twilioWorkerId: 'WK-integration-test-counselor',
+  taskId: 'TK-integration-test',
+
+  helpline: '',
+  number: '',
+  timeOfContact: new Date().toISOString(),
+  channelSid: '',
+  serviceSid: '',
+  createdBy: 'WK-integration-test-counselor',
+};

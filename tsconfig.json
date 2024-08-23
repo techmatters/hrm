@@ -38,5 +38,6 @@
     { "path": "resources-domain/lambdas/search-index" },
     { "path": "resources-domain/resources-service" },
     { "path": "hrm-domain/hrm-service" },
+    { "path": "hrm-domain/integration-tests/transcripts" }
   ]
 }

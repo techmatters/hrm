@@ -1,0 +1,77 @@
+# Copyright (C) 2021-2023 Technology Matters
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published
+# by the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see https://www.gnu.org/licenses/.
+
+name: 'Run HRM Integration Tests'
+on:
+  workflow_dispatch:
+
+  workflow_call:
+    secrets:
+      AWS_ACCESS_KEY_ID:
+        required: true
+      AWS_SECRET_ACCESS_KEY:
+        required: true
+    inputs:
+      send-slack-message:
+        description: 'Specifies if should send a Slack message at the end of successful run. Defaults to true'
+        required: false
+        default: 'true'
+        type: string
+
+env:
+  ECR_REPOSITORY: ${{ inputs.environment }}-hrm
+  # if anything is set as a secret, it can't be used in outputs. So we need to set it as an env var
+  PRIMARY_AWS_REGION: us-east-1
+
+jobs:
+  integration-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Branch
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 16.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 16.x
+
+      - name: Install Packages
+        run: npm ci
+
+      - name: Add licence
+        env:
+          INTEGRATION_TEST_PRIVATE_AI_LICENCE: ${{ secrets.INTEGRATION_TEST_PRIVATE_AI_LICENCE }}
+        run: |
+          touch ./hrm-domain/scheduled-tasks/transcript-scrubber/licence/license.json
+          echo "$INTEGRATION_TEST_PRIVATE_AI_LICENCE" >> ./hrm-domain/scheduled-tasks/transcript-scrubber/licence/license.json
+        shell: bash
+
+      - name: Build Code
+        run: npm run build
+
+      - name: Log in to Private AI Registry
+        run: docker login -u ${{ secrets.INTEGRATION_TEST_PRIVATE_AI_DOCKER_USER }} -p ${{ secrets.INTEGRATION_TEST_PRIVATE_AI_DOCKER_PASSWORD }} crprivateaiprod.azurecr.io
+
+      - name: Build Containers
+        run: npm run docker:build
+
+      - name: Run Tests
+        env:
+          AWS_ACCESS_KEY_ID: test
+          AWS_SECRET_ACCESS_KEY: test
+          AWS_REGION: us-east-1
+        run: npm run test:integration -w hrm-domain/integration-tests/transcripts
+      - name: Output container logs
+        if: always()
+        uses: jwalton/gh-docker-logs@v2
