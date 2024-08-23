@@ -57,7 +57,7 @@ export function processContactJobs() {
 
     return setInterval(async () => {
       try {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        console.debug(`processContactJobs sweep started.`);
         await pollAndProcessCompletedContactJobs(JOB_MAX_ATTEMPTS);
         const now = new Date();
         let dueContactJobs: ContactJob[] = [];
