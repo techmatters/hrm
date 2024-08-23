@@ -37,7 +37,7 @@
  * DO NOT set 'req.authorized' directly.
  */
 import { Router, RouterOptions, Request } from 'express';
-import { unauthorized } from '@tech-matters/http';
+import { forbidden } from '@tech-matters/http/dist/unauthorized';
 
 /**
  * A middleware that just marks an endpoint as open.
@@ -46,20 +46,20 @@ import { unauthorized } from '@tech-matters/http';
  * @param {*} next
  */
 export const publicEndpoint = (req, res, next) => {
-  req.authorize();
+  req.permit();
   next();
 };
 
 /**
- * Adds authorize(), unauthorize() and isAuthorized() methods to the request
+ * Adds permit(), block() and isPermitted() methods to the request
  * @param {*} req
  */
-const createAuthorizationMethods = req => {
-  req.authorize = () => {
-    req.authorized = true;
+const createAuthorizationMethods = (req: SafeRouterRequest) => {
+  req.permit = () => {
+    req.permitted = true;
   };
-  req.unauthorize = () => null;
-  req.isAuthorized = () => req.authorized;
+  req.block = () => null;
+  req.isPermitted = () => req.permitted;
 };
 
 /**
@@ -70,9 +70,9 @@ const createAuthorizationMethods = req => {
  * @param {*} res
  * @param {*} next
  */
-const startAuthorization = (req, res, next) => {
+const startPermissibleRequest = (req: SafeRouterRequest, res, next) => {
   createAuthorizationMethods(req);
-  req.authorized = false;
+  req.permitted = false;
   next();
 };
 
@@ -84,19 +84,19 @@ const startAuthorization = (req, res, next) => {
  * @param {*} res
  * @param {*} next
  */
-const blockUnauthorized = (req, res, next) =>
-  req.isAuthorized() ? next() : unauthorized(res);
+const blockNotPermitted = (req: SafeRouterRequest, res, next) =>
+  req.isPermitted() ? next() : forbidden(res);
 
 /**
  * Includes two middlewares in the list of handlers:
- * 1) startAuthorization as the first middleware in the chain
+ * 1) startPermissibleRequest as the first middleware in the chain
  * 2) blockUnauthorized as the last middleware in the chain
  * @param {*} handlers
  */
 const addPermissionMiddlewares = handlers => {
   const params = [...handlers];
   const endpointHandler = params.pop();
-  return [startAuthorization, ...params, blockUnauthorized, endpointHandler];
+  return [startPermissibleRequest, ...params, blockNotPermitted, endpointHandler];
 };
 
 // HTTP methods and the 'all' special method
@@ -144,7 +144,8 @@ export const SafeRouter = (
 };
 
 export type SafeRouterRequest = Request & {
-  isAuthorized: () => boolean;
-  authorize: () => void;
-  unauthorize: () => void;
+  isPermitted: () => boolean;
+  permit: () => void;
+  block: () => void;
+  permitted: boolean;
 };

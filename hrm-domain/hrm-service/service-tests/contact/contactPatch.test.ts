@@ -433,7 +433,7 @@ describe('/contacts/:contactId route', () => {
           .set(headers)
           .send({ conversationDuration: 1337 });
 
-        expect(response.status).toBe(401);
+        expect(response.status).toBe(403);
       });
 
       type FullPatchTestOptions = {
@@ -567,7 +567,7 @@ describe('/contacts/:contactId route', () => {
       expect(response.status).toBe(404);
     });
 
-    test("Draft contact edited by a user that didn't create or own the contact - returns 401", async () => {
+    test("Draft contact edited by a user that didn't create or own the contact - returns 403", async () => {
       const createdContact = await contactApi.createContact(
         accountSid,
         'WK another creator',
@@ -583,7 +583,7 @@ describe('/contacts/:contactId route', () => {
         .set(headers)
         .send();
 
-      expect(response.status).toBe(401);
+      expect(response.status).toBe(403);
     });
 
     test('Draft contact edited by a user that owns the contact - returns 200', async () => {

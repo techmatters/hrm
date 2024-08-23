@@ -230,7 +230,7 @@ contactsRouter.get('/:contactId', canPerformViewContactAction, async (req, res) 
   if (!contact) {
     throw createError(404);
   }
-  if (!req.isAuthorized()) {
+  if (!req.isPermitted()) {
     if (!can(user, actionsMaps.contact.VIEW_CONTACT, contact)) {
       createError(401);
     }

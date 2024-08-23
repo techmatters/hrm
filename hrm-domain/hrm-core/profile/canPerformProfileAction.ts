@@ -70,9 +70,15 @@ export const canPerformActionOnProfileMiddleware = (
     }
 
     if (result.data.isAllowed) {
-      req.authorize();
+      console.debug(
+        `[Permission - PERMITTED] User ${user.workerSid} is permitted to perform ${action} on ${hrmAccountId}/${profileId}`,
+      );
+      req.permit();
     } else {
-      req.unauthorize();
+      console.debug(
+        `[Permission - BLOCKED] User ${user.workerSid} is not permitted to perform ${action} on ${hrmAccountId}/${profileId} - rules failure`,
+      );
+      req.block();
     }
 
     next();
@@ -143,9 +149,9 @@ export const canPerformActionOnProfileSectionMiddleware = (
     }
 
     if (result.data.isAllowed) {
-      req.authorize();
+      req.permit();
     } else {
-      req.unauthorize();
+      req.block();
     }
 
     next();

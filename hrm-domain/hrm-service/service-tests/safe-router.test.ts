@@ -24,32 +24,24 @@ import { headers, getRequest, getServer, useOpenRules } from './server';
 
 jest.mock('@tech-matters/hrm-core/routes', () => {
   const mockRouter = MockSafeRouter();
-  const middlewareThatDontAuthorize = (req, res, next) => {
-    req.unauthorize();
+  const middlewareThatBlocks = (req, res, next) => {
+    req.block();
     next();
   };
-  const middlewareThatAuthorizes = (req, res, next) => {
-    req.authorize();
+  const middlewareThatPermits = (req, res, next) => {
+    req.permit();
     next();
   };
   const defaultHandler = (req, res) => res.json({});
 
   mockRouter.get('/without-middleware', defaultHandler);
   mockRouter.get('/with-public-endpoint-middleware', mockPublicEndpoint, defaultHandler);
-  mockRouter.get(
-    '/with-middleware-that-dont-authorize',
-    middlewareThatDontAuthorize,
-    defaultHandler,
-  );
-  mockRouter.get(
-    '/with-middleware-that-authorizes',
-    middlewareThatAuthorizes,
-    defaultHandler,
-  );
+  mockRouter.get('/with-middleware-that-blocks', middlewareThatBlocks, defaultHandler);
+  mockRouter.get('/with-middleware-that-permits', middlewareThatPermits, defaultHandler);
   mockRouter.get(
     '/with-multiple-middlewares',
-    middlewareThatDontAuthorize,
-    middlewareThatAuthorizes,
+    middlewareThatBlocks,
+    middlewareThatPermits,
     defaultHandler,
   );
   return {
@@ -75,9 +67,9 @@ afterAll(done => {
   });
 });
 
-test('unauthorize endpoints with no middleware', async () => {
+test('Unauthorize endpoints with no middleware', async () => {
   const response = await request.get(`${baseRoute}/without-middleware`).set(headers);
-  expect(response.status).toBe(401);
+  expect(response.status).toBe(403);
 });
 
 test('authorize endpoints with  publicEndpoint middleware', async () => {
@@ -87,21 +79,21 @@ test('authorize endpoints with  publicEndpoint middleware', async () => {
   expect(response.status).toBe(200);
 });
 
-test('Unauthorize endpoints with middleware that dont authorize', async () => {
+test('Blocks endpoints with middleware that dont permit', async () => {
   const response = await request
-    .get(`${baseRoute}/with-middleware-that-dont-authorize`)
+    .get(`${baseRoute}/with-middleware-that-blocks`)
     .set(headers);
-  expect(response.status).toBe(401);
+  expect(response.status).toBe(403);
 });
 
-test('Authorizes endpoints with middleware that authorizes', async () => {
+test('Permits endpoints with middleware that permits', async () => {
   const response = await request
-    .get(`${baseRoute}/with-middleware-that-authorizes`)
+    .get(`${baseRoute}/with-middleware-that-permits`)
     .set(headers);
   expect(response.status).toBe(200);
 });
 
-test('Authorizes endpoints with multiple middlewares and one that authorizes', async () => {
+test('Permits endpoints with multiple middlewares and one that permits', async () => {
   const response = await request
     .get(`${baseRoute}/with-multiple-middlewares`)
     .set(headers);
