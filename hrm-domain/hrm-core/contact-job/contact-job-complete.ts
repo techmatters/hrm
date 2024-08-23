@@ -40,7 +40,6 @@ import {
 import {
   deleteCompletedContactJobsFromQueue,
   pollCompletedContactJobsFromQueue,
-  publishToContactJobs,
 } from './client-sqs';
 import {
   ConversationMedia,

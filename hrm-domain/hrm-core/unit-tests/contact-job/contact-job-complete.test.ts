@@ -275,7 +275,6 @@ describe('pollAndProcessCompletedContactJobs', () => {
         SQSClient,
         'deleteCompletedContactJobsFromQueue',
       );
-      const publishToContactJobsTopicSpy = jest.spyOn(SQSClient, 'publishToContactJobs');
       const processCompletedFunctionSpy = jest
         .spyOn(contactJobComplete, processCompletedFunction)
         .mockImplementation(async () => {});
