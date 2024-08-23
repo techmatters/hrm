@@ -28,8 +28,18 @@ import { ContactJobType } from '@tech-matters/types/dist';
 import { db } from '../connection-pool';
 
 let processingJobs = false;
-
-const JOB_PROCESSING_INTERVAL_MILLISECONDS = 5000; // 5 seconds
+let JOB_PROCESSING_INTERVAL_MILLISECONDS: number;
+try {
+  JOB_PROCESSING_INTERVAL_MILLISECONDS = process.env.JOB_PROCESSING_INTERVAL_MILLISECONDS
+    ? parseInt(process.env.JOB_PROCESSING_INTERVAL_MILLISECONDS)
+    : 5000;
+} catch (err) {
+  console.error(
+    'Failed to parse JOB_PROCESSING_INTERVAL_MILLISECONDS from environment variable. Using default value.',
+    err,
+  );
+  JOB_PROCESSING_INTERVAL_MILLISECONDS = 5000;
+}
 const MINIMUM_JOB_RETRY_INTERVAL_MILLISECONDS = 120000; // 2 minutes
 const JOB_TYPE_SPECIFIC_RETRY_INTERVAL_MILLISECONDS: {
   [jobType in ContactJobType]?: number | undefined;
@@ -47,6 +57,7 @@ export function processContactJobs() {
 
     return setInterval(async () => {
       try {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         await pollAndProcessCompletedContactJobs(JOB_MAX_ATTEMPTS);
         const now = new Date();
         let dueContactJobs: ContactJob[] = [];
@@ -69,6 +80,7 @@ export function processContactJobs() {
           }
         });
         await publishDueContactJobs(dueContactJobs);
+        console.debug(`processContactJobs sweep complete.`);
       } catch (err) {
         console.error(
           new ContactJobPollerError(

@@ -14,8 +14,8 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-const getStackOutput = require('../cdk/cdkOutput');
+import env from 'dotenv';
 
-console.log(
-  getStackOutput('contact-complete').queueUrl.replace('localhost', 'localstack'),
-);
+env.config({ path: '../../../.env.localstack' });
+
+export const ACCOUNT_SID = 'AC-integration-test';
