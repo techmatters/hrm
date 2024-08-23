@@ -70,7 +70,7 @@ const scrubS3Transcript = async (bucket: string, key: string) => {
     body: JSON.stringify({ text: transcript.messages.map(m => m.body) }),
   });
   const responsePayload = await response.json();
-  console.log(response.status, JSON.stringify(responsePayload, null, 2));
+  console.log('Response from PrivateAI:', response.status);
   const results = responsePayload as { processed_text: string }[];
   const scrubbedKey = key.replace('transcripts', 'scrubbed-transcripts');
   const scrubbedMessages = transcript.messages.map((m, idx) => ({
@@ -82,7 +82,7 @@ const scrubS3Transcript = async (bucket: string, key: string) => {
     null,
     2,
   );
-  console.debug('Saving', scrubbedKey, scrubbedTranscriptJson);
+  console.debug('Saving', scrubbedKey);
   await putS3Object({
     bucket,
     key: scrubbedKey,

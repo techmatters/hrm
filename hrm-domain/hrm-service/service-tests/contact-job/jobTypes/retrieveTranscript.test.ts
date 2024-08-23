@@ -180,8 +180,8 @@ describe('publish retrieve-transcript job type', () => {
     expect(publishRetrieveContactTranscriptSpy).toHaveBeenCalledTimes(1);
     expect(publishRetrieveContactTranscriptSpy).toHaveBeenCalledWith({
       ...retrieveContactTranscriptJob,
-      lastAttempt: expect.toParseAsDate(),
-      numberOfAttempts: 1,
+      lastAttempt: null,
+      numberOfAttempts: 0,
       resource: {
         ...contact,
         conversationMedia: contact.conversationMedia?.map(cm => ({
@@ -245,8 +245,8 @@ describe('publish retrieve-transcript job type', () => {
     expect(publishRetrieveContactTranscriptSpy).toHaveBeenCalledTimes(1);
     expect(publishRetrieveContactTranscriptSpy).toHaveBeenCalledWith({
       ...retrieveContactTranscriptJob,
-      lastAttempt: expect.toParseAsDate(),
-      numberOfAttempts: 1,
+      lastAttempt: null,
+      numberOfAttempts: 0,
       resource: {
         ...contact,
         conversationMedia: contact.conversationMedia?.map(cm => ({

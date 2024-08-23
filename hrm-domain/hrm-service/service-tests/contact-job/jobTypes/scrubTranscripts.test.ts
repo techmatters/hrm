@@ -37,8 +37,12 @@ import {
 } from '@tech-matters/types';
 import { processContactJobs } from '@tech-matters/hrm-core/contact-job/contact-job-processor';
 import { createContactJob } from '@tech-matters/hrm-core/contact-job/contact-job';
-import { pullDueContactJobs } from '@tech-matters/hrm-core/contact-job/contact-job-data-access';
+import {
+  ContactJob,
+  pullDueContactJobs,
+} from '@tech-matters/hrm-core/contact-job/contact-job-data-access';
 import { receiveSqsMessage } from '@tech-matters/sqs-client';
+import { db } from '@tech-matters/hrm-core/connection-pool';
 
 const CONTACT_JOB_COMPLETE_SQS_QUEUE = 'mock-completed-contact-jobs';
 const PENDING_SCRUB_TRANSCRIPT_JOBS_QUEUE = 'mock-pending-scrub-transcript-jobs';
@@ -174,8 +178,11 @@ describe('Scrub job complete', () => {
       },
     });
 
+    let pendingScrubTranscriptJob: ContactJob;
+    await db.tx(async t => {
+      [pendingScrubTranscriptJob] = await pullDueContactJobs(t, new Date(), 5);
+    });
     // Should only be 1 due job
-    const [pendingScrubTranscriptJob] = await pullDueContactJobs(new Date(), 5);
 
     const message: CompletedScrubContactTranscript = {
       jobId: pendingScrubTranscriptJob.id,
@@ -221,7 +228,10 @@ describe('Scrub job complete', () => {
       S3ContactMediaType.SCRUBBED_TRANSCRIPT,
       'mock-scrubbed-transcript-path',
     );
-    expect(await pullDueContactJobs(new Date(), 5)).toHaveLength(0);
+
+    await db.tx(async t => {
+      expect(await pullDueContactJobs(t, new Date(), 5)).toHaveLength(0);
+    });
   });
 
   test('Receive a completed scrub transcript job for contact with an existing scrubbed transcripts - updates the scrubbed transcript media item', async () => {
@@ -253,7 +263,10 @@ describe('Scrub job complete', () => {
     });
 
     // Should only be 1 due job
-    const [pendingScrubTranscriptJob] = await pullDueContactJobs(new Date(), 5);
+    let pendingScrubTranscriptJob: ContactJob;
+    await db.tx(async t => {
+      [pendingScrubTranscriptJob] = await pullDueContactJobs(t, new Date(), 5);
+    });
 
     const message: CompletedScrubContactTranscript = {
       jobId: pendingScrubTranscriptJob.id,
@@ -299,7 +312,10 @@ describe('Scrub job complete', () => {
       S3ContactMediaType.SCRUBBED_TRANSCRIPT,
       'mock-new-scrubbed-transcript-path',
     );
-    expect(await pullDueContactJobs(new Date(), 5)).toHaveLength(0);
+
+    await db.tx(async t => {
+      expect(await pullDueContactJobs(t, new Date(), 5)).toHaveLength(0);
+    });
   });
 });
 
@@ -336,7 +352,10 @@ describe('Retrieve transcript job complete', () => {
       },
     });
 
-    const [pendingRetrieveJobs] = await pullDueContactJobs(new Date(), 5);
+    let pendingRetrieveJobs: ContactJob;
+    await db.tx(async t => {
+      [pendingRetrieveJobs] = await pullDueContactJobs(t, new Date(), 5);
+    });
 
     const message: CompletedRetrieveContactTranscript = {
       jobId: pendingRetrieveJobs.id,

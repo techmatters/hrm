@@ -64,15 +64,17 @@ export const PENDING_CLEANUP_JOB_ACCOUNT_SIDS_SQL = `
 `;
 
 export const PULL_DUE_JOBS_SQL = `
-  WITH due AS (
-    UPDATE "ContactJobs" SET "lastAttempt" = CURRENT_TIMESTAMP, "numberOfAttempts" = "numberOfAttempts" + 1
-    WHERE "completed" IS NULL AND "numberOfAttempts" < $<jobMaxAttempts> AND ("lastAttempt" IS NULL OR "lastAttempt" <= $<lastAttemptedBefore>::TIMESTAMP WITH TIME ZONE) RETURNING *
-  )
-  SELECT due.*, to_jsonb(contacts.*) AS "resource"
-  FROM due LEFT JOIN LATERAL (
+  SELECT cj.*, to_jsonb(contacts.*) AS "resource"
+  FROM "ContactJobs" as cj LEFT JOIN LATERAL (
   ${selectContactsWithRelations(
     'Contacts',
-  )} WHERE c."accountSid" = due."accountSid" AND c."id" = due."contactId") AS contacts ON true
+  )} WHERE c."accountSid" = cj."accountSid" AND c."id" = cj."contactId") AS contacts ON true
+  WHERE cj."completed" IS NULL AND cj."numberOfAttempts" < $<jobMaxAttempts> AND (cj."lastAttempt" IS NULL OR cj."lastAttempt" <= $<lastAttemptedBefore>::TIMESTAMP WITH TIME ZONE)
+`;
+
+export const INCREMENT_JOBS_ATTEMPTS_SQL = `
+    UPDATE "ContactJobs" SET "lastAttempt" = CURRENT_TIMESTAMP, "numberOfAttempts" = "numberOfAttempts" + 1
+    WHERE "id" IN ($<jobIds:csv>)
 `;
 
 export const UPDATE_JOB_CLEANUP_ACTIVE_SQL = `

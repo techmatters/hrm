@@ -27,11 +27,13 @@ import {
   selectSingleContactJobByIdSql,
   UPDATE_JOB_CLEANUP_ACTIVE_SQL,
   UPDATE_JOB_CLEANUP_PENDING_SQL,
+  INCREMENT_JOBS_ATTEMPTS_SQL,
 } from './sql/contact-job-sql';
 import { txIfNotInOne } from '../sql';
 
 import { ContactJobType, HrmAccountId } from '@tech-matters/types';
 import { ConversationMedia } from '../conversation-media/conversation-media';
+import { ITask } from 'pg-promise';
 
 // Reflects the actual shape of a record in the ContactJobs table
 export type ContactJobRecord = {
@@ -87,18 +89,23 @@ export const getContactJobById = async (jobId: number): Promise<ContactJobRecord
  * These are jobs that are not considered complete, and have also not been attempted since the time provided (to prevent jobs being retried too often)
  * The logic will also consider a job 'abandoned', after a certain number of attempts.
  * This will pull the contact in its current state and add it to the job payload for sending
- * @param lastAttemptedBefore
  */
 export const pullDueContactJobs = async (
+  tx: ITask<unknown>,
   lastAttemptedBefore: Date,
   jobMaxAttempts: number,
 ): Promise<ContactJob[]> => {
-  return db.task(tx => {
-    return tx.manyOrNone<ContactJob>(PULL_DUE_JOBS_SQL, {
-      lastAttemptedBefore: lastAttemptedBefore.toISOString(),
-      jobMaxAttempts,
-    });
+  return tx.manyOrNone<ContactJob>(PULL_DUE_JOBS_SQL, {
+    lastAttemptedBefore: lastAttemptedBefore.toISOString(),
+    jobMaxAttempts,
   });
+};
+
+export const markJobsAsAttempted = async (
+  tx: ITask<unknown>,
+  jobIds: number[],
+): Promise<void> => {
+  return tx.none(INCREMENT_JOBS_ATTEMPTS_SQL, { jobIds });
 };
 
 /**
