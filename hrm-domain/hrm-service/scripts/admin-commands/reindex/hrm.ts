@@ -107,7 +107,9 @@ export const handler = async ({
         },
         body: JSON.stringify({ dateFrom, dateTo }),
       });
-      console.log('>>> contacts response', response);
+
+      const body = await response.json();
+      console.log('>>> contacts response body', body);
 
       if (!response.ok) {
         console.error(

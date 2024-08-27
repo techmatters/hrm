@@ -33,6 +33,7 @@ export const reindexCases = async (
         to: formatISO(new Date(dateTo)),
       },
     };
+    console.log('filters', filters);
 
     const searchFunction: SearchFunction<CaseService> = async limitAndOffset => {
       const res = await searchCases(
@@ -50,6 +51,7 @@ export const reindexCases = async (
     };
 
     const asyncProcessor: AsyncProcessor<CaseService, void> = async casesResult => {
+      console.log('asyncProcessor casesResult', casesResult);
       const promises = casesResult.records.map(caseObj => {
         return publishCaseToSearchIndex({
           accountSid,
@@ -58,7 +60,7 @@ export const reindexCases = async (
         });
       });
 
-      console.log('cases promises', promises);
+      console.log('asyncProcessor cases promises');
       await Promise.all(promises);
     };
 

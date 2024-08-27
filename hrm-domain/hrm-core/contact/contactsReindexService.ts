@@ -33,6 +33,8 @@ export const reindexContacts = async (
       shouldIncludeUpdatedAt: true,
     };
 
+    console.log('searchParameters', searchParameters);
+
     const searchFunction: SearchFunction<Contact> = async limitAndOffset => {
       const res = await searchContacts(
         accountSid,
@@ -40,6 +42,8 @@ export const reindexContacts = async (
         limitAndOffset,
         maxPermissions,
       );
+      console.log('res Reindexing contacts  ', res, res.count);
+
       return { records: res.contacts, count: res.count };
     };
 
@@ -52,6 +56,7 @@ export const reindexContacts = async (
         });
       });
 
+      console.log('asyncProcessor contacts promises');
       await Promise.all(promises);
     };
 
