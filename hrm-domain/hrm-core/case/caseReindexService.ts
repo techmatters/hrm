@@ -35,6 +35,8 @@ export const reindexCases = async (
     };
     console.log('filters', filters);
 
+    let casesProcessed = false;
+
     const searchFunction: SearchFunction<CaseService> = async limitAndOffset => {
       const res = await searchCases(
         accountSid,
@@ -52,6 +54,9 @@ export const reindexCases = async (
 
     const asyncProcessor: AsyncProcessor<CaseService, void> = async casesResult => {
       console.log('asyncProcessor casesResult', casesResult);
+      if (casesResult.records.length > 0) {
+        casesProcessed = true;
+      }
       const promises = casesResult.records.map(caseObj => {
         return publishCaseToSearchIndex({
           accountSid,
@@ -66,9 +71,13 @@ export const reindexCases = async (
 
     await processInBatch(searchFunction, asyncProcessor);
 
-    return newOkFromData('Successfully indexed contacts');
+    if (casesProcessed) {
+      return newOkFromData('Successfully indexed cases');
+    } else {
+      return newOkFromData('No cases found to index');
+    }
   } catch (error) {
-    console.error('Error reindexing contacts', error);
-    return newErr({ error, message: 'Error reindexing contacts' });
+    console.error('Error reindexing case', error);
+    return newErr({ error, message: 'Error reindexing case' });
   }
 };

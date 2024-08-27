@@ -90,7 +90,13 @@ export const handler = async ({
       assumeRoleParams,
     });
 
-    console.log('getHRMInternalEndpointAccess', authKey, internalResourcesUrl);
+    console.log(
+      'getHRMInternalEndpointAccess',
+      authKey,
+      internalResourcesUrl,
+      dateFrom,
+      dateTo,
+    );
 
     if (!contacts && !cases) {
       console.log(
