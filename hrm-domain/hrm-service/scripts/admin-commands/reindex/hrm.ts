@@ -100,7 +100,7 @@ export const handler = async ({
     if (contacts) {
       const url = getAdminV0URL(internalResourcesUrl, accountSid, '/contacts/reindex');
       console.log('url', url);
-      const response = await fetch(url, {
+      const response = await fetch(url.href, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -125,7 +125,7 @@ export const handler = async ({
       const url = getAdminV0URL(internalResourcesUrl, accountSid, '/cases/reindex');
       console.log('url', url);
 
-      const response = await fetch(url, {
+      const response = await fetch(url.href, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
