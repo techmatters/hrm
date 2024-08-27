@@ -56,8 +56,12 @@ export const processInBatch = async <T, U = T[]>(
 
     await asyncProcessor(searchResult);
 
+    console.log(`autopaginate: Processed ${processed} out of ${count} records`);
+
     processed += records.length;
     hasMoreItems = processed < count;
+
+    console.log(`autopaginate: hasMoreItems: ${hasMoreItems}`);
 
     if (hasMoreItems) {
       offset += limit;

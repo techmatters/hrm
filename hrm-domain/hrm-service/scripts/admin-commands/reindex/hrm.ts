@@ -107,6 +107,7 @@ export const handler = async ({
         },
         body: JSON.stringify({ dateFrom, dateTo }),
       });
+      console.log('>>> contacts response', response);
 
       if (!response.ok) {
         console.error(
@@ -127,6 +128,8 @@ export const handler = async ({
         },
         body: JSON.stringify({ dateFrom, dateTo }),
       });
+
+      console.log('>>> cases response', response);
 
       if (!response.ok) {
         console.error(

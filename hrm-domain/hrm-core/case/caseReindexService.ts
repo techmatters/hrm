@@ -45,6 +45,7 @@ export const reindexCases = async (
         { filters },
         maxPermissions,
       );
+      console.log('res Reindexing cases with filters', res);
       return { records: res.cases as CaseService[], count: res.count };
     };
 
@@ -57,6 +58,7 @@ export const reindexCases = async (
         });
       });
 
+      console.log('cases promises', promises);
       await Promise.all(promises);
     };
 
