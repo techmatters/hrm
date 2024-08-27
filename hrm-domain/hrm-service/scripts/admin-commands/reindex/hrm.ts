@@ -129,7 +129,8 @@ export const handler = async ({
         body: JSON.stringify({ dateFrom, dateTo }),
       });
 
-      console.log('>>> cases response', response);
+      const body = await response.json();
+      console.log('>>> cases response body', body);
 
       if (!response.ok) {
         console.error(

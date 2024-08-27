@@ -45,7 +45,7 @@ export const reindexCases = async (
         { filters },
         maxPermissions,
       );
-      console.log('res Reindexing cases with filters', res);
+      console.log('res Reindexing cases with filters', res, res.count);
       return { records: res.cases as CaseService[], count: res.count };
     };
 

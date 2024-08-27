@@ -38,6 +38,7 @@ adminContactsRouter.post(
         }),
       );
     }
+    console.log('case result', result);
 
     res.json(result.data);
   },
