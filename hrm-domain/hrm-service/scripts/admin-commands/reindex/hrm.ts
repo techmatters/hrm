@@ -90,6 +90,8 @@ export const handler = async ({
       assumeRoleParams,
     });
 
+    console.log('getHRMInternalEndpointAccess', authKey, internalResourcesUrl);
+
     if (!contacts && !cases) {
       console.log(
         'Please specify contacts and/or cases option to reindex in your command',
@@ -100,7 +102,7 @@ export const handler = async ({
     if (contacts) {
       const url = getAdminV0URL(internalResourcesUrl, accountSid, '/contacts/reindex');
       console.log('url', url);
-      const response = await fetch(url.href, {
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
