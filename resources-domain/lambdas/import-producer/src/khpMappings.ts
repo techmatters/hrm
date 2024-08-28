@@ -105,6 +105,15 @@ const KHP_MAPPING_NODE_SITES: { children: MappingNode } = {
         ),
         nameEN: translatableAttributeMapping(siteKey('name'), { language: 'en' }),
         nameFR: translatableAttributeMapping(siteKey('name'), { language: 'fr' }),
+        nameDetails: {
+          children: {
+            '{language}': translatableAttributeMapping(siteKey('nameDetails'), {
+              value: ctx => ctx.currentValue.alternate,
+              language: ctx => ctx.captures.language,
+              info: ctx => ctx.currentValue,
+            }),
+          },
+        },
         isActive: attributeMapping('booleanAttributes', siteKey('isActive')),
         location: {
           children: {
@@ -303,6 +312,15 @@ export const KHP_MAPPING_NODE: MappingNode = {
   updatedAt: resourceFieldMapping('lastUpdated'),
   createdAt: attributeMapping('dateTimeAttributes', 'sourceCreatedAt'),
   retiredAt: resourceFieldMapping('deletedAt'),
+  nameDetails: {
+    children: {
+      '{language}': translatableAttributeMapping('nameDetails', {
+        value: ctx => ctx.currentValue.official || ctx.currentValue.alternate,
+        info: ctx => ctx.currentValue,
+        language: ctx => ctx.captures.language,
+      }),
+    },
+  },
   applicationProcess: {
     children: {
       '{language}': translatableAttributeMapping('applicationProcess', {
