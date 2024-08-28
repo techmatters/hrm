@@ -608,6 +608,13 @@ export const generalisedCasesSearch = async (
       ctx,
     );
 
+    // monitor the number of cases returned by hrmdb
+    console.log(
+      `HRM generalisedCasesSearch for AccountSid: ${accountSid} - Total cases: ${total}, Number returned from DB: ${
+        cases.length
+      } cases at ${new Date().toISOString()}`,
+    );
+
     const order = caseIds.reduce(
       (accum, idVal, idIndex) => ({ ...accum, [idVal]: idIndex }),
       {},

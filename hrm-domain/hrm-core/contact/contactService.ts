@@ -558,6 +558,13 @@ export const generalisedContactSearch = async (
       ctx,
     );
 
+    // monitor the number of contacts returned by hrmdb
+    console.log(
+      `HRM generalisedContactSearch for AccountSid: ${accountSid} - Total contacts: ${total}, Number returned from DB: ${
+        contacts.length
+      } contacts at ${new Date().toISOString()}`,
+    );
+
     const order = contactIds.reduce(
       (accum, idVal, idIndex) => ({ ...accum, [idVal]: idIndex }),
       {},
