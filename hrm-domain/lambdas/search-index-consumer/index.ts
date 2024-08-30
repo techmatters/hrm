@@ -50,17 +50,6 @@ export const handler = async (event: SQSEvent): Promise<SQSBatchResponse> => {
       );
     }
 
-    // monitor the number of documents returned per account by elastic search
-    resultsByAccount.forEach((results, accountSid) => {
-      console.debug(
-        `search-index-lambda. AccountSid: ${accountSid} - Returned ${
-          results.length
-        } batches of documents, containing a total of ${
-          results.flat(2).length
-        } documents at ${new Date().toISOString()}`,
-      );
-    });
-
     // send the failed payloads back to SQS so they are redrive to DLQ
     const response: SQSBatchResponse = {
       batchItemFailures: documentsWithErrors.map(({ messageId }) => ({
