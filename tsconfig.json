@@ -17,6 +17,7 @@
     { "path": "packages/service-discovery" },
     { "path": "packages/process" },
     { "path": "lambdas/packages/hrm-authentication" },
+    { "path": "lambdas/etl-twilio" },
     { "path": "lambdas/job-complete" },
     { "path": "hrm-domain/packages/hrm-types" },
     { "path": "hrm-domain/packages/hrm-search-config" },

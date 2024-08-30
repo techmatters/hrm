@@ -1,0 +1,26 @@
+{
+  "name": "@tech-matters/etl-twilio",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "author": "",
+  "license": "AGPL",
+  "scripts": {
+    "test": "echo 'passed'"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.144"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/techmatters/hrm.git"
+  },
+  "bugs": {
+    "url": "https://github.com/techmatters/hrm/issues"
+  },
+  "homepage": "https://github.com/techmatters/hrm#readme",
+  "description": "",
+  "dependencies": {
+    "@tech-matters/ssm-cache": "^1.0.0",
+    "@tech-matters/twilio-client": "^1.0.0"
+  }
+}
