@@ -612,7 +612,6 @@ export const generalisedCasesSearch = async (
     console.log(
       `HRM generalisedCasesSearch for AccountSid: ${accountSid} - Total cases: ${total}, Number searched from ES: ${caseIds.length} cases, Number returned from DB: ${cases.length} cases.`,
     );
-    //calculate the percentage
 
     const order = caseIds.reduce(
       (accum, idVal, idIndex) => ({ ...accum, [idVal]: idIndex }),
