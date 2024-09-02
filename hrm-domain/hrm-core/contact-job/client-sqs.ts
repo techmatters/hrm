@@ -67,10 +67,14 @@ export const publishToContactJobs = async (params: PublishToContactJobsTopicPara
   try {
     const queueUrl = await getSsmParameter(`${JOB_QUEUE_SSM_PATH_BASE}${params.jobType}`);
 
-    return await sendSqsMessage({
+    const result = await sendSqsMessage({
       queueUrl,
       message: JSON.stringify(params),
     });
+    console.info(
+      `[contact-job] Sent job ${params.jobType} / ${params.jobId}, contact ${params.contactId}`,
+    );
+    return result;
   } catch (err) {
     if (err instanceof SsmParameterNotFound) {
       console.log(

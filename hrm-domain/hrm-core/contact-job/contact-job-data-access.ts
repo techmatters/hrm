@@ -141,7 +141,7 @@ export const createContactJob =
     job: Pick<ContactJob, 'jobType' | 'resource' | 'additionalPayload'>,
   ): Promise<void> => {
     const contact = job.resource;
-    const insertSql = pgp.helpers.insert(
+    const insertSql = `${pgp.helpers.insert(
       {
         requested: new Date().toISOString(),
         jobType: job.jobType,
@@ -155,9 +155,13 @@ export const createContactJob =
       },
       null,
       'ContactJobs',
+    )} RETURNING *`;
+    const { id, jobType, contactId } = await txIfNotInOne<ContactJob>(tk, conn =>
+      conn.one(insertSql),
     );
-
-    return txIfNotInOne(tk, conn => conn.none(insertSql));
+    console.info(
+      `[contact-job] Creating new job ${jobType} / ${id}, contact ${contactId}`,
+    );
   };
 
 export const appendFailedAttemptPayload = async (

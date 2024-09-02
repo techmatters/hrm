@@ -135,9 +135,8 @@ export const processCompletedContactJob = async (
     case ContactJobType.SCRUB_CONTACT_TRANSCRIPT: {
       return processCompletedScrubContactTranscript(completedJob);
     }
-    // TODO: remove the as never typecast when we have 2 or more job types. TS complains if we remove it now.
     default:
-      assertExhaustive(completedJob as never);
+      assertExhaustive(completedJob);
   }
 };
 
@@ -230,7 +229,7 @@ export const pollAndProcessCompletedContactJobs = async (jobMaxAttempts: number)
       `polledCompletedJobs returned invalid messages format ${messages}`,
     );
   }
-  console.debug(`Processing ${messages.length} completed jobs`);
+  console.debug(`[contact-job] Processing ${messages.length} completed jobs`);
 
   const completedJobs = await Promise.allSettled(
     messages.map(async m => {
@@ -243,13 +242,18 @@ export const pollAndProcessCompletedContactJobs = async (jobMaxAttempts: number)
 
         if (completedJob.attemptResult === ContactJobAttemptResult.SUCCESS) {
           console.debug(
-            `Processing successful job ${completedJob.jobId}, contact ${completedJob.contactId}`,
+            `[contact-job] Processing successful job ${completedJob.jobType} / ${completedJob.jobId}, contact ${completedJob.contactId}`,
             completedJob,
           );
-          return await handleSuccess(completedJob);
+          const jobRecord = await handleSuccess(completedJob);
+          console.info(
+            `[contact-job] Processed successful job ${completedJob.jobType} / ${completedJob.jobId}, contact ${completedJob.contactId}`,
+            completedJob,
+          );
+          return jobRecord;
         } else {
           console.debug(
-            `Processing failed job ${completedJob.jobId}, contact ${completedJob.contactId}`,
+            `[contact-job] Processing failed job ${completedJob.jobType} / ${completedJob.jobId}, contact ${completedJob.contactId}`,
             completedJob,
           );
           return await handleFailure(completedJob, jobMaxAttempts);
