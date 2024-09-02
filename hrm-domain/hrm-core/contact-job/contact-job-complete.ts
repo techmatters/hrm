@@ -242,18 +242,18 @@ export const pollAndProcessCompletedContactJobs = async (jobMaxAttempts: number)
 
         if (completedJob.attemptResult === ContactJobAttemptResult.SUCCESS) {
           console.debug(
-            `[contact-job] Processing successful job ${completedJob.jobType} / ${completedJob.jobId}, contact ${completedJob.contactId}`,
+            `[contact-job](${completedJob.accountSid}) Processing successful job ${completedJob.jobType} / ${completedJob.jobId}, contact ${completedJob.contactId}`,
             completedJob,
           );
           const jobRecord = await handleSuccess(completedJob);
           console.info(
-            `[contact-job] Processed successful job ${completedJob.jobType} / ${completedJob.jobId}, contact ${completedJob.contactId}`,
+            `[contact-job](${completedJob.accountSid}) Processed successful job ${completedJob.jobType} / ${completedJob.jobId}, contact ${completedJob.contactId}`,
             completedJob,
           );
           return jobRecord;
         } else {
           console.debug(
-            `[contact-job] Processing failed job ${completedJob.jobType} / ${completedJob.jobId}, contact ${completedJob.contactId}`,
+            `[contact-job](${completedJob.accountSid}) Processing failed job ${completedJob.jobType} / ${completedJob.jobId}, contact ${completedJob.contactId}`,
             completedJob,
           );
           return await handleFailure(completedJob, jobMaxAttempts);

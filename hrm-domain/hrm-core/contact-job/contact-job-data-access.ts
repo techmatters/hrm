@@ -156,11 +156,12 @@ export const createContactJob =
       null,
       'ContactJobs',
     )} RETURNING *`;
-    const { id, jobType, contactId } = await txIfNotInOne<ContactJob>(tk, conn =>
-      conn.one(insertSql),
+    const { id, jobType, contactId, accountSid } = await txIfNotInOne<ContactJob>(
+      tk,
+      conn => conn.one(insertSql),
     );
     console.info(
-      `[contact-job] Creating new job ${jobType} / ${id}, contact ${contactId}`,
+      `[contact-job](${accountSid}) Creating new job ${jobType} / ${id}, contact ${contactId}`,
     );
   };
 
