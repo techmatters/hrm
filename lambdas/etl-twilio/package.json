@@ -9,7 +9,7 @@
   },
   "devDependencies": {
     "@tech-matters/types": "^1.0.0",
-    "@tsconfig/node18": "^18.2.4",
+    "@tsconfig/node16": "^1.0.4",
     "@types/aws-lambda": "^8.10.144"
   },
   "repository": {
