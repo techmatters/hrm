@@ -23,6 +23,7 @@ export const handler = async (event: any) => {
   console.log(ssmCache.values);
 
   const accountSids = Object.values(ssmCache.values).map(v => v!.value);
+  console.log('accountSids: ', accountSids);
 
   for (const accountSid in accountSids) {
     console.log('accountSid: ', accountSid);
