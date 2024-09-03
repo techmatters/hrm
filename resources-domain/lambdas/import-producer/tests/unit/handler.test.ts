@@ -26,7 +26,11 @@ import each from 'jest-each';
 import type { FlatResource, ImportProgress, TimeSequence } from '@tech-matters/types';
 import { ScheduledEvent } from 'aws-lambda';
 import { addSeconds, subHours, subMinutes } from 'date-fns';
-import { publishToImportConsumer, ResourceMessage } from '../../src/clientSqs';
+import {
+  publishToImportConsumer,
+  ResourceMessage,
+  retrieveUnprocessedMessageCount,
+} from '../../src/clientSqs';
 import getConfig from '../../src/config';
 import { Response } from 'undici';
 
@@ -38,6 +42,7 @@ jest.mock('@tech-matters/ssm-cache', () => ({
 
 jest.mock('../../src/clientSqs', () => ({
   publishToImportConsumer: jest.fn(),
+  retrieveUnprocessedMessageCount: jest.fn(),
 }));
 
 jest.mock('../../src/config', () => jest.fn());
@@ -78,6 +83,11 @@ Object.defineProperty(global, 'performance', {
 const mockPublisher = publishToImportConsumer as jest.MockedFunction<
   typeof publishToImportConsumer
 >;
+
+const mockRetrieveUnprocessedMessageCount =
+  retrieveUnprocessedMessageCount as jest.MockedFunction<
+    typeof retrieveUnprocessedMessageCount
+  >;
 const mockConfiguredPublisher: jest.MockedFunction<
   ReturnType<typeof publishToImportConsumer>
 > = jest.fn();
@@ -86,6 +96,7 @@ beforeEach(() => {
   jest.resetAllMocks();
   mockConfiguredPublisher.mockResolvedValue(Promise.resolve({} as any));
   mockPublisher.mockReturnValue(mockConfiguredPublisher);
+  mockRetrieveUnprocessedMessageCount.mockResolvedValue(0);
   (getConfig as jest.MockedFunction<typeof getConfig>).mockResolvedValue(MOCK_CONFIG);
 });
 

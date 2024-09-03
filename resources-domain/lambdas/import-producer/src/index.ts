@@ -22,7 +22,11 @@ import type {
   TimeSequence,
 } from '@tech-matters/types';
 import parseISO from 'date-fns/parseISO';
-import { publishToImportConsumer, ResourceMessage } from './clientSqs';
+import {
+  publishToImportConsumer,
+  ResourceMessage,
+  retrieveUnprocessedMessageCount,
+} from './clientSqs';
 import getConfig from './config';
 import { transformKhpResourceToApiResource } from './transformExternalResourceToApiResource';
 import path from 'path';
@@ -41,6 +45,20 @@ export const isHttpError = <T>(value: any): value is HttpError<T> => {
     typeof value?.statusText === 'string' &&
     typeof value?.body !== 'undefined'
   );
+};
+
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+const waitForEmptyQueue = async (importResourcesSqsQueueUrl: URL) => {
+  let unprocessedCount: number | undefined;
+  while (
+    (unprocessedCount = await retrieveUnprocessedMessageCount(importResourcesSqsQueueUrl))
+  ) {
+    console.info(
+      `${unprocessedCount} resources still to be processed from prior import run, waiting 10 seconds...`,
+    );
+    await delay(10000);
+  }
 };
 
 const nextTimeSequence = (timeSequence: TimeSequence): TimeSequence => {
@@ -203,6 +221,9 @@ export const handler = async (event: ScheduledEvent): Promise<void> => {
     maxApiSize,
   );
   const configuredSend = sendUpdates(accountSid, importResourcesSqsQueueUrl);
+
+  // Wait until the target queue is empty, otherwise the progress tracking on the DB will not account for the unprocessed messages and process the same resources again
+  await waitForEmptyQueue(importResourcesSqsQueueUrl);
 
   const progress = await retrieveCurrentStatus(
     internalResourcesBaseUrl,
