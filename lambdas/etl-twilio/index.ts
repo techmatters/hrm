@@ -1,5 +1,5 @@
 import type { HrmAccountId } from '@tech-matters/types';
-import { getTaskrouterEvents } from './taskrouter';
+import { getTaskrouterEvents } from './taskrouter/index';
 import { loadSsmCache, ssmCache } from '@tech-matters/ssm-cache';
 
 const ssmCacheConfigs = [
