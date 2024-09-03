@@ -25,7 +25,7 @@ export const handler = async (event: any) => {
   const accountSids = Object.values(ssmCache.values).map(v => v!.value);
   console.log('accountSids: ', accountSids);
 
-  for (const accountSid in accountSids) {
+  for (const accountSid of accountSids) {
     console.log('accountSid: ', accountSid);
 
     const taskrouterEvents = await getTaskrouterEvents({
