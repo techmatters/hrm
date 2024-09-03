@@ -22,9 +22,11 @@ export const handler = async (event: any) => {
 
   console.log(ssmCache.values);
 
-  const accountSids = Object.values(ssmCache.values).map(v => v?.value);
+  const accountSids = Object.values(ssmCache.values).map(v => v!.value);
 
   for (const accountSid in accountSids) {
+    console.log('accountSid: ', accountSid);
+
     const taskrouterEvents = await getTaskrouterEvents({
       accountSid: accountSid as HrmAccountId,
       endDate,
