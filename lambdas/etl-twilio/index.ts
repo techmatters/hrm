@@ -1,4 +1,6 @@
 import { loadSsmCache, ssmCache } from '@tech-matters/ssm-cache';
+import { getTaskrouterEvents } from './taskrouter';
+import type { HrmAccountId } from '@tech-matters/types';
 
 const ssmCacheConfigs = [
   {
@@ -13,11 +15,24 @@ const loadSsmCacheConfig = async () => {
 
 export const handler = async (event: any) => {
   console.log(event);
-  console.log('Ok');
+  const startDate = new Date(event.startDate);
+  const endDate = new Date(event.endDate);
 
   await loadSsmCacheConfig();
 
   console.log(ssmCache.values);
+
+  const accountSids = Object.values(ssmCache.values).map(v => v?.value);
+
+  for (const accountSid in accountSids) {
+    const taskrouterEvents = getTaskrouterEvents({
+      accountSid: accountSid as HrmAccountId,
+      endDate,
+      startDate,
+    });
+
+    console.log(taskrouterEvents);
+  }
 
   return {
     statusCode: 200,

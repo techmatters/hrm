@@ -8,6 +8,7 @@
     "test": "echo 'passed'"
   },
   "devDependencies": {
+    "@tech-matters/types": "^1.0.0",
     "@tsconfig/node16": "^1.0.4",
     "@types/aws-lambda": "^8.10.144"
   },
