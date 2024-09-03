@@ -67,7 +67,9 @@ const scrubS3Transcript = async (bucket: string, key: string) => {
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ text: transcript.messages.map(m => m.body) }),
+    body: JSON.stringify({
+      text: transcript.messages.map(m => m.body?.toString() ?? ''),
+    }),
   });
   const responsePayload = await response.json();
   console.log('Response from PrivateAI:', response.status);
@@ -106,9 +108,15 @@ const pollQueue = async (): Promise<boolean> => {
   try {
     parsedPendingMessage = JSON.parse(message.Body);
     const {
+      jobId,
+      contactId,
+      accountSid,
+      attemptNumber,
       originalLocation: { bucket, key },
-    } = JSON.parse(message.Body);
-    console.log(`Scrubbing transcript: ${key}`);
+    } = parsedPendingMessage;
+    console.debug(
+      `Scrubbing transcript: ${key} jobId: ${jobId} (attempt ${attemptNumber}), contact ${accountSid}/${contactId}`,
+    );
 
     const scrubbedKey = await scrubS3Transcript(bucket, key);
     await sendSqsMessage({
@@ -122,7 +130,7 @@ const pollQueue = async (): Promise<boolean> => {
       }),
     });
     console.log(
-      `Successfully scrubbed transcript: ${key}, scrubbed version at ${scrubbedKey}`,
+      `Successfully scrubbed transcript: ${key}, scrubbed version at ${scrubbedKey}${key}, jobId: ${jobId} (attempt ${attemptNumber}), contact ${accountSid}/${contactId}`,
     );
   } catch (error) {
     console.error(`Failed to scrub transcript`, error);
