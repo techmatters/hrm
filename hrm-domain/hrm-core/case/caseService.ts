@@ -609,8 +609,8 @@ export const generalisedCasesSearch = async (
     );
 
     // monitor the number of cases returned by hrmdb
-    console.log(
-      `HRM generalisedCasesSearch for AccountSid: ${accountSid} - Total cases: ${total}, Number searched from ES: ${caseIds.length} cases, Number returned from DB: ${cases.length} cases.`,
+    console.info(
+      `[generalised-search-cases] AccountSid: ${accountSid} - Total count from ES: ${total}, Paginated count from ES: ${caseIds.length} cases, Number returned from DB: ${cases.length} cases.`,
     );
 
     const order = caseIds.reduce(
