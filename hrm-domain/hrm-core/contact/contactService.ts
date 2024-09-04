@@ -558,6 +558,11 @@ export const generalisedContactSearch = async (
       ctx,
     );
 
+    // Monitors & dashboards use this log statement, review them before updating to ensure they remain aligned.
+    console.info(
+      `[generalised-search-contacts] AccountSid: ${accountSid} - Search Complete. Total count from ES: ${total}, Paginated count from ES: ${contactIds.length}, Paginated count from DB: ${contacts.length}.`,
+    );
+
     const order = contactIds.reduce(
       (accum, idVal, idIndex) => ({ ...accum, [idVal]: idIndex }),
       {},
