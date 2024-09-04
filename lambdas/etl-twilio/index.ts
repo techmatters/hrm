@@ -1,6 +1,7 @@
 import type { HrmAccountId } from '@tech-matters/types';
 import { getTaskrouterEvents } from './taskrouter';
 import { loadSsmCache, ssmCache } from '@tech-matters/ssm-cache';
+import { getSudioExecutions } from './studio';
 
 const ssmCacheConfigs = [
   {
@@ -20,21 +21,31 @@ export const handler = async (event: any) => {
 
   await loadSsmCacheConfig();
 
-  console.log(ssmCache.values);
+  const accountSids = Object.entries(ssmCache.values)
+    .filter(([key]) => key.includes('/account_sid'))
+    .map(([, v]) => v!.value);
 
-  const accountSids = Object.values(ssmCache.values).map(v => v!.value);
   console.log('accountSids: ', accountSids);
 
   for (const accountSid of accountSids) {
     console.log('accountSid: ', accountSid);
 
-    const taskrouterEvents = await getTaskrouterEvents({
-      accountSid: accountSid as HrmAccountId,
-      endDate,
-      startDate,
-    });
+    const [taskrouterEvents, studioExecutions] = await Promise.all([
+      getTaskrouterEvents({
+        accountSid: accountSid as HrmAccountId,
+        endDate,
+        startDate,
+      }),
+      getSudioExecutions({
+        accountSid: accountSid as HrmAccountId,
+        endDate,
+        startDate,
+      }),
+    ]);
 
-    console.log(taskrouterEvents);
+    console.log('results for account', accountSid);
+    console.log('taskrouterEvents', taskrouterEvents);
+    console.log('studioExecutions', studioExecutions);
   }
 
   return {
