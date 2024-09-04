@@ -21,7 +21,7 @@ import {
   type IndexContactMessage,
   type IndexCaseMessage,
 } from '@tech-matters/hrm-search-config';
-import { assertExhaustive, type AccountSID } from '@tech-matters/types';
+import { assertExhaustive, type HrmAccountId } from '@tech-matters/types';
 import { ExportTranscript, isS3StoredTranscript } from '@tech-matters/hrm-types';
 import type { MessageWithMeta, MessagesByAccountSid } from './messages';
 
@@ -41,7 +41,7 @@ export type PayloadWithMeta = {
 export type PayloadsByIndex = {
   [indexType: string]: PayloadWithMeta[];
 };
-export type PayloadsByAccountSid = Record<AccountSID, PayloadsByIndex>;
+export type PayloadsByAccountSid = Record<HrmAccountId, PayloadsByIndex>;
 
 /**
  * ContactIndexingInputData type represents an "index contact" message, plus contact specific data that might be collected from other places other than the HRM DB (e.g. transcripts fetched from S3)
