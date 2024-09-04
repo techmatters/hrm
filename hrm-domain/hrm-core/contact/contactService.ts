@@ -558,9 +558,9 @@ export const generalisedContactSearch = async (
       ctx,
     );
 
-    // monitor the number of contacts returned by hrmdb
-    console.log(
-      `HRM generalisedContactSearch for AccountSid: ${accountSid} - Total contacts: ${total}, Number searched from ES: ${contactIds.length} contacts, Number returned from DB: ${contacts.length} contacts.`,
+    // Monitors & dashboards use this log statement, review them before updating to ensure they remain aligned.
+    console.info(
+      `[generalised-search-contacts] AccountSid: ${accountSid} - Search Complete. Total count from ES: ${total}, Paginated count from ES: ${contactIds.length}, Paginated count from DB: ${contacts.length}.`,
     );
 
     const order = contactIds.reduce(
