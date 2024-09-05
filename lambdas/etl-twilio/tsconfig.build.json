@@ -4,6 +4,7 @@
   "files": [],
   "references": [
     { "path": "packages/ssm-cache" },
+    { "path": "packages/s3-client" },
     { "path": "packages/twilio-client" },
     { "path": "lambdas/etl-twilio" }
   ]

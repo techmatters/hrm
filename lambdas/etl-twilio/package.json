@@ -22,6 +22,7 @@
   "homepage": "https://github.com/techmatters/hrm#readme",
   "description": "",
   "dependencies": {
+    "@tech-matters/s3-client": "^1.0.0",
     "@tech-matters/ssm-cache": "^1.0.0",
     "@tech-matters/twilio-client": "^1.0.0"
   }

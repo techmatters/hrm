@@ -1,8 +1,11 @@
 import type { HrmAccountId } from '@tech-matters/types';
-import { getTaskrouterEvents } from './taskrouter';
 import { loadSsmCache, ssmCache } from '@tech-matters/ssm-cache';
+import { getTaskrouterEvents } from './taskrouter';
 import { getSudioExecutions } from './studio';
 import { getUsageStatistics } from './usage';
+
+const dateLakeBucketName = process.env.DL_BUCKET || '';
+const parentPath = 'twilio';
 
 const ssmCacheConfigs = [
   {
@@ -31,11 +34,13 @@ export const handler = async (event: any) => {
   for (const accountSid of accountSids) {
     console.log('accountSid: ', accountSid);
 
-    const [taskrouterEvents, studioExecutions, usageStats] = await Promise.all([
+    const [, studioExecutions, usageStats] = await Promise.all([
       getTaskrouterEvents({
         accountSid: accountSid as HrmAccountId,
         endDate,
         startDate,
+        dateLakeBucketName,
+        parentPath,
       }),
       getSudioExecutions({
         accountSid: accountSid as HrmAccountId,
@@ -49,8 +54,6 @@ export const handler = async (event: any) => {
       }),
     ]);
 
-    console.log('results for account', accountSid);
-    console.log('taskrouterEvents', taskrouterEvents);
     console.log('studioExecutions', studioExecutions);
     console.log('usageStats', usageStats);
   }
