@@ -12,7 +12,9 @@ export const getUsageStatistics = async ({
 }) => {
   const client = await getClient({ accountSid });
 
-  const usage = await client.usage.records?.daily?.list({ startDate, endDate });
+  const usage = (await client.usage.records?.daily?.list({ startDate, endDate }))?.filter(
+    u => parseInt(u.count, 10) > 0,
+  );
 
   return usage;
 };
