@@ -29,7 +29,7 @@ export const exportStudioExecutions = async ({
   await Promise.all(
     executions.map(e => {
       const { dateCreated, sid } = e;
-      const key = `${parentPath}/${accountSid}/taskrouter/${accountSid}/${dateCreated.toISOString()}-${sid}`;
+      const key = `${parentPath}/${accountSid}/studio/${accountSid}/${dateCreated.toISOString()}-${sid}`;
       return putS3Object({
         bucket: dateLakeBucketName,
         key,
