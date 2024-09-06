@@ -1,14 +1,19 @@
 import type { HrmAccountId } from '@tech-matters/types';
 import { getClient } from '@tech-matters/twilio-client';
+import { putS3Object } from '@tech-matters/s3-client';
 
-export const getUsageStatistics = async ({
+export const exportDailyUsage = async ({
   accountSid,
   startDate,
   endDate,
+  dateLakeBucketName,
+  parentPath,
 }: {
   accountSid: HrmAccountId;
   startDate: Date;
   endDate: Date;
+  dateLakeBucketName: string;
+  parentPath: string;
 }) => {
   const client = await getClient({ accountSid });
 
@@ -16,5 +21,15 @@ export const getUsageStatistics = async ({
     u => parseInt(u.count, 10) > 0,
   );
 
-  return usage;
+  await Promise.all(
+    (usage || []).map(u => {
+      const { startDate: from, endDate: to, category } = u;
+      const key = `${parentPath}/${accountSid}/taskrouter/${accountSid}/${from.toISOString()}-${to.toISOString()}-${category}`;
+      return putS3Object({
+        bucket: dateLakeBucketName,
+        key,
+        body: JSON.stringify(u),
+      });
+    }),
+  );
 };

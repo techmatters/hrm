@@ -1,8 +1,8 @@
 import type { HrmAccountId } from '@tech-matters/types';
 import { loadSsmCache, ssmCache } from '@tech-matters/ssm-cache';
-import { getTaskrouterEvents } from './taskrouter';
-import { getSudioExecutions } from './studio';
-import { getUsageStatistics } from './usage';
+import { exportTaskrouterEvents } from './taskrouter';
+import { exportStudioExecutions } from './studio';
+import { exportDailyUsage } from './usage';
 
 const dateLakeBucketName = process.env.DL_BUCKET || '';
 const parentPath = 'twilio';
@@ -34,28 +34,19 @@ export const handler = async (event: any) => {
   for (const accountSid of accountSids) {
     console.log('accountSid: ', accountSid);
 
-    const [, studioExecutions, usageStats] = await Promise.all([
-      getTaskrouterEvents({
-        accountSid: accountSid as HrmAccountId,
-        endDate,
-        startDate,
-        dateLakeBucketName,
-        parentPath,
-      }),
-      getSudioExecutions({
-        accountSid: accountSid as HrmAccountId,
-        endDate,
-        startDate,
-      }),
-      getUsageStatistics({
-        accountSid: accountSid as HrmAccountId,
-        endDate,
-        startDate,
-      }),
-    ]);
+    const exportParams = {
+      accountSid: accountSid as HrmAccountId,
+      endDate,
+      startDate,
+      dateLakeBucketName,
+      parentPath,
+    };
 
-    console.log('studioExecutions', studioExecutions);
-    console.log('usageStats', usageStats);
+    await Promise.all([
+      exportTaskrouterEvents(exportParams),
+      exportStudioExecutions(exportParams),
+      exportDailyUsage(exportParams),
+    ]);
   }
 
   return {

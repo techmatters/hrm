@@ -2,7 +2,7 @@ import type { HrmAccountId } from '@tech-matters/types';
 import { getClient } from '@tech-matters/twilio-client';
 import { putS3Object } from '@tech-matters/s3-client';
 
-export const getTaskrouterEvents = async ({
+export const exportTaskrouterEvents = async ({
   accountSid,
   startDate,
   endDate,
@@ -26,12 +26,10 @@ export const getTaskrouterEvents = async ({
     )
   ).flat();
 
-  console.log('taskrouterEvents', events);
-
   await Promise.all(
     events.map(e => {
       const { eventDate, sid } = e;
-      const key = `${parentPath}/${accountSid}/taskrouter/${accountSid}/${eventDate}-${sid}`;
+      const key = `${parentPath}/${accountSid}/taskrouter/${accountSid}/${eventDate.toISOString()}-${sid}`;
       return putS3Object({
         bucket: dateLakeBucketName,
         key,
@@ -39,6 +37,4 @@ export const getTaskrouterEvents = async ({
       });
     }),
   );
-
-  return events;
 };
