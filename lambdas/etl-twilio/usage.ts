@@ -24,7 +24,7 @@ export const exportDailyUsage = async ({
   await Promise.all(
     (usage || []).map(u => {
       const { startDate: from, endDate: to, category } = u;
-      const key = `${parentPath}/${accountSid}/usage/${accountSid}/${from.toISOString()}-${to.toISOString()}-${category}`;
+      const key = `${parentPath}/usage/${accountSid}/${from.toISOString()}-${to.toISOString()}-${category}`;
       return putS3Object({
         bucket: dateLakeBucketName,
         key,

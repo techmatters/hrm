@@ -29,7 +29,7 @@ export const exportTaskrouterEvents = async ({
   await Promise.all(
     events.map(e => {
       const { eventDate, sid } = e;
-      const key = `${parentPath}/${accountSid}/taskrouter/${accountSid}/${eventDate.toISOString()}-${sid}`;
+      const key = `${parentPath}/taskrouter/${accountSid}/${eventDate.toISOString()}-${sid}`;
       return putS3Object({
         bucket: dateLakeBucketName,
         key,
