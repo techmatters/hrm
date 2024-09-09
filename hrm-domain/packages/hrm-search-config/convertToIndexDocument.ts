@@ -68,7 +68,7 @@ export const convertContactToContactDocument = ({
     transcript,
     twilioWorkerId,
     content: JSON.stringify(rawJson),
-    isDataContact: Object.values(dataCallTypes).includes(rawJson.callType),
+    isDataContact: Object.values(dataCallTypes).includes(rawJson?.callType),
     // high_boost_global: '', // highBoostGlobal.join(' '),
     // low_boost_global: '', // lowBoostGlobal.join(' '),
   };
