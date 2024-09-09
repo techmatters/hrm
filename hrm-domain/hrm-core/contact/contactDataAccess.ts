@@ -40,7 +40,7 @@ import {
   newOkFromData,
 } from '@tech-matters/types';
 
-import { ExistingContactRecord, Contact } from '@tech-matters/hrm-types';
+import { ExistingContactRecord, Contact, dataCallTypes } from '@tech-matters/hrm-types';
 
 export { ExistingContactRecord, Contact };
 
@@ -86,12 +86,6 @@ const BLANK_CONTACT_UPDATES: ContactUpdates = {
   caseId: undefined,
   twilioWorkerId: undefined,
   conversationDuration: undefined,
-};
-
-// Intentionally adding only the types of interest here
-const callTypes = {
-  child: 'Child calling about self',
-  caller: 'Someone calling about a child',
 };
 
 type QueryParams = {
@@ -157,7 +151,7 @@ const searchParametersToQueryParameters = (
     accountSid,
     twilioWorkerSid: workerSid,
 
-    dataCallTypes: Object.values(callTypes),
+    dataCallTypes: Object.values(dataCallTypes),
     limit,
     offset,
   };

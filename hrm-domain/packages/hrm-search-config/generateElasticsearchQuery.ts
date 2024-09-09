@@ -60,7 +60,7 @@ export type DocumentTypeQueryParams = {
   [DocumentType.Case]: GenerateTDocQueryParams<DocumentType.Case>;
 };
 
-type GenerateTermQueryParams = { type: 'term'; term: string; boost?: number };
+type GenerateTermQueryParams = { type: 'term'; term: string | boolean; boost?: number };
 type GenerateRangeQueryParams = {
   type: 'range';
   ranges: { lt?: string; lte?: string; gt?: string; gte?: string };
