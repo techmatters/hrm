@@ -90,7 +90,7 @@ export const executeBulk = async (
         })
       ).indexClient(resourceIndexConfiguration);
       try {
-        const indexResp = await client.executeBulk({ documents });
+        const indexResp = await client.executeBulk({ documents, autocreate: true });
         await handleErrors(indexResp, addDocumentIdToFailures);
       } catch (err) {
         console.error(new ResourceIndexProcessorError('Error calling executeBulk'), err);
