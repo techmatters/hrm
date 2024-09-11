@@ -22,6 +22,7 @@ import {
 } from './hrmIndexDocumentMappings';
 import { CreateIndexConvertedDocument } from '@tech-matters/elasticsearch-client';
 import { IndexPayload, IndexPayloadCase, IndexPayloadContact } from './payload';
+import { dataCallTypes } from '@tech-matters/hrm-types';
 
 const filterUndefined = <T extends CaseDocument | ContactDocument>(doc: T): T =>
   Object.entries(doc).reduce((accum, [key, value]) => {
@@ -67,6 +68,8 @@ export const convertContactToContactDocument = ({
     transcript,
     twilioWorkerId,
     content: JSON.stringify(rawJson),
+    isDataContact:
+      Boolean(rawJson) && Object.values(dataCallTypes).includes(rawJson!.callType),
     // high_boost_global: '', // highBoostGlobal.join(' '),
     // low_boost_global: '', // lowBoostGlobal.join(' '),
   };
