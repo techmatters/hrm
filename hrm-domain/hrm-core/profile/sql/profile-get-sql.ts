@@ -59,7 +59,7 @@ export const getProfilesSqlBase = (selectTargetProfilesQuery: string) => `
     FROM TargetProfiles profile
 	  LEFT JOIN "ProfileSections" pps ON pps."profileId" = profile.id AND pps."accountSid" = profile."accountSid"
     GROUP BY pps."profileId"
-  ),
+  )
 
   SELECT
     tp.*,
