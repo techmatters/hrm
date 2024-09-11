@@ -35,10 +35,12 @@ const buildSearchFilters = ({
   counselor,
   dateFrom,
   dateTo,
+  onlyDataContacts,
 }: {
   counselor?: string;
   dateFrom?: string;
   dateTo?: string;
+  onlyDataContacts?: boolean;
 }): DocumentTypeQueryParams[DocumentType.Contact][] => {
   const searchFilters: DocumentTypeQueryParams[DocumentType.Contact][] = [
     counselor &&
@@ -58,6 +60,13 @@ const buildSearchFilters = ({
           ...(dateTo && { lte: new Date(dateTo).toISOString() }),
         },
       } as const),
+    onlyDataContacts &&
+      ({
+        documentType: DocumentType.Contact,
+        field: 'isDataContact',
+        type: 'term',
+        term: true,
+      } as const),
   ].filter(Boolean);
 
   return searchFilters;
@@ -67,6 +76,7 @@ export const generateContactSearchFilters = (p: {
   counselor?: string;
   dateFrom?: string;
   dateTo?: string;
+  onlyDataContacts?: boolean;
 }) => buildSearchFilters(p).map(generateESFilter);
 
 export type ContactListCondition = Extract<

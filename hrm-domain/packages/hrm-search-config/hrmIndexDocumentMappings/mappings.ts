@@ -68,6 +68,9 @@ export const contactMapping = {
   transcript: {
     type: 'text',
   },
+  isDataContact: {
+    type: 'boolean',
+  },
 } as const;
 
 export const casePathToContacts = 'contacts' as const;
