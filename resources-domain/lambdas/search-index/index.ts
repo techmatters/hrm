@@ -83,7 +83,11 @@ export const executeBulk = async (
     Object.keys(documentsByAccountSid).map(async accountSid => {
       const documents = documentsByAccountSid[accountSid];
       const client = (
-        await getClient({ accountSid, indexType: RESOURCE_INDEX_TYPE })
+        await getClient({
+          accountSid,
+          indexType: RESOURCE_INDEX_TYPE,
+          ssmConfigParameter: process.env.SSM_PARAM_ELASTICSEARCH_CONFIG,
+        })
       ).indexClient(resourceIndexConfiguration);
       try {
         const indexResp = await client.executeBulk({ documents });
