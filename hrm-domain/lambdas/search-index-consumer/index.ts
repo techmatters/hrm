@@ -73,7 +73,7 @@ export const handler = async (event: SQSEvent): Promise<SQSBatchResponse> => {
         case 'contact': {
           const { contact } = message;
           console.info(
-            `[generalised-search-contacts]: Indexing Request Acknowledged By ES. Account SID: ${accountSid}, Case ID: ${
+            `[generalised-search-contacts]: Indexing Request Acknowledged By ES. Account SID: ${accountSid}, Contact ID: ${
               contact.id
             }, Updated / Created At: ${
               contact.updatedAt ?? contact.createdAt
