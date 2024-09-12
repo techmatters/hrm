@@ -15,6 +15,7 @@
  */
 import { BulkRequest, BulkResponse } from '@elastic/elasticsearch/lib/api/types';
 import { PassThroughConfig } from './client';
+import createIndex from './createIndex';
 
 export type BulkOperation<T> = {
   id: string;
@@ -32,6 +33,7 @@ export type BulkOperations<T> = BulkOperation<T>[];
 
 export type ExecuteBulkExtraParams<T> = {
   documents: BulkOperations<T>;
+  autocreate?: boolean;
 };
 
 export type ExecuteBulkParams<T> = PassThroughConfig<T> & ExecuteBulkExtraParams<T>;
@@ -43,7 +45,14 @@ export const executeBulk = async <T>({
   index,
   indexConfig,
   documents,
+  autocreate = false,
 }: ExecuteBulkParams<T>): Promise<ExecuteBulkResponse> => {
+  if (autocreate) {
+    // const exists = await client.indices.exists({ index });
+    // NOTE: above check is already performed in createIndex
+    await createIndex({ client, index, indexConfig });
+  }
+
   const body: BulkRequest['operations'] = documents.flatMap(
     (documentItem): BulkRequest['operations'] => {
       if (documentItem.action === 'delete') {
