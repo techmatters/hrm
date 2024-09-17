@@ -61,7 +61,7 @@ export const uploadStreamAsSingleFile = async (
     params: {
       Bucket: targetBucket,
       Key: `${helplineCode}/categoryTrainingSet_${fileTimestamp(new Date())}.json`,
-      Body: streamAsArray,
+      Body: streamAsArray.pipe(new PassThrough({ objectMode: false })),
     },
   });
 
