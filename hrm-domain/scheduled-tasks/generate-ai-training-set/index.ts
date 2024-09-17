@@ -96,14 +96,14 @@ export const generate = async (
             callback();
             return;
           }
-          const docJson = JSON.stringify(trainingSetDoc);
           await uploadTrainingSetDocument(
             trainingSetDoc.contactId,
-            docJson,
+            JSON.stringify(trainingSetDoc),
             targetBucket,
             shortCode,
           );
-          this.push(`${docJson}\n`);
+
+          this.push(trainingSetDoc);
           callback();
         },
       }),

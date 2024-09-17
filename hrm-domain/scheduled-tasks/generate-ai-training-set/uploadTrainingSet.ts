@@ -25,17 +25,43 @@ const fileTimestamp = (date: Date) =>
     .replace(/[:-]/g, '')
     .replace(/[T.].+/, '-');
 
+/**
+ * This function takes a stream of documents and wraps it in an array to be uploaded as a single file
+ */
+const buildStreamAsArray = (trainingSetDocumentStream: ReadableStream): PassThrough => {
+  const wrappedStream = new PassThrough({ objectMode: true });
+  wrappedStream.write('[');
+
+  let isFirstDocument = true;
+
+  trainingSetDocumentStream.on('data', doc => {
+    if (!isFirstDocument) {
+      wrappedStream.write(',');
+    } else {
+      isFirstDocument = false;
+    }
+
+    wrappedStream.write(JSON.stringify(doc));
+  });
+
+  trainingSetDocumentStream.on('end', () => wrappedStream.end(']'));
+
+  return wrappedStream;
+};
+
 export const uploadStreamAsSingleFile = async (
   trainingSetDocumentStream: ReadableStream,
   targetBucket: string,
   helplineCode: string,
 ) => {
+  const streamAsArray = buildStreamAsArray(trainingSetDocumentStream);
+
   const upload = new Upload({
     client: getNativeS3Client(),
     params: {
       Bucket: targetBucket,
       Key: `${helplineCode}/categoryTrainingSet_${fileTimestamp(new Date())}.json`,
-      Body: trainingSetDocumentStream.pipe(new PassThrough({ objectMode: false })),
+      Body: streamAsArray,
     },
   });
 
