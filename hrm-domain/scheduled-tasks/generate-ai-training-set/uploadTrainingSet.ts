@@ -44,7 +44,7 @@ const buildStreamAsArray = (trainingSetDocumentStream: ReadableStream): PassThro
     wrappedStream.write(JSON.stringify(doc));
   });
 
-  trainingSetDocumentStream.on('end', () => wrappedStream.write(']'));
+  trainingSetDocumentStream.on('end', () => wrappedStream.end(']'));
 
   return wrappedStream;
 };
@@ -61,7 +61,7 @@ export const uploadStreamAsSingleFile = async (
     params: {
       Bucket: targetBucket,
       Key: `${helplineCode}/categoryTrainingSet_${fileTimestamp(new Date())}.json`,
-      Body: streamAsArray.pipe(new PassThrough({ objectMode: false })),
+      Body: streamAsArray,
     },
   });
 
