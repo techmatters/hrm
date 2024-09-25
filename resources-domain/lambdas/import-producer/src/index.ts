@@ -30,6 +30,8 @@ import {
 import getConfig from './config';
 import { transformKhpResourceToApiResource } from './transformExternalResourceToApiResource';
 import path from 'path';
+import Undici from 'undici';
+import Agent = Undici.Agent;
 
 declare var fetch: typeof import('undici').fetch;
 
@@ -134,6 +136,10 @@ const pullUpdates =
         'x-api-key': externalApiKey,
       },
       method: 'GET',
+      dispatcher: new Agent({
+        headersTimeout: 15 * 60 * 1000, // 15 minutes
+        bodyTimeout: 15 * 60 * 1000, // 15 minutes
+      }),
     });
 
     if (response.ok) {
