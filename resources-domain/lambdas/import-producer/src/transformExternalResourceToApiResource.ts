@@ -61,9 +61,9 @@ const pushReferenceAttributeMapping = ({
   const key = mapping.keyGenerator(context);
 
   if (value === null || value === undefined) {
-    console.debug(
-      `No value provided to referenceStringAttributes: key ${key} and value ${value} - omitting attribute`,
-    );
+    // console.debug(
+    //   `No value provided to referenceStringAttributes: key ${key} and value ${value} - omitting attribute`,
+    // );
     return;
   }
   if (typeof value !== 'string') {
@@ -102,9 +102,9 @@ const pushInlineAttributeMapping = <T extends InlineAttributeProperty>({
   }
 
   if (value === null || value === undefined) {
-    console.debug(
-      `No value provided to ${mapping.property}: key ${key} and value ${value} - omitting attribute`,
-    );
+    // console.debug(
+    //   `No value provided to ${mapping.property}: key ${key} and value ${value} - omitting attribute`,
+    // );
     return;
   }
 
