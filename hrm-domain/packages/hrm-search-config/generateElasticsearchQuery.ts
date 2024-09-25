@@ -60,7 +60,11 @@ export type DocumentTypeQueryParams = {
   [DocumentType.Case]: GenerateTDocQueryParams<DocumentType.Case>;
 };
 
-type GenerateTermQueryParams = { type: 'term'; term: string | boolean; boost?: number };
+type GenerateTermQueryParams = {
+  type: 'term';
+  term: string | boolean | number;
+  boost?: number;
+};
 type GenerateRangeQueryParams = {
   type: 'range';
   ranges: { lt?: string; lte?: string; gt?: string; gte?: string };
@@ -193,15 +197,17 @@ const generateQueriesFromId = <TDoc extends DocumentType>({
   const queries = terms
     .map(term => {
       // Ignore terms that are not entirely a number, as that breaks term queries against integer fields
-      if (Number.isNaN(Number(term))) {
+      if (Number.isNaN(Number(term)) || !Number.isInteger(term)) {
         return null;
       }
+
+      const parsed = Number.parseInt(term, 10);
 
       return generateESQuery(
         queryWrapper({
           documentType,
           type: 'term',
-          term,
+          term: parsed,
           boost: boostFactor * BOOST_FACTORS.id,
           field: 'id' as any, // typecast to conform TS, only valid parameters should be accept
           parentPath,
