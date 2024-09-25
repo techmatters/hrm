@@ -32,7 +32,7 @@ import {
   retrieveUnprocessedMessageCount,
 } from '../../src/clientSqs';
 import getConfig from '../../src/config';
-import { Response } from 'undici';
+import { Agent, Response } from 'undici';
 
 declare var fetch: typeof import('undici').fetch;
 
@@ -464,6 +464,7 @@ describe('resources-import-producer handler', () => {
             Authorization: MOCK_CONFIG.importApiAuthHeader,
             'x-api-key': MOCK_CONFIG.importApiKey,
           },
+          dispatcher: expect.any(Agent),
         });
       });
       expect(mockConfiguredPublisher).toHaveBeenCalledTimes(

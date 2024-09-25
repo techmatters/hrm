@@ -30,7 +30,8 @@ import {
 import getConfig from './config';
 import { transformKhpResourceToApiResource } from './transformExternalResourceToApiResource';
 import path from 'path';
-
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { Agent } from 'undici';
 declare var fetch: typeof import('undici').fetch;
 
 export type HttpError<T = any> = {
@@ -134,6 +135,10 @@ const pullUpdates =
         'x-api-key': externalApiKey,
       },
       method: 'GET',
+      dispatcher: new Agent({
+        headersTimeout: 15 * 60 * 1000, // 15 minutes
+        bodyTimeout: 15 * 60 * 1000, // 15 minutes
+      }),
     });
 
     if (response.ok) {
