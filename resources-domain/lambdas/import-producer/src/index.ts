@@ -30,9 +30,8 @@ import {
 import getConfig from './config';
 import { transformKhpResourceToApiResource } from './transformExternalResourceToApiResource';
 import path from 'path';
-import Undici from 'undici';
-import Agent = Undici.Agent;
-
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { Agent } from 'undici';
 declare var fetch: typeof import('undici').fetch;
 
 export type HttpError<T = any> = {
