@@ -372,6 +372,10 @@ const generateContactsQuery = ({
     highlight: {
       fields: { '*': {} },
     },
+    sort:
+      searchParameters.searchTerm.length === 0
+        ? [{ updatedAt: 'desc' }]
+        : ['_score', { updatedAt: 'desc' }],
     min_score: MIN_SCORE,
     from: pagination.start,
     size: pagination.limit,
@@ -483,6 +487,10 @@ const generateCasesQuery = ({
     highlight: {
       fields: { '*': {} },
     },
+    sort:
+      searchParameters.searchTerm.length === 0
+        ? [{ updatedAt: 'desc' }]
+        : ['_score', { updatedAt: 'desc' }],
     min_score: MIN_SCORE,
     from: pagination.start,
     size: pagination.limit,
