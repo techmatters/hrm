@@ -205,7 +205,7 @@ const generateQueriesFromId = <TDoc extends DocumentType>({
       const parsed = Number.parseInt(term, 10);
 
       // Ignore numbers that are greater than maximum supported int
-      if (parsed > MAX_INT) {
+      if (parsed >= MAX_INT) {
         return null;
       }
 
