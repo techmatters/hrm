@@ -91,7 +91,7 @@ export const publishScrubTranscriptJob = async (
 export const publishDueContactJobs = async (
   dueContactJobs: ContactJob[],
 ): Promise<PromiseSettledResult<PublishedContactJobResult>[]> => {
-  console.debug(`Processing ${dueContactJobs?.length} due contact jobs.`);
+  // console.debug(`Processing ${dueContactJobs?.length} due contact jobs.`);
   const publishedContactJobResult = await Promise.allSettled(
     dueContactJobs.map(async (dueJob: ContactJob) => {
       try {
@@ -127,7 +127,7 @@ export const publishDueContactJobs = async (
       }
     }),
   );
-  console.debug(`Processed ${dueContactJobs?.length} due contact jobs.`);
+  // console.debug(`Processed ${dueContactJobs?.length} due contact jobs.`);
 
   return publishedContactJobResult;
 };
