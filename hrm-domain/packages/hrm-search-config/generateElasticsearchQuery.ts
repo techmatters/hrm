@@ -33,6 +33,7 @@ const BOOST_FACTORS = {
   case: 3,
 };
 const MIN_SCORE = 0.1;
+const MAX_INT = 2147483648; // 2^31, the max integer allowed by ElasticSearch integer type
 
 export const FILTER_ALL_CLAUSE: QueryDslQueryContainer[][] = [
   [
@@ -202,6 +203,11 @@ const generateQueriesFromId = <TDoc extends DocumentType>({
       }
 
       const parsed = Number.parseInt(term, 10);
+
+      // Ignore numbers that are greater than maximum supported int
+      if (parsed > MAX_INT) {
+        return null;
+      }
 
       return generateESQuery(
         queryWrapper({
