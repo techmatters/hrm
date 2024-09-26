@@ -135,13 +135,13 @@ export const handler = async (event: SQSEvent): Promise<SQSBatchResponse> => {
   try {
     // Map the messages and add the documentId to messageId mapping.
     const messages = mapMessages(event.Records, addDocumentIdToMessageId);
-    console.debug('Mapped messages:', JSON.stringify(messages, null, 2));
+    console.debug('Mapped messages:', JSON.stringify(messages));
 
     // Convert the messages to a bulk requests grouped by accountSid.
     const documentsByAccountSid = convertDocumentsToBulkRequest(messages);
     console.debug(
       'Converted documents to bulk request:',
-      JSON.stringify(documentsByAccountSid, null, 2),
+      JSON.stringify(documentsByAccountSid),
     );
 
     // Iterates over groups of documents and index them using an accountSid specific client
