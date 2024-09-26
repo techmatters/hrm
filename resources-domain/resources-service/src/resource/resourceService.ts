@@ -173,6 +173,11 @@ export const resourceService = () => {
         ({ id, name }) => resourceMap[id] ?? { id, name, _status: 'missing' },
       );
 
+      // Monitors & dashboards use this log statement, review them before updating to ensure they remain aligned.
+      console.info(
+        `[resource-search] AccountSid: ${accountSid} - Search Complete. Total count from ES: ${total}, Paginated count from ES: ${items.length}, Paginated count from DB: ${unsortedResourceList.length}.`,
+      );
+
       return {
         results: orderedResults.map(record =>
           isMissingResource(record) ? record : resourceRecordToApiResource(record),
