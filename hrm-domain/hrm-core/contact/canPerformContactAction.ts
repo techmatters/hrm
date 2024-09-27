@@ -93,7 +93,8 @@ const canPerformActionOnContact = (
           // Transferred tasks need to be edited by an owner that didn't create them.
           if (
             contactObj.createdBy === user.workerSid ||
-            contactObj.twilioWorkerId === user.workerSid
+            contactObj.twilioWorkerId === user.workerSid ||
+            user.roles.map(role => role === 'supervisor')
           ) {
             await permitIfAdditionalValidationPasses(
               req,
