@@ -30,7 +30,8 @@ import {
 import getConfig from './config';
 import { transformKhpResourceToApiResource } from './transformExternalResourceToApiResource';
 import path from 'path';
-
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { Agent } from 'undici';
 declare var fetch: typeof import('undici').fetch;
 
 export type HttpError<T = any> = {
@@ -134,6 +135,10 @@ const pullUpdates =
         'x-api-key': externalApiKey,
       },
       method: 'GET',
+      dispatcher: new Agent({
+        headersTimeout: 15 * 60 * 1000, // 15 minutes
+        bodyTimeout: 15 * 60 * 1000, // 15 minutes
+      }),
     });
 
     if (response.ok) {
@@ -225,6 +230,7 @@ export const handler = async (event: ScheduledEvent): Promise<void> => {
   // Wait until the target queue is empty, otherwise the progress tracking on the DB will not account for the unprocessed messages and process the same resources again
   await waitForEmptyQueue(importResourcesSqsQueueUrl);
 
+  console.debug('Target queue empty, reading current import status.');
   const progress = await retrieveCurrentStatus(
     internalResourcesBaseUrl,
     internalResourcesApiKey,
@@ -243,6 +249,11 @@ export const handler = async (event: ScheduledEvent): Promise<void> => {
           `${parseISO(progress.lastProcessedDate).valueOf()}-0`,
       )
     : '0-0';
+  console.info(
+    `Starting import from: ${nextFrom} (${progress ? 'resuming' : 'initial'}${
+      progress?.importSequenceId ? 'import sequence supplied.' : ''
+    })`,
+  );
   let remaining = maxBatchSize;
   let totalRemaining: number | undefined;
   let requestsMade = 0;
@@ -281,6 +292,9 @@ export const handler = async (event: ScheduledEvent): Promise<void> => {
     });
     if (result.nextFrom) {
       nextFrom = result.nextFrom;
+      console.debug(
+        `Continuing import from: ${nextFrom} with another pull from the API...`,
+      );
     } else {
       console.info(
         `Import operation complete due to there being no more resources to import, ${describeRemaining(
