@@ -33,6 +33,7 @@ const BOOST_FACTORS = {
   case: 3,
 };
 const MIN_SCORE = 0.1;
+const MAX_INT = 2147483648 - 1; // 2^31 - 1, the max integer allowed by ElasticSearch integer type
 
 export const FILTER_ALL_CLAUSE: QueryDslQueryContainer[][] = [
   [
@@ -60,7 +61,11 @@ export type DocumentTypeQueryParams = {
   [DocumentType.Case]: GenerateTDocQueryParams<DocumentType.Case>;
 };
 
-type GenerateTermQueryParams = { type: 'term'; term: string | boolean; boost?: number };
+type GenerateTermQueryParams = {
+  type: 'term';
+  term: string | boolean | number;
+  boost?: number;
+};
 type GenerateRangeQueryParams = {
   type: 'range';
   ranges: { lt?: string; lte?: string; gt?: string; gte?: string };
@@ -193,7 +198,14 @@ const generateQueriesFromId = <TDoc extends DocumentType>({
   const queries = terms
     .map(term => {
       // Ignore terms that are not entirely a number, as that breaks term queries against integer fields
-      if (Number.isNaN(Number(term))) {
+      if (Number.isNaN(Number(term)) || !Number.isInteger(term)) {
+        return null;
+      }
+
+      const parsed = Number.parseInt(term, 10);
+
+      // Ignore numbers that are greater than maximum supported int
+      if (parsed > MAX_INT) {
         return null;
       }
 
@@ -201,7 +213,7 @@ const generateQueriesFromId = <TDoc extends DocumentType>({
         queryWrapper({
           documentType,
           type: 'term',
-          term,
+          term: parsed,
           boost: boostFactor * BOOST_FACTORS.id,
           field: 'id' as any, // typecast to conform TS, only valid parameters should be accept
           parentPath,
@@ -372,6 +384,10 @@ const generateContactsQuery = ({
     highlight: {
       fields: { '*': {} },
     },
+    sort:
+      searchParameters.searchTerm.length === 0
+        ? [{ timeOfContact: 'desc' }]
+        : ['_score', { timeOfContact: 'desc' }],
     min_score: MIN_SCORE,
     from: pagination.start,
     size: pagination.limit,
@@ -483,6 +499,10 @@ const generateCasesQuery = ({
     highlight: {
       fields: { '*': {} },
     },
+    sort:
+      searchParameters.searchTerm.length === 0
+        ? [{ createdAt: 'desc' }]
+        : ['_score', { createdAt: 'desc' }],
     min_score: MIN_SCORE,
     from: pagination.start,
     size: pagination.limit,
