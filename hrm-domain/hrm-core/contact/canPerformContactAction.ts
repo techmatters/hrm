@@ -59,10 +59,7 @@ const canPerformActionOnContact = (
           throw new Error('contact not found');
         }
         if (contactObj.finalizedAt || action !== 'editContact') {
-          if (
-            can(user, action, contactObj) ||
-            can(user, actionsMaps.contact.EDIT_INPROGRESS_CONTACT, contactObj)
-          ) {
+          if (can(user, action, contactObj)) {
             await permitIfAdditionalValidationPasses(
               req,
               contactObj,
