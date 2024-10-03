@@ -386,8 +386,8 @@ const generateContactsQuery = ({
     },
     sort:
       searchParameters.searchTerm.length === 0
-        ? [{ updatedAt: 'desc' }]
-        : ['_score', { updatedAt: 'desc' }],
+        ? [{ timeOfContact: 'desc' }]
+        : ['_score', { timeOfContact: 'desc' }],
     min_score: MIN_SCORE,
     from: pagination.start,
     size: pagination.limit,
@@ -501,8 +501,8 @@ const generateCasesQuery = ({
     },
     sort:
       searchParameters.searchTerm.length === 0
-        ? [{ updatedAt: 'desc' }]
-        : ['_score', { updatedAt: 'desc' }],
+        ? [{ createdAt: 'desc' }]
+        : ['_score', { createdAt: 'desc' }],
     min_score: MIN_SCORE,
     from: pagination.start,
     size: pagination.limit,
