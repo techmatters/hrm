@@ -45,6 +45,9 @@ export const processInBatch = async <T, U = T[]>(
 
   let processed = 0;
 
+  console.log('executing processInBatch');
+  console.log('entering loop');
+
   while (hasMoreItems) {
     /**
      * Updates 'limitAndOffset' param
@@ -54,15 +57,20 @@ export const processInBatch = async <T, U = T[]>(
 
     const { count, records } = searchResult;
 
+    console.log('count is', count);
+
     await asyncProcessor(searchResult);
 
     processed += records.length;
+    console.log('processed is', processed);
     hasMoreItems = processed < count;
 
     if (hasMoreItems) {
       offset += limit;
     }
   }
+
+  console.log('exiting loop');
 };
 
 /**

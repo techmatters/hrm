@@ -43,8 +43,16 @@ export const reindexContacts = async (
       return { records: res.contacts, count: res.count };
     };
 
+    const visited = new Set();
+
     const asyncProcessor: AsyncProcessor<Contact, void> = async contactsResult => {
       const promises = contactsResult.records.map(contact => {
+        if (visited.has(contact.id)) {
+          console.log(`contact ${contact.id} has been visited before`);
+        } else {
+          visited.add(contact.id);
+        }
+
         return publishContactToSearchIndex({
           accountSid,
           contact,
