@@ -59,7 +59,10 @@ const canPerformActionOnContact = (
           throw new Error('contact not found');
         }
         if (contactObj.finalizedAt || action !== 'editContact') {
-          if (can(user, action, contactObj)) {
+          if (
+            can(user, action, contactObj) ||
+            can(user, actionsMaps.contact.EDIT_INPROGRESS_CONTACT, contactObj)
+          ) {
             await permitIfAdditionalValidationPasses(
               req,
               contactObj,
@@ -94,7 +97,7 @@ const canPerformActionOnContact = (
           if (
             contactObj.createdBy === user.workerSid ||
             contactObj.twilioWorkerId === user.workerSid ||
-            user.roles.map(role => role === 'supervisor')
+            can(user, actionsMaps.contact.EDIT_INPROGRESS_CONTACT, contactObj)
           ) {
             await permitIfAdditionalValidationPasses(
               req,
