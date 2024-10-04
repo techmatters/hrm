@@ -22,7 +22,7 @@ import {
   type IndexCaseMessage,
 } from '@tech-matters/hrm-search-config';
 import { assertExhaustive, type HrmAccountId } from '@tech-matters/types';
-import { ExportTranscript, isS3StoredTranscript } from '@tech-matters/hrm-types';
+import { ExportTranscriptDocument, isS3StoredTranscript } from '@tech-matters/hrm-types';
 import type { MessageWithMeta, MessagesByAccountSid } from './messages';
 
 /**
@@ -68,7 +68,7 @@ const contactIndexingInputData = async (
       const { bucket, key } = location || {};
       if (bucket && key) {
         const transcriptString = await getS3Object({ bucket, key });
-        const parsedTranscript: ExportTranscript = JSON.parse(transcriptString);
+        const parsedTranscript: ExportTranscriptDocument = JSON.parse(transcriptString);
         transcript = parsedTranscript.transcript.messages
           .map(({ body }) => body)
           .join('\n');

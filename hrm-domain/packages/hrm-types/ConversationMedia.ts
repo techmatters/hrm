@@ -107,6 +107,14 @@ export type ExportTranscriptMessage = {
 };
 
 export type ExportTranscript = {
+  accountSid: string;
+  serviceSid: string;
+  channelSid: string;
+  messages: ExportTranscriptMessage[];
+  participants: ExportTranscripParticipants;
+};
+
+export type ExportTranscriptDocument = {
   accountSid: HrmAccountId;
   hrmAccountId: HrmAccountId;
   contactId: number;
@@ -114,11 +122,5 @@ export type ExportTranscript = {
   twilioWorkerId: string;
   serviceSid: string;
   channelSid: string;
-  transcript: {
-    accountSid: string;
-    serviceSid: string;
-    channelSid: string;
-    messages: ExportTranscriptMessage[];
-    participants: ExportTranscripParticipants;
-  };
+  transcript: ExportTranscript;
 };
