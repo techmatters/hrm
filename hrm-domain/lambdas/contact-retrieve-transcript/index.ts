@@ -31,6 +31,7 @@ import { exportTranscript } from './exportTranscript';
 
 import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
 import type { CompletedContactJobBody } from '@tech-matters/types';
+import { ExportTranscriptDocument } from '@tech-matters/hrm-types';
 
 const completedQueueUrl = process.env.completed_sqs_queue_url as string;
 const hrmEnv = process.env.NODE_ENV;
@@ -78,19 +79,21 @@ const processRetrieveTranscriptRecord = async (
     serviceSid,
   });
 
+  const document: ExportTranscriptDocument = {
+    transcript,
+    accountSid,
+    hrmAccountId,
+    contactId,
+    taskId,
+    twilioWorkerId,
+    serviceSid,
+    channelSid,
+  };
+
   await putS3Object({
     bucket: docsBucketName,
     key: message.filePath,
-    body: JSON.stringify({
-      transcript,
-      accountSid,
-      hrmAccountId,
-      contactId,
-      taskId,
-      twilioWorkerId,
-      serviceSid,
-      channelSid,
-    }),
+    body: JSON.stringify(document),
   });
 
   const completedJob: CompletedRetrieveContactTranscript = {
