@@ -69,7 +69,9 @@ const contactIndexingInputData = async (
       if (bucket && key) {
         const transcriptString = await getS3Object({ bucket, key });
         const parsedTranscript: ExportTranscript = JSON.parse(transcriptString);
-        transcript = parsedTranscript.messages.map(({ body }) => body).join('\n');
+        transcript = parsedTranscript.transcript.messages
+          .map(({ body }) => body)
+          .join('\n');
       }
     }
   } catch (err) {
