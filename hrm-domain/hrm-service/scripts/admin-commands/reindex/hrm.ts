@@ -114,6 +114,7 @@ export const handler = async ({
         );
       } else {
         console.log(`Reindexing contacts from ${dateFrom} to ${dateTo}...`);
+        console.log(response.text());
       }
     }
 
