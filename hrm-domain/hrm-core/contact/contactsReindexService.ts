@@ -14,52 +14,66 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { HrmAccountId, newErr, newOkFromData } from '@tech-matters/types';
-import { Contact, searchContacts } from './contactService';
+import { HrmAccountId } from '@tech-matters/types';
 import { publishContactToSearchIndex } from '../jobs/search/publishToSearchIndex';
 import { maxPermissions } from '../permissions';
-import { AsyncProcessor, SearchFunction, processInBatch } from '../autoPaginate';
+import { Transform } from 'stream';
+import { streamContactsForReindexing } from './contactDataAccess';
+import { TKConditionsSets } from '../permissions/rulesMap';
 
-export const reindexContacts = async (
+// TODO: move this to service initialization or constant package?
+const highWaterMark = 1000;
+
+export const reindexContactsStream = async (
   accountSid: HrmAccountId,
   dateFrom: string,
   dateTo: string,
 ) => {
-  try {
-    const searchParameters = {
-      dateFrom,
-      dateTo,
-      onlyDataContacts: false,
-      shouldIncludeUpdatedAt: true,
-    };
+  const searchParameters = {
+    dateFrom,
+    dateTo,
+    onlyDataContacts: false,
+    shouldIncludeUpdatedAt: true,
+  };
 
-    const searchFunction: SearchFunction<Contact> = async limitAndOffset => {
-      const res = await searchContacts(
-        accountSid,
-        searchParameters,
-        limitAndOffset,
-        maxPermissions,
-      );
-      return { records: res.contacts, count: res.count };
-    };
+  console.debug('Querying DB for contacts to index', searchParameters);
+  const contactsStream: NodeJS.ReadableStream = await streamContactsForReindexing({
+    accountSid,
+    searchParameters,
+    user: maxPermissions.user,
+    viewPermissions: maxPermissions.permissions
+      .viewContact as TKConditionsSets<'contact'>,
+    batchSize: highWaterMark,
+  });
 
-    const asyncProcessor: AsyncProcessor<Contact, void> = async contactsResult => {
-      const promises = contactsResult.records.map(contact => {
-        return publishContactToSearchIndex({
-          accountSid,
-          contact,
-          operation: 'index',
-        });
-      });
+  console.debug('Piping contacts to queue for reindexing', searchParameters);
+  return contactsStream.pipe(
+    new Transform({
+      objectMode: true,
+      highWaterMark,
+      async transform(contact, _, callback) {
+        try {
+          const { MessageId } = await publishContactToSearchIndex({
+            accountSid,
+            contact,
+            operation: 'index',
+          });
 
-      await Promise.all(promises);
-    };
-
-    await processInBatch(searchFunction, asyncProcessor);
-
-    return newOkFromData('Successfully indexed contacts');
-  } catch (error) {
-    console.error('Error reindexing contacts', error);
-    return newErr({ error, message: 'Error reindexing contacts' });
-  }
+          this.push(
+            `${new Date().toISOString()},${accountSid},contad id: ${
+              contact.id
+            } Success, MessageId ${MessageId}
+              \n`,
+          );
+        } catch (err) {
+          this.push(
+            `${new Date().toISOString()},${accountSid},contad id: ${contact.id} Error: ${
+              err.message?.replace('"', '""') || String(err)
+            }\n`,
+          );
+        }
+        callback();
+      },
+    }),
+  );
 };
