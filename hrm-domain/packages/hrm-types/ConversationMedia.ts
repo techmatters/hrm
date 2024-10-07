@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { HrmAccountId } from '@tech-matters/types';
+import { AccountSID, HrmAccountId } from '@tech-matters/types';
 
 type ConversationMediaCommons = {
   id: number;
@@ -115,7 +115,7 @@ export type ExportTranscript = {
 };
 
 export type ExportTranscriptDocument = {
-  accountSid: HrmAccountId;
+  accountSid: AccountSID;
   hrmAccountId: HrmAccountId;
   contactId: number;
   taskId: string;
