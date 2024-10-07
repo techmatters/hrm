@@ -39,6 +39,7 @@ import {
 import { CaseSectionRecord } from './caseSection/types';
 import { pick } from 'lodash';
 import { HrmAccountId } from '@tech-matters/types';
+import QueryStream from 'pg-query-stream';
 
 export { PrecalculatedCasePermissionConditions, CaseRecordCommon };
 
@@ -219,21 +220,30 @@ const generalizedSearchQueryFunction = <T>(
   };
 };
 
+const searchParametersToQueryParameters: SearchQueryParamsBuilder<CaseSearchCriteria> = (
+  accountSid,
+  user,
+  searchCriteria,
+  filters,
+  limit,
+  offset,
+) => ({
+  ...filters,
+  accountSid,
+  firstName: searchCriteria.firstName ? `%${searchCriteria.firstName}%` : null,
+  lastName: searchCriteria.lastName ? `%${searchCriteria.lastName}%` : null,
+  phoneNumber: searchCriteria.phoneNumber
+    ? `%${searchCriteria.phoneNumber.replace(/[\D]/gi, '')}%`
+    : null,
+  contactNumber: searchCriteria.contactNumber || null,
+  limit: limit,
+  offset: offset,
+  twilioWorkerSid: user.workerSid,
+});
+
 export const search = generalizedSearchQueryFunction<CaseSearchCriteria>(
   selectCaseSearch,
-  (accountSid, user, searchCriteria, filters, limit, offset) => ({
-    ...filters,
-    accountSid,
-    firstName: searchCriteria.firstName ? `%${searchCriteria.firstName}%` : null,
-    lastName: searchCriteria.lastName ? `%${searchCriteria.lastName}%` : null,
-    phoneNumber: searchCriteria.phoneNumber
-      ? `%${searchCriteria.phoneNumber.replace(/[\D]/gi, '')}%`
-      : null,
-    contactNumber: searchCriteria.contactNumber || null,
-    limit: limit,
-    offset: offset,
-    twilioWorkerSid: user.workerSid,
-  }),
+  searchParametersToQueryParameters,
 );
 
 export const searchByProfileId = generalizedSearchQueryFunction<{
@@ -311,3 +321,44 @@ export const searchByCaseIds = generalizedSearchQueryFunction<{
     twilioWorkerSid: user.workerSid,
   };
 });
+
+export const streamCasesForReindexing = ({
+  accountSid,
+  filters,
+  user,
+  viewCasePermissions,
+  viewContactPermissions,
+  batchSize = 1000,
+}: {
+  accountSid: HrmAccountId;
+  filters: NonNullable<Pick<CaseListFilters, 'createdAt' | 'updatedAt'>>;
+  user: TwilioUser;
+  viewCasePermissions: TKConditionsSets<'case'>;
+  viewContactPermissions: TKConditionsSets<'contact'>;
+  batchSize?: number;
+}): Promise<NodeJS.ReadableStream> => {
+  const qs = new QueryStream(
+    pgp.as.format(
+      selectCaseSearch(user, viewCasePermissions, viewContactPermissions, filters),
+      searchParametersToQueryParameters(
+        accountSid,
+        user,
+        {},
+        filters,
+        Number.MAX_SAFE_INTEGER, // limit
+        0, // offset
+      ),
+    ),
+    [],
+    {
+      batchSize,
+    },
+  );
+
+  // Expose the readable stream to the caller as a promise for further pipelining
+  return new Promise(resolve => {
+    db.stream(qs, resultStream => {
+      resolve(resultStream);
+    });
+  });
+};

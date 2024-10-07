@@ -14,57 +14,74 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { HrmAccountId, newErr, newOkFromData } from '@tech-matters/types';
-import { CaseService, searchCases } from './caseService';
+import { HrmAccountId } from '@tech-matters/types';
+import { caseRecordToCase } from './caseService';
 import { publishCaseToSearchIndex } from '../jobs/search/publishToSearchIndex';
 import { maxPermissions } from '../permissions';
-import { AsyncProcessor, SearchFunction, processInBatch } from '../autoPaginate';
 import formatISO from 'date-fns/formatISO';
+import { CaseRecord, streamCasesForReindexing } from './caseDataAccess';
+import { TKConditionsSets } from '../permissions/rulesMap';
+import { Transform } from 'stream';
 
-export const reindexCases = async (
+// TODO: move this to service initialization or constant package?
+const highWaterMark = 1000;
+
+export const reindexCasesStream = async (
   accountSid: HrmAccountId,
   dateFrom: string,
   dateTo: string,
 ) => {
-  try {
-    const filters = {
-      createdAt: {
-        from: formatISO(new Date(dateFrom)),
-        to: formatISO(new Date(dateTo)),
+  const filters = {
+    createdAt: {
+      from: formatISO(new Date(dateFrom)),
+      to: formatISO(new Date(dateTo)),
+    },
+    updatedAt: {
+      from: formatISO(new Date(dateFrom)),
+      to: formatISO(new Date(dateTo)),
+    },
+  };
+
+  console.debug('Querying DB for cases to index', filters);
+  const casesStream: NodeJS.ReadableStream = await streamCasesForReindexing({
+    accountSid,
+    filters,
+    user: maxPermissions.user,
+    viewCasePermissions: maxPermissions.permissions.viewCase as TKConditionsSets<'case'>,
+    viewContactPermissions: maxPermissions.permissions
+      .viewContact as TKConditionsSets<'contact'>,
+    batchSize: highWaterMark,
+  });
+
+  console.debug('Piping cases to queue for reindexing', filters);
+  return casesStream.pipe(
+    new Transform({
+      objectMode: true,
+      highWaterMark,
+      async transform(caseRecord: CaseRecord, _, callback) {
+        const caseObj = caseRecordToCase(caseRecord);
+        try {
+          const { MessageId } = await publishCaseToSearchIndex({
+            accountSid,
+            case: caseObj,
+            operation: 'index',
+          });
+
+          this.push(
+            `${new Date().toISOString()},${accountSid},contad id: ${
+              caseObj.id
+            } Success, MessageId ${MessageId}
+              \n`,
+          );
+        } catch (err) {
+          this.push(
+            `${new Date().toISOString()},${accountSid},contad id: ${caseObj.id} Error: ${
+              err.message?.replace('"', '""') || String(err)
+            }\n`,
+          );
+        }
+        callback();
       },
-    };
-
-    const searchFunction: SearchFunction<CaseService> = async limitAndOffset => {
-      const res = await searchCases(
-        accountSid,
-        {
-          limit: limitAndOffset.limit.toString(),
-          offset: limitAndOffset.offset.toString(),
-        },
-        {},
-        { filters },
-        maxPermissions,
-      );
-      return { records: res.cases as CaseService[], count: res.count };
-    };
-
-    const asyncProcessor: AsyncProcessor<CaseService, void> = async casesResult => {
-      const promises = casesResult.records.map(caseObj => {
-        return publishCaseToSearchIndex({
-          accountSid,
-          case: caseObj,
-          operation: 'index',
-        });
-      });
-
-      await Promise.all(promises);
-    };
-
-    await processInBatch(searchFunction, asyncProcessor);
-
-    return newOkFromData('Successfully indexed contacts');
-  } catch (error) {
-    console.error('Error reindexing contacts', error);
-    return newErr({ error, message: 'Error reindexing contacts' });
-  }
+    }),
+  );
 };
