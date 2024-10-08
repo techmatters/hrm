@@ -131,10 +131,10 @@ export const handler = async ({
 
       if (!response.ok) {
         console.error(
-          `Failed to submit request for reindexing contacts: ${response.statusText}`,
+          `Failed to submit request for reindexing cases: ${response.statusText}`,
         );
       } else {
-        console.log(`Reindexing contacts from ${dateFrom} to ${dateTo}...`);
+        console.log(`Reindexing cases from ${dateFrom} to ${dateTo}...`);
         console.log(await response.text());
       }
     }

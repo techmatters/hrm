@@ -337,9 +337,18 @@ export const streamCasesForReindexing = ({
   viewContactPermissions: TKConditionsSets<'contact'>;
   batchSize?: number;
 }): Promise<NodeJS.ReadableStream> => {
+  const { sortBy, sortDirection } = getPaginationElements({});
+  const orderByClause = [{ sortBy, sortDirection }];
+
   const qs = new QueryStream(
     pgp.as.format(
-      selectCaseSearch(user, viewCasePermissions, viewContactPermissions, filters),
+      selectCaseSearch(
+        user,
+        viewCasePermissions,
+        viewContactPermissions,
+        filters,
+        orderByClause,
+      ),
       searchParametersToQueryParameters(
         accountSid,
         user,
