@@ -28,7 +28,7 @@ export const reindexContactsStream = async (
   accountSid: HrmAccountId,
   dateFrom: string,
   dateTo: string,
-) => {
+): Promise<Transform> => {
   const searchParameters = {
     dateFrom,
     dateTo,

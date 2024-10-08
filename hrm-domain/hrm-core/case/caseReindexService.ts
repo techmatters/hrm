@@ -30,7 +30,7 @@ export const reindexCasesStream = async (
   accountSid: HrmAccountId,
   dateFrom: string,
   dateTo: string,
-) => {
+): Promise<Transform> => {
   const filters = {
     createdAt: {
       from: formatISO(new Date(dateFrom)),
