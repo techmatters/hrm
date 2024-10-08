@@ -327,7 +327,7 @@ export type SearchQueryBuilder = (
   viewCasePermissions: TKConditionsSets<'case'>,
   viewContactPermissions: TKConditionsSets<'contact'>,
   filters: CaseListFilters,
-  orderByClauses?: OrderByClauseItem[],
+  orderByClauses: OrderByClauseItem[],
   onlyEssentialData?: boolean,
 ) => string;
 
