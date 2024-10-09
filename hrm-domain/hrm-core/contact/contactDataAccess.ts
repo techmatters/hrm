@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { db } from '../connection-pool';
+import { db, pgp } from '../connection-pool';
 import {
   selectContactSearch,
   selectContactsByProfileId,
@@ -39,6 +39,7 @@ import {
   Result,
   newOkFromData,
 } from '@tech-matters/types';
+import QueryStream from 'pg-query-stream';
 
 import { ExistingContactRecord, Contact, dataCallTypes } from '@tech-matters/hrm-types';
 
@@ -105,6 +106,17 @@ type QueryParams = {
   offset: number;
 };
 
+type SearchParametersForQueryParameters = {
+  firstName?: string;
+  lastName?: string;
+  phoneNumber?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  contactNumber?: string;
+  helpline?: string;
+  counselor?: string;
+};
+
 const searchParametersToQueryParameters = (
   accountSid: HrmAccountId,
   { workerSid }: TwilioUser,
@@ -118,16 +130,7 @@ const searchParametersToQueryParameters = (
     contactNumber,
     counselor,
     ...restOfSearch
-  }: {
-    firstName?: string;
-    lastName?: string;
-    phoneNumber?: string;
-    dateFrom?: string;
-    dateTo?: string;
-    contactNumber?: string;
-    helpline?: string;
-    counselor?: string;
-  },
+  }: SearchParametersForQueryParameters,
   limit: number,
   offset: number,
 ): QueryParams => {
@@ -347,3 +350,46 @@ export const searchByIds: SearchQueryFunction<
     contactIds: searchParameters.contactIds,
   }),
 );
+
+export const streamContactsForReindexing = ({
+  accountSid,
+  searchParameters,
+  user,
+  viewPermissions,
+  batchSize = 1000,
+}: {
+  accountSid: HrmAccountId;
+  searchParameters: NonNullable<
+    Pick<SearchParametersForQueryParameters, 'dateFrom' | 'dateTo'> & {
+      onlyDataContacts: boolean;
+      shouldIncludeUpdatedAt: boolean;
+    }
+  >;
+  user: TwilioUser;
+  viewPermissions: TKConditionsSets<'contact'>;
+  batchSize?: number;
+}): Promise<NodeJS.ReadableStream> => {
+  const qs = new QueryStream(
+    pgp.as.format(
+      selectContactSearch(viewPermissions, user.isSupervisor),
+      searchParametersToQueryParameters(
+        accountSid,
+        user,
+        searchParameters,
+        Number.MAX_SAFE_INTEGER, // limit
+        0, // offset
+      ),
+    ),
+    [],
+    {
+      batchSize,
+    },
+  );
+
+  // Expose the readable stream to the caller as a promise for further pipelining
+  return new Promise(resolve => {
+    db.stream(qs, resultStream => {
+      resolve(resultStream);
+    });
+  });
+};

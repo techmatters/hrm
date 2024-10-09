@@ -49,6 +49,7 @@
     "pg": "^8.7.3",
     "pg-hstore": "^2.3.4",
     "pg-promise": "^10.11.1",
+    "pg-query-stream": "^4.7.0",
     "twilio": "^3.58.0",
     "twilio-flex-token-validator": "^1.5.5"
   },
