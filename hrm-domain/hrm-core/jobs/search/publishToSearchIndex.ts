@@ -32,12 +32,7 @@ const publishToSearchIndex = async ({
   messageGroupId: string;
 }) => {
   try {
-    console.log(
-      '>>>> publishToSearchIndex invoked with message: ',
-      JSON.stringify(message),
-    );
     const queueUrl = await getSsmParameter(PENDING_INDEX_QUEUE_SSM_PATH);
-    console.log('>>>> publishToSearchIndex sending to queue: ', queueUrl);
     return await sendSqsMessage({
       queueUrl,
       message: JSON.stringify(message),

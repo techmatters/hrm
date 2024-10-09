@@ -65,6 +65,7 @@ import {
   generateCaseSearchFilters,
 } from './caseSearchIndex';
 import { ContactListCondition } from '../contact/contactSearchIndex';
+import { maxPermissions } from '../permissions';
 
 export { WELL_KNOWN_CASE_SECTION_NAMES, CaseService, CaseInfoSection };
 
@@ -186,7 +187,7 @@ const caseToCaseRecord = (
   return caseWithoutContacts;
 };
 
-const caseRecordToCase = (record: CaseRecord): CaseService => {
+export const caseRecordToCase = (record: CaseRecord): CaseService => {
   // Remove legacy case sections
   const info = {
     ...record.info,
@@ -283,20 +284,6 @@ const mapEssentialData =
       precalculatedPermissions: caseRecord.precalculatedPermissions,
     };
   };
-
-// TODO: use the factored out version once that's merged
-const maxPermissions: {
-  user: TwilioUser;
-  can: () => boolean;
-} = {
-  can: () => true,
-  user: {
-    accountSid: 'ACxxx',
-    workerSid: 'WKxxx',
-    roles: ['supervisor'],
-    isSupervisor: true,
-  },
-};
 
 const doCaseInSearchIndexOP =
   (operation: IndexMessage['operation']) =>

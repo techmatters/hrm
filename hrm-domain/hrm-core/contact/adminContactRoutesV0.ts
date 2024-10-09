@@ -15,9 +15,8 @@
  */
 
 import type { Request, Response, NextFunction } from 'express';
-import { isErr, mapHTTPError } from '@tech-matters/types';
 import { SafeRouter, publicEndpoint } from '../permissions';
-import { reindexContacts } from './contactsReindexService';
+import { reindexContactsStream } from './contactsReindexService';
 
 const adminContactsRouter = SafeRouter();
 
@@ -29,17 +28,12 @@ adminContactsRouter.post(
     const { hrmAccountId } = req;
     const { dateFrom, dateTo } = req.body;
 
-    const result = await reindexContacts(hrmAccountId, dateFrom, dateTo);
-
-    if (isErr(result)) {
-      return next(
-        mapHTTPError(result, {
-          InvalidParameterError: 400,
-        }),
-      );
-    }
-
-    res.json(result.data);
+    const resultStream = await reindexContactsStream(hrmAccountId, dateFrom, dateTo);
+    resultStream.on('error', err => {
+      next(err);
+    });
+    res.status(200).setHeader('Content-Type', 'text/plain');
+    resultStream.pipe(res);
   },
 );
 
