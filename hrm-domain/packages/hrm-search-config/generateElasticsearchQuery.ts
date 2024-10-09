@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 import type { QueryDslQueryContainer } from '@elastic/elasticsearch/lib/api/types';
-import type { SearchQuery } from '@tech-matters/elasticsearch-client';
+import { SearchQuery, escapeReservedSymbols } from '@tech-matters/elasticsearch-client';
 import {
   DocumentType,
   type DocumentTypeToDocument,
@@ -243,13 +243,13 @@ const generateQueriesFromSearchTerms = <TDoc extends DocumentType>({
   field: keyof DocumentTypeToDocument[TDoc];
   parentPath?: string;
 }): QueryDslQueryContainer[] => {
-  const terms = searchTerm.split(' ');
+  const terms = searchTerm.split(' ').map(escapeReservedSymbols);
 
   const queries = [
     // query for exact matches on the term(s)
     ...(terms.length > 1
       ? [
-          { query: terms.join('AND'), boost: 3 * boostFactor },
+          { query: terms.join(' && '), boost: 3 * boostFactor },
           { query: terms.join(' '), boost: 2 * boostFactor },
         ]
       : [{ query: terms.join(' '), boost: 2 * boostFactor }]),
