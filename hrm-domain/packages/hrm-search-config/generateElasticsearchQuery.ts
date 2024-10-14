@@ -146,6 +146,7 @@ export const generateESQuery = <TDoc extends DocumentType>(
         simple_query_string: {
           fields: [getFieldName(p)],
           query: p.query,
+          flags: 'FUZZY|NEAR|PHRASE|WHITESPACE',
           ...(p.boost && { boost: p.boost }),
         },
       };
