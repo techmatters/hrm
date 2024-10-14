@@ -71,6 +71,11 @@ type GenerateRangeQueryParams = {
   ranges: { lt?: string; lte?: string; gt?: string; gte?: string };
 };
 type GenerateQueryStringQuery = { type: 'queryString'; query: string; boost?: number };
+type GenerateSimpleQueryStringQuery = {
+  type: 'simpleQueryString';
+  query: string;
+  boost?: number;
+};
 type GenerateMustNotQueryParams<TDoc extends DocumentType> = {
   type: 'mustNot';
   innerQuery: DocumentTypeQueryParams[TDoc];
@@ -97,6 +102,7 @@ type GenerateQueryParams<TDoc extends DocumentType> =
       | GenerateTermQueryParams
       | GenerateRangeQueryParams
       | GenerateQueryStringQuery
+      | GenerateSimpleQueryStringQuery
     ))
   | GenerateMustNotQueryParams<TDoc>
   | GenerateNestedQueryParams<TDoc>;
@@ -131,6 +137,16 @@ export const generateESQuery = <TDoc extends DocumentType>(
         query_string: {
           default_field: getFieldName(p),
           query: p.query,
+          ...(p.boost && { boost: p.boost }),
+        },
+      };
+    }
+    case 'simpleQueryString': {
+      return {
+        simple_query_string: {
+          fields: [getFieldName(p)],
+          query: p.query,
+          flags: 'FUZZY|NEAR|PHRASE|WHITESPACE',
           ...(p.boost && { boost: p.boost }),
         },
       };
@@ -225,7 +241,7 @@ const generateQueriesFromId = <TDoc extends DocumentType>({
   return queries;
 };
 
-const generateQueriesFromSearchTerms = <TDoc extends DocumentType>({
+const generateQueryFromSearchTerms = <TDoc extends DocumentType>({
   searchTerm,
   documentType,
   field,
@@ -242,37 +258,19 @@ const generateQueriesFromSearchTerms = <TDoc extends DocumentType>({
   documentType: TDoc;
   field: keyof DocumentTypeToDocument[TDoc];
   parentPath?: string;
-}): QueryDslQueryContainer[] => {
-  const terms = searchTerm.split(' ');
-
-  const queries = [
-    // query for exact matches on the term(s)
-    ...(terms.length > 1
-      ? [
-          { query: terms.join('AND'), boost: 3 * boostFactor },
-          { query: terms.join(' '), boost: 2 * boostFactor },
-        ]
-      : [{ query: terms.join(' '), boost: 2 * boostFactor }]),
-
-    // query for partial matches on the term(s)
-    { query: terms.map(t => `*${t}*`).join(' '), boost: 1.5 * boostFactor },
-
-    // query for fuzzy matches on the term(s)
-    { query: terms.map(t => `${t}~1`).join(' '), boost: 1 * boostFactor },
-  ].map(({ boost, query }) =>
-    generateESQuery(
-      queryWrapper({
-        documentType,
-        type: 'queryString',
-        query,
-        boost,
-        field: field as any, // typecast to conform TS, only valid parameters should be accept
-        parentPath,
-      }),
-    ),
+}): QueryDslQueryContainer => {
+  const query = generateESQuery(
+    queryWrapper({
+      documentType,
+      type: 'simpleQueryString',
+      query: searchTerm,
+      boost: boostFactor,
+      field: field as any, // typecast to conform TS, only valid parameters should be accept
+      parentPath,
+    }),
   );
 
-  return queries;
+  return query;
 };
 
 const generateTranscriptQueriesFromFilters = ({
@@ -288,7 +286,7 @@ const generateTranscriptQueriesFromFilters = ({
     p: DocumentTypeQueryParams[DocumentType],
   ) => DocumentTypeQueryParams[DocumentType];
 }): QueryDslQueryContainer[] => {
-  const queries = generateQueriesFromSearchTerms({
+  const query = generateQueryFromSearchTerms({
     documentType: DocumentType.Contact,
     field: 'transcript',
     searchTerm: searchParameters.searchTerm,
@@ -300,9 +298,9 @@ const generateTranscriptQueriesFromFilters = ({
   return transcriptFilters.map(filter => ({
     bool: {
       filter: filter,
-      should: queries.map(q => ({
-        bool: { must: [q] },
-      })),
+      should: {
+        bool: { must: [query] },
+      },
     },
   }));
 };
@@ -317,7 +315,7 @@ const generateContactsQueriesFromFilters = ({
   queryWrapper?: (
     p: DocumentTypeQueryParams[DocumentType],
   ) => DocumentTypeQueryParams[DocumentType];
-}) => {
+}): QueryDslQueryContainer[] => {
   const { searchFilters, permissionFilters } = searchParameters;
 
   if (searchParameters.searchTerm.length === 0) {
@@ -337,7 +335,7 @@ const generateContactsQueriesFromFilters = ({
   });
 
   const queries = [
-    ...generateQueriesFromSearchTerms({
+    generateQueryFromSearchTerms({
       documentType: DocumentType.Contact,
       field: 'content',
       searchTerm: searchParameters.searchTerm,
@@ -416,7 +414,7 @@ const generateCasesQueriesFromFilters = ({
   searchParameters,
 }: {
   searchParameters: SearchParametersCases;
-}) => {
+}): QueryDslQueryContainer[] => {
   const { searchFilters, permissionFilters } = searchParameters;
 
   if (searchParameters.searchTerm.length === 0) {
@@ -428,7 +426,7 @@ const generateCasesQueriesFromFilters = ({
     }));
   }
 
-  const contactQueries = generateContactsQueriesFromFilters({
+  const contactsQueries = generateContactsQueriesFromFilters({
     searchParameters: { ...searchParameters, type: DocumentType.Contact },
     queryWrapper: p => ({
       documentType: DocumentType.Case,
@@ -440,7 +438,7 @@ const generateCasesQueriesFromFilters = ({
   });
 
   const queries = [
-    ...generateQueriesFromSearchTerms({
+    generateQueryFromSearchTerms({
       documentType: DocumentType.Case,
       field: 'content',
       searchTerm: searchParameters.searchTerm,
@@ -453,7 +451,7 @@ const generateCasesQueriesFromFilters = ({
     }),
   ];
 
-  const sectionsQueries = generateQueriesFromSearchTerms({
+  const sectionsQuery = generateQueryFromSearchTerms({
     documentType: DocumentType.CaseSection,
     field: 'content',
     searchTerm: searchParameters.searchTerm,
@@ -474,10 +472,10 @@ const generateCasesQueriesFromFilters = ({
         ...queries.map(q => ({
           bool: { must: [q] },
         })),
-        ...sectionsQueries.map(q => ({
-          bool: { must: [q] },
-        })),
-        ...contactQueries,
+        {
+          bool: { must: [sectionsQuery] },
+        },
+        ...contactsQueries,
       ],
     },
   }));
