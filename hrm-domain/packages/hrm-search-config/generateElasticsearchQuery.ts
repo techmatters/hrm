@@ -214,7 +214,7 @@ const generateQueriesFromId = <TDoc extends DocumentType>({
   const queries = terms
     .map(term => {
       // Ignore terms that are not entirely a number, as that breaks term queries against integer fields
-      if (Number.isNaN(Number(term)) || !Number.isInteger(term)) {
+      if (Number.isNaN(Number(term)) || !Number.isInteger(Number(term))) {
         return null;
       }
 
