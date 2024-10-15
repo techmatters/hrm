@@ -197,6 +197,9 @@ const KHP_MAPPING_NODE_SITES: { children: MappingNode } = {
             '{language}': translatableAttributeMapping(siteKey('accessibility'), {
               language: ctx => ctx.captures.language,
             }),
+            _id: {},
+            __v: {},
+            name: {},
           },
         },
         transportation: {
@@ -216,9 +219,9 @@ const KHP_MAPPING_NODE_SITES: { children: MappingNode } = {
         },
         phoneNumbers: {
           children: {
-            '{phoneNumberType}': attributeMapping(
+            '{phoneNumberIndex}': attributeMapping(
               'stringAttributes',
-              siteKey('phone/{phoneNumberType}'),
+              siteKey('phone/{phoneNumberIndex}'),
               {
                 value: ctx => ctx.currentValue.name || ctx.currentValue.number,
                 info: ctx => ctx.currentValue,
@@ -712,6 +715,8 @@ export const KHP_MAPPING_NODE: MappingNode = {
       '{language}': translatableAttributeMapping('accessibility', {
         language: ctx => ctx.captures.language,
       }),
+      __v: {},
+      name: {},
     },
   },
   volunteer: {

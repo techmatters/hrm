@@ -66,7 +66,7 @@ const getConfig = async () => {
     importApiKey,
     importApiAuthHeader,
     maxBatchSize: Number(process.env.RESOURCE_IMPORT_MAX_BATCH_SIZE ?? 20000),
-    maxApiSize: Number(process.env.RESOURCE_IMPORT_MAX_API_SIZE ?? 500),
+    maxApiSize: Number(process.env.RESOURCE_IMPORT_MAX_API_SIZE ?? 200),
     maxRequests: Number(process.env.RESOURCE_IMPORT_MAX_REQUESTS ?? 200),
   } as const;
 };

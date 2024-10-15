@@ -502,6 +502,7 @@ export const generalisedContactSearch = async (
     counselor?: string;
     dateFrom?: string;
     dateTo?: string;
+    onlyDataContacts?: boolean;
   },
   query: Pick<PaginationQuery, 'limit' | 'offset'>,
   ctx: {
@@ -511,7 +512,8 @@ export const generalisedContactSearch = async (
   },
 ): Promise<TResult<'InternalServerError', { count: number; contacts: Contact[] }>> => {
   try {
-    const { searchTerm, counselor, dateFrom, dateTo } = searchParameters;
+    const { searchTerm, counselor, dateFrom, dateTo, onlyDataContacts } =
+      searchParameters;
     const { limit, offset } = query;
 
     const pagination = {
@@ -523,6 +525,7 @@ export const generalisedContactSearch = async (
       counselor,
       dateFrom,
       dateTo,
+      onlyDataContacts,
     });
     const permissionFilters = generateContactPermissionsFilters({
       user: ctx.user,
@@ -556,6 +559,11 @@ export const generalisedContactSearch = async (
       { contactIds },
       {}, // limit and offset are computed in ES query
       ctx,
+    );
+
+    // Monitors & dashboards use this log statement, review them before updating to ensure they remain aligned.
+    console.info(
+      `[generalised-search-contacts] AccountSid: ${accountSid} - Search Complete. Total count from ES: ${total}, Paginated count from ES: ${contactIds.length}, Paginated count from DB: ${contacts.length}.`,
     );
 
     const order = contactIds.reduce(

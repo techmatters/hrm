@@ -72,3 +72,8 @@ export type Contact = ExistingContactRecord & {
   referrals?: ReferralWithoutContactId[];
   conversationMedia?: ConversationMedia[];
 };
+
+export const dataCallTypes = {
+  child: 'Child calling about self',
+  caller: 'Someone calling about a child',
+};

@@ -59,10 +59,6 @@ export const getProfilesSqlBase = (selectTargetProfilesQuery: string) => `
     FROM TargetProfiles profile
 	  LEFT JOIN "ProfileSections" pps ON pps."profileId" = profile.id AND pps."accountSid" = profile."accountSid"
     GROUP BY pps."profileId"
-  ),
-  
-  HasRelatedContacts AS (
-    SELECT COUNT(*) > 0 as "hasContacts", "profileId" FROM "Contacts" GROUP BY "profileId"
   )
 
   SELECT
@@ -77,7 +73,7 @@ export const getProfilesSqlBase = (selectTargetProfilesQuery: string) => `
   LEFT JOIN RelatedProfileFlags rpf ON profiles.id = rpf."profileId"
   LEFT JOIN RelatedProfileSections rps ON profiles.id = rps."profileId"
   -- Remove this hack once we have limited contact view permissions
-  LEFT JOIN HasRelatedContacts hrc ON profiles.id = hrc."profileId"
+  LEFT JOIN LATERAL (SELECT COUNT(*) > 0 as "hasContacts", "profileId", "accountSid" FROM "Contacts" c WHERE profiles.id = c."profileId" AND profiles."accountSid" = c."accountSid" GROUP BY "profileId", "accountSid") hrc ON true
 `;
 
 export const getProfileByIdSql = getProfilesSqlBase(`

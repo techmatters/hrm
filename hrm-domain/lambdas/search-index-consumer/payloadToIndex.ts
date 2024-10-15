@@ -24,7 +24,12 @@ import type {
   PayloadsByAccountSid,
   PayloadsByIndex,
 } from './messagesToPayloads';
-import { assertExhaustive, newErr, newOkFromData } from '@tech-matters/types';
+import {
+  assertExhaustive,
+  type HrmAccountId,
+  newErr,
+  newOkFromData,
+} from '@tech-matters/types';
 import { HrmIndexProcessorError } from '@tech-matters/job-errors';
 
 const handleIndexPayload =
@@ -33,7 +38,7 @@ const handleIndexPayload =
     client,
     indexType,
   }: {
-    accountSid: string;
+    accountSid: HrmAccountId;
     client: IndexClient<IndexPayload>;
     indexType: string;
   }) =>
@@ -112,7 +117,7 @@ const handleIndexPayload =
         indexType,
         messageId,
         result: newErr({
-          error: 'ErrorFailedToInex',
+          error: 'ErrorFailedToIndex',
           message: err instanceof Error ? err.message : String(err),
         }),
       };
@@ -120,7 +125,7 @@ const handleIndexPayload =
   };
 
 const indexDocumentsByIndexMapper =
-  (accountSid: string) =>
+  (accountSid: HrmAccountId) =>
   async ([indexType, payloads]: [string, PayloadWithMeta[]]) => {
     if (!process.env.SSM_PARAM_ELASTICSEARCH_CONFIG) {
       throw new Error('SSM_PARAM_ELASTICSEARCH_CONFIG missing in environment variables');
@@ -143,7 +148,7 @@ const indexDocumentsByIndexMapper =
   };
 
 const indexDocumentsByAccountMapper = async ([accountSid, payloadsByIndex]: [
-  string,
+  HrmAccountId,
   PayloadsByIndex,
 ]) => {
   const resultsByIndex = await Promise.all(
@@ -155,4 +160,9 @@ const indexDocumentsByAccountMapper = async ([accountSid, payloadsByIndex]: [
 
 export const indexDocumentsByAccount = async (
   payloadsByAccountSid: PayloadsByAccountSid,
-) => Promise.all(Object.entries(payloadsByAccountSid).map(indexDocumentsByAccountMapper));
+) =>
+  Promise.all(
+    (Object.entries(payloadsByAccountSid) as [HrmAccountId, PayloadsByIndex][]).map(
+      indexDocumentsByAccountMapper,
+    ),
+  );

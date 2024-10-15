@@ -76,7 +76,7 @@ export type RequestWithPermissions = SafeRouterRequest & {
 export const maxPermissions: {
   user: TwilioUser;
   can: () => boolean;
-  permissions: (typeof rulesMap)[keyof typeof rulesMap];
+  permissions: RulesFile;
 } = {
   can: () => true,
   user: {

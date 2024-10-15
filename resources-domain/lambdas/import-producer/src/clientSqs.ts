@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { sendSqsMessage } from '@tech-matters/sqs-client';
+import { getQueueAttributes, sendSqsMessage } from '@tech-matters/sqs-client';
 
 import type { AccountSID, ImportRequestBody } from '@tech-matters/types';
 
@@ -35,4 +35,15 @@ export const publishToImportConsumer =
       console.error('Error trying to send message to SQS queue', err);
     }
   };
+
+export const retrieveUnprocessedMessageCount = async (
+  importResourcesSqsQueueUrl: URL,
+) => {
+  const { ApproximateNumberOfMessages } = (await getQueueAttributes({
+    queueUrl: importResourcesSqsQueueUrl.toString(),
+    attributes: ['ApproximateNumberOfMessages'],
+  })) ?? { ApproximateNumberOfMessages: '0' };
+  return parseInt(ApproximateNumberOfMessages);
+};
+
 export type ResourceMessage = ImportRequestBody & { accountSid: AccountSID };

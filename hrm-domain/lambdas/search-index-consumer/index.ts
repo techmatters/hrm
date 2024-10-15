@@ -35,13 +35,56 @@ export const handler = async (event: SQSEvent): Promise<SQSBatchResponse> => {
 
     // index all the payloads
     const resultsByAccount = await indexDocumentsByAccount(payloadsByAccountSid);
+    const documentsWithErrors: (typeof resultsByAccount)[number][number] = [];
+    resultsByAccount.flat(2).forEach(resultItem => {
+      const { result, indexType, accountSid, messageId } = resultItem;
 
-    console.debug(`Successfully indexed documents`);
+      if (isErr(result)) {
+        console.warn(
+          `[generalised-search-${indexType}] ${result.error}. Account SID: ${accountSid}, Message ID: ${messageId}.`,
+          result.message,
+        );
+        documentsWithErrors.push(resultItem);
+        return;
+      }
 
-    // filter the payloads that failed indexing
-    const documentsWithErrors = resultsByAccount
-      .flat(2)
-      .filter(({ result }) => isErr(result));
+      const { message } =
+        messagesByAccoundSid[accountSid].find(m => m.messageId === messageId) ?? {};
+      if (!message) {
+        console.warn(
+          `[generalised-search-${indexType}]: Result Message ID not found. Account SID: ${accountSid}, Result has Message ID: ${messageId} but this ID was not found in the original input messages.`,
+        );
+        return;
+      }
+      switch (message.type) {
+        case 'case': {
+          const caseObj = message.case;
+          console.info(
+            `[generalised-search-cases]: Indexing Request Acknowledged By ES. Account SID: ${accountSid}, Case ID: ${
+              caseObj.id
+            }, Updated / Created At: ${
+              caseObj.updatedAt ?? caseObj.createdAt
+            }. Operation: ${message.operation}. (key: ${accountSid}/${caseObj.id}/${
+              caseObj.updatedAt ?? caseObj.createdAt
+            }/${message.operation})`,
+          );
+          return;
+        }
+        case 'contact': {
+          const { contact } = message;
+          console.info(
+            `[generalised-search-contacts]: Indexing Request Acknowledged By ES. Account SID: ${accountSid}, Contact ID: ${
+              contact.id
+            }, Updated / Created At: ${
+              contact.updatedAt ?? contact.createdAt
+            }. Operation: ${message.operation}. (key: ${accountSid}/${contact.id}/${
+              contact.updatedAt ?? contact.createdAt
+            }/${message.operation})`,
+          );
+          return;
+        }
+      }
+    });
 
     if (documentsWithErrors.length) {
       console.debug(

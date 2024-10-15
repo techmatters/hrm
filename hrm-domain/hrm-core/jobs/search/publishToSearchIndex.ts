@@ -18,7 +18,7 @@ import { sendSqsMessage } from '@tech-matters/sqs-client';
 import { getSsmParameter } from '../../config/ssmCache';
 import { IndexMessage } from '@tech-matters/hrm-search-config';
 import { CaseService, Contact } from '@tech-matters/hrm-types';
-import { AccountSID } from '@tech-matters/types';
+import { AccountSID, HrmAccountId } from '@tech-matters/types';
 
 const PENDING_INDEX_QUEUE_SSM_PATH = `/${process.env.NODE_ENV}/${
   process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
@@ -32,12 +32,7 @@ const publishToSearchIndex = async ({
   messageGroupId: string;
 }) => {
   try {
-    console.log(
-      '>>>> publishToSearchIndex invoked with message: ',
-      JSON.stringify(message),
-    );
     const queueUrl = await getSsmParameter(PENDING_INDEX_QUEUE_SSM_PATH);
-    console.log('>>>> publishToSearchIndex sending to queue: ', queueUrl);
     return await sendSqsMessage({
       queueUrl,
       message: JSON.stringify(message),
@@ -56,14 +51,24 @@ export const publishContactToSearchIndex = async ({
   contact,
   operation,
 }: {
-  accountSid: AccountSID;
+  accountSid: HrmAccountId;
   contact: Contact;
   operation: IndexMessage['operation'];
-}) =>
-  publishToSearchIndex({
+}) => {
+  console.info(
+    `[generalised-search-contacts]: Indexing Started. Account SID: ${accountSid}, Contact ID: ${
+      contact.id
+    }, Updated / Created At: ${
+      contact.updatedAt ?? contact.createdAt
+    }. Operation: ${operation}. (key: ${accountSid}/${contact.id}/${
+      contact.updatedAt ?? contact.createdAt
+    }/${operation})`,
+  );
+  return publishToSearchIndex({
     message: { accountSid, type: 'contact', contact, operation },
     messageGroupId: `${accountSid}-contact-${contact.id}`,
   });
+};
 
 export const publishCaseToSearchIndex = async ({
   accountSid,
@@ -73,8 +78,18 @@ export const publishCaseToSearchIndex = async ({
   accountSid: AccountSID;
   case: CaseService;
   operation: IndexMessage['operation'];
-}) =>
-  publishToSearchIndex({
+}) => {
+  console.info(
+    `[generalised-search-cases]: Indexing Request Started. Account SID: ${accountSid}, Case ID: ${
+      caseObj.id
+    }, Updated / Created At: ${
+      caseObj.updatedAt ?? caseObj.createdAt
+    }. Operation: ${operation}. (key: ${accountSid}/${caseObj.id}/${
+      caseObj.updatedAt ?? caseObj.createdAt
+    }/${operation})`,
+  );
+  return publishToSearchIndex({
     message: { accountSid, type: 'case', case: caseObj, operation },
     messageGroupId: `${accountSid}-case-${caseObj.id}`,
   });
+};

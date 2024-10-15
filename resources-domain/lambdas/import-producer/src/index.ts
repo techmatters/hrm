@@ -22,11 +22,16 @@ import type {
   TimeSequence,
 } from '@tech-matters/types';
 import parseISO from 'date-fns/parseISO';
-import { publishToImportConsumer, ResourceMessage } from './clientSqs';
+import {
+  publishToImportConsumer,
+  ResourceMessage,
+  retrieveUnprocessedMessageCount,
+} from './clientSqs';
 import getConfig from './config';
 import { transformKhpResourceToApiResource } from './transformExternalResourceToApiResource';
 import path from 'path';
-
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { Agent } from 'undici';
 declare var fetch: typeof import('undici').fetch;
 
 export type HttpError<T = any> = {
@@ -41,6 +46,20 @@ export const isHttpError = <T>(value: any): value is HttpError<T> => {
     typeof value?.statusText === 'string' &&
     typeof value?.body !== 'undefined'
   );
+};
+
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+const waitForEmptyQueue = async (importResourcesSqsQueueUrl: URL) => {
+  let unprocessedCount: number | undefined;
+  while (
+    (unprocessedCount = await retrieveUnprocessedMessageCount(importResourcesSqsQueueUrl))
+  ) {
+    console.info(
+      `${unprocessedCount} resources still to be processed from prior import run, waiting 10 seconds...`,
+    );
+    await delay(10000);
+  }
 };
 
 const nextTimeSequence = (timeSequence: TimeSequence): TimeSequence => {
@@ -116,6 +135,10 @@ const pullUpdates =
         'x-api-key': externalApiKey,
       },
       method: 'GET',
+      dispatcher: new Agent({
+        headersTimeout: 15 * 60 * 1000, // 15 minutes
+        bodyTimeout: 15 * 60 * 1000, // 15 minutes
+      }),
     });
 
     if (response.ok) {
@@ -204,6 +227,10 @@ export const handler = async (event: ScheduledEvent): Promise<void> => {
   );
   const configuredSend = sendUpdates(accountSid, importResourcesSqsQueueUrl);
 
+  // Wait until the target queue is empty, otherwise the progress tracking on the DB will not account for the unprocessed messages and process the same resources again
+  await waitForEmptyQueue(importResourcesSqsQueueUrl);
+
+  console.debug('Target queue empty, reading current import status.');
   const progress = await retrieveCurrentStatus(
     internalResourcesBaseUrl,
     internalResourcesApiKey,
@@ -222,6 +249,11 @@ export const handler = async (event: ScheduledEvent): Promise<void> => {
           `${parseISO(progress.lastProcessedDate).valueOf()}-0`,
       )
     : '0-0';
+  console.info(
+    `Starting import from: ${nextFrom} (${progress ? 'resuming' : 'initial'}${
+      progress?.importSequenceId ? 'import sequence supplied.' : ''
+    })`,
+  );
   let remaining = maxBatchSize;
   let totalRemaining: number | undefined;
   let requestsMade = 0;
@@ -260,6 +292,9 @@ export const handler = async (event: ScheduledEvent): Promise<void> => {
     });
     if (result.nextFrom) {
       nextFrom = result.nextFrom;
+      console.debug(
+        `Continuing import from: ${nextFrom} with another pull from the API...`,
+      );
     } else {
       console.info(
         `Import operation complete due to there being no more resources to import, ${describeRemaining(

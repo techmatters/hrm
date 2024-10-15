@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { HrmAccountId } from '@tech-matters/types';
+import { AccountSID, HrmAccountId } from '@tech-matters/types';
 
 type ConversationMediaCommons = {
   id: number;
@@ -107,9 +107,20 @@ export type ExportTranscriptMessage = {
 };
 
 export type ExportTranscript = {
-  accountSid: HrmAccountId;
+  accountSid: string;
   serviceSid: string;
   channelSid: string;
   messages: ExportTranscriptMessage[];
   participants: ExportTranscripParticipants;
+};
+
+export type ExportTranscriptDocument = {
+  accountSid: AccountSID;
+  hrmAccountId: HrmAccountId;
+  contactId: number;
+  taskId: string;
+  twilioWorkerId: string;
+  serviceSid: string;
+  channelSid: string;
+  transcript: ExportTranscript;
 };
