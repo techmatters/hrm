@@ -46,6 +46,7 @@ export const actionsMaps = {
   contact: {
     VIEW_CONTACT: 'viewContact',
     EDIT_CONTACT: 'editContact',
+    EDIT_INPROGRESS_CONTACT: 'editInProgressContact',
     VIEW_EXTERNAL_TRANSCRIPT: 'viewExternalTranscript',
     VIEW_RECORDING: 'viewRecording',
     ADD_CONTACT_TO_CASE: 'addContactToCase',

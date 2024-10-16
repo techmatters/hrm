@@ -158,6 +158,11 @@ export const canPerformEditContactAction = canPerformActionOnContact(
   checkFinalizedContactEditsOnlyChangeForm,
 );
 
+export const canPerformEditInProgressContactAction = canPerformActionOnContact(
+  actionsMaps.contact.EDIT_INPROGRESS_CONTACT,
+  checkFinalizedContactEditsOnlyChangeForm,
+);
+
 export const canPerformViewContactAction = canPerformActionOnContact(
   actionsMaps.contact.VIEW_CONTACT,
 );
