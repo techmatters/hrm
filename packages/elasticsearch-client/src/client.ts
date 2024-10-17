@@ -102,6 +102,7 @@ const getEsConfig = async ({
     return JSON.parse(await getSsmParameter(ssmConfigParameter));
   }
 
+  // TODO: remove this if it's not used anymore?
   return JSON.parse(await getSsmParameter(getConfigSsmParameterKey(indexType)));
 };
 
