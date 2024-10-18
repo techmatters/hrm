@@ -30,7 +30,6 @@ process.env.PERMISSIONS_pl = 'pl';
 process.env.PERMISSIONS_ro = 'ro';
 process.env.PERMISSIONS_sg = 'sg';
 process.env.PERMISSIONS_th = 'th';
-process.env.PERMISSIONS_uk = 'uk';
 process.env.PERMISSIONS_za = 'za';
 process.env.PERMISSIONS_zm = 'zm';
 process.env.PERMISSIONS_zw = 'zw';
