@@ -211,34 +211,28 @@ const generateQueriesFromId = <TDoc extends DocumentType>({
 }): QueryDslQueryContainer[] => {
   const terms = searchTerm.split(' ');
 
-  const queries = terms
-    .map(term => {
-      // Ignore terms that are not entirely a number, as that breaks term queries against integer fields
-      if (Number.isNaN(Number(term)) || !Number.isInteger(Number(term))) {
-        return null;
-      }
+  if (terms.length > 1) {
+    return [];
+  }
 
-      const parsed = Number.parseInt(term, 10);
+  const parsed = Number.parseInt(searchTerm, 10);
+  // Ignore terms that are not entirely a number or greater than max int, as that breaks term queries against integer fields
+  if (Number.isNaN(parsed) || !Number.isInteger(parsed) || parsed > MAX_INT) {
+    return [];
+  }
 
-      // Ignore numbers that are greater than maximum supported int
-      if (parsed > MAX_INT) {
-        return null;
-      }
-
-      return generateESQuery(
-        queryWrapper({
-          documentType,
-          type: 'term',
-          term: parsed,
-          boost: boostFactor * BOOST_FACTORS.id,
-          field: 'id' as any, // typecast to conform TS, only valid parameters should be accept
-          parentPath,
-        }),
-      );
-    })
-    .filter(q => q !== null) as QueryDslQueryContainer[]; // this typecast is awful but Array.filter does not infers that nulls are being removed
-
-  return queries;
+  return [
+    generateESQuery(
+      queryWrapper({
+        documentType,
+        type: 'term',
+        term: parsed,
+        boost: boostFactor * BOOST_FACTORS.id,
+        field: 'id' as any, // typecast to conform TS, only valid parameters should be accept
+        parentPath,
+      }),
+    ),
+  ];
 };
 
 const generateQueryFromSearchTerms = <TDoc extends DocumentType>({
@@ -527,12 +521,16 @@ const isSearchParametersCases = (p: any): p is SearchParametersCases =>
 export const generateElasticsearchQuery = (p: GenerateIndexQueryParams): SearchQuery => {
   const { index, searchParameters } = p;
 
-  if (isHrmContactsIndex(index) && isSearchParametersContacts(searchParameters)) {
-    return generateContactsQuery({ index, searchParameters });
+  const sanitizedTerm = searchParameters.searchTerm.trim();
+
+  const sanitized = { ...searchParameters, searchTerm: sanitizedTerm };
+
+  if (isHrmContactsIndex(index) && isSearchParametersContacts(sanitized)) {
+    return generateContactsQuery({ index, searchParameters: sanitized });
   }
 
-  if (isHrmCasesIndex(index) && isSearchParametersCases(searchParameters)) {
-    return generateCasesQuery({ index, searchParameters });
+  if (isHrmCasesIndex(index) && isSearchParametersCases(sanitized)) {
+    return generateCasesQuery({ index, searchParameters: sanitized });
   }
 
   throw new Error(
