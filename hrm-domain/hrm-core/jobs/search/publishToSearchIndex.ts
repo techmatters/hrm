@@ -30,13 +30,13 @@ type DeleteNotificationPayload = {
 
 type UpsertCaseNotificationPayload = {
   accountSid: HrmAccountId;
-  operation: 'update' | 'create';
+  operation: 'update' | 'create' | 'reindex';
   case: CaseService;
 };
 
 type UpsertContactNotificationPayload = {
   accountSid: HrmAccountId;
-  operation: 'update' | 'create';
+  operation: 'update' | 'create' | 'reindex';
   contact: Contact;
 };
 
@@ -91,6 +91,7 @@ const publishToSns = async ({
       topicArn,
       message: JSON.stringify({ ...payload, entityType }),
       messageGroupId,
+      messageAttributes: { operation: payload.operation },
     });
   } catch (err) {
     if (err instanceof SsmParameterNotFound) {
@@ -110,6 +111,44 @@ const publishToSns = async ({
   }
 };
 
+const publishEntityToSearchIndex = async (
+  accountSid: HrmAccountId,
+  entityType: 'contact' | 'case',
+  entity: Contact | CaseService,
+  operation: IndexMessage['operation'] | 'reindex',
+) => {
+  const messageGroupId = `${accountSid}-${entityType}-${entity.id}`;
+  if (operation === 'remove') {
+    await publishToSns({
+      entityType,
+      payload: { accountSid, id: entity.id.toString(), operation: 'delete' },
+      messageGroupId,
+    });
+  } else {
+    const publishOperation = operation === 'reindex' ? 'reindex' : 'update';
+    await publishToSns({
+      entityType,
+      // Update / create are identical for now, will differentiate between the 2 ops in a follow pu refactor PR
+      payload: {
+        accountSid,
+        [entityType]: entity,
+        operation: publishOperation,
+      } as NotificationPayload,
+      messageGroupId,
+    });
+  }
+  const indexOperation = operation === 'reindex' ? 'index' : operation;
+  return publishToSearchIndex({
+    message: {
+      accountSid,
+      type: entityType,
+      [entityType]: entity,
+      operation: indexOperation,
+    } as IndexMessage,
+    messageGroupId: `${accountSid}-${entityType}-${entity.id}`,
+  });
+};
+
 export const publishContactToSearchIndex = async ({
   accountSid,
   contact,
@@ -117,7 +156,7 @@ export const publishContactToSearchIndex = async ({
 }: {
   accountSid: HrmAccountId;
   contact: Contact;
-  operation: IndexMessage['operation'];
+  operation: IndexMessage['operation'] | 'reindex';
 }) => {
   console.info(
     `[generalised-search-contacts]: Indexing Started. Account SID: ${accountSid}, Contact ID: ${
@@ -128,25 +167,7 @@ export const publishContactToSearchIndex = async ({
       contact.updatedAt ?? contact.createdAt
     }/${operation})`,
   );
-  const messageGroupId = `${accountSid}-contact-${contact.id}`;
-  if (operation === 'remove') {
-    await publishToSns({
-      entityType: 'contact',
-      payload: { accountSid, id: contact.id.toString(), operation: 'delete' },
-      messageGroupId,
-    });
-  } else {
-    await publishToSns({
-      entityType: 'contact',
-      // Update / create are identical for now, will differentiate between the 2 ops in a follow pu refactor PR
-      payload: { accountSid, contact, operation: 'update' },
-      messageGroupId,
-    });
-  }
-  return publishToSearchIndex({
-    message: { accountSid, type: 'contact', contact, operation },
-    messageGroupId: `${accountSid}-contact-${contact.id}`,
-  });
+  return publishEntityToSearchIndex(accountSid, 'contact', contact, operation);
 };
 
 export const publishCaseToSearchIndex = async ({
@@ -156,9 +177,8 @@ export const publishCaseToSearchIndex = async ({
 }: {
   accountSid: AccountSID;
   case: CaseService;
-  operation: IndexMessage['operation'];
+  operation: IndexMessage['operation'] | 'reindex';
 }) => {
-  const messageGroupId = `${accountSid}-case-${caseObj.id}`;
   console.info(
     `[generalised-search-cases]: Indexing Request Started. Account SID: ${accountSid}, Case ID: ${
       caseObj.id
@@ -168,22 +188,5 @@ export const publishCaseToSearchIndex = async ({
       caseObj.updatedAt ?? caseObj.createdAt
     }/${operation})`,
   );
-  if (operation === 'remove') {
-    await publishToSns({
-      entityType: 'case',
-      payload: { accountSid, id: caseObj.id.toString(), operation: 'delete' },
-      messageGroupId,
-    });
-  } else {
-    await publishToSns({
-      entityType: 'case',
-      payload: { accountSid, case: caseObj, operation: 'update' },
-      messageGroupId,
-    });
-  }
-
-  return publishToSearchIndex({
-    message: { accountSid, type: 'case', case: caseObj, operation },
-    messageGroupId,
-  });
+  return publishEntityToSearchIndex(accountSid, 'case', caseObj, operation);
 };

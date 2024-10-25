@@ -14,7 +14,12 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { PublishCommand, SNSClient, SNSClientConfig } from '@aws-sdk/client-sns';
+import {
+  MessageAttributeValue,
+  PublishCommand,
+  SNSClient,
+  SNSClientConfig,
+} from '@aws-sdk/client-sns';
 
 const convertToEndpoint = (endpointUrl: string) => {
   const url: URL = new URL(endpointUrl);
@@ -47,14 +52,21 @@ export type PublishSnsParams = {
   topicArn: string;
   message: string;
   messageGroupId?: string;
+  messageAttributes?: Record<string, string>;
 };
 
 export const publishSns = async (params: PublishSnsParams) => {
-  const { topicArn, message, messageGroupId } = params;
+  const { topicArn, message, messageGroupId, messageAttributes } = params;
+  const messageAttributesPayload: Record<string, MessageAttributeValue> = {};
+  Object.entries(messageAttributes ?? {}).forEach(
+    ([key, value]) =>
+      (messageAttributesPayload[key] = { DataType: 'String', StringValue: value }),
+  );
 
   const command = new PublishCommand({
     TopicArn: topicArn,
     Message: message,
+    MessageAttributes: messageAttributesPayload,
     ...(messageGroupId ? { MessageGroupId: messageGroupId } : {}),
   });
 
