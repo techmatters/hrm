@@ -46,14 +46,16 @@ export const sns = new SNSClient(getSnsConfig());
 export type PublishSnsParams = {
   topicArn: string;
   message: string;
+  messageGroupId?: string;
 };
 
 export const publishSns = async (params: PublishSnsParams) => {
-  const { topicArn, message } = params;
+  const { topicArn, message, messageGroupId } = params;
 
   const command = new PublishCommand({
     TopicArn: topicArn,
     Message: message,
+    ...(messageGroupId ? { MessageGroupId: messageGroupId } : {}),
   });
 
   return sns.send(command);

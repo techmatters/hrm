@@ -677,13 +677,14 @@ export const KHP_MAPPING_NODE: MappingNode = {
         children: {
           objectId: { children: {} },
           _id: { children: {} },
+          __v: {},
+          name: {},
           '{language}': referenceAttributeMapping(
             'feeStructure/{feeStructureSourceIndex}',
             'khp-fee-structure-source',
             {
-              value: ctx => ctx.parentValue.en,
+              value: ctx => ctx.parentValue[ctx.captures.language],
               language: ctx => ctx.captures.language,
-              // value: ctx => ctx.currentValue.en || ctx.currentValue.fr,
             },
           ),
         },
@@ -695,6 +696,10 @@ export const KHP_MAPPING_NODE: MappingNode = {
     children: {
       '{howIsServiceOfferedIndex}': {
         children: {
+          objectId: { children: {} },
+          _id: { children: {} },
+          __v: {},
+          name: {},
           '{language}': referenceAttributeMapping(
             'howIsServiceOffered/{howIsServiceOfferedIndex}',
             'khp-how-is-service-offered',

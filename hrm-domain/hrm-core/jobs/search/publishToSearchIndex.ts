@@ -19,10 +19,40 @@ import { getSsmParameter } from '../../config/ssmCache';
 import { IndexMessage } from '@tech-matters/hrm-search-config';
 import { CaseService, Contact } from '@tech-matters/hrm-types';
 import { AccountSID, HrmAccountId } from '@tech-matters/types';
+import { publishSns } from '@tech-matters/sns-client';
+import { SsmParameterNotFound } from '@tech-matters/ssm-cache';
+
+type DeleteNotificationPayload = {
+  accountSid: HrmAccountId;
+  operation: 'delete';
+  id: string;
+};
+
+type UpsertCaseNotificationPayload = {
+  accountSid: HrmAccountId;
+  operation: 'update' | 'create';
+  case: CaseService;
+};
+
+type UpsertContactNotificationPayload = {
+  accountSid: HrmAccountId;
+  operation: 'update' | 'create';
+  contact: Contact;
+};
+
+type NotificationPayload =
+  | DeleteNotificationPayload
+  | UpsertCaseNotificationPayload
+  | UpsertContactNotificationPayload;
 
 const PENDING_INDEX_QUEUE_SSM_PATH = `/${process.env.NODE_ENV}/${
   process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
 }/sqs/jobs/hrm-search-index/queue-url-consumer`;
+
+const getSnsSsmPath = dataType =>
+  `/${process.env.NODE_ENV}/${
+    process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
+  }/sns/hrm/${dataType}/update-notifications-sns-topic`;
 
 const publishToSearchIndex = async ({
   message,
@@ -46,6 +76,40 @@ const publishToSearchIndex = async ({
   }
 };
 
+const publishToSns = async ({
+  entityType,
+  payload,
+  messageGroupId,
+}: {
+  entityType: 'contact' | 'case';
+  payload: NotificationPayload;
+  messageGroupId: string;
+}) => {
+  try {
+    const topicArn = await getSsmParameter(getSnsSsmPath(entityType));
+    return await publishSns({
+      topicArn,
+      message: JSON.stringify({ ...payload, entityType }),
+      messageGroupId,
+    });
+  } catch (err) {
+    if (err instanceof SsmParameterNotFound) {
+      console.debug(
+        `No SNS topic stored in SSM parameter ${getSnsSsmPath(
+          entityType,
+        )}. Skipping publish.`,
+      );
+      return;
+    }
+    console.error(
+      `Error trying to publish message to SNS topic stored in SSM parameter ${getSnsSsmPath(
+        entityType,
+      )}`,
+      err,
+    );
+  }
+};
+
 export const publishContactToSearchIndex = async ({
   accountSid,
   contact,
@@ -64,6 +128,21 @@ export const publishContactToSearchIndex = async ({
       contact.updatedAt ?? contact.createdAt
     }/${operation})`,
   );
+  const messageGroupId = `${accountSid}-contact-${contact.id}`;
+  if (operation === 'remove') {
+    await publishToSns({
+      entityType: 'contact',
+      payload: { accountSid, id: contact.id.toString(), operation: 'delete' },
+      messageGroupId,
+    });
+  } else {
+    await publishToSns({
+      entityType: 'contact',
+      // Update / create are identical for now, will differentiate between the 2 ops in a follow pu refactor PR
+      payload: { accountSid, contact, operation: 'update' },
+      messageGroupId,
+    });
+  }
   return publishToSearchIndex({
     message: { accountSid, type: 'contact', contact, operation },
     messageGroupId: `${accountSid}-contact-${contact.id}`,
@@ -79,6 +158,7 @@ export const publishCaseToSearchIndex = async ({
   case: CaseService;
   operation: IndexMessage['operation'];
 }) => {
+  const messageGroupId = `${accountSid}-case-${caseObj.id}`;
   console.info(
     `[generalised-search-cases]: Indexing Request Started. Account SID: ${accountSid}, Case ID: ${
       caseObj.id
@@ -88,8 +168,22 @@ export const publishCaseToSearchIndex = async ({
       caseObj.updatedAt ?? caseObj.createdAt
     }/${operation})`,
   );
+  if (operation === 'remove') {
+    await publishToSns({
+      entityType: 'case',
+      payload: { accountSid, id: caseObj.id.toString(), operation: 'delete' },
+      messageGroupId,
+    });
+  } else {
+    await publishToSns({
+      entityType: 'case',
+      payload: { accountSid, case: caseObj, operation: 'update' },
+      messageGroupId,
+    });
+  }
+
   return publishToSearchIndex({
     message: { accountSid, type: 'case', case: caseObj, operation },
-    messageGroupId: `${accountSid}-case-${caseObj.id}`,
+    messageGroupId,
   });
 };
