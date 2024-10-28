@@ -60,6 +60,7 @@
   "scripts": {
     "admin-cli": "npx tsx hrm-domain/hrm-service/scripts/admin-cli.ts",
     "build": "tsc -b --verbose",
+    "clean": "tsc -b --clean",
     "build-and-start": "run-s build start",
     "build-and-start:service": "run-s build start:service",
     "start": "run-s start:db start:localstack start:es start:service",
