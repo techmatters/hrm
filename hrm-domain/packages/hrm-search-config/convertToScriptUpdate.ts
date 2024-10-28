@@ -38,7 +38,7 @@ const convertContactToCaseScriptUpdate = (
       const contactDocument = convertContactToContactDocument(payload);
 
       const documentUpdate: CreateIndexConvertedDocument<CaseDocument> = {
-        id: parseInt(caseId!, 10),
+        id: caseId.toString(),
         accountSid,
         contacts: [contactDocument],
       };
@@ -66,9 +66,9 @@ const convertContactToCaseScriptUpdate = (
     case 'remove': {
       const scriptUpdate: Script = {
         source:
-          'def removeContact(int contactId, List contacts) { contacts.removeIf(contact -> contact.id == contactId); } removeContact(params.contactId, ctx._source.contacts);',
+          'def removeContact(String contactId, List contacts) { contacts.removeIf(contact -> contact.id == contactId); } removeContact(params.contactId, ctx._source.contacts);',
         params: {
-          contactId: payload.contact.id,
+          contactId: payload.contact.id.toString(),
         },
       };
 
