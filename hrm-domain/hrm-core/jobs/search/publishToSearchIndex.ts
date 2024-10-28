@@ -19,7 +19,7 @@ import { getSsmParameter } from '../../config/ssmCache';
 import { IndexMessage } from '@tech-matters/hrm-search-config';
 import { CaseService, Contact } from '@tech-matters/hrm-types';
 import { AccountSID, HrmAccountId } from '@tech-matters/types';
-import { publishSns } from '@tech-matters/sns-client';
+import { publishSns, PublishSnsParams } from '@tech-matters/sns-client';
 import { SsmParameterNotFound } from '@tech-matters/ssm-cache';
 
 type DeleteNotificationPayload = {
@@ -87,12 +87,14 @@ const publishToSns = async ({
 }) => {
   try {
     const topicArn = await getSsmParameter(getSnsSsmPath(entityType));
-    return await publishSns({
+    const publishParameters: PublishSnsParams = {
       topicArn,
       message: JSON.stringify({ ...payload, entityType }),
       messageGroupId,
       messageAttributes: { operation: payload.operation },
-    });
+    };
+    console.debug('Publishing HRM entity update:', publishParameters);
+    return await publishSns(publishParameters);
   } catch (err) {
     if (err instanceof SsmParameterNotFound) {
       console.debug(
