@@ -38,7 +38,7 @@ const convertContactToCaseScriptUpdate = (
       const contactDocument = convertContactToContactDocument(payload);
 
       const documentUpdate: CreateIndexConvertedDocument<CaseDocument> = {
-        id: caseId.toString(),
+        id: caseId!.toString(),
         accountSid,
         contacts: [contactDocument],
       };
