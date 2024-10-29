@@ -168,11 +168,11 @@ export const canPerformViewContactAction = canPerformActionOnContact(
 );
 
 const canRemoveFromCase = async (
-  originalCaseId: string,
+  originalCaseId: number,
   { can, user, hrmAccountId, permissions },
 ): Promise<boolean> => {
   if (originalCaseId) {
-    const originalCaseObj = await getCase(parseInt(originalCaseId), hrmAccountId, {
+    const originalCaseObj = await getCase(originalCaseId, hrmAccountId, {
       can,
       user,
       permissions,
@@ -190,7 +190,7 @@ const canConnectContact = canPerformActionOnContact(
     { can, user, hrmAccountId, body: { caseId: targetCaseId }, permissions },
   ) => {
     if (
-      !(await canRemoveFromCase(String(originalCaseId), {
+      !(await canRemoveFromCase(originalCaseId, {
         can,
         user,
         hrmAccountId,
@@ -199,7 +199,7 @@ const canConnectContact = canPerformActionOnContact(
     ) {
       return false;
     }
-    const targetCaseObj = await getCase(parseInt(targetCaseId), hrmAccountId, {
+    const targetCaseObj = await getCase(parseInt(targetCaseId, 10), hrmAccountId, {
       can,
       user,
       permissions,
@@ -211,7 +211,7 @@ const canConnectContact = canPerformActionOnContact(
 
 export const canDisconnectContact = canPerformActionOnContact(
   actionsMaps.contact.REMOVE_CONTACT_FROM_CASE,
-  async ({ caseId }: Contact, req) => canRemoveFromCase(String(caseId), req),
+  async ({ caseId }: Contact, req) => canRemoveFromCase(caseId, req),
 );
 
 // TODO: Remove when we start disallowing disconnecting contacts via the connect endpoint
