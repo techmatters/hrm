@@ -64,7 +64,7 @@ jobs:
           ENV_FILE="development.env"
           COMMAND="npm,run,start:generate-ai-training-set,development,as,tl-aselo-ai-development"
           TASK_ROLE="development-ecsTaskRole"
-          EXEC_ROLE="development-ecsExecutionRole"
+          EXEC_ROLE="development-ecsTaskExecutionRole"
 
           aws ecs run-task \
             --cluster $CLUSTER \
