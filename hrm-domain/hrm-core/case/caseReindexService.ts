@@ -68,14 +68,14 @@ export const reindexCasesStream = async (
           });
 
           this.push(
-            `${new Date().toISOString()},${accountSid},contad id: ${
+            `${new Date().toISOString()}, ${accountSid}, case id: ${
               caseObj.id
             } Success, MessageId ${MessageId}
               \n`,
           );
         } catch (err) {
           this.push(
-            `${new Date().toISOString()},${accountSid},contad id: ${caseObj.id} Error: ${
+            `${new Date().toISOString()}, ${accountSid}, case id: ${caseObj.id} Error: ${
               err.message?.replace('"', '""') || String(err)
             }\n`,
           );
