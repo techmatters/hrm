@@ -62,7 +62,9 @@ jobs:
             "development-scheduled-task-sg"
             "development-ecs-tasks-sg")
           ENV_FILE="development.env"
-          COMMAND="npm,run,start:generate-ai-training-set,development,${{ github.event.inputs.shortcode }},tl-aselo-ai-development"
+          COMMAND="npm,run,start:generate-ai-training-set,development,as,tl-aselo-ai-development"
+          TASK_ROLE="development-ecsTaskRole"
+          EXEC_ROLE="development-ecsExecutionRole"
 
           aws ecs run-task \
             --cluster $CLUSTER \
@@ -71,9 +73,10 @@ jobs:
             --task-definition $FAMILY \
             --overrides '{
               "containerOverrides": [{
-                "name": $FAMILY,
+                "name": "'"$FAMILY"'",
                 "command": ["'$COMMAND'"],
                 "environment": [{"name": "AWS_REGION", "value": "us-east-1"}]
-              }],"taskRoleArn": $TASK_ROLE,
-              "executionRoleArn": $EXEC_ROLE
+              }],
+              "taskRoleArn": "'"$TASK_ROLE"'",
+              "executionRoleArn": "'"$EXEC_ROLE"'"
             }'
