@@ -60,16 +60,16 @@ export const reindexContactsStream = async (
           });
 
           this.push(
-            `${new Date().toISOString()},${accountSid},contad id: ${
+            `${new Date().toISOString()}, ${accountSid}, contact id: ${
               contact.id
             } Success, MessageId ${MessageId}
               \n`,
           );
         } catch (err) {
           this.push(
-            `${new Date().toISOString()},${accountSid},contad id: ${contact.id} Error: ${
-              err.message?.replace('"', '""') || String(err)
-            }\n`,
+            `${new Date().toISOString()}, ${accountSid}, contact id: ${
+              contact.id
+            } Error: ${err.message?.replace('"', '""') || String(err)}\n`,
           );
         }
         callback();
