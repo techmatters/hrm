@@ -13,7 +13,7 @@
 # along with this program.  If not, see https://www.gnu.org/licenses/.
 
 
-name: Generate AI Training Set with ECS
+name: Generate AI Training Set Task
 
 on:
   push:
@@ -53,16 +53,16 @@ jobs:
       - name: Run New ECS task
         id: run-task
         run: |
-          CLUSTER="${{ github.event.inputs.environment }}-ecs-cluster"
-          FAMILY="${{ github.event.inputs.environment }}-hrm-scheduled-task"
-          VPC="${{ github.event.inputs.environment }}-vpc"
+          CLUSTER="development-ecs-cluster"
+          FAMILY="development-hrm-scheduled-task"
+          VPC="development-vpc"
           SECURITY_GROUPS=(
             "default"
-            "${{ github.event.inputs.environment }}-rds-src-sg"
-            "${{ github.event.inputs.environment }}-scheduled-task-sg"
-            "${{ github.event.inputs.environment }}-ecs-tasks-sg")
-          ENV_FILE="${{ github.event.inputs.environment }}.env"
-          COMMAND="npm,run,start:generate-ai-training-set,${{ github.event.inputs.environment }},${{ github.event.inputs.shortcode }},tl-aselo-ai-${{ github.event.inputs.environment }}"
+            "development-rds-src-sg"
+            "development-scheduled-task-sg"
+            "development-ecs-tasks-sg")
+          ENV_FILE="development.env"
+          COMMAND="npm,run,start:generate-ai-training-set,development,${{ github.event.inputs.shortcode }},tl-aselo-ai-development"
 
           aws ecs run-task \
             --cluster $CLUSTER \
