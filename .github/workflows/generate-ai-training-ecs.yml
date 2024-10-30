@@ -16,6 +16,9 @@
 name: Generate AI Training Set with ECS
 
 on:
+  push:
+    branches:
+      - "CHI-3008-link-summary"
   workflow_dispatch:
     inputs:
       environment:
