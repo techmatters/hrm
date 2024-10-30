@@ -21,10 +21,11 @@ import { db, pgp } from '@tech-matters/hrm-core/connection-pool';
 
 const HIGH_WATER_MARK = 1000;
 
-const SELECT_CATEGORIES_AND_TRANSCRIPTS_SQL = `
+const SELECT_CATEGORIES_SUMMARY_AND_TRANSCRIPTS_SQL = `
   SELECT
     c."id" AS "contactId",
     c."rawJson"->'categories' AS "categories",
+    c."rawJson"->'caseInformation'->>'callSummary' AS "summary",
     cm."storeTypeSpecificData",
     cm."storeTypeSpecificData"->'location'->>'bucket' AS "transcriptBucket",
     cm."storeTypeSpecificData"->'location'->>'key' AS "transcriptKey"
@@ -33,6 +34,7 @@ const SELECT_CATEGORIES_AND_TRANSCRIPTS_SQL = `
   WHERE 
   c."accountSid" = $<accountSid> AND 
   (SELECT COUNT(*) FROM jsonb_object_keys(COALESCE(c."rawJson"->'categories', '{}'::jsonb))) > 0 AND 
+  COALESCE(c."rawJson"->'caseInformation'->>'callSummary', '') <> '' AND
   cm."storeType" = 'S3' AND 
   cm."storeTypeSpecificData"->>'type' = 'transcript' AND
   cm."storeTypeSpecificData"->>'location' IS NOT NULL
@@ -44,13 +46,14 @@ export type TrainingSetContact = {
   categories: Record<string, string[]>;
   transcriptKey: string;
   transcriptBucket: string;
+  summary: string;
 };
 
 export const streamTrainingSetContacts = async (
   accountSid: HrmAccountId,
 ): Promise<ReadableStream> => {
   const qs = new QueryStream(
-    pgp.as.format(SELECT_CATEGORIES_AND_TRANSCRIPTS_SQL, { accountSid }),
+    pgp.as.format(SELECT_CATEGORIES_SUMMARY_AND_TRANSCRIPTS_SQL, { accountSid }),
     [],
     { highWaterMark: HIGH_WATER_MARK },
   );
