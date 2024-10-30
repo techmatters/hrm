@@ -1,0 +1,63 @@
+# generate-ai-training-set
+
+name: Generate AI Training Set on ECS
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment (development, staging, production)'
+        required: true
+        default: 'development'
+        type: choice
+        options:
+          - development
+          - staging
+          - production
+      helpline-shortcode:
+        description: 'Helpline shortcode (lowercase)'
+        required: true
+        default: 'as'
+        type: string
+
+jobs:
+  generate-ai-training-set:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: 'us-east-1'
+      
+      - name: Run New ECS task
+        id: run-task
+        run: |
+          CLUSTER="${{ github.event.inputs.environment }}-ecs-cluster"
+          FAMILY="${{ github.event.inputs.environment }}-hrm-scheduled-task"
+          VPC="${{ github.event.inputs.environment }}-vpc"
+          SECURITY_GROUPS=(
+            "default"
+            "${{ github.event.inputs.environment }}-rds-src-sg"
+            "${{ github.event.inputs.environment }}-scheduled-task-sg"
+            "${{ github.event.inputs.environment }}-ecs-tasks-sg")
+          ENV_FILE="${{ github.event.inputs.environment }}.env"
+          COMMAND="npm,run,start:generate-ai-training-set,${{ github.event.inputs.environment }},${{ github.event.inputs.shortcode }},tl-aselo-ai-${{ github.event.inputs.environment }}"
+
+          aws ecs run-task \
+            --cluster $CLUSTER \
+            --launch-type FARGATE \
+            --network-configuration "awsvpcConfiguration={subnets=[$VPC],securityGroups=[$(IFS=,; echo "${SECURITY_GROUPS[*]}")],assignPublicIp=DISABLED}" \
+            --task-definition $FAMILY \
+            --overrides '{
+              "containerOverrides": [{
+                "name": $FAMILY,
+                "command": ["'$COMMAND'"],
+                "environment": [{"name": "AWS_REGION", "value": "us-east-1"}]
+              }],"taskRoleArn": $TASK_ROLE,
+              "executionRoleArn": $EXEC_ROLE
+            }'
