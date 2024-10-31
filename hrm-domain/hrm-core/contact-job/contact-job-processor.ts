@@ -50,14 +50,14 @@ export const JOB_MAX_ATTEMPTS = 20;
 
 export function processContactJobs() {
   if (!processingJobs) {
-    console.log(
+    console.info(
       `Started processing jobs every ${JOB_PROCESSING_INTERVAL_MILLISECONDS} milliseconds.`,
     );
     processingJobs = true;
 
     return setInterval(async () => {
       try {
-        console.debug(`processContactJobs sweep started.`);
+        // console.debug(`processContactJobs sweep started.`);
         await pollAndProcessCompletedContactJobs(JOB_MAX_ATTEMPTS);
         const now = new Date();
         let dueContactJobs: ContactJob[] = [];
@@ -80,7 +80,7 @@ export function processContactJobs() {
           }
         });
         await publishDueContactJobs(dueContactJobs);
-        console.debug(`processContactJobs sweep complete.`);
+        // console.debug(`processContactJobs sweep complete.`);
       } catch (err) {
         console.error(
           new ContactJobPollerError(
