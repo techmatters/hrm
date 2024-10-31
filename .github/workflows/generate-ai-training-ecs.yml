@@ -34,7 +34,11 @@ on:
         description: 'Helpline shortcode (lowercase)'
         required: true
         default: 'as'
-        type: string
+        type: choice
+        options:
+          - as
+          - jm
+          - zm
 
 jobs:
   generate-ai-training-set:
@@ -61,10 +65,10 @@ jobs:
             "development-rds-src-sg"
             "development-scheduled-task-sg"
             "development-ecs-tasks-sg")
-          ENV_FILE="development.env"
+          ENV_FILE="arn:aws:s3:::tl-hrm-vars-development/development.env"
           COMMAND="npm,run,start:generate-ai-training-set,development,as,tl-aselo-ai-development"
-          TASK_ROLE="development-ecsTaskRole"
-          EXEC_ROLE="development-ecsTaskExecutionRole"
+          TASK_ROLE="arn:aws:iam::712893914485:user/development-ecsTaskRole"
+          EXEC_ROLE="arn:aws:iam::712893914485:user/development-ecsTaskExecutionRole"
 
           aws ecs run-task \
             --cluster $CLUSTER \
@@ -75,7 +79,10 @@ jobs:
               "containerOverrides": [{
                 "name": "'"$FAMILY"'",
                 "command": ["'$COMMAND'"],
-                "environment": [{"name": "AWS_REGION", "value": "us-east-1"}]
+                "environment": [
+                  {"name": "SSM_REGION", "value": "us-east-1"},
+                  $(cat $ENV_FILE | sed 's/^/{"name": "/; s/=/", "value": "/; s/$/"},/')
+                ]
               }],
               "taskRoleArn": "'"$TASK_ROLE"'",
               "executionRoleArn": "'"$EXEC_ROLE"'"
