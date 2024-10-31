@@ -66,9 +66,11 @@ jobs:
             "development-scheduled-task-sg"
             "development-ecs-tasks-sg")
           ENV_FILE="arn:aws:s3:::tl-hrm-vars-development/development.env"
-          COMMAND="npm,run,start:generate-ai-training-set,development,as,tl-aselo-ai-development"
+          COMMAND="npm run start:generate-ai-training-set development as tl-aselo-ai-development"
           TASK_ROLE="arn:aws:iam::712893914485:user/development-ecsTaskRole"
           EXEC_ROLE="arn:aws:iam::712893914485:user/development-ecsTaskExecutionRole"
+
+          ENV_VARS=$(awk -F= '{print "{\"name\": \"" $1 "\", \"value\": \"" $2 "\"},"}' $ENV_FILE | tr -d '\n')
 
           aws ecs run-task \
             --cluster $CLUSTER \
@@ -78,10 +80,10 @@ jobs:
             --overrides '{
               "containerOverrides": [{
                 "name": "'"$FAMILY"'",
-                "command": ["'$COMMAND'"],
+                "command": ["sh", "-c", "'"$COMMAND"'"],
                 "environment": [
                   {"name": "SSM_REGION", "value": "us-east-1"},
-                  $(cat $ENV_FILE | sed 's/^/{"name": "/; s/=/", "value": "/; s/$/"},/')
+                  '"$ENV_VARS"'
                 ]
               }],
               "taskRoleArn": "'"$TASK_ROLE"'",
