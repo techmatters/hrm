@@ -77,7 +77,7 @@ export const search = async <T>({
     index,
     searchParameters,
   });
-  console.debug('search query', JSON.stringify(query, null, 2));
+  console.debug('search query', JSON.stringify(query));
 
   const { hits } = await client.search(query);
   const total = getTotalValue(hits.total);
