@@ -59,7 +59,7 @@ jobs:
         run: |
           CLUSTER="development-ecs-cluster"
           FAMILY="development-hrm-scheduled-task"
-          VPC="vpc-075db66dac3f60fe8"
+          SUBNETS=("subnet-0fb9c51f269c4da64" "subnet-06b1f47952d84865a" "subnet-03f0f601591273130")
           SECURITY_GROUPS=("sg-09194f9a648baf082" "sg-047498d4c7b2cedd8" "sg-06d6458accc0ec5ed" "sg-0ace4338c75e5d3de")
           COMMAND="npm run start:generate-ai-training-set development as tl-aselo-ai-development"
           TASK_ROLE="arn:aws:iam::712893914485:role/development-ecsTaskRole"
@@ -68,7 +68,7 @@ jobs:
           aws ecs run-task \
             --cluster $CLUSTER \
             --launch-type FARGATE \
-            --network-configuration "awsvpcConfiguration={subnets=[$VPC],securityGroups=[$(IFS=,; echo "${SECURITY_GROUPS[*]}")],assignPublicIp=ENABLED}" \
+            --network-configuration "awsvpcConfiguration={subnets=[$SUBNETS],securityGroups=[$(IFS=,; echo "${SECURITY_GROUPS[*]}")],assignPublicIp=ENABLED}" \
             --task-definition $FAMILY \
             --overrides '{
               "containerOverrides": [{
