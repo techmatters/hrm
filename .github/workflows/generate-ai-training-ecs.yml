@@ -66,10 +66,8 @@ jobs:
             "development-scheduled-task-sg"
             "development-ecs-tasks-sg")
           COMMAND="npm run start:generate-ai-training-set development as tl-aselo-ai-development"
-          TASK_ROLE="arn:aws:iam::712893914485:user/development-ecsTaskRole"
-          EXEC_ROLE="arn:aws:iam::712893914485:user/development-ecsTaskExecutionRole"
-
-          ENV_VARS=$(awk -F= '{print "{\"name\": \"" $1 "\", \"value\": \"" $2 "\"},"}' $ENV_FILE | tr -d '\n')
+          TASK_ROLE="arn:aws:iam::712893914485:role/development-ecsTaskRole"
+          EXEC_ROLE="arn:aws:iam::712893914485:role/development-ecsTaskExecutionRole"
 
           aws ecs run-task \
             --cluster $CLUSTER \
