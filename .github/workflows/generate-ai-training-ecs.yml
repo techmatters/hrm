@@ -65,7 +65,6 @@ jobs:
             "development-rds-src-sg"
             "development-scheduled-task-sg"
             "development-ecs-tasks-sg")
-          ENV_FILE="development.env"
           COMMAND="npm run start:generate-ai-training-set development as tl-aselo-ai-development"
           TASK_ROLE="arn:aws:iam::712893914485:user/development-ecsTaskRole"
           EXEC_ROLE="arn:aws:iam::712893914485:user/development-ecsTaskExecutionRole"
@@ -82,8 +81,7 @@ jobs:
                 "name": "'"$FAMILY"'",
                 "command": ["sh", "-c", "'"$COMMAND"'"],
                 "environment": [
-                  {"name": "SSM_REGION", "value": "us-east-1"},
-                  '"$ENV_VARS"'
+                  {"name": "SSM_REGION", "value": "us-east-1"}
                 ]
               }],
               "taskRoleArn": "'"$TASK_ROLE"'",
