@@ -1,0 +1,78 @@
+# Copyright (C) 2021-2023 Technology Matters
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published
+# by the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see https://www.gnu.org/licenses/.
+
+
+name: Generate AI Training Set Task
+
+on:
+  push:
+    branches:
+      - "CHI-3008-summary"
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment (development, staging, production)'
+        required: true
+        default: 'development'
+        type: choice
+        options:
+          - development
+          - production
+      helpline-shortcode:
+        description: 'Helpline shortcode (lowercase) separated by space'
+        required: true
+        default: 'as'
+        type: string
+
+jobs:
+  generate-ai-training-set:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: 'us-east-1'
+      
+      - name: Run New ECS task
+        id: run-task
+        run: |
+          CLUSTER="development-ecs-cluster"
+          FAMILY="development-hrm-scheduled-task"
+          SUBNETS=("subnet-034e5c652dbad09dd")
+          SECURITY_GROUPS=("sg-09194f9a648baf082" "sg-047498d4c7b2cedd8" "sg-06d6458accc0ec5ed" "sg-0ace4338c75e5d3de")
+          COMMAND="npm run start:generate-ai-training-set development as tl-aselo-ai-development"
+          TASK_ROLE="arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/development-ecsTaskRole"
+          EXEC_ROLE="arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/development-ecsTaskExecutionRole"
+
+          aws ecs run-task \
+            --cluster $CLUSTER \
+            --launch-type FARGATE \
+            --network-configuration "awsvpcConfiguration={subnets=[$SUBNETS],securityGroups=[$(IFS=,; echo "${SECURITY_GROUPS[*]}")],assignPublicIp=ENABLED}" \
+            --task-definition $FAMILY \
+            --overrides '{
+              "containerOverrides": [{
+                "name": "'"$FAMILY"'",
+                "command": ["sh", "-c", "'"$COMMAND"'"],
+                "environment": [
+                  {"name": "SSM_REGION", "value": "us-east-1"}
+                ]
+              }],
+              "taskRoleArn": "'"$TASK_ROLE"'",
+              "executionRoleArn": "'"$EXEC_ROLE"'"
+            }'
