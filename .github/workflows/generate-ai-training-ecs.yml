@@ -16,9 +16,6 @@
 name: Generate AI Training Set Task
 
 on:
-  push:
-    branches:
-      - "CHI-3008-summary"
   workflow_dispatch:
     inputs:
       environment:
