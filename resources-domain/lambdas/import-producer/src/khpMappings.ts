@@ -251,8 +251,10 @@ const KHP_MAPPING_NODE_SITES: { children: MappingNode } = {
   },
 };
 
+const MAX_TAXONOMY_DEPTH = 5;
+
 // TODO: this is an array of arrays, is this shape correct?
-const KHP_MAPPING_NODE_TAXONOMIES: { children: MappingNode } = {
+const KHP_MAPPING_NODE_TAXONOMIES = (depth: number = 0): { children: MappingNode } => ({
   children: {
     '{taxonomyIndex}': {
       children: {
@@ -272,6 +274,10 @@ const KHP_MAPPING_NODE_TAXONOMIES: { children: MappingNode } = {
             info: ctx => ctx.parentValue,
           },
         ),
+        ...(depth + 1 <= MAX_TAXONOMY_DEPTH
+          ? { ancestors: KHP_MAPPING_NODE_TAXONOMIES(depth + 1) }
+          : {}),
+        // Deprecated
         ancestorTaxonomies: {
           children: {
             '{ancestorIndex}': {
@@ -299,7 +305,7 @@ const KHP_MAPPING_NODE_TAXONOMIES: { children: MappingNode } = {
       },
     },
   },
-};
+});
 
 export const KHP_MAPPING_NODE: MappingNode = {
   _id: resourceFieldMapping('id'),
@@ -307,7 +313,12 @@ export const KHP_MAPPING_NODE: MappingNode = {
   objectId: resourceFieldMapping('id'),
   timeSequence: resourceFieldMapping('importSequenceId'),
   sites: KHP_MAPPING_NODE_SITES,
-  taxonomies: KHP_MAPPING_NODE_TAXONOMIES,
+  taxonomies: {
+    ...KHP_MAPPING_NODE_TAXONOMIES(),
+    children: {
+      '{topIndex}': KHP_MAPPING_NODE_TAXONOMIES(),
+    },
+  },
   name: resourceFieldMapping('name', ctx => ctx.currentValue.en || ctx.currentValue.fr),
   updatedAt: resourceFieldMapping('lastUpdated'),
   createdAt: attributeMapping('dateTimeAttributes', 'sourceCreatedAt'),
