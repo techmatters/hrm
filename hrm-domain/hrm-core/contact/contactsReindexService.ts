@@ -56,7 +56,7 @@ export const reindexContactsStream = async (
           const { MessageId } = await publishContactToSearchIndex({
             accountSid,
             contact,
-            operation: 'reindex',
+            operation: 'index',
           });
 
           this.push(

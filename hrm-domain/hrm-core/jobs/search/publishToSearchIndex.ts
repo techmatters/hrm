@@ -19,40 +19,10 @@ import { getSsmParameter } from '../../config/ssmCache';
 import { IndexMessage } from '@tech-matters/hrm-search-config';
 import { CaseService, Contact } from '@tech-matters/hrm-types';
 import { AccountSID, HrmAccountId } from '@tech-matters/types';
-import { publishSns, PublishSnsParams } from '@tech-matters/sns-client';
-import { SsmParameterNotFound } from '@tech-matters/ssm-cache';
-
-type DeleteNotificationPayload = {
-  accountSid: HrmAccountId;
-  operation: 'delete';
-  id: string;
-};
-
-type UpsertCaseNotificationPayload = {
-  accountSid: HrmAccountId;
-  operation: 'update' | 'create' | 'reindex';
-  case: CaseService;
-};
-
-type UpsertContactNotificationPayload = {
-  accountSid: HrmAccountId;
-  operation: 'update' | 'create' | 'reindex';
-  contact: Contact;
-};
-
-type NotificationPayload =
-  | DeleteNotificationPayload
-  | UpsertCaseNotificationPayload
-  | UpsertContactNotificationPayload;
 
 const PENDING_INDEX_QUEUE_SSM_PATH = `/${process.env.NODE_ENV}/${
   process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
 }/sqs/jobs/hrm-search-index/queue-url-consumer`;
-
-const getSnsSsmPath = dataType =>
-  `/${process.env.NODE_ENV}/${
-    process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
-  }/sns/hrm/${dataType}/update-notifications-sns-topic`;
 
 const publishToSearchIndex = async ({
   message,
@@ -76,81 +46,6 @@ const publishToSearchIndex = async ({
   }
 };
 
-const publishToSns = async ({
-  entityType,
-  payload,
-  messageGroupId,
-}: {
-  entityType: 'contact' | 'case';
-  payload: NotificationPayload;
-  messageGroupId: string;
-}) => {
-  try {
-    const topicArn = await getSsmParameter(getSnsSsmPath(entityType));
-    const publishParameters: PublishSnsParams = {
-      topicArn,
-      message: JSON.stringify({ ...payload, entityType }),
-      messageGroupId,
-      messageAttributes: { operation: payload.operation },
-    };
-    console.debug('Publishing HRM entity update:', publishParameters);
-    return await publishSns(publishParameters);
-  } catch (err) {
-    if (err instanceof SsmParameterNotFound) {
-      console.debug(
-        `No SNS topic stored in SSM parameter ${getSnsSsmPath(
-          entityType,
-        )}. Skipping publish.`,
-      );
-      return;
-    }
-    console.error(
-      `Error trying to publish message to SNS topic stored in SSM parameter ${getSnsSsmPath(
-        entityType,
-      )}`,
-      err,
-    );
-  }
-};
-
-const publishEntityToSearchIndex = async (
-  accountSid: HrmAccountId,
-  entityType: 'contact' | 'case',
-  entity: Contact | CaseService,
-  operation: IndexMessage['operation'] | 'reindex',
-) => {
-  const messageGroupId = `${accountSid}-${entityType}-${entity.id}`;
-  if (operation === 'remove') {
-    await publishToSns({
-      entityType,
-      payload: { accountSid, id: entity.id.toString(), operation: 'delete' },
-      messageGroupId,
-    });
-  } else {
-    const publishOperation = operation === 'reindex' ? 'reindex' : 'update';
-    await publishToSns({
-      entityType,
-      // Update / create are identical for now, will differentiate between the 2 ops in a follow pu refactor PR
-      payload: {
-        accountSid,
-        [entityType]: entity,
-        operation: publishOperation,
-      } as NotificationPayload,
-      messageGroupId,
-    });
-  }
-  const indexOperation = operation === 'reindex' ? 'index' : operation;
-  return publishToSearchIndex({
-    message: {
-      accountSid,
-      type: entityType,
-      [entityType]: entity,
-      operation: indexOperation,
-    } as IndexMessage,
-    messageGroupId: `${accountSid}-${entityType}-${entity.id}`,
-  });
-};
-
 export const publishContactToSearchIndex = async ({
   accountSid,
   contact,
@@ -158,7 +53,7 @@ export const publishContactToSearchIndex = async ({
 }: {
   accountSid: HrmAccountId;
   contact: Contact;
-  operation: IndexMessage['operation'] | 'reindex';
+  operation: IndexMessage['operation'];
 }) => {
   console.info(
     `[generalised-search-contacts]: Indexing Started. Account SID: ${accountSid}, Contact ID: ${
@@ -169,7 +64,10 @@ export const publishContactToSearchIndex = async ({
       contact.updatedAt ?? contact.createdAt
     }/${operation})`,
   );
-  return publishEntityToSearchIndex(accountSid, 'contact', contact, operation);
+  return publishToSearchIndex({
+    message: { accountSid, type: 'contact', contact, operation },
+    messageGroupId: `${accountSid}-contact-${contact.id}`,
+  });
 };
 
 export const publishCaseToSearchIndex = async ({
@@ -179,7 +77,7 @@ export const publishCaseToSearchIndex = async ({
 }: {
   accountSid: AccountSID;
   case: CaseService;
-  operation: IndexMessage['operation'] | 'reindex';
+  operation: IndexMessage['operation'];
 }) => {
   console.info(
     `[generalised-search-cases]: Indexing Request Started. Account SID: ${accountSid}, Case ID: ${
@@ -190,5 +88,8 @@ export const publishCaseToSearchIndex = async ({
       caseObj.updatedAt ?? caseObj.createdAt
     }/${operation})`,
   );
-  return publishEntityToSearchIndex(accountSid, 'case', caseObj, operation);
+  return publishToSearchIndex({
+    message: { accountSid, type: 'case', case: caseObj, operation },
+    messageGroupId: `${accountSid}-case-${caseObj.id}`,
+  });
 };
