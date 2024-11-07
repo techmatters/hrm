@@ -69,7 +69,7 @@ export const generate = async (
   });
 
   for (const { accountSid, shortCode } of accountSidMappings) {
-    // Query the DB for contacts and start streaming records with their ID, categories and transcript location
+    // Query the DB for contacts and start streaming records with their ID, categories, contact summary and transcript location
     const contactStream = await streamTrainingSetContacts(accountSid);
     console.log(`Streaming contacts for ${shortCode}...`);
 

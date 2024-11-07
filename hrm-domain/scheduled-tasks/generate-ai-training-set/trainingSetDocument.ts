@@ -21,15 +21,17 @@ import { getS3Object } from '@tech-matters/s3-client';
 export type TrainingSetDocument = {
   contactId: string;
   categories: Record<string, string[]>;
+  summary: string;
   messages: ExportTranscript['messages'];
 };
 
 const trainingSetDocument = (
-  { contactId, categories }: TrainingSetContact,
+  { contactId, categories, summary }: TrainingSetContact,
   { messages }: ExportTranscript,
 ): TrainingSetDocument => ({
   contactId,
   categories,
+  summary,
   messages,
 });
 
