@@ -7994,7 +7994,13 @@ export const withSites_20240823 = {
   },
   eligibilityMaxAge: 30,
   eligibilityMinAge: 18,
-  feeStructureSource: [],
+  feeStructureSource: [
+    {
+      en: 'Free',
+      fr: 'Gratuit',
+      objectId: '66635363033cc0b95a022076',
+    },
+  ],
   feeStructureSourceFreeTextEn: null,
   feeStructureSourceFreeTextFr: null,
   howIsServiceOffered: [
