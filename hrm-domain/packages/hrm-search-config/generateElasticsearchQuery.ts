@@ -33,7 +33,6 @@ const BOOST_FACTORS = {
   case: 3,
 };
 const MIN_SCORE = 0.1;
-const MAX_INT = 2147483648 - 1; // 2^31 - 1, the max integer allowed by ElasticSearch integer type
 
 export const FILTER_ALL_CLAUSE: QueryDslQueryContainer[][] = [
   [
@@ -61,21 +60,36 @@ export type DocumentTypeQueryParams = {
   [DocumentType.Case]: GenerateTDocQueryParams<DocumentType.Case>;
 };
 
-type GenerateTermQueryParams = {
+type NestableQueryParams = {
+  parentPath?: string;
+};
+
+type GenerateTermQueryParams<TDoc extends DocumentType> = {
   type: 'term';
   term: string | boolean | number;
+  field: keyof DocumentTypeToDocument[TDoc];
   boost?: number;
-};
-type GenerateRangeQueryParams = {
+} & NestableQueryParams;
+type GenerateRangeQueryParams<TDoc extends DocumentType> = {
   type: 'range';
+  field: keyof DocumentTypeToDocument[TDoc];
   ranges: { lt?: string; lte?: string; gt?: string; gte?: string };
-};
-type GenerateQueryStringQuery = { type: 'queryString'; query: string; boost?: number };
-type GenerateSimpleQueryStringQuery = {
+} & NestableQueryParams;
+type GenerateQueryStringQuery<TDoc extends DocumentType> = {
+  type: 'queryString';
+  query: string;
+  field: keyof DocumentTypeToDocument[TDoc];
+  boost?: number;
+} & NestableQueryParams;
+type SimpleQueryStringFields<TDoc extends DocumentType> = {
+  field: keyof DocumentTypeToDocument[TDoc];
+  boost?: number;
+}[];
+type GenerateSimpleQueryStringQuery<TDoc extends DocumentType> = {
   type: 'simpleQueryString';
   query: string;
-  boost?: number;
-};
+  fields: SimpleQueryStringFields<TDoc>;
+} & NestableQueryParams;
 type GenerateMustNotQueryParams<TDoc extends DocumentType> = {
   type: 'mustNot';
   innerQuery: DocumentTypeQueryParams[TDoc];
@@ -98,12 +112,12 @@ type GenerateNestedQueryParams<TDoc extends DocumentType> = {
 }[keyof NestedDocumentsQueryParams[TDoc]];
 
 type GenerateQueryParams<TDoc extends DocumentType> =
-  | ({ field: keyof DocumentTypeToDocument[TDoc]; parentPath?: string } & (
-      | GenerateTermQueryParams
-      | GenerateRangeQueryParams
-      | GenerateQueryStringQuery
-      | GenerateSimpleQueryStringQuery
-    ))
+  | (
+      | GenerateTermQueryParams<TDoc>
+      | GenerateRangeQueryParams<TDoc>
+      | GenerateQueryStringQuery<TDoc>
+      | GenerateSimpleQueryStringQuery<TDoc>
+    )
   | GenerateMustNotQueryParams<TDoc>
   | GenerateNestedQueryParams<TDoc>;
 
@@ -111,6 +125,14 @@ const getFieldName = <T extends {}>(p: { field: keyof T; parentPath?: string }) 
   const prefix = p.parentPath ? `${p.parentPath}.` : '';
 
   return `${prefix}${String(p.field)}`;
+};
+
+const getSimpleQueryStringFields = <TDoc extends DocumentType>(
+  p: GenerateSimpleQueryStringQuery<TDoc>,
+) => {
+  const prefix = p.parentPath ? `${p.parentPath}.` : '';
+
+  return p.fields.map(f => `${prefix}${String(f.field)}${f.boost ? `^${f.boost}` : ''}`);
 };
 
 /** Utility function that creates a filter based on a more human-readable representation */
@@ -144,10 +166,9 @@ export const generateESQuery = <TDoc extends DocumentType>(
     case 'simpleQueryString': {
       return {
         simple_query_string: {
-          fields: [getFieldName(p)],
+          fields: getSimpleQueryStringFields(p as GenerateSimpleQueryStringQuery<TDoc>), // typecast to conform TS, only valid parameters should be accept
           query: p.query,
           flags: 'FUZZY|NEAR|PHRASE|WHITESPACE',
-          ...(p.boost && { boost: p.boost }),
         },
       };
     }
@@ -193,64 +214,20 @@ type SearchParametersContact = {
   };
 } & SearchPagination;
 
-const generateQueriesFromId = <TDoc extends DocumentType>({
-  searchTerm,
-  documentType,
-  parentPath,
-  boostFactor,
-  queryWrapper = p => p,
-}: {
-  searchTerm: string;
-  boostFactor: number;
-  queryWrapper?: (
-    p: DocumentTypeQueryParams[DocumentType],
-  ) => DocumentTypeQueryParams[DocumentType];
-} & {
-  documentType: TDoc;
-  parentPath?: string;
-}): QueryDslQueryContainer[] => {
-  const terms = searchTerm.split(' ');
-
-  if (terms.length > 1) {
-    return [];
-  }
-
-  const parsed = Number.parseInt(searchTerm, 10);
-  // Ignore terms that are not entirely a number or greater than max int, as that breaks term queries against integer fields
-  if (Number.isNaN(parsed) || !Number.isInteger(parsed) || parsed > MAX_INT) {
-    return [];
-  }
-
-  return [
-    generateESQuery(
-      queryWrapper({
-        documentType,
-        type: 'term',
-        term: parsed,
-        boost: boostFactor * BOOST_FACTORS.id,
-        field: 'id' as any, // typecast to conform TS, only valid parameters should be accept
-        parentPath,
-      }),
-    ),
-  ];
-};
-
 const generateQueryFromSearchTerms = <TDoc extends DocumentType>({
   searchTerm,
   documentType,
-  field,
+  fields,
   parentPath,
-  boostFactor,
   queryWrapper = p => p,
 }: {
   searchTerm: string;
-  boostFactor: number;
   queryWrapper?: (
     p: DocumentTypeQueryParams[DocumentType],
   ) => DocumentTypeQueryParams[DocumentType];
 } & {
   documentType: TDoc;
-  field: keyof DocumentTypeToDocument[TDoc];
+  fields: SimpleQueryStringFields<TDoc>;
   parentPath?: string;
 }): QueryDslQueryContainer => {
   const query = generateESQuery(
@@ -258,8 +235,7 @@ const generateQueryFromSearchTerms = <TDoc extends DocumentType>({
       documentType,
       type: 'simpleQueryString',
       query: searchTerm,
-      boost: boostFactor,
-      field: field as any, // typecast to conform TS, only valid parameters should be accept
+      fields: fields as any, // typecast to conform TS, only valid parameters should be accept
       parentPath,
     }),
   );
@@ -282,10 +258,9 @@ const generateTranscriptQueriesFromFilters = ({
 }): QueryDslQueryContainer[] => {
   const query = generateQueryFromSearchTerms({
     documentType: DocumentType.Contact,
-    field: 'transcript',
+    fields: [{ field: 'transcript', boost: BOOST_FACTORS.transcript }],
     searchTerm: searchParameters.searchTerm,
     parentPath: buildParams.parentPath,
-    boostFactor: BOOST_FACTORS.transcript,
     queryWrapper,
   });
 
@@ -331,17 +306,18 @@ const generateContactsQueriesFromFilters = ({
   const queries = [
     generateQueryFromSearchTerms({
       documentType: DocumentType.Contact,
-      field: 'content',
+      fields: [
+        {
+          field: 'content',
+          boost: BOOST_FACTORS.contact,
+        },
+        {
+          field: 'id',
+          boost: BOOST_FACTORS.id * BOOST_FACTORS.contact,
+        },
+      ],
       searchTerm: searchParameters.searchTerm,
       parentPath: buildParams.parentPath,
-      boostFactor: BOOST_FACTORS.contact,
-      queryWrapper,
-    }),
-    ...generateQueriesFromId({
-      documentType: DocumentType.Contact,
-      searchTerm: searchParameters.searchTerm,
-      parentPath: buildParams.parentPath,
-      boostFactor: BOOST_FACTORS.contact,
       queryWrapper,
     }),
   ];
@@ -434,22 +410,29 @@ const generateCasesQueriesFromFilters = ({
   const queries = [
     generateQueryFromSearchTerms({
       documentType: DocumentType.Case,
-      field: 'content',
+      fields: [
+        {
+          field: 'content',
+          boost: BOOST_FACTORS.case,
+        },
+        {
+          field: 'id',
+          boost: BOOST_FACTORS.id * BOOST_FACTORS.case,
+        },
+      ],
       searchTerm: searchParameters.searchTerm,
-      boostFactor: BOOST_FACTORS.case,
-    }),
-    ...generateQueriesFromId({
-      documentType: DocumentType.Case,
-      searchTerm: searchParameters.searchTerm,
-      boostFactor: BOOST_FACTORS.case,
     }),
   ];
 
   const sectionsQuery = generateQueryFromSearchTerms({
     documentType: DocumentType.CaseSection,
-    field: 'content',
+    fields: [
+      {
+        field: 'content',
+        boost: BOOST_FACTORS.case,
+      },
+    ],
     searchTerm: searchParameters.searchTerm,
-    boostFactor: BOOST_FACTORS.case,
     queryWrapper: p => ({
       documentType: DocumentType.Case,
       type: 'nested',

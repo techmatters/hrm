@@ -141,7 +141,7 @@ const generatePayloadFromContact = (
               ...(ps[HRM_CASES_INDEX_TYPE] ?? []),
               {
                 ...m,
-                documentId: parseInt(m.message.contact.caseId, 10),
+                documentId: m.message.contact.caseId,
                 payload: { ...m.message, transcript: m.transcript },
                 indexHandler: 'updateScript',
               },

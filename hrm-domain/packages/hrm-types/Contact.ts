@@ -16,6 +16,7 @@
 import { HrmAccountId, TwilioUserIdentifier, WorkerSID } from '@tech-matters/types';
 import { ConversationMedia } from './ConversationMedia';
 import { Referral } from './Referral';
+import { CaseService } from './Case';
 
 /**
  * This and contained types are copied from Flex
@@ -53,7 +54,7 @@ export type NewContactRecord = {
   taskId: string;
   channelSid?: string;
   serviceSid?: string;
-  caseId?: string;
+  caseId?: CaseService['id'];
   profileId?: number;
   identifierId?: number;
 };
