@@ -39,7 +39,7 @@ const commonProperties = {
 // Properties shared by both types of documents, cases and contacts
 const rootProperties = {
   id: {
-    type: 'integer',
+    type: 'keyword',
   },
   twilioWorkerId: {
     type: 'keyword',

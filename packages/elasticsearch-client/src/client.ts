@@ -67,17 +67,12 @@ export type PassThroughConfig<T> = {
   client: EsClient;
 };
 
-const getConfigSsmParameterKey = (indexType: string) =>
-  `/${process.env.NODE_ENV}/${indexType}/${process.env.AWS_REGION}/elasticsearch_config`;
-
 //TODO: type for config
 const getEsConfig = async ({
   config,
-  indexType,
   ssmConfigParameter,
 }: {
-  config: ClientOptions | undefined;
-  indexType: string;
+  config?: ClientOptions | undefined;
   ssmConfigParameter?: string;
 }) => {
   console.log('config', config);
@@ -102,8 +97,7 @@ const getEsConfig = async ({
     return JSON.parse(await getSsmParameter(ssmConfigParameter));
   }
 
-  // TODO: remove this if it's not used anymore?
-  return JSON.parse(await getSsmParameter(getConfigSsmParameterKey(indexType)));
+  throw new Error(`getEsConfig error: no valid config provided to initialize client`);
 };
 
 /**
@@ -123,7 +117,6 @@ export type IndexClient<T> = {
 const getClientOrMock = async ({
   config,
   index,
-  indexType,
   ssmConfigParameter,
 }: GetClientOrMockArgs) => {
   // TODO: mock client for unit tests
@@ -132,9 +125,7 @@ const getClientOrMock = async ({
   //   return mock;
   // }
 
-  const client = new EsClient(
-    await getEsConfig({ config, indexType, ssmConfigParameter }),
-  );
+  const client = new EsClient(await getEsConfig({ config, ssmConfigParameter }));
   return {
     client,
     index,

@@ -55,7 +55,7 @@ export const convertContactToContactDocument = ({
 
   const contactDocument: ContactDocument = {
     accountSid,
-    id,
+    id: id.toString(),
     createdAt,
     updatedAt,
     createdBy,
@@ -115,7 +115,7 @@ const convertCaseToCaseDocument = ({
 
   const caseDocument: CaseDocument = {
     accountSid,
-    id,
+    id: id.toString(),
     createdAt,
     updatedAt,
     createdBy,

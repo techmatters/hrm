@@ -253,7 +253,7 @@ describe('canDisconnectContact', () => {
     let contact = new ContactBuilder().withFinalizedAt(BASELINE_DATE).build();
     beforeEach(() => {
       mockGetContactById.mockResolvedValue(contact);
-      contact.caseId = '123';
+      contact.caseId = 123;
     });
     test('can returns true to permit & case id not set on contact - permits', async () => {
       delete contact.caseId;
