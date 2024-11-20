@@ -121,12 +121,6 @@ const KHP_MAPPING_NODE_SITES: { children: MappingNode } = {
             address2: translatableAttributeMapping(siteKey('location/address2')),
             city: {
               mappings: [
-                referenceAttributeMapping(siteKey('location/city'), 'cities', {
-                  value: ctx =>
-                    `CA/${lookupProvinceCode(ctx.parentValue.province)}/${
-                      ctx.currentValue
-                    }`,
-                }),
                 referenceAttributeMapping(
                   siteKey('location/region-city'),
                   'country/province/region/city',
@@ -486,16 +480,6 @@ export const KHP_MAPPING_NODE: MappingNode = {
   }),
   primaryLocationCity: {
     mappings: [
-      referenceAttributeMapping('primaryLocationCity', 'cities', {
-        value: ctx => {
-          const { primaryLocationProvince } = ctx.rootResource;
-          return [
-            'CA',
-            lookupProvinceCode(primaryLocationProvince),
-            ctx.currentValue,
-          ].join('/');
-        },
-      }),
       referenceAttributeMapping(
         'primaryLocationRegionCity',
         'country/province/region/city',
