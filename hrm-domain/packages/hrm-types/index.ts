@@ -19,5 +19,6 @@ export * from './Referral';
 export * from './ConversationMedia';
 export * from './Case';
 export * from './CaseSection';
+export * from './NotificationOperation';
 export * from './Profile';
 export * from './PostSurvey';

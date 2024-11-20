@@ -54,9 +54,8 @@ import {
   DocumentType,
   HRM_CASES_INDEX_TYPE,
   hrmSearchConfiguration,
-  type IndexMessage,
 } from '@tech-matters/hrm-search-config';
-import { publishCaseToSearchIndex } from '../jobs/search/publishToSearchIndex';
+import { publishCaseChangeNotification } from '../notifications/entityChangeNotify';
 import { enablePublishHrmSearchIndex } from '../featureFlags';
 import { getClient } from '@tech-matters/elasticsearch-client';
 import {
@@ -66,6 +65,7 @@ import {
 } from './caseSearchIndex';
 import { ContactListCondition } from '../contact/contactSearchIndex';
 import { maxPermissions } from '../permissions';
+import { NotificationOperation } from '@tech-matters/hrm-types/dist/NotificationOperation';
 
 export { WELL_KNOWN_CASE_SECTION_NAMES, CaseService, CaseInfoSection };
 
@@ -285,8 +285,8 @@ const mapEssentialData =
     };
   };
 
-const doCaseInSearchIndexOP =
-  (operation: IndexMessage['operation']) =>
+const doCaseChangeNotification =
+  (operation: NotificationOperation) =>
   async ({
     accountSid,
     caseId,
@@ -305,7 +305,7 @@ const doCaseInSearchIndexOP =
         caseRecord || (await getById(caseId, accountSid, maxPermissions.user, []));
 
       if (caseObj) {
-        await publishCaseToSearchIndex({
+        await publishCaseChangeNotification({
           accountSid,
           case: caseRecordToCase(caseObj),
           operation,
@@ -319,8 +319,9 @@ const doCaseInSearchIndexOP =
     }
   };
 
-export const indexCaseInSearchIndex = doCaseInSearchIndexOP('index');
-const removeCaseInSearchIndex = doCaseInSearchIndexOP('remove');
+export const createCaseNotify = doCaseChangeNotification('create');
+export const updateCaseNotify = doCaseChangeNotification('update');
+const deleteCaseNotify = doCaseChangeNotification('delete');
 
 export const createCase = async (
   body: Partial<CaseService>,
@@ -347,7 +348,7 @@ export const createCase = async (
 
   if (!skipSearchIndex) {
     // trigger index operation but don't await for it
-    indexCaseInSearchIndex({ accountSid, caseId: created.id });
+    createCaseNotify({ accountSid, caseId: created.id });
   }
 
   // A new case is always initialized with empty connected contacts. No need to apply mapContactTransformations here
@@ -379,7 +380,7 @@ export const updateCaseStatus = async (
 
   if (!skipSearchIndex) {
     // trigger index operation but don't await for it
-    indexCaseInSearchIndex({ accountSid, caseId: updated.id });
+    updateCaseNotify({ accountSid, caseId: updated.id });
   }
 
   return caseRecordToCase(withTransformedContacts);
@@ -397,7 +398,7 @@ export const updateCaseOverview = async (
 
   if (!skipSearchIndex) {
     // trigger index operation but don't await for it
-    indexCaseInSearchIndex({ accountSid, caseId: updated.id });
+    updateCaseNotify({ accountSid, caseId: updated.id });
   }
 
   return caseRecordToCase(updated);
@@ -625,7 +626,7 @@ export const deleteCaseById = async ({
   const deleted = await deleteById(caseId, accountSid);
 
   // trigger remove operation but don't await for it
-  removeCaseInSearchIndex({ accountSid, caseId: deleted?.id, caseRecord: deleted });
+  deleteCaseNotify({ accountSid, caseId: deleted?.id, caseRecord: deleted });
 
   return deleted;
 };

@@ -15,7 +15,7 @@
  */
 
 import { HrmAccountId } from '@tech-matters/types';
-import { publishContactToSearchIndex } from '../jobs/search/publishToSearchIndex';
+import { publishContactChangeNotification } from '../notifications/entityChangeNotify';
 import { maxPermissions } from '../permissions';
 import { Transform } from 'stream';
 import { streamContactsForReindexing } from './contactDataAccess';
@@ -53,7 +53,7 @@ export const reindexContactsStream = async (
       highWaterMark,
       async transform(contact, _, callback) {
         try {
-          const { MessageId } = await publishContactToSearchIndex({
+          const { MessageId } = await publishContactChangeNotification({
             accountSid,
             contact,
             operation: 'reindex',

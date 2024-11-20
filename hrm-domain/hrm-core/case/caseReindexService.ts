@@ -16,7 +16,7 @@
 
 import { HrmAccountId } from '@tech-matters/types';
 import { caseRecordToCase } from './caseService';
-import { publishCaseToSearchIndex } from '../jobs/search/publishToSearchIndex';
+import { publishCaseChangeNotification } from '../notifications/entityChangeNotify';
 import { maxPermissions } from '../permissions';
 import formatISO from 'date-fns/formatISO';
 import { CaseRecord, streamCasesForReindexing } from './caseDataAccess';
@@ -61,10 +61,10 @@ export const reindexCasesStream = async (
       async transform(caseRecord: CaseRecord, _, callback) {
         const caseObj = caseRecordToCase(caseRecord);
         try {
-          const { MessageId } = await publishCaseToSearchIndex({
+          const { MessageId } = await publishCaseChangeNotification({
             accountSid,
             case: caseObj,
-            operation: 'index',
+            operation: 'reindex',
           });
 
           this.push(

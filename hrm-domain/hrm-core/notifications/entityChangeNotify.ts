@@ -15,28 +15,29 @@
  */
 
 import { sendSqsMessage } from '@tech-matters/sqs-client';
-import { getSsmParameter } from '../../config/ssmCache';
+import { getSsmParameter } from '../config/ssmCache';
 import { IndexMessage } from '@tech-matters/hrm-search-config';
 import { CaseService, Contact } from '@tech-matters/hrm-types';
 import { AccountSID, HrmAccountId } from '@tech-matters/types';
 import { publishSns, PublishSnsParams } from '@tech-matters/sns-client';
 import { SsmParameterNotFound } from '@tech-matters/ssm-cache';
+import { NotificationOperation } from '@tech-matters/hrm-types';
 
 type DeleteNotificationPayload = {
   accountSid: HrmAccountId;
-  operation: 'delete';
+  operation: NotificationOperation & 'delete';
   id: string;
 };
 
 type UpsertCaseNotificationPayload = {
   accountSid: HrmAccountId;
-  operation: 'update' | 'create' | 'reindex';
+  operation: NotificationOperation & ('update' | 'create' | 'reindex');
   case: CaseService;
 };
 
 type UpsertContactNotificationPayload = {
   accountSid: HrmAccountId;
-  operation: 'update' | 'create' | 'reindex';
+  operation: NotificationOperation & ('update' | 'create' | 'reindex');
   contact: Contact;
 };
 
@@ -117,29 +118,29 @@ const publishEntityToSearchIndex = async (
   accountSid: HrmAccountId,
   entityType: 'contact' | 'case',
   entity: Contact | CaseService,
-  operation: IndexMessage['operation'] | 'reindex',
+  operation: NotificationOperation,
 ) => {
   const messageGroupId = `${accountSid}-${entityType}-${entity.id}`;
-  if (operation === 'remove') {
+  if (operation === 'delete') {
     await publishToSns({
       entityType,
-      payload: { accountSid, id: entity.id.toString(), operation: 'delete' },
+      payload: { accountSid, id: entity.id.toString(), operation },
       messageGroupId,
     });
   } else {
-    const publishOperation = operation === 'reindex' ? 'reindex' : 'update';
     await publishToSns({
       entityType,
       // Update / create are identical for now, will differentiate between the 2 ops in a follow pu refactor PR
       payload: {
         accountSid,
         [entityType]: entity,
-        operation: publishOperation,
+        operation,
       } as NotificationPayload,
       messageGroupId,
     });
   }
-  const indexOperation = operation === 'reindex' ? 'index' : operation;
+  const indexOperation: IndexMessage['operation'] =
+    operation === 'delete' ? 'index' : 'remove';
   return publishToSearchIndex({
     message: {
       accountSid,
@@ -151,14 +152,14 @@ const publishEntityToSearchIndex = async (
   });
 };
 
-export const publishContactToSearchIndex = async ({
+export const publishContactChangeNotification = async ({
   accountSid,
   contact,
   operation,
 }: {
   accountSid: HrmAccountId;
   contact: Contact;
-  operation: IndexMessage['operation'] | 'reindex';
+  operation: NotificationOperation;
 }) => {
   console.info(
     `[generalised-search-contacts]: Indexing Started. Account SID: ${accountSid}, Contact ID: ${
@@ -172,14 +173,14 @@ export const publishContactToSearchIndex = async ({
   return publishEntityToSearchIndex(accountSid, 'contact', contact, operation);
 };
 
-export const publishCaseToSearchIndex = async ({
+export const publishCaseChangeNotification = async ({
   accountSid,
   case: caseObj,
   operation,
 }: {
   accountSid: AccountSID;
   case: CaseService;
-  operation: IndexMessage['operation'] | 'reindex';
+  operation: NotificationOperation;
 }) => {
   console.info(
     `[generalised-search-cases]: Indexing Request Started. Account SID: ${accountSid}, Case ID: ${

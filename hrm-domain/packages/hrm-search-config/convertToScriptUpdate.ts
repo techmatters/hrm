@@ -34,6 +34,9 @@ const convertContactToCaseScriptUpdate = (
   const { accountSid, caseId } = payload.contact;
 
   switch (operation) {
+    case 'create':
+    case 'update':
+    case 'reindex':
     case 'index': {
       const contactDocument = convertContactToContactDocument(payload);
 
@@ -63,6 +66,7 @@ const convertContactToCaseScriptUpdate = (
 
       return { documentUpdate, scriptUpdate };
     }
+    case 'delete':
     case 'remove': {
       const scriptUpdate: Script = {
         source:
