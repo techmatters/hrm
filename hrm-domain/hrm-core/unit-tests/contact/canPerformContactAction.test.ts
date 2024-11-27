@@ -26,6 +26,7 @@ import {
 } from '../../contact/canPerformContactAction';
 import { CaseService, getCase } from '../../case/caseService';
 import { actionsMaps } from '../../permissions';
+import { SafeRouterRequest } from '../../permissions/safe-router';
 
 jest.mock('@tech-matters/twilio-client', () => ({
   getClient: jest.fn().mockResolvedValue({}),
@@ -50,20 +51,35 @@ const accountSid1 = 'ACtwilio-hrm1';
 const thisWorkerSid = 'WK-thisWorker';
 const otherWorkerSid = 'WK-otherWorker';
 
-let req: any;
+let req: Partial<SafeRouterRequest>;
+let mockRequestMethods: {
+  permit: jest.MockedFunction<SafeRouterRequest['permit']>;
+  isPermitted: jest.MockedFunction<SafeRouterRequest['isPermitted']>;
+  block: jest.MockedFunction<SafeRouterRequest['block']>;
+  can: jest.MockedFunction<SafeRouterRequest['can']>;
+};
 const next = jest.fn();
 
 beforeEach(() => {
-  req = {
-    isPermitted: jest.fn().mockReturnValue(false),
-    params: { contactId: 'contact1' },
+  mockRequestMethods = {
     permit: jest.fn(),
     block: jest.fn(),
     can: jest.fn(),
-    user: { workerSid: 'WK-worker1', accountSid: 'ACtwilio' },
+    isPermitted: jest.fn().mockReturnValue(false),
+  };
+
+  req = {
+    ...mockRequestMethods,
+    params: { contactId: 'contact1' },
+    user: {
+      workerSid: 'WK-worker1',
+      accountSid: 'ACtwilio',
+      isSupervisor: false,
+      roles: [],
+    },
     hrmAccountId: accountSid1,
     body: {},
-  };
+  } as Partial<SafeRouterRequest>;
   next.mockClear();
   mockGetContactById.mockClear();
   mockCreateError.mockClear();
@@ -98,9 +114,9 @@ const draftContactTests =
     const expectation = expectToPermit ? expectToBePermitted : expectToBeBlocked;
     beforeEach(async () => {
       // Draft contact authorization doesn't care about the can response, so always return false
-      req.can.mockReturnValue(false);
+      mockRequestMethods.can.mockReturnValue(false);
       req.body = { conversationDuration: 123 };
-      req.user = { accountSid: 'ACtwilio', workerSid: thisWorkerSid };
+      req.user = { ...req.user, accountSid: 'ACtwilio', workerSid: thisWorkerSid };
       process.env.TWILIO_AUTH_TOKEN_ACtwilio = 'account1 token';
       await setup();
     });
@@ -151,6 +167,28 @@ const draftContactTests =
       expectation();
     });
 
+    test(`Request user is not the owner or the creator, but has EDIT_INPROGRESS_CONTACT - ${expectedDescription}`, async () => {
+      mockGetContactById.mockResolvedValue(
+        new ContactBuilder()
+          .withCreatedBy(otherWorkerSid)
+          .withTwilioWorkerId(otherWorkerSid)
+          .withTaskId('original task')
+          .build(),
+      );
+      req.body.taskId = 'transfer task';
+      mockRequestMethods.can.mockImplementation(
+        (user, action) => action === actionsMaps.contact.EDIT_INPROGRESS_CONTACT,
+      );
+      mockIsTwilioTaskTransferTarget.mockResolvedValue(false);
+      await canPerformEditContactAction(req, {}, next);
+      expect(getClient).toHaveBeenCalledWith({
+        accountSid: 'ACtwilio',
+        authToken: 'account1 token',
+      });
+
+      expectation();
+    });
+
     test('Request user is not the owner or the creator, nor target of a transfer - blocks', async () => {
       mockGetContactById.mockResolvedValue(
         new ContactBuilder()
@@ -175,15 +213,16 @@ const draftContactTests =
       expectToBeBlocked();
     });
   };
+
 describe('canPerformEditContactAction', () => {
   test("Request is already permitted - doesn't permit or block", async () => {
-    req.isPermitted.mockReturnValue(true);
+    mockRequestMethods.isPermitted.mockReturnValue(true);
     await canPerformEditContactAction(req, {}, next);
     expectNoop();
   });
 
   test('Request is not already permitted - looks up contact using contactID parameter', async () => {
-    req.can.mockReturnValue(false);
+    mockRequestMethods.can.mockReturnValue(false);
     mockGetContactById.mockResolvedValue(
       new ContactBuilder().withFinalizedAt(BASELINE_DATE).build(),
     );
@@ -220,31 +259,42 @@ describe('canPerformEditContactAction', () => {
 
     test('Modifying rawJson / resource referrals and can returns true - permits', async () => {
       req.body = validFinalizedContactPatchPayload;
-      req.can.mockReturnValue(true);
+      mockRequestMethods.can.mockReturnValue(true);
       await canPerformEditContactAction(req, {}, next);
       expectToBePermitted();
     });
 
     test('Modifying values other than rawJson / resource referrals and can returns true - blocks', async () => {
       req.body = { ...validFinalizedContactPatchPayload, conversationDuration: 100 };
-      req.can.mockReturnValue(true);
+      mockRequestMethods.can.mockReturnValue(true);
       await canPerformEditContactAction(req, {}, next);
       expectToBeBlocked();
     });
 
     test('Modifying rawJson / resource referrals and can returns false - blocks', async () => {
       req.body = validFinalizedContactPatchPayload;
-      req.can.mockReturnValue(false);
+      mockRequestMethods.can.mockReturnValue(false);
+      await canPerformEditContactAction(req, {}, next);
+      expectToBeBlocked();
+    });
+
+    test('Modifying rawJson / resource referrals and can returns false but EDIT_INPROGRESS_CAN is permitted - blocks', async () => {
+      req.body = validFinalizedContactPatchPayload;
+      mockRequestMethods.can.mockImplementation(
+        (user, action) => action === actionsMaps.contact.EDIT_INPROGRESS_CONTACT,
+      );
       await canPerformEditContactAction(req, {}, next);
       expectToBeBlocked();
     });
   });
-  describe('draft contact', draftContactTests(true));
+  describe('draft contact', () => {
+    draftContactTests(true);
+  });
 });
 
 describe('canDisconnectContact', () => {
   test('Request is already permitted - skips authorization', async () => {
-    req.isPermitted.mockReturnValue(true);
+    mockRequestMethods.isPermitted.mockReturnValue(true);
     await canDisconnectContact(req, {}, next);
     expectNoop();
   });
@@ -257,7 +307,7 @@ describe('canDisconnectContact', () => {
     });
     test('can returns true to permit & case id not set on contact - permits', async () => {
       delete contact.caseId;
-      req.can.mockImplementation(
+      mockRequestMethods.can.mockImplementation(
         (user, action) => action === actionsMaps.contact.REMOVE_CONTACT_FROM_CASE,
       );
       await canDisconnectContact(req, {}, next);
@@ -271,7 +321,7 @@ describe('canDisconnectContact', () => {
 
     test('can returns true to permit & case not found to disconnect from - permits', async () => {
       mockGetCase.mockResolvedValue(undefined);
-      req.can.mockImplementation(
+      mockRequestMethods.can.mockImplementation(
         (user, action) => action === actionsMaps.contact.REMOVE_CONTACT_FROM_CASE,
       );
       await canDisconnectContact(req, {}, next);
@@ -285,7 +335,7 @@ describe('canDisconnectContact', () => {
     test('Can returns true for contact and case checks - permits', async () => {
       const mockCase = {} as CaseService;
       mockGetCase.mockResolvedValue(mockCase);
-      req.can.mockReturnValue(true);
+      mockRequestMethods.can.mockReturnValue(true);
       await canDisconnectContact(req, {}, next);
       expect(req.can).toHaveBeenCalledWith(
         req.user,
@@ -302,7 +352,7 @@ describe('canDisconnectContact', () => {
     test('Can returns false - blocks', async () => {
       const mockCase = {} as CaseService;
       mockGetCase.mockResolvedValue(mockCase);
-      req.can.mockReturnValue(false);
+      mockRequestMethods.can.mockReturnValue(false);
       await canDisconnectContact(req, {}, next);
       expect(req.can).toHaveBeenCalledWith(
         req.user,
@@ -314,7 +364,7 @@ describe('canDisconnectContact', () => {
     test('Can returns true for contact but false for case - blocks', async () => {
       const mockCase = {} as CaseService;
       mockGetCase.mockResolvedValue(mockCase);
-      req.can.mockImplementation(
+      mockRequestMethods.can.mockImplementation(
         (user, action) => action === actionsMaps.contact.REMOVE_CONTACT_FROM_CASE,
       );
       await canDisconnectContact(req, {}, next);
@@ -335,7 +385,7 @@ describe('canDisconnectContact', () => {
     describe(
       'can update case contacts',
       draftContactTests(true, async () => {
-        req.can.mockImplementation(
+        mockRequestMethods.can.mockImplementation(
           (user, action) => action === actionsMaps.case.UPDATE_CASE_CONTACTS,
         );
       }),
@@ -343,8 +393,10 @@ describe('canDisconnectContact', () => {
     describe(
       'cannot update case contacts',
       draftContactTests(true, async () => {
-        req.can.mockImplementation(
-          (user, action) => action !== actionsMaps.case.UPDATE_CASE_CONTACTS,
+        mockRequestMethods.can.mockImplementation(
+          (user, action) =>
+            action !== actionsMaps.case.UPDATE_CASE_CONTACTS &&
+            action !== actionsMaps.contact.EDIT_INPROGRESS_CONTACT,
         );
       }),
     );
