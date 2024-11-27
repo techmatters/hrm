@@ -34,7 +34,7 @@ import { ALWAYS_CAN, OPEN_CONTACT_ACTION_CONDITIONS } from '../mocks';
 import '@tech-matters/testing/expectToParseAsDate';
 import { openPermissions } from '../../permissions/json-permissions';
 import { RulesFile, TKConditionsSets } from '../../permissions/rulesMap';
-import * as publishToSearchIndex from '../../jobs/search/publishToSearchIndex';
+import * as entityChangeNotify from '../../notifications/entityChangeNotify';
 
 const flushPromises = async () => {
   await new Promise(process.nextTick);
@@ -42,9 +42,9 @@ const flushPromises = async () => {
   await new Promise(process.nextTick);
 };
 
-const publishToSearchIndexSpy = jest
-  .spyOn(publishToSearchIndex, 'publishContactToSearchIndex')
-  .mockImplementation(async () => Promise.resolve('Ok') as any);
+const publishContactChangeNotificationSpy = jest
+  .spyOn(entityChangeNotify, 'publishContactChangeNotification')
+  .mockImplementation(() => Promise.resolve('Ok') as any);
 
 const accountSid = 'AC-accountSid';
 const workerSid = 'WK-WORKER_SID';
@@ -161,7 +161,7 @@ describe('createContact', () => {
     });
 
     await flushPromises();
-    expect(publishToSearchIndexSpy).toHaveBeenCalled();
+    expect(publishContactChangeNotificationSpy).toHaveBeenCalled();
     expect(returnValue).toStrictEqual(mockContact);
   });
 
@@ -191,7 +191,7 @@ describe('createContact', () => {
     });
 
     await flushPromises();
-    expect(publishToSearchIndexSpy).toHaveBeenCalled();
+    expect(publishContactChangeNotificationSpy).toHaveBeenCalled();
     expect(returnValue).toStrictEqual(mockContact);
   });
 
@@ -227,7 +227,7 @@ describe('createContact', () => {
     });
 
     await flushPromises();
-    expect(publishToSearchIndexSpy).toHaveBeenCalled();
+    expect(publishContactChangeNotificationSpy).toHaveBeenCalled();
     expect(returnValue).toStrictEqual(mockContact);
   });
 
@@ -250,7 +250,7 @@ describe('createContact', () => {
     });
 
     await flushPromises();
-    expect(publishToSearchIndexSpy).toHaveBeenCalled();
+    expect(publishContactChangeNotificationSpy).toHaveBeenCalled();
     expect(returnValue).toStrictEqual(mockContact);
   });
 
@@ -274,7 +274,7 @@ describe('createContact', () => {
     });
 
     await flushPromises();
-    expect(publishToSearchIndexSpy).toHaveBeenCalled();
+    expect(publishContactChangeNotificationSpy).toHaveBeenCalled();
     expect(returnValue).toStrictEqual(mockContact);
   });
 });
@@ -294,7 +294,7 @@ describe('connectContactToCase', () => {
     );
 
     await flushPromises();
-    expect(publishToSearchIndexSpy).toHaveBeenCalled();
+    expect(publishContactChangeNotificationSpy).toHaveBeenCalled();
     expect(result).toStrictEqual(mockContact);
   });
 
@@ -305,7 +305,7 @@ describe('connectContactToCase', () => {
     expect(
       connectContactToCase(accountSid, '1234', '4321', ALWAYS_CAN),
     ).rejects.toThrow();
-    expect(publishToSearchIndexSpy).not.toHaveBeenCalled();
+    expect(publishContactChangeNotificationSpy).not.toHaveBeenCalled();
   });
 });
 
@@ -343,7 +343,7 @@ describe('patchContact', () => {
     );
 
     await flushPromises();
-    expect(publishToSearchIndexSpy).toHaveBeenCalled();
+    expect(publishContactChangeNotificationSpy).toHaveBeenCalled();
     expect(result).toStrictEqual(mockContact);
     expect(patchSpy).toHaveBeenCalledWith(accountSid, '1234', true, {
       updatedBy: contactPatcherSid,
@@ -368,7 +368,7 @@ describe('patchContact', () => {
     jest.spyOn(contactDb, 'patch').mockReturnValue(patchSpy);
     patchSpy.mockResolvedValue(undefined);
 
-    expect(publishToSearchIndexSpy).not.toHaveBeenCalled();
+    expect(publishContactChangeNotificationSpy).not.toHaveBeenCalled();
     expect(
       patchContact(accountSid, contactPatcherSid, true, '1234', samplePatch, ALWAYS_CAN),
     ).rejects.toThrow();

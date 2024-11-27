@@ -36,7 +36,7 @@ import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { RulesFile, TKConditionsSets } from '../../permissions/rulesMap';
 import { ListConfiguration } from '../caseDataAccess';
 import { HrmAccountId } from '@tech-matters/types';
-import { indexCaseInSearchIndex } from '../caseService';
+import { updateCaseNotify } from '../caseService';
 
 const sectionRecordToSection = (
   sectionRecord: CaseSectionRecord | undefined,
@@ -72,7 +72,7 @@ export const createCaseSection = async (
 
   if (!skipSearchIndex) {
     // trigger index operation but don't await for it
-    indexCaseInSearchIndex({ accountSid, caseId: parseInt(caseId, 10) });
+    updateCaseNotify({ accountSid, caseId: parseInt(caseId, 10) });
   }
 
   return sectionRecordToSection(created);
@@ -105,7 +105,7 @@ export const replaceCaseSection = async (
 
   if (!skipSearchIndex) {
     // trigger index operation but don't await for it
-    indexCaseInSearchIndex({ accountSid, caseId: parseInt(caseId, 10) });
+    updateCaseNotify({ accountSid, caseId: parseInt(caseId, 10) });
   }
 
   return sectionRecordToSection(updated);
@@ -183,7 +183,7 @@ export const deleteCaseSection = async (
 
   if (!skipSearchIndex) {
     // trigger index operation but don't await for it
-    indexCaseInSearchIndex({ accountSid, caseId: parseInt(caseId, 10) });
+    updateCaseNotify({ accountSid, caseId: parseInt(caseId, 10) });
   }
 
   return sectionRecordToSection(deleted);
