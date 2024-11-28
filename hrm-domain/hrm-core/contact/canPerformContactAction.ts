@@ -58,7 +58,7 @@ const canPerformActionOnContact = (
           // This is a dirty hack that relies on the catch block in the try/catch below to return a 404
           throw new Error('contact not found');
         }
-        if (contactObj.finalizedAt || action !== 'editContact') {
+        if (contactObj.finalizedAt || action !== actionsMaps.contact.EDIT_CONTACT) {
           if (can(user, action, contactObj)) {
             await permitIfAdditionalValidationPasses(
               req,
@@ -70,7 +70,7 @@ const canPerformActionOnContact = (
             console.debug(
               `[Permission - BLOCKED] User ${user.workerSid} is not permitted to perform ${action} on contact ${hrmAccountId}/${contactId} - rules failure`,
             );
-            if (action === 'viewContact') {
+            if (action === actionsMaps.contact.VIEW_CONTACT) {
               throw createError(404);
             } else {
               req.block();
@@ -88,12 +88,14 @@ const canPerformActionOnContact = (
             );
             req.block();
           }
-          // If there is no finalized date, then the contact is a draft and can only be edited by the worker who created it or the one who owns it.
+          // If there is no finalized date, then the contact is a draft and can only be edited by the worker who created it or the one who owns it, or those with EDIT_INPROGRESS_CONTACT permission.
+          // Should we remove the hardcoded checks now we have the permission? Without the hardcoded allows, an incorrect permission config could break Aselo
           // Offline contacts potentially need to be edited by a creator that won't own them.
           // Transferred tasks need to be edited by an owner that didn't create them.
           if (
             contactObj.createdBy === user.workerSid ||
-            contactObj.twilioWorkerId === user.workerSid
+            contactObj.twilioWorkerId === user.workerSid ||
+            can(user, actionsMaps.contact.EDIT_INPROGRESS_CONTACT, contactObj)
           ) {
             await permitIfAdditionalValidationPasses(
               req,
@@ -155,11 +157,6 @@ const checkFinalizedContactEditsOnlyChangeForm = async (
 
 export const canPerformEditContactAction = canPerformActionOnContact(
   actionsMaps.contact.EDIT_CONTACT,
-  checkFinalizedContactEditsOnlyChangeForm,
-);
-
-export const canPerformEditInProgressContactAction = canPerformActionOnContact(
-  actionsMaps.contact.EDIT_INPROGRESS_CONTACT,
   checkFinalizedContactEditsOnlyChangeForm,
 );
 
