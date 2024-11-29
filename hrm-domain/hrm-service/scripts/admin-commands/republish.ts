@@ -14,11 +14,11 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-export const command = 'reindex <command>';
-export const desc = 'admin endpoints for reindexing contacts and cases';
+export const command = 'republish <command>';
+export const desc = 'admin endpoints for republishing contacts';
 
 export const builder = function (yargs) {
-  return yargs.commandDir('reindex', {
+  return yargs.commandDir('republish', {
     exclude: /^(index|_)/,
     extensions: ['ts'],
   });
