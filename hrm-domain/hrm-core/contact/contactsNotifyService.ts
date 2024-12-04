@@ -40,7 +40,7 @@ export const processContactsStream = async (
     shouldIncludeUpdatedAt: true,
   };
 
-  console.debug('Querying DB for contacts to index', searchParameters);
+  console.debug(`Querying DB for contacts to ${operation}`, searchParameters);
   const contactsStream: NodeJS.ReadableStream = await streamContactsAfterNotified({
     accountSid,
     searchParameters,
@@ -50,7 +50,7 @@ export const processContactsStream = async (
     batchSize: highWaterMark,
   });
 
-  console.debug('Piping contacts to queue for reindexing', searchParameters);
+  console.debug(`Piping contacts to queue for ${operation}ing`, searchParameters);
   return contactsStream.pipe(
     new Transform({
       objectMode: true,

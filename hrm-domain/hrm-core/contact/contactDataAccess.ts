@@ -369,6 +369,7 @@ export const streamContactsAfterNotified = ({
   viewPermissions: TKConditionsSets<'contact'>;
   batchSize?: number;
 }): Promise<NodeJS.ReadableStream> => {
+  console.log('>>> streamContactsAfterNotified', searchParameters, viewPermissions, user);
   const qs = new QueryStream(
     pgp.as.format(
       selectContactSearch(viewPermissions, user.isSupervisor),

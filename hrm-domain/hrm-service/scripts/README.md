@@ -24,6 +24,8 @@ admin-cli
 |   ├── delete:       # Delete an existing profile flag
 ├── reindex
 | ├── hrm:            # Reindex contacts and cases based on date range
+├── republish
+| ├── hrm:            # Reindex contacts and cases based on date range
 ```
 
 ### Usage
