@@ -14,4 +14,4 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-export type NotificationOperation = 'update' | 'create' | 'delete' | 'reindex';
+export type NotificationOperation = 'update' | 'create' | 'delete' | 'reindex' | 'republish';

@@ -20,9 +20,22 @@ import { fetch } from 'undici';
 import { getAdminV0URL, staticKeyPattern } from '../../hrmInternalConfig';
 
 export const command = 'hrm';
-export const describe = 'Republish contacts to the data lake based on date range';
+export const describe =
+  'Republish contacts (TBD cases) to the data lake based on date range';
 
 export const builder = {
+  co: {
+    alias: 'contacts',
+    describe: 'republish contacts',
+    type: 'boolean',
+    default: false,
+  },
+  ca: {
+    alias: 'cases',
+    describe: 'republish cases',
+    type: 'boolean',
+    default: false,
+  },
   e: {
     alias: 'environment',
     describe: 'environment (e.g. development, staging, production)',
@@ -55,7 +68,15 @@ export const builder = {
   },
 };
 
-export const handler = async ({ region, environment, accountSid, dateFrom, dateTo }) => {
+export const handler = async ({
+  region,
+  environment,
+  accountSid,
+  dateFrom,
+  dateTo,
+  contacts,
+  cases,
+}) => {
   try {
     const timestamp = new Date().getTime();
     const assumeRoleParams = {
@@ -70,26 +91,31 @@ export const handler = async ({ region, environment, accountSid, dateFrom, dateT
       assumeRoleParams,
     });
 
-    const url = getAdminV0URL(internalResourcesUrl, accountSid, '/contacts/reindex');
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Basic ${authKey}`,
-      },
-      body: JSON.stringify({ dateFrom, dateTo }),
-    });
+    if (contacts) {
+      const url = getAdminV0URL(internalResourcesUrl, accountSid, '/contacts/republish');
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Basic ${authKey}`,
+        },
+        body: JSON.stringify({ dateFrom, dateTo }),
+      });
 
-    if (!response.ok) {
-      console.error(
-        `Failed to submit request for republishing contacts: ${response.statusText}`,
-      );
-    } else {
-      console.log(`Republishing contacts from ${dateFrom} to ${dateTo}...`);
-      console.log(await response.text());
+      if (!response.ok) {
+        console.error(
+          `Failed to submit request for republishing contacts: ${response.statusText}`,
+        );
+      } else {
+        console.log(`Republishing contacts from ${dateFrom} to ${dateTo}...`);
+        console.log(await response.text());
+      }
     }
-
   } catch (err) {
     console.error(err);
+  }
+
+  if (cases) {
+    console.log('Republishing cases is not yet implemented');
   }
 };
