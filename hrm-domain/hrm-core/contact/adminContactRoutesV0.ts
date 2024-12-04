@@ -25,6 +25,8 @@ adminContactsRouter.post(
   '/reindex',
   publicEndpoint,
   async (req: Request, res: Response, next: NextFunction) => {
+    console.log('.......reindexing contacts......', req, res);
+
     const { hrmAccountId } = req;
     const { dateFrom, dateTo } = req.body;
 
@@ -46,6 +48,7 @@ adminContactsRouter.post(
   '/republish',
   publicEndpoint,
   async (req: Request, res: Response, next: NextFunction) => {
+    console.log('.......republishing contacts......', req, res);
     const { hrmAccountId } = req;
     const { dateFrom, dateTo } = req.body;
 

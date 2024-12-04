@@ -25,7 +25,7 @@ admin-cli
 ├── reindex
 | ├── hrm:            # Reindex contacts and cases based on date range
 ├── republish
-| ├── hrm:            # Reindex contacts and cases based on date range
+| ├── hrm:            # Republish contacts and cases based on date range
 ```
 
 ### Usage
