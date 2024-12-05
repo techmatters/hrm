@@ -53,7 +53,7 @@ const PENDING_INDEX_QUEUE_SSM_PATH = `/${process.env.NODE_ENV}/${
 const getSnsSsmPath = dataType =>
   `/${process.env.NODE_ENV}/${
     process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
-  }/sns/hrm/${dataType}/notifications-sns-topic-arn`;
+  }/hrm/${dataType}/notifications-sns-topic-arn`;
 
 const publishToSearchIndex = async ({
   message,
