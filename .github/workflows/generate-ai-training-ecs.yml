@@ -27,9 +27,9 @@ on:
           - development
           - production
       helpline-shortcodes:
-        description: 'Helpline shortcodes (uppercase) separated by space'
+        description: 'Helpline shortcodes (lowercase) separated by space'
         required: true
-        default: 'AS'
+        default: 'as'
         type: string
 
 jobs:
