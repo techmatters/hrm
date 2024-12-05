@@ -351,7 +351,7 @@ export const searchByIds: SearchQueryFunction<
   }),
 );
 
-export const streamContactsForReindexing = ({
+export const streamContactsAfterNotified = ({
   accountSid,
   searchParameters,
   user,
@@ -369,6 +369,7 @@ export const streamContactsForReindexing = ({
   viewPermissions: TKConditionsSets<'contact'>;
   batchSize?: number;
 }): Promise<NodeJS.ReadableStream> => {
+  console.log('>>> streamContactsAfterNotified', searchParameters, viewPermissions, user);
   const qs = new QueryStream(
     pgp.as.format(
       selectContactSearch(viewPermissions, user.isSupervisor),
