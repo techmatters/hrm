@@ -31,7 +31,7 @@ type DeleteNotificationPayload = {
 
 type UpsertCaseNotificationPayload = {
   accountSid: HrmAccountId;
-  operation: NotificationOperation & ('update' | 'create' | 'reindex');
+  operation: NotificationOperation & ('update' | 'create' | 'reindex' | 'republish');
   case: CaseService;
 };
 
@@ -127,7 +127,7 @@ const publishEntityToSearchIndex = async (
       payload: { accountSid, id: entity.id.toString(), operation },
       messageGroupId,
     });
-  } else if (operation === 'republish' && entityType === 'contact') {
+  } else if (operation === 'republish') {
     await publishToSns({
       entityType,
       payload: {

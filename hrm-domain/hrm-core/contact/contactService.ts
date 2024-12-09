@@ -85,7 +85,7 @@ import {
   generateContactSearchFilters,
   generateContactPermissionsFilters,
 } from './contactSearchIndex';
-import { NotificationOperation } from '@tech-matters/hrm-types/dist/NotificationOperation';
+import { NotificationOperation } from '@tech-matters/hrm-types/NotificationOperation';
 
 // Re export as is:
 export { Contact } from './contactDataAccess';

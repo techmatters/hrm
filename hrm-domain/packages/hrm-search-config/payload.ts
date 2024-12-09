@@ -25,13 +25,19 @@ type IndexOperation = 'index' | 'remove';
 
 export type IndexContactMessage = {
   type: 'contact';
-  operation: IndexOperation | NotificationOperation;
+  operation:
+    | IndexOperation
+    | NotificationOperation
+    | Omit<NotificationOperation, 'republish'>;
   contact: Pick<Contact, 'id'> & Partial<Contact>;
 };
 
 export type IndexCaseMessage = {
   type: 'case';
-  operation: IndexOperation | NotificationOperation;
+  operation:
+    | IndexOperation
+    | NotificationOperation
+    | Omit<NotificationOperation, 'republish'>;
   case: Pick<CaseService, 'id'> &
     Partial<Omit<CaseService, 'sections'>> & {
       sections: NonNullable<CaseService['sections']>;
