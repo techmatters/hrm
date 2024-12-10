@@ -104,9 +104,7 @@ export const handler = async ({
 
       if (!response.ok) {
         for (const key in response) {
-          if (response.hasOwnProperty(key)) {
-            console.log(`${key}: ${response[key]}`);
-          }
+          console.error(` response . ${key}: ${response[key]}`);
         }
         console.error(
           `Failed to submit request for republishing contacts: ${response.statusText}`,
