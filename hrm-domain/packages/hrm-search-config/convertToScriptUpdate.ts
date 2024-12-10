@@ -79,7 +79,7 @@ const convertContactToCaseScriptUpdate = (
       return { documentUpdate: {}, scriptUpdate };
     }
     default: {
-      return assertExhaustive(operation as never);
+      return assertExhaustive(operation);
     }
   }
 };
