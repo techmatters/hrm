@@ -122,6 +122,12 @@ const publishEntityToSearchIndex = async (
   operation: NotificationOperation,
 ) => {
   const messageGroupId = `${accountSid}-${entityType}-${entity.id}`;
+  console.info('Publishing entity to search index:', {
+    accountSid,
+    entityType,
+    entity,
+    operation,
+  });
   if (operation === 'delete') {
     await publishToSns({
       entityType,
