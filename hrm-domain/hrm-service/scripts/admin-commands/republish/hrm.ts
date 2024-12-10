@@ -103,6 +103,7 @@ export const handler = async ({
       });
 
       if (!response.ok) {
+        console.log(`Failed to submit request for republishing contacts: ${response}`);
         console.error(
           `Failed to submit request for republishing contacts: ${response.statusText}`,
         );
