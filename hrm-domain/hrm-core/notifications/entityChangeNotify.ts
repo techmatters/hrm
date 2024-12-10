@@ -97,6 +97,7 @@ const publishToSns = async ({
     console.debug('Publishing HRM entity update:', publishParameters);
     return await publishSns(publishParameters);
   } catch (err) {
+    console.debug('Error trying to publish message to SNS topic', err, payload);
     if (err instanceof SsmParameterNotFound) {
       console.debug(
         `No SNS topic stored in SSM parameter ${getSnsSsmPath(
