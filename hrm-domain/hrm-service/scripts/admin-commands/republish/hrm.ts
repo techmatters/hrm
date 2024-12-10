@@ -103,12 +103,11 @@ export const handler = async ({
       });
 
       if (!response.ok) {
-        console.log(
-          `Failed to submit request for republishing contacts: ${response.toString()}`,
-        );
-        console.error(
-          `Failed to submit request for republishing contacts: ${response.statusText}`,
-        );
+        for (const key in response) {
+          if (response.hasOwnProperty(key)) {
+            console.log(`${key}: ${response[key]}`);
+          }
+        }
       } else {
         console.log(`Republishing contacts from ${dateFrom} to ${dateTo}...`);
         console.log(await response.text());
