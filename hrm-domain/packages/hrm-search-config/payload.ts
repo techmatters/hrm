@@ -23,15 +23,20 @@ import { AccountSID } from '@tech-matters/types';
 
 type IndexOperation = 'index' | 'remove';
 
+type SupportedNotificationOperation = Extract<
+  NotificationOperation,
+  'update' | 'create' | 'delete' | 'reindex'
+>;
+
 export type IndexContactMessage = {
   type: 'contact';
-  operation: IndexOperation | Omit<NotificationOperation, 'republish'>;
+  operation: IndexOperation | SupportedNotificationOperation;
   contact: Pick<Contact, 'id'> & Partial<Contact>;
 };
 
 export type IndexCaseMessage = {
   type: 'case';
-  operation: IndexOperation | Omit<NotificationOperation, 'republish'>;
+  operation: IndexOperation | SupportedNotificationOperation;
   case: Pick<CaseService, 'id'> &
     Partial<Omit<CaseService, 'sections'>> & {
       sections: NonNullable<CaseService['sections']>;

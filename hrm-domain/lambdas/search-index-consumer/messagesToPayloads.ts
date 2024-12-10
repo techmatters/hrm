@@ -186,7 +186,7 @@ const generatePayloadFromCase = (
       };
     }
     default: {
-      return assertExhaustive(m.message.operation as never);
+      return assertExhaustive(m.message.operation);
     }
   }
 };
