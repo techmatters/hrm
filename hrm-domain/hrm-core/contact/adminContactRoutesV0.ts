@@ -16,7 +16,7 @@
 
 import type { Request, Response, NextFunction } from 'express';
 import { SafeRouter, publicEndpoint } from '../permissions';
-import { reindexContactsStream } from './contactsReindexService';
+import { processContactsStream } from './contactsNotifyService';
 
 const adminContactsRouter = SafeRouter();
 
@@ -25,10 +25,39 @@ adminContactsRouter.post(
   '/reindex',
   publicEndpoint,
   async (req: Request, res: Response, next: NextFunction) => {
+    console.log('.......reindexing contacts......', req, res);
+
     const { hrmAccountId } = req;
     const { dateFrom, dateTo } = req.body;
 
-    const resultStream = await reindexContactsStream(hrmAccountId, dateFrom, dateTo);
+    const resultStream = await processContactsStream(
+      hrmAccountId,
+      dateFrom,
+      dateTo,
+      'reindex',
+    );
+    resultStream.on('error', err => {
+      next(err);
+    });
+    res.status(200).setHeader('Content-Type', 'text/plain');
+    resultStream.pipe(res);
+  },
+);
+
+adminContactsRouter.post(
+  '/republish',
+  publicEndpoint,
+  async (req: Request, res: Response, next: NextFunction) => {
+    console.log('.......republishing contacts......', req, res);
+    const { hrmAccountId } = req;
+    const { dateFrom, dateTo } = req.body;
+
+    const resultStream = await processContactsStream(
+      hrmAccountId,
+      dateFrom,
+      dateTo,
+      'republish',
+    );
     resultStream.on('error', err => {
       next(err);
     });

@@ -20,18 +20,19 @@ import { fetch } from 'undici';
 import { getAdminV0URL, staticKeyPattern } from '../../hrmInternalConfig';
 
 export const command = 'hrm';
-export const describe = 'Reindex contacts and cases based on date range';
+export const describe =
+  'Republish contacts (TBD cases) to the data lake based on date range';
 
 export const builder = {
   co: {
     alias: 'contacts',
-    describe: 'reindex contacts',
+    describe: 'republish contacts',
     type: 'boolean',
     default: false,
   },
   ca: {
     alias: 'cases',
-    describe: 'reindex cases',
+    describe: 'republish cases',
     type: 'boolean',
     default: false,
   },
@@ -90,15 +91,8 @@ export const handler = async ({
       assumeRoleParams,
     });
 
-    if (!contacts && !cases) {
-      console.log(
-        'Please specify contacts and/or cases option to reindex in your command',
-      );
-      return;
-    }
-
     if (contacts) {
-      const url = getAdminV0URL(internalResourcesUrl, accountSid, '/contacts/reindex');
+      const url = getAdminV0URL(internalResourcesUrl, accountSid, '/contacts/republish');
       const response = await fetch(url, {
         method: 'POST',
         headers: {
@@ -107,40 +101,25 @@ export const handler = async ({
         },
         body: JSON.stringify({ dateFrom, dateTo }),
       });
+
       for (const key in response) {
         console.error(` response . ${key}: ${response[key]}`);
       }
-      if (!response.ok) {
-        console.error(
-          `Failed to submit request for reindexing contacts: ${response.statusText}`,
-        );
-      } else {
-        console.log(`Reindexing contacts from ${dateFrom} to ${dateTo}...`);
-        console.log(await response.text());
-      }
-    }
-
-    if (cases) {
-      const url = getAdminV0URL(internalResourcesUrl, accountSid, '/cases/reindex');
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Basic ${authKey}`,
-        },
-        body: JSON.stringify({ dateFrom, dateTo }),
-      });
 
       if (!response.ok) {
         console.error(
-          `Failed to submit request for reindexing cases: ${response.statusText}`,
+          `Failed to submit request for republishing contacts: ${response.statusText}`,
         );
       } else {
-        console.log(`Reindexing cases from ${dateFrom} to ${dateTo}...`);
+        console.log(`Republishing contacts from ${dateFrom} to ${dateTo}...`);
         console.log(await response.text());
       }
     }
   } catch (err) {
     console.error(err);
+  }
+
+  if (cases) {
+    console.log('Republishing cases is not yet implemented');
   }
 };

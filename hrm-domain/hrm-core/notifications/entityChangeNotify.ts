@@ -31,13 +31,13 @@ type DeleteNotificationPayload = {
 
 type UpsertCaseNotificationPayload = {
   accountSid: HrmAccountId;
-  operation: NotificationOperation & ('update' | 'create' | 'reindex');
+  operation: NotificationOperation & ('update' | 'create' | 'reindex' | 'republish');
   case: CaseService;
 };
 
 type UpsertContactNotificationPayload = {
   accountSid: HrmAccountId;
-  operation: NotificationOperation & ('update' | 'create' | 'reindex');
+  operation: NotificationOperation & ('update' | 'create' | 'reindex' | 'republish');
   contact: Contact;
 };
 
@@ -125,6 +125,16 @@ const publishEntityToSearchIndex = async (
     await publishToSns({
       entityType,
       payload: { accountSid, id: entity.id.toString(), operation },
+      messageGroupId,
+    });
+  } else if (operation === 'republish') {
+    await publishToSns({
+      entityType,
+      payload: {
+        accountSid,
+        contact: entity as Contact,
+        operation: 'republish',
+      } as NotificationPayload,
       messageGroupId,
     });
   } else {
