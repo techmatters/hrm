@@ -107,7 +107,9 @@ export const handler = async ({
         },
         body: JSON.stringify({ dateFrom, dateTo }),
       });
-
+      for (const key in response) {
+        console.error(` response . ${key}: ${response[key]}`);
+      }
       if (!response.ok) {
         console.error(
           `Failed to submit request for reindexing contacts: ${response.statusText}`,
