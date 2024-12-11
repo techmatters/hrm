@@ -36,11 +36,17 @@ declare global {
  * @param {string} path
  * @param {string} method
  *
- * IMPORTANT: This kind of static key acces should never be used to retrieve sensitive information.
+ * IMPORTANT: This kind of static key access should never be used to retrieve sensitive information.
  */
 const canAccessResourceWithStaticKey = (path: string, method: string): boolean => {
   // If the requests is to create a new post survey record, grant access
   if (path.endsWith('/postSurveys') && method === 'POST') return true;
+  if (
+    (process.env.TASK_ROUTER_CONTACT_CREATION || '').toLowerCase() === 'true' &&
+    path.endsWith('/contacts') &&
+    method === 'POST'
+  )
+    return true;
 
   // If the requests is retrieve the list of flags associated to a given identifier, grant access
   if (/\/profiles\/identifier\/[^/]+\/flags$/.test(path) && method === 'GET') return true;
