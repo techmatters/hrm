@@ -65,7 +65,7 @@ import {
 } from './caseSearchIndex';
 import { ContactListCondition } from '../contact/contactSearchIndex';
 import { maxPermissions } from '../permissions';
-import { NotificationOperation } from '@tech-matters/hrm-types/dist/NotificationOperation';
+import { NotificationOperation } from '@tech-matters/hrm-types/NotificationOperation';
 
 export { WELL_KNOWN_CASE_SECTION_NAMES, CaseService, CaseInfoSection };
 
