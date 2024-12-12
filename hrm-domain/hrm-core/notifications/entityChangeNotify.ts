@@ -25,19 +25,25 @@ import { NotificationOperation } from '@tech-matters/hrm-types';
 
 type DeleteNotificationPayload = {
   accountSid: HrmAccountId;
-  operation: NotificationOperation & 'delete';
+  operation: Extract<NotificationOperation, 'delete'>;
   id: string;
 };
 
 type UpsertCaseNotificationPayload = {
   accountSid: HrmAccountId;
-  operation: NotificationOperation & ('update' | 'create' | 'reindex' | 'republish');
+  operation: Extract<
+    NotificationOperation,
+    'update' | 'create' | 'reindex' | 'republish'
+  >;
   case: CaseService;
 };
 
 type UpsertContactNotificationPayload = {
   accountSid: HrmAccountId;
-  operation: NotificationOperation & ('update' | 'create' | 'reindex' | 'republish');
+  operation: Extract<
+    NotificationOperation,
+    'update' | 'create' | 'reindex' | 'republish'
+  >;
   contact: Contact;
 };
 
