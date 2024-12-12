@@ -16,6 +16,9 @@
 name: Generate AI Training Set Task
 
 on:
+  push:
+    branches:
+      - CHI-3016-workflow-debug # Temporary branch for debugging
   workflow_dispatch:
     inputs:
       environment:
@@ -50,13 +53,13 @@ jobs:
       - name: Run New ECS task
         id: run-task
         run: |
-          CLUSTER="${{ inputs.environment}}-ecs-cluster"
-          FAMILY="${{ inputs.environment}}-hrm-scheduled-task"
+          CLUSTER="production-ecs-cluster"
+          FAMILY="production-hrm-scheduled-task"
           SUBNETS="subnet-034e5c652dbad09dd"
-          SECURITY_GROUPS="sg-09194f9a648baf082 sg-047498d4c7b2cedd8 sg-06d6458accc0ec5ed sg-0ace4338c75e5d3de"
-          COMMAND="npm run start:generate-ai-training-set ${{ inputs.environment }} ${{ inputs.helpline-shortcodes }} tl-aselo-ai-${{ inputs.environment }}$(if [ ${{ inputs.environment }} == "production" ]; then echo "-us-east-1"; fi)"
-          TASK_ROLE="arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/development-ecsTaskRole"
-          EXEC_ROLE="arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/development-ecsTaskExecutionRole"
+          SECURITY_GROUPS="sg-09194f9a648baf082,sg-047498d4c7b2cedd8,sg-06d6458accc0ec5ed,sg-0ace4338c75e5d3de"
+          COMMAND="npm run start:generate-ai-training-set profuction as tl-aselo-ai-profuction-us-east-1"
+          TASK_ROLE="arn:aws:iam::712893914485:role/development-ecsTaskRole"
+          EXEC_ROLE="arn:aws:iam::712893914485:role/development-ecsTaskExecutionRole"
 
           aws ecs run-task \
             --cluster $CLUSTER \
