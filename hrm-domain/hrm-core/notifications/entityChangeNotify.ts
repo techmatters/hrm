@@ -25,19 +25,25 @@ import { NotificationOperation } from '@tech-matters/hrm-types';
 
 type DeleteNotificationPayload = {
   accountSid: HrmAccountId;
-  operation: NotificationOperation & 'delete';
+  operation: Extract<NotificationOperation, 'delete'>;
   id: string;
 };
 
 type UpsertCaseNotificationPayload = {
   accountSid: HrmAccountId;
-  operation: NotificationOperation & ('update' | 'create' | 'reindex');
+  operation: Extract<
+    NotificationOperation,
+    'update' | 'create' | 'reindex' | 'republish'
+  >;
   case: CaseService;
 };
 
 type UpsertContactNotificationPayload = {
   accountSid: HrmAccountId;
-  operation: NotificationOperation & ('update' | 'create' | 'reindex');
+  operation: Extract<
+    NotificationOperation,
+    'update' | 'create' | 'reindex' | 'republish'
+  >;
   contact: Contact;
 };
 
@@ -97,6 +103,7 @@ const publishToSns = async ({
     console.debug('Publishing HRM entity update:', publishParameters);
     return await publishSns(publishParameters);
   } catch (err) {
+    console.debug('Error trying to publish message to SNS topic', err, payload);
     if (err instanceof SsmParameterNotFound) {
       console.debug(
         `No SNS topic stored in SSM parameter ${getSnsSsmPath(
@@ -125,6 +132,16 @@ const publishEntityToSearchIndex = async (
     await publishToSns({
       entityType,
       payload: { accountSid, id: entity.id.toString(), operation },
+      messageGroupId,
+    });
+  } else if (operation === 'republish') {
+    await publishToSns({
+      entityType,
+      payload: {
+        accountSid,
+        contact: entity as Contact,
+        operation: 'republish',
+      } as NotificationPayload,
       messageGroupId,
     });
   } else {

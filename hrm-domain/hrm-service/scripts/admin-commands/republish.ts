@@ -14,9 +14,12 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-export type NotificationOperation =
-  | 'update'
-  | 'create'
-  | 'delete'
-  | 'reindex'
-  | 'republish';
+export const command = 'republish <command>';
+export const desc = 'admin endpoints for republishing contacts';
+
+export const builder = function (yargs) {
+  return yargs.commandDir('republish', {
+    exclude: /^(index|_)/,
+    extensions: ['ts'],
+  });
+};
