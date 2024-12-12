@@ -57,7 +57,7 @@ jobs:
           FAMILY="production-hrm-scheduled-task"
           SUBNETS="subnet-034e5c652dbad09dd"
           SECURITY_GROUPS="sg-09194f9a648baf082,sg-047498d4c7b2cedd8,sg-06d6458accc0ec5ed,sg-0ace4338c75e5d3de"
-          COMMAND="npm run start:generate-ai-training-set profuction as tl-aselo-ai-profuction-us-east-1"
+          COMMAND="npm run start:generate-ai-training-set production as tl-aselo-ai-production-us-east-1"
           TASK_ROLE="arn:aws:iam::712893914485:role/development-ecsTaskRole"
           EXEC_ROLE="arn:aws:iam::712893914485:role/development-ecsTaskExecutionRole"
 
