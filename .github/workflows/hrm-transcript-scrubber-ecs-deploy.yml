@@ -197,10 +197,11 @@ jobs:
         id: slack
         uses: slackapi/slack-github-action@v2.0.0
         with:
-          channel-id: ${{ env.ASELO_DEPLOYS_CHANNEL_ID }}
-          slack-message: '`[HRM Transcript Scrubber]` Deployment of ${{ github.ref_type }} `${{ github.ref_name }}` requested by `${{ github.triggering_actor }}` completed with SHA ${{ github.sha }} to region `${{ inputs.region }}`, environment `${{ inputs.environment }}` :rocket:.'
-        env:
-          SLACK_BOT_TOKEN: ${{ env.GITHUB_ACTIONS_SLACK_BOT_TOKEN }}
+          method: chat.postMessage
+          token: ${{ env.GITHUB_ACTIONS_SLACK_BOT_TOKEN }}
+          payload: |
+            channel: ${{ env.ASELO_DEPLOYS_CHANNEL_ID }}
+            text: "`[HRM Transcript Scrubber]` Deployment of ${{ github.ref_type }} `${{ github.ref_name }}` requested by `${{ github.triggering_actor }}` completed with SHA ${{ github.sha }} to region `${{ inputs.region }}`, environment `${{ inputs.environment }}` :rocket:."
         if: ${{ inputs.send-slack-message != 'false' }}
 
 #      # Update deployment matrix
