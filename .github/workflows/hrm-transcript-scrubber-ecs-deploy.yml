@@ -201,7 +201,7 @@ jobs:
           token: ${{ env.GITHUB_ACTIONS_SLACK_BOT_TOKEN }}
           payload: |
             channel: ${{ env.ASELO_DEPLOYS_CHANNEL_ID }}
-            text: "`[HRM Transcript Scrubber]` Deployment of ${{ github.ref_type }} `${{ github.ref_name }}` requested by `${{ github.triggering_actor }}` completed with SHA ${{ github.sha }} to region `${{ inputs.region }}`, environment `${{ inputs.environment }}` :rocket:."
+            text: '`[HRM Transcript Scrubber]` Deployment of ${{ github.ref_type }} `${{ github.ref_name }}` requested by `${{ github.triggering_actor }}` completed with SHA ${{ github.sha }} to region `${{ inputs.region }}`, environment `${{ inputs.environment }}` :rocket:.'
         if: ${{ inputs.send-slack-message != 'false' }}
 
 #      # Update deployment matrix
