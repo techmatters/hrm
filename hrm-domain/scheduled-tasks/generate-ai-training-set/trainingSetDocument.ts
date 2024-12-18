@@ -57,6 +57,8 @@ export const attachTranscript = async (
     key: readKey,
     bucket: readBucket,
   });
+  console.log(`Transcript transcriptDocJson: ${transcriptDocJson}`);
   const transcript: ExportTranscript = JSON.parse(transcriptDocJson).transcript;
+  console.log(`Transcript transcript: ${transcript}`);
   return trainingSetDocument(trainingSetContact, transcript);
 };
