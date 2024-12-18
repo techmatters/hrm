@@ -38,16 +38,17 @@ const trainingSetDocument = (
 export const attachTranscript = async (
   trainingSetContact: TrainingSetContact,
   shortCode: string,
-  sourceBucket: string,
+  // sourceBucket: string,
 ): Promise<TrainingSetDocument> => {
-  console.log(
-    `Attaching transcript from ${trainingSetContact.transcriptBucket} or ${sourceBucket}`,
-  );
-  const readBucket = sourceBucket || trainingSetContact.transcriptBucket;
+  console.log(`Attaching transcript from ${trainingSetContact.transcriptBucket}`);
+  const readBucket = trainingSetContact.transcriptBucket;
+
   console.log(`Reading transcript from ${readBucket}`);
-  const readKey = sourceBucket
-    ? `${shortCode.toLowerCase()}/${trainingSetContact.transcriptKey}`
-    : trainingSetContact.transcriptKey;
+
+  const readKey = `${shortCode.toLowerCase()}/${trainingSetContact.transcriptKey}`;
+  // const readKey = sourceBucket
+  //   ? `${shortCode.toLowerCase()}/${trainingSetContact.transcriptKey}`
+  //   : trainingSetContact.transcriptKey;
 
   console.log(
     `Attempting reading transcript from ${readBucket} bucket and ${readKey} key`,
