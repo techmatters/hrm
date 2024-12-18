@@ -40,7 +40,9 @@ export const attachTranscript = async (
   shortCode: string,
   sourceBucket: string,
 ): Promise<TrainingSetDocument> => {
-  console.log(`Attaching transcript from ${trainingSetContact} or ${sourceBucket}`);
+  console.log(
+    `Attaching transcript from ${trainingSetContact.transcriptBucket} or ${sourceBucket}`,
+  );
   const readBucket = sourceBucket || trainingSetContact.transcriptBucket;
   console.log(`Reading transcript from ${readBucket}`);
   const readKey = sourceBucket

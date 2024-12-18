@@ -28,6 +28,7 @@ export const waitForS3Object = retryable(
     try {
       return await getS3Object({ bucket, key });
     } catch (err) {
+      console.error(`Error getting S3 object: ${err}`);
       return undefined;
     }
   },
