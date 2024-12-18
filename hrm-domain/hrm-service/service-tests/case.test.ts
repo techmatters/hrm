@@ -286,7 +286,7 @@ describe('/cases route', () => {
         const fromDb = await caseDb.getById(
           cases.blank.id,
           accountSid,
-          { accountSid, workerSid, isSupervisor: true, roles: [] },
+          newTwilioUser(accountSid, workerSid, ['supervisor']),
           [['everyone']],
         );
         expect(fromDb).toBeFalsy();
