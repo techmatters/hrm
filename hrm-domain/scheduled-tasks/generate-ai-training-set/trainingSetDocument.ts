@@ -49,7 +49,7 @@ export const attachTranscript = async (
     ? `${shortCode.toLowerCase()}/${trainingSetContact.transcriptKey}`
     : trainingSetContact.transcriptKey;
 
-  console.log(`Reading transcript from ${readBucket} bucket and ${readKey} key`);
+  console.log(`Attempting reading transcript from ${readBucket} bucket and ${readKey} key`);
 
   const transcriptDocJson = await getS3Object({
     key: readKey,
