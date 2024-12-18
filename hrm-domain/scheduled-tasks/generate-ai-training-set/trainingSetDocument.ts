@@ -38,12 +38,16 @@ const trainingSetDocument = (
 export const attachTranscript = async (
   trainingSetContact: TrainingSetContact,
   shortCode: string,
-  sourceBucket?: string,
+  sourceBucket: string,
 ): Promise<TrainingSetDocument> => {
+  console.log(`Attaching transcript from ${trainingSetContact} or ${sourceBucket}`);
   const readBucket = sourceBucket || trainingSetContact.transcriptBucket;
+  console.log(`Reading transcript from ${readBucket}`);
   const readKey = sourceBucket
     ? `${shortCode.toLowerCase()}/${trainingSetContact.transcriptKey}`
     : trainingSetContact.transcriptKey;
+
+  console.log(`Reading transcript from ${readBucket} bucket and ${readKey} key`);
 
   const transcriptDocJson = await getS3Object({
     key: readKey,
