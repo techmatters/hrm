@@ -149,6 +149,8 @@ const setupAllow = <T extends TargetKind>(
   );
 
   return (performer: TwilioUser, target: any) => {
+    // Let system users do anything for now, might need to tighten this up in future
+    if (performer.isSystemUser) return true;
     const ctx = { curentTimestamp: new Date() };
 
     const appliedTimeBasedConditions = applyTimeBasedConditions(timeBasedConditions)(

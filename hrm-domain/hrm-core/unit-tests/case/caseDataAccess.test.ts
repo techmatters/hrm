@@ -22,7 +22,7 @@ import each from 'jest-each';
 import { db } from '../../connection-pool';
 import { OrderByColumn, OrderByColumnType } from '../../case/sql/caseSearchSql';
 import { expectValuesInSql, getSqlStatement } from '@tech-matters/testing';
-import { TwilioUser } from '@tech-matters/twilio-worker-auth';
+import { newTwilioUser, TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { AccountSID } from '@tech-matters/types';
 import { rulesMap } from '../../permissions';
 import { TKConditionsSets } from '../../permissions/rulesMap';
@@ -31,7 +31,7 @@ import { pick } from 'lodash';
 
 const accountSid: AccountSID = 'ACCOUNT_SID';
 const workerSid = 'WK-twilio-worker-id';
-const user: TwilioUser = { accountSid, workerSid, isSupervisor: true, roles: [] };
+const user: TwilioUser = newTwilioUser('ACxx', 'WKxx', ['supervisor']);
 let conn: pgPromise.ITask<unknown>;
 const caseId = 42;
 

@@ -17,10 +17,15 @@
 import { validator as TokenValidator } from 'twilio-flex-token-validator';
 import crypto from 'crypto';
 
-import { newTwilioUser, TwilioUser } from './twilioUser';
+import {
+  newAccountSystemUser,
+  newGlobalSystemUser,
+  newTwilioUser,
+  TwilioUser,
+} from './twilioUser';
 import { unauthorized } from '@tech-matters/http';
 import type { Request, Response, NextFunction } from 'express';
-import { AccountSID, TwilioUserIdentifier, WorkerSID } from '@tech-matters/types';
+import { AccountSID, WorkerSID } from '@tech-matters/types';
 
 declare global {
   namespace Express {
@@ -72,7 +77,7 @@ const extractAccountSid = (request: Request): AccountSID => {
 const authenticateWithStaticKey = (
   req: Request,
   keySuffix: string,
-  userId?: TwilioUserIdentifier,
+  user: TwilioUser,
 ): boolean => {
   if (!req.headers) return false;
   const {
@@ -91,7 +96,7 @@ const authenticateWithStaticKey = (
         crypto.timingSafeEqual(Buffer.from(requestSecret), Buffer.from(staticSecret));
 
       if (isStaticSecretValid) {
-        req.user = newTwilioUser(extractAccountSid(req), userId, []);
+        req.user = user;
         return true;
       }
     } catch (err) {
@@ -140,7 +145,7 @@ export const getAuthorizationMiddleware =
 
     if (
       canAccessResourceWithStaticKey(req.originalUrl, req.method) &&
-      authenticateWithStaticKey(req, accountSid, `account-${accountSid}`)
+      authenticateWithStaticKey(req, accountSid, newAccountSystemUser(accountSid))
     )
       return next();
 
@@ -159,7 +164,8 @@ export const staticKeyAuthorizationMiddleware = async (
     );
   }
 
-  if (authenticateWithStaticKey(req, accountSid, `account-${accountSid}`)) return next();
+  if (authenticateWithStaticKey(req, accountSid, newAccountSystemUser(accountSid)))
+    return next();
   return unauthorized(res);
 };
 
@@ -167,6 +173,13 @@ export const staticKeyAuthorizationMiddleware = async (
 export const systemUser = 'system';
 export const adminAuthorizationMiddleware =
   (keySuffix: string) => async (req: Request, res: Response, next: NextFunction) => {
-    if (authenticateWithStaticKey(req, keySuffix, systemUser)) return next();
+    if (
+      authenticateWithStaticKey(
+        req,
+        keySuffix,
+        newGlobalSystemUser(extractAccountSid(req)),
+      )
+    )
+      return next();
     return unauthorized(res);
   };
