@@ -22,7 +22,7 @@ const helplineCodes = process.argv[3].split(';');
 const targetBucket = process.argv[4];
 // const sourceBucket = process.argv[5];
 
-generate(environment, helplineCodes, targetBucket.catch(error => {
+generate(environment, helplineCodes, targetBucket).catch(error => {
   console.error(error);
 });
 handleSignals(async () => undefined).catch(error => {
