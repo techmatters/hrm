@@ -78,14 +78,14 @@ import {
   isDatabaseUniqueConstraintViolationErrorResult,
 } from '../sql';
 import { newGlobalSystemUser } from '@tech-matters/twilio-worker-auth';
-import { publishContactToSearchIndex } from '../jobs/search/publishToSearchIndex';
+import { publishContactChangeNotification } from '../notifications/entityChangeNotify';
 import type { RulesFile, TKConditionsSets } from '../permissions/rulesMap';
-import type { IndexMessage } from '@tech-matters/hrm-search-config';
 import {
   ContactListCondition,
   generateContactSearchFilters,
   generateContactPermissionsFilters,
 } from './contactSearchIndex';
+import { NotificationOperation } from '@tech-matters/hrm-types/NotificationOperation';
 
 // Re export as is:
 export { Contact } from './contactDataAccess';
@@ -178,8 +178,8 @@ const initProfile = async (
   });
 };
 
-const doContactInSearchIndexOP =
-  (operation: IndexMessage['operation']) =>
+const doContactChangeNotification =
+  (operation: NotificationOperation) =>
   async ({
     accountSid,
     contactId,
@@ -195,7 +195,7 @@ const doContactInSearchIndexOP =
       const contact = await getById(accountSid, contactId);
 
       if (contact) {
-        await publishContactToSearchIndex({ accountSid, contact, operation });
+        await publishContactChangeNotification({ accountSid, contact, operation });
       }
     } catch (err) {
       console.error(
@@ -205,8 +205,9 @@ const doContactInSearchIndexOP =
     }
   };
 
-const indexContactInSearchIndex = doContactInSearchIndexOP('index');
-const removeContactInSearchIndex = doContactInSearchIndexOP('remove');
+const createContactInSearchIndex = doContactChangeNotification('create');
+const updateContactInSearchIndex = doContactChangeNotification('update');
+const deleteContactInSearchIndex = doContactChangeNotification('delete');
 
 // Creates a contact with all its related records within a single transaction
 export const createContact = async (
@@ -262,7 +263,7 @@ export const createContact = async (
     if (isOk(result)) {
       // trigger index operation but don't await for it
       if (!skipSearchIndex) {
-        indexContactInSearchIndex({ accountSid, contactId: result.data.id });
+        createContactInSearchIndex({ accountSid, contactId: result.data.id });
       }
       return result.data;
     }
@@ -335,7 +336,7 @@ export const patchContact = async (
     // trigger index operation but don't await for it
 
     if (!skipSearchIndex) {
-      indexContactInSearchIndex({ accountSid, contactId: parseInt(contactId, 10) });
+      updateContactInSearchIndex({ accountSid, contactId: parseInt(contactId, 10) });
     }
 
     return applyTransformations(updated);
@@ -350,7 +351,7 @@ export const connectContactToCase = async (
 ): Promise<Contact> => {
   if (caseId === null) {
     // trigger remove operation, awaiting for it, since we'll lost the information of which is the "old case" otherwise
-    await removeContactInSearchIndex({ accountSid, contactId: parseInt(contactId, 10) });
+    await deleteContactInSearchIndex({ accountSid, contactId: parseInt(contactId, 10) });
   }
 
   const updated: Contact | undefined = await connectToCase()(
@@ -367,7 +368,7 @@ export const connectContactToCase = async (
 
   // trigger index operation but don't await for it
   if (!skipSearchIndex) {
-    indexContactInSearchIndex({ accountSid, contactId: parseInt(contactId, 10) });
+    updateContactInSearchIndex({ accountSid, contactId: parseInt(contactId, 10) });
   }
 
   return applyTransformations(updated);
@@ -415,7 +416,10 @@ export const addConversationMediaToContact = async (
 
     // trigger index operation but don't await for it
     if (!skipSearchIndex) {
-      indexContactInSearchIndex({ accountSid, contactId: parseInt(contactIdString, 10) });
+      updateContactInSearchIndex({
+        accountSid,
+        contactId: parseInt(contactIdString, 10),
+      });
     }
 
     return applyTransformations(updated);
@@ -599,7 +603,7 @@ export const updateConversationMediaData =
 
     // trigger index operation but don't await for it
     if (!skipSearchIndex) {
-      indexContactInSearchIndex({ accountSid, contactId });
+      updateContactInSearchIndex({ accountSid, contactId });
     }
 
     return result;

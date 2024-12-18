@@ -351,7 +351,7 @@ export const searchByIds: SearchQueryFunction<
   }),
 );
 
-export const streamContactsForReindexing = ({
+export const streamContactsAfterNotified = ({
   accountSid,
   searchParameters,
   user,

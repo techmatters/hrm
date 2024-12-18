@@ -119,40 +119,31 @@ const generatePayloadFromContact = (
   ps: PayloadsByIndex,
   m: ContactIndexingInputData,
 ): PayloadsByIndex => {
-  switch (m.message.operation) {
-    // both operations are handled internally by the hrm-search-config package, so just cascade the cases
-    case 'index':
-    case 'remove': {
-      return {
-        ...ps,
-        // add an upsert job to HRM_CONTACTS_INDEX_TYPE index
-        [HRM_CONTACTS_INDEX_TYPE]: [
-          ...(ps[HRM_CONTACTS_INDEX_TYPE] ?? []),
+  return {
+    ...ps,
+    // add an upsert job to HRM_CONTACTS_INDEX_TYPE index
+    [HRM_CONTACTS_INDEX_TYPE]: [
+      ...(ps[HRM_CONTACTS_INDEX_TYPE] ?? []),
+      {
+        ...m,
+        documentId: m.message.contact.id,
+        payload: { ...m.message, transcript: m.transcript },
+        indexHandler: 'updateDocument',
+      },
+    ],
+    // if associated to a case, add an upsert with script job to HRM_CASES_INDEX_TYPE index
+    [HRM_CASES_INDEX_TYPE]: m.message.contact.caseId
+      ? [
+          ...(ps[HRM_CASES_INDEX_TYPE] ?? []),
           {
             ...m,
-            documentId: m.message.contact.id,
+            documentId: m.message.contact.caseId,
             payload: { ...m.message, transcript: m.transcript },
-            indexHandler: 'updateDocument',
+            indexHandler: 'updateScript',
           },
-        ],
-        // if associated to a case, add an upsert with script job to HRM_CASES_INDEX_TYPE index
-        [HRM_CASES_INDEX_TYPE]: m.message.contact.caseId
-          ? [
-              ...(ps[HRM_CASES_INDEX_TYPE] ?? []),
-              {
-                ...m,
-                documentId: m.message.contact.caseId,
-                payload: { ...m.message, transcript: m.transcript },
-                indexHandler: 'updateScript',
-              },
-            ]
-          : ps[HRM_CASES_INDEX_TYPE] ?? [],
-      };
-    }
-    default: {
-      return assertExhaustive(m.message.operation);
-    }
-  }
+        ]
+      : ps[HRM_CASES_INDEX_TYPE] ?? [],
+  };
 };
 
 const generatePayloadFromCase = (
@@ -160,6 +151,9 @@ const generatePayloadFromCase = (
   m: CaseIndexingInputData,
 ): PayloadsByIndex => {
   switch (m.message.operation) {
+    case 'create':
+    case 'update':
+    case 'reindex':
     case 'index': {
       return {
         ...ps,
@@ -175,6 +169,7 @@ const generatePayloadFromCase = (
         ],
       };
     }
+    case 'delete':
     case 'remove': {
       return {
         ...ps,

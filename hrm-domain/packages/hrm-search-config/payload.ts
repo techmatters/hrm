@@ -14,20 +14,29 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import type { CaseService, Contact } from '@tech-matters/hrm-types';
+import type {
+  CaseService,
+  Contact,
+  NotificationOperation,
+} from '@tech-matters/hrm-types';
 import { AccountSID } from '@tech-matters/types';
 
 type IndexOperation = 'index' | 'remove';
 
+type SupportedNotificationOperation = Extract<
+  NotificationOperation,
+  'update' | 'create' | 'delete' | 'reindex'
+>;
+
 export type IndexContactMessage = {
   type: 'contact';
-  operation: IndexOperation;
+  operation: IndexOperation | SupportedNotificationOperation;
   contact: Pick<Contact, 'id'> & Partial<Contact>;
 };
 
 export type IndexCaseMessage = {
   type: 'case';
-  operation: IndexOperation;
+  operation: IndexOperation | SupportedNotificationOperation;
   case: Pick<CaseService, 'id'> &
     Partial<Omit<CaseService, 'sections'>> & {
       sections: NonNullable<CaseService['sections']>;

@@ -14,11 +14,12 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-export * from './Contact';
-export * from './Referral';
-export * from './ConversationMedia';
-export * from './Case';
-export * from './CaseSection';
-export * from './NotificationOperation';
-export * from './Profile';
-export * from './PostSurvey';
+export const command = 'republish <command>';
+export const desc = 'admin endpoints for republishing contacts';
+
+export const builder = function (yargs) {
+  return yargs.commandDir('republish', {
+    exclude: /^(index|_)/,
+    extensions: ['ts'],
+  });
+};

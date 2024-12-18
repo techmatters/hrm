@@ -24,11 +24,11 @@ import { workerSid, accountSid } from '../mocks';
 import { newTwilioUser } from '@tech-matters/twilio-worker-auth';
 import { rulesMap } from '../../permissions';
 import { RulesFile } from '../../permissions/rulesMap';
-import * as publishToSearchIndex from '../../jobs/search/publishToSearchIndex';
+import * as entityChangeNotify from '../../notifications/entityChangeNotify';
 
-const publishToSearchIndexSpy = jest
-  .spyOn(publishToSearchIndex, 'publishCaseToSearchIndex')
-  .mockImplementation(async () => Promise.resolve('Ok') as any);
+const publishCaseChangeNotificationSpy = jest
+  .spyOn(entityChangeNotify, 'publishCaseChangeNotification')
+  .mockImplementation(() => Promise.resolve('Ok') as any);
 
 jest.mock('../../case/caseDataAccess');
 const baselineCreatedDate = new Date(2013, 6, 13).toISOString();
@@ -77,7 +77,7 @@ test('create case', async () => {
   });
 
   await new Promise(process.nextTick);
-  expect(publishToSearchIndexSpy).toHaveBeenCalled();
+  expect(publishCaseChangeNotificationSpy).toHaveBeenCalled();
 });
 
 describe('searchCases', () => {

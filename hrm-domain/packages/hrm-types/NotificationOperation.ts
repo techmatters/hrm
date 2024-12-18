@@ -14,11 +14,9 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-export * from './Contact';
-export * from './Referral';
-export * from './ConversationMedia';
-export * from './Case';
-export * from './CaseSection';
-export * from './NotificationOperation';
-export * from './Profile';
-export * from './PostSurvey';
+export type NotificationOperation =
+  | 'update'
+  | 'create'
+  | 'delete'
+  | 'reindex'
+  | 'republish';

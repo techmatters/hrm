@@ -15,20 +15,24 @@
  */
 
 import { HrmAccountId } from '@tech-matters/types';
-import { publishContactToSearchIndex } from '../jobs/search/publishToSearchIndex';
+import { publishContactChangeNotification } from '../notifications/entityChangeNotify';
 import { maxPermissions } from '../permissions';
 import { Transform } from 'stream';
-import { streamContactsForReindexing } from './contactDataAccess';
+import { streamContactsAfterNotified } from './contactDataAccess';
 import { TKConditionsSets } from '../permissions/rulesMap';
 
 // TODO: move this to service initialization or constant package?
 const highWaterMark = 1000;
 
-export const reindexContactsStream = async (
+export const processContactsStream = async (
   accountSid: HrmAccountId,
   dateFrom: string,
   dateTo: string,
+  operation: 'reindex' | 'republish',
 ): Promise<Transform> => {
+  if (operation !== 'reindex' && operation !== 'republish')
+    throw new Error(`Invalid operation: ${operation}`);
+
   const searchParameters = {
     dateFrom,
     dateTo,
@@ -36,8 +40,8 @@ export const reindexContactsStream = async (
     shouldIncludeUpdatedAt: true,
   };
 
-  console.debug('Querying DB for contacts to index', searchParameters);
-  const contactsStream: NodeJS.ReadableStream = await streamContactsForReindexing({
+  console.debug(`Querying DB for contacts to ${operation}`, searchParameters);
+  const contactsStream: NodeJS.ReadableStream = await streamContactsAfterNotified({
     accountSid,
     searchParameters,
     user: maxPermissions.user,
@@ -46,17 +50,17 @@ export const reindexContactsStream = async (
     batchSize: highWaterMark,
   });
 
-  console.debug('Piping contacts to queue for reindexing', searchParameters);
+  console.debug(`Piping contacts to queue for ${operation}ing`, searchParameters);
   return contactsStream.pipe(
     new Transform({
       objectMode: true,
       highWaterMark,
       async transform(contact, _, callback) {
         try {
-          const { MessageId } = await publishContactToSearchIndex({
+          const { MessageId } = await publishContactChangeNotification({
             accountSid,
             contact,
-            operation: 'reindex',
+            operation,
           });
 
           this.push(

@@ -32,7 +32,6 @@ import {
   canChangeContactConnection,
   canDisconnectContact,
   canPerformEditContactAction,
-  canPerformEditInProgressContactAction,
   canPerformViewContactAction,
 } from './canPerformContactAction';
 
@@ -180,7 +179,6 @@ contactsRouter.patch(
   '/:contactId',
   validatePatchPayload,
   canPerformEditContactAction,
-  canPerformEditInProgressContactAction,
   async (req, res) => {
     const { hrmAccountId, user } = req;
     const { contactId } = req.params;
