@@ -19,18 +19,13 @@ import { mockConnection, mockTask, mockTransaction } from '../mock-db';
 import { search, create } from '../../contact/contactDataAccess';
 import { ContactBuilder } from './contact-builder';
 import { NewContactRecord } from '../../contact/sql/contactInsertSql';
-import { TwilioUser } from '@tech-matters/twilio-worker-auth';
+import { newTwilioUser, TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { OPEN_CONTACT_ACTION_CONDITIONS } from '../mocks';
 import { newOkFromData } from '@tech-matters/types';
 
 let conn: pgPromise.ITask<unknown>;
 
-const twilioUser: TwilioUser = {
-  accountSid: 'ACxx',
-  workerSid: 'WKxx',
-  isSupervisor: true,
-  roles: [],
-};
+const twilioUser: TwilioUser = newTwilioUser('ACxx', 'WKxx', ['supervisor']);
 
 beforeEach(() => {
   conn = mockConnection();

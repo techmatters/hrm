@@ -46,12 +46,18 @@ const contactsRouter = SafeRouter();
  *
  * @returns {Contact} - Created contact
  */
-contactsRouter.post('/', publicEndpoint, async (req, res) => {
-  const { hrmAccountId, user } = req;
-  const contact = await createContact(hrmAccountId, user.workerSid, req.body, {
-    can: req.can,
-    user,
-  });
+contactsRouter.post('/', publicEndpoint, async (req: Request, res) => {
+  const { hrmAccountId, user, body } = req;
+  const contact = await createContact(
+    hrmAccountId,
+    // Take the createdBy specified in the body if this is being created from a backend system, otherwise force use of the authenticated user's workerSid
+    user.isSystemUser ? body.createdBy : user.workerSid,
+    body,
+    {
+      can: req.can,
+      user,
+    },
+  );
   res.json(contact);
 });
 

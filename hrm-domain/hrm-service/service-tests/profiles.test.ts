@@ -89,14 +89,14 @@ describe('/profiles', () => {
           murray!.id,
           defaultFlags[0].id,
           null,
-          { user: { accountSid, workerSid, isSupervisor: false, roles: [] } },
+          { user: newTwilioUser(accountSid, workerSid, []) },
         ),
         profilesDB.associateProfileToProfileFlag()(
           accountSid,
           antonella!.id,
           defaultFlags[1].id,
           null,
-          { user: { accountSid, workerSid, isSupervisor: false, roles: [] } },
+          { user: newTwilioUser(accountSid, workerSid, []) },
         ),
         profilesDB.createProfileSection()(antonella!.accountSid, {
           content: 'some example content',
@@ -231,7 +231,7 @@ describe('/profiles', () => {
               getOrCreateProfileWithIdentifier(t)(
                 acc,
                 { identifier: { identifier }, profile: { name: null } },
-                { user: { accountSid: acc, isSupervisor: false, roles: [], workerSid } },
+                { user: newTwilioUser(accountSid, workerSid, []) },
               ),
             ),
           ),
@@ -269,7 +269,7 @@ describe('/profiles', () => {
         const result = await getOrCreateProfileWithIdentifier(t)(
           accountSid,
           { identifier: { identifier }, profile: { name: null } },
-          { user: { accountSid, isSupervisor: false, roles: [], workerSid } },
+          { user: newTwilioUser(accountSid, workerSid, []) },
         );
         return result.unwrap().identifier;
       });
@@ -546,7 +546,7 @@ describe('/profiles', () => {
               createdProfile.profiles[0].id,
               defaultFlags[0].id,
               null,
-              { user: { accountSid, workerSid, isSupervisor: false, roles: [] } },
+              { user: newTwilioUser(accountSid, workerSid, []) },
             );
 
             const pfs = (

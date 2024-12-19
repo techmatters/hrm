@@ -84,6 +84,7 @@ export const maxPermissions: {
     workerSid: 'WKxxx',
     roles: ['supervisor'],
     isSupervisor: true,
+    isSystemUser: false,
   },
   permissions: rulesMap.open,
 };

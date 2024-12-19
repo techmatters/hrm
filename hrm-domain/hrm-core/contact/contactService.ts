@@ -77,7 +77,7 @@ import {
   DatabaseErrorResult,
   isDatabaseUniqueConstraintViolationErrorResult,
 } from '../sql';
-import { systemUser } from '@tech-matters/twilio-worker-auth';
+import { newGlobalSystemUser } from '@tech-matters/twilio-worker-auth';
 import { publishContactChangeNotification } from '../notifications/entityChangeNotify';
 import type { RulesFile, TKConditionsSets } from '../permissions/rulesMap';
 import {
@@ -165,7 +165,7 @@ const initProfile = async (
   const profileResult = await getOrCreateProfileWithIdentifier(conn)(
     hrmAccountId,
     { identifier: { identifier: contact.number }, profile: { name: null } },
-    { user: { accountSid, isSupervisor: false, roles: [], workerSid: systemUser } }, // fake the worker since makes more sense to keep the new "profile created by system"
+    { user: newGlobalSystemUser(accountSid) }, // system user since makes more sense to keep the new "profile created by system"
   );
 
   if (isErr(profileResult)) {
