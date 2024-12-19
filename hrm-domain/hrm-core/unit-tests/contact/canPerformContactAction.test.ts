@@ -16,8 +16,7 @@
 
 import { parseISO, subHours } from 'date-fns';
 import { ContactBuilder } from './contact-builder';
-import { getClient } from '@tech-matters/twilio-client';
-import { isTwilioTaskTransferTarget } from '@tech-matters/twilio-client';
+import { getClient, isTwilioTaskTransferTarget } from '@tech-matters/twilio-client';
 import { getContactById, PatchPayload } from '../../contact/contactService';
 import createError from 'http-errors';
 import {
@@ -27,6 +26,7 @@ import {
 import { CaseService, getCase } from '../../case/caseService';
 import { actionsMaps } from '../../permissions';
 import { SafeRouterRequest } from '../../permissions/safe-router';
+import { newTwilioUser } from '@tech-matters/twilio-worker-auth';
 
 jest.mock('@tech-matters/twilio-client', () => ({
   getClient: jest.fn().mockResolvedValue({}),
@@ -71,12 +71,7 @@ beforeEach(() => {
   req = {
     ...mockRequestMethods,
     params: { contactId: 'contact1' },
-    user: {
-      workerSid: 'WK-worker1',
-      accountSid: 'ACtwilio',
-      isSupervisor: false,
-      roles: [],
-    },
+    user: newTwilioUser('ACtwilio', 'WK-worker1', []),
     hrmAccountId: accountSid1,
     body: {},
   } as Partial<SafeRouterRequest>;
