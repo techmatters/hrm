@@ -60,7 +60,7 @@ export const generate = async (
   environment: 'development' | 'staging' | 'production',
   hlShortCodes: string[],
   targetBucket: string,
-  sourceBucket?: string,
+  // sourceBucket: string,
 ) => {
   const accountSidMappings = await lookupAccountSids(environment, hlShortCodes);
   console.log('Account SIDs found:');
@@ -87,7 +87,7 @@ export const generate = async (
             trainingSetDoc = await attachTranscript(
               trainingSetContact,
               shortCode,
-              sourceBucket,
+              // targetBucket,
             );
           } catch (error) {
             console.info(
