@@ -87,7 +87,7 @@ export const generate = async (
             trainingSetDoc = await attachTranscript(
               trainingSetContact,
               shortCode,
-              // targetBucket,
+              targetBucket,
             );
           } catch (error) {
             console.info(
