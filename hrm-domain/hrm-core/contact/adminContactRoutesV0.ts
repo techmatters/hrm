@@ -15,15 +15,20 @@
  */
 
 import type { Request, Response, NextFunction } from 'express';
-import { SafeRouter, publicEndpoint } from '../permissions';
+import { SafeRouter } from '../permissions';
 import { processContactsStream } from './contactsNotifyService';
+import { createContact } from './contactService';
+import {
+  adminAuthorizationMiddleware,
+  staticKeyAuthorizationMiddleware,
+} from '@tech-matters/twilio-worker-auth';
 
 const adminContactsRouter = SafeRouter();
 
 // admin POST endpoint to reindex contacts. req body has accountSid, dateFrom, dateTo
 adminContactsRouter.post(
   '/reindex',
-  publicEndpoint,
+  adminAuthorizationMiddleware('ADMIN_HRM'),
   async (req: Request, res: Response, next: NextFunction) => {
     console.log('.......reindexing contacts......', req, res);
 
@@ -46,7 +51,7 @@ adminContactsRouter.post(
 
 adminContactsRouter.post(
   '/republish',
-  publicEndpoint,
+  adminAuthorizationMiddleware('ADMIN_HRM'),
   async (req: Request, res: Response, next: NextFunction) => {
     console.log('.......republishing contacts......', req, res);
     const { hrmAccountId } = req;
@@ -63,6 +68,32 @@ adminContactsRouter.post(
     });
     res.status(200).setHeader('Content-Type', 'text/plain');
     resultStream.pipe(res);
+  },
+);
+
+/**
+ * @param {any} req - Request
+ * @param {any} res - Response
+ * @param {NewContactRecord} req.body - Contact to create
+ *
+ * @returns {Contact} - Created contact
+ */
+adminContactsRouter.post(
+  '/',
+  staticKeyAuthorizationMiddleware,
+  async (req: Request, res) => {
+    const { hrmAccountId, user, body } = req;
+    const contact = await createContact(
+      hrmAccountId,
+      // Take the createdBy specified in the body since this is being created from a backend system
+      body.createdBy,
+      body,
+      {
+        can: req.can,
+        user,
+      },
+    );
+    res.json(contact);
   },
 );
 

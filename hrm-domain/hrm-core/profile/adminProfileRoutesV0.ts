@@ -19,12 +19,13 @@ import { isErr, isOk, mapHTTPError } from '@tech-matters/types';
 import { SafeRouter, publicEndpoint } from '../permissions';
 import * as profileController from './profileService';
 import createError from 'http-errors';
+import { adminAuthorizationMiddleware } from '@tech-matters/twilio-worker-auth';
 
 const adminProfilesRouter = SafeRouter();
 
 adminProfilesRouter.post(
   '/identifiers',
-  publicEndpoint,
+  adminAuthorizationMiddleware('ADMIN_HRM'),
   async (req: Request, res: Response, next: NextFunction) => {
     const { hrmAccountId, user } = req;
     const { identifier, name } = req.body;
@@ -58,7 +59,7 @@ adminProfilesRouter.get('/flags', publicEndpoint, async (req: Request, res: Resp
 
 adminProfilesRouter.post(
   '/flags',
-  publicEndpoint,
+  adminAuthorizationMiddleware('ADMIN_HRM'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { hrmAccountId, user } = req;
@@ -84,7 +85,7 @@ adminProfilesRouter.post(
 
 adminProfilesRouter.patch(
   '/flags/:flagId',
-  publicEndpoint,
+  adminAuthorizationMiddleware('ADMIN_HRM'),
   async (req: Request, res: Response, next: NextFunction) => {
     const { hrmAccountId, user } = req;
     const { flagId } = req.params;
@@ -115,7 +116,7 @@ adminProfilesRouter.patch(
 
 adminProfilesRouter.delete(
   '/flags/:flagId',
-  publicEndpoint,
+  adminAuthorizationMiddleware('ADMIN_HRM'),
   async (req: Request, res: Response) => {
     const { hrmAccountId } = req;
     const { flagId } = req.params;

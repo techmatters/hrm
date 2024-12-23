@@ -20,10 +20,7 @@ import 'express-async-errors';
 import type { Permissions } from './permissions';
 import { jsonPermissions } from './permissions/json-permissions';
 import { setUpHrmRoutes } from './setUpHrmRoutes';
-import {
-  addAccountSidMiddleware,
-  adminAuthorizationMiddleware,
-} from '@tech-matters/twilio-worker-auth';
+import { addAccountSidMiddleware } from '@tech-matters/twilio-worker-auth';
 import { adminApiV0 } from './routes';
 import { AccountSID } from '@tech-matters/types';
 
@@ -59,12 +56,7 @@ export const configureInternalService = ({ webServer }: { webServer: Express }) 
     });
   });
 
-  webServer.use(
-    '/admin/v0/accounts/:accountSid',
-    addAccountSidMiddleware,
-    adminAuthorizationMiddleware('ADMIN_HRM'),
-    adminApiV0(),
-  );
+  webServer.use('/admin/v0/accounts/:accountSid', addAccountSidMiddleware, adminApiV0());
 
   return webServer;
 };
