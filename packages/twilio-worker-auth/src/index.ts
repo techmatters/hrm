@@ -21,4 +21,9 @@ export {
   systemUser,
 } from './twilioWorkerAuthMiddleware';
 export { addAccountSidMiddleware } from './addAccountSidMiddleware';
-export { newTwilioUser, TwilioUser } from './twilioUser';
+export {
+  newTwilioUser,
+  newGlobalSystemUser,
+  newAccountSystemUser,
+  TwilioUser,
+} from './twilioUser';

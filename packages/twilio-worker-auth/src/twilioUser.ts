@@ -15,13 +15,12 @@
  */
 import { AccountSID, TwilioUserIdentifier } from '@tech-matters/types';
 
-export const SYSTEM_USER = {};
-
 export type TwilioUser = {
   accountSid: AccountSID;
   workerSid: TwilioUserIdentifier | undefined;
   roles: string[];
   isSupervisor: boolean;
+  isSystemUser: boolean;
 };
 
 export const newTwilioUser = (
@@ -34,4 +33,23 @@ export const newTwilioUser = (
     workerSid,
     roles,
     isSupervisor: roles.includes('supervisor'),
+    isSystemUser: false,
+  });
+
+export const newAccountSystemUser = (accountSid: AccountSID): Readonly<TwilioUser> =>
+  Object.freeze({
+    accountSid,
+    workerSid: `account-${accountSid}`,
+    roles: [],
+    isSupervisor: false,
+    isSystemUser: true,
+  });
+
+export const newGlobalSystemUser = (accountSid: AccountSID): Readonly<TwilioUser> =>
+  Object.freeze({
+    accountSid,
+    workerSid: `system`,
+    roles: [],
+    isSupervisor: false,
+    isSystemUser: true,
   });

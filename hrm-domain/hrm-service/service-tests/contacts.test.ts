@@ -303,7 +303,7 @@ describe('/contacts route', () => {
           identifier: { identifier: contact.number },
           profile: { name: null },
         },
-        { user: { accountSid, isSupervisor: false, roles: [], workerSid } },
+        { user: newTwilioUser(accountSid, workerSid, []) },
       );
 
       if (isErr(profileResult)) {

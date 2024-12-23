@@ -21,6 +21,7 @@ import { canPerformActionsOnObject } from '../../permissions/canPerformActionOnO
 import { actionsMaps } from '../../permissions';
 import * as contactApi from '../../contact/contactService';
 import * as caseApi from '../../case/caseService';
+import { newTwilioUser } from '@tech-matters/twilio-worker-auth';
 
 const accountSid: HrmAccountId = 'ACxxxxxx';
 
@@ -83,12 +84,7 @@ describe('canPerformActionsOnObject', () => {
         actions: [action],
         objectId: 123,
         can: mockedCan ? mockedCan : () => shouldCan,
-        user: {
-          accountSid,
-          workerSid: 'WK-workerSid',
-          isSupervisor: false,
-          roles: ['supervisor'],
-        },
+        user: newTwilioUser(accountSid, 'WK-workerSid', []),
       });
 
       if (shouldAccessDB) {

@@ -19,7 +19,7 @@ import { addDays, subDays } from 'date-fns';
 import { db } from '@tech-matters/hrm-core/connection-pool';
 import { accountSid, workerSid } from '../mocks';
 import * as profileDB from '@tech-matters/hrm-core/profile/profileDataAccess';
-import { systemUser } from '@tech-matters/twilio-worker-auth';
+import { newTwilioUser, systemUser } from '@tech-matters/twilio-worker-auth';
 
 let createdProfile: profileDB.Profile;
 let createdProfileFlag: profileDB.ProfileFlag;
@@ -61,7 +61,7 @@ describe('cleanupProfileFlags', () => {
     await Promise.all(
       p.profileFlags.map(pf =>
         profileDB.disassociateProfileFromProfileFlag()(accountSid, p.id, pf.id, {
-          user: { accountSid, isSupervisor: false, roles: [], workerSid },
+          user: newTwilioUser(accountSid, workerSid, []),
         }),
       ),
     );
@@ -75,7 +75,7 @@ describe('cleanupProfileFlags', () => {
           createdProfile.id,
           pf.id,
           null,
-          { user: { accountSid, isSupervisor: false, roles: [], workerSid } },
+          { user: newTwilioUser(accountSid, workerSid, []) },
         ),
       ),
     );
@@ -98,7 +98,7 @@ describe('cleanupProfileFlags', () => {
           createdProfile.id,
           pf.id,
           futureDate,
-          { user: { accountSid, isSupervisor: false, roles: [], workerSid } },
+          { user: newTwilioUser(accountSid, workerSid, []) },
         ),
       ),
     );
@@ -121,7 +121,7 @@ describe('cleanupProfileFlags', () => {
           createdProfile.id,
           pf.id,
           pastDate,
-          { user: { accountSid, isSupervisor: false, roles: [], workerSid } },
+          { user: newTwilioUser(accountSid, workerSid, []) },
         ),
       ),
     );
