@@ -15,7 +15,7 @@
  */
 
 import type { Request, Response, NextFunction } from 'express';
-import { SafeRouter } from '../permissions';
+import { publicEndpoint, SafeRouter } from '../permissions';
 import { reindexCasesStream } from './caseReindexService';
 import { adminAuthorizationMiddleware } from '@tech-matters/twilio-worker-auth';
 
@@ -25,6 +25,7 @@ const adminContactsRouter = SafeRouter();
 adminContactsRouter.post(
   '/reindex',
   adminAuthorizationMiddleware('ADMIN_HRM'),
+  publicEndpoint,
   async (req: Request, res: Response, next: NextFunction) => {
     const { hrmAccountId } = req;
     const { dateFrom, dateTo } = req.body;

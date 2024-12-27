@@ -26,6 +26,7 @@ const adminProfilesRouter = SafeRouter();
 adminProfilesRouter.post(
   '/identifiers',
   adminAuthorizationMiddleware('ADMIN_HRM'),
+  publicEndpoint,
   async (req: Request, res: Response, next: NextFunction) => {
     const { hrmAccountId, user } = req;
     const { identifier, name } = req.body;
@@ -60,6 +61,7 @@ adminProfilesRouter.get('/flags', publicEndpoint, async (req: Request, res: Resp
 adminProfilesRouter.post(
   '/flags',
   adminAuthorizationMiddleware('ADMIN_HRM'),
+  publicEndpoint,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { hrmAccountId, user } = req;
@@ -86,6 +88,7 @@ adminProfilesRouter.post(
 adminProfilesRouter.patch(
   '/flags/:flagId',
   adminAuthorizationMiddleware('ADMIN_HRM'),
+  publicEndpoint,
   async (req: Request, res: Response, next: NextFunction) => {
     const { hrmAccountId, user } = req;
     const { flagId } = req.params;
@@ -117,6 +120,7 @@ adminProfilesRouter.patch(
 adminProfilesRouter.delete(
   '/flags/:flagId',
   adminAuthorizationMiddleware('ADMIN_HRM'),
+  publicEndpoint,
   async (req: Request, res: Response) => {
     const { hrmAccountId } = req;
     const { flagId } = req.params;
