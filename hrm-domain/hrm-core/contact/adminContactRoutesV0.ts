@@ -84,15 +84,14 @@ adminContactsRouter.post(
   '/',
   staticKeyAuthorizationMiddleware,
   publicEndpoint,
-  async (req: Request, res) => {
-    const { hrmAccountId, user, body } = req;
+  async ({ hrmAccountId, user, body, can }: Request, res) => {
     const contact = await createContact(
       hrmAccountId,
       // Take the createdBy specified in the body since this is being created from a backend system
       body.createdBy,
       body,
       {
-        can: req.can,
+        can,
         user,
       },
     );

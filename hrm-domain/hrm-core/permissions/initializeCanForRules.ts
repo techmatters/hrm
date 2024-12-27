@@ -66,7 +66,7 @@ const checkConditionsSets = <T extends TargetKind>(
 
 const applyTimeBasedConditions =
   (conditions: TimeBasedCondition[]) =>
-  (performer: TwilioUser, target: any, ctx: { curentTimestamp: Date }) =>
+  (performer: TwilioUser, target: any, ctx: { currentTimestamp: Date }) =>
     conditions
       .map(c => {
         const key = JSON.stringify(c);
@@ -74,14 +74,14 @@ const applyTimeBasedConditions =
           if (cond === 'createdHoursAgo') {
             const conditionMet =
               differenceInHours(
-                ctx.curentTimestamp,
+                ctx.currentTimestamp,
                 parseISO(target.timeOfContact ?? target.createdAt),
               ) < param;
             console.debug(
               'createdHoursAgo condition:',
               `${
                 target.timeOfContact ?? target.createdAt
-              } < ${param} hours before ${ctx.curentTimestamp.toISOString()}`,
+              } < ${param} hours before ${ctx.currentTimestamp.toISOString()}`,
               conditionMet,
             );
             if (!conditionMet) {
@@ -93,14 +93,14 @@ const applyTimeBasedConditions =
           if (cond === 'createdDaysAgo') {
             const conditionMet =
               differenceInDays(
-                ctx.curentTimestamp,
+                ctx.currentTimestamp,
                 parseISO(target.timeOfContact ?? target.createdAt),
               ) < param;
             console.debug(
               'createdDaysAgo condition:',
               `${
                 target.timeOfContact ?? target.createdAt
-              } < ${param} days before ${ctx.curentTimestamp.toISOString()}`,
+              } < ${param} days before ${ctx.currentTimestamp.toISOString()}`,
               conditionMet,
             );
             if (!conditionMet)
@@ -149,9 +149,7 @@ const setupAllow = <T extends TargetKind>(
   );
 
   return (performer: TwilioUser, target: any) => {
-    // Let system users do anything for now, might need to tighten this up in future
-    if (performer.isSystemUser) return true;
-    const ctx = { curentTimestamp: new Date() };
+    const ctx = { currentTimestamp: new Date() };
 
     const appliedTimeBasedConditions = applyTimeBasedConditions(timeBasedConditions)(
       performer,
