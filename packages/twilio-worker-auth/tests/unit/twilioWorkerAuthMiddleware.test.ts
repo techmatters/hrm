@@ -87,9 +87,7 @@ describe('Test Bearer token', () => {
 
       const mockedReq: any = {
         headers,
-        params: {
-          accountSid: mockAccountSid,
-        },
+        hrmAccountId: mockAccountSid,
       };
 
       const mockedRes: any = {
