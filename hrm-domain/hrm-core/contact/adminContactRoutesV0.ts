@@ -15,21 +15,15 @@
  */
 
 import type { Request, Response, NextFunction } from 'express';
-import { publicEndpoint, SafeRouter } from '../permissions';
+import { SafeRouter } from '../permissions';
 import { processContactsStream } from './contactsNotifyService';
 import { createContact } from './contactService';
-import {
-  adminAuthorizationMiddleware,
-  staticKeyAuthorizationMiddleware,
-} from '@tech-matters/twilio-worker-auth';
 
 const adminContactsRouter = SafeRouter();
 
 // admin POST endpoint to reindex contacts. req body has accountSid, dateFrom, dateTo
 adminContactsRouter.post(
   '/reindex',
-  adminAuthorizationMiddleware('ADMIN_HRM'),
-  publicEndpoint,
   async (req: Request, res: Response, next: NextFunction) => {
     console.log('.......reindexing contacts......', req, res);
 
@@ -52,8 +46,6 @@ adminContactsRouter.post(
 
 adminContactsRouter.post(
   '/republish',
-  adminAuthorizationMiddleware('ADMIN_HRM'),
-  publicEndpoint,
   async (req: Request, res: Response, next: NextFunction) => {
     console.log('.......republishing contacts......', req, res);
     const { hrmAccountId } = req;
@@ -80,23 +72,18 @@ adminContactsRouter.post(
  *
  * @returns {Contact} - Created contact
  */
-adminContactsRouter.post(
-  '/',
-  staticKeyAuthorizationMiddleware,
-  publicEndpoint,
-  async ({ hrmAccountId, user, body, can }: Request, res) => {
-    const contact = await createContact(
-      hrmAccountId,
-      // Take the createdBy specified in the body since this is being created from a backend system
-      body.createdBy,
-      body,
-      {
-        can,
-        user,
-      },
-    );
-    res.json(contact);
-  },
-);
+adminContactsRouter.post('/', async ({ hrmAccountId, user, body, can }: Request, res) => {
+  const contact = await createContact(
+    hrmAccountId,
+    // Take the createdBy specified in the body since this is being created from a backend system
+    body.createdBy,
+    body,
+    {
+      can,
+      user,
+    },
+  );
+  res.json(contact);
+});
 
 export default adminContactsRouter.expressRouter;

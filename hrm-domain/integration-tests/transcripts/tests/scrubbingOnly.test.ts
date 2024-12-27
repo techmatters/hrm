@@ -31,7 +31,7 @@ import { waitForExpectedNumberOfSQSMessage } from '../src/sqs';
 import { clearAllTables } from '../src/cleanupDb';
 import { runContainer } from '../src/docker';
 import { newCompletedRetrieveTranscriptMessageBody } from '../src/fixtures/sampleMessages';
-import { ContactJobType } from '@tech-matters/types/dist/ContactJob';
+import { ContactJobType } from '@tech-matters/types/ContactJob';
 import { waitForS3Object } from '../src/s3';
 import { ACCOUNT_SID } from '../src/fixtures/sampleConfig';
 import { deleteParameter, putParameter } from '../src/ssm';

@@ -14,27 +14,34 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import type { Request, Response, NextFunction } from 'express';
+import type { Request } from 'express';
 import { SafeRouter } from '../permissions';
-import { reindexCasesStream } from './caseReindexService';
+import { createContact } from './contactService';
 
-const adminContactsRouter = SafeRouter();
+const internalContactsRouter = SafeRouter();
 
-// admin POST endpoint to reindex contacts. req body has accountSid, dateFrom, dateTo
-adminContactsRouter.post(
-  '/reindex',
-  async (req: Request, res: Response, next: NextFunction) => {
-    const { hrmAccountId } = req;
-    const { dateFrom, dateTo } = req.body;
-
-    const resultStream = await reindexCasesStream(hrmAccountId, dateFrom, dateTo);
-
-    resultStream.on('error', err => {
-      next(err);
-    });
-    res.status(200).setHeader('Content-Type', 'text/plain');
-    resultStream.pipe(res);
+/**
+ * @param {any} req - Request
+ * @param {any} res - Response
+ * @param {NewContactRecord} req.body - Contact to create
+ *
+ * @returns {Contact} - Created contact
+ */
+internalContactsRouter.post(
+  '/',
+  async ({ hrmAccountId, user, body, can }: Request, res) => {
+    const contact = await createContact(
+      hrmAccountId,
+      // Take the createdBy specified in the body since this is being created from a backend system
+      body.createdBy,
+      body,
+      {
+        can,
+        user,
+      },
+    );
+    res.json(contact);
   },
 );
 
-export default adminContactsRouter.expressRouter;
+export default internalContactsRouter.expressRouter;

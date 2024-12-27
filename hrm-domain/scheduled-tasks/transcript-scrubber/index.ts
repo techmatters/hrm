@@ -18,7 +18,7 @@
 import { fetch } from 'undici';
 import { getS3Object, putS3Object } from '@tech-matters/s3-client';
 import { receiveSqsMessage, sendSqsMessage } from '@tech-matters/sqs-client';
-import { ContactJobAttemptResult } from '@tech-matters/types/dist/ContactJob';
+import { ContactJobAttemptResult } from '@tech-matters/types/ContactJob';
 
 declare global {
   var fetch: typeof import('undici').fetch;
