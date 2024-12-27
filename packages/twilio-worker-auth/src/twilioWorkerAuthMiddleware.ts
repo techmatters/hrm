@@ -64,7 +64,7 @@ const defaultTokenLookup = (accountSid: string) =>
   process.env[`TWILIO_AUTH_TOKEN_${accountSid}`] ?? '';
 
 const extractAccountSid = (request: Request): AccountSID => {
-  const [twilioAccountSid] = request.params.accountSid?.split('-') ?? [];
+  const [twilioAccountSid] = request.hrmAccountId?.split('-') ?? [];
   return twilioAccountSid as AccountSID;
 };
 
