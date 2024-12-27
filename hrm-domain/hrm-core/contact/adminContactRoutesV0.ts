@@ -15,7 +15,7 @@
  */
 
 import type { Request, Response, NextFunction } from 'express';
-import { SafeRouter } from '../permissions';
+import { publicEndpoint, SafeRouter } from '../permissions';
 import { processContactsStream } from './contactsNotifyService';
 import { createContact } from './contactService';
 import {
@@ -29,6 +29,7 @@ const adminContactsRouter = SafeRouter();
 adminContactsRouter.post(
   '/reindex',
   adminAuthorizationMiddleware('ADMIN_HRM'),
+  publicEndpoint,
   async (req: Request, res: Response, next: NextFunction) => {
     console.log('.......reindexing contacts......', req, res);
 
@@ -52,6 +53,7 @@ adminContactsRouter.post(
 adminContactsRouter.post(
   '/republish',
   adminAuthorizationMiddleware('ADMIN_HRM'),
+  publicEndpoint,
   async (req: Request, res: Response, next: NextFunction) => {
     console.log('.......republishing contacts......', req, res);
     const { hrmAccountId } = req;
@@ -81,6 +83,7 @@ adminContactsRouter.post(
 adminContactsRouter.post(
   '/',
   staticKeyAuthorizationMiddleware,
+  publicEndpoint,
   async (req: Request, res) => {
     const { hrmAccountId, user, body } = req;
     const contact = await createContact(
