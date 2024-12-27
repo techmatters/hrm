@@ -64,8 +64,8 @@ export const configureInternalService = ({ webServer }: { webServer: Express }) 
   webServer.use(
     '/admin/v0/accounts/:accountSid',
     addAccountSidMiddleware,
-    setupPermissions(openPermissions),
     adminAuthorizationMiddleware('ADMIN_HRM'),
+    setupPermissions(openPermissions),
     publicEndpoint,
     adminApiV0(),
   );
@@ -73,8 +73,8 @@ export const configureInternalService = ({ webServer }: { webServer: Express }) 
   webServer.use(
     '/internal/v0/accounts/:accountSid',
     addAccountSidMiddleware,
-    setupPermissions(openPermissions),
     staticKeyAuthorizationMiddleware,
+    setupPermissions(openPermissions),
     publicEndpoint,
     internalApiV0(),
   );
