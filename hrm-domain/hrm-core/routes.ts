@@ -72,7 +72,7 @@ export const INTERNAL_ROUTES: {
 
 export const internalApiV0 = () => {
   const router: IRouter = Router();
-  ADMIN_ROUTES.forEach(({ path, routerFactory }) => router.use(path, routerFactory()));
+  INTERNAL_ROUTES.forEach(({ path, routerFactory }) => router.use(path, routerFactory()));
 
   return router;
 };

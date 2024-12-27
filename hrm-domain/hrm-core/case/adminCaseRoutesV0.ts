@@ -15,7 +15,7 @@
  */
 
 import type { Request, Response, NextFunction } from 'express';
-import { SafeRouter } from '../permissions';
+import { publicEndpoint, SafeRouter } from '../permissions';
 import { reindexCasesStream } from './caseReindexService';
 
 const adminContactsRouter = SafeRouter();
@@ -23,6 +23,7 @@ const adminContactsRouter = SafeRouter();
 // admin POST endpoint to reindex contacts. req body has accountSid, dateFrom, dateTo
 adminContactsRouter.post(
   '/reindex',
+  publicEndpoint,
   async (req: Request, res: Response, next: NextFunction) => {
     const { hrmAccountId } = req;
     const { dateFrom, dateTo } = req.body;

@@ -17,7 +17,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import supertest from 'supertest';
 
-import { configureService } from '@tech-matters/hrm-core/app';
+import { configureInternalService, configureService } from '@tech-matters/hrm-core/app';
 import { RulesFile } from '@tech-matters/hrm-core/permissions/rulesMap';
 import {
   configureDefaultPostMiddlewares,
@@ -55,6 +55,16 @@ export const defaultConfig: {
 export const getServer = (config?: Partial<typeof defaultConfig>) => {
   const withoutService = configureDefaultPreMiddlewares(express());
   const withService = configureService({
+    ...defaultConfig,
+    ...config,
+    webServer: withoutService,
+  });
+  return configureDefaultPostMiddlewares(withService, true).listen();
+};
+
+export const getInternalServer = (config?: Partial<typeof defaultConfig>) => {
+  const withoutService = configureDefaultPreMiddlewares(express());
+  const withService = configureInternalService({
     ...defaultConfig,
     ...config,
     webServer: withoutService,

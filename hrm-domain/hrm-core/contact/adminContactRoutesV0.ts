@@ -15,15 +15,15 @@
  */
 
 import type { Request, Response, NextFunction } from 'express';
-import { SafeRouter } from '../permissions';
+import { publicEndpoint, SafeRouter } from '../permissions';
 import { processContactsStream } from './contactsNotifyService';
-import { createContact } from './contactService';
 
 const adminContactsRouter = SafeRouter();
 
 // admin POST endpoint to reindex contacts. req body has accountSid, dateFrom, dateTo
 adminContactsRouter.post(
   '/reindex',
+  publicEndpoint,
   async (req: Request, res: Response, next: NextFunction) => {
     console.log('.......reindexing contacts......', req, res);
 
@@ -46,6 +46,7 @@ adminContactsRouter.post(
 
 adminContactsRouter.post(
   '/republish',
+  publicEndpoint,
   async (req: Request, res: Response, next: NextFunction) => {
     console.log('.......republishing contacts......', req, res);
     const { hrmAccountId } = req;
@@ -64,26 +65,5 @@ adminContactsRouter.post(
     resultStream.pipe(res);
   },
 );
-
-/**
- * @param {any} req - Request
- * @param {any} res - Response
- * @param {NewContactRecord} req.body - Contact to create
- *
- * @returns {Contact} - Created contact
- */
-adminContactsRouter.post('/', async ({ hrmAccountId, user, body, can }: Request, res) => {
-  const contact = await createContact(
-    hrmAccountId,
-    // Take the createdBy specified in the body since this is being created from a backend system
-    body.createdBy,
-    body,
-    {
-      can,
-      user,
-    },
-  );
-  res.json(contact);
-});
 
 export default adminContactsRouter.expressRouter;

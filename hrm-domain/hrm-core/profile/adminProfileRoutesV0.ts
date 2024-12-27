@@ -24,6 +24,7 @@ const adminProfilesRouter = SafeRouter();
 
 adminProfilesRouter.post(
   '/identifiers',
+  publicEndpoint,
   async (req: Request, res: Response, next: NextFunction) => {
     const { hrmAccountId, user } = req;
     const { identifier, name } = req.body;
@@ -57,6 +58,7 @@ adminProfilesRouter.get('/flags', publicEndpoint, async (req: Request, res: Resp
 
 adminProfilesRouter.post(
   '/flags',
+  publicEndpoint,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { hrmAccountId, user } = req;
@@ -82,6 +84,7 @@ adminProfilesRouter.post(
 
 adminProfilesRouter.patch(
   '/flags/:flagId',
+  publicEndpoint,
   async (req: Request, res: Response, next: NextFunction) => {
     const { hrmAccountId, user } = req;
     const { flagId } = req.params;
@@ -110,16 +113,20 @@ adminProfilesRouter.patch(
   },
 );
 
-adminProfilesRouter.delete('/flags/:flagId', async (req: Request, res: Response) => {
-  const { hrmAccountId } = req;
-  const { flagId } = req.params;
+adminProfilesRouter.delete(
+  '/flags/:flagId',
+  publicEndpoint,
+  async (req: Request, res: Response) => {
+    const { hrmAccountId } = req;
+    const { flagId } = req.params;
 
-  const result = await profileController.deleteProfileFlagById(
-    parseInt(flagId, 10),
-    hrmAccountId,
-  );
+    const result = await profileController.deleteProfileFlagById(
+      parseInt(flagId, 10),
+      hrmAccountId,
+    );
 
-  res.json(result);
-});
+    res.json(result);
+  },
+);
 
 export default adminProfilesRouter.expressRouter;

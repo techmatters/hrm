@@ -15,7 +15,7 @@
  */
 
 import type { Request } from 'express';
-import { SafeRouter } from '../permissions';
+import { publicEndpoint, SafeRouter } from '../permissions';
 import { createContact } from './contactService';
 
 const internalContactsRouter = SafeRouter();
@@ -29,6 +29,7 @@ const internalContactsRouter = SafeRouter();
  */
 internalContactsRouter.post(
   '/',
+  publicEndpoint,
   async ({ hrmAccountId, user, body, can }: Request, res) => {
     const contact = await createContact(
       hrmAccountId,

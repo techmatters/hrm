@@ -27,7 +27,7 @@ import {
 } from '@tech-matters/twilio-worker-auth';
 import { adminApiV0, internalApiV0 } from './routes';
 import { AccountSID } from '@tech-matters/types';
-import { publicEndpoint, setupPermissions } from './permissions';
+import { setupPermissions } from './permissions';
 
 type ServiceCreationOptions = Partial<{
   permissions: Permissions;
@@ -66,7 +66,6 @@ export const configureInternalService = ({ webServer }: { webServer: Express }) 
     addAccountSidMiddleware,
     adminAuthorizationMiddleware('ADMIN_HRM'),
     setupPermissions(openPermissions),
-    publicEndpoint,
     adminApiV0(),
   );
 
@@ -75,7 +74,6 @@ export const configureInternalService = ({ webServer }: { webServer: Express }) 
     addAccountSidMiddleware,
     staticKeyAuthorizationMiddleware,
     setupPermissions(openPermissions),
-    publicEndpoint,
     internalApiV0(),
   );
 
