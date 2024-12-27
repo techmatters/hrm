@@ -71,7 +71,7 @@ export const configureInternalService = ({ webServer }: { webServer: Express }) 
   );
 
   webServer.use(
-    '/admin/v0/accounts/:accountSid',
+    '/internal/v0/accounts/:accountSid',
     addAccountSidMiddleware,
     setupPermissions(openPermissions),
     staticKeyAuthorizationMiddleware,
