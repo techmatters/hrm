@@ -23,11 +23,10 @@ import {
   adminAuthorizationMiddleware,
 } from '@tech-matters/twilio-worker-auth';
 import { adminApiV0, apiV0, internalApiV0 } from './routes';
-import { HrmAccountId } from '@tech-matters/types';
 
 type ResourceServiceCreationOptions = {
   webServer: ReturnType<typeof express>;
-  authTokenLookup?: (accountSid: HrmAccountId) => string;
+  authTokenLookup?: (accountSid: string) => Promise<string>;
 };
 
 export const configureService = ({
