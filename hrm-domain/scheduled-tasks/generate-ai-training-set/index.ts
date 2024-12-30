@@ -90,16 +90,19 @@ export const generate = async (
               sourceBucket,
             );
           } catch (error) {
-            console.info(
-              `No transcript found for contact ${trainingSetContact.contactId} in ${shortCode} bucket. Skipping...`,
-            );
+            // console.info(
+            //   `No transcript found for contact ${trainingSetContact.contactId} in ${shortCode} bucket. Skipping...`,
+            // );
             callback();
             return;
           }
+          console.log(
+            `Uploading contact ${trainingSetDoc.contactId} from ${sourceBucket}`,
+          );
           await uploadTrainingSetDocument(
             trainingSetDoc.contactId,
             JSON.stringify(trainingSetDoc),
-            targetBucket,
+            sourceBucket,
             shortCode,
           );
 
