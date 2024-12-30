@@ -29,7 +29,7 @@ import { AccountSID } from '@tech-matters/types';
 
 type ServiceCreationOptions = Partial<{
   permissions: Permissions;
-  authTokenLookup: (accountSid: AccountSID) => string;
+  authTokenLookup: (accountSid: AccountSID) => Promise<string>;
   enableProcessContactJobs: boolean;
   webServer: Express;
 }>;

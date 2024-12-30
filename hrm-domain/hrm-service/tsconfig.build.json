@@ -10,6 +10,7 @@
     { "path": "packages/ssm-cache" },
     { "path": "packages/sqs-client" },
     { "path": "packages/elasticsearch-client" },
+    { "path": "packages/config-ssm-cache" },
     { "path": "packages/twilio-client" },
     { "path": "packages/types" },
     { "path": "packages/service-discovery" },

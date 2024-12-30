@@ -12,6 +12,7 @@
     { "path": "packages/s3-client" },
     { "path": "packages/sns-client" },
     { "path": "packages/sqs-client" },
+    { "path": "packages/config-ssm-cache" },
     { "path": "packages/twilio-client" },
     { "path": "packages/twilio-worker-auth" },
     { "path": "packages/service-discovery" },

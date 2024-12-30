@@ -14,41 +14,52 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
+import { getFromSSMCache } from '@tech-matters/config-ssm-cache';
 import { rulesMap } from './rulesMap';
 import { Permissions } from './index';
 import { AccountSID } from '@tech-matters/types';
 
-export const getPermissionsConfigName = (accountSid: AccountSID) => {
+export const getPermissionsConfigName = async (accountSid: AccountSID) => {
   const permissionsKey = `PERMISSIONS_${accountSid}`;
 
-  const permissionsConfigName = process.env[permissionsKey];
+  if (process.env[permissionsKey]) {
+    const permissionConfig = process.env[permissionsKey];
 
-  if (!permissionsConfigName)
-    throw new Error(`No permissions set for account ${accountSid}.`);
+    if (!rulesMap[permissionConfig])
+      throw new Error(
+        `Permissions rules with name ${permissionConfig} missing in rules map.`,
+      );
 
-  if (!rulesMap[permissionsConfigName])
+    return permissionConfig;
+  }
+
+  const { permissionConfig } = await getFromSSMCache(accountSid);
+
+  if (!permissionConfig) throw new Error(`No permissions set for account ${accountSid}.`);
+
+  if (!rulesMap[permissionConfig])
     throw new Error(
-      `Permissions rules with name ${permissionsConfigName} missing in rules map.`,
+      `Permissions rules with name ${permissionConfig} missing in rules map.`,
     );
 
-  return permissionsConfigName;
+  return permissionConfig;
 };
 
 /**
  * @throws Will throw if there is no env var set for PERMISSIONS_${accountSid} or if it's an invalid key in rulesMap
  */
 export const jsonPermissions: Permissions = {
-  rules: (accountSid: AccountSID) => {
-    const permissionsConfigName = getPermissionsConfigName(accountSid);
+  rules: async (accountSid: AccountSID) => {
+    const permissionConfig = await getPermissionsConfigName(accountSid);
 
-    const rules = rulesMap[permissionsConfigName];
-    if (!rules) throw new Error(`Cannot find rules for ${permissionsConfigName}`);
+    const rules = rulesMap[permissionConfig];
+    if (!rules) throw new Error(`Cannot find rules for ${permissionConfig}`);
     return rules;
   },
   cachePermissions: true,
 };
 
 export const openPermissions: Permissions = {
-  rules: () => rulesMap.open,
+  rules: () => Promise.resolve(rulesMap.open),
   cachePermissions: true,
 };

@@ -25,7 +25,7 @@ import { HrmAccountId } from '@tech-matters/types';
 
 export const setUpHrmRoutes = (
   webServer: Express,
-  authTokenLookup: (accountSid: HrmAccountId) => string,
+  authTokenLookup: (accountSid: HrmAccountId) => Promise<string>,
   rules: Permissions,
 ) => {
   const authorizationMiddleware = getAuthorizationMiddleware(authTokenLookup);

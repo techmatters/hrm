@@ -14,9 +14,11 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { loadSsmCache as loadSsmCacheRoot } from '@tech-matters/ssm-cache';
-
-export { getSsmParameter, hasCacheExpired, ssmCache } from '@tech-matters/ssm-cache';
+import {
+  hasCacheExpired,
+  loadSsmCache as loadSsmCacheRoot,
+  ssmCache,
+} from '@tech-matters/ssm-cache';
 
 const ssmCacheConfigs = [
   {
@@ -25,8 +27,36 @@ const ssmCacheConfigs = [
     }/sqs/jobs/contact`,
     regex: /queue-url-*/,
   },
+  {
+    path: `/${process.env.NODE_ENV}/twilio`,
+    regex: /\/.*\/static_key/,
+  },
+  {
+    path: `/${process.env.NODE_ENV}/twilio`,
+    regex: /\/.*\/auth_token/,
+  },
+  {
+    path: `/${process.env.NODE_ENV}/config`,
+    regex: /\/.*\/permission_config/,
+  },
 ];
 
 export const loadSsmCache = async () => {
   await loadSsmCacheRoot({ configs: ssmCacheConfigs });
+};
+
+export const getFromSSMCache = async (accountSid: string) => {
+  if (hasCacheExpired()) {
+    await loadSsmCache();
+  }
+
+  return {
+    staticKey:
+      ssmCache.values[`/${process.env.NODE_ENV}/twilio/${accountSid}/static_key`]!.value,
+    authToken:
+      ssmCache.values[`/${process.env.NODE_ENV}/twilio/${accountSid}/auth_token`]!.value,
+    permissionConfig:
+      ssmCache.values[`/${process.env.NODE_ENV}/config/${accountSid}/permission_config`]!
+        .value,
+  };
 };
