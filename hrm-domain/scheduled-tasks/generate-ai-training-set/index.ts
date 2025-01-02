@@ -102,7 +102,7 @@ export const generate = async (
           await uploadTrainingSetDocument(
             trainingSetDoc.contactId,
             JSON.stringify(trainingSetDoc),
-            sourceBucket,
+            targetBucket,
             shortCode,
           );
 
