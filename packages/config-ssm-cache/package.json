@@ -18,9 +18,8 @@
   "author": "",
   "license": "AGPL",
   "dependencies": {
-    "typescript": "^4.8.4",
-    "@tech-matters/types": "^1.0.0",
-    "@tech-matters/ssm-cache": "^1.0.0"
+    "@tech-matters/ssm-cache": "^1.0.0",
+    "@tech-matters/types": "^1.0.0"
   },
   "scripts": {}
 }
