@@ -3,6 +3,7 @@
   "compilerOptions": {
     "esModuleInterop": true,
     "lib": ["ES2020"],
+    "types": ["node"],
     "strict": true,
     "allowSyntheticDefaultImports": true,
     "allowJs": true,
