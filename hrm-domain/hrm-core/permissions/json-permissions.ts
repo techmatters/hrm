@@ -63,3 +63,5 @@ export const openPermissions: Permissions = {
   rules: () => Promise.resolve(rulesMap.open),
   cachePermissions: true,
 };
+
+export const openRules = rulesMap.open;
