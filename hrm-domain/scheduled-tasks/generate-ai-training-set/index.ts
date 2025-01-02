@@ -63,7 +63,6 @@ export const generate = async (
   sourceBucket: string,
 ) => {
   const accountSidMappings = await lookupAccountSids(environment, hlShortCodes);
-  console.log('Account SIDs found:');
   accountSidMappings.forEach(({ accountSid, shortCode }) => {
     console.log(`Account SID for ${shortCode}: ${accountSid}`);
   });
