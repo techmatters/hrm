@@ -51,7 +51,15 @@ export type TrainingSetContact = {
 
 export const streamTrainingSetContacts = async (
   accountSid: HrmAccountId,
+  sourceBucket?: string,
 ): Promise<ReadableStream> => {
+  if (sourceBucket) {
+    // use the source bucket and find the transcripts directory and stream contacts from there instead
+    const formattedQuery = pgp.as.format(SELECT_CATEGORIES_SUMMARY_AND_TRANSCRIPTS_SQL, {
+      accountSid,
+    });
+    console.log('Executing SQL Query:', formattedQuery);
+  }
   const formattedQuery = pgp.as.format(SELECT_CATEGORIES_SUMMARY_AND_TRANSCRIPTS_SQL, {
     accountSid,
   });
