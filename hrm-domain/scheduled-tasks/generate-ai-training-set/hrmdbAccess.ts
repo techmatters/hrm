@@ -30,7 +30,12 @@ const SELECT_CATEGORIES_SUMMARY_AND_TRANSCRIPTS_SQL = `
     cm."storeTypeSpecificData"->'location'->>'bucket' AS "transcriptBucket",
     cm."storeTypeSpecificData"->'location'->>'key' AS "transcriptKey"
   FROM
-    "Contacts" AS c INNER JOIN "ConversationMedia" AS cm ON c."id" = cm."contactId" AND c."accountSid" = cm."accountSid"
+    "Contacts" AS c 
+  INNER JOIN (
+    SELECT * FROM "ConversationMedia"
+    UNION ALL
+    SELECT * FROM "ConversationMedias"
+  ) AS cm ON c."id" = cm."contactId" AND c."accountSid" = cm."accountSid"
   WHERE 
   c."accountSid" = $<accountSid> AND 
   (SELECT COUNT(*) FROM jsonb_object_keys(COALESCE(c."rawJson"->'categories', '{}'::jsonb))) > 0 AND 
@@ -52,15 +57,19 @@ export type TrainingSetContact = {
 export const streamTrainingSetContacts = async (
   accountSid: HrmAccountId,
 ): Promise<ReadableStream> => {
-  const qs = new QueryStream(
-    pgp.as.format(SELECT_CATEGORIES_SUMMARY_AND_TRANSCRIPTS_SQL, { accountSid }),
-    [],
-    { highWaterMark: HIGH_WATER_MARK },
-  );
+  const formattedQuery = pgp.as.format(SELECT_CATEGORIES_SUMMARY_AND_TRANSCRIPTS_SQL, {
+    accountSid,
+  });
+  console.log('Executing SQL Query:', formattedQuery);
+
+  const qs = new QueryStream(formattedQuery, [], { highWaterMark: HIGH_WATER_MARK });
   // Expose the readable stream to the caller as a promise for further pipelining
-  return new Promise(resolve => {
+  return new Promise((resolve, reject) => {
     db.stream(qs, resultStream => {
       resolve(resultStream);
+    }).catch(error => {
+      console.error('Error streaming contacts:', error);
+      reject(error);
     });
   });
 };
