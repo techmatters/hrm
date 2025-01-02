@@ -24,12 +24,11 @@ import {
 import express from 'express';
 
 import { configureInternalService, configureService } from '../../src/service';
-import { HrmAccountId } from '@tech-matters/types';
 
 export const defaultConfig: {
-  authTokenLookup: (accountSid: HrmAccountId) => string;
+  authTokenLookup: (accountSid: string) => Promise<string>;
 } = {
-  authTokenLookup: () => 'picernic basket',
+  authTokenLookup: () => Promise.resolve('picernic basket'),
 };
 
 export const getServer = (config?: Partial<typeof defaultConfig>) => {
