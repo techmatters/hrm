@@ -1,0 +1,25 @@
+{
+  "name": "@tech-matters/config-ssm-cache",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/techmatters/hrm.git"
+  },
+  "keywords": [],
+  "bugs": {
+    "url": "https://github.com/techmatters/hrm/issues"
+  },
+  "homepage": "https://github.com/techmatters/hrm#readme",
+  "description": "",
+  "author": "",
+  "license": "AGPL",
+  "dependencies": {
+    "@tech-matters/ssm-cache": "^1.0.0",
+    "@tech-matters/types": "^1.0.0"
+  },
+  "scripts": {}
+}
