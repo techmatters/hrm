@@ -60,7 +60,7 @@ export const generate = async (
   environment: 'development' | 'staging' | 'production',
   hlShortCodes: string[],
   targetBucket: string,
-  sourceBucket?: string,
+  sourceBucket: string,
 ) => {
   const accountSidMappings = await lookupAccountSids(environment, hlShortCodes);
   console.log('Account SIDs found:');
@@ -69,6 +69,7 @@ export const generate = async (
   });
 
   for (const { accountSid, shortCode } of accountSidMappings) {
+
     // Query the DB for contacts and start streaming records with their ID, categories, contact summary and transcript location
     const contactStream = await streamTrainingSetContacts(accountSid);
     console.log(`Streaming contacts for ${shortCode}...`);

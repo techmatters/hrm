@@ -30,7 +30,7 @@ const SELECT_CATEGORIES_SUMMARY_AND_TRANSCRIPTS_SQL = `
     cm."storeTypeSpecificData"->'location'->>'bucket' AS "transcriptBucket",
     cm."storeTypeSpecificData"->'location'->>'key' AS "transcriptKey"
   FROM
-    "Contacts" AS c INNER JOIN "ConversationMedias" AS cm ON c."id" = cm."contactId" AND c."accountSid" = cm."accountSid"
+    "Contacts" AS c INNER JOIN "ConversationMedia" AS cm ON c."id" = cm."contactId" AND c."accountSid" = cm."accountSid"
   WHERE 
   c."accountSid" = $<accountSid> AND 
   (SELECT COUNT(*) FROM jsonb_object_keys(COALESCE(c."rawJson"->'categories', '{}'::jsonb))) > 0 AND 
