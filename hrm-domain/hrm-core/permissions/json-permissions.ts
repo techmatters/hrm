@@ -59,8 +59,7 @@ export const jsonPermissions: Permissions = {
   cachePermissions: true,
 };
 
-export const openPermissions = {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  rules: (_accountSid: string) => rulesMap.open,
+export const openPermissions: Permissions = {
+  rules: () => Promise.resolve(rulesMap.open),
   cachePermissions: true,
 };

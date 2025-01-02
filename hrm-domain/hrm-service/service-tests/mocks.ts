@@ -273,7 +273,7 @@ export const workerSid = 'WK-worker-sid';
 export const ALWAYS_CAN = {
   user: newTwilioUser(accountSid, workerSid, []),
   can: () => true,
-  permissions: openPermissions.rules('ACx'),
+  permissions: await openPermissions.rules('ACx'),
 };
 
 export const populateCaseSections = async (
