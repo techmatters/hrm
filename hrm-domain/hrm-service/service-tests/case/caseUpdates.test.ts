@@ -56,7 +56,10 @@ beforeEach(async () => {
   await mockSuccessfulTwilioAuthentication(workerSid);
   const mockttp = await mockingProxy.mockttpServer();
   await mockSsmParameters(mockttp, [
-    { pathPattern: /.*/, valueGenerator: () => SEARCH_INDEX_SQS_QUEUE_NAME },
+    {
+      pathPattern: /.*\/queue-url-consumer$/,
+      valueGenerator: () => SEARCH_INDEX_SQS_QUEUE_NAME,
+    },
   ]);
   cases.blank = await caseApi.createCase(case1, accountSid, workerSid, undefined, true);
   cases.populated = await caseApi.createCase(

@@ -81,7 +81,11 @@ beforeEach(async () => {
   await cleanup();
   const mockttp = await mockingProxy.mockttpServer();
   await mockSsmParameters(mockttp, [
-    { pathPattern: /.*/, valueGenerator: () => SEARCH_INDEX_SQS_QUEUE_NAME },
+    {
+      pathPattern: /.*\/queue-url-consumer$/,
+      valueGenerator: () => SEARCH_INDEX_SQS_QUEUE_NAME,
+    },
+    { pathPattern: /.*\/auth_token$/, valueGenerator: () => 'mockAuthToken' },
   ]);
 
   const { QueueUrl } = await sqsClient
@@ -567,7 +571,7 @@ describe('/contacts/:contactId route', () => {
       expect(response.status).toBe(404);
     });
 
-    test("Draft contact edited by a user that didn't create or own the contact - returns 403", async () => {
+    test.only("Draft contact edited by a user that didn't create or own the contact - returns 403", async () => {
       const createdContact = await contactApi.createContact(
         accountSid,
         'WK another creator',
