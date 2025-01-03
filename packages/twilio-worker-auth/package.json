@@ -10,7 +10,6 @@
     "test": "tests"
   },
   "dependencies": {
-    "@tech-matters/config-ssm-cache": "^1.0.0",
     "@tech-matters/http": "^1.0.0",
     "@tech-matters/types": "^1.0.0",
     "twilio-flex-token-validator": "^1.5.6"
