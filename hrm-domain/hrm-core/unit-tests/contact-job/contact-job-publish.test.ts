@@ -30,12 +30,6 @@ jest.mock('@tech-matters/ssm-cache', () => {
   };
 });
 
-jest.mock('../../config/ssmCache', () => {
-  return {
-    getSsmParameter: jest.fn(),
-  };
-});
-
 const accountSid = 'AC-accountSid';
 const twilioWorkerId = 'WK-twilioWorkerId';
 const mockGetSsmParameter = getSsmParameter as jest.MockedFunction<
