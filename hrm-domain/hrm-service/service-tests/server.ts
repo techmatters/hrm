@@ -39,16 +39,16 @@ export const setRules = (rules: Partial<RulesFile>) => {
 export const defaultConfig: {
   permissions?: {
     cachePermissions: boolean;
-    rules: () => RulesFile;
+    rules: () => Promise<RulesFile>;
   };
-  authTokenLookup: () => string;
+  authTokenLookup: () => Promise<string>;
   enableProcessContactJobs: boolean;
 } = {
   permissions: {
     cachePermissions: false,
-    rules: () => testRules,
+    rules: () => Promise.resolve(testRules),
   },
-  authTokenLookup: () => 'picernic basket',
+  authTokenLookup: () => Promise.resolve('picernic basket'),
   enableProcessContactJobs: false,
 };
 
