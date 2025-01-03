@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { getFromSSMCache } from '@tech-matters/config-ssm-cache';
+import { getFromSSMCache } from '../config/ssm-cache';
 import { rulesMap } from './rulesMap';
 import { Permissions } from './index';
 import { AccountSID } from '@tech-matters/types';

@@ -26,7 +26,7 @@ import {
 import { unauthorized } from '@tech-matters/http';
 import type { Request, Response, NextFunction } from 'express';
 import { AccountSID, WorkerSID } from '@tech-matters/types';
-import { getFromSSMCache } from '@tech-matters/config-ssm-cache';
+import { getFromSSMCache } from './ssm-cache';
 
 declare global {
   namespace Express {
