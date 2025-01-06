@@ -52,7 +52,7 @@ jobs:
       - name: Run New ECS task
         id: run-task
         run: |
-          CLUSTER="${{ inputs.environment }}-ecs-cluster"
+          CLUSTER="development-ecs-cluster"
           FAMILY="${{ inputs.environment }}-hrm-scheduled-task"
           SUBNETS=$(if [ ${{ inputs.environment }} == "development" ]; then echo "subnet-034e5c652dbad09dd"; else echo "subnet-00b4e88c0ea178f3d"; fi)
           SECURITY_GROUPS=($(if [ ${{ inputs.environment}} == "development" ]; then echo "sg-09194f9a648baf082 sg-047498d4c7b2cedd8 sg-06d6458accc0ec5ed sg-0ace4338c75e5d3de"; 
