@@ -66,8 +66,6 @@ jobs:
               "containerOverrides": [{
                 "name": "'"$FAMILY"'",
                 "command": [
-                  "sh",
-                  "-c",
                   "npm",
                   "run",
                   "start:generate-ai-training-set",
