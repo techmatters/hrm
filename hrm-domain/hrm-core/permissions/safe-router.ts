@@ -37,7 +37,7 @@
  * DO NOT set 'req.authorized' directly.
  */
 import { Router, RouterOptions, Request } from 'express';
-import { forbidden } from '@tech-matters/http/dist/unauthorized';
+import { forbidden } from '@tech-matters/http';
 
 /**
  * A middleware that just marks an endpoint as open.

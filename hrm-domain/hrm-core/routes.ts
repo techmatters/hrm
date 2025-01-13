@@ -26,6 +26,7 @@ import profiles from './profile/profileRoutesV0';
 import adminProfiles from './profile/adminProfileRoutesV0';
 import adminContacts from './contact/adminContactRoutesV0';
 import adminCases from './case/adminCaseRoutesV0';
+import internalContacts from './contact/internalContactRoutesV0';
 import { Permissions } from './permissions';
 
 export const HRM_ROUTES: {
@@ -60,6 +61,18 @@ export const ADMIN_ROUTES: {
 export const adminApiV0 = () => {
   const router: IRouter = Router();
   ADMIN_ROUTES.forEach(({ path, routerFactory }) => router.use(path, routerFactory()));
+
+  return router;
+};
+
+export const INTERNAL_ROUTES: {
+  path: string;
+  routerFactory: () => Router;
+}[] = [{ path: '/contacts', routerFactory: () => internalContacts }];
+
+export const internalApiV0 = () => {
+  const router: IRouter = Router();
+  INTERNAL_ROUTES.forEach(({ path, routerFactory }) => router.use(path, routerFactory()));
 
   return router;
 };

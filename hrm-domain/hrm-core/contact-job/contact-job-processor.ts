@@ -24,7 +24,7 @@ import {
 import { pollAndProcessCompletedContactJobs } from './contact-job-complete';
 import { ContactJobPollerError } from './contact-job-error';
 import { publishDueContactJobs } from './contact-job-publish';
-import { ContactJobType } from '@tech-matters/types/dist';
+import { ContactJobType } from '@tech-matters/types';
 import { db } from '../connection-pool';
 
 let processingJobs = false;
