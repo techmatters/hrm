@@ -26,7 +26,11 @@ import {
 import { unauthorized } from '@tech-matters/http';
 import type { Request, Response, NextFunction } from 'express';
 import { AccountSID, WorkerSID } from '@tech-matters/types';
-import { getFromSSMCache } from './ssm-cache';
+
+export type AuthSecretsLookup = {
+  authTokenLookup: (accountSid: string) => Promise<string>;
+  staticKeyLookup: (accountSid: string) => Promise<string>;
+};
 
 declare global {
   namespace Express {
@@ -67,63 +71,42 @@ const isWorker = (tokenResult: TokenValidatorResponse) =>
 const isGuest = (tokenResult: TokenValidatorResponse) =>
   Array.isArray(tokenResult.roles) && tokenResult.roles.includes('guest');
 
-const defaultTokenLookup = async (accountSid: string) => {
-  if (process.env[`TWILIO_AUTH_TOKEN_${accountSid}`]) {
-    return process.env[`TWILIO_AUTH_TOKEN_${accountSid}`] || '';
-  }
-
-  const { authToken } = await getFromSSMCache(accountSid);
-  return authToken;
-};
-
-const defaultStatickKeyLookup = async (keySuffix: string) => {
-  const staticSecretKey = `STATIC_KEY_${keySuffix}`;
-  if (process.env[staticSecretKey]) {
-    return process.env[staticSecretKey] || '';
-  }
-
-  const { staticKey } = await getFromSSMCache(keySuffix);
-  return staticKey;
-};
-
 const extractAccountSid = (request: Request): AccountSID => {
   const [twilioAccountSid] = request.params.accountSid?.split('-') ?? [];
   return twilioAccountSid as AccountSID;
 };
 
-const authenticateWithStaticKey = async (
-  req: Request,
-  keySuffix: string,
-  user: TwilioUser,
-): Promise<boolean> => {
-  if (!req.headers) return false;
-  const {
-    headers: { authorization },
-  } = req;
+const authenticateWithStaticKey =
+  (staticKeyLookup: AuthSecretsLookup['staticKeyLookup']) =>
+  async (req: Request, keySuffix: string, user: TwilioUser): Promise<boolean> => {
+    if (!req.headers) return false;
+    const {
+      headers: { authorization },
+    } = req;
 
-  if (keySuffix && authorization && authorization.startsWith('Basic')) {
-    try {
-      const requestSecret = authorization.replace('Basic ', '');
-      const staticSecret = await defaultStatickKeyLookup(keySuffix);
+    if (keySuffix && authorization && authorization.startsWith('Basic')) {
+      try {
+        const requestSecret = authorization.replace('Basic ', '');
+        const staticSecret = await staticKeyLookup(keySuffix);
 
-      const isStaticSecretValid =
-        staticSecret &&
-        requestSecret &&
-        crypto.timingSafeEqual(Buffer.from(requestSecret), Buffer.from(staticSecret));
+        const isStaticSecretValid =
+          staticSecret &&
+          requestSecret &&
+          crypto.timingSafeEqual(Buffer.from(requestSecret), Buffer.from(staticSecret));
 
-      if (isStaticSecretValid) {
-        req.user = user;
-        return true;
+        if (isStaticSecretValid) {
+          req.user = user;
+          return true;
+        }
+      } catch (err) {
+        console.warn('Static key authentication failed: ', err);
       }
-    } catch (err) {
-      console.warn('Static key authentication failed: ', err);
     }
-  }
-  return false;
-};
+    return false;
+  };
 
 export const getAuthorizationMiddleware =
-  (authTokenLookup: (accountSid: string) => Promise<string> = defaultTokenLookup) =>
+  ({ authTokenLookup, staticKeyLookup }: AuthSecretsLookup) =>
   async (req: Request, res: Response, next: NextFunction) => {
     if (!req || !req.headers || !req.headers.authorization) {
       return unauthorized(res);
@@ -161,36 +144,46 @@ export const getAuthorizationMiddleware =
 
     if (
       canAccessResourceWithStaticKey(req.originalUrl, req.method) &&
-      (await authenticateWithStaticKey(req, accountSid, newAccountSystemUser(accountSid)))
+      (await authenticateWithStaticKey(staticKeyLookup)(
+        req,
+        accountSid,
+        newAccountSystemUser(accountSid),
+      ))
     )
       return next();
 
     return unauthorized(res);
   };
 
-export const staticKeyAuthorizationMiddleware = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  const accountSid = extractAccountSid(req);
-  if (!accountSid) {
-    throw new Error(
-      'staticKeyAuthorizationMiddleware invoked with invalid request, req.accountSid missing',
-    );
-  }
+export const staticKeyAuthorizationMiddleware =
+  (staticKeyLookup: AuthSecretsLookup['staticKeyLookup']) =>
+  async (req: Request, res: Response, next: NextFunction) => {
+    const accountSid = extractAccountSid(req);
+    if (!accountSid) {
+      throw new Error(
+        'staticKeyAuthorizationMiddleware invoked with invalid request, req.accountSid missing',
+      );
+    }
 
-  if (await authenticateWithStaticKey(req, accountSid, newAccountSystemUser(accountSid)))
-    return next();
-  return unauthorized(res);
-};
+    if (
+      await authenticateWithStaticKey(staticKeyLookup)(
+        req,
+        accountSid,
+        newAccountSystemUser(accountSid),
+      )
+    )
+      return next();
+    return unauthorized(res);
+  };
 
 // TODO: do we want to differentiate what is actually system vs admin?
 export const systemUser = 'system';
 export const adminAuthorizationMiddleware =
-  (keySuffix: string) => async (req: Request, res: Response, next: NextFunction) => {
+  (staticKeyLookup: AuthSecretsLookup['staticKeyLookup']) =>
+  (keySuffix: string) =>
+  async (req: Request, res: Response, next: NextFunction) => {
     if (
-      await authenticateWithStaticKey(
+      await authenticateWithStaticKey(staticKeyLookup)(
         req,
         keySuffix,
         newGlobalSystemUser(extractAccountSid(req)),
