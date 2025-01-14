@@ -20,7 +20,7 @@
 
   "viewContact": [],
   "editContact": [],
-  "editInProgressContact": [["isSupervisor"], ["isOwner"]],
+  "editInProgressContact": [],
   "viewExternalTranscript": [[]],
   "viewRecording": [],
   "addContactToCase": [],
@@ -33,5 +33,7 @@
   "viewProfileSection": [],
   "editProfileSection": [],
   
-  "viewPostSurvey": []
+  "viewPostSurvey": [],
+
+  "viewIdentifiers": []
 }

@@ -33,5 +33,7 @@
   "createProfileSection": [["isSupervisor"]],
   "editProfileSection": [["isSupervisor"]],
   
-  "viewPostSurvey": [["isSupervisor"]]
+  "viewPostSurvey": [["isSupervisor"]],
+
+  "viewIdentifiers": [["everyone"]]
 }
