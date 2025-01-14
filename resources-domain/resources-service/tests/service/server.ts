@@ -31,7 +31,8 @@ export const defaultConfig: {
 } = {
   authSecretsLookup: {
     authTokenLookup: () => Promise.resolve('picernic basket'),
-    staticKeyLookup: () => Promise.resolve('picernic basket'),
+    staticKeyLookup: keySuffix =>
+      Promise.resolve(process.env[`STATIC_KEY_${keySuffix}`] || ''),
   },
 };
 
