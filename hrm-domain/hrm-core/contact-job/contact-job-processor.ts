@@ -27,7 +27,7 @@ import { publishDueContactJobs } from './contact-job-publish';
 import { ContactJobType } from '@tech-matters/types/dist';
 import { db } from '../connection-pool';
 
-let processingJobs = false;
+let processingJobs = true;
 let JOB_PROCESSING_INTERVAL_MILLISECONDS: number;
 try {
   JOB_PROCESSING_INTERVAL_MILLISECONDS = process.env.JOB_PROCESSING_INTERVAL_MILLISECONDS

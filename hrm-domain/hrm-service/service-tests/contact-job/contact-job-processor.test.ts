@@ -29,7 +29,10 @@ let contactJobProcessor: typeof import('@tech-matters/hrm-core/contact-job/conta
 
 const startServer = () => {
   const service = configureService({
-    authTokenLookup: () => Promise.resolve('picernic basket'),
+    authSecretsLookup: {
+      authTokenLookup: () => Promise.resolve('picernic basket'),
+      staticKeyLookup: () => Promise.resolve('picernic basket'),
+    },
   });
 
   service.listen();

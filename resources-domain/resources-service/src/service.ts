@@ -21,19 +21,20 @@ import {
   getAuthorizationMiddleware,
   staticKeyAuthorizationMiddleware,
   adminAuthorizationMiddleware,
+  type AuthSecretsLookup,
 } from '@tech-matters/twilio-worker-auth';
 import { adminApiV0, apiV0, internalApiV0 } from './routes';
 
-type ResourceServiceCreationOptions = {
+type ResourceServiceCreationOptions = Required<{
   webServer: ReturnType<typeof express>;
-  authTokenLookup?: (accountSid: string) => Promise<string>;
-};
+  authSecretsLookup: AuthSecretsLookup;
+}>;
 
 export const configureService = ({
   webServer,
-  authTokenLookup,
+  authSecretsLookup,
 }: ResourceServiceCreationOptions) => {
-  const authorizationMiddleware = getAuthorizationMiddleware(authTokenLookup);
+  const authorizationMiddleware = getAuthorizationMiddleware(authSecretsLookup);
   webServer.use(
     '/v0/accounts/:accountSid/resources',
     addAccountSidMiddleware,
@@ -46,11 +47,13 @@ export const configureService = ({
 type InternalResourceServiceCreationOptions = {
   webServer: ReturnType<typeof express>;
   reindexDbBatchSize?: number;
+  authSecretsLookup: AuthSecretsLookup;
 };
 
 export const configureInternalService = ({
   webServer,
   reindexDbBatchSize = 1000,
+  authSecretsLookup,
 }: InternalResourceServiceCreationOptions) => {
   webServer.get('/resources', (req, res) => {
     res.json({
@@ -65,7 +68,7 @@ export const configureInternalService = ({
   );
   webServer.use(
     '/v0/resources/admin',
-    adminAuthorizationMiddleware('SEARCH_REINDEXER'),
+    adminAuthorizationMiddleware(authSecretsLookup.staticKeyLookup)('SEARCH_REINDEXER'),
     adminApiV0({ reindexDbBatchSize }),
   );
   return webServer;

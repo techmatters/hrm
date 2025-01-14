@@ -22,13 +22,17 @@ import {
   configureDefaultPreMiddlewares,
 } from '@tech-matters/http';
 import express from 'express';
+import type { AuthSecretsLookup } from '@tech-matters/twilio-worker-auth';
 
 import { configureInternalService, configureService } from '../../src/service';
 
 export const defaultConfig: {
-  authTokenLookup: (accountSid: string) => Promise<string>;
+  authSecretsLookup: AuthSecretsLookup;
 } = {
-  authTokenLookup: () => Promise.resolve('picernic basket'),
+  authSecretsLookup: {
+    authTokenLookup: () => Promise.resolve('picernic basket'),
+    staticKeyLookup: () => Promise.resolve('picernic basket'),
+  },
 };
 
 export const getServer = (config?: Partial<typeof defaultConfig>) => {
@@ -54,6 +58,7 @@ export const getInternalServer = () => {
   process.env.AWS_SECRET_ACCESS_KEY = 'mock-secret-key';
   const withoutService = configureDefaultPreMiddlewares(express());
   const withService = configureInternalService({
+    ...defaultConfig,
     ...defaultInternalServiceConfig,
     webServer: withoutService,
   });

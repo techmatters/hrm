@@ -25,18 +25,19 @@ import {
   adminAuthorizationMiddleware,
 } from '@tech-matters/twilio-worker-auth';
 import { adminApiV0 } from './routes';
-import { AccountSID } from '@tech-matters/types';
+import { defaultAuthSecretsLookup } from './config/authSecretsLookup';
+import type { AuthSecretsLookup } from '@tech-matters/twilio-worker-auth';
 
 type ServiceCreationOptions = Partial<{
   permissions: Permissions;
-  authTokenLookup: (accountSid: AccountSID) => Promise<string>;
+  authSecretsLookup: AuthSecretsLookup;
   enableProcessContactJobs: boolean;
   webServer: Express;
 }>;
 
 export function configureService({
   permissions = jsonPermissions,
-  authTokenLookup,
+  authSecretsLookup = defaultAuthSecretsLookup,
   webServer = express(),
 }: ServiceCreationOptions = {}) {
   webServer.get('/', (req, res) => {
@@ -45,14 +46,20 @@ export function configureService({
     });
   });
 
-  setUpHrmRoutes(webServer, authTokenLookup, permissions);
+  setUpHrmRoutes(webServer, authSecretsLookup, permissions);
 
   console.log(`${new Date().toLocaleString()}: app.js has been created`);
 
   return webServer;
 }
 
-export const configureInternalService = ({ webServer }: { webServer: Express }) => {
+export const configureInternalService = ({
+  webServer,
+  authSecretsLookup,
+}: {
+  webServer: Express;
+  authSecretsLookup: AuthSecretsLookup;
+}) => {
   webServer.get('/', (req, res) => {
     res.json({
       Message: 'HRM internal service is up and running!',
@@ -62,7 +69,7 @@ export const configureInternalService = ({ webServer }: { webServer: Express }) 
   webServer.use(
     '/admin/v0/accounts/:accountSid',
     addAccountSidMiddleware,
-    adminAuthorizationMiddleware('ADMIN_HRM'),
+    adminAuthorizationMiddleware(authSecretsLookup.staticKeyLookup)('ADMIN_HRM'),
     adminApiV0(),
   );
 
