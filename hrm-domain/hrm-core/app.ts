@@ -79,7 +79,7 @@ export const configureInternalService = ({
   webServer.use(
     '/internal/v0/accounts/:accountSid',
     addAccountSidMiddleware,
-    staticKeyAuthorizationMiddleware,
+    staticKeyAuthorizationMiddleware(authSecretsLookup.staticKeyLookup),
     setupPermissions(openPermissions),
     internalApiV0(),
   );
