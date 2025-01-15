@@ -99,10 +99,8 @@ jobs:
         working-directory: ./flex-plugins/e2e-tests
 
       - name: Setup dependencies for playwright/browsers
-        uses: microsoft/playwright-github-action@v1
-
-      - name: Install Playwright CLI
-        run: npx playwright install
+        shell: bash
+        run: npx playwright install --with-deps chromium
         working-directory: ./flex-plugins/e2e-tests
 
       # Run E2E tests against actual E2E Flex instance
