@@ -15,7 +15,7 @@
  */
 
 import type { Request, Response, NextFunction } from 'express';
-import { SafeRouter, publicEndpoint } from '../permissions';
+import { publicEndpoint, SafeRouter } from '../permissions';
 import { processContactsStream } from './contactsNotifyService';
 
 const adminContactsRouter = SafeRouter();
