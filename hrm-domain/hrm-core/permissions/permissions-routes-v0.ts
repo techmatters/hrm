@@ -27,24 +27,28 @@ import { TResult, newErr, isErr, newOk, mapHTTPError } from '@tech-matters/types
 
 export default (permissions: Permissions) => {
   const permissionsRouter = SafeRouter();
-  permissionsRouter.get('/', publicEndpoint, (req: Request, res: Response, next) => {
-    try {
-      const { accountSid } = req.user;
-      if (!permissions.rules) {
-        return next(
-          createError(
-            400,
-            'Reading rules is not supported by the permissions implementation being used by this instance of the HRM service.',
-          ),
-        );
-      }
-      const rules = permissions.rules(accountSid);
+  permissionsRouter.get(
+    '/',
+    publicEndpoint,
+    async (req: Request, res: Response, next) => {
+      try {
+        const { accountSid } = req.user;
+        if (!permissions.rules) {
+          return next(
+            createError(
+              400,
+              'Reading rules is not supported by the permissions implementation being used by this instance of the HRM service.',
+            ),
+          );
+        }
+        const rules = await permissions.rules(accountSid);
 
-      res.json(rules);
-    } catch (error) {
-      return next(createError(500, error.message));
-    }
-  });
+        res.json(rules);
+      } catch (error) {
+        return next(createError(500, error.message));
+      }
+    },
+  );
 
   const parseActionGetPayload = ({
     objectType,

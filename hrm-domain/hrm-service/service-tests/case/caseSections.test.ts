@@ -50,7 +50,10 @@ beforeAll(async () => {
   await mockSuccessfulTwilioAuthentication(workerSid);
   const mockttp = await mockingProxy.mockttpServer();
   await mockSsmParameters(mockttp, [
-    { pathPattern: /.*/, valueGenerator: () => SEARCH_INDEX_SQS_QUEUE_NAME },
+    {
+      pathPattern: /.*\/queue-url-consumer$/,
+      valueGenerator: () => SEARCH_INDEX_SQS_QUEUE_NAME,
+    },
   ]);
 });
 

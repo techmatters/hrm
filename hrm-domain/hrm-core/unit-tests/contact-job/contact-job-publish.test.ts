@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { getSsmParameter } from '../../config/ssmCache';
+import { getSsmParameter } from '@tech-matters/ssm-cache';
 import * as SQSClient from '../../contact-job/client-sqs';
 import * as contactJobPublish from '../../contact-job/contact-job-publish';
 import { ContactJob } from '../../contact-job/contact-job-data-access';
@@ -25,12 +25,6 @@ import { PublishToContactJobsTopicParams } from '@tech-matters/types';
 jest.mock('../../contact-job/client-sqs');
 
 jest.mock('@tech-matters/ssm-cache', () => {
-  return {
-    getSsmParameter: jest.fn(),
-  };
-});
-
-jest.mock('../../config/ssmCache', () => {
   return {
     getSsmParameter: jest.fn(),
   };

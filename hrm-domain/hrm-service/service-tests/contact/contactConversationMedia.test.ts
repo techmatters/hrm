@@ -63,7 +63,10 @@ beforeEach(async () => {
   await cleanup();
   const mockttp = await mockingProxy.mockttpServer();
   await mockSsmParameters(mockttp, [
-    { pathPattern: /.*/, valueGenerator: () => SEARCH_INDEX_SQS_QUEUE_NAME },
+    {
+      pathPattern: /.*\/queue-url-consumer$/,
+      valueGenerator: () => SEARCH_INDEX_SQS_QUEUE_NAME,
+    },
   ]);
 
   createdContact = await contactApi.createContact(

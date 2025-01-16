@@ -22,6 +22,7 @@ import './defaultConfiguration';
  */
 console.log(new Date(Date.now()).toLocaleString() + ': trying to initialize www');
 import { configureService, configureInternalService } from '@tech-matters/hrm-core/app';
+import { defaultAuthSecretsLookup } from '@tech-matters/hrm-core/config/authSecretsLookup';
 import {
   configureInternalResourcesService,
   configureResourcesService,
@@ -56,9 +57,13 @@ function normalizePort(val) {
 }
 
 const appWithoutServices = configureDefaultPreMiddlewares(express());
-const appWithHrmService = configureService({ webServer: appWithoutServices });
+const appWithHrmService = configureService({
+  webServer: appWithoutServices,
+  authSecretsLookup: defaultAuthSecretsLookup,
+});
 const appWithResourcesService = configureResourcesService({
   webServer: appWithHrmService,
+  authSecretsLookup: defaultAuthSecretsLookup,
 });
 const app = configureDefaultPostMiddlewares(
   appWithResourcesService,
@@ -68,9 +73,11 @@ const app = configureDefaultPostMiddlewares(
 const internalAppWithoutServices = configureDefaultPreMiddlewares(express());
 const inernalAppWithHrmService = configureInternalService({
   webServer: internalAppWithoutServices,
+  authSecretsLookup: defaultAuthSecretsLookup,
 });
 const internalAppWithResourcesService = configureInternalResourcesService({
   webServer: inernalAppWithHrmService,
+  authSecretsLookup: defaultAuthSecretsLookup,
 });
 const internalApp = configureDefaultPostMiddlewares(
   internalAppWithResourcesService,

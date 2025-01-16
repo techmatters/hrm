@@ -32,7 +32,7 @@ import * as profilesService from '../../profile/profileService';
 import { NewContactRecord } from '../../contact/sql/contactInsertSql';
 import { ALWAYS_CAN, OPEN_CONTACT_ACTION_CONDITIONS } from '../mocks';
 import '@tech-matters/testing/expectToParseAsDate';
-import { openPermissions } from '../../permissions/json-permissions';
+import { openRules } from '../../permissions/json-permissions';
 import { RulesFile, TKConditionsSets } from '../../permissions/rulesMap';
 import * as entityChangeNotify from '../../notifications/entityChangeNotify';
 
@@ -537,7 +537,7 @@ describe('search contacts permissions', () => {
         isSupervisor: isSupervisor,
       };
       const permissions: RulesFile = {
-        ...openPermissions.rules('ACx'),
+        ...openRules,
         viewContact: viewContactsPermissions,
       };
       const reqData = {

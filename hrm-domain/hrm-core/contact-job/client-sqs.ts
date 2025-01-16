@@ -19,10 +19,9 @@ import {
   receiveSqsMessage,
   sendSqsMessage,
 } from '@tech-matters/sqs-client';
-import { getSsmParameter } from '../config/ssmCache';
 
 import type { PublishToContactJobsTopicParams } from '@tech-matters/types';
-import { SsmParameterNotFound } from '@tech-matters/ssm-cache';
+import { SsmParameterNotFound, getSsmParameter } from '@tech-matters/ssm-cache';
 
 const COMPLETED_QUEUE_SSM_PATH = `/${process.env.NODE_ENV}/${
   process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION

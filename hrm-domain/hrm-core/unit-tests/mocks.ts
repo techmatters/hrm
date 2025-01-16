@@ -1,5 +1,5 @@
 import { newTwilioUser } from '@tech-matters/twilio-worker-auth';
-import { openPermissions } from '../permissions/json-permissions';
+import { openRules } from '../permissions/json-permissions';
 import { TKConditionsSets } from '../permissions/rulesMap';
 
 /**
@@ -24,7 +24,7 @@ export const accountSid = 'ACCOUNT_SID';
 export const ALWAYS_CAN = {
   user: newTwilioUser(accountSid, workerSid, []),
   can: () => true,
-  permissions: openPermissions.rules('ACx'),
+  permissions: openRules,
 };
 
 export const OPEN_CONTACT_ACTION_CONDITIONS: TKConditionsSets<'contact'> = [['everyone']];

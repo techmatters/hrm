@@ -22,8 +22,7 @@ import {
 } from './contact-job-data-access';
 import { publishToContactJobs } from './client-sqs';
 import { assertExhaustive, ContactJobType } from '@tech-matters/types';
-import { getSsmParameter } from '../config/ssmCache';
-import { SsmParameterNotFound } from '@tech-matters/ssm-cache';
+import { SsmParameterNotFound, getSsmParameter } from '@tech-matters/ssm-cache';
 
 export const publishRetrieveContactTranscript = (
   contactJob: RetrieveContactTranscriptJob,

@@ -25,20 +25,21 @@ import {
   adminAuthorizationMiddleware,
   staticKeyAuthorizationMiddleware,
 } from '@tech-matters/twilio-worker-auth';
+import { defaultAuthSecretsLookup } from './config/authSecretsLookup';
+import type { AuthSecretsLookup } from '@tech-matters/twilio-worker-auth';
 import { adminApiV0, internalApiV0 } from './routes';
-import { AccountSID } from '@tech-matters/types';
 import { setupPermissions } from './permissions';
 
 type ServiceCreationOptions = Partial<{
   permissions: Permissions;
-  authTokenLookup: (accountSid: AccountSID) => string;
+  authSecretsLookup: AuthSecretsLookup;
   enableProcessContactJobs: boolean;
   webServer: Express;
 }>;
 
 export function configureService({
   permissions = jsonPermissions,
-  authTokenLookup,
+  authSecretsLookup = defaultAuthSecretsLookup,
   webServer = express(),
 }: ServiceCreationOptions = {}) {
   webServer.get('/', (req, res) => {
@@ -47,14 +48,20 @@ export function configureService({
     });
   });
 
-  setUpHrmRoutes(webServer, authTokenLookup, permissions);
+  setUpHrmRoutes(webServer, authSecretsLookup, permissions);
 
   console.log(`${new Date().toLocaleString()}: app.js has been created`);
 
   return webServer;
 }
 
-export const configureInternalService = ({ webServer }: { webServer: Express }) => {
+export const configureInternalService = ({
+  webServer,
+  authSecretsLookup,
+}: {
+  webServer: Express;
+  authSecretsLookup: AuthSecretsLookup;
+}) => {
   webServer.get('/', (req, res) => {
     res.json({
       Message: 'HRM internal service is up and running!',
@@ -64,7 +71,7 @@ export const configureInternalService = ({ webServer }: { webServer: Express }) 
   webServer.use(
     '/admin/v0/accounts/:accountSid',
     addAccountSidMiddleware,
-    adminAuthorizationMiddleware('ADMIN_HRM'),
+    adminAuthorizationMiddleware(authSecretsLookup.staticKeyLookup)('ADMIN_HRM'),
     setupPermissions(openPermissions),
     adminApiV0(),
   );
@@ -72,7 +79,7 @@ export const configureInternalService = ({ webServer }: { webServer: Express }) 
   webServer.use(
     '/internal/v0/accounts/:accountSid',
     addAccountSidMiddleware,
-    staticKeyAuthorizationMiddleware,
+    staticKeyAuthorizationMiddleware(authSecretsLookup.staticKeyLookup),
     setupPermissions(openPermissions),
     internalApiV0(),
   );
