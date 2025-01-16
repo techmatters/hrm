@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { Contact } from '@tech-matters/hrm-types/dist/Contact';
+import { Contact } from '@tech-matters/hrm-types/Contact';
 import {
   CompletedRetrieveContactTranscript,
   ContactJobAttemptResult,

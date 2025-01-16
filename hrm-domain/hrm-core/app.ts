@@ -18,14 +18,16 @@ import express, { Express } from 'express';
 import 'express-async-errors';
 
 import type { Permissions } from './permissions';
-import { jsonPermissions } from './permissions/json-permissions';
+import { jsonPermissions, openPermissions } from './permissions/json-permissions';
 import { setUpHrmRoutes } from './setUpHrmRoutes';
 import {
   addAccountSidMiddleware,
   adminAuthorizationMiddleware,
+  staticKeyAuthorizationMiddleware,
 } from '@tech-matters/twilio-worker-auth';
-import { adminApiV0 } from './routes';
+import { adminApiV0, internalApiV0 } from './routes';
 import { AccountSID } from '@tech-matters/types';
+import { setupPermissions } from './permissions';
 
 type ServiceCreationOptions = Partial<{
   permissions: Permissions;
@@ -63,7 +65,16 @@ export const configureInternalService = ({ webServer }: { webServer: Express }) 
     '/admin/v0/accounts/:accountSid',
     addAccountSidMiddleware,
     adminAuthorizationMiddleware('ADMIN_HRM'),
+    setupPermissions(openPermissions),
     adminApiV0(),
+  );
+
+  webServer.use(
+    '/internal/v0/accounts/:accountSid',
+    addAccountSidMiddleware,
+    staticKeyAuthorizationMiddleware,
+    setupPermissions(openPermissions),
+    internalApiV0(),
   );
 
   return webServer;

@@ -18,7 +18,7 @@
 import { fetch } from 'undici';
 import { getS3Object, putS3Object } from '@tech-matters/s3-client';
 import { receiveSqsMessage, sendSqsMessage } from '@tech-matters/sqs-client';
-import { ContactJobAttemptResult } from '@tech-matters/types/dist/ContactJob';
+import { ContactJobAttemptResult } from '@tech-matters/types/ContactJob';
 
 declare global {
   var fetch: typeof import('undici').fetch;
@@ -26,7 +26,7 @@ declare global {
 
 const PENDING_TRANSCRIPT_SQS_QUEUE_URL = process.env.PENDING_TRANSCRIPT_SQS_QUEUE_URL;
 const COMPLETED_TRANSCRIPT_SQS_QUEUE_URL = process.env.COMPLETED_TRANSCRIPT_SQS_QUEUE_URL;
-const LOCAL_PRIVATEAI_URI_ENDPOINT = new URL('http://localhost:8080/v3/process/text');
+const LOCAL_PRIVATEAI_URI_ENDPOINT = new URL('http://localhost:8080/process/text');
 const LOCAL_PRIVATEAI_HEALTH_ENDPOINT = new URL('http://localhost:8080/healthz');
 const MAX_PAI_STARTUP_TIME_MILLIS = 10 * 60 * 1000;
 const MAX_PROCESSING_RUN_TIME_MILLIS = 15 * 60 * 1000;

@@ -46,12 +46,6 @@ declare global {
 const canAccessResourceWithStaticKey = (path: string, method: string): boolean => {
   // If the requests is to create a new post survey record, grant access
   if (path.endsWith('/postSurveys') && method === 'POST') return true;
-  if (
-    (process.env.TASK_ROUTER_CONTACT_CREATION || '').toLowerCase() === 'true' &&
-    path.endsWith('/contacts') &&
-    method === 'POST'
-  )
-    return true;
 
   // If the requests is retrieve the list of flags associated to a given identifier, grant access
   if (/\/profiles\/identifier\/[^/]+\/flags$/.test(path) && method === 'GET') return true;
@@ -70,7 +64,7 @@ const defaultTokenLookup = (accountSid: string) =>
   process.env[`TWILIO_AUTH_TOKEN_${accountSid}`] ?? '';
 
 const extractAccountSid = (request: Request): AccountSID => {
-  const [twilioAccountSid] = request.params.accountSid?.split('-') ?? [];
+  const [twilioAccountSid] = request.hrmAccountId?.split('-') ?? [];
   return twilioAccountSid as AccountSID;
 };
 
