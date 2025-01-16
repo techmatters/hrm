@@ -60,10 +60,9 @@ export const generate = async (
   environment: 'development' | 'staging' | 'production',
   hlShortCodes: string[],
   targetBucket: string,
-  sourceBucket?: string,
+  sourceBucket: string,
 ) => {
   const accountSidMappings = await lookupAccountSids(environment, hlShortCodes);
-  console.log('Account SIDs found:');
   accountSidMappings.forEach(({ accountSid, shortCode }) => {
     console.log(`Account SID for ${shortCode}: ${accountSid}`);
   });
@@ -90,8 +89,8 @@ export const generate = async (
               sourceBucket,
             );
           } catch (error) {
-            console.info(
-              `No transcript found for contact ${trainingSetContact.contactId} in ${shortCode} bucket. Skipping...`,
+            console.debug(
+              `No transcript found for contact ${trainingSetContact.contactId} in ${trainingSetContact.transcriptBucket}/${trainingSetContact.transcriptKey} . Skipping...`,
             );
             callback();
             return;
