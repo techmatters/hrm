@@ -105,6 +105,20 @@ export default (permissions: Permissions) => {
         user,
       });
 
+      console.log(
+        '>>> canPerformActionsOnObject Parameters:',
+        {
+          hrmAccountId,
+          targetKind: objectType,
+          actions: [action],
+          objectId,
+          can,
+          user,
+        },
+        '>>> canPerformResult:',
+        canPerformResult,
+      );
+
       if (isErr(canPerformResult)) {
         return next(
           mapHTTPError(canPerformResult, {
