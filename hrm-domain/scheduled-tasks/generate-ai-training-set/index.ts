@@ -69,7 +69,7 @@ export const generate = async (
 
   for (const { accountSid, shortCode } of accountSidMappings) {
     // Query the DB for contacts and start streaming records with their ID, categories, contact summary and transcript location
-    const contactStream = await streamTrainingSetContacts(accountSid, sourceBucket);
+    const contactStream = await streamTrainingSetContacts(accountSid);
     console.log(`Streaming contacts for ${shortCode}...`);
 
     const trainingSetJsonStream = contactStream.pipe(
@@ -89,15 +89,12 @@ export const generate = async (
               sourceBucket,
             );
           } catch (error) {
-            console.info(
+            console.debug(
               `No transcript found for contact ${trainingSetContact.contactId} in ${trainingSetContact.transcriptBucket}/${trainingSetContact.transcriptKey} . Skipping...`,
             );
             callback();
             return;
           }
-          console.log(
-            `Uploading contact ${trainingSetDoc.contactId} from ${sourceBucket}`,
-          );
           await uploadTrainingSetDocument(
             trainingSetDoc.contactId,
             JSON.stringify(trainingSetDoc),
