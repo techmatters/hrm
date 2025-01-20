@@ -22,7 +22,7 @@ import {
   receiveSqsMessage,
   sendSqsMessage,
 } from '@tech-matters/sqs-client';
-import { ContactJobAttemptResult } from '@tech-matters/types/ContactJob';
+import { ContactJobAttemptResult } from '@tech-matters/types';
 
 declare global {
   var fetch: typeof import('undici').fetch;
