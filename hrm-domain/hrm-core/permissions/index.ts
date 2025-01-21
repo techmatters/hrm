@@ -64,8 +64,7 @@ export const setupPermissions =
       const initializedCan = canCache[accountSid];
       applyPermissions(req, initializedCan);
     } else {
-      const initializedCan = initializeCanForRules(accountRules);
-      applyPermissions(req, initializedCan);
+      applyPermissions(req, initializeCanForRules(accountRules));
     }
 
     req.permissions = accountRules;
