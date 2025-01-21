@@ -20,13 +20,8 @@ import { AccountSID } from '@tech-matters/types';
 
 export const getPermissionsConfigName = (accountSid: AccountSID) => {
   const permissionsKey = `PERMISSIONS_${accountSid}`;
-  console.log('!! 2. getPermissionsConfigName permissionsKey', permissionsKey);
 
   const permissionsConfigName = process.env[permissionsKey];
-  console.log(
-    '!! 2. getPermissionsConfigName permissionsConfigName',
-    permissionsConfigName,
-  );
 
   if (!permissionsConfigName)
     throw new Error(`No permissions set for account ${accountSid}.`);
@@ -48,7 +43,6 @@ export const jsonPermissions: Permissions = {
 
     const rules = rulesMap[permissionsConfigName];
 
-    console.log('!! 3. jsonPermissions rules', rules);
     if (!rules) throw new Error(`Cannot find rules for ${permissionsConfigName}`);
     return rules;
   },

@@ -30,10 +30,6 @@ export const setUpHrmRoutes = (
 ) => {
   const authorizationMiddleware = getAuthorizationMiddleware(authTokenLookup);
   HRM_ROUTES.forEach(({ path }) => {
-    console.log(
-      `!! 1. setUpHrmRoutes. Setting up route: /v0/accounts/:accountSid${path}.  Setting up API v0 with permissions rules ${rules.toString()}`,
-    );
-
     webServer.use(
       `/v0/accounts/:accountSid${path}`,
       addAccountSidMiddleware,

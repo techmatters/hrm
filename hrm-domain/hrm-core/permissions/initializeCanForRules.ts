@@ -230,34 +230,22 @@ const setupAllow = <T extends TargetKind>(
 };
 
 export const initializeCanForRules = (rules: RulesFile) => {
-  console.log('!! 5. initializeCanForRules Initializing action checkers for rules:');
   const actionCheckers = {} as { [action in Actions]: ReturnType<typeof setupAllow> };
 
   const targetKinds = Object.keys(actionsMaps);
-  console.log('Target kinds found:', targetKinds);
   targetKinds.forEach((targetKind: string) => {
     if (!isTargetKind(targetKind)) {
-      console.error(`Invalid target kind ${targetKind} found in initializeCanForRules`);
       throw new Error(`Invalid target kind ${targetKind} found in initializeCanForRules`);
     }
 
-    console.log(`Setting up actions for target kind: ${targetKind}`);
     const actionsForTK = Object.values(actionsMaps[targetKind]);
     actionsForTK.forEach(action => {
-      console.log(
-        `Setting up allow checker for action: ${action} on target kind: ${targetKind}`,
-      );
       actionCheckers[action] = setupAllow(targetKind, rules[action]);
     });
   });
 
-  console.log('Action checkers initialized:', actionCheckers);
-  return (performer: TwilioUser, action: Actions, target: any) => {
-    console.log(
-      `Checking permission for performer: ${performer}, action: ${action}, target: ${target}`,
-    );
-    return actionCheckers[action](performer, target);
-  };
+  return (performer: TwilioUser, action: Actions, target: any) =>
+    actionCheckers[action](performer, target);
 };
 
 export type InitializedCan = ReturnType<typeof initializeCanForRules>;
