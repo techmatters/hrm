@@ -42,6 +42,7 @@ export const jsonPermissions: Permissions = {
     const permissionsConfigName = getPermissionsConfigName(accountSid);
 
     const rules = rulesMap[permissionsConfigName];
+
     if (!rules) throw new Error(`Cannot find rules for ${permissionsConfigName}`);
     return rules;
   },

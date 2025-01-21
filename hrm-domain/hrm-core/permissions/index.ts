@@ -58,6 +58,7 @@ export const setupPermissions =
     const { accountSid } = <TwilioUser>(<any>req).user;
 
     const accountRules = lookup.rules(accountSid);
+
     if (lookup.cachePermissions) {
       canCache[accountSid] = canCache[accountSid] ?? initializeCanForRules(accountRules);
       const initializedCan = canCache[accountSid];
@@ -65,6 +66,7 @@ export const setupPermissions =
     } else {
       applyPermissions(req, initializeCanForRules(accountRules));
     }
+
     req.permissions = accountRules;
     return next();
   };
