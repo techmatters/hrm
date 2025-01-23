@@ -108,10 +108,6 @@ const pollQueue = async (): Promise<boolean> => {
 
   let moreToProcess = false;
   for (const message of messages) {
-    if (!message) {
-      moreToProcess = false;
-      continue;
-    }
     moreToProcess = true;
     let parsedPendingMessage;
     // ECS tasks need to manually delete the message, unlike lambdas where deletion is automically handled for SQS inputs
