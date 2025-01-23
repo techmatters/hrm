@@ -97,6 +97,7 @@ export type PatchPayload = Omit<
 > & {
   rawJson?: Partial<ContactRawJson>;
   referrals?: ReferralWithoutContactId[];
+  conversationMedia?: ConversationMedia[];
 };
 
 const filterExternalTranscripts = (contact: Contact): Contact => {
@@ -296,7 +297,7 @@ export const patchContact = async (
   updatedBy: TwilioUserIdentifier,
   finalize: boolean,
   contactId: string,
-  { referrals, rawJson, ...restOfPatch }: PatchPayload,
+  { referrals, rawJson, conversationMedia, ...restOfPatch }: PatchPayload,
   { can, user }: { can: InitializedCan; user: TwilioUser },
   skipSearchIndex = false,
 ): Promise<Contact> =>
@@ -313,6 +314,15 @@ export const patchContact = async (
         });
       }
     }
+
+    // if conversationMedia is present, update it
+    if (conversationMedia) {
+      await createConversationMedia(conn)(accountSid, {
+        contactId: parseInt(contactId, 10),
+        ...conversationMedia,
+      });
+    }
+
     const res = await initProfile(conn, accountSid, restOfPatch);
     if (isErr(res)) {
       throw res.rawError;
@@ -334,7 +344,6 @@ export const patchContact = async (
     const applyTransformations = bindApplyTransformations(can, user);
 
     // trigger index operation but don't await for it
-
     if (!skipSearchIndex) {
       updateContactInSearchIndex({ accountSid, contactId: parseInt(contactId, 10) });
     }

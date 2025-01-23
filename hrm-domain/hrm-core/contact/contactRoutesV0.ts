@@ -34,6 +34,7 @@ import {
   canPerformEditContactAction,
   canPerformViewContactAction,
 } from './canPerformContactAction';
+import { fi } from 'date-fns/locale';
 
 const contactsRouter = SafeRouter();
 
@@ -183,6 +184,8 @@ contactsRouter.patch(
     const { hrmAccountId, user } = req;
     const { contactId } = req.params;
     const finalize = req.query.finalize === 'true'; // Default to false for backwards compatibility
+
+    console.log('>>>  patch /:contactId', { body: req.body, finalize, can: req.can });
     try {
       const contact = await patchContact(
         hrmAccountId,
@@ -195,6 +198,7 @@ contactsRouter.patch(
           user,
         },
       );
+      console.log('>>>  patch /:contactId', { contact });
       res.json(contact);
     } catch (err) {
       if (err.message.toLowerCase().includes('contact not found')) {
