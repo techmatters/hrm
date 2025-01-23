@@ -34,7 +34,6 @@ import {
   canPerformEditContactAction,
   canPerformViewContactAction,
 } from './canPerformContactAction';
-import { fi } from 'date-fns/locale';
 
 const contactsRouter = SafeRouter();
 
