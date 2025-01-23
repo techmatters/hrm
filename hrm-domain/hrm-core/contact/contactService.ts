@@ -317,10 +317,12 @@ export const patchContact = async (
 
     // if conversationMedia is present, update it
     if (conversationMedia) {
-      await createConversationMedia(conn)(accountSid, {
-        contactId: parseInt(contactId, 10),
-        ...conversationMedia,
-      });
+      for (const media of conversationMedia) {
+        await createConversationMedia(conn)(accountSid, {
+          contactId: parseInt(contactId, 10),
+          ...media,
+        });
+      }
     }
 
     const res = await initProfile(conn, accountSid, restOfPatch);
