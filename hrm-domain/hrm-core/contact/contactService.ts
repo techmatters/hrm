@@ -315,16 +315,6 @@ export const patchContact = async (
       }
     }
 
-    // if conversationMedia is present, update it
-    if (conversationMedia) {
-      for (const media of conversationMedia) {
-        await createConversationMedia(conn)(accountSid, {
-          contactId: parseInt(contactId, 10),
-          ...media,
-        });
-      }
-    }
-
     const res = await initProfile(conn, accountSid, restOfPatch);
     if (isErr(res)) {
       throw res.rawError;
@@ -338,6 +328,7 @@ export const patchContact = async (
       ...rawJson,
       profileId,
       identifierId,
+      conversationMedia,
     });
     if (!updated) {
       throw new Error(`Contact not found with id ${contactId}`);
