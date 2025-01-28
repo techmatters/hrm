@@ -101,7 +101,7 @@ describe('getSsmParameter', () => {
     // Mock initial ssm params
     const ssmParam = {
       Name: '/test/newParam',
-      Value: 'newValue',
+      Value: 'notNewValue',
     };
 
     mockSSMClient.on(GetParameterCommand, { Name: ssmParam.Name }).resolves({

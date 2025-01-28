@@ -199,7 +199,7 @@ describe('searchResources', () => {
           name: 'Resource 1',
           attributes: {
             testAttribute: [
-              { value: 'testValue', language: 'Klingon', info: { qa: 'pla' } },
+              { value: 'testValue', language: 'Romulan', info: { qa: 'pla' } },
             ],
           },
         },
