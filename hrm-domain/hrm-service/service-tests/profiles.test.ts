@@ -251,7 +251,7 @@ describe('/profiles', () => {
 
       test('when identifier exists, return 200', async () => {
         const response = await request.get(buildRoute(identifier)).set(headers);
-        expect(response.statusCode).toBe(201);
+        expect(response.statusCode).toBe(200);
         expect(response.body.id).toBe(createdProfiles[accountSid].id);
         expect(response.body.profiles.length).toBe(1);
         expect(response.body.profiles[0].id).toBe(
