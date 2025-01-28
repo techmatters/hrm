@@ -68,7 +68,10 @@ const main = async () => {
   sqlFile.write('\n\n--- REGIONS AND CITIES ---\n\n');
   for await (const line of csvLines) {
     const [, provinceCode, region, cityEn] = line as string[];
-    const provinceName = CANADIAN_PROVINCE_CODE_EN_MAP[provinceCode];
+    const provinceName =
+      CANADIAN_PROVINCE_CODE_EN_MAP[
+        provinceCode as keyof typeof CANADIAN_PROVINCE_CODE_EN_MAP
+      ];
     if (!region || region.toLowerCase() === 'unknown') {
       console.info(`${cityEn} (${provinceName}) has no region, skipping`);
       continue;
