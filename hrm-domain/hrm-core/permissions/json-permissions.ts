@@ -54,6 +54,7 @@ export const jsonPermissions: Permissions = {
 
     const rules = rulesMap[permissionConfig];
     if (!rules) throw new Error(`Cannot find rules for ${permissionConfig}`);
+
     return rules;
   },
   cachePermissions: true,

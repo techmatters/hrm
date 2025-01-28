@@ -234,13 +234,14 @@ export const initializeCanForRules = (rules: RulesFile) => {
 
   const targetKinds = Object.keys(actionsMaps);
   targetKinds.forEach((targetKind: string) => {
-    if (!isTargetKind(targetKind))
+    if (!isTargetKind(targetKind)) {
       throw new Error(`Invalid target kind ${targetKind} found in initializeCanForRules`);
+    }
 
     const actionsForTK = Object.values(actionsMaps[targetKind]);
-    actionsForTK.forEach(
-      action => (actionCheckers[action] = setupAllow(targetKind, rules[action])),
-    );
+    actionsForTK.forEach(action => {
+      actionCheckers[action] = setupAllow(targetKind, rules[action]);
+    });
   });
 
   return (performer: TwilioUser, action: Actions, target: any) =>

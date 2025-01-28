@@ -52,15 +52,18 @@ export type TrainingSetContact = {
 export const streamTrainingSetContacts = async (
   accountSid: HrmAccountId,
 ): Promise<ReadableStream> => {
-  const qs = new QueryStream(
-    pgp.as.format(SELECT_CATEGORIES_SUMMARY_AND_TRANSCRIPTS_SQL, { accountSid }),
-    [],
-    { highWaterMark: HIGH_WATER_MARK },
-  );
+  const formattedQuery = pgp.as.format(SELECT_CATEGORIES_SUMMARY_AND_TRANSCRIPTS_SQL, {
+    accountSid,
+  });
+
+  const qs = new QueryStream(formattedQuery, [], { highWaterMark: HIGH_WATER_MARK });
   // Expose the readable stream to the caller as a promise for further pipelining
-  return new Promise(resolve => {
+  return new Promise((resolve, reject) => {
     db.stream(qs, resultStream => {
       resolve(resultStream);
+    }).catch(error => {
+      console.error('Error streaming contacts:', error);
+      reject(error);
     });
   });
 };

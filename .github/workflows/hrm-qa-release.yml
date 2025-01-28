@@ -64,8 +64,8 @@ jobs:
     needs:
       - build-and-deploy-service
       - build-and-deploy-lambdas
-
-    runs-on: ubuntu-latest
+    # Pinned to v22 while https://github.com/microsoft/playwright/issues/30368 is addressed
+    runs-on: ubuntu-22.04
 
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
@@ -99,10 +99,8 @@ jobs:
         working-directory: ./flex-plugins/e2e-tests
 
       - name: Setup dependencies for playwright/browsers
-        uses: microsoft/playwright-github-action@v1
-
-      - name: Install Playwright CLI
-        run: npx playwright install
+        shell: bash
+        run: npx playwright install --with-deps chromium
         working-directory: ./flex-plugins/e2e-tests
 
       # Run E2E tests against actual E2E Flex instance

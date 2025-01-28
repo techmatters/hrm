@@ -2,19 +2,19 @@
   "viewCase": [["isSupervisor"], ["isCreator"]],
   "closeCase": [["isSupervisor"], ["isCreator", "isCaseOpen"]],
   "reopenCase": [["isSupervisor"]],
-  "caseStatusTransition": [],
+  "caseStatusTransition": [["isSupervisor"], ["isCreator", "isCaseOpen"]],
   "addNote": [["isSupervisor"], ["isCreator", "isCaseOpen"]],
-  "editNote": [["isSupervisor"], ["isCreator", "isCaseOpen"]],
+  "editNote": [["isSupervisor"]],
   "addReferral": [["isSupervisor"], ["isCreator", "isCaseOpen"]],
-  "editReferral": [["isSupervisor"], ["isCreator", "isCaseOpen"]],
+  "editReferral": [["isSupervisor"]],
   "addHousehold": [["isSupervisor"], ["isCreator", "isCaseOpen"]],
-  "editHousehold": [["isSupervisor"], ["isCreator", "isCaseOpen"]],
+  "editHousehold": [["isSupervisor"]],
   "addPerpetrator": [["isSupervisor"], ["isCreator", "isCaseOpen"]],
-  "editPerpetrator": [["isSupervisor"], ["isCreator", "isCaseOpen"]],
+  "editPerpetrator": [["isSupervisor"]],
   "addIncident": [["isSupervisor"], ["isCreator", "isCaseOpen"]],
-  "editIncident": [["isSupervisor"], ["isCreator", "isCaseOpen"]],
+  "editIncident": [["isSupervisor"]],
   "addDocument": [["isSupervisor"], ["isCreator", "isCaseOpen"]],
-  "editDocument": [["isSupervisor"], ["isCreator", "isCaseOpen"]],
+  "editDocument": [["isSupervisor"]],
   "editCaseOverview": [["isSupervisor"], ["isCreator", "isCaseOpen"]],
   "updateCaseContacts": [["isSupervisor"], ["isCaseOpen"]],
 
@@ -22,18 +22,18 @@
   "editContact": [["isSupervisor"], ["isOwner"]],
   "editInProgressContact": [["isSupervisor"], ["isOwner"]],
   "viewExternalTranscript": [["everyone"]],
-  "viewRecording": [["everyone"]],
+  "viewRecording": [],
   "addContactToCase": [["isSupervisor"], ["isOwner"]],
   "removeContactFromCase": [["isSupervisor"], ["isOwner"]],
-  
+
   "viewProfile": [["everyone"]],
-  "flagProfile": [["everyone"]],
+  "flagProfile": [["isSupervisor"]],
   "unflagProfile": [["isSupervisor"]],
-  "createProfileSection": [["everyone"]],
-  "viewProfileSection": [["everyone"]],
+  "viewProfileSection": [["everyone", { "sectionType": "summary" }], ["isSupervisor"]],
+  "createProfileSection": [["isSupervisor"]],
   "editProfileSection": [["isSupervisor"]],
   
   "viewPostSurvey": [["isSupervisor"]],
-  
+
   "viewIdentifiers": [["everyone"]]
 }

@@ -17,8 +17,12 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { fetch } from 'undici';
 import { getS3Object, putS3Object } from '@tech-matters/s3-client';
-import { receiveSqsMessage, sendSqsMessage } from '@tech-matters/sqs-client';
-import { ContactJobAttemptResult } from '@tech-matters/types/ContactJob';
+import {
+  deleteSqsMessage,
+  receiveSqsMessage,
+  sendSqsMessage,
+} from '@tech-matters/sqs-client';
+import { ContactJobAttemptResult } from '@tech-matters/types';
 
 declare global {
   var fetch: typeof import('undici').fetch;
@@ -98,52 +102,60 @@ const pollQueue = async (): Promise<boolean> => {
   const messagesPayload = await receiveSqsMessage({
     queueUrl: PENDING_TRANSCRIPT_SQS_QUEUE_URL,
   });
-  const [message] = Array.isArray(messagesPayload?.Messages)
+  const messages = Array.isArray(messagesPayload?.Messages)
     ? messagesPayload?.Messages
     : [];
-  if (!message) {
-    return false;
-  }
-  let parsedPendingMessage;
-  try {
-    parsedPendingMessage = JSON.parse(message.Body);
-    const {
-      jobId,
-      contactId,
-      accountSid,
-      attemptNumber,
-      originalLocation: { bucket, key },
-    } = parsedPendingMessage;
-    console.debug(
-      `Scrubbing transcript: ${key} jobId: ${jobId} (attempt ${attemptNumber}), contact ${accountSid}/${contactId}`,
-    );
 
-    const scrubbedKey = await scrubS3Transcript(bucket, key);
-    await sendSqsMessage({
-      queueUrl: COMPLETED_TRANSCRIPT_SQS_QUEUE_URL,
-      message: JSON.stringify({
-        ...parsedPendingMessage,
-        attemptPayload: {
-          scrubbedLocation: { key: scrubbedKey, bucket },
-        },
-        attemptResult: ContactJobAttemptResult.SUCCESS,
-      }),
+  let moreToProcess = false;
+  for (const message of messages) {
+    moreToProcess = true;
+    let parsedPendingMessage;
+    // ECS tasks need to manually delete the message, unlike lambdas where deletion is automically handled for SQS inputs
+    // Delete it first because polling handles retries
+    await deleteSqsMessage({
+      queueUrl: PENDING_TRANSCRIPT_SQS_QUEUE_URL,
+      receiptHandle: message.ReceiptHandle,
     });
-    console.log(
-      `Successfully scrubbed transcript: ${key}, scrubbed version at ${scrubbedKey}${key}, jobId: ${jobId} (attempt ${attemptNumber}), contact ${accountSid}/${contactId}`,
-    );
-  } catch (error) {
-    console.error(`Failed to scrub transcript`, error);
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    await sendSqsMessage({
-      queueUrl: COMPLETED_TRANSCRIPT_SQS_QUEUE_URL,
-      message: JSON.stringify({
-        attemptPayload: errorMessage,
-        attemptResult: ContactJobAttemptResult.FAILURE,
-      }),
-    });
+    try {
+      parsedPendingMessage = JSON.parse(message.Body);
+      const {
+        jobId,
+        contactId,
+        accountSid,
+        attemptNumber,
+        originalLocation: { bucket, key },
+      } = parsedPendingMessage;
+      console.debug(
+        `Scrubbing transcript: ${key} jobId: ${jobId} (attempt ${attemptNumber}), contact ${accountSid}/${contactId}`,
+      );
+
+      const scrubbedKey = await scrubS3Transcript(bucket, key);
+      await sendSqsMessage({
+        queueUrl: COMPLETED_TRANSCRIPT_SQS_QUEUE_URL,
+        message: JSON.stringify({
+          ...parsedPendingMessage,
+          attemptPayload: {
+            scrubbedLocation: { key: scrubbedKey, bucket },
+          },
+          attemptResult: ContactJobAttemptResult.SUCCESS,
+        }),
+      });
+      console.log(
+        `Successfully scrubbed transcript: ${key}, scrubbed version at ${scrubbedKey}${key}, jobId: ${jobId} (attempt ${attemptNumber}), contact ${accountSid}/${contactId}`,
+      );
+    } catch (error) {
+      console.error(`Failed to scrub transcript`, error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      await sendSqsMessage({
+        queueUrl: COMPLETED_TRANSCRIPT_SQS_QUEUE_URL,
+        message: JSON.stringify({
+          attemptPayload: errorMessage,
+          attemptResult: ContactJobAttemptResult.FAILURE,
+        }),
+      });
+    }
   }
-  return true;
+  return moreToProcess;
 };
 
 export const executeTask = async () => {

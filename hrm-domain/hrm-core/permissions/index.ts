@@ -65,6 +65,7 @@ export const setupPermissions =
     } else {
       applyPermissions(req, initializeCanForRules(accountRules));
     }
+
     req.permissions = accountRules;
     return next();
   };
