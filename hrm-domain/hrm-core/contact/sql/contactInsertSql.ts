@@ -41,6 +41,7 @@ export const INSERT_CONTACT_SQL = `
       "serviceSid",
       "profileId",
       "identifierId"
+      "conversationMedia"
     ) (SELECT 
         $<accountSid>, 
         $<rawJson>, 
@@ -59,6 +60,7 @@ export const INSERT_CONTACT_SQL = `
         $<serviceSid>,
         $<profileId>,
         $<identifierId>
+        $<conversationMedia>
       WHERE NOT EXISTS (
         ${selectSingleContactByTaskId('Contacts')}
       )

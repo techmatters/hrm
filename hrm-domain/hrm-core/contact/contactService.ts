@@ -315,15 +315,6 @@ export const patchContact = async (
       }
     }
 
-    // I want only the conversationMedia to be updated. this is a draft
-    if (conversationMedia && finalize == false) {
-      // just add the media to the contact
-      await createConversationMedia(conn)(accountSid, {
-        contactId: parseInt(contactId),
-        ...conversationMedia[0],
-      });
-    }
-
     const res = await initProfile(conn, accountSid, restOfPatch);
     if (isErr(res)) {
       throw res.rawError;
@@ -337,6 +328,7 @@ export const patchContact = async (
       ...rawJson,
       profileId,
       identifierId,
+      conversationMedia,
     });
     console.log('>>> contactService patchContact contact:', updated);
     if (!updated) {

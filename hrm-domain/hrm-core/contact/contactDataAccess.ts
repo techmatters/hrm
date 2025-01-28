@@ -46,6 +46,7 @@ import {
   Contact,
   dataCallTypes,
   ConversationMedia,
+  NewConversationMedia,
 } from '@tech-matters/hrm-types';
 
 export { ExistingContactRecord, Contact };
@@ -72,7 +73,7 @@ export type ContactUpdates = Omit<
   'id' | 'accountSid' | 'rawJson' | 'createdAt' | 'finalizedAt'
 > &
   Partial<ContactRawJson> & {
-    conversationMedia?: ConversationMedia[];
+    conversationMedia?: ConversationMedia[] | NewConversationMedia[];
   };
 
 const BLANK_CONTACT_UPDATES: ContactUpdates = {
