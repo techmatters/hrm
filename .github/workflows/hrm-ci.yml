@@ -111,8 +111,13 @@ jobs:
         run: npm run build
 
       - name: Run Unit Tests
-        run: npm run test:unit
+        run: npm run test:unit:ci
 
+      - name: Publish Test Reports
+        uses: mikepenz/action-junit-report@v5
+        if: success() || failure() # always run even if the previous step fails
+        with:
+          report_paths: '**/junit.xml'
   service-tests:
     runs-on: ubuntu-latest
 
