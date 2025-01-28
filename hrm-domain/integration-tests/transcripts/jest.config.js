@@ -27,6 +27,7 @@ module.exports = config => {
         },
       },
       setupFiles: ['<rootDir>/src/setTestEnvVars.js'],
+      reporters: ['default', 'jest-junit'],
     }
   );
 };

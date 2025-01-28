@@ -26,6 +26,7 @@ module.exports = config => {
           useExperimentalLanguageServer: true,
         },
       },
+      reporters: ['default', 'jest-junit'],
     }
   );
 };
