@@ -41,7 +41,12 @@ import {
 } from '@tech-matters/types';
 import QueryStream from 'pg-query-stream';
 
-import { ExistingContactRecord, Contact, dataCallTypes } from '@tech-matters/hrm-types';
+import {
+  ExistingContactRecord,
+  Contact,
+  dataCallTypes,
+  ConversationMedia,
+} from '@tech-matters/hrm-types';
 
 export { ExistingContactRecord, Contact };
 
@@ -66,7 +71,9 @@ export type ContactUpdates = Omit<
   ExistingContactRecord,
   'id' | 'accountSid' | 'rawJson' | 'createdAt' | 'finalizedAt'
 > &
-  Partial<ContactRawJson>;
+  Partial<ContactRawJson> & {
+    conversationMedia?: ConversationMedia[];
+  };
 
 const BLANK_CONTACT_UPDATES: ContactUpdates = {
   caseInformation: undefined,
@@ -87,6 +94,7 @@ const BLANK_CONTACT_UPDATES: ContactUpdates = {
   caseId: undefined,
   twilioWorkerId: undefined,
   conversationDuration: undefined,
+  conversationMedia: undefined,
 };
 
 type QueryParams = {

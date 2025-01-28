@@ -97,6 +97,7 @@ export type PatchPayload = Omit<
 > & {
   rawJson?: Partial<ContactRawJson>;
   referrals?: ReferralWithoutContactId[];
+  conversationMedia?: NewConversationMedia[];
 };
 
 const filterExternalTranscripts = (contact: Contact): Contact => {
@@ -296,7 +297,7 @@ export const patchContact = async (
   updatedBy: TwilioUserIdentifier,
   finalize: boolean,
   contactId: string,
-  { referrals, rawJson, ...restOfPatch }: PatchPayload,
+  { referrals, rawJson, conversationMedia, ...restOfPatch }: PatchPayload,
   { can, user }: { can: InitializedCan; user: TwilioUser },
   skipSearchIndex = false,
 ): Promise<Contact> =>
@@ -327,6 +328,7 @@ export const patchContact = async (
       profileId,
       identifierId,
     });
+    console.log('>>> contactService patchContact contact:', updated);
     if (!updated) {
       throw new Error(`Contact not found with id ${contactId}`);
     }
