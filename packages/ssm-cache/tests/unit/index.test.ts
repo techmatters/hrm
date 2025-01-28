@@ -101,14 +101,14 @@ describe('getSsmParameter', () => {
     // Mock initial ssm params
     const ssmParam = {
       Name: '/test/newParam',
-      Value: 'notNewValue',
+      Value: 'newValue',
     };
 
     mockSSMClient.on(GetParameterCommand, { Name: ssmParam.Name }).resolves({
       Parameter: ssmParam,
     });
 
-    await expect(SsmCache.getSsmParameter(ssmParam.Name)).resolves.toEqual(
+    await expect(SsmCache.getSsmParameter(ssmParam.Name + '_NOT')).resolves.toEqual(
       ssmParam.Value,
     );
 
