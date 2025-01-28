@@ -15,7 +15,7 @@
  */
 
 import type { AuthSecretsLookup } from '@tech-matters/twilio-worker-auth';
-import { getFromSSMCache } from './ssm-cache';
+import { getFromSSMCache } from './ssmConfigurationCache';
 
 const authTokenLookup = async (accountSid: string) => {
   if (process.env[`TWILIO_AUTH_TOKEN_${accountSid}`]) {
