@@ -38,7 +38,7 @@ declare global {
 const canCache: Record<string, InitializedCan> = {};
 
 export type Permissions = {
-  rules: (accountSid: AccountSID) => RulesFile;
+  rules: (accountSid: AccountSID) => Promise<RulesFile>;
   cachePermissions: boolean;
 };
 
@@ -54,11 +54,10 @@ export const applyPermissions = (req: Request, initializedCan: InitializedCan) =
 };
 
 export const setupPermissions =
-  (lookup: Permissions) => (req: Request, res: Response, next: NextFunction) => {
+  (lookup: Permissions) => async (req: Request, res: Response, next: NextFunction) => {
     const { accountSid } = <TwilioUser>(<any>req).user;
 
-    const accountRules = lookup.rules(accountSid);
-
+    const accountRules = await lookup.rules(accountSid);
     if (lookup.cachePermissions) {
       canCache[accountSid] = canCache[accountSid] ?? initializeCanForRules(accountRules);
       const initializedCan = canCache[accountSid];

@@ -110,7 +110,6 @@ const canPerformActionOnContact = (
             const accountSid = user.accountSid;
             const twilioClient = await getClient({
               accountSid,
-              authToken: process.env[`TWILIO_AUTH_TOKEN_${accountSid}`],
             });
             const isTransferTarget = await isTwilioTaskTransferTarget(
               twilioClient,

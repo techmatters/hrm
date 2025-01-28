@@ -25,6 +25,7 @@ import {
 } from '@tech-matters/http';
 import express from 'express';
 import { rulesMap } from '../../hrm-core/permissions';
+import type { AuthSecretsLookup } from '@tech-matters/twilio-worker-auth';
 
 const testRules: RulesFile = { ...rulesMap.open };
 
@@ -39,16 +40,20 @@ export const setRules = (rules: Partial<RulesFile>) => {
 export const defaultConfig: {
   permissions?: {
     cachePermissions: boolean;
-    rules: () => RulesFile;
+    rules: () => Promise<RulesFile>;
   };
-  authTokenLookup: () => string;
+  authSecretsLookup: AuthSecretsLookup;
   enableProcessContactJobs: boolean;
 } = {
   permissions: {
     cachePermissions: false,
-    rules: () => testRules,
+    rules: () => Promise.resolve(testRules),
   },
-  authTokenLookup: () => 'picernic basket',
+  authSecretsLookup: {
+    authTokenLookup: () => Promise.resolve('picernic basket'),
+    staticKeyLookup: keySuffix =>
+      Promise.resolve(process.env[`STATIC_KEY_${keySuffix}`] || ''),
+  },
   enableProcessContactJobs: false,
 };
 

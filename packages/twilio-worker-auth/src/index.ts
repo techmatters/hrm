@@ -19,6 +19,7 @@ export {
   adminAuthorizationMiddleware,
   staticKeyAuthorizationMiddleware,
   systemUser,
+  type AuthSecretsLookup,
 } from './twilioWorkerAuthMiddleware';
 export { addAccountSidMiddleware } from './addAccountSidMiddleware';
 export {

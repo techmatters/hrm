@@ -15,12 +15,11 @@
  */
 
 import { sendSqsMessage } from '@tech-matters/sqs-client';
-import { getSsmParameter } from '../config/ssmCache';
+import { SsmParameterNotFound, getSsmParameter } from '@tech-matters/ssm-cache';
 import { IndexMessage } from '@tech-matters/hrm-search-config';
 import { CaseService, Contact } from '@tech-matters/hrm-types';
 import { AccountSID, HrmAccountId } from '@tech-matters/types';
 import { publishSns, PublishSnsParams } from '@tech-matters/sns-client';
-import { SsmParameterNotFound } from '@tech-matters/ssm-cache';
 import { NotificationOperation } from '@tech-matters/hrm-types';
 
 type DeleteNotificationPayload = {

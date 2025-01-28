@@ -78,10 +78,13 @@ describe('Test Bearer token', () => {
     async ({
       shouldAuthorize,
       validatorImplementation,
-      authTokenLookup = () => 'picernic basket',
+      authTokenLookup = () => Promise.resolve('picernic basket'),
       headers = { authorization: 'Bearer some-very-valid-worker-token' },
     }) => {
-      const authorizationMiddleware = getAuthorizationMiddleware(authTokenLookup);
+      const authorizationMiddleware = getAuthorizationMiddleware({
+        authTokenLookup,
+        staticKeyLookup: authTokenLookup,
+      });
 
       const nextFn = jest.fn();
 
@@ -121,7 +124,10 @@ describe('Test Bearer token', () => {
   );
 
   test('Should reject when there is no authorization header', async () => {
-    const authorizationMiddleware = getAuthorizationMiddleware();
+    const authorizationMiddleware = getAuthorizationMiddleware({
+      authTokenLookup: () => Promise.resolve('picernic basket'),
+      staticKeyLookup: () => Promise.resolve('picernic basket'),
+    });
 
     const nextFn = jest.fn();
 

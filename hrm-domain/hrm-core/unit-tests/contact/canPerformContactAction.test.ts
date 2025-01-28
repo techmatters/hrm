@@ -27,6 +27,7 @@ import { CaseService, getCase } from '../../case/caseService';
 import { actionsMaps } from '../../permissions';
 import { SafeRouterRequest } from '../../permissions/safe-router';
 import { newTwilioUser } from '@tech-matters/twilio-worker-auth';
+import { mockingProxy, mockSsmParameters } from '@tech-matters/testing';
 
 jest.mock('@tech-matters/twilio-client', () => ({
   getClient: jest.fn().mockResolvedValue({}),
@@ -50,6 +51,18 @@ const BASELINE_DATE = parseISO('2022-05-05 12:00:00');
 const accountSid1 = 'ACtwilio-hrm1';
 const thisWorkerSid = 'WK-thisWorker';
 const otherWorkerSid = 'WK-otherWorker';
+
+beforeAll(async () => {
+  await mockingProxy.start();
+  const mockttp = await mockingProxy.mockttpServer();
+  await mockSsmParameters(mockttp, [
+    { pathPattern: /.*\/auth_token$/, valueGenerator: () => 'account1 token' },
+  ]);
+});
+
+afterAll(async () => {
+  await mockingProxy.stop();
+});
 
 let req: Partial<SafeRouterRequest>;
 let mockRequestMethods: {
@@ -112,7 +125,6 @@ const draftContactTests =
       mockRequestMethods.can.mockReturnValue(false);
       req.body = { conversationDuration: 123 };
       req.user = { ...req.user, accountSid: 'ACtwilio', workerSid: thisWorkerSid };
-      process.env.TWILIO_AUTH_TOKEN_ACtwilio = 'account1 token';
       await setup();
     });
 
@@ -151,7 +163,6 @@ const draftContactTests =
       await canPerformEditContactAction(req, {}, next);
       expect(getClient).toHaveBeenCalledWith({
         accountSid: 'ACtwilio',
-        authToken: 'account1 token',
       });
       expect(isTwilioTaskTransferTarget).toHaveBeenCalledWith(
         await getClient({ accountSid: accountSid1 }),
@@ -178,7 +189,6 @@ const draftContactTests =
       await canPerformEditContactAction(req, {}, next);
       expect(getClient).toHaveBeenCalledWith({
         accountSid: 'ACtwilio',
-        authToken: 'account1 token',
       });
 
       expectation();
@@ -197,7 +207,6 @@ const draftContactTests =
       await canPerformEditContactAction(req, {}, next);
       expect(getClient).toHaveBeenCalledWith({
         accountSid: 'ACtwilio',
-        authToken: 'account1 token',
       });
       expect(isTwilioTaskTransferTarget).toHaveBeenCalledWith(
         await getClient({ accountSid: accountSid1 }),

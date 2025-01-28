@@ -14,28 +14,29 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { Express } from 'express';
-import { Permissions, setupPermissions } from './permissions';
-import { apiV0, HRM_ROUTES } from './routes';
-import {
-  addAccountSidMiddleware,
-  getAuthorizationMiddleware,
-} from '@tech-matters/twilio-worker-auth';
 import type { AuthSecretsLookup } from '@tech-matters/twilio-worker-auth';
+import { getFromSSMCache } from './ssmConfigurationCache';
 
-export const setUpHrmRoutes = (
-  webServer: Express,
-  authSecretsLookup: AuthSecretsLookup,
-  rules: Permissions,
-) => {
-  const authorizationMiddleware = getAuthorizationMiddleware(authSecretsLookup);
-  HRM_ROUTES.forEach(({ path }) => {
-    webServer.use(
-      `/v0/accounts/:accountSid${path}`,
-      addAccountSidMiddleware,
-      authorizationMiddleware,
-      setupPermissions(rules),
-    );
-  });
-  webServer.use('/v0/accounts/:accountSid', apiV0(rules));
+const authTokenLookup = async (accountSid: string) => {
+  if (process.env[`TWILIO_AUTH_TOKEN_${accountSid}`]) {
+    return process.env[`TWILIO_AUTH_TOKEN_${accountSid}`] || '';
+  }
+
+  const { authToken } = await getFromSSMCache(accountSid);
+  return authToken;
+};
+
+const staticKeyLookup = async (keySuffix: string) => {
+  const staticSecretKey = `STATIC_KEY_${keySuffix}`;
+  if (process.env[staticSecretKey]) {
+    return process.env[staticSecretKey] || '';
+  }
+
+  const { staticKey } = await getFromSSMCache(keySuffix);
+  return staticKey;
+};
+
+export const defaultAuthSecretsLookup: AuthSecretsLookup = {
+  authTokenLookup,
+  staticKeyLookup,
 };
