@@ -97,6 +97,7 @@ export type PatchPayload = Omit<
 > & {
   rawJson?: Partial<ContactRawJson>;
   referrals?: ReferralWithoutContactId[];
+  conversationMedia?: ConversationMedia[];
 };
 
 const filterExternalTranscripts = (contact: Contact): Contact => {
@@ -125,12 +126,21 @@ const permissionsBasedTransformations: PermissionsBasedTransformation[] = [
 
 export const bindApplyTransformations =
   (can: InitializedCan, user: TwilioUser) =>
-  (contact: Contact): Contact =>
-    permissionsBasedTransformations.reduce(
-      (transformed, { action, transformation }) =>
-        !can(user, action, contact) ? transformation(transformed) : transformed,
+  (contact: Contact): Contact => {
+    console.log(`Applying transformations for contact ID: ${contact.id}`);
+    return permissionsBasedTransformations.reduce(
+      (transformed, { action, transformation }) => {
+        const canPerformAction = can(user, action, contact);
+        console.log(
+          `User ${user.workerSid} ${
+            canPerformAction ? 'can' : 'cannot'
+          } perform action ${action} on contact ID: ${contact.id}`,
+        );
+        return !canPerformAction ? transformation(transformed) : transformed;
+      },
       contact,
     );
+  };
 
 export const getContactById = async (
   accountSid: HrmAccountId,
@@ -327,6 +337,13 @@ export const patchContact = async (
       profileId,
       identifierId,
     });
+    //check if updated has conversationMedia
+    if (!updated.conversationMedia) {
+      console.error(
+        `Contact ${contactId} did not have conversationMedia even though it should: ${restOfPatch.conversationMedia}`,
+      );
+      console.error('restOfPatch', restOfPatch);
+    }
     if (!updated) {
       throw new Error(`Contact not found with id ${contactId}`);
     }

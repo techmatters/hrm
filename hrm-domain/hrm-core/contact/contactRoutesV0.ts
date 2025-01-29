@@ -183,6 +183,7 @@ contactsRouter.patch(
     const { hrmAccountId, user } = req;
     const { contactId } = req.params;
     const finalize = req.query.finalize === 'true'; // Default to false for backwards compatibility
+    console.log('at route req.body', req.body);
     try {
       const contact = await patchContact(
         hrmAccountId,

@@ -57,6 +57,7 @@ export type NewContactRecord = {
   caseId?: CaseService['id'];
   profileId?: number;
   identifierId?: number;
+  conversationMedia?: ConversationMedia[];
 };
 
 export type ExistingContactRecord = {
