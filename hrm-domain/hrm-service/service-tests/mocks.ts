@@ -88,6 +88,7 @@ export const contact1: NewContactRecord = {
   conversationDuration: 14,
   profileId: undefined,
   identifierId: undefined,
+  definitionVersion: 'as-v1',
 };
 
 export const contact2: NewContactRecord = {
@@ -148,6 +149,7 @@ export const contact2: NewContactRecord = {
   conversationDuration: 10,
   profileId: undefined,
   identifierId: undefined,
+  definitionVersion: 'as-v1',
 };
 
 export const nonData1: NewContactRecord = {
@@ -262,6 +264,7 @@ export const withTaskId: NewContactRecord = {
   taskId: 'taskId',
   profileId: undefined,
   identifierId: undefined,
+  definitionVersion: 'as-v1',
 };
 export type CaseSectionInsert = {
   section: NewCaseSection;
