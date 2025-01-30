@@ -336,7 +336,16 @@ export const patchContact = async (
     // trigger index operation but don't await for it
 
     if (!skipSearchIndex) {
-      updateContactInSearchIndex({ accountSid, contactId: parseInt(contactId, 10) });
+      if (
+        updated.taskId?.startsWith('offline-contact-task-') &&
+        !updated.rawJson.callType &&
+        !updated.finalizedAt
+      ) {
+        // If the task is an offline contact task and the call type is not set, this is a 'reset' contact, effectively deleted, so we should remove it from the index
+        deleteContactInSearchIndex({ accountSid, contactId: parseInt(contactId, 10) });
+      } else {
+        updateContactInSearchIndex({ accountSid, contactId: parseInt(contactId, 10) });
+      }
     }
 
     return applyTransformations(updated);
