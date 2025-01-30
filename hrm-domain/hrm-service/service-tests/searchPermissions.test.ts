@@ -99,6 +99,7 @@ const createContact = async (twilioWorkerId: WorkerSID): Promise<contactDb.Conta
       helpline: 'helpline',
       conversationDuration: 5,
       serviceSid: 'ISxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+      definitionVersion: 'as-v1',
     },
     ALWAYS_CAN,
   );
