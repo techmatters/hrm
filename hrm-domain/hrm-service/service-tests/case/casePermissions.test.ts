@@ -101,6 +101,7 @@ describe('isCaseContactOwner condition', () => {
               },
               queueName: 'buh',
               conversationDuration: 0,
+              definitionVersion: 'as-v1',
             },
             ALWAYS_CAN,
             true,

@@ -168,6 +168,7 @@ each([
         taskId: 'empty-contact-tasksid',
         channelSid: null,
         serviceSid: null,
+        definitionVersion: 'as-v1',
       },
       expectedGetContact: {
         rawJson: {} as ContactRawJson,

@@ -54,6 +54,7 @@ describe('create', () => {
     channelSid: undefined,
     serviceSid: undefined,
     isNewRecord: true,
+    definitionVersion: 'as-v1',
   };
 
   test('Task ID specified in payload that is already associated with a contact - returns that contact', async () => {

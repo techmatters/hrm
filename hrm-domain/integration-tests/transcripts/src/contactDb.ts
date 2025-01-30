@@ -66,6 +66,7 @@ export const createContact = async (newContact: NewContactRecord): Promise<Conta
     const { isNewRecord, ...created }: CreateResultRecord =
       await conn.one<CreateResultRecord>(INSERT_CONTACT_SQL, {
         ...newContact,
+        definitionVersion: 'as-v1',
         identifierId: identifier.id,
         profileId: profile.id,
         accountSid: ACCOUNT_SID,

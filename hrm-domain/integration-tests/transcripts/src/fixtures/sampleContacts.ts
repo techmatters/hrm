@@ -29,6 +29,7 @@ export const MINIMAL_CONTACT: NewContactRecord = {
   twilioWorkerId: 'WK-integration-test-counselor',
   taskId: 'TK-integration-test',
 
+  definitionVersion: 'as-v1',
   helpline: '',
   number: '',
   timeOfContact: new Date().toISOString(),
