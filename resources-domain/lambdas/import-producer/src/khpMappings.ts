@@ -486,16 +486,6 @@ export const KHP_MAPPING_NODE: MappingNode = {
   }),
   primaryLocationCity: {
     mappings: [
-      referenceAttributeMapping('primaryLocationCity', 'cities', {
-        value: ctx => {
-          const { primaryLocationProvince } = ctx.rootResource;
-          return [
-            'CA',
-            lookupProvinceCode(primaryLocationProvince),
-            ctx.currentValue,
-          ].join('/');
-        },
-      }),
       referenceAttributeMapping(
         'primaryLocationRegionCity',
         'country/province/region/city',
