@@ -28,6 +28,7 @@ import {
   AccountSID,
   HrmAccountId,
   TwilioUserIdentifier,
+  ErrorResult,
 } from '@tech-matters/types';
 import { getClient } from '@tech-matters/elasticsearch-client';
 import {
@@ -209,6 +210,9 @@ const createContactInSearchIndex = doContactChangeNotification('create');
 const updateContactInSearchIndex = doContactChangeNotification('update');
 const deleteContactInSearchIndex = doContactChangeNotification('delete');
 
+type InvalidParameterError = ErrorResult<'InvalidParameterError'>;
+type CreateError = DatabaseErrorResult | InvalidParameterError;
+
 // Creates a contact with all its related records within a single transaction
 export const createContact = async (
   accountSid: HrmAccountId,
@@ -217,14 +221,24 @@ export const createContact = async (
   { can, user }: { can: InitializedCan; user: TwilioUser },
   skipSearchIndex = false,
 ): Promise<Contact> => {
-  let result: Result<DatabaseErrorResult, Contact>;
+  let result: Result<CreateError, Contact>;
   for (let retries = 1; retries < 4; retries++) {
-    result = await ensureRejection<DatabaseErrorResult, Contact>(db.tx)(async conn => {
+    result = await ensureRejection<CreateError, Contact>(db.tx)(async conn => {
       const res = await initProfile(conn, accountSid, newContact);
       if (isErr(res)) {
         return res;
       }
       const { profileId, identifierId } = res.data;
+
+      const definitionVersion =
+        newContact.definitionVersion || newContact.rawJson.definitionVersion;
+
+      if (!definitionVersion) {
+        return newErr({
+          error: 'InvalidParameterError',
+          message: 'creteContact error: missing definition version parameter',
+        });
+      }
 
       const completeNewContact: NewContactRecord = {
         ...newContact,
@@ -245,6 +259,7 @@ export const createContact = async (
         // Hardcoded to first profile for now, but will be updated to support multiple profiles
         profileId,
         identifierId,
+        definitionVersion,
       };
       const contactCreateResult = await create(conn)(accountSid, completeNewContact);
       if (isErr(contactCreateResult)) {
@@ -336,7 +351,16 @@ export const patchContact = async (
     // trigger index operation but don't await for it
 
     if (!skipSearchIndex) {
-      updateContactInSearchIndex({ accountSid, contactId: parseInt(contactId, 10) });
+      if (
+        updated.taskId?.startsWith('offline-contact-task-') &&
+        !updated.rawJson.callType &&
+        !updated.finalizedAt
+      ) {
+        // If the task is an offline contact task and the call type is not set, this is a 'reset' contact, effectively deleted, so we should remove it from the index
+        deleteContactInSearchIndex({ accountSid, contactId: parseInt(contactId, 10) });
+      } else {
+        updateContactInSearchIndex({ accountSid, contactId: parseInt(contactId, 10) });
+      }
     }
 
     return applyTransformations(updated);
