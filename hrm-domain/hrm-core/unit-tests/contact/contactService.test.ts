@@ -120,6 +120,7 @@ describe('createContact', () => {
     number: "that's numberwang",
     channelSid: 'a channel',
     serviceSid: 'a service',
+    definitionVersion: 'as-v1',
   };
 
   const spyOnContact = ({

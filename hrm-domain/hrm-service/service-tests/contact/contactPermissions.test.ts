@@ -105,6 +105,7 @@ const createContact = async (
       helpline: 'helpline',
       conversationDuration: 5,
       serviceSid: 'ISxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+      definitionVersion: 'as-v1',
     },
     ALWAYS_CAN,
     true,
