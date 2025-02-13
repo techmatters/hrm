@@ -87,6 +87,7 @@ const BLANK_CONTACT_UPDATES: ContactUpdates = {
   caseId: undefined,
   twilioWorkerId: undefined,
   conversationDuration: undefined,
+  llmSupportedEntries: undefined,
 };
 
 type QueryParams = {
