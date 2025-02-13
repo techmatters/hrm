@@ -27,7 +27,8 @@ SET "rawJson" = COALESCE("rawJson", '{}'::JSONB)
   || (CASE WHEN $<childInformation> IS NOT NULL THEN jsonb_build_object('childInformation', $<childInformation>::JSONB) ELSE '{}'::JSONB END)
   || (CASE WHEN $<contactlessTask> IS NOT NULL THEN jsonb_build_object('contactlessTask', $<contactlessTask>::JSONB) ELSE '{}'::JSONB END)
   || (CASE WHEN $<callType> IS NOT NULL THEN jsonb_build_object('callType', $<callType>) ELSE '{}'::JSONB END)
-  || (CASE WHEN $<definitionVersion> IS NOT NULL THEN jsonb_build_object('definitionVersion', $<definitionVersion>) ELSE '{}'::JSONB END),
+  || (CASE WHEN $<definitionVersion> IS NOT NULL THEN jsonb_build_object('definitionVersion', $<definitionVersion>) ELSE '{}'::JSONB END)
+  || (CASE WHEN $<aiSupportedEntries> IS NOT NULL THEN jsonb_build_object('aiSupportedEntries', $<aiSupportedEntries>::JSONB) ELSE '{}'::JSONB END),
   "updatedBy" = $<updatedBy>,
   "queueName" =   COALESCE($<queueName>, "queueName"),
   "twilioWorkerId" =   COALESCE($<twilioWorkerId>, "twilioWorkerId"),
