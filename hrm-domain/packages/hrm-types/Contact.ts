@@ -35,6 +35,12 @@ export type ContactRawJson = {
     [key: string]: string | boolean;
   };
   contactlessTask?: { [key: string]: string | boolean };
+  llmSupportedEntries?: {
+    [key in keyof Pick<
+      ContactRawJson,
+      'childInformation' | 'callerInformation' | 'caseInformation'
+    >]?: string[];
+  };
   referrals?: Referral[];
 };
 
