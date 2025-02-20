@@ -8,6 +8,7 @@
     { "path": "packages/s3-client" },
     { "path": "packages/sns-client" },
     { "path": "packages/ssm-cache" },
+    { "path": "packages/config-ssm-cache" },
     { "path": "packages/sqs-client" },
     { "path": "packages/elasticsearch-client" },
     { "path": "packages/twilio-client" },
