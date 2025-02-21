@@ -7,6 +7,7 @@
   "workspaces": [
     "packages/*",
     "lambdas/packages/*",
+    "lambdas/custom-integrations/*",
     "lambdas/*",
     "hrm-domain/lambdas/*",
     "hrm-domain/packages/*",
