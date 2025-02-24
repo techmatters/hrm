@@ -7,6 +7,7 @@
   "license": "AGPL",
   "dependencies": {
     "@tech-matters/ssm-cache": "^1.0.0",
+    "@tech-matters/twilio-worker-auth": "^1.0.0",
     "@tech-matters/types": "^1.0.0"
   },
   "devDependencies": {
