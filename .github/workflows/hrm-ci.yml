@@ -23,10 +23,10 @@ jobs:
       - name: Checkout Branch
         uses: actions/checkout@v4
 
-      - name: Use Node.js 18.x
+      - name: Use Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18.x
+          node-version: 22.x
 
       - name: Install Packages
         run: npm ci
@@ -99,10 +99,10 @@ jobs:
       - name: Checkout Branch
         uses: actions/checkout@v4
 
-      - name: Use Node.js 18.x
+      - name: Use Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18.x
+          node-version: 22.x
 
       - name: Install Packages
         run: npm ci
@@ -133,10 +133,10 @@ jobs:
       - name: Checkout Branch
         uses: actions/checkout@v4
 
-      - name: Use Node.js 16.x
+      - name: Use Node.js 22.x
         uses: actions/setup-node@v4
         with:
-          node-version: 16.x
+          node-version: 22.x
 
       - name: Install Packages
         run: npm ci
@@ -148,7 +148,7 @@ jobs:
         uses: m4nu56/postgresql-action@1.0
         with:
           # Version of PostgreSQL to use
-          postgresql version: 12.7
+          postgresql version: 16.3
           # POSTGRES_DB - name for the default database that is created
           postgresql db: hrmdb
           # POSTGRES_USER - create the specified user with superuser power

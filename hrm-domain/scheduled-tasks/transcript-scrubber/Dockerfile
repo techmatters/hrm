@@ -12,7 +12,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see https://www.gnu.org/licenses/.
 
-FROM node:18 AS build
+FROM node:22 AS build
 # FROM crprivateaiprod.azurecr.io/deid:cpu-text
 ARG task_dir=hrm-domain/scheduled-tasks/transcript-scrubber
 
