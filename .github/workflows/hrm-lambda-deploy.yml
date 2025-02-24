@@ -38,6 +38,7 @@ on:
           - resources-domain/lambdas/import-consumer
           - resources-domain/lambdas/import-producer
           - resources-domain/lambdas/search-index
+          - hrm-domain/lambdas/custom-integrations/uscr-dispatcher
 
   workflow_call:
     secrets:
@@ -130,7 +131,23 @@ jobs:
         id: generate-output
         run: |
           # output to logs
-          matrix_json=$(jq -c --arg env "${{ inputs.environment }}" '[.[$env][] | {region: .}]' ./.github/workflows/config/environment-region-map.json)
+          # Load lambda specific region mapping (if any)
+          if [ -f "./.github/workflows/config/lambda-region-map.json" ]; then
+            LAMBDA_REGIONS=$(jq -c --arg lambda "$LAMBDA_PATH" '.[$lambda] // []' ./.github/workflows/config/lambda-region-map.json)
+          else
+            LAMBDA_REGIONS="[]"
+          fi
+
+          # Load default environment region mapping
+          ENV_REGIONS=$(jq -c --arg env "${{ inputs.environment }}" '[.[$env][] | {region: .}]' ./.github/workflows/config/environment-region-map.json)
+
+          # If lambda has specific regions defined, use those; otherwise use environment regions
+          if [ "$LAMBDA_REGIONS" != "[]" ]; then
+            matrix_json=$(jq -c '[.[] | {region: .}]' <<< "$LAMBDA_REGIONS")
+          else
+            matrix_json=$(jq -c --arg env "${{ inputs.environment }}" '[.[$env][] | {region: .}]' ./.github/workflows/config/environment-region-map.json)
+          fi
+
           echo "matrix_json=$matrix_json" >> $GITHUB_OUTPUT
           echo "docker_image=${{ steps.login-ecr.outputs.registry }}/${{ env.ecr_repository }}:${{ github.sha }}" >> $GITHUB_OUTPUT
 

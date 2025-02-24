@@ -9,6 +9,7 @@
     "lambdas/packages/*",
     "lambdas/*",
     "hrm-domain/lambdas/*",
+    "hrm-domain/lambdas/custom-integrations/*",
     "hrm-domain/packages/*",
     "hrm-domain/*",
     "hrm-domain/scheduled-tasks/*",
