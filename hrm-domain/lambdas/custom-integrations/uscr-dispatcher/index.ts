@@ -16,10 +16,12 @@
 
 // eslint-disable-next-line prettier/prettier
 import type { ALBEvent, ALBResult } from 'aws-lambda';
-import { twilioTokenValidator } from '@tech-matters/twilio-worker-auth';
+// import { twilioTokenValidator } from '@tech-matters/twilio-worker-auth';
 
 export const handler = async (event: ALBEvent): Promise<ALBResult> => {
   try {
+    console.log(JSON.stringify(event));
+    // const payload = JSON.parse(event.body || '{}');
     console.debug(`custom-integrations/uscr-dispatcher: called with event ${event}`);
   } catch (err) {
     console.error(`custom-integrations/uscr-dispatcher: error: `, err);
