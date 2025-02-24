@@ -14,6 +14,6 @@
     "@types/aws-lambda": "^8.10.108"
   },
   "scripts": {
-    "docker:build": "docker build -t uscr-dispatcher --build-arg lambda_name=uscr-dispatcher --build-arg lambda_dir=lambdas/custom-integrations -f ../../Dockerfile ../../../"
+    "docker:build": "docker build -t uscr-dispatcher --build-arg lambda_name=uscr-dispatcher --build-arg lambda_dir=hrm-domain/lambdas/custom-integrations -f ../../../../lambdas/Dockerfile ../../../../"
   }
 }

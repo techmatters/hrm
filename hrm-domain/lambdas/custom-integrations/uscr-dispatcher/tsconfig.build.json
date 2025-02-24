@@ -5,6 +5,6 @@
   "references": [
     { "path": "packages/types" },
     { "path": "packages/ssm-cache" },
-    { "path": "lambdas/custom-integrations/uscr-dispatcher" }
+    { "path": "hrm-domain/lambdas/custom-integrations/uscr-dispatcher" }
   ]
 }
