@@ -49,7 +49,7 @@ const authenticateRequest = async ({
   );
 
   const [type, token] = authHeader.split(' ');
-  if (type !== 'Bearer ') {
+  if (type !== 'Bearer') {
     return newErr({
       error: 'Token authentication failed',
       message: `Invalid auth type ${type}`,
@@ -101,7 +101,7 @@ export const handler = async (event: ALBEvent): Promise<ALBResult> => {
       return { statusCode: 401 };
     }
 
-    console.debug(`custom-integrations/uscr-dispatcher: called with event ${event}`);
+    console.debug(`custom-integrations/uscr-dispatcher: succesful execution`);
   } catch (err) {
     console.error(`custom-integrations/uscr-dispatcher: error: `, err);
 
