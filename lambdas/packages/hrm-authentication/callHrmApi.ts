@@ -53,12 +53,12 @@ const callHrmApi = async <T = any>({
     if (!response.ok) {
       const error = await response.json();
       return newErr({
-        message: error.message,
+        message: String(error),
         error: 'CallHrmApiError',
       });
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as T;
     return newOk({ data });
   } catch (err) {
     return newErr({
