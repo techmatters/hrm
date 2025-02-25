@@ -6,13 +6,16 @@
   "author": "",
   "license": "AGPL",
   "dependencies": {
+    "@tech-matters/hrm-authentication": "^1.0.0",
+    "@tech-matters/hrm-types": "^1.0.0",
     "@tech-matters/ssm-cache": "^1.0.0",
     "@tech-matters/twilio-worker-auth": "^1.0.0",
     "@tech-matters/types": "^1.0.0"
   },
   "devDependencies": {
     "@tsconfig/node16": "^1.0.3",
-    "@types/aws-lambda": "^8.10.108"
+    "@types/aws-lambda": "^8.10.108",
+    "@types/node": "^18.19.76"
   },
   "scripts": {
     "docker:build": "docker build -t uscr-dispatcher --build-arg lambda_name=uscr-dispatcher --build-arg lambda_dir=hrm-domain/lambdas/custom-integrations -f ../../../../lambdas/Dockerfile ../../../../"

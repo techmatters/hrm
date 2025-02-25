@@ -16,99 +16,73 @@
 
 // eslint-disable-next-line prettier/prettier
 import type { ALBEvent, ALBResult } from 'aws-lambda';
-import { twilioTokenValidator } from '@tech-matters/twilio-worker-auth';
-import { isErr, newErr } from '@tech-matters/types';
-import { getSsmParameter } from '@tech-matters/ssm-cache';
-
-const validAccountSidsMap: { [env: string]: string[] } = {
-  development: ['/development/twilio/AS/account_sid'],
-  staging: ['/staging/twilio/AS/account_sid', '/staging/twilio/USCR/account_sid'],
-};
-
-const authenticateRequest = async ({
-  accountSid,
-  authHeader,
-  environment,
-}: {
-  accountSid: string;
-  authHeader: string;
-  environment: string;
-}) => {
-  const validAccountSids = await Promise.all(
-    validAccountSidsMap[environment].map(key => getSsmParameter(key)),
-  );
-  if (!validAccountSids.includes(accountSid)) {
-    return newErr({
-      error: 'Token authentication failed',
-      message: `Account ${accountSid} not allowed to call this service`,
-    });
-  }
-
-  const authToken = await getSsmParameter(
-    `/${process.env.NODE_ENV}/twilio/${accountSid}/auth_token`,
-  );
-
-  const [type, token] = authHeader.split(' ');
-  if (type !== 'Bearer') {
-    return newErr({
-      error: 'Token authentication failed',
-      message: `Invalid auth type ${type}`,
-    });
-  }
-
-  const result = await twilioTokenValidator({ accountSid, authToken, token });
-  return result;
-};
+import { isErr } from '@tech-matters/types';
+import { validateEnvironment, validateHeaders, validatePayload } from './validation';
+import { authenticateRequest } from './authentication';
+import { logger } from './logger';
+import { createAndConnectCase } from './hrm-service/integrationService';
 
 export const handler = async (event: ALBEvent): Promise<ALBResult> => {
   try {
     console.log(JSON.stringify(event));
-    const payload = JSON.parse(event.body || '{}');
-    const { headers } = event;
-
-    const environment = process.env.NODE_ENV;
-    if (!environment) {
-      console.error(
-        `custom-integrations/uscr-dispatcher: error: missing environment env var`,
-      );
-      return { statusCode: 500 };
+    const envResult = validateEnvironment();
+    if (isErr(envResult)) {
+      const message = `${envResult.error} ${envResult.message}`;
+      logger({ message, severity: 'error' });
+      return { statusCode: 500, body: message };
     }
 
-    const accountSid = payload.accountSid;
-    if (!accountSid) {
-      console.warn(
-        `custom-integrations/uscr-dispatcher: error: missing accountSid in request payload`,
-      );
-      return { statusCode: 400 };
+    const payloadResult = validatePayload(JSON.parse(event.body || '{}'));
+    if (isErr(payloadResult)) {
+      const message = `${payloadResult.error} ${payloadResult.message}`;
+      logger({ message, severity: 'warn' });
+      return { statusCode: 400, body: message };
     }
 
-    const authHeader = headers?.authorization;
-    if (!authHeader) {
-      console.warn(
-        `custom-integrations/uscr-dispatcher: error: missing authorization in request headers`,
-      );
+    const headersResult = validateHeaders(event.headers);
+    if (isErr(headersResult)) {
+      const message = `${headersResult.error} ${headersResult.message}`;
+      logger({ message, severity: 'warn' });
       return { statusCode: 400 };
     }
 
     const authResult = await authenticateRequest({
-      accountSid,
-      authHeader,
-      environment,
+      accountSid: payloadResult.data.accountSid,
+      authHeader: headersResult.data.authToken,
+      environment: envResult.data.environment,
     });
 
     if (isErr(authResult)) {
-      console.warn(authResult.error, authResult.message);
+      const message = authResult.error + authResult.message;
+      logger({ message, severity: 'warn' });
       return { statusCode: 401 };
     }
 
-    console.debug(`custom-integrations/uscr-dispatcher: succesful execution`);
+    const createResult = await createAndConnectCase({
+      accountSid: payloadResult.data.accountSid,
+      casePayload: payloadResult.data.casePayload,
+      contactId: payloadResult.data.contactId,
+      token: authResult.data.token,
+    });
+
+    if (isErr(createResult)) {
+      const message = createResult.error + createResult.message;
+      logger({ message, severity: 'error' });
+      return { statusCode: 500 };
+    }
+
+    logger({ message: JSON.stringify(createResult), severity: 'info' });
+
+    logger({ message: 'succesful execution', severity: 'info' });
+    return {
+      statusCode: 200,
+    };
   } catch (err) {
-    console.error(`custom-integrations/uscr-dispatcher: error: `, err);
+    logger({
+      message: err instanceof Error ? err.message : String(err),
+      severity: 'error',
+    });
 
     return { statusCode: 500 };
   }
-
-  return {
-    statusCode: 200,
-  };
 };
