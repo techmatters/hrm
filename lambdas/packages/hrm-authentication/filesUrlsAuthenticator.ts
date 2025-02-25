@@ -106,6 +106,7 @@ const filesUrlsAuthenticator = async (
   const result = await callHrmApi({
     urlPath: authUrlPathGenerator(params),
     authHeader,
+    method: 'GET',
     requestData: {
       objectType,
       objectId,

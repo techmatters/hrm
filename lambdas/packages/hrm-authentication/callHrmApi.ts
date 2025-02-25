@@ -14,42 +14,58 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { newErr, newOk } from '@tech-matters/types';
+import { newErr, newOk, TResult } from '@tech-matters/types';
 import { URLSearchParams } from 'url';
 
 export type CallHrmApiParameters = {
   urlPath: string;
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE';
   authHeader: string;
   requestData?: any;
+  body?: any;
 };
 
-export type CallHrmApiError = 'UnauthorizedError';
+export type CallHrmApiError = 'CallHrmApiError';
 
-const callHrmApi = async ({ urlPath, requestData, authHeader }: CallHrmApiParameters) => {
-  const params = new URLSearchParams(requestData).toString();
-  const fullUrl = params
-    ? `${process.env.HRM_BASE_URL}/${urlPath}?${params}`
-    : `${process.env.HRM_BASE_URL}/${urlPath}`;
+const callHrmApi = async <T = any>({
+  urlPath,
+  requestData,
+  authHeader,
+  method,
+  body,
+}: CallHrmApiParameters): Promise<TResult<CallHrmApiError, T>> => {
+  try {
+    const params = new URLSearchParams(requestData).toString();
+    const fullUrl = params
+      ? `${process.env.HRM_BASE_URL}/${urlPath}?${params}`
+      : `${process.env.HRM_BASE_URL}/${urlPath}`;
 
-  // @ts-ignore global fetch available because node 18
-  const response = await fetch(fullUrl, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: authHeader,
-    },
-  });
+    // @ts-ignore global fetch available because node 18
+    const response = await fetch(fullUrl, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: authHeader,
+      },
+      ...(body && { body: JSON.stringify(body) }),
+    });
 
-  if (!response.ok) {
-    const error = await response.json();
+    if (!response.ok) {
+      const error = await response.json();
+      return newErr({
+        message: error.message,
+        error: 'CallHrmApiError',
+      });
+    }
+
+    const data = await response.json();
+    return newOk({ data });
+  } catch (err) {
     return newErr({
-      message: error.message,
-      error: 'UnauthorizedError',
+      message: err instanceof Error ? err.message : String(err),
+      error: 'CallHrmApiError',
     });
   }
-
-  const data = await response.json();
-  return newOk({ data });
 };
 
 export default callHrmApi;
