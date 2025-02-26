@@ -26,16 +26,20 @@ ENV lambda_name ${lambda_name}
 COPY packages /tmp/build/packages
 COPY lambdas/tsconfig.json /tmp/build/lambdas/tsconfig.json
 COPY lambdas/packages /tmp/build/lambdas/packages
+COPY hrm-domain/packages /tmp/build/hrm-domain/packages
+COPY hrm-domain/tsconfig.json /tmp/build/hrm-domain/tsconfig.json
 COPY ${lambda_dir}/${lambda_name} /tmp/build/${lambda_dir}/${lambda_name}
 COPY ${lambda_dir}/packages /tmp/build/${lambda_dir}/packages
 COPY ${lambda_dir}/../packages /tmp/build/${lambda_dir}/../packages
 COPY ${lambda_dir}/../tsconfig.json /tmp/build/${lambda_dir}/../tsconfig.json
 COPY ${lambda_dir}/tsconfig.json /tmp/build/${lambda_dir}/tsconfig.json
+
+
 COPY package.json package-lock.json tsconfig.json tsconfig.base.json ${lambda_dir}/${lambda_name}/tsconfig.build.json /tmp/build/
 
 RUN yum install -y rsync \
     && cd /tmp/build \
-    && npm ci -w ${lambda_dir}/${lambda_name} -w packages/* -w ${lambda_dir}/../packages/* -w ${lambda_dir}/packages/* --verbose \
+    && npm ci -w ${lambda_dir}/${lambda_name} -w packages/* -w hrm-domain/packages/* -w ${lambda_dir}/../packages/* -w ${lambda_dir}/packages/* --verbose \
     && npx tsc -b tsconfig.build.json --verbose \
     && cp ${lambda_dir}/${lambda_name}/dist/*.js /var/task/ \
     && cp -r packages /var/task/ \

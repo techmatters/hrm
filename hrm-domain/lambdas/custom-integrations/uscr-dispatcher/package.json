@@ -14,8 +14,7 @@
   },
   "devDependencies": {
     "@tsconfig/node16": "^1.0.3",
-    "@types/aws-lambda": "^8.10.108",
-    "@types/node": "^18.19.76"
+    "@types/aws-lambda": "^8.10.108"
   },
   "scripts": {
     "docker:build": "docker build -t uscr-dispatcher --build-arg lambda_name=uscr-dispatcher --build-arg lambda_dir=hrm-domain/lambdas/custom-integrations -f ../../../../lambdas/Dockerfile ../../../../"
