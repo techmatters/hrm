@@ -35,10 +35,12 @@ const callHrmApi = async <T = any>({
   body,
 }: CallHrmApiParameters): Promise<TResult<CallHrmApiError, T>> => {
   try {
+    const baseUrl = process.env.HRM_BASE_URL?.startsWith('https://')
+      ? process.env.HRM_BASE_URL
+      : `https://${process.env.HRM_BASE_URL}`;
+
     const params = new URLSearchParams(requestData).toString();
-    const fullUrl = params
-      ? `${process.env.HRM_BASE_URL}/${urlPath}?${params}`
-      : `${process.env.HRM_BASE_URL}/${urlPath}`;
+    const fullUrl = params ? `${baseUrl}/${urlPath}?${params}` : `${baseUrl}/${urlPath}`;
 
     // @ts-ignore global fetch available because node 18
     const response = await fetch(fullUrl, {
