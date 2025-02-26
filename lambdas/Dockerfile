@@ -33,15 +33,13 @@ COPY ${lambda_dir}/packages /tmp/build/${lambda_dir}/packages
 COPY ${lambda_dir}/../packages /tmp/build/${lambda_dir}/../packages
 COPY ${lambda_dir}/../tsconfig.json /tmp/build/${lambda_dir}/../tsconfig.json
 COPY ${lambda_dir}/tsconfig.json /tmp/build/${lambda_dir}/tsconfig.json
-
-
 COPY package.json package-lock.json tsconfig.json tsconfig.base.json ${lambda_dir}/${lambda_name}/tsconfig.build.json /tmp/build/
 
 RUN yum install -y rsync \
     && cd /tmp/build \
     && npm ci -w ${lambda_dir}/${lambda_name} -w packages/* -w hrm-domain/packages/* -w ${lambda_dir}/../packages/* -w ${lambda_dir}/packages/* --verbose \
     && npx tsc -b tsconfig.build.json --verbose \
-    && cp ${lambda_dir}/${lambda_name}/dist/*.js /var/task/ \
+    && cp ${lambda_dir}/${lambda_name}/dist/* -r /var/task/ \
     && cp -r packages /var/task/ \
     && mkdir -p /var/task/${lambda_dir} \
     && mkdir -p /var/task/lambdas \
