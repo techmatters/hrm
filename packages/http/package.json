@@ -24,6 +24,8 @@
   },
   "homepage": "https://github.com/techmatters/hrm#readme",
   "devDependencies": {
-    "@types/morgan": "^1.9.4"
+    "@tsconfig/node22": "^22.0.0",
+    "@types/morgan": "^1.9.4",
+    "typescript": "^5.7.3"
   }
 }
