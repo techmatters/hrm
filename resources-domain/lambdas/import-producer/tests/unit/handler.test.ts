@@ -461,7 +461,7 @@ describe('resources-import-producer handler', () => {
             Authorization: MOCK_CONFIG.importApiAuthHeader,
             'x-api-key': MOCK_CONFIG.importApiKey,
           },
-          dispatcher: expect.any(Agent),
+          signal: expect.any(AbortSignal),
         });
       });
       expect(mockConfiguredPublisher).toHaveBeenCalledTimes(
