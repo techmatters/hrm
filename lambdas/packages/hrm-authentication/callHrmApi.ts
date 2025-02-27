@@ -41,7 +41,7 @@ const callHrmApi = async ({ urlPath, requestData, authHeader }: CallHrmApiParame
   });
 
   if (!response.ok) {
-    const error = await response.json();
+    const error = (await response.json()) as any;
     return newErr({
       message: error.message,
       error: 'UnauthorizedError',
