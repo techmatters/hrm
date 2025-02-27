@@ -26,8 +26,6 @@
     "node-fetch": "^2.7.0"
   },
   "devDependencies": {
-    "@tsconfig/node16": "^1.0.3",
-    "@tsconfig/node18": "^18.2.1",
     "@tsconfig/node22": "^22.0.0",
     "@types/aws-lambda": "^8.10.119",
     "@types/jest": "^26.0.24",
