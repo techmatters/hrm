@@ -1,9 +1,6 @@
 {
   "extends": "../tsconfig.json",
   "compilerOptions": {
-
-    "lib": ["es2023"],
-    "moduleResolution": "node16",
     "declaration": true,
     "outDir": "./dist"
   },
