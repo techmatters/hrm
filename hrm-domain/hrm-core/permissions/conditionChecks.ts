@@ -16,10 +16,22 @@
 
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 
-export const isCounselorWhoCreated = (user: TwilioUser, caseObj: any) =>
-  user.workerSid === caseObj.twilioWorkerId;
+export const isCounselorWhoCreated = (user: TwilioUser, caseObj: any) => {
+  console.log('>>>>> isCounselorWhoCreated');
+  console.log('>>>>> user.workerSid', user.workerSid);
+  console.log('>>>>> caseObj', caseObj);
+  console.log('>>>>> caseObj.twilioWorkerId', caseObj.twilioWorkerId);
+
+  return user.workerSid === caseObj.twilioWorkerId;
+};
 
 export const isCaseOpen = (caseObj: any) => caseObj.status !== 'closed';
 
-export const isContactOwner = (user: TwilioUser, contactObj: any) =>
-  user.workerSid === contactObj.twilioWorkerId;
+export const isContactOwner = (user: TwilioUser, contactObj: any) => {
+  console.log('>>>>> isContactOwner');
+  console.log('>>>>> user.workerSid', user.workerSid);
+  console.log('>>>>> contactObj', contactObj);
+  console.log('>>>>> contactObj.twilioWorkerId', contactObj.twilioWorkerId);
+
+  return user.workerSid === contactObj.twilioWorkerId;
+};
