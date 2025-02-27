@@ -69,6 +69,7 @@
     "@tech-matters/twilio-client": "^1.0.0",
     "@tech-matters/types": "^1.0.0",
     "@tech-matters/sqs-client": "^1.0.0",
+    "@tsconfig/node22": "^22.0.0",
     "@types/deep-diff": "^1.0.1",
     "@types/http-errors": "^2.0.1",
     "@types/lodash": "^4.14.191",
