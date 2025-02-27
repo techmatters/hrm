@@ -28,6 +28,7 @@ import adminContacts from './contact/adminContactRoutesV0';
 import adminCases from './case/adminCaseRoutesV0';
 import internalContacts from './contact/internalContactRoutesV0';
 import { Permissions } from './permissions';
+import internalProfiles from './profile/internalProfileRoutesV0';
 
 export const HRM_ROUTES: {
   path: string;
@@ -68,7 +69,10 @@ export const adminApiV0 = () => {
 export const INTERNAL_ROUTES: {
   path: string;
   routerFactory: () => Router;
-}[] = [{ path: '/contacts', routerFactory: () => internalContacts }];
+}[] = [
+  { path: '/contacts', routerFactory: () => internalContacts },
+  { path: '/profiles', routerFactory: () => internalProfiles },
+];
 
 export const internalApiV0 = () => {
   const router: IRouter = Router();
