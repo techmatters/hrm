@@ -40,10 +40,13 @@ jobs:
         lambda_path:
           - hrm-domain/lambdas/files-urls
           - hrm-domain/lambdas/contact-retrieve-transcript
+          - hrm-domain/lambdas/contact-retrieve-transcript
           - lambdas/job-complete
           - resources-domain/lambdas/import-consumer
           - resources-domain/lambdas/import-producer
           - resources-domain/lambdas/search-index
+          - hrm-domain/lambdas/custom-integrations/uscr-dispatcher
+          - hrm-domain/lambdas/custom-integrations/uscr-beacon-poller
 
     steps:
       - name: Checkout Branch
