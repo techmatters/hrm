@@ -13,7 +13,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import fetch from 'node-fetch';
 import { deleteS3Object, putS3Object } from '@tech-matters/s3-client';
 import { handler } from '../../index';
 import { mockQueryStringParameters, newAlbEvent } from '../__mocks__';
