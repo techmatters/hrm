@@ -1,13 +1,13 @@
 {
   "compilerOptions": {
+    "moduleResolution": "Node16",
+    "module": "Node16",
     "allowJs": true,
-    "module": "commonjs",
     "esModuleInterop": true,
-    "target": "ES2020",
-    "moduleResolution": "node16",
+    "target": "ES2023",
     "sourceMap": true,
     "outDir": "./dist",
-    "lib": ["es2020"],
+    "lib": ["es2023"],
     "strict": false,
     "declaration": true,
     "resolveJsonModule": true

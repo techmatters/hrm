@@ -14,10 +14,8 @@
   },
   "devDependencies": {
     "@aws-sdk/s3-request-presigner": "^3.391.0",
-    "@tsconfig/node16": "^1.0.3",
     "@types/aws-lambda": "^8.10.108",
-    "jest-mock": "^29.6.2",
-    "node-fetch": "^2.5.10"
+    "jest-mock": "^29.6.2"
   },
   "scripts": {
     "docker:build": "docker build -t hrm-files-urls --build-arg lambda_name=files-urls --build-arg lambda_dir=hrm-domain/lambdas -f ../../../lambdas/Dockerfile ../../../",

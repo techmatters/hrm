@@ -24,9 +24,7 @@
     "util": "^0.12.4"
   },
   "devDependencies": {
-    "@tsconfig/node16": "^1.0.3",
-    "@types/aws-lambda": "^8.10.108",
-    "ts-node": "^10.9.1"
+    "@types/aws-lambda": "^8.10.108"
   },
   "scripts": {
     "localstack:setup": "cd ../../ && npm run  && npm run start:localstack",

@@ -16,7 +16,6 @@
     "@tech-matters/types": "^1.0.0"
   },
   "devDependencies": {
-    "@types/node": "^18.15.11",
     "jest-each": "^29.5.0",
     "lodash": "^4.17.21"
   }

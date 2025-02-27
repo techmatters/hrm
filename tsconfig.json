@@ -19,6 +19,7 @@
     { "path": "lambdas/packages/hrm-authentication" },
     { "path": "lambdas/job-complete" },
     { "path": "hrm-domain/lambdas/custom-integrations/uscr-dispatcher" },
+    { "path": "hrm-domain/lambdas/custom-integrations/uscr-beacon-poller" },
     { "path": "hrm-domain/packages/hrm-types" },
     { "path": "hrm-domain/packages/hrm-search-config" },
     { "path": "hrm-domain/lambdas/contact-complete" },

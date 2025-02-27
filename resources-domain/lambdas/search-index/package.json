@@ -14,7 +14,6 @@
     "@tech-matters/types": "^1.0.0"
   },
   "devDependencies": {
-    "@tsconfig/node16": "^1.0.3",
     "@types/aws-lambda": "^8.10.108"
   },
   "scripts": {

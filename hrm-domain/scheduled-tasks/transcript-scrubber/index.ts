@@ -15,7 +15,6 @@
  */
 
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { fetch } from 'undici';
 import { getS3Object, putS3Object } from '@tech-matters/s3-client';
 import {
   deleteSqsMessage,
@@ -23,10 +22,6 @@ import {
   sendSqsMessage,
 } from '@tech-matters/sqs-client';
 import { ContactJobAttemptResult } from '@tech-matters/types';
-
-declare global {
-  var fetch: typeof import('undici').fetch;
-}
 
 const PENDING_TRANSCRIPT_SQS_QUEUE_URL = process.env.PENDING_TRANSCRIPT_SQS_QUEUE_URL;
 const COMPLETED_TRANSCRIPT_SQS_QUEUE_URL = process.env.COMPLETED_TRANSCRIPT_SQS_QUEUE_URL;

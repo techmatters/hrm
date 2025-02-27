@@ -1,5 +1,5 @@
 {
-  "name": "@tech-matters/uscr-dispatcher",
+  "name": "@tech-matters/uscr-beacon-poller",
   "version": "1.0.0",
   "description": "",
   "main": "dist/index.js",
@@ -13,6 +13,6 @@
     "@types/aws-lambda": "^8.10.108"
   },
   "scripts": {
-    "docker:build": "docker build -t uscr-dispatcher --build-arg lambda_name=uscr-dispatcher --build-arg lambda_dir=hrm-domain/lambdas/custom-integrations -f ../../../../lambdas/Dockerfile ../../../../"
+    "docker:build": "docker build -t uscr-beacon-poller --build-arg lambda_name=uscr-beacon-poller --build-arg lambda_dir=hrm-domain/lambdas/custom-integrations -f ../../../../lambdas/Dockerfile ../../../../"
   }
 }

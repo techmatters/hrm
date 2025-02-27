@@ -18,8 +18,6 @@
 import yargs from 'yargs';
 import { SearchReindexParams } from '../../src/admin/adminSearchService';
 import { AccountSID } from '@tech-matters/types';
-// eslint-disable-next-line import/no-extraneous-dependencies
-import { fetch, Response } from 'undici';
 import { getHRMInternalEndpointAccess } from '@tech-matters/service-discovery';
 
 const staticKeyPattern = /^STATIC_KEY_SEARCH_REINDEXER=(?<key>.*)$/im;

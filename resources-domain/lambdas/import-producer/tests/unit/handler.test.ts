@@ -32,9 +32,6 @@ import {
   retrieveUnprocessedMessageCount,
 } from '../../src/clientSqs';
 import getConfig from '../../src/config';
-import { Agent, Response } from 'undici';
-
-declare var fetch: typeof import('undici').fetch;
 
 jest.mock('@tech-matters/ssm-cache', () => ({
   getSsmParameter: () => 'static-key',

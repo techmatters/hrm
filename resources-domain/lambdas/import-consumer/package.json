@@ -11,12 +11,9 @@
     "@tech-matters/types": "^1.0.0"
   },
   "devDependencies": {
-    "@tsconfig/node16": "^1.0.3",
     "@types/aws-lambda": "^8.10.108",
-    "@types/node": "^18.16.2",
     "date-fns": "^2.29.3",
-    "jest-each": "^29.5.0",
-    "ts-node": "^10.9.1"
+    "jest-each": "^29.5.0"
   },
   "scripts": {
     "docker:build": "docker build -t resources-import-consumer --build-arg lambda_name=import-consumer --build-arg lambda_dir=resources-domain/lambdas -f ../../../lambdas/Dockerfile ../../../",

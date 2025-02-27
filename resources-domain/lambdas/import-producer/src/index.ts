@@ -30,9 +30,6 @@ import {
 import getConfig from './config';
 import { transformKhpResourceToApiResource } from './transformExternalResourceToApiResource';
 import path from 'path';
-// eslint-disable-next-line import/no-extraneous-dependencies
-import { Agent } from 'undici';
-declare var fetch: typeof import('undici').fetch;
 
 export type HttpError<T = any> = {
   status: number;
@@ -135,10 +132,7 @@ const pullUpdates =
         'x-api-key': externalApiKey,
       },
       method: 'GET',
-      dispatcher: new Agent({
-        headersTimeout: 15 * 60 * 1000, // 15 minutes
-        bodyTimeout: 15 * 60 * 1000, // 15 minutes
-      }),
+      signal: AbortSignal.timeout(15 * 60 * 1000), // 15 minutes
     });
 
     if (response.ok) {
@@ -236,7 +230,7 @@ export const handler = async (event: ScheduledEvent): Promise<void> => {
     internalResourcesApiKey,
   )(accountSid);
   const now: TimeSequence = `${Date.now()}-0`;
-  if (isHttpError(progress)) {
+  if (isHttpError<any>(progress)) {
     throw new Error(
       `Failed to retrieve import progress: ${progress.status} (${progress.statusText}). Response body: ${progress.body}`,
     );
@@ -271,7 +265,7 @@ export const handler = async (event: ScheduledEvent): Promise<void> => {
     }
     const result = await configuredPull(nextFrom, now, remaining);
     requestsMade++;
-    if (isHttpError(result)) {
+    if (isHttpError<any>(result)) {
       console.error(
         `Error calling import API, aborting after ${describeRemaining(
           maxBatchSize,

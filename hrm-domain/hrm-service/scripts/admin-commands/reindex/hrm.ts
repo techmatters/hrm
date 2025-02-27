@@ -15,8 +15,6 @@
  */
 
 import { getHRMInternalEndpointAccess } from '@tech-matters/service-discovery';
-// eslint-disable-next-line import/no-extraneous-dependencies
-import { fetch } from 'undici';
 import { getAdminV0URL, staticKeyPattern } from '../../hrmInternalConfig';
 
 export const command = 'hrm';

@@ -9,8 +9,7 @@
     "@tech-matters/types": "^1.0.0"
   },
   "devDependencies": {
-    "@tsconfig/node16": "^1.0.3",
-    "undici": "^5.28.5"
+    "@tsconfig/node22": "^22.0.0"
   },
   "scripts": {
     "docker:build": "docker pull crprivateaiprod.azurecr.io/deid:cpu-text && docker build -t transcript-scrubber --progress=plain --no-cache -f ./Dockerfile ../../../",
