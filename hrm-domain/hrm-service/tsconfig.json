@@ -9,6 +9,7 @@
     "outDir": "./dist",
     "lib": ["es2020"],
     "strict": false,
+    "rootDir": "."
   },
 
   "include": ["src/**/*.js", "src/**/*.json", "src/**/*.ts"]
