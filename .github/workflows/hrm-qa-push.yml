@@ -1,0 +1,120 @@
+# Copyright (C) 2021-2023 Technology Matters
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published
+# by the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see https://www.gnu.org/licenses/.
+
+name: Run full QA on push
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  build-and-deploy-service:
+    uses: ./.github/workflows/hrm-ecs-deploy.yml
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    with:
+      send-slack-message: 'false'
+      environment: 'development'
+
+  build-and-deploy-lambdas:
+    strategy:
+      matrix:
+        lambda_path:
+          - hrm-domain/lambdas/files-urls
+          - hrm-domain/lambdas/contact-retrieve-transcript
+          - lambdas/job-complete
+          - resources-domain/lambdas/import-consumer
+          - resources-domain/lambdas/import-producer
+          - resources-domain/lambdas/search-index
+
+    uses: ./.github/workflows/hrm-lambda-deploy.yml
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    with:
+      send-slack-message: 'false'
+      environment: 'development'
+      lambda_path: ${{ matrix.lambda_path }}
+
+  run-e2e-tests:
+    needs:
+      - build-and-deploy-service
+      - build-and-deploy-lambdas
+
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v2
+
+      - name: Use Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '16.x'
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      # Clone flex-plugins repo
+      - name: Clone flex-plugins repo
+        run: git clone https://github.com/techmatters/flex-plugins
+        shell: bash
+
+      - name: Install Flex Plugin
+        uses: ./flex-plugins/.github/actions/install-flex-plugin
+        with:
+          path: ./flex-plugins
+
+      # Build Playwright
+      - name: Install e2e-tests dependencies
+        run: npm ci
+        working-directory: ./flex-plugins/e2e-tests
+
+      - name: Setup dependencies for playwright/browsers
+        uses: microsoft/playwright-github-action@v1
+
+      - name: Install Playwright CLI
+        run: npx playwright install
+        working-directory: ./flex-plugins/e2e-tests
+
+      # Run E2E tests against actual E2E Flex instance
+      - name: Run Playwright tests
+        run: npm run test:development:e2e
+        working-directory: ./flex-plugins/e2e-tests
+
+      # Upload artifacts
+      # TODO: this is not working and cant tell why :(
+      - uses: actions/upload-artifact@v2
+        if: ${{ always() }}
+        with:
+          name: test-artifacts
+          path: flex-plugins/e2e-tests/test-results
+
+      # Send Slack notifying failure
+      - name: Send Slack notification on failure
+        uses: techmatters/flex-plugins/.github/actions/notify-deploys@master
+        if: failure()
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
+          slack-message: '`[HRM]` QA run for ${{ github.ref_type }} `${{ github.ref_name }}` failed. Please check the logs for more details.'
+          channel-id: '#aselo-engineering'
+        env:
+          SLACK_BOT_TOKEN: ${{ env.GITHUB_ACTIONS_SLACK_BOT_TOKEN }}
