@@ -63,8 +63,8 @@ export const createIncident = async ({
 }) => {
   try {
     const [baseUrl, apiKey] = await Promise.all([
-      getSsmParameter(`/${environment}/hrm/custom-integration/uscr/beacon_api_key`),
       getSsmParameter(`/${environment}/hrm/custom-integration/uscr/beacon_base_url`),
+      getSsmParameter(`/${environment}/hrm/custom-integration/uscr/beacon_api_key`),
     ]);
 
     const fullUrl = `${baseUrl}/api/aselo/incidents`;
