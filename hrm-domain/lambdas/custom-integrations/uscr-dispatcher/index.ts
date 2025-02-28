@@ -20,7 +20,9 @@ import { isErr } from '@tech-matters/types';
 import { validateEnvironment, validateHeaders, validatePayload } from './validation';
 import { authenticateRequest } from './authentication';
 import { logger } from './logger';
-import { createAndConnectCase } from './hrm-service/integrationService';
+import * as hrmService from './hrm-service';
+import * as beaconService from './beacon-service';
+import * as mapping from './mapping';
 
 export const handler = async (event: ALBEvent): Promise<ALBResult> => {
   try {
@@ -51,27 +53,42 @@ export const handler = async (event: ALBEvent): Promise<ALBResult> => {
       authHeader: headersResult.data.authToken,
       environment: envResult.data.environment,
     });
-
     if (isErr(authResult)) {
       const message = authResult.error + authResult.message;
       logger({ message, severity: 'warn' });
       return { statusCode: 401 };
     }
 
-    const createResult = await createAndConnectCase({
+    const createCaseResult = await hrmService.createAndConnectCase({
       accountSid: payloadResult.data.accountSid,
       casePayload: payloadResult.data.casePayload,
       contactId: payloadResult.data.contactId,
       token: authResult.data.token,
     });
-
-    if (isErr(createResult)) {
-      const message = createResult.error + createResult.message;
+    if (isErr(createCaseResult)) {
+      const message = createCaseResult.error + createCaseResult.message;
       logger({ message, severity: 'error' });
       return { statusCode: 500 };
     }
 
-    logger({ message: JSON.stringify(createResult), severity: 'info' });
+    const { contact, createdCase } = createCaseResult.data;
+
+    logger({ message: JSON.stringify(createCaseResult), severity: 'info' });
+
+    const createIncidentResult = await beaconService.createIncident({
+      environment: envResult.data.environment,
+      incidentParams: mapping.toCreateIncident({
+        caseObj: createdCase,
+        contact,
+      }),
+    });
+    if (isErr(createIncidentResult)) {
+      const message = createIncidentResult.error + createIncidentResult.message;
+      logger({ message, severity: 'error' });
+      return { statusCode: 500 };
+    }
+
+    logger({ message: JSON.stringify(createIncidentResult), severity: 'info' });
 
     logger({ message: 'succesful execution', severity: 'info' });
     return {
