@@ -239,7 +239,7 @@ each([publicApiTestSuiteParameters, internalApiTestSuiteParameters]).describe(
       expect(updatedCase).toEqual({
         ...targetCase,
         updatedAt: updatedCase?.updatedAt,
-        updatedBy: workerSid,
+        updatedBy: requestDescription === 'PUBLIC' ? workerSid : `account-${accountSid}`,
         connectedContacts: [],
         info: null,
         sections: {
@@ -316,7 +316,12 @@ describe('/cases/:caseId/sections/:sectionId', () => {
 
   each([publicApiTestSuiteParameters, internalApiTestSuiteParameters]).describe(
     '[$requestDescription] PUT',
-    ({ request, route: baseRoute, testHeaders }: ApiTestSuiteParameters) => {
+    ({
+      request,
+      route: baseRoute,
+      testHeaders,
+      requestDescription,
+    }: ApiTestSuiteParameters) => {
       test('should return 401 if valid auth headers are not set', async () => {
         const response = await request
           .put(
@@ -398,7 +403,8 @@ describe('/cases/:caseId/sections/:sectionId', () => {
           createdAt: expect.toParseAsDate(targetSection.createdAt),
           eventTimestamp: expect.toParseAsDate(targetSection.eventTimestamp),
           createdBy: workerSid,
-          updatedBy: workerSid,
+          updatedBy:
+            requestDescription === 'PUBLIC' ? workerSid : `account-${accountSid}`,
           updatedAt: expect.toParseAsDate(),
         });
         const updatedCase = await getCase(targetCase.id, accountSid, ALWAYS_CAN);
@@ -409,7 +415,7 @@ describe('/cases/:caseId/sections/:sectionId', () => {
         expect(updatedCase).toEqual({
           ...targetCase,
           updatedAt: updatedCase?.updatedAt,
-          updatedBy: workerSid,
+          updatedBy: requestDescription === 'PUBLIC' ? workerSid : `account-${accountSid}`,
           connectedContacts: [],
           info: null,
           sections: {

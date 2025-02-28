@@ -100,20 +100,20 @@ setupTestQueues([SEARCH_INDEX_SQS_QUEUE_NAME]);
 const publicApiTestSuiteParameters = {
   request: publicRequest,
   requestDescription: 'PUBLIC',
-  caseBaseRoute,
+  route: caseBaseRoute,
   testHeaders: headers,
 };
 
 const internalApiTestSuiteParameters = {
   request: internalRequest,
   requestDescription: 'INTERNAL',
-  route: `internal/${caseBaseRoute}`,
+  route: `/internal${caseBaseRoute}`,
   testHeaders: basicHeaders,
 };
 
 each([publicApiTestSuiteParameters, internalApiTestSuiteParameters]).describe(
   '[$requestDescription] PUT /cases/:id/status route',
-  ({ request, route, testHeaders }: ApiTestSuiteParameters) => {
+  ({ request, route, testHeaders, requestDescription }: ApiTestSuiteParameters) => {
     const subRoute = id => `${route}/${id}/status`;
 
     test('should return 401', async () => {
@@ -140,14 +140,18 @@ each([publicApiTestSuiteParameters, internalApiTestSuiteParameters]).describe(
         changeDescription: 'status changed',
         newStatus: 'dappled',
         statusUpdatedAt: expect.toParseAsDate(),
-        statusUpdatedBy: workerSid,
+        statusUpdatedBy:
+          requestDescription === 'PUBLIC' ? workerSid : `account-${accountSid}`,
         previousStatus: case1.status,
       },
       {
         changeDescription: 'status changed by another counselor',
         newStatus: 'puddled',
         statusUpdatedAt: expect.toParseAsDate(),
-        statusUpdatedBy: 'WK-another-worker-sid',
+        statusUpdatedBy:
+          requestDescription === 'PUBLIC'
+            ? 'WK-another-worker-sid'
+            : `account-${accountSid}`,
         previousStatus: case1.status,
         customWorkerSid: 'WK-another-worker-sid',
       },
@@ -197,7 +201,10 @@ each([publicApiTestSuiteParameters, internalApiTestSuiteParameters]).describe(
           createdAt: expect.toParseAsDate(originalCase.createdAt),
           updatedAt: expect.toParseAsDate(),
           status: newStatus,
-          updatedBy: customWorkerSid || workerSid,
+          updatedBy:
+            requestDescription === 'PUBLIC'
+              ? customWorkerSid || workerSid
+              : `account-${accountSid}`,
           statusUpdatedAt,
           statusUpdatedBy,
           previousStatus,
@@ -240,7 +247,7 @@ each([publicApiTestSuiteParameters, internalApiTestSuiteParameters]).describe(
 
 each([publicApiTestSuiteParameters, internalApiTestSuiteParameters]).describe(
   '[$requestDescription] PUT /cases/:id/overview route',
-  ({ request, route, testHeaders }: ApiTestSuiteParameters) => {
+  ({ request, route, testHeaders, requestDescription }: ApiTestSuiteParameters) => {
     const subRoute = id => `${route}/${id}/overview`;
     const baselineDate = new Date('2020-01-01T00:00:00.000Z');
 
@@ -313,7 +320,8 @@ each([publicApiTestSuiteParameters, internalApiTestSuiteParameters]).describe(
             ...pick(newOverview, ['summary', 'childIsAtRisk', 'followUpDate']),
           },
           updatedAt: expect.toParseAsDate(),
-          updatedBy: workerSid,
+          updatedBy:
+            requestDescription === 'PUBLIC' ? workerSid : `account-${accountSid}`,
         };
 
         expect(response.body).toStrictEqual(expected);

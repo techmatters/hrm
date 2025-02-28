@@ -260,6 +260,9 @@ export const updateCaseStatus = async (
     permissions.viewContact as TKConditionsSets<'contact'>,
   );
 
+  // Case not found
+  if (!updated) return null;
+
   const withTransformedContacts = mapContactTransformations({ can, user })(updated);
 
   if (!skipSearchIndex) {
@@ -279,6 +282,8 @@ export const updateCaseOverview = async (
 ): Promise<CaseService> => {
   const validOverview = pick(overview, CASE_OVERVIEW_PROPERTIES);
   const updated = await updateCaseInfo(accountSid, id, validOverview, workerSid);
+
+  if (!updated) return null;
 
   if (!skipSearchIndex) {
     // trigger index operation but don't await for it
