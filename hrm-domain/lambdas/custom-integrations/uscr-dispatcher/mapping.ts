@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import type { CreateIncidentParams, PendingIncident } from './beacon-service';
+import type { CreateIncidentParams } from './beacon-service';
 import type { CaseService, Contact } from '@tech-matters/hrm-types';
 
 export const toCreateIncident = ({
