@@ -94,7 +94,7 @@ describe('/cases route', () => {
   const route = `/v0/accounts/${accountSid}/cases`;
 
   describe('POST', () => {
-    const expected: CaseService = {
+    const expected = {
       ...case1,
       id: expect.anything(),
       updatedAt: expect.toParseAsDate(),
