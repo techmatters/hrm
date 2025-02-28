@@ -27,7 +27,7 @@ export const handler = async (): Promise<0> => {
   // Do something on the public internet
   const response = await fetch('https://google.com');
   console.info('External API responded with status:', response.status);
-  // Do something on the internal HRM API
+  // Do something on the internal HRM API - will return a 404
   const hrmResponse = await fetch(
     `${process.env.INTERNAL_HRM_URL}/v0/accounts/${accountSid}/profiles/identifier/1234/flags`,
     {
