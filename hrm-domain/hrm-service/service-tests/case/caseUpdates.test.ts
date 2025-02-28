@@ -21,7 +21,6 @@ import each from 'jest-each';
 import * as caseApi from '@tech-matters/hrm-core/case/caseService';
 import { CaseService } from '@tech-matters/hrm-core/case/caseService';
 import * as caseDb from '@tech-matters/hrm-core/case/caseDataAccess';
-import { convertCaseInfoToExpectedInfo } from './caseValidation';
 import { isBefore } from 'date-fns';
 
 import {
@@ -194,7 +193,7 @@ each([publicApiTestSuiteParameters, internalApiTestSuiteParameters]).describe(
 
         expect(response.status).toBe(200);
         const expected = {
-          ...convertCaseInfoToExpectedInfo(originalCase),
+          ...originalCase,
           createdAt: expect.toParseAsDate(originalCase.createdAt),
           updatedAt: expect.toParseAsDate(),
           status: newStatus,

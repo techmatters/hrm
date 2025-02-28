@@ -105,7 +105,12 @@ const internalApiTestSuiteParameters = {
 
 each([publicApiTestSuiteParameters, internalApiTestSuiteParameters]).describe(
   '[$requestDescription] POST /cases/:caseId/sections',
-  ({ request, testHeaders, route: baseRoute }: ApiTestSuiteParameters) => {
+  ({
+    request,
+    testHeaders,
+    route: baseRoute,
+    requestDescription,
+  }: ApiTestSuiteParameters) => {
     test('should return 401 if valid auth headers are not set', async () => {
       const response = await request
         .post(`${baseRoute}${getRoutePath(targetCase.id, 'note')}`)
@@ -181,7 +186,7 @@ each([publicApiTestSuiteParameters, internalApiTestSuiteParameters]).describe(
         sectionId: expect.any(String),
         sectionType: 'note',
         ...newSection, // Will overwrite sectionId expectation if specified
-        createdBy: workerSid,
+        createdBy: requestDescription === 'PUBLIC' ? workerSid : `account-${accountSid}`,
         createdAt: expect.toParseAsDate(),
         eventTimestamp: expect.toParseAsDate(newSection.eventTimestamp),
         updatedAt: null,
@@ -197,17 +202,7 @@ each([publicApiTestSuiteParameters, internalApiTestSuiteParameters]).describe(
         updatedAt: updatedCase?.updatedAt,
         updatedBy: workerSid,
         connectedContacts: [],
-        info: {
-          counsellorNotes: [
-            {
-              ...newSection.sectionTypeSpecificData,
-              id: expect.any(String),
-              accountSid,
-              twilioWorkerId: workerSid,
-              createdAt: expect.toParseAsDate(apiSection.createdAt),
-            },
-          ],
-        },
+        info: {},
         sections: {
           note: [
             {
@@ -246,17 +241,7 @@ each([publicApiTestSuiteParameters, internalApiTestSuiteParameters]).describe(
         updatedAt: updatedCase?.updatedAt,
         updatedBy: workerSid,
         connectedContacts: [],
-        info: {
-          counsellorNotes: expect.arrayContaining(
-            apiSections.map(apiSection => ({
-              ...apiSection.sectionTypeSpecificData,
-              id: expect.any(String),
-              accountSid,
-              twilioWorkerId: workerSid,
-              createdAt: expect.toParseAsDate(apiSection.createdAt),
-            })),
-          ),
-        },
+        info: {},
         sections: {
           note: expect.arrayContaining(
             apiSections.map(apiSection => {
@@ -270,7 +255,6 @@ each([publicApiTestSuiteParameters, internalApiTestSuiteParameters]).describe(
           ),
         },
       });
-      expect(updatedCase.info.counsellorNotes).toHaveLength(3);
       expect(updatedCase.sections.note).toHaveLength(3);
     });
   },
@@ -427,19 +411,7 @@ describe('/cases/:caseId/sections/:sectionId', () => {
           updatedAt: updatedCase?.updatedAt,
           updatedBy: workerSid,
           connectedContacts: [],
-          info: {
-            counsellorNotes: [
-              {
-                ...newSection.sectionTypeSpecificData,
-                id: targetSection.sectionId,
-                accountSid,
-                twilioWorkerId: workerSid,
-                createdAt: expect.toParseAsDate(targetSection.createdAt),
-                updatedAt: expect.toParseAsDate(),
-                updatedBy: workerSid,
-              },
-            ],
-          },
+          info: {},
           sections: {
             note: [
               {

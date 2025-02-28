@@ -19,7 +19,10 @@ import supertest, { SuperAgentTest } from 'supertest';
 
 import { configureInternalService, configureService } from '@tech-matters/hrm-core/app';
 import { RulesFile } from '@tech-matters/hrm-core/permissions/rulesMap';
-import { configureDefaultPostMiddlewares, configureDefaultPreMiddlewares } from '@tech-matters/http';
+import {
+  configureDefaultPostMiddlewares,
+  configureDefaultPreMiddlewares,
+} from '@tech-matters/http';
 import express from 'express';
 import { rulesMap } from '../../hrm-core/permissions';
 import type { AuthSecretsLookup } from '@tech-matters/twilio-worker-auth';
@@ -89,7 +92,7 @@ export const basicHeaders = {
 
 export type ApiTestSuiteParameters = {
   request: SuperAgentTest;
-  requestDescription: string;
+  requestDescription: 'PUBLIC' | 'INTERNAL';
   route: string;
   testHeaders: Record<string, string>;
 };
