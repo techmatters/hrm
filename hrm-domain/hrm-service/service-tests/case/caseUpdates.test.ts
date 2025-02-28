@@ -30,14 +30,16 @@ import {
   mockSuccessfulTwilioAuthentication,
 } from '@tech-matters/testing';
 import * as mocks from '../mocks';
+import { ALWAYS_CAN, casePopulated } from '../mocks';
 import {
-  headers,
+  ApiTestSuiteParameters,
+  basicHeaders,
+  getInternalServer,
   getRequest,
   getServer,
+  headers,
   useOpenRules,
-  getInternalServer,
 } from '../server';
-import { ALWAYS_CAN, casePopulated } from '../mocks';
 import { pick } from 'lodash';
 import { clearAllTables } from '../dbCleanup';
 import { setupTestQueues } from '../sqs';
@@ -55,7 +57,7 @@ const { case1, case2, accountSid, workerSid } = mocks;
 
 const cases: Record<string, CaseService> = {};
 let nonExistingCaseId;
-const route = `/v0/accounts/${accountSid}/cases`;
+const caseBaseRoute = `/v0/accounts/${accountSid}/cases`;
 
 beforeAll(clearAllTables);
 
@@ -96,243 +98,274 @@ afterEach(async () => {
 
 setupTestQueues([SEARCH_INDEX_SQS_QUEUE_NAME]);
 
-each([
-  { request: publicRequest, requestDescription: 'PUBLIC' },
-  { request: internalRequest, requestDescription: 'INTERNAL' },
-]).describe('[requestDescription] PUT /cases/:id/status route', ({ request }) => {
-  const subRoute = id => `${route}/${id}/status`;
+const publicApiTestSuiteParameters = {
+  request: publicRequest,
+  requestDescription: 'PUBLIC',
+  caseBaseRoute,
+  testHeaders: headers,
+};
 
-  test('should return 401', async () => {
-    const response = await request
-      .put(subRoute(cases.blank.id))
-      .send({ status: 'anxious' });
+const internalApiTestSuiteParameters = {
+  request: internalRequest,
+  requestDescription: 'INTERNAL',
+  route: `internal/${caseBaseRoute}`,
+  testHeaders: basicHeaders,
+};
 
-    expect(response.status).toBe(401);
-    expect(response.body.error).toBe('Authorization failed');
-  });
+each([publicApiTestSuiteParameters, internalApiTestSuiteParameters]).describe(
+  '[$requestDescription] PUT /cases/:id/status route',
+  ({ request, route, testHeaders }: ApiTestSuiteParameters) => {
+    const subRoute = id => `${route}/${id}/status`;
 
-  type TestCase = {
-    originalCase?: () => CaseService;
-    newStatus: caseApi.CaseService['status'];
-    changeDescription: string;
-    customWorkerSid?: string;
-    statusUpdatedAt: string | null;
-    statusUpdatedBy: string | null;
-    previousStatus: caseApi.CaseService['status'] | null;
-  };
+    test('should return 401', async () => {
+      const response = await request
+        .put(subRoute(cases.blank.id))
+        .send({ status: 'anxious' });
 
-  const testCases: TestCase[] = [
-    {
-      changeDescription: 'status changed',
-      newStatus: 'dappled',
-      statusUpdatedAt: expect.toParseAsDate(),
-      statusUpdatedBy: workerSid,
-      previousStatus: case1.status,
-    },
-    {
-      changeDescription: 'status changed by another counselor',
-      newStatus: 'puddled',
-      statusUpdatedAt: expect.toParseAsDate(),
-      statusUpdatedBy: 'WK-another-worker-sid',
-      previousStatus: case1.status,
-      customWorkerSid: 'WK-another-worker-sid',
-    },
-    {
-      changeDescription:
-        'status changed to the same status - status tracking not updated',
-      newStatus: 'open',
-      statusUpdatedAt: null,
-      statusUpdatedBy: null,
-      previousStatus: null,
-    },
-  ];
+      expect(response.status).toBe(401);
+      expect(response.body.error).toBe('Authorization failed');
+    });
 
-  each(testCases).test(
-    'should return 200 and save new status when $changeDescription',
-    async ({
-      newStatus,
-      originalCase: originalCaseGetter = () => cases.blank,
-      customWorkerSid = undefined,
-      statusUpdatedAt,
-      statusUpdatedBy,
-      previousStatus,
-    }: TestCase) => {
-      if (customWorkerSid) {
-        await mockingProxy.stop();
-        await mockingProxy.start();
-        await mockSuccessfulTwilioAuthentication(customWorkerSid);
-        await new Promise(resolve => setTimeout(resolve, 3000));
-      }
-      const originalCase = originalCaseGetter();
-      const caseBeforeUpdate = await caseApi.getCase(
-        originalCase.id,
-        accountSid,
-        ALWAYS_CAN,
-      );
+    type TestCase = {
+      originalCase?: () => CaseService;
+      newStatus: caseApi.CaseService['status'];
+      changeDescription: string;
+      customWorkerSid?: string;
+      statusUpdatedAt: string | null;
+      statusUpdatedBy: string | null;
+      previousStatus: caseApi.CaseService['status'] | null;
+    };
 
-      const response = await request.put(subRoute(originalCase.id)).set(headers).send({
-        status: newStatus,
-      });
+    const testCases: TestCase[] = [
+      {
+        changeDescription: 'status changed',
+        newStatus: 'dappled',
+        statusUpdatedAt: expect.toParseAsDate(),
+        statusUpdatedBy: workerSid,
+        previousStatus: case1.status,
+      },
+      {
+        changeDescription: 'status changed by another counselor',
+        newStatus: 'puddled',
+        statusUpdatedAt: expect.toParseAsDate(),
+        statusUpdatedBy: 'WK-another-worker-sid',
+        previousStatus: case1.status,
+        customWorkerSid: 'WK-another-worker-sid',
+      },
+      {
+        changeDescription:
+          'status changed to the same status - status tracking not updated',
+        newStatus: 'open',
+        statusUpdatedAt: null,
+        statusUpdatedBy: null,
+        previousStatus: null,
+      },
+    ];
 
-      expect(response.status).toBe(200);
-      const expected = {
-        ...convertCaseInfoToExpectedInfo(originalCase),
-        createdAt: expect.toParseAsDate(originalCase.createdAt),
-        updatedAt: expect.toParseAsDate(),
-        status: newStatus,
-        updatedBy: customWorkerSid || workerSid,
+    each(testCases).test(
+      'should return 200 and save new status when $changeDescription',
+      async ({
+        newStatus,
+        originalCase: originalCaseGetter = () => cases.blank,
+        customWorkerSid = undefined,
         statusUpdatedAt,
         statusUpdatedBy,
         previousStatus,
-      };
+      }: TestCase) => {
+        if (customWorkerSid) {
+          await mockingProxy.stop();
+          await mockingProxy.start();
+          await mockSuccessfulTwilioAuthentication(customWorkerSid);
+          await new Promise(resolve => setTimeout(resolve, 3000));
+        }
+        const originalCase = originalCaseGetter();
+        const caseBeforeUpdate = await caseApi.getCase(
+          originalCase.id,
+          accountSid,
+          ALWAYS_CAN,
+        );
 
-      expect(response.body).toMatchObject(expected);
+        const response = await request
+          .put(subRoute(originalCase.id))
+          .set(testHeaders)
+          .send({
+            status: newStatus,
+          });
 
-      // Check the DB is actually updated
-      const fromDb = await caseApi.getCase(originalCase.id, accountSid, ALWAYS_CAN);
-      expect(fromDb).toMatchObject(expected);
+        expect(response.status).toBe(200);
+        const expected = {
+          ...convertCaseInfoToExpectedInfo(originalCase),
+          createdAt: expect.toParseAsDate(originalCase.createdAt),
+          updatedAt: expect.toParseAsDate(),
+          status: newStatus,
+          updatedBy: customWorkerSid || workerSid,
+          statusUpdatedAt,
+          statusUpdatedBy,
+          previousStatus,
+        };
 
-      if (!fromDb || !caseBeforeUpdate) {
-        throw new Error('fromDB is falsy');
-      }
+        expect(response.body).toMatchObject(expected);
 
-      // Check that in each case, createdAt is not changed
-      expect(fromDb.createdAt).toStrictEqual(caseBeforeUpdate.createdAt);
-      // Check that in each case, updatedAt is greater than createdAt
-      expect(isBefore(new Date(fromDb.createdAt), new Date(fromDb.updatedAt))).toBe(true);
-      // Check that in each case, updatedAt is greater it was before
-      expect(
-        isBefore(new Date(caseBeforeUpdate.updatedAt), new Date(fromDb.updatedAt)),
-      ).toBe(true);
-    },
-  );
+        // Check the DB is actually updated
+        const fromDb = await caseApi.getCase(originalCase.id, accountSid, ALWAYS_CAN);
+        expect(fromDb).toMatchObject(expected);
 
-  test('should return 404', async () => {
-    const status = 'closed';
-    const response = await request
-      .put(subRoute(nonExistingCaseId))
-      .set(headers)
-      .send({ status });
+        if (!fromDb || !caseBeforeUpdate) {
+          throw new Error('fromDB is falsy');
+        }
 
-    expect(response.status).toBe(404);
-  });
-});
+        // Check that in each case, createdAt is not changed
+        expect(fromDb.createdAt).toStrictEqual(caseBeforeUpdate.createdAt);
+        // Check that in each case, updatedAt is greater than createdAt
+        expect(isBefore(new Date(fromDb.createdAt), new Date(fromDb.updatedAt))).toBe(
+          true,
+        );
+        // Check that in each case, updatedAt is greater it was before
+        expect(
+          isBefore(new Date(caseBeforeUpdate.updatedAt), new Date(fromDb.updatedAt)),
+        ).toBe(true);
+      },
+    );
 
-each([
-  { request: publicRequest, requestDescription: 'PUBLIC' },
-  { request: internalRequest, requestDescription: 'INTERNAL' },
-]).describe('[$requestDescription] PUT /cases/:id/overview route', ({ request }) => {
-  const subRoute = id => `${route}/${id}/overview`;
-  const baselineDate = new Date('2020-01-01T00:00:00.000Z');
+    test('should return 404', async () => {
+      const status = 'closed';
+      const response = await request
+        .put(subRoute(nonExistingCaseId))
+        .set(testHeaders)
+        .send({ status });
 
-  test('should return 401', async () => {
-    const response = await request.put(subRoute(cases.blank.id)).send({
-      summary: 'wintery',
-      childIsAtRisk: false,
-      followUpDate: baselineDate.toISOString(),
+      expect(response.status).toBe(404);
     });
+  },
+);
 
-    expect(response.status).toBe(401);
-    expect(response.body.error).toBe('Authorization failed');
-  });
+each([publicApiTestSuiteParameters, internalApiTestSuiteParameters]).describe(
+  '[$requestDescription] PUT /cases/:id/overview route',
+  ({ request, route, testHeaders }: ApiTestSuiteParameters) => {
+    const subRoute = id => `${route}/${id}/overview`;
+    const baselineDate = new Date('2020-01-01T00:00:00.000Z');
 
-  type TestCase = {
-    originalCase?: () => CaseService;
-    newOverview: caseApi.CaseService['info'];
-    changeDescription: string;
-  };
-
-  const testCases: TestCase[] = [
-    {
-      changeDescription: 'all overview properties changed',
-      newOverview: {
-        summary: 'dappled',
+    test('should return 401', async () => {
+      const response = await request.put(subRoute(cases.blank.id)).send({
+        summary: 'wintery',
         childIsAtRisk: false,
         followUpDate: baselineDate.toISOString(),
-      },
-    },
-    {
-      changeDescription:
-        'overview partially changed (omitted properties are not changed)',
-      newOverview: {
-        summary: 'autumnal',
-      },
-    },
-    {
-      changeDescription:
-        'properties other than the known overview properties are specified (unrecognised properties are ignored)',
-      newOverview: {
-        summary: 'autumnal',
-        somethingFrom: 'behind the veil',
-      },
-    },
-  ];
+      });
 
-  each(testCases).test(
-    'should return 200 and save overview updates when $changeDescription',
-    async ({
-      newOverview,
-      originalCase: originalCaseGetter = () => cases.populated,
-    }: TestCase) => {
-      const originalCase = originalCaseGetter();
-      const caseBeforeUpdate = await caseApi.getCase(
-        originalCase.id,
-        accountSid,
-        ALWAYS_CAN,
-      );
+      expect(response.status).toBe(401);
+      expect(response.body.error).toBe('Authorization failed');
+    });
 
-      const response = await request
-        .put(subRoute(originalCase.id))
-        .set(headers)
-        .send(newOverview);
+    type TestCase = {
+      originalCase?: () => CaseService;
+      newOverview: caseApi.CaseService['info'];
+      changeDescription: string;
+    };
 
-      expect(response.status).toBe(200);
-      const expected: CaseService = {
-        ...originalCase,
-        info: {
-          ...originalCase.info,
-          ...pick(newOverview, ['summary', 'childIsAtRisk', 'followUpDate']),
+    const testCases: TestCase[] = [
+      {
+        changeDescription: 'all overview properties changed',
+        newOverview: {
+          summary: 'dappled',
+          childIsAtRisk: false,
+          followUpDate: baselineDate.toISOString(),
         },
-        updatedAt: expect.toParseAsDate(),
-        updatedBy: workerSid,
-      };
+      },
+      {
+        changeDescription:
+          'overview partially changed (omitted properties are not changed)',
+        newOverview: {
+          summary: 'autumnal',
+        },
+      },
+      {
+        changeDescription:
+          'properties other than the known overview properties are specified (unrecognised properties are ignored)',
+        newOverview: {
+          summary: 'autumnal',
+          somethingFrom: 'behind the veil',
+        },
+      },
+    ];
 
-      expect(response.body).toStrictEqual(expected);
+    each(testCases).test(
+      'should return 200 and save overview updates when $changeDescription',
+      async ({
+        newOverview,
+        originalCase: originalCaseGetter = () => cases.populated,
+      }: TestCase) => {
+        const originalCase = originalCaseGetter();
+        const caseBeforeUpdate = await caseApi.getCase(
+          originalCase.id,
+          accountSid,
+          ALWAYS_CAN,
+        );
 
-      // Check the DB is actually updated
-      const fromDb = await caseApi.getCase(originalCase.id, accountSid, ALWAYS_CAN);
-      expect(fromDb).toStrictEqual({ ...expected, sections: {}, connectedContacts: [] });
+        const response = await request
+          .put(subRoute(originalCase.id))
+          .set(testHeaders)
+          .send(newOverview);
 
-      if (!fromDb || !caseBeforeUpdate) {
-        throw new Error('fromDB is falsy');
-      }
+        expect(response.status).toBe(200);
+        const expected: CaseService = {
+          ...originalCase,
+          info: {
+            ...originalCase.info,
+            ...pick(newOverview, ['summary', 'childIsAtRisk', 'followUpDate']),
+          },
+          updatedAt: expect.toParseAsDate(),
+          updatedBy: workerSid,
+        };
 
-      // Check that in each case, createdAt is not changed
-      expect(fromDb.createdAt).toStrictEqual(caseBeforeUpdate.createdAt);
-      // Check that in each case, updatedAt is greater than createdAt
-      expect(isBefore(new Date(fromDb.createdAt), new Date(fromDb.updatedAt))).toBe(true);
-      // Check that in each case, updatedAt is greater it was before
-      expect(
-        isBefore(new Date(caseBeforeUpdate.updatedAt), new Date(fromDb.updatedAt)),
-      ).toBe(true);
-    },
-  );
+        expect(response.body).toStrictEqual(expected);
 
-  test("should return 404 if case doesn't exist", async () => {
-    const response = await request.put(subRoute(nonExistingCaseId)).set(headers).send({
-      summary: 'wintery',
-      childIsAtRisk: false,
-      followUpDate: baselineDate.toISOString(),
+        // Check the DB is actually updated
+        const fromDb = await caseApi.getCase(originalCase.id, accountSid, ALWAYS_CAN);
+        expect(fromDb).toStrictEqual({
+          ...expected,
+          sections: {},
+          connectedContacts: [],
+        });
+
+        if (!fromDb || !caseBeforeUpdate) {
+          throw new Error('fromDB is falsy');
+        }
+
+        // Check that in each case, createdAt is not changed
+        expect(fromDb.createdAt).toStrictEqual(caseBeforeUpdate.createdAt);
+        // Check that in each case, updatedAt is greater than createdAt
+        expect(isBefore(new Date(fromDb.createdAt), new Date(fromDb.updatedAt))).toBe(
+          true,
+        );
+        // Check that in each case, updatedAt is greater it was before
+        expect(
+          isBefore(new Date(caseBeforeUpdate.updatedAt), new Date(fromDb.updatedAt)),
+        ).toBe(true);
+      },
+    );
+
+    test("should return 404 if case doesn't exist", async () => {
+      const response = await request
+        .put(subRoute(nonExistingCaseId))
+        .set(testHeaders)
+        .send({
+          summary: 'wintery',
+          childIsAtRisk: false,
+          followUpDate: baselineDate.toISOString(),
+        });
+
+      expect(response.status).toBe(404);
     });
 
-    expect(response.status).toBe(404);
-  });
+    test('should return 400 if followUpDate is not a valid date', async () => {
+      const response = await request
+        .put(subRoute(cases.populated.id))
+        .set(testHeaders)
+        .send({
+          followUpDate: 'in a bit',
+        });
 
-  test('should return 400 if followUpDate is not a valid date', async () => {
-    const response = await request.put(subRoute(cases.populated.id)).set(headers).send({
-      followUpDate: 'in a bit',
+      expect(response.status).toBe(400);
     });
-
-    expect(response.status).toBe(400);
-  });
-});
+  },
+);
