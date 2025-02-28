@@ -30,7 +30,13 @@ import {
   mockSuccessfulTwilioAuthentication,
 } from '@tech-matters/testing';
 import * as mocks from '../mocks';
-import { headers, getRequest, getServer, useOpenRules } from '../server';
+import {
+  headers,
+  getRequest,
+  getServer,
+  useOpenRules,
+  getInternalServer,
+} from '../server';
 import { ALWAYS_CAN, casePopulated } from '../mocks';
 import { pick } from 'lodash';
 import { clearAllTables } from '../dbCleanup';
@@ -39,8 +45,11 @@ import { setupTestQueues } from '../sqs';
 const SEARCH_INDEX_SQS_QUEUE_NAME = 'mock-search-index-queue';
 
 useOpenRules();
-const server = getServer();
-const request = getRequest(server);
+const publicServer = getServer();
+const publicRequest = getRequest(publicServer);
+
+const internalServer = getInternalServer();
+const internalRequest = getRequest(internalServer);
 
 const { case1, case2, accountSid, workerSid } = mocks;
 
@@ -87,7 +96,10 @@ afterEach(async () => {
 
 setupTestQueues([SEARCH_INDEX_SQS_QUEUE_NAME]);
 
-describe('PUT /cases/:id/status route', () => {
+each([
+  { request: publicRequest, requestDescription: 'PUBLIC' },
+  { request: internalRequest, requestDescription: 'INTERNAL' },
+]).describe('[requestDescription] PUT /cases/:id/status route', ({ request }) => {
   const subRoute = id => `${route}/${id}/status`;
 
   test('should return 401', async () => {
@@ -117,7 +129,6 @@ describe('PUT /cases/:id/status route', () => {
       statusUpdatedBy: workerSid,
       previousStatus: case1.status,
     },
-    /* Disable until weird flake mocking out auth can be fixed
     {
       changeDescription: 'status changed by another counselor',
       newStatus: 'puddled',
@@ -125,7 +136,7 @@ describe('PUT /cases/:id/status route', () => {
       statusUpdatedBy: 'WK-another-worker-sid',
       previousStatus: case1.status,
       customWorkerSid: 'WK-another-worker-sid',
-    },*/
+    },
     {
       changeDescription:
         'status changed to the same status - status tracking not updated',
@@ -207,7 +218,10 @@ describe('PUT /cases/:id/status route', () => {
   });
 });
 
-describe('PUT /cases/:id/overview route', () => {
+each([
+  { request: publicRequest, requestDescription: 'PUBLIC' },
+  { request: internalRequest, requestDescription: 'INTERNAL' },
+]).describe('[$requestDescription] PUT /cases/:id/overview route', ({ request }) => {
   const subRoute = id => `${route}/${id}/overview`;
   const baselineDate = new Date('2020-01-01T00:00:00.000Z');
 

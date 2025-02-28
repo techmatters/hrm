@@ -14,7 +14,13 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { getRequest, getServer, headers, useOpenRules } from '../server';
+import {
+  getInternalServer,
+  getRequest,
+  getServer,
+  headers,
+  useOpenRules,
+} from '../server';
 import {
   mockingProxy,
   mockSsmParameters,
@@ -41,8 +47,11 @@ import { setupTestQueues } from '../sqs';
 const SEARCH_INDEX_SQS_QUEUE_NAME = 'mock-search-index-queue';
 
 useOpenRules();
-const server = getServer();
-const request = getRequest(server);
+const publicServer = getServer();
+const publicRequest = getRequest(publicServer);
+
+const internalServer = getInternalServer();
+const internalRequest = getRequest(internalServer);
 
 beforeAll(async () => {
   await clearAllTables();
@@ -78,7 +87,10 @@ const getRoutePath = (caseId: string | number, sectionType: string, sectionId?: 
     sectionId ? `/${sectionId}` : ''
   }`;
 
-describe('POST /cases/:caseId/sections', () => {
+each([
+  { request: publicRequest, requestDescription: 'PUBLIC' },
+  { request: internalRequest, requestDescription: 'INTERNAL' },
+]).describe('[$requestDescription] POST /cases/:caseId/sections', ({ request }) => {
   test('should return 401 if valid auth headers are not set', async () => {
     const response = await request
       .post(getRoutePath(targetCase.id, 'note'))
@@ -262,6 +274,7 @@ describe('/cases/:caseId/sections/:sectionId', () => {
   });
 
   describe('GET', () => {
+    const request = publicRequest;
     test('should return 401 if valid auth headers are not set', async () => {
       const response = await request.get(
         getRoutePath(targetCase.id, 'note', targetSection.sectionId),
@@ -301,7 +314,10 @@ describe('/cases/:caseId/sections/:sectionId', () => {
     });
   });
 
-  describe('PUT', () => {
+  each([
+    { request: publicRequest, requestDescription: 'PUBLIC' },
+    { request: internalRequest, requestDescription: 'INTERNAL' },
+  ]).describe('[$requestDescription] PUT', ({ request }) => {
     test('should return 401 if valid auth headers are not set', async () => {
       const response = await request
         .put(getRoutePath(targetCase.id, 'note', targetSection.sectionId))
@@ -413,7 +429,10 @@ describe('/cases/:caseId/sections/:sectionId', () => {
     });
   });
 
-  describe('DELETE', () => {
+  each([
+    { request: publicRequest, requestDescription: 'PUBLIC' },
+    { request: internalRequest, requestDescription: 'INTERNAL' },
+  ]).describe('[$requestDescription] DELETE', ({ request }) => {
     const verifySectionWasntDeleted = async () => {
       const { sectionId, ...expectedSection } = targetSection;
       const section = await getCaseSection(
