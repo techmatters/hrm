@@ -23,10 +23,10 @@ const lastUpdateSeenSsmKey = `/${process.env.NODE_ENV}/hrm/custom-integration/us
 export const handler = async (): Promise<0> => {
   // Read the last update seen from SSM
   const lastUpdateSeen = await getSsmParameter(lastUpdateSeenSsmKey);
-  console.debug('Last beacon update seen:', lastUpdateSeen);
+  console.info('Last beacon update before:', lastUpdateSeen);
   // Do something on the public internet
   const response = await fetch('https://google.com');
-  console.info('External API responded with status:', response.status);
+  console.debug('External API responded with status:', response.status);
   // Do something on the internal HRM API - will return a 404
   const hrmResponse = await fetch(
     `${process.env.INTERNAL_HRM_URL}/v0/accounts/${accountSid}/profiles/identifier/1234/flags`,
@@ -37,12 +37,12 @@ export const handler = async (): Promise<0> => {
       },
     },
   );
-  console.info('HRM API responded with status:', hrmResponse.status);
+  console.debug('HRM API responded with status:', hrmResponse.status);
   // Update the last update seen in SSM
   await putSsmParameter(lastUpdateSeenSsmKey, new Date().toISOString(), {
     overwrite: true,
   });
-  console.info('Last beacon update seen:', await getSsmParameter(lastUpdateSeenSsmKey));
+  console.info('Last beacon update after:', await getSsmParameter(lastUpdateSeenSsmKey));
 
   return 0;
 };
