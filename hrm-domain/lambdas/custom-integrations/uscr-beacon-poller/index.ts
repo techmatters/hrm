@@ -18,7 +18,7 @@ import { getSsmParameter, putSsmParameter } from '@tech-matters/ssm-cache';
 
 const accountSid = process.env.ACCOUNT_SID;
 const staticKey = process.env.STATIC_KEY;
-const lastUpdateSeenSsmKey = `/${process.env.NODE_ENV}/hrm/custom-integration/uscr/${accountSid}/latest-beacon-update-seen`;
+const lastUpdateSeenSsmKey = `/${process.env.NODE_ENV}/hrm/custom-integration/uscr/${accountSid}/latest_beacon_update_seen`;
 
 export const handler = async (): Promise<0> => {
   // Read the last update seen from SSM
