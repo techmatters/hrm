@@ -16,7 +16,7 @@
 
 import createError from 'http-errors';
 import * as caseApi from './caseService';
-import { publicEndpoint as openEndpoint, SafeRouter } from '../permissions';
+import { openEndpoint as openEndpoint, SafeRouter } from '../permissions';
 import {
   canEditCaseOverview,
   canUpdateCaseStatus,
@@ -107,7 +107,7 @@ const newCaseRouter = (isPublic: boolean) => {
       res.json(timeline);
     });
 
-    casesRouter.delete('/:id', publicEndpoint, async (req, res) => {
+    casesRouter.delete('/:id', openEndpoint, async (req, res) => {
       const { hrmAccountId } = req;
       const { id } = req.params;
       const deleted = await caseApi.deleteCaseById({
@@ -131,7 +131,7 @@ const newCaseRouter = (isPublic: boolean) => {
      *
      * @returns {CaseSearchReturn} - List of cases
      */
-    casesRouter.get('/', publicEndpoint, async (req, res) => {
+    casesRouter.get('/', openEndpoint, async (req, res) => {
       const { hrmAccountId } = req;
       const {
         sortDirection,
@@ -156,7 +156,7 @@ const newCaseRouter = (isPublic: boolean) => {
       res.json(cases);
     });
 
-    casesRouter.post('/', publicEndpoint, async (req, res) => {
+    casesRouter.post('/', openEndpoint, async (req, res) => {
       const { hrmAccountId, user } = req;
       const createdCase = await caseApi.createCase(
         req.body,
@@ -190,7 +190,7 @@ const newCaseRouter = (isPublic: boolean) => {
       res.json(caseFromDB);
     });
 
-    casesRouter.post('/search', publicEndpoint, async (req, res) => {
+    casesRouter.post('/search', openEndpoint, async (req, res) => {
       const { hrmAccountId } = req;
       const {
         closedCases,
@@ -215,7 +215,7 @@ const newCaseRouter = (isPublic: boolean) => {
     // Endpoint used for generalized search powered by ElasticSearch
     casesRouter.post(
       '/generalizedSearch',
-      publicEndpoint,
+      openEndpoint,
       async (req: Request, res: Response, next: NextFunction) => {
         try {
           const { hrmAccountId, can, user, permissions, query, body } = req;
