@@ -14,18 +14,33 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-// eslint-disable-next-line prettier/prettier
-import type { ALBEvent, ALBResult } from 'aws-lambda';
+import { getSsmParameter, putSsmParameter } from '@tech-matters/ssm-cache';
 
-export const handler = async (event: ALBEvent): Promise<ALBResult> => {
-  try {
-    console.debug(`custom-integrations/uscr-beacon-poller: called with event ${event}`);
-    await fetch('https://google.com');
-  } catch (err) {
-    console.error(`custom-integrations/uscr-beacon-poller: error: `, err);
-  }
+const accountSid = process.env.ACCOUNT_SID;
+const staticKey = process.env.STATIC_KEY;
+const lastUpdateSeenSsmKey = `/${process.env.NODE_ENV}/hrm/custom-integration/uscr/${accountSid}/last-beacon-update-seen`;
 
-  return {
-    statusCode: 200,
-  };
+export const handler = async (): Promise<0> => {
+  // Read the last update seen from SSM
+  const lastUpdateSeen = getSsmParameter(lastUpdateSeenSsmKey);
+  console.debug('Last beacon update seen:', lastUpdateSeen);
+  // Do something on the public internet
+  const response = await fetch('https://google.com');
+  console.info('External API responded with status:', response.status);
+  // Do something on the internal HRM API
+  const hrmResponse = await fetch(
+    `${process.env.INTERNAL_HRM_URL}/v0/accounts/${accountSid}/profiles/identifier/1234/flags`,
+    {
+      method: 'GET',
+      headers: {
+        Authorization: `Basic ${staticKey}`,
+      },
+    },
+  );
+  console.info('HRM API responded with status:', hrmResponse.status);
+  // Update the last update seen in SSM
+  await putSsmParameter(lastUpdateSeenSsmKey, new Date().toISOString());
+  console.info('HRM API responded with status:', hrmResponse.status);
+
+  return 0;
 };
