@@ -200,7 +200,7 @@ each([publicApiTestSuiteParameters, internalApiTestSuiteParameters]).describe(
       expect(updatedCase).toEqual({
         ...targetCase,
         updatedAt: updatedCase?.updatedAt,
-        updatedBy: workerSid,
+        updatedBy: requestDescription === 'PUBLIC' ? workerSid : `account-${accountSid}`,
         connectedContacts: [],
         info: null,
         sections: {
