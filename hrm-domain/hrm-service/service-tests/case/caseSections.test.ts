@@ -202,7 +202,7 @@ each([publicApiTestSuiteParameters, internalApiTestSuiteParameters]).describe(
         updatedAt: updatedCase?.updatedAt,
         updatedBy: workerSid,
         connectedContacts: [],
-        info: {},
+        info: null,
         sections: {
           note: [
             {
@@ -241,7 +241,7 @@ each([publicApiTestSuiteParameters, internalApiTestSuiteParameters]).describe(
         updatedAt: updatedCase?.updatedAt,
         updatedBy: workerSid,
         connectedContacts: [],
-        info: {},
+        info: null,
         sections: {
           note: expect.arrayContaining(
             apiSections.map(apiSection => {
@@ -411,7 +411,7 @@ describe('/cases/:caseId/sections/:sectionId', () => {
           updatedAt: updatedCase?.updatedAt,
           updatedBy: workerSid,
           connectedContacts: [],
-          info: {},
+          info: null,
           sections: {
             note: [
               {
