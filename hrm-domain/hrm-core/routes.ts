@@ -35,7 +35,7 @@ export const HRM_ROUTES: {
   routerFactory: (rules: Permissions) => Router;
 }[] = [
   { path: '/contacts', routerFactory: () => contacts },
-  { path: '/cases', routerFactory: () => cases },
+  { path: '/cases', routerFactory: () => cases(true) },
   { path: '/postSurveys', routerFactory: () => postSurveys },
   { path: '/csamReports', routerFactory: () => csamReports },
   { path: '/profiles', routerFactory: () => profiles },
@@ -72,6 +72,7 @@ export const INTERNAL_ROUTES: {
 }[] = [
   { path: '/contacts', routerFactory: () => internalContacts },
   { path: '/profiles', routerFactory: () => internalProfiles },
+  { path: '/cases', routerFactory: () => cases(false) },
 ];
 
 export const internalApiV0 = () => {
