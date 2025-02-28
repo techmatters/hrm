@@ -24,7 +24,6 @@ import * as caseDb from '@tech-matters/hrm-core/case/caseDataAccess';
 import { convertCaseInfoToExpectedInfo } from './caseValidation';
 import { isBefore } from 'date-fns';
 
-// const each = require('jest-each').default;
 import {
   mockingProxy,
   mockSsmParameters,

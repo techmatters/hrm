@@ -245,8 +245,8 @@ const newCaseRouter = (isPublic: boolean) => {
         }
       },
     );
-    return casesRouter.expressRouter;
   }
+  return casesRouter.expressRouter;
 };
 
 export default newCaseRouter;
