@@ -160,10 +160,15 @@ export const getSsmParameter = async (
   return ssmCache.values[name]?.value || '';
 };
 
-export const putSsmParameter = async (name: string, value: string, cacheValue = true) => {
+export const putSsmParameter = async (
+  name: string,
+  value: string,
+  { cacheValue = true, overwrite = false } = {},
+) => {
   const params: PutParameterCommandInput = {
     Name: name,
     Value: value,
+    Overwrite: overwrite,
   };
   const command = new PutParameterCommand(params);
   try {

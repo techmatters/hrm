@@ -39,7 +39,9 @@ export const handler = async (): Promise<0> => {
   );
   console.info('HRM API responded with status:', hrmResponse.status);
   // Update the last update seen in SSM
-  await putSsmParameter(lastUpdateSeenSsmKey, new Date().toISOString());
+  await putSsmParameter(lastUpdateSeenSsmKey, new Date().toISOString(), {
+    overwrite: true,
+  });
   console.info('HRM API responded with status:', hrmResponse.status);
 
   return 0;
