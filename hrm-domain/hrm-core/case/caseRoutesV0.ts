@@ -16,7 +16,7 @@
 
 import createError from 'http-errors';
 import * as caseApi from './caseService';
-import { openEndpoint as openEndpoint, SafeRouter } from '../permissions';
+import { publicEndpoint as openEndpoint, SafeRouter } from '../permissions';
 import {
   canEditCaseOverview,
   canUpdateCaseStatus,
