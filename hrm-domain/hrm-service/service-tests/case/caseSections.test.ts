@@ -415,7 +415,8 @@ describe('/cases/:caseId/sections/:sectionId', () => {
         expect(updatedCase).toEqual({
           ...targetCase,
           updatedAt: updatedCase?.updatedAt,
-          updatedBy: requestDescription === 'PUBLIC' ? workerSid : `account-${accountSid}`,
+          updatedBy:
+            requestDescription === 'PUBLIC' ? workerSid : `account-${accountSid}`,
           connectedContacts: [],
           info: null,
           sections: {
