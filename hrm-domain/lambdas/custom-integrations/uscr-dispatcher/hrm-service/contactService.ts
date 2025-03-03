@@ -56,3 +56,39 @@ export const connectToCase = async ({
     });
   }
 };
+
+export const getContact = async ({
+  accountSid,
+  contactId,
+  token,
+}: {
+  accountSid: string;
+  contactId: string;
+  token: string;
+}) => {
+  try {
+    // TODO?: set api version via env vars
+    const urlPath = `v0/accounts/${accountSid}/contacts/${contactId}`;
+    const authHeader = `Bearer ${token}`;
+
+    const result = await callHrmApi<Contact>({
+      urlPath,
+      authHeader,
+      method: 'GET',
+    });
+
+    if (isErr(result)) {
+      return newErr({
+        error: `getContact error: ${result.error} `,
+        message: result.message,
+      });
+    }
+
+    return result;
+  } catch (err) {
+    return newErr({
+      error: 'getContact error: ',
+      message: `Unexpected error ${err instanceof Error ? err.message : String(err)}`,
+    });
+  }
+};

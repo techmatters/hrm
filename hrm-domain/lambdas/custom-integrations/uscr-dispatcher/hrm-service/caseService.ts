@@ -55,6 +55,42 @@ export const createCase = async ({
   }
 };
 
+export const getCase = async ({
+  accountSid,
+  caseId,
+  token,
+}: {
+  accountSid: string;
+  caseId: string;
+  token: string;
+}) => {
+  try {
+    const urlPath = `v0/accounts/${accountSid}/cases/${caseId}`;
+
+    const authHeader = `Bearer ${token}`;
+
+    const result = await callHrmApi<CaseService>({
+      urlPath,
+      authHeader,
+      method: 'GET',
+    });
+
+    if (isErr(result)) {
+      return newErr({
+        error: `getCase error: ${result.error} `,
+        message: result.message,
+      });
+    }
+
+    return result;
+  } catch (err) {
+    return newErr({
+      error: 'getCase error: ',
+      message: `Unexpected error ${err instanceof Error ? err.message : String(err)}`,
+    });
+  }
+};
+
 export const deleteCase = async ({
   accountSid,
   caseId,

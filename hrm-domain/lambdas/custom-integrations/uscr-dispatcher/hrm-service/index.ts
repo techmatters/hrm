@@ -14,13 +14,13 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import type { CaseService } from '@tech-matters/hrm-types';
-import { createCase, deleteCase } from './caseService';
-import { connectToCase } from './contactService';
-import { isErr, newErr, newOk } from '@tech-matters/types';
+import type { CaseService, Contact } from '@tech-matters/hrm-types';
+import { createCase, deleteCase, getCase } from './caseService';
+import { connectToCase, getContact } from './contactService';
+import { isErr, newErr, newOk, TResult } from '@tech-matters/types';
 import { logger } from '../logger';
 
-export const createAndConnectCase = async ({
+export const getOrCreateCase = async ({
   accountSid,
   casePayload,
   contactId,
@@ -30,7 +30,38 @@ export const createAndConnectCase = async ({
   casePayload: Partial<CaseService>;
   contactId: string;
   token: string;
-}) => {
+}): Promise<TResult<string, { caseObj: CaseService; contact: Contact }>> => {
+  // get contact and check for existence of an associated case
+  const contactResult = await getContact({ accountSid, contactId, token });
+  if (isErr(contactResult)) {
+    return newErr({
+      error: `createAndConnectCase: ${contactResult.error}`,
+      message: contactResult.message,
+    });
+  }
+
+  if (contactResult.data.caseId) {
+    const caseResult = await getCase({
+      accountSid,
+      caseId: contactResult.data.caseId.toString(),
+      token,
+    });
+    if (isErr(caseResult)) {
+      return newErr({
+        error: `createAndConnectCase: ${caseResult.error}`,
+        message: caseResult.message,
+      });
+    }
+
+    // TODO: check if incident has already been dispatched. While Beacon idempotence on contact id should prevent this scenario, won't harm having it here too
+    logger({ message: `Case exists: ${JSON.stringify(caseResult)}`, severity: 'info' });
+
+    return newOk({
+      data: { caseObj: caseResult.data, contact: contactResult.data },
+    });
+  }
+
+  // no case associated, create and associate one
   const caseResult = await createCase({ accountSid, casePayload, token });
   if (isErr(caseResult)) {
     return newErr({
@@ -39,16 +70,18 @@ export const createAndConnectCase = async ({
     });
   }
 
-  const createdCase = caseResult.data;
-  const caseId = createdCase.id.toString();
+  logger({ message: `Case created: ${JSON.stringify(caseResult)}`, severity: 'info' });
 
-  const contactResult = await connectToCase({
+  const caseObj = caseResult.data;
+  const caseId = caseObj.id.toString();
+
+  const connectedResult = await connectToCase({
     accountSid,
     caseId,
     contactId,
     token,
   });
-  if (isErr(contactResult)) {
+  if (isErr(connectedResult)) {
     const deleteResult = await deleteCase({
       accountSid,
       caseId,
@@ -61,10 +94,10 @@ export const createAndConnectCase = async ({
     }
 
     return newErr({
-      error: `createAndConnectCase: ${contactResult.error}`,
-      message: contactResult.message,
+      error: `createAndConnectCase: ${connectedResult.error}`,
+      message: connectedResult.message,
     });
   }
 
-  return newOk({ data: { createdCase, contact: contactResult.data } });
+  return newOk({ data: { caseObj, contact: connectedResult.data } });
 };

@@ -59,7 +59,7 @@ export const handler = async (event: ALBEvent): Promise<ALBResult> => {
       return { statusCode: 401 };
     }
 
-    const createCaseResult = await hrmService.createAndConnectCase({
+    const createCaseResult = await hrmService.getOrCreateCase({
       accountSid: payloadResult.data.accountSid,
       casePayload: payloadResult.data.casePayload,
       contactId: payloadResult.data.contactId,
@@ -71,14 +71,18 @@ export const handler = async (event: ALBEvent): Promise<ALBResult> => {
       return { statusCode: 500 };
     }
 
-    const { contact, createdCase } = createCaseResult.data;
+    const { contact, caseObj } = createCaseResult.data;
 
     logger({ message: JSON.stringify(createCaseResult), severity: 'info' });
 
+    // sectionType(pin):"incidentReport"
+    // TODO:
+    // - if section exists, do nothing.
+    // - if not exists, create the incident, then create a "blank" section for it
     const createIncidentResult = await beaconService.createIncident({
       environment: envResult.data.environment,
       incidentParams: mapping.toCreateIncident({
-        caseObj: createdCase,
+        caseObj: caseObj,
         contact,
       }),
     });
