@@ -149,7 +149,7 @@ export const createCaseSection = async ({
       urlPath,
       authHeader,
       method: 'POST',
-      body: JSON.stringify({ sectionTypeSpecificData }),
+      body: { sectionTypeSpecificData },
     });
 
     if (isErr(result)) {

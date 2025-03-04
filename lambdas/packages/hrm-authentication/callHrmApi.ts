@@ -22,7 +22,7 @@ export type CallHrmApiParameters = {
   method: 'GET' | 'POST' | 'PUT' | 'DELETE';
   authHeader: string;
   requestData?: any;
-  body?: any;
+  body?: Record<string, any>;
 };
 
 export type CallHrmApiError = 'CallHrmApiError';
