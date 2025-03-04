@@ -24,7 +24,7 @@ export async function mockttpServer() {
   if (!mockServer) {
     console.log('CREATING ENDPOINT SERVER');
     const https = await generateCACertificate();
-    // Just wave through them self signed certs... :-/
+    // Just wave through them self-signed certs... :-/
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
     mockServer = getLocal({ https });
   }
@@ -35,7 +35,6 @@ export async function start(allowPassThrough = false): Promise<void> {
   const server = await mockttpServer();
   try {
     await server.stop();
-    console.warn('Mockttp server was already running, this could be a smell.');
   } catch (e) {
     // Ignore error
   }
@@ -48,7 +47,7 @@ export async function start(allowPassThrough = false): Promise<void> {
     await server.forUnmatchedRequest().thenCallback(req => {
       console.log('UNHANDLED MOCKTTP REQUEST', req);
       return {
-        status: 500,
+        statusCode: 500,
         body: 'Not implemented',
       };
     });

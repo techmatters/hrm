@@ -15,19 +15,66 @@
  */
 
 import { handler } from '../../src';
-import { Mockttp } from 'mockttp';
+import { MockedEndpoint, Mockttp } from 'mockttp';
 import { mockingProxy, mockSsmParameters } from '@tech-matters/testing';
-
+import { addHours } from 'date-fns/addHours';
+import { subDays } from 'date-fns/subDays';
 const ACCOUNT_SID = 'ACservicetest';
-process.env.BEACON_URL = 'http://google.com';
+const BEACON_RESPONSE_HEADERS = {
+  'Content-Type': 'application/json',
+};
+const MAX_INCIDENT_REPORTS_PER_CALL = 5;
+process.env.MAX_INCIDENT_REPORTS_PER_CALL = MAX_INCIDENT_REPORTS_PER_CALL.toString();
+const BASELINE_DATE = new Date('2001-01-01T00:00:00.000Z');
 
-export const mockParameters = async (mockttp: Mockttp, queueName: string) => {
+export const mockLastUpdateSeenParameter = async (
+  mockttp: Mockttp,
+  lastUpdateSeen: Date,
+) => {
+  const lastUpdateSeenIso = lastUpdateSeen.toISOString();
   await mockSsmParameters(mockttp, [
     {
       name: `/${process.env.NODE_ENV}/hrm/custom-integration/uscr/${ACCOUNT_SID}/latest_beacon_update_seen`,
-      valueGenerator: () => queueName,
+      valueGenerator: () => lastUpdateSeenIso,
     },
   ]);
+};
+
+type IncidentReport = {
+  lastUpdated: string;
+};
+let mockedBeaconEndpoint: MockedEndpoint;
+
+const generateIncidentReports = (
+  numberToGenerate: number,
+  intervalInHours: number,
+  start: Date = BASELINE_DATE,
+): IncidentReport[] => {
+  const response = [];
+  for (let i = 0; i < numberToGenerate; i++) {
+    response.push({
+      lastUpdated: addHours(start, i * intervalInHours).toISOString(),
+    });
+  }
+  return response;
+};
+
+let beaconMockPriority = 0;
+
+export const mockBeacon = async (
+  mockttp: Mockttp,
+  response: IncidentReport[],
+): Promise<MockedEndpoint> => {
+  process.env.BEACON_URL = `http://localhost:${mockttp.port}/mock-beacon`;
+  console.log(
+    `Mocking beacon endpoint: GET ${process.env.BEACON_URL} to respond with:`,
+    response,
+  );
+  return mockttp
+    .forGet(process.env.BEACON_URL!)
+    .always()
+    .asPriority(beaconMockPriority++)
+    .thenJson(200, response, BEACON_RESPONSE_HEADERS);
 };
 
 afterAll(async () => {
@@ -36,14 +83,31 @@ afterAll(async () => {
 
 beforeAll(async () => {
   await mockingProxy.start();
+  mockedBeaconEndpoint = await mockBeacon(await mockingProxy.mockttpServer(), []);
 });
 
 beforeEach(async () => {
-  await mockParameters(await mockingProxy.mockttpServer(), 'queue-url');
+  await mockLastUpdateSeenParameter(
+    await mockingProxy.mockttpServer(),
+    subDays(BASELINE_DATE, 1),
+  );
 });
 
 describe('Beacon Polling Service - polling logic', () => {
   test("Returns less than the maximum records - doesn't query again", async () => {
+    mockedBeaconEndpoint = await mockBeacon(
+      await mockingProxy.mockttpServer(),
+      generateIncidentReports(4, 1),
+    );
     await handler();
+    const beaconRequests = await mockedBeaconEndpoint.getSeenRequests();
+    expect(beaconRequests.length).toBe(1);
+
+    expect(beaconRequests[0].url).toBe(
+      `${process.env.BEACON_URL}?updatedAfter=${subDays(
+        BASELINE_DATE,
+        1,
+      ).toISOString()}&max=${MAX_INCIDENT_REPORTS_PER_CALL}`,
+    );
   });
 });
