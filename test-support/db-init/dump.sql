@@ -755,8 +755,31 @@ ALTER TABLE ONLY public."CaseSections"
 ALTER TABLE ONLY public."Contacts"
     ADD CONSTRAINT "Contacts_caseId_fkey" FOREIGN KEY ("caseId") REFERENCES public."Cases"(id) ON UPDATE CASCADE ON DELETE SET NULL;
 
+-- Resources
+
+
+
 
 --
 -- PostgreSQL database dump complete
 --
+DO
+$do$
+BEGIN
+   IF EXISTS (
+      SELECT FROM pg_catalog.pg_roles
+      WHERE  rolname = 'resources') THEN
 
+      RAISE NOTICE 'Role "resources" already exists. Skipping.';
+    ELSE
+    BEGIN   -- nested block
+        CREATE USER resources WITH PASSWORD 'postgres' VALID UNTIL 'infinity';
+        EXCEPTION
+                 WHEN duplicate_object THEN
+                    RAISE NOTICE 'Role "resources" was just created by a concurrent transaction. Skipping.';
+        GRANT CONNECT, CREATE ON DATABASE hrmdb TO resources;
+    END;
+    END IF;
+END
+$do$;
+CREATE SCHEMA IF NOT EXISTS resources AUTHORIZATION resources;

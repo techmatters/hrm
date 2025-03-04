@@ -25,8 +25,8 @@ import { isBefore } from 'date-fns';
 
 import {
   mockingProxy,
-  mockSsmParameters,
   mockSuccessfulTwilioAuthentication,
+  mockAllSns,
 } from '@tech-matters/testing';
 import * as mocks from '../mocks';
 import { ALWAYS_CAN, casePopulated } from '../mocks';
@@ -42,8 +42,10 @@ import {
 import { pick } from 'lodash';
 import { clearAllTables } from '../dbCleanup';
 import { setupTestQueues } from '../sqs';
+import { mockEntitySnsParameters } from '../../ssm';
 
 const SEARCH_INDEX_SQS_QUEUE_NAME = 'mock-search-index-queue';
+const ENTITY_SNS_TOPIC_NAME = 'mock-entity-sns-topic';
 
 useOpenRules();
 const publicServer = getServer();
@@ -64,12 +66,12 @@ beforeEach(async () => {
   await mockingProxy.start();
   await mockSuccessfulTwilioAuthentication(workerSid);
   const mockttp = await mockingProxy.mockttpServer();
-  await mockSsmParameters(mockttp, [
-    {
-      pathPattern: /.*\/queue-url-consumer$/,
-      valueGenerator: () => SEARCH_INDEX_SQS_QUEUE_NAME,
-    },
-  ]);
+  await mockEntitySnsParameters(
+    mockttp,
+    SEARCH_INDEX_SQS_QUEUE_NAME,
+    ENTITY_SNS_TOPIC_NAME,
+  );
+  await mockAllSns(mockttp);
   cases.blank = await caseApi.createCase(case1, accountSid, workerSid, undefined, true);
   cases.populated = await caseApi.createCase(
     casePopulated,
