@@ -18,7 +18,8 @@ import { getSsmParameter } from '@tech-matters/ssm-cache';
 import { newErr, newOk } from '@tech-matters/types';
 
 export type PendingIncident = {
-  incident_id: number;
+  id: number;
+  case_id: number;
   contact_id: string;
   description: string;
   address: string;
@@ -36,17 +37,19 @@ type CreateIncidentResponse = {
 } & ({ status: 'success' } | { status: 'exists'; message: string });
 
 export type CreateIncidentParams = {
-  incident_class_id: number;
   contact_id: string;
-  case_id: string;
+  case_id: number;
   caller_name: string;
   caller_number: string;
   description: string;
   address: string;
   category_id: number;
-  requestor_call_back: boolean;
+  incident_class_id: number;
+  requestor_call_back: 'Y' | 'N'; //boolean;
   person_demographics: {
-    name: string;
+    first_name: string;
+    last_name: string;
+    nick_name: string;
     age: string;
     gender: string;
     race: string;

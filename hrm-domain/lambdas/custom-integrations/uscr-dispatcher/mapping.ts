@@ -26,18 +26,21 @@ export const toCreateIncident = ({
 }): CreateIncidentParams => {
   const params: CreateIncidentParams = {
     contact_id: contact.id.toString(),
-    case_id: caseObj.id.toString(),
+    case_id: caseObj.id,
     description: contact.rawJson?.childInformation?.incidentSummary as string,
     address: contact.rawJson?.childInformation?.specificLocation as string,
     caller_name: contact.rawJson?.callerInformation?.friendlyName as string,
     caller_number: contact.rawJson?.callerInformation?.phone as string,
-    requestor_call_back: contact.rawJson?.callerInformation?.callbackRequested as boolean,
+    requestor_call_back: (contact.rawJson?.callerInformation
+      ?.callbackRequested as boolean)
+      ? 'Y'
+      : 'N',
     person_demographics: {
+      first_name: contact.rawJson?.childInformation?.firstName as string,
+      last_name: contact.rawJson?.childInformation?.lastName as string,
+      nick_name: contact.rawJson?.childInformation?.nickname as string,
       age: contact.rawJson?.childInformation?.age as string,
       gender: contact.rawJson?.childInformation?.gender as string,
-      name:
-        (contact.rawJson?.childInformation?.firstName as string) +
-        contact.rawJson?.childInformation?.lastName,
       race: contact.rawJson?.childInformation?.race as string,
     },
     category_id: 123,

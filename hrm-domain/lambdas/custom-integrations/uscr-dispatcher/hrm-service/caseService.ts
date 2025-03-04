@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import type { CaseService } from '@tech-matters/hrm-types';
+import type { CaseService, CaseSection } from '@tech-matters/hrm-types';
 import { callHrmApi } from '@tech-matters/hrm-authentication';
 import { isErr, newErr } from '@tech-matters/types';
 
@@ -122,6 +122,47 @@ export const deleteCase = async ({
   } catch (err) {
     return newErr({
       error: 'deleteCase error: ',
+      message: `Unexpected error ${err instanceof Error ? err.message : String(err)}`,
+    });
+  }
+};
+
+export const createCaseSection = async ({
+  accountSid,
+  caseId,
+  sectionType,
+  sectionTypeSpecificData,
+  token,
+}: {
+  accountSid: string;
+  caseId: string;
+  sectionType: CaseSection['sectionType'];
+  sectionTypeSpecificData: CaseSection['sectionTypeSpecificData'];
+  token: string;
+}) => {
+  try {
+    const urlPath = `v0/accounts/${accountSid}/cases/${caseId}/sections/${sectionType}`;
+
+    const authHeader = `Bearer ${token}`;
+
+    const result = await callHrmApi<CaseSection>({
+      urlPath,
+      authHeader,
+      method: 'POST',
+      body: JSON.stringify({ sectionTypeSpecificData }),
+    });
+
+    if (isErr(result)) {
+      return newErr({
+        error: `createCaseSection error: ${result.error} `,
+        message: result.message,
+      });
+    }
+
+    return result;
+  } catch (err) {
+    return newErr({
+      error: 'createCaseSection error: ',
       message: `Unexpected error ${err instanceof Error ? err.message : String(err)}`,
     });
   }

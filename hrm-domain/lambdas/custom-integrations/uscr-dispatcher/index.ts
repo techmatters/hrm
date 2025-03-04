@@ -14,7 +14,6 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-// eslint-disable-next-line prettier/prettier
 import type { ALBEvent, ALBResult } from 'aws-lambda';
 import { isErr } from '@tech-matters/types';
 import { validateEnvironment, validateHeaders, validatePayload } from './validation';
@@ -59,6 +58,7 @@ export const handler = async (event: ALBEvent): Promise<ALBResult> => {
       return { statusCode: 401 };
     }
 
+    // Get (or create) case associated with the contact so we can track the incident being reported
     const createCaseResult = await hrmService.getOrCreateCase({
       accountSid: payloadResult.data.accountSid,
       casePayload: payloadResult.data.casePayload,
@@ -75,10 +75,15 @@ export const handler = async (event: ALBEvent): Promise<ALBResult> => {
 
     logger({ message: JSON.stringify(createCaseResult), severity: 'info' });
 
-    // sectionType(pin):"incidentReport"
-    // TODO:
-    // - if section exists, do nothing.
-    // - if not exists, create the incident, then create a "blank" section for it
+    // Case already contains a corresponding case entry section, we asume the incident has been created but something went wrong updating HRM. Poller will eventually bring consitency to this case
+    if (hrmService.hasIncidentCaseSection(caseObj)) {
+      logger({ message: 'case already has associated incident', severity: 'info' });
+      return {
+        statusCode: 200,
+      };
+    }
+
+    // Case does not contains a corresponding case entry section, we assume the incident was never reported (this can only happen if Beacon responded with an error)
     const createIncidentResult = await beaconService.createIncident({
       environment: envResult.data.environment,
       incidentParams: mapping.toCreateIncident({
@@ -94,7 +99,21 @@ export const handler = async (event: ALBEvent): Promise<ALBResult> => {
 
     logger({ message: JSON.stringify(createIncidentResult), severity: 'info' });
 
-    logger({ message: 'succesful execution', severity: 'info' });
+    // Create incident case section to mark this case as "already reported"
+    const createSectionResult = await hrmService.createIncidentCaseSection({
+      accountSid: payloadResult.data.accountSid,
+      beaconIncidentId: createIncidentResult.data.pending_incident.id,
+      caseId: caseObj.id.toString(),
+      token: authResult.data.token,
+    });
+    if (isErr(createSectionResult)) {
+      // TODO: delete the case section corresponding to the empty incident
+      const message = createSectionResult.error + createSectionResult.message;
+      logger({ message, severity: 'error' });
+      return { statusCode: 500 };
+    }
+
+    logger({ message: 'new incident reported', severity: 'info' });
     return {
       statusCode: 200,
     };

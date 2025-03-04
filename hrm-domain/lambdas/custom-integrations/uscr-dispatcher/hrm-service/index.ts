@@ -15,10 +15,11 @@
  */
 
 import type { CaseService, Contact } from '@tech-matters/hrm-types';
-import { createCase, deleteCase, getCase } from './caseService';
+import { createCase, createCaseSection, getCase } from './caseService';
 import { connectToCase, getContact } from './contactService';
 import { isErr, newErr, newOk, TResult } from '@tech-matters/types';
 import { logger } from '../logger';
+import { PendingIncident } from '../beacon-service';
 
 export const getOrCreateCase = async ({
   accountSid,
@@ -31,21 +32,38 @@ export const getOrCreateCase = async ({
   contactId: string;
   token: string;
 }): Promise<TResult<string, { caseObj: CaseService; contact: Contact }>> => {
-  // get contact and check for existence of an associated case
-  const contactResult = await getContact({ accountSid, contactId, token });
-  if (isErr(contactResult)) {
-    return newErr({
-      error: `createAndConnectCase: ${contactResult.error}`,
-      message: contactResult.message,
-    });
-  }
+  try {
+    // get contact and check for existence of an associated case
+    const contactResult = await getContact({ accountSid, contactId, token });
+    if (isErr(contactResult)) {
+      return newErr({
+        error: `getOrCreateCase: ${contactResult.error}`,
+        message: contactResult.message,
+      });
+    }
 
-  if (contactResult.data.caseId) {
-    const caseResult = await getCase({
-      accountSid,
-      caseId: contactResult.data.caseId.toString(),
-      token,
-    });
+    if (contactResult.data.caseId) {
+      const caseResult = await getCase({
+        accountSid,
+        caseId: contactResult.data.caseId.toString(),
+        token,
+      });
+      if (isErr(caseResult)) {
+        return newErr({
+          error: `getOrCreateCase: ${caseResult.error}`,
+          message: caseResult.message,
+        });
+      }
+
+      logger({ message: `Case exists: ${JSON.stringify(caseResult)}`, severity: 'info' });
+
+      return newOk({
+        data: { caseObj: caseResult.data, contact: contactResult.data },
+      });
+    }
+
+    // no case associated, create and associate one
+    const caseResult = await createCase({ accountSid, casePayload, token });
     if (isErr(caseResult)) {
       return newErr({
         error: `createAndConnectCase: ${caseResult.error}`,
@@ -53,51 +71,81 @@ export const getOrCreateCase = async ({
       });
     }
 
-    // TODO: check if incident has already been dispatched. While Beacon idempotence on contact id should prevent this scenario, won't harm having it here too
-    logger({ message: `Case exists: ${JSON.stringify(caseResult)}`, severity: 'info' });
+    logger({ message: `Case created: ${JSON.stringify(caseResult)}`, severity: 'info' });
 
-    return newOk({
-      data: { caseObj: caseResult.data, contact: contactResult.data },
-    });
-  }
+    const caseObj = caseResult.data;
+    const caseId = caseObj.id.toString();
 
-  // no case associated, create and associate one
-  const caseResult = await createCase({ accountSid, casePayload, token });
-  if (isErr(caseResult)) {
-    return newErr({
-      error: `createAndConnectCase: ${caseResult.error}`,
-      message: caseResult.message,
-    });
-  }
-
-  logger({ message: `Case created: ${JSON.stringify(caseResult)}`, severity: 'info' });
-
-  const caseObj = caseResult.data;
-  const caseId = caseObj.id.toString();
-
-  const connectedResult = await connectToCase({
-    accountSid,
-    caseId,
-    contactId,
-    token,
-  });
-  if (isErr(connectedResult)) {
-    const deleteResult = await deleteCase({
+    const connectedResult = await connectToCase({
       accountSid,
       caseId,
+      contactId,
       token,
     });
+    if (isErr(connectedResult)) {
+      // TODO: not sure this is even needed
+      // const deleteResult = await deleteCase({
+      //   accountSid,
+      //   caseId,
+      //   token,
+      // });
+      // if (isErr(deleteResult)) {
+      //   const message = deleteResult.error + deleteResult.message;
+      //   logger({ message, severity: 'error' });
+      // }
 
-    if (isErr(deleteResult)) {
-      const message = deleteResult.error + deleteResult.message;
-      logger({ message, severity: 'error' });
+      return newErr({
+        error: `createAndConnectCase: ${connectedResult.error}`,
+        message: connectedResult.message,
+      });
     }
 
+    return newOk({ data: { caseObj, contact: connectedResult.data } });
+  } catch (err) {
     return newErr({
-      error: `createAndConnectCase: ${connectedResult.error}`,
-      message: connectedResult.message,
+      error: 'getOrCreateCase error: ',
+      message: `Unexpected error ${err instanceof Error ? err.message : String(err)}`,
     });
   }
-
-  return newOk({ data: { caseObj, contact: connectedResult.data } });
 };
+
+export const createIncidentCaseSection = async ({
+  accountSid,
+  beaconIncidentId,
+  caseId,
+  token,
+}: {
+  accountSid: string;
+  beaconIncidentId: PendingIncident['id'];
+  caseId: string;
+  token: string;
+}) => {
+  try {
+    const sectionType = 'incidentReport';
+    const sectionTypeSpecificData = { beaconIncidentId };
+
+    const createSectionResult = await createCaseSection({
+      accountSid,
+      caseId,
+      sectionType,
+      sectionTypeSpecificData,
+      token,
+    });
+    if (isErr(createSectionResult)) {
+      return newErr({
+        error: `createIncidentCaseSection: ${createSectionResult.error}`,
+        message: createSectionResult.message,
+      });
+    }
+
+    return newOk({ data: { caseSection: createSectionResult.data } });
+  } catch (err) {
+    return newErr({
+      error: 'createIncidentCaseSection error: ',
+      message: `Unexpected error ${err instanceof Error ? err.message : String(err)}`,
+    });
+  }
+};
+
+export const hasIncidentCaseSection = (caseObj: CaseService) =>
+  Boolean(caseObj.sections.incidentReport && caseObj.sections.incidentReport.length);
