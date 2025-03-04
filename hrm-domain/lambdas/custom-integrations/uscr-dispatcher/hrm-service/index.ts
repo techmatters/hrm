@@ -142,7 +142,9 @@ export const createIncidentCaseSection = async ({
   } catch (err) {
     return newErr({
       error: 'createIncidentCaseSection error: ',
-      message: `Unexpected error ${err instanceof Error ? err.message : String(err)}`,
+      message: `Unexpected error ${
+        err instanceof Error ? err.message : JSON.stringify(err)
+      }`,
     });
   }
 };
