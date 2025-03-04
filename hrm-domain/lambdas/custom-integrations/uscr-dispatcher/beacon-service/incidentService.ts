@@ -45,7 +45,7 @@ export type CreateIncidentParams = {
   address: string;
   category_id: number;
   incident_class_id: number;
-  requestor_call_back: 'Y' | 'N'; //boolean;
+  requestor_call_back: boolean;
   person_demographics: {
     first_name: string;
     last_name: string;

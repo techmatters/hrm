@@ -31,10 +31,7 @@ export const toCreateIncident = ({
     address: contact.rawJson?.childInformation?.specificLocation as string,
     caller_name: contact.rawJson?.callerInformation?.friendlyName as string,
     caller_number: contact.rawJson?.callerInformation?.phone as string,
-    requestor_call_back: (contact.rawJson?.callerInformation
-      ?.callbackRequested as boolean)
-      ? 'Y'
-      : 'N',
+    requestor_call_back: Boolean(contact.rawJson?.callerInformation?.callbackRequested),
     person_demographics: {
       first_name: contact.rawJson?.childInformation?.firstName as string,
       last_name: contact.rawJson?.childInformation?.lastName as string,
