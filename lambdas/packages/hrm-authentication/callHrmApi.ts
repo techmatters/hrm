@@ -55,7 +55,7 @@ const callHrmApi = async <T = any>({
     if (!response.ok) {
       const error = await response.json();
       return newErr({
-        message: String(error),
+        message: JSON.stringify(error),
         error: 'CallHrmApiError',
       });
     }
@@ -64,7 +64,7 @@ const callHrmApi = async <T = any>({
     return newOk({ data });
   } catch (err) {
     return newErr({
-      message: err instanceof Error ? err.message : String(err),
+      message: err instanceof Error ? err.message : JSON.stringify(err),
       error: 'CallHrmApiError',
     });
   }
