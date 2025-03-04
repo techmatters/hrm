@@ -19,6 +19,7 @@
   "scripts": {
     "docker:build": "docker build -t uscr-beacon-poller --build-arg lambda_name=uscr-beacon-poller --build-arg lambda_dir=hrm-domain/lambdas/custom-integrations -f ../../../../lambdas/Dockerfile ../../../../",
     "test:service:run": "jest --verbose --maxWorkers=1 --forceExit tests/service",
-    "test:service": "cd tests/service && docker compose up -d && npm run test:service:run && docker compose down"
+    "test:service": "cd tests/service && docker compose up -d && npm run test:service:run && docker compose down",
+    "test:service:ci": "npm run test:service"
   }
 }

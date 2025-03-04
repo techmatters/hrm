@@ -42,7 +42,7 @@ import {
 import { pick } from 'lodash';
 import { clearAllTables } from '../dbCleanup';
 import { setupTestQueues } from '../sqs';
-import { mockEntitySnsParameters } from '../../ssm';
+import { mockEntitySnsParameters } from '../ssm';
 
 const SEARCH_INDEX_SQS_QUEUE_NAME = 'mock-search-index-queue';
 const ENTITY_SNS_TOPIC_NAME = 'mock-entity-sns-topic';
