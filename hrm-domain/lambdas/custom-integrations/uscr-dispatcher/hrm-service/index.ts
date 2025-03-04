@@ -15,7 +15,7 @@
  */
 
 import type { CaseService, Contact } from '@tech-matters/hrm-types';
-import { createCase, createCaseSection, getCase } from './caseService';
+import { createCase, upsertCaseSection, getCase } from './caseService';
 import { connectToCase, getContact } from './contactService';
 import { isErr, newErr, newOk, TResult } from '@tech-matters/types';
 import { logger } from '../logger';
@@ -124,9 +124,10 @@ export const createIncidentCaseSection = async ({
     const sectionType = 'incidentReport';
     const sectionTypeSpecificData = { beaconIncidentId };
 
-    const createSectionResult = await createCaseSection({
+    const createSectionResult = await upsertCaseSection({
       accountSid,
       caseId,
+      sectionId: beaconIncidentId.toString(),
       sectionType,
       sectionTypeSpecificData,
       token,

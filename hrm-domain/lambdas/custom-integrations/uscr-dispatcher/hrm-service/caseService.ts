@@ -127,28 +127,30 @@ export const deleteCase = async ({
   }
 };
 
-export const createCaseSection = async ({
+export const upsertCaseSection = async ({
   accountSid,
   caseId,
+  sectionId,
   sectionType,
   sectionTypeSpecificData,
   token,
 }: {
   accountSid: string;
   caseId: string;
+  sectionId: CaseSection['sectionId'];
   sectionType: CaseSection['sectionType'];
   sectionTypeSpecificData: CaseSection['sectionTypeSpecificData'];
   token: string;
 }) => {
   try {
-    const urlPath = `v0/accounts/${accountSid}/cases/${caseId}/sections/${sectionType}`;
+    const urlPath = `v0/accounts/${accountSid}/cases/${caseId}/sections/${sectionType}/${sectionId}`;
 
     const authHeader = `Bearer ${token}`;
 
     const result = await callHrmApi<CaseSection>({
       urlPath,
       authHeader,
-      method: 'POST',
+      method: 'PUT',
       body: { sectionTypeSpecificData },
     });
 
