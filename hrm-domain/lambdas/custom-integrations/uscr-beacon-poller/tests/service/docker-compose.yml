@@ -37,6 +37,7 @@ services:
       POSTGRES_PORT: 5432
       RDS_HOSTNAME: db
       HRM_RUN_MIGRATIONS: 'true'
+      RESOURCES_CREATE_SCHEMA: 'true'
       RESOURCES_PASSWORD: postgres
 
     env_file:

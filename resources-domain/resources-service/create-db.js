@@ -18,8 +18,8 @@ require('dotenv').config();
 
 const pgPromise = require('pg-promise');
 
-resourceUsername = process.env.RESOURCES_USERNAME || 'resources';
-resourcePassword = process.env.RESOURCES_PASSWORD || null;
+const resourceUsername = process.env.RESOURCES_USERNAME || 'resources';
+const resourcePassword = process.env.RESOURCES_PASSWORD || null;
 const config = {
   username: process.env.RDS_USERNAME || 'hrm',
   password: process.env.RDS_PASSWORD || null,
@@ -37,9 +37,9 @@ async function create() {
   const timeoutPoint = Date.now() + CONNECT_ATTEMPT_SECONDS * 1000;
 
   const createUserConnection = pgp(
-    `postgres://${encodeURIComponent(config.username)}:${encodeURIComponent(
-      config.password,
-    )}@${config.host}:${config.port}/${encodeURIComponent(
+    `postgres://${encodeURIComponent(config.username)}${
+      config.password ? `:${encodeURIComponent(config.password)}` : ''
+    }@${config.host}:${config.port}/${encodeURIComponent(
       config.database,
     )}?&application_name=resources-db-create-script`,
   );
@@ -76,9 +76,9 @@ async function create() {
   }
 
   const createSchemaConnection = pgp(
-    `postgres://${encodeURIComponent(resourceUsername)}:${encodeURIComponent(
-      resourcePassword,
-    )}@${config.host}:${config.port}/${encodeURIComponent(
+    `postgres://${encodeURIComponent(resourceUsername)}${
+      config.password ? `:${encodeURIComponent(config.password)}` : ''
+    }@${config.host}:${config.port}/${encodeURIComponent(
       config.database,
     )}?&application_name=resources-db-create-script`,
   );

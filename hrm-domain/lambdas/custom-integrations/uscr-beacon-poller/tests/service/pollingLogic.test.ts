@@ -19,6 +19,7 @@ import { Mockttp } from 'mockttp';
 import { mockingProxy, mockSsmParameters } from '@tech-matters/testing';
 
 const ACCOUNT_SID = 'ACservicetest';
+process.env.BEACON_URL = 'http://google.com';
 
 export const mockParameters = async (mockttp: Mockttp, queueName: string) => {
   await mockSsmParameters(mockttp, [
