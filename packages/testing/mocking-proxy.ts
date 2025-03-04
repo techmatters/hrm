@@ -35,9 +35,9 @@ export async function start(allowPassThrough = false): Promise<void> {
   const server = await mockttpServer();
   try {
     await server.stop();
+    console.warn('Mockttp server was already running, this could be a smell.');
   } catch (e) {
     // Ignore error
-    console.warn('Error stopping mockttp server', e);
   }
   await server.start();
   console.log('STARTED ENDPOINT SERVER');

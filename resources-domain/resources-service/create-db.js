@@ -77,7 +77,7 @@ async function create() {
 
   const createSchemaConnection = pgp(
     `postgres://${encodeURIComponent(resourceUsername)}${
-      config.password ? `:${encodeURIComponent(config.password)}` : ''
+      resourcePassword ? `:${encodeURIComponent(resourcePassword)}` : ''
     }@${config.host}:${config.port}/${encodeURIComponent(
       config.database,
     )}?&application_name=resources-db-create-script`,

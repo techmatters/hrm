@@ -16,13 +16,14 @@
 
 // eslint-disable-next-line import/no-extraneous-dependencies,prettier/prettier
 import type { Mockttp } from 'mockttp';
+import { randomUUID } from 'node:crypto';
 
 export const mockAllSns = async (mockttp: Mockttp) => {
   await mockttp
     .forPost(/http:\/\/mock-sns(.*)/)
     .always()
     .thenJson(200, {
-      MessageId: 'mocked',
+      MessageId: randomUUID(),
     });
   console.info('Mocked SNS on mock-ssm');
 };

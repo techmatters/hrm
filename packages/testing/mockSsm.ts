@@ -51,7 +51,7 @@ export const mockSsmParameters = async (
     .forPost(/http:\/\/mock-ssm(.*)/)
     .always()
     .thenCallback(async req => {
-      if (req.headers['x-amz-target'] !== 'AmazonSSM.PutParameter') {
+      if (req.headers['x-amz-target'] === 'AmazonSSM.PutParameter') {
         const { Name, Value } = (await req.body.getJson()) as {
           Name: string;
           Value: string;
