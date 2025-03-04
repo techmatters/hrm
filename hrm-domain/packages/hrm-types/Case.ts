@@ -91,7 +91,7 @@ export const WELL_KNOWN_CASE_SECTION_NAMES = {
 type PrecalculatedPermissions = Record<'userOwnsContact', boolean>;
 
 type CaseSectionsMap = {
-  [k in (typeof WELL_KNOWN_CASE_SECTION_NAMES)[keyof typeof WELL_KNOWN_CASE_SECTION_NAMES]['sectionTypeName']]?: CaseSection[];
+  [sectionType: string]: CaseSection[];
 };
 
 export type CaseService = CaseRecordCommon & {
