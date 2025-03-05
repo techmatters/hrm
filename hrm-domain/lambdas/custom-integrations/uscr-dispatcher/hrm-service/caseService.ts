@@ -130,12 +130,14 @@ export const deleteCase = async ({
 export const createCaseSection = async ({
   accountSid,
   caseId,
+  sectionId,
   sectionType,
   sectionTypeSpecificData,
   token,
 }: {
   accountSid: string;
   caseId: string;
+  sectionId: CaseSection['sectionId'];
   sectionType: CaseSection['sectionType'];
   sectionTypeSpecificData: CaseSection['sectionTypeSpecificData'];
   token: string;
@@ -149,7 +151,7 @@ export const createCaseSection = async ({
       urlPath,
       authHeader,
       method: 'POST',
-      body: { sectionTypeSpecificData },
+      body: { sectionTypeSpecificData, sectionId },
     });
 
     if (isErr(result)) {

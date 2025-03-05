@@ -127,6 +127,7 @@ export const createIncidentCaseSection = async ({
     const createSectionResult = await createCaseSection({
       accountSid,
       caseId,
+      sectionId: beaconIncidentId.toString(),
       sectionType,
       sectionTypeSpecificData,
       token,
