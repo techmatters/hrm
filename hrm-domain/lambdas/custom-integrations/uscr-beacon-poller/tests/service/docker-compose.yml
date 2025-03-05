@@ -30,21 +30,6 @@ services:
 
     ports:
       - '127.0.0.1:5433:5432'
-
-  job-processor:
-    image: hrm-service
-    environment:
-      POSTGRES_PORT: 5432
-      RDS_HOSTNAME: db
-      HRM_RUN_MIGRATIONS: 'false'
-      RESOURCES_CREATE_SCHEMA: 'true'
-      RESOURCES_PASSWORD: postgres
-
-    env_file:
-      - ./.env.service-test
-    depends_on:
-      - db
-
   service:
     image: hrm-service
     ports:
@@ -52,6 +37,7 @@ services:
       - '127.0.0.1:3001:3001'
 
     environment:
+      POSTGRES_PORT: 5432
       RDS_HOSTNAME: db
       RESOURCES_PASSWORD: postgres
 
@@ -59,4 +45,4 @@ services:
       - ./.env.service-test
 
     depends_on:
-      - job-processor
+      - db

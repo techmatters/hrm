@@ -52,24 +52,23 @@ const generateCases = (numberToGenerate: number): Promise<number[]> => {
     Array(numberToGenerate)
       .fill(0)
       .map(async () => {
-        const dbCase = await db.one(`INSERT INTO public."Cases" (  "accountSid",
-            "info",
-            "helpline",
-            "status",
-            "twilioWorkerId",
-            "createdBy",
-            "createdAt",
-           "updatedBy",
-           "updatedAt") VALUES 
-            ('${ACCOUNT_SID}', '{}'::JSONB, '', 'open', 'WKfake', 'WKfake', '${new Date().toISOString()}', 'WKfake', '${new Date().toISOString()}') RETURNING *`);
-
         const newCaseResponse = await fetch(
-          `${process.env.INTERNAL_HRM_URL}/internal/v0/accounts/${ACCOUNT_SID}/cases/${dbCase.id}/sections`,
+          `${process.env.INTERNAL_HRM_URL}/internal/v0/accounts/${ACCOUNT_SID}/cases`,
           { method: 'POST', body: JSON.stringify({}), headers: HRM_REQUEST_HEADERS },
         );
-        const newCase = await newCaseResponse.json();
+        const newCase: any = await newCaseResponse.json();
         console.debug('Generated case:', newCase);
-        return parseInt((newCase as any).id);
+        const newSectionResponse = await fetch(
+          `${process.env.INTERNAL_HRM_URL}/internal/v0/accounts/${ACCOUNT_SID}/cases/${newCase.id}/sections/incidentReport`,
+          {
+            method: 'POST',
+            body: JSON.stringify({ sectionId: 'existing', sectionTypeSpecificData: {} }),
+            headers: HRM_REQUEST_HEADERS,
+          },
+        );
+        const newSection: any = await newSectionResponse.json();
+        console.debug('Generated section:', newSection);
+        return parseInt(newCase.id);
       }),
   );
 };
