@@ -30,7 +30,7 @@ import internalContacts from './contact/internalContactRoutesV0';
 import { Permissions } from './permissions';
 import internalProfiles from './profile/internalProfileRoutesV0';
 
-// Need to create these first, ordering is important
+// Need to create these first - the route handlers don't activate if they are instantiated just in time
 const publicCases = cases(true);
 const internalCases = cases(false);
 
