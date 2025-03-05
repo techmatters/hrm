@@ -134,7 +134,6 @@ beforeAll(async () => {
   await mockingProxy.start();
   mockedBeaconEndpoint = await mockBeacon(await mockingProxy.mockttpServer(), []);
   await mockLastUpdateSeenParameter(await mockingProxy.mockttpServer());
-  await new Promise(resolve => setTimeout(resolve, 60000));
 });
 
 beforeEach(async () => {
