@@ -88,6 +88,13 @@ const newCaseRouter = (isPublic: boolean) => {
     },
   );
 
+  casesRouter.post('/', openEndpoint, async (req, res) => {
+    const { hrmAccountId, user } = req;
+    const createdCase = await caseApi.createCase(req.body, hrmAccountId, user.workerSid);
+
+    res.json(createdCase);
+  });
+
   casesRouter.expressRouter.use('/:caseId/sections', caseSectionRoutesV0(isPublic));
 
   // Public only endpoints
@@ -155,18 +162,6 @@ const newCaseRouter = (isPublic: boolean) => {
       );
       res.json(cases);
     });
-
-    casesRouter.post('/', openEndpoint, async (req, res) => {
-      const { hrmAccountId, user } = req;
-      const createdCase = await caseApi.createCase(
-        req.body,
-        hrmAccountId,
-        user.workerSid,
-      );
-
-      res.json(createdCase);
-    });
-
     casesRouter.get('/:id', canViewCase, async (req, res) => {
       const { hrmAccountId, permissions, can, user } = req;
       const { id } = req.params;

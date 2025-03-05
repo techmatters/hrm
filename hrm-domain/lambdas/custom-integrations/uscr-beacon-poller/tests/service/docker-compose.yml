@@ -28,8 +28,8 @@ services:
 
     command: ['postgres', '-c', 'log_statement=all']
 
-    expose:
-      - '5433:5432'
+    ports:
+      - '127.0.0.1:5433:5432'
 
   job-processor:
     image: hrm-service
@@ -48,8 +48,8 @@ services:
   service:
     image: hrm-service
     ports:
-      - '3000:3000'
-      - '3001:3001'
+      - '127.0.0.1:3000:3000'
+      - '127.0.0.1:3001:3001'
 
     environment:
       RDS_HOSTNAME: db
