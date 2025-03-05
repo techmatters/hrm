@@ -14,6 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
+// eslint-disable-next-line import/no-extraneous-dependencies
 import pgPromise from 'pg-promise';
 
 export const pgp = pgPromise({});

@@ -42,15 +42,3 @@ export const clearAllTables = async (db: IDatabase<unknown>) => {
     throw err;
   }
 };
-
-export const waitForDb = async (db: IDatabase<unknown>) => {
-  while (true) {
-    try {
-      const {} = await db.one('SELECT 1');
-      return;
-    } catch (err) {
-      console.error('Database not ready, retrying in 1s');
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    }
-  }
-};
