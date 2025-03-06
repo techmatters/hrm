@@ -17,12 +17,16 @@
 import { getSsmParameter, putSsmParameter } from '@tech-matters/ssm-cache';
 
 const accountSid = process.env.ACCOUNT_SID;
-const staticKey = process.env.STATIC_KEY;
+const hrmHeaders = {
+  Authorization: `Basic ${process.env.STATIC_KEY}`,
+  'Content-Type': 'application/json',
+};
 const lastUpdateSeenSsmKey = `/${process.env.NODE_ENV}/hrm/custom-integration/uscr/${accountSid}/latest_beacon_update_seen`;
 
 export type IncidentReport = {
   lastUpdated: string;
   caseId: string;
+  incidentReportId: string;
 };
 
 const processIncidentReportBatch = async (
@@ -31,27 +35,27 @@ const processIncidentReportBatch = async (
 ): Promise<string> => {
   let updatedLastSeen = lastSeen;
   try {
-    for (const incident of incidents) {
-      console.debug('Start processing incident:', incident.lastUpdated);
+    for (const { lastUpdated, caseId, incidentReportId } of incidents) {
+      console.debug('Start processing incident report:', lastUpdated);
       // Do something on the internal HRM API - will return a 404
-      const hrmResponse = await fetch(
-        `${process.env.INTERNAL_HRM_URL}/internal/v0/accounts/${accountSid}/profiles/identifier/1234/flags`,
+
+      const newSectionResponse = await fetch(
+        `${process.env.INTERNAL_HRM_URL}/internal/v0/accounts/${accountSid}/cases/${caseId}/sections/incidentReport`,
         {
-          method: 'GET',
-          headers: {
-            Authorization: `Basic ${staticKey}`,
-          },
+          method: 'POST',
+          body: JSON.stringify({
+            sectionId: incidentReportId,
+            sectionTypeSpecificData: {},
+          }),
+          headers: hrmHeaders,
         },
       );
-      console.debug(
-        'HRM API responded with status:',
-        hrmResponse.status,
-        await hrmResponse.text(),
-      );
-      updatedLastSeen = incident.lastUpdated;
+      const newSection: any = await newSectionResponse.json();
+      console.debug(`Added new case section to case ${caseId}:`, newSection);
+      updatedLastSeen = lastUpdated;
     }
   } catch (error) {
-    console.error('Error processing incident, abandoning batch:', error);
+    console.error('Error processing incident report, abandoning batch:', error);
   }
   return updatedLastSeen;
 };

@@ -58,16 +58,6 @@ const generateCases = (numberToGenerate: number): Promise<number[]> => {
         );
         const newCase: any = await newCaseResponse.json();
         console.debug('Generated case:', newCase);
-        const newSectionResponse = await fetch(
-          `${process.env.INTERNAL_HRM_URL}/internal/v0/accounts/${ACCOUNT_SID}/cases/${newCase.id}/sections/incidentReport`,
-          {
-            method: 'POST',
-            body: JSON.stringify({ sectionId: 'existing', sectionTypeSpecificData: {} }),
-            headers: HRM_REQUEST_HEADERS,
-          },
-        );
-        const newSection: any = await newSectionResponse.json();
-        console.debug('Generated section:', newSection);
         return parseInt(newCase.id);
       }),
   );
@@ -83,9 +73,12 @@ const generateIncidentReports = (
 ): IncidentReport[] => {
   const response = [];
   for (let i = 0; i < numberToGenerate; i++) {
+    const indexInCurrentIteration = i % caseIds.length;
+    const iteration = Math.floor(i / caseIds.length);
     response.push({
       lastUpdated: addHours(start, i * intervalInHours).toISOString(),
-      caseId: caseIds[i % caseIds.length].toString(),
+      caseId: caseIds[indexInCurrentIteration].toString(),
+      incidentReportId: `IR#${iteration}`,
     });
   }
   return response;
@@ -125,6 +118,24 @@ export const mockBeacon = async (
     }));
 };
 
+const verifyIncidentReportsForCase = async (
+  caseId: number,
+  expectedIncidentReportIds: string[],
+): Promise<void> => {
+  expectedIncidentReportIds.sort();
+  const records = await db.manyOrNone(
+    `SELECT "sectionId" FROM public."CaseSections" WHERE "accountSid" = $<accountSid> AND "caseId" = $<caseId> AND "sectionType" = 'incidentReport' ORDER BY "sectionId" ASC`,
+    {
+      caseId,
+      accountSid: ACCOUNT_SID,
+    },
+  );
+  expect(records.length).toBe(expectedIncidentReportIds.length);
+  records.forEach((r, idx) => {
+    expect(r.sectionId).toBe(expectedIncidentReportIds[idx]);
+  });
+};
+
 afterAll(async () => {
   await mockingProxy.stop();
 });
@@ -142,69 +153,90 @@ beforeEach(async () => {
     subDays(BASELINE_DATE, 1).toISOString(),
   );
 });
+describe('Beacon Polling Service', () => {
+  describe('Polling logic', () => {
+    test("Returns less than the maximum records - doesn't query again", async () => {
+      const caseIds = await generateCases(4);
+      mockedBeaconEndpoint = await mockBeacon(await mockingProxy.mockttpServer(), [
+        generateIncidentReports(4, 1, caseIds),
+      ]);
+      await handler();
+      const beaconRequests = await mockedBeaconEndpoint.getSeenRequests();
+      expect(beaconRequests.length).toBe(1);
 
-describe('Beacon Polling Service - polling logic', () => {
-  test("Returns less than the maximum records - doesn't query again", async () => {
-    const caseIds = await generateCases(4);
-    mockedBeaconEndpoint = await mockBeacon(await mockingProxy.mockttpServer(), [
-      generateIncidentReports(4, 1, caseIds),
-    ]);
-    await handler();
-    const beaconRequests = await mockedBeaconEndpoint.getSeenRequests();
-    expect(beaconRequests.length).toBe(1);
+      expect(beaconRequests[0].url).toBe(
+        `${process.env.BEACON_URL}?updatedAfter=${subDays(
+          BASELINE_DATE,
+          1,
+        ).toISOString()}&max=${MAX_INCIDENT_REPORTS_PER_CALL}`,
+      );
+    });
+    test('Returns the maximum records - queries again', async () => {
+      const caseIds = await generateCases(12);
+      mockedBeaconEndpoint = await mockBeacon(
+        await mockingProxy.mockttpServer(),
+        batchIncidentReports(
+          generateIncidentReports(12, 1, caseIds),
+          MAX_INCIDENT_REPORTS_PER_CALL,
+        ),
+      );
+      await handler();
+      const beaconRequests = await mockedBeaconEndpoint.getSeenRequests();
+      expect(beaconRequests.length).toBe(3);
 
-    expect(beaconRequests[0].url).toBe(
-      `${process.env.BEACON_URL}?updatedAfter=${subDays(
-        BASELINE_DATE,
-        1,
-      ).toISOString()}&max=${MAX_INCIDENT_REPORTS_PER_CALL}`,
-    );
+      expect(beaconRequests[0].url).toBe(
+        `${process.env.BEACON_URL}?updatedAfter=${subDays(
+          BASELINE_DATE,
+          1,
+        ).toISOString()}&max=${MAX_INCIDENT_REPORTS_PER_CALL}`,
+      );
+
+      expect(beaconRequests[1].url).toBe(
+        `${process.env.BEACON_URL}?updatedAfter=${addHours(
+          BASELINE_DATE,
+          4,
+        ).toISOString()}&max=${MAX_INCIDENT_REPORTS_PER_CALL}`,
+      );
+
+      expect(beaconRequests[2].url).toBe(
+        `${process.env.BEACON_URL}?updatedAfter=${addHours(
+          BASELINE_DATE,
+          9,
+        ).toISOString()}&max=${MAX_INCIDENT_REPORTS_PER_CALL}`,
+      );
+    });
+    test('Returns the maximum records for more than the maximum allowed number of queries in a polling sweep - stops querying', async () => {
+      const caseIds = await generateCases(30);
+      mockedBeaconEndpoint = await mockBeacon(
+        await mockingProxy.mockttpServer(),
+        batchIncidentReports(
+          generateIncidentReports(1000, 1, caseIds),
+          MAX_INCIDENT_REPORTS_PER_CALL,
+        ),
+      );
+      await handler();
+      const beaconRequests = await mockedBeaconEndpoint.getSeenRequests();
+      expect(beaconRequests.length).toBe(5);
+    });
   });
-  test('Returns the maximum records - queries again', async () => {
-    const caseIds = await generateCases(12);
-    mockedBeaconEndpoint = await mockBeacon(
-      await mockingProxy.mockttpServer(),
-      batchIncidentReports(
-        generateIncidentReports(12, 1, caseIds),
-        MAX_INCIDENT_REPORTS_PER_CALL,
-      ),
-    );
-    await handler();
-    const beaconRequests = await mockedBeaconEndpoint.getSeenRequests();
-    expect(beaconRequests.length).toBe(3);
 
-    expect(beaconRequests[0].url).toBe(
-      `${process.env.BEACON_URL}?updatedAfter=${subDays(
-        BASELINE_DATE,
-        1,
-      ).toISOString()}&max=${MAX_INCIDENT_REPORTS_PER_CALL}`,
-    );
-
-    expect(beaconRequests[1].url).toBe(
-      `${process.env.BEACON_URL}?updatedAfter=${addHours(
-        BASELINE_DATE,
-        4,
-      ).toISOString()}&max=${MAX_INCIDENT_REPORTS_PER_CALL}`,
-    );
-
-    expect(beaconRequests[2].url).toBe(
-      `${process.env.BEACON_URL}?updatedAfter=${addHours(
-        BASELINE_DATE,
-        9,
-      ).toISOString()}&max=${MAX_INCIDENT_REPORTS_PER_CALL}`,
-    );
-  });
-  test('Returns the maximum records for more than the maximum allowed number of queries in a polling sweep - stops querying', async () => {
-    const caseIds = await generateCases(30);
-    mockedBeaconEndpoint = await mockBeacon(
-      await mockingProxy.mockttpServer(),
-      batchIncidentReports(
-        generateIncidentReports(1000, 1, caseIds),
-        MAX_INCIDENT_REPORTS_PER_CALL,
-      ),
-    );
-    await handler();
-    const beaconRequests = await mockedBeaconEndpoint.getSeenRequests();
-    expect(beaconRequests.length).toBe(5);
+  describe('HRM case updates', () => {
+    test('Single new incident reports for existing cases', async () => {
+      // Arrange
+      const caseIds = await generateCases(2);
+      const incidentReports = generateIncidentReports(2, 1, caseIds);
+      mockedBeaconEndpoint = await mockBeacon(await mockingProxy.mockttpServer(), [
+        incidentReports,
+      ]);
+      // Act
+      await handler();
+      // Assert
+      await verifyIncidentReportsForCase(caseIds[0], [
+        incidentReports[0].incidentReportId,
+      ]);
+      await verifyIncidentReportsForCase(caseIds[1], [
+        incidentReports[1].incidentReportId,
+      ]);
+    });
   });
 });

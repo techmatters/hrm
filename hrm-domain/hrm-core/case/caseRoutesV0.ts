@@ -30,6 +30,9 @@ import { isErr, mapHTTPError } from '@tech-matters/types';
 
 const newCaseRouter = (isPublic: boolean) => {
   const casesRouter = SafeRouter();
+
+  casesRouter.expressRouter.use('/:caseId/sections', caseSectionRoutesV0(isPublic));
+
   casesRouter.put(
     '/:id/status',
     isPublic ? canUpdateCaseStatus : openEndpoint,
@@ -91,11 +94,31 @@ const newCaseRouter = (isPublic: boolean) => {
   casesRouter.post('/', openEndpoint, async (req, res) => {
     const { hrmAccountId, user } = req;
     const createdCase = await caseApi.createCase(req.body, hrmAccountId, user.workerSid);
-
     res.json(createdCase);
   });
 
-  casesRouter.expressRouter.use('/:caseId/sections', caseSectionRoutesV0(isPublic));
+  casesRouter.get('/:id', isPublic ? canViewCase : openEndpoint, async (req, res) => {
+    const { hrmAccountId, permissions, can, user } = req;
+    const { id } = req.params;
+    const onlyEssentialData = Boolean(req.query.onlyEssentialData);
+
+    const caseFromDB = await caseApi.getCase(
+      id,
+      hrmAccountId,
+      {
+        can,
+        user,
+        permissions,
+      },
+      onlyEssentialData,
+    );
+
+    if (!caseFromDB) {
+      throw createError(404);
+    }
+
+    res.json(caseFromDB);
+  });
 
   // Public only endpoints
   if (isPublic) {
@@ -161,28 +184,6 @@ const newCaseRouter = (isPublic: boolean) => {
         onlyEssentialData,
       );
       res.json(cases);
-    });
-    casesRouter.get('/:id', canViewCase, async (req, res) => {
-      const { hrmAccountId, permissions, can, user } = req;
-      const { id } = req.params;
-      const onlyEssentialData = Boolean(req.query.onlyEssentialData);
-
-      const caseFromDB = await caseApi.getCase(
-        id,
-        hrmAccountId,
-        {
-          can,
-          user,
-          permissions,
-        },
-        onlyEssentialData,
-      );
-
-      if (!caseFromDB) {
-        throw createError(404);
-      }
-
-      res.json(caseFromDB);
     });
 
     casesRouter.post('/search', openEndpoint, async (req, res) => {
