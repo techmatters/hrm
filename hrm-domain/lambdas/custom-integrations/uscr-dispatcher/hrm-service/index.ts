@@ -27,7 +27,7 @@ import { connectToCase, getContact } from './contactService';
 import { isErr, newErr, newOk } from '@tech-matters/types';
 import { PendingIncident } from '../beacon-service';
 
-const sectionType = '__incidentReportAttempt';
+const sectionType = 'dispatchAttempt';
 type IncidentReportAttempt = {
   attemptTimestamp: string;
   createdTimestamp: string | null;
