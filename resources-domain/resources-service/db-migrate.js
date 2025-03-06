@@ -25,14 +25,14 @@ require('dotenv').config();
 
 const config = {
   username: process.env.RESOURCES_USERNAME || 'resources',
-  password: process.env.RESOURCES_PASSWORD || null,
+  password: process.env.RESOURCES_PASSWORD || '',
   database: process.env.RDS_DBNAME || 'hrmdb',
   host: process.env.RDS_RESOURCES_HOSTNAME || process.env.RDS_HOSTNAME || 'localhost',
   port: process.env.POSTGRES_PORT || 5432,
   dialect: 'postgres',
+  logging: process.env.SEQUELIZE_STATEMENT_LOGGING,
+  use_env_variable: null,
 };
-
-config.logging = process.env.SEQUELIZE_STATEMENT_LOGGING;
 
 let sequelize;
 

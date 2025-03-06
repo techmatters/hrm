@@ -27,7 +27,7 @@ const config = {
   username: process.env.RDS_USERNAME || 'hrm',
   password: process.env.RDS_PASSWORD || null,
   database: process.env.RDS_DBNAME || 'hrmdb',
-  host: process.env.RDS_HOSTNAME || 'localhost',
+  host: process.env.RDS_HOSTNAME || '127.0.0.1',
   port: process.env.POSTGRES_PORT || 5432,
   dialect: 'postgres',
 };

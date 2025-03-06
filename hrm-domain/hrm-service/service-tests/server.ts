@@ -15,7 +15,7 @@
  */
 
 // eslint-disable-next-line import/no-extraneous-dependencies
-import supertest from 'supertest';
+import supertest, { SuperAgentTest } from 'supertest';
 
 import { configureInternalService, configureService } from '@tech-matters/hrm-core/app';
 import { RulesFile } from '@tech-matters/hrm-core/permissions/rulesMap';
@@ -88,4 +88,11 @@ export const headers = {
 export const basicHeaders = {
   'Content-Type': 'application/json',
   Authorization: `Basic BBC`,
+};
+
+export type ApiTestSuiteParameters = {
+  request: SuperAgentTest;
+  requestDescription: 'PUBLIC' | 'INTERNAL';
+  route: string;
+  testHeaders: Record<string, string>;
 };
