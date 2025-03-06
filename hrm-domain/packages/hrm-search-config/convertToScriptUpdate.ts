@@ -36,8 +36,7 @@ const convertContactToCaseScriptUpdate = (
   switch (operation) {
     case 'create':
     case 'update':
-    case 'reindex':
-    case 'index': {
+    case 'reindex': {
       const contactDocument = convertContactToContactDocument(payload);
 
       const documentUpdate: CreateIndexConvertedDocument<CaseDocument> = {
@@ -66,8 +65,7 @@ const convertContactToCaseScriptUpdate = (
 
       return { documentUpdate, scriptUpdate };
     }
-    case 'delete':
-    case 'remove': {
+    case 'delete': {
       const scriptUpdate: Script = {
         source:
           'def removeContact(String contactId, List contacts) { contacts.removeIf(contact -> contact.id == contactId); } removeContact(params.contactId, ctx._source.contacts);',

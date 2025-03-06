@@ -32,12 +32,18 @@ import type { MessageWithMeta, MessagesByAccountSid } from './messages';
  *   - updateDocument: Used when we want to preserve the existing document (if any), using the document object for the update. An example is update a case
  *   - updateScript: Used when we want to preserve the existing document (if any), using the generated "update script" for the update. An example is updating case.contacts list when a contact is indexed
  */
-export type PayloadWithMeta = {
-  documentId: number;
-  payload: IndexPayload;
-  messageId: string;
-  indexHandler: 'indexDocument' | 'updateDocument' | 'updateScript' | 'deleteDocument';
-};
+export type PayloadWithMeta =
+  | {
+      documentId: number;
+      payload: IndexPayload;
+      messageId: string;
+      indexHandler: 'indexDocument' | 'updateDocument' | 'updateScript';
+    }
+  | {
+      documentId: number;
+      messageId: string;
+      indexHandler: 'deleteDocument';
+    };
 export type PayloadsByIndex = {
   [indexType: string]: PayloadWithMeta[];
 };
@@ -119,31 +125,54 @@ const generatePayloadFromContact = (
   ps: PayloadsByIndex,
   m: ContactIndexingInputData,
 ): PayloadsByIndex => {
-  return {
-    ...ps,
-    // add an upsert job to HRM_CONTACTS_INDEX_TYPE index
-    [HRM_CONTACTS_INDEX_TYPE]: [
-      ...(ps[HRM_CONTACTS_INDEX_TYPE] ?? []),
-      {
-        ...m,
-        documentId: m.message.contact.id,
-        payload: { ...m.message, transcript: m.transcript },
-        indexHandler: 'updateDocument',
-      },
-    ],
-    // if associated to a case, add an upsert with script job to HRM_CASES_INDEX_TYPE index
-    [HRM_CASES_INDEX_TYPE]: m.message.contact.caseId
-      ? [
-          ...(ps[HRM_CASES_INDEX_TYPE] ?? []),
+  switch (m.message.operation) {
+    case 'create':
+    case 'update':
+    case 'reindex': {
+      return {
+        ...ps,
+        // add an upsert job to HRM_CONTACTS_INDEX_TYPE index
+        [HRM_CONTACTS_INDEX_TYPE]: [
+          ...(ps[HRM_CONTACTS_INDEX_TYPE] ?? []),
           {
             ...m,
-            documentId: m.message.contact.caseId,
+            documentId: m.message.contact.id,
             payload: { ...m.message, transcript: m.transcript },
-            indexHandler: 'updateScript',
+            indexHandler: 'updateDocument',
           },
-        ]
-      : ps[HRM_CASES_INDEX_TYPE] ?? [],
-  };
+        ],
+        // if associated to a case, add an upsert with script job to HRM_CASES_INDEX_TYPE index
+        [HRM_CASES_INDEX_TYPE]: m.message.contact.caseId
+          ? [
+              ...(ps[HRM_CASES_INDEX_TYPE] ?? []),
+              {
+                ...m,
+                documentId: m.message.contact.caseId,
+                payload: { ...m.message, transcript: m.transcript },
+                indexHandler: 'updateScript',
+              },
+            ]
+          : ps[HRM_CASES_INDEX_TYPE] ?? [],
+      };
+    }
+    case 'delete': {
+      return {
+        ...ps,
+        // add a delete job to HRM_CASES_INDEX_TYPE index
+        [HRM_CONTACTS_INDEX_TYPE]: [
+          ...(ps[HRM_CONTACTS_INDEX_TYPE] ?? []),
+          {
+            ...m,
+            documentId: m.message.contact.id,
+            indexHandler: 'deleteDocument',
+          },
+        ],
+      };
+    }
+    default: {
+      return assertExhaustive(m.message.operation);
+    }
+  }
 };
 
 const generatePayloadFromCase = (
@@ -153,8 +182,7 @@ const generatePayloadFromCase = (
   switch (m.message.operation) {
     case 'create':
     case 'update':
-    case 'reindex':
-    case 'index': {
+    case 'reindex': {
       return {
         ...ps,
         // add an upsert job to HRM_CASES_INDEX_TYPE index
@@ -169,8 +197,7 @@ const generatePayloadFromCase = (
         ],
       };
     }
-    case 'delete':
-    case 'remove': {
+    case 'delete': {
       return {
         ...ps,
         // add a delete job to HRM_CASES_INDEX_TYPE index
@@ -179,7 +206,6 @@ const generatePayloadFromCase = (
           {
             ...m,
             documentId: m.message.case.id,
-            payload: { ...m.message },
             indexHandler: 'deleteDocument',
           },
         ],
