@@ -24,5 +24,8 @@
     "url": "https://github.com/techmatters/hrm/issues"
   },
   "homepage": "https://github.com/techmatters/hrm#readme",
-  "devDependencies": {}
+  "devDependencies": {
+    "@tsconfig/node22": "^22.0.0",
+    "typescript": "^5.7.3"
+  }
 }

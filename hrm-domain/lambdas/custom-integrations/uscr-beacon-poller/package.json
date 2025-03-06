@@ -1,11 +1,12 @@
 {
-  "name": "@tech-matters/alb-handler",
+  "name": "@tech-matters/uscr-beacon-poller",
   "version": "1.0.0",
   "description": "",
   "main": "dist/index.js",
   "author": "",
   "license": "AGPL",
   "dependencies": {
+    "@tech-matters/ssm-cache": "^1.0.0",
     "@tech-matters/types": "^1.0.0"
   },
   "devDependencies": {
@@ -14,7 +15,6 @@
     "typescript": "^5.7.3"
   },
   "scripts": {
-    "test:integration": "cross-env S3_FORCE_PATH_STYLE=true S3_ENDPOINT=http://localhost:4566 SQS_ENDPOINT=http://localhost:4566 jest tests/integration",
-    "test:unit": "jest tests/unit"
+    "docker:build": "docker build -t uscr-beacon-poller --build-arg lambda_name=uscr-beacon-poller --build-arg lambda_dir=hrm-domain/lambdas/custom-integrations -f ../../../../lambdas/Dockerfile ../../../../"
   }
 }

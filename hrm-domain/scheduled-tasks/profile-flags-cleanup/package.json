@@ -15,5 +15,9 @@
     "@tech-matters/types": "^1.0.0",
     "@tech-matters/twilio-worker-auth": "^1.0.0",
     "date-fns": "^2.28.0"
+  },
+  "devDependencies": {
+    "@tsconfig/node22": "^22.0.0",
+    "typescript": "^5.7.3"
   }
 }

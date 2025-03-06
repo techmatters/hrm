@@ -5,7 +5,6 @@
     "strict": true,
     "allowSyntheticDefaultImports": true,
     "checkJs": true,
-    "moduleResolution": "node",
     "resolveJsonModule": true,
     "declaration": true,
     "outDir": "./scripts-dist"

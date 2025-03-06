@@ -25,10 +25,7 @@ import * as caseApi from '@tech-matters/hrm-core/case/caseService';
 import { CaseService, getCase } from '@tech-matters/hrm-core/case/caseService';
 import { db } from '@tech-matters/hrm-core/connection-pool';
 import { isAfter, parseISO, subDays, subHours, subMinutes } from 'date-fns';
-import {
-  transitionCaseStatuses,
-  CaseStatusTransitionRule,
-} from '@tech-matters/case-status-transition';
+import { transitionCaseStatuses } from '@tech-matters/case-status-transition';
 import { ALWAYS_CAN } from '../mocks';
 
 const { case1, workerSid } = mocks;
@@ -60,7 +57,7 @@ describe('Single Rule', () => {
     await mockingProxy.start(false);
     await mockSuccessfulTwilioAuthentication(workerSid);
     const mockttp = await mockingProxy.mockttpServer();
-    const mockRuleSet: [AccountSID, CaseStatusTransitionRule[]][] = [
+    const mockRuleSet: [AccountSID, Record<string, string>[]][] = [
       [
         'AC1',
         [

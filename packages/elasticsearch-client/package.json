@@ -16,8 +16,9 @@
     "@tech-matters/types": "^1.0.0"
   },
   "devDependencies": {
-    "@types/node": "^18.15.11",
+    "@tsconfig/node22": "^22.0.0",
     "jest-each": "^29.5.0",
-    "lodash": "^4.17.21"
+    "lodash": "^4.17.21",
+    "typescript": "^5.7.3"
   }
 }

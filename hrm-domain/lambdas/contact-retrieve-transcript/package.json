@@ -17,9 +17,9 @@
     "util": "^0.12.4"
   },
   "devDependencies": {
-    "@tsconfig/node16": "^1.0.3",
+    "@tsconfig/node22": "^22.0.0",
     "@types/aws-lambda": "^8.10.108",
-    "ts-node": "^10.9.1"
+    "typescript": "^5.7.3"
   },
   "scripts": {
     "docker:build": "docker build -t hrm-jobs-contact-retrieve-transcript --build-arg lambda_name=contact-retrieve-transcript --build-arg lambda_dir=hrm-domain/lambdas -f ../../../lambdas/Dockerfile ../../../",

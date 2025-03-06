@@ -20,5 +20,9 @@
   "homepage": "https://github.com/techmatters/hrm#readme",
   "dependencies": {
     "aws-sdk": "^2.1353.0"
+  },
+  "devDependencies": {
+    "@tsconfig/node22": "^22.0.0",
+    "typescript": "^5.7.3"
   }
 }

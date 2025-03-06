@@ -42,7 +42,6 @@ const callHrmApi =
         ? `${baseUrl}/${urlPath}?${params}`
         : `${baseUrl}/${urlPath}`;
 
-      // @ts-ignore global fetch available because node 18
       const response = await fetch(fullUrl, {
         method,
         headers: {

@@ -12,7 +12,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see https://www.gnu.org/licenses/.
 
-FROM node:16-alpine as build
+FROM node:22-alpine as build
 
 # This is a bit complicated by the need for access to the package.
 # We must have the full repo context for our docker build so we can
@@ -49,7 +49,7 @@ RUN apk add --no-cache rsync \
 # Ignore errors if node_modules is not present
 RUN rsync -a hrm-domain/hrm-service/node_modules/ /home/node/node_modules; exit 0
 
-FROM node:16-alpine
+FROM node:22-alpine
 COPY --from=build /home/node /home/node
 
 WORKDIR /home/node

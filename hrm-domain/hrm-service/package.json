@@ -69,10 +69,10 @@
     "@tech-matters/twilio-client": "^1.0.0",
     "@tech-matters/types": "^1.0.0",
     "@tech-matters/sqs-client": "^1.0.0",
+    "@tsconfig/node22": "^22.0.0",
     "@types/deep-diff": "^1.0.1",
     "@types/http-errors": "^2.0.1",
     "@types/lodash": "^4.14.191",
-    "@types/node": "^17.0.23",
     "@types/supertest": "^2.0.12",
     "aws-sdk": "^2.1353.0",
     "chalk": "^4.0.0",
@@ -88,10 +88,8 @@
     "sequelize-mock": "^0.10.2",
     "sqslite": "^2.1.1",
     "supertest": "^4.0.2",
-    "ts-node": "^10.7.0",
-    "typescript": "^4.6.3",
+    "typescript": "^5.7.3",
     "umzug": "^3.0.0",
-    "undici": "^5.28.5",
     "util": "^0.12.2",
     "yargs": "^17.7.2"
   }
