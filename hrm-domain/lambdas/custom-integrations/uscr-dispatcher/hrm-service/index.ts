@@ -109,13 +109,6 @@ const recordAttemptAndGetTimeline = async ({
       return sectionsResult;
     }
 
-    console.log(
-      JSON.stringify({
-        sections: sectionsResult.data,
-        currentAttempt: createSectionResult.data,
-      }),
-    );
-
     return newOk({
       data: { sections: sectionsResult.data, currentAttempt: createSectionResult.data },
     });
