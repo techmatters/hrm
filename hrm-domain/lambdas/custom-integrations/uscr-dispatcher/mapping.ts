@@ -40,8 +40,8 @@ export const toCreateIncident = ({
       gender: contact.rawJson?.childInformation?.gender as string,
       race: contact.rawJson?.childInformation?.race as string,
     },
-    category_id: 123,
-    incident_class_id: 123,
+    category: Object.values(contact.rawJson?.categories || {})[0][0],
+    priority: contact.rawJson?.caseInformation?.priority as string,
     is_officer_on_standby: contact.rawJson?.callerInformation?.officerStandby as boolean,
   };
 

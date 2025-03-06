@@ -43,8 +43,8 @@ export type CreateIncidentParams = {
   caller_number: string;
   description: string;
   address: string;
-  category_id: number;
-  incident_class_id: number;
+  category: string;
+  priority: string;
   requestor_call_back: boolean;
   person_demographics: {
     first_name: string;
