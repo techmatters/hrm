@@ -290,5 +290,6 @@ export const getOrCreateCase = async ({
 export const wasPendingIncidentCreated = (timeline: TimelineResult) =>
   Boolean(timeline.activities.length) &&
   timeline.activities.some(
-    t => (t.activity as IncidentReportAttempt)?.incidentId !== null,
+    t =>
+      (t.activity.sectionTypeSpecificData as IncidentReportAttempt)?.incidentId !== null,
   );

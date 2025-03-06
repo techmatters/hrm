@@ -220,7 +220,7 @@ export const getCaseSections = async ({
   token: string;
 }) => {
   try {
-    const urlPath = `v0/accounts/${accountSid}/cases/${caseId}/timeline?sectionTypes=${sectionType}`;
+    const urlPath = `v0/accounts/${accountSid}/cases/${caseId}/timeline?sectionTypes=${sectionType}&includeContacts=false`;
 
     const authHeader = `Bearer ${token}`;
 
