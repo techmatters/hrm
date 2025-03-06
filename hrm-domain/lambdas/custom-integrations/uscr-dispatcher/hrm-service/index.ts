@@ -18,6 +18,7 @@ import type { CaseSection, CaseService, TimelineResult } from '@tech-matters/hrm
 import {
   createCase,
   createCaseSection,
+  deleteCase,
   getCase,
   getCaseSections,
   updateCaseSection,
@@ -239,6 +240,7 @@ export const getOrCreateCase = async ({
       token,
     });
     if (isErr(connectedResult)) {
+      await deleteCase({ accountSid, baseUrl, caseId: caseObj.id, token });
       return connectedResult;
     }
 
