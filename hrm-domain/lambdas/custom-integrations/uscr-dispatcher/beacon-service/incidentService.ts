@@ -85,8 +85,8 @@ export const createIncident = async ({
     if (!response.ok) {
       const error = await response.json();
       return newErr({
-        message: JSON.stringify(error),
-        error: 'createIncident: request failed',
+        error,
+        message: 'Failed calling Beacon API',
       });
     }
 

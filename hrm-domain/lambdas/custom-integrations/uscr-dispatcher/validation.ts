@@ -76,7 +76,10 @@ export const validatePayload = ({
 
 export const validateHeaders = (headers: { authorization?: string } | undefined) => {
   if (!headers) {
-    return newErr({ error: 'Headers validation failed', message: 'no headers provided' });
+    return newErr({
+      error: 'Headers validation failed',
+      message: 'no headers provided',
+    });
   }
 
   if (!headers.authorization) {

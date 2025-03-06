@@ -23,6 +23,8 @@ const validAccountSidsMap: { [env: string]: string[] } = {
   staging: ['/staging/twilio/AS/account_sid', '/staging/twilio/USCR/account_sid'],
 };
 
+const AuthenticationError = 'AuthenticationError';
+
 export const authenticateRequest = async ({
   accountSid,
   authHeader,
@@ -38,7 +40,7 @@ export const authenticateRequest = async ({
     );
     if (!validAccountSids.includes(accountSid)) {
       return newErr({
-        error: 'authenticateRequest error: ',
+        error: AuthenticationError,
         message: `Account ${accountSid} not allowed to call this service`,
       });
     }
@@ -50,7 +52,7 @@ export const authenticateRequest = async ({
     const [type, token] = authHeader.split(' ');
     if (type !== 'Bearer') {
       return newErr({
-        error: 'authenticateRequest error: ',
+        error: AuthenticationError,
         message: `Invalid auth type ${type}`,
       });
     }
@@ -58,16 +60,13 @@ export const authenticateRequest = async ({
     const result = await twilioTokenValidator({ accountSid, authToken, token });
 
     if (isErr(result)) {
-      return newErr({
-        error: 'authenticateRequest error: ' + result.error,
-        message: result.message,
-      });
+      return result;
     }
 
     return newOk({ data: { ...result.data, token } });
   } catch (err) {
     return newErr({
-      error: 'authenticateRequest error: ',
+      error: err,
       message: `Unexpected error ${err instanceof Error ? err.message : String(err)}`,
     });
   }

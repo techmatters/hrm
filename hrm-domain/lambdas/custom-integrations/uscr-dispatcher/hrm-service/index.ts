@@ -14,11 +14,10 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import type { CaseService, Contact } from '@tech-matters/hrm-types';
+import type { CaseSection, CaseService, Contact } from '@tech-matters/hrm-types';
 import { createCase, createCaseSection, getCase } from './caseService';
 import { connectToCase, getContact } from './contactService';
 import { isErr, newErr, newOk, TResult } from '@tech-matters/types';
-import { logger } from '../logger';
 import { PendingIncident } from '../beacon-service';
 
 export const getOrCreateCase = async ({
@@ -33,15 +32,12 @@ export const getOrCreateCase = async ({
   contactId: string;
   baseUrl: string;
   token: string;
-}): Promise<TResult<string, { caseObj: CaseService; contact: Contact }>> => {
+}): Promise<TResult<any, { caseObj: CaseService; contact: Contact }>> => {
   try {
     // get contact and check for existence of an associated case
     const contactResult = await getContact({ accountSid, contactId, baseUrl, token });
     if (isErr(contactResult)) {
-      return newErr({
-        error: `getOrCreateCase: ${contactResult.error}`,
-        message: contactResult.message,
-      });
+      return contactResult;
     }
 
     if (contactResult.data.caseId) {
@@ -52,13 +48,10 @@ export const getOrCreateCase = async ({
         token,
       });
       if (isErr(caseResult)) {
-        return newErr({
-          error: `getOrCreateCase: ${caseResult.error}`,
-          message: caseResult.message,
-        });
+        return caseResult;
       }
 
-      logger({ message: `Case exists: ${JSON.stringify(caseResult)}`, severity: 'info' });
+      console.info(`Case exists: ${JSON.stringify(caseResult)}`);
 
       return newOk({
         data: { caseObj: caseResult.data, contact: contactResult.data },
@@ -68,13 +61,10 @@ export const getOrCreateCase = async ({
     // no case associated, create and associate one
     const caseResult = await createCase({ accountSid, casePayload, baseUrl, token });
     if (isErr(caseResult)) {
-      return newErr({
-        error: `createAndConnectCase: ${caseResult.error}`,
-        message: caseResult.message,
-      });
+      return caseResult;
     }
 
-    logger({ message: `Case created: ${JSON.stringify(caseResult)}`, severity: 'info' });
+    console.info(`Case created: ${JSON.stringify(caseResult)}`);
 
     const caseObj = caseResult.data;
     const caseId = caseObj.id.toString();
@@ -87,28 +77,16 @@ export const getOrCreateCase = async ({
       token,
     });
     if (isErr(connectedResult)) {
-      // TODO: not sure this is even needed
-      // const deleteResult = await deleteCase({
-      //   accountSid,
-      //   caseId,
-      //   token,
-      // });
-      // if (isErr(deleteResult)) {
-      //   const message = deleteResult.error + deleteResult.message;
-      //   logger({ message, severity: 'error' });
-      // }
-
-      return newErr({
-        error: `createAndConnectCase: ${connectedResult.error}`,
-        message: connectedResult.message,
-      });
+      return connectedResult;
     }
 
     return newOk({ data: { caseObj, contact: connectedResult.data } });
-  } catch (err) {
+  } catch (error) {
     return newErr({
-      error: 'getOrCreateCase error: ',
-      message: `Unexpected error ${err instanceof Error ? err.message : String(err)}`,
+      error,
+      message: `Unexpected error ${
+        error instanceof Error ? error.message : String(error)
+      }`,
     });
   }
 };
@@ -125,7 +103,7 @@ export const createIncidentCaseSection = async ({
   caseId: string;
   baseUrl: string;
   token: string;
-}) => {
+}): Promise<TResult<any, { caseSection: CaseSection }>> => {
   try {
     const sectionType = 'incidentReport';
     const sectionTypeSpecificData = { beaconIncidentId };
@@ -140,18 +118,15 @@ export const createIncidentCaseSection = async ({
       token,
     });
     if (isErr(createSectionResult)) {
-      return newErr({
-        error: `createIncidentCaseSection: ${createSectionResult.error}`,
-        message: createSectionResult.message,
-      });
+      return createSectionResult;
     }
 
     return newOk({ data: { caseSection: createSectionResult.data } });
-  } catch (err) {
+  } catch (error) {
     return newErr({
-      error: 'createIncidentCaseSection error: ',
+      error,
       message: `Unexpected error ${
-        err instanceof Error ? err.message : JSON.stringify(err)
+        error instanceof Error ? error.message : String(error)
       }`,
     });
   }

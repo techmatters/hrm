@@ -115,6 +115,7 @@ export const getAuthorizationMiddleware =
         const tokenResult = await twilioTokenValidator({ accountSid, authToken, token });
 
         if (isErr(tokenResult)) {
+          console.error(tokenResult.error);
           return unauthorized(res);
         }
 

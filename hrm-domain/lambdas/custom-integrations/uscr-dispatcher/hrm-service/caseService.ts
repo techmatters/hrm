@@ -42,16 +42,13 @@ export const createCase = async ({
     });
 
     if (isErr(result)) {
-      return newErr({
-        error: `createCase error: ${result.error} `,
-        message: result.message,
-      });
+      return result;
     }
 
     return result;
   } catch (err) {
     return newErr({
-      error: 'createCase error: ',
+      error: err,
       message: `Unexpected error ${err instanceof Error ? err.message : String(err)}`,
     });
   }
@@ -80,16 +77,13 @@ export const getCase = async ({
     });
 
     if (isErr(result)) {
-      return newErr({
-        error: `getCase error: ${result.error} `,
-        message: result.message,
-      });
+      return result;
     }
 
     return result;
   } catch (err) {
     return newErr({
-      error: 'getCase error: ',
+      error: err,
       message: `Unexpected error ${err instanceof Error ? err.message : String(err)}`,
     });
   }
@@ -118,16 +112,13 @@ export const deleteCase = async ({
     });
 
     if (isErr(result)) {
-      return newErr({
-        error: `deleteCase error: ${result.error} `,
-        message: result.message,
-      });
+      return result;
     }
 
     return result;
   } catch (err) {
     return newErr({
-      error: 'deleteCase error: ',
+      error: err,
       message: `Unexpected error ${err instanceof Error ? err.message : String(err)}`,
     });
   }
@@ -163,16 +154,50 @@ export const createCaseSection = async ({
     });
 
     if (isErr(result)) {
-      return newErr({
-        error: `createCaseSection error: ${result.error} `,
-        message: result.message,
-      });
+      return result;
     }
 
     return result;
   } catch (err) {
     return newErr({
-      error: 'createCaseSection error: ',
+      error: err,
+      message: `Unexpected error ${err instanceof Error ? err.message : String(err)}`,
+    });
+  }
+};
+
+export const getCaseSections = async ({
+  accountSid,
+  caseId,
+  sectionType,
+  baseUrl,
+  token,
+}: {
+  accountSid: string;
+  caseId: string;
+  sectionType: CaseSection['sectionType'];
+  baseUrl: string;
+  token: string;
+}) => {
+  try {
+    const urlPath = `v0/accounts/${accountSid}/cases/${caseId}/timeline?sectionTypes=${sectionType}`;
+
+    const authHeader = `Bearer ${token}`;
+
+    const result = await callHrmApi<CaseSection>(baseUrl)({
+      urlPath,
+      authHeader,
+      method: 'GET',
+    });
+
+    if (isErr(result)) {
+      return result;
+    }
+
+    return result;
+  } catch (err) {
+    return newErr({
+      error: err,
       message: `Unexpected error ${err instanceof Error ? err.message : String(err)}`,
     });
   }

@@ -18,7 +18,6 @@ import type { ALBEvent, ALBResult } from 'aws-lambda';
 import { isErr } from '@tech-matters/types';
 import { validateEnvironment, validateHeaders, validatePayload } from './validation';
 import { authenticateRequest } from './authentication';
-import { logger } from './logger';
 import * as hrmService from './hrm-service';
 import * as beaconService from './beacon-service';
 import * as mapping from './mapping';
@@ -29,21 +28,21 @@ export const handler = async (event: ALBEvent): Promise<ALBResult> => {
     const envResult = validateEnvironment();
     if (isErr(envResult)) {
       const message = `${envResult.error} ${envResult.message}`;
-      logger({ message, severity: 'error' });
+      console.error(message);
       return { statusCode: 500, body: message };
     }
 
     const payloadResult = validatePayload(JSON.parse(event.body || '{}'));
     if (isErr(payloadResult)) {
       const message = `${payloadResult.error} ${payloadResult.message}`;
-      logger({ message, severity: 'warn' });
+      console.warn(message);
       return { statusCode: 400, body: message };
     }
 
     const headersResult = validateHeaders(event.headers);
     if (isErr(headersResult)) {
       const message = `${headersResult.error} ${headersResult.message}`;
-      logger({ message, severity: 'warn' });
+      console.warn(message);
       return { statusCode: 400 };
     }
 
@@ -54,7 +53,7 @@ export const handler = async (event: ALBEvent): Promise<ALBResult> => {
     });
     if (isErr(authResult)) {
       const message = authResult.error + authResult.message;
-      logger({ message, severity: 'warn' });
+      console.warn(message);
       return { statusCode: 401 };
     }
 
@@ -68,17 +67,15 @@ export const handler = async (event: ALBEvent): Promise<ALBResult> => {
     });
     if (isErr(createCaseResult)) {
       const message = createCaseResult.error + createCaseResult.message;
-      logger({ message, severity: 'error' });
+      console.error(message);
       return { statusCode: 500 };
     }
 
     const { contact, caseObj } = createCaseResult.data;
 
-    logger({ message: JSON.stringify(createCaseResult), severity: 'info' });
-
     // Case already contains a corresponding case entry section, we asume the incident has been created but something went wrong updating HRM. Poller will eventually bring consitency to this case
     if (hrmService.hasIncidentCaseSection(caseObj)) {
-      logger({ message: 'case already has associated incident', severity: 'info' });
+      console.info('case already has associated incident');
       return {
         statusCode: 200,
       };
@@ -94,11 +91,11 @@ export const handler = async (event: ALBEvent): Promise<ALBResult> => {
     });
     if (isErr(createIncidentResult)) {
       const message = createIncidentResult.error + createIncidentResult.message;
-      logger({ message, severity: 'error' });
+      console.error(message);
       return { statusCode: 500 };
     }
 
-    logger({ message: JSON.stringify(createIncidentResult), severity: 'info' });
+    console.debug(JSON.stringify(createIncidentResult));
 
     // Create incident case section to mark this case as "already reported"
     const createSectionResult = await hrmService.createIncidentCaseSection({
@@ -111,20 +108,18 @@ export const handler = async (event: ALBEvent): Promise<ALBResult> => {
     if (isErr(createSectionResult)) {
       // TODO: delete the case section corresponding to the empty incident
       const message = createSectionResult.error + createSectionResult.message;
-      logger({ message, severity: 'error' });
+      console.error(message);
       return { statusCode: 500 };
     }
 
-    logger({ message: 'new incident reported', severity: 'info' });
+    console.info(
+      `new incident reported, incident id ${createIncidentResult.data.pending_incident.id}, case id ${caseObj.id}`,
+    );
     return {
       statusCode: 200,
     };
   } catch (err) {
-    logger({
-      message: err instanceof Error ? err.message : String(err),
-      severity: 'error',
-    });
-
+    console.error(err);
     return { statusCode: 500 };
   }
 };

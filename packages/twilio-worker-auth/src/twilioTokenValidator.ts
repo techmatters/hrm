@@ -48,7 +48,7 @@ export const twilioTokenValidator = async ({
     return newOk({ data: tokenResult });
   } catch (err) {
     return newErr({
-      error: 'Token authentication failed',
+      error: err,
       message: 'Invalid token provided',
     });
   }

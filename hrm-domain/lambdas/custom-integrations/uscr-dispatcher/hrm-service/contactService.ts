@@ -44,16 +44,13 @@ export const connectToCase = async ({
     });
 
     if (isErr(result)) {
-      return newErr({
-        error: `connectToCase error: ${result.error} `,
-        message: result.message,
-      });
+      return result;
     }
 
     return result;
   } catch (err) {
     return newErr({
-      error: 'connectToCase error: ',
+      error: err,
       message: `Unexpected error ${err instanceof Error ? err.message : String(err)}`,
     });
   }
@@ -82,16 +79,13 @@ export const getContact = async ({
     });
 
     if (isErr(result)) {
-      return newErr({
-        error: `getContact error: ${result.error} `,
-        message: result.message,
-      });
+      return result;
     }
 
     return result;
   } catch (err) {
     return newErr({
-      error: 'getContact error: ',
+      error: err,
       message: `Unexpected error ${err instanceof Error ? err.message : String(err)}`,
     });
   }
