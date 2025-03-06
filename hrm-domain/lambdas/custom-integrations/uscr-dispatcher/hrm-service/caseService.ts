@@ -21,10 +21,12 @@ import { isErr, newErr } from '@tech-matters/types';
 export const createCase = async ({
   accountSid,
   casePayload,
+  baseUrl,
   token,
 }: {
   accountSid: string;
   casePayload: Partial<CaseService>;
+  baseUrl: string;
   token: string;
 }) => {
   try {
@@ -32,7 +34,7 @@ export const createCase = async ({
     const urlPath = `v0/accounts/${accountSid}/cases`;
     const authHeader = `Bearer ${token}`;
 
-    const result = await callHrmApi<CaseService>({
+    const result = await callHrmApi<CaseService>(baseUrl)({
       urlPath,
       authHeader,
       method: 'POST',
@@ -58,10 +60,12 @@ export const createCase = async ({
 export const getCase = async ({
   accountSid,
   caseId,
+  baseUrl,
   token,
 }: {
   accountSid: string;
   caseId: string;
+  baseUrl: string;
   token: string;
 }) => {
   try {
@@ -69,7 +73,7 @@ export const getCase = async ({
 
     const authHeader = `Bearer ${token}`;
 
-    const result = await callHrmApi<CaseService>({
+    const result = await callHrmApi<CaseService>(baseUrl)({
       urlPath,
       authHeader,
       method: 'GET',
@@ -94,10 +98,12 @@ export const getCase = async ({
 export const deleteCase = async ({
   accountSid,
   caseId,
+  baseUrl,
   token,
 }: {
   accountSid: string;
   caseId: string;
+  baseUrl: string;
   token: string;
 }) => {
   try {
@@ -105,7 +111,7 @@ export const deleteCase = async ({
 
     const authHeader = `Bearer ${token}`;
 
-    const result = await callHrmApi<CaseService>({
+    const result = await callHrmApi<CaseService>(baseUrl)({
       urlPath,
       authHeader,
       method: 'DELETE',
@@ -133,6 +139,7 @@ export const createCaseSection = async ({
   sectionId,
   sectionType,
   sectionTypeSpecificData,
+  baseUrl,
   token,
 }: {
   accountSid: string;
@@ -140,6 +147,7 @@ export const createCaseSection = async ({
   sectionId: CaseSection['sectionId'];
   sectionType: CaseSection['sectionType'];
   sectionTypeSpecificData: CaseSection['sectionTypeSpecificData'];
+  baseUrl: string;
   token: string;
 }) => {
   try {
@@ -147,7 +155,7 @@ export const createCaseSection = async ({
 
     const authHeader = `Bearer ${token}`;
 
-    const result = await callHrmApi<CaseSection>({
+    const result = await callHrmApi<CaseSection>(baseUrl)({
       urlPath,
       authHeader,
       method: 'POST',

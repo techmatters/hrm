@@ -103,7 +103,9 @@ const filesUrlsAuthenticator = async (
     return newOk({ data: true });
   }
 
-  const result = await callHrmApi({
+  const baseUrl = process.env.HRM_BASE_URL || '';
+
+  const result = await callHrmApi(baseUrl)({
     urlPath: authUrlPathGenerator(params),
     authHeader,
     method: 'GET',

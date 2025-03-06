@@ -27,47 +27,47 @@ export type CallHrmApiParameters = {
 
 export type CallHrmApiError = 'CallHrmApiError';
 
-const callHrmApi = async <T = any>({
-  urlPath,
-  requestData,
-  authHeader,
-  method,
-  body,
-}: CallHrmApiParameters): Promise<TResult<CallHrmApiError, T>> => {
-  try {
-    const baseUrl = process.env.HRM_BASE_URL?.startsWith('https://')
-      ? process.env.HRM_BASE_URL
-      : `https://${process.env.HRM_BASE_URL}`;
+const callHrmApi =
+  <T = any>(baseUrl: string) =>
+  async ({
+    urlPath,
+    requestData,
+    authHeader,
+    method,
+    body,
+  }: CallHrmApiParameters): Promise<TResult<CallHrmApiError, T>> => {
+    try {
+      const params = new URLSearchParams(requestData).toString();
+      const fullUrl = params
+        ? `${baseUrl}/${urlPath}?${params}`
+        : `${baseUrl}/${urlPath}`;
 
-    const params = new URLSearchParams(requestData).toString();
-    const fullUrl = params ? `${baseUrl}/${urlPath}?${params}` : `${baseUrl}/${urlPath}`;
+      // @ts-ignore global fetch available because node 18
+      const response = await fetch(fullUrl, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: authHeader,
+        },
+        ...(body && { body: JSON.stringify(body) }),
+      });
 
-    // @ts-ignore global fetch available because node 18
-    const response = await fetch(fullUrl, {
-      method,
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: authHeader,
-      },
-      ...(body && { body: JSON.stringify(body) }),
-    });
+      if (!response.ok) {
+        const error = await response.json();
+        return newErr({
+          message: JSON.stringify(error),
+          error: 'CallHrmApiError',
+        });
+      }
 
-    if (!response.ok) {
-      const error = await response.json();
+      const data = (await response.json()) as T;
+      return newOk({ data });
+    } catch (err) {
       return newErr({
-        message: JSON.stringify(error),
+        message: err instanceof Error ? err.message : JSON.stringify(err),
         error: 'CallHrmApiError',
       });
     }
-
-    const data = (await response.json()) as T;
-    return newOk({ data });
-  } catch (err) {
-    return newErr({
-      message: err instanceof Error ? err.message : JSON.stringify(err),
-      error: 'CallHrmApiError',
-    });
-  }
-};
+  };
 
 export default callHrmApi;

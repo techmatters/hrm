@@ -34,7 +34,11 @@ export const validateEnvironment = () => {
     });
   }
 
-  return newOk({ data: { environment } });
+  const baseUrl = process.env.HRM_BASE_URL?.startsWith('https://')
+    ? process.env.HRM_BASE_URL
+    : `https://${process.env.HRM_BASE_URL}`;
+
+  return newOk({ data: { environment, baseUrl } });
 };
 
 export const validatePayload = ({

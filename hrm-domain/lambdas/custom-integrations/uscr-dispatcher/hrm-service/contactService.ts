@@ -22,11 +22,13 @@ export const connectToCase = async ({
   accountSid,
   caseId,
   contactId,
+  baseUrl,
   token,
 }: {
   accountSid: string;
   caseId: string;
   contactId: string;
+  baseUrl: string;
   token: string;
 }) => {
   try {
@@ -34,7 +36,7 @@ export const connectToCase = async ({
     const urlPath = `v0/accounts/${accountSid}/contacts/${contactId}/connectToCase`;
     const authHeader = `Bearer ${token}`;
 
-    const result = await callHrmApi<Contact>({
+    const result = await callHrmApi<Contact>(baseUrl)({
       urlPath,
       authHeader,
       method: 'PUT',
@@ -60,10 +62,12 @@ export const connectToCase = async ({
 export const getContact = async ({
   accountSid,
   contactId,
+  baseUrl,
   token,
 }: {
   accountSid: string;
   contactId: string;
+  baseUrl: string;
   token: string;
 }) => {
   try {
@@ -71,7 +75,7 @@ export const getContact = async ({
     const urlPath = `v0/accounts/${accountSid}/contacts/${contactId}`;
     const authHeader = `Bearer ${token}`;
 
-    const result = await callHrmApi<Contact>({
+    const result = await callHrmApi<Contact>(baseUrl)({
       urlPath,
       authHeader,
       method: 'GET',

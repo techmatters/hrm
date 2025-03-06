@@ -63,6 +63,7 @@ export const handler = async (event: ALBEvent): Promise<ALBResult> => {
       accountSid: payloadResult.data.accountSid,
       casePayload: payloadResult.data.casePayload,
       contactId: payloadResult.data.contactId,
+      baseUrl: envResult.data.baseUrl,
       token: authResult.data.token,
     });
     if (isErr(createCaseResult)) {
@@ -104,6 +105,7 @@ export const handler = async (event: ALBEvent): Promise<ALBResult> => {
       accountSid: payloadResult.data.accountSid,
       beaconIncidentId: createIncidentResult.data.pending_incident.id,
       caseId: caseObj.id.toString(),
+      baseUrl: envResult.data.baseUrl,
       token: authResult.data.token,
     });
     if (isErr(createSectionResult)) {

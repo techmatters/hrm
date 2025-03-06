@@ -25,16 +25,18 @@ export const getOrCreateCase = async ({
   accountSid,
   casePayload,
   contactId,
+  baseUrl,
   token,
 }: {
   accountSid: string;
   casePayload: Partial<CaseService>;
   contactId: string;
+  baseUrl: string;
   token: string;
 }): Promise<TResult<string, { caseObj: CaseService; contact: Contact }>> => {
   try {
     // get contact and check for existence of an associated case
-    const contactResult = await getContact({ accountSid, contactId, token });
+    const contactResult = await getContact({ accountSid, contactId, baseUrl, token });
     if (isErr(contactResult)) {
       return newErr({
         error: `getOrCreateCase: ${contactResult.error}`,
@@ -46,6 +48,7 @@ export const getOrCreateCase = async ({
       const caseResult = await getCase({
         accountSid,
         caseId: contactResult.data.caseId.toString(),
+        baseUrl,
         token,
       });
       if (isErr(caseResult)) {
@@ -63,7 +66,7 @@ export const getOrCreateCase = async ({
     }
 
     // no case associated, create and associate one
-    const caseResult = await createCase({ accountSid, casePayload, token });
+    const caseResult = await createCase({ accountSid, casePayload, baseUrl, token });
     if (isErr(caseResult)) {
       return newErr({
         error: `createAndConnectCase: ${caseResult.error}`,
@@ -80,6 +83,7 @@ export const getOrCreateCase = async ({
       accountSid,
       caseId,
       contactId,
+      baseUrl,
       token,
     });
     if (isErr(connectedResult)) {
@@ -113,11 +117,13 @@ export const createIncidentCaseSection = async ({
   accountSid,
   beaconIncidentId,
   caseId,
+  baseUrl,
   token,
 }: {
   accountSid: string;
   beaconIncidentId: PendingIncident['id'];
   caseId: string;
+  baseUrl: string;
   token: string;
 }) => {
   try {
@@ -130,6 +136,7 @@ export const createIncidentCaseSection = async ({
       sectionId: beaconIncidentId.toString(),
       sectionType,
       sectionTypeSpecificData,
+      baseUrl,
       token,
     });
     if (isErr(createSectionResult)) {
