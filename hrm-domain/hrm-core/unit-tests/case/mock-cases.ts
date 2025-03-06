@@ -26,11 +26,7 @@ export const createMockCaseRecord = (partial: Partial<CaseRecord>): CaseRecord =
       id: 1,
       helpline: 'helpline',
       status: 'open',
-      info: {
-        counsellorNotes: [
-          { note: 'Child with covid-19', twilioWorkerId: 'WK-contact-adder' },
-        ],
-      },
+      info: {},
       twilioWorkerId: 'WK-twilio-worker-id',
       createdBy: workerSid,
       accountSid: 'ACCOUNT_SID',

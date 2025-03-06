@@ -755,8 +755,3 @@ ALTER TABLE ONLY public."CaseSections"
 ALTER TABLE ONLY public."Contacts"
     ADD CONSTRAINT "Contacts_caseId_fkey" FOREIGN KEY ("caseId") REFERENCES public."Cases"(id) ON UPDATE CASCADE ON DELETE SET NULL;
 
-
---
--- PostgreSQL database dump complete
---
-

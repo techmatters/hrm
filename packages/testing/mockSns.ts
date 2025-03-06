@@ -14,10 +14,16 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-export * from './mock-pgpromise';
-export * from './mock-twilio-auth-endpoint';
-export * from './mockSsm';
-export * from './mockSns';
-import { start, stop, mockttpServer } from './mocking-proxy';
-export const mockingProxy = { start, stop, mockttpServer };
-import './expectToParseAsDate';
+// eslint-disable-next-line import/no-extraneous-dependencies,prettier/prettier
+import type { Mockttp } from 'mockttp';
+import { randomUUID } from 'node:crypto';
+
+export const mockAllSns = async (mockttp: Mockttp) => {
+  await mockttp
+    .forPost(/http:\/\/mock-sns(.*)/)
+    .always()
+    .thenJson(200, {
+      MessageId: randomUUID(),
+    });
+  console.info('Mocked SNS on mock-ssm');
+};

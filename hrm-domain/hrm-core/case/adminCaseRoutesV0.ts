@@ -18,10 +18,10 @@ import type { Request, Response, NextFunction } from 'express';
 import { publicEndpoint, SafeRouter } from '../permissions';
 import { reindexCasesStream } from './caseReindexService';
 
-const adminContactsRouter = SafeRouter();
+const adminCasesRouter = SafeRouter();
 
 // admin POST endpoint to reindex contacts. req body has accountSid, dateFrom, dateTo
-adminContactsRouter.post(
+adminCasesRouter.post(
   '/reindex',
   publicEndpoint,
   async (req: Request, res: Response, next: NextFunction) => {
@@ -38,4 +38,4 @@ adminContactsRouter.post(
   },
 );
 
-export default adminContactsRouter.expressRouter;
+export default adminCasesRouter.expressRouter;

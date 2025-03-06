@@ -14,10 +14,12 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-export * from './mock-pgpromise';
-export * from './mock-twilio-auth-endpoint';
-export * from './mockSsm';
-export * from './mockSns';
-import { start, stop, mockttpServer } from './mocking-proxy';
-export const mockingProxy = { start, stop, mockttpServer };
-import './expectToParseAsDate';
+process.env.AWS_REGION = 'xx-fake-1';
+process.env.AWS_ACCESS_KEY_ID = 'mock-access-key';
+process.env.AWS_SECRET_ACCESS_KEY = 'mock-secret';
+process.env.SSM_ENDPOINT = 'http://mock-ssm/';
+
+process.env.STATIC_KEY = 'BBC';
+process.env.ACCOUNT_SID = 'ACservicetest';
+process.env.INTERNAL_HRM_URL = 'http://localhost:3001';
+process.env.BEACON_URL = 'http://mock-beacon/';
