@@ -24,9 +24,18 @@ const hrmHeaders = {
 const lastUpdateSeenSsmKey = `/${process.env.NODE_ENV}/hrm/custom-integration/uscr/${accountSid}/latest_beacon_update_seen`;
 
 export type IncidentReport = {
-  lastUpdated: string;
-  caseId: string;
-  incidentReportId: string;
+  id: number;
+  case_id: number;
+  contact_id: string;
+  description: string;
+  address: string;
+  category_id: number;
+  incident_class_id: number;
+  status: string;
+  caller_name: string;
+  caller_number: string;
+  created_at: string;
+  updated_at: string;
 };
 
 const processIncidentReportBatch = async (
@@ -35,7 +44,13 @@ const processIncidentReportBatch = async (
 ): Promise<string> => {
   let updatedLastSeen = lastSeen;
   try {
-    for (const { lastUpdated, caseId, incidentReportId } of incidents) {
+    for (const {
+      updated_at: lastUpdated,
+      case_id: caseId,
+      id: incidentReportId,
+      contact_id: contactId,
+      ...restOfIncident
+    } of incidents) {
       console.debug('Start processing incident report:', lastUpdated);
       // Do something on the internal HRM API - will return a 404
 
@@ -45,7 +60,7 @@ const processIncidentReportBatch = async (
           method: 'POST',
           body: JSON.stringify({
             sectionId: incidentReportId,
-            sectionTypeSpecificData: {},
+            sectionTypeSpecificData: restOfIncident,
           }),
           headers: hrmHeaders,
         },

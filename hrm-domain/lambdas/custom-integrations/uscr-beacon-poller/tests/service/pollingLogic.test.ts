@@ -17,6 +17,7 @@ import { MockedEndpoint, Mockttp } from 'mockttp';
 import { addHours } from 'date-fns/addHours';
 import { subDays } from 'date-fns/subDays';
 import { mockingProxy, mockSsmParameters } from '@tech-matters/testing';
+import { CaseSectionRecord } from '@tech-matters/hrm-types';
 import { putSsmParameter } from '@tech-matters/ssm-cache';
 import { clearAllTables } from '@tech-matters/hrm-service-test-support';
 
@@ -71,14 +72,23 @@ const generateIncidentReports = (
   caseIds: number[] = [],
   start: Date = BASELINE_DATE,
 ): IncidentReport[] => {
-  const response = [];
+  const response: IncidentReport[] = [];
   for (let i = 0; i < numberToGenerate; i++) {
     const indexInCurrentIteration = i % caseIds.length;
     const iteration = Math.floor(i / caseIds.length);
     response.push({
-      lastUpdated: addHours(start, i * intervalInHours).toISOString(),
-      caseId: caseIds[indexInCurrentIteration].toString(),
-      incidentReportId: `IR#${iteration}`,
+      updated_at: addHours(start, i * intervalInHours).toISOString(),
+      case_id: caseIds[indexInCurrentIteration],
+      id: iteration,
+      contact_id: `contact-for-case-${caseIds[indexInCurrentIteration]}`,
+      description: `Incident report #${iteration}, for case ${caseIds[indexInCurrentIteration]}`,
+      address: `Address for incident report #${iteration}`,
+      category_id: 1,
+      incident_class_id: 1,
+      status: 'open',
+      caller_name: 'Caller Name',
+      caller_number: '1234567890',
+      created_at: start.toISOString(),
     });
   }
   return response;
@@ -120,19 +130,27 @@ export const mockBeacon = async (
 
 const verifyIncidentReportsForCase = async (
   caseId: number,
-  expectedIncidentReportIds: string[],
+  expectedIncidentReports: IncidentReport[],
 ): Promise<void> => {
-  expectedIncidentReportIds.sort();
-  const records = await db.manyOrNone(
-    `SELECT "sectionId" FROM public."CaseSections" WHERE "accountSid" = $<accountSid> AND "caseId" = $<caseId> AND "sectionType" = 'incidentReport' ORDER BY "sectionId" ASC`,
+  expectedIncidentReports.sort((ir1, ir2) => ir1.id - ir2.id);
+  const records: CaseSectionRecord[] = await db.manyOrNone(
+    `SELECT "sectionId", "sectionTypeSpecificData" FROM public."CaseSections" WHERE "accountSid" = $<accountSid> AND "caseId" = $<caseId> AND "sectionType" = 'incidentReport' ORDER BY "sectionId" ASC`,
     {
       caseId,
       accountSid: ACCOUNT_SID,
     },
   );
-  expect(records.length).toBe(expectedIncidentReportIds.length);
+  expect(records.length).toBe(expectedIncidentReports.length);
   records.forEach((r, idx) => {
-    expect(r.sectionId).toBe(expectedIncidentReportIds[idx]);
+    const {
+      case_id: recordCaseId,
+      id: incidentReportId,
+      contact_id: contactId,
+      updated_at: lastUpdated,
+      ...restOfIncident
+    } = expectedIncidentReports[idx];
+    expect(r.sectionId).toBe(incidentReportId.toString());
+    expect(r.sectionTypeSpecificData).toStrictEqual(restOfIncident);
   });
 };
 
@@ -231,12 +249,8 @@ describe('Beacon Polling Service', () => {
       // Act
       await handler();
       // Assert
-      await verifyIncidentReportsForCase(caseIds[0], [
-        incidentReports[0].incidentReportId,
-      ]);
-      await verifyIncidentReportsForCase(caseIds[1], [
-        incidentReports[1].incidentReportId,
-      ]);
+      await verifyIncidentReportsForCase(caseIds[0], [incidentReports[0]]);
+      await verifyIncidentReportsForCase(caseIds[1], [incidentReports[1]]);
     });
   });
 });
