@@ -109,6 +109,13 @@ const recordAttemptAndGetTimeline = async ({
       return sectionsResult;
     }
 
+    console.log(
+      JSON.stringify({
+        sections: sectionsResult.data,
+        currentAttempt: createSectionResult.data,
+      }),
+    );
+
     return newOk({
       data: { sections: sectionsResult.data, currentAttempt: createSectionResult.data },
     });
@@ -280,8 +287,8 @@ export const getOrCreateCase = async ({
   }
 };
 
-export const hasPendingIncidentCaseSection = (caseSections: TimelineResult) =>
-  Boolean(caseSections.activities.length) &&
-  caseSections.activities.some(
-    t => (t.activity as IncidentReportAttempt).incidentId !== null,
+export const wasPendingIncidentCreated = (timeline: TimelineResult) =>
+  Boolean(timeline.activities.length) &&
+  timeline.activities.some(
+    t => (t.activity as IncidentReportAttempt)?.incidentId !== null,
   );

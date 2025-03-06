@@ -74,7 +74,7 @@ export const handler = async (event: ALBEvent): Promise<ALBResult> => {
     const { contact, caseObj, sections } = createCaseResult.data;
 
     // Case already contains a corresponding case entry section, we asume the incident has been created but something went wrong updating HRM. Poller will eventually bring consitency to this case
-    if (hrmService.hasPendingIncidentCaseSection(sections.sections)) {
+    if (hrmService.wasPendingIncidentCreated(sections.sections)) {
       console.info('case already has associated incident');
       return {
         statusCode: 200,
