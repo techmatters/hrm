@@ -11,8 +11,9 @@
     "@tech-matters/types": "^1.0.0"
   },
   "devDependencies": {
-    "@tsconfig/node16": "^1.0.3",
-    "jest-each": "^29.7.0"
+    "@tsconfig/node22": "^22.0.0",
+    "jest-each": "^29.7.0",
+    "typescript": "^5.7.3"
   },
   "scripts": {
     "test:unit": "jest tests/unit"

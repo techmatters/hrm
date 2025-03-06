@@ -22,6 +22,8 @@ import {
   GetParametersByPathCommandInput,
   Parameter as SsmParameter,
   ParameterNotFound,
+  PutParameterCommand,
+  PutParameterCommandInput,
 } from '@aws-sdk/client-ssm';
 
 const convertToEndpoint = (endpointUrl: string) => {
@@ -156,6 +158,33 @@ export const getSsmParameter = async (
   }
 
   return ssmCache.values[name]?.value || '';
+};
+
+export const putSsmParameter = async (
+  name: string,
+  value: string,
+  { cacheValue = true, overwrite = false } = {},
+) => {
+  const params: PutParameterCommandInput = {
+    Name: name,
+    Value: value,
+    Overwrite: overwrite,
+  };
+  const command = new PutParameterCommand(params);
+  try {
+    await getSsmClient().send(command);
+    if (cacheValue) {
+      addToCache(undefined, { Name: name, Value: value });
+    } else {
+      // Invalidate the cache entry if we're not caching the value
+      delete ssmCache.values[name];
+    }
+  } catch (e) {
+    if (e instanceof ParameterNotFound) {
+      return;
+    }
+    throw e;
+  }
 };
 
 type LoadPaginatedParameters = {

@@ -18,14 +18,15 @@
   "author": "",
   "license": "AGPL",
   "dependencies": {
-    "@aws-sdk/client-ssm": "^3.391.0",
-    "typescript": "^4.8.4"
+    "@aws-sdk/client-ssm": "^3.391.0"
   },
   "scripts": {
     "test:unit": "jest tests/unit"
   },
   "devDependencies": {
+    "@tsconfig/node22": "^22.0.0",
     "aws-sdk-client-mock": "^3.0.0",
-    "date-fns": "^2.29.3"
+    "date-fns": "^2.29.3",
+    "typescript": "^5.7.3"
   }
 }

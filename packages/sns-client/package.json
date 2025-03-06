@@ -10,5 +10,9 @@
   "license": "AGPL",
   "dependencies": {
     "@aws-sdk/client-sns": "^3.388.0"
+  },
+  "devDependencies": {
+    "@tsconfig/node22": "^22.0.0",
+    "typescript": "^5.7.3"
   }
 }

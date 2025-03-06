@@ -1,3 +1,4 @@
 {
-  "hrm-domain/lambdas/custom-integrations/uscr-dispatcher": ["us-east-1"]
+  "hrm-domain/lambdas/custom-integrations/uscr-dispatcher": ["us-east-1"],
+  "hrm-domain/lambdas/custom-integrations/uscr-beacon-poller": ["us-east-1"]
 }

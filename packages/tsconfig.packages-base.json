@@ -1,13 +1,11 @@
 {
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
-    "lib": ["ES2020"],
     "strict": true,
     "allowJs": false,
     "allowSyntheticDefaultImports": true,
     "declaration": true,
     "outDir": "./dist",
-    "moduleResolution": "node",
     "resolveJsonModule": true,
   },
   "ts-node": {

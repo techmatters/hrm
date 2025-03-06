@@ -44,6 +44,8 @@ jobs:
           - resources-domain/lambdas/import-consumer
           - resources-domain/lambdas/import-producer
           - resources-domain/lambdas/search-index
+          - hrm-domain/lambdas/custom-integrations/uscr-dispatcher
+          - hrm-domain/lambdas/custom-integrations/uscr-beacon-poller
 
     steps:
       - name: Checkout Branch

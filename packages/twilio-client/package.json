@@ -13,5 +13,9 @@
     "@tech-matters/types": "^1.0.0",
     "@tech-matters/ssm-cache": "^1.0.0",
     "twilio": "^3.80.0"
+  },
+  "devDependencies": {
+    "@tsconfig/node22": "^22.0.0",
+    "typescript": "^5.7.3"
   }
 }

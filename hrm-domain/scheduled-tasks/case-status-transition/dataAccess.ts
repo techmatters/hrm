@@ -29,7 +29,7 @@ export const applyTransitionRuleToCases = async (
   rule: CaseStatusTransitionRule,
 ): Promise<string[]> => {
   const records = await db.task(async conn => {
-    return conn.manyOrNone<{ id: string }>(
+    return conn.manyOrNone(
       `UPDATE "Cases" 
                 SET 
                 "status" = $<targetStatus>, "statusUpdatedAt" = CURRENT_TIMESTAMP, "previousStatus" = "status",
