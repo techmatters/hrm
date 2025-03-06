@@ -15,6 +15,7 @@
  */
 
 import { HrmAccountId } from '@tech-matters/types';
+import { Contact } from './Contact';
 
 export type CaseSectionRecord = {
   caseId: number;
@@ -30,3 +31,18 @@ export type CaseSectionRecord = {
 };
 
 export type CaseSection = Omit<CaseSectionRecord, 'accountSid' | 'caseId'>;
+
+export type TimelineActivity<T> = {
+  timestamp: string;
+  activity: T;
+  activityType: string;
+};
+
+export type ContactTimelineActivity = TimelineActivity<Contact> & {
+  activityType: 'contact';
+};
+export type CaseSectionTimelineActivity = TimelineActivity<CaseSectionRecord> & {
+  activityType: 'case-section';
+};
+
+export type TimelineResult = { count: number; activities: TimelineActivity<any>[] };
