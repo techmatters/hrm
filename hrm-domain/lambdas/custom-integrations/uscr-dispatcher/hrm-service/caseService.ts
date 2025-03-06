@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import type { CaseService, CaseSection } from '@tech-matters/hrm-types';
+import type { CaseService, CaseSection, TimelineResult } from '@tech-matters/hrm-types';
 import { callHrmApi } from '@tech-matters/hrm-authentication';
 import { isErr, newErr } from '@tech-matters/types';
 
@@ -61,7 +61,7 @@ export const getCase = async ({
   token,
 }: {
   accountSid: string;
-  caseId: string;
+  caseId: CaseService['id'];
   baseUrl: string;
   token: string;
 }) => {
@@ -96,7 +96,7 @@ export const deleteCase = async ({
   token,
 }: {
   accountSid: string;
-  caseId: string;
+  caseId: CaseService['id'];
   baseUrl: string;
   token: string;
 }) => {
@@ -127,15 +127,13 @@ export const deleteCase = async ({
 export const createCaseSection = async ({
   accountSid,
   caseId,
-  sectionId,
   sectionType,
   sectionTypeSpecificData,
   baseUrl,
   token,
 }: {
   accountSid: string;
-  caseId: string;
-  sectionId: CaseSection['sectionId'];
+  caseId: CaseService['id'];
   sectionType: CaseSection['sectionType'];
   sectionTypeSpecificData: CaseSection['sectionTypeSpecificData'];
   baseUrl: string;
@@ -150,7 +148,49 @@ export const createCaseSection = async ({
       urlPath,
       authHeader,
       method: 'POST',
-      body: { sectionTypeSpecificData, sectionId },
+      body: { sectionTypeSpecificData },
+    });
+
+    if (isErr(result)) {
+      return result;
+    }
+
+    return result;
+  } catch (err) {
+    return newErr({
+      error: err,
+      message: `Unexpected error ${err instanceof Error ? err.message : String(err)}`,
+    });
+  }
+};
+
+export const updateCaseSection = async ({
+  accountSid,
+  caseId,
+  sectionId,
+  sectionType,
+  sectionTypeSpecificData,
+  baseUrl,
+  token,
+}: {
+  accountSid: string;
+  caseId: CaseService['id'];
+  sectionId: CaseSection['sectionId'];
+  sectionType: CaseSection['sectionType'];
+  sectionTypeSpecificData: CaseSection['sectionTypeSpecificData'];
+  baseUrl: string;
+  token: string;
+}) => {
+  try {
+    const urlPath = `v0/accounts/${accountSid}/cases/${caseId}/sections/${sectionType}/${sectionId}`;
+
+    const authHeader = `Bearer ${token}`;
+
+    const result = await callHrmApi<CaseSection>(baseUrl)({
+      urlPath,
+      authHeader,
+      method: 'PUT',
+      body: { sectionTypeSpecificData },
     });
 
     if (isErr(result)) {
@@ -174,7 +214,7 @@ export const getCaseSections = async ({
   token,
 }: {
   accountSid: string;
-  caseId: string;
+  caseId: CaseService['id'];
   sectionType: CaseSection['sectionType'];
   baseUrl: string;
   token: string;
@@ -184,7 +224,7 @@ export const getCaseSections = async ({
 
     const authHeader = `Bearer ${token}`;
 
-    const result = await callHrmApi<CaseSection>(baseUrl)({
+    const result = await callHrmApi<TimelineResult>(baseUrl)({
       urlPath,
       authHeader,
       method: 'GET',

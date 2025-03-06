@@ -71,10 +71,10 @@ export const handler = async (event: ALBEvent): Promise<ALBResult> => {
       return { statusCode: 500 };
     }
 
-    const { contact, caseObj } = createCaseResult.data;
+    const { contact, caseObj, sections } = createCaseResult.data;
 
     // Case already contains a corresponding case entry section, we asume the incident has been created but something went wrong updating HRM. Poller will eventually bring consitency to this case
-    if (hrmService.hasIncidentCaseSection(caseObj)) {
+    if (hrmService.hasPendingIncidentCaseSection(sections.sections)) {
       console.info('case already has associated incident');
       return {
         statusCode: 200,
@@ -98,16 +98,17 @@ export const handler = async (event: ALBEvent): Promise<ALBResult> => {
     console.debug(JSON.stringify(createIncidentResult));
 
     // Create incident case section to mark this case as "already reported"
-    const createSectionResult = await hrmService.createIncidentCaseSection({
+    const updateSectionResult = await hrmService.updateAttemptCaseSection({
       accountSid: payloadResult.data.accountSid,
       beaconIncidentId: createIncidentResult.data.pending_incident.id,
-      caseId: caseObj.id.toString(),
+      caseId: caseObj.id,
+      attemptSection: sections.currentAttempt.caseSection,
       baseUrl: envResult.data.baseUrl,
       token: authResult.data.token,
     });
-    if (isErr(createSectionResult)) {
+    if (isErr(updateSectionResult)) {
       // TODO: delete the case section corresponding to the empty incident
-      const message = createSectionResult.error + createSectionResult.message;
+      const message = updateSectionResult.error + updateSectionResult.message;
       console.error(message);
       return { statusCode: 500 };
     }

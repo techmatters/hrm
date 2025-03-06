@@ -14,11 +14,159 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import type { CaseSection, CaseService, Contact } from '@tech-matters/hrm-types';
-import { createCase, createCaseSection, getCase } from './caseService';
+import type { CaseSection, CaseService, TimelineResult } from '@tech-matters/hrm-types';
+import {
+  createCase,
+  createCaseSection,
+  getCase,
+  getCaseSections,
+  updateCaseSection,
+} from './caseService';
 import { connectToCase, getContact } from './contactService';
-import { isErr, newErr, newOk, TResult } from '@tech-matters/types';
+import { isErr, newErr, newOk } from '@tech-matters/types';
 import { PendingIncident } from '../beacon-service';
+
+const sectionType = '__incidentReportAttempt';
+type IncidentReportAttempt = {
+  attemptTimestamp: string;
+  createdTimestamp: string | null;
+  incidentId: PendingIncident['id'] | null;
+};
+
+export const createAttemptCaseSection = async ({
+  accountSid,
+  caseId,
+  baseUrl,
+  token,
+}: {
+  accountSid: string;
+  caseId: CaseService['id'];
+  baseUrl: string;
+  token: string;
+}) => {
+  try {
+    const sectionTypeSpecificData: IncidentReportAttempt = {
+      attemptTimestamp: new Date().toISOString(),
+      createdTimestamp: null,
+      incidentId: null,
+    };
+
+    const createSectionResult = await createCaseSection({
+      accountSid,
+      caseId,
+      sectionType,
+      sectionTypeSpecificData,
+      baseUrl,
+      token,
+    });
+    if (isErr(createSectionResult)) {
+      return createSectionResult;
+    }
+
+    return newOk({ data: { caseSection: createSectionResult.data } });
+  } catch (error) {
+    return newErr({
+      error,
+      message: `Unexpected error ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    });
+  }
+};
+
+const recordAttemptAndGetTimeline = async ({
+  accountSid,
+  caseId,
+  baseUrl,
+  token,
+}: {
+  accountSid: string;
+  caseId: CaseService['id'];
+  baseUrl: string;
+  token: string;
+}) => {
+  try {
+    // record a new attempt
+    const createSectionResult = await createAttemptCaseSection({
+      accountSid,
+      baseUrl,
+      caseId,
+      token,
+    });
+    if (isErr(createSectionResult)) {
+      return createSectionResult;
+    }
+
+    // get the entire timeline
+    const sectionsResult = await getCaseSections({
+      accountSid,
+      baseUrl,
+      caseId,
+      sectionType,
+      token,
+    });
+    if (isErr(sectionsResult)) {
+      return sectionsResult;
+    }
+
+    return newOk({
+      data: { sections: sectionsResult.data, currentAttempt: createSectionResult.data },
+    });
+  } catch (error) {
+    return newErr({
+      error,
+      message: `Unexpected error ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    });
+  }
+};
+
+export const updateAttemptCaseSection = async ({
+  accountSid,
+  caseId,
+  beaconIncidentId,
+  attemptSection,
+  baseUrl,
+  token,
+}: {
+  accountSid: string;
+  caseId: CaseService['id'];
+  attemptSection: CaseSection;
+  beaconIncidentId: PendingIncident['id'];
+  baseUrl: string;
+  token: string;
+}) => {
+  try {
+    const sectionTypeSpecificData: IncidentReportAttempt = {
+      attemptTimestamp: attemptSection.sectionTypeSpecificData.attemptTimestamp,
+      createdTimestamp: new Date().toISOString(),
+      incidentId: beaconIncidentId,
+    };
+
+    const updateSectionResult = await updateCaseSection({
+      accountSid,
+      caseId,
+      sectionId: attemptSection.sectionId,
+      sectionType,
+      sectionTypeSpecificData,
+      baseUrl,
+      token,
+    });
+    if (isErr(updateSectionResult)) {
+      return updateSectionResult;
+    }
+
+    return newOk({ data: { caseSection: updateSectionResult.data } });
+  } catch (error) {
+    return newErr({
+      error,
+      message: `Unexpected error ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    });
+  }
+};
 
 export const getOrCreateCase = async ({
   accountSid,
@@ -32,7 +180,7 @@ export const getOrCreateCase = async ({
   contactId: string;
   baseUrl: string;
   token: string;
-}): Promise<TResult<any, { caseObj: CaseService; contact: Contact }>> => {
+}) => {
   try {
     // get contact and check for existence of an associated case
     const contactResult = await getContact({ accountSid, contactId, baseUrl, token });
@@ -43,7 +191,7 @@ export const getOrCreateCase = async ({
     if (contactResult.data.caseId) {
       const caseResult = await getCase({
         accountSid,
-        caseId: contactResult.data.caseId.toString(),
+        caseId: contactResult.data.caseId,
         baseUrl,
         token,
       });
@@ -53,8 +201,22 @@ export const getOrCreateCase = async ({
 
       console.info(`Case exists: ${JSON.stringify(caseResult)}`);
 
+      const sectionsResult = await recordAttemptAndGetTimeline({
+        accountSid,
+        baseUrl,
+        caseId: caseResult.data.id,
+        token,
+      });
+      if (isErr(sectionsResult)) {
+        return sectionsResult;
+      }
+
       return newOk({
-        data: { caseObj: caseResult.data, contact: contactResult.data },
+        data: {
+          caseObj: caseResult.data,
+          contact: contactResult.data,
+          sections: sectionsResult.data,
+        },
       });
     }
 
@@ -80,48 +242,34 @@ export const getOrCreateCase = async ({
       return connectedResult;
     }
 
-    return newOk({ data: { caseObj, contact: connectedResult.data } });
-  } catch (error) {
-    return newErr({
-      error,
-      message: `Unexpected error ${
-        error instanceof Error ? error.message : String(error)
-      }`,
-    });
-  }
-};
-
-export const createIncidentCaseSection = async ({
-  accountSid,
-  beaconIncidentId,
-  caseId,
-  baseUrl,
-  token,
-}: {
-  accountSid: string;
-  beaconIncidentId: PendingIncident['id'];
-  caseId: string;
-  baseUrl: string;
-  token: string;
-}): Promise<TResult<any, { caseSection: CaseSection }>> => {
-  try {
-    const sectionType = 'incidentReport';
-    const sectionTypeSpecificData = { beaconIncidentId };
-
-    const createSectionResult = await createCaseSection({
+    // record a new attempt
+    const createSectionResult = await createAttemptCaseSection({
       accountSid,
-      caseId,
-      sectionId: beaconIncidentId.toString(),
-      sectionType,
-      sectionTypeSpecificData,
       baseUrl,
+      caseId: caseResult.data.id,
       token,
     });
     if (isErr(createSectionResult)) {
       return createSectionResult;
     }
 
-    return newOk({ data: { caseSection: createSectionResult.data } });
+    const sectionsResult = await recordAttemptAndGetTimeline({
+      accountSid,
+      baseUrl,
+      caseId: caseResult.data.id,
+      token,
+    });
+    if (isErr(sectionsResult)) {
+      return sectionsResult;
+    }
+
+    return newOk({
+      data: {
+        caseObj: caseResult.data,
+        contact: contactResult.data,
+        sections: sectionsResult.data,
+      },
+    });
   } catch (error) {
     return newErr({
       error,
@@ -132,5 +280,8 @@ export const createIncidentCaseSection = async ({
   }
 };
 
-export const hasIncidentCaseSection = (caseObj: CaseService) =>
-  Boolean(caseObj.sections.incidentReport && caseObj.sections.incidentReport.length);
+export const hasPendingIncidentCaseSection = (caseSections: TimelineResult) =>
+  Boolean(caseSections.activities.length) &&
+  caseSections.activities.some(
+    t => (t.activity as IncidentReportAttempt).incidentId !== null,
+  );
