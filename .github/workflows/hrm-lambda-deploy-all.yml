@@ -48,7 +48,7 @@ env:
   PRIMARY_AWS_REGION: us-east-1
 
 jobs:
-  build-and-deploy-lambdas:
+  build_and_deploy_lambdas:
     strategy:
       matrix:
         lambda_path:
@@ -70,3 +70,40 @@ jobs:
       send-slack-message: 'false'
       environment: ${{ inputs.environment }}
       lambda_path: ${{ matrix.lambda_path }}
+      skip-matrix-update: 'true'
+  update_matrix:
+    needs: [build_and_deploy_lambdas]
+    name: Update Version Matrix Spreadsheet
+    runs-on: ubuntu-latest
+    concurrency:
+      group: update-version-matrix
+      cancel-in-progress: false
+
+    strategy:
+      fail-fast: false
+      matrix:
+        lambda_path:
+          - hrm-domain/lambdas/files-urls
+          - hrm-domain/lambdas/contact-retrieve-transcript
+          - hrm-domain/lambdas/search-index-consumer
+          - lambdas/job-complete
+          - resources-domain/lambdas/import-consumer
+          - resources-domain/lambdas/import-producer
+          - resources-domain/lambdas/search-index
+          - hrm-domain/lambdas/custom-integrations/uscr-dispatcher
+          - hrm-domain/lambdas/custom-integrations/uscr-beacon-poller
+        include: ${{ fromJson(needs.build_and_deploy_lambdas.outputs.matrix_json) }}
+        max-parallel: 1
+      # Update deployment matrix with region as identifier and lambda path as service repo
+    steps:
+      - name: Update deployment matrix
+        id: update-deployment-matrix
+        uses: techmatters/flex-plugins/.github/actions/deployment-matrix@master
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.PRIMARY_AWS_REGION }}
+          identifier: ${{ matrix.region }}
+          environment: ${{ inputs.environment }}
+          service_repo: ${{ inputs.lambda_path }}
+          version_tag: ${{ github.ref_name }}
