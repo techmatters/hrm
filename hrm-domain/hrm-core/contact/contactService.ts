@@ -214,7 +214,7 @@ type InvalidParameterError = ErrorResult<'InvalidParameterError'>;
 type CreateError = DatabaseErrorResult | InvalidParameterError;
 
 const isRemovedOfflineContact = (contact: Contact): boolean =>
-  contact.taskId.startsWith('offline-contact-task-') &&
+  contact.taskId?.startsWith('offline-contact-task-') &&
   !contact.rawJson.callType &&
   !contact.finalizedAt;
 
