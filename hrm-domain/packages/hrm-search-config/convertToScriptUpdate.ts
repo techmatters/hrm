@@ -88,12 +88,12 @@ const convertToCaseScriptUpdate = (
   documentUpdate: CreateIndexConvertedDocument<CaseDocument>;
   scriptUpdate: Script;
 } => {
-  if (payload.type === 'contact') {
+  if (payload.entityType === 'contact') {
     return convertContactToCaseScriptUpdate(payload);
   }
 
   throw new Error(
-    `convertToCaseScriptDocument not implemented for type ${payload.type} and operation ${payload.operation}`,
+    `convertToCaseScriptDocument not implemented for type ${payload.entityType} and operation ${payload.operation}`,
   );
 };
 

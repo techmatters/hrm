@@ -26,7 +26,10 @@ const groupMessagesReducer = (
   curr: SQSRecord,
 ): MessagesByAccountSid => {
   const { messageId, body } = curr;
-  const message = JSON.parse(body) as IndexMessage;
+  const deserialized = JSON.parse(body);
+  // This is compatibility code, can be removed when HRM v1.26.x is deployed everywhere
+  deserialized.entityType = deserialized.entityType || deserialized.type;
+  const message = deserialized as IndexMessage;
 
   const { accountSid } = message;
 

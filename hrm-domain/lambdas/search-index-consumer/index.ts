@@ -56,7 +56,7 @@ export const handler = async (event: SQSEvent): Promise<SQSBatchResponse> => {
         );
         return;
       }
-      switch (message.type) {
+      switch (message.entityType) {
         case 'case': {
           const caseObj = message.case;
           console.info(

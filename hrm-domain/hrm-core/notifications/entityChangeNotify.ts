@@ -163,7 +163,7 @@ const publishEntityToSearchIndex = async (
   return publishToSearchIndex({
     message: {
       accountSid,
-      type: entityType,
+      entityType,
       [entityType]: entity,
       operation,
     } as IndexMessage,

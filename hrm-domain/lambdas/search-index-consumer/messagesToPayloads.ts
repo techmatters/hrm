@@ -106,9 +106,9 @@ type IndexingInputData = ContactIndexingInputData | CaseIndexingInputData;
 const indexingInputDataMapper = (m: MessageWithMeta): Promise<IndexingInputData> => {
   const { message, messageId } = m;
 
-  const { type } = message;
+  const { entityType } = message;
 
-  switch (type) {
+  switch (entityType) {
     case 'contact': {
       return contactIndexingInputData({ message, messageId });
     }
@@ -116,7 +116,7 @@ const indexingInputDataMapper = (m: MessageWithMeta): Promise<IndexingInputData>
       return caseIndexingInputData({ message, messageId });
     }
     default: {
-      return assertExhaustive(type);
+      return assertExhaustive(entityType);
     }
   }
 };
@@ -223,9 +223,9 @@ const messagesToPayloadReducer = (
 ): PayloadsByIndex => {
   const { message, messageId } = currM;
 
-  const { type } = message;
+  const { entityType } = message;
 
-  switch (type) {
+  switch (entityType) {
     case 'contact': {
       const { transcript } = currM as ContactIndexingInputData;
       return generatePayloadFromContact(accum, { message, messageId, transcript });
@@ -234,7 +234,7 @@ const messagesToPayloadReducer = (
       return generatePayloadFromCase(accum, { message, messageId });
     }
     default: {
-      return assertExhaustive(type);
+      return assertExhaustive(entityType);
     }
   }
 };

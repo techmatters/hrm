@@ -27,13 +27,13 @@ type SupportedNotificationOperation = Extract<
 >;
 
 export type IndexContactMessage = {
-  type: 'contact';
+  entityType: 'contact';
   operation: SupportedNotificationOperation;
   contact: Pick<Contact, 'id'> & Partial<Contact>;
 };
 
 export type IndexCaseMessage = {
-  type: 'case';
+  entityType: 'case';
   operation: SupportedNotificationOperation;
   case: Pick<CaseService, 'id'> &
     Partial<Omit<CaseService, 'sections'>> & {
