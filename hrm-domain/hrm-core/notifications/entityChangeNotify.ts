@@ -21,6 +21,7 @@ import { CaseService, Contact } from '@tech-matters/hrm-types';
 import { AccountSID, HrmAccountId } from '@tech-matters/types';
 import { publishSns, PublishSnsParams } from '@tech-matters/sns-client';
 import { NotificationOperation } from '@tech-matters/hrm-types';
+import { enableSnsHrmSearchIndex } from '../featureFlags';
 
 type DeleteNotificationPayload = {
   accountSid: HrmAccountId;
@@ -155,7 +156,7 @@ const publishEntityToSearchIndex = async (
       messageGroupId,
     });
   }
-  if (process.env.LEGACY_ENTITY_SQS_PUBLISH === 'false') {
+  if (enableSnsHrmSearchIndex) {
     return publishResponse;
   }
 
