@@ -81,6 +81,7 @@ jobs:
 
     strategy:
       fail-fast: false
+      max-parallel: 1
       matrix:
         lambda_path:
           - hrm-domain/lambdas/files-urls
@@ -93,7 +94,6 @@ jobs:
           - hrm-domain/lambdas/custom-integrations/uscr-dispatcher
           - hrm-domain/lambdas/custom-integrations/uscr-beacon-poller
         include: ${{ fromJson(needs.build_and_deploy_lambdas.outputs.matrix_json) }}
-        max-parallel: 1
       # Update deployment matrix with region as identifier and lambda path as service repo
     steps:
       - name: Update deployment matrix
