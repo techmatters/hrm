@@ -68,7 +68,9 @@ on:
         default: 'false'
         type: string
     outputs:
-        matrix_json: ${{ jobs.build_lambda.outputs.matrix_json }}
+        matrix_json:
+          description: 'JSON string of the matrix of environments / regions to deploy to'
+          value: ${{ jobs.build_lambda.outputs.matrix_json }}
 
 env:
   # if anything is set as a secret, it can't be used in outputs. So we need to set it as an env var
