@@ -238,7 +238,7 @@ jobs:
         if: ${{ inputs.send-slack-message != 'false' }}
 
   update_matrix:
-    needs: deploy_lambdas
+    needs: [deploy_lambdas, build_lambda]
     name: Update Version Matrix Spreadsheet
     runs-on: ubuntu-latest
     concurrency: update-version-matrix
