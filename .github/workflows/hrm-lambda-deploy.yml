@@ -241,7 +241,9 @@ jobs:
     needs: [deploy_lambdas, build_lambda]
     name: Update Version Matrix Spreadsheet
     runs-on: ubuntu-latest
-    concurrency: update-version-matrix
+    concurrency:
+      group: update-version-matrix
+      cancel-in-progress: false
 
     strategy:
       fail-fast: false
