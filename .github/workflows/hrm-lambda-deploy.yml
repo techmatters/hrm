@@ -236,8 +236,19 @@ jobs:
             channel: ${{ env.ASELO_DEPLOYS_CHANNEL_ID }}
             text: '`[HRM lambdas - ${{ inputs.lambda_path }}]` Deployment of ${{ github.ref_type }} `${{ github.ref_name }}` requested by `${{ github.triggering_actor }}` completed with SHA ${{ github.sha }} to region `${{ matrix.region }}`, environment `${{ inputs.environment }}` :rocket:.'
         if: ${{ inputs.send-slack-message != 'false' }}
-      
+
+  update_matrix:
+    needs: deploy_lambdas
+    name: Update Version Matrix Spreadsheet
+    runs-on: ubuntu-latest
+    concurrency: update-version-matrix
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.build_lambda.outputs.matrix_json) }}
       # Update deployment matrix with region as identifier and lambda path as service repo
+    steps:
       - name: Update deployment matrix
         id: update-deployment-matrix
         uses: techmatters/flex-plugins/.github/actions/deployment-matrix@master
