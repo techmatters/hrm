@@ -137,22 +137,22 @@ const convertCaseToCaseDocument = ({
 };
 
 const convertToContactIndexDocument = (payload: IndexPayload) => {
-  if (payload.type === 'contact') {
+  if (payload.entityType === 'contact') {
     return convertContactToContactDocument(payload);
   }
 
   throw new Error(
-    `convertToContactIndexDocument not implemented for type ${payload.type} and operation ${payload.operation}`,
+    `convertToContactIndexDocument not implemented for type ${payload.entityType} and operation ${payload.operation}`,
   );
 };
 
 const convertToCaseIndexDocument = (payload: IndexPayload) => {
-  if (payload.type === 'case') {
+  if (payload.entityType === 'case') {
     return convertCaseToCaseDocument(payload);
   }
 
   throw new Error(
-    `convertToCaseIndexDocument not implemented for type ${payload.type} and operation ${payload.operation}`,
+    `convertToCaseIndexDocument not implemented for type ${payload.entityType} and operation ${payload.operation}`,
   );
 };
 

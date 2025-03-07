@@ -14,11 +14,14 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import type { IndexMessage } from '@tech-matters/hrm-search-config';
+import type { IndexMessage, DeleteMessage } from '@tech-matters/hrm-search-config';
 import type { AccountSID } from '@tech-matters/types';
 import type { SQSRecord } from 'aws-lambda';
 
-export type MessageWithMeta = { message: IndexMessage; messageId: string };
+export type MessageWithMeta = {
+  message: IndexMessage | DeleteMessage;
+  messageId: string;
+};
 export type MessagesByAccountSid = Record<AccountSID, MessageWithMeta[]>;
 
 const groupMessagesReducer = (
@@ -26,7 +29,10 @@ const groupMessagesReducer = (
   curr: SQSRecord,
 ): MessagesByAccountSid => {
   const { messageId, body } = curr;
-  const message = JSON.parse(body) as IndexMessage;
+  const deserialized = JSON.parse(body);
+  // This is compatibility code, can be removed when HRM v1.26.x is deployed everywhere
+  deserialized.entityType = deserialized.entityType || deserialized.type;
+  const message = deserialized as IndexMessage;
 
   const { accountSid } = message;
 

@@ -62,6 +62,15 @@ on:
         required: false
         default: 'true'
         type: string
+      skip-matrix-update:
+        description: 'Specifies if should skip updating the version matrix. Defaults to false'
+        required: false
+        default: 'false'
+        type: string
+    outputs:
+        matrix_json:
+          description: 'JSON string of the matrix of environments / regions to deploy to'
+          value: ${{ jobs.build_lambda.outputs.matrix_json }}
 
 env:
   # if anything is set as a secret, it can't be used in outputs. So we need to set it as an env var
@@ -236,9 +245,9 @@ jobs:
             channel: ${{ env.ASELO_DEPLOYS_CHANNEL_ID }}
             text: '`[HRM lambdas - ${{ inputs.lambda_path }}]` Deployment of ${{ github.ref_type }} `${{ github.ref_name }}` requested by `${{ github.triggering_actor }}` completed with SHA ${{ github.sha }} to region `${{ matrix.region }}`, environment `${{ inputs.environment }}` :rocket:.'
         if: ${{ inputs.send-slack-message != 'false' }}
-      
-      # Update deployment matrix with region as identifier and lambda path as service repo
+
       - name: Update deployment matrix
+        if: ${{ inputs.skip-matrix-update != 'true' }}
         id: update-deployment-matrix
         uses: techmatters/flex-plugins/.github/actions/deployment-matrix@master
         with:
