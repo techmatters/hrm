@@ -213,6 +213,11 @@ const deleteContactInSearchIndex = doContactChangeNotification('delete');
 type InvalidParameterError = ErrorResult<'InvalidParameterError'>;
 type CreateError = DatabaseErrorResult | InvalidParameterError;
 
+const isRemovedOfflineContact = (contact: Contact): boolean =>
+  contact.taskId.startsWith('offline-contact-task-') &&
+  !contact.rawJson.callType &&
+  !contact.finalizedAt;
+
 // Creates a contact with all its related records within a single transaction
 export const createContact = async (
   accountSid: HrmAccountId,
@@ -351,11 +356,7 @@ export const patchContact = async (
     // trigger index operation but don't await for it
 
     if (!skipSearchIndex) {
-      if (
-        updated.taskId?.startsWith('offline-contact-task-') &&
-        !updated.rawJson.callType &&
-        !updated.finalizedAt
-      ) {
+      if (isRemovedOfflineContact(updated)) {
         // If the task is an offline contact task and the call type is not set, this is a 'reset' contact, effectively deleted, so we should remove it from the index
         deleteContactInSearchIndex({ accountSid, contactId: parseInt(contactId, 10) });
       } else {
@@ -391,7 +392,7 @@ export const connectContactToCase = async (
   const applyTransformations = bindApplyTransformations(can, user);
 
   // trigger index operation but don't await for it
-  if (!skipSearchIndex) {
+  if (!skipSearchIndex && !isRemovedOfflineContact(updated)) {
     updateContactInSearchIndex({ accountSid, contactId: parseInt(contactId, 10) });
   }
 
