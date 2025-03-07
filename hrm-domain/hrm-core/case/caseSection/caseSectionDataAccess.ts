@@ -22,21 +22,20 @@ import { UPDATE_CASE_SECTION_BY_ID } from './sql/updateSql';
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { TKConditionsSets } from '../../permissions/rulesMap';
 import { isOk, HrmAccountId } from '@tech-matters/types';
-import { Contact } from '../../contact/contactDataAccess';
 import { txIfNotInOne } from '../../sql';
 import { TOUCH_CASE_SQL } from '../sql/caseUpdateSql';
+import {
+  CaseSectionTimelineActivity,
+  ContactTimelineActivity,
+  TimelineActivity,
+  TimelineResult,
+} from '@tech-matters/hrm-types';
 
-export type TimelineActivity<T> = {
-  timestamp: string;
-  activity: T;
-  activityType: string;
-};
-
-export type ContactTimelineActivity = TimelineActivity<Contact> & {
-  activityType: 'contact';
-};
-export type CaseSectionTimelineActivity = TimelineActivity<CaseSectionRecord> & {
-  activityType: 'case-section';
+export {
+  TimelineActivity,
+  ContactTimelineActivity,
+  CaseSectionTimelineActivity,
+  TimelineResult,
 };
 
 export const isCaseSectionTimelineActivity = (
@@ -142,8 +141,6 @@ export const updateById =
       return updatedSection;
     });
   };
-
-export type TimelineResult = { count: number; activities: TimelineActivity<any>[] };
 
 export const getTimeline = async (
   accountSid: HrmAccountId,

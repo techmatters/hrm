@@ -19,7 +19,7 @@ type ResultBase = {
   readonly _tag: 'Result';
 };
 
-type NewErrorResultParams<TError extends string> = {
+type NewErrorResultParams<TError> = {
   message: string;
   error: TError;
   extraProperties?: Record<string, any>;
@@ -48,7 +48,7 @@ class ResultError<T extends ErrorResult<any>> extends Error {
   }
 }
 
-export const newErr = <TError extends string>({
+export const newErr = <TError>({
   message,
   error,
 }: NewErrorResultParams<TError>): ErrorResult<TError> => {
