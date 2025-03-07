@@ -23,13 +23,24 @@ import { AccountSID } from '@tech-matters/types';
 
 type SupportedNotificationOperation = Extract<
   NotificationOperation,
-  'update' | 'create' | 'delete' | 'reindex'
+  'update' | 'create' | 'reindex'
 >;
+export type DeleteContactMessage = {
+  entityType: 'contact';
+  operation: 'delete';
+  id: string;
+};
 
 export type IndexContactMessage = {
   entityType: 'contact';
   operation: SupportedNotificationOperation;
   contact: Pick<Contact, 'id'> & Partial<Contact>;
+};
+
+export type DeleteCaseMessage = {
+  entityType: 'case';
+  operation: 'delete';
+  id: string;
 };
 
 export type IndexCaseMessage = {
@@ -44,6 +55,11 @@ export type IndexCaseMessage = {
 export type IndexMessage = { accountSid: AccountSID } & (
   | IndexContactMessage
   | IndexCaseMessage
+);
+
+export type DeleteMessage = { accountSid: AccountSID } & (
+  | DeleteContactMessage
+  | DeleteCaseMessage
 );
 
 export type IndexPayloadContact = IndexContactMessage & {

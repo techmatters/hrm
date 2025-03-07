@@ -58,6 +58,12 @@ export const handler = async (event: SQSEvent): Promise<SQSBatchResponse> => {
       }
       switch (message.entityType) {
         case 'case': {
+          if (message.operation === 'delete') {
+            console.info(
+              `[generalised-search-cases]: Indexing Request Acknowledged By ES. Account SID: ${accountSid}, Case ID: ${message.id}. Operation: ${message.operation}. (key: ${accountSid}/${message.id}/${message.operation})`,
+            );
+            return;
+          }
           const caseObj = message.case;
           console.info(
             `[generalised-search-cases]: Indexing Request Acknowledged By ES. Account SID: ${accountSid}, Case ID: ${
@@ -71,6 +77,12 @@ export const handler = async (event: SQSEvent): Promise<SQSBatchResponse> => {
           return;
         }
         case 'contact': {
+          if (message.operation === 'delete') {
+            console.info(
+              `[generalised-search-contacts]: Indexing Request Acknowledged By ES. Account SID: ${accountSid}, Contact ID: ${message.id}. Operation: ${message.operation}. (key: ${accountSid}/${message.id}/${message.operation})`,
+            );
+            return;
+          }
           const { contact } = message;
           console.info(
             `[generalised-search-contacts]: Indexing Request Acknowledged By ES. Account SID: ${accountSid}, Contact ID: ${
