@@ -31,21 +31,21 @@ export const postHandler = async (event: AlbHandlerEvent) => {
     console.log(JSON.stringify(event));
     const envResult = validateEnvironment();
     if (isErr(envResult)) {
-      const message = `${envResult.error} ${envResult.message}`;
+      const message = `${JSON.stringify(envResult.error)} ${envResult.message}`;
       console.error(message);
       return newErr({ error: 'InternalServerError', message });
     }
 
     const payloadResult = validatePayload(JSON.parse(event.body || '{}'));
     if (isErr(payloadResult)) {
-      const message = `${payloadResult.error} ${payloadResult.message}`;
+      const message = `${JSON.stringify(payloadResult.error)} ${payloadResult.message}`;
       console.warn(message);
       return newErr({ error: 'InvalidRequestError', message });
     }
 
     const headersResult = validateHeaders(event.headers);
     if (isErr(headersResult)) {
-      const message = `${headersResult.error} ${headersResult.message}`;
+      const message = `${JSON.stringify(headersResult.error)} ${headersResult.message}`;
       console.warn(message);
       return newErr({ error: 'InvalidRequestError', message });
     }
@@ -56,7 +56,7 @@ export const postHandler = async (event: AlbHandlerEvent) => {
       environment: envResult.data.environment,
     });
     if (isErr(authResult)) {
-      const message = authResult.error + authResult.message;
+      const message = JSON.stringify(authResult.error) + authResult.message;
       console.warn(message);
       return newErr({ error: 'AuthError', message });
     }
@@ -70,7 +70,7 @@ export const postHandler = async (event: AlbHandlerEvent) => {
       token: authResult.data.token,
     });
     if (isErr(createCaseResult)) {
-      const message = createCaseResult.error + createCaseResult.message;
+      const message = JSON.stringify(createCaseResult.error) + createCaseResult.message;
       console.error(message);
       return newErr({ error: 'InternalServerError', message });
     }
@@ -92,7 +92,8 @@ export const postHandler = async (event: AlbHandlerEvent) => {
       }),
     });
     if (isErr(createIncidentResult)) {
-      const message = createIncidentResult.error + createIncidentResult.message;
+      const message =
+        JSON.stringify(createIncidentResult.error) + createIncidentResult.message;
       console.error(message);
       return newErr({ error: 'InternalServerError', message });
     }
@@ -109,7 +110,8 @@ export const postHandler = async (event: AlbHandlerEvent) => {
       token: authResult.data.token,
     });
     if (isErr(updateSectionResult)) {
-      const message = updateSectionResult.error + updateSectionResult.message;
+      const message =
+        JSON.stringify(updateSectionResult.error) + updateSectionResult.message;
       console.error(message);
       return newErr({ error: 'InternalServerError', message });
     }
