@@ -19,9 +19,11 @@ import {
   HRM_CONTACTS_INDEX_TYPE,
   type IndexPayload,
   type IndexContactMessage,
+  type DeleteContactMessage,
   type IndexCaseMessage,
+  type DeleteCaseMessage,
 } from '@tech-matters/hrm-search-config';
-import { assertExhaustive, type HrmAccountId } from '@tech-matters/types';
+import { type HrmAccountId } from '@tech-matters/types';
 import { ExportTranscriptDocument, isS3StoredTranscript } from '@tech-matters/hrm-types';
 import type { MessageWithMeta, MessagesByAccountSid } from './messages';
 
@@ -32,12 +34,18 @@ import type { MessageWithMeta, MessagesByAccountSid } from './messages';
  *   - updateDocument: Used when we want to preserve the existing document (if any), using the document object for the update. An example is update a case
  *   - updateScript: Used when we want to preserve the existing document (if any), using the generated "update script" for the update. An example is updating case.contacts list when a contact is indexed
  */
-export type PayloadWithMeta = {
-  documentId: number;
-  payload: IndexPayload;
-  messageId: string;
-  indexHandler: 'indexDocument' | 'updateDocument' | 'updateScript' | 'deleteDocument';
-};
+export type PayloadWithMeta =
+  | {
+      documentId: number;
+      payload: IndexPayload;
+      messageId: string;
+      indexHandler: 'indexDocument' | 'updateDocument' | 'updateScript';
+    }
+  | {
+      documentId: number;
+      messageId: string;
+      indexHandler: 'deleteDocument';
+    };
 export type PayloadsByIndex = {
   [indexType: string]: PayloadWithMeta[];
 };
@@ -47,7 +55,7 @@ export type PayloadsByAccountSid = Record<HrmAccountId, PayloadsByIndex>;
  * ContactIndexingInputData type represents an "index contact" message, plus contact specific data that might be collected from other places other than the HRM DB (e.g. transcripts fetched from S3)
  */
 type ContactIndexingInputData = MessageWithMeta & {
-  message: IndexContactMessage;
+  message: IndexContactMessage | DeleteContactMessage;
 } & {
   transcript: string | null;
 };
@@ -87,7 +95,7 @@ const contactIndexingInputData = async (
  * CaseIndexingInputData type represents an "index case" message, plus case specific data that might be collected from other places other than the HRM DB (no instances of such data right now, defining the type for completeness)
  */
 type CaseIndexingInputData = MessageWithMeta & {
-  message: IndexCaseMessage;
+  message: IndexCaseMessage | DeleteCaseMessage;
 };
 
 const caseIndexingInputData = async (
@@ -97,20 +105,27 @@ const caseIndexingInputData = async (
 ): Promise<CaseIndexingInputData> => m;
 
 type IndexingInputData = ContactIndexingInputData | CaseIndexingInputData;
-const indexingInputDataMapper = (m: MessageWithMeta): Promise<IndexingInputData> => {
+const indexingInputDataMapper = async (
+  m: MessageWithMeta,
+): Promise<IndexingInputData> => {
   const { message, messageId } = m;
+  if (message.operation === 'delete') {
+    switch (message.entityType) {
+      case 'contact': {
+        return { message, messageId } as ContactIndexingInputData;
+      }
+      case 'case': {
+        return { message, messageId } as CaseIndexingInputData;
+      }
+    }
+  }
 
-  const { type } = message;
-
-  switch (type) {
+  switch (message.entityType) {
     case 'contact': {
       return contactIndexingInputData({ message, messageId });
     }
     case 'case': {
       return caseIndexingInputData({ message, messageId });
-    }
-    default: {
-      return assertExhaustive(type);
     }
   }
 };
@@ -119,31 +134,53 @@ const generatePayloadFromContact = (
   ps: PayloadsByIndex,
   m: ContactIndexingInputData,
 ): PayloadsByIndex => {
-  return {
-    ...ps,
-    // add an upsert job to HRM_CONTACTS_INDEX_TYPE index
-    [HRM_CONTACTS_INDEX_TYPE]: [
-      ...(ps[HRM_CONTACTS_INDEX_TYPE] ?? []),
-      {
-        ...m,
-        documentId: m.message.contact.id,
-        payload: { ...m.message, transcript: m.transcript },
-        indexHandler: 'updateDocument',
-      },
-    ],
-    // if associated to a case, add an upsert with script job to HRM_CASES_INDEX_TYPE index
-    [HRM_CASES_INDEX_TYPE]: m.message.contact.caseId
-      ? [
-          ...(ps[HRM_CASES_INDEX_TYPE] ?? []),
+  switch (m.message.operation) {
+    case 'create':
+    case 'update':
+    case 'reindex': {
+      return {
+        ...ps,
+        // add an upsert job to HRM_CONTACTS_INDEX_TYPE index
+        [HRM_CONTACTS_INDEX_TYPE]: [
+          ...(ps[HRM_CONTACTS_INDEX_TYPE] ?? []),
           {
             ...m,
-            documentId: m.message.contact.caseId,
+            documentId: m.message.contact.id,
             payload: { ...m.message, transcript: m.transcript },
-            indexHandler: 'updateScript',
+            indexHandler: 'updateDocument',
           },
-        ]
-      : ps[HRM_CASES_INDEX_TYPE] ?? [],
-  };
+        ],
+        // if associated to a case, add an upsert with script job to HRM_CASES_INDEX_TYPE index
+        [HRM_CASES_INDEX_TYPE]: m.message.contact.caseId
+          ? [
+              ...(ps[HRM_CASES_INDEX_TYPE] ?? []),
+              {
+                ...m,
+                documentId: m.message.contact.caseId,
+                payload: { ...m.message, transcript: m.transcript },
+                indexHandler: 'updateScript',
+              },
+            ]
+          : ps[HRM_CASES_INDEX_TYPE] ?? [],
+      };
+    }
+    case 'delete': {
+      // Compatibility with old messages that don't have a message.id field, can be removed once HRM v1.26.0 is deployed
+      const contactId = m.message.id ?? (m.message as any).contact?.id;
+      return {
+        ...ps,
+        // add a delete job to HRM_CASES_INDEX_TYPE index
+        [HRM_CONTACTS_INDEX_TYPE]: [
+          ...(ps[HRM_CONTACTS_INDEX_TYPE] ?? []),
+          {
+            ...m,
+            documentId: parseInt(contactId),
+            indexHandler: 'deleteDocument',
+          },
+        ],
+      };
+    }
+  }
 };
 
 const generatePayloadFromCase = (
@@ -153,8 +190,7 @@ const generatePayloadFromCase = (
   switch (m.message.operation) {
     case 'create':
     case 'update':
-    case 'reindex':
-    case 'index': {
+    case 'reindex': {
       return {
         ...ps,
         // add an upsert job to HRM_CASES_INDEX_TYPE index
@@ -169,8 +205,12 @@ const generatePayloadFromCase = (
         ],
       };
     }
-    case 'delete':
-    case 'remove': {
+    case 'delete': {
+      // Compatibility with old messages that don't have a message.id field, can be removed once HRM v1.26.0 is deployed
+      const caseId = m.message.id ?? (m.message as any).case?.id;
+      if (!caseId) {
+        throw new Error(`Case id not found in message ${m}`);
+      }
       return {
         ...ps,
         // add a delete job to HRM_CASES_INDEX_TYPE index
@@ -178,15 +218,11 @@ const generatePayloadFromCase = (
           ...(ps[HRM_CASES_INDEX_TYPE] ?? []),
           {
             ...m,
-            documentId: m.message.case.id,
-            payload: { ...m.message },
+            documentId: parseInt(caseId),
             indexHandler: 'deleteDocument',
           },
         ],
       };
-    }
-    default: {
-      return assertExhaustive(m.message.operation);
     }
   }
 };
@@ -197,18 +233,13 @@ const messagesToPayloadReducer = (
 ): PayloadsByIndex => {
   const { message, messageId } = currM;
 
-  const { type } = message;
-
-  switch (type) {
+  switch (message.entityType) {
     case 'contact': {
       const { transcript } = currM as ContactIndexingInputData;
       return generatePayloadFromContact(accum, { message, messageId, transcript });
     }
     case 'case': {
       return generatePayloadFromCase(accum, { message, messageId });
-    }
-    default: {
-      return assertExhaustive(type);
     }
   }
 };

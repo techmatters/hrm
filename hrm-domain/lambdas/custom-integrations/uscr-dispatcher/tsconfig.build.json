@@ -5,6 +5,10 @@
   "references": [
     { "path": "packages/types" },
     { "path": "packages/ssm-cache" },
+    { "path": "packages/http" },
+    { "path": "packages/twilio-worker-auth" },
+    { "path": "lambdas/packages/hrm-authentication" },
+    { "path": "hrm-domain/packages/hrm-types" },
     { "path": "hrm-domain/lambdas/custom-integrations/uscr-dispatcher" }
   ]
 }

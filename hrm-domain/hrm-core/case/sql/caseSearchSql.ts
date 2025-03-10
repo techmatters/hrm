@@ -361,8 +361,6 @@ const selectSearchCaseBaseQuery = (whereClause: string): SearchQueryBuilder => {
 
 export const selectCaseSearch = selectSearchCaseBaseQuery(
   `WHERE
-    (info IS NULL OR jsonb_typeof(info) = 'object')
-    AND
       $<accountSid> IS NOT NULL AND cases."accountSid" = $<accountSid>
     AND ${SEARCH_WHERE_CLAUSE}
   `,
