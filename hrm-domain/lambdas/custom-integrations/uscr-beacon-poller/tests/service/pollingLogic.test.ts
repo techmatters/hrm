@@ -36,7 +36,7 @@ const MAX_INCIDENT_REPORTS_PER_CALL = 5;
 process.env.MAX_INCIDENT_REPORTS_PER_CALL = MAX_INCIDENT_REPORTS_PER_CALL.toString();
 process.env.MAX_CONSECUTIVE_API_CALLS = '5';
 const BASELINE_DATE = new Date('2001-01-01T00:00:00.000Z');
-const LAST_SEEN_PARAMETER_NAME = `/${process.env.NODE_ENV}/hrm/custom-integration/uscr/${ACCOUNT_SID}/latest_beacon_update_seen`;
+const LAST_SEEN_PARAMETER_NAME = `/${process.env.NODE_ENV}/hrm/custom-integration/uscr/${ACCOUNT_SID}/beacon/latest_incident_report_seen`;
 
 export const mockLastUpdateSeenParameter = async (mockttp: Mockttp) => {
   await mockSsmParameters(mockttp, [
@@ -111,14 +111,14 @@ export const mockBeacon = async (
   mockttp: Mockttp,
   responses: IncidentReport[][],
 ): Promise<MockedEndpoint> => {
-  process.env.BEACON_URL = `http://localhost:${mockttp.port}/mock-beacon`;
+  process.env.BEACON_BASE_URL = `http://localhost:${mockttp.port}/mock-beacon`;
   console.debug(
-    `Mocking beacon endpoint: GET ${process.env.BEACON_URL} to respond with ${responses.length} responses:`,
+    `Mocking beacon endpoint: GET ${process.env.BEACON_BASE_URL} to respond with ${responses.length} responses:`,
   );
   responses.map((r, idx) => console.debug(idx, r));
   let currentResponseIndex = 0;
   return mockttp
-    .forGet(process.env.BEACON_URL!)
+    .forGet(`${process.env.BEACON_BASE_URL}/incidentReport`)
     .always()
     .asPriority(beaconMockPriority++)
     .thenCallback(async () => ({
@@ -171,6 +171,7 @@ beforeEach(async () => {
     subDays(BASELINE_DATE, 1).toISOString(),
   );
 });
+
 describe('Beacon Polling Service', () => {
   describe('Polling logic', () => {
     test("Returns less than the maximum records - doesn't query again", async () => {
@@ -183,10 +184,9 @@ describe('Beacon Polling Service', () => {
       expect(beaconRequests.length).toBe(1);
 
       expect(beaconRequests[0].url).toBe(
-        `${process.env.BEACON_URL}?updatedAfter=${subDays(
-          BASELINE_DATE,
-          1,
-        ).toISOString()}&max=${MAX_INCIDENT_REPORTS_PER_CALL}`,
+        `${process.env.BEACON_BASE_URL}/incidentReport?updatedAfter=${encodeURIComponent(
+          subDays(BASELINE_DATE, 1).toISOString(),
+        )}&max=${MAX_INCIDENT_REPORTS_PER_CALL}`,
       );
     });
     test('Returns the maximum records - queries again', async () => {
@@ -202,25 +202,22 @@ describe('Beacon Polling Service', () => {
       const beaconRequests = await mockedBeaconEndpoint.getSeenRequests();
       expect(beaconRequests.length).toBe(3);
 
-      expect(beaconRequests[0].url).toBe(
-        `${process.env.BEACON_URL}?updatedAfter=${subDays(
-          BASELINE_DATE,
-          1,
-        ).toISOString()}&max=${MAX_INCIDENT_REPORTS_PER_CALL}`,
+      expect(decodeURI(beaconRequests[0].url)).toBe(
+        `${process.env.BEACON_BASE_URL}/incidentReport?updatedAfter=${encodeURIComponent(
+          subDays(BASELINE_DATE, 1).toISOString(),
+        )}&max=${MAX_INCIDENT_REPORTS_PER_CALL}`,
       );
 
-      expect(beaconRequests[1].url).toBe(
-        `${process.env.BEACON_URL}?updatedAfter=${addHours(
-          BASELINE_DATE,
-          4,
-        ).toISOString()}&max=${MAX_INCIDENT_REPORTS_PER_CALL}`,
+      expect(decodeURI(beaconRequests[1].url)).toBe(
+        `${process.env.BEACON_BASE_URL}/incidentReport?updatedAfter=${encodeURIComponent(
+          addHours(BASELINE_DATE, 4).toISOString(),
+        )}&max=${MAX_INCIDENT_REPORTS_PER_CALL}`,
       );
 
-      expect(beaconRequests[2].url).toBe(
-        `${process.env.BEACON_URL}?updatedAfter=${addHours(
-          BASELINE_DATE,
-          9,
-        ).toISOString()}&max=${MAX_INCIDENT_REPORTS_PER_CALL}`,
+      expect(decodeURI(beaconRequests[2].url)).toBe(
+        `${process.env.BEACON_BASE_URL}/incidentReport?updatedAfter=${encodeURIComponent(
+          addHours(BASELINE_DATE, 9).toISOString(),
+        )}&max=${MAX_INCIDENT_REPORTS_PER_CALL}`,
       );
     });
     test('Returns the maximum records for more than the maximum allowed number of queries in a polling sweep - stops querying', async () => {
