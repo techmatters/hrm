@@ -34,6 +34,7 @@ export const twilioTokenValidator = async ({
   token: string;
 }) => {
   try {
+    console.debug('Token validation input:', token, accountSid, `${authToken[0]}xxxxxxx`);
     const tokenResult = <TokenValidatorResponse>(
       await TokenValidator(token, accountSid, authToken)
     );
