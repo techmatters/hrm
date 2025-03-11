@@ -49,7 +49,6 @@ import {
 } from '@tech-matters/hrm-types';
 import { RulesFile, TKConditionsSets } from '../permissions/rulesMap';
 import { CaseSectionRecord } from './caseSection/types';
-import { pick } from 'lodash';
 import {
   DocumentType,
   HRM_CASES_INDEX_TYPE,
@@ -69,8 +68,8 @@ import { NotificationOperation } from '@tech-matters/hrm-types/NotificationOpera
 
 export { WELL_KNOWN_CASE_SECTION_NAMES, CaseService, CaseInfoSection };
 
-const CASE_OVERVIEW_PROPERTIES = ['summary', 'followUpDate', 'childIsAtRisk'] as const;
-type CaseOverviewProperties = (typeof CASE_OVERVIEW_PROPERTIES)[number];
+const REQUIRED_CASE_OVERVIEW_PROPERTIES = ['summary'] as const;
+type RequiredCaseOverviewProperties = (typeof REQUIRED_CASE_OVERVIEW_PROPERTIES)[number];
 
 type RecursivePartial<T> = {
   [P in keyof T]?: RecursivePartial<T[P]>;
@@ -389,12 +388,12 @@ export const updateCaseStatus = async (
 export const updateCaseOverview = async (
   accountSid: CaseService['accountSid'],
   id: CaseService['id'],
-  overview: Pick<CaseService['info'], CaseOverviewProperties>,
+  overview: Partial<CaseService['info']> &
+    Pick<CaseService['info'], RequiredCaseOverviewProperties>,
   workerSid: CaseService['twilioWorkerId'],
   skipSearchIndex = false,
 ): Promise<CaseService> => {
-  const validOverview = pick(overview, CASE_OVERVIEW_PROPERTIES);
-  const updated = await updateCaseInfo(accountSid, id, validOverview, workerSid);
+  const updated = await updateCaseInfo(accountSid, id, overview, workerSid);
 
   if (!skipSearchIndex) {
     // trigger index operation but don't await for it
