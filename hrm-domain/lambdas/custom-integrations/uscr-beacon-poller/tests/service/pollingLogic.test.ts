@@ -23,7 +23,7 @@ import { clearAllTables } from '@tech-matters/hrm-service-test-support';
 import each from 'jest-each';
 
 import { db } from './dbConnection';
-import { handler, IncidentReport } from '../../src';
+import { BEACON_API_KEY_HEADER, handler, IncidentReport } from '../../src';
 
 const ACCOUNT_SID = 'ACservicetest';
 const BEACON_RESPONSE_HEADERS = {
@@ -205,6 +205,9 @@ describe('Beacon Polling Service', () => {
           `${process.env.BEACON_BASE_URL}/${api}?updatedAfter=${encodeURIComponent(
             subDays(BASELINE_DATE, 1).toISOString(),
           )}&max=${MAX_INCIDENT_REPORTS_PER_CALL}`,
+        );
+        expect(beaconRequests[0].headers[BEACON_API_KEY_HEADER.toLowerCase()]).toBe(
+          process.env.BEACON_API_KEY,
         );
       });
       test('[$api] Returns the maximum records - queries again', async () => {

@@ -22,4 +22,5 @@ process.env.SSM_ENDPOINT = 'http://mock-ssm/';
 process.env.STATIC_KEY = 'BBC';
 process.env.ACCOUNT_SID = 'ACservicetest';
 process.env.INTERNAL_HRM_URL = 'http://localhost:3001';
-process.env.BEACON_URL = 'http://mock-beacon/';
+process.env.BEACON_BASE_URL = 'http://mock-beacon/';
+process.env.BEACON_API_KEY = 'mock-beacon-key';

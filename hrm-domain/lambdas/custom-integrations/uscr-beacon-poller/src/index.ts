@@ -17,12 +17,16 @@
 import { getSsmParameter, putSsmParameter } from '@tech-matters/ssm-cache';
 
 const accountSid = process.env.ACCOUNT_SID;
+export const BEACON_API_KEY_HEADER = 'X-API-Token';
 const hrmHeaders = {
   Authorization: `Basic ${process.env.STATIC_KEY}`,
   'Content-Type': 'application/json',
 };
+const beaconHeaders = {
+  [BEACON_API_KEY_HEADER]: process.env.BEACON_API_KEY!,
+};
 const lastIncidentReportUpdateSeenSsmKey = `/${process.env.NODE_ENV}/hrm/custom-integration/uscr/${accountSid}/beacon/latest_incident_report_seen`;
-// const lastCaseReportUpdateSeenSsmKey = `/${process.env.NODE_ENV}/hrm/custom-integration/uscr/${accountSid}/beacon/latest_case_report_seen`;
+const lastCaseReportUpdateSeenSsmKey = `/${process.env.NODE_ENV}/hrm/custom-integration/uscr/${accountSid}/beacon/latest_case_report_seen`;
 
 type PollConfig<TItem> = {
   url: URL;
@@ -109,7 +113,7 @@ const pollApi = async <TItem>({
     url.searchParams.set('updatedAfter', lastUpdateSeen);
     url.searchParams.set('max', maxIncidents.toString());
     console.info('Querying:', url);
-    const response = await fetch(url);
+    const response = await fetch(url, { headers: beaconHeaders });
     console.debug(`Beacon ${itemTypeName} API responded with status:`, response.status);
     if (response.ok) {
       const beaconData = (await response.json()) as TItem[];
@@ -170,7 +174,7 @@ export const handler = async ({
     },
     caseReport: {
       url: new URL(`${process.env.BEACON_BASE_URL}/caseReport`),
-      lastUpdateSeenSsmKey: lastIncidentReportUpdateSeenSsmKey,
+      lastUpdateSeenSsmKey: lastCaseReportUpdateSeenSsmKey,
       itemProcessor: processIncidentReport,
       maxIncidents: parseInt(process.env.MAX_INCIDENT_REPORTS_PER_CALL || '1000'),
       maxConsecutiveApiCalls: parseInt(process.env.MAX_CONSECUTIVE_API_CALLS || '10'),
