@@ -80,8 +80,20 @@ const processIncidentReport = async ({
       headers: hrmHeaders,
     },
   );
-  const newSection: any = await newSectionResponse.json();
-  console.debug(`Added new incidentReport case section to case ${caseId}:`, newSection);
+  if (newSectionResponse.ok) {
+    const newSection: any = await newSectionResponse.json();
+    console.debug(`Added new incidentReport case section to case ${caseId}:`, newSection);
+  } else if (newSectionResponse.status === 409) {
+    console.warn(
+      `Incident report ${incidentReportId} was already added to case ${caseId} - overwrites are not supported.`,
+      await newSectionResponse.text(),
+    );
+  } else {
+    console.error(
+      `Error adding incident report ${incidentReportId} to case ${caseId} (status ${newSectionResponse.status}):`,
+      await newSectionResponse.text(),
+    );
+  }
   return lastUpdated;
 };
 
