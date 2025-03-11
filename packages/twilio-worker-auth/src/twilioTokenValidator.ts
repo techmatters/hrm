@@ -37,7 +37,7 @@ export const twilioTokenValidator = async ({
     const tokenResult = <TokenValidatorResponse>(
       await TokenValidator(token, accountSid, authToken)
     );
-
+    console.debug('Token validation result:', tokenResult);
     if (!isWorker(tokenResult) || isGuest(tokenResult)) {
       return newErr({
         error: 'Token authentication failed',
