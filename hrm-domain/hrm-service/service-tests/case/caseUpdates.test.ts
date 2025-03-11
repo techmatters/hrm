@@ -33,7 +33,6 @@ import {
 import * as mocks from '../mocks';
 import { headers, getRequest, getServer, useOpenRules } from '../server';
 import { ALWAYS_CAN, casePopulated } from '../mocks';
-import { pick } from 'lodash';
 import { clearAllTables } from '../dbCleanup';
 import { setupTestQueues } from '../sqs';
 
@@ -253,6 +252,14 @@ describe('PUT /cases/:id/overview route', () => {
         somethingFrom: 'behind the veil',
       },
     },
+    {
+      changeDescription: 'dynamic properties are now supported and saved',
+      newOverview: {
+        summary: 'summary is required',
+        customField1: 'custom value 1',
+        customField2: 'custom value 2',
+      },
+    },
   ];
 
   each(testCases).test(
@@ -278,7 +285,7 @@ describe('PUT /cases/:id/overview route', () => {
         ...originalCase,
         info: {
           ...originalCase.info,
-          ...pick(newOverview, ['summary', 'childIsAtRisk', 'followUpDate']),
+          ...newOverview,
         },
         updatedAt: expect.toParseAsDate(),
         updatedBy: workerSid,
