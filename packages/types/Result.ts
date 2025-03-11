@@ -111,7 +111,7 @@ export const ensureRejection = <TError extends ErrorResult<any>, TData>(
   };
 };
 
-type SuccessResult<TData> = ResultBase & {
+export type SuccessResult<TData> = ResultBase & {
   status: 'success';
   data: TData;
   readonly unwrap: () => TData;

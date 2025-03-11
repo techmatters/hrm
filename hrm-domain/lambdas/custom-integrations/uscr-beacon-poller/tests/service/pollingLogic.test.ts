@@ -24,6 +24,7 @@ import each from 'jest-each';
 
 import { db } from './dbConnection';
 import { BEACON_API_KEY_HEADER, handler, IncidentReport } from '../../src';
+import { parseISO } from 'date-fns';
 
 const ACCOUNT_SID = 'ACservicetest';
 const BEACON_RESPONSE_HEADERS = {
@@ -84,8 +85,10 @@ const generateIncidentReports = (
     const indexInCurrentIteration = i % caseIds.length;
     const iteration = Math.floor(i / caseIds.length);
     response.push({
-      updated_at: addHours(start, i * intervalInHours).toISOString(),
-      case_id: caseIds[indexInCurrentIteration],
+      updated_at: addHours(start, (i + 1) * intervalInHours).toISOString(),
+      ...(caseIds[indexInCurrentIteration]
+        ? { case_id: caseIds[indexInCurrentIteration] }
+        : {}),
       id: iteration,
       contact_id: `contact-for-case-${caseIds[indexInCurrentIteration]}`,
       description: `Incident report #${iteration}, for case ${caseIds[indexInCurrentIteration]}`,
@@ -96,7 +99,7 @@ const generateIncidentReports = (
       caller_name: 'Caller Name',
       caller_number: '1234567890',
       created_at: start.toISOString(),
-    });
+    } as IncidentReport);
   }
   return response;
 };
@@ -131,7 +134,7 @@ export const mockBeacon = async (
     .asPriority(beaconMockPriority++)
     .thenCallback(async () => ({
       statusCode: 200,
-      body: JSON.stringify(responses[currentResponseIndex++]),
+      body: JSON.stringify(responses[currentResponseIndex++] ?? []),
       headers: BEACON_RESPONSE_HEADERS,
     }));
 };
@@ -232,13 +235,13 @@ describe('Beacon Polling Service', () => {
 
         expect(decodeURI(beaconRequests[1].url)).toBe(
           `${process.env.BEACON_BASE_URL}/${api}?updatedAfter=${encodeURIComponent(
-            addHours(BASELINE_DATE, 4).toISOString(),
+            addHours(BASELINE_DATE, 5).toISOString(),
           )}&max=${MAX_INCIDENT_REPORTS_PER_CALL}`,
         );
 
         expect(decodeURI(beaconRequests[2].url)).toBe(
           `${process.env.BEACON_BASE_URL}/${api}?updatedAfter=${encodeURIComponent(
-            addHours(BASELINE_DATE, 9).toISOString(),
+            addHours(BASELINE_DATE, 10).toISOString(),
           )}&max=${MAX_INCIDENT_REPORTS_PER_CALL}`,
         );
       });
@@ -260,7 +263,7 @@ describe('Beacon Polling Service', () => {
   );
 
   describe('HRM case updates', () => {
-    test('Single new incident reports for existing cases', async () => {
+    test('Single new incident reports for existing cases - adds all incidents', async () => {
       // Arrange
       const caseIds = await generateCases(2);
       const incidentReports = generateIncidentReports(2, 1, caseIds);
@@ -273,6 +276,74 @@ describe('Beacon Polling Service', () => {
       await handler({ api: 'incidentReport' });
       // Assert
       await verifyIncidentReportsForCase(caseIds[0], [incidentReports[0]]);
+      await verifyIncidentReportsForCase(caseIds[1], [incidentReports[1]]);
+    });
+    test('Multiple new incident reports per case for existing cases - adds all incidents', async () => {
+      // Arrange
+      const caseIds = await generateCases(2);
+      const incidentReports = generateIncidentReports(5, 1, caseIds);
+      mockedBeaconEndpoint = await mockBeacon(
+        await mockingProxy.mockttpServer(),
+        'incidentReport',
+        [incidentReports],
+      );
+      // Act
+      await handler({ api: 'incidentReport' });
+      // Assert
+      await verifyIncidentReportsForCase(caseIds[0], [
+        incidentReports[0],
+        incidentReports[2],
+        incidentReports[4],
+      ]);
+      await verifyIncidentReportsForCase(caseIds[1], [
+        incidentReports[1],
+        incidentReports[3],
+      ]);
+    });
+    test('Single new incident reports, some without cases - rejects incidents without cases and adds the rest', async () => {
+      // Arrange
+      const caseIds = await generateCases(2);
+      const incidentReports = generateIncidentReports(3, 1, [
+        caseIds[0],
+        undefined as any,
+        caseIds[1],
+      ]);
+      mockedBeaconEndpoint = await mockBeacon(
+        await mockingProxy.mockttpServer(),
+        'incidentReport',
+        [incidentReports],
+      );
+      // Act
+      await handler({ api: 'incidentReport' });
+      // Assert
+      await verifyIncidentReportsForCase(caseIds[0], [incidentReports[0]]);
+      await verifyIncidentReportsForCase(caseIds[1], [incidentReports[2]]);
+    });
+    test('Same incident multiple times in one batch - rejects all but first', async () => {
+      // Arrange
+      const caseIds = await generateCases(2);
+      const incidentReports = generateIncidentReports(3, 2, caseIds);
+      const updatedIncidentReport: IncidentReport = {
+        ...generateIncidentReports(1, 5, caseIds)[0],
+        description: 'Updated incident',
+      };
+      mockedBeaconEndpoint = await mockBeacon(
+        await mockingProxy.mockttpServer(),
+        'incidentReport',
+        [
+          [...incidentReports, updatedIncidentReport].sort(
+            (ir1, ir2) =>
+              parseISO(ir1.updated_at).getTime() - parseISO(ir2.updated_at).getTime(),
+          ),
+        ],
+      );
+      // Act
+      await handler({ api: 'incidentReport' });
+      // Assert
+      await verifyIncidentReportsForCase(caseIds[0], [
+        incidentReports[0],
+        incidentReports[2],
+      ]);
       await verifyIncidentReportsForCase(caseIds[1], [incidentReports[1]]);
     });
   });

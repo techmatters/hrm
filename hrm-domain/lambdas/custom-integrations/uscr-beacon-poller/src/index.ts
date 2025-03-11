@@ -59,8 +59,15 @@ const processIncidentReport = async ({
   contact_id: contactId,
   ...restOfIncident
 }: IncidentReport): Promise<string> => {
-  console.debug('Start processing incident report:', lastUpdated);
-  // Do something on the internal HRM API - will return a 404
+  console.debug(
+    `Start processing incident report: ${incidentReportId} (last updated: ${lastUpdated})`,
+  );
+  if (!caseId) {
+    console.warn(
+      `Incident reports not already assigned to a case are not currently supported - rejecting incident report ${incidentReportId} (last updated: ${lastUpdated})`,
+    );
+    return lastUpdated;
+  }
 
   const newSectionResponse = await fetch(
     `${process.env.INTERNAL_HRM_URL}/internal/v0/accounts/${accountSid}/cases/${caseId}/sections/incidentReport`,
