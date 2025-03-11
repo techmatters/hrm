@@ -33,11 +33,14 @@ services:
   service:
     image: hrm-service
     ports:
-      - '127.0.0.1:3000:3000'
-      - '127.0.0.1:3001:3001'
+      - '127.0.0.1:3030:3030'
+      - '127.0.0.1:3031:3031'
 
     environment:
       POSTGRES_PORT: 5432
+      PORT: 3030
+      INTERNAL_SERVICES_PORT: 3031
+
       RDS_HOSTNAME: db
       RESOURCES_PASSWORD: postgres
 
