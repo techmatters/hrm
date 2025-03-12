@@ -18,6 +18,7 @@ process.env.AWS_REGION = 'xx-fake-1';
 process.env.AWS_ACCESS_KEY_ID = 'mock-access-key';
 process.env.AWS_SECRET_ACCESS_KEY = 'mock-secret';
 process.env.SSM_ENDPOINT = 'http://mock-ssm/';
+process.env.HRM_DATABASE_PORT = '5433';
 
 process.env.STATIC_KEY = 'BBC';
 process.env.ACCOUNT_SID = 'ACservicetest';
