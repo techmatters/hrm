@@ -32,6 +32,12 @@ export async function mockSuccessfulTwilioAuthentication(
   accountSid: string | undefined = undefined,
 ): Promise<void> {
   const server = await mockttpServer();
+  console.debug(
+    'Mocking successful Twilio authentication',
+    accountSid,
+    mockWorkerSid,
+    mockRoles,
+  );
   await server
     .forPost(
       accountSid
@@ -40,9 +46,18 @@ export async function mockSuccessfulTwilioAuthentication(
     )
     .always()
     .asPriority(++priority) // This is to ensure the latest mock is the one that is used
-    .thenJson(200, <TokenValidatorResponse>{
-      worker_sid: mockWorkerSid,
-      roles: mockRoles,
-      valid: true,
+    .thenCallback(req => {
+      console.debug('Twilio authentication request:', req.url, req.body.getText());
+      const responseBody: TokenValidatorResponse = {
+        worker_sid: mockWorkerSid,
+        roles: mockRoles,
+      };
+      return {
+        statusCode: 200,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(responseBody),
+      };
     });
 }
