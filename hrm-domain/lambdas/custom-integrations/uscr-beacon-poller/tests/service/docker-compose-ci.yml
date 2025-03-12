@@ -25,7 +25,7 @@ services:
       INTERNAL_SERVICES_PORT: 3031
 
       RDS_HOSTNAME: host.docker.internal
-      RESOURCES_PASSWORD: postgres
+      RDB_PASSWORD: postgres
 
     env_file:
       - ./.env.service-test
