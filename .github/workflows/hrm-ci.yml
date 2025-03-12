@@ -169,7 +169,7 @@ jobs:
           postgresql init scripts: test-support/db-init
 
       - name: Run Service Tests
-        run: npm run test:service:ci
+        run: npm run test:service:ci -w hrm-domain/hrm-service
 
       - name: Publish Test Reports
         uses: dorny/test-reporter@v1
