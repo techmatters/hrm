@@ -31,6 +31,3 @@ services:
 
     env_file:
       - ./.env.service-test
-
-    depends_on:
-      - db
