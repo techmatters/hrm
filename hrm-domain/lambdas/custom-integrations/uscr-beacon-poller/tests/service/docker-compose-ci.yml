@@ -26,7 +26,7 @@ services:
       PORT: 3030
       INTERNAL_SERVICES_PORT: 3031
 
-      RDS_HOSTNAME: localhost
+      RDS_HOSTNAME: 127.0.0.1
       RESOURCES_PASSWORD: postgres
 
     env_file:
