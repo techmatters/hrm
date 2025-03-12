@@ -23,8 +23,10 @@ import { clearAllTables } from '@tech-matters/hrm-service-test-support';
 import each from 'jest-each';
 
 import { db } from './dbConnection';
-import { BEACON_API_KEY_HEADER, handler, IncidentReport } from '../../src';
+import { BEACON_API_KEY_HEADER } from '../../src/config';
+import { handler } from '../../src';
 import { parseISO } from 'date-fns';
+import { IncidentReport } from '../../src/incidentReport';
 
 const ACCOUNT_SID = 'ACservicetest';
 const BEACON_RESPONSE_HEADERS = {
@@ -34,8 +36,9 @@ const HRM_REQUEST_HEADERS = {
   'Content-Type': 'application/json',
   Authorization: `Basic ${process.env.STATIC_KEY}`,
 };
-const MAX_INCIDENT_REPORTS_PER_CALL = 5;
-process.env.MAX_INCIDENT_REPORTS_PER_CALL = MAX_INCIDENT_REPORTS_PER_CALL.toString();
+const MAX_ITEMS_PER_CALL = 5;
+process.env.MAX_INCIDENT_REPORTS_PER_CALL = MAX_ITEMS_PER_CALL.toString();
+process.env.MAX_CASE_REPORTS_PER_CALL = MAX_ITEMS_PER_CALL.toString();
 process.env.MAX_CONSECUTIVE_API_CALLS = '5';
 const BASELINE_DATE = new Date('2001-01-01T00:00:00.000Z');
 const LAST_INCIDENT_REPORT_SEEN_PARAMETER_NAME = `/${process.env.NODE_ENV}/hrm/custom-integration/uscr/${ACCOUNT_SID}/beacon/latest_incident_report_seen`;
@@ -211,7 +214,7 @@ describe('Beacon Polling Service', () => {
         expect(beaconRequests[0].url).toBe(
           `${process.env.BEACON_BASE_URL}/${api}?updatedAfter=${encodeURIComponent(
             subDays(BASELINE_DATE, 1).toISOString(),
-          )}&max=${MAX_INCIDENT_REPORTS_PER_CALL}`,
+          )}&max=${MAX_ITEMS_PER_CALL}`,
         );
         expect(beaconRequests[0].headers[BEACON_API_KEY_HEADER.toLowerCase()]).toBe(
           process.env.BEACON_API_KEY,
@@ -224,7 +227,7 @@ describe('Beacon Polling Service', () => {
           api,
           batchIncidentReports(
             generateIncidentReports(12, 1, caseIds),
-            MAX_INCIDENT_REPORTS_PER_CALL,
+            MAX_ITEMS_PER_CALL,
           ),
         );
         await handler({ api });
@@ -234,19 +237,19 @@ describe('Beacon Polling Service', () => {
         expect(decodeURI(beaconRequests[0].url)).toBe(
           `${process.env.BEACON_BASE_URL}/${api}?updatedAfter=${encodeURIComponent(
             subDays(BASELINE_DATE, 1).toISOString(),
-          )}&max=${MAX_INCIDENT_REPORTS_PER_CALL}`,
+          )}&max=${MAX_ITEMS_PER_CALL}`,
         );
 
         expect(decodeURI(beaconRequests[1].url)).toBe(
           `${process.env.BEACON_BASE_URL}/${api}?updatedAfter=${encodeURIComponent(
             addHours(BASELINE_DATE, 5).toISOString(),
-          )}&max=${MAX_INCIDENT_REPORTS_PER_CALL}`,
+          )}&max=${MAX_ITEMS_PER_CALL}`,
         );
 
         expect(decodeURI(beaconRequests[2].url)).toBe(
           `${process.env.BEACON_BASE_URL}/${api}?updatedAfter=${encodeURIComponent(
             addHours(BASELINE_DATE, 10).toISOString(),
-          )}&max=${MAX_INCIDENT_REPORTS_PER_CALL}`,
+          )}&max=${MAX_ITEMS_PER_CALL}`,
         );
       });
       test('[$api] Returns the maximum records for more than the maximum allowed number of queries in a polling sweep - stops querying', async () => {
@@ -256,7 +259,7 @@ describe('Beacon Polling Service', () => {
           api,
           batchIncidentReports(
             generateIncidentReports(1000, 1, caseIds),
-            MAX_INCIDENT_REPORTS_PER_CALL,
+            MAX_ITEMS_PER_CALL,
           ),
         );
         await handler({ api });
