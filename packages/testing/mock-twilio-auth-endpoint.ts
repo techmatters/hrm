@@ -47,9 +47,11 @@ export async function mockSuccessfulTwilioAuthentication(
     .always()
     .asPriority(++priority) // This is to ensure the latest mock is the one that is used
     .thenCallback(async req => {
-      const responseBody: TokenValidatorResponse = {
+      const responseBody: TokenValidatorResponse & { valid: boolean; message: string } = {
         worker_sid: mockWorkerSid,
         roles: mockRoles,
+        valid: true,
+        message: 'Much success.',
       };
       console.debug(
         'Twilio authentication request:',
