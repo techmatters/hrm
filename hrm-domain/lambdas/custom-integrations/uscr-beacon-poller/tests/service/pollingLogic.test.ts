@@ -122,7 +122,7 @@ export const mockBeacon = async (
   api: 'incidentReport' | 'caseReport',
   responses: IncidentReport[][],
 ): Promise<MockedEndpoint> => {
-  process.env.BEACON_BASE_URL = `http://localhost:${mockttp.port}/mock-beacon`;
+  process.env.BEACON_BASE_URL = `http://127.0.0.1:${mockttp.port}/mock-beacon`;
   console.debug(
     `Mocking beacon endpoint: GET ${process.env.BEACON_BASE_URL} to respond with ${responses.length} responses`,
   );
@@ -133,12 +133,11 @@ export const mockBeacon = async (
     .always()
     .asPriority(beaconMockPriority++)
     .thenCallback(async () => {
-      console.debug(
-        `Response ${currentResponseIndex++}, ${responses[currentResponseIndex]} items`,
-      );
+      const response = responses[currentResponseIndex] ?? [];
+      console.debug(`Response ${currentResponseIndex++}, ${response.length} items`);
       return {
         statusCode: 200,
-        body: JSON.stringify(responses[currentResponseIndex] ?? []),
+        body: JSON.stringify(response),
         headers: BEACON_RESPONSE_HEADERS,
       };
     });
