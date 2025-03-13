@@ -14,10 +14,11 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { addIncidentReportToAseloCase } from './incidentReport';
+import { incidentReportToCaseSection } from './incidentReport';
 import { accountSid, beaconHeaders } from './config';
 import { readApiInChunks } from './apiChunkReader';
-import { addCaseReportToAseloCase } from './caseReport';
+import { addSectionToAseloCase } from './caseUpdater';
+
 const lastIncidentReportUpdateSeenSsmKey = `/${process.env.NODE_ENV}/hrm/custom-integration/uscr/${accountSid}/beacon/latest_incident_report_seen`;
 const lastCaseReportUpdateSeenSsmKey = `/${process.env.NODE_ENV}/hrm/custom-integration/uscr/${accountSid}/beacon/latest_case_report_seen`;
 
@@ -31,7 +32,7 @@ export const handler = async ({
       url: new URL(`${process.env.BEACON_BASE_URL}/incidentReport`),
       headers: beaconHeaders,
       lastUpdateSeenSsmKey: lastIncidentReportUpdateSeenSsmKey,
-      itemProcessor: addIncidentReportToAseloCase,
+      itemProcessor: addSectionToAseloCase('incidentReport', incidentReportToCaseSection),
       maxItemsInChunk: parseInt(process.env.MAX_INCIDENT_REPORTS_PER_CALL || '1000'),
       maxChunksToRead: parseInt(process.env.MAX_CONSECUTIVE_API_CALLS || '10'),
       itemTypeName: 'incident report',
@@ -40,7 +41,7 @@ export const handler = async ({
       url: new URL(`${process.env.BEACON_BASE_URL}/caseReport`),
       headers: beaconHeaders,
       lastUpdateSeenSsmKey: lastCaseReportUpdateSeenSsmKey,
-      itemProcessor: addCaseReportToAseloCase,
+      itemProcessor: addSectionToAseloCase('caseReport', incidentReportToCaseSection),
       maxItemsInChunk: parseInt(process.env.MAX_CASE_REPORTS_PER_CALL || '1000'),
       maxChunksToRead: parseInt(process.env.MAX_CONSECUTIVE_API_CALLS || '10'),
       itemTypeName: 'case report',

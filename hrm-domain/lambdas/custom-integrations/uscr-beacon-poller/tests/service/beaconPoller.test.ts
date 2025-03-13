@@ -27,6 +27,7 @@ import { BEACON_API_KEY_HEADER } from '../../src/config';
 import { handler } from '../../src';
 import { parseISO } from 'date-fns';
 import { IncidentReport } from '../../src/incidentReport';
+import { generateIncidentReport } from '../mockGenerators';
 
 const ACCOUNT_SID = 'ACservicetest';
 const BEACON_RESPONSE_HEADERS = {
@@ -87,22 +88,25 @@ const generateIncidentReports = (
   for (let i = 0; i < numberToGenerate; i++) {
     const indexInCurrentIteration = i % caseIds.length;
     const iteration = Math.floor(i / caseIds.length);
-    response.push({
-      updated_at: addHours(start, (i + 1) * intervalInHours).toISOString(),
-      ...(caseIds[indexInCurrentIteration]
-        ? { case_id: caseIds[indexInCurrentIteration] }
-        : {}),
-      id: iteration,
-      contact_id: `contact-for-case-${caseIds[indexInCurrentIteration]}`,
-      description: `Incident report #${iteration}, for case ${caseIds[indexInCurrentIteration]}`,
-      address: `Address for incident report #${iteration}`,
-      category_id: 1,
-      incident_class_id: 1,
-      status: 'open',
-      caller_name: 'Caller Name',
-      caller_number: '1234567890',
-      created_at: start.toISOString(),
-    } as IncidentReport);
+    response.push(
+      generateIncidentReport({
+        updated_at: addHours(start, (i + 1) * intervalInHours).toISOString(),
+        ...(caseIds[indexInCurrentIteration]
+          ? { case_id: caseIds[indexInCurrentIteration] }
+          : {}),
+        id: iteration,
+        contact_id: `contact-for-case-${caseIds[indexInCurrentIteration]}`,
+        description: `Incident report #${iteration}, for case ${caseIds[indexInCurrentIteration]}`,
+        address: `Address for incident report #${iteration}`,
+        category_id: 1,
+        incident_class_id: 1,
+        status: 'open',
+        caller_name: 'Caller Name',
+        responder_name: `Responder Name on report #${iteration}, case #${caseIds[indexInCurrentIteration]}`,
+        caller_number: '1234567890',
+        created_at: start.toISOString(),
+      }),
+    );
   }
   return response;
 };
@@ -151,6 +155,7 @@ const verifyIncidentReportsForCase = async (
   expectedIncidentReports: IncidentReport[],
 ): Promise<void> => {
   expectedIncidentReports.sort((ir1, ir2) => ir1.id - ir2.id);
+
   const records: CaseSectionRecord[] = await db.manyOrNone(
     `SELECT "sectionId", "sectionTypeSpecificData" FROM public."CaseSections" WHERE "accountSid" = $<accountSid> AND "caseId" = $<caseId> AND "sectionType" = 'incidentReport' ORDER BY "sectionId" ASC`,
     {
@@ -159,16 +164,12 @@ const verifyIncidentReportsForCase = async (
     },
   );
   expect(records.length).toBe(expectedIncidentReports.length);
+  // Extremely basic check to ensure the records are in the correct order, detailed mapping verification is in incidentReport unit tests
   records.forEach((r, idx) => {
-    const {
-      case_id: recordCaseId,
-      id: incidentReportId,
-      contact_id: contactId,
-      updated_at: lastUpdated,
-      ...restOfIncident
-    } = expectedIncidentReports[idx];
+    const { id: incidentReportId, responder_name: responderName } =
+      expectedIncidentReports[idx];
     expect(r.sectionId).toBe(incidentReportId.toString());
-    expect(r.sectionTypeSpecificData).toStrictEqual(restOfIncident);
+    expect(r.sectionTypeSpecificData).toMatchObject({ responderName });
   });
 };
 

@@ -14,12 +14,8 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { accountSid } from './config';
+import { NewCaseSectionInfo } from './types';
 
-const hrmHeaders = {
-  Authorization: `Basic ${process.env.STATIC_KEY}`,
-  'Content-Type': 'application/json',
-};
 
 export type IncidentReport = {
   id: number;
@@ -34,49 +30,77 @@ export type IncidentReport = {
   caller_number: string;
   created_at: string;
   updated_at: string;
+  latitude: number;
+  longitude: number;
+  responder_name: string;
+  transport_destination: string;
+  no_clients_transported: number;
+  en_route_timestamp: string;
+  on_scene_timestamp: string;
+  additional_resources_timestamp: string;
+  transport_timestamp: string;
+  destination_arrival_timestamp: string;
+  incident_complete_timestamp: string;
+  activation_interval: string;
+  en_route_interval: string;
+  scene_arrival_interval: string;
+  triage_interval: string;
+  transport_interval: string;
+  total_incident_interval: string;
 };
 
-export const addIncidentReportToAseloCase = async ({
-  updated_at: lastUpdated,
-  case_id: caseId,
-  id: incidentReportId,
-  contact_id: contactId,
-  ...restOfIncident
-}: IncidentReport): Promise<string> => {
-  console.debug(
-    `Start processing incident report: ${incidentReportId} (last updated: ${lastUpdated})`,
-  );
-  if (!caseId) {
-    console.warn(
-      `Incident reports not already assigned to a case are not currently supported - rejecting incident report ${incidentReportId} (last updated: ${lastUpdated})`,
-    );
-    return lastUpdated;
-  }
-
-  const newSectionResponse = await fetch(
-    `${process.env.INTERNAL_HRM_URL}/internal/v0/accounts/${accountSid}/cases/${caseId}/sections/incidentReport`,
-    {
-      method: 'POST',
-      body: JSON.stringify({
-        sectionId: incidentReportId,
-        sectionTypeSpecificData: restOfIncident,
-      }),
-      headers: hrmHeaders,
+export const incidentReportToCaseSection = ({
+  id,
+  case_id,
+  updated_at,
+  incident_class_id,
+  category_id,
+  latitude,
+  longitude,
+  address,
+  responder_name,
+  transport_destination,
+  no_clients_transported,
+  en_route_timestamp,
+  on_scene_timestamp,
+  additional_resources_timestamp,
+  transport_timestamp,
+  destination_arrival_timestamp,
+  incident_complete_timestamp,
+  activation_interval,
+  en_route_interval,
+  scene_arrival_interval,
+  triage_interval,
+  transport_interval,
+  total_incident_interval,
+}: IncidentReport): NewCaseSectionInfo => {
+  return {
+    caseId: case_id.toString(),
+    lastUpdated: updated_at,
+    section: {
+      sectionId: id.toString(),
+      sectionTypeSpecificData: {
+        operatingArea: incident_class_id,
+        incidentType: category_id,
+        latitude,
+        longitude,
+        locationAddress: address,
+        responderName: responder_name,
+        transportDestination: transport_destination,
+        numberOfClientsTransported: no_clients_transported,
+        enrouteTimestamp: en_route_timestamp,
+        onSceneTimestamp: on_scene_timestamp,
+        additionalResourcesTimestamp: additional_resources_timestamp,
+        transportTimestamp: transport_timestamp,
+        destinationArrivalTimestamp: destination_arrival_timestamp,
+        incidentCompleteTimestamp: incident_complete_timestamp,
+        incidentActivationInterval: activation_interval,
+        enrouteInterval: en_route_interval,
+        sceneArrivalInterval: scene_arrival_interval,
+        triageInterval: triage_interval,
+        transportInterval: transport_interval,
+        totalIncidentInterval: total_incident_interval,
+      },
     },
-  );
-  if (newSectionResponse.ok) {
-    const newSection: any = await newSectionResponse.json();
-    console.debug(`Added new incidentReport case section to case ${caseId}:`, newSection);
-  } else if (newSectionResponse.status === 409) {
-    console.warn(
-      `Incident report ${incidentReportId} was already added to case ${caseId} - overwrites are not supported.`,
-      await newSectionResponse.text(),
-    );
-  } else {
-    console.error(
-      `Error adding incident report ${incidentReportId} to case ${caseId} (status ${newSectionResponse.status}):`,
-      await newSectionResponse.text(),
-    );
-  }
-  return lastUpdated;
+  };
 };

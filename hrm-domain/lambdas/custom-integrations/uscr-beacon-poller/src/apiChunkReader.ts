@@ -15,12 +15,14 @@
  */
 
 import { getSsmParameter, putSsmParameter } from '@tech-matters/ssm-cache';
+import { isErr } from '@tech-matters/types';
+import { ItemProcessor } from './types';
 
-type PollConfig<TItem> = {
+type ChunkReaderConfig<TItem> = {
   url: URL;
   headers: Record<string, string>;
   lastUpdateSeenSsmKey: string;
-  itemProcessor: (item: TItem) => Promise<string>;
+  itemProcessor: ItemProcessor<TItem>;
   maxItemsInChunk: number;
   maxChunksToRead: number;
   itemTypeName?: string; // Just for logging
@@ -29,17 +31,22 @@ type PollConfig<TItem> = {
 const processChunk = async <TItem>(
   items: TItem[],
   lastSeen: string,
-  itemProcessor: (item: TItem) => Promise<string>,
+  itemProcessor: ItemProcessor<TItem>,
   itemTypeName: string = 'item',
 ): Promise<string> => {
   let updatedLastSeen = lastSeen;
-  try {
-    for (const item of items) {
-      console.debug(`Start processing ${itemTypeName}:`, lastSeen);
-      updatedLastSeen = await itemProcessor(item);
+  for (const item of items) {
+    console.debug(`Start processing ${itemTypeName}:`, lastSeen);
+    const processorResult = await itemProcessor(item);
+    if (isErr(processorResult)) {
+      console[processorResult.error.level](
+        processorResult.message,
+        processorResult.error,
+      );
+      updatedLastSeen = processorResult.error.lastUpdated ?? updatedLastSeen;
+    } else {
+      updatedLastSeen = processorResult.unwrap();
     }
-  } catch (error) {
-    console.error(`Error processing ${itemTypeName}, abandoning batch:`, error);
   }
   return updatedLastSeen;
 };
@@ -52,7 +59,7 @@ export const readApiInChunks = async <TItem>({
   maxChunksToRead,
   itemProcessor,
   itemTypeName = 'item',
-}: PollConfig<TItem>) => {
+}: ChunkReaderConfig<TItem>) => {
   let lastUpdateSeen = await getSsmParameter(lastUpdateSeenSsmKey);
   let processedAllItems = false;
   for (let i = 0; i < maxChunksToRead; i++) {
