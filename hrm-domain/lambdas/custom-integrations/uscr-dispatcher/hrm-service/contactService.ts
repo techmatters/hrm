@@ -23,18 +23,18 @@ export const connectToCase = async ({
   caseId,
   contactId,
   baseUrl,
-  token,
+  staticKey,
 }: {
   accountSid: string;
   caseId: string;
   contactId: string;
   baseUrl: string;
-  token: string;
+  staticKey: string;
 }) => {
   try {
     // TODO?: set api version via env vars
     const urlPath = `v0/accounts/${accountSid}/contacts/${contactId}/connectToCase`;
-    const authHeader = `Bearer ${token}`;
+    const authHeader = `Basic ${staticKey}`;
 
     const result = await callHrmApi<Contact>(baseUrl)({
       urlPath,
@@ -60,17 +60,17 @@ export const getContact = async ({
   accountSid,
   contactId,
   baseUrl,
-  token,
+  staticKey,
 }: {
   accountSid: string;
   contactId: string;
   baseUrl: string;
-  token: string;
+  staticKey: string;
 }) => {
   try {
     // TODO?: set api version via env vars
     const urlPath = `v0/accounts/${accountSid}/contacts/${contactId}`;
-    const authHeader = `Bearer ${token}`;
+    const authHeader = `Basic ${staticKey}`;
 
     const result = await callHrmApi<Contact>(baseUrl)({
       urlPath,

@@ -22,17 +22,17 @@ export const createCase = async ({
   accountSid,
   casePayload,
   baseUrl,
-  token,
+  staticKey,
 }: {
   accountSid: string;
   casePayload: Partial<CaseService>;
   baseUrl: string;
-  token: string;
+  staticKey: string;
 }) => {
   try {
     // TODO?: set api version via env vars
     const urlPath = `v0/accounts/${accountSid}/cases`;
-    const authHeader = `Bearer ${token}`;
+    const authHeader = `Basic ${staticKey}`;
 
     const result = await callHrmApi<CaseService>(baseUrl)({
       urlPath,
@@ -58,17 +58,17 @@ export const getCase = async ({
   accountSid,
   caseId,
   baseUrl,
-  token,
+  staticKey,
 }: {
   accountSid: string;
   caseId: CaseService['id'];
   baseUrl: string;
-  token: string;
+  staticKey: string;
 }) => {
   try {
     const urlPath = `v0/accounts/${accountSid}/cases/${caseId}`;
 
-    const authHeader = `Bearer ${token}`;
+    const authHeader = `Basic ${staticKey}`;
 
     const result = await callHrmApi<CaseService>(baseUrl)({
       urlPath,
@@ -93,17 +93,17 @@ export const deleteCase = async ({
   accountSid,
   caseId,
   baseUrl,
-  token,
+  staticKey,
 }: {
   accountSid: string;
   caseId: CaseService['id'];
   baseUrl: string;
-  token: string;
+  staticKey: string;
 }) => {
   try {
     const urlPath = `v0/accounts/${accountSid}/cases/${caseId}`;
 
-    const authHeader = `Bearer ${token}`;
+    const authHeader = `Basic ${staticKey}`;
 
     const result = await callHrmApi<CaseService>(baseUrl)({
       urlPath,
@@ -130,19 +130,19 @@ export const createCaseSection = async ({
   sectionType,
   sectionTypeSpecificData,
   baseUrl,
-  token,
+  staticKey,
 }: {
   accountSid: string;
   caseId: CaseService['id'];
   sectionType: CaseSection['sectionType'];
   sectionTypeSpecificData: CaseSection['sectionTypeSpecificData'];
   baseUrl: string;
-  token: string;
+  staticKey: string;
 }) => {
   try {
     const urlPath = `v0/accounts/${accountSid}/cases/${caseId}/sections/${sectionType}`;
 
-    const authHeader = `Bearer ${token}`;
+    const authHeader = `Basic ${staticKey}`;
 
     const result = await callHrmApi<CaseSection>(baseUrl)({
       urlPath,
@@ -171,7 +171,7 @@ export const updateCaseSection = async ({
   sectionType,
   sectionTypeSpecificData,
   baseUrl,
-  token,
+  staticKey,
 }: {
   accountSid: string;
   caseId: CaseService['id'];
@@ -179,12 +179,12 @@ export const updateCaseSection = async ({
   sectionType: CaseSection['sectionType'];
   sectionTypeSpecificData: CaseSection['sectionTypeSpecificData'];
   baseUrl: string;
-  token: string;
+  staticKey: string;
 }) => {
   try {
     const urlPath = `v0/accounts/${accountSid}/cases/${caseId}/sections/${sectionType}/${sectionId}`;
 
-    const authHeader = `Bearer ${token}`;
+    const authHeader = `Basic ${staticKey}`;
 
     const result = await callHrmApi<CaseSection>(baseUrl)({
       urlPath,
@@ -211,18 +211,18 @@ export const getCaseSections = async ({
   caseId,
   sectionType,
   baseUrl,
-  token,
+  staticKey,
 }: {
   accountSid: string;
   caseId: CaseService['id'];
   sectionType: CaseSection['sectionType'];
   baseUrl: string;
-  token: string;
+  staticKey: string;
 }) => {
   try {
     const urlPath = `v0/accounts/${accountSid}/cases/${caseId}/timeline?sectionTypes=${sectionType}&includeContacts=false`;
 
-    const authHeader = `Bearer ${token}`;
+    const authHeader = `Basic ${staticKey}`;
 
     const result = await callHrmApi<TimelineResult>(baseUrl)({
       urlPath,

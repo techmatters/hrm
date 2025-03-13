@@ -63,7 +63,11 @@ export const authenticateRequest = async ({
       return result;
     }
 
-    return newOk({ data: { ...result.data, token } });
+    const staticKey = await getSsmParameter(
+      `/${environment}/twilio/${accountSid}/static_key`,
+    );
+
+    return newOk({ data: { ...result.data, staticKey } });
   } catch (err) {
     return newErr({
       error: err,

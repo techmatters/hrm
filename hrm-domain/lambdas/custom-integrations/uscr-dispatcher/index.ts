@@ -67,7 +67,7 @@ export const postHandler = async (event: AlbHandlerEvent) => {
       casePayload: payloadResult.data.casePayload,
       contactId: payloadResult.data.contactId,
       baseUrl: envResult.data.baseUrl,
-      token: authResult.data.token,
+      staticKey: authResult.data.staticKey,
     });
     if (isErr(createCaseResult)) {
       const message = JSON.stringify(createCaseResult.error) + createCaseResult.message;
@@ -107,7 +107,7 @@ export const postHandler = async (event: AlbHandlerEvent) => {
       caseId: caseObj.id,
       attemptSection: sections.currentAttempt.caseSection,
       baseUrl: envResult.data.baseUrl,
-      token: authResult.data.token,
+      staticKey: authResult.data.staticKey,
     });
     if (isErr(updateSectionResult)) {
       const message =
