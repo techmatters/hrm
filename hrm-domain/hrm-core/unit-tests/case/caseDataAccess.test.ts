@@ -44,11 +44,7 @@ describe('getById', () => {
       id: caseId,
       helpline: 'helpline',
       status: 'open',
-      info: {
-        counsellorNotes: [
-          { note: 'Child with covid-19', twilioWorkerId: 'WK-contact-adder' },
-        ],
-      },
+      info: {},
       twilioWorkerId: workerSid,
     });
     mockTask(conn);
@@ -256,11 +252,7 @@ describe('search', () => {
           id: caseId,
           helpline: 'helpline',
           status: 'open',
-          info: {
-            counsellorNotes: [
-              { note: 'Child with covid-19', twilioWorkerId: 'WK-contact-adder' },
-            ],
-          },
+          info: {},
           twilioWorkerId: 'WK-twilio-worker-id',
           totalCount: 1337,
         },
@@ -275,11 +267,7 @@ describe('search', () => {
           id: caseId,
           helpline: 'helpline',
           status: 'open',
-          info: {
-            counsellorNotes: [
-              { note: 'Child with covid-19', twilioWorkerId: 'WK-contact-adder' },
-            ],
-          },
+          info: {},
           twilioWorkerId: 'WK-twilio-worker-id',
           connectedContacts: [
             {

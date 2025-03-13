@@ -30,6 +30,7 @@ import * as contactDb from '@tech-matters/hrm-core/contact/contactDataAccess';
 import { ruleFileActionOverride } from '../permissions-overrides';
 import { isS3StoredTranscript } from '@tech-matters/hrm-core/conversation-media/conversation-media-data-access';
 import {
+  mockAllSns,
   mockingProxy,
   mockSsmParameters,
   mockSuccessfulTwilioAuthentication,
@@ -86,7 +87,12 @@ beforeEach(async () => {
       valueGenerator: () => SEARCH_INDEX_SQS_QUEUE_NAME,
     },
     { pathPattern: /.*\/auth_token$/, valueGenerator: () => 'mockAuthToken' },
+    {
+      pathPattern: /.*\/notifications-sns-topic-arn$/,
+      valueGenerator: () => 'anything',
+    },
   ]);
+  await mockAllSns(mockttp);
 
   const { QueueUrl } = await sqsClient
     .createQueue({
@@ -571,7 +577,7 @@ describe('/contacts/:contactId route', () => {
       expect(response.status).toBe(404);
     });
 
-    test.only("Draft contact edited by a user that didn't create or own the contact - returns 403", async () => {
+    test("Draft contact edited by a user that didn't create or own the contact - returns 403", async () => {
       const createdContact = await contactApi.createContact(
         accountSid,
         'WK another creator',

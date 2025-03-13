@@ -27,7 +27,6 @@ import {
 } from '@tech-matters/hrm-core/contact/contactService';
 import { CaseService } from '@tech-matters/hrm-core/case/caseService';
 import * as caseDb from '@tech-matters/hrm-core/case/caseDataAccess';
-import { convertCaseInfoToExpectedInfo } from './case/caseValidation';
 
 import {
   mockingProxy,
@@ -95,8 +94,8 @@ describe('/cases route', () => {
   const route = `/v0/accounts/${accountSid}/cases`;
 
   describe('POST', () => {
-    const expected: CaseService = {
-      ...convertCaseInfoToExpectedInfo({ ...case1, info: {} }),
+    const expected = {
+      ...case1,
       id: expect.anything(),
       updatedAt: expect.toParseAsDate(),
       createdAt: expect.toParseAsDate(),
@@ -191,7 +190,7 @@ describe('/cases route', () => {
         expect(response.status).toBe(200);
 
         const expected = {
-          ...convertCaseInfoToExpectedInfo(cases.populated),
+          ...cases.populated,
           sections: {},
           createdAt: expect.toParseAsDate(cases.populated.createdAt),
           updatedAt: expect.toParseAsDate(cases.populated.createdAt),

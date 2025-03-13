@@ -35,20 +35,14 @@ import {
   deleteById,
   searchByCaseIds,
 } from './caseDataAccess';
-import { randomUUID } from 'crypto';
 import { InitializedCan } from '../permissions/initializeCanForRules';
 import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { bindApplyTransformations as bindApplyContactTransformations } from '../contact/contactService';
 import type { Profile } from '../profile/profileDataAccess';
 import type { PaginationQuery } from '../search';
 import { HrmAccountId, TResult, newErr, newOk } from '@tech-matters/types';
-import {
-  WELL_KNOWN_CASE_SECTION_NAMES,
-  CaseService,
-  CaseInfoSection,
-} from '@tech-matters/hrm-types';
+import { CaseService, CaseInfoSection } from '@tech-matters/hrm-types';
 import { RulesFile, TKConditionsSets } from '../permissions/rulesMap';
-import { CaseSectionRecord } from './caseSection/types';
 import { pick } from 'lodash';
 import {
   DocumentType,
@@ -67,7 +61,7 @@ import { ContactListCondition } from '../contact/contactSearchIndex';
 import { maxPermissions } from '../permissions';
 import { NotificationOperation } from '@tech-matters/hrm-types/NotificationOperation';
 
-export { WELL_KNOWN_CASE_SECTION_NAMES, CaseService, CaseInfoSection };
+export { CaseService, CaseInfoSection };
 
 const CASE_OVERVIEW_PROPERTIES = ['summary', 'followUpDate', 'childIsAtRisk'] as const;
 type CaseOverviewProperties = (typeof CASE_OVERVIEW_PROPERTIES)[number];
@@ -78,63 +72,6 @@ type RecursivePartial<T> = {
 
 type CaseServiceUpdate = Partial<CaseService> & Pick<CaseService, 'updatedBy'>;
 
-/**
- * Converts a single list of all sections for a case to a set of arrays grouped by type
- */
-const caseSectionRecordsToInfo = (
-  sections: CaseSectionRecord[] = [],
-): Record<string, CaseInfoSection[]> => {
-  const infoLists: Record<string, CaseInfoSection[]> = {};
-  return sections.reduce((categorized, record) => {
-    const {
-      caseId,
-      sectionType,
-      sectionId: id,
-      sectionTypeSpecificData,
-      createdBy,
-      eventTimestamp,
-      ...restOfRecord
-    } = record;
-
-    if (!restOfRecord.updatedAt) {
-      delete restOfRecord.updatedAt;
-    }
-    if (!restOfRecord.updatedBy) {
-      delete restOfRecord.updatedBy;
-    }
-    switch (record.sectionType) {
-      case 'note':
-        categorized.counsellorNotes = categorized.counsellorNotes ?? [];
-        categorized.counsellorNotes.push({
-          ...sectionTypeSpecificData,
-          ...restOfRecord,
-          id: id,
-          twilioWorkerId: createdBy,
-        });
-        break;
-      case 'referral':
-        categorized.referrals = categorized.referrals ?? [];
-        categorized.referrals.push({
-          ...sectionTypeSpecificData,
-          ...restOfRecord,
-          id: id,
-          twilioWorkerId: createdBy,
-        });
-        break;
-      default:
-        const listName = `${record.sectionType}s`;
-        categorized[listName] = categorized[listName] ?? [];
-        categorized[listName].push({
-          ...restOfRecord,
-          id: id,
-          twilioWorkerId: createdBy,
-          [record.sectionType]: sectionTypeSpecificData,
-        });
-    }
-    return categorized;
-  }, infoLists);
-};
-
 const addCategories = (caseItem: CaseRecord) => {
   const fstContact = (caseItem.connectedContacts ?? [])[0];
 
@@ -143,65 +80,15 @@ const addCategories = (caseItem: CaseRecord) => {
 
 /**
  * Converts a case passed in from the API to a case record ready to write to the DB
- * Code to convert sections to section records is deprecated and should be removed in v1.16
  * @param inputCase
- * @param workerSid
  */
-const caseToCaseRecord = (
-  inputCase: CaseServiceUpdate,
-  workerSid: string,
-): CaseRecordUpdate => {
+const caseToCaseRecord = (inputCase: CaseServiceUpdate): CaseRecordUpdate => {
   const { connectedContacts, ...caseWithoutContacts } = inputCase;
-  const info = inputCase.info ?? {};
-  let anySectionsSpecified = false;
-  const caseSections: CaseSectionRecord[] = Object.entries(
-    WELL_KNOWN_CASE_SECTION_NAMES,
-  ).flatMap(([sectionName, { getSectionSpecificData, sectionTypeName }]) => {
-    if (!info[sectionName]) {
-      return [];
-    }
-    anySectionsSpecified = true;
-    return (info[sectionName] ?? []).map(section => {
-      const caseSectionRecordToUpsert: CaseSectionRecord = {
-        caseId: inputCase.id,
-        sectionType: sectionTypeName,
-        sectionId: section.id ?? randomUUID(),
-        createdBy: section.twilioWorkerId ?? workerSid,
-        createdAt: section.createdAt ?? new Date().toISOString(),
-        eventTimestamp:
-          section.eventTimestamp ?? section.createdAt ?? new Date().toISOString(),
-        updatedBy: section.updatedBy,
-        updatedAt: section.updatedAt,
-        sectionTypeSpecificData: getSectionSpecificData(section),
-        accountSid: section.accountSid,
-      };
-      return caseSectionRecordToUpsert;
-    });
-  });
-  if (anySectionsSpecified) {
-    return {
-      ...caseWithoutContacts,
-      caseSections,
-    };
-  }
   return caseWithoutContacts;
 };
 
 export const caseRecordToCase = (record: CaseRecord): CaseService => {
-  // Remove legacy case sections
-  const info = {
-    ...record.info,
-  };
-  Object.keys(WELL_KNOWN_CASE_SECTION_NAMES).forEach(k => delete info[k]);
-
-  const { caseSections, contactsOwnedByUserCount, ...output } = addCategories({
-    ...record,
-    // Deprecated, remove in v1.16
-    info: {
-      ...info,
-      ...caseSectionRecordsToInfo(record.caseSections),
-    },
-  });
+  const { caseSections, contactsOwnedByUserCount, ...output } = addCategories(record);
   const precalculatedPermissions = { userOwnsContact: contactsOwnedByUserCount > 0 };
 
   if (record.caseSections) {
@@ -332,18 +219,15 @@ export const createCase = async (
 ): Promise<CaseService> => {
   const nowISO = (testNowISO ?? new Date()).toISOString();
   delete body.id;
-  const record = caseToCaseRecord(
-    {
-      twilioWorkerId: workerSid,
-      ...body,
-      createdBy: workerSid,
-      createdAt: nowISO,
-      updatedAt: nowISO,
-      updatedBy: null,
-      accountSid,
-    },
-    workerSid,
-  );
+  const record = caseToCaseRecord({
+    twilioWorkerId: workerSid,
+    ...body,
+    createdBy: workerSid,
+    createdAt: nowISO,
+    updatedAt: nowISO,
+    updatedBy: null,
+    accountSid,
+  });
   const created = await create(record);
 
   if (!skipSearchIndex) {
@@ -376,6 +260,9 @@ export const updateCaseStatus = async (
     permissions.viewContact as TKConditionsSets<'contact'>,
   );
 
+  // Case not found
+  if (!updated) return null;
+
   const withTransformedContacts = mapContactTransformations({ can, user })(updated);
 
   if (!skipSearchIndex) {
@@ -395,6 +282,8 @@ export const updateCaseOverview = async (
 ): Promise<CaseService> => {
   const validOverview = pick(overview, CASE_OVERVIEW_PROPERTIES);
   const updated = await updateCaseInfo(accountSid, id, validOverview, workerSid);
+
+  if (!updated) return null;
 
   if (!skipSearchIndex) {
     // trigger index operation but don't await for it
