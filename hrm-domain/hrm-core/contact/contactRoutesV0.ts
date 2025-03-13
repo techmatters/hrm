@@ -40,39 +40,6 @@ const newContactRouter = (isPublic: boolean) => {
 
   // Public only endpoints
   if (isPublic) {
-    // example: curl -XPOST -H'Content-Type: application/json' localhost:3000/contacts -d'{"hi": 2}'
-
-    /**
-     * @param {any} req. - Request
-     * @param {any} res - User for requested
-     * @param {NewContactRecord} req.body - Contact to create
-     *
-     * @returns {Contact} - Created contact
-     */
-    contactsRouter.post('/', openEndpoint, async (req: Request, res) => {
-      const getCreatedBy = ({ body, user }: { user: Request['user']; body: any }) => {
-        if (isPublic) {
-          // Take the createdBy specified in the body if this is being created from a backend system, otherwise force use of the authenticated user's workerSid
-          return user.isSystemUser ? body.createdBy : user.workerSid;
-        }
-
-        // Take the createdBy specified in the body since this is being created from a backend system
-        return body.createdBy;
-      };
-
-      const { hrmAccountId, user, body } = req;
-      const contact = await createContact(
-        hrmAccountId,
-        getCreatedBy({ body, user }),
-        body,
-        {
-          can: req.can,
-          user,
-        },
-      );
-      res.json(contact);
-    });
-
     contactsRouter.get('/byTaskSid/:taskSid', openEndpoint, async (req, res) => {
       const { hrmAccountId, user, can } = req;
       const contact = await getContactByTaskId(hrmAccountId, req.params.taskSid, {
@@ -171,6 +138,39 @@ const newContactRouter = (isPublic: boolean) => {
 
       next();
     };
+
+    // example: curl -XPOST -H'Content-Type: application/json' localhost:3000/contacts -d'{"hi": 2}'
+
+    /**
+     * @param {any} req. - Request
+     * @param {any} res - User for requested
+     * @param {NewContactRecord} req.body - Contact to create
+     *
+     * @returns {Contact} - Created contact
+     */
+    contactsRouter.post('/', openEndpoint, async (req: Request, res) => {
+      const getCreatedBy = ({ body, user }: { user: Request['user']; body: any }) => {
+        if (isPublic) {
+          // Take the createdBy specified in the body if this is being created from a backend system, otherwise force use of the authenticated user's workerSid
+          return user.isSystemUser ? body.createdBy : user.workerSid;
+        }
+
+        // Take the createdBy specified in the body since this is being created from a backend system
+        return body.createdBy;
+      };
+
+      const { hrmAccountId, user, body } = req;
+      const contact = await createContact(
+        hrmAccountId,
+        getCreatedBy({ body, user }),
+        body,
+        {
+          can: req.can,
+          user,
+        },
+      );
+      res.json(contact);
+    });
 
     contactsRouter.patch(
       '/:contactId',
