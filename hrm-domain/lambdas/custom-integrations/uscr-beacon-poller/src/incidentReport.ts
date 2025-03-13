@@ -16,7 +16,6 @@
 
 import { NewCaseSectionInfo } from './types';
 
-
 export type IncidentReport = {
   id: number;
   case_id: number;

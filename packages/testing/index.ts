@@ -21,3 +21,4 @@ export * from './mockSns';
 import { start, stop, mockttpServer } from './mocking-proxy';
 export const mockingProxy = { start, stop, mockttpServer };
 import './expectToParseAsDate';
+import './expectToParseAsJson';
