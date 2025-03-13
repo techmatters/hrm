@@ -20,3 +20,6 @@ export const enableProfileFlagsCleanup = /^true$/i.test(
 export const enablePublishHrmSearchIndex = /^true$/i.test(
   process.env.ENABLE_PUBLISH_HRM_SEARCH_INDEX,
 );
+export const enableSnsHrmSearchIndex = /^true$/i.test(
+  process.env.ENABLE_SNS_HRM_SEARCH_INDEX,
+);

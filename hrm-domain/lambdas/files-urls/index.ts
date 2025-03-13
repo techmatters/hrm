@@ -36,7 +36,7 @@ export const handler = async (event: AlbHandlerEvent): Promise<AlbHandlerResult>
       MissingRequiredQueryParamsError: 400,
       InvalidFileTypeError: 400,
       MissingRequiredFileParamsError: 400,
-      UnauthorizedError: 403,
+      CallHrmApiError: 403,
       MethodNotAllowedError: 405,
       InternalServerError: 500,
     },

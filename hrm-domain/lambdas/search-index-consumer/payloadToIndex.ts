@@ -24,12 +24,7 @@ import type {
   PayloadsByAccountSid,
   PayloadsByIndex,
 } from './messagesToPayloads';
-import {
-  assertExhaustive,
-  type HrmAccountId,
-  newErr,
-  newOkFromData,
-} from '@tech-matters/types';
+import { type HrmAccountId, newErr, newOkFromData } from '@tech-matters/types';
 import { HrmIndexProcessorError } from '@tech-matters/job-errors';
 
 const handleIndexPayload =
@@ -42,13 +37,14 @@ const handleIndexPayload =
     client: IndexClient<IndexPayload>;
     indexType: string;
   }) =>
-  async ({ documentId, indexHandler, messageId, payload }: PayloadWithMeta) => {
+  async (payloadWithMeta: PayloadWithMeta) => {
+    const { messageId, documentId } = payloadWithMeta;
     try {
-      switch (indexHandler) {
+      switch (payloadWithMeta.indexHandler) {
         case 'indexDocument': {
           const result = await client.indexDocument({
             id: documentId.toString(),
-            document: payload,
+            document: payloadWithMeta.payload,
             autocreate: true,
           });
 
@@ -62,7 +58,7 @@ const handleIndexPayload =
         case 'updateDocument': {
           const result = await client.updateDocument({
             id: documentId.toString(),
-            document: payload,
+            document: payloadWithMeta.payload,
             autocreate: true,
             docAsUpsert: true,
           });
@@ -76,7 +72,7 @@ const handleIndexPayload =
         }
         case 'updateScript': {
           const result = await client.updateScript({
-            document: payload,
+            document: payloadWithMeta.payload,
             id: documentId.toString(),
             autocreate: true,
             scriptedUpsert: true,
@@ -101,15 +97,12 @@ const handleIndexPayload =
             result: newOkFromData(result),
           };
         }
-        default: {
-          return assertExhaustive(indexHandler);
-        }
       }
     } catch (err) {
       console.error(
         new HrmIndexProcessorError('handleIndexPayload: Failed to process index request'),
         err,
-        { documentId, indexHandler, messageId, payload },
+        payloadWithMeta,
       );
 
       return {

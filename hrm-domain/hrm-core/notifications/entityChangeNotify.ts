@@ -21,6 +21,7 @@ import { CaseService, Contact } from '@tech-matters/hrm-types';
 import { AccountSID, HrmAccountId } from '@tech-matters/types';
 import { publishSns, PublishSnsParams } from '@tech-matters/sns-client';
 import { NotificationOperation } from '@tech-matters/hrm-types';
+import { enableSnsHrmSearchIndex } from '../featureFlags';
 
 type DeleteNotificationPayload = {
   accountSid: HrmAccountId;
@@ -127,14 +128,15 @@ const publishEntityToSearchIndex = async (
   operation: NotificationOperation,
 ) => {
   const messageGroupId = `${accountSid}-${entityType}-${entity.id}`;
+  let publishResponse: { MessageId?: string };
   if (operation === 'delete') {
-    await publishToSns({
+    publishResponse = await publishToSns({
       entityType,
       payload: { accountSid, id: entity.id.toString(), operation },
       messageGroupId,
     });
   } else if (operation === 'republish') {
-    await publishToSns({
+    publishResponse = await publishToSns({
       entityType,
       payload: {
         accountSid,
@@ -144,9 +146,8 @@ const publishEntityToSearchIndex = async (
       messageGroupId,
     });
   } else {
-    await publishToSns({
+    publishResponse = await publishToSns({
       entityType,
-      // Update / create are identical for now, will differentiate between the 2 ops in a follow pu refactor PR
       payload: {
         accountSid,
         [entityType]: entity,
@@ -155,14 +156,16 @@ const publishEntityToSearchIndex = async (
       messageGroupId,
     });
   }
-  const indexOperation: IndexMessage['operation'] =
-    operation === 'delete' ? 'index' : 'remove';
+  if (enableSnsHrmSearchIndex) {
+    return publishResponse;
+  }
+
   return publishToSearchIndex({
     message: {
       accountSid,
-      type: entityType,
+      entityType,
       [entityType]: entity,
-      operation: indexOperation,
+      operation,
     } as IndexMessage,
     messageGroupId: `${accountSid}-${entityType}-${entity.id}`,
   });

@@ -14,7 +14,6 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { validator as TokenValidator } from 'twilio-flex-token-validator';
 import crypto from 'crypto';
 
 import {
@@ -25,7 +24,8 @@ import {
 } from './twilioUser';
 import { unauthorized } from '@tech-matters/http';
 import type { Request, Response, NextFunction } from 'express';
-import { AccountSID, WorkerSID } from '@tech-matters/types';
+import { AccountSID, isErr, WorkerSID } from '@tech-matters/types';
+import { twilioTokenValidator } from './twilioTokenValidator';
 
 export type AuthSecretsLookup = {
   authTokenLookup: (accountSid: string) => Promise<string>;
@@ -57,13 +57,6 @@ const canAccessResourceWithStaticKey = (path: string, method: string): boolean =
 
   return false;
 };
-
-type TokenValidatorResponse = { worker_sid: string; roles: string[] };
-
-const isWorker = (tokenResult: TokenValidatorResponse) =>
-  Boolean(tokenResult.worker_sid) && tokenResult.worker_sid.startsWith('WK');
-const isGuest = (tokenResult: TokenValidatorResponse) =>
-  Array.isArray(tokenResult.roles) && tokenResult.roles.includes('guest');
 
 const extractAccountSid = (request: Request): AccountSID => {
   const [twilioAccountSid] = request.hrmAccountId?.split('-') ?? [];
@@ -119,16 +112,17 @@ export const getAuthorizationMiddleware =
           return unauthorized(res);
         }
 
-        const tokenResult = <TokenValidatorResponse>(
-          await TokenValidator(token, accountSid, authToken)
-        );
-        if (!isWorker(tokenResult) || isGuest(tokenResult)) {
+        const tokenResult = await twilioTokenValidator({ accountSid, authToken, token });
+
+        if (isErr(tokenResult)) {
+          console.error(tokenResult.error);
           return unauthorized(res);
         }
+
         req.user = newTwilioUser(
           accountSid,
-          tokenResult.worker_sid as WorkerSID,
-          tokenResult.roles,
+          tokenResult.data.worker_sid as WorkerSID,
+          tokenResult.data.roles,
         );
         return next();
       } catch (err) {
