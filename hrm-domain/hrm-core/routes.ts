@@ -26,19 +26,20 @@ import profiles from './profile/profileRoutesV0';
 import adminProfiles from './profile/adminProfileRoutesV0';
 import adminContacts from './contact/adminContactRoutesV0';
 import adminCases from './case/adminCaseRoutesV0';
-import internalContacts from './contact/internalContactRoutesV0';
 import { Permissions } from './permissions';
 import internalProfiles from './profile/internalProfileRoutesV0';
 
 // Need to create these first - the route handlers don't activate if they are instantiated just in time
 const publicCases = cases(true);
 const internalCases = cases(false);
+const publicContacts = contacts(true);
+const internalContacts = contacts(false);
 
 export const HRM_ROUTES: {
   path: string;
   routerFactory: (rules: Permissions) => Router;
 }[] = [
-  { path: '/contacts', routerFactory: () => contacts },
+  { path: '/contacts', routerFactory: () => publicContacts },
   { path: '/cases', routerFactory: () => publicCases },
   { path: '/postSurveys', routerFactory: () => postSurveys },
   { path: '/csamReports', routerFactory: () => csamReports },
