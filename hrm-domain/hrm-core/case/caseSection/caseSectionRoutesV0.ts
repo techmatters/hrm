@@ -95,22 +95,26 @@ const newCaseSectionsRouter = (isPublic: boolean) => {
     );
   }
 
-  caseSectionsRouter.post('/:sectionType', canAddCaseSection, async (req, res) => {
-    const {
-      hrmAccountId,
-      user,
-      params: { caseId, sectionType },
-    } = req;
-    const createdCase = await createCaseSection(
-      hrmAccountId,
-      caseId,
-      sectionType,
-      req.body,
-      user.workerSid,
-    );
+  caseSectionsRouter.post(
+    '/:sectionType',
+    isPublic ? canAddCaseSection : openEndpoint,
+    async (req, res) => {
+      const {
+        hrmAccountId,
+        user,
+        params: { caseId, sectionType },
+      } = req;
+      const createdCase = await createCaseSection(
+        hrmAccountId,
+        caseId,
+        sectionType,
+        req.body,
+        user.workerSid,
+      );
 
-    res.json(createdCase);
-  });
+      res.json(createdCase);
+    },
+  );
 
   caseSectionsRouter.put(
     '/:sectionType/:sectionId',

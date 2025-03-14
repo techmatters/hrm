@@ -192,7 +192,7 @@ const newCaseRouter = (isPublic: boolean) => {
     res.json(createdCase);
   });
 
-  casesRouter.get('/:id', canViewCase, async (req, res) => {
+  casesRouter.get('/:id', isPublic ? canViewCase : openEndpoint, async (req, res) => {
     const { hrmAccountId, permissions, can, user } = req;
     const { id } = req.params;
     const onlyEssentialData = Boolean(req.query.onlyEssentialData);
