@@ -39,7 +39,6 @@ import {
   headers,
   useOpenRules,
 } from '../server';
-import { pick } from 'lodash';
 import { clearAllTables } from '../dbCleanup';
 import { setupTestQueues } from '../sqs';
 import { mockEntitySnsParameters } from '../ssm';
@@ -294,6 +293,14 @@ each([publicApiTestSuiteParameters, internalApiTestSuiteParameters]).describe(
           somethingFrom: 'behind the veil',
         },
       },
+      {
+        changeDescription: 'dynamic properties are now supported and saved',
+        newOverview: {
+          summary: 'summary is required',
+          customField1: 'custom value 1',
+          customField2: 'custom value 2',
+        },
+      },
     ];
 
     each(testCases).test(
@@ -319,7 +326,8 @@ each([publicApiTestSuiteParameters, internalApiTestSuiteParameters]).describe(
           ...originalCase,
           info: {
             ...originalCase.info,
-            ...pick(newOverview, ['summary', 'childIsAtRisk', 'followUpDate']),
+
+            ...newOverview,
           },
           updatedAt: expect.toParseAsDate(),
           updatedBy:

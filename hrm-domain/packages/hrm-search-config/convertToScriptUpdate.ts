@@ -14,9 +14,8 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 import type { Script } from '@elastic/elasticsearch/lib/api/types';
-import { assertExhaustive } from '@tech-matters/types';
 import { CreateIndexConvertedDocument } from '@tech-matters/elasticsearch-client';
-import { IndexPayload, IndexPayloadContact } from './payload';
+import { DeleteContactMessage, IndexPayload, IndexPayloadContact } from './payload';
 import {
   CaseDocument,
   ContactDocument,
@@ -25,19 +24,16 @@ import {
 import { convertContactToContactDocument } from './convertToIndexDocument';
 
 const convertContactToCaseScriptUpdate = (
-  payload: IndexPayloadContact,
+  payload: IndexPayloadContact | DeleteContactMessage,
 ): {
   documentUpdate: CreateIndexConvertedDocument<CaseDocument>;
   scriptUpdate: Script;
 } => {
-  const { operation } = payload;
-  const { accountSid, caseId } = payload.contact;
-
-  switch (operation) {
+  switch (payload.operation) {
     case 'create':
     case 'update':
-    case 'reindex':
-    case 'index': {
+    case 'reindex': {
+      const { accountSid, caseId } = payload.contact;
       const contactDocument = convertContactToContactDocument(payload);
 
       const documentUpdate: CreateIndexConvertedDocument<CaseDocument> = {
@@ -66,20 +62,18 @@ const convertContactToCaseScriptUpdate = (
 
       return { documentUpdate, scriptUpdate };
     }
-    case 'delete':
-    case 'remove': {
+    case 'delete': {
+      // Compatibility with old messages that don't have a message.id field, can be removed once HRM v1.26.0 is deployed
+      const contactId = payload.id ?? (payload as any).contact?.id;
       const scriptUpdate: Script = {
         source:
           'def removeContact(String contactId, List contacts) { contacts.removeIf(contact -> contact.id == contactId); } removeContact(params.contactId, ctx._source.contacts);',
         params: {
-          contactId: payload.contact.id.toString(),
+          contactId: contactId.toString(),
         },
       };
 
       return { documentUpdate: {}, scriptUpdate };
-    }
-    default: {
-      return assertExhaustive(operation);
     }
   }
 };
@@ -90,12 +84,12 @@ const convertToCaseScriptUpdate = (
   documentUpdate: CreateIndexConvertedDocument<CaseDocument>;
   scriptUpdate: Script;
 } => {
-  if (payload.type === 'contact') {
+  if (payload.entityType === 'contact') {
     return convertContactToCaseScriptUpdate(payload);
   }
 
   throw new Error(
-    `convertToCaseScriptDocument not implemented for type ${payload.type} and operation ${payload.operation}`,
+    `convertToCaseScriptDocument not implemented for type ${payload.entityType} and operation ${payload.operation}`,
   );
 };
 

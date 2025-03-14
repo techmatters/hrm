@@ -21,22 +21,31 @@ import type {
 } from '@tech-matters/hrm-types';
 import { AccountSID } from '@tech-matters/types';
 
-type IndexOperation = 'index' | 'remove';
-
 type SupportedNotificationOperation = Extract<
   NotificationOperation,
-  'update' | 'create' | 'delete' | 'reindex'
+  'update' | 'create' | 'reindex'
 >;
+export type DeleteContactMessage = {
+  entityType: 'contact';
+  operation: 'delete';
+  id: string;
+};
 
 export type IndexContactMessage = {
-  type: 'contact';
-  operation: IndexOperation | SupportedNotificationOperation;
+  entityType: 'contact';
+  operation: SupportedNotificationOperation;
   contact: Pick<Contact, 'id'> & Partial<Contact>;
 };
 
+export type DeleteCaseMessage = {
+  entityType: 'case';
+  operation: 'delete';
+  id: string;
+};
+
 export type IndexCaseMessage = {
-  type: 'case';
-  operation: IndexOperation | SupportedNotificationOperation;
+  entityType: 'case';
+  operation: SupportedNotificationOperation;
   case: Pick<CaseService, 'id'> &
     Partial<Omit<CaseService, 'sections'>> & {
       sections: NonNullable<CaseService['sections']>;
@@ -46,6 +55,11 @@ export type IndexCaseMessage = {
 export type IndexMessage = { accountSid: AccountSID } & (
   | IndexContactMessage
   | IndexCaseMessage
+);
+
+export type DeleteMessage = { accountSid: AccountSID } & (
+  | DeleteContactMessage
+  | DeleteCaseMessage
 );
 
 export type IndexPayloadContact = IndexContactMessage & {
