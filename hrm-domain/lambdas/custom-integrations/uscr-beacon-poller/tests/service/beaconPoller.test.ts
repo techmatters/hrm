@@ -27,7 +27,11 @@ import { BEACON_API_KEY_HEADER } from '../../src/config';
 import { handler } from '../../src';
 import { parseISO } from 'date-fns';
 import { IncidentReport } from '../../src/incidentReport';
-import { generateCaseReport, generateIncidentReport } from '../mockGenerators';
+import {
+  generateCaseReport,
+  generateCompleteCaseReport,
+  generateIncidentReport,
+} from '../mockGenerators';
 import { CaseReport } from '../../src/caseReport';
 
 const ACCOUNT_SID = 'ACservicetest';
@@ -117,13 +121,14 @@ const generateCaseReports = (
   intervalInHours: number,
   caseIds: number[] = [],
   start: Date = BASELINE_DATE,
+  completeReport: boolean = false,
 ): CaseReport[] => {
   const response: CaseReport[] = [];
   for (let i = 0; i < numberToGenerate; i++) {
     const indexInCurrentIteration = i % caseIds.length;
     const iteration = Math.floor(i / caseIds.length);
     response.push(
-      generateCaseReport({
+      (completeReport ? generateCompleteCaseReport : generateCaseReport)({
         updated_at: addHours(start, (i + 1) * intervalInHours).toISOString(),
         ...(caseIds[indexInCurrentIteration]
           ? { case_id: caseIds[indexInCurrentIteration] }
@@ -172,29 +177,29 @@ export const mockBeacon = async <TItem>(
     });
 };
 
-const verifyIncidentReportsForCase = async (
-  caseId: number,
-  expectedIncidentReports: IncidentReport[],
-): Promise<void> => {
-  expectedIncidentReports.sort((ir1, ir2) => ir1.id - ir2.id);
+const verifyCaseSectionsForCase =
+  <TItem>(
+    caseSectionType: string,
+    sectionVerifier: (actual: CaseSectionRecord, expected: TItem) => void,
+    expectedItemsSortComparer: (ir1: TItem, ir2: TItem) => number,
+  ) =>
+  async (caseId: number, expectedItems: TItem[]): Promise<void> => {
+    expectedItems.sort(expectedItemsSortComparer);
 
-  const records: CaseSectionRecord[] = await db.manyOrNone(
-    `SELECT "sectionId", "sectionTypeSpecificData" FROM public."CaseSections" WHERE "accountSid" = $<accountSid> AND "caseId" = $<caseId> AND "sectionType" = 'incidentReport' ORDER BY "sectionId" ASC`,
-    {
-      caseId,
-      accountSid: ACCOUNT_SID,
-    },
-  );
-  expect(records.length).toBe(expectedIncidentReports.length);
-  // Extremely basic check to ensure the records are in the correct order, detailed mapping verification is in incidentReport unit tests
-  records.forEach((r, idx) => {
-    const { id: incidentReportId, responder_name: responderName } =
-      expectedIncidentReports[idx];
-    expect(r.sectionId).toBe(incidentReportId.toString());
-    expect(r.sectionTypeSpecificData).toMatchObject({ responderName });
-  });
-};
-
+    const records: CaseSectionRecord[] = await db.manyOrNone(
+      `SELECT "sectionId", "sectionTypeSpecificData" FROM public."CaseSections" WHERE "accountSid" = $<accountSid> AND "caseId" = $<caseId> AND "sectionType" = $<caseSectionType> ORDER BY "sectionId" ASC`,
+      {
+        caseId,
+        accountSid: ACCOUNT_SID,
+        caseSectionType,
+      },
+    );
+    expect(records.length).toBe(expectedItems.length);
+    // Extremely basic check to ensure the records are in the correct order, detailed mapping verification is in incidentReport unit tests
+    records.forEach((r, idx) => {
+      sectionVerifier(r, expectedItems[idx]);
+    });
+  };
 afterAll(async () => {
   await mockingProxy.stop();
 });
@@ -313,88 +318,164 @@ describe('Beacon Polling Service', () => {
   );
 
   describe('HRM case updates', () => {
-    test('Single new incident reports for existing cases - adds all incidents', async () => {
-      // Arrange
-      const caseIds = await generateCases(2);
-      const incidentReports = generateIncidentReports(2, 1, caseIds);
-      mockedBeaconEndpoint = await mockBeacon(
-        await mockingProxy.mockttpServer(),
+    describe('Incident Reports', () => {
+      const verifyIncidentReportsForCase = verifyCaseSectionsForCase(
         'incidentReport',
-        [incidentReports],
+        (actual, expected: IncidentReport) => {
+          const { id: incidentReportId, responder_name: responderName } = expected;
+          expect(actual.sectionId).toBe(incidentReportId.toString());
+          expect(actual.sectionTypeSpecificData).toMatchObject({ responderName });
+        },
+        (ir1, ir2) => ir1.id - ir2.id,
       );
-      // Act
-      await handler({ api: 'incidentReport' });
-      // Assert
-      await verifyIncidentReportsForCase(caseIds[0], [incidentReports[0]]);
-      await verifyIncidentReportsForCase(caseIds[1], [incidentReports[1]]);
+
+      test('Single new incident reports for existing cases - adds all incidents', async () => {
+        // Arrange
+        const caseIds = await generateCases(2);
+        const incidentReports = generateIncidentReports(2, 1, caseIds);
+        mockedBeaconEndpoint = await mockBeacon(
+          await mockingProxy.mockttpServer(),
+          'incidentReport',
+          [incidentReports],
+        );
+        // Act
+        await handler({ api: 'incidentReport' });
+        // Assert
+        await verifyIncidentReportsForCase(caseIds[0], [incidentReports[0]]);
+        await verifyIncidentReportsForCase(caseIds[1], [incidentReports[1]]);
+      });
+      test('Multiple new incident reports per case for existing cases - adds all incidents', async () => {
+        // Arrange
+        const caseIds = await generateCases(2);
+        const incidentReports = generateIncidentReports(5, 1, caseIds);
+        mockedBeaconEndpoint = await mockBeacon(
+          await mockingProxy.mockttpServer(),
+          'incidentReport',
+          [incidentReports],
+        );
+        // Act
+        await handler({ api: 'incidentReport' });
+        // Assert
+        await verifyIncidentReportsForCase(caseIds[0], [
+          incidentReports[0],
+          incidentReports[2],
+          incidentReports[4],
+        ]);
+        await verifyIncidentReportsForCase(caseIds[1], [
+          incidentReports[1],
+          incidentReports[3],
+        ]);
+      });
+      test('Single new incident reports, some without cases - rejects incidents without cases and adds the rest', async () => {
+        // Arrange
+        const caseIds = await generateCases(2);
+        const incidentReports = generateIncidentReports(3, 1, [
+          caseIds[0],
+          undefined as any,
+          caseIds[1],
+        ]);
+        mockedBeaconEndpoint = await mockBeacon(
+          await mockingProxy.mockttpServer(),
+          'incidentReport',
+          [incidentReports],
+        );
+        // Act
+        await handler({ api: 'incidentReport' });
+        // Assert
+        await verifyIncidentReportsForCase(caseIds[0], [incidentReports[0]]);
+        await verifyIncidentReportsForCase(caseIds[1], [incidentReports[2]]);
+      });
+      test('Same incident multiple times in one batch - rejects all but first', async () => {
+        // Arrange
+        const caseIds = await generateCases(2);
+        const incidentReports = generateIncidentReports(3, 2, caseIds);
+        const updatedIncidentReport: IncidentReport = {
+          ...generateIncidentReports(1, 5, caseIds)[0],
+          description: 'Updated incident',
+        };
+        mockedBeaconEndpoint = await mockBeacon(
+          await mockingProxy.mockttpServer(),
+          'incidentReport',
+          [
+            [...incidentReports, updatedIncidentReport].sort(
+              (ir1, ir2) =>
+                parseISO(ir1.updated_at).getTime() - parseISO(ir2.updated_at).getTime(),
+            ),
+          ],
+        );
+        // Act
+        await handler({ api: 'incidentReport' });
+        // Assert
+        await verifyIncidentReportsForCase(caseIds[0], [
+          incidentReports[0],
+          incidentReports[2],
+        ]);
+        await verifyIncidentReportsForCase(caseIds[1], [incidentReports[1]]);
+      });
     });
-    test('Multiple new incident reports per case for existing cases - adds all incidents', async () => {
-      // Arrange
-      const caseIds = await generateCases(2);
-      const incidentReports = generateIncidentReports(5, 1, caseIds);
-      mockedBeaconEndpoint = await mockBeacon(
-        await mockingProxy.mockttpServer(),
-        'incidentReport',
-        [incidentReports],
+    describe('Case Reports', () => {
+      const verifyCaseReportsForCase = verifyCaseSectionsForCase(
+        'caseReport',
+        (actual, expected: CaseReport) => {
+          expect(actual.sectionId).toEqual(expected.id);
+          expect(actual.sectionTypeSpecificData.primaryDisposition).toEqual(
+            expected.primary_disposition,
+          );
+        },
+        (ir1, ir2) => ir1.id.localeCompare(ir2.id),
       );
-      // Act
-      await handler({ api: 'incidentReport' });
-      // Assert
-      await verifyIncidentReportsForCase(caseIds[0], [
-        incidentReports[0],
-        incidentReports[2],
-        incidentReports[4],
-      ]);
-      await verifyIncidentReportsForCase(caseIds[1], [
-        incidentReports[1],
-        incidentReports[3],
-      ]);
-    });
-    test('Single new incident reports, some without cases - rejects incidents without cases and adds the rest', async () => {
-      // Arrange
-      const caseIds = await generateCases(2);
-      const incidentReports = generateIncidentReports(3, 1, [
-        caseIds[0],
-        undefined as any,
-        caseIds[1],
-      ]);
-      mockedBeaconEndpoint = await mockBeacon(
-        await mockingProxy.mockttpServer(),
-        'incidentReport',
-        [incidentReports],
+      const verifyPehForCase = verifyCaseSectionsForCase(
+        'caseReport',
+        (actual, expected: CaseReport) => {
+          expect(actual.sectionId).toEqual(expected.id);
+          expect(actual.sectionTypeSpecificData.firstName).toEqual(
+            expected.demographics?.first_name,
+          );
+        },
+        (ir1, ir2) => ir1.id.localeCompare(ir2.id),
       );
-      // Act
-      await handler({ api: 'incidentReport' });
-      // Assert
-      await verifyIncidentReportsForCase(caseIds[0], [incidentReports[0]]);
-      await verifyIncidentReportsForCase(caseIds[1], [incidentReports[2]]);
-    });
-    test('Same incident multiple times in one batch - rejects all but first', async () => {
-      // Arrange
-      const caseIds = await generateCases(2);
-      const incidentReports = generateIncidentReports(3, 2, caseIds);
-      const updatedIncidentReport: IncidentReport = {
-        ...generateIncidentReports(1, 5, caseIds)[0],
-        description: 'Updated incident',
-      };
-      mockedBeaconEndpoint = await mockBeacon(
-        await mockingProxy.mockttpServer(),
-        'incidentReport',
-        [
-          [...incidentReports, updatedIncidentReport].sort(
-            (ir1, ir2) =>
-              parseISO(ir1.updated_at).getTime() - parseISO(ir2.updated_at).getTime(),
-          ),
-        ],
+      const verifySafetyPlanForCase = verifyCaseSectionsForCase(
+        'caseReport',
+        (actual, expected: CaseReport) => {
+          expect(actual.sectionId).toEqual(expected.id);
+          expect(actual.sectionTypeSpecificData.distractions).toEqual(
+            expected.safety_plan?.distractions,
+          );
+        },
+        (ir1, ir2) => ir1.id.localeCompare(ir2.id),
       );
-      // Act
-      await handler({ api: 'incidentReport' });
-      // Assert
-      await verifyIncidentReportsForCase(caseIds[0], [
-        incidentReports[0],
-        incidentReports[2],
-      ]);
-      await verifyIncidentReportsForCase(caseIds[1], [incidentReports[1]]);
+      const verifySudSurveyForCase = verifyCaseSectionsForCase(
+        'caseReport',
+        (actual, expected: CaseReport) => {
+          expect(actual.sectionId).toEqual(expected.id);
+          expect(actual.sectionTypeSpecificData.substancesUsed).toEqual(
+            expected.collaborative_sud_survey?.substances_used,
+          );
+        },
+        (ir1, ir2) => ir1.id.localeCompare(ir2.id),
+      );
+
+      test('Complete case report - adds 4 sections to a case', async () => {
+        // Arrange
+        const caseIds = await generateCases(2);
+        const caseReports = generateCaseReports(2, 1, caseIds);
+        mockedBeaconEndpoint = await mockBeacon(
+          await mockingProxy.mockttpServer(),
+          'caseReport',
+          [caseReports],
+        );
+        // Act
+        await handler({ api: 'caseReport' });
+        // Assert
+        await verifyCaseReportsForCase(caseIds[0], [caseReports[0]]);
+        await verifyCaseReportsForCase(caseIds[1], [caseReports[1]]);
+        await verifyPehForCase(caseIds[0], [caseReports[0]]);
+        await verifyPehForCase(caseIds[1], [caseReports[1]]);
+        await verifySafetyPlanForCase(caseIds[0], [caseReports[0]]);
+        await verifySafetyPlanForCase(caseIds[1], [caseReports[1]]);
+        await verifySudSurveyForCase(caseIds[0], [caseReports[0]]);
+        await verifySudSurveyForCase(caseIds[1], [caseReports[1]]);
+      });
     });
   });
 });

@@ -15,7 +15,7 @@
  */
 
 import { NewCaseSection } from '../../src/types';
-import { generateCaseReport } from '../mockGenerators';
+import { generateCaseReport, generateCompleteCaseReport } from '../mockGenerators';
 import { addCaseReportSectionsToAseloCase, CaseReport } from '../../src/caseReport';
 import '@tech-matters/testing';
 import { isErr, isOk } from '@tech-matters/types';
@@ -83,36 +83,7 @@ describe('addCaseReportSectionsToAseloCase', () => {
     },
   });
 
-  const completeCaseReport = {
-    ...caseReportWithCoreSection,
-    demographics: {
-      first_name: 'Charlotte',
-      last_name: 'Ballantyne',
-      nickname: 'Charlie',
-      date_of_birth: '10-1-1990',
-      gender: 'female',
-      race_ethnicity: 'white',
-      language: 'English',
-    },
-    safety_plan: {
-      warning_signs: 'warning',
-      coping_strategies: 'coping',
-      distractions: 'distractions',
-      who_can_help: 'who',
-      crisis_agencies: 'crisis',
-      safe_environment: 'safe',
-    },
-    collaborative_sud_survey: {
-      substances_used: ['thing1', 'thing2'],
-      other_substances_used: 'other',
-      failed_to_control_substances: 'thing1',
-      treatment_interest: 'much',
-      treatment_preferences: ['many', 'treatments'],
-      has_service_animal: 'yes',
-      pet_type: ['quasit'],
-      pet_separation_barrier: 'cannot get rid of it, it follows me everywhere',
-    },
-  };
+  const completeCaseReport = generateCompleteCaseReport({ id: 'caserReportId' });
 
   beforeEach(() => {
     jest.clearAllMocks();
