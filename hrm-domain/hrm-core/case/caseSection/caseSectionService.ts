@@ -118,6 +118,7 @@ export const createCaseSection = async (
       const cause = createdResult;
       return newResourceAlreadyExistsResult(resourceIdentifier, cause);
     }
+    return createdResult;
   }
 
   if (!skipSearchIndex) {
