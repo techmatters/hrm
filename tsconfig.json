@@ -8,6 +8,7 @@
     { "path": "packages/http" },
     { "path": "packages/job-errors" },
     { "path": "packages/ssm-cache" },
+    { "path": "packages/config-ssm-cache" },
     { "path": "packages/elasticsearch-client" },
     { "path": "packages/s3-client" },
     { "path": "packages/sns-client" },
