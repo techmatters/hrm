@@ -26,19 +26,15 @@ export const validateEnvironment = () => {
     });
   }
 
-  const hrmBaseUrl = process.env.HRM_BASE_URL;
-  if (!hrmBaseUrl) {
+  const hrmInternalUrl = process.env.INTERNAL_HRM_URL;
+  if (!hrmInternalUrl) {
     return newErr({
       error: 'Environment validation failed',
       message: 'HRM_BASE_URL variable missing',
     });
   }
 
-  const baseUrl = process.env.HRM_BASE_URL?.startsWith('https://')
-    ? process.env.HRM_BASE_URL
-    : `https://${process.env.HRM_BASE_URL}`;
-
-  return newOk({ data: { environment, baseUrl } });
+  return newOk({ data: { environment, baseUrl: hrmInternalUrl } });
 };
 
 export const validatePayload = ({
