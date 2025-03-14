@@ -225,7 +225,7 @@ describe('Beacon Polling Service', () => {
   each([{ api: 'incidentReport' }, { api: 'caseReport' }]).describe(
     'Polling logic',
     ({ api }: { api: 'incidentReport' | 'caseReport' }) => {
-      test("[$api] Returns less than the maximum records - doesn't query again", async () => {
+      test(`[${api}] Returns less than the maximum records - doesn't query again`, async () => {
         const caseIds = await generateCases(4);
         if (api === 'incidentReport') {
           mockedBeaconEndpoint = await mockBeacon(
@@ -253,7 +253,7 @@ describe('Beacon Polling Service', () => {
           process.env.BEACON_API_KEY,
         );
       });
-      test('[$api] Returns the maximum records - queries again', async () => {
+      test(`[${api}] Returns the maximum records - queries again`, async () => {
         const caseIds = await generateCases(12);
         if (api === 'incidentReport') {
           mockedBeaconEndpoint = await mockBeacon(
@@ -290,7 +290,7 @@ describe('Beacon Polling Service', () => {
           )}&max=${MAX_ITEMS_PER_CALL}`,
         );
       });
-      test('[$api] Returns the maximum records for more than the maximum allowed number of queries in a polling sweep - stops querying', async () => {
+      test(`[${api}] Returns the maximum records for more than the maximum allowed number of queries in a polling sweep - stops querying`, async () => {
         const caseIds = await generateCases(30);
         if (api === 'incidentReport') {
           mockedBeaconEndpoint = await mockBeacon(
