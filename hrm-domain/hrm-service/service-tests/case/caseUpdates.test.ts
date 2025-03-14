@@ -269,39 +269,39 @@ each([publicApiTestSuiteParameters, internalApiTestSuiteParameters]).describe(
       changeDescription: string;
     };
 
-  const testCases: TestCase[] = [
-    {
-      changeDescription: 'all overview properties changed',
-      newOverview: {
-        summary: 'dappled',
-        childIsAtRisk: false,
-        followUpDate: baselineDate.toISOString(),
+    const testCases: TestCase[] = [
+      {
+        changeDescription: 'all overview properties changed',
+        newOverview: {
+          summary: 'dappled',
+          childIsAtRisk: false,
+          followUpDate: baselineDate.toISOString(),
+        },
       },
-    },
-    {
-      changeDescription:
-        'overview partially changed (omitted properties are not changed)',
-      newOverview: {
-        summary: 'autumnal',
+      {
+        changeDescription:
+          'overview partially changed (omitted properties are not changed)',
+        newOverview: {
+          summary: 'autumnal',
+        },
       },
-    },
-    {
-      changeDescription:
-        'properties other than the known overview properties are specified (unrecognised properties are ignored)',
-      newOverview: {
-        summary: 'autumnal',
-        somethingFrom: 'behind the veil',
+      {
+        changeDescription:
+          'properties other than the known overview properties are specified (unrecognised properties are ignored)',
+        newOverview: {
+          summary: 'autumnal',
+          somethingFrom: 'behind the veil',
+        },
       },
-    },
-    {
-      changeDescription: 'dynamic properties are now supported and saved',
-      newOverview: {
-        summary: 'summary is required',
-        customField1: 'custom value 1',
-        customField2: 'custom value 2',
+      {
+        changeDescription: 'dynamic properties are now supported and saved',
+        newOverview: {
+          summary: 'summary is required',
+          customField1: 'custom value 1',
+          customField2: 'custom value 2',
+        },
       },
-    },
-  ];
+    ];
 
     each(testCases).test(
       'should return 200 and save overview updates when $changeDescription',
