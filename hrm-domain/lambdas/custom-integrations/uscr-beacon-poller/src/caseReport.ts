@@ -26,44 +26,44 @@ export type CaseReport = {
   updated_at: string;
   primary_disposition: string;
   secondary_disposition?: {
-    tangible_resources_provided: string[];
-    information_provided: string[];
-    referral_provided: string[];
-    service_obtained: string[];
+    tangible_resources_provided?: string[];
+    information_provided?: string[];
+    referral_provided?: string[];
+    service_obtained?: string[];
   };
-  issue_report: string[];
-  narrative: {
-    behaviour: string;
-    intervention: string;
-    response: string;
-    plan: string;
+  issue_report?: string[];
+  narrative?: {
+    behaviour?: string;
+    intervention?: string;
+    response?: string;
+    plan?: string;
   };
   demographics?: {
-    first_name: string;
-    last_name: string;
-    nickname: string;
-    date_of_birth: string;
-    gender: string;
-    race_ethnicity: string;
-    language: string;
+    first_name?: string;
+    last_name?: string;
+    nickname?: string;
+    date_of_birth?: string;
+    gender?: string;
+    race_ethnicity?: string;
+    language?: string;
   };
   safety_plan?: {
-    warning_signs: string;
-    coping_strategies: string;
-    distractions: string;
-    who_can_help: string;
-    crisis_agencies: string;
-    safe_environment: string;
+    warning_signs?: string;
+    coping_strategies?: string;
+    distractions?: string;
+    who_can_help?: string;
+    crisis_agencies?: string;
+    safe_environment?: string;
   };
   collaborative_sud_survey?: {
-    substances_used: string[];
-    other_substances_used: string;
-    failed_to_control_substances: string;
-    treatment_interest: string;
-    treatment_preferences: string[];
-    has_service_animal: string;
-    pet_type: string[];
-    pet_separation_barrier: string;
+    substances_used?: string[];
+    other_substances_used?: string;
+    failed_to_control_substances?: string;
+    treatment_interest?: string;
+    treatment_preferences?: string[];
+    has_service_animal?: string;
+    pet_type?: string[];
+    pet_separation_barrier?: string;
   };
 };
 
@@ -74,8 +74,9 @@ const caseReportToCaseReportCaseSection = ({
   primary_disposition,
   secondary_disposition,
   issue_report,
-  narrative: { behaviour, intervention, response, plan },
+  narrative,
 }: CaseReport): NewCaseSectionInfo => {
+  const { behaviour, intervention, response, plan } = narrative || {};
   const {
     tangible_resources_provided,
     information_provided,

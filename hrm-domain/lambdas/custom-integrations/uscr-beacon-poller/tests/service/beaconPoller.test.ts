@@ -27,7 +27,8 @@ import { BEACON_API_KEY_HEADER } from '../../src/config';
 import { handler } from '../../src';
 import { parseISO } from 'date-fns';
 import { IncidentReport } from '../../src/incidentReport';
-import { generateIncidentReport } from '../mockGenerators';
+import { generateCaseReport, generateIncidentReport } from '../mockGenerators';
+import { CaseReport } from '../../src/caseReport';
 
 const ACCOUNT_SID = 'ACservicetest';
 const BEACON_RESPONSE_HEADERS = {
@@ -111,10 +112,31 @@ const generateIncidentReports = (
   return response;
 };
 
-const batchIncidentReports = (
-  reports: IncidentReport[],
-  batchSize: number,
-): IncidentReport[][] => {
+const generateCaseReports = (
+  numberToGenerate: number,
+  intervalInHours: number,
+  caseIds: number[] = [],
+  start: Date = BASELINE_DATE,
+): CaseReport[] => {
+  const response: CaseReport[] = [];
+  for (let i = 0; i < numberToGenerate; i++) {
+    const indexInCurrentIteration = i % caseIds.length;
+    const iteration = Math.floor(i / caseIds.length);
+    response.push(
+      generateCaseReport({
+        updated_at: addHours(start, (i + 1) * intervalInHours).toISOString(),
+        ...(caseIds[indexInCurrentIteration]
+          ? { case_id: caseIds[indexInCurrentIteration] }
+          : {}),
+        id: iteration.toString(),
+        contact_id: `contact-for-case-${caseIds[indexInCurrentIteration]}`,
+      }),
+    );
+  }
+  return response;
+};
+
+const batch = <TItem>(reports: TItem[], batchSize: number): TItem[][] => {
   const batches = [];
   for (let i = 0; i < reports.length; i += batchSize) {
     batches.push(reports.slice(i, i + batchSize));
@@ -124,10 +146,10 @@ const batchIncidentReports = (
 
 let beaconMockPriority = 0;
 
-export const mockBeacon = async (
+export const mockBeacon = async <TItem>(
   mockttp: Mockttp,
   api: 'incidentReport' | 'caseReport',
-  responses: IncidentReport[][],
+  responses: TItem[][],
 ): Promise<MockedEndpoint> => {
   process.env.BEACON_BASE_URL = `http://127.0.0.1:${mockttp.port}/mock-beacon`;
   console.debug(
@@ -205,9 +227,19 @@ describe('Beacon Polling Service', () => {
     ({ api }: { api: 'incidentReport' | 'caseReport' }) => {
       test("[$api] Returns less than the maximum records - doesn't query again", async () => {
         const caseIds = await generateCases(4);
-        mockedBeaconEndpoint = await mockBeacon(await mockingProxy.mockttpServer(), api, [
-          generateIncidentReports(4, 1, caseIds),
-        ]);
+        if (api === 'incidentReport') {
+          mockedBeaconEndpoint = await mockBeacon(
+            await mockingProxy.mockttpServer(),
+            api,
+            [generateIncidentReports(4, 1, caseIds)],
+          );
+        } else {
+          mockedBeaconEndpoint = await mockBeacon(
+            await mockingProxy.mockttpServer(),
+            api,
+            [generateCaseReports(4, 1, caseIds)],
+          );
+        }
         await handler({ api });
         const beaconRequests = await mockedBeaconEndpoint.getSeenRequests();
         expect(beaconRequests.length).toBe(1);
@@ -223,14 +255,19 @@ describe('Beacon Polling Service', () => {
       });
       test('[$api] Returns the maximum records - queries again', async () => {
         const caseIds = await generateCases(12);
-        mockedBeaconEndpoint = await mockBeacon(
-          await mockingProxy.mockttpServer(),
-          api,
-          batchIncidentReports(
-            generateIncidentReports(12, 1, caseIds),
-            MAX_ITEMS_PER_CALL,
-          ),
-        );
+        if (api === 'incidentReport') {
+          mockedBeaconEndpoint = await mockBeacon(
+            await mockingProxy.mockttpServer(),
+            api,
+            batch(generateIncidentReports(12, 1, caseIds), MAX_ITEMS_PER_CALL),
+          );
+        } else {
+          mockedBeaconEndpoint = await mockBeacon(
+            await mockingProxy.mockttpServer(),
+            api,
+            batch(generateCaseReports(12, 1, caseIds), MAX_ITEMS_PER_CALL),
+          );
+        }
         await handler({ api });
         const beaconRequests = await mockedBeaconEndpoint.getSeenRequests();
         expect(beaconRequests.length).toBe(3);
@@ -255,14 +292,19 @@ describe('Beacon Polling Service', () => {
       });
       test('[$api] Returns the maximum records for more than the maximum allowed number of queries in a polling sweep - stops querying', async () => {
         const caseIds = await generateCases(30);
-        mockedBeaconEndpoint = await mockBeacon(
-          await mockingProxy.mockttpServer(),
-          api,
-          batchIncidentReports(
-            generateIncidentReports(1000, 1, caseIds),
-            MAX_ITEMS_PER_CALL,
-          ),
-        );
+        if (api === 'incidentReport') {
+          mockedBeaconEndpoint = await mockBeacon(
+            await mockingProxy.mockttpServer(),
+            api,
+            batch(generateIncidentReports(1000, 1, caseIds), MAX_ITEMS_PER_CALL),
+          );
+        } else {
+          mockedBeaconEndpoint = await mockBeacon(
+            await mockingProxy.mockttpServer(),
+            api,
+            batch(generateCaseReports(1000, 1, caseIds), MAX_ITEMS_PER_CALL),
+          );
+        }
         await handler({ api });
         const beaconRequests = await mockedBeaconEndpoint.getSeenRequests();
         expect(beaconRequests.length).toBe(5);
