@@ -50,6 +50,7 @@ export const waitForDb = async (db: IDatabase<unknown>) => {
       return;
     } catch (err) {
       console.error('Database not ready, retrying in 1s');
+      // eslint-disable-next-line @typescript-eslint/no-loop-func
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
   }
