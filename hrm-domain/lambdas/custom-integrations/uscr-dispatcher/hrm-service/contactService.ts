@@ -33,7 +33,7 @@ export const connectToCase = async ({
 }) => {
   try {
     // TODO?: set api version via env vars
-    const urlPath = `v0/accounts/${accountSid}/contacts/${contactId}/connectToCase`;
+    const urlPath = `/internal/v0/accounts/${accountSid}/contacts/${contactId}/connectToCase`;
     const authHeader = `Basic ${staticKey}`;
 
     const result = await callHrmApi<Contact>(baseUrl)({
@@ -69,7 +69,7 @@ export const getContact = async ({
 }) => {
   try {
     // TODO?: set api version via env vars
-    const urlPath = `v0/accounts/${accountSid}/contacts/${contactId}`;
+    const urlPath = `/internal/v0/accounts/${accountSid}/contacts/${contactId}`;
     const authHeader = `Basic ${staticKey}`;
 
     const result = await callHrmApi<Contact>(baseUrl)({

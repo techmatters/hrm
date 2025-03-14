@@ -31,7 +31,7 @@ export const createCase = async ({
 }) => {
   try {
     // TODO?: set api version via env vars
-    const urlPath = `v0/accounts/${accountSid}/cases`;
+    const urlPath = `/internal/v0/accounts/${accountSid}/cases`;
     const authHeader = `Basic ${staticKey}`;
 
     const result = await callHrmApi<CaseService>(baseUrl)({
@@ -66,7 +66,7 @@ export const getCase = async ({
   staticKey: string;
 }) => {
   try {
-    const urlPath = `v0/accounts/${accountSid}/cases/${caseId}`;
+    const urlPath = `/internal/v0/accounts/${accountSid}/cases/${caseId}`;
 
     const authHeader = `Basic ${staticKey}`;
 
@@ -101,7 +101,7 @@ export const deleteCase = async ({
   staticKey: string;
 }) => {
   try {
-    const urlPath = `v0/accounts/${accountSid}/cases/${caseId}`;
+    const urlPath = `/internal/v0/accounts/${accountSid}/cases/${caseId}`;
 
     const authHeader = `Basic ${staticKey}`;
 
@@ -140,7 +140,7 @@ export const createCaseSection = async ({
   staticKey: string;
 }) => {
   try {
-    const urlPath = `v0/accounts/${accountSid}/cases/${caseId}/sections/${sectionType}`;
+    const urlPath = `/internal/v0/accounts/${accountSid}/cases/${caseId}/sections/${sectionType}`;
 
     const authHeader = `Basic ${staticKey}`;
 
@@ -182,7 +182,7 @@ export const updateCaseSection = async ({
   staticKey: string;
 }) => {
   try {
-    const urlPath = `v0/accounts/${accountSid}/cases/${caseId}/sections/${sectionType}/${sectionId}`;
+    const urlPath = `/internal/v0/accounts/${accountSid}/cases/${caseId}/sections/${sectionType}/${sectionId}`;
 
     const authHeader = `Basic ${staticKey}`;
 
@@ -220,7 +220,7 @@ export const getCaseSections = async ({
   staticKey: string;
 }) => {
   try {
-    const urlPath = `v0/accounts/${accountSid}/cases/${caseId}/timeline?sectionTypes=${sectionType}&includeContacts=false`;
+    const urlPath = `/internal/v0/accounts/${accountSid}/cases/${caseId}/timeline?sectionTypes=${sectionType}&includeContacts=false`;
 
     const authHeader = `Basic ${staticKey}`;
 
