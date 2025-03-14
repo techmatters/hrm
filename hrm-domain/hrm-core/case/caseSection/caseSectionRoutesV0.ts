@@ -22,6 +22,7 @@ import {
   deleteCaseSection,
   getCaseSection,
   getCaseSectionTypeList,
+  isResourceAlreadyExistsResult,
   replaceCaseSection,
 } from './caseSectionService';
 import '@tech-matters/twilio-worker-auth';
@@ -101,7 +102,7 @@ const newCaseSectionsRouter = (isPublic: boolean) => {
       user,
       params: { caseId, sectionType },
     } = req;
-    const createdCase = await createCaseSection(
+    const createdCaseResult = await createCaseSection(
       hrmAccountId,
       caseId,
       sectionType,
@@ -109,7 +110,11 @@ const newCaseSectionsRouter = (isPublic: boolean) => {
       user.workerSid,
     );
 
-    res.json(createdCase);
+    if (isResourceAlreadyExistsResult(createdCaseResult)) {
+      throw createError(409, createdCaseResult);
+    }
+
+    res.json(createdCaseResult.unwrap());
   });
 
   caseSectionsRouter.put(

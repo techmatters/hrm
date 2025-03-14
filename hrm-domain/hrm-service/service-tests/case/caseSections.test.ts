@@ -257,6 +257,48 @@ each([publicApiTestSuiteParameters, internalApiTestSuiteParameters]).describe(
       });
       expect(updatedCase.sections.note).toHaveLength(3);
     });
+
+    test('Multiple calls with same specific section ID - will return a 409 after the first', async () => {
+      const startTime = Date.now();
+
+      const newSection: NewCaseSection = {
+        sectionId: 'specific-id',
+        sectionTypeSpecificData: { note: `hello` },
+      };
+      const firstResponse = await request
+        .post(`${baseRoute}${getRoutePath(targetCase.id, 'note')}`)
+        .set(testHeaders)
+        .send(newSection);
+      expect(firstResponse.status).toBe(200);
+      const addedSection = firstResponse.body;
+      const secondResponse = await request
+        .post(`${baseRoute}${getRoutePath(targetCase.id, 'note')}`)
+        .set(testHeaders)
+        .send(newSection);
+      expect(secondResponse.status).toBe(409);
+
+      const updatedCase = await getCase(targetCase.id, accountSid, ALWAYS_CAN);
+      expect(new Date(updatedCase!.updatedAt).getTime()).toBeGreaterThan(startTime);
+      const { sectionType, ...expectedSection } = addedSection;
+      expect(updatedCase).toEqual({
+        ...targetCase,
+        updatedAt: updatedCase?.updatedAt,
+        updatedBy: requestDescription === 'PUBLIC' ? workerSid : `account-${accountSid}`,
+        connectedContacts: [],
+        info: null,
+        sections: {
+          note: [
+            {
+              ...expectedSection,
+              sectionId: 'specific-id',
+              createdAt: expect.toParseAsDate(addedSection.createdAt),
+              eventTimestamp: expect.toParseAsDate(addedSection.eventTimestamp),
+            },
+          ],
+        },
+      });
+      expect(updatedCase.sections.note).toHaveLength(1);
+    });
   },
 );
 
@@ -264,13 +306,15 @@ describe('/cases/:caseId/sections/:sectionId', () => {
   let targetSection: CaseSection;
 
   beforeEach(async () => {
-    targetSection = await createCaseSection(
-      accountSid,
-      targetCase.id.toString(),
-      'note',
-      { sectionTypeSpecificData: { note: 'hello' } },
-      workerSid,
-    );
+    targetSection = (
+      await createCaseSection(
+        accountSid,
+        targetCase.id.toString(),
+        'note',
+        { sectionTypeSpecificData: { note: 'hello' } },
+        workerSid,
+      )
+    ).unwrap();
   });
 
   describe('GET', () => {
