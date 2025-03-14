@@ -22,7 +22,6 @@ import {
   deleteCaseSection,
   getCaseSection,
   getCaseSectionTypeList,
-  isResourceAlreadyExistsResult,
   replaceCaseSection,
 } from './caseSectionService';
 import '@tech-matters/twilio-worker-auth';
@@ -32,6 +31,7 @@ import {
   canEditCaseSection,
   canViewCaseSection,
 } from './canPerformCaseSectionAction';
+import { isErr } from '@tech-matters/types';
 
 const newCaseSectionsRouter = (isPublic: boolean) => {
   const caseSectionsRouter = SafeRouter({ mergeParams: true });
@@ -113,8 +113,13 @@ const newCaseSectionsRouter = (isPublic: boolean) => {
         user.workerSid,
       );
 
-      if (isResourceAlreadyExistsResult(createdCaseResult)) {
-        throw createError(409, createdCaseResult);
+      if (isErr(createdCaseResult)) {
+        if (createdCaseResult.error === 'ResourceAlreadyExists') {
+          throw createError(409, createdCaseResult);
+        }
+        if (createdCaseResult.error === 'ForeignKeyViolation') {
+          throw createError(404, createdCaseResult);
+        }
       }
 
       res.json(createdCaseResult.unwrap());
