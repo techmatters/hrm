@@ -79,14 +79,14 @@ export const addSectionToAseloCase =
       const { section, caseId, lastUpdated } = inputToSectionMapper(inputData);
       const { sectionId } = section;
       console.debug(
-        `Start processing incident report: ${sectionId} (last updated: ${lastUpdated})`,
+        `Start processing ${sectionType}: ${sectionId} (last updated: ${lastUpdated})`,
       );
       if (!caseId) {
         console.warn(
-          `Incident reports not already assigned to a case are not currently supported - rejecting ${sectionType} ${sectionId} (last updated: ${lastUpdated})`,
+          `${sectionType}s not already assigned to a case are not currently supported - rejecting ${sectionType} ${sectionId} (last updated: ${lastUpdated})`,
         );
         return newErr({
-          message: `Incident reports not already assigned to a case are not currently supported - rejecting ${sectionType} ${sectionId} (last updated: ${lastUpdated})`,
+          message: `${sectionType}s not already assigned to a case are not currently supported - rejecting ${sectionType} ${sectionId} (last updated: ${lastUpdated})`,
           error: {
             type: 'CaseNotSpecified',
             sectionId,
@@ -107,12 +107,12 @@ export const addSectionToAseloCase =
       if (newSectionResponse.ok) {
         const newSection: any = await newSectionResponse.json();
         console.debug(
-          `Added new incidentReport case section to case ${caseId}:`,
+          `Added new ${sectionType} case section to case ${caseId}:`,
           newSection,
         );
       } else if (newSectionResponse.status === 409) {
         return newErr({
-          message: `Incident report ${sectionId} was already added to case ${caseId} - overwrites are not supported. ${await newSectionResponse.text()}`,
+          message: `${sectionType} ${sectionId} was already added to case ${caseId} - overwrites are not supported. ${await newSectionResponse.text()}`,
           error: {
             type: 'SectionExists',
             caseId,
@@ -123,7 +123,7 @@ export const addSectionToAseloCase =
         });
       } else if (newSectionResponse.status === 404) {
         return newErr({
-          message: `Attempted to add incident report ${sectionId} to case ${caseId} which does not exist. ${await newSectionResponse.text()}`,
+          message: `Attempted to add ${sectionType} ${sectionId} to case ${caseId} which does not exist. ${await newSectionResponse.text()}`,
           error: {
             type: 'CaseNotFound',
             caseId,
@@ -134,7 +134,7 @@ export const addSectionToAseloCase =
         });
       } else {
         return newErr({
-          message: `Error adding incident report ${sectionId} to case ${caseId} (status ${newSectionResponse.status})`,
+          message: `Error adding ${sectionType} ${sectionId} to case ${caseId} (status ${newSectionResponse.status})`,
           error: {
             type: 'UnexpectedHttpError',
             status: newSectionResponse.status,
