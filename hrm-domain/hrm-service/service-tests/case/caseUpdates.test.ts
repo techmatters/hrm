@@ -326,6 +326,7 @@ each([publicApiTestSuiteParameters, internalApiTestSuiteParameters]).describe(
           ...originalCase,
           info: {
             ...originalCase.info,
+
             ...newOverview,
           },
           updatedAt: expect.toParseAsDate(),
