@@ -14,7 +14,7 @@
   "viewExternalTranscript": [["everyone"]],
   "viewRecording": [],
   "addContactToCase": [["isSupervisor"], ["isOwner"]],
-  "removeContactFromCase": [["isSupervisor"], ["isOwner"]],
+  "removeContactFromCase": [],
   
   "viewProfile": [["everyone"]],
   "flagProfile": [["isSupervisor"]],
