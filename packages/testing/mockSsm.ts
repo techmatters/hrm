@@ -29,7 +29,7 @@ type FindPayload = {
 
 type MockParameter = {
   valueGenerator: () => string;
-  pathPattern?: RegExp;
+  updateable?: boolean;
 } & (
   | {
       name: string;
@@ -45,76 +45,106 @@ export const mockSsmParameters = async (
   mockttp: Mockttp,
   parameters: MockParameter[],
 ) => {
-  await mockttp.forPost(/http:\/\/mock-ssm(.*)/).thenCallback(async req => {
-    const requestBody = await req.body.getText();
-    const {
-      Name: name,
-      Path: path,
-      MaxResults: maxResults,
-      NextToken: nextToken,
-    }: GetPayload & FindPayload = JSON.parse(requestBody!);
-    if (name) {
-      // This is a get request for a single parameter
-      for (const parameter of parameters) {
-        if (parameter.name === name || parameter.pathPattern?.test(name)) {
-          return {
-            status: 200,
-            body: JSON.stringify({
-              Parameter: {
-                ARN: 'string',
-                DataType: 'text',
-                LastModifiedDate: 0,
-                Name: name,
-                Selector: 'string',
-                SourceResult: 'string',
-                Type: 'SecureString',
-                Value: parameter.valueGenerator(),
-                Version: 3,
-              },
-            }),
-          };
+  const putValues: Record<string, string> = {};
+
+  await mockttp
+    .forPost(/http:\/\/mock-ssm(.*)/)
+    .always()
+    .thenCallback(async req => {
+      if (req.headers['x-amz-target'] === 'AmazonSSM.PutParameter') {
+        const { Name, Value } = (await req.body.getJson()) as {
+          Name: string;
+          Value: string;
+        };
+        console.debug(`Receiving SSM PutParameter command to set ${Name}=${Value}`);
+        putValues[Name] = Value;
+        return {
+          statusCode: 200,
+          body: JSON.stringify({
+            Version: 3,
+            Tier: 'Standard',
+          }),
+        };
+      }
+      const requestBody = await req.body.getText();
+      const {
+        Name: name,
+        Path: path,
+        MaxResults: maxResults,
+        NextToken: nextToken,
+      }: GetPayload & FindPayload = JSON.parse(requestBody!);
+      if (name) {
+        // This is a get request for a single parameter
+        for (const parameter of parameters) {
+          if (parameter.name === name || parameter.pathPattern?.test(name)) {
+            let value;
+            if (parameter.updateable && putValues[name]) {
+              console.debug(`Returning updated value for ${name}: ${putValues[name]}`);
+              value = putValues[name];
+            } else {
+              console.debug(
+                `Returning mocked value for ${name}: ${parameter.valueGenerator()}`,
+              );
+              value = parameter.valueGenerator();
+            }
+            return {
+              statusCode: 200,
+              body: JSON.stringify({
+                Parameter: {
+                  ARN: 'string',
+                  DataType: 'text',
+                  LastModifiedDate: 0,
+                  Name: name,
+                  Selector: 'string',
+                  SourceResult: 'string',
+                  Type: 'SecureString',
+                  Value: value,
+                  Version: 3,
+                },
+              }),
+            };
+          }
         }
+      } else if (path) {
+        // This is a find request for multiple parameters that we need to filter.
+        // Where we also need to handle pagination with NextToken or requests & responses.
+        // pathPattern on parameters is ignored in this case, since it doesn't really make sense.
+        // Note: doesn't currently support filters, only a path.
+        const pathRegex = new RegExp(`${path}/.*`);
+        const matchingParameters = parameters.filter(parameter =>
+          pathRegex.test(parameter.name ?? ''),
+        );
+        const windowStart = nextToken ? parseInt(nextToken, 10) : 0;
+        const windowedParameters = matchingParameters.slice(
+          windowStart,
+          windowStart + (maxResults ?? 10),
+        );
+        const responseNextToken =
+          windowedParameters.length === (maxResults ?? 10)
+            ? (windowStart + maxResults).toString()
+            : undefined;
+        const payload: any = {
+          Parameters: windowedParameters.map(parameter => ({
+            ARN: 'string',
+            DataType: 'text',
+            LastModifiedDate: 0,
+            Name: parameter.name,
+            Selector: 'string',
+            SourceResult: 'string',
+            Type: 'SecureString',
+            Value: parameter.valueGenerator(),
+            Version: 3,
+          })),
+        };
+        if (responseNextToken) {
+          payload.NextToken = responseNextToken;
+        }
+        return {
+          status: 200,
+          body: JSON.stringify(payload),
+        };
       }
-    } else if (path) {
-      // This is a find request for multiple parameters that we need to filter.
-      // Where we also need to handle pagination with NextToken or requests & responses.
-      // pathPattern on parameters is ignored in this case, since it doesn't really make sense.
-      // Note: doesn't currently support filters, only a path.
-      const pathRegex = new RegExp(`${path}/.*`);
-      const matchingParameters = parameters.filter(parameter =>
-        pathRegex.test(parameter.name ?? ''),
-      );
-      const windowStart = nextToken ? parseInt(nextToken, 10) : 0;
-      const windowedParameters = matchingParameters.slice(
-        windowStart,
-        windowStart + (maxResults ?? 10),
-      );
-      const responseNextToken =
-        windowedParameters.length === (maxResults ?? 10)
-          ? (windowStart + maxResults).toString()
-          : undefined;
-      const payload: any = {
-        Parameters: windowedParameters.map(parameter => ({
-          ARN: 'string',
-          DataType: 'text',
-          LastModifiedDate: 0,
-          Name: parameter.name,
-          Selector: 'string',
-          SourceResult: 'string',
-          Type: 'SecureString',
-          Value: parameter.valueGenerator(),
-          Version: 3,
-        })),
-      };
-      if (responseNextToken) {
-        payload.NextToken = responseNextToken;
-      }
-      return {
-        status: 200,
-        body: JSON.stringify(payload),
-      };
-    }
-    return { status: 404 };
-  });
-  console.log('Mocked SSM on mock-ssm: ', parameters);
+      return { status: 404 };
+    });
+  console.info('Mocked SSM on mock-ssm: ', parameters);
 };

@@ -44,12 +44,12 @@ process.env.PERMISSIONS_notConfigured = '';
 process.env.PERMISSIONS_notExistsInRulesMap = 'notExistsInRulesMap';
 process.env.STATIC_KEY_ACCOUNT_SID = 'BBC';
 
-process.env.INCLUDE_ERROR_IN_RESPONSE = true;
+process.env.INCLUDE_ERROR_IN_RESPONSE = 'true';
 
-process.env.ENABLE_PUBLISH_HRM_SEARCH_INDEX = true;
-process.env.ENABLE_CREATE_CONTACT_JOBS = true;
-process.env.ENABLE_PROCESS_CONTACT_JOBS = true;
-process.env.ENABLE_CLEANUP_JOBS = true;
+process.env.ENABLE_PUBLISH_HRM_SEARCH_INDEX = 'true';
+process.env.ENABLE_CREATE_CONTACT_JOBS = 'true';
+process.env.ENABLE_PROCESS_CONTACT_JOBS = 'true';
+process.env.ENABLE_CLEANUP_JOBS = 'true';
 process.env.AWS_REGION = 'xx-fake-1';
 process.env.AWS_ACCESS_KEY_ID = 'mock-access-key';
 process.env.AWS_SECRET_ACCESS_KEY = 'mock-secret-key';

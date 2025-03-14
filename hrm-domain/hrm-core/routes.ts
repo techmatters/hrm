@@ -30,12 +30,16 @@ import internalContacts from './contact/internalContactRoutesV0';
 import { Permissions } from './permissions';
 import internalProfiles from './profile/internalProfileRoutesV0';
 
+// Need to create these first - the route handlers don't activate if they are instantiated just in time
+const publicCases = cases(true);
+const internalCases = cases(false);
+
 export const HRM_ROUTES: {
   path: string;
   routerFactory: (rules: Permissions) => Router;
 }[] = [
   { path: '/contacts', routerFactory: () => contacts },
-  { path: '/cases', routerFactory: () => cases },
+  { path: '/cases', routerFactory: () => publicCases },
   { path: '/postSurveys', routerFactory: () => postSurveys },
   { path: '/csamReports', routerFactory: () => csamReports },
   { path: '/profiles', routerFactory: () => profiles },
@@ -72,6 +76,7 @@ export const INTERNAL_ROUTES: {
 }[] = [
   { path: '/contacts', routerFactory: () => internalContacts },
   { path: '/profiles', routerFactory: () => internalProfiles },
+  { path: '/cases', routerFactory: () => internalCases },
 ];
 
 export const internalApiV0 = () => {

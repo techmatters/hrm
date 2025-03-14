@@ -12,31 +12,51 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see https://www.gnu.org/licenses/.
 
+version: '3'
+
 services:
+  db:
+    image: library/postgres:16.3
+
+    environment:
+      POSTGRES_USER: rdsadmin
+      POSTGRES_HOST_AUTH_METHOD: trust
+      POSTGRES_DB: hrmdb
+
+    volumes:
+      - ../../../../../../test-support/db-init/dump.sql:/docker-entrypoint-initdb.d/dump.sql
+
+    command: ['postgres', '-c', 'log_statement=all']
+
+    expose:
+      - '5433:5432'
+
   job-processor:
     image: hrm-service
-    command: "npm run start:job-processor"
     environment:
       POSTGRES_PORT: 5432
       RDS_HOSTNAME: db
       HRM_RUN_MIGRATIONS: 'true'
+      RESOURCES_CREATE_SCHEMA: 'true'
+      RESOURCES_PASSWORD: postgres
 
     env_file:
-      - ../../.env.localstack
+      - ./.env.service-test
+    depends_on:
+      - db
 
   service:
     image: hrm-service
     ports:
-      - '8081:8080'
+      - '3000:3000'
+      - '3001:3001'
 
     environment:
-      API_KEY: testApiKey
-      PORT: 8080
-      POSTGRES_PORT: 5432
       RDS_HOSTNAME: db
+      RESOURCES_PASSWORD: postgres
 
     env_file:
-      - ../../.env.localstack
+      - ./.env.service-test
 
     depends_on:
       - job-processor

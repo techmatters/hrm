@@ -21,12 +21,19 @@ const staticKey = process.env.STATIC_KEY;
 const lastUpdateSeenSsmKey = `/${process.env.NODE_ENV}/hrm/custom-integration/uscr/${accountSid}/latest_beacon_update_seen`;
 
 export const handler = async (): Promise<0> => {
+  const maxIncidents = parseInt(process.env.MAX_INCIDENT_REPORTS_PER_CALL || '1000');
   // Read the last update seen from SSM
   const lastUpdateSeen = await getSsmParameter(lastUpdateSeenSsmKey);
   console.info('Last beacon update before:', lastUpdateSeen);
-  // Do something on the public internet
-  const response = await fetch('https://google.com');
-  console.debug('External API responded with status:', response.status);
+  // Query Beacon API
+  const url = `${process.env.BEACON_URL}?updatedAfter=${lastUpdateSeen}&max=${maxIncidents}`;
+  console.info('Querying:', url);
+  const response = await fetch(url);
+  console.debug(
+    'External API responded with status:',
+    response.status,
+    await response.text(),
+  );
   // Do something on the internal HRM API - will return a 404
   const hrmResponse = await fetch(
     `${process.env.INTERNAL_HRM_URL}/v0/accounts/${accountSid}/profiles/identifier/1234/flags`,
@@ -37,7 +44,11 @@ export const handler = async (): Promise<0> => {
       },
     },
   );
-  console.debug('HRM API responded with status:', hrmResponse.status);
+  console.debug(
+    'HRM API responded with status:',
+    hrmResponse.status,
+    await hrmResponse.text(),
+  );
   // Update the last update seen in SSM
   await putSsmParameter(lastUpdateSeenSsmKey, new Date().toISOString(), {
     overwrite: true,

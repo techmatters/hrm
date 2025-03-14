@@ -14,10 +14,24 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-export * from './mock-pgpromise';
-export * from './mock-twilio-auth-endpoint';
-export * from './mockSsm';
-export * from './mockSns';
-import { start, stop, mockttpServer } from './mocking-proxy';
-export const mockingProxy = { start, stop, mockttpServer };
-import './expectToParseAsDate';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { mockSsmParameters } from '@tech-matters/testing';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { Mockttp } from 'mockttp';
+
+export const mockEntitySnsParameters = async (
+  mockttp: Mockttp,
+  queueName: string,
+  topicName: string,
+) => {
+  await mockSsmParameters(mockttp, [
+    {
+      pathPattern: /.*\/queue-url-consumer$/,
+      valueGenerator: () => queueName,
+    },
+    {
+      pathPattern: /.*\/notifications-sns-topic-arn$/,
+      valueGenerator: () => topicName,
+    },
+  ]);
+};

@@ -87,17 +87,7 @@ describe('searchCases', () => {
     helpline: 'helpline',
     accountSid,
     status: 'open',
-    info: {
-      counsellorNotes: [
-        {
-          accountSid,
-          note: 'Child with covid-19',
-          twilioWorkerId: 'WK-contact-adder',
-          id: 'NOTE_1',
-          createdAt: baselineCreatedDate,
-        },
-      ],
-    },
+    info: {},
     sections: {
       note: [
         {
