@@ -45,6 +45,7 @@ type DatabaseErrorName = `Database${string}Error`;
 export type DatabaseGenericErrorResult<T extends DatabaseErrorName = DatabaseErrorName> =
   ErrorResult<T> & {
     rawError: Error;
+    table?: string;
   };
 
 export type DatabaseConstraintViolationErrorResult<T extends `Database${string}Error`> =
