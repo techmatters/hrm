@@ -41,15 +41,18 @@ type MockParameter = {
     }
 );
 
+let currentPriority = 1;
+
 export const mockSsmParameters = async (
   mockttp: Mockttp,
   parameters: MockParameter[],
 ) => {
   const putValues: Record<string, string> = {};
-
+  console.debug('Mocking SSM parameters with priority: ', currentPriority);
   await mockttp
     .forPost(/http:\/\/mock-ssm(.*)/)
     .always()
+    .asPriority(currentPriority++)
     .thenCallback(async req => {
       if (req.headers['x-amz-target'] === 'AmazonSSM.PutParameter') {
         const { Name, Value } = (await req.body.getJson()) as {
