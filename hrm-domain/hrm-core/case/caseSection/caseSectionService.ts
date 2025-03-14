@@ -35,8 +35,47 @@ import {
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { RulesFile, TKConditionsSets } from '../../permissions/rulesMap';
 import { ListConfiguration } from '../caseDataAccess';
-import { HrmAccountId } from '@tech-matters/types';
+import {
+  ErrorResult,
+  HrmAccountId,
+  isErr,
+  newOkFromData,
+  TResult,
+} from '@tech-matters/types';
 import { updateCaseNotify } from '../caseService';
+import {
+  DatabaseErrorResult,
+  isDatabaseUniqueConstraintViolationErrorResult,
+} from '../../sql';
+import { SuccessResult } from '@tech-matters/types';
+
+type ResourceAlreadyExistsResult = ErrorResult<'ResourceAlreadyExists'> & {
+  cause: DatabaseErrorResult;
+  resourceIdentifier: string;
+  resourceType: 'caseSection';
+};
+
+const newResourceAlreadyExistsResult = (
+  resourceIdentifier: string,
+  cause: DatabaseErrorResult,
+) => {
+  const message = `caseSection resource already exists: ${resourceIdentifier}`;
+  return {
+    _tag: 'Result',
+    status: 'error',
+    error: 'ResourceAlreadyExists',
+    cause,
+    resourceIdentifier,
+    resourceType: 'caseSection',
+    message,
+    unwrap: () => {
+      throw new Error(message);
+    },
+  } as const;
+};
+
+export const isResourceAlreadyExistsResult = (result: TResult<any, any>) =>
+  isErr(result) && result.error === 'ResourceAlreadyExists';
 
 const sectionRecordToSection = (
   sectionRecord: CaseSectionRecord | undefined,
@@ -55,7 +94,9 @@ export const createCaseSection = async (
   newSection: NewCaseSection,
   workerSid: string,
   skipSearchIndex = false,
-): Promise<CaseSection> => {
+): Promise<
+  ResourceAlreadyExistsResult | DatabaseErrorResult | SuccessResult<CaseSection>
+> => {
   const nowISO = new Date().toISOString();
   const record: CaseSectionRecord = {
     sectionId: randomUUID(),
@@ -67,15 +108,25 @@ export const createCaseSection = async (
     createdAt: nowISO,
     accountSid,
   };
-
-  const created = await create()(record);
+  const createdResult = await create()(record);
+  if (isErr(createdResult)) {
+    if (
+      isDatabaseUniqueConstraintViolationErrorResult(createdResult) &&
+      createdResult.table === 'CaseSections'
+    ) {
+      const resourceIdentifier = `${caseId}/${sectionType}/${record.sectionId}`;
+      const cause = createdResult;
+      return newResourceAlreadyExistsResult(resourceIdentifier, cause);
+    }
+    return createdResult;
+  }
 
   if (!skipSearchIndex) {
     // trigger index operation but don't await for it
     updateCaseNotify({ accountSid, caseId: parseInt(caseId, 10) });
   }
 
-  return sectionRecordToSection(created);
+  return newOkFromData(sectionRecordToSection(createdResult.unwrap()));
 };
 
 export const replaceCaseSection = async (
