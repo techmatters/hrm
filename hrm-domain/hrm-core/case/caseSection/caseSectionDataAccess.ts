@@ -21,8 +21,8 @@ import { DELETE_CASE_SECTION_BY_ID } from './sql/deleteSql';
 import { UPDATE_CASE_SECTION_BY_ID } from './sql/updateSql';
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { TKConditionsSets } from '../../permissions/rulesMap';
-import { isOk, HrmAccountId } from '@tech-matters/types';
-import { txIfNotInOne } from '../../sql';
+import { isOk, HrmAccountId, newOkFromData, TResult } from '@tech-matters/types';
+import { DatabaseErrorResult, inferPostgresErrorResult, txIfNotInOne } from '../../sql';
 import { TOUCH_CASE_SQL } from '../sql/caseUpdateSql';
 import {
   CaseSectionTimelineActivity,
@@ -44,35 +44,41 @@ export const isCaseSectionTimelineActivity = (
 
 export const create =
   (task?) =>
-  async (sectionRecord: CaseSectionRecord): Promise<CaseSectionRecord> => {
-    const insertSectionStatement = `${pgp.helpers.insert(
-      sectionRecord,
-      [
-        'caseId',
-        'sectionType',
-        'sectionId',
-        'createdBy',
-        'createdAt',
-        'sectionTypeSpecificData',
-        'accountSid',
-        'eventTimestamp',
-      ],
-      'CaseSections',
-    )} RETURNING *`;
+  async (
+    sectionRecord: CaseSectionRecord,
+  ): Promise<TResult<DatabaseErrorResult['error'], CaseSectionRecord>> => {
+    try {
+      const insertSectionStatement = `${pgp.helpers.insert(
+        sectionRecord,
+        [
+          'caseId',
+          'sectionType',
+          'sectionId',
+          'createdBy',
+          'createdAt',
+          'sectionTypeSpecificData',
+          'accountSid',
+          'eventTimestamp',
+        ],
+        'CaseSections',
+      )} RETURNING *`;
 
-    return txIfNotInOne(task, async connection => {
-      const [[createdSection]]: CaseSectionRecord[][] =
-        await connection.multi<CaseSectionRecord>(
-          [insertSectionStatement, TOUCH_CASE_SQL].join(';\n'),
-          {
-            accountSid: sectionRecord.accountSid,
-            caseId: sectionRecord.caseId,
-            updatedBy: sectionRecord.createdBy,
-          },
-        );
+      return await txIfNotInOne(task, async connection => {
+        const [[createdSection]]: CaseSectionRecord[][] =
+          await connection.multi<CaseSectionRecord>(
+            [insertSectionStatement, TOUCH_CASE_SQL].join(';\n'),
+            {
+              accountSid: sectionRecord.accountSid,
+              caseId: sectionRecord.caseId,
+              updatedBy: sectionRecord.createdBy,
+            },
+          );
 
-      return createdSection;
-    });
+        return newOkFromData(createdSection);
+      });
+    } catch (error) {
+      return inferPostgresErrorResult(error);
+    }
   };
 
 export const getById = async (
