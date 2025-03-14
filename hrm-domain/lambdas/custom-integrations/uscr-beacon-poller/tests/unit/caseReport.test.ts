@@ -83,7 +83,7 @@ describe('addCaseReportSectionsToAseloCase', () => {
     },
   });
 
-  const completeCaseReport = generateCompleteCaseReport({ id: 'caserReportId' });
+  const completeCaseReport = generateCompleteCaseReport({ id: 'caseReportId' });
 
   beforeEach(() => {
     jest.clearAllMocks();
