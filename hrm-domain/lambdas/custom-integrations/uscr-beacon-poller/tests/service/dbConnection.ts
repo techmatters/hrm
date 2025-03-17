@@ -22,7 +22,7 @@ export const pgp = pgPromise({});
 export const db = pgp(
   `postgres://hrm:postgres@127.0.0.1:${
     process.env.HRM_DATABASE_PORT ?? '5432'
-  }/hrmdb?&application_name=service-test-beacon-poller`,
+  }/hrmdb?application_name=service-test-beacon-poller`,
 );
 
 const { builtins } = pgp.pg.types;
