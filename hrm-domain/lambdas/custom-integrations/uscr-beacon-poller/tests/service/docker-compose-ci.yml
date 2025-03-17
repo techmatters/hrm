@@ -12,24 +12,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see https://www.gnu.org/licenses/.
 
-version: '3'
-
 services:
-  db:
-    image: library/postgres:16.3
-
-    environment:
-      POSTGRES_USER: rdsadmin
-      POSTGRES_HOST_AUTH_METHOD: trust
-      POSTGRES_DB: hrmdb
-
-    volumes:
-      - ../../../../../../test-support/db-init/dump.sql:/docker-entrypoint-initdb.d/dump.sql
-
-    command: ['postgres', '-c', 'log_statement=all']
-
-    ports:
-      - '127.0.0.1:5433:5432'
   service:
     image: hrm-service
     ports:
@@ -41,11 +24,10 @@ services:
       PORT: 3030
       INTERNAL_SERVICES_PORT: 3031
 
-      RDS_HOSTNAME: db
-      RESOURCES_PASSWORD: postgres
+      RDS_HOSTNAME: host.docker.internal
+      RDS_PASSWORD: postgres
 
     env_file:
       - ./.env.service-test
-
-    depends_on:
-      - db
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"

@@ -14,11 +14,21 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-export * from './mock-pgpromise';
-export * from './mock-twilio-auth-endpoint';
-export * from './mockSsm';
-export * from './mockSns';
-import { start, stop, mockttpServer } from './mocking-proxy';
-export const mockingProxy = { start, stop, mockttpServer };
-import './expectToParseAsDate';
-import './expectToParseAsJson';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import pgPromise from 'pg-promise';
+
+export const pgp = pgPromise({});
+
+export const db = pgp(
+  `postgres://hrm:postgres@127.0.0.1:${
+    process.env.HRM_DATABASE_PORT ?? '5432'
+  }/hrmdb?application_name=service-test-beacon-poller`,
+);
+
+const { builtins } = pgp.pg.types;
+
+[builtins.DATE, builtins.TIMESTAMP, builtins.TIMESTAMPTZ].forEach(typeId => {
+  pgp.pg.types.setTypeParser(typeId, value => {
+    return value === null ? null : new Date(value).toISOString();
+  });
+});

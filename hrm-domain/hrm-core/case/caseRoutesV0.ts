@@ -31,6 +31,127 @@ import { isErr, mapHTTPError } from '@tech-matters/types';
 const newCaseRouter = (isPublic: boolean) => {
   const casesRouter = SafeRouter();
 
+  casesRouter.expressRouter.use('/:caseId/sections', caseSectionRoutesV0(isPublic));
+
+  casesRouter.put(
+    '/:id/status',
+    isPublic ? canUpdateCaseStatus : openEndpoint,
+    async (req, res) => {
+      const {
+        hrmAccountId,
+        user,
+        body: { status },
+        can,
+        permissions,
+      } = req;
+      const { id } = req.params;
+      const updatedCase = await caseApi.updateCaseStatus(id, status, hrmAccountId, {
+        can,
+        user,
+        permissions,
+      });
+      if (!updatedCase) {
+        throw createError(404);
+      }
+      res.json(updatedCase);
+    },
+  );
+
+  casesRouter.put(
+    '/:id/overview',
+    isPublic ? canEditCaseOverview : openEndpoint,
+    async (req, res) => {
+      const {
+        hrmAccountId,
+        user: { workerSid },
+        body,
+      } = req;
+      const { id } = req.params;
+      const { followUpDate } = body ?? {};
+      if (
+        followUpDate !== undefined &&
+        followUpDate !== null &&
+        isNaN(parseISO(followUpDate).valueOf())
+      ) {
+        throw createError(
+          400,
+          `Invalid followUpDate provided: ${followUpDate} - must be a valid ISO 8601 date string`,
+        );
+      }
+      const updatedCase = await caseApi.updateCaseOverview(
+        hrmAccountId,
+        id,
+        body,
+        workerSid,
+      );
+      if (!updatedCase) {
+        throw createError(404);
+      }
+      res.json(updatedCase);
+    },
+  );
+
+  casesRouter.post('/', openEndpoint, async (req, res) => {
+    const { hrmAccountId, user } = req;
+    const createdCase = await caseApi.createCase(req.body, hrmAccountId, user.workerSid);
+    res.json(createdCase);
+  });
+
+  casesRouter.get('/:id', isPublic ? canViewCase : openEndpoint, async (req, res) => {
+    const { hrmAccountId, permissions, can, user } = req;
+    const { id } = req.params;
+    const onlyEssentialData = Boolean(req.query.onlyEssentialData);
+
+    const caseFromDB = await caseApi.getCase(
+      id,
+      hrmAccountId,
+      {
+        can,
+        user,
+        permissions,
+      },
+      onlyEssentialData,
+    );
+
+    if (!caseFromDB) {
+      throw createError(404);
+    }
+
+    res.json(caseFromDB);
+  });
+
+  casesRouter.delete('/:id', openEndpoint, async (req, res) => {
+    const { hrmAccountId } = req;
+    const { id } = req.params;
+    const deleted = await caseApi.deleteCaseById({
+      accountSid: hrmAccountId,
+      caseId: id,
+    });
+    if (!deleted) {
+      throw createError(404);
+    }
+    res.sendStatus(200);
+  });
+
+  casesRouter.get(
+    '/:id/timeline',
+    isPublic ? canViewCase : openEndpoint,
+    async (req, res) => {
+      const { hrmAccountId, params, query } = req;
+      const { id: caseId } = params;
+      const { sectionTypes, includeContacts, limit, offset } = query;
+      const timeline = await getCaseTimeline(
+        hrmAccountId,
+        req,
+        parseInt(caseId),
+        (sectionTypes ?? 'note,referral').split(','),
+        includeContacts?.toLowerCase() !== 'false',
+        { limit: limit ?? 20, offset: offset ?? 0 },
+      );
+      res.json(timeline);
+    },
+  );
+
   // Public only endpoints
   if (isPublic) {
     /**
@@ -126,128 +247,6 @@ const newCaseRouter = (isPublic: boolean) => {
       },
     );
   }
-
-  casesRouter.put(
-    '/:id/status',
-    isPublic ? canUpdateCaseStatus : openEndpoint,
-    async (req, res) => {
-      const {
-        hrmAccountId,
-        user,
-        body: { status },
-        can,
-        permissions,
-      } = req;
-      const { id } = req.params;
-      const updatedCase = await caseApi.updateCaseStatus(id, status, hrmAccountId, {
-        can,
-        user,
-        permissions,
-      });
-      if (!updatedCase) {
-        throw createError(404);
-      }
-      res.json(updatedCase);
-    },
-  );
-
-  casesRouter.put(
-    '/:id/overview',
-    isPublic ? canEditCaseOverview : openEndpoint,
-    async (req, res) => {
-      const {
-        hrmAccountId,
-        user: { workerSid },
-        body,
-      } = req;
-      const { id } = req.params;
-      const { followUpDate } = body ?? {};
-      if (
-        followUpDate !== undefined &&
-        followUpDate !== null &&
-        isNaN(parseISO(followUpDate).valueOf())
-      ) {
-        throw createError(
-          400,
-          `Invalid followUpDate provided: ${followUpDate} - must be a valid ISO 8601 date string`,
-        );
-      }
-      const updatedCase = await caseApi.updateCaseOverview(
-        hrmAccountId,
-        id,
-        body,
-        workerSid,
-      );
-      if (!updatedCase) {
-        throw createError(404);
-      }
-      res.json(updatedCase);
-    },
-  );
-
-  casesRouter.post('/', openEndpoint, async (req, res) => {
-    const { hrmAccountId, user } = req;
-    const createdCase = await caseApi.createCase(req.body, hrmAccountId, user.workerSid);
-
-    res.json(createdCase);
-  });
-
-  casesRouter.get('/:id', isPublic ? canViewCase : openEndpoint, async (req, res) => {
-    const { hrmAccountId, permissions, can, user } = req;
-    const { id } = req.params;
-    const onlyEssentialData = Boolean(req.query.onlyEssentialData);
-
-    const caseFromDB = await caseApi.getCase(
-      id,
-      hrmAccountId,
-      {
-        can,
-        user,
-        permissions,
-      },
-      onlyEssentialData,
-    );
-
-    if (!caseFromDB) {
-      throw createError(404);
-    }
-
-    res.json(caseFromDB);
-  });
-
-  casesRouter.delete('/:id', openEndpoint, async (req, res) => {
-    const { hrmAccountId } = req;
-    const { id } = req.params;
-    const deleted = await caseApi.deleteCaseById({
-      accountSid: hrmAccountId,
-      caseId: id,
-    });
-    if (!deleted) {
-      throw createError(404);
-    }
-    res.sendStatus(200);
-  });
-
-  casesRouter.get(
-    '/:id/timeline',
-    isPublic ? canViewCase : openEndpoint,
-    async (req, res) => {
-      const { hrmAccountId, params, query } = req;
-      const { id: caseId } = params;
-      const { sectionTypes, includeContacts, limit, offset } = query;
-      const timeline = await getCaseTimeline(
-        hrmAccountId,
-        req,
-        parseInt(caseId),
-        (sectionTypes ?? 'note,referral').split(','),
-        includeContacts?.toLowerCase() !== 'false',
-        { limit: limit ?? 20, offset: offset ?? 0 },
-      );
-      res.json(timeline);
-    },
-  );
-
-  casesRouter.expressRouter.use('/:caseId/sections', caseSectionRoutesV0(isPublic));
 
   return casesRouter.expressRouter;
 };

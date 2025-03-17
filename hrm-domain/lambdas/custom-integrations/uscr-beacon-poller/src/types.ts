@@ -14,11 +14,21 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-export * from './mock-pgpromise';
-export * from './mock-twilio-auth-endpoint';
-export * from './mockSsm';
-export * from './mockSns';
-import { start, stop, mockttpServer } from './mocking-proxy';
-export const mockingProxy = { start, stop, mockttpServer };
-import './expectToParseAsDate';
-import './expectToParseAsJson';
+import { ErrorResult, SuccessResult } from '@tech-matters/types';
+import { CaseSection } from '@tech-matters/hrm-types';
+
+export type ItemProcessor<TItem> = (
+  item: TItem,
+) => Promise<
+  ErrorResult<{ level: 'warn' | 'error'; lastUpdated?: string }> | SuccessResult<string>
+>;
+
+export type NewCaseSection = Pick<CaseSection, 'sectionTypeSpecificData'> & {
+  sectionId?: CaseSection['sectionId'];
+};
+
+export type NewCaseSectionInfo = {
+  caseId: string;
+  section: NewCaseSection;
+  lastUpdated: string;
+};

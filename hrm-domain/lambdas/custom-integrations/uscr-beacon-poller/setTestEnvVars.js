@@ -18,8 +18,10 @@ process.env.AWS_REGION = 'xx-fake-1';
 process.env.AWS_ACCESS_KEY_ID = 'mock-access-key';
 process.env.AWS_SECRET_ACCESS_KEY = 'mock-secret';
 process.env.SSM_ENDPOINT = 'http://mock-ssm/';
+process.env.HRM_DATABASE_PORT = process.env.HRM_DATABASE_PORT ?? '5432';
 
 process.env.STATIC_KEY = 'BBC';
 process.env.ACCOUNT_SID = 'ACservicetest';
-process.env.INTERNAL_HRM_URL = 'http://localhost:3001';
-process.env.BEACON_URL = 'http://mock-beacon/';
+process.env.INTERNAL_HRM_URL = 'http://localhost:3031';
+process.env.BEACON_BASE_URL = 'http://mock-beacon/';
+process.env.BEACON_API_KEY = 'mock-beacon-key';
