@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { actionsMaps, publicEndpoint, SafeRouter } from '../permissions';
+import { actionsMaps, publicEndpoint as openEndpoint, SafeRouter } from '../permissions';
 import { isErr, mapHTTPError } from '@tech-matters/types';
 import createError from 'http-errors';
 import {
@@ -35,213 +35,251 @@ import {
   canPerformViewContactAction,
 } from './canPerformContactAction';
 
-const contactsRouter = SafeRouter();
+const newContactRouter = (isPublic: boolean) => {
+  const contactsRouter = SafeRouter();
 
-// example: curl -XPOST -H'Content-Type: application/json' localhost:3000/contacts -d'{"hi": 2}'
-
-/**
- * @param {any} req. - Request
- * @param {any} res - User for requested
- * @param {NewContactRecord} req.body - Contact to create
- *
- * @returns {Contact} - Created contact
- */
-contactsRouter.post('/', publicEndpoint, async (req: Request, res) => {
-  const { hrmAccountId, user, body } = req;
-  const contact = await createContact(
-    hrmAccountId,
-    // Take the createdBy specified in the body if this is being created from a backend system, otherwise force use of the authenticated user's workerSid
-    user.isSystemUser ? body.createdBy : user.workerSid,
-    body,
-    {
-      can: req.can,
-      user,
-    },
-  );
-  res.json(contact);
-});
-
-contactsRouter.get('/byTaskSid/:taskSid', publicEndpoint, async (req, res) => {
-  const { hrmAccountId, user, can } = req;
-  const contact = await getContactByTaskId(hrmAccountId, req.params.taskSid, {
-    can: req.can,
-    user,
-  });
-  if (!contact || !can(user, actionsMaps.contact.VIEW_CONTACT, contact)) {
-    throw createError(404);
-  }
-  res.json(contact);
-});
-
-contactsRouter.put(
-  '/:contactId/connectToCase',
-  canChangeContactConnection,
-  async (req, res) => {
-    const { hrmAccountId, user } = req;
-    const { contactId } = req.params;
-    const { caseId } = req.body;
-    try {
-      const updatedContact = await connectContactToCase(hrmAccountId, contactId, caseId, {
+  // Public only endpoints
+  if (isPublic) {
+    contactsRouter.get('/byTaskSid/:taskSid', openEndpoint, async (req, res) => {
+      const { hrmAccountId, user, can } = req;
+      const contact = await getContactByTaskId(hrmAccountId, req.params.taskSid, {
         can: req.can,
         user,
       });
-      res.json(updatedContact);
-    } catch (err) {
-      if (
-        err.message.toLowerCase().includes('violates foreign key constraint') ||
-        err.message.toLowerCase().includes('contact not found')
-      ) {
+      if (!contact || !can(user, actionsMaps.contact.VIEW_CONTACT, contact)) {
         throw createError(404);
-      } else throw err;
-    }
-  },
-);
+      }
+      res.json(contact);
+    });
 
-contactsRouter.delete(
-  '/:contactId/connectToCase',
-  canDisconnectContact,
-  async (req, res) => {
-    const { hrmAccountId, user } = req;
-    const { contactId } = req.params;
+    contactsRouter.delete(
+      '/:contactId/connectToCase',
+      canDisconnectContact,
+      async (req, res) => {
+        const { hrmAccountId, user } = req;
+        const { contactId } = req.params;
 
-    try {
-      const deleteContact = await connectContactToCase(hrmAccountId, contactId, null, {
+        try {
+          const deleteContact = await connectContactToCase(
+            hrmAccountId,
+            contactId,
+            null,
+            {
+              can: req.can,
+              user,
+            },
+          );
+          res.json(deleteContact);
+        } catch (err) {
+          if (
+            err.message.toLowerCase().includes('violates foreign key constraint') ||
+            err.message.toLowerCase().includes('contact not found')
+          ) {
+            throw createError(404);
+          } else throw err;
+        }
+      },
+    );
+
+    // Legacy Search endpoint
+    contactsRouter.post('/search', openEndpoint, async (req, res) => {
+      const { hrmAccountId } = req;
+
+      const searchResults = await searchContacts(hrmAccountId, req.body, req.query, {
         can: req.can,
-        user,
+        user: req.user,
+        permissions: req.permissions,
       });
-      res.json(deleteContact);
-    } catch (err) {
-      if (
-        err.message.toLowerCase().includes('violates foreign key constraint') ||
-        err.message.toLowerCase().includes('contact not found')
-      ) {
-        throw createError(404);
-      } else throw err;
-    }
-  },
-);
+      res.json(searchResults);
+    });
 
-// Legacy Search endpoint
-contactsRouter.post('/search', publicEndpoint, async (req, res) => {
-  const { hrmAccountId } = req;
+    // Endpoint used for generalized search powered by ElasticSearch
+    contactsRouter.post(
+      '/generalizedSearch',
+      openEndpoint,
+      async (req: Request, res: Response, next: NextFunction) => {
+        try {
+          const { hrmAccountId, can, user, permissions, query, body } = req;
 
-  const searchResults = await searchContacts(hrmAccountId, req.body, req.query, {
-    can: req.can,
-    user: req.user,
-    permissions: req.permissions,
-  });
-  res.json(searchResults);
-});
+          // TODO: use better validation
+          const { limit, offset } = query as { limit: string; offset: string };
+          const { searchParameters } = body;
 
-// Endpoint used for generalized search powered by ElasticSearch
-contactsRouter.post(
-  '/generalizedSearch',
-  publicEndpoint,
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const { hrmAccountId, can, user, permissions, query, body } = req;
+          const contactsResponse = await generalisedContactSearch(
+            hrmAccountId,
+            searchParameters,
+            { limit, offset },
+            {
+              can,
+              user,
+              permissions,
+            },
+          );
 
-      // TODO: use better validation
-      const { limit, offset } = query as { limit: string; offset: string };
-      const { searchParameters } = body;
+          if (isErr(contactsResponse)) {
+            return next(mapHTTPError(contactsResponse, { InternalServerError: 500 }));
+          }
 
-      const contactsResponse = await generalisedContactSearch(
-        hrmAccountId,
-        searchParameters,
-        { limit, offset },
-        {
-          can,
-          user,
-          permissions,
-        },
-      );
+          res.json(contactsResponse.data);
+        } catch (err) {
+          return next(createError(500, err.message));
+        }
+      },
+    );
 
-      if (isErr(contactsResponse)) {
-        return next(mapHTTPError(contactsResponse, { InternalServerError: 500 }));
+    const validatePatchPayload = (
+      { body }: Request,
+      res: Response,
+      next: NextFunction,
+    ) => {
+      if (typeof body !== 'object' || Array.isArray(body)) {
+        throw createError(400);
       }
 
-      res.json(contactsResponse.data);
-    } catch (err) {
-      return next(createError(500, err.message));
-    }
-  },
-);
+      next();
+    };
 
-const validatePatchPayload = ({ body }: Request, res: Response, next: NextFunction) => {
-  if (typeof body !== 'object' || Array.isArray(body)) {
-    throw createError(400);
+    contactsRouter.patch(
+      '/:contactId',
+      validatePatchPayload,
+      canPerformEditContactAction,
+      async (req, res) => {
+        const { hrmAccountId, user } = req;
+        const { contactId } = req.params;
+        const finalize = req.query.finalize === 'true'; // Default to false for backwards compatibility
+        try {
+          const contact = await patchContact(
+            hrmAccountId,
+            user.workerSid,
+            finalize,
+            contactId,
+            req.body,
+            {
+              can: req.can,
+              user,
+            },
+          );
+          res.json(contact);
+        } catch (err) {
+          if (err.message.toLowerCase().includes('contact not found')) {
+            throw createError(404);
+          } else throw err;
+        }
+      },
+    );
+
+    contactsRouter.post(
+      '/:contactId/conversationMedia',
+      openEndpoint,
+      async (req, res) => {
+        const { hrmAccountId, user } = req;
+        const { contactId } = req.params;
+
+        try {
+          const contact = await addConversationMediaToContact(
+            hrmAccountId,
+            contactId,
+            req.body,
+            {
+              can: req.can,
+              user,
+            },
+          );
+          res.json(contact);
+        } catch (err) {
+          if (err.message.toLowerCase().includes('contact not found')) {
+            throw createError(404);
+          } else throw err;
+        }
+      },
+    );
   }
 
-  next();
-};
+  // example: curl -XPOST -H'Content-Type: application/json' localhost:3000/contacts -d'{"hi": 2}'
 
-contactsRouter.patch(
-  '/:contactId',
-  validatePatchPayload,
-  canPerformEditContactAction,
-  async (req, res) => {
-    const { hrmAccountId, user } = req;
-    const { contactId } = req.params;
-    const finalize = req.query.finalize === 'true'; // Default to false for backwards compatibility
-    try {
-      const contact = await patchContact(
-        hrmAccountId,
-        user.workerSid,
-        finalize,
-        contactId,
-        req.body,
-        {
-          can: req.can,
-          user,
-        },
-      );
-      res.json(contact);
-    } catch (err) {
-      if (err.message.toLowerCase().includes('contact not found')) {
-        throw createError(404);
-      } else throw err;
-    }
-  },
-);
+  /**
+   * @param {any} req. - Request
+   * @param {any} res - User for requested
+   * @param {NewContactRecord} req.body - Contact to create
+   *
+   * @returns {Contact} - Created contact
+   */
+  contactsRouter.post('/', openEndpoint, async (req: Request, res) => {
+    const getCreatedBy = ({ body, user }: { user: Request['user']; body: any }) => {
+      if (isPublic) {
+        // Take the createdBy specified in the body if this is being created from a backend system, otherwise force use of the authenticated user's workerSid
+        return user.isSystemUser ? body.createdBy : user.workerSid;
+      }
 
-contactsRouter.post('/:contactId/conversationMedia', publicEndpoint, async (req, res) => {
-  const { hrmAccountId, user } = req;
-  const { contactId } = req.params;
+      // Take the createdBy specified in the body since this is being created from a backend system
+      return body.createdBy;
+    };
 
-  try {
-    const contact = await addConversationMediaToContact(
+    const { hrmAccountId, user, body } = req;
+    const contact = await createContact(
       hrmAccountId,
-      contactId,
-      req.body,
+      getCreatedBy({ body, user }),
+      body,
       {
         can: req.can,
         user,
       },
     );
     res.json(contact);
-  } catch (err) {
-    if (err.message.toLowerCase().includes('contact not found')) {
-      throw createError(404);
-    } else throw err;
-  }
-});
-
-// WARNING: this endpoint MUST be the last one in this router, because it will be used if none of the above regex matches the path
-contactsRouter.get('/:contactId', canPerformViewContactAction, async (req, res) => {
-  const { hrmAccountId, can, user } = req;
-  const contact = await getContactById(hrmAccountId, req.params.contactId, {
-    can: req.can,
-    user,
   });
-  if (!contact) {
-    throw createError(404);
-  }
-  if (!req.isPermitted()) {
-    if (!can(user, actionsMaps.contact.VIEW_CONTACT, contact)) {
-      createError(401);
-    }
-  }
-  res.json(contact);
-});
 
-export default contactsRouter.expressRouter;
+  contactsRouter.put(
+    '/:contactId/connectToCase',
+    isPublic ? canChangeContactConnection : openEndpoint,
+    async (req, res) => {
+      const { hrmAccountId, user } = req;
+      const { contactId } = req.params;
+      const { caseId } = req.body;
+      try {
+        const updatedContact = await connectContactToCase(
+          hrmAccountId,
+          contactId,
+          caseId,
+          {
+            can: req.can,
+            user,
+          },
+        );
+        res.json(updatedContact);
+      } catch (err) {
+        if (
+          err.message.toLowerCase().includes('violates foreign key constraint') ||
+          err.message.toLowerCase().includes('contact not found')
+        ) {
+          throw createError(404);
+        } else throw err;
+      }
+    },
+  );
+
+  // WARNING: this endpoint MUST be the last one in this router, because it will be used if none of the above regex matches the path
+  contactsRouter.get(
+    '/:contactId',
+    isPublic ? canPerformViewContactAction : openEndpoint,
+    async (req, res) => {
+      const { hrmAccountId, can, user } = req;
+      const contact = await getContactById(hrmAccountId, req.params.contactId, {
+        can: req.can,
+        user,
+      });
+      if (!contact) {
+        throw createError(404);
+      }
+      if (!req.isPermitted()) {
+        if (!can(user, actionsMaps.contact.VIEW_CONTACT, contact)) {
+          createError(401);
+        }
+      }
+      res.json(contact);
+    },
+  );
+
+  return contactsRouter.expressRouter;
+};
+
+export default newContactRouter;

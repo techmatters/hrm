@@ -35,35 +35,37 @@ import {
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { RulesFile, TKConditionsSets } from '../../permissions/rulesMap';
 import { ListConfiguration } from '../caseDataAccess';
-import {
-  ErrorResult,
-  HrmAccountId,
-  isErr,
-  newOkFromData,
-  TResult,
-} from '@tech-matters/types';
+import { ErrorResult, HrmAccountId, isErr, newOkFromData } from '@tech-matters/types';
 import { updateCaseNotify } from '../caseService';
 import {
   DatabaseErrorResult,
   isDatabaseUniqueConstraintViolationErrorResult,
+  isDatabaseForeignKeyViolationErrorResult,
 } from '../../sql';
 import { SuccessResult } from '@tech-matters/types';
 
-type ResourceAlreadyExistsResult = ErrorResult<'ResourceAlreadyExists'> & {
+type ResourceAlreadyExists = 'ResourceAlreadyExists';
+type ForeignKeyViolation = 'ForeignKeyViolation';
+type DBErrorResult = ErrorResult<ResourceAlreadyExists | ForeignKeyViolation> & {
   cause: DatabaseErrorResult;
   resourceIdentifier: string;
   resourceType: 'caseSection';
 };
 
-const newResourceAlreadyExistsResult = (
-  resourceIdentifier: string,
-  cause: DatabaseErrorResult,
-) => {
+const newDBErrorResult = ({
+  cause,
+  error,
+  resourceIdentifier,
+}: {
+  resourceIdentifier: string;
+  cause: DatabaseErrorResult;
+  error: ResourceAlreadyExists | ForeignKeyViolation;
+}) => {
   const message = `caseSection resource already exists: ${resourceIdentifier}`;
   return {
     _tag: 'Result',
     status: 'error',
-    error: 'ResourceAlreadyExists',
+    error,
     cause,
     resourceIdentifier,
     resourceType: 'caseSection',
@@ -73,9 +75,6 @@ const newResourceAlreadyExistsResult = (
     },
   } as const;
 };
-
-export const isResourceAlreadyExistsResult = (result: TResult<any, any>) =>
-  isErr(result) && result.error === 'ResourceAlreadyExists';
 
 const sectionRecordToSection = (
   sectionRecord: CaseSectionRecord | undefined,
@@ -94,9 +93,7 @@ export const createCaseSection = async (
   newSection: NewCaseSection,
   workerSid: string,
   skipSearchIndex = false,
-): Promise<
-  ResourceAlreadyExistsResult | DatabaseErrorResult | SuccessResult<CaseSection>
-> => {
+): Promise<DBErrorResult | DatabaseErrorResult | SuccessResult<CaseSection>> => {
   const nowISO = new Date().toISOString();
   const record: CaseSectionRecord = {
     sectionId: randomUUID(),
@@ -110,13 +107,23 @@ export const createCaseSection = async (
   };
   const createdResult = await create()(record);
   if (isErr(createdResult)) {
-    if (
-      isDatabaseUniqueConstraintViolationErrorResult(createdResult) &&
-      createdResult.table === 'CaseSections'
-    ) {
+    if (createdResult.table === 'CaseSections') {
       const resourceIdentifier = `${caseId}/${sectionType}/${record.sectionId}`;
       const cause = createdResult;
-      return newResourceAlreadyExistsResult(resourceIdentifier, cause);
+      if (isDatabaseUniqueConstraintViolationErrorResult(createdResult)) {
+        return newDBErrorResult({
+          resourceIdentifier,
+          cause,
+          error: 'ResourceAlreadyExists',
+        });
+      }
+      if (isDatabaseForeignKeyViolationErrorResult(createdResult)) {
+        return newDBErrorResult({
+          resourceIdentifier,
+          cause,
+          error: 'ForeignKeyViolation',
+        });
+      }
     }
     return createdResult;
   }

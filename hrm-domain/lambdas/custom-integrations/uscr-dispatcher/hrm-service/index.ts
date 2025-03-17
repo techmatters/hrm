@@ -38,12 +38,12 @@ export const createAttemptCaseSection = async ({
   accountSid,
   caseId,
   baseUrl,
-  token,
+  staticKey,
 }: {
   accountSid: string;
   caseId: CaseService['id'];
   baseUrl: string;
-  token: string;
+  staticKey: string;
 }) => {
   try {
     const sectionTypeSpecificData: IncidentReportAttempt = {
@@ -58,7 +58,7 @@ export const createAttemptCaseSection = async ({
       sectionType,
       sectionTypeSpecificData,
       baseUrl,
-      token,
+      staticKey,
     });
     if (isErr(createSectionResult)) {
       return createSectionResult;
@@ -79,12 +79,12 @@ const recordAttemptAndGetTimeline = async ({
   accountSid,
   caseId,
   baseUrl,
-  token,
+  staticKey,
 }: {
   accountSid: string;
   caseId: CaseService['id'];
   baseUrl: string;
-  token: string;
+  staticKey: string;
 }) => {
   try {
     // record a new attempt
@@ -92,7 +92,7 @@ const recordAttemptAndGetTimeline = async ({
       accountSid,
       baseUrl,
       caseId,
-      token,
+      staticKey,
     });
     if (isErr(createSectionResult)) {
       return createSectionResult;
@@ -104,7 +104,7 @@ const recordAttemptAndGetTimeline = async ({
       baseUrl,
       caseId,
       sectionType,
-      token,
+      staticKey,
     });
     if (isErr(sectionsResult)) {
       return sectionsResult;
@@ -129,14 +129,14 @@ export const updateAttemptCaseSection = async ({
   beaconIncidentId,
   attemptSection,
   baseUrl,
-  token,
+  staticKey,
 }: {
   accountSid: string;
   caseId: CaseService['id'];
   attemptSection: CaseSection;
   beaconIncidentId: PendingIncident['id'];
   baseUrl: string;
-  token: string;
+  staticKey: string;
 }) => {
   try {
     const sectionTypeSpecificData: IncidentReportAttempt = {
@@ -152,7 +152,7 @@ export const updateAttemptCaseSection = async ({
       sectionType,
       sectionTypeSpecificData,
       baseUrl,
-      token,
+      staticKey,
     });
     if (isErr(updateSectionResult)) {
       return updateSectionResult;
@@ -174,17 +174,17 @@ export const getOrCreateCase = async ({
   casePayload,
   contactId,
   baseUrl,
-  token,
+  staticKey,
 }: {
   accountSid: string;
   casePayload: Partial<CaseService>;
   contactId: string;
   baseUrl: string;
-  token: string;
+  staticKey: string;
 }) => {
   try {
     // get contact and check for existence of an associated case
-    const contactResult = await getContact({ accountSid, contactId, baseUrl, token });
+    const contactResult = await getContact({ accountSid, contactId, baseUrl, staticKey });
     if (isErr(contactResult)) {
       return contactResult;
     }
@@ -194,7 +194,7 @@ export const getOrCreateCase = async ({
         accountSid,
         caseId: contactResult.data.caseId,
         baseUrl,
-        token,
+        staticKey,
       });
       if (isErr(caseResult)) {
         return caseResult;
@@ -206,7 +206,7 @@ export const getOrCreateCase = async ({
         accountSid,
         baseUrl,
         caseId: caseResult.data.id,
-        token,
+        staticKey,
       });
       if (isErr(sectionsResult)) {
         return sectionsResult;
@@ -222,7 +222,7 @@ export const getOrCreateCase = async ({
     }
 
     // no case associated, create and associate one
-    const caseResult = await createCase({ accountSid, casePayload, baseUrl, token });
+    const caseResult = await createCase({ accountSid, casePayload, baseUrl, staticKey });
     if (isErr(caseResult)) {
       return caseResult;
     }
@@ -237,10 +237,10 @@ export const getOrCreateCase = async ({
       caseId,
       contactId,
       baseUrl,
-      token,
+      staticKey,
     });
     if (isErr(connectedResult)) {
-      await deleteCase({ accountSid, baseUrl, caseId: caseObj.id, token });
+      await deleteCase({ accountSid, baseUrl, caseId: caseObj.id, staticKey });
       return connectedResult;
     }
 
@@ -249,7 +249,7 @@ export const getOrCreateCase = async ({
       accountSid,
       baseUrl,
       caseId: caseResult.data.id,
-      token,
+      staticKey,
     });
     if (isErr(createSectionResult)) {
       return createSectionResult;
@@ -259,7 +259,7 @@ export const getOrCreateCase = async ({
       accountSid,
       baseUrl,
       caseId: caseResult.data.id,
-      token,
+      staticKey,
     });
     if (isErr(sectionsResult)) {
       return sectionsResult;

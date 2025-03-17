@@ -120,9 +120,23 @@ const newCaseRouter = (isPublic: boolean) => {
     res.json(caseFromDB);
   });
 
-  // Public only endpoints
-  if (isPublic) {
-    casesRouter.get('/:id/timeline', canViewCase, async (req, res) => {
+  casesRouter.delete('/:id', openEndpoint, async (req, res) => {
+    const { hrmAccountId } = req;
+    const { id } = req.params;
+    const deleted = await caseApi.deleteCaseById({
+      accountSid: hrmAccountId,
+      caseId: id,
+    });
+    if (!deleted) {
+      throw createError(404);
+    }
+    res.sendStatus(200);
+  });
+
+  casesRouter.get(
+    '/:id/timeline',
+    isPublic ? canViewCase : openEndpoint,
+    async (req, res) => {
       const { hrmAccountId, params, query } = req;
       const { id: caseId } = params;
       const { sectionTypes, includeContacts, limit, offset } = query;
@@ -135,20 +149,11 @@ const newCaseRouter = (isPublic: boolean) => {
         { limit: limit ?? 20, offset: offset ?? 0 },
       );
       res.json(timeline);
-    });
+    },
+  );
 
-    casesRouter.delete('/:id', openEndpoint, async (req, res) => {
-      const { hrmAccountId } = req;
-      const { id } = req.params;
-      const deleted = await caseApi.deleteCaseById({
-        accountSid: hrmAccountId,
-        caseId: id,
-      });
-      if (!deleted) {
-        throw createError(404);
-      }
-      res.sendStatus(200);
-    });
+  // Public only endpoints
+  if (isPublic) {
     /**
      * Returns a filterable list of cases for a helpline
      *
@@ -242,6 +247,7 @@ const newCaseRouter = (isPublic: boolean) => {
       },
     );
   }
+
   return casesRouter.expressRouter;
 };
 
