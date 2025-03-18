@@ -83,13 +83,17 @@ export const postHandler = async (event: AlbHandlerEvent) => {
       return newOk({ data: {} });
     }
 
+    const incidentParams = mapping.toCreateIncident({
+      caseObj: caseObj,
+      contact,
+    });
+
+    console.info(`Creating incident with the following data:`, incidentParams);
+
     // Case does not contains a corresponding case entry section, we assume the incident was never reported (this can only happen if Beacon responded with an error)
     const createIncidentResult = await beaconService.createIncident({
       environment: envResult.data.environment,
-      incidentParams: mapping.toCreateIncident({
-        caseObj: caseObj,
-        contact,
-      }),
+      incidentParams,
     });
     if (isErr(createIncidentResult)) {
       const message =
