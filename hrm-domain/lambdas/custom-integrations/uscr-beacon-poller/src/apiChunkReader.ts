@@ -23,6 +23,7 @@ type ChunkReaderConfig<TItem> = {
   headers: Record<string, string>;
   lastUpdateSeenSsmKey: string;
   itemProcessor: ItemProcessor<TItem>;
+  itemExtractor: (responseBody: any) => TItem[];
   maxItemsInChunk: number;
   maxChunksToRead: number;
   itemTypeName?: string; // Just for logging
@@ -57,6 +58,7 @@ export const readApiInChunks = async <TItem>({
   lastUpdateSeenSsmKey,
   maxItemsInChunk,
   maxChunksToRead,
+  itemExtractor,
   itemProcessor,
   itemTypeName = 'item',
 }: ChunkReaderConfig<TItem>) => {
@@ -71,7 +73,7 @@ export const readApiInChunks = async <TItem>({
     const response = await fetch(url, { headers });
     console.debug(`Beacon ${itemTypeName} API responded with status:`, response.status);
     if (response.ok) {
-      const beaconData = (await response.json()) as TItem[];
+      const beaconData = itemExtractor(await response.json());
       if (!Array.isArray(beaconData)) {
         throw new Error(
           `Beacon ${itemTypeName} API did not return a valid response: ${JSON.stringify(

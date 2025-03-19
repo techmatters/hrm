@@ -170,7 +170,10 @@ export const mockBeacon = async <TItem>(
       console.debug(`Response ${currentResponseIndex++}, ${response.length} items`);
       return {
         statusCode: 200,
-        body: JSON.stringify(response),
+        body: JSON.stringify({
+          status: 'successs',
+          [apiPath.includes('incidents') ? 'incidents' : 'casereports']: response,
+        }),
         headers: BEACON_RESPONSE_HEADERS,
       };
     });
@@ -226,16 +229,16 @@ beforeEach(async () => {
 });
 
 describe('Beacon Polling Service', () => {
-  each([{ api: 'incidentReport' }, { api: 'caseReport' }]).describe(
+  each([{ apiType: 'incidentReport' }, { apiType: 'caseReport' }]).describe(
     'Polling logic',
-    ({ api }: { api: 'incidentReport' | 'caseReport' }) => {
+    ({ apiType }: { apiType: 'incidentReport' | 'caseReport' }) => {
       const apiPath =
-        api === 'incidentReport'
+        apiType === 'incidentReport'
           ? '/api/aselo/incidents/updates'
           : '/api/aselo/casereports/updates';
-      test(`[${api}] Returns less than the maximum records - doesn't query again`, async () => {
+      test(`[${apiType}] Returns less than the maximum records - doesn't query again`, async () => {
         const caseIds = await generateCases(4);
-        if (api === 'incidentReport') {
+        if (apiType === 'incidentReport') {
           mockedBeaconEndpoint = await mockBeacon(
             await mockingProxy.mockttpServer(),
             apiPath,
@@ -248,7 +251,7 @@ describe('Beacon Polling Service', () => {
             [generateCaseReports(4, 1, caseIds)],
           );
         }
-        await handler({ api });
+        await handler({ apiType });
         const beaconRequests = await mockedBeaconEndpoint.getSeenRequests();
         expect(beaconRequests.length).toBe(1);
 
@@ -261,9 +264,9 @@ describe('Beacon Polling Service', () => {
           process.env.BEACON_API_KEY,
         );
       });
-      test(`[${api}] Returns the maximum records - queries again`, async () => {
+      test(`[${apiType}] Returns the maximum records - queries again`, async () => {
         const caseIds = await generateCases(12);
-        if (api === 'incidentReport') {
+        if (apiType === 'incidentReport') {
           mockedBeaconEndpoint = await mockBeacon(
             await mockingProxy.mockttpServer(),
             apiPath,
@@ -276,7 +279,7 @@ describe('Beacon Polling Service', () => {
             batch(generateCaseReports(12, 1, caseIds), MAX_ITEMS_PER_CALL),
           );
         }
-        await handler({ api });
+        await handler({ apiType });
         const beaconRequests = await mockedBeaconEndpoint.getSeenRequests();
         expect(beaconRequests.length).toBe(3);
 
@@ -298,9 +301,9 @@ describe('Beacon Polling Service', () => {
           )}&max=${MAX_ITEMS_PER_CALL}`,
         );
       });
-      test(`[${api}] Returns the maximum records for more than the maximum allowed number of queries in a polling sweep - stops querying`, async () => {
+      test(`[${apiType}] Returns the maximum records for more than the maximum allowed number of queries in a polling sweep - stops querying`, async () => {
         const caseIds = await generateCases(30);
-        if (api === 'incidentReport') {
+        if (apiType === 'incidentReport') {
           mockedBeaconEndpoint = await mockBeacon(
             await mockingProxy.mockttpServer(),
             apiPath,
@@ -313,7 +316,7 @@ describe('Beacon Polling Service', () => {
             batch(generateCaseReports(1000, 1, caseIds), MAX_ITEMS_PER_CALL),
           );
         }
-        await handler({ api });
+        await handler({ apiType });
         const beaconRequests = await mockedBeaconEndpoint.getSeenRequests();
         expect(beaconRequests.length).toBe(5);
       });
@@ -342,7 +345,7 @@ describe('Beacon Polling Service', () => {
           [incidentReports],
         );
         // Act
-        await handler({ api: 'incidentReport' });
+        await handler({ apiType: 'incidentReport' });
         // Assert
         await verifyIncidentReportsForCase(caseIds[0], [incidentReports[0]]);
         await verifyIncidentReportsForCase(caseIds[1], [incidentReports[1]]);
@@ -357,7 +360,7 @@ describe('Beacon Polling Service', () => {
           [incidentReports],
         );
         // Act
-        await handler({ api: 'incidentReport' });
+        await handler({ apiType: 'incidentReport' });
         // Assert
         await verifyIncidentReportsForCase(caseIds[0], [
           incidentReports[0],
@@ -383,7 +386,7 @@ describe('Beacon Polling Service', () => {
           [incidentReports],
         );
         // Act
-        await handler({ api: 'incidentReport' });
+        await handler({ apiType: 'incidentReport' });
         // Assert
         await verifyIncidentReportsForCase(caseIds[0], [incidentReports[0]]);
         await verifyIncidentReportsForCase(caseIds[1], [incidentReports[2]]);
@@ -407,7 +410,7 @@ describe('Beacon Polling Service', () => {
           ],
         );
         // Act
-        await handler({ api: 'incidentReport' });
+        await handler({ apiType: 'incidentReport' });
         // Assert
         await verifyIncidentReportsForCase(caseIds[0], [
           incidentReports[0],
@@ -468,7 +471,7 @@ describe('Beacon Polling Service', () => {
           [caseReports],
         );
         // Act
-        await handler({ api: 'caseReport' });
+        await handler({ apiType: 'caseReport' });
         // Assert
         await verifyCaseReportsForCase(caseIds[0], [caseReports[0]]);
         await verifyCaseReportsForCase(caseIds[1], [caseReports[1]]);
