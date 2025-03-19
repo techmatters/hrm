@@ -154,6 +154,7 @@ const filterSql = ({
   helplines,
   excludedStatuses,
   includeOrphans,
+  operatingAreas,
 }: CaseListFilters) => {
   const filterSqlClauses: string[] = [];
   if (helplines && helplines.length) {
@@ -167,6 +168,9 @@ const filterSql = ({
   }
   if (statuses && statuses.length) {
     filterSqlClauses.push(`cases."status" IN ($<statuses:csv>)`);
+  }
+  if (operatingAreas && operatingAreas.length) {
+    filterSqlClauses.push(`cases."info"->>'operatingArea' IN ($<operatingAreas:csv>)`);
   }
   filterSqlClauses.push(
     ...[
@@ -340,6 +344,10 @@ const selectSearchCaseBaseQuery = (whereClause: string): SearchQueryBuilder => {
     orderByClauses,
     onlyEssentialData,
   ) => {
+    console.log(
+      `\x1b[35m>>> 3. CaseServiceSql selectSearchCaseBaseQuery >>>\x1b[0m`,
+      `\x1b[36m${JSON.stringify(filters)}\x1b[0m`,
+    );
     const whereSql = [
       whereClause,
       ...listCasesPermissionWhereClause(

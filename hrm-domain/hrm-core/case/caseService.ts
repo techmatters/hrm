@@ -362,6 +362,11 @@ const generalizedSearchCases =
     },
     onlyEssentialData?: boolean,
   ): Promise<CaseSearchReturn> => {
+    console.log(
+      '\x1b[31m%s\x1b[0m',
+      '>>> 2. CaseService generalizedSearchCases filterParameters:',
+      JSON.stringify(filterParameters),
+    );
     const { filters, helpline, counselor, closedCases } = filterParameters;
     const caseFilters = filters ?? {};
     caseFilters.helplines =
