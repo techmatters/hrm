@@ -24,9 +24,9 @@ const lastIncidentReportUpdateSeenSsmKey = `/${process.env.NODE_ENV}/hrm/custom-
 const lastCaseReportUpdateSeenSsmKey = `/${process.env.NODE_ENV}/hrm/custom-integration/uscr/${accountSid}/beacon/latest_case_report_seen`;
 
 export const handler = async ({
-  api,
+  apiType,
 }: {
-  api: 'incidentReport' | 'caseReport';
+  apiType: 'incidentReport' | 'caseReport';
 }): Promise<0> => {
   const API_POLL_CONFIGS = {
     caseReport: {
@@ -49,6 +49,6 @@ export const handler = async ({
     },
   } as const;
 
-  await readApiInChunks<any>(API_POLL_CONFIGS[api]);
+  await readApiInChunks<any>(API_POLL_CONFIGS[apiType]);
   return 0;
 };
