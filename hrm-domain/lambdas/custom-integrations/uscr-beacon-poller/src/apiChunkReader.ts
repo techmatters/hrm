@@ -64,7 +64,8 @@ export const readApiInChunks = async <TItem>({
 }: ChunkReaderConfig<TItem>) => {
   let lastUpdateSeen = await getSsmParameter(lastUpdateSeenSsmKey);
   let processedAllItems = false;
-  for (let i = 0; i < maxChunksToRead; i++) {
+  let chunksRead = 0;
+  for (; chunksRead < maxChunksToRead; chunksRead++) {
     console.info(`Last ${itemTypeName} update before:`, lastUpdateSeen);
     // Query Beacon API
     url.searchParams.set('updated_after', lastUpdateSeen);
@@ -126,5 +127,7 @@ export const readApiInChunks = async <TItem>({
     console.warn(
       `Beacon poll queries the API the maximum of ${maxChunksToRead} times and still doesn't appear to have processed all ${itemTypeName}s. This could indicate an issue with the API or the client, or the settings may have to be adjusted to keep up with the volume of incidents.`,
     );
+  } else {
+    console.info(`Beacon poller processed all ${itemTypeName}s in ${chunksRead} chunks`);
   }
 };
