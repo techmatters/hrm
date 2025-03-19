@@ -110,6 +110,16 @@ export const readApiInChunks = async <TItem>({
         processedAllItems = true;
         return;
       }
+    } else {
+      if (response.status === 404) {
+        console.info(`No items updated later than ${lastUpdateSeen} found in Beacon`);
+        processedAllItems = true;
+        return;
+      }
+      console.error(
+        `Beacon ${itemTypeName} API responded with an error status: ${response.status}`,
+        await response.text(),
+      );
     }
   }
   if (!processedAllItems) {
