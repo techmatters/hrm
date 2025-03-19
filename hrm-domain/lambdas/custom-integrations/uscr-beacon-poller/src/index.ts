@@ -30,7 +30,7 @@ export const handler = async ({
 }): Promise<0> => {
   const API_POLL_CONFIGS = {
     caseReport: {
-      url: new URL(`${process.env.BEACON_BASE_URL}/caseReport`),
+      url: new URL(`${process.env.BEACON_BASE_URL}/api/aselo/casereports/updates`),
       headers: beaconHeaders,
       lastUpdateSeenSsmKey: lastCaseReportUpdateSeenSsmKey,
       itemProcessor: addCaseReportSectionsToAseloCase,
@@ -39,7 +39,7 @@ export const handler = async ({
       itemTypeName: 'case report',
     },
     incidentReport: {
-      url: new URL(`${process.env.BEACON_BASE_URL}/incidentReport`),
+      url: new URL(`${process.env.BEACON_BASE_URL}/api/aselo/incidents/updates`),
       headers: beaconHeaders,
       lastUpdateSeenSsmKey: lastIncidentReportUpdateSeenSsmKey,
       itemProcessor: addSectionToAseloCase('incidentReport', incidentReportToCaseSection),
