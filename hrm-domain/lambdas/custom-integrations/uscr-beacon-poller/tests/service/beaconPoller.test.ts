@@ -258,7 +258,7 @@ describe('Beacon Polling Service', () => {
         expect(beaconRequests[0].url).toBe(
           `${process.env.BEACON_BASE_URL}${apiPath}?updated_after=${encodeURIComponent(
             subDays(BASELINE_DATE, 1).toISOString(),
-          )}&max=${MAX_ITEMS_PER_CALL}`,
+          )}&limit=${MAX_ITEMS_PER_CALL}`,
         );
         expect(beaconRequests[0].headers[BEACON_API_KEY_HEADER.toLowerCase()]).toBe(
           process.env.BEACON_API_KEY,
@@ -286,19 +286,19 @@ describe('Beacon Polling Service', () => {
         expect(decodeURI(beaconRequests[0].url)).toBe(
           `${process.env.BEACON_BASE_URL}${apiPath}?updated_after=${encodeURIComponent(
             subDays(BASELINE_DATE, 1).toISOString(),
-          )}&max=${MAX_ITEMS_PER_CALL}`,
+          )}&limit=${MAX_ITEMS_PER_CALL}`,
         );
 
         expect(decodeURI(beaconRequests[1].url)).toBe(
           `${process.env.BEACON_BASE_URL}${apiPath}?updated_after=${encodeURIComponent(
             addHours(BASELINE_DATE, 5).toISOString(),
-          )}&max=${MAX_ITEMS_PER_CALL}`,
+          )}&limit=${MAX_ITEMS_PER_CALL}`,
         );
 
         expect(decodeURI(beaconRequests[2].url)).toBe(
           `${process.env.BEACON_BASE_URL}${apiPath}?updated_after=${encodeURIComponent(
             addHours(BASELINE_DATE, 10).toISOString(),
-          )}&max=${MAX_ITEMS_PER_CALL}`,
+          )}&limit=${MAX_ITEMS_PER_CALL}`,
         );
       });
       test(`[${apiType}] Returns the maximum records for more than the maximum allowed number of queries in a polling sweep - stops querying`, async () => {

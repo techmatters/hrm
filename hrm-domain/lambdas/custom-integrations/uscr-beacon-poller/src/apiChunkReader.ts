@@ -69,7 +69,7 @@ export const readApiInChunks = async <TItem>({
     console.info(`Last ${itemTypeName} update before:`, lastUpdateSeen);
     // Query Beacon API
     url.searchParams.set('updated_after', lastUpdateSeen);
-    url.searchParams.set('max', maxItemsInChunk.toString());
+    url.searchParams.set('limit', maxItemsInChunk.toString());
     console.info('Querying:', url);
     const response = await fetch(url, { headers });
     console.debug(`Beacon ${itemTypeName} API responded with status:`, response.status);
