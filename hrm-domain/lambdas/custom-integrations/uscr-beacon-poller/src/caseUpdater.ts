@@ -82,9 +82,6 @@ export const addSectionToAseloCase =
         `Start processing ${sectionType}: ${sectionId} (last updated: ${lastUpdated})`,
       );
       if (!caseId) {
-        console.warn(
-          `${sectionType}s not already assigned to a case are not currently supported - rejecting ${sectionType} ${sectionId} (last updated: ${lastUpdated})`,
-        );
         return newErr({
           message: `${sectionType}s not already assigned to a case are not currently supported - rejecting ${sectionType} ${sectionId} (last updated: ${lastUpdated})`,
           error: {

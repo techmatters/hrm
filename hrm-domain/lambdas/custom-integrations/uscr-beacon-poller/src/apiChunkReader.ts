@@ -73,11 +73,12 @@ export const readApiInChunks = async <TItem>({
     const response = await fetch(url, { headers });
     console.debug(`Beacon ${itemTypeName} API responded with status:`, response.status);
     if (response.ok) {
-      const beaconData = itemExtractor(await response.json());
+      const parsedBody = await response.json();
+      const beaconData = itemExtractor(parsedBody);
       if (!Array.isArray(beaconData)) {
         throw new Error(
           `Beacon ${itemTypeName} API did not return a valid response: ${JSON.stringify(
-            beaconData,
+            parsedBody,
           )}`,
         );
       }
@@ -93,7 +94,10 @@ export const readApiInChunks = async <TItem>({
         itemProcessor,
       );
       // Update the last update seen in SSM
-      await putSsmParameter(lastUpdateSeenSsmKey, lastUpdateSeen);
+      await putSsmParameter(lastUpdateSeenSsmKey, lastUpdateSeen, {
+        cacheValue: true,
+        overwrite: true,
+      });
       console.info(
         'Last beacon update after:',
         await getSsmParameter(lastUpdateSeenSsmKey),
