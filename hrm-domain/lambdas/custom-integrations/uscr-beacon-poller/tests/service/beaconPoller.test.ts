@@ -75,7 +75,7 @@ const generateCases = (numberToGenerate: number): Promise<number[]> => {
           { method: 'POST', body: JSON.stringify({}), headers: HRM_REQUEST_HEADERS },
         );
         const newCase: any = await newCaseResponse.json();
-        console.debug('Generated case:', newCase);
+        console.debug('Generated case:', newCase.id);
         return parseInt(newCase.id);
       }),
   );
@@ -153,17 +153,16 @@ let beaconMockPriority = 0;
 
 export const mockBeacon = async <TItem>(
   mockttp: Mockttp,
-  api: 'incidentReport' | 'caseReport',
+  apiPath: string,
   responses: TItem[][],
 ): Promise<MockedEndpoint> => {
   process.env.BEACON_BASE_URL = `http://127.0.0.1:${mockttp.port}/mock-beacon`;
   console.debug(
-    `Mocking beacon endpoint: GET ${process.env.BEACON_BASE_URL} to respond with ${responses.length} responses`,
+    `Mocking beacon endpoint: GET ${process.env.BEACON_BASE_URL}${apiPath} to respond with ${responses.length} responses`,
   );
-  responses.map((r, idx) => console.debug(idx, r));
   let currentResponseIndex = 0;
   return mockttp
-    .forGet(`${process.env.BEACON_BASE_URL}/${api}`)
+    .forGet(`${process.env.BEACON_BASE_URL}${apiPath}`)
     .always()
     .asPriority(beaconMockPriority++)
     .thenCallback(async () => {
@@ -230,18 +229,22 @@ describe('Beacon Polling Service', () => {
   each([{ api: 'incidentReport' }, { api: 'caseReport' }]).describe(
     'Polling logic',
     ({ api }: { api: 'incidentReport' | 'caseReport' }) => {
+      const apiPath =
+        api === 'incidentReport'
+          ? '/api/aselo/incidents/updates'
+          : '/api/aselo/casereports/updates';
       test(`[${api}] Returns less than the maximum records - doesn't query again`, async () => {
         const caseIds = await generateCases(4);
         if (api === 'incidentReport') {
           mockedBeaconEndpoint = await mockBeacon(
             await mockingProxy.mockttpServer(),
-            api,
+            apiPath,
             [generateIncidentReports(4, 1, caseIds)],
           );
         } else {
           mockedBeaconEndpoint = await mockBeacon(
             await mockingProxy.mockttpServer(),
-            api,
+            apiPath,
             [generateCaseReports(4, 1, caseIds)],
           );
         }
@@ -250,7 +253,7 @@ describe('Beacon Polling Service', () => {
         expect(beaconRequests.length).toBe(1);
 
         expect(beaconRequests[0].url).toBe(
-          `${process.env.BEACON_BASE_URL}/${api}?updatedAfter=${encodeURIComponent(
+          `${process.env.BEACON_BASE_URL}${apiPath}?updated_after=${encodeURIComponent(
             subDays(BASELINE_DATE, 1).toISOString(),
           )}&max=${MAX_ITEMS_PER_CALL}`,
         );
@@ -263,13 +266,13 @@ describe('Beacon Polling Service', () => {
         if (api === 'incidentReport') {
           mockedBeaconEndpoint = await mockBeacon(
             await mockingProxy.mockttpServer(),
-            api,
+            apiPath,
             batch(generateIncidentReports(12, 1, caseIds), MAX_ITEMS_PER_CALL),
           );
         } else {
           mockedBeaconEndpoint = await mockBeacon(
             await mockingProxy.mockttpServer(),
-            api,
+            apiPath,
             batch(generateCaseReports(12, 1, caseIds), MAX_ITEMS_PER_CALL),
           );
         }
@@ -278,19 +281,19 @@ describe('Beacon Polling Service', () => {
         expect(beaconRequests.length).toBe(3);
 
         expect(decodeURI(beaconRequests[0].url)).toBe(
-          `${process.env.BEACON_BASE_URL}/${api}?updatedAfter=${encodeURIComponent(
+          `${process.env.BEACON_BASE_URL}${apiPath}?updated_after=${encodeURIComponent(
             subDays(BASELINE_DATE, 1).toISOString(),
           )}&max=${MAX_ITEMS_PER_CALL}`,
         );
 
         expect(decodeURI(beaconRequests[1].url)).toBe(
-          `${process.env.BEACON_BASE_URL}/${api}?updatedAfter=${encodeURIComponent(
+          `${process.env.BEACON_BASE_URL}${apiPath}?updated_after=${encodeURIComponent(
             addHours(BASELINE_DATE, 5).toISOString(),
           )}&max=${MAX_ITEMS_PER_CALL}`,
         );
 
         expect(decodeURI(beaconRequests[2].url)).toBe(
-          `${process.env.BEACON_BASE_URL}/${api}?updatedAfter=${encodeURIComponent(
+          `${process.env.BEACON_BASE_URL}${apiPath}?updated_after=${encodeURIComponent(
             addHours(BASELINE_DATE, 10).toISOString(),
           )}&max=${MAX_ITEMS_PER_CALL}`,
         );
@@ -300,13 +303,13 @@ describe('Beacon Polling Service', () => {
         if (api === 'incidentReport') {
           mockedBeaconEndpoint = await mockBeacon(
             await mockingProxy.mockttpServer(),
-            api,
+            apiPath,
             batch(generateIncidentReports(1000, 1, caseIds), MAX_ITEMS_PER_CALL),
           );
         } else {
           mockedBeaconEndpoint = await mockBeacon(
             await mockingProxy.mockttpServer(),
-            api,
+            apiPath,
             batch(generateCaseReports(1000, 1, caseIds), MAX_ITEMS_PER_CALL),
           );
         }
@@ -335,7 +338,7 @@ describe('Beacon Polling Service', () => {
         const incidentReports = generateIncidentReports(2, 1, caseIds);
         mockedBeaconEndpoint = await mockBeacon(
           await mockingProxy.mockttpServer(),
-          'incidentReport',
+          '/api/aselo/incidents/updates',
           [incidentReports],
         );
         // Act
@@ -350,7 +353,7 @@ describe('Beacon Polling Service', () => {
         const incidentReports = generateIncidentReports(5, 1, caseIds);
         mockedBeaconEndpoint = await mockBeacon(
           await mockingProxy.mockttpServer(),
-          'incidentReport',
+          '/api/aselo/incidents/updates',
           [incidentReports],
         );
         // Act
@@ -376,7 +379,7 @@ describe('Beacon Polling Service', () => {
         ]);
         mockedBeaconEndpoint = await mockBeacon(
           await mockingProxy.mockttpServer(),
-          'incidentReport',
+          '/api/aselo/incidents/updates',
           [incidentReports],
         );
         // Act
@@ -395,7 +398,7 @@ describe('Beacon Polling Service', () => {
         };
         mockedBeaconEndpoint = await mockBeacon(
           await mockingProxy.mockttpServer(),
-          'incidentReport',
+          '/api/aselo/incidents/updates',
           [
             [...incidentReports, updatedIncidentReport].sort(
               (ir1, ir2) =>
@@ -461,7 +464,7 @@ describe('Beacon Polling Service', () => {
         const caseReports = generateCaseReports(2, 1, caseIds);
         mockedBeaconEndpoint = await mockBeacon(
           await mockingProxy.mockttpServer(),
-          'caseReport',
+          '/api/aselo/casereports/updates',
           [caseReports],
         );
         // Act
