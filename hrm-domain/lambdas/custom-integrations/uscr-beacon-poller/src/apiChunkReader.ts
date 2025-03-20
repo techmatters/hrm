@@ -77,9 +77,11 @@ export const readApiInChunks = async <TItem>({
     url.searchParams.set('updated_after', lastUpdateSeen);
     url.searchParams.set('limit', maxItemsInChunk.toString());
     console.info(`${itemTypeName} Querying:`, url);
+    const apiCallStart = Date.now();
     const response = await fetch(url, { headers });
+    const apiCallMillis = Date.now() - apiCallStart;
     console.info(
-      `[TRACER][${itemTypeName}] Beacon  API responded with status:`,
+      `[TRACER][${itemTypeName}] Beacon API responded after ${apiCallMillis} with status:`,
       response.status,
     );
     if (response.ok) {
