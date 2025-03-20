@@ -81,7 +81,7 @@ export const readApiInChunks = async <TItem>({
     const response = await fetch(url, { headers });
     const apiCallMillis = Date.now() - apiCallStart;
     console.info(
-      `[TRACER][${itemTypeName}] Beacon API responded after ${apiCallMillis} with status:`,
+      `[TRACER][${itemTypeName}] Beacon API responded after ${apiCallMillis}ms with status:`,
       response.status,
     );
     if (response.ok) {

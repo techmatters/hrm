@@ -83,7 +83,7 @@ export const createIncident = async ({
     const apiCallMillis = Date.now() - apiCallStart;
 
     console.info(
-      `[TRACER][incident dispatch] Beacon API responded after ${apiCallMillis} with status:`,
+      `[TRACER][incident dispatch] Beacon API responded after ${apiCallMillis}ms with status:`,
       response.status,
     );
 
