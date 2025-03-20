@@ -154,7 +154,7 @@ const filterSql = ({
   helplines,
   excludedStatuses,
   includeOrphans,
-  operatingAreas,
+  customFilter,
 }: CaseListFilters) => {
   const filterSqlClauses: string[] = [];
   if (helplines && helplines.length) {
@@ -169,8 +169,12 @@ const filterSql = ({
   if (statuses && statuses.length) {
     filterSqlClauses.push(`cases."status" IN ($<statuses:csv>)`);
   }
-  if (operatingAreas && operatingAreas.length) {
-    filterSqlClauses.push(`cases."info"->>'operatingArea' IN ($<operatingAreas:csv>)`);
+  if (customFilter) {
+    Object.entries(customFilter).forEach(([key, values]) => {
+      if (values && values.length) {
+        filterSqlClauses.push(`cases."info"->>'${key}' IN ($<customFilter.${key}:csv>)`);
+      }
+    });
   }
   filterSqlClauses.push(
     ...[
