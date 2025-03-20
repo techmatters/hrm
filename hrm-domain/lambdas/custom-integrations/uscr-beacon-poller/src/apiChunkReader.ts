@@ -104,6 +104,7 @@ export const readApiInChunks = async <TItem>({
         beaconData,
         lastUpdateSeen,
         itemProcessor,
+        itemTypeName,
       );
       // Update the last update seen in SSM
       await putSsmParameter(lastUpdateSeenSsmKey, lastUpdateSeen, {
