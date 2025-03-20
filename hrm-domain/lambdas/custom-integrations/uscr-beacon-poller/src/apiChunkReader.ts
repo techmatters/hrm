@@ -36,9 +36,11 @@ const processChunk = async <TItem>(
   itemTypeName: string = 'item',
 ): Promise<string> => {
   let updatedLastSeen = lastSeen;
-  for (const item of items) {
-    console.debug(`Start processing ${itemTypeName}:`, lastSeen);
-    const processorResult = await itemProcessor(item);
+  for (const [index, item] of items.entries()) {
+    console.debug(
+      `Start processing index ${index} in ${items.length} ${itemTypeName}, (${lastSeen})`,
+    );
+    const processorResult = await itemProcessor(item, lastSeen);
     if (isErr(processorResult)) {
       console[processorResult.error.level](
         processorResult.message,

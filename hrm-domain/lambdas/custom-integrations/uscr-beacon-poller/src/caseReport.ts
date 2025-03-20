@@ -223,19 +223,23 @@ const addSudSurveySectionToAseloCase = addSectionToAseloCase(
 export const addCaseReportSectionsToAseloCase: ItemProcessor<CaseReport> = async (
   caseReport: CaseReport,
 ) => {
-  const caseReportResult = await addCaseReportSectionToAseloCase(caseReport);
+  const caseReportResult = await addCaseReportSectionToAseloCase(caseReport, 'something');
   if (isOk(caseReportResult)) {
     const additionalSectionsResults: ReturnType<
       ReturnType<typeof addSectionToAseloCase>
     >[] = [];
     if (caseReport.demographics) {
-      additionalSectionsResults.push(addPehSectionToAseloCase(caseReport));
+      additionalSectionsResults.push(addPehSectionToAseloCase(caseReport, 'something'));
     }
     if (caseReport.collaborative_sud_survey) {
-      additionalSectionsResults.push(addSudSurveySectionToAseloCase(caseReport));
+      additionalSectionsResults.push(
+        addSudSurveySectionToAseloCase(caseReport, 'something'),
+      );
     }
     if (caseReport.safety_plan) {
-      additionalSectionsResults.push(addSafetyPlanSectionToAseloCase(caseReport));
+      additionalSectionsResults.push(
+        addSafetyPlanSectionToAseloCase(caseReport, 'something'),
+      );
     }
     const errors = (await Promise.all(additionalSectionsResults)).filter(isErr);
     if (errors.length) {

@@ -74,7 +74,7 @@ export const incidentReportToCaseSection = ({
   total_incident_interval,
 }: IncidentReport): NewCaseSectionInfo => {
   return {
-    caseId: case_id?.toString(),
+    caseId: case_id?.toString() ?? case_id,
     lastUpdated: updated_at,
     section: {
       sectionId: id.toString(),

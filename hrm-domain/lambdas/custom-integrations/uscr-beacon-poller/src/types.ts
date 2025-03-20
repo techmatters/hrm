@@ -19,6 +19,7 @@ import { CaseSection } from '@tech-matters/hrm-types';
 
 export type ItemProcessor<TItem> = (
   item: TItem,
+  lastSeen: string,
 ) => Promise<
   ErrorResult<{ level: 'warn' | 'error'; lastUpdated?: string }> | SuccessResult<string>
 >;
