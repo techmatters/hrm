@@ -154,7 +154,7 @@ const filterSql = ({
   helplines,
   excludedStatuses,
   includeOrphans,
-  customFilter,
+  caseInfoFilters,
 }: CaseListFilters) => {
   const filterSqlClauses: string[] = [];
   if (helplines && helplines.length) {
@@ -169,10 +169,13 @@ const filterSql = ({
   if (statuses && statuses.length) {
     filterSqlClauses.push(`cases."status" IN ($<statuses:csv>)`);
   }
-  if (customFilter) {
-    Object.entries(customFilter).forEach(([key, values]) => {
+  // Custom filters are based on helpline specific filters in CaseFilters definition (eg: operatingArea for LA)
+  if (caseInfoFilters) {
+    Object.entries(caseInfoFilters).forEach(([key, values]) => {
       if (values && values.length) {
-        filterSqlClauses.push(`cases."info"->>'${key}' IN ($<customFilter.${key}:csv>)`);
+        filterSqlClauses.push(
+          `cases."info"->>'${key}' IN ($<caseInfoFilters.${key}:csv>)`,
+        );
       }
     });
   }
