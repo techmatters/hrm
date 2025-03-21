@@ -97,7 +97,7 @@ export type CaseListFilters = {
   excludedStatuses?: string[];
   counsellors?: string[];
   categories?: CategoryFilter[];
-  caseInfoFilters?: { [key: string]: string[] };
+  caseInfoFilters?: { [key: string]: string[] | DateFilter };
   createdAt?: DateFilter;
   updatedAt?: DateFilter;
   followUpDate?: DateFilter;
