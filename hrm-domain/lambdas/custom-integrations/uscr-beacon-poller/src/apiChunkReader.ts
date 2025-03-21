@@ -43,12 +43,16 @@ const processChunk = async <TItem>(
     const processorResult = await itemProcessor(item, lastSeen);
     if (isErr(processorResult)) {
       console[processorResult.error.level](
-        processorResult.message,
+        `[TRACER][${itemTypeName}] Item processing error: ${processorResult.message}`,
         processorResult.error,
       );
       updatedLastSeen = processorResult.error.lastUpdated ?? updatedLastSeen;
     } else {
       updatedLastSeen = processorResult.unwrap();
+      console.info(
+        `[TRACER][${itemTypeName}] Item processing success - updated last seen to:`,
+        updatedLastSeen,
+      );
     }
   }
   return updatedLastSeen;
@@ -72,9 +76,14 @@ export const readApiInChunks = async <TItem>({
     // Query Beacon API
     url.searchParams.set('updated_after', lastUpdateSeen);
     url.searchParams.set('limit', maxItemsInChunk.toString());
-    console.info('Querying:', url);
+    console.info(`${itemTypeName} Querying:`, url);
+    const apiCallStart = Date.now();
     const response = await fetch(url, { headers });
-    console.debug(`Beacon ${itemTypeName} API responded with status:`, response.status);
+    const apiCallMillis = Date.now() - apiCallStart;
+    console.info(
+      `[TRACER][${itemTypeName}] Beacon API responded after ${apiCallMillis}ms with status:`,
+      response.status,
+    );
     if (response.ok) {
       const parsedBody = await response.json();
       const beaconData = itemExtractor(parsedBody);
@@ -85,7 +94,9 @@ export const readApiInChunks = async <TItem>({
           )}`,
         );
       }
-      console.info(`Received ${beaconData.length} new ${itemTypeName}s from Beacon`);
+      console.info(
+        `[TRACER][${itemTypeName}] Received ${beaconData.length} new items from Beacon`,
+      );
       if (beaconData.length === 0) {
         console.info(`No new ${itemTypeName} found querying after:`, lastUpdateSeen);
         processedAllItems = true;
@@ -95,6 +106,7 @@ export const readApiInChunks = async <TItem>({
         beaconData,
         lastUpdateSeen,
         itemProcessor,
+        itemTypeName,
       );
       // Update the last update seen in SSM
       await putSsmParameter(lastUpdateSeenSsmKey, lastUpdateSeen, {
@@ -115,7 +127,7 @@ export const readApiInChunks = async <TItem>({
       }
     } else {
       if (response.status === 404) {
-        console.info(`No items updated later than ${lastUpdateSeen} found in Beacon`);
+        console.info(`[TRACER][${itemTypeName}] Received 0 new items from Beacon`);
         processedAllItems = true;
         return;
       }

@@ -111,13 +111,17 @@ export const addSectionToAseloCase =
       );
       if (newSectionResponse.ok) {
         const newSection: any = await newSectionResponse.json();
+
+        console.info(
+          `[${sectionType}] Added new ${sectionType} case section to case ${caseId}`,
+        );
         console.debug(
-          `Added new ${sectionType} case section to case ${caseId}:`,
+          `[${sectionType}] New ${sectionType} case section to case ${caseId} details:`,
           newSection,
         );
       } else if (newSectionResponse.status === 409) {
         return newErr({
-          message: `${sectionType} ${sectionId} was already added to case ${caseId} - overwrites are not supported. ${await newSectionResponse.text()}`,
+          message: `[${sectionType}] ${sectionId} was already added to case ${caseId} - overwrites are not supported. ${await newSectionResponse.text()}`,
           error: {
             type: 'SectionExists',
             caseId,
@@ -128,7 +132,7 @@ export const addSectionToAseloCase =
         });
       } else if (newSectionResponse.status === 404) {
         return newErr({
-          message: `Attempted to add ${sectionType} ${sectionId} to case ${caseId} which does not exist. ${await newSectionResponse.text()}`,
+          message: `[${sectionType}] Attempted to add ${sectionType} ${sectionId} to case ${caseId} which does not exist. ${await newSectionResponse.text()}`,
           error: {
             type: 'CaseNotFound',
             caseId,
@@ -139,7 +143,7 @@ export const addSectionToAseloCase =
         });
       } else {
         return newErr({
-          message: `Error adding ${sectionType} ${sectionId} to case ${caseId} (status ${newSectionResponse.status})`,
+          message: `[${sectionType}] Error adding ${sectionType} ${sectionId} to case ${caseId} (status ${newSectionResponse.status})`,
           error: {
             type: 'UnexpectedHttpError',
             status: newSectionResponse.status,

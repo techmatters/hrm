@@ -50,7 +50,14 @@ export const handler = async ({
       itemTypeName: 'incident report',
     },
   } as const;
-
+  console.info(
+    `[TRACER][${API_POLL_CONFIGS[apiType]?.itemTypeName}] Starting beacon poll: `,
+    apiType,
+  );
   await readApiInChunks<any>(API_POLL_CONFIGS[apiType]);
+  console.info(
+    `[TRACER][${API_POLL_CONFIGS[apiType]?.itemTypeName}] Completed beacon poll: `,
+    apiType,
+  );
   return 0;
 };
