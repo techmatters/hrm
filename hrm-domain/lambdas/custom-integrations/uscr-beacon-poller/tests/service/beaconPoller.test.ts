@@ -65,7 +65,7 @@ export const mockLastUpdateSeenParameter = async (mockttp: Mockttp) => {
   ]);
 };
 
-const generateCases = (numberToGenerate: number): Promise<number[]> => {
+const generateCases = (numberToGenerate: number): Promise<string[]> => {
   return Promise.all(
     Array(numberToGenerate)
       .fill(0)
@@ -76,7 +76,7 @@ const generateCases = (numberToGenerate: number): Promise<number[]> => {
         );
         const newCase: any = await newCaseResponse.json();
         console.debug('Generated case:', newCase.id);
-        return parseInt(newCase.id);
+        return newCase.id;
       }),
   );
 };
@@ -86,7 +86,7 @@ let mockedBeaconEndpoint: MockedEndpoint;
 const generateIncidentReports = (
   numberToGenerate: number,
   intervalInHours: number,
-  caseIds: number[] = [],
+  caseIds: string[] = [],
   start: Date = BASELINE_DATE,
 ): IncidentReport[] => {
   const response: IncidentReport[] = [];
@@ -107,7 +107,14 @@ const generateIncidentReports = (
         incident_class_id: 1,
         status: 'open',
         caller_name: 'Caller Name',
-        responder_name: `Responder Name on report #${iteration}, case #${caseIds[indexInCurrentIteration]}`,
+        responders: [
+          {
+            id: 40404,
+            name: `Responder Name on report #${iteration}, case #${caseIds[indexInCurrentIteration]}`,
+            timestamps: {} as any,
+            intervals: {} as any,
+          },
+        ],
         caller_number: '1234567890',
         created_at: start.toISOString(),
       }),
@@ -119,7 +126,7 @@ const generateIncidentReports = (
 const generateCaseReports = (
   numberToGenerate: number,
   intervalInHours: number,
-  caseIds: number[] = [],
+  caseIds: string[] = [],
   start: Date = BASELINE_DATE,
   completeReport: boolean = false,
 ): CaseReport[] => {
@@ -185,7 +192,7 @@ const verifyCaseSectionsForCase =
     sectionVerifier: (actual: CaseSectionRecord, expected: TItem) => void,
     expectedItemsSortComparer: (ir1: TItem, ir2: TItem) => number,
   ) =>
-  async (caseId: number, expectedItems: TItem[]): Promise<void> => {
+  async (caseId: string, expectedItems: TItem[]): Promise<void> => {
     expectedItems.sort(expectedItemsSortComparer);
 
     const records: CaseSectionRecord[] = await db.manyOrNone(
@@ -328,9 +335,11 @@ describe('Beacon Polling Service', () => {
       const verifyIncidentReportsForCase = verifyCaseSectionsForCase(
         'incidentReport',
         (actual, expected: IncidentReport) => {
-          const { id: incidentReportId, responder_name: responderName } = expected;
+          const { id: incidentReportId, responders: responders } = expected;
           expect(actual.sectionId).toBe(incidentReportId.toString());
-          expect(actual.sectionTypeSpecificData).toMatchObject({ responderName });
+          expect(actual.sectionTypeSpecificData).toMatchObject({
+            responderName: responders[0].name,
+          });
         },
         (ir1, ir2) => ir1.id - ir2.id,
       );

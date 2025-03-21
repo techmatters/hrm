@@ -22,29 +22,41 @@ describe('incidentReportToCaseSection', () => {
   test('most beacon incident report properties map to equivalents in the Aselo case section', () => {
     const { section, caseId, lastUpdated } = incidentReportToCaseSection(
       generateIncidentReport({
-        case_id: 1234,
+        case_id: '1234',
         id: 5678,
         incident_class_id: 6,
         category_id: 22,
+        category: 'Planetary Evacuation',
         latitude: -4.2,
         longitude: 13.37,
         address: 'Echo Park, Los Angeles, CA, USA',
-        responder_name: 'Lorna Ballantyne',
         transport_destination: 'Europa, Saturn',
-        no_clients_transported: 4000000000,
-        en_route_timestamp: '1970',
-        on_scene_timestamp: '1974',
-        additional_resources_timestamp: '80s',
-        transport_timestamp: '1978',
-        destination_arrival_timestamp: '2025',
-        incident_complete_timestamp: '2026 (est)',
-        activation_interval: '6 months',
-        en_route_interval: '4 years',
-        scene_arrival_interval: '3 weeks',
-        triage_interval: '4 years',
-        transport_interval: '47 years',
-        total_incident_interval: '55 years',
+        number_of_patient_transports: 4000000000,
         updated_at: 'not long ago',
+        tags: [],
+        responders: [
+          {
+            name: 'Lorna Ballantyne',
+            id: 6183,
+            timestamps: {
+              alert_reply_received_at: '1969',
+              enroute_received_at: '1970',
+              on_scene_received_at: '1974',
+              additional_reply_received_at: '80s',
+              transport_info_received_at: '1978',
+              hospital_arrival_received_at: '2025',
+              complete_incident_received_at: '2026 (est)',
+            },
+            intervals: {
+              enroute_time_interval: 208,
+              scene_arrival_interval: 3,
+              triage_interval: 208,
+              total_scene_interval: 411,
+              transport_interval: null,
+              total_incident_interval: 55 * 52,
+            },
+          },
+        ],
       }),
     );
     expect(caseId).toBe('1234');
@@ -53,7 +65,7 @@ describe('incidentReportToCaseSection', () => {
       sectionId: '5678',
       sectionTypeSpecificData: {
         operatingArea: 6,
-        incidentType: 22,
+        incidentType: 'Planetary Evacuation',
         latitude: -4.2,
         longitude: 13.37,
         locationAddress: 'Echo Park, Los Angeles, CA, USA',
@@ -66,23 +78,20 @@ describe('incidentReportToCaseSection', () => {
         transportTimestamp: '1978',
         destinationArrivalTimestamp: '2025',
         incidentCompleteTimestamp: '2026 (est)',
-        incidentActivationInterval: '6 months',
-        enrouteInterval: '4 years',
-        sceneArrivalInterval: '3 weeks',
-        triageInterval: '4 years',
-        transportInterval: '47 years',
-        totalIncidentInterval: '55 years',
+        enrouteInterval: 208,
+        sceneArrivalInterval: 3,
+        triageInterval: 208,
+        transportInterval: null,
+        totalIncidentInterval: 55 * 52,
       },
     });
   });
   each([
-    { input: 0, output: '0' },
     { input: '', output: '' },
-    { input: false, output: 'false' },
     { input: null, output: null },
     { input: undefined, output: undefined },
   ]).test(
-    'inputcident report case_id $input -> returns $output caseId',
+    'incident report case_id $input -> returns $output caseId',
     ({ input, output }) => {
       const { section, caseId } = incidentReportToCaseSection(
         generateIncidentReport({
@@ -98,7 +107,7 @@ describe('incidentReportToCaseSection', () => {
     expect(() =>
       incidentReportToCaseSection(
         generateIncidentReport({
-          case_id: 1234,
+          case_id: '1234',
           id: val,
         }),
       ),
@@ -106,7 +115,7 @@ describe('incidentReportToCaseSection', () => {
   });
   test('Missing incident id throws an error', () => {
     const incidentReport = generateIncidentReport({
-      case_id: 1234,
+      case_id: '1234',
       id: 1,
     });
     delete (incidentReport as any).id;

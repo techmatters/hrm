@@ -65,7 +65,7 @@ describe('addCaseReportSectionsToAseloCase', () => {
 
   const caseReportWithCoreSection = generateCaseReport({
     id: 'caseReportId',
-    case_id: 5678,
+    case_id: '5678',
     issue_report: ['issue1', 'issue2'],
     updated_at: 'Christmas time',
     primary_disposition: '1234',

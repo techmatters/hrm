@@ -21,7 +21,7 @@ import { isErr, isOk, newErr } from '@tech-matters/types';
 
 export type CaseReport = {
   id: string;
-  case_id: number;
+  case_id: string | null;
   contact_id: string;
   updated_at: string;
   primary_disposition: string;
@@ -84,7 +84,7 @@ const caseReportToCaseReportCaseSection = ({
     service_obtained,
   } = secondary_disposition || {};
   return {
-    caseId: case_id.toString(),
+    caseId: case_id as string,
     lastUpdated: updated_at,
     section: {
       sectionId: id,
@@ -120,7 +120,7 @@ const caseReportToPehCaseSection = ({
     race_ethnicity,
   } = demographics || {};
   return {
-    caseId: case_id.toString(),
+    caseId: case_id as string,
     lastUpdated: updated_at,
     section: {
       sectionId: id.toString(),
@@ -152,7 +152,7 @@ const caseReportToSafetyPlanCaseSection = ({
     safe_environment,
   } = safety_plan || {};
   return {
-    caseId: case_id.toString(),
+    caseId: case_id as string,
     lastUpdated: updated_at,
     section: {
       sectionId: id.toString(),
@@ -185,7 +185,7 @@ const caseReportToSudSurveyCaseSection = ({
     pet_separation_barrier,
   } = collaborative_sud_survey || {};
   return {
-    caseId: case_id.toString(),
+    caseId: case_id as string,
     lastUpdated: updated_at,
     section: {
       sectionId: id.toString(),
