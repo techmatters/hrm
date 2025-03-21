@@ -2,7 +2,6 @@
 {
   "extends": "./tsconfig.base.json",
   "files": [],
-  "include": ["src/**/*.ts"],
   "references": [
     { "path": "packages/types" },
     { "path": "packages/ssm-cache" },

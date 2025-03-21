@@ -70,12 +70,15 @@ describe('addSectionToAseloCase', () => {
   });
 
   test('most beacon incident report properties map to equivalents in the Aselo case section', async () => {
-    const result = await chickenAdder({
-      case_id: '1234',
-      id: '5678',
-      boc: 'bocARGGH',
-      chicken_counter: 42,
-    });
+    const result = await chickenAdder(
+      {
+        case_id: '1234',
+        id: '5678',
+        boc: 'bocARGGH',
+        chicken_counter: 42,
+      },
+      '40',
+    );
     verifyAddSectionRequest('1234', {
       sectionId: '5678',
       sectionTypeSpecificData: {
@@ -92,12 +95,15 @@ describe('addSectionToAseloCase', () => {
       status: 409,
       text: async () => 'Already exists',
     } as Response);
-    const result = await chickenAdder({
-      case_id: '1234',
-      id: '5678',
-      boc: 'bocARGGH',
-      chicken_counter: 42,
-    });
+    const result = await chickenAdder(
+      {
+        case_id: '1234',
+        id: '5678',
+        boc: 'bocARGGH',
+        chicken_counter: 42,
+      },
+      '40',
+    );
     if (isErr(result)) {
       expect(result.error).toEqual({
         level: 'warn',
@@ -122,12 +128,15 @@ describe('addSectionToAseloCase', () => {
       status: 404,
       text: async () => 'No case',
     } as Response);
-    const result = await chickenAdder({
-      case_id: '1234',
-      id: '5678',
-      boc: 'bocARGGH',
-      chicken_counter: 42,
-    });
+    const result = await chickenAdder(
+      {
+        case_id: '1234',
+        id: '5678',
+        boc: 'bocARGGH',
+        chicken_counter: 42,
+      },
+      '40',
+    );
     if (isErr(result)) {
       expect(result.error).toEqual({
         level: 'warn',
@@ -152,12 +161,15 @@ describe('addSectionToAseloCase', () => {
       status: 500,
       text: async () => 'No case',
     } as Response);
-    const result = await chickenAdder({
-      case_id: '1234',
-      id: '5678',
-      boc: 'bocARGGH',
-      chicken_counter: 42,
-    });
+    const result = await chickenAdder(
+      {
+        case_id: '1234',
+        id: '5678',
+        boc: 'bocARGGH',
+        chicken_counter: 42,
+      },
+      '40',
+    );
     if (isErr(result)) {
       expect(result.error).toEqual({
         level: 'error',
@@ -182,12 +194,15 @@ describe('addSectionToAseloCase', () => {
       status: 500,
       text: async () => 'No case',
     } as Response);
-    const result = await chickenAdder({
-      case_id: undefined as any,
-      id: '5678',
-      boc: 'bocARGGH',
-      chicken_counter: 42,
-    });
+    const result = await chickenAdder(
+      {
+        case_id: undefined as any,
+        id: '5678',
+        boc: 'bocARGGH',
+        chicken_counter: 42,
+      },
+      '40',
+    );
     if (isErr(result)) {
       expect(result.error).toEqual({
         level: 'error',
@@ -200,17 +215,42 @@ describe('addSectionToAseloCase', () => {
     }
     expect(mockFetch).not.toHaveBeenCalled();
   });
+  test('Last updated value equals last seen value - skips, returning ok result without adding a section', async () => {
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 409,
+      text: async () => 'No case',
+    } as Response);
+    const result = await chickenAdder(
+      {
+        case_id: '1234',
+        id: '5678',
+        boc: 'bocARGGH',
+        chicken_counter: 42,
+      },
+      '42',
+    );
+    if (isOk(result)) {
+      expect(result.data).toEqual('42');
+    } else {
+      throw new AssertionError({ message: 'Did not expect error', actual: result });
+    }
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
   test('Error caused by something other than HTTP response code', async () => {
     const thrownError = new Error('boom');
     mockFetch.mockImplementation(() => {
       throw thrownError;
     });
-    const result = await chickenAdder({
-      case_id: 'boc',
-      id: '5678',
-      boc: 'bocARGGH',
-      chicken_counter: 42,
-    });
+    const result = await chickenAdder(
+      {
+        case_id: 'boc',
+        id: '5678',
+        boc: 'bocARGGH',
+        chicken_counter: 42,
+      },
+      '40',
+    );
     if (isErr(result)) {
       expect(result.error).toEqual({
         level: 'error',

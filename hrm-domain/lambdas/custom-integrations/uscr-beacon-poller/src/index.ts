@@ -24,24 +24,26 @@ const lastIncidentReportUpdateSeenSsmKey = `/${process.env.NODE_ENV}/hrm/custom-
 const lastCaseReportUpdateSeenSsmKey = `/${process.env.NODE_ENV}/hrm/custom-integration/uscr/${accountSid}/beacon/latest_case_report_seen`;
 
 export const handler = async ({
-  api,
+  apiType,
 }: {
-  api: 'incidentReport' | 'caseReport';
+  apiType: 'incidentReport' | 'caseReport';
 }): Promise<0> => {
   const API_POLL_CONFIGS = {
     caseReport: {
-      url: new URL(`${process.env.BEACON_BASE_URL}/caseReport`),
+      url: new URL(`${process.env.BEACON_BASE_URL}/api/aselo/casereports/updates`),
       headers: beaconHeaders,
       lastUpdateSeenSsmKey: lastCaseReportUpdateSeenSsmKey,
+      itemExtractor: (body: any) => body.casereports,
       itemProcessor: addCaseReportSectionsToAseloCase,
       maxItemsInChunk: parseInt(process.env.MAX_CASE_REPORTS_PER_CALL || '1000'),
       maxChunksToRead: parseInt(process.env.MAX_CONSECUTIVE_API_CALLS || '10'),
       itemTypeName: 'case report',
     },
     incidentReport: {
-      url: new URL(`${process.env.BEACON_BASE_URL}/incidentReport`),
+      url: new URL(`${process.env.BEACON_BASE_URL}/api/aselo/incidents/updates`),
       headers: beaconHeaders,
       lastUpdateSeenSsmKey: lastIncidentReportUpdateSeenSsmKey,
+      itemExtractor: (body: any) => body.incidents,
       itemProcessor: addSectionToAseloCase('incidentReport', incidentReportToCaseSection),
       maxItemsInChunk: parseInt(process.env.MAX_INCIDENT_REPORTS_PER_CALL || '1000'),
       maxChunksToRead: parseInt(process.env.MAX_CONSECUTIVE_API_CALLS || '10'),
@@ -49,6 +51,6 @@ export const handler = async ({
     },
   } as const;
 
-  await readApiInChunks<any>(API_POLL_CONFIGS[api]);
+  await readApiInChunks<any>(API_POLL_CONFIGS[apiType]);
   return 0;
 };

@@ -95,7 +95,10 @@ describe('addCaseReportSectionsToAseloCase', () => {
 
   test('Case report with only core case report sections - only adds a case report section', async () => {
     // Act
-    const res = await addCaseReportSectionsToAseloCase(caseReportWithCoreSection);
+    const res = await addCaseReportSectionsToAseloCase(
+      caseReportWithCoreSection,
+      'something',
+    );
 
     // Assert
     verifyAddSectionRequest('5678', 'caseReport', {
@@ -148,7 +151,7 @@ describe('addCaseReportSectionsToAseloCase', () => {
     };
 
     // Act
-    const res = await addCaseReportSectionsToAseloCase(caseReport);
+    const res = await addCaseReportSectionsToAseloCase(caseReport, 'something');
 
     // Assert
     verifyAddSectionRequest('5678', 'caseReport', {
@@ -202,7 +205,7 @@ describe('addCaseReportSectionsToAseloCase', () => {
     };
 
     // Act
-    const res = await addCaseReportSectionsToAseloCase(caseReport);
+    const res = await addCaseReportSectionsToAseloCase(caseReport, 'something');
 
     // Assert
     verifyAddSectionRequest('5678', 'caseReport', {
@@ -257,7 +260,7 @@ describe('addCaseReportSectionsToAseloCase', () => {
     };
 
     // Act
-    const res = await addCaseReportSectionsToAseloCase(caseReport);
+    const res = await addCaseReportSectionsToAseloCase(caseReport, 'something');
 
     // Assert
     verifyAddSectionRequest('5678', 'caseReport', {
@@ -300,7 +303,7 @@ describe('addCaseReportSectionsToAseloCase', () => {
 
   test('Case report with all additional case report data - adds a case report and all additional sections', async () => {
     // Act
-    const res = await addCaseReportSectionsToAseloCase(completeCaseReport);
+    const res = await addCaseReportSectionsToAseloCase(completeCaseReport, 'something');
 
     // Assert
     verifyAddSectionRequest('5678', 'caseReport', {
@@ -352,7 +355,10 @@ describe('addCaseReportSectionsToAseloCase', () => {
     } as Response);
 
     // Act
-    const res = await addCaseReportSectionsToAseloCase(caseReportWithCoreSection);
+    const res = await addCaseReportSectionsToAseloCase(
+      caseReportWithCoreSection,
+      'something',
+    );
 
     // Assert
     verifyAddSectionRequest('5678', 'caseReport', {
@@ -403,7 +409,7 @@ describe('addCaseReportSectionsToAseloCase', () => {
       } as Response;
     });
     // Act
-    const res = await addCaseReportSectionsToAseloCase(completeCaseReport);
+    const res = await addCaseReportSectionsToAseloCase(completeCaseReport, 'something');
 
     // Assert
     verifyAddSectionRequest('5678', 'caseReport', {

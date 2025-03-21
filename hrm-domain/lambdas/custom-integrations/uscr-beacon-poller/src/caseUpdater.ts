@@ -68,6 +68,7 @@ export const addSectionToAseloCase =
   ): ItemProcessor<TInput> =>
   async (
     inputData: TInput,
+    lastSeen: string,
   ): Promise<
     | InvalidDataError
     | CaseNotSpecifiedError
@@ -77,14 +78,18 @@ export const addSectionToAseloCase =
   > => {
     try {
       const { section, caseId, lastUpdated } = inputToSectionMapper(inputData);
+      // This works around a bug in the beacon service where it returns later than or equal to the provided updated_after timestamp, not strictly later than.
+      if (lastSeen === lastUpdated) {
+        console.info(
+          `Skipping ${sectionType} ${section.sectionId} (its last updated timestamp ${lastUpdated} is the same as the latest timestamp observed by the poller, indicating it is already processed)`,
+        );
+        return newOkFromData(lastUpdated);
+      }
       const { sectionId } = section;
       console.debug(
         `Start processing ${sectionType}: ${sectionId} (last updated: ${lastUpdated})`,
       );
       if (!caseId) {
-        console.warn(
-          `${sectionType}s not already assigned to a case are not currently supported - rejecting ${sectionType} ${sectionId} (last updated: ${lastUpdated})`,
-        );
         return newErr({
           message: `${sectionType}s not already assigned to a case are not currently supported - rejecting ${sectionType} ${sectionId} (last updated: ${lastUpdated})`,
           error: {

@@ -16,6 +16,7 @@
 
 import { incidentReportToCaseSection } from '../../src/incidentReport';
 import { generateIncidentReport } from '../mockGenerators';
+import each from 'jest-each';
 
 describe('incidentReportToCaseSection', () => {
   test('most beacon incident report properties map to equivalents in the Aselo case section', () => {
@@ -73,5 +74,42 @@ describe('incidentReportToCaseSection', () => {
         totalIncidentInterval: '55 years',
       },
     });
+  });
+  each([
+    { input: 0, output: '0' },
+    { input: '', output: '' },
+    { input: false, output: 'false' },
+    { input: null, output: null },
+    { input: undefined, output: undefined },
+  ]).test(
+    'inputcident report case_id $input -> returns $output caseId',
+    ({ input, output }) => {
+      const { section, caseId } = incidentReportToCaseSection(
+        generateIncidentReport({
+          case_id: input,
+          id: 5678,
+        }),
+      );
+      expect(caseId).toBe(output);
+      expect(section.sectionId).toBe('5678');
+    },
+  );
+  each([null, undefined]).test('%s incident id throws an error', val => {
+    expect(() =>
+      incidentReportToCaseSection(
+        generateIncidentReport({
+          case_id: 1234,
+          id: val,
+        }),
+      ),
+    ).toThrow();
+  });
+  test('Missing incident id throws an error', () => {
+    const incidentReport = generateIncidentReport({
+      case_id: 1234,
+      id: 1,
+    });
+    delete (incidentReport as any).id;
+    expect(() => incidentReportToCaseSection(incidentReport)).toThrow();
   });
 });
