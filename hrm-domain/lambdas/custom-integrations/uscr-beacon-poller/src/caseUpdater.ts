@@ -17,6 +17,7 @@
 import { ItemProcessor, NewCaseSection } from './types';
 import {
   ErrorResult,
+  isOk,
   newErr,
   newOkFromData,
   SuccessResult,
@@ -68,7 +69,7 @@ export const addSectionToAseloCase =
   ): ItemProcessor<TInput> =>
   async (
     inputData: TInput,
-    lastSeen: string,
+    lastSeen: string | null = null,
   ): Promise<
     | InvalidDataError
     | CaseNotSpecifiedError
@@ -79,7 +80,7 @@ export const addSectionToAseloCase =
     try {
       const { section, caseId, lastUpdated } = inputToSectionMapper(inputData);
       // This works around a bug in the beacon service where it returns later than or equal to the provided updated_after timestamp, not strictly later than.
-      if (lastSeen === lastUpdated) {
+      if (lastSeen !== null && lastSeen === lastUpdated) {
         console.info(
           `Skipping ${sectionType} ${section.sectionId} (its last updated timestamp ${lastUpdated} is the same as the latest timestamp observed by the poller, indicating it is already processed)`,
         );
@@ -160,5 +161,32 @@ export const addSectionToAseloCase =
         message: error.message,
         error: { type: 'UnexpectedError', level: 'error', thrownError: error },
       });
+    }
+  };
+
+/**
+ * Adds a section but ignores all 'last seen' updating / checking.
+ * This is for subsections of a main section that always need to be added if the parent is and shouldn't affect the last seen timestamp.
+ * @param sectionType
+ * @param inputToSectionMapper
+ */
+export const addDependentSectionToAseloCase =
+  <TInput>(
+    sectionType: string,
+    inputToSectionMapper: (item: TInput) => {
+      section: NewCaseSection;
+      caseId: string;
+    },
+  ) =>
+  async (item: TInput) => {
+    const res = await addSectionToAseloCase(sectionType, (input: TInput) => ({
+      ...inputToSectionMapper(input),
+      lastUpdated: '',
+    }))(item, '_');
+    if (isOk(res)) {
+      return newOkFromData<void>(undefined);
+    } else {
+      delete res.error.lastUpdated;
+      return res;
     }
   };

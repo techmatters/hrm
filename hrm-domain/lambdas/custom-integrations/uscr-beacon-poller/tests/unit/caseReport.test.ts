@@ -14,55 +14,18 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { NewCaseSection } from '../../src/types';
 import { generateCaseReport, generateCompleteCaseReport } from '../mockGenerators';
 import { addCaseReportSectionsToAseloCase, CaseReport } from '../../src/caseReport';
 import '@tech-matters/testing';
 import { isErr, isOk } from '@tech-matters/types';
 import { AssertionError } from 'node:assert';
+import { verifyAddSectionRequest } from './verifyAddSectionRequest';
 
 const mockFetch: jest.MockedFunction<typeof fetch> = jest.fn();
 
 global.fetch = mockFetch;
 
 describe('addCaseReportSectionsToAseloCase', () => {
-  const verifyAddSectionRequest = (
-    caseId: string,
-    caseSectionType:
-      | 'caseReport'
-      | 'personExperiencingHomelessness'
-      | 'sudSurvey'
-      | 'safetyPlan',
-    expectedCaseSection: NewCaseSection,
-    firstRequest = true,
-  ) => {
-    expect(mockFetch.mock.calls.length).toBeGreaterThan(firstRequest ? 0 : 1);
-    const [firstCall, ...subsequentCalls] = mockFetch.mock.calls;
-    const callsToCheck = firstRequest ? [firstCall] : subsequentCalls;
-    const call = callsToCheck.find(
-      ([url]) =>
-        url ===
-        `${process.env.INTERNAL_HRM_URL}/internal/v0/accounts/${process.env.ACCOUNT_SID}/cases/${caseId}/sections/${caseSectionType}`,
-    );
-    if (!call) {
-      throw new AssertionError({
-        message: `Expected request to ${caseSectionType} section not found`,
-        actual: mockFetch.mock.calls,
-      });
-    }
-
-    expect(call[1]).toStrictEqual({
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Basic ${process.env.STATIC_KEY}`,
-      },
-      body: expect.any(String),
-    });
-    let parsedJson = JSON.parse(call[1]!.body as string);
-    expect(parsedJson).toStrictEqual(expectedCaseSection);
-  };
-
   const caseReportWithCoreSection = generateCaseReport({
     id: 'caseReportId',
     case_id: '5678',

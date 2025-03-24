@@ -14,29 +14,10 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { NewCaseSectionInfo } from './types';
-
-type Responder = {
-  id: number;
-  name: string;
-  timestamps: {
-    alert_reply_received_at: string | null;
-    enroute_received_at: string | null;
-    on_scene_received_at: string | null;
-    additional_reply_received_at: string | null;
-    transport_info_received_at: string | null;
-    hospital_arrival_received_at: string | null;
-    complete_incident_received_at: string | null;
-  };
-  intervals: {
-    enroute_time_interval: number | null;
-    scene_arrival_interval: number | null;
-    triage_interval: number | null;
-    total_scene_interval: number | null;
-    transport_interval: number | null;
-    total_incident_interval: number | null;
-  };
-};
+import { ItemProcessor, NewCaseSectionInfo } from './types';
+import { addDependentSectionToAseloCase, addSectionToAseloCase } from './caseUpdater';
+import { isErr, isOk, newErr } from '@tech-matters/types';
+import { Responder, responderToCaseSection } from './responder';
 
 export type IncidentReport = {
   id: number;
@@ -69,30 +50,9 @@ export const incidentReportToCaseSection = ({
   latitude,
   longitude,
   address,
-  responders,
   transport_destination,
   number_of_patient_transports,
 }: IncidentReport): NewCaseSectionInfo => {
-  const firstResponder: Responder | null = responders[0] ?? null;
-  const responderSections = firstResponder
-    ? {
-        responderName: firstResponder.name,
-        enrouteTimestamp: firstResponder.timestamps.enroute_received_at,
-        onSceneTimestamp: firstResponder.timestamps.on_scene_received_at,
-        additionalResourcesTimestamp:
-          firstResponder.timestamps.additional_reply_received_at,
-        transportTimestamp: firstResponder.timestamps.transport_info_received_at,
-        destinationArrivalTimestamp:
-          firstResponder.timestamps.hospital_arrival_received_at,
-        incidentCompleteTimestamp:
-          firstResponder.timestamps.complete_incident_received_at,
-        enrouteInterval: firstResponder.intervals.enroute_time_interval,
-        sceneArrivalInterval: firstResponder.intervals.scene_arrival_interval,
-        triageInterval: firstResponder.intervals.triage_interval,
-        transportInterval: firstResponder.intervals.transport_interval,
-        totalIncidentInterval: firstResponder.intervals.total_incident_interval,
-      }
-    : {};
   return {
     caseId: case_id as string,
     lastUpdated: updated_at,
@@ -106,8 +66,53 @@ export const incidentReportToCaseSection = ({
         locationAddress: address,
         numberOfClientsTransported: number_of_patient_transports,
         transportDestination: transport_destination,
-        ...responderSections,
       },
     },
   };
+};
+
+const addIncidentReportSectionToAseloCase = addSectionToAseloCase(
+  'incidentReport',
+  incidentReportToCaseSection,
+);
+
+export const addIncidentReportSectionsToAseloCase: ItemProcessor<IncidentReport> = async (
+  incidentReport: IncidentReport,
+  lastSeen: string,
+) => {
+  const incidentReportResult = await addIncidentReportSectionToAseloCase(
+    incidentReport,
+    lastSeen,
+  );
+
+  if (isOk(incidentReportResult)) {
+    const addResponderToAseloCase = addDependentSectionToAseloCase(
+      'assignedResponder',
+      (responder: Responder) =>
+        responderToCaseSection(
+          incidentReport.case_id!,
+          incidentReport.id,
+          responder,
+          lastSeen,
+        ),
+    );
+    const responderResults = await Promise.all(
+      (incidentReport.responders ?? []).map(responder =>
+        addResponderToAseloCase(responder),
+      ),
+    );
+    const errors = responderResults.filter(result => isErr(result));
+    if (errors.length) {
+      return newErr({
+        message: 'Failed to add responders from incident report to Aselo case',
+        error: {
+          type: 'AggregateError',
+          level: 'error',
+          lastUpdated: incidentReportResult.unwrap(),
+          errors,
+        },
+      });
+    }
+  }
+  return incidentReportResult;
 };

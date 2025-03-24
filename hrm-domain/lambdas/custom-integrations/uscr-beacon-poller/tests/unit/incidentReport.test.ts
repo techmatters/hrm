@@ -14,9 +14,16 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { incidentReportToCaseSection } from '../../src/incidentReport';
+import {
+  addIncidentReportSectionsToAseloCase,
+  incidentReportToCaseSection,
+} from '../../src/incidentReport';
 import { generateIncidentReport } from '../mockGenerators';
 import each from 'jest-each';
+import { verifyAddSectionRequest } from './verifyAddSectionRequest';
+
+const mockFetch: jest.MockedFunction<typeof fetch> = jest.fn();
+global.fetch = mockFetch;
 
 describe('incidentReportToCaseSection', () => {
   test('most beacon incident report properties map to equivalents in the Aselo case section', () => {
@@ -69,20 +76,8 @@ describe('incidentReportToCaseSection', () => {
         latitude: -4.2,
         longitude: 13.37,
         locationAddress: 'Echo Park, Los Angeles, CA, USA',
-        responderName: 'Lorna Ballantyne',
         transportDestination: 'Europa, Saturn',
         numberOfClientsTransported: 4000000000,
-        enrouteTimestamp: '1970',
-        onSceneTimestamp: '1974',
-        additionalResourcesTimestamp: '80s',
-        transportTimestamp: '1978',
-        destinationArrivalTimestamp: '2025',
-        incidentCompleteTimestamp: '2026 (est)',
-        enrouteInterval: 208,
-        sceneArrivalInterval: 3,
-        triageInterval: 208,
-        transportInterval: null,
-        totalIncidentInterval: 55 * 52,
       },
     });
   });
@@ -120,5 +115,167 @@ describe('incidentReportToCaseSection', () => {
     });
     delete (incidentReport as any).id;
     expect(() => incidentReportToCaseSection(incidentReport)).toThrow();
+  });
+});
+
+describe('addIncidentReportSectionsToAseloCase', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({}),
+    } as Response);
+  });
+
+  test('Responders specified - adds case section and responders', async () => {
+    await addIncidentReportSectionsToAseloCase(
+      generateIncidentReport({
+        case_id: '1234',
+        id: 5678,
+        incident_class_id: 6,
+        category_id: 22,
+        category: 'Planetary Evacuation',
+        latitude: -4.2,
+        longitude: 13.37,
+        address: 'Echo Park, Los Angeles, CA, USA',
+        transport_destination: 'Europa, Saturn',
+        number_of_patient_transports: 4000000000,
+        updated_at: 'just now',
+        tags: [],
+        responders: [
+          {
+            name: 'Lorna Ballantyne',
+            id: 6183,
+            timestamps: {
+              alert_reply_received_at: '1969',
+              enroute_received_at: '1970',
+              on_scene_received_at: '1974',
+              additional_reply_received_at: '80s',
+              transport_info_received_at: '1978',
+              hospital_arrival_received_at: '2025',
+              complete_incident_received_at: '2026 (est)',
+            },
+            intervals: {
+              enroute_time_interval: 208,
+              scene_arrival_interval: 3,
+              triage_interval: 208,
+              total_scene_interval: 411,
+              transport_interval: null,
+              total_incident_interval: 55 * 52,
+            },
+          },
+          {
+            name: 'Chalie Ballantyne',
+            id: 6184,
+            timestamps: {
+              alert_reply_received_at: '1969',
+              enroute_received_at: '1970',
+              on_scene_received_at: '1974',
+              additional_reply_received_at: null,
+              transport_info_received_at: null,
+              hospital_arrival_received_at: null,
+              complete_incident_received_at: '1974',
+            },
+            intervals: {
+              enroute_time_interval: 208,
+              scene_arrival_interval: 3,
+              triage_interval: 208,
+              total_scene_interval: 411,
+              transport_interval: null,
+              total_incident_interval: 208,
+            },
+          },
+        ],
+      }),
+      'not long ago',
+    );
+    verifyAddSectionRequest('1234', 'incidentReport', {
+      sectionId: '5678',
+      sectionTypeSpecificData: {
+        operatingArea: 6,
+        incidentType: 'Planetary Evacuation',
+        latitude: -4.2,
+        longitude: 13.37,
+        locationAddress: 'Echo Park, Los Angeles, CA, USA',
+        transportDestination: 'Europa, Saturn',
+        numberOfClientsTransported: 4000000000,
+      },
+    });
+    verifyAddSectionRequest(
+      '1234',
+      'assignedResponder',
+      {
+        sectionId: '5678/6183',
+        sectionTypeSpecificData: {
+          responderName: 'Lorna Ballantyne',
+          enrouteTimestamp: '1970',
+          onSceneTimestamp: '1974',
+          additionalResourcesTimestamp: '80s',
+          transportTimestamp: '1978',
+          destinationArrivalTimestamp: '2025',
+          incidentCompleteTimestamp: '2026 (est)',
+          enrouteInterval: 208,
+          sceneArrivalInterval: 3,
+          triageInterval: 208,
+          transportInterval: null,
+          totalIncidentTime: 55 * 52,
+        },
+      },
+      false,
+    );
+    verifyAddSectionRequest(
+      '1234',
+      'assignedResponder',
+      {
+        sectionId: '5678/6184',
+        sectionTypeSpecificData: {
+          responderName: 'Lorna Ballantyne',
+          enrouteTimestamp: '1970',
+          onSceneTimestamp: '1974',
+          additionalResourcesTimestamp: null,
+          transportTimestamp: null,
+          destinationArrivalTimestamp: null,
+          incidentCompleteTimestamp: '1974',
+          enrouteInterval: 208,
+          sceneArrivalInterval: 3,
+          triageInterval: null,
+          transportInterval: null,
+          totalIncidentTime: 208,
+        },
+      },
+      false,
+    );
+  });
+
+  test('No responders - just adds case section', async () => {
+    await addIncidentReportSectionsToAseloCase(
+      generateIncidentReport({
+        case_id: '1234',
+        id: 5678,
+        incident_class_id: 6,
+        category_id: 22,
+        category: 'Planetary Evacuation',
+        latitude: -4.2,
+        longitude: 13.37,
+        address: 'Echo Park, Los Angeles, CA, USA',
+        transport_destination: 'Europa, Saturn',
+        number_of_patient_transports: 4000000000,
+        updated_at: 'just now',
+        tags: [],
+      }),
+      'not long ago',
+    );
+    verifyAddSectionRequest('1234', 'incidentReport', {
+      sectionId: '5678',
+      sectionTypeSpecificData: {
+        operatingArea: 6,
+        incidentType: 'Planetary Evacuation',
+        latitude: -4.2,
+        longitude: 13.37,
+        locationAddress: 'Echo Park, Los Angeles, CA, USA',
+        transportDestination: 'Europa, Saturn',
+        numberOfClientsTransported: 4000000000,
+      },
+    });
   });
 });

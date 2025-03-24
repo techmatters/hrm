@@ -33,6 +33,7 @@ import {
   generateIncidentReport,
 } from '../mockGenerators';
 import { CaseReport } from '../../src/caseReport';
+import { Responder } from '../../src/responder';
 
 const ACCOUNT_SID = 'ACservicetest';
 const BEACON_RESPONSE_HEADERS = {
@@ -107,14 +108,12 @@ const generateIncidentReports = (
         incident_class_id: 1,
         status: 'open',
         caller_name: 'Caller Name',
-        responders: [
-          {
-            id: 40404,
-            name: `Responder Name on report #${iteration}, case #${caseIds[indexInCurrentIteration]}`,
-            timestamps: {} as any,
-            intervals: {} as any,
-          },
-        ],
+        responders: [40404, 40405].map(id => ({
+          id,
+          name: `Responder for case #${caseIds[indexInCurrentIteration]} on incident #${iteration} with id #${id}`,
+          timestamps: {} as any,
+          intervals: {} as any,
+        })),
         caller_number: '1234567890',
         created_at: start.toISOString(),
       }),
@@ -178,7 +177,7 @@ export const mockBeacon = async <TItem>(
       return {
         statusCode: 200,
         body: JSON.stringify({
-          status: 'successs',
+          status: 'success',
           [apiPath.includes('incidents') ? 'incidents' : 'casereports']: response,
         }),
         headers: BEACON_RESPONSE_HEADERS,
@@ -209,6 +208,7 @@ const verifyCaseSectionsForCase =
       sectionVerifier(r, expectedItems[idx]);
     });
   };
+
 afterAll(async () => {
   await mockingProxy.stop();
 });
@@ -335,13 +335,34 @@ describe('Beacon Polling Service', () => {
       const verifyIncidentReportsForCase = verifyCaseSectionsForCase(
         'incidentReport',
         (actual, expected: IncidentReport) => {
-          const { id: incidentReportId, responders: responders } = expected;
+          const { id: incidentReportId } = expected;
           expect(actual.sectionId).toBe(incidentReportId.toString());
-          expect(actual.sectionTypeSpecificData).toMatchObject({
-            responderName: responders[0].name,
-          });
         },
         (ir1, ir2) => ir1.id - ir2.id,
+      );
+
+      const respondersWithIncidentId = (incidentReport: IncidentReport) =>
+        incidentReport.responders.map(responder => ({
+          responder,
+          incidentReportId: incidentReport.id,
+        }));
+
+      const verifyRespondersForCase = verifyCaseSectionsForCase(
+        'assignedResponder',
+        (
+          actual,
+          {
+            responder,
+            incidentReportId,
+          }: { responder: Responder; incidentReportId: number },
+        ) => {
+          const { name } = responder;
+          expect(actual.sectionId).toBe(`${incidentReportId}/${name}`);
+          expect(actual.sectionTypeSpecificData).toMatchObject({
+            responderName: name,
+          });
+        },
+        ({ responder: r1 }, { responder: r2 }) => r1.name.localeCompare(r2.name),
       );
 
       test('Single new incident reports for existing cases - adds all incidents', async () => {
@@ -357,7 +378,15 @@ describe('Beacon Polling Service', () => {
         await handler({ apiType: 'incidentReport' });
         // Assert
         await verifyIncidentReportsForCase(caseIds[0], [incidentReports[0]]);
+        await verifyRespondersForCase(
+          caseIds[0],
+          respondersWithIncidentId(incidentReports[0]),
+        );
         await verifyIncidentReportsForCase(caseIds[1], [incidentReports[1]]);
+        await verifyRespondersForCase(
+          caseIds[1],
+          respondersWithIncidentId(incidentReports[1]),
+        );
       });
       test('Multiple new incident reports per case for existing cases - adds all incidents', async () => {
         // Arrange
@@ -376,9 +405,21 @@ describe('Beacon Polling Service', () => {
           incidentReports[2],
           incidentReports[4],
         ]);
+
+        await verifyRespondersForCase(caseIds[0], [
+          ...respondersWithIncidentId(incidentReports[0]),
+          ...respondersWithIncidentId(incidentReports[2]),
+          ...respondersWithIncidentId(incidentReports[4]),
+        ]);
+
         await verifyIncidentReportsForCase(caseIds[1], [
           incidentReports[1],
           incidentReports[3],
+        ]);
+
+        await verifyRespondersForCase(caseIds[1], [
+          ...respondersWithIncidentId(incidentReports[1]),
+          ...respondersWithIncidentId(incidentReports[3]),
         ]);
       });
       test('Single new incident reports, some without cases - rejects incidents without cases and adds the rest', async () => {
@@ -398,7 +439,15 @@ describe('Beacon Polling Service', () => {
         await handler({ apiType: 'incidentReport' });
         // Assert
         await verifyIncidentReportsForCase(caseIds[0], [incidentReports[0]]);
+        await verifyRespondersForCase(
+          caseIds[0],
+          respondersWithIncidentId(incidentReports[0]),
+        );
         await verifyIncidentReportsForCase(caseIds[1], [incidentReports[2]]);
+        await verifyRespondersForCase(
+          caseIds[1],
+          respondersWithIncidentId(incidentReports[2]),
+        );
       });
       test('Same incident multiple times in one batch - rejects all but first', async () => {
         // Arrange
