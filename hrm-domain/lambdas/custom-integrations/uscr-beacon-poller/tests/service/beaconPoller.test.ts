@@ -356,8 +356,8 @@ describe('Beacon Polling Service', () => {
             incidentReportId,
           }: { responder: Responder; incidentReportId: number },
         ) => {
-          const { name } = responder;
-          expect(actual.sectionId).toBe(`${incidentReportId}/${name}`);
+          const { name, id } = responder;
+          expect(actual.sectionId).toBe(`${incidentReportId}/${id}`);
           expect(actual.sectionTypeSpecificData).toMatchObject({
             responderName: name,
           });
