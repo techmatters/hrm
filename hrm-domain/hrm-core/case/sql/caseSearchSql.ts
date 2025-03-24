@@ -178,9 +178,9 @@ export const filterSql = ({
       } else if (typeof values === 'object' && !Array.isArray(values)) {
         // Handle DateFilter type
         const dateFilter = values as DateFilter;
-        const field = `CAST(NULLIF(cases."info"->>'${key}', '') AS TIMESTAMP WITH TIME ZONE)`;
+        const dateClause = `CAST(NULLIF(cases."info"->>'${key}', '') AS TIMESTAMP WITH TIME ZONE)`;
         const dateCondition = dateFilterCondition(
-          field,
+          dateClause,
           `caseInfoFilters.${key}`,
           dateFilter,
         );
