@@ -165,7 +165,7 @@ describe('addIncidentReportSectionsToAseloCase', () => {
             },
           },
           {
-            name: 'Chalie Ballantyne',
+            name: 'Charlie Ballantyne',
             id: 6184,
             timestamps: {
               alert_reply_received_at: '1969',
@@ -179,7 +179,7 @@ describe('addIncidentReportSectionsToAseloCase', () => {
             intervals: {
               enroute_time_interval: 208,
               scene_arrival_interval: 3,
-              triage_interval: 208,
+              triage_interval: null,
               total_scene_interval: 411,
               transport_interval: null,
               total_incident_interval: 208,
@@ -229,7 +229,7 @@ describe('addIncidentReportSectionsToAseloCase', () => {
       {
         sectionId: '5678/6184',
         sectionTypeSpecificData: {
-          responderName: 'Lorna Ballantyne',
+          responderName: 'Charlie Ballantyne',
           enrouteTimestamp: '1970',
           onSceneTimestamp: '1974',
           additionalResourcesTimestamp: null,

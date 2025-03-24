@@ -52,7 +52,7 @@ describe('responderToCaseSection', () => {
     expect(section).toStrictEqual({
       sectionId: '5678/6183',
       sectionTypeSpecificData: {
-        responderName: 'Charlie Ballantyne',
+        responderName: 'Lorna Ballantyne',
         enrouteTimestamp: '1970',
         onSceneTimestamp: '1974',
         additionalResourcesTimestamp: '80s',
@@ -61,7 +61,7 @@ describe('responderToCaseSection', () => {
         incidentCompleteTimestamp: '2026 (est)',
         enrouteInterval: 208,
         sceneArrivalInterval: 3,
-        triageInterval: null,
+        triageInterval: 208,
         transportInterval: null,
         totalIncidentTime: 55 * 52,
       },
